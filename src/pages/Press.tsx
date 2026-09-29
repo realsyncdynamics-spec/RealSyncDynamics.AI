@@ -164,12 +164,12 @@ export function Press() {
             </div>
             <p className="text-titanium-300 text-sm mb-4">
               Interview-Anfragen, Hintergrund-Gespräche, Quotes für laufende Recherchen, Investor-Decks,
-              Konferenz-Slots — schnellste Antwort über das Kontakt-Formular.
+              Konferenz-Slots — schnellste Antwort per E-Mail an hello@realsyncdynamicsai.de.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/contact-sales?source=press" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
+              <a href="mailto:hello@realsyncdynamicsai.de?subject=Presseanfrage" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
                 Anfrage senden <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
               <Link to="/about" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Über uns
               </Link>

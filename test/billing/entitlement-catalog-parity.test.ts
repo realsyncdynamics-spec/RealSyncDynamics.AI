@@ -38,6 +38,7 @@ import {
   neuesteSpiegelMigration,
   quittierteEntzuege,
   spiegelMigrationen,
+  versionUnzulaessig,
   zuordnungenAus,
 } from '../../scripts/generate-entitlement-mirror-sql';
 
@@ -182,6 +183,29 @@ describe('Entzug — kein Paar verschwindet still zwischen zwei Spiegeln', () =>
     const vorher = spiegel(["  ('starter', 'bots.enabled', 1)"]);
     const nachher = spiegel(["  ('starter', 'bots.enabled', 0)"]);
     expect(entzogenZwischen(zuordnungenAus(vorher), zuordnungenAus(nachher))).toEqual([]);
+  });
+});
+
+/**
+ * Die Version einer neuen Spiegel-Migration muss frei und neuer sein.
+ * (Befund aus dem CodeRabbit-Review zu PR #1616.)
+ */
+describe('Generator — nur eine freie, neuere Version wird geschrieben', () => {
+  const vorhandene = [
+    '20260920120000_entitlement_catalog_ssot_parity.sql',
+    '20260927112804_entitlement_catalog_mirror.sql',
+  ];
+
+  it('lehnt eine vorhandene Version ab — keine angewandte Migration wird ueberschrieben', () => {
+    expect(versionUnzulaessig('20260927112804', vorhandene)).toMatch(/existiert bereits/);
+  });
+
+  it('lehnt eine aeltere Version ab — sie waere nicht „die neueste"', () => {
+    expect(versionUnzulaessig('20260925101500', vorhandene)).toMatch(/nicht neuer als/);
+  });
+
+  it('nimmt eine neuere, freie Version an', () => {
+    expect(versionUnzulaessig('20260929104312', vorhandene)).toBeNull();
   });
 });
 

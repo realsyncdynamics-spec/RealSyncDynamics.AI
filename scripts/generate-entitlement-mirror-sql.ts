@@ -93,6 +93,22 @@ export function neuesteSpiegelMigration(): string {
   return alle[alle.length - 1]!;
 }
 
+/**
+ * Warum eine Version NICHT taugt — oder `null`, wenn sie taugt.
+ *
+ * Eine vorhandene Version wuerde eine angewandte Migration ueberschreiben.
+ * Eine aeltere als die neueste Spiegel-Migration waere nicht „die neueste" —
+ * Test, `--check` und Entzugs-Vergleich liefen dann gegen die falsche Datei.
+ * (Befund aus dem CodeRabbit-Review zu PR #1616.)
+ */
+export function versionUnzulaessig(version: string, vorhandene: string[]): string | null {
+  const ziel = `${version}_entitlement_catalog_mirror.sql`;
+  if (vorhandene.includes(ziel)) return `${ziel} existiert bereits — angewandte Migrationen werden nicht ueberschrieben.`;
+  const neueste = [...vorhandene].sort().at(-1);
+  if (neueste !== undefined && ziel <= neueste) return `${ziel} ist nicht neuer als ${neueste}.`;
+  return null;
+}
+
 /** Die VALUES-Zeilen: Plan, Key, Wert — sortiert, damit der Diff stabil ist. */
 function wertezeilen(): string[] {
   const zeilen: string[] = [];
@@ -282,6 +298,13 @@ function schreiben(): void {
   const version =
     [...args].find((a) => /^\d{14}$/.test(a)) ??
     new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+
+  const unzulaessig = versionUnzulaessig(version, spiegelMigrationen());
+  if (unzulaessig) {
+    console.error(`✗ ${unzulaessig}`);
+    console.error('  Eine freie, neuere Version angeben (14 Stellen, keine runde Stunde).');
+    process.exit(1);
+  }
 
   const vorige = neuesteSpiegelMigration();
   const weg = entzogenZwischen(zuordnungenAus(readFileSync(join(MIGRATIONS, vorige), 'utf8')), quellPaare());

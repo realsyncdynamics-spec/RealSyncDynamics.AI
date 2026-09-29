@@ -31,6 +31,7 @@ import type {
 } from './types.ts';
 import { REBUILD_ENGINE_VERSION } from './types.ts';
 import { hexToHsl } from './color.ts';
+import { stripLegalSuffix } from './text.ts';
 import { toWellFormed } from './well-formed.ts';
 
 /** Abzüge je Befund. Versionsrelevant — in Berichten zitiert. */
@@ -162,7 +163,7 @@ function assessHero(home: SourcePage, positioning: Positioning, add: Add, streng
       recommendation: 'Die neue H1 benennt das Angebot im Wortlaut der eigenen Leistungen.',
       evidence: [home.hero.ev], pageUrl: url,
     });
-  } else if (company !== '' && lower.replace(/\s+(gmbh|ug|ag|kg|e\.k\.|mbh|gbr)\b.*$/, '') === company.replace(/\s+(gmbh|ug|ag|kg|e\.k\.|mbh|gbr)\b.*$/, '')) {
+  } else if (company !== '' && stripLegalSuffix(lower) === stripLegalSuffix(company)) {
     add({
       code: 'rebuild.hero.name-only-headline', criterion: 'hero-clarity', severity: 'low',
       title: 'Hauptüberschrift nennt nur den Firmennamen',

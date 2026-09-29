@@ -19,6 +19,8 @@
 
 import type { ConversionGoal, Positioning, SourcePage, SourceSnapshot } from './types.ts';
 import type { DirectionKey } from './design-system.ts';
+import { collapseSpace } from './html.ts';
+import { splitTitle, stripLegalSuffix } from './text.ts';
 
 // ─────────────────────────────────────────────────────────────────────
 // Guard gegen unbelegte Behauptungen
@@ -97,17 +99,9 @@ export function sourceCorpus(snapshot: SourceSnapshot): string {
 // Bausteine
 // ─────────────────────────────────────────────────────────────────────
 
-const LEGAL_SUFFIX = /\s*(?:,\s*)?(?:(?:Steuerberatungs|Wirtschaftsprüfungs|Rechtsanwalts|Partnerschafts)gesellschaft\s*)?(?:mbB|mbH|GmbH\s*&\s*Co\.?\s*KG|GmbH|gGmbH|UG\s*\(haftungsbeschränkt\)|UG|AG|KG|OHG|GbR|e\.\s?K\.?|e\.\s?V\.?|PartG(?:\s*mbB)?|SE|Ltd\.?|Inc\.?)\.?$/i;
-
 /** Anzeigename ohne Rechtsformzusatz („Müller Haustechnik GmbH" → „Müller Haustechnik"). */
 export function displayName(name: string): string {
-  let current = name.trim();
-  for (let k = 0; k < 3; k += 1) {
-    const next = current.replace(LEGAL_SUFFIX, '').trim();
-    if (next === current || next.length < 2) break;
-    current = next;
-  }
-  return current;
+  return stripLegalSuffix(name);
 }
 
 /**
@@ -184,7 +178,7 @@ const GENERIC_SEGMENT = /^(start|startseite|home|homepage|index|willkommen|herzl
 /** Titelsegment neben dem Namen („Heizung, Sanitär & Bad in Leipzig"). */
 function titleClaim(home: SourcePage, company: string | null): string | null {
   if (!home.title) return null;
-  const segments = home.title.split(/\s+[|–—·•:-]\s+|\s*\|\s*/).map((s) => s.trim()).filter((s) => s.length >= 4);
+  const segments = splitTitle(home.title).filter((s) => s.length >= 4);
   const name = company ? displayName(company).toLowerCase() : '';
   const candidates = segments.filter((s) => {
     if (GENERIC_SEGMENT.test(s) || GENERIC_H1.test(s)) return false;
@@ -306,7 +300,7 @@ export function composeHero(
       candidates = [sourceH1, headlineSentence(positioning.valueProposition.value), claim, withPlace(offerPhrase, 'in'), name];
       break;
   }
-  const fallbackHeadline = name ?? (home.title ? home.title.split(/\s+[|–—-]\s+/)[0] : 'Willkommen');
+  const fallbackHeadline = name ?? (home.title ? collapseSpace(home.title).split(/ [|–—-] /)[0] : 'Willkommen');
   const headline = guarded(candidates, fallbackHeadline, corpus);
   const headlineSource: 'quelle' | 'komponiert' = headline.text === sourceH1 || headline.text === claim ? 'quelle' : 'komponiert';
 

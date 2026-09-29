@@ -619,8 +619,17 @@ function linkOrText(href: unknown, text: unknown): string {
   return safe ? `<a href="${safe}">${escapeHtml(text)}</a>` : escapeHtml(text);
 }
 
+const OPENING_QUOTES = new Set(['„', '"', '“', '»', '«', "'"]);
+const CLOSING_QUOTES = new Set(['“', '"', '”', '«', '»', "'"]);
+
+/** Anführungszeichen außen entfernen — als Schleife, nicht als Regex (linear bei langen Folgen). */
 function stripQuotes(value: unknown): string {
-  return String(value ?? '').trim().replace(/^[„"“»«']+|[“"”«»']+$/g, '').trim();
+  const text = String(value ?? '').trim();
+  let start = 0;
+  let end = text.length;
+  while (start < end && OPENING_QUOTES.has(text[start])) start += 1;
+  while (end > start && CLOSING_QUOTES.has(text[end - 1])) end -= 1;
+  return text.slice(start, end).trim();
 }
 
 function emphasisOf(value: unknown): string | undefined {

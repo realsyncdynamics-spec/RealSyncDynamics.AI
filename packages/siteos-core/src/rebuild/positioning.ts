@@ -10,6 +10,7 @@
 import { INDUSTRY_PRESETS } from '../blueprint/industries.ts';
 import type { IndustryKey } from '../types.ts';
 import type { Audience, ConversionGoal, Known, Positioning, SourcePage, SourceSnapshot } from './types.ts';
+import { cutBefore, splitTitle } from './text.ts';
 import { toWellFormed } from './well-formed.ts';
 
 export function known<T>(value: T, confidence: 'high' | 'medium' | 'low', evidence: (string | null | undefined)[]): Known<T> {
@@ -48,7 +49,6 @@ export function derivePositioning(snapshot: SourceSnapshot): Positioning {
 // Firma
 // ─────────────────────────────────────────────────────────────────────
 
-const TITLE_SEPARATORS = /\s+[|–—·•:-]\s+|\s*\|\s*/;
 const GENERIC_TITLE = /^(start|startseite|home|homepage|willkommen|herzlich willkommen|index|kontakt|impressum|datenschutz|leistungen|über uns|ueber uns)$/i;
 
 function deriveCompanyName(pages: SourcePage[]): Known<string> {
@@ -61,7 +61,7 @@ function deriveCompanyName(pages: SourcePage[]): Known<string> {
   // Ein Titelsegment, das auf mehreren Seiten wiederkehrt, ist der Name.
   const segmentsPerPage = pages
     .filter((p) => p.title)
-    .map((p) => ({ page: p, segments: (p.title as string).split(TITLE_SEPARATORS).map((s) => s.trim()).filter((s) => s.length >= 2 && s.length <= 60) }));
+    .map((p) => ({ page: p, segments: splitTitle(p.title as string).filter((s) => s.length >= 2 && s.length <= 60) }));
   if (segmentsPerPage.length >= 2) {
     const counts = new Map<string, { count: number; pages: SourcePage[] }>();
     for (const { page, segments } of segmentsPerPage) {
@@ -85,7 +85,7 @@ function deriveCompanyName(pages: SourcePage[]): Known<string> {
   if (logoAlt && logoAlt.length >= 2 && logoAlt.length <= 60) return known(logoAlt, 'medium', [home.logo?.ev]);
 
   if (home.title) {
-    const first = home.title.split(TITLE_SEPARATORS)[0]?.trim();
+    const first = splitTitle(home.title)[0];
     if (first && first.length <= 50 && !GENERIC_TITLE.test(first)) return known(first, 'low', [home.documentEv]);
   }
   return unknown('Weder strukturierte Daten noch Seitentitel noch Logo nennen einen Firmennamen.');
@@ -124,11 +124,12 @@ function deriveOffer(pages: SourcePage[], companyName: string | null): Known<str
   }
   // 3. Titelsegmente nach dem Namen („Heizung, Sanitär & Bad in Leipzig").
   if (items.length < 2 && pages[0].title) {
-    const segments = pages[0].title.split(TITLE_SEPARATORS).slice(1);
+    const segments = splitTitle(pages[0].title).slice(1);
     for (const segment of segments) {
-      // Ort und Zielgruppe gehören nicht zum Angebot.
-      const withoutPlace = segment.replace(/\s+in\s+[A-ZÄÖÜ][\wäöüß-]+.*$/, '').replace(/\s+für\s+.*$/, '');
-      for (const part of withoutPlace.split(/\s*(?:,|&| und )\s*/)) add(part, pages[0].documentEv);
+      // Ort und Zielgruppe gehören nicht zum Angebot (Segmente sind
+      // zusammengezogen: einzelne Leerzeichen, feste Muster).
+      const withoutPlace = cutBefore(cutBefore(segment, / in [A-ZÄÖÜ]/), / für /);
+      for (const part of withoutPlace.split(/ ?[,&] ?| und /)) add(part, pages[0].documentEv);
     }
   }
 

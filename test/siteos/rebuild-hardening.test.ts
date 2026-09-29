@@ -37,6 +37,7 @@ import {
   type SnapshotInput,
 } from '../../packages/siteos-core/src/index';
 import { decodeEntities } from '../../packages/siteos-core/src/rebuild/html';
+import { isScriptOrDataUrl, splitTitle, stripLegalSuffix } from '../../packages/siteos-core/src/rebuild/text';
 import { AT, rebuildCase } from './rebuild-helpers';
 
 const PAGE = 'https://www.dach-beispiel.example/';
@@ -356,6 +357,67 @@ describe('Rechenzeit bei feindlichen Seiten', () => {
     expect(within(3000, () => {
       extract(page(FILLER), [{ url: `${PAGE}a.css`, css: nested.slice(0, 600_000) }, { url: `${PAGE}b.css`, css: selector.slice(0, 600_000) }]);
     })).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Regex über fremdem Text: keine quadratische Rückverfolgung (CodeQL)
+// ─────────────────────────────────────────────────────────────────────
+
+describe('Titel, Namen und Anführungszeichen mit langen Leerraum- und Zeichenfolgen', () => {
+  const runs = (ch: string) => `A${ch.repeat(60_000)}B`;
+  const quick = (fn: () => void) => {
+    const started = performance.now();
+    fn();
+    return performance.now() - started;
+  };
+
+  it('Titel-Segmente und Rechtsform — gleiches Ergebnis wie bisher, lineare Laufzeit', () => {
+    expect(splitTitle('Müller Bau  |  Heizung – Leipzig')).toEqual(['Müller Bau', 'Heizung', 'Leipzig']);
+    expect(splitTitle('Müller Bau|Sanitär')).toEqual(['Müller Bau', 'Sanitär']);
+    expect(splitTitle('Bad-Sanierung Leipzig')).toEqual(['Bad-Sanierung Leipzig']);
+    expect(stripLegalSuffix('Müller Haustechnik GmbH')).toBe('Müller Haustechnik');
+    expect(stripLegalSuffix('Berger Steuerberatungsgesellschaft mbH')).toBe('Berger');
+    expect(stripLegalSuffix('Kanzlei Weiß, PartG mbB')).toBe('Kanzlei Weiß');
+    expect(stripLegalSuffix('Nordlicht AI GmbH & Co. KG')).toBe('Nordlicht AI');
+    for (const ch of ['\t', ' ', '-', '|']) {
+      expect(quick(() => { splitTitle(runs(ch)); stripLegalSuffix(runs(ch)); })).toBeLessThan(1000);
+    }
+  });
+
+  it('Positionierung einer Seite mit feindlichem Titel bleibt schnell', async () => {
+    const title = `Start${'\t'.repeat(40_000)}x${' '.repeat(40_000)}in${'\t'.repeat(20_000)}A${'-'.repeat(20_000)}`;
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(page(`<h1>Dach</h1>${FILLER}`, `<title>${title}</title>`))));
+    expect(quick(() => { derivePositioning(snapshot); })).toBeLessThan(2000);
+  });
+
+  it('Anführungszeichen um eine Kundenstimme', async () => {
+    const { builds } = await rebuildCase('handwerk');
+    const bp = builds[0].blueprint;
+    const quote = `${'"'.repeat(60_000)}Sehr sauber gearbeitet.`;
+    const withQuote: SiteBlueprint = { ...bp, pages: bp.pages.map((p) => ({ ...p, blocks: p.blocks.map((b) => (b.kind === 'testimonials' ? { ...b, content: { ...b.content, items: [{ quote, author: 'A. K.' }] } } : b)) })) };
+    expect(quick(() => { renderSite(withQuote, { presentation: 'showcase' }); })).toBeLessThan(2000);
+  });
+});
+
+describe('Adressen, die kein Link und kein Formularziel sind', () => {
+  it('javascript:, vbscript: und data: werden erkannt', () => {
+    for (const value of ['javascript:alert(1)', ' JavaScript:void(0)', 'vbscript:msgbox', 'data:text/html;base64,PHNjcmlwdD4=']) {
+      expect(isScriptOrDataUrl(value)).toBe(true);
+    }
+    expect(isScriptOrDataUrl('https://beispiel.example/')).toBe(false);
+  });
+
+  it('ein Formular mit data:-Ziel hat kein Ziel, ein data:-Link ist kein Link', () => {
+    const extracted = extractPage({ url: PAGE, html: page(`${FILLER}<form action="data:text/html,x"><input name="email" type="email"><button>Senden</button></form><a class="btn" href="data:text/html,x">Jetzt anfragen</a>`), statusCode: 200, fetchedAt: AT }, 0).page;
+    expect(extracted.forms[0]?.action ?? null).toBeNull();
+    expect(extracted.ctas.every((c) => c.href === null || !c.href.startsWith('data:'))).toBe(true);
+  });
+
+  it('Google Fonts nur vom Host fonts.googleapis.com — nicht aus einer Adresse, die ihn nur enthält', () => {
+    const fonts = (href: string) => extractPage({ url: PAGE, html: page(FILLER, `<title>Dach</title><link rel="stylesheet" href="${href}">`), statusCode: 200, fetchedAt: AT }, 0).page.fonts.map((f) => f.family);
+    expect(fonts('https://fonts.googleapis.com/css2?family=Inter:wght@400;700')).toContain('Inter');
+    expect(fonts('https://evil.example/?u=fonts.googleapis.com/css2&family=Evil')).not.toContain('Evil');
   });
 });
 

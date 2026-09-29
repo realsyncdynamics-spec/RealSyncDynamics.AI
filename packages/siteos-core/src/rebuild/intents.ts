@@ -402,7 +402,7 @@ function moreLocal(bp: SiteBlueprint, changes: RefinementChange[], notes: string
     }
     const home = homeOf(next);
     if (home && !home.description.includes(locality)) {
-      const description = `${home.description.replace(/\s+$/, '')}${/[.!?]$/.test(home.description.trim()) ? '' : '.'} Standort: ${locality}.`;
+      const description = `${home.description.trimEnd()}${/[.!?]$/.test(home.description.trim()) ? '' : '.'} Standort: ${locality}.`;
       if (description.length <= 160) {
         next = mapPage(next, '/', (p) => ({ ...p, description }));
         next = { ...next, seo: { ...next.seo, defaultDescription: next.seo.defaultDescription === home.description ? description : next.seo.defaultDescription } };

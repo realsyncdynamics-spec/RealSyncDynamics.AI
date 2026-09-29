@@ -39,6 +39,7 @@ import {
   type HtmlElement,
 } from './html.ts';
 import { CssAccumulator } from './css.ts';
+import { escapeRegExp, isScriptOrDataUrl } from './text.ts';
 import { backendLinkKind, categorizeHost, sameSite, socialNetwork } from './hosts.ts';
 import {
   EVIDENCE_EXCERPT_MAX,
@@ -280,13 +281,13 @@ export function extractPage(input: ExtractInput, pageIndex: number): ExtractResu
       }
     } else if (lowerHref.startsWith('mailto:')) {
       const address = rawHref.slice(7).split('?')[0].trim();
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address) && !emails.some((m) => m.value === address)) {
+      if (address.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address) && !emails.some((m) => m.value === address)) {
         emails.push({ value: address, ev: ev.element(el) });
       }
     }
 
     let resolved: URL | null = null;
-    if (el.tag === 'a' && pageUrl && rawHref !== '' && !lowerHref.startsWith('javascript:')) {
+    if (el.tag === 'a' && pageUrl && rawHref !== '' && !isScriptOrDataUrl(rawHref)) {
       resolved = resolveHref(rawHref, pageUrl);
     }
 
@@ -411,7 +412,8 @@ export function extractPage(input: ExtractInput, pageIndex: number): ExtractResu
   const fontSources = new Map<string, FontUse['source']>();
   for (const link of findAll(doc.root, byTag('link'))) {
     const href = link.attrs.href ?? '';
-    if (/fonts\.googleapis\.com\/css/i.test(href)) {
+    const fontsUrl = href !== '' && pageUrl ? resolveHref(href, pageUrl) : null;
+    if (fontsUrl && fontsUrl.hostname === 'fonts.googleapis.com' && fontsUrl.pathname.startsWith('/css')) {
       for (const family of googleFontFamilies(href)) {
         acc.addFontFamily(family);
         fontSources.set(family.toLowerCase(), 'google-fonts');
@@ -563,7 +565,7 @@ function readForm(
   if (rawAction.toLowerCase().startsWith('mailto:')) {
     action = rawAction.split('?')[0];
     targetKind = 'mailto';
-  } else if (pageUrl && !rawAction.toLowerCase().startsWith('javascript:') && rawAction !== '#') {
+  } else if (pageUrl && !isScriptOrDataUrl(rawAction) && rawAction !== '#') {
     // Leeres `action` sendet an die Seite selbst — das ist ein Ziel.
     const resolved = resolveHref(rawAction === '' ? pageUrl.toString() : rawAction, pageUrl);
     if (resolved && isHttp(resolved)) {
@@ -1389,7 +1391,7 @@ function formatDecimal(value: number): string {
  */
 function ratingVisible(body: HtmlElement, rating: number): boolean {
   const variants = [...new Set([formatDecimal(rating), rating.toFixed(1), String(rating), String(rating).replace('.', ',')])];
-  const number = new RegExp(`(^|[^\\d,.])(${variants.map((v) => v.replace(/[.]/g, '\\.')).join('|')})(?![\\d])`);
+  const number = new RegExp(`(^|[^\\d,.])(${variants.map(escapeRegExp).join('|')})(?![\\d])`);
   const context = /(stern|bewertung|rezension|von 5|\/\s?5\b|★|⭐|google|kundenzufriedenheit|rating|reviews?)/i;
   for (const node of textElements(body)) {
     if (isInside(node, byTag('script', 'style', 'noscript', 'template'))) continue;

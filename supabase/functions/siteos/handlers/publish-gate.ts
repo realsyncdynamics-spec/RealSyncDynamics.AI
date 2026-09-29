@@ -518,7 +518,7 @@ async function evaluatePrepared(ctx: Context, prepared: PreparedRelease): Promis
     severity_max: scores.severityMax,
     evaluated_at: nowIso,
     created_by: ctx.userId,
-    // Nur für übernommene Sites (Migration 20260929120000): der Vergleich,
+    // Nur für übernommene Sites (Migration 20260929150000): der Vergleich,
     // den diese Bewertung gesehen hat. Andere Zeilen bleiben unverändert.
     ...(backendSha256 ? { backend_sha256: backendSha256 } : {}),
   });

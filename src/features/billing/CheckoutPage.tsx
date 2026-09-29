@@ -238,7 +238,6 @@ export function CheckoutPage() {
       planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
-      isPilot={isPilot}
       trialDays={trialDays}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
@@ -412,7 +411,6 @@ function ConsentGateShell({
   planKey,
   tier,
   userEmail,
-  isPilot,
   trialDays,
   agreedToTerms,
   onAgreedToTerms,
@@ -426,7 +424,6 @@ function ConsentGateShell({
   planKey:                  string;
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
-  isPilot:                  boolean;
   trialDays:                number;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;

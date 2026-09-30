@@ -27,6 +27,73 @@ interface BrowserExecuteBody {
 
 const MUTATING_ACTIONS = new Set<BrowserAction['type']>(['click', 'type', 'select']);
 
+// Deutlich unter dem Wall-Clock-Limit der Edge Function, damit nach einem
+// Timeout noch Zeit bleibt, die Reservierung als executor_failed abzuschliessen.
+const EXECUTOR_TIMEOUT_MS = 90_000;
+
+type ExecutionEndStatus = 'executed' | 'executed_unrecorded' | 'executor_failed';
+
+interface Reservation {
+  outcome: 'reserved' | 'already_used' | 'not_found' | 'not_approved' | 'expired' | 'mismatch';
+  execution_id: string | null;
+  execution_status: string | null;
+  approval_status: string | null;
+}
+
+// Freigabe atomar verbrauchen (reserve_browser_execution: Zeilensperre auf der
+// Freigabe + UNIQUE(approval_id)). Muss VOR dem Executor-Aufruf stehen — ein
+// nachträglicher Evidence-Lookup schützt weder gegen parallele Requests noch
+// gegen einen Retry nach gescheiterter Persistenz.
+// deno-lint-ignore no-explicit-any
+async function reserveExecution(admin: any, tenantId: string, approvalId: string, fingerprint: string): Promise<Reservation> {
+  const { data, error } = await admin.rpc('reserve_browser_execution', {
+    p_tenant_id: tenantId,
+    p_approval_id: approvalId,
+    p_fingerprint: fingerprint,
+  });
+  if (error) throw new Error(`reserve_browser_execution: ${error.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.outcome) throw new Error('reserve_browser_execution: empty result');
+  return row as Reservation;
+}
+
+// Statuswechsel nur aus 'reserved' (finish_browser_execution). false heisst:
+// nicht geschrieben — die Reservierung bleibt stehen (fail-closed).
+// deno-lint-ignore no-explicit-any
+async function finishExecution(admin: any, executionId: string | null, status: ExecutionEndStatus, detail?: string): Promise<boolean> {
+  if (!executionId) return true;
+  try {
+    const { data, error } = await admin.rpc('finish_browser_execution', {
+      p_execution_id: executionId,
+      p_status: status,
+      p_detail: detail ?? null,
+    });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+function reservationError(reservation: Reservation): Response {
+  switch (reservation.outcome) {
+    case 'not_found':
+      return jsonError(404, 'APPROVAL_NOT_FOUND', 'approval not found');
+    case 'not_approved':
+      return jsonError(409, 'APPROVAL_REQUIRED', `approval is ${reservation.approval_status}`);
+    case 'expired':
+      return jsonError(409, 'APPROVAL_EXPIRED', 'approval has expired; request a new approval');
+    case 'mismatch':
+      return jsonError(409, 'APPROVAL_MISMATCH', 'approval does not match this browser action');
+    default:
+      // Jeder bestehende Status (reserved, executed, executed_unrecorded,
+      // executor_failed) heisst für den Client dasselbe: mit dieser Freigabe
+      // nicht erneut ausführbar. Der Status geht zur Anzeige mit.
+      return jsonError(409, 'APPROVAL_ALREADY_USED', 'approval has already been used; request a new approval', undefined, {
+        execution_status: reservation.execution_status,
+      });
+  }
+}
+
 function redactActions(actions: BrowserAction[]): unknown[] {
   return actions.map((action) => {
     if (action.type === 'type') {
@@ -64,6 +131,7 @@ async function appendBrowserEvidence(
     eventId: string;
     sessionId: string;
     approvalId: string | null;
+    executionId: string | null;
     actionCount: number;
     risk: 'info' | 'low' | 'medium' | 'high';
     result: unknown;
@@ -80,6 +148,7 @@ async function appendBrowserEvidence(
       event_id: input.eventId,
       browser_session_id: input.sessionId,
       browser_approval_id: input.approvalId,
+      browser_execution_id: input.executionId,
       browser_execution_consumed: Boolean(input.approvalId),
       action_count: input.actionCount,
       risk: input.risk,
@@ -101,6 +170,7 @@ async function appendBrowserEvidence(
           source: 'browser-execute',
           browser_session_id: input.sessionId,
           browser_approval_id: input.approvalId,
+          browser_execution_id: input.executionId,
           browser_execution_consumed: Boolean(input.approvalId),
           action_count: input.actionCount,
           risk: input.risk,
@@ -288,6 +358,7 @@ Deno.serve(async (req: Request) => {
 
   const fingerprint = await stableFingerprint(sessionId, actions);
   const requiresApproval = actions.some((action) => MUTATING_ACTIONS.has(action.type));
+  let executionId: string | null = null;
 
   if (requiresApproval) {
     if (!body.approval_id) {
@@ -303,54 +374,58 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: approval, error } = await auth.admin
-      .from('governance_approvals')
-      .select('id, tenant_id, status, requested_action')
-      .eq('id', body.approval_id)
-      .eq('tenant_id', auth.tenantId)
-      .maybeSingle();
-    if (error || !approval) return jsonError(404, 'APPROVAL_NOT_FOUND', 'approval not found');
-    if (approval.status !== 'approved') {
-      return jsonError(409, 'APPROVAL_REQUIRED', `approval is ${approval.status}`);
+    let reservation: Reservation;
+    try {
+      reservation = await reserveExecution(auth.admin, auth.tenantId, body.approval_id, fingerprint);
+    } catch {
+      return jsonError(503, 'RESERVATION_UNAVAILABLE', 'approval could not be reserved; nothing was executed');
     }
-    if (approval.requested_action !== fingerprint) {
-      return jsonError(409, 'APPROVAL_MISMATCH', 'approval does not match this browser action');
-    }
-
-    const { data: consumed } = await auth.admin
-      .from('governance_evidence')
-      .select('id')
-      .eq('tenant_id', auth.tenantId)
-      .eq('evidence_type', 'json')
-      .contains('metadata', {
-        browser_approval_id: body.approval_id,
-        browser_execution_consumed: true,
-      })
-      .limit(1)
-      .maybeSingle();
-    if (consumed) {
-      return jsonError(409, 'APPROVAL_ALREADY_USED', 'approval has already been consumed');
+    if (reservation.outcome !== 'reserved') return reservationError(reservation);
+    executionId = reservation.execution_id;
+    if (!executionId) {
+      return jsonError(503, 'RESERVATION_UNAVAILABLE', 'approval could not be reserved; nothing was executed');
     }
   }
 
   const startedAt = new Date().toISOString();
-  const response = await fetch(`${scannerBase}/execute`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${scannerKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      session_id: `${auth.tenantId}:${sessionId}`,
-      actions,
-    }),
-  });
+  let response: Response;
+  let payload: unknown;
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), EXECUTOR_TIMEOUT_MS);
+  try {
+    response = await fetch(`${scannerBase}/execute`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${scannerKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        session_id: `${auth.tenantId}:${sessionId}`,
+        actions,
+      }),
+      signal: abort.signal,
+    });
+    payload = await response.json().catch(() => null);
+  } catch {
+    const timedOut = abort.signal.aborted;
+    await finishExecution(auth.admin, executionId, 'executor_failed', timedOut ? 'timeout' : 'unreachable');
+    return jsonError(
+      timedOut ? 504 : 502,
+      timedOut ? 'EXECUTOR_TIMEOUT' : 'EXECUTOR_UNREACHABLE',
+      timedOut ? 'browser executor did not answer in time' : 'browser executor is unreachable',
+      undefined,
+      executionId ? { execution_status: 'executor_failed', approval_consumed: true } : undefined,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
 
-  const payload = await response.json().catch(() => null);
   if (!response.ok) {
+    await finishExecution(auth.admin, executionId, 'executor_failed', `http ${response.status}`);
     return jsonError(502, 'EXECUTOR_FAILED', 'browser executor request failed', undefined, {
       status: response.status,
       payload: await sanitizeExecutorPayload(payload),
+      ...(executionId ? { execution_status: 'executor_failed', approval_consumed: true } : {}),
     });
   }
 
@@ -373,6 +448,7 @@ Deno.serve(async (req: Request) => {
         session_id: sessionId,
         actions: safeActions,
         approval_id: body.approval_id ?? null,
+        browser_execution_id: executionId,
         executor_result: safePayload,
         started_at: startedAt,
         completed_at: new Date().toISOString(),
@@ -381,9 +457,18 @@ Deno.serve(async (req: Request) => {
     .select('id')
     .single();
 
-  if (eventError || !event?.id) {
-    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action log could not be persisted');
-  }
+  // Ab hier ist die Aktion gelaufen. Scheitert der Prüfpfad, wird die
+  // Ausführung executed_unrecorded — nie wieder freigegeben, nie ok gemeldet.
+  const unrecorded = async (detail: string) => {
+    await finishExecution(auth.admin, executionId, 'executed_unrecorded', detail);
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action was executed, but governance evidence could not be persisted; manual review required', undefined, {
+      execution_status: 'executed_unrecorded',
+      action_executed: true,
+      approval_consumed: Boolean(executionId),
+    });
+  };
+
+  if (eventError || !event?.id) return unrecorded('governance event');
 
   try {
     await appendBrowserEvidence(auth.admin, {
@@ -391,12 +476,23 @@ Deno.serve(async (req: Request) => {
       eventId: event.id,
       sessionId,
       approvalId: body.approval_id ?? null,
+      executionId,
       actionCount: actions.length,
       risk,
       result: safePayload,
     });
   } catch {
-    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser execution evidence could not be persisted');
+    return unrecorded('governance evidence');
+  }
+
+  // Auch der Abschluss selbst ist Teil des Prüfpfads: gelingt er nicht, bleibt
+  // die Reservierung stehen (fail-closed) und der Aufrufer bekommt kein ok.
+  if (!(await finishExecution(auth.admin, executionId, 'executed'))) {
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action was executed and recorded, but the execution status could not be finalized; manual review required', undefined, {
+      execution_status: 'reserved',
+      action_executed: true,
+      approval_consumed: true,
+    });
   }
 
   return jsonResponse({
@@ -404,6 +500,7 @@ Deno.serve(async (req: Request) => {
     session_id: sessionId,
     risk,
     approval_id: body.approval_id ?? null,
+    execution_id: executionId,
     result: payload,
   });
 });

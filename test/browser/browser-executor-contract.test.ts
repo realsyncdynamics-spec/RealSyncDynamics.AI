@@ -34,6 +34,11 @@ describe('governed browser executor contract', () => {
     expect(edge).toContain("key === 'screenshot_base64'");
     expect(edge).toContain("persisted_inline: false");
     expect(edge).toContain("browser:v1:");
+    expect(edge).toContain("rpc('append_governance_evidence'");
+    expect(edge).toContain('evidenceContentHash(snapshot)');
+    expect(edge).toContain('EVIDENCE_HASH_METHOD');
+    expect(edge).not.toMatch(/from\('governance_evidence'\)\.insert/);
+    expect(edge).toContain("EVIDENCE_WRITE_FAILED");
   });
 
   it('keeps the browser client on the user JWT path and exposes a health probe', () => {

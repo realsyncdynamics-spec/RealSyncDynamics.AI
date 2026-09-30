@@ -2,6 +2,7 @@ import { jsonError, jsonResponse, handleOptions } from '../_shared/gateway.ts';
 import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { AiInvokeError, runAiTool } from '../_shared/ai.ts';
 import { MAX_TASK_CHARS, buildPlannerInput, parseBrowserPlan } from '../_shared/browser-plan.ts';
+import { EVIDENCE_HASH_METHOD, evidenceContentHash } from '../_shared/evidence-hash.ts';
 
 type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -41,6 +42,79 @@ function redactActions(actions: BrowserAction[]): unknown[] {
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function latestEvidenceHash(admin: any, tenantId: string): Promise<string | null> {
+  const { data, error } = await admin
+    .from('governance_evidence')
+    .select('content_hash')
+    .eq('tenant_id', tenantId)
+    .not('content_hash', 'is', null)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(1);
+  if (error) throw new Error(`governance_evidence head: ${error.message}`);
+  return data?.[0]?.content_hash ?? null;
+}
+
+async function appendBrowserEvidence(
+  admin: any,
+  input: {
+    tenantId: string;
+    eventId: string;
+    sessionId: string;
+    approvalId: string | null;
+    actionCount: number;
+    risk: 'info' | 'low' | 'medium' | 'high';
+    result: unknown;
+  },
+): Promise<string> {
+  // Compare-and-swap on the tenant evidence head. A concurrent writer may
+  // advance the chain between read and append; in that case re-read, re-hash
+  // (previous_hash is part of the snapshot), and retry.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const previousHash = await latestEvidenceHash(admin, input.tenantId);
+    const snapshot: Record<string, unknown> = {
+      source: 'browser-execute',
+      tenant_id: input.tenantId,
+      event_id: input.eventId,
+      browser_session_id: input.sessionId,
+      browser_approval_id: input.approvalId,
+      browser_execution_consumed: Boolean(input.approvalId),
+      action_count: input.actionCount,
+      risk: input.risk,
+      result: input.result,
+      previous_hash: previousHash,
+    };
+    const contentHash = await evidenceContentHash(snapshot);
+    const { data, error } = await admin.rpc('append_governance_evidence', {
+      p_row: {
+        tenant_id: input.tenantId,
+        event_id: input.eventId,
+        asset_id: null,
+        evidence_type: 'json',
+        title: 'Browser execution evidence',
+        storage_path: null,
+        content_hash: contentHash,
+        previous_hash: previousHash,
+        metadata: {
+          source: 'browser-execute',
+          browser_session_id: input.sessionId,
+          browser_approval_id: input.approvalId,
+          browser_execution_consumed: Boolean(input.approvalId),
+          action_count: input.actionCount,
+          risk: input.risk,
+          result: input.result,
+          snapshot,
+          hash_method: EVIDENCE_HASH_METHOD,
+        },
+      },
+      p_expected_previous_hash: previousHash,
+    });
+    if (error) throw new Error(`append_governance_evidence: ${error.message}`);
+    if (typeof data === 'string' && data.length > 0) return data;
+  }
+  throw new Error('append_governance_evidence: chain head kept moving');
 }
 
 async function stableFingerprint(sessionId: string, actions: BrowserAction[]): Promise<string> {
@@ -284,7 +358,7 @@ Deno.serve(async (req: Request) => {
   const safeActions = redactActions(actions);
   const risk = riskFor(actions);
 
-  const { data: event } = await auth.admin
+  const { data: event, error: eventError } = await auth.admin
     .from('governance_events')
     .insert({
       tenant_id: auth.tenantId,
@@ -307,20 +381,23 @@ Deno.serve(async (req: Request) => {
     .select('id')
     .single();
 
-  await auth.admin.from('governance_evidence').insert({
-    tenant_id: auth.tenantId,
-    event_id: event?.id ?? null,
-    evidence_type: 'json',
-    title: 'Browser execution evidence',
-    metadata: {
-      browser_session_id: sessionId,
-      browser_approval_id: body.approval_id ?? null,
-      browser_execution_consumed: Boolean(body.approval_id),
-      action_count: actions.length,
+  if (eventError || !event?.id) {
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action log could not be persisted');
+  }
+
+  try {
+    await appendBrowserEvidence(auth.admin, {
+      tenantId: auth.tenantId,
+      eventId: event.id,
+      sessionId,
+      approvalId: body.approval_id ?? null,
+      actionCount: actions.length,
       risk,
       result: safePayload,
-    },
-  });
+    });
+  } catch {
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser execution evidence could not be persisted');
+  }
 
   return jsonResponse({
     ok: true,

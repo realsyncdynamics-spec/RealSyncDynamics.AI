@@ -22,8 +22,24 @@
 --     Freigabe Mandant, Status 'approved', expires_at > now() (Datenbankuhr)
 --     und Fingerprint und reserviert in derselben Transaktion.
 --   - public.finish_browser_execution(): Statuswechsel nur aus 'reserved'.
---     'reserved' wird nie automatisch freigegeben; stehengebliebene
---     Reservierungen zeigt docs/runbooks/browser-execution-reservations.md.
+--     'reserved' wird nie automatisch freigegeben, auch nicht manuell.
+--
+-- Runbook — stehengebliebene und ungeklärte Ausführungen (service_role):
+--
+--   SELECT e.id, e.tenant_id, e.approval_id, e.status, e.detail,
+--          e.reserved_at, e.finished_at, now() - e.reserved_at AS age
+--     FROM public.browser_executions e
+--    WHERE (e.status = 'reserved' AND e.reserved_at < now() - interval '5 minutes')
+--       OR e.status IN ('executed_unrecorded', 'executor_failed')
+--    ORDER BY e.reserved_at DESC;
+--
+--   Executor-Timeout ist 90 s: 'reserved' nach 5 Minuten heisst, die Function
+--   brach zwischen Reservierung und Abschluss ab. Ob die Aktion lief, zeigt das
+--   Zielsystem oder ein governance_events-Eintrag 'browser.action.executed'
+--   mit payload->>'browser_execution_id' = e.id::text.
+--   executed_unrecorded: Aktion lief, Prüfpfad unvollständig → manuell prüfen
+--   und nachdokumentieren. executor_failed: Ausgang unklar → Zielsystem prüfen.
+--   Ein neuer Versuch braucht immer eine neue Freigabe.
 --
 -- Rein additiv: governance_approvals (inkl. CHECK auf status) bleibt
 -- unverändert. Zugriff nur service_role. Deploy-Reihenfolge: diese

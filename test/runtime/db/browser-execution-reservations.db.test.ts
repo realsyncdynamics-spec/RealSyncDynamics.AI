@@ -112,7 +112,10 @@ d('browser_executions · reserve_browser_execution', () => {
 
     expect(await finish(ctx!.client, r.execution_id!, 'executed_unrecorded')).toBe(true);
     expect(await finish(ctx!.client, r.execution_id!, 'executed')).toBe(false);
+    // Der Fehler bricht sonst die Testtransaktion ab (25P02 bei der nächsten Abfrage).
+    await ctx!.client.query('SAVEPOINT sp_reserved');
     expect(await pgCode(finish(ctx!.client, r.execution_id!, 'reserved'))).toBe('22023');
+    await ctx!.client.query('ROLLBACK TO SAVEPOINT sp_reserved');
 
     const { rows } = await ctx!.client.query<{ status: string }>(
       `SELECT status FROM public.browser_executions WHERE id = $1`, [r.execution_id]);

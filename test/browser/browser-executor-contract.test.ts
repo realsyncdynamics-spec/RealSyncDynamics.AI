@@ -70,7 +70,9 @@ describe('governed browser executor contract', () => {
   it('does not persist typed values or inline screenshots as governance evidence', () => {
     expect(actions).toContain('[redacted:');
     expect(actions).toContain('browser:v2:');
-    expect(handler).toContain('redactAction(action)');
+    expect(handler).toContain('redactAction(recordAction)');
+    // Abgelehnte Roh-URLs nur ohne Zugangsdaten/Query/Fragment (recordableUrl).
+    expect(handler).toContain('recordableUrl(action.url)');
     // Evidence enthält nur Hashes der Artefakte, nie Bild- oder Textinhalt.
     expect(handler).toContain("artifacts.push({ kind: 'frame', sha256: execution.frame.sha256");
     expect(handler).toContain("artifacts.push({ kind: 'text', sha256: textSha");

@@ -175,6 +175,26 @@ export function checkNavigationUrl(raw: string, allowPrivateHosts: readonly stri
   return { ok: true, url: url.toString(), host };
 }
 
+/**
+ * Form einer NICHT freigegebenen Roh-URL für Ereignis, Nachweis und Log:
+ * nie Zugangsdaten, Query oder Fragment (können Passwörter/Tokens tragen und
+ * lägen sonst für alle Mitglieder lesbar und unlöschbar in der Kette).
+ * Nicht-HTTP-Schemata nur als Schema; Unlesbares als Platzhalter.
+ */
+export function recordableUrl(raw: string): string {
+  const trimmed = String(raw ?? '').trim().slice(0, 4096);
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    || /^(javascript|data|file|vbscript|blob|about|chrome|chrome-extension|mailto|ftp|ws|wss|view-source):/i.test(trimmed);
+  let url: URL;
+  try {
+    url = new URL(hasScheme ? trimmed : `https://${trimmed}`);
+  } catch {
+    return '[invalid-url]';
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return `${url.protocol}[redacted]`;
+  return `${url.protocol}//${url.host}${url.pathname}`.slice(0, 2048);
+}
+
 export function parseAllowlist(value: string | undefined | null): string[] {
   if (!value) return [];
   return value.split(',').map(normalizeAllowEntry).filter((s) => s.length > 0 && s.length <= 300).slice(0, 20);

@@ -655,6 +655,11 @@ describe('Landeprüfung (Redirect-Hops, DNS-genau im Executor)', () => {
     });
     expect(res.body.error).toMatchObject({ code: 'URL_BLOCKED', details: { action_executed: true, approval_consumed: true } });
     expect(h.db.executions[0]).toMatchObject({ status: 'executed', detail: 'landed_on_blocked_url' });
+    // Auch die gekettete Evidence verschweigt die Nebenwirkung nicht (Review 10-01).
+    const resultEvent = h.db.events.at(-1)!;
+    expect(resultEvent.event_type).toBe('browser.action.executed');
+    expect(String(resultEvent.title)).toContain('ausgeführt, danach gesperrt gelandet');
+    expect((resultEvent.payload as { result: Record<string, unknown> }).result).toMatchObject({ ok: false, action_executed: true, error_code: 'URL_BLOCKED' });
   });
 
   it('Seite stand schon vor der Aktion gesperrt (selbstständiger Redirect): nichts ausgeführt, Session zu', async () => {
@@ -695,4 +700,23 @@ describe('Landeprüfung (Redirect-Hops, DNS-genau im Executor)', () => {
   async function requestClickFor(sid: string) {
     return call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector: '#submit' } });
   }
+});
+
+describe('abgelehnte Navigation: Roh-URL nie mit Zugangsdaten, Query oder Fragment gespeichert', () => {
+  it('Passwort und Token landen weder in Ereignis, Nachweis, Log noch Antwort', async () => {
+    const sid = await openSession();
+    const res = await navigate(sid, 'https://admin:S3cr3t-P4ss@intranet-portal.example.com/login?token=abc123#frag');
+    expect(res.body.error.code).toBe('URL_BLOCKED');
+    const everything = JSON.stringify([h.db.events, h.db.actionLog, h.db.evidence, h.db.sessions, res.body]);
+    for (const secret of ['S3cr3t-P4ss', 'admin:', 'token=abc123', '#frag']) expect(everything).not.toContain(secret);
+    const denied = h.db.events.find((e) => e.event_type === 'browser.action.denied')!;
+    expect((denied.payload as { target: string }).target).toBe('https://intranet-portal.example.com/login');
+    expect(h.db.actionLog.at(-1)!.url).toBe('https://intranet-portal.example.com/login');
+  });
+
+  it('fremde Schemata nur als Schema', async () => {
+    const sid = await openSession();
+    await navigate(sid, 'data:text/html,<script>geheim()</script>');
+    expect(JSON.stringify([h.db.events, h.db.evidence, h.db.actionLog])).not.toContain('geheim');
+  });
 });

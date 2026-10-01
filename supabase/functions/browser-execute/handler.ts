@@ -24,7 +24,7 @@ import {
   type BrowserAction,
 } from '../_shared/browser-runtime/actions.ts';
 import { decideWithEvidence, type ApprovalDecisionRepo } from '../_shared/browser-runtime/approval-decision.ts';
-import { checkNavigationUrl } from '../_shared/browser-runtime/url.ts';
+import { checkNavigationUrl, recordableUrl } from '../_shared/browser-runtime/url.ts';
 import {
   APPROVER_ROLES,
   BASELINE_POLICY_ID,
@@ -589,8 +589,14 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     });
     pipeline.push({ step: 'policy', state: decision.decision === 'DENY' ? 'blocked' : 'done', detail: decision.reason });
 
-    const redacted = redactAction(action);
-    const target = actionTarget(action);
+    // Aufgezeichnet wird eine nicht freigegebene Roh-URL nur ohne Zugangsdaten,
+    // Query und Fragment (Review 10-01): Ereignis und Nachweis sind für alle
+    // Mitglieder lesbar, die Kette ist nicht löschbar.
+    const recordAction: BrowserAction = action.type === 'navigate' && !urlCheck?.ok
+      ? { type: 'navigate', url: recordableUrl(action.url) }
+      : action;
+    const redacted = redactAction(recordAction);
+    const target = actionTarget(recordAction);
     const policySummary = {
       decision: decision.decision,
       policy_id: decision.policy_id,
@@ -658,7 +664,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         browser_session_id: session.id,
         browser_action: action.type,
         status: 'denied',
-        url: action.type === 'navigate' ? action.url.slice(0, 2048) : session.current_url,
+        url: recordAction.type === 'navigate' ? recordAction.url.slice(0, 2048) : session.current_url,
         tool_name: 'governed-browser-runtime',
         policy_decision: 'deny',
         policy_id: decision.policy_id,
@@ -896,7 +902,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       browser_session_id: session.id,
       browser_action: action.type,
       status: 'started',
-      url: action.type === 'navigate' ? action.url.slice(0, 2048) : session.current_url,
+      url: recordAction.type === 'navigate' ? recordAction.url.slice(0, 2048) : session.current_url,
       tool_name: 'governed-browser-runtime',
       policy_decision: decision.decision === 'ALLOW' ? 'allow' : 'require_approval',
       policy_id: decision.policy_id,
@@ -989,8 +995,15 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
           ? result.verification.checks.blocked_origin
           : null)
       : null;
+    // Lief die Aktion? Auch wenn die Seite danach gesperrt landete — der
+    // Nachweis darf die mögliche Nebenwirkung nicht als Fehlschlag tarnen.
+    const ran = executedOk || (!executionError && result?.error === 'LANDED_ON_BLOCKED_URL');
+    const outcomeTitle = ran
+      ? (landedBlocked ? 'ausgeführt, danach gesperrt gelandet' : 'ausgeführt')
+      : notExecuted ? 'nicht ausgeführt' : 'fehlgeschlagen';
     const resultSummary = {
       ok: executedOk && !landedBlocked,
+      action_executed: ran,
       url: landedUrl,
       // Nichts von einer gesperrten Seite (auch nicht ihr Titel) in den Nachweis.
       title: landedBlocked ? null : (result?.title ?? page?.title ?? null),
@@ -1008,9 +1021,9 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     try {
       resultEventId = (await repo.insertEvent({
         tenant_id: actor.tenantId,
-        event_type: executedOk ? 'browser.action.executed' : 'browser.action.failed',
+        event_type: ran ? 'browser.action.executed' : 'browser.action.failed',
         event_source: 'agent_runtime',
-        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : notExecuted ? 'nicht ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
+        title: `Browser-Aktion ${outcomeTitle}: ${action.type}`,
         summary: `${action.type}${target ? ` · ${target.slice(0, 200)}` : ''}`,
         risk_level: decision.risk_level,
         actor_email: actor.user.email ?? null,
@@ -1028,7 +1041,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         tenantId: actor.tenantId,
         eventId: resultEventId,
         evidenceType: action.type === 'screenshot' ? 'screenshot' : 'json',
-        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : notExecuted ? 'nicht ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
+        title: `Browser-Aktion ${outcomeTitle}: ${action.type}`,
         source: 'browser-execute',
         snapshot: browserActionSnapshot({
           kind: 'browser.action.result',
@@ -1096,7 +1109,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       page_title: landedBlocked ? null : (page?.title ?? result?.title ?? session.page_title)?.slice(0, 500) ?? null,
       last_action: {
         type: action.type,
-        outcome: executedOk ? 'executed' : notExecuted ? 'not_executed' : 'failed',
+        outcome: ran ? 'executed' : notExecuted ? 'not_executed' : 'failed',
         verification: verificationStatus,
         at: finishedAt.toISOString(),
         evidence_id: resultEvidence?.id ?? null,

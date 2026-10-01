@@ -12,6 +12,7 @@ import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gatewa
 import {
   BrowserRuntimeError,
   isBrowserRuntimeError,
+  safeErrorCode,
   type BrowserRuntimeErrorCode,
 } from '../_shared/browser-runtime/errors.ts';
 import {
@@ -20,9 +21,9 @@ import {
   approvalFingerprint,
   parseBrowserAction,
   redactAction,
-  requestedActionLabel,
   type BrowserAction,
 } from '../_shared/browser-runtime/actions.ts';
+import { decideWithEvidence, type ApprovalDecisionRepo } from '../_shared/browser-runtime/approval-decision.ts';
 import { checkNavigationUrl } from '../_shared/browser-runtime/url.ts';
 import {
   APPROVER_ROLES,
@@ -70,8 +71,24 @@ export interface VerifiedActor {
   role: string;
 }
 
-export type ApprovalConsumeCode =
-  | 'consumed' | 'not_found' | 'pending' | 'rejected' | 'cancelled' | 'expired' | 'already_used' | 'mismatch';
+/** Ergebnis von reserve_browser_execution (#1728). */
+export interface Reservation {
+  outcome: 'reserved' | 'already_used' | 'not_found' | 'not_approved' | 'expired' | 'mismatch';
+  execution_id: string | null;
+  execution_status: string | null;
+  approval_status: string | null;
+}
+
+/** Endstatus in browser_executions — keiner gibt die Freigabe wieder frei. */
+export type ExecutionEndStatus = 'executed' | 'executed_unrecorded' | 'executor_failed';
+
+export interface ApprovalExecution {
+  id: string;
+  status: 'reserved' | ExecutionEndStatus;
+  reserved_at: string;
+  finished_at: string | null;
+  detail: string | null;
+}
 
 export interface ApprovalRow {
   id: string;
@@ -81,12 +98,12 @@ export interface ApprovalRow {
   requested_by: string | null;
   browser_session_id: string | null;
   resolved_at: string | null;
-  consumed_at: string | null;
-  executed_at: string | null;
   event_id: string;
+  /** Verbrauch aus browser_executions; null = nie reserviert. */
+  execution: ApprovalExecution | null;
 }
 
-export interface BrowserRuntimeRepo extends EvidenceRepo {
+export interface BrowserRuntimeRepo extends EvidenceRepo, ApprovalDecisionRepo {
   countOpenSessions(tenantId: string, nowIso: string): Promise<number>;
   insertSession(row: Omit<SessionRow, 'id' | 'created_at'> & { id: string; created_at: string }): Promise<SessionRow>;
   getSession(tenantId: string, sessionId: string): Promise<SessionRow | null>;
@@ -100,12 +117,15 @@ export interface BrowserRuntimeRepo extends EvidenceRepo {
   listOpenSessions(tenantId: string): Promise<SessionRow[]>;
   insertEvent(row: Record<string, unknown>): Promise<{ id: string }>;
   insertApproval(row: Record<string, unknown>): Promise<{ id: string; expires_at: string }>;
-  insertApprovalBinding(row: Record<string, unknown>): Promise<void>;
   getApproval(tenantId: string, approvalId: string): Promise<ApprovalRow | null>;
+  /** Kompensation (pending → cancelled), wenn der Nachweis der Anforderung scheiterte. */
   cancelApproval(tenantId: string, approvalId: string): Promise<boolean>;
-  cancelPendingSessionApprovals(tenantId: string, sessionIds: string[]): Promise<number>;
-  consumeApproval(approvalId: string, tenantId: string, sessionId: string, fingerprint: string, consumer: string): Promise<ApprovalConsumeCode>;
-  finishApproval(approvalId: string, tenantId: string, outcome: 'executed' | 'failed'): Promise<boolean>;
+  /** Offene Freigaben geschlossener Sessions → cancelled; liefert die IDs. */
+  cancelPendingSessionApprovals(tenantId: string, sessionIds: string[]): Promise<string[]>;
+  /** reserve_browser_execution: Zeilensperre + UNIQUE(approval_id), Ablauf nach DB-Uhr. */
+  reserveExecution(tenantId: string, approvalId: string, fingerprint: string): Promise<Reservation>;
+  /** finish_browser_execution: nur aus 'reserved'; false = nichts geschrieben. */
+  finishExecution(executionId: string, status: ExecutionEndStatus, detail: string | null): Promise<boolean>;
   insertActionLog(row: Record<string, unknown>): Promise<{ id: string }>;
   updateActionLog(id: string, patch: Record<string, unknown>): Promise<void>;
   getExecutorLastSeen(executorId: string): Promise<string | null>;
@@ -126,6 +146,8 @@ export interface BrowserExecuteDeps {
   plan?(actor: VerifiedActor, task: unknown, currentUrl: unknown): Promise<Response>;
   killSwitchEngaged(): boolean;
   privateHostAllowlist: readonly string[];
+  /** HMAC-Schlüssel für Freigabe-Fingerprints (deriveFingerprintKey, ≥ 32 Byte). */
+  fingerprintKey: Uint8Array;
   now(): Date;
   uuid(): string;
   randomBytes(n: number): Uint8Array;
@@ -193,6 +215,67 @@ function framePayload(frame: ExecutorFrame | null): Record<string, unknown> | nu
 async function textDigest(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Die Freigabe, auf die eine wartende Session wartet (next_action.approval_id). */
+function pendingApprovalOf(session: SessionRow): string | null {
+  const next = (session as SessionRow & { next_action?: { approval_id?: unknown } | null }).next_action;
+  return typeof next?.approval_id === 'string' ? next.approval_id : null;
+}
+
+function reservationErrorCode(reservation: Reservation): BrowserRuntimeErrorCode {
+  switch (reservation.outcome) {
+    case 'not_found':
+      return 'APPROVAL_NOT_FOUND';
+    case 'expired':
+      return 'APPROVAL_EXPIRED';
+    case 'mismatch':
+      return 'APPROVAL_MISMATCH';
+    case 'already_used':
+      return 'APPROVAL_ALREADY_USED';
+    case 'not_approved':
+      if (reservation.approval_status === 'rejected' || reservation.approval_status === 'cancelled') return 'APPROVAL_DENIED';
+      if (reservation.approval_status === 'expired') return 'APPROVAL_EXPIRED';
+      return 'APPROVAL_PENDING';
+    default:
+      return 'RESERVATION_UNAVAILABLE';
+  }
+}
+
+/**
+ * Verifikations-Checks des Executors für Evidence und Antwort: nur Zahlen,
+ * Wahrheitswerte, kurze Strings und kleine String-Listen. `error`/`message`
+ * nur als Code — Freitext (z. B. Playwright-Meldungen mit der Eingabe im
+ * Call-Log) wird nie übernommen.
+ */
+export function sanitizeChecks(checks: unknown): Record<string, unknown> {
+  if (!checks || typeof checks !== 'object' || Array.isArray(checks)) return {};
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(checks as Record<string, unknown>).slice(0, 30)) {
+    if (!/^[a-z0-9_]{1,40}$/i.test(key)) continue;
+    if (key === 'error' || key === 'message') {
+      out[key] = safeErrorCode(value, 'ACTION_FAILED');
+    } else if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      out[key] = value;
+    } else if (typeof value === 'string') {
+      if (value.length <= 2048) out[key] = value;
+    } else if (Array.isArray(value)) {
+      out[key] = value.filter((v) => typeof v === 'string' && v.length <= 200).slice(0, 20);
+    }
+  }
+  return out;
+}
+
+/**
+ * Statische Gegenprobe einer gemeldeten Seiten-URL: nur http(s) mit nicht-
+ * öffentlichem Host. about:blank, Chromiums Fehlerseite (fehlgeschlagene oder
+ * blockierte Navigation) und data:/blob: sind kein Ziel im Netz — die
+ * DNS-genaue Prüfung macht der Executor (LANDED_ON_BLOCKED_URL).
+ */
+export function isNonPublicHttpUrl(url: string | null | undefined, allowlist: readonly string[]): boolean {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return false;
+  const check = checkNavigationUrl(url, allowlist);
+  return !check.ok && check.reason === 'PRIVATE_NETWORK_BLOCKED';
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
@@ -275,10 +358,12 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     return session;
   }
 
-  async function markSessionLost(repo: BrowserRuntimeRepo, session: SessionRow, now: Date): Promise<void> {
+  async function markSessionLost(repo: BrowserRuntimeRepo, session: SessionRow, now: Date, code = 'EXECUTOR_SESSION_LOST'): Promise<void> {
     await repo.updateSession(session.tenant_id, session.id, {
       status: 'failed',
-      last_error_code: 'EXECUTOR_SESSION_LOST',
+      last_error_code: code,
+      ...(code === 'LANDED_ON_NON_PUBLIC_URL' ? { current_url: 'about:blank', page_title: null } : {}),
+      next_action: null,
       closed_at: now.toISOString(),
       updated_at: now.toISOString(),
     });
@@ -444,6 +529,8 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     const approvalId = body.approval_id === undefined || body.approval_id === null
       ? null
       : requireUuid(body.approval_id, 'approval_id');
+    // Nur Beschriftung für Event und Log: der Wert stammt vom Client. Die
+    // Freigabepflicht hängt nicht davon ab, sondern allein von der Policy.
     const initiatedBy = body.initiated_by === 'planner' ? 'planner' : 'human';
 
     if (action.type === 'upload') {
@@ -457,15 +544,17 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     if (!session) throw new BrowserRuntimeError('SESSION_NOT_FOUND', 'session not found');
     const now = deps.now();
 
-    // Wartet die Session auf eine Freigabe, die inzwischen entschieden oder
-    // abgelaufen ist (und nicht gerade eingelöst wird), wird sie wieder frei.
+    // Wartet die Session auf eine Freigabe, darf nur GENAU diese eingelöst
+    // werden. Eine beliebige andere approval_id entsperrt nichts (Review 09-29).
+    const pendingApprovalId = pendingApprovalOf(session);
     if (session.status === 'awaiting_approval') {
-      const pendingId = ((session as SessionRow & { next_action?: { approval_id?: unknown } | null }).next_action?.approval_id);
-      const pending = typeof pendingId === 'string' ? await repo.getApproval(actor.tenantId, pendingId) : null;
+      const pending = pendingApprovalId ? await repo.getApproval(actor.tenantId, pendingApprovalId) : null;
       const stillOpen = pending !== null
+        && pending.execution === null
         && (pending.status === 'pending' || pending.status === 'approved')
         && Date.parse(pending.expires_at) > now.getTime();
-      if (!stillOpen && approvalId !== pendingId) {
+      // Entschieden, abgelaufen oder verbraucht (und nicht gerade eingelöst): Session wieder frei.
+      if (!stillOpen && approvalId !== pendingApprovalId) {
         session = (await repo.updateSession(actor.tenantId, session.id, {
           status: 'ready', next_action: null, updated_at: now.toISOString(),
         }, ['awaiting_approval'])) ?? session;
@@ -475,7 +564,8 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       await repo.updateSession(actor.tenantId, session.id, { status: 'closed', closed_at: now.toISOString(), updated_at: now.toISOString(), last_error_code: 'SESSION_EXPIRED' });
       await deps.executor.closeSession(session.executor_session_id).catch(() => undefined);
     }
-    assertSessionActionable(session, { user_id: actor.user.id }, action.type, now, approvalId !== null);
+    const redeemsPending = approvalId !== null && approvalId === pendingApprovalId;
+    assertSessionActionable(session, { user_id: actor.user.id }, action.type, now, redeemsPending);
 
     const urlCheck = action.type === 'navigate' ? checkNavigationUrl(action.url, deps.privateHostAllowlist) : undefined;
     if (urlCheck && urlCheck.ok && action.type === 'navigate') action = { type: 'navigate', url: urlCheck.url };
@@ -578,7 +668,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         evidence_id: evidence?.id ?? null,
         evidence_hash: evidence?.content_hash ?? null,
         correlation_id: correlationId,
-        error_code: decision.reason,
+        error_code: safeErrorCode(decision.reason, 'POLICY_DENIED'),
         started_at: now.toISOString(),
         completed_at: deps.now().toISOString(),
         metadata: { action: redacted },
@@ -599,6 +689,14 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       });
     }
 
+    // Eine approval_id gehört nur zu freigabepflichtigen Aktionen. Sonst würde
+    // sie ungeprüft mitgeschickt und könnte eine wartende Session entsperren.
+    if (approvalId !== null && decision.decision !== 'REQUIRE_APPROVAL') {
+      throw new BrowserRuntimeError('VALIDATION_FAILED', 'approval_id is only valid for actions that require approval', {
+        policy: policySummary,
+      });
+    }
+
     // ── REQUIRE_APPROVAL ohne Freigabe: Freigabe anlegen, nichts ausführen ─
     if (decision.decision === 'REQUIRE_APPROVAL' && approvalId === null) {
       if (session.status === 'awaiting_approval') {
@@ -610,7 +708,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         executorSessionId: session.executor_session_id,
         pageUrl: session.current_url,
         action,
-      });
+      }, deps.fingerprintKey);
       const expiresAt = new Date(now.getTime() + EXECUTION_LIMITS.approvalTtlMs).toISOString();
       const event = await repo.insertEvent({
         tenant_id: actor.tenantId,
@@ -623,22 +721,16 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         policy_action: 'require_approval',
         payload: eventPayload,
       });
+      // requested_action = HMAC-Fingerprint; reserve_browser_execution (#1728)
+      // vergleicht genau diesen Wert beim Einlösen.
       const approval = await repo.insertApproval({
         tenant_id: actor.tenantId,
         event_id: event.id,
         status: 'pending',
-        requested_action: requestedActionLabel(action),
+        requested_action: fingerprint,
         requested_by: actor.user.id,
         browser_session_id: session.id,
         expires_at: expiresAt,
-      });
-      await repo.insertApprovalBinding({
-        approval_id: approval.id,
-        tenant_id: actor.tenantId,
-        browser_session_id: session.id,
-        fingerprint,
-        action_type: action.type,
-        page_url: session.current_url,
       });
       let evidence: ChainedEvidence;
       try {
@@ -706,8 +798,8 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       });
     }
 
-    // ── Freigabe einlösen (atomar, genau einmal) ──────────────────────────
-    let consumedApproval: string | null = null;
+    // ── Freigabe einlösen: atomar reservieren, VOR dem Executor (#1728) ────
+    let executionId: string | null = null;
     if (decision.decision === 'REQUIRE_APPROVAL' && approvalId !== null) {
       const fingerprint = await approvalFingerprint({
         tenantId: actor.tenantId,
@@ -715,33 +807,44 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         executorSessionId: session.executor_session_id,
         pageUrl: session.current_url,
         action,
-      });
-      const code = await repo.consumeApproval(approvalId, actor.tenantId, session.id, fingerprint, actor.user.id);
-      if (code !== 'consumed') {
-        const approvalCodes: Record<Exclude<ApprovalConsumeCode, 'consumed'>, BrowserRuntimeErrorCode> = {
-          not_found: 'APPROVAL_NOT_FOUND',
-          pending: 'APPROVAL_PENDING',
-          rejected: 'APPROVAL_DENIED',
-          cancelled: 'APPROVAL_DENIED',
-          expired: 'APPROVAL_EXPIRED',
-          already_used: 'APPROVAL_ALREADY_USED',
-          mismatch: 'APPROVAL_MISMATCH',
-        };
-        if (['rejected', 'cancelled', 'expired'].includes(code) && session.status === 'awaiting_approval') {
+      }, deps.fingerprintKey);
+      let reservation: Reservation;
+      try {
+        reservation = await repo.reserveExecution(actor.tenantId, approvalId, fingerprint);
+      } catch {
+        throw new BrowserRuntimeError('RESERVATION_UNAVAILABLE', 'approval could not be reserved; nothing was executed', {
+          approval_id: approvalId,
+        });
+      }
+      if (reservation.outcome !== 'reserved' || !reservation.execution_id) {
+        const code = reservationErrorCode(reservation);
+        const released = reservation.outcome === 'expired'
+          || (reservation.outcome === 'not_approved' && ['rejected', 'cancelled', 'expired'].includes(reservation.approval_status ?? ''));
+        if (released && session.status === 'awaiting_approval') {
           await repo.updateSession(actor.tenantId, session.id, { status: 'ready', next_action: null, updated_at: now.toISOString() }, ['awaiting_approval']);
         }
-        throw new BrowserRuntimeError(approvalCodes[code], `approval ${code}`, { approval_id: approvalId, approval_status: code });
+        throw new BrowserRuntimeError(code, `approval ${reservation.outcome}`, {
+          approval_id: approvalId,
+          approval_status: reservation.approval_status,
+          ...(reservation.outcome === 'already_used'
+            ? { execution_status: reservation.execution_status, approval_consumed: true }
+            : {}),
+        });
       }
-      consumedApproval = approvalId;
+      executionId = reservation.execution_id;
       pipeline.push({ step: 'approval', state: 'done', detail: approvalId });
     } else {
       pipeline.push({ step: 'approval', state: 'skipped', detail: 'not required by policy' });
     }
 
     const cls = actionClass(action.type);
-    const finishApproval = async (outcome: 'executed' | 'failed') => {
-      if (consumedApproval) await repo.finishApproval(consumedApproval, actor.tenantId, outcome).catch(() => false);
+    // Ab hier ist eine Freigabe verbraucht. Jeder Ausgang wird festgeschrieben;
+    // keiner gibt sie wieder frei (#1728). Ein neuer Versuch braucht eine neue.
+    const finish = async (status: ExecutionEndStatus, detail: string | null): Promise<boolean> => {
+      if (!executionId) return true;
+      return await repo.finishExecution(executionId, status, detail).catch(() => false);
     };
+    const consumedDetails = executionId ? { approval_consumed: true, execution_id: executionId } : {};
 
     // ── Evidence-Vorbedingung (fail closed) ───────────────────────────────
     let intentEvidence: ChainedEvidence | null = null;
@@ -764,25 +867,25 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
             action: redacted,
             target,
             policy: policySummary,
-            approvalId: consumedApproval,
-            result: { status: 'executing', page_url: session.current_url },
+            approvalId,
+            result: { status: 'executing', page_url: session.current_url, browser_execution_id: executionId },
             verification: null,
             artifacts: [],
           }),
         });
       } catch (error) {
-        await finishApproval('failed');
+        await finish('executor_failed', 'not_executed:evidence_unavailable');
         if (session.status === 'awaiting_approval') {
           await repo.updateSession(actor.tenantId, session.id, { status: 'ready', next_action: null, updated_at: deps.now().toISOString() }, ['awaiting_approval']);
         }
         pipeline.push({ step: 'execution', state: 'skipped', detail: 'evidence precondition failed' });
-        throw isBrowserRuntimeError(error)
-          ? new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', error.message, { pipeline })
-          : new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', 'evidence could not be persisted', { pipeline });
+        throw new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', isBrowserRuntimeError(error) ? error.message : 'evidence could not be persisted', {
+          pipeline, action_executed: false, ...consumedDetails,
+        });
       }
     } else if (!(await evidenceAvailable(repo, actor.tenantId))) {
       pipeline.push({ step: 'execution', state: 'skipped', detail: 'evidence store unavailable' });
-      throw new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', 'evidence store unavailable', { pipeline });
+      throw new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', 'evidence store unavailable', { pipeline, action_executed: false });
     }
 
     // ── Ausführung ────────────────────────────────────────────────────────
@@ -799,44 +902,71 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
       policy_id: decision.policy_id,
       policy_version: decision.policy_version,
       risk_level: decision.risk_level,
-      approval_id: consumedApproval,
+      approval_id: approvalId,
+      browser_execution_id: executionId,
       correlation_id: correlationId,
       started_at: now.toISOString(),
       metadata: { action: redacted, initiated_by: initiatedBy },
     }).catch(() => null);
 
     // Lesende Aktion während einer offenen Freigabe: Freigabe-Zustand bleibt stehen.
-    const keepAwaiting = session.status === 'awaiting_approval' && consumedApproval === null;
+    const keepAwaiting = session.status === 'awaiting_approval' && executionId === null;
     const locked = await repo.updateSession(actor.tenantId, session.id, {
       status: 'executing',
-      ...(keepAwaiting ? {} : { next_action: consumedApproval ? null : { action: redacted } }),
+      ...(keepAwaiting ? {} : { next_action: executionId ? null : { action: redacted } }),
       updated_at: now.toISOString(),
     }, session.status === 'awaiting_approval' ? ['awaiting_approval'] : ['ready']);
     if (!locked) {
-      await finishApproval('failed');
+      await finish('executor_failed', 'not_executed:session_busy');
       if (logRow) await repo.updateActionLog(logRow.id, { status: 'failed', error_code: 'SESSION_BUSY', completed_at: deps.now().toISOString() }).catch(() => undefined);
-      throw new BrowserRuntimeError('SESSION_BUSY', 'another action is running in this session');
+      throw new BrowserRuntimeError('SESSION_BUSY', 'another action is running in this session', { action_executed: false, ...consumedDetails });
     }
 
     let execution: Awaited<ReturnType<ExecutorClient['execute']>> | null = null;
     let executionError: BrowserRuntimeError | null = null;
     try {
-      execution = await deps.executor.execute(session.executor_session_id, action);
+      // Freigabe gebunden an die Seite, die der Freigebende gesehen hat: der
+      // Executor prüft die LIVE-Seite vor der Mutation (Review 09-29).
+      execution = await deps.executor.execute(session.executor_session_id, action, {
+        expectedUrl: executionId ? session.current_url : null,
+      });
     } catch (error) {
       executionError = isBrowserRuntimeError(error) ? error : new BrowserRuntimeError('EXECUTION_FAILED', 'executor request failed');
     }
     const finishedAt = deps.now();
     const result = execution?.result ?? null;
     const executedOk = Boolean(result?.ok) && !executionError;
-    pipeline.push({ step: 'execution', state: executedOk ? 'done' : 'failed', detail: executionError?.code ?? result?.error });
+    const pageChanged = executionError?.code === 'PAGE_CHANGED';
+    // Vor der Aktion stand die Seite schon auf einer gesperrten Adresse: der
+    // Executor hat zurückgesetzt und nichts ausgeführt.
+    const landingPrecheck = executionError?.code === 'URL_BLOCKED'
+      && executionError.details?.executor_code === 'LANDED_ON_BLOCKED_URL';
+    const notExecuted = pageChanged || landingPrecheck;
+    pipeline.push({
+      step: 'execution',
+      state: executedOk ? 'done' : notExecuted ? 'skipped' : 'failed',
+      detail: executionError?.code ?? (result?.ok === false ? safeErrorCode(result.error, 'ACTION_FAILED') : undefined),
+    });
 
-    const verificationStatus: 'passed' | 'failed' | 'not_applicable' = !executedOk
+    // Gelandet auf einer nicht-öffentlichen Adresse (Redirect-Hop,
+    // selbstständige Navigation)? Der Executor prüft das DNS-genau und meldet
+    // LANDED_ON_BLOCKED_URL (Seite schon auf about:blank zurückgesetzt) — vor
+    // der Aktion als Fehler (nichts ausgeführt), danach im Ergebnis. Hier
+    // zusätzlich die statische Gegenprobe beider gemeldeter URLs.
+    const page = execution?.page ?? null;
+    const landedBlocked = landingPrecheck
+      || result?.error === 'LANDED_ON_BLOCKED_URL'
+      || isNonPublicHttpUrl(page?.url, deps.privateHostAllowlist)
+      || isNonPublicHttpUrl(result?.url, deps.privateHostAllowlist);
+    const landedUrl = landedBlocked ? 'about:blank' : (page?.url ?? result?.url ?? null);
+
+    const verificationStatus: 'passed' | 'failed' | 'not_applicable' = !executedOk || landedBlocked
       ? 'failed'
       : (result?.verification?.status ?? 'not_applicable');
     pipeline.push({
       step: 'verification',
       state: verificationStatus === 'passed' ? 'done' : verificationStatus === 'failed' ? 'failed' : 'skipped',
-      detail: verificationStatus,
+      detail: landedBlocked ? 'LANDED_ON_NON_PUBLIC_URL' : verificationStatus,
     });
 
     // ── Ergebnis-Evidence ─────────────────────────────────────────────────
@@ -847,14 +977,30 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
     const textSha = typeof result?.text === 'string' ? await textDigest(result.text) : null;
     if (textSha) artifacts.push({ kind: 'text', sha256: textSha, bytes: new TextEncoder().encode(result!.text!).length });
 
+    const errorCode = executionError
+      ? executionError.code
+      : landedBlocked
+        ? 'URL_BLOCKED'
+        : (result?.ok === false ? safeErrorCode(result.error, 'ACTION_FAILED') : null);
+    const blockedOrigin = landedBlocked
+      ? (typeof executionError?.details?.blocked_origin === 'string'
+        ? executionError.details.blocked_origin
+        : typeof result?.verification?.checks?.blocked_origin === 'string'
+          ? result.verification.checks.blocked_origin
+          : null)
+      : null;
     const resultSummary = {
-      ok: executedOk,
-      url: result?.url ?? execution?.page?.url ?? null,
-      title: result?.title ?? execution?.page?.title ?? null,
-      error_code: executionError?.code ?? (result?.ok === false ? (result.error ?? 'ACTION_FAILED') : null),
-      text_chars: typeof result?.text === 'string' ? result.text.length : null,
+      ok: executedOk && !landedBlocked,
+      url: landedUrl,
+      // Nichts von einer gesperrten Seite (auch nicht ihr Titel) in den Nachweis.
+      title: landedBlocked ? null : (result?.title ?? page?.title ?? null),
+      error_code: errorCode,
+      text_chars: !landedBlocked && typeof result?.text === 'string' ? result.text.length : null,
       download: result?.download ? { filename: result.download.filename, bytes: result.download.bytes, mime: result.download.mime } : null,
+      browser_execution_id: executionId,
+      ...(landedBlocked ? { blocked_origin: blockedOrigin } : {}),
     };
+    const checks = sanitizeChecks(result?.verification?.checks);
 
     let resultEvidence: ChainedEvidence | null = null;
     let resultEventId: string | null = null;
@@ -864,19 +1010,25 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         tenant_id: actor.tenantId,
         event_type: executedOk ? 'browser.action.executed' : 'browser.action.failed',
         event_source: 'agent_runtime',
-        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
+        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : notExecuted ? 'nicht ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
         summary: `${action.type}${target ? ` · ${target.slice(0, 200)}` : ''}`,
         risk_level: decision.risk_level,
         actor_email: actor.user.email ?? null,
         policy_action: decision.decision === 'ALLOW' ? 'allow' : 'require_approval',
-        payload: { ...eventPayload, approval_id: consumedApproval, result: resultSummary, verification: verificationStatus },
+        payload: {
+          ...eventPayload,
+          approval_id: approvalId,
+          browser_execution_id: executionId,
+          result: resultSummary,
+          verification: verificationStatus,
+        },
       })).id;
       resultEvidence = await appendChainedEvidence(repo, {
         id: deps.uuid(),
         tenantId: actor.tenantId,
         eventId: resultEventId,
         evidenceType: action.type === 'screenshot' ? 'screenshot' : 'json',
-        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
+        title: `Browser-Aktion ${executedOk ? 'ausgeführt' : notExecuted ? 'nicht ausgeführt' : 'fehlgeschlagen'}: ${action.type}`,
         source: 'browser-execute',
         snapshot: browserActionSnapshot({
           kind: 'browser.action.result',
@@ -888,60 +1040,87 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
           action: redacted,
           target,
           policy: policySummary,
-          approvalId: consumedApproval,
+          approvalId,
           result: { ...resultSummary, intent_evidence_id: intentEvidence?.id ?? null },
-          verification: { status: verificationStatus, checks: result?.verification?.checks ?? {} },
+          verification: { status: verificationStatus, checks },
           artifacts,
         }),
       });
     } catch {
       evidenceError = true;
-      deps.log({ level: 'error', scope: 'browser-execute', event: 'result_evidence_failed', correlation_id: correlationId, tenant_id: actor.tenantId });
+      deps.log({ level: 'error', scope: 'browser-execute', event: 'result_evidence_failed', correlation_id: correlationId, tenant_id: actor.tenantId, browser_execution_id: executionId });
     }
     pipeline.push({ step: 'evidence', state: resultEvidence ? 'done' : 'failed', detail: resultEvidence?.id });
 
+    // ── Verbrauch festschreiben ───────────────────────────────────────────
+    let finishOk = true;
+    if (executionId) {
+      if (executionError || !result) {
+        finishOk = await finish('executor_failed', pageChanged
+          ? 'not_executed:page_changed'
+          : landingPrecheck
+            ? 'not_executed:landed_on_blocked_url'
+            : safeErrorCode(executionError?.code, 'EXECUTION_FAILED'));
+      } else if (result.error === 'LANDED_ON_BLOCKED_URL') {
+        // Die Aktion lief (Nebenwirkung möglich), erst danach landete die Seite
+        // auf einer gesperrten Adresse — als ausgeführt festhalten, nicht als
+        // Fehlschlag, damit der Nachweis die Nebenwirkung nicht verschweigt.
+        finishOk = await finish(evidenceError ? 'executed_unrecorded' : 'executed', 'landed_on_blocked_url');
+      } else if (!executedOk) {
+        finishOk = await finish('executor_failed', safeErrorCode(result.error, 'ACTION_FAILED'));
+      } else if (evidenceError) {
+        finishOk = await finish('executed_unrecorded', 'governance evidence');
+      } else {
+        finishOk = await finish('executed', null);
+      }
+    }
+
     // ── Zustand nachführen ────────────────────────────────────────────────
     const sessionLost = executionError?.code === 'SESSION_NOT_FOUND';
-    const nextStatus: SessionStatus = sessionLost
+    if (landedBlocked) await deps.executor.closeSession(session.executor_session_id).catch(() => undefined);
+    const nextStatus: SessionStatus = sessionLost || landedBlocked
       ? 'failed'
       : evidenceError && cls !== 'read_only'
         ? 'paused' // Mutation ausgeführt, Nachweis fehlt: Mensch muss prüfen.
         : keepAwaiting
           ? 'awaiting_approval'
           : 'ready';
-    const page = execution?.page ?? null;
+    const livePageUrl = pageChanged && typeof executionError?.details?.current_url === 'string'
+      ? executionError.details.current_url
+      : null;
     const updated = await repo.updateSession(actor.tenantId, session.id, {
       status: nextStatus,
-      current_url: page?.url ?? result?.url ?? session.current_url,
-      page_title: page?.title ?? result?.title ?? session.page_title,
+      current_url: landedBlocked
+        ? 'about:blank'
+        : (livePageUrl ?? page?.url ?? result?.url ?? session.current_url)?.slice(0, 2048) ?? null,
+      page_title: landedBlocked ? null : (page?.title ?? result?.title ?? session.page_title)?.slice(0, 500) ?? null,
       last_action: {
         type: action.type,
-        outcome: executedOk ? 'executed' : 'failed',
+        outcome: executedOk ? 'executed' : notExecuted ? 'not_executed' : 'failed',
         verification: verificationStatus,
         at: finishedAt.toISOString(),
         evidence_id: resultEvidence?.id ?? null,
         event_id: resultEventId,
       },
       ...(keepAwaiting ? {} : { next_action: null }),
-      last_error_code: executionError?.code ?? (executedOk ? null : resultSummary.error_code),
+      last_error_code: errorCode ? safeErrorCode(errorCode) : null,
       last_frame_sha256: execution?.frame?.sha256 ?? null,
       last_frame_at: execution?.frame ? finishedAt.toISOString() : null,
       action_count: session.action_count + 1,
       expires_at: nextExpiry(finishedAt, new Date(session.created_at)).toISOString(),
       updated_at: finishedAt.toISOString(),
-      ...(sessionLost ? { closed_at: finishedAt.toISOString() } : {}),
-    }, ['executing']);
-    await finishApproval(executedOk ? 'executed' : 'failed');
+      ...(sessionLost || landedBlocked ? { closed_at: finishedAt.toISOString() } : {}),
+    }, ['executing']).catch(() => null);
     if (logRow) {
       await repo.updateActionLog(logRow.id, {
-        status: executedOk ? 'completed' : 'failed',
+        status: executedOk && !landedBlocked ? 'completed' : 'failed',
         completed_at: finishedAt.toISOString(),
         duration_ms: finishedAt.getTime() - startedAt.getTime(),
         verification: verificationStatus,
         governance_event_id: resultEventId,
         evidence_id: resultEvidence?.id ?? null,
         evidence_hash: resultEvidence?.content_hash ?? null,
-        error_code: resultSummary.error_code,
+        error_code: errorCode ? safeErrorCode(errorCode) : null,
         url: resultSummary.url?.slice(0, 2048) ?? null,
       }).catch(() => undefined);
     }
@@ -951,13 +1130,39 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         ...(executionError.details ?? {}),
         pipeline,
         evidence_id: resultEvidence?.id ?? null,
+        action_executed: notExecuted ? false : undefined,
+        ...(landingPrecheck ? { session_status: nextStatus } : {}),
+        ...consumedDetails,
+      });
+    }
+    if (landedBlocked) {
+      throw new BrowserRuntimeError('URL_BLOCKED', 'the page ended up on a non-public address; session closed', {
+        reason: 'LANDED_ON_NON_PUBLIC_URL',
+        action_executed: true,
+        blocked_origin: blockedOrigin,
+        pipeline,
+        evidence_id: resultEvidence?.id ?? null,
+        ...consumedDetails,
       });
     }
     if (evidenceError) {
       throw new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', 'action ran but its evidence could not be persisted', {
         pipeline,
-        executed: executedOk,
+        action_executed: executedOk,
+        execution_status: executionId ? 'executed_unrecorded' : null,
         session_status: nextStatus,
+        ...consumedDetails,
+      });
+    }
+    if (!finishOk) {
+      // ok erst nach geschriebenem Abschluss (#1728): sonst bleibt die
+      // Reservierung stehen und der Aufrufer bekommt kein ok.
+      throw new BrowserRuntimeError('EVIDENCE_WRITE_FAILED', 'action ran and was recorded, but its execution status could not be finalized', {
+        pipeline,
+        action_executed: executedOk,
+        execution_status: 'reserved',
+        evidence_id: resultEvidence?.id ?? null,
+        ...consumedDetails,
       });
     }
 
@@ -974,11 +1179,12 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         ...(result?.download ? { download: result.download } : {}),
         ...(result?.screenshot?.base64 ? { screenshot: { base64: result.screenshot.base64, sha256: result.screenshot.sha256 } } : {}),
       },
-      verification: { status: verificationStatus, checks: result?.verification?.checks ?? {} },
+      verification: { status: verificationStatus, checks },
       evidence: resultEvidence
         ? { id: resultEvidence.id, content_hash: resultEvidence.content_hash, previous_hash: resultEvidence.previous_hash, event_id: resultEventId }
         : null,
-      approval_id: consumedApproval,
+      approval_id: approvalId,
+      execution_id: executionId,
       session: updated ? publicSession(updated as SessionRow & Record<string, unknown>) : null,
       frame: framePayload(execution?.frame ?? null),
     }, correlationId);
@@ -1053,12 +1259,33 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
           if (isExpired(session, deps.now())) throw new BrowserRuntimeError('SESSION_EXPIRED', 'session expired');
           try {
             const { page, frame } = await deps.executor.frame(session.executor_session_id);
-            if (page && (page.url !== session.current_url || page.title !== session.page_title)) {
-              await repo.updateSession(actor.tenantId, session.id, { current_url: page.url, page_title: page.title, updated_at: deps.now().toISOString() });
-            }
-            return ok({ frame: framePayload(frame), page, session_status: session.status }, correlationId);
+            const seenAt = deps.now();
+            // Zuschauen ist Aktivität der Eigentümerin: Idle-Frist verlängern
+            // (gedeckelt durch das Höchstalter), Seite nachführen.
+            const refreshed = await repo.updateSession(actor.tenantId, session.id, {
+              ...(page ? { current_url: page.url.slice(0, 2048), page_title: page.title.slice(0, 500) } : {}),
+              last_frame_sha256: frame.sha256,
+              last_frame_at: seenAt.toISOString(),
+              expires_at: nextExpiry(seenAt, new Date(session.created_at)).toISOString(),
+              updated_at: seenAt.toISOString(),
+            }).catch(() => null);
+            return ok({
+              frame: framePayload(frame),
+              page,
+              session_status: session.status,
+              expires_at: refreshed?.expires_at ?? session.expires_at,
+            }, correlationId);
           } catch (error) {
             if (isBrowserRuntimeError(error) && error.code === 'SESSION_NOT_FOUND') await markSessionLost(repo, session, deps.now());
+            if (isBrowserRuntimeError(error) && error.code === 'URL_BLOCKED') {
+              // Die Seite stand beim Zuschauen auf einer gesperrten Adresse
+              // (z. B. selbstständiger Redirect): kein Bild, Session zu,
+              // offene Freigaben dieser Session hinfällig.
+              await deps.executor.closeSession(session.executor_session_id).catch(() => undefined);
+              await markSessionLost(repo, session, deps.now(), 'LANDED_ON_NON_PUBLIC_URL');
+              await repo.cancelPendingSessionApprovals(actor.tenantId, [session.id]).catch(() => [] as string[]);
+              deps.log({ level: 'warn', scope: 'browser-execute', event: 'frame_landing_blocked', tenant_id: actor.tenantId, correlation_id: correlationId });
+            }
             throw error;
           }
         }
@@ -1071,7 +1298,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
           }
           await deps.executor.closeSession(session.executor_session_id).catch(() => undefined);
           const now = deps.now();
-          await repo.cancelPendingSessionApprovals(actor.tenantId, [session.id]).catch(() => 0);
+          const cancelledApprovals = await repo.cancelPendingSessionApprovals(actor.tenantId, [session.id]).catch(() => [] as string[]);
           const closed = await repo.updateSession(actor.tenantId, session.id, {
             status: 'closed', closed_at: now.toISOString(), next_action: null, updated_at: now.toISOString(),
           });
@@ -1087,7 +1314,7 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
               kind: 'browser.session.closed', tenantId: actor.tenantId,
               actor: { user_id: actor.user.id, role: actor.role }, browserSessionId: session.id,
               correlationId, timestamp: now.toISOString(), action: { type: 'session_close' }, target: null,
-              policy: null, approvalId: null, result: { action_count: session.action_count }, verification: null, artifacts: [],
+              policy: null, approvalId: null, result: { action_count: session.action_count, cancelled_approvals: cancelledApprovals }, verification: null, artifacts: [],
             }),
           }).catch(() => deps.log({ level: 'error', scope: 'browser-execute', event: 'close_evidence_failed', correlation_id: correlationId }));
           return ok({ session: closed ? publicSession(closed as SessionRow & Record<string, unknown>) : null }, correlationId);
@@ -1104,33 +1331,75 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
         case 'approval_status': {
           const approval = await deps.repo(actor).getApproval(actor.tenantId, requireUuid(body.approval_id, 'approval_id'));
           if (!approval) throw new BrowserRuntimeError('APPROVAL_NOT_FOUND', 'approval not found');
-          const expired = approval.status === 'pending' && Date.parse(approval.expires_at) <= deps.now().getTime();
+          const openStatus = approval.status === 'pending' || approval.status === 'approved';
+          const expired = openStatus && approval.execution === null && Date.parse(approval.expires_at) <= deps.now().getTime();
           return ok({
             approval: {
               id: approval.id,
               status: expired ? 'expired' : approval.status,
               expires_at: approval.expires_at,
               resolved_at: approval.resolved_at,
-              consumed_at: approval.consumed_at,
-              executed_at: approval.executed_at,
               event_id: approval.event_id,
+              // Verbrauch aus browser_executions (#1728): reserved | executed |
+              // executed_unrecorded | executor_failed — null = nie eingelöst.
+              execution: approval.execution
+                ? {
+                  status: approval.execution.status,
+                  reserved_at: approval.execution.reserved_at,
+                  finished_at: approval.execution.finished_at,
+                  detail: approval.execution.detail,
+                }
+                : null,
             },
           }, correlationId);
         }
         case 'approval_cancel': {
+          // Zurückziehen bis zur Einlösung: offen ODER freigegeben-und-unbenutzt.
+          // Status + gekettete Evidence atomar (decide_governance_approval).
           const repo = deps.repo(actor);
           const approval = await repo.getApproval(actor.tenantId, requireUuid(body.approval_id, 'approval_id'));
           if (!approval) throw new BrowserRuntimeError('APPROVAL_NOT_FOUND', 'approval not found');
           if (approval.requested_by !== actor.user.id && !APPROVER_ROLES.has(actor.role)) {
             throw new BrowserRuntimeError('FORBIDDEN', 'only the requester or an owner/admin can cancel');
           }
-          const cancelled = await repo.cancelApproval(actor.tenantId, approval.id);
-          if (cancelled && approval.browser_session_id) {
+          const decidedAt = deps.now().toISOString();
+          const decision = await decideWithEvidence(repo, {
+            approvalId: approval.id,
+            tenantId: actor.tenantId,
+            decidedBy: actor.user.id,
+            target: 'cancelled',
+            reason: approval.requested_by === actor.user.id ? 'withdrawn by requester' : 'withdrawn by owner/admin',
+            decidedAt,
+            evidence: {
+              id: deps.uuid(),
+              eventId: approval.event_id,
+              evidenceType: 'approval',
+              title: 'Approval withdrawn',
+              source: 'browser-execute',
+              snapshot: {
+                kind: 'approval.decision',
+                approval_id: approval.id,
+                decision: 'cancelled',
+                resolved_by_user_id: actor.user.id,
+                resolved_at: decidedAt,
+                requested_by: approval.requested_by,
+                browser_session_id: approval.browser_session_id,
+                correlation_id: correlationId,
+              },
+            },
+          });
+          const cancelled = decision.outcome === 'decided';
+          if ((cancelled || decision.outcome === 'expired') && approval.browser_session_id) {
             await repo.updateSession(actor.tenantId, approval.browser_session_id, {
-              status: 'ready', next_action: null, updated_at: deps.now().toISOString(),
+              status: 'ready', next_action: null, updated_at: decidedAt,
             }, ['awaiting_approval']);
           }
-          return ok({ cancelled }, correlationId);
+          return ok({
+            cancelled,
+            outcome: decision.outcome,
+            approval_status: decision.approval_status,
+            evidence_id: decision.evidence_id,
+          }, correlationId);
         }
         case 'kill_all': {
           if (!APPROVER_ROLES.has(actor.role)) throw new BrowserRuntimeError('FORBIDDEN', 'owner or admin required');
@@ -1143,9 +1412,9 @@ export function createBrowserExecuteHandler(deps: BrowserExecuteDeps) {
               status: 'closed', closed_at: now.toISOString(), next_action: null, last_error_code: 'KILLED', updated_at: now.toISOString(),
             });
           }
-          const cancelled = await repo.cancelPendingSessionApprovals(actor.tenantId, open.map((s) => s.id)).catch(() => 0);
+          const cancelled = await repo.cancelPendingSessionApprovals(actor.tenantId, open.map((s) => s.id)).catch(() => [] as string[]);
           deps.log({ level: 'warn', scope: 'browser-execute', event: 'kill_all', tenant_id: actor.tenantId, correlation_id: correlationId, sessions: open.length });
-          return ok({ closed_sessions: open.length, cancelled_approvals: cancelled }, correlationId);
+          return ok({ closed_sessions: open.length, cancelled_approvals: cancelled.length }, correlationId);
         }
         case 'plan': {
           if (!deps.plan) throw new BrowserRuntimeError('INTERNAL_ERROR', 'planner not configured');

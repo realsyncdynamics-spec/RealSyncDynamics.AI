@@ -24,6 +24,8 @@ export const BROWSER_RUNTIME_ERROR_CODES = [
   'APPROVAL_ALREADY_USED',
   'APPROVAL_MISMATCH',
   'APPROVAL_NOT_FOUND',
+  'RESERVATION_UNAVAILABLE',
+  'PAGE_CHANGED',
   'ACTION_NOT_SUPPORTED',
   'VALIDATION_FAILED',
   'URL_BLOCKED',
@@ -56,6 +58,8 @@ export const HTTP_STATUS: Record<BrowserRuntimeErrorCode, number> = {
   APPROVAL_ALREADY_USED: 409,
   APPROVAL_MISMATCH: 409,
   APPROVAL_NOT_FOUND: 404,
+  RESERVATION_UNAVAILABLE: 503,
+  PAGE_CHANGED: 409,
   ACTION_NOT_SUPPORTED: 422,
   VALIDATION_FAILED: 400,
   URL_BLOCKED: 403,
@@ -82,6 +86,18 @@ export class BrowserRuntimeError extends Error {
 
 export function isBrowserRuntimeError(value: unknown): value is BrowserRuntimeError {
   return value instanceof BrowserRuntimeError;
+}
+
+/**
+ * Nur maschinenlesbare Codes verlassen den Executor bzw. landen in DB-Spalten
+ * und Evidence (last_error_code, browser_actions.error_code, result.error_code).
+ * Freitext — z. B. Playwright-Fehlermeldungen mit `fill("<Eingabe>")` im
+ * Call-Log — wird nie übernommen, sondern durch `fallback` ersetzt.
+ */
+export const ERROR_CODE_RE = /^[A-Z0-9_]{1,64}$/;
+
+export function safeErrorCode(value: unknown, fallback = 'EXECUTION_FAILED'): string {
+  return typeof value === 'string' && ERROR_CODE_RE.test(value) ? value : fallback;
 }
 
 /**

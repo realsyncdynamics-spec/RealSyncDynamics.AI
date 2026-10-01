@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import {
   actionClass,
   approvalFingerprint,
+  deriveFingerprintKey,
   parseBrowserAction,
   redactAction,
-  requestedActionLabel,
   type BrowserAction,
 } from '../../supabase/functions/_shared/browser-runtime/actions';
 import {
@@ -74,17 +74,21 @@ describe('Aktionsschema', () => {
   it('redigiert Eingabetext und Datei-Referenzen', () => {
     expect(redactAction({ type: 'type', selector: '#pw', text: 'geheim' })).toEqual({ type: 'type', selector: '#pw', text: '[redacted:6 chars]' });
     expect(redactAction({ type: 'upload', selector: '#f', file_ref: 'tenant/x.pdf' })).toEqual({ type: 'upload', selector: '#f', file_ref: '[redacted]' });
-    expect(requestedActionLabel({ type: 'type', selector: '#pw', text: 'geheim' })).toBe('browser:type:#pw');
   });
 
-  it('Fingerprint bindet Session, Seite und unredigierte Aktion', async () => {
+  it('Fingerprint (HMAC) bindet Session, Seite und unredigierte Aktion — und den Schlüssel', async () => {
+    const key = await deriveFingerprintKey('server-secret-for-tests');
+    expect(key).toHaveLength(32);
     const base = { tenantId: T, browserSessionId: 's1', executorSessionId: 'rsx_1', pageUrl: 'https://a.example/', action: { type: 'type', selector: '#q', text: 'x' } as BrowserAction };
-    const fp = await approvalFingerprint(base);
+    const fp = await approvalFingerprint(base, key);
     expect(fp).toMatch(/^browser:v2:[0-9a-f]{64}$/);
-    expect(await approvalFingerprint(base)).toBe(fp);
-    expect(await approvalFingerprint({ ...base, pageUrl: 'https://a.example/other' })).not.toBe(fp);
-    expect(await approvalFingerprint({ ...base, browserSessionId: 's2' })).not.toBe(fp);
-    expect(await approvalFingerprint({ ...base, action: { type: 'type', selector: '#q', text: 'y' } })).not.toBe(fp);
+    expect(await approvalFingerprint(base, key)).toBe(fp);
+    expect(await approvalFingerprint({ ...base, pageUrl: 'https://a.example/other' }, key)).not.toBe(fp);
+    expect(await approvalFingerprint({ ...base, browserSessionId: 's2' }, key)).not.toBe(fp);
+    expect(await approvalFingerprint({ ...base, action: { type: 'type', selector: '#q', text: 'y' } }, key)).not.toBe(fp);
+    expect(await approvalFingerprint(base, await deriveFingerprintKey('anderes-geheimnis'))).not.toBe(fp);
+    await expect(approvalFingerprint(base, new Uint8Array(8))).rejects.toThrow();
+    await expect(deriveFingerprintKey('')).rejects.toThrow();
   });
 });
 

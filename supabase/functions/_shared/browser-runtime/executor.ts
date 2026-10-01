@@ -6,7 +6,7 @@
 // freigegeben hat, und die Session-ID aus browser_sessions.executor_session_id.
 // Der API-Key verlässt die Edge Function nie und wird nie geloggt.
 
-import { BrowserRuntimeError } from './errors.ts';
+import { BrowserRuntimeError, safeErrorCode } from './errors.ts';
 import type { BrowserAction, BrowserActionType } from './actions.ts';
 
 export type ExecutorStatus = 'offline' | 'connecting' | 'ready' | 'busy' | 'degraded' | 'error';
@@ -75,7 +75,12 @@ export interface ExecutorClient {
   openSession(executorSessionId: string): Promise<{ page: ExecutorPage | null; frame: ExecutorFrame | null; version: string | null }>;
   frame(executorSessionId: string): Promise<{ page: ExecutorPage | null; frame: ExecutorFrame }>;
   closeSession(executorSessionId: string): Promise<void>;
-  execute(executorSessionId: string, action: BrowserAction): Promise<ExecutorExecuteResult>;
+  /**
+   * expectedUrl: die Seite, an die eine Freigabe gebunden ist. Der Executor
+   * prüft die LIVE-Seite vor der Aktion; weicht sie ab → PAGE_CHANGED, nichts
+   * wird ausgeführt.
+   */
+  execute(executorSessionId: string, action: BrowserAction, opts?: { expectedUrl?: string | null }): Promise<ExecutorExecuteResult>;
 }
 
 function num(value: unknown): number | null {
@@ -176,7 +181,22 @@ function pageFrom(value: unknown): ExecutorPage | null {
 }
 
 /** Executor-Fehlercode → Runtime-Fehler. */
-export function errorFromExecutor(httpStatus: number, code: string | null): BrowserRuntimeError {
+export function errorFromExecutor(httpStatus: number, code: string | null, json: Record<string, unknown> = {}): BrowserRuntimeError {
+  if (code === 'PAGE_CHANGED') {
+    return new BrowserRuntimeError('PAGE_CHANGED', 'the live page differs from the approved page; nothing was executed', {
+      executor_code: code,
+      current_url: str(json.current_url, 2048),
+    });
+  }
+  if (code === 'LANDED_ON_BLOCKED_URL') {
+    // Die Seite stand (Redirect-Hop, selbstständige Navigation) auf einer
+    // gesperrten Adresse; der Executor hat sie zurückgesetzt, nichts ausgeführt.
+    return new BrowserRuntimeError('URL_BLOCKED', 'the page ended up on a blocked address and was reset; nothing was executed', {
+      executor_code: code,
+      reason: 'LANDED_ON_NON_PUBLIC_URL',
+      blocked_origin: str(json.blocked_origin, 300),
+    });
+  }
   if (httpStatus === 404 || code === 'SESSION_NOT_FOUND') {
     return new BrowserRuntimeError('SESSION_NOT_FOUND', 'executor session not found', { executor_code: 'SESSION_NOT_FOUND' });
   }
@@ -192,7 +212,7 @@ export function errorFromExecutor(httpStatus: number, code: string | null): Brow
   if (httpStatus === 401 || httpStatus === 403) {
     return new BrowserRuntimeError('EXECUTOR_OFFLINE', 'executor rejected credentials', { executor_code: 'EXECUTOR_AUTH_FAILED' });
   }
-  return new BrowserRuntimeError('EXECUTION_FAILED', 'executor request failed', { executor_code: code ?? `HTTP_${httpStatus}` });
+  return new BrowserRuntimeError('EXECUTION_FAILED', 'executor request failed', { executor_code: safeErrorCode(code, `HTTP_${httpStatus}`) });
 }
 
 export function createExecutorClient(
@@ -225,11 +245,12 @@ export function createExecutorClient(
     }
   }
 
+  // Nur Codes, nie Freitext: Executor-Meldungen können Eingaben enthalten.
   function codeOf(json: Record<string, unknown>): string | null {
     const e = json.error;
-    if (typeof e === 'string') return e.slice(0, 100);
+    if (typeof e === 'string') return safeErrorCode(e, 'EXECUTOR_ERROR');
     if (e && typeof e === 'object' && typeof (e as { code?: unknown }).code === 'string') {
-      return ((e as { code: string }).code).slice(0, 100);
+      return safeErrorCode((e as { code: string }).code, 'EXECUTOR_ERROR');
     }
     return null;
   }
@@ -251,13 +272,13 @@ export function createExecutorClient(
 
     async openSession(executorSessionId) {
       const { status, json } = await call('/session/open', { session_id: executorSessionId }, TIMEOUTS.open);
-      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json));
+      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json), json);
       return { page: pageFrom(json.page), frame: frameFrom(json.frame), version: str(json.version) };
     },
 
     async frame(executorSessionId) {
       const { status, json } = await call('/session/frame', { session_id: executorSessionId }, TIMEOUTS.frame);
-      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json));
+      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json), json);
       const frame = frameFrom(json.frame);
       if (!frame) throw new BrowserRuntimeError('EXECUTION_FAILED', 'executor returned no frame');
       return { page: pageFrom(json.page), frame };
@@ -265,17 +286,18 @@ export function createExecutorClient(
 
     async closeSession(executorSessionId) {
       const { status, json } = await call('/session/close', { session_id: executorSessionId }, TIMEOUTS.close);
-      if ((status < 200 || status >= 300) && status !== 404) throw errorFromExecutor(status, codeOf(json));
+      if ((status < 200 || status >= 300) && status !== 404) throw errorFromExecutor(status, codeOf(json), json);
     },
 
-    async execute(executorSessionId, action) {
+    async execute(executorSessionId, action, opts) {
       const { status, json } = await call('/execute', {
         session_id: executorSessionId,
         actions: [action],
         require_session: true,
         include_frame: true,
+        ...(opts?.expectedUrl ? { expected_url: opts.expectedUrl } : {}),
       }, TIMEOUTS.execute);
-      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json));
+      if (status < 200 || status >= 300 || json.ok !== true) throw errorFromExecutor(status, codeOf(json), json);
       const results = Array.isArray(json.results) ? json.results : [];
       const raw = (results[0] ?? {}) as Record<string, unknown>;
       const result: ExecutorActionResult = {
@@ -290,7 +312,7 @@ export function createExecutorClient(
         ...(raw.verification && typeof raw.verification === 'object'
           ? { verification: raw.verification as ExecutorActionResult['verification'] }
           : {}),
-        ...(typeof raw.error === 'string' ? { error: raw.error.slice(0, 200) } : {}),
+        ...(typeof raw.error === 'string' ? { error: safeErrorCode(raw.error, 'ACTION_FAILED') } : {}),
       };
       return { result, page: pageFrom(json.page), frame: frameFrom(json.frame) };
     },

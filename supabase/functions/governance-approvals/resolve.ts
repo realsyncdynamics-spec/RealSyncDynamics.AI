@@ -2,16 +2,18 @@
 //
 // Befunde (Audit 2026-09-29), hier behoben:
 //   - Race: Das Update filterte nur nach id; zwei gleichzeitige Entscheidungen
-//     konnten sich überschreiben. Jetzt: Übergang nur aus 'pending' (bedingtes
-//     Update, genau eine Zeile).
-//   - expires_at wurde nie geprüft. Jetzt: abgelaufene offene Freigaben werden
-//     auf 'expired' gesetzt und nicht mehr entschieden.
-//   - Die Entscheidung wurde als ungekettete Evidence ohne Fehlerprüfung
-//     geschrieben. Jetzt: gekettet (append_governance_evidence); scheitert der
-//     Nachweis, wird die Entscheidung zurückgenommen (fail closed).
-//   - Browser-Freigaben: Ablehnung gibt die wartende Browser-Session frei.
+//     konnten sich überschreiben. Jetzt: Zeilensperre und Übergang nur aus
+//     'pending' (decide_governance_approval).
+//   - expires_at wurde nie geprüft. Jetzt: nach Datenbankuhr; abgelaufene
+//     offene Freigaben werden 'expired' und nicht mehr entschieden.
+//   - Die Entscheidung wurde als ungekettete Evidence ohne Fehlerprüfung und
+//     NACH dem Status geschrieben. Jetzt: Status und gekettete Evidence in
+//     EINER Transaktion — eine Freigabe ist nie 'approved' (und damit für
+//     reserve_browser_execution reservierbar), solange ihr Nachweis fehlt.
+//   - Browser-Freigaben: Ablehnung/Ablauf gibt die wartende Session frei.
 
-import { appendChainedEvidence, type EvidenceRepo } from '../_shared/browser-runtime/evidence.ts';
+import { isBrowserRuntimeError } from '../_shared/browser-runtime/errors.ts';
+import { decideWithEvidence, type ApprovalDecisionRepo } from '../_shared/browser-runtime/approval-decision.ts';
 
 export interface ResolvableApproval {
   id: string;
@@ -24,14 +26,9 @@ export interface ResolvableApproval {
   requested_by: string | null;
 }
 
-export interface ApprovalResolverRepo extends EvidenceRepo {
+export interface ApprovalResolverRepo extends ApprovalDecisionRepo {
   getApproval(approvalId: string): Promise<ResolvableApproval | null>;
   roleOf(userId: string, tenantId: string): Promise<string | null>;
-  markExpired(approvalId: string): Promise<void>;
-  /** Übergang pending → target; true = genau diese Anfrage hat entschieden. */
-  decide(approvalId: string, patch: Record<string, unknown>): Promise<boolean>;
-  /** Kompensation, wenn der Nachweis nicht geschrieben werden konnte. */
-  revertToPending(approvalId: string): Promise<void>;
   releaseBrowserSession(tenantId: string, sessionId: string, nowIso: string): Promise<void>;
 }
 
@@ -65,51 +62,58 @@ export async function resolveApproval(repo: ApprovalResolverRepo, input: Resolve
   if (row.status !== 'pending') {
     return { ok: false, http: 409, code: 'ALREADY_RESOLVED', message: `approval is ${row.status}` };
   }
-  if (Date.parse(row.expires_at) <= input.now.getTime()) {
-    await repo.markExpired(row.id);
-    if (row.browser_session_id) await repo.releaseBrowserSession(row.tenant_id, row.browser_session_id, input.now.toISOString());
-    return { ok: false, http: 409, code: 'APPROVAL_EXPIRED', message: 'approval is expired' };
-  }
 
   const resolvedAt = input.now.toISOString();
-  const decided = await repo.decide(row.id, {
-    status: input.target,
-    resolved_by: input.userId,
-    resolved_at: resolvedAt,
-    resolution_reason: input.reason,
-  });
-  if (!decided) return { ok: false, http: 409, code: 'ALREADY_RESOLVED', message: 'approval was resolved concurrently' };
-
-  let evidenceId: string;
+  let decision;
   try {
-    const evidence = await appendChainedEvidence(repo, {
-      id: input.evidenceId,
+    decision = await decideWithEvidence(repo, {
+      approvalId: row.id,
       tenantId: row.tenant_id,
-      eventId: row.event_id,
-      evidenceType: 'approval',
-      title: input.target === 'approved' ? 'Approval granted' : 'Approval denied',
-      source: 'governance-approvals',
-      snapshot: {
-        kind: 'approval.decision',
-        approval_id: row.id,
-        decision: input.target,
-        resolved_by_user_id: input.userId,
-        resolved_by_email: input.userEmail,
-        resolved_at: resolvedAt,
-        reason: input.reason,
-        requested_by: row.requested_by,
-        self_approved: row.requested_by !== null && row.requested_by === input.userId,
-        browser_session_id: row.browser_session_id,
+      decidedBy: input.userId,
+      target: input.target,
+      reason: input.reason,
+      decidedAt: resolvedAt,
+      evidence: {
+        id: input.evidenceId,
+        eventId: row.event_id,
+        evidenceType: 'approval',
+        title: input.target === 'approved' ? 'Approval granted' : 'Approval denied',
+        source: 'governance-approvals',
+        snapshot: {
+          kind: 'approval.decision',
+          approval_id: row.id,
+          decision: input.target,
+          resolved_by_user_id: input.userId,
+          resolved_by_email: input.userEmail,
+          resolved_at: resolvedAt,
+          reason: input.reason,
+          requested_by: row.requested_by,
+          self_approved: row.requested_by !== null && row.requested_by === input.userId,
+          browser_session_id: row.browser_session_id,
+        },
       },
     });
-    evidenceId = evidence.id;
-  } catch {
-    await repo.revertToPending(row.id);
-    return { ok: false, http: 503, code: 'EVIDENCE_WRITE_FAILED', message: 'decision could not be evidenced; not applied' };
+  } catch (error) {
+    if (isBrowserRuntimeError(error)) {
+      return { ok: false, http: 503, code: 'EVIDENCE_WRITE_FAILED', message: 'decision could not be evidenced; not applied' };
+    }
+    throw error;
+  }
+
+  switch (decision.outcome) {
+    case 'not_found':
+      return { ok: false, http: 404, code: 'NOT_FOUND', message: 'approval not found' };
+    case 'already_resolved':
+      return { ok: false, http: 409, code: 'ALREADY_RESOLVED', message: `approval is ${decision.approval_status ?? 'resolved'}` };
+    case 'expired':
+      if (row.browser_session_id) await repo.releaseBrowserSession(row.tenant_id, row.browser_session_id, resolvedAt);
+      return { ok: false, http: 409, code: 'APPROVAL_EXPIRED', message: 'approval is expired' };
+    case 'decided':
+      break;
   }
 
   if (input.target === 'rejected' && row.browser_session_id) {
     await repo.releaseBrowserSession(row.tenant_id, row.browser_session_id, resolvedAt);
   }
-  return { ok: true, status: input.target, resolved_at: resolvedAt, evidence_id: evidenceId };
+  return { ok: true, status: input.target, resolved_at: resolvedAt, evidence_id: decision.evidence_id ?? input.evidenceId };
 }

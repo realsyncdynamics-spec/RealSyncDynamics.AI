@@ -1,19 +1,23 @@
 /**
  * In-Memory-Fakes für browser-execute (handler.ts).
  *
- * Der Repo-Fake bildet die SQL-Semantik der Migration
- * 20260929100000_browser_runtime_governed_sessions.sql nach:
+ * Der Repo-Fake bildet die SQL-Semantik nach:
  *   - append_governance_evidence: Compare-and-Swap auf den Kettenkopf
- *   - consume_browser_approval: gleiche Prüfreihenfolge und Rückgabecodes
- *   - finish_browser_approval: nur verbrauchte, freigegebene Freigaben
+ *   - reserve_browser_execution / finish_browser_execution (#1728,
+ *     20260930190000): gleiche Prüfreihenfolge und Rückgaben, UNIQUE(approval_id)
+ *   - decide_governance_approval (20261001100000): Entscheidung nur mit Evidence
+ *   - browser_sessions_enforce_open_limit: höchstens 3 offene Sessions
  *   - bedingte Session-Updates (status ∈ expected)
- * Die echte Datenbanksemantik prüft test/runtime/db/browser-runtime-sessions.db.test.ts.
+ * Die echte Datenbanksemantik prüfen test/runtime/db/browser-runtime-sessions.db.test.ts
+ * und test/runtime/db/browser-execution-reservations.db.test.ts.
  */
 import type {
-  ApprovalConsumeCode,
+  ApprovalExecution,
   ApprovalRow,
   BrowserExecuteDeps,
   BrowserRuntimeRepo,
+  ExecutionEndStatus,
+  Reservation,
   VerifiedActor,
 } from '../../supabase/functions/browser-execute/handler';
 import type { SessionRow, SessionStatus } from '../../supabase/functions/_shared/browser-runtime/session';
@@ -31,19 +35,23 @@ export const TENANT_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const TENANT_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 export const USER_1 = '11111111-1111-4111-8111-111111111111';
 export const USER_2 = '22222222-2222-4222-8222-222222222222';
+/** Fester Test-Schlüssel (32 Byte) für HMAC-Fingerprints. */
+export const TEST_FINGERPRINT_KEY = new Uint8Array(32).map((_, i) => (i * 13 + 5) % 256);
 
 type Row = Record<string, unknown>;
 
 export class FakeDb {
   sessions: Array<SessionRow & Row> = [];
   events: Row[] = [];
-  approvals: Array<ApprovalRow & Row> = [];
-  bindings: Row[] = [];
+  approvals: Array<ApprovalRow & Row & { requested_action: string }> = [];
+  executions: Array<ApprovalExecution & { approval_id: string; tenant_id: string; fingerprint: string }> = [];
   evidence: EvidenceRow[] = [];
   actionLog: Array<Row & { id: string }> = [];
   executorStatus = new Map<string, Row>();
   failEvidence = false;
   failEvidenceRead = false;
+  failReservation = false;
+  failFinish = false;
   now: () => Date;
   private seq = 0;
   constructor(now: () => Date) { this.now = now; }
@@ -70,12 +78,41 @@ export class FakeDb {
         db.evidence.push({ ...row });
         return { id: row.id };
       },
+      async decideApproval(input) {
+        if (db.failEvidence) throw new Error('decide_governance_approval: 42501');
+        const a = db.approvals.find((x) => x.id === input.approvalId);
+        if (!a || a.tenant_id !== input.tenantId) return { outcome: 'not_found', evidence_id: null, approval_status: null };
+        const unusedApproved = input.target === 'cancelled' && a.status === 'approved'
+          && !db.executions.some((e) => e.approval_id === a.id);
+        if (a.status !== 'pending' && !unusedApproved) {
+          return { outcome: 'already_resolved', evidence_id: null, approval_status: a.status };
+        }
+        if (Date.parse(a.expires_at) <= db.now().getTime()) {
+          a.status = 'expired';
+          return { outcome: 'expired', evidence_id: null, approval_status: 'expired' };
+        }
+        // Gleiche Transaktion: Kopf bewegt → alles zurück ('conflict').
+        const rows = db.evidence.filter((e) => e.tenant_id === input.tenantId && e.content_hash);
+        const head = rows.length ? rows[rows.length - 1].content_hash : null;
+        if (head !== input.expectedPreviousHash) return 'conflict';
+        a.status = input.target;
+        a.resolved_at = input.decidedAt;
+        (a as Row).resolved_by = input.decidedBy;
+        (a as Row).resolution_reason = input.reason;
+        db.evidence.push({ ...input.evidenceRow });
+        return { outcome: 'decided', evidence_id: input.evidenceRow.id, approval_status: input.target };
+      },
       async countOpenSessions(tenantId, nowIso) {
         return db.sessions.filter((s) => s.tenant_id === tenantId
           && ['creating', 'ready', 'executing', 'awaiting_approval', 'paused'].includes(s.status)
           && s.expires_at > nowIso).length;
       },
       async insertSession(row) {
+        // Trigger browser_sessions_enforce_open_limit.
+        const open = db.sessions.filter((x) => x.tenant_id === row.tenant_id
+          && ['creating', 'ready', 'executing', 'awaiting_approval', 'paused'].includes(x.status)
+          && x.expires_at > db.now().toISOString()).length;
+        if (open >= 3) throw new BrowserRuntimeError('SESSION_LIMIT_REACHED', 'at most 3 open sessions per tenant');
         const s = { ...row, last_action: null, next_action: null, last_error_code: null } as SessionRow & Row;
         db.sessions.push(s);
         return { ...s };
@@ -100,16 +137,18 @@ export class FakeDb {
         return { id: e.id as string };
       },
       async insertApproval(row) {
-        const a = { id: db.id(), resolved_at: null, consumed_at: null, executed_at: null, consumed_by: null, ...row } as unknown as ApprovalRow & Row;
+        const a = { id: db.id(), resolved_at: null, ...row } as unknown as ApprovalRow & Row & { requested_action: string };
         db.approvals.push(a);
         return { id: a.id, expires_at: a.expires_at };
       },
-      async insertApprovalBinding(row) {
-        db.bindings.push({ ...row });
-      },
       async getApproval(tenantId, approvalId) {
         const a = db.approvals.find((x) => x.tenant_id === tenantId && x.id === approvalId);
-        return a ? { ...a } : null;
+        if (!a) return null;
+        const e = db.executions.find((x) => x.approval_id === a.id);
+        return {
+          ...a,
+          execution: e ? { id: e.id, status: e.status, reserved_at: e.reserved_at, finished_at: e.finished_at, detail: e.detail } : null,
+        };
       },
       async cancelApproval(tenantId, approvalId) {
         const a = db.approvals.find((x) => x.tenant_id === tenantId && x.id === approvalId && x.status === 'pending');
@@ -118,39 +157,35 @@ export class FakeDb {
         return true;
       },
       async cancelPendingSessionApprovals(tenantId, sessionIds) {
-        let n = 0;
+        const ids: string[] = [];
         for (const a of db.approvals) {
-          if (a.tenant_id === tenantId && a.browser_session_id && sessionIds.includes(a.browser_session_id)
-            && ['pending', 'approved'].includes(a.status) && !a.consumed_at) {
+          if (a.tenant_id === tenantId && a.browser_session_id && sessionIds.includes(a.browser_session_id) && a.status === 'pending') {
             a.status = 'cancelled';
-            n += 1;
+            ids.push(a.id);
           }
         }
-        return n;
+        return ids;
       },
-      async consumeApproval(approvalId, tenantId, sessionId, fingerprint, consumer): Promise<ApprovalConsumeCode> {
-        const a = db.approvals.find((x) => x.id === approvalId && x.tenant_id === tenantId);
-        if (!a) return 'not_found';
-        const b = db.bindings.find((x) => x.approval_id === approvalId);
-        if (a.consumed_at || a.status === 'executed' || a.status === 'failed') return 'already_used';
-        if ((a.status === 'pending' || a.status === 'approved') && Date.parse(a.expires_at) <= db.now().getTime()) {
-          a.status = 'expired';
-          return 'expired';
-        }
-        if (a.status === 'pending') return 'pending';
-        if (a.status === 'rejected') return 'rejected';
-        if (a.status === 'cancelled') return 'cancelled';
-        if (a.status === 'expired') return 'expired';
-        if (!b || b.browser_session_id !== sessionId || b.fingerprint !== fingerprint) return 'mismatch';
-        a.consumed_at = db.now().toISOString();
-        (a as Row).consumed_by = consumer;
-        return 'consumed';
+      async reserveExecution(tenantId, approvalId, fingerprint): Promise<Reservation> {
+        if (db.failReservation) throw new Error('reserve_browser_execution: 57014');
+        const a = db.approvals.find((x) => x.id === approvalId);
+        if (!a || a.tenant_id !== tenantId) return { outcome: 'not_found', execution_id: null, execution_status: null, approval_status: null };
+        const existing = db.executions.find((x) => x.approval_id === approvalId);
+        if (existing) return { outcome: 'already_used', execution_id: existing.id, execution_status: existing.status, approval_status: a.status };
+        if (a.status !== 'approved') return { outcome: 'not_approved', execution_id: null, execution_status: null, approval_status: a.status };
+        if (Date.parse(a.expires_at) <= db.now().getTime()) return { outcome: 'expired', execution_id: null, execution_status: null, approval_status: a.status };
+        if (a.requested_action !== fingerprint) return { outcome: 'mismatch', execution_id: null, execution_status: null, approval_status: a.status };
+        const e = { id: db.id(), approval_id: approvalId, tenant_id: tenantId, fingerprint, status: 'reserved' as const, reserved_at: db.now().toISOString(), finished_at: null, detail: null };
+        db.executions.push(e);
+        return { outcome: 'reserved', execution_id: e.id, execution_status: 'reserved', approval_status: a.status };
       },
-      async finishApproval(approvalId, tenantId, outcome) {
-        const a = db.approvals.find((x) => x.id === approvalId && x.tenant_id === tenantId && x.status === 'approved' && x.consumed_at);
-        if (!a) return false;
-        a.status = outcome;
-        a.executed_at = db.now().toISOString();
+      async finishExecution(executionId, status: ExecutionEndStatus, detail) {
+        if (db.failFinish) throw new Error('finish_browser_execution: 57014');
+        const e = db.executions.find((x) => x.id === executionId && x.status === 'reserved');
+        if (!e) return false;
+        (e as ApprovalExecution).status = status;
+        e.detail = detail;
+        e.finished_at = db.now().toISOString();
         return true;
       },
       async insertActionLog(row) {
@@ -188,10 +223,20 @@ export class FakeDb {
 
 export interface FakeExecutor extends ExecutorClient {
   healthValue: ExecutorHealth;
-  calls: Array<{ op: string; session?: string; action?: BrowserAction }>;
+  calls: Array<{ op: string; session?: string; action?: BrowserAction; expectedUrl?: string | null }>;
   pageUrl: string;
+  /** Nächstes Ergebnis landet hier (z. B. Redirect auf eine private Adresse). */
+  landOn: string | null;
+  /** Überschreibt Felder des nächsten Ergebnisses (z. B. ok:false mit Freitext-Fehler). */
+  nextResult: Partial<ExecutorExecuteResult['result']> | null;
   failNext: BrowserRuntimeError | null;
   openSessions: Set<string>;
+  /**
+   * Hosts, die der Executor DNS-genau sperrt (statisch öffentlich, privat
+   * aufgelöst). Steht die Seite dort, verhält sich der Fake wie session-core:
+   * zurück auf about:blank, LANDED_ON_BLOCKED_URL.
+   */
+  dnsBlocked: Set<string>;
 }
 
 const FRAME = { mime: 'image/jpeg' as const, base64: 'AAAA', sha256: 'f'.repeat(64), bytes: 3, captured_at: '2026-09-29T00:00:00.000Z' };
@@ -211,6 +256,25 @@ export function readyHealth(): ExecutorHealth {
   };
 }
 
+function blockedOriginOf(ex: FakeExecutor): string | null {
+  try {
+    const u = new URL(ex.pageUrl);
+    return ex.dnsBlocked.has(u.hostname) ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Wie session-core vor Aktion/Frame: Seite zurücksetzen, nichts ausführen. */
+function landingBlocked(ex: FakeExecutor): BrowserRuntimeError | null {
+  const origin = blockedOriginOf(ex);
+  if (!origin) return null;
+  ex.pageUrl = 'about:blank';
+  return new BrowserRuntimeError('URL_BLOCKED', 'the page ended up on a blocked address and was reset; nothing was executed', {
+    executor_code: 'LANDED_ON_BLOCKED_URL', reason: 'LANDED_ON_NON_PUBLIC_URL', blocked_origin: origin,
+  });
+}
+
 export function createFakeExecutor(): FakeExecutor {
   const ex: FakeExecutor = {
     configured: true,
@@ -218,8 +282,11 @@ export function createFakeExecutor(): FakeExecutor {
     healthValue: readyHealth(),
     calls: [],
     pageUrl: 'about:blank',
+    landOn: null,
+    nextResult: null,
     failNext: null,
     openSessions: new Set(),
+    dnsBlocked: new Set(),
     async health() { return { ...ex.healthValue }; },
     async openSession(id) {
       ex.calls.push({ op: 'open', session: id });
@@ -230,17 +297,44 @@ export function createFakeExecutor(): FakeExecutor {
     async frame(id) {
       ex.calls.push({ op: 'frame', session: id });
       if (!ex.openSessions.has(id)) throw new BrowserRuntimeError('SESSION_NOT_FOUND', 'executor session not found');
+      const blocked = landingBlocked(ex);
+      if (blocked) throw blocked;
       return { page: { url: ex.pageUrl, title: 'T', loading: false }, frame: FRAME };
     },
     async closeSession(id) {
       ex.calls.push({ op: 'close', session: id });
       ex.openSessions.delete(id);
     },
-    async execute(id, action): Promise<ExecutorExecuteResult> {
-      ex.calls.push({ op: 'execute', session: id, action });
+    async execute(id, action, opts): Promise<ExecutorExecuteResult> {
+      ex.calls.push({ op: 'execute', session: id, action, expectedUrl: opts?.expectedUrl ?? null });
       if (ex.failNext) { const e = ex.failNext; ex.failNext = null; throw e; }
       if (!ex.openSessions.has(id)) throw new BrowserRuntimeError('SESSION_NOT_FOUND', 'executor session not found');
+      const before = landingBlocked(ex);
+      if (before) throw before;
+      if (opts?.expectedUrl && opts.expectedUrl !== ex.pageUrl) {
+        throw new BrowserRuntimeError('PAGE_CHANGED', 'the live page differs from the approved page; nothing was executed', {
+          executor_code: 'PAGE_CHANGED', current_url: ex.pageUrl,
+        });
+      }
       if (action.type === 'navigate') ex.pageUrl = action.url;
+      if (ex.landOn) { ex.pageUrl = ex.landOn; ex.landOn = null; }
+      const override = ex.nextResult ?? {};
+      ex.nextResult = null;
+      const landedOrigin = blockedOriginOf(ex);
+      if (landedOrigin) {
+        ex.pageUrl = 'about:blank';
+        return {
+          result: {
+            type: action.type,
+            ok: false,
+            url: 'about:blank',
+            error: 'LANDED_ON_BLOCKED_URL',
+            verification: { status: 'failed', checks: { landed_blocked: true, blocked_origin: landedOrigin } },
+          },
+          page: { url: 'about:blank', title: '', loading: false },
+          frame: FRAME,
+        };
+      }
       return {
         result: {
           type: action.type,
@@ -249,6 +343,7 @@ export function createFakeExecutor(): FakeExecutor {
           title: 'Seite',
           ...(action.type === 'read_text' || action.type === 'extract' ? { text: 'Hallo Welt' } : {}),
           verification: { status: action.type === 'wait' ? 'not_applicable' : 'passed', checks: {} },
+          ...override,
         },
         page: { url: ex.pageUrl, title: 'Seite', loading: false },
         frame: FRAME,
@@ -310,6 +405,7 @@ export function createHarness(): Harness {
     async tenantPolicyReady() { return tenantPolicy.value.status === 'evaluated'; },
     killSwitchEngaged: () => killSwitch.on,
     privateHostAllowlist: [],
+    fingerprintKey: TEST_FINGERPRINT_KEY,
     now,
     uuid: () => {
       uuidSeq += 1;

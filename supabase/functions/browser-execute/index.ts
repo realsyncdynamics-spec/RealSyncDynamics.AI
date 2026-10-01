@@ -17,6 +17,8 @@
 //
 // Secrets (nur Function-Env, nie geloggt):
 //   PLAYWRIGHT_SCANNER_URL, PLAYWRIGHT_SCANNER_KEY  — Executor (deploy/playwright-scanner)
+//   SUPABASE_SERVICE_ROLE_KEY  — (Plattform) Quelle des HMAC-Schlüssels für
+//                                Freigabe-Fingerprints, domänengetrennt abgeleitet
 // Optional:
 //   BROWSER_EXECUTOR_ID                  — Kennung für browser_executor_status (Default 'default')
 //   BROWSER_RUNTIME_KILL_SWITCH=on       — globale Notabschaltung (alle Aktionen DENY)
@@ -32,7 +34,7 @@ import { evaluateSnapshot, type DecisionRequest } from '../_shared/pdp/core.ts';
 import { codeForAuthStatus } from '../_shared/browser-runtime/errors.ts';
 import { createExecutorClient } from '../_shared/browser-runtime/executor.ts';
 import { overlayFromPdpResult } from '../_shared/browser-runtime/policy.ts';
-import { actionTarget } from '../_shared/browser-runtime/actions.ts';
+import { actionTarget, deriveFingerprintKey } from '../_shared/browser-runtime/actions.ts';
 import { parseAllowlist } from '../_shared/browser-runtime/url.ts';
 import { BROWSER_RUNTIME_ENTITLEMENT, createBrowserExecuteHandler, type VerifiedActor } from './handler.ts';
 import { createBrowserRuntimeRepo } from './repo.ts';
@@ -49,6 +51,9 @@ const executor = createExecutorClient(
     : null,
   (input, init) => fetch(input, init),
 );
+
+// Fail closed beim Start: ohne Schlüssel keine Freigaben (Top-Level-Await).
+const fingerprintKey = await deriveFingerprintKey(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
 function adminOf(actor: VerifiedActor): Admin {
   const admin = admins.get(actor);
@@ -146,6 +151,7 @@ Deno.serve(createBrowserExecuteHandler({
 
   killSwitchEngaged: () => ['on', 'true', '1'].includes((Deno.env.get('BROWSER_RUNTIME_KILL_SWITCH') ?? '').toLowerCase()),
   privateHostAllowlist: parseAllowlist(Deno.env.get('BROWSER_PRIVATE_HOST_ALLOWLIST')),
+  fingerprintKey,
   now: () => new Date(),
   uuid: () => crypto.randomUUID(),
   randomBytes: (n) => crypto.getRandomValues(new Uint8Array(n)),

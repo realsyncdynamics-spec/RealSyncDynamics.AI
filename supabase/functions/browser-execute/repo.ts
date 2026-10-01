@@ -3,17 +3,22 @@
 //
 // Jede Abfrage ist mandantengebunden (eq('tenant_id', …)); der Mandant kommt
 // aus dem verifizierten Aktor, nie aus dem Request-Body.
+//
+// Einmal-Verbrauch einer Freigabe: reserve_browser_execution /
+// finish_browser_execution aus #1728 (browser_executions, UNIQUE(approval_id)).
 
-import type { BrowserRuntimeRepo, ApprovalConsumeCode, ApprovalRow } from './handler.ts';
+import type { BrowserRuntimeRepo, ApprovalRow, Reservation, ExecutionEndStatus } from './handler.ts';
 import type { SessionRow, SessionStatus } from '../_shared/browser-runtime/session.ts';
 import type { EvidenceRow } from '../_shared/browser-runtime/evidence.ts';
 import type { ExecutorHealth } from '../_shared/browser-runtime/executor.ts';
+import { BrowserRuntimeError } from '../_shared/browser-runtime/errors.ts';
 import { createEvidenceChainRepo } from '../_shared/evidence-chain-repo.ts';
 
 // deno-lint-ignore no-explicit-any
 type Db = any;
 
-interface PgResult<T> { data: T | null; error: { message: string; code?: string } | null }
+interface PgError { message: string; code?: string; details?: string | null }
+interface PgResult<T> { data: T | null; error: PgError | null }
 
 function unwrap<T>(r: PgResult<T>, what: string): T {
   if (r.error) throw new Error(`${what}: ${r.error.code ?? 'error'}`);
@@ -24,21 +29,30 @@ const SESSION_COLUMNS =
   'id, tenant_id, user_id, executor_session_id, mode, status, current_url, page_title, last_action, next_action, ' +
   'last_error_code, last_frame_sha256, last_frame_at, action_count, executor_version, created_at, updated_at, expires_at, closed_at';
 
-const CONSUME_CODES: ReadonlySet<string> = new Set([
-  'consumed', 'not_found', 'pending', 'rejected', 'cancelled', 'expired', 'already_used', 'mismatch',
+const OPEN = ['creating', 'ready', 'executing', 'awaiting_approval', 'paused'];
+
+const RESERVATION_OUTCOMES: ReadonlySet<string> = new Set([
+  'reserved', 'already_used', 'not_found', 'not_approved', 'expired', 'mismatch',
 ]);
+
+/** PostgREST bettet eine 1:1-Beziehung je nach Version als Objekt oder Array ein. */
+function single<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
 
 export function createBrowserRuntimeRepo(db: Db): BrowserRuntimeRepo {
   const chain = createEvidenceChainRepo(db);
   return {
     latestEvidenceHash: (tenantId) => chain.latestEvidenceHash(tenantId),
     appendEvidence: (row: EvidenceRow, expected) => chain.appendEvidence(row, expected),
+    decideApproval: (input) => chain.decideApproval(input),
 
     async countOpenSessions(tenantId, nowIso) {
       const r = await db.from('browser_sessions')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId)
-        .in('status', ['creating', 'ready', 'executing', 'awaiting_approval', 'paused'])
+        .in('status', OPEN)
         .gt('expires_at', nowIso);
       if (r.error) throw new Error(`browser_sessions count: ${r.error.code ?? 'error'}`);
       return r.count ?? 0;
@@ -46,6 +60,10 @@ export function createBrowserRuntimeRepo(db: Db): BrowserRuntimeRepo {
 
     async insertSession(row) {
       const r: PgResult<SessionRow> = await db.from('browser_sessions').insert(row).select(SESSION_COLUMNS).single();
+      // Trigger browser_sessions_enforce_open_limit (Advisory-Lock je Mandant).
+      if (r.error?.code === 'P0001' && r.error.details === 'BROWSER_SESSION_LIMIT_REACHED') {
+        throw new BrowserRuntimeError('SESSION_LIMIT_REACHED', 'at most 3 open sessions per tenant');
+      }
       return unwrap(r, 'browser_sessions insert');
     },
 
@@ -66,7 +84,7 @@ export function createBrowserRuntimeRepo(db: Db): BrowserRuntimeRepo {
       const r: PgResult<SessionRow[]> = await db.from('browser_sessions')
         .select(SESSION_COLUMNS)
         .eq('tenant_id', tenantId)
-        .in('status', ['creating', 'ready', 'executing', 'awaiting_approval', 'paused'])
+        .in('status', OPEN)
         .order('created_at', { ascending: false })
         .limit(50);
       return unwrap(r, 'browser_sessions list') ?? [];
@@ -83,56 +101,53 @@ export function createBrowserRuntimeRepo(db: Db): BrowserRuntimeRepo {
       return unwrap(r, 'governance_approvals insert');
     },
 
-    async insertApprovalBinding(row) {
-      const r: PgResult<unknown> = await db.from('browser_approval_bindings').insert(row);
-      unwrap(r, 'browser_approval_bindings insert');
-    },
-
     async getApproval(tenantId, approvalId) {
-      const r: PgResult<ApprovalRow> = await db.from('governance_approvals')
-        .select('id, tenant_id, status, expires_at, requested_by, browser_session_id, resolved_at, consumed_at, executed_at, event_id')
+      const r: PgResult<Record<string, unknown>> = await db.from('governance_approvals')
+        .select('id, tenant_id, status, expires_at, requested_by, browser_session_id, resolved_at, event_id, '
+          + 'execution:browser_executions(id,status,reserved_at,finished_at,detail)')
         .eq('tenant_id', tenantId).eq('id', approvalId).maybeSingle();
-      return unwrap(r, 'governance_approvals get');
+      const row = unwrap(r, 'governance_approvals get');
+      if (!row) return null;
+      return { ...row, execution: single(row.execution as ApprovalRow['execution'] | ApprovalRow['execution'][]) } as ApprovalRow;
     },
 
     async cancelApproval(tenantId, approvalId) {
+      // Nur Kompensation, wenn der Nachweis der Anforderung scheiterte —
+      // die Freigabe war nie entscheidbar sichtbar und wird nicht verbraucht.
       const r: PgResult<Array<{ id: string }>> = await db.from('governance_approvals')
-        .update({ status: 'cancelled', resolved_at: new Date().toISOString() })
+        .update({ status: 'cancelled', resolved_at: new Date().toISOString(), resolution_reason: 'request evidence failed' })
         .eq('tenant_id', tenantId).eq('id', approvalId).eq('status', 'pending')
         .select('id');
       return (unwrap(r, 'governance_approvals cancel') ?? []).length === 1;
     },
 
     async cancelPendingSessionApprovals(tenantId, sessionIds) {
-      if (sessionIds.length === 0) return 0;
+      if (sessionIds.length === 0) return [];
       const r: PgResult<Array<{ id: string }>> = await db.from('governance_approvals')
         .update({ status: 'cancelled', resolved_at: new Date().toISOString(), resolution_reason: 'browser session closed' })
-        .eq('tenant_id', tenantId).in('browser_session_id', sessionIds).in('status', ['pending', 'approved'])
-        .is('consumed_at', null)
+        .eq('tenant_id', tenantId).in('browser_session_id', sessionIds).eq('status', 'pending')
         .select('id');
-      return (unwrap(r, 'governance_approvals cancel session') ?? []).length;
+      return (unwrap(r, 'governance_approvals cancel session') ?? []).map((a) => a.id);
     },
 
-    async consumeApproval(approvalId, tenantId, sessionId, fingerprint, consumer) {
-      const r: PgResult<string> = await db.rpc('consume_browser_approval', {
-        p_approval_id: approvalId,
+    async reserveExecution(tenantId, approvalId, fingerprint) {
+      const r: PgResult<Reservation | Reservation[]> = await db.rpc('reserve_browser_execution', {
         p_tenant_id: tenantId,
-        p_session_id: sessionId,
+        p_approval_id: approvalId,
         p_fingerprint: fingerprint,
-        p_consumer: consumer,
       });
-      const code = unwrap(r, 'consume_browser_approval');
-      if (typeof code !== 'string' || !CONSUME_CODES.has(code)) throw new Error('consume_browser_approval: unexpected result');
-      return code as ApprovalConsumeCode;
+      const row = single(unwrap(r, 'reserve_browser_execution'));
+      if (!row || !RESERVATION_OUTCOMES.has(row.outcome)) throw new Error('reserve_browser_execution: unexpected result');
+      return row;
     },
 
-    async finishApproval(approvalId, tenantId, outcome) {
-      const r: PgResult<boolean> = await db.rpc('finish_browser_approval', {
-        p_approval_id: approvalId,
-        p_tenant_id: tenantId,
-        p_outcome: outcome,
+    async finishExecution(executionId: string, status: ExecutionEndStatus, detail: string | null) {
+      const r: PgResult<boolean> = await db.rpc('finish_browser_execution', {
+        p_execution_id: executionId,
+        p_status: status,
+        p_detail: detail,
       });
-      return unwrap(r, 'finish_browser_approval') === true;
+      return unwrap(r, 'finish_browser_execution') === true;
     },
 
     async insertActionLog(row) {

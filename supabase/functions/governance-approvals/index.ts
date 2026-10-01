@@ -27,7 +27,9 @@ import { createEvidenceChainRepo } from '../_shared/evidence-chain-repo.ts';
 import { resolveApproval, type ApprovalResolverRepo } from './resolve.ts';
 
 // Seit 2026-09-29 (Browser-Runtime): cancelled/executed/failed zusätzlich.
-const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired', 'cancelled', 'executed', 'failed'];
+// Ausführung (executed/failed) steht nicht im Freigabe-Status, sondern in
+// browser_executions (#1728) — die Liste liefert sie als `execution` mit.
+const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired', 'cancelled'];
 const GATE_STATUS = ['pending', 'approved', 'rejected', 'expired'];
 
 interface SupabaseAdminClient {
@@ -115,8 +117,9 @@ async function handleList(admin: SupabaseAdminClient, userId: string, body: Reco
     .select(`
       id, tenant_id, event_id, policy_id, asset_id, status, requested_action,
       resolved_by, resolved_at, resolution_reason, expires_at, created_at,
-      requested_by, browser_session_id, consumed_at, executed_at,
+      requested_by, browser_session_id,
       event:governance_events!inner(id,title,summary,risk_level,event_type,event_source,vendor,model_name,data_types,created_at,payload),
+      execution:browser_executions(id,status,reserved_at,finished_at,detail),
       policy:governance_policies(id,name,severity,policy_type),
       asset:governance_assets(id,name,asset_type,ai_act_class)
     `)
@@ -151,20 +154,6 @@ async function handleResolve(
       const { data } = await db.from('memberships')
         .select('role').eq('tenant_id', tenantId).eq('user_id', uid).maybeSingle();
       return (data?.role as string | undefined) ?? null;
-    },
-    async markExpired(id) {
-      await db.from('governance_approvals').update({ status: 'expired' }).eq('id', id).eq('status', 'pending');
-    },
-    async decide(id, patch) {
-      const { data, error } = await db.from('governance_approvals')
-        .update(patch).eq('id', id).eq('status', 'pending').select('id');
-      if (error) throw error;
-      return Array.isArray(data) && data.length === 1;
-    },
-    async revertToPending(id) {
-      await db.from('governance_approvals')
-        .update({ status: 'pending', resolved_by: null, resolved_at: null, resolution_reason: null })
-        .eq('id', id).is('consumed_at', null);
     },
     async releaseBrowserSession(tenantId, sessionId, nowIso) {
       await db.from('browser_sessions')

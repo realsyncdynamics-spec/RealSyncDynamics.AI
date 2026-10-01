@@ -6,7 +6,6 @@
 // nie „repariert" und ausgeführt.
 
 import { canonicalJson } from '../evidence-hash.ts';
-import { sha256Hex } from '../hash.ts';
 
 export type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -195,8 +194,31 @@ export function actionTarget(action: BrowserAction): string | null {
 }
 
 /**
- * Bindung einer Freigabe an Mandant, Session, Seite und die UNREDIGIERTE
- * Aktion. Liegt nur in browser_approval_bindings (service_role).
+ * Schlüssel für den Freigabe-Fingerprint, abgeleitet aus einem serverseitigen
+ * Geheimnis (index.ts: SUPABASE_SERVICE_ROLE_KEY) mit fester Domänen-Trennung.
+ * Das Geheimnis selbst wird nie als HMAC-Schlüssel benutzt und nie geloggt.
+ */
+export const APPROVAL_FINGERPRINT_LABEL = 'rsd.browser.approval-fingerprint.v2';
+
+async function hmacSha256(key: Uint8Array, message: string): Promise<Uint8Array> {
+  // Kopie: eigener ArrayBuffer (BufferSource in jeder TS-/Laufzeitversion).
+  const k = await crypto.subtle.importKey('raw', new Uint8Array(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(message)));
+}
+
+export async function deriveFingerprintKey(serverSecret: string): Promise<Uint8Array> {
+  if (!serverSecret) throw new Error('fingerprint secret required');
+  return hmacSha256(new TextEncoder().encode(serverSecret), APPROVAL_FINGERPRINT_LABEL);
+}
+
+/**
+ * Bindung einer Freigabe an Mandant, Session, Executor-Session, Seite und die
+ * UNREDIGIERTE Aktion. Steht in governance_approvals.requested_action und wird
+ * von reserve_browser_execution (#1728) verglichen.
+ *
+ * HMAC statt nacktem SHA-256: Mitglieder lesen requested_action per RLS. Ohne
+ * Schlüssel lässt sich eine kurze Eingabe (z. B. eine PIN) aus dem Wert nicht
+ * per Wörterbuch zurückrechnen.
  */
 export async function approvalFingerprint(input: {
   tenantId: string;
@@ -204,8 +226,9 @@ export async function approvalFingerprint(input: {
   executorSessionId: string;
   pageUrl: string | null;
   action: BrowserAction;
-}): Promise<string> {
-  const digest = await sha256Hex(canonicalJson({
+}, key: Uint8Array): Promise<string> {
+  if (!key || key.length < 32) throw new Error('fingerprint key must be at least 32 bytes');
+  const mac = await hmacSha256(key, canonicalJson({
     v: 2,
     tenant_id: input.tenantId,
     browser_session_id: input.browserSessionId,
@@ -213,11 +236,5 @@ export async function approvalFingerprint(input: {
     page_url: input.pageUrl,
     action: input.action,
   }));
-  return `browser:v2:${digest}`;
-}
-
-/** Nicht-sensitive Kurzbeschreibung für governance_approvals.requested_action. */
-export function requestedActionLabel(action: BrowserAction): string {
-  const target = actionTarget(action);
-  return `browser:${action.type}${target ? `:${target.slice(0, 200)}` : ''}`;
+  return `browser:v2:${[...mac].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
 }

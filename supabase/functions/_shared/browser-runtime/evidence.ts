@@ -50,30 +50,43 @@ export interface ChainedEvidence {
   previous_hash: string | null;
 }
 
+/**
+ * Baut die Evidence-Zeile für einen gegebenen Kettenkopf: previous_hash und
+ * evidence_id stehen im Snapshot, content_hash = sha256(JCS(snapshot)).
+ * Gemeinsam genutzt von appendChainedEvidence und decide_governance_approval.
+ */
+export async function buildChainedEvidenceRow(
+  input: ChainedEvidenceInput,
+  previousHash: string | null,
+): Promise<EvidenceRow> {
+  const snapshot = { ...input.snapshot, evidence_id: input.id, previous_hash: previousHash };
+  const contentHash = await evidenceContentHash(snapshot);
+  return {
+    id: input.id,
+    tenant_id: input.tenantId,
+    event_id: input.eventId,
+    asset_id: null,
+    evidence_type: input.evidenceType,
+    title: input.title.slice(0, 500),
+    storage_path: null,
+    content_hash: contentHash,
+    previous_hash: previousHash,
+    metadata: {
+      source: input.source,
+      hash_method: EVIDENCE_HASH_METHOD,
+      snapshot,
+    },
+  };
+}
+
 export async function appendChainedEvidence(repo: EvidenceRepo, input: ChainedEvidenceInput): Promise<ChainedEvidence> {
   try {
     for (let attempt = 0; attempt < EVIDENCE_APPEND_ATTEMPTS; attempt++) {
       const previousHash = await repo.latestEvidenceHash(input.tenantId);
-      const snapshot = { ...input.snapshot, evidence_id: input.id, previous_hash: previousHash };
-      const contentHash = await evidenceContentHash(snapshot);
-      const appended = await repo.appendEvidence({
-        id: input.id,
-        tenant_id: input.tenantId,
-        event_id: input.eventId,
-        asset_id: null,
-        evidence_type: input.evidenceType,
-        title: input.title.slice(0, 500),
-        storage_path: null,
-        content_hash: contentHash,
-        previous_hash: previousHash,
-        metadata: {
-          source: input.source,
-          hash_method: EVIDENCE_HASH_METHOD,
-          snapshot,
-        },
-      }, previousHash);
+      const row = await buildChainedEvidenceRow(input, previousHash);
+      const appended = await repo.appendEvidence(row, previousHash);
       if (appended !== 'conflict') {
-        return { id: appended.id, content_hash: contentHash, previous_hash: previousHash };
+        return { id: appended.id, content_hash: row.content_hash, previous_hash: previousHash };
       }
     }
   } catch (error) {

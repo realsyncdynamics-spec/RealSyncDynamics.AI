@@ -9,7 +9,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createBrowserExecuteHandler } from '../../supabase/functions/browser-execute/handler';
 import { evidenceContentHash } from '../../supabase/functions/_shared/evidence-hash';
 import { BrowserRuntimeError } from '../../supabase/functions/_shared/browser-runtime/errors';
-import { TENANT_A, TENANT_B, USER_1, call, createHarness, type Harness } from './fakes';
+import { approvalFingerprint } from '../../supabase/functions/_shared/browser-runtime/actions';
+import { canonicalJson } from '../../supabase/functions/_shared/evidence-hash';
+import { createHash } from 'node:crypto';
+import { TENANT_A, TENANT_B, TEST_FINGERPRINT_KEY, USER_1, call, createHarness, type Harness } from './fakes';
 
 let h: Harness;
 let handler: (req: Request) => Promise<Response>;
@@ -302,7 +305,7 @@ describe('Approvals', () => {
     return call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector }, approval_id: approvalId });
   }
 
-  it('Mutation ohne Freigabe: APPROVAL_REQUIRED, keine Ausführung, Freigabe + Bindung + Evidence', async () => {
+  it('Mutation ohne Freigabe: APPROVAL_REQUIRED, keine Ausführung, Freigabe mit HMAC-Fingerprint + Evidence', async () => {
     const sid = await openSession();
     await navigate(sid);
     const res = await requestClick(sid);
@@ -311,13 +314,37 @@ describe('Approvals', () => {
     const approvalId = res.body.error.details.approval_id;
     expect(executorExecutions().map((c) => c.action?.type)).toEqual(['navigate']);
     const approval = h.db.approvals[0];
-    expect(approval).toMatchObject({ id: approvalId, status: 'pending', requested_by: USER_1, browser_session_id: sid, requested_action: 'browser:click:#submit' });
+    expect(approval).toMatchObject({ id: approvalId, status: 'pending', requested_by: USER_1, browser_session_id: sid });
     expect(Date.parse(approval.expires_at) - h.clock.t).toBe(15 * 60 * 1000);
-    expect(h.db.bindings[0]).toMatchObject({ approval_id: approvalId, page_url: 'https://example.com/', action_type: 'click' });
-    expect(String(h.db.bindings[0].fingerprint)).toMatch(/^browser:v2:[0-9a-f]{64}$/);
+    // requested_action ist der Wert, den reserve_browser_execution (#1728) vergleicht.
+    const session = h.db.sessions[0];
+    const input = {
+      tenantId: TENANT_A, browserSessionId: sid, executorSessionId: session.executor_session_id,
+      pageUrl: 'https://example.com/', action: { type: 'click' as const, selector: '#submit' },
+    };
+    expect(approval.requested_action).toBe(await approvalFingerprint(input, TEST_FINGERPRINT_KEY));
+    expect(approval.requested_action).toMatch(/^browser:v2:[0-9a-f]{64}$/);
     expect(h.db.sessions[0].status).toBe('awaiting_approval');
     const intent = h.db.evidence.at(-1)!.metadata.snapshot as Record<string, any>;
     expect(intent).toMatchObject({ kind: 'browser.action.intent', approval_id: approvalId });
+  });
+
+  it('Fingerprint ohne Schlüssel nicht per Wörterbuch rückrechenbar (HMAC statt nacktem SHA-256)', async () => {
+    const sid = await openSession();
+    const res = await call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'type', selector: '#pin', text: '4711' } });
+    expect(res.body.error.code).toBe('APPROVAL_REQUIRED');
+    const stored = h.db.approvals[0].requested_action;
+    const session = h.db.sessions[0];
+    const plain = createHash('sha256').update(canonicalJson({
+      v: 2, tenant_id: TENANT_A, browser_session_id: sid, executor_session_id: session.executor_session_id,
+      page_url: 'about:blank', action: { type: 'type', selector: '#pin', text: '4711' },
+    })).digest('hex');
+    expect(stored).not.toBe(`browser:v2:${plain}`);
+    const otherKey = new Uint8Array(32).fill(7);
+    expect(await approvalFingerprint({
+      tenantId: TENANT_A, browserSessionId: sid, executorSessionId: session.executor_session_id,
+      pageUrl: 'about:blank', action: { type: 'type', selector: '#pin', text: '4711' },
+    }, otherKey)).not.toBe(stored);
   });
 
   it('eingegebener Text erscheint weder in Freigabe, Event, Log noch Evidence', async () => {
@@ -348,17 +375,22 @@ describe('Approvals', () => {
     expect(executorExecutions()).toHaveLength(0);
   });
 
-  it('Freigabe → genau eine Ausführung; Wiederverwendung scheitert', async () => {
+  it('Freigabe → genau eine Ausführung; Wiederverwendung scheitert (browser_executions, #1728)', async () => {
     const sid = await openSession();
     const approvalId = (await requestClick(sid)).body.error.details.approval_id;
     h.db.approve(approvalId);
     const first = await executeApproved(sid, approvalId);
     expect(first.status).toBe(200);
     expect(first.body.pipeline.find((s: { step: string }) => s.step === 'approval').state).toBe('done');
-    expect(h.db.approvals[0].status).toBe('executed');
+    expect(h.db.approvals[0].status).toBe('approved');
+    expect(h.db.executions).toHaveLength(1);
+    expect(h.db.executions[0]).toMatchObject({ approval_id: approvalId, status: 'executed' });
+    expect(first.body.execution_id).toBe(h.db.executions[0].id);
     const second = await executeApproved(sid, approvalId);
     expect(second.body.error.code).toBe('APPROVAL_ALREADY_USED');
+    expect(second.body.error.details).toMatchObject({ execution_status: 'executed', approval_consumed: true });
     expect(executorExecutions()).toHaveLength(1);
+    expect(executorExecutions()[0].expectedUrl).toBe('about:blank');
     const kinds = (await assertChainValid(TENANT_A)).map((e) => (e.metadata.snapshot as Record<string, unknown>).kind);
     expect(kinds).toEqual(['browser.session.opened', 'browser.action.intent', 'browser.action.intent', 'browser.action.result']);
   });
@@ -384,7 +416,7 @@ describe('Approvals', () => {
     expect(executorExecutions()).toHaveLength(0);
   });
 
-  it('abgelaufen → APPROVAL_EXPIRED, Status expired', async () => {
+  it('abgelaufen → APPROVAL_EXPIRED nach Datenbankuhr, keine Ausführung, Session frei', async () => {
     const sid = await openSession();
     const approvalId = (await requestClick(sid)).body.error.details.approval_id;
     h.db.approve(approvalId);
@@ -392,7 +424,8 @@ describe('Approvals', () => {
     h.db.approvals[0].expires_at = new Date(h.clock.t - 1).toISOString();
     const res = await executeApproved(sid, approvalId);
     expect(res.body.error.code).toBe('APPROVAL_EXPIRED');
-    expect(h.db.approvals[0].status).toBe('expired');
+    expect(h.db.executions).toHaveLength(0);
+    expect(h.db.sessions[0].status).toBe('ready');
     expect(executorExecutions()).toHaveLength(0);
   });
 
@@ -404,7 +437,7 @@ describe('Approvals', () => {
     expect((await executeApproved(sid, approvalId)).body.error.code).toBe('APPROVAL_NOT_FOUND');
   });
 
-  it('Evidence nicht schreibbar bei freigegebener Mutation: fail closed, keine Ausführung, Freigabe failed', async () => {
+  it('Evidence nicht schreibbar bei freigegebener Mutation: fail closed, keine Ausführung, Freigabe verbraucht', async () => {
     const sid = await openSession();
     const approvalId = (await requestClick(sid)).body.error.details.approval_id;
     h.db.approve(approvalId);
@@ -412,9 +445,33 @@ describe('Approvals', () => {
     const res = await executeApproved(sid, approvalId);
     expect(res.status).toBe(503);
     expect(res.body.error.code).toBe('EVIDENCE_WRITE_FAILED');
+    expect(res.body.error.details).toMatchObject({ action_executed: false, approval_consumed: true });
     expect(executorExecutions()).toHaveLength(0);
-    expect(h.db.approvals[0].status).toBe('failed');
+    expect(h.db.executions[0]).toMatchObject({ status: 'executor_failed', detail: 'not_executed:evidence_unavailable' });
     expect(h.db.sessions[0].status).toBe('ready');
+  });
+
+  it('Reservierung nicht möglich: RESERVATION_UNAVAILABLE, nichts ausgeführt', async () => {
+    const sid = await openSession();
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    h.db.failReservation = true;
+    const res = await executeApproved(sid, approvalId);
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe('RESERVATION_UNAVAILABLE');
+    expect(executorExecutions()).toHaveLength(0);
+  });
+
+  it('Abschluss nicht schreibbar: kein ok, Reservierung bleibt stehen', async () => {
+    const sid = await openSession();
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    h.db.failFinish = true;
+    const res = await executeApproved(sid, approvalId);
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe('EVIDENCE_WRITE_FAILED');
+    expect(res.body.error.details).toMatchObject({ execution_status: 'reserved', action_executed: true });
+    expect(h.db.executions[0].status).toBe('reserved');
   });
 
   it('parallele Einlösung derselben Freigabe: genau eine Ausführung', async () => {
@@ -427,13 +484,44 @@ describe('Approvals', () => {
     expect(executorExecutions()).toHaveLength(1);
   });
 
-  it('Anfragender kann eine offene Freigabe zurückziehen', async () => {
+  it('Anfragender kann eine offene Freigabe zurückziehen — atomar mit Evidence', async () => {
     const sid = await openSession();
     const approvalId = (await requestClick(sid)).body.error.details.approval_id;
     const res = await call(handler, 'token-owner', { op: 'approval_cancel', tenant_id: TENANT_A, approval_id: approvalId });
-    expect(res.body.cancelled).toBe(true);
+    expect(res.body).toMatchObject({ cancelled: true, outcome: 'decided', approval_status: 'cancelled' });
     expect(h.db.approvals[0].status).toBe('cancelled');
     expect(h.db.sessions[0].status).toBe('ready');
+    const decision = h.db.evidence.at(-1)!.metadata.snapshot as Record<string, unknown>;
+    expect(decision).toMatchObject({ kind: 'approval.decision', decision: 'cancelled', approval_id: approvalId });
+    await assertChainValid(TENANT_A);
+  });
+
+  it('freigegeben, aber unbenutzt: zurückziehbar und danach nicht mehr einlösbar', async () => {
+    const sid = await openSession();
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    const res = await call(handler, 'token-owner', { op: 'approval_cancel', tenant_id: TENANT_A, approval_id: approvalId });
+    expect(res.body.cancelled).toBe(true);
+    expect((await executeApproved(sid, approvalId)).body.error.code).toBe('APPROVAL_DENIED');
+    expect(executorExecutions()).toHaveLength(0);
+  });
+
+  it('nach der Einlösung ist Zurückziehen nicht mehr möglich', async () => {
+    const sid = await openSession();
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    expect((await executeApproved(sid, approvalId)).status).toBe(200);
+    const res = await call(handler, 'token-owner', { op: 'approval_cancel', tenant_id: TENANT_A, approval_id: approvalId });
+    expect(res.body).toMatchObject({ cancelled: false, outcome: 'already_resolved' });
+  });
+
+  it('approval_status liefert den Verbrauch aus browser_executions', async () => {
+    const sid = await openSession();
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    await executeApproved(sid, approvalId);
+    const res = await call(handler, 'token-owner', { op: 'approval_status', tenant_id: TENANT_A, approval_id: approvalId });
+    expect(res.body.approval).toMatchObject({ status: 'approved', execution: { status: 'executed' } });
   });
 
   it('kill_all schließt alle Sessions und zieht offene Freigaben zurück (nur owner/admin)', async () => {
@@ -457,4 +545,154 @@ describe('Freigabe entschieden, Session wartet noch', () => {
     expect(second.body.error.code).toBe('APPROVAL_REQUIRED');
     expect(second.body.error.details.approval_id).not.toBe(first.body.error.details.approval_id);
   });
+});
+
+describe('Security-Review 2026-09-29', () => {
+  async function requestClick(sid: string, selector = '#submit') {
+    return call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector } });
+  }
+
+  it('eine beliebige approval_id entsperrt eine wartende Session nicht', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    const pendingId = (await requestClick(sid)).body.error.details.approval_id;
+    const random = '12345678-1234-4234-8234-123456789abc';
+    const withRandom = await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'navigate', url: 'https://example.org/' }, approval_id: random,
+    });
+    expect(withRandom.body.error.code).toBe('APPROVAL_PENDING');
+    // Selbst die richtige ID taugt nicht für eine Aktion ohne Freigabepflicht.
+    const withPending = await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'navigate', url: 'https://example.org/' }, approval_id: pendingId,
+    });
+    expect(withPending.body.error.code).toBe('VALIDATION_FAILED');
+    expect(executorExecutions().map((c) => c.action?.type)).toEqual(['navigate']);
+    expect(h.db.sessions[0].status).toBe('awaiting_approval');
+  });
+
+  it('Live-Seite weicht von der freigegebenen ab: PAGE_CHANGED, nichts ausgeführt, Freigabe verbraucht', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    const approvalId = (await requestClick(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    h.executor.pageUrl = 'https://example.com/umgeleitet'; // Seite hat sich ohne Aktion geändert
+    const res = await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector: '#submit' }, approval_id: approvalId,
+    });
+    expect(res.body.error.code).toBe('PAGE_CHANGED');
+    expect(res.body.error.details).toMatchObject({ approval_consumed: true, action_executed: false });
+    expect(executorExecutions().at(-1)!.expectedUrl).toBe('https://example.com/');
+    expect(h.db.executions[0]).toMatchObject({ status: 'executor_failed', detail: 'not_executed:page_changed' });
+    expect(h.db.sessions[0].current_url).toBe('https://example.com/umgeleitet');
+  });
+
+  it('Freitext aus Executor-Fehlern (mit Eingabe) landet weder in DB noch Evidence noch Antwort', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    const approvalId = (await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'type', selector: '#pin', text: '4711' },
+    })).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    h.executor.nextResult = {
+      ok: false,
+      error: 'locator.fill: Timeout — waiting for fill("4711")',
+      verification: { status: 'failed', checks: { error: 'fill("4711") failed', value_length_matches: false } },
+    };
+    const res = await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'type', selector: '#pin', text: '4711' }, approval_id: approvalId,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({ ok: false, error_code: 'ACTION_FAILED' });
+    const everything = JSON.stringify([h.db.approvals, h.db.events, h.db.actionLog, h.db.evidence, h.db.sessions, h.db.executions, res.body]);
+    expect(everything).not.toContain('4711');
+    expect(h.db.sessions[0].last_error_code).toBe('ACTION_FAILED');
+  });
+
+  it('Landung auf einer nicht-öffentlichen Adresse (Redirect) schließt die Session', async () => {
+    const sid = await openSession();
+    h.executor.landOn = 'http://169.254.169.254/latest/meta-data/';
+    const res = await navigate(sid, 'https://example.com/r');
+    expect(res.body.error.code).toBe('URL_BLOCKED');
+    expect(res.body.error.details.reason).toBe('LANDED_ON_NON_PUBLIC_URL');
+    expect(h.db.sessions[0].status).toBe('failed');
+    expect(h.executor.calls.some((c) => c.op === 'close' && c.session === h.db.sessions[0].executor_session_id)).toBe(true);
+  });
+
+  it('Session-Limit hält auch bei parallelen Anlagen (Trigger mit Advisory-Lock)', async () => {
+    const results = await Promise.all([1, 2, 3, 4].map(() => call(handler, 'token-owner', { op: 'session_create', tenant_id: TENANT_A, mode: 'assist' })));
+    const codes = results.map((r) => (r.status === 201 ? 'ok' : r.body.error.code)).sort();
+    expect(codes).toEqual(['SESSION_LIMIT_REACHED', 'ok', 'ok', 'ok']);
+  });
+});
+
+describe('Landeprüfung (Redirect-Hops, DNS-genau im Executor)', () => {
+  const PRIVATE_BY_DNS = 'intranet-by-dns.example'; // statisch öffentlich, löst privat auf
+
+  it('Redirect auf privat auflösenden Host: Executor meldet LANDED_ON_BLOCKED_URL, Session zu, nichts von der Seite gespeichert', async () => {
+    const sid = await openSession();
+    h.executor.dnsBlocked.add(PRIVATE_BY_DNS);
+    h.executor.landOn = `https://${PRIVATE_BY_DNS}/admin?token=geheim`;
+    const res = await navigate(sid, 'https://example.com/r');
+    expect(res.body.error.code).toBe('URL_BLOCKED');
+    expect(res.body.error.details).toMatchObject({
+      reason: 'LANDED_ON_NON_PUBLIC_URL', action_executed: true, blocked_origin: `https://${PRIVATE_BY_DNS}`,
+    });
+    expect(h.db.sessions[0]).toMatchObject({ status: 'failed', current_url: 'about:blank', page_title: null, last_error_code: 'URL_BLOCKED' });
+    expect(h.executor.calls.some((c) => c.op === 'close')).toBe(true);
+    const everything = JSON.stringify([h.db.events, h.db.actionLog, h.db.evidence, h.db.sessions, res.body]);
+    expect(everything).not.toContain('token=geheim');
+  });
+
+  it('freigegebener Klick landet gesperrt: Ausführung als executed festgehalten (Nebenwirkung nicht verschwiegen)', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    const approvalId = (await requestClickFor(sid)).body.error.details.approval_id;
+    h.db.approve(approvalId);
+    h.executor.dnsBlocked.add(PRIVATE_BY_DNS);
+    h.executor.landOn = `https://${PRIVATE_BY_DNS}/`;
+    const res = await call(handler, 'token-owner', {
+      op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector: '#submit' }, approval_id: approvalId,
+    });
+    expect(res.body.error).toMatchObject({ code: 'URL_BLOCKED', details: { action_executed: true, approval_consumed: true } });
+    expect(h.db.executions[0]).toMatchObject({ status: 'executed', detail: 'landed_on_blocked_url' });
+  });
+
+  it('Seite stand schon vor der Aktion gesperrt (selbstständiger Redirect): nichts ausgeführt, Session zu', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    h.executor.dnsBlocked.add(PRIVATE_BY_DNS);
+    h.executor.pageUrl = `https://${PRIVATE_BY_DNS}/`;
+    const res = await call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'read_text' } });
+    expect(res.body.error.code).toBe('URL_BLOCKED');
+    expect(res.body.error.details).toMatchObject({ executor_code: 'LANDED_ON_BLOCKED_URL', action_executed: false });
+    expect(h.db.sessions[0]).toMatchObject({ status: 'failed', current_url: 'about:blank' });
+  });
+
+  it('Frame einer gesperrt gelandeten Seite: kein Bild, Session zu, offene Freigaben hinfällig', async () => {
+    const sid = await openSession();
+    await navigate(sid);
+    await requestClickFor(sid);
+    h.executor.dnsBlocked.add(PRIVATE_BY_DNS);
+    h.executor.pageUrl = `https://${PRIVATE_BY_DNS}/`;
+    const res = await call(handler, 'token-owner', { op: 'session_frame', tenant_id: TENANT_A, session_id: sid });
+    expect(res.body.error.code).toBe('URL_BLOCKED');
+    expect(res.body.frame).toBeUndefined();
+    expect(h.db.sessions[0]).toMatchObject({ status: 'failed', last_error_code: 'LANDED_ON_NON_PUBLIC_URL', current_url: 'about:blank' });
+    expect(h.db.approvals[0].status).toBe('cancelled');
+    expect(h.executor.calls.some((c) => c.op === 'close')).toBe(true);
+  });
+
+  it('fehlgeschlagene Navigation (Chromium-Fehlerseite) schließt die Session NICHT', async () => {
+    const sid = await openSession();
+    h.executor.landOn = 'chrome-error://chromewebdata/';
+    h.executor.nextResult = { ok: false, error: 'DNS_FAILED', verification: { status: 'failed', checks: { error: 'DNS_FAILED' } } };
+    const res = await navigate(sid, 'https://does-not-resolve.example/');
+    expect(res.status).toBe(200);
+    expect(res.body.result).toMatchObject({ ok: false, error_code: 'DNS_FAILED' });
+    expect(h.db.sessions[0].status).toBe('ready');
+  });
+
+  async function requestClickFor(sid: string) {
+    return call(handler, 'token-owner', { op: 'act', tenant_id: TENANT_A, session_id: sid, action: { type: 'click', selector: '#submit' } });
+  }
 });

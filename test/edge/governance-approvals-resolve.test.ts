@@ -1,6 +1,9 @@
 /**
  * governance-approvals — Freigeben/Ablehnen (resolve.ts).
- * Race, Ablauf, fail-closed Evidence, Freigabe der Browser-Session.
+ * Entscheidung und gekettete Evidence atomar (decide_governance_approval):
+ * Race, Ablauf nach Datenbankuhr, Kettenkopf-Konflikt, fail closed,
+ * Freigabe der Browser-Session. Die echte SQL-Semantik prüft
+ * test/runtime/db/browser-runtime-sessions.db.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { resolveApproval, type ApprovalResolverRepo, type ResolvableApproval } from '../../supabase/functions/governance-approvals/resolve';
@@ -9,7 +12,10 @@ import type { EvidenceRow } from '../../supabase/functions/_shared/browser-runti
 const T = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const NOW = new Date('2026-09-29T10:00:00.000Z');
 
-function fakeRepo(approval: Partial<ResolvableApproval> = {}, opts: { role?: string | null; failEvidence?: boolean; decideWins?: boolean } = {}) {
+function fakeRepo(
+  approval: Partial<ResolvableApproval> = {},
+  opts: { role?: string | null; failEvidence?: boolean; concurrentDecision?: boolean; headMovesTimes?: number } = {},
+) {
   const row: ResolvableApproval & Record<string, unknown> = {
     id: 'ap1', tenant_id: T, event_id: 'ev1', asset_id: null, status: 'pending',
     expires_at: '2026-09-29T10:10:00.000Z', browser_session_id: null, requested_by: 'u-req',
@@ -17,22 +23,31 @@ function fakeRepo(approval: Partial<ResolvableApproval> = {}, opts: { role?: str
   };
   const evidence: EvidenceRow[] = [];
   const released: string[] = [];
+  let headMoves = opts.headMovesTimes ?? 0;
   const repo: ApprovalResolverRepo = {
     async latestEvidenceHash() { return evidence.at(-1)?.content_hash ?? null; },
-    async appendEvidence(r) {
-      if (opts.failEvidence) throw new Error('append failed');
-      evidence.push(r);
-      return { id: r.id };
+    async decideApproval(i) {
+      if (opts.failEvidence) throw new Error('decide_governance_approval: 42501');
+      if (i.approvalId !== row.id || i.tenantId !== row.tenant_id) return { outcome: 'not_found', evidence_id: null, approval_status: null };
+      if (opts.concurrentDecision) row.status = 'rejected';
+      if (row.status !== 'pending') return { outcome: 'already_resolved', evidence_id: null, approval_status: String(row.status) };
+      if (Date.parse(row.expires_at) <= NOW.getTime()) {
+        row.status = 'expired';
+        return { outcome: 'expired', evidence_id: null, approval_status: 'expired' };
+      }
+      if (headMoves > 0) {
+        headMoves -= 1;
+        return 'conflict'; // Transaktion zurückgerollt: kein Status, keine Evidence
+      }
+      if (i.evidenceRow.previous_hash !== i.expectedPreviousHash) throw new Error('22023');
+      row.status = i.target;
+      row.resolved_by = i.decidedBy;
+      row.resolution_reason = i.reason;
+      evidence.push(i.evidenceRow);
+      return { outcome: 'decided', evidence_id: i.evidenceRow.id, approval_status: i.target };
     },
     async getApproval(id) { return id === row.id ? { ...row } : null; },
     async roleOf() { return opts.role === undefined ? 'owner' : opts.role; },
-    async markExpired() { row.status = 'expired'; },
-    async decide(_id, patch) {
-      if (opts.decideWins === false || row.status !== 'pending') return false;
-      Object.assign(row, patch);
-      return true;
-    },
-    async revertToPending() { row.status = 'pending'; row.resolved_by = null; },
     async releaseBrowserSession(_t, sessionId) { released.push(sessionId); },
   };
   return { repo, row, evidence, released };
@@ -44,7 +59,7 @@ const input = (patch: Record<string, unknown> = {}) => ({
 });
 
 describe('resolveApproval', () => {
-  it('freigeben: Status + gekettete Evidence mit Anfragendem und Selbstfreigabe-Kennzeichen', async () => {
+  it('freigeben: Status + gekettete Evidence in einem Schritt, mit Anfragendem und Selbstfreigabe-Kennzeichen', async () => {
     const { repo, row, evidence } = fakeRepo();
     const out = await resolveApproval(repo, input());
     expect(out).toMatchObject({ ok: true, status: 'approved', evidence_id: 'evd1' });
@@ -73,10 +88,24 @@ describe('resolveApproval', () => {
   });
 
   it('gleichzeitige Entscheidung: nur eine gewinnt', async () => {
-    expect(await resolveApproval(fakeRepo({}, { decideWins: false }).repo, input())).toMatchObject({ ok: false, code: 'ALREADY_RESOLVED' });
+    expect(await resolveApproval(fakeRepo({}, { concurrentDecision: true }).repo, input())).toMatchObject({ ok: false, code: 'ALREADY_RESOLVED' });
   });
 
-  it('Nachweis nicht schreibbar: Entscheidung wird zurückgenommen (fail closed)', async () => {
+  it('Kettenkopf bewegt sich: neu lesen, neu hashen, erneut — danach genau ein Nachweis', async () => {
+    const { repo, row, evidence } = fakeRepo({}, { headMovesTimes: 2 });
+    expect(await resolveApproval(repo, input())).toMatchObject({ ok: true, status: 'approved' });
+    expect(row.status).toBe('approved');
+    expect(evidence).toHaveLength(1);
+  });
+
+  it('Kettenkopf bewegt sich dauerhaft: nicht entschieden (fail closed)', async () => {
+    const { repo, row, evidence } = fakeRepo({}, { headMovesTimes: 99 });
+    expect(await resolveApproval(repo, input())).toMatchObject({ ok: false, http: 503, code: 'EVIDENCE_WRITE_FAILED' });
+    expect(row.status).toBe('pending');
+    expect(evidence).toHaveLength(0);
+  });
+
+  it('Nachweis nicht schreibbar: keine Entscheidung (fail closed)', async () => {
     const { repo, row } = fakeRepo({}, { failEvidence: true });
     expect(await resolveApproval(repo, input())).toMatchObject({ ok: false, http: 503, code: 'EVIDENCE_WRITE_FAILED' });
     expect(row.status).toBe('pending');

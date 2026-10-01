@@ -10,9 +10,9 @@ name: Backend Services CI
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'deploy/playwright-scanner/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+    paths: ['services/**', 'deploy/playwright-scanner/**', 'worker/**', 'workers/browser-run-executor/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
   pull_request:
-    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+    paths: ['services/**', 'worker/**', 'workers/browser-run-executor/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
   workflow_dispatch:
 
 jobs:
@@ -25,6 +25,9 @@ jobs:
           - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
           - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
           - { dir: deploy/playwright-scanner,         check: 'npm run typecheck && npm run build' }
+          # Cloudflare-Browser-Run-Executor: teilt session-core.ts/netguard.ts mit
+          # deploy/playwright-scanner; Typen gegen den gebündelten Cloudflare-Fork.
+          - { dir: workers/browser-run-executor,      check: 'npm run typecheck' }
           - { dir: apps/agent-runtime,                check: 'npm run typecheck && npm test' }
           # Worker importiert ../src/rules (Repo-Root) → reiner Typecheck ohne Emit,
           # damit keine .js-Artefakte ausserhalb des Worker-Verzeichnisses entstehen.

@@ -140,7 +140,7 @@ function MyComponent() {
 - Stored in `localStorage` with timeout tracking
 - Survives page reloads within 12 hours
 - Supports GDPR: no PII, opaque to the user
-- Groups actions of one browser session; the write itself requires a user session (`browser-action-log` verifies user and tenant membership via `requireAuthAndTenant` and sets `actor_id` from the JWT)
+- Groups one session's actions; writing needs a user session (`requireAuthAndTenant`)
 
 ## Audit Trail Queries
 

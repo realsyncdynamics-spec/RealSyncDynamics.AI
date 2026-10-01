@@ -15,7 +15,7 @@ Browser Run gelaufen.** Kein Deploy-Workflow — Inbetriebnahme nur nach GO.
 |---|---|---|
 | Worker | `src/router.ts` | Auth (`SCANNER_API_KEY`, konstante Zeit, auch `/health`), Health aus `limits()`, Weiterleitung an das Durable Object |
 | Durable Object | `src/session-object.ts` | 1 Session = 1 Objekt (Name = `executor_session_id`, **EU-Jurisdiktion**) = 1 Browser, Kontext, Seite |
-| Kern | `deploy/playwright-scanner/session-core.ts` | Aktionen, `expected_url` → `PAGE_CHANGED`, Landeprüfung, nur Fehlercodes |
+| Kern | `deploy/playwright-scanner/session-core.ts` | Aktionen, `expected_url` → `PAGE_CHANGED`, POST nur mit Freigabe, Server-Adress- und Landeprüfung, nur Fehlercodes |
 | Netz | `deploy/playwright-scanner/netguard.ts` | Route-/WebSocket-Guard, DNS über DoH (`cloudflare-dns.com`) |
 | Einstieg | `src/index.ts` | einzige Stelle mit `@cloudflare/playwright` und echten Bindungen |
 
@@ -31,11 +31,16 @@ angelegt**: `SESSION_NOT_FOUND`, der verwaiste Browser wird geschlossen.
 ## Unterschiede zum Node-Executor (ehrlich)
 
 - **Kein Egress-Proxy möglich:** Browser Run lässt keinen Proxy vor dem Browser
-  zu. HTTP-Redirect-Hops sieht der Route-Guard nicht (Playwright-Grenze) — die
-  **Landeprüfung** setzt eine so erreichte Seite auf `about:blank`, bevor Bild,
-  Text oder DOM den Executor verlassen. Die Anfrage selbst hat das Ziel dann
-  erreicht; im Cloudflare-Netz gibt es kein Kunden-LAN und keinen
-  Metadaten-Dienst des Hosts, das Restrisiko ist dokumentiert.
+  zu. HTTP-Redirect-Hops (auch in iframes) sieht der Route-Guard nicht
+  (Playwright-Grenze), und Chromium löst DNS selbst auf (Rebinding). Deshalb
+  prüft der Kern hier zusätzlich die **Server-Adresse jeder Antwort**
+  (`verifyServerAddress`): eine private Adresse sperrt die Session dauerhaft.
+  Die **Landeprüfung** (alle Frames, auch nach der Bildaufnahme) setzt die Seite
+  auf `about:blank`, bevor Bild, Text oder DOM den Executor verlassen
+  (nachgestellt mit echtem Chromium: `test/executor/session-core-no-proxy.test.ts`).
+  **Restrisiko:** Die Anfrage selbst kann das Ziel erreichen (blinde Anfrage,
+  ohne Antwort an uns). Im Cloudflare-Netz gibt es kein Kunden-LAN und keinen
+  Metadaten-Dienst des Hosts.
 - **Keine Downloads** (`acceptDownloads: false`, Capability fehlt).
 - **Datenstandort:** Das Durable Object läuft in der EU-Jurisdiktion. Browser
   Run selbst ist „global by default“ (startet nahe am Aufrufer) — **keine

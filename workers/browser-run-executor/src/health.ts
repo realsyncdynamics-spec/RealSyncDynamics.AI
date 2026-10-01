@@ -36,7 +36,7 @@ export function healthBody(
     active_sessions: active,
     max_sessions: max,
     capabilities: CLOUDFLARE_CAPABILITIES,
-    network_guard: { route_guard: true, egress_proxy: false, landing_check: true, dns: 'doh' },
+    network_guard: { route_guard: true, egress_proxy: false, server_address_check: true, landing_check: true, dns: 'doh' },
     acquisition: reachable
       ? { allowed: limits.allowedBrowserAcquisitions > 0, retry_after_ms: Math.max(0, limits.timeUntilNextAllowedBrowserAcquisition) }
       : null,

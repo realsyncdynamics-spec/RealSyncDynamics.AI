@@ -56,7 +56,9 @@ export class ExecutorSession {
       storage: state.storage,
       browserRun: browserRun(env),
       sessions: {
-        open: (context) => GuardedSession.open(context as BrowserContext, { guard, downloads: null, log }),
+        // Ohne Egress-Proxy: Server-Adresse jeder Antwort prüfen (DNS-Rebinding,
+        // Redirect-Hops in iframes) — eine private Adresse sperrt die Session.
+        open: (context) => GuardedSession.open(context as BrowserContext, { guard, downloads: null, verifyServerAddress: true, log }),
       },
       maxSessions: maxSessions(env),
       log,

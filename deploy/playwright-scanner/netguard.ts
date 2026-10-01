@@ -1,15 +1,19 @@
 // Netzwerk-Schutz des Browser-Executors (SSRF, private Netze, Metadaten).
 //
 // Gleiche Regeln wie supabase/functions/_shared/browser-runtime/url.ts —
-// die Parität prüft test/executor/netguard-parity.test.ts. Zusätzlich hier:
+// die Parität prüft test/executor/netguard.test.ts. Zusätzlich hier:
 // DNS-Auflösung (jede aufgelöste Adresse muss öffentlich sein) und ein
 // kurzer Cache, weil der Route-Guard jede Unterressource prüft.
 //
-// Restrisiko (dokumentiert in DEPLOY.md): DNS-Rebinding zwischen dieser
-// Prüfung und Chromiums eigener Auflösung. Dagegen hilft nur eine
-// Egress-Firewall des Containers (RFC1918/Link-Local/Metadaten sperren).
-
-import { lookup } from 'node:dns/promises';
+// Laufzeitneutral (Node und Cloudflare Workers): kein node:-Import. Der
+// Resolver wird injiziert — Node: node-resolver.ts (System-DNS),
+// Workers: createDohResolver (DNS über HTTPS).
+//
+// Grenze des Route-Guards (empirisch geprüft, Playwright 1.59): HTTP-
+// Redirect-Hops laufen NICHT durch context.route(). Im Node-Executor
+// schließt der Egress-Proxy (egress-proxy.ts) diese Lücke — er verbindet nur
+// zu der hier geprüften Adresse (DNS-gepinnt, auch gegen Rebinding). Im
+// Cloudflare-Executor bleibt die Landeprüfung (isLandingAllowed) die Grenze.
 
 const BLOCKED_SUFFIXES = ['.localhost', '.local', '.internal', '.intranet', '.lan', '.home.arpa', '.corp'];
 
@@ -132,40 +136,62 @@ export function parseAllowlist(value: string | undefined | null): string[] {
   return value.split(',').map((s) => s.trim().toLowerCase().replace(/\.$/, '')).filter((s) => s.length > 0 && s.length <= 300).slice(0, 20);
 }
 
+/** Löst einen Hostnamen in IP-Adressen auf (A + AAAA). Leer/Fehler = gesperrt. */
 export type Resolver = (host: string) => Promise<string[]>;
-
-const defaultResolver: Resolver = async (host) => {
-  const entries = await lookup(host, { all: true, verbatim: true });
-  return entries.map((e) => e.address);
-};
 
 export interface HostGuard {
   /** true = Anfrage an host[:port] darf raus. */
   allows(host: string, port: string): Promise<boolean>;
+  /**
+   * Adresse, mit der verbunden werden DARF (DNS-gepinnt), oder null = gesperrt.
+   * Freigegebene Hosts (Allowlist) kommen unverändert zurück; öffentliche
+   * Literale ebenso; Namen als erste geprüfte Adresse — wer zu ihr verbindet,
+   * kann zwischen Prüfung und Verbindung nicht umgebogen werden (Rebinding).
+   */
+  pin(host: string, port: string): Promise<string | null>;
 }
 
-export function createHostGuard(allowlist: readonly string[], resolver: Resolver = defaultResolver, ttlMs = 60_000): HostGuard {
+function normalizeHost(rawHost: string): string {
+  return rawHost.toLowerCase().replace(/\.$/, '').replace(/^\[(.*)\]$/, '$1');
+}
+
+export function createHostGuard(
+  allowlist: readonly string[],
+  resolver: Resolver,
+  ttlMs = 60_000,
+  now: () => number = () => Date.now(),
+): HostGuard {
   const allow = new Set(allowlist);
-  const cache = new Map<string, { ok: boolean; until: number }>();
-  return {
-    async allows(rawHost, port) {
-      const host = rawHost.toLowerCase().replace(/\.$/, '').replace(/^\[(.*)\]$/, '$1');
-      if (allow.has(port ? `${host}:${port}` : host) || (!port && allow.has(host))) return true;
-      if (isStaticallyNonPublicHost(host.includes(':') ? `[${host}]` : host)) return false;
-      if (parseIPv4(host) || parseIPv6(host)) return true; // öffentliches Literal
-      const hit = cache.get(host);
-      const now = Date.now();
-      if (hit && hit.until > now) return hit.ok;
-      let ok = false;
+  const cache = new Map<string, { addresses: string[] | null; until: number }>();
+
+  async function pin(rawHost: string, port: string): Promise<string | null> {
+    const host = normalizeHost(rawHost);
+    if (host.length === 0 || host.length > 253) return null;
+    if (allow.has(port ? `${host}:${port}` : host) || (!port && allow.has(host))) return host;
+    if (isStaticallyNonPublicHost(host.includes(':') ? `[${host}]` : host)) return null;
+    if (parseIPv4(host) || parseIPv6(host)) return host; // öffentliches Literal
+    const at = now();
+    const hit = cache.get(host);
+    let addresses: string[] | null;
+    if (hit && hit.until > at) {
+      addresses = hit.addresses;
+    } else {
       try {
-        const addresses = await resolver(host);
-        ok = addresses.length > 0 && addresses.every((a) => !isNonPublicAddress(a));
+        const resolved = await resolver(host);
+        addresses = resolved.length > 0 && resolved.every((a) => !isNonPublicAddress(a)) ? resolved : null;
       } catch {
-        ok = false;
+        addresses = null;
       }
-      cache.set(host, { ok, until: now + ttlMs });
-      if (cache.size > 2_000) cache.clear();
-      return ok;
+      if (cache.size >= 2_000) cache.clear();
+      cache.set(host, { addresses, until: at + ttlMs });
+    }
+    return addresses?.[0] ?? null;
+  }
+
+  return {
+    pin,
+    async allows(host, port) {
+      return (await pin(host, port)) !== null;
     },
   };
 }
@@ -178,4 +204,65 @@ export async function assertNavigable(raw: string, guard: HostGuard): Promise<UR
   if (url.username || url.password) throw new Error('URL_CREDENTIALS_NOT_ALLOWED');
   if (!(await guard.allows(url.hostname, url.port))) throw new Error('PRIVATE_NETWORK_BLOCKED');
   return url;
+}
+
+/**
+ * Darf die Seite auf dieser URL stehen (nach einer Aktion, vor Frame/Text)?
+ * Fängt Redirect-Hops und selbstständige Navigationen ab, die der Route-Guard
+ * nicht sieht. about:blank und Chromiums Fehlerseite sind unkritisch; blob:
+ * zählt mit seinem Ursprung; data: kann keine Netzwerkadresse erreichen.
+ * Alles andere (file:, chrome:, view-source:, …) ist gesperrt.
+ */
+export async function isLandingAllowed(raw: string, guard: HostGuard): Promise<boolean> {
+  if (raw === 'about:blank' || raw.startsWith('chrome-error://')) return true;
+  let url: URL;
+  try { url = new URL(raw); } catch { return false; }
+  if (url.protocol === 'data:') return true;
+  if (url.protocol === 'blob:') {
+    try {
+      const inner = new URL(url.pathname);
+      return (inner.protocol === 'http:' || inner.protocol === 'https:') && await guard.allows(inner.hostname, inner.port);
+    } catch {
+      return false;
+    }
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  return guard.allows(url.hostname, url.port);
+}
+
+export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Resolver über DNS-over-HTTPS (JSON-API, A + AAAA) — für Laufzeiten ohne
+ * System-DNS (Cloudflare Workers). Fehler, NXDOMAIN oder leere Antworten
+ * liefern [] und damit „gesperrt“.
+ */
+export function createDohResolver(
+  fetchImpl: FetchLike,
+  endpoint = 'https://cloudflare-dns.com/dns-query',
+  timeoutMs = 3_000,
+): Resolver {
+  async function query(host: string, type: 'A' | 'AAAA'): Promise<string[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(`${endpoint}?name=${encodeURIComponent(host)}&type=${type}`, {
+        headers: { accept: 'application/dns-json' },
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('DOH_HTTP');
+      const body = await res.json() as { Status?: number; Answer?: Array<{ type?: number; data?: unknown }> };
+      if (body.Status !== 0) return [];
+      const want = type === 'A' ? 1 : 28;
+      return (body.Answer ?? [])
+        .filter((a) => a.type === want && typeof a.data === 'string')
+        .map((a) => a.data as string);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return async (host) => {
+    const [v4, v6] = await Promise.all([query(host, 'A'), query(host, 'AAAA')]);
+    return [...v4, ...v6];
+  };
 }

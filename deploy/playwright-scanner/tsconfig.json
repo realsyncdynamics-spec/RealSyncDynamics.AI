@@ -10,5 +10,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["server.ts", "executor.ts", "netguard.ts"]
+  "include": ["server.ts", "executor.ts", "session-core.ts", "netguard.ts", "node-resolver.ts", "egress-proxy.ts"]
 }

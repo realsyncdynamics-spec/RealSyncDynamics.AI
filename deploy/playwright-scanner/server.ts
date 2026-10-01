@@ -10,17 +10,23 @@
 //   POST /session/open          — Executor-Session anlegen/wiederverwenden { session_id }
 //   POST /session/frame         — aktuelles Bild DERSELBEN Session (JPEG) { session_id }
 //   POST /session/close         — Session schliessen { session_id }
-//   POST /execute               — Aktionen in einer Session { session_id, actions, require_session, include_frame }
+//   POST /execute               — Aktionen in einer Session { session_id, actions, require_session, include_frame, expected_url }
 //
 // Auth: SCANNER_API_KEY Header (Basic-Auth via Traefik als erste Schicht)
 // Port: 3001
 // Deployment: docker-compose.yml hinter Traefik auf realsyncdynamicsai.de VPS
+//
+// Netzwerk: Chromium spricht nur über den Egress-Proxy (egress-proxy.ts), der
+// jede Verbindung — auch Redirect-Hops — DNS-gepinnt gegen den HostGuard
+// prüft; context.route() ist die zweite Schicht.
 
 import { chromium, Browser, BrowserContext, Page, Request, Response } from 'playwright';
 import * as http from 'http';
 import { timingSafeEqual } from 'node:crypto';
-import { EXECUTOR_CAPABILITIES, ExecutorError, SessionRegistry, type BrowserExecuteRequest } from './executor.js';
+import { EXECUTOR_CAPABILITIES, ExecutorError, SessionRegistry } from './executor.js';
 import { assertNavigable, createHostGuard, parseAllowlist } from './netguard.js';
+import { nodeResolver } from './node-resolver.js';
+import { startEgressProxy } from './egress-proxy.js';
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const API_KEY = process.env.SCANNER_API_KEY ?? '';
@@ -28,17 +34,24 @@ const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT ?? '3', 10);
 const MAX_SESSIONS = parseInt(process.env.MAX_SESSIONS ?? '20', 10);
 const DEFAULT_TIMEOUT = 30_000;
 const MAX_BODY_BYTES = 1_000_000;
-export const EXECUTOR_VERSION = '2026.09.1';
+export const EXECUTOR_VERSION = '2026.10.1';
 const STARTED_AT = Date.now();
-
-// Nur ausdruecklich administrativ freigegebene private Hosts (z. B. lokale
-// Integrationstests). Leer = keine Ausnahme.
-const hostGuard = createHostGuard(parseAllowlist(process.env.EXECUTOR_PRIVATE_HOST_ALLOWLIST));
 
 if (!API_KEY) {
   console.error('[playwright-scanner] FATAL: SCANNER_API_KEY is required');
   process.exit(1);
 }
+
+// Nur ausdruecklich administrativ freigegebene private Hosts (z. B. lokale
+// Integrationstests). Leer = keine Ausnahme.
+const hostGuard = createHostGuard(parseAllowlist(process.env.EXECUTOR_PRIVATE_HOST_ALLOWLIST), nodeResolver);
+
+// Nur Ereignisart, nie Ziele/URLs (können Eingaben enthalten).
+const logEvent = (event: Record<string, unknown>): void => {
+  console.log('[executor]', JSON.stringify(event));
+};
+
+const egress = await startEgressProxy(hostGuard, { log: logEvent });
 
 // ─── Tracker-Patterns (synchronisiert mit cookie-scan/index.ts) ──────────────
 const TRACKER_PATTERNS = [
@@ -71,11 +84,16 @@ async function getBrowser(): Promise<Browser> {
     browser = await chromium.launch({
       headless: true,
       ...(process.env.EXECUTOR_CHROMIUM_PATH ? { executablePath: process.env.EXECUTOR_CHROMIUM_PATH } : {}),
+      // Gesamter Browser-Verkehr über den Egress-Proxy. Playwright setzt dazu
+      // <-loopback>: auch localhost/127.0.0.1 laufen durch den Proxy.
+      proxy: { server: egress.url },
       args: [
         '--no-sandbox', '--disable-setuid-sandbox',
         '--disable-dev-shm-usage', '--disable-gpu',
         '--disable-extensions', '--disable-background-networking',
         '--disable-sync', '--no-first-run',
+        // WebRTC/UDP am Proxy vorbei (STUN/ICE) unterbinden.
+        '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
       ],
     });
     console.log('[playwright] browser launched');
@@ -83,7 +101,7 @@ async function getBrowser(): Promise<Browser> {
   return browser;
 }
 
-const registry = new SessionRegistry(getBrowser, hostGuard, MAX_SESSIONS);
+const registry = new SessionRegistry(getBrowser, hostGuard, MAX_SESSIONS, undefined, logEvent);
 setInterval(() => { registry.prune().catch(() => undefined); }, 60_000).unref();
 
 // Scan-Kontexte bekommen denselben Netzwerk-Schutz wie Executor-Sessions:
@@ -328,10 +346,13 @@ function send(res: http.ServerResponse, status: number, body: unknown): void {
 
 function sendExecutorError(res: http.ServerResponse, err: unknown): void {
   if (err instanceof ExecutorError) {
-    send(res, err.status, { ok: false, error: err.code });
+    // extra stammt nur aus session-core (current_url bei PAGE_CHANGED,
+    // blocked_origin bei LANDED_ON_BLOCKED_URL) — nie aus Fehlermeldungen.
+    send(res, err.status, { ok: false, error: err.code, ...err.extra });
     return;
   }
-  console.error('[executor] internal error:', err instanceof Error ? err.message : String(err));
+  // Nur der Fehlertyp ins Log: Playwright-Meldungen können Eingaben enthalten.
+  console.error('[executor] internal error:', err instanceof Error ? err.name : typeof err);
   send(res, 500, { ok: false, error: 'INTERNAL' });
 }
 
@@ -368,6 +389,7 @@ const server = http.createServer(async (req, res) => {
       max_sessions: MAX_SESSIONS,
       active_scans: activeSans,
       capabilities: EXECUTOR_CAPABILITIES,
+      network_guard: { route_guard: true, egress_proxy: true, blocked_connections: egress.blockedCount() },
       uptime_seconds: Math.round((Date.now() - STARTED_AT) / 1000),
     });
   }
@@ -399,8 +421,15 @@ const server = http.createServer(async (req, res) => {
     try {
       if (typeof sessionId !== 'string') throw new ExecutorError('INVALID_SESSION');
       const state = await registry.open(sessionId);
-      const page = await registry.pageInfo(state);
-      const frame = await registry.frame(state).catch(() => null);
+      let page = null;
+      let frame = null;
+      try {
+        ({ page, frame } = await state.run(() => state.frame()));
+      } catch (err) {
+        // Kein Bild ist kein Fehler beim Öffnen; eine verlorene Session schon.
+        if (err instanceof ExecutorError && err.code === 'SESSION_NOT_FOUND') throw err;
+        page = await state.run(() => state.pageInfo());
+      }
       return send(res, 200, { ok: true, session_id: sessionId, version: EXECUTOR_VERSION, page, frame });
     } catch (err) {
       return sendExecutorError(res, err);
@@ -410,10 +439,8 @@ const server = http.createServer(async (req, res) => {
   if (path === '/session/frame') {
     try {
       if (typeof sessionId !== 'string') throw new ExecutorError('INVALID_SESSION');
-      const out = await registry.withSession(sessionId, async (state) => ({
-        page: await registry.pageInfo(state),
-        frame: await registry.frame(state),
-      }));
+      const state = registry.get(sessionId);
+      const out = await state.run(() => state.frame());
       return send(res, 200, { ok: true, session_id: sessionId, ...out });
     } catch (err) {
       return sendExecutorError(res, err);
@@ -428,7 +455,7 @@ const server = http.createServer(async (req, res) => {
 
   if (path === '/execute') {
     try {
-      const out = await registry.execute(parsed as BrowserExecuteRequest);
+      const out = await registry.execute(parsed);
       return send(res, 200, { ok: true, session_id: sessionId, ...out });
     } catch (err) {
       return sendExecutorError(res, err);
@@ -491,5 +518,6 @@ process.on('SIGTERM', async () => {
   console.log('[playwright-scanner] SIGTERM received, shutting down...');
   await registry.closeAll().catch(() => undefined);
   if (browser) await browser.close();
+  await egress.close().catch(() => undefined);
   server.close(() => process.exit(0));
 });

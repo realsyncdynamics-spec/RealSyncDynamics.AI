@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --no-audit --no-fund
 
-COPY tsconfig.json server.ts executor.ts netguard.ts ./
+COPY tsconfig.json server.ts executor.ts session-core.ts netguard.ts node-resolver.ts egress-proxy.ts ./
 RUN npm run typecheck
 RUN npm run build
 

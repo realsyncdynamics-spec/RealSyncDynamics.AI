@@ -104,6 +104,28 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
         res.end(DOWNLOAD_BODY);
         return;
       }
+      // Redirect-Hops auf ein privates Ziel — context.route() sieht sie nicht,
+      // der Egress-Proxy schon.
+      if (url.pathname === '/to-private') {
+        res.writeHead(302, { location: `${blockedOrigin}/secret` });
+        res.end();
+        return;
+      }
+      if (url.pathname === '/img-to-private') {
+        res.writeHead(302, { location: `${blockedOrigin}/pixel.png` });
+        res.end();
+        return;
+      }
+      if (url.pathname === '/img-via-redirect') {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<!doctype html><title>Bild</title><img src="/img-to-private" alt="">');
+        return;
+      }
+      if (url.pathname === '/self-redirect') {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<!doctype html><title>Gleich weg</title><script>setTimeout(() => { location.href = "/to-private"; }, 200)</script>');
+        return;
+      }
       res.writeHead(404);
       res.end();
     });
@@ -143,7 +165,9 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
     expect(health.status).toBe('ready');
     expect(health.runtime).toBe('playwright-chromium');
     expect(health.version).toMatch(/^\d{4}\.\d{2}\.\d+$/);
-    expect(health.capabilities).toEqual(expect.arrayContaining(['sessions', 'frame', 'navigate', 'click', 'read_dom', 'download']));
+    expect(health.capabilities).toEqual(expect.arrayContaining([
+      'sessions', 'frame', 'navigate', 'click', 'read_dom', 'download', 'expected_url', 'landing_check',
+    ]));
     expect(health.max_sessions).toBe(3);
 
     const noKey = await fetch(`http://127.0.0.1:${executorPort}/health`);
@@ -220,6 +244,80 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
     }
     await expect(client.execute(sid, { type: 'navigate', url: 'file:///etc/passwd' })).rejects.toMatchObject({ code: 'URL_BLOCKED' });
     expect(blockedHits).toEqual([]);
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('Freigabe an die Seite gebunden: abweichende Live-Seite → PAGE_CHANGED, nichts ausgeführt', async () => {
+    const sid = `rsx_${'h'.repeat(32)}`;
+    await client.openSession(sid);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/` });
+    await expect(client.execute(sid, { type: 'click', selector: '#p2' }, { expectedUrl: `${fixtureOrigin}/page2` }))
+      .rejects.toMatchObject({ code: 'PAGE_CHANGED', details: { current_url: `${fixtureOrigin}/` } });
+    expect((await client.frame(sid)).page?.title).toBe('Fixture'); // Klick lief nicht
+    const bound = await client.execute(sid, { type: 'click', selector: '#p2' }, { expectedUrl: `${fixtureOrigin}/` });
+    expect(bound.page?.title).toBe('Page 2');
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('Fehler verlassen den Executor nur als Codes — nie mit Selektor oder Eingabe', async () => {
+    const sid = `rsx_${'i'.repeat(32)}`;
+    await client.openSession(sid);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/` });
+    const raw = async (action: Record<string, unknown>) => {
+      const r = await fetch(`http://127.0.0.1:${executorPort}/execute`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, actions: [action], require_session: true }),
+      });
+      return await r.text();
+    };
+    const invalid = await raw({ type: 'click', selector: 'div[geheim-selektor' });
+    expect(JSON.parse(invalid).results[0]).toMatchObject({ ok: false, error: 'INVALID_SELECTOR' });
+    expect(invalid).not.toContain('geheim');
+    const missing = await raw({ type: 'type', selector: '#fehlt-xyz', text: 'pin-4711' });
+    expect(JSON.parse(missing).results[0]).toMatchObject({ ok: false, error: 'SELECTOR_NOT_FOUND' });
+    expect(missing).not.toContain('4711');
+    expect(missing).not.toContain('fehlt-xyz');
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('Redirect-Hop auf privates Ziel: Proxy verweigert, Seite zurückgesetzt, Ziel nie kontaktiert', async () => {
+    const sid = `rsx_${'j'.repeat(32)}`;
+    await client.openSession(sid);
+    const nav = await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/to-private` });
+    expect(nav.result).toMatchObject({ ok: false, error: 'LANDED_ON_BLOCKED_URL', url: 'about:blank' });
+    expect(nav.result.verification?.checks).toMatchObject({ landed_blocked: true, blocked_origin: blockedOrigin });
+    expect(nav.page?.url).toBe('about:blank');
+
+    const img = await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/img-via-redirect` });
+    expect(img.result.ok).toBe(true);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(blockedHits).toEqual([]);
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('selbstständige Navigation auf ein privates Ziel: kein Frame davon', async () => {
+    const sid = `rsx_${'k'.repeat(32)}`;
+    await client.openSession(sid);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/self-redirect` });
+    await new Promise((r) => setTimeout(r, 1_500));
+    await expect(client.frame(sid)).rejects.toMatchObject({
+      code: 'URL_BLOCKED', details: { executor_code: 'LANDED_ON_BLOCKED_URL', blocked_origin: blockedOrigin },
+    });
+    const after = await client.frame(sid); // zurückgesetzt, Session lebt
+    expect(after.page?.url).toBe('about:blank');
+    expect(blockedHits).toEqual([]);
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('ungefragte Downloads werden abgebrochen und gezählt', async () => {
+    const sid = `rsx_${'l'.repeat(32)}`;
+    await client.openSession(sid);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/` });
+    const click = await client.execute(sid, { type: 'click', selector: '#dl' });
+    expect(click.result.ok).toBe(true);
+    expect(click.result.verification?.checks.downloads_blocked).toBe(1);
+    expect(click.result.download).toBeUndefined();
     await client.closeSession(sid);
   }, 60_000);
 

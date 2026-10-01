@@ -92,6 +92,11 @@ Deno.serve(async (req) => {
 
   // Formprüfung ohne Wirkung — darf vor der Autorisierung stehen, weil sie
   // weder liest noch schreibt und nichts über fremde Mandanten verrät.
+  // `null`, Zahlen oder Arrays sind gültiges JSON; ohne diese Prüfung würde der
+  // Zugriff auf payload.sessionId werfen statt 400 zu liefern.
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return jsonError(400, 'BAD_REQUEST', 'body must be a JSON object');
+  }
   if (!payload.sessionId || typeof payload.sessionId !== 'string') {
     return jsonError(400, 'BAD_REQUEST', 'sessionId is required');
   }

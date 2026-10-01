@@ -78,6 +78,8 @@ export function EmbeddedBrowserCanvas({
   const [evidenceLogged, setEvidenceLogged] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const startTimeRef = useRef<number>(Date.now());
+  // Verhindert Doppelaufrufe, solange der erste Eintrag noch unterwegs ist.
+  const evidencePendingRef = useRef(false);
 
   const tenant = useCurrentTenant();
   const sessionId = useBrowserSession();
@@ -109,9 +111,11 @@ export function EmbeddedBrowserCanvas({
     setLoading(false);
     setLoadError(false);
 
-    if (!evidenceLogged && tenant?.id && sessionId) {
-      setEvidenceLogged(true);
-      logBrowserAction({
+    if (!evidenceLogged && !evidencePendingRef.current && tenant?.id && sessionId) {
+      // „Protokolliert" erst anzeigen, wenn der Eintrag eine ID hat. Ohne
+      // Sitzung oder bei Fehler liefert logBrowserAction null.
+      evidencePendingRef.current = true;
+      void logBrowserAction({
         tenantId: tenant.id,
         sessionId,
         workflowId,
@@ -128,7 +132,13 @@ export function EmbeddedBrowserCanvas({
           loadSource: 'iframe',
           displayHost: new URL(url).hostname,
         },
-      });
+      })
+        .then((id) => {
+          if (id) setEvidenceLogged(true);
+        })
+        .finally(() => {
+          evidencePendingRef.current = false;
+        });
     }
   };
 

@@ -59,6 +59,18 @@ describe('browser-action-log: Autorisierung findet statt', () => {
   });
 });
 
+describe('browser-action-log: Body muss ein Objekt sein', () => {
+  it('lehnt null, Zahlen und Arrays mit 400 ab, bevor Felder gelesen werden', () => {
+    const guard = code.indexOf("typeof payload !== 'object'");
+    expect(guard, 'Objektpruefung fehlt').toBeGreaterThan(-1);
+    expect(code).toContain('Array.isArray(payload)');
+    const ersterFeldzugriff = code.indexOf('payload.sessionId');
+    expect(ersterFeldzugriff).toBeGreaterThan(-1);
+    expect(guard, 'Feldzugriff vor der Objektpruefung').toBeLessThan(ersterFeldzugriff);
+    expect(code).toContain("jsonError(400, 'BAD_REQUEST', 'body must be a JSON object')");
+  });
+});
+
 describe('browser-action-log: Autorisierung steht vor dem Write', () => {
   function autorisierungAn(): number {
     const i = code.indexOf('requireAuthAndTenant(req,');
@@ -139,5 +151,15 @@ describe('EmbeddedBrowserCanvas: sendet die Sitzung mit und keinen Akteur', () =
 
   it('benennt keinen Akteur im Body', () => {
     expect(canvas).not.toMatch(/actorId/);
+  });
+
+  it('meldet „protokolliert" erst, wenn der Eintrag eine ID hat', () => {
+    // Vorher stand setEvidenceLogged(true) vor dem Aufruf: ohne Sitzung zeigte
+    // die Vorschau „✓ protokolliert", obwohl nichts geschrieben wurde.
+    const handleLoad = canvas.slice(canvas.indexOf('const handleLoad'), canvas.indexOf('const handleError'));
+    expect(handleLoad).toContain('logBrowserAction(');
+    expect(handleLoad).toMatch(/\.then\(\(id\)\s*=>\s*\{\s*if \(id\) setEvidenceLogged\(true\)/);
+    const vorAufruf = handleLoad.slice(0, handleLoad.indexOf('logBrowserAction('));
+    expect(vorAufruf).not.toContain('setEvidenceLogged(true)');
   });
 });

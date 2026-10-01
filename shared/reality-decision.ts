@@ -146,7 +146,7 @@ export const ACTION_MAP: Readonly<Record<string, ActionMapping>> = Object.freeze
   },
   sub_imprint_no_contact: {
     track: 'govern',
-    impact: 'Kein unmittelbarer Kontaktweg im Impressum — Pflicht nach § 5 Abs. 1 Nr. 2 TMG, und für Interessenten eine Hürde.',
+    impact: 'Kein unmittelbarer Kontaktweg im Impressum — Pflicht nach § 5 DDG, und für Interessenten eine Hürde.',
     action: 'E-Mail-Adresse und Telefonnummer im Impressum nennen.',
     module: 'governance_core',
   },

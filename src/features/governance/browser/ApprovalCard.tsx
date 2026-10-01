@@ -4,14 +4,16 @@ import { Check, Clock, LockKeyhole, X } from 'lucide-react';
 import type { PendingApproval } from './useBrowserRuntime';
 import { describeRedacted } from './runtimeText';
 
+// Freigabe-Status (governance_approvals) plus 'consumed': eingelöst laut
+// browser_executions (#1728) — z. B. in einem anderen Tab. Ausgeführt/
+// fehlgeschlagen ist kein Freigabe-Status mehr.
 const STATUS_TEXT: Record<string, string> = {
   pending: 'wartet auf Freigabe',
   approved: 'freigegeben — noch nicht ausgeführt',
   rejected: 'abgelehnt',
   expired: 'abgelaufen',
   cancelled: 'zurückgezogen',
-  executed: 'ausgeführt',
-  failed: 'Ausführung fehlgeschlagen',
+  consumed: 'bereits eingelöst — nicht erneut ausführbar',
 };
 
 function remaining(expiresAt: string, now: number): string {
@@ -77,7 +79,8 @@ export function ApprovalCard({
       </div>
       <p className="mt-2 break-words text-xs text-titanium-200">{describeRedacted(redactedView(approval.action))}</p>
       <p className="mt-1 text-[10px] text-titanium-500">
-        Einmalig gültig, gebunden an diese Session und die aktuell geöffnete Seite. Die Aktion wurde nicht ausgeführt.
+        Einmalig gültig, gebunden an diese Session und die aktuell geöffnete Seite.
+        {(pending || approved) && ' Die Aktion wurde noch nicht ausgeführt.'}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -99,8 +102,9 @@ export function ApprovalCard({
             Freigegebene Aktion ausführen
           </button>
         )}
-        {pending && (
-          <button type="button" disabled={busy} onClick={() => void onCancel()} className="border border-titanium-800 px-3 py-1.5 text-xs text-titanium-300 disabled:opacity-45">
+        {(pending || approved) && (
+          // Zurückziehen bis zur Einlösung — auch eine erteilte, unbenutzte Freigabe.
+          <button type="button" disabled={busy} onClick={() => void onCancel()} className="border border-titanium-800 px-3 py-1.5 text-xs text-titanium-300 disabled:opacity-45" data-testid="withdraw-approval">
             Zurückziehen
           </button>
         )}

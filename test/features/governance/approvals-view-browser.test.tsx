@@ -3,8 +3,9 @@
  *
  * Die Queue zeigt, WAS freigegeben wird: Aktion (redigiert — eingegebener
  * Text nie im Klartext), Seite, Policy mit Version und die Bindung an genau
- * eine Session. Entscheiden gibt es nur auf offenen Einträgen; die neuen
- * Endzustände (ausgeführt, fehlgeschlagen, zurückgezogen) sind filterbar.
+ * eine Session. Entscheiden gibt es nur auf offenen Einträgen. Ausgeführt/
+ * fehlgeschlagen ist kein Freigabe-Status: die Einlösung kommt aus
+ * browser_executions (#1728) und steht je Eintrag als Ausführungs-Hinweis.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -45,8 +46,7 @@ function browserApproval(over: Record<string, unknown> = {}) {
     created_at: new Date().toISOString(),
     requested_by: 'u-1',
     browser_session_id: SESSION,
-    consumed_at: null,
-    executed_at: null,
+    execution: null,
     event: {
       id: 'ev-1',
       title: 'Browser-Aktion wartet auf Freigabe: type',
@@ -113,21 +113,59 @@ describe('Approval-Queue · Browser-Aktionen', () => {
     renderView();
     await screen.findByText('Keine offenen Freigaben.');
 
-    for (const label of ['Ausgeführt', 'Fehlgeschlagen', 'Zurückgezogen', 'Abgelaufen']) {
+    for (const label of ['Genehmigt', 'Abgelehnt', 'Zurückgezogen', 'Abgelaufen']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy();
     }
+    // Kein eigener Freigabe-Status mehr — Ausführung steht in browser_executions.
+    expect(screen.queryByRole('button', { name: 'Ausgeführt' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fehlgeschlagen' })).toBeNull();
 
     const executedAt = '2026-09-29T10:05:00.000Z';
     api.listApprovals.mockResolvedValueOnce({
       ok: true,
-      approvals: [browserApproval({ status: 'executed', consumed_at: executedAt, executed_at: executedAt, resolved_at: executedAt })],
+      approvals: [browserApproval({
+        status: 'approved',
+        resolved_at: executedAt,
+        execution: { id: 'ex-1', status: 'executed', reserved_at: executedAt, finished_at: executedAt, detail: null },
+      })],
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Ausgeführt' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Genehmigt' }));
 
-    await waitFor(() => expect(api.listApprovals).toHaveBeenLastCalledWith(TENANT, 'executed'));
-    const details = await screen.findByTestId('approval-browser-details');
-    expect(details.textContent).toContain('Ausgeführt');
+    await waitFor(() => expect(api.listApprovals).toHaveBeenLastCalledWith(TENANT, 'approved'));
+    const execution = await screen.findByTestId('approval-execution');
+    expect(execution.textContent).toContain('Ausgeführt');
+    expect(screen.queryByText(/die Ausführung startet der Anfragende/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Genehmigen/ })).toBeNull();
+  });
+
+  it('Einlösung ohne Erfolg: verbraucht, mit Grund — nie als ausführbar', async () => {
+    api.listApprovals.mockResolvedValueOnce({ ok: true, approvals: [] });
+    renderView();
+    await screen.findByText('Keine offenen Freigaben.');
+
+    api.listApprovals.mockResolvedValueOnce({
+      ok: true,
+      approvals: [
+        browserApproval({
+          id: 'ap-2',
+          status: 'approved',
+          execution: { id: 'ex-2', status: 'executor_failed', reserved_at: '2026-09-29T10:00:00.000Z', finished_at: '2026-09-29T10:00:01.000Z', detail: 'not_executed:page_changed' },
+        }),
+        browserApproval({
+          id: 'ap-3',
+          status: 'approved',
+          execution: { id: 'ex-3', status: 'executed_unrecorded', reserved_at: '2026-09-29T10:00:00.000Z', finished_at: '2026-09-29T10:00:01.000Z', detail: 'governance evidence' },
+        }),
+      ],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Genehmigt' }));
+    const notes = await screen.findAllByTestId('approval-execution');
+    expect(notes.map((n) => n.textContent)).toEqual([
+      expect.stringContaining('Nicht ausgeführt — Freigabe verbraucht'),
+      expect.stringContaining('Nachweis fehlt — manuell prüfen'),
+    ]);
+    expect(notes[0].textContent).toContain('not_executed:page_changed');
+    expect(screen.queryByText(/die Ausführung startet der Anfragende/)).toBeNull();
   });
 
   it('freigegeben, aber noch nicht verbraucht: Hinweis, dass der Anfragende ausführt', async () => {

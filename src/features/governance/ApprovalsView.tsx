@@ -8,7 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
   listApprovals, approveApproval, rejectApproval,
-  type Approval, type ApprovalStatus, type BrowserActionPayload,
+  type Approval, type ApprovalExecution, type ApprovalStatus, type BrowserActionPayload,
 } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
@@ -28,11 +28,11 @@ export const ApprovalsView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
+// Ausgeführt/fehlgeschlagen ist kein Freigabe-Status: die Einlösung steht
+// in browser_executions und erscheint je Eintrag als Ausführungs-Hinweis.
 const FILTERS: Array<{ key: ApprovalStatus; label: string }> = [
   { key: 'pending',   label: 'Offen' },
   { key: 'approved',  label: 'Genehmigt' },
-  { key: 'executed',  label: 'Ausgeführt' },
-  { key: 'failed',    label: 'Fehlgeschlagen' },
   { key: 'rejected',  label: 'Abgelehnt' },
   { key: 'cancelled', label: 'Zurückgezogen' },
   { key: 'expired',   label: 'Abgelaufen' },
@@ -301,11 +301,44 @@ function BrowserActionDetails({ approval }: { approval: Approval }) {
       <div className="mt-1 text-[11px] text-titanium-500">
         Einmalig gültig, gebunden an Session {payload.browser_session_id?.slice(0, 8) ?? '—'} und diese Seite.
         {approval.status === 'pending' && <span className="ml-1 font-mono text-amber-300">{expiresIn(approval.expires_at)}</span>}
-        {approval.executed_at && <span className="ml-1">Ausgeführt {new Date(approval.executed_at).toLocaleString('de-DE')}.</span>}
       </div>
-      {approval.status === 'approved' && !approval.consumed_at && (
+      {approval.execution && <ExecutionNote execution={approval.execution} />}
+      {approval.status === 'approved' && !approval.execution && (
         <div className="mt-1 text-[11px] text-cyan-300">Freigegeben — die Ausführung startet der Anfragende in der Browser-Runtime.</div>
       )}
+    </div>
+  );
+}
+
+/** Einlösung aus browser_executions — genau einmal je Freigabe. */
+function executionLabel(execution: ApprovalExecution): { text: string; tone: 'ok' | 'warn' | 'bad' | 'neutral' } {
+  switch (execution.status) {
+    case 'reserved':
+      return { text: 'Eingelöst — Ausführung läuft oder wurde nicht abgeschlossen', tone: 'warn' };
+    case 'executed':
+      return execution.detail === 'landed_on_blocked_url'
+        ? { text: 'Ausgeführt — danach auf gesperrter Adresse gelandet, Session geschlossen', tone: 'warn' }
+        : { text: 'Ausgeführt', tone: 'ok' };
+    case 'executed_unrecorded':
+      return { text: 'Ausgeführt, Nachweis fehlt — manuell prüfen', tone: 'bad' };
+    case 'executor_failed':
+      return execution.detail?.startsWith('not_executed')
+        ? { text: 'Nicht ausgeführt — Freigabe verbraucht', tone: 'neutral' }
+        : { text: 'Ausführung fehlgeschlagen — Freigabe verbraucht', tone: 'bad' };
+    default:
+      return { text: 'Unbekannter Ausführungsstatus', tone: 'neutral' };
+  }
+}
+
+function ExecutionNote({ execution }: { execution: ApprovalExecution }) {
+  const { text, tone } = executionLabel(execution);
+  const cls = tone === 'ok' ? 'text-emerald-300' : tone === 'warn' ? 'text-amber-300' : tone === 'bad' ? 'text-red-300' : 'text-titanium-300';
+  const at = execution.finished_at ?? execution.reserved_at;
+  return (
+    <div className={`mt-1 text-[11px] ${cls}`} data-testid="approval-execution">
+      {text}
+      {at && <span className="ml-1 text-titanium-500">· {new Date(at).toLocaleString('de-DE')}</span>}
+      {execution.detail && <span className="ml-1 font-mono text-titanium-500">· {execution.detail}</span>}
     </div>
   );
 }

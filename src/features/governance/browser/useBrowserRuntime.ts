@@ -143,6 +143,13 @@ export function useBrowserRuntime(tenantId: string | null, userId: string | null
       if (error instanceof BrowserExecutorError && (error.code === 'SESSION_NOT_FOUND' || error.code === 'SESSION_EXPIRED')) {
         setSession((s) => (s ? { ...s, status: 'closed' } : s));
       }
+      if (error instanceof BrowserExecutorError && error.code === 'URL_BLOCKED') {
+        // Seite stand auf einer gesperrten Adresse: kein Bild, Session zu,
+        // offene Freigaben dieser Session serverseitig zurückgezogen.
+        setSession((s) => (s ? { ...s, status: 'failed' } : s));
+        setFrame(null);
+        setPendingApproval(null);
+      }
     }
   }, [tenantId, session, client]);
 
@@ -152,14 +159,16 @@ export function useBrowserRuntime(tenantId: string | null, userId: string | null
     return () => clearInterval(timer);
   }, [session, refreshFrame]);
 
-  // Offene Freigabe beobachten.
+  // Offene Freigabe beobachten. Eingelöst (browser_executions) heißt: in
+  // einem anderen Tab ausgeführt oder verbraucht — hier nicht mehr ausführbar.
   useEffect(() => {
     if (!tenantId || !pendingApproval || pendingApproval.status !== 'pending') return;
     const timer = setInterval(async () => {
       if (!visible()) return;
       try {
         const { approval } = await client.getApprovalStatus({ tenantId, approvalId: pendingApproval.id });
-        setPendingApproval((p) => (p && p.id === approval.id ? { ...p, status: approval.status } : p));
+        const status = approval.execution ? 'consumed' : approval.status;
+        setPendingApproval((p) => (p && p.id === approval.id ? { ...p, status } : p));
       } catch { /* nächster Versuch */ }
     }, APPROVAL_POLL_MS);
     return () => clearInterval(timer);
@@ -206,11 +215,20 @@ export function useBrowserRuntime(tenantId: string | null, userId: string | null
           });
           setSession((s) => (s ? { ...s, status: 'awaiting_approval' } : s));
         }
-        if (['APPROVAL_DENIED', 'APPROVAL_EXPIRED', 'APPROVAL_ALREADY_USED', 'APPROVAL_MISMATCH', 'APPROVAL_NOT_FOUND'].includes(error.code)) {
+        const consumed = (error.details as { approval_consumed?: unknown } | undefined)?.approval_consumed === true;
+        if (consumed || ['APPROVAL_DENIED', 'APPROVAL_EXPIRED', 'APPROVAL_ALREADY_USED', 'APPROVAL_MISMATCH', 'APPROVAL_NOT_FOUND'].includes(error.code)) {
+          // Verbraucht (reserviert vor dem Executor, #1728) oder ungültig:
+          // nie als „ausführbar“ stehen lassen.
           setPendingApproval(null);
         }
         if (error.code === 'SESSION_NOT_FOUND' || error.code === 'SESSION_EXPIRED') {
           setSession((s) => (s ? { ...s, status: 'closed' } : s));
+        }
+        if (error.code === 'URL_BLOCKED' && (error.details as { reason?: unknown } | undefined)?.reason === 'LANDED_ON_NON_PUBLIC_URL') {
+          // Server hat die Session aus Sicherheitsgründen geschlossen.
+          setSession((s) => (s ? { ...s, status: 'failed' } : s));
+          setFrame(null);
+          setPendingApproval(null);
         }
       }
       throw error;
@@ -255,9 +273,15 @@ export function useBrowserRuntime(tenantId: string | null, userId: string | null
 
   const cancelPendingApproval = useCallback(async () => {
     if (!tenantId || !pendingApproval) return;
-    await client.cancelApproval({ tenantId, approvalId: pendingApproval.id });
+    const out = await client.cancelApproval({ tenantId, approvalId: pendingApproval.id });
+    if (out.outcome === 'already_resolved') {
+      // Zwischenzeitlich entschieden oder schon eingelöst — Stand vom Server holen.
+      const { approval } = await client.getApprovalStatus({ tenantId, approvalId: pendingApproval.id });
+      setPendingApproval((p) => (p && p.id === approval.id ? { ...p, status: approval.execution ? 'consumed' : approval.status } : p));
+      return;
+    }
     setPendingApproval(null);
-    setSession((s) => (s ? { ...s, status: 'ready' } : s));
+    setSession((s) => (s && s.status === 'awaiting_approval' ? { ...s, status: 'ready' } : s));
   }, [tenantId, pendingApproval, client]);
 
   const markApproval = useCallback((status: string) => {

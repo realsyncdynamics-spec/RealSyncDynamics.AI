@@ -17,11 +17,11 @@
       "aktion": "Browser-Session öffnen (Assist, Co-Pilot, Autonom)",
       "handler": "src/features/governance/browser/useBrowserRuntime.ts",
       "backend": "src/features/governance/browser/browserExecutorClient.ts",
-      "persistenz": "browser_sessions, browser_actions, governance_evidence (Migration 20260929100000)",
+      "persistenz": "browser_sessions, browser_actions, governance_evidence (Migration 20261001100000, setzt auf browser_executions aus 20260930190000 auf)",
       "entitlement": "ai.tool.automations serverseitig in browser-execute; Co-Pilot und Autonom nur ueber serverseitige Capabilities (can_copilot/can_autonomous mit reasons[])",
       "status": "BLOCKED",
-      "luecke": "Infrastruktur fehlt: In Production sind PLAYWRIGHT_SCANNER_URL und PLAYWRIGHT_SCANNER_KEY nicht gesetzt; browser-execute meldet EXECUTOR_NOT_CONFIGURED, die Session-Anlage endet fail-closed mit EXECUTOR_OFFLINE. Der bisherige Executor-Host (Hostinger-VPS) laeuft am 2026-10-04 aus, die Host-Entscheidung ist offen. Migration 20260929100000 ist nicht auf Production angewendet, der Branch ist nicht deployt.",
-      "beleg": "supabase/functions/browser-execute/handler.ts: session_create prueft Rolle, Entitlement (:250), Capabilities, Executor-Health (:306 EXECUTOR_OFFLINE), Evidence-Store und hoechstens 3 offene Sessions und schreibt browser.session.opened als gekettete Evidence (:1083). Tests: test/browser-runtime/handler.test.ts, test/executor/executor-chromium.test.ts (echtes Chromium, lokal), test/runtime/db/browser-runtime-sessions.db.test.ts.",
+      "luecke": "Infrastruktur fehlt: In Production sind PLAYWRIGHT_SCANNER_URL und PLAYWRIGHT_SCANNER_KEY nicht gesetzt; browser-execute meldet EXECUTOR_NOT_CONFIGURED, die Session-Anlage endet fail-closed mit EXECUTOR_OFFLINE. Der bisherige Executor-Host (Hostinger-VPS) laeuft am 2026-10-04 aus; entschieden ist Cloudflare Browser Run (Worker + Durable Object, gleicher HTTP-Vertrag), noch nicht gebaut/deployt. Migration 20261001100000 ist nicht auf Production angewendet, der Branch ist nicht deployt.",
+      "beleg": "supabase/functions/browser-execute/handler.ts: session_create prueft Rolle, Entitlement (:376), Capabilities, Executor-Health (EXECUTOR_OFFLINE), Evidence-Store und hoechstens 3 offene Sessions (DB-Trigger browser_sessions_enforce_open_limit mit Advisory-Lock) und schreibt browser.session.opened als gekettete Evidence (:442). Tests: test/browser-runtime/handler.test.ts, test/executor/executor-chromium.test.ts (echtes Chromium, lokal), test/runtime/db/browser-runtime-sessions.db.test.ts.",
       "seit": "2026-09-29"
     },
     {
@@ -31,11 +31,11 @@
       "aktion": "Browser-Aktion ausfuehren (Navigate, Scroll, Click, Type, Select, Submit, Extract, Screenshot, Download …)",
       "handler": "src/features/governance/browser/useBrowserRuntime.ts",
       "backend": "src/features/governance/browser/browserExecutorClient.ts",
-      "persistenz": "browser_actions, governance_events, governance_approvals, browser_approval_bindings, governance_evidence",
+      "persistenz": "browser_actions, governance_events, governance_approvals, browser_executions, governance_evidence",
       "entitlement": "ai.tool.automations serverseitig; Policy rsd.browser.baseline plus Tenant-PDP; click/type/select/submit/upload und download nur mit einmaliger, an Session, Seite und Aktion gebundener Freigabe (owner/admin)",
       "status": "BLOCKED",
       "luecke": "Wie browser.session.open: Ohne konfigurierten Executor gibt es keine Session und damit keine Aktion. Upload bleibt gesperrt (FILE_SOURCE_NOT_CONFIGURED), bis es eine serverseitige Dateiquelle gibt. Nicht deployt, Migration nicht auf Production.",
-      "beleg": "supabase/functions/browser-execute/handler.ts: act → evaluateBrowserAction (:486), DENY mit Evidence (:538), REQUIRE_APPROVAL mit Freigabe und Bindung (:645), atomarer Verbrauch per RPC consume_browser_approval (:719), Intent-Evidence vor jeder Mutation (:750), Ergebnis-Evidence (:874). Tests: test/browser-runtime/handler.test.ts, test/runtime/db/browser-runtime-sessions.db.test.ts (Wettlauf zweier Verbindungen).",
+      "beleg": "supabase/functions/browser-execute/handler.ts: act → evaluateBrowserAction (:576), DENY mit Evidence (:613), REQUIRE_APPROVAL mit Freigabe und HMAC-Fingerprint in requested_action (:726), einmalige Einloesung per RPC reserve_browser_execution vor dem Executor (:813), Intent-Evidence vor jeder Mutation (:853), Ergebnis-Evidence (:1034), Abschluss per finish_browser_execution vor ok. Executor: Seitenbindung (expected_url → PAGE_CHANGED), Landepruefung und Egress-Proxy (deploy/playwright-scanner/session-core.ts, egress-proxy.ts). Tests: test/browser-runtime/handler.test.ts, test/executor/executor-chromium.test.ts, test/runtime/db/browser-runtime-sessions.db.test.ts.",
       "seit": "2026-09-29"
     },
     {
@@ -48,8 +48,8 @@
       "persistenz": "governance_approvals, governance_evidence",
       "entitlement": "Rolle owner/admin serverseitig (supabase/functions/governance-approvals/resolve.ts)",
       "status": "PARTIAL",
-      "luecke": "Die gehaertete Fassung (bedingtes Update nur aus pending, Ablaufpruefung, gekettete Evidence, Freigabe der wartenden Browser-Session bei Ablehnung) liegt nur auf dem Branch; Production fuehrt die alte Function ohne Ablaufpruefung und ohne Kettenhash. Kein Realtime — die Queue pollt offene Freigaben alle 15 s.",
-      "beleg": "supabase/functions/governance-approvals/resolve.ts: resolveApproval (:54) prueft Rolle, ALREADY_RESOLVED (:66), APPROVAL_EXPIRED (:71), gleichzeitige Entscheidung (:81) und schreibt gekettete Evidence (:85). Tests: test/edge/governance-approvals-resolve.test.ts, test/features/governance/approvals-view-browser.test.tsx.",
+      "luecke": "Die gehaertete Fassung (Entscheidung und gekettete Evidence atomar per RPC decide_governance_approval, Ablaufpruefung nach Datenbankuhr, Freigabe der wartenden Browser-Session bei Ablehnung) liegt nur auf dem Branch; Production fuehrt die alte Function ohne Ablaufpruefung und ohne Kettenhash. Kein Realtime — die Queue pollt offene Freigaben alle 15 s.",
+      "beleg": "supabase/functions/governance-approvals/resolve.ts: resolveApproval (:51) prueft Rolle (:60), ALREADY_RESOLVED (:63), entscheidet mit Evidence in einer Transaktion (decideWithEvidence :69, RPC decide_governance_approval), APPROVAL_EXPIRED (:110). Tests: test/edge/governance-approvals-resolve.test.ts, test/features/governance/approvals-view-browser.test.tsx.",
       "seit": "2026-09-29"
     },
     {

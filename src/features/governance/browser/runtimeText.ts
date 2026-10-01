@@ -3,6 +3,7 @@
  * Technische Details bleiben im Function-Log; hier nur, was Nutzer brauchen.
  */
 import { BrowserExecutorError, type BrowserExecutorAction, type ExecutorStatus, type SessionStatus } from './browserExecutorClient';
+import { consumedApprovalMessage } from './consumedApproval';
 
 export const CAPABILITY_REASON_TEXT: Record<string, string> = {
   TENANT_NOT_VERIFIED: 'Mandant nicht über eine Mitgliedschaft bestätigt',
@@ -71,6 +72,8 @@ const ERROR_TEXT: Record<string, string> = {
   APPROVAL_ALREADY_USED: 'Diese Freigabe wurde bereits verwendet.',
   APPROVAL_MISMATCH: 'Die Freigabe passt nicht zu dieser Aktion oder Seite.',
   APPROVAL_NOT_FOUND: 'Freigabe nicht gefunden.',
+  PAGE_CHANGED: 'Die Seite hat sich seit der Freigabe geändert — nichts ausgeführt. Bitte für die aktuelle Seite neu anfordern.',
+  RESERVATION_UNAVAILABLE: 'Die Freigabe konnte gerade nicht eingelöst werden — nichts ausgeführt, Freigabe nicht verbraucht. Bitte erneut versuchen.',
   ACTION_NOT_SUPPORTED: 'Diese Aktion wird nicht unterstützt.',
   VALIDATION_FAILED: 'Die Eingaben sind ungültig.',
   URL_BLOCKED: 'Ziel blockiert: private Netze, lokale Adressen, Metadaten-Endpunkte und Nicht-HTTP-Schemata sind gesperrt.',
@@ -95,9 +98,22 @@ export function runtimeErrorText(error: unknown): string {
   if (error.code === 'ACTION_NOT_SUPPORTED' && details.reason === 'FILE_SOURCE_NOT_CONFIGURED') {
     return 'Upload braucht eine mandantengebundene Dateiquelle — noch nicht eingerichtet.';
   }
-  if (error.code === 'EVIDENCE_WRITE_FAILED' && details.executed === true) {
+  if (error.code === 'PAGE_CHANGED') {
+    return details.approval_consumed === true
+      ? `${ERROR_TEXT.PAGE_CHANGED} Die alte Freigabe ist verbraucht.`
+      : ERROR_TEXT.PAGE_CHANGED;
+  }
+  if (error.code === 'URL_BLOCKED' && details.reason === 'LANDED_ON_NON_PUBLIC_URL') {
+    return details.action_executed === true
+      ? 'Die Aktion lief, danach landete die Seite auf einer gesperrten Adresse (z. B. internes Netz). Sie wurde zurückgesetzt, die Session aus Sicherheitsgründen geschlossen.'
+      : 'Die Seite stand auf einer gesperrten Adresse (z. B. internes Netz) und wurde zurückgesetzt — nichts ausgeführt, die Session ist aus Sicherheitsgründen geschlossen.';
+  }
+  if (error.code === 'EVIDENCE_WRITE_FAILED' && details.action_executed === true && details.approval_consumed !== true) {
     return 'Die Aktion lief, ihr Nachweis fehlt — die Session ist pausiert und muss geprüft werden.';
   }
+  // Freigabe verbraucht (Reservierung vor dem Executor, #1728): eigener Hinweis.
+  const consumed = consumedApprovalMessage(error);
+  if (consumed) return consumed;
   if (error.code === 'POLICY_DENIED' && error.message && !/^[A-Z_]+$/.test(error.message)) {
     return `Von der Policy abgelehnt: ${error.message}`;
   }

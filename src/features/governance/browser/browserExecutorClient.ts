@@ -244,16 +244,42 @@ export async function runGovernedAction(input: {
   }) as Promise<ActResponse>;
 }
 
-export async function getApprovalStatus(input: { tenantId: string; approvalId: string }): Promise<{
-  approval: { id: string; status: string; expires_at: string; resolved_at: string | null; consumed_at: string | null; executed_at: string | null; event_id: string };
-}> {
+/** Einlösung einer Freigabe (browser_executions, #1728); null = nie eingelöst. */
+export interface ApprovalExecutionState {
+  status: 'reserved' | 'executed' | 'executed_unrecorded' | 'executor_failed';
+  reserved_at: string;
+  finished_at: string | null;
+  detail: string | null;
+}
+
+export interface ApprovalStatusView {
+  id: string;
+  status: string;
+  expires_at: string;
+  resolved_at: string | null;
+  event_id: string;
+  execution: ApprovalExecutionState | null;
+}
+
+export async function getApprovalStatus(input: { tenantId: string; approvalId: string }): Promise<{ approval: ApprovalStatusView }> {
   return invokeBrowserExecutor({ op: 'approval_status', tenant_id: input.tenantId, approval_id: input.approvalId }) as Promise<{
-    approval: { id: string; status: string; expires_at: string; resolved_at: string | null; consumed_at: string | null; executed_at: string | null; event_id: string };
+    approval: ApprovalStatusView;
   }>;
 }
 
-export async function cancelApproval(input: { tenantId: string; approvalId: string }): Promise<{ cancelled: boolean }> {
-  return invokeBrowserExecutor({ op: 'approval_cancel', tenant_id: input.tenantId, approval_id: input.approvalId }) as Promise<{ cancelled: boolean }>;
+/** Zurückziehen bis zur Einlösung (offen oder freigegeben-und-unbenutzt); gekettete Evidence serverseitig. */
+export async function cancelApproval(input: { tenantId: string; approvalId: string }): Promise<{
+  cancelled: boolean;
+  outcome?: 'decided' | 'already_resolved' | 'expired' | 'not_found';
+  approval_status?: string | null;
+  evidence_id?: string | null;
+}> {
+  return invokeBrowserExecutor({ op: 'approval_cancel', tenant_id: input.tenantId, approval_id: input.approvalId }) as Promise<{
+    cancelled: boolean;
+    outcome?: 'decided' | 'already_resolved' | 'expired' | 'not_found';
+    approval_status?: string | null;
+    evidence_id?: string | null;
+  }>;
 }
 
 export async function killAllBrowserSessions(input: { tenantId: string }): Promise<{ closed_sessions: number; cancelled_approvals: number }> {

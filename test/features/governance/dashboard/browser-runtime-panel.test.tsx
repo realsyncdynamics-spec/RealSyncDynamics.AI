@@ -184,7 +184,7 @@ describe('Executor bereit', () => {
 
     const card = await screen.findByTestId('browser-approval-card');
     expect(card).toHaveAttribute('data-approval-status', 'pending');
-    expect(card).toHaveTextContent('Die Aktion wurde nicht ausgeführt');
+    expect(card).toHaveTextContent('Die Aktion wurde noch nicht ausgeführt');
     expect(api.runGovernedAction).toHaveBeenCalledTimes(1);
 
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Freigeben/ })); });
@@ -207,6 +207,62 @@ describe('Executor bereit', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Governed Action ausführen/ })); });
     expect(await screen.findByText(/Ziel blockiert: private Netze/)).toBeInTheDocument();
     expect(screen.queryByText(/PRIVATE_NETWORK_BLOCKED/)).not.toBeInTheDocument();
+  });
+
+  async function requestApproval() {
+    api.runGovernedAction.mockRejectedValueOnce(new BrowserExecutorError('this action requires human approval', 'APPROVAL_REQUIRED', 409, {
+      approval_id: 'ap-9', expires_at: '2099-01-01T00:00:00.000Z',
+      pipeline: [{ step: 'requested', state: 'done' }, { step: 'policy', state: 'done' }, { step: 'approval', state: 'pending' }],
+    }));
+    renderPanel();
+    await screen.findByTestId('browser-session-preview');
+    fireEvent.change(screen.getByLabelText('Aktion'), { target: { value: 'click' } });
+    fireEvent.change(screen.getByLabelText('Selector'), { target: { value: '#accept' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Governed Action ausführen/ })); });
+    await screen.findByTestId('browser-approval-card');
+  }
+
+  it('Seite geändert: verbrauchte Freigabe verschwindet, Meldung erklärt warum', async () => {
+    api.getBrowserRuntimeCapabilities.mockResolvedValue(capabilities('ready'));
+    api.listBrowserSessions.mockResolvedValue({ sessions: [SESSION] });
+    api.approveApproval.mockResolvedValue({ ok: true, status: 'approved' });
+    await requestApproval();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Freigeben/ })); });
+    api.runGovernedAction.mockRejectedValueOnce(new BrowserExecutorError('the live page differs', 'PAGE_CHANGED', 409, {
+      approval_consumed: true, action_executed: false, current_url: 'https://example.com/anders',
+    }));
+    await act(async () => { fireEvent.click(await screen.findByTestId('execute-approved-action')); });
+    expect(await screen.findByText(/Die Seite hat sich seit der Freigabe geändert — nichts ausgeführt/)).toBeInTheDocument();
+    expect(screen.getByText(/alte Freigabe ist verbraucht/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('browser-approval-card')).not.toBeInTheDocument());
+  });
+
+  it('Landung auf gesperrter Adresse: Session als fehlgeschlagen, verständliche Meldung', async () => {
+    api.getBrowserRuntimeCapabilities.mockResolvedValue(capabilities('ready'));
+    api.listBrowserSessions.mockResolvedValue({ sessions: [SESSION] });
+    api.runGovernedAction.mockRejectedValueOnce(new BrowserExecutorError('the page ended up on a non-public address; session closed', 'URL_BLOCKED', 403, {
+      reason: 'LANDED_ON_NON_PUBLIC_URL', action_executed: true, blocked_origin: 'http://10.0.0.1',
+    }));
+    renderPanel();
+    await screen.findByTestId('browser-session-preview');
+    fireEvent.change(screen.getByLabelText('Aktion'), { target: { value: 'navigate' } });
+    fireEvent.change(screen.getByLabelText('URL'), { target: { value: 'https://example.com/weiter' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Governed Action ausführen/ })); });
+    expect(await screen.findByText(/danach landete die Seite auf einer gesperrten Adresse/)).toBeInTheDocument();
+    expect(screen.queryByText(/LANDED_ON_NON_PUBLIC_URL/)).not.toBeInTheDocument();
+  });
+
+  it('erteilte, unbenutzte Freigabe lässt sich zurückziehen', async () => {
+    api.getBrowserRuntimeCapabilities.mockResolvedValue(capabilities('ready'));
+    api.listBrowserSessions.mockResolvedValue({ sessions: [SESSION] });
+    api.approveApproval.mockResolvedValue({ ok: true, status: 'approved' });
+    api.cancelApproval.mockResolvedValue({ cancelled: true, outcome: 'decided', approval_status: 'cancelled', evidence_id: 'ev-c' });
+    await requestApproval();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Freigeben/ })); });
+    await screen.findByTestId('execute-approved-action');
+    await act(async () => { fireEvent.click(screen.getByTestId('withdraw-approval')); });
+    expect(api.cancelApproval).toHaveBeenCalledWith({ tenantId: TENANT, approvalId: 'ap-9' });
+    await waitFor(() => expect(screen.queryByTestId('browser-approval-card')).not.toBeInTheDocument());
   });
 
   it('Upload bleibt mit konkretem Grund gesperrt', async () => {

@@ -46,14 +46,22 @@ function portKey(port: number): string {
   return port === 80 || port === 443 ? '' : String(port);
 }
 
-function filterHeaders(headers: http.IncomingHttpHeaders): http.OutgoingHttpHeaders {
-  const out: http.OutgoingHttpHeaders = {};
-  for (const [name, value] of Object.entries(headers)) {
-    if (value === undefined || HOP_BY_HOP.has(name)) continue;
-    out[name] = value;
+/**
+ * Rohe Header-Paare ([Name, Wert, Name, Wert, …]) ohne Hop-by-Hop-Header.
+ * Bewusst als Liste statt Objekt: Header-Namen kommen von Browser und Ziel —
+ * als Objekt-Schlüssel wären sie eine Property-Injection (z. B. __proto__).
+ */
+function filterRawHeaders(raw: readonly string[], drop: ReadonlySet<string>): string[] {
+  const out: string[] = [];
+  for (let i = 0; i + 1 < raw.length; i += 2) {
+    const name = raw[i]!;
+    if (drop.has(name.toLowerCase())) continue;
+    out.push(name, raw[i + 1]!);
   }
   return out;
 }
+
+const HOP_BY_HOP_AND_HOST: ReadonlySet<string> = new Set([...HOP_BY_HOP, 'host']);
 
 export async function startEgressProxy(
   guard: HostGuard,
@@ -90,19 +98,17 @@ export async function startEgressProxy(
           .end('blocked by executor egress policy');
         return;
       }
-      const headers = filterHeaders(req.headers);
-      headers.host = url.host;
       const upstream = http.request({
         host: address,
         port,
         method: req.method,
         path: `${url.pathname}${url.search}`,
-        headers,
+        headers: [...filterRawHeaders(req.rawHeaders, HOP_BY_HOP_AND_HOST), 'Host', url.host],
         setHost: false,
         timeout: connectTimeoutMs,
       });
       upstream.on('response', (r) => {
-        res.writeHead(r.statusCode ?? 502, filterHeaders(r.headers));
+        res.writeHead(r.statusCode ?? 502, filterRawHeaders(r.rawHeaders, HOP_BY_HOP));
         r.pipe(res);
       });
       upstream.on('timeout', () => upstream.destroy(new Error('timeout')));

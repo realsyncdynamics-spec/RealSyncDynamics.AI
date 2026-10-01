@@ -43,13 +43,13 @@ function rawConnect(authority: string): Promise<{ status: string; socket: import
   });
 }
 
-function viaProxy(url: string): Promise<{ status: number; body: string; egress: string | undefined }> {
+function viaProxy(url: string, extraHeaders: Record<string, string> = {}): Promise<{ status: number; body: string; egress: string | undefined; raw: string[] }> {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
-    const req = request({ host: '127.0.0.1', port: proxy.port, path: url, headers: { host: u.host } }, (res) => {
+    const req = request({ host: '127.0.0.1', port: proxy.port, path: url, headers: { host: u.host, ...extraHeaders } }, (res) => {
       let body = '';
       res.on('data', (c) => { body += c; });
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, body, egress: res.headers['x-rsd-egress'] as string | undefined }));
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body, egress: res.headers['x-rsd-egress'] as string | undefined, raw: res.rawHeaders }));
     });
     req.on('error', reject);
     req.end();
@@ -58,6 +58,12 @@ function viaProxy(url: string): Promise<{ status: number; body: string; egress: 
 
 beforeAll(async () => {
   allowed = createServer((req, res) => {
+    if (req.url === '/headers') {
+      // Doppelte Set-Cookie, Hop-by-Hop und ein feindlicher Header-Name.
+      res.writeHead(200, ['Content-Type', 'application/json', 'Set-Cookie', 'a=1', 'Set-Cookie', 'b=2', 'Keep-Alive', 'timeout=77', '__proto__', 'x', 'Connection', 'close']);
+      res.end(JSON.stringify(req.rawHeaders));
+      return;
+    }
     res.writeHead(200, { 'content-type': 'text/plain', connection: 'close' });
     res.end(`allowed:${req.url}`);
   });
@@ -126,6 +132,21 @@ describe('Egress-Proxy', () => {
   it('HTTP über den Proxy: freigegebenes Ziel wird weitergereicht', async () => {
     const out = await viaProxy(`http://127.0.0.1:${allowedPort}/page?q=1`);
     expect(out).toMatchObject({ status: 200, body: 'allowed:/page?q=1' });
+  });
+
+  it('reicht Header als Paare durch: ohne Hop-by-Hop, Host = Ziel, doppelte Set-Cookie bleiben', async () => {
+    const out = await viaProxy(`http://127.0.0.1:${allowedPort}/headers`, { 'proxy-authorization': 'Basic Zm9vOmJhcg==', 'x-trace': '1' });
+    expect(out.status).toBe(200);
+    const sent = JSON.parse(out.body) as string[];
+    const sentNames = sent.filter((_, i) => i % 2 === 0).map((n) => n.toLowerCase());
+    expect(sentNames).not.toContain('proxy-authorization');
+    expect(sent[sentNames.indexOf('host') * 2 + 1]).toBe(`127.0.0.1:${allowedPort}`);
+    expect(sentNames).toContain('x-trace');
+    const names = out.raw.filter((_, i) => i % 2 === 0).map((n) => n.toLowerCase());
+    expect(names.filter((n) => n === 'set-cookie')).toHaveLength(2);
+    // Hop-by-Hop des Ziels kommt nicht durch (Node setzt für die eigene Verbindung ggf. eigene Werte).
+    expect(out.raw).not.toContain('timeout=77');
+    expect(names).toContain('__proto__'); // als Header durchgereicht, nie als Objekt-Schlüssel
   });
 
   it('ungültige CONNECT-Ziele werden abgewiesen', async () => {

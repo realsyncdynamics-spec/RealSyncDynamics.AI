@@ -296,7 +296,7 @@ describe('Worker-Eingang', () => {
     const client = createExecutorClient({ baseUrl: 'https://executor.example', apiKey: KEY, executorId: 'cf' }, fetchVia(router));
     const health = await client.health();
     expect(health).toMatchObject({ status: 'ready', runtime: 'cloudflare-browser-run', version: '2026.10.1', active_sessions: 1, max_sessions: 10 });
-    expect(health.capabilities).toEqual(expect.arrayContaining(['sessions', 'frame', 'expected_url', 'landing_check', 'navigate', 'click']));
+    expect(health.capabilities).toEqual(expect.arrayContaining(['sessions', 'frame', 'expected_url', 'landing_check', 'post_navigation_guard', 'navigate', 'click']));
     expect(health.capabilities).not.toContain('download');
 
     const broken = createRouter({ limits: () => Promise.reject(new Error('api down')) });

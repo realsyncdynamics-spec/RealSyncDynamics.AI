@@ -66,7 +66,7 @@ const CHECKS = [
                              expected: 'Sub-Prozessoren',
                              mustInclude: [
                                'Supabase', 'Anthropic', 'Google', 'OpenAI',
-                               'Stripe', 'Hostinger', 'Resend', 'GitHub', 'Sentry',
+                               'Stripe', 'Hostinger', 'Resend', 'GitHub', 'EU (Frankfurt, de.sentry.io Region-Endpoint)',
                              ] },
   { id: 'privacy-policy',    name: 'Datenschutzerklärung reachable',
                              kind: 'html', url: `${BASE_URL}/legal/privacy`,

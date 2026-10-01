@@ -138,7 +138,7 @@ describe('isLandingAllowed (Landeprüfung nach Aktionen)', () => {
   const guard = createHostGuard([], resolver);
 
   it('erlaubt öffentliche Seiten, about:blank, Chromium-Fehlerseite und data:', async () => {
-    for (const url of ['https://public.test/x?y=1', 'about:blank', 'chrome-error://chromewebdata/', 'data:text/html,hi']) {
+    for (const url of ['https://public.test/x?y=1', 'about:blank', 'about:srcdoc', 'chrome-error://chromewebdata/', 'data:text/html,hi']) {
       expect(await isLandingAllowed(url, guard)).toBe(true);
     }
   });

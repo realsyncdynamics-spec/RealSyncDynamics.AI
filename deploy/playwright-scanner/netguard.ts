@@ -209,15 +209,16 @@ export async function assertNavigable(raw: string, guard: HostGuard): Promise<UR
 /**
  * Darf die Seite auf dieser URL stehen (nach einer Aktion, vor Frame/Text)?
  * Fängt Redirect-Hops und selbstständige Navigationen ab, die der Route-Guard
- * nicht sieht. about:blank und Chromiums Fehlerseite sind unkritisch; blob:
- * zählt mit seinem Ursprung; data: kann keine Netzwerkadresse erreichen.
- * Alles andere (file:, chrome:, view-source:, …) ist gesperrt.
+ * nicht sieht. about: (blank, srcdoc) und Chromiums Fehlerseite sind
+ * unkritisch; blob: zählt mit seinem Ursprung; data: kann keine
+ * Netzwerkadresse erreichen. Alles andere (file:, chrome:, view-source:, …)
+ * ist gesperrt.
  */
 export async function isLandingAllowed(raw: string, guard: HostGuard): Promise<boolean> {
-  if (raw === 'about:blank' || raw.startsWith('chrome-error://')) return true;
+  if (raw.startsWith('chrome-error://')) return true;
   let url: URL;
   try { url = new URL(raw); } catch { return false; }
-  if (url.protocol === 'data:') return true;
+  if (url.protocol === 'about:' || url.protocol === 'data:') return true;
   if (url.protocol === 'blob:') {
     try {
       const inner = new URL(url.pathname);

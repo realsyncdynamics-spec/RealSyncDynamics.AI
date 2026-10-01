@@ -38,6 +38,7 @@ let blocked: Server;
 let fixtureOrigin = '';
 let blockedOrigin = '';
 const blockedHits: string[] = [];
+const posts: string[] = [];
 let executorProc: ChildProcess | null = null;
 let executorPort = 0;
 let client: ExecutorClient;
@@ -121,6 +122,22 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
         res.end('<!doctype html><title>Bild</title><img src="/img-to-private" alt="">');
         return;
       }
+      if (url.pathname === '/post-form') {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<!doctype html><title>Formular</title><form method="post" action="/post-target"><input name="betrag" value="10"><button id="send">Senden</button></form>');
+        return;
+      }
+      if (url.pathname === '/post-target') {
+        if (req.method === 'POST') posts.push(url.pathname);
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<!doctype html><title>Gesendet</title><p>Zahlung ausgeführt</p>');
+        return;
+      }
+      if (url.pathname === '/iframe-hop') {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<!doctype html><title>Rahmen</title><iframe src="/to-private"></iframe>');
+        return;
+      }
       if (url.pathname === '/self-redirect') {
         res.writeHead(200, { 'content-type': 'text/html' });
         res.end('<!doctype html><title>Gleich weg</title><script>setTimeout(() => { location.href = "/to-private"; }, 200)</script>');
@@ -166,7 +183,7 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
     expect(health.runtime).toBe('playwright-chromium');
     expect(health.version).toMatch(/^\d{4}\.\d{2}\.\d+$/);
     expect(health.capabilities).toEqual(expect.arrayContaining([
-      'sessions', 'frame', 'navigate', 'click', 'read_dom', 'download', 'expected_url', 'landing_check',
+      'sessions', 'frame', 'navigate', 'click', 'read_dom', 'download', 'expected_url', 'landing_check', 'post_navigation_guard',
     ]));
     expect(health.max_sessions).toBe(3);
 
@@ -306,6 +323,39 @@ describe.skipIf(!RUN)('Browser-Executor (echtes Chromium, HTTP-Vertrag)', () => 
     });
     const after = await client.frame(sid); // zurückgesetzt, Session lebt
     expect(after.page?.url).toBe('about:blank');
+    expect(blockedHits).toEqual([]);
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('POST nur in einer freigegebenen Aktion — reload/back/forward senden es nie erneut', async () => {
+    const sid = `rsx_${'m'.repeat(32)}`;
+    await client.openSession(sid);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/post-form` });
+    // Ohne Freigabe-Bindung (kein expected_url) geht kein POST hinaus.
+    const unbound = await client.execute(sid, { type: 'click', selector: '#send' });
+    expect(unbound.result.verification?.checks.navigations_blocked).toBe(1);
+    expect(posts).toHaveLength(0);
+    await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/post-form` });
+    // Freigegeben (expected_url gesetzt): genau ein POST.
+    const sent = await client.execute(sid, { type: 'click', selector: '#send' }, { expectedUrl: `${fixtureOrigin}/post-form` });
+    expect(sent.page?.title).toBe('Gesendet');
+    expect(posts).toHaveLength(1);
+    // Neu laden würde das Formular erneut senden — blockiert, als Code.
+    const reload = await client.execute(sid, { type: 'reload' });
+    expect(reload.result).toMatchObject({ ok: false, error: 'NAVIGATION_BLOCKED' });
+    expect(reload.result.verification?.checks.navigations_blocked).toBe(1);
+    await client.execute(sid, { type: 'back' }).catch(() => undefined);
+    await client.execute(sid, { type: 'forward' }).catch(() => undefined);
+    expect(posts).toHaveLength(1);
+    await client.closeSession(sid);
+  }, 60_000);
+
+  it('Redirect-Hop in einem iframe: Ziel nie kontaktiert, Seite zurückgesetzt', async () => {
+    const sid = `rsx_${'n'.repeat(32)}`;
+    await client.openSession(sid);
+    const nav = await client.execute(sid, { type: 'navigate', url: `${fixtureOrigin}/iframe-hop` });
+    expect(nav.result).toMatchObject({ ok: false, error: 'LANDED_ON_BLOCKED_URL', url: 'about:blank' });
+    expect(nav.page?.url).toBe('about:blank');
     expect(blockedHits).toEqual([]);
     await client.closeSession(sid);
   }, 60_000);

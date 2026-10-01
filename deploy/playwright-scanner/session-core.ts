@@ -18,12 +18,19 @@
 //    about:blank gesetzt, bevor Bild oder Text den Executor verlassen.
 //  - Downloads nur innerhalb einer download-Aktion; jeder andere wird
 //    abgebrochen und in der Verifikation gezählt.
+//  - Zustandsändernde Navigationen (POST-Formular, auch per reload/back/
+//    forward erneut gesendet) nur während einer FREIGEGEBENEN Aktion
+//    (expected_url gesetzt) — sonst ließe sich eine einmal freigegebene
+//    Mutation per „Neu laden“ ohne Freigabe wiederholen (Review 10-01).
+//  - Optional (Laufzeiten ohne Egress-Proxy, Cloudflare): Server-Adresse
+//    jeder Antwort prüfen; eine private Adresse (DNS-Rebinding, Redirect-Hop
+//    in einem iframe) sperrt die Session dauerhaft, bevor Inhalte hinausgehen.
 //
 // Session-Modell: eine Session-ID (browser_sessions.executor_session_id) =
 // genau ein BrowserContext mit genau einer aktiven Page. Dieselbe Session
 // liefert Aktionen UND Vorschau-Frames — keine zweite Seite, keine Animation.
 
-import type { BrowserContext, BrowserContextOptions, Download, Page, Route } from 'playwright';
+import type { BrowserContext, BrowserContextOptions, Download, Page, Response as PwResponse, Route } from 'playwright';
 import { assertNavigable, isLandingAllowed, type HostGuard } from './netguard.js';
 
 export type BrowserAction =
@@ -45,7 +52,7 @@ export type BrowserAction =
 
 /** Fähigkeiten jeder Laufzeit; 'download' nur mit DownloadInspector. */
 export const BASE_CAPABILITIES = [
-  'sessions', 'frame', 'expected_url', 'landing_check',
+  'sessions', 'frame', 'expected_url', 'landing_check', 'post_navigation_guard',
   'navigate', 'scroll', 'click', 'type', 'select', 'submit', 'wait',
   'read_text', 'read_dom', 'screenshot', 'back', 'forward', 'reload',
 ] as const;
@@ -122,6 +129,9 @@ export class ExecutorError extends Error {
 }
 
 const NETGUARD_CODES = new Set(['INVALID_URL', 'URL_CREDENTIALS_NOT_ALLOWED', 'PRIVATE_NETWORK_BLOCKED']);
+
+/** Navigationen ohne Zustandsänderung; alles andere (POST) nur mit Freigabe. */
+const SAFE_NAVIGATION_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD']);
 
 /**
  * Fehler → fester Code. Die Playwright-Meldung (inkl. Call-Log) wird nur
@@ -222,6 +232,18 @@ async function triggerAndSettle(page: Page, trigger: () => Promise<unknown>, nav
   return didNavigate;
 }
 
+/** Ergebnis einer Aktion, nach der die Seite gesperrt landete (Inhalt verworfen). */
+function landedResult(index: number, type: BrowserAction['type'], blockedOrigin: string): BrowserActionResult {
+  return {
+    index,
+    type,
+    ok: false,
+    url: 'about:blank',
+    error: 'LANDED_ON_BLOCKED_URL',
+    verification: { status: 'failed', checks: { landed_blocked: true, blocked_origin: blockedOrigin } },
+  };
+}
+
 /** Prüft/hasht einen ERWARTETEN Download und verwirft ihn danach (laufzeitspezifisch). */
 export interface DownloadInspector {
   inspect(download: Download): Promise<{ bytes: number; sha256: string }>;
@@ -231,6 +253,11 @@ export interface GuardedSessionOptions {
   guard: HostGuard;
   /** null: Laufzeit kann keine Downloads prüfen — jeder Download wird abgebrochen. */
   downloads: DownloadInspector | null;
+  /**
+   * Server-Adresse jeder Antwort gegen den HostGuard prüfen. Nur für
+   * Laufzeiten OHNE Egress-Proxy (dort wäre jede Adresse die des Proxys).
+   */
+  verifyServerAddress?: boolean;
   now?: () => number;
   log?: (event: Record<string, unknown>) => void;
 }
@@ -259,6 +286,12 @@ export class GuardedSession {
   private queue: Promise<unknown> = Promise.resolve();
   private expectingDownload = false;
   private blockedDownloads = 0;
+  private blockedNavigations = 0;
+  /** true nur während einer freigegebenen Aktion (expected_url gesetzt). */
+  private allowStateChangingNavigation = false;
+  /** Eine Antwort kam von einer nicht-öffentlichen Adresse: Session gesperrt. */
+  private tainted = false;
+  private readonly addressChecks = new Set<Promise<void>>();
   private readonly now: () => number;
   private readonly log: (event: Record<string, unknown>) => void;
 
@@ -287,6 +320,7 @@ export class GuardedSession {
         else await ws.close();
       });
     }
+    if (opts.verifyServerAddress) context.on('response', (r) => s.checkServerAddress(r));
     // Neue Tabs (target=_blank) werden zur aktiven Seite der Session.
     context.on('page', (p) => s.adopt(p));
     s.adopt(await context.newPage());
@@ -314,9 +348,33 @@ export class GuardedSession {
     this.log({ event: 'download_blocked' });
   }
 
+  private checkServerAddress(response: PwResponse): void {
+    const check: Promise<void> = response.serverAddr()
+      .then(async (addr) => {
+        if (!addr) return; // Cache, data: — kein Netzweg
+        const port = addr.port === 80 || addr.port === 443 ? '' : String(addr.port);
+        if (!(await this.opts.guard.allows(addr.ipAddress, port))) {
+          this.tainted = true;
+          this.log({ event: 'private_server_address' });
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => { this.addressChecks.delete(check); });
+    this.addressChecks.add(check);
+  }
+
   private async routeGuard(route: Route): Promise<void> {
+    const request = route.request();
+    if (request.isNavigationRequest() && !SAFE_NAVIGATION_METHODS.has(request.method()) && !this.allowStateChangingNavigation) {
+      // POST-Navigation außerhalb einer freigegebenen Aktion (z. B. reload
+      // einer Formular-Antwortseite) — nie ohne Freigabe erneut senden.
+      this.blockedNavigations += 1;
+      this.log({ event: 'state_changing_navigation_blocked' });
+      await route.abort('blockedbyclient');
+      return;
+    }
     let url: URL;
-    try { url = new URL(route.request().url()); } catch {
+    try { url = new URL(request.url()); } catch {
       await route.abort('blockedbyclient');
       return;
     }
@@ -369,16 +427,28 @@ export class GuardedSession {
    * dieser Seite den Executor. Rückgabe: Ursprung der gesperrten Adresse.
    */
   private async enforceLanding(): Promise<string | null> {
+    // Laufende Adressprüfungen abwarten — erst danach darf etwas hinaus.
+    if (this.addressChecks.size > 0) await Promise.all([...this.addressChecks]);
     const page = await this.page();
-    const url = page.url();
-    if (await isLandingAllowed(url, this.opts.guard)) return null;
+    let blocked: string | null = this.tainted ? 'private-server-address' : null;
+    if (!blocked) {
+      // Alle Frames, nicht nur die Hauptseite (Redirect-Hop in einem iframe).
+      for (const frame of page.frames()) {
+        const url = frame.url();
+        if (url !== '' && !(await isLandingAllowed(url, this.opts.guard))) {
+          blocked = originOf(url) ?? 'unknown';
+          break;
+        }
+      }
+    }
+    if (!blocked) return null;
     this.log({ event: 'landing_blocked' });
     await page.goto('about:blank', { timeout: 5_000 }).catch(() => undefined);
     if (page.url() !== 'about:blank') {
       await this.close();
       throw new ExecutorError('LANDED_ON_BLOCKED_URL', 403);
     }
-    return originOf(url) ?? 'unknown';
+    return blocked;
   }
 
   async pageInfo(): Promise<PageInfo> {
@@ -402,11 +472,18 @@ export class GuardedSession {
     };
   }
 
-  /** Aktuelles Bild derselben Session — erst nach der Landeprüfung. */
+  /**
+   * Aktuelles Bild derselben Session. Landeprüfung davor UND danach: alles,
+   * was auf dem Bild zu sehen ist, kam vor der Aufnahme an und ist damit
+   * geprüft — sonst geht das Bild nicht hinaus.
+   */
   async frame(): Promise<{ page: PageInfo; frame: Frame }> {
-    const blocked = await this.enforceLanding();
-    if (blocked) throw new ExecutorError('LANDED_ON_BLOCKED_URL', 403, { blocked_origin: blocked });
-    return { page: await this.pageInfo(), frame: await this.captureFrame() };
+    const before = await this.enforceLanding();
+    if (before) throw new ExecutorError('LANDED_ON_BLOCKED_URL', 403, { blocked_origin: before });
+    const frame = await this.captureFrame();
+    const after = await this.enforceLanding();
+    if (after) throw new ExecutorError('LANDED_ON_BLOCKED_URL', 403, { blocked_origin: after });
+    return { page: await this.pageInfo(), frame };
   }
 
   async runAction(action: BrowserAction, index: number): Promise<BrowserActionResult> {
@@ -591,6 +668,49 @@ export class GuardedSession {
     }
   }
 
+  /** Aktionen nacheinander; Landeprüfung nach jeder, Abbruch beim ersten Fehler. */
+  private async runActions(actions: readonly BrowserAction[]): Promise<BrowserActionResult[]> {
+    const results: BrowserActionResult[] = [];
+    for (const [index, action] of actions.entries()) {
+      this.blockedDownloads = 0;
+      this.blockedNavigations = 0;
+      let result: BrowserActionResult;
+      try {
+        result = await this.runAction(action, index);
+      } catch (error) {
+        const code = errorCode(error);
+        if (NETGUARD_CODES.has(code)) throw new ExecutorError(code, code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400);
+        if (code === 'SESSION_CLOSED') {
+          await this.close();
+          throw new ExecutorError('SESSION_NOT_FOUND', 404);
+        }
+        result = {
+          index,
+          type: action.type,
+          ok: false,
+          url: (await this.page()).url(),
+          error: code,
+          verification: { status: 'failed', checks: { error: code } },
+        };
+      }
+      if (this.blockedDownloads > 0) result.verification.checks.downloads_blocked = this.blockedDownloads;
+      if (this.blockedNavigations > 0) result.verification.checks.navigations_blocked = this.blockedNavigations;
+      // Unterframes (iframes) fertig laden lassen, damit ihre Adressen geprüft
+      // sind — begrenzt, eine Seite ohne load-Ereignis hält nicht auf.
+      await (await this.page()).waitForLoadState('load', { timeout: 2_000 }).catch(() => undefined);
+      const landed = await this.enforceLanding();
+      if (landed) {
+        // Die Aktion lief, die Seite landete auf einer gesperrten Adresse:
+        // kein Text, kein DOM, kein Bild davon — nur der Ursprung als Nachweis.
+        results.push(landedResult(index, action.type, landed));
+        break;
+      }
+      results.push(result);
+      if (!result.ok) break;
+    }
+    return results;
+  }
+
   /**
    * Aktionen ausführen. Reihenfolge: Seitenbindung (expected_url) →
    * Landeprüfung → Aktion → Landeprüfung → Frame. Gesperrte Ziele einer
@@ -610,49 +730,24 @@ export class GuardedSession {
         }
       }
 
-      const results: BrowserActionResult[] = [];
-      for (const [index, action] of req.actions.entries()) {
-        this.blockedDownloads = 0;
-        let result: BrowserActionResult;
-        try {
-          result = await this.runAction(action, index);
-        } catch (error) {
-          const code = errorCode(error);
-          if (NETGUARD_CODES.has(code)) throw new ExecutorError(code, code === 'PRIVATE_NETWORK_BLOCKED' ? 403 : 400);
-          if (code === 'SESSION_CLOSED') {
-            await this.close();
-            throw new ExecutorError('SESSION_NOT_FOUND', 404);
-          }
-          result = {
-            index,
-            type: action.type,
-            ok: false,
-            url: (await this.page()).url(),
-            error: code,
-            verification: { status: 'failed', checks: { error: code } },
-          };
-        }
-        if (this.blockedDownloads > 0) result.verification.checks.downloads_blocked = this.blockedDownloads;
-        const landed = await this.enforceLanding();
-        if (landed) {
-          // Die Aktion lief, die Seite landete auf einer gesperrten Adresse:
-          // kein Text, kein DOM, kein Bild davon — nur der Ursprung als Nachweis.
-          results.push({
-            index,
-            type: action.type,
-            ok: false,
-            url: 'about:blank',
-            error: 'LANDED_ON_BLOCKED_URL',
-            verification: { status: 'failed', checks: { landed_blocked: true, blocked_origin: landed } },
-          });
-          break;
-        }
-        results.push(result);
-        if (!result.ok) break;
+      // Zustandsändernde Navigation nur während einer freigegebenen Aktion.
+      this.allowStateChangingNavigation = typeof req.expected_url === 'string' && req.expected_url.length > 0;
+      let results: BrowserActionResult[];
+      try {
+        results = await this.runActions(req.actions);
+      } finally {
+        this.allowStateChangingNavigation = false;
       }
-      const page = await this.pageInfo();
-      const frame = req.include_frame ? await this.captureFrame().catch(() => null) : null;
-      return { results, page, frame };
+      let frame = req.include_frame ? await this.captureFrame().catch(() => null) : null;
+      // Nach dem Bild erneut prüfen (spät geladene Frames): sonst kein Bild,
+      // und das Ergebnis meldet die gesperrte Landung.
+      const late = await this.enforceLanding();
+      if (late) {
+        frame = null;
+        const last = results[results.length - 1];
+        if (last && last.error !== 'LANDED_ON_BLOCKED_URL') results[results.length - 1] = landedResult(last.index, last.type, late);
+      }
+      return { results, page: await this.pageInfo(), frame };
     });
   }
 }

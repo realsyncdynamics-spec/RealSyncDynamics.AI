@@ -331,7 +331,7 @@ export function runChecks(
         severity: 'info',
         title: 'Kein Impressum-Link (DE-spezifisch)',
         detail:
-          'Die Site weist keine deutschen Anbieter-Signale auf (TLD, lang-Attribut, Rechtsform). ' +
+          'Die Site weist keine deutschen Anbieter-Signale auf (TLD, Rechtsform). ' +
           '§ 5 DDG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
         paragraph_ref: '§ 5 DDG / § 18 MStV',
       });

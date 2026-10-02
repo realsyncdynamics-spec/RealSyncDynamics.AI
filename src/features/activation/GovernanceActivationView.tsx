@@ -186,6 +186,11 @@ export function GovernanceActivationView() {
   /** Was zuletzt gespeichert wurde — die Erfolgsmeldung folgt dem Speichervorgang, nicht dem aktuellen Schritt. */
   const [lastSavedPart, setLastSavedPart] = useState<'org-scope' | 'ai-setup' | null>(null);
   const isPersistedStep = PERSISTED_STEPS.includes(step);
+  /** Tenant, dessen Bestand im Formular steht (`''` = kein Tenant). `undefined` = noch nicht geladen. */
+  const [loadedTenantId, setLoadedTenantId] = useState<string | undefined>(undefined);
+  /** Solange der Bestand des aktiven Tenants nicht geladen ist, zeigt das Formular nur Vorbelegung — nicht speichern. */
+  const isLoadingActivation =
+    tenantLoading || loadState === 'loading' || loadedTenantId !== (activeTenantId ?? '');
 
   const stepMeta = STEPS.find((s) => s.id === step) ?? STEPS[0];
   const stepIdx = STEPS.findIndex((s) => s.id === step);
@@ -201,7 +206,9 @@ export function GovernanceActivationView() {
     setLastSavedAt(null);
     setLastSavedPart(null);
     setSaveState('idle');
+    setLoadedTenantId(undefined);
     if (!activeTenantId) {
+      setLoadedTenantId('');
       setLoadState('ready');
       return;
     }
@@ -220,10 +227,14 @@ export function GovernanceActivationView() {
           if (record.scopes.length > 0) setScopes(record.scopes);
           setLastSavedAt(record.updatedAt);
         }
+        setLoadedTenantId(activeTenantId);
         setLoadState('ready');
       })
       .catch(() => {
-        if (!cancelled) setLoadState('error');
+        if (cancelled) return;
+        // Wie bisher: Formular startet leer und bleibt speicherbar.
+        setLoadedTenantId(activeTenantId);
+        setLoadState('error');
       });
     return () => {
       cancelled = true;
@@ -241,6 +252,7 @@ export function GovernanceActivationView() {
   }
 
   async function persistActivation(): Promise<boolean> {
+    if (isLoadingActivation) return false;
     if (!activeTenantId) {
       setSaveError('Kein aktiver Tenant. Activation speichern erfordert einen Workspace.');
       setSaveState('error');
@@ -745,6 +757,7 @@ export function GovernanceActivationView() {
                   onClick={() => void persistActivation()}
                   disabled={
                     saveState === 'saving' ||
+                    isLoadingActivation ||
                     !activeTenantId ||
                     (step === 'ai-inventory' && !isAiSetupComplete(aiSetup))
                   }
@@ -767,7 +780,7 @@ export function GovernanceActivationView() {
                     (step === 'scope' && scopes.length === 0) ||
                     (step === 'ai-inventory' && !isAiSetupComplete(aiSetup)) ||
                     saveState === 'saving' ||
-                    (isPersistedStep && !activeTenantId)
+                    (isPersistedStep && (isLoadingActivation || !activeTenantId))
                   }
                   className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition`}
                 >

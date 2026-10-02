@@ -11,6 +11,7 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireServiceRole } from '../_shared/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -29,10 +30,10 @@ interface DeadlineAlert {
 
 Deno.serve(async (req: Request) => {
   // Verify this is a scheduled job (from Supabase cron)
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  // Cron-Endpunkt: liest Fristen ueber alle Tenants und loest Alarme aus.
+  // Zuvor genuegte ein beliebiges Bearer-Praefix (Befund F-04).
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
 
   try {
     console.log('Starting governance deadline monitoring...');

@@ -133,8 +133,7 @@ If step 8 succeeds but step 9 doesn't, the subscription was written through a se
 
 **Fix**: copy real Price ID from Stripe Dashboard → Products → [plan] → Pricing section. UPDATE the products row.
 
-**Gemessen 2026-09-27** (read-only): Vault-Secrets da, Monatspreise echt, nur `*_yearly` Platzhalter.
-Gewollt laut Entscheidung 2026-09-01 (`yearlyCheckoutUnavailable`); ändern nur nach neuer.
+`*_yearly`: Platzhalter gewollt (2026-09-01).
 
 ### `STRIPE_SECRET_KEY missing`
 

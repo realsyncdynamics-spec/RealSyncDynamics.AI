@@ -5,7 +5,8 @@
  * `docs/product/governance-activation.md`
  *
  * Route: `/app/activation` inside GovernanceBrowserShell + AppGate.
- * Organization + Governance Scope persist to `governance_activations`.
+ * Organization + Governance Scope + AI-OS-Setup (WP3, `organization.aiSetup`)
+ * persist to `governance_activations`.
  * Blueprint / Migration extraction / Expert Review stay Preview.
  * No live tenant KPIs — placeholder numbers labeled Preview / Coming Soon.
  */
@@ -35,17 +36,36 @@ import {
   saveGovernanceActivation,
   type ActivationOrganization,
 } from './activationApi';
+import { AiSetupStep } from './AiSetupStep';
+import {
+  countSelected,
+  createEmptyAiSetup,
+  isAiSetupComplete,
+  NONE_OPTION_ID,
+  type AiSetup,
+} from './aiSetupCatalog';
 
-type WizardStep = 'organization' | 'scope' | 'blueprint' | 'documents' | 'review' | 'status';
+type WizardStep =
+  | 'organization'
+  | 'scope'
+  | 'ai-inventory'
+  | 'blueprint'
+  | 'documents'
+  | 'review'
+  | 'status';
 
 const STEPS: readonly { id: WizardStep; label: string; index: string }[] = [
   { id: 'organization', label: 'Organization', index: '01' },
   { id: 'scope', label: 'Scope', index: '02' },
-  { id: 'blueprint', label: 'Blueprint', index: '03' },
-  { id: 'documents', label: 'Migration', index: '04' },
-  { id: 'review', label: 'Expert Review', index: '05' },
-  { id: 'status', label: 'Go-Live', index: '06' },
+  { id: 'ai-inventory', label: 'AI Setup', index: '03' },
+  { id: 'blueprint', label: 'Blueprint', index: '04' },
+  { id: 'documents', label: 'Migration', index: '05' },
+  { id: 'review', label: 'Expert Review', index: '06' },
+  { id: 'status', label: 'Go-Live', index: '07' },
 ];
+
+/** Schritte, die beim Weiter/Speichern in `governance_activations` persistieren. */
+const PERSISTED_STEPS: readonly WizardStep[] = ['organization', 'scope', 'ai-inventory'];
 
 const SUBMODULES = [
   'Activation',
@@ -119,6 +139,34 @@ function Field({
   );
 }
 
+function countLabel(list: readonly string[]): string {
+  return list.includes(NONE_OPTION_ID) ? 'keine' : String(countSelected(list));
+}
+
+/** Reine Zählung gespeicherter Angaben — bewusst ohne Score oder Ampel. */
+function aiSetupSummary(
+  setup: AiSetup | null,
+): { label: string; value: string; badge: string }[] {
+  if (!setup) {
+    return [
+      { label: 'KI-Systeme erfasst', value: '—', badge: 'Offen' },
+      { label: 'Bots/Agenten vorbereitet', value: '—', badge: 'Offen' },
+      { label: 'Datenklassen erkannt', value: '—', badge: 'Offen' },
+      { label: 'Freigaben definiert', value: '—', badge: 'Offen' },
+    ];
+  }
+  return [
+    { label: 'KI-Systeme erfasst', value: countLabel(setup.aiSystems), badge: 'Persisted' },
+    { label: 'Bots/Agenten vorbereitet', value: countLabel(setup.botsAgents), badge: 'Persisted' },
+    { label: 'Datenklassen erkannt', value: String(setup.dataClasses.length), badge: 'Persisted' },
+    {
+      label: 'Freigaben definiert',
+      value: `${setup.approvals.humanApprovalFor.length} Aktionen`,
+      badge: setup.approvals.logEveryAgentAction ? 'Persisted · Protokoll an' : 'Persisted',
+    },
+  ];
+}
+
 export function GovernanceActivationView() {
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const [step, setStep] = useState<WizardStep>('organization');
@@ -130,6 +178,10 @@ export function GovernanceActivationView() {
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [aiSetup, setAiSetup] = useState<AiSetup>(createEmptyAiSetup);
+  /** Zuletzt gespeicherter Stand — die Ergebnisseite zeigt nur Gespeichertes. */
+  const [savedAiSetup, setSavedAiSetup] = useState<AiSetup | null>(null);
+  const isPersistedStep = PERSISTED_STEPS.includes(step);
 
   const stepMeta = STEPS.find((s) => s.id === step) ?? STEPS[0];
   const stepIdx = STEPS.findIndex((s) => s.id === step);
@@ -146,7 +198,12 @@ export function GovernanceActivationView() {
       .then((record) => {
         if (cancelled) return;
         if (record) {
-          setOrg(record.organization);
+          const { aiSetup: storedAiSetup, ...orgFields } = record.organization;
+          setOrg(orgFields);
+          if (storedAiSetup) {
+            setAiSetup(storedAiSetup);
+            setSavedAiSetup(storedAiSetup);
+          }
           if (record.scopes.length > 0) setScopes(record.scopes);
           setLastSavedAt(record.updatedAt);
         }
@@ -165,7 +222,12 @@ export function GovernanceActivationView() {
     setSaveState('idle');
   }
 
-  async function persistOrgAndScope(): Promise<boolean> {
+  function updateAiSetup(next: AiSetup) {
+    setAiSetup(next);
+    setSaveState('idle');
+  }
+
+  async function persistActivation(): Promise<boolean> {
     if (!activeTenantId) {
       setSaveError('Kein aktiver Tenant. Activation speichern erfordert einen Workspace.');
       setSaveState('error');
@@ -174,11 +236,15 @@ export function GovernanceActivationView() {
     setSaveState('saving');
     setSaveError(null);
     try {
+      // aiSetup nur aus dem eigenen Schritt mitsenden; Org-/Scope-Speichern lässt
+      // den gespeicherten Bestand per Merge in activationApi unangetastet.
+      const savingAiSetup = step === 'ai-inventory';
       await saveGovernanceActivation({
         tenantId: activeTenantId,
-        organization: org,
+        organization: savingAiSetup ? { ...org, aiSetup } : org,
         scopes,
       });
+      if (savingAiSetup) setSavedAiSetup(aiSetup);
       setSaveState('saved');
       setLastSavedAt(new Date().toISOString());
       return true;
@@ -190,8 +256,8 @@ export function GovernanceActivationView() {
   }
 
   async function goNext() {
-    if (step === 'organization' || step === 'scope') {
-      const ok = await persistOrgAndScope();
+    if (isPersistedStep) {
+      const ok = await persistActivation();
       if (!ok) return;
     }
     const next = STEPS[stepIdx + 1];
@@ -232,7 +298,7 @@ export function GovernanceActivationView() {
                   Governance Activation
                 </h1>
                 <ModuleStatusBadge status="beta" />
-                {(step === 'organization' || step === 'scope') && lastSavedAt ? (
+                {isPersistedStep && lastSavedAt ? (
                   <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-emerald-800 bg-emerald-950 text-emerald-300">
                     Persisted
                   </span>
@@ -244,9 +310,9 @@ export function GovernanceActivationView() {
                 Turn existing data into operational governance.
               </p>
               <p className="mt-2 text-xs text-titanium-500 max-w-xl leading-relaxed">
-                Von Bestandschaos zu aktiver Governance. Organization und Scope werden im Tenant
-                gespeichert. Blueprint, Extraction und Expert Review bleiben Coming Soon, bis das
-                Backend steht.
+                Von Bestandschaos zu aktiver Governance. Organization, Scope und AI Setup werden im
+                Tenant gespeichert. Blueprint, Extraction und Expert Review bleiben Coming Soon, bis
+                das Backend steht.
               </p>
             </div>
           </div>
@@ -318,7 +384,7 @@ export function GovernanceActivationView() {
               <span className={`font-mono ${OS_ACCENT_TEXT} mr-2`}>{stepMeta.index}</span>
               {stepMeta.label}
             </h2>
-            {step !== 'organization' && step !== 'scope' && <PreviewChip>Coming Soon</PreviewChip>}
+            {!isPersistedStep && step !== 'status' && <PreviewChip>Coming Soon</PreviewChip>}
           </div>
 
           {step === 'organization' && (
@@ -430,6 +496,8 @@ export function GovernanceActivationView() {
               )}
             </div>
           )}
+
+          {step === 'ai-inventory' && <AiSetupStep value={aiSetup} onChange={updateAiSetup} />}
 
           {step === 'blueprint' && (
             <div className="space-y-4">
@@ -569,11 +637,54 @@ export function GovernanceActivationView() {
 
           {step === 'status' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-titanium-100">Your Governance Activation</h3>
+              {savedAiSetup ? (
+                <h3 className="text-base font-semibold text-titanium-50 flex items-center gap-2">
+                  <CheckCircle2 className={`h-5 w-5 ${OS_ACCENT_TEXT}`} />
+                  Ihr AI Governance Workspace ist vorbereitet.
+                </h3>
+              ) : (
+                <div className="border border-amber-900 bg-obsidian-950 p-4 space-y-2">
+                  <p className="text-sm text-amber-300 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" /> Das AI Setup ist noch nicht gespeichert.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setStep('ai-inventory')}
+                    className="text-xs text-[#00B8D4] hover:underline"
+                  >
+                    Zum AI Setup
+                  </button>
+                </div>
+              )}
               <p className="text-sm text-titanium-400">
-                Organization und Scope sind persistiert, sofern gespeichert. Readiness-Zahlen bleiben
-                Preview, bis Blueprint und Evidence-Flows live sind — keine Fake-KPIs.
+                Die Zahlen zählen Ihre gespeicherten Angaben. Sie sind keine Risikobewertung.
+                Blueprint und Readiness bleiben Coming Soon, bis die Backends live sind.
               </p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {aiSetupSummary(savedAiSetup).map(({ label, value, badge }) => (
+                  <div key={label} className="border border-titanium-900 bg-obsidian-950 p-4">
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-500">
+                      {label}
+                    </div>
+                    <div className="mt-1 text-2xl font-mono text-titanium-200">{value}</div>
+                    <div className="mt-2">
+                      <PreviewChip>{badge}</PreviewChip>
+                    </div>
+                  </div>
+                ))}
+                <div className="border border-titanium-900 bg-obsidian-950 p-4">
+                  <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-500">
+                    Evidence / Audit
+                  </div>
+                  <div className="mt-1 text-sm text-titanium-200">Nächster Schritt</div>
+                  <Link
+                    to="/app/evidence"
+                    className="mt-2 inline-block text-xs text-[#00B8D4] hover:underline"
+                  >
+                    Evidence prüfen
+                  </Link>
+                </div>
+              </div>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
                   ['Organization', org.company.trim() ? 'saved' : '—', org.company.trim() ? 'Persisted' : 'Preview'],
@@ -591,33 +702,6 @@ export function GovernanceActivationView() {
                   </div>
                 ))}
               </div>
-              <div className="border border-titanium-900 bg-obsidian-950 p-4">
-                <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-500 mb-2">
-                  Next actions
-                </div>
-                <ul className="space-y-1.5 text-sm text-titanium-300">
-                  <li>
-                    ·{' '}
-                    <Link to="/app/dashboard" className="text-[#00B8D4] hover:underline">
-                      Compliance Dashboard öffnen
-                    </Link>
-                  </li>
-                  <li>
-                    ·{' '}
-                    <Link to="/app/evidence" className="text-[#00B8D4] hover:underline">
-                      Evidence prüfen
-                    </Link>
-                  </li>
-                  <li>
-                    ·{' '}
-                    <Link to="/app/modules" className="text-[#00B8D4] hover:underline">
-                      Module aktivieren
-                    </Link>
-                  </li>
-                  <li>· Blueprint Engine — Coming Soon</li>
-                  <li>· Document Extraction — Coming Soon</li>
-                </ul>
-              </div>
             </div>
           )}
         </section>
@@ -634,18 +718,22 @@ export function GovernanceActivationView() {
           <div className="flex flex-col items-stretch sm:items-end gap-2">
             {saveState === 'saved' && (
               <span className="font-mono text-[10px] text-emerald-400 tracking-wider">
-                ORGANIZATION + SCOPE SAVED
+                {step === 'ai-inventory' ? 'AI SETUP SAVED' : 'ORGANIZATION + SCOPE SAVED'}
               </span>
             )}
             {saveState === 'error' && saveError && (
               <span className="text-xs text-amber-400 max-w-sm text-right">{saveError}</span>
             )}
             <div className="flex flex-wrap gap-2 justify-end">
-              {(step === 'organization' || step === 'scope') && (
+              {isPersistedStep && (
                 <button
                   type="button"
-                  onClick={() => void persistOrgAndScope()}
-                  disabled={saveState === 'saving' || !activeTenantId}
+                  onClick={() => void persistActivation()}
+                  disabled={
+                    saveState === 'saving' ||
+                    !activeTenantId ||
+                    (step === 'ai-inventory' && !isAiSetupComplete(aiSetup))
+                  }
                   className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-700 text-sm text-titanium-200 hover:border-[#00B8D4] disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
                   {saveState === 'saving' ? (
@@ -663,8 +751,9 @@ export function GovernanceActivationView() {
                   onClick={() => void goNext()}
                   disabled={
                     (step === 'scope' && scopes.length === 0) ||
+                    (step === 'ai-inventory' && !isAiSetupComplete(aiSetup)) ||
                     saveState === 'saving' ||
-                    ((step === 'organization' || step === 'scope') && !activeTenantId)
+                    (isPersistedStep && !activeTenantId)
                   }
                   className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition`}
                 >
@@ -675,7 +764,7 @@ export function GovernanceActivationView() {
                   to="/app/dashboard"
                   className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold transition`}
                 >
-                  Zum Compliance Dashboard <ArrowRight className="h-4 w-4" />
+                  Zum Governance Command Center <ArrowRight className="h-4 w-4" />
                 </Link>
               )}
             </div>

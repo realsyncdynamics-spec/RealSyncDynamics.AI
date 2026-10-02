@@ -90,6 +90,8 @@ const SCOPE_OPTIONS = [
   { id: 'other', label: 'Weitere Frameworks' },
 ] as const;
 
+const DEFAULT_SCOPES: readonly string[] = ['dsgvo', 'eu-ai-act', 'ai-governance'];
+
 const ACCEPTED_TYPES = 'XLSX · CSV · DOCX · PDF · JSON · VVT · DSFA · TOM · Policies · Risiko-Register';
 
 function PreviewChip({ children }: { children: string }) {
@@ -171,7 +173,7 @@ export function GovernanceActivationView() {
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const [step, setStep] = useState<WizardStep>('organization');
   const [org, setOrg] = useState<ActivationOrganization>(EMPTY_ORGANIZATION);
-  const [scopes, setScopes] = useState<string[]>(['dsgvo', 'eu-ai-act', 'ai-governance']);
+  const [scopes, setScopes] = useState<string[]>([...DEFAULT_SCOPES]);
   const [dropActive, setDropActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<string[]>([]);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -181,6 +183,8 @@ export function GovernanceActivationView() {
   const [aiSetup, setAiSetup] = useState<AiSetup>(createEmptyAiSetup);
   /** Zuletzt gespeicherter Stand — die Ergebnisseite zeigt nur Gespeichertes. */
   const [savedAiSetup, setSavedAiSetup] = useState<AiSetup | null>(null);
+  /** Was zuletzt gespeichert wurde — die Erfolgsmeldung folgt dem Speichervorgang, nicht dem aktuellen Schritt. */
+  const [lastSavedPart, setLastSavedPart] = useState<'org-scope' | 'ai-setup' | null>(null);
   const isPersistedStep = PERSISTED_STEPS.includes(step);
 
   const stepMeta = STEPS.find((s) => s.id === step) ?? STEPS[0];
@@ -188,6 +192,15 @@ export function GovernanceActivationView() {
 
   useEffect(() => {
     if (tenantLoading) return;
+    // Workspace-Wechsel: Formularzustand des vorherigen Tenants verwerfen, bevor
+    // geladen wird — sonst landen fremde Angaben im neuen Tenant.
+    setOrg(EMPTY_ORGANIZATION);
+    setScopes([...DEFAULT_SCOPES]);
+    setAiSetup(createEmptyAiSetup());
+    setSavedAiSetup(null);
+    setLastSavedAt(null);
+    setLastSavedPart(null);
+    setSaveState('idle');
     if (!activeTenantId) {
       setLoadState('ready');
       return;
@@ -245,6 +258,7 @@ export function GovernanceActivationView() {
         scopes,
       });
       if (savingAiSetup) setSavedAiSetup(aiSetup);
+      setLastSavedPart(savingAiSetup ? 'ai-setup' : 'org-scope');
       setSaveState('saved');
       setLastSavedAt(new Date().toISOString());
       return true;
@@ -718,7 +732,7 @@ export function GovernanceActivationView() {
           <div className="flex flex-col items-stretch sm:items-end gap-2">
             {saveState === 'saved' && (
               <span className="font-mono text-[10px] text-emerald-400 tracking-wider">
-                {step === 'ai-inventory' ? 'AI SETUP SAVED' : 'ORGANIZATION + SCOPE SAVED'}
+                {lastSavedPart === 'ai-setup' ? 'AI SETUP SAVED' : 'ORGANIZATION + SCOPE SAVED'}
               </span>
             )}
             {saveState === 'error' && saveError && (

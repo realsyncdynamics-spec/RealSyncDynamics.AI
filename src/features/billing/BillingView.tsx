@@ -11,7 +11,7 @@ import { PlanUpgradeModal } from './PlanUpgradeModal';
 import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
-import { SELLABLE_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, planByKey, tierPriceLabel, type TierId } from '../../config/pricing';
 import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Subscription {
@@ -57,7 +57,7 @@ const AVAILABLE_PLANS = SELLABLE_PRICING_TIERS
     id: tier.id,
     key: tier.planKey,
     name: tier.name,
-    price: tier.priceString,
+    price: tierPriceLabel(tier, ''),
     suffix: tier.priceSuffix,
     tagline: tier.tagline,
   }));

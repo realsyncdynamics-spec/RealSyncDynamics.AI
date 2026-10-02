@@ -19,7 +19,7 @@
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { tierById, type PricingTier } from '../../config/pricing';
+import { tierById, tierPriceLabel, type PricingTier } from '../../config/pricing';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TITAN } from './governance-ai-theme';
 import { SectionHeading } from './GovernanceSectionChrome';
 
@@ -108,7 +108,7 @@ export function GovernancePricingSection() {
                     color: 'transparent',
                   }}
                 >
-                  {tier.priceOnRequest ? 'Auf Anfrage' : `${tier.priceString} €`}
+                  {tierPriceLabel(tier)}
                   {tier.priceOnRequest ? null : (
                   <span
                     className="ml-2 text-[11px] tracking-[.14em]"

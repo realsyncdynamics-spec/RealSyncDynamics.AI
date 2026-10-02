@@ -61,6 +61,12 @@ describe('gdpr-audit: Mandanten-Scan ohne IP-Limit und ohne Lead', () => {
     expect(src).toContain('if (!isOptimizerScan && !isTenantScan) {');
     expect(src).toContain("const email = isTenantScan ? '' : ");
   });
+
+  it('Mandanten-Scan verletzt gdpr_audits.email NOT NULL nicht (\'\' statt null)', () => {
+    const ddl = readFileSync('supabase/migrations/20260506110000_gdpr_audits.sql', 'utf8');
+    expect(ddl).toMatch(/email\s+TEXT NOT NULL/);
+    expect(src).toContain("email: isTenantScan ? '' : email || null,");
+  });
 });
 
 describe('tenant-audit: interner Aufruf + Limit pro Mandant', () => {

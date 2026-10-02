@@ -320,7 +320,9 @@ async function handleAudit(req: Request): Promise<Response> {
   const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
     url,
     domain,
-    email: email || null,
+    // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
+    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
+    email: isTenantScan ? '' : email || null,
     company,
     score,
     severity,

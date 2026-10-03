@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE, tierPriceLabel } from '../../config/pricing';
 import { getComplianceBanner } from '../../lib/compliance-notices';
 
 export interface PlanSelectorProps {
@@ -84,8 +84,8 @@ export function PlanSelector({
                   {/* Price */}
                   <div className="mb-4">
                     <div className="text-3xl font-bold text-titanium-50">
-                      {tier.priceString}
-                      <span className="text-lg text-titanium-400"> €</span>
+                      {tierPriceLabel(tier, '')}
+                      {!tier.priceOnRequest && <span className="text-lg text-titanium-400"> €</span>}
                     </div>
                     <p className="text-sm text-titanium-400">{tier.priceSuffix}</p>
                   </div>

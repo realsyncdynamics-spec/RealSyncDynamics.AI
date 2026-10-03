@@ -9,9 +9,11 @@ export interface CompanyProfileDraft {
   industry: string | null;
   companySize: string | null;
   usedTools: string[];
+  /** Im Setup-Assistenten gewählte KI-Systeme (IDs), getrennt von den Branchen-Tools. */
+  aiSystems: string[];
 }
 
-const EMPTY: CompanyProfileDraft = { industry: null, companySize: null, usedTools: [] };
+const EMPTY: CompanyProfileDraft = { industry: null, companySize: null, usedTools: [], aiSystems: [] };
 
 export const COMPANY_SIZES = ['1', '2-9', '10-49', '50-249', '250+'] as const;
 
@@ -28,6 +30,7 @@ export function loadCompanyProfile(tenantId: string | null): CompanyProfileDraft
       industry: parsed.industry ?? null,
       companySize: parsed.companySize ?? null,
       usedTools: Array.isArray(parsed.usedTools) ? parsed.usedTools : [],
+      aiSystems: Array.isArray(parsed.aiSystems) ? parsed.aiSystems : [],
     };
   } catch {
     return { ...EMPTY };

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Metrics {
   cac: number;
@@ -43,7 +44,7 @@ export function useRealtimeMetrics({
   const fetchMetrics = useCallback(async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-seo-metrics`,
+        `${getSupabaseUrl()}/functions/v1/calculate-seo-metrics`,
         {
           method: 'POST',
           headers: {
@@ -132,7 +133,7 @@ export function useSyncJobStatus(jobId: string, accessToken: string) {
     const fetchStatus = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/data_sync_jobs?id=eq.${jobId}`,
+          `${getSupabaseUrl()}/rest/v1/data_sync_jobs?id=eq.${jobId}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,

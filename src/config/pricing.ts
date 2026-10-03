@@ -297,6 +297,34 @@ export function tierById(id: TierId): PricingTier | undefined {
   return PRICING_TIERS.find((tier) => tier.id === id);
 }
 
+/** Öffentliche Beschriftung für Pläne ohne zugesicherten Festpreis. */
+export const ON_REQUEST_LABEL = 'Auf Anfrage';
+
+/**
+ * Der öffentliche Preis eines Tiers — die EINZIGE Stelle, an der aus
+ * `priceString` eine Preisangabe für eine Oberfläche wird.
+ *
+ * `priceString` bleibt bewusst der formatierte Listenbetrag (auch „1.249"
+ * für Enterprise; `test/contracts/audit-contract.test.ts` hält das fest).
+ * Ausgegeben werden darf er aber nur, wo ein Kaufpfad ihn einlöst. Bis zum
+ * 2026-09-27 prüfte das jede Oberfläche selbst — und sechs taten es nicht:
+ * Optimizer, Governance Score, Upgrade-Dialog, Plan-Auswahl, Billing und die
+ * Enterprise-Sektion zeigten „1.249 €" für einen Plan, der nur per Vertrag
+ * zu haben ist. `check:offer-prices` sah keinen davon, weil der Betrag erst
+ * zur Laufzeit aus der SSoT entsteht und nie als Literal im Quelltext steht.
+ *
+ * Deshalb liegt die Regel hier, und `test/pricing/tier-price-label.test.ts`
+ * verbietet den direkten Zugriff auf `.priceString` in Anzeigen.
+ *
+ * @param suffix wird nur an einen echten Betrag gehängt, nie an das Label.
+ */
+export function tierPriceLabel(
+  tier: Pick<PricingTier, 'priceOnRequest' | 'priceString'>,
+  suffix = ' €',
+): string {
+  return tier.priceOnRequest ? ON_REQUEST_LABEL : `${tier.priceString}${suffix}`;
+}
+
 /**
  * Lookup nach beliebigem Plan-Key — inklusive Altdaten wie `scale`.
  * Liefert die Monatsvariante, sofern der Key keine Jahresvariante ist.

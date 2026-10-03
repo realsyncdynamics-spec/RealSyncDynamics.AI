@@ -11,8 +11,9 @@ import {
   ArrowLeft, Clock, AlertTriangle, CheckCircle2, Loader2,
   Globe, ExternalLink, ShieldCheck, Info, ZapOff,
 } from 'lucide-react';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 
 interface ConsentTimingRequest {
   url: string;

@@ -10,6 +10,9 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions } from '../_shared/gateway.ts';
+// Steuerhinweis aus der Pricing-SSoT (shared/pricing.ts, per sync:pricing
+// gespiegelt): folgt dem Steuerstatus der Firma, kein eigener Wortlaut hier.
+import { PRICING_TAX_NOTE } from '../_shared/pricing.generated.ts';
 
 // Abweichende CORS-Header: kein x-client-info/apikey benötigt für PDF-View
 const corsHeaders = buildCorsHeaders('GET, OPTIONS');
@@ -374,7 +377,7 @@ ${auditSlide}
       <ul><li>+ SSO / SAML</li><li>+ Org-Governance</li><li>+ Public-Sector-Modus</li><li>unlimitierte AI-Calls</li></ul>
     </div>
   </div>
-  <p class="footnote">Alle Preise zzgl. USt. · monatlich kündbar · AI-Kontingent rollt nicht über</p>
+  <p class="footnote">${PRICING_TAX_NOTE} · monatlich kündbar · AI-Kontingent rollt nicht über</p>
 </section>
 
 <!-- ─── SLIDE 7: WAS UNS ANDERS MACHT ────────────────────────────── -->

@@ -1,8 +1,9 @@
 // Smart Model Selection for Governance Agent
 //
 // Detects question complexity and routes to optimal model:
-// - Simple (FAQ-like): Haiku 4.5 (~€0.80/M input) — 5x cheaper, sufficient for basic Q&A
-// - Complex (multi-turn, tools, analysis): Sonnet 4.6 (~€3.00/M input) — for nuanced compliance
+// - Simple (FAQ-like): Haiku 4.5 — sufficient for basic Q&A
+// - Complex (multi-turn, tools, analysis): Sonnet 4.6 — for nuanced compliance
+// Prices are not kept here: shared/model-prices.ts is the only source.
 //
 // Cost impact: ~40-50% reduction if 40-50% of queries are simple
 // Latency impact: ~30% faster for simple queries (Haiku is ~3x faster)

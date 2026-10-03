@@ -19,6 +19,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   fromAnthropicUsage,
   fromInclusiveCacheUsage,
+  type AnthropicUsage,
   type TokenUsage,
 } from './providerCost.ts';
 import { supportsSamplingParams } from './aiGateway/anthropicAdapter.ts';
@@ -103,13 +104,6 @@ export class ProviderError extends Error {
   constructor(message: string, code = 'PROVIDER_ERROR') {
     super(message); this.code = code;
   }
-}
-
-interface AnthropicUsage {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_creation_input_tokens?: number;
-  cache_read_input_tokens?: number;
 }
 
 interface AnthropicMessageParams {

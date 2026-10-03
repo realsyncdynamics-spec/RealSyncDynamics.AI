@@ -17,6 +17,7 @@ import {
   LV2_LIFECYCLE,
   LV2_PIPELINE,
   LV2_TIMELINE_NOTE,
+  LV2_INFRASTRUCTURE,
   type Lv2EuCard,
 } from './landing-v2-content';
 
@@ -142,7 +143,7 @@ export function EvidenceChainPreview() {
             </ul>
 
             <p style={{ marginTop: '1.6em' }}>
-              <Link to="/evidence" className="lv2-btn lv2-btn--link">
+              <Link to="/evidence-vault" className="lv2-btn lv2-btn--link">
                 Evidence Vault ansehen <ArrowRight size="1em" aria-hidden="true" />
               </Link>
             </p>
@@ -192,15 +193,16 @@ export function EuNativeGrid() {
       <div className="lv2__wrap">
         <div className="lv2-split">
           <div>
-            <p className="lv2__kicker">EU-native by design</p>
+            <p className="lv2__kicker">Produktionspfad · offen gelegt</p>
             <h2 id="lv2-eu-title" className="lv2__h2">
-              Ihre Daten verlassen Europa nicht.
+              Infrastruktur ist Teil des Produkts — deshalb zeigen wir sie.
             </h2>
           </div>
           <p className="lv2__lead lv2-split__aside">
-            Runtime, Datenbank und Evidence Vault laufen in Frankfurt am Main. Keine Übermittlung
-            in Drittländer, keine Abhängigkeit von US-Hyperscalern im Datenpfad – mit
-            Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.
+            Die öffentliche SPA wird über Cloudflare Pages ausgeliefert. Daten, Identität und
+            serverseitige Functions laufen über Supabase; lokale KI- und Ops-Dienste haben einen
+            eigenen VPS-/Docker-Pfad. Die Oberfläche benennt diese Schichten statt sie hinter
+            generischen „Cloud“-Claims zu verstecken.
           </p>
         </div>
 
@@ -212,6 +214,52 @@ export function EuNativeGrid() {
                 <Icon size={22} aria-hidden="true" />
                 <h3 className="lv2__h3">{card.title}</h3>
                 <p>{card.text}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+
+/* ── 06b Infrastruktur-Spiegel ───────────────────────────────────────── */
+const INFRA_ICONS = [Server, Database, Workflow, Layers, Cpu, CreditCard] as const;
+
+export function InfrastructureMirror() {
+  return (
+    <section id="infrastruktur" className="lv2__section lv2-infrastructure" aria-labelledby="lv2-infra-title">
+      <div className="lv2__wrap">
+        <div className="lv2-split">
+          <div>
+            <p className="lv2__kicker">Make the invisible visible</p>
+            <h2 id="lv2-infra-title" className="lv2__h2">
+              Das Frontend zeigt den echten Produktionspfad.
+            </h2>
+          </div>
+          <p className="lv2__lead lv2-split__aside">
+            Keine zweite Marketing-Architektur: Jede Karte benennt eine reale Schicht oder öffentliche
+            Produktoberfläche und führt auf die dazugehörige Route.
+          </p>
+        </div>
+
+        <ul className="lv2-infra">
+          {LV2_INFRASTRUCTURE.map((item, index) => {
+            const Icon = INFRA_ICONS[index] ?? Server;
+            return (
+              <li key={item.layer} className="lv2-infra__card">
+                <div className="lv2-infra__top">
+                  <span className="lv2__kicker">{item.layer}</span>
+                  <span className="lv2-infra__status">{item.status}</span>
+                </div>
+                <Icon size={22} aria-hidden="true" />
+                <h3 className="lv2__h3">{item.title}</h3>
+                <code>{item.path}</code>
+                <p>{item.text}</p>
+                <Link to={item.to} className="lv2-btn lv2-btn--link">
+                  {item.cta} <ArrowRight size="1em" aria-hidden="true" />
+                </Link>
               </li>
             );
           })}

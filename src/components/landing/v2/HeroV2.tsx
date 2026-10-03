@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
 import {
   LV2_H1_GOLD,
   LV2_H1_SILVER,
@@ -16,6 +17,11 @@ const SOURCE = 'landing-v2-hero';
  * spiegelt.
  */
 export function HeroV2() {
+  const starter = planById('starter');
+  const growth = planById('growth');
+  const agency = planById('agency');
+  const tierButtons = [starter, growth, agency];
+
   return (
     <section id="top" className="lv2-hero" aria-labelledby="lv2-hero-title">
       <div className="lv2-hero__map" aria-hidden="true">
@@ -55,6 +61,17 @@ export function HeroV2() {
           <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass" data-hero-cta="runtime">
             Runtime ansehen
           </Link>
+          {tierButtons.map((plan) => (
+            <Link
+              key={plan.id}
+              to={checkoutHrefForPlan(plan, { source: SOURCE })}
+              className={`lv2-btn lv2-btn--glass${plan.highlight ? ' lv2-btn--featured' : ''}`}
+              data-hero-cta={`plan-${plan.id}`}
+            >
+              {plan.name}
+              <strong>{formatPriceEur(plan.price.monthlyEur)}</strong>
+            </Link>
+          ))}
           <Link
             to="/contact-sales?tier=enterprise&source=landing-v2-hero"
             className="lv2-btn lv2-btn--glass lv2-btn--enterprise"

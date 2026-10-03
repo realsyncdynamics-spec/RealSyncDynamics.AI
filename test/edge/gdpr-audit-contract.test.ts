@@ -377,6 +377,11 @@ describe('Laufzeit auf feindseligem HTML (ReDoS)', () => {
     within('deepCheckImprint / kontakt-href', () => deepCheckImprint(html));
   });
 
+  it('haelt bei vielen unterminierten Kommentaren und Formularen durch', () => {
+    within('deepCheckImprint / comments', () => deepCheckImprint('<!--'.repeat(30_000)));
+    within('deepCheckImprint / forms', () => deepCheckImprint('<form>'.repeat(20_000) + '<textarea>'));
+  });
+
   it('haelt bei sehr vielen Ankern durch', () => {
     const html = '<a href="/x">Text</a>'.repeat(20_000);
     within('findLegalLink', () => findLegalLink(html, 'privacy'));

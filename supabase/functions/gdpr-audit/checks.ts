@@ -547,6 +547,53 @@ export function hasEmailContact(html: string, text: string): boolean {
   return extractCloudflareEmails(html).length > 0;
 }
 
+/**
+ * Entfernt HTML-Kommentare linear. Bewusst keine Regex: `<!--[\s\S]*?-->`
+ * laeuft bei vielen ungeschlossenen `<!--` fuer jede Fundstelle bis zum Ende
+ * (gemessen 1,9 s auf 120 kB). Ein ungeschlossener Kommentar reicht wie im
+ * Browser bis zum Dokumentende.
+ */
+function stripComments(html: string): string {
+  let out = '';
+  let i = 0;
+  for (;;) {
+    const start = html.indexOf('<!--', i);
+    if (start === -1) return out + html.slice(i);
+    out += html.slice(i, start);
+    const end = html.indexOf('-->', start + 4);
+    if (end === -1) return out;
+    i = end + 3;
+  }
+}
+
+/** Index von `<name` als echter Tag-Anfang (gefolgt von Whitespace, `>` oder `/`), sonst -1. */
+function indexOfTag(lower: string, name: string, from: number): number {
+  const needle = `<${name}`;
+  for (let i = lower.indexOf(needle, from); i !== -1; i = lower.indexOf(needle, i + 1)) {
+    const next = lower.charAt(i + needle.length);
+    if (next === '' || next === '>' || next === '/' || /\s/.test(next)) return i;
+  }
+  return -1;
+}
+
+/**
+ * Steht ein `<textarea>` innerhalb eines `<form>…</form>`? Linear: der naechste
+ * textarea-Index wird zwischen den Formularen weitergereicht statt pro Formular
+ * neu bis zum Dokumentende gesucht.
+ */
+function hasFormTextarea(markup: string): boolean {
+  const lower = markup.toLowerCase();
+  let textarea = indexOfTag(lower, 'textarea', 0);
+  for (let form = indexOfTag(lower, 'form', 0); form !== -1 && textarea !== -1; ) {
+    const close = lower.indexOf('</form', form);
+    const end = close === -1 ? lower.length : close;
+    if (textarea < form) textarea = indexOfTag(lower, 'textarea', form);
+    if (textarea !== -1 && textarea < end) return true;
+    form = indexOfTag(lower, 'form', end);
+  }
+  return false;
+}
+
 /** Pfadsegment einer Kontaktseite: /kontakt, /contact-us, /de/kontaktformular.html … */
 const CONTACT_PAGE_PATH =
   /(?:^|\/)(?:kontakt(?:[-_]?formular)?|contact(?:[-_]?form|[-_]?us)?)(?:\.html?)?(?:\/|[?#]|$)/;
@@ -600,12 +647,13 @@ export function deepCheckImprint(html: string): Issue[] {
   // Der Pfad muss als eigenes Segment auf eine Kontaktseite zeigen: ein
   // Teilstring-Treffer zaehlte auch /products/contact-lenses oder
   // /kontaktlinsen und liess damit einen echten Verstoss durchgehen.
-  // Nur echtes Markup zaehlt: Skript- und Style-Inhalt raus, wie in
-  // visibleText() — sonst galte ein "<textarea" oder ein Kontaktlink in einem
-  // Skript-String als Formular (dieselbe Falle wie Telefonnummern im Skript).
-  const markup = stripElement(stripElement(html, 'script'), 'style');
+  // Nur echtes Markup zaehlt: Skript, Style und Kommentare raus — sonst galte
+  // ein "<textarea" oder Kontaktlink in einem Skript-String oder einem
+  // auskommentierten Block als Formular (dieselbe Falle wie Telefonnummern im
+  // Skript). Ein textarea zaehlt nur innerhalb eines <form>.
+  const markup = stripComments(stripElement(stripElement(html, 'script'), 'style'));
   const hasContactForm =
-    (/<textarea\b/i.test(markup) && /<form\b/i.test(markup)) ||
+    hasFormTextarea(markup) ||
     tagsOf(markup, 'a').some((tag) => {
       const href = (attrOf(tag, 'href') ?? '').toLowerCase();
       if (/^(?:mailto|tel):/.test(href)) return false;

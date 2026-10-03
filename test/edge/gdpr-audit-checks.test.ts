@@ -411,6 +411,30 @@ Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7ad
     }
   });
 
+  it('ignoriert Formular oder Kontaktlink in HTML-Kommentaren', () => {
+    const inComment = [
+      '<!-- <form><textarea></textarea></form> -->',
+      '<!-- <a href="/kontakt">Kontakt</a> -->',
+      '<!-- unterminiert <form><textarea></textarea></form>',
+    ];
+    for (const c of inComment) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${c}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), c).toContain('sub_imprint_no_contact');
+    }
+  });
+
+  it('verlangt eine textarea innerhalb eines <form>', () => {
+    const unassociated = [
+      '<textarea></textarea>',
+      '<textarea></textarea><form></form>',
+      '<form></form><textarea></textarea>',
+    ];
+    for (const m of unassociated) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${m}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), m).toContain('sub_imprint_no_contact');
+    }
+  });
+
   it('wertet einen mailto:contact@-Link nicht als Kontaktformular', () => {
     const html = `<!doctype html><body>${IMPRINT_BASE}
       <p><a href="mailto:contact@muster.de">contact@muster.de</a></p></body>`;

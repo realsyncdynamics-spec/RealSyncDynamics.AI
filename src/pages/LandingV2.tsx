@@ -7,6 +7,7 @@ import {
   AiActTimeline,
   EuNativeGrid,
   EvidenceChainPreview,
+  InfrastructureMirror,
   FrameworkStrip,
   LifecycleGrid,
 } from '../components/landing/v2/LandingV2Sections';
@@ -58,6 +59,7 @@ export function LandingV2() {
         </Embed>
         <EvidenceChainPreview />
         <EuNativeGrid />
+        <InfrastructureMirror />
         <Embed>
           <ArchitectureSection />
           <GovernanceSelfCheck />

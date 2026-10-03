@@ -75,8 +75,7 @@
     "src/pages/solutions/SaaSSolution.tsx": 1,
     "src/pages/SteuerberaterLanding.tsx": 4,
     "src/pages/WhatsAppPricingPage.tsx": 3,
-    "src/unified-entry/mock-data.ts": 1,
-    "src/unified-entry/pages/TrialOfferPage.tsx": 1
+    "src/unified-entry/mock-data.ts": 1
   },
   "provenance": {
     "src/config/public-nav.ts": 1,

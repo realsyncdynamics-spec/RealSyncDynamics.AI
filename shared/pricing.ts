@@ -1843,6 +1843,7 @@ export const ENTITLEMENT_KEYS = [
   'evidence.advanced',
   'evidence.basic_vault',
   'fix.snippets',
+  'frontend.modernization',
   'governance.ai_register',
   'governance.dsgvo_directory',
   'governance.risk_register',
@@ -1940,6 +1941,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'bots.count': 0,
     'dashboard.access': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'limit.sites': 0,
@@ -1959,6 +1961,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'dashboard.access': 1,
     'dse.generator': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'limit.agent_runs_monthly': 100,
@@ -1999,6 +2002,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2057,6 +2061,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2119,6 +2124,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 1,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2185,6 +2191,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 1,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2229,6 +2236,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'dashboard.access': 1,
     'dse.generator': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.dsgvo_directory': 1,
     'limit.automation_runs_monthly': 10,
     'limit.bot_messages_monthly': 1000,
@@ -2959,5 +2967,30 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Alle Preise verstehen sich zzgl. USt. */
-export const PRICING_TAX_NOTE = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
+export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+
+/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+export const PRICING_TAX_NOTE_EXEMPT =
+  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+
+export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
+
+/**
+ * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
+ * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
+ * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
+ * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ */
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+
+/** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
+export function pricingTaxNote(mode: PricingTaxMode): string {
+  return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
+}
+
+/**
+ * Gültiger Steuerhinweis, abgeleitet aus `PRICING_TAX_MODE`. Für Konsumenten
+ * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
+ */
+export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);

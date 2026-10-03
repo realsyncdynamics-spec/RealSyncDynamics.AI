@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { PUBLIC_PRICING_TIERS, SELLABLE_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, SELLABLE_PRICING_TIERS, tierPriceLabel, type TierId } from '../../config/pricing';
 import { AlertCircle, ArrowRight, Loader2, X } from 'lucide-react';
 
 interface PlanUpgradeModalProps {
@@ -92,7 +92,7 @@ export function PlanUpgradeModal({
                   } disabled:cursor-not-allowed`}
                 >
                   <p className="font-semibold text-titanium-50">{tier.name}</p>
-                  <p className="text-sm text-titanium-400 mt-1">{tier.priceString}€ / {tier.priceSuffix.toLowerCase()}</p>
+                  <p className="text-sm text-titanium-400 mt-1">{tierPriceLabel(tier, '€')} / {tier.priceSuffix.toLowerCase()}</p>
                   {tier.id === currentPlanId && (
                     <span className="absolute top-2 right-2 text-xs font-bold text-titanium-300 bg-obsidian-800 px-2 py-1">
                       Aktuell

@@ -29,6 +29,9 @@ export function getTrialStatus(decision: EntitlementDecision, now: Date = new Da
   };
 }
 
+/** Abo-Zustände, die ein laufendes Vertragsverhältnis ausweisen. */
+const LIVE_SUBSCRIPTION_STATES: ReadonlySet<string> = new Set(['active', 'trialing', 'past_due']);
+
 /**
  * Warum ein Mandant gerade den dauerhaft kostenlosen Zugang nutzt — oder
  * `null`, wenn ein Abo bzw. eine laufende Testphase greift.
@@ -54,7 +57,9 @@ export function getFreeAccessReason(
   // Stripe-Testphase, die ohne Zahlungsmethode auslief: Der Sync setzt den
   // Status auf canceled/unpaid, `trial_end` bleibt als Spur stehen. Ein
   // bezahltes Abo, das nie eine Testphase hatte, trägt kein `trial_end`.
-  if (!decision.isActive && decision.trialEnd) {
+  // Ein laufendes Vertragsverhältnis (z. B. `past_due` nach Umwandlung der
+  // Testphase) behält `trial_end` ebenfalls — das ist kein Free-Rückfall.
+  if (!decision.isActive && decision.trialEnd && !LIVE_SUBSCRIPTION_STATES.has(decision.status)) {
     const end = new Date(decision.trialEnd);
     if (!Number.isNaN(end.getTime()) && end.getTime() <= now.getTime()) return 'trial_expired';
   }
@@ -62,9 +67,6 @@ export function getFreeAccessReason(
   // eine Eigenschaft des Katalogs, kein Vergleich gegen 'free_audit'.
   return planByKey(decision.planKey)?.purchaseMode === 'free' ? 'free_plan' : null;
 }
-
-/** Abo-Zustände, die ein laufendes Vertragsverhältnis ausweisen. */
-const LIVE_SUBSCRIPTION_STATES: ReadonlySet<string> = new Set(['active', 'trialing', 'past_due']);
 
 /**
  * Darf dieser Mandant im Stripe-Checkout eine Testphase bekommen?

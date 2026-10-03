@@ -84,6 +84,11 @@ describe('getFreeAccessReason', () => {
     expect(getFreeAccessReason(decision, NOW)).toBe('trial_expired');
   });
 
+  it('past_due nach umgewandelter Testphase ist kein kostenloser Zugang', () => {
+    const decision = { ...baseDecision, status: 'past_due' as const, isActive: false, trialEnd: '2026-06-10T12:00:00Z' };
+    expect(getFreeAccessReason(decision, NOW)).toBeNull();
+  });
+
   it('gekündigtes bezahltes Abo ohne Testphase ist kein kostenloser Zugang', () => {
     const decision = { ...baseDecision, status: 'canceled' as const, isActive: false, trialEnd: null };
     expect(getFreeAccessReason(decision, NOW)).toBeNull();

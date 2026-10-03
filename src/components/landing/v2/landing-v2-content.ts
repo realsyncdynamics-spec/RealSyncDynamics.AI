@@ -15,13 +15,13 @@ export const LV2_H1_GOLD = 'for Europe';
 export const LV2_PIPELINE = ['Discover', 'Assess', 'Govern', 'Execute', 'Verify', 'Prove'] as const;
 
 export const LV2_STACK = [
-  'EU-Hosted Runtime',
-  'Supabase Frankfurt',
-  'Evidence Vault / Hash-Chain',
-  'Ollama local',
-  'Multi-Tenant RLS',
-  'n8n',
-  'Stripe',
+  'Cloudflare Pages · Frontend',
+  'Supabase · Postgres / Auth / RLS',
+  'Supabase Edge Functions · Deno',
+  'Evidence Vault · Hash-Chain',
+  'VPS · Docker / Traefik',
+  'Ollama · Hermes · AnythingLLM',
+  'Stripe Billing',
 ] as const;
 
 export const LV2_HERO_NOTE =
@@ -129,12 +129,84 @@ export interface Lv2EuCard {
 }
 
 export const LV2_EU_NATIVE: Lv2EuCard[] = [
-  { icon: 'server', title: 'EU-Hosted Runtime', text: 'Policy-Engine und API-Gateway in deutschen Rechenzentren.' },
-  { icon: 'database', title: 'Supabase Frankfurt', text: 'Postgres in eu-central-1, verschlüsselt at rest und in transit.' },
-  { icon: 'layers', title: 'Multi-Tenant RLS', text: 'Mandantentrennung auf Datenbankebene per Row-Level Security.' },
-  { icon: 'cpu', title: 'Ollama local', text: 'Klassifizierung mit lokal betriebenen Open-Weight-Modellen.' },
-  { icon: 'workflow', title: 'n8n Workflows', text: 'Self-hosted Automatisierung für Freigaben und Eskalationen.' },
-  { icon: 'creditcard', title: 'Stripe Billing', text: 'Abrechnung in Euro, Zahlung per Karte oder SEPA-Lastschrift.' },
+  { icon: 'server', title: 'Cloudflare Pages', text: 'Die öffentliche React/Vite-SPA wird über die Cloudflare-Git-Integration aus main ausgeliefert.' },
+  { icon: 'database', title: 'Supabase · Data & Auth', text: 'Postgres, Auth und mandantenfähige Row-Level Security bilden die autoritative Daten- und Identitätsschicht.' },
+  { icon: 'layers', title: 'Supabase Edge Functions', text: 'Deno-Functions liefern die serverseitigen API- und Governance-Funktionen unter /functions/v1/*.' },
+  { icon: 'cpu', title: 'VPS · Docker / Traefik', text: 'Der Container-Pfad betreibt lokale KI- und Ops-Dienste hinter Traefik/TLS.' },
+  { icon: 'workflow', title: 'Ollama · Hermes · AnythingLLM', text: 'Lokale Modell-, Automations- und RAG-Dienste bleiben als eigener Runtime-Pfad sichtbar statt im Marketing zu verschwinden.' },
+  { icon: 'creditcard', title: 'Stripe Billing', text: 'Self-Service-Billing für die buchbaren Pläne; Enterprise führt bewusst in die Anfrage statt in einen Fake-Checkout.' },
+];
+
+export interface Lv2InfrastructureItem {
+  layer: string;
+  title: string;
+  status: 'PROD PATH' | 'LIVE SURFACE';
+  path: string;
+  to: string;
+  cta: string;
+  text: string;
+}
+
+/**
+ * Sichtbarer Spiegel der produktiven Infrastruktur. Die Labels beschreiben
+ * den im Repository verdrahteten Produktionspfad — keine erfundenen Uptime-
+ * oder Kundendaten.
+ */
+export const LV2_INFRASTRUCTURE: readonly Lv2InfrastructureItem[] = [
+  {
+    layer: '01 · DELIVERY',
+    title: 'Cloudflare Pages',
+    status: 'PROD PATH',
+    path: 'main → build:full → Cloudflare Pages',
+    to: '/',
+    cta: 'Live-Surface',
+    text: 'Frontend-Auslieferung über Cloudflare Pages. Der GitHub-Workflow validiert den Build; die Cloudflare-Git-Integration ist der dokumentierte Produktionspfad.',
+  },
+  {
+    layer: '02 · DATA / IDENTITY',
+    title: 'Supabase',
+    status: 'PROD PATH',
+    path: 'Postgres · Auth · RLS · Edge Functions',
+    to: '/sicherheit',
+    cta: 'Security ansehen',
+    text: 'Postgres, Auth, Tenant-Isolation per RLS und Deno Edge Functions bilden die server-autoritative Daten- und API-Schicht.',
+  },
+  {
+    layer: '03 · GOVERNANCE',
+    title: 'Runtime + Policy Engine',
+    status: 'LIVE SURFACE',
+    path: '/governance-runtime · /policy-engine',
+    to: '/policy-engine',
+    cta: 'Policy Engine öffnen',
+    text: 'Risiko, Freigaben und ausführbare Governance-Regeln liegen auf echten Produktseiten und führen in dieselbe Runtime.',
+  },
+  {
+    layer: '04 · PROOF',
+    title: 'Evidence Vault',
+    status: 'LIVE SURFACE',
+    path: '/evidence-vault · /app/evidence',
+    to: '/evidence-vault',
+    cta: 'Evidence ansehen',
+    text: 'Hash-Chain, Prüfpfad und Evidence-Flächen werden als eigener Proof-Layer sichtbar — nicht nur als Claim im Hero.',
+  },
+  {
+    layer: '05 · LOCAL AI / OPS',
+    title: 'VPS · Docker / Traefik',
+    status: 'PROD PATH',
+    path: 'Ollama · Hermes · AnythingLLM · Uptime Kuma',
+    to: '/governance-runtime',
+    cta: 'Runtime ansehen',
+    text: 'Lokale KI, Automation, RAG und Monitoring laufen im dokumentierten Container-Pfad hinter Traefik.',
+  },
+  {
+    layer: '06 · PRODUCT ENTRY',
+    title: 'Activation → Command Center',
+    status: 'LIVE SURFACE',
+    path: '/welcome → /app/activation → /app/dashboard',
+    to: '/demo-tour/dashboard',
+    cta: 'Demo-Dashboard',
+    text: 'Login, Governance Activation und Command Center sind ein zusammenhängender Produktpfad; die öffentliche Demo spiegelt ihn ohne Login.',
+  },
 ];
 
 export interface Lv2Faq {

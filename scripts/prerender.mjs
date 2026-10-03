@@ -25,7 +25,24 @@ const GOTO_MS = parseInt(process.env.PRERENDER_GOTO_MS ?? process.env.PRERENDER_
 const HYDRATE_MS = parseInt(process.env.PRERENDER_HYDRATE_MS ?? '3500', 10);
 const PREVIEW_MS = parseInt(process.env.PRERENDER_PREVIEW_MS ?? '10000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '6', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 0.4 = niedrigste vergebene Sitemap-Priority: ALLE Sitemap-Routen bekommen
+// statisches HTML. Grund ist der SPA-Fallback in public/_redirects — jede
+// nicht prerenderte Route bekommt dist/index.html, und das ist die gerenderte
+// STARTSEITE samt `<link rel="canonical" href=".../">`. Bei 0.6 lieferten so
+// u. a. /ai-act-klassifikator, /avv-generator und /presse in der Produktion
+// Startseiten-Inhalt (gemessen 2026-09: identische Bytes wie /), Suchmaschinen
+// werten sie als Duplikate von `/`. Die 301-Regeln in _redirects decken nur
+// Aliasse ab, keine eigenstaendigen Inhaltsseiten.
+//
+// Watchdog-sicher: loadRoutes() sortiert nach Priority absteigend und jede
+// Route wird sofort geschrieben. Bricht MAX_MS den Lauf ab, fehlen nur Routen
+// vom Ende der Liste — also genau die, die bei 0.6 ohnehin nicht dran waren.
+//
+// Den Fallback auf eine inhaltsleere Shell umzubiegen wurde versucht und
+// verworfen (PR #966): auf Cloudflare Pages erzeugt jedes andere Ziel als
+// /index.html entweder eine 308-Schleife oder haengt die statische
+// Auslieferung samt JS-Bundles aus.
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '360000', 10);
 
 const BLOCKED_HOST = /google-analytics|googletagmanager|googleadservices|doubleclick|facebook\.net|hotjar|intercom|sentry\.io|ingest\.sentry/i;

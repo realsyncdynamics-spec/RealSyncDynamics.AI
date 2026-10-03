@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamics.ai/schemas/registry/assessment.schema.json",
+  "title": "Assessment-Snapshot (Deployment-Bewertung)",
+  "description": "Persistierter Snapshot einer Bewertung. Das Ergebnis ist NIE ein Deployment-Status, sondern gilt nur fuer genau diese Eingaben (inputs), dieses policy_profile, diese rule_version und diesen evidence_cutoff. inputs_hash = sha256_hex(utf8(RFC8785_JCS(inputs))), gleiche Konvention wie supabase/functions/_shared/evidence-hash.ts. Keine UI-Farbe.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "assessment_id": {
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "is_example": {
+      "type": "boolean",
+      "description": "true fuer Fixtures/Beispiele. Echte Snapshots liegen in der DB (deployment_assessments), nicht im Repo."
+    },
+    "deployment_id": {
+      "$ref": "common.schema.json#/$defs/slug"
+    },
+    "model_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/modelKey"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_profile": {
+      "$ref": "#/$defs/policyProfile"
+    },
+    "assurance_target": {
+      "$ref": "#/$defs/assuranceTarget"
+    },
+    "rule_version": {
+      "$ref": "#/$defs/ruleVersion"
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "evidence_cutoff": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "result": {
+      "enum": [
+        "PASS",
+        "CONDITIONAL",
+        "FAIL",
+        "UNKNOWN",
+        "STALE"
+      ]
+    },
+    "inputs": {
+      "$ref": "#/$defs/inputs"
+    },
+    "inputs_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "inputs_hash_method": {
+      "const": "sha256_hex(utf8(RFC8785_JCS(inputs)))"
+    },
+    "derived": {
+      "description": "Aussagen, die der Evaluator aus den Eingaben ableitet. Invarianten (registry:policy-invariants) begrenzen, was hier stehen darf.",
+      "type": "object",
+      "properties": {
+        "third_country_access": {
+          "enum": [
+            "no_access_claimed",
+            "access_possible",
+            "access_confirmed",
+            "unknown",
+            null
+          ]
+        },
+        "seal_level": {
+          "enum": [
+            "SEAL-0",
+            "SEAL-1",
+            "SEAL-2",
+            "SEAL-3",
+            "SEAL-4",
+            null
+          ]
+        },
+        "sovereignty_assurance": {
+          "enum": [
+            "none",
+            "data_residency",
+            "full_supply_chain_sovereignty",
+            null
+          ]
+        },
+        "ai_act_conformity": {
+          "enum": [
+            "no_statement",
+            "conformant",
+            "non_conformant",
+            null
+          ]
+        }
+      },
+      "required": [
+        "third_country_access",
+        "seal_level",
+        "sovereignty_assurance",
+        "ai_act_conformity"
+      ],
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "condition",
+              "blocking"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "assessment_id",
+    "is_example",
+    "deployment_id",
+    "model_id",
+    "policy_profile",
+    "assurance_target",
+    "rule_version",
+    "evaluated_at",
+    "evidence_cutoff",
+    "expires_at",
+    "result",
+    "inputs",
+    "inputs_hash",
+    "inputs_hash_method",
+    "derived",
+    "findings"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "policyProfile": {
+      "enum": [
+        "strict_eu_sovereignty",
+        "eu_data_residency",
+        "baseline"
+      ]
+    },
+    "assuranceTarget": {
+      "enum": [
+        "routing_eligibility",
+        "data_residency",
+        "full_supply_chain_sovereignty",
+        "ai_act_documentation_support"
+      ]
+    },
+    "ruleVersion": {
+      "type": "string",
+      "pattern": "^[a-z0-9_.-]+@\\d+\\.\\d+\\.\\d+$"
+    },
+    "residencyClass": {
+      "enum": [
+        "DE_ONLY",
+        "EU_ONLY",
+        "EU_EFTA",
+        "GLOBAL_ALLOWED"
+      ]
+    },
+    "evidenceItem": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^(claim|certification|fact|seal):[a-z0-9._:/-]+$"
+        },
+        "status": {
+          "$ref": "common.schema.json#/$defs/verificationStatus"
+        },
+        "source_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_at": {
+          "$ref": "common.schema.json#/$defs/capturedAt"
+        },
+        "max_age_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "freshness": {
+          "enum": [
+            "fresh",
+            "stale"
+          ]
+        }
+      },
+      "required": [
+        "ref",
+        "status",
+        "source_count",
+        "captured_at",
+        "max_age_days",
+        "freshness"
+      ],
+      "additionalProperties": false
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "deployment_id": {
+          "$ref": "common.schema.json#/$defs/slug"
+        },
+        "product_sku": {
+          "$ref": "common.schema.json#/$defs/slug"
+        },
+        "facts": {
+          "type": "object",
+          "properties": {
+            "inference_region": {
+              "$ref": "common.schema.json#/$defs/regionFact"
+            },
+            "external_inference_egress": {
+              "$ref": "common.schema.json#/$defs/boolFact"
+            },
+            "third_country_access": {
+              "$ref": "common.schema.json#/$defs/thirdCountryAccess"
+            },
+            "eu_commission_seal": {
+              "$ref": "common.schema.json#/$defs/euCommissionSeal"
+            }
+          },
+          "required": [
+            "inference_region",
+            "external_inference_egress",
+            "third_country_access",
+            "eu_commission_seal"
+          ],
+          "additionalProperties": false
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceItem"
+          }
+        },
+        "relied_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "customer_config": {
+          "type": "object",
+          "properties": {
+            "residency_class": {
+              "$ref": "#/$defs/residencyClass"
+            },
+            "settings": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "residency_class",
+            "settings"
+          ],
+          "additionalProperties": false
+        },
+        "intended_purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "use_case_risk_class": {
+          "enum": [
+            "not_assessed",
+            "minimal",
+            "limited",
+            "high",
+            "prohibited"
+          ]
+        },
+        "policy_profile": {
+          "$ref": "#/$defs/policyProfile"
+        },
+        "assurance_target": {
+          "$ref": "#/$defs/assuranceTarget"
+        },
+        "rule_version": {
+          "$ref": "#/$defs/ruleVersion"
+        }
+      },
+      "required": [
+        "deployment_id",
+        "product_sku",
+        "facts",
+        "evidence",
+        "relied_on",
+        "customer_config",
+        "intended_purpose",
+        "use_case_risk_class",
+        "policy_profile",
+        "assurance_target",
+        "rule_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

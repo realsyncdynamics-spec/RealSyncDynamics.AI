@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "scaleway",
+  "display_name": "Scaleway",
+  "legal_name": {
+    "value": "Scaleway",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "Data processor: Scaleway, 8 rue de la Ville l'Evêque, 75008 Paris"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Rechtsform auf der Quelle nicht genannt."
+  },
+  "brands": [
+    "Scaleway"
+  ],
+  "legal_seat_country": {
+    "value": [
+      "FR"
+    ],
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://www.scaleway.com/en/docs/generative-apis/reference-content/data-privacy/",
+        "captured_at": "2026-09-26",
+        "locator": "Anschrift des Verarbeiters: 8 rue de la Ville l'Evêque, 75008 Paris"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht in den ausgewerteten Quellen belegt."
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [],
+  "website": "https://www.scaleway.com",
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ],
+    "notes": "ISO/IEC 27001:2022 laut Recherche (2026-09-25) war auf der Security-Seite am 2026-09-26 nicht belegbar und wurde daher NICHT erfasst."
+  }
+}

@@ -1,0 +1,548 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "mistral-la-plateforme-eu",
+  "vendor_id": "mistral-ai",
+  "brand": "Mistral AI",
+  "product_name": "Mistral La Plateforme – EU Regional Inference (api.eu.mistral.ai)",
+  "product_sku": "mistral-la-plateforme",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": null,
+    "name": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Betreiber der Rechenzentren nicht belegt ('Multiple data centers in EU and EFTA countries')."
+  },
+  "connector": {
+    "connector_type": "mistral_native",
+    "api_base_url": "https://api.eu.mistral.ai/v1",
+    "api_paths": [
+      "/chat/completions"
+    ],
+    "inventory_endpoint": {
+      "kind": "models_list",
+      "path_or_url": "/models"
+    },
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://docs.mistral.ai/inference/regional-inference",
+        "captured_at": "2026-09-26",
+        "locator": "api.eu.mistral.ai; Modellverfuegbarkeit per models.list am regionalen Endpunkt pruefen"
+      },
+      {
+        "url": "https://docs.mistral.ai/api/endpoint/chat",
+        "captured_at": "2026-09-25",
+        "locator": "/v1/chat/completions (laut Recherche/PoC-Plan)"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "OpenAI-nahe API; PoC-Plan sieht einen generischen OpenAI-kompatiblen Adapter mit Parameter-Mapping vor (random_seed, tool_choice)."
+  },
+  "inference_region": {
+    "scope": "eu_efta",
+    "country_codes": [],
+    "provider_region_code": null,
+    "locality": "Multiple data centers in EU and EFTA countries",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.mistral.ai/inference/regional-inference",
+        "captured_at": "2026-09-26",
+        "locator": "api.eu.mistral.ai: Multiple data centers in EU and EFTA countries"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "EU+EFTA, keine Zusage 'nur EU' -> genuegt EU_ONLY nicht, nur EU_EFTA."
+  },
+  "control_plane_region": {
+    "scope": "unknown",
+    "country_codes": [],
+    "provider_region_code": null,
+    "locality": null,
+    "status": "unknown",
+    "sources": [
+      {
+        "url": "https://docs.mistral.ai/inference/regional-inference",
+        "captured_at": "2026-09-26",
+        "locator": "Control plane (account, keys, billing, analytics) is not regional"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Control Plane (Konto, API-Keys, Abrechnung, Analytics) ist laut Quelle nicht regional."
+  },
+  "external_inference_egress": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht belegt."
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [
+        "FR"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "Mistral AI, registered offices 15 rue des Halles, 75001 Paris, France"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nur 'EU and EFTA countries' belegt, keine Laenderliste."
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht belegt."
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "access_possible",
+      "requires_subprocessor_review": true,
+      "verification_status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "8.1: International Data Transfers auf Basis angemessener Garantien oder SCC erlaubt"
+        },
+        {
+          "url": "https://docs.mistral.ai/inference/regional-inference",
+          "captured_at": "2026-09-26",
+          "locator": "Control plane not regional"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "note": "Die DPA erlaubt Transfers in Drittstaaten (SCC/Angemessenheit); Control-Plane-Daten koennen ausserhalb EU/EFTA verarbeitet werden. Subprozessorliste im Trust Center pruefen."
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/api/endpoint/chat",
+          "captured_at": "2026-09-25",
+          "locator": "/v1/chat/completions"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "json_object": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/studio/conversations/structured-output",
+          "captured_at": "2026-09-25",
+          "locator": "JSON mode (laut Recherche)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "json_schema": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/studio/conversations/structured-output",
+          "captured_at": "2026-09-25",
+          "locator": "JSON Schema / custom structured output (laut Recherche)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "json_schema_strict": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/api/endpoint/chat",
+          "captured_at": "2026-09-25",
+          "locator": "strict-Flag nicht dokumentiert (PoC-Plan)"
+        }
+      ],
+      "captured_at": "2026-09-25",
+      "note": "Ob 'strict' akzeptiert oder ignoriert wird, prueft der PoC-Harness."
+    },
+    "tools": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/inference/regional-inference",
+          "captured_at": "2026-09-26",
+          "locator": "Function calling ist das einzige am regionalen Endpunkt verfuegbare Tool"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "tool_choice": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/api/endpoint/chat",
+          "captured_at": "2026-09-25",
+          "locator": "tool_choice: auto|none|any|required (PoC-Plan)"
+        }
+      ],
+      "captured_at": "2026-09-25",
+      "note": "OpenAI-Form {type:function,...} ggf. umsetzen."
+    },
+    "parallel_tool_calls": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/api/endpoint/chat",
+          "captured_at": "2026-09-25",
+          "locator": "parallel_tool_calls (PoC-Plan)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "batch": {
+      "support": "no",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/inference/regional-inference",
+          "captured_at": "2026-09-26",
+          "locator": "Batch am regionalen Endpunkt nicht verfuegbar"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "embeddings": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "context_window_tokens": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht fuer den EU-Endpunkt belegt."
+    },
+    "languages": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    }
+  },
+  "certifications": [],
+  "claims": [
+    {
+      "claim_id": "mistral-control-plane-not-regional",
+      "claim_type": "control_plane_regionality",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Account, API-Keys, Abrechnung und Analytics sind nicht regional.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/inference/regional-inference",
+          "captured_at": "2026-09-26",
+          "locator": "Control plane not regional"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "mistral-training-unless-opt-out",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": "unless_opted_out",
+      "statement": "DPA 2.3: Mistral AI darf als Verantwortlicher zum Training verarbeiten, sofern der Kunde nicht widersprochen hat; Feedback (Daumen hoch/runter) wird zum Training genutzt.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "2.3 Mistral AI as Controller"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "mistral-abuse-monitoring",
+      "claim_type": "abuse_or_error_content_access",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": "unless_zdr",
+      "statement": "DPA 2.3: Automatisierte Moderation inkl. Abuse-Monitoring, ausser bei aktivierter Zero Data Retention.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "2.3 Automated moderation ... except when zero data retention has been activated"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "mistral-zdr-on-request",
+      "claim_type": "zero_data_retention_default",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "ZDR ist nicht Standard, sondern auf Antrag fuer stateless Endpunkte (Ermessen von Mistral).",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr",
+          "captured_at": "2026-09-25",
+          "locator": "ZDR auf Antrag (laut Recherche/PoC-Plan)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    {
+      "claim_id": "mistral-dpa",
+      "claim_type": "dpa_available",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "DPA (Effective July 27, 2026) ist Teil der Vereinbarung.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "Effective: July 27, 2026"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "mistral-subprocessors",
+      "claim_type": "subprocessors_engaged",
+      "subject": {
+        "deployment_id": "mistral-la-plateforme-eu",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Allgemeine Genehmigung fuer Subprozessoren; Liste im Trust Center, 10 Tage Widerspruchsfrist.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://legal.mistral.ai/terms/data-processing-addendum",
+          "captured_at": "2026-09-26",
+          "locator": "7.1 General authorization; 7.2 ten (10) days"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    }
+  ],
+  "pricing": {
+    "scheme": "per_model",
+    "currency": "USD",
+    "unit": "per_1m_tokens",
+    "vat": "unknown",
+    "categories": [],
+    "modifiers": [
+      {
+        "modifier_id": "eu-regional-inference",
+        "kind": "regional_multiplier",
+        "value": 1.1,
+        "description": "Regional Inference wird mit dem 1,1-fachen Listenpreis abgerechnet.",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/regional-inference",
+            "captured_at": "2026-09-26",
+            "locator": "billed at 1.1x standard list pricing"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://docs.mistral.ai/inference/pricing",
+        "captured_at": "2026-09-26",
+        "locator": "Listenpreise je 1M Tokens"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "models": [
+    {
+      "model_id": "mistral-large-3",
+      "api_model_id": "mistral-large-2512",
+      "display_name": "Mistral Large 3",
+      "model_type": "chat",
+      "availability": {
+        "value": "unknown",
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26",
+        "note": "Modelle variieren je Region; Verfuegbarkeit am EU-Endpunkt per GET /v1/models gegen https://api.eu.mistral.ai pruefen (nicht erfolgt)."
+      },
+      "model_origin": {
+        "developer": "Mistral AI",
+        "developer_vendor_id": "mistral-ai",
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/models/mistral-large-3-25-12",
+            "captured_at": "2026-09-25",
+            "locator": "Modellseite Mistral Large 3 (25.12)"
+          }
+        ],
+        "captured_at": "2026-09-25"
+      },
+      "capabilities": {},
+      "price": {
+        "input_per_1m": 0.5,
+        "output_per_1m": 1.5,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/pricing",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Large 3: $0.5 / $1.5, cached $0.05"
+          }
+        ],
+        "captured_at": "2026-09-26",
+        "cached_input_per_1m": 0.05,
+        "note": "Standard-Listenpreis; ueber api.eu.mistral.ai gilt der Faktor 1.1 (pricing.modifiers)."
+      },
+      "note": "api_model_id laut PoC-Plan (Quelle docs.mistral.ai/models/mistral-large-3-25-12, erfasst 2026-09-25)."
+    },
+    {
+      "model_id": "mistral-medium-3.5",
+      "api_model_id": null,
+      "display_name": "Mistral Medium 3.5",
+      "model_type": "chat",
+      "availability": {
+        "value": "unknown",
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26",
+        "note": "Verfuegbarkeit am EU-Endpunkt nicht geprueft."
+      },
+      "model_origin": {
+        "developer": "Mistral AI",
+        "developer_vendor_id": "mistral-ai",
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/pricing",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Medium 3.5"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "price": {
+        "input_per_1m": 1.5,
+        "output_per_1m": 7.5,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/pricing",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Medium 3.5: $1.5 / $7.5"
+          }
+        ],
+        "captured_at": "2026-09-26",
+        "note": "Standard-Listenpreis; EU-Faktor 1.1."
+      }
+    },
+    {
+      "model_id": "mistral-small-4",
+      "api_model_id": null,
+      "display_name": "Mistral Small 4",
+      "model_type": "chat",
+      "availability": {
+        "value": "unknown",
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26",
+        "note": "Verfuegbarkeit am EU-Endpunkt nicht geprueft."
+      },
+      "model_origin": {
+        "developer": "Mistral AI",
+        "developer_vendor_id": "mistral-ai",
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/pricing",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Small 4"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "price": {
+        "input_per_1m": 0.15,
+        "output_per_1m": 0.6,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://docs.mistral.ai/inference/pricing",
+            "captured_at": "2026-09-26",
+            "locator": "Mistral Small 4: $0.15 / $0.6"
+          }
+        ],
+        "captured_at": "2026-09-26",
+        "note": "Standard-Listenpreis; EU-Faktor 1.1."
+      }
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

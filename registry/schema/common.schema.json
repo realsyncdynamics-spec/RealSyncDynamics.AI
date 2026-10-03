@@ -1,0 +1,1240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamics.ai/schemas/registry/common.schema.json",
+  "title": "RealSyncDynamics Anbieter-/Deployment-Registry – gemeinsame Bausteine",
+  "description": "Gemeinsame Definitionen fuer vendor-, deployment- und assessment-Dateien. Grundsatz: Fakten tragen immer Quelle (sources[]), Erfassungsdatum (captured_at) und Verifikationsstatus (verified | claimed | unknown). Ein Wert ohne Quelle ist nie 'claimed'/'verified' im Sinne des Evidence-Gates.",
+  "$defs": {
+    "slug": {
+      "description": "Stabile, menschenlesbare Kennung (vendor_id, deployment_id, product_sku, claim_id, cert_id).",
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$"
+    },
+    "modelKey": {
+      "description": "Registry-Schluessel eines Modells innerhalb eines Deployments (nicht zwingend die API-Modell-ID).",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "capturedAt": {
+      "description": "Zeitpunkt, an dem die Quelle gelesen wurde. Datum (YYYY-MM-DD) oder Zeitstempel mit Zone.",
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
+    },
+    "nullableDate": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "countryCode": {
+      "description": "ISO-3166-1 alpha-2, Grossbuchstaben.",
+      "type": "string",
+      "pattern": "^[A-Z]{2}$"
+    },
+    "verificationStatus": {
+      "description": "verified = von RSD unabhaengig geprueft (Vertrag/Zertifikat/Test, mit verification-Nachweis); claimed = durch eine Anbieterquelle belegte Selbstauskunft; unknown = keine belastbare Quelle.",
+      "enum": [
+        "verified",
+        "claimed",
+        "unknown"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Abschnitt/Zitat auf der Quelle, das den Wert traegt."
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "captured_at"
+      ],
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "verification": {
+      "description": "Pflicht bei status=verified: wie, wann, von wem und mit welchem Nachweis unabhaengig geprueft wurde.",
+      "type": "object",
+      "properties": {
+        "method": {
+          "enum": [
+            "contract_reviewed",
+            "certificate_reviewed",
+            "audit_report_reviewed",
+            "technical_test",
+            "other"
+          ]
+        },
+        "performed_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "performed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "z. B. governance_evidence.id oder Ablageort."
+        }
+      },
+      "required": [
+        "method",
+        "performed_at",
+        "performed_by",
+        "evidence_ref"
+      ],
+      "additionalProperties": false
+    },
+    "factMeta": {
+      "description": "Mixin fuer jeden belegpflichtigen Wert.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "status",
+        "sources",
+        "captured_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "verification"
+            ],
+            "properties": {
+              "sources": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "boolFact": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": false,
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "stringFact": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": false,
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "countryListFact": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/countryCode"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": false,
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "regionFact": {
+      "description": "Wo etwas (Inferenz, Speicherung, Control Plane) stattfindet. Immer auf Deployment- bzw. Modellebene, nie aus dem Vendor abgeleitet. scope=europe heisst 'Europa' ohne EU-Zusage und genuegt EU_ONLY nicht.",
+      "type": "object",
+      "properties": {
+        "scope": {
+          "enum": [
+            "country",
+            "eu",
+            "eu_efta",
+            "europe",
+            "global",
+            "unknown"
+          ]
+        },
+        "country_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/countryCode"
+          },
+          "uniqueItems": true
+        },
+        "provider_region_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Regionskennung des Anbieters, z. B. fr-par, eu01."
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Ort/Region laut Quelle, z. B. Paris, Gravelines, Germany South."
+        }
+      },
+      "required": [
+        "scope",
+        "country_codes",
+        "provider_region_code",
+        "locality"
+      ],
+      "unevaluatedProperties": false,
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "const": "country"
+              }
+            },
+            "required": [
+              "scope"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "country_codes": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "scope"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              },
+              "country_codes": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "scope": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "capability": {
+      "description": "Unterstuetzung einer Faehigkeit. model_dependent/partial/unknown erfuellen eine Routing-Anforderung nie.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "support": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "support"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "verified",
+                  "claimed"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "support": {
+          "enum": [
+            "yes",
+            "no",
+            "partial",
+            "model_dependent",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "support"
+      ],
+      "unevaluatedProperties": false
+    },
+    "integerFact": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": false,
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "languagesFact": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/factMeta"
+        }
+      ],
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(\\*|[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)$"
+          },
+          "uniqueItems": true
+        },
+        "additional_unspecified": {
+          "type": "boolean",
+          "description": "Quelle nennt zusaetzliche, nicht aufgezaehlte Sprachen."
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "unevaluatedProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "$ref": "#/$defs/capability"
+        },
+        "completions": {
+          "$ref": "#/$defs/capability"
+        },
+        "json_object": {
+          "$ref": "#/$defs/capability"
+        },
+        "json_schema": {
+          "$ref": "#/$defs/capability"
+        },
+        "json_schema_strict": {
+          "$ref": "#/$defs/capability"
+        },
+        "tools": {
+          "$ref": "#/$defs/capability"
+        },
+        "tool_choice": {
+          "$ref": "#/$defs/capability"
+        },
+        "parallel_tool_calls": {
+          "$ref": "#/$defs/capability"
+        },
+        "streaming": {
+          "$ref": "#/$defs/capability"
+        },
+        "embeddings": {
+          "$ref": "#/$defs/capability"
+        },
+        "responses_api": {
+          "$ref": "#/$defs/capability"
+        },
+        "batch": {
+          "$ref": "#/$defs/capability"
+        },
+        "vision_input": {
+          "$ref": "#/$defs/capability"
+        },
+        "reasoning": {
+          "$ref": "#/$defs/capability"
+        },
+        "context_window_tokens": {
+          "$ref": "#/$defs/integerFact"
+        },
+        "max_output_tokens": {
+          "$ref": "#/$defs/integerFact"
+        },
+        "languages": {
+          "$ref": "#/$defs/languagesFact"
+        }
+      },
+      "additionalProperties": false
+    },
+    "thirdCountryAccess": {
+      "description": "Drittstaatenzugriff als Fakt, kein Immunitaets-Flag. no_access_claimed ist eine Anbieterbehauptung, keine Garantie. Nie aus der Region abgeleitet.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "no_access_claimed",
+            "access_possible",
+            "access_confirmed",
+            "unknown"
+          ]
+        },
+        "requires_subprocessor_review": {
+          "type": "boolean"
+        },
+        "verification_status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "status",
+        "requires_subprocessor_review",
+        "verification_status",
+        "sources",
+        "captured_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "verification_status": {
+                "const": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "verification_status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "verification_status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "verification"
+            ],
+            "properties": {
+              "sources": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "controlChange": {
+      "description": "Kontrollwechsel des Rechtstraegers (Uebernahme/Beteiligung). unknown ist zulaessig und ehrlicher als ein unbelegtes none.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "none",
+            "signed_not_closed",
+            "closed",
+            "unknown"
+          ]
+        },
+        "counterparty": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "as_of": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "verification_status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "status",
+        "counterparty",
+        "as_of",
+        "verification_status",
+        "sources",
+        "captured_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "none",
+                  "signed_not_closed",
+                  "closed"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "sources": {
+                "type": "array",
+                "minItems": 1
+              },
+              "verification_status": {
+                "enum": [
+                  "verified",
+                  "claimed"
+                ]
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "verification_status": {
+                "const": "unknown"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "signed_not_closed",
+                  "closed"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "counterparty": {
+                "type": "string"
+              },
+              "as_of": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "sealLevel": {
+      "enum": [
+        "SEAL-0",
+        "SEAL-1",
+        "SEAL-2",
+        "SEAL-3",
+        "SEAL-4"
+      ]
+    },
+    "euCommissionSeal": {
+      "description": "Souveraenitaets-Siegel der EU-Kommission. Gilt nur fuer die in applies_to_sku genannten Produkte; nie auf eine Marke vererbt. SEAL-3 ist nie SEAL-4.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "awarded",
+            "none_documented",
+            "unknown"
+          ]
+        },
+        "level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sealLevel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applies_to_sku": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "uniqueItems": true
+        },
+        "verification_status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "valid_from": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "valid_until": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "status",
+        "level",
+        "applies_to_sku",
+        "verification_status",
+        "sources",
+        "captured_at",
+        "valid_from",
+        "valid_until"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "awarded"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "$ref": "#/$defs/sealLevel"
+              },
+              "applies_to_sku": {
+                "type": "array",
+                "minItems": 1
+              },
+              "sources": {
+                "type": "array",
+                "minItems": 1
+              },
+              "verification_status": {
+                "enum": [
+                  "verified",
+                  "claimed"
+                ]
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "verification_status": {
+                "const": "unknown"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "certification": {
+      "description": "Zertifikat/Testat. scope, source(s), captured_at, valid_from/valid_until und applies_to_sku sind Pflicht. applies_to_sku=[] heisst: keinem Produkt zurechenbar – zaehlt fuer kein Deployment.",
+      "type": "object",
+      "properties": {
+        "cert_id": {
+          "$ref": "#/$defs/slug"
+        },
+        "scheme": {
+          "enum": [
+            "ISO_27001",
+            "ISO_27017",
+            "ISO_27018",
+            "ISO_27701",
+            "ISO_42001",
+            "SOC1_TYPE2",
+            "SOC2_TYPE1",
+            "SOC2_TYPE2",
+            "SOC3",
+            "BSI_C5",
+            "BSI_C5_TYPE1",
+            "BSI_C5_TYPE2",
+            "SECNUMCLOUD",
+            "CSA_STAR",
+            "HDS",
+            "OTHER"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Geltungsbereich laut Quelle (z. B. 'Rechenzentren', 'AI Model Hub'). Nicht erweitern."
+        },
+        "applies_to_sku": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "uniqueItems": true
+        },
+        "status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          },
+          "minItems": 1
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "valid_from": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "valid_until": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "cert_id",
+        "scheme",
+        "name",
+        "scope",
+        "applies_to_sku",
+        "status",
+        "sources",
+        "captured_at",
+        "valid_from",
+        "valid_until"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "verification"
+            ]
+          }
+        }
+      ]
+    },
+    "claimType": {
+      "enum": [
+        "training_on_customer_data",
+        "prompt_logging",
+        "request_retention",
+        "zero_data_retention_default",
+        "abuse_or_error_content_access",
+        "usage_metadata_retention",
+        "operational_log_retention",
+        "dpa_available",
+        "subprocessors_engaged",
+        "model_developer_access",
+        "third_party_access",
+        "personnel_access_location",
+        "extraterritorial_law_exposure",
+        "stateless_processing",
+        "control_plane_regionality",
+        "other"
+      ]
+    },
+    "claim": {
+      "description": "Governance-Claim als eigener Datensatz mit Quelle, Datum und Verifikationsstatus.",
+      "type": "object",
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/slug"
+        },
+        "claim_type": {
+          "$ref": "#/$defs/claimType"
+        },
+        "subject": {
+          "type": "object",
+          "properties": {
+            "deployment_id": {
+              "$ref": "#/$defs/slug"
+            },
+            "model_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/modelKey"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "deployment_id",
+            "model_ids"
+          ],
+          "additionalProperties": false
+        },
+        "value": {
+          "description": "Maschinenlesbarer Wert (bool, Zahl, Zeichenkette, Objekt) oder null bei unknown."
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Wortlaut/Zusammenfassung der Quelle."
+        },
+        "status": {
+          "$ref": "#/$defs/verificationStatus"
+        },
+        "sources": {
+          "$ref": "#/$defs/sources"
+        },
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "note": {
+          "type": "string"
+        },
+        "verification": {
+          "$ref": "#/$defs/verification"
+        }
+      },
+      "required": [
+        "claim_id",
+        "claim_type",
+        "subject",
+        "value",
+        "statement",
+        "status",
+        "sources",
+        "captured_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "verification"
+            ],
+            "properties": {
+              "sources": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "currency": {
+      "enum": [
+        "EUR",
+        "USD"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "captured_at": {
+          "$ref": "#/$defs/capturedAt"
+        },
+        "captured_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "research_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "captured_at",
+        "captured_by",
+        "research_refs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

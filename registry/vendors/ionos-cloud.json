@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "vendor_id": "ionos-cloud",
+  "display_name": "IONOS Cloud",
+  "legal_name": {
+    "value": "IONOS Cloud GmbH",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+        "captured_at": "2026-09-26",
+        "locator": "Vertragspartei: IONOS Cloud GmbH (Germany)"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Auf der Data-Handling-Seite als nicht aufgeloeste Variable space.vars.ionos_cloud eingebettet (gerendert: IONOS Cloud GmbH (Germany)). Abweichung: Der Footer der IONOS-Doku nennt am 2026-09-26 '(c) 2026 IONOS CLOUD SE' – Rechtsform/Firma klaeren."
+  },
+  "brands": [
+    "IONOS"
+  ],
+  "legal_seat_country": {
+    "value": [
+      "DE"
+    ],
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+        "captured_at": "2026-09-26",
+        "locator": "IONOS Cloud GmbH (Germany)"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "parent_organization": {
+    "value": null,
+    "status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Nicht in den ausgewerteten Quellen belegt (Recherche nennt IONOS SE ohne Einzelbeleg)."
+  },
+  "control_change": {
+    "status": "unknown",
+    "counterparty": null,
+    "as_of": null,
+    "verification_status": "unknown",
+    "sources": [],
+    "captured_at": "2026-09-26",
+    "note": "Kein Beleg zu Kontrollwechseln ausgewertet; bewusst nicht 'none'."
+  },
+  "certifications": [
+    {
+      "cert_id": "ionos-dc-iso-27001",
+      "scheme": "ISO_27001",
+      "name": "ISO/IEC 27001",
+      "scope": "Rechenzentren, in denen der AI Model Hub betrieben wird (nicht das Produkt selbst)",
+      "applies_to_sku": [],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling",
+          "captured_at": "2026-09-26",
+          "locator": "AI Model Hub runs in data centers certified to ISO 27001"
+        }
+      ],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Geltungsbereich laut Quelle: Rechenzentren. Kein Produktzertifikat -> applies_to_sku leer."
+    }
+  ],
+  "website": "https://cloud.ionos.com",
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

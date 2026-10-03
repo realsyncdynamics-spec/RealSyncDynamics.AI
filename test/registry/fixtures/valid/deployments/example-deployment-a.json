@@ -1,0 +1,365 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "example-deployment-a",
+  "vendor_id": "example-vendor-a",
+  "brand": "Example A",
+  "product_name": "Example Product A",
+  "product_sku": "example-product-a",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": "example-host-b",
+    "name": "Example Host B",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Betreiber"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "connector": {
+    "connector_type": "openai_compatible",
+    "api_base_url": "https://api.example.com/v1",
+    "api_paths": [
+      "/chat/completions",
+      "/models"
+    ],
+    "inventory_endpoint": {
+      "kind": "models_list",
+      "path_or_url": "/models"
+    },
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "API"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "inference_region": {
+    "scope": "country",
+    "country_codes": [
+      "DE"
+    ],
+    "provider_region_code": "de-1",
+    "locality": "Frankfurt",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Region"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "external_inference_egress": {
+    "value": false,
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "keine Weitergabe"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Sitz"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "infrastructure_jurisdiction": {
+      "value": [
+        "DE"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "RZ"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "non_eu_parent_control": {
+      "value": false,
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Eigentuemer"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "eu_commission_seal": {
+      "status": "awarded",
+      "level": "SEAL-3",
+      "applies_to_sku": [
+        "example-product-a"
+      ],
+      "verification_status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Siegel"
+        }
+      ],
+      "captured_at": "2026-09-20",
+      "valid_from": "2026-01-01",
+      "valid_until": "2027-12-31"
+    },
+    "third_country_access": {
+      "status": "no_access_claimed",
+      "requires_subprocessor_review": false,
+      "verification_status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "kein Zugriff"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "chat"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "json_schema": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "json"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "json_schema_strict": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "strict"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "tools": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "tools"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "embeddings": {
+      "support": "no",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "keine"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "context_window_tokens": {
+      "value": 128000,
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "ctx"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    },
+    "languages": {
+      "value": [
+        "de",
+        "en"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Sprachen"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    }
+  },
+  "certifications": [
+    {
+      "cert_id": "example-cert-1",
+      "scheme": "ISO_27001",
+      "name": "ISO/IEC 27001",
+      "scope": "Example Product A",
+      "applies_to_sku": [
+        "example-product-a"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Zertifikat"
+        }
+      ],
+      "captured_at": "2026-09-20",
+      "valid_from": null,
+      "valid_until": null
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "example-claim-1",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "example-deployment-a",
+        "model_ids": [
+          "example-model-1"
+        ]
+      },
+      "value": false,
+      "statement": "Kein Training.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://example.com/fixtures/source",
+          "captured_at": "2026-09-20",
+          "locator": "Training"
+        }
+      ],
+      "captured_at": "2026-09-20"
+    }
+  ],
+  "pricing": {
+    "scheme": "category",
+    "currency": "EUR",
+    "unit": "per_1m_tokens",
+    "vat": "excluded",
+    "categories": [
+      {
+        "category_id": "std",
+        "display_name": "Standard",
+        "kind": "llm",
+        "input_per_1m": 0.1,
+        "output_per_1m": 0.2,
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Preis"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      }
+    ],
+    "modifiers": [],
+    "sources": [
+      {
+        "url": "https://example.com/fixtures/source",
+        "captured_at": "2026-09-20",
+        "locator": "Preis"
+      }
+    ],
+    "captured_at": "2026-09-20"
+  },
+  "models": [
+    {
+      "model_id": "example-model-1",
+      "api_model_id": "example/model-1",
+      "display_name": "Example Model 1",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Modell"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "model_origin": {
+        "developer": "Example Lab",
+        "developer_vendor_id": null,
+        "open_weights": true,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Herkunft"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      },
+      "capabilities": {},
+      "price_category": {
+        "value": "std",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://example.com/fixtures/source",
+            "captured_at": "2026-09-20",
+            "locator": "Kategorie"
+          }
+        ],
+        "captured_at": "2026-09-20"
+      }
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-20",
+    "captured_by": "fixture",
+    "research_refs": [],
+    "notes": "Fiktiver Testdatensatz (is_example)."
+  }
+}

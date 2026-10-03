@@ -1,0 +1,705 @@
+{
+  "schema_version": "1.0",
+  "deployment_id": "ovhcloud-ai-endpoints-gra",
+  "vendor_id": "ovhcloud",
+  "brand": "OVHcloud",
+  "product_name": "OVHcloud AI Endpoints",
+  "product_sku": "ovhcloud-ai-endpoints",
+  "deployment_kind": "shared_serverless",
+  "listing_status": "active",
+  "infrastructure_operator": {
+    "vendor_id": "ovhcloud",
+    "name": "OVHcloud",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+        "captured_at": "2026-09-26",
+        "locator": "infrastructure, located in Gravelines, France"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "connector": {
+    "connector_type": "openai_compatible",
+    "api_base_url": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+    "api_paths": [
+      "/chat/completions"
+    ],
+    "inventory_endpoint": {
+      "kind": "catalog_api",
+      "path_or_url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2"
+    },
+    "legacy_fallback_endpoint": null,
+    "sources": [
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+        "captured_at": "2026-09-26",
+        "locator": "OpenAI-kompatibler Endpunkt https://oai.endpoints.kepler.ai.cloud.ovh.net/v1"
+      },
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+        "captured_at": "2026-09-25",
+        "locator": "Catalog API ist fuer Modelle/Faehigkeiten massgeblich"
+      }
+    ],
+    "captured_at": "2026-09-26"
+  },
+  "inference_region": {
+    "scope": "country",
+    "country_codes": [
+      "FR"
+    ],
+    "provider_region_code": null,
+    "locality": "Gravelines",
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+        "captured_at": "2026-09-26",
+        "locator": "infrastructure, located in Gravelines, France"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Mehrdeutigkeit: Die Produktseite nennt am 2026-09-26 zusaetzlich 'Worldwide availability (non-EU)' (Base/Batch). Vor Produktivnutzung klaeren; modellbezogene Regionen stehen in models[]."
+  },
+  "external_inference_egress": {
+    "value": false,
+    "status": "claimed",
+    "sources": [
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+        "captured_at": "2026-09-26",
+        "locator": "Data is not stored or shared"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Abgeleitet aus 'not ... shared'; keine ausdrueckliche Aussage zu Inferenz-Weitergabe."
+  },
+  "jurisdiction": {
+    "provider_jurisdiction": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Rechtstraeger nicht belegt."
+    },
+    "infrastructure_jurisdiction": {
+      "value": [
+        "FR"
+      ],
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "Gravelines, France"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "non_eu_parent_control": {
+      "value": null,
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Nicht belegt."
+    },
+    "eu_commission_seal": {
+      "status": "unknown",
+      "level": null,
+      "applies_to_sku": [],
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "valid_from": null,
+      "valid_until": null,
+      "note": "Kein Beleg fuer ein EU-Souveraenitaets-Siegel in den ausgewerteten Quellen."
+    },
+    "third_country_access": {
+      "status": "unknown",
+      "requires_subprocessor_review": true,
+      "verification_status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Keine Aussage zum Drittstaatenzugriff ausgewertet."
+    }
+  },
+  "capabilities": {
+    "chat": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "Chat Completions"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_object": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "JSON mode"
+        },
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+          "captured_at": "2026-09-25",
+          "locator": "modellabhaengig, Catalog massgeblich"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_schema": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "Structured Outputs (JSON Schema)"
+        },
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+          "captured_at": "2026-09-25",
+          "locator": "modellabhaengig"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "json_schema_strict": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "output strictly adheres to the JSON Schema"
+        },
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+          "captured_at": "2026-09-25",
+          "locator": "modellabhaengig"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "tools": {
+      "support": "model_dependent",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "Function Calling"
+        },
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+          "captured_at": "2026-09-25",
+          "locator": "modellabhaengig"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    "responses_api": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-responses-api",
+          "captured_at": "2026-09-25",
+          "locator": "Responses API (laut Recherche)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "batch": {
+      "support": "yes",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/",
+          "captured_at": "2026-09-25",
+          "locator": "Batch (laut Recherche)"
+        }
+      ],
+      "captured_at": "2026-09-25"
+    },
+    "tool_choice": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "embeddings": {
+      "support": "unknown",
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26"
+    },
+    "languages": {
+      "value": [],
+      "status": "unknown",
+      "sources": [],
+      "captured_at": "2026-09-26",
+      "note": "Modellabhaengig."
+    }
+  },
+  "certifications": [],
+  "claims": [
+    {
+      "claim_id": "ovh-no-training",
+      "claim_type": "training_on_customer_data",
+      "subject": {
+        "deployment_id": "ovhcloud-ai-endpoints-gra",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Your data will never be used to train.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/",
+          "captured_at": "2026-09-26",
+          "locator": "Your data will never be used to train"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ovh-zdr",
+      "claim_type": "zero_data_retention_default",
+      "subject": {
+        "deployment_id": "ovhcloud-ai-endpoints-gra",
+        "model_ids": []
+      },
+      "value": true,
+      "statement": "Zero data retention: nur fuer die Abrechnung noetige Daten werden behalten.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/",
+          "captured_at": "2026-09-26",
+          "locator": "Zero data retention: keep only data required for billing"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    },
+    {
+      "claim_id": "ovh-not-stored-shared",
+      "claim_type": "request_retention",
+      "subject": {
+        "deployment_id": "ovhcloud-ai-endpoints-gra",
+        "model_ids": []
+      },
+      "value": false,
+      "statement": "Data is not stored or shared.",
+      "status": "claimed",
+      "sources": [
+        {
+          "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+          "captured_at": "2026-09-26",
+          "locator": "Data is not stored or shared"
+        }
+      ],
+      "captured_at": "2026-09-26"
+    }
+  ],
+  "pricing": {
+    "scheme": "per_model",
+    "currency": "EUR",
+    "unit": "per_1m_tokens",
+    "vat": "unknown",
+    "categories": [],
+    "modifiers": [],
+    "sources": [
+      {
+        "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+        "captured_at": "2026-09-26",
+        "locator": "Preise je 1M Tokens (Catalog ohne Waehrungsangabe)"
+      },
+      {
+        "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md",
+        "captured_at": "2026-09-25",
+        "locator": "Doku zeigt Euro"
+      }
+    ],
+    "captured_at": "2026-09-26",
+    "note": "Der Catalog nennt keine Waehrung; die Doku zeigt Euro."
+  },
+  "models": [
+    {
+      "model_id": "gpt-oss-120b",
+      "api_model_id": "gpt-oss-120b",
+      "display_name": "gpt-oss-120b",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "gpt-oss-120b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": "OpenAI",
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "gpt-oss-120b: publisher OpenAI"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 131000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "gpt-oss-120b: context 131k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 131k; als 131000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        },
+        "tools": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "gpt-oss-120b: function_calling true"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "json_object": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "gpt-oss-120b: response_format json_object"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "json_schema": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "gpt-oss-120b: response_format json_schema"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        },
+        "json_schema_strict": {
+          "support": "yes",
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "response_format json_schema"
+            },
+            {
+              "url": "https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md",
+              "captured_at": "2026-09-26",
+              "locator": "Structured Outputs: JSON Schema, output strictly adheres"
+            }
+          ],
+          "captured_at": "2026-09-26"
+        }
+      },
+      "price": {
+        "input_per_1m": 0.08,
+        "output_per_1m": 0.4,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "gpt-oss-120b: 0.08 / 0.4"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "Catalog nennt fuer dieses Modell kein Rechenzentrum; es gilt die Deployment-Region (Gravelines) laut Capabilities-Doku."
+    },
+    {
+      "model_id": "qwen-3-6-27b",
+      "api_model_id": null,
+      "display_name": "Qwen3.6 27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-6-27b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {
+        "context_window_tokens": {
+          "value": 262000,
+          "status": "claimed",
+          "sources": [
+            {
+              "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+              "captured_at": "2026-09-26",
+              "locator": "qwen-3-6-27b: context 262k"
+            }
+          ],
+          "captured_at": "2026-09-26",
+          "note": "Quelle nennt 262k; als 262000 erfasst (Untergrenze, exakte Tokenzahl nicht angegeben)."
+        }
+      },
+      "inference_region": {
+        "scope": "country",
+        "country_codes": [
+          "FR"
+        ],
+        "provider_region_code": null,
+        "locality": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-6-27b: datacenters country_code FR"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "price": {
+        "input_per_1m": 0.4,
+        "output_per_1m": 2.7,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-6-27b: 0.4 / 2.7"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "model_id = Catalog-Name; api_model_id nicht erfasst."
+    },
+    {
+      "model_id": "qwen-3-5-397b",
+      "api_model_id": null,
+      "display_name": "Qwen3.5 397B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-5-397b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "inference_region": {
+        "scope": "country",
+        "country_codes": [
+          "FR"
+        ],
+        "provider_region_code": null,
+        "locality": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-5-397b: datacenters country_code FR"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "price": {
+        "input_per_1m": 0.6,
+        "output_per_1m": 3.6,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-5-397b: 0.6 / 3.6"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "model_id = Catalog-Name; api_model_id nicht erfasst."
+    },
+    {
+      "model_id": "qwen-3-8-27b",
+      "api_model_id": null,
+      "display_name": "Qwen3.8 27B",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-8-27b"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "inference_region": {
+        "scope": "country",
+        "country_codes": [
+          "FR"
+        ],
+        "provider_region_code": null,
+        "locality": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-8-27b: datacenters country_code FR"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "price": {
+        "input_per_1m": 0.4,
+        "output_per_1m": 2.7,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "qwen-3-8-27b: 0.4 / 2.7"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "model_id = Catalog-Name; api_model_id nicht erfasst."
+    },
+    {
+      "model_id": "llama-3-3-70b-instruct",
+      "api_model_id": null,
+      "display_name": "Llama 3.3 70B Instruct",
+      "model_type": "chat",
+      "availability": {
+        "value": "available",
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "llama-3-3-70b-instruct"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "model_origin": {
+        "developer": null,
+        "developer_vendor_id": null,
+        "open_weights": null,
+        "status": "unknown",
+        "sources": [],
+        "captured_at": "2026-09-26"
+      },
+      "capabilities": {},
+      "inference_region": {
+        "scope": "country",
+        "country_codes": [
+          "FR"
+        ],
+        "provider_region_code": null,
+        "locality": null,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "llama-3-3-70b-instruct: datacenters country_code FR"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "price": {
+        "input_per_1m": 0.67,
+        "output_per_1m": 0.67,
+        "status": "claimed",
+        "sources": [
+          {
+            "url": "https://catalog.endpoints.ai.ovh.net/rest/v1/models_v2",
+            "captured_at": "2026-09-26",
+            "locator": "llama-3-3-70b-instruct: 0.67 / 0.67"
+          }
+        ],
+        "captured_at": "2026-09-26"
+      },
+      "note": "model_id = Catalog-Name; api_model_id nicht erfasst."
+    }
+  ],
+  "provenance": {
+    "captured_at": "2026-09-26",
+    "captured_by": "RealSyncDynamics Registry-Bootstrap (Agent im Auftrag von Dominik Steiner)",
+    "research_refs": [
+      "research/eu-ai-providers-2026-09-25.md",
+      "research/eu-llm-poc-plan-2026-09-25.md"
+    ]
+  }
+}

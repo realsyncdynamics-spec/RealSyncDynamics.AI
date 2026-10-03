@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
   });
 
   const { data: skill, error: skillErr } = await admin
-    .from('automation_skills').select('id, status, n8n_workflow_id, title')
+    .from('automation_skills').select('id, status, n8n_workflow_id, name')
     .eq('id', body.skill_id).maybeSingle();
   if (skillErr) return jsonError(500, 'INTERNAL', skillErr.message);
   if (!skill) return jsonError(404, 'NOT_FOUND', 'automation skill not found');
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         callback_secret: AUTOMATION_CALLBACK_SECRET,
         tenant_id: body.tenant_id,
         skill_id: skill.id,
-        skill_title: skill.title,
+        skill_title: skill.name,
         input: body.input ?? {},
       }),
       // n8n's webhook acks fast; if it doesn't, we treat it as failed.

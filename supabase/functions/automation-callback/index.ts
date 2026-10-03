@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     if (!validEvents.includes(eventType)) {
       return jsonError(400, 'BAD_REQUEST', `event_type must be one of: ${validEvents.join(', ')}`);
     }
-    if (run.status !== 'pending' && run.status !== 'running') {
+    if (run.status !== 'queued' && run.status !== 'running') {
       return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
     }
     const { error: eventErr } = await admin.from('automation_run_events').insert({
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
   if (!validStatus.includes(body.status)) {
     return jsonError(400, 'BAD_REQUEST', `status must be one of: ${validStatus.join(', ')}`);
   }
-  if (run.status !== 'pending' && run.status !== 'running') {
+  if (run.status !== 'queued' && run.status !== 'running') {
     return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
   }
 

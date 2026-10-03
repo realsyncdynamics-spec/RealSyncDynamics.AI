@@ -229,7 +229,7 @@ const INFRA_ICONS = [Server, Database, Workflow, Layers, Cpu, CreditCard] as con
 
 export function InfrastructureMirror() {
   return (
-    <section id="infrastruktur" className="lv2__section lv2-infrastructure" aria-labelledby="lv2-infra-title">
+    <div id="infrastruktur" className="lv2__section lv2-infrastructure" aria-labelledby="lv2-infra-title">
       <div className="lv2__wrap">
         <div className="lv2-split">
           <div>
@@ -265,6 +265,6 @@ export function InfrastructureMirror() {
           })}
         </ul>
       </div>
-    </section>
+    </div>
   );
 }

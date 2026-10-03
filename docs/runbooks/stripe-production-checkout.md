@@ -133,6 +133,8 @@ If step 8 succeeds but step 9 doesn't, the subscription was written through a se
 
 **Fix**: copy real Price ID from Stripe Dashboard → Products → [plan] → Pricing section. UPDATE the products row.
 
+`*_yearly`: Platzhalter gewollt (2026-09-01).
+
 ### `STRIPE_SECRET_KEY missing`
 
 Edge Function returns `503` with `STRIPE_NOT_CONFIGURED`.

@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom';
 
 export function RuntimePage() {
   usePageMeta({
-    title: 'Runtime — Governance-Übersicht | RealSync',
+    title: 'Runtime — Governance-Übersicht | RealSync Dynamics AI',
     description:
       'Governance-Runtime: kontinuierliche Beobachtung, Compliance-Agenten, ' +
       'überprüfbare Evidence-Reports, dokumentierte Policies. Demo-Surface ' +

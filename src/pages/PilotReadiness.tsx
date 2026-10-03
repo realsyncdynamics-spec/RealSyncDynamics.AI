@@ -20,7 +20,7 @@ import { AuthGate } from '../features/kodee/connections/AuthGate';
 
 export function PilotReadiness() {
   usePageMeta({
-    title: 'Pilot Readiness — RealSyncDynamics.AI',
+    title: 'Pilot Readiness — RealSync Dynamics AI',
     description:
       'Live-Status der Pilot-Vorbereitung: Daten-Befüllung, Stripe, Resend, Governance-Agent, Security.',
   });

@@ -754,8 +754,9 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
-      {/* Bußgeld-Rechner: aliases for the correct-spelling URLs.
-          Canonical /busseld-rechner stays the SEO target. */}
+      {/* Bußgeld-Rechner: /bussgeld-rechner ist kanonisch (SEO-Sprint KW 40).
+          Die Tippfehler-URL /busseld-rechner bleibt als SPA-Route erhalten
+          und wird beim vollen Aufruf per 301 umgeleitet (public/_redirects). */}
       <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
       <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
       <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />

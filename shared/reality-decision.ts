@@ -122,13 +122,13 @@ export const ACTION_MAP: Readonly<Record<string, ActionMapping>> = Object.freeze
   },
   no_imprint_link: {
     track: 'govern',
-    impact: 'Impressumspflicht nach § 5 TMG nicht erfüllt — der häufigste Abmahngrund für gewerbliche Websites.',
+    impact: 'Impressumspflicht nach § 5 DDG nicht erfüllt — der häufigste Abmahngrund für gewerbliche Websites.',
     action: 'Impressum mit Anbieter, Vertretung, Kontakt und Registereintrag anlegen und verlinken.',
     module: 'governance_core',
   },
   no_imprint_link_non_de: {
     track: 'govern',
-    impact: 'Kein Impressum gefunden; deutsche Anbietersignale fehlen, § 5 TMG greift daher möglicherweise nicht.',
+    impact: 'Kein Impressum gefunden; deutsche Anbietersignale fehlen, § 5 DDG greift daher möglicherweise nicht.',
     action: 'Prüfen, ob der Anbieter in Deutschland sitzt. Wenn ja, gilt die Impressumspflicht.',
     module: null,
   },
@@ -146,7 +146,7 @@ export const ACTION_MAP: Readonly<Record<string, ActionMapping>> = Object.freeze
   },
   sub_imprint_no_contact: {
     track: 'govern',
-    impact: 'Kein unmittelbarer Kontaktweg im Impressum — Pflicht nach § 5 Abs. 1 Nr. 2 TMG, und für Interessenten eine Hürde.',
+    impact: 'Kein unmittelbarer Kontaktweg im Impressum — Pflicht nach § 5 DDG, und für Interessenten eine Hürde.',
     action: 'E-Mail-Adresse und Telefonnummer im Impressum nennen.',
     module: 'governance_core',
   },

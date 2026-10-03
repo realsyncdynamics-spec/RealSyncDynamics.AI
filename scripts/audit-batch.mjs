@@ -215,7 +215,7 @@ async function auditDomain(domain) {
   }
 
   if (!result.has_imprint_link) {
-    result.findings.push({ severity: 'high', code: 'missing_imprint', msg: 'Kein Impressum-Link auf der Startseite gefunden (§ 5 TMG).' });
+    result.findings.push({ severity: 'high', code: 'missing_imprint', msg: 'Kein Impressum-Link auf der Startseite gefunden (§ 5 DDG).' });
   }
   if (!result.has_privacy_link) {
     result.findings.push({ severity: 'high', code: 'missing_privacy', msg: 'Kein Datenschutzerklärung-Link auf der Startseite gefunden (Art. 13 DSGVO).' });

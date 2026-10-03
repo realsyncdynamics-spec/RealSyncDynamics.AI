@@ -60,7 +60,7 @@ const probes: Probe[] = [
   // ── Legal pages reachability ──────────────────────────────────────────────
 
   {
-    name: '/legal/impressum reachable (§5 TMG)',
+    name: '/legal/impressum reachable (§5 DDG)',
     run: async () => {
       const p = await getPage('/legal/impressum');
       if (!p.ok) return { ok: false, status: p.status, detail: `HTTP ${p.status}` };

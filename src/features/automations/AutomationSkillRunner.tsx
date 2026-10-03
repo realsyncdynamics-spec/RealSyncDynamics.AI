@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, PlayCircle, AlertTriangle } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface AuditIssue {
   id: string;
@@ -60,7 +61,7 @@ export function AutomationSkillRunner({ tenantId }: { tenantId: string }) {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { setError('Bitte erneut anmelden.'); return; }
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/automation-trigger`, {
+      const resp = await fetch(`${getSupabaseUrl()}/functions/v1/automation-trigger`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

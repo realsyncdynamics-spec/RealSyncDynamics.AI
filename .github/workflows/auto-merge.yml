@@ -1,0 +1,36 @@
+name: Auto-merge
+
+# Aktiviert Squash-Auto-Merge für PRs gegen main. Merged nicht selbst:
+# GitHub wartet auf die Required Checks des Rulesets "main merge hygiene".
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  enable:
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable squash auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+          method="$(gh pr view "$PR" --repo "$repo" --json autoMergeRequest --jq '.autoMergeRequest.mergeMethod // empty')"
+          if [ "$method" = "SQUASH" ]; then
+            echo "Auto-merge bereits aktiv (squash)."
+            exit 0
+          fi
+          gh pr merge "$PR" --repo "$repo" --squash --auto

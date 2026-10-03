@@ -20,19 +20,24 @@
 //
 // Response:
 //   { ok: true, scan_run_id, correlation_id, finding_count, severity_max,
-//     gdpr_audit_id, score, severity }
+//     gdpr_audit_id, score, severity, website_id, asset_id, evidence_id,
+//     findings: { created, refreshed, reopened, resolved, suppressed } }
 //
 // Storage:
 //   scan_runs   ← startScanRun(detector='gdpr-audit')  (./pipeline.ts)
-//   findings    ← recordScanFinding pro Issue (category-Guess via id)
+//   governance_evidence ← ein hash-verketteter Nachweis pro Lauf (Gate 2)
+//   findings    ← pro Issue: neu / aktualisiert / wieder geöffnet / behoben,
+//                 mit asset_id + evidence_id + dedupe_key (./repo.ts)
 //   gdpr_audits ← unverändert (durch internen gdpr-audit-Aufruf)
 //   runtime_events ← emitRuntimeEvent() an den Scan-Lifecycle-Übergängen
 //     (audit.scan_started / audit.scan_completed / audit.scan_failed)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
+import { internalScanHeaders, TENANT_SCAN_LIMIT_PER_HOUR } from '../_shared/internal-scan-call.ts';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { runTenantAuditPipeline, type GdprAuditResponse } from './pipeline.ts';
+import { createAuditRepo } from './repo.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -101,23 +106,32 @@ Deno.serve(async (req) => {
   if (memErr) return jsonError(500, 'INTERNAL', memErr.message);
   if (!membership) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
+  // Rate-Limit pro Mandant. gdpr-audit lässt den internen Aufruf an seinem
+  // IP-Limit vorbei (sonst teilten sich alle Mandanten 5 Scans/Stunde), also
+  // begrenzen wir hier. Verbindlich ist der Trigger auf scan_runs
+  // (20260928181700, Advisory-Lock je Mandant); diese Vorabprüfung spart nur
+  // den Pipeline-Start. Zählfehler ⇒ kein Scan (fail-closed).
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count: recentRuns, error: countErr } = await admin
+    .from('scan_runs').select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId).eq('detector', 'gdpr-audit').gte('created_at', oneHourAgo);
+  if (countErr) return jsonError(500, 'INTERNAL', countErr.message);
+  if ((recentRuns ?? 0) >= TENANT_SCAN_LIMIT_PER_HOUR) {
+    return jsonError(429, 'RATE_LIMITED', `max ${TENANT_SCAN_LIMIT_PER_HOUR} scans per tenant and hour`);
+  }
+
   const result = await runTenantAuditPipeline({
     // deno-lint-ignore no-explicit-any
     admin: admin as any,
+    repo: createAuditRepo(admin),
     callGdprAudit: async () => {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method:  'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // gdpr-audit ist verify_jwt=false, braucht aber email — wir nutzen
-          // den user-email als technisches Identifikator (taucht im sales_lead
-          // auf, der ohnehin Lead-Tracking ist; OK für authenticated path).
-        },
-        body: JSON.stringify({
-          url,
-          email:  userResult.user.email ?? 'no-email@tenant-audit',
-          source: 'tenant-audit',
-        }),
+        // Interner Aufruf (Service-Role-Key + Caller-Header): gdpr-audit
+        // überspringt dann IP-Limit, sales_leads und E-Mail
+        // (_shared/internal-scan-call.ts). Die E-Mail des Nutzers geht nicht mit.
+        headers: internalScanHeaders(SRK),
+        body: JSON.stringify({ url, source: 'tenant-audit' }),
       });
       if (!r.ok) return { httpStatus: r.status, text: await r.text() };
       return await r.json() as GdprAuditResponse;
@@ -126,9 +140,16 @@ Deno.serve(async (req) => {
   }, { tenantId, websiteId, url, userId });
 
   if (!result.ok) {
+    // Parallele Anfragen, die die Vorabprüfung gemeinsam bestanden haben,
+    // weist der Trigger beim Anlegen des Laufs ab.
+    if (result.code === 'PIPELINE_START_FAILED' && result.message.includes('TENANT_SCAN_LIMIT_EXCEEDED')) {
+      return jsonError(429, 'RATE_LIMITED', `max ${TENANT_SCAN_LIMIT_PER_HOUR} scans per tenant and hour`);
+    }
     const code = result.code === 'GDPR_AUDIT_HTTP' || result.code === 'GDPR_AUDIT_FETCH'
       ? 'DETECTOR_FAILED'
-      : result.code === 'FINDING_INSERT' ? 'PIPELINE_INSERT_FAILED' : result.code;
+      : result.code === 'FINDING_INSERT' || result.code === 'EVIDENCE_INSERT'
+        ? 'PIPELINE_INSERT_FAILED'
+        : result.code;
     return jsonError(result.status, code, result.message);
   }
 
@@ -141,6 +162,10 @@ Deno.serve(async (req) => {
     gdpr_audit_id:  result.gdpr_audit_id,
     score:          result.score,
     severity:       result.severity,
+    website_id:     result.website_id,
+    asset_id:       result.asset_id,
+    evidence_id:    result.evidence_id,
+    findings:       result.findings,
   });
 });
 

@@ -19,6 +19,7 @@ import { FINDING_NEXT_STATUS } from '../../../types/governance/finding';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import type { ReportPayload } from '../../../types/governance/report';
 import { buildReportPayload } from '../../../lib/governance/reportMapping';
+import { notifyTenantDataChanged } from '../tenantDataEvents';
 
 /**
  * List a tenant's most recent scan_runs. Default limit 50; UI
@@ -220,6 +221,14 @@ function scanErrorForStatus(status: number): string {
   return `Scan fehlgeschlagen (HTTP ${status}).`;
 }
 
+/** Gate-2-Fehlercodes von tenant-audit, die ein Nutzer verstehen und beheben kann. */
+const SCAN_ERROR_BY_CODE: Record<string, string> = {
+  TARGET_UNREACHABLE:
+    'Die Website war nicht erreichbar. Es wurde nichts bewertet und kein Befund geändert.',
+  WEBSITE_NOT_FOUND: 'Diese Website gehört nicht zu Ihrem Workspace.',
+  URL_WEBSITE_MISMATCH: 'Die Scan-Adresse passt nicht zur hinterlegten Domain der Website.',
+};
+
 /**
  * Trigger an authenticated scan for the active tenant. Calls the
  * `tenant-audit` Edge Function which fans out to `gdpr-audit` and
@@ -252,6 +261,8 @@ export async function triggerTenantAudit(
   } catch {
     throw new Error('Scan-Dienst nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.');
   }
+  // Auch ein fehlgeschlagener Lauf ist als `scan_runs`-Zeile geschrieben.
+  notifyTenantDataChanged(tenantId);
 
   // Die Edge Function antwortet bei Gateway-Timeouts und 5xx teils mit leerem
   // Body — r.json() würde dann „Unexpected end of JSON input“ ins UI werfen.
@@ -261,7 +272,7 @@ export async function triggerTenantAudit(
     scan_run_id?: string;
     finding_count?: number;
     severity_max?: string | null;
-    error?: { message?: string };
+    error?: { code?: string; message?: string };
   } = {};
   if (raw.trim()) {
     try {
@@ -276,6 +287,8 @@ export async function triggerTenantAudit(
   }
 
   if (!r.ok) {
+    const known = body.error?.code ? SCAN_ERROR_BY_CODE[body.error.code] : undefined;
+    if (known) throw new Error(known);
     // 5xx u. a. (tenant-audit antwortet derzeit mit 500): Status immer
     // sichtbar, Server-Detail nur als Zusatz — nie still verschlucken.
     const detail = body.error?.message;
@@ -294,15 +307,17 @@ export async function triggerTenantAudit(
 // ─── Finding status transitions ─────────────────────────────
 
 /**
- * Update a finding's status. Validates the transition against
- * FINDING_NEXT_STATUS client-side before hitting the DB — the DB
- * doesn't enforce the transition map (only the value range), but
- * surfacing an invalid transition early gives a clearer error.
+ * Update a finding's status through the `set_finding_status` RPC — the only
+ * client write path (Gate 2). A direct `findings` UPDATE matched 0 rows under
+ * RLS without an error, so the UI reported success for a change that never
+ * happened. The RPC checks role, tenant and transition server-side and
+ * returns the written row; no row means nothing was saved, which is an error.
  */
 export async function updateFindingStatus(
   findingId:   string,
   currentStatus: FindingStatus,
   nextStatus:    FindingStatus,
+  tenantId?:     string | null,
 ): Promise<void> {
   const allowed = FINDING_NEXT_STATUS[currentStatus] ?? [];
   if (!allowed.includes(nextStatus)) {
@@ -311,8 +326,25 @@ export async function updateFindingStatus(
     );
   }
   const sb = getSupabase();
-  const { error } = await sb.from('findings')
-    .update({ status: nextStatus })
-    .eq('id', findingId);
-  if (error) throw new Error(error.message);
+  const { data, error } = await sb.rpc('set_finding_status', {
+    p_finding_id: findingId,
+    p_status:     nextStatus,
+  });
+  if (error) throw new Error(findingStatusError(error));
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || (row as { status?: string }).status !== nextStatus) {
+    throw new Error('Status wurde nicht gespeichert.');
+  }
+  if (tenantId) notifyTenantDataChanged(tenantId);
+}
+
+/** Maps RPC error codes of `set_finding_status` to user-facing text. */
+export function findingStatusError(error: { code?: string; message?: string }): string {
+  switch (error.code) {
+    case '42501': return 'Keine Berechtigung, den Status dieses Befunds zu ändern.';
+    case 'P0002': return 'Befund nicht gefunden.';
+    case '22023': return 'Dieser Statuswechsel ist nicht erlaubt.';
+    case '23505': return 'Für diesen Sachverhalt ist bereits ein offener Befund vorhanden.';
+    default:      return error.message || 'Status konnte nicht gespeichert werden.';
+  }
 }

@@ -1,8 +1,10 @@
 /**
- * Governance Activation persistence — Organization + Scope only.
+ * Governance Activation persistence — Organization + Scope + AI-OS-Setup.
+ * AI-OS-Setup lives in `organization.aiSetup` (JSONB, no migration).
  * Blueprint / extraction / Expert Review have no backend yet.
  */
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
+import { asAiSetup, type AiSetup } from './aiSetupCatalog';
 
 export interface ActivationOrganization {
   company: string;
@@ -12,6 +14,8 @@ export interface ActivationOrganization {
   teamStructure: string;
   responsibilities: string;
   roles: string;
+  /** Undefined = noch nie gespeichert. Beim Speichern ohne aiSetup bleibt der Bestand erhalten. */
+  aiSetup?: AiSetup;
 }
 
 export interface GovernanceActivationRecord {
@@ -35,6 +39,7 @@ export const EMPTY_ORGANIZATION: ActivationOrganization = {
 function asOrganization(raw: unknown): ActivationOrganization {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY_ORGANIZATION };
   const o = raw as Record<string, unknown>;
+  const aiSetup = asAiSetup(o.aiSetup);
   return {
     company: typeof o.company === 'string' ? o.company : '',
     entities: typeof o.entities === 'string' ? o.entities : '',
@@ -43,6 +48,30 @@ function asOrganization(raw: unknown): ActivationOrganization {
     teamStructure: typeof o.teamStructure === 'string' ? o.teamStructure : '',
     responsibilities: typeof o.responsibilities === 'string' ? o.responsibilities : '',
     roles: typeof o.roles === 'string' ? o.roles : '',
+    ...(aiSetup ? { aiSetup } : {}),
+  };
+}
+
+function asJsonObject(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? { ...(raw as Record<string, unknown>) }
+    : {};
+}
+
+/**
+ * Merge vor Upsert: `upsert` ersetzt die JSONB-Spalte komplett. Ohne Merge würde
+ * Org-Speichern ein zuvor gespeichertes `aiSetup` (und unbekannte Felder) löschen.
+ * Ein übergebenes `aiSetup` ersetzt den Bestand, ein fehlendes lässt ihn stehen.
+ */
+export function mergeOrganizationForSave(
+  existing: unknown,
+  next: ActivationOrganization,
+): Record<string, unknown> {
+  const { aiSetup, ...orgFields } = next;
+  return {
+    ...asJsonObject(existing),
+    ...orgFields,
+    ...(aiSetup ? { aiSetup } : {}),
   };
 }
 
@@ -86,10 +115,21 @@ export async function saveGovernanceActivation(input: {
         ? 'scope_set'
         : 'draft');
 
+  const { data: existing, error: readError } = await getSupabase()
+    .from('governance_activations')
+    .select('organization')
+    .eq('tenant_id', input.tenantId)
+    .maybeSingle();
+  // Ohne gelesenen Bestand nicht schreiben — sonst droht stilles Überschreiben von aiSetup.
+  if (readError) throw new Error(readError.message);
+
   const { error } = await getSupabase().from('governance_activations').upsert(
     {
       tenant_id: input.tenantId,
-      organization: input.organization,
+      organization: mergeOrganizationForSave(
+        (existing as { organization?: unknown } | null)?.organization,
+        input.organization,
+      ),
       scopes: input.scopes,
       status,
       updated_at: new Date().toISOString(),

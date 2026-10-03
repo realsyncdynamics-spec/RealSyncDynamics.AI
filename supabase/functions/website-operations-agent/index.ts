@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     // 3. Generate website using AI
     const website = await generateWebsiteWithAI(body, project.id);
 
-    if (!website.success) {
+    if (website.success === false) {
       // Fail closed. Vorher lief der Ablauf hier weiter, und zwar bis zum Ende:
       // Schritt 4 pruefte die Compliance gegen `website.html || ''`, Schritt 5
       // schrieb das Projekt mit `generated_html: undefined` auf
@@ -236,15 +236,25 @@ Deno.serve(async (req) => {
 // AI Website Generation using Claude
 // ============================================================================
 
-interface AIGenerationResult {
-  success: boolean;
-  html?: string;
-  css?: string;
-  sections: string[];
-  seo: Record<string, unknown>;
-  aiDisclosures: string[];
-  error?: string;
-}
+// Erfolg ist ein Literal: html/css existieren nur im Erfolgszweig, error nur
+// im Fehlerzweig. Nach `website.success === false` mit Ausstieg ist
+// `website` fuer den Rest des Handlers als Erfolg eingeengt.
+type AIGenerationResult =
+  | {
+      success: true;
+      html: string;
+      css: string;
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+    }
+  | {
+      success: false;
+      sections: string[];
+      seo: Record<string, unknown>;
+      aiDisclosures: string[];
+      error: string;
+    };
 
 async function generateWebsiteWithAI(
   req: WebsiteGenerationRequest,

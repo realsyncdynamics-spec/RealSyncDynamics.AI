@@ -185,7 +185,7 @@ describe('Tracker-Erkennung — die 28/100-Regression', () => {
   });
 });
 
-describe('Jurisdiktion — § 5 TMG gilt nicht weltweit', () => {
+describe('Jurisdiktion — § 5 DDG gilt nicht weltweit', () => {
   it('meldet ein fehlendes Impressum bei DE-Signalen als kritisch', () => {
     const issues = runChecks('https://beispiel.de', '<html lang="de"><body>Hallo</body></html>', new Headers(), 200, null);
     expect(issues.find((i) => i.id === 'no_imprint_link')?.severity).toBe('critical');
@@ -366,6 +366,15 @@ describe('Laufzeit auf feindseligem HTML (ReDoS)', () => {
     // um dieselben Zeichen.
     const html = `<html><body>M${'a'.repeat(50_000)}strasse</body></html>`;
     within('deepCheckImprint', () => deepCheckImprint(html));
+  });
+
+  it('haelt bei einem offenen href voller "kontakt" ohne Schlusszeichen durch', () => {
+    // Eine href-Regex der Form `[^"']*(kontakt|contact)[^"']*["']` liess das
+    // hintere `[^"']*` fuer jeden Treffer bis zum Ende laufen — gemessen
+    // > 2 s auf dieser Eingabe. Die Kontaktformular-Erkennung geht daher
+    // ueber tagsOf/attrOf.
+    const html = `<a href="${'kontakt'.repeat(20_000)}`;
+    within('deepCheckImprint / kontakt-href', () => deepCheckImprint(html));
   });
 
   it('haelt bei sehr vielen Ankern durch', () => {

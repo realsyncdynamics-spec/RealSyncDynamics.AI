@@ -547,6 +547,10 @@ export function hasEmailContact(html: string, text: string): boolean {
   return extractCloudflareEmails(html).length > 0;
 }
 
+/** Pfadsegment einer Kontaktseite: /kontakt, /contact-us, /de/kontaktformular.html … */
+const CONTACT_PAGE_PATH =
+  /(?:^|\/)(?:kontakt(?:[-_]?formular)?|contact(?:[-_]?form|[-_]?us)?)(?:\.html?)?(?:\/|[?#]|$)/;
+
 export function deepCheckImprint(html: string): Issue[] {
   const issues: Issue[] = [];
   const text = visibleText(html);
@@ -558,9 +562,9 @@ export function deepCheckImprint(html: string): Issue[] {
       severity: 'critical',
       title: 'Impressum nennt keine Rechtsform',
       detail:
-        'Pflicht nach § 5 Abs. 1 Nr. 1 TMG: vollständige Angabe der Firma inkl. Rechtsform ' +
+        'Pflicht nach § 5 Abs. 1 Nr. 1 DDG: vollständige Angabe der Firma inkl. Rechtsform ' +
         '(GmbH, UG, e.K. etc.) bzw. Inhaber-Name bei Einzelunternehmen.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
     });
   }
 
@@ -575,22 +579,43 @@ export function deepCheckImprint(html: string): Issue[] {
       id: 'sub_imprint_no_address',
       severity: 'critical',
       title: 'Impressum hat keine ladungsfähige Anschrift',
-      detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG. Postfach reicht nicht.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+      detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 DDG. Postfach reicht nicht.',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
     });
   }
 
-  // Klartext / mailto ODER Cloudflare Email Protection (XOR in data-cfemail).
-  // TMG § 5 Abs. 1 Nr. 2 bleibt: Email UND Telefon — CF zählt als Email-Nachweis.
+  // § 5 Abs. 1 Nr. 2 DDG: Die E-Mail-Adresse ist Pflicht (Klartext, mailto
+  // oder Cloudflare Email Protection). Daneben braucht es einen zweiten
+  // schnellen, unmittelbaren Kontaktweg — laut EuGH C-298/07 muss das KEIN
+  // Telefon sein, eine elektronische Anfragemaske genuegt. Frueher verlangte
+  // diese Pruefung zwingend ein Telefon und meldete Seiten mit E-Mail und
+  // Kontaktformular faelschlich als `high`-Verstoss.
   const hasEmail = hasEmailContact(html, text);
   const hasPhone = hasPhoneNumber(text) && /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
-  if (!hasEmail || !hasPhone) {
+  // Formular auf der Seite selbst, oder Link auf eine Kontaktseite. mailto:/tel:
+  // ausgeschlossen — sonst zaehlte die E-Mail-Adresse doppelt als zweiter Weg.
+  // Ueber tagsOf/attrOf statt einer href-Regex: `href=["'][^"']*(kontakt)[^"']*`
+  // war quadratisch (gemessen > 2 s auf 140 kB) — dieselbe ReDoS-Klasse, die
+  // test/edge/gdpr-audit-contract.test.ts per Laufzeitbudget abfaengt.
+  // Der Pfad muss als eigenes Segment auf eine Kontaktseite zeigen: ein
+  // Teilstring-Treffer zaehlte auch /products/contact-lenses oder
+  // /kontaktlinsen und liess damit einen echten Verstoss durchgehen.
+  const hasContactForm =
+    /<textarea\b/i.test(html) ||
+    tagsOf(html, 'a').some((tag) => {
+      const href = (attrOf(tag, 'href') ?? '').toLowerCase();
+      return !/^(?:mailto|tel):/.test(href) && CONTACT_PAGE_PATH.test(href);
+    });
+  if (!hasEmail || !(hasPhone || hasContactForm)) {
     issues.push({
       id: 'sub_imprint_no_contact',
       severity: 'high',
       title: 'Impressum ohne unmittelbaren Kontaktweg',
-      detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 TMG: Email + Telefon müssen genannt sein.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 2 TMG',
+      detail: hasEmail
+        ? 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Neben der E-Mail-Adresse fehlt ein zweiter ' +
+          'unmittelbarer Kontaktweg — Telefon oder Kontaktformular.'
+        : 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Eine E-Mail-Adresse muss genannt sein.',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 2 DDG',
     });
   }
 

@@ -93,6 +93,8 @@ function toFieldValue(shape: FieldShape, value: unknown): unknown {
     case 'form-fields':
       // Puck kennt keine Liste aus Strings — jedes Feld wird zum Objekt.
       return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string').map((name) => ({ name })) : [];
+    case 'boolean':
+      return value === true;
   }
 }
 
@@ -139,6 +141,8 @@ function fromFieldValue(shape: FieldShape, value: unknown): unknown {
       return Array.isArray(value) ? value.map((v) => (typeof v === 'object' && v !== null ? (v as { name?: unknown }).name : v)) : [];
     case 'enum':
       return value === '' ? undefined : value;
+    case 'boolean':
+      return value === true || value === 'true' ? true : undefined;
     default:
       return value;
   }
@@ -164,7 +168,12 @@ export function propsToBlock(kind: BlockKind, props: BlockProps): SiteBlock {
   const content: Record<string, unknown> = { ...(props.__content ?? {}) };
   for (const [key, shape] of Object.entries(EDITABLE_CONTENT[kind])) {
     if (!(key in props) || fieldUnchanged(shape, props, key)) continue;
-    const value = fromFieldValue(shape, props[key]);
+    let value = fromFieldValue(shape, props[key]);
+    if (shape.type === 'object' && shape.merge && typeof value === 'object' && value !== null) {
+      // Wie auf dem Server (`applyPageEdits`): nicht editierbare Teile bleiben.
+      const stored = typeof content[key] === 'object' && content[key] !== null ? content[key] as Record<string, unknown> : {};
+      value = { ...stored, ...(value as Record<string, unknown>) };
+    }
     if (value === undefined) delete content[key];
     else content[key] = value;
   }

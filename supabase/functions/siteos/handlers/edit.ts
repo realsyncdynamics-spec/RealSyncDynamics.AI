@@ -43,10 +43,14 @@ import {
   canonicalHash,
   computeScores,
   isBlockKind,
+  protectedFieldChanges,
   type PageEdit,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
 import { persistBlueprintVersion } from '../persist.ts';
+
+/** Wer Felder mit Rechtswirkung ändern darf (siehe `protectedFieldChanges`). */
+const PROTECTED_FIELD_ROLES: ReadonlySet<string> = new Set(['owner', 'admin', 'editor']);
 
 const MAX_PAGES = 40;
 const MAX_BLOCKS_PER_PAGE = 60;
@@ -94,8 +98,8 @@ export async function handle(req: Request): Promise<Response> {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const { data: member } = await admin
-    .from('memberships').select('user_id')
-    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+    .from('memberships').select('user_id, role')
+    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle<{ user_id: string; role: string | null }>();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
   try {
@@ -117,6 +121,16 @@ export async function handle(req: Request): Promise<Response> {
 
     // ── Redaktion anwenden ───────────────────────────────────────────────
     const applied = applyPageEdits(row.blueprint, edits);
+
+    // Felder mit Rechtswirkung (Formularziel, Rechtstext, Bildrechte,
+    // Sichtbarkeit) ändern nur Inhaber, Admin und Redaktion — wie der
+    // Rebuild-Refine. Sie wirken wie Freigaben: Ein eingesetzter Rechtstext
+    // räumt einen kritischen Befund ab, ein Formularziel bestimmt, wohin
+    // personenbezogene Daten gehen. Geprüft wird der Wert, nicht die Anfrage.
+    const protectedChanges = protectedFieldChanges(row.blueprint, applied.blueprint);
+    if (protectedChanges.length > 0 && !PROTECTED_FIELD_ROLES.has(member.role ?? '')) {
+      return jsonError(403, 'FORBIDDEN', `Formularziel, Rechtstexte, Bildrechte und Sichtbarkeit ändern nur Inhaber, Admins und Redaktion (betroffen: ${protectedChanges.slice(0, 5).join(', ')}).`);
+    }
     const blueprintSha256 = await canonicalHash(applied.blueprint);
 
     // Nach der Änderung werden Befunde und Bewertung neu gebildet. Sie auf

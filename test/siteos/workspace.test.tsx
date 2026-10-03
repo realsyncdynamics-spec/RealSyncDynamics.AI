@@ -40,6 +40,20 @@ vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({ activeTenantId: 'tenant-1', loading: false }),
 }));
 vi.mock('../../src/features/billing/checkout', () => ({ createSiteOsCheckoutSession: vi.fn() }));
+// Rebuild-Pfade (Status, Überarbeiten, Verzicht, Export): hier nur der
+// Status — was er liefert, bestimmt der Server.
+const rebuildApi = {
+  rebuildStatus: vi.fn(),
+  refineRebuild: vi.fn(),
+  waiveBackend: vi.fn(),
+  exportPublish: vi.fn(),
+};
+vi.mock('../../src/features/siteos/rebuild/rebuildApi', () => ({
+  rebuildStatus: (...a: unknown[]) => rebuildApi.rebuildStatus(...a),
+  refineRebuild: (...a: unknown[]) => rebuildApi.refineRebuild(...a),
+  waiveBackend: (...a: unknown[]) => rebuildApi.waiveBackend(...a),
+  exportPublish: (...a: unknown[]) => rebuildApi.exportPublish(...a),
+}));
 const previewFrame = vi.fn();
 vi.mock('../../src/components/preview/SandboxedPreviewFrame', () => ({
   SandboxedPreviewFrame: (props: { html: string }) => { previewFrame(props); return null; },
@@ -98,6 +112,22 @@ async function sample() {
   return { blueprint, sha256: await canonicalHash(blueprint) };
 }
 
+/** Antwort von `rebuild-status` — standardmäßig bestanden, ohne Sperren. */
+function statusOf(sha256: string, over: Record<string, unknown>) {
+  return {
+    ok: true, blueprint_id: 'bp-1', version: 1, content_sha256: sha256, origin_source: 'ai-builder', run_id: null, base_url: null,
+    artifact: { sha256: 'c'.repeat(64), total_bytes: 1000, files: [] },
+    backend: null,
+    checklist: { items: [{ key: 'seo.h1', group: 'seo', title: 'Genau eine Hauptüberschrift je Seite', status: 'ok', detail: 'Geprüft.' }], blockers: 0, todos: 0 },
+    next_steps: [],
+    evaluation: {
+      id: 'ev-1', status: 'passed', publishable: true, blockers: [], warnings: [], artifact_sha256: 'c'.repeat(64),
+      human_approval_required: false, evaluated_at: '2026-09-29T10:00:00.000Z', approved_by: null, current: true,
+    },
+    ...over,
+  };
+}
+
 function storedRow(blueprint: SiteBlueprint, sha256: string, version = 1) {
   return {
     id: `bp-${version}`, version, blueprint, content_sha256: sha256, prev_hash: null,
@@ -113,6 +143,7 @@ function renderWorkspace(slug: string, search = '') {
         <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
         <Route path="/welcome" element={<LocationProbe />} />
         <Route path="/unified-entry/transformation" element={<LocationProbe />} />
+        <Route path="/app/siteos/rebuild" element={<LocationProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -120,6 +151,7 @@ function renderWorkspace(slug: string, search = '') {
 
 beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset();
+  for (const fn of Object.values(rebuildApi)) fn.mockReset();
   previewFrame.mockReset();
   editorProps = null;
   authenticated = true;
@@ -259,14 +291,34 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(screen.getByText(/Nicht veröffentlichbar \(blocked\)/)).toBeInTheDocument();
   });
 
-  it('hält den Veröffentlichen-Knopf gesperrt und sagt warum', async () => {
+  it('öffnet mit „Veröffentlichen" den Publish-Schritt — das GO bleibt gesperrt, bis der Stand bestanden hat', async () => {
     const { blueprint, sha256 } = await sample();
     api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    rebuildApi.rebuildStatus.mockResolvedValue({ kind: 'ok', data: statusOf(sha256, { evaluation: null }) });
     renderWorkspace(blueprint.slug);
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
-    const publish = screen.getByRole('button', { name: /Veröffentlichen/ });
-    expect(publish).toBeDisabled();
-    expect(publish.getAttribute('title')).toMatch(/nicht verdrahtet/);
+    const publish = screen.getByRole('button', { name: /^Veröffentlichen$/ });
+    expect(publish).toBeEnabled();
+    fireEvent.click(publish);
+    await waitFor(() => expect(rebuildApi.rebuildStatus).toHaveBeenCalledWith({ tenant_id: 'tenant-1', slug: blueprint.slug, base_url: undefined }));
+    const go = await screen.findByRole('button', { name: /GO — veröffentlichen und exportieren/ });
+    expect(go).toBeDisabled();
+    expect(screen.getByText('Erst diesen Stand bewerten.')).toBeInTheDocument();
+    // Selbst mit bestätigter Vorschau: ohne bestandene Bewertung kein GO.
+    fireEvent.click(screen.getByLabelText(/Vorschau auf Desktop und Mobil geprüft/));
+    expect(go).toBeDisabled();
+    expect(rebuildApi.exportPublish).not.toHaveBeenCalled();
+  });
+
+  it('gibt das GO erst frei, wenn der Stand bestanden hat, die Checkliste frei ist und die Vorschau bestätigt wurde', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    rebuildApi.rebuildStatus.mockResolvedValue({ kind: 'ok', data: statusOf(sha256, {}) });
+    renderWorkspace(blueprint.slug, '?tab=publish');
+    const go = await screen.findByRole('button', { name: /GO — veröffentlichen und exportieren/ });
+    expect(go).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/Vorschau auf Desktop und Mobil geprüft/));
+    expect(go).toBeEnabled();
   });
 
   it('zeigt in der Vorschau das echte Dokument der lokalen Fassung', async () => {
@@ -301,7 +353,9 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText('Anweisung an die KI'), { target: { value: 'Hero hochwertiger' } });
     fireEvent.click(screen.getByRole('button', { name: 'Mit KI neu bauen' }));
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/unified-entry/transformation?url=https%3A%2F%2Fihre-firma.de%2F&instruction=Hero%20hochwertiger'));
+    // Der Neubau aus der Ausgangsseite läuft über den Rebuild-Workflow
+    // (Herkunft `import`, Backend-Vergleich) — nicht mehr über den alten Erstbau.
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/app/siteos/rebuild?url=https%3A%2F%2Fihre-firma.de%2F&instruction=Hero%20hochwertiger'));
   });
 
   it('sperrt den KI-Neubau ohne bekannte Quelle, statt eine zu raten', async () => {
@@ -324,14 +378,14 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
     };
   }
 
-  it('führt rechts die vier Tabs Assistent · Eigenschaften · Probleme · Governance; unten bleiben Konsole und Verlauf', async () => {
+  it('führt rechts die Tabs Assistent · Eigenschaften · Probleme · Governance · Veröffentlichen · Nächste Schritte; unten bleiben Konsole und Verlauf', async () => {
     const { blueprint, sha256 } = await sample();
     api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
     renderWorkspace(blueprint.slug);
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
     const right = within(screen.getByTestId('right'));
     const labels = right.getAllByRole('tab').map((t) => t.textContent?.replace(/ \(\d+\)$/, ''));
-    expect(labels).toEqual(['Assistent', 'Eigenschaften', 'Probleme', 'Governance']);
+    expect(labels).toEqual(['Assistent', 'Eigenschaften', 'Probleme', 'Governance', 'Veröffentlichen', 'Nächste Schritte']);
     const bottom = within(screen.getByRole('tablist', { name: 'Leisten' }));
     expect(bottom.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Konsole', 'Verlauf']);
     // Der Assistent ist der Startzustand; die Puck-Felder liegen im Tab „Eigenschaften".
@@ -473,6 +527,8 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
     await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
     expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
+    // Der Knopf in der Kopfzeile öffnet nur den Publish-Schritt; veröffentlicht
+    // wird dort erst mit bestandener Bewertung und ausdrücklichem GO.
+    expect(rebuildApi.exportPublish).not.toHaveBeenCalled();
   });
 });

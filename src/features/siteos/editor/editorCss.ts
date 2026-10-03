@@ -13,7 +13,8 @@
 // soll `body>header` weiter tragen. Die Umschreibung gilt nur für die
 // Leinwand — die sandboxed Vorschau zeigt weiterhin das echte Dokument.
 
-import { renderPresentationCss, renderThemeCss, type SiteTheme } from '../../../../packages/siteos-core/src/index';
+import { renderPresentationCss, renderThemeCss, type DesignSpec, type SiteTheme } from '../../../../packages/siteos-core/src/index';
+import { renderDesignCss } from '../../../../packages/siteos-core/src/render/design';
 
 /** Attribut, das jeder Block-Wrapper in der Leinwand trägt. */
 export const BLOCK_WRAPPER_ATTR = 'data-siteos-block';
@@ -36,11 +37,18 @@ export function adaptPresentationCssForCanvas(css: string): string {
   return out;
 }
 
-/** Vollständiges Stylesheet der Leinwand: Theme + umgeschriebene Layoutschicht. */
-export function renderCanvasCss(theme: SiteTheme): string {
+/**
+ * Vollständiges Stylesheet der Leinwand: Theme + umgeschriebene Layoutschicht.
+ *
+ * Trägt der Blueprint ein Design-System (Rebuild), gehört dessen Stylesheet
+ * auf die Leinwand — dasselbe, das `renderPage` ausliefert. Es spricht
+ * Klassen an (`.rs-hero`), keine Dokumentstruktur, und braucht deshalb keine
+ * Umschreibung.
+ */
+export function renderCanvasCss(theme: SiteTheme, design?: DesignSpec): string {
   return [
     renderThemeCss(theme),
-    adaptPresentationCssForCanvas(renderPresentationCss(theme)),
+    design ? renderDesignCss(design) : adaptPresentationCssForCanvas(renderPresentationCss(theme)),
     // Der Wrapper selbst bleibt unsichtbar; nur die Reveal-Animation der
     // Layoutschicht soll auch in der Leinwand nicht bei jedem Tastendruck
     // erneut anlaufen.

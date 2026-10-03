@@ -45,6 +45,8 @@ const PREVIEW_SURFACES = [
   'src/unified-entry/pages/BuildStudioPage.tsx',
   // App Builder Workspace (Phase 2, Schritt A): Vorschau der lokalen Fassung.
   'src/features/siteos/workspace/AppBuilderWorkspacePage.tsx',
+  // Rebuild-Workflow: Vorschau je Richtung (derselbe Renderer wie der Export).
+  'src/features/siteos/rebuild/RebuildPage.tsx',
   'supabase/functions/siteos/preview.ts',
 ] as const;
 

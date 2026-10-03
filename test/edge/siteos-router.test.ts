@@ -28,9 +28,10 @@ import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/re
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
 const ENDPOINTS = [
   'agents', 'builder', 'discover', 'edit', 'runtime-scan',
-  'publish-approve', 'publish-gate',
+  'publish-approve', 'publish-gate', 'publish-export',
   'build-anon', 'refine-anon', 'session', 'claim',
   'code-persist',
+  'rebuild-analyze', 'rebuild-select', 'rebuild-refine', 'rebuild-status', 'rebuild-waive',
 ];
 
 /**
@@ -57,6 +58,9 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'runtime-scan': 'runtime-scan',
   'publish-gate': 'publish-gate',
   'publish-approve': 'publish-gate',
+  // Das GO baut das Bündel exakt wie die Bewertung (G6) — derselbe Weg,
+  // dieselbe Datei.
+  'publish-export': 'publish-gate',
   // Bauen, verfeinern und uebernehmen teilen Sitzungsladen, Prüfpfad-Gate
   // und Ablaufregel. Getrennte Dateien hiessen drei Kopien davon.
   'build-anon': 'anonymous',
@@ -64,6 +68,13 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'session': 'anonymous',
   'claim': 'anonymous',
   'code-persist': 'code-persist',
+  // Rebuild-Workflow: fünf Pfade, ein Modul — Snapshot, Kontext und
+  // Nachweis sind gemeinsam.
+  'rebuild-analyze': 'rebuild',
+  'rebuild-select': 'rebuild',
+  'rebuild-refine': 'rebuild',
+  'rebuild-status': 'rebuild',
+  'rebuild-waive': 'rebuild',
 });
 
 describe('siteos Router — resolveEndpoint', () => {

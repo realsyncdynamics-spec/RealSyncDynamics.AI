@@ -27,6 +27,8 @@ export * from './render/presentation.ts';
 export * from './render/templates.ts';
 
 export * from './deploy/artifact.ts';
+export * from './deploy/site-files.ts';
+export * from './deploy/zip.ts';
 export * from './publish/gate.ts';
 
 export * from './agents/registry.ts';
@@ -38,3 +40,6 @@ export * from './workflows/skills.ts';
 export * from './workflows/workflows.ts';
 
 export { buildSiteFromPrompt } from './pipeline.ts';
+
+// Rebuild-Workflow (bestehende Website → gestalteter Neubau mit Nachweisen).
+export * from './rebuild/index.ts';

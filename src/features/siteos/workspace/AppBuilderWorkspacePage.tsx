@@ -15,8 +15,14 @@
 //
 // Was sie nicht tut: keinen Blueprint aus dem Browser speichern (die
 // Sicherheitsbasis aus #1248 bleibt), keine Seiten anlegen (PR B), keinen
-// LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
-// Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
+// LLM-Assistenten (PR C), keine Medien (PR E). Wo etwas fehlt, steht das dran.
+//
+// Rebuild-Workflow (2026-09-29): Für übernommene Sites (`origin_source =
+// 'import'`) trägt der Assistent die Überarbeitung in Klartext (REFINE). Die
+// Tabs „Veröffentlichen" und „Nächste Schritte" führen PUBLISH (Checkliste,
+// Backend-Vergleich, Bewertung, GO → geprüftes ZIP) und AUTOMATE/GOVERN.
+// Veröffentlicht wird nichts von hier aus: Das GO liefert das bewertete
+// Bündel als Datei — hochgeladen wird es vom Verantwortlichen.
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -43,6 +49,7 @@ import {
   type AgentRunRow, type CustodyEventRow, type EvaluationRow, type StoredBlueprintRow,
 } from '../siteOsApi';
 import { toPageEdit, type PuckPageData } from '../editor/blueprintPuckAdapter';
+import { NextStepsPanel, PublishPanel, RefinePanel, useRebuildStatus } from '../rebuild/WorkspaceRebuildPanels';
 import {
   AssistantPanel, ConsolePanel, GovernancePanel, GovernanceStatusChip, HistoryPanel, ProblemsPanel, ProjectNav,
   RIGHT_TABS, SECTION_LABEL, governanceStatus,
@@ -79,6 +86,8 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     if (!raw) return null;
     try { return new URL(raw).toString(); } catch { return null; }
   }, [params]);
+  const initialTab = params.get('tab');
+  const initialInstruction = params.get('instruction') ?? '';
 
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [loadError, setLoadError] = useState('');
@@ -90,7 +99,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [device, setDevice] = useState<Device>('desktop');
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
   const [navTab, setNavTab] = useState<NavTab>('pages');
-  const [rightTab, setRightTab] = useState<RightTab>('assistant');
+  const [rightTab, setRightTab] = useState<RightTab>(initialTab === 'publish' ? 'publish' : initialTab === 'next' ? 'next' : 'assistant');
   const [bottomTab, setBottomTab] = useState<BottomTab>('console');
   const [bottomOpen, setBottomOpen] = useState(false);
   const [mobilePane, setMobilePane] = useState<MobilePane>('canvas');
@@ -105,12 +114,19 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [evaluations, setEvaluations] = useState<EvaluationRow[]>([]);
   const [custody, setCustody] = useState<CustodyEventRow[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
+  // Zieldomain für Canonical/Sitemap des Bündels — Vorschlag: Origin der Ausgangsseite.
+  const [baseUrl, setBaseUrl] = useState(() => {
+    const raw = new URLSearchParams(location.search).get('source');
+    try { return raw ? `https://${new URL(raw).host}` : ''; } catch { return ''; }
+  });
 
   const log = useCallback((level: ConsoleEntry['level'], text: string) => {
     setConsole((prev) => [...prev.slice(-199), { at: new Date().toISOString(), level, text }]);
   }, []);
 
   const assetRef = activeTenantId ? `siteos:blueprint:${activeTenantId}:${slug}` : '';
+  const statusEnabled = rightTab === 'publish' || rightTab === 'next';
+  const rebuildState = useRebuildStatus(statusEnabled && stored ? activeTenantId : null, slug, stored?.content_sha256 ?? '', baseUrl);
 
   // ── Laden ────────────────────────────────────────────────────────────
   const loadGovernance = useCallback(async (tenantId: string, siteSlug: string) => {
@@ -242,7 +258,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const rebuild = (text: string) => {
     if (!sourceUrl) return;
     if (dirty && !window.confirm('Die KI baut die Website aus der Ausgangsseite neu. Ungespeicherte Änderungen gehen dabei verloren. Fortfahren?')) return;
-    navigate(`/unified-entry/transformation?url=${encodeURIComponent(sourceUrl)}&instruction=${encodeURIComponent(text)}`);
+    // Absicht aus der App (Navigationszustand): Die Rebuild-Seite startet
+    // die Analyse dann gleich — ein Link von außen kann das nicht auslösen.
+    navigate(`/app/siteos/rebuild?url=${encodeURIComponent(sourceUrl)}&instruction=${encodeURIComponent(text)}`, { state: { autostart: true } });
   };
 
   const checkout = async () => {
@@ -258,6 +276,20 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     }
   };
 
+  // ── Überarbeitung (Rebuild) ──────────────────────────────────────────
+  // Der Server hat eine neue Version geschrieben; die Oberfläche übernimmt
+  // genau diese (Blueprint + Hash aus der Antwort), nicht eine lokale Fassung.
+  const revised = (next: { blueprint_id: string | null; version: number; content_sha256: string; blueprint: SiteBlueprint }) => {
+    if (!stored || !activeTenantId) return;
+    // Die neue Zeile: Bewertung, Freigabe und Export beziehen sich auf sie,
+    // nicht auf die Vorversion.
+    setStored({ ...stored, id: next.blueprint_id ?? stored.id, version: next.version, blueprint: next.blueprint, content_sha256: next.content_sha256, prev_hash: stored.content_sha256, status: 'draft' });
+    setPageData({});
+    setRevision((r) => r + 1);
+    setGate(null);
+    void loadGovernance(activeTenantId, stored.blueprint.slug);
+  };
+
   // ── Zustände ohne Projekt ────────────────────────────────────────────
   if (loadState !== 'ready' || !stored || !localBlueprint) {
     return (
@@ -270,7 +302,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
               <p className="mt-2 text-sm leading-6 text-black/55">Unter <code className="font-mono">{slug || '—'}</code> gibt es in diesem Workspace keine Site. Entweder wurde sie nie gebaut, oder sie gehört zu einem anderen Workspace.</p>
               <div className="mt-5 flex flex-col gap-2">
                 <Link to="/app/siteos" className="rounded-lg bg-[#111827] px-4 py-2.5 text-xs font-bold text-white">Zur Übersicht</Link>
-                <Link to="/unified-entry/transformation" className="rounded-lg border border-black/[.12] px-4 py-2.5 text-xs font-bold">Neue Website bauen</Link>
+                <Link to="/app/siteos/rebuild" className="rounded-lg border border-black/[.12] px-4 py-2.5 text-xs font-bold">Bestehende Website neu bauen</Link>
               </div>
             </>
           )}
@@ -338,16 +370,15 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         >
           {checking ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}<span className="hidden sm:inline">Prüfen</span>
         </button>
-        {/* Veröffentlichen gibt es noch nicht: Es existiert kein Pfad vom
-            Artefakt zu einer öffentlichen Adresse (gemessen 2026-09-07).
-            Der Knopf steht hier, damit die Kopfzeile ihre Form hat — und
-            sagt, warum er nichts tut, statt so zu tun als ob. */}
+        {/* Veröffentlichen öffnet den Publish-Schritt: Checkliste,
+            Backend-Vergleich, Bewertung und das ausdrückliche GO. Der Knopf
+            selbst veröffentlicht nichts — das GO steht im Panel, mit
+            bestätigter Vorschau, und nur für ein bestandenes Bündel. */}
         <button
-          disabled
-          aria-disabled="true"
-          title="Auslieferung nicht verdrahtet: Es gibt noch keinen Pfad von der geprüften Version zu einer öffentlichen Adresse. Folgt mit dem Publish-Schritt."
+          onClick={() => { setRightTab('publish'); setMobilePane('right'); }}
+          title="Checkliste, Freigabebewertung und GO für die gespeicherte Version"
           aria-label="Veröffentlichen"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white opacity-40 sm:px-3"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white sm:px-3"
         >
           <Upload size={14} /><span className="hidden sm:inline">Veröffentlichen</span>
         </button>
@@ -381,7 +412,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     </div>
   );
 
-  const designPanel = (
+  const designPanel = localBlueprint.design ? (
+    <div className="mt-7 border-t border-black/[.07] pt-5">
+      <div className={SECTION_LABEL}>Design</div>
+      <p className="text-[11px] leading-5 text-black/50">Diese Site trägt ein Design-System aus der Marke der Ausgangsseite ({localBlueprint.design.direction}). Farben, Schrift und Formen ändern Sie über „Überarbeiten" — Vorlagen würden es überschreiben.</p>
+    </div>
+  ) : (
     <div className="mt-7 border-t border-black/[.07] pt-5">
       <div className={SECTION_LABEL}>Design</div>
       {SITE_DESIGN_TEMPLATES.map((item) => (
@@ -391,7 +427,15 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     </div>
   );
 
-  const assistant = (
+  const assistant = stored.origin_source === 'import' && activeTenantId ? (
+    <div>
+      <RefinePanel tenantId={activeTenantId} stored={stored} dirty={dirty} initialInstruction={initialInstruction} onRevised={revised} log={log} />
+      {sourceUrl && (
+        <button onClick={() => rebuild('')} disabled={busy || saving} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-black/[.12] px-3 py-2 text-[11px] font-semibold text-black/65 disabled:opacity-40">Ausgangsseite neu analysieren</button>
+      )}
+      {designPanel}
+    </div>
+  ) : (
     <AssistantPanel sourceUrl={sourceUrl} instruction={instruction} onInstruction={setInstruction} onRebuild={rebuild} busy={busy || saving}>
       {sourceUrl && (
         <button onClick={() => void checkout()} disabled={busy} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-3 text-xs font-bold text-[#06111f] disabled:opacity-40">Website fertig umsetzen <ArrowRight size={14} /></button>
@@ -432,6 +476,10 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       )}
       {rightTab === 'problems' && <ProblemsPanel findings={findings} gate={gate} />}
       {rightTab === 'governance' && <GovernancePanel stored={stored} local={localBlueprint} evaluations={evaluations} custody={custody} agentRuns={agentRuns} assetRef={assetRef} />}
+      {rightTab === 'publish' && activeTenantId && (
+        <PublishPanel tenantId={activeTenantId} stored={stored} dirty={dirty} runId={rebuildState.status?.run_id ?? null} baseUrl={baseUrl} onBaseUrl={setBaseUrl} status={rebuildState} log={log} />
+      )}
+      {rightTab === 'next' && <NextStepsPanel status={rebuildState} />}
     </div>
   );
 

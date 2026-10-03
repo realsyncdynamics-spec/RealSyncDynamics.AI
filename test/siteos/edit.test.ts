@@ -172,8 +172,11 @@ describe('applyPageEdits — Redaktion ändert Inhalt, nicht Merkmale', () => {
 describe('Vokabular', () => {
   it('führt jeden Block-Typ genau einmal und hält Angeheftetes von Anlegbarem getrennt', () => {
     const kinds = Object.keys(EDITABLE_CONTENT);
-    expect(kinds).toHaveLength(15);
+    // 15 Basis-Typen + 8 Rebuild-Komponenten (Trust-Leiste … Automationen).
+    expect(kinds).toHaveLength(23);
+    expect(new Set(kinds).size).toBe(kinds.length);
     for (const kind of PINNED_KINDS) expect(ADDABLE_KINDS).not.toContain(kind);
+    for (const kind of ADDABLE_KINDS) expect(kinds).toContain(kind);
   });
 
   it('bereinigt Werte nach ihrer Form', () => {

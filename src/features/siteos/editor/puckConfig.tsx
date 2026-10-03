@@ -55,6 +55,33 @@ const FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
   answer: 'Antwort',
   fields: 'Formularfelder',
   consentText: 'Einwilligungstext',
+  eyebrow: 'Dachzeile',
+  secondaryCta: 'Zweite Schaltfläche',
+  proof: 'Nachweiszeile',
+  variant: 'Stilvariante',
+  media: 'Bild',
+  src: 'Bildadresse',
+  alt: 'Alternativtext',
+  rightsConfirmed: 'Nutzungsrechte bestätigt',
+  hidden: 'Ausgeblendet',
+  cta: 'Schaltfläche im Kopf',
+  intro: 'Einleitung',
+  submitLabel: 'Beschriftung Absenden',
+  target: 'Formularziel (https:// oder mailto:)',
+  author: 'Quelle / Person',
+  problem: 'Ausgangslage',
+  solution: 'Lösung',
+  points: 'Punkte',
+  steps: 'Schritte',
+  title: 'Titel',
+  text: 'Text',
+  price: 'Preis',
+  note: 'Hinweis',
+  phone: 'Telefon',
+  phoneHref: 'Telefon-Link (tel:)',
+  email: 'E-Mail',
+  address: 'Anschrift',
+  hours: 'Erreichbarkeit',
 });
 
 const FORM_FIELD_LABELS: Readonly<Record<string, string>> = Object.freeze({
@@ -69,6 +96,18 @@ const EMPHASIS_LABELS: Readonly<Record<string, string>> = Object.freeze({
   '': 'Standard',
   compact: 'Kompakt',
   tall: 'Hoch',
+  // Stilvarianten der Rebuild-Komponenten
+  split: 'Zweispaltig',
+  centered: 'Zentriert',
+  editorial: 'Redaktionell',
+  cards: 'Karten',
+  numbered: 'Nummeriert',
+  list: 'Liste',
+  standard: 'Standard',
+  lead: 'Anfrage (Lead)',
+  newsletter: 'Newsletter',
+  band: 'Band',
+  card: 'Karte',
 });
 
 function labelOf(key: string): string {
@@ -113,6 +152,15 @@ export function toPuckField(key: string, shape: FieldShape): Field {
         },
       };
     }
+    case 'boolean':
+      return {
+        type: 'radio',
+        label,
+        options: [
+          { label: 'Nein', value: false },
+          { label: 'Ja', value: true },
+        ],
+      };
     case 'form-fields':
       return {
         type: 'array',
@@ -131,9 +179,18 @@ export function toPuckField(key: string, shape: FieldShape): Field {
   }
 }
 
+/** Beschriftungen, die nur für einen Block-Typ gelten. */
+const KIND_FIELD_LABELS: Readonly<Partial<Record<BlockKind, Record<string, string>>>> = Object.freeze({
+  'legal-text': { body: 'Wortlaut (vom Verantwortlichen — RealSync erzeugt keine Rechtstexte)' },
+});
+
 function fieldsFor(kind: BlockKind): Fields<BlockProps> {
   return Object.fromEntries(
-    Object.entries(EDITABLE_CONTENT[kind]).map(([key, shape]) => [key, toPuckField(key, shape)]),
+    Object.entries(EDITABLE_CONTENT[kind]).map(([key, shape]) => {
+      const field = toPuckField(key, shape);
+      const label = KIND_FIELD_LABELS[kind]?.[key];
+      return [key, label ? { ...field, label } : field];
+    }),
   ) as Fields<BlockProps>;
 }
 
@@ -148,12 +205,15 @@ function BlockCanvas({ kind, props, metadata }: { kind: BlockKind; props: BlockP
   const wrapperProps = { [BLOCK_WRAPPER_ATTR]: kind } as Record<string, string>;
 
   if (html === '') {
-    // Der Renderer lässt leere Referenzlisten bewusst weg (§ 5 UWG). In der
-    // Leinwand bleibt der Block sichtbar, damit klar ist, warum nichts
-    // erscheint — und dass er so nicht ausgeliefert wird.
+    // Der Renderer lässt leere Referenzlisten bewusst weg (§ 5 UWG) und
+    // ausgeblendete Blöcke ganz. In der Leinwand bleibt der Block sichtbar,
+    // damit klar ist, warum nichts erscheint — und wie er zurückkommt.
+    const hidden = (block.content as { hidden?: unknown }).hidden === true;
     return (
       <div {...wrapperProps} style={{ padding: '1.5rem', border: '1px dashed currentColor', opacity: 0.6, fontSize: '.9rem' }}>
-        {labelFor(kind)}: keine Einträge — dieser Block wird ohne Inhalt nicht ausgeliefert.
+        {hidden
+          ? `${labelFor(kind)}: ausgeblendet — wird nicht ausgeliefert. Zum Einblenden rechts „Ausgeblendet" auf „Nein" stellen.`
+          : `${labelFor(kind)}: keine Einträge — dieser Block wird ohne Inhalt nicht ausgeliefert.`}
       </div>
     );
   }

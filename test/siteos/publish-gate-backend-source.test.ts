@@ -55,10 +55,30 @@ describe('Backend-Feststellung — G1 am Quelltext', () => {
     expect(handlerSource).not.toContain('readBackendState');
   });
 
-  it('er leitet sie stattdessen aus origin_source ab', () => {
+  it('er leitet sie stattdessen aus origin_source und dem gespeicherten Rebuild-Lauf ab', () => {
     expect(handlerSource).toContain('deriveBackendState');
     expect(handlerSource).toContain('origin_source');
-    expect(handlerSource).toContain("deriveBackendState(row.origin_source)");
+    // Seit dem Rebuild-Workflow gibt es den Vergleichslauf. Er kommt aus
+    // `siteos_rebuild_runs` (serverseitig geschrieben) und `compareBackend`
+    // im Kern — nicht aus dem Body.
+    expect(handlerSource).toContain('const comparison = backendComparison(rebuild, row.blueprint);');
+    expect(handlerSource).toContain('backend: deriveBackendState(row.origin_source, comparison)');
+    // Der Lauf ist der, an den die Site gebunden ist (`origin.rebuild` im
+    // Blueprint) — nicht der zuletzt bearbeitete zum Slug.
+    expect(handlerSource).toContain('resolveRebuildContext(ctx.admin, ctx.tenantId, row)');
+    const helper = handlerSource.slice(handlerSource.indexOf('function backendComparison'));
+    expect(helper).toContain('compareBackend(context.snapshot, blueprint, context.waivers)');
+
+    const contextSource = readFileSync(resolve(__dirname, '../../supabase/functions/siteos/rebuild-context.ts'), 'utf8');
+    expect(contextSource).toContain(".from('siteos_rebuild_runs')");
+    expect(contextSource).toContain(".eq('tenant_id', tenantId)");
+    expect(contextSource).toContain(".eq('id', binding.runId)");
+    expect(contextSource).not.toMatch(/body\./);
+  });
+
+  it('einen Vergleich gibt es nur für übernommene Sites (`import`) — `manual` bleibt ohne', () => {
+    const fn = handlerSource.slice(handlerSource.indexOf('function deriveBackendState'));
+    expect(fn).toContain("comparison: originSource === 'import' ? comparison : null");
   });
 
   it('nur `ai-builder` gilt als greenfield', () => {

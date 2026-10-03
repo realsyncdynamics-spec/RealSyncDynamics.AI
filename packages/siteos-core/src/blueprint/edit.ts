@@ -43,13 +43,23 @@ export type FieldShape =
   | { type: 'url' }
   | { type: 'enum'; values: readonly string[]; optional?: boolean }
   | { type: 'list'; item: Readonly<Record<string, FieldShape>>; max?: number }
-  | { type: 'object'; fields: Readonly<Record<string, FieldShape>> }
-  | { type: 'form-fields' };
+  /**
+   * `merge`: Die Felder werden in den gespeicherten Wert eingemischt statt
+   * ihn zu ersetzen — nötig, wo das Objekt nicht editierbare Teile trägt
+   * (z. B. `media.kind`, `media.ratio`).
+   */
+  | { type: 'object'; fields: Readonly<Record<string, FieldShape>>; merge?: boolean }
+  | { type: 'form-fields' }
+  /** Schalter. `false` entfernt das Feld (unberührte Blöcke bleiben hash-gleich). */
+  | { type: 'boolean' };
 
 const TEXT: FieldShape = { type: 'text', maxLength: 160 };
 const LONG: FieldShape = { type: 'textarea', maxLength: 2000 };
 const LONG_NULLABLE: FieldShape = { type: 'textarea', maxLength: 2000, nullable: true };
 const URL: FieldShape = { type: 'url' };
+const BOOL: FieldShape = { type: 'boolean' };
+/** Sichtbarkeit: ausgeblendete Blöcke bleiben gespeichert, werden aber nicht ausgeliefert. */
+const HIDDEN = { hidden: BOOL } as const;
 
 /**
  * Welche Inhaltsfelder ein Redakteur je Block-Typ ändern darf.
@@ -59,26 +69,58 @@ const URL: FieldShape = { type: 'url' };
  * die Rechtslinks im Fuß. Das sind Compliance-Merkmale, keine Redaktion.
  */
 export const EDITABLE_CONTENT: Readonly<Record<BlockKind, Readonly<Record<string, FieldShape>>>> = Object.freeze({
-  navigation: { brand: TEXT, links: { type: 'list', max: 12, item: { label: TEXT, href: URL } } },
+  navigation: {
+    brand: TEXT,
+    links: { type: 'list', max: 12, item: { label: TEXT, href: URL } },
+    cta: { type: 'object', fields: { label: TEXT, href: URL } },
+  },
   hero: {
+    eyebrow: TEXT,
     headline: TEXT,
     subline: LONG,
     primaryCta: { type: 'object', fields: { label: TEXT, href: URL } },
+    secondaryCta: { type: 'object', fields: { label: TEXT, href: URL } },
+    proof: TEXT,
     emphasis: { type: 'enum', values: ['compact', 'tall'], optional: true },
+    variant: { type: 'enum', values: ['split', 'centered', 'editorial', 'compact'], optional: true },
+    // Bild: nur mit bestätigter Rechtelage und Alternativtext ausgeliefert.
+    media: { type: 'object', merge: true, fields: { src: URL, alt: TEXT, rightsConfirmed: BOOL } },
+    ...HIDDEN,
   },
-  features: { heading: TEXT, items: { type: 'list', max: 12, item: { label: TEXT, description: LONG_NULLABLE } } },
-  services: { heading: TEXT, items: { type: 'list', max: 24, item: { label: TEXT, description: LONG_NULLABLE } } },
-  about: { heading: TEXT, body: LONG },
-  team: { heading: TEXT, members: { type: 'list', max: 24, item: { name: TEXT } } },
-  testimonials: { heading: TEXT, items: { type: 'list', max: 12, item: { quote: LONG } } },
-  faq: { heading: TEXT, items: { type: 'list', max: 24, item: { question: TEXT, answer: LONG_NULLABLE } } },
-  'contact-form': { heading: TEXT, fields: { type: 'form-fields' }, consentText: LONG_NULLABLE },
-  booking: { heading: TEXT, fields: { type: 'form-fields' }, consentText: LONG_NULLABLE },
-  map: { heading: TEXT },
-  cta: { headline: TEXT, href: URL },
-  'legal-text': {},
+  features: { heading: TEXT, intro: LONG_NULLABLE, items: { type: 'list', max: 12, item: { label: TEXT, description: LONG_NULLABLE } }, variant: { type: 'enum', values: ['cards', 'numbered', 'list'], optional: true }, ...HIDDEN },
+  services: { heading: TEXT, intro: LONG_NULLABLE, items: { type: 'list', max: 24, item: { label: TEXT, description: LONG_NULLABLE } }, variant: { type: 'enum', values: ['cards', 'numbered', 'list'], optional: true }, ...HIDDEN },
+  about: { heading: TEXT, body: LONG, ...HIDDEN },
+  team: { heading: TEXT, members: { type: 'list', max: 24, item: { name: TEXT } }, ...HIDDEN },
+  testimonials: { heading: TEXT, items: { type: 'list', max: 12, item: { quote: LONG, author: TEXT } }, ...HIDDEN },
+  faq: { heading: TEXT, items: { type: 'list', max: 24, item: { question: TEXT, answer: LONG_NULLABLE } }, ...HIDDEN },
+  'contact-form': {
+    heading: TEXT,
+    intro: LONG_NULLABLE,
+    fields: { type: 'form-fields' },
+    consentText: LONG_NULLABLE,
+    submitLabel: TEXT,
+    // Formularziel: https-Endpunkt oder mailto:. Leer = nicht konfiguriert
+    // (bei übernommenen Seiten ein Befund, der die Veröffentlichung sperrt).
+    target: URL,
+    variant: { type: 'enum', values: ['standard', 'lead', 'newsletter'], optional: true },
+    ...HIDDEN,
+  },
+  booking: { heading: TEXT, fields: { type: 'form-fields' }, consentText: LONG_NULLABLE, submitLabel: TEXT, target: URL, ...HIDDEN },
+  map: { heading: TEXT, ...HIDDEN },
+  cta: { headline: TEXT, label: TEXT, href: URL, variant: { type: 'enum', values: ['band', 'card'], optional: true }, ...HIDDEN },
+  // Wortlaut des Rechtstexts — vom Verantwortlichen eingesetzt, nie
+  // generiert. `documentRef` (welcher Text) bleibt Compliance-Merkmal.
+  'legal-text': { body: { type: 'textarea', maxLength: 30000, nullable: true } },
   'ai-disclosure': {},
   footer: {},
+  'trust-bar': { heading: TEXT, items: { type: 'list', max: 8, item: { label: TEXT } }, ...HIDDEN },
+  'problem-solution': { heading: TEXT, problem: LONG, solution: LONG, points: { type: 'list', max: 6, item: { label: TEXT } }, ...HIDDEN },
+  process: { heading: TEXT, steps: { type: 'list', max: 8, item: { title: TEXT, text: LONG_NULLABLE } }, ...HIDDEN },
+  pricing: { heading: TEXT, items: { type: 'list', max: 8, item: { label: TEXT, price: TEXT, note: LONG_NULLABLE } }, note: LONG_NULLABLE, ...HIDDEN },
+  'case-study': { heading: TEXT, items: { type: 'list', max: 8, item: { title: TEXT, text: LONG } }, ...HIDDEN },
+  'contact-info': { heading: TEXT, phone: TEXT, phoneHref: URL, email: TEXT, address: LONG_NULLABLE, hours: TEXT, ...HIDDEN },
+  governance: { heading: TEXT, ...HIDDEN },
+  automation: { heading: TEXT, steps: { type: 'list', max: 8, item: { label: TEXT, text: LONG_NULLABLE } }, ...HIDDEN },
 });
 
 /** Formularfelder, die der Renderer kennt (`fieldLabel`/`fieldType`). */
@@ -88,6 +130,7 @@ export const FORM_FIELD_NAMES = Object.freeze(['name', 'email', 'phone', 'messag
 export const ADDABLE_KINDS: readonly BlockKind[] = Object.freeze([
   'hero', 'features', 'services', 'about', 'team', 'testimonials', 'faq',
   'contact-form', 'booking', 'map', 'cta',
+  'trust-bar', 'problem-solution', 'process', 'pricing', 'case-study', 'contact-info', 'governance', 'automation',
 ]);
 
 /**
@@ -320,11 +363,43 @@ function mergeContent(base: SiteBlock, incoming: Record<string, unknown> | undef
 
   for (const [key, shape] of Object.entries(shapes)) {
     if (!(key in incoming)) continue;
-    const value = sanitizeValue(shape, incoming[key]);
+    let value = sanitizeValue(shape, incoming[key]);
+    if (shape.type === 'object' && shape.merge && value !== undefined) {
+      // Nicht editierbare Teile des Objekts bleiben erhalten.
+      const stored = typeof base.content[key] === 'object' && base.content[key] !== null ? base.content[key] as Record<string, unknown> : {};
+      const merged: Record<string, unknown> = { ...stored };
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        if (v === undefined) delete merged[k];
+        else merged[k] = v;
+      }
+      value = merged;
+    }
+    if (shape.type === 'list' && Array.isArray(value)) value = preserveItemMetadata(shape, base.content[key], value as Record<string, unknown>[]);
     if (value === undefined) delete out[key];
     else out[key] = value;
   }
   return out;
+}
+
+/**
+ * Listeneinträge tragen teils Felder, die nicht editierbar sind — etwa
+ * `source`, die Beleg-Kennung einer übernommenen Kundenstimme. Ein Eintrag,
+ * dessen redaktionelle Felder unverändert sind, behält sie. Ein bearbeiteter
+ * Eintrag verliert sie: Er ist nicht mehr der Wortlaut der Quelle.
+ */
+function preserveItemMetadata(shape: Extract<FieldShape, { type: 'list' }>, stored: unknown, next: Record<string, unknown>[]): Record<string, unknown>[] {
+  if (!Array.isArray(stored)) return next;
+  const editable = Object.keys(shape.item);
+  const originals = stored.filter((v): v is Record<string, unknown> => typeof v === 'object' && v !== null);
+  const used = new Set<number>();
+  return next.map((item) => {
+    const index = originals.findIndex((original, i) => !used.has(i) && editable.every((k) => deepEqual(sanitizeValue(shape.item[k], original[k]), item[k])));
+    if (index === -1) return item;
+    used.add(index);
+    const extra: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(originals[index])) if (!editable.includes(k)) extra[k] = v;
+    return { ...extra, ...item };
+  });
 }
 
 /** Bereinigt einen Wert nach seiner Form; `undefined` heißt „Feld entfernen". */
@@ -349,8 +424,11 @@ export function sanitizeValue(shape: FieldShape, value: unknown): unknown {
       const source = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
       const out: Record<string, unknown> = {};
       for (const [k, s] of Object.entries(shape.fields)) {
+        // Beim Einmischen zählen nur die mitgeschickten Teile.
+        if (shape.merge && !(k in source)) continue;
         const v = sanitizeValue(s, source[k]);
         if (v !== undefined) out[k] = v;
+        else if (shape.merge) out[k] = undefined;
       }
       return out;
     }
@@ -366,6 +444,8 @@ export function sanitizeValue(shape: FieldShape, value: unknown): unknown {
         return out;
       });
     }
+    case 'boolean':
+      return value === true ? true : undefined;
     case 'form-fields': {
       if (!Array.isArray(value)) return [];
       const seen = new Set<string>();
@@ -427,6 +507,14 @@ export function labelFor(kind: BlockKind): string {
     case 'legal-text': return 'Rechtstext';
     case 'ai-disclosure': return 'KI-Hinweis';
     case 'footer': return 'Fußbereich';
+    case 'trust-bar': return 'Trust-Leiste';
+    case 'problem-solution': return 'Problem & Lösung';
+    case 'process': return 'Ablauf';
+    case 'pricing': return 'Preise';
+    case 'case-study': return 'Referenzen';
+    case 'contact-info': return 'Kontaktdaten';
+    case 'governance': return 'Datenschutz & Transparenz';
+    case 'automation': return 'Automatisierung';
   }
 }
 
@@ -455,4 +543,62 @@ function deepEqual(a: unknown, b: unknown): boolean {
     if (!deepEqual(left[key], right[key])) return false;
   }
   return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Felder mit Rechtswirkung
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Änderungen an Feldern mit Rechts- oder Datenschutzwirkung zwischen zwei
+ * Fassungen: wohin Formulardaten gehen (`target`), der Wortlaut der
+ * Rechtstexte (`body` in `legal-text`), die Bestätigung von Bildrechten
+ * (`media.rightsConfirmed`) und das Ausblenden von Blöcken (`hidden`).
+ *
+ * Diese Felder sind redaktionell erreichbar, wirken aber wie Freigaben: Ein
+ * eingesetzter Rechtstext räumt einen kritischen Befund ab, ein Formularziel
+ * bestimmt den Empfänger personenbezogener Daten. Wer sie ändern darf,
+ * entscheidet der Aufrufer (`handlers/edit.ts`: nur Inhaber, Admin,
+ * Redaktion) — hier wird nur festgestellt, **ob** eine Anfrage sie ändert.
+ * Verglichen wird der Wert, nicht die Anfrage: Wer ein Feld unverändert
+ * mitschickt, ändert es nicht.
+ */
+export function protectedFieldChanges(before: SiteBlueprint, after: SiteBlueprint): string[] {
+  const index = (bp: SiteBlueprint) => {
+    const map = new Map<string, { path: string; block: SiteBlock }>();
+    for (const page of bp.pages) for (const block of page.blocks) map.set(`${page.path}#${block.id}`, { path: page.path, block });
+    return map;
+  };
+  const previous = index(before);
+  const out: string[] = [];
+  for (const [key, { path, block }] of index(after)) {
+    const prior = previous.get(key)?.block;
+    const label = `${path} ${KIND_LABEL_FOR_PROTECTED[block.kind] ?? block.kind}`;
+    if ((block.kind === 'contact-form' || block.kind === 'booking') && normalizedTarget(block) !== (prior ? normalizedTarget(prior) : '')) {
+      out.push(`${label}: Formularziel`);
+    }
+    if (block.kind === 'legal-text' && String(block.content.body ?? '') !== String(prior?.content.body ?? '')) {
+      out.push(`${label}: Wortlaut`);
+    }
+    if ((block.content.hidden === true) !== (prior?.content.hidden === true)) {
+      out.push(`${label}: Sichtbarkeit`);
+    }
+    if (rightsConfirmed(block) !== (prior ? rightsConfirmed(prior) : false)) {
+      out.push(`${label}: Bildrechte`);
+    }
+  }
+  return out;
+}
+
+const KIND_LABEL_FOR_PROTECTED: Partial<Record<BlockKind, string>> = {
+  'contact-form': 'Formular', booking: 'Terminformular', 'legal-text': 'Rechtstext', hero: 'Hero',
+};
+
+function normalizedTarget(block: SiteBlock): string {
+  return typeof block.content.target === 'string' ? block.content.target.trim() : '';
+}
+
+function rightsConfirmed(block: SiteBlock): boolean {
+  const media = block.content.media as { rightsConfirmed?: unknown } | undefined;
+  return media?.rightsConfirmed === true;
 }

@@ -137,6 +137,7 @@ export function CommandCenterDashboard() {
         loading={loading}
         error={error}
         reloadKey={reloadKey}
+        dataVersion={dataVersion}
       />
       <BrowserRuntimePanel activeTenantId={activeTenantId} />
       <ComplianceStatusView

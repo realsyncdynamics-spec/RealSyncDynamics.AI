@@ -116,6 +116,7 @@ export interface OsControlStripData {
   pendingApprovals: TileState<number>;
 }
 
+/** Ein `allSettled`-Ergebnis als Kachelzustand: erfüllt → Wert, abgelehnt → Fehler. */
 function settled<T>(result: PromiseSettledResult<T>): TileState<T> {
   if (result.status === 'fulfilled') return { kind: 'value', value: result.value };
   const reason = result.reason as unknown;

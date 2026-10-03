@@ -36,8 +36,15 @@ interface Props {
   data: CockpitData | null;
   loading: boolean;
   error: string | null;
-  /** Erhöht sich bei „Erneut laden“ und bei Mandanten-Datenänderungen. */
+  /** Erhöht sich bei „Erneut laden“. */
   reloadKey: number;
+  /**
+   * Zählt Mandanten-Datenereignisse (`useTenantDataVersion`). Muss als eigene
+   * Abhängigkeit mitlaufen: ohne sie bliebe z. B. „Wartende Freigaben" auf der
+   * alten Zahl stehen, nachdem eine Freigabe anderswo aufgelöst wurde — die
+   * Cockpit-Daten lädt das Dashboard dann neu, diese drei Zähler aber nicht.
+   */
+  dataVersion: number;
 }
 
 const EMPTY_SOURCES: OsControlStripData = {
@@ -46,7 +53,10 @@ const EMPTY_SOURCES: OsControlStripData = {
   pendingApprovals: TILE_LOADING,
 };
 
-export function OsControlStrip({ activeTenantId, data, loading, error, reloadKey }: Props) {
+/** Die Kachelreihe. Lädt ihre drei eigenen Quellen, Risiko und Evidence kommen als Prop. */
+export function OsControlStrip(
+  { activeTenantId, data, loading, error, reloadKey, dataVersion }: Props,
+) {
   const [sources, setSources] = useState<OsControlStripData>(EMPTY_SOURCES);
 
   useEffect(() => {
@@ -63,7 +73,7 @@ export function OsControlStrip({ activeTenantId, data, loading, error, reloadKey
       if (!cancelled) setSources(next);
     });
     return () => { cancelled = true; };
-  }, [activeTenantId, reloadKey]);
+  }, [activeTenantId, reloadKey, dataVersion]);
 
   if (!activeTenantId) return null;
 
@@ -233,6 +243,7 @@ function Tile({ icon, label, source, testId, children }: {
   );
 }
 
+/** Eine Zahl mit Einheit. Nur für gemessene Werte. */
 function Figure({ value, unit }: { value: number; unit: string }) {
   return (
     <p className="text-titanium-50">
@@ -242,6 +253,7 @@ function Figure({ value, unit }: { value: number; unit: string }) {
   );
 }
 
+/** Empty State: Grund plus Weg, wie der Mandant die Quelle füllt. */
 function Empty({ text, to, cta }: { text: string; to: string; cta: string }) {
   return (
     <>
@@ -251,6 +263,7 @@ function Empty({ text, to, cta }: { text: string; to: string; cta: string }) {
   );
 }
 
+/** Verweis aus einer Kachel heraus. Navigiert nur, führt nichts aus. */
 function TileLink({ to, label }: { to: string; label: string }) {
   return (
     <Link

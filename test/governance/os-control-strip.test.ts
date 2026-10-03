@@ -8,6 +8,7 @@
  *
  * Geprüft wird je Kachel: Daten · leer · Fehler.
  */
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -358,5 +359,37 @@ describe('Abnahme: frischer Mandant ohne Daten', () => {
     expect(result.tenantAgents).toEqual({
       kind: 'value', value: { configured: false, count: 0, declaredNone: false },
     });
+  });
+});
+
+/**
+ * Befund von CodeRabbit auf #1733, bestätigt: der Lade-Effekt der Kachelreihe
+ * hing nur an `reloadKey`, nicht an `dataVersion`. Folge: nach einem
+ * Mandanten-Datenereignis (z. B. eine anderswo aufgelöste Freigabe) lud das
+ * Dashboard die Cockpit-Daten neu, die drei eigenen Zähler der Reihe aber
+ * nicht — die Kachel „Wartende Freigaben" blieb auf der alten Zahl stehen.
+ *
+ * Die Effekt-Abhängigkeiten sind ohne Renderer nicht beobachtbar, deshalb hier
+ * dieselbe Quelltext-Ratsche wie in `count-helpers-throw.test.ts`.
+ */
+describe('Kachelreihe lädt bei Mandanten-Datenänderungen neu', () => {
+  const strip = readFileSync('src/features/governance/dashboard/OsControlStrip.tsx', 'utf8');
+  const dashboard = readFileSync(
+    'src/features/governance/dashboard/CommandCenterDashboard.tsx', 'utf8',
+  );
+
+  it('der Lade-Effekt hängt an activeTenantId, reloadKey UND dataVersion', () => {
+    expect(strip).toContain('}, [activeTenantId, reloadKey, dataVersion]);');
+  });
+
+  it('das Dashboard gibt dataVersion auch durch', () => {
+    expect(dashboard).toMatch(/<OsControlStrip[\s\S]*?dataVersion=\{dataVersion\}[\s\S]*?\/>/);
+  });
+
+  it('die drei Geschwister-Effekte im Dashboard hängen weiterhin an dataVersion', () => {
+    // Wenn diese Zahl sinkt, ist eine der bestehenden Quellen entkoppelt worden
+    // und zeigt veraltete Werte — dann gehört das geprüft, nicht angepasst.
+    const matches = dashboard.match(/\}, \[activeTenantId, reloadKey, dataVersion\]\);/g) ?? [];
+    expect(matches.length).toBeGreaterThanOrEqual(3);
   });
 });

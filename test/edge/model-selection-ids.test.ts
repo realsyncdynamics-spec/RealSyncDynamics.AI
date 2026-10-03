@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { getModelId, selectModel } from '../../supabase/functions/_shared/modelSelection';
 
 /**
- * `getModelId` feeds `client.messages.create({ model })` directly
- * (governance-agent/index.ts:427 -> :442). A model id that Anthropic does not
- * publish is not a cosmetic problem — the request fails outright.
+ * `getModelId` feeds `client.messages.create({ model })` directly (the
+ * governance agent passes `getModelId(selectedTier)` as `model`). A model id
+ * that Anthropic does not publish is not a cosmetic problem — the request
+ * fails outright.
  *
  * Until 2026-09-21 the sonnet tier returned `claude-sonnet-4-6-20250514`, an id
  * assembled from two generations: Sonnet 4.6 plus the release date of Sonnet 4.
@@ -29,11 +30,15 @@ describe('getModelId', () => {
     },
   );
 
-  it('never returns a base id with a date suffix appended', () => {
-    // Guards the exact regression: `<family>-<major>-<minor>-<8-digit date>`.
-    // A real dated snapshot carries no minor group (claude-sonnet-4-20250514),
-    // so this pattern only matches the fabricated shape.
-    const fabricated = /^claude-(opus|sonnet|haiku)-\d+-\d+-\d{8}$/;
+  it('never returns a dated Sonnet 4.6 id', () => {
+    // Guards the exact regression. Sonnet 4.6 is published only as
+    // `claude-sonnet-4-6`; there is no dated snapshot of it, so any
+    // `claude-sonnet-4-6-<date>` is fabricated. Other families do have dated
+    // snapshots with a minor group (claude-haiku-4-5-20251001 is real), so the
+    // guard deliberately covers Sonnet 4.6 only.
+    const fabricated = /^claude-sonnet-4-6-\d{8}$/;
+    expect('claude-sonnet-4-6-20250514').toMatch(fabricated);
+    expect('claude-haiku-4-5-20251001').not.toMatch(fabricated);
     for (const tier of ['haiku', 'sonnet'] as const) {
       expect(getModelId(tier)).not.toMatch(fabricated);
     }

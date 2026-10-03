@@ -25,9 +25,9 @@ export function SuccessPage() {
       </div>
 
       <div className="bg-obsidian-800 border border-petrol-600 rounded-lg p-6 space-y-4">
-        <p className="text-petrol-500 font-medium">✓ 14 Tage kostenlos Zugriff</p>
+        <p className="text-petrol-500 font-medium">✓ Dauerhaft kostenloser Zugang</p>
         <p className="text-sm text-titanium-400">
-          Nutzen Sie die volle Kraft unserer Governance-Platform ohne Einschränkungen.
+          Scan, Governance Score und Audit Center ohne Zeitlimit. Upgrade jederzeit aus dem Dashboard.
         </p>
       </div>
 

@@ -23,18 +23,23 @@ export const BUILD_PROJECT_STATUSES = [
 
 export type BuildProjectStatus = (typeof BUILD_PROJECT_STATUSES)[number];
 
-export type SiteOsBlueprintId = string & { readonly __brand: 'SiteOsBlueprintId' };
-export type AppBuilderProjectId = string & { readonly __brand: 'AppBuilderProjectId' };
+/**
+ * Both stores keep one row per (tenant_id, slug, version). A row id pins one
+ * version; the routes are addressed by slug. A surface therefore points at the
+ * store slug, never at a row id.
+ */
+export type SiteOsSlug = string & { readonly __brand: 'SiteOsSlug' };
+export type AppBuilderSlug = string & { readonly __brand: 'AppBuilderSlug' };
 
 export type BuildSurface =
   | {
       kind: 'site';
-      ref: SiteOsBlueprintId;
+      slug: SiteOsSlug;
       route: '/builder/:slug';
     }
   | {
       kind: 'code';
-      ref: AppBuilderProjectId;
+      slug: AppBuilderSlug;
       route: '/builder/:slug/code';
     };
 
@@ -60,14 +65,19 @@ export function entryRouteFor(kind: BuildProjectKind): BuildSurface['route'] | '
   return surfaceKindFor(kind) === 'site' ? '/build' : '/builder/:slug/code';
 }
 
+export function surfaceHref(surface: BuildSurface): string {
+  const slug = encodeURIComponent(surface.slug);
+  return surface.kind === 'site' ? `/builder/${slug}` : `/builder/${slug}/code`;
+}
+
 export function createBuildProject(input: {
   id: string;
   tenantId: string;
   name: string;
   slug: string;
   kind: BuildProjectKind;
-  siteRef?: string;
-  codeRef?: string;
+  siteSlug?: string;
+  codeSlug?: string;
   now?: string;
 }): BuildProject {
   if (!input.tenantId.trim()) {
@@ -75,18 +85,25 @@ export function createBuildProject(input: {
   }
   const now = input.now ?? new Date().toISOString();
   const surface = surfaceKindFor(input.kind);
+  // A slug for the other engine is a caller error, not something to drop silently.
+  if (surface === 'site' && input.codeSlug) {
+    throw new Error(`${input.kind} opens a site surface; attach code with attachSurface`);
+  }
+  if (surface === 'code' && input.siteSlug) {
+    throw new Error(`${input.kind} opens a code surface; attach a site with attachSurface`);
+  }
   const surfaces: BuildSurface[] = [];
-  if (surface === 'site' && input.siteRef) {
+  if (surface === 'site' && input.siteSlug) {
     surfaces.push({
       kind: 'site',
-      ref: input.siteRef as SiteOsBlueprintId,
+      slug: input.siteSlug as SiteOsSlug,
       route: '/builder/:slug',
     });
   }
-  if (surface === 'code' && input.codeRef) {
+  if (surface === 'code' && input.codeSlug) {
     surfaces.push({
       kind: 'code',
-      ref: input.codeRef as AppBuilderProjectId,
+      slug: input.codeSlug as AppBuilderSlug,
       route: '/builder/:slug/code',
     });
   }

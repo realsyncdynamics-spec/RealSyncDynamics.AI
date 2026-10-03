@@ -4,6 +4,7 @@ import {
   attachSurface,
   createBuildProject,
   entryRouteFor,
+  surfaceHref,
   surfaceKindFor,
 } from '../../src/features/build-studio/contract';
 
@@ -40,11 +41,11 @@ describe('Builder-01 contract', () => {
       name: 'North',
       slug: 'north',
       kind: 'landing',
-      siteRef: 'blueprint-1',
+      siteSlug: 'north',
     });
     expect(project.status).toBe('draft');
     expect(project.surfaces).toEqual([
-      { kind: 'site', ref: 'blueprint-1', route: '/builder/:slug' },
+      { kind: 'site', slug: 'north', route: '/builder/:slug' },
     ]);
     expect(BUILD_STUDIO_LIMITS).toEqual({
       persistence: 'none',
@@ -60,14 +61,25 @@ describe('Builder-01 contract', () => {
       name: 'North',
       slug: 'north',
       kind: 'landing',
-      siteRef: 'blueprint-1',
+      siteSlug: 'north',
     });
     const combined = attachSurface(project, {
       kind: 'code',
-      ref: 'code-1' as never,
+      slug: 'north-app' as never,
       route: '/builder/:slug/code',
     });
     expect(combined.surfaces.map((surface) => surface.kind)).toEqual(['site', 'code']);
     expect(() => attachSurface(combined, combined.surfaces[1])).toThrow(/already attached/);
+    expect(combined.surfaces.map(surfaceHref)).toEqual(['/builder/north', '/builder/north-app/code']);
+  });
+
+  it('refuses a slug for the other engine instead of dropping it', () => {
+    const base = { id: 'p1', tenantId: 'tenant-from-session', name: 'North', slug: 'north' };
+    expect(() => createBuildProject({ ...base, kind: 'web_app', siteSlug: 'north' })).toThrow(/code surface/);
+    expect(() => createBuildProject({ ...base, kind: 'landing', codeSlug: 'north' })).toThrow(/site surface/);
+  });
+
+  it('encodes the store slug into the route', () => {
+    expect(surfaceHref({ kind: 'site', slug: 'a b/c' as never, route: '/builder/:slug' })).toBe('/builder/a%20b%2Fc');
   });
 });

@@ -22,7 +22,8 @@ One studio, two existing engines. DesignOS is not a third builder and does not g
 - No `build_projects` table in this change.
 - No single `engine` field. A later combined project is a second surface, not a migration.
 - `landing` and `website` open a SiteOS surface. `web_app`, `dashboard` and `saas_app` open the existing code surface.
-- `published` is a target status. It does not deploy.
+- A surface points at the store **slug**. Both stores version per `(tenant_id, slug, version)`; a row id would pin one version.
+- `published` is a target status. It does not deploy. The stores keep their own status checks (`siteos_blueprints`: draft/approved/deployed/archived, `app_builder_projects`: draft/archived); `BuildProjectStatus` is not written to either.
 - URL modernise and description are SiteOS entry modes. They are not a DesignOS extractor. Screenshot and media stay unavailable until `frontend-entry-modes.ts` says otherwise.
 
 ## Out of scope

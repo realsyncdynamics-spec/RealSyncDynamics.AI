@@ -16,7 +16,7 @@ vi.mock('../../../../src/lib/supabase', () => ({
   }),
 }));
 
-import { triggerTenantAudit } from '../../../../src/features/governance/scans/scansApi';
+import { TenantAuditError, triggerTenantAudit } from '../../../../src/features/governance/scans/scansApi';
 
 function respond(status: number, body: string): Response {
   return {
@@ -101,6 +101,43 @@ describe('triggerTenantAudit', () => {
       scan_run_id: 'sr-1',
       finding_count: 4,
       severity_max: 'high',
+      // Ältere Server-Antwort ohne asset_binding: aus website_id abgeleitet.
+      asset_binding: 'none',
+      website_id: null,
+      evidence_id: null,
     });
+  });
+
+  it('meldet die Asset-Bindung und die Evidence des Laufs (Stand 29.09.)', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      respond(200, JSON.stringify({
+        ok: true, scan_run_id: 'sr-2', finding_count: 0, severity_max: null,
+        asset_binding: 'website', website_id: 'w-1', evidence_id: 'ev-1',
+      })),
+    );
+
+    await expect(triggerTenantAudit('t-1', 'example.de', { website_id: 'w-1' })).resolves.toMatchObject({
+      asset_binding: 'website', website_id: 'w-1', evidence_id: 'ev-1',
+    });
+  });
+
+  it('WEBSITE_AMBIGUOUS: TenantAuditError mit Code und Kandidaten — nichts wird geraten', async () => {
+    const candidates = [{ id: 'w-1', domain: 'example.de' }, { id: 'w-2', domain: 'www.example.de' }];
+    vi.mocked(fetch).mockResolvedValue(
+      respond(409, JSON.stringify({ ok: false, error: { code: 'WEBSITE_AMBIGUOUS', message: 'x', details: { candidates } } })),
+    );
+
+    const err = await triggerTenantAudit('t-1', 'example.de').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(TenantAuditError);
+    expect(err).toMatchObject({ code: 'WEBSITE_AMBIGUOUS', status: 409, details: { candidates } });
+  });
+
+  it('429 RATE_LIMITED: deutsche Meldung mit Code, ohne Server-Rohtext und ohne erfundene Zahl', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      respond(429, JSON.stringify({ ok: false, error: { code: 'RATE_LIMITED', message: 'max 30 scans per tenant and hour' } })),
+    );
+    const err = await triggerTenantAudit('t-1', 'example.de').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(TenantAuditError);
+    expect(err).toMatchObject({ code: 'RATE_LIMITED', status: 429, message: 'Scan-Limit erreicht. Bitte später erneut versuchen.' });
   });
 });

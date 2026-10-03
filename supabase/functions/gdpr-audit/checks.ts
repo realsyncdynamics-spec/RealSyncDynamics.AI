@@ -604,7 +604,14 @@ export function deepCheckImprint(html: string): Issue[] {
     /<textarea\b/i.test(html) ||
     tagsOf(html, 'a').some((tag) => {
       const href = (attrOf(tag, 'href') ?? '').toLowerCase();
-      return !/^(?:mailto|tel):/.test(href) && CONTACT_PAGE_PATH.test(href);
+      if (/^(?:mailto|tel):/.test(href)) return false;
+      // Nur der Pfad zaehlt — sonst traefe /products?next=/contact ueber Query
+      // oder Fragment. Unparsebare hrefs gelten als kein Kontaktweg.
+      try {
+        return CONTACT_PAGE_PATH.test(new URL(href, 'https://imprint.invalid').pathname);
+      } catch {
+        return false;
+      }
     });
   if (!hasEmail || !(hasPhone || hasContactForm)) {
     issues.push({

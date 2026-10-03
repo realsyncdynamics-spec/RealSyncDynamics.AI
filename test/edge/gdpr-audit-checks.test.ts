@@ -387,7 +387,13 @@ Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7ad
   });
 
   it('wertet nur Kontaktseiten-Pfade als Kontaktweg, keine Teilstring-Treffer', () => {
-    for (const href of ['/products/contact-lenses', '/kontaktlinsen', '#kontakt']) {
+    for (const href of [
+      '/products/contact-lenses',
+      '/kontaktlinsen',
+      '#kontakt',
+      '/products?next=/contact',
+      '/products#next=/contact',
+    ]) {
       const html = `<!doctype html><body>${IMPRINT_BASE}
         <p>E-Mail: info@muster.de · <a href="${href}">x</a></p></body>`;
       expect(deepCheckImprint(html).map((i) => i.id), href).toContain('sub_imprint_no_contact');

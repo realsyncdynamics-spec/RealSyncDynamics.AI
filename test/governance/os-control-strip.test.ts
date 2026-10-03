@@ -79,8 +79,24 @@ import {
   computeRiskIndex,
 } from '../../src/features/governance/dashboard/complianceStatus';
 
-/** Minimale Cockpit-Daten — die Kachel-Ableitungen lesen nur diese Felder. */
-function cockpit(overrides: {
+/**
+ * Minimale Cockpit-Daten — die Kachel-Ableitungen lesen nur diese Felder.
+ *
+ * Die Vorgaben stehen bewusst als Destructuring-Defaults und NICHT als `??`:
+ * `??` behandelt ein ausdrücklich übergebenes `null` wie „nicht angegeben",
+ * `cockpit({ riskScore: null })` hätte also 34 geliefert und den Fall
+ * „nicht gemessen" nie geprüft. Genau daran ist dieser Test zuerst
+ * fehlgeschlagen. Destructuring-Defaults greifen nur bei `undefined`, lassen
+ * `null` stehen — und `0` ebenso.
+ */
+function cockpit({
+  partialFailures = [],
+  riskScore = 34,
+  highRiskAssets = 1,
+  evidencePercent = 72,
+  evidenceTotal = 25,
+  evidenceHashed = 18,
+}: {
   partialFailures?: string[];
   riskScore?: number | null;
   highRiskAssets?: number;
@@ -89,20 +105,20 @@ function cockpit(overrides: {
   evidenceHashed?: number;
 } = {}): CockpitData {
   return {
-    partialFailures: overrides.partialFailures ?? [],
+    partialFailures,
     riskIndex: {
-      score: overrides.riskScore ?? 34,
+      score: riskScore,
       assetCount: 3,
-      highRiskAssets: overrides.highRiskAssets ?? 1,
+      highRiskAssets,
       avgAssetRisk: 40,
       newRisks24h: 0,
       level: 'medium',
       label: 'mittel',
     },
     evidenceHealth: {
-      percent: overrides.evidencePercent ?? 72,
-      hashedCount: overrides.evidenceHashed ?? 18,
-      totalCount: overrides.evidenceTotal ?? 25,
+      percent: evidencePercent,
+      hashedCount: evidenceHashed,
+      totalCount: evidenceTotal,
       newEvidence24h: 0,
       failedScans: 0,
       level: 'medium',
@@ -296,6 +312,13 @@ describe('Kachel Evidence-Status', () => {
       kind: 'value',
       value: expect.objectContaining({ percent: 72, hashedCount: 18, totalCount: 25 }),
     });
+  });
+
+  it('fehlende Abdeckung ist ein Wert mit percent null, kein Fehler', () => {
+    // Dieser Fall war durch den `??`-Fehler im Fixture nicht prüfbar.
+    const tile = evidenceTileFrom(cockpit({ evidencePercent: null }), false, null);
+    expect(tile.kind).toBe('value');
+    if (tile.kind === 'value') expect(tile.value.percent).toBeNull();
   });
 
   it('leerer Nachweisspeicher ist ein Wert mit totalCount 0', () => {

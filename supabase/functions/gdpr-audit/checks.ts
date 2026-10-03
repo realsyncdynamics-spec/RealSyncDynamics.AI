@@ -600,9 +600,13 @@ export function deepCheckImprint(html: string): Issue[] {
   // Der Pfad muss als eigenes Segment auf eine Kontaktseite zeigen: ein
   // Teilstring-Treffer zaehlte auch /products/contact-lenses oder
   // /kontaktlinsen und liess damit einen echten Verstoss durchgehen.
+  // Nur echtes Markup zaehlt: Skript- und Style-Inhalt raus, wie in
+  // visibleText() — sonst galte ein "<textarea" oder ein Kontaktlink in einem
+  // Skript-String als Formular (dieselbe Falle wie Telefonnummern im Skript).
+  const markup = stripElement(stripElement(html, 'script'), 'style');
   const hasContactForm =
-    /<textarea\b/i.test(html) ||
-    tagsOf(html, 'a').some((tag) => {
+    (/<textarea\b/i.test(markup) && /<form\b/i.test(markup)) ||
+    tagsOf(markup, 'a').some((tag) => {
       const href = (attrOf(tag, 'href') ?? '').toLowerCase();
       if (/^(?:mailto|tel):/.test(href)) return false;
       // Nur der Pfad zaehlt — sonst traefe /products?next=/contact ueber Query

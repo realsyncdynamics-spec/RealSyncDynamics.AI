@@ -400,6 +400,17 @@ Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7ad
     }
   });
 
+  it('wertet Formular oder Kontaktlink nur in echtem Markup, nicht im Skript', () => {
+    const inScript = [
+      '<script>var t = "<form><textarea></textarea></form>";</script >',
+      `<script>var a = '<a href="/kontakt">k</a>';</script >`,
+    ];
+    for (const s of inScript) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${s}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), s).toContain('sub_imprint_no_contact');
+    }
+  });
+
   it('wertet einen mailto:contact@-Link nicht als Kontaktformular', () => {
     const html = `<!doctype html><body>${IMPRINT_BASE}
       <p><a href="mailto:contact@muster.de">contact@muster.de</a></p></body>`;

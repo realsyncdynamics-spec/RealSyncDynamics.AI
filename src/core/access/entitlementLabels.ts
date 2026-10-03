@@ -38,6 +38,7 @@ export const ENTITLEMENT_LABELS = {
   'evidence.advanced': 'Evidence Vault (erweitert)',
   'evidence.basic_vault': 'Evidence Vault',
   'fix.snippets': 'Behebungsvorschläge mit Code',
+  'frontend.modernization': 'Frontend-Modernisierung',
   'governance.ai_register': 'KI-Register',
   'governance.dsgvo_directory': 'Verarbeitungsverzeichnis',
   'governance.risk_register': 'Risikoregister',

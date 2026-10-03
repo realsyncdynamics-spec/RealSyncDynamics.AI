@@ -12,6 +12,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { isTrustedInternalScanCall } from '../_shared/internal-scan-call.ts';
 // Die Pruef- und Bewertungslogik liegt bewusst in einem eigenen, Deno-freien
 // Modul: So laesst sie sich aus Vitest heraus testen. Dass sie hier fehlte
 // und niemand es merkte, war die Ursache des Ausfalls seit 2026-08-19.
@@ -173,9 +174,13 @@ async function handleAudit(req: Request): Promise<Response> {
   let body: { url?: string; email?: string; company?: string; plan?: string; source?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
+  // Mandanten-Scan aus tenant-audit (Service-Role-Key + Caller-Header):
+  // kein IP-Limit (tenant-audit begrenzt pro Mandant), kein Lead, keine E-Mail.
+  const isTenantScan = await isTrustedInternalScanCall(req.headers, SRK);
+
   const url = (body.url ?? '').trim();
-  const email = (body.email ?? '').trim().toLowerCase();
-  const company = (body.company ?? '').trim().slice(0, 200) || null;
+  const email = isTenantScan ? '' : (body.email ?? '').trim().toLowerCase();
+  const company = isTenantScan ? null : (body.company ?? '').trim().slice(0, 200) || null;
   const isOptimizerScan = body.source === 'optimizer';
 
   const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
@@ -185,7 +190,7 @@ async function handleAudit(req: Request): Promise<Response> {
   const leadSource = sourceTag ?? 'audit_lp';
 
   if (!url || !URL_RE.test(url)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
-  if (!isOptimizerScan && (!email || !EMAIL_RE.test(email))) {
+  if (!isOptimizerScan && !isTenantScan && (!email || !EMAIL_RE.test(email))) {
     return jsonError(400, 'INVALID_EMAIL', 'valid email required');
   }
   if (email.length > 254) return jsonError(400, 'INVALID_EMAIL', 'email too long');
@@ -206,12 +211,15 @@ async function handleAudit(req: Request): Promise<Response> {
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
-  // Rate-limit: 5 audits per ip_hash per hour
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count } = await admin
-    .from('gdpr_audits').select('*', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
-  if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many audits, retry later');
+  // Rate-limit: 5 audits per ip_hash per hour — public callers only. A tenant
+  // scan arrives from the edge runtime's egress IP, shared by every tenant.
+  if (!isTenantScan) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from('gdpr_audits').select('*', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
+    if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many audits, retry later');
+  }
 
   let domain = '';
   try { domain = new URL(url).hostname.toLowerCase(); }
@@ -291,9 +299,10 @@ async function handleAudit(req: Request): Promise<Response> {
 
   // Only lead-magnet submissions create sales_leads. The optimizer performs a
   // domain-only public scan and must never require or invent an email address.
+  // A tenant scan is a governance action, not a lead.
   const planTag = plan ? ` · plan=${plan}` : '';
   let leadId: string | null = null;
-  if (!isOptimizerScan) {
+  if (!isOptimizerScan && !isTenantScan) {
     const { data: leadRow } = await admin.from('sales_leads').insert({
       name: null,
       email,
@@ -311,7 +320,9 @@ async function handleAudit(req: Request): Promise<Response> {
   const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
     url,
     domain,
-    email: email || null,
+    // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
+    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
+    email: isTenantScan ? '' : email || null,
     company,
     score,
     severity,

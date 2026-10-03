@@ -23,6 +23,7 @@ import {
   type BrowserExecutorAction,
   type BrowserPlanStep,
 } from '../browser/browserExecutorClient';
+import { consumedApprovalMessage } from '../browser/consumedApproval';
 
 type AgentMode = 'assist' | 'copilot' | 'autonomous';
 type RunOutcome = 'ok' | 'approval' | 'error';
@@ -317,6 +318,15 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           setPendingAction(action);
           setActionResult('Diese Aktion wurde nicht ausgeführt. Sie wartet auf eine menschliche Freigabe.');
           return 'approval';
+        }
+      }
+      if (error instanceof BrowserExecutorError) {
+        const consumed = consumedApprovalMessage(error);
+        if (consumed) {
+          setPendingApprovalId(null);
+          setPendingAction(null);
+          setActionResult(consumed);
+          return 'error';
         }
       }
       setActionResult(

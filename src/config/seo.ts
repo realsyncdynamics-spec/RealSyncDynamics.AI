@@ -290,6 +290,19 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  // Marken-Landing aus LandingPagesOverview. Bis 2026-09-28 lieferte
+  // Cloudflare hier `public/realsync-landing.html` aus — ein Inline-Redirect,
+  // den die CSP-Haertung vom 2026-09-18 (`script-src` ohne 'unsafe-inline')
+  // blockiert. Die Seite stand seither auf „Redirecting…". Jetzt rendert die
+  // SPA-Route; als alternative Landing ist sie wie /design/landing-v2 noindex
+  // und kanonisch auf /, damit sie nicht mit der Startseite konkurriert.
+  '/realsync-landing': {
+    title: 'RealSyncDynamics.AI – Marken-Landing',
+    description:
+      'Marken-Landing von RealSyncDynamics.AI: EU-souveräne AI-Governance-Runtime für DSGVO und EU AI Act. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/titan': {
     title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
     description:

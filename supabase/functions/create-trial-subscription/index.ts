@@ -122,6 +122,9 @@ Deno.serve(async (req) => {
       const alreadyTrialing = current.status === 'trialing' && current.plan_key === 'growth';
       if (alreadyTrialing) {
         return jsonResponse({
+          // `postEdgeFunction` akzeptiert nur Antworten mit `ok: true` — ohne das
+          // Feld warf der Client nach einem erfolgreich angelegten Trial einen Fehler.
+          ok: true,
           success: true,
           alreadyExisted: true,
           subscription: {
@@ -180,6 +183,9 @@ Deno.serve(async (req) => {
     if (auditErr) console.warn('Audit log failed:', auditErr.message);
 
     return jsonResponse({
+      // `postEdgeFunction` akzeptiert nur Antworten mit `ok: true` — ohne das
+      // Feld warf der Client nach einem erfolgreich angelegten Trial einen Fehler.
+      ok: true,
       success: true,
       alreadyExisted: false,
       subscription: {

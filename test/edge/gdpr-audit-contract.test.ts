@@ -368,6 +368,15 @@ describe('Laufzeit auf feindseligem HTML (ReDoS)', () => {
     within('deepCheckImprint', () => deepCheckImprint(html));
   });
 
+  it('haelt bei einem offenen href voller "kontakt" ohne Schlusszeichen durch', () => {
+    // Eine href-Regex der Form `[^"']*(kontakt|contact)[^"']*["']` liess das
+    // hintere `[^"']*` fuer jeden Treffer bis zum Ende laufen — gemessen
+    // > 2 s auf dieser Eingabe. Die Kontaktformular-Erkennung geht daher
+    // ueber tagsOf/attrOf.
+    const html = `<a href="${'kontakt'.repeat(20_000)}`;
+    within('deepCheckImprint / kontakt-href', () => deepCheckImprint(html));
+  });
+
   it('haelt bei sehr vielen Ankern durch', () => {
     const html = '<a href="/x">Text</a>'.repeat(20_000);
     within('findLegalLink', () => findLegalLink(html, 'privacy'));

@@ -580,16 +580,34 @@ export function deepCheckImprint(html: string): Issue[] {
     });
   }
 
-  // Klartext / mailto ODER Cloudflare Email Protection (XOR in data-cfemail).
-  // DDG § 5 Abs. 1 Nr. 2 bleibt: Email UND Telefon — CF zählt als Email-Nachweis.
+  // § 5 Abs. 1 Nr. 2 DDG: Die E-Mail-Adresse ist Pflicht (Klartext, mailto
+  // oder Cloudflare Email Protection). Daneben braucht es einen zweiten
+  // schnellen, unmittelbaren Kontaktweg — laut EuGH C-298/07 muss das KEIN
+  // Telefon sein, eine elektronische Anfragemaske genuegt. Frueher verlangte
+  // diese Pruefung zwingend ein Telefon und meldete Seiten mit E-Mail und
+  // Kontaktformular faelschlich als `high`-Verstoss.
   const hasEmail = hasEmailContact(html, text);
   const hasPhone = hasPhoneNumber(text) && /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
-  if (!hasEmail || !hasPhone) {
+  // Formular auf der Seite selbst, oder Link auf eine Kontaktseite. mailto:/tel:
+  // ausgeschlossen — sonst zaehlte die E-Mail-Adresse doppelt als zweiter Weg.
+  // Ueber tagsOf/attrOf statt einer href-Regex: `href=["'][^"']*(kontakt)[^"']*`
+  // war quadratisch (gemessen > 2 s auf 140 kB) — dieselbe ReDoS-Klasse, die
+  // test/edge/gdpr-audit-contract.test.ts per Laufzeitbudget abfaengt.
+  const hasContactForm =
+    /<textarea\b/i.test(html) ||
+    tagsOf(html, 'a').some((tag) => {
+      const href = (attrOf(tag, 'href') ?? '').toLowerCase();
+      return !/^(?:mailto|tel):/.test(href) && (href.includes('kontakt') || href.includes('contact'));
+    });
+  if (!hasEmail || !(hasPhone || hasContactForm)) {
     issues.push({
       id: 'sub_imprint_no_contact',
       severity: 'high',
       title: 'Impressum ohne unmittelbaren Kontaktweg',
-      detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Email + Telefon müssen genannt sein.',
+      detail: hasEmail
+        ? 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Neben der E-Mail-Adresse fehlt ein zweiter ' +
+          'unmittelbarer Kontaktweg — Telefon oder Kontaktformular.'
+        : 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Eine E-Mail-Adresse muss genannt sein.',
       paragraph_ref: '§ 5 Abs. 1 Nr. 2 DDG',
     });
   }

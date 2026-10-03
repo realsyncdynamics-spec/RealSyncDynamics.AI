@@ -362,5 +362,34 @@ Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7ad
     const ids = deepCheckImprint(html).map((i) => i.id);
     expect(ids).toContain('sub_imprint_no_contact');
   });
+
+  // § 5 Abs. 1 Nr. 2 DDG verlangt neben der E-Mail einen zweiten schnellen
+  // Kontaktweg — laut EuGH C-298/07 genuegt eine elektronische Anfragemaske,
+  // ein Telefon ist nicht Pflicht.
+  const IMPRINT_BASE = '<p>Rechtsform: GmbH</p><p>Musterstrasse 1<br>12345 Berlin</p>';
+
+  it('meldet kein sub_imprint_no_contact bei Email + Link aufs Kontaktformular, ohne Telefon', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p>E-Mail: info@muster.de · <a href="/kontakt">Kontaktformular</a></p></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).not.toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet kein sub_imprint_no_contact bei Email + Formular auf der Seite, ohne Telefon', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p>E-Mail: info@muster.de</p><form><textarea name="msg"></textarea></form></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).not.toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet sub_imprint_no_contact bei Email ohne zweiten Kontaktweg', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p></body>`;
+    const issue = deepCheckImprint(html).find((i) => i.id === 'sub_imprint_no_contact');
+    expect(issue?.detail).toContain('zweiter');
+  });
+
+  it('wertet einen mailto:contact@-Link nicht als Kontaktformular', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p><a href="mailto:contact@muster.de">contact@muster.de</a></p></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).toContain('sub_imprint_no_contact');
+  });
 });
 

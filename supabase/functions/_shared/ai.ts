@@ -130,11 +130,13 @@ function toolCostUsd(provider: string, modelId: string, usage: TokenUsage): numb
     console.warn(JSON.stringify({
       level: 'warn', scope: 'model_price_missing', provider, model_id: modelId,
     }));
+    // Anbieter und Modell stehen im Log und in der ai_tool_runs-Zeile, nicht
+    // in der Antwort: bot-chat reicht message und details an anonyme
+    // Widget-Nutzer durch.
     throw new AiInvokeError(
-      `no purchase price for ${provider}/${modelId}`,
+      'no purchase price configured for this tool',
       'MODEL_PRICE_MISSING',
       503,
-      { provider, model_id: modelId },
     );
   }
   return usd;
@@ -242,12 +244,37 @@ export async function runAiTool(
   // wird deshalb wie bisher alles zum vollen Input-Preis. Abgerechnet wird
   // beim Settle mit dem tatsächlichen Verbrauch.
   // Wirft MODEL_PRICE_MISSING, bevor Budget reserviert oder ein Provider
-  // gerufen wird.
-  const estimatedUsd = toolCostUsd(
-    effectiveProvider,
-    effectiveModelId,
-    { ...NO_USAGE, input: estimatedInputTokens, output: tool.max_tokens },
-  );
+  // gerufen wird. Auch dieser Fehler bekommt eine ai_tool_runs-Zeile — wie
+  // jeder Fehler nach dem Providercall —, sonst bliebe ein Tool ohne Preis
+  // nur im Log sichtbar.
+  let estimatedUsd: number;
+  try {
+    estimatedUsd = toolCostUsd(
+      effectiveProvider,
+      effectiveModelId,
+      { ...NO_USAGE, input: estimatedInputTokens, output: tool.max_tokens },
+    );
+  } catch (e) {
+    if (e instanceof AiInvokeError && e.code === 'MODEL_PRICE_MISSING') {
+      await admin.from('ai_tool_runs').insert({
+        tenant_id: tenantId,
+        tool_id: tool.id,
+        tool_key: tool.key,
+        user_id: userId,
+        duration_ms: 0,
+        status: 'error',
+        error_code: e.code,
+        error_message: `no purchase price for ${effectiveProvider}/${effectiveModelId}`,
+        metadata: {
+          ...(opts.metadata ?? {}),
+          residency,
+          provider: effectiveProvider,
+          model_id: effectiveModelId,
+        },
+      });
+    }
+    throw e;
+  }
   let reservationId: string | null = null;
   if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
     try {

@@ -158,9 +158,27 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
     expect(ai).toContain("'MODEL_PRICE_MISSING'");
     // Die Schätzung — und damit der Wurf — steht vor Reservierung und
     // Providercall.
-    const estimate = ai.indexOf('const estimatedUsd = toolCostUsd(');
+    const estimate = ai.indexOf('estimatedUsd = toolCostUsd(');
     expect(estimate).toBeGreaterThan(-1);
     expect(estimate).toBeLessThan(ai.indexOf('reserveLlmBudget(admin'));
     expect(estimate).toBeLessThan(ai.indexOf('await callProvider('));
+  });
+
+  it('ein fehlender Preis landet als Fehlerlauf in ai_tool_runs', () => {
+    // Der Wurf steht vor dem try um callProvider; ohne eigenen Insert sähe
+    // man ein Tool ohne Preis nur im Log.
+    const estimate = ai.indexOf('estimatedUsd = toolCostUsd(');
+    const reserve = ai.indexOf('reserveLlmBudget(admin');
+    const between = ai.slice(estimate, reserve);
+    expect(between).toContain("e.code === 'MODEL_PRICE_MISSING'");
+    expect(between).toContain(".from('ai_tool_runs').insert(");
+    expect(between).toContain("status: 'error'");
+  });
+
+  it('die Antwort an den Client nennt weder Anbieter noch Modell', () => {
+    // bot-chat gibt message und details unverändert an anonyme Widget-Nutzer.
+    const fn = ai.slice(ai.indexOf('function toolCostUsd('), ai.indexOf('async function resolveResidency('));
+    const thrown = fn.slice(fn.indexOf('throw new AiInvokeError('));
+    expect(thrown).not.toMatch(/\$\{provider\}|\$\{modelId\}|model_id:/);
   });
 });

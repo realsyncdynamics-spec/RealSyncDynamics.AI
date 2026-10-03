@@ -416,3 +416,35 @@ describe('Kachelreihe lädt bei Mandanten-Datenänderungen neu', () => {
     expect(matches.length).toBeGreaterThanOrEqual(3);
   });
 });
+
+/**
+ * Zweiter Befund von CodeRabbit auf #1733, ebenfalls bestätigt: beim
+ * Mandantenwechsel rendert React einmal mit dem neuen `activeTenantId`, aber
+ * noch mit den alten Werten — `setData(null)` und `setSources(EMPTY_SOURCES)`
+ * stehen beide IM Effekt und laufen erst nach diesem Render. Die Reihe zeigte
+ * in genau diesem Frame die Zahlen des vorigen Mandanten unter dem neuen.
+ *
+ * Auf einer Governance-Fläche ist das keine Kosmetik, sondern eine falsch
+ * zugeordnete Zahl. Zwei Vorkehrungen, beide am Einhängepunkt.
+ */
+describe('Mandantenwechsel zeigt keine Zahlen des vorigen Mandanten', () => {
+  const dashboard = readFileSync(
+    'src/features/governance/dashboard/CommandCenterDashboard.tsx', 'utf8',
+  );
+
+  it('die Reihe wird beim Wechsel über key neu aufgebaut', () => {
+    expect(dashboard).toContain("key={activeTenantId ?? 'no-tenant'}");
+  });
+
+  it('data wird nur durchgegeben, solange es zum aktiven Mandanten gehört', () => {
+    expect(dashboard).toContain('data={dataTenantId === activeTenantId ? data : null}');
+  });
+
+  it('dataTenantId wird beim Laden gesetzt und beim Wechsel geleert', () => {
+    // Gesetzt erst NACH erfolgreichem Laden, zusammen mit den Daten.
+    expect(dashboard).toContain('setData(next); setDataTenantId(activeTenantId);');
+    // Und vor jedem neuen Laden sowie ohne Mandanten geleert: zwei Stellen.
+    const cleared = dashboard.match(/setDataTenantId\(null\);/g) ?? [];
+    expect(cleared.length).toBe(2);
+  });
+});

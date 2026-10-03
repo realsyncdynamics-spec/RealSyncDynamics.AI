@@ -51,6 +51,11 @@ export function CommandCenterDashboard() {
   // DE: „Workspace von …“ statt englischem Genitiv aus dem Signup-Trigger.
   const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
   const [data, setData] = useState<CockpitData | null>(null);
+  // Zu welchem Mandanten gehören die geladenen Cockpit-Daten? Beim Wechsel
+  // rendert React einmal mit neuem activeTenantId, aber noch alten `data` —
+  // Effekte laufen erst danach. Ohne diese Zuordnung zeigte die OS-Kachelreihe
+  // in diesem einen Frame die Zahlen des vorigen Mandanten unter dem neuen.
+  const [dataTenantId, setDataTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
@@ -64,6 +69,7 @@ export function CommandCenterDashboard() {
     let cancelled = false;
     if (!activeTenantId) {
       setData(null);
+      setDataTenantId(null);
       setLoading(false);
       setBootstrapSteps([]);
       return;
@@ -71,8 +77,9 @@ export function CommandCenterDashboard() {
     setLoading(true);
     setError(null);
     setData(null);
+    setDataTenantId(null);
     loadCockpitData(activeTenantId)
-      .then((next) => { if (!cancelled) setData(next); })
+      .then((next) => { if (!cancelled) { setData(next); setDataTenantId(activeTenantId); } })
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -130,10 +137,18 @@ export function CommandCenterDashboard() {
       />
       {/* WP4: Kontrollschicht sichtbar machen — KI-Inventar, Bots/Agenten,
           Residualrisiko, Freigaben, Evidence. Liest Risiko und Evidence aus
-          denselben Cockpit-Daten wie die Übersicht (kein zweiter RPC). */}
+          denselben Cockpit-Daten wie die Übersicht (kein zweiter RPC).
+
+          Zwei Vorkehrungen gegen falsch zugeordnete Zahlen beim
+          Mandantenwechsel: `key` setzt die mandanteneigenen Zähler der Reihe
+          synchron zurück (statt erst im Effekt nach dem ersten Render), und
+          `data` wird nur durchgegeben, solange es zum aktiven Mandanten
+          gehört. Ohne beides zeigte die Reihe in genau einem Frame die Zahlen
+          des vorigen Mandanten unter dem neuen. */}
       <OsControlStrip
+        key={activeTenantId ?? 'no-tenant'}
         activeTenantId={activeTenantId}
-        data={data}
+        data={dataTenantId === activeTenantId ? data : null}
         loading={loading}
         error={error}
         reloadKey={reloadKey}

@@ -356,12 +356,6 @@ export const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [
         badge: 'live',
       },
       {
-        label: 'Yearly',
-        to: '/pricing',
-        description: 'Jahresabrechnung',
-        badge: 'coming-soon',
-      },
-      {
         label: 'Enterprise',
         to: '/contact-sales?source=nav-enterprise&intent=enterprise',
         description: 'Anfrage',

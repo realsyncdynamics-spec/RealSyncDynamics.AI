@@ -97,8 +97,13 @@ jobs:
     # `skipped` und `cancelled` sind keine Befunde — nur echte Ergebnisse zählen.
     # Und nur Läufe auf main: PR-Läufe von „Pre-Deploy Check" und „Cron Health
     # Guard" dürfen weder ein Issue öffnen noch eines schließen (siehe Kopf).
+    # `head_branch` allein reicht dafür nicht: Ein PR aus dem `main` eines
+    # Forks trägt ebenfalls `main`. Beim Entitlement-Guard wäre das ein
+    # falsches „wieder grün" — er läuft bei PRs nur beratend
+    # (`continue-on-error`) und endet dort immer als `success`, auch bei Drift.
     if: >
       github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event != 'pull_request' &&
       (github.event.workflow_run.conclusion == 'failure' ||
        github.event.workflow_run.conclusion == 'success')
     steps:
@@ -290,8 +295,13 @@ jobs:
               '',
               '1. Protokoll des Laufs öffnen und die Richtung der Abweichung lesen',
               '2. Steht der Key **nur in der DB**, ist meist eine Migration ihm',
-              '   vorausgegangen: dann die Quelle nachziehen und `npm run sync:pricing`',
-              '3. Steht er **nur in der Quelle**, fehlt die Migration',
+              '   vorausgegangen: dann die Quelle nachziehen, `npm run sync:pricing`',
+              '   und `npm run gen:entitlement-mirror` — jede Änderung an',
+              '   `PLAN_ENTITLEMENTS` bringt eine neue Spiegel-Migration mit, sonst',
+              '   bleibt `test/billing/entitlement-catalog-parity.test.ts` rot',
+              '3. Steht er **nur in der Quelle**, fehlt die Migration: sie mit',
+              '   `npm run gen:entitlement-mirror` erzeugen (der Key muss vorher im',
+              '   Vokabular stehen — den trägt die Feature-Migration ein)',
               '4. Nie beides driften lassen — eine Seite ist die richtige, und die',
               '   Entscheidung, welche, gehört in den PR',
               '',

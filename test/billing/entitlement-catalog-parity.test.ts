@@ -39,6 +39,7 @@ import {
   quittierteEntzuege,
   spiegelMigrationen,
   versionUnzulaessig,
+  werteAus,
   zuordnungenAus,
 } from '../../scripts/generate-entitlement-mirror-sql';
 
@@ -56,25 +57,6 @@ const ERSTE_MIGRATION = resolve(
   '20260920120000_entitlement_catalog_ssot_parity.sql',
 );
 
-type Zuordnung = Record<string, Record<string, number>>;
-
-/** Liest den generierten VALUES-Block ('plan', 'key', wert) aus der Migration. */
-function zuordnungAusMigration(sql: string): Zuordnung {
-  const start = sql.indexOf('>>> GENERATED FROM shared/pricing.ts PLAN_ENTITLEMENTS >>>');
-  const ende = sql.indexOf('<<< GENERATED <<<');
-  expect(start).toBeGreaterThan(-1);
-  expect(ende).toBeGreaterThan(start);
-  const block = sql.slice(start, ende);
-
-  const ergebnis: Zuordnung = {};
-  const zeile = /^\s*\('([a-z_]+)',\s*'([a-z0-9_.\-]+)',\s*(-?\d+)\)/gm;
-  for (const m of block.matchAll(zeile)) {
-    const [, plan, key, wert] = m;
-    (ergebnis[plan] ??= {})[key] = Number(wert);
-  }
-  return ergebnis;
-}
-
 /** Liest die explizit ins Vokabular eingetragenen Keys. */
 function vokabularAusMigration(sql: string): string[] {
   const start = sql.indexOf('INSERT INTO public.entitlements');
@@ -86,7 +68,9 @@ function vokabularAusMigration(sql: string): string[] {
 }
 
 const sql = readFileSync(MIGRATION, 'utf8');
-const migration = zuordnungAusMigration(sql);
+// Derselbe Parser wie im Generator: Test, `--check` und Entzugs-Vergleich
+// lesen den GENERATED-Block nicht mehr auf zwei Wegen.
+const migration = werteAus(sql);
 
 describe('Neueste Spiegel-Migration — Katalog aus PLAN_ENTITLEMENTS', () => {
   it('kennt genau die Plaene der Quelle', () => {
@@ -125,8 +109,8 @@ describe('Neueste Spiegel-Migration — Katalog aus PLAN_ENTITLEMENTS', () => {
     // Ohne diesen Waechter ueberspringt der INNER JOIN eine Zuordnung mit
     // unbekanntem Key still — dieselbe leise Klasse Fehler, gegen die der
     // Entitlement-Guard gebaut wurde. Nur die erste Spiegel-Migration legte
-    // Keys selbst an; seither traegt sie die Feature-Migration ein.
-    if (MIGRATION === ERSTE_MIGRATION) return;
+    // Keys selbst an; seither traegt sie die Feature-Migration ein — und die
+    // neueste ist nie mehr die erste (siehe den Entzugs-Test unten).
     expect(sql).toMatch(/RAISE EXCEPTION/);
     expect(sql).toContain('Entitlement-Vokabular unvollstaendig');
   });
@@ -187,25 +171,44 @@ describe('Entzug — kein Paar verschwindet still zwischen zwei Spiegeln', () =>
 });
 
 /**
- * Die Version einer neuen Spiegel-Migration muss frei und neuer sein.
- * (Befund aus dem CodeRabbit-Review zu PR #1616.)
+ * Die Version einer neuen Spiegel-Migration muss frei und neuer sein als
+ * **jede** Migration — nicht nur als die vorige Spiegel-Migration.
+ * (Befunde aus dem CodeRabbit-Review und dem Review vom 2026-10-03 zu PR #1616.)
  */
-describe('Generator — nur eine freie, neuere Version wird geschrieben', () => {
+describe('Generator — nur eine freie Version nach der neuesten Migration wird geschrieben', () => {
   const vorhandene = [
+    '00001_initial_schema.sql',
+    '20260510_ai_governance_core.sql',
     '20260920120000_entitlement_catalog_ssot_parity.sql',
     '20260927112804_entitlement_catalog_mirror.sql',
+    // Feature-Migration, die einen Key ins Vokabular eintraegt (#1720).
+    '20260928163000_browser_scan_monitoring.sql',
   ];
 
-  it('lehnt eine vorhandene Version ab — keine angewandte Migration wird ueberschrieben', () => {
-    expect(versionUnzulaessig('20260927112804', vorhandene)).toMatch(/existiert bereits/);
+  it('lehnt eine vorhandene Spiegel-Version ab — keine angewandte Migration wird ueberschrieben', () => {
+    expect(versionUnzulaessig('20260927112804', vorhandene)).toMatch(/vergeben/);
   });
 
-  it('lehnt eine aeltere Version ab — sie waere nicht „die neueste"', () => {
+  it('lehnt die Version einer anderen Migration ab, nicht nur die eines Spiegels', () => {
+    expect(versionUnzulaessig('20260928163000', vorhandene)).toMatch(/vergeben/);
+  });
+
+  it('lehnt eine aeltere Version als die neueste Spiegel-Migration ab', () => {
     expect(versionUnzulaessig('20260925101500', vorhandene)).toMatch(/nicht neuer als/);
   });
 
-  it('nimmt eine neuere, freie Version an', () => {
-    expect(versionUnzulaessig('20260929104312', vorhandene)).toBeNull();
+  it('lehnt eine Version vor der Feature-Migration eines neuen Keys ab (#1720)', () => {
+    // Neuer als der vorige Spiegel, aber vor 20260928163000: In einer frischen
+    // Kette liefe der Spiegel zuerst und braeche am Vokabular-Waechter ab.
+    expect(versionUnzulaessig('20260928120417', vorhandene)).toMatch(/20260928163000_browser_scan_monitoring\.sql/);
+  });
+
+  it('nimmt eine freie Version nach der neuesten Migration an', () => {
+    expect(versionUnzulaessig('20260928171904', vorhandene)).toBeNull();
+  });
+
+  it('ordnet kurze Alt-Praefixe richtig ein, statt sie als neueste zu werten', () => {
+    expect(versionUnzulaessig('20260928171904', ['20260510_ai_governance_core.sql', '00001_initial_schema.sql'])).toBeNull();
   });
 });
 

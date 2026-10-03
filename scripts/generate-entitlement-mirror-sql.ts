@@ -2,7 +2,7 @@
 /**
  * Erzeugt eine Spiegel-Migration fuer `PLAN_ENTITLEMENTS` aus shared/pricing.ts.
  *
- *   npm run gen:entitlement-mirror            # neue Migration schreiben
+ *   npm run gen:entitlement-mirror            # neue Migration, falls die Quelle abweicht
  *   npm run gen:entitlement-mirror -- --check # Quelle gegen die neueste pruefen
  *
  * ── Warum es dieses Skript gibt ────────────────────────────────────────────
@@ -71,6 +71,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PLAN_ENTITLEMENTS } from '../shared/pricing';
+import { sqlString } from './generate-plan-catalog-sql';
 
 // ESM: wie in scripts/generate-plan-catalog-sql.ts — `__dirname` gibt es hier nicht.
 const MIGRATIONS = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
@@ -93,19 +94,48 @@ export function neuesteSpiegelMigration(): string {
   return alle[alle.length - 1]!;
 }
 
+/** Jede Migration im Verzeichnis, sortiert — nicht nur die Spiegel. */
+export function alleMigrationen(): string[] {
+  return readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+}
+
+/**
+ * Die Version einer Migration, auf 14 Stellen aufgefuellt. Aeltere Dateien
+ * tragen kuerzere Praefixe (`00001_`, `20260510_`); rechts mit Nullen
+ * aufgefuellt sortieren sie dort ein, wo sie in der Kette stehen.
+ */
+function versionVon(datei: string): string {
+  return (datei.match(/^\d+/)?.[0] ?? '').padEnd(14, '0');
+}
+
 /**
  * Warum eine Version NICHT taugt — oder `null`, wenn sie taugt.
  *
- * Eine vorhandene Version wuerde eine angewandte Migration ueberschreiben.
- * Eine aeltere als die neueste Spiegel-Migration waere nicht „die neueste" —
- * Test, `--check` und Entzugs-Vergleich liefen dann gegen die falsche Datei.
- * (Befund aus dem CodeRabbit-Review zu PR #1616.)
+ * Verglichen wird gegen **alle** Migrationen, nicht nur gegen die Spiegel:
+ *
+ *   * Eine vergebene Version wuerde eine angewandte Migration ueberschreiben
+ *     oder mit ihr kollidieren. (Befund aus dem CodeRabbit-Review zu PR #1616.)
+ *   * Eine Version, die nicht neuer ist als die neueste Migration, kann vor
+ *     der Feature-Migration liegen, die einen Key der Quelle erst ins Vokabular
+ *     eintraegt. In einer frischen Kette (`Migration validation`) liefe der
+ *     Spiegel dann zuerst und braeche am Vokabular-Waechter ab — genau der
+ *     Fall von #1720 (`monitoring.browser_scan`, Feature-Migration
+ *     `20260928163000`). Die Regel stand nur im PR-Text; hier wird sie
+ *     erzwungen.
+ *
+ * Das betrifft nur das Schreiben eines neuen Spiegels. Bestehende Migrationen,
+ * auch spaeter eingespielte mit aelterer Version (Backfills), prueft niemand
+ * hiermit — `db push --include-all` nimmt sie unveraendert mit.
  */
-export function versionUnzulaessig(version: string, vorhandene: string[]): string | null {
-  const ziel = `${version}_entitlement_catalog_mirror.sql`;
-  if (vorhandene.includes(ziel)) return `${ziel} existiert bereits — angewandte Migrationen werden nicht ueberschrieben.`;
-  const neueste = [...vorhandene].sort().at(-1);
-  if (neueste !== undefined && ziel <= neueste) return `${ziel} ist nicht neuer als ${neueste}.`;
+export function versionUnzulaessig(version: string, migrationen: string[]): string | null {
+  const vergeben = migrationen.find((f) => versionVon(f) === version);
+  if (vergeben) return `Version ${version} ist vergeben (${vergeben}) — angewandte Migrationen werden nicht ueberschrieben.`;
+  const neueste = [...migrationen].sort((a, b) => versionVon(a).localeCompare(versionVon(b))).at(-1);
+  if (neueste !== undefined && version <= versionVon(neueste)) {
+    return `Version ${version} ist nicht neuer als die neueste Migration (${neueste}).`;
+  }
   return null;
 }
 
@@ -115,7 +145,10 @@ function wertezeilen(): string[] {
   for (const plan of Object.keys(PLAN_ENTITLEMENTS).sort()) {
     const satz = PLAN_ENTITLEMENTS[plan]!;
     for (const key of Object.keys(satz).sort()) {
-      zeilen.push(`  ('${plan}', '${key}', ${satz[key as keyof typeof satz]})`);
+      // Literale escapen wie der Katalog-Generator — Plaene und Keys kommen
+      // aus unserer Quelle, aber eine Migration auf Platte soll nicht davon
+      // abhaengen, dass nie ein Hochkomma darin steht.
+      zeilen.push(`  (${sqlString(plan)}, ${sqlString(key)}, ${Number(satz[key as keyof typeof satz])})`);
     }
   }
   return zeilen;
@@ -133,10 +166,25 @@ export function quellPaare(): Set<string> {
   return paare;
 }
 
+/**
+ * Plan → Key → Wert, wie ihn der GENERATED-Block einer Spiegel-Migration
+ * vergibt. Der eine Parser fuer diesen Block — Generator, `--check`,
+ * Entzugs-Vergleich und Paritaetstest lesen alle hierueber.
+ */
+export function werteAus(sql: string): Record<string, Record<string, number>> {
+  const zeile = /^\s*\('([a-z_]+)',\s*'([a-z0-9_.\-]+)',\s*(-?\d+)\)/gm;
+  const werte: Record<string, Record<string, number>> = {};
+  for (const m of blockAus(sql).matchAll(zeile)) (werte[m[1]!] ??= {})[m[2]!] = Number(m[3]);
+  return werte;
+}
+
 /** Die Paare, die eine Spiegel-Migration vergibt — aus ihrem GENERATED-Block. */
 export function zuordnungenAus(sql: string): Set<string> {
-  const zeile = /^\s*\('([a-z_]+)',\s*'([a-z0-9_.\-]+)',\s*-?\d+\)/gm;
-  return new Set([...blockAus(sql).matchAll(zeile)].map((m) => paar(m[1]!, m[2]!)));
+  const paare = new Set<string>();
+  for (const [plan, satz] of Object.entries(werteAus(sql))) {
+    for (const key of Object.keys(satz)) paare.add(paar(plan, key));
+  }
+  return paare;
 }
 
 /** Die Paare, deren Entzug eine Spiegel-Migration ausdruecklich vermerkt. */
@@ -227,7 +275,7 @@ function vollstaendigeMigration(version: string, entzogen: string[]): string {
     'BEGIN',
     "  SELECT string_agg(v.key, ', ' ORDER BY v.key) INTO fehlend",
     '  FROM (VALUES',
-    keys.map((k) => `    ('${k}')`).join(',\n'),
+    keys.map((k) => `    (${sqlString(k)})`).join(',\n'),
     '  ) AS v(key)',
     '  WHERE NOT EXISTS (SELECT 1 FROM public.entitlements e WHERE e.key = v.key);',
     '  IF fehlend IS NOT NULL THEN',
@@ -245,7 +293,7 @@ function vollstaendigeMigration(version: string, entzogen: string[]): string {
   ].join('\n');
 }
 
-function blockAus(sql: string): string {
+export function blockAus(sql: string): string {
   const start = sql.indexOf(ANFANG);
   const ende = sql.indexOf(ENDE);
   if (start < 0 || ende < 0) throw new Error('Kein GENERATED-Block in der Datei.');
@@ -292,6 +340,17 @@ function pruefen(): never {
 }
 
 function schreiben(): void {
+  const vorige = neuesteSpiegelMigration();
+  const vorigeSql = readFileSync(join(MIGRATIONS, vorige), 'utf8');
+
+  // Nichts zu spiegeln: Die neueste Spiegel-Migration traegt die Quelle schon.
+  // Eine weitere waere nur Rauschen in supabase/migrations, im Collision Guard
+  // und im Deploy.
+  if (blockAus(vorigeSql) === generierterBlock()) {
+    console.log(`✓ ${vorige} spiegelt shared/pricing.ts bereits — keine neue Migration noetig.`);
+    return;
+  }
+
   // Version als Argument, sonst aus der Uhr. Sie muss eindeutig sein — der
   // Migration Collision Guard prueft das, auch gegen offene PRs. Keine runde
   // Stunde: die trifft ein zweiter PR am selben Tag mit derselben Ueberlegung.
@@ -299,15 +358,16 @@ function schreiben(): void {
     [...args].find((a) => /^\d{14}$/.test(a)) ??
     new Date().toISOString().replace(/\D/g, '').slice(0, 14);
 
-  const unzulaessig = versionUnzulaessig(version, spiegelMigrationen());
+  const unzulaessig = versionUnzulaessig(version, alleMigrationen());
   if (unzulaessig) {
     console.error(`✗ ${unzulaessig}`);
-    console.error('  Eine freie, neuere Version angeben (14 Stellen, keine runde Stunde).');
+    console.error('  Eine freie Version nach der neuesten Migration angeben (14 Stellen,');
+    console.error('  keine runde Stunde) — sonst liegt der Spiegel womoeglich vor der');
+    console.error('  Feature-Migration, die einen seiner Keys erst eintraegt.');
     process.exit(1);
   }
 
-  const vorige = neuesteSpiegelMigration();
-  const weg = entzogenZwischen(zuordnungenAus(readFileSync(join(MIGRATIONS, vorige), 'utf8')), quellPaare());
+  const weg = entzogenZwischen(zuordnungenAus(vorigeSql), quellPaare());
   if (weg.length > 0 && !args.has('--entzug-quittiert')) {
     console.error(`✗ Die Quelle fuehrt ${weg.length} Paar(e) nicht mehr, die ${vorige} vergibt:`);
     for (const p of weg) console.error(`    ${p}`);

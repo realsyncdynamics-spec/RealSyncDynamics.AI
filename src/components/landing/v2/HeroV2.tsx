@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
 import {
   LV2_H1_GOLD,
   LV2_H1_SILVER,
@@ -11,15 +10,12 @@ import {
 const SOURCE = 'landing-v2-hero';
 
 /**
- * Screen 01 — Hero. Tier-Buttons ziehen Preis + Ziel aus `shared/pricing.ts`;
- * Enterprise geht wie überall auf `/contact-sales`.
+ * Screen 01 — Hero. Der Einstieg zeigt die echten Produktoberflächen:
+ * Scan, Demo-Command-Center, Runtime und Enterprise-Anfrage. Preise bleiben
+ * in der Pricing-Sektion, damit der Hero die Architektur statt Tarifkarten
+ * spiegelt.
  */
 export function HeroV2() {
-  const starter = planById('starter');
-  const growth = planById('growth');
-  const agency = planById('agency');
-  const tierButtons = [starter, growth, agency];
-
   return (
     <section id="top" className="lv2-hero" aria-labelledby="lv2-hero-title">
       <div className="lv2-hero__map" aria-hidden="true">
@@ -46,35 +42,33 @@ export function HeroV2() {
 
         <div className="lv2-hero__cta" role="group" aria-label="Hero-Aktionen">
           <Link
-            to={checkoutHrefForPlan('free', { source: SOURCE })}
+            to={`/audit?source=${SOURCE}`}
             className="lv2-btn lv2-btn--gold"
             data-hero-cta="audit"
             data-testid="hero-primary-cta"
           >
-            Free Audit
+            Governance-Scan starten
           </Link>
-          {tierButtons.map((plan) => (
-            <Link
-              key={plan.id}
-              to={checkoutHrefForPlan(plan, { source: SOURCE })}
-              className={`lv2-btn lv2-btn--glass${plan.highlight ? ' lv2-btn--featured' : ''}`}
-              data-hero-cta={`plan-${plan.id}`}
-            >
-              {plan.name}
-              <strong>{formatPriceEur(plan.price.monthlyEur)}</strong>
-            </Link>
-          ))}
+          <Link to="/demo-tour/dashboard" className="lv2-btn lv2-btn--glass" data-hero-cta="dashboard">
+            Live Dashboard ansehen
+          </Link>
+          <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass" data-hero-cta="runtime">
+            Runtime ansehen
+          </Link>
           <Link
             to="/contact-sales?tier=enterprise&source=landing-v2-hero"
-            className="lv2-btn lv2-btn--glass"
+            className="lv2-btn lv2-btn--glass lv2-btn--enterprise"
             data-hero-cta="enterprise"
             data-testid="hero-secondary-cta"
           >
-            Enterprise
+            Enterprise anfragen
           </Link>
         </div>
 
         <p className="lv2-hero__note">{LV2_HERO_NOTE}</p>
+        <p className="lv2-hero__truthline">
+          Ein Frontend, eine Runtime: Scan, Policy Engine, Evidence, Activation und Command Center führen in dieselbe Produktarchitektur.
+        </p>
       </div>
     </section>
   );

@@ -295,10 +295,18 @@ Deno.serve(async (req) => {
     insertedEvidence = ev ?? [];
   }
 
+  const usedAt = new Date().toISOString();
   await admin
     .from('governance_ingest_keys')
-    .update({ last_used_at: new Date().toISOString() })
+    .update({ last_used_at: usedAt })
     .eq('id', keyRow.id);
+  // Connector-Verifikation (Tenant-Boot): das erste angenommene Event macht
+  // aus `issued` ein `verified`. Nur einmal gesetzt, nie ueberschrieben.
+  await admin
+    .from('governance_ingest_keys')
+    .update({ first_event_at: usedAt })
+    .eq('id', keyRow.id)
+    .is('first_event_at', null);
 
   const policyDecisions = insertedEvents!.map((ev, idx) => {
     const d = decisions[idx];

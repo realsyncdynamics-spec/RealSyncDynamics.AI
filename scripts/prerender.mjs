@@ -34,9 +34,13 @@ const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '6', 10);
 // werten sie als Duplikate von `/`. Die 301-Regeln in _redirects decken nur
 // Aliasse ab, keine eigenstaendigen Inhaltsseiten.
 //
-// Watchdog-sicher: loadRoutes() sortiert nach Priority absteigend und jede
-// Route wird sofort geschrieben. Bricht MAX_MS den Lauf ab, fehlen nur Routen
-// vom Ende der Liste — also genau die, die bei 0.6 ohnehin nicht dran waren.
+// Watchdog: loadRoutes() sortiert nach Priority absteigend, der Worker-Pool
+// verteilt in dieser Reihenfolge — geschrieben wird aber erst, wenn eine
+// Route fertig gerendert ist. Bricht MAX_MS den Lauf ab, fehlen deshalb die
+// noch nicht verteilten Routen vom Ende der Liste PLUS bis zu CONCURRENCY
+// gerade laufende, die auch hoeher priorisiert sein koennen. Die Schwelle
+// 0.4 verlaengert den Lauf und macht einen Abbruch damit wahrscheinlicher;
+// am Cloudflare-Preview lief er mit allen 119 Routen vollstaendig durch.
 //
 // Den Fallback auf eine inhaltsleere Shell umzubiegen wurde versucht und
 // verworfen (PR #966): auf Cloudflare Pages erzeugt jedes andere Ziel als

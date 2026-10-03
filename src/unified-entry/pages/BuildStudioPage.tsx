@@ -198,8 +198,14 @@ export default function BuildStudioPage() {
     params.get('prompt') ?? (auditContext.domain ? `Neue Website für ${auditContext.domain}. ` : ''),
   );
   const [brand, setBrand] = useState('');
-  const [kind, setKind] = useState<BuildProjectKind>(() => parseBuildKind(params.get('kind')));
+  const urlKind = params.get('kind');
+  const [kind, setKind] = useState<BuildProjectKind>(() => parseBuildKind(urlKind));
   const opensCode = surfaceKindFor(kind) === 'code';
+
+  // The page is reused across /build?kind=… navigations; follow the URL.
+  useEffect(() => {
+    setKind(parseBuildKind(urlKind));
+  }, [urlKind]);
   const [instruction, setInstruction] = useState('');
   const [device, setDevice] = useState<Device>('desktop');
   const [path, setPath] = useState('/');
@@ -244,8 +250,10 @@ export default function BuildStudioPage() {
     if (!isAuthenticated) return;
     if (!entitled && entitlements.ssotReady) return;
     if (startedRef.current) return;
-    startedRef.current = true;
+    // An app kind never starts or resumes a site build. Decide before latching,
+    // so a later switch to a site kind still resumes.
     if (surfaceKindFor(parseBuildKind(params.get('kind'))) === 'code') return;
+    startedRef.current = true;
 
     const fromUrl = params.get('prompt')?.trim();
     if (fromUrl) {
@@ -373,7 +381,7 @@ export default function BuildStudioPage() {
   };
 
   // ── Einstieg: App-Builder Intent ──────────────────────────────────────
-  if (!blueprint && !busy) {
+  if ((!blueprint || opensCode) && !busy) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-50">
         <BuildOsChrome />
@@ -437,6 +445,7 @@ export default function BuildStudioPage() {
               {opensCode && (
                 <p className="mt-2 text-xs text-titanium-500">
                   Apps öffnen den Code-Builder unter /builder/…/code. Kein Deploy.
+                  {blueprint && ' Ihr Website-Entwurf bleibt erhalten — „Website“ wählen, um ihn fortzusetzen.'}
                 </p>
               )}
             </fieldset>
@@ -586,6 +595,13 @@ export default function BuildStudioPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setKind('web_app')}
+            className="px-2 py-1 text-xs text-titanium-400 underline underline-offset-4 hover:text-titanium-100"
+          >
+            Stattdessen eine App bauen
+          </button>
           <div
             className="flex items-center gap-1 border border-titanium-800 bg-obsidian-800 p-1"
             role="tablist"

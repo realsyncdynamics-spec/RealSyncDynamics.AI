@@ -39,8 +39,20 @@ export function codeEntryHref(kind: BuildProjectKind, name: string, description 
     throw new Error(`${kind} stays in the SiteOS flow on /build`);
   }
   const source = name.trim() || description.trim().split(/\s+/).slice(0, 4).join(' ');
-  // slugify falls back to 'site' when nothing survives; an app is not a site.
+  // slugify falls back to 'site' when nothing survives (e.g. 日本). Keep such names apart.
   const base = slugify(source);
-  const slug = (base === 'site' && !/site/i.test(source) ? 'app' : base) as AppBuilderSlug;
+  const slug = (
+    base === 'site' && !/site/i.test(source) ? (source ? `app-${shortHash(source)}` : 'app') : base
+  ) as AppBuilderSlug;
   return surfaceHref({ kind: 'code', slug, route: '/builder/:slug/code' });
+}
+
+/** FNV-1a, 8 hex chars. Stable across sessions; not a security hash. */
+function shortHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (const char of input) {
+    hash ^= char.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
 }

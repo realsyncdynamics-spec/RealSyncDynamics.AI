@@ -20,7 +20,15 @@ describe('Builder-02 entry', () => {
       '/builder/lager-uebersicht-fuer-drei/code',
     );
     expect(codeEntryHref('saas_app', '  ', '')).toBe('/builder/app/code');
-    expect(codeEntryHref('saas_app', '日本')).toBe('/builder/app/code');
+  });
+
+  it('keeps names without slug characters apart instead of collapsing them to one app', () => {
+    const tokyo = codeEntryHref('web_app', '東京');
+    const japan = codeEntryHref('web_app', '日本');
+    expect(japan).toMatch(/^\/builder\/app-[0-9a-f]{8}\/code$/);
+    expect(tokyo).toMatch(/^\/builder\/app-[0-9a-f]{8}\/code$/);
+    expect(japan).not.toBe(tokyo);
+    expect(codeEntryHref('web_app', '日本')).toBe(japan);
   });
 
   it('refuses to route a site kind past the SiteOS flow', () => {

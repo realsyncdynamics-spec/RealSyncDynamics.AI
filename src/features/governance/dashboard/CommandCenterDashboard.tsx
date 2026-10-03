@@ -30,6 +30,7 @@ import { navLockTitle } from '../../../components/governance-os/useNavLock';
 import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
+import { OsControlStrip } from './OsControlStrip';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
@@ -125,6 +126,16 @@ export function CommandCenterDashboard() {
         loading={loading}
         error={error}
         onRetry={retry}
+        reloadKey={reloadKey}
+      />
+      {/* WP4: Kontrollschicht sichtbar machen — KI-Inventar, Bots/Agenten,
+          Residualrisiko, Freigaben, Evidence. Liest Risiko und Evidence aus
+          denselben Cockpit-Daten wie die Übersicht (kein zweiter RPC). */}
+      <OsControlStrip
+        activeTenantId={activeTenantId}
+        data={data}
+        loading={loading}
+        error={error}
         reloadKey={reloadKey}
       />
       <BrowserRuntimePanel activeTenantId={activeTenantId} />

@@ -558,9 +558,9 @@ export function deepCheckImprint(html: string): Issue[] {
       severity: 'critical',
       title: 'Impressum nennt keine Rechtsform',
       detail:
-        'Pflicht nach § 5 Abs. 1 Nr. 1 TMG: vollständige Angabe der Firma inkl. Rechtsform ' +
+        'Pflicht nach § 5 Abs. 1 Nr. 1 DDG: vollständige Angabe der Firma inkl. Rechtsform ' +
         '(GmbH, UG, e.K. etc.) bzw. Inhaber-Name bei Einzelunternehmen.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
     });
   }
 
@@ -575,13 +575,13 @@ export function deepCheckImprint(html: string): Issue[] {
       id: 'sub_imprint_no_address',
       severity: 'critical',
       title: 'Impressum hat keine ladungsfähige Anschrift',
-      detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG. Postfach reicht nicht.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+      detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 DDG. Postfach reicht nicht.',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
     });
   }
 
   // Klartext / mailto ODER Cloudflare Email Protection (XOR in data-cfemail).
-  // TMG § 5 Abs. 1 Nr. 2 bleibt: Email UND Telefon — CF zählt als Email-Nachweis.
+  // DDG § 5 Abs. 1 Nr. 2 bleibt: Email UND Telefon — CF zählt als Email-Nachweis.
   const hasEmail = hasEmailContact(html, text);
   const hasPhone = hasPhoneNumber(text) && /tel(?:efon)?|phone|fon\b|tel:/i.test(html);
   if (!hasEmail || !hasPhone) {
@@ -589,8 +589,8 @@ export function deepCheckImprint(html: string): Issue[] {
       id: 'sub_imprint_no_contact',
       severity: 'high',
       title: 'Impressum ohne unmittelbaren Kontaktweg',
-      detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 TMG: Email + Telefon müssen genannt sein.',
-      paragraph_ref: '§ 5 Abs. 1 Nr. 2 TMG',
+      detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Email + Telefon müssen genannt sein.',
+      paragraph_ref: '§ 5 Abs. 1 Nr. 2 DDG',
     });
   }
 

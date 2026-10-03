@@ -185,7 +185,7 @@ describe('Tracker-Erkennung — die 28/100-Regression', () => {
   });
 });
 
-describe('Jurisdiktion — § 5 TMG gilt nicht weltweit', () => {
+describe('Jurisdiktion — § 5 DDG gilt nicht weltweit', () => {
   it('meldet ein fehlendes Impressum bei DE-Signalen als kritisch', () => {
     const issues = runChecks('https://beispiel.de', '<html lang="de"><body>Hallo</body></html>', new Headers(), 200, null);
     expect(issues.find((i) => i.id === 'no_imprint_link')?.severity).toBe('critical');

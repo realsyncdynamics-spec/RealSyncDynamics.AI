@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getTrialStatus } from '../../../src/core/billing/trial';
+import { getFreeAccessReason, getTrialStatus, isTrialEligible } from '../../../src/core/billing/trial';
 import type { EntitlementDecision } from '../../../src/core/billing/types';
 
 const baseDecision: EntitlementDecision = {
@@ -51,5 +51,63 @@ describe('getTrialStatus', () => {
     const status = getTrialStatus(decision, NOW);
     expect(status!.daysRemaining).toBe(-1);
     expect(status!.endingSoon).toBe(true);
+  });
+});
+
+describe('getFreeAccessReason', () => {
+  it('free_audit ohne Testphase ist der kostenlose Zugang', () => {
+    const decision = { ...baseDecision, planKey: 'free_audit' as const, status: 'inactive' as const, isActive: false };
+    expect(getFreeAccessReason(decision, NOW)).toBe('free_plan');
+  });
+
+  it('laufende Testphase ist kein kostenloser Zugang', () => {
+    const decision = { ...baseDecision, trialEnd: '2026-06-21T12:00:00Z' };
+    expect(getFreeAccessReason(decision, NOW)).toBeNull();
+  });
+
+  it('Testphase ohne Ende gilt als laufend', () => {
+    expect(getFreeAccessReason({ ...baseDecision, trialEnd: null }, NOW)).toBeNull();
+  });
+
+  it('abgelaufene Testphase fällt auf den kostenlosen Zugang zurück', () => {
+    const decision = { ...baseDecision, trialEnd: '2026-06-10T12:00:00Z' };
+    expect(getFreeAccessReason(decision, NOW)).toBe('trial_expired');
+  });
+
+  it('bezahltes Abo ist kein kostenloser Zugang', () => {
+    const decision = { ...baseDecision, status: 'active' as const };
+    expect(getFreeAccessReason(decision, NOW)).toBeNull();
+  });
+
+  it('von Stripe beendete Testphase (canceled, trialEnd in der Vergangenheit) ist trial_expired', () => {
+    const decision = { ...baseDecision, status: 'canceled' as const, isActive: false, trialEnd: '2026-06-10T12:00:00Z' };
+    expect(getFreeAccessReason(decision, NOW)).toBe('trial_expired');
+  });
+
+  it('past_due nach umgewandelter Testphase ist kein kostenloser Zugang', () => {
+    const decision = { ...baseDecision, status: 'past_due' as const, isActive: false, trialEnd: '2026-06-10T12:00:00Z' };
+    expect(getFreeAccessReason(decision, NOW)).toBeNull();
+  });
+
+  it('gekündigtes bezahltes Abo ohne Testphase ist kein kostenloser Zugang', () => {
+    const decision = { ...baseDecision, status: 'canceled' as const, isActive: false, trialEnd: null };
+    expect(getFreeAccessReason(decision, NOW)).toBeNull();
+  });
+});
+
+describe('isTrialEligible', () => {
+  it('frischer Mandant ohne Abo und ohne frühere Testphase ist berechtigt', () => {
+    const decision = { ...baseDecision, planKey: 'free_audit' as const, status: 'inactive' as const, isActive: false, trialEnd: null };
+    expect(isTrialEligible(decision)).toBe(true);
+  });
+
+  it('frühere Testphase schließt eine zweite aus', () => {
+    const decision = { ...baseDecision, status: 'canceled' as const, isActive: false, trialEnd: '2026-06-10T12:00:00Z' };
+    expect(isTrialEligible(decision)).toBe(false);
+  });
+
+  it('laufendes Abo (Upgrade) bekommt keine Testphase', () => {
+    expect(isTrialEligible({ ...baseDecision, status: 'active' as const, trialEnd: null })).toBe(false);
+    expect(isTrialEligible({ ...baseDecision, status: 'trialing' as const, trialEnd: '2026-06-21T12:00:00Z' })).toBe(false);
   });
 });

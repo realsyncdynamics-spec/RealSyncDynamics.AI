@@ -6,16 +6,22 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
 import { SECTORS, type SectorId } from '../../config/sectors';
+import { formatPriceEur, planById } from '@/shared/pricing';
 
 /**
- * Die beiden Functions, die diesen Schritt tragen.
+ * Die Function, die diesen Schritt trägt.
  *
  * Bewusst wird zuerst aufgerufen und erst der Fehlschlag erklärt: Wäre die
  * Verfügbarkeit vorab aus der Liste abgeleitet, würde ein Nutzer auch dann
  * blockiert, wenn das Backend längst nachgezogen und nur die Liste nicht
  * gepflegt wurde. Messung darf erklaeren, nicht verhindern.
+ *
+ * `create-trial-subscription` gehört seit E-F6 (`.claude/os-funnel/PLAN.md`)
+ * nicht mehr hierher: Die Registrierung legt ein dauerhaft kostenloses Konto
+ * an, die Growth-Testphase ist ein Upgrade aus dem Dashboard
+ * (`FreePlanPanel`), kein Zwangseinstieg.
  */
-const SETUP_FUNCTIONS = ['save-company-profile', 'create-trial-subscription'] as const;
+const SETUP_FUNCTIONS = ['save-company-profile'] as const;
 
 type Sector = SectorId;
 
@@ -72,7 +78,6 @@ export function PostRegisterOnboardingPage() {
       // über `memberships` auf — der frische Registrierungsfall.
       const tenant = activeTenantId ? { tenantId: activeTenantId } : {};
       await postEdgeFunction('save-company-profile', { sector: selectedSector, answers, ...tenant });
-      await postEdgeFunction('create-trial-subscription', { planKey: 'growth', ...tenant });
       setStep('success');
     } catch (err) {
       // Der Fehlschlag hat zwei sehr verschiedene Ursachen, und der Unterschied
@@ -90,20 +95,20 @@ export function PostRegisterOnboardingPage() {
     }
   };
 
-  // Kein „Growth ist bereit", wenn kein Growth angelegt wurde. Die Seite hat
-  // an dieser Stelle bislang einen rohen HTTP-Fehler gezeigt und den Nutzer
+  // Kein „Konto ist bereit", wenn das Profil nicht gespeichert wurde. Die Seite
+  // hat an dieser Stelle bislang einen rohen HTTP-Fehler gezeigt und den Nutzer
   // stehen lassen — Konto vorhanden, kein Weg weiter, keine Erklärung.
   if (step === 'incomplete') {
     return (
       <div className="max-w-md mx-auto text-center space-y-6">
         <h1 className="text-3xl font-bold text-titanium-50">Ihr Konto steht.</h1>
         <p className="text-lg text-titanium-300">
-          Die automatische Einrichtung von Branche und Testphase konnten wir gerade nicht
-          abschließen. Ihre Registrierung ist davon nicht betroffen — Sie sind angemeldet.
+          Die Zuordnung Ihrer Branche konnten wir gerade nicht abschließen. Ihre
+          Registrierung ist davon nicht betroffen — Sie sind angemeldet.
         </p>
         <p className="text-sm text-titanium-400">
-          Wir richten den Growth-Testzeitraum manuell ein. Bis dahin steht Ihnen das
-          Dashboard offen.
+          Ihr kostenloses Konto steht, das Dashboard ist offen. Die Branche tragen wir
+          nach.
         </p>
         <div className="flex flex-col gap-3">
           <button
@@ -127,9 +132,16 @@ export function PostRegisterOnboardingPage() {
     return (
       <div className="max-w-md mx-auto text-center space-y-6">
         <div className="text-5xl">🎉</div>
-        <h1 className="text-3xl font-bold text-titanium-50">Growth ist bereit.</h1>
-        <p className="text-lg text-titanium-300"><strong>14 Tage kostenlos</strong>, danach 249 € / Monat.</p>
-        <button onClick={() => navigate('/app/dashboard')} className="w-full px-6 py-3 bg-petrol-600 hover:bg-petrol-700 text-white font-medium rounded-lg transition-colors">Zum Dashboard</button>
+        <h1 className="text-3xl font-bold text-titanium-50">Ihr kostenloses Konto ist bereit.</h1>
+        <p className="text-lg text-titanium-300">
+          <strong>Dauerhaft kostenlos.</strong> Domain-Scan, Governance Score und Audit Center
+          ohne Zeitlimit. Upgrade jederzeit aus dem Dashboard — Growth {planById('growth').trialDays} Tage
+          kostenlos testen oder Starter ab {formatPriceEur(planById('starter').price.monthlyEur)} / Monat.
+        </p>
+        <div className="flex flex-col gap-3">
+          <button onClick={() => navigate('/app/dashboard')} className="w-full px-6 py-3 bg-petrol-600 hover:bg-petrol-700 text-white font-medium rounded-lg transition-colors">Zum Dashboard</button>
+          <button onClick={() => navigate('/pricing?source=onboarding-free')} className="w-full px-6 py-3 bg-obsidian-700 hover:bg-obsidian-600 border border-titanium-600 text-titanium-200 font-medium rounded-lg transition-colors">Pakete vergleichen</button>
+        </div>
       </div>
     );
   }
@@ -164,7 +176,7 @@ export function PostRegisterOnboardingPage() {
           {error && <div className="px-4 py-3 bg-red-900/20 border border-red-700 rounded-lg text-red-300 text-sm">{error}</div>}
           <div className="flex gap-4 pt-6 border-t border-titanium-700">
             <button onClick={() => { setStep('sector'); setSelectedSector(null); }} className="flex-1 px-6 py-2 bg-obsidian-700 hover:bg-obsidian-600 border border-titanium-600 text-titanium-200 font-medium rounded-lg">Zurück</button>
-            <button onClick={handleSubmit} disabled={loading} className="flex-1 px-6 py-2 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 text-white font-medium rounded-lg">{loading ? 'Wird gespeichert...' : 'Growth starten'}</button>
+            <button onClick={handleSubmit} disabled={loading} className="flex-1 px-6 py-2 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 text-white font-medium rounded-lg">{loading ? 'Wird gespeichert...' : 'Kostenloses Konto einrichten'}</button>
           </div>
         </div>
       )}

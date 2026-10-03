@@ -47,17 +47,17 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
     }
   });
 
-  it('nennt die drei echten Gates namentlich', () => {
-    // Diese drei entscheiden, was ein zahlender Kunde bekommt: Kontingent,
-    // Monitoring-Takt, Aufbewahrungsdauer. Verschwindet einer aus der Liste,
-    // ohne dass die Fundstelle behoben wurde, ist die Ratsche stumpf
-    // geworden — deshalb stehen sie hier fest.
-    const gates = baseline.filter((b) => b.art === 'GATE').map((b) => b.datei).sort();
-    expect(gates).toEqual([
-      'src/core/billing/useScanLimits.ts',
-      'src/features/governance/terminal/agents/AuditAgent.ts',
-      'supabase/functions/audit-monitor-cron/index.ts',
-    ]);
+  it('führt kein echtes Gate mehr — alle vier sind aufgelöst', () => {
+    // Bis 2026-09-28 standen hier drei GATE-Einträge fest: Scan-Kontingent,
+    // Monitoring-Takt, Aufbewahrungsdauer. Ein vierter (Browser-Scan per
+    // `.includes(tier)`) lag im blinden Fleck des Prüfers. Aufgelöst:
+    //   - useScanLimits liest nur noch `website.scan_monthly_limit`
+    //   - audit-monitor-cron liest `monitoring.daily` / `.monthly` /
+    //     `.browser_scan` aus dem Abo
+    //   - AuditAgent war kein Gate, sondern eine Attrappe; entfernt
+    // Ein neues GATE gehört nicht in die Grundlinie, sondern nach
+    // hasPermission(), hasModule() oder limitOf().
+    expect(baseline.filter((b) => b.art === 'GATE')).toEqual([]);
   });
 
   it('führt keine Fundstelle doppelt', () => {
@@ -67,6 +67,29 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
 });
 
 describe('Der Prüfer selbst', () => {
+  it('findet genau, was die Grundlinie führt — in beide Richtungen', () => {
+    // Zwei Fehler, die derselbe Test fängt:
+    //
+    // 1. Der blinde Fleck kehrt zurück. Die Eingabelisten von /upgrade und
+    //    /pay im Terminal sind nur über das `.includes(tier)`-Muster sichtbar
+    //    (8 Fundstellen). Bricht das Muster weg, erscheinen sie hier als
+    //    „verschwunden" — und die Zählung stimmt nicht mehr.
+    // 2. Die Grundlinie lügt. Wer eine Fundstelle behebt, ohne `--update` zu
+    //    laufen, lässt einen Eintrag stehen, der nichts mehr zählt. Genau das
+    //    stand am 2026-09-28 in der Schwester-Grundlinie der erfundenen Werte:
+    //    „Behoben in PR #1375" — der PR war nie gemergt.
+    const out = execFileSync('node', ['scripts/check-plan-name-gates.mjs', '--json'], {
+      cwd: ROOT, encoding: 'utf8',
+    });
+    const result = JSON.parse(out) as {
+      summary: { gefunden: number };
+      verschwunden: { datei: string; plan: string }[];
+    };
+    expect(result.verschwunden.map((v) => `${v.datei}::${v.plan}`)).toEqual([]);
+    const gefuehrt = baseline.reduce((n, b) => n + b.fundstellen, 0);
+    expect(result.summary.gefunden).toBe(gefuehrt);
+  });
+
   it('läuft gegen den aktuellen Stand grün', () => {
     // Wenn dieser Test bricht, ist eine NEUE Zugriffsprüfung auf einen
     // Plan-Namen dazugekommen. Sie gehört nach hasPermission(), hasModule()

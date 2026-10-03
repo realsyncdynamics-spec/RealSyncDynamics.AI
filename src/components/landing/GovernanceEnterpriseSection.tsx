@@ -22,7 +22,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, Headset, KeyRound, ShieldCheck } from 'lucide-react';
-import { tierById } from '../../config/pricing';
+import { tierById, tierPriceLabel } from '../../config/pricing';
 import { CTA } from '../../content/runtimeVocab';
 import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TEXT, GA_TITAN } from './governance-ai-theme';
 import { SectionEyebrow, SectionHeading, SectionIndex } from './GovernanceSectionChrome';
@@ -97,7 +97,7 @@ export function GovernanceEnterpriseSection() {
                 className="text-[40px] font-normal leading-none tracking-[-.01em]"
                 style={{ fontFamily: GA_DISPLAY, color: 'var(--ga-accent-lite)' }}
               >
-                {tier.priceString} €
+                {tierPriceLabel(tier)}
               </span>
               <span
                 className="text-[11px] uppercase tracking-[.18em]"

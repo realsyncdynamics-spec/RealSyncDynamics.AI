@@ -6,6 +6,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireServiceRole } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -15,9 +16,13 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  // Service role auth (called from database trigger)
-  const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
+  // Aufrufer ist ausschliesslich der DB-Trigger trigger_trial_webhook, der
+  // `Bearer <service_role_key>` schickt (Migration 20260719000000). Die
+  // fruehere Praefix-Pruefung liess jeden eingeloggten Nutzer Trial-/Abo-
+  // Ereignisse fuer eine frei waehlbare tenant_id einschleusen — direkt
+  // billing-relevant (Befund F-04, AUDIT/18_FINDINGS.md).
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
 
   let body: {
     stripe_event_id?: string;

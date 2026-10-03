@@ -12,9 +12,10 @@ const SOURCE = 'landing-v2-hero';
 
 /**
  * Screen 01 — Hero. Der Einstieg zeigt die echten Produktoberflächen:
- * Scan, Demo-Command-Center, Runtime und Enterprise-Anfrage. Die bestehenden
- * Tarif-Buttons bleiben aus der Pricing-SSoT verdrahtet; der Hero zeigt damit
- * Produktoberflächen und buchbare Einstiegspfade ohne zweite Preislogik.
+ * Scan, Runtime und Enterprise-Anfrage. Die bestehenden Tarif-Buttons
+ * bleiben aus der Pricing-SSoT verdrahtet; der Hero zeigt damit
+ * Produktoberflächen und buchbare Einstiegspfade ohne Demo-CTA und
+ * ohne zweite Preislogik.
  */
 export function HeroV2() {
   const starter = planById('starter');
@@ -54,9 +55,6 @@ export function HeroV2() {
             data-testid="hero-primary-cta"
           >
             Governance-Scan starten
-          </Link>
-          <Link to="/demo-tour/dashboard" className="lv2-btn lv2-btn--glass" data-hero-cta="dashboard">
-            Live Dashboard ansehen
           </Link>
           <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass" data-hero-cta="runtime">
             Runtime ansehen

@@ -1,5 +1,5 @@
-// Lightweight pageview tracking — fires on every route change to Supabase
-// Edge Function `track-pageview`. DSGVO-konform via IP-Hash, kein Cookie.
+// Lightweight pageview tracking — fires on route change to Supabase
+// Edge Function `track-pageview` **only after analytics consent**.
 //
 // Usage in App.tsx (inside <BrowserRouter>):
 //   useTrackPageview();
@@ -12,8 +12,29 @@ import { getSupabaseUrl } from './supabaseUrl';
 // im Build fehlt — sonst geht der Beacon relativ gegen den SPA-Host (503).
 const ENDPOINT = `${getSupabaseUrl()}/functions/v1/track-pageview`;
 
+const CONSENT_STORAGE_KEY = 'realsync.cookie-consent.v1';
+const CONSENT_EVENT = 'realsync:consent-changed';
+const CONSENT_VERSION = 1;
+
 // Skip in dev to avoid polluting analytics with HMR refreshes.
 const ENABLED = import.meta.env.PROD;
+
+function hasAnalyticsConsent(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as {
+      version?: number;
+      analytics?: boolean;
+    };
+    const version = typeof parsed.version === 'number' ? parsed.version : 1;
+    if (version < CONSENT_VERSION) return false;
+    return parsed.analytics === true;
+  } catch {
+    return false;
+  }
+}
 
 function readUtm(): { utm_source?: string; utm_medium?: string; utm_campaign?: string } {
   if (typeof window === 'undefined') return {};
@@ -28,26 +49,36 @@ function readUtm(): { utm_source?: string; utm_medium?: string; utm_campaign?: s
   return out;
 }
 
+function sendPageview(pathname: string): void {
+  if (!ENABLED || typeof window === 'undefined') return;
+  // Kein Tracking vor Einwilligung — auch nicht als „cookieless" Beacon.
+  if (!hasAnalyticsConsent()) return;
+
+  const payload = {
+    path: pathname,
+    referrer: document.referrer || undefined,
+    ...readUtm(),
+  };
+
+  // Use fetch with keepalive so it survives navigation. No await.
+  fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => { /* swallow */ });
+}
+
 export function useTrackPageview() {
   const location = useLocation();
 
   useEffect(() => {
-    if (!ENABLED || typeof window === 'undefined') return;
+    sendPageview(location.pathname);
 
-    // Best-effort fire-and-forget. Errors are swallowed — pageview tracking
-    // must never break the app or block render.
-    const payload = {
-      path: location.pathname,
-      referrer: document.referrer || undefined,
-      ...readUtm(),
-    };
-
-    // Use fetch with keepalive so it survives navigation. No await.
-    fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(() => { /* swallow */ });
+    // Nach Consent-Entscheidung denselben Path nachsenden (erster Aufruf
+    // vor dem Banner war bewusst unterdrückt).
+    const onConsent = () => sendPageview(location.pathname);
+    window.addEventListener(CONSENT_EVENT, onConsent);
+    return () => window.removeEventListener(CONSENT_EVENT, onConsent);
   }, [location.pathname]);
 }

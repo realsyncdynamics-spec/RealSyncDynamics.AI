@@ -7,16 +7,12 @@ import { tierById, type PricingTier } from '../../../config/pricing';
 import {
   checkoutHrefForPlan,
   formatPriceEur,
-  PRICING_TAX_NOTE,
+  pricingTaxNote,
   yearlySavingsEur,
 } from '@/shared/pricing';
 
 const PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
 const SOURCE = 'landing-v2-pricing';
-
-/** § 19 UStG — Hinweis-Text identisch mit Impressum/AGB. */
-const TAX_NOTE_EXEMPT =
-  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
 
 function bullets(tier: PricingTier): string[] {
   // Karten zeigen die ersten vier Punkte der SSoT-Matrix; Vollmatrix auf /pricing.
@@ -112,7 +108,7 @@ export function PricingV2() {
         </ul>
 
         <p className="lv2-pricing__foot">
-          {COMPANY.taxMode === 'EXEMPT' ? TAX_NOTE_EXEMPT : PRICING_TAX_NOTE} Bezahlung per Karte
+          {pricingTaxNote(COMPANY.taxMode)} Bezahlung per Karte
           oder SEPA-Lastschrift über Stripe. Vollständige Feature-Matrix unter{' '}
           <Link to="/pricing" className="lv2-btn lv2-btn--link">
             /pricing

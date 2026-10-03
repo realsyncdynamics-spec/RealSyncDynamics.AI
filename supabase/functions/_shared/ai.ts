@@ -63,8 +63,6 @@ interface ToolRow {
   system_prompt: string | null;
   max_tokens: number;
   temperature: number;
-  cost_input_per_million_usd: number;
-  cost_output_per_million_usd: number;
   required_entitlement_key: string | null;
   enabled: boolean;
 }
@@ -111,31 +109,37 @@ function buildShadowRatingTelemetry(args: {
 }
 
 /**
- * Providerkosten eines runAiTool-Laufs — Einkaufspreis-SSoT zuerst
- * (providerCost.ts, derselbe Kern wie im governance-agent).
+ * Providerkosten eines runAiTool-Laufs — ausschließlich aus der
+ * Einkaufspreis-SSoT (providerCost.ts, derselbe Kern wie im governance-agent).
  *
- * Führt die SSoT für (Anbieter, Modell) keinen Preis — heute nur Tools eines
- * Nicht-Anthropic-Anbieters —, gilt der Preis, den das Tool selbst in
- * ai_tools konfiguriert, mit derselben Formel wie vor Schritt C. Ein NULL wie
- * im governance-agent geht hier nicht: ai_tool_runs.cost_usd ist NOT NULL und
- * speist Kontingent, Kosten-Cap und Ledger. Der Rückfall ist kein geratener
- * Nachbarpreis, sondern die eigene Konfiguration des Tools, und er wird
- * geloggt und in den Run-Metadaten als cost_source festgehalten.
+ * Lokale Inferenz (ollama) kostet pro Aufruf nichts; sie wird über den VPS
+ * bezahlt und liegt außerhalb des LLM-USD-Caps.
+ *
+ * Führt die SSoT für (Anbieter, Modell) keinen Preis, läuft das Tool nicht.
+ * ai_tool_runs.cost_usd ist NOT NULL und speist Kontingent, Kosten-Cap und
+ * Ledger — ohne Preis ließe sich weder reservieren noch abrechnen. Bis
+ * Schritt D fiel runAiTool hier auf ai_tools.cost_* zurück; diese Spalten
+ * liest der Code nicht mehr. Der erste Aufruf steht vor der Reservierung und
+ * damit vor jedem Providercall: es entstehen keine Kosten, die sich nicht
+ * verbuchen lassen.
  */
-function toolCostUsd(
-  tool: ToolRow,
-  provider: string,
-  modelId: string,
-  usage: TokenUsage,
-  legacyTokens: { input: number; output: number },
-): { usd: number; source: 'ssot' | 'ai_tools' } {
-  const ssot = providerCostUsd(provider, modelId, usage);
-  if (ssot !== null) return { usd: ssot, source: 'ssot' };
-  return {
-    usd: (legacyTokens.input  / 1_000_000) * Number(tool.cost_input_per_million_usd) +
-         (legacyTokens.output / 1_000_000) * Number(tool.cost_output_per_million_usd),
-    source: 'ai_tools',
-  };
+function toolCostUsd(provider: string, modelId: string, usage: TokenUsage): number {
+  if (provider === 'ollama') return 0;
+  const usd = providerCostUsd(provider, modelId, usage);
+  if (usd === null) {
+    console.warn(JSON.stringify({
+      level: 'warn', scope: 'model_price_missing', provider, model_id: modelId,
+    }));
+    // Anbieter und Modell stehen im Log und in der ai_tool_runs-Zeile, nicht
+    // in der Antwort: bot-chat reicht message und details an anonyme
+    // Widget-Nutzer durch.
+    throw new AiInvokeError(
+      'no purchase price configured for this tool',
+      'MODEL_PRICE_MISSING',
+      503,
+    );
+  }
+  return usd;
 }
 
 async function resolveResidency(
@@ -239,15 +243,38 @@ export async function runAiTool(
   // Vor dem Aufruf ist nicht bekannt, was aus dem Cache kommt — geschätzt
   // wird deshalb wie bisher alles zum vollen Input-Preis. Abgerechnet wird
   // beim Settle mit dem tatsächlichen Verbrauch.
-  const estimatedUsd = effectiveProvider === 'ollama'
-    ? 0
-    : toolCostUsd(
-        tool,
-        effectiveProvider,
-        effectiveModelId,
-        { ...NO_USAGE, input: estimatedInputTokens, output: tool.max_tokens },
-        { input: estimatedInputTokens, output: tool.max_tokens },
-      ).usd;
+  // Wirft MODEL_PRICE_MISSING, bevor Budget reserviert oder ein Provider
+  // gerufen wird. Auch dieser Fehler bekommt eine ai_tool_runs-Zeile — wie
+  // jeder Fehler nach dem Providercall —, sonst bliebe ein Tool ohne Preis
+  // nur im Log sichtbar.
+  let estimatedUsd: number;
+  try {
+    estimatedUsd = toolCostUsd(
+      effectiveProvider,
+      effectiveModelId,
+      { ...NO_USAGE, input: estimatedInputTokens, output: tool.max_tokens },
+    );
+  } catch (e) {
+    if (e instanceof AiInvokeError && e.code === 'MODEL_PRICE_MISSING') {
+      await admin.from('ai_tool_runs').insert({
+        tenant_id: tenantId,
+        tool_id: tool.id,
+        tool_key: tool.key,
+        user_id: userId,
+        duration_ms: 0,
+        status: 'error',
+        error_code: e.code,
+        error_message: `no purchase price for ${effectiveProvider}/${effectiveModelId}`,
+        metadata: {
+          ...(opts.metadata ?? {}),
+          residency,
+          provider: effectiveProvider,
+          model_id: effectiveModelId,
+        },
+      });
+    }
+    throw e;
+  }
   let reservationId: string | null = null;
   if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
     try {
@@ -286,25 +313,9 @@ export async function runAiTool(
     });
     const durationMs = Math.round(performance.now() - start);
 
-    // Local inference is free at the per-call level (paid for via VPS),
-    // so zero-out cost when the residency override kicked in.
-    const cost = effectiveProvider === 'ollama'
-      ? { usd: 0, source: 'local' as const }
-      : toolCostUsd(
-          tool,
-          effectiveProvider,
-          effectiveModelId,
-          result.pricedUsage,
-          { input: result.inputTokens, output: result.outputTokens },
-        );
-    if (cost.source === 'ai_tools') {
-      console.warn(JSON.stringify({
-        level: 'warn', scope: 'model_price_missing', tool_key: tool.key,
-        provider: effectiveProvider, model_id: effectiveModelId,
-        fallback: 'ai_tools.cost_*',
-      }));
-    }
-    const costUsd = cost.usd;
+    // Derselbe Anbieter und dasselbe Modell wie bei der Schätzung — der Preis
+    // ist also vorhanden. Abgerechnet wird der tatsächliche Verbrauch.
+    const costUsd = toolCostUsd(effectiveProvider, effectiveModelId, result.pricedUsage);
 
     const shadowRating = buildShadowRatingTelemetry({
       runtimeClass,
@@ -333,7 +344,7 @@ export async function runAiTool(
         ...(opts.metadata ?? {}),
         residency,
         provider: effectiveProvider,
-        cost_source: cost.source,
+        cost_source: effectiveProvider === 'ollama' ? 'local' : 'ssot',
         ...shadowRating,
       },
     }).select('id').single();

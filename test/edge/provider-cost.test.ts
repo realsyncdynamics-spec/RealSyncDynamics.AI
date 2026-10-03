@@ -147,10 +147,38 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
     expect(selection).not.toMatch(/\bfunction estimateSavings\b/);
   });
 
-  it('ai_tools.cost_* ist in runAiTool nur noch Typ und Rückfall', () => {
-    // Je einmal im ToolRow-Typ, je einmal im Rückfall von toolCostUsd. Ein
-    // drittes Vorkommen hieße: irgendwo wird wieder direkt gerechnet.
-    expect(ai.split('cost_input_per_million_usd').length - 1).toBe(2);
-    expect(ai.split('cost_output_per_million_usd').length - 1).toBe(2);
+  it('runAiTool liest ai_tools.cost_* nicht mehr (Schritt D)', () => {
+    // Weder im ToolRow-Typ noch als Rückfall. Taucht eine der Spalten wieder
+    // auf, rechnet irgendwo wieder eine zweite Preisquelle.
+    expect(ai).not.toContain('cost_input_per_million_usd');
+    expect(ai).not.toContain('cost_output_per_million_usd');
+  });
+
+  it('ohne SSoT-Preis läuft ein Cloud-Tool nicht, statt zu raten', () => {
+    expect(ai).toContain("'MODEL_PRICE_MISSING'");
+    // Die Schätzung — und damit der Wurf — steht vor Reservierung und
+    // Providercall.
+    const estimate = ai.indexOf('estimatedUsd = toolCostUsd(');
+    expect(estimate).toBeGreaterThan(-1);
+    expect(estimate).toBeLessThan(ai.indexOf('reserveLlmBudget(admin'));
+    expect(estimate).toBeLessThan(ai.indexOf('await callProvider('));
+  });
+
+  it('ein fehlender Preis landet als Fehlerlauf in ai_tool_runs', () => {
+    // Der Wurf steht vor dem try um callProvider; ohne eigenen Insert sähe
+    // man ein Tool ohne Preis nur im Log.
+    const estimate = ai.indexOf('estimatedUsd = toolCostUsd(');
+    const reserve = ai.indexOf('reserveLlmBudget(admin');
+    const between = ai.slice(estimate, reserve);
+    expect(between).toContain("e.code === 'MODEL_PRICE_MISSING'");
+    expect(between).toContain(".from('ai_tool_runs').insert(");
+    expect(between).toContain("status: 'error'");
+  });
+
+  it('die Antwort an den Client nennt weder Anbieter noch Modell', () => {
+    // bot-chat gibt message und details unverändert an anonyme Widget-Nutzer.
+    const fn = ai.slice(ai.indexOf('function toolCostUsd('), ai.indexOf('async function resolveResidency('));
+    const thrown = fn.slice(fn.indexOf('throw new AiInvokeError('));
+    expect(thrown).not.toMatch(/\$\{provider\}|\$\{modelId\}|model_id:/);
   });
 });

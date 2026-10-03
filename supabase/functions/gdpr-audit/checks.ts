@@ -547,6 +547,10 @@ export function hasEmailContact(html: string, text: string): boolean {
   return extractCloudflareEmails(html).length > 0;
 }
 
+/** Pfadsegment einer Kontaktseite: /kontakt, /contact-us, /de/kontaktformular.html … */
+const CONTACT_PAGE_PATH =
+  /(?:^|\/)(?:kontakt(?:[-_]?formular)?|contact(?:[-_]?form|[-_]?us)?)(?:\.html?)?(?:\/|[?#]|$)/;
+
 export function deepCheckImprint(html: string): Issue[] {
   const issues: Issue[] = [];
   const text = visibleText(html);
@@ -593,11 +597,14 @@ export function deepCheckImprint(html: string): Issue[] {
   // Ueber tagsOf/attrOf statt einer href-Regex: `href=["'][^"']*(kontakt)[^"']*`
   // war quadratisch (gemessen > 2 s auf 140 kB) — dieselbe ReDoS-Klasse, die
   // test/edge/gdpr-audit-contract.test.ts per Laufzeitbudget abfaengt.
+  // Der Pfad muss als eigenes Segment auf eine Kontaktseite zeigen: ein
+  // Teilstring-Treffer zaehlte auch /products/contact-lenses oder
+  // /kontaktlinsen und liess damit einen echten Verstoss durchgehen.
   const hasContactForm =
     /<textarea\b/i.test(html) ||
     tagsOf(html, 'a').some((tag) => {
       const href = (attrOf(tag, 'href') ?? '').toLowerCase();
-      return !/^(?:mailto|tel):/.test(href) && (href.includes('kontakt') || href.includes('contact'));
+      return !/^(?:mailto|tel):/.test(href) && CONTACT_PAGE_PATH.test(href);
     });
   if (!hasEmail || !(hasPhone || hasContactForm)) {
     issues.push({

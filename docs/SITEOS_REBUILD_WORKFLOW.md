@@ -17,7 +17,7 @@ Einstieg: `/build/rebuild` (Konto + `siteos.builder`). Link aus dem Studio
 | --- | --- | --- |
 | Kern | `packages/siteos-core/src/rebuild/` | abhängigkeitsfrei, deterministisch; läuft in Browser, Deno, Vitest |
 | Server | `supabase/functions/siteos/handlers/rebuild.ts` | Abruf (SSRF-Schutz in `fetch-source.ts`), Persistenz, Gate, GO |
-| Tabelle | `supabase/migrations/20260929120000_siteos_rebuilds.sql` | Workflow-Zustand je Rebuild, RLS: Mitglieder lesen, nur service_role schreibt |
+| Tabelle | `supabase/migrations/20261003155529_siteos_rebuilds.sql` | Workflow-Zustand je Rebuild, RLS: Mitglieder lesen, nur service_role schreibt |
 | Oberfläche | `src/features/siteos/rebuild/` | Stepper, Bewertung mit Belegen, Richtungs-Karten, Refine-Studio, Publish, Automate, Govern |
 | Tests | `test/siteos/rebuild-core.test.ts` | Import, Bewertung, Richtungen, Revision, Reife, GO |
 

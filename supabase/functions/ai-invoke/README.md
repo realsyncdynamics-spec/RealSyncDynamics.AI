@@ -59,7 +59,9 @@ Content-Type: application/json
 - **503 PROVIDER_NOT_CONFIGURED** — env key missing for the tool's provider
   (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`).
 - **503 MODEL_PRICE_MISSING** — no purchase price in `shared/model-prices.ts`
-  for the tool's provider/model; nothing was reserved or called.
+  for the tool's provider/model; nothing was reserved or called. The response
+  names neither; provider and model are in the log (`scope:
+  model_price_missing`) and in an `ai_tool_runs` error row.
 
 ## Pipeline
 

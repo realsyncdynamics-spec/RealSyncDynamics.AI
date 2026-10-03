@@ -4,7 +4,47 @@ description: WP1 Landing / schärfen (Kontrollschicht, Scan-CTA, Loop mit Learn=
 
 # WP1 — Landing `/` schärfen
 
-**Voraussetzung:** ✅ E-F3 entschieden (2026-09-27): „Die Kontrollschicht für KI im Unternehmen." · **Branch:** `feat/wp1-landing-control-layer`
+> ## ⛔ Überholt — nicht mehr ausführen (Stand 2026-10-03)
+>
+> **Dieses Arbeitspaket ist erledigt und sein Ziel ist weggezogen.** Wer den
+> Auftrag unten wörtlich ausführt, baut gegen eine Seite, die nicht mehr `/` ist,
+> oder überschreibt eine spätere Entscheidung.
+>
+> | Datum | Commit | Was |
+> |---|---|---|
+> | 2026-09-27 | `6523ac2` (#1673) | WP1 **vollständig umgesetzt** — auf `/`, das damals `DesignGovernanceAiLanding` war |
+> | 2026-09-28 | `7a8fa8b` (#1686) | `/` wird auf `LandingV2` umgestellt |
+>
+> Die WP1-Arbeit liegt seither auf `/design/governance-ai`. Der gesamte
+> „Bestand"-Abschnitt unten (`DesignGovernanceAiLanding.tsx`,
+> `GovernanceOsHero.tsx`, `HomepageBriefSections.tsx`) beschreibt diese
+> Referenzroute, nicht die Startseite.
+>
+> **E-F3 ist damit abgelöst** (Entscheidung 2026-10-03, siehe `PLAN.md` §3). Die
+> Startseite trägt die Headline aus dem Landing-v2-Handoff und die
+> Sechs-Stufen-Schleife `Discover → Assess → Govern → Execute → Verify → Prove`
+> — letztere ausdrücklich als „Entscheidung Dominik, 28.09.2026" im Code
+> vermerkt, also **einen Tag nach** E-F3. Die frühere Entscheidung durch die
+> spätere zu ersetzen wäre ein Rückschritt, nicht eine Umsetzung.
+>
+> Was auf dem heutigen `/` gemessen wurde (2026-10-03, `main` @ `ac1815d`):
+>
+> | Akzeptanzkriterium | Stand | Beleg |
+> |---|---|---|
+> | CTA führt auf `/audit` | ✅ erfüllt | `checkoutHrefForPlan('free')` → `/audit?source=landing-v2-hero` |
+> | Loop sichtbar | ✅ erfüllt | `LV2_PIPELINE`, sechs Stufen |
+> | Kein Overclaim | ✅ erfüllt | `npm run check:landing-claims` grün (7 Phrasen, 20 Items) |
+> | Hero nennt Kontroll-/Nachweisschicht | ❌ bewusst nicht | H1 = „AI Compliance Operations OS for Europe" |
+> | Learn als COMING SOON | ❌ bewusst nicht | Stufe existiert in Landing v2 nicht |
+>
+> Die beiden offenen Punkte sind **keine Lücken mehr, sondern die getroffene
+> Entscheidung**. Eine Landing-Änderung braucht eine neue Freigabe und ein neues
+> Arbeitspaket — nicht dieses.
+>
+> Der Auftrag bleibt unverändert stehen, weil er dokumentiert, was #1673
+> umgesetzt hat. Als Anweisung gilt er nicht mehr.
+
+**Voraussetzung:** ~~✅ E-F3 entschieden (2026-09-27)~~ → **abgelöst 2026-10-03** · **Branch (historisch):** `feat/wp1-landing-control-layer`
 **Freigabe:** Landing-Claims = Einzel-Freigabe im PR
 
 ## Rahmen (gilt für jede WP-Session)

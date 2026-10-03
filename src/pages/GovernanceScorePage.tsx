@@ -19,7 +19,7 @@ import { ArrowRight, ShieldCheck, Activity, AlertTriangle, Gauge, Landmark } fro
 import { Navbar } from '../components/Navbar';
 import { usePageMeta } from '../lib/usePageMeta';
 import { CTA } from '../content/runtimeVocab';
-import { tierById } from '../config/pricing';
+import { tierById, tierPriceLabel } from '../config/pricing';
 import {
   GCS_DIMENSIONS,
   GCS_LEVELS,
@@ -191,7 +191,7 @@ export function GovernanceScorePage() {
                     <h2 className="font-display font-bold text-2xl text-titanium-50">{result.recommended.name}</h2>
                     {tier && (
                       <span className="font-display font-semibold text-titanium-100">
-                        {tier.priceEur > 0 ? `${tier.priceString} €` : tier.priceString}
+                        {tier.priceEur > 0 ? tierPriceLabel(tier) : tierPriceLabel(tier, '')}
                         {tier.priceEur > 0 && <span className="text-titanium-600 text-xs font-mono"> {tier.priceSuffix}</span>}
                       </span>
                     )}

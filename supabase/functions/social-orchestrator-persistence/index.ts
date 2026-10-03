@@ -11,6 +11,17 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import { buildCorsHeaders, handleOptions } from "../_shared/gateway.ts";
+
+// Aufrufer ist der Browser ueber `supabase.functions.invoke`
+// (src/core/social-orchestrator/persistenceClient.ts). Das ist
+// cross-origin, also schickt der Browser zuerst OPTIONS. Ohne
+// Preflight-Antwort und ohne CORS-Header auf den echten Antworten
+// verwirft er den Aufruf, bevor er rausgeht — gemessen am
+// 2026-10-03: OPTIONS liefert 500 "Unexpected end of JSON input",
+// weil `req.json()` auf den leeren Preflight-Koerper trifft.
+const cors = buildCorsHeaders("POST, OPTIONS");
+const jsonHeaders = { ...cors, "Content-Type": "application/json" };
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -216,6 +227,9 @@ function calculateNextRetryTime(retryCount: number): string {
 // ── HTTP Handler ────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
+  const preflight = handleOptions(req, cors);
+  if (preflight) return preflight;
+
   try {
     const { action, payload } = await req.json();
 
@@ -271,18 +285,18 @@ Deno.serve(async (req: Request) => {
       default:
         return new Response(
           JSON.stringify({ error: `Unknown action: ${action}` }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: jsonHeaders }
         );
     }
 
     return new Response(JSON.stringify({ ok: true, result }), {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders,
     });
   }
 });

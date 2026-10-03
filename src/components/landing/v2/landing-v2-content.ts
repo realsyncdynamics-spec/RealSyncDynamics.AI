@@ -199,7 +199,7 @@ export const LV2_INFRASTRUCTURE: readonly Lv2InfrastructureItem[] = [
     text: 'Lokale KI, Automation, RAG und Monitoring laufen im dokumentierten Container-Pfad hinter Traefik.',
   },
   {
-    layer: '06 · PRODUCT ENTRY',
+    layer: '06 · ENTRY PATH',
     title: 'Activation → Command Center',
     status: 'LIVE SURFACE',
     path: '/welcome → /app/activation → /app/dashboard',

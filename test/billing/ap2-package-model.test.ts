@@ -84,11 +84,19 @@ const NEU_DURCH_AP2: Readonly<Record<string, readonly string[]>> = {
  * (20260904000200_workflows_current_plans.sql).
  *
  * SiteOS Builder (20260912170000): Create/Publish-Entitlements + limit.sites.
+ *
+ * `frontend.modernization` (20260924000000): Das Frontend Modernization Tool
+ * ist Enterprise+ — Starter und Growth tragen den Key deshalb mit dem Wert
+ * `0`. Er steht hier trotzdem, weil dieser Test die *Praesenz* von Keys je
+ * Plan vergleicht, nicht ihren Wert: Die Quelle fuehrt einen Key explizit auf
+ * `0`, wo die DB ihn auf `0` gewaehrt, damit die Paritaetspruefung gegen
+ * `product_entitlements` in beide Richtungen aufgeht.
  */
 const NEU_NACH_AP2: Readonly<Record<string, readonly string[]>> = {
-  starter: ['limit.sites', 'siteos.builder', 'siteos.publish'],
+  starter: ['frontend.modernization', 'limit.sites', 'siteos.builder', 'siteos.publish'],
   growth: [
     'ai.tool.workflows',
+    'frontend.modernization',
     'limit.sites',
     'limit.workflow_runs_monthly',
     'siteos.builder',

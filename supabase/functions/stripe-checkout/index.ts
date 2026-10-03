@@ -185,9 +185,24 @@ Deno.serve(async (req) => {
 
   // Re-use or create the tenant's Stripe Customer.
   let stripeCustomerId: string | null = null;
-  const { data: existingSub } = await admin
-    .from('subscriptions').select('stripe_customer_id')
+  const { data: existingSub, error: subErr } = await admin
+    .from('subscriptions').select('stripe_customer_id, status, trial_end, trial_ends_at')
     .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
+  // Ein Lookup-Fehler darf nicht wie „kein Abo" aussehen — sonst bekäme ein
+  // Bestandskunde bei einem DB-Aussetzer eine zweite Testphase und einen
+  // zweiten Stripe-Customer.
+  if (subErr) return jsonError(500, 'INTERNAL', subErr.message);
+
+  // Eine Testphase pro Mandant. Wer schon eine hatte (kartenlos über
+  // `create-trial-subscription` oder über Stripe — beide hinterlassen ein
+  // Trial-Ende in der Abo-Zeile) oder ein laufendes Abo führt (Upgrade),
+  // zahlt ab der ersten Abbuchung. Ohne diese Prüfung bekäme jeder erneute
+  // Checkout desselben Mandanten wieder 14 Tage geschenkt. Spiegelbild:
+  // `isTrialEligible()` in src/core/billing/trial.ts für die Anzeige.
+  const LIVE_SUBSCRIPTION_STATES = new Set(['active', 'trialing', 'past_due']);
+  const hadTrial = Boolean(existingSub?.trial_end || existingSub?.trial_ends_at);
+  const hasLiveSubscription = LIVE_SUBSCRIPTION_STATES.has(existingSub?.status ?? '');
+  const trialEligible = !hadTrial && !hasLiveSubscription;
 
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
@@ -200,16 +215,22 @@ Deno.serve(async (req) => {
   // Aufrufer ein Abo als Einmalzahlung abschließen.
   const isOneTime = plan.purchaseMode === 'one_time';
 
-  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
-  // Triggered via body.pilot=true (typically set from /contact-sales after
-  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
-  // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  // Trial: Die Pricing-SSoT (`plan.trialDays`) entscheidet allein, ob ein
+  // Abo mit Testphase startet. Die Preisseite bewirbt „14 Tage kostenlos
+  // testen" für Starter/Growth — bis hierher wurde der Trial aber nur mit
+  // `body.pilot === true` gesetzt, das öffentliche CTAs nie senden. Ergebnis:
+  // beworbener Trial, sofortige Abbuchung. Stripe belastet erst nach Ablauf
+  // der Testphase — Kündigung innerhalb der Frist bleibt kostenfrei.
+  // `pilot` markiert nur noch Sales-Piloten (Metadaten für Auswertung),
+  // ändert an der Abrechnung nichts mehr.
   // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (!isOneTime && body.pilot === true && plan.trialDays > 0) {
+  if (!isOneTime && plan.trialDays > 0 && trialEligible) {
     subscriptionData.trial_period_days = plan.trialDays;
+  }
+  if (!isOneTime && body.pilot === true) {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 

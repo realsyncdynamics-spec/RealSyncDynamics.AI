@@ -9,6 +9,8 @@ import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from 
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
+import { getEntitlementsForTenant } from '../../core/usage/usage-service';
+import { isTrialEligible } from '../../core/billing/trial';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -48,10 +50,24 @@ export function CheckoutPage() {
   // /legal/terms §12. Both must be checked to enable submit.
   const [agreedToTerms,    setAgreedToTerms]    = useState(false);
   const [acknowledgedWithdrawal, setAcknowledgedWithdrawal] = useState(false);
+  // Eine Testphase pro Mandant (Spiegel der Regel in `stripe-checkout`):
+  // Wer schon eine hatte oder ein Abo führt, sieht die Sofort-Abbuchung —
+  // sonst verspräche die Seite 14 Tage, die Stripe nicht gewährt.
+  // `pending`: Konditionen werden noch geprüft, Bestellen ist gesperrt.
+  // `unavailable`: Prüfung fehlgeschlagen — angezeigt wird die strengere
+  // Sofort-Abbuchung; gewährt Stripe doch eine Testphase, ist das für den
+  // Kunden nur besser, nie schlechter als zugesagt.
+  const [trialEligibility, setTrialEligibility] =
+    useState<'pending' | 'eligible' | 'ineligible' | 'unavailable'>('pending');
 
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
   const tier = validPlan ? tierByPlanKey(validPlan) : undefined;
+  // Trial-Tage kommen aus der Pricing-SSoT (`trialDays`), nicht aus der URL.
+  // Die Preisseite bewirbt „14 Tage kostenlos testen" — der Checkout muss
+  // dasselbe zeigen, was `stripe-checkout` serverseitig als
+  // `trial_period_days` setzt. `?pilot=true` markiert nur noch Sales-Piloten.
+  const trialDays = validPlan ? (planByKey(validPlan)?.trialDays ?? 0) : 0;
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
@@ -147,6 +163,12 @@ export function CheckoutPage() {
         return;
       }
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
+      try {
+        const decision = await getEntitlementsForTenant(firstTenant.tenant_id);
+        if (!cancelled) setTrialEligibility(isTrialEligible(decision) ? 'eligible' : 'ineligible');
+      } catch {
+        if (!cancelled) setTrialEligibility('unavailable');
+      }
     })();
     return () => { cancelled = true; clearTimeout(timeout); };
   }, [validPlan]);
@@ -233,7 +255,8 @@ export function CheckoutPage() {
       planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
-      isPilot={isPilot}
+      trialDays={trialEligibility === 'eligible' ? trialDays : 0}
+      termsPending={trialEligibility === 'pending'}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -406,7 +429,8 @@ function ConsentGateShell({
   planKey,
   tier,
   userEmail,
-  isPilot,
+  trialDays,
+  termsPending,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -419,7 +443,9 @@ function ConsentGateShell({
   planKey:                  string;
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
-  isPilot:                  boolean;
+  trialDays:                number;
+  /** Trial-Berechtigung noch nicht geprüft: Konditionen offen, Bestellen gesperrt. */
+  termsPending:             boolean;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -429,7 +455,13 @@ function ConsentGateShell({
   onConfirm:                () => void;
   backTo?:                  string;
 }) {
-  const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+  const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting && !termsPending;
+  // Trial-Banner, sobald der Plan Trial-Tage hat — unabhängig vom Pilot-Flag.
+  // Vorher hing er nur an `?pilot=true`, das öffentliche CTAs nie setzen:
+  // Preisseite versprach 14 Tage gratis, Checkout zeigte Sofort-Abbuchung.
+  // Ein Pilot auf einem Plan ohne Trial-Tage (z. B. Agency) bekommt auch in
+  // Stripe keinen Trial — also auch kein Banner.
+  const hasTrial = trialDays > 0;
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
@@ -456,21 +488,37 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot && (
-            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+          {hasTrial ? (
+            <div
+              className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center"
+              data-testid="checkout-trial-banner"
+            >
               <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
-                ✅ 14 TAGE KOSTENLOS
+                ✅ {trialDays} TAGE KOSTENLOS
               </p>
               <p className="font-mono text-xs text-emerald-200">
-                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+                Erste Abbuchung erst nach {trialDays} Tagen. Vorher jederzeit kündbar — dann fällt nichts an.
               </p>
             </div>
-          )}
-          {!isPilot && (
+          ) : termsPending ? (
+            <p
+              className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6"
+              data-testid="checkout-terms-pending"
+            >
+              Konditionen werden geprüft …
+            </p>
+          ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>
           )}
+          <p className="text-center text-xs text-silver-500 -mt-3 mb-6">
+            Lieber erst in Ruhe umsehen?{' '}
+            <Link to="/audit?source=checkout-free" className="text-gold-300 underline hover:text-gold-200">
+              Dauerhaft kostenlos starten
+            </Link>{' '}
+            — ohne Karte.
+          </p>
 
           <div className="space-y-3 mb-5">
             <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">

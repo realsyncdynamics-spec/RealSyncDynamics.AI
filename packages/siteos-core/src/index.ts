@@ -38,3 +38,19 @@ export * from './workflows/skills.ts';
 export * from './workflows/workflows.ts';
 
 export { buildSiteFromPrompt } from './pipeline.ts';
+
+// AI Rebuild Workflow: DISCOVER → ASSESS → REBUILD → REFINE → PUBLISH →
+// AUTOMATE → GOVERN. Bestehende Website-URL → belegte Bewertung → zwei
+// bis drei gestaltete Richtungen → Klartext-Revision → Publish-Prüfung.
+export * from './rebuild/types.ts';
+export * from './rebuild/extract.ts';
+export * from './rebuild/assess.ts';
+export * from './rebuild/design-system.ts';
+export * from './rebuild/components.ts';
+export * from './rebuild/directions.ts';
+export * from './rebuild/revise.ts';
+export * from './rebuild/render.ts';
+export * from './rebuild/blueprint-bridge.ts';
+export * from './rebuild/publish.ts';
+export * from './rebuild/next-steps.ts';
+export * from './rebuild/workflow.ts';

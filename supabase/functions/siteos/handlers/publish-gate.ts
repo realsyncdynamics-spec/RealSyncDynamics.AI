@@ -482,7 +482,7 @@ function policyTrail(state: PolicyEngineState): Record<string, unknown> {
   };
 }
 
-async function consultPolicyEngine(
+export async function consultPolicyEngine(
   ctx: { admin: any; tenantId: string; userId: string | null },
   row: { id: string; slug: string; blueprint: { compliance?: { dpiaRequired?: boolean; specialCategories?: boolean } } },
   artifactSha256: string,

@@ -99,8 +99,14 @@ export function detectLocality(prompt: string): string | null {
   const parts = match[1].split(/\s+/).filter((p) => !LOCALITY_STOPWORDS.has(p.toLowerCase()));
   if (parts.length === 0) return null;
 
-  // Satzzeichen am Ende abschneiden.
-  const locality = parts.join(' ').replace(/[.,;:!?]+$/u, '').trim();
+  // Satzzeichen am Ende abschneiden — als Schleife, nicht als `[…]+$`:
+  // Der Text kommt seit dem AI Rebuild auch aus fremden Websites, und ein
+  // End-Anker über einer Zeichenklasse ist auf langen Läufen quadratisch.
+  let joined = parts.join(' ');
+  let end = joined.length;
+  while (end > 0 && '.,;:!?'.includes(joined[end - 1])) end -= 1;
+  joined = joined.slice(0, end);
+  const locality = joined.trim();
   return locality.length >= 2 ? locality : null;
 }
 

@@ -155,7 +155,7 @@ export function errorMessage(e: SiteOsError): string {
  * Body. Nur für neue Pfade verwendet — die bestehenden bleiben unverändert,
  * damit sich ihr Verhalten nicht nebenbei ändert.
  */
-async function mapErrorDetailed(error: unknown): Promise<SiteOsError> {
+export async function mapErrorDetailed(error: unknown): Promise<SiteOsError> {
   const context = (error as { context?: Response }).context;
   if (context?.status !== 404) return mapError(error);
 

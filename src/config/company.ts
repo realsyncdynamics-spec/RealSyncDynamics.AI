@@ -1,3 +1,5 @@
+import { PRICING_TAX_MODE } from '@/shared/pricing';
+
 /**
  * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
  *
@@ -104,7 +106,9 @@ export const COMPANY: CompanyConfig = {
   stripeAccountMode: 'test', // Switch to 'live' for production
   stripePublishableKey: (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || '',
 
-  taxMode: 'EXEMPT',
+  // Aus der Pricing-SSoT (shared/pricing.ts), damit Frontend und Edge Functions
+  // denselben Steuerhinweis zeigen.
+  taxMode: PRICING_TAX_MODE,
   complianceDisclaimer:
     'RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ' +
     'Die Ergebnisse dienen der technischen und organisatorischen Compliance-Unterstützung.',

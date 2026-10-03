@@ -8,7 +8,7 @@ import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
 import { useLang } from '../../i18n/useLang';
 import { COMPANY } from '../../config/company';
 import {
-  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, CALCULABLE_PRICING_TIERS,
+  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE_STANDARD, CALCULABLE_PRICING_TIERS,
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
@@ -112,7 +112,7 @@ export function PricingPage() {
                 {' '}Enterprise: nach Anfrage, kein Self-Service-Trial
               </p>
               <p data-testid="pricing-tax-note">
-                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE}`}
+                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
               </p>
             </div>
           </div>

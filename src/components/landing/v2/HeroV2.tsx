@@ -12,9 +12,9 @@ const SOURCE = 'landing-v2-hero';
 
 /**
  * Screen 01 — Hero. Der Einstieg zeigt die echten Produktoberflächen:
- * Scan, Demo-Command-Center, Runtime und Enterprise-Anfrage. Preise bleiben
- * in der Pricing-Sektion, damit der Hero die Architektur statt Tarifkarten
- * spiegelt.
+ * Scan, Demo-Command-Center, Runtime und Enterprise-Anfrage. Die bestehenden
+ * Tarif-Buttons bleiben aus der Pricing-SSoT verdrahtet; der Hero zeigt damit
+ * Produktoberflächen und buchbare Einstiegspfade ohne zweite Preislogik.
  */
 export function HeroV2() {
   const starter = planById('starter');

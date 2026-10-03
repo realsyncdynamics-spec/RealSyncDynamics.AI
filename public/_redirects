@@ -60,8 +60,8 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /demo               /demo-tour  301
 
 # SEO-Sprint KW 40, Befund 1 + 9: Synonym- und DE/EN-Duplikate. Die Aliase
-# rendern dieselbe Komponente wie die kanonische URL (src/App.tsx; Ausnahme
-# /agencies: englische Fassung von /fuer-agenturen) und zeigten bisher nur per
+# rendern dieselbe Komponente wie die kanonische URL (src/App.tsx) und
+# zeigten bisher nur per
 # canonical dorthin — standen aber weiter in der Sitemap. Die
 # Aliase sind aus der Sitemap raus; diese 301s konsolidieren Index und
 # Backlinks. Echte EN-Übersetzungen gibt es nicht, daher kein hreflang.
@@ -75,7 +75,6 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /sicherheit          /security          301
 /about               /ueber-uns         301
 /faq                 /haeufige-fragen   301
-/agencies            /fuer-agenturen    301
 /saas-providers      /saas-anbieter     301
 /steuerkanzlei       /steuerberater     301
 /bildung             /schulen           301

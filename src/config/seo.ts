@@ -300,7 +300,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/realsync-landing': {
     title: 'RealSync Dynamics AI – Marken-Landing',
     description:
-      'Marken-Landing von RealSync Dynamics AI:EU-souveräne AI-Governance-Runtime für DSGVO und EU AI Act. Kanonisch ist /.',
+      'Marken-Landing von RealSync Dynamics AI: EU-souveräne AI-Governance-Runtime für DSGVO und EU AI Act. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

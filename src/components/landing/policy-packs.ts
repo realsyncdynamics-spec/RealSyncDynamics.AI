@@ -32,7 +32,7 @@ const SELECTION: readonly (readonly [code: string, next?: true])[] = [
   ['GDPR'],
   ['EU_AI_ACT'],
   ['ISO_27001'],
-  ['NIS2'],
+  ['NIS2', true], // Preview — Pack+Schema existieren, Melde-UI fehlt
   ['TISAX', true],
   ['DORA', true],
 ] as const;

@@ -39,6 +39,8 @@ const FRAMEWORK_LABEL: Record<string, string> = {
   NIS2: 'NIS2',
   DORA: 'DORA',
   TISAX: 'TISAX',
+  /** Orientierungs-Grid unter NIS2-Controls — kein Landing-/LIVE-Pack. */
+  BSI_GRUNDSCHUTZ: 'BSI IT-Grundschutz',
   CUSTOM: 'Individuell',
 };
 

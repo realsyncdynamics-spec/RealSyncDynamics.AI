@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-09-18';
+export const IMPLEMENTATION_MEASURED_AT = '2026-09-24';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -134,7 +134,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, ehrliche Empty States, Bootstrap-Nächste-Schritte (Domain/Audit/Activation), Framework-Strip mit LIVE/BETA/ROADMAP.',
+      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, ehrliche Empty States, Bootstrap-Nächste-Schritte (Domain/Audit/Activation), Framework-Strip mit LIVE/BETA/PREVIEW/ROADMAP.',
     route: '/app/dashboard',
     evidence: [
       'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
@@ -486,6 +486,22 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/pages/content/AgentGovernancePage.tsx',
       'src/components/landing/LandingOsSpine.tsx',
       'PR #1331',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'framework-nis2',
+    name: 'NIS2 Policy Pack / Incident Notifications',
+    status: 'preview',
+    group: 'compliance',
+    description:
+      'NIS2 Zehn-Punkte-Kontrollpack (§ 30 Abs. 2 BSIG / Art. 21 Abs. 2) und Meldefristen-Modell — Preview/activatable; kein LIVE ohne Reporting-UI, kein BSI-Versand.',
+    evidence: [
+      'src/core/governance/policy-pack-nis2.json',
+      'src/core/governance/nis2-pack.ts',
+      'src/core/governance/nis2-incident.ts',
+      'supabase/migrations/20260924160000_nis2_incident_notifications.sql',
+      'test/governance/nis2-policy-pack.test.ts',
     ],
     showOnRoadmap: true,
   },

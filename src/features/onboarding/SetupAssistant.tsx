@@ -203,6 +203,26 @@ export function SetupAssistant() {
         ...profile,
         aiSystems: Array.from(new Set([...profile.aiSystems, ...state.ai_systems])),
       });
+
+      // KI-gestütztes Automation-Profil serverseitig erzeugen. Der Endpoint
+      // erfindet keine Rechte: Er liest tenant_entitlements(), empfiehlt nur
+      // passende Skills und markiert ungebundene Runtime-Pfade als
+      // needs_binding statt sie als aktiv auszugeben.
+      const { error: automationProfileError } = await supabase.functions.invoke(
+        'onboarding-automation-profile',
+        {
+          body: {
+            tenant_id: activeTenantId,
+            org_type: state.tenant_type,
+            ai_systems: state.ai_systems,
+            residency_policy: state.residency_chosen ? state.residency_policy : null,
+          },
+        },
+      );
+      if (automationProfileError) {
+        console.warn('Setup: Automation-Profil nicht erzeugt:', automationProfileError.message);
+      }
+
       clearScanProfile();
 
       // Refresh tenant context

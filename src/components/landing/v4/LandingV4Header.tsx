@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { LV4_BRAND, LV4_NAV, LV4_STATUS } from './landing-v4-content';
 
 const AUDIT = '/audit?source=landing-v4';
+const FOCUSABLE = 'a[href], button:not([disabled])';
 
 /**
  * Statusleiste + Header der Landing v4. Nur Dunkel (Design v4 hat keinen
@@ -12,18 +13,42 @@ const AUDIT = '/audit?source=landing-v4';
  */
 export function LandingV4Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Modales Menü: Fokus hinein, Tab bleibt im Dialog, beim Schließen zurück zum Auslöser.
   useEffect(() => {
     if (!menuOpen) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const trigger = triggerRef.current;
+    const focusables = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+    focusables()[0]?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !menuRef.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !menuRef.current?.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener('keydown', onKey);
+      // preventScroll: sonst springt die Seite nach einem Anker-Link zurück nach oben.
+      trigger?.focus({ preventScroll: true });
     };
   }, [menuOpen]);
 
@@ -54,6 +79,7 @@ export function LandingV4Header() {
             </Link>
           </nav>
           <button
+            ref={triggerRef}
             type="button"
             className="lv4-burger"
             aria-label="Menü öffnen"
@@ -67,7 +93,7 @@ export function LandingV4Header() {
       </header>
 
       {menuOpen && (
-        <div id="lv4-mobile-menu" className="lv4-menu" role="dialog" aria-modal="true" aria-label="Menü">
+        <div ref={menuRef} id="lv4-mobile-menu" className="lv4-menu" role="dialog" aria-modal="true" aria-label="Menü">
           <div className="lv4-menu__top">
             <span className="lv4-logo">RealSync Dynamics.AI</span>
             <button type="button" className="lv4-burger" aria-label="Menü schließen" onClick={close}>

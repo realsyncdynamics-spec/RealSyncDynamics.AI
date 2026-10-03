@@ -18,7 +18,8 @@
   --lv2-header-bg: rgba(4, 6, 11, 0.82);
 
   --lv4-cyan: #6cc3dc;
-  --lv4-cyan-dim: rgba(108, 195, 220, 0.42);
+  --lv4-cyan-dim: rgba(108, 195, 220, 0.42); /* nur Deko (Pfeile) */
+  --lv4-cyan-muted: #7fa8b7; /* Text, ≥ 4.5:1 auf --lv2-bg */
   --lv4-gold: linear-gradient(180deg, #e2c27c 0%, #c79b4b 60%, #9c7430 100%);
   --lv4-ok: #3ddc97;
   --lv4-border: rgba(230, 228, 222, 0.42);
@@ -37,7 +38,7 @@
   font-size: var(--lv2-kicker);
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--lv4-cyan-dim);
+  color: var(--lv4-cyan-muted);
 }
 
 .lv4-status__row {
@@ -222,7 +223,7 @@
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--lv4-cyan-dim);
+  color: var(--lv4-cyan-muted);
 }
 
 .lv4-pipeline li:first-child {
@@ -261,6 +262,8 @@
   flex-direction: column;
   gap: 32px;
   padding: 0 16px 32px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--lv2-bg);
 }
 

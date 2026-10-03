@@ -63,6 +63,14 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
   'src/pages/DemoLoginPage.tsx':
     'Abgelöst: /demo-login leitet auf /welcome (kanonische OTP/OAuth-Anmeldung).',
+  // Landing v4 ist das einzige öffentliche Frontend; die alten Varianten leiten
+  // auf `/`. Die Dateien bleiben, weil Landing-Verträge (Tests/Baselines) sie lesen.
+  'src/pages/MainLanding.tsx': 'Abgelöst durch Landing v4: /design/titan leitet auf /.',
+  'src/pages/Landing.tsx': 'Abgelöst durch Landing v4: /landing leitet auf /.',
+  'src/pages/LandingPagesOverview.tsx':
+    'Abgelöst durch Landing v4: /landingpages und /landing-uebersicht leiten auf /.',
+  'src/pages/GovernanceRuntimeLayerPage.tsx':
+    'Abgelöst durch Landing v4: /governance-runtime-layer leitet auf /.',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

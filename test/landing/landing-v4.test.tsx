@@ -59,12 +59,16 @@ it('keeps every in-page anchor resolvable', () => {
   }
 });
 
-it('opens the mobile menu and closes it on Escape', () => {
+it('opens the mobile menu with focus inside and restores focus on Escape', () => {
   mount();
-  fireEvent.click(screen.getByRole('button', { name: 'Menü öffnen' }));
-  const menu = within(screen.getByRole('dialog'));
+  const trigger = screen.getByRole('button', { name: 'Menü öffnen' });
+  fireEvent.click(trigger);
+  const dialog = screen.getByRole('dialog');
+  expect(dialog.contains(document.activeElement)).toBe(true);
+  const menu = within(dialog);
   expect(menu.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/welcome');
   expect(menu.getByRole('link', { name: 'Free Audit starten' })).toHaveAttribute('href', '/audit?source=landing-v4');
   fireEvent.keyDown(window, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
 });

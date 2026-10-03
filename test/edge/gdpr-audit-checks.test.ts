@@ -132,7 +132,7 @@ describe('runChecks', () => {
   });
 
   it('stuft ein fehlendes Impressum außerhalb DE nur als Hinweis ein', () => {
-    // § 5 TMG greift nicht weltweit — ein englischsprachiges .com darf dafür
+    // § 5 DDG greift nicht weltweit — ein englischsprachiges .com darf dafür
     // keinen schweren Befund bekommen. Der Code unterscheidet sich mit:
     // `no_imprint_link` (DE, critical) gegen `no_imprint_link_non_de` (info).
     const html = '<html lang="en"><body><a href="/privacy">Privacy</a></body></html>';

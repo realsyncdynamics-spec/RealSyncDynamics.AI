@@ -1,0 +1,329 @@
+/*
+ * Landing v4 — Claude-Design „realsync-landing-v4“.
+ * Baut auf `.lv2` auf (Typo-Skala, Wrap, Sektionen) und setzt den v4-Farbraum:
+ * tiefes Weltraum-Navy, Serif-Typo, Gold nur für „for Europe“, kühles Cyan für
+ * die Betriebsschleife. Nur Dunkel.
+ */
+
+.lv4 {
+  --lv2-bg: #04060b;
+  --lv2-bg2: #070a12;
+  --lv2-fg: #e6e4de;
+  --lv2-fg2: #a9adb8;
+  --lv2-fg3: #7b8191;
+  --lv2-line: rgba(160, 190, 230, 0.12);
+  --lv2-chip: rgba(160, 190, 230, 0.04);
+  --lv2-chip-border: rgba(230, 228, 222, 0.32);
+  --lv2-accent: #c9a35a;
+  --lv2-header-bg: rgba(4, 6, 11, 0.82);
+
+  --lv4-cyan: #6cc3dc;
+  --lv4-cyan-dim: rgba(108, 195, 220, 0.42);
+  --lv4-gold: linear-gradient(180deg, #e2c27c 0%, #c79b4b 60%, #9c7430 100%);
+  --lv4-ok: #3ddc97;
+  --lv4-border: rgba(230, 228, 222, 0.42);
+
+  background:
+    radial-gradient(ellipse 80% 60% at 80% 20%, rgba(40, 70, 120, 0.12), transparent 70%),
+    var(--lv2-bg);
+}
+
+/* ── Statusleiste ─────────────────────────────────────────── */
+.lv4-status {
+  position: relative;
+  z-index: 3;
+  border-bottom: 1px solid var(--lv2-line);
+  font-family: var(--lv2-mono);
+  font-size: var(--lv2-kicker);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lv4-cyan-dim);
+}
+
+.lv4-status__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lv4-status__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  background: var(--lv4-ok);
+  box-shadow: 0 0 10px var(--lv4-ok);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.lv4-header {
+  position: relative;
+  z-index: 3;
+  border-bottom: 1px solid var(--lv2-line);
+}
+
+.lv4-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: clamp(76px, 6.5vw, 140px);
+}
+
+.lv4-logo {
+  font-family: var(--lv2-sans);
+  font-size: clamp(20px, 1.5vw, 40px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--lv2-fg);
+}
+
+.lv4-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2vw, 56px);
+  font-family: var(--lv2-sans);
+  font-size: var(--lv2-lead);
+  color: var(--lv2-fg2);
+}
+
+.lv4-nav > a:not(.lv4-btn):hover {
+  color: var(--lv2-fg);
+}
+
+.lv4-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--lv4-border);
+  background: transparent;
+  color: var(--lv2-fg);
+  cursor: pointer;
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.lv4-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  min-height: 48px;
+  padding: 0.7em 1.4em;
+  border: 1px solid var(--lv4-border);
+  font-family: var(--lv2-serif);
+  font-size: var(--lv2-lead);
+  color: var(--lv2-fg);
+  background: transparent;
+  transition:
+    background 0.25s var(--lv2-ease),
+    border-color 0.25s var(--lv2-ease);
+}
+
+.lv4-btn:hover {
+  background: rgba(230, 228, 222, 0.06);
+  border-color: var(--lv2-fg);
+}
+
+.lv4-btn--lg {
+  font-size: clamp(17px, 1.2vw, 32px);
+  padding: 0.85em 1.6em;
+}
+
+.lv4-btn--ghost {
+  color: var(--lv2-fg2);
+  border-color: rgba(230, 228, 222, 0.22);
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.lv4-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: min(100svh, 1400px);
+  display: flex;
+  align-items: center;
+  padding-block: clamp(72px, 8vw, 220px);
+}
+
+.lv4-hero__space {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.5), transparent 60%),
+    radial-gradient(1px 1px at 34% 70%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(1px 1px at 52% 14%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1.5px 1.5px at 66% 48%, rgba(255, 255, 255, 0.3), transparent 60%),
+    radial-gradient(1px 1px at 88% 84%, rgba(255, 255, 255, 0.35), transparent 60%);
+}
+
+.lv4-hero__space img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 72% 48%;
+  filter: brightness(1.05) contrast(1.1) saturate(1.1);
+}
+
+.lv4-hero__space::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(100deg, rgba(4, 6, 11, 0.94) 0%, rgba(4, 6, 11, 0.72) 32%, rgba(4, 6, 11, 0.2) 60%, transparent 78%),
+    linear-gradient(180deg, transparent 70%, var(--lv2-bg) 100%);
+}
+
+.lv4-hero__inner {
+  position: relative;
+  width: var(--lv2-wrap);
+}
+
+.lv4-hero__h1 {
+  margin: 0;
+  font-family: var(--lv2-serif);
+  font-weight: 400;
+  font-size: clamp(52px, 7.4vw, 240px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  color: var(--lv2-fg);
+  max-width: 11ch;
+}
+
+.lv4-hero__line {
+  display: block;
+}
+
+.lv4-hero__line.is-gold {
+  font-style: italic;
+  background: var(--lv4-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lv4-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 0;
+  margin: clamp(32px, 3vw, 80px) 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--lv2-mono);
+  font-size: clamp(13px, 1vw, 26px);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lv4-cyan-dim);
+}
+
+.lv4-pipeline li:first-child {
+  color: var(--lv4-cyan);
+}
+
+.lv4-pipeline li + li::before {
+  content: '→';
+  margin-inline: 0.9em;
+  letter-spacing: 0;
+  color: var(--lv4-cyan-dim);
+}
+
+.lv4-hero__sub {
+  margin: clamp(24px, 2vw, 56px) 0 0;
+  max-width: 34ch;
+  font-family: var(--lv2-serif);
+  font-size: clamp(22px, 2vw, 60px);
+  line-height: 1.28;
+  color: var(--lv2-fg2);
+}
+
+.lv4-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: clamp(32px, 3vw, 80px);
+}
+
+/* ── Mobile-Menü ──────────────────────────────────────────── */
+.lv4-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 0 16px 32px;
+  background: var(--lv2-bg);
+}
+
+.lv4-menu__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  border-bottom: 1px solid var(--lv2-line);
+}
+
+.lv4-menu nav {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: var(--lv2-serif);
+  font-size: 30px;
+}
+
+/* ── Inhaltssektionen im v4-Farbraum ─────────────────────── */
+.lv4 .lv2-btn--gold {
+  background: transparent;
+  color: var(--lv2-fg);
+  border: 1px solid var(--lv4-border);
+  box-shadow: none;
+}
+
+.lv4 .lv2-btn--gold:hover {
+  background: rgba(230, 228, 222, 0.06);
+}
+
+@media (max-width: 999px) {
+  .lv4-nav {
+    display: none;
+  }
+
+  .lv4-burger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .lv4-status {
+    letter-spacing: 0.16em;
+  }
+
+  .lv4-hero {
+    min-height: auto;
+    align-items: flex-start;
+  }
+
+  .lv4-hero__space img {
+    opacity: 0.55;
+    object-position: 80% 50%;
+  }
+
+  .lv4-hero__cta .lv4-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv4-btn {
+    transition: none;
+  }
+}

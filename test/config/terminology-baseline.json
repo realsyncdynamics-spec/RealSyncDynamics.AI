@@ -78,7 +78,6 @@
     "src/unified-entry/mock-data.ts": 1
   },
   "provenance": {
-    "src/components/landing/v4/landing-v4-content.ts": 1,
     "src/config/public-nav.ts": 1,
     "src/core/realsync-os/design/designAgents.ts": 1,
     "src/core/realsync-os/design/planner.ts": 1,

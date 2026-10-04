@@ -7,8 +7,22 @@
 //     tenant_id: string,
 //     slug: string,               // Site, deren jüngste Version bearbeitet wird
 //     base_sha256: string,        // Stand, auf dem die Bearbeitung aufsetzt
-//     edits: PageEdit[]           // je Seite: Blockfolge mit redaktionellen Feldern
+//     edits?: PageEdit[],         // je Seite: Blockfolge mit redaktionellen Feldern
+//     design_template?: string    // ID einer Vorlage aus DESIGN_TEMPLATES
 //   }
+//   Mindestens eins von beiden muss eine Änderung tragen.
+//
+// ## Design-Vorlage: ID, keine Theme-Werte
+//
+// Das Theme bleibt eine Ableitung des Servers. Der Client nennt nur die ID
+// einer Vorlage aus `DESIGN_TEMPLATES` (siteos-core); Farben, Schriften und
+// Radius setzt `applySiteDesignTemplate` aus der Liste des Kerns. Eine
+// unbekannte ID lehnt die Anfrage ab — sie wird nicht auf einen Default
+// umgebogen, sonst speicherte der Server etwas anderes, als der Editor zeigte.
+//
+// Bis 2026-10 wirkte die Vorlage nur in der Vorschau: Der Editor zeigte sie,
+// gespeichert und geprüft wurde das Theme des Bauplans. Was der Kunde sah, war
+// nicht das, was das Publish Gate bewertete.
 //
 // ## Was der Server annimmt und was nicht
 //
@@ -39,10 +53,12 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import {
   analyzeBlueprint,
-  applyPageEdits,
+  applySiteEdits,
   canonicalHash,
   computeScores,
   isBlockKind,
+  isDesignTemplate,
+  type DesignTemplate,
   type PageEdit,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
@@ -74,9 +90,16 @@ export async function handle(req: Request): Promise<Response> {
   if (!slug) return jsonError(400, 'BAD_REQUEST', 'slug required');
   if (!SHA_PATTERN.test(baseSha)) return jsonError(400, 'BAD_REQUEST', 'base_sha256 must be a sha256 hex');
 
-  const edits = sanitizeEdits(body.edits);
+  let designTemplate: DesignTemplate | null = null;
+  if (body.design_template !== undefined && body.design_template !== null) {
+    if (!isDesignTemplate(body.design_template)) return jsonError(400, 'BAD_REQUEST', 'design_template is not a known template');
+    designTemplate = body.design_template;
+  }
+
+  // `edits` darf fehlen, wenn allein die Vorlage wechselt.
+  const edits = body.edits === undefined && designTemplate ? [] : sanitizeEdits(body.edits);
   if (edits === null) return jsonError(400, 'BAD_REQUEST', 'edits must be an array of { path, blocks }');
-  if (edits.length === 0) return jsonError(400, 'BAD_REQUEST', 'edits is empty');
+  if (edits.length === 0 && !designTemplate) return jsonError(400, 'BAD_REQUEST', 'edits is empty');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -116,7 +139,7 @@ export async function handle(req: Request): Promise<Response> {
     }
 
     // ── Redaktion anwenden ───────────────────────────────────────────────
-    const applied = applyPageEdits(row.blueprint, edits);
+    const applied = applySiteEdits(row.blueprint, edits, designTemplate);
     const blueprintSha256 = await canonicalHash(applied.blueprint);
 
     // Nach der Änderung werden Befunde und Bewertung neu gebildet. Sie auf
@@ -142,8 +165,12 @@ export async function handle(req: Request): Promise<Response> {
       auditAction: 'siteos.blueprint.edit',
       auditPayload: {
         base_sha256: baseSha,
-        change_codes: applied.changes.map((c) => c.code),
+        change_codes: [
+          ...applied.changes.map((c) => c.code),
+          ...(applied.themeChange ? ['theme.template'] : []),
+        ],
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
       },
     });
@@ -160,6 +187,7 @@ export async function handle(req: Request): Promise<Response> {
         findings,
         scores,
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
       });
     }
@@ -176,6 +204,7 @@ export async function handle(req: Request): Promise<Response> {
       findings,
       scores,
       changes: applied.changes,
+      theme_change: applied.themeChange,
       rejected: applied.rejected,
       agent_tasks: persisted.tasks,
       provenance_linked: persisted.provenanceLinked,

@@ -205,6 +205,8 @@ export interface EditResponse {
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
   changes: EditChange[];
+  /** Gesetzt, wenn die Anfrage eine Design-Vorlage übernommen hat. */
+  theme_change?: { template: string; summary: string } | null;
   rejected: string[];
   provenance_linked?: boolean;
 }
@@ -216,12 +218,17 @@ export interface EditResponse {
  * (`siteos-core/blueprint/edit.ts`). `base_sha256` ist der Stand, auf dem
  * die Bearbeitung aufsetzt — weicht er vom gespeicherten ab, antwortet der
  * Server mit 409, statt eine ältere Fassung stillschweigend zu überschreiben.
+ *
+ * `design_template` ist nur die ID einer Vorlage; Farben und Schriften setzt
+ * der Server aus der Liste des Kerns. `edits` darf leer sein, wenn allein die
+ * Vorlage wechselt.
  */
 export async function editSite(args: {
   tenant_id: string;
   slug: string;
   base_sha256: string;
   edits: PageEdit[];
+  design_template?: string;
 }): Promise<SiteOsResult<EditResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });

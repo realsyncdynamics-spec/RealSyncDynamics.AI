@@ -476,3 +476,61 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
   });
 });
+
+describe('App Builder Workspace — Design-Vorlage wird gespeichert', () => {
+  it('zeigt das gespeicherte Theme, solange keine Vorlage gewählt ist', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    // Keine Vorschau-Vorlage überdeckt mehr das Theme des Bauplans.
+    expect((editorProps?.localBlueprint as SiteBlueprint).theme).toEqual(blueprint.theme);
+    expect(editorProps).not.toHaveProperty('template');
+    expect(screen.getByTestId('save-state').getAttribute('data-state')).toBe('saved');
+  });
+
+  it('macht eine gewählte Vorlage zur ungespeicherten Änderung und schickt nur ihre ID', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const themed = { ...blueprint, theme: { ...blueprint.theme, accent: '#0B63F6' } };
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true, unchanged: false, blueprint_id: 'bp-2', slug: blueprint.slug, version: 2,
+        content_sha256: 'b'.repeat(64), prev_hash: sha256, blueprint: themed, findings: [], scores: {},
+        changes: [], theme_change: { template: 'bento-bold', summary: 'Design-Vorlage „Bento Bold" übernommen.' }, rejected: [],
+      },
+    });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByTestId('right')).getByRole('button', { name: /Bento Bold/ }));
+    await waitFor(() => expect(screen.getByTestId('save-state').getAttribute('data-state')).toBe('unsaved'));
+    const local = editorProps?.localBlueprint as SiteBlueprint;
+    expect(local.theme.accent).toBe('#0B63F6');
+    expect(local.theme.fontDisplay).toBe('Space Grotesk, system-ui, sans-serif');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as Record<string, unknown>;
+    expect(call).toMatchObject({ tenant_id: 'tenant-1', slug: blueprint.slug, base_sha256: sha256, design_template: 'bento-bold', edits: [] });
+    // Keine Theme-Werte aus dem Browser — der Server setzt sie aus der Liste des Kerns.
+    expect(call).not.toHaveProperty('theme');
+
+    await waitFor(() => expect(screen.getByText('Gespeichert · v2')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Konsole' }));
+    expect(screen.getByText(/Bento Bold" übernommen/)).toBeInTheDocument();
+  });
+
+  it('schickt ohne gewählte Vorlage kein design_template mit', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.editSite.mockResolvedValue({ kind: 'ok', data: { ok: true, unchanged: true, slug: blueprint.slug, version: 1, content_sha256: sha256, blueprint, findings: [], scores: {}, changes: [], rejected: [] } });
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    expect(api.editSite.mock.calls[0][0]).not.toHaveProperty('design_template');
+  });
+});

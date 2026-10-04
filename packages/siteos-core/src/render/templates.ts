@@ -37,6 +37,15 @@ export function defaultDesignTemplate(): DesignTemplate {
   return 'bento-bold';
 }
 
+export function isDesignTemplate(value: unknown): value is DesignTemplate {
+  return typeof value === 'string' && DESIGN_TEMPLATES.some((template) => template.id === value);
+}
+
+/**
+ * Überträgt eine Vorlage vollständig auf das Theme — Farben, Radius **und**
+ * Schriften. Bis 2026-10 fehlten die Schriften: Die Vorschau zeigte die
+ * Vorlage mit den Schriften des Bauplans, obwohl jede Vorlage eigene führt.
+ */
 export function applySiteDesignTemplate(blueprint: SiteBlueprint, template: SiteDesignTemplate): SiteBlueprint {
   const selected = designTemplateById(template);
   return {
@@ -47,7 +56,28 @@ export function applySiteDesignTemplate(blueprint: SiteBlueprint, template: Site
       accent: selected.accent,
       surface: selected.surface,
       foreground: selected.foreground,
+      fontDisplay: selected.fontDisplay,
+      fontBody: selected.fontBody,
       radiusPx: selected.radiusPx,
     },
   };
+}
+
+/**
+ * Welche Vorlage trägt dieses Theme? `null`, wenn keine passt — dann hat der
+ * Bauplan ein eigenes Theme (aus dem Erstbau oder einer Verfeinerung), und
+ * der Editor darf es nicht stillschweigend durch eine Vorlage ersetzen.
+ */
+export function matchDesignTemplate(theme: SiteBlueprint['theme'] | undefined): DesignTemplate | null {
+  if (!theme) return null;
+  const same = (a: unknown, b: string) => String(a ?? '').trim().toLowerCase() === b.toLowerCase();
+  const match = DESIGN_TEMPLATES.find((t) =>
+    theme.mode === t.mode
+    && same(theme.accent, t.accent)
+    && same(theme.surface, t.surface)
+    && same(theme.foreground, t.foreground)
+    && same(theme.fontDisplay, t.fontDisplay)
+    && same(theme.fontBody, t.fontBody)
+    && Number(theme.radiusPx) === t.radiusPx);
+  return match?.id ?? null;
 }

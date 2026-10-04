@@ -32,8 +32,12 @@ export interface SiteOsBlockEditorProps {
   storedBlueprint: SiteBlueprint;
   /** Der Stand mit allen lokalen Bearbeitungen (für Leinwand und Struktur). */
   localBlueprint: SiteBlueprint;
-  /** Design-Vorlage der Vorschau; wirkt nur auf das Stylesheet der Leinwand. */
-  template: SiteDesignTemplate;
+  /**
+   * Optionale Design-Vorlage nur für die Leinwand. Ohne Angabe zeigt der
+   * Editor das Theme von `localBlueprint` — der Workspace legt die Vorlage
+   * dort bereits an, damit Leinwand und Speicherstand dasselbe zeigen.
+   */
+  template?: SiteDesignTemplate | null;
   pagePath: string;
   /** Puck-Daten der aktuellen Seite, falls sie schon bearbeitet wurde. */
   pageData?: PuckPageData;
@@ -165,7 +169,10 @@ export default function SiteOsBlockEditor(props: SiteOsBlockEditorProps): ReactE
     [storedPage.path, revision],
   );
 
-  const themed = useMemo(() => applySiteDesignTemplate(localBlueprint, template), [localBlueprint, template]);
+  const themed = useMemo(
+    () => template ? applySiteDesignTemplate(localBlueprint, template) : localBlueprint,
+    [localBlueprint, template],
+  );
   const canvasCss = useMemo(() => renderCanvasCss(themed.theme), [themed.theme]);
 
   const metadata = useMemo<CanvasMetadata>(() => {

@@ -82,6 +82,28 @@ describe('implementation-status registry', () => {
     expect(command.evidence.some((e) => e.includes('AgentOsPanel'))).toBe(false);
   });
 
+  it('narrows ai-act-classify to the public classifier; inventory persist stays preview', () => {
+    const classify = getImplementation('ai-act-classify')!;
+    expect(classify.status).toBe('live');
+    expect(classify.route).toBe('/ai-act-klassifikator');
+    expect(classify.description).toContain('/ai-act-klassifikator');
+    expect(classify.description.toLowerCase()).not.toMatch(/als inventar führen/);
+    expect(classify.evidence.some((e) => e.includes('AiActClassifier'))).toBe(true);
+    expect(classify.evidence.some((e) => e.includes('ai-act-classify'))).toBe(true);
+    expect(classify.evidence.some((e) => e.includes('platform-capabilities'))).toBe(false);
+
+    const persist = getImplementation('ai-act-inventory-persist')!;
+    expect(persist.status).toBe('preview');
+    expect(isImplementationLive('ai-act-inventory-persist')).toBe(false);
+    expect(persist.showOnRoadmap).not.toBe(false);
+    expect(persist.description).toMatch(/kein(em)? Plan|kein Upgrade/i);
+    expect(persist.description).toMatch(/Persist|Speichern/i);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'ai-act-inventory-persist')).toBe(true);
+    expect(ROADMAP_LIVE_ITEMS.find((i) => i.id === 'ai-act-classify')?.route).toBe(
+      '/ai-act-klassifikator',
+    );
+  });
+
   it('registers frontend-builder live and modernize wizard preview', () => {
     expect(isImplementationLive('public-frontend-builder')).toBe(true);
     expect(getImplementation('public-frontend-builder')?.route).toBe('/frontend-builder');
@@ -100,6 +122,8 @@ describe('implementation-status registry', () => {
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
     expect(docs).toContain('Landing v4');
     expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('/ai-act-klassifikator');
+    expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);
   });
 

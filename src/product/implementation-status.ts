@@ -166,10 +166,35 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'EU-AI-Act-Klassifizierung',
     status: 'live',
     group: 'compliance',
-    description: 'KI-Systeme nach Risikoklasse einordnen und als Inventar führen.',
-    route: '/ai-act-governance',
-    evidence: ['src/config/platform-capabilities.ts#ai-act'],
+    description:
+      'Öffentlicher Annex-III-Klassifikator unter /ai-act-klassifikator (Q&A + optionale LLM-Signalextraktion via Edge Function ai-act-classify). Kein Speichern ins Tenant-Inventar — siehe Preview ai-act-inventory-persist.',
+    route: '/ai-act-klassifikator',
+    evidence: [
+      'src/pages/AiActClassifier.tsx',
+      'src/App.tsx#/ai-act-klassifikator',
+      'supabase/functions/ai-act-classify/index.ts',
+      'src/lib/ai-act/signal-extraction.ts',
+    ],
     showOnPlatform: true,
+  },
+  {
+    id: 'ai-act-inventory-persist',
+    name: 'EU-AI-Act-Inventar (Persistenz)',
+    status: 'preview',
+    group: 'compliance',
+    description:
+      'Klassifikation ins Register/Inventar speichern ist nicht freigeschaltet: ai_classification.limited steht in keinem Plan (kein Upgrade entsperrt; Lock-Copy nach #1743). UI-Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory-Pfad existieren, Persistenz funktioniert noch nicht (fehlender Persist-Pfad / P1-2). Nicht live.',
+    route: '/app/risk-inventory',
+    evidence: [
+      'src/pages/AiActClassifier.tsx#saveToInventory',
+      'src/features/governance/aiActRiskInventoryApi.ts',
+      'supabase/functions/ai-act-risk-inventory/index.ts',
+      'src/core/billing/FeatureGate.tsx#ai_classification.limited',
+      'src/components/governance-os/useNavLock.ts',
+      'src/i18n/handoffApp.ts#classifyLocked',
+      'PR #1743',
+    ],
+    showOnRoadmap: true,
   },
   {
     id: 'gdpr-audit-module',

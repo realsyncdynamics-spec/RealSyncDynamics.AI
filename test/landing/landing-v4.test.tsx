@@ -76,8 +76,13 @@ it('roadmap comes from the registry and omits redirect-only design landings', ()
   expect(roadmap.textContent).toContain('Product-Registry');
   expect(roadmap.textContent).toContain('Compliance Command Center');
   expect(roadmap.textContent).toContain('CommandCenterDashboard');
+  expect(roadmap.textContent).toContain('/ai-act-klassifikator');
+  expect(roadmap.textContent).toContain('EU-AI-Act-Inventar (Persistenz)');
+  expect(roadmap.textContent).toMatch(/kein Upgrade|keinem Plan/i);
   expect(roadmap.textContent).not.toContain('produktionsreifer E2E-Pfad offen');
   expect(roadmap.textContent).not.toContain('sind aber nicht der Live-Hero');
+  expect(roadmap.textContent).not.toContain('/ai-act-governance');
+  expect(roadmap.textContent).not.toContain('als Inventar führen');
   expect(roadmap.textContent).not.toContain('/design/ledger');
   expect(roadmap.textContent).not.toContain('/design/tribunal');
   expect(roadmap.textContent).not.toContain('Evidence Ledger Landing (Design)');

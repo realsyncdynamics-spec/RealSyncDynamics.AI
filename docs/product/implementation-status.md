@@ -45,6 +45,11 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
    Stripe secrets provisioned, live `public.products` defaults (`price_1UEm*`).
    Monthly self-service for starter/growth/agency; yearly remains coming-soon;
    enterprise stays inquiry.
+8. `ai-act-classify` **live** means only the public classifier at
+   `/ai-act-klassifikator` + Edge Function `ai-act-classify`. Persisting a
+   classification into the tenant register/inventory is a separate **preview**
+   entry (`ai-act-inventory-persist`): `ai_classification.limited` is granted
+   by no plan (PR #1743 lock copy), and the save path is not production-complete.
 
 ## Automation
 

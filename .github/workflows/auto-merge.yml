@@ -7,7 +7,8 @@ name: Auto-merge
 # Warum so (Entscheidung Dominik, 04.10.):
 # - Label statt Automatik: vorher bekam jeder Nicht-Draft-PR Auto-Merge.
 #   Jetzt nur, wer `automerge` trägt. PRs ohne Label überspringen den Job
-#   komplett (kein roter Check mehr). Label entfernen schaltet Auto-Merge ab.
+#   komplett (kein roter Check mehr). `automerge` entfernen schaltet Auto-Merge
+#   ab; das Entfernen anderer Labels startet den Job nur bei PRs mit Label.
 # - GitHub-App-Token statt GITHUB_TOKEN: ein mit GITHUB_TOKEN aktivierter
 #   Auto-Merge löst nach dem Merge keine Folge-Workflows aus, "Deploy" und
 #   "Deploy to Cloudflare Pages" liefen dann nicht an. Das App-Token hat nur
@@ -38,7 +39,7 @@ jobs:
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       (contains(github.event.pull_request.labels.*.name, 'automerge') ||
-       github.event.action == 'unlabeled')
+       (github.event.action == 'unlabeled' && github.event.label.name == 'automerge'))
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub App token

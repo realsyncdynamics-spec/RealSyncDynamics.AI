@@ -61,9 +61,10 @@ jobs:
 
           # Live-Zustand statt Event-Payload: Labels und Auto-Merge können sich
           # seit dem Auslösen geändert haben.
-          state="$(gh pr view "$PR" --repo "$REPO" --json labels,autoMergeRequest)"
+          state="$(gh pr view "$PR" --repo "$REPO" --json labels,autoMergeRequest,changedFiles)"
           has_label="$(jq -r 'any(.labels[]; .name == "automerge")' <<<"$state")"
           method="$(jq -r '.autoMergeRequest.mergeMethod // empty' <<<"$state")"
+          changed_files="$(jq -r '.changedFiles' <<<"$state")"
 
           disable_if_active() {
             if [ -n "$method" ]; then
@@ -80,10 +81,21 @@ jobs:
             exit 0
           fi
 
+          # Migrations-Prüfung fail-closed: Ist die Dateiliste nicht lesbar oder
+          # unvollständig (die API liefert höchstens 3000 Dateien), kein Auto-Merge.
+          if [ "$changed_files" -ge 3000 ]; then
+            echo "::warning title=Auto-merge gesperrt::PR hat $changed_files Dateien; die Dateiliste der API ist ab 3000 unvollständig. Bitte manuell mergen."
+            disable_if_active
+            exit 0
+          fi
           # Auch umbenannte Dateien zählen (previous_filename).
-          migrations="$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
-            --jq '.[] | .filename, (.previous_filename // empty)' \
-            | grep '^supabase/migrations/' || true)"
+          if ! files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)')"; then
+            echo "::error title=Auto-merge gesperrt::Dateiliste des PR nicht lesbar; Migrations-Prüfung unmöglich."
+            disable_if_active
+            exit 1
+          fi
+          migrations="$(grep '^supabase/migrations/' <<<"$files" || true)"
           if [ -n "$migrations" ]; then
             echo "::warning title=Auto-merge gesperrt::PR ändert supabase/migrations/** (deploy.yml wendet Migrationen beim Merge auf Prod an). Bitte manuell mergen."
             printf '%s\n' "$migrations"

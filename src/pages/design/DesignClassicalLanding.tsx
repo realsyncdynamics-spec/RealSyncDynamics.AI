@@ -144,7 +144,7 @@ export function DesignClassicalLanding() {
   }, []);
 
   return (
-    <div className="gv4" data-theme="day" ref={rootRef}>
+    <div id="top" className="gv4" data-theme="day" ref={rootRef}>
       <SEOHead />
       <V4Backdrop canvasRef={canvasRef} />
       <div id="page">

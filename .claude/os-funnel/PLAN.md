@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben · **E-V1–E-V4 entschieden, WP7a + WP7 freigegeben (2026-10-04)**
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -15,8 +15,9 @@ jede Abweichung einem Change zugeordnet bleibt.
 | Datei | Inhalt |
 |---|---|
 | `PLAN.md` | Ist-Befund, Entscheidungen, Reihenfolge, Gates (diese Datei) |
-| `../commands/wp1-landing.md` … `wp6-governed-evolution.md` | Session-Auftrag je WP, in Claude Code als `/wp1-landing` … `/wp6-governed-evolution` aufrufbar |
+| `../commands/wp1-landing.md` … `wp7-landing-v4.md` | Session-Auftrag je WP, in Claude Code als `/wp1-landing` … `/wp7-landing-v4` aufrufbar (dazu `/wp7a-ssot-cleanup`) |
 | `governed-evolution.md` | Zielbild-Spec Governed Evolution (nur Doku) |
+| `landing-v4-review.md` | Prüfung des Claude-Design-Exports Landing v4 — was nie übernommen wird (Referenz für WP7) |
 
 ---
 
@@ -34,10 +35,12 @@ den falschen Bestand. Wer ihn wörtlich ausführt, baut einen zweiten Trichter.
 | **B5** | Ein Gratis-Code-System **existiert nicht**. Vorhanden ist nur `allow_promotion_codes: true` in `stripe-checkout`. | `supabase/functions/stripe-checkout/index.ts` | „1 Monat Growth per Code" ist ohne Code-Änderung nur als **Stripe-Promotion-Code** machbar (Karte nötig) — oder als manuelle Freischaltung. |
 | **B6** | Agenten stehen in **vier** Quellen: `AGENT_MESH` (ehrlich: nur Compliance preview), `DEMO_AGENTS` (4 × `status: 'active'`, im Register als „Aktiv" gezählt), `AgentsCenterView` (Skills), DB-Tabelle `governance_agent_registry` (nur `active/archived/deprecated`). | `core/realsync-os/agentMesh.ts`, `features/governance/agents/demoAgents.ts`, Migration `20260817000000` | Das Register zeigt heute „4 Aktiv" für Demo-Daten — Overclaim-Risiko. WP5 führt eine Quelle ein. |
 | **B7** | `/app/dashboard` ist **bereits** das Command Center mit echten RPCs (`governance_kpi_latest_snapshot`, `governance_24h_summary`, Evidence-Health, Risk-Index, Maßnahmen). Es fehlen Kacheln für KI-Inventar, Agent-Register und Freigaben. Quellen existieren: `ai_systems`, `ai_act_risk_inventory`, `governance_approvals`. | `CommandCenterDashboard.tsx`, `cockpit/cockpitData.ts`, `approvalsApi.ts` | WP4 ergänzt eine Kachelreihe, kein zweites Dashboard. |
-| **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). **Nachtrag 2026-10-03:** gemessen galt das für `DesignGovernanceAiLanding`. Seit #1686 ist `/` = Landing v2, visuelle Quelle `src/styles/landing-v2.css`; der Freeze gilt jetzt dieser Seite. | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. **Heute:** WP1 geschlossen (§3) — Landing-Änderungen brauchen eine neue Freigabe. |
+| **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). **Nachtrag 2026-10-03:** gemessen galt das für `DesignGovernanceAiLanding`. Seit #1686 ist `/` = Landing v2, visuelle Quelle `src/styles/landing-v2.css`; der Freeze gilt jetzt dieser Seite. | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. **Heute:** WP1 geschlossen (§3) — Landing-Änderungen brauchen eine neue Freigabe. **Nachtrag 2026-10-04 (E-V1):** Landing v4 ersetzt v2 auf `/`; der Freeze wandert mit dem WP7-Merge auf `src/styles/landing-v4.css` (CLAUDE.md stellt #1742 um). |
 | **B9** | Oberhalb von Enterprise (1.249 €) steht im SSoT **Partner zu 1.999 €**. | `shared/pricing.ts` | Klären, ob Partner ein Programm (nicht öffentlich) oder eine Stufe ist — sonst widerspricht es „Enterprise ist die höchste Stufe" (**E-F4**). |
 | **B10** | Das Doku-Budget ist **exakt voll**: `docs/` 235/235 Dateien, 2.697/2.700 KB (`npm run check:context`, CI). | `.claude/context-budget.json`, `scripts/check-context-budget.mjs` | Jedes neue `docs/`-Dokument bricht CI. Dieser Plan liegt deshalb unter `.claude/`. Neue Specs nur gegen Archivierung eines alten Dokuments. |
 | **B11** | Kartenlose Testphasen **laufen nie ab**: `create-trial-subscription` schreibt `status='trialing'` + `trial_end` ohne Stripe-Subscription; der Entitlement-Resolver (`20260920130000_bots_quota_enforcement.sql`, `abo_wirksam`) prüft `trial_end` nicht, und kein Job setzt abgelaufene Testphasen zurück. | Migration `20260920130000`, `create-trial-subscription/index.ts` | Growth-Rechte ohne Ende. **WP2a** (Migration, separates GO): Resolver prüft `trial_end > now()`. WP2 erst danach mergen. **Im Repo:** `20260928160000_wp2a_trial_end_expiry.sql` (liest `trial_end`, ersatzweise `trial_ends_at`; ohne Ende = Stripe-Testphase, läuft weiter), Test `test/runtime/db/trial-expiry.db.test.ts`. Anwendung auf Produktion nur mit GO. |
+| **B12** | Der Claude-Design-Export Landing v4 (`dist/realsync-landing-v4.html`) ist **als Datei nicht live-fähig**: falsche Firmenangaben im Footer (GmbH/HRB Berlin), Links auf die nicht auflösende Domain `realsyncdynamics.ai`, Inhalte per Inline-Script + CDN (Prod-CSP blockt), Overclaims (99,9-%-SLA, Seal-Line, „Monitoring Live", „6 Policy Packs", „Volle Konformität", SCIM/On-Prem), Status-Wortlaute vom Stand ~17.08. | `landing-v4-review.md` (vollständige Liste) | Optik übernehmen, Inhalte aus dem SSoT rendern — als React-Port auf Basis **#1742** (WP7). Aus dem Export nie Text, Zahl oder Status übernehmen. |
+| **B13** | Der Hostinger-VPS (`srv1622293`) läuft am **04.10.2026** aus (Entscheidung 04.09.). Die Startseite nannte VPS · Docker/Traefik · Ollama · Hermes · AnythingLLM · Uptime Kuma als laufende Infrastruktur; Rechtstexte beschreiben Verarbeitung auf dem VPS (`eu_local`). | `landing-v2-content.ts`, `PrivacyPolicy.tsx` Z. 100/110/157, `SubProcessors.tsx` Z. 57–58/130/142, `ComplianceMatrix.tsx` Z. 26, `Security.tsx` Z. 75 | Startseite: **#1750** (Regressionstest). Rechtstexte + Produktseiten: **H2**, wartet auf E-V5/E-V6 (§3). |
 
 **Was schon richtig ist und bleibt:** Tenant-Auflösung über `memberships`
 (`create-trial-subscription`, `save-company-profile`), ehrliche
@@ -90,6 +93,22 @@ Freigabe und ein neues Arbeitspaket.
 | **E-F5** | `/unified-entry/scan` | ⏳ offen: behalten für Builder-Pfad oder auf `/audit` umleiten | Empfehlung: Behalten, aber **nicht** aus Landing/Funnel verlinken |
 | **E-F6** | Einstieg nach dem Scan (ersetzt die Angebotsmechanik aus E-F1) | ✅ **Entschieden am 2026-09-29 (Dominik Steiner): dauerhaft kostenloses Konto.** Registrierung ohne Testphase; der Kunde landet im Dashboard auf Free (`free_audit`: Scan, Governance Score, Audit Center) und macht sich in Ruhe vertraut. Growth-Testphase (kartenlos, `create-trial-subscription`) und Starter-Kauf sind Upgrade-Angebote im Dashboard (`FreePlanPanel`) und auf `/pricing`. Abgelaufene Testphase fällt sichtbar auf Free zurück. Starter behält `trialDays: 14` — beworben auf `/pricing`, eingelöst in `stripe-checkout` (B4 damit in die andere Richtung aufgelöst). | Kein Zeitdruck im Einstieg, Trial wird zum Pull-Angebot statt Zwang. `create-trial-subscription` bleibt „nur Growth". |
 
+**Nachtrag 2026-10-04 (Dominik Steiner): Landing v4.** Grundlage ist die Prüfung des
+Claude-Design-Exports (`landing-v4-review.md`, B12). E-V1–E-V4 sind entschieden;
+E-V5–E-V9 sind offen und blockieren nur die genannten Teile.
+
+| ID | Frage | Status / Entscheidung | Begründung |
+|---|---|---|---|
+| **E-V1** | Design für `/` | ✅ **Landing v4 „Classical"** ersetzt v2 auf `/` und ist Vorlage für die weitere Plattform. Nur Dunkel, **kein** Theme-Schalter. Freeze wandert mit WP7 auf `landing-v4.css`. | Stärkste Designrichtung; der Schalter war im Export ohnehin nicht bedienbar. |
+| **E-V2** | Ablaufkette | ✅ **Die sechs Stufen vom 28.09. bleiben** (`LV2_PIPELINE`: Discover → Assess → Govern → Execute → Verify → Prove). Keine Vier-Schritt-Kette als Betriebsschleife. | Eine Kette pro Seite; die Sechs ist entschieden und im Code verankert. |
+| **E-V3** | Free in der Preistabelle | ✅ **Ja** — Free (`free_audit`) als erste Spalte, Angebot laut E-F6. | E-F6 macht das kostenlose Konto zum Einstieg; die Tabelle zeigte es nicht. |
+| **E-V4** | Hero-Motiv | ✅ **Statisches Europa-Bild als LCP** (`/europe-globe.*`). 3D-Erde höchstens als späteres Desktop-Extra (WP7b, nur nach Lighthouse-Messung, self-hosted, Startwinkel Europa). | Der Export-Globus zeigte beim Laden Amerika; ~3,5 MB 3D-Assets. |
+| **E-V5** | `eu_local` nach VPS-Abschaltung | ⏳ offen: entfällt oder zieht um (wohin)? | Entscheidet H2 (Datenschutz, Unterauftragsverarbeiter). |
+| **E-V6** | Hostinger als Auftragsverarbeiter | ⏳ offen: bleibt (z. B. Mail) oder entfällt? | Entscheidet `SubProcessors.tsx` in H2. |
+| **E-V7** | On-Prem / SCIM | ⏳ offen. Empfehlung: **nicht angeboten → streichen** (`GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx`). | SCIM nicht gebaut (ADR 0008), On-Prem in keinem Plan. |
+| **E-V8** | Enterprise-SSO im Katalog | ⏳ offen. Empfehlung: „Single Sign-On (Preview, auf Anfrage)" statt „mit SLA und SSO". Katalogänderung = Einzel-Freigabe. | `TenantAdminConsole.tsx`: SSO Vorschau, kein Build. |
+| **E-V9** | Roadmap-Eintrag `agent-os-hostinger-workers` | ⏳ offen. Empfehlung: **streichen**. | VPS läuft aus; Produktion = Cloudflare + Supabase. |
+
 ---
 
 ## 4. Arbeitspakete und Reihenfolge
@@ -103,6 +122,14 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
       └─► WP2a Trial-Ablauf (GO) ─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
                                                                               │
                                                              WP6 Governed Evolution (nur Doku, jederzeit)
+
+E-V1–E-V4 ✅ (2026-10-04)
+      │
+      ├─► Live zuerst: #1748 USt/Bruttopreise (Rechtstext, Einzel-Freigabe) · #1750 VPS-Claims · #1744 Fake-KPIs
+      ├─► WP7a SSoT-Bereinigung (Teile warten auf E-V7–E-V9)
+      │                                 ▼
+      └──────────────────────────► WP7 Landing v4 = #1742 fertigstellen ──► (optional) WP7b 3D-Erde Desktop
+H2 Rechtstexte nach VPS-Abschaltung — wartet auf E-V5/E-V6, eigener PR, Einzel-Freigabe
 ```
 
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
@@ -114,6 +141,9 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
 | **WP4** | Command Center: Inventar · Agenten · Freigaben · Evidence | `features/governance/dashboard/*`, vorhandene APIs | niedrig | — |
 | **WP5** | Ein Agent-Register | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | — |
 | **WP6** | Governed-Evolution-Spec | `.claude/os-funnel/governed-evolution.md` | keins | — |
+| **WP7a** | SSoT-Bereinigung vor dem Port: Bot-Laufzeit eine Wahrheit, toter `PLANS`-Export, SSO-/SCIM-/On-Prem-Claims, Hostinger-Roadmap | `platform-capabilities.ts`, `implementation-status.ts`, `runtimeVocab.ts`, `shared/pricing.ts` (nur mit E-V8), `GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx` | mittel | Katalog (E-V8), Claims (E-V7, E-V9) |
+| **WP7** | Landing v4 auf `/` — **#1742 fertigstellen** (Branch `claude/new-session-nqc4y8`), Deltas laut E-V1–E-V4 und `landing-v4-review.md` | `src/pages/LandingV4.tsx`, `src/components/landing/v4/*`, `src/styles/landing-v4.css`, `landing-v2-content.ts` (Kette, Claims), `PricingV2.tsx` (Free) | mittel | Landing-Claims (Einzel-Freigabe) |
+| **H2** | Rechtstexte + Produktseiten nach VPS-Abschaltung | `PrivacyPolicy.tsx`, `SubProcessors.tsx`, `ComplianceMatrix.tsx`, `Security.tsx`, weitere Seiten mit VPS-Wortlaut | hoch | Rechtstexte (E-V5, E-V6) |
 
 Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
 AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.

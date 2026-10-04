@@ -149,35 +149,6 @@ export function V4Header() {
 
 /* ───────────────── Hero ───────────────── */
 
-/** Seal-Zeile: Sekundentakt; nach 14–24 s neue Chain-Height (+1, de-DE) und neuer Hash. */
-function SealLine() {
-  const [seal, setSeal] = useState({ age: 4, height: 1284, hash: '0x9f3c…a71e' });
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSeal((s) => {
-        const age = s.age + 1;
-        if (age > 14 + Math.random() * 10) {
-          return { age: 0, height: s.height + 1, hash: hash() + '…' + hex() + hex() + hex() + hex() };
-        }
-        return { ...s, age };
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div className="seal-line">
-      <i />
-      <span>LETZTER NACHWEIS VERANKERT</span>
-      <b>vor {seal.age} s</b>
-      <span>·</span>
-      <span>CHAIN-HEIGHT</span>
-      <b>{seal.height.toLocaleString('de-DE')}</b>
-      <span>·</span>
-      <b>{seal.hash}</b>
-    </div>
-  );
-}
-
 export function V4Hero() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
@@ -248,7 +219,6 @@ export function V4Hero() {
             </div>
           ))}
         </div>
-        <SealLine />
         <div className="trust">
           <p>SECHS POLICY PACKS · EIN PRÜFPFAD</p>
           <div className="frameworks">

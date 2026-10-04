@@ -30,6 +30,7 @@ import { navLockTitle } from '../../../components/governance-os/useNavLock';
 import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
+import { OsControlStrip } from './OsControlStrip';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
@@ -120,6 +121,15 @@ export function CommandCenterDashboard() {
       {/* Handoff v2 §6: Übersicht im Entwurfsraster — dieselben Cockpit-Daten
           (Score, Maßnahmen, Evidenz) plus Inventar/Policies/Connectoren. */}
       <HandoffOverview
+        activeTenantId={activeTenantId}
+        data={data}
+        loading={loading}
+        error={error}
+        onRetry={retry}
+        reloadKey={reloadKey}
+      />
+      {/* WP4: OS-Kachelreihe — Inventar, Agenten, Risiko, Freigaben, Evidence. */}
+      <OsControlStrip
         activeTenantId={activeTenantId}
         data={data}
         loading={loading}

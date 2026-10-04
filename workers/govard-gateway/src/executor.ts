@@ -1,5 +1,14 @@
-import type { Env } from "./env";
-import type { CommandWorkflowParams } from "./workflows/command-workflow";
+import type { CommandWorkflowParams } from "./types";
+
+/**
+ * Der Ausschnitt des COMMAND_WORKFLOW-Bindings, den der Start braucht.
+ * Bewusst ohne Env: So bleibt die Doppelstart-Logik ausserhalb der
+ * Worker-Runtime testbar (test/govard/), und Env erfuellt ihn strukturell.
+ */
+export interface CommandWorkflowStarter {
+  create(options: { id: string; params: CommandWorkflowParams }): Promise<{ id: string }>;
+  get(id: string): Promise<{ id: string }>;
+}
 
 /**
  * Startet die serverseitige Ausfuehrung eines freigegebenen Commands.
@@ -15,7 +24,7 @@ import type { CommandWorkflowParams } from "./workflows/command-workflow";
  * abgewiesene Doppelstart ist der Normalfall, kein Fehler.
  */
 export async function startCommandExecution(
-  env: Env,
+  env: { COMMAND_WORKFLOW: CommandWorkflowStarter },
   orgId: string,
   commandId: string,
 ): Promise<{ started: boolean; instanceId: string }> {
@@ -24,11 +33,15 @@ export async function startCommandExecution(
     const instance = await env.COMMAND_WORKFLOW.create({ id: commandId, params });
     return { started: true, instanceId: instance.id };
   } catch (err) {
-    // Bereits vergebene Kennung = laeuft schon. Alles andere ist echt.
-    const message = err instanceof Error ? err.message : String(err);
-    if (/already exists|duplicate|conflict/i.test(message)) {
-      return { started: false, instanceId: commandId };
+    // Doppelstart wird am Bestand erkannt, nicht am Fehlertext: Der Wortlaut
+    // der Workflows-Fehler ist kein Vertrag, und ein Muster wie /conflict/
+    // wuerde echte Fehler verschlucken — der Command hinge dann ohne
+    // laufende Instanz fuer immer. Existiert die Instanz, laeuft er schon.
+    try {
+      const existing = await env.COMMAND_WORKFLOW.get(commandId);
+      return { started: false, instanceId: existing.id };
+    } catch {
+      throw err;
     }
-    throw err;
   }
 }

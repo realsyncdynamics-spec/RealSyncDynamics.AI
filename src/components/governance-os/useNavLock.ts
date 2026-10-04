@@ -19,9 +19,10 @@ export function useNavLock(): (target: NavTarget) => NavLock {
   );
 }
 
-/** Tooltip für ein Schloss: Mindestplan oder ehrlich „in keinem Plan“. */
+/** Tooltip für ein Schloss: Mindestplan oder ehrlich „noch nicht verfügbar“. */
 export function navLockTitle(label: string, lock: NavLock): string {
   if (!lock.locked) return label;
   if (lock.minPlan) return `${label} — ab ${planById(lock.minPlan).name}`;
-  return `${label} — im aktuellen Plan nicht enthalten`;
+  // minPlan null = kein wählbarer Plan gewährt die Keys (z. B. Klassifizierung).
+  return `${label} ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.`;
 }

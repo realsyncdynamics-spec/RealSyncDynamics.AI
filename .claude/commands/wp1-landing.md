@@ -4,7 +4,55 @@ description: WP1 Landing / schärfen (Kontrollschicht, Scan-CTA, Loop mit Learn=
 
 # WP1 — Landing `/` schärfen
 
-**Voraussetzung:** ✅ E-F3 entschieden (2026-09-27): „Die Kontrollschicht für KI im Unternehmen." · **Branch:** `feat/wp1-landing-control-layer`
+> ## ⛔ Überholt — nicht mehr ausführen (Stand 2026-10-03)
+>
+> **Dieses Arbeitspaket ist erledigt; nur sein Hero-Teil ist durch Landing v2
+> überholt.** Wer den Auftrag unten wörtlich ausführt, baut den Hero gegen eine
+> Seite, die nicht mehr `/` ist, oder überschreibt eine spätere Entscheidung.
+>
+> | Datum | Commit | Was |
+> |---|---|---|
+> | 2026-09-27 | `6523ac2` (#1673) | WP1 **vollständig umgesetzt** — auf `/`, das damals `DesignGovernanceAiLanding` war |
+> | 2026-09-28 | `7a8fa8b` (#1686) | `/` wird auf `LandingV2` umgestellt |
+>
+> Seither ist WP1 geteilt:
+>
+> - Der **Hero** (`GovernanceOsHero.tsx`, H1 aus E-F3) rendert nur noch auf
+>   `/design/governance-ai`.
+> - Der **Zielbild-Abschnitt** läuft auf `/` weiter: `LandingV2.tsx` bettet
+>   `ArchitectureSection` aus `HomepageBriefSections.tsx` ein, und diese rendert
+>   `GovernanceOsTarget` — Control Loop Observe → Learn, Learn als COMING SOON,
+>   dazu der Einstiegspfad.
+>
+> Der „Bestand"-Abschnitt unten trifft also für `HomepageBriefSections.tsx` und
+> `hero-content.ts` (`GOVERNANCE_OS_LOOP`) weiter auf die Startseite zu, für
+> `DesignGovernanceAiLanding.tsx` und `GovernanceOsHero.tsx` nicht.
+>
+> **E-F3 ist damit abgelöst** (Entscheidung 2026-10-03, siehe `PLAN.md` §3). Die
+> Startseite trägt die Headline aus dem Landing-v2-Handoff und die
+> Sechs-Stufen-Schleife `Discover → Assess → Govern → Execute → Verify → Prove`
+> — letztere ausdrücklich als „Entscheidung Dominik, 28.09.2026" im Code
+> vermerkt, also **einen Tag nach** E-F3. Die frühere Entscheidung durch die
+> spätere zu ersetzen wäre ein Rückschritt, nicht eine Umsetzung.
+>
+> Was auf dem heutigen `/` gemessen wurde (2026-10-03, `main` @ `ac1815d`):
+>
+> | Akzeptanzkriterium | Stand | Beleg |
+> |---|---|---|
+> | CTA führt auf `/audit` | ✅ erfüllt | `checkoutHrefForPlan('free')` → `/audit?source=landing-v2-hero` |
+> | Loop sichtbar | ✅ erfüllt | zwei Schleifen: `LV2_PIPELINE` im Hero (sechs Stufen), `GOVERNANCE_OS_LOOP` im eingebetteten Zielbild (sieben Stufen) |
+> | Learn als COMING SOON | ✅ erfüllt | `GovernanceOsTarget` in `ArchitectureSection`, eingebettet in `LandingV2.tsx` — `LEARN` mit `status: 'coming-soon'` |
+> | Kein Overclaim | ✅ erfüllt | `npm run check:landing-claims` grün (7 Phrasen, 20 Items) |
+> | Hero nennt Kontroll-/Nachweisschicht | ❌ bewusst nicht | H1 = „AI Compliance Operations OS for Europe" |
+>
+> Der offene Punkt — die Headline — ist **keine Lücke mehr, sondern die
+> getroffene Entscheidung**. Eine Landing-Änderung braucht eine neue Freigabe und
+> ein neues Arbeitspaket — nicht dieses.
+>
+> Der Auftrag bleibt unverändert stehen, weil er dokumentiert, was #1673
+> umgesetzt hat. Als Anweisung gilt er nicht mehr.
+
+**Voraussetzung:** ~~✅ E-F3 entschieden (2026-09-27)~~ → **abgelöst 2026-10-03** · **Branch (historisch):** `feat/wp1-landing-control-layer`
 **Freigabe:** Landing-Claims = Einzel-Freigabe im PR
 
 ## Rahmen (gilt für jede WP-Session)

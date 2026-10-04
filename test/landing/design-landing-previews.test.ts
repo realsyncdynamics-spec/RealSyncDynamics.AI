@@ -1,8 +1,7 @@
 /**
  * Design landing routing contract.
  *
- * The Governance-AI surface is the approved live root; older visual concepts
- * remain available only as reversible design references.
+ * Landing v4 is the only public front; older visual concepts redirect to `/`.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,18 +10,15 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Landing v2 on / and keeps older design references reversible', () => {
+  it('serves Landing v4 on / and redirects older design references to /', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<LandingV2/);
+    expect(app).toMatch(/path="\/"\s+element=\{<LandingV4/);
     expect(app).toContain('path="/design/landing-v2"');
-    expect(app).toContain('path="/design/governance-ai"');
-    expect(app).toContain('path="/design/titan"');
-    expect(app).toContain('path="/design/ledger"');
-    expect(app).toContain('path="/design/tribunal"');
-    expect(app).toContain('DesignGovernanceAiLanding');
-    expect(app).toContain('MainLanding');
-    expect(app).toContain('DesignLedgerLanding');
-    expect(app).toContain('DesignTribunalLanding');
+    for (const path of ['/design/governance-ai', '/design/titan', '/design/ledger', '/design/tribunal', '/landing', '/realsync-landing']) {
+      expect(app).toMatch(new RegExp(`path="${path}" element=\\{<Navigate to="/" replace />\\}`));
+    }
+    expect(app).not.toContain('<MainLanding');
+    expect(app).not.toContain('<DesignGovernanceAiLanding');
   });
 
   it('uses existing audit funnel and allowed CTAs only', () => {

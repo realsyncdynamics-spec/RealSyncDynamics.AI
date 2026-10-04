@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F3 entschieden (2026-09-27), WP1–WP6 freigegeben
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -34,7 +34,7 @@ den falschen Bestand. Wer ihn wörtlich ausführt, baut einen zweiten Trichter.
 | **B5** | Ein Gratis-Code-System **existiert nicht**. Vorhanden ist nur `allow_promotion_codes: true` in `stripe-checkout`. | `supabase/functions/stripe-checkout/index.ts` | „1 Monat Growth per Code" ist ohne Code-Änderung nur als **Stripe-Promotion-Code** machbar (Karte nötig) — oder als manuelle Freischaltung. |
 | **B6** | Agenten stehen in **vier** Quellen: `AGENT_MESH` (ehrlich: nur Compliance preview), `DEMO_AGENTS` (4 × `status: 'active'`, im Register als „Aktiv" gezählt), `AgentsCenterView` (Skills), DB-Tabelle `governance_agent_registry` (nur `active/archived/deprecated`). | `core/realsync-os/agentMesh.ts`, `features/governance/agents/demoAgents.ts`, Migration `20260817000000` | Das Register zeigt heute „4 Aktiv" für Demo-Daten — Overclaim-Risiko. WP5 führt eine Quelle ein. |
 | **B7** | `/app/dashboard` ist **bereits** das Command Center mit echten RPCs (`governance_kpi_latest_snapshot`, `governance_24h_summary`, Evidence-Health, Risk-Index, Maßnahmen). Es fehlen Kacheln für KI-Inventar, Agent-Register und Freigaben. Quellen existieren: `ai_systems`, `ai_act_risk_inventory`, `governance_approvals`. | `CommandCenterDashboard.tsx`, `cockpit/cockpitData.ts`, `approvalsApi.ts` | WP4 ergänzt eine Kachelreihe, kein zweites Dashboard. |
-| **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. |
+| **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). **Nachtrag 2026-10-03:** gemessen galt das für `DesignGovernanceAiLanding`. Seit #1686 ist `/` = Landing v2, visuelle Quelle `src/styles/landing-v2.css`; der Freeze gilt jetzt dieser Seite. | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. **Heute:** WP1 geschlossen (§3) — Landing-Änderungen brauchen eine neue Freigabe. |
 | **B9** | Oberhalb von Enterprise (1.249 €) steht im SSoT **Partner zu 1.999 €**. | `shared/pricing.ts` | Klären, ob Partner ein Programm (nicht öffentlich) oder eine Stufe ist — sonst widerspricht es „Enterprise ist die höchste Stufe" (**E-F4**). |
 | **B10** | Das Doku-Budget ist **exakt voll**: `docs/` 235/235 Dateien, 2.697/2.700 KB (`npm run check:context`, CI). | `.claude/context-budget.json`, `scripts/check-context-budget.mjs` | Jedes neue `docs/`-Dokument bricht CI. Dieser Plan liegt deshalb unter `.claude/`. Neue Specs nur gegen Archivierung eines alten Dokuments. |
 | **B11** | Kartenlose Testphasen **laufen nie ab**: `create-trial-subscription` schreibt `status='trialing'` + `trial_end` ohne Stripe-Subscription; der Entitlement-Resolver (`20260920130000_bots_quota_enforcement.sql`, `abo_wirksam`) prüft `trial_end` nicht, und kein Job setzt abgelaufene Testphasen zurück. | Migration `20260920130000`, `create-trial-subscription/index.ts` | Growth-Rechte ohne Ende. **WP2a** (Migration, separates GO): Resolver prüft `trial_end > now()`. WP2 erst danach mergen. **Im Repo:** `20260928160000_wp2a_trial_end_expiry.sql` (liest `trial_end`, ersatzweise `trial_ends_at`; ohne Ende = Stripe-Testphase, läuft weiter), Test `test/runtime/db/trial-expiry.db.test.ts`. Anwendung auf Produktion nur mit GO. |
@@ -65,11 +65,27 @@ Die Sichten sind Labels auf dem Authority-Pfad. Kein zweites Enum, kein zweites 
 
 **Entschieden am 2026-09-27 (Dominik Steiner):** E-F1 = (a), E-F2 = (a), E-F3 = „Die Kontrollschicht für KI im Unternehmen." — WP1–WP3 sind damit freigegeben. E-F4 und E-F5 bleiben offen und blockieren WP1–WP3 nicht.
 
+**Nachtrag 2026-10-03 (Dominik Steiner): E-F3 ist abgelöst, WP1 ist geschlossen.**
+WP1 wurde am 2026-09-27 mit `6523ac2` (#1673) umgesetzt. Einen Tag später hat
+`7a8fa8b` (#1686) die Startseite auf `LandingV2` umgestellt. Seither ist WP1
+geteilt: Der WP1-**Hero** rendert nur noch auf `/design/governance-ai`; der
+WP1-**Zielbild-Abschnitt** (`GovernanceOsTarget` — Control Loop mit Learn als
+Coming Soon, Einstiegspfad) läuft auf `/` weiter, weil `LandingV2.tsx`
+`ArchitectureSection` einbettet. Die Startseite trägt die Headline des
+Landing-v2-Handoffs und die Sechs-Stufen-Schleife, die im Code als „Entscheidung
+Dominik, 28.09.2026" vermerkt ist — **nach** E-F3. E-F3 wird deshalb nicht
+nachgezogen, sondern als überholt geführt: die spätere Entscheidung gilt.
+
+Damit ist genau ein WP1-Akzeptanzkriterium dauerhaft offen: Die Headline nennt
+nicht die Kontroll-/Nachweisschicht. Das ist **keine Lücke, sondern die
+getroffene Entscheidung.** Eine Änderung der Startseite braucht eine neue
+Freigabe und ein neues Arbeitspaket.
+
 | ID | Frage | Status / Entscheidung | Begründung |
 |---|---|---|---|
 | **E-F1** | Angebotsmechanik nach dem Scan | ✅ **Entschieden: 14-Tage-Growth-Testphase.** Kein Stripe-Gratis-Code, keine manuelle Freischaltung. Starter-`trialDays` → 0 und Starter-`ctaLabel` ohne Trial-Versprechen. **Blocker:** kartenlose Testphasen laufen heute nie ab (B11) → WP2a vor WP2. | Nutzt die deployte `create-trial-subscription`; kein neuer Zahlungsweg, keine Karte im Einstieg. |
 | **E-F2** | Wo lebt das AI-OS-Setup? | ✅ **Entschieden: `/app/activation`.** `/setup-assistant` und `/unified-entry/onboarding` werden nicht erweitert. | Activation persistiert schon Org + Scope, ist live und im Post-Scan-Pfad verlinkt. |
-| **E-F3** | Hero-Headline | ✅ **Entschieden: „Die Kontrollschicht für KI im Unternehmen."** | Beschreibt, was heute läuft; die Agenten-Variante wäre überwiegend Coming Soon. |
+| **E-F3** | Hero-Headline | ⛔ **Abgelöst (2026-10-03).** Entschieden war „Die Kontrollschicht für KI im Unternehmen."; umgesetzt in #1673, dann durch Landing v2 (#1686) von `/` verdrängt. Gilt heute nur noch für `/design/governance-ai`. | Die Headline der Startseite kommt aus dem Landing-v2-Handoff (28.09.2026) — eine spätere Entscheidung als E-F3. |
 | **E-F4** | Partner 1.999 € | ⏳ offen: Programm (nicht öffentlich) oder Stufe | Empfehlung: Programm, `sellable`/öffentliche Anzeige prüfen |
 | **E-F5** | `/unified-entry/scan` | ⏳ offen: behalten für Builder-Pfad oder auf `/audit` umleiten | Empfehlung: Behalten, aber **nicht** aus Landing/Funnel verlinken |
 | **E-F6** | Einstieg nach dem Scan (ersetzt die Angebotsmechanik aus E-F1) | ✅ **Entschieden am 2026-09-29 (Dominik Steiner): dauerhaft kostenloses Konto.** Registrierung ohne Testphase; der Kunde landet im Dashboard auf Free (`free_audit`: Scan, Governance Score, Audit Center) und macht sich in Ruhe vertraut. Growth-Testphase (kartenlos, `create-trial-subscription`) und Starter-Kauf sind Upgrade-Angebote im Dashboard (`FreePlanPanel`) und auf `/pricing`. Abgelaufene Testphase fällt sichtbar auf Free zurück. Starter behält `trialDays: 14` — beworben auf `/pricing`, eingelöst in `stripe-checkout` (B4 damit in die andere Richtung aufgelöst). | Kein Zeitdruck im Einstieg, Trial wird zum Pull-Angebot statt Zwang. `create-trial-subscription` bleibt „nur Growth". |
@@ -79,9 +95,9 @@ Die Sichten sind Labels auf dem Authority-Pfad. Kein zweites Enum, kein zweites 
 ## 4. Arbeitspakete und Reihenfolge
 
 ```
-E-F1–E-F3 ✅ entschieden (E-F4/E-F5 offen, nicht blockierend)
+E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blockierend)
       │
-      ├─► WP1 Landing-Copy ─────────────┐
+      ├─X WP1 Landing-Copy ─────────────┐   ERLEDIGT #1673; Hero von #1686 überholt — nicht erneut aufgreifen
       ├─► WP5 Agent-Register-Quelle ────┤   (parallel möglich, keine Datei-Überschneidung)
       │                                 ▼
       └─► WP2a Trial-Ablauf (GO) ─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
@@ -91,7 +107,7 @@ E-F1–E-F3 ✅ entschieden (E-F4/E-F5 offen, nicht blockierend)
 
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
 |---|---|---|---|---|
-| **WP1** | Landing schärfen | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | niedrig | Landing-Claims (Einzel-Freigabe) |
+| ~~**WP1**~~ | ⛔ **Geschlossen** — Landing schärfen. Umgesetzt in `6523ac2` (#1673). Seit #1686 tragen `GovernanceOsHero.tsx` und `DesignGovernanceAiLanding.tsx` nur `/design/governance-ai`; `HomepageBriefSections.tsx` und `hero-content.ts` laufen über die eingebettete `ArchitectureSection` weiter auf `/`. | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | — | erledigt |
 | **WP2a** | Trial-Ablauf erzwingen (Resolver prüft `trial_end`) | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | **Migration = separates GO** |
 | **WP2** | Funnel auf `/audit` ausrichten | `pages/AuditLanding.tsx`, `components/audit/PostScanChoiceRow.tsx`, `TrialOfferPage.tsx`, `SuccessPage.tsx`, `PostRegisterOnboardingPage.tsx` (nur Copy), `shared/pricing.ts` (Starter `trialDays`) | mittel | Preise/Angebot |
 | **WP3** | AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | — (keine Migration) |

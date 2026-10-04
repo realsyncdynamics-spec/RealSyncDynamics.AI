@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { COMPANY, getCompanyDisplayName } from '../../../config/company';
 import {
   ANCHORS,
   APP_FINDINGS,
@@ -807,21 +808,25 @@ export function V4Footer() {
       <div className="foot-legal">
         <div>
           <b>UNTERNEHMEN</b>
-          <strong>RealSyncDynamics GmbH</strong>
+          <strong>{getCompanyDisplayName()}</strong>
           <br />
-          Berlin, Deutschland
-          <br />
-          Handelsregister: HRB · Amtsgericht Berlin-Charlottenburg
+          {COMPANY.headquartersAddress.city}, Deutschland
+          {COMPANY.registryEntry ? (
+            <>
+              <br />
+              Handelsregister: {COMPANY.registryEntry}
+            </>
+          ) : null}
         </div>
         <div>
-          <b>BETRIEB</b>Alle Daten werden in Europa verarbeitet und gespeichert.
+          <b>BETRIEB</b>Datenhaltung in der EU (Supabase, eu-central-1 · Frankfurt).
           <br />
-          Volle Konformität mit der Datenschutz-Grundverordnung.
+          Unterstützt DSGVO- und EU-AI-Act-Kontrollen — die rechtliche Bewertung bleibt beim Anwender.
         </div>
         <div>
-          <b>STANDARDS</b>DSGVO · EU AI Act · ISO 27001 · NIS2
+          <b>STANDARDS</b>Rahmenwerke: DSGVO · EU AI Act · ISO 27001 · NIS2
           <br />
-          C2PA-Standard · Deutsche Ingenieurskunst
+          C2PA Content Credentials
         </div>
         <div>
           <b>KONTAKT</b>Enterprise per Anfrage — SSO, On-Prem, Custom-DPA, Behördenvertrag.

@@ -13,12 +13,13 @@
 
 import {
   ENTITLEMENT_KEYS,
+  SALES_PLANS,
   checkoutHrefForPlan,
   hasPermission,
   limitOf,
-  planById,
   planEntitlementValue,
   planGrants,
+  planRank,
   resolvePlan,
   type EntitlementKey,
   type Plan,
@@ -175,12 +176,60 @@ export function isWithinSiteCap(
   return siteCount < snapshot.sites;
 }
 
+/** Warum das Studio gesperrt ist — bestimmt, welcher Plan die Sperre hebt. */
+export type BuilderUpgradeReason = 'no_entitlement' | 'sites_exhausted' | 'publish_locked';
+
 /**
- * Upgrade target: Starter monthly checkout (first plan with siteos.builder).
+ * Der günstigste angebotene Plan, der die fehlende Grenze tatsächlich hebt —
+ * abgeleitet aus Rang (`planRank`) und Keys (`planGrants` /
+ * `planEntitlementValue`), nie aus Plannamen.
+ *
+ * - `no_entitlement`: erster Plan ab dem aktuellen Rang mit `siteos.builder`
+ *   (Free → Starter; ein pausierter Plan führt zurück auf denselben Plan).
+ * - `sites_exhausted`: erster Plan **über** dem aktuellen mit Builder und
+ *   mehr `limit.sites` als heute.
+ * - `publish_locked`: erster Plan ab dem aktuellen Rang mit `siteos.publish`.
+ *
+ * Fehlt ein Recht, das der eigene Plan enthält, ist die Freischaltung
+ * pausiert — dann führt der Link zum eigenen Plan, nicht zum Upsell. Nur ein
+ * erschöpftes Kontingent braucht einen höheren Plan.
+ *
+ * Bis 2026-10 führte jeder Grund auf Starter — auch ein Starter-Kunde mit
+ * erschöpftem Kontingent landete im Checkout seines eigenen Plans.
+ * Hebt kein angebotener Plan die Grenze, bleibt der letzte (Vertrieb).
+ */
+export function builderUpgradeTarget(
+  currentPlan?: Plan | PlanId | string | null,
+  reason: BuilderUpgradeReason = 'no_entitlement',
+): Plan {
+  const current = resolvePlan(currentPlan);
+  const currentRank = current ? planRank(current.id) : -1;
+  const currentSites = current ? (planEntitlementValue(current.planKey, SITEOS_SITES_LIMIT_KEY) ?? 0) : 0;
+  const minRank = reason === 'sites_exhausted' ? currentRank + 1 : currentRank;
+
+  const lifts = (plan: Plan): boolean => {
+    if (reason === 'publish_locked') return planGrants(plan.planKey, SITEOS_PUBLISH_KEY);
+    if (!planGrants(plan.planKey, SITEOS_BUILDER_KEY)) return false;
+    if (reason !== 'sites_exhausted') return true;
+    if (currentSites === -1) return false;
+    const cap = planEntitlementValue(plan.planKey, SITEOS_SITES_LIMIT_KEY);
+    return cap === -1 || (cap ?? 0) > currentSites;
+  };
+
+  return SALES_PLANS.find((plan) => planRank(plan.id) >= minRank && lifts(plan))
+    ?? SALES_PLANS[SALES_PLANS.length - 1];
+}
+
+/**
+ * Upgrade-Link je Grund (siehe `builderUpgradeTarget`). Immer Monats-
+ * Checkout; ein Vertragsplan führt über `checkoutHrefForPlan` zur Anfrage.
  * Never invent yearly checkout.
  */
-export function builderUpgradeHref(_currentPlan?: Plan | PlanId | string | null): string {
-  return checkoutHrefForPlan(planById('starter'), { source: 'build-studio-upgrade' });
+export function builderUpgradeHref(
+  currentPlan?: Plan | PlanId | string | null,
+  reason: BuilderUpgradeReason = 'no_entitlement',
+): string {
+  return checkoutHrefForPlan(builderUpgradeTarget(currentPlan, reason), { source: 'build-studio-upgrade' });
 }
 
 /** Helper for `useEntitlements().canAccess('siteos.builder')` upgrade URLs. */

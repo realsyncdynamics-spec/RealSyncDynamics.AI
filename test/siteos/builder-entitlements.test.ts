@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import {
   ENTITLEMENT_KEYS,
   planById,
+  planEntitlementValue,
   planGrants,
 } from '../../shared/pricing';
 import {
@@ -16,6 +17,7 @@ import {
   SITEOS_PUBLISH_KEY,
   SITEOS_SITES_LIMIT_KEY,
   builderUpgradeHref,
+  builderUpgradeTarget,
   canOpenAppBuilder,
   canPublishSite,
   canUseFrontendDesigner,
@@ -132,6 +134,44 @@ describe('builderEntitlements — siteos.* keys', () => {
     expect(href).toContain('/checkout/starter');
     expect(href).not.toContain('yearly');
     expect(href).not.toContain('interval=year');
+  });
+
+  it('upgrade target follows the reason up the ladder — keys and rank, not plan names', () => {
+    // Kein Builder: der erste Plan mit siteos.builder.
+    expect(builderUpgradeTarget('free', 'no_entitlement').id).toBe('starter');
+    // Kontingent erschöpft: der nächste Plan mit mehr limit.sites, nicht der eigene.
+    expect(builderUpgradeTarget('starter', 'sites_exhausted').id).toBe('growth');
+    expect(builderUpgradeTarget('growth', 'sites_exhausted').id).toBe('agency');
+    expect(builderUpgradeTarget('free', 'sites_exhausted').id).toBe('starter');
+    // Oben auf der Self-Service-Leiter bleibt nur die Anfrage.
+    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/contact-sales');
+    // Publish fehlt: der erste Plan ab dem aktuellen mit siteos.publish.
+    expect(builderUpgradeTarget('free', 'publish_locked').id).toBe('starter');
+    // Enthält der eigene Plan das Recht schon, ist es pausiert — kein Upsell.
+    expect(builderUpgradeTarget('growth', 'publish_locked').id).toBe('growth');
+    expect(builderUpgradeTarget('growth', 'no_entitlement').id).toBe('growth');
+    for (const reason of ['no_entitlement', 'sites_exhausted', 'publish_locked'] as const) {
+      for (const plan of ['free', 'starter', 'growth', null]) {
+        const href = builderUpgradeHref(plan, reason);
+        expect(href).not.toContain('yearly');
+        expect(href).not.toContain('interval=year');
+      }
+    }
+  });
+
+  it('every upgrade target actually lifts the lock it is offered for', () => {
+    for (const plan of ['free', 'starter', 'growth'] as const) {
+      const sites = planEntitlementValue(plan, 'limit.sites') ?? 0;
+      const target = builderUpgradeTarget(plan, 'sites_exhausted');
+      const cap = planEntitlementValue(target.planKey, 'limit.sites') ?? 0;
+      expect(cap === -1 || cap > sites).toBe(true);
+      expect(planGrants(target.planKey, 'siteos.builder')).toBe(true);
+    }
+  });
+
+  it('upgrade panel passes its reason to the upgrade target', () => {
+    const panel = readFileSync(resolve(ROOT, 'src/features/siteos/BuilderUpgradePanel.tsx'), 'utf8');
+    expect(panel).toContain('builderUpgradeHref(snapshot.planId, reason)');
   });
 });
 

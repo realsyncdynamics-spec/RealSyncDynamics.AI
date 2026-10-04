@@ -7,8 +7,16 @@ import type { CommandWorkflowParams } from "./types";
  */
 export interface CommandWorkflowStarter {
   create(options: { id: string; params: CommandWorkflowParams }): Promise<{ id: string }>;
-  get(id: string): Promise<{ id: string }>;
+  get(id: string): Promise<{ id: string; status(): Promise<{ status: string }> }>;
 }
+
+/**
+ * Endzustaende einer Instanz, die nicht erfolgreich durchgelaufen ist
+ * (Cloudflare Workflows, InstanceStatus). Eine solche Instanz arbeitet
+ * nicht mehr — sie als laufenden Doppelstart zu werten, hiesse, einen
+ * moeglicherweise haengenden Command zu verschweigen.
+ */
+const ENDED_UNSUCCESSFULLY = new Set(["errored", "terminated"]);
 
 /**
  * Startet die serverseitige Ausfuehrung eines freigegebenen Commands.
@@ -36,12 +44,24 @@ export async function startCommandExecution(
     // Doppelstart wird am Bestand erkannt, nicht am Fehlertext: Der Wortlaut
     // der Workflows-Fehler ist kein Vertrag, und ein Muster wie /conflict/
     // wuerde echte Fehler verschlucken — der Command hinge dann ohne
-    // laufende Instanz fuer immer. Existiert die Instanz, laeuft er schon.
+    // laufende Instanz fuer immer.
+    let existing: Awaited<ReturnType<CommandWorkflowStarter["get"]>>;
     try {
-      const existing = await env.COMMAND_WORKFLOW.get(commandId);
-      return { started: false, instanceId: existing.id };
+      existing = await env.COMMAND_WORKFLOW.get(commandId);
     } catch {
       throw err;
     }
+    // Gefunden heisst nicht laufend. Ueber die heutigen Aufrufer ist eine
+    // beendete Instanz nicht erreichbar (je Command genau ein Startpfad,
+    // durch WHERE state bewacht) — tritt sie doch auf, wird sie laut statt
+    // still. Die Wiederaufnahme selbst ist bewusst nicht Teil dieses Pfads.
+    const { status } = await existing.status();
+    if (ENDED_UNSUCCESSFULLY.has(status)) {
+      throw new Error(
+        `Workflow-Instanz ${commandId} existiert bereits, ist aber "${status}" — der Command braucht eine Wiederaufnahme`,
+        { cause: err },
+      );
+    }
+    return { started: false, instanceId: existing.id };
   }
 }

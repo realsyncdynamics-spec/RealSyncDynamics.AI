@@ -1,4 +1,4 @@
-import { PRICING_TAX_NOTE, checkoutHrefForPlan, planById } from '@/shared/pricing';
+import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/shared/pricing';
 
 /**
  * Landing v4 „Klassisch" — Inhalte 1:1 aus der Design-Referenz
@@ -242,11 +242,31 @@ export const ROADMAP_FILTERS = [
 ] as const;
 
 // ---- 07 Enterprise ----
+const ENTERPRISE_PLAN = planById('enterprise');
+
+export const ENTERPRISE_LEDE = ENTERPRISE_PLAN.technicalSubheadline;
+
 export const ENTERPRISE_TILES = [
-  ['Identität & Zugriff', 'Single Sign-On, zentrale Benutzerverwaltung mit Rollen und Rechten, Mandanten-Isolation über RLS.', 'SSO · SCIM · RBAC'],
-  ['Alle sechs Policy Packs', 'DSGVO, EU AI Act, ISO 27001, NIS2, TISAX, DORA — mit eigenen Richtlinien und Kontrollkatalogen.', 'POLICY ENGINE · CONTROLS'],
-  ['Evidence & Audit', 'Evidence Vault Enterprise mit 200 GB Nachweisspeicher, Audit Center Pro mit 200 Berichten pro Monat.', '200 GB · 200 REPORTS / MONAT'],
-  ['Betrieb & Support', 'API Premium mit 250.000 Aufrufen pro Monat, priorisierter Support mit vertraglich vereinbarter Reaktionszeit, White-Label mit Branding.', 'API PREMIUM · SLA · WHITE-LABEL'],
+  [
+    'Identität & Zugriff',
+    `Single Sign-On, zentrale Rechteverwaltung, ${formatLimit(ENTERPRISE_PLAN.limits.tenants)} Organisationen und ${formatLimit(ENTERPRISE_PLAN.limits.seats)} Benutzerplätze.`,
+    'SSO · RBAC',
+  ],
+  [
+    'Aktive Policy Packs + Roadmap',
+    'Live: DSGVO, EU AI Act, ISO 27001 und NIS2. TISAX und DORA: Roadmap / auf Anfrage.',
+    'POLICY ENGINE · CONTROLS',
+  ],
+  [
+    'Evidence & Audit',
+    `Evidence Vault mit ${formatLimit(ENTERPRISE_PLAN.limits.evidenceStorageGb)} GB Nachweisspeicher und bis zu ${formatLimit(ENTERPRISE_PLAN.limits.auditReportsPerMonth)} Audit-Berichten pro Monat.`,
+    `${formatLimit(ENTERPRISE_PLAN.limits.evidenceStorageGb)} GB · ${formatLimit(ENTERPRISE_PLAN.limits.auditReportsPerMonth)} REPORTS / MONAT`,
+  ],
+  [
+    'Betrieb & Support',
+    `API mit ${formatLimit(ENTERPRISE_PLAN.limits.apiCallsPerMonth)} Aufrufen pro Monat, dedizierter Ansprechpartner und White-Label-Berichte. SLA nach Vereinbarung.`,
+    'API · SLA NACH VEREINBARUNG · WHITE-LABEL',
+  ],
 ] as const;
 
 export const CLOSING_PILLS = ['DSGVO', 'EU AI ACT', 'POLICY PACKS', 'EVIDENCE VAULT', 'CLAUDE CODE', 'NACHWEIS-EXPORT'] as const;

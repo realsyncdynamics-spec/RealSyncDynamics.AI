@@ -49,7 +49,8 @@ function FeaturePaywall({ feature, upgradeUrl }: FeaturePaywallProps) {
     },
     'ai_classification.limited': {
       title: 'EU AI Act Klassifizierung',
-      description: 'Klassifiziere Systeme nach EU AI Act Compliance-Anforderungen.',
+      description:
+        'Klassifizierung ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.',
     },
     'bots.count': {
       title: 'Governance-Bots',
@@ -65,6 +66,8 @@ function FeaturePaywall({ feature, upgradeUrl }: FeaturePaywallProps) {
     title: 'Premium-Feature',
     description: 'Dieses Feature ist in deinem Plan nicht enthalten.',
   };
+  // Klassifizierung: kein Plan gewährt den Key — Upgrade-CTA wäre irreführend.
+  const unavailableWithoutUpgrade = feature === 'ai_classification.limited';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-obsidian-950 p-4">
@@ -85,24 +88,26 @@ function FeaturePaywall({ feature, upgradeUrl }: FeaturePaywallProps) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {upgradeUrl && (
+          {!unavailableWithoutUpgrade && (
+            <div className="flex flex-col gap-3">
+              {upgradeUrl && (
+                <button
+                  onClick={() => navigate(upgradeUrl)}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none bg-ai-cyan-500 hover:bg-ai-cyan-600 text-obsidian-950 font-semibold transition-colors"
+                >
+                  <Zap className="w-4 h-4" />
+                  Plan upgraden
+                </button>
+              )}
               <button
-                onClick={() => navigate(upgradeUrl)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none bg-ai-cyan-500 hover:bg-ai-cyan-600 text-obsidian-950 font-semibold transition-colors"
+                onClick={() => navigate('/pricing')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none border border-titanium-700 text-titanium-300 hover:text-titanium-50 hover:border-titanium-600 transition-colors text-sm"
               >
-                <Zap className="w-4 h-4" />
-                Plan upgraden
+                Alle Pläne anschauen
+                <ArrowRight className="w-4 h-4" />
               </button>
-            )}
-            <button
-              onClick={() => navigate('/pricing')}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-none border border-titanium-700 text-titanium-300 hover:text-titanium-50 hover:border-titanium-600 transition-colors text-sm"
-            >
-              Alle Pläne anschauen
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+            </div>
+          )}
 
           <p className="text-xs text-titanium-600">
             Kontaktiere uns für Enterprise-Lösungen: hello@realsyncdynamicsai.de

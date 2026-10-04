@@ -2984,7 +2984,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**
  * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
- * `EU_STANDARD` = Regelbesteuerung (seit 25.07.2026, Stripe Tax DE + OSS),
+ * `EU_STANDARD` = Regelbesteuerung; Stripe Tax DE + OSS registriert seit 25.07.2026.
  * Preise sind Bruttopreise. `COMPANY.taxMode` (Frontend) und
  * `pricing.generated.ts` (Edge Functions) folgen daraus.
  */

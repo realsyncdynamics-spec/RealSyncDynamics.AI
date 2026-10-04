@@ -1,8 +1,8 @@
 /**
  * Steuermodus-Guard: Website und Rechtstexte folgen der Laufzeit.
  *
- * Stripe rechnet seit 25.07.2026 mit Regelbesteuerung ab (Tax-Registrierung
- * DE + OSS, alle Live-Preise `tax_behavior=inclusive`). Solange
+ * Regelbesteuerung; Stripe Tax DE + OSS registriert seit 25.07.2026, alle
+ * Live-Preise `tax_behavior=inclusive`. Solange
  * `COMPANY.taxMode === 'EU_STANDARD'` gilt, darf keine Kundenfläche mehr
  * „§ 19 UStG" oder „Kleinunternehmer" behaupten.
  *

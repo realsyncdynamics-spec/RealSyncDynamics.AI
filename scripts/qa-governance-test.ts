@@ -191,7 +191,7 @@ const probes: Probe[] = [
   // ── Regelbesteuerung — no § 19 UStG claim on Impressum ──────────────────
 
   {
-    name: 'Impressum does NOT claim § 19 UStG (Regelbesteuerung since 2026-07-25)',
+    name: 'Impressum does NOT claim § 19 UStG (Regelbesteuerung, Stripe Tax registered 2026-07-25)',
     run: async () => {
       const p = await getPage('/legal/impressum');
       if (!p.ok) return { ok: false, status: p.status, detail: `HTTP ${p.status}` };

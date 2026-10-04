@@ -11,7 +11,8 @@ import { resolve } from 'node:path';
 import { PricingPage } from '../../src/features/billing/PricingPage';
 import { AuditStepper, recommendPlan } from '../../src/components/audit/AuditStepper';
 import { resetLangForTests } from '../../src/i18n/useLang';
-import { formatPriceEur, planById } from '../../src/config/pricing';
+import { formatPriceEur, planById, PRICING_TAX_NOTE_STANDARD, PRICING_TAX_NOTE_STANDARD_EN } from '../../src/config/pricing';
+import { translate } from '../../src/i18n/handoff';
 
 beforeEach(() => {
   localStorage.clear();
@@ -46,9 +47,12 @@ describe('/pricing (Handoff v2)', () => {
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
   });
 
-  it('shows the § 19 UStG note from the company SSOT', () => {
+  it('shows the gross-price VAT note from the pricing SSOT', () => {
     mount();
-    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('§ 19 UStG');
+    const note = screen.getByTestId('pricing-tax-note');
+    expect(note).toHaveTextContent(PRICING_TAX_NOTE_STANDARD);
+    expect(note.textContent).not.toMatch(/§\s*19|Kleinunternehmer|zzgl\./);
+    expect(translate('en', 'pricingFoot')).toContain(PRICING_TAX_NOTE_STANDARD_EN);
   });
 });
 

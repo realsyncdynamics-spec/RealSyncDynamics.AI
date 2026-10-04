@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Mail, Github, Shield, Zap, Lock, TrendingUp } from 'lucide-react';
-import { planById } from '@/shared/pricing';
+import { planById, pricingTaxNote } from '@/shared/pricing';
+import { COMPANY } from '../../config/company';
 
 export const RealSyncDynamicsLanding = () => {
   const [activeSection, setActiveSection] = useState(0);
@@ -610,7 +611,7 @@ export const RealSyncDynamicsLanding = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Umsatzsteuer</h3>
-                <p>Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.</p>
+                <p>{pricingTaxNote(COMPANY.taxMode)}</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Aufsichtsbehörde Datenschutz</h3>

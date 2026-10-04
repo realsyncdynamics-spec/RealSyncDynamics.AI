@@ -16,10 +16,11 @@
  *   auditFoot  `gdpr-audit` speichert Domain und E-Mail für Bericht und
  *              Report-Mail (Tabelle `gdpr_audits`). „Keine Speicherung ohne
  *              Einwilligung" wäre falsch.
- *   pricingSub „Preise netto" passt nicht zur Kleinunternehmer-Regel
- *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
+ *   pricingSub „Preise netto" ist falsch — die Preise sind Bruttopreise
+ *              (Stripe `tax_behavior=inclusive`), „alle Daten in der EU" ist
  *              breiter als belegt; übrig bleibt, was stimmt.
- *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
+ *   pricingFoot  Der Prototyp behauptet § 19 UStG. Der Steuerhinweis kommt
+ *              aus der Pricing-SSoT (`pricingTaxNote(COMPANY.taxMode)`).
  *   heroA–C, sub1, sub2  Positionierung nach Entscheidung E-F3 (2026-09-27):
  *              „Die Kontrollschicht für KI im Unternehmen." Kategorie bleibt
  *              Governance, nicht EU-AI-Act-Software; Compliance ist
@@ -35,6 +36,8 @@
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
  */
 
+import { pricingTaxNote } from '@/shared/pricing';
+import { COMPANY } from '../config/company';
 import { HANDOFF_APP, type HandoffAppKey } from './handoffApp';
 
 export type Lang = 'de' | 'en';
@@ -265,6 +268,7 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Ergebnis ohne Account. Domain und E-Mail werden für den Bericht gespeichert — Details in der Datenschutzerklärung.',
     pricingSub: 'Monatlich kündbar. Datenhaltung in der EU (Supabase Frankfurt).',
+    pricingFoot: `Alle Preise in EUR. ${pricingTaxNote(COMPANY.taxMode, 'de')} Enterprise auf Anfrage.`,
     cta: 'Governance-Scan starten',
     heroA: 'Die Kontrollschicht',
     heroB: 'für KI im',
@@ -278,6 +282,7 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     auditFoot:
       'Result without an account. Domain and e-mail are stored for the report — see the privacy policy.',
     pricingSub: 'Cancel monthly. Data stored in the EU (Supabase Frankfurt).',
+    pricingFoot: `All prices in EUR. ${pricingTaxNote(COMPANY.taxMode, 'en')} Enterprise on request.`,
     cta: 'Start governance scan',
     heroA: 'The control layer',
     heroB: 'for AI in the',

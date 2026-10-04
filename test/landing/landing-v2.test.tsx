@@ -1,14 +1,14 @@
 /**
  * Landing v2 (`/design/landing-v2`) — Vertrag des Claude-Design-Handoffs:
  * H1, Pipeline, Tier-Buttons aus der Pricing-SSoT, Sektionsreihenfolge,
- * Preise ohne USt-Ausweis (§ 19 UStG), Hell/Dunkel-Umschaltung.
+ * Bruttopreise inkl. gesetzlicher USt (Regelbesteuerung), Hell/Dunkel-Umschaltung.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV2 } from '../../src/pages/LandingV2';
 import { LV2_FAQ, lv2FaqJsonLd } from '../../src/components/landing/v2/landing-v2-content';
-import { checkoutHrefForPlan, formatPriceEur, planById } from '../../shared/pricing';
+import { checkoutHrefForPlan, formatPriceEur, planById, PRICING_TAX_NOTE_STANDARD } from '../../shared/pricing';
 
 /** Intl setzt ein geschütztes Leerzeichen vor „€“ — für Textvergleiche normalisieren. */
 const eur = (v: number) => formatPriceEur(v).replace(/\u00a0/g, ' ');
@@ -89,7 +89,7 @@ it('keeps the handoff section order and resolvable in-page anchors', () => {
   }
 });
 
-it('shows four plan cards with SSoT prices, no VAT line and a § 19 UStG note', () => {
+it('shows four plan cards with SSoT prices and the gross-price VAT note', () => {
   const view = mount();
   const cards = view.container.querySelectorAll('.lv2-plan');
   expect(cards).toHaveLength(4);
@@ -105,7 +105,8 @@ it('shows four plan cards with SSoT prices, no VAT line and a § 19 UStG note', 
   );
 
   const foot = view.container.querySelector('.lv2-pricing__foot')!;
-  expect(foot.textContent).toContain('§ 19 UStG');
+  expect(foot.textContent).toContain(PRICING_TAX_NOTE_STANDARD);
+  expect(view.container.textContent).not.toMatch(/§\s*19\s*UStG|Kleinunternehmer/);
   expect(view.container.textContent).not.toMatch(/zzgl\. (gesetzlicher )?USt/i);
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 

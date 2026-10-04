@@ -4,6 +4,8 @@ import {
   isImpressumProductionReady,
   loadBusinessIdentity,
 } from '../../config/business-identity';
+import { COMPANY } from '../../config/company';
+import { PRICING_TAX_NOTE_EXEMPT } from '@/shared/pricing';
 
 /**
  * Impressum nach § 5 DDG + § 18 MStV.
@@ -128,10 +130,10 @@ export function Impressum() {
             <p>
               Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: <span className="font-mono text-titanium-50">{identity.vatId}</span>
             </p>
+          ) : COMPANY.taxMode === 'EXEMPT' ? (
+            <p>{PRICING_TAX_NOTE_EXEMPT}</p>
           ) : (
-            <p>
-              Kleinunternehmer i. S. v. § 19 UStG (Umsatzsteuer-Befreiung). Es wird keine Umsatzsteuer ausgewiesen.
-            </p>
+            <p>Die Umsatzsteuer-Identifikationsnummer wird nach Erteilung ergänzt.</p>
           )}
         </Section>
 

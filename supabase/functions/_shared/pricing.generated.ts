@@ -2978,25 +2978,34 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
-export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/**
+ * Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`.
+ * Die Live-Preise in Stripe sind `tax_behavior=inclusive` (Bruttopreise), daher „inkl.".
+ */
+export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise inkl. gesetzlicher Umsatzsteuer.';
+export const PRICING_TAX_NOTE_STANDARD_EN = 'All prices include statutory VAT.';
 
-/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Nur für `taxMode === 'EXEMPT'`. */
 export const PRICING_TAX_NOTE_EXEMPT =
   'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+export const PRICING_TAX_NOTE_EXEMPT_EN =
+  'Small business under § 19 UStG — no VAT is charged.';
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**
  * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
- * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
- * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
- * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ * `EU_STANDARD` = Regelbesteuerung (seit 25.07.2026, Stripe Tax DE + OSS),
+ * Preise sind Bruttopreise. `COMPANY.taxMode` (Frontend) und
+ * `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
-export function pricingTaxNote(mode: PricingTaxMode): string {
+export function pricingTaxNote(mode: PricingTaxMode, lang: 'de' | 'en' = 'de'): string {
+  if (lang === 'en') {
+    return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT_EN : PRICING_TAX_NOTE_STANDARD_EN;
+  }
   return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
 }
 

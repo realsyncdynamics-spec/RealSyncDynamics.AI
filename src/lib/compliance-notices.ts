@@ -209,7 +209,7 @@ export function areLegalDocsComplete(): {
 } {
   const missing: string[] = [];
 
-  // Kleinunternehmer § 19 UStG: USt-IdNr. optional bis zur Vergabe.
+  // Einzelunternehmen: USt-IdNr. kommt aus VITE_BUSINESS_VAT_ID (Impressum), nicht aus COMPANY.
   if (COMPANY.legalForm !== 'Einzelunternehmen' && !COMPANY.vatId) {
     missing.push('USt-IdNr. (Umsatzsteuer-Identifikationsnummer)');
   }

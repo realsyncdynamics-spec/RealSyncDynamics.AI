@@ -163,7 +163,7 @@ export function requiresRegistryEntry(legalForm: LegalForm = COMPANY.legalForm):
 
 /**
  * Validiert, ob die Konfiguration für Production-Start bereit ist.
- * HRB ist nur bei UG/GmbH Pflicht; Kleinunternehmer ohne USt-IdNr. ist zulässig.
+ * HRB ist nur bei UG/GmbH Pflicht; die USt-IdNr. kommt aus VITE_BUSINESS_VAT_ID (Impressum).
  */
 export function isProductionReady(): boolean {
   const registryOk = !requiresRegistryEntry() || COMPANY.registryEntry !== null;

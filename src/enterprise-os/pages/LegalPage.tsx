@@ -2,6 +2,7 @@ import React from 'react';
 import { PublicNav } from '../layout/PublicNav';
 import { PublicFooter } from '../layout/PublicFooter';
 import { COMPANY } from '../../config/company';
+import { pricingTaxNote } from '@/shared/pricing';
 
 interface LegalSection {
   heading: string;
@@ -135,7 +136,7 @@ export function ImpressumPage() {
         },
         {
           heading: 'Umsatzsteuer',
-          body: ['Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.'],
+          body: [pricingTaxNote(COMPANY.taxMode)],
         },
         {
           heading: 'Hinweis',

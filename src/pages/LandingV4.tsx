@@ -4,15 +4,15 @@
  *
  * Dunkler Hero mit 3D-Erde (Sonne, Mond, Mars, ISS), darunter Classical-
  * Sektionen (Papier #f3f2f2, Tinte #201f1d, Gold #b68235; Cormorant Garamond ·
- * Lora · JetBrains Mono). Design-Route neben `/` — die Startseite (Landing v2)
- * bleibt unverändert, bis der Wechsel ausdrücklich freigegeben ist.
+ * Lora · JetBrains Mono). Startseite `/` und einziges öffentliches Frontend
+ * (Freigabe Owner); v2 bleibt als Referenz unter /design/landing-v2.
  *
  * Verhalten wie in der Referenz: Scroll-Fortschritt, Hero-Parallax,
  * Einblenden (IntersectionObserver 0,08), Karten-Spotlight und -Tilt,
  * Seal-/Ledger-Takt, Ticker, Roadmap-Filter, Scroll-Kamerafahrt der Szene.
  */
 import { useEffect, useRef } from 'react';
-import { SEOHead } from '../../components/SEOHead';
+import { SEOHead } from '../components/SEOHead';
 import {
   V4Backdrop,
   V4Closing,
@@ -29,14 +29,14 @@ import {
   V4Ticker,
   V4Tools,
   V4Workspace,
-} from '../../components/landing/v4/LandingV4Sections';
-import '../../styles/landing-v4-classical.css';
+} from '../components/landing/v4/LandingV4Sections';
+import '../styles/landing-v4-classical.css';
 
 const REVEAL_SELECTOR = '.card, .rm-card, .ent > div, .loop-node, .sec-lede';
 const SPOTLIGHT_SELECTOR = '.card, .rm-card, .ent > div';
 const TILT_SELECTOR = '.card, .ent > div';
 
-export function DesignClassicalLanding() {
+export function LandingV4() {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -52,10 +52,11 @@ export function DesignClassicalLanding() {
   useEffect(() => {
     const root = rootRef.current;
     const canvas = canvasRef.current;
-    if (!root || !canvas) return;
+    // Prerender/Automation (`navigator.webdriver`): kein WebGL, nur der statische Stand.
+    if (!root || !canvas || navigator.webdriver) return;
     let unmount: (() => void) | undefined;
     let cancelled = false;
-    import('../../components/landing/v4/heroEarthScene').then(({ mountHeroEarth }) => {
+    import('../components/landing/v4/heroEarthScene').then(({ mountHeroEarth }) => {
       if (cancelled) return;
       unmount = mountHeroEarth({ canvas, cssTarget: root, visibilityTarget: root.querySelector('main') });
     });

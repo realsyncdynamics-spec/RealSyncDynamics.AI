@@ -54,7 +54,7 @@ export const HERO_PROOF = ['EVIDENCE-CHAIN', 'AI-ACT-KLASSIFIKATION', 'PROVENANC
 export const HERO_KPIS = [
   ['6', 'POLICY PACKS'],
   ['EU', 'DATENRESIDENZ'],
-  ['99.9 %', 'UPTIME SLA'],
+  ['C2PA', 'PROVENANCE LIVE'],
 ] as const;
 
 export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [

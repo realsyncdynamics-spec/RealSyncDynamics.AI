@@ -67,16 +67,19 @@ Die Sichten sind Labels auf dem Authority-Pfad. Kein zweites Enum, kein zweites 
 
 **Nachtrag 2026-10-03 (Dominik Steiner): E-F3 ist abgelöst, WP1 ist geschlossen.**
 WP1 wurde am 2026-09-27 mit `6523ac2` (#1673) umgesetzt. Einen Tag später hat
-`7a8fa8b` (#1686) die Startseite auf `LandingV2` umgestellt; die WP1-Arbeit liegt
-seither auf `/design/governance-ai`. Die Startseite trägt die Headline des
+`7a8fa8b` (#1686) die Startseite auf `LandingV2` umgestellt. Seither ist WP1
+geteilt: Der WP1-**Hero** rendert nur noch auf `/design/governance-ai`; der
+WP1-**Zielbild-Abschnitt** (`GovernanceOsTarget` — Control Loop mit Learn als
+Coming Soon, Einstiegspfad) läuft auf `/` weiter, weil `LandingV2.tsx`
+`ArchitectureSection` einbettet. Die Startseite trägt die Headline des
 Landing-v2-Handoffs und die Sechs-Stufen-Schleife, die im Code als „Entscheidung
 Dominik, 28.09.2026" vermerkt ist — **nach** E-F3. E-F3 wird deshalb nicht
 nachgezogen, sondern als überholt geführt: die spätere Entscheidung gilt.
 
-Damit sind zwei WP1-Akzeptanzkriterien dauerhaft offen (Headline nennt nicht die
-Kontroll-/Nachweisschicht, keine Learn-Stufe als Coming Soon). Das sind **keine
-Lücken, sondern die getroffene Entscheidung.** Eine Änderung der Startseite
-braucht eine neue Freigabe und ein neues Arbeitspaket.
+Damit ist genau ein WP1-Akzeptanzkriterium dauerhaft offen: Die Headline nennt
+nicht die Kontroll-/Nachweisschicht. Das ist **keine Lücke, sondern die
+getroffene Entscheidung.** Eine Änderung der Startseite braucht eine neue
+Freigabe und ein neues Arbeitspaket.
 
 | ID | Frage | Status / Entscheidung | Begründung |
 |---|---|---|---|
@@ -94,7 +97,7 @@ braucht eine neue Freigabe und ein neues Arbeitspaket.
 ```
 E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blockierend)
       │
-      ├─X WP1 Landing-Copy ─────────────┐   ERLEDIGT #1673, dann von #1686 überholt — nicht erneut aufgreifen
+      ├─X WP1 Landing-Copy ─────────────┐   ERLEDIGT #1673; Hero von #1686 überholt — nicht erneut aufgreifen
       ├─► WP5 Agent-Register-Quelle ────┤   (parallel möglich, keine Datei-Überschneidung)
       │                                 ▼
       └─► WP2a Trial-Ablauf (GO) ─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
@@ -104,7 +107,7 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
 
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
 |---|---|---|---|---|
-| ~~**WP1**~~ | ⛔ **Geschlossen** — Landing schärfen. Umgesetzt in `6523ac2` (#1673); die genannten Dateien tragen seit #1686 `/design/governance-ai`, nicht `/`. | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | — | erledigt |
+| ~~**WP1**~~ | ⛔ **Geschlossen** — Landing schärfen. Umgesetzt in `6523ac2` (#1673). Seit #1686 tragen `GovernanceOsHero.tsx` und `DesignGovernanceAiLanding.tsx` nur `/design/governance-ai`; `HomepageBriefSections.tsx` und `hero-content.ts` laufen über die eingebettete `ArchitectureSection` weiter auf `/`. | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | — | erledigt |
 | **WP2a** | Trial-Ablauf erzwingen (Resolver prüft `trial_end`) | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | **Migration = separates GO** |
 | **WP2** | Funnel auf `/audit` ausrichten | `pages/AuditLanding.tsx`, `components/audit/PostScanChoiceRow.tsx`, `TrialOfferPage.tsx`, `SuccessPage.tsx`, `PostRegisterOnboardingPage.tsx` (nur Copy), `shared/pricing.ts` (Starter `trialDays`) | mittel | Preise/Angebot |
 | **WP3** | AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | — (keine Migration) |

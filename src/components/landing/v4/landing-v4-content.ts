@@ -1,3 +1,5 @@
+import { PRICING_TAX_NOTE, checkoutHrefForPlan, planById } from '@/shared/pricing';
+
 /**
  * Landing v4 „Klassisch" — Inhalte 1:1 aus der Design-Referenz
  * (`The Governance AI v4.html`, Datenblöcke Z. 1215–1670). Der Wortlaut
@@ -170,23 +172,25 @@ export const TRUST: ReadonlyArray<readonly [TrustIcon, string, string]> = [
 ];
 
 // ---- 05 Tarife (shared/pricing.ts) ----
-export const PLANS = [
-  { id: 'starter', name: 'STARTER', price: '79', badge: '', featured: false,
-    tagline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
-    cta: '14 Tage kostenlos testen',
-    l: ['Vollständiger DSGVO-Scan mit Paragraphenbezug', 'Evidence Vault mit Hash-Chain-Verifizierung',
-      'Audit-Export als PDF und JSON', 'Lückenloser Prüfpfad über alle Läufe'] },
-  { id: 'growth', name: 'GROWTH', price: '249', badge: 'EMPFOHLEN', featured: true,
-    tagline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
-    cta: '14 Tage kostenlos testen',
-    l: ['Alles aus Starter', 'Evidence Vault mit Versionierung',
-      'Erweiterter Evidence-Zugriff mit C2PA-Export', 'Signierter Herkunftsnachweis (Provenance)', 'Policy Packs: DSGVO, EU AI Act, ISO 27001'] },
-  { id: 'agency', name: 'AGENCY', price: '699', badge: 'FÜR AGENTUREN', featured: false,
-    tagline: 'Für Agenturen und mehrere Kunden.',
-    cta: 'Agency starten',
-    l: ['Alles aus Growth', 'Evidence Vault Advanced: unveränderliche Snapshots, Retention, Legal Hold',
-      'Herkunftsnachweis mit Ed25519-Signatur und Chain-of-Custody', 'White-Label-Berichte mit eigenem Logo'] },
-] as const;
+const V4_PLAN_IDS = ['starter', 'growth', 'agency'] as const;
+
+export const PLANS = V4_PLAN_IDS.map((id) => {
+  const plan = planById(id);
+  return {
+    id: plan.id,
+    name: plan.name.toUpperCase(),
+    displayName: plan.name,
+    price: String(plan.price.monthlyEur),
+    badge: plan.badges[0]?.toUpperCase() ?? '',
+    featured: plan.highlight,
+    tagline: plan.outcomeHeadline,
+    cta: plan.ctaLabel,
+    href: checkoutHrefForPlan(plan, { source: 'landing-v4' }),
+    l: plan.features.audit_evidence.slice(0, 4),
+  };
+});
+
+export const V4_PRICING_TAX_NOTE = PRICING_TAX_NOTE;
 
 // ---- 06 Roadmap (implementation-status.ts) ----
 export const ROADMAP = [

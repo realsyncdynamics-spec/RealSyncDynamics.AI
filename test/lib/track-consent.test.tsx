@@ -10,7 +10,9 @@ const CONSENT_KEY = 'realsync.cookie-consent.v1';
 const CONSENT_EVENT = 'realsync:consent-changed';
 
 describe('useTrackPageview consent gate', () => {
-  const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+  const fetchMock = vi.fn<typeof fetch>(
+    async () => new Response(null, { status: 204 }),
+  );
 
   beforeEach(() => {
     localStorage.clear();
@@ -66,10 +68,10 @@ describe('useTrackPageview consent gate', () => {
     renderHook(() => useTrackPageview(), { wrapper });
 
     expect(fetchMock).toHaveBeenCalled();
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('/functions/v1/track-pageview');
-    expect(init.method).toBe('POST');
-    expect(JSON.parse(String(init.body)).path).toBe('/welcome');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/functions/v1/track-pageview');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body)).path).toBe('/welcome');
   });
 
   it('fires after consent-changed when analytics becomes true', async () => {

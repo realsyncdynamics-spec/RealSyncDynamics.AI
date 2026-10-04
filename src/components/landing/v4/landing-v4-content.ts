@@ -148,7 +148,6 @@ export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({
 
 export const BUILDING_CAPS = [
   ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist nicht in Produktion (Messung 2026-08-17).'],
-  ['Herkunftsnachweis (C2PA)', 'Inhalte signieren und ihre Herkunft überprüfbar machen — Ed25519, C2PA Content Credentials.', 'Signaturdienst läuft, die C2PA-Manifest-Erzeugung noch nicht in Produktion.'],
 ] as const;
 
 export const GOV_STEPS = [

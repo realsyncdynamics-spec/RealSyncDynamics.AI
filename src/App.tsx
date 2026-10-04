@@ -29,6 +29,7 @@ const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLandin
 const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
 const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
 const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default: m.LandingV2 })));
+const DesignClassicalLanding = lazy(() => import('./pages/design/DesignClassicalLanding').then((m) => ({ default: m.DesignClassicalLanding })));
 const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
@@ -510,6 +511,8 @@ function RoutesWithTracking() {
       <Route path="/design/titan" element={<MainLanding />} />
       {/* Landing v2 — Claude-Design-Handoff „AI Compliance Operations OS for Europe“. */}
       <Route path="/design/landing-v2" element={<LandingV2 />} />
+      {/* Landing v4 „Klassisch" — Claude-Design-Handoff v4 (Classical + 3D-Erde). */}
+      <Route path="/design/classical" element={<DesignClassicalLanding />} />
       <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
       <Route path="/design/ledger" element={<DesignLedgerLanding />} />
       <Route path="/design/tribunal" element={<DesignTribunalLanding />} />

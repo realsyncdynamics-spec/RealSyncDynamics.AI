@@ -283,6 +283,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
     jsonLd: LANDING_V2_JSONLD,
   },
+  '/design/classical': {
+    title: 'RealSyncDynamics.AI – Landing v4 Klassisch (Design-Referenz)',
+    description:
+      'Design-Referenz „AI Compliance Operations OS for Europe“ im Classical-Design mit 3D-Erde. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/landing-v2': {
     title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
     description:

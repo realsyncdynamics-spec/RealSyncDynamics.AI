@@ -15,6 +15,7 @@
  *  (owner | admin | dpo | editor | viewer_auditor). viewer_auditor is read-only. */
 export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'dpo', 'editor'];
 
+/** True for roles that may write tenant data (WRITER_ROLES); viewer_auditor and unknown roles are read-only. */
 export function isWriterRole(role: string | null | undefined): boolean {
   return !!role && WRITER_ROLES.includes(role);
 }
@@ -43,6 +44,10 @@ const READ_ONLY: AuthzResult = {
   ok: false, status: 403, code: 'READ_ONLY_ROLE', message: 'role may not generate tenant documents',
 };
 
+/**
+ * Decides whether the caller may generate a document for this audit and which
+ * tenant it is bound to. Order: sign-in → membership → cross-tenant → writer role.
+ */
 export function authorizeDocument(input: AuthzInput): AuthzResult {
   const { auditTenantId, requestedTenantId, userId, memberships } = input;
   const roleIn = (tenantId: string) => memberships.find((m) => m.tenantId === tenantId)?.role ?? null;

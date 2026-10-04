@@ -53,8 +53,9 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /demo-login         /welcome  301
 # /kontakt ist nur ein Client-Alias (KontaktPage → /contact-sales). Ohne Edge-301
 # bekam ein Crawler die Startseiten-Shell samt Startseiten-Canonical.
-/contact            /contact-sales?source=kontakt  301
-/kontakt            /contact-sales?source=kontakt  301
+# Ziel ohne eigenen Query-String: nur dann reicht Cloudflare ?utm_* durch.
+/contact            /contact-sales  301
+/kontakt            /contact-sales  301
 /domain-check       /audit  301
 /domain-checker     /audit  301
 /preise             /pricing  301

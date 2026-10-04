@@ -661,6 +661,10 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
             letter-spacing: -.02em; color: var(--silver); }
   .gv4 .hero-kpis span { font-family: var(--ff-mono); font-size: var(--fs-overline); letter-spacing: .14em;
                color: var(--titan); }
+  /* Unter 640px trägt das Dreier-Raster die Inhalte nicht: „LAUFEND" (clamp, min. 2.4rem) und die gesperrten
+     Versalien-Labels sind breiter als ihre Spalte — bei 560px bricht es noch, ab 640px passt alles. Wegen
+     background-clip:text verschwinden überstehende Glyphen („LAUI"), Labels laufen in die Nachbarkarte. */
+  @media (max-width: 639px) { .gv4 .hero-kpis { grid-template-columns: minmax(0, 1fr); } }
   .gv4 .mark { position: absolute; display: block; width: 14px; height: 14px; border-color: hsl(var(--sun-h) var(--sun-s) var(--sun-l) / .55);
           border-style: solid; border-width: 0; }
   .gv4 .mark.tl { left: -60px; top: -56px; border-left-width: 1px; border-top-width: 1px; }

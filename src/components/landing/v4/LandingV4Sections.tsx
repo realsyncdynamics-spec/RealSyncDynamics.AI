@@ -25,6 +25,7 @@ import {
   TOOLS,
   TRUST,
   V4_ROUTES,
+  V4_PRICING_TAX_NOTE,
   statusOf,
   type TrustIcon,
 } from './landing-v4-content';
@@ -613,7 +614,14 @@ export function V4Pricing() {
           Pläne für die <em>Governance Runtime.</em>
         </h2>
         <p className="sec-lede">
-          Monatliche Self-Service-Tarife — Starter €79 · Growth €249 · Agency €699. Jahresabrechnung: Coming Soon.
+          Monatliche Self-Service-Tarife —{' '}
+          {PLANS.map((p, index) => (
+            <Fragment key={p.id}>
+              {index > 0 ? ' · ' : ''}
+              {p.displayName} €{p.price}
+            </Fragment>
+          ))}
+          . Jahresabrechnung: Coming Soon.
         </p>
         <p className="sec-note">
           Upgrade-Leiter: Einzel-Domain → Starter · SaaS → Growth · Agentur → Agency · DSB/Enterprise → Anfrage
@@ -637,7 +645,7 @@ export function V4Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link className="plan-cta" to={V4_ROUTES.pricing}>
+              <Link className="plan-cta" to={p.href}>
                 {p.cta}
                 <Arrow size={14} />
               </Link>
@@ -646,6 +654,9 @@ export function V4Pricing() {
         </div>
         <p className="sec-note" style={{ marginTop: 28, letterSpacing: '.08em' }}>
           Monatlich live · Yearly Coming Soon · <Link to={V4_ROUTES.contactSales}>Enterprise anfragen</Link>
+        </p>
+        <p className="sec-note" style={{ marginTop: 10 }}>
+          {V4_PRICING_TAX_NOTE}
         </p>
       </div>
     </section>

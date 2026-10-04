@@ -91,9 +91,6 @@ export function V4StatusBar() {
         <span>HOSTING IN EUROPA</span>
         <div className="right">
           <span>DSGVO · EU AI ACT · ISO 27001</span>
-          <span>
-            <b>99.9 %</b> UPTIME SLA
-          </span>
         </div>
       </div>
     </div>

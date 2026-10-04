@@ -67,6 +67,8 @@ describe('SiteOS gates — no plan-name hardcoding', () => {
     'supabase/functions/siteos/handlers/builder.ts',
     'supabase/functions/siteos/handlers/publish-gate.ts',
     'supabase/functions/siteos/handlers/anonymous.ts',
+    'supabase/functions/siteos/handlers/edit.ts',
+    'src/features/siteos/workspace/AppBuilderWorkspacePage.tsx',
   ];
 
   it.each(files)('%s never branches on plan id strings', (path) => {
@@ -96,5 +98,28 @@ describe('SiteOS gates — no plan-name hardcoding', () => {
     expect(publish).toContain('gateSitePublish');
     const helper = readFileSync('supabase/functions/siteos/site-entitlements.ts', 'utf8');
     expect(helper).toContain("'siteos.publish'");
+  });
+
+  it('edit path gates siteos.builder — nach der Mitgliedschaft, vor dem Laden', () => {
+    const helper = readFileSync('supabase/functions/siteos/site-entitlements.ts', 'utf8');
+    const gate = helper.slice(helper.indexOf('export async function gateSiteEdit'));
+    expect(gate).toMatch(/requireFeature\(ent, 'siteos\.builder'\)/);
+    // Bearbeiten legt keine neue Site an — kein zweites limit.sites.
+    expect(gate.slice(0, gate.indexOf('\n}\n'))).not.toContain('requireQuota');
+
+    const edit = readFileSync('supabase/functions/siteos/handlers/edit.ts', 'utf8');
+    const membership = edit.indexOf("not a member of this tenant");
+    const gateCall = edit.indexOf('gateSiteEdit(admin, tenantId)');
+    const load = edit.indexOf(".from('siteos_blueprints')");
+    expect(membership).toBeGreaterThan(-1);
+    expect(gateCall).toBeGreaterThan(membership);
+    expect(load).toBeGreaterThan(gateCall);
+  });
+
+  it('workspace /builder/:slug schließt ohne siteos.builder über das Upgrade-Panel', () => {
+    const page = readFileSync('src/features/siteos/workspace/AppBuilderWorkspacePage.tsx', 'utf8');
+    expect(page).toContain('useEntitlements');
+    expect(page).toContain('canOpenAppBuilder(');
+    expect(page).toContain('<BuilderUpgradePanel');
   });
 });

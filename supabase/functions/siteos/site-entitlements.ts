@@ -88,6 +88,39 @@ export async function gateSiteCreate(
   }
 }
 
+/**
+ * Edit gate (Block-Editor speichert eine neue Version): requires
+ * `siteos.builder`, aber **kein** weiteres `limit.sites` — eine Bearbeitung
+ * legt keine neue Site an, nur eine neue Version derselben.
+ *
+ * Bis 2026-10 prüfte `handlers/edit.ts` nur die Mitgliedschaft: Ein Mandant
+ * ohne Builder-Freischaltung (z. B. nach einer Kündigung) konnte eine einmal
+ * angelegte Site weiter bearbeiten und neue Versionen erzeugen.
+ *
+ * Bewusst **nicht** hinter diesem Gate: `discover` (Vorstufe des Funnels vor
+ * dem Kauf), `runtime-scan` und `agents` (Governance einer Live-Site, gehört
+ * nicht exklusiv zum Builder).
+ */
+export async function gateSiteEdit(
+  admin: SupabaseClient,
+  tenantId: string,
+): Promise<Response | null> {
+  try {
+    const ent = await loadEntitlementsForTenant(admin, tenantId);
+    requireFeature(ent, 'siteos.builder');
+    return null;
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(
+        e.code === 'INTERNAL' ? 500 : 403,
+        e.code,
+        e.message,
+      );
+    }
+    throw e;
+  }
+}
+
 /** Publish-gate / publish-approve: requires `siteos.publish`. */
 export async function gateSitePublish(
   admin: SupabaseClient,

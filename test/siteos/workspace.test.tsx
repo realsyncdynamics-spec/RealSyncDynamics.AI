@@ -40,6 +40,14 @@ vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({ activeTenantId: 'tenant-1', loading: false }),
 }));
 vi.mock('../../src/features/billing/checkout', () => ({ createSiteOsCheckoutSession: vi.fn() }));
+// Freischaltung über die Live-Features (`siteos.builder`), nicht über den
+// Plannamen — `free` gewährt den Builder laut SSoT nicht.
+let builderGranted = true;
+const grantedEntitlements = { tier: 'free', loading: false, features: { 'siteos.builder': true }, canAccess: () => ({ allowed: true }) };
+const deniedEntitlements = { tier: 'free', loading: false, features: { 'siteos.builder': false }, canAccess: () => ({ allowed: false }) };
+vi.mock('../../src/core/billing/useEntitlements', () => ({
+  useEntitlements: () => (builderGranted ? grantedEntitlements : deniedEntitlements),
+}));
 const previewFrame = vi.fn();
 vi.mock('../../src/components/preview/SandboxedPreviewFrame', () => ({
   SandboxedPreviewFrame: (props: { html: string }) => { previewFrame(props); return null; },
@@ -123,6 +131,7 @@ beforeEach(() => {
   previewFrame.mockReset();
   editorProps = null;
   authenticated = true;
+  builderGranted = true;
   window.history.replaceState({}, '', '/builder/x');
   api.listBlueprintChain.mockResolvedValue([]);
   api.listEvaluations.mockResolvedValue([]);
@@ -474,6 +483,18 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
     expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
+  });
+});
+
+describe('App Builder Workspace — Zugang (siteos.builder)', () => {
+  it('zeigt ohne siteos.builder das Upgrade-Panel statt des Editors und lädt nichts', async () => {
+    builderGranted = false;
+    renderWorkspace('praxis');
+    await waitFor(() => expect(screen.getByTestId('builder-upgrade-panel')).toBeInTheDocument());
+    expect(screen.getByTestId('builder-upgrade-panel').getAttribute('data-reason')).toBe('no_entitlement');
+    expect(screen.queryByTestId('editor')).not.toBeInTheDocument();
+    expect(api.loadLatestBlueprint).not.toHaveBeenCalled();
+    expect(api.editSite).not.toHaveBeenCalled();
   });
 });
 

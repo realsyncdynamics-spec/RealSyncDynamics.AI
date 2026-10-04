@@ -9,6 +9,7 @@ import {
   APP_TILES,
   BUILDING_CAPS,
   CLOSING_PILLS,
+  ENTERPRISE_LEDE,
   ENTERPRISE_TILES,
   GOV_STEPS,
   HERO_FRAMEWORKS,
@@ -721,8 +722,7 @@ export function V4Enterprise() {
           Governance mit <em>Ansprechpartner.</em>
         </h2>
         <p className="sec-lede">
-          Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte
-          Scheduler- und Automation-Kontingente. Kein Self-Service-Checkout — Enterprise per Anfrage.
+          {ENTERPRISE_LEDE} Kein Self-Service-Checkout — Enterprise per Anfrage.
         </p>
         <div className="ent">
           {ENTERPRISE_TILES.map(([h, p, u]) => (

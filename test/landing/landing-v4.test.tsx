@@ -70,6 +70,27 @@ it('filters roadmap groups by status', () => {
   expect(screen.getByRole('button', { name: 'IN PREVIEW' })).toHaveAttribute('aria-pressed', 'true');
 });
 
+it('roadmap comes from the registry and omits redirect-only design landings', () => {
+  const view = mount();
+  const roadmap = view.container.querySelector('#roadmap')!;
+  expect(roadmap.textContent).toContain('Product-Registry');
+  expect(roadmap.textContent).toContain('Compliance Command Center');
+  expect(roadmap.textContent).toContain('CommandCenterDashboard');
+  expect(roadmap.textContent).not.toContain('produktionsreifer E2E-Pfad offen');
+  expect(roadmap.textContent).not.toContain('sind aber nicht der Live-Hero');
+  expect(roadmap.textContent).not.toContain('/design/ledger');
+  expect(roadmap.textContent).not.toContain('/design/tribunal');
+  expect(roadmap.textContent).not.toContain('Evidence Ledger Landing (Design)');
+  expect(roadmap.textContent).not.toContain('Tribunal Landing (Design)');
+  // Agent OS preview cards must not advertise a live /app/dashboard mount.
+  const previewCards = Array.from(roadmap.querySelectorAll('.rm-card.dashed h4'))
+    .filter((h) => h.textContent?.includes('Agent OS') || h.textContent?.includes('Agent OS™') || h.textContent?.includes('RealSync Agent OS'));
+  for (const h of previewCards) {
+    const card = h.closest('.rm-card');
+    expect(card?.querySelector('u')?.textContent ?? '').not.toBe('/app/dashboard');
+  }
+});
+
 it('sends the scan form into /audit with the URL', () => {
   mount();
   fireEvent.change(screen.getByLabelText('Website-URL für Governance-Scan'), { target: { value: 'https://example.com' } });

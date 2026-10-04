@@ -3,10 +3,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   IMPLEMENTATION_ITEMS,
+  IMPLEMENTATION_MEASURED_AT,
   LANDING_FORBIDDEN_LIVE_CLAIMS,
   LIVE_IMPLEMENTATION,
   PLATFORM_LIVE_ITEMS,
+  ROADMAP_COMING_SOON_ITEMS,
   ROADMAP_ITEMS,
+  ROADMAP_LIVE_ITEMS,
+  ROADMAP_PREVIEW_ITEMS,
+  getImplementation,
   isImplementationLive,
 } from '../../src/product/implementation-status';
 
@@ -21,6 +26,10 @@ describe('implementation-status registry', () => {
     }
   });
 
+  it('bumps measured date after Landing v4 re-measure', () => {
+    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-04');
+  });
+
   it('keeps yearly billing off live; free audit live', () => {
     expect(isImplementationLive('pricing-yearly')).toBe(false);
     expect(isImplementationLive('free-audit')).toBe(true);
@@ -30,57 +39,120 @@ describe('implementation-status registry', () => {
     expect(PLATFORM_LIVE_ITEMS.length).toBeGreaterThan(3);
     expect(ROADMAP_ITEMS.every((i) => i.status !== 'live')).toBe(true);
     expect(LIVE_IMPLEMENTATION.every((i) => i.status === 'live')).toBe(true);
+    expect(ROADMAP_LIVE_ITEMS.every((i) => i.status === 'live')).toBe(true);
+    expect(ROADMAP_PREVIEW_ITEMS.every((i) => i.status === 'preview')).toBe(true);
+    expect(ROADMAP_COMING_SOON_ITEMS.every((i) => i.status === 'coming-soon')).toBe(true);
+  });
+
+  it('hides redirect-only design landings from the public roadmap', () => {
+    expect(getImplementation('design-landing-ledger')?.showOnRoadmap).toBe(false);
+    expect(getImplementation('design-landing-tribunal')?.showOnRoadmap).toBe(false);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'design-landing-ledger')).toBe(false);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'design-landing-tribunal')).toBe(false);
+    expect(getImplementation('design-landing-ledger')?.route).toBeUndefined();
+    expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
+  });
+
+  it('points public landing + earth hero at Landing v4 evidence', () => {
+    const landing = getImplementation('public-landing')!;
+    expect(landing.status).toBe('live');
+    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('DesignGovernanceAiLanding'))).toBe(false);
+
+    const earth = getImplementation('hero-earth-scenery')!;
+    expect(earth.status).toBe('live');
+    expect(earth.evidence.some((e) => e.includes('heroEarthScene'))).toBe(true);
+    expect(earth.evidence.some((e) => e.includes('MainLanding'))).toBe(false);
+    expect(earth.description.toLowerCase()).toContain('three.js');
+  });
+
+  it('does not claim Agent OS is mounted on live /app/dashboard', () => {
+    for (const id of [
+      'agent-os-command-center',
+      'agent-os-mesh-compliance',
+      'agent-os-product-evolution',
+    ] as const) {
+      const item = getImplementation(id)!;
+      expect(item.status).toBe('preview');
+      expect(item.route).toBeUndefined();
+      expect(item.description).toMatch(/nicht.*\/app\/dashboard|nicht gemountet|nicht als Live/i);
+    }
+    const command = getImplementation('command-center')!;
+    expect(command.evidence.some((e) => e.includes('CommandCenterDashboard'))).toBe(true);
+    expect(command.evidence.some((e) => e.includes('AgentOsPanel'))).toBe(false);
+  });
+
+  it('registers frontend-builder live and modernize wizard preview', () => {
+    expect(isImplementationLive('public-frontend-builder')).toBe(true);
+    expect(getImplementation('public-frontend-builder')?.route).toBe('/frontend-builder');
+    expect(getImplementation('frontend-modernize-wizard')?.status).toBe('preview');
+    expect(getImplementation('frontend-modernize-wizard')?.route).toBe('/app/siteos/modernize');
+  });
+
+  it('mentions /login on the welcome/auth entry', () => {
+    expect(getImplementation('welcome')?.description).toContain('/login');
+    expect(getImplementation('welcome')?.evidence.some((e) => e.includes('LoginPage'))).toBe(true);
   });
 
   it('ships docs + CI claim script', () => {
     expect(existsSync(resolve('docs/product/implementation-status.md'))).toBe(true);
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
+    const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
+    expect(docs).toContain('Landing v4');
+    expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).not.toMatch(/cyan buttons/);
   });
 
-  it('MainLanding + roadmap render from the registry', () => {
-    const landing = readFileSync(resolve('src/pages/MainLanding.tsx'), 'utf8');
-    const roadmap = readFileSync(
+  it('Landing v4 roadmap renders from the registry', () => {
+    const landing = readFileSync(resolve('src/pages/LandingV4.tsx'), 'utf8');
+    const sections = readFileSync(
+      resolve('src/components/landing/v4/LandingV4Sections.tsx'),
+      'utf8',
+    );
+    const content = readFileSync(
+      resolve('src/components/landing/v4/landing-v4-content.ts'),
+      'utf8',
+    );
+    const roadmapLegacy = readFileSync(
       resolve('src/components/landing/LandingRoadmapSection.tsx'),
       'utf8',
     );
-    const platform = readFileSync(
-      resolve('src/components/landing/PlatformCapabilitiesSection.tsx'),
-      'utf8',
-    );
-    expect(landing).toContain('PLATFORM_LIVE_ITEMS');
-    const titanHero = readFileSync(
-      resolve('src/components/landing/HeroTitanium.tsx'),
-      'utf8',
-    );
-    expect(landing).toContain('HeroTitanium');
-    expect(titanHero).toContain('EuropeNetworkHero');
-    expect(landing).not.toContain('GovernanceSphereHost');
-    expect(titanHero).not.toContain('EuropeReliefBackdrop');
-    expect(platform).toContain('PLATFORM_LIVE_ITEMS');
-    expect(roadmap).toContain('PREVIEW_IMPLEMENTATION');
-    expect(roadmap).toContain('COMING_SOON_IMPLEMENTATION');
+    expect(landing).toContain('V4Roadmap');
+    expect(sections).toContain('ROADMAP_LIVE_ITEMS');
+    expect(sections).toContain('ROADMAP_PREVIEW_ITEMS');
+    expect(sections).toContain('ROADMAP_COMING_SOON_ITEMS');
+    expect(content).not.toMatch(/export const ROADMAP =/);
+    expect(content).toContain('Registry-live: DSGVO');
+    expect(content).not.toContain('Live: DSGVO, EU AI Act, ISO 27001 und NIS2');
+    expect(roadmapLegacy).toContain('ROADMAP_PREVIEW_ITEMS');
   });
 
-  it('forbids unqualified complete-runtime claims on landing', () => {
-    const landing = readFileSync(resolve('src/pages/MainLanding.tsx'), 'utf8');
+  it('forbids unqualified complete-runtime claims on Landing v4', () => {
+    const landing = readFileSync(resolve('src/pages/LandingV4.tsx'), 'utf8');
+    const sections = readFileSync(
+      resolve('src/components/landing/v4/LandingV4Sections.tsx'),
+      'utf8',
+    );
+    const content = readFileSync(
+      resolve('src/components/landing/v4/landing-v4-content.ts'),
+      'utf8',
+    );
     for (const phrase of LANDING_FORBIDDEN_LIVE_CLAIMS) {
       expect(landing.includes(phrase), phrase).toBe(false);
+      expect(sections.includes(phrase), phrase).toBe(false);
+      expect(content.includes(phrase), phrase).toBe(false);
     }
   });
 
-  it('hero headline is Homepage Brief SSOT lock', () => {
-    const hero = readFileSync(
-      resolve('src/components/governance-frontend/hero-content.ts'),
+  it('locks Landing v4 homepage H1', () => {
+    const sections = readFileSync(
+      resolve('src/components/landing/v4/LandingV4Sections.tsx'),
       'utf8',
     );
-    expect(hero).toContain('Europa braucht kein weiteres');
-    expect(hero).toContain('Frontier-Modell');
-    expect(hero).toContain('Frontier-KI');
-    expect(hero).toContain("HERO_HEADLINE_TEST_SUBSTRING = 'Frontier-KI'");
-    expect(hero).toContain("HERO_SCAN_CTA_LABEL = 'Governance-Scan starten'");
-    expect(hero).toContain("HERO_SCAN_CTA_LONG = 'Governance-Scan starten'");
-    expect(hero).toContain("HERO_DASHBOARD_CTA_LABEL = 'Live Dashboard ansehen'");
-    expect(hero).not.toContain('99.9');
-    expect(hero).not.toContain('UPTIME');
+    expect(sections).toContain('AI Compliance');
+    expect(sections).toContain('Operations OS');
+    expect(sections).toContain('for Europe');
+    expect(sections).toContain('Free Audit starten');
+    expect(sections).toContain('Live Dashboard ansehen');
   });
 });

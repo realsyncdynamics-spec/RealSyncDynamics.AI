@@ -2,6 +2,14 @@ import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY, getCompanyDisplayName } from '../../../config/company';
 import {
+  ROADMAP_COMING_SOON_ITEMS,
+  ROADMAP_LIVE_ITEMS,
+  ROADMAP_PREVIEW_ITEMS,
+  STATUS_LABEL,
+  type ImplementationItem,
+  type ImplementationStatus,
+} from '../../../product/implementation-status';
+import {
   ANCHORS,
   APP_FINDINGS,
   APP_FRAMEWORKS,
@@ -21,7 +29,6 @@ import {
   LIVE_CAPS,
   LOOP_NODES,
   PLANS,
-  ROADMAP,
   ROADMAP_FILTERS,
   TOOLS,
   TRUST,
@@ -664,7 +671,37 @@ export function V4Pricing() {
   );
 }
 
-/** Roadmap mit Filter ALLE · LIVE · IN PREVIEW · NEXT (blendet Gruppen per Titel-Präfix aus). */
+/** Roadmap mit Filter ALLE · LIVE · IN PREVIEW · NEXT — aus dem Product-Registry. */
+const V4_ROADMAP_GROUPS: {
+  title: string;
+  eyebrow: string;
+  status: ImplementationStatus;
+  dashed: boolean;
+  items: readonly ImplementationItem[];
+}[] = [
+  {
+    title: 'LIVE',
+    eyebrow: 'SHIPPED · REACHABLE',
+    status: 'live',
+    dashed: false,
+    items: ROADMAP_LIVE_ITEMS,
+  },
+  {
+    title: 'IN PREVIEW',
+    eyebrow: 'DRAFT · NOT PRODUCTION-COMPLETE',
+    status: 'preview',
+    dashed: true,
+    items: ROADMAP_PREVIEW_ITEMS,
+  },
+  {
+    title: 'NEXT',
+    eyebrow: 'COMING SOON',
+    status: 'coming-soon',
+    dashed: true,
+    items: ROADMAP_COMING_SOON_ITEMS,
+  },
+];
+
 export function V4Roadmap() {
   const [filter, setFilter] = useState('');
   return (
@@ -675,7 +712,7 @@ export function V4Roadmap() {
           Was live ist. <em>Was als Nächstes kommt.</em>
         </h2>
         <p className="sec-lede">
-          Status je Modul — live, in Preview oder als Nächstes. Keine doppelten Marketing-Claims.
+          Status je Modul aus dem Product-Registry — live, in Preview oder als Nächstes. Keine doppelten Marketing-Claims.
         </p>
         <div id="v3-filter">
           {ROADMAP_FILTERS.map(([label, key]) => (
@@ -685,26 +722,31 @@ export function V4Roadmap() {
           ))}
         </div>
         <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 44 }}>
-          {ROADMAP.map((g) => (
-            <div key={g.title} style={filter && !g.title.startsWith(filter) ? { display: 'none' } : undefined}>
-              <div className="group-head">
-                <h3>{g.title}</h3>
-                <span>{g.eyebrow}</span>
-              </div>
-              <div className="cards" style={{ marginTop: 0 }}>
-                {g.items.map(([name, desc, route]) => (
-                  <div key={name} className={'rm-card' + (g.dashed ? ' dashed' : '')}>
-                    <div className="rm-top">
-                      <h4>{name}</h4>
-                      <StatusTag className={'status' + (g.dashed ? ' dashed' : '')} label={g.status} />
+          {V4_ROADMAP_GROUPS.map((g) =>
+            g.items.length === 0 ? null : (
+              <div key={g.title} style={filter && !g.title.startsWith(filter) ? { display: 'none' } : undefined}>
+                <div className="group-head">
+                  <h3>{g.title}</h3>
+                  <span>{g.eyebrow}</span>
+                </div>
+                <div className="cards" style={{ marginTop: 0 }}>
+                  {g.items.map((item) => (
+                    <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')}>
+                      <div className="rm-top">
+                        <h4>{item.name}</h4>
+                        <StatusTag
+                          className={'status' + (g.dashed ? ' dashed' : '')}
+                          label={STATUS_LABEL[item.status]}
+                        />
+                      </div>
+                      <p>{item.description}</p>
+                      {item.route ? <u>{item.route}</u> : null}
                     </div>
-                    <p>{desc}</p>
-                    {route ? <u>{route}</u> : null}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       </div>
     </section>

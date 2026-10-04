@@ -1,7 +1,7 @@
 # Implementation Status (Public Product Registry)
 
 **SSoT:** `src/product/implementation-status.ts`  
-**Measured:** see `IMPLEMENTATION_MEASURED_AT` in that file.
+**Measured:** see `IMPLEMENTATION_MEASURED_AT` in that file (last: `2026-10-04`).
 
 ## Why
 
@@ -22,20 +22,25 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 1. Do not claim `vollständig` / `voll funktionsfähig` / `complete runtime` on `/`.
 2. Preview / coming-soon items must show a badge — never as unqualified PRODUCT.
 3. No fake KPIs. No yearly Stripe prices until Stripe prices exist.
-4. Interactive Governance Sphere stays off public `/`. Hero structure follows
-   Dominik bundler `hero reveal` copy-block (Dark/Gold/Cream only — reject
-   Complianty light, cyan buttons, `.hero-kpis` fake SLA). Europe on the limb
-   + gold network. H1: AI Compliance / Operations OS for / Europe (gold).
-   Fold: kicker · H1 · DISCOVER loop · lede · EU line · Free Audit + Live
-   Dashboard · proof chips (labels only). Header: Produkt · Evidence · Preise ·
-   Login. Assistent chip hidden on `/`.
-5. Canonical dashboard remains `/app` → ComplianceStatusDashboard.
-   Auth: `/welcome` is the gate; `?next=` resumes after login (including
-   already-signed-in `getSession`). `GovernanceBrowserShell` always wraps
+4. Public `/` is Landing v4 „Klassisch“ (`LandingV4.tsx` + `landing-v4-classical.css`).
+   Live hero is the three.js Earth scene (`heroEarthScene.ts` / `mountHeroEarth`).
+   Locked H1: **AI Compliance Operations OS for Europe**. Primary CTA: Free Audit
+   → `/audit`; secondary: Live Dashboard → `/demo-tour/dashboard`. Interactive
+   Governance Sphere stays off `/`. Design routes `/design/ledger`,
+   `/design/tribunal`, `/design/governance-ai`, `/design/titan` redirect to `/`
+   and must not appear as reachable roadmap links. Do not invent ISO 27001 /
+   NIS2 as registry-live frameworks unless a dedicated live registry entry exists.
+5. Canonical dashboard remains `/app` → `CommandCenterDashboard` (via
+   `DashboardRouter`) rendering `ComplianceStatusView` — not the older
+   `ComplianceStatusDashboard` wrapper that mounts `AgentOsPanel`.
+   Auth: `/login` (Magic-Link) and `/welcome` are live gates; `?next=` resumes
+   after login (including already-signed-in `getSession`). Callbacks from
+   `/login` return to `/welcome`. `GovernanceBrowserShell` always wraps
    `AppGate` so sibling `/app/*` shell routes are not anonymous empties.
-6. RealSync Agent OS™ first slice is **preview** on that same `/app` surface
-   (`docs/product/realsync-agent-os.md`) — never a second dashboard, never live
-   mesh specialists beyond Compliance.
+6. RealSync Agent OS™ first slice remains **preview** code in-tree
+   (`docs/product/realsync-agent-os.md`, `AgentOsPanel`) — **not** mounted on
+   live `/app/dashboard`. Never a second dashboard, never live mesh specialists
+   beyond Compliance.
 7. Stripe Checkout E2E is **live**: checkout/webhook/portal wired, Vault
    Stripe secrets provisioned, live `public.products` defaults (`price_1UEm*`).
    Monthly self-service for starter/growth/agency; yearly remains coming-soon;
@@ -43,7 +48,8 @@ Flipping `status` moves an item between Live / Preview / Coming Soon in the UI.
 
 ## Automation
 
-- `#roadmap` on the landing renders from this registry.
+- `#roadmap` on Landing v4 renders from this registry
+  (`ROADMAP_LIVE_ITEMS` / `ROADMAP_PREVIEW_ITEMS` / `ROADMAP_COMING_SOON_ITEMS`).
 - `npm run check:landing-claims` (CI: CTA Enforcement workflow) fails if landing
   copy asserts forbidden live claims or treats a non-live registry item as live
   without a Preview / Coming Soon marker.

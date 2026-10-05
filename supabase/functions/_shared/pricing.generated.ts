@@ -2696,6 +2696,23 @@ export function addonById(id: AddOnId): AddOn | undefined {
   return ADDONS.find((a) => a.id === id);
 }
 
+/**
+ * Stripe-Testprice für ein Add-on. Nur bei `sk_test_…`.
+ *
+ * Env-Name: `STRIPE_PRICE_ADDON_<ID>` , z.B. `STRIPE_PRICE_ADDON_ADDITIONAL_DOMAIN`.
+ * Ein Live-Key ignoriert die Variable, damit eine Test-Price nicht in
+ * Produktion gebucht wird.
+ */
+export function stripeTestAddonPrice(
+  addonId: AddOnId,
+  secret: string | null | undefined,
+  env: Readonly<Record<string, string | undefined>>,
+): string | null {
+  if (!secret || !secret.startsWith('sk_test_')) return null;
+  const raw = env[`STRIPE_PRICE_ADDON_${addonId.toUpperCase()}`];
+  return typeof raw === 'string' && raw.startsWith('price_') ? raw : null;
+}
+
 // ── Add-on-Buchung: Abhängigkeiten, Produkte, Preisvorschau (AP5–AP8) ─────
 
 /**

@@ -35,6 +35,7 @@ import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import {
   ADDONS,
   addonById,
+  stripeTestAddonPrice,
   addonOfferStatus,
   addonPricePreview,
   bookedAddonsMonthlyEur,
@@ -98,7 +99,7 @@ function isAddonId(value: unknown): value is AddOnId {
 }
 
 /** Alles, was die Oberfläche für „Mein Plan" braucht — in einer Antwort. */
-async function buildListing(admin: SupabaseClient, tenantId: string) {
+async function buildListing(admin: SupabaseClient, tenantId: string, stripeSecret: string | null) {
   const [subRes, addonRes, bookedRes, entRes] = await Promise.all([
     admin.from('subscriptions')
       .select('id, plan_key, status, stripe_subscription_id, stripe_customer_id, current_period_end, past_due_since')
@@ -138,7 +139,9 @@ async function buildListing(admin: SupabaseClient, tenantId: string) {
 
   const addons = ADDONS.map((addon) => {
     const row = planAddons.get(addon.id);
-    const purchasable = !!row && row.active !== false && isLiveStripePrice(row.stripe_price_id) && !!row.product_id;
+    const testPrice = stripeTestAddonPrice(addon.id, stripeSecret, Deno.env.toObject());
+    const priceId = isLiveStripePrice(row?.stripe_price_id) ? row!.stripe_price_id : testPrice;
+    const purchasable = !!priceId && (row?.active !== false) && (!!row?.product_id || !!testPrice);
     const offer: AddonOffer = addonOfferStatus({ addon, plan, held, booked, purchasable });
     const gebucht = bookedRows.find((r) => r.addon_key === addon.id);
     const vorschau = addonPricePreview(plan, booked, addon, 1);
@@ -224,10 +227,11 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const stripeSecret = await getSecret(admin, 'STRIPE_SECRET_KEY', 'stripe_secret_key');
 
   let listing: Awaited<ReturnType<typeof buildListing>>;
   try {
-    listing = await buildListing(admin, tenantId);
+    listing = await buildListing(admin, tenantId, stripeSecret);
   } catch (e) {
     return jsonError(500, 'INTERNAL', (e as Error).message);
   }
@@ -254,7 +258,6 @@ Deno.serve(async (req) => {
       `Das Abo ist im Zustand „${subscription.status}". Bitte zuerst die Zahlung klären, dann lassen sich Add-ons ändern.`);
   }
 
-  const stripeSecret = await getSecret(admin, 'STRIPE_SECRET_KEY', 'stripe_secret_key');
   if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
   const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
 
@@ -274,9 +277,11 @@ Deno.serve(async (req) => {
       return jsonError(400, 'ADDON_DEPENDENCY_MISSING',
         `${addon.name} setzt voraus: ${eintrag.missing.join(', ')}.`, undefined, { missing: eintrag.missing });
     }
-    if (eintrag.status !== 'bookable' || !planAddon || !isLiveStripePrice(planAddon.stripe_price_id) || !planAddon.product_id) {
+    const testPrice = stripeTestAddonPrice(addon.id, stripeSecret, Deno.env.toObject());
+    const priceId = isLiveStripePrice(planAddon?.stripe_price_id) ? planAddon!.stripe_price_id : testPrice;
+    if (eintrag.status !== 'bookable' || !priceId || !planAddon?.product_id) {
       return jsonError(400, 'ADDON_NOT_PURCHASABLE',
-        `${addon.name} ist noch nicht buchbar — es fehlt der Stripe-Price (plan_addons.stripe_price_id).`);
+        `${addon.name} ist noch nicht buchbar — es fehlt der Stripe-Price (plan_addons.stripe_price_id oder STRIPE_PRICE_ADDON_${addon.id.toUpperCase()} mit sk_test_).`);
     }
 
     const menge = addon.perUnit && typeof body.quantity === 'number' && Number.isInteger(body.quantity) && body.quantity >= 1
@@ -287,7 +292,7 @@ Deno.serve(async (req) => {
     try {
       item = await stripe.subscriptionItems.create({
         subscription: subscription.stripe_subscription_id,
-        price: planAddon.stripe_price_id,
+        price: priceId,
         quantity: menge,
         proration_behavior: 'create_prorations',
         metadata: { tenant_id: tenantId, addon_id: addon.id },
@@ -302,7 +307,7 @@ Deno.serve(async (req) => {
       tenant_id: tenantId,
       addon_key: addon.id,
       stripe_item_id: item.id,
-      stripe_price_id: planAddon.stripe_price_id,
+      stripe_price_id: priceId,
       quantity: menge,
       status: 'active',
       removed_at: null,
@@ -331,7 +336,7 @@ Deno.serve(async (req) => {
     if (grantErr) return jsonError(500, 'INTERNAL', `entitlement_grants: ${grantErr.message}`);
 
     try {
-      return antwort(await buildListing(admin, tenantId));
+      return antwort(await buildListing(admin, tenantId, stripeSecret));
     } catch (e) {
       return jsonError(500, 'INTERNAL', (e as Error).message);
     }
@@ -365,7 +370,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    return antwort(await buildListing(admin, tenantId));
+    return antwort(await buildListing(admin, tenantId, stripeSecret));
   } catch (e) {
     return jsonError(500, 'INTERNAL', (e as Error).message);
   }

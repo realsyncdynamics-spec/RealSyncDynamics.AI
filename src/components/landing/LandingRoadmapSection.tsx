@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import {
-  COMING_SOON_IMPLEMENTATION,
-  LIVE_IMPLEMENTATION,
-  PREVIEW_IMPLEMENTATION,
+  ROADMAP_COMING_SOON_ITEMS,
+  ROADMAP_LIVE_ITEMS,
+  ROADMAP_PREVIEW_ITEMS,
   STATUS_LABEL,
   type ImplementationItem,
   type ImplementationStatus,
@@ -33,19 +33,19 @@ const GROUPS: {
     status: 'live',
     title: 'Live',
     eyebrow: 'SHIPPED · REACHABLE',
-    items: LIVE_IMPLEMENTATION.filter((i) => i.showOnPlatform || i.id === 'free-audit' || i.id === 'pricing-monthly'),
+    items: ROADMAP_LIVE_ITEMS,
   },
   {
     status: 'preview',
     title: 'In preview',
     eyebrow: 'DRAFT · NOT PRODUCTION-COMPLETE',
-    items: PREVIEW_IMPLEMENTATION,
+    items: ROADMAP_PREVIEW_ITEMS,
   },
   {
     status: 'coming-soon',
     title: 'Next',
     eyebrow: 'COMING SOON',
-    items: COMING_SOON_IMPLEMENTATION,
+    items: ROADMAP_COMING_SOON_ITEMS,
   },
 ];
 

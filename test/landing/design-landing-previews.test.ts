@@ -38,12 +38,18 @@ describe('design landing previews', () => {
     }
   });
 
-  it('registers both design surfaces as preview in implementation-status', () => {
+  it('registers both design surfaces as preview but hides redirect routes from the roadmap', () => {
     const reg = readFileSync(resolve(root, 'src/product/implementation-status.ts'), 'utf8');
     expect(reg).toContain("id: 'design-landing-ledger'");
     expect(reg).toContain("id: 'design-landing-tribunal'");
-    expect(reg).toContain("route: '/design/ledger'");
-    expect(reg).toContain("route: '/design/tribunal'");
+    expect(reg).toMatch(
+      /id: 'design-landing-ledger'[\s\S]*?showOnRoadmap: false[\s\S]*?id: 'design-landing-tribunal'[\s\S]*?showOnRoadmap: false/,
+    );
+    expect(reg).not.toContain("route: '/design/ledger'");
+    expect(reg).not.toContain("route: '/design/tribunal'");
+    expect(reg).toContain('src/App.tsx#/design/ledger→/');
+    expect(reg).toContain('src/App.tsx#/design/tribunal→/');
     expect(reg).toMatch(/id: 'public-landing'[\s\S]*?status: 'live'/);
+    expect(reg).toMatch(/id: 'public-landing'[\s\S]*?LandingV4/);
   });
 });

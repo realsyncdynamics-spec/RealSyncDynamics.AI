@@ -107,7 +107,11 @@ Deno.serve(async (req: Request) => {
           const brief = await generateGovernanceBriefForTenant(admin, tenant_id, now);
           if (brief) { hermes_brief_created = true; hermes_brief_id = brief.id; }
         } catch (e) {
-          sentinel.errors.push(`brief_failed: ${(e as Error)?.message ?? String(e)}`);
+          const msg = `brief_failed: ${(e as Error)?.message ?? String(e)}`;
+          sentinel.errors.push(msg);
+          // Ins Function-Log, nicht nur in die pg_net-Antwort (die net._http_response
+          // nach ~6 h verwirft). Meldung ist bereits gekürzt, ohne Prompts.
+          console.error(JSON.stringify({ scope: 'agent-os-runner', event: 'brief_failed', tenant_id, error: msg.slice(0, 300) }));
         }
       }
 

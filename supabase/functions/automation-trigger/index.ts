@@ -8,7 +8,7 @@
 //   1. JWT verify + tenant membership
 //   2. Load automation_skills row + status check + n8n-bound check
 //   3. gateFeature('ai.tool.automations') + quota check (limit.automation_runs_monthly)
-//   4. INSERT automation_runs (status='pending')
+//   4. INSERT automation_runs (status='queued')
 //   5. POST n8n webhook (async — n8n callbacks automation-callback when done)
 //   6. UPDATE automation_runs status='running' on n8n accept, or 'error' on reject
 //   7. Return { run_id }
@@ -90,12 +90,12 @@ Deno.serve(async (req) => {
       `monthly automation run quota reached (${currentRuns}/${runsLimit})`);
   }
 
-  // Insert pending run
+  // Insert queued run ('pending' kennt der CHECK auf automation_runs.status nicht)
   const { data: run, error: runErr } = await admin.from('automation_runs').insert({
     skill_id: skill.id,
     tenant_id: body.tenant_id,
     triggered_by: userId,
-    status: 'pending',
+    status: 'queued',
     input: body.input ?? {},
   }).select('id').single();
   if (runErr || !run) return jsonError(500, 'INTERNAL', runErr?.message ?? 'run insert failed');
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
         error_code: 'N8N_REJECTED',
         error_message: `n8n returned ${n8nResp.status}: ${errBody.slice(0, 200)}`,
         finished_at: new Date().toISOString(),
-      }).eq('id', run.id);
+      }).eq('id', run.id).eq('status', 'queued');
       return jsonError(502, 'N8N_REJECTED', `n8n returned ${n8nResp.status}`);
     }
     const ack: N8nAcknowledge = await n8nResp.json().catch(() => ({})) as unknown as N8nAcknowledge;
@@ -145,14 +145,16 @@ Deno.serve(async (req) => {
       error_code: 'N8N_UNREACHABLE',
       error_message: (e as Error).message,
       finished_at: new Date().toISOString(),
-    }).eq('id', run.id);
+    }).eq('id', run.id).eq('status', 'queued');
     return jsonError(503, 'N8N_UNREACHABLE', `n8n unreachable: ${(e as Error).message}`);
   }
 
+  // Nur von 'queued' aus: ein schneller Callback kann den Lauf schon beendet
+  // haben — dann darf der Trigger ihn nicht wieder auf 'running' setzen.
   await admin.from('automation_runs').update({
     status: 'running',
     n8n_execution_id: n8nExecutionId,
-  }).eq('id', run.id);
+  }).eq('id', run.id).eq('status', 'queued');
 
   return jsonResponse({ ok: true, run_id: run.id, n8n_execution_id: n8nExecutionId });
 });

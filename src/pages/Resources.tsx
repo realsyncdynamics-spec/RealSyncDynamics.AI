@@ -30,9 +30,9 @@ const RESOURCES: Resource[] = [
     icon: <AlertTriangle className="h-5 w-5" />,
   },
   {
-    href: '/ki-betriebssystem',
-    title: 'Was ist ein KI-Betriebssystem?',
-    description: 'Warum die Governance-Schicht entscheidet und nicht das Modell: von Request bis Evidence — DSGVO und EU AI Act in einem provider-neutralen Kontrollfluss.',
+    href: '/evidence-runtime',
+    title: 'Evidence Runtime erklärt',
+    description: 'Scan → Build → Automate → Govern: wie aus dem realen Systemzustand belastbare Nachweise für DSGVO, TDDDG und EU AI Act werden — mit ehrlichem Live-Status je Phase.',
     badge: 'Konzept',
     icon: <ShieldCheck className="h-5 w-5" />,
   },

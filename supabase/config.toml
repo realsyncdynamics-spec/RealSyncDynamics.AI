@@ -284,11 +284,12 @@ verify_jwt = false
 
 # ── Enterprise AI OS public surfaces ──
 # enterprise-ai-os-discovery-intake: braucht eine echte Nutzersitzung mit
-# schreibender Rolle. verify_jwt ist nur das Plattform-Gate (laesst den
-# Anon-Key durch); die Mandanten-Autorisierung macht der Handler ueber
-# requireAuthAndTenant aus _shared/auth.ts — body.tenantId ist dort nur ein Claim.
+# schreibender Rolle. Das prueft der Handler ueber requireAuthAndTenant aus
+# _shared/auth.ts — body.tenantId ist dort nur ein Claim. verify_jwt bleibt
+# false wie deployt (Edge-Function-Drift-Guard); das Plattform-Gate liesse den
+# Anon-Key ohnehin durch und ersetzt die Pruefung im Handler nicht.
 [functions.enterprise-ai-os-discovery-intake]
-verify_jwt = true
+verify_jwt = false
 
 # F-05 remediation (2026-08-11): previously public + global dump.
 # Now requires JWT + membership; platform gate enabled.

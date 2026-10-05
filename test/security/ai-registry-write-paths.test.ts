@@ -97,9 +97,12 @@ describe('enterprise-ai-os-discovery-intake: kanonischer Resolver mit Schreibrol
   const FN = 'enterprise-ai-os-discovery-intake';
   const code = codeOf(FN);
 
-  it('Plattform-Gate an und Absicht dokumentiert', () => {
-    expect(stanza(FN)).toMatch(/verify_jwt\s*=\s*true/);
+  it('Absicht in config.toml dokumentiert — die Prüfung liegt im Handler, nicht im Plattform-Gate', () => {
+    // verify_jwt bleibt false wie deployt (Drift-Guard: live false ≠ Repo true
+    // wäre rot bis zum Deploy); das Gate ließe den Anon-Key ohnehin durch.
+    expect(stanza(FN)).not.toBeNull();
     expect(toml).toContain('enterprise-ai-os-discovery-intake: braucht eine echte Nutzersitzung');
+    expect(toml).toContain('requireAuthAndTenant aus\n# _shared/auth.ts');
   });
 
   it('genau ein Resolver, kein eigener Service-Role-Client, keine eigene Mitgliedsabfrage', () => {

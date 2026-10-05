@@ -147,13 +147,14 @@ export function planLabel(planId: PlanId | null): string | null {
  *
  * `advanced_ai_governance` (149 € Anzeige) hängt am bestehenden
  * Compliance Pack (149 €), bis ein eigenes Stripe-Price existiert.
- * Domain- und Unternehmens-Mengen haben noch kein Add-on — die Karte darf
- * dann keinen Einzelpreis zeigen.
+ * Weitere Unternehmen haben noch kein Add-on: es gibt keinen
+ * `limit.tenants`-Key. Die Karte darf dann keinen Einzelpreis zeigen.
  */
 export const MODULE_ADDON: Partial<Record<BookableModuleId, AddOnId>> = {
   voice_bot: 'voice',
   whatsapp_bot: 'whatsapp',
   advanced_ai_governance: 'compliance_pack',
+  additional_domain: 'additional_domain',
 };
 
 export type MarketplaceCardState =

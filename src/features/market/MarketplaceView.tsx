@@ -131,8 +131,8 @@ export function MarketplaceView() {
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             Jede Karte hat genau einen Zustand: im Plan enthalten, für den
             Add-on-Preis hinzufügen, oder ein höherer Plan ist nötig.
-            Zusätzliche Domains und Unternehmen sind noch keine Mengen-Add-ons
-            und zeigen deshalb keinen Einzelpreis.
+            Weitere Domain ist ein Mengen-Add-on (19 €). Ein weiteres
+            Unternehmen hat noch kein Kontingent und zeigt keinen Preis.
           </p>
         </footer>
       </div>

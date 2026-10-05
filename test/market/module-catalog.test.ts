@@ -138,7 +138,7 @@ describe('planLabel', () => {
 
 describe('MODULE_ADDON', () => {
   it('zeigt keinen provisionalen Modulpreis als Buchungspreis', () => {
-    expect(addonListPriceEur('additional_domain')).toBeNull();
+    expect(addonListPriceEur('additional_domain')).toBe(19);
     expect(addonListPriceEur('additional_company')).toBeNull();
     expect(addonListPriceEur('advanced_ai_governance')).toBe(149);
     expect(MODULE_ADDON.voice_bot).toBe('voice');

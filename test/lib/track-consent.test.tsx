@@ -101,3 +101,49 @@ describe('useTrackPageview consent gate', () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 });
+
+describe('useTrackPageview consent re-save', () => {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () => new Response(null, { status: 204 }),
+  );
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockClear();
+    vi.stubEnv('PROD', true);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    localStorage.clear();
+  });
+
+  it('does not resend the same route when consent is saved again unchanged', async () => {
+    localStorage.setItem(
+      CONSENT_KEY,
+      JSON.stringify({
+        version: 1,
+        decided_at: new Date().toISOString(),
+        necessary: true,
+        analytics: true,
+        marketing: false,
+      }),
+    );
+    Object.defineProperty(import.meta, 'env', {
+      value: { ...import.meta.env, PROD: true, MODE: 'production' },
+      configurable: true,
+    });
+    vi.resetModules();
+    const { useTrackPageview } = await import('../../src/lib/track');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <MemoryRouter initialEntries={['/pricing']}>{children}</MemoryRouter>
+    );
+    renderHook(() => useTrackPageview(), { wrapper });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

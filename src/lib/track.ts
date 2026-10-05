@@ -49,10 +49,11 @@ function readUtm(): { utm_source?: string; utm_medium?: string; utm_campaign?: s
   return out;
 }
 
-function sendPageview(pathname: string): void {
-  if (!ENABLED || typeof window === 'undefined') return;
+/** Liefert `true`, wenn der Pageview abgeschickt wurde. */
+function sendPageview(pathname: string): boolean {
+  if (!ENABLED || typeof window === 'undefined') return false;
   // Kein Tracking vor Einwilligung — auch nicht als „cookieless" Beacon.
-  if (!hasAnalyticsConsent()) return;
+  if (!hasAnalyticsConsent()) return false;
 
   const payload = {
     path: pathname,
@@ -67,17 +68,20 @@ function sendPageview(pathname: string): void {
     body: JSON.stringify(payload),
     keepalive: true,
   }).catch(() => { /* swallow */ });
+  return true;
 }
 
 export function useTrackPageview() {
   const location = useLocation();
 
   useEffect(() => {
-    sendPageview(location.pathname);
+    let sent = sendPageview(location.pathname);
 
-    // Nach Consent-Entscheidung denselben Path nachsenden (erster Aufruf
-    // vor dem Banner war bewusst unterdrückt).
-    const onConsent = () => sendPageview(location.pathname);
+    // Nach Consent-Entscheidung denselben Path nachsenden — nur wenn der
+    // erste Aufruf mangels Einwilligung unterdrückt war, sonst doppelt.
+    const onConsent = () => {
+      if (!sent) sent = sendPageview(location.pathname);
+    };
     window.addEventListener(CONSENT_EVENT, onConsent);
     return () => window.removeEventListener(CONSENT_EVENT, onConsent);
   }, [location.pathname]);

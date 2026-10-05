@@ -28,7 +28,8 @@ Deno.serve(async (req) => {
   const HASH_SALT = Deno.env.get('PAGEVIEW_HASH_SALT') ?? '';
   if (!HASH_SALT) {
     console.error('track-pageview: PAGEVIEW_HASH_SALT is not set — refusing to write unsalted hashes');
-    return jsonResponse({ ok: false, skipped: 'PAGEVIEW_HASH_SALT_missing' }, 204);
+    // 204 darf keinen Body tragen — `new Response(body, { status: 204 })` wirft.
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   let body: { path?: string; referrer?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string };

@@ -12,6 +12,7 @@ import {
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
+import { checkoutHrefForPlan } from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -382,9 +383,6 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
   // zusammensetzen — `source` und `interval` bleiben erhalten.
   const [params] = useSearchParams();
   const auditContext = resolveAuditContext(params, params.get('audit') ?? undefined);
-  const ctaHref = tier.cta.href.startsWith('http')
-    ? tier.cta.href
-    : withAuditContext(tier.cta.href, auditContext);
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
   // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
@@ -395,8 +393,17 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
     YEARLY_BILLING_ENABLED &&
     billing === 'yearly' &&
     !tier.priceOnRequest &&
+    tier.plan.yearlyPlanKey !== null &&
     yearlyEur !== null &&
     tier.plan.yearlyCheckoutUnavailable !== true;
+  // Angezeigter Betrag und Checkout-Intervall gehören zusammen: Jahrespreis
+  // führt in den Jahres-Checkout, nie in den Monats-Checkout.
+  const checkoutHref = showYearly
+    ? checkoutHrefForPlan(tier.plan, { interval: 'year', source: 'pricing' })
+    : tier.cta.href;
+  const ctaHref = checkoutHref.startsWith('http')
+    ? checkoutHref
+    : withAuditContext(checkoutHref, auditContext);
   const priceDisplay = tier.priceOnRequest
     ? t('onRequest')
     : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);

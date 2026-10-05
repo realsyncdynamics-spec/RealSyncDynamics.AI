@@ -15,12 +15,15 @@ const PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
 const SOURCE = 'landing-v2-pricing';
 
 /** Jahres-Checkout ist in Stripe nicht verdrahtet — Toggle bleibt aus. */
-const YEARLY_BILLING_ENABLED = PLANS.some(
-  (plan) =>
+function yearlyAvailable(plan: (typeof PLANS)[number]): boolean {
+  return (
     plan.yearlyPlanKey !== null &&
     plan.yearlyCheckoutUnavailable !== true &&
-    plan.price.yearlyEur !== null,
-);
+    plan.price.yearlyEur !== null
+  );
+}
+
+const YEARLY_BILLING_ENABLED = PLANS.some(yearlyAvailable);
 
 function bullets(tier: PricingTier): string[] {
   // Karten zeigen die ersten vier Punkte der SSoT-Matrix; Vollmatrix auf /pricing.
@@ -33,7 +36,7 @@ function bullets(tier: PricingTier): string[] {
  * (sonst endet Checkout mit PRICE_NOT_CONFIGURED).
  */
 export function PricingV2() {
-  const [cycle] = useState<'month' | 'year'>('month');
+  const [cycle, setCycle] = useState<'month' | 'year'>('month');
   const tiers = PLAN_IDS.map((id) => tierById(id)).filter((t): t is PricingTier => Boolean(t));
   if (tiers.length === 0) return null;
 
@@ -49,10 +52,10 @@ export function PricingV2() {
           </div>
           {YEARLY_BILLING_ENABLED ? (
             <div className="lv2-toggle" role="group" aria-label="Abrechnungszeitraum">
-              <button type="button" aria-pressed={cycle === 'month'}>
+              <button type="button" aria-pressed={cycle === 'month'} onClick={() => setCycle('month')}>
                 Monatlich
               </button>
-              <button type="button" aria-pressed={cycle === 'year'}>
+              <button type="button" aria-pressed={cycle === 'year'} onClick={() => setCycle('year')}>
                 Jährlich · 2 Monate gratis
               </button>
             </div>
@@ -70,12 +73,24 @@ export function PricingV2() {
         <ul className="lv2-plans">
           {tiers.map((tier) => {
             const plan = tier.plan;
+            // Jahrespreis und Jahres-Checkout nur gemeinsam — nie Jahresbetrag
+            // anzeigen und in den Monats-Checkout führen.
+            const yearly =
+              cycle === 'year' && !tier.priceOnRequest && yearlyAvailable(plan);
             const price = tier.priceOnRequest
               ? 'Auf Anfrage'
-              : formatPriceEur(plan.price.monthlyEur);
-            const suffix = tier.priceOnRequest ? tier.priceSuffix : '/ Monat';
+              : formatPriceEur(
+                  yearly && plan.price.yearlyEur !== null
+                    ? plan.price.yearlyEur
+                    : plan.price.monthlyEur,
+                );
+            const suffix = tier.priceOnRequest
+              ? tier.priceSuffix
+              : yearly
+                ? '/ Jahr'
+                : '/ Monat';
             const href = checkoutHrefForPlan(plan, {
-              interval: 'month',
+              interval: yearly ? 'year' : 'month',
               source: SOURCE,
             });
             const featured = plan.highlight;

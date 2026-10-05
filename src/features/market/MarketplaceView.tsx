@@ -61,7 +61,11 @@ export function MarketplaceView() {
     [funnel],
   );
 
-  const checkoutReady = sandbox || listing?.subscription?.has_stripe_subscription === true;
+  const subscriptionStatus = listing?.subscription?.status;
+  const checkoutReady = sandbox || (
+    listing?.subscription?.has_stripe_subscription === true
+    && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
+  );
 
   const istAktiv = (eintrag: CatalogEntry) => {
     const addon = addonByModule.get(eintrag.module.id);

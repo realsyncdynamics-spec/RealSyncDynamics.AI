@@ -614,7 +614,7 @@ export const PLANS: Plan[] = [
     // es genau umgekehrt gebucht (zielzustand-paketmodell.md §3.2).
     // `channels` bleibt `['website']`: Der Kanal kommt mit dem Add-on, nicht
     // mit dem Plan.
-    addons: ['whatsapp', 'additional_domain'],
+    addons: ['whatsapp'],
     features: {
       audit_evidence: [
         'Vollständiger DSGVO-Scan mit Paragraphenbezug',
@@ -705,7 +705,7 @@ export const PLANS: Plan[] = [
     // Add-on, das verkauft, was der Plan schon hat, war der Widerspruch aus
     // `zielzustand-paketmodell.md` §3.2. Voice und White Label kommen dazu,
     // weil sie sonst mit Agency aus dem Angebot fielen.
-    addons: ['response_pack', 'compliance_pack', 'voice', 'white_label', 'agency_bot_pack', 'additional_domain'],
+    addons: ['response_pack', 'compliance_pack', 'voice', 'white_label', 'agency_bot_pack'],
     features: {
       audit_evidence: [
         'Alles aus Starter',
@@ -794,7 +794,7 @@ export const PLANS: Plan[] = [
       siteosPublish: true,
     }),
     support: 'priority',
-    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label', 'additional_domain'],
+    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
     features: {
       audit_evidence: [
         'Alles aus Growth',
@@ -982,7 +982,7 @@ export const PLANS: Plan[] = [
       siteosPublish: true,
     }),
     support: 'dedicated',
-    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label', 'additional_domain'],
+    addons: ['response_pack', 'whatsapp', 'voice', 'compliance_pack', 'agency_bot_pack', 'white_label'],
     features: {
       audit_evidence: [
         'Alles aus Enterprise',
@@ -1163,8 +1163,7 @@ export type AddOnId =
   | 'voice'
   | 'compliance_pack'
   | 'agency_bot_pack'
-  | 'white_label'
-  | 'additional_domain';
+  | 'white_label';
 
 export interface AddOn {
   id: AddOnId;
@@ -1206,7 +1205,7 @@ export interface AddOn {
   /**
    * `true`, wenn das Add-on mehrfach gebucht werden kann (Menge, etwa
    * „weitere Domain"). Der Auflöser multipliziert die Kontingente dann mit
-   * der gebuchten Menge.
+   * der gebuchten Menge. Alle heutigen Add-ons sind Einzelpositionen.
    */
   perUnit: boolean;
 }
@@ -1358,24 +1357,6 @@ export const ADDONS: AddOn[] = [
     availableFor: ['growth'],
     grants: { 'whitelabel.reports': 1, 'whitelabel.dashboard': 1 },
     perUnit: false,
-  },
-  {
-    id: 'additional_domain',
-    name: 'Weitere Domain',
-    description: 'Eine zusätzliche Domain im selben Konto, additiv zum Plan-Kontingent.',
-    priceEur: 19,
-    priceNote: '/ Domain und Monat',
-    interval: 'month',
-    bullets: [
-      'Eine weitere überwachte Domain',
-      'Menge buchbar, Kontingent additiv',
-      'Kein Ersatz für ein weiteres Unternehmen',
-    ],
-    // Nicht für Enterprise: dort ist limit.domains bereits unbegrenzt,
-    // ein Kauf hätte keinen Gegenwert.
-    availableFor: ['starter', 'growth'],
-    grants: { 'limit.domains': 1 },
-    perUnit: true,
   },
 ];
 
@@ -2683,23 +2664,6 @@ export function addonsFor(plan: Plan | PlanId | string | null | undefined): AddO
 
 export function addonById(id: AddOnId): AddOn | undefined {
   return ADDONS.find((a) => a.id === id);
-}
-
-/**
- * Stripe-Testprice für ein Add-on. Nur bei `sk_test_…`.
- *
- * Env-Name: `STRIPE_PRICE_ADDON_<ID>` , z.B. `STRIPE_PRICE_ADDON_ADDITIONAL_DOMAIN`.
- * Ein Live-Key ignoriert die Variable, damit eine Test-Price nicht in
- * Produktion gebucht wird.
- */
-export function stripeTestAddonPrice(
-  addonId: AddOnId,
-  secret: string | null | undefined,
-  env: Readonly<Record<string, string | undefined>>,
-): string | null {
-  if (!secret || !secret.startsWith('sk_test_')) return null;
-  const raw = env[`STRIPE_PRICE_ADDON_${addonId.toUpperCase()}`];
-  return typeof raw === 'string' && raw.startsWith('price_') ? raw : null;
 }
 
 // ── Add-on-Buchung: Abhängigkeiten, Produkte, Preisvorschau (AP5–AP8) ─────

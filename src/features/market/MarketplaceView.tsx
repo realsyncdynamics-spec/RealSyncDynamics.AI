@@ -36,7 +36,7 @@ import { previewSentence, type AddonListingEntry } from './subscriptionAddons';
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
   const katalog = useMemo(() => buildCatalog(tier), [tier]);
-  const { listing, add, busy, canManage } = useSubscriptionAddons();
+  const { listing, add, busy, canManage, sandbox } = useSubscriptionAddons();
   const addonByModule = useMemo(() => {
     const byId = new Map((listing?.addons ?? []).map((a) => [a.id, a]));
     const map = new Map<BookableModuleId, AddonListingEntry>();
@@ -104,6 +104,12 @@ export function MarketplaceView() {
         {/* AP7 — „Mein Plan" plus Karten, die denselben Buchungsweg nutzen.
             Ein Eurobetrag erscheint nur, wenn subscription-addons das Add-on
             als bookable liefert. Provisorische Modulpreise bleiben unsichtbar. */}
+        {sandbox && (
+          <p className="mb-6 border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Billing-Sandbox. Buchungen bleiben in diesem Tab, Stripe und die Datenbank werden nicht angefasst.
+            Aufruf: <span className="font-mono">?billing=sandbox</span>
+          </p>
+        )}
         <MyPlanSection />
 
         {aktiv.length > 0 && (

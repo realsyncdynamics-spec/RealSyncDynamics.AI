@@ -154,7 +154,6 @@ export function planLabel(planId: PlanId | null): string | null {
 export const MODULE_ADDON: Partial<Record<BookableModuleId, AddOnId>> = {
   voice_bot: 'voice',
   whatsapp_bot: 'whatsapp',
-  additional_domain: 'additional_domain',
 };
 
 export type MarketplaceCardState =

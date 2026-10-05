@@ -26,14 +26,28 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Info, Sparkles } from 'lucide-react';
 import { useEntitlements } from '../../core/billing/useEntitlements';
-import { MODULE_PRICING_STATUS, type BookableModule, type BookableModuleId } from '@/shared/pricing';
-import { buildCatalog, planLabel, type CatalogEntry } from './moduleCatalog';
+import { type BookableModuleId } from '@/shared/pricing';
+import { buildCatalog, planLabel, addonForModule, type CatalogEntry } from './moduleCatalog';
 import { readFunnelContext } from '../../core/onboarding/funnelContext';
 import { MyPlanSection } from './MyPlanSection';
+import { useSubscriptionAddons } from './useSubscriptionAddons';
+import { previewSentence, type AddonListingEntry } from './subscriptionAddons';
 
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
   const katalog = useMemo(() => buildCatalog(tier), [tier]);
+  const { listing, add, busy, canManage } = useSubscriptionAddons();
+  const addonByModule = useMemo(() => {
+    const byId = new Map((listing?.addons ?? []).map((a) => [a.id, a]));
+    const map = new Map<BookableModuleId, AddonListingEntry>();
+    for (const eintrag of katalog) {
+      const addonId = addonForModule(eintrag.module.id);
+      if (!addonId) continue;
+      const row = byId.get(addonId);
+      if (row) map.set(eintrag.module.id, row);
+    }
+    return map;
+  }, [katalog, listing]);
 
   // Empfehlung aus dem Trichter, sofern der Kunde über Scan → Empfehlung
   // hierher gekommen ist. Sie ist **keine** Berechtigung und ändert keinen
@@ -87,9 +101,9 @@ export function MarketplaceView() {
           )}
         </header>
 
-        {/* AP7 — „Mein Plan": Plan, Enthaltenes, Add-ons mit Preisvorschau.
-            Add-ons werden über `subscription-addons` gebucht; die Module
-            darunter laufen weiterhin über den Plan. */}
+        {/* AP7 — „Mein Plan" plus Karten, die denselben Buchungsweg nutzen.
+            Ein Eurobetrag erscheint nur, wenn subscription-addons das Add-on
+            als bookable liefert. Provisorische Modulpreise bleiben unsichtbar. */}
         <MyPlanSection />
 
         {aktiv.length > 0 && (
@@ -97,7 +111,7 @@ export function MarketplaceView() {
             <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">AKTIV</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {aktiv.map((eintrag) => (
-                <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} />
+                <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} />
               ))}
             </div>
           </section>
@@ -107,25 +121,18 @@ export function MarketplaceView() {
           <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">VERFÜGBAR</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {verfuegbar.map((eintrag) => (
-              <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} />
+              <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} />
             ))}
           </div>
         </section>
 
-        {/* Zwei Vorbehalte, die der Kunde kennen muss, bevor er rechnet. */}
-        <footer className="mt-12 space-y-3 border-t border-titanium-800 pt-6">
-          {MODULE_PRICING_STATUS === 'provisional' && (
-            <p className="flex items-start gap-2 text-xs leading-relaxed text-titanium-500">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-              Die Modulbeträge sind vorläufige Richtwerte und noch nicht
-              endgültig kalkuliert. Verbindlich ist der Preis Ihres Plans.
-            </p>
-          )}
+        <footer className="mt-12 border-t border-titanium-800 pt-6">
           <p className="flex items-start gap-2 text-xs leading-relaxed text-titanium-500">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-            Einzelne Module lassen sich derzeit nicht getrennt buchen — die
-            Freischaltung läuft über den Plan. Die Einzelbuchung folgt mit dem
-            modularen Checkout.
+            Jede Karte hat genau einen Zustand: im Plan enthalten, für den
+            Add-on-Preis hinzufügen, oder ein höherer Plan ist nötig.
+            Zusätzliche Domains und Unternehmen sind noch keine Mengen-Add-ons
+            und zeigen deshalb keinen Einzelpreis.
           </p>
         </footer>
       </div>
@@ -133,9 +140,26 @@ export function MarketplaceView() {
   );
 }
 
-function Karte({ eintrag, empfohlen = false }: { eintrag: CatalogEntry; empfohlen?: boolean }) {
+function Karte({
+  eintrag,
+  empfohlen = false,
+  addon,
+  onAdd,
+  busy,
+  canManage,
+}: {
+  eintrag: CatalogEntry;
+  empfohlen?: boolean;
+  addon: AddonListingEntry | null;
+  onAdd: (id: AddonListingEntry['id']) => Promise<boolean>;
+  busy: AddonListingEntry['id'] | null;
+  canManage: boolean;
+}) {
   const { module, status, unlockedByPlan } = eintrag;
-  const aktiv = status === 'active';
+  const imPlan = status === 'active' || addon?.status === 'included';
+  const gebucht = addon?.status === 'booked';
+  const zubuchbar = !imPlan && !gebucht && addon?.status === 'bookable';
+  const label = planLabel(unlockedByPlan);
 
   return (
     <article
@@ -150,13 +174,17 @@ function Karte({ eintrag, empfohlen = false }: { eintrag: CatalogEntry; empfohle
       )}
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold text-titanium-50">{module.name}</h3>
-        {aktiv ? (
+        {imPlan || gebucht ? (
           <span className="flex shrink-0 items-center gap-1.5 border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-emerald-300">
-            <CheckCircle2 className="h-3 w-3" aria-hidden /> Aktiv
+            <CheckCircle2 className="h-3 w-3" aria-hidden /> {gebucht && !imPlan ? 'Gebucht' : 'Enthalten'}
+          </span>
+        ) : zubuchbar ? (
+          <span className="shrink-0 border border-ai-cyan-500/40 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-ai-cyan-300">
+            Zubuchbar
           </span>
         ) : (
           <span className="shrink-0 border border-titanium-700 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-titanium-400">
-            Verfügbar
+            {label ? `Ab ${label}` : 'Anfrage'}
           </span>
         )}
       </div>
@@ -173,55 +201,47 @@ function Karte({ eintrag, empfohlen = false }: { eintrag: CatalogEntry; empfohle
       </ul>
 
       <div className="mt-auto border-t border-titanium-800 pt-4">
-        <Preis module={module} />
-        {aktiv ? (
-          <p className="mt-3 text-xs text-titanium-500">In Ihrem Plan enthalten.</p>
-        ) : (
-          <Zugang unlockedByPlan={unlockedByPlan} />
+        {imPlan && <p className="text-xs text-titanium-500">Im Plan enthalten.</p>}
+        {gebucht && !imPlan && addon && (
+          <p className="font-mono text-sm text-titanium-200">Gebucht · {addon.price_eur} € / Monat</p>
+        )}
+        {zubuchbar && addon && (
+          <>
+            <p className="font-mono text-sm text-titanium-200">+ {addon.price_eur} € / Monat hinzufügen</p>
+            <p className="mt-1 text-xs text-titanium-500">{previewSentence(addon)}</p>
+            {canManage ? (
+              <button
+                type="button"
+                disabled={busy === addon.id}
+                onClick={() => void onAdd(addon.id)}
+                className="mt-3 inline-flex items-center gap-2 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-2 text-xs font-medium text-ai-cyan-300 transition-colors hover:bg-ai-cyan-500/20 disabled:opacity-50"
+              >
+                {busy === addon.id ? 'Wird gebucht …' : `Für +${addon.price_eur} €/Monat hinzufügen`}
+                <ArrowRight className="h-3 w-3" aria-hidden />
+              </button>
+            ) : (
+              <p className="mt-3 text-xs text-titanium-500">Nur Inhaber oder Admins können dazubuchen.</p>
+            )}
+          </>
+        )}
+        {!imPlan && !gebucht && !zubuchbar && label && (
+          <Link
+            to="/pricing"
+            className="inline-flex items-center gap-2 border border-titanium-700 px-3 py-2 text-xs font-medium text-titanium-200 transition-colors hover:border-ai-cyan-500 hover:text-ai-cyan-300"
+          >
+            Benötigt {label} <ArrowRight className="h-3 w-3" aria-hidden />
+          </Link>
+        )}
+        {!imPlan && !gebucht && !zubuchbar && !label && (
+          <Link
+            to="/contact-sales?source=marketplace"
+            className="inline-flex items-center gap-2 border border-titanium-700 px-3 py-2 text-xs font-medium text-titanium-200 transition-colors hover:border-ai-cyan-500 hover:text-ai-cyan-300"
+          >
+            Angebot anfragen <ArrowRight className="h-3 w-3" aria-hidden />
+          </Link>
         )}
       </div>
     </article>
-  );
-}
-
-function Preis({ module }: { module: BookableModule }) {
-  return (
-    <p className="font-mono text-sm text-titanium-200">
-      {module.priceModel === 'per_unit'
-        ? `${module.priceEur} € / Einheit`
-        : `${module.priceEur} € / Monat`}
-      {module.usageNote !== null && (
-        <span className="ml-2 text-xs text-titanium-500">+ {module.usageNote}</span>
-      )}
-    </p>
-  );
-}
-
-/**
- * Der Weg zum Modul. Führt zu den Preisen, wenn ein Plan es enthält, sonst
- * zum Vertrieb — statt zu einem Knopf, der nichts auslöst.
- */
-function Zugang({ unlockedByPlan }: { unlockedByPlan: CatalogEntry['unlockedByPlan'] }) {
-  const label = planLabel(unlockedByPlan);
-
-  if (label === null) {
-    return (
-      <Link
-        to="/contact-sales?source=marketplace"
-        className="mt-3 inline-flex items-center gap-2 border border-titanium-700 px-3 py-2 text-xs font-medium text-titanium-200 transition-colors hover:border-ai-cyan-500 hover:text-ai-cyan-300"
-      >
-        Angebot anfragen <ArrowRight className="h-3 w-3" aria-hidden />
-      </Link>
-    );
-  }
-
-  return (
-    <Link
-      to="/pricing"
-      className="mt-3 inline-flex items-center gap-2 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-2 text-xs font-medium text-ai-cyan-300 transition-colors hover:bg-ai-cyan-500/20"
-    >
-      Enthalten ab {label} <ArrowRight className="h-3 w-3" aria-hidden />
-    </Link>
   );
 }
 

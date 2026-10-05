@@ -38,7 +38,10 @@ import {
   isPlanSelectable,
   planByKey,
   planGrants,
+  addonById,
+  type AddOnId,
   type BookableModule,
+  type BookableModuleId,
   type EntitlementKey,
   type PlanId,
 } from '@/shared/pricing';
@@ -132,4 +135,42 @@ export function buildCatalog(planId: PlanId | string | null | undefined): Catalo
 export function planLabel(planId: PlanId | null): string | null {
   if (planId === null) return null;
   return planByKey(planId)?.name ?? null;
+}
+
+
+/**
+ * Verkaufseinheit, die ein Marketplace-Modul heute wirklich einlösen kann.
+ *
+ * `BOOKABLE_MODULES.priceEur` ist provisional (MODULE_PRICING_STATUS) und
+ * darf nicht als Checkout-Preis erscheinen. Buchbar ist nur, was in `ADDONS`
+ * steht und `subscription-addons` mit einem Live-Stripe-Price ausliefert.
+ *
+ * `advanced_ai_governance` (149 € Anzeige) hängt am bestehenden
+ * Compliance Pack (149 €), bis ein eigenes Stripe-Price existiert.
+ * Domain- und Unternehmens-Mengen haben noch kein Add-on — die Karte darf
+ * dann keinen Einzelpreis zeigen.
+ */
+export const MODULE_ADDON: Partial<Record<BookableModuleId, AddOnId>> = {
+  voice_bot: 'voice',
+  whatsapp_bot: 'whatsapp',
+  advanced_ai_governance: 'compliance_pack',
+};
+
+export type MarketplaceCardState =
+  | 'included'
+  | 'booked'
+  | 'add'
+  | 'upgrade'
+  | 'inquiry'
+  | 'booking_pending';
+
+export function addonForModule(id: BookableModuleId): AddOnId | null {
+  return MODULE_ADDON[id] ?? null;
+}
+
+/** Anzeigepreis nur aus der Add-on-SSoT, nie aus dem provisionalen Modulbetrag. */
+export function addonListPriceEur(id: BookableModuleId): number | null {
+  const addonId = addonForModule(id);
+  if (!addonId) return null;
+  return addonById(addonId)?.priceEur ?? null;
 }

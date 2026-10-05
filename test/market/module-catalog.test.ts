@@ -140,7 +140,7 @@ describe('MODULE_ADDON', () => {
   it('zeigt keinen provisionalen Modulpreis als Buchungspreis', () => {
     expect(addonListPriceEur('additional_domain')).toBe(19);
     expect(addonListPriceEur('additional_company')).toBeNull();
-    expect(addonListPriceEur('advanced_ai_governance')).toBe(149);
+    expect(addonListPriceEur('advanced_ai_governance')).toBeNull();
     expect(MODULE_ADDON.voice_bot).toBe('voice');
     expect(MODULE_ADDON.whatsapp_bot).toBe('whatsapp');
   });

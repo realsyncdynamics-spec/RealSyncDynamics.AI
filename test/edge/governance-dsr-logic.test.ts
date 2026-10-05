@@ -7,7 +7,7 @@
  *   - request_type / status restricted to the DB CHECK enums
  *   - completed_at stamped on terminal transitions, cleared on reopen
  *   - string fields clamped, affected_assets sanitized
- *   - writer-role gate excludes 'viewer'
+ *   - writer-role gate matches memberships_role_check, excludes viewer_auditor
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -97,10 +97,13 @@ describe('governance-dsr logic — guards', () => {
     expect(sanitizeAssets(['a', 2, null, 'b'])).toEqual(['a', 'b']);
     expect(sanitizeAssets('notarray')).toEqual([]);
   });
-  it('isWriterRole excludes viewer and unknown roles', () => {
+  it('isWriterRole excludes viewer_auditor and unknown roles', () => {
     expect(isWriterRole('owner')).toBe(true);
     expect(isWriterRole('admin')).toBe(true);
-    expect(isWriterRole('member')).toBe(true);
+    expect(isWriterRole('dpo')).toBe(true);
+    expect(isWriterRole('editor')).toBe(true);
+    expect(isWriterRole('viewer_auditor')).toBe(false);
+    expect(isWriterRole('member')).toBe(false);
     expect(isWriterRole('viewer')).toBe(false);
     expect(isWriterRole(null)).toBe(false);
   });

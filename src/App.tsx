@@ -277,9 +277,7 @@ const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const LocalAiOnboardingView = lazy(() => import('./features/local-ai/LocalAiOnboardingView').then((m) => ({ default: m.LocalAiOnboardingView })));
-const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
-const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
 const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
@@ -794,9 +792,12 @@ function RoutesWithTracking() {
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/websites" element={<AppGate><GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 2 Governance Views: Multi-Framework Compliance */}
-      <Route path="/app/governance/ai-register" element={<AppGate><GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell></AppGate>} />
+      {/* KI-Register und AI-Act-Prüfung leben unter /app/ai-systems (Inventar + Klassifizierung).
+          Die früheren Ansichten riefen relative /functions/v1-URLs auf (SPA-Fallback statt Supabase)
+          und speicherten nichts — sie sind entfernt, die Pfade bleiben als Weiterleitung. */}
+      <Route path="/app/governance/ai-register" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/dsgvo-directory" element={<AppGate><GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/ai-act-assessment" element={<AppGate><GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance/ai-act-assessment" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/industrial-ot" element={<AppGate><GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/memory" element={<AppGate><GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/nis2-incidents" element={<AppGate><GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell></AppGate>} />

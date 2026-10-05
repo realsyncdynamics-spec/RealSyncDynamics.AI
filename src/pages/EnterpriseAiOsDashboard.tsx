@@ -90,6 +90,15 @@ export function EnterpriseAiOsDashboard() {
               Zentrale Übersicht über KI-Systeme, Connectoren, Agent Policies, Risiken und Audit
               Events.
             </p>
+            <p
+              className="mt-4 max-w-3xl rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300"
+              data-testid="enterprise-demo-notice"
+            >
+              <strong className="text-white">Beispieldaten.</strong> Kennzahlen, Systeme, Connectoren,
+              Policies und Ereignisse auf dieser Seite sind fest hinterlegte Beispiele — keine Daten
+              Ihres Unternehmens. Ihr echtes KI-Inventar steht nach der Anmeldung unter{' '}
+              <Link to="/app/ai-systems" className="text-[#d4af37] underline underline-offset-2">KI-Systeme</Link>.
+            </p>
           </div>
 
           <Link
@@ -101,10 +110,10 @@ export function EnterpriseAiOsDashboard() {
         </div>
 
         <section className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard label="Verbundene Systeme" value={connectedSystems} hint="Live Connector Status" />
-          <KpiCard label="Erkannte KI-Systeme" value={mockAiSystems.length} hint="AI Registry" />
-          <KpiCard label="Hochrisiko-Systeme" value={highRiskSystems} hint="EU AI Act Risk Mapping" />
-          <KpiCard label="Offene Freigaben" value={openApprovals} hint="Human Approval Required" />
+          <KpiCard label="Verbundene Systeme" value={connectedSystems} hint="Beispielwert · Connector-Status" />
+          <KpiCard label="Erkannte KI-Systeme" value={mockAiSystems.length} hint="Beispielwert · KI-Register" />
+          <KpiCard label="Hochrisiko-Systeme" value={highRiskSystems} hint="Beispielwert · EU-AI-Act-Einstufung" />
+          <KpiCard label="Offene Freigaben" value={openApprovals} hint="Beispielwert · Freigaben" />
         </section>
 
         <section className="mt-10 grid gap-6 lg:grid-cols-2">

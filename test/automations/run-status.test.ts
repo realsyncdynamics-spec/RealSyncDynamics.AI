@@ -90,3 +90,15 @@ describe('automation-callback liest und setzt nur erlaubte Status', () => {
     expect(code(TRIGGER)).not.toMatch(/'pending'/);
   });
 });
+
+describe('automation-trigger überschreibt keinen beendeten Lauf', () => {
+  it('jedes Update nach dem Insert gilt nur für einen noch queued Lauf', () => {
+    const updates = [
+      ...code(TRIGGER).matchAll(
+        /\.from\('automation_runs'\)\.update\(\{[\s\S]*?\}\)\.eq\('id', run\.id\)(\.eq\('status', 'queued'\))?/g,
+      ),
+    ];
+    expect(updates.length).toBe(3);
+    for (const u of updates) expect(u[1], u[0].slice(0, 80)).toBeDefined();
+  });
+});

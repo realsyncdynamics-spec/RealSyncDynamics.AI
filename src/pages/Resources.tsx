@@ -30,6 +30,13 @@ const RESOURCES: Resource[] = [
     icon: <AlertTriangle className="h-5 w-5" />,
   },
   {
+    href: '/ki-betriebssystem',
+    title: 'Was ist ein KI-Betriebssystem?',
+    description: 'Warum die Governance-Schicht entscheidet und nicht das Modell: von Request bis Evidence — DSGVO und EU AI Act in einem provider-neutralen Kontrollfluss.',
+    badge: 'Konzept',
+    icon: <ShieldCheck className="h-5 w-5" />,
+  },
+  {
     href: '/onboarding-erklaert',
     title: 'So funktioniert das Onboarding',
     description: 'Vom Unternehmensprofil über verbundene Systeme bis zu Risiken, Aufgaben und Nachweisen — warum Ihre bestehende IT dabei bleibt.',

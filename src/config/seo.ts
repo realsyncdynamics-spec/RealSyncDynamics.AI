@@ -872,6 +872,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
     ]),
   },
+  '/ki-betriebssystem': {
+    title: 'KI-Betriebssystem für DSGVO und EU AI Act — was ein AI Governance OS ist | RealSyncDynamics.AI',
+    description:
+      'Request → Identity → Tenant → Policy → Risk → Approval → Execution → Verification → Evidence: Wie ein AI Governance Operating System KI-Ausführung provider-neutral steuert und nachweisbar macht.',
+    canonical: `${SITE_URL}/ki-betriebssystem`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'KI-Betriebssystem', url: '/ki-betriebssystem' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
     title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSyncDynamics.AI',
     description:

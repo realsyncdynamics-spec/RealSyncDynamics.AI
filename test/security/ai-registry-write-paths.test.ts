@@ -69,7 +69,8 @@ describe('telemetry-ai-event: Ingest-Schlüssel statt Mandanten-UUID', () => {
     const pruefung = at(code, 'await authenticateIngestKey(');
     const ablehnung = at(code, 'if (!auth.ok) return');
     expect(ablehnung).toBeGreaterThan(pruefung);
-    expect(at(code, 'await req.text()')).toBeGreaterThan(ablehnung);
+    expect(at(code, 'await readCappedText(req, MAX_BODY_BYTES)')).toBeGreaterThan(ablehnung);
+    expect(code).not.toContain('await req.text()');
     expect(at(code, ".from('ai_runtime_events')")).toBeGreaterThan(ablehnung);
     expect(at(code, ".from('ai_evidence_events')")).toBeGreaterThan(ablehnung);
     expect(at(code, ".from('ai_policies')")).toBeGreaterThan(ablehnung);

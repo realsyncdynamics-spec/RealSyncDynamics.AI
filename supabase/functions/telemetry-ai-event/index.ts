@@ -20,6 +20,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { authenticateIngestKey, checkTenantRef } from '../_shared/ingestKeyAuth.ts';
+import { readCappedText } from '../_shared/readCappedBody.ts';
 import {
   evaluatePolicies,
   type PolicyRule,
@@ -158,13 +159,15 @@ Deno.serve(async (req) => {
   if (!auth.ok) return jsonError(auth.status, auth.code, auth.message, corsHeaders);
   const tenantId = auth.tenantId;
 
-  const rawBody = await req.text();
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+  // Grenze beim Streamen, nicht nach req.text() (sonst läge der ganze Body
+  // schon im Speicher, bevor 413 käme).
+  const body = await readCappedText(req, MAX_BODY_BYTES);
+  if (!body.ok) {
     return jsonError(413, 'BODY_TOO_LARGE', `max ${MAX_BODY_BYTES} bytes`, corsHeaders);
   }
   let payload: unknown;
   try {
-    payload = JSON.parse(rawBody);
+    payload = JSON.parse(body.text);
   } catch {
     return jsonError(400, 'BAD_JSON', 'request body must be valid JSON', corsHeaders);
   }

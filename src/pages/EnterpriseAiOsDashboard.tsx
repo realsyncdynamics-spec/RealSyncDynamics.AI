@@ -94,9 +94,10 @@ export function EnterpriseAiOsDashboard() {
               className="mt-4 max-w-3xl rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300"
               data-testid="enterprise-demo-notice"
             >
-              <strong className="text-white">Beispieldaten.</strong> Kennzahlen, Systeme, Connectoren,
-              Policies und Ereignisse auf dieser Seite sind fest hinterlegte Beispiele — keine Daten
-              Ihres Unternehmens. Ihr echtes KI-Inventar steht nach der Anmeldung unter{' '}
+              <strong className="text-white">Beispieldaten.</strong> Die Kennzahlen sowie AI System
+              Registry, Connector Status, Agent Policies und Audit Events auf dieser Seite sind fest
+              hinterlegte Beispiele — keine Daten Ihres Unternehmens. Nur „Recent Agent Runs“ wird
+              abgerufen. Ihr echtes KI-Inventar steht nach der Anmeldung unter{' '}
               <Link to="/app/ai-systems" className="text-[#d4af37] underline underline-offset-2">KI-Systeme</Link>.
             </p>
           </div>
@@ -257,8 +258,8 @@ export function EnterpriseAiOsDashboard() {
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-xl font-semibold">Recent Agent Runs</h2>
-              <p className="mt-1 text-sm text-zinc-400">
-                Letzte Dispatcher-Aufrufe ans Agent Control Layer. Ergebnisse sind revisionssicher
+              <p className="mt-1 text-sm text-zinc-400" data-testid="enterprise-runs-fetched">
+                Abgerufen, keine Beispieldaten: letzte Dispatcher-Aufrufe ans Agent Control Layer. Ergebnisse sind revisionssicher
                 in <code className="text-zinc-300">enterprise_agent_runs</code> persistiert.
               </p>
             </div>

@@ -52,6 +52,8 @@ describe('ISO-42001-Hub', () => {
     const { container } = render(<MemoryRouter><Iso42001ComplianceHub /></MemoryRouter>);
     expect(screen.getByTestId('iso42001-insufficient-data')).toHaveTextContent('Unzureichende Daten');
     expect(container.textContent).not.toMatch(/GESAMTKONFORMITÄT|Vor 2 Stunden|Fällig:/i);
+    // Kein Upgrade-Versprechen: ISO 42001 hat in keinem Plan Kontrollpunkte.
+    expect(container.textContent).not.toMatch(/Verfügbar ab|upgraden/i);
     expect(screen.queryByText(/^Konform$/)).toBeNull();
     expect(container.textContent).not.toMatch(/\d+\s*%/);
   });
@@ -68,6 +70,8 @@ describe('Enterprise-AI-OS-Übersicht und Weiterleitungen (Quelltext)', () => {
     const src = readFileSync('src/pages/EnterpriseAiOsDashboard.tsx', 'utf8');
     expect(src).toContain('data-testid="enterprise-demo-notice"');
     expect(src).not.toContain('Live Connector Status');
+    // Abgerufene Agentenläufe sind ausdrücklich keine Beispieldaten.
+    expect(src).toContain('data-testid="enterprise-runs-fetched"');
   });
 
   it('leitet die entfernten KI-Ansichten ins KI-Inventar', () => {
@@ -75,5 +79,11 @@ describe('Enterprise-AI-OS-Übersicht und Weiterleitungen (Quelltext)', () => {
     expect(app).toContain('<Route path="/app/governance/ai-register" element={<Navigate to="/app/ai-systems" replace />} />');
     expect(app).toContain('<Route path="/app/governance/ai-act-assessment" element={<Navigate to="/app/ai-systems" replace />} />');
     expect(app).not.toMatch(/AiRegisterView|AiActRiskAssessmentView/);
+  });
+
+  it('die Kachel im Intelligence-Dashboard verspricht keinen „AI Act Check“ mehr, sondern führt ins Inventar', () => {
+    const view = readFileSync('src/features/dashboard/DashboardView.tsx', 'utf8');
+    expect(view).not.toContain("'AI Act Check'");
+    expect(view).toContain("{ label: 'KI-Systeme', hint: 'Inventar und Klassifizierung', icon: ShieldCheck, path: '/app/ai-systems' }");
   });
 });

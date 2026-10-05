@@ -10,10 +10,8 @@
  * echten KI-Inventar, das die Grundlage einer ISO-42001-Bewertung wäre.
  */
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Info, Lock } from 'lucide-react';
-import { useEntitlements } from '../../../core/billing/useEntitlements';
+import { ArrowRight, Info } from 'lucide-react';
 import { FeatureGate } from '../../../core/billing/FeatureGate';
-import { hasModule, minimumPlanForModule, planById } from '@/shared/pricing';
 
 export function Iso42001ComplianceHub() {
   return (
@@ -25,7 +23,6 @@ export function Iso42001ComplianceHub() {
 
 function Inner() {
   const navigate = useNavigate();
-  const { tier } = useEntitlements();
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -49,14 +46,8 @@ function Inner() {
             ISO/IEC 42001 beschreibt ein Managementsystem für KI. Eine Bewertung setzt ein
             vollständiges KI-Inventar und erfasste Kontrollpunkte voraus.
           </p>
-          {/* Freischaltung folgt dem ISO-27001-Pack der SSoT — kein
-              Vergleich gegen Plan-Namen. */}
-          {!hasModule(tier, 'iso_27001') && (
-            <p className="mt-3 text-xs text-amber-300 flex items-center gap-2">
-              <Lock className="w-3 h-3" />
-              Verfügbar ab {planById(minimumPlanForModule('iso_27001') ?? 'growth').name}-Plan
-            </p>
-          )}
+          {/* Kein „Verfügbar ab …-Plan“: Für ISO 42001 gibt es in keinem Plan
+              Kontrollpunkte — ein Upgrade schaltet hier nichts frei. */}
         </div>
 
         <div

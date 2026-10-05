@@ -61,6 +61,8 @@ export function MarketplaceView() {
     [funnel],
   );
 
+  const checkoutReady = sandbox || listing?.subscription?.has_stripe_subscription === true;
+
   const istAktiv = (eintrag: CatalogEntry) => {
     const addon = addonByModule.get(eintrag.module.id);
     return eintrag.status === 'active' || addon?.status === 'included' || addon?.status === 'booked';
@@ -128,7 +130,7 @@ export function MarketplaceView() {
             <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">AKTIV</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {aktiv.map((eintrag) => (
-                <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} />
+                <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} checkoutReady={checkoutReady} />
               ))}
             </div>
           </section>
@@ -138,7 +140,7 @@ export function MarketplaceView() {
           <h2 className="mb-4 font-mono text-xs tracking-widest text-titanium-500">VERFÜGBAR</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {verfuegbar.map((eintrag) => (
-              <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} />
+              <Karte key={eintrag.module.id} eintrag={eintrag} empfohlen={empfohlen.has(eintrag.module.id)} addon={addonByModule.get(eintrag.module.id) ?? null} onAdd={add} busy={busy} canManage={canManage} checkoutReady={checkoutReady} />
             ))}
           </div>
         </section>
@@ -148,8 +150,9 @@ export function MarketplaceView() {
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             Jede Karte hat genau einen Zustand: im Plan enthalten, für den
             Add-on-Preis hinzufügen, oder ein höherer Plan ist nötig.
-            Weitere Domain ist ein Mengen-Add-on (19 €). Ein weiteres
-            Unternehmen hat noch kein Kontingent und zeigt keinen Preis.
+            Ein Eurobetrag erscheint nur für Add-ons mit einem realen
+            Buchungsweg. Weitere Domain und weiteres Unternehmen zeigen bis
+            zur Provisionierung keinen Einzelpreis.
           </p>
         </footer>
       </div>
@@ -164,6 +167,7 @@ function Karte({
   onAdd,
   busy,
   canManage,
+  checkoutReady,
 }: {
   eintrag: CatalogEntry;
   empfohlen?: boolean;
@@ -171,6 +175,7 @@ function Karte({
   onAdd: (id: AddonListingEntry['id']) => Promise<boolean>;
   busy: AddonListingEntry['id'] | null;
   canManage: boolean;
+  checkoutReady: boolean;
 }) {
   const { module, status, unlockedByPlan } = eintrag;
   const imPlan = status === 'active' || addon?.status === 'included';
@@ -231,7 +236,7 @@ function Karte({
             {canManage ? (
               <button
                 type="button"
-                disabled={busy !== null}
+                disabled={busy !== null || !checkoutReady}
                 onClick={() => void onAdd(addon.id)}
                 className="mt-3 inline-flex items-center gap-2 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-2 text-xs font-medium text-ai-cyan-300 transition-colors hover:bg-ai-cyan-500/20 disabled:opacity-50"
               >
@@ -240,6 +245,9 @@ function Karte({
               </button>
             ) : (
               <p className="mt-3 text-xs text-titanium-500">Nur Inhaber oder Admins können dazubuchen.</p>
+            )}
+            {canManage && !checkoutReady && (
+              <p className="mt-2 text-xs text-amber-300">Add-ons setzen ein laufendes Stripe-Abo voraus.</p>
             )}
           </>
         )}

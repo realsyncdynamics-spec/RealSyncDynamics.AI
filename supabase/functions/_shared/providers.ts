@@ -1,7 +1,9 @@
 // Provider abstraction for AI tools.
 //
 // Routes a normalized request to the right model SDK and returns a normalized
-// {text, inputTokens, outputTokens, cachedTokens} result.
+// {text, inputTokens, outputTokens, cachedTokens, pricedUsage} result.
+// pricedUsage is the basis for cost (providerCost.ts); the token fields keep
+// their display/quota meaning.
 //
 // Anthropic:  prompt-caching enabled on the system prompt so repeated tool
 //             invocations only pay full input price for the user prompt.
@@ -14,6 +16,12 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  fromAnthropicUsage,
+  fromInclusiveCacheUsage,
+  type AnthropicUsage,
+  type TokenUsage,
+} from './providerCost.ts';
 import { supportsSamplingParams } from './aiGateway/anthropicAdapter.ts';
 
 // Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
@@ -82,6 +90,13 @@ export interface ProviderResult {
   outputTokens: number;
   /** Tokens served from prompt cache (counts toward inputTokens for billing display, separate for clarity). */
   cachedTokens: number;
+  /**
+   * Verbrauch auf die vier Preisarten abgebildet — die Grundlage der
+   * Kostenrechnung (providerCost.ts). inputTokens/cachedTokens oben bleiben
+   * für Anzeige und Token-Kontingent, wie sie sind; sie zählen Cache-Tokens je
+   * Anbieter verschieden und taugen deshalb nicht als Preisbasis.
+   */
+  pricedUsage: TokenUsage;
 }
 
 export class ProviderError extends Error {
@@ -89,13 +104,6 @@ export class ProviderError extends Error {
   constructor(message: string, code = 'PROVIDER_ERROR') {
     super(message); this.code = code;
   }
-}
-
-interface AnthropicUsage {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_creation_input_tokens?: number;
-  cache_read_input_tokens?: number;
 }
 
 interface AnthropicMessageParams {
@@ -175,6 +183,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
     outputTokens: u.output_tokens ?? 0,
     cachedTokens: u.cache_read_input_tokens ?? 0,
+    pricedUsage: fromAnthropicUsage(u),
   };
 }
 
@@ -235,6 +244,11 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: usage.promptTokenCount ?? 0,
     outputTokens: usage.candidatesTokenCount ?? 0,
     cachedTokens: usage.cachedContentTokenCount ?? 0,
+    pricedUsage: fromInclusiveCacheUsage({
+      promptTokens: usage.promptTokenCount,
+      outputTokens: usage.candidatesTokenCount,
+      cachedTokens: usage.cachedContentTokenCount,
+    }),
   };
 }
 
@@ -304,6 +318,10 @@ async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: data?.prompt_eval_count ?? 0,
     outputTokens: data?.eval_count ?? 0,
     cachedTokens: 0,
+    pricedUsage: fromInclusiveCacheUsage({
+      promptTokens: data?.prompt_eval_count,
+      outputTokens: data?.eval_count,
+    }),
   };
 }
 
@@ -338,5 +356,10 @@ async function callOpenAI(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: usage?.prompt_tokens ?? 0,
     outputTokens: usage?.completion_tokens ?? 0,
     cachedTokens: cached,
+    pricedUsage: fromInclusiveCacheUsage({
+      promptTokens: usage?.prompt_tokens,
+      outputTokens: usage?.completion_tokens,
+      cachedTokens: cached,
+    }),
   };
 }

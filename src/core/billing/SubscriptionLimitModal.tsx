@@ -33,14 +33,10 @@ const FEATURE_INFO: Record<string, { tier: string; description: string; benefits
     ],
   },
   'ai_classification.limited': {
-    tier: 'Growth',
-    description: 'Klassifiziere Systeme nach EU AI Act Compliance-Anforderungen.',
-    benefits: [
-      'Automated Classification',
-      'Risk Assessment',
-      'Compliance Mapping',
-      'Regulatory Updates',
-    ],
+    tier: '',
+    description:
+      'Klassifizierung ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.',
+    benefits: [],
   },
   'evidence.advanced_vault': {
     tier: 'Partner',
@@ -71,6 +67,8 @@ export function SubscriptionLimitModal({
     description: `Upgrade to unlock ${featureName}.`,
     benefits: ['Premium Features', 'Enhanced Capabilities', 'Priority Support'],
   };
+  // Klassifizierung: kein Plan gewährt den Key — Upgrade-CTA wäre irreführend.
+  const unavailableWithoutUpgrade = feature === 'ai_classification.limited';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -83,9 +81,11 @@ export function SubscriptionLimitModal({
             <h2 className="text-xl font-bold text-titanium-50 mb-1">
               {featureName}
             </h2>
-            <p className="text-sm text-titanium-400">
-              {info.tier}-Plan erforderlich
-            </p>
+            {!unavailableWithoutUpgrade && (
+              <p className="text-sm text-titanium-400">
+                {info.tier}-Plan erforderlich
+              </p>
+            )}
           </div>
         </div>
 
@@ -93,29 +93,33 @@ export function SubscriptionLimitModal({
           {info.description}
         </p>
 
-        <div className="space-y-2">
-          <p className="text-xs text-titanium-500 font-mono mb-3">FEATURES</p>
-          {info.benefits.map((benefit) => (
-            <div key={benefit} className="flex items-start gap-2">
-              <div className="w-4 h-4 rounded-none bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+        {!unavailableWithoutUpgrade && info.benefits.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-titanium-500 font-mono mb-3">FEATURES</p>
+            {info.benefits.map((benefit) => (
+              <div key={benefit} className="flex items-start gap-2">
+                <div className="w-4 h-4 rounded-none bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                </div>
+                <span className="text-sm text-titanium-300">{benefit}</span>
               </div>
-              <span className="text-sm text-titanium-300">{benefit}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div className="bg-ai-cyan-500/10 border border-ai-cyan-500/30 p-4 rounded-none space-y-2">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-ai-cyan-400" />
-            <p className="text-sm font-semibold text-ai-cyan-300">
-              Upgrade auf {info.tier}
+        {!unavailableWithoutUpgrade && (
+          <div className="bg-ai-cyan-500/10 border border-ai-cyan-500/30 p-4 rounded-none space-y-2">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-ai-cyan-400" />
+              <p className="text-sm font-semibold text-ai-cyan-300">
+                Upgrade auf {info.tier}
+              </p>
+            </div>
+            <p className="text-xs text-ai-cyan-200">
+              Erhalte Zugriff auf dieses und weitere Premium-Features
             </p>
           </div>
-          <p className="text-xs text-ai-cyan-200">
-            Erhalte Zugriff auf dieses und weitere Premium-Features
-          </p>
-        </div>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -124,25 +128,29 @@ export function SubscriptionLimitModal({
           >
             Schließen
           </button>
-          <button
-            onClick={() => {
-              if (upgradeUrl) {
-                navigate(upgradeUrl);
-              } else {
-                navigate('/pricing');
-              }
-              onClose();
-            }}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-ai-cyan-500 hover:bg-ai-cyan-600 text-obsidian-950 font-semibold transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            Upgraden
-          </button>
+          {!unavailableWithoutUpgrade && (
+            <button
+              onClick={() => {
+                if (upgradeUrl) {
+                  navigate(upgradeUrl);
+                } else {
+                  navigate('/pricing');
+                }
+                onClose();
+              }}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-ai-cyan-500 hover:bg-ai-cyan-600 text-obsidian-950 font-semibold transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Upgraden
+            </button>
+          )}
         </div>
 
-        <p className="text-xs text-titanium-600 text-center">
-          Oder kontaktiere uns für Enterprise-Lösungen
-        </p>
+        {!unavailableWithoutUpgrade && (
+          <p className="text-xs text-titanium-600 text-center">
+            Oder kontaktiere uns für Enterprise-Lösungen
+          </p>
+        )}
       </div>
     </div>
   );

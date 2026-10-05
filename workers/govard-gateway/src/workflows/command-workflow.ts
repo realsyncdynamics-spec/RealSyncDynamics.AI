@@ -6,11 +6,10 @@ import { OrgRepository } from "../db/repository";
 import { evidenceFor } from "../evidence/sequencer";
 import { isAlreadyApplied, isExecutableState } from "./execution-rules";
 import { runIntent } from "../intents";
+import type { CommandWorkflowParams } from "../types";
 
-export interface CommandWorkflowParams {
-  org_id: string;
-  command_id: string;
-}
+// Liegt in types.ts, damit executor.ts ohne Worker-Runtime testbar bleibt.
+export type { CommandWorkflowParams };
 
 /**
  * Serverseitige Ausfuehrung eines freigegebenen Commands — durable.

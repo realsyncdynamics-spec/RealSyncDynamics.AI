@@ -139,6 +139,40 @@ Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR.**
 
 ---
 
+## 3a. O-WP1 Triage (Stand 2026-10-05, 31 offene PRs)
+
+Kein PR hat ein Approve. `enable` (rot bei 11 PRs) ist ein **veralteter Lauf**:
+`auto-merge.yml` heißt den Job seit 04.10. `auto-merge` und endet „skipped" —
+Branch-Update auf `main` räumt ihn ab. Drafts überspringen unit/build/gates/spa,
+ihr Grün zählt erst nach „Ready for review".
+
+| Spur | PR | Zustand | Aktion |
+|---|---|---|---|
+| **1 Security** | #1721 | clean, grün | **merge** (GO) |
+| | #1710 | behind, nur `enable` | Branch-Update → merge (GO) |
+| | #1723, #1717 | Draft, grün | Ready for review → Branch-Update → merge (GO) |
+| | #1719 | behind, nur `enable` | Branch-Update → merge (GO) |
+| **2 Recht/Claims** | #1748 | Draft, hot-file | **wartet auf E-O3**; danach Textkonflikt mit #1744 |
+| | #1739 | behind, nur `enable` | Branch-Update → merge (GO, Rechtstext) |
+| | #1665 | **dirty**, CI vom 28.09. | `main` hineinmergen → neu prüfen |
+| | #1744 | behind, **4 Major offen** (Jahres-Toggle ohne Handler, Jahrespreis → Monats-Checkout, 204 mit Body) | **fixen**, dann merge |
+| | #1750 | behind | prüfen, ob geänderte v2-Sektionen auf v4 noch rendern — sonst **schließen** |
+| **3 Laufzeit** | #1709 | behind, nur `enable` | Branch-Update → merge |
+| | #1756, #1745, #1718 | Draft, grün | Ready for review → merge |
+| | #1700 | Draft, **Migration collisions** | Zeitstempel fixen; Migration = GO |
+| **4 SEO** | #1740 → #1701 | behind; #1701 hot-file (`App.tsx`) | in dieser Reihenfolge |
+| **5 Plan** | #1752 | WP7 = #1742 überholt (#1751 gemergt) | WP7 als erledigt führen oder schließen |
+| **KW 42 Build Studio** | #1737 → #1738 | behind, nur `enable`, gestapelt | O-WP3 |
+| **KW 42–43** | #1733 | behind, nur `enable` | O-WP7 |
+| | #1720 → #1679 | hot-file `shared/pricing.ts` | O-WP8, nacheinander, `sync:pricing` nach jedem Merge |
+| **KW 44** | #1731 | Draft, grün | O-WP10 (Edge-Function-Drift) |
+| **geparkt** | #1724 (+ CodeQL offen), #1729, #1727 (dirty, +16k), #1714 (drift rot), #1712, #1706 | — | nicht rebasen |
+
+**Neuer Konflikt → E-O7:** #1746 (Basis für O-WP5) soll laut PR-Text **nach**
+#1727 gemergt werden (6 Dateien Überschneidung) — #1727 ist geparkt.
+
+---
+
 ## 4. Bewusst geparkt (November oder später)
 
 #1724 / #1729 Browser-Runtime/Executor · #1714 KI-Automation-Profil · #1727 AI-Rebuild ·
@@ -157,6 +191,7 @@ WebContainer · neue Agenten. Parken = Draft bleibt offen, kein Rebase-Aufwand i
 | E-O4 | WP2a-Migration auf Produktion anwenden | ja, vor O-WP8 Teil 2 | O-WP8, O-WP10 |
 | E-O5 | Publish-Ziel: CF-Pages-Preview je Tenant; Custom Domain im Oktober | Domain bleibt Preview | O-WP9 |
 | E-O6 | Go/No-Go-Runde | 30.10., Ergebnis = Startfenster, kein Datum vorab | O-WP10 |
+| E-O7 | #1746 hängt an geparktem #1727 | #1746 eigenständig auf `main` neu schneiden, #1727 bleibt geparkt | O-WP5 |
 
 ---
 

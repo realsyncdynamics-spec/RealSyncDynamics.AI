@@ -109,6 +109,7 @@ async function handleCreate(
   return jsonResponse({ ok: true, incident: data });
 }
 
+/** Moves an incident to a new status and appends a timeline entry (writers only, 409 on a concurrent write). */
 async function handleTransition(
   admin: SupabaseClient,
   userId: string,
@@ -118,9 +119,11 @@ async function handleTransition(
   if (!isUuid(body.id)) return jsonError(400, 'BAD_REQUEST', 'id must be a UUID');
 
   const { data: row } = await admin
-    .from('incidents').select('id, tenant_id, status, timeline').eq('id', body.id).maybeSingle();
+    .from('incidents').select('id, tenant_id, status, timeline, updated_at').eq('id', body.id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'incident not found');
-  const current = row as { id: string; tenant_id: string | null; status: string; timeline: unknown };
+  const current = row as {
+    id: string; tenant_id: string | null; status: string; timeline: unknown; updated_at: string;
+  };
 
   // Tenant-less legacy rows cannot be authorised against a membership.
   if (!current.tenant_id || !isWriterRole(await memberRole(admin, userId, current.tenant_id))) {
@@ -130,9 +133,22 @@ async function handleTransition(
   const built = buildTransitionPatch(current, body, userEmail ?? userId, new Date().toISOString());
   if (!built.ok) return jsonError(400, 'BAD_REQUEST', built.message);
 
+  // Compare-and-set on the row version we read: the timeline is appended in
+  // JS (read-modify-write), so a concurrent write must not be overwritten
+  // with a stale timeline. Status alone is not enough — a reopen allows
+  // open → investigating → open, which would match the read status again.
+  // updated_at is NOT NULL and set by trg_incidents_updated_at on every
+  // UPDATE, so it changes with every timeline write. Zero matched rows → 409.
   const { data, error } = await admin
-    .from('incidents').update(built.value).eq('id', current.id).select('*').single();
+    .from('incidents')
+    .update(built.value)
+    .eq('id', current.id)
+    .eq('updated_at', current.updated_at)
+    .eq('status', current.status)
+    .select('*')
+    .maybeSingle();
   if (error) throw error;
+  if (!data) return jsonError(409, 'CONFLICT', 'incident changed concurrently; reload and retry');
 
   await audit(admin as unknown as Parameters<typeof audit>[0], {
     tenant_id: current.tenant_id, actor_user_id: userId, actor_email: userEmail,

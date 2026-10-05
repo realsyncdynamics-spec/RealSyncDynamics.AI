@@ -123,4 +123,20 @@ describe('governance-incidents — handler contract (source)', () => {
     expect(src).toMatch(/from\('incidents'\)\.insert/);
     expect(src).not.toMatch(/governance_incidents'\)\s*\.insert/);
   });
+
+  it('transitions with compare-and-set on the row version it read, 409 on a lost race', () => {
+    // The timeline is appended in JS (read-modify-write). Without a version
+    // predicate two concurrent transitions silently drop timeline entries
+    // (last writer wins). Status alone is not enough: a reopen makes
+    // open → investigating → open match the read status again, so the
+    // trigger-maintained updated_at is the version.
+    const transition = src.slice(src.indexOf('async function handleTransition'));
+    expect(transition).toMatch(/select\('id, tenant_id, status, timeline, updated_at'\)/);
+    const update = transition.match(/\.update\(built\.value\)([\s\S]*?)\.select\('\*'\)/);
+    expect(update).not.toBeNull();
+    expect(update![1]).toMatch(/\.eq\('id', current\.id\)/);
+    expect(update![1]).toMatch(/\.eq\('updated_at', current\.updated_at\)/);
+    expect(update![1]).toMatch(/\.eq\('status', current\.status\)/);
+    expect(transition).toMatch(/\.maybeSingle\(\);\s*if \(error\) throw error;\s*if \(!data\) return jsonError\(409, 'CONFLICT'/);
+  });
 });

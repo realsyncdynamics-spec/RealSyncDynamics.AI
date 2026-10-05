@@ -145,15 +145,15 @@ export function planLabel(planId: PlanId | null): string | null {
  * darf nicht als Checkout-Preis erscheinen. Buchbar ist nur, was in `ADDONS`
  * steht und `subscription-addons` mit einem Live-Stripe-Price ausliefert.
  *
- * `advanced_ai_governance` (149 € Anzeige) hängt am bestehenden
- * Compliance Pack (149 €), bis ein eigenes Stripe-Price existiert.
- * Weitere Unternehmen haben noch kein Add-on: es gibt keinen
- * `limit.tenants`-Key. Die Karte darf dann keinen Einzelpreis zeigen.
+ * `advanced_ai_governance` bleibt absichtlich ohne Mapping, bis ein
+ * eigenes Add-on exakt dieselben Entitlements gewährt. Ein gleich teures,
+ * aber fachlich anderes Add-on darf nie als Ersatz verkauft werden.
+ * Weitere Unternehmen haben ebenfalls noch kein Add-on: es gibt keinen
+ * `limit.tenants`-Key. Beide Karten zeigen deshalb keinen Einzelpreis.
  */
 export const MODULE_ADDON: Partial<Record<BookableModuleId, AddOnId>> = {
   voice_bot: 'voice',
   whatsapp_bot: 'whatsapp',
-  advanced_ai_governance: 'compliance_pack',
   additional_domain: 'additional_domain',
 };
 

@@ -35,7 +35,7 @@ import {
 } from '../shared/pricing';
 
 /** Escaped einen String für ein SQL-Literal. */
-function sqlString(value: string): string {
+export function sqlString(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 

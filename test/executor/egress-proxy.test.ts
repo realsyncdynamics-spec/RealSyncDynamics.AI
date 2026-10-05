@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServer, request, type Server } from 'node:http';
 import { connect, type AddressInfo } from 'node:net';
 import { createHostGuard } from '../../deploy/playwright-scanner/netguard';
-import { parseAuthority, startEgressProxy, type EgressProxy } from '../../deploy/playwright-scanner/egress-proxy';
+import { forwardableStatus, parseAuthority, startEgressProxy, type EgressProxy } from '../../deploy/playwright-scanner/egress-proxy';
 
 let allowed: Server;
 let blocked: Server;
@@ -62,6 +62,12 @@ beforeAll(async () => {
       // Doppelte Set-Cookie, Hop-by-Hop und ein feindlicher Header-Name.
       res.writeHead(200, ['Content-Type', 'application/json', 'Set-Cookie', 'a=1', 'Set-Cookie', 'b=2', 'Keep-Alive', 'timeout=77', '__proto__', 'x', 'Connection', 'close']);
       res.end(JSON.stringify(req.rawHeaders));
+      return;
+    }
+    const status = /^\/status\/(\d{3})$/.exec(req.url ?? '');
+    if (status) {
+      res.writeHead(Number(status[1]), { 'content-type': 'text/plain', connection: 'close' });
+      res.end('UPSTREAM-BODY');
       return;
     }
     res.writeHead(200, { 'content-type': 'text/plain', connection: 'close' });
@@ -149,6 +155,13 @@ describe('Egress-Proxy', () => {
     expect(names).toContain('__proto__'); // als Header durchgereicht, nie als Objekt-Schlüssel
   });
 
+  it('Statuscodes: 200–599 werden durchgereicht, anomale Antworten werden 502 ohne Inhalt des Ziels', async () => {
+    expect(await viaProxy(`http://127.0.0.1:${allowedPort}/status/299`)).toMatchObject({ status: 299, body: 'UPSTREAM-BODY' });
+    expect(await viaProxy(`http://127.0.0.1:${allowedPort}/status/404`)).toMatchObject({ status: 404, body: 'UPSTREAM-BODY' });
+    expect(await viaProxy(`http://127.0.0.1:${allowedPort}/status/502`)).toMatchObject({ status: 502, body: 'UPSTREAM-BODY' });
+    expect(await viaProxy(`http://127.0.0.1:${allowedPort}/status/799`)).toMatchObject({ status: 502, body: '' });
+  });
+
   it('ungültige CONNECT-Ziele werden abgewiesen', async () => {
     for (const authority of ['no-port', 'host:99999', 'host:0']) {
       const { status, socket } = await rawConnect(authority);
@@ -171,5 +184,12 @@ describe('parseAuthority', () => {
     expect(parseAuthority('example.com')).toBeNull();
     expect(parseAuthority('example.com:0')).toBeNull();
     expect(parseAuthority('exa mple.com:80')).toBeNull();
+  });
+});
+
+describe('forwardableStatus', () => {
+  it('nur endgültige Codes 200–599', () => {
+    for (const code of [200, 204, 301, 404, 599]) expect(forwardableStatus(code)).toBe(code);
+    for (const code of [undefined, 0, 100, 101, 199, 600, 799, 999, 200.5, Number.NaN]) expect(forwardableStatus(code)).toBeNull();
   });
 });

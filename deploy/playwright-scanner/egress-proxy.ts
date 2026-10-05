@@ -63,6 +63,21 @@ function filterRawHeaders(raw: readonly string[], drop: ReadonlySet<string>): st
 
 const HOP_BY_HOP_AND_HOST: ReadonlySet<string> = new Set([...HOP_BY_HOP, 'host']);
 
+/** Endgültige Statuscodes, die der Proxy weiterreicht: 200–599. */
+const FORWARDABLE_STATUS: ReadonlyMap<number, number> = new Map(
+  Array.from({ length: 400 }, (_, i) => [200 + i, 200 + i] as const),
+);
+
+/**
+ * Statuscode des Ziels für die Antwort an den Browser — oder null bei einer
+ * Protokollanomalie (fehlend, 1xx ohne Upgrade, ≥ 600; RFC 9110 §15: wie 5xx
+ * behandeln). Der zurückgegebene Wert stammt immer aus der Tabelle, nie
+ * direkt vom Ziel.
+ */
+export function forwardableStatus(code: number | undefined): number | null {
+  return code === undefined ? null : FORWARDABLE_STATUS.get(code) ?? null;
+}
+
 export async function startEgressProxy(
   guard: HostGuard,
   opts: { connectTimeoutMs?: number; log?: (event: Record<string, unknown>) => void } = {},
@@ -108,13 +123,20 @@ export async function startEgressProxy(
         timeout: connectTimeoutMs,
       });
       upstream.on('response', (r) => {
-        res.writeHead(r.statusCode ?? 502, filterRawHeaders(r.rawHeaders, HOP_BY_HOP));
+        const status = forwardableStatus(r.statusCode);
+        if (status === null) {
+          // Nichts von einer anomalen Antwort weiterreichen.
+          r.destroy();
+          res.writeHead(502, { 'content-length': '0' }).end();
+          return;
+        }
+        res.writeHead(status, filterRawHeaders(r.rawHeaders, HOP_BY_HOP));
         r.pipe(res);
       });
       upstream.on('timeout', () => upstream.destroy(new Error('timeout')));
       upstream.on('error', () => {
         if (!res.headersSent) res.writeHead(502, { 'content-length': '0' }).end();
-        else res.destroy();
+        else if (!res.writableEnded) res.destroy();
       });
       req.pipe(upstream);
     })().catch(() => {

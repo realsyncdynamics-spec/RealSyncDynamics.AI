@@ -112,11 +112,13 @@ describe('Klassifizierung — Entitlement ai_classification.limited', () => {
     resetLangForTests();
   });
 
-  it('Free: Eingaben gesperrt, Hinweis „nicht enthalten“ und „nicht gespeichert“', async () => {
+  it('Free: Eingaben gesperrt, Hinweis „noch nicht verfügbar“ und „nicht gespeichert“', async () => {
     ent.values = { ...(PLAN_ENTITLEMENTS.free_audit as Record<string, number>) };
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    expect(screen.getByTestId('classify-locked')).toBeInTheDocument();
+    expect(screen.getByTestId('classify-locked')).toHaveTextContent(
+      /noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei/,
+    );
     expect(screen.getByTestId('classify-no-save')).toHaveTextContent(/nicht gespeichert/);
     expect(screen.getByRole('button', { name: /Begrenzt/ })).toBeDisabled();
     expect(screen.getByRole('switch')).toBeDisabled();

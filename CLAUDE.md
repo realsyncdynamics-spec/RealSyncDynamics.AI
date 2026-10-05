@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = **Landing v2** (`src/pages/LandingV2.tsx`, gemergt mit #1686). Die aktive visuelle Quelle ist `src/styles/landing-v2.css`; eingebettete Governance-Module nutzen zusätzlich `src/styles/governance-os-landing.css` im `.lv2-embed`-Wrapper. Der vorhandene Hell/Dunkel-Schalter gehört zum aktuellen Design und bleibt bestehen. Ältere Design-Routen und frühere Landing-v3-Anweisungen sind Referenzen, keine Vorgabe für `/`. Design-Freeze: die aktuelle Landing v2 nicht ersetzen oder grundlegend umstylen ohne Freigabe.
+Startseite `/` = **Landing v4 „Klassisch"** (`src/pages/LandingV4.tsx`, 1:1-Port des Claude-Design-Handoffs v4) — das einzige öffentliche Frontend. Sektionen in `src/components/landing/v4/`, 3D-Erde in `heroEarthScene.ts`, Optik ausschließlich in `src/styles/landing-v4-classical.css` (gekapselte Referenz-Kaskade unter `.gv4` — nicht von Hand umformatieren). Alte Landing-/Design-Routen leiten auf `/`; v2 bleibt als Referenz unter `/design/landing-v2`. Design-Freeze: v4 nicht ersetzen oder grundlegend umstylen ohne Freigabe.
 
 ## Harte Verbote
 

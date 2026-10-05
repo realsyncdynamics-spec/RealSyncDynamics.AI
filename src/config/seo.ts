@@ -873,9 +873,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/evidence-runtime': {
-    title: 'Evidence Runtime — Continuous Governance für Websites & KI | RealSyncDynamics.AI',
+    title: 'Continuous Governance Control Plane & Evidence Runtime | RealSyncDynamics.AI',
     description:
-      'Die europäische Control- und Evidence-Plattform: Scan → Build → Automate → Govern. Risiken sichtbar machen und Nachweise für DSGVO, TDDDG und EU AI Act aus dem realen Systemzustand erzeugen.',
+      'Realen Zustand erkennen, Regeln durchsetzen, Abweichungen beheben, Ergebnisse verifizieren, Nachweise erzeugen — Beweisketten statt Compliance-Score für DSGVO, TDDDG und EU AI Act.',
     canonical: `${SITE_URL}/evidence-runtime`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

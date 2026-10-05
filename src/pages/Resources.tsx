@@ -32,7 +32,7 @@ const RESOURCES: Resource[] = [
   {
     href: '/evidence-runtime',
     title: 'Evidence Runtime erklärt',
-    description: 'Scan → Build → Automate → Govern: wie aus dem realen Systemzustand belastbare Nachweise für DSGVO, TDDDG und EU AI Act werden — mit ehrlichem Live-Status je Phase.',
+    description: 'Closed Loop von Detect bis Prove: wie aus dem realen Systemzustand Beweisketten für DSGVO, TDDDG und EU AI Act werden — mit ehrlichem Status je Architektur-Ebene.',
     badge: 'Konzept',
     icon: <ShieldCheck className="h-5 w-5" />,
   },

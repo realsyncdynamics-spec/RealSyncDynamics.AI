@@ -36,7 +36,8 @@ import { previewSentence, type AddonListingEntry } from './subscriptionAddons';
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
   const katalog = useMemo(() => buildCatalog(tier), [tier]);
-  const { listing, add, busy, canManage, sandbox } = useSubscriptionAddons();
+  const addonsState = useSubscriptionAddons();
+  const { listing, add, busy, error, canManage, sandbox } = addonsState;
   const addonByModule = useMemo(() => {
     const byId = new Map((listing?.addons ?? []).map((a) => [a.id, a]));
     const map = new Map<BookableModuleId, AddonListingEntry>();
@@ -60,8 +61,12 @@ export function MarketplaceView() {
     [funnel],
   );
 
-  const aktiv = katalog.filter((e) => e.status === 'active');
-  const verfuegbar = katalog.filter((e) => e.status !== 'active');
+  const istAktiv = (eintrag: CatalogEntry) => {
+    const addon = addonByModule.get(eintrag.module.id);
+    return eintrag.status === 'active' || addon?.status === 'included' || addon?.status === 'booked';
+  };
+  const aktiv = katalog.filter(istAktiv);
+  const verfuegbar = katalog.filter((e) => !istAktiv(e));
 
   return (
     <div className="dashboard-context min-h-screen bg-obsidian-950 p-6">
@@ -110,7 +115,13 @@ export function MarketplaceView() {
             Aufruf: <span className="font-mono">?billing=sandbox</span>
           </p>
         )}
-        <MyPlanSection />
+        <MyPlanSection addonsState={addonsState} />
+        {error && (
+          <p className="mb-6 flex items-start gap-2 border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            {error.message}
+          </p>
+        )}
 
         {aktiv.length > 0 && (
           <section className="mb-12">
@@ -209,20 +220,22 @@ function Karte({
       <div className="mt-auto border-t border-titanium-800 pt-4">
         {imPlan && <p className="text-xs text-titanium-500">Im Plan enthalten.</p>}
         {gebucht && !imPlan && addon && (
-          <p className="font-mono text-sm text-titanium-200">Gebucht · {addon.price_eur} € / Monat</p>
+          <>
+            <p className="font-mono text-sm text-titanium-200">Gebucht · {addon.price_eur} € {addon.price_note}</p>
+          </>
         )}
         {zubuchbar && addon && (
           <>
-            <p className="font-mono text-sm text-titanium-200">+ {addon.price_eur} € / Monat hinzufügen</p>
+            <p className="font-mono text-sm text-titanium-200">+ {addon.price_eur} € {addon.price_note}</p>
             <p className="mt-1 text-xs text-titanium-500">{previewSentence(addon)}</p>
             {canManage ? (
               <button
                 type="button"
-                disabled={busy === addon.id}
+                disabled={busy !== null}
                 onClick={() => void onAdd(addon.id)}
                 className="mt-3 inline-flex items-center gap-2 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-2 text-xs font-medium text-ai-cyan-300 transition-colors hover:bg-ai-cyan-500/20 disabled:opacity-50"
               >
-                {busy === addon.id ? 'Wird gebucht …' : `Für +${addon.price_eur} €/Monat hinzufügen`}
+                {busy === addon.id ? 'Wird gebucht …' : 'Hinzufügen'}
                 <ArrowRight className="h-3 w-3" aria-hidden />
               </button>
             ) : (

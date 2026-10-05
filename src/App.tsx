@@ -12,7 +12,6 @@ import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
-import { DesignGovernanceAiLanding } from './pages/design/DesignGovernanceAiLanding';
 import { LogoutPage } from './pages/LogoutPage';
 import { Welcome } from './pages/Welcome';
 // FlowProvider stays eager (wraps Routes at root); FlowStepRoute is lazy below.
@@ -25,23 +24,17 @@ const DemoTourStartPage = lazy(() => import('./pages/DemoTourStartPage').then((m
 const DemoTourSignupPage = lazy(() => import('./pages/DemoTourSignupPage').then((m) => ({ default: m.DemoTourSignupPage })));
 const DemoTourCheckoutPage = lazy(() => import('./pages/DemoTourCheckoutPage').then((m) => ({ default: m.DemoTourCheckoutPage })));
 const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m) => ({ default: m.DemoTourDashboard })));
-const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
-const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
-const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
 const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default: m.LandingV2 })));
-const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
+const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
-const RealSyncDynamicsLanding = lazy(() => import('./marketing/landing/RealSyncDynamicsLanding').then((m) => ({ default: m.RealSyncDynamicsLanding })));
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
 const GovernanceBrowserPage = lazy(() => import('./pages/GovernanceBrowserPage').then((m) => ({ default: m.GovernanceBrowserPage })));
-const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
-const LandingPagesOverview = lazy(() => import('./pages/LandingPagesOverview').then((m) => ({ default: m.LandingPagesOverview })));
 const AgenciesLanding = lazy(() => import('./pages/AgenciesLanding').then((m) => ({ default: m.AgenciesLanding })));
 const AuditLanding = lazy(() => import('./pages/AuditLanding').then((m) => ({ default: m.AuditLanding })));
 const AutomationsLanding = lazy(() => import('./pages/AutomationsLanding').then((m) => ({ default: m.AutomationsLanding })));
@@ -501,18 +494,16 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
-      {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
-      {/* Public `/` = Landing v2 (Claude-Design-Handoff). Governance-OS-Landing bleibt unter /design/governance-ai. */}
-      <Route path="/" element={<LandingV2 />} />
-
-      {/* Reversible design references; no duplicate backend/runtime paths. */}
-      <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />
-      <Route path="/design/titan" element={<MainLanding />} />
-      {/* Landing v2 — Claude-Design-Handoff „AI Compliance Operations OS for Europe“. */}
+      {/* Public `/` = Landing v4 „Klassisch" (Claude-Design-Handoff v4, 1:1) — das einzige
+          öffentliche Frontend. Ältere Landing-/Design-Varianten leiten auf `/`;
+          v2 bleibt nur als Referenz unter /design/landing-v2. */}
+      <Route path="/" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
-      <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
-      <Route path="/design/ledger" element={<DesignLedgerLanding />} />
-      <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
+      <Route path="/design/governance-ai" element={<Navigate to="/" replace />} />
+      <Route path="/design/titan" element={<Navigate to="/" replace />} />
+      <Route path="/design/ledger" element={<Navigate to="/" replace />} />
+      <Route path="/design/tribunal" element={<Navigate to="/" replace />} />
+      <Route path="/governance-runtime-layer" element={<Navigate to="/" replace />} />
 
       {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
           docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
@@ -526,10 +517,10 @@ function RoutesWithTracking() {
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
-      <Route path="/landing" element={<Landing />} />
-      <Route path="/landingpages" element={<LandingPagesOverview />} />
-      <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
-      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
+      <Route path="/landing" element={<Navigate to="/" replace />} />
+      <Route path="/landingpages" element={<Navigate to="/" replace />} />
+      <Route path="/landing-uebersicht" element={<Navigate to="/" replace />} />
+      <Route path="/realsync-landing" element={<Navigate to="/" replace />} />
       <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />

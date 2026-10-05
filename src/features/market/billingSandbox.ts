@@ -27,7 +27,8 @@ export function isBillingSandbox(): boolean {
   const preview = host.endsWith('.pages.dev') || host.includes('staging') || host.includes('sandbox');
   const local = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
   const flagged = import.meta.env.VITE_BILLING_SANDBOX === '1' || import.meta.env.DEV;
-  return local || preview || flagged;
+  const production = host === 'realsyncdynamicsai.de' || host === 'www.realsyncdynamicsai.de';
+  return !production && (local || preview || flagged);
 }
 
 function heldFor(planId: PlanId): Record<string, number> {
@@ -106,7 +107,9 @@ export function sandboxListing(booked: { id: AddOnId; quantity: number }[] = [])
       current_period_end: null,
       past_due_since: null,
       grace_days_remaining: null,
-      has_stripe_subscription: false,
+      // Synthetisches Abo: true, damit auch „Mein Plan“ den in-memory
+      // Buchungsfluss testen kann. isBillingSandbox() hält Production hart aus.
+      has_stripe_subscription: true,
     },
     entitlements: [],
     addons,

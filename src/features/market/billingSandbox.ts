@@ -26,9 +26,7 @@ export function isBillingSandbox(): boolean {
   const host = window.location.hostname;
   const preview = host.endsWith('.pages.dev') || host.includes('staging') || host.includes('sandbox');
   const local = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
-  const flagged = import.meta.env.VITE_BILLING_SANDBOX === '1' || import.meta.env.DEV;
-  const production = host === 'realsyncdynamicsai.de' || host === 'www.realsyncdynamicsai.de';
-  return !production && (local || preview || flagged);
+  return local || preview;
 }
 
 function heldFor(planId: PlanId): Record<string, number> {

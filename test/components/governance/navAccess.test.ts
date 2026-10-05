@@ -9,6 +9,7 @@ import { PLAN_ENTITLEMENTS, type EntitlementKey } from '@/shared/pricing';
 import { SHELL_NAV } from '../../../src/components/governance-os/shellNav';
 import { GOVERNANCE_MODULES } from '../../../src/components/governance-os/governanceModules';
 import { decideNavLock, navRequiredKeys, type NavEntitlements } from '../../../src/components/governance-os/navAccess';
+import { navLockTitle } from '../../../src/components/governance-os/useNavLock';
 import { decideAccess, requirementForPath } from '../../../src/core/access/featureAccess';
 
 function entitlementsOf(planKey: string, extra: Partial<Record<EntitlementKey, number>> = {}): NavEntitlements {
@@ -128,5 +129,12 @@ describe('Randfälle wie RouteEntitlementGate', () => {
 
   it('kein wählbarer Plan gewährt ai_classification.limited ⇒ minPlan null (kein erfundener Mindestplan)', () => {
     expect(navLock('classify').minPlan).toBeNull();
+  });
+
+  it('Klassifizierung-Tooltip: noch nicht verfügbar, kein Upgrade schaltet frei', () => {
+    const lock = navLock('classify');
+    expect(navLockTitle('Klassifizierung', lock)).toBe(
+      'Klassifizierung ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.',
+    );
   });
 });

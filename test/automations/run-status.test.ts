@@ -102,3 +102,25 @@ describe('automation-trigger überschreibt keinen beendeten Lauf', () => {
     for (const u of updates) expect(u[1], u[0].slice(0, 80)).toBeDefined();
   });
 });
+
+describe('automation-callback schreibt Outputs passend zum Schema', () => {
+  const sql = lies('supabase/migrations/20260614100000_automation_skills.sql');
+  const start = sql.indexOf('CREATE TABLE IF NOT EXISTS public.automation_outputs (');
+  const rumpf = sql.slice(start, sql.indexOf('\n);', start));
+  const spalten = [...rumpf.matchAll(/^\s{4}([a-z_]+)\s/gm)].map((m) => m[1]);
+
+  const insert = code(CALLBACK).match(
+    /from\('automation_outputs'\)\.insert\(\s*outputRefs\.map\(\(o\) => \(\{([\s\S]*?)\}\)\)/,
+  );
+  const gesetzt = [...(insert?.[1] ?? '').matchAll(/^\s*([a-z_]+):/gm)].map((m) => m[1]);
+
+  it('setzt tenant_id (NOT NULL)', () => {
+    expect(spalten).toContain('tenant_id');
+    expect(gesetzt).toContain('tenant_id');
+  });
+
+  it('schreibt nur Spalten, die es gibt', () => {
+    expect(gesetzt.length).toBeGreaterThan(0);
+    for (const s of gesetzt) expect(spalten, `Spalte ${s}`).toContain(s);
+  });
+});

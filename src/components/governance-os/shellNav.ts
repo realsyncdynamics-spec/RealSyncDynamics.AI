@@ -27,7 +27,8 @@ export const SHELL_NAV: readonly ShellNavItem[] = [
   { id: 'overview', labelKey: 'navOverview', route: '/app/dashboard' },
   // Free gewährt governance.ai_register ⇒ offen.
   { id: 'systems', labelKey: 'navSystems', route: '/app/ai-systems', entitlementKeys: ['governance.ai_register'] },
-  // ai_classification.limited = 0 in Free ⇒ Schloss. Speicherpfad fehlt noch (P1-2).
+  // ai_classification.limited = 0 in Free ⇒ Schloss. Kein Plan gewährt den Key
+  // (minPlan null) — Tooltip sagt „noch nicht verfügbar“, kein Upgrade-CTA.
   { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems', entitlementKeys: ['ai_classification.limited'] },
   // Route /app/policy-packs verlangt policy.packs (Register) — Schloss und Sperre aus derselben Quelle.
   { id: 'enforce', labelKey: 'navEnforce', route: '/app/policy-packs', entitlementKeys: ['policy.packs'] },

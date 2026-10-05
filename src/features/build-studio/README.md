@@ -32,6 +32,10 @@ One studio, two existing engines. DesignOS is not a third builder and does not g
 - `published` is a target status. It does not deploy. The stores keep their own status checks (`siteos_blueprints`: draft/approved/deployed/archived, `app_builder_projects`: draft/archived); `BuildProjectStatus` is not written to either.
 - URL modernise and description are SiteOS entry modes. They are not a DesignOS extractor. Screenshot and media stay unavailable until `frontend-entry-modes.ts` says otherwise.
 
+## Builder-02
+
+`/build` asks for the kind. `landing`/`website` stay in the SiteOS flow; `web_app`/`dashboard`/`saas_app` continue at `/builder/<slug>/code` (`entry.ts`). `?kind=` preselects. The description is not handed to the code builder yet.
+
 ## Out of scope
 
 Screenshot import, asset store, WebContainer, a new AI agent, Cloudflare production promotion, closing the old routes.

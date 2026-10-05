@@ -58,7 +58,6 @@ Datei öffnen und Werte eintragen:
 - `VITE_SUPABASE_URL` — von Supabase Dashboard
 - `VITE_SUPABASE_ANON_KEY` — von Supabase Dashboard
 - `VITE_SENTRY_DSN` — optional
-- `VITE_GOOGLE_GENAI_API_KEY` — optional
 - `VITE_STRIPE_PUBLISHABLE_KEY` — optional
 
 Beispiel `.env`:

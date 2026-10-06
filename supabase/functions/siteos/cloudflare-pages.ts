@@ -184,7 +184,6 @@ export async function deployPagesPreview(args: {
   form.set('manifest', JSON.stringify(manifest));
   form.set('branch', branch);
   form.set('commit_dirty', 'false');
-  form.set('commit_hash', args.artifactSha256);
   form.set('commit_message', `SiteOS governed preview ${args.artifactSha256.slice(0, 12)}`);
 
   const deployment = await cfRequest<PagesDeploymentApi>(
@@ -194,7 +193,7 @@ export async function deployPagesPreview(args: {
     { method: 'POST', body: form },
   );
 
-  if (!deployment.id || !deployment.url) {
+  if (!deployment || !deployment.id || !deployment.url) {
     throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare deployment response lacked id/url');
   }
 
@@ -236,6 +235,9 @@ async function ensurePagesProject(
       body: JSON.stringify({ name: projectName, production_branch: 'main' }),
     },
   );
+  if (!created) {
+    throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare project creation returned no project');
+  }
   return {
     id: created.id,
     name: created.name || projectName,
@@ -257,7 +259,7 @@ async function getUploadToken(
     apiToken,
     { method: 'GET' },
   );
-  if (!result.jwt) {
+  if (!result || !result.jwt) {
     throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare upload-token response lacked jwt');
   }
   return result.jwt;

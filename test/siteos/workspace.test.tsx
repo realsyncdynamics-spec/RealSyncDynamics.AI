@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useParams, Link } from 'react-router-dom';
-import { analyzeBlueprint, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
+import { analyzeBlueprint, applyPageOperations, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { pageToPuckData, type PuckPageData } from '../../src/features/siteos/editor/blueprintPuckAdapter';
 
 /**
@@ -398,6 +398,98 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
     await waitFor(() => expect(screen.getByText('Veröffentlichbar')).toBeInTheDocument());
     const right = within(screen.getByTestId('right'));
     expect(right.getByRole('tab', { name: /^Probleme/ }).getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+describe('App Builder Workspace — Seitenverwaltung', () => {
+  it('zeigt nur die vom Core erlaubten Aktionen und schützt Rechtsseiten', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+
+    const left = within(screen.getByTestId('left'));
+    const legal = left.getAllByTestId('page-row').find(
+      (row) => row.getAttribute('data-path') === '/impressum',
+    );
+    expect(legal).toBeTruthy();
+    expect(within(legal!).getByLabelText('Rechtsseite, geschützt')).toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /umbenennen/i })).not.toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /duplizieren/i })).not.toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /löschen/i })).not.toBeInTheDocument();
+
+    const home = left.getAllByTestId('page-row').find(
+      (row) => row.getAttribute('data-path') === '/',
+    );
+    expect(home).toBeTruthy();
+    expect(within(home!).getByRole('button', { name: /umbenennen/i })).toBeInTheDocument();
+    expect(within(home!).getByRole('button', { name: /duplizieren/i })).toBeInTheDocument();
+    expect(within(home!).queryByRole('button', { name: /löschen/i })).not.toBeInTheDocument();
+  });
+
+  it('legt eine Seite als Operation an und speichert offene Redaktion in derselben Version', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+
+    const pageResult = applyPageOperations(blueprint, [
+      { op: 'create', title: 'Wärmepumpen', slug: 'waermepumpen' },
+    ]);
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        unchanged: false,
+        blueprint_id: 'bp-2',
+        slug: blueprint.slug,
+        version: 2,
+        content_sha256: 'b'.repeat(64),
+        prev_hash: sha256,
+        blueprint: pageResult.blueprint,
+        findings: [],
+        scores: {},
+        changes: [
+          {
+            code: 'block.edited',
+            path: '/',
+            blockId: 'root--hero--1',
+            kind: 'hero',
+            summary: 'Hero bearbeitet.',
+            complianceNote: null,
+          },
+          ...pageResult.changes,
+        ],
+        rejected: [],
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+
+    const left = within(screen.getByTestId('left'));
+    fireEvent.click(left.getByRole('button', { name: /Neue Seite/ }));
+    fireEvent.change(left.getByLabelText('Titel der Seite'), {
+      target: { value: 'Wärmepumpen' },
+    });
+    expect((left.getByLabelText('Slug der Seite') as HTMLInputElement).value).toBe(
+      'waermepumpen',
+    );
+    fireEvent.click(left.getByRole('button', { name: 'Seite anlegen' }));
+
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as {
+      edits?: unknown[];
+      pages?: unknown[];
+      base_sha256: string;
+    };
+    expect(call.pages).toEqual([
+      { op: 'create', title: 'Wärmepumpen', slug: 'waermepumpen' },
+    ]);
+    expect(call.edits).toHaveLength(1);
+    expect(call.base_sha256).toBe(sha256);
+    await waitFor(() =>
+      expect(screen.getByTestId('editor')).toHaveAttribute('data-page', '/waermepumpen'),
+    );
   });
 });
 

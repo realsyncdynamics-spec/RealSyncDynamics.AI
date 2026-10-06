@@ -52,6 +52,26 @@ describe('fetchGuarded', () => {
     expect(besucht).toEqual(['https://firma.de/']);
   });
 
+  it('haelt die Deadline bis zum Body-Read aktiv', async () => {
+    const res = await fetchGuarded('https://firma.de', {
+      timeoutMs: 25,
+      fetchImpl: async (_input, init) => {
+        const signal = init?.signal;
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            if (!signal) return;
+            const abbrechen = () => controller.error(new DOMException('aborted', 'AbortError'));
+            if (signal.aborted) abbrechen();
+            else signal.addEventListener('abort', abbrechen, { once: true });
+          },
+        });
+        return new Response(body, { status: 200 });
+      },
+    });
+
+    await expect(res.text()).rejects.toThrow();
+  });
+
   it('folgt öffentlichen Weiterleitungen manuell, mit den übergebenen Headern; url = gelesene Adresse', async () => {
     const aufrufe: Array<{ input: string; init?: RequestInit }> = [];
     const res = await fetchGuarded('http://firma.de', {

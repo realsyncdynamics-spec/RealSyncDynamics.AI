@@ -351,6 +351,45 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     assert.equal(payload.verified, false);
     assert.equal(payload.output.verdict, 'REQUIRE_CONFIRMATION');
   });
+
+  it('reserviert toolCount vor dem Await und erhöht turnCount bei finalem Nutzer-Turn', async () => {
+    const seen: number[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        seen.push(req.session.toolCount);
+        await gate;
+        return { ok: true, verdict: 'ALLOW', status: 'accepted' };
+      },
+    });
+    const { socket } = await openRuntime(
+      h,
+      startRequest({
+        session: {
+          killSwitch: false,
+          turnCount: 0,
+          toolCount: 0,
+          rateLimit: { maxTurns: 20, maxTools: 8 },
+        },
+      }),
+    );
+    socket.server({
+      type: 'conversation.item.input_audio_transcription.completed',
+      item_id: 'u1',
+      transcript: 'Bitte Öffnungszeiten',
+    });
+    socket.server(functionCall('call_a', 'lookup_kb', { query: 'a' }));
+    socket.server(functionCall('call_b', 'lookup_kb', { query: 'b' }));
+    await wait(30);
+    assert.deepEqual(seen, [0, 1], 'parallele Calls bekommen unterschiedliche toolCounts');
+    assert.equal(h.voiceToolCalls[0]!.session.turnCount, 1);
+    assert.equal(h.voiceToolCalls[1]!.session.turnCount, 1);
+    release();
+    await wait(30);
+  });
 });
 
 describe('VoiceSessionRuntime — ws Authorization und Secrets', () => {

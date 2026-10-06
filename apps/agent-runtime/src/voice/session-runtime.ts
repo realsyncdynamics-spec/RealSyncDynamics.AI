@@ -91,6 +91,8 @@ interface LiveSession {
   readonly offeredTools: ReadonlySet<string>;
   readonly session: VoiceToolSessionSnapshot;
   readonly consent: VoiceConsent | null;
+  /** Autoritative Zähler — vor jedem /voice-tool-Aufruf reservieren. */
+  turnCount: number;
   toolCount: number;
 }
 
@@ -144,6 +146,7 @@ export class VoiceSessionRuntime {
       offeredTools: new Set(request.tools.map((t) => t.name)),
       session: { ...request.session, rateLimit: { ...request.session.rateLimit } },
       consent: request.consent,
+      turnCount: request.session.turnCount,
       toolCount: request.session.toolCount,
     };
 
@@ -215,6 +218,10 @@ export class VoiceSessionRuntime {
       });
       return;
     }
+    // Turn-Grenze: finaler Nutzer-Transcript erhöht den Zähler vor späteren Tools.
+    if (event.type === 'transcript.user' && event.final) {
+      live.turnCount += 1;
+    }
     if (event.type === 'session.closed' || event.type === 'error') {
       this.onEvent?.(event);
       if (event.type === 'session.closed') this.sessions.delete(live.sessionId);
@@ -262,6 +269,11 @@ export class VoiceSessionRuntime {
       return deniedResult('invalid_arguments', callId);
     }
 
+    // Slot vor dem Await reservieren — parallele tool.call dürfen denselben
+    // Zähler nicht an /voice-tool senden (sonst umgehen sie maxTools).
+    const toolCountForPolicy = live.toolCount;
+    live.toolCount += 1;
+
     // tenantId/botId nie aus Args — immer Session-Kontext.
     const outcome = await this.voiceTool.evaluate({
       tenantId: live.tenantId,
@@ -271,14 +283,12 @@ export class VoiceSessionRuntime {
       args: clean,
       session: {
         killSwitch: live.session.killSwitch,
-        turnCount: live.session.turnCount,
-        toolCount: live.toolCount,
+        turnCount: live.turnCount,
+        toolCount: toolCountForPolicy,
         rateLimit: live.session.rateLimit,
       },
       consent: live.consent,
     });
-
-    live.toolCount += 1;
 
     if (!outcome.ok) {
       return {

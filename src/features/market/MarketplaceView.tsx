@@ -35,9 +35,10 @@ import { previewSentence, type AddonListingEntry } from './subscriptionAddons';
 
 export function MarketplaceView() {
   const { tier, loading } = useEntitlements();
-  const katalog = useMemo(() => buildCatalog(tier), [tier]);
   const addonsState = useSubscriptionAddons();
   const { listing, add, busy, error, canManage, sandbox } = addonsState;
+  const catalogPlan = sandbox && listing?.plan?.plan_key ? listing.plan.plan_key : tier;
+  const katalog = useMemo(() => buildCatalog(catalogPlan), [catalogPlan]);
   const addonByModule = useMemo(() => {
     const byId = new Map((listing?.addons ?? []).map((a) => [a.id, a]));
     const map = new Map<BookableModuleId, AddonListingEntry>();
@@ -67,9 +68,12 @@ export function MarketplaceView() {
     && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
   );
 
+  const paidAccess = listing?.subscription?.paid_access !== false;
   const istAktiv = (eintrag: CatalogEntry) => {
     const addon = addonByModule.get(eintrag.module.id);
-    return eintrag.status === 'active' || addon?.status === 'included' || addon?.status === 'booked';
+    return eintrag.status === 'active'
+      || addon?.status === 'included'
+      || (addon?.status === 'booked' && paidAccess);
   };
   const aktiv = katalog.filter(istAktiv);
   const verfuegbar = katalog.filter((e) => !istAktiv(e));

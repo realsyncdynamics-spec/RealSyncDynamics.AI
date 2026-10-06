@@ -343,6 +343,26 @@ describe('GrokProvider — Session-Aufbau', () => {
     assert.equal(h.sockets[0]!.listenerCount(), 0);
   });
 
+  it('xAI-error vor session.updated lehnt createSession fail-closed ab (kein Timeout, kein error vor opened)', async () => {
+    const h = harness({ connectTimeoutMs: 5_000 });
+    const pending = h.provider.createSession(config(), (e) => h.events.push(e));
+    await tick();
+    const socket = h.sockets[0]!;
+    socket.open();
+    socket.server({ type: 'session.created', session: { id: 'xai_sess_bad' } });
+    // Ungültige Stimme/Modell/Format → error vor session.updated
+    socket.server({
+      type: 'error',
+      error: { type: 'invalid_request_error', code: 'invalid_voice', message: 'voice "bogus" not supported' },
+    });
+    await assert.rejects(pending, /xAI-Fehler beim Session-Aufbau \(xai\.invalid_voice\)/);
+    assert.equal(ofType(h.events, 'error').length, 0, 'kein error-Event vor session.opened');
+    assert.equal(ofType(h.events, 'session.opened').length, 0);
+    assert.ok(socket.closeCalls.length >= 1);
+    assert.equal(socket.listenerCount(), 0);
+    assert.equal(h.provider.getSession('sess_grok_1'), undefined);
+  });
+
   it('Konstruktor ohne socketFactory schlägt fehl', () => {
     assert.throws(() => new GrokProvider({} as never), /socketFactory/);
   });
@@ -508,6 +528,66 @@ describe('GrokProvider — Tool-Calls', () => {
       sessionId: 'sess_grok_1',
       correlationId: 'corr_1',
     });
+  });
+
+  it('__proto__/constructor/prototype in Tool-Args werden fail-closed als invalid_arguments abgelehnt (CWE-1321)', async () => {
+    const h = harness();
+    const { socket } = await openSession(h);
+
+    const protoKeysBefore = Reflect.ownKeys(Object.prototype);
+    const tenantDescBefore = Object.getOwnPropertyDescriptor(Object.prototype, 'tenantId');
+    const pollutedDescBefore = Object.getOwnPropertyDescriptor(Object.prototype, 'polluted');
+
+    // JSON.parse-String: "__proto__" wird Own-Key (nicht Object.create-Pfad).
+    const pollutedArgs = JSON.parse(
+      '{"query":"x","__proto__":{"polluted":true,"tenantId":"tenant_evil","botId":"bot_evil"},"constructor":{"name":"Evil"},"prototype":{"polluted":true}}',
+    ) as Record<string, unknown>;
+    assert.ok(Object.hasOwn(pollutedArgs, '__proto__'), 'Voraussetzung: __proto__ ist Own-Key nach JSON.parse');
+    assert.ok(Object.hasOwn(pollutedArgs, 'constructor'));
+    assert.ok(Object.hasOwn(pollutedArgs, 'prototype'));
+
+    socket.serverRaw(
+      JSON.stringify({
+        type: 'response.function_call_arguments.done',
+        call_id: 'call_proto',
+        name: 'lookup_kb',
+        arguments: JSON.stringify(pollutedArgs),
+      }),
+    );
+
+    // Fail-closed: kein tool.call, keine Argument-Struktur mit Prototype-Keys.
+    assert.equal(ofType(h.events, 'tool.call').length, 0);
+    assert.equal(ofType(h.events, 'error')[0]?.code, 'tool_call_rejected.invalid_arguments');
+
+    // Object.prototype unverändert — kein neues Property durch Pollution.
+    assert.deepEqual(Reflect.ownKeys(Object.prototype), protoKeysBefore);
+    assert.deepEqual(Object.getOwnPropertyDescriptor(Object.prototype, 'tenantId'), tenantDescBefore);
+    assert.deepEqual(Object.getOwnPropertyDescriptor(Object.prototype, 'polluted'), pollutedDescBefore);
+    assert.equal(({} as { polluted?: boolean }).polluted, undefined);
+    assert.equal(({} as { tenantId?: string }).tenantId, undefined);
+    assert.equal(({} as { botId?: string }).botId, undefined);
+
+    // Kein verarbeitetes Ergebnis mit diesen Keys als Own-Properties.
+    const calls = ofType(h.events, 'tool.call');
+    for (const event of calls) {
+      assert.equal(Object.hasOwn(event.call.arguments, '__proto__'), false);
+      assert.equal(Object.hasOwn(event.call.arguments, 'constructor'), false);
+      assert.equal(Object.hasOwn(event.call.arguments, 'prototype'), false);
+    }
+
+    const denial = socket
+      .sentOfType('conversation.item.create')
+      .filter((m) => (m.item as { type?: string }).type === 'function_call_output')
+      .at(-1)!;
+    const out = JSON.parse((denial.item as { output: string }).output) as {
+      outcome: string;
+      verified: boolean;
+      output: { reason: string };
+    };
+    assert.equal(out.outcome, 'denied');
+    assert.equal(out.verified, false);
+    assert.equal(out.output.reason, 'invalid_arguments');
+    assert.deepEqual(h.provider.getSessionContext('sess_grok_1')?.tenantId, 'tenant_mueller_sanitaer');
   });
 
   it('unbekanntes Tool: kein tool.call, Fehler-Event, Ablehnung an das Modell', async () => {

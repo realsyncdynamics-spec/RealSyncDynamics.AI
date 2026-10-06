@@ -601,6 +601,16 @@ export class GrokProvider implements VoiceProvider {
       case 'error': {
         const err = obj(msg.error);
         const code = str(err?.code) ?? str(err?.type) ?? 'unknown';
+        // Fail-closed: Fehler auf session.update (ungültige Stimme/Modell/Format)
+        // vor session.updated müssen createSession sofort ablehnen — kein Timeout,
+        // kein error-Event vor session.opened.
+        if (state.setup) {
+          this.failSetup(
+            state,
+            new Error(`grok: xAI-Fehler beim Session-Aufbau (xai.${sanitizeCode(code)}).`),
+          );
+          return;
+        }
         state.sawProviderError = true;
         this.emit(state, {
           type: 'error',
@@ -674,11 +684,19 @@ export class GrokProvider implements VoiceProvider {
     if (typeof args !== 'object' || args === null || Array.isArray(args)) {
       return { ok: false, callId, reason: 'invalid_arguments' };
     }
-    const clean: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
-      if (RESERVED_PAYLOAD_KEYS.includes(key)) continue;
-      clean[key] = value;
+    // CWE-1321: `__proto__`/`constructor`/`prototype` aus Provider-Input
+    // fail-closed ablehnen. `clean[key] = value` mit key === '__proto__' würde
+    // den Prototype-Setter aufrufen und reservierte Felder über die Kette
+    // einschleusen (Object.keys/JSON.stringify sähen sie nicht).
+    const entries = Object.entries(args as Record<string, unknown>);
+    if (entries.some(([key]) => key === '__proto__' || key === 'constructor' || key === 'prototype')) {
+      return { ok: false, callId, reason: 'invalid_arguments' };
     }
+    // Object.fromEntries nutzt DefineProperty (kein __proto__-Setter); die
+    // Denylist oben verhindert, dass diese Keys überhaupt ankommen.
+    const clean: Record<string, unknown> = Object.fromEntries(
+      entries.filter(([key]) => !RESERVED_PAYLOAD_KEYS.includes(key)),
+    );
     return { ok: true, call: { callId, name, arguments: clean } };
   }
 

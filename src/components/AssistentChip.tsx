@@ -41,26 +41,55 @@ export function AssistentChip() {
 
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
+  // A MutationObserver keeps this working when route/lazy content inserts
+  // the hero CTA after the chip has already mounted.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const targets = Array.from(document.querySelectorAll('[data-hero-cta]'));
-    if (targets.length === 0) {
-      setHeroVisible(false);
-      return;
-    }
+
+    let intersection: IntersectionObserver | null = null;
+    let observed = new Set<Element>();
     const visible = new Set<Element>();
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) visible.add(e.target);
-          else visible.delete(e.target);
-        }
-        setHeroVisible(visible.size > 0);
-      },
-      { threshold: 0.15 },
-    );
-    for (const t of targets) obs.observe(t);
-    return () => obs.disconnect();
+
+    const syncTargets = () => {
+      const next = new Set(Array.from(document.querySelectorAll('[data-hero-cta]')));
+      const unchanged = next.size === observed.size && Array.from(next).every((target) => observed.has(target));
+      if (unchanged) return;
+
+      intersection?.disconnect();
+      intersection = null;
+      observed = next;
+      visible.clear();
+      setHeroVisible(false);
+
+      if (observed.size === 0) return;
+
+      intersection = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) visible.add(entry.target);
+            else visible.delete(entry.target);
+          }
+          setHeroVisible(visible.size > 0);
+        },
+        { threshold: 0.15 },
+      );
+      for (const target of observed) intersection.observe(target);
+    };
+
+    syncTargets();
+    const mutationRoot = document.body ?? document.documentElement;
+    const mutation = new MutationObserver(syncTargets);
+    mutation.observe(mutationRoot, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-hero-cta'],
+    });
+
+    return () => {
+      mutation.disconnect();
+      intersection?.disconnect();
+    };
   }, [pathname]);
 
   if (shouldHide(pathname)) return null;

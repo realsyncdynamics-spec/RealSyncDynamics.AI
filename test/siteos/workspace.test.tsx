@@ -375,6 +375,8 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
           preview_deployment_id: 'dep-1',
           deployed_at: '2026-10-06T10:05:00.000Z',
           production: true,
+          recording_complete: true,
+          recording_warnings: [],
         },
       },
     });

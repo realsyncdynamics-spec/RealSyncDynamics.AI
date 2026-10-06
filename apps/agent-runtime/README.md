@@ -41,6 +41,7 @@ wird auf `/run-agent` mit `denied_by_channel_policy` abgewiesen — der
 | GET     | `/agents`     | Bearer | Listet registrierte Agents inkl. Nora |
 | POST    | `/run-agent`  | Bearer | Interne Agents → `evaluate()` |
 | POST    | `/voice-tool` | Bearer | Voice-Kanal → 8-Check-Prüfpfad |
+| POST    | `/voice-sessions` | Bearer | Session-Start → Store-Snapshot + Provider |
 
 Auth-Header: `Authorization: Bearer ${AGENT_RUNTIME_API_TOKEN}`
 
@@ -214,9 +215,47 @@ Kein Wrangler, kein KV, keine Secrets im Code außer Env-Lesen.
 
 ### HTTP-Einstieg Voice-Session
 
-Es gibt **keinen** HTTP-Endpoint, der eine Voice-Session startet.
-Vorhanden: `GET /health`, `GET /agents`, `POST /run-agent`, `POST /voice-tool`.
-`VoiceSessionRuntime.startSession` ist die programmatische API.
+`POST /voice-sessions` (Bearer `AGENT_RUNTIME_API_TOKEN`) startet eine
+governed Voice-Session über `VoiceSessionRuntime.startSession`.
+
+**Body** (JSON, `.strict` — unbekannte/autoritative Felder → `400 invalid_request`):
+
+| Feld | Pflicht | Bemerkung |
+|------|---------|-----------|
+| `bot_id` **oder** `number_binding_id` | genau eines | UUID |
+| `correlation_id` | nein | UUID |
+| `input_audio` / `output_audio` | nein | Allowlist: `pcm16`/`g711_ulaw`/`g711_alaw` + 8/16/24/48 kHz |
+| `consent` | nein | `{ purposes[], withdrawn_at }` — fehlt → `null` (fail-closed, keine erfundene Einwilligung) |
+
+**Verboten im Body** (führen zu `400`, erreichen `startSession` nie):
+`tenantId`/`tenant_id`, `policy`/`policy_ref`, `disclosure`/`disclosure_text`,
+`provider`, `model`, `offered_tools`, `instructions`. Tenant nie aus URL.
+Snapshot kommt ausschließlich aus `voice_bot_configs` /
+`voice_number_bindings`. Instructions = serverseitiger Default.
+Ohne Body-`consent` geht `consent: null` an `startSession` → Tool-Calls
+scheitern an der Consent-Prüfung, bis eine echte Einwilligung vorliegt.
+
+**Antworten**
+
+| Status | `reason` | Bedeutung |
+|--------|----------|-----------|
+| 201 | — | `{ ok: true, session_id }` (= `voice_sessions.id`) |
+| 400 | `invalid_request` | Body/Strict/exactly-one |
+| 401 | `missing_token` | Auth fehlt/falsch |
+| 404 | `config_not_found` | kein aktiver Config/Binding |
+| 502 | `provider_error` | Provider-Start fehlgeschlagen |
+| 503 | `store_error` / `not_configured` / `missing_token` | Store/Insert/Env |
+
+Ohne konfigurierten Store: `503 not_configured` — **kein** Legacy-Start über HTTP.
+
+```bash
+curl -X POST http://localhost:8787/voice-sessions \
+  -H "Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"bot_id":"22222222-2222-2222-2222-222222222222"}'
+```
+
+Weitere Routen: `GET /health`, `GET /agents`, `POST /run-agent`, `POST /voice-tool`.
 
 ## Lokal entwickeln
 

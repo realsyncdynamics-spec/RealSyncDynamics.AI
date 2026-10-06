@@ -5,7 +5,7 @@
  * Bearer-Token und Base-URL kommen aus der Umgebung (injizierbar für Tests).
  */
 
-import { VOICE_AGENT_ID, type VoiceConsent, type VoiceVerdict } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoiceConsent, type VoicePolicyDecision, type VoiceVerdict } from '../voice-types.js';
 
 export interface VoiceToolSessionSnapshot {
   killSwitch: boolean;
@@ -25,8 +25,8 @@ export interface VoiceToolHttpRequest {
 }
 
 export type VoiceToolHttpOutcome =
-  | { ok: true; verdict: VoiceVerdict; status: string }
-  | { ok: false; reason: string; verdict?: VoiceVerdict };
+  | { ok: true; verdict: VoiceVerdict; status: string; decision?: VoicePolicyDecision }
+  | { ok: false; reason: string; verdict?: VoiceVerdict; decision?: VoicePolicyDecision };
 
 export interface VoiceToolClient {
   evaluate(request: VoiceToolHttpRequest): Promise<VoiceToolHttpOutcome>;
@@ -111,10 +111,18 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
           return { ok: false, reason: 'invalid_voice_tool_response' };
         }
 
+        const decision = parsePolicyDecision(body.decision, {
+          requestId: request.requestId,
+          sessionId: request.sessionId,
+          tenantId: request.tenantId,
+          verdict,
+        });
+
         return {
           ok: true,
           verdict,
           status: typeof body.status === 'string' ? body.status : 'accepted',
+          decision,
         };
       } catch (err) {
         const aborted =
@@ -125,5 +133,42 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
         clearTimeout(timer);
       }
     },
+  };
+}
+
+function parsePolicyDecision(
+  raw: unknown,
+  fallback: {
+    requestId: string;
+    sessionId: string;
+    tenantId: string;
+    verdict: VoiceVerdict;
+  },
+): VoicePolicyDecision | undefined {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
+  const d = raw as Record<string, unknown>;
+  if (d.decidedBy !== 'policy-engine') return undefined;
+  if (typeof d.decisionId !== 'string' || typeof d.requestId !== 'string') return undefined;
+  if (typeof d.sessionId !== 'string' || typeof d.tenantId !== 'string') return undefined;
+  if (d.verdict !== 'ALLOW' && d.verdict !== 'DENY' && d.verdict !== 'REQUIRE_CONFIRMATION') {
+    return undefined;
+  }
+  if (typeof d.reason !== 'string' || typeof d.decidedAt !== 'string') return undefined;
+  if (d.risk !== 'low' && d.risk !== 'medium' && d.risk !== 'high') return undefined;
+  if (typeof d.piiDetected !== 'boolean' || typeof d.auditRequired !== 'boolean') return undefined;
+  if (!Array.isArray(d.trace)) return undefined;
+  return {
+    decisionId: d.decisionId,
+    requestId: d.requestId || fallback.requestId,
+    sessionId: d.sessionId || fallback.sessionId,
+    tenantId: d.tenantId || fallback.tenantId,
+    verdict: d.verdict,
+    reason: d.reason,
+    risk: d.risk,
+    piiDetected: d.piiDetected,
+    auditRequired: d.auditRequired,
+    trace: d.trace as VoicePolicyDecision['trace'],
+    decidedAt: d.decidedAt,
+    decidedBy: 'policy-engine',
   };
 }

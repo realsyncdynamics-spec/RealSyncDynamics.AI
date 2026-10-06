@@ -1,19 +1,18 @@
 /**
- * Voice Session-Runtime (PR 3/6).
+ * Voice Session-Runtime (PR 3 + PR 4 Anbindung).
  *
  * Verdrahtet den Grok-Realtime-Adapter mit `ws` und leitet jeden
- * `tool.call` an das bestehende POST /voice-tool weiter.
+ * `tool.call` an POST /voice-tool (Policy) und anschließend an das
+ * Tool-Gateway (Ausführung/Verifikation/Evidenz, PR 4) weiter.
  *
  * Grenzen:
- *  - Keine Tool-Ausführung (kommt in PR 4). Policy-Entscheidung geht
- *    nur als submitToolResult an das Modell zurück.
- *  - tenantId/botId ausschließlich aus dem Session-Kontext
- *    (voice_number_bindings → bots → memberships/is_tenant_member).
- *    Gleichnamige Felder in Modell-Args werden verworfen.
- *  - Disclosure (voice_bot_configs.disclosure_text) ist Pflicht und wird
- *    verbatim gesprochen. Fehlt sie → keine Session.
+ *  - tenantId/botId ausschließlich aus dem Session-Kontext.
+ *  - Disclosure ist Pflicht und wird verbatim gesprochen.
  *  - Kein voice_channels / bot_agents. Keine Secrets im Code/Log.
+ *  - evaluate() in policy-engine.ts bleibt unberührt.
  */
+
+import { randomUUID } from 'node:crypto';
 
 import {
   GrokProvider,
@@ -29,7 +28,11 @@ import {
   type VoiceToolDefinition,
   type VoiceToolResult,
 } from '../voice-provider-types.js';
-import { VOICE_AGENT_ID, type VoiceConsent } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoiceConsent, type VoicePolicyDecision } from '../voice-types.js';
+import {
+  createVoiceToolGateway,
+  type VoiceToolGateway,
+} from './tool-gateway.js';
 import {
   createVoiceToolClient,
   sanitizeToolArgs,
@@ -82,6 +85,8 @@ export interface SessionRuntimeOptions {
   onEvent?: (event: VoiceProviderEvent) => void;
   /** Injizierbarer Provider (Tests). Default: neuer GrokProvider. */
   provider?: GrokProvider;
+  /** Tool-Gateway (Ausführung/Evidenz). Default: Memory-Store. */
+  toolGateway?: VoiceToolGateway;
 }
 
 interface LiveSession {
@@ -99,6 +104,7 @@ interface LiveSession {
 export class VoiceSessionRuntime {
   private readonly provider: GrokProvider;
   private readonly voiceTool: VoiceToolClient;
+  private readonly toolGateway: VoiceToolGateway;
   private readonly onEvent: ((event: VoiceProviderEvent) => void) | undefined;
   private readonly sessions = new Map<string, LiveSession>();
 
@@ -118,6 +124,7 @@ export class VoiceSessionRuntime {
         getApiToken: options.getApiToken ?? (() => process.env.AGENT_RUNTIME_API_TOKEN),
         timeoutMs: options.voiceToolTimeoutMs ?? defaultVoiceToolTimeoutMs(),
       });
+    this.toolGateway = options.toolGateway ?? createVoiceToolGateway();
     this.onEvent = options.onEvent;
   }
 
@@ -299,30 +306,48 @@ export class VoiceSessionRuntime {
       };
     }
 
-    if (outcome.verdict === 'DENY') {
-      return {
-        callId,
-        outcome: 'denied',
-        verified: false,
-        output: { verdict: 'DENY' },
-      };
-    }
-    if (outcome.verdict === 'REQUIRE_CONFIRMATION') {
-      return {
-        callId,
-        outcome: 'awaiting_confirmation',
-        verified: false,
-        output: { verdict: 'REQUIRE_CONFIRMATION' },
-      };
-    }
-    // ALLOW — keine Ausführung in PR 3; Modell erfährt die Policy-Entscheidung.
-    return {
+    const decision =
+      outcome.decision ??
+      synthesizeDecision({
+        requestId: `vt_${callId}`,
+        sessionId: live.sessionId,
+        tenantId: live.tenantId,
+        verdict: outcome.verdict,
+      });
+
+    return this.toolGateway.handle({
+      tenantId: live.tenantId,
+      botId: live.botId,
+      sessionId: live.sessionId,
       callId,
-      outcome: 'failed',
-      verified: false,
-      output: { verdict: 'ALLOW', execution: 'deferred_to_pr4' },
-    };
+      tool: call.name,
+      args: clean,
+      decision,
+      confirmed: false,
+    });
   }
+}
+
+function synthesizeDecision(input: {
+  requestId: string;
+  sessionId: string;
+  tenantId: string;
+  verdict: VoicePolicyDecision['verdict'];
+}): VoicePolicyDecision {
+  return {
+    decisionId: randomUUID(),
+    requestId: input.requestId,
+    sessionId: input.sessionId,
+    tenantId: input.tenantId,
+    verdict: input.verdict,
+    reason: 'Synthesized from /voice-tool verdict (no decision payload).',
+    risk: input.verdict === 'DENY' ? 'high' : 'medium',
+    piiDetected: false,
+    auditRequired: true,
+    trace: [{ check: 'audit', result: 'pass', detail: 'voice.channel.v1' }],
+    decidedAt: new Date().toISOString(),
+    decidedBy: 'policy-engine',
+  };
 }
 
 function deniedResult(reason: string, callId: string): VoiceToolResult {
@@ -356,3 +381,9 @@ export {
   type VoiceToolHttpRequest,
   type VoiceToolHttpOutcome,
 } from './voice-tool-client.js';
+export {
+  createVoiceToolGateway,
+  createMemoryVoiceStore,
+  VOICE_GENESIS_HASH,
+  type VoiceToolGateway,
+} from './tool-gateway.js';

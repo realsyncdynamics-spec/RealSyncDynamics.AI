@@ -137,6 +137,24 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
   fail-closed `denied` an das Modell.
 - Kein `voice_channels` / `bot_agents`.
 
+### Tool-Gateway (PR 4)
+
+`src/voice/tool-gateway.ts` übernimmt nach der Policy-Entscheidung
+Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
+Memory-Store mit `GENESIS_HASH`).
+
+- `PolicyDecision.decidedBy` bleibt immer `policy-engine`.
+- `evaluate()` in `policy-engine.ts` unberührt.
+- Ausführung nur bei `ALLOW` oder bestätigtem `REQUIRE_CONFIRMATION`.
+- `verified: true` nur mit `external_ref` nach erfolgreicher Ausführung.
+- Echter Executor: `schedule_appointment` → `bot_appointments` (via Store).
+- Bewusst `not_configured`: `lookup_kb`, `create_ticket`, `handoff_human`,
+  `export_transcript` (kein Backend im Repo).
+- Keine neuen Tool-Namen `read_availability` / `book_appointment` (kein
+  Backend; bestehende fünf Nora-Tools bleiben).
+- Persistenz: `VoiceStore` (Default Memory). Optional später Supabase
+  (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) — nie im Client/Log.
+
 ## Lokal entwickeln
 
 ```bash

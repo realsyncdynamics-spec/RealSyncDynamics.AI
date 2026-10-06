@@ -270,7 +270,7 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     assert.equal(payload.outcome, 'failed');
     assert.equal(payload.verified, false);
     assert.equal(payload.output.verdict, 'ALLOW');
-    assert.equal(payload.output.execution, 'deferred_to_pr4');
+    assert.equal(payload.output.reason, 'not_configured');
   });
 
   it('unbekanntes Tool → denied ohne /voice-tool-Aufruf', async () => {

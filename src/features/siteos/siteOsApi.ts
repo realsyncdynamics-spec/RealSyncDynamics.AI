@@ -540,6 +540,8 @@ export interface PublishProductionResponse {
     preview_deployment_id: string;
     deployed_at: string;
     production: true;
+    recording_complete: boolean;
+    recording_warnings: string[];
   };
 }
 

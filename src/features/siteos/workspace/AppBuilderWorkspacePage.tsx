@@ -28,6 +28,7 @@ import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../supabase/SupabaseAuthContext';
 import { SandboxedPreviewFrame } from '../../../components/preview/SandboxedPreviewFrame';
 import { createSiteOsCheckoutSession } from '../../billing/checkout';
+import { useEntitlements } from '../../../core/billing/useEntitlements';
 import {
   analyzeBlueprint,
   applySiteEdits,
@@ -38,6 +39,8 @@ import {
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index';
 import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
+import { BuilderUpgradePanel } from '../BuilderUpgradePanel';
+import { canOpenAppBuilder, resolveBuilderEntitlements } from '../builderEntitlements';
 import {
   editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
@@ -70,6 +73,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const { slug = '' } = useParams<{ slug: string }>();
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const { isAuthenticated } = useSupabaseAuth();
+  const entitlements = useEntitlements();
+  const builderSnapshot = useMemo(
+    () => resolveBuilderEntitlements(entitlements.tier, entitlements.features),
+    [entitlements.tier, entitlements.features],
+  );
+  const entitled = canOpenAppBuilder(builderSnapshot);
   const location = useLocation();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   // Nur der Erstbau kennt die Ausgangs-URL; er reicht sie als Parameter
@@ -140,6 +149,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       return;
     }
     if (!slug) { setLoadState('not_found'); return; }
+    if (entitlements.loading || !entitled) return;
     let cancelled = false;
     (async () => {
       setLoadState('loading');
@@ -161,7 +171,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId, tenantLoading, isAuthenticated, navigate, slug, log, loadGovernance, location.pathname, location.search]);
+  }, [activeTenantId, tenantLoading, isAuthenticated, entitlements.loading, entitled, navigate, slug, log, loadGovernance, location.pathname, location.search]);
 
   // ── Lokale Fassung ───────────────────────────────────────────────────
   const edits = useMemo(() => Object.entries(pageData).map(([path, data]) => toPageEdit(path, data)), [pageData]);
@@ -282,6 +292,11 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       setBusy(false);
     }
   };
+
+  // ── Zugang (siteos.builder) ──────────────────────────────────────────
+  if (isAuthenticated && activeTenantId && !entitlements.loading && !entitled) {
+    return <BuilderUpgradePanel snapshot={builderSnapshot} reason="no_entitlement" />;
+  }
 
   // ── Zustände ohne Projekt ────────────────────────────────────────────
   if (loadState !== 'ready' || !stored || !localBlueprint) {

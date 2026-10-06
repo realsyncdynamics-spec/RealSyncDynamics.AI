@@ -396,6 +396,7 @@ export async function handle(req: Request): Promise<Response> {
   }
 
   const completedAt = new Date().toISOString();
+  const recordingWarnings: string[] = [];
   const nextConfiguration = { ...configuration };
   nextConfiguration.siteos_cloudflare_project_name = deployment.project.name;
   nextConfiguration.siteos_last_production = {
@@ -420,10 +421,8 @@ export async function handle(req: Request): Promise<Response> {
     .eq('tenant_id', tenantId);
 
   if (projectUpdateErr) {
-    return jsonError(
-      500,
-      'PRODUCTION_STATE_NOT_RECORDED',
-      `Cloudflare production exists but website project state could not be recorded: ${projectUpdateErr.message}`,
+    recordingWarnings.push(
+      `PRODUCTION_STATE_NOT_RECORDED: ${projectUpdateErr.message}`,
     );
   }
 
@@ -434,10 +433,8 @@ export async function handle(req: Request): Promise<Response> {
     .eq('tenant_id', tenantId);
 
   if (blueprintUpdateErr) {
-    return jsonError(
-      500,
-      'BLUEPRINT_DEPLOY_STATE_NOT_RECORDED',
-      `Cloudflare production exists but blueprint deploy state could not be recorded: ${blueprintUpdateErr.message}`,
+    recordingWarnings.push(
+      `BLUEPRINT_DEPLOY_STATE_NOT_RECORDED: ${blueprintUpdateErr.message}`,
     );
   }
 
@@ -465,11 +462,10 @@ export async function handle(req: Request): Promise<Response> {
     started_at: startedAt,
     completed_at: completedAt,
   });
+
   if (logErr) {
-    return jsonError(
-      500,
-      'PRODUCTION_LOG_NOT_RECORDED',
-      `Cloudflare production exists but deployment log failed: ${logErr.message}`,
+    recordingWarnings.push(
+      `PRODUCTION_LOG_NOT_RECORDED: ${logErr.message}`,
     );
   }
 
@@ -494,11 +490,21 @@ export async function handle(req: Request): Promise<Response> {
       },
     });
   } catch (error) {
-    return jsonError(
-      500,
-      'PRODUCTION_AUDIT_NOT_RECORDED',
-      `Cloudflare production exists but completion audit failed: ${error instanceof Error ? error.message : String(error)}`,
+    recordingWarnings.push(
+      `PRODUCTION_AUDIT_NOT_RECORDED: ${error instanceof Error ? error.message : String(error)}`,
     );
+  }
+
+  if (recordingWarnings.length > 0) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_production_recording_incomplete',
+      project_id: project.id,
+      deployment_id: deployment.id,
+      production_url: deployment.url,
+      artifact_sha256: release.manifest.artifact_sha256,
+      warnings: recordingWarnings,
+    }));
   }
 
   return jsonResponse({
@@ -514,6 +520,8 @@ export async function handle(req: Request): Promise<Response> {
       preview_deployment_id: lastPreview.deployment_id,
       deployed_at: completedAt,
       production: true,
+      recording_complete: recordingWarnings.length === 0,
+      recording_warnings: recordingWarnings,
     },
   });
 }

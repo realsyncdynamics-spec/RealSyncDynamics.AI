@@ -1,47 +1,35 @@
 // siteos/publish-preview — governed Cloudflare Pages preview transport.
 //
-// This endpoint does not accept files, HTML, hashes or a deployment URL from
-// the browser. It obtains the release exclusively from handleExport(), i.e.
-// the already governed server-side path:
+// Preview is deliberately before production GO:
 //
-//   Blueprint -> fresh gate -> explicit GO -> exact release bundle
-//             -> Cloudflare Direct Upload -> PREVIEW branch only.
+//   Blueprint -> fresh publish-gate evaluation -> exact artifact hash check
+//             -> Cloudflare PREVIEW branch
+//             -> user reviews the real preview
+//             -> only later: publish-export with confirm_preview + GO.
 //
-// Production remains a different, not-yet-wired action.
+// The browser never supplies files, HTML, artifact hashes or a project target.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../../_shared/auditLog.ts';
 import { handleOptions, jsonError, jsonResponse, methodNotAllowed } from '../../_shared/gateway.ts';
-import { CloudflarePagesError, deployPagesPreview, type ReleaseFile } from '../cloudflare-pages.ts';
-import { handleExport } from './publish-gate.ts';
+import {
+  buildDeploymentArtifact,
+  type PublishGateEvaluation,
+  type SiteBlueprint,
+} from '../../../../packages/siteos-core/src/index.ts';
+import { CloudflarePagesError, deployPagesPreview } from '../cloudflare-pages.ts';
+import { handle as handlePublishGate } from './publish-gate.ts';
 
 const PREVIEW_ROLES = new Set(['owner', 'admin']);
-
-interface PublishExportPayload {
-  ok: true;
-  manifest: {
-    format: 'realsync-siteos-export/1';
-    slug: string;
-    version: number;
-    blueprint_sha256: string;
-    artifact_sha256: string;
-    evaluation_id: string;
-    go_by: string;
-    go_at: string;
-    base_url: string | null;
-    files: Array<{ path: string; sha256: string; bytes: number }>;
-  };
-  files: ReleaseFile[];
-}
 
 export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
 
-  // Clone before consuming the body. The clone is handed to the existing
-  // governed export handler; this endpoint never recreates its gate logic.
-  const exportRequest = req.clone();
+  // Clone before reading the request. The clone is evaluated by the canonical
+  // publish-gate handler; this transport does not reproduce its policy logic.
+  const gateRequest = req.clone();
 
   let body: Record<string, unknown>;
   try {
@@ -52,10 +40,12 @@ export async function handle(req: Request): Promise<Response> {
 
   const tenantId = String(body.tenant_id ?? '').trim();
   const blueprintId = String(body.blueprint_id ?? '').trim();
+  const baseUrl = typeof body.base_url === 'string' ? body.base_url : undefined;
+
   if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
-  if (body.confirm_go !== true || body.confirm_preview !== true) {
-    return jsonError(400, 'BAD_REQUEST', 'confirm_go and confirm_preview must both be true');
+  if (body.confirm_preview_deploy !== true) {
+    return jsonError(400, 'BAD_REQUEST', 'confirm_preview_deploy must be true');
   }
 
   const authHeader = req.headers.get('Authorization');
@@ -93,16 +83,20 @@ export async function handle(req: Request): Promise<Response> {
     return jsonError(403, 'FORBIDDEN', `role "${member.role}" may not deploy a SiteOS preview`);
   }
 
-  // Resolve deployment target server-side. A browser-supplied project id
-  // would let a request choose a different website target than the blueprint.
+  // Resolve target and content server-side. No browser-selected project.
   const { data: blueprintRow } = await admin
     .from('siteos_blueprints')
-    .select('id, project_id, slug')
+    .select('id, project_id, slug, blueprint')
     .eq('id', blueprintId)
     .eq('tenant_id', tenantId)
-    .maybeSingle<{ id: string; project_id: string | null; slug: string }>();
+    .maybeSingle<{
+      id: string;
+      project_id: string | null;
+      slug: string;
+      blueprint: SiteBlueprint;
+    }>();
 
-  if (!blueprintRow) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
+  if (!blueprintRow?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
   if (!blueprintRow.project_id) {
     return jsonError(
       409,
@@ -125,21 +119,45 @@ export async function handle(req: Request): Promise<Response> {
 
   if (!project) return jsonError(409, 'PROJECT_NOT_FOUND', 'bound website project not found for this tenant');
 
-  // Only after all local deployment prerequisites exist do we record/release
-  // the governed GO. handleExport performs a fresh gate evaluation and returns
-  // the exact bytes bound to its artifact hash.
-  const releaseResponse = await handleExport(exportRequest);
-  if (!releaseResponse.ok) return releaseResponse;
+  // Fresh canonical evaluation. This writes the evidence snapshot/custody that
+  // the gate itself requires, but it does NOT write a publish GO.
+  const gateResponse = await handlePublishGate(gateRequest);
+  if (!gateResponse.ok) return gateResponse;
 
-  let release: PublishExportPayload;
+  let evaluation: PublishGateEvaluation;
   try {
-    release = await releaseResponse.json() as PublishExportPayload;
+    const payload = await gateResponse.json() as { ok?: boolean; evaluation?: PublishGateEvaluation };
+    if (!payload?.evaluation) throw new Error('missing evaluation');
+    evaluation = payload.evaluation;
   } catch {
-    return jsonError(500, 'INTERNAL', 'governed publish export returned invalid json');
+    return jsonError(500, 'INTERNAL', 'publish gate returned invalid json');
   }
 
-  if (release?.manifest?.format !== 'realsync-siteos-export/1' || !Array.isArray(release.files)) {
-    return jsonError(500, 'INTERNAL', 'governed publish export returned an invalid manifest');
+  if (!evaluation.publishable) {
+    const reason = evaluation.blockers.length > 0
+      ? evaluation.blockers.join(' · ')
+      : evaluation.human_approval_required
+        ? 'Für diesen Stand steht eine Freigabe aus.'
+        : 'Der Publish Gate hat diesen Stand nicht bestanden.';
+    return jsonError(
+      409,
+      'NOT_PUBLISHABLE',
+      `Preview nicht veröffentlichbar (Bewertung ${evaluation.evaluation_id.slice(0, 8)}): ${reason}`,
+    );
+  }
+
+  // Deterministically rebuild exactly what publish-gate evaluated and bind
+  // transport to its hash. If these differ, nothing leaves the system.
+  const artifact = await buildDeploymentArtifact(blueprintRow.blueprint, {
+    baseUrl,
+    presentation: 'showcase',
+  });
+  if (artifact.artifactSha256 !== evaluation.artifact_sha256) {
+    return jsonError(
+      409,
+      'STALE_ARTIFACT',
+      'Preview artifact differs from the freshly evaluated artifact; retry evaluation.',
+    );
   }
 
   const startedAt = new Date().toISOString();
@@ -150,18 +168,18 @@ export async function handle(req: Request): Promise<Response> {
       apiToken: CLOUDFLARE_API_TOKEN,
       projectId: project.id,
       projectName: project.name,
-      artifactSha256: release.manifest.artifact_sha256,
-      files: release.files,
+      artifactSha256: artifact.artifactSha256,
+      files: artifact.files,
     });
 
-    // Never mark this project live here. Preview is a distinct state and URL.
+    // Never mark this project live here. Preview state is separate.
     const configuration = isRecord(project.configuration) ? { ...project.configuration } : {};
     configuration.siteos_cloudflare_project_name = deployment.project.name;
     configuration.siteos_last_preview = {
       deployment_id: deployment.id,
       branch: deployment.branch,
-      artifact_sha256: release.manifest.artifact_sha256,
-      evaluation_id: release.manifest.evaluation_id,
+      artifact_sha256: artifact.artifactSha256,
+      evaluation_id: evaluation.evaluation_id,
       deployed_at: new Date().toISOString(),
     };
 
@@ -206,10 +224,10 @@ export async function handle(req: Request): Promise<Response> {
         cloudflare_deployment_id: deployment.id,
         cloudflare_project_name: deployment.project.name,
         branch: deployment.branch,
-        artifact_sha256: release.manifest.artifact_sha256,
-        blueprint_sha256: release.manifest.blueprint_sha256,
-        evaluation_id: release.manifest.evaluation_id,
-        file_count: release.files.length,
+        artifact_sha256: artifact.artifactSha256,
+        blueprint_sha256: artifact.blueprintSha256,
+        evaluation_id: evaluation.evaluation_id,
+        file_count: artifact.files.length,
         started_at: startedAt,
       },
       triggered_by: 'user',
@@ -233,8 +251,8 @@ export async function handle(req: Request): Promise<Response> {
         cloudflare_deployment_id: deployment.id,
         cloudflare_project_name: deployment.project.name,
         branch: deployment.branch,
-        artifact_sha256: release.manifest.artifact_sha256,
-        evaluation_id: release.manifest.evaluation_id,
+        artifact_sha256: artifact.artifactSha256,
+        evaluation_id: evaluation.evaluation_id,
       },
     });
 
@@ -246,8 +264,8 @@ export async function handle(req: Request): Promise<Response> {
         project_name: deployment.project.name,
         branch: deployment.branch,
         environment: deployment.environment,
-        artifact_sha256: release.manifest.artifact_sha256,
-        evaluation_id: release.manifest.evaluation_id,
+        artifact_sha256: artifact.artifactSha256,
+        evaluation_id: evaluation.evaluation_id,
         production: false,
       },
     });
@@ -258,45 +276,53 @@ export async function handle(req: Request): Promise<Response> {
       ? error.status
       : 502;
 
-    await admin.from('deployment_logs').insert({
-      project_id: project.id,
-      tenant_id: tenantId,
-      event_type: 'deploy',
-      status: 'failed',
-      title: 'SiteOS Cloudflare preview fehlgeschlagen',
-      message,
-      details: {
-        preview_only: true,
-        error_code: code,
-        artifact_sha256: release.manifest.artifact_sha256,
-        evaluation_id: release.manifest.evaluation_id,
-      },
-      triggered_by: 'user',
-      triggered_by_user_id: userResp.user.id,
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-    });
+    try {
+      await admin.from('deployment_logs').insert({
+        project_id: project.id,
+        tenant_id: tenantId,
+        event_type: 'deploy',
+        status: 'failed',
+        title: 'SiteOS Cloudflare preview fehlgeschlagen',
+        message,
+        details: {
+          preview_only: true,
+          error_code: code,
+          artifact_sha256: artifact.artifactSha256,
+          evaluation_id: evaluation.evaluation_id,
+        },
+        triggered_by: 'user',
+        triggered_by_user_id: userResp.user.id,
+        started_at: startedAt,
+        completed_at: new Date().toISOString(),
+      });
+    } catch {
+      // Preserve the original transport failure.
+    }
 
-    await audit(admin, {
-      tenant_id: tenantId,
-      actor_user_id: userResp.user.id,
-      actor_email: userResp.user.email ?? null,
-      action: 'siteos.publish.preview.failed',
-      target_type: 'website_project',
-      target_id: project.id,
-      payload: {
-        blueprint_id: blueprintId,
-        artifact_sha256: release.manifest.artifact_sha256,
-        evaluation_id: release.manifest.evaluation_id,
-        error_code: code,
-      },
-    });
+    try {
+      await audit(admin, {
+        tenant_id: tenantId,
+        actor_user_id: userResp.user.id,
+        actor_email: userResp.user.email ?? null,
+        action: 'siteos.publish.preview.failed',
+        target_type: 'website_project',
+        target_id: project.id,
+        payload: {
+          blueprint_id: blueprintId,
+          artifact_sha256: artifact.artifactSha256,
+          evaluation_id: evaluation.evaluation_id,
+          error_code: code,
+        },
+      });
+    } catch {
+      // Preserve the original transport failure.
+    }
 
     console.error(JSON.stringify({
       level: 'error',
       scope: 'siteos_cloudflare_preview_failed',
       project_id: project.id,
-      artifact_sha256: release.manifest.artifact_sha256,
+      artifact_sha256: artifact.artifactSha256,
       code,
       error: message,
     }));

@@ -242,7 +242,14 @@ export class VoiceSessionRuntime {
   private async onToolCall(live: LiveSession, call: ProviderToolCall): Promise<void> {
     const callId = typeof call.callId === 'string' ? call.callId.trim() : '';
     if (!callId) return;
-    const result = await this.evaluateToolCall(live, call);
+    // Zweite Fail-closed-Linie: unerwartete Throws (z. B. Gateway/Store)
+    // dürfen den Provider-Tool-Call nicht hängen lassen.
+    let result: VoiceToolResult;
+    try {
+      result = await this.evaluateToolCall(live, call);
+    } catch {
+      result = deniedResult('internal_error', callId);
+    }
     try {
       await this.provider.submitToolResult(live.sessionId, result);
     } catch {

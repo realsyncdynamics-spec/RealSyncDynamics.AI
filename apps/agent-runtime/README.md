@@ -162,6 +162,14 @@ Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
   (`src/voice/supabase-voice-store.ts`) aus `SUPABASE_URL` +
   `SUPABASE_SERVICE_ROLE_KEY` — nie loggen. Ohne Store → jedes Tool
   fail-closed `failed`/`not_configured`. Memory-Store nur explizit in Tests.
+- **Voraussetzung `voice_sessions`:** Der Supabase-Store erwartet eine
+  existierende Zeile in `public.voice_sessions` mit passendem
+  `tenant_id`/`bot_id` (FK `voice_tool_requests.session_id` →
+  `voice_sessions.id`, Trigger `voice_enforce_tenant_consistency`). Die
+  Session-Runtime legt diese Zeile in PR 4 bewusst **nicht** an. Bis das
+  geschieht, schlagen Store-Writes fail-closed mit `store_error` fehl
+  (`verified: false`, Ergebnis geht an das Modell — kein hängender
+  Tool-Call). Store-Fehlertexte/Secrets erscheinen nie in `output`.
 
 ## Lokal entwickeln
 

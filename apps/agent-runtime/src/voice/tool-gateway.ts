@@ -82,6 +82,16 @@ function createNotConfiguredGateway(): VoiceToolGateway {
   };
 }
 
+function storeErrorResult(callId: string): VoiceToolResult {
+  // Keine Fehlertexte/Secrets in output — nur stabiler Grund.
+  return {
+    callId: callId || 'unknown',
+    outcome: 'failed',
+    verified: false,
+    output: { reason: 'store_error' },
+  };
+}
+
 function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
   return {
     async handle(input: ToolGatewayInput): Promise<VoiceToolResult> {
@@ -90,128 +100,135 @@ function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
         return { callId: 'unknown', outcome: 'denied', verified: false, output: { reason: 'missing_call_id' } };
       }
 
-      if (!isContractToolName(input.tool)) {
-        return { callId, outcome: 'denied', verified: false, output: { reason: 'unknown_tool' } };
-      }
-      const tool = input.tool;
+      // Gesamter Store-/Executor-Pfad fail-closed: DB-Trigger/FK (fehlende
+      // voice_sessions-Zeile, tenant mismatch, http_4xx) dürfen den Tool-Call
+      // nicht hängen lassen — nie executed/verified:true nach Store-Fehler.
+      try {
+        if (!isContractToolName(input.tool)) {
+          return { callId, outcome: 'denied', verified: false, output: { reason: 'unknown_tool' } };
+        }
+        const tool = input.tool;
 
-      if (input.decision.decidedBy !== 'policy-engine') {
-        return {
-          callId,
-          outcome: 'denied',
-          verified: false,
-          output: { reason: 'invalid_decided_by' },
-        };
-      }
-      if (input.decision.tenantId !== input.tenantId || input.decision.sessionId !== input.sessionId) {
-        return {
-          callId,
-          outcome: 'denied',
-          verified: false,
-          output: { reason: 'tenant_session_mismatch' },
-        };
-      }
-
-      const clean = sanitizeToolArgs(input.args);
-      if (clean === null) {
-        return { callId, outcome: 'denied', verified: false, output: { reason: 'invalid_arguments' } };
-      }
-
-      const argumentKeys = Object.keys(clean).sort();
-      const policyRef = input.policyRef ?? input.decision.trace[0]?.detail ?? 'voice.channel.v1';
-
-      const request = await store.insertToolRequest({
-        tenantId: input.tenantId,
-        sessionId: input.sessionId,
-        providerCallId: callId,
-        tool,
-        argumentKeys,
-        args: clean,
-        verdict: input.decision.verdict,
-        reason: input.decision.reason,
-        risk: input.decision.risk,
-        policyRef,
-        trace: input.decision.trace,
-        decidedBy: 'policy-engine',
-        decidedAt: input.decision.decidedAt,
-        confirmedBy: null,
-        confirmedAt: null,
-      });
-
-      await store.appendEvidence({
-        tenantId: input.tenantId,
-        sessionId: input.sessionId,
-        kind: 'tool.request',
-        toolRequestId: request.id,
-        payload: { tool, argumentKeys, provider_call_id: callId },
-      });
-      await store.appendEvidence({
-        tenantId: input.tenantId,
-        sessionId: input.sessionId,
-        kind: 'policy.decision',
-        toolRequestId: request.id,
-        payload: {
-          verdict: input.decision.verdict,
-          decided_by: 'policy-engine',
-          decision_id: input.decision.decisionId,
-          risk: input.decision.risk,
-        },
-      });
-
-      if (input.decision.verdict === 'DENY') {
-        return {
-          callId,
-          outcome: 'denied',
-          verified: false,
-          output: { verdict: 'DENY', reason: input.decision.reason },
-        };
-      }
-
-      if (input.decision.verdict === 'REQUIRE_CONFIRMATION' && !input.confirmed) {
-        return {
-          callId,
-          outcome: 'awaiting_confirmation',
-          verified: false,
-          output: { verdict: 'REQUIRE_CONFIRMATION' },
-        };
-      }
-
-      let active = request;
-      if (input.decision.verdict === 'REQUIRE_CONFIRMATION' && input.confirmed) {
-        const confirmed = await store.confirmToolRequest(
-          input.tenantId,
-          request.id,
-          input.confirmedBy ?? 'caller',
-        );
-        if (!confirmed) {
+        if (input.decision.decidedBy !== 'policy-engine') {
           return {
             callId,
             outcome: 'denied',
             verified: false,
-            output: { reason: 'confirmation_failed' },
+            output: { reason: 'invalid_decided_by' },
           };
         }
-        active = confirmed;
+        if (input.decision.tenantId !== input.tenantId || input.decision.sessionId !== input.sessionId) {
+          return {
+            callId,
+            outcome: 'denied',
+            verified: false,
+            output: { reason: 'tenant_session_mismatch' },
+          };
+        }
+
+        const clean = sanitizeToolArgs(input.args);
+        if (clean === null) {
+          return { callId, outcome: 'denied', verified: false, output: { reason: 'invalid_arguments' } };
+        }
+
+        const argumentKeys = Object.keys(clean).sort();
+        const policyRef = input.policyRef ?? input.decision.trace[0]?.detail ?? 'voice.channel.v1';
+
+        const request = await store.insertToolRequest({
+          tenantId: input.tenantId,
+          sessionId: input.sessionId,
+          providerCallId: callId,
+          tool,
+          argumentKeys,
+          args: clean,
+          verdict: input.decision.verdict,
+          reason: input.decision.reason,
+          risk: input.decision.risk,
+          policyRef,
+          trace: input.decision.trace,
+          decidedBy: 'policy-engine',
+          decidedAt: input.decision.decidedAt,
+          confirmedBy: null,
+          confirmedAt: null,
+        });
+
         await store.appendEvidence({
           tenantId: input.tenantId,
           sessionId: input.sessionId,
-          kind: 'confirmation.received',
-          toolRequestId: active.id,
-          payload: { confirmed_by: active.confirmedBy },
+          kind: 'tool.request',
+          toolRequestId: request.id,
+          payload: { tool, argumentKeys, provider_call_id: callId },
         });
-      }
+        await store.appendEvidence({
+          tenantId: input.tenantId,
+          sessionId: input.sessionId,
+          kind: 'policy.decision',
+          toolRequestId: request.id,
+          payload: {
+            verdict: input.decision.verdict,
+            decided_by: 'policy-engine',
+            decision_id: input.decision.decisionId,
+            risk: input.decision.risk,
+          },
+        });
 
-      return executeAndVerify({
-        store,
-        tenantId: input.tenantId,
-        botId: input.botId,
-        sessionId: input.sessionId,
-        callId,
-        tool,
-        args: clean,
-        toolRequestId: active.id,
-        verdict: active.verdict,
-      });
+        if (input.decision.verdict === 'DENY') {
+          return {
+            callId,
+            outcome: 'denied',
+            verified: false,
+            output: { verdict: 'DENY', reason: input.decision.reason },
+          };
+        }
+
+        if (input.decision.verdict === 'REQUIRE_CONFIRMATION' && !input.confirmed) {
+          return {
+            callId,
+            outcome: 'awaiting_confirmation',
+            verified: false,
+            output: { verdict: 'REQUIRE_CONFIRMATION' },
+          };
+        }
+
+        let active = request;
+        if (input.decision.verdict === 'REQUIRE_CONFIRMATION' && input.confirmed) {
+          const confirmed = await store.confirmToolRequest(
+            input.tenantId,
+            request.id,
+            input.confirmedBy ?? 'caller',
+          );
+          if (!confirmed) {
+            return {
+              callId,
+              outcome: 'denied',
+              verified: false,
+              output: { reason: 'confirmation_failed' },
+            };
+          }
+          active = confirmed;
+          await store.appendEvidence({
+            tenantId: input.tenantId,
+            sessionId: input.sessionId,
+            kind: 'confirmation.received',
+            toolRequestId: active.id,
+            payload: { confirmed_by: active.confirmedBy },
+          });
+        }
+
+        return await executeAndVerify({
+          store,
+          tenantId: input.tenantId,
+          botId: input.botId,
+          sessionId: input.sessionId,
+          callId,
+          tool,
+          args: clean,
+          toolRequestId: active.id,
+          verdict: active.verdict,
+        });
+      } catch {
+        return storeErrorResult(callId);
+      }
     },
   };
 }

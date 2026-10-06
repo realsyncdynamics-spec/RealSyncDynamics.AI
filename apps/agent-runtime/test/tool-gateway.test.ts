@@ -214,6 +214,69 @@ describe('VoiceToolGateway — Policy-Gates', () => {
     assert.equal(result.outcome, 'denied');
     assert.equal(result.output.reason, 'unknown_tool');
   });
+
+  it('insertToolRequest wirft → failed/store_error, kein Executor-Aufruf', async () => {
+    const store = createMemoryVoiceStore();
+    let executorTouched = false;
+    const original = VOICE_TOOL_EXECUTORS.schedule_appointment;
+    VOICE_TOOL_EXECUTORS.schedule_appointment = async (ctx) => {
+      executorTouched = true;
+      return original(ctx);
+    };
+    try {
+      store.insertToolRequest = async () => {
+        throw new Error('http_409: voice: tenant mismatch / missing voice_sessions');
+      };
+      const gateway = createVoiceToolGateway({ store });
+      const result = await gateway.handle({
+        tenantId: 'tenant_1',
+        botId: 'bot_1',
+        sessionId: 'sess_1',
+        callId: 'call_store_fail',
+        tool: 'schedule_appointment',
+        args: { customer_name: 'Max', when: 'Fr 9:00' },
+        decision: decision({ verdict: 'ALLOW' }),
+      });
+      assert.equal(result.outcome, 'failed');
+      assert.equal(result.verified, false);
+      assert.equal(result.output.reason, 'store_error');
+      assert.ok(!JSON.stringify(result.output).includes('http_409'));
+      assert.ok(!JSON.stringify(result.output).includes('tenant mismatch'));
+      assert.equal(executorTouched, false);
+    } finally {
+      VOICE_TOOL_EXECUTORS.schedule_appointment = original;
+    }
+  });
+
+  it('updateExecution nach Executor wirft → verified false, nie executed', async () => {
+    const store = createMemoryVoiceStore();
+    const realUpdate = store.updateExecution.bind(store);
+    let updates = 0;
+    store.updateExecution = async (tenantId, executionId, patch) => {
+      updates += 1;
+      // Erster Update ist der Success-Pfad nach Re-Read — dort werfen.
+      if (patch.verificationStatus === 'confirmed') {
+        throw new Error('http_500: update failed');
+      }
+      return realUpdate(tenantId, executionId, patch);
+    };
+    const gateway = createVoiceToolGateway({ store });
+    const result = await gateway.handle({
+      tenantId: 'tenant_1',
+      botId: 'bot_1',
+      sessionId: 'sess_1',
+      callId: 'call_upd_fail',
+      tool: 'schedule_appointment',
+      args: { customer_name: 'Max', when: '2026-10-10T09:00:00.000Z' },
+      decision: decision({ verdict: 'ALLOW' }),
+    });
+    assert.equal(result.outcome, 'failed');
+    assert.equal(result.verified, false);
+    assert.equal(result.output.reason, 'store_error');
+    assert.notEqual(result.outcome, 'executed');
+    assert.ok(updates >= 1);
+    assert.ok(!JSON.stringify(result.output).includes('http_500'));
+  });
 });
 
 describe('VoiceToolGateway — Hash-Kette', () => {

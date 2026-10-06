@@ -162,6 +162,8 @@ function harness(
     getApiKey?: () => string | null;
     /** Default: Memory-Store explizit (kein Produktiv-Default). */
     injectMemoryStore?: boolean;
+    /** Optional: komplett eigenes Gateway (z. B. werfendes Stub). */
+    toolGateway?: ReturnType<typeof createVoiceToolGateway>;
   } = {},
 ): Harness {
   const h: Harness = {
@@ -195,12 +197,15 @@ function harness(
   });
 
   const injectMemory = overrides.injectMemoryStore !== false;
+  const toolGateway =
+    overrides.toolGateway ??
+    (injectMemory
+      ? createVoiceToolGateway({ store: createMemoryVoiceStore() })
+      : createVoiceToolGateway({ env: {} }));
   h.runtime = new VoiceSessionRuntime({
     provider,
     voiceToolClient: client,
-    toolGateway: injectMemory
-      ? createVoiceToolGateway({ store: createMemoryVoiceStore() })
-      : createVoiceToolGateway({ env: {} }),
+    toolGateway,
     onEvent: (e) => h.events.push(e),
   });
   return h;
@@ -434,6 +439,32 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     assert.equal(payload.outcome, 'failed');
     assert.equal(payload.verified, false);
     assert.equal(payload.output.reason, 'not_configured');
+  });
+
+  it('Gateway wirft → genau ein submitToolResult mit outcome denied (kein Hänger)', async () => {
+    const h = harness({
+      toolGateway: {
+        handle: async () => {
+          throw new Error('simulated gateway crash — must not hang tool call');
+        },
+      },
+    });
+    const { socket } = await openRuntime(h, startRequest({ sessionId: 'sess_rt_throw' }));
+    socket.server(functionCall('call_throw', 'lookup_kb', { query: 'x' }));
+    await wait(30);
+    const out = socket.sentOfType('conversation.item.create').filter(
+      (m) => (m.item as { type?: string }).type === 'function_call_output',
+    );
+    assert.equal(out.length, 1, 'genau ein Tool-Ergebnis an den Provider');
+    const payload = JSON.parse((out[0]!.item as { output: string }).output) as {
+      outcome: string;
+      verified: boolean;
+      output: { reason: string };
+    };
+    assert.equal(payload.outcome, 'denied');
+    assert.equal(payload.verified, false);
+    assert.equal(payload.output.reason, 'internal_error');
+    assert.ok(!JSON.stringify(payload).includes('simulated gateway crash'));
   });
 
   it('reserviert toolCount vor dem Await und erhöht turnCount bei finalem Nutzer-Turn', async () => {

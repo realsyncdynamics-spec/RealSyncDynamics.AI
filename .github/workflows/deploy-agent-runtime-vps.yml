@@ -212,6 +212,7 @@ jobs:
 
           if [[ "$STATUS" != "healthy" ]]; then
             docker compose --env-file "$ENV_FILE" logs --tail=100 agent-runtime || true
+            rollback
             exit 4
           fi
 
@@ -220,6 +221,7 @@ jobs:
           UNAUTH="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/agents)"
           if [[ "$UNAUTH" != "401" ]]; then
             echo "ERROR: unauthenticated /agents returned $UNAUTH instead of 401"
+            rollback
             exit 5
           fi
 
@@ -227,6 +229,7 @@ jobs:
             'wget -qO- --header="Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" http://127.0.0.1:8787/agents >/dev/null'
           then
             echo "ERROR: authenticated /agents smoke failed"
+            rollback
             exit 6
           fi
 

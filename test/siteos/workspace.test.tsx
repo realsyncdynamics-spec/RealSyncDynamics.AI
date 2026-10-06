@@ -33,8 +33,20 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
 }));
 
 let authenticated = true;
+const entState = {
+  tier: 'starter' as string,
+  loading: false,
+  features: {} as Record<string, boolean | number>,
+};
 vi.mock('../../src/features/supabase/SupabaseAuthContext', () => ({
   useSupabaseAuth: () => ({ isAuthenticated: authenticated }),
+}));
+vi.mock('../../src/core/billing/useEntitlements', () => ({
+  useEntitlements: () => ({
+    tier: entState.tier,
+    loading: entState.loading,
+    features: entState.features,
+  }),
 }));
 vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({ activeTenantId: 'tenant-1', loading: false }),
@@ -123,6 +135,9 @@ beforeEach(() => {
   previewFrame.mockReset();
   editorProps = null;
   authenticated = true;
+  entState.tier = 'starter';
+  entState.loading = false;
+  entState.features = {};
   window.history.replaceState({}, '', '/builder/x');
   api.listBlueprintChain.mockResolvedValue([]);
   api.listEvaluations.mockResolvedValue([]);
@@ -154,6 +169,15 @@ describe('App Builder Workspace — Laden', () => {
     await waitFor(() => expect(screen.getByText('Projekt nicht gefunden')).toBeInTheDocument());
     expect(screen.queryByTestId('editor')).not.toBeInTheDocument();
     expect(api.editSite).not.toHaveBeenCalled();
+  });
+
+  it('lädt ohne siteos.builder keinen Blueprint und zeigt stattdessen das Upgrade-Panel', async () => {
+    entState.tier = 'free';
+    entState.features = {};
+    renderWorkspace('praxis');
+    await waitFor(() => expect(screen.getByTestId('builder-upgrade-panel')).toBeInTheDocument());
+    expect(screen.getByTestId('builder-upgrade-panel')).toHaveAttribute('data-reason', 'no_entitlement');
+    expect(api.loadLatestBlueprint).not.toHaveBeenCalled();
   });
 
   it('schickt nicht angemeldete Nutzer nach /welcome mit Rücksprung', async () => {

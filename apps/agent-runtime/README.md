@@ -62,6 +62,8 @@ Auth-Header: `Authorization: Bearer ${AGENT_RUNTIME_API_TOKEN}`
 | `XAI_API_KEY`             | —                        | nur für den Grok-Voice-Adapter (Default-Getter); nie loggen |
 | `AGENT_RUNTIME_VOICE_TOOL_BASE_URL` | `http://127.0.0.1:$PORT` | Base-URL für POST `/voice-tool` (Session-Runtime) |
 | `AGENT_RUNTIME_VOICE_TOOL_TIMEOUT_MS` | `5000`               | Timeout der Session-Runtime gegen `/voice-tool` |
+| `SUPABASE_URL` | — | Base-URL für `SupabaseVoiceStore` (Tool-Gateway Persistenz) |
+| `SUPABASE_SERVICE_ROLE_KEY` | — | Service-Role nur serverseitig; nie loggen / nie im Browser |
 
 ### Agent-PEP (Governance-Prüfung vor dem Lauf)
 
@@ -136,6 +138,38 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
 - Unbekannte Tools, kaputte Args, Timeout/Fehler von `/voice-tool` →
   fail-closed `denied` an das Modell.
 - Kein `voice_channels` / `bot_agents`.
+
+### Tool-Gateway (PR 4)
+
+`src/voice/tool-gateway.ts` übernimmt nach der Policy-Entscheidung
+Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
+`GENESIS_HASH`).
+
+- `PolicyDecision.decidedBy` bleibt immer `policy-engine`.
+- Ohne vollständigen Decision-Payload von `/voice-tool` →
+  `denied` / `missing_policy_decision` (keine synthetisierte Entscheidung).
+- `evaluate()` in `policy-engine.ts` unberührt.
+- Ausführung nur bei `ALLOW` oder bestätigtem `REQUIRE_CONFIRMATION`.
+- `verified: true` nur nach Re-Read des Datensatzes (`id` + `tenant_id`,
+  `external_ref` = diese ID); sonst `mismatch` / `failed`.
+- Echter Executor: `schedule_appointment` → `bot_appointments` (via Store).
+  Fehlt `customer_name` → `invalid_arguments`, keine Ausführung.
+- Bewusst `not_configured`: `lookup_kb`, `create_ticket`, `handoff_human`,
+  `export_transcript` (kein Backend im Repo).
+- Keine neuen Tool-Namen `read_availability` / `book_appointment` (kein
+  Backend; bestehende fünf Nora-Tools bleiben).
+- Persistenz: `SupabaseVoiceStore`
+  (`src/voice/supabase-voice-store.ts`) aus `SUPABASE_URL` +
+  `SUPABASE_SERVICE_ROLE_KEY` — nie loggen. Ohne Store → jedes Tool
+  fail-closed `failed`/`not_configured`. Memory-Store nur explizit in Tests.
+- **Voraussetzung `voice_sessions`:** Der Supabase-Store erwartet eine
+  existierende Zeile in `public.voice_sessions` mit passendem
+  `tenant_id`/`bot_id` (FK `voice_tool_requests.session_id` →
+  `voice_sessions.id`, Trigger `voice_enforce_tenant_consistency`). Die
+  Session-Runtime legt diese Zeile in PR 4 bewusst **nicht** an. Bis das
+  geschieht, schlagen Store-Writes fail-closed mit `store_error` fehl
+  (`verified: false`, Ergebnis geht an das Modell — kein hängender
+  Tool-Call). Store-Fehlertexte/Secrets erscheinen nie in `output`.
 
 ## Lokal entwickeln
 

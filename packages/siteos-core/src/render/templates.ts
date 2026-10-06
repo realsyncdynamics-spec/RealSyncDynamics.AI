@@ -37,6 +37,15 @@ export function defaultDesignTemplate(): DesignTemplate {
   return 'bento-bold';
 }
 
+export function isDesignTemplate(value: unknown): value is DesignTemplate {
+  return typeof value === 'string' && DESIGN_TEMPLATES.some((template) => template.id === value);
+}
+
+/**
+ * Überträgt eine Vorlage vollständig auf das Theme. Compliance, Inhalte und
+ * Seitenstruktur bleiben unverändert; Farben, Radius und Schriften stammen
+ * ausschließlich aus dem Template-Katalog des Kerns.
+ */
 export function applySiteDesignTemplate(blueprint: SiteBlueprint, template: SiteDesignTemplate): SiteBlueprint {
   const selected = designTemplateById(template);
   return {
@@ -47,7 +56,29 @@ export function applySiteDesignTemplate(blueprint: SiteBlueprint, template: Site
       accent: selected.accent,
       surface: selected.surface,
       foreground: selected.foreground,
+      fontDisplay: selected.fontDisplay,
+      fontBody: selected.fontBody,
       radiusPx: selected.radiusPx,
     },
   };
+}
+
+
+/**
+ * Erkennt, ob ein gespeichertes Theme exakt einer bekannten Vorlage
+ * entspricht. `null` bedeutet eigenes Theme — niemals still auf einen
+ * Default zurückfallen.
+ */
+export function matchDesignTemplate(theme: SiteBlueprint['theme'] | undefined): DesignTemplate | null {
+  if (!theme) return null;
+  const same = (a: unknown, b: string) => String(a ?? '').trim().toLowerCase() === b.toLowerCase();
+  const match = DESIGN_TEMPLATES.find((template) =>
+    theme.mode === template.mode
+    && same(theme.accent, template.accent)
+    && same(theme.surface, template.surface)
+    && same(theme.foreground, template.foreground)
+    && same(theme.fontDisplay, template.fontDisplay)
+    && same(theme.fontBody, template.fontBody)
+    && Number(theme.radiusPx) === template.radiusPx);
+  return match?.id ?? null;
 }

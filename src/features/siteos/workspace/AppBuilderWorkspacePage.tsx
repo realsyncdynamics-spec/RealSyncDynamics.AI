@@ -14,14 +14,14 @@
 // `docs/product/app-builder-zielbild.md` §4.
 //
 // Was sie nicht tut: keinen Blueprint aus dem Browser speichern (die
-// Sicherheitsbasis aus #1248 bleibt), keine Seiten anlegen (PR B), keinen
-// LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
-// Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
+// Sicherheitsbasis aus #1248 bleibt), keinen ungeprüften Deploy und keinen
+// Production-Cutover aus dem Editor. Eine reale Cloudflare-Preview läuft
+// ausschließlich über den serverseitig bewerteten SiteOS-Publish-Pfad.
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, ChevronLeft, Code2, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
+  ArrowRight, Check, ChevronLeft, Code2, ExternalLink, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
   Smartphone, Sparkles, Tablet, Upload,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -40,11 +40,11 @@ import {
 } from '../../../../packages/siteos-core/src/index';
 import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
 import { BuilderUpgradePanel } from '../BuilderUpgradePanel';
-import { canOpenAppBuilder, resolveBuilderEntitlements } from '../builderEntitlements';
+import { builderUpgradeHref, canOpenAppBuilder, canPublishSite, resolveBuilderEntitlements } from '../builderEntitlements';
 import {
-  editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
+  deployPublishPreview, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
-  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type StoredBlueprintRow,
+  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type PublishPreviewResponse, type StoredBlueprintRow,
 } from '../siteOsApi';
 import { toPageEdit, type PuckPageData } from '../editor/blueprintPuckAdapter';
 import {
@@ -79,6 +79,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     [entitlements.tier, entitlements.features],
   );
   const entitled = canOpenAppBuilder(builderSnapshot);
+  const publishEntitled = canPublishSite(builderSnapshot);
   const location = useLocation();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   // Nur der Erstbau kennt die Ausgangs-URL; er reicht sie als Parameter
@@ -111,6 +112,8 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [instruction, setInstruction] = useState('');
   const [gate, setGate] = useState<PublishGateEvaluation | null>(null);
   const [checking, setChecking] = useState(false);
+  const [previewDeploying, setPreviewDeploying] = useState(false);
+  const [hostedPreview, setHostedPreview] = useState<PublishPreviewResponse['preview'] | null>(null);
   const [console_, setConsole] = useState<ConsoleEntry[]>([]);
   const [chain, setChain] = useState<ChainRow[]>([]);
   const [evaluations, setEvaluations] = useState<EvaluationRow[]>([]);
@@ -273,6 +276,34 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     } finally { setChecking(false); }
   };
 
+  // ── Reale Cloudflare-Vorschau ───────────────────────────────────────
+  const deployPreview = async () => {
+    if (!activeTenantId || !stored || dirty || previewDeploying || !publishEntitled) return;
+    setPreviewDeploying(true);
+    try {
+      const result = await deployPublishPreview({
+        tenant_id: activeTenantId,
+        blueprint_id: stored.id,
+        confirm_preview_deploy: true,
+        ...(sourceUrl ? { base_url: sourceUrl } : {}),
+      });
+      if (result.kind !== 'ok') throw new Error(errorMessage(result));
+      setHostedPreview(result.data.preview);
+      setMode('preview');
+      setRightTab('governance');
+      setMobilePane('right');
+      log(
+        'ok',
+        `Cloudflare-Vorschau bereit: ${result.data.preview.branch} · ${result.data.preview.artifact_sha256.slice(0, 12)}…`,
+      );
+      void loadGovernance(activeTenantId, stored.blueprint.slug);
+    } catch (cause) {
+      log('error', `Vorschau-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
+    } finally {
+      setPreviewDeploying(false);
+    }
+  };
+
   // ── KI-Neubau (vorhandener Pfad, kein LLM) ───────────────────────────
   const rebuild = (text: string) => {
     if (!sourceUrl) return;
@@ -378,19 +409,39 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         >
           {checking ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}<span className="hidden sm:inline">Prüfen</span>
         </button>
-        {/* Veröffentlichen gibt es noch nicht: Es existiert kein Pfad vom
-            Artefakt zu einer öffentlichen Adresse (gemessen 2026-09-07).
-            Der Knopf steht hier, damit die Kopfzeile ihre Form hat — und
-            sagt, warum er nichts tut, statt so zu tun als ob. */}
-        <button
-          disabled
-          aria-disabled="true"
-          title="Auslieferung nicht verdrahtet: Es gibt noch keinen Pfad von der geprüften Version zu einer öffentlichen Adresse. Folgt mit dem Publish-Schritt."
-          aria-label="Veröffentlichen"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white opacity-40 sm:px-3"
-        >
-          <Upload size={14} /><span className="hidden sm:inline">Veröffentlichen</span>
-        </button>
+        {hostedPreview && (
+          <a
+            href={hostedPreview.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Cloudflare-Vorschau öffnen"
+            title={`Geprüfte Cloudflare-Vorschau öffnen · ${hostedPreview.artifact_sha256.slice(0, 12)}…`}
+            className="inline-flex items-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-900 sm:px-3"
+          >
+            <ExternalLink size={14} /><span className="hidden sm:inline">Vorschau öffnen</span>
+          </a>
+        )}
+        {publishEntitled ? (
+          <button
+            onClick={() => void deployPreview()}
+            disabled={dirty || previewDeploying || saving || busy}
+            title={dirty ? 'Erst speichern — bereitgestellt wird ausschließlich die gespeicherte Version.' : 'Frisch prüfen und als Cloudflare-Preview bereitstellen'}
+            aria-label="Cloudflare-Vorschau bereitstellen"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white disabled:opacity-40 sm:px-3"
+          >
+            {previewDeploying ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            <span className="hidden sm:inline">{hostedPreview ? 'Vorschau erneuern' : 'Vorschau bereitstellen'}</span>
+          </button>
+        ) : (
+          <a
+            href={builderUpgradeHref(builderSnapshot.planId, 'publish_locked')}
+            aria-label="Veröffentlichen freischalten"
+            title="siteos.publish ist in diesem Tarif nicht freigeschaltet."
+            className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white sm:px-3"
+          >
+            <Upload size={14} /><span className="hidden sm:inline">Publish freischalten</span>
+          </a>
+        )}
       </div>
     </header>
   );

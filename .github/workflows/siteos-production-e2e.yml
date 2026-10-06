@@ -1,9 +1,12 @@
 name: SiteOS Production E2E
 
 on:
-  push:
-    branches:
-      - feature/siteos-production-e2e
+  workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: 'Type PUBLISH to run the real SiteOS production cutover'
+        required: true
+        type: string
 
 concurrency:
   group: siteos-production-e2e
@@ -19,11 +22,17 @@ jobs:
       RUN_SITEOS_PRODUCTION_E2E: 'true'
       E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
       E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+      CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
       CI: 'true'
 
     steps:
       - name: Checkout exact branch
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Require explicit production confirmation
+        shell: bash
+        run: |
+          test "$CONFIRM_PRODUCTION" = "PUBLISH" || { echo "confirm_production must equal PUBLISH"; exit 1; }
 
       - name: Require real test-user secrets
         shell: bash

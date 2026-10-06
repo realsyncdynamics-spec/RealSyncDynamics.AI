@@ -30,6 +30,9 @@ import { handleExport } from './publish-gate.ts';
 
 const PUBLISHER_ROLES = new Set(['owner', 'admin']);
 
+// No generated Database type exists in this repository.
+type AdminClient = ReturnType<typeof createClient<any, 'public', any>>;
+
 interface PublishExportPayload {
   ok: true;
   manifest: {
@@ -533,7 +536,7 @@ function cloudflareFailure(error: unknown, fallback: string): Response {
 }
 
 async function recordFailure(args: {
-  admin: ReturnType<typeof createClient>;
+  admin: AdminClient;
   projectId: string;
   tenantId: string;
   userId: string;

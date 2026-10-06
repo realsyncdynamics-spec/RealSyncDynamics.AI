@@ -32,10 +32,14 @@ function str(value: unknown): string | null {
 /** schedule_appointment → bot_appointments (Feature A). */
 export const executeScheduleAppointment: VoiceToolExecutor = async (ctx) => {
   const customerName =
-    str(ctx.args.customer_name) ??
-    str(ctx.args.customerName) ??
-    str(ctx.args.name) ??
-    'Anrufer';
+    str(ctx.args.customer_name) ?? str(ctx.args.customerName) ?? str(ctx.args.name);
+  if (!customerName) {
+    return {
+      ok: false,
+      errorCode: 'invalid_arguments',
+      output: { reason: 'invalid_arguments', field: 'customer_name' },
+    };
+  }
   const when = str(ctx.args.when) ?? str(ctx.args.requested_at) ?? str(ctx.args.date);
   const contact = str(ctx.args.contact) ?? str(ctx.args.phone) ?? null;
   const service = str(ctx.args.service) ?? null;

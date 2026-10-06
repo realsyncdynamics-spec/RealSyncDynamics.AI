@@ -10,7 +10,9 @@ import {
 } from '../src/providers/grok-provider.js';
 import {
   VoiceSessionRuntime,
+  createMemoryVoiceStore,
   createVoiceToolClient,
+  createVoiceToolGateway,
   sanitizeToolArgs,
   type VoiceSessionStartRequest,
   type VoiceToolClient,
@@ -18,9 +20,40 @@ import {
   type VoiceToolHttpRequest,
 } from '../src/voice/session-runtime.js';
 import type { VoiceProviderEvent, VoiceToolDefinition } from '../src/voice-provider-types.js';
+import type { VoicePolicyDecision } from '../src/voice-types.js';
 
 const PLACEHOLDER_KEY = 'test-placeholder-not-a-real-key';
 const PLACEHOLDER_TOKEN = 'test-runtime-token';
+
+function policyDecision(
+  overrides: Partial<VoicePolicyDecision> & Pick<VoicePolicyDecision, 'verdict' | 'sessionId' | 'tenantId'>,
+): VoicePolicyDecision {
+  return {
+    decisionId: 'dec_rt_1',
+    requestId: 'vt_call',
+    reason: 'test',
+    risk: 'medium',
+    piiDetected: false,
+    auditRequired: true,
+    trace: [{ check: 'audit', result: 'pass', detail: 'voice.channel.v1' }],
+    decidedAt: '2026-10-06T12:00:00.000Z',
+    decidedBy: 'policy-engine',
+    ...overrides,
+  };
+}
+
+function allowOutcome(
+  tenantId: string,
+  sessionId: string,
+  verdict: VoicePolicyDecision['verdict'] = 'ALLOW',
+): VoiceToolHttpOutcome {
+  return {
+    ok: true,
+    verdict,
+    status: verdict === 'REQUIRE_CONFIRMATION' ? 'confirmation_required' : 'accepted',
+    decision: policyDecision({ verdict, tenantId, sessionId }),
+  };
+}
 
 // ─── Mock-WebSocket (wie grok-provider.test) ────────────────────────────────
 
@@ -127,6 +160,8 @@ function harness(
   overrides: {
     voiceToolImpl?: (req: VoiceToolHttpRequest) => Promise<VoiceToolHttpOutcome>;
     getApiKey?: () => string | null;
+    /** Default: Memory-Store explizit (kein Produktiv-Default). */
+    injectMemoryStore?: boolean;
   } = {},
 ): Harness {
   const h: Harness = {
@@ -135,7 +170,7 @@ function harness(
     voiceToolCalls: [],
     voiceToolImpl:
       overrides.voiceToolImpl ??
-      (async () => ({ ok: true, verdict: 'ALLOW', status: 'accepted' })),
+      (async (req) => allowOutcome(req.tenantId, req.sessionId, 'ALLOW')),
     events: [],
     factoryHeaders: [],
   };
@@ -159,9 +194,13 @@ function harness(
     closeTimeoutMs: 50,
   });
 
+  const injectMemory = overrides.injectMemoryStore !== false;
   h.runtime = new VoiceSessionRuntime({
     provider,
     voiceToolClient: client,
+    toolGateway: injectMemory
+      ? createVoiceToolGateway({ store: createMemoryVoiceStore() })
+      : createVoiceToolGateway({ env: {} }),
     onEvent: (e) => h.events.push(e),
   });
   return h;
@@ -330,14 +369,16 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
 
   it('REQUIRE_CONFIRMATION von /voice-tool → awaiting_confirmation', async () => {
     const h = harness({
-      voiceToolImpl: async () => ({
-        ok: true,
-        verdict: 'REQUIRE_CONFIRMATION',
-        status: 'confirmation_required',
-      }),
+      voiceToolImpl: async (req) =>
+        allowOutcome(req.tenantId, req.sessionId, 'REQUIRE_CONFIRMATION'),
     });
     const { socket } = await openRuntime(h);
-    socket.server(functionCall('call_c', 'schedule_appointment', { when: 'Fr 9:00' }));
+    socket.server(
+      functionCall('call_c', 'schedule_appointment', {
+        when: 'Fr 9:00',
+        customer_name: 'Max',
+      }),
+    );
     await wait(20);
     const out = socket.sentOfType('conversation.item.create').filter(
       (m) => (m.item as { type?: string }).type === 'function_call_output',
@@ -352,6 +393,49 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     assert.equal(payload.output.verdict, 'REQUIRE_CONFIRMATION');
   });
 
+  it('ohne Decision-Payload → denied missing_policy_decision (kein Fake)', async () => {
+    const h = harness({
+      voiceToolImpl: async () => ({ ok: true, verdict: 'ALLOW', status: 'accepted' }),
+    });
+    const { socket } = await openRuntime(h, startRequest({ sessionId: 'sess_rt_nodec' }));
+    socket.server(functionCall('call_nd', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    const out = socket.sentOfType('conversation.item.create').filter(
+      (m) => (m.item as { type?: string }).type === 'function_call_output',
+    );
+    const payload = JSON.parse((out.at(-1)!.item as { output: string }).output) as {
+      outcome: string;
+      verified: boolean;
+      output: { reason: string };
+    };
+    assert.equal(payload.outcome, 'denied');
+    assert.equal(payload.verified, false);
+    assert.equal(payload.output.reason, 'missing_policy_decision');
+  });
+
+  it('ohne Store → failed/not_configured (kein Memory-Default)', async () => {
+    const h = harness({ injectMemoryStore: false });
+    const { socket } = await openRuntime(h, startRequest({ sessionId: 'sess_rt_nostore' }));
+    socket.server(
+      functionCall('call_ns', 'schedule_appointment', {
+        customer_name: 'Max',
+        when: 'Fr 9:00',
+      }),
+    );
+    await wait(20);
+    const out = socket.sentOfType('conversation.item.create').filter(
+      (m) => (m.item as { type?: string }).type === 'function_call_output',
+    );
+    const payload = JSON.parse((out.at(-1)!.item as { output: string }).output) as {
+      outcome: string;
+      verified: boolean;
+      output: { reason: string };
+    };
+    assert.equal(payload.outcome, 'failed');
+    assert.equal(payload.verified, false);
+    assert.equal(payload.output.reason, 'not_configured');
+  });
+
   it('reserviert toolCount vor dem Await und erhöht turnCount bei finalem Nutzer-Turn', async () => {
     const seen: number[] = [];
     let release!: () => void;
@@ -362,7 +446,7 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
       voiceToolImpl: async (req) => {
         seen.push(req.session.toolCount);
         await gate;
-        return { ok: true, verdict: 'ALLOW', status: 'accepted' };
+        return allowOutcome(req.tenantId, req.sessionId, 'ALLOW');
       },
     });
     const { socket } = await openRuntime(

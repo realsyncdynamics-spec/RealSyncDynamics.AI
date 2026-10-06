@@ -2,8 +2,10 @@
  * Persistenz-Port für Voice Tool Gateway (PR 4).
  *
  * apps/agent-runtime hatte bisher keinen DB-Zugriff. Der Port hält
- * Service-Role-Schreiben tenant-gescoped; Tests nutzen MemoryVoiceStore.
- * Optional: SupabaseVoiceStore (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
+ * Service-Role-Schreiben tenant-gescoped.
+ *
+ * MemoryVoiceStore: nur explizit in Tests injizieren — nie als Produktiv-Default.
+ * Produktion: SupabaseVoiceStore (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
  */
 
 import { randomUUID } from 'node:crypto';
@@ -59,6 +61,14 @@ export interface AppointmentInsert {
   metadata?: Record<string, unknown>;
 }
 
+export interface AppointmentRow {
+  id: string;
+  tenantId: string;
+  botId: string;
+  customerName: string;
+  status: string;
+}
+
 export interface VoiceStore {
   insertToolRequest(row: Omit<VoiceToolRequestRow, 'id'> & { id?: string }): Promise<VoiceToolRequestRow>;
   confirmToolRequest(
@@ -82,16 +92,19 @@ export interface VoiceStore {
   }): Promise<VoiceEvidenceRecord>;
   listEvidence(tenantId: string, sessionId: string): Promise<VoiceEvidenceRecord[]>;
   insertAppointment(row: AppointmentInsert): Promise<{ id: string }>;
+  /** Re-Read zur Verifikation: nur Treffer mit id + tenant_id. */
+  getAppointment(tenantId: string, appointmentId: string): Promise<AppointmentRow | null>;
 }
 
-/** In-Memory-Store für Unit-Tests und Betrieb ohne DB-Credentials. */
+/** In-Memory-Store — ausschließlich für Unit-Tests (explizit injizieren). */
 export function createMemoryVoiceStore(): VoiceStore {
   const requests = new Map<string, VoiceToolRequestRow>();
   const executions = new Map<string, VoiceExecutionRow>();
-  const evidenceBySession = new Map<string, VoiceEvidenceRecord[]>();
-  const appointments = new Map<string, AppointmentInsert & { id: string }>();
+  const evidenceByTenantSession = new Map<string, VoiceEvidenceRecord[]>();
+  const appointments = new Map<string, AppointmentInsert & { id: string; status: string }>();
 
   const scopedKey = (tenantId: string, id: string) => `${tenantId}:${id}`;
+  const evidenceKey = (tenantId: string, sessionId: string) => `${tenantId}:${sessionId}`;
 
   return {
     async insertToolRequest(row) {
@@ -156,7 +169,8 @@ export function createMemoryVoiceStore(): VoiceStore {
     },
 
     async appendEvidence(input) {
-      const list = evidenceBySession.get(input.sessionId) ?? [];
+      const key = evidenceKey(input.tenantId, input.sessionId);
+      const list = evidenceByTenantSession.get(key) ?? [];
       const prevHash = list.length === 0 ? VOICE_GENESIS_HASH : list[list.length - 1]!.hash;
       const record = appendEvidenceLink({
         tenantId: input.tenantId,
@@ -171,12 +185,12 @@ export function createMemoryVoiceStore(): VoiceStore {
         throw new Error('voice-store: tenant mismatch on evidence');
       }
       list.push(record);
-      evidenceBySession.set(input.sessionId, list);
+      evidenceByTenantSession.set(key, list);
       return record;
     },
 
     async listEvidence(tenantId, sessionId) {
-      return (evidenceBySession.get(sessionId) ?? []).filter((e) => e.tenantId === tenantId);
+      return [...(evidenceByTenantSession.get(evidenceKey(tenantId, sessionId)) ?? [])];
     },
 
     async insertAppointment(row) {
@@ -184,8 +198,24 @@ export function createMemoryVoiceStore(): VoiceStore {
         throw new Error('voice-store: appointment requires tenantId, botId, customerName');
       }
       const id = randomUUID();
-      appointments.set(scopedKey(row.tenantId, id), { ...row, id });
+      appointments.set(scopedKey(row.tenantId, id), {
+        ...row,
+        id,
+        status: 'requested',
+      });
       return { id };
+    },
+
+    async getAppointment(tenantId, appointmentId) {
+      const row = appointments.get(scopedKey(tenantId, appointmentId));
+      if (!row || row.tenantId !== tenantId) return null;
+      return {
+        id: row.id,
+        tenantId: row.tenantId,
+        botId: row.botId,
+        customerName: row.customerName,
+        status: row.status,
+      };
     },
   };
 }

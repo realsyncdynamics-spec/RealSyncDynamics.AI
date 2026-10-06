@@ -12,8 +12,6 @@
  *  - evaluate() in policy-engine.ts bleibt unberührt.
  */
 
-import { randomUUID } from 'node:crypto';
-
 import {
   GrokProvider,
   type ApiKeyGetter,
@@ -28,7 +26,7 @@ import {
   type VoiceToolDefinition,
   type VoiceToolResult,
 } from '../voice-provider-types.js';
-import { VOICE_AGENT_ID, type VoiceConsent, type VoicePolicyDecision } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoiceConsent } from '../voice-types.js';
 import {
   createVoiceToolGateway,
   type VoiceToolGateway,
@@ -85,7 +83,11 @@ export interface SessionRuntimeOptions {
   onEvent?: (event: VoiceProviderEvent) => void;
   /** Injizierbarer Provider (Tests). Default: neuer GrokProvider. */
   provider?: GrokProvider;
-  /** Tool-Gateway (Ausführung/Evidenz). Default: Memory-Store. */
+  /**
+   * Tool-Gateway (Ausführung/Evidenz).
+   * Default: createVoiceToolGateway() — Supabase aus Env, sonst fail-closed
+   * not_configured. Memory nur in Tests explizit injizieren.
+   */
   toolGateway?: VoiceToolGateway;
 }
 
@@ -297,23 +299,41 @@ export class VoiceSessionRuntime {
       consent: live.consent,
     });
 
-    if (!outcome.ok) {
+    const decision = outcome.decision;
+    if (!decision) {
+      // Kein Decision-Payload → fail-closed. Nie eine Policy-Entscheidung erfinden.
+      if (!outcome.ok) {
+        return {
+          callId,
+          outcome: 'denied',
+          verified: false,
+          output: { reason: outcome.reason, agentId: VOICE_AGENT_ID },
+        };
+      }
       return {
         callId,
         outcome: 'denied',
         verified: false,
-        output: { reason: outcome.reason, agentId: VOICE_AGENT_ID },
+        output: { reason: 'missing_policy_decision', agentId: VOICE_AGENT_ID },
       };
     }
 
-    const decision =
-      outcome.decision ??
-      synthesizeDecision({
-        requestId: `vt_${callId}`,
-        sessionId: live.sessionId,
-        tenantId: live.tenantId,
-        verdict: outcome.verdict,
-      });
+    if (decision.decidedBy !== 'policy-engine') {
+      return {
+        callId,
+        outcome: 'denied',
+        verified: false,
+        output: { reason: 'invalid_decided_by', agentId: VOICE_AGENT_ID },
+      };
+    }
+    if (decision.tenantId !== live.tenantId || decision.sessionId !== live.sessionId) {
+      return {
+        callId,
+        outcome: 'denied',
+        verified: false,
+        output: { reason: 'tenant_session_mismatch', agentId: VOICE_AGENT_ID },
+      };
+    }
 
     return this.toolGateway.handle({
       tenantId: live.tenantId,
@@ -326,28 +346,6 @@ export class VoiceSessionRuntime {
       confirmed: false,
     });
   }
-}
-
-function synthesizeDecision(input: {
-  requestId: string;
-  sessionId: string;
-  tenantId: string;
-  verdict: VoicePolicyDecision['verdict'];
-}): VoicePolicyDecision {
-  return {
-    decisionId: randomUUID(),
-    requestId: input.requestId,
-    sessionId: input.sessionId,
-    tenantId: input.tenantId,
-    verdict: input.verdict,
-    reason: 'Synthesized from /voice-tool verdict (no decision payload).',
-    risk: input.verdict === 'DENY' ? 'high' : 'medium',
-    piiDetected: false,
-    auditRequired: true,
-    trace: [{ check: 'audit', result: 'pass', detail: 'voice.channel.v1' }],
-    decidedAt: new Date().toISOString(),
-    decidedBy: 'policy-engine',
-  };
 }
 
 function deniedResult(reason: string, callId: string): VoiceToolResult {
@@ -384,6 +382,8 @@ export {
 export {
   createVoiceToolGateway,
   createMemoryVoiceStore,
+  createSupabaseVoiceStore,
+  createSupabaseVoiceStoreFromEnv,
   VOICE_GENESIS_HASH,
   type VoiceToolGateway,
 } from './tool-gateway.js';

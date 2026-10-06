@@ -98,12 +98,20 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
         }
 
         const verdict = typeof body.verdict === 'string' ? (body.verdict as VoiceVerdict) : undefined;
+        const expected = {
+          requestId: request.requestId,
+          sessionId: request.sessionId,
+          tenantId: request.tenantId,
+          verdict,
+        };
+        const decision = parsePolicyDecision(body.decision, expected);
 
         if (!res.ok) {
           return {
             ok: false,
             reason: typeof body.reason === 'string' ? body.reason : `http_${res.status}`,
             verdict,
+            decision,
           };
         }
 
@@ -111,13 +119,7 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
           return { ok: false, reason: 'invalid_voice_tool_response' };
         }
 
-        const decision = parsePolicyDecision(body.decision, {
-          requestId: request.requestId,
-          sessionId: request.sessionId,
-          tenantId: request.tenantId,
-          verdict,
-        });
-
+        // Decision ist Pflicht — ohne vollständigen Payload kein ok:true mit Fake.
         return {
           ok: true,
           verdict,
@@ -138,11 +140,11 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
 
 function parsePolicyDecision(
   raw: unknown,
-  fallback: {
+  expected: {
     requestId: string;
     sessionId: string;
     tenantId: string;
-    verdict: VoiceVerdict;
+    verdict: VoiceVerdict | undefined;
   },
 ): VoicePolicyDecision | undefined {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
@@ -153,15 +155,18 @@ function parsePolicyDecision(
   if (d.verdict !== 'ALLOW' && d.verdict !== 'DENY' && d.verdict !== 'REQUIRE_CONFIRMATION') {
     return undefined;
   }
+  // tenantId/sessionId müssen exakt zum Request passen — kein Soft-Fill.
+  if (d.tenantId !== expected.tenantId || d.sessionId !== expected.sessionId) return undefined;
+  if (expected.verdict !== undefined && d.verdict !== expected.verdict) return undefined;
   if (typeof d.reason !== 'string' || typeof d.decidedAt !== 'string') return undefined;
   if (d.risk !== 'low' && d.risk !== 'medium' && d.risk !== 'high') return undefined;
   if (typeof d.piiDetected !== 'boolean' || typeof d.auditRequired !== 'boolean') return undefined;
   if (!Array.isArray(d.trace)) return undefined;
   return {
     decisionId: d.decisionId,
-    requestId: d.requestId || fallback.requestId,
-    sessionId: d.sessionId || fallback.sessionId,
-    tenantId: d.tenantId || fallback.tenantId,
+    requestId: d.requestId,
+    sessionId: d.sessionId,
+    tenantId: d.tenantId,
     verdict: d.verdict,
     reason: d.reason,
     risk: d.risk,

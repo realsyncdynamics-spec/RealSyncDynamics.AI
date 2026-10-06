@@ -9,6 +9,9 @@
  * PolicyDecision.decidedBy ist immer 'policy-engine'.
  * evaluate() in policy-engine.ts bleibt unberührt.
  * Kein voice_channels / bot_agents.
+ *
+ * Ohne konfigurierten Store (kein injizierter Store, kein Supabase aus Env):
+ * fail-closed failed/not_configured — kein Memory-Default in Produktion.
  */
 
 import { isContractToolName, type VoiceToolResult } from '../voice-provider-types.js';
@@ -20,7 +23,8 @@ import {
 } from '../voice-types.js';
 import { sanitizeToolArgs } from './voice-tool-client.js';
 import { VOICE_TOOL_EXECUTORS } from './tool-executors.js';
-import { createMemoryVoiceStore, type VoiceStore } from './voice-store.js';
+import { createSupabaseVoiceStoreFromEnv } from './supabase-voice-store.js';
+import type { VoiceStore } from './voice-store.js';
 
 export interface ToolGatewayInput {
   tenantId: string;
@@ -42,12 +46,43 @@ export interface VoiceToolGateway {
 }
 
 export interface VoiceToolGatewayOptions {
+  /**
+   * Persistenz. Tests: createMemoryVoiceStore() explizit injizieren.
+   * Produktion: weglassen → Supabase aus Env, sonst fail-closed not_configured.
+   */
   store?: VoiceStore;
+  /** Env für Supabase-Auflösung (Tests). Default: process.env. */
+  env?: NodeJS.Dict<string | undefined>;
 }
 
 export function createVoiceToolGateway(options: VoiceToolGatewayOptions = {}): VoiceToolGateway {
-  const store = options.store ?? createMemoryVoiceStore();
+  const store =
+    options.store ??
+    createSupabaseVoiceStoreFromEnv({ env: options.env ?? process.env });
 
+  if (!store) {
+    return createNotConfiguredGateway();
+  }
+
+  return createConfiguredGateway(store);
+}
+
+/** Jedes Tool fail-closed — keine Ausführung, verified false. */
+function createNotConfiguredGateway(): VoiceToolGateway {
+  return {
+    async handle(input: ToolGatewayInput): Promise<VoiceToolResult> {
+      const callId = input.callId.trim() || 'unknown';
+      return {
+        callId,
+        outcome: 'failed',
+        verified: false,
+        output: { reason: 'not_configured', tool: input.tool },
+      };
+    },
+  };
+}
+
+function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
   return {
     async handle(input: ToolGatewayInput): Promise<VoiceToolResult> {
       const callId = input.callId.trim();
@@ -256,6 +291,43 @@ async function executeAndVerify(input: {
     };
   }
 
+  // Verifikation: Re-Read des geschriebenen Datensatzes per id + tenant_id.
+  // external_ref muss die persistierte Appointment-ID sein — nie nur Insert-Echo.
+  const verifiedRow = await input.store.getAppointment(input.tenantId, result.externalRef);
+  if (!verifiedRow || verifiedRow.id !== result.externalRef || verifiedRow.tenantId !== input.tenantId) {
+    await input.store.updateExecution(input.tenantId, execution.id, {
+      status: 'failed',
+      externalRef: result.externalRef,
+      errorCode: 'verification_mismatch',
+      verificationStatus: 'mismatch',
+      finishedAt,
+    });
+    await input.store.appendEvidence({
+      tenantId: input.tenantId,
+      sessionId: input.sessionId,
+      kind: 'tool.result',
+      toolRequestId: input.toolRequestId,
+      payload: { status: 'failed', error_code: 'verification_mismatch', external_ref: result.externalRef },
+    });
+    await input.store.appendEvidence({
+      tenantId: input.tenantId,
+      sessionId: input.sessionId,
+      kind: 'verification.result',
+      toolRequestId: input.toolRequestId,
+      payload: { verification_status: 'mismatch', external_ref: result.externalRef },
+    });
+    return {
+      callId: input.callId,
+      outcome: 'failed',
+      verified: false,
+      output: {
+        reason: 'verification_mismatch',
+        appointmentId: result.externalRef,
+        verdict: input.verdict,
+      },
+    };
+  }
+
   const verifiedAt = new Date().toISOString();
   await input.store.updateExecution(input.tenantId, execution.id, {
     status: 'succeeded',
@@ -289,5 +361,10 @@ async function executeAndVerify(input: {
 }
 
 export { createMemoryVoiceStore } from './voice-store.js';
+export {
+  createSupabaseVoiceStore,
+  createSupabaseVoiceStoreFromEnv,
+  createPostgrestVoiceDbClient,
+} from './supabase-voice-store.js';
 export { VOICE_GENESIS_HASH, computeEvidenceHash, appendEvidenceLink } from './evidence-hash.js';
 export { VOICE_TOOL_EXECUTORS } from './tool-executors.js';

@@ -23,6 +23,7 @@ import {
 import {
   CloudflarePagesError,
   deployPagesProduction,
+  getPagesDeployment,
   getPagesProject,
   type ReleaseFile,
 } from '../cloudflare-pages.ts';
@@ -243,6 +244,42 @@ export async function handle(req: Request): Promise<Response> {
       409,
       'CLOUDFLARE_PROJECT_MISMATCH',
       'Recorded website project and Cloudflare Pages project no longer match',
+    );
+  }
+
+  let remotePreview;
+  try {
+    remotePreview = await getPagesDeployment({
+      accountId: CLOUDFLARE_ACCOUNT_ID,
+      apiToken: CLOUDFLARE_API_TOKEN,
+      projectName: cloudflareProjectName,
+      deploymentId: lastPreview.deployment_id,
+    });
+  } catch (error) {
+    return cloudflareFailure(error, 'Cloudflare preview verification failed');
+  }
+  if (!remotePreview) {
+    return jsonError(
+      409,
+      'PREVIEW_MISSING',
+      'The governed preview deployment no longer exists in Cloudflare',
+    );
+  }
+  if (
+    remotePreview.environment !== 'preview'
+    || remotePreview.branch !== lastPreview.branch
+  ) {
+    return jsonError(
+      409,
+      'PREVIEW_REMOTE_MISMATCH',
+      'The recorded preview no longer matches Cloudflare preview state',
+    );
+  }
+  if (normalizeUrl(remotePreview.url) !== normalizeUrl(project.preview_url)) {
+    return jsonError(
+      409,
+      'PREVIEW_URL_MISMATCH',
+      'The recorded preview URL no longer matches the Cloudflare deployment',
     );
   }
 
@@ -504,6 +541,10 @@ function readLastPreview(value: unknown): LastPreview | null {
     evaluation_id: evaluationId,
     deployed_at: deployedAt,
   };
+}
+
+function normalizeUrl(value: string): string {
+  return value.trim().replace(/\/+$/, '');
 }
 
 function readNonEmptyString(value: unknown): string | null {

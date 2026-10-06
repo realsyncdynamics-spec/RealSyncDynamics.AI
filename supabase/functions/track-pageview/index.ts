@@ -23,10 +23,13 @@ Deno.serve(async (req) => {
 
   // Fail closed: ohne Salt würden ungesalzene, praktisch umkehrbare Hashes
   // geschrieben. Lieber kein Pageview als ein schwach pseudonymisierter.
+  // Kein 500 an den Client — fehlende Konfiguration ist kein Request-Fehler
+  // und darf die öffentliche Seite nicht mit Serverfehlern belasten.
   const HASH_SALT = Deno.env.get('PAGEVIEW_HASH_SALT') ?? '';
   if (!HASH_SALT) {
     console.error('track-pageview: PAGEVIEW_HASH_SALT is not set — refusing to write unsalted hashes');
-    return jsonError(500, 'CONFIG', 'PAGEVIEW_HASH_SALT is not configured');
+    // 204 darf keinen Body tragen — `new Response(body, { status: 204 })` wirft.
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   let body: { path?: string; referrer?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string };

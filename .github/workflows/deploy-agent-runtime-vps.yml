@@ -10,6 +10,9 @@ on:
       - 'apps/agent-runtime/**'
       - 'deploy/agent-runtime-vps/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: agent-runtime-vps-production
   cancel-in-progress: false
@@ -96,15 +99,35 @@ jobs:
           ENV_TMP="$(mktemp)"
           trap 'rm -f "$ENV_TMP"' EXIT
 
-          {
-            printf 'AGENT_RUNTIME_API_TOKEN=%s\n' "$AGENT_RUNTIME_API_TOKEN"
-            printf 'XAI_API_KEY=%s\n' "$XAI_API_KEY"
-            printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
-            printf 'SUPABASE_SERVICE_ROLE_KEY=%s\n' "$SUPABASE_SERVICE_ROLE_KEY"
-            printf 'AGENT_RUNTIME_HOST_BIND=127.0.0.1\n'
-            printf 'AGENT_RUNTIME_HOST_PORT=8787\n'
-            printf 'AGENT_RUNTIME_IMAGE_TAG=latest\n'
-          } > "$ENV_TMP"
+          python - "$ENV_TMP" <<'PY'
+          import os
+          import sys
+
+          def compose_double_quoted(value: str) -> str:
+              escaped = (
+                  value
+                  .replace("\\", "\\\\")
+                  .replace('"', '\\"')
+                  .replace("$", "$")
+                  .replace("\r", "\\r")
+                  .replace("\n", "\\n")
+              )
+              return f'"{escaped}"'
+
+          keys = (
+              "AGENT_RUNTIME_API_TOKEN",
+              "XAI_API_KEY",
+              "SUPABASE_URL",
+              "SUPABASE_SERVICE_ROLE_KEY",
+          )
+
+          with open(sys.argv[1], "w", encoding="utf-8", newline="\n") as env_file:
+              for key in keys:
+                  env_file.write(f"{key}={compose_double_quoted(os.environ[key])}\n")
+              env_file.write("AGENT_RUNTIME_HOST_BIND=127.0.0.1\n")
+              env_file.write("AGENT_RUNTIME_HOST_PORT=8787\n")
+              env_file.write("AGENT_RUNTIME_IMAGE_TAG=latest\n")
+          PY
 
           scp -i ~/.ssh/deploy_key -P "$VPS_SSH_PORT" -o ConnectTimeout=15 \
             "$ENV_TMP" \
@@ -143,20 +166,41 @@ jobs:
           fi
 
           HAD_PREVIOUS=0
-          if docker image inspect realsync-agent-runtime:latest >/dev/null 2>&1; then
+          if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
+            CURRENT_IMAGE="$(docker inspect -f '{{.Image}}' "$CONTAINER")"
+            docker image tag "$CURRENT_IMAGE" realsync-agent-runtime:previous
+            HAD_PREVIOUS=1
+          elif docker image inspect realsync-agent-runtime:latest >/dev/null 2>&1; then
             docker image tag realsync-agent-runtime:latest realsync-agent-runtime:previous
             HAD_PREVIOUS=1
           fi
 
           rollback() {
+            echo "Runtime deployment failed; rolling back"
+            docker compose --env-file "$ENV_FILE" down || true
             if [[ "$HAD_PREVIOUS" = "1" ]]; then
-              echo "Runtime verification failed; restoring previous image"
-              docker compose --env-file "$ENV_FILE" down || true
-              docker image tag realsync-agent-runtime:previous realsync-agent-runtime:latest
+              docker image tag realsync-agent-runtime:previous realsync-agent-runtime:latest || true
               docker compose --env-file "$ENV_FILE" up -d --no-build || true
+            else
+              echo "No previous runtime image exists; broken deployment left stopped"
             fi
           }
 
+          DEPLOY_STARTED=0
+          DEPLOY_VERIFIED=0
+
+          on_failure() {
+            rc=$?
+            trap - ERR
+            set +e
+            if [[ "$DEPLOY_STARTED" = "1" && "$DEPLOY_VERIFIED" != "1" ]]; then
+              rollback
+            fi
+            exit "$rc"
+          }
+
+          trap on_failure ERR
+          DEPLOY_STARTED=1
           docker compose --env-file "$ENV_FILE" up -d --build
 
           STATUS=
@@ -168,7 +212,6 @@ jobs:
 
           if [[ "$STATUS" != "healthy" ]]; then
             docker compose --env-file "$ENV_FILE" logs --tail=100 agent-runtime || true
-            rollback
             exit 4
           fi
 
@@ -177,7 +220,6 @@ jobs:
           UNAUTH="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/agents)"
           if [[ "$UNAUTH" != "401" ]]; then
             echo "ERROR: unauthenticated /agents returned $UNAUTH instead of 401"
-            rollback
             exit 5
           fi
 
@@ -185,10 +227,11 @@ jobs:
             'wget -qO- --header="Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" http://127.0.0.1:8787/agents >/dev/null'
           then
             echo "ERROR: authenticated /agents smoke failed"
-            rollback
             exit 6
           fi
 
+          DEPLOY_VERIFIED=1
+          trap - ERR
           docker compose --env-file "$ENV_FILE" ps
           echo "agent-runtime local health/auth verification passed"
           REMOTE
@@ -200,8 +243,8 @@ jobs:
           {
             echo "## Agent Runtime VPS"
             echo
-            echo "- bind: `127.0.0.1:8787`"
+            echo '- bind: `127.0.0.1:8787`'
             echo "- public routing: not configured by this workflow"
             echo "- telephony: not configured by this workflow"
-            echo "- job status: `${{ job.status }}`"
+            echo '- job status: `${{ job.status }}`'
           } >> "$GITHUB_STEP_SUMMARY"

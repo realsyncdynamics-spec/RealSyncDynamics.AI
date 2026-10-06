@@ -78,10 +78,10 @@ curl -fsS http://127.0.0.1:8787/health
 test "$(curl -sS -o /dev/null -w '%{http_code}' \
   http://127.0.0.1:8787/agents)" = "401"
 
-# Authenticated route must answer.
-test "$(curl -sS -o /dev/null -w '%{http_code}' \
-  -H "Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" \
-  http://127.0.0.1:8787/agents)" = "200"
+# Authenticated route must answer. The token stays inside the container env.
+docker compose --env-file .env exec -T agent-runtime sh -c \
+  'wget -qO- --header="Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" \
+  http://127.0.0.1:8787/agents >/dev/null'
 ```
 
 Only after these checks pass is the host side ready for Voice configuration.

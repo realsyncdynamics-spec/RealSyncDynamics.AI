@@ -72,7 +72,7 @@ describe('SiteOS publish-export — governed GO contract', () => {
 
   it('client sends only identity, base URL and explicit confirmations — never blueprint/gate claims', () => {
     const start = api.indexOf('export async function exportPublish');
-    const end = api.indexOf('// ── Anonymer Build', start);
+    const end = api.indexOf('export interface PublishPreviewResponse', start);
     const src = api.slice(start, end);
     expect(src).toContain("invoke('siteos/publish-export'");
     expect(src).toContain('blueprint_id: string');

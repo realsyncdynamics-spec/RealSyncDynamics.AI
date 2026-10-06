@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AssistentChip } from '../../src/components/AssistentChip';
 
@@ -115,6 +115,28 @@ describe('<AssistentChip>', () => {
     expect(btn.className).not.toMatch(/pointer-events-none/);
     expect(btn).not.toHaveAttribute('aria-hidden');
     expect(btn).toHaveAttribute('tabindex', '0');
+  });
+
+  it('starts observing a hero CTA inserted after the chip mounts', async () => {
+    const { getByLabelText } = renderChip({ path: '/', withHero: false });
+    const btn = getByLabelText('Assistent öffnen');
+    expect(btn.className).toMatch(/opacity-100/);
+
+    const lateHero = document.createElement('div');
+    lateHero.setAttribute('data-hero-cta', '');
+    document.body.appendChild(lateHero);
+
+    await waitFor(() => {
+      expect(observers.some((observer) => observer.targets.includes(lateHero))).toBe(true);
+    });
+
+    act(() => {
+      observers.forEach((observer) => observer.trigger(true));
+    });
+    expect(btn.className).toMatch(/opacity-0/);
+    expect(btn).toHaveAttribute('aria-hidden', 'true');
+
+    lateHero.remove();
   });
 
   it('renders visible on non-landing routes when no [data-hero-cta] is present', () => {

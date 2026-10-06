@@ -8,7 +8,7 @@
 //   POST /functions/v1/siteos/publish-gate     Freigabebewertung (§7)
 //   POST /functions/v1/siteos/publish-approve  Freigabe erteilen + neu bewerten
 //   POST /functions/v1/siteos/publish-export   ausdrückliches GO → geprüftes Bündel (kein Upload)
-//   POST /functions/v1/siteos/publish-preview  geprüftes Bündel → Cloudflare Preview (nie Production)
+//   POST /functions/v1/siteos/publish-preview  frische Gate-Prüfung → Cloudflare Preview (nie Production)
 //   POST /functions/v1/siteos/build-anon       Beschreibung -> Blueprint, ohne Konto
 //   POST /functions/v1/siteos/refine-anon      Anweisung -> neue Version, ohne Konto
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto

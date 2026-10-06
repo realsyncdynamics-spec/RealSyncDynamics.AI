@@ -158,6 +158,9 @@ export async function listWebsitesForTenant(tenantId: string): Promise<TenantWeb
   return (data ?? []) as TenantWebsite[];
 }
 
+/** Rollen, die Websites anlegen dürfen (wie public.is_tenant_writer, RLS 20261005150000). */
+export const WEBSITE_WRITER_ROLES: ReadonlySet<string> = new Set(['owner', 'admin', 'dpo', 'editor']);
+
 /**
  * Adds a website to the tenant's registry. Domain is normalised
  * lowercase + scheme-stripped. Caller is responsible for being a
@@ -180,7 +183,12 @@ export async function addWebsiteForTenant(
     })
     .select('id, tenant_id, domain, plan_tier, status, created_at')
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // RLS (20261005150000): nur owner/admin/dpo/editor legen Websites an.
+    if (error.code === '42501') throw new Error('Ihre Rolle darf keine Websites anlegen.');
+    if (error.code === '23505') throw new Error('Diese Domain ist bereits registriert.');
+    throw new Error(error.message);
+  }
   return data as TenantWebsite;
 }
 

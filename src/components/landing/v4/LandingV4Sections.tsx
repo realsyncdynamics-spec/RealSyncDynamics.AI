@@ -195,8 +195,8 @@ export function V4Hero() {
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan">
             Free Audit starten <Arrow />
           </Link>
-          <Link className="btn-ghost" to={V4_ROUTES.dashboardDemo}>
-            Live Dashboard ansehen
+          <Link className="btn-ghost" to={V4_ROUTES.runtime}>
+            Runtime ansehen
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>

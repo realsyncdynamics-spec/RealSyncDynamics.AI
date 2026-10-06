@@ -15,10 +15,17 @@ import {
 import type {
   AppointmentInsert,
   AppointmentRow,
+  ResolveSessionContextQuery,
   VoiceExecutionRow,
+  VoiceSessionContext,
+  VoiceSessionInsert,
+  VoiceSessionRow,
+  VoiceSessionStatus,
+  VoiceSessionStatusPatch,
   VoiceStore,
   VoiceToolRequestRow,
 } from './voice-store.js';
+import type { VoiceProviderId } from '../voice-provider-types.js';
 import type { VoiceToolName } from '../voice-types.js';
 
 /** Minimaler PostgREST-Client — in Tests gemockt, keine Netzwerk-Calls. */
@@ -53,6 +60,84 @@ export function createSupabaseVoiceStore(options: SupabaseVoiceStoreOptions): Vo
   const db = options.client;
 
   return {
+    async resolveSessionContext(query: ResolveSessionContextQuery) {
+      if ('numberBindingId' in query && query.numberBindingId) {
+        const binding = await db.selectOne(
+          'voice_number_bindings',
+          'id,tenant_id,bot_id,status',
+          { id: query.numberBindingId, status: 'active' },
+        );
+        if (!binding) return null;
+        const tenantId = String(binding.tenant_id);
+        const botId = String(binding.bot_id);
+        const config = await db.selectOne(
+          'voice_bot_configs',
+          'tenant_id,bot_id,provider,model,voice,language,disclosure_text,policy_ref,offered_tools,status',
+          { bot_id: botId, tenant_id: tenantId, status: 'active' },
+        );
+        if (!config) return null;
+        if (String(config.tenant_id) !== tenantId) return null;
+        return mapSessionContext(config, String(binding.id));
+      }
+      if ('botId' in query && query.botId) {
+        const config = await db.selectOne(
+          'voice_bot_configs',
+          'tenant_id,bot_id,provider,model,voice,language,disclosure_text,policy_ref,offered_tools,status',
+          { bot_id: query.botId, status: 'active' },
+        );
+        if (!config) return null;
+        return mapSessionContext(config, null);
+      }
+      return null;
+    },
+
+    async insertSession(row: VoiceSessionInsert) {
+      if (!row.tenantId || !row.botId || !row.model || !row.policyRef || !row.provider) {
+        throw new Error('supabase-voice-store: session requires tenantId, botId, provider, model, policyRef');
+      }
+      const inserted = await db.insert('voice_sessions', {
+        tenant_id: row.tenantId,
+        bot_id: row.botId,
+        number_binding_id: row.numberBindingId ?? null,
+        provider: row.provider,
+        model: row.model,
+        policy_ref: row.policyRef,
+        correlation_id: row.correlationId ?? undefined,
+        provider_session_ref: row.providerSessionRef ?? null,
+        telephony_call_ref: row.telephonyCallRef ?? null,
+        status: row.status ?? 'idle',
+        disclosure_played_at: row.disclosurePlayedAt ?? null,
+        consent_purposes: row.consentPurposes ?? [],
+        kill_switch: row.killSwitch ?? false,
+      });
+      return mapSessionRow(inserted);
+    },
+
+    async updateSessionStatus(tenantId, sessionId, patch: VoiceSessionStatusPatch) {
+      const body: Record<string, unknown> = {};
+      if (patch.status !== undefined) body.status = patch.status;
+      if (patch.disclosurePlayedAt !== undefined) body.disclosure_played_at = patch.disclosurePlayedAt;
+      if (patch.endedAt !== undefined) body.ended_at = patch.endedAt;
+      if (patch.providerSessionRef !== undefined) body.provider_session_ref = patch.providerSessionRef;
+      if (patch.killSwitch !== undefined) body.kill_switch = patch.killSwitch;
+      if (Object.keys(body).length === 0) {
+        const existing = await db.selectOne('voice_sessions', '*', {
+          id: sessionId,
+          tenant_id: tenantId,
+        });
+        return existing ? mapSessionRow(existing) : null;
+      }
+      try {
+        const updated = await db.update('voice_sessions', body, {
+          id: sessionId,
+          tenant_id: tenantId,
+        });
+        return mapSessionRow(updated);
+      } catch {
+        return null;
+      }
+    },
+
     async insertToolRequest(row) {
       const inserted = await db.insert('voice_tool_requests', {
         ...(row.id ? { id: row.id } : {}),
@@ -351,6 +436,50 @@ export function createPostgrestVoiceDbClient(options: PostgrestClientOptions): V
       if (!Array.isArray(data)) return [];
       return data.filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null);
     },
+  };
+}
+
+function mapSessionContext(
+  row: Record<string, unknown>,
+  numberBindingId: string | null,
+): VoiceSessionContext {
+  const offered = Array.isArray(row.offered_tools)
+    ? row.offered_tools.map((t) => String(t))
+    : [];
+  return {
+    tenantId: String(row.tenant_id),
+    botId: String(row.bot_id),
+    numberBindingId,
+    provider: row.provider as VoiceProviderId,
+    model: String(row.model),
+    voice: row.voice == null ? null : String(row.voice),
+    language: String(row.language ?? 'de-DE'),
+    policyRef: String(row.policy_ref),
+    disclosureText: String(row.disclosure_text ?? ''),
+    offeredTools: offered,
+  };
+}
+
+function mapSessionRow(row: Record<string, unknown>): VoiceSessionRow {
+  return {
+    id: String(row.id),
+    tenantId: String(row.tenant_id),
+    botId: String(row.bot_id),
+    numberBindingId: row.number_binding_id == null ? null : String(row.number_binding_id),
+    provider: row.provider as VoiceProviderId,
+    model: String(row.model),
+    policyRef: String(row.policy_ref),
+    providerSessionRef: row.provider_session_ref == null ? null : String(row.provider_session_ref),
+    telephonyCallRef: row.telephony_call_ref == null ? null : String(row.telephony_call_ref),
+    correlationId: String(row.correlation_id ?? ''),
+    status: (row.status as VoiceSessionStatus) ?? 'idle',
+    disclosurePlayedAt: row.disclosure_played_at ? String(row.disclosure_played_at) : null,
+    consentPurposes: Array.isArray(row.consent_purposes)
+      ? row.consent_purposes.map((p) => String(p))
+      : [],
+    killSwitch: Boolean(row.kill_switch),
+    startedAt: String(row.started_at ?? ''),
+    endedAt: row.ended_at ? String(row.ended_at) : null,
   };
 }
 

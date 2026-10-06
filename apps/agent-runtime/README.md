@@ -162,14 +162,61 @@ Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
   (`src/voice/supabase-voice-store.ts`) aus `SUPABASE_URL` +
   `SUPABASE_SERVICE_ROLE_KEY` — nie loggen. Ohne Store → jedes Tool
   fail-closed `failed`/`not_configured`. Memory-Store nur explizit in Tests.
-- **Voraussetzung `voice_sessions`:** Der Supabase-Store erwartet eine
-  existierende Zeile in `public.voice_sessions` mit passendem
-  `tenant_id`/`bot_id` (FK `voice_tool_requests.session_id` →
-  `voice_sessions.id`, Trigger `voice_enforce_tenant_consistency`). Die
-  Session-Runtime legt diese Zeile in PR 4 bewusst **nicht** an. Bis das
-  geschieht, schlagen Store-Writes fail-closed mit `store_error` fehl
-  (`verified: false`, Ergebnis geht an das Modell — kein hängender
-  Tool-Call). Store-Fehlertexte/Secrets erscheinen nie in `output`.
+- **`voice_sessions`:** Ist ein Store konfiguriert, legt die Session-Runtime
+  VOR dem Provider-Start eine Zeile in `public.voice_sessions` an (Snapshot
+  aus `voice_bot_configs` / `voice_number_bindings`, status=`active`). Deren
+  `id` ist die kanonische `sessionId` für Tool-Requests und Evidenz.
+  Caller-`tenantId`/`policy`/`disclosure` überschreiben den DB-Snapshot nie.
+  Fehlt aktiver Config/Binding → `config_not_found` (kein Provider-Start).
+  `insertSession`-Fehler → `store_error` (kein Provider-Start). Ohne Store
+  bleibt der Legacy-Pfad (Tools `not_configured`) — kein vorgetäuschter Erfolg.
+
+## Betrieb / Deploy
+
+**Status: nicht deployt.** Im Repo gibt es für `apps/agent-runtime` kein
+Hoster-Deploy-Muster (kein `fly.toml` / `render.yaml` / Railway / dedizierter
+Deploy-Workflow). Vorhanden sind:
+
+- `apps/agent-runtime/Dockerfile` (Node 20, Port `8787`)
+- `apps/agent-runtime/docker-compose.yml` (internes Netz, Healthcheck auf `/health`)
+- CI: `.github/workflows/backend-services-ci.yml` → `npm run typecheck && npm test`
+
+### Docker-Build / Run
+
+```bash
+cd apps/agent-runtime
+docker build -t realsync-agent-runtime .
+docker run --rm -p 8787:8787 \
+  -e NODE_ENV=production \
+  -e PORT=8787 \
+  -e AGENT_RUNTIME_API_TOKEN=… \
+  -e XAI_API_KEY=… \
+  -e SUPABASE_URL=… \
+  -e SUPABASE_SERVICE_ROLE_KEY=… \
+  realsync-agent-runtime
+```
+
+Health: `GET /health` (ohne Auth).
+
+### Env-Namen (keine Werte)
+
+| Name | Pflicht | Zweck |
+|------|---------|--------|
+| `AGENT_RUNTIME_API_TOKEN` | ja | Bearer für `/agents`, `/run-agent`, `/voice-tool` |
+| `PORT` | nein (8787) | Listen-Port |
+| `XAI_API_KEY` | für Voice | Grok Realtime — nie loggen |
+| `SUPABASE_URL` | für Persistenz | PostgREST-Base |
+| `SUPABASE_SERVICE_ROLE_KEY` | für Persistenz | Service-Role — nie loggen, nie im Browser |
+| `AGENT_RUNTIME_VOICE_TOOL_BASE_URL` | nein | Base-URL für POST `/voice-tool` |
+| `AGENT_RUNTIME_VOICE_TOOL_TIMEOUT_MS` | nein (5000) | Timeout Session-Runtime → `/voice-tool` |
+
+Kein Wrangler, kein KV, keine Secrets im Code außer Env-Lesen.
+
+### HTTP-Einstieg Voice-Session
+
+Es gibt **keinen** HTTP-Endpoint, der eine Voice-Session startet.
+Vorhanden: `GET /health`, `GET /agents`, `POST /run-agent`, `POST /voice-tool`.
+`VoiceSessionRuntime.startSession` ist die programmatische API.
 
 ## Lokal entwickeln
 

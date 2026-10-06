@@ -1,8 +1,5 @@
 /**
- * Persistenz-Port für Voice Tool Gateway (PR 4).
- *
- * apps/agent-runtime hatte bisher keinen DB-Zugriff. Der Port hält
- * Service-Role-Schreiben tenant-gescoped.
+ * Persistenz-Port für Voice Tool Gateway + Session-Persistenz.
  *
  * MemoryVoiceStore: nur explizit in Tests injizieren — nie als Produktiv-Default.
  * Produktion: SupabaseVoiceStore (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).
@@ -10,6 +7,7 @@
 
 import { randomUUID } from 'node:crypto';
 
+import type { VoiceProviderId } from '../voice-provider-types.js';
 import type { VoicePolicyDecision, VoiceRiskLevel, VoiceToolName, VoiceVerdict } from '../voice-types.js';
 import {
   VOICE_GENESIS_HASH,
@@ -69,7 +67,110 @@ export interface AppointmentRow {
   status: string;
 }
 
+export type VoiceSessionStatus =
+  | 'idle'
+  | 'consent_required'
+  | 'listening'
+  | 'transcribing'
+  | 'reasoning'
+  | 'policy_check'
+  | 'awaiting_confirmation'
+  | 'speaking'
+  | 'killed'
+  | 'rate_limited'
+  | 'ended'
+  | 'failed';
+
+export interface VoiceSessionContext {
+  tenantId: string;
+  botId: string;
+  numberBindingId: string | null;
+  provider: VoiceProviderId;
+  model: string;
+  voice: string | null;
+  language: string;
+  policyRef: string;
+  disclosureText: string;
+  offeredTools: string[];
+}
+
+export type ResolveSessionContextQuery =
+  | { botId: string; numberBindingId?: never }
+  | { numberBindingId: string; botId?: never };
+
+export interface VoiceSessionInsert {
+  tenantId: string;
+  botId: string;
+  numberBindingId?: string | null;
+  provider: VoiceProviderId;
+  model: string;
+  policyRef: string;
+  correlationId?: string;
+  providerSessionRef?: string | null;
+  telephonyCallRef?: string | null;
+  status?: VoiceSessionStatus;
+  consentPurposes?: string[];
+  killSwitch?: boolean;
+  disclosurePlayedAt?: string | null;
+}
+
+export interface VoiceSessionRow {
+  id: string;
+  tenantId: string;
+  botId: string;
+  numberBindingId: string | null;
+  provider: VoiceProviderId;
+  model: string;
+  policyRef: string;
+  providerSessionRef: string | null;
+  telephonyCallRef: string | null;
+  correlationId: string;
+  status: VoiceSessionStatus;
+  disclosurePlayedAt: string | null;
+  consentPurposes: string[];
+  killSwitch: boolean;
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export type VoiceSessionStatusPatch = Partial<{
+  status: VoiceSessionStatus;
+  disclosurePlayedAt: string | null;
+  endedAt: string | null;
+  providerSessionRef: string | null;
+  killSwitch: boolean;
+}>;
+
+export interface VoiceBotConfigSeed {
+  tenantId: string;
+  botId: string;
+  provider: VoiceProviderId;
+  model: string;
+  voice?: string | null;
+  language?: string;
+  disclosureText: string;
+  policyRef: string;
+  offeredTools?: string[];
+  status?: 'draft' | 'active' | 'paused';
+}
+
+export interface VoiceNumberBindingSeed {
+  id?: string;
+  tenantId: string;
+  botId: string;
+  phoneNumberE164: string;
+  telephonyProvider?: 'telnyx' | 'twilio' | 'sip' | 'test';
+  status?: 'pending' | 'active' | 'released';
+}
+
 export interface VoiceStore {
+  resolveSessionContext(query: ResolveSessionContextQuery): Promise<VoiceSessionContext | null>;
+  insertSession(row: VoiceSessionInsert): Promise<VoiceSessionRow>;
+  updateSessionStatus(
+    tenantId: string,
+    sessionId: string,
+    patch: VoiceSessionStatusPatch,
+  ): Promise<VoiceSessionRow | null>;
   insertToolRequest(row: Omit<VoiceToolRequestRow, 'id'> & { id?: string }): Promise<VoiceToolRequestRow>;
   confirmToolRequest(
     tenantId: string,
@@ -96,17 +197,120 @@ export interface VoiceStore {
   getAppointment(tenantId: string, appointmentId: string): Promise<AppointmentRow | null>;
 }
 
+export interface MemoryVoiceStore extends VoiceStore {
+  seedBotConfig(config: VoiceBotConfigSeed): void;
+  seedNumberBinding(binding: VoiceNumberBindingSeed): string;
+  listSessions(tenantId: string): VoiceSessionRow[];
+}
+
 /** In-Memory-Store — ausschließlich für Unit-Tests (explizit injizieren). */
-export function createMemoryVoiceStore(): VoiceStore {
+export function createMemoryVoiceStore(): MemoryVoiceStore {
   const requests = new Map<string, VoiceToolRequestRow>();
   const executions = new Map<string, VoiceExecutionRow>();
   const evidenceByTenantSession = new Map<string, VoiceEvidenceRecord[]>();
   const appointments = new Map<string, AppointmentInsert & { id: string; status: string }>();
+  const configsByBot = new Map<string, VoiceBotConfigSeed & { status: 'draft' | 'active' | 'paused' }>();
+  const bindings = new Map<string, VoiceNumberBindingSeed & { id: string; status: 'pending' | 'active' | 'released' }>();
+  const sessions = new Map<string, VoiceSessionRow>();
 
   const scopedKey = (tenantId: string, id: string) => `${tenantId}:${id}`;
   const evidenceKey = (tenantId: string, sessionId: string) => `${tenantId}:${sessionId}`;
 
+  function configToContext(
+    config: VoiceBotConfigSeed & { status: string },
+    numberBindingId: string | null,
+  ): VoiceSessionContext {
+    return {
+      tenantId: config.tenantId,
+      botId: config.botId,
+      numberBindingId,
+      provider: config.provider,
+      model: config.model,
+      voice: config.voice ?? null,
+      language: config.language ?? 'de-DE',
+      policyRef: config.policyRef,
+      disclosureText: config.disclosureText,
+      offeredTools: [...(config.offeredTools ?? [])],
+    };
+  }
+
   return {
+    seedBotConfig(config) {
+      configsByBot.set(config.botId, {
+        ...config,
+        status: config.status ?? 'active',
+        offeredTools: [...(config.offeredTools ?? [])],
+      });
+    },
+
+    seedNumberBinding(binding) {
+      const id = binding.id ?? randomUUID();
+      bindings.set(id, {
+        ...binding,
+        id,
+        status: binding.status ?? 'active',
+        telephonyProvider: binding.telephonyProvider ?? 'test',
+      });
+      return id;
+    },
+
+    listSessions(tenantId) {
+      return [...sessions.values()].filter((s) => s.tenantId === tenantId);
+    },
+
+    async resolveSessionContext(query) {
+      if ('numberBindingId' in query && query.numberBindingId) {
+        const binding = bindings.get(query.numberBindingId);
+        if (!binding || binding.status !== 'active') return null;
+        const config = configsByBot.get(binding.botId);
+        if (!config || config.status !== 'active') return null;
+        if (config.tenantId !== binding.tenantId) return null;
+        return configToContext(config, binding.id);
+      }
+      if ('botId' in query && query.botId) {
+        const config = configsByBot.get(query.botId);
+        if (!config || config.status !== 'active') return null;
+        return configToContext(config, null);
+      }
+      return null;
+    },
+
+    async insertSession(row) {
+      if (!row.tenantId || !row.botId || !row.model || !row.policyRef || !row.provider) {
+        throw new Error('voice-store: session requires tenantId, botId, provider, model, policyRef');
+      }
+      const id = randomUUID();
+      const full: VoiceSessionRow = {
+        id,
+        tenantId: row.tenantId,
+        botId: row.botId,
+        numberBindingId: row.numberBindingId ?? null,
+        provider: row.provider,
+        model: row.model,
+        policyRef: row.policyRef,
+        providerSessionRef: row.providerSessionRef ?? null,
+        telephonyCallRef: row.telephonyCallRef ?? null,
+        correlationId: row.correlationId ?? randomUUID(),
+        status: row.status ?? 'idle',
+        disclosurePlayedAt: row.disclosurePlayedAt ?? null,
+        consentPurposes: [...(row.consentPurposes ?? [])],
+        killSwitch: row.killSwitch ?? false,
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+      };
+      sessions.set(scopedKey(full.tenantId, id), full);
+      return full;
+    },
+
+    async updateSessionStatus(tenantId, sessionId, patch) {
+      const key = scopedKey(tenantId, sessionId);
+      const row = sessions.get(key);
+      if (!row || row.tenantId !== tenantId) return null;
+      const next: VoiceSessionRow = { ...row, ...patch };
+      sessions.set(key, next);
+      return next;
+    },
+
     async insertToolRequest(row) {
       const id = row.id ?? randomUUID();
       const full: VoiceToolRequestRow = { ...row, id, decidedBy: 'policy-engine' };

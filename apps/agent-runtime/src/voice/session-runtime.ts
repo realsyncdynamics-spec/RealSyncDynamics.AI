@@ -1,16 +1,23 @@
 /**
- * Voice Session-Runtime (PR 3 + PR 4 Anbindung).
+ * Voice Session-Runtime (PR 3–4 + Session-Persistenz).
  *
  * Verdrahtet den Grok-Realtime-Adapter mit `ws` und leitet jeden
  * `tool.call` an POST /voice-tool (Policy) und anschließend an das
- * Tool-Gateway (Ausführung/Verifikation/Evidenz, PR 4) weiter.
+ * Tool-Gateway (Ausführung/Verifikation/Evidenz) weiter.
+ *
+ * Mit konfiguriertem VoiceStore:
+ *  - Kontext aus voice_bot_configs / voice_number_bindings (status=active)
+ *  - voice_sessions-Zeile VOR Provider-Start; deren uuid = sessionId
+ *  - Caller-tenantId/policy/disclosure überschreiben den DB-Snapshot nie
  *
  * Grenzen:
- *  - tenantId/botId ausschließlich aus dem Session-Kontext.
+ *  - tenantId/botId ausschließlich aus Session-Kontext / DB-Snapshot.
  *  - Disclosure ist Pflicht und wird verbatim gesprochen.
  *  - Kein voice_channels / bot_agents. Keine Secrets im Code/Log.
  *  - evaluate() in policy-engine.ts bleibt unberührt.
  */
+
+import { randomUUID } from 'node:crypto';
 
 import {
   GrokProvider,
@@ -18,6 +25,7 @@ import {
   type RealtimeSocketFactory,
 } from '../providers/grok-provider.js';
 import {
+  CONTRACT_TOOL_NAMES,
   isContractToolName,
   type AudioFormat,
   type ProviderToolCall,
@@ -26,7 +34,9 @@ import {
   type VoiceToolDefinition,
   type VoiceToolResult,
 } from '../voice-provider-types.js';
-import { VOICE_AGENT_ID, type VoiceConsent } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoiceConsent, type VoiceToolName } from '../voice-types.js';
+import { VOICE_TOOLS } from '../voice-tools.js';
+import { createSupabaseVoiceStoreFromEnv } from './supabase-voice-store.js';
 import {
   createVoiceToolGateway,
   type VoiceToolGateway,
@@ -37,29 +47,33 @@ import {
   type VoiceToolClient,
   type VoiceToolSessionSnapshot,
 } from './voice-tool-client.js';
+import type { VoiceStore } from './voice-store.js';
 import { createWsSocketFactory } from './ws-socket-factory.js';
 
 export interface VoiceSessionStartRequest {
-  /** Serverseitig aufgelöst (voice_number_bindings) — nie aus URL/Body. */
-  tenantId: string;
-  botId: string;
-  sessionId: string;
-  correlationId: string;
-  model: string;
+  /**
+   * Ohne Store: Pflicht (serverseitig aufgelöst).
+   * Mit Store: wird vom DB-Snapshot überschrieben / ignoriert.
+   */
+  tenantId?: string;
+  /** Mit Store: botId oder numberBindingId zur Auflösung. */
+  botId?: string;
+  numberBindingId?: string;
+  /** Ohne Store: Pflicht. Mit Store: wird durch voice_sessions.id ersetzt. */
+  sessionId?: string;
+  correlationId?: string;
+  model?: string;
   voice?: string;
-  language: string;
+  language?: string;
   instructions: string;
   /**
-   * Pflicht-Hinweis (Art. 50 EU AI Act) aus voice_bot_configs.disclosure_text.
-   * Wird verbatim gesprochen. Leer/fehlend → fail-closed.
+   * Ohne Store: Pflicht.
+   * Mit Store: Snapshot aus voice_bot_configs.disclosure_text — Caller-Wert ignoriert.
    */
-  disclosureText: string;
-  /**
-   * Optionale Begrüßung NACH der Disclosure. Kein Default im Code —
-   * Marketing-Story-Texte gehören hierher, nicht in disclosureText.
-   */
+  disclosureText?: string;
   greetingText?: string;
-  tools: VoiceToolDefinition[];
+  /** Tool-Schemas; mit Store auf Schnittmenge Contract ∩ offered_tools gefiltert. */
+  tools?: VoiceToolDefinition[];
   inputAudio: AudioFormat;
   outputAudio: AudioFormat;
   session: VoiceToolSessionSnapshot;
@@ -67,28 +81,21 @@ export interface VoiceSessionStartRequest {
 }
 
 export interface SessionRuntimeOptions {
-  /** WebSocket-Factory. Default: createWsSocketFactory() (`ws`). */
   socketFactory?: RealtimeSocketFactory;
-  /** xAI-API-Key. Default: process.env.XAI_API_KEY — nie loggen. */
   getApiKey?: ApiKeyGetter;
-  /** HTTP-Client für /voice-tool. Default: createVoiceToolClient aus Env. */
   voiceToolClient?: VoiceToolClient;
-  /** Base-URL für /voice-tool. Default: AGENT_RUNTIME_VOICE_TOOL_BASE_URL oder http://127.0.0.1:PORT. */
   voiceToolBaseUrl?: string;
-  /** Timeout für /voice-tool in ms. Default: AGENT_RUNTIME_VOICE_TOOL_TIMEOUT_MS oder 5000. */
   voiceToolTimeoutMs?: number;
-  /** Bearer-Token-Getter. Default: AGENT_RUNTIME_API_TOKEN. */
   getApiToken?: () => string | null | undefined;
-  /** Passthrough für Provider-Events (Audio, Transkripte, …). */
   onEvent?: (event: VoiceProviderEvent) => void;
-  /** Injizierbarer Provider (Tests). Default: neuer GrokProvider. */
   provider?: GrokProvider;
-  /**
-   * Tool-Gateway (Ausführung/Evidenz).
-   * Default: createVoiceToolGateway() — Supabase aus Env, sonst fail-closed
-   * not_configured. Memory nur in Tests explizit injizieren.
-   */
   toolGateway?: VoiceToolGateway;
+  /**
+   * Persistenz. Explizit setzen (Tests) oder weglassen → Supabase aus Env.
+   * Ohne Store: Legacy-Start ohne voice_sessions (Tools fail-closed not_configured).
+   */
+  store?: VoiceStore | null;
+  env?: NodeJS.Dict<string | undefined>;
 }
 
 interface LiveSession {
@@ -98,7 +105,8 @@ interface LiveSession {
   readonly offeredTools: ReadonlySet<string>;
   readonly session: VoiceToolSessionSnapshot;
   readonly consent: VoiceConsent | null;
-  /** Autoritative Zähler — vor jedem /voice-tool-Aufruf reservieren. */
+  readonly policyRef: string | null;
+  readonly persist: boolean;
   turnCount: number;
   toolCount: number;
 }
@@ -107,6 +115,7 @@ export class VoiceSessionRuntime {
   private readonly provider: GrokProvider;
   private readonly voiceTool: VoiceToolClient;
   private readonly toolGateway: VoiceToolGateway;
+  private readonly store: VoiceStore | null;
   private readonly onEvent: ((event: VoiceProviderEvent) => void) | undefined;
   private readonly sessions = new Map<string, LiveSession>();
 
@@ -126,60 +135,27 @@ export class VoiceSessionRuntime {
         getApiToken: options.getApiToken ?? (() => process.env.AGENT_RUNTIME_API_TOKEN),
         timeoutMs: options.voiceToolTimeoutMs ?? defaultVoiceToolTimeoutMs(),
       });
-    this.toolGateway = options.toolGateway ?? createVoiceToolGateway();
+
+    const env = options.env ?? process.env;
+    this.store =
+      options.store === undefined
+        ? createSupabaseVoiceStoreFromEnv({ env })
+        : options.store;
+
+    this.toolGateway =
+      options.toolGateway ??
+      (this.store
+        ? createVoiceToolGateway({ store: this.store })
+        : createVoiceToolGateway({ env: {} }));
     this.onEvent = options.onEvent;
   }
 
-  /** Startet eine Voice-Session. Disclosure fehlt → reject. */
+  /** Startet eine Voice-Session. Disclosure/Config fehlt → reject. */
   async startSession(request: VoiceSessionStartRequest): Promise<VoiceProviderSession> {
-    this.assertStartRequest(request);
-    if (this.sessions.has(request.sessionId)) {
-      throw new Error('voice-runtime: Session existiert bereits.');
+    if (this.store) {
+      return this.startSessionWithStore(this.store, request);
     }
-
-    const disclosureText = request.disclosureText.trim();
-    const greeting =
-      typeof request.greetingText === 'string' && request.greetingText.trim() !== ''
-        ? request.greetingText.trim()
-        : null;
-    // Greeting ist optional und NIE Disclosure — nur in Instructions, damit
-    // das Modell nach dem force_message-Disclosure begrüßen kann.
-    const instructions = greeting
-      ? `${request.instructions.trim()}\n\nBegrüßung nach dem Pflicht-Hinweis: ${greeting}`
-      : request.instructions;
-
-    const live: LiveSession = {
-      tenantId: request.tenantId,
-      botId: request.botId,
-      sessionId: request.sessionId,
-      offeredTools: new Set(request.tools.map((t) => t.name)),
-      session: { ...request.session, rateLimit: { ...request.session.rateLimit } },
-      consent: request.consent,
-      turnCount: request.session.turnCount,
-      toolCount: request.session.toolCount,
-    };
-
-    const session = await this.provider.createSession(
-      {
-        tenantId: request.tenantId,
-        botId: request.botId,
-        sessionId: request.sessionId,
-        correlationId: request.correlationId,
-        provider: 'grok',
-        model: request.model,
-        voice: request.voice,
-        language: request.language,
-        instructions,
-        disclosureText,
-        tools: request.tools,
-        inputAudio: request.inputAudio,
-        outputAudio: request.outputAudio,
-      },
-      (event) => this.handleProviderEvent(live, event),
-    );
-
-    this.sessions.set(request.sessionId, live);
-    return session;
+    return this.startSessionLegacy(request);
   }
 
   async sendAudio(sessionId: string, audio: ArrayBuffer): Promise<void> {
@@ -187,8 +163,17 @@ export class VoiceSessionRuntime {
   }
 
   async closeSession(sessionId: string): Promise<void> {
-    await this.provider.closeSession(sessionId);
-    this.sessions.delete(sessionId);
+    const live = this.sessions.get(sessionId);
+    try {
+      await this.provider.closeSession(sessionId);
+    } finally {
+      // Delete first — nur der Pfad, der die Session entfernt, finalisiert
+      // (sonst Race mit session.closed → doppelte Evidence/seq-Konflikt).
+      const removed = this.sessions.delete(sessionId);
+      if (removed && live?.persist && this.store) {
+        await this.finalizePersistedSession(this.store, live, 'ended');
+      }
+    }
   }
 
   getSessionContext(sessionId: string): { tenantId: string; botId: string; sessionId: string } | undefined {
@@ -198,9 +183,195 @@ export class VoiceSessionRuntime {
       : undefined;
   }
 
-  private assertStartRequest(request: VoiceSessionStartRequest): void {
+  private async startSessionWithStore(
+    store: VoiceStore,
+    request: VoiceSessionStartRequest,
+  ): Promise<VoiceProviderSession> {
+    const botId = typeof request.botId === 'string' ? request.botId.trim() : '';
+    const numberBindingId =
+      typeof request.numberBindingId === 'string' ? request.numberBindingId.trim() : '';
+    if (!botId && !numberBindingId) {
+      throw new Error('voice-runtime: config_not_found');
+    }
+    if (typeof request.instructions !== 'string' || request.instructions.trim() === '') {
+      throw new Error('voice-runtime: instructions fehlt (serverseitig aufzulösen).');
+    }
+
+    const resolved = await store.resolveSessionContext(
+      numberBindingId ? { numberBindingId } : { botId },
+    );
+    if (!resolved || !resolved.disclosureText.trim()) {
+      throw new Error('voice-runtime: config_not_found');
+    }
+    if (resolved.provider !== 'grok') {
+      throw new Error('voice-runtime: unsupported_provider');
+    }
+
+    // DB-Snapshot gewinnt — Caller-tenantId/policy/disclosure/model werden ignoriert.
+    const correlationId = asUuidOrNew(request.correlationId);
+    const consentPurposes = request.consent?.purposes ?? [];
+
+    let persisted;
+    try {
+      persisted = await store.insertSession({
+        tenantId: resolved.tenantId,
+        botId: resolved.botId,
+        numberBindingId: resolved.numberBindingId,
+        provider: resolved.provider,
+        model: resolved.model,
+        policyRef: resolved.policyRef,
+        correlationId,
+        status: 'idle',
+        consentPurposes: [...consentPurposes],
+        killSwitch: request.session.killSwitch,
+      });
+    } catch {
+      throw new Error('voice-runtime: store_error');
+    }
+
+    const sessionId = persisted.id;
+    const tools = intersectOfferedTools(resolved.offeredTools, request.tools ?? []);
+    const disclosureText = resolved.disclosureText.trim();
+    const greeting =
+      typeof request.greetingText === 'string' && request.greetingText.trim() !== ''
+        ? request.greetingText.trim()
+        : null;
+    const instructions = greeting
+      ? `${request.instructions.trim()}\n\nBegrüßung nach dem Pflicht-Hinweis: ${greeting}`
+      : request.instructions;
+
+    const live: LiveSession = {
+      tenantId: resolved.tenantId,
+      botId: resolved.botId,
+      sessionId,
+      offeredTools: new Set(tools.map((t) => t.name)),
+      session: { ...request.session, rateLimit: { ...request.session.rateLimit } },
+      consent: request.consent,
+      policyRef: resolved.policyRef,
+      persist: true,
+      turnCount: request.session.turnCount,
+      toolCount: request.session.toolCount,
+    };
+
+    try {
+      await store.appendEvidence({
+        tenantId: live.tenantId,
+        sessionId,
+        kind: 'session.start',
+        payload: {
+          provider: resolved.provider,
+          model: resolved.model,
+          policy_ref: resolved.policyRef,
+        },
+      });
+    } catch {
+      await this.safeFailSession(store, live);
+      throw new Error('voice-runtime: store_error');
+    }
+
+    let session: VoiceProviderSession;
+    try {
+      session = await this.provider.createSession(
+        {
+          tenantId: live.tenantId,
+          botId: live.botId,
+          sessionId,
+          correlationId,
+          provider: 'grok',
+          model: resolved.model,
+          voice: request.voice ?? resolved.voice ?? undefined,
+          language: resolved.language || request.language || 'de-DE',
+          instructions,
+          disclosureText,
+          tools,
+          inputAudio: request.inputAudio,
+          outputAudio: request.outputAudio,
+        },
+        (event) => this.handleProviderEvent(live, event),
+      );
+    } catch (err) {
+      await this.safeFailSession(store, live);
+      throw err;
+    }
+
+    const playedAt = new Date().toISOString();
+    try {
+      await store.updateSessionStatus(live.tenantId, sessionId, {
+        status: 'listening',
+        disclosurePlayedAt: playedAt,
+      });
+      await store.appendEvidence({
+        tenantId: live.tenantId,
+        sessionId,
+        kind: 'disclosure.played',
+        payload: { played_at: playedAt },
+      });
+    } catch {
+      // Session läuft bereits — Status-Update fehlgeschlagen ist fail-soft;
+      // Tool-Writes bleiben durch FK an voice_sessions gebunden.
+    }
+
+    this.sessions.set(sessionId, live);
+    return session;
+  }
+
+  private async startSessionLegacy(request: VoiceSessionStartRequest): Promise<VoiceProviderSession> {
+    this.assertLegacyStartRequest(request);
+    const sessionId = request.sessionId!.trim();
+    if (this.sessions.has(sessionId)) {
+      throw new Error('voice-runtime: Session existiert bereits.');
+    }
+
+    const disclosureText = request.disclosureText!.trim();
+    const greeting =
+      typeof request.greetingText === 'string' && request.greetingText.trim() !== ''
+        ? request.greetingText.trim()
+        : null;
+    const instructions = greeting
+      ? `${request.instructions.trim()}\n\nBegrüßung nach dem Pflicht-Hinweis: ${greeting}`
+      : request.instructions;
+
+    const tools = request.tools ?? [];
+    const live: LiveSession = {
+      tenantId: request.tenantId!.trim(),
+      botId: request.botId!.trim(),
+      sessionId,
+      offeredTools: new Set(tools.map((t) => t.name)),
+      session: { ...request.session, rateLimit: { ...request.session.rateLimit } },
+      consent: request.consent,
+      policyRef: null,
+      persist: false,
+      turnCount: request.session.turnCount,
+      toolCount: request.session.toolCount,
+    };
+
+    const session = await this.provider.createSession(
+      {
+        tenantId: live.tenantId,
+        botId: live.botId,
+        sessionId,
+        correlationId: request.correlationId!.trim(),
+        provider: 'grok',
+        model: request.model!.trim(),
+        voice: request.voice,
+        language: request.language ?? 'de-DE',
+        instructions,
+        disclosureText,
+        tools,
+        inputAudio: request.inputAudio,
+        outputAudio: request.outputAudio,
+      },
+      (event) => this.handleProviderEvent(live, event),
+    );
+
+    this.sessions.set(sessionId, live);
+    return session;
+  }
+
+  private assertLegacyStartRequest(request: VoiceSessionStartRequest): void {
     for (const key of ['tenantId', 'botId', 'sessionId', 'correlationId', 'model', 'instructions'] as const) {
-      if (typeof request[key] !== 'string' || request[key].trim() === '') {
+      const value = request[key];
+      if (typeof value !== 'string' || value.trim() === '') {
         throw new Error(`voice-runtime: ${key} fehlt (serverseitig aufzulösen).`);
       }
     }
@@ -219,21 +390,62 @@ export class VoiceSessionRuntime {
     }
   }
 
+  private async safeFailSession(store: VoiceStore, live: LiveSession): Promise<void> {
+    try {
+      await store.updateSessionStatus(live.tenantId, live.sessionId, {
+        status: 'failed',
+        endedAt: new Date().toISOString(),
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  private async finalizePersistedSession(
+    store: VoiceStore,
+    live: LiveSession,
+    status: 'ended' | 'failed',
+  ): Promise<void> {
+    try {
+      await store.appendEvidence({
+        tenantId: live.tenantId,
+        sessionId: live.sessionId,
+        kind: 'session.end',
+        payload: { status },
+      });
+    } catch {
+      // ignore
+    }
+    try {
+      await store.updateSessionStatus(live.tenantId, live.sessionId, {
+        status,
+        endedAt: new Date().toISOString(),
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   private handleProviderEvent(live: LiveSession, event: VoiceProviderEvent): void {
     if (event.type === 'tool.call') {
-      // Fail-closed asynchron — der Provider-Handler darf nicht blockieren.
-      void this.onToolCall(live, event.call).catch(() => {
-        // submitToolResult-Fehler werden im onToolCall selbst abgefangen.
-      });
+      void this.onToolCall(live, event.call).catch(() => {});
       return;
     }
-    // Turn-Grenze: finaler Nutzer-Transcript erhöht den Zähler vor späteren Tools.
     if (event.type === 'transcript.user' && event.final) {
       live.turnCount += 1;
     }
     if (event.type === 'session.closed' || event.type === 'error') {
       this.onEvent?.(event);
-      if (event.type === 'session.closed') this.sessions.delete(live.sessionId);
+      if (event.type === 'session.closed') {
+        const removed = this.sessions.delete(live.sessionId);
+        if (removed && live.persist && this.store) {
+          void this.finalizePersistedSession(
+            this.store,
+            live,
+            event.reason === 'error' ? 'failed' : 'ended',
+          );
+        }
+      }
       return;
     }
     this.onEvent?.(event);
@@ -242,8 +454,6 @@ export class VoiceSessionRuntime {
   private async onToolCall(live: LiveSession, call: ProviderToolCall): Promise<void> {
     const callId = typeof call.callId === 'string' ? call.callId.trim() : '';
     if (!callId) return;
-    // Zweite Fail-closed-Linie: unerwartete Throws (z. B. Gateway/Store)
-    // dürfen den Provider-Tool-Call nicht hängen lassen.
     let result: VoiceToolResult;
     try {
       result = await this.evaluateToolCall(live, call);
@@ -263,7 +473,6 @@ export class VoiceSessionRuntime {
       return deniedResult('missing_call_id', '');
     }
 
-    // Unbekanntes / nicht angebotenes Tool: kein /voice-tool-Aufruf.
     if (!isContractToolName(call.name) || !live.offeredTools.has(call.name)) {
       return deniedResult('unknown_tool', callId);
     }
@@ -285,12 +494,9 @@ export class VoiceSessionRuntime {
       return deniedResult('invalid_arguments', callId);
     }
 
-    // Slot vor dem Await reservieren — parallele tool.call dürfen denselben
-    // Zähler nicht an /voice-tool senden (sonst umgehen sie maxTools).
     const toolCountForPolicy = live.toolCount;
     live.toolCount += 1;
 
-    // tenantId/botId nie aus Args — immer Session-Kontext.
     const outcome = await this.voiceTool.evaluate({
       tenantId: live.tenantId,
       sessionId: live.sessionId,
@@ -308,7 +514,6 @@ export class VoiceSessionRuntime {
 
     const decision = outcome.decision;
     if (!decision) {
-      // Kein Decision-Payload → fail-closed. Nie eine Policy-Entscheidung erfinden.
       if (!outcome.ok) {
         return {
           callId,
@@ -351,8 +556,43 @@ export class VoiceSessionRuntime {
       args: clean,
       decision,
       confirmed: false,
+      policyRef: live.policyRef ?? undefined,
     });
   }
+}
+
+/** Schnittmenge Contract ∩ offered_tools; Schemas aus request oder Fallback. */
+export function intersectOfferedTools(
+  offeredTools: string[],
+  catalog: VoiceToolDefinition[],
+): VoiceToolDefinition[] {
+  const offered = new Set(
+    offeredTools.filter((name): name is VoiceToolName => isContractToolName(name)),
+  );
+  const byName = new Map(catalog.filter((t) => isContractToolName(t.name)).map((t) => [t.name, t]));
+  const out: VoiceToolDefinition[] = [];
+  for (const name of CONTRACT_TOOL_NAMES) {
+    if (!offered.has(name)) continue;
+    const fromCatalog = byName.get(name);
+    if (fromCatalog) {
+      out.push(fromCatalog);
+      continue;
+    }
+    const spec = VOICE_TOOLS[name];
+    out.push({
+      name,
+      description: spec.label,
+      parameters: { type: 'object', properties: {} },
+    });
+  }
+  return out;
+}
+
+function asUuidOrNew(value: string | undefined): string {
+  if (typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim())) {
+    return value.trim();
+  }
+  return randomUUID();
 }
 
 function deniedResult(reason: string, callId: string): VoiceToolResult {

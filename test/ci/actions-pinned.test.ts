@@ -41,6 +41,7 @@ import { describe, expect, it } from 'vitest';
 
 const WORKFLOWS = resolve(__dirname, '../../.github/workflows');
 const DRIFT_ALERT_PATH = join(WORKFLOWS, 'drift-alert.yml');
+const AUTO_MERGE_PATH = join(WORKFLOWS, 'auto-merge.yml');
 
 /**
  * Workflows, deren Verweise noch nicht gepinnt sind — mit Grund.
@@ -80,6 +81,16 @@ function actionRefs(): Ref[] {
 
 const REFS = actionRefs();
 const isPinned = (uses: string) => /@[0-9a-f]{40}$/.test(uses);
+
+describe('Auto-merge workflow permissions', () => {
+  const src = readFileSync(AUTO_MERGE_PATH, 'utf8');
+
+  it('can enable pull-request auto-merge', () => {
+    expect(src).toMatch(
+      /permissions:\s*\n\s+contents:\s*write\s*\n\s+pull-requests:\s*write/
+    );
+  });
+});
 
 describe('Actions sind auf einen Commit-SHA gepinnt', () => {
   it('findet überhaupt Verweise (Scanner nicht kaputt)', () => {

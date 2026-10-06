@@ -17,6 +17,7 @@ const api = {
   editSite: vi.fn(),
   evaluatePublish: vi.fn(),
   deployPublishPreview: vi.fn(),
+  deployPublishProduction: vi.fn(),
   listBlueprintChain: vi.fn(),
   listEvaluations: vi.fn(),
   listCustodyEvents: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
   editSite: (...a: unknown[]) => api.editSite(...a),
   evaluatePublish: (...a: unknown[]) => api.evaluatePublish(...a),
   deployPublishPreview: (...a: unknown[]) => api.deployPublishPreview(...a),
+  deployPublishProduction: (...a: unknown[]) => api.deployPublishProduction(...a),
   listBlueprintChain: (...a: unknown[]) => api.listBlueprintChain(...a),
   listEvaluations: (...a: unknown[]) => api.listEvaluations(...a),
   listCustodyEvents: (...a: unknown[]) => api.listCustodyEvents(...a),
@@ -331,6 +333,79 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(link).toHaveAttribute('href', 'https://preview-abc.example.pages.dev');
     expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('confirm_go');
     expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
+  });
+
+
+  it('veröffentlicht erst nach realer Vorschau und ausdrücklicher Bestätigung live', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-preview-1',
+      artifact_sha256: 'c'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-abc.example.pages.dev',
+          deployment_id: 'dep-1',
+          project_name: 'praxis-bp1',
+          branch: 'preview-cccccccccccc',
+          environment: 'preview',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-preview-2',
+          production: false,
+        },
+      },
+    });
+    api.deployPublishProduction.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        production: {
+          url: 'https://praxis-bp1.pages.dev',
+          deployment_id: 'dep-prod-1',
+          project_name: 'praxis-bp1',
+          branch: 'main',
+          environment: 'production',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-prod-1',
+          preview_deployment_id: 'dep-1',
+          deployed_at: '2026-10-06T10:05:00.000Z',
+          production: true,
+        },
+      },
+    });
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Live veröffentlichen' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    const live = await screen.findByRole('button', { name: 'Live veröffentlichen' });
+    fireEvent.click(live);
+
+    await waitFor(() => expect(api.deployPublishProduction).toHaveBeenCalledTimes(1));
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(api.deployPublishProduction).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+      confirm_preview: true,
+      confirm_go: true,
+    });
+    const liveLink = await screen.findByRole('link', { name: 'Live-Seite öffnen' });
+    expect(liveLink).toHaveAttribute('href', 'https://praxis-bp1.pages.dev');
+    expect(api.deployPublishProduction.mock.calls[0][0]).not.toHaveProperty('files');
+    expect(api.deployPublishProduction.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
+
+    confirmSpy.mockRestore();
   });
 
   it('zeigt in der Vorschau das echte Dokument der lokalen Fassung', async () => {

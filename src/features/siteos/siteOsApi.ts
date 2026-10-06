@@ -453,6 +453,48 @@ export async function approvePublish(args: {
   return { kind: 'ok', data: data as { ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation } };
 }
 
+export interface PublishExportFile {
+  path: string;
+  content: string;
+  sha256: string;
+  bytes: number;
+}
+
+export interface PublishExportResponse {
+  ok: true;
+  manifest: {
+    format: 'realsync-siteos-export/1';
+    slug: string;
+    version: number;
+    blueprint_sha256: string;
+    artifact_sha256: string;
+    evaluation_id: string;
+    go_by: string;
+    go_at: string;
+    base_url: string | null;
+    files: Array<Omit<PublishExportFile, 'content'>>;
+  };
+  files: PublishExportFile[];
+}
+
+/**
+ * Ausdrückliches Veröffentlichungs-GO. Der Server bewertet frisch und liefert
+ * ausschließlich das hashgebundene Release-Bündel zurück; dieser Wrapper
+ * führt selbst keinen Upload aus.
+ */
+export async function exportPublish(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_go: true;
+  confirm_preview: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishExportResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-export', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishExportResponse };
+}
+
 // ── Anonymer Build (Zielarchitektur: Idee → Vorschau → Konto → Claim) ───
 //
 // Bauen und Verfeinern laufen serverseitig, ohne Konto. Der Blueprint liegt

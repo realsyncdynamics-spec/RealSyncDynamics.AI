@@ -29,6 +29,7 @@ export interface PagesProjectRef {
   id: string;
   name: string;
   subdomain: string | null;
+  productionBranch: string;
   created: boolean;
 }
 
@@ -52,6 +53,7 @@ interface PagesProjectApi {
   id: string;
   name: string;
   subdomain?: string | null;
+  production_branch?: string | null;
 }
 
 interface PagesDeploymentApi {
@@ -168,6 +170,13 @@ export async function deployPagesPreview(args: {
 
   const manifest = Object.fromEntries(prepared.map(({ file, hash }) => [normalizeDeployPath(file.path), hash]));
   const branch = `preview-${args.artifactSha256.slice(0, 12)}`;
+  if (project.productionBranch === branch) {
+    throw new CloudflarePagesError(
+      409,
+      'PREVIEW_BRANCH_IS_PRODUCTION',
+      'Cloudflare project production branch collides with the governed preview branch',
+    );
+  }
 
   // Preview branch only. Production branch remains "main" and is never used
   // by this helper.
@@ -212,6 +221,7 @@ async function ensurePagesProject(
       id: existing.id,
       name: existing.name || projectName,
       subdomain: existing.subdomain ?? null,
+      productionBranch: existing.production_branch || 'main',
       created: false,
     };
   }
@@ -230,6 +240,7 @@ async function ensurePagesProject(
     id: created.id,
     name: created.name || projectName,
     subdomain: created.subdomain ?? null,
+    productionBranch: created.production_branch || 'main',
     created: true,
   };
 }

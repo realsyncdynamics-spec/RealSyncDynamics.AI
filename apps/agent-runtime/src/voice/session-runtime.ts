@@ -1,18 +1,15 @@
 /**
- * Voice Session-Runtime (PR 3/6).
+ * Voice Session-Runtime (PR 3 + PR 4 Anbindung).
  *
  * Verdrahtet den Grok-Realtime-Adapter mit `ws` und leitet jeden
- * `tool.call` an das bestehende POST /voice-tool weiter.
+ * `tool.call` an POST /voice-tool (Policy) und anschließend an das
+ * Tool-Gateway (Ausführung/Verifikation/Evidenz, PR 4) weiter.
  *
  * Grenzen:
- *  - Keine Tool-Ausführung (kommt in PR 4). Policy-Entscheidung geht
- *    nur als submitToolResult an das Modell zurück.
- *  - tenantId/botId ausschließlich aus dem Session-Kontext
- *    (voice_number_bindings → bots → memberships/is_tenant_member).
- *    Gleichnamige Felder in Modell-Args werden verworfen.
- *  - Disclosure (voice_bot_configs.disclosure_text) ist Pflicht und wird
- *    verbatim gesprochen. Fehlt sie → keine Session.
+ *  - tenantId/botId ausschließlich aus dem Session-Kontext.
+ *  - Disclosure ist Pflicht und wird verbatim gesprochen.
  *  - Kein voice_channels / bot_agents. Keine Secrets im Code/Log.
+ *  - evaluate() in policy-engine.ts bleibt unberührt.
  */
 
 import {
@@ -30,6 +27,10 @@ import {
   type VoiceToolResult,
 } from '../voice-provider-types.js';
 import { VOICE_AGENT_ID, type VoiceConsent } from '../voice-types.js';
+import {
+  createVoiceToolGateway,
+  type VoiceToolGateway,
+} from './tool-gateway.js';
 import {
   createVoiceToolClient,
   sanitizeToolArgs,
@@ -82,6 +83,12 @@ export interface SessionRuntimeOptions {
   onEvent?: (event: VoiceProviderEvent) => void;
   /** Injizierbarer Provider (Tests). Default: neuer GrokProvider. */
   provider?: GrokProvider;
+  /**
+   * Tool-Gateway (Ausführung/Evidenz).
+   * Default: createVoiceToolGateway() — Supabase aus Env, sonst fail-closed
+   * not_configured. Memory nur in Tests explizit injizieren.
+   */
+  toolGateway?: VoiceToolGateway;
 }
 
 interface LiveSession {
@@ -99,6 +106,7 @@ interface LiveSession {
 export class VoiceSessionRuntime {
   private readonly provider: GrokProvider;
   private readonly voiceTool: VoiceToolClient;
+  private readonly toolGateway: VoiceToolGateway;
   private readonly onEvent: ((event: VoiceProviderEvent) => void) | undefined;
   private readonly sessions = new Map<string, LiveSession>();
 
@@ -118,6 +126,7 @@ export class VoiceSessionRuntime {
         getApiToken: options.getApiToken ?? (() => process.env.AGENT_RUNTIME_API_TOKEN),
         timeoutMs: options.voiceToolTimeoutMs ?? defaultVoiceToolTimeoutMs(),
       });
+    this.toolGateway = options.toolGateway ?? createVoiceToolGateway();
     this.onEvent = options.onEvent;
   }
 
@@ -233,7 +242,14 @@ export class VoiceSessionRuntime {
   private async onToolCall(live: LiveSession, call: ProviderToolCall): Promise<void> {
     const callId = typeof call.callId === 'string' ? call.callId.trim() : '';
     if (!callId) return;
-    const result = await this.evaluateToolCall(live, call);
+    // Zweite Fail-closed-Linie: unerwartete Throws (z. B. Gateway/Store)
+    // dürfen den Provider-Tool-Call nicht hängen lassen.
+    let result: VoiceToolResult;
+    try {
+      result = await this.evaluateToolCall(live, call);
+    } catch {
+      result = deniedResult('internal_error', callId);
+    }
     try {
       await this.provider.submitToolResult(live.sessionId, result);
     } catch {
@@ -290,38 +306,52 @@ export class VoiceSessionRuntime {
       consent: live.consent,
     });
 
-    if (!outcome.ok) {
+    const decision = outcome.decision;
+    if (!decision) {
+      // Kein Decision-Payload → fail-closed. Nie eine Policy-Entscheidung erfinden.
+      if (!outcome.ok) {
+        return {
+          callId,
+          outcome: 'denied',
+          verified: false,
+          output: { reason: outcome.reason, agentId: VOICE_AGENT_ID },
+        };
+      }
       return {
         callId,
         outcome: 'denied',
         verified: false,
-        output: { reason: outcome.reason, agentId: VOICE_AGENT_ID },
+        output: { reason: 'missing_policy_decision', agentId: VOICE_AGENT_ID },
       };
     }
 
-    if (outcome.verdict === 'DENY') {
+    if (decision.decidedBy !== 'policy-engine') {
       return {
         callId,
         outcome: 'denied',
         verified: false,
-        output: { verdict: 'DENY' },
+        output: { reason: 'invalid_decided_by', agentId: VOICE_AGENT_ID },
       };
     }
-    if (outcome.verdict === 'REQUIRE_CONFIRMATION') {
+    if (decision.tenantId !== live.tenantId || decision.sessionId !== live.sessionId) {
       return {
         callId,
-        outcome: 'awaiting_confirmation',
+        outcome: 'denied',
         verified: false,
-        output: { verdict: 'REQUIRE_CONFIRMATION' },
+        output: { reason: 'tenant_session_mismatch', agentId: VOICE_AGENT_ID },
       };
     }
-    // ALLOW — keine Ausführung in PR 3; Modell erfährt die Policy-Entscheidung.
-    return {
+
+    return this.toolGateway.handle({
+      tenantId: live.tenantId,
+      botId: live.botId,
+      sessionId: live.sessionId,
       callId,
-      outcome: 'failed',
-      verified: false,
-      output: { verdict: 'ALLOW', execution: 'deferred_to_pr4' },
-    };
+      tool: call.name,
+      args: clean,
+      decision,
+      confirmed: false,
+    });
   }
 }
 
@@ -356,3 +386,11 @@ export {
   type VoiceToolHttpRequest,
   type VoiceToolHttpOutcome,
 } from './voice-tool-client.js';
+export {
+  createVoiceToolGateway,
+  createMemoryVoiceStore,
+  createSupabaseVoiceStore,
+  createSupabaseVoiceStoreFromEnv,
+  VOICE_GENESIS_HASH,
+  type VoiceToolGateway,
+} from './tool-gateway.js';

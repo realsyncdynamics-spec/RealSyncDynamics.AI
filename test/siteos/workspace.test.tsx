@@ -16,6 +16,7 @@ const api = {
   loadLatestBlueprint: vi.fn(),
   editSite: vi.fn(),
   evaluatePublish: vi.fn(),
+  deployPublishPreview: vi.fn(),
   listBlueprintChain: vi.fn(),
   listEvaluations: vi.fn(),
   listCustodyEvents: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
   loadLatestBlueprint: (...a: unknown[]) => api.loadLatestBlueprint(...a),
   editSite: (...a: unknown[]) => api.editSite(...a),
   evaluatePublish: (...a: unknown[]) => api.evaluatePublish(...a),
+  deployPublishPreview: (...a: unknown[]) => api.deployPublishPreview(...a),
   listBlueprintChain: (...a: unknown[]) => api.listBlueprintChain(...a),
   listEvaluations: (...a: unknown[]) => api.listEvaluations(...a),
   listCustodyEvents: (...a: unknown[]) => api.listCustodyEvents(...a),
@@ -283,14 +285,52 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(screen.getByText(/Nicht veröffentlichbar \(blocked\)/)).toBeInTheDocument();
   });
 
-  it('hält den Veröffentlichen-Knopf gesperrt und sagt warum', async () => {
+  it('stellt eine echte Cloudflare-Vorschau erst nach bestandenem Gate bereit', async () => {
     const { blueprint, sha256 } = await sample();
     api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-preview-1',
+      artifact_sha256: 'c'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-abc.example.pages.dev',
+          deployment_id: 'dep-1',
+          project_name: 'praxis-bp1',
+          branch: 'preview-cccccccccccc',
+          environment: 'preview',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-preview-2',
+          production: false,
+        },
+      },
+    });
+
     renderWorkspace(blueprint.slug);
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
-    const publish = screen.getByRole('button', { name: /Veröffentlichen/ });
-    expect(publish).toBeDisabled();
-    expect(publish.getAttribute('title')).toMatch(/nicht verdrahtet/);
+
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    expect(previewDeploy).toBeDisabled();
+    expect(previewDeploy.getAttribute('title')).toMatch(/Prüfen/);
+
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    await waitFor(() => expect(api.deployPublishPreview).toHaveBeenCalledTimes(1));
+    expect(api.deployPublishPreview).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+      confirm_preview_deploy: true,
+    });
+    const link = await screen.findByRole('link', { name: 'Cloudflare-Vorschau öffnen' });
+    expect(link).toHaveAttribute('href', 'https://preview-abc.example.pages.dev');
+    expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('confirm_go');
+    expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
   });
 
   it('zeigt in der Vorschau das echte Dokument der lokalen Fassung', async () => {
@@ -636,6 +676,8 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
     await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
     expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    expect(previewDeploy).toBeDisabled();
+    expect(previewDeploy.getAttribute('title')).toMatch(/blockiert/);
   });
 });

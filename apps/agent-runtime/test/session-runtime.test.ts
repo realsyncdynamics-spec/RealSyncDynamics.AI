@@ -206,6 +206,8 @@ function harness(
     provider,
     voiceToolClient: client,
     toolGateway,
+    // Legacy-Tests: kein Persistenz-Store (unabhängig von Env-Credentials).
+    store: null,
     onEvent: (e) => h.events.push(e),
   });
   return h;

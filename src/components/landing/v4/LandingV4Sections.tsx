@@ -172,8 +172,19 @@ export function V4Header() {
           <Link className="navlink" to={V4_ROUTES.login} onClick={() => setMenuOpen(false)}>
             Login
           </Link>
-          <Link className="cta-pill" to={V4_ROUTES.audit} data-hero-cta="" onClick={() => setMenuOpen(false)}>
-            Free Audit starten
+          <Link
+            className="cta-pill"
+            to={V4_ROUTES.audit}
+            data-hero-cta=""
+            aria-label="Audit starten"
+            onClick={() => setMenuOpen(false)}
+          >
+            <span className="cta-label-full" aria-hidden="true">
+              Free Audit starten
+            </span>
+            <span className="cta-label-mobile" aria-hidden="true">
+              Audit starten
+            </span>
           </Link>
         </nav>
       </div>
@@ -212,13 +223,13 @@ export function V4Hero() {
           Prove
         </p>
         <p className="lede">
-          Runtime governance for regulated AI systems.
+          Runtime governance for regulated AI.
           <br />
-          Continuous evidence. EU-native by design.
+          Continuous evidence. Human control. EU-native by design.
         </p>
         <div className="cta-row">
-          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan">
-            Free Audit starten <Arrow />
+          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
+            Free Governance Audit <Arrow />
           </Link>
           <Link className="btn-ghost" to={V4_ROUTES.runtime}>
             Runtime ansehen

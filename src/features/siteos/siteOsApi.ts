@@ -273,6 +273,7 @@ export async function runAgent(tenantId: string, runId?: string): Promise<SiteOs
 /** Die jüngste gespeicherte Version einer Site — Grundlage des Workspace. */
 export interface StoredBlueprintRow {
   id: string;
+  project_id: string | null;
   version: number;
   blueprint: SiteBlueprint;
   content_sha256: string;
@@ -294,7 +295,7 @@ export async function loadLatestBlueprint(tenantId: string, slug: string): Promi
   const sb = getSupabase();
   const { data, error } = await sb
     .from('siteos_blueprints')
-    .select('id, version, blueprint, content_sha256, prev_hash, status, origin_source, origin_model, created_at')
+    .select('id, project_id, version, blueprint, content_sha256, prev_hash, status, origin_source, origin_model, created_at')
     .eq('tenant_id', tenantId).eq('slug', slug)
     .order('version', { ascending: false }).limit(1)
     .maybeSingle();
@@ -411,6 +412,33 @@ export async function listBlueprintChain(tenantId: string, slug: string): Promis
     .order('version', { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+export interface SiteProjectBindingResponse {
+  ok: true;
+  created: boolean;
+  project: {
+    id: string;
+    name: string;
+    status: string;
+  };
+  blueprint_id: string;
+  version: number;
+  audit_recorded?: boolean;
+}
+
+/**
+ * Einmalige Brücke zwischen SiteOS-Blueprint und Website Operations.
+ * Serverseitig tenant-/rollen-/entitlement-geprüft und idempotent.
+ */
+export async function bindSiteProject(args: {
+  tenant_id: string;
+  blueprint_id: string;
+}): Promise<SiteOsResult<SiteProjectBindingResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/project-bind', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as SiteProjectBindingResponse };
 }
 
 // ── Publish Gate (Zielarchitektur §7) ───────────────────────────────────

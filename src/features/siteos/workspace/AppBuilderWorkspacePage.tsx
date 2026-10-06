@@ -42,7 +42,7 @@ import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } f
 import { BuilderUpgradePanel } from '../BuilderUpgradePanel';
 import { builderUpgradeHref, canOpenAppBuilder, canPublishSite, resolveBuilderEntitlements } from '../builderEntitlements';
 import {
-  deployPublishPreview, deployPublishProduction, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
+  bindSiteProject, deployPublishPreview, deployPublishProduction, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
   type AgentRunRow, type CustodyEventRow, type EvaluationRow, type PublishPreviewResponse, type PublishProductionResponse, type StoredBlueprintRow,
 } from '../siteOsApi';
@@ -285,6 +285,23 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     if (!activeTenantId || !stored || dirty || previewDeploying || !publishEntitled) return;
     setPreviewDeploying(true);
     try {
+      if (!stored.project_id) {
+        const binding = await bindSiteProject({
+          tenant_id: activeTenantId,
+          blueprint_id: stored.id,
+        });
+        if (binding.kind !== 'ok') throw new Error(errorMessage(binding));
+        setStored((current) => current && current.id === stored.id
+          ? { ...current, project_id: binding.data.project.id }
+          : current);
+        log(
+          'info',
+          binding.data.created
+            ? `Website-Projekt angelegt und gebunden: ${binding.data.project.name}`
+            : `Vorhandenes Website-Projekt gebunden: ${binding.data.project.name}`,
+        );
+      }
+
       const result = await deployPublishPreview({
         tenant_id: activeTenantId,
         blueprint_id: stored.id,

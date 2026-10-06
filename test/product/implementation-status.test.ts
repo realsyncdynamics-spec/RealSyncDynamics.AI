@@ -111,6 +111,17 @@ describe('implementation-status registry', () => {
     expect(getImplementation('frontend-modernize-wizard')?.route).toBe('/app/siteos/modernize');
   });
 
+  it('marks automations/n8n as preview — Skills unlinked, Runtime down', () => {
+    const item = getImplementation('automation-n8n')!;
+    expect(item.status).toBe('preview');
+    expect(isImplementationLive('automation-n8n')).toBe(false);
+    expect(item.route).toBe('/app/automations');
+    expect(item.description.toLowerCase()).toMatch(/ohne workflow|nicht erreichbar|keine produktive/);
+    expect(item.description).not.toMatch(/\b(Pilot|Demo|Call|Sales|Beratung|Termin)\b/i);
+    expect(item.evidence.some((e) => e.includes('automation-trigger'))).toBe(true);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'automation-n8n')).toBe(true);
+  });
+
   it('mentions /login on the welcome/auth entry', () => {
     expect(getImplementation('welcome')?.description).toContain('/login');
     expect(getImplementation('welcome')?.evidence.some((e) => e.includes('LoginPage'))).toBe(true);

@@ -59,6 +59,16 @@ import {
   upgradeHrefFromAccess,
 } from '../../features/siteos/builderEntitlements';
 import { BuilderUpgradePanel } from '../../features/siteos/BuilderUpgradePanel';
+import {
+  BUILD_PROJECT_KINDS,
+  surfaceKindFor,
+  type BuildProjectKind,
+} from '../../features/build-studio/contract';
+import {
+  BUILD_KIND_LABEL,
+  codeEntryHref,
+  parseBuildKind,
+} from '../../features/build-studio/entry';
 import { useEntitlements } from '../../core/billing/useEntitlements';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { STATUS_LABEL } from '../../product/implementation-status';
@@ -188,6 +198,14 @@ export default function BuildStudioPage() {
     params.get('prompt') ?? (auditContext.domain ? `Neue Website für ${auditContext.domain}. ` : ''),
   );
   const [brand, setBrand] = useState('');
+  const urlKind = params.get('kind');
+  const [kind, setKind] = useState<BuildProjectKind>(() => parseBuildKind(urlKind));
+  const opensCode = surfaceKindFor(kind) === 'code';
+
+  // The page is reused across /build?kind=… navigations; follow the URL.
+  useEffect(() => {
+    setKind(parseBuildKind(urlKind));
+  }, [urlKind]);
   const [instruction, setInstruction] = useState('');
   const [device, setDevice] = useState<Device>('desktop');
   const [path, setPath] = useState('/');
@@ -232,6 +250,9 @@ export default function BuildStudioPage() {
     if (!isAuthenticated) return;
     if (!entitled && entitlements.ssotReady) return;
     if (startedRef.current) return;
+    // An app kind never starts or resumes a site build. Decide before latching,
+    // so a later switch to a site kind still resumes.
+    if (surfaceKindFor(parseBuildKind(params.get('kind'))) === 'code') return;
     startedRef.current = true;
 
     const fromUrl = params.get('prompt')?.trim();
@@ -308,6 +329,15 @@ export default function BuildStudioPage() {
   const submitPrompt = (event: FormEvent) => {
     event.preventDefault();
     const text = draft.trim();
+    if (opensCode) {
+      // Apps continue in the existing code builder. It checks tenant and entitlement.
+      if (!brand.trim() && text.length < 3) {
+        setError('Bitte geben Sie einen Namen oder eine kurze Beschreibung an.');
+        return;
+      }
+      navigate(codeEntryHref(kind, brand, text));
+      return;
+    }
     if (text.length < 10) {
       setError('Bitte beschreiben Sie in einem Satz, was entstehen soll.');
       return;
@@ -351,7 +381,7 @@ export default function BuildStudioPage() {
   };
 
   // ── Einstieg: App-Builder Intent ──────────────────────────────────────
-  if (!blueprint && !busy) {
+  if ((!blueprint || opensCode) && !busy) {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-50">
         <BuildOsChrome />
@@ -388,12 +418,44 @@ export default function BuildStudioPage() {
           </p>
 
           <form onSubmit={submitPrompt} className="mt-8 space-y-4">
+            <fieldset>
+              <legend className="block text-sm font-medium text-titanium-200">
+                Was soll entstehen?
+              </legend>
+              <div className="mt-2 flex flex-wrap gap-2" data-testid="build-kind">
+                {BUILD_PROJECT_KINDS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={kind === option}
+                    onClick={() => {
+                      setKind(option);
+                      setError('');
+                    }}
+                    className={`border px-3 py-2 text-sm transition-colors ${
+                      kind === option
+                        ? 'border-[#e4cfa2]/60 text-titanium-50'
+                        : 'border-titanium-800 text-titanium-400 hover:border-[#e4cfa2]/40 hover:text-titanium-100'
+                    }`}
+                  >
+                    {BUILD_KIND_LABEL[option]}
+                  </button>
+                ))}
+              </div>
+              {opensCode && (
+                <p className="mt-2 text-xs text-titanium-500">
+                  Apps öffnen den Code-Builder unter /builder/…/code. Kein Deploy.
+                  {blueprint && ' Ihr Website-Entwurf bleibt erhalten — „Website“ wählen, um ihn fortzusetzen.'}
+                </p>
+              )}
+            </fieldset>
+
             <div>
               <label
                 htmlFor="build-brand"
                 className="block text-sm font-medium text-titanium-200"
               >
-                Wie heißt Ihr Unternehmen?{' '}
+                {opensCode ? 'Wie heißt die App?' : 'Wie heißt Ihr Unternehmen?'}{' '}
                 <span className="text-titanium-500">(optional)</span>
               </label>
               <input
@@ -431,7 +493,7 @@ export default function BuildStudioPage() {
               type="submit"
               className={`w-full px-6 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors ${OS_CREAM_BTN}`}
             >
-              Blueprint erzeugen
+              {opensCode ? 'Code-Builder öffnen' : 'Blueprint erzeugen'}
             </button>
           </form>
 
@@ -533,6 +595,13 @@ export default function BuildStudioPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setKind('web_app')}
+            className="px-2 py-1 text-xs text-titanium-400 underline underline-offset-4 hover:text-titanium-100"
+          >
+            Stattdessen eine App bauen
+          </button>
           <div
             className="flex items-center gap-1 border border-titanium-800 bg-obsidian-800 p-1"
             role="tablist"

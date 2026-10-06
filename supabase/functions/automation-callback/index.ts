@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     if (!validEvents.includes(eventType)) {
       return jsonError(400, 'BAD_REQUEST', `event_type must be one of: ${validEvents.join(', ')}`);
     }
-    if (run.status !== 'pending' && run.status !== 'running') {
+    if (run.status !== 'queued' && run.status !== 'running') {
       return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
     }
     const { error: eventErr } = await admin.from('automation_run_events').insert({
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
   if (!validStatus.includes(body.status)) {
     return jsonError(400, 'BAD_REQUEST', `status must be one of: ${validStatus.join(', ')}`);
   }
-  if (run.status !== 'pending' && run.status !== 'running') {
+  if (run.status !== 'queued' && run.status !== 'running') {
     return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
   }
 
@@ -113,11 +113,13 @@ Deno.serve(async (req) => {
   const outputRefs = (body.output_refs ?? []).filter((o) => o.output_type && validOutputTypes.includes(o.output_type));
   if (outputRefs.length > 0) {
     const { error: outputErr } = await admin.from('automation_outputs').insert(
+      // Spalten laut Migration 20260614100000: tenant_id ist Pflicht,
+      // storage_path/metadata gibt es nicht — beides steht in `content`.
       outputRefs.map((o) => ({
         run_id: run.id,
+        tenant_id: run.tenant_id,
         output_type: o.output_type,
-        storage_path: o.storage_path ?? null,
-        metadata: o.metadata ?? {},
+        content: { storage_path: o.storage_path ?? null, metadata: o.metadata ?? {} },
       })),
     );
     if (outputErr) console.error('automation_outputs insert failed', outputErr.message);

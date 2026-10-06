@@ -124,13 +124,13 @@ test.describe('Governance-AI-Landing (/)', () => {
       await expect(h1).toContainText(line);
     }
 
-    // P0: Free Audit → `/audit`, Live Dashboard → `/app` (Enterprise stays in header).
+    // P0: Free Audit / Governance-Scan → `/audit`. Kein Demo-Dashboard-CTA.
     await expect(
-      page.getByRole('link', { name: /Free Audit starten/i }).first(),
+      page.getByRole('link', { name: /Free Audit starten|Governance-Scan starten/i }).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Live Dashboard ansehen/i }).first(),
-    ).toBeVisible();
+      page.getByRole('link', { name: /Live Dashboard ansehen/i }),
+    ).toHaveCount(0);
     await expect(
       page.getByText(/DISCOVER\s*→\s*CLASSIFY\s*→\s*ENFORCE\s*→\s*PROVE/i).first(),
     ).toBeVisible();

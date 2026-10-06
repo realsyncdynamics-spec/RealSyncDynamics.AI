@@ -119,7 +119,7 @@ function VoiceSessionsList({ tenantId }: { tenantId: string }) {
         <p className="text-sm text-titanium-200">Noch keine Voice-Sessions.</p>
         <p className="mt-2 text-xs text-titanium-500 max-w-md mx-auto leading-relaxed">
           Der Voice-Runtime-Dienst ist noch nicht live geschaltet
-          (<span className="font-mono"> (apps/agent-runtime</span> hat keinen Deploy-Pfad;
+          (<span className="font-mono">apps/agent-runtime</span> hat keinen Deploy-Pfad;
           Telefonie ist nicht angebunden). Sobald Sessions geschrieben werden, erscheinen sie hier.
         </p>
       </div>

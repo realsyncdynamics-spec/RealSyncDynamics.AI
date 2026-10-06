@@ -42,9 +42,9 @@ import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } f
 import { BuilderUpgradePanel } from '../BuilderUpgradePanel';
 import { builderUpgradeHref, canOpenAppBuilder, canPublishSite, resolveBuilderEntitlements } from '../builderEntitlements';
 import {
-  deployPublishPreview, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
+  deployPublishPreview, deployPublishProduction, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
-  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type PublishPreviewResponse, type StoredBlueprintRow,
+  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type PublishPreviewResponse, type PublishProductionResponse, type StoredBlueprintRow,
 } from '../siteOsApi';
 import { toPageEdit, type PuckPageData } from '../editor/blueprintPuckAdapter';
 import {
@@ -113,7 +113,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [gate, setGate] = useState<PublishGateEvaluation | null>(null);
   const [checking, setChecking] = useState(false);
   const [previewDeploying, setPreviewDeploying] = useState(false);
+  const [productionDeploying, setProductionDeploying] = useState(false);
   const [hostedPreview, setHostedPreview] = useState<PublishPreviewResponse['preview'] | null>(null);
+  const [liveDeployment, setLiveDeployment] = useState<PublishProductionResponse['production'] | null>(null);
   const [console_, setConsole] = useState<ConsoleEntry[]>([]);
   const [chain, setChain] = useState<ChainRow[]>([]);
   const [evaluations, setEvaluations] = useState<EvaluationRow[]>([]);
@@ -239,6 +241,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       setRevision((r) => r + 1);
       setGate(null);
       setHostedPreview(null);
+      setLiveDeployment(null);
       const changeCount = saved.changes.length + (saved.theme_change ? 1 : 0);
       log('ok', `Version ${saved.version} gespeichert und geprüft (${changeCount} Änderung${changeCount === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
       if (saved.theme_change) log('info', saved.theme_change.summary);
@@ -290,6 +293,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       setHostedPreview(result.data.preview);
+      setLiveDeployment(null);
       setMode('preview');
       setRightTab('governance');
       setMobilePane('right');
@@ -302,6 +306,38 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       log('error', `Vorschau-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
     } finally {
       setPreviewDeploying(false);
+    }
+  };
+
+  // ── Production-Cutover nach realer Vorschau ─────────────────────────
+  const deployProduction = async () => {
+    if (!activeTenantId || !stored || !hostedPreview || dirty || productionDeploying || !publishEntitled) return;
+
+    const confirmed = window.confirm(
+      'Ich habe die reale Cloudflare-Vorschau geprüft und bestätige die Veröffentlichung dieser Version in Production.',
+    );
+    if (!confirmed) return;
+
+    setProductionDeploying(true);
+    try {
+      const result = await deployPublishProduction({
+        tenant_id: activeTenantId,
+        blueprint_id: stored.id,
+        confirm_preview: true,
+        confirm_go: true,
+        ...(sourceUrl ? { base_url: sourceUrl } : {}),
+      });
+      if (result.kind !== 'ok') throw new Error(errorMessage(result));
+      setLiveDeployment(result.data.production);
+      log(
+        'ok',
+        `Production veröffentlicht: ${result.data.production.branch} · ${result.data.production.artifact_sha256.slice(0, 12)}…`,
+      );
+      void loadGovernance(activeTenantId, stored.blueprint.slug);
+    } catch (cause) {
+      log('error', `Production-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
+    } finally {
+      setProductionDeploying(false);
     }
   };
 
@@ -410,6 +446,18 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         >
           {checking ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}<span className="hidden sm:inline">Prüfen</span>
         </button>
+        {liveDeployment && (
+          <a
+            href={liveDeployment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Live-Seite öffnen"
+            title={`Production öffnen · ${liveDeployment.artifact_sha256.slice(0, 12)}…`}
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-2 text-xs font-bold text-emerald-900 sm:px-3"
+          >
+            <ExternalLink size={14} /><span className="hidden sm:inline">Live öffnen</span>
+          </a>
+        )}
         {hostedPreview && (
           <a
             href={hostedPreview.url}
@@ -421,6 +469,18 @@ export default function AppBuilderWorkspacePage(): ReactElement {
           >
             <ExternalLink size={14} /><span className="hidden sm:inline">Vorschau öffnen</span>
           </a>
+        )}
+        {hostedPreview && publishEntitled && (
+          <button
+            onClick={() => void deployProduction()}
+            disabled={dirty || productionDeploying || previewDeploying || saving || busy}
+            title="Nach bestätigter Prüfung der realen Vorschau in Production veröffentlichen"
+            aria-label="Live veröffentlichen"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-2.5 py-2 text-xs font-bold text-white disabled:opacity-40 sm:px-3"
+          >
+            {productionDeploying ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            <span className="hidden sm:inline">Live veröffentlichen</span>
+          </button>
         )}
         {publishEntitled ? (
           <button

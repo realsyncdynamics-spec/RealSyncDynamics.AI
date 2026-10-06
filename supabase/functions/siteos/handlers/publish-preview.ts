@@ -275,7 +275,7 @@ export async function handle(req: Request): Promise<Response> {
       triggered_by_user_id: userResp.user.id,
       started_at: startedAt,
       completed_at: new Date().toISOString(),
-    }).catch(() => {});
+    });
 
     await audit(admin, {
       tenant_id: tenantId,
@@ -290,7 +290,7 @@ export async function handle(req: Request): Promise<Response> {
         evaluation_id: release.manifest.evaluation_id,
         error_code: code,
       },
-    }).catch(() => {});
+    });
 
     console.error(JSON.stringify({
       level: 'error',

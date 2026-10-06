@@ -596,6 +596,9 @@ export class GrokProvider implements VoiceProvider {
         this.maybeContinue(state);
         return;
       case 'response.function_call_arguments.done':
+        // Während connecting/closing keine neuen Tool-Calls annehmen:
+        // submitToolResult wäre nicht (mehr) möglich.
+        if (state.status !== 'open') return;
         this.onFunctionCall(state, msg);
         return;
       case 'error': {

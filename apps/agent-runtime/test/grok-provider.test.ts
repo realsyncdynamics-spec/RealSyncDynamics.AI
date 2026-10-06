@@ -660,6 +660,27 @@ describe('GrokProvider — Tool-Calls', () => {
       /outcome/,
     );
   });
+
+  it('Tool-Calls während closing werden verworfen (kein tool.call, kein pendingCalls)', async () => {
+    const h = harness({ closeTimeoutMs: 200 });
+    const { socket } = await openSession(h);
+    socket.emitCloseOnClose = false; // Close-Event verzögern → Status bleibt 'closing'
+    const closing = h.provider.closeSession('sess_grok_1', 'caller');
+    await tick();
+    assert.equal(h.provider.getSession('sess_grok_1')?.status, 'closing');
+    socket.server(functionCall('call_late', 'lookup_kb', { query: 'zu spät' }));
+    assert.equal(ofType(h.events, 'tool.call').length, 0);
+    // Transkript während closing bleibt erlaubt.
+    socket.server({
+      type: 'conversation.item.input_audio_transcription.completed',
+      item_id: 'm_late',
+      transcript: 'Abschluss',
+    });
+    assert.equal(ofType(h.events, 'transcript.user').some((e) => e.text === 'Abschluss' && e.final), true);
+    socket.serverClose(1000);
+    await closing;
+    assert.equal(ofType(h.events, 'tool.call').length, 0);
+  });
 });
 
 describe('GrokProvider — Fehler und Lebenszyklus', () => {

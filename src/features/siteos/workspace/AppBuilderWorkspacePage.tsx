@@ -30,14 +30,14 @@ import { SandboxedPreviewFrame } from '../../../components/preview/SandboxedPrev
 import { createSiteOsCheckoutSession } from '../../billing/checkout';
 import {
   analyzeBlueprint,
-  applyPageEdits,
+  applySiteEdits,
   canonicalize,
   renderSite,
   type PageOperation,
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index';
-import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
+import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
 import {
   editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
@@ -89,7 +89,8 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [pagePath, setPagePath] = useState('/');
   const [mode, setMode] = useState<Mode>('edit');
   const [device, setDevice] = useState<Device>('desktop');
-  const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
+  // null = gespeichertes Theme unverändert lassen; Auswahl wird erst beim Speichern Teil der Version.
+  const [templateOverride, setTemplateOverride] = useState<SiteDesignTemplate | null>(null);
   const [navTab, setNavTab] = useState<NavTab>('pages');
   const [rightTab, setRightTab] = useState<RightTab>('assistant');
   const [bottomTab, setBottomTab] = useState<BottomTab>('console');
@@ -164,11 +165,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
 
   // ── Lokale Fassung ───────────────────────────────────────────────────
   const edits = useMemo(() => Object.entries(pageData).map(([path, data]) => toPageEdit(path, data)), [pageData]);
-  // Dieselbe Logik wie der Server: Die Leinwand zeigt, was gespeichert würde.
+  // Dieselbe Logik wie der Server: Blöcke und optionales Design ergeben die lokale Fassung.
   const localBlueprint = useMemo<SiteBlueprint | null>(
-    () => stored ? (edits.length > 0 ? applyPageEdits(stored.blueprint, edits).blueprint : stored.blueprint) : null,
-    [stored, edits],
+    () => stored ? applySiteEdits(stored.blueprint, edits, templateOverride).blueprint : null,
+    [stored, edits, templateOverride],
   );
+  const activeTemplate = useMemo(() => matchDesignTemplate(localBlueprint?.theme), [localBlueprint]);
   const dirty = useMemo(
     () => Boolean(stored && localBlueprint && canonicalize(localBlueprint) !== canonicalize(stored.blueprint)),
     [stored, localBlueprint],
@@ -180,10 +182,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   // abgeleitet. Ohne Bewertung steht „keine" da, nicht „in Ordnung".
   const govStatus = useMemo(() => governanceStatus(evaluations, stored?.id ?? ''), [evaluations, stored?.id]);
 
-  const previewBlueprint = useMemo(() => localBlueprint ? applySiteDesignTemplate(localBlueprint, template) : null, [localBlueprint, template]);
   const previewHtml = useMemo(
-    () => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl ?? undefined, presentation: 'showcase' }).find((p) => p.path === pagePath)?.html ?? '' : '',
-    [previewBlueprint, sourceUrl, pagePath],
+    () => localBlueprint ? renderSite(localBlueprint, { baseUrl: sourceUrl ?? undefined, presentation: 'showcase' }).find((p) => p.path === pagePath)?.html ?? '' : '',
+    [localBlueprint, sourceUrl, pagePath],
   );
 
   // ── Speichern — Redaktion und Seitenoperationen, ein Weg ─────────────
@@ -191,7 +192,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   // einem siteos/edit-Request versioniert. Der Client schickt nur Absichten.
   const persist = async (ops: PageOperation[] = []) => {
     if (!activeTenantId || !stored || saving) return;
-    if (edits.length === 0 && ops.length === 0) return;
+    if (edits.length === 0 && ops.length === 0 && !templateOverride) return;
     setSaving(true); setSaveError('');
     try {
       const result = await editSite({
@@ -200,6 +201,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         base_sha256: stored.content_sha256,
         ...(edits.length > 0 ? { edits } : {}),
         ...(ops.length > 0 ? { pages: ops } : {}),
+        ...(templateOverride ? { design_template: templateOverride } : {}),
       });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       const saved = result.data;
@@ -220,9 +222,12 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         status: 'draft',
       });
       setPageData({});
+      setTemplateOverride(null);
       setRevision((r) => r + 1);
       setGate(null);
-      log('ok', `Version ${saved.version} gespeichert und geprüft (${saved.changes.length} Änderung${saved.changes.length === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
+      const changeCount = saved.changes.length + (saved.theme_change ? 1 : 0);
+      log('ok', `Version ${saved.version} gespeichert und geprüft (${changeCount} Änderung${changeCount === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
+      if (saved.theme_change) log('info', saved.theme_change.summary);
       for (const change of saved.changes) log('info', `${change.summary}${change.complianceNote ? ` — ${change.complianceNote}` : ''}`);
 
       const created = saved.changes.find((change) =>
@@ -405,9 +410,15 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     <div className="mt-7 border-t border-black/[.07] pt-5">
       <div className={SECTION_LABEL}>Design</div>
       {SITE_DESIGN_TEMPLATES.map((item) => (
-        <button key={item.id} onClick={() => setTemplate(item.id)} aria-pressed={template === item.id} className={`mb-2 flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs ${template === item.id ? 'border-cyan-400/40 bg-cyan-50 text-cyan-800' : 'border-black/[.07]'}`}>{item.label}{template === item.id && <Check size={14} />}</button>
+        <button key={item.id} onClick={() => setTemplateOverride(item.id)} aria-pressed={activeTemplate === item.id} className={`mb-2 flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs ${activeTemplate === item.id ? 'border-cyan-400/40 bg-cyan-50 text-cyan-800' : 'border-black/[.07]'}`}>{item.label}{activeTemplate === item.id && <Check size={14} />}</button>
       ))}
-      <p className="text-[11px] leading-5 text-black/45">Die Vorlage wirkt auf Vorschau und Leinwand; gespeichert wird sie nicht — der Blueprint trägt sein eigenes Theme.</p>
+      {activeTemplate === null && (
+        <p className="mb-2 text-[11px] leading-5 text-black/55" data-testid="custom-theme">Eigenes Theme aus dem Bau — eine Vorlage ersetzt Farben, Schriften und Radius.</p>
+      )}
+      {templateOverride && (
+        <button onClick={() => setTemplateOverride(null)} className="mb-2 text-[11px] font-semibold text-cyan-700 underline">Vorlage verwerfen</button>
+      )}
+      <p className="text-[11px] leading-5 text-black/45">Die Vorlage wird mit „Speichern“ Teil der neuen Version und vom Publish Gate mitgeprüft.</p>
     </div>
   );
 
@@ -486,7 +497,6 @@ export default function AppBuilderWorkspacePage(): ReactElement {
             <SiteOsBlockEditor
               storedBlueprint={stored.blueprint}
               localBlueprint={localBlueprint}
-              template={template}
               pagePath={pagePath}
               pageData={pageData[pagePath]}
               onPageDataChange={(path, data) => setPageData((prev) => ({ ...prev, [path]: data }))}

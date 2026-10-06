@@ -8,6 +8,10 @@ test.describe.configure({ mode: 'serial' });
 
 test('real owner session: governed SiteOS preview -> production', async ({ page, request }) => {
   test.setTimeout(240_000);
+  test.skip(
+    process.env.RUN_SITEOS_PRODUCTION_E2E !== 'true',
+    'production publish E2E only runs in the dedicated guarded workflow',
+  );
 
   if (!EMAIL || !PASSWORD) {
     throw new Error('E2E_TEST_EMAIL/E2E_TEST_PASSWORD GitHub Actions secrets are required');

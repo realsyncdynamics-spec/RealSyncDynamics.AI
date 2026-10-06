@@ -8,7 +8,9 @@
 import { getSupabase } from '../../lib/supabase';
 import type {
   EditChange,
+  PageChange,
   PageEdit,
+  PageOperation,
   AgentKey,
   PublishGateEvaluation,
   RefinementChange,
@@ -204,7 +206,8 @@ export interface EditResponse {
   blueprint: SiteBlueprint;
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
-  changes: EditChange[];
+  /** Blockänderungen und Seitenoperationen in Anwendungsreihenfolge. */
+  changes: (EditChange | PageChange)[];
   rejected: string[];
   provenance_linked?: boolean;
 }
@@ -221,7 +224,9 @@ export async function editSite(args: {
   tenant_id: string;
   slug: string;
   base_sha256: string;
-  edits: PageEdit[];
+  edits?: PageEdit[];
+  /** Strukturänderungen als Absicht; der Server leitet die neue Seite ab. */
+  pages?: PageOperation[];
 }): Promise<SiteOsResult<EditResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });

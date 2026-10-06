@@ -225,13 +225,15 @@ governed Voice-Session über `VoiceSessionRuntime.startSession`.
 | `bot_id` **oder** `number_binding_id` | genau eines | UUID |
 | `correlation_id` | nein | UUID |
 | `input_audio` / `output_audio` | nein | Allowlist: `pcm16`/`g711_ulaw`/`g711_alaw` + 8/16/24/48 kHz |
-| `consent` | nein | `{ purposes[], withdrawn_at }` |
+| `consent` | nein | `{ purposes[], withdrawn_at }` — fehlt → `null` (fail-closed, keine erfundene Einwilligung) |
 
 **Verboten im Body** (führen zu `400`, erreichen `startSession` nie):
 `tenantId`/`tenant_id`, `policy`/`policy_ref`, `disclosure`/`disclosure_text`,
 `provider`, `model`, `offered_tools`, `instructions`. Tenant nie aus URL.
 Snapshot kommt ausschließlich aus `voice_bot_configs` /
 `voice_number_bindings`. Instructions = serverseitiger Default.
+Ohne Body-`consent` geht `consent: null` an `startSession` → Tool-Calls
+scheitern an der Consent-Prüfung, bis eine echte Einwilligung vorliegt.
 
 **Antworten**
 

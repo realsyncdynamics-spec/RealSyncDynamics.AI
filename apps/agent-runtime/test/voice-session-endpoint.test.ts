@@ -272,6 +272,34 @@ describe('POST /voice-sessions', () => {
     }
   });
 
+  it('ohne consent im Body wird keine Einwilligung erfunden', async () => {
+    h = await startHarness();
+    try {
+      const startCalls: Array<{ consent: unknown }> = [];
+      const originalStart = h.runtime.startSession.bind(h.runtime);
+      h.runtime.startSession = async (request) => {
+        startCalls.push({ consent: request.consent });
+        return originalStart(request);
+      };
+
+      const res = await postJson(
+        h.baseUrl,
+        '/voice-sessions',
+        { bot_id: BOT },
+        { Authorization: `Bearer ${TOKEN}` },
+      );
+      assert.equal(res.status, 201);
+      assert.equal(startCalls.length, 1);
+      assert.equal(startCalls[0]!.consent, null);
+
+      const rows = h.store.listSessions(TENANT);
+      assert.equal(rows.length, 1);
+      assert.deepEqual(rows[0]!.consentPurposes, []);
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
   it('Caller-tenantId/policy/disclosure im Body → 400, erreichen startSession nie', async () => {
     h = await startHarness();
     try {

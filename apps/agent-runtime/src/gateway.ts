@@ -100,8 +100,18 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
   app.disable('x-powered-by');
   app.use(express.json({ limit: '256kb' }));
 
-  function requireBearerToken(req: Request, res: Response, next: NextFunction): void {
+  /* ------------------------------------------------------------------ */
+  /* Auth-Middleware — Bearer-Token-Pflicht für /agents und /run-agent. */
+  /* ------------------------------------------------------------------ */
+
+  function requireBearerToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
     if (!env.apiToken) {
+      // Nicht-Prod ohne Token: explizit ablehnen statt durchwinken,
+      // damit Devs den Token sofort konfigurieren.
       res.status(503).json({
         ok: false,
         status: 'denied',
@@ -122,6 +132,10 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
 
     next();
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Routes                                                              */
+  /* ------------------------------------------------------------------ */
 
   app.get('/health', (_req, res) => {
     res.json({ ok: true, service: 'realsync-agent-runtime', port: env.port });
@@ -154,6 +168,9 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
 
     const request = parsed.data;
 
+    // Voice läuft nur über /voice-tool. evaluate() bleibt unangetastet —
+    // dieser Kanal-Guard sitzt davor, sonst umgeht /run-agent Consent,
+    // Kill Switch und den 8-Check-Prüfpfad.
     if (request.agentId === VOICE_AGENT_ID) {
       const auditEvent = emitAuditEvent({
         status: 'denied',
@@ -202,6 +219,19 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       return;
     }
 
+    /* ---------------------------------------------------------------- */
+    /* Agent-PEP (P1-5): zentrale Policies VOR der Freigabe des Laufs.   */
+    /*                                                                   */
+    /* Die lokale Registry-Prüfung oben bleibt die erste Schranke — sie  */
+    /* kennt die erlaubten Werkzeuge des Agenten. Der PDP kommt darüber: */
+    /* er kennt die Regeln des Mandanten. Ein lokales Nein bleibt ein    */
+    /* Nein; der PDP kann nur zusätzlich anhalten, nie zusätzlich        */
+    /* erlauben.                                                         */
+    /*                                                                   */
+    /* Bewertet werden ausschließlich strukturierte Fakten des Aufrufs — */
+    /* Argumentwerte und Modellausgabe verlassen den Prozess nie         */
+    /* (sanitizeToolCall, Prompt-Injection-Schutz K6).                   */
+    /* ---------------------------------------------------------------- */
     let pdpAudit: { decision: string; mode: string; reason: string | null } | undefined;
 
     if (pdpConfig.enforcement !== 'off') {
@@ -225,10 +255,8 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
 
       if (!applied.allowed) {
         const reason: DenyReason =
-          verdict.outcome === 'require_approval'
-            ? 'approval_required'
-            : verdict.outcome === 'unavailable'
-              ? 'policy_engine_unavailable'
+          verdict.outcome === 'require_approval' ? 'approval_required'
+            : verdict.outcome === 'unavailable' ? 'policy_engine_unavailable'
               : 'policy_blocked';
         const auditEvent = emitAuditEvent({
           status: 'denied',
@@ -237,14 +265,14 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
           request,
           pdp: pdpAudit,
         });
-        const denyBody: RunAgentResponse = {
+        const body: RunAgentResponse = {
           ok: false,
           status: 'denied',
           reason,
           message: applied.reason ?? undefined,
           auditEvent,
         };
-        res.status(403).json(denyBody);
+        res.status(403).json(body);
         return;
       }
     }
@@ -257,14 +285,14 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       pdp: pdpAudit,
     });
 
-    const acceptBody: RunAgentResponse = {
+    const body: RunAgentResponse = {
       ok: true,
       status: 'accepted',
       reviewRequired: decision.reviewRequired,
       agent: { id: agent.id, name: agent.name },
       auditEvent,
     };
-    res.json(acceptBody);
+    res.json(body);
   });
 
   const voiceConsentPurposes: [VoiceConsentPurpose, ...VoiceConsentPurpose[]] = [
@@ -299,6 +327,10 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       .nullable(),
   });
 
+  /**
+   * Voice-Kanal. LLM schlägt nur vor — diese Route entscheidet.
+   * Keine Tool-Ausführung (gleicher Scope wie /run-agent).
+   */
   app.post('/voice-tool', requireBearerToken, async (req, res) => {
     const parsed = voiceToolSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -388,6 +420,19 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       return;
     }
 
+    /* ---------------------------------------------------------------- */
+    /* Agent-PEP auch auf dem Sprachkanal (P1-5).                        */
+    /*                                                                   */
+    /* Die Kanal-Policy oben ist reicher als der PDP (Einwilligung,      */
+    /* Kill-Switch, Rate-Limit) und bleibt die erste Schranke — ihr DENY */
+    /* ist oben schon beantwortet. Der PDP kommt darüber und bringt die  */
+    /* Regeln des Mandanten ein; er kann nur zusätzlich anhalten, nie    */
+    /* zusätzlich erlauben.                                              */
+    /*                                                                   */
+    /* Ohne diesen Aufruf wäre der Sprachkanal ein Werkzeugpfad, der an  */
+    /* der zentralen Governance vorbeiläuft — genau die Lücke, die P1-5  */
+    /* für /run-agent geschlossen hat.                                   */
+    /* ---------------------------------------------------------------- */
     if (pdpConfig.enforcement !== 'off') {
       const verdict = await askPdp(
         pdpConfig,
@@ -395,6 +440,8 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
           agentId: body.agentId,
           taskType: 'voice_tool',
           requestedTool: body.tool,
+          // `args` ist LLM-Vorschlag: Nur die Argumentnamen verlassen den
+          // Prozess, nie die Werte (K6).
           input: (body.args ?? {}) as Record<string, unknown>,
           requiresHumanReview: decision.verdict === 'REQUIRE_CONFIRMATION',
         }),
@@ -402,10 +449,8 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       const applied = applyVerdict(pdpConfig, verdict);
       if (!applied.allowed) {
         const reason: DenyReason =
-          verdict.outcome === 'require_approval'
-            ? 'approval_required'
-            : verdict.outcome === 'unavailable'
-              ? 'policy_engine_unavailable'
+          verdict.outcome === 'require_approval' ? 'approval_required'
+            : verdict.outcome === 'unavailable' ? 'policy_engine_unavailable'
               : 'policy_blocked';
         const pdpAudit = emitAuditEvent({
           status: 'denied',
@@ -473,6 +518,8 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
   /**
    * .strict(): tenantId/policy/disclosure/provider/model/offered_tools/instructions
    * und sonstige Fremdfelder → 400 invalid_request (erreichen startSession nie).
+   *
+   * Consent: ohne Body-Feld → null (fail-closed). Keine erfundene Einwilligung.
    */
   const voiceSessionStartSchema = z
     .object({
@@ -520,6 +567,7 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
     const outputAudio = mapAudio(body.output_audio) ?? DEFAULT_OUTPUT_AUDIO;
 
     // Nur nicht-autoritative Felder — Snapshot kommt ausschließlich aus dem Store.
+    // Ohne Body-Consent: null → Tool-Calls scheitern an der Consent-Prüfung.
     const startRequest: VoiceSessionStartRequest = {
       botId: body.bot_id,
       numberBindingId: body.number_binding_id,
@@ -539,7 +587,7 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
             purposes: body.consent.purposes,
             withdrawnAt: body.consent.withdrawn_at,
           }
-        : { purposes: ['execute_tools', 'store_evidence'], withdrawnAt: null },
+        : null,
     };
 
     try {
@@ -591,8 +639,13 @@ function isDirectGatewayEntry(): boolean {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Boot                                                                */
+/* ------------------------------------------------------------------ */
+
 if (isDirectGatewayEntry()) {
   const env = loadEnv();
+  const pdpConfig = loadPdpConfig();
   const app = createGatewayApp({ env });
   app.listen(env.port, () => {
     process.stdout.write(
@@ -602,6 +655,9 @@ if (isDirectGatewayEntry()) {
         port: env.port,
         node_env: env.nodeEnv,
         auth_enforced: Boolean(env.apiToken),
+        pdp_enforcement: pdpConfig.enforcement,
+        pdp_configured: Boolean(pdpConfig.url && pdpConfig.key),
+        pdp_failure_mode: pdpConfig.failureMode,
         timestamp: new Date().toISOString(),
       })}\n`,
     );

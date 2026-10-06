@@ -1,6 +1,9 @@
 /**
  * Read-only hook: list voice sessions for the active tenant.
  * Does not fetch when tenantId is null/undefined.
+ *
+ * Request generations guard against stale responses (tenant switch + loadMore
+ * races, including A→B→A where tenantRef alone is insufficient).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { listVoiceSessions, type VoiceSessionRow } from './voiceApi';
@@ -24,28 +27,37 @@ export function useVoiceSessions(tenantId: string | null): UseVoiceSessionsResul
   const [offset, setOffset] = useState(0);
   const tenantRef = useRef(tenantId);
   tenantRef.current = tenantId;
+  const requestGenerationRef = useRef(0);
 
   const fetchPage = useCallback(async (tid: string, pageOffset: number, append: boolean) => {
+    const generation = ++requestGenerationRef.current;
     setLoading(true);
     setError(null);
+    if (!append) {
+      setSessions([]);
+      setHasMore(false);
+    }
     try {
       const rows = await listVoiceSessions(tid, { limit: PAGE_SIZE, offset: pageOffset });
-      if (tenantRef.current !== tid) return;
+      if (tenantRef.current !== tid || requestGenerationRef.current !== generation) return;
       setSessions((prev) => (append ? [...prev, ...rows] : rows));
       setHasMore(rows.length === PAGE_SIZE);
       setOffset(pageOffset + rows.length);
     } catch (e) {
-      if (tenantRef.current !== tid) return;
+      if (tenantRef.current !== tid || requestGenerationRef.current !== generation) return;
       setError(e instanceof Error ? e.message : 'Voice-Sessions konnten nicht geladen werden.');
       if (!append) setSessions([]);
       setHasMore(false);
     } finally {
-      if (tenantRef.current === tid) setLoading(false);
+      if (tenantRef.current === tid && requestGenerationRef.current === generation) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     if (!tenantId) {
+      requestGenerationRef.current += 1;
       setSessions([]);
       setError(null);
       setLoading(false);

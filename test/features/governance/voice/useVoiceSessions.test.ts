@@ -73,4 +73,29 @@ describe('useVoiceSessions', () => {
     expect(result.current.sessions[0].id).toBe('sess-1');
     expect(result.current.error).toBeNull();
   });
+
+  it('verwirft veraltete Antworten nach Tenant-Wechsel (Generation)', async () => {
+    let resolveA: (rows: VoiceSessionRow[]) => void = () => {};
+    const pendingA = new Promise<VoiceSessionRow[]>((resolve) => {
+      resolveA = resolve;
+    });
+    listMock.mockImplementationOnce(() => pendingA);
+    listMock.mockResolvedValueOnce([{ ...sample, id: 'sess-b', bot_id: 'bot-b' }]);
+
+    const { result, rerender } = renderHook(
+      ({ tid }: { tid: string | null }) => useVoiceSessions(tid),
+      { initialProps: { tid: 'tenant-a' as string | null } },
+    );
+
+    await waitFor(() => expect(listMock).toHaveBeenCalledTimes(1));
+    rerender({ tid: 'tenant-b' });
+    await waitFor(() => expect(result.current.sessions[0]?.id).toBe('sess-b'));
+
+    await act(async () => {
+      resolveA([{ ...sample, id: 'sess-stale' }]);
+      await Promise.resolve();
+    });
+
+    expect(result.current.sessions.map((s) => s.id)).toEqual(['sess-b']);
+  });
 });

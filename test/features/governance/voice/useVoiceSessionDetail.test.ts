@@ -47,4 +47,55 @@ describe('useVoiceSessionDetail', () => {
     expect(result.current.detail).toBeNull();
     expect(result.current.notFound).toBe(false);
   });
+
+  it('verwirft stale A→B→A Responses per Generation', async () => {
+    const detailA1: VoiceSessionDetail = {
+      session: {
+        id: 'sess-1',
+        bot_id: 'bot-1',
+        provider: 'grok',
+        model: 'm1',
+        status: 'ended',
+        disclosure_played_at: null,
+        kill_switch: false,
+        started_at: '2026-10-01T12:00:00Z',
+        ended_at: null,
+      },
+      toolRequests: [],
+      executionsByRequestId: {},
+      evidence: [],
+    };
+    const detailA2: VoiceSessionDetail = {
+      ...detailA1,
+      session: { ...detailA1.session, model: 'm2-newer' },
+    };
+
+    let resolveFirstA: (v: VoiceSessionDetail | null) => void = () => {};
+    const firstA = new Promise<VoiceSessionDetail | null>((resolve) => {
+      resolveFirstA = resolve;
+    });
+
+    loadMock.mockImplementationOnce(() => firstA);
+    loadMock.mockResolvedValueOnce(null); // B → not found
+    loadMock.mockResolvedValueOnce(detailA2); // second A
+
+    const { result, rerender } = renderHook(
+      ({ tid, sid }: { tid: string | null; sid: string | undefined }) =>
+        useVoiceSessionDetail(tid, sid),
+      { initialProps: { tid: 'tenant-a' as string | null, sid: 'sess-1' as string | undefined } },
+    );
+
+    await waitFor(() => expect(loadMock).toHaveBeenCalledTimes(1));
+    rerender({ tid: 'tenant-b', sid: 'sess-1' });
+    await waitFor(() => expect(result.current.notFound).toBe(true));
+    rerender({ tid: 'tenant-a', sid: 'sess-1' });
+    await waitFor(() => expect(result.current.detail?.session.model).toBe('m2-newer'));
+
+    await act(async () => {
+      resolveFirstA(detailA1);
+      await Promise.resolve();
+    });
+
+    expect(result.current.detail?.session.model).toBe('m2-newer');
+  });
 });

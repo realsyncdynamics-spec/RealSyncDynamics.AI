@@ -11,6 +11,7 @@ import type {
   PageChange,
   PageEdit,
   PageOperation,
+  ThemeChange,
   AgentKey,
   PublishGateEvaluation,
   RefinementChange,
@@ -208,6 +209,7 @@ export interface EditResponse {
   scores: ScoreBreakdown;
   /** Blockänderungen und Seitenoperationen in Anwendungsreihenfolge. */
   changes: (EditChange | PageChange)[];
+  theme_change: ThemeChange | null;
   rejected: string[];
   provenance_linked?: boolean;
 }
@@ -227,6 +229,8 @@ export async function editSite(args: {
   edits?: PageEdit[];
   /** Strukturänderungen als Absicht; der Server leitet die neue Seite ab. */
   pages?: PageOperation[];
+  /** Nur eine bekannte Template-ID; Theme-Werte setzt der Server aus dem Core. */
+  design_template?: string;
 }): Promise<SiteOsResult<EditResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });

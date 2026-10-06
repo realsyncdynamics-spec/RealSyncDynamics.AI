@@ -32,6 +32,7 @@ import { handleExport } from './publish-gate.ts';
 const PUBLISHER_ROLES = new Set(['owner', 'admin']);
 
 // No generated Database type exists in this repository.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AdminClient = ReturnType<typeof createClient<any, 'public', any>>;
 
 interface PublishExportPayload {

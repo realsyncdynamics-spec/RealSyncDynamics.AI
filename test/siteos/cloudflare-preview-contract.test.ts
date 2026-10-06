@@ -45,16 +45,19 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
     expect(transport).not.toContain("form.set('commit_hash', args.artifactSha256)");
   });
 
-  it('never accepts release files or deployment target from the browser', () => {
-    expect(handler).toContain('const exportRequest = req.clone()');
-    expect(handler).toContain('const releaseResponse = await handleExport(exportRequest)');
-    expect(handler).toContain("select('id, project_id, slug')");
+  it('never accepts release files, GO state or deployment target from the browser', () => {
+    expect(handler).toContain('const gateRequest = req.clone()');
+    expect(handler).toContain('const gateResponse = await handlePublishGate(gateRequest)');
+    expect(handler).toContain("select('id, project_id, slug, blueprint')");
     expect(handler).toContain("'PROJECT_REQUIRED'");
     expect(handler).toContain(".eq('id', blueprintRow.project_id)");
+    expect(handler).not.toContain('handleExport');
     expect(handler).not.toContain('body.project_id');
     expect(handler).not.toContain('body.files');
     expect(handler).not.toContain('body.artifact_sha256');
     expect(handler).not.toContain('body.cloudflare_project');
+    expect(handler).not.toContain('body.confirm_go');
+    expect(handler).not.toContain("'siteos.publish.go'");
   });
 
   it('does not mark a preview as a production deployment', () => {
@@ -67,15 +70,19 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
     expect(handler).not.toContain('website_domains');
   });
 
-  it('checks local prerequisites before recording the governed GO', () => {
+  it('checks local prerequisites, evaluates fresh, then binds transport to the evaluated artifact', () => {
     const config = handler.indexOf('CLOUDFLARE_NOT_CONFIGURED');
     const project = handler.indexOf("'PROJECT_REQUIRED'");
-    const exportCall = handler.indexOf('handleExport(exportRequest)');
+    const gate = handler.indexOf('handlePublishGate(gateRequest)');
+    const build = handler.indexOf('buildDeploymentArtifact(blueprintRow.blueprint');
+    const hashCheck = handler.indexOf('artifact.artifactSha256 !== evaluation.artifact_sha256');
     const upload = handler.indexOf('deployPagesPreview({');
     expect(config).toBeGreaterThanOrEqual(0);
     expect(project).toBeGreaterThan(config);
-    expect(exportCall).toBeGreaterThan(project);
-    expect(upload).toBeGreaterThan(exportCall);
+    expect(gate).toBeGreaterThan(project);
+    expect(build).toBeGreaterThan(gate);
+    expect(hashCheck).toBeGreaterThan(build);
+    expect(upload).toBeGreaterThan(hashCheck);
   });
 
   it('registers one explicit preview route and a narrow client request', () => {
@@ -86,8 +93,9 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
     expect(src).toContain("invoke('siteos/publish-preview'");
     expect(src).toContain('tenant_id: string');
     expect(src).toContain('blueprint_id: string');
-    expect(src).toContain('confirm_go: true');
-    expect(src).toContain('confirm_preview: true');
+    expect(src).toContain('confirm_preview_deploy: true');
+    expect(src).not.toContain('confirm_go: true');
+    expect(src).not.toContain('confirm_preview: true');
     expect(src).not.toContain('files:');
     expect(src).not.toContain('artifact_sha256:');
     expect(src).not.toContain('project_id:');

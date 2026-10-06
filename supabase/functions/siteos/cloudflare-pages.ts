@@ -61,6 +61,18 @@ interface PagesDeploymentApi {
   id: string;
   url: string;
   environment?: string | null;
+  deployment_trigger?: {
+    metadata?: {
+      branch?: string | null;
+    } | null;
+  } | null;
+}
+
+export interface PagesDeploymentRef {
+  id: string;
+  url: string;
+  environment: string | null;
+  branch: string | null;
 }
 
 export class CloudflarePagesError extends Error {
@@ -113,6 +125,35 @@ export async function getPagesProject(args: {
     args.projectName,
   );
   return existing ? toProjectRef(existing, args.projectName, false) : null;
+}
+
+/**
+ * Read one concrete Pages deployment. Used by the production gate to prove
+ * that the preview a human is confirming still exists remotely.
+ */
+export async function getPagesDeployment(args: {
+  accountId: string;
+  apiToken: string;
+  projectName: string;
+  deploymentId: string;
+  fetchImpl?: typeof fetch;
+}): Promise<PagesDeploymentRef | null> {
+  const fetchImpl = args.fetchImpl ?? fetch;
+  requireCredentials(args.accountId, args.apiToken);
+  const deployment = await cfRequest<PagesDeploymentApi>(
+    fetchImpl,
+    `/accounts/${encodeURIComponent(args.accountId)}/pages/projects/${encodeURIComponent(args.projectName)}/deployments/${encodeURIComponent(args.deploymentId)}`,
+    args.apiToken,
+    { method: 'GET' },
+    true,
+  );
+  if (!deployment) return null;
+  return {
+    id: deployment.id,
+    url: deployment.url,
+    environment: deployment.environment ?? null,
+    branch: deployment.deployment_trigger?.metadata?.branch ?? null,
+  };
 }
 
 /**

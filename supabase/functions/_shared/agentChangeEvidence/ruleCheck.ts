@@ -68,11 +68,15 @@ const CONTENT_RULES: Array<{ cls: HitClass; re: RegExp }> = [
   { cls: 'env', re: /\.env(\.|$|\s|"|')/i },
   { cls: 'secrets', re: /(aws_secret_access_key|private[_-]?key|client_secret)\s*[=:]/i },
   { cls: 'credentials', re: /(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})/ },
-  { cls: 'tracking', re: /(googletagmanager\.com\/gtag|connect\.facebook\.net\/.*fbevents|static\.hotjar\.com)/i },
-  { cls: 'third_party_scripts', re: /https?:\/\/[^"'\s>]+\.(js)(\?[^"'\s>]*)?/i },
+  // Host patterns are protocol-anchored so a suffix/prefix host cannot spoof them (CodeQL js/regex/missing-regexp-anchor).
+  {
+    cls: 'tracking',
+    re: /https?:\/\/(?:www\.)?googletagmanager\.com\/gtag(?:[/?#"'\s]|$)|https?:\/\/connect\.facebook\.net\/[^"'\s>]*fbevents|https?:\/\/static\.hotjar\.com(?:[/?#"'\s]|$)/i,
+  },
+  { cls: 'third_party_scripts', re: /https?:\/\/[^"'\s>]+\.js(?:\?[^"'\s>]*)?/i },
   {
     cls: 'model_providers',
-    re: /(api\.openai\.com|api\.anthropic\.com|api\.mistral\.ai|generativelanguage\.googleapis\.com|api\.cohere\.ai|api\.groq\.com|openai\.azure\.com)/i,
+    re: /https?:\/\/(?:api\.openai\.com|api\.anthropic\.com|api\.mistral\.ai|generativelanguage\.googleapis\.com|api\.cohere\.ai|api\.groq\.com|[^/"'\s>]+\.openai\.azure\.com)(?:[/?#"'\s]|$)/i,
   },
   { cls: 'policy_files', re: /\b(ENABLE ROW LEVEL SECURITY|CREATE POLICY|ALTER POLICY)\b/i },
 ];

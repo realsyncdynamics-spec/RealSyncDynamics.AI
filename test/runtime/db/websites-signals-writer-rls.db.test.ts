@@ -1,4 +1,5 @@
 /**
+ * Branch-sync marker: security regression coverage rerun after main advanced.
  * websites und security_signals — Schreiben nur mit schreibender Rolle und nur
  * die Spalten, die die Oberfläche setzt
  * (Migration 20261005150000_websites_security_signals_writer_rls.sql).

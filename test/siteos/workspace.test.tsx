@@ -401,6 +401,40 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
   });
 });
 
+describe('App Builder Workspace — ungespeicherte Änderungen', () => {
+  it('warnt vor Browser-Verlassen und blockiert interne Navigation bis zur Bestätigung', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const add = vi.spyOn(window, 'addEventListener');
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(add.mock.calls.some(([type]) => type === 'beforeunload')).toBe(false);
+
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+    await waitFor(() => expect(screen.getByTestId('save-state')).toHaveAttribute('data-state', 'unsaved'));
+    await waitFor(() => expect(add.mock.calls.some(([type]) => type === 'beforeunload')).toBe(true));
+
+    fireEvent.click(screen.getByRole('link', { name: 'Zur Übersicht' }));
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringMatching(/ungespeicherte Änderungen/i));
+    expect(screen.getByTestId('editor')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('open-code-builder'));
+    expect(confirmSpy).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('editor')).toBeInTheDocument();
+
+    confirmSpy.mockReturnValue(true);
+    fireEvent.click(screen.getByTestId('open-code-builder'));
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe(`/builder/${blueprint.slug}/code`),
+    );
+
+    add.mockRestore();
+    confirmSpy.mockRestore();
+  });
+});
+
 describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
   it('öffnet Puck weiterhin unter /builder/:slug', async () => {
     const { blueprint, sha256 } = await sample();

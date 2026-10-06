@@ -319,6 +319,25 @@ describe('VoiceSessionRuntime — voice_sessions Persistenz', () => {
     assert.ok(evidence.some((e) => e.kind === 'tool.request'));
     assert.ok(evidence.every((e) => e.sessionId === voiceSessionId));
   });
+
+  it('closeSession und session.closed finalisieren nur einmal (kein doppeltes session.end)', async () => {
+    const h = persistHarness();
+    seedActiveConfig(h.store);
+    const { session } = await openPersisted(h);
+    const voiceSessionId = session.sessionId;
+
+    await h.runtime.closeSession(voiceSessionId);
+    await wait(30);
+    // Zweites close ist no-op (Session schon entfernt).
+    await h.runtime.closeSession(voiceSessionId);
+    await wait(20);
+
+    const evidence = await h.store.listEvidence(TENANT, voiceSessionId);
+    const ends = evidence.filter((e) => e.kind === 'session.end');
+    assert.equal(ends.length, 1);
+    const rows = h.store.listSessions(TENANT);
+    assert.equal(rows[0]!.status, 'ended');
+  });
 });
 
 describe('intersectOfferedTools', () => {

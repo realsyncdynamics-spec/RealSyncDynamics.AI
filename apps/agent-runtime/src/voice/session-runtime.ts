@@ -167,10 +167,12 @@ export class VoiceSessionRuntime {
     try {
       await this.provider.closeSession(sessionId);
     } finally {
-      if (live?.persist && this.store) {
+      // Delete first — nur der Pfad, der die Session entfernt, finalisiert
+      // (sonst Race mit session.closed → doppelte Evidence/seq-Konflikt).
+      const removed = this.sessions.delete(sessionId);
+      if (removed && live?.persist && this.store) {
         await this.finalizePersistedSession(this.store, live, 'ended');
       }
-      this.sessions.delete(sessionId);
     }
   }
 
@@ -435,14 +437,14 @@ export class VoiceSessionRuntime {
     if (event.type === 'session.closed' || event.type === 'error') {
       this.onEvent?.(event);
       if (event.type === 'session.closed') {
-        if (live.persist && this.store) {
+        const removed = this.sessions.delete(live.sessionId);
+        if (removed && live.persist && this.store) {
           void this.finalizePersistedSession(
             this.store,
             live,
             event.reason === 'error' ? 'failed' : 'ended',
           );
         }
-        this.sessions.delete(live.sessionId);
       }
       return;
     }

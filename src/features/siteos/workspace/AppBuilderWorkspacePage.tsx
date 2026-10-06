@@ -238,6 +238,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       setTemplateOverride(null);
       setRevision((r) => r + 1);
       setGate(null);
+      setHostedPreview(null);
       const changeCount = saved.changes.length + (saved.theme_change ? 1 : 0);
       log('ok', `Version ${saved.version} gespeichert und geprüft (${changeCount} Änderung${changeCount === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
       if (saved.theme_change) log('info', saved.theme_change.summary);
@@ -424,8 +425,16 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         {publishEntitled ? (
           <button
             onClick={() => void deployPreview()}
-            disabled={dirty || previewDeploying || saving || busy}
-            title={dirty ? 'Erst speichern — bereitgestellt wird ausschließlich die gespeicherte Version.' : 'Frisch prüfen und als Cloudflare-Preview bereitstellen'}
+            disabled={dirty || previewDeploying || saving || busy || gate?.publishable !== true}
+            title={
+              dirty
+                ? 'Erst speichern — bereitgestellt wird ausschließlich die gespeicherte Version.'
+                : !gate
+                  ? 'Erst „Prüfen“ ausführen — die Vorschau wird nur nach bestandenem Publish Gate bereitgestellt.'
+                  : !gate.publishable
+                    ? 'Publish Gate blockiert diese Version.'
+                    : 'Frisch erneut prüfen und als Cloudflare-Preview bereitstellen'
+            }
             aria-label="Cloudflare-Vorschau bereitstellen"
             className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white disabled:opacity-40 sm:px-3"
           >

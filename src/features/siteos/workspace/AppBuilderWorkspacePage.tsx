@@ -333,6 +333,9 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         'ok',
         `Production veröffentlicht: ${result.data.production.branch} · ${result.data.production.artifact_sha256.slice(0, 12)}…`,
       );
+      for (const warning of result.data.production.recording_warnings) {
+        log('error', `Production ist live, Nachweis-Synchronisierung unvollständig: ${warning}`);
+      }
       void loadGovernance(activeTenantId, stored.blueprint.slug);
     } catch (cause) {
       log('error', `Production-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);

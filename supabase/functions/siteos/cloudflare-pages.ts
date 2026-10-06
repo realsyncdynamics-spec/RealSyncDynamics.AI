@@ -1,14 +1,12 @@
-// Cloudflare Pages Direct Upload for governed SiteOS preview releases.
+// Cloudflare Pages Direct Upload for governed SiteOS releases.
 //
-// Contract verified against Cloudflare/Wrangler 2026:
-//   upload-token -> check-missing -> upload -> upsert-hashes -> deployment manifest.
+// Transport only. Governance decisions stay in the SiteOS handlers.
 //
-// This module never decides whether a release is publishable. It only transports
-// files that were already produced by siteos/publish-export.
+// Verified flow:
+//   upload-token -> check-missing -> upload -> upsert-hashes -> deployment.
 //
-// IMPORTANT: Pages asset keys are not our SHA-256 evidence hashes. Wrangler uses
-// BLAKE3(base64(file bytes) + file extension), truncated to 32 hex chars.
-// Keep these two hash domains separate.
+// IMPORTANT: Cloudflare asset keys are not SiteOS evidence hashes.
+// Wrangler uses BLAKE3(base64(file bytes) + extension), truncated to 32 hex.
 
 import { hash as blake3hash } from 'npm:blake3-wasm@2.1.5';
 
@@ -33,7 +31,7 @@ export interface PagesProjectRef {
   created: boolean;
 }
 
-export interface PagesPreviewDeployment {
+export interface PagesDeployment {
   id: string;
   url: string;
   environment: string | null;
@@ -41,6 +39,9 @@ export interface PagesPreviewDeployment {
   branch: string;
   manifest: Record<string, string>;
 }
+
+export type PagesPreviewDeployment = PagesDeployment;
+export type PagesProductionDeployment = PagesDeployment;
 
 interface CloudflareEnvelope<T> {
   success: boolean;
@@ -74,7 +75,7 @@ export class CloudflarePagesError extends Error {
   }
 }
 
-/** Same deterministic naming scheme already used by the legacy deployer. */
+/** Deterministic project name; browser input never decides it. */
 export function pagesProjectName(projectName: string, projectId: string): string {
   const base = projectName
     .normalize('NFKD')
@@ -86,10 +87,7 @@ export function pagesProjectName(projectName: string, projectId: string): string
   return `${base}-${suffix || 'project'}`.slice(0, 58).replace(/-+$/g, '');
 }
 
-/**
- * Cloudflare Pages/Wrangler asset key.
- * This is intentionally NOT the SiteOS evidence SHA-256.
- */
+/** Current Wrangler Pages asset-key algorithm. Not the SiteOS SHA-256. */
 export function pagesAssetHash(file: Pick<ReleaseFile, 'path' | 'content'>): string {
   const base64 = utf8ToBase64(file.content);
   const cleanPath = file.path.split('?')[0].split('#')[0];
@@ -99,6 +97,28 @@ export function pagesAssetHash(file: Pick<ReleaseFile, 'path' | 'content'>): str
   return blake3hash(base64 + extension).toString('hex').slice(0, 32);
 }
 
+/** Read-only preflight for a Pages project. */
+export async function getPagesProject(args: {
+  accountId: string;
+  apiToken: string;
+  projectName: string;
+  fetchImpl?: typeof fetch;
+}): Promise<PagesProjectRef | null> {
+  const fetchImpl = args.fetchImpl ?? fetch;
+  requireCredentials(args.accountId, args.apiToken);
+  const existing = await fetchPagesProject(
+    fetchImpl,
+    args.accountId,
+    args.apiToken,
+    args.projectName,
+  );
+  return existing ? toProjectRef(existing, args.projectName, false) : null;
+}
+
+/**
+ * Deploy a governed release to a preview branch only.
+ * Can create the Direct Upload project when it does not exist yet.
+ */
 export async function deployPagesPreview(args: {
   accountId: string;
   apiToken: string;
@@ -109,16 +129,195 @@ export async function deployPagesPreview(args: {
   fetchImpl?: typeof fetch;
 }): Promise<PagesPreviewDeployment> {
   const fetchImpl = args.fetchImpl ?? fetch;
-  if (!args.accountId || !args.apiToken) {
-    throw new CloudflarePagesError(500, 'CLOUDFLARE_NOT_CONFIGURED', 'Cloudflare credentials missing');
-  }
+  requireCredentials(args.accountId, args.apiToken);
   validateReleaseFiles(args.files);
 
   const cfName = pagesProjectName(args.projectName, args.projectId);
-  const project = await ensurePagesProject(fetchImpl, args.accountId, args.apiToken, cfName);
-  const uploadJwt = await getUploadToken(fetchImpl, args.accountId, args.apiToken, project.name);
+  const project = await ensurePagesProject(
+    fetchImpl,
+    args.accountId,
+    args.apiToken,
+    cfName,
+  );
+  const manifest = await uploadReleaseAssets(
+    fetchImpl,
+    args.accountId,
+    args.apiToken,
+    project,
+    args.files,
+  );
 
-  const prepared = args.files.map((file) => ({
+  const branch = `preview-${args.artifactSha256.slice(0, 12)}`;
+  if (project.productionBranch === branch) {
+    throw new CloudflarePagesError(
+      409,
+      'PREVIEW_BRANCH_IS_PRODUCTION',
+      'Cloudflare project production branch collides with the governed preview branch',
+    );
+  }
+
+  const deployment = await createPagesDeployment({
+    fetchImpl,
+    accountId: args.accountId,
+    apiToken: args.apiToken,
+    project,
+    branch,
+    manifest,
+    message: `SiteOS governed preview ${args.artifactSha256.slice(0, 12)}`,
+  });
+
+  if (deployment.environment === 'production') {
+    throw new CloudflarePagesError(
+      502,
+      'PREVIEW_BECAME_PRODUCTION',
+      'Cloudflare reported a production environment for a governed preview branch',
+    );
+  }
+
+  return deployment;
+}
+
+/**
+ * Deploy to the actual production branch of an existing Pages project.
+ *
+ * This helper never creates a project. A successful governed preview must
+ * establish the project before production can be attempted.
+ */
+export async function deployPagesProduction(args: {
+  accountId: string;
+  apiToken: string;
+  projectName: string;
+  artifactSha256: string;
+  files: ReleaseFile[];
+  fetchImpl?: typeof fetch;
+}): Promise<PagesProductionDeployment> {
+  const fetchImpl = args.fetchImpl ?? fetch;
+  requireCredentials(args.accountId, args.apiToken);
+  validateReleaseFiles(args.files);
+
+  const projectApi = await fetchPagesProject(
+    fetchImpl,
+    args.accountId,
+    args.apiToken,
+    args.projectName,
+  );
+  if (!projectApi) {
+    throw new CloudflarePagesError(
+      409,
+      'CLOUDFLARE_PROJECT_REQUIRED',
+      'Production deploy requires the Pages project established by a governed preview',
+    );
+  }
+  const project = toProjectRef(projectApi, args.projectName, false);
+  if (!project.productionBranch) {
+    throw new CloudflarePagesError(
+      409,
+      'PRODUCTION_BRANCH_REQUIRED',
+      'Cloudflare Pages project has no production branch',
+    );
+  }
+
+  const manifest = await uploadReleaseAssets(
+    fetchImpl,
+    args.accountId,
+    args.apiToken,
+    project,
+    args.files,
+  );
+  const deployment = await createPagesDeployment({
+    fetchImpl,
+    accountId: args.accountId,
+    apiToken: args.apiToken,
+    project,
+    branch: project.productionBranch,
+    manifest,
+    message: `SiteOS governed production ${args.artifactSha256.slice(0, 12)}`,
+  });
+
+  if (deployment.environment !== 'production') {
+    throw new CloudflarePagesError(
+      502,
+      'PRODUCTION_NOT_CONFIRMED',
+      'Cloudflare did not confirm the deployment as production',
+    );
+  }
+
+  return deployment;
+}
+
+async function ensurePagesProject(
+  fetchImpl: typeof fetch,
+  accountId: string,
+  apiToken: string,
+  projectName: string,
+): Promise<PagesProjectRef> {
+  const existing = await fetchPagesProject(fetchImpl, accountId, apiToken, projectName);
+  if (existing) return toProjectRef(existing, projectName, false);
+
+  const created = await cfRequest<PagesProjectApi>(
+    fetchImpl,
+    `/accounts/${encodeURIComponent(accountId)}/pages/projects`,
+    apiToken,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: projectName, production_branch: 'main' }),
+    },
+  );
+  if (!created) {
+    throw new CloudflarePagesError(
+      502,
+      'CLOUDFLARE_BAD_RESPONSE',
+      'Cloudflare project creation returned no project',
+    );
+  }
+  return toProjectRef(created, projectName, true);
+}
+
+async function fetchPagesProject(
+  fetchImpl: typeof fetch,
+  accountId: string,
+  apiToken: string,
+  projectName: string,
+): Promise<PagesProjectApi | null> {
+  return await cfRequest<PagesProjectApi>(
+    fetchImpl,
+    `/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`,
+    apiToken,
+    { method: 'GET' },
+    true,
+  );
+}
+
+function toProjectRef(
+  project: PagesProjectApi,
+  fallbackName: string,
+  created: boolean,
+): PagesProjectRef {
+  return {
+    id: project.id,
+    name: project.name || fallbackName,
+    subdomain: project.subdomain ?? null,
+    productionBranch: project.production_branch || 'main',
+    created,
+  };
+}
+
+async function uploadReleaseAssets(
+  fetchImpl: typeof fetch,
+  accountId: string,
+  apiToken: string,
+  project: PagesProjectRef,
+  files: ReleaseFile[],
+): Promise<Record<string, string>> {
+  const uploadJwt = await getUploadToken(
+    fetchImpl,
+    accountId,
+    apiToken,
+    project.name,
+  );
+
+  const prepared = files.map((file) => ({
     file,
     hash: pagesAssetHash(file),
     contentType: contentTypeForPath(file.path),
@@ -151,8 +350,7 @@ export async function deployPagesPreview(args: {
     );
   }
 
-  // Cache optimization only. Wrangler treats failure here as non-fatal too:
-  // uploaded assets are already valid for this deployment.
+  // Cache optimization only; same non-fatal behavior as Wrangler.
   try {
     await pagesJwtRequest<unknown>(
       fetchImpl,
@@ -168,82 +366,48 @@ export async function deployPagesPreview(args: {
     }));
   }
 
-  const manifest = Object.fromEntries(prepared.map(({ file, hash }) => [normalizeDeployPath(file.path), hash]));
-  const branch = `preview-${args.artifactSha256.slice(0, 12)}`;
-  if (project.productionBranch === branch) {
-    throw new CloudflarePagesError(
-      409,
-      'PREVIEW_BRANCH_IS_PRODUCTION',
-      'Cloudflare project production branch collides with the governed preview branch',
-    );
-  }
+  return Object.fromEntries(
+    prepared.map(({ file, hash }) => [normalizeDeployPath(file.path), hash]),
+  );
+}
 
-  // Preview branch only. Production branch remains "main" and is never used
-  // by this helper.
+async function createPagesDeployment(args: {
+  fetchImpl: typeof fetch;
+  accountId: string;
+  apiToken: string;
+  project: PagesProjectRef;
+  branch: string;
+  manifest: Record<string, string>;
+  message: string;
+}): Promise<PagesDeployment> {
   const form = new FormData();
-  form.set('manifest', JSON.stringify(manifest));
-  form.set('branch', branch);
+  form.set('manifest', JSON.stringify(args.manifest));
+  form.set('branch', args.branch);
   form.set('commit_dirty', 'false');
-  form.set('commit_message', `SiteOS governed preview ${args.artifactSha256.slice(0, 12)}`);
+  form.set('commit_message', args.message);
 
   const deployment = await cfRequest<PagesDeploymentApi>(
-    fetchImpl,
-    `/accounts/${encodeURIComponent(args.accountId)}/pages/projects/${encodeURIComponent(project.name)}/deployments`,
+    args.fetchImpl,
+    `/accounts/${encodeURIComponent(args.accountId)}/pages/projects/${encodeURIComponent(args.project.name)}/deployments`,
     args.apiToken,
     { method: 'POST', body: form },
   );
 
   if (!deployment || !deployment.id || !deployment.url) {
-    throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare deployment response lacked id/url');
+    throw new CloudflarePagesError(
+      502,
+      'CLOUDFLARE_BAD_RESPONSE',
+      'Cloudflare deployment response lacked id/url',
+    );
   }
 
   return {
     id: deployment.id,
     url: deployment.url,
     environment: deployment.environment ?? null,
-    project,
-    branch,
-    manifest,
-  };
-}
-
-async function ensurePagesProject(
-  fetchImpl: typeof fetch,
-  accountId: string,
-  apiToken: string,
-  projectName: string,
-): Promise<PagesProjectRef> {
-  const path = `/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`;
-  const existing = await cfRequest<PagesProjectApi>(fetchImpl, path, apiToken, { method: 'GET' }, true);
-  if (existing) {
-    return {
-      id: existing.id,
-      name: existing.name || projectName,
-      subdomain: existing.subdomain ?? null,
-      productionBranch: existing.production_branch || 'main',
-      created: false,
-    };
-  }
-
-  const created = await cfRequest<PagesProjectApi>(
-    fetchImpl,
-    `/accounts/${encodeURIComponent(accountId)}/pages/projects`,
-    apiToken,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: projectName, production_branch: 'main' }),
-    },
-  );
-  if (!created) {
-    throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare project creation returned no project');
-  }
-  return {
-    id: created.id,
-    name: created.name || projectName,
-    subdomain: created.subdomain ?? null,
-    productionBranch: created.production_branch || 'main',
-    created: true,
+    project: args.project,
+    branch: args.branch,
+    manifest: args.manifest,
   };
 }
 
@@ -259,8 +423,12 @@ async function getUploadToken(
     apiToken,
     { method: 'GET' },
   );
-  if (!result || !result.jwt) {
-    throw new CloudflarePagesError(502, 'CLOUDFLARE_BAD_RESPONSE', 'Cloudflare upload-token response lacked jwt');
+  if (!result?.jwt) {
+    throw new CloudflarePagesError(
+      502,
+      'CLOUDFLARE_BAD_RESPONSE',
+      'Cloudflare upload-token response lacked jwt',
+    );
   }
   return result.jwt;
 }
@@ -321,7 +489,10 @@ async function readEnvelope<T>(response: Response): Promise<CloudflareEnvelope<T
   }
 }
 
-function cloudflareError<T>(status: number, envelope: CloudflareEnvelope<T>): CloudflarePagesError {
+function cloudflareError<T>(
+  status: number,
+  envelope: CloudflareEnvelope<T>,
+): CloudflarePagesError {
   const first = envelope.errors?.[0];
   return new CloudflarePagesError(
     status || 502,
@@ -330,27 +501,57 @@ function cloudflareError<T>(status: number, envelope: CloudflareEnvelope<T>): Cl
   );
 }
 
+function requireCredentials(accountId: string, apiToken: string): void {
+  if (!accountId || !apiToken) {
+    throw new CloudflarePagesError(
+      500,
+      'CLOUDFLARE_NOT_CONFIGURED',
+      'Cloudflare credentials missing',
+    );
+  }
+}
+
 function validateReleaseFiles(files: ReleaseFile[]): void {
   if (!Array.isArray(files) || files.length === 0) {
-    throw new CloudflarePagesError(400, 'EMPTY_ARTIFACT', 'Release artifact contains no files');
+    throw new CloudflarePagesError(
+      400,
+      'EMPTY_ARTIFACT',
+      'Release artifact contains no files',
+    );
   }
   if (files.length > MAX_FILES) {
-    throw new CloudflarePagesError(413, 'TOO_MANY_FILES', `Release exceeds ${MAX_FILES} files`);
+    throw new CloudflarePagesError(
+      413,
+      'TOO_MANY_FILES',
+      `Release exceeds ${MAX_FILES} files`,
+    );
   }
 
   const seen = new Set<string>();
   for (const file of files) {
     const path = normalizeDeployPath(file.path);
     if (seen.has(path)) {
-      throw new CloudflarePagesError(400, 'DUPLICATE_PATH', `Duplicate release path: ${path}`);
+      throw new CloudflarePagesError(
+        400,
+        'DUPLICATE_PATH',
+        `Duplicate release path: ${path}`,
+      );
     }
     seen.add(path);
     const actualBytes = new TextEncoder().encode(file.content).byteLength;
     if (actualBytes !== file.bytes) {
-      throw new CloudflarePagesError(409, 'ARTIFACT_SIZE_MISMATCH', `Byte length mismatch for ${path}`);
+      throw new CloudflarePagesError(
+        409,
+        'ARTIFACT_SIZE_MISMATCH',
+        `Byte length mismatch for ${path}`,
+      );
     }
     if (actualBytes > MAX_FILE_BYTES) {
-      throw new CloudflarePagesError(413, 'FILE_TOO_LARGE', `${path} exceeds 25 MiB`);
+      throw new CloudflarePagesError(
+        413,
+        'FILE_TOO_LARGE',
+        `${path} exceeds 25 MiB`,
+      );
     }
   }
 }
@@ -363,7 +564,10 @@ function makeUploadBatches<T extends { file: ReleaseFile }>(files: T[]): T[][] {
   for (const item of files) {
     if (
       current.length > 0
-      && (current.length >= MAX_UPLOAD_BATCH_FILES || bytes + item.file.bytes > MAX_UPLOAD_BATCH_BYTES)
+      && (
+        current.length >= MAX_UPLOAD_BATCH_FILES
+        || bytes + item.file.bytes > MAX_UPLOAD_BATCH_BYTES
+      )
     ) {
       batches.push(current);
       current = [];
@@ -379,7 +583,11 @@ function makeUploadBatches<T extends { file: ReleaseFile }>(files: T[]): T[][] {
 function normalizeDeployPath(path: string): string {
   const trimmed = String(path || '').trim();
   if (!trimmed || trimmed.includes('\\') || trimmed.includes('..')) {
-    throw new CloudflarePagesError(400, 'INVALID_PATH', `Invalid release path: ${trimmed}`);
+    throw new CloudflarePagesError(
+      400,
+      'INVALID_PATH',
+      `Invalid release path: ${trimmed}`,
+    );
   }
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }
@@ -405,7 +613,9 @@ function utf8ToBase64(value: string): string {
   let binary = '';
   const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, Math.min(bytes.length, i + chunk)));
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, Math.min(bytes.length, i + chunk)),
+    );
   }
   return btoa(binary);
 }

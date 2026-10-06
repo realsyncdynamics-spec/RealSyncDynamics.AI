@@ -1364,6 +1364,7 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
   /* ── Hero balance refinement 2026-10-06 ─────────────────────────────
      Owner-approved visual pass: smaller globe, clearer CTA hierarchy,
      and a real keyboard-accessible mobile navigation. */
+  .gv4 .cta-label-mobile { display: none; }
   .gv4 .nav-toggle {
     display: none;
     width: 42px;
@@ -1433,6 +1434,13 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
     .gv4 .hero { max-width: min(680px, 92vw); }
     .gv4 .hero::before { inset: -36px -72px -32px -36px; }
   }
+  @media (max-width: 760px) {
+    .gv4 .cta-label-full { display: none; }
+    .gv4 .cta-label-mobile { display: inline; }
+    .gv4 .hero .btn-ghost { display: none; }
+    .gv4 .hero .scanform, .gv4 .hero .scanform-note { display: none !important; }
+    .gv4 .proof { margin-top: 24px; }
+  }
   @media (max-width: 640px) {
     .gv4 .statusbar { height: 30px; padding-inline: 5vw; }
     .gv4 .statusbar-in i { display: block !important; }
@@ -1446,9 +1454,7 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
     .gv4 .loop svg { margin: 0 2px; }
     .gv4 .lede { font-size: 1.08rem !important; max-width: 29rem !important; }
     .gv4 .cta-row { gap: 10px; }
-    .gv4 .hero .btn-primary, .gv4 .hero .btn-ghost { width: 100%; justify-content: center; }
-    .gv4 .scanform { margin-top: 14px; }
-    .gv4 .scanform input, .gv4 .scanform button { width: 100%; flex-basis: 100%; }
+    .gv4 .hero .btn-primary { width: 100%; justify-content: center; }
     .gv4 #hud { width: min(62vw, 52vh); right: -22%; top: 44%; opacity: .72; }
     .gv4 #bg .scrim { background: linear-gradient(100deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.72) 56%, rgba(0,0,0,.35) 78%, transparent 100%); }
   }

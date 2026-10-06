@@ -88,6 +88,30 @@ export async function gateSiteCreate(
   }
 }
 
+/**
+ * Edit gate: Bearbeiten erzeugt eine neue Version derselben Site und braucht
+ * deshalb `siteos.builder`, aber keinen zusätzlichen `limit.sites`-Slot.
+ */
+export async function gateSiteEdit(
+  admin: SupabaseClient,
+  tenantId: string,
+): Promise<Response | null> {
+  try {
+    const ent = await loadEntitlementsForTenant(admin, tenantId);
+    requireFeature(ent, 'siteos.builder');
+    return null;
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      return jsonError(
+        e.code === 'INTERNAL' ? 500 : 403,
+        e.code,
+        e.message,
+      );
+    }
+    throw e;
+  }
+}
+
 /** Publish-gate / publish-approve: requires `siteos.publish`. */
 export async function gateSitePublish(
   admin: SupabaseClient,

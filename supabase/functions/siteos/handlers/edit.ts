@@ -47,16 +47,19 @@ import {
   MAX_PAGE_TITLE_LENGTH,
   PAGE_OPERATION_KINDS,
   analyzeBlueprint,
-  applyPageEdits,
+  applySiteEdits,
   applyPageOperations,
   canonicalHash,
   computeScores,
   isBlockKind,
+  isDesignTemplate,
+  type DesignTemplate,
   type PageEdit,
   type PageOperation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
 import { persistBlueprintVersion } from '../persist.ts';
+import { gateSiteEdit } from '../site-entitlements.ts';
 
 const MAX_PAGES = 40;
 const MAX_BLOCKS_PER_PAGE = 60;
@@ -86,12 +89,20 @@ export async function handle(req: Request): Promise<Response> {
   if (!slug) return jsonError(400, 'BAD_REQUEST', 'slug required');
   if (!SHA_PATTERN.test(baseSha)) return jsonError(400, 'BAD_REQUEST', 'base_sha256 must be a sha256 hex');
 
+  let designTemplate: DesignTemplate | null = null;
+  if (body.design_template !== undefined && body.design_template !== null) {
+    if (!isDesignTemplate(body.design_template)) {
+      return jsonError(400, 'BAD_REQUEST', 'design_template is not a known template');
+    }
+    designTemplate = body.design_template;
+  }
+
   const edits = body.edits === undefined ? [] : sanitizeEdits(body.edits);
   if (edits === null) return jsonError(400, 'BAD_REQUEST', 'edits must be an array of { path, blocks }');
   const pageOps = body.pages === undefined ? [] : sanitizePageOperations(body.pages);
   if (pageOps === null) return jsonError(400, 'BAD_REQUEST', 'pages must be an array of page operations');
-  if (edits.length === 0 && pageOps.length === 0) {
-    return jsonError(400, 'BAD_REQUEST', 'edits and pages are empty');
+  if (edits.length === 0 && pageOps.length === 0 && !designTemplate) {
+    return jsonError(400, 'BAD_REQUEST', 'edits, pages and design_template are empty');
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -114,6 +125,10 @@ export async function handle(req: Request): Promise<Response> {
     .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
+  // Bearbeiten erzeugt eine neue Blueprint-Version und braucht siteos.builder.
+  const denied = await gateSiteEdit(admin, tenantId);
+  if (denied) return denied;
+
   try {
     // ── Jüngste Version laden ────────────────────────────────────────────
     const { data: row } = await admin
@@ -135,9 +150,7 @@ export async function handle(req: Request): Promise<Response> {
     // Beide Wege nehmen nur Absichten entgegen. Der Browser liefert nie einen
     // fertigen Blueprint. Seitenoperationen arbeiten auf dem redigierten Stand,
     // damit z. B. ein gleichzeitiges Umbenennen + Inhaltsedit eine Version bleibt.
-    const edited = edits.length > 0
-      ? applyPageEdits(row.blueprint, edits)
-      : { blueprint: row.blueprint, changes: [], rejected: [] };
+    const edited = applySiteEdits(row.blueprint, edits, designTemplate);
     const structured = pageOps.length > 0
       ? applyPageOperations(edited.blueprint, pageOps)
       : { blueprint: edited.blueprint, changes: [], rejected: [] };
@@ -145,6 +158,7 @@ export async function handle(req: Request): Promise<Response> {
       blueprint: structured.blueprint,
       changes: [...edited.changes, ...structured.changes],
       rejected: [...edited.rejected, ...structured.rejected],
+      themeChange: edited.themeChange,
     };
     const blueprintSha256 = await canonicalHash(applied.blueprint);
 
@@ -171,8 +185,12 @@ export async function handle(req: Request): Promise<Response> {
       auditAction: 'siteos.blueprint.edit',
       auditPayload: {
         base_sha256: baseSha,
-        change_codes: applied.changes.map((c) => c.code),
+        change_codes: [
+          ...applied.changes.map((c) => c.code),
+          ...(applied.themeChange ? ['theme.template'] : []),
+        ],
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
         page_operations: pageOps,
       },
@@ -190,6 +208,7 @@ export async function handle(req: Request): Promise<Response> {
         findings,
         scores,
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
       });
     }
@@ -206,6 +225,7 @@ export async function handle(req: Request): Promise<Response> {
       findings,
       scores,
       changes: applied.changes,
+      theme_change: applied.themeChange,
       rejected: applied.rejected,
       agent_tasks: persisted.tasks,
       provenance_linked: persisted.provenanceLinked,

@@ -60,6 +60,8 @@ Auth-Header: `Authorization: Bearer ${AGENT_RUNTIME_API_TOKEN}`
 | `AGENT_PDP_FAILURE_MODE`  | `block`                  | nein — `allow` \| `block` |
 | `AGENT_PDP_TIMEOUT_MS`    | `3000`                   | nein |
 | `XAI_API_KEY`             | —                        | nur für den Grok-Voice-Adapter (Default-Getter); nie loggen |
+| `AGENT_RUNTIME_VOICE_TOOL_BASE_URL` | `http://127.0.0.1:$PORT` | Base-URL für POST `/voice-tool` (Session-Runtime) |
+| `AGENT_RUNTIME_VOICE_TOOL_TIMEOUT_MS` | `5000`               | Timeout der Session-Runtime gegen `/voice-tool` |
 
 ### Agent-PEP (Governance-Prüfung vor dem Lauf)
 
@@ -111,8 +113,29 @@ kopiert) gegen die xAI Realtime Voice API (`wss://api.x.ai/v1/realtime`).
 - Audio: `pcm16` → `audio/pcm` (8/16/24/48 kHz), `g711_ulaw` → `audio/pcmu`,
   `g711_alaw` → `audio/pcma` (je 8 kHz); `opus` und andere Raten werden abgelehnt.
 - Die WebSocket-Implementierung wird über `socketFactory` injiziert, der
-  API-Key über `getApiKey` (Default: `XAI_API_KEY`). Noch nicht verdrahtet —
-  das folgt mit der Session-Runtime.
+  API-Key über `getApiKey` (Default: `XAI_API_KEY`).
+
+### Session-Runtime (PR 3)
+
+`src/voice/session-runtime.ts` verdrahtet den Grok-Adapter mit `ws`
+(`createWsSocketFactory`) und leitet jeden `tool.call` an `POST /voice-tool`
+weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
+`AGENT_RUNTIME_VOICE_TOOL_BASE_URL`).
+
+- **Keine Tool-Ausführung** in Adapter oder Runtime — die kommt in **PR 4**.
+  Bei Policy-`ALLOW` geht `outcome: failed` / `execution: deferred_to_pr4`
+  an das Modell (`verified: false`).
+- `tenantId`/`botId` ausschließlich aus dem Session-Kontext
+  (`voice_number_bindings` → `bots`; Tenant via `memberships` /
+  `is_tenant_member`). Gleichnamige Felder in Modell-Args werden verworfen.
+- Disclosure (`voice_bot_configs.disclosure_text`) ist Pflicht und wird
+  verbatim zuerst gesprochen. Fehlt sie → keine Session.
+- Optional `greetingText` nur als konfigurierte Begrüßung **nach** der
+  Disclosure (kein Default im Code, kein Marketing-Story-Hardcode als
+  Disclosure).
+- Unbekannte Tools, kaputte Args, Timeout/Fehler von `/voice-tool` →
+  fail-closed `denied` an das Modell.
+- Kein `voice_channels` / `bot_agents`.
 
 ## Lokal entwickeln
 

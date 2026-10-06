@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AssistentChip } from '../../src/components/AssistentChip';
 
 // IntersectionObserver isn't in jsdom; the chip uses it to detect when
-// [data-hero-cta] is on-screen (non-landing routes only — `/` never mounts
-// the chip so the luxury hero fold owns attention).
+// [data-hero-cta] is on-screen. The same rule applies on `/`: the assistant
+// yields to the premium hero conversion zone and returns below the fold.
 
 interface MockedObserver {
   callback: IntersectionObserverCallback;
@@ -83,22 +83,38 @@ function renderChip({
 }
 
 describe('<AssistentChip>', () => {
-  it('mounts on `/` even when a hero CTA marker is present (Grok Bot on landing)', () => {
+  it('mounts on `/` but yields while a hero CTA is in the viewport', () => {
     const { getByLabelText, getByText } = renderChip({ path: '/', withHero: true });
     const btn = getByLabelText('Assistent öffnen');
     expect(btn).toBeInTheDocument();
     expect(btn.className).toMatch(/opacity-100/);
     expect(getByText('Grok Bot')).toBeInTheDocument();
-  });
 
-  it('stays visible on `/` when hero CTA intersects (no fade on landing)', () => {
-    const { getByLabelText } = renderChip({ path: '/', withHero: true });
-    const btn = getByLabelText('Assistent öffnen');
     act(() => {
       observers.forEach((o) => o.trigger(true));
     });
+
+    expect(btn.className).toMatch(/opacity-0/);
+    expect(btn.className).toMatch(/pointer-events-none/);
+    expect(btn).toHaveAttribute('aria-hidden', 'true');
+    expect(btn).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('reveals again on `/` after the hero CTA leaves the viewport', () => {
+    const { getByLabelText } = renderChip({ path: '/', withHero: true });
+    const btn = getByLabelText('Assistent öffnen');
+
+    act(() => {
+      observers.forEach((o) => o.trigger(true));
+    });
+    act(() => {
+      observers.forEach((o) => o.trigger(false));
+    });
+
     expect(btn.className).toMatch(/opacity-100/);
     expect(btn.className).not.toMatch(/pointer-events-none/);
+    expect(btn).not.toHaveAttribute('aria-hidden');
+    expect(btn).toHaveAttribute('tabindex', '0');
   });
 
   it('renders visible on non-landing routes when no [data-hero-cta] is present', () => {

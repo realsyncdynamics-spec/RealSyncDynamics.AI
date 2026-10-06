@@ -527,6 +527,39 @@ export async function deployPublishPreview(args: {
   return { kind: 'ok', data: data as PublishPreviewResponse };
 }
 
+export interface PublishProductionResponse {
+  ok: true;
+  production: {
+    url: string;
+    deployment_id: string;
+    project_name: string;
+    branch: string;
+    environment: 'production';
+    artifact_sha256: string;
+    evaluation_id: string;
+    preview_deployment_id: string;
+    deployed_at: string;
+    production: true;
+  };
+}
+
+/**
+ * Finaler Cutover nach realer Vorschau. Der Server akzeptiert keine Dateien,
+ * keine Ziel-ID und keinen Artefakt-Hash aus dem Browser.
+ */
+export async function deployPublishProduction(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_preview: true;
+  confirm_go: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishProductionResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-production', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishProductionResponse };
+}
+
 // ── Anonymer Build (Zielarchitektur: Idee → Vorschau → Konto → Claim) ───
 //
 // Bauen und Verfeinern laufen serverseitig, ohne Konto. Der Blueprint liegt

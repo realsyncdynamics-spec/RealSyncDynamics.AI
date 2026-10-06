@@ -2697,18 +2697,23 @@ export function addonById(id: AddOnId): AddOn | undefined {
 }
 
 /**
- * Stripe-Testprice für ein Add-on. Nur bei `sk_test_…`.
+ * Stripe-Testprice für ein Add-on. Nur bei `sk_test_…` oder `rk_test_…`.
  *
  * Env-Name: `STRIPE_PRICE_ADDON_<ID>` , z.B. `STRIPE_PRICE_ADDON_ADDITIONAL_DOMAIN`.
- * Ein Live-Key ignoriert die Variable, damit eine Test-Price nicht in
- * Produktion gebucht wird.
+ * Ein Live-Key (`sk_live_` / `rk_live_`) ignoriert die Variable, damit eine
+ * Test-Price nicht in Produktion gebucht wird. `rk_test_` ist der engere
+ * Restricted Key und reicht für Produkte und Prices.
  */
+export function isStripeTestSecret(secret: string | null | undefined): boolean {
+  return !!secret && (secret.startsWith('sk_test_') || secret.startsWith('rk_test_'));
+}
+
 export function stripeTestAddonPrice(
   addonId: AddOnId,
   secret: string | null | undefined,
   env: Readonly<Record<string, string | undefined>>,
 ): string | null {
-  if (!secret || !secret.startsWith('sk_test_')) return null;
+  if (!isStripeTestSecret(secret)) return null;
   const raw = env[`STRIPE_PRICE_ADDON_${addonId.toUpperCase()}`];
   return typeof raw === 'string' && raw.startsWith('price_') ? raw : null;
 }

@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
     const priceId = isLiveStripePrice(planAddon?.stripe_price_id) ? planAddon!.stripe_price_id : testPrice;
     if (eintrag.status !== 'bookable' || !priceId || !planAddon?.product_id) {
       return jsonError(400, 'ADDON_NOT_PURCHASABLE',
-        `${addon.name} ist noch nicht buchbar — es fehlt der Stripe-Price (plan_addons.stripe_price_id oder STRIPE_PRICE_ADDON_${addon.id.toUpperCase()} mit sk_test_).`);
+        `${addon.name} ist noch nicht buchbar — es fehlt der Stripe-Price (plan_addons.stripe_price_id oder STRIPE_PRICE_ADDON_${addon.id.toUpperCase()} mit sk_test_ oder rk_test_).`);
     }
 
     const menge = addon.perUnit && typeof body.quantity === 'number' && Number.isInteger(body.quantity) && body.quantity >= 1

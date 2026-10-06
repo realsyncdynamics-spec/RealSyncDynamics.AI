@@ -2,14 +2,15 @@
 /**
  * Legt Stripe-Testpreise für Add-ons an. Verweigert Live-Keys.
  *
- *   STRIPE_SECRET_KEY=sk_test_… node scripts/stripe-test-addon-prices.mjs
+ *   STRIPE_SECRET_KEY=rk_test_… node scripts/stripe-test-addon-prices.mjs
+ *   sk_test_… geht auch. sk_live_ und rk_live_ werden abgewiesen.
  *
  * Schreibt nichts in die Datenbank. Gibt das SQL aus, das der Betreiber
  * auf der Test-Datenbank ausführt.
  */
 const secret = process.env.STRIPE_SECRET_KEY ?? '';
-if (!secret.startsWith('sk_test_')) {
-  console.error('Abbruch: STRIPE_SECRET_KEY muss mit sk_test_ beginnen.');
+if (!secret.startsWith('sk_test_') && !secret.startsWith('rk_test_')) {
+  console.error('Abbruch: nur sk_test_ oder rk_test_. Kein Live-Key.');
   process.exit(1);
 }
 

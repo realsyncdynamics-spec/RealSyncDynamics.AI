@@ -16,6 +16,7 @@ const api = {
   loadLatestBlueprint: vi.fn(),
   editSite: vi.fn(),
   evaluatePublish: vi.fn(),
+  bindSiteProject: vi.fn(),
   deployPublishPreview: vi.fn(),
   deployPublishProduction: vi.fn(),
   listBlueprintChain: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
   loadLatestBlueprint: (...a: unknown[]) => api.loadLatestBlueprint(...a),
   editSite: (...a: unknown[]) => api.editSite(...a),
   evaluatePublish: (...a: unknown[]) => api.evaluatePublish(...a),
+  bindSiteProject: (...a: unknown[]) => api.bindSiteProject(...a),
   deployPublishPreview: (...a: unknown[]) => api.deployPublishPreview(...a),
   deployPublishProduction: (...a: unknown[]) => api.deployPublishProduction(...a),
   listBlueprintChain: (...a: unknown[]) => api.listBlueprintChain(...a),
@@ -114,9 +116,9 @@ async function sample() {
   return { blueprint, sha256: await canonicalHash(blueprint) };
 }
 
-function storedRow(blueprint: SiteBlueprint, sha256: string, version = 1) {
+function storedRow(blueprint: SiteBlueprint, sha256: string, version = 1, projectId: string | null = null) {
   return {
-    id: `bp-${version}`, version, blueprint, content_sha256: sha256, prev_hash: null,
+    id: `bp-${version}`, project_id: projectId, version, blueprint, content_sha256: sha256, prev_hash: null,
     status: 'draft', origin_source: 'ai-builder', origin_model: 'test-model', created_at: '2026-09-06T00:00:00.000Z',
   };
 }
@@ -147,6 +149,17 @@ beforeEach(() => {
   api.listEvaluations.mockResolvedValue([]);
   api.listCustodyEvents.mockResolvedValue([]);
   api.listAgentRuns.mockResolvedValue([]);
+  api.bindSiteProject.mockResolvedValue({
+    kind: 'ok',
+    data: {
+      ok: true,
+      created: true,
+      project: { id: 'project-1', name: 'Praxis Dr. Muster', status: 'draft' },
+      blueprint_id: 'bp-1',
+      version: 1,
+      audit_recorded: true,
+    },
+  });
 });
 
 describe('App Builder Workspace — Laden', () => {
@@ -332,6 +345,13 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     fireEvent.click(previewDeploy);
 
     await waitFor(() => expect(api.deployPublishPreview).toHaveBeenCalledTimes(1));
+    expect(api.bindSiteProject).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+    });
+    expect(api.bindSiteProject.mock.invocationCallOrder[0]).toBeLessThan(
+      api.deployPublishPreview.mock.invocationCallOrder[0],
+    );
     expect(api.deployPublishPreview).toHaveBeenCalledWith({
       tenant_id: 'tenant-1',
       blueprint_id: 'bp-1',
@@ -343,6 +363,42 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
   });
 
+
+  it('überspringt project-bind bei bereits gebundener Site', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256, 1, 'project-existing'));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-bound-1',
+      artifact_sha256: 'd'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-existing.example.pages.dev',
+          deployment_id: 'dep-existing',
+          project_name: 'praxis-existing',
+          branch: 'preview-dddddddddddd',
+          environment: 'preview',
+          artifact_sha256: 'd'.repeat(64),
+          evaluation_id: 'eval-bound-2',
+          production: false,
+        },
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    await waitFor(() => expect(api.deployPublishPreview).toHaveBeenCalledTimes(1));
+    expect(api.bindSiteProject).not.toHaveBeenCalled();
+  });
 
   it('veröffentlicht erst nach realer Vorschau und ausdrücklicher Bestätigung live', async () => {
     const { blueprint, sha256 } = await sample();

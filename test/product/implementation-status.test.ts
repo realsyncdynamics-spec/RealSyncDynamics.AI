@@ -177,6 +177,17 @@ describe('implementation-status registry', () => {
     expect(sections).toContain('Operations OS');
     expect(sections).toContain('for Europe');
     expect(sections).toContain('Free Audit starten');
-    expect(sections).toContain('Live Dashboard ansehen');
+    expect(sections).toContain('Runtime ansehen');
+    expect(sections).not.toContain('Live Dashboard ansehen');
+    expect(sections).not.toContain('/demo-tour/dashboard');
+    const landing = getImplementation('public-landing')!;
+    expect(landing.description).toContain('/governance-runtime');
+    expect(landing.description).not.toContain('/demo-tour/dashboard');
+    const content = readFileSync(
+      resolve('src/components/landing/v4/landing-v4-content.ts'),
+      'utf8',
+    );
+    expect(content).toContain('/ai-act-klassifikator');
+    expect(content).not.toMatch(/als Inventar führen/);
   });
 });

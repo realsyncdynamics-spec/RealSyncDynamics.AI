@@ -77,13 +77,11 @@ export async function fetchGuarded(raw: string, options: GuardedFetchOptions): P
   const check = validateScanTarget(raw);
   if (!check.ok) throw new TargetRefusedError(`target refused: ${check.reason}`);
   const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs);
-  try {
-    return await followWithGuard(check.url, fetchImpl, controller.signal, options.headers);
-  } finally {
-    clearTimeout(timer);
-  }
+  // Die Deadline muss bis zum Body-Read gelten, nicht nur bis zu den
+  // Antwort-Headern. AbortSignal.timeout bleibt nach dem Return aktiv und
+  // beendet deshalb auch ein haengendes response.text()/reader.read().
+  const signal = AbortSignal.timeout(options.timeoutMs);
+  return await followWithGuard(check.url, fetchImpl, signal, options.headers);
 }
 
 export interface ObserveOptions {

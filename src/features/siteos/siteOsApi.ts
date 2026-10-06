@@ -510,14 +510,15 @@ export interface PublishPreviewResponse {
 }
 
 /**
- * Deployt ausschließlich eine Cloudflare-Pages-Vorschau aus dem serverseitig
- * geprüften Release. Der Browser sendet weder Dateien noch Artefakt-Hash.
+ * Deployt ausschließlich eine Cloudflare-Pages-Vorschau nach frischer
+ * Gate-Bewertung. Das ist noch kein Veröffentlichungs-GO: Erst die reale
+ * Vorschau kann anschließend bestätigt und über publish-export freigegeben
+ * werden. Der Browser sendet weder Dateien noch Artefakt-Hash.
  */
 export async function deployPublishPreview(args: {
   tenant_id: string;
   blueprint_id: string;
-  confirm_go: true;
-  confirm_preview: true;
+  confirm_preview_deploy: true;
   base_url?: string;
 }): Promise<SiteOsResult<PublishPreviewResponse>> {
   const sb = getSupabase();

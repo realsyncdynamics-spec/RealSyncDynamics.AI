@@ -33,6 +33,7 @@ import {
   applyPageEdits,
   canonicalize,
   renderSite,
+  type PageOperation,
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index';
@@ -185,20 +186,30 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     [previewBlueprint, sourceUrl, pagePath],
   );
 
-  // ── Speichern ────────────────────────────────────────────────────────
-  const save = async () => {
-    if (!activeTenantId || !stored || edits.length === 0 || saving) return;
+  // ── Speichern — Redaktion und Seitenoperationen, ein Weg ─────────────
+  // Seitenoperationen werden zusammen mit offenen Puck-Änderungen in genau
+  // einem siteos/edit-Request versioniert. Der Client schickt nur Absichten.
+  const persist = async (ops: PageOperation[] = []) => {
+    if (!activeTenantId || !stored || saving) return;
+    if (edits.length === 0 && ops.length === 0) return;
     setSaving(true); setSaveError('');
     try {
-      const result = await editSite({ tenant_id: activeTenantId, slug: stored.blueprint.slug, base_sha256: stored.content_sha256, edits });
+      const result = await editSite({
+        tenant_id: activeTenantId,
+        slug: stored.blueprint.slug,
+        base_sha256: stored.content_sha256,
+        ...(edits.length > 0 ? { edits } : {}),
+        ...(ops.length > 0 ? { pages: ops } : {}),
+      });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       const saved = result.data;
+      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
+
       if (saved.unchanged) {
-        // Der Server hat nichts geschrieben — das ist kein Erfolg, sondern
-        // ein leeres Ergebnis. Der Zustand bleibt, wie er ist.
         log('info', 'Keine Änderungen zu speichern — Server hat keine neue Version angelegt.');
         return;
       }
+
       setStored({
         ...stored,
         id: saved.blueprint_id ?? stored.id,
@@ -213,7 +224,15 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       setGate(null);
       log('ok', `Version ${saved.version} gespeichert und geprüft (${saved.changes.length} Änderung${saved.changes.length === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
       for (const change of saved.changes) log('info', `${change.summary}${change.complianceNote ? ` — ${change.complianceNote}` : ''}`);
-      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
+
+      const created = saved.changes.find((change) =>
+        change.code === 'page.created' || change.code === 'page.duplicated');
+      const moved = saved.changes.find((change) =>
+        change.code === 'page.moved' && 'previousPath' in change && change.previousPath === pagePath);
+      if (created) setPagePath(created.path);
+      else if (moved) setPagePath(moved.path);
+      else if (!saved.blueprint.pages.some((page) => page.path === pagePath)) setPagePath('/');
+
       void loadGovernance(activeTenantId, stored.blueprint.slug);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Die Änderungen konnten nicht gespeichert werden.';
@@ -221,6 +240,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       log('error', `Speichern fehlgeschlagen: ${message}`);
     } finally { setSaving(false); }
   };
+  const save = () => persist();
 
   // ── Prüfen (Publish Gate) ────────────────────────────────────────────
   const check = async () => {
@@ -476,14 +496,14 @@ export default function AppBuilderWorkspacePage(): ReactElement {
               renderRight={(parts) => rightColumn(parts.fields)}
               mobilePane={editorPane}
               renderLeft={(parts) => (
-                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} puck={parts} />
+                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} puck={parts} />
               )}
             />
           </Suspense>
         ) : (
           <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[260px_minmax(0,1fr)_320px]">
             <aside className={`${editorPane === 'left' ? 'block' : 'hidden'} border-r border-black/[.07] bg-white p-4 lg:block`}>
-              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} />
+              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} />
             </aside>
             <section className={`${editorPane === 'canvas' ? 'block' : 'hidden'} min-w-0 p-3 sm:p-5 lg:block`}>
               {canvasHeader}

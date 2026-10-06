@@ -22,8 +22,9 @@ describe('siteos/edit — PageOperation contract', () => {
     expect(handler).toContain('applyPageOperations');
     expect(handler).toContain('body.pages === undefined ? [] : sanitizePageOperations(body.pages)');
     expect(handler).toContain('edits.length === 0 && pageOps.length === 0');
-    expect(handler).toContain('const edited = edits.length > 0');
+    expect(handler).toContain('const edited = applySiteEdits(row.blueprint, edits, designTemplate)');
     expect(handler).toContain('const structured = pageOps.length > 0');
+    expect(handler).toContain('? applyPageOperations(edited.blueprint, pageOps)');
     expect(handler).toContain('page_operations: pageOps');
     expect(handler).not.toMatch(/body\.blueprint/);
   });

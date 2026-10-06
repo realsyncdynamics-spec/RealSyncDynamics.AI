@@ -163,7 +163,15 @@ describe('App Builder Workspace — Laden', () => {
     // Die Seitenliste kommt aus dem Blueprint, nicht aus einer festen Liste.
     const nav = within(screen.getByTestId('left'));
     for (const page of blueprint.pages) {
-      expect(nav.getByRole('button', { name: new RegExp(page.path === '/' ? 'Startseite' : page.title) })).toBeInTheDocument();
+      const row = nav.getAllByTestId('page-row').find(
+        (candidate) => candidate.getAttribute('data-path') === page.path,
+      );
+      expect(row).toBeTruthy();
+      expect(
+        within(row!).getByRole('button', {
+          pressed: page.path === blueprint.pages[0].path,
+        }),
+      ).toBeInTheDocument();
     }
   });
 

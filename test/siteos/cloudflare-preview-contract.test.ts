@@ -33,7 +33,7 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
     expect(transport).toContain('/pages/assets/upload');
     expect(transport).toContain('/pages/assets/upsert-hashes');
     expect(transport).toContain('/deployments');
-    expect(transport).toContain("form.set('manifest', JSON.stringify(manifest))");
+    expect(transport).toContain("form.set('manifest', JSON.stringify(args.manifest))");
   });
 
   it('is preview-only and cannot silently target the production branch', () => {
@@ -88,7 +88,7 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
   it('registers one explicit preview route and a narrow client request', () => {
     expect(router).toContain("'publish-preview': publishPreview");
     const start = api.indexOf('export async function deployPublishPreview');
-    const end = api.indexOf('// ── Anonymer Build', start);
+    const end = api.indexOf('export interface PublishProductionResponse', start);
     const src = api.slice(start, end);
     expect(src).toContain("invoke('siteos/publish-preview'");
     expect(src).toContain('tenant_id: string');

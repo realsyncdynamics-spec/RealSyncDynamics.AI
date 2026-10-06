@@ -849,7 +849,7 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><EnforcementPanel /><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      <Route path="/app/siteos/builder" element={<AppGate><Navigate to="/build?kind=website" replace /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}

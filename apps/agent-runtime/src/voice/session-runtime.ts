@@ -183,6 +183,11 @@ export class VoiceSessionRuntime {
       : undefined;
   }
 
+  /** true wenn ein Persistenz-Store konfiguriert ist (HTTP-Start verlangt das). */
+  hasStore(): boolean {
+    return this.store !== null;
+  }
+
   private async startSessionWithStore(
     store: VoiceStore,
     request: VoiceSessionStartRequest,

@@ -18,7 +18,7 @@
 // LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
 // Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight, Check, ChevronLeft, Code2, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
@@ -197,7 +197,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
 
-  const confirmLeave = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const confirmLeave = (event: MouseEvent<HTMLAnchorElement>) => {
     if (dirty && !window.confirm('Es gibt ungespeicherte Änderungen. Ohne Speichern verlassen?')) {
       event.preventDefault();
     }

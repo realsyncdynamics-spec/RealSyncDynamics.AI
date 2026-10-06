@@ -147,8 +147,18 @@ export function V4Header() {
           <Link className="navlink" to={V4_ROUTES.login}>
             Login
           </Link>
-          <Link className="cta-pill" to={V4_ROUTES.audit} data-hero-cta="">
-            Free Audit starten
+          <Link
+            className="cta-pill"
+            to={V4_ROUTES.audit}
+            data-hero-cta=""
+            aria-label="Audit starten"
+          >
+            <span className="cta-label-full" aria-hidden="true">
+              Free Audit starten
+            </span>
+            <span className="cta-label-mobile" aria-hidden="true">
+              Audit starten
+            </span>
           </Link>
         </nav>
       </div>
@@ -187,13 +197,13 @@ export function V4Hero() {
           Prove
         </p>
         <p className="lede">
-          Runtime governance for regulated AI systems.
+          Runtime governance for regulated AI.
           <br />
-          Continuous evidence. EU-native by design.
+          Continuous evidence. Human control. EU-native by design.
         </p>
         <div className="cta-row">
-          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan">
-            Free Audit starten <Arrow />
+          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
+            Free Governance Audit <Arrow />
           </Link>
           <Link className="btn-ghost" to={V4_ROUTES.runtime}>
             Runtime ansehen
@@ -211,7 +221,7 @@ export function V4Hero() {
             Audit starten <Arrow size={14} />
           </button>
         </form>
-        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p>
+        <p className="scanform-note">No account required · Results in minutes</p>
         <div className="proof">
           {HERO_PROOF.map((p) => (
             <span key={p} className="chip">

@@ -19,9 +19,9 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 //   - Routes: visible on `/` (landing). Auto-hide on /dashboard, /app/*,
 //     /checkout/* and /audit — those surfaces already have their own
 //     assistant context (tenant widget or audit-copilot panel).
-//   - Hero-CTA-Coexistence: on non-landing routes, while a [data-hero-cta]
-//     is intersecting, the chip fades out. On `/` the chip stays visible
-//     (bottom-right) so the Grok Bot remains discoverable.
+//   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting, the
+//     chip fades out. On `/` this keeps the premium hero conversion zone
+//     clear; the Grok Bot returns as soon as the visitor leaves the hero.
 
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
@@ -39,14 +39,10 @@ export function AssistentChip() {
   const [heroVisible, setHeroVisible] = useState(false);
   const isLanding = pathname === '/';
 
-  // Observe [data-hero-cta] visibility — hide chip while hero CTA is on
-  // screen to avoid attention-competition (skipped on landing).
+  // Observe [data-hero-cta] visibility — the assistant yields to the
+  // conversion zone on every public surface, including the landing page.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (isLanding) {
-      setHeroVisible(false);
-      return;
-    }
     const targets = Array.from(document.querySelectorAll('[data-hero-cta]'));
     if (targets.length === 0) {
       setHeroVisible(false);
@@ -65,11 +61,11 @@ export function AssistentChip() {
     );
     for (const t of targets) obs.observe(t);
     return () => obs.disconnect();
-  }, [pathname, isLanding]);
+  }, [pathname]);
 
   if (shouldHide(pathname)) return null;
 
-  const faded = !isLanding && heroVisible;
+  const faded = heroVisible;
   const positionClass = isLanding
     ? 'fixed right-4 sm:right-6 z-40'
     : 'fixed left-1/2 -translate-x-1/2 z-40';

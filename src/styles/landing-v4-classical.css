@@ -1359,3 +1359,90 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
   div.gv4[data-theme="day"] header .cta-pill { color: #fbe7bd !important; }
   div.gv4[data-theme="day"] .card[data-tier] .plan-cta:not(.featured .plan-cta), div.gv4[data-theme="day"] .card[data-tier="agency"] .plan-cta, div.gv4[data-theme="day"] .card[data-tier="starter"] .plan-cta, div.gv4[data-theme="day"] .card[data-tier="growth"] .plan-cta, div.gv4[data-theme="day"] .featured .plan-cta { border: 1px solid #b68235 !important; background: transparent !important; color: #7d5411 !important; box-shadow: none !important; }
   div.gv4[data-theme="day"] .card[data-tier] .plan-cta:hover { background: rgba(182,130,53,.12) !important; }
+
+/* ── Premium mobile conversion pass — compact chrome, deliberate hero hierarchy.
+   Desktop keeps the v4 composition; <=760px behaves as its own mobile surface. ── */
+.gv4 .cta-label-mobile { display: none; }
+
+@media (max-width: 760px) {
+  .gv4 header { height: 64px; padding: 0 20px; }
+  .gv4 .head-in { gap: 12px; }
+  .gv4 .brand {
+    min-width: 0;
+    white-space: nowrap;
+    font-size: 20px !important;
+    letter-spacing: -.025em !important;
+  }
+  .gv4 header nav { margin-left: auto; gap: 0; }
+  .gv4 .cta-pill {
+    font-size: 13px !important;
+    line-height: 1.2;
+    padding: 10px 14px !important;
+  }
+  .gv4 .cta-label-full { display: none; }
+  .gv4 .cta-label-mobile { display: inline; }
+
+  .gv4 main {
+    align-items: flex-start;
+    padding: clamp(44px, 10vw, 64px) 20px 56px;
+  }
+  .gv4 .hero { width: 100%; max-width: 100%; }
+  .gv4 .hero::before {
+    inset: -32px -20px -32px;
+    background: linear-gradient(180deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.54) 54%, rgba(0,0,0,.18) 82%, transparent 100%);
+  }
+  .gv4 h1 {
+    max-width: 100% !important;
+    font-size: clamp(3.1rem, 13.5vw, 4.8rem) !important;
+    line-height: .94 !important;
+    letter-spacing: -.035em !important;
+    padding-bottom: .08em;
+  }
+  .gv4 h1 > span { white-space: nowrap; }
+  .gv4 h1 em { display: block; margin-top: .12em; }
+
+  .gv4 .loop {
+    margin-top: 28px;
+    white-space: nowrap;
+    font-size: 11px !important;
+    line-height: 1.8;
+    letter-spacing: .16em !important;
+  }
+  .gv4 .loop svg { width: 14px; height: 14px; margin: 0 4px; }
+
+  .gv4 .lede {
+    margin-top: 22px;
+    max-width: 22rem !important;
+    font-size: clamp(1.12rem, 4.8vw, 1.35rem) !important;
+    line-height: 1.5 !important;
+  }
+  .gv4 .cta-row { display: block; margin-top: 30px; }
+  .gv4 .hero .btn-primary {
+    width: 100%;
+    justify-content: center;
+    font-size: 16px !important;
+    padding: 16px 18px !important;
+  }
+  .gv4 .hero .btn-ghost { display: none; }
+  .gv4 .scanform { display: none !important; }
+  .gv4 .scanform-note {
+    margin-top: 12px;
+    font-size: 11px !important;
+    line-height: 1.5;
+    letter-spacing: .08em;
+    color: #98a0a8;
+  }
+  .gv4 .proof { margin-top: 24px; gap: 8px; }
+  .gv4 .chip { font-size: 10px; padding: 6px 10px 6px 8px; }
+  .gv4 .hero-kpis { margin-top: 24px; }
+  .gv4 .trust { margin-top: 28px; padding-top: 18px; }
+}
+
+@media (max-width: 390px) {
+  .gv4 header { padding-inline: 16px; }
+  .gv4 main { padding-inline: 16px; }
+  .gv4 .brand { font-size: 18px !important; }
+  .gv4 .cta-pill { font-size: 12px !important; padding: 9px 12px !important; }
+  .gv4 h1 { font-size: clamp(3rem, 13.5vw, 3.65rem) !important; }
+  .gv4 .loop { font-size: 10px !important; letter-spacing: .12em !important; }
+}

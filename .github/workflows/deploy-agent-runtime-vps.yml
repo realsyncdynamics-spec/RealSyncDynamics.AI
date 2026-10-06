@@ -108,7 +108,7 @@ jobs:
                   value
                   .replace("\\", "\\\\")
                   .replace('"', '\\"')
-                  .replace("$", "$")
+                  .replace("$", "$$")
                   .replace("\r", "\\r")
                   .replace("\n", "\\n")
               )

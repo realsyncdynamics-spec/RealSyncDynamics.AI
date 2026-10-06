@@ -141,6 +141,9 @@ async function stripRuntimeOnlyState(page) {
       el.style.removeProperty('--reveal-delay');
       if (el.getAttribute('style') === '') el.removeAttribute('style');
     }
+    // Landing v4 (`/`): Einblenden setzt `v3-rv` (verborgen) erst zur Laufzeit —
+    // im statischen Stand muss alles sichtbar bleiben.
+    for (const el of document.querySelectorAll('.gv4 .v3-rv')) el.classList.remove('v3-rv', 'v3-in');
   });
 }
 

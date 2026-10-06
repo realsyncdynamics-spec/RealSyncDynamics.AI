@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-09-18';
+export const IMPLEMENTATION_MEASURED_AT = '2026-10-04';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,18 +49,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Governance OS: H1 „Die Kontrollschicht für KI im Unternehmen.“ (E-F3), Primär-CTA in den Scan (/audit), Sekundär-CTA Enterprise; Papier & Waldgrün, Europa-Karte als Atlas-Druck, Systemzeile mit eu-central-1 (kein 3D-Globus); System-Story 01–07 → Signature Pipeline (Beispielablauf im Browser) → Agent-Architektur (Preview) inkl. Zielbild „AI Governance OS“ mit Control Loop (Learn = Coming Soon) und Einstiegspfad → Provider-Neutralität → Control Room (Beispielwerte, gekennzeichnet) → Nutzen → Executive → Prinzipien → Governance-Check → Plattform-Preise inkl. Enterprise auf Anfrage.',
+      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
     route: '/',
     evidence: [
-      'src/pages/design/DesignGovernanceAiLanding.tsx',
-      'src/components/landing/GovernanceOsHero.tsx',
-      'src/components/landing/HomepageBriefSections.tsx',
-      'src/components/landing/GovernanceSelfCheck.tsx',
-      'src/components/landing/GovernanceSystemStory.tsx',
-      'src/components/landing/GovernancePipelineDemo.tsx',
-      'src/components/landing/GovernanceControlRoom.tsx',
-      'src/components/governance-frontend/hero-content.ts',
-      'test/landing/homepage-hero.test.tsx',
+      'src/pages/LandingV4.tsx',
+      'src/components/landing/v4/LandingV4Sections.tsx',
+      'src/components/landing/v4/landing-v4-content.ts',
+      'src/components/landing/v4/heroEarthScene.ts',
+      'src/styles/landing-v4-classical.css',
+      'src/App.tsx',
+      'test/landing/landing-v4.test.tsx',
+      'PR #1751',
     ],
     showOnRoadmap: false,
   },
@@ -70,10 +69,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'Alternatives Design-Chrome (Steel/Ice/Blue) unter /design/ledger — Preview, ersetzt nicht Live-/.',
-    route: '/design/ledger',
-    evidence: ['src/pages/design/DesignLedgerLanding.tsx', 'src/App.tsx'],
-    showOnRoadmap: true,
+      'DesignLedgerLanding.tsx existiert noch im Tree, aber /design/ledger leitet per Navigate auf `/` um — keine erreichbare Preview-Route, daher nicht auf dem öffentlichen Roadmap.',
+    evidence: [
+      'src/pages/design/DesignLedgerLanding.tsx',
+      'src/App.tsx#/design/ledger→/',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'design-landing-tribunal',
@@ -81,10 +82,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'Alternatives Paper-OS-Design (Ink/Burgundy) unter /design/tribunal — Preview, ersetzt nicht Live-/.',
-    route: '/design/tribunal',
-    evidence: ['src/pages/design/DesignTribunalLanding.tsx', 'src/App.tsx'],
-    showOnRoadmap: true,
+      'DesignTribunalLanding.tsx existiert noch im Tree, aber /design/tribunal leitet per Navigate auf `/` um — keine erreichbare Preview-Route, daher nicht auf dem öffentlichen Roadmap.',
+    evidence: [
+      'src/pages/design/DesignTribunalLanding.tsx',
+      'src/App.tsx#/design/tribunal→/',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'welcome',
@@ -92,10 +95,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'OTP/OAuth unter /welcome — ?next= Resume nach Login (auch getSession); Post-Checkout-Wizard nur mit session=.',
+      'OTP/OAuth unter /welcome — ?next= Resume nach Login (auch getSession); öffentliches /login (Magic-Link, Handoff v2) leitet Callbacks wieder nach /welcome; Post-Checkout-Wizard nur mit session=.',
     route: '/welcome',
     evidence: [
       'src/pages/Welcome.tsx',
+      'src/pages/LoginPage.tsx',
+      'src/App.tsx#/login',
       'src/lib/safeInternalPath.ts',
       'test/welcome/auth-resume-next.test.ts',
     ],
@@ -134,15 +139,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'ComplianceStatusDashboard unter /app/dashboard — Dark/Gold Chrome, ehrliche Empty States, Bootstrap-Nächste-Schritte (Domain/Audit/Activation), Framework-Strip mit LIVE/BETA/ROADMAP.',
+      'CommandCenterDashboard unter /app/dashboard — HandoffOverview, BrowserRuntimePanel, ComplianceStatusView (Mandant/Lage/Jetzt), Bootstrap-Nächste-Schritte, Execute-Strip → /app/agents. Kein AgentOsPanel auf dieser Route.',
     route: '/app/dashboard',
     evidence: [
-      'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
+      'src/features/governance/dashboard/DashboardRouter.tsx',
+      'src/features/governance/dashboard/CommandCenterDashboard.tsx',
+      'src/features/governance/dashboard/ComplianceStatusDashboard.tsx#ComplianceStatusView',
       'src/features/governance/dashboard/workspaceBootstrapSteps.ts',
-      'src/features/governance/agent-os/AgentOsPanel.tsx',
-      'src/components/governance-os/BrowserTopBar.tsx',
-      'src/components/governance-os/governanceModules.ts',
-      'test/features/governance/dashboard/dashboard-chrome-wiring.test.ts',
+      'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
+      'test/features/governance/dashboard/dashboard-router-source.test.ts',
     ],
     showOnPlatform: true,
   },
@@ -161,10 +166,35 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'EU-AI-Act-Klassifizierung',
     status: 'live',
     group: 'compliance',
-    description: 'KI-Systeme nach Risikoklasse einordnen und als Inventar führen.',
-    route: '/ai-act-governance',
-    evidence: ['src/config/platform-capabilities.ts#ai-act'],
+    description:
+      'Öffentlicher Annex-III-Klassifikator unter /ai-act-klassifikator (Q&A + optionale LLM-Signalextraktion via Edge Function ai-act-classify). Kein Speichern ins Tenant-Inventar — siehe Preview ai-act-inventory-persist.',
+    route: '/ai-act-klassifikator',
+    evidence: [
+      'src/pages/AiActClassifier.tsx',
+      'src/App.tsx#/ai-act-klassifikator',
+      'supabase/functions/ai-act-classify/index.ts',
+      'src/lib/ai-act/signal-extraction.ts',
+    ],
     showOnPlatform: true,
+  },
+  {
+    id: 'ai-act-inventory-persist',
+    name: 'EU-AI-Act-Inventar (Persistenz)',
+    status: 'preview',
+    group: 'compliance',
+    description:
+      'Klassifikation ins Register/Inventar speichern ist nicht freigeschaltet: ai_classification.limited steht in keinem Plan (kein Upgrade entsperrt; Lock-Copy nach #1743). UI-Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory-Pfad existieren, Persistenz funktioniert noch nicht (fehlender Persist-Pfad / P1-2). Nicht live.',
+    route: '/app/risk-inventory',
+    evidence: [
+      'src/pages/AiActClassifier.tsx#saveToInventory',
+      'src/features/governance/aiActRiskInventoryApi.ts',
+      'supabase/functions/ai-act-risk-inventory/index.ts',
+      'src/core/billing/FeatureGate.tsx#ai_classification.limited',
+      'src/components/governance-os/useNavLock.ts',
+      'src/i18n/handoffApp.ts#classifyLocked',
+      'PR #1743',
+    ],
+    showOnRoadmap: true,
   },
   {
     id: 'gdpr-audit-module',
@@ -238,14 +268,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'visual',
     description:
-      'Public `/` full-bleed HeroEarthBackdrop — Europe-night framing (continent first, right), city lights + gold route network, restrained rim (no muddy wash), CSS starfield + distant planets, pointer-events-none — scenery behind type, no Sphere HUD.',
+      'Live-Hero auf `/`: three.js-Szene (mountHeroEarth) hinter Landing-v4-Typografie — Blue-Marble/Night/Clouds/Normal/Specular, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver.',
     route: '/',
     evidence: [
-      'src/components/landing/HeroEarthBackdrop.tsx',
-      'src/components/landing/HeroEarthBackdropScene.tsx',
-      'src/pages/MainLanding.tsx',
-      'src/components/visual/earthTextures.ts',
-      'src/index.css#hero-earth-backdrop',
+      'src/components/landing/v4/heroEarthScene.ts',
+      'src/pages/LandingV4.tsx',
+      'public/textures/hero-v4/',
+      'test/landing/landing-v4.test.tsx',
+      'PR #1751',
     ],
     showOnRoadmap: false,
   },
@@ -256,7 +286,11 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     group: 'billing',
     description: 'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden.',
     route: '/#pricing',
-    evidence: ['shared/pricing.ts', 'src/components/landing/LandingPricingSection.tsx'],
+    evidence: [
+      'shared/pricing.ts',
+      'src/components/landing/v4/landing-v4-content.ts#PLANS',
+      'src/components/landing/v4/LandingV4Sections.tsx#V4Pricing',
+    ],
     showOnRoadmap: false,
   },
   {
@@ -266,7 +300,10 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     group: 'billing',
     description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
     route: '/contact-sales',
-    evidence: ['src/components/landing/EnterpriseAccessSection.tsx'],
+    evidence: [
+      'src/components/landing/v4/LandingV4Sections.tsx#V4Enterprise',
+      'src/pages/ContactSales.tsx',
+    ],
     showOnRoadmap: false,
   },
   {
@@ -302,6 +339,36 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'test/siteos/builder-entitlements.test.ts',
     ],
     showOnRoadmap: true,
+  },
+  {
+    id: 'frontend-modernize-wizard',
+    name: 'Frontend Modernization Wizard',
+    status: 'preview',
+    group: 'channels',
+    description:
+      'FmtModernizeWizard unter /app/siteos/modernize (Enterprise+, Entitlement frontend.modernization) — AuthGate + Projekt/Source-Persistenz; kein vollständiger Self-Service-Ship, Greenfield bleibt /build.',
+    route: '/app/siteos/modernize',
+    evidence: [
+      'src/features/siteos/fmt/FmtModernizeWizard.tsx',
+      'src/features/siteos/fmt/fmtTypes.ts',
+      'src/App.tsx#/app/siteos/modernize',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'public-frontend-builder',
+    name: 'Frontend Builder Landing',
+    status: 'live',
+    group: 'surface',
+    description:
+      'Öffentliche Landing /frontend-builder — Wizard-Funnel postet qualifizierte Anfragen an Edge Function sales-lead (kein Self-Service-Deploy).',
+    route: '/frontend-builder',
+    evidence: [
+      'src/pages/frontend-builder/FrontendBuilderLanding.tsx',
+      'src/pages/frontend-builder/builderSteps.ts',
+      'src/App.tsx#/frontend-builder',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'public-kontakt',
@@ -411,14 +478,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'Dark/Gold/Cream Chrome für /app + /build, ehrliche StatusBar, Agent-OS Intent-Row und Mesh Preview/Coming-Soon — erreichbar.',
+      'Dark/Gold/Cream Chrome für /app + /build, ehrliche StatusBar, CommandCenterDashboard mit ComplianceStatusView und BrowserRuntimePanel — erreichbar; Agent-OS-Mesh nicht auf /app/dashboard gemountet.',
     route: '/app/dashboard',
     evidence: [
       'src/components/governance-os/osChrome.ts',
       'src/components/governance-os/BrowserTopBar.tsx',
       'src/components/governance-os/GovernanceStatusBar.tsx',
-      'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/features/governance/dashboard/CommandCenterDashboard.tsx',
       'src/unified-entry/pages/BuildStudioPage.tsx',
+      'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
     ],
     showOnRoadmap: false,
   },
@@ -428,7 +496,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Earth backdrop scenery instead).',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Landing-v4 three.js Earth hero instead).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',
@@ -505,13 +573,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'runtime',
     description:
-      'Intent „Was möchtest du erledigen?“ auf /app — Compliance 10-Artefakt-Session via realsync-os Kernel. Kein zweites Dashboard.',
-    route: '/app/dashboard',
+      'AgentOsPanel (Intent „Was möchtest du erledigen?“) und realsync-os Kernel-Slice existieren im Tree — nicht gemountet auf dem live /app/dashboard (CommandCenterDashboard mountet bewusst kein AgentOsPanel; Agents unter /app/agents).',
     evidence: [
       'docs/product/realsync-agent-os.md',
       'src/features/governance/agent-os/AgentOsPanel.tsx',
+      'src/features/governance/dashboard/CommandCenterDashboard.tsx',
       'src/core/realsync-os/complianceArtifacts.ts',
       'test/core/realsync-os/agent-os-slice.test.ts',
+      'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
     ],
     showOnRoadmap: true,
   },
@@ -521,9 +590,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'runtime',
     description:
-      'Einziger Mesh-Agent mit Preview-Lauf; SiteOS evaluate_governance wenn gebunden. Production bleibt approval-pflichtig.',
-    route: '/app/dashboard',
-    evidence: ['src/core/realsync-os/agentMesh.ts', 'src/core/realsync-os/planner.ts'],
+      'Mesh-Agent-Code (Compliance Specialist) im Tree; Production bleibt approval-pflichtig. Nicht als Live-Panel auf /app/dashboard verdrahtet.',
+    evidence: [
+      'src/core/realsync-os/agentMesh.ts',
+      'src/core/realsync-os/planner.ts',
+      'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
+    ],
     showOnRoadmap: true,
   },
   {
@@ -560,11 +632,11 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'runtime',
     description:
-      'Read-only Integrity Panel (Pricing/Entitlements). Dominik approved — kein Auto-Merge von PRs.',
-    route: '/app/dashboard',
+      'Read-only Integrity Panel (Pricing/Entitlements) lebt in AgentOsPanel — Panel ist nicht auf /app/dashboard gemountet; Dominik approved — kein Auto-Merge von PRs.',
     evidence: [
       'src/features/governance/agent-os/AgentOsPanel.tsx',
       'src/core/billing/useEntitlements.ts',
+      'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
     ],
     showOnRoadmap: true,
   },
@@ -580,6 +652,21 @@ export const PLATFORM_LIVE_ITEMS = LIVE_IMPLEMENTATION.filter((i) => i.showOnPla
 
 export const ROADMAP_ITEMS = IMPLEMENTATION_ITEMS.filter(
   (i) => i.showOnRoadmap !== false && i.status !== 'live',
+);
+
+/** Live cards shown on public #roadmap (platform + scan + monthly pricing). */
+export const ROADMAP_LIVE_ITEMS = LIVE_IMPLEMENTATION.filter(
+  (i) => i.showOnPlatform || i.id === 'free-audit' || i.id === 'pricing-monthly',
+);
+
+/** Preview cards for public #roadmap (respects showOnRoadmap: false). */
+export const ROADMAP_PREVIEW_ITEMS = PREVIEW_IMPLEMENTATION.filter(
+  (i) => i.showOnRoadmap !== false,
+);
+
+/** Coming-soon cards for public #roadmap (respects showOnRoadmap: false). */
+export const ROADMAP_COMING_SOON_ITEMS = COMING_SOON_IMPLEMENTATION.filter(
+  (i) => i.showOnRoadmap !== false,
 );
 
 export function getImplementation(id: string): ImplementationItem | undefined {

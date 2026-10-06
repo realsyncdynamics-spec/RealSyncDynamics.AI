@@ -28,7 +28,14 @@ function readStoredLang(): Lang {
 let current: Lang | null = null;
 
 function getSnapshot(): Lang {
-  if (current === null) current = readStoredLang();
+  if (current === null) {
+    current = readStoredLang();
+    try {
+      document.documentElement.lang = current;
+    } catch {
+      /* SSR */
+    }
+  }
   return current;
 }
 

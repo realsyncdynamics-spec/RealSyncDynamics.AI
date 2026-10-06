@@ -134,7 +134,15 @@ export function V4Header() {
   }, []);
 
   return (
-    <header className={stuck ? 'v3-stuck' : undefined}>
+    <header
+      className={stuck ? 'v3-stuck' : undefined}
+      onKeyDown={(event) => {
+        if (menuOpen && event.key === 'Escape') {
+          setMenuOpen(false);
+          event.currentTarget.querySelector<HTMLButtonElement>('.nav-toggle')?.focus();
+        }
+      }}
+    >
       <div className="head-in">
         <a className="brand" href="#top">
           RealSync Dynamics.AI

@@ -70,6 +70,79 @@ describe('SiteOS Cloudflare preview — Direct Upload contract', () => {
     expect(handler).not.toContain('website_domains');
   });
 
+  it('fails closed when Cloudflare reports the preview deployment as production', () => {
+    // Case-insensitive environment check on the deployment result.
+    expect(handler).toContain('isProductionEnvironment(deployment.environment)');
+    expect(handler).toMatch(/String\(environment \?\? ''\)\.trim\(\)\.toLowerCase\(\) === 'production'/);
+    expect(handler).toContain("'PREVIEW_DEPLOYED_AS_PRODUCTION'");
+    expect(handler).toContain("return jsonError(502, 'PREVIEW_DEPLOYED_AS_PRODUCTION', message)");
+    expect(handler).toContain("action: 'siteos.publish.preview.failed'");
+
+    // The post-deploy check sits after the transport and BEFORE any preview
+    // state (siteos_last_preview, preview_url, status) is written.
+    const upload = handler.indexOf('deployPagesPreview({');
+    const guard = handler.indexOf('if (isProductionEnvironment(deployment.environment))');
+    const guardEnd = handler.indexOf("return jsonError(502, 'PREVIEW_DEPLOYED_AS_PRODUCTION'", guard);
+    const lastPreview = handler.indexOf('configuration.siteos_last_preview =');
+    const previewUrl = handler.indexOf('preview_url: deployment.url');
+    const statusWrite = handler.indexOf("status: 'preview'");
+    const projectWrite = handler.indexOf(".from('website_projects')\n        .update(");
+    expect(upload).toBeGreaterThan(0);
+    expect(guard).toBeGreaterThan(upload);
+    expect(guardEnd).toBeGreaterThan(guard);
+    expect(lastPreview).toBeGreaterThan(guardEnd);
+    expect(previewUrl).toBeGreaterThan(guardEnd);
+    expect(statusWrite).toBeGreaterThan(guardEnd);
+    expect(projectWrite).toBeGreaterThan(guardEnd);
+
+    // The guard block itself writes no project state.
+    const guardBlock = handler.slice(guard, guardEnd);
+    expect(guardBlock).toContain("recordPreviewFailure('PREVIEW_DEPLOYED_AS_PRODUCTION'");
+    expect(guardBlock).not.toContain('website_projects');
+    expect(guardBlock).not.toContain('siteos_last_preview =');
+    expect(guardBlock).not.toContain('preview_url:');
+
+    // The failure trail writes the same audit action as transport failures.
+    const failureStart = handler.indexOf('const recordPreviewFailure = async');
+    const failureEnd = handler.indexOf('\n  };', failureStart);
+    const failure = handler.slice(failureStart, failureEnd);
+    expect(failureStart).toBeGreaterThan(0);
+    expect(failure).toContain("action: 'siteos.publish.preview.failed'");
+    expect(failure).toContain('error_code: code');
+    expect(failure).toContain("status: 'failed'");
+  });
+
+  it('keeps the pre-deploy production-branch collision check in the transport', () => {
+    expect(transport).toContain('project.productionBranch === branch');
+    const collision = transport.indexOf("'PREVIEW_BRANCH_IS_PRODUCTION'");
+    const deploy = transport.indexOf("form.set('manifest', JSON.stringify(manifest))");
+    expect(collision).toBeGreaterThan(0);
+    expect(deploy).toBeGreaterThan(collision);
+  });
+
+  it('never lets a live project fall back to preview status', () => {
+    // CHECK (status IN ('draft','preview','live','archived')).
+    expect(handler).toContain("const LIVE_STATUS = 'live'");
+    // The only status write is filtered to non-live rows …
+    expect(handler.match(/status: 'preview'/g)).toHaveLength(1);
+    expect(handler).toMatch(
+      /\.update\(\{ \.\.\.previewState, status: 'preview' \}\)\s*\.eq\('id', project\.id\)\s*\.eq\('tenant_id', tenantId\)\s*\.neq\('status', LIVE_STATUS\)/,
+    );
+    // … and live rows still receive preview_url + siteos_last_preview, without status.
+    expect(handler).toMatch(
+      /\.update\(previewState\)\s*\.eq\('id', project\.id\)\s*\.eq\('tenant_id', tenantId\)\s*\.eq\('status', LIVE_STATUS\)/,
+    );
+    const stateStart = handler.indexOf('const previewState: Record<string, unknown> = {');
+    const stateEnd = handler.indexOf('};', stateStart);
+    const previewState = handler.slice(stateStart, stateEnd);
+    expect(previewState).toContain('preview_url: deployment.url');
+    expect(previewState).toContain('configuration');
+    expect(previewState).not.toContain('status');
+    // An unmatched row is not silently reported as success.
+    expect(handler).toContain("'PREVIEW_STATE_NOT_RECORDED'");
+    expect(handler).not.toContain('update(projectUpdate)');
+  });
+
   it('checks local prerequisites, evaluates fresh, then binds transport to the evaluated artifact', () => {
     const config = handler.indexOf('CLOUDFLARE_NOT_CONFIGURED');
     const project = handler.indexOf("'PROJECT_REQUIRED'");

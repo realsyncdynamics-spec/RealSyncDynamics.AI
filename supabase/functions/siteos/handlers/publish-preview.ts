@@ -22,6 +22,11 @@ import { handle as handlePublishGate } from './publish-gate.ts';
 
 const PREVIEW_ROLES = new Set(['owner', 'admin']);
 
+// website_projects.status CHECK (draft | preview | live | archived), see
+// supabase/migrations/20260717191000_website_operations_core.sql. A live
+// project must never fall back to 'preview' because a new preview exists.
+const LIVE_STATUS = 'live';
+
 export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -162,6 +167,69 @@ export async function handle(req: Request): Promise<Response> {
 
   const startedAt = new Date().toISOString();
 
+  // Shared failure trail for every failed preview attempt: failed
+  // deployment_log + `siteos.publish.preview.failed` audit + stderr. Both
+  // writes are best-effort so the original failure is what the caller sees.
+  const recordPreviewFailure = async (
+    code: string,
+    message: string,
+    extra: Record<string, unknown> = {},
+  ): Promise<void> => {
+    try {
+      await admin.from('deployment_logs').insert({
+        project_id: project.id,
+        tenant_id: tenantId,
+        event_type: 'deploy',
+        status: 'failed',
+        title: 'SiteOS Cloudflare preview fehlgeschlagen',
+        message,
+        details: {
+          preview_only: true,
+          error_code: code,
+          artifact_sha256: artifact.artifactSha256,
+          evaluation_id: evaluation.evaluation_id,
+          ...extra,
+        },
+        triggered_by: 'user',
+        triggered_by_user_id: userResp.user.id,
+        started_at: startedAt,
+        completed_at: new Date().toISOString(),
+      });
+    } catch {
+      // Preserve the original failure.
+    }
+
+    try {
+      await audit(admin, {
+        tenant_id: tenantId,
+        actor_user_id: userResp.user.id,
+        actor_email: userResp.user.email ?? null,
+        action: 'siteos.publish.preview.failed',
+        target_type: 'website_project',
+        target_id: project.id,
+        payload: {
+          blueprint_id: blueprintId,
+          artifact_sha256: artifact.artifactSha256,
+          evaluation_id: evaluation.evaluation_id,
+          error_code: code,
+          ...extra,
+        },
+      });
+    } catch {
+      // Preserve the original failure.
+    }
+
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_cloudflare_preview_failed',
+      project_id: project.id,
+      artifact_sha256: artifact.artifactSha256,
+      code,
+      error: message,
+      ...extra,
+    }));
+  };
+
   try {
     const deployment = await deployPagesPreview({
       accountId: CLOUDFLARE_ACCOUNT_ID,
@@ -171,6 +239,22 @@ export async function handle(req: Request): Promise<Response> {
       artifactSha256: artifact.artifactSha256,
       files: artifact.files,
     });
+
+    // Fail closed AFTER transport: the pre-deploy branch-collision check is
+    // necessary but not sufficient. If Cloudflare reports the resulting
+    // deployment as production (case-insensitive), nothing is recorded as a
+    // preview: no preview_url, no status change, no siteos_last_preview.
+    if (isProductionEnvironment(deployment.environment)) {
+      const message =
+        'Cloudflare reported the governed preview deployment as production; preview state was not recorded';
+      await recordPreviewFailure('PREVIEW_DEPLOYED_AS_PRODUCTION', message, {
+        cloudflare_deployment_id: deployment.id,
+        cloudflare_project_name: deployment.project.name,
+        cloudflare_environment: deployment.environment,
+        branch: deployment.branch,
+      });
+      return jsonError(502, 'PREVIEW_DEPLOYED_AS_PRODUCTION', message);
+    }
 
     // Never mark this project live here. Preview state is separate.
     const configuration = isRecord(project.configuration) ? { ...project.configuration } : {};
@@ -183,20 +267,47 @@ export async function handle(req: Request): Promise<Response> {
       deployed_at: new Date().toISOString(),
     };
 
-    const projectUpdate: Record<string, unknown> = {
-      status: 'preview',
+    const previewState: Record<string, unknown> = {
       preview_url: deployment.url,
       configuration,
     };
     if (deployment.project.id && deployment.project.id !== project.cloudflare_project_id) {
-      projectUpdate.cloudflare_project_id = deployment.project.id;
+      previewState.cloudflare_project_id = deployment.project.id;
     }
 
-    const { error: updateErr } = await admin
-      .from('website_projects')
-      .update(projectUpdate)
-      .eq('id', project.id)
-      .eq('tenant_id', tenantId);
+    // Live must never fall back to 'preview'. Each UPDATE is a single
+    // conditional statement (WHERE status <> 'live' / = 'live'), so a status
+    // that becomes live concurrently is re-checked by Postgres and never
+    // overwritten. Preview URL + siteos_last_preview are written either way.
+    let projectStatusLivePreserved = false;
+    let updateErr: { message: string } | null = null;
+    let recorded = false;
+    {
+      const { data, error } = await admin
+        .from('website_projects')
+        .update({ ...previewState, status: 'preview' })
+        .eq('id', project.id)
+        .eq('tenant_id', tenantId)
+        .neq('status', LIVE_STATUS)
+        .select('id');
+      updateErr = error;
+      recorded = !error && Array.isArray(data) && data.length > 0;
+    }
+    if (!updateErr && !recorded) {
+      const { data, error } = await admin
+        .from('website_projects')
+        .update(previewState)
+        .eq('id', project.id)
+        .eq('tenant_id', tenantId)
+        .eq('status', LIVE_STATUS)
+        .select('id');
+      updateErr = error;
+      recorded = !error && Array.isArray(data) && data.length > 0;
+      projectStatusLivePreserved = recorded;
+    }
+    if (!updateErr && !recorded) {
+      updateErr = { message: 'website project row not matched by preview state update' };
+    }
 
     if (updateErr) {
       console.error(JSON.stringify({
@@ -221,6 +332,7 @@ export async function handle(req: Request): Promise<Response> {
       message: deployment.url,
       details: {
         preview_only: true,
+        project_status_live_preserved: projectStatusLivePreserved,
         cloudflare_deployment_id: deployment.id,
         cloudflare_project_name: deployment.project.name,
         branch: deployment.branch,
@@ -247,6 +359,7 @@ export async function handle(req: Request): Promise<Response> {
         blueprint_id: blueprintId,
         slug: blueprintRow.slug,
         preview_only: true,
+        project_status_live_preserved: projectStatusLivePreserved,
         preview_url: deployment.url,
         cloudflare_deployment_id: deployment.id,
         cloudflare_project_name: deployment.project.name,
@@ -276,59 +389,15 @@ export async function handle(req: Request): Promise<Response> {
       ? error.status
       : 502;
 
-    try {
-      await admin.from('deployment_logs').insert({
-        project_id: project.id,
-        tenant_id: tenantId,
-        event_type: 'deploy',
-        status: 'failed',
-        title: 'SiteOS Cloudflare preview fehlgeschlagen',
-        message,
-        details: {
-          preview_only: true,
-          error_code: code,
-          artifact_sha256: artifact.artifactSha256,
-          evaluation_id: evaluation.evaluation_id,
-        },
-        triggered_by: 'user',
-        triggered_by_user_id: userResp.user.id,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
-      });
-    } catch {
-      // Preserve the original transport failure.
-    }
-
-    try {
-      await audit(admin, {
-        tenant_id: tenantId,
-        actor_user_id: userResp.user.id,
-        actor_email: userResp.user.email ?? null,
-        action: 'siteos.publish.preview.failed',
-        target_type: 'website_project',
-        target_id: project.id,
-        payload: {
-          blueprint_id: blueprintId,
-          artifact_sha256: artifact.artifactSha256,
-          evaluation_id: evaluation.evaluation_id,
-          error_code: code,
-        },
-      });
-    } catch {
-      // Preserve the original transport failure.
-    }
-
-    console.error(JSON.stringify({
-      level: 'error',
-      scope: 'siteos_cloudflare_preview_failed',
-      project_id: project.id,
-      artifact_sha256: artifact.artifactSha256,
-      code,
-      error: message,
-    }));
+    await recordPreviewFailure(code, message);
 
     return jsonError(status, code, message);
   }
+}
+
+/** Case-insensitive: Cloudflare may report 'production', 'Production', … */
+function isProductionEnvironment(environment: unknown): boolean {
+  return String(environment ?? '').trim().toLowerCase() === 'production';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -59,6 +59,7 @@ Auth-Header: `Authorization: Bearer ${AGENT_RUNTIME_API_TOKEN}`
 | `AGENT_PDP_KEY`           | —                        | für `enforce` erforderlich (`rsd_gov_…`) |
 | `AGENT_PDP_FAILURE_MODE`  | `block`                  | nein — `allow` \| `block` |
 | `AGENT_PDP_TIMEOUT_MS`    | `3000`                   | nein |
+| `XAI_API_KEY`             | —                        | nur für den Grok-Voice-Adapter (Default-Getter); nie loggen |
 
 ### Agent-PEP (Governance-Prüfung vor dem Lauf)
 
@@ -92,6 +93,26 @@ sondern der Schutz gegen Prompt Injection: Wer die Entscheidungsgrundlage
 nicht beeinflussen kann, kann die Entscheidung nicht drehen. Siehe
 `src/pdp-client.ts` (`sanitizeToolCall`) und
 `supabase/functions/_shared/pdp/toolcall.ts`.
+
+### Voice-Provider: Grok Realtime (PR 2)
+
+`src/providers/grok-provider.ts` implementiert den `VoiceProvider`-Vertrag
+(`packages/agent-runtime-contracts/src/voice-provider.ts`, lokal gespiegelt in
+`src/voice-provider-types.ts`, weil das Docker-Build nur `apps/agent-runtime`
+kopiert) gegen die xAI Realtime Voice API (`wss://api.x.ai/v1/realtime`).
+
+- Der Adapter führt **nie** ein Tool aus. Tool-Calls des Modells werden nur
+  als `tool.call`-Event gemeldet; das Ergebnis geht ausschließlich über
+  `submitToolResult` an xAI zurück (`function_call_output` + `response.create`).
+- `tenantId`/`botId` kommen nur aus der `VoiceSessionConfig`; gleichnamige
+  Felder in Provider-Payloads werden ignoriert.
+- Unbekannte/nicht angebotene Tools, fehlende Call-IDs und kaputte Argumente
+  werden fail-closed als `error`-Event (`tool_call_rejected.<grund>`) gemeldet.
+- Audio: `pcm16` → `audio/pcm` (8/16/24/48 kHz), `g711_ulaw` → `audio/pcmu`,
+  `g711_alaw` → `audio/pcma` (je 8 kHz); `opus` und andere Raten werden abgelehnt.
+- Die WebSocket-Implementierung wird über `socketFactory` injiziert, der
+  API-Key über `getApiKey` (Default: `XAI_API_KEY`). Noch nicht verdrahtet —
+  das folgt mit der Session-Runtime.
 
 ## Lokal entwickeln
 

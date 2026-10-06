@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useParams, Link } from 'react-router-dom';
-import { analyzeBlueprint, applyPageOperations, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
+import { analyzeBlueprint, applyPageOperations, applySiteDesignTemplate, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { pageToPuckData, type PuckPageData } from '../../src/features/siteos/editor/blueprintPuckAdapter';
 
 /**
@@ -398,6 +398,53 @@ describe('App Builder Workspace — rechte Spalte und Governance-Status (A-Nacht
     await waitFor(() => expect(screen.getByText('Veröffentlichbar')).toBeInTheDocument());
     const right = within(screen.getByTestId('right'));
     expect(right.getByRole('tab', { name: /^Probleme/ }).getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+describe('App Builder Workspace — Design-Persistenz', () => {
+  it('macht die Template-Auswahl ungespeichert und sendet nur die Template-ID an siteos/edit', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const themed = applySiteDesignTemplate(blueprint, 'dark-professional');
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        unchanged: false,
+        blueprint_id: 'bp-2',
+        slug: blueprint.slug,
+        version: 2,
+        content_sha256: 'd'.repeat(64),
+        prev_hash: sha256,
+        blueprint: themed,
+        findings: [],
+        scores: {},
+        changes: [],
+        theme_change: {
+          template: 'dark-professional',
+          summary: 'Design-Vorlage „Dark Professional“ übernommen.',
+        },
+        rejected: [],
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dark Professional' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('save-state')).toHaveAttribute('data-state', 'unsaved'),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
+
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as Record<string, unknown>;
+    expect(call.design_template).toBe('dark-professional');
+    expect(call).not.toHaveProperty('theme');
+    expect(call).not.toHaveProperty('blueprint');
+    await waitFor(() =>
+      expect(screen.getByTestId('save-state')).toHaveAttribute('data-state', 'saved'),
+    );
   });
 });
 

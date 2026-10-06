@@ -59,6 +59,7 @@ import {
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
 import { persistBlueprintVersion } from '../persist.ts';
+import { gateSiteEdit } from '../site-entitlements.ts';
 
 const MAX_PAGES = 40;
 const MAX_BLOCKS_PER_PAGE = 60;
@@ -123,6 +124,10 @@ export async function handle(req: Request): Promise<Response> {
     .from('memberships').select('user_id')
     .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+
+  // Bearbeiten erzeugt eine neue Blueprint-Version und braucht siteos.builder.
+  const denied = await gateSiteEdit(admin, tenantId);
+  if (denied) return denied;
 
   try {
     // ── Jüngste Version laden ────────────────────────────────────────────

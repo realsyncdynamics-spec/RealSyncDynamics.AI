@@ -495,6 +495,37 @@ export async function exportPublish(args: {
   return { kind: 'ok', data: data as PublishExportResponse };
 }
 
+export interface PublishPreviewResponse {
+  ok: true;
+  preview: {
+    url: string;
+    deployment_id: string;
+    project_name: string;
+    branch: string;
+    environment: string | null;
+    artifact_sha256: string;
+    evaluation_id: string;
+    production: false;
+  };
+}
+
+/**
+ * Deployt ausschließlich eine Cloudflare-Pages-Vorschau aus dem serverseitig
+ * geprüften Release. Der Browser sendet weder Dateien noch Artefakt-Hash.
+ */
+export async function deployPublishPreview(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_go: true;
+  confirm_preview: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishPreviewResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-preview', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishPreviewResponse };
+}
+
 // ── Anonymer Build (Zielarchitektur: Idee → Vorschau → Konto → Claim) ───
 //
 // Bauen und Verfeinern laufen serverseitig, ohne Konto. Der Blueprint liegt

@@ -272,7 +272,7 @@ export async function deployPagesProduction(args: {
     project,
     branch: project.productionBranch,
     manifest,
-    message: `SiteOS governed production ${args.artifactSha256.slice(0, 12)}`,
+    message: `SiteOS governed production ${args.artifactSha256}`,
   });
 
   if (deployment.environment !== 'production') {

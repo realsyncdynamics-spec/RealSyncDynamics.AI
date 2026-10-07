@@ -15,6 +15,7 @@ import type { EventBus } from '../../src/core/runtime/events';
 import { InMemoryEventBus } from '../../src/core/runtime/events';
 import type { ExecutionTracer } from '../../src/core/runtime/observability';
 import { InMemoryExecutionTracer } from '../../src/core/runtime/observability';
+import type { RuntimeSafetyControlService } from '../../src/core/runtime/safety';
 
 /**
  * Create a test Supabase client pointing to local dev instance.
@@ -51,6 +52,7 @@ export async function createTestExecutor(options: {
   permissions?: PermissionChecker;
   tracer?: ExecutionTracer;
   eventBus?: EventBus;
+  safety?: RuntimeSafetyControlService;
   tenantId?: string;
 }): Promise<Executor> {
   const supabase = options.supabase;
@@ -70,6 +72,7 @@ export async function createTestExecutor(options: {
   const registry = options.skillRegistry || createTestSkillRegistry();
   const handlers = options.handlers || createTestHandlerRegistry();
   const permissions = options.permissions || createTestPermissionChecker();
+  const safety = options.safety || createTestSafetyControl();
 
   const deps: ExecutorDeps = {
     registry,
@@ -78,6 +81,7 @@ export async function createTestExecutor(options: {
     tracer,
     events: eventBus,
     gates: approvalService,
+    safety,
   };
 
   return new Executor(deps);
@@ -160,6 +164,24 @@ export function createTestPermissionChecker(): PermissionChecker {
   return {
     check: async () => {
       return { outcome: 'granted' };
+    },
+  };
+}
+
+/**
+ * Explicit GREEN safety fixture for tests that are not exercising safety.
+ * Production code must never use this helper.
+ */
+export function createTestSafetyControl(): RuntimeSafetyControlService {
+  return {
+    async assess() {
+      return {
+        light: 'green',
+        reasons: [],
+        mustStop: false,
+        requiresIndependentReview: false,
+        requiresHumanDecision: false,
+      };
     },
   };
 }

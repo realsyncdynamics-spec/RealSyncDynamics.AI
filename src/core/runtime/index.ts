@@ -7,6 +7,7 @@ export * from './observability';
 export * from './validate-agent';
 export * from './approvals';
 export * from './handlers';
+export * from './safety';
 export * from './executor';
 export * from './governanceEvents';
 export * from './evidence';

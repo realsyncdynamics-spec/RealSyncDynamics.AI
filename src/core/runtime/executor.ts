@@ -46,7 +46,8 @@ export type ExecutionOutcome =
       execution_id: string;
       light: 'yellow' | 'red';
       error_code: Extract<ExecutionError, 'safety_review_required' | 'safety_blocked'>;
-      reasons: string[];
+      /** Detailed safety reasons stay inside the control/review plane. */
+      reason_count: number;
     };
 
 export type ExecutionError =
@@ -201,7 +202,7 @@ export class Executor {
         execution_id,
         light: safetyAssessment.light,
         error_code,
-        reasons: [...safetyAssessment.reasons],
+        reason_count: safetyAssessment.reasons.length,
       };
     }
 

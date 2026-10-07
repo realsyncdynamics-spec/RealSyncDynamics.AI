@@ -112,6 +112,7 @@ export type RuntimeEventName =
   | 'execution.started'
   | 'execution.completed'
   | 'execution.failed'
+  | 'safety.evaluated'
   | 'approval.requested'
   | 'approval.granted'
   | 'approval.denied'

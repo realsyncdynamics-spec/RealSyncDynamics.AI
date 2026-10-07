@@ -271,6 +271,13 @@ export class SafetyReviewCoordinator {
     if (record.reviews.has(input.review.reviewerId)) {
       throw new Error('Reviewer already submitted a report for this case.');
     }
+    if (
+      [...record.reviews.values()].some(
+        (submitted) => submitted.review.reviewId === input.review.reviewId,
+      )
+    ) {
+      throw new Error('reviewId must be unique within a safety case.');
+    }
 
     const submitted = freezeSubmittedReview({
       caseId: input.caseId,
@@ -312,6 +319,12 @@ export class SafetyReviewCoordinator {
     }
     if (!input.synthesisId || !input.agentId) {
       throw new Error('synthesisId and agentId are required.');
+    }
+    if (input.agentId === record.snapshot.agentId) {
+      throw new Error('Synthesis agent must be separate from the producing agent.');
+    }
+    if (record.snapshot.reviewers.some((slot) => slot.reviewerId === input.agentId)) {
+      throw new Error('Synthesis agent must be separate from all three safety reviewers.');
     }
     if (!SHA256_HEX.test(input.analysisHash)) {
       throw new Error('analysisHash must be a lowercase SHA-256 hex digest.');
@@ -377,6 +390,18 @@ export class SafetyReviewCoordinator {
     const conditions = Object.freeze([...(input.conditions ?? [])]);
     if (input.decision === 'approve_with_conditions' && conditions.length === 0) {
       throw new Error('approve_with_conditions requires at least one explicit condition.');
+    }
+
+    const bundleDisposition = deriveReviewDisposition(
+      record.snapshot.reviewers.map((slot) => record.reviews.get(slot.reviewerId)!.review),
+    );
+    if (
+      bundleDisposition.recommendedLight === 'red' &&
+      (input.decision === 'approve' || input.decision === 'approve_with_conditions')
+    ) {
+      throw new Error(
+        'A RED reviewer disposition cannot be directly approved; modify, reject or escalate instead.',
+      );
     }
 
     const decision: HumanSafetyDecisionRecord = Object.freeze({

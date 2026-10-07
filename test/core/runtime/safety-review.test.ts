@@ -278,3 +278,66 @@ describe('SafetyReviewCoordinator', () => {
     expect('resume' in coordinator).toBe(false);
   });
 });
+
+
+describe('SafetyReviewCoordinator — escalation hardening', () => {
+  it('does not let a RED review disposition be directly approved', () => {
+    const coordinator = makeCoordinator();
+    openCase(coordinator);
+    submitAll(coordinator, ['green', 'green', 'red']);
+
+    expect(() =>
+      coordinator.recordHumanDecision({
+        caseId: 'case-1',
+        caseVersion: 1,
+        caseFingerprint: H('a'),
+        userId: 'human-owner',
+        decision: 'approve',
+        intent: 'Attempt to override the RED disposition.',
+      }),
+    ).toThrow(/cannot be directly approved/i);
+
+    const decision = coordinator.recordHumanDecision({
+      caseId: 'case-1',
+      caseVersion: 1,
+      caseFingerprint: H('a'),
+      userId: 'human-owner',
+      decision: 'modify',
+      intent: 'Create a safer replacement action instead of executing this version.',
+    });
+
+    expect(decision.decision).toBe('modify');
+  });
+
+  it('requires the synthesis agent to be separate from producer and reviewers', () => {
+    const coordinator = makeCoordinator();
+    openCase(coordinator);
+    submitAll(coordinator, ['green', 'yellow', 'green']);
+
+    expect(() =>
+      coordinator.recordSynthesis({
+        caseId: 'case-1',
+        caseVersion: 1,
+        caseFingerprint: H('a'),
+        synthesisId: 'synth-1',
+        agentId: 'reviewer-a',
+        analysisHash: H('1'),
+        proposal: 'Proposal',
+        rationale: 'Rationale',
+      }),
+    ).toThrow(/separate from all three safety reviewers/i);
+
+    expect(() =>
+      coordinator.recordSynthesis({
+        caseId: 'case-1',
+        caseVersion: 1,
+        caseFingerprint: H('a'),
+        synthesisId: 'synth-2',
+        agentId: 'implementation-agent',
+        analysisHash: H('2'),
+        proposal: 'Proposal',
+        rationale: 'Rationale',
+      }),
+    ).toThrow(/separate from the producing agent/i);
+  });
+});

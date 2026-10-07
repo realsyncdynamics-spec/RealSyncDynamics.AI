@@ -142,8 +142,8 @@ export interface IndependentSafetyReview {
   /** Must remain false. Reviewers may not see peer reports. */
   peerReportsVisible: false;
   light: SafetyLight;
-  reasons: string[];
-  uncertainties: string[];
+  reasons: readonly string[];
+  uncertainties: readonly string[];
   recommendedAction: string;
   confidence: number;
 }
@@ -244,7 +244,7 @@ export interface PostRedRecoveryEvidence {
 
 export interface PostRedRecoveryDecision {
   eligibleForNewAutomationRequest: boolean;
-  missing: (keyof PostRedRecoveryEvidence)[];
+  missing: readonly (keyof PostRedRecoveryEvidence)[];
 }
 
 /**

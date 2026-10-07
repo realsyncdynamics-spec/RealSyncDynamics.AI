@@ -495,7 +495,7 @@ describe('Executor — runtime safety enforcement', () => {
       execution_id: 'exec_1',
       light: 'yellow',
       error_code: 'safety_review_required',
-      reasons: ['Scope changed during evaluation.'],
+      reason_count: 1,
     });
     expect(handler).not.toHaveBeenCalled();
     expect(gates.opened).toHaveLength(0);

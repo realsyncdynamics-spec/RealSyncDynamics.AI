@@ -17,6 +17,7 @@ import {
   type PermissionDecision,
   type RuntimeEvent,
   type SkillManifest,
+  type RuntimeSafetyControlService,
 } from '../../../src/core/runtime';
 
 // ---------------------------------------------------------------------------
@@ -97,6 +98,41 @@ function denyWith(missing: readonly Capability[]): PermissionChecker {
   };
 }
 
+function safety(
+  light: 'green' | 'yellow' | 'red' = 'green',
+  reasons: string[] = [],
+): RuntimeSafetyControlService {
+  return {
+    async assess() {
+      if (light === 'green') {
+        return {
+          light,
+          reasons,
+          mustStop: false,
+          requiresIndependentReview: false,
+          requiresHumanDecision: false,
+        };
+      }
+      if (light === 'yellow') {
+        return {
+          light,
+          reasons,
+          mustStop: true,
+          requiresIndependentReview: true,
+          requiresHumanDecision: true,
+        };
+      }
+      return {
+        light,
+        reasons,
+        mustStop: true,
+        requiresIndependentReview: false,
+        requiresHumanDecision: true,
+      };
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -171,6 +207,7 @@ beforeEach(() => {
     'execution.started',
     'execution.completed',
     'execution.failed',
+    'safety.evaluated',
     'approval.requested',
     'permission.denied',
   ] as const) {
@@ -195,6 +232,7 @@ describe('Executor — happy path', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
       id: sequentialIds(),
       clock: fixedClock(),
     });
@@ -216,6 +254,7 @@ describe('Executor — happy path', () => {
 
     expect(receivedEvents.map((e) => e.name)).toEqual([
       'execution.started',
+      'safety.evaluated',
       'execution.completed',
     ]);
     expect(gates.opened).toEqual([]);
@@ -234,6 +273,7 @@ describe('Executor — approval flow', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
       id: sequentialIds(),
       clock: fixedClock(),
     });
@@ -257,6 +297,7 @@ describe('Executor — approval flow', () => {
     });
     expect(receivedEvents.map((e) => e.name)).toEqual([
       'execution.started',
+      'safety.evaluated',
       'approval.requested',
     ]);
   });
@@ -274,6 +315,7 @@ describe('Executor — denials and errors', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
       id: sequentialIds(),
       clock: fixedClock(),
     });
@@ -304,6 +346,7 @@ describe('Executor — denials and errors', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
       id: sequentialIds(),
       clock: fixedClock(),
     });
@@ -324,6 +367,7 @@ describe('Executor — denials and errors', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
     });
 
     const outcome = await executor.execute(makeInput({ skill_id: 'nope.gone' }));
@@ -340,6 +384,7 @@ describe('Executor — denials and errors', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
     });
 
     const outcome = await executor.execute(makeInput());
@@ -355,6 +400,7 @@ describe('Executor — denials and errors', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
     });
 
     const outcome = await executor.execute({
@@ -379,6 +425,7 @@ describe('Executor — input hashing', () => {
       tracer,
       events,
       gates,
+      safety: safety(),
       id: sequentialIds(),
       clock: fixedClock(),
     });
@@ -388,5 +435,137 @@ describe('Executor — input hashing', () => {
 
     const [a, b] = [tracer.rows.get('exec_1')!, tracer.rows.get('exec_2')!];
     expect(a.input_hash).toBe(b.input_hash);
+  });
+});
+
+
+describe('Executor — runtime safety enforcement', () => {
+  it('fails closed to RED when no safety control is configured', async () => {
+    const handler = vi.fn(async () => ({ output_hash: 'should-not-run' }));
+    handlers.register('audit.cookie_scan', handler);
+
+    const executor = new Executor({
+      registry,
+      handlers,
+      permissions: permitAll(),
+      tracer,
+      events,
+      gates,
+      id: sequentialIds(),
+      clock: fixedClock(),
+    });
+
+    const outcome = await executor.execute(makeInput());
+
+    expect(outcome).toMatchObject({
+      status: 'blocked_by_safety',
+      execution_id: 'exec_1',
+      light: 'red',
+      error_code: 'safety_blocked',
+    });
+    expect(handler).not.toHaveBeenCalled();
+    expect(tracer.rows.get('exec_1')).toMatchObject({
+      status: 'failed',
+      error_code: 'safety_blocked',
+    });
+  });
+
+  it('stops YELLOW before both approval gates and handler side effects', async () => {
+    const handler = vi.fn(async () => ({ output_hash: 'should-not-run' }));
+    handlers.register('shopify.consent_inject', handler);
+
+    const executor = new Executor({
+      registry,
+      handlers,
+      permissions: permitAll(),
+      tracer,
+      events,
+      gates,
+      safety: safety('yellow', ['Scope changed during evaluation.']),
+      id: sequentialIds(),
+      clock: fixedClock(),
+    });
+
+    const outcome = await executor.execute(
+      makeInput({ skill_id: 'shopify.consent_inject' }),
+    );
+
+    expect(outcome).toEqual({
+      status: 'blocked_by_safety',
+      execution_id: 'exec_1',
+      light: 'yellow',
+      error_code: 'safety_review_required',
+      reasons: ['Scope changed during evaluation.'],
+    });
+    expect(handler).not.toHaveBeenCalled();
+    expect(gates.opened).toHaveLength(0);
+    expect(tracer.rows.get('exec_1')).toMatchObject({
+      status: 'failed',
+      error_code: 'safety_review_required',
+    });
+  });
+
+  it('stops RED before handler execution and records only bounded event metadata', async () => {
+    const handler = vi.fn(async () => ({ output_hash: 'should-not-run' }));
+    handlers.register('audit.cookie_scan', handler);
+
+    const executor = new Executor({
+      registry,
+      handlers,
+      permissions: permitAll(),
+      tracer,
+      events,
+      gates,
+      safety: safety('red', ['Cross-tenant boundary cannot be established.']),
+      id: sequentialIds(),
+      clock: fixedClock(),
+    });
+
+    const outcome = await executor.execute(makeInput());
+
+    expect(outcome.status).toBe('blocked_by_safety');
+    expect(handler).not.toHaveBeenCalled();
+
+    const evaluated = receivedEvents.find((e) => e.name === 'safety.evaluated');
+    expect(evaluated?.payload).toMatchObject({
+      light: 'red',
+      must_stop: true,
+      requires_human_decision: true,
+      reason_count: 1,
+    });
+    expect(JSON.stringify(evaluated?.payload)).not.toContain('Cross-tenant boundary');
+  });
+
+  it('fails closed when the safety service throws', async () => {
+    const handler = vi.fn(async () => ({ output_hash: 'should-not-run' }));
+    handlers.register('audit.cookie_scan', handler);
+
+    const throwingSafety: RuntimeSafetyControlService = {
+      async assess() {
+        throw new Error('provider unavailable with internal details');
+      },
+    };
+
+    const executor = new Executor({
+      registry,
+      handlers,
+      permissions: permitAll(),
+      tracer,
+      events,
+      gates,
+      safety: throwingSafety,
+      id: sequentialIds(),
+      clock: fixedClock(),
+    });
+
+    const outcome = await executor.execute(makeInput());
+
+    expect(outcome).toMatchObject({
+      status: 'blocked_by_safety',
+      light: 'red',
+      error_code: 'safety_blocked',
+    });
+    expect(handler).not.toHaveBeenCalled();
+    expect(JSON.stringify(receivedEvents)).not.toContain('provider unavailable with internal details');
   });
 });

@@ -18,6 +18,11 @@ import {
 } from './approvals';
 import type { HandlerContext, HandlerRegistry } from './handlers';
 import { defaultHasher } from './handlers';
+import {
+  assessRuntimeSafetyFailClosed,
+  FailClosedRuntimeSafetyControl,
+  type RuntimeSafetyControlService,
+} from './safety';
 
 export type ExecutionOutcome =
   | {
@@ -35,12 +40,21 @@ export type ExecutionOutcome =
       status: 'awaiting_approval';
       execution_id: string;
       gate_id: string;
+    }
+  | {
+      status: 'blocked_by_safety';
+      execution_id: string;
+      light: 'yellow' | 'red';
+      error_code: Extract<ExecutionError, 'safety_review_required' | 'safety_blocked'>;
+      reasons: string[];
     };
 
 export type ExecutionError =
   | 'skill_not_found'
   | 'handler_not_found'
   | 'permission_denied'
+  | 'safety_review_required'
+  | 'safety_blocked'
   | 'handler_threw'
   | 'invalid_input';
 
@@ -51,6 +65,11 @@ export interface ExecutorDeps {
   tracer: ExecutionTracer;
   events: EventBus;
   gates: ApprovalGateService;
+  /**
+   * Runtime safety control. If omitted, execution fails closed as RED.
+   * There is deliberately no implicit GREEN fallback.
+   */
+  safety?: RuntimeSafetyControlService;
   /** Injectable for tests. Defaults to `crypto.randomUUID()`. */
   id?: () => string;
   /** Injectable for tests. Defaults to `() => new Date()`. */
@@ -60,23 +79,25 @@ export interface ExecutorDeps {
 }
 
 /**
- * Phase 1.1 executor. Synchronous skill orchestration:
+ * Runtime skill orchestration:
  *
- *   1. Look up skill in registry  → error_code:'skill_not_found' if missing
- *   2. Look up handler           → error_code:'handler_not_found' if missing
- *   3. Validate input            → error_code:'invalid_input' if not plain
- *   4. Check capabilities        → error_code:'permission_denied' if denied
- *   5. Open approval gate iff !auto_approve  → outcome:'awaiting_approval'
- *   6. Run handler               → outcome:'completed' | error_code:'handler_threw'
+ *   1. Look up skill
+ *   2. Look up handler
+ *   3. Validate input
+ *   4. Check capabilities
+ *   5. Evaluate independent runtime safety control
+ *      - GREEN  -> continue
+ *      - YELLOW -> stop; independent-review orchestration happens elsewhere
+ *      - RED    -> stop; only the dedicated incident path may take bounded
+ *                  emergency safety actions
+ *   6. Open human approval gate iff !auto_approve
+ *   7. Run handler
  *
- * Every successful path persists an ExecutionRecord and emits structured
- * events. Permission denials are recorded in the audit trail (as a failed
- * execution) so a sweep over `runtime_events` is sufficient for forensics.
+ * Safety is evaluated before any handler side effect. Missing, throwing or
+ * malformed safety control fails closed to RED.
  *
- * What this is NOT (intentionally):
- *   - parallel/streaming execution
- *   - sub-agent / skill-to-skill calls
- *   - retry logic (lives in the Phase-2 workflow engine)
+ * This executor does not itself invoke the three YELLOW reviewers and does not
+ * attempt RED remediation. Those are separate authorities by design.
  */
 export class Executor {
   readonly #deps: Required<ExecutorDeps>;
@@ -84,6 +105,7 @@ export class Executor {
   constructor(deps: ExecutorDeps) {
     this.#deps = {
       ...deps,
+      safety: deps.safety ?? new FailClosedRuntimeSafetyControl(),
       id: deps.id ?? defaultId,
       clock: deps.clock ?? (() => new Date()),
       hash: deps.hash ?? defaultHasher,
@@ -91,7 +113,7 @@ export class Executor {
   }
 
   async execute(input: ExecutionInput): Promise<ExecutionOutcome> {
-    const { registry, handlers, permissions, tracer, gates } = this.#deps;
+    const { registry, handlers, permissions, tracer, gates, safety } = this.#deps;
 
     if (!isValidInput(input)) {
       return { status: 'failed', error_code: 'invalid_input' };
@@ -138,6 +160,49 @@ export class Executor {
         reason: decision.reason,
       });
       return { status: 'failed', execution_id, error_code: 'permission_denied' };
+    }
+
+    const safetyAssessment = await assessRuntimeSafetyFailClosed(safety, {
+      execution_id,
+      tenant_id: input.tenant_id,
+      agent_id: input.agent_id,
+      skill_id: input.skill_id,
+      risk_level: skill.risk_level,
+      capabilities: skill.capabilities,
+      pii_class: skill.pii_class,
+      auto_approve: skill.auto_approve,
+      input_hash,
+    });
+
+    await this.#emit('safety.evaluated', input, execution_id, {
+      light: safetyAssessment.light,
+      must_stop: safetyAssessment.mustStop,
+      requires_independent_review: safetyAssessment.requiresIndependentReview,
+      requires_human_decision: safetyAssessment.requiresHumanDecision,
+      reason_count: safetyAssessment.reasons.length,
+    });
+
+    if (safetyAssessment.light !== 'green') {
+      const error_code: Extract<
+        ExecutionError,
+        'safety_review_required' | 'safety_blocked'
+      > = safetyAssessment.light === 'yellow'
+        ? 'safety_review_required'
+        : 'safety_blocked';
+
+      await this.#finish(execution_id, 'failed', error_code);
+      await this.#emit('execution.failed', input, execution_id, {
+        error_code,
+        safety_light: safetyAssessment.light,
+      });
+
+      return {
+        status: 'blocked_by_safety',
+        execution_id,
+        light: safetyAssessment.light,
+        error_code,
+        reasons: [...safetyAssessment.reasons],
+      };
     }
 
     if (requiresApprovalGate({ auto_approve: skill.auto_approve })) {

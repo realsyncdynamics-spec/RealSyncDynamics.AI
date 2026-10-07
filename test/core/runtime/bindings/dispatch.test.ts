@@ -12,6 +12,7 @@ import {
   type OpenGateInput,
   type PermissionChecker,
   type RuntimeEvent,
+  type RuntimeSafetyControlService,
 } from '../../../../src/core/runtime';
 import { registerSkillBindings, runtimeSkillId } from '../../../../src/core/runtime/bindings';
 
@@ -63,6 +64,20 @@ function permitAll(): PermissionChecker {
   return { async check() { return { outcome: 'granted' as const }; } };
 }
 
+function greenSafety(): RuntimeSafetyControlService {
+  return {
+    async assess() {
+      return {
+        light: 'green',
+        reasons: [],
+        mustStop: false,
+        requiresIndependentReview: false,
+        requiresHumanDecision: false,
+      };
+    },
+  };
+}
+
 function makeRuntime() {
   const registry = new SkillRegistry();
   const handlers = new HandlerRegistry();
@@ -72,13 +87,14 @@ function makeRuntime() {
   const seen: RuntimeEvent[] = [];
   for (const name of [
     'execution.started', 'execution.completed', 'execution.failed',
-    'approval.requested', 'permission.denied',
+    'safety.evaluated', 'approval.requested', 'permission.denied',
   ] as const) {
     events.subscribe(name, (e) => { seen.push(e); });
   }
   const bindings = registerSkillBindings({ registry, handlers });
   const executor = new Executor({
     registry, handlers, tracer, gates, events, permissions: permitAll(),
+    safety: greenSafety(),
   });
   return { registry, handlers, tracer, gates, events, executor, bindings, seen };
 }

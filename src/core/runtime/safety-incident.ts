@@ -139,10 +139,12 @@ export class SafetyIncidentController {
   async openRedIncident(input: OpenRedIncidentInput): Promise<SafetyIncidentRecord> {
     validateOpenIncident(input);
 
-    const existingId = this.#incidentByExecution.get(input.executionId);
+    const executionKey = incidentExecutionKey(input.tenantId, input.executionId);
+    const existingId = this.#incidentByExecution.get(executionKey);
     if (existingId) {
       const existing = this.#byIncident.get(existingId);
       if (!existing) throw new Error('Incident index is inconsistent.');
+      assertRepeatedIncidentBinding(existing, input);
       return existing;
     }
 
@@ -172,7 +174,7 @@ export class SafetyIncidentController {
     // Register before side effects so a repeated RED signal cannot run the
     // emergency plan twice.
     this.#byIncident.set(incidentId, record);
-    this.#incidentByExecution.set(input.executionId, incidentId);
+    this.#incidentByExecution.set(executionKey, incidentId);
 
     const actionRecords: EmergencySafetyActionRecord[] = [];
     const context: EmergencySafetyActionContext = Object.freeze({
@@ -194,7 +196,9 @@ export class SafetyIncidentController {
             ok: result.ok,
             attemptedAt,
             evidenceRef: result.evidenceRef,
-            errorCode: result.errorCode,
+            errorCode: result.ok
+              ? result.errorCode
+              : (result.errorCode ?? 'emergency_action_reported_failure'),
           }),
         );
       } catch {
@@ -272,6 +276,28 @@ export class SafetyIncidentController {
     const incident = this.#byIncident.get(incidentId);
     if (!incident) throw new Error(`Safety incident not found: ${incidentId}`);
     return incident;
+  }
+}
+
+function incidentExecutionKey(tenantId: string, executionId: string): string {
+  return `${tenantId}:${executionId}`;
+}
+
+function assertRepeatedIncidentBinding(
+  existing: SafetyIncidentRecord,
+  input: OpenRedIncidentInput,
+): void {
+  if (existing.tenantId !== input.tenantId || existing.executionId !== input.executionId) {
+    throw new Error('Repeated RED incident does not match the original tenant/execution binding.');
+  }
+  if (existing.evidenceHash !== input.evidenceHash) {
+    throw new Error('Repeated RED incident carries a different evidence hash.');
+  }
+  if (
+    input.caseFingerprint !== undefined &&
+    existing.caseFingerprint !== input.caseFingerprint
+  ) {
+    throw new Error('Repeated RED incident carries a different case fingerprint.');
   }
 }
 

@@ -121,8 +121,13 @@ export type HumanSafetyDecision =
   | 'reject'
   | 'escalate';
 
+export type HumanReviewMethod = 'in_app' | 'email' | 'out_of_band';
+export type AuthorizedHumanReviewRole = 'owner' | 'admin';
+
 export interface HumanSafetyDecisionRecord {
   userId: string;
+  verifiedRole: AuthorizedHumanReviewRole;
+  method: HumanReviewMethod;
   decision: HumanSafetyDecision;
   intent: string;
   conditions: readonly string[];
@@ -136,6 +141,12 @@ export interface RecordHumanSafetyDecisionInput {
   caseVersion: 1;
   caseFingerprint: string;
   userId: string;
+  /**
+   * Must be supplied by a trusted server-side membership check, never directly
+   * trusted from an unverified client claim.
+   */
+  verifiedRole: AuthorizedHumanReviewRole;
+  method: HumanReviewMethod;
   decision: HumanSafetyDecision;
   intent: string;
   conditions?: readonly string[];
@@ -257,6 +268,7 @@ export class SafetyReviewCoordinator {
     if (!SHA256_HEX.test(input.reportHash)) {
       throw new Error('reportHash must be a lowercase SHA-256 hex digest.');
     }
+    validateSingleReview(input.review);
 
     const slot = record.snapshot.reviewers.find(
       (candidate) => candidate.reviewerId === input.review.reviewerId,
@@ -380,6 +392,12 @@ export class SafetyReviewCoordinator {
       throw new Error('Human decision already recorded for this safety case.');
     }
     if (!input.userId) throw new Error('Human reviewer userId is required.');
+    if (!['owner', 'admin'].includes(input.verifiedRole)) {
+      throw new Error('Human reviewer must have a verified owner or admin role.');
+    }
+    if (!['in_app', 'email', 'out_of_band'].includes(input.method)) {
+      throw new Error('Human review method is invalid.');
+    }
     if (record.snapshot.producerUserId && input.userId === record.snapshot.producerUserId) {
       throw new Error('Producer and human reviewer must be different users.');
     }
@@ -406,6 +424,8 @@ export class SafetyReviewCoordinator {
 
     const decision: HumanSafetyDecisionRecord = Object.freeze({
       userId: input.userId,
+      verifiedRole: input.verifiedRole,
+      method: input.method,
       decision: input.decision,
       intent: input.intent,
       conditions,
@@ -446,6 +466,10 @@ function validateOpenInput(input: OpenSafetyCaseInput): void {
     }
   }
 
+  if (input.evidenceRefs.length === 0 || input.evidenceRefs.some((ref) => !ref.trim())) {
+    throw new Error('At least one non-empty immutable evidence reference is required.');
+  }
+
   if (input.reviewers.length !== REVIEWER_COUNT) {
     throw new Error('Exactly three safety reviewers are required.');
   }
@@ -454,10 +478,45 @@ function validateOpenInput(input: OpenSafetyCaseInput): void {
   if (reviewerIds.size !== REVIEWER_COUNT || [...reviewerIds].some((id) => !id)) {
     throw new Error('Safety reviewer identities must be three distinct non-empty values.');
   }
+  if (reviewerIds.has(input.agentId)) {
+    throw new Error('Producing agent cannot also act as an independent safety reviewer.');
+  }
 
   const isolationKeys = new Set(input.reviewers.map((reviewer) => reviewer.isolationKey));
   if (isolationKeys.size !== REVIEWER_COUNT || [...isolationKeys].some((key) => !key)) {
     throw new Error('Safety reviewer isolation keys must be three distinct non-empty values.');
+  }
+}
+
+function validateSingleReview(review: IndependentSafetyReview): void {
+  if (!review.reviewId || !review.reviewerId || !review.isolationKey) {
+    throw new Error('Review identity fields are required.');
+  }
+  if (!['green', 'yellow', 'red'].includes(review.light)) {
+    throw new Error('Review light must be green, yellow or red.');
+  }
+  if (review.peerReportsVisible !== false) {
+    throw new Error('Peer reports must never be visible to a safety reviewer.');
+  }
+  if (!Number.isFinite(review.confidence) || review.confidence < 0 || review.confidence > 1) {
+    throw new Error('Reviewer confidence must be between 0 and 1.');
+  }
+  if (!review.recommendedAction.trim()) {
+    throw new Error('Reviewer recommendedAction is required.');
+  }
+  if (
+    !Array.isArray(review.reasons) ||
+    !review.reasons.every((reason) => typeof reason === 'string' && reason.trim().length > 0)
+  ) {
+    throw new Error('Review reasons must contain non-empty strings.');
+  }
+  if (
+    !Array.isArray(review.uncertainties) ||
+    !review.uncertainties.every(
+      (uncertainty) => typeof uncertainty === 'string' && uncertainty.trim().length > 0,
+    )
+  ) {
+    throw new Error('Review uncertainties must contain non-empty strings.');
   }
 }
 

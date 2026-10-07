@@ -225,3 +225,51 @@ describe('SafetyIncidentController', () => {
     expect('activate' in controller).toBe(false);
   });
 });
+
+
+describe('SafetyIncidentController — incident binding hardening', () => {
+  it('never aliases the same execution id across tenants', async () => {
+    const execute = vi.fn(async () => ({ ok: true }));
+    let nextId = 0;
+    const controller = new SafetyIncidentController({ execute }, {
+      id: () => `incident-${++nextId}`,
+      clock: makeClock(),
+    });
+
+    const first = await controller.openRedIncident({
+      tenantId: 'tenant-1',
+      executionId: 'shared-exec-id',
+      evidenceHash: H('a'),
+    });
+    const second = await controller.openRedIncident({
+      tenantId: 'tenant-2',
+      executionId: 'shared-exec-id',
+      evidenceHash: H('b'),
+    });
+
+    expect(first.incidentId).not.toBe(second.incidentId);
+    expect(first.tenantId).toBe('tenant-1');
+    expect(second.tenantId).toBe('tenant-2');
+  });
+
+  it('rejects a repeated RED signal when the frozen evidence hash changes', async () => {
+    const controller = new SafetyIncidentController(
+      { async execute() { return { ok: true }; } },
+      { id: () => 'incident-1', clock: makeClock() },
+    );
+
+    await controller.openRedIncident({
+      tenantId: 'tenant-1',
+      executionId: 'exec-1',
+      evidenceHash: H('a'),
+    });
+
+    await expect(
+      controller.openRedIncident({
+        tenantId: 'tenant-1',
+        executionId: 'exec-1',
+        evidenceHash: H('b'),
+      }),
+    ).rejects.toThrow(/different evidence hash/i);
+  });
+});

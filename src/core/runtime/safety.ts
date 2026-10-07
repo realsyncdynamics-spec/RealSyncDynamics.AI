@@ -78,10 +78,35 @@ function isValidSafetyClassification(value: unknown): value is SafetyClassificat
   if (!Array.isArray(candidate.reasons) || !candidate.reasons.every((x) => typeof x === 'string')) {
     return false;
   }
+  if (
+    typeof candidate.mustStop !== 'boolean' ||
+    typeof candidate.requiresIndependentReview !== 'boolean' ||
+    typeof candidate.requiresHumanDecision !== 'boolean'
+  ) {
+    return false;
+  }
+
+  if (candidate.light === 'green') {
+    return (
+      candidate.mustStop === false &&
+      candidate.requiresIndependentReview === false &&
+      candidate.requiresHumanDecision === false
+    );
+  }
+
+  if (candidate.light === 'yellow') {
+    return (
+      candidate.mustStop === true &&
+      candidate.requiresIndependentReview === true &&
+      candidate.requiresHumanDecision === true
+    );
+  }
+
   return (
-    typeof candidate.mustStop === 'boolean' &&
-    typeof candidate.requiresIndependentReview === 'boolean' &&
-    typeof candidate.requiresHumanDecision === 'boolean'
+    candidate.light === 'red' &&
+    candidate.mustStop === true &&
+    candidate.requiresIndependentReview === false &&
+    candidate.requiresHumanDecision === true
   );
 }
 

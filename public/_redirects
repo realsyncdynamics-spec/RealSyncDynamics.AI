@@ -67,4 +67,28 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /loesungen          /branchen  301
 /demo               /demo-tour  301
 
+# SEO-Sprint KW 40, Befund 1 + 9: Synonym- und DE/EN-Duplikate. Die Aliase
+# rendern dieselbe Komponente wie die kanonische URL (src/App.tsx) und
+# zeigten bisher nur per
+# canonical dorthin — standen aber weiter in der Sitemap. Die
+# Aliase sind aus der Sitemap raus; diese 301s konsolidieren Index und
+# Backlinks. Echte EN-Übersetzungen gibt es nicht, daher kein hreflang.
+# Client-Navigation auf einen Alias rendert weiter die SPA-Route mit
+# canonical auf das Ziel (src/config/seo.ts).
+# Rechtstexte (/datenschutz, /legal/datenschutz, /impressum) bewusst NICHT:
+# Umleitungen dort brauchen eine Einzel-Freigabe; bis dahin konsolidiert
+# der canonical in seo.ts.
+/press               /presse            301
+/resources           /ressourcen        301
+/sicherheit          /security          301
+/about               /ueber-uns         301
+/faq                 /haeufige-fragen   301
+/saas-providers      /saas-anbieter     301
+/steuerkanzlei       /steuerberater     301
+/bildung             /schulen           301
+/education           /schulen           301
+/market-analysis     /marktanalyse      301
+/busseld-rechner     /bussgeld-rechner  301
+/bussgeldrechner     /bussgeld-rechner  301
+
 /*  /index.html  200

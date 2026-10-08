@@ -49,7 +49,7 @@ function fmtBytes(n: number): string {
 
 export function EvidencePage() {
   usePageMeta({
-    title: 'Evidence — Audit-Kette | RealSync',
+    title: 'Evidence — Audit-Kette | RealSync Dynamics AI',
     description:
       'Evidence-Vault-Vorschau: jeder Befund, jede Agent-Aktion, jeder Policy-Snapshot ' +
       'mit SHA-256 gehasht und verankert. Demo-Surface — keine Kundendaten, keine ' +

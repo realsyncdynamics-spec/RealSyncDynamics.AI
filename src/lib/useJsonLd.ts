@@ -62,11 +62,11 @@ export function softwareApplicationLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'RealSyncDynamics.AI',
+    name: 'RealSync Dynamics AI',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     description:
       'Technische Vorprüfung und Monitoring für DSGVO-, TDDDG- und AI-Act-relevante Website- und Tracking-Risiken.',
-    url: 'https://RealSyncDynamicsAI.de/',
+    url: 'https://realsyncdynamicsai.de/',
   };
 }

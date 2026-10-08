@@ -179,7 +179,7 @@ export function SchremsIIErklaert() {
             description: 'EuGH C-311/18: warum US-Cloud-KI nach Schrems-II zusätzliche Schutzmaßnahmen braucht. Mit konkreten Empfehlungen für DSGVO-konforme Anbieter.',
             datePublished: '2026-05-06',
             inLanguage: 'de-DE',
-            author: { '@type': 'Organization', name: 'RealSync Dynamics' },
+            author: { '@type': 'Organization', name: 'RealSync Dynamics AI' },
           }),
         }}
       />

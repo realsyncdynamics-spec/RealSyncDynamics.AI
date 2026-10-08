@@ -188,6 +188,9 @@ export const MODEL_PRICES: ModelPrice[] = [
   },
 ];
 
+/** Datums-Suffix einer Snapshot-ID, etwa `-20251001`. */
+const SNAPSHOT_SUFFIX = /-\d{8}$/;
+
 /**
  * Preis für `(provider, modelId)` — oder `null`, wenn die Kombination nicht
  * hinterlegt ist.
@@ -196,11 +199,26 @@ export const MODEL_PRICES: ModelPrice[] = [
  * Fehler, kein Sonnet. Der Aufrufer schreibt dann lieber keine Kostenzeile
  * als eine erfundene: eine fehlende Zahl ist reparierbar, eine falsche wandert
  * unbemerkt in Kontingent und Ledger.
+ *
+ * Eine datierte Snapshot-ID (`claude-haiku-4-5-20251001`) ist kein anderes
+ * Modell, sondern ein fester Stand desselben — sie kostet, was die Basis-ID
+ * kostet. Deshalb: exakter Treffer zuerst, sonst das Datums-Suffix abtrennen
+ * und die Basis-ID suchen. Nur diese eine Stufe, und nur wenn die Basis-ID
+ * wirklich geführt ist — `claude-opus-4-1-20250805` bleibt `null`, weil es
+ * keine Zeile `claude-opus-4-1` gibt.
+ *
+ * Das ist keine Prüfung, ob die ID existiert: eine erfundene ID mit
+ * angehängtem Datum bekommt hier den Preis ihrer Basis. Ob Anthropic sie
+ * annimmt, entscheidet der Request, nicht die Preistabelle.
  */
 export function priceFor(provider: string, modelId: string): ModelPrice | null {
   const p = provider.trim().toLowerCase();
   const m = modelId.trim().toLowerCase();
-  return MODEL_PRICES.find((e) => e.provider === p && e.modelId === m) ?? null;
+  const exact = MODEL_PRICES.find((e) => e.provider === p && e.modelId === m);
+  if (exact) return exact;
+  const base = m.replace(SNAPSHOT_SUFFIX, '');
+  if (base === m) return null;
+  return MODEL_PRICES.find((e) => e.provider === p && e.modelId === base) ?? null;
 }
 
 /** Cache-Schreibpreis je 1M Tokens — explizit, sonst abgeleitet. */
@@ -216,13 +234,13 @@ export function cacheReadPerMillionUsd(price: ModelPrice): number {
 /**
  * Kosten eines Laufs in USD.
  *
- * Alle vier Tokenarten getrennt — genau deshalb, weil der heutige Adapter
- * Cache-Writes zum vollen Input-Preis verbucht und Cache-Reads gar nicht:
- * `anthropicAdapter.ts` addiert `cache_creation_input_tokens` auf
- * `input_tokens` und lässt `cache_read_input_tokens` ungenutzt liegen.
+ * Alle vier Tokenarten getrennt. Bis Schritt C verbuchten beide Kostenpfade
+ * Cache-Writes höchstens zum vollen Input-Preis und Cache-Reads gar nicht.
  *
- * Diese Funktion hat in PR A noch keinen Aufrufer. Sie steht hier, damit die
- * Formel an einer Stelle definiert ist, bevor die Aufrufer umgestellt werden.
+ * `input` meint hier die NICHT gecachten Input-Tokens — bei Anthropic genau
+ * `usage.input_tokens`, das Cache-Writes und Cache-Reads bereits ausschließt.
+ * Aufrufer gehen über `supabase/functions/_shared/providerCost.ts`, nicht
+ * direkt hierher: dort wird die Anbieter-Usage auf diese vier Arten abgebildet.
  */
 export function costUsd(
   price: ModelPrice,

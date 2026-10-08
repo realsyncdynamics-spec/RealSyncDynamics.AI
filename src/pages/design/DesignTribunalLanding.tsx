@@ -65,7 +65,7 @@ export function DesignTribunalLanding() {
       }}
     >
       <SEOHead
-        title="Tribunal (Preview) — RealSyncDynamics.AI"
+        title="Tribunal (Preview) — RealSync Dynamics AI"
         description={`${CONTINUOUS_COMPLIANCE_NARRATIVE} Design-Preview.`}
         canonical="/design/tribunal"
         noIndex

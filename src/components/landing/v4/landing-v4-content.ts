@@ -3,16 +3,19 @@ import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/
 /**
  * Landing v4 „Klassisch" — Inhalte 1:1 aus der Design-Referenz
  * (`The Governance AI v4.html`, Datenblöcke Z. 1215–1670). Der Wortlaut
- * stammt aus runtimeVocab.ts, shared/pricing.ts, implementation-status.ts,
- * platform-capabilities.ts und LandingChannelTools.tsx (Stand Handoff) und
- * wird hier bewusst eingefroren, damit die Design-Route deckungsgleich mit
- * der Referenz bleibt.
+ * stammt aus runtimeVocab.ts, shared/pricing.ts, platform-capabilities.ts und
+ * LandingChannelTools.tsx (Stand Handoff) und wird hier bewusst eingefroren,
+ * damit die Design-Route deckungsgleich mit der Referenz bleibt.
+ *
+ * Ausnahme: die öffentliche #roadmap-Sektion liest live aus
+ * `src/product/implementation-status.ts` (keine parallele Claim-Liste).
  */
 
 /** Ziel-Routen der Referenz (`wire()`-Tabelle) — relativ, damit .ai und .de funktionieren. */
 export const V4_ROUTES = {
   audit: '/audit',
-  dashboardDemo: '/demo-tour/dashboard',
+  /** Öffentliche Runtime-Seite (kein Demo-Tour) — wie Landing v2 nach #1744. */
+  runtime: '/governance-runtime',
   login: '/login',
   pricing: '/pricing',
   contactSales: '/contact-sales',
@@ -26,7 +29,7 @@ export const V4_ROUTES = {
 
 /** Referenz-Hash → App-Route für „Mehr erfahren"-Karten (`MAP` in der Referenz). */
 const CAPABILITY_ROUTE: Record<string, string> = {
-  '/ai-act-governance': '/ai-act',
+  '/ai-act-klassifikator': '/ai-act-klassifikator',
   '/evidence-vault': '/evidence',
   '/policy-engine': '/runtime',
 };
@@ -134,7 +137,7 @@ export const TOOLS = [
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
   ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.', ''],
-  ['EU-AI-Act-Klassifizierung', 'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.', '/ai-act-governance'],
+  ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
   ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],
   ['AI Gateway', 'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.', ''],
@@ -192,47 +195,10 @@ export const PLANS = V4_PLAN_IDS.map((id) => {
 
 export const V4_PRICING_TAX_NOTE = PRICING_TAX_NOTE;
 
-// ---- 06 Roadmap (implementation-status.ts) ----
-export const ROADMAP = [
-  { title: 'LIVE', eyebrow: 'SHIPPED · REACHABLE', status: 'LIVE', dashed: false, items: [
-    ['Governance Scan', 'Kostenloser öffentlicher Website-Scan auf DSGVO-/Governance-Aspekte.', '/audit'],
-    ['Governance OS /app', 'Authentifiziertes App-Shell mit Command Center unter /app/dashboard.', '/app'],
-    ['Compliance Command Center', 'ComplianceStatusDashboard unter /app/dashboard — Agent OS Intent, ehrliche Empty States.', '/app/dashboard'],
-    ['Evidence / Nachweis-Export', 'Nachweisflächen unter /app/evidence und öffentliche Evidence-Seiten.', '/app/evidence'],
-    ['EU-AI-Act-Klassifizierung', 'KI-Systeme nach Risikoklasse einordnen und als Inventar führen.', '/ai-act-governance'],
-    ['DSGVO- & Tracking-Audit', 'Cookie-/Tracker-Scan mit Bericht und wiederkehrender Nachprüfung.', '/audit'],
-    ['Governance Runtime (Kernmodule)', 'Risiko, Vorfälle, DSR, DSFA, Vendors und Freigaben — erreichbar im /app-Shell.', '/governance-runtime'],
-    ['AI Gateway', 'Kontrollierte Modellaufrufe mit Protokollierung und Kostenerfassung.', '/claude-code-optimizer'],
-    ['Policy Engine', 'Governance-Regeln als ausführbare Kontrolllogik.', '/policy-engine'],
-    ['Claude Code Optimizer', 'Repository auf DSGVO- und EU-AI-Act-Risiken prüfen, konkrete Fixes erzeugen.', '/claude-code-optimizer'],
-    ['Herkunftsnachweis (C2PA)', 'Inhalte signieren und Herkunft überprüfbar machen.', ''],
-    ['Governance Activation', 'Org+Scope Activation unter /app/activation — erreichbar über /welcome?next=….', '/app/activation'],
-  ] },
-  { title: 'IN PREVIEW', eyebrow: 'DRAFT · NOT PRODUCTION-COMPLETE', status: 'PREVIEW', dashed: true, items: [
-    ['Agent Governance', 'Action Request → Policy → Risk → Permission → Evidence — Hub live, Kernel-Slice Preview.', '/agent-governance'],
-    ['RealSync Agent OS™ — Command Center Slice', 'Intent „Was möchtest du erledigen?" auf /app — Compliance-Session via realsync-os Kernel.', '/app/dashboard'],
-    ['Agent OS — Compliance Specialist', 'Einziger Mesh-Agent mit Preview-Lauf; Production bleibt approval-pflichtig.', '/app/dashboard'],
-    ['Agent OS — Product Evolution Loop', 'Read-only Integrity Panel für Pricing und Entitlements — kein Auto-Merge.', '/app/dashboard'],
-    ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Start-Routen und Builder-UI erreichbar; volle Provider-Laufzeit noch Preview.', '/chatbot/start'],
-    ['DSGVO Web App Builder', 'SiteOS Builder unter /build; Publish/Domain und Governance-Tiefe bleiben Preview.', '/build'],
-    ['Customer Domain ↔ Dashboard', 'DomainManager auf /app/websites — Cloudflare-Provisioning noch Preview.', '/app/websites'],
-    ['Stripe Checkout E2E', 'Checkout-Seiten und Edge Functions verdrahtet; produktionsreifer E2E-Pfad offen.', '/checkout/starter'],
-    ['Photoreal Earth Hero', 'Photoreal-Earth-Komponenten existieren, sind aber nicht der Live-Hero.', ''],
-    ['Evidence Ledger Landing (Design)', 'Alternatives Design-Chrome unter /design/ledger — ersetzt nicht Live-/.', '/design/ledger'],
-    ['Tribunal Landing (Design)', 'Alternatives Paper-OS-Design unter /design/tribunal — ersetzt nicht Live-/.', '/design/tribunal'],
-  ] },
-  { title: 'NEXT', eyebrow: 'COMING SOON', status: 'COMING SOON', dashed: true, items: [
-    ['Auto-Blueprint Engine', 'Automatische Blueprint-Erzeugung in der Activation.', '/app/activation'],
-    ['Document Extraction', 'Dokument-Extraktion und Mapping für Activation.', '/app/activation'],
-    ['Expert Review', 'Experten-Review-Warteschlange.', '/app/activation'],
-    ['Jahresabrechnung', 'Yearly Prices sind in Stripe nicht verdrahtet (yearlyCheckoutUnavailable).', ''],
-    ['Dauerhafte Domain-Überwachung', 'Post-Scan „Diese Domain überwachen" — öffentlicher Funnel Coming Soon.', '/app/monitoring'],
-    ['TISAX / DORA Frameworks', 'Framework-Reifegrade im Command Center als Roadmap markiert.', ''],
-    ['Agent OS — Specialist Mesh', 'Product, Marketing, Sales, QA, Security, DevOps … — Roster sichtbar, nicht ausführbar.', ''],
-    ['Agent OS — Chrome Side Panel', 'Analyze Page / GDPR / AI Act / Evidence — Spec only, keine Fake-Extension.', ''],
-    ['Agent OS — Hostinger Worker Runtime', 'Zukünftige Worker-Runtime; Cloudflare Edge bleibt Deploy-Pfad.', ''],
-  ] },
-] as const;
+// ---- 06 Roadmap ----
+// Frozen handoff list removed: V4Roadmap renders from
+// src/product/implementation-status.ts (ROADMAP_*_ITEMS). Do not reintroduce
+// a parallel claim list here.
 
 export const ROADMAP_FILTERS = [
   ['ALLE', ''],
@@ -254,7 +220,7 @@ export const ENTERPRISE_TILES = [
   ],
   [
     'Aktive Policy Packs + Roadmap',
-    'Live: DSGVO, EU AI Act, ISO 27001 und NIS2. TISAX und DORA: Roadmap / auf Anfrage.',
+    'Registry-live: DSGVO- & Tracking-Audit und EU-AI-Act-Klassifizierung. ISO 27001, NIS2, TISAX und DORA: nicht als live im Product-Registry geführt — Roadmap / auf Anfrage.',
     'POLICY ENGINE · CONTROLS',
   ],
   [

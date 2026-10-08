@@ -821,6 +821,11 @@
   .lv2-eu {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  /* Vier Karten in einer Reihe statt 3 + 1 (seit der VPS-Pfad entfallen ist). */
+  .lv2-eu[data-count='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .lv2-eu li {

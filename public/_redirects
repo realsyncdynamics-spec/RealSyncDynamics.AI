@@ -48,6 +48,10 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /auth/register      /welcome  301
 /account            /app/dashboard  301
 /activate           /app/activation  301
+# Billing aliases → canonical /app/billing (AppGate + Stripe portal).
+# Exact /billing only — /billing/usage stays a separate SPA route.
+/billing            /app/billing  301
+/app/settings/billing /app/billing  301
 /os/login           /welcome  301
 /os/signup          /welcome  301
 /demo-login         /welcome  301

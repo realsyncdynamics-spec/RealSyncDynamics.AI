@@ -202,9 +202,8 @@ export function EvidenceRuntime() {
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-slate-600 leading-relaxed">
             Die europäische Kontroll- und Nachweisschicht für Websites, KI und automatisierte
-            Geschäftsprozesse. Den realen Zustand erkennen, Regeln
-            durchsetzen, Abweichungen beheben, Ergebnisse verifizieren, Nachweise
-            erzeugen — fortlaufend.
+            Geschäftsprozesse. Den realen Zustand erkennen, Regeln durchsetzen, Abweichungen
+            beheben, Ergebnisse verifizieren, Nachweise erzeugen — fortlaufend als Zielbild.
           </p>
           <ul className="mt-6 flex flex-wrap gap-2" aria-label="Regelwerke">
             {REGELWERKE.map((r) => (
@@ -273,16 +272,16 @@ export function EvidenceRuntime() {
             Governance verwalten reicht nicht. Der Loop muss sich schließen.
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
-            Viele Plattformen verwalten Governance. RealSyncDynamics.AI verbindet den
-            beobachteten Ist-Zustand direkt mit Entscheidung, technischer Umsetzung,
-            erneuter Verifikation und Evidence. Ein Befund gilt erst als behoben, wenn der
-            neue reale Zustand es bestätigt — nicht nach einem Klick.
+            Viele Plattformen verwalten Governance. Das Zielbild von RealSyncDynamics.AI
+            verbindet den beobachteten Ist-Zustand mit Entscheidung, technischer Umsetzung,
+            erneuter Verifikation und Evidence. Ein Befund soll erst als behoben gelten, wenn
+            ein bestätigender Re-Scan den neuen Zustand belegt — nicht nach einem Klick.
           </p>
           <div className="mt-8 rounded-panel border border-slate-200 bg-white p-5 sm:p-6">
             <Chain steps={CLOSED_LOOP} label="Closed Loop von Detect bis Monitor" accent="Verify" />
             <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
               <RefreshCw className="h-4 w-4 text-petrol-600 shrink-0" strokeWidth={1.75} />
-              Monitor führt zurück zu Detect: jede Änderung startet den Loop neu.
+              Zielbild: Monitor führt zurück zu Detect — jede Änderung startet den Loop neu.
             </p>
           </div>
         </div>

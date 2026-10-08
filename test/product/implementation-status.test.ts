@@ -14,6 +14,10 @@ import {
   getImplementation,
   isImplementationLive,
 } from '../../src/product/implementation-status';
+import {
+  PUBLIC_ROADMAP_COPY,
+  getPublicRoadmapCopy,
+} from '../../src/product/implementation-status-public';
 
 describe('implementation-status registry', () => {
   it('has unique ids and valid statuses', () => {
@@ -138,7 +142,7 @@ describe('implementation-status registry', () => {
     expect(docs).not.toMatch(/cyan buttons/);
   });
 
-  it('Landing v4 roadmap renders from the registry', () => {
+  it('Landing v4 roadmap renders from the registry via public copy', () => {
     const landing = readFileSync(resolve('src/pages/LandingV4.tsx'), 'utf8');
     const sections = readFileSync(
       resolve('src/components/landing/v4/LandingV4Sections.tsx'),
@@ -156,10 +160,43 @@ describe('implementation-status registry', () => {
     expect(sections).toContain('ROADMAP_LIVE_ITEMS');
     expect(sections).toContain('ROADMAP_PREVIEW_ITEMS');
     expect(sections).toContain('ROADMAP_COMING_SOON_ITEMS');
+    expect(sections).toContain('getPublicRoadmapCopy');
+    expect(sections).not.toMatch(/\{item\.description\}/);
+    expect(sections).not.toMatch(/\{item\.name\}/);
     expect(content).not.toMatch(/export const ROADMAP =/);
     expect(content).toContain('Registry-live: DSGVO');
     expect(content).not.toContain('Live: DSGVO, EU AI Act, ISO 27001 und NIS2');
     expect(roadmapLegacy).toContain('ROADMAP_PREVIEW_ITEMS');
+  });
+
+  it('covers every public roadmap item with customer-facing DE/EN copy', () => {
+    const publicItems = [...ROADMAP_LIVE_ITEMS, ...ROADMAP_PREVIEW_ITEMS, ...ROADMAP_COMING_SOON_ITEMS];
+    const banned = [
+      'CommandCenterDashboard',
+      'AgentOsPanel',
+      '#1743',
+      '#1331',
+      'Messung',
+      'Dominik',
+      'Auto-Merge',
+    ] as const;
+    for (const item of publicItems) {
+      expect(PUBLIC_ROADMAP_COPY[item.id], item.id).toBeTruthy();
+      for (const lang of ['de', 'en'] as const) {
+        const copy = getPublicRoadmapCopy(item, lang);
+        expect(copy.name.length, `${item.id}.${lang}.name`).toBeGreaterThan(3);
+        expect(copy.description.length, `${item.id}.${lang}.description`).toBeGreaterThan(12);
+        for (const phrase of banned) {
+          expect(copy.name, `${item.id} name has ${phrase}`).not.toContain(phrase);
+          expect(copy.description, `${item.id} desc has ${phrase}`).not.toContain(phrase);
+        }
+        expect(copy.description).not.toMatch(/#\d{3,5}/);
+        expect(copy.name).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
+        expect(copy.description).not.toMatch(
+          /\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/,
+        );
+      }
+    }
   });
 
   it('forbids unqualified complete-runtime claims on Landing v4', () => {

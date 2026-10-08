@@ -29,7 +29,7 @@ COMMENT ON COLUMN public.sales_leads.marketing_consent_at IS
 COMMENT ON COLUMN public.sales_leads.marketing_consent_text_version IS
   'Allowlisted wording id: audit_followup_v1_de | audit_followup_v1_en.';
 COMMENT ON COLUMN public.sales_leads.marketing_consent_revoked_at IS
-  'Sticky revocation timestamp; once set, never cleared.';
+  'Sticky revocation timestamp; once set, never cleared. On revoke, marketing_consent stays true (proof) and this is set. Every send/due gate MUST require marketing_consent AND marketing_consent_revoked_at IS NULL.';
 
 COMMENT ON COLUMN public.gdpr_audits.marketing_consent IS
   'Explicit Free-Audit follow-up/marketing opt-in. Default false.';
@@ -38,7 +38,7 @@ COMMENT ON COLUMN public.gdpr_audits.marketing_consent_at IS
 COMMENT ON COLUMN public.gdpr_audits.marketing_consent_text_version IS
   'Allowlisted wording id: audit_followup_v1_de | audit_followup_v1_en.';
 COMMENT ON COLUMN public.gdpr_audits.marketing_consent_revoked_at IS
-  'Sticky revocation timestamp; once set, never cleared.';
+  'Sticky revocation timestamp; once set, never cleared. On revoke, marketing_consent stays true (proof) and this is set. Every send/due gate MUST require marketing_consent AND marketing_consent_revoked_at IS NULL.';
 
 -- ── 2. CHECK constraints (proof + allowlist) ────────────────────────────────
 
@@ -100,6 +100,9 @@ LANGUAGE plpgsql
 SET search_path = ''
 AS $$
 BEGIN
+  -- Revocation cannot be forged on INSERT; only UPDATE may set it.
+  NEW.marketing_consent_revoked_at := NULL;
+
   IF NEW.marketing_consent IS TRUE THEN
     IF NEW.marketing_consent_text_version IS NULL
        OR NEW.marketing_consent_text_version NOT IN (
@@ -147,6 +150,12 @@ LANGUAGE plpgsql
 SET search_path = ''
 AS $$
 BEGIN
+  -- Consent is INSERT-only. DOI will use a separate confirmed_at column later.
+  IF OLD.marketing_consent IS NOT TRUE AND NEW.marketing_consent IS TRUE THEN
+    RAISE EXCEPTION 'marketing consent can only be granted on INSERT'
+      USING ERRCODE = '23514';
+  END IF;
+
   -- Once proof exists (consent granted with timestamp), consent/at/version are immutable.
   IF OLD.marketing_consent_at IS NOT NULL THEN
     IF NEW.marketing_consent IS DISTINCT FROM OLD.marketing_consent
@@ -155,24 +164,13 @@ BEGIN
       RAISE EXCEPTION 'marketing consent proof fields are immutable once set'
         USING ERRCODE = '23514';
     END IF;
-  ELSIF NEW.marketing_consent IS TRUE THEN
-    -- First-time grant on UPDATE: same rules as INSERT.
-    IF NEW.marketing_consent_text_version IS NULL
-       OR NEW.marketing_consent_text_version NOT IN (
-         'audit_followup_v1_de',
-         'audit_followup_v1_en'
-       ) THEN
-      RAISE EXCEPTION 'marketing_consent_text_version must be audit_followup_v1_de or audit_followup_v1_en'
-        USING ERRCODE = '23514';
-    END IF;
-    NEW.marketing_consent_at := pg_catalog.now();
   ELSE
     NEW.marketing_consent := false;
     NEW.marketing_consent_at := NULL;
     NEW.marketing_consent_text_version := NULL;
   END IF;
 
-  -- Revocation: may set once; never clear.
+  -- Revocation: may set once; never clear. Consent stays true as proof.
   IF OLD.marketing_consent_revoked_at IS NOT NULL THEN
     IF NEW.marketing_consent_revoked_at IS DISTINCT FROM OLD.marketing_consent_revoked_at THEN
       RAISE EXCEPTION 'marketing_consent_revoked_at is sticky and cannot be cleared or changed'
@@ -187,7 +185,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.marketing_consent_before_update() IS
-  'PR A (#1806): immutable consent proof; sticky marketing_consent_revoked_at.';
+  'PR A (#1806): INSERT-only grant; immutable consent proof; sticky revoked_at.';
 
 REVOKE ALL ON FUNCTION public.marketing_consent_before_update() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.marketing_consent_before_update() FROM anon;

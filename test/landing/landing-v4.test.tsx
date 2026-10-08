@@ -134,15 +134,18 @@ it('roadmap comes from public copy and omits redirect-only design landings', () 
 
 it('marks the dashboard preview as example data (visible, not only aria)', () => {
   const view = mount();
-  const dash = view.container.querySelector('#dashboard .app')!;
+  const section = view.container.querySelector('#dashboard')!;
+  const dash = section.querySelector('.app')!;
+  const note = screen.getByTestId('v4-dash-example-note');
   expect(dash).toHaveAttribute('data-demo-kpis', 'true');
   expect(dash.getAttribute('aria-label')).toMatch(/Beispielansicht|Beispieldaten/i);
   expect(dash.querySelector('.url')?.textContent).toBe('realsyncdynamicsai.de/app/dashboard');
   expect(dash.querySelector('.url')?.textContent).not.toContain('realsyncdynamics.ai');
   expect(dash.querySelector('.app-bar .tag')?.textContent).toBe('Beispielansicht');
-  expect(screen.getByTestId('v4-dash-example-note').textContent).toMatch(
-    /Beispieldaten.*keine echten Messwerte.*eigenen Scan/i,
-  );
+  // Note sits outside the dark preview frame (sibling before .app), clearly readable.
+  expect(dash.contains(note)).toBe(false);
+  expect(note.compareDocumentPosition(dash) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(note.textContent).toMatch(/Beispieldaten.*keine echten Messwerte.*eigenen Scan/i);
 });
 
 it('marks the dashboard preview in EN when language is English', () => {
@@ -158,7 +161,8 @@ it('marks the dashboard preview in EN when language is English', () => {
 
 it('roadmap public markup leaks no internal registry details', () => {
   const view = mount();
-  const text = view.container.querySelector('#roadmap')!.textContent ?? '';
+  const roadmap = view.container.querySelector('#roadmap')!;
+  const text = roadmap.textContent ?? '';
   for (const banned of [
     'CommandCenterDashboard',
     'AgentOsPanel',
@@ -167,12 +171,20 @@ it('roadmap public markup leaks no internal registry details', () => {
     'Messung',
     'Dominik',
     'Auto-Merge',
+    'optimizer',
+    'Kugel',
   ] as const) {
-    expect(text, banned).not.toContain(banned);
+    expect(text.toLowerCase(), banned).not.toContain(banned.toLowerCase());
   }
   expect(text).not.toMatch(/#\d{3,5}/);
+  expect(text).not.toMatch(/claude-code-optimizer/i);
+  expect(text).not.toContain('Interaktive Governance-Kugel');
+  expect(roadmap.querySelector('[data-impl-id="governance-sphere-interactive"]')).toBeNull();
   // PascalCase component-like identifiers (e.g. FooBarPanel) must not appear.
   expect(text).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
+  // Internal tooling routes must not render as public labels.
+  const routes = Array.from(roadmap.querySelectorAll('.rm-card u')).map((u) => u.textContent ?? '');
+  expect(routes.some((r) => /optimizer|chatbot|siteos/i.test(r))).toBe(false);
 });
 
 it('sends the scan form into /audit with the URL', () => {

@@ -17,6 +17,7 @@ import {
 import {
   PUBLIC_ROADMAP_COPY,
   getPublicRoadmapCopy,
+  getPublicRoadmapRoute,
 } from '../../src/product/implementation-status-public';
 
 describe('implementation-status registry', () => {
@@ -179,7 +180,11 @@ describe('implementation-status registry', () => {
       'Messung',
       'Dominik',
       'Auto-Merge',
+      'optimizer',
+      'Kugel',
     ] as const;
+    expect(publicItems.some((i) => i.id === 'governance-sphere-interactive')).toBe(false);
+    expect(getImplementation('governance-sphere-interactive')?.showOnRoadmap).toBe(false);
     for (const item of publicItems) {
       expect(PUBLIC_ROADMAP_COPY[item.id], item.id).toBeTruthy();
       for (const lang of ['de', 'en'] as const) {
@@ -187,8 +192,12 @@ describe('implementation-status registry', () => {
         expect(copy.name.length, `${item.id}.${lang}.name`).toBeGreaterThan(3);
         expect(copy.description.length, `${item.id}.${lang}.description`).toBeGreaterThan(12);
         for (const phrase of banned) {
-          expect(copy.name, `${item.id} name has ${phrase}`).not.toContain(phrase);
-          expect(copy.description, `${item.id} desc has ${phrase}`).not.toContain(phrase);
+          expect(copy.name.toLowerCase(), `${item.id} name has ${phrase}`).not.toContain(
+            phrase.toLowerCase(),
+          );
+          expect(copy.description.toLowerCase(), `${item.id} desc has ${phrase}`).not.toContain(
+            phrase.toLowerCase(),
+          );
         }
         expect(copy.description).not.toMatch(/#\d{3,5}/);
         expect(copy.name).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
@@ -197,6 +206,14 @@ describe('implementation-status registry', () => {
         );
       }
     }
+  });
+
+  it('only exposes customer-safe routes on the public roadmap', () => {
+    expect(getPublicRoadmapRoute(getImplementation('free-audit')!)).toBe('/audit');
+    expect(getPublicRoadmapRoute(getImplementation('pricing-monthly')!)).toBe('/pricing');
+    expect(getPublicRoadmapRoute(getImplementation('ai-gateway')!)).toBeUndefined();
+    expect(getPublicRoadmapRoute(getImplementation('channel-bots')!)).toBeUndefined();
+    expect(getPublicRoadmapRoute(getImplementation('frontend-modernize-wizard')!)).toBeUndefined();
   });
 
   it('forbids unqualified complete-runtime claims on Landing v4', () => {

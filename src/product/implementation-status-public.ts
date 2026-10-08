@@ -278,18 +278,6 @@ export const PUBLIC_ROADMAP_COPY: Record<
         'In progress: manage a domain on the workspace — automated provisioning follows.',
     },
   },
-  'governance-sphere-interactive': {
-    de: {
-      name: 'Interaktive Governance-Kugel',
-      description:
-        'In Arbeit: Alternative Visualisierung der Governance-Lage — nicht Teil der öffentlichen Startseite.',
-    },
-    en: {
-      name: 'Interactive governance sphere',
-      description:
-        'In progress: alternative visualisation of governance posture — not part of the public homepage.',
-    },
-  },
   'agent-governance': {
     de: {
       name: 'Agent Governance',
@@ -453,4 +441,36 @@ export function getPublicRoadmapCopy(
     );
   }
   return entry[lang] ?? entry.de;
+}
+
+/**
+ * Customer-safe routes shown under public roadmap cards.
+ * Internal tooling paths (e.g. /claude-code-optimizer, /chatbot/start,
+ * /app/siteos/…) stay off the public markup.
+ */
+export const PUBLIC_ROADMAP_ROUTE_ALLOWLIST = new Set([
+  '/audit',
+  '/pricing',
+  '/#pricing',
+  '/governance-runtime',
+  '/ai-act-klassifikator',
+  '/app',
+  '/app/dashboard',
+  '/app/evidence',
+  '/app/activation',
+  '/build',
+  '/frontend-builder',
+  '/agent-governance',
+  '/policy-engine',
+  '/evidence',
+  '/evidence-vault',
+  '/kontakt',
+  '/contact-sales',
+]);
+
+/** Public route label for a roadmap card, or undefined when the route is internal. */
+export function getPublicRoadmapRoute(item: ImplementationItem): string | undefined {
+  const route = item.route;
+  if (!route || !PUBLIC_ROADMAP_ROUTE_ALLOWLIST.has(route)) return undefined;
+  return route === '/#pricing' ? '/pricing' : route;
 }

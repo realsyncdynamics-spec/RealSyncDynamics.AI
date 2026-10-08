@@ -13,6 +13,7 @@ import {
   PUBLIC_ROADMAP_GROUP,
   PUBLIC_STATUS_LABEL,
   getPublicRoadmapCopy,
+  getPublicRoadmapRoute,
 } from '../../../product/implementation-status-public';
 import {
   ANCHORS,
@@ -385,6 +386,9 @@ export function V4Workspace() {
           Nach dem Free Audit läuft Ihre Runtime im Command Center weiter — Rahmenwerk-Reifegrade, offene Findings,
           Evidence-Chain und der Agent-Intent auf einer Fläche.
         </p>
+        <p className="sec-note" data-testid="v4-dash-example-note" style={{ marginTop: 18, maxWidth: '52rem' }}>
+          {t('v4DashExampleNote')}
+        </p>
 
         <div
           className="app"
@@ -392,6 +396,7 @@ export function V4Workspace() {
           aria-label={t('v4DashExampleAria')}
           data-demo-kpis="true"
           data-example-preview="true"
+          style={{ marginTop: 16 }}
         >
           <div className="app-bar">
             <div className="dots">
@@ -419,9 +424,6 @@ export function V4Workspace() {
                 <h3>Compliance Command Center</h3>
                 <span>PLAN GROWTH · EU-CENTRAL</span>
               </div>
-              <p className="sec-note" data-testid="v4-dash-example-note" style={{ marginTop: 0 }}>
-                {t('v4DashExampleNote')}
-              </p>
               <div className="tiles" aria-hidden="true">
                 {APP_TILES.map(([v, suffix, k]) => (
                   <div key={k} className="tile">
@@ -759,7 +761,7 @@ export function V4Roadmap() {
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 44 }}>
+        <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 36 }}>
           {V4_ROADMAP_GROUPS.map((g) => {
             if (g.items.length === 0) return null;
             const group = PUBLIC_ROADMAP_GROUP[lang][g.status];
@@ -769,9 +771,10 @@ export function V4Roadmap() {
                   <h3>{group.title}</h3>
                   <span>{group.eyebrow}</span>
                 </div>
-                <div className="cards" style={{ marginTop: 0 }}>
+                <div className="cards" style={{ marginTop: 12 }}>
                   {g.items.map((item) => {
                     const copy = getPublicRoadmapCopy(item, lang);
+                    const route = getPublicRoadmapRoute(item);
                     return (
                       <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')} data-impl-id={item.id}>
                         <div className="rm-top">
@@ -782,7 +785,7 @@ export function V4Roadmap() {
                           />
                         </div>
                         <p>{copy.description}</p>
-                        {item.route ? <u>{item.route}</u> : null}
+                        {route ? <u>{route}</u> : null}
                       </div>
                     );
                   })}

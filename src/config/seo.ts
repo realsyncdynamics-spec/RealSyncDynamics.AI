@@ -897,6 +897,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
     ]),
   },
+  '/evidence-runtime': {
+    title: 'Continuous Governance Control Plane & Evidence Runtime | RealSyncDynamics.AI',
+    description:
+      'Realen Zustand erkennen, Regeln durchsetzen, Abweichungen beheben, Ergebnisse verifizieren, Nachweise erzeugen — Beweisketten statt Compliance-Score für DSGVO, TDDDG und EU AI Act.',
+    canonical: `${SITE_URL}/evidence-runtime`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Evidence Runtime', url: '/evidence-runtime' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
     title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSync Dynamics AI',
     description:

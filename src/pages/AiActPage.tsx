@@ -10,15 +10,15 @@ import { PolicyEngineSection } from '../components/sections/PolicyEngineSection'
 
 export function AiActPage() {
   usePageMeta({
-    title: 'AI Act Governance — Klassifikation, Oversight, Policies | RealSync',
+    title: 'EU-AI-Act-Compliance: Klassifikation & Risiko | RealSync Dynamics AI',
     description:
       'EU AI Act ohne Beratung: AI-Systeme klassifizieren, Risk-Profile pflegen, Agenten überwachen, Policies erzwingen.',
-    url: 'https://RealSyncDynamicsAI.de/ai-act',
+    url: 'https://realsyncdynamicsai.de/ai-act',
   });
   return (
     <PageShell
       eyebrow="Governance · AI Act"
-      title="AI Act compliance without a consulting engagement."
+      title="EU-AI-Act-Compliance ohne Beratungsprojekt."
       sub="Agent-gestützte Klassifikation (minimal / limited / high / prohibited) mit menschlicher Freigabe, Agent-Oversight, Policy-Engine — alle Findings in der Evidence-Chain."
     >
       <AiActGovernanceBetaSection />

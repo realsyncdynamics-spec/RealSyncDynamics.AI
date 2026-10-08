@@ -4,7 +4,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
 
 export function ShopifyErrorPage() {
   usePageMeta({
-    title: 'Shopify Integration · Fehler — RealSyncDynamics.AI',
+    title: 'Shopify Integration · Fehler — RealSync Dynamics AI',
     description: 'Die Shopify-Verbindung konnte nicht abgeschlossen werden.',
   });
 

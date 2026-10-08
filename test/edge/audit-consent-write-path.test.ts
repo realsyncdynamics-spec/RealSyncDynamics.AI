@@ -51,14 +51,15 @@ describe('AuditStepper checkbox', () => {
     );
   });
 
-  it('mentions offers/Angebote and opens privacy in a new tab (no SPA Link)', () => {
+  it('mentions offers/Angebote and opens privacy in a new tab from the checkbox', () => {
     expect(handoff).toMatch(/Angeboten/);
     expect(handoff).toMatch(/offers/);
     expect(stepper).toMatch(/followUpConsentPrivacy/);
+    // Checkbox copy must use a plain <a> (new tab) so SPA navigation does not
+    // wipe in-progress form state. Footer may still use react-router Link.
     expect(stepper).toMatch(
-      /href="\/legal\/privacy"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
+      /followUpConsentLabel[\s\S]*?href="\/legal\/privacy"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[\s\S]*?followUpConsentPrivacy/,
     );
-    expect(stepper).not.toMatch(/<Link to="\/legal\/privacy"/);
   });
 });
 

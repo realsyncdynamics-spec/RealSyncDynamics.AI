@@ -101,7 +101,7 @@ it('renders English hero heading and lede when EN is active', () => {
   );
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('The Governance OS for Autonomous AI');
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('Any model. Any agent. One control plane.');
-  expect(screen.getByTestId('v4-hero-lede')).not.toMatch(/Control Plane für Enterprise-KI/);
+  expect(screen.getByTestId('v4-hero-lede').textContent).not.toMatch(/Control Plane für Enterprise-KI/);
 });
 
 it('renders the 6-step journey band and platform steps in DE and EN', () => {
@@ -138,7 +138,9 @@ it('renders Agent Governance Runtime and provider-neutrality sections in DE and 
   for (const name of ['OpenAI', 'Anthropic', 'Gemini', 'Mistral', 'STACKIT', 'Local models', 'Future models']) {
     expect(screen.getByTestId('v4-provider-list').textContent).toContain(name);
   }
-  expect(providers.textContent).not.toMatch(/Partner|zertifiziert|certified partner/i);
+  // Keine Partnerschafts-/Zertifizierungszusage — der Disclaimer „ohne Partnerschafts-…" ist Absicht.
+  expect(providers.textContent).not.toMatch(/offizieller Partner|certified partner|ISO[- ]zertifiziert/i);
+  expect(providers.textContent).toMatch(/ohne Partnerschafts-|no partnership/i);
 
   fireEvent.click(screen.getByTestId('lang-toggle'));
   expect(screen.getByTestId('v4-agent-runtime').textContent).toContain('Tool access');

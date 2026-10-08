@@ -32,7 +32,7 @@ import {
 } from './checks.ts';
 import {
   consentInsertErrorLog,
-  isMissingConsentColumnError,
+  insertWithConsentColumnFailSafe,
   marketingConsentWrite,
   resolveConsentLocale,
 } from './marketing-consent.ts';
@@ -347,23 +347,15 @@ async function handleAudit(req: Request): Promise<Response> {
       user_agent: req.headers.get('user-agent')?.slice(0, 500),
       ip_hash: ipHash,
     };
-    let { data: leadRow, error: leadErr } = await admin
-      .from('sales_leads')
-      .insert({ ...leadBase, ...consentCols })
-      .select('id')
-      .single();
-    if (leadErr && isMissingConsentColumnError(leadErr)) {
-      // PR A not live yet — keep free audit up; retry without consent fields.
-      console.error(
+    const { data: leadRow, error: leadErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
+      (row) => admin.from('sales_leads').insert(row).select('id').single(),
+      leadBase,
+      consentCols,
+      (safe) => console.error(
         'gdpr-audit: sales_leads consent columns missing — retry without consent',
-        consentInsertErrorLog(leadErr),
-      );
-      ({ data: leadRow, error: leadErr } = await admin
-        .from('sales_leads')
-        .insert(leadBase)
-        .select('id')
-        .single());
-    }
+        safe,
+      ),
+    );
     if (leadErr) {
       // Never log full PostgREST error (details may contain email).
       console.error('gdpr-audit: sales_leads insert failed', consentInsertErrorLog(leadErr));
@@ -394,22 +386,15 @@ async function handleAudit(req: Request): Promise<Response> {
     sales_lead_id: leadId,
   };
 
-  let { data: auditRow, error: auditErr } = await admin
-    .from('gdpr_audits')
-    .insert({ ...auditBase, ...auditConsentCols })
-    .select('id')
-    .single();
-  if (auditErr && isMissingConsentColumnError(auditErr)) {
-    console.error(
+  const { data: auditRow, error: auditErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
+    (row) => admin.from('gdpr_audits').insert(row).select('id').single(),
+    auditBase,
+    auditConsentCols,
+    (safe) => console.error(
       'gdpr-audit: gdpr_audits consent columns missing — retry without consent',
-      consentInsertErrorLog(auditErr),
-    );
-    ({ data: auditRow, error: auditErr } = await admin
-      .from('gdpr_audits')
-      .insert(auditBase)
-      .select('id')
-      .single());
-  }
+      safe,
+    ),
+  );
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 
   // P0 Privacy: never return raw email on the public response.

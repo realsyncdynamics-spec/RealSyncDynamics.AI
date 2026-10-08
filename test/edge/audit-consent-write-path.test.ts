@@ -1,15 +1,17 @@
 /**
  * PR A2 — checkbox + gdpr-audit consent write path (depends on #1806 live).
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   MARKETING_CONSENT_TEXT_VERSION,
   consentInsertErrorLog,
+  insertWithConsentColumnFailSafe,
   isMissingConsentColumnError,
   marketingConsentWrite,
   resolveConsentLocale,
+  type ConsentInsertResult,
 } from '../../supabase/functions/gdpr-audit/marketing-consent';
 
 const ROOT = resolve(__dirname, '../..');
@@ -78,7 +80,7 @@ describe('gdpr-audit write path', () => {
     expect(gdprAudit).toMatch(/body\.marketing_consent === true/);
     expect(gdprAudit).toMatch(/sales_leads insert failed/);
     expect(gdprAudit).toMatch(/consentInsertErrorLog/);
-    expect(gdprAudit).toMatch(/isMissingConsentColumnError/);
+    expect(gdprAudit).toMatch(/insertWithConsentColumnFailSafe/);
     expect(gdprAudit).toMatch(/retry without consent/);
   });
 
@@ -115,6 +117,80 @@ describe('gdpr-audit write path', () => {
       code: 'PGRST204',
       message: 'Could not find the \'other_column\' column',
     })).toBe(false);
+  });
+});
+
+describe('insertWithConsentColumnFailSafe (behavioral)', () => {
+  const base = {
+    email: 'lead@example.com',
+    source: 'audit_lp',
+    path: '/audit',
+  };
+  const consentCols = marketingConsentWrite(true, 'de');
+
+  it('retries once without consent fields on PGRST204 mentioning marketing_consent', async () => {
+    const insert = vi.fn()
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: 'PGRST204',
+          message: "Could not find the 'marketing_consent' column of 'sales_leads' in the schema cache",
+          details: 'Failing row contains (lead@example.com)',
+        },
+      } satisfies ConsentInsertResult<{ id: string }>)
+      .mockResolvedValueOnce({
+        data: { id: 'lead-1' },
+        error: null,
+      } satisfies ConsentInsertResult<{ id: string }>);
+
+    const logged: Array<{ code: string | undefined; message: string | undefined }> = [];
+    const result = await insertWithConsentColumnFailSafe(
+      insert,
+      base,
+      consentCols,
+      (safe) => logged.push(safe),
+    );
+
+    expect(insert).toHaveBeenCalledTimes(2);
+    expect(insert.mock.calls[0][0]).toMatchObject({
+      ...base,
+      marketing_consent: true,
+      marketing_consent_text_version: MARKETING_CONSENT_TEXT_VERSION.de,
+    });
+    expect(insert.mock.calls[1][0]).toEqual(base);
+    expect(insert.mock.calls[1][0]).not.toHaveProperty('marketing_consent');
+    expect(insert.mock.calls[1][0]).not.toHaveProperty('marketing_consent_text_version');
+    expect(result).toEqual({ data: { id: 'lead-1' }, error: null });
+    expect(logged).toEqual([{
+      code: 'PGRST204',
+      message: "Could not find the 'marketing_consent' column of 'sales_leads' in the schema cache",
+    }]);
+    expect(JSON.stringify(logged)).not.toMatch(/lead@example\.com/);
+  });
+
+  it('does not retry on a different error code', async () => {
+    const err = {
+      code: '23505',
+      message: 'duplicate key value violates unique constraint',
+      details: 'Failing row contains (lead@example.com)',
+    };
+    const insert = vi.fn().mockResolvedValue({
+      data: null,
+      error: err,
+    } satisfies ConsentInsertResult<{ id: string }>);
+    const onRetry = vi.fn();
+
+    const result = await insertWithConsentColumnFailSafe(
+      insert,
+      base,
+      consentCols,
+      onRetry,
+    );
+
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+    expect(result.error).toEqual(err);
+    expect(result.data).toBeNull();
   });
 });
 

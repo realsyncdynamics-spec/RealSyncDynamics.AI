@@ -641,7 +641,7 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Kontinuierliches Monitoring (Coming Soon)',
         'E-Mail-Alert bei neuen Findings',
-        '25 Automationsläufe pro Monat',
+        '25 Automationsläufe pro Monat (Preview)',
         '1 Governance-Bot mit 500 Antworten (Website)',
         '1 SiteOS-Website (Create/Claim); Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -737,7 +737,7 @@ export const PLANS: Plan[] = [
         'Behebungsvorschläge mit Code-Snippets',
         'API-Zugriff, Webhooks und Scheduler',
         '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
-        '100 Automationsläufe pro Monat',
+        '100 Automationsläufe pro Monat (Preview)',
         '2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)',
         '3 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -821,9 +821,9 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Scheduler für geplante Läufe mit Slack-/Teams-/Webhook-Alerts',
         'Bulk Jobs: Massen-Scan vieler Domains per CSV',
-        'n8n-Anbindung und Kodee Server-Assistent',
+        'n8n-Anbindung und Kodee Server-Assistent (Preview)',
         'REST-API und Webhooks für CI/CD',
-        '500 Automationsläufe pro Monat',
+        '500 Automationsläufe pro Monat (Preview)',
         '10 Governance-Bots mit 25.000 Antworten (alle Kanäle inkl. Voice)',
         '10 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -1005,7 +1005,7 @@ export const PLANS: Plan[] = [
         'Mandantenspezifische Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
-        '10.000 Automationsläufe pro Monat',
+        '10.000 Automationsläufe pro Monat (Preview)',
         'Voller API-Zugriff mit 1 Mio. Aufrufen pro Monat',
         '50 Governance-Bots mit 100.000 Antworten, mandantengetrennt',
         'SLA 4 h auf Fehlermeldungen mit festem Ansprechpartner',

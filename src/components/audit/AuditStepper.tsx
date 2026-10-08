@@ -325,7 +325,9 @@ export function AuditStepper({
                   />
                   <span>
                     {t('followUpConsentLabel')}{' '}
-                    <Link to="/legal/privacy">{t('followUpConsentPrivacy')}</Link>
+                    <a href="/legal/privacy" target="_blank" rel="noopener noreferrer">
+                      {t('followUpConsentPrivacy')}
+                    </a>
                   </span>
                 </label>
               </div>

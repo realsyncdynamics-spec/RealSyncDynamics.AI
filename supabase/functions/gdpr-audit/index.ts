@@ -30,7 +30,12 @@ import {
   isDuplicateOfHeuristic,
   type Issue,
 } from './checks.ts';
-import { marketingConsentWrite, resolveConsentLocale } from './marketing-consent.ts';
+import {
+  consentInsertErrorLog,
+  isMissingConsentColumnError,
+  marketingConsentWrite,
+  resolveConsentLocale,
+} from './marketing-consent.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -331,8 +336,8 @@ async function handleAudit(req: Request): Promise<Response> {
   const planTag = plan ? ` · plan=${plan}` : '';
   let leadId: string | null = null;
   if (!isOptimizerScan && !isTenantScan) {
-    const { data: leadRow, error: leadErr } = await admin.from('sales_leads').insert({
-      name: null,
+    const leadBase = {
+      name: null as string | null,
       email,
       company,
       use_case: 'compliance',
@@ -341,11 +346,27 @@ async function handleAudit(req: Request): Promise<Response> {
       path: '/audit',
       user_agent: req.headers.get('user-agent')?.slice(0, 500),
       ip_hash: ipHash,
-      ...consentCols,
-    }).select('id').single();
+    };
+    let { data: leadRow, error: leadErr } = await admin
+      .from('sales_leads')
+      .insert({ ...leadBase, ...consentCols })
+      .select('id')
+      .single();
+    if (leadErr && isMissingConsentColumnError(leadErr)) {
+      // PR A not live yet — keep free audit up; retry without consent fields.
+      console.error(
+        'gdpr-audit: sales_leads consent columns missing — retry without consent',
+        consentInsertErrorLog(leadErr),
+      );
+      ({ data: leadRow, error: leadErr } = await admin
+        .from('sales_leads')
+        .insert(leadBase)
+        .select('id')
+        .single());
+    }
     if (leadErr) {
-      // Do not swallow — silent lead loss hides schema/deploy skew.
-      console.error('gdpr-audit: sales_leads insert failed', leadErr);
+      // Never log full PostgREST error (details may contain email).
+      console.error('gdpr-audit: sales_leads insert failed', consentInsertErrorLog(leadErr));
     }
     leadId = leadRow?.id ?? null;
   }
@@ -354,7 +375,7 @@ async function handleAudit(req: Request): Promise<Response> {
     ? marketingConsentWrite(false, 'de')
     : consentCols;
 
-  const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
+  const auditBase = {
     url,
     domain,
     // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
@@ -371,8 +392,24 @@ async function handleAudit(req: Request): Promise<Response> {
     user_agent: req.headers.get('user-agent')?.slice(0, 500),
     ip_hash: ipHash,
     sales_lead_id: leadId,
-    ...auditConsentCols,
-  }).select('id').single();
+  };
+
+  let { data: auditRow, error: auditErr } = await admin
+    .from('gdpr_audits')
+    .insert({ ...auditBase, ...auditConsentCols })
+    .select('id')
+    .single();
+  if (auditErr && isMissingConsentColumnError(auditErr)) {
+    console.error(
+      'gdpr-audit: gdpr_audits consent columns missing — retry without consent',
+      consentInsertErrorLog(auditErr),
+    );
+    ({ data: auditRow, error: auditErr } = await admin
+      .from('gdpr_audits')
+      .insert(auditBase)
+      .select('id')
+      .single());
+  }
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 
   // P0 Privacy: never return raw email on the public response.

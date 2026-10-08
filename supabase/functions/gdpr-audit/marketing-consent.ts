@@ -40,3 +40,31 @@ export function marketingConsentWrite(
     marketing_consent_text_version: MARKETING_CONSENT_TEXT_VERSION[locale],
   };
 }
+
+/** Safe fields for console.error — never log PostgREST `details` (may include email). */
+export function consentInsertErrorLog(err: {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+}): {
+  code: string | undefined;
+  message: string | undefined;
+} {
+  return { code: err.code, message: err.message };
+}
+
+/**
+ * True when the schema cache / DB lacks marketing_consent columns
+ * (deploy-order skew: A2 before PR A migration).
+ */
+export function isMissingConsentColumnError(
+  err: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!err) return false;
+  const code = err.code ?? '';
+  const message = (err.message ?? '').toLowerCase();
+  if (!message.includes('marketing_consent')) return false;
+  // PGRST204: column not found in schema cache; 42703: undefined_column
+  return code === 'PGRST204' || code === '42703';
+}

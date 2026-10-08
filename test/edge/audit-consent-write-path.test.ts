@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   MARKETING_CONSENT_TEXT_VERSION,
+  consentInsertErrorLog,
+  isMissingConsentColumnError,
   marketingConsentWrite,
   resolveConsentLocale,
 } from '../../supabase/functions/gdpr-audit/marketing-consent';
@@ -49,11 +51,14 @@ describe('AuditStepper checkbox', () => {
     );
   });
 
-  it('mentions offers/Angebote and links privacy', () => {
+  it('mentions offers/Angebote and opens privacy in a new tab (no SPA Link)', () => {
     expect(handoff).toMatch(/Angeboten/);
     expect(handoff).toMatch(/offers/);
     expect(stepper).toMatch(/followUpConsentPrivacy/);
-    expect(stepper).toMatch(/to="\/legal\/privacy"/);
+    expect(stepper).toMatch(
+      /href="\/legal\/privacy"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
+    );
+    expect(stepper).not.toMatch(/<Link to="\/legal\/privacy"/);
   });
 });
 
@@ -71,6 +76,44 @@ describe('gdpr-audit write path', () => {
     expect(gdprAudit).not.toMatch(/_shared\/audit-marketing-consent/);
     expect(gdprAudit).toMatch(/body\.marketing_consent === true/);
     expect(gdprAudit).toMatch(/sales_leads insert failed/);
+    expect(gdprAudit).toMatch(/consentInsertErrorLog/);
+    expect(gdprAudit).toMatch(/isMissingConsentColumnError/);
+    expect(gdprAudit).toMatch(/retry without consent/);
+  });
+
+  it('logs only code+message for lead errors (no details/email leak)', () => {
+    expect(consentInsertErrorLog({
+      code: 'PGRST204',
+      message: 'Could not find the marketing_consent column',
+      details: 'Failing row contains (evil@example.com)',
+    })).toEqual({
+      code: 'PGRST204',
+      message: 'Could not find the marketing_consent column',
+    });
+    expect(JSON.stringify(consentInsertErrorLog({
+      code: '23505',
+      message: 'duplicate',
+      details: 'Failing row contains (evil@example.com)',
+    }))).not.toMatch(/evil@example/);
+  });
+
+  it('detects missing marketing_consent column errors for fail-safe retry', () => {
+    expect(isMissingConsentColumnError({
+      code: 'PGRST204',
+      message: 'Could not find the \'marketing_consent\' column of \'sales_leads\' in the schema cache',
+    })).toBe(true);
+    expect(isMissingConsentColumnError({
+      code: '42703',
+      message: 'column \"marketing_consent\" does not exist',
+    })).toBe(true);
+    expect(isMissingConsentColumnError({
+      code: '23505',
+      message: 'duplicate key',
+    })).toBe(false);
+    expect(isMissingConsentColumnError({
+      code: 'PGRST204',
+      message: 'Could not find the \'other_column\' column',
+    })).toBe(false);
   });
 });
 

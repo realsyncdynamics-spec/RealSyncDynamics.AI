@@ -14,6 +14,7 @@
 import { useEffect, useRef } from 'react';
 import { SEOHead } from '../components/SEOHead';
 import {
+  V4AgentRuntime,
   V4Backdrop,
   V4Closing,
   V4Enterprise,
@@ -24,6 +25,7 @@ import {
   V4LoopBand,
   V4Platform,
   V4Pricing,
+  V4ProviderNeutrality,
   V4Roadmap,
   V4StatusBar,
   V4Ticker,
@@ -157,6 +159,8 @@ export function LandingV4() {
         <V4Workspace />
         <V4Tools />
         <V4Platform />
+        <V4AgentRuntime />
+        <V4ProviderNeutrality />
         <V4Evidence />
         <V4Pricing />
         <V4Roadmap />

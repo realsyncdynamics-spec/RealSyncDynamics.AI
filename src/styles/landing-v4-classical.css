@@ -765,9 +765,15 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
        -webkit-background-clip: text; background-clip: text; color: transparent;
        filter: drop-shadow(0 6px 18px rgba(0,0,0,.55)); transition: filter 600ms var(--ease); }
   .gv4 h1 em { font-style: normal; font-weight: 400; background: linear-gradient(180deg, hsl(var(--sun-h) 85% 70%) 0%, var(--sun) 50%, hsl(var(--sun-h) 75% 40%) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .gv4 .hero-brand { margin: 0 0 14px; font-family: var(--ff-mono); font-size: 12px; font-weight: 500;
+          letter-spacing: .28em; text-transform: uppercase; color: var(--mint); }
   .gv4 .loop { margin: 22px 0 0; font-family: var(--ff-mono); font-size: 13px; font-weight: 500; letter-spacing: .24em;
           text-transform: uppercase; color: var(--mint); }
   .gv4 .loop svg { width: 16px; height: 16px; vertical-align: -3px; margin: 0 8px; }
+  .gv4 .arch-flow { margin: 28px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+          font-family: var(--ff-mono); font-size: 12px; font-weight: 500; letter-spacing: .14em;
+          text-transform: uppercase; color: var(--muted); line-height: 1.6; }
+  .gv4 .arch-flow__sep { color: var(--mint); opacity: .7; letter-spacing: 0; }
   .gv4 .lede { font-size: clamp(1.1rem, 1rem + .5vw, 1.4rem); line-height: 1.5; letter-spacing: -.01em; color: #c8d0d9;
           margin: 16px 0 0; max-width: 34rem; text-wrap: pretty; }
   .gv4 .pillars { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line-soft); display: grid;
@@ -1449,7 +1455,8 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
     .gv4 header { padding-inline: 5vw; }
     .gv4 .brand { font-size: 18px; }
     .gv4 main { padding: 28px 5vw 48px; align-items: flex-start; }
-    .gv4 h1 { font-size: clamp(2.55rem, 12vw, 4rem); line-height: 1.01; max-width: 10.5ch; }
+    /* Längere Control-Plane-These braucht mehr als 10.5ch (altes Short-H1). */
+    .gv4 h1 { font-size: clamp(2.2rem, 9vw, 3.6rem); line-height: 1.06; max-width: 22ch; }
     .gv4 .loop { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; letter-spacing: .16em; line-height: 1.7; }
     .gv4 .loop svg { margin: 0 2px; }
     .gv4 .lede { font-size: 1.08rem !important; max-width: 29rem !important; }

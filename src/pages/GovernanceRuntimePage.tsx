@@ -40,17 +40,17 @@ export function GovernanceRuntimePage() {
       <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-16">
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-            Operational Governance Infrastructure
+            Governance OS · Control Plane
           </div>
 
           <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.03] max-w-4xl">
-            Jede AI-, Web- und Agent-Aktion wird zum Governance Event.
+            Die Control Plane für Enterprise-KI zur Laufzeit.
           </h1>
 
           <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
-            RealSyncDynamicsAI entwickelt sich von Website-Compliance zu einer
-            event-driven Governance Runtime: Assets, Policies, Evidence,
-            Framework Controls und spätere Auto-Remediation in einer Engine.
+            RealSyncDynamics.AI steuert Identity, Policy, Risiko, Freigabe,
+            Ausführung, Verifikation und Evidence — über Modelle, Agenten und
+            Provider. EU AI Act und DSGVO bleiben der Proof-Layer.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">

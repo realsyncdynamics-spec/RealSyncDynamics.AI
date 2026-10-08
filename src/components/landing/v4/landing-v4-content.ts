@@ -71,11 +71,75 @@ export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
   ['DORA', true],
 ];
 
-export const LOOP_NODES = [
-  ['01 · DETECT', 'Discover', 'Headers, Cookies, Tracker, AI-Endpoints und Third-Parties in Sekunden inventarisiert.'],
-  ['02 · GOVERN', 'Classify', 'Findings nach DSGVO-Artikel und AI-Act-Risikoklasse eingeordnet, ins Register überführt.'],
-  ['03 · AUTOMATE', 'Enforce', 'Policies als ausführbare Kontrollen — Agenten schlagen Fixes vor, Freigaben bleiben beim Menschen.'],
-  ['04 · MONITOR', 'Prove', 'Jeder Lauf in der Evidence-Chain versiegelt; Drift wird in Echtzeit erkannt und dokumentiert.'],
+/** 6-Schritt-Journey (Hero-Loop + Loopband) — Labels EN (Produktwortlaut), Erklärungen bilingual. */
+export const JOURNEY_STEPS = [
+  {
+    no: '01',
+    label: 'DISCOVER',
+    de: 'Entdecken, welche KI läuft.',
+    en: 'Discover what AI is running.',
+  },
+  {
+    no: '02',
+    label: 'ASSESS',
+    de: 'Risiko bewerten.',
+    en: 'Assess its risk.',
+  },
+  {
+    no: '03',
+    label: 'GOVERN',
+    de: 'Steuern, was sie darf.',
+    en: 'Govern what it may do.',
+  },
+  {
+    no: '04',
+    label: 'EXECUTE',
+    de: 'Ausführung kontrollieren.',
+    en: 'Control execution.',
+  },
+  {
+    no: '05',
+    label: 'VERIFY',
+    de: 'Verifizieren, was wirklich passiert ist.',
+    en: 'Verify what actually happened.',
+  },
+  {
+    no: '06',
+    label: 'PROVE',
+    de: 'Compliance mit Evidence beweisen.',
+    en: 'Prove compliance with evidence.',
+  },
+] as const;
+
+/** @deprecated Alias — gleiche 6 Stufen wie JOURNEY_STEPS (Loopband). */
+export const LOOP_NODES = JOURNEY_STEPS.map((s) => [
+  `${s.no} · ${s.label}`,
+  s.label,
+  s.de,
+] as const);
+
+/** Compact Control-Plane-Fluss (sichtbar, kein internes Diagramm). */
+export const ARCHITECTURE_FLOW = [
+  'User/Agent',
+  'Identity',
+  'Tenant',
+  'Policy',
+  'Risk',
+  'Approval',
+  'Execution',
+  'Verification',
+  'Evidence',
+] as const;
+
+/** Provider-Wortmarken (Text only) — keine Logos, keine Partnerschaftsclaims. */
+export const V4_PROVIDERS = [
+  'OpenAI',
+  'Anthropic',
+  'Gemini',
+  'Mistral',
+  'STACKIT',
+  'Local models',
+  'Future models',
 ] as const;
 
 export const ANCHORS = [
@@ -155,14 +219,8 @@ export const BUILDING_CAPS = [
   ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist nicht in Produktion (Messung 2026-08-17).'],
 ] as const;
 
-export const GOV_STEPS = [
-  ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
-  ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],
-  ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
-  ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
-  ['05', 'EVIDENCE', 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.'],
-  ['06', 'AUDIT', 'Eine konsistente Governance-Historie für Management, interne Kontrollen und Audits bereitstellen.'],
-] as const;
+/** Plattform-Karten: gleiche 6-Schritt-Journey wie Hero/Loopband. */
+export const GOV_STEPS = JOURNEY_STEPS.map((s) => [s.no, s.label, s.de] as const);
 
 // ---- 04 Evidence & Trust (MainLanding.tsx TrustItem) — Lucide-Pfade wie in der Referenz ----
 export type TrustIcon = 'shield' | 'lock' | 'file' | 'code';

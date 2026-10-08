@@ -16,11 +16,12 @@ const SUGGESTIONS = [
 ];
 
 const WORK_STAGES = [
-  ['RESEARCH', 'Kontext, Systeme und Quellen ermitteln'],
-  ['ANALYZE', 'Risiken und Anforderungen bewerten'],
-  ['EXECUTE', 'Freigegebene Maßnahmen durchführen'],
-  ['VERIFY', 'Ergebnis erneut prüfen'],
-  ['PROVE', 'Evidence und Prüfpfad erzeugen'],
+  ['DISCOVER', 'Entdecken, welche KI läuft'],
+  ['ASSESS', 'Risiko bewerten'],
+  ['GOVERN', 'Steuern, was sie darf'],
+  ['EXECUTE', 'Ausführung kontrollieren'],
+  ['VERIFY', 'Verifizieren, was wirklich passiert ist'],
+  ['PROVE', 'Compliance mit Evidence beweisen'],
 ] as const;
 
 export function AiGovernancePage() {
@@ -62,9 +63,9 @@ export function AiGovernancePage() {
 
       <section className="mx-auto max-w-6xl px-4 pb-14 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-cyan-300">Governance AI · EU Governance Workspace</div>
+          <div className="font-mono text-[10px] uppercase tracking-[.24em] text-cyan-300">Governance OS · Control Plane</div>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">Was möchtest du prüfen, bewerten oder umsetzen?</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-6 text-white/45">Eine KI-Arbeitsoberfläche für AI Act, DSGVO, ISO 42001, Risiken, Policies und Evidence — mit freigegebenen Browser- und Agent-Workflows.</p>
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-6 text-white/45">Die Arbeitsoberfläche der Control Plane für Enterprise-KI — AI Act, DSGVO, ISO 42001, Risiken, Policies und Evidence als Proof-Layer, mit freigegebenen Browser- und Agent-Workflows.</p>
 
           <form onSubmit={submit} className="mt-8 rounded-2xl border border-white/15 bg-white/[.035] p-3 text-left shadow-2xl shadow-cyan-950/20">
             <textarea value={prompt} onChange={(event) => { setPrompt(event.target.value); setSubmitted(false); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submit(event as unknown as FormEvent); }} rows={4} placeholder="Frag Governance AI … z. B. „Prüfe meinen AI Act Status und zeige mir die offenen Maßnahmen.“" className="w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-white/25" />
@@ -91,7 +92,7 @@ export function AiGovernancePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[.015]">
-        <div className="mx-auto grid max-w-6xl gap-px bg-white/10 sm:grid-cols-5">
+        <div className="mx-auto grid max-w-6xl gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-6">
           {WORK_STAGES.map(([stage, text], index) => <div key={stage} className="bg-[rgb(3,7,18)] p-5"><div className="font-mono text-[10px] text-cyan-300">0{index + 1}</div><div className="mt-2 text-sm font-semibold">{stage}</div><p className="mt-2 text-xs leading-5 text-white/30">{text}</p></div>)}
         </div>
       </section>
@@ -116,7 +117,7 @@ export function AiGovernancePage() {
       <footer className="border-t border-white/10 py-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-xs text-white/25 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <span>Governance AI · by RealSyncDynamics.AI</span>
-          <span>Understand · Assess · Act · Verify · Prove</span>
+          <span>Discover → Assess → Govern → Execute → Verify → Prove</span>
           <Link to="/" className="hover:text-white/60">RealSyncDynamics.AI</Link>
         </div>
       </footer>

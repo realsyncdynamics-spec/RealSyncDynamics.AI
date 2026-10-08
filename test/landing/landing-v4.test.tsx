@@ -1,16 +1,20 @@
 /**
- * Landing v4 „Klassisch" (`/`) — Vertrag: H1, Betriebsschleife, CTAs in echte
- * Routen, auflösbare In-Page-Anker, Roadmap-Filter, Scan-Formular.
+ * Landing v4 „Klassisch" (`/`) — Vertrag: Control-Plane-Hero (DE/EN),
+ * 6-Schritt-Journey, Agent-/Provider-Sektionen, CTAs in echte Routen,
+ * auflösbare In-Page-Anker, Roadmap-Filter, Scan-Formular.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
+import { resetLangForTests, setLang } from '../../src/i18n/useLang';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/v4/heroEarthScene', () => ({ mountHeroEarth: () => () => {} }));
 
 beforeEach(() => {
+  localStorage.clear();
+  resetLangForTests();
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({ matches: false, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
@@ -19,6 +23,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  resetLangForTests();
 });
 
 function Where() {
@@ -36,18 +41,36 @@ const mount = () =>
     </MemoryRouter>,
   );
 
-it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
+const JOURNEY = ['DISCOVER', 'ASSESS', 'GOVERN', 'EXECUTE', 'VERIFY', 'PROVE'] as const;
+
+it('renders the v4 DE hero: Frontier thesis, 6-step journey and CTAs into real routes', () => {
   const view = mount();
-  // Zeilenumbruch per <br> wie in der Referenz; der zugängliche Name trennt die Zeilen.
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for Europe/ });
+  // Default-Sprache DE: These sichtbar, nicht als EN-Zitat versteckt.
+  expect(screen.getByTestId('v4-hero-brand')).toHaveTextContent('REALSYNCDYNAMICS.AI');
+  screen.getByRole('heading', {
+    level: 1,
+    name: /Europa braucht kein weiteres Frontier-Modell\.\s*Europa braucht Kontrolle über\s*Frontier-KI\./,
+  });
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
-  expect(view.container.querySelector('.loop')?.textContent).toBe('DiscoverClassifyEnforceProve');
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/Frontier-KI/);
+  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/AI Compliance/);
+
+  const loopText = screen.getByTestId('v4-hero-loop').textContent ?? '';
+  for (const step of JOURNEY) {
+    expect(loopText).toContain(step);
+  }
+  expect(loopText).not.toContain('Classify');
+  expect(loopText).not.toContain('Enforce');
+
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
+    'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI.',
+  );
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('The Governance OS for Autonomous AI');
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('Any model. Any agent. One control plane.');
+
   expect(view.container.querySelector('#scan')).toHaveAttribute('href', '/audit');
   expect(view.container.querySelector('#scan')).toHaveAttribute('data-hero-cta', '');
   expect(view.container.querySelector('#scan')).toHaveTextContent('Free Governance Audit');
-  expect(view.container.querySelector('.hero .lede')).toHaveTextContent(
-    'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
-  );
   expect(view.container.querySelector('header .cta-label-mobile')).toHaveTextContent('Audit starten');
   const secondary = view.container.querySelector('.hero .btn-ghost');
   expect(secondary).toHaveAttribute('href', '/governance-runtime');
@@ -62,6 +85,65 @@ it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   expect(classify).toHaveAttribute('href', '/ai-act-klassifikator');
   expect(classify?.textContent).not.toMatch(/als Inventar führen/i);
   expect(classify?.textContent).toMatch(/Klassifikator|Risikoklasse/i);
+});
+
+it('renders English hero heading and lede when EN is active', () => {
+  setLang('en');
+  mount();
+  screen.getByRole('heading', {
+    level: 1,
+    name: /Europe doesn't need another frontier model\.\s*Europe needs control over\s*frontier AI\./,
+  });
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/frontier AI/);
+  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/Frontier-KI/);
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
+    'RealSyncDynamics.AI is the control plane for enterprise AI.',
+  );
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('The Governance OS for Autonomous AI');
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent('Any model. Any agent. One control plane.');
+  expect(screen.getByTestId('v4-hero-lede')).not.toMatch(/Control Plane für Enterprise-KI/);
+});
+
+it('renders the 6-step journey band and platform steps in DE and EN', () => {
+  const view = mount();
+  const band = screen.getByTestId('v4-journey-band');
+  for (const step of JOURNEY) {
+    expect(band.textContent).toContain(step);
+  }
+  expect(band.textContent).toContain('Entdecken, welche KI läuft.');
+  expect(band.textContent).toContain('Compliance mit Evidence beweisen.');
+  expect(screen.getByTestId('v4-gov-steps').textContent).toContain('Risiko bewerten.');
+
+  fireEvent.click(screen.getByTestId('lang-toggle'));
+  expect(screen.getByTestId('lang-toggle')).toHaveAttribute('data-lang', 'en');
+  expect(screen.getByTestId('v4-journey-band').textContent).toContain('Discover what AI is running.');
+  expect(screen.getByTestId('v4-journey-band').textContent).toContain('Prove compliance with evidence.');
+  expect(screen.getByTestId('v4-gov-steps').textContent).toContain('Assess its risk.');
+  expect(view.container.textContent).not.toMatch(/SCAN\s*→\s*BUILD/);
+});
+
+it('renders Agent Governance Runtime and provider-neutrality sections in DE and EN', () => {
+  mount();
+  const agent = screen.getByTestId('v4-agent-runtime');
+  expect(agent.textContent).toMatch(/AGENT GOVERNANCE RUNTIME/i);
+  expect(agent.textContent).toContain('Werkzeugzugriffe');
+  expect(agent.textContent).toContain('Security-Agent');
+  expect(screen.getByTestId('v4-architecture-flow').textContent).toMatch(
+    /User\/Agent.*Identity.*Tenant.*Policy.*Risk.*Approval.*Execution.*Verification.*Evidence/,
+  );
+
+  const providers = screen.getByTestId('v4-provider-neutrality');
+  expect(providers.textContent).toContain('Any model. Any agent.');
+  expect(providers.textContent).toContain('One control plane.');
+  for (const name of ['OpenAI', 'Anthropic', 'Gemini', 'Mistral', 'STACKIT', 'Local models', 'Future models']) {
+    expect(screen.getByTestId('v4-provider-list').textContent).toContain(name);
+  }
+  expect(providers.textContent).not.toMatch(/Partner|zertifiziert|certified partner/i);
+
+  fireEvent.click(screen.getByTestId('lang-toggle'));
+  expect(screen.getByTestId('v4-agent-runtime').textContent).toContain('Tool access');
+  expect(screen.getByTestId('v4-agent-runtime').textContent).toContain('security agent');
+  expect(screen.getByTestId('v4-provider-neutrality').textContent).toContain('under the same governance layer');
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

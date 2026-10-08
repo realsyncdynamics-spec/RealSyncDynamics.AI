@@ -371,6 +371,30 @@ export const HANDOFF_EXTRA = {
     residencyLocal: 'Lokal im Haus',
     residencyEu: 'EU-Cloud',
     residencyHybrid: 'Gemischt / offen',
+    // Landing v4 Hero — Control-Plane-These (DE-These sichtbar, nicht nur EN-Zitat).
+    v4HeroBrand: 'REALSYNCDYNAMICS.AI',
+    v4HeroTitleA: 'Europa braucht kein weiteres Frontier-Modell.',
+    v4HeroTitleB: 'Europa braucht Kontrolle über',
+    v4HeroTitleEm: 'Frontier-KI.',
+    v4HeroLede1: 'RealSyncDynamics.AI ist die Control Plane für Enterprise-KI.',
+    v4HeroCategory: 'The Governance OS for Autonomous AI',
+    v4HeroTagline: 'Any model. Any agent. One control plane.',
+    v4LoopAria: 'Governance-Journey: Discover, Assess, Govern, Execute, Verify, Prove',
+    v4ArchAria: 'Architekturfluss der Control Plane',
+    v4AgentEyebrow: 'AGENT GOVERNANCE RUNTIME',
+    v4AgentTitle: 'Agenten handeln.',
+    v4AgentTitleEm: 'Autorisieren nicht.',
+    v4AgentLede:
+      'Werkzeugzugriffe, Berechtigungen, Risikoklassen, Human-in-the-loop-Freigaben, Budget- und Quotenlimits, Datenzugriffe, Provider-Auswahl, Ausführungsrichtlinien und Evidence-Logs.',
+    v4AgentExample:
+      'Ein Security-Agent darf eine Schwachstelle erkennen — ein produktives System aber erst nach Policy-Prüfung und ggf. menschlicher Freigabe verändern.',
+    v4ProviderEyebrow: 'PROVIDER-NEUTRAL',
+    v4ProviderTitle: 'Any model. Any agent.',
+    v4ProviderTitleEm: 'One control plane.',
+    v4ProviderLede:
+      'OpenAI, Anthropic, Gemini, Mistral, STACKIT, lokale Modelle und künftige Modelle unter derselben Governance-Schicht — ohne Partnerschafts- oder Zertifizierungsanspruch.',
+    v4FooterClaim:
+      'Governance OS · Control Plane für Enterprise-KI. Evidence für DSGVO und EU AI Act als Proof-Layer.',
   },
   en: {
     brandName: 'RealSync Dynamics',
@@ -450,6 +474,29 @@ export const HANDOFF_EXTRA = {
     residencyLocal: 'On-premises',
     residencyEu: 'EU cloud',
     residencyHybrid: 'Mixed / undecided',
+    v4HeroBrand: 'REALSYNCDYNAMICS.AI',
+    v4HeroTitleA: "Europe doesn't need another frontier model.",
+    v4HeroTitleB: 'Europe needs control over',
+    v4HeroTitleEm: 'frontier AI.',
+    v4HeroLede1: 'RealSyncDynamics.AI is the control plane for enterprise AI.',
+    v4HeroCategory: 'The Governance OS for Autonomous AI',
+    v4HeroTagline: 'Any model. Any agent. One control plane.',
+    v4LoopAria: 'Governance journey: Discover, Assess, Govern, Execute, Verify, Prove',
+    v4ArchAria: 'Control plane architecture flow',
+    v4AgentEyebrow: 'AGENT GOVERNANCE RUNTIME',
+    v4AgentTitle: 'Agents may act.',
+    v4AgentTitleEm: 'They may not authorize themselves.',
+    v4AgentLede:
+      'Tool access, permissions, risk classes, human-in-the-loop approvals, budget/quota limits, data access, provider selection, execution policies, and evidence logs.',
+    v4AgentExample:
+      'A security agent may detect a vulnerability — but may change a production system only after policy evaluation and, if required, human approval.',
+    v4ProviderEyebrow: 'PROVIDER-NEUTRAL',
+    v4ProviderTitle: 'Any model. Any agent.',
+    v4ProviderTitleEm: 'One control plane.',
+    v4ProviderLede:
+      'OpenAI, Anthropic, Gemini, Mistral, STACKIT, local models and future models under the same governance layer — no partnership or certification claims.',
+    v4FooterClaim:
+      'Governance OS · control plane for enterprise AI. Evidence for GDPR and the EU AI Act as the proof layer.',
   },
 } as const;
 

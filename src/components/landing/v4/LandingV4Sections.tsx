@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY, getCompanyDisplayName } from '../../../config/company';
+import { useLang } from '../../../i18n/useLang';
 import {
   ROADMAP_COMING_SOON_ITEMS,
   ROADMAP_LIVE_ITEMS,
@@ -15,23 +16,24 @@ import {
   APP_FRAMEWORKS,
   APP_NAV,
   APP_TILES,
+  ARCHITECTURE_FLOW,
   BUILDING_CAPS,
   CLOSING_PILLS,
   ENTERPRISE_LEDE,
   ENTERPRISE_TILES,
-  GOV_STEPS,
   HERO_FRAMEWORKS,
   HERO_KPIS,
   HERO_PROOF,
   HUD_ORBITS,
   INTENT_CHIPS,
+  JOURNEY_STEPS,
   LEDGER_NODES,
   LIVE_CAPS,
-  LOOP_NODES,
   PLANS,
   ROADMAP_FILTERS,
   TOOLS,
   TRUST,
+  V4_PROVIDERS,
   V4_ROUTES,
   V4_PRICING_TAX_NOTE,
   statusOf,
@@ -95,11 +97,11 @@ export function V4StatusBar() {
       <div className="statusbar-in">
         <i />
         <span>
-          <b>GOVERNANCE RUNTIME</b> · EU-NATIVE
+          <b>GOVERNANCE OS</b> · CONTROL PLANE
         </span>
-        <span>CONTINUOUS EVIDENCE</span>
+        <span>ANY MODEL · ANY AGENT</span>
         <div className="right">
-          <span>DSGVO · EU AI ACT · POLICY CONTROLS</span>
+          <span>DSGVO · EU AI ACT · EVIDENCE</span>
         </div>
       </div>
     </div>
@@ -114,6 +116,7 @@ const NAV_ANCHORS = [
 
 /** Kopf: bei scrollY > 60 `v3-stuck`, aktive Sektion (< 40 % Viewporthöhe) → `v3-on`. */
 export function V4Header() {
+  const { lang, toggleLang, t } = useLang();
   const [stuck, setStuck] = useState(false);
   const [active, setActive] = useState(-1);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -150,7 +153,7 @@ export function V4Header() {
         <button
           className="nav-toggle"
           type="button"
-          aria-label={menuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
+          aria-label={menuOpen ? t('menuClose') : t('menuOpen')}
           aria-expanded={menuOpen}
           aria-controls="gv4-main-nav"
           onClick={() => setMenuOpen((open) => !open)}
@@ -169,6 +172,19 @@ export function V4Header() {
               {label}
             </a>
           ))}
+          <button
+            type="button"
+            className="navlink"
+            data-testid="lang-toggle"
+            data-lang={lang}
+            aria-label={t('langSwitch')}
+            onClick={() => {
+              toggleLang();
+              setMenuOpen(false);
+            }}
+          >
+            {lang === 'de' ? 'DE → EN' : 'EN → DE'}
+          </button>
           <Link className="navlink" to={V4_ROUTES.login} onClick={() => setMenuOpen(false)}>
             Login
           </Link>
@@ -196,6 +212,7 @@ export function V4Header() {
 
 export function V4Hero() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [url, setUrl] = useState('');
   const onScan = (e: FormEvent) => {
     e.preventDefault();
@@ -208,24 +225,28 @@ export function V4Hero() {
       <div className="hero reveal" style={{ animationDelay: '60ms' }}>
         <i className="mark tl" />
         <i className="mark br" />
-        <h1>
-          <span>AI Compliance</span>
-          <br />
-          <span>Operations OS</span> <em>for Europe</em>
-        </h1>
-        <p className="loop">
-          Discover
-          <LoopArrow />
-          Classify
-          <LoopArrow />
-          Enforce
-          <LoopArrow />
-          Prove
+        <p className="hero-brand" data-testid="v4-hero-brand">
+          {t('v4HeroBrand')}
         </p>
-        <p className="lede">
-          Runtime governance for regulated AI.
+        <h1 data-testid="v4-hero-heading">
+          <span>{t('v4HeroTitleA')}</span>
           <br />
-          Continuous evidence. Human control. EU-native by design.
+          <span>{t('v4HeroTitleB')}</span> <em>{t('v4HeroTitleEm')}</em>
+        </h1>
+        <p className="loop" data-testid="v4-hero-loop" aria-label={t('v4LoopAria')}>
+          {JOURNEY_STEPS.map((step, i) => (
+            <Fragment key={step.label}>
+              {i > 0 ? <LoopArrow /> : null}
+              {step.label}
+            </Fragment>
+          ))}
+        </p>
+        <p className="lede" data-testid="v4-hero-lede">
+          {t('v4HeroLede1')}
+          <br />
+          {t('v4HeroCategory')}
+          <br />
+          {t('v4HeroTagline')}
         </p>
         <div className="cta-row">
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
@@ -301,15 +322,18 @@ export function V4Ticker() {
 }
 
 export function V4LoopBand() {
+  const { lang, t } = useLang();
   return (
-    <section className="loopband" aria-label="Governance Loop">
+    <section className="loopband" aria-label={t('v4LoopAria')} data-testid="v4-journey-band">
       <div className="loop-grid">
         <div className="loop-wire" />
-        {LOOP_NODES.map(([k, h, p]) => (
-          <div key={k} className="loop-node">
-            <small>{k}</small>
-            <h3>{h}</h3>
-            <p>{p}</p>
+        {JOURNEY_STEPS.map((step) => (
+          <div key={step.label} className="loop-node" data-testid={`v4-journey-${step.label.toLowerCase()}`}>
+            <small>
+              {step.no} · {step.label}
+            </small>
+            <h3>{step.label}</h3>
+            <p>{lang === 'en' ? step.en : step.de}</p>
           </div>
         ))}
       </div>
@@ -514,6 +538,7 @@ export function V4Tools() {
 }
 
 export function V4Platform() {
+  const { lang, t } = useLang();
   return (
     <section className="band band-b" id="platform">
       <div className="band-in">
@@ -524,6 +549,14 @@ export function V4Platform() {
         <p className="sec-lede">
           RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem
           durchgängigen operativen Kontrollprozess.
+        </p>
+        <p className="arch-flow" data-testid="v4-architecture-flow" aria-label={t('v4ArchAria')}>
+          {ARCHITECTURE_FLOW.map((node, i) => (
+            <Fragment key={node}>
+              {i > 0 ? <span className="arch-flow__sep" aria-hidden="true">→</span> : null}
+              <span>{node}</span>
+            </Fragment>
+          ))}
         </p>
         <div className="cards">
           {LIVE_CAPS.map(({ name, desc, route }) => {
@@ -573,14 +606,62 @@ export function V4Platform() {
             </div>
           ))}
         </div>
-        <div className="cards" style={{ marginTop: 40 }}>
-          {GOV_STEPS.map(([no, title, text]) => (
-            <article key={no} className="card">
+        <div className="cards" style={{ marginTop: 40 }} data-testid="v4-gov-steps">
+          {JOURNEY_STEPS.map((step) => (
+            <article key={step.no} className="card">
               <p className="card-tag">
-                {no} · {title}
+                {step.no} · {step.label}
               </p>
-              <p className="body">{text}</p>
+              <p className="body">{lang === 'en' ? step.en : step.de}</p>
             </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Agent Governance Runtime — Control Plane über autonome Agenten. */
+export function V4AgentRuntime() {
+  const { t } = useLang();
+  return (
+    <section className="band band-a" id="agent-runtime" data-testid="v4-agent-runtime">
+      <div className="band-in">
+        <SecHead no="03b" index="RUNTIME" eyebrow={t('v4AgentEyebrow')} />
+        <h2>
+          {t('v4AgentTitle')} <em>{t('v4AgentTitleEm')}</em>
+        </h2>
+        <p className="sec-lede">{t('v4AgentLede')}</p>
+        <p className="sec-lede" style={{ marginTop: 16 }}>
+          {t('v4AgentExample')}
+        </p>
+        <p className="arch-flow" aria-label={t('v4ArchAria')}>
+          {ARCHITECTURE_FLOW.map((node, i) => (
+            <Fragment key={node}>
+              {i > 0 ? <span className="arch-flow__sep" aria-hidden="true">→</span> : null}
+              <span>{node}</span>
+            </Fragment>
+          ))}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/** Provider-Neutralität als Kernprodukt — Textwortmarken, keine Logos. */
+export function V4ProviderNeutrality() {
+  const { t } = useLang();
+  return (
+    <section className="band band-b" id="providers" data-testid="v4-provider-neutrality">
+      <div className="band-in">
+        <SecHead no="03c" index="PROVIDERS" eyebrow={t('v4ProviderEyebrow')} />
+        <h2>
+          {t('v4ProviderTitle')} <em>{t('v4ProviderTitleEm')}</em>
+        </h2>
+        <p className="sec-lede">{t('v4ProviderLede')}</p>
+        <div className="frameworks" style={{ marginTop: 28 }} data-testid="v4-provider-list">
+          {V4_PROVIDERS.map((name) => (
+            <span key={name}>{name}</span>
           ))}
         </div>
       </div>
@@ -826,10 +907,10 @@ export function V4Closing() {
   return (
     <section className="band band-a" id="next">
       <div className="band-in closing">
-        <p className="sec-eyebrow">ONE GOVERNANCE PLANE</p>
+        <p className="sec-eyebrow">THE GOVERNANCE OS FOR AUTONOMOUS AI</p>
         <h2>Governance statt Checkliste.</h2>
         <p className="sec-lede" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
-          Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.
+          Control Plane statt Checklist. Evidence statt Behauptung. Enforcement statt Empfehlung.
         </p>
         <div className="frameworks" style={{ justifyContent: 'center', marginTop: 24 }}>
           {CLOSING_PILLS.map((p) => (
@@ -859,6 +940,7 @@ const LEGAL = [
 ] as const;
 
 export function V4Footer() {
+  const { t } = useLang();
   return (
     <footer>
       <div className="foot-legal">
@@ -875,9 +957,10 @@ export function V4Footer() {
           ) : null}
         </div>
         <div>
-          <b>BETRIEB</b>Datenhaltung in der EU (Supabase, eu-central-1 · Frankfurt).
+          <b>BETRIEB</b>
+          <span data-testid="v4-footer-claim">{t('v4FooterClaim')}</span>
           <br />
-          Unterstützt DSGVO- und EU-AI-Act-Kontrollen — die rechtliche Bewertung bleibt beim Anwender.
+          Datenhaltung in der EU (Supabase, eu-central-1 · Frankfurt). Die rechtliche Bewertung bleibt beim Anwender.
         </div>
         <div>
           <b>STANDARDS</b>Rahmenwerke: DSGVO · EU AI Act · ISO 27001 · NIS2

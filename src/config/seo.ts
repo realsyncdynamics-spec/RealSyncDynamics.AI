@@ -55,9 +55,9 @@ import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
+  title: 'Governance OS & Control Plane für Enterprise-KI | RealSyncDynamics.AI',
   description:
-    'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
+    'The Governance OS for Autonomous AI — Control Plane für Enterprise-KI: Discover, Assess, Govern, Execute, Verify, Prove. Evidence für DSGVO und EU AI Act.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -65,9 +65,9 @@ export const DEFAULT_SEO: SEOConfig = {
 const PRICING_PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: 'RealSyncDynamics.AI Compliance Platform',
+  name: 'RealSyncDynamics.AI Governance OS',
   description:
-    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
+    'Governance OS / Control Plane für Enterprise-KI: Policies, Freigaben, Ausführung und Evidence unter EU AI Act und DSGVO. Website-Audit und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -274,19 +274,22 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
+    title: 'RealSyncDynamics.AI – Governance OS & Control Plane für Enterprise-KI | EU AI Act & DSGVO',
     description:
-      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
+      'DISCOVER → ASSESS → GOVERN → EXECUTE → VERIFY → PROVE: Control Plane für Enterprise-KI — Policies, Freigaben, Ausführung und Evidence. EU-hosted. Free Audit ohne Kreditkarte.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'The Governance OS for Autonomous AI',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'RealSyncDynamics.AI is the control plane for enterprise AI. Any model. Any agent. One control plane. EU AI Act, DSGVO and Evidence as the proof layer.',
+    twitterTitle: 'Governance OS · Control Plane for Enterprise AI',
+    twitterDescription:
+      'Any model. Any agent. One control plane. Discover → Assess → Govern → Execute → Verify → Prove — with Evidence for EU AI Act & DSGVO.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
     title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
     description:
-      'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+      'Design-Referenz der Startseite „Governance OS / Control Plane für Enterprise-KI“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

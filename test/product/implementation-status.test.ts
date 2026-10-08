@@ -121,7 +121,8 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
     expect(docs).toContain('Landing v4');
-    expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('Frontier-KI');
+    expect(docs).toContain('DISCOVER→ASSESS→GOVERN→EXECUTE→VERIFY→PROVE');
     expect(docs).toContain('/ai-act-klassifikator');
     expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);
@@ -168,26 +169,41 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('locks Landing v4 homepage H1', () => {
+  it('locks Landing v4 homepage H1 to Control-Plane thesis via i18n', () => {
     const sections = readFileSync(
       resolve('src/components/landing/v4/LandingV4Sections.tsx'),
       'utf8',
     );
-    expect(sections).toContain('AI Compliance');
-    expect(sections).toContain('Operations OS');
-    expect(sections).toContain('for Europe');
+    // H1/Lede laufen über i18n (HANDOFF_EXTRA), nicht mehr als Literale im Markup.
+    expect(sections).toContain("t('v4HeroTitleA')");
+    expect(sections).toContain("t('v4HeroTitleB')");
+    expect(sections).toContain("t('v4HeroTitleEm')");
+    expect(sections).toContain('JOURNEY_STEPS');
+    expect(sections).toContain('V4AgentRuntime');
+    expect(sections).toContain('V4ProviderNeutrality');
     expect(sections).toContain('Free Audit starten');
     expect(sections).toContain('Runtime ansehen');
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
+    expect(sections).not.toContain('AI Compliance');
+    expect(sections).not.toContain('Operations OS');
+    const i18n = readFileSync(resolve('src/i18n/handoff.ts'), 'utf8');
+    expect(i18n).toContain("v4HeroTitleEm: 'Frontier-KI.'");
+    expect(i18n).toContain("v4HeroTitleEm: 'frontier AI.'");
+    expect(i18n).toContain('Europa braucht kein weiteres Frontier-Modell.');
+    expect(i18n).toContain("Europe doesn't need another frontier model.");
     const landing = getImplementation('public-landing')!;
     expect(landing.description).toContain('/governance-runtime');
+    expect(landing.description).toContain('Frontier-KI');
     expect(landing.description).not.toContain('/demo-tour/dashboard');
     const content = readFileSync(
       resolve('src/components/landing/v4/landing-v4-content.ts'),
       'utf8',
     );
     expect(content).toContain('/ai-act-klassifikator');
+    expect(content).toContain("label: 'DISCOVER'");
+    expect(content).toContain("label: 'EXECUTE'");
+    expect(content).toContain("label: 'VERIFY'");
     expect(content).not.toMatch(/als Inventar führen/);
   });
 });

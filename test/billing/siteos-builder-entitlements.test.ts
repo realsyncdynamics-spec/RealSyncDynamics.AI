@@ -91,6 +91,22 @@ describe('SiteOS gates — no plan-name hardcoding', () => {
     expect(claim).toContain('gateSiteCreate');
   });
 
+  it('edit path requires siteos.builder before loading the blueprint', () => {
+    const helper = readFileSync('supabase/functions/siteos/site-entitlements.ts', 'utf8');
+    expect(helper).toContain('export async function gateSiteEdit');
+    expect(helper).toContain("requireFeature(ent, 'siteos.builder')");
+
+    const edit = readFileSync('supabase/functions/siteos/handlers/edit.ts', 'utf8');
+    expect(edit).toContain('gateSiteEdit');
+    const membership = edit.indexOf("from('memberships')");
+    const gate = edit.indexOf('gateSiteEdit(admin, tenantId)');
+    const blueprintLoad = edit.indexOf("from('siteos_blueprints')");
+    expect(membership).toBeGreaterThanOrEqual(0);
+    expect(gate).toBeGreaterThan(membership);
+    expect(blueprintLoad).toBeGreaterThan(gate);
+    expect(edit).not.toContain('requireQuota(ent');
+  });
+
   it('publish path gates siteos.publish', () => {
     const publish = readFileSync('supabase/functions/siteos/handlers/publish-gate.ts', 'utf8');
     expect(publish).toContain('gateSitePublish');

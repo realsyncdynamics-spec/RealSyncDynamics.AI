@@ -22,10 +22,8 @@ import {
   modulesForArea,
   planByKey,
   PRODUCT_AREAS,
+  moduleAvailabilityLabel,
 } from '@/shared/pricing';
-
-/** Rahmenwerke ohne aktives Policy Pack (Roadmap / auf Anfrage). */
-const ROADMAP_MODULE_IDS: ReadonlySet<string> = new Set(['tisax', 'dora']);
 
 interface LocationState {
   profile?: GovernanceProfile;
@@ -301,19 +299,24 @@ function RecommendationBody({
                     <p className="mb-3 text-xs leading-relaxed text-titanium-500">{area.summary}</p>
                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                       {modules.map((module) => {
-                        // TISAX/DORA sind Roadmap (implementation-status:
-                        // framework-tisax-dora = coming-soon) — kein Häkchen
-                        // als aktives Policy Pack.
-                        const roadmap = ROADMAP_MODULE_IDS.has(module.id);
+                        // availability aus shared/pricing (Registry-aligned):
+                        // preview → graues Häkchen + (Preview);
+                        // coming-soon → graues Häkchen + (Roadmap);
+                        // live/fehlend → grünes Häkchen, „Im Produkt“.
+                        const statusLabel = moduleAvailabilityLabel(module.availability);
+                        const nonLive = statusLabel !== null;
                         return (
-                          <div key={module.id}>
+                          <div key={module.id} data-module-id={module.id} data-module-availability={module.availability ?? 'live'}>
                             <dt className="flex items-center gap-2 text-sm font-semibold text-titanium-100">
                               <CheckCircle2
-                                className={`h-4 w-4 shrink-0 ${roadmap ? 'text-titanium-600' : 'text-emerald-400'}`}
+                                className={`h-4 w-4 shrink-0 ${nonLive ? 'text-titanium-600' : 'text-emerald-400'}`}
+                                data-testid={nonLive ? `module-check-nonlive-${module.id}` : `module-check-live-${module.id}`}
                               />
                               <span>
                                 {module.name}
-                                {roadmap && <span className="ml-1 font-normal text-titanium-500">(Roadmap)</span>}
+                                {statusLabel && (
+                                  <span className="ml-1 font-normal text-titanium-500">{statusLabel}</span>
+                                )}
                               </span>
                             </dt>
                             <dd className="mt-0.5 pl-6 text-xs leading-relaxed text-titanium-400">

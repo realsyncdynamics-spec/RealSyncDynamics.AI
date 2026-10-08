@@ -22,31 +22,37 @@ async function insertLead(
     consent?: boolean;
     version?: string | null;
     at?: string | null;
+    revokedAt?: string | null;
   },
 ): Promise<{
   id: string;
   marketing_consent: boolean;
   marketing_consent_at: string | null;
   marketing_consent_text_version: string | null;
+  marketing_consent_revoked_at: string | null;
 }> {
   const { rows } = await ctx.client.query<{
     id: string;
     marketing_consent: boolean;
     marketing_consent_at: string | null;
     marketing_consent_text_version: string | null;
+    marketing_consent_revoked_at: string | null;
   }>(
     `INSERT INTO public.sales_leads (
        email, source, path,
-       marketing_consent, marketing_consent_at, marketing_consent_text_version
-     ) VALUES ($1, 'audit_lp', '/audit', $2, $3::timestamptz, $4)
+       marketing_consent, marketing_consent_at, marketing_consent_text_version,
+       marketing_consent_revoked_at
+     ) VALUES ($1, 'audit_lp', '/audit', $2, $3::timestamptz, $4, $5::timestamptz)
      RETURNING id, marketing_consent,
                marketing_consent_at::text AS marketing_consent_at,
-               marketing_consent_text_version`,
+               marketing_consent_text_version,
+               marketing_consent_revoked_at::text AS marketing_consent_revoked_at`,
     [
       opts.email,
       opts.consent ?? false,
       opts.at ?? null,
       opts.version ?? null,
+      opts.revokedAt ?? null,
     ],
   );
   return rows[0]!;
@@ -208,27 +214,111 @@ d('PR A marketing consent (DB)', () => {
     expect(rows[0]?.version).toBe('audit_followup_v1_de');
   });
 
-  it('anon cannot insert or update consent columns (RLS / grants)', async () => {
-    await expect(
-      ctx!.withClaims({ role: 'anon' }, async () => {
-        await ctx!.client.query(
-          `INSERT INTO public.sales_leads (email, marketing_consent, marketing_consent_text_version)
-           VALUES ('anon@example.com', true, 'audit_followup_v1_de')`,
-        );
-      }),
-    ).rejects.toMatchObject({ code: '42501' });
+  it('forged marketing_consent_revoked_at on INSERT is nulled', async () => {
+    const row = await insertLead(ctx!, {
+      email: `forge_revoke_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+      revokedAt: '2020-01-01T00:00:00.000Z',
+    });
+    expect(row.marketing_consent).toBe(true);
+    expect(row.marketing_consent_revoked_at).toBeNull();
+  });
 
+  it('refuses granting consent via UPDATE on a false row', async () => {
+    const row = await insertLead(ctx!, {
+      email: `upd_false_${Date.now()}@example.com`,
+      consent: false,
+    });
+    await expect(
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('refuses granting consent via UPDATE on a revoked row', async () => {
+    const row = await insertLead(ctx!, {
+      email: `upd_revoked_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+    });
+    await ctx!.client.query(
+      `UPDATE public.sales_leads SET marketing_consent_revoked_at = now() WHERE id = $1`,
+      [row.id],
+    );
+    // Consent stays true as proof; "re-grant" attempt that flips false→true
+    // is simulated by first forcing a false+revoked path is impossible under
+    // immutability. Assert grant-on-UPDATE is blocked for a never-granted
+    // revoked-marked row (false + sticky revoke), then for the true+revoked row
+    // via trying to change version (immutable) and via false→true after a
+    // separate false+revoked insert.
+    const neverGranted = await insertLead(ctx!, {
+      email: `upd_revoked_false_${Date.now()}@example.com`,
+      consent: false,
+    });
+    await ctx!.client.query(
+      `UPDATE public.sales_leads SET marketing_consent_revoked_at = now() WHERE id = $1`,
+      [neverGranted.id],
+    );
+    await expect(
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [neverGranted.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+
+    // True + revoked: proof fields remain immutable (cannot "re-grant" by rewrite).
+    await expect(
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('authenticated/anon UPDATE under RLS affects 0 rows (does not throw)', async () => {
     const row = await insertLead(ctx!, {
       email: `authz_${Date.now()}@example.com`,
       consent: true,
       version: 'audit_followup_v1_de',
     });
 
+    // withClaims({ role: 'anon' }) still SETs ROLE authenticated (db-helpers).
+    // Without an UPDATE policy, Postgres returns 0 rows — not 42501.
+    const result = await ctx!.withClaims({ role: 'anon' }, async () =>
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent_revoked_at = now()
+          WHERE id = $1
+          RETURNING id`,
+        [row.id],
+      ),
+    );
+    expect(result.rowCount).toBe(0);
+
+    const { rows } = await ctx!.client.query<{ revoked: string | null }>(
+      `SELECT marketing_consent_revoked_at::text AS revoked
+         FROM public.sales_leads WHERE id = $1`,
+      [row.id],
+    );
+    expect(rows[0]?.revoked).toBeNull();
+
     await expect(
       ctx!.withClaims({ role: 'anon' }, async () => {
         await ctx!.client.query(
-          `UPDATE public.sales_leads SET marketing_consent_revoked_at = now() WHERE id = $1`,
-          [row.id],
+          `INSERT INTO public.sales_leads (email, marketing_consent, marketing_consent_text_version)
+           VALUES ('anon@example.com', true, 'audit_followup_v1_de')`,
         );
       }),
     ).rejects.toMatchObject({ code: '42501' });

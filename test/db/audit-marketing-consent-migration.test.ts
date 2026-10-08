@@ -37,5 +37,12 @@ describe('PR A marketing consent migration (offline)', () => {
     expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.marketing_consent_before_insert\(\) FROM anon/);
     expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.marketing_consent_before_insert\(\) FROM authenticated/);
     expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.marketing_consent_before_update\(\) FROM PUBLIC/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.marketing_consent_before_update\(\) FROM anon/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.marketing_consent_before_update\(\) FROM authenticated/);
+  });
+
+  it('nulls forged revoked_at on INSERT and forbids granting consent via UPDATE', () => {
+    expect(sql).toMatch(/NEW\.marketing_consent_revoked_at := NULL/);
+    expect(sql).toMatch(/marketing consent can only be granted on INSERT/);
   });
 });

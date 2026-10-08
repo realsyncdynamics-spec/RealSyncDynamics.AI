@@ -173,9 +173,15 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/v4/LandingV4Sections.tsx'),
       'utf8',
     );
-    expect(sections).toContain('AI Compliance');
-    expect(sections).toContain('Operations OS');
-    expect(sections).toContain('for Europe');
+    // H1/Lede laufen über i18n (HANDOFF_EXTRA), nicht mehr als Literale im Markup.
+    expect(sections).toContain("t('v4HeroTitleA')");
+    expect(sections).toContain("t('v4HeroTitleB')");
+    expect(sections).toContain("t('v4HeroTitleEm')");
+    const i18n = readFileSync(resolve('src/i18n/handoff.ts'), 'utf8');
+    expect(i18n).toContain("v4HeroTitleEm: 'für Europa'");
+    expect(i18n).toContain("v4HeroTitleEm: 'for Europe'");
+    expect(i18n).toContain("v4HeroTitleA: 'AI Compliance'");
+    expect(i18n).toContain("v4HeroTitleB: 'Operations OS'");
     expect(sections).toContain('Free Audit starten');
     expect(sections).toContain('Runtime ansehen');
     expect(sections).not.toContain('Live Dashboard ansehen');

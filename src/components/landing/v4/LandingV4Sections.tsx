@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY, getCompanyDisplayName } from '../../../config/company';
+import { LangToggle } from '../../handoff/LangToggle';
 import { useLang } from '../../../i18n/useLang';
 import {
   ROADMAP_COMING_SOON_ITEMS,
@@ -116,7 +117,7 @@ const NAV_ANCHORS = [
 
 /** Kopf: bei scrollY > 60 `v3-stuck`, aktive Sektion (< 40 % Viewporthöhe) → `v3-on`. */
 export function V4Header() {
-  const { lang, toggleLang, t } = useLang();
+  const { t } = useLang();
   const [stuck, setStuck] = useState(false);
   const [active, setActive] = useState(-1);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -172,19 +173,7 @@ export function V4Header() {
               {label}
             </a>
           ))}
-          <button
-            type="button"
-            className="navlink"
-            data-testid="lang-toggle"
-            data-lang={lang}
-            aria-label={t('langSwitch')}
-            onClick={() => {
-              toggleLang();
-              setMenuOpen(false);
-            }}
-          >
-            {lang === 'de' ? 'DE → EN' : 'EN → DE'}
-          </button>
+          <LangToggle />
           <Link className="navlink" to={V4_ROUTES.login} onClick={() => setMenuOpen(false)}>
             Login
           </Link>

@@ -192,6 +192,10 @@ describe('implementation-status registry', () => {
     expect(i18n).toContain("v4HeroTitleEm: 'frontier AI.'");
     expect(i18n).toContain('Europa braucht kein weiteres Frontier-Modell.');
     expect(i18n).toContain("Europe doesn't need another frontier model.");
+    // #1805 pricing keys remain; no stale AI-Compliance v4Hero* values.
+    expect(i18n).toContain('pricingTrustNote');
+    expect(i18n).not.toContain("v4HeroTitleA: 'AI Compliance'");
+    expect(i18n).not.toContain('v4HeroLede2');
     const landing = getImplementation('public-landing')!;
     expect(landing.description).toContain('/governance-runtime');
     expect(landing.description).toContain('Frontier-KI');

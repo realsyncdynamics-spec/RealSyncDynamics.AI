@@ -336,6 +336,9 @@ export const HANDOFF_EXTRA = {
     domainPlaceholder: 'muster.de',
     reportEmailLabel: 'E-Mail für den Bericht',
     reportEmailHint: 'Der Scan braucht eine geschäftliche E-Mail für die Berichtszustellung.',
+    followUpConsentLabel:
+      'Ich möchte gelegentlich Follow-up-E-Mails mit Angeboten und Informationen zu Audit-Ergebnissen erhalten. Abmelden jederzeit möglich. (optional)',
+    followUpConsentPrivacy: 'Datenschutzerklärung',
     comingSoon: 'Coming Soon',
     roleSelf: 'Ich selbst',
     roleTeam: 'Team bis fünf',
@@ -415,6 +418,9 @@ export const HANDOFF_EXTRA = {
     domainPlaceholder: 'example.com',
     reportEmailLabel: 'E-mail for the report',
     reportEmailHint: 'The scan needs a business e-mail to deliver the report.',
+    followUpConsentLabel:
+      'I would like occasional follow-up e-mails with offers and information about audit results. Unsubscribe anytime. (optional)',
+    followUpConsentPrivacy: 'Privacy policy',
     comingSoon: 'Coming soon',
     roleSelf: 'Just me',
     roleTeam: 'Team up to five',

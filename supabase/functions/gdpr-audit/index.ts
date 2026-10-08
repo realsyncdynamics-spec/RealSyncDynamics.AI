@@ -2,7 +2,8 @@
 // Public endpoint — verify_jwt is disabled per-function via deploy.yml.
 //
 // POST /functions/v1/gdpr-audit   (verify_jwt = false; public endpoint)
-// Body: { url: string, email?: string, company?: string, plan?: string, source?: string }
+// Body: { url: string, email?: string, company?: string, plan?: string, source?: string,
+//         marketing_consent?: boolean, consent_locale?: 'de' | 'en' }
 //
 // The public optimizer path intentionally supports domain-only scans without
 // collecting an email. Lead/audit email capture remains mandatory for the
@@ -29,6 +30,7 @@ import {
   isDuplicateOfHeuristic,
   type Issue,
 } from './checks.ts';
+import { marketingConsentWrite, resolveConsentLocale } from './marketing-consent.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -174,7 +176,15 @@ async function handleAudit(req: Request): Promise<Response> {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  let body: { url?: string; email?: string; company?: string; plan?: string; source?: string };
+  let body: {
+    url?: string;
+    email?: string;
+    company?: string;
+    plan?: string;
+    source?: string;
+    marketing_consent?: boolean;
+    consent_locale?: string;
+  };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   // Mandanten-Scan aus tenant-audit (Service-Role-Key + Caller-Header):
@@ -185,6 +195,12 @@ async function handleAudit(req: Request): Promise<Response> {
   const email = isTenantScan ? '' : (body.email ?? '').trim().toLowerCase();
   const company = isTenantScan ? null : (body.company ?? '').trim().slice(0, 200) || null;
   const isOptimizerScan = body.source === 'optimizer';
+  // Opt-in only on strict true. Never accept client marketing_consent_at —
+  // the BEFORE INSERT trigger sets the server timestamp.
+  const consentCols = marketingConsentWrite(
+    body.marketing_consent === true,
+    resolveConsentLocale(body.consent_locale),
+  );
 
   const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
   const planRaw = (body.plan ?? '').trim().toLowerCase();
@@ -315,7 +331,7 @@ async function handleAudit(req: Request): Promise<Response> {
   const planTag = plan ? ` · plan=${plan}` : '';
   let leadId: string | null = null;
   if (!isOptimizerScan && !isTenantScan) {
-    const { data: leadRow } = await admin.from('sales_leads').insert({
+    const { data: leadRow, error: leadErr } = await admin.from('sales_leads').insert({
       name: null,
       email,
       company,
@@ -325,15 +341,24 @@ async function handleAudit(req: Request): Promise<Response> {
       path: '/audit',
       user_agent: req.headers.get('user-agent')?.slice(0, 500),
       ip_hash: ipHash,
+      ...consentCols,
     }).select('id').single();
+    if (leadErr) {
+      // Do not swallow — silent lead loss hides schema/deploy skew.
+      console.error('gdpr-audit: sales_leads insert failed', leadErr);
+    }
     leadId = leadRow?.id ?? null;
   }
+
+  const auditConsentCols = (isTenantScan || isOptimizerScan)
+    ? marketingConsentWrite(false, 'de')
+    : consentCols;
 
   const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
     url,
     domain,
     // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
-    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
+    // null: keine E-Mail, kein Follow-up-Opt-in.
     email: isTenantScan ? '' : email || null,
     company,
     score,
@@ -346,6 +371,7 @@ async function handleAudit(req: Request): Promise<Response> {
     user_agent: req.headers.get('user-agent')?.slice(0, 500),
     ip_hash: ipHash,
     sales_lead_id: leadId,
+    ...auditConsentCols,
   }).select('id').single();
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 

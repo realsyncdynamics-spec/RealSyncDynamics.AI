@@ -41,6 +41,8 @@ export interface AuditStepperInput {
   domain: string;
   email: string;
   company: string;
+  /** Explicit opt-in for follow-up e-mails (incl. offers). Default false. */
+  marketingConsent: boolean;
 }
 
 type Role = ScanRole;
@@ -157,6 +159,7 @@ export function AuditStepper({
   const [company, setCompany] = useState('');
   const [domain, setDomain] = useState(initialDomain);
   const [email, setEmail] = useState('');
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [frameworks, setFrameworks] = useState<string[]>(['dsgvo', 'ai_act']);
   const [systems, setSystems] = useState<string[]>([]);
   const [role, setRole] = useState<Role | null>(null);
@@ -176,7 +179,12 @@ export function AuditStepper({
     setStarted(true);
     setStep(4);
     saveScanProfile({ company: company.trim(), domain: domain.trim(), frameworks, systems, role, residency });
-    onRun({ domain: domain.trim(), email: email.trim(), company: company.trim() });
+    onRun({
+      domain: domain.trim(),
+      email: email.trim(),
+      company: company.trim(),
+      marketingConsent,
+    });
   };
 
   const next = (event?: FormEvent) => {
@@ -299,6 +307,27 @@ export function AuditStepper({
                 <p id="audit-email-hint" className="rs-audit__hint" style={{ fontSize: 13, marginTop: 6 }}>
                   {t('reportEmailHint')}
                 </p>
+              </div>
+              <div>
+                <label
+                  htmlFor="audit-followup-consent"
+                  className="rs-audit__hint"
+                  style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, cursor: 'pointer' }}
+                >
+                  <input
+                    id="audit-followup-consent"
+                    name="marketing_consent"
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    data-testid="audit-followup-consent"
+                    style={{ marginTop: 3, flexShrink: 0 }}
+                  />
+                  <span>
+                    {t('followUpConsentLabel')}{' '}
+                    <Link to="/legal/privacy">{t('followUpConsentPrivacy')}</Link>
+                  </span>
+                </label>
               </div>
             </div>
           )}

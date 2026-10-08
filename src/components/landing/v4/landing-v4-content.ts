@@ -14,7 +14,8 @@ import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/
 /** Ziel-Routen der Referenz (`wire()`-Tabelle) — relativ, damit .ai und .de funktionieren. */
 export const V4_ROUTES = {
   audit: '/audit',
-  dashboardDemo: '/demo-tour/dashboard',
+  /** Öffentliche Runtime-Seite (kein Demo-Tour) — wie Landing v2 nach #1744. */
+  runtime: '/governance-runtime',
   login: '/login',
   pricing: '/pricing',
   contactSales: '/contact-sales',
@@ -28,7 +29,7 @@ export const V4_ROUTES = {
 
 /** Referenz-Hash → App-Route für „Mehr erfahren"-Karten (`MAP` in der Referenz). */
 const CAPABILITY_ROUTE: Record<string, string> = {
-  '/ai-act-governance': '/ai-act',
+  '/ai-act-klassifikator': '/ai-act-klassifikator',
   '/evidence-vault': '/evidence',
   '/policy-engine': '/runtime',
 };
@@ -136,7 +137,7 @@ export const TOOLS = [
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
   ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.', ''],
-  ['EU-AI-Act-Klassifizierung', 'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.', '/ai-act-governance'],
+  ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
   ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],
   ['AI Gateway', 'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.', ''],

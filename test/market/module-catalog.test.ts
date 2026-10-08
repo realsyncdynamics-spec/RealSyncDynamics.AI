@@ -15,6 +15,8 @@ import {
   type BookableModule,
 } from '@/shared/pricing';
 import {
+  MODULE_ADDON,
+  addonListPriceEur,
   buildCatalog,
   cheapestPlanFor,
   isModuleActive,
@@ -131,5 +133,15 @@ describe('planLabel', () => {
 
   it('rät nicht, wenn kein Plan vorliegt', () => {
     expect(planLabel(null)).toBeNull();
+  });
+});
+
+describe('MODULE_ADDON', () => {
+  it('zeigt keinen provisionalen Modulpreis als Buchungspreis', () => {
+    expect(addonListPriceEur('additional_domain')).toBeNull();
+    expect(addonListPriceEur('additional_company')).toBeNull();
+    expect(addonListPriceEur('advanced_ai_governance')).toBeNull();
+    expect(MODULE_ADDON.voice_bot).toBe('voice');
+    expect(MODULE_ADDON.whatsapp_bot).toBe('whatsapp');
   });
 });

@@ -8,12 +8,19 @@ Logs browser-based governance actions (preview loads, scans, evidence generation
 POST /functions/v1/browser-action-log
 ```
 
+## Auth
+
+```
+Authorization: Bearer <User-JWT>
+```
+
+The function is declared `verify_jwt = false` in `config.toml` (matching its live state; the platform gate would let the anon key through anyway). The handler verifies the user and their membership in `tenantId` via `requireAuthAndTenant` (`_shared/auth.ts`) before it writes. `actor_id` is taken from the verified session, never from the body.
+
 ## Request
 
 ```json
 {
-  "tenantId": "uuid",
-  "actorId": "uuid (optional)",
+  "tenantId": "uuid (must be a tenant the caller is a member of)",
   "sessionId": "session-id (required)",
   "workflowId": "uuid (optional)",
   "runId": "uuid (optional)",
@@ -88,15 +95,16 @@ Stores to `browser_actions` table with RLS enabled:
 - Regular users can SELECT their tenant's events
 - Append-only audit trail
 
-See: `supabase/migrations/20260526000000_browser_actions_observability.sql`
+See: `supabase/migrations/20260526000100_browser_actions_observability.sql`
 
 ## Error Handling
 
-- Missing required fields → 400 Bad Request
+- Missing required fields / unknown action or status → 400 Bad Request
+- No or invalid user session → 401 UNAUTHORIZED
+- Caller is not a member of `tenantId` → 403 FORBIDDEN
 - Supabase insert error → 500 Internal Server Error
-- Missing config → 500 with warning
 
 Client should:
 - Retry on 500 (transient server error)
 - Skip on 400 (malformed request, log client-side)
-- NOT retry on auth errors (fix configuration)
+- NOT retry on 401/403 (no session, or wrong tenant)

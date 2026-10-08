@@ -74,6 +74,7 @@ const assets = [
 
 vi.mock('@/src/features/governance/governanceApi', () => ({
   fetchTenantAssets: vi.fn(async () => assets),
+  fetchAssetEvidenceStats: vi.fn(async () => new Map()),
 }));
 vi.mock('@/src/features/governance/gatesApi', () => ({
   listConnectors: vi.fn(async () => [

@@ -169,7 +169,8 @@ function AssetStep({
   const [name, setName] = useState('');
   const [assetType, setAssetType] = useState<GovernanceAssetType>('ai_system');
   const [vendor, setVendor] = useState('');
-  const [aiActClass, setAiActClass] = useState<AiActClass>('limited');
+  // Keine vorausgewählte Einstufung: „limited“ als Vorgabe landete ungeprüft als Klasse (Auftrag §14/§3).
+  const [aiActClass, setAiActClass] = useState<AiActClass>('unknown');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

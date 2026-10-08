@@ -15,13 +15,17 @@
  * Entscheidung wie das Schloss „Klassifizierung“ in der Seitenleiste
  * (decideNavLock / navAccess.ts). Die Seite selbst bleibt als KI-System-Detail
  * erreichbar (governance.ai_register).
+ *
+ * Registerdaten (Auftrag §14: Typ, Anbieter, Modell, Betrieb, Datenstandort,
+ * Zweck, Verantwortung, Status, Nachweise, Ampel) sind über
+ * governance-resources `update_asset` speicherbar (owner/admin).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, FileDown, Lock } from 'lucide-react';
+import { ArrowRight, FileDown, Lock, Pencil } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { decideNavLock } from '../../../components/governance-os/navAccess';
-import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
+import { fetchAssetEvidenceStats, fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import {
   ANNEX_III_CATEGORIES,
@@ -42,20 +46,35 @@ import {
   tierOf,
   type TierId,
 } from '../handoff/enforcementModel';
-import { ClassBadge, DraftBadge, Panel, WarnToast, colorVar } from '../handoff/ui';
+import { ClassBadge, DraftBadge, Panel, WarnToast, colorVar, formatDateTime } from '../handoff/ui';
 import { useTenantLoad } from '../handoff/useTenantLoad';
+import { AiSystemForm } from './AiSystemForm';
+import { RegistryLightBadge } from './RegistryLightBadge';
+import {
+  AI_SYSTEM_TYPE_LABEL,
+  DATA_RESIDENCY_LABEL,
+  DEPLOYMENT_MODEL_LABEL,
+  STATUS_LABEL,
+  assessRegistryEntry,
+  canEditRegistry,
+  label,
+  type EvidenceStats,
+} from './registryModel';
 
 interface DetailData {
   systems: DbGovernanceAsset[];
   connectors: ConnectorRegistryEntry[];
+  /** null = Nachweise nicht ladbar (≠ keine Nachweise). */
+  evidence: Map<string, EvidenceStats> | null;
 }
 
 async function loadDetail(tenantId: string): Promise<DetailData> {
-  const [assets, connectors] = await Promise.all([
+  const [assets, connectors, evidence] = await Promise.all([
     fetchTenantAssets(tenantId),
     listConnectors(tenantId).catch((): ConnectorRegistryEntry[] => []),
+    fetchAssetEvidenceStats(tenantId).catch(() => null),
   ]);
-  return { systems: assets.filter(isAiSystemAsset), connectors };
+  return { systems: assets.filter(isAiSystemAsset), connectors, evidence };
 }
 
 function isAnnexCategory(v: unknown): v is AnnexIIICategory {
@@ -70,7 +89,9 @@ export function AiSystemDetailView() {
 
   const systems = state.status === 'ready' ? state.data.systems : [];
   const connectors = state.status === 'ready' ? state.data.connectors : [];
+  const evidenceMap = state.status === 'ready' ? state.data.evidence : null;
   const asset = systems.find((s) => s.id === id) ?? null;
+  const evidence = asset && evidenceMap ? (evidenceMap.get(asset.id) ?? { count: 0, latestAt: null }) : null;
 
   return (
     <div className="rs-apppage rs-ui" data-testid="ai-system-detail">
@@ -106,7 +127,7 @@ export function AiSystemDetailView() {
             </Link>
           </Panel>
         ) : asset ? (
-          <ClassificationDetail key={asset.id} asset={asset} connectors={connectors} lang={lang} />
+          <ClassificationDetail key={asset.id} asset={asset} connectors={connectors} evidence={evidence} lang={lang} />
         ) : (
           <Panel className="rs-panel--pad24">
             <div className="rs-empty">{t('loading')}</div>
@@ -120,10 +141,12 @@ export function AiSystemDetailView() {
 function ClassificationDetail({
   asset,
   connectors,
+  evidence,
   lang,
 }: {
   asset: DbGovernanceAsset;
   connectors: ConnectorRegistryEntry[];
+  evidence: EvidenceStats | null;
   lang: 'de' | 'en';
 }) {
   const { t } = useLang();
@@ -163,7 +186,8 @@ function ClassificationDetail({
       system: {
         name: asset.name,
         provider: asset.vendor,
-        model: typeof asset.metadata?.model_name === 'string' ? (asset.metadata.model_name as string) : null,
+        model: asset.model_name
+          ?? (typeof asset.metadata?.model_name === 'string' ? (asset.metadata.model_name as string) : null),
         riskLabel: storedTier ? t(tierDefinition(storedTier).labelKey) : t('tierUnknown'),
         annexCategory: storedAnnex ? ANNEX_III_CATEGORY_LABEL[storedAnnex] : null,
         providerRole:
@@ -207,6 +231,8 @@ function ClassificationDetail({
           </div>
         </div>
       </Panel>
+
+      <RegistryPanel asset={asset} evidence={evidence} lang={lang} />
 
       <Panel className="rs-panel--pad20">
         <div className="rs-panel__head">
@@ -304,5 +330,85 @@ function ClassificationDetail({
         )}
       </Panel>
     </div>
+  );
+}
+
+/** Registerdaten nach Auftrag §14 mit Ampel; Bearbeiten nur owner/admin (Server prüft). */
+function RegistryPanel({
+  asset,
+  evidence,
+  lang,
+}: {
+  asset: DbGovernanceAsset;
+  evidence: EvidenceStats | null;
+  lang: 'de' | 'en';
+}) {
+  const { t } = useLang();
+  const { tenants, activeTenantId } = useTenant();
+  const [editing, setEditing] = useState(false);
+  const canEdit = canEditRegistry(tenants.find((x) => x.tenantId === activeTenantId)?.role);
+  const archived = asset.status === 'archived';
+  const assessment = useMemo(() => assessRegistryEntry(asset, evidence), [asset, evidence]);
+  const notSet = t('regNotSet');
+  const statusKey = asset.status as keyof typeof STATUS_LABEL;
+
+  const rows: Array<[string, string]> = [
+    [t('regFieldType'), label(AI_SYSTEM_TYPE_LABEL, asset.ai_system_type, lang) ?? notSet],
+    [t('regFieldVendor'), asset.vendor ?? notSet],
+    [t('regFieldModel'), asset.model_name ?? notSet],
+    [t('regFieldDeployment'), label(DEPLOYMENT_MODEL_LABEL, asset.deployment_model, lang) ?? notSet],
+    [t('regFieldResidency'), label(DATA_RESIDENCY_LABEL, asset.data_residency, lang) ?? notSet],
+    [t('regFieldPurpose'), asset.intended_purpose ?? notSet],
+    [t('regFieldOwner'), asset.owner_email ?? notSet],
+    [t('regFieldStatus'), statusKey in STATUS_LABEL ? STATUS_LABEL[statusKey][lang] : asset.status],
+    [
+      t('regEvidence'),
+      evidence === null
+        ? t('regEvidenceUnavailable')
+        : evidence.count === 0
+          ? t('regEvidenceNone')
+          : `${evidence.count} · ${t('regEvidenceLatest', { date: formatDateTime(evidence.latestAt, lang) })}`,
+    ],
+  ];
+
+  return (
+    <Panel className="rs-panel--pad20" testId="registry-panel">
+      <div className="rs-panel__head">
+        <span className="rs-overline">{t('regTitle')}</span>
+        {!archived && (
+          <button
+            type="button"
+            className="rs-chip-sm"
+            data-testid="registry-edit"
+            disabled={!activeTenantId || !canEdit}
+            title={canEdit ? undefined : t('regLocked')}
+            onClick={() => setEditing(true)}
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> {t('regEdit')}
+          </button>
+        )}
+      </div>
+      <dl className="rs-kv">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+        <dt>{t('regColLight')}</dt>
+        <dd>
+          {archived ? STATUS_LABEL.archived[lang] : <RegistryLightBadge assessment={assessment} lang={lang} withReasons />}
+        </dd>
+      </dl>
+      <p className="rs-note mt-3">{t('regLightBasis')}</p>
+      {editing && activeTenantId && (
+        <AiSystemForm
+          tenantId={activeTenantId}
+          asset={asset}
+          onClose={() => setEditing(false)}
+          onSaved={() => setEditing(false)}
+        />
+      )}
+    </Panel>
   );
 }

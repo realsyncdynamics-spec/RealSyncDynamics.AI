@@ -107,8 +107,8 @@ export function LifecycleGrid() {
           <Link to="/audit?source=landing-v2-produkt" className="lv2-btn lv2-btn--gold">
             Free Audit starten
           </Link>
-          <Link to="/demo-tour" className="lv2-btn lv2-btn--glass">
-            Demo ansehen
+          <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass">
+            Runtime ansehen
           </Link>
         </div>
       </div>

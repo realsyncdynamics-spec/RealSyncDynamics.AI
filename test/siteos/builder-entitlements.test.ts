@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import {
   ENTITLEMENT_KEYS,
   planById,
+  planEntitlementValue,
   planGrants,
 } from '../../shared/pricing';
 import {
@@ -16,6 +17,7 @@ import {
   SITEOS_PUBLISH_KEY,
   SITEOS_SITES_LIMIT_KEY,
   builderUpgradeHref,
+  builderUpgradeTarget,
   canOpenAppBuilder,
   canPublishSite,
   canUseFrontendDesigner,
@@ -132,6 +134,38 @@ describe('builderEntitlements — siteos.* keys', () => {
     expect(href).toContain('/checkout/starter');
     expect(href).not.toContain('yearly');
     expect(href).not.toContain('interval=year');
+  });
+
+  it('upgrade target follows the actual lock reason', () => {
+    expect(builderUpgradeTarget('free', 'no_entitlement').id).toBe('starter');
+    expect(builderUpgradeTarget('starter', 'sites_exhausted').id).toBe('growth');
+    expect(builderUpgradeTarget('growth', 'sites_exhausted').id).toBe('agency');
+    expect(builderUpgradeTarget('free', 'sites_exhausted').id).toBe('starter');
+    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/contact-sales');
+    expect(builderUpgradeTarget('free', 'publish_locked').id).toBe('starter');
+
+    // Besitzt der aktuelle Plan das fehlende Recht laut SSoT bereits,
+    // ist kein höherer Upsell nötig.
+    expect(builderUpgradeTarget('growth', 'publish_locked').id).toBe('growth');
+    expect(builderUpgradeTarget('growth', 'no_entitlement').id).toBe('growth');
+  });
+
+  it('every sites_exhausted target really raises limit.sites', () => {
+    for (const plan of ['free', 'starter', 'growth'] as const) {
+      const current = planEntitlementValue(plan, 'limit.sites') ?? 0;
+      const target = builderUpgradeTarget(plan, 'sites_exhausted');
+      const next = planEntitlementValue(target.planKey, 'limit.sites') ?? 0;
+      expect(next === -1 || next > current).toBe(true);
+      expect(planGrants(target.planKey, 'siteos.builder')).toBe(true);
+    }
+  });
+
+  it('upgrade panel forwards its reason into the plan resolver', () => {
+    const panel = readFileSync(
+      resolve(ROOT, 'src/features/siteos/BuilderUpgradePanel.tsx'),
+      'utf8',
+    );
+    expect(panel).toContain('builderUpgradeHref(snapshot.planId, reason)');
   });
 });
 

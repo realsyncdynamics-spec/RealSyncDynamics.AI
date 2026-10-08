@@ -1,0 +1,24 @@
+services:
+  agent-runtime:
+    build:
+      context: ../../apps/agent-runtime
+      dockerfile: Dockerfile
+    image: realsync-agent-runtime:${AGENT_RUNTIME_IMAGE_TAG:-latest}
+    container_name: realsync-agent-runtime
+    restart: unless-stopped
+    ports:
+      - "${AGENT_RUNTIME_HOST_BIND:-127.0.0.1}:${AGENT_RUNTIME_HOST_PORT:-8787}:8787"
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      AGENT_RUNTIME_API_TOKEN: ${AGENT_RUNTIME_API_TOKEN:?AGENT_RUNTIME_API_TOKEN must be set}
+      XAI_API_KEY: ${XAI_API_KEY:?XAI_API_KEY must be set}
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL must be set}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY must be set}
+      AGENT_RUNTIME_VOICE_TOOL_BASE_URL: http://127.0.0.1:8787
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

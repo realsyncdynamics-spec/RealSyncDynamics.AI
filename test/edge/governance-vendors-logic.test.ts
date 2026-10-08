@@ -56,8 +56,13 @@ describe('governance-vendors logic — guards', () => {
     expect(sanitizeStrArray(['a', 1, 'b', null])).toEqual(['a', 'b']);
     expect(sanitizeStrArray(42)).toEqual([]);
   });
-  it('isWriterRole excludes viewer', () => {
-    expect(isWriterRole('member')).toBe(true);
+  it('isWriterRole excludes viewer_auditor and unknown roles', () => {
+    expect(isWriterRole('owner')).toBe(true);
+    expect(isWriterRole('admin')).toBe(true);
+    expect(isWriterRole('dpo')).toBe(true);
+    expect(isWriterRole('editor')).toBe(true);
+    expect(isWriterRole('viewer_auditor')).toBe(false);
+    expect(isWriterRole('member')).toBe(false);
     expect(isWriterRole('viewer')).toBe(false);
     expect(isWriterRole(undefined)).toBe(false);
   });

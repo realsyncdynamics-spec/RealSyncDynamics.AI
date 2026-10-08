@@ -31,6 +31,7 @@ const PASS = 42; // ISS-Überflug alle 42 s …
 const PASS_LEN = 16; // … sichtbar 16 s
 const mouseX = 0;
 const mouseY = 0;
+const HERO_EARTH_SCALE = 0.73; // Owner request: globe exactly 27% smaller than the v4 reference.
 
 const seeded = (seed: number) => {
   let s = seed;
@@ -560,7 +561,7 @@ export function mountHeroEarth({ canvas, cssTarget, visibilityTarget }: HeroEart
     const place = () => {
       const vw = VW();
       const narrow = cam.aspect < 1.5;
-      const s = 0.83 * Math.min(4.05, vw * (narrow ? 0.195 : 0.29));
+      const s = 0.83 * HERO_EARTH_SCALE * Math.min(4.05, vw * (narrow ? 0.195 : 0.29));
       earthGroup.scale.setScalar(s);
       earthGroup.position.set(vw * 0.5 - s * (narrow ? 0.35 : 0.8), -0.55 - s * 0.12, 0);
     };

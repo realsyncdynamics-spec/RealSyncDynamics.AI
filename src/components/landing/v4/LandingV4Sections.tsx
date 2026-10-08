@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY, getCompanyDisplayName } from '../../../config/company';
+import { useLang } from '../../../i18n/useLang';
 import {
   ROADMAP_COMING_SOON_ITEMS,
   ROADMAP_LIVE_ITEMS,
@@ -196,6 +197,7 @@ export function V4Header() {
 
 export function V4Hero() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [url, setUrl] = useState('');
   const onScan = (e: FormEvent) => {
     e.preventDefault();
@@ -208,10 +210,10 @@ export function V4Hero() {
       <div className="hero reveal" style={{ animationDelay: '60ms' }}>
         <i className="mark tl" />
         <i className="mark br" />
-        <h1>
-          <span>AI Compliance</span>
+        <h1 data-testid="v4-hero-heading">
+          <span>{t('v4HeroTitleA')}</span>
           <br />
-          <span>Operations OS</span> <em>for Europe</em>
+          <span>{t('v4HeroTitleB')}</span> <em>{t('v4HeroTitleEm')}</em>
         </h1>
         <p className="loop">
           Discover
@@ -222,10 +224,10 @@ export function V4Hero() {
           <LoopArrow />
           Prove
         </p>
-        <p className="lede">
-          Runtime governance for regulated AI.
+        <p className="lede" data-testid="v4-hero-lede">
+          {t('v4HeroLede1')}
           <br />
-          Continuous evidence. Human control. EU-native by design.
+          {t('v4HeroLede2')}
         </p>
         <div className="cta-row">
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">

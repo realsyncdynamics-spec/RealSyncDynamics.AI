@@ -1,0 +1,253 @@
+name: Deploy Agent Runtime to Hostinger VPS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deploy-agent-runtime-vps.yml'
+      - 'apps/agent-runtime/**'
+      - 'deploy/agent-runtime-vps/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-runtime-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy agent-runtime
+    runs-on: ubuntu-latest
+    env:
+      VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+      VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_SSH_KNOWN_HOST: ${{ secrets.VPS_SSH_KNOWN_HOST }}
+      VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+      AGENT_RUNTIME_API_TOKEN: ${{ secrets.AGENT_RUNTIME_API_TOKEN }}
+      XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Fail closed when required secrets are missing
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for name in \
+            VPS_SSH_HOST VPS_SSH_USER VPS_SSH_KEY VPS_SSH_KNOWN_HOST \
+            AGENT_RUNTIME_API_TOKEN XAI_API_KEY SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY
+          do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::required secret ${name} is not configured"
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Preflight SSH connectivity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if ! timeout 15 bash -c "cat < /dev/null > /dev/tcp/$VPS_SSH_HOST/$VPS_SSH_PORT" 2>/dev/null; then
+            echo "::error::VPS is not reachable on configured SSH port; runtime deployment was not attempted"
+            exit 1
+          fi
+
+      - name: Prepare remote directories
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$VPS_SSH_PORT" -o ConnectTimeout=15 \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" \
+            'mkdir -p /var/www/realsyncdynamicsai-frontend/apps/agent-runtime /var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps'
+
+      - name: Sync runtime sources only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $VPS_SSH_PORT -o ConnectTimeout=15" \
+            apps/agent-runtime/ \
+            "$VPS_SSH_USER@$VPS_SSH_HOST:/var/www/realsyncdynamicsai-frontend/apps/agent-runtime/"
+
+          rsync -az --delete --exclude='.env' \
+            -e "ssh -i ~/.ssh/deploy_key -p $VPS_SSH_PORT -o ConnectTimeout=15" \
+            deploy/agent-runtime-vps/ \
+            "$VPS_SSH_USER@$VPS_SSH_HOST:/var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps/"
+
+      - name: Install host-only runtime env
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          ENV_TMP="$(mktemp)"
+          trap 'rm -f "$ENV_TMP"' EXIT
+
+          python - "$ENV_TMP" <<'PY'
+          import os
+          import sys
+
+          def compose_double_quoted(value: str) -> str:
+              escaped = (
+                  value
+                  .replace("\\", "\\\\")
+                  .replace('"', '\\"')
+                  .replace("$", "$$")
+                  .replace("\r", "\\r")
+                  .replace("\n", "\\n")
+              )
+              return f'"{escaped}"'
+
+          keys = (
+              "AGENT_RUNTIME_API_TOKEN",
+              "XAI_API_KEY",
+              "SUPABASE_URL",
+              "SUPABASE_SERVICE_ROLE_KEY",
+          )
+
+          with open(sys.argv[1], "w", encoding="utf-8", newline="\n") as env_file:
+              for key in keys:
+                  env_file.write(f"{key}={compose_double_quoted(os.environ[key])}\n")
+              env_file.write("AGENT_RUNTIME_HOST_BIND=127.0.0.1\n")
+              env_file.write("AGENT_RUNTIME_HOST_PORT=8787\n")
+              env_file.write("AGENT_RUNTIME_IMAGE_TAG=latest\n")
+          PY
+
+          scp -i ~/.ssh/deploy_key -P "$VPS_SSH_PORT" -o ConnectTimeout=15 \
+            "$ENV_TMP" \
+            "$VPS_SSH_USER@$VPS_SSH_HOST:/var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps/.env.next"
+
+          ssh -i ~/.ssh/deploy_key -p "$VPS_SSH_PORT" -o ConnectTimeout=15 \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" \
+            'chmod 600 /var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps/.env.next && mv /var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps/.env.next /var/www/realsyncdynamicsai-frontend/deploy/agent-runtime-vps/.env'
+
+      - name: Deploy and verify locally on VPS
+        id: deploy
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$VPS_SSH_PORT" -o ConnectTimeout=15 \
+            "$VPS_SSH_USER@$VPS_SSH_HOST" 'bash -se' <<'REMOTE'
+          set -Eeuo pipefail
+
+          BASE=/var/www/realsyncdynamicsai-frontend
+          COMPOSE_DIR="$BASE/deploy/agent-runtime-vps"
+          ENV_FILE="$COMPOSE_DIR/.env"
+          EXPECTED_PROJECT=agent-runtime-vps
+          CONTAINER=realsync-agent-runtime
+
+          cd "$COMPOSE_DIR"
+          test -f "$ENV_FILE"
+          test "$(stat -c '%a' "$ENV_FILE")" = "600"
+          docker compose --env-file "$ENV_FILE" config >/dev/null
+
+          if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
+            PROJECT="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$CONTAINER" 2>/dev/null || true)"
+            if [[ "$PROJECT" != "$EXPECTED_PROJECT" ]]; then
+              echo "ERROR: existing $CONTAINER is not owned by compose project $EXPECTED_PROJECT; refusing takeover"
+              exit 3
+            fi
+          fi
+
+          HAD_PREVIOUS=0
+          if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
+            CURRENT_IMAGE="$(docker inspect -f '{{.Image}}' "$CONTAINER")"
+            docker image tag "$CURRENT_IMAGE" realsync-agent-runtime:previous
+            HAD_PREVIOUS=1
+          elif docker image inspect realsync-agent-runtime:latest >/dev/null 2>&1; then
+            docker image tag realsync-agent-runtime:latest realsync-agent-runtime:previous
+            HAD_PREVIOUS=1
+          fi
+
+          rollback() {
+            echo "Runtime deployment failed; rolling back"
+            docker compose --env-file "$ENV_FILE" down || true
+            if [[ "$HAD_PREVIOUS" = "1" ]]; then
+              docker image tag realsync-agent-runtime:previous realsync-agent-runtime:latest || true
+              docker compose --env-file "$ENV_FILE" up -d --no-build || true
+            else
+              echo "No previous runtime image exists; broken deployment left stopped"
+            fi
+          }
+
+          DEPLOY_STARTED=0
+          DEPLOY_VERIFIED=0
+
+          on_failure() {
+            rc=$?
+            trap - ERR
+            set +e
+            if [[ "$DEPLOY_STARTED" = "1" && "$DEPLOY_VERIFIED" != "1" ]]; then
+              rollback
+            fi
+            exit "$rc"
+          }
+
+          trap on_failure ERR
+          DEPLOY_STARTED=1
+          docker compose --env-file "$ENV_FILE" up -d --build
+
+          STATUS=
+          for _ in {1..30}; do
+            STATUS="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-health{{end}}' "$CONTAINER" 2>/dev/null || echo missing)"
+            [[ "$STATUS" = "healthy" ]] && break
+            sleep 2
+          done
+
+          if [[ "$STATUS" != "healthy" ]]; then
+            docker compose --env-file "$ENV_FILE" logs --tail=100 agent-runtime || true
+            rollback
+            exit 4
+          fi
+
+          curl -fsS http://127.0.0.1:8787/health >/dev/null
+
+          UNAUTH="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/agents)"
+          if [[ "$UNAUTH" != "401" ]]; then
+            echo "ERROR: unauthenticated /agents returned $UNAUTH instead of 401"
+            rollback
+            exit 5
+          fi
+
+          if ! docker compose --env-file "$ENV_FILE" exec -T agent-runtime sh -c \
+            'wget -qO- --header="Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" http://127.0.0.1:8787/agents >/dev/null'
+          then
+            echo "ERROR: authenticated /agents smoke failed"
+            rollback
+            exit 6
+          fi
+
+          DEPLOY_VERIFIED=1
+          trap - ERR
+          docker compose --env-file "$ENV_FILE" ps
+          echo "agent-runtime local health/auth verification passed"
+          REMOTE
+
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Agent Runtime VPS"
+            echo
+            echo '- bind: `127.0.0.1:8787`'
+            echo "- public routing: not configured by this workflow"
+            echo "- telephony: not configured by this workflow"
+            echo '- job status: `${{ job.status }}`'
+          } >> "$GITHUB_STEP_SUMMARY"

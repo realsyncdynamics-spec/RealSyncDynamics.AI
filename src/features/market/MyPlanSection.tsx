@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, Info, Loader2, Plus, X } from 'lucide-react';
 import { formatPriceEur, type AddOnId } from '@/shared/pricing';
-import { useSubscriptionAddons } from './useSubscriptionAddons';
+import type { SubscriptionAddonsState } from './useSubscriptionAddons';
 import {
   formatDate,
   groupAddons,
@@ -23,8 +23,8 @@ import {
   type AddonListingEntry,
 } from './subscriptionAddons';
 
-export function MyPlanSection() {
-  const { listing, loading, busy, error, canManage, add, remove } = useSubscriptionAddons();
+export function MyPlanSection({ addonsState }: { addonsState: SubscriptionAddonsState }) {
+  const { listing, loading, busy, error, canManage, add, remove } = addonsState;
   const [bestaetigen, setBestaetigen] = useState<AddOnId | null>(null);
 
   if (loading && !listing) {
@@ -127,7 +127,7 @@ export function MyPlanSection() {
                   bestaetigen === a.id ? (
                     <span className="flex items-center gap-2">
                       <span className="text-xs text-titanium-400">Wirklich kündigen? Die Berechtigungen entfallen sofort, die Gutschrift erfolgt anteilig.</span>
-                      <button type="button" onClick={async () => { setBestaetigen(null); await remove(a.id); }} className="border border-amber-500/60 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/10">
+                      <button type="button" disabled={busy !== null} onClick={async () => { setBestaetigen(null); await remove(a.id); }} className="border border-amber-500/60 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/10 disabled:opacity-50">
                         Ja, kündigen
                       </button>
                       <button type="button" onClick={() => setBestaetigen(null)} className="px-2 py-1.5 text-xs text-titanium-400 hover:text-titanium-200">Abbrechen</button>
@@ -161,7 +161,7 @@ export function MyPlanSection() {
                   bestaetigen === a.id ? (
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs text-titanium-200">{previewSentence(a)}</span>
-                      <button type="button" onClick={async () => { setBestaetigen(null); await add(a.id); }} className="inline-flex items-center gap-1.5 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-1.5 text-xs font-medium text-ai-cyan-300 hover:bg-ai-cyan-500/20">
+                      <button type="button" disabled={busy !== null} onClick={async () => { setBestaetigen(null); await add(a.id); }} className="inline-flex items-center gap-1.5 border border-ai-cyan-500 bg-ai-cyan-500/10 px-3 py-1.5 text-xs font-medium text-ai-cyan-300 hover:bg-ai-cyan-500/20 disabled:opacity-50">
                         <CheckCircle2 className="h-3 w-3" aria-hidden /> Jetzt buchen
                       </button>
                       <button type="button" onClick={() => setBestaetigen(null)} className="px-2 py-1.5 text-xs text-titanium-400 hover:text-titanium-200">Abbrechen</button>

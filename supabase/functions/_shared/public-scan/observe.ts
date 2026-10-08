@@ -37,6 +37,53 @@ export const SCANNER_USER_AGENT =
 /** Nur zum Testen austauschbar — in Produktion das globale `fetch`. */
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
+/**
+ * Ein Ziel — Eingabe oder Station einer Weiterleitung — liegt außerhalb der
+ * SSRF-Schranke (`validateScanTarget`). Eigene Klasse, damit Aufrufer es von
+ * einem gewöhnlichen Netzfehler unterscheiden und dem Besucher sagen können,
+ * warum nicht geprüft wurde.
+ */
+export class TargetRefusedError extends Error {
+  readonly code = 'TARGET_REFUSED';
+  constructor(message: string) {
+    super(message);
+    this.name = 'TargetRefusedError';
+  }
+}
+
+const DEFAULT_SCAN_HEADERS: Readonly<Record<string, string>> = {
+  'user-agent': SCANNER_USER_AGENT,
+  // Ohne diesen Header liefern manche Seiten eine reine
+  // Weiterleitungsantwort statt des Dokuments.
+  accept: 'text/html,application/xhtml+xml',
+  'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+};
+
+export interface GuardedFetchOptions {
+  timeoutMs: number;
+  headers?: Readonly<Record<string, string>>;
+  fetchImpl?: FetchLike;
+}
+
+/**
+ * Abruf einer Besucher-Adresse für Scans außerhalb von `observeSite`
+ * (gdpr-audit, cookie-scan): Eingangsprüfung, jede Weiterleitung erneut
+ * geprüft (`followWithGuard`), harte Zeitgrenze bis zum Antwortkopf.
+ * `response.url` ist die tatsächlich gelesene Adresse.
+ *
+ * Wirft `TargetRefusedError`, wenn Eingabe oder eine Station abgelehnt wird.
+ */
+export async function fetchGuarded(raw: string, options: GuardedFetchOptions): Promise<Response> {
+  const check = validateScanTarget(raw);
+  if (!check.ok) throw new TargetRefusedError(`target refused: ${check.reason}`);
+  const fetchImpl = options.fetchImpl ?? ((input, init) => fetch(input, init));
+  // Die Deadline muss bis zum Body-Read gelten, nicht nur bis zu den
+  // Antwort-Headern. AbortSignal.timeout bleibt nach dem Return aktiv und
+  // beendet deshalb auch ein haengendes response.text()/reader.read().
+  const signal = AbortSignal.timeout(options.timeoutMs);
+  return await followWithGuard(check.url, fetchImpl, signal, options.headers);
+}
+
 export interface ObserveOptions {
   fetchImpl?: FetchLike;
   timeoutMs?: number;
@@ -109,6 +156,7 @@ async function followWithGuard(
   start: URL,
   fetchImpl: FetchLike,
   signal: AbortSignal,
+  headers: Readonly<Record<string, string>> = DEFAULT_SCAN_HEADERS,
 ): Promise<Response> {
   let current = start;
 
@@ -117,13 +165,7 @@ async function followWithGuard(
       method: 'GET',
       redirect: 'manual',
       signal,
-      headers: {
-        'user-agent': SCANNER_USER_AGENT,
-        // Ohne diesen Header liefern manche Seiten eine reine
-        // Weiterleitungsantwort statt des Dokuments.
-        accept: 'text/html,application/xhtml+xml',
-        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
-      },
+      headers: { ...headers },
     });
 
     const location = isRedirect(response.status) ? response.headers.get('location') : null;
@@ -151,7 +193,7 @@ async function followWithGuard(
     if (!check.ok) {
       // Bewusst ein Abbruch und kein stilles Ignorieren: Wer hierher
       // umleitet, versucht etwas, das nicht stattfinden soll.
-      throw new Error(`redirect target refused: ${check.reason}`);
+      throw new TargetRefusedError(`redirect target refused: ${check.reason}`);
     }
     current = check.url;
   }

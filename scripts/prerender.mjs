@@ -25,7 +25,28 @@ const GOTO_MS = parseInt(process.env.PRERENDER_GOTO_MS ?? process.env.PRERENDER_
 const HYDRATE_MS = parseInt(process.env.PRERENDER_HYDRATE_MS ?? '3500', 10);
 const PREVIEW_MS = parseInt(process.env.PRERENDER_PREVIEW_MS ?? '10000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '6', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 0.4 = niedrigste vergebene Sitemap-Priority: ALLE Sitemap-Routen bekommen
+// statisches HTML. Grund ist der SPA-Fallback in public/_redirects — jede
+// nicht prerenderte Route bekommt dist/index.html, und das ist die gerenderte
+// STARTSEITE samt `<link rel="canonical" href=".../">`. Bei 0.6 lieferten so
+// u. a. /ai-act-klassifikator, /avv-generator und /presse in der Produktion
+// Startseiten-Inhalt (gemessen 2026-09: identische Bytes wie /), Suchmaschinen
+// werten sie als Duplikate von `/`. Die 301-Regeln in _redirects decken nur
+// Aliasse ab, keine eigenstaendigen Inhaltsseiten.
+//
+// Watchdog: loadRoutes() sortiert nach Priority absteigend, der Worker-Pool
+// verteilt in dieser Reihenfolge — geschrieben wird aber erst, wenn eine
+// Route fertig gerendert ist. Bricht MAX_MS den Lauf ab, fehlen deshalb die
+// noch nicht verteilten Routen vom Ende der Liste PLUS bis zu CONCURRENCY
+// gerade laufende, die auch hoeher priorisiert sein koennen. Die Schwelle
+// 0.4 verlaengert den Lauf und macht einen Abbruch damit wahrscheinlicher;
+// am Cloudflare-Preview lief er mit allen 119 Routen vollstaendig durch.
+//
+// Den Fallback auf eine inhaltsleere Shell umzubiegen wurde versucht und
+// verworfen (PR #966): auf Cloudflare Pages erzeugt jedes andere Ziel als
+// /index.html entweder eine 308-Schleife oder haengt die statische
+// Auslieferung samt JS-Bundles aus.
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '360000', 10);
 
 const BLOCKED_HOST = /google-analytics|googletagmanager|googleadservices|doubleclick|facebook\.net|hotjar|intercom|sentry\.io|ingest\.sentry/i;
@@ -120,6 +141,9 @@ async function stripRuntimeOnlyState(page) {
       el.style.removeProperty('--reveal-delay');
       if (el.getAttribute('style') === '') el.removeAttribute('style');
     }
+    // Landing v4 (`/`): Einblenden setzt `v3-rv` (verborgen) erst zur Laufzeit —
+    // im statischen Stand muss alles sichtbar bleiben.
+    for (const el of document.querySelectorAll('.gv4 .v3-rv')) el.classList.remove('v3-rv', 'v3-in');
   });
 }
 

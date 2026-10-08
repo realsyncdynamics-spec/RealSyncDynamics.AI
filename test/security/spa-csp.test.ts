@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -58,6 +59,17 @@ describe('SPA CSP (Pages + meta)', () => {
     expect(directive(header, 'script-src')).not.toMatch(/unsafe-inline/);
     expect(directive(header, 'script-src')).not.toMatch(/unsafe-eval/);
     expect(directive(meta, 'script-src')).not.toMatch(/unsafe-inline/);
+  });
+
+  // Ohne 'unsafe-inline' wird jedes ausführbare Inline-Script still blockiert —
+  // es läuft nicht und erzeugt nur einen CSP-Fehler in der Konsole.
+  it('index.html has no executable inline scripts', () => {
+    const html = readFileSync(join(ROOT, 'index.html'), 'utf-8');
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const inline = [...document.querySelectorAll('script:not([src])')]
+      .filter((s) => !/^application\/(ld\+)?json$/i.test(s.getAttribute('type') ?? ''))
+      .filter((s) => (s.textContent ?? '').trim() !== '');
+    expect(inline.map((s) => s.outerHTML.slice(0, 80))).toEqual([]);
   });
 
   it('keeps consent-gated tracker hosts so pixels.ts can load after opt-in', () => {

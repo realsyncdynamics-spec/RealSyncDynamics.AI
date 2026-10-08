@@ -107,8 +107,8 @@ export function LifecycleGrid() {
           <Link to="/audit?source=landing-v2-produkt" className="lv2-btn lv2-btn--gold">
             Free Audit starten
           </Link>
-          <Link to="/demo-tour" className="lv2-btn lv2-btn--glass">
-            Demo ansehen
+          <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass">
+            Runtime ansehen
           </Link>
         </div>
       </div>
@@ -200,13 +200,12 @@ export function EuNativeGrid() {
           </div>
           <p className="lv2__lead lv2-split__aside">
             Die öffentliche SPA wird über Cloudflare Pages ausgeliefert. Daten, Identität und
-            serverseitige Functions laufen über Supabase; lokale KI- und Ops-Dienste haben einen
-            eigenen VPS-/Docker-Pfad. Die Oberfläche benennt diese Schichten statt sie hinter
-            generischen „Cloud“-Claims zu verstecken.
+            serverseitige Functions laufen über Supabase. Die Oberfläche benennt diese Schichten
+            statt sie hinter generischen „Cloud“-Claims zu verstecken.
           </p>
         </div>
 
-        <ul className="lv2-eu">
+        <ul className="lv2-eu" data-count={LV2_EU_NATIVE.length}>
           {LV2_EU_NATIVE.map((card) => {
             const Icon = EU_ICONS[card.icon];
             return (
@@ -225,7 +224,7 @@ export function EuNativeGrid() {
 
 
 /* ── 06b Infrastruktur-Spiegel ───────────────────────────────────────── */
-const INFRA_ICONS = [Server, Database, Workflow, Layers, Cpu, CreditCard] as const;
+const INFRA_ICONS = [Server, Database, Workflow, Layers, CreditCard] as const;
 
 export function InfrastructureMirror() {
   return (

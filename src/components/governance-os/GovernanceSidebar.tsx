@@ -6,7 +6,7 @@ import {
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
   Share2, Sparkles, Scale, Shield, BadgeCheck, FileSearch, GitBranch,
-  ListChecks, MessageSquare, Store, Terminal,
+  ListChecks, MessageSquare, Store, Terminal, Mic,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES } from './governanceModules';
@@ -26,8 +26,8 @@ import '../../styles/governance-os-app.css';
 /**
  * Seitenleiste der App — Handoff v2 §5.
  *
- * Oben die sieben Hauptbereiche des Entwurfs (Übersicht, KI-Systeme,
- * Klassifizierung, Enforcement, Evidence, Berichte, Abrechnung) mit
+ * Oben die Hauptbereiche des Entwurfs (Übersicht, KI-Systeme,
+ * Klassifizierung, Enforcement, Evidence, Voice, Berichte, Abrechnung) mit
  * Lucide-Icons. Darunter „Weitere Module" aus `TAB_MODULES` — dieselbe
  * Registry wie die mobile Tab-Leiste, mit Status-Filter.
  *
@@ -50,7 +50,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, ShieldCheck, MessagesSquare, Zap, Server, Layers,
   CalendarClock, Archive, Library, Share2, Sparkles, Scale, BadgeCheck,
-  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal,
+  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal, Mic,
 };
 
 const NAV_ICONS: Record<ShellNavId, LucideIcon> = {
@@ -59,6 +59,7 @@ const NAV_ICONS: Record<ShellNavId, LucideIcon> = {
   classify: Scale,
   enforce: Shield,
   evidence: FileCheck2,
+  voice: Mic,
   reports: BarChart3,
   billing: CreditCard,
 };

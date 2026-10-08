@@ -81,6 +81,25 @@ Deno.serve(async (req) => {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'project does not exist');
     }
 
+    // Vier Aktionen dieses Altpfads waren nur Platzhalter, meldeten aber
+    // `success: true` samt erfundenen URLs/SSL-/DNS-Daten. Solange kein
+    // echter, hashgebundener SiteOS-Transport verdrahtet ist, müssen diese
+    // Aktionen fail-closed sein — ein nicht ausgeführter Deploy darf nie als
+    // Erfolg erscheinen.
+    const simulatedActions = new Set([
+      'upload-assets',
+      'deploy-to-pages',
+      'setup-domain',
+      'validate-ssl',
+    ]);
+    if (simulatedActions.has(body.action)) {
+      return jsonError(
+        501,
+        'NOT_IMPLEMENTED',
+        `${body.action} is not wired to a real Cloudflare operation; use the governed SiteOS publish path instead`,
+      );
+    }
+
     let result;
     switch (body.action) {
       case 'create-pages-project':

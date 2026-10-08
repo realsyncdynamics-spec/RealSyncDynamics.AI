@@ -8,11 +8,22 @@ import {
   checkoutHrefForPlan,
   formatPriceEur,
   pricingTaxNote,
-  yearlySavingsEur,
+  PLANS,
 } from '@/shared/pricing';
 
 const PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
 const SOURCE = 'landing-v2-pricing';
+
+/** Jahres-Checkout ist in Stripe nicht verdrahtet — Toggle bleibt aus. */
+function yearlyAvailable(plan: (typeof PLANS)[number]): boolean {
+  return (
+    plan.yearlyPlanKey !== null &&
+    plan.yearlyCheckoutUnavailable !== true &&
+    plan.price.yearlyEur !== null
+  );
+}
+
+const YEARLY_BILLING_ENABLED = PLANS.some(yearlyAvailable);
 
 function bullets(tier: PricingTier): string[] {
   // Karten zeigen die ersten vier Punkte der SSoT-Matrix; Vollmatrix auf /pricing.
@@ -20,9 +31,9 @@ function bullets(tier: PricingTier): string[] {
 }
 
 /**
- * 07 Preise — vier Karten aus `shared/pricing.ts`. Monat/Jahr-Toggle zeigt den
- * Listenpreis der Jahresvariante; buchbar ist Jahr nicht
- * (`yearlyCheckoutUnavailable`), die Karte sagt das ausdrücklich.
+ * 07 Preise — vier Karten aus `shared/pricing.ts`. Der Jahres-Toggle bleibt
+ * ausgeblendet, solange `yearlyCheckoutUnavailable` für alle Pläne gilt
+ * (sonst endet Checkout mit PRICE_NOT_CONFIGURED).
  */
 export function PricingV2() {
   const [cycle, setCycle] = useState<'month' | 'year'>('month');
@@ -39,34 +50,50 @@ export function PricingV2() {
               Transparent, monatlich kündbar, in Euro.
             </h2>
           </div>
-          <div className="lv2-toggle" role="group" aria-label="Abrechnungszeitraum">
-            <button type="button" aria-pressed={cycle === 'month'} onClick={() => setCycle('month')}>
-              Monatlich
-            </button>
-            <button type="button" aria-pressed={cycle === 'year'} onClick={() => setCycle('year')}>
-              Jährlich · 2 Monate gratis
-            </button>
-          </div>
+          {YEARLY_BILLING_ENABLED ? (
+            <div className="lv2-toggle" role="group" aria-label="Abrechnungszeitraum">
+              <button type="button" aria-pressed={cycle === 'month'} onClick={() => setCycle('month')}>
+                Monatlich
+              </button>
+              <button type="button" aria-pressed={cycle === 'year'} onClick={() => setCycle('year')}>
+                Jährlich · 2 Monate gratis
+              </button>
+            </div>
+          ) : (
+            <p
+              className="lv2__kicker"
+              data-testid="pricing-yearly-disabled"
+              title="Jahrespreise sind in Stripe noch nicht verdrahtet"
+            >
+              Monatlich · Jährlich demnächst
+            </p>
+          )}
         </div>
 
         <ul className="lv2-plans">
           {tiers.map((tier) => {
             const plan = tier.plan;
-            const yearly = plan.price.yearlyEur;
-            const showYearly = cycle === 'year' && !tier.priceOnRequest && yearly !== null;
-            const yearlyBookable = showYearly && plan.yearlyCheckoutUnavailable !== true;
-            // Jahresbetrag nur, wenn er auch buchbar ist (check:offer-prices:
-            // kein öffentlicher Betrag ohne einlösbaren Kaufpfad).
+            // Jahrespreis und Jahres-Checkout nur gemeinsam — nie Jahresbetrag
+            // anzeigen und in den Monats-Checkout führen.
+            const yearly =
+              cycle === 'year' && !tier.priceOnRequest && yearlyAvailable(plan);
             const price = tier.priceOnRequest
               ? 'Auf Anfrage'
-              : formatPriceEur(yearlyBookable && yearly !== null ? yearly : plan.price.monthlyEur);
-            const suffix = tier.priceOnRequest ? tier.priceSuffix : yearlyBookable ? '/ Jahr' : '/ Monat';
+              : formatPriceEur(
+                  yearly && plan.price.yearlyEur !== null
+                    ? plan.price.yearlyEur
+                    : plan.price.monthlyEur,
+                );
+            const suffix = tier.priceOnRequest
+              ? tier.priceSuffix
+              : yearly
+                ? '/ Jahr'
+                : '/ Monat';
             const href = checkoutHrefForPlan(plan, {
-              interval: yearlyBookable ? 'year' : 'month',
+              interval: yearly ? 'year' : 'month',
               source: SOURCE,
             });
             const featured = plan.highlight;
-            const savings = yearlySavingsEur(plan);
 
             return (
               <li key={tier.id} className="lv2-plan" data-featured={featured ? 'true' : undefined}>
@@ -78,13 +105,7 @@ export function PricingV2() {
                   <span>{price}</span> <small>{suffix}</small>
                 </p>
                 <p className="lv2-plan__note">
-                  {tier.priceOnRequest
-                    ? 'SLA & dedizierter Tenant'
-                    : showYearly
-                      ? yearlyBookable
-                        ? `Ersparnis ${formatPriceEur(savings)} pro Jahr`
-                        : 'Jährlich · in Vorbereitung — Start monatlich'
-                      : 'monatlich kündbar'}
+                  {tier.priceOnRequest ? 'SLA & dedizierter Tenant' : 'monatlich kündbar'}
                 </p>
                 <p className="lv2-plan__desc">{plan.outcomeHeadline}</p>
                 <ul className="lv2-plan__features">

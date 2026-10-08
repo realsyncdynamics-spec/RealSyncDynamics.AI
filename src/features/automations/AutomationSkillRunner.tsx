@@ -36,7 +36,7 @@ const SEVERITY_CLS: Record<string, string> = {
  * `{ ok, run_id, n8n_execution_id }` und fuehrt den Skill asynchron ueber n8n
  * aus, nicht synchron gegen `gdpr-audit`. Solange der Skill `dsgvo-audit`
  * zudem ohne `n8n_workflow_id` geseedet ist, bricht der Trigger bereits mit
- * 409 NOT_BOUND ab. Der Button fuehrt also einen echten Serveraufruf aus, kann
+ * 409 skill_not_linked ab. Der Button fuehrt also einen echten Serveraufruf aus, kann
  * aber im aktuellen Stand kein Ergebnis anzeigen.
  *
  * Bewertung und Belege: scripts/dashboard-actions.json, "automation.run"

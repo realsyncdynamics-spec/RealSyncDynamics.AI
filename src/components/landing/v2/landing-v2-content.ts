@@ -190,9 +190,9 @@ export const LV2_INFRASTRUCTURE: readonly Lv2InfrastructureItem[] = [
     title: 'Activation → Command Center',
     status: 'LIVE SURFACE',
     path: '/welcome → /app/activation → /app/dashboard',
-    to: '/demo-tour/dashboard',
-    cta: 'Demo-Dashboard',
-    text: 'Login, Governance Activation und Command Center sind ein zusammenhängender Produktpfad; die öffentliche Demo spiegelt ihn ohne Login.',
+    to: '/welcome?next=/app/dashboard',
+    cta: 'Command Center öffnen',
+    text: 'Login, Governance Activation und Command Center sind ein zusammenhängender Produktpfad — ohne Demo-Zahlen auf der Startseite.',
   },
 ];
 

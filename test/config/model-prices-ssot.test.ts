@@ -88,6 +88,27 @@ describe('priceFor', () => {
   });
 });
 
+describe('priceFor: datierte Snapshot-IDs', () => {
+  it('bepreist einen Snapshot wie seine Basis-ID', () => {
+    // claude-haiku-4-5-20251001 steht in serverFromEnv.ts und ai-act-classify —
+    // ohne Kanonisierung bekäme dieser Aufrufpfad keinen Preis (Codex-Befund
+    // auf #1503).
+    expect(priceFor('anthropic', 'claude-haiku-4-5-20251001')).toBe(priceFor('anthropic', 'claude-haiku-4-5'));
+    expect(priceFor('Anthropic', ' CLAUDE-OPUS-5-20260101 ')?.modelId).toBe('claude-opus-5');
+  });
+
+  it('kanonisiert nur, wenn die Basis-ID wirklich geführt ist', () => {
+    expect(priceFor('anthropic', 'claude-opus-4-1-20250805')).toBeNull();
+    expect(priceFor('anthropic', 'claude-sonnet-4-20250514')).toBeNull();
+  });
+
+  it('trennt genau ein achtstelliges Datum ab, sonst nichts', () => {
+    expect(priceFor('anthropic', 'claude-haiku-4-5-2025')).toBeNull();
+    expect(priceFor('anthropic', 'claude-haiku-4-5-20251001-20251001')).toBeNull();
+    expect(priceFor('anthropic', 'claude-haiku-4-5x20251001')).toBeNull();
+  });
+});
+
 describe('Cache-Preise', () => {
   it('leitet aus dem Input-Preis ab, wo der Anbieter nichts ausweist', () => {
     const sonnet = priceFor('anthropic', 'claude-sonnet-4-6')!;

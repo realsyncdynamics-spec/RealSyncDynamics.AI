@@ -1,8 +1,7 @@
 /**
  * Design landing routing contract.
  *
- * The Governance-AI surface is the approved live root; older visual concepts
- * remain available only as reversible design references.
+ * Landing v4 is the only public front; older visual concepts redirect to `/`.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,18 +10,15 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Landing v2 on / and keeps older design references reversible', () => {
+  it('serves Landing v4 on / and redirects older design references to /', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<LandingV2/);
+    expect(app).toMatch(/path="\/"\s+element=\{<LandingV4/);
     expect(app).toContain('path="/design/landing-v2"');
-    expect(app).toContain('path="/design/governance-ai"');
-    expect(app).toContain('path="/design/titan"');
-    expect(app).toContain('path="/design/ledger"');
-    expect(app).toContain('path="/design/tribunal"');
-    expect(app).toContain('DesignGovernanceAiLanding');
-    expect(app).toContain('MainLanding');
-    expect(app).toContain('DesignLedgerLanding');
-    expect(app).toContain('DesignTribunalLanding');
+    for (const path of ['/design/governance-ai', '/design/titan', '/design/ledger', '/design/tribunal', '/landing', '/realsync-landing']) {
+      expect(app).toMatch(new RegExp(`path="${path}" element=\\{<Navigate to="/" replace />\\}`));
+    }
+    expect(app).not.toContain('<MainLanding');
+    expect(app).not.toContain('<DesignGovernanceAiLanding');
   });
 
   it('uses existing audit funnel and allowed CTAs only', () => {
@@ -42,12 +38,18 @@ describe('design landing previews', () => {
     }
   });
 
-  it('registers both design surfaces as preview in implementation-status', () => {
+  it('registers both design surfaces as preview but hides redirect routes from the roadmap', () => {
     const reg = readFileSync(resolve(root, 'src/product/implementation-status.ts'), 'utf8');
     expect(reg).toContain("id: 'design-landing-ledger'");
     expect(reg).toContain("id: 'design-landing-tribunal'");
-    expect(reg).toContain("route: '/design/ledger'");
-    expect(reg).toContain("route: '/design/tribunal'");
+    expect(reg).toMatch(
+      /id: 'design-landing-ledger'[\s\S]*?showOnRoadmap: false[\s\S]*?id: 'design-landing-tribunal'[\s\S]*?showOnRoadmap: false/,
+    );
+    expect(reg).not.toContain("route: '/design/ledger'");
+    expect(reg).not.toContain("route: '/design/tribunal'");
+    expect(reg).toContain('src/App.tsx#/design/ledger→/');
+    expect(reg).toContain('src/App.tsx#/design/tribunal→/');
     expect(reg).toMatch(/id: 'public-landing'[\s\S]*?status: 'live'/);
+    expect(reg).toMatch(/id: 'public-landing'[\s\S]*?LandingV4/);
   });
 });

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
-  listWebsitesForTenant, listScanRuns, triggerTenantAudit, addWebsiteForTenant,
+  listWebsitesForTenant, listScanRuns, triggerTenantAudit, addWebsiteForTenant, WEBSITE_WRITER_ROLES,
   type TenantWebsite,
 } from '../scans/scansApi';
 import type { ScanRun } from '../../../types/governance/scan-run';
@@ -207,7 +207,11 @@ function AddDomainModal({
 
 function _WebsiteGovernanceView() {
   const { activeTenantId, tenants, loading: tenantLoading } = useTenant();
-  const company = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const activeTenant = tenants.find((t) => t.tenantId === activeTenantId);
+  const company = activeTenant?.name ?? null;
+  // Spiegelt RLS (20261005150000): Domains anlegen nur owner/admin/dpo/editor.
+  const role = activeTenant?.role as string | undefined;
+  const canAdd = role !== undefined && WEBSITE_WRITER_ROLES.has(role);
 
   const [rows, setRows] = useState<WebsiteRow[]>([]);
   const [search, setSearch] = useState('');
@@ -246,7 +250,7 @@ function _WebsiteGovernanceView() {
       }
 
       let nextSites = sites;
-      if (sites.length === 0 && hint) {
+      if (sites.length === 0 && hint && canAdd) {
         try {
           const created = await addWebsiteForTenant(activeTenantId, hint);
           nextSites = [created];
@@ -266,7 +270,7 @@ function _WebsiteGovernanceView() {
     });
 
     return () => { cancelled = true; };
-  }, [activeTenantId, tenantLoading]);
+  }, [activeTenantId, tenantLoading, canAdd]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -338,7 +342,9 @@ function _WebsiteGovernanceView() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAddOpen(true)}
-            disabled={signedOut}
+            disabled={signedOut || !canAdd}
+            title={!signedOut && !canAdd ? 'Ihre Rolle darf keine Websites anlegen.' : undefined}
+            data-testid="website-add"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-titanium-800 text-titanium-400 hover:border-[#00B8D4]/60 hover:text-[#00B8D4] transition-colors disabled:opacity-40"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -417,9 +423,15 @@ function _WebsiteGovernanceView() {
             {domainHint && (
               <p className="mt-2 font-mono text-xs text-[#00B8D4]">Vorschlag aus dem Konto: {domainHint}</p>
             )}
+            {!canAdd && (
+              <p className="mt-3 text-xs text-titanium-500" data-testid="website-add-readonly">
+                Ihre Rolle darf keine Websites anlegen.
+              </p>
+            )}
             <button
               onClick={() => setAddOpen(true)}
-              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
+              disabled={!canAdd}
+              className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4] disabled:opacity-40"
             >
               <Plus className="h-3.5 w-3.5" />
               {domainHint ? `${domainHint} übernehmen` : 'Erste Domain hinzufügen'}

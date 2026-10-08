@@ -95,11 +95,11 @@ export function V4StatusBar() {
       <div className="statusbar-in">
         <i />
         <span>
-          <b>RUNTIME OPERATIONAL</b> · EU-CENTRAL
+          <b>GOVERNANCE RUNTIME</b> · EU-NATIVE
         </span>
-        <span>HOSTING IN EUROPA</span>
+        <span>CONTINUOUS EVIDENCE</span>
         <div className="right">
-          <span>DSGVO · EU AI ACT · ISO 27001</span>
+          <span>DSGVO · EU AI ACT · POLICY CONTROLS</span>
         </div>
       </div>
     </div>
@@ -116,6 +116,7 @@ const NAV_ANCHORS = [
 export function V4Header() {
   const [stuck, setStuck] = useState(false);
   const [active, setActive] = useState(-1);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const secs = NAV_ANCHORS.map(([id]) => document.getElementById(id));
@@ -133,22 +134,57 @@ export function V4Header() {
   }, []);
 
   return (
-    <header className={stuck ? 'v3-stuck' : undefined}>
+    <header
+      className={stuck ? 'v3-stuck' : undefined}
+      onKeyDown={(event) => {
+        if (menuOpen && event.key === 'Escape') {
+          setMenuOpen(false);
+          event.currentTarget.querySelector<HTMLButtonElement>('.nav-toggle')?.focus();
+        }
+      }}
+    >
       <div className="head-in">
         <a className="brand" href="#top">
           RealSync Dynamics.AI
         </a>
-        <nav>
+        <button
+          className="nav-toggle"
+          type="button"
+          aria-label={menuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
+          aria-expanded={menuOpen}
+          aria-controls="gv4-main-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+        </button>
+        <nav id="gv4-main-nav" className={menuOpen ? 'nav-open' : undefined}>
           {NAV_ANCHORS.map(([id, label], i) => (
-            <a key={id} className={'navlink' + (active === i ? ' v3-on' : '')} href={`#${id}`}>
+            <a
+              key={id}
+              className={'navlink' + (active === i ? ' v3-on' : '')}
+              href={`#${id}`}
+              onClick={() => setMenuOpen(false)}
+            >
               {label}
             </a>
           ))}
-          <Link className="navlink" to={V4_ROUTES.login}>
+          <Link className="navlink" to={V4_ROUTES.login} onClick={() => setMenuOpen(false)}>
             Login
           </Link>
-          <Link className="cta-pill" to={V4_ROUTES.audit} data-hero-cta="">
-            Free Audit starten
+          <Link
+            className="cta-pill"
+            to={V4_ROUTES.audit}
+            data-hero-cta=""
+            aria-label="Audit starten"
+            onClick={() => setMenuOpen(false)}
+          >
+            <span className="cta-label-full" aria-hidden="true">
+              Free Audit starten
+            </span>
+            <span className="cta-label-mobile" aria-hidden="true">
+              Audit starten
+            </span>
           </Link>
         </nav>
       </div>
@@ -187,16 +223,16 @@ export function V4Hero() {
           Prove
         </p>
         <p className="lede">
-          Runtime governance for regulated AI systems.
+          Runtime governance for regulated AI.
           <br />
-          Continuous evidence. EU-native by design.
+          Continuous evidence. Human control. EU-native by design.
         </p>
         <div className="cta-row">
-          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan">
-            Free Audit starten <Arrow />
+          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
+            Free Governance Audit <Arrow />
           </Link>
-          <Link className="btn-ghost" to={V4_ROUTES.dashboardDemo}>
-            Live Dashboard ansehen
+          <Link className="btn-ghost" to={V4_ROUTES.runtime}>
+            Runtime ansehen
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>
@@ -211,7 +247,7 @@ export function V4Hero() {
             Audit starten <Arrow size={14} />
           </button>
         </form>
-        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p>
+        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Befunde nachvollziehbar dokumentiert</p>
         <div className="proof">
           {HERO_PROOF.map((p) => (
             <span key={p} className="chip">

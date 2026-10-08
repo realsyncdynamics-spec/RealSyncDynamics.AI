@@ -43,8 +43,25 @@ it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
   expect(view.container.querySelector('.loop')?.textContent).toBe('DiscoverClassifyEnforceProve');
   expect(view.container.querySelector('#scan')).toHaveAttribute('href', '/audit');
-  expect(view.container.querySelector('.hero .btn-ghost')).toHaveAttribute('href', '/demo-tour/dashboard');
+  expect(view.container.querySelector('#scan')).toHaveAttribute('data-hero-cta', '');
+  expect(view.container.querySelector('#scan')).toHaveTextContent('Free Governance Audit');
+  expect(view.container.querySelector('.hero .lede')).toHaveTextContent(
+    'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
+  );
+  expect(view.container.querySelector('header .cta-label-mobile')).toHaveTextContent('Audit starten');
+  const secondary = view.container.querySelector('.hero .btn-ghost');
+  expect(secondary).toHaveAttribute('href', '/governance-runtime');
+  expect(secondary?.textContent).toMatch(/Runtime ansehen/);
+  expect(secondary?.textContent).not.toMatch(/Live|Demo/i);
   expect(view.container.querySelector('header .cta-pill')).toHaveAttribute('href', '/audit');
+  // LIVE_CAPS: Klassifizierung claims public classifier only (no inventory persist).
+  const classify = Array.from(view.container.querySelectorAll('#platform .card')).find((c) =>
+    c.querySelector('h3')?.textContent?.includes('EU-AI-Act-Klassifizierung'),
+  );
+  expect(classify).toBeTruthy();
+  expect(classify).toHaveAttribute('href', '/ai-act-klassifikator');
+  expect(classify?.textContent).not.toMatch(/als Inventar führen/i);
+  expect(classify?.textContent).toMatch(/Klassifikator|Risikoklasse/i);
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

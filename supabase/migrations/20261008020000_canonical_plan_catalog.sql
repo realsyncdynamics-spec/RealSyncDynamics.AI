@@ -5,7 +5,7 @@
 -- Ersetzt die Katalog-Daten aus 20260924140000_canonical_plan_catalog.sql.
 -- Nur Marketing-Copy in features.automation_ops (Preview für Automationsläufe
 -- und n8n-Anbindung; Registry: automation-n8n = preview). Keine Limit-/
--- Entitlement-/Preis-Änderung.
+-- Entitlement-/Preis-Änderung. Modul-Beschreibungen liegen nicht im Katalog.
 --
 -- Der Block unten wird von `scripts/generate-plan-catalog-sql.ts` erzeugt und
 -- von `test/config/pricing-ssot.test.ts` gegen shared/pricing.ts geprüft.

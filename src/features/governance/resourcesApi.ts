@@ -30,6 +30,27 @@ export interface CreateAssetInput {
   risk_score?: number;
   ai_act_class?: AiActClass;
   metadata?: Record<string, unknown>;
+  // KI-Register (Auftrag §14)
+  intended_purpose?: string | null;
+  ai_system_type?: string | null;
+  model_name?: string | null;
+  deployment_model?: string | null;
+  data_residency?: string | null;
+}
+
+/** Nur diese Felder ändert `update_asset` — nie Mandant, Typ, Klasse oder Score. */
+export interface UpdateAssetInput {
+  asset_id: string;
+  name?: string;
+  description?: string | null;
+  owner_email?: string | null;
+  vendor?: string | null;
+  intended_purpose?: string | null;
+  ai_system_type?: string | null;
+  model_name?: string | null;
+  deployment_model?: string | null;
+  data_residency?: string | null;
+  status?: 'draft' | 'active' | 'under_review' | 'approved';
 }
 
 export interface CreatePolicyInput {
@@ -60,14 +81,33 @@ export interface BareResult {
   error?: { code: string; message: string };
 }
 
+/**
+ * Fehler der Function lesbar machen: Bei Nicht-2xx liefert supabase-js nur
+ * „non-2xx status code“; Code und Text stehen im Antwort-Body.
+ */
+async function serverError(error: unknown): Promise<{ code: string; message: string }> {
+  const ctx = (error as { context?: unknown } | null)?.context;
+  if (ctx instanceof Response) {
+    try {
+      const body = (await ctx.clone().json()) as { error?: { code?: string; message?: string } } | null;
+      if (body?.error?.message) return { code: body.error.code ?? `HTTP_${ctx.status}`, message: body.error.message };
+    } catch {
+      /* kein JSON */
+    }
+    return { code: `HTTP_${ctx.status}`, message: `HTTP ${ctx.status}` };
+  }
+  return { code: 'NETWORK', message: (error as Error)?.message ?? 'Netzwerkfehler' };
+}
+
 async function call<T>(body: Record<string, unknown>): Promise<T> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('governance-resources', { body });
-  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } } as T;
+  if (error) return { ok: false, error: await serverError(error) } as T;
   return data as T;
 }
 
 export const createAsset  = (input: CreateAssetInput)  => call<AssetResult>({ op: 'create_asset', ...input });
+export const updateAsset  = (input: UpdateAssetInput)  => call<AssetResult>({ op: 'update_asset', ...input });
 export const archiveAsset = (asset_id: string)         => call<BareResult>({ op: 'archive_asset', asset_id });
 export const createPolicy = (input: CreatePolicyInput) => call<PolicyResult>({ op: 'create_policy', ...input });
 export const togglePolicy = (policy_id: string, enabled: boolean) =>

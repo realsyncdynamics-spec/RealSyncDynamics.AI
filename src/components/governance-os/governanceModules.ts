@@ -89,6 +89,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Hashes, Snapshots und Prüfpfade (read-only im Free Audit)',
   },
   {
+    id: 'voice',
+    label: 'Voice',
+    icon: 'Mic',
+    route: '/app/voice',
+    status: 'live',
+    gate: { kind: 'all' },
+    description: 'Governed Voice Sessions · Tool-Verdicts · Evidenz (read-only)',
+  },
+  {
     id: 'ai-systems',
     label: 'KI-Systeme',
     icon: 'Cpu',

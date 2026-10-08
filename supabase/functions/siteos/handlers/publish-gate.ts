@@ -54,6 +54,13 @@ import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
 /** Rollen, die eine Freigabe erteilen dürfen. */
 const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
 
+/**
+ * Das ausdrückliche Veröffentlichungs-GO ist enger als die fachliche
+ * Freigabe: Der DSB kann eine Veröffentlichung freigeben, aber nicht für
+ * das Unternehmen auslösen. Export-GO nur owner/admin.
+ */
+const PUBLISHER_ROLES = new Set(['owner', 'admin']);
+
 const MAX_REASON_LENGTH = 1000;
 
 /**
@@ -181,6 +188,180 @@ export async function handleApprove(req: Request): Promise<Response> {
     console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_reeval_failed', error: (e as Error)?.message ?? String(e) }));
     return jsonError(500, 'INTERNAL', 'approval recorded but re-evaluation failed');
   }
+}
+
+
+/**
+ * Liefert das exakt bewertete Release-Bündel nach ausdrücklichem GO.
+ *
+ * Dieser Endpunkt deployt NICHT. Er schließt nur die Governance-Kette bis
+ * zum unveränderlichen Artefakt:
+ *
+ * Blueprint → Artefakt → frische Gate-Bewertung → bestätigte Vorschau → GO.
+ *
+ * Der Client darf weder Blueprint noch Theme noch einen behaupteten Gate-
+ * Zustand mitsenden. Das Bündel wird serverseitig aus der gespeicherten
+ * Blueprint-Version neu gebaut.
+ */
+export async function handleExport(req: Request): Promise<Response> {
+  const pre = handleOptions(req);
+  if (pre) return pre;
+  if (req.method !== 'POST') return methodNotAllowed();
+
+  const parsed = await authorize(req);
+  if (parsed instanceof Response) return parsed;
+  const { ctx, body } = parsed;
+
+  {
+    const denied = await gateSitePublish(ctx.admin, ctx.tenantId);
+    if (denied) return denied;
+  }
+
+  if (!PUBLISHER_ROLES.has(ctx.role)) {
+    return jsonError(403, 'FORBIDDEN', `role "${ctx.role}" may not give the publish GO`);
+  }
+  if (body.confirm_go !== true || body.confirm_preview !== true) {
+    return jsonError(
+      400,
+      'BAD_REQUEST',
+      'Veröffentlichung nur mit ausdrücklichem GO und bestätigter Vorschau (confirm_go, confirm_preview).',
+    );
+  }
+
+  const blueprintId = String(body.blueprint_id ?? '').trim();
+  if (!blueprintId) return jsonError(400, 'BAD_REQUEST', 'blueprint_id required');
+  const baseUrl = typeof body.base_url === 'string' ? body.base_url : undefined;
+
+  // Frisch bewerten: Eine frühere bestandene Bewertung reicht nicht. Policies,
+  // Freigaben und Nachweislage können sich geändert haben, obwohl die Bytes
+  // des Artefakts gleich geblieben sind.
+  let evaluation: PublishGateEvaluation;
+  try {
+    const result = await runEvaluation(ctx, blueprintId, baseUrl);
+    if (result instanceof Response) return result;
+    evaluation = result;
+  } catch (e) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_publish_export_eval_failed',
+      error: (e as Error)?.message ?? String(e),
+    }));
+    return jsonError(500, 'INTERNAL', 'publish gate evaluation failed');
+  }
+
+  if (!evaluation.publishable) {
+    const reason = evaluation.blockers.length > 0
+      ? evaluation.blockers.join(' · ')
+      : evaluation.human_approval_required
+        ? 'Für diesen Stand steht eine Freigabe aus.'
+        : 'Der Publish Gate hat diesen Stand nicht bestanden.';
+    return jsonError(
+      409,
+      'NOT_PUBLISHABLE',
+      `Nicht veröffentlichbar (Bewertung ${evaluation.evaluation_id.slice(0, 8)}): ${reason}`,
+    );
+  }
+
+  const { data: row } = await ctx.admin
+    .from('siteos_blueprints')
+    .select('id, slug, version, blueprint, content_sha256')
+    .eq('id', blueprintId)
+    .eq('tenant_id', ctx.tenantId)
+    .maybeSingle<{
+      id: string;
+      slug: string;
+      version: number;
+      blueprint: SiteBlueprint;
+      content_sha256: string;
+    }>();
+
+  if (!row?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
+
+  const artifact = await buildDeploymentArtifact(row.blueprint, {
+    baseUrl,
+    presentation: 'showcase',
+  });
+
+  // G6: Ausgeliefert wird nur exakt das Artefakt, das gerade bewertet wurde.
+  if (evaluation.artifact_sha256 !== artifact.artifactSha256) {
+    return jsonError(
+      409,
+      'STALE_ARTIFACT',
+      'Das Release-Bündel hat sich seit der Bewertung geändert; bitte erneut prüfen.',
+    );
+  }
+
+  const nowIso = new Date().toISOString();
+
+  // GO muss vor dem Verlassen des Systems nachweisbar sein. Kann die
+  // Custody-Kette nicht fortgeschrieben werden, gibt es kein Bündel.
+  try {
+    await appendCustodyEvent(ctx.admin, {
+      tenantId: ctx.tenantId,
+      assetRef: `siteos:artifact:${ctx.tenantId}:${row.slug}`,
+      contentSha256: artifact.artifactSha256,
+      action: 'updated',
+      issuer: `tenant:${ctx.tenantId}`,
+      timestamp: nowIso,
+    });
+  } catch (provErr) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_publish_go_custody_failed',
+      artifact_sha256: artifact.artifactSha256,
+      error: (provErr as Error)?.message ?? String(provErr),
+    }));
+    return jsonError(500, 'INTERNAL', 'publish GO could not be linked to custody evidence');
+  }
+
+  await audit(ctx.admin, {
+    tenant_id: ctx.tenantId,
+    actor_user_id: ctx.userId,
+    actor_email: ctx.userEmail,
+    action: 'siteos.publish.go',
+    target_type: 'siteos_blueprint',
+    target_id: row.id,
+    payload: {
+      slug: row.slug,
+      version: row.version,
+      blueprint_sha256: artifact.blueprintSha256,
+      artifact_sha256: artifact.artifactSha256,
+      evaluation_id: evaluation.evaluation_id,
+      confirmed_preview: true,
+      role: ctx.role,
+      files: artifact.files.map((file) => ({
+        path: file.path,
+        sha256: file.sha256,
+        bytes: file.bytes,
+      })),
+    },
+  });
+
+  return jsonResponse({
+    ok: true,
+    manifest: {
+      format: 'realsync-siteos-export/1',
+      slug: row.slug,
+      version: row.version,
+      blueprint_sha256: artifact.blueprintSha256,
+      artifact_sha256: artifact.artifactSha256,
+      evaluation_id: evaluation.evaluation_id,
+      go_by: ctx.userId,
+      go_at: nowIso,
+      base_url: baseUrl ?? null,
+      files: artifact.files.map((file) => ({
+        path: file.path,
+        sha256: file.sha256,
+        bytes: file.bytes,
+      })),
+    },
+    files: artifact.files.map((file) => ({
+      path: file.path,
+      content: file.content,
+      sha256: file.sha256,
+      bytes: file.bytes,
+    })),
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -192,6 +192,8 @@ const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) 
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+// Voice dashboard (PR 5/6) — read-only sessions behind AppGate + shell.
+const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter').then((m) => ({ default: m.VoiceRouter })));
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
 // Standard aus). GovernanceAiRoute zeigt dann nur einen Hinweis und lädt den Workspace nicht.
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
@@ -278,9 +280,7 @@ const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const LocalAiOnboardingView = lazy(() => import('./features/local-ai/LocalAiOnboardingView').then((m) => ({ default: m.LocalAiOnboardingView })));
-const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
-const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
 const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
@@ -747,8 +747,9 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
-      {/* Bußgeld-Rechner: aliases for the correct-spelling URLs.
-          Canonical /busseld-rechner stays the SEO target. */}
+      {/* Bußgeld-Rechner: /bussgeld-rechner ist kanonisch (SEO-Sprint KW 40).
+          Die Tippfehler-URL /busseld-rechner bleibt als SPA-Route erhalten
+          und wird beim vollen Aufruf per 301 umgeleitet (public/_redirects). */}
       <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
       <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
       <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />
@@ -780,6 +781,8 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceAiRoute /></AppGate>} />
       <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
@@ -796,9 +799,12 @@ function RoutesWithTracking() {
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/websites" element={<AppGate><GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 2 Governance Views: Multi-Framework Compliance */}
-      <Route path="/app/governance/ai-register" element={<AppGate><GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell></AppGate>} />
+      {/* KI-Register und AI-Act-Prüfung leben unter /app/ai-systems (Inventar + Klassifizierung).
+          Die früheren Ansichten riefen relative /functions/v1-URLs auf (SPA-Fallback statt Supabase)
+          und speicherten nichts — sie sind entfernt, die Pfade bleiben als Weiterleitung. */}
+      <Route path="/app/governance/ai-register" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/dsgvo-directory" element={<AppGate><GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/ai-act-assessment" element={<AppGate><GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance/ai-act-assessment" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/industrial-ot" element={<AppGate><GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/memory" element={<AppGate><GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/nis2-incidents" element={<AppGate><GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell></AppGate>} />

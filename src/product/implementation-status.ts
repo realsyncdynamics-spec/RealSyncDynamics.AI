@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Live Dashboard (/demo-tour/dashboard); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
+      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
     route: '/',
     evidence: [
       'src/pages/LandingV4.tsx',
@@ -242,6 +242,23 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/claude-code-optimizer',
     evidence: ['src/config/platform-capabilities.ts#ai-gateway'],
     showOnPlatform: true,
+  },
+  {
+    id: 'automation-n8n',
+    name: 'Automations / n8n Runtime',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Skill-Katalog, automation-trigger und -callback existieren; Skills ohne Workflow-Bindung, Runtime-Host nicht erreichbar. Keine produktive Ausführung.',
+    route: '/app/automations',
+    evidence: [
+      'supabase/functions/automation-trigger/index.ts',
+      'supabase/functions/automation-callback/index.ts',
+      'src/features/automations/AutomationSkillsView.tsx',
+      'test/automations/skill-spalten.test.ts',
+      'PR #1750',
+    ],
+    showOnRoadmap: true,
   },
   {
     id: 'policy-engine',

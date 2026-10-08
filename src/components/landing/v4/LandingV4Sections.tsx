@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY, getCompanyDisplayName } from '../../../config/company';
+import { useLang } from '../../../i18n/useLang';
 import {
   ROADMAP_COMING_SOON_ITEMS,
   ROADMAP_LIVE_ITEMS,
@@ -95,11 +96,11 @@ export function V4StatusBar() {
       <div className="statusbar-in">
         <i />
         <span>
-          <b>RUNTIME OPERATIONAL</b> · EU-CENTRAL
+          <b>GOVERNANCE RUNTIME</b> · EU-NATIVE
         </span>
-        <span>HOSTING IN EUROPA</span>
+        <span>CONTINUOUS EVIDENCE</span>
         <div className="right">
-          <span>DSGVO · EU AI ACT · ISO 27001</span>
+          <span>DSGVO · EU AI ACT · POLICY CONTROLS</span>
         </div>
       </div>
     </div>
@@ -116,6 +117,7 @@ const NAV_ANCHORS = [
 export function V4Header() {
   const [stuck, setStuck] = useState(false);
   const [active, setActive] = useState(-1);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const secs = NAV_ANCHORS.map(([id]) => document.getElementById(id));
@@ -133,22 +135,57 @@ export function V4Header() {
   }, []);
 
   return (
-    <header className={stuck ? 'v3-stuck' : undefined}>
+    <header
+      className={stuck ? 'v3-stuck' : undefined}
+      onKeyDown={(event) => {
+        if (menuOpen && event.key === 'Escape') {
+          setMenuOpen(false);
+          event.currentTarget.querySelector<HTMLButtonElement>('.nav-toggle')?.focus();
+        }
+      }}
+    >
       <div className="head-in">
         <a className="brand" href="#top">
           RealSync Dynamics.AI
         </a>
-        <nav>
+        <button
+          className="nav-toggle"
+          type="button"
+          aria-label={menuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
+          aria-expanded={menuOpen}
+          aria-controls="gv4-main-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span />
+          <span />
+        </button>
+        <nav id="gv4-main-nav" className={menuOpen ? 'nav-open' : undefined}>
           {NAV_ANCHORS.map(([id, label], i) => (
-            <a key={id} className={'navlink' + (active === i ? ' v3-on' : '')} href={`#${id}`}>
+            <a
+              key={id}
+              className={'navlink' + (active === i ? ' v3-on' : '')}
+              href={`#${id}`}
+              onClick={() => setMenuOpen(false)}
+            >
               {label}
             </a>
           ))}
-          <Link className="navlink" to={V4_ROUTES.login}>
+          <Link className="navlink" to={V4_ROUTES.login} onClick={() => setMenuOpen(false)}>
             Login
           </Link>
-          <Link className="cta-pill" to={V4_ROUTES.audit} data-hero-cta="">
-            Free Audit starten
+          <Link
+            className="cta-pill"
+            to={V4_ROUTES.audit}
+            data-hero-cta=""
+            aria-label="Audit starten"
+            onClick={() => setMenuOpen(false)}
+          >
+            <span className="cta-label-full" aria-hidden="true">
+              Free Audit starten
+            </span>
+            <span className="cta-label-mobile" aria-hidden="true">
+              Audit starten
+            </span>
           </Link>
         </nav>
       </div>
@@ -160,6 +197,7 @@ export function V4Header() {
 
 export function V4Hero() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [url, setUrl] = useState('');
   const onScan = (e: FormEvent) => {
     e.preventDefault();
@@ -172,10 +210,10 @@ export function V4Hero() {
       <div className="hero reveal" style={{ animationDelay: '60ms' }}>
         <i className="mark tl" />
         <i className="mark br" />
-        <h1>
-          <span>AI Compliance</span>
+        <h1 data-testid="v4-hero-heading">
+          <span>{t('v4HeroTitleA')}</span>
           <br />
-          <span>Operations OS</span> <em>for Europe</em>
+          <span>{t('v4HeroTitleB')}</span> <em>{t('v4HeroTitleEm')}</em>
         </h1>
         <p className="loop">
           Discover
@@ -186,17 +224,17 @@ export function V4Hero() {
           <LoopArrow />
           Prove
         </p>
-        <p className="lede">
-          Runtime governance for regulated AI systems.
+        <p className="lede" data-testid="v4-hero-lede">
+          {t('v4HeroLede1')}
           <br />
-          Continuous evidence. EU-native by design.
+          {t('v4HeroLede2')}
         </p>
         <div className="cta-row">
-          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan">
-            Free Audit starten <Arrow />
+          <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
+            Free Governance Audit <Arrow />
           </Link>
-          <Link className="btn-ghost" to={V4_ROUTES.dashboardDemo}>
-            Live Dashboard ansehen
+          <Link className="btn-ghost" to={V4_ROUTES.runtime}>
+            Runtime ansehen
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>
@@ -211,7 +249,7 @@ export function V4Hero() {
             Audit starten <Arrow size={14} />
           </button>
         </form>
-        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p>
+        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Befunde nachvollziehbar dokumentiert</p>
         <div className="proof">
           {HERO_PROOF.map((p) => (
             <span key={p} className="chip">

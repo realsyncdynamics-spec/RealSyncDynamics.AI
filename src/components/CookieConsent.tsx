@@ -65,19 +65,12 @@ function readStoredConsent(): Consent | null {
  * geladen bevor Consent erteilt wurde.
  */
 export function CookieConsent() {
-  const [decided, setDecided] = useState<boolean | null>(null);
+  // Synchron aus localStorage lesen, damit der Banner auf frischer Sitzung
+  // sofort sichtbar ist (kein Frame ohne Banner vor dem useEffect).
+  const [decided, setDecided] = useState<boolean>(() => !!readStoredConsent());
   const [showCustom, setShowCustom] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
-  const [marketing, setMarketing] = useState(false);
-
-  useEffect(() => {
-    const stored = readStoredConsent();
-    setDecided(!!stored);
-    if (stored) {
-      setAnalytics(stored.analytics);
-      setMarketing(stored.marketing);
-    }
-  }, []);
+  const [analytics, setAnalytics] = useState(() => readStoredConsent()?.analytics ?? false);
+  const [marketing, setMarketing] = useState(() => readStoredConsent()?.marketing ?? false);
 
   // DSGVO Art. 7(3): Widerruf jederzeit ermöglichen — Banner auf Event wieder einblenden.
   // Die zuletzt gespeicherte Auswahl wird dabei vorbefüllt, damit der Nutzer seinen
@@ -120,7 +113,7 @@ export function CookieConsent() {
     save({ necessary: true, analytics, marketing });
   }
 
-  if (decided === null || decided === true) return null;
+  if (decided) return null;
 
   return (
     <div className="cookie-consent fixed inset-x-0 bottom-12 lg:bottom-4 lg:inset-x-auto lg:right-4 z-50 p-2 sm:p-4 lg:p-0">

@@ -9,7 +9,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
  */
 export function CheckoutCancelledPage() {
   usePageMeta({
-    title: 'Checkout abgebrochen — RealSyncDynamics.AI',
+    title: 'Checkout abgebrochen — RealSync Dynamics AI',
     description: 'Du hast den Stripe-Checkout abgebrochen. Du kannst den Plan jederzeit erneut aktivieren.',
     url: 'https://realsyncdynamicsai.de/checkout/cancelled',
   });

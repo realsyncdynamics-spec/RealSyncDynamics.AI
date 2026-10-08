@@ -6,11 +6,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
+import { resetLangForTests, setLang } from '../../src/i18n/useLang';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/v4/heroEarthScene', () => ({ mountHeroEarth: () => () => {} }));
 
 beforeEach(() => {
+  localStorage.clear();
+  resetLangForTests();
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({ matches: false, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
@@ -19,6 +22,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  resetLangForTests();
 });
 
 function Where() {
@@ -38,13 +42,43 @@ const mount = () =>
 
 it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   const view = mount();
-  // Zeilenumbruch per <br> wie in der Referenz; der zugängliche Name trennt die Zeilen.
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for Europe/ });
+  // Default-Sprache DE: H1 und Lede deutsch (Produktname bleibt EN).
+  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS für Europa/ });
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/für Europa/);
   expect(view.container.querySelector('.loop')?.textContent).toBe('DiscoverClassifyEnforceProve');
   expect(view.container.querySelector('#scan')).toHaveAttribute('href', '/audit');
-  expect(view.container.querySelector('.hero .btn-ghost')).toHaveAttribute('href', '/demo-tour/dashboard');
+  expect(view.container.querySelector('#scan')).toHaveAttribute('data-hero-cta', '');
+  expect(view.container.querySelector('#scan')).toHaveTextContent('Free Governance Audit');
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
+    'Runtime-Governance für regulierte KI.Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+  );
+  expect(view.container.querySelector('header .cta-label-mobile')).toHaveTextContent('Audit starten');
+  const secondary = view.container.querySelector('.hero .btn-ghost');
+  expect(secondary).toHaveAttribute('href', '/governance-runtime');
+  expect(secondary?.textContent).toMatch(/Runtime ansehen/);
+  expect(secondary?.textContent).not.toMatch(/Live|Demo/i);
   expect(view.container.querySelector('header .cta-pill')).toHaveAttribute('href', '/audit');
+  // LIVE_CAPS: Klassifizierung claims public classifier only (no inventory persist).
+  const classify = Array.from(view.container.querySelectorAll('#platform .card')).find((c) =>
+    c.querySelector('h3')?.textContent?.includes('EU-AI-Act-Klassifizierung'),
+  );
+  expect(classify).toBeTruthy();
+  expect(classify).toHaveAttribute('href', '/ai-act-klassifikator');
+  expect(classify?.textContent).not.toMatch(/als Inventar führen/i);
+  expect(classify?.textContent).toMatch(/Klassifikator|Risikoklasse/i);
+});
+
+it('renders English hero heading and lede when EN is active', () => {
+  setLang('en');
+  mount();
+  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for Europe/ });
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/for Europe/);
+  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/für Europa/);
+  expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
+    'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
+  );
+  expect(screen.getByTestId('v4-hero-lede')).not.toHaveTextContent(/regulierter KI/);
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

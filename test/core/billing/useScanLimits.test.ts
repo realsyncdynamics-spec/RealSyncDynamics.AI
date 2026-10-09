@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useScanLimits } from '../../../src/core/billing/useScanLimits';
 import * as useEntitlementsModule from '../../../src/core/billing/useEntitlements';
 import * as supabaseModule from '../../../src/lib/supabase';
@@ -59,7 +59,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }],
                 error: undefined,
               }),
@@ -118,7 +118,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: undefined }),
+              lt: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: undefined }),
             }),
           }),
         }),
@@ -128,11 +128,11 @@ describe('useScanLimits', () => {
 
     try {
       const { result } = renderHook(() => useScanLimits());
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Kein `if (result.current)` wie in den Fällen darüber: Gerade dass
-      // überhaupt ein Status entsteht, ist hier die Aussage.
-      expect(result.current).not.toBeNull();
+      // überhaupt ein Status entsteht, ist hier die Aussage. `waitFor` statt
+      // fester Wartezeit — sonst hinge der Fall an der Geschwindigkeit des Runners.
+      await waitFor(() => expect(result.current).not.toBeNull());
       expect(result.current?.limit).toBe(5);
       expect(result.current?.used).toBe(1);
       expect(mockSupabase.from).toHaveBeenCalledWith('scans');
@@ -163,7 +163,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }, { id: '3' }],
                 error: undefined,
               }),
@@ -208,7 +208,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [],
                 error: undefined,
               }),
@@ -251,7 +251,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: null,
                 error: new Error('Database error'),
               }),

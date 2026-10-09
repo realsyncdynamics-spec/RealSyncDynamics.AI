@@ -36,7 +36,8 @@
 //   node scripts/check-plan-name-gates.mjs --update   Grundlinie nachziehen
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const BASELINE = join(ROOT, 'scripts/plan-name-gate-baseline.json');
@@ -83,9 +84,15 @@ const GATE_PATTERN = new RegExp(
  * `audit-monitor-cron` ein echtes Gate (Browser-Scan nur für zwei Pläne)
  * unbemerkt neben der Stelle, die die Grundlinie führte. Gemeldet wird je
  * Plan-Name in der Liste — die Liste ist das Gate, jeder Name darin ein Teil.
+ *
+ * Läuft über den ganzen Dateitext, nicht zeilenweise: Eine über mehrere Zeilen
+ * umbrochene Liste ist dasselbe Gate, und ein Prüfer, der sie bei anderer
+ * Formatierung übersieht, meldet einen sauberen Stand, den es nicht gibt.
+ * Jedes Element ist `'name'` mit optionalem Komma danach — eindeutig zerlegt,
+ * damit das Muster auch über lange String-Listen nicht zurückverfolgt.
  */
 const INCLUDES_PATTERN = new RegExp(
-  String.raw`\[((?:\s*['"][\w-]+['"]\s*,?)+)\]\s*\.includes\(\s*${PLAN_VAR}\s*\)`,
+  String.raw`\[\s*((?:['"][\w-]+['"]\s*,\s*)*['"][\w-]+['"]\s*,?\s*)\]\s*\.includes\(\s*${PLAN_VAR}\s*\)`,
   'g',
 );
 const LIST_ITEM = new RegExp(PLAN_LIT, 'g');
@@ -106,34 +113,52 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * Alle Plan-Namen-Gates in einem Quelltext — ohne Dateisystem, damit der Test
+ * genau diese Funktion an selbst gebauten Eingaben prüfen kann.
+ *
+ * @param {string} source
+ * @returns {{ zeile: number, plan: string, code: string }[]}
+ */
+export function gatesIn(source) {
+  const found = [];
+  const lines = source.split('\n');
+  // Reine Kommentarzeilen zitieren die Regel oft, statt sie zu brechen. Sie
+  // werden geleert, nicht entfernt — so bleiben die Zeilennummern gültig.
+  const code = lines.map((line) => {
+    const t = line.trim();
+    return t.startsWith('//') || t.startsWith('*') ? '' : line;
+  });
+
+  code.forEach((line, i) => {
+    GATE_PATTERN.lastIndex = 0;
+    let m;
+    while ((m = GATE_PATTERN.exec(line)) !== null) {
+      found.push({ zeile: i + 1, plan: m[1], code: line.trim().slice(0, 160) });
+    }
+  });
+
+  const text = code.join('\n');
+  INCLUDES_PATTERN.lastIndex = 0;
+  let m;
+  while ((m = INCLUDES_PATTERN.exec(text)) !== null) {
+    const zeile = text.slice(0, m.index).split('\n').length;
+    LIST_ITEM.lastIndex = 0;
+    let item;
+    while ((item = LIST_ITEM.exec(m[1])) !== null) {
+      found.push({ zeile, plan: item[1], code: lines[zeile - 1].trim().slice(0, 160) });
+    }
+  }
+  return found;
+}
+
 function findGates() {
   const found = [];
   for (const dir of SCAN_DIRS) {
     for (const file of walk(join(ROOT, dir))) {
       const rel = relative(ROOT, file);
       if (EXEMPT.has(rel)) continue;
-
-      const lines = readFileSync(file, 'utf8').split('\n');
-      lines.forEach((line, i) => {
-        // Reine Kommentarzeilen zitieren die Regel oft, statt sie zu brechen.
-        const trimmed = line.trim();
-        if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
-
-        GATE_PATTERN.lastIndex = 0;
-        let m;
-        while ((m = GATE_PATTERN.exec(line)) !== null) {
-          found.push({ datei: rel, zeile: i + 1, plan: m[1], code: trimmed.slice(0, 160) });
-        }
-
-        INCLUDES_PATTERN.lastIndex = 0;
-        while ((m = INCLUDES_PATTERN.exec(line)) !== null) {
-          LIST_ITEM.lastIndex = 0;
-          let item;
-          while ((item = LIST_ITEM.exec(m[1])) !== null) {
-            found.push({ datei: rel, zeile: i + 1, plan: item[1], code: trimmed.slice(0, 160) });
-          }
-        }
-      });
+      for (const g of gatesIn(readFileSync(file, 'utf8'))) found.push({ datei: rel, ...g });
     }
   }
   return found.sort((a, b) => a.datei.localeCompare(b.datei) || a.zeile - b.zeile);
@@ -144,83 +169,91 @@ function keyOf(g) {
   return `${g.datei}::${g.plan}`;
 }
 
-const args = process.argv.slice(2);
-const asJson = args.includes('--json');
-const update = args.includes('--update');
+// Nur beim direkten Aufruf prüfen. Der Test importiert `gatesIn`, und ein
+// Import darf weder die Grundlinie schreiben noch den Prozess beenden.
+const istHauptprogramm =
+  process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (istHauptprogramm) main();
 
-const gates = findGates();
-let baseline = [];
-try {
-  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
-} catch {
-  if (!update) {
-    console.error(`Grundlinie fehlt: ${relative(ROOT, BASELINE)}. Mit --update anlegen.`);
+function main() {
+  const args = process.argv.slice(2);
+  const asJson = args.includes('--json');
+  const update = args.includes('--update');
+
+  const gates = findGates();
+  let baseline = [];
+  try {
+    baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+  } catch {
+    if (!update) {
+      console.error(`Grundlinie fehlt: ${relative(ROOT, BASELINE)}. Mit --update anlegen.`);
+      process.exit(1);
+    }
+  }
+
+  if (update) {
+    const known = new Map(baseline.map((b) => [keyOf(b), b]));
+    // Nach demselben Schluessel zusammenfassen, mit dem geprueft wird. Sonst
+    // stuenden drei Zeilen derselben Datei dreimal in der Grundlinie und eine
+    // Umsortierung im Code sähe wie eine Änderung aus.
+    const merged = new Map();
+    for (const g of gates) {
+      const key = keyOf(g);
+      if (merged.has(key)) {
+        merged.get(key).fundstellen += 1;
+        continue;
+      }
+      const prev = known.get(key);
+      merged.set(key, {
+        datei: g.datei,
+        plan: g.plan,
+        fundstellen: 1,
+        art: prev?.art ?? 'UNGEPRUEFT',
+        grund: prev?.grund ?? 'Noch nicht eingeordnet — art und grund von Hand ergaenzen.',
+        seit: prev?.seit ?? new Date().toISOString().slice(0, 10),
+      });
+    }
+    const next = [...merged.values()];
+    writeFileSync(BASELINE, `${JSON.stringify(next, null, 2)}\n`);
+    console.log(`Grundlinie geschrieben: ${next.length} Eintraege aus ${gates.length} Fundstellen.`);
+    process.exit(0);
+  }
+
+  const baselineKeys = new Set(baseline.map(keyOf));
+  const foundKeys = new Set(gates.map(keyOf));
+
+  const neu = gates.filter((g) => !baselineKeys.has(keyOf(g)));
+  const verschwunden = baseline.filter((b) => !foundKeys.has(keyOf(b)));
+
+  if (asJson) {
+    console.log(JSON.stringify({
+      summary: { gefunden: gates.length, grundlinie: baseline.length, neu: neu.length, verschwunden: verschwunden.length },
+      neu, verschwunden,
+    }, null, 2));
+    process.exit(neu.length > 0 ? 1 : 0);
+  }
+
+  console.log(`Plan-Namen-Gates: ${gates.length} gefunden, ${baseline.length} in der Grundlinie.\n`);
+
+  if (neu.length > 0) {
+    console.error('❌ NEUE Zugriffsprüfung auf einen Plan-Namen:\n');
+    for (const g of neu) {
+      console.error(`   ${g.datei}:${g.zeile}  (${g.plan})`);
+      console.error(`      ${g.code}\n`);
+    }
+    console.error('Zielarchitektur §10 verlangt hasPermission(), hasModule() oder limitOf().');
+    console.error('Ein Vergleich auf den Plan-Namen macht den Umbau auf BASE + MODULE + SCALE');
+    console.error('zu einem Refactoring der Anwendung statt zu einer Katalogaenderung.\n');
+    console.error('Ist die Fundstelle kein Gate (z. B. reines Routing), mit --update');
+    console.error('nachziehen UND in der Grundlinie art/grund ausfuellen.');
     process.exit(1);
   }
-}
 
-if (update) {
-  const known = new Map(baseline.map((b) => [keyOf(b), b]));
-  // Nach demselben Schluessel zusammenfassen, mit dem geprueft wird. Sonst
-  // stuenden drei Zeilen derselben Datei dreimal in der Grundlinie und eine
-  // Umsortierung im Code sähe wie eine Änderung aus.
-  const merged = new Map();
-  for (const g of gates) {
-    const key = keyOf(g);
-    if (merged.has(key)) {
-      merged.get(key).fundstellen += 1;
-      continue;
-    }
-    const prev = known.get(key);
-    merged.set(key, {
-      datei: g.datei,
-      plan: g.plan,
-      fundstellen: 1,
-      art: prev?.art ?? 'UNGEPRUEFT',
-      grund: prev?.grund ?? 'Noch nicht eingeordnet — art und grund von Hand ergaenzen.',
-      seit: prev?.seit ?? new Date().toISOString().slice(0, 10),
-    });
+  if (verschwunden.length > 0) {
+    console.log('✓ Aus der Grundlinie verschwunden — bitte mit --update nachziehen:\n');
+    for (const b of verschwunden) console.log(`   ${b.datei} (${b.plan})`);
+    console.log('');
   }
-  const next = [...merged.values()];
-  writeFileSync(BASELINE, `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`Grundlinie geschrieben: ${next.length} Eintraege aus ${gates.length} Fundstellen.`);
-  process.exit(0);
+
+  console.log('✅ Keine neuen Plan-Namen-Gates.');
 }
-
-const baselineKeys = new Set(baseline.map(keyOf));
-const foundKeys = new Set(gates.map(keyOf));
-
-const neu = gates.filter((g) => !baselineKeys.has(keyOf(g)));
-const verschwunden = baseline.filter((b) => !foundKeys.has(keyOf(b)));
-
-if (asJson) {
-  console.log(JSON.stringify({
-    summary: { gefunden: gates.length, grundlinie: baseline.length, neu: neu.length, verschwunden: verschwunden.length },
-    neu, verschwunden,
-  }, null, 2));
-  process.exit(neu.length > 0 ? 1 : 0);
-}
-
-console.log(`Plan-Namen-Gates: ${gates.length} gefunden, ${baseline.length} in der Grundlinie.\n`);
-
-if (neu.length > 0) {
-  console.error('❌ NEUE Zugriffsprüfung auf einen Plan-Namen:\n');
-  for (const g of neu) {
-    console.error(`   ${g.datei}:${g.zeile}  (${g.plan})`);
-    console.error(`      ${g.code}\n`);
-  }
-  console.error('Zielarchitektur §10 verlangt hasPermission(), hasModule() oder limitOf().');
-  console.error('Ein Vergleich auf den Plan-Namen macht den Umbau auf BASE + MODULE + SCALE');
-  console.error('zu einem Refactoring der Anwendung statt zu einer Katalogaenderung.\n');
-  console.error('Ist die Fundstelle kein Gate (z. B. reines Routing), mit --update');
-  console.error('nachziehen UND in der Grundlinie art/grund ausfuellen.');
-  process.exit(1);
-}
-
-if (verschwunden.length > 0) {
-  console.log('✓ Aus der Grundlinie verschwunden — bitte mit --update nachziehen:\n');
-  for (const b of verschwunden) console.log(`   ${b.datei} (${b.plan})`);
-  console.log('');
-}
-
-console.log('✅ Keine neuen Plan-Namen-Gates.');

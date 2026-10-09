@@ -66,14 +66,17 @@ export function useScanLimits(): ScanLimitStatus | null {
       // Count scans in current month
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      // Exklusive Obergrenze am Ersten des Folgemonats — derselbe Zeitpunkt wie
+      // `resetDate` unten. Vorher `.lte(letzter Tag 00:00)`: Scans vom letzten
+      // Tag des Monats fielen aus der Zaehlung.
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
       const { data, error } = await sb
         .from('scans')
         .select('id', { count: 'exact' })
         .eq('tenant_id', activeTenantId)
         .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
+        .lt('created_at', nextMonthStart.toISOString());
 
       if (error) {
         console.error('Failed to fetch scan status:', error);

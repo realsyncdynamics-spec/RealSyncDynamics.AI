@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { gatesIn } from '../../scripts/check-plan-name-gates.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 const BASELINE = resolve(ROOT, 'scripts/plan-name-gate-baseline.json');
@@ -63,6 +64,30 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
   it('führt keine Fundstelle doppelt', () => {
     const keys = baseline.map((b) => `${b.datei}::${b.plan}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('gatesIn — was der Prüfer als Gate erkennt', () => {
+  // Am Muster selbst geprüft, nicht am Bestand: Im Repo steht gerade keine
+  // mehrzeilige Liste, also bliebe eine Rückkehr zur zeilenweisen Prüfung in
+  // jedem Lauf gegen den Bestand unsichtbar.
+  const plaene = (src: string) => gatesIn(src).map((g) => `${g.zeile}:${g.plan}`);
+
+  it('erkennt eine Namensliste mit .includes(tier) in einer Zeile', () => {
+    expect(plaene("const s = ['agency','enterprise'].includes(d.tier);")).toEqual(['1:agency', '1:enterprise']);
+  });
+
+  it('erkennt dieselbe Liste über mehrere Zeilen umbrochen', () => {
+    const src = "const ok =\n  [\n    'agency',\n    'enterprise',\n  ].includes(d.tier);";
+    expect(plaene(src)).toEqual(['2:agency', '2:enterprise']);
+  });
+
+  it('übergeht Kommentarzeilen, die die Regel nur zitieren', () => {
+    expect(plaene("// ['agency'].includes(tier)\n * if (plan === 'free')")).toEqual([]);
+  });
+
+  it('meldet keine Liste, die gegen etwas anderes als einen Plan prüft', () => {
+    expect(plaene("['agency'].includes(source)")).toEqual([]);
   });
 });
 

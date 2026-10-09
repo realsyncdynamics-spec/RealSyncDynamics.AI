@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_URL = getSupabaseUrl();
 
 export function EnterpriseFeedbackWidget() {
   const [open, setOpen] = useState(false);

@@ -141,11 +141,26 @@ it('reads every entry-path status from implementation-status, never from landing
   });
 });
 
-it('labels every surface with example values as demo data', () => {
+it('labels demo panels as demo data and keeps the control room free of fake KPIs', () => {
   mount();
-  for (const id of ['system-story-visual', 'pipeline-panel', 'control-room']) {
+  // Guided demo surfaces remain explicitly labeled.
+  for (const id of ['system-story-visual', 'pipeline-panel'] as const) {
     expect(within(screen.getByTestId(id)).getByText(DEMO_LABEL)).toBeInTheDocument();
   }
+
+  // Control Room shows capabilities only — no demo label, no fake numbers.
+  const room = screen.getByTestId('control-room');
+  expect(within(room).queryByText(DEMO_LABEL)).toBeNull();
+  expect(within(room).getByText('LIVE NACH LOGIN')).toBeInTheDocument();
+  expect(within(room).getByText('Policy Decision Point')).toBeInTheDocument();
+  expect(within(room).getByText(/allow · warn · block · require_approval · log_only/)).toBeInTheDocument();
+  expect(within(room).getByText('Freigaben')).toBeInTheDocument();
+  expect(within(room).getByText('Blockierungen')).toBeInTheDocument();
+  expect(within(room).getByText('Evidence')).toBeInTheDocument();
+  const roomText = room.textContent ?? '';
+  expect(roomText).not.toMatch(/\b12\b/);
+  expect(roomText).not.toMatch(/\b184\b/);
+  expect(roomText).not.toMatch(/\b1[.\u00a0]?248\b/);
 });
 
 it('pipeline pauses at approval until an approver releases it', () => {

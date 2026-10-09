@@ -821,6 +821,11 @@
   .lv2-eu {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  /* Vier Karten in einer Reihe statt 3 + 1 (seit der VPS-Pfad entfallen ist). */
+  .lv2-eu[data-count='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .lv2-eu li {
@@ -1205,4 +1210,223 @@
 
 .lv2 .lv2-embed .os-inner {
   max-width: var(--lv2-wrap);
+}
+
+
+/* ── Enterprise Control Plane skin · 2026-10-03 ───────────────────────
+ * Frontend-only. Cyan = operative Aktion, Gold = Enterprise/VIP. */
+.lv2 {
+  --lv2-bg: #080b0f;
+  --lv2-bg2: #0d1218;
+  --lv2-fg: #f2f5f7;
+  --lv2-fg2: #a8b3bd;
+  --lv2-fg3: #707e8b;
+  --lv2-line: rgba(38, 50, 61, 0.82);
+  --lv2-chip: rgba(18, 25, 34, 0.72);
+  --lv2-chip-border: rgba(93, 118, 137, 0.42);
+  --lv2-accent: #22d3ee;
+  --lv2-accent-ink: #041015;
+  --lv2-btn: linear-gradient(180deg, #67e8f9 0%, #22d3ee 58%, #08a9c7 100%);
+  --lv2-gold-text: linear-gradient(180deg, #dffbff 0%, #67e8f9 48%, #22d3ee 100%);
+  --lv2-silver-text: linear-gradient(180deg, #ffffff 0%, #f2f5f7 52%, #a8b3bd 100%);
+  --lv2-glow: rgba(34, 211, 238, 0.28);
+  --lv2-vip: #d6ad68;
+  --lv2-vip-lite: #f7dcae;
+  --lv2-vip-deep: #9a6b2f;
+  --lv2-header-bg: rgba(8, 11, 15, 0.78);
+  --lv2-serif: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(70vw 48vw at 82% 3%, rgba(34, 211, 238, 0.08), transparent 64%),
+    radial-gradient(48vw 34vw at 10% 34%, rgba(214, 173, 104, 0.035), transparent 72%),
+    var(--lv2-bg);
+}
+.lv2[data-lv2-theme='light'] {
+  --lv2-bg: #f4f7f9;
+  --lv2-bg2: #eaf0f4;
+  --lv2-fg: #091017;
+  --lv2-fg2: #42505c;
+  --lv2-fg3: #667681;
+  --lv2-line: rgba(38, 50, 61, 0.18);
+  --lv2-chip: rgba(255, 255, 255, 0.72);
+  --lv2-chip-border: rgba(38, 50, 61, 0.24);
+  --lv2-accent: #087f99;
+  --lv2-btn: linear-gradient(180deg, #22d3ee, #0ea5c6);
+  --lv2-gold-text: linear-gradient(180deg, #0f4350, #087f99);
+  --lv2-silver-text: linear-gradient(180deg, #091017, #26323d 70%, #586977);
+  --lv2-header-bg: rgba(244, 247, 249, 0.86);
+}
+.lv2__h2,
+.lv2__h3,
+.lv2-hero__h1 {
+  font-family: var(--lv2-sans);
+  font-weight: 640;
+  letter-spacing: -0.035em;
+}
+.lv2-hero__h1 {
+  line-height: 0.96;
+  max-width: 13ch;
+}
+.lv2-hero {
+  perspective: 1600px;
+}
+.lv2-hero__map {
+  transform: translateZ(-40px) scale(1.035);
+  filter: saturate(0.72) contrast(1.08);
+}
+.lv2-hero__map::after {
+  background:
+    radial-gradient(56% 58% at 70% 45%, rgba(34, 211, 238, 0.14), transparent 68%),
+    linear-gradient(90deg, rgba(8, 11, 15, 0.48), transparent 54%);
+}
+.lv2-hero__truthline {
+  max-width: 78ch;
+  margin: 0.7em 0 0;
+  color: var(--lv2-fg2);
+  font-size: var(--lv2-small);
+}
+.lv2-btn {
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 28px -22px rgba(0, 0, 0, 0.9);
+}
+.lv2-btn--gold {
+  background: var(--lv2-btn);
+  color: var(--lv2-accent-ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 12px 34px -16px var(--lv2-glow),
+    0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.lv2-btn--enterprise {
+  border-color: rgba(214, 173, 104, 0.62);
+  color: var(--lv2-vip-lite);
+  background: linear-gradient(180deg, rgba(214, 173, 104, 0.12), rgba(154, 107, 47, 0.06));
+  box-shadow:
+    inset 0 1px 0 rgba(247, 220, 174, 0.12),
+    0 16px 34px -24px rgba(214, 173, 104, 0.5);
+}
+.lv2-btn--enterprise:hover {
+  border-color: var(--lv2-vip-lite);
+  box-shadow:
+    inset 0 1px 0 rgba(247, 220, 174, 0.18),
+    0 18px 42px -22px rgba(214, 173, 104, 0.58);
+}
+.lv2-eu li,
+.lv2-lifecycle li,
+.lv2-chain li,
+.lv2-plan,
+.lv2-infra__card {
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 1px 0 rgba(255, 255, 255, 0.015),
+    0 18px 42px -28px rgba(0, 0, 0, 0.95),
+    0 44px 90px -64px rgba(0, 0, 0, 0.88);
+  transition:
+    transform 220ms var(--lv2-ease),
+    border-color 220ms var(--lv2-ease),
+    box-shadow 220ms var(--lv2-ease),
+    background-color 220ms var(--lv2-ease);
+}
+.lv2-eu li::before,
+.lv2-lifecycle li::before,
+.lv2-chain li::before,
+.lv2-plan::before,
+.lv2-infra__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.035), transparent 34%, rgba(34,211,238,.025) 76%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lv2-eu li:hover,
+  .lv2-lifecycle li:hover,
+  .lv2-chain li:hover,
+  .lv2-plan:hover,
+  .lv2-infra__card:hover {
+    transform: translateY(-5px) translateZ(10px);
+    border-color: rgba(34, 211, 238, 0.32);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.055),
+      0 24px 56px -30px rgba(0,0,0,.98),
+      0 36px 90px -58px rgba(34,211,238,.2);
+  }
+}
+.lv2-infrastructure {
+  background:
+    linear-gradient(180deg, rgba(18, 25, 34, 0.32), rgba(8, 11, 15, 0.04)),
+    var(--lv2-bg);
+}
+.lv2-infra {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 1.25vw, 28px);
+  margin: clamp(42px, 4vw, 96px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lv2-infra__card {
+  min-height: 320px;
+  padding: var(--lv2-card-p);
+  border: 1px solid var(--lv2-line);
+  border-radius: var(--lv2-r-md);
+  background: linear-gradient(180deg, rgba(18, 25, 34, 0.92), rgba(13, 18, 24, 0.92));
+}
+.lv2-infra__card > svg {
+  color: var(--lv2-accent);
+  margin: 1.2em 0 1.1em;
+}
+.lv2-infra__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lv2-infra__top .lv2__kicker {
+  margin: 0;
+  color: var(--lv2-fg3);
+}
+.lv2-infra__status {
+  flex: none;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 999px;
+  padding: 0.35em 0.62em;
+  font-family: var(--lv2-mono);
+  font-size: calc(var(--lv2-small) * 0.78);
+  letter-spacing: 0.08em;
+  color: var(--lv2-accent);
+  background: rgba(34, 211, 238, 0.055);
+}
+.lv2-infra__card code {
+  display: block;
+  margin-top: 0.75em;
+  font-family: var(--lv2-mono);
+  font-size: var(--lv2-small);
+  color: var(--lv2-vip-lite);
+  overflow-wrap: anywhere;
+}
+.lv2-infra__card p {
+  margin: 1em 0 1.4em;
+  color: var(--lv2-fg2);
+  font-size: var(--lv2-small);
+}
+@media (max-width: 1099px) {
+  .lv2-infra {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 679px) {
+  .lv2-infra {
+    grid-template-columns: 1fr;
+  }
+  .lv2-infra__card {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv2-hero__map {
+    transform: none;
+  }
 }

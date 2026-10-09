@@ -46,7 +46,6 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          VITE_GOOGLE_GENAI_API_KEY: ${{ secrets.VITE_GOOGLE_GENAI_API_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           VITE_AUTH_GOOGLE_ENABLED: ${{ secrets.VITE_AUTH_GOOGLE_ENABLED || 'true' }}
           VITE_AUTH_AZURE_ENABLED: ${{ secrets.VITE_AUTH_AZURE_ENABLED || 'true' }}
@@ -97,7 +96,6 @@ jobs:
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
-            VITE_GOOGLE_GENAI_API_KEY=${{ secrets.VITE_GOOGLE_GENAI_API_KEY }}
             VITE_STRIPE_PUBLISHABLE_KEY=${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
             VITE_AUTH_GOOGLE_ENABLED=${{ secrets.VITE_AUTH_GOOGLE_ENABLED || 'true' }}
             VITE_AUTH_AZURE_ENABLED=${{ secrets.VITE_AUTH_AZURE_ENABLED || 'true' }}
@@ -146,7 +144,6 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          VITE_GOOGLE_GENAI_API_KEY: ${{ secrets.VITE_GOOGLE_GENAI_API_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           DOMAIN: ${{ secrets.DOMAIN || 'realsyncdynamicsai.de' }}
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}

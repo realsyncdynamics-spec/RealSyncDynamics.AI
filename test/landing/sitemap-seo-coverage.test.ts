@@ -52,7 +52,6 @@ const sitemapPaths = [
  * Diese Liste abzuarbeiten ist redaktionelle Arbeit, ein Pfad nach dem anderen.
  */
 const OHNE_EIGENE_META = [
-  '/about',
   '/ai-act-klassifikator',
   '/ai-act-workflows',
   '/api',
@@ -72,7 +71,6 @@ const OHNE_EIGENE_META = [
   '/release-notes',
   '/status',
   '/tom-generator',
-  '/ueber-uns',
   '/vvt-wizard',
 ];
 

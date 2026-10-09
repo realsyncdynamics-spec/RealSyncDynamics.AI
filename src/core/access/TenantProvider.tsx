@@ -114,6 +114,15 @@ export function useTenant(): TenantState {
   return v;
 }
 
+/**
+ * Wie `useTenant`, wirft aber außerhalb von `<TenantProvider>` nicht,
+ * sondern liefert `null` — für Komponenten, die auch isoliert (Tests,
+ * öffentliche Seiten) gerendert werden.
+ */
+export function useOptionalTenant(): TenantState | null {
+  return useContext(Ctx);
+}
+
 export function useEntitlements(): EntitlementSet | null {
   return useTenant().entitlements;
 }

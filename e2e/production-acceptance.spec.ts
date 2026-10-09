@@ -11,8 +11,8 @@ import { test, expect, type Page, type Response } from '@playwright/test';
  *   1. `gdpr-audit` antwortet auf JEDEN Aufruf mit HTTP 500
  *      (`ReferenceError`, sechs Hilfsfunktionen fehlen) — der kostenlose
  *      Audit, der wichtigste CTA der Startseite, ist tot.
- *   2. `track-pageview` antwortet auf JEDEM Seitenaufruf mit HTTP 500,
- *      weil `PAGEVIEW_HASH_SALT` in der Produktionsumgebung fehlt.
+ *   2. `track-pageview` ohne `PAGEVIEW_HASH_SALT` antwortet mit 204 (skip),
+ *      nicht mit HTTP 500 — und der Client sendet erst nach Analytics-Consent.
  *   3. Die CSP erlaubt `static.cloudflareinsights.com` nicht, wodurch auch
  *      der zweite Analytics-Weg stumm bleibt.
  *
@@ -256,9 +256,8 @@ test('kein Seitenaufruf erzeugt einen 5xx im Hintergrund', async ({ page }) => {
 
   // Regression 2026-08-30: `track-pageview` lief auf jedem Seitenaufruf in
   // einen 500er, weil `PAGEVIEW_HASH_SALT` in Produktion nie gesetzt wurde.
-  // Die Function faellt korrekt "fail closed" — der Fehler ist die fehlende
-  // Konfiguration, nicht der Code. Folge: seit 2026-08-03 keine einzige
-  // Zeile in `page_views`.
+  // Seit dem Consent-/Config-Fix: Client sendet erst nach Analytics-Consent,
+  // und die Function antwortet ohne Salt mit 204 statt 500.
   const serverfehler = failures.filter((f) => f.status >= 500);
   expect(
     serverfehler,

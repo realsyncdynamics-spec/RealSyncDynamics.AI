@@ -11,6 +11,7 @@ import {
   TrendingDown, TrendingUp, Minus, Clock, ChevronRight, Rocket, CheckCircle,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useTenantDataVersion } from '../tenantDataEvents';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';
@@ -25,6 +26,7 @@ import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 export function CeoCockpitView() {
   const navigate = useNavigate();
   const { activeTenantId, tenants } = useTenant();
+  const dataVersion = useTenantDataVersion(activeTenantId);
   const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   // Deutsche Oberfläche: „Workspace von …“ statt englischem Genitiv.
   const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, 'de');
@@ -61,7 +63,7 @@ export function CeoCockpitView() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [activeTenantId, reloadKey]);
+  }, [activeTenantId, reloadKey, dataVersion]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">

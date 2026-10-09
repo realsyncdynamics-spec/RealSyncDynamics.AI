@@ -120,7 +120,7 @@ export function ToolsHub() {
       title: 'DSGVO-Bußgeld-Simulator',
       subtitle: 'Bußgeldrahmen-Simulation nach Art. 83 DSGVO',
       desc: 'Educational Tool — Bandbreiten-Simulation auf Basis Verstoßtyp, Umsatz, Schwere. Keine Vorhersage, keine Rechtsberatung.',
-      href: '/busseld-rechner',
+      href: '/bussgeld-rechner',
       badge: 'Art. 83 DSGVO',
       badgeColor: '#3b1515',
       textColor: '#fca5a5',

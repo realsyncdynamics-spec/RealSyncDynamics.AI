@@ -84,6 +84,10 @@ describe('gatesIn — was der Prüfer als Gate erkennt', () => {
     expect(plaene(src)).toEqual(['2:agency', '2:enterprise']);
   });
 
+  it('erkennt Plan-Namen auch in einer gemischten Liste', () => {
+    expect(plaene("if (['free', ...weitere].includes(plan)) return;")).toEqual(['1:free']);
+  });
+
   it('übergeht Kommentarzeilen, die die Regel nur zitieren', () => {
     expect(plaene("// ['agency'].includes(tier)\n * if (plan === 'free')")).toEqual([]);
   });

@@ -88,11 +88,13 @@ const GATE_PATTERN = new RegExp(
  * Läuft über den ganzen Dateitext, nicht zeilenweise: Eine über mehrere Zeilen
  * umbrochene Liste ist dasselbe Gate, und ein Prüfer, der sie bei anderer
  * Formatierung übersieht, meldet einen sauberen Stand, den es nicht gibt.
- * Jedes Element ist `'name'` mit optionalem Komma danach — eindeutig zerlegt,
- * damit das Muster auch über lange String-Listen nicht zurückverfolgt.
+ * Die Liste darf gemischt sein (`['free', ...rest]`): Gemeldet wird jeder
+ * Plan-Name darin, gleich was sonst in der Liste steht. Ihr Inhalt ist alles
+ * ohne eckige Klammer — eine Zeichenklasse ohne Verschachtelung, damit das
+ * Muster auch über lange Listen nicht zurückverfolgt.
  */
 const INCLUDES_PATTERN = new RegExp(
-  String.raw`\[\s*((?:['"][\w-]+['"]\s*,\s*)*['"][\w-]+['"]\s*,?\s*)\]\s*\.includes\(\s*${PLAN_VAR}\s*\)`,
+  String.raw`\[([^\[\]]*)\]\s*\.includes\(\s*${PLAN_VAR}\s*\)`,
   'g',
 );
 const LIST_ITEM = new RegExp(PLAN_LIT, 'g');

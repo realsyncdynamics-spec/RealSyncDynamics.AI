@@ -15,9 +15,7 @@
 export type StripeMode = 'test' | 'live';
 
 export const STRIPE_MODE: StripeMode =
-  ((import.meta.env.VITE_STRIPE_MODE as string | undefined) ?? '').trim().toLowerCase() === 'live'
-    ? 'live'
-    : 'test';
+  (import.meta.env.VITE_STRIPE_MODE as string | undefined) === 'live' ? 'live' : 'test';
 
 export const IS_STRIPE_TEST_MODE = STRIPE_MODE === 'test';
 

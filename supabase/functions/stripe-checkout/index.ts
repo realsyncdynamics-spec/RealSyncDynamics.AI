@@ -277,16 +277,19 @@ Deno.serve(async (req) => {
     // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).
     if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
       stripeCustomerId = existingSub!.stripe_customer_id!;
-      // Ein im Live-Modus angelegter Customer existiert im Testmodus nicht
-      // (und umgekehrt). Statt mit "No such customer" abzubrechen, legen wir
-      // im Testmodus einen frischen Test-Customer an.
+      // Ein im Live-Modus angelegter Customer existiert im Testmodus nicht.
+      // Ein Testkauf würde dann die (eine) subscriptions-Zeile des Tenants mit
+      // einem Test-Abo überschreiben, während das Live-Abo weiterläuft — daher
+      // abweisen. Testkäufe laufen über einen eigenen Test-Tenant.
       if (stripeMode === 'test') {
         try {
           const existing = await stripe.customers.retrieve(stripeCustomerId);
           if ((existing as { deleted?: boolean }).deleted) stripeCustomerId = null;
         } catch (e) {
           if ((e as { code?: string }).code !== 'resource_missing') throw e;
-          stripeCustomerId = null;
+          return jsonError(409, 'STRIPE_MODE_CUSTOMER_MISMATCH',
+            'Beta-Testmodus: Dieser Account hat ein bestehendes Live-Kundenkonto. ' +
+            'Testkäufe bitte mit einem neuen Test-Account durchführen.');
         }
       }
     }

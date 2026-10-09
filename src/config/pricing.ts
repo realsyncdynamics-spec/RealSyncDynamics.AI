@@ -318,15 +318,15 @@ const FEATURE_UNLOCK_NOTE = 'Die Freischaltung einzelner Paket-Funktionen im Das
 /** Kurzaussage zur Zahlung, z. B. für Schritt-Listen und Checkout-Zeilen. */
 export const BETA_PAYMENT_NOTE = IS_STRIPE_TEST_MODE
   ? 'Zahlungen laufen derzeit im Stripe-Testmodus – es wird nichts belastet.'
-  : 'Zahlungen werden über Stripe sofort belastet.';
+  : 'Zahlungen laufen über Stripe – es gelten die Zahlungs- und Testphasen-Konditionen des gewählten Pakets.';
 export const BETA_CHECKOUT_NOTICE = `${BETA_PAYMENT_NOTE} ${FEATURE_UNLOCK_NOTE}`;
 export const BETA_CHECKOUT_NOTICE_EN = IS_STRIPE_TEST_MODE
   ? 'Payments currently run in Stripe test mode – nothing is charged. Activation of individual plan features in the dashboard is still being verified.'
-  : 'Payments are charged immediately via Stripe. Activation of individual plan features in the dashboard is still being verified.';
+  : 'Payments are processed via Stripe under the payment and trial terms of the selected plan. Activation of individual plan features in the dashboard is still being verified.';
 /** Kurzform für die App-Shell (eingeloggte Nutzer). */
 export const BETA_APP_NOTICE =
   'Die Freischaltung der Funktionen je Paket wird noch getestet – einzelne Module können abweichend freigeschaltet sein. ' +
-  (IS_STRIPE_TEST_MODE ? 'Zahlungen laufen im Stripe-Testmodus.' : 'Zahlungen werden regulär belastet.');
+  (IS_STRIPE_TEST_MODE ? 'Zahlungen laufen im Stripe-Testmodus.' : 'Zahlungen laufen regulär über Stripe.');
 
 /**
  * Der öffentliche Preis eines Tiers — die EINZIGE Stelle, an der aus

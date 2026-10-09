@@ -34,8 +34,7 @@ export const STRIPE_TEST_PRICE_PREFIX = 'STRIPE_TEST_PRICE_';
 
 /** Liest STRIPE_MODE. Nur der exakte Wert 'live' schaltet Live frei. */
 export function getStripeMode(): StripeMode {
-  const raw = (Deno.env.get('STRIPE_MODE') ?? '').trim().toLowerCase();
-  return raw === 'live' ? 'live' : 'test';
+  return Deno.env.get('STRIPE_MODE') === 'live' ? 'live' : 'test';
 }
 
 /** Modus eines Secret Keys anhand des Präfixes. */

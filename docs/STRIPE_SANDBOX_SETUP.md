@@ -120,9 +120,11 @@ GitHub-Repo-Secrets / Build-Env:
   (`https://buy.stripe.com/test_…`). Ein Live-Link wird im Testmodus durch
   `/checkout/growth` ersetzt.
 
-`VITE_STRIPE_MODE` muss noch im Build-Env-Block von
-`.github/workflows/deploy-cloudflare-pages.yml` ergänzt werden (wird bisher
-nicht durchgereicht; ohne ihn gilt der sichere Default `test`).
+`VITE_STRIPE_MODE` wird im Build-Env-Block von
+`.github/workflows/deploy-cloudflare-pages.yml` aus dem gleichnamigen Repo-Secret
+durchgereicht (fehlt es, gilt der sichere Default `test`). Für Live-Betrieb
+**beide** Werte gemeinsam auf `live` setzen: Supabase-Secret `STRIPE_MODE` und
+Repo-Secret `VITE_STRIPE_MODE`.
 Price-IDs liegen im Frontend nicht vor: Die `VITE_STRIPE_PRICE_*`-Variablen
 werden im Code nicht gelesen.
 
@@ -138,9 +140,11 @@ Ablaufdatum: beliebig in der Zukunft, CVC: beliebig 3-stellig, PLZ: beliebig.
 
 ## 5. Verifikation: schaltet der Kauf im Dashboard frei?
 
-**Für jeden Plan einen frischen Test-Tenant nehmen.** Ein Tenant mit
-vorhandenem Live-Abo bekommt sonst keine Testphase, und seine Abo-Zeile wird
-durch das Test-Abo überschrieben (`subscriptions` ist pro Tenant eindeutig).
+**Für jeden Plan einen frischen Test-Tenant nehmen.** `subscriptions` ist pro
+Tenant eindeutig. Hat ein Tenant ein Live-Kundenkonto, lehnt `stripe-checkout`
+im Testmodus den Kauf mit `409 STRIPE_MODE_CUSTOMER_MISMATCH` ab, damit seine
+Live-Abo-Zeile nicht überschrieben wird. Bestandskunden erreichen ihr Live-Abo
+im Testmodus weiter über `stripe-portal` (Rückfall auf den Live-Key nur dort).
 
 Ablauf je Plan (`starter`, `growth`, `agency`, `governance_launch`):
 

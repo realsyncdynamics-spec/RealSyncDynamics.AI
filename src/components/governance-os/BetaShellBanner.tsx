@@ -11,13 +11,11 @@ export function BetaShellBanner() {
     <div
       role="note"
       data-testid="app-beta-banner"
-      className="flex shrink-0 items-center gap-2 border-b border-amber-500/20 bg-amber-500/5 px-4 py-1 text-[11px] leading-snug text-amber-200/90"
+      className="flex shrink-0 items-start gap-2 border-b border-amber-500/20 bg-amber-500/5 px-4 py-1 text-[11px] leading-snug text-amber-200/90"
     >
-      <FlaskConical className="h-3 w-3 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+      <FlaskConical className="mt-px h-3 w-3 shrink-0" strokeWidth={1.75} aria-hidden="true" />
       <span className="shrink-0 font-mono uppercase tracking-wider">Beta</span>
-      <span className="min-w-0 truncate" title={BETA_APP_NOTICE}>
-        {BETA_APP_NOTICE}
-      </span>
+      <span className="min-w-0">{BETA_APP_NOTICE}</span>
     </div>
   );
 }

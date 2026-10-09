@@ -13,6 +13,7 @@
  * CheckoutPage, GovernanceTierGate, CostCalculator, index.html JSON-LD.
  */
 
+import { IS_STRIPE_TEST_MODE } from './stripeMode';
 import {
   PLANS,
   ORDERED_PLANS,
@@ -302,18 +303,30 @@ export const ON_REQUEST_LABEL = 'Auf Anfrage';
 
 /**
  * Beta-Hinweis für alle Kaufpfade (Landing v4, /pricing, /pricing/:slug,
- * Checkout). Solange Stripe im Testmodus läuft und die Freischaltung der
- * Paket-Funktionen im Dashboard nicht je Plan verifiziert ist, muss das vor
- * jedem Kauf-CTA sichtbar sein. Eine Quelle — nicht pro Seite umformulieren.
+ * Checkout). Solange die Freischaltung der Paket-Funktionen im Dashboard nicht
+ * je Plan verifiziert ist, muss das vor jedem Kauf-CTA sichtbar sein. Eine
+ * Quelle — nicht pro Seite umformulieren.
+ *
+ * „Es wird nichts belastet" steht NUR im Testmodus da (`VITE_STRIPE_MODE`,
+ * Default test; serverseitig erzwingt `STRIPE_MODE` dasselbe fail-closed, siehe
+ * supabase/functions/_shared/stripe-mode.ts). Live-Umschaltung: beide Werte
+ * gemeinsam setzen — dann kippen alle Texte auf den Belastungshinweis.
  */
 export const BETA_LABEL = 'Beta-Testversion';
-export const BETA_CHECKOUT_NOTICE =
-  'Zahlungen laufen derzeit im Stripe-Testmodus – es wird nichts belastet. ' +
-  'Die Freischaltung einzelner Paket-Funktionen im Dashboard wird noch verifiziert.';
+export const BETA_LABEL_EN = 'Beta test version';
+const FEATURE_UNLOCK_NOTE = 'Die Freischaltung einzelner Paket-Funktionen im Dashboard wird noch verifiziert.';
+/** Kurzaussage zur Zahlung, z. B. für Schritt-Listen und Checkout-Zeilen. */
+export const BETA_PAYMENT_NOTE = IS_STRIPE_TEST_MODE
+  ? 'Zahlungen laufen derzeit im Stripe-Testmodus – es wird nichts belastet.'
+  : 'Zahlungen werden über Stripe sofort belastet.';
+export const BETA_CHECKOUT_NOTICE = `${BETA_PAYMENT_NOTE} ${FEATURE_UNLOCK_NOTE}`;
+export const BETA_CHECKOUT_NOTICE_EN = IS_STRIPE_TEST_MODE
+  ? 'Payments currently run in Stripe test mode – nothing is charged. Activation of individual plan features in the dashboard is still being verified.'
+  : 'Payments are charged immediately via Stripe. Activation of individual plan features in the dashboard is still being verified.';
 /** Kurzform für die App-Shell (eingeloggte Nutzer). */
 export const BETA_APP_NOTICE =
   'Die Freischaltung der Funktionen je Paket wird noch getestet – einzelne Module können abweichend freigeschaltet sein. ' +
-  'Zahlungen laufen im Stripe-Testmodus.';
+  (IS_STRIPE_TEST_MODE ? 'Zahlungen laufen im Stripe-Testmodus.' : 'Zahlungen werden regulär belastet.');
 
 /**
  * Der öffentliche Preis eines Tiers — die EINZIGE Stelle, an der aus

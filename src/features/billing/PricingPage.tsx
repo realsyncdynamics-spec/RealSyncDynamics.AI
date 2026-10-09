@@ -113,7 +113,7 @@ export function PricingPage() {
               </p>
             )}
             {/* Beta-Testversion: Stripe-Testmodus, Paket-Freischaltung noch nicht verifiziert. */}
-            <BetaNotice className="mb-6" />
+            <BetaNotice className="mb-6" lang={lang} />
             <div className="rs-pricing__grid">
               <FreeAuditCard />
               {SELLABLE_PRICING_TIERS.map((tier) => (

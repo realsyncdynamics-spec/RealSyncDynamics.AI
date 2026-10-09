@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { tierByPlanKey } from '../../config/pricing';
+import { IS_STRIPE_TEST_MODE } from '../../config/stripeMode';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 import { createCheckoutSession } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
@@ -510,7 +511,7 @@ function ConsentGateShell({
             </p>
           ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
-              Beta-Testmodus · keine echte Abbuchung
+              {IS_STRIPE_TEST_MODE ? 'Beta-Testmodus · keine echte Abbuchung' : 'Erste Abbuchung sofort nach Bestellung'}
             </p>
           )}
           <p className="text-center text-xs text-silver-500 -mt-3 mb-6">

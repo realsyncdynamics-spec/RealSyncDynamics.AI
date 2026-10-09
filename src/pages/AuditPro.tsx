@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, ArrowRight, CheckCircle2, FileText, Award, Clock } from 'lucide-react';
-import { paymentLinkForMode } from '@/config/stripeMode';
+import { paymentLinkForMode } from '../config/stripeMode';
 
 // Beta-Testmodus: ein Live-Payment-Link wird verworfen (src/config/stripeMode.ts).
 const STRIPE_PAYMENT_LINK = paymentLinkForMode(

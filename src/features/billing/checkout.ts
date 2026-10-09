@@ -1,5 +1,6 @@
 import { getSupabase } from '../../lib/supabase';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { IS_STRIPE_TEST_MODE } from '../../config/stripeMode';
 
 export type { PlanKey };
 
@@ -8,6 +9,26 @@ export interface CheckoutResult {
   url?: string;
   session_id?: string;
   error?: { code: string; message: string };
+  /** Vom Server gemeldeter Stripe-Modus (supabase/functions/_shared/stripe-mode.ts). */
+  stripe_mode?: 'test' | 'live';
+}
+
+/**
+ * Die Seite verspricht im Testmodus „es wird nichts belastet". Meldet der
+ * Server trotzdem eine Live-Session (STRIPE_MODE=live, VITE_STRIPE_MODE nicht),
+ * wird nicht zu Stripe weitergeleitet.
+ */
+function guardStripeMode(result: CheckoutResult): CheckoutResult {
+  if (IS_STRIPE_TEST_MODE && result?.stripe_mode === 'live') {
+    return {
+      ok: false,
+      error: {
+        code: 'STRIPE_MODE_MISMATCH',
+        message: 'Zahlungsmodus uneinheitlich konfiguriert – Checkout abgebrochen, es wurde nichts belastet.',
+      },
+    };
+  }
+  return result;
 }
 
 async function readCheckoutError(error: unknown): Promise<CheckoutResult> {
@@ -44,7 +65,7 @@ export async function createCheckoutSession(
     body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
   });
   if (error) return readCheckoutError(error);
-  return data as CheckoutResult;
+  return guardStripeMode(data as CheckoutResult);
 }
 
 /**
@@ -71,5 +92,5 @@ export async function createSiteOsCheckoutSession(args: {
     },
   });
   if (error) return readCheckoutError(error);
-  return data as CheckoutResult;
+  return guardStripeMode(data as CheckoutResult);
 }

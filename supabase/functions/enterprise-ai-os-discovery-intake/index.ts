@@ -14,14 +14,23 @@
 // Each agent run is persisted into enterprise_agent_runs and audit events
 // fan out into enterprise_ai_audit_events. The registry row's risk_level
 // is updated from the risk-classification result.
+//
+// Auth: echte Nutzersitzung + schreibende Rolle im genannten Mandanten
+// (requireAuthAndTenant, der kanonische Resolver). Vorher ohne jede Prüfung:
+// tenantId und actor kamen aus dem Body und flossen in einen Service-Role-
+// Client — jeder konnte Register-, Agentenlauf- und Audit-Zeilen in fremde
+// Mandanten schreiben. Der Actor ist jetzt die geprüfte Nutzer-ID.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { runEnterpriseAgent, type AgentId } from '../_shared/enterprise-ai-os-agents.ts';
-import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
+
+/** Schreibende Mandantenrollen (wie public.is_tenant_writer) — nicht viewer_auditor. */
+const WRITER_ROLES = ['owner', 'admin', 'dpo', 'editor'];
 
 interface IntakeBody {
   tenantId?: string;
-  actor?: string;
   systemName: string;
   provider: string;
   model?: string;
@@ -36,9 +45,9 @@ interface IntakeBody {
 }
 
 async function persistRun(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient,
   agentId: AgentId,
-  tenantId: string | undefined,
+  tenantId: string,
   actor: string,
   payload: Record<string, unknown>,
 ) {
@@ -47,7 +56,7 @@ async function persistRun(
   const { data: runRow, error: runErr } = await sb
     .from('enterprise_agent_runs')
     .insert({
-      tenant_id: tenantId ?? null,
+      tenant_id: tenantId,
       agent_id: agentId,
       actor,
       input_payload: payload,
@@ -65,7 +74,7 @@ async function persistRun(
 
   if (!runErr && result.auditEvents.length > 0) {
     const rows = result.auditEvents.map((ev) => ({
-      tenant_id: tenantId ?? null,
+      tenant_id: tenantId,
       actor: ev.actor as string,
       action: ev.action as string,
       system_name: (ev.systemName as string | null) ?? null,
@@ -82,6 +91,28 @@ async function persistRun(
   return { ...result, run_id: runId };
 }
 
+function validateIntake(body: IntakeBody): string | null {
+  const text = (v: unknown, max: number, required: boolean): boolean =>
+    v === undefined || v === null
+      ? !required
+      : typeof v === 'string' && v.length <= max && (!required || v.trim().length > 0);
+  if (!text(body.systemName, 200, true) || !text(body.provider, 200, true)) {
+    return 'systemName and provider are required (max 200 chars)';
+  }
+  if (!text(body.model, 200, false) || !text(body.department, 200, false)) return 'model/department: max 200 chars';
+  if (!text(body.usageContext, 2000, false) || !text(body.comment, 2000, false)) {
+    return 'usageContext/comment: max 2000 chars';
+  }
+  const categories = body.dataCategories;
+  if (categories !== undefined && (
+    !Array.isArray(categories) || categories.length > 20
+    || categories.some((c) => typeof c !== 'string' || !/^[a-z_]{1,64}$/.test(c))
+  )) {
+    return 'dataCategories: up to 20 identifiers';
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -94,23 +125,22 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
-  if (!body.systemName || !body.provider) {
-    return jsonResponse({ error: 'systemName and provider are required' }, 400);
-  }
+  // Autorisierung vor jeder Wirkung; danach ist auth.tenantId die einzige
+  // Mandanten-Autorität und auth.admin der einzige Service-Role-Client.
+  const auth = await requireAuthAndTenant(req, body?.tenantId, WRITER_ROLES);
+  if (auth instanceof Response) return auth;
+  const tenantId = auth.tenantId;
+  const sb = auth.admin;
+  const actor = `user:${auth.user.id}`;
 
-  const url = Deno.env.get('SUPABASE_URL');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !serviceKey) return jsonResponse({ error: 'Supabase env vars missing' }, 500);
-
-  const sb = createClient(url, serviceKey);
-  const actor = body.actor ?? 'self-assessment';
-  const tenantId = body.tenantId;
+  const invalid = validateIntake(body);
+  if (invalid) return jsonResponse({ error: invalid }, 400);
 
   // 1. Insert registry row (always approved=false on intake; admin must approve).
   const { data: registryRow, error: regErr } = await sb
     .from('enterprise_ai_system_registry')
     .insert({
-      tenant_id: tenantId ?? null,
+      tenant_id: tenantId,
       name: body.systemName,
       provider: body.provider,
       model: body.model ?? null,
@@ -128,7 +158,11 @@ Deno.serve(async (req) => {
     .select()
     .single();
 
-  if (regErr) return jsonResponse({ error: `registry insert failed: ${regErr.message}` }, 500);
+  if (regErr) {
+    // Datenbankmeldungen nicht an den Aufrufer.
+    console.error('[discovery-intake] registry insert failed', regErr.code ?? 'unknown');
+    return jsonResponse({ error: 'registry insert failed' }, 500);
+  }
   const registry = registryRow as Record<string, unknown>;
   const registryId = registry.id as string;
 

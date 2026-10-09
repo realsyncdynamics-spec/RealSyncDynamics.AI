@@ -12,6 +12,10 @@ import {
 } from './aiActRiskInventoryApi';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
+/** Spiegelt die Prüfung der Function (owner/admin/dpo/editor) — entscheidend bleibt der Server. */
+const INVENTORY_WRITER_ROLES: ReadonlySet<string> = new Set(['owner', 'admin', 'dpo', 'editor']);
+const READ_ONLY_HINT = 'Ihre Rolle darf das Inventar nur lesen.';
+
 const SEVERITY_CLS: Record<Severity, string> = {
   prohibited: 'bg-red-500/15 text-red-200 border-red-500/40',
   high:       'bg-orange-500/15 text-orange-200 border-orange-500/40',
@@ -36,6 +40,8 @@ function Inner() {
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState<Severity | 'all'>('all');
+  const role = tenants.find((t) => t.tenantId === activeTenantId)?.role as string | undefined;
+  const canWrite = role !== undefined && INVENTORY_WRITER_ROLES.has(role);
 
   const reload = async () => {
     if (!activeTenantId) { setItems([]); return; }
@@ -104,7 +110,8 @@ function Inner() {
           </Link>
           <button
             onClick={() => setCreating(true)}
-            disabled={!activeTenantId}
+            disabled={!activeTenantId || !canWrite}
+            title={activeTenantId && !canWrite ? READ_ONLY_HINT : undefined}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-400 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" /> Neuer Eintrag
@@ -172,6 +179,7 @@ function Inner() {
               <Row
                 key={it.id}
                 item={it}
+                canWrite={canWrite}
                 onEdit={() => setEditing(it)}
                 onDelete={async () => {
                   if (!confirm(`Eintrag "${it.name}" wirklich löschen?`)) return;
@@ -198,9 +206,10 @@ function Inner() {
 }
 
 function Row({
-  item, onEdit, onDelete,
+  item, canWrite, onEdit, onDelete,
 }: {
   item: InventoryItem;
+  canWrite: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -231,14 +240,16 @@ function Row({
             <span>Erfasst: {new Date(item.created_at).toLocaleDateString('de-DE')}</span>
           </div>
         </div>
-        <div className="flex flex-col gap-1 shrink-0">
-          <button onClick={onEdit} className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800" title="Bearbeiten">
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button onClick={onDelete} className="p-1.5 text-titanium-400 hover:text-red-300 hover:bg-obsidian-800" title="Löschen">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex flex-col gap-1 shrink-0">
+            <button onClick={onEdit} className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800" title="Bearbeiten">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={onDelete} className="p-1.5 text-titanium-400 hover:text-red-300 hover:bg-obsidian-800" title="Löschen">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </li>
   );

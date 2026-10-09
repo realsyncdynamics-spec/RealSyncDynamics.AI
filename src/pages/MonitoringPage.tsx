@@ -15,7 +15,7 @@ type KindFilter = (typeof KIND_FILTERS)[number];
 // Oeffentliche Standalone-Seite (/monitoring): volle Marketing-Chrome + SEO-Meta.
 export function MonitoringPage() {
   usePageMeta({
-    title: 'Monitoring — Runtime-Feed-Vorschau | RealSync',
+    title: 'Monitoring — Runtime-Feed-Vorschau | RealSync Dynamics AI',
     description:
       'Runtime-Monitoring-Vorschau: Ereignisse, Drift-Erkennung, KI-Klassifikation, ' +
       'Evidence-Anchor. Demo-Surface mit simulierten Daten — keine Kundendaten.',

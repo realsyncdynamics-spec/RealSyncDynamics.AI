@@ -12,6 +12,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { isTrustedInternalScanCall } from '../_shared/internal-scan-call.ts';
+import { validateScanTarget } from '../_shared/public-scan/target.ts';
+import { fetchGuarded, TargetRefusedError } from '../_shared/public-scan/observe.ts';
 // Die Pruef- und Bewertungslogik liegt bewusst in einem eigenen, Deno-freien
 // Modul: So laesst sie sich aus Vitest heraus testen. Dass sie hier fehlte
 // und niemand es merkte, war die Ursache des Ausfalls seit 2026-08-19.
@@ -47,30 +50,31 @@ const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
  */
 const AUDIT_ENGINE_VERSION = '2026.08.1';
 
+const AUDIT_FETCH_HEADERS = {
+  // Ohne erkennbaren User-Agent liefern viele Seiten eine
+  // Bot-Abwehrseite statt ihres echten Markups — der Scan wuerde dann
+  // die Abwehrseite bewerten.
+  'user-agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAI-Audit/1.0; +https://realsyncdynamicsai.de/methodik)',
+  'accept': 'text/html,application/xhtml+xml',
+  'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+} as const;
+
 /**
- * Abruf mit harter Zeitgrenze. Ohne sie haelt eine Zielseite, die nie
- * antwortet, die Edge Function bis zum Plattform-Timeout fest und der
- * Besucher sieht nur eine haengende Anzeige.
+ * Abruf mit harter Zeitgrenze und SSRF-Schranke fuer jede Station.
+ *
+ * Vorher `redirect: 'follow'` hinter einer Pruefung, die nur `localhost` und
+ * gepunktete IPv4 ablehnte: IPv6-Literale (`[::1]`, `[fd00:ec2::254]`),
+ * `*.internal`, Nicht-Standard-Ports und — vor allem — jede Weiterleitung
+ * einer oeffentlichen Seite auf `169.254.169.254` gingen durch. Jetzt prueft
+ * `fetchGuarded` Eingabe und jede Weiterleitung mit `validateScanTarget`.
  */
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      signal: ctrl.signal,
-      redirect: 'follow',
-      headers: {
-        // Ohne erkennbaren User-Agent liefern viele Seiten eine
-        // Bot-Abwehrseite statt ihres echten Markups — der Scan wuerde dann
-        // die Abwehrseite bewerten.
-        'user-agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAI-Audit/1.0; +https://realsyncdynamicsai.de/methodik)',
-        'accept': 'text/html,application/xhtml+xml',
-        'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
-      },
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  return fetchGuarded(url, { timeoutMs, headers: AUDIT_FETCH_HEADERS });
+}
+
+/** IPv4 gepunktet oder IPv6 in Klammern — der Free Audit prueft nur Domains. */
+function isIpLiteral(host: string): boolean {
+  return IP_RE.test(host) || host.startsWith('[');
 }
 
 /** Fuegt die gelesenen Body-Chunks zu einem Puffer zusammen. */
@@ -173,9 +177,13 @@ async function handleAudit(req: Request): Promise<Response> {
   let body: { url?: string; email?: string; company?: string; plan?: string; source?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
+  // Mandanten-Scan aus tenant-audit (Service-Role-Key + Caller-Header):
+  // kein IP-Limit (tenant-audit begrenzt pro Mandant), kein Lead, keine E-Mail.
+  const isTenantScan = await isTrustedInternalScanCall(req.headers, SRK);
+
   const url = (body.url ?? '').trim();
-  const email = (body.email ?? '').trim().toLowerCase();
-  const company = (body.company ?? '').trim().slice(0, 200) || null;
+  const email = isTenantScan ? '' : (body.email ?? '').trim().toLowerCase();
+  const company = isTenantScan ? null : (body.company ?? '').trim().slice(0, 200) || null;
   const isOptimizerScan = body.source === 'optimizer';
 
   const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
@@ -185,7 +193,7 @@ async function handleAudit(req: Request): Promise<Response> {
   const leadSource = sourceTag ?? 'audit_lp';
 
   if (!url || !URL_RE.test(url)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
-  if (!isOptimizerScan && (!email || !EMAIL_RE.test(email))) {
+  if (!isOptimizerScan && !isTenantScan && (!email || !EMAIL_RE.test(email))) {
     return jsonError(400, 'INVALID_EMAIL', 'valid email required');
   }
   if (email.length > 254) return jsonError(400, 'INVALID_EMAIL', 'email too long');
@@ -197,7 +205,11 @@ async function handleAudit(req: Request): Promise<Response> {
   if (EMAIL_RE.test(parsedHost) || FREE_EMAIL_DOMAINS.has(parsedHost)) {
     return jsonError(400, 'INVALID_URL', 'E-Mail-Adressen können nicht geprüft werden. Bitte Domain angeben.');
   }
-  if (parsedHost === 'localhost' || IP_RE.test(parsedHost)) {
+  // SSRF-Schranke (gemeinsam mit dem oeffentlichen Scan): nur http(s), Ports
+  // 80/443, keine Zugangsdaten, keine internen Namen, keine privaten Netze.
+  const target = validateScanTarget(url);
+  if (!target.ok) return jsonError(400, 'INVALID_URL', target.reason);
+  if (parsedHost === 'localhost' || isIpLiteral(target.domain)) {
     return jsonError(400, 'INVALID_URL', 'Lokale Adressen und IP-Adressen sind nicht erlaubt.');
   }
 
@@ -206,12 +218,15 @@ async function handleAudit(req: Request): Promise<Response> {
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
-  // Rate-limit: 5 audits per ip_hash per hour
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count } = await admin
-    .from('gdpr_audits').select('*', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
-  if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many audits, retry later');
+  // Rate-limit: 5 audits per ip_hash per hour — public callers only. A tenant
+  // scan arrives from the edge runtime's egress IP, shared by every tenant.
+  if (!isTenantScan) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from('gdpr_audits').select('*', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
+    if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many audits, retry later');
+  }
 
   let domain = '';
   try { domain = new URL(url).hostname.toLowerCase(); }
@@ -242,6 +257,11 @@ async function handleAudit(req: Request): Promise<Response> {
       }
     }
   } catch (e) {
+    // Eine Weiterleitung auf ein unzulaessiges Ziel ist kein Befund ueber die
+    // Seite, sondern eine verweigerte Pruefung — das sagen wir auch so.
+    if (e instanceof TargetRefusedError) {
+      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Seite leitet auf ein Ziel weiter, das nicht geprueft werden darf.');
+    }
     fetchError = (e as Error).message ?? 'fetch failed';
   }
 
@@ -291,9 +311,10 @@ async function handleAudit(req: Request): Promise<Response> {
 
   // Only lead-magnet submissions create sales_leads. The optimizer performs a
   // domain-only public scan and must never require or invent an email address.
+  // A tenant scan is a governance action, not a lead.
   const planTag = plan ? ` · plan=${plan}` : '';
   let leadId: string | null = null;
-  if (!isOptimizerScan) {
+  if (!isOptimizerScan && !isTenantScan) {
     const { data: leadRow } = await admin.from('sales_leads').insert({
       name: null,
       email,
@@ -311,7 +332,9 @@ async function handleAudit(req: Request): Promise<Response> {
   const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
     url,
     domain,
-    email: email || null,
+    // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
+    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
+    email: isTenantScan ? '' : email || null,
     company,
     score,
     severity,

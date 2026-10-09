@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, ArrowRight, CheckCircle2, FileText, Award, Clock } from 'lucide-react';
 
 const STRIPE_PAYMENT_LINK = (import.meta.env.VITE_STRIPE_AUDIT_PRO_LINK as string | undefined)
-  ?? '/checkout/growth?source=audit_pro';
+  || '/checkout/growth?source=audit_pro';
 
 export function AuditPro() {
   return (

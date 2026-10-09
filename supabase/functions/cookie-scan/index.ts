@@ -21,6 +21,8 @@
 //   }
 
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { validateScanTarget } from '../_shared/public-scan/target.ts';
+import { fetchGuarded, TargetRefusedError } from '../_shared/public-scan/observe.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
@@ -318,22 +320,22 @@ function scoreScan(cookies: Cookie[], trackers: Tracker[], consentManager: boole
   return { score, severity, summary };
 }
 
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      method: 'GET',
-      signal: ctrl.signal,
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'RealSyncDynamics-CookieScanner/1.0 (+https://RealSyncDynamicsAI.de/cookie-scanner)',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-    });
-  } finally {
-    clearTimeout(t);
-  }
+/**
+ * Abruf mit harter Zeitgrenze und SSRF-Schranke fuer jede Station.
+ *
+ * Vorher pruefte dieser oeffentliche, anonyme Endpunkt nur das URL-Format und
+ * folgte Weiterleitungen automatisch: `http://169.254.169.254/…`,
+ * `http://localhost:…` oder eine oeffentliche Seite mit `302` dorthin wurden
+ * abgerufen. Jetzt Eingabe und jede Weiterleitung ueber `validateScanTarget`.
+ */
+function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  return fetchGuarded(url, {
+    timeoutMs,
+    headers: {
+      'user-agent': 'RealSyncDynamics-CookieScanner/1.0 (+https://RealSyncDynamicsAI.de/cookie-scanner)',
+      'accept': 'text/html,application/xhtml+xml',
+    },
+  });
 }
 
 Deno.serve(async (req) => {
@@ -346,6 +348,9 @@ Deno.serve(async (req) => {
   const url = (body.url ?? '').trim();
   if (!url || !URL_RE.test(url)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
   if (url.length > 1000)         return jsonError(400, 'INVALID_URL', 'url too long');
+  // SSRF-Schranke vor jedem Abruf (wie der oeffentliche Scan und gdpr-audit).
+  const target = validateScanTarget(url);
+  if (!target.ok) return jsonError(400, 'INVALID_URL', target.reason);
 
   const ipHeader = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown';
   const ipHash = await sha256Hex(ipHeader);
@@ -388,6 +393,9 @@ Deno.serve(async (req) => {
       }
     }
   } catch (err) {
+    if (err instanceof TargetRefusedError) {
+      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Seite leitet auf ein Ziel weiter, das nicht geprüft werden darf.');
+    }
     fetchError = err instanceof Error ? err.message : String(err);
   }
 

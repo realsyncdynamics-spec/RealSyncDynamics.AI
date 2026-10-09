@@ -8,10 +8,12 @@ import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
 import { useLang } from '../../i18n/useLang';
 import { COMPANY } from '../../config/company';
 import {
-  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, CALCULABLE_PRICING_TIERS,
+  SELLABLE_PRICING_TIERS, PRICING_TAX_NOTE_STANDARD,
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
+import { checkoutHrefForPlan } from '@/shared/pricing';
+import { pricingPlanCopy } from '../../i18n/pricingCopy';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -23,9 +25,11 @@ const TRIAL_PLAN_NAMES: string[] = PLANS
   .filter((p) => p.purchaseMode === 'checkout' && p.trialDays > 0)
   .map((p) => p.name);
 const TRIAL_DAYS: number = PLANS.find((p) => p.trialDays > 0)?.trialDays ?? 14;
-const TRIAL_PLAN_LIST: string = TRIAL_PLAN_NAMES.length > 1
-  ? `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} und ${TRIAL_PLAN_NAMES.at(-1)}`
-  : (TRIAL_PLAN_NAMES[0] ?? '');
+function trialPlanList(lang: 'de' | 'en'): string {
+  if (TRIAL_PLAN_NAMES.length <= 1) return TRIAL_PLAN_NAMES[0] ?? '';
+  const conj = lang === 'en' ? 'and' : 'und';
+  return `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} ${conj} ${TRIAL_PLAN_NAMES.at(-1)}`;
+}
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -42,41 +46,38 @@ import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModul
  * eigenen Preise, Limits oder Feature-Listen — sie rendert nur.
  *
  * Kopf und Karten folgen dem Governance-OS-Handoff v2 (§ 4): fünf Karten
- * (Free Audit + die buchbaren Monats-Abos), Monatlich/Jährlich-Umschalter.
- * Die Jahresabrechnung ist nicht buchbar (`yearlyCheckoutUnavailable`,
- * Registry `pricing-yearly` = coming-soon): im Jahresmodus stehen die
- * Jahresbeträge aus `planById().price.yearlyEur` mit „Jährlich · Coming
- * Soon", die Buchung bleibt monatlich. Details je Plan (Limits, Module,
- * Feature-Gruppen) stehen in der Vergleichsmatrix und auf /pricing/<id>.
+ * (Free Audit + die buchbaren Monats-Abos). Der Monatlich/Jährlich-Umschalter
+ * bleibt ausgeblendet, solange Jahres-Preis-IDs in Stripe Platzhalter sind
+ * (`yearlyCheckoutUnavailable`) — sonst endet Checkout mit
+ * PRICE_NOT_CONFIGURED. Details je Plan stehen in der Vergleichsmatrix und
+ * auf /pricing/<id>.
  */
 
 type Billing = 'monthly' | 'yearly';
 
-/**
- * Ersparnis der Jahresvariante in Prozent, aus der SSoT gerechnet (kleinster
- * Wert über alle Pläne mit Festpreis — „mindestens").
- */
-const YEARLY_SAVING_PERCENT: number | null = (() => {
-  const savings = CALCULABLE_PRICING_TIERS.flatMap((tier) => {
-    const { yearlyEur: yearly, monthlyEur: monthly } = planById(tier.plan.id).price;
-    return yearly && monthly ? [Math.round((1 - yearly / (12 * monthly)) * 100)] : [];
-  });
-  return savings.length ? Math.min(...savings) : null;
-})();
-
+/** True erst, wenn mindestens ein Plan einen echten Jahres-Checkout hat. */
+const YEARLY_BILLING_ENABLED = PLANS.some(
+  (plan) =>
+    plan.yearlyPlanKey !== null &&
+    plan.yearlyCheckoutUnavailable !== true &&
+    plan.price.yearlyEur !== null,
+);
 
 export function PricingPage() {
   // Deep-Link von Startseite/Audit: ?plan=<id> hebt das gewählte Paket hervor
   // und scrollt es in den Blick — so bleibt der Weg zur Paket-Auswahl eindeutig.
   const [params] = useSearchParams();
   const selectedPlan = params.get('plan');
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [billing, setBilling] = useState<Billing>('monthly');
   useEffect(() => {
     if (!selectedPlan) return;
     const el = document.getElementById(`plan-${selectedPlan}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [selectedPlan]);
+
+  // Ohne verdrahtete Jahrespreise immer monatlich halten.
+  const effectiveBilling: Billing = YEARLY_BILLING_ENABLED ? billing : 'monthly';
 
   return (
     <>
@@ -90,9 +91,21 @@ export function PricingPage() {
                 <h1 id="pricing-heading" className="rs-pricing__title">{t('pricingTitle')}</h1>
                 <p className="rs-pricing__sub">{t('pricingSub')}</p>
               </div>
-              <BillingToggle billing={billing} onChange={setBilling} />
+              {YEARLY_BILLING_ENABLED ? (
+                <BillingToggle billing={billing} onChange={setBilling} />
+              ) : (
+                <p
+                  className="rs-pricing__yearly-note"
+                  role="status"
+                  data-testid="pricing-yearly-disabled"
+                  title="Jahrespreise sind in Stripe noch nicht verdrahtet"
+                >
+                  <span className="rs-pill rs-pill--muted">{t('yearlyComingSoon')}</span>
+                  {t('yearlyNote')}
+                </p>
+              )}
             </div>
-            {billing === 'yearly' && (
+            {YEARLY_BILLING_ENABLED && effectiveBilling === 'yearly' && (
               <p className="rs-pricing__yearly-note" role="status" data-testid="pricing-yearly-note">
                 <span className="rs-pill rs-pill--cyan">{t('yearlyComingSoon')}</span>
                 {t('yearlyNote')}
@@ -101,18 +114,21 @@ export function PricingPage() {
             <div className="rs-pricing__grid">
               <FreeAuditCard />
               {SELLABLE_PRICING_TIERS.map((tier) => (
-                <TierCard key={tier.id} tier={tier} billing={billing} selected={tier.id === selectedPlan} />
+                <TierCard key={tier.id} tier={tier} billing={effectiveBilling} selected={tier.id === selectedPlan} />
               ))}
             </div>
-            <div className="rs-pricing__foot">
-              <p>{PRICING_TRUST_NOTE}</p>
-              <p>
-                Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
-                {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
-                {' '}Enterprise: nach Anfrage, kein Self-Service-Trial
+            <div className="rs-pricing__foot" data-testid="pricing-foot">
+              <p data-testid="pricing-trust-note">{t('pricingTrustNote')}</p>
+              <p data-testid="pricing-trial-foot">
+                {t('pricingTrialFoot', {
+                  plans: trialPlanList(lang),
+                  days: TRIAL_DAYS,
+                  until: TRIAL_DAYS + 1,
+                })}
               </p>
+              {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
               <p data-testid="pricing-tax-note">
-                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE}`}
+                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
               </p>
             </div>
           </div>
@@ -122,13 +138,16 @@ export function PricingPage() {
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           {/* Disclaimer */}
-          <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
+          <div
+            className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none"
+            data-testid="pricing-disclaimer"
+          >
             <div className="flex items-start gap-3">
               <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
               <p className="text-sm text-silver-300 leading-relaxed">
-                Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung.
-                <strong className="text-titanium-200"> Wir versprechen kein "100 % rechtssicher"</strong>, weil das niemand seriös kann.
-                Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.
+                {t('pricingDisclaimerBefore')}
+                <strong className="text-titanium-200">{t('pricingDisclaimerStrong')}</strong>
+                {t('pricingDisclaimerAfter')}
               </p>
             </div>
           </div>
@@ -316,9 +335,6 @@ function BillingToggle({ billing, onChange }: { billing: Billing; onChange: (b: 
         data-testid="pricing-billing-yearly"
       >
         {t('yearly')}
-        {YEARLY_SAVING_PERCENT !== null && (
-          <span className="rs-segment__save">−{YEARLY_SAVING_PERCENT} %</span>
-        )}
       </button>
     </div>
   );
@@ -339,9 +355,13 @@ function FeatureList({ items }: { items: readonly string[] }) {
 
 /** Kostenloser Einstieg — Preis, Label und Ziel aus der SSoT (`tierById('free')`). */
 function FreeAuditCard() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const free = tierById('free');
   if (!free) return null;
+  const copy = pricingPlanCopy(lang, 'free');
+  const tagline = copy?.tagline ?? free.tagline;
+  const bullets = copy?.bullets ?? free.bullets.slice(0, 5);
+  const ctaLabel = copy?.ctaLabel ?? free.cta.label;
   return (
     <div className="rs-price-card" data-testid="pricing-free-audit" id="plan-free">
       <div className="rs-price-card__head">
@@ -349,13 +369,13 @@ function FreeAuditCard() {
       </div>
       <div className="rs-price-card__price">
         <span className="rs-price-card__amount">{formatPriceEur(free.priceEur)}</span>
-        <span className="rs-price-card__suffix">{free.priceSuffix}</span>
+        <span className="rs-price-card__suffix">{lang === 'en' ? t('once') : free.priceSuffix}</span>
       </div>
-      <p className="rs-price-card__tagline">{free.tagline}</p>
-      <FeatureList items={free.bullets.slice(0, 5)} />
+      <p className="rs-price-card__tagline">{tagline}</p>
+      <FeatureList items={[...bullets]} />
       <div className="rs-price-card__cta">
         <Link to={free.cta.href} className="rs-btn rs-btn--outline rs-btn--h40" data-testid="pricing-book-free">
-          {free.cta.label}
+          {ctaLabel}
         </Link>
       </div>
     </div>
@@ -363,7 +383,7 @@ function FreeAuditCard() {
 }
 
 function TierCard({ tier, billing, selected = false }: { tier: PricingTier; billing: Billing; selected?: boolean }) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   // Der Scan-Kontext reiste bis hierher (`?audit_id=` aus dem Bericht, oder
   // die Sitzung aus /onboarding) und ging genau an dieser Karte verloren:
   // `tier.cta.href` kommt aus der Config und kannte ihn nicht. Der Checkout
@@ -371,23 +391,40 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
   // zusammensetzen — `source` und `interval` bleiben erhalten.
   const [params] = useSearchParams();
   const auditContext = resolveAuditContext(params, params.get('audit') ?? undefined);
-  const ctaHref = tier.cta.href.startsWith('http')
-    ? tier.cta.href
-    : withAuditContext(tier.cta.href, auditContext);
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
   // Plaene ohne oeffentlich zugesicherten Festpreis duerfen keinen Betrag
   // ausweisen — sonst steht dort ein Angebot, das der Checkout nicht erfuellt.
   const yearlyEur = planById(tier.plan.id).price.yearlyEur;
-  // Jahresbetrag nur zeigen, wenn es ihn gibt; buchbar ist er nicht
-  // (`yearlyCheckoutUnavailable`), die Karte sagt das ausdrücklich.
-  const showYearly = billing === 'yearly' && !tier.priceOnRequest && yearlyEur !== null;
-  const yearlyBookable = showYearly && tier.plan.yearlyCheckoutUnavailable !== true;
+  // Jahresbetrag nur zeigen, wenn Jahres-Checkout live verdrahtet ist.
+  const showYearly =
+    YEARLY_BILLING_ENABLED &&
+    billing === 'yearly' &&
+    !tier.priceOnRequest &&
+    tier.plan.yearlyPlanKey !== null &&
+    yearlyEur !== null &&
+    tier.plan.yearlyCheckoutUnavailable !== true;
+  // Angezeigter Betrag und Checkout-Intervall gehören zusammen: Jahrespreis
+  // führt in den Jahres-Checkout, nie in den Monats-Checkout.
+  const checkoutHref = showYearly
+    ? checkoutHrefForPlan(tier.plan, { interval: 'year', source: 'pricing' })
+    : tier.cta.href;
+  const ctaHref = checkoutHref.startsWith('http')
+    ? checkoutHref
+    : withAuditContext(checkoutHref, auditContext);
   const priceDisplay = tier.priceOnRequest
     ? t('onRequest')
     : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
-  const suffix = tier.priceOnRequest ? tier.priceSuffix : showYearly ? t('perYear') : t('perMonth');
+  const suffix = tier.priceOnRequest
+    ? (lang === 'en' ? 'custom offer' : tier.priceSuffix)
+    : showYearly
+      ? t('perYear')
+      : t('perMonth');
   const filled = tier.highlight || selected;
+  const copy = pricingPlanCopy(lang, tier.id);
+  const tagline = copy?.tagline ?? tier.tagline;
+  const bullets = copy?.bullets ?? tier.bullets.slice(0, 5);
+  const ctaLabel = copy?.ctaLabel ?? tier.cta.label;
   const go = () => {
     if (ctaHref.startsWith('http')) window.open(ctaHref, '_blank', 'noopener');
     else window.location.href = ctaHref;
@@ -399,6 +436,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       className={`rs-price-card${tier.highlight ? ' rs-price-card--popular' : ''}${selected ? ' rs-price-card--selected' : ''}`}
       data-testid={`pricing-card-${tier.id}`}
       data-billing={billing}
+      data-lang={lang}
     >
       <div className="rs-price-card__head">
         <h2 className="rs-price-card__name">{tier.name}</h2>
@@ -413,40 +451,19 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
         <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
         <span className="rs-price-card__suffix">{suffix}</span>
       </div>
-      {showYearly && !yearlyBookable && (
-        <span className="rs-pill rs-pill--muted" style={{ marginTop: 10, alignSelf: 'flex-start' }}>
-          {t('yearlyComingSoon')}
-        </span>
-      )}
 
-      <p className="rs-price-card__tagline">{tier.tagline}</p>
-      <FeatureList items={tier.bullets.slice(0, 5)} />
+      <p className="rs-price-card__tagline">{tagline}</p>
+      <FeatureList items={[...bullets]} />
 
       <div className="rs-price-card__cta">
-        {showYearly && !yearlyBookable ? (
-          <>
-            <button type="button" className="rs-btn rs-btn--outline rs-btn--h40" disabled aria-disabled="true">
-              {t('yearlyComingSoon')}
-            </button>
-            <button
-              type="button"
-              onClick={go}
-              className="rs-price-card__more"
-              data-testid={`pricing-book-${tier.id}`}
-            >
-              {t('bookMonthly')} →
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={go}
-            className={`rs-btn ${filled ? 'rs-btn--solid' : 'rs-btn--outline'} rs-btn--h40`}
-            data-testid={`pricing-book-${tier.id}`}
-          >
-            {tier.cta.label}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={go}
+          className={`rs-btn ${filled ? 'rs-btn--solid' : 'rs-btn--outline'} rs-btn--h40`}
+          data-testid={`pricing-book-${tier.id}`}
+        >
+          {ctaLabel}
+        </button>
         <Link to={`/pricing/${tier.id}`} className="rs-price-card__more" data-testid={`pricing-info-${tier.id}`}>
           {t('moreInfo')}
         </Link>

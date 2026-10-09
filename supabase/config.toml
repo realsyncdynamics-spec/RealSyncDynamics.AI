@@ -121,7 +121,8 @@ verify_jwt = false
 verify_jwt = false
 
 # Audit-Report-Email: fire-and-forget vom Browser nach dem Scan (kein JWT).
-# Sicher: Zugriff nur per UUID, idempotent (email_sent_at-Guard).
+# Grenze im Code (audit-report-email/gate.ts): ohne Bearer nur 10 min nach
+# created_at, mit Service-Role-Bearer jederzeit. Antwort ohne Empfaengeradresse.
 [functions.audit-report-email]
 verify_jwt = false
 
@@ -136,9 +137,18 @@ verify_jwt = false
 [functions.cookie-scan-deep]
 verify_jwt = false
 
-# Browser-action-log — governance observability. Called from browser without JWT
-# (EmbeddedBrowserCanvas). Auth + tenant-scope checked inside the function via
-# service_role calls to Supabase (browser passes tenantId, which is validated by RLS).
+# browser-action-log: braucht eine echte Nutzersitzung. Der fruehere Kommentar
+# hier behauptete, RLS pruefe den Mandanten — die Function schreibt aber mit
+# Service Role, und Service Role umgeht RLS. Deshalb prueft der Handler Nutzer
+# und Mitgliedschaft ueber requireAuthAndTenant, bevor er nach browser_actions
+# schreibt (EmbeddedBrowserCanvas sendet das User-JWT).
+#
+# Bleibt deklariert false, weil die Function live so laeuft und der
+# Edge-Function-Drift-Guard Repo gegen Live prueft (UNDECLARED_NO_JWT). Das
+# Plattform-Gate laesst den Anon-Key ohnehin durch, die Sicherheit liegt im
+# Handler — dasselbe Muster wie welcome-email (#1297). Umstellung auf den
+# Default true: erst `supabase functions deploy browser-action-log` ohne
+# diesen Eintrag, dann den Eintrag hier entfernen.
 [functions.browser-action-log]
 verify_jwt = false
 
@@ -433,7 +443,7 @@ verify_jwt = false
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,
-# hostinger-agent-brief, kodee*, audit-report-email, generate-document,
+# hostinger-agent-brief, kodee*, generate-document,
 # shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.

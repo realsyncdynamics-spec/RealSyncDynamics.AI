@@ -66,7 +66,7 @@ export function DesignLedgerLanding() {
       style={{ backgroundColor: BG, color: ICE, fontFamily: SANS }}
     >
       <SEOHead
-        title="Evidence Ledger (Preview) — RealSyncDynamics.AI"
+        title="Evidence Ledger (Preview) — RealSync Dynamics AI"
         description={`${CONTINUOUS_COMPLIANCE_NARRATIVE} Design-Preview.`}
         canonical="/design/ledger"
         noIndex

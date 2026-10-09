@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit lief bisher ohne Repo-Konfiguration (Defaults). Dabei werden
+# Draft-PRs nicht automatisch geprüft — hier ist fast jeder PR zuerst ein
+# Draft (CLAUDE.md: „zunächst Draft“), also blieb die Mehrheit ohne Review.
+# Alles andere bleibt auf dem bisherigen Default-Verhalten.
+reviews:
+  profile: chill
+  auto_review:
+    enabled: true
+    drafts: true

@@ -95,6 +95,15 @@ export type EngageModuleId =
 
 export type ModuleId = GovernModuleId | AutomateModuleId | EngageModuleId;
 
+/**
+ * Honesty-Status für öffentliche Oberflächen (Empfehlung, Pricing).
+ * Entspricht der Produkt-Registry (`implementation-status.ts`):
+ * live → grünes Häkchen; preview → graues Häkchen + „(Preview)“;
+ * coming-soon → graues Häkchen + „(Roadmap)“.
+ * Default / fehlend = live.
+ */
+export type ModuleAvailability = 'live' | 'preview' | 'coming-soon';
+
 export interface ModuleDefinition {
   id: ModuleId;
   area: ProductArea;
@@ -105,46 +114,60 @@ export interface ModuleDefinition {
   icon: string;
   /** Ist das Modul ein regulatorisches Rahmenwerk (Policy Pack)? */
   policyPack?: boolean;
+  /**
+   * Öffentlicher Honesty-Status. Preview/Coming-Soon dürfen nicht als
+   * „Im Produkt“ mit grünem Häkchen erscheinen.
+   */
+  availability?: ModuleAvailability;
+}
+
+/** Anzeige-Suffix für nicht-live Module; `null` bei live/fehlend. */
+export function moduleAvailabilityLabel(
+  availability: ModuleAvailability | undefined,
+): '(Preview)' | '(Roadmap)' | null {
+  if (availability === 'preview') return '(Preview)';
+  if (availability === 'coming-soon') return '(Roadmap)';
+  return null;
 }
 
 export const GOVERN_MODULES: ModuleDefinition[] = [
-  { id: 'dsgvo', area: 'govern', name: 'DSGVO', description: 'Datenschutz-Grundverordnung: Verarbeitungsverzeichnis, Betroffenenrechte, Prüfpfad.', icon: 'Shield', policyPack: true },
-  { id: 'eu_ai_act', area: 'govern', name: 'EU AI Act', description: 'Risikoklassifizierung von KI-Systemen, Transparenzpflichten, technische Dokumentation.', icon: 'Brain', policyPack: true },
-  { id: 'nis2', area: 'govern', name: 'NIS2', description: 'Meldepflichten und Fristen (24 h / 72 h / 1 Monat), Sicherheitsmaßnahmen.', icon: 'Siren', policyPack: true },
-  { id: 'dora', area: 'govern', name: 'DORA', description: 'Digitale operationale Resilienz für Finanzunternehmen, IKT-Drittparteienrisiko.', icon: 'Landmark', policyPack: true },
-  { id: 'iso_27001', area: 'govern', name: 'ISO 27001', description: 'Informationssicherheits-Managementsystem, Annex-A-Kontrollen.', icon: 'Lock', policyPack: true },
-  { id: 'tisax', area: 'govern', name: 'TISAX', description: 'Automotive-Informationssicherheit, VDA-ISA-Kontrollkatalog.', icon: 'Car', policyPack: true },
-  { id: 'policy_engine', area: 'govern', name: 'Policy Engine', description: 'Regelwerk als Code: Richtlinien definieren, versionieren und zur Laufzeit durchsetzen.', icon: 'Scale' },
-  { id: 'evidence_vault', area: 'govern', name: 'Evidence Vault', description: 'Manipulationssicherer Nachweisspeicher mit Hash-Chain, Retention und Legal Hold.', icon: 'Archive' },
-  { id: 'audit_center', area: 'govern', name: 'Audit Center', description: 'Prüfpfad, Audit-Läufe und exportfähige Nachweispakete für Prüfer.', icon: 'ClipboardCheck' },
-  { id: 'risk_register', area: 'govern', name: 'Risk Register', description: 'Zentrales Risikoregister mit Bewertung, Eigentümern und Maßnahmenverfolgung.', icon: 'AlertTriangle' },
-  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity' },
-  { id: 'compliance_reports', area: 'govern', name: 'Compliance Reports', description: 'Berichte je Rahmenwerk — PDF/JSON, revisionssicher signiert.', icon: 'FileText' },
+  { id: 'dsgvo', area: 'govern', name: 'DSGVO', description: 'EU-Datenschutz-Grundverordnung: regelt, wie personenbezogene Daten verarbeitet werden dürfen. Im Produkt: Verarbeitungsverzeichnis, Betroffenenrechte, Prüfpfad.', icon: 'Shield', policyPack: true },
+  { id: 'eu_ai_act', area: 'govern', name: 'EU AI Act', description: 'EU-Verordnung für Künstliche Intelligenz: stuft KI-Systeme nach Risiko ein und knüpft daran Pflichten. Im Produkt: Risikoklassifizierung, Transparenzpflichten, technische Dokumentation.', icon: 'Brain', policyPack: true },
+  { id: 'nis2', area: 'govern', name: 'NIS2', description: 'EU-Richtlinie zur Cybersicherheit wesentlicher und wichtiger Einrichtungen, mit Verantwortung der Geschäftsleitung. Im Produkt: Meldepflichten und Fristen (24 h / 72 h / 1 Monat), Sicherheitsmaßnahmen.', icon: 'Siren', policyPack: true },
+  { id: 'dora', area: 'govern', name: 'DORA', description: 'Digital Operational Resilience Act: EU-Verordnung für Finanzunternehmen und ihre IT-Dienstleister — IKT-Risiken, Resilienztests, Vorfallmeldung, Drittanbietersteuerung. Als Policy Pack auf der Roadmap.', icon: 'Landmark', policyPack: true, availability: 'coming-soon' },
+  { id: 'iso_27001', area: 'govern', name: 'ISO 27001', description: 'Internationaler Standard für ein Informationssicherheits-Managementsystem (ISMS). Im Produkt: Annex-A-Kontrollen.', icon: 'Lock', policyPack: true },
+  { id: 'tisax', area: 'govern', name: 'TISAX', description: 'Prüfverfahren der Automobilindustrie für Informationssicherheit, Datenschutz und Prototypenschutz auf Basis des VDA-ISA-Katalogs. Als Policy Pack auf der Roadmap.', icon: 'Car', policyPack: true, availability: 'coming-soon' },
+  { id: 'policy_engine', area: 'govern', name: 'Policy Engine', description: 'Regel-Engine, die automatisch prüft, ob Prozesse, Datenzugriffe und KI-Anwendungen vorgegebene Richtlinien einhalten. Im Produkt: Richtlinien als Code definieren, versionieren und zur Laufzeit durchsetzen.', icon: 'Scale' },
+  { id: 'evidence_vault', area: 'govern', name: 'Evidence Vault', description: 'Revisionssicherer Speicher für Nachweise wie Logs, Freigaben und Prüfprotokolle, damit Audits nachvollziehbar bleiben. Im Produkt: manipulationssicher mit Hash-Chain, Retention und Legal Hold.', icon: 'Archive' },
+  { id: 'audit_center', area: 'govern', name: 'Audit Center', description: 'Zentraler Ort, um Prüfungen vorzubereiten, durchzuführen und zu dokumentieren. Im Produkt: Prüfpfad, Audit-Läufe und exportfähige Nachweispakete für Prüfer.', icon: 'ClipboardCheck' },
+  { id: 'risk_register', area: 'govern', name: 'Risk Register', description: 'Zentrale Liste erkannter Risiken mit Eintrittswahrscheinlichkeit, Auswirkung und Status. Im Produkt: Bewertung, Eigentümer und Maßnahmenverfolgung.', icon: 'AlertTriangle' },
+  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Laufende Überwachung, damit Abweichungen früh sichtbar werden statt erst im Audit. Im Produkt: Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity' },
+  { id: 'compliance_reports', area: 'govern', name: 'Compliance Reports', description: 'Berichte über den Erfüllungsstand: offene Risiken, Kontrollen, Maßnahmen, Nachweise. Im Produkt: je Rahmenwerk als PDF/JSON, revisionssicher signiert.', icon: 'FileText' },
 ];
 
 export const AUTOMATE_MODULES: ModuleDefinition[] = [
-  { id: 'scheduler', area: 'automate', name: 'Scheduler', description: 'Geplante Läufe (täglich/wöchentlich/monatlich) mit Prioritäts-Queue.', icon: 'CalendarClock' },
-  { id: 'workflows', area: 'automate', name: 'Workflows', description: 'Mehrstufige Governance-Abläufe mit Freigaben und Eskalation.', icon: 'GitBranch' },
-  { id: 'n8n', area: 'automate', name: 'n8n', description: 'Anbindung an n8n: Webhook-Trigger, Workflow-Läufe, Rückschreiben von Ergebnissen.', icon: 'Workflow' },
-  { id: 'kodee', area: 'automate', name: 'Kodee', description: 'Server-Operations-Assistent (SSH): Status, Logs, TLS/DNS mit Risiko-Advisor.', icon: 'Terminal' },
-  { id: 'bulk_jobs', area: 'automate', name: 'Bulk Jobs', description: 'Massenläufe über viele Domains: CSV-Import, Queue, Retry.', icon: 'Layers' },
-  { id: 'automation_engine', area: 'automate', name: 'Automation Engine', description: 'Ausführungs-Engine für Governance-Skills mit Kontingent und Protokollierung.', icon: 'Cpu' },
-  { id: 'alerts', area: 'automate', name: 'Alerts', description: 'Benachrichtigungen bei neuen Findings — E-Mail, Slack, Teams, Webhook.', icon: 'Bell' },
-  { id: 'drift_detection', area: 'automate', name: 'Drift Detection', description: 'Erkennt Abweichungen vom genehmigten Soll-Zustand zwischen zwei Läufen.', icon: 'TrendingUp' },
-  { id: 'remediation', area: 'automate', name: 'Remediation', description: 'Vorbereitete Maßnahmen mit Code-Snippets und Review-Pflicht.', icon: 'Wrench' },
-  { id: 'background_jobs', area: 'automate', name: 'Background Jobs', description: 'Langlaufende Hintergrundaufgaben mit Fortschritt und Wiederaufnahme.', icon: 'Cog' },
+  { id: 'scheduler', area: 'automate', name: 'Scheduler', description: 'Zeitplaner für wiederkehrende Aufgaben wie regelmäßige Checks oder Berichte. Im Produkt: geplante Läufe (täglich/wöchentlich/monatlich) mit Prioritäts-Queue.', icon: 'CalendarClock' },
+  { id: 'workflows', area: 'automate', name: 'Workflows', description: 'Wiederholbare Prozessketten mit Schritten, Rollen, Bedingungen und Freigaben. Im Produkt: mehrstufige Governance-Abläufe mit Freigaben und Eskalation.', icon: 'GitBranch' },
+  { id: 'n8n', area: 'automate', name: 'n8n', description: 'Workflow-Automatisierungsplattform, die APIs, Datenbanken und Dienste über Abläufe verbindet. Preview: Webhook-Trigger, Workflow-Läufe, Rückschreiben von Ergebnissen — noch keine produktive Ausführung.', icon: 'Workflow', availability: 'preview' },
+  { id: 'kodee', area: 'automate', name: 'Kodee', description: 'Produktname, kein Fachbegriff: der eingebaute Assistent für den Serverbetrieb. Auf der Roadmap.', icon: 'Terminal', availability: 'coming-soon' },
+  { id: 'bulk_jobs', area: 'automate', name: 'Bulk Jobs', description: 'Massenverarbeitung: viele Datensätze oder Prüfungen in einem Durchgang. Im Produkt: Massenläufe über viele Domains — CSV-Import, Queue, Retry.', icon: 'Layers' },
+  { id: 'automation_engine', area: 'automate', name: 'Automation Engine', description: 'Ausführungslogik hinter Automationen: startet Trigger, wertet Bedingungen aus, protokolliert Ergebnisse. Im Produkt: führt Governance-Skills mit Kontingent und Protokollierung aus.', icon: 'Cpu' },
+  { id: 'alerts', area: 'automate', name: 'Alerts', description: 'Warnmeldungen bei Ereignissen oder Regelverstößen. Im Produkt: Benachrichtigungen bei neuen Findings — E-Mail, Slack, Teams, Webhook.', icon: 'Bell' },
+  { id: 'drift_detection', area: 'automate', name: 'Drift Detection', description: 'Erkennung schleichender Abweichungen vom freigegebenen Soll-Zustand. Im Produkt: Vergleich zwischen zwei Läufen.', icon: 'TrendingUp' },
+  { id: 'remediation', area: 'automate', name: 'Remediation', description: 'Behebung festgestellter Schwachstellen oder Abweichungen — Maßnahme, Verantwortliche, Frist, Nachweis. Im Produkt: vorbereitete Maßnahmen mit Code-Snippets und Review-Pflicht.', icon: 'Wrench' },
+  { id: 'background_jobs', area: 'automate', name: 'Background Jobs', description: 'Aufgaben, die im Hintergrund statt innerhalb einer Nutzeranfrage laufen, etwa Berichte oder Scans. Im Produkt: mit Fortschritt und Wiederaufnahme.', icon: 'Cog' },
 ];
 
 export const ENGAGE_MODULES: ModuleDefinition[] = [
-  { id: 'ai_bots', area: 'engage', name: 'AI Bots', description: 'Governance-Bots mit Transparenzhinweis, Antwort-Logging und Risiko-Tags.', icon: 'Bot' },
-  { id: 'voice', area: 'engage', name: 'Voice', description: 'Sprachkanal mit IVR, Speech-to-Text und Text-to-Speech.', icon: 'Phone' },
-  { id: 'whatsapp', area: 'engage', name: 'WhatsApp', description: 'WhatsApp-Business-Integration mit Compliance-Badges und Media-Support.', icon: 'MessageCircle' },
-  { id: 'telegram', area: 'engage', name: 'Telegram', description: 'Telegram-Bot-Kanal mit identischem Governance-Protokoll.', icon: 'Send' },
-  { id: 'website_chat', area: 'engage', name: 'Website Chat', description: 'Eingebetteter Chat auf der eigenen Website, DSGVO-konform ausgeliefert.', icon: 'MessageSquare' },
-  { id: 'api', area: 'engage', name: 'API', description: 'REST-API für Scans, Nachweise, Risiken und Automationsläufe.', icon: 'Code' },
-  { id: 'webhooks', area: 'engage', name: 'Webhooks', description: 'Signierte Ereignis-Zustellung an eigene Systeme und CI/CD.', icon: 'Webhook' },
-  { id: 'human_handoff', area: 'engage', name: 'Human Handoff', description: 'Übergabe an Menschen mit Eskalationsstufen und Protokollierung.', icon: 'UserCheck' },
-  { id: 'multi_channel_messaging', area: 'engage', name: 'Multi Channel Messaging', description: 'Ein Bot, viele Kanäle — konsistente Antworten und ein Prüfpfad.', icon: 'Share2' },
+  { id: 'ai_bots', area: 'engage', name: 'AI Bots', description: 'KI-Assistenten, die Fragen beantworten oder Aufgaben ausführen. Preview: Governance-Bots mit Transparenzhinweis, Antwort-Logging und Risiko-Tags.', icon: 'Bot', availability: 'preview' },
+  { id: 'voice', area: 'engage', name: 'Voice', description: 'Sprachbasierte Interaktion, etwa Telefonie oder Sprachbots. Preview: Sprachkanal mit IVR, Speech-to-Text und Text-to-Speech.', icon: 'Phone', availability: 'preview' },
+  { id: 'whatsapp', area: 'engage', name: 'WhatsApp', description: 'Kanal über die WhatsApp Business Platform für Support und Benachrichtigungen. Preview: Integration mit Compliance-Badges und Media-Support.', icon: 'MessageCircle', availability: 'preview' },
+  { id: 'telegram', area: 'engage', name: 'Telegram', description: 'Messaging-Kanal über die Telegram Bot API, etwa für Alerts oder Support. Preview: Bot-Kanal mit identischem Governance-Protokoll.', icon: 'Send', availability: 'preview' },
+  { id: 'website_chat', area: 'engage', name: 'Website Chat', description: 'In die eigene Website eingebetteter Chat für Service oder Self-Service. Preview: DSGVO-konform ausgeliefert.', icon: 'MessageSquare', availability: 'preview' },
+  { id: 'api', area: 'engage', name: 'API', description: 'Programmierschnittstelle, über die externe Anwendungen Funktionen und Daten kontrolliert nutzen. Im Produkt: REST-API für Scans, Nachweise, Risiken und Automationsläufe.', icon: 'Code' },
+  { id: 'webhooks', area: 'engage', name: 'Webhooks', description: 'HTTP-Benachrichtigungen zwischen Systemen: Bei einem Ereignis gehen Daten automatisch an eine festgelegte URL. Im Produkt: signierte Zustellung an eigene Systeme und CI/CD.', icon: 'Webhook' },
+  { id: 'human_handoff', area: 'engage', name: 'Human Handoff', description: 'Übergabe vom Bot an einen Menschen — wenn der Bot unsicher ist, eine sensible Entscheidung ansteht oder Nutzer es wünschen. Auf der Roadmap.', icon: 'UserCheck', availability: 'coming-soon' },
+  { id: 'multi_channel_messaging', area: 'engage', name: 'Multi Channel Messaging', description: 'Kommunikation über mehrere Kanäle mit gemeinsamer Gesprächshistorie. Preview: ein Bot, viele Kanäle — konsistente Antworten und ein Prüfpfad.', icon: 'Share2', availability: 'preview' },
 ];
 
 export const ALL_MODULES: ModuleDefinition[] = [
@@ -630,7 +653,7 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Kontinuierliches Monitoring (Coming Soon)',
         'E-Mail-Alert bei neuen Findings',
-        '25 Automationsläufe pro Monat',
+        '25 Automationsläufe pro Monat (Preview)',
         '1 Governance-Bot mit 500 Antworten (Website)',
         '1 SiteOS-Website (Create/Claim); Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -726,7 +749,7 @@ export const PLANS: Plan[] = [
         'Behebungsvorschläge mit Code-Snippets',
         'API-Zugriff, Webhooks und Scheduler',
         '10 Bulk-Jobs pro Monat, 3 API-Schlüssel',
-        '100 Automationsläufe pro Monat',
+        '100 Automationsläufe pro Monat (Preview)',
         '2 Governance-Bots mit 2.000 Antworten (Website, WhatsApp, Telegram)',
         '3 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -810,9 +833,9 @@ export const PLANS: Plan[] = [
       automation_ops: [
         'Scheduler für geplante Läufe mit Slack-/Teams-/Webhook-Alerts',
         'Bulk Jobs: Massen-Scan vieler Domains per CSV',
-        'n8n-Anbindung und Kodee Server-Assistent',
+        'n8n-Anbindung und Kodee Server-Assistent (Preview)',
         'REST-API und Webhooks für CI/CD',
-        '500 Automationsläufe pro Monat',
+        '500 Automationsläufe pro Monat (Preview)',
         '10 Governance-Bots mit 25.000 Antworten (alle Kanäle inkl. Voice)',
         '10 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
@@ -994,7 +1017,7 @@ export const PLANS: Plan[] = [
         'Mandantenspezifische Richtlinien und Kontrollkataloge',
       ],
       automation_ops: [
-        '10.000 Automationsläufe pro Monat',
+        '10.000 Automationsläufe pro Monat (Preview)',
         'Voller API-Zugriff mit 1 Mio. Aufrufen pro Monat',
         '50 Governance-Bots mit 100.000 Antworten, mandantengetrennt',
         'SLA 4 h auf Fehlermeldungen mit festem Ansprechpartner',
@@ -1843,6 +1866,7 @@ export const ENTITLEMENT_KEYS = [
   'evidence.advanced',
   'evidence.basic_vault',
   'fix.snippets',
+  'frontend.modernization',
   'governance.ai_register',
   'governance.dsgvo_directory',
   'governance.risk_register',
@@ -1941,6 +1965,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'bots.count': 0,
     'dashboard.access': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'limit.sites': 0,
@@ -1960,6 +1985,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'dashboard.access': 1,
     'dse.generator': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'limit.agent_runs_monthly': 100,
@@ -2000,6 +2026,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2058,6 +2085,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 0,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2121,6 +2149,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 1,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2188,6 +2217,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'evidence.advanced': 1,
     'evidence.basic_vault': 1,
     'fix.snippets': 1,
+    'frontend.modernization': 1,
     'governance.ai_register': 1,
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
@@ -2233,6 +2263,7 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'dashboard.access': 1,
     'dse.generator': 1,
     'evidence.basic_vault': 1,
+    'frontend.modernization': 0,
     'governance.dsgvo_directory': 1,
     'limit.automation_runs_monthly': 10,
     'limit.bot_messages_monthly': 1000,
@@ -2963,5 +2994,30 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Alle Preise verstehen sich zzgl. USt. */
-export const PRICING_TAX_NOTE = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
+export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+
+/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+export const PRICING_TAX_NOTE_EXEMPT =
+  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+
+export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
+
+/**
+ * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
+ * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
+ * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
+ * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ */
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+
+/** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
+export function pricingTaxNote(mode: PricingTaxMode): string {
+  return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
+}
+
+/**
+ * Gültiger Steuerhinweis, abgeleitet aus `PRICING_TAX_MODE`. Für Konsumenten
+ * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
+ */
+export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);

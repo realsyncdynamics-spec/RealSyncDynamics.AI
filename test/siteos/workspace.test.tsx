@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation, useParams, Link } from 'react-router-dom';
-import { analyzeBlueprint, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
+import { analyzeBlueprint, applyPageOperations, applySiteDesignTemplate, buildSiteFromPrompt, canonicalHash, type SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { pageToPuckData, type PuckPageData } from '../../src/features/siteos/editor/blueprintPuckAdapter';
 
 /**
@@ -16,6 +16,9 @@ const api = {
   loadLatestBlueprint: vi.fn(),
   editSite: vi.fn(),
   evaluatePublish: vi.fn(),
+  bindSiteProject: vi.fn(),
+  deployPublishPreview: vi.fn(),
+  deployPublishProduction: vi.fn(),
   listBlueprintChain: vi.fn(),
   listEvaluations: vi.fn(),
   listCustodyEvents: vi.fn(),
@@ -25,6 +28,9 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
   loadLatestBlueprint: (...a: unknown[]) => api.loadLatestBlueprint(...a),
   editSite: (...a: unknown[]) => api.editSite(...a),
   evaluatePublish: (...a: unknown[]) => api.evaluatePublish(...a),
+  bindSiteProject: (...a: unknown[]) => api.bindSiteProject(...a),
+  deployPublishPreview: (...a: unknown[]) => api.deployPublishPreview(...a),
+  deployPublishProduction: (...a: unknown[]) => api.deployPublishProduction(...a),
   listBlueprintChain: (...a: unknown[]) => api.listBlueprintChain(...a),
   listEvaluations: (...a: unknown[]) => api.listEvaluations(...a),
   listCustodyEvents: (...a: unknown[]) => api.listCustodyEvents(...a),
@@ -33,8 +39,20 @@ vi.mock('../../src/features/siteos/siteOsApi', () => ({
 }));
 
 let authenticated = true;
+const entState = {
+  tier: 'starter' as string,
+  loading: false,
+  features: {} as Record<string, boolean | number>,
+};
 vi.mock('../../src/features/supabase/SupabaseAuthContext', () => ({
   useSupabaseAuth: () => ({ isAuthenticated: authenticated }),
+}));
+vi.mock('../../src/core/billing/useEntitlements', () => ({
+  useEntitlements: () => ({
+    tier: entState.tier,
+    loading: entState.loading,
+    features: entState.features,
+  }),
 }));
 vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({ activeTenantId: 'tenant-1', loading: false }),
@@ -98,9 +116,9 @@ async function sample() {
   return { blueprint, sha256: await canonicalHash(blueprint) };
 }
 
-function storedRow(blueprint: SiteBlueprint, sha256: string, version = 1) {
+function storedRow(blueprint: SiteBlueprint, sha256: string, version = 1, projectId: string | null = null) {
   return {
-    id: `bp-${version}`, version, blueprint, content_sha256: sha256, prev_hash: null,
+    id: `bp-${version}`, project_id: projectId, version, blueprint, content_sha256: sha256, prev_hash: null,
     status: 'draft', origin_source: 'ai-builder', origin_model: 'test-model', created_at: '2026-09-06T00:00:00.000Z',
   };
 }
@@ -123,11 +141,25 @@ beforeEach(() => {
   previewFrame.mockReset();
   editorProps = null;
   authenticated = true;
+  entState.tier = 'starter';
+  entState.loading = false;
+  entState.features = {};
   window.history.replaceState({}, '', '/builder/x');
   api.listBlueprintChain.mockResolvedValue([]);
   api.listEvaluations.mockResolvedValue([]);
   api.listCustodyEvents.mockResolvedValue([]);
   api.listAgentRuns.mockResolvedValue([]);
+  api.bindSiteProject.mockResolvedValue({
+    kind: 'ok',
+    data: {
+      ok: true,
+      created: true,
+      project: { id: 'project-1', name: 'Praxis Dr. Muster', status: 'draft' },
+      blueprint_id: 'bp-1',
+      version: 1,
+      audit_recorded: true,
+    },
+  });
 });
 
 describe('App Builder Workspace — Laden', () => {
@@ -144,7 +176,15 @@ describe('App Builder Workspace — Laden', () => {
     // Die Seitenliste kommt aus dem Blueprint, nicht aus einer festen Liste.
     const nav = within(screen.getByTestId('left'));
     for (const page of blueprint.pages) {
-      expect(nav.getByRole('button', { name: new RegExp(page.path === '/' ? 'Startseite' : page.title) })).toBeInTheDocument();
+      const row = nav.getAllByTestId('page-row').find(
+        (candidate) => candidate.getAttribute('data-path') === page.path,
+      );
+      expect(row).toBeTruthy();
+      expect(
+        within(row!).getByRole('button', {
+          pressed: page.path === blueprint.pages[0].path,
+        }),
+      ).toBeInTheDocument();
     }
   });
 
@@ -154,6 +194,15 @@ describe('App Builder Workspace — Laden', () => {
     await waitFor(() => expect(screen.getByText('Projekt nicht gefunden')).toBeInTheDocument());
     expect(screen.queryByTestId('editor')).not.toBeInTheDocument();
     expect(api.editSite).not.toHaveBeenCalled();
+  });
+
+  it('lädt ohne siteos.builder keinen Blueprint und zeigt stattdessen das Upgrade-Panel', async () => {
+    entState.tier = 'free';
+    entState.features = {};
+    renderWorkspace('praxis');
+    await waitFor(() => expect(screen.getByTestId('builder-upgrade-panel')).toBeInTheDocument());
+    expect(screen.getByTestId('builder-upgrade-panel')).toHaveAttribute('data-reason', 'no_entitlement');
+    expect(api.loadLatestBlueprint).not.toHaveBeenCalled();
   });
 
   it('schickt nicht angemeldete Nutzer nach /welcome mit Rücksprung', async () => {
@@ -259,14 +308,170 @@ describe('App Builder Workspace — Prüfung, Vorschau, Leisten', () => {
     expect(screen.getByText(/Nicht veröffentlichbar \(blocked\)/)).toBeInTheDocument();
   });
 
-  it('hält den Veröffentlichen-Knopf gesperrt und sagt warum', async () => {
+  it('stellt eine echte Cloudflare-Vorschau erst nach bestandenem Gate bereit', async () => {
     const { blueprint, sha256 } = await sample();
     api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-preview-1',
+      artifact_sha256: 'c'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-abc.example.pages.dev',
+          deployment_id: 'dep-1',
+          project_name: 'praxis-bp1',
+          branch: 'preview-cccccccccccc',
+          environment: 'preview',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-preview-2',
+          production: false,
+        },
+      },
+    });
+
     renderWorkspace(blueprint.slug);
     await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
-    const publish = screen.getByRole('button', { name: /Veröffentlichen/ });
-    expect(publish).toBeDisabled();
-    expect(publish.getAttribute('title')).toMatch(/nicht verdrahtet/);
+
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    expect(previewDeploy).toBeDisabled();
+    expect(previewDeploy.getAttribute('title')).toMatch(/Prüfen/);
+
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    await waitFor(() => expect(api.deployPublishPreview).toHaveBeenCalledTimes(1));
+    expect(api.bindSiteProject).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+    });
+    expect(api.bindSiteProject.mock.invocationCallOrder[0]).toBeLessThan(
+      api.deployPublishPreview.mock.invocationCallOrder[0],
+    );
+    expect(api.deployPublishPreview).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+      confirm_preview_deploy: true,
+    });
+    const link = await screen.findByRole('link', { name: 'Cloudflare-Vorschau öffnen' });
+    expect(link).toHaveAttribute('href', 'https://preview-abc.example.pages.dev');
+    expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('confirm_go');
+    expect(api.deployPublishPreview.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
+  });
+
+
+  it('überspringt project-bind bei bereits gebundener Site', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256, 1, 'project-existing'));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-bound-1',
+      artifact_sha256: 'd'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-existing.example.pages.dev',
+          deployment_id: 'dep-existing',
+          project_name: 'praxis-existing',
+          branch: 'preview-dddddddddddd',
+          environment: 'preview',
+          artifact_sha256: 'd'.repeat(64),
+          evaluation_id: 'eval-bound-2',
+          production: false,
+        },
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    await waitFor(() => expect(api.deployPublishPreview).toHaveBeenCalledTimes(1));
+    expect(api.bindSiteProject).not.toHaveBeenCalled();
+  });
+
+  it('veröffentlicht erst nach realer Vorschau und ausdrücklicher Bestätigung live', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    api.evaluatePublish.mockResolvedValue({ kind: 'ok', data: { ok: true, evaluation: {
+      status: 'passed', evidence_complete: true, backend_preservation: 'preserve_all', policy_compliant: true,
+      human_approval_required: false, publishable: true, evaluated_at: '2026-10-06T10:00:00.000Z', evaluation_id: 'eval-preview-1',
+      artifact_sha256: 'c'.repeat(64), blockers: [], warnings: [],
+    } } });
+    api.deployPublishPreview.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        preview: {
+          url: 'https://preview-abc.example.pages.dev',
+          deployment_id: 'dep-1',
+          project_name: 'praxis-bp1',
+          branch: 'preview-cccccccccccc',
+          environment: 'preview',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-preview-2',
+          production: false,
+        },
+      },
+    });
+    api.deployPublishProduction.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        production: {
+          url: 'https://praxis-bp1.pages.dev',
+          deployment_id: 'dep-prod-1',
+          project_name: 'praxis-bp1',
+          branch: 'main',
+          environment: 'production',
+          artifact_sha256: 'c'.repeat(64),
+          evaluation_id: 'eval-prod-1',
+          preview_deployment_id: 'dep-1',
+          deployed_at: '2026-10-06T10:05:00.000Z',
+          production: true,
+          recording_complete: true,
+          recording_warnings: [],
+        },
+      },
+    });
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Live veröffentlichen' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    await waitFor(() => expect(previewDeploy).toBeEnabled());
+    fireEvent.click(previewDeploy);
+
+    const live = await screen.findByRole('button', { name: 'Live veröffentlichen' });
+    fireEvent.click(live);
+
+    await waitFor(() => expect(api.deployPublishProduction).toHaveBeenCalledTimes(1));
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(api.deployPublishProduction).toHaveBeenCalledWith({
+      tenant_id: 'tenant-1',
+      blueprint_id: 'bp-1',
+      confirm_preview: true,
+      confirm_go: true,
+    });
+    const liveLink = await screen.findByRole('link', { name: 'Live-Seite öffnen' });
+    expect(liveLink).toHaveAttribute('href', 'https://praxis-bp1.pages.dev');
+    expect(api.deployPublishProduction.mock.calls[0][0]).not.toHaveProperty('files');
+    expect(api.deployPublishProduction.mock.calls[0][0]).not.toHaveProperty('artifact_sha256');
+
+    confirmSpy.mockRestore();
   });
 
   it('zeigt in der Vorschau das echte Dokument der lokalen Fassung', async () => {
@@ -435,6 +640,145 @@ describe('App Builder Workspace — ungespeicherte Änderungen', () => {
   });
 });
 
+describe('App Builder Workspace — Design-Persistenz', () => {
+  it('macht die Template-Auswahl ungespeichert und sendet nur die Template-ID an siteos/edit', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    const themed = applySiteDesignTemplate(blueprint, 'dark-professional');
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        unchanged: false,
+        blueprint_id: 'bp-2',
+        slug: blueprint.slug,
+        version: 2,
+        content_sha256: 'd'.repeat(64),
+        prev_hash: sha256,
+        blueprint: themed,
+        findings: [],
+        scores: {},
+        changes: [],
+        theme_change: {
+          template: 'dark-professional',
+          summary: 'Design-Vorlage „Dark Professional“ übernommen.',
+        },
+        rejected: [],
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dark Professional' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('save-state')).toHaveAttribute('data-state', 'unsaved'),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^Speichern$/ }));
+
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as Record<string, unknown>;
+    expect(call.design_template).toBe('dark-professional');
+    expect(call).not.toHaveProperty('theme');
+    expect(call).not.toHaveProperty('blueprint');
+    await waitFor(() =>
+      expect(screen.getByTestId('save-state')).toHaveAttribute('data-state', 'saved'),
+    );
+  });
+});
+
+describe('App Builder Workspace — Seitenverwaltung', () => {
+  it('zeigt nur die vom Core erlaubten Aktionen und schützt Rechtsseiten', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+
+    const left = within(screen.getByTestId('left'));
+    const legal = left.getAllByTestId('page-row').find(
+      (row) => row.getAttribute('data-path') === '/impressum',
+    );
+    expect(legal).toBeTruthy();
+    expect(within(legal!).getByLabelText('Rechtsseite, geschützt')).toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /umbenennen/i })).not.toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /duplizieren/i })).not.toBeInTheDocument();
+    expect(within(legal!).queryByRole('button', { name: /löschen/i })).not.toBeInTheDocument();
+
+    const home = left.getAllByTestId('page-row').find(
+      (row) => row.getAttribute('data-path') === '/',
+    );
+    expect(home).toBeTruthy();
+    expect(within(home!).getByRole('button', { name: /umbenennen/i })).toBeInTheDocument();
+    expect(within(home!).getByRole('button', { name: /duplizieren/i })).toBeInTheDocument();
+    expect(within(home!).queryByRole('button', { name: /löschen/i })).not.toBeInTheDocument();
+  });
+
+  it('legt eine Seite als Operation an und speichert offene Redaktion in derselben Version', async () => {
+    const { blueprint, sha256 } = await sample();
+    api.loadLatestBlueprint.mockResolvedValue(storedRow(blueprint, sha256));
+
+    const pageResult = applyPageOperations(blueprint, [
+      { op: 'create', title: 'Wärmepumpen', slug: 'waermepumpen' },
+    ]);
+    api.editSite.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        ok: true,
+        unchanged: false,
+        blueprint_id: 'bp-2',
+        slug: blueprint.slug,
+        version: 2,
+        content_sha256: 'b'.repeat(64),
+        prev_hash: sha256,
+        blueprint: pageResult.blueprint,
+        findings: [],
+        scores: {},
+        changes: [
+          {
+            code: 'block.edited',
+            path: '/',
+            blockId: 'root--hero--1',
+            kind: 'hero',
+            summary: 'Hero bearbeitet.',
+            complianceNote: null,
+          },
+          ...pageResult.changes,
+        ],
+        rejected: [],
+      },
+    });
+
+    renderWorkspace(blueprint.slug);
+    await waitFor(() => expect(screen.getByTestId('editor')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('stub:edit-hero'));
+
+    const left = within(screen.getByTestId('left'));
+    fireEvent.click(left.getByRole('button', { name: /Neue Seite/ }));
+    fireEvent.change(left.getByLabelText('Titel der Seite'), {
+      target: { value: 'Wärmepumpen' },
+    });
+    expect((left.getByLabelText('Slug der Seite') as HTMLInputElement).value).toBe(
+      'waermepumpen',
+    );
+    fireEvent.click(left.getByRole('button', { name: 'Seite anlegen' }));
+
+    await waitFor(() => expect(api.editSite).toHaveBeenCalledTimes(1));
+    const call = api.editSite.mock.calls[0][0] as {
+      edits?: unknown[];
+      pages?: unknown[];
+      base_sha256: string;
+    };
+    expect(call.pages).toEqual([
+      { op: 'create', title: 'Wärmepumpen', slug: 'waermepumpen' },
+    ]);
+    expect(call.edits).toHaveLength(1);
+    expect(call.base_sha256).toBe(sha256);
+    await waitFor(() =>
+      expect(screen.getByTestId('editor')).toHaveAttribute('data-page', '/waermepumpen'),
+    );
+  });
+});
+
 describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
   it('öffnet Puck weiterhin unter /builder/:slug', async () => {
     const { blueprint, sha256 } = await sample();
@@ -507,6 +851,8 @@ describe('App Builder Workspace — Code-Link ohne Puck-Regression', () => {
     fireEvent.click(screen.getByRole('button', { name: /Prüfen/ }));
     await waitFor(() => expect(api.evaluatePublish).toHaveBeenCalled());
     expect(screen.getByText('Impressum fehlt.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Veröffentlichen/ })).toBeDisabled();
+    const previewDeploy = screen.getByRole('button', { name: 'Cloudflare-Vorschau bereitstellen' });
+    expect(previewDeploy).toBeDisabled();
+    expect(previewDeploy.getAttribute('title')).toMatch(/blockiert/);
   });
 });

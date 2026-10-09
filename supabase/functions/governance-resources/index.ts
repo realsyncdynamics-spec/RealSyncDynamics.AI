@@ -4,6 +4,9 @@
 // Authorization: Bearer <user JWT>
 // Body shapes:
 //   { op: 'create_asset',     tenant_id, asset_type, name, ... }
+//   { op: 'update_asset',     asset_id, name?, description?, owner_email?, vendor?,
+//                             intended_purpose?, ai_system_type?, model_name?,
+//                             deployment_model?, data_residency?, status? }
 //   { op: 'archive_asset',    asset_id }
 //   { op: 'create_policy',    tenant_id, name, policy_type, severity, action, condition, ... }
 //   { op: 'toggle_policy',    policy_id, enabled }
@@ -13,14 +16,14 @@
 //
 // Owner / admin gated against `public.memberships`. Reads are
 // handled directly by the frontend via Supabase + tenant-RLS
-// (PR #139). Updates / deletes beyond the two state-only ops here
-// are deferred until pilot signal shows what fields need
-// editing in-place.
+// (PR #139). update_asset (KI-Register, Auftrag §14) ändert nur die
+// Felder aus registryFields.ts — nie Mandant, Typ, Klasse oder Score.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
+import { parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -107,6 +110,7 @@ Deno.serve(async (req) => {
   try {
     switch (body.op) {
       case 'create_asset':    return await createAsset(admin, userId, userEmail, body);
+      case 'update_asset':    return await updateAsset(admin, userId, userEmail, body);
       case 'archive_asset':   return await archiveAsset(admin, userId, userEmail, body);
       case 'create_policy':   return await createPolicy(admin, userId, userEmail, body);
       case 'toggle_policy':   return await togglePolicy(admin, userId, userEmail, body);
@@ -134,6 +138,9 @@ async function createAsset(admin: SupabaseAdminClient, userId: string, userEmail
   const data_types = Array.isArray(b.data_types) ? (b.data_types as string[]).map(String) : [];
   const risk_score = clampInt(b.risk_score, 0, 0, 100);
 
+  const registry = parseRegistryFields(b, 'create');
+  if (!registry.ok) return jsonError(400, 'BAD_REQUEST', registry.error);
+
   const { data, error } = await admin.from('governance_assets').insert({
     tenant_id,
     asset_type,
@@ -146,11 +153,39 @@ async function createAsset(admin: SupabaseAdminClient, userId: string, userEmail
     risk_score,
     ai_act_class,
     status: 'active',
-    metadata: (b.metadata && typeof b.metadata === 'object') ? b.metadata : {},
+    ...registry.patch,
+    metadata: sanitizeAssetMetadata(b.metadata),
   }).select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.create', target_type: 'governance_asset', target_id: data.id, payload: { name: data.name, asset_type, ai_act_class } });
   return jsonResponse({ ok: true, asset: data });
+}
+
+
+async function updateAsset(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+  const asset_id = b.asset_id as string;
+  if (!asset_id || typeof asset_id !== 'string') return jsonError(400, 'BAD_REQUEST', 'asset_id required');
+
+  const { data } = await admin.from('governance_assets')
+    .select('tenant_id, status').eq('id', asset_id).maybeSingle();
+  const row = data as { tenant_id: string; status: string } | null;
+  if (!row) return jsonError(404, 'NOT_FOUND', 'asset not found');
+  // Mandant aus der Zeile, nicht aus dem Body; Rolle gegen memberships.
+  if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  if (row.status === 'archived') return jsonError(409, 'ASSET_ARCHIVED', 'archived assets cannot be edited');
+
+  const fields = parseRegistryFields(b, 'update');
+  if (!fields.ok) return jsonError(400, 'BAD_REQUEST', fields.error);
+
+  const { error } = await admin.from('governance_assets').update(fields.patch).eq('id', asset_id);
+  if (error) throw error;
+  await audit(admin, {
+    tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail,
+    action: 'asset.update', target_type: 'governance_asset', target_id: asset_id,
+    payload: { fields: Object.keys(fields.patch).sort() },
+  });
+  const { data: updated } = await admin.from('governance_assets').select('*').eq('id', asset_id).maybeSingle();
+  return jsonResponse({ ok: true, asset: updated });
 }
 
 

@@ -14,33 +14,37 @@
 // `docs/product/app-builder-zielbild.md` §4.
 //
 // Was sie nicht tut: keinen Blueprint aus dem Browser speichern (die
-// Sicherheitsbasis aus #1248 bleibt), keine Seiten anlegen (PR B), keinen
-// LLM-Assistenten (PR C), nichts veröffentlichen (PR D — es gibt keinen
-// Auslieferungspfad), keine Medien (PR E). Wo etwas fehlt, steht das dran.
+// Sicherheitsbasis aus #1248 bleibt), keinen ungeprüften Deploy und keinen
+// Production-Cutover aus dem Editor. Eine reale Cloudflare-Preview läuft
+// ausschließlich über den serverseitig bewerteten SiteOS-Publish-Pfad.
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, ChevronLeft, Code2, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
+  ArrowRight, Check, ChevronLeft, Code2, ExternalLink, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
   Smartphone, Sparkles, Tablet, Upload,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../supabase/SupabaseAuthContext';
 import { SandboxedPreviewFrame } from '../../../components/preview/SandboxedPreviewFrame';
 import { createSiteOsCheckoutSession } from '../../billing/checkout';
+import { useEntitlements } from '../../../core/billing/useEntitlements';
 import {
   analyzeBlueprint,
-  applyPageEdits,
+  applySiteEdits,
   canonicalize,
   renderSite,
+  type PageOperation,
   type PublishGateEvaluation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index';
-import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
+import { matchDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../../../packages/siteos-core/src/render/templates';
+import { BuilderUpgradePanel } from '../BuilderUpgradePanel';
+import { builderUpgradeHref, canOpenAppBuilder, canPublishSite, resolveBuilderEntitlements } from '../builderEntitlements';
 import {
-  editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
+  bindSiteProject, deployPublishPreview, deployPublishProduction, editSite, errorMessage, evaluatePublish, listAgentRuns, listBlueprintChain, listCustodyEvents,
   listEvaluations, loadLatestBlueprint,
-  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type StoredBlueprintRow,
+  type AgentRunRow, type CustodyEventRow, type EvaluationRow, type PublishPreviewResponse, type PublishProductionResponse, type StoredBlueprintRow,
 } from '../siteOsApi';
 import { toPageEdit, type PuckPageData } from '../editor/blueprintPuckAdapter';
 import {
@@ -69,6 +73,13 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const { slug = '' } = useParams<{ slug: string }>();
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const { isAuthenticated } = useSupabaseAuth();
+  const entitlements = useEntitlements();
+  const builderSnapshot = useMemo(
+    () => resolveBuilderEntitlements(entitlements.tier, entitlements.features),
+    [entitlements.tier, entitlements.features],
+  );
+  const entitled = canOpenAppBuilder(builderSnapshot);
+  const publishEntitled = canPublishSite(builderSnapshot);
   const location = useLocation();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   // Nur der Erstbau kennt die Ausgangs-URL; er reicht sie als Parameter
@@ -88,7 +99,8 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [pagePath, setPagePath] = useState('/');
   const [mode, setMode] = useState<Mode>('edit');
   const [device, setDevice] = useState<Device>('desktop');
-  const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
+  // null = gespeichertes Theme unverändert lassen; Auswahl wird erst beim Speichern Teil der Version.
+  const [templateOverride, setTemplateOverride] = useState<SiteDesignTemplate | null>(null);
   const [navTab, setNavTab] = useState<NavTab>('pages');
   const [rightTab, setRightTab] = useState<RightTab>('assistant');
   const [bottomTab, setBottomTab] = useState<BottomTab>('console');
@@ -100,6 +112,10 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const [instruction, setInstruction] = useState('');
   const [gate, setGate] = useState<PublishGateEvaluation | null>(null);
   const [checking, setChecking] = useState(false);
+  const [previewDeploying, setPreviewDeploying] = useState(false);
+  const [productionDeploying, setProductionDeploying] = useState(false);
+  const [hostedPreview, setHostedPreview] = useState<PublishPreviewResponse['preview'] | null>(null);
+  const [liveDeployment, setLiveDeployment] = useState<PublishProductionResponse['production'] | null>(null);
   const [console_, setConsole] = useState<ConsoleEntry[]>([]);
   const [chain, setChain] = useState<ChainRow[]>([]);
   const [evaluations, setEvaluations] = useState<EvaluationRow[]>([]);
@@ -138,6 +154,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       return;
     }
     if (!slug) { setLoadState('not_found'); return; }
+    if (entitlements.loading || !entitled) return;
     let cancelled = false;
     (async () => {
       setLoadState('loading');
@@ -159,15 +176,16 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId, tenantLoading, isAuthenticated, navigate, slug, log, loadGovernance, location.pathname, location.search]);
+  }, [activeTenantId, tenantLoading, isAuthenticated, entitlements.loading, entitled, navigate, slug, log, loadGovernance, location.pathname, location.search]);
 
   // ── Lokale Fassung ───────────────────────────────────────────────────
   const edits = useMemo(() => Object.entries(pageData).map(([path, data]) => toPageEdit(path, data)), [pageData]);
-  // Dieselbe Logik wie der Server: Die Leinwand zeigt, was gespeichert würde.
+  // Dieselbe Logik wie der Server: Blöcke und optionales Design ergeben die lokale Fassung.
   const localBlueprint = useMemo<SiteBlueprint | null>(
-    () => stored ? (edits.length > 0 ? applyPageEdits(stored.blueprint, edits).blueprint : stored.blueprint) : null,
-    [stored, edits],
+    () => stored ? applySiteEdits(stored.blueprint, edits, templateOverride).blueprint : null,
+    [stored, edits, templateOverride],
   );
+  const activeTemplate = useMemo(() => matchDesignTemplate(localBlueprint?.theme), [localBlueprint]);
   const dirty = useMemo(
     () => Boolean(stored && localBlueprint && canonicalize(localBlueprint) !== canonicalize(stored.blueprint)),
     [stored, localBlueprint],
@@ -179,13 +197,11 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   // abgeleitet. Ohne Bewertung steht „keine" da, nicht „in Ordnung".
   const govStatus = useMemo(() => governanceStatus(evaluations, stored?.id ?? ''), [evaluations, stored?.id]);
 
-  const previewBlueprint = useMemo(() => localBlueprint ? applySiteDesignTemplate(localBlueprint, template) : null, [localBlueprint, template]);
   const previewHtml = useMemo(
-    () => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: sourceUrl ?? undefined, presentation: 'showcase' }).find((p) => p.path === pagePath)?.html ?? '' : '',
-    [previewBlueprint, sourceUrl, pagePath],
+    () => localBlueprint ? renderSite(localBlueprint, { baseUrl: sourceUrl ?? undefined, presentation: 'showcase' }).find((p) => p.path === pagePath)?.html ?? '' : '',
+    [localBlueprint, sourceUrl, pagePath],
   );
 
-  // ── Speichern ────────────────────────────────────────────────────────
   // ── Ungespeicherte Änderungen schützen ────────────────────────────────
   useEffect(() => {
     if (!dirty) return;
@@ -203,19 +219,31 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     }
   };
 
-  const save = async () => {
-    if (!activeTenantId || !stored || edits.length === 0 || saving) return;
+  // ── Speichern — Redaktion und Seitenoperationen, ein Weg ─────────────
+  // Seitenoperationen werden zusammen mit offenen Puck-Änderungen in genau
+  // einem siteos/edit-Request versioniert. Der Client schickt nur Absichten.
+  const persist = async (ops: PageOperation[] = []) => {
+    if (!activeTenantId || !stored || saving) return;
+    if (edits.length === 0 && ops.length === 0 && !templateOverride) return;
     setSaving(true); setSaveError('');
     try {
-      const result = await editSite({ tenant_id: activeTenantId, slug: stored.blueprint.slug, base_sha256: stored.content_sha256, edits });
+      const result = await editSite({
+        tenant_id: activeTenantId,
+        slug: stored.blueprint.slug,
+        base_sha256: stored.content_sha256,
+        ...(edits.length > 0 ? { edits } : {}),
+        ...(ops.length > 0 ? { pages: ops } : {}),
+        ...(templateOverride ? { design_template: templateOverride } : {}),
+      });
       if (result.kind !== 'ok') throw new Error(errorMessage(result));
       const saved = result.data;
+      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
+
       if (saved.unchanged) {
-        // Der Server hat nichts geschrieben — das ist kein Erfolg, sondern
-        // ein leeres Ergebnis. Der Zustand bleibt, wie er ist.
         log('info', 'Keine Änderungen zu speichern — Server hat keine neue Version angelegt.');
         return;
       }
+
       setStored({
         ...stored,
         id: saved.blueprint_id ?? stored.id,
@@ -226,11 +254,24 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         status: 'draft',
       });
       setPageData({});
+      setTemplateOverride(null);
       setRevision((r) => r + 1);
       setGate(null);
-      log('ok', `Version ${saved.version} gespeichert und geprüft (${saved.changes.length} Änderung${saved.changes.length === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
+      setHostedPreview(null);
+      setLiveDeployment(null);
+      const changeCount = saved.changes.length + (saved.theme_change ? 1 : 0);
+      log('ok', `Version ${saved.version} gespeichert und geprüft (${changeCount} Änderung${changeCount === 1 ? '' : 'en'}${saved.rejected.length > 0 ? `, ${saved.rejected.length} abgewiesen` : ''}).`);
+      if (saved.theme_change) log('info', saved.theme_change.summary);
       for (const change of saved.changes) log('info', `${change.summary}${change.complianceNote ? ` — ${change.complianceNote}` : ''}`);
-      for (const r of saved.rejected) log('error', `Abgewiesen: ${r}`);
+
+      const created = saved.changes.find((change) =>
+        change.code === 'page.created' || change.code === 'page.duplicated');
+      const moved = saved.changes.find((change) =>
+        change.code === 'page.moved' && 'previousPath' in change && change.previousPath === pagePath);
+      if (created) setPagePath(created.path);
+      else if (moved) setPagePath(moved.path);
+      else if (!saved.blueprint.pages.some((page) => page.path === pagePath)) setPagePath('/');
+
       void loadGovernance(activeTenantId, stored.blueprint.slug);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Die Änderungen konnten nicht gespeichert werden.';
@@ -238,6 +279,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       log('error', `Speichern fehlgeschlagen: ${message}`);
     } finally { setSaving(false); }
   };
+  const save = () => persist();
 
   // ── Prüfen (Publish Gate) ────────────────────────────────────────────
   const check = async () => {
@@ -253,6 +295,87 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     } catch (cause) {
       log('error', `Prüfung fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
     } finally { setChecking(false); }
+  };
+
+  // ── Reale Cloudflare-Vorschau ───────────────────────────────────────
+  const deployPreview = async () => {
+    if (!activeTenantId || !stored || dirty || previewDeploying || !publishEntitled) return;
+    setPreviewDeploying(true);
+    try {
+      if (!stored.project_id) {
+        const binding = await bindSiteProject({
+          tenant_id: activeTenantId,
+          blueprint_id: stored.id,
+        });
+        if (binding.kind !== 'ok') throw new Error(errorMessage(binding));
+        setStored((current) => current && current.id === stored.id
+          ? { ...current, project_id: binding.data.project.id }
+          : current);
+        log(
+          'info',
+          binding.data.created
+            ? `Website-Projekt angelegt und gebunden: ${binding.data.project.name}`
+            : `Vorhandenes Website-Projekt gebunden: ${binding.data.project.name}`,
+        );
+      }
+
+      const result = await deployPublishPreview({
+        tenant_id: activeTenantId,
+        blueprint_id: stored.id,
+        confirm_preview_deploy: true,
+        ...(sourceUrl ? { base_url: sourceUrl } : {}),
+      });
+      if (result.kind !== 'ok') throw new Error(errorMessage(result));
+      setHostedPreview(result.data.preview);
+      setLiveDeployment(null);
+      setMode('preview');
+      setRightTab('governance');
+      setMobilePane('right');
+      log(
+        'ok',
+        `Cloudflare-Vorschau bereit: ${result.data.preview.branch} · ${result.data.preview.artifact_sha256.slice(0, 12)}…`,
+      );
+      void loadGovernance(activeTenantId, stored.blueprint.slug);
+    } catch (cause) {
+      log('error', `Vorschau-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
+    } finally {
+      setPreviewDeploying(false);
+    }
+  };
+
+  // ── Production-Cutover nach realer Vorschau ─────────────────────────
+  const deployProduction = async () => {
+    if (!activeTenantId || !stored || !hostedPreview || dirty || productionDeploying || !publishEntitled) return;
+
+    const confirmed = window.confirm(
+      'Ich habe die reale Cloudflare-Vorschau geprüft und bestätige die Veröffentlichung dieser Version in Production.',
+    );
+    if (!confirmed) return;
+
+    setProductionDeploying(true);
+    try {
+      const result = await deployPublishProduction({
+        tenant_id: activeTenantId,
+        blueprint_id: stored.id,
+        confirm_preview: true,
+        confirm_go: true,
+        ...(sourceUrl ? { base_url: sourceUrl } : {}),
+      });
+      if (result.kind !== 'ok') throw new Error(errorMessage(result));
+      setLiveDeployment(result.data.production);
+      log(
+        'ok',
+        `Production veröffentlicht: ${result.data.production.branch} · ${result.data.production.artifact_sha256.slice(0, 12)}…`,
+      );
+      for (const warning of result.data.production.recording_warnings) {
+        log('error', `Production ist live, Nachweis-Synchronisierung unvollständig: ${warning}`);
+      }
+      void loadGovernance(activeTenantId, stored.blueprint.slug);
+    } catch (cause) {
+      log('error', `Production-Deploy fehlgeschlagen: ${cause instanceof Error ? cause.message : String(cause)}`);
+    } finally {
+      setProductionDeploying(false);
+    }
   };
 
   // ── KI-Neubau (vorhandener Pfad, kein LLM) ───────────────────────────
@@ -274,6 +397,11 @@ export default function AppBuilderWorkspacePage(): ReactElement {
       setBusy(false);
     }
   };
+
+  // ── Zugang (siteos.builder) ──────────────────────────────────────────
+  if (isAuthenticated && activeTenantId && !entitlements.loading && !entitled) {
+    return <BuilderUpgradePanel snapshot={builderSnapshot} reason="no_entitlement" />;
+  }
 
   // ── Zustände ohne Projekt ────────────────────────────────────────────
   if (loadState !== 'ready' || !stored || !localBlueprint) {
@@ -355,19 +483,71 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         >
           {checking ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}<span className="hidden sm:inline">Prüfen</span>
         </button>
-        {/* Veröffentlichen gibt es noch nicht: Es existiert kein Pfad vom
-            Artefakt zu einer öffentlichen Adresse (gemessen 2026-09-07).
-            Der Knopf steht hier, damit die Kopfzeile ihre Form hat — und
-            sagt, warum er nichts tut, statt so zu tun als ob. */}
-        <button
-          disabled
-          aria-disabled="true"
-          title="Auslieferung nicht verdrahtet: Es gibt noch keinen Pfad von der geprüften Version zu einer öffentlichen Adresse. Folgt mit dem Publish-Schritt."
-          aria-label="Veröffentlichen"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white opacity-40 sm:px-3"
-        >
-          <Upload size={14} /><span className="hidden sm:inline">Veröffentlichen</span>
-        </button>
+        {liveDeployment && (
+          <a
+            href={liveDeployment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Live-Seite öffnen"
+            title={`Production öffnen · ${liveDeployment.artifact_sha256.slice(0, 12)}…`}
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-2 text-xs font-bold text-emerald-900 sm:px-3"
+          >
+            <ExternalLink size={14} /><span className="hidden sm:inline">Live öffnen</span>
+          </a>
+        )}
+        {hostedPreview && (
+          <a
+            href={hostedPreview.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Cloudflare-Vorschau öffnen"
+            title={`Geprüfte Cloudflare-Vorschau öffnen · ${hostedPreview.artifact_sha256.slice(0, 12)}…`}
+            className="inline-flex items-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-900 sm:px-3"
+          >
+            <ExternalLink size={14} /><span className="hidden sm:inline">Vorschau öffnen</span>
+          </a>
+        )}
+        {hostedPreview && publishEntitled && (
+          <button
+            onClick={() => void deployProduction()}
+            disabled={dirty || productionDeploying || previewDeploying || saving || busy}
+            title="Nach bestätigter Prüfung der realen Vorschau in Production veröffentlichen"
+            aria-label="Live veröffentlichen"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-2.5 py-2 text-xs font-bold text-white disabled:opacity-40 sm:px-3"
+          >
+            {productionDeploying ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            <span className="hidden sm:inline">Live veröffentlichen</span>
+          </button>
+        )}
+        {publishEntitled ? (
+          <button
+            onClick={() => void deployPreview()}
+            disabled={dirty || previewDeploying || saving || busy || gate?.publishable !== true}
+            title={
+              dirty
+                ? 'Erst speichern — bereitgestellt wird ausschließlich die gespeicherte Version.'
+                : !gate
+                  ? 'Erst „Prüfen“ ausführen — die Vorschau wird nur nach bestandenem Publish Gate bereitgestellt.'
+                  : !gate.publishable
+                    ? 'Publish Gate blockiert diese Version.'
+                    : 'Frisch erneut prüfen und als Cloudflare-Preview bereitstellen'
+            }
+            aria-label="Cloudflare-Vorschau bereitstellen"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white disabled:opacity-40 sm:px-3"
+          >
+            {previewDeploying ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            <span className="hidden sm:inline">{hostedPreview ? 'Vorschau erneuern' : 'Vorschau bereitstellen'}</span>
+          </button>
+        ) : (
+          <a
+            href={builderUpgradeHref(builderSnapshot.planId, 'publish_locked')}
+            aria-label="Veröffentlichen freischalten"
+            title="siteos.publish ist in diesem Tarif nicht freigeschaltet."
+            className="inline-flex items-center gap-2 rounded-lg bg-[#111827] px-2.5 py-2 text-xs font-bold text-white sm:px-3"
+          >
+            <Upload size={14} /><span className="hidden sm:inline">Publish freischalten</span>
+          </a>
+        )}
       </div>
     </header>
   );
@@ -387,7 +567,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1 sm:hidden" role="group" aria-label="Ansicht">
           <button onClick={() => setMode('edit')} aria-pressed={mode === 'edit'} className={`rounded-md p-1.5 ${mode === 'edit' ? 'bg-white shadow' : ''}`} aria-label="Bearbeiten"><PencilLine size={14} /></button>
           <button onClick={() => setMode('preview')} aria-pressed={mode === 'preview'} className={`rounded-md p-1.5 ${mode === 'preview' ? 'bg-white shadow' : ''}`} aria-label="Vorschau"><Eye size={14} /></button>
-          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} className="rounded-md p-1.5" aria-label="Code-Builder" data-testid="open-code-builder-mobile"><Code2 size={14} /></Link>
+          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} onClick={confirmLeave} className="rounded-md p-1.5" aria-label="Code-Builder" data-testid="open-code-builder-mobile"><Code2 size={14} /></Link>
         </div>
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1" role="group" aria-label="Gerät">
           <button onClick={() => setDevice('desktop')} className={`rounded-md p-1.5 ${device === 'desktop' ? 'bg-white shadow' : ''}`} aria-label="Desktop" aria-pressed={device === 'desktop'}><Monitor size={14} /></button>
@@ -402,9 +582,15 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     <div className="mt-7 border-t border-black/[.07] pt-5">
       <div className={SECTION_LABEL}>Design</div>
       {SITE_DESIGN_TEMPLATES.map((item) => (
-        <button key={item.id} onClick={() => setTemplate(item.id)} aria-pressed={template === item.id} className={`mb-2 flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs ${template === item.id ? 'border-cyan-400/40 bg-cyan-50 text-cyan-800' : 'border-black/[.07]'}`}>{item.label}{template === item.id && <Check size={14} />}</button>
+        <button key={item.id} onClick={() => setTemplateOverride(item.id)} aria-pressed={activeTemplate === item.id} className={`mb-2 flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs ${activeTemplate === item.id ? 'border-cyan-400/40 bg-cyan-50 text-cyan-800' : 'border-black/[.07]'}`}>{item.label}{activeTemplate === item.id && <Check size={14} />}</button>
       ))}
-      <p className="text-[11px] leading-5 text-black/45">Die Vorlage wirkt auf Vorschau und Leinwand; gespeichert wird sie nicht — der Blueprint trägt sein eigenes Theme.</p>
+      {activeTemplate === null && (
+        <p className="mb-2 text-[11px] leading-5 text-black/55" data-testid="custom-theme">Eigenes Theme aus dem Bau — eine Vorlage ersetzt Farben, Schriften und Radius.</p>
+      )}
+      {templateOverride && (
+        <button onClick={() => setTemplateOverride(null)} className="mb-2 text-[11px] font-semibold text-cyan-700 underline">Vorlage verwerfen</button>
+      )}
+      <p className="text-[11px] leading-5 text-black/45">Die Vorlage wird mit „Speichern“ Teil der neuen Version und vom Publish Gate mitgeprüft.</p>
     </div>
   );
 
@@ -483,7 +669,6 @@ export default function AppBuilderWorkspacePage(): ReactElement {
             <SiteOsBlockEditor
               storedBlueprint={stored.blueprint}
               localBlueprint={localBlueprint}
-              template={template}
               pagePath={pagePath}
               pageData={pageData[pagePath]}
               onPageDataChange={(path, data) => setPageData((prev) => ({ ...prev, [path]: data }))}
@@ -493,14 +678,14 @@ export default function AppBuilderWorkspacePage(): ReactElement {
               renderRight={(parts) => rightColumn(parts.fields)}
               mobilePane={editorPane}
               renderLeft={(parts) => (
-                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} puck={parts} />
+                <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} puck={parts} />
               )}
             />
           </Suspense>
         ) : (
           <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[260px_minmax(0,1fr)_320px]">
             <aside className={`${editorPane === 'left' ? 'block' : 'hidden'} border-r border-black/[.07] bg-white p-4 lg:block`}>
-              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} />
+              <ProjectNav tab={navTab} onTab={setNavTab} blueprint={localBlueprint} pagePath={pagePath} onOpenPage={setPagePath} onPageOperations={(ops) => void persist(ops)} busy={saving || busy} />
             </aside>
             <section className={`${editorPane === 'canvas' ? 'block' : 'hidden'} min-w-0 p-3 sm:p-5 lg:block`}>
               {canvasHeader}

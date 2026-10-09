@@ -19,8 +19,6 @@ export const LV2_STACK = [
   'Supabase · Postgres / Auth / RLS',
   'Supabase Edge Functions · Deno',
   'Evidence Vault · Hash-Chain',
-  'VPS · Docker / Traefik',
-  'Ollama · Hermes · AnythingLLM',
   'Stripe Billing',
 ] as const;
 
@@ -132,8 +130,6 @@ export const LV2_EU_NATIVE: Lv2EuCard[] = [
   { icon: 'server', title: 'Cloudflare Pages', text: 'Die öffentliche React/Vite-SPA wird über die Cloudflare-Git-Integration aus main ausgeliefert.' },
   { icon: 'database', title: 'Supabase · Data & Auth', text: 'Postgres, Auth und mandantenfähige Row-Level Security bilden die autoritative Daten- und Identitätsschicht.' },
   { icon: 'layers', title: 'Supabase Edge Functions', text: 'Deno-Functions liefern die serverseitigen API- und Governance-Funktionen unter /functions/v1/*.' },
-  { icon: 'cpu', title: 'VPS · Docker / Traefik', text: 'Der Container-Pfad betreibt lokale KI- und Ops-Dienste hinter Traefik/TLS.' },
-  { icon: 'workflow', title: 'Ollama · Hermes · AnythingLLM', text: 'Lokale Modell-, Automations- und RAG-Dienste bleiben als eigener Runtime-Pfad sichtbar statt im Marketing zu verschwinden.' },
   { icon: 'creditcard', title: 'Stripe Billing', text: 'Self-Service-Billing für die buchbaren Pläne; Enterprise führt bewusst in die Anfrage statt in einen Fake-Checkout.' },
 ];
 
@@ -190,16 +186,7 @@ export const LV2_INFRASTRUCTURE: readonly Lv2InfrastructureItem[] = [
     text: 'Hash-Chain, Prüfpfad und Evidence-Flächen werden als eigener Proof-Layer sichtbar — nicht nur als Claim im Hero.',
   },
   {
-    layer: '05 · LOCAL AI / OPS',
-    title: 'VPS · Docker / Traefik',
-    status: 'PROD PATH',
-    path: 'Ollama · Hermes · AnythingLLM · Uptime Kuma',
-    to: '/governance-runtime',
-    cta: 'Runtime ansehen',
-    text: 'Lokale KI, Automation, RAG und Monitoring laufen im dokumentierten Container-Pfad hinter Traefik.',
-  },
-  {
-    layer: '06 · ENTRY PATH',
+    layer: '05 · ENTRY PATH',
     title: 'Activation → Command Center',
     status: 'LIVE SURFACE',
     path: '/welcome → /app/activation → /app/dashboard',
@@ -217,7 +204,7 @@ export interface Lv2Faq {
 export const LV2_FAQ: Lv2Faq[] = [
   {
     q: 'Wo werden unsere Daten verarbeitet?',
-    a: 'Ausschließlich in der EU – Runtime und Datenbank laufen in Frankfurt am Main. Modelle können lokal über Ollama betrieben werden.',
+    a: 'Ausschließlich in der EU – Runtime und Datenbank laufen in Frankfurt am Main.',
   },
   {
     q: 'Welche Regelwerke deckt die Plattform ab?',

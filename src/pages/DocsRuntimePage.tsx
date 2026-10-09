@@ -12,7 +12,7 @@ import { ScannerTechStackSection } from '../components/sections/ScannerTechStack
 
 export function DocsRuntimePage() {
   usePageMeta({
-    title: 'Docs — Architecture, Tech Security, Integrations | RealSync',
+    title: 'Docs — Architecture, Tech Security, Integrations | RealSync Dynamics AI',
     description:
       'Technische Tiefe: Architektur, Tech-Security, Scanner-Stack, Integrationen und System-Level-Controls der RealSync Runtime.',
     url: 'https://RealSyncDynamicsAI.de/docs',

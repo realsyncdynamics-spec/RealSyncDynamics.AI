@@ -10,11 +10,12 @@ import { STATUS_LABEL } from '../../product/implementation-status';
 import {
   builderUpgradeHref,
   type BuilderEntitlementSnapshot,
+  type BuilderUpgradeReason,
 } from './builderEntitlements';
 
 export interface BuilderUpgradePanelProps {
   snapshot: BuilderEntitlementSnapshot;
-  reason: 'no_entitlement' | 'sites_exhausted' | 'publish_locked';
+  reason: BuilderUpgradeReason;
   /** Optional override (e.g. from useEntitlements().canAccess). */
   upgradeHref?: string;
 }
@@ -47,7 +48,7 @@ export function BuilderUpgradePanel({
   upgradeHref,
 }: BuilderUpgradePanelProps) {
   const copy = COPY[reason];
-  const href = upgradeHref ?? builderUpgradeHref(snapshot.planId);
+  const href = upgradeHref ?? builderUpgradeHref(snapshot.planId, reason);
   const isEnterpriseInquiry = href.includes('/contact-sales');
 
   return (

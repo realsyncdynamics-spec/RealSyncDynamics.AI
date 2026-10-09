@@ -22,6 +22,7 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `governance-monitoring-hourly` / `-daily` | `governance-monitoring-scheduler` | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `memory-decay-hourly` | `memory-decay-worker` | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
+| `audit-monitor-daily` | `audit-monitor-cron` | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
@@ -97,6 +98,18 @@ HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
 `401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer und Body
 `{"trigger":"manual","dry_run":true}`.
 
+### `audit-monitor-daily` → `audit-monitor-cron` (neu, 2026-10-09)
+
+Täglich 04:00 UTC Re-Scan der `monitored_domains` (Kadenz je Plan: täglich mit
+`monitoring.daily`, monatlich mit nur `monitoring.monthly`, sonst kein
+Dauerbetrieb). Reihenfolge nach dem Merge: Vault-Eintrag `cron_audit_monitor_key`
++ Function Secret `CRON_AUDIT_MONITOR_KEY` (derselbe Zufallswert) → Migration
+`20261009230000_audit_monitor_daily_cron.sql` → Deploy der Function.
+Fail-closed: Vault fehlt → Lauf `failed` ohne HTTP-Request; Secret fehlt →
+`500 CRON_KEY_MISSING`; Werte verschieden → `401 cron only`; Scan- oder
+Evidence-Fehler → Antwort `ok:false` (HTTP 500), kein Alert. Drift-Mails nutzen
+das vorhandene `RESEND_API_KEY`; fehlt es, steht `alert: not_configured` im Ergebnis.
+
 ## Prüfen, dass es gewirkt hat
 
 Der nächste Lauf kommt binnen 15 Minuten (`scan-scheduler-dispatch`).
@@ -107,7 +120,8 @@ from cron.job j
 join cron.job_run_details d on d.jobid = j.jobid
 where j.jobname in (
   'scan-scheduler-dispatch','governance-monitoring-hourly',
-  'memory-decay-hourly','governance-monitoring-daily','website-rescan-daily'
+  'memory-decay-hourly','governance-monitoring-daily','website-rescan-daily',
+  'audit-monitor-daily'
 )
 order by d.start_time desc
 limit 8;

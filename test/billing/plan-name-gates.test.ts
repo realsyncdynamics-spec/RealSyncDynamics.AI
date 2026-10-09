@@ -47,16 +47,16 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
     }
   });
 
-  it('nennt die drei echten Gates namentlich', () => {
-    // Diese drei entscheiden, was ein zahlender Kunde bekommt: Kontingent,
-    // Monitoring-Takt, Aufbewahrungsdauer. Verschwindet einer aus der Liste,
+  it('nennt die echten Gates namentlich', () => {
+    // Diese entscheiden, was ein zahlender Kunde bekommt: Kontingent,
+    // Aufbewahrungsdauer. Der Monitoring-Takt (audit-monitor-cron) hängt seit
+    // 2026-10-09 an monitoring.daily/monthly + limit.domains statt am Namen. Verschwindet einer aus der Liste,
     // ohne dass die Fundstelle behoben wurde, ist die Ratsche stumpf
     // geworden — deshalb stehen sie hier fest.
     const gates = baseline.filter((b) => b.art === 'GATE').map((b) => b.datei).sort();
     expect(gates).toEqual([
       'src/core/billing/useScanLimits.ts',
       'src/features/governance/terminal/agents/AuditAgent.ts',
-      'supabase/functions/audit-monitor-cron/index.ts',
     ]);
   });
 

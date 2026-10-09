@@ -8,14 +8,6 @@
     "seit": "2026-09-06"
   },
   {
-    "datei": "supabase/functions/audit-monitor-cron/index.ts",
-    "plan": "starter",
-    "fundstellen": 1,
-    "art": "GATE",
-    "grund": "Monitoring-Takt haengt am Plan-Namen: starter alle 30 Tage, alle anderen taeglich. Eine Frequenz ist ein Kontingent und gehoert nach limitOf(). Aenderung verschiebt eine zugesagte Leistung -> Fragepflicht.",
-    "seit": "2026-09-06"
-  },
-  {
     "datei": "src/features/governance/terminal/agents/AuditAgent.ts",
     "plan": "free",
     "fundstellen": 3,

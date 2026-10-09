@@ -4,7 +4,7 @@ import { usePageMeta } from '../lib/usePageMeta';
 
 export function Developers() {
   usePageMeta({
-    title: 'Developers — API-first Governance | RealSyncDynamics.AI',
+    title: 'Developers — API-first Governance | RealSync Dynamics AI',
     description:
       'API-first Governance. SDKs für TypeScript, Webhooks, GitHub Actions, Browser Extension und Event Ingestion. So integriert ihr Compliance ins Build-System.',
   });

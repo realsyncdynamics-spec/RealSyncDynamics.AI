@@ -164,7 +164,7 @@ export function BranchenLanding({
               description: config.jsonLd.description,
               datePublished: config.jsonLd.datePublished,
               inLanguage: 'de-DE',
-              author: { '@type': 'Organization', name: 'RealSync Dynamics' },
+              author: { '@type': 'Organization', name: 'RealSync Dynamics AI' },
             }),
           }}
         />

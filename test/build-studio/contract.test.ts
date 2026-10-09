@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   BUILD_STUDIO_LIMITS,
   attachSurface,
@@ -81,5 +83,28 @@ describe('Builder-01 contract', () => {
 
   it('encodes the store slug into the route', () => {
     expect(surfaceHref({ kind: 'site', slug: 'a b/c' as never, route: '/builder/:slug' })).toBe('/builder/a%20b%2Fc');
+  });
+
+  it('keeps legacy builder links on the canonical /build entry', () => {
+    const app = readFileSync(resolve('src/App.tsx'), 'utf8');
+    const siteosDashboard = readFileSync(
+      resolve('src/features/siteos/SiteOsDashboardView.tsx'),
+      'utf8',
+    );
+    const complianceDashboard = readFileSync(
+      resolve('src/features/governance/dashboard/ComplianceStatusDashboard.tsx'),
+      'utf8',
+    );
+
+    const legacyRoute =
+      app.split('\n').find((line) => line.includes('path="/app/siteos/builder"')) ?? '';
+
+    expect(legacyRoute).toContain('<AppGate>');
+    // Ziel und Query-Erhalt prueft legacy-builder-redirect.test.tsx am Router.
+    expect(legacyRoute).toContain('<LegacySiteOsBuilderRedirect />');
+    expect(siteosDashboard).toContain('to="/build?kind=website"');
+    expect(complianceDashboard).toContain("href: '/build?kind=web_app'");
+    expect(siteosDashboard).not.toContain('to="/app/siteos/builder"');
+    expect(complianceDashboard).not.toContain("href: '/app/siteos/builder'");
   });
 });

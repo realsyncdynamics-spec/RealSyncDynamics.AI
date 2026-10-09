@@ -33,7 +33,7 @@ steht damit so:
 | O-WP5 App Builder Phase 1 | **erledigt (früher als geplant)** | Inhalt von #1746 kam über #1789 auf `main`; #1746 geschlossen → **E-O7 erledigt** |
 | O-WP6 Governance-Kette | **offen — 0 PRs** | wichtigste Lücke für KW 42/43 |
 | O-WP7 Backend-Verkabelung | läuft | #1745, #1760, #1768 gemergt |
-| O-WP8 Monetarisierung | läuft | Jahrespreise (#1744), Plan-Katalog (#1811), Begriffe (#1679) gemergt; #1748 hängt an **E-O3** |
+| O-WP8 Monetarisierung | läuft | Jahrespreise (#1744), Plan-Katalog (#1811), Begriffe (#1679) gemergt; #1748 widerspricht E-O3 (§ 19 UStG) |
 | O-WP9 Publish Controller | **vorgezogen** | Gate → Preview → Production (Owner/Admin, explizites GO) über #1789 auf `main`; **Rollback fehlt**, Domain/DNS bleibt Preview (E-O5) |
 | O-WP10 Live-Readiness | blockiert | Cron: 3 Functions antworten 401 (Function-Secret ≠ Vault, siehe unten); CI: Docker-Hub-Ausfälle (#1816) |
 
@@ -51,7 +51,7 @@ Vorgehen: `docs/runbooks/cron-vault-secrets.md`. Manueller Schritt im
 Dashboard, kein Code-Fix.
 
 **Entscheidungen:** E-O2 umgesetzt (Vertrag), E-O4 erledigt, E-O5 eingehalten,
-E-O7 erledigt. Offen: **E-O3** (USt), **E-O6** (Go/No-Go 30.10.), Freigabe
+E-O7 erledigt, E-O3 durch die Triage-Policy entschieden (§ 19 UStG). Offen: **E-O6** (Go/No-Go 30.10.), Freigabe
 #1809 (Design-Freeze).
 
 **Nächste Schwerpunkte KW 42:** O-WP6 erster Schnitt (Publish-Request →
@@ -96,7 +96,7 @@ O-WP2 Landing-Claims ─┘                     └─► O-WP5 App Builder ─�
 
 ## 3. Arbeitspakete
 
-Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR.**
+Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR** — neue Feature-PRs erst, wenn höchstens 20 PRs offen sind (WIP-Stopp, `.github/PR_TRIAGE_POLICY.md`); Triage-, Ersatz-, Security- und Docs-PRs sind ausgenommen.
 
 ### O-WP1 — Stabilisieren (KW 41)
 **Ziel:** 31 offene PRs triagiert, Security-Fixes zuerst gemerged (mit GO).
@@ -229,7 +229,7 @@ WebContainer · neue Agenten. Parken = Draft bleibt offen, kein Rebase-Aufwand i
 |---|---|---|---|
 | E-O1 | O-WP-Nummerierung neben Funnel-WP1–WP7 | O-WP bündelt, Funnel-WPs laufen als Zulieferer weiter | — |
 | E-O2 | Project Model: TS-Vertrag (#1737) oder Tabelle `build_projects` | Vertrag im Oktober; Tabelle frühestens nach O-WP10 | O-WP3/5 |
-| E-O3 | USt: Regelbesteuerung (#1748) oder § 19 UStG | mit Steuerberatung klären; bis dahin keine Preis-Copy ändern | O-WP8, #1748 |
+| E-O3 | USt: Regelbesteuerung (#1748) oder § 19 UStG | **festgelegt** in `.github/PR_TRIAGE_POLICY.md` (27.09.): § 19 UStG, Hinweis „Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.“ #1748 widerspricht → Vorschlag schließen (Einzel-Freigabe); eine Änderung der Steuerbasis nur über eine neue Owner-Entscheidung | — |
 | E-O4 | WP2a-Migration auf Produktion anwenden | ja, vor O-WP8 Teil 2 | O-WP8, O-WP10 |
 | E-O5 | Publish-Ziel: CF-Pages-Preview je Tenant; Custom Domain im Oktober | Domain bleibt Preview | O-WP9 |
 | E-O6 | Go/No-Go-Runde | 30.10., Ergebnis = Startfenster, kein Datum vorab | O-WP10 |
@@ -240,6 +240,8 @@ WebContainer · neue Agenten. Parken = Draft bleibt offen, kein Rebase-Aufwand i
 ## 6. Regeln für alle Pakete
 
 - Branch von aktuellem `origin/main`, **Draft-PR**, CI + Review abwarten, Merge nur mit GO.
+- WIP-Stopp: bei mehr als 20 offenen PRs keine neuen Feature-PRs (Ausnahmen laut Triage-Policy).
+- Einzel-Freigabe für Security, Migrationen, Schließen, Preise/Steuer/Recht/Landing-Claims, Rebase/Force-Push.
 - Keine Migration, kein Deploy, keine Preisänderung ohne separates GO.
 - Status-Vokabular nur aus `src/product/implementation-status.ts`.
 - Keine Secrets, keine Service-Role im Browser, keine Fake-KPIs.

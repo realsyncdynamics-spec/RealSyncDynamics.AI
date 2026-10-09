@@ -67,11 +67,11 @@ Cron-Secrets setzen.
 | O-B1 | `main` ist grün. Rot ist nur der repo-weite Auto-Merge-Check `enable`. | Actions-Runs auf `026ab3d`, Kommentar in #1737 | O-WP1 räumt PRs auf, repariert keine „rote Basis". |
 | O-B2 | **Landing v4 ist live** auf `/` (#1751, Nacharbeiten #1753/#1754). | `src/pages/LandingV4.tsx` | O-WP2 = Claims-Hygiene + Design-Freeze, **kein Neubau**. #1752 (WP7 = „#1742 fertigstellen") ist dadurch teilweise überholt → rebasen und WP7 als erledigt führen. |
 | O-B3 | `/build` existiert (Preview), `/builder` leitet dorthin. Zwei Engines: SiteOS `/builder/:slug` (Puck) und Code-Builder `/builder/:slug/code`. | `src/App.tsx`, `BuildStudioPage.tsx` | O-WP3 vereinheitlicht den Einstieg, keine dritte Oberfläche. |
-| O-B4 | Das „gemeinsame Project Model" ist als **Vertrag** vorgeschlagen, nicht als Tabelle: `siteos_blueprints` und `app_builder_projects` bleiben getrennt, Tenant nur aus der Session. | #1737 (Builder-01), #1738 (Builder-02) | Oktober = TS-Vertrag. Eine `build_projects`-Tabelle nur per **E-O2**. |
+| O-B4 | Das „gemeinsame Project Model" ist als **Vertrag** vorgeschlagen, nicht als Tabelle: `siteos_blueprints` und `app_builder_projects` bleiben getrennt. Der Client nennt den Tenant (`tenant_id`), der Server prüft die Mitgliedschaft und übernimmt nie einen ungeprüften Tenant (`project-bind`, `publish-gate`). | #1737 (Builder-01), #1738 (Builder-02) | Oktober = TS-Vertrag. Eine `build_projects`-Tabelle nur per **E-O2**. |
 | O-B5 | Publish Gate ist **serverseitig** vorhanden (`publish-gate`, `publish-approve`), Publish/Domain bleiben Preview. Workflow `deploy-siteos-preview.yml` existiert. | `supabase/functions/siteos/handlers/publish-gate.ts` | O-WP9 verdrahtet Gate → Approval → CF-Preview → Prod; kein zweites Gate. |
 | O-B6 | Builder-Keys `siteos.builder`, `siteos.publish`, `limit.sites` stehen in der SSoT; Client liest sie über `useEntitlements`. Drift-Workflow `entitlement-drift.yml` läuft. | `shared/pricing.ts` Z. 1866 ff., `builderEntitlements.ts` | O-WP8 prüft Server-Durchsetzung und Plan-vs-Funktion, erfindet keine neuen Keys. |
 | O-B7 | Kartenlose Testphasen laufen ohne WP2a-Migration nie ab (B11). Migration liegt im Repo, Anwendung auf Produktion offen. | `20260928160000_wp2a_trial_end_expiry.sql` | **E-O4** — Voraussetzung für O-WP8 und Live-Readiness. |
-| O-B8 | Steuer-Widerspruch: #1748 stellt auf Regelbesteuerung (Bruttopreise) um; die Hausregel sagt § 19 UStG (Kleinunternehmer). | #1748 | **E-O3** — blockiert Pricing-Copy und Rechnungen, bis entschieden. |
+| O-B8 | Steuer-Widerspruch: #1748 stellt auf Regelbesteuerung (Bruttopreise) um; die Hausregel sagt § 19 UStG (Kleinunternehmer). | #1748 | **E-O3** ist entschieden (§ 19 UStG); #1748 läuft über die Einzel-Freigabe (Vorschlag: schließen). Pricing-Copy und Rechnungen folgen § 19. |
 | O-B9 | `docs/` ist auf der Ratsche voll (B10). | `.claude/context-budget.json` | Dieser Plan liegt unter `.claude/os-funnel/`, nicht in `docs/`. |
 
 ---
@@ -88,7 +88,7 @@ Cron-Secrets setzen.
 ```
 O-WP1 Stabilisieren ──┬─► O-WP3 Build Studio ─► O-WP4 Site Builder ─┬─► O-WP6 Governance ─► O-WP9 Publish ─► O-WP10 Readiness
 O-WP2 Landing-Claims ─┘                     └─► O-WP5 App Builder ─┘
-                        O-WP8 Monetarisierung (parallel, braucht E-O3/E-O4)
+                        O-WP8 Monetarisierung (parallel, braucht E-O4)
                         O-WP7 Backend-Verkabelung (parallel ab KW 42)
 ```
 
@@ -104,7 +104,7 @@ Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR** —
 | Reihenfolge | PRs | Grund |
 |---|---|---|
 | 1 Security/Tenant | #1710, #1721, #1723, #1717, #1719 | Mandantentrennung vor jedem neuen Feature |
-| 2 Recht/Claims | #1748 (nach E-O3), #1739, #1665, #1750, #1744 | Keine Aussage, die die Runtime nicht hält |
+| 2 Recht/Claims | #1748 (widerspricht E-O3, Einzel-Freigabe), #1739, #1665, #1750, #1744 | Keine Aussage, die die Runtime nicht hält |
 | 3 Laufzeit-Fixes | #1756, #1745, #1709, #1700, #1718 | Kleine, belegte Fehler |
 | 4 SEO | #1740, #1701 | nach Landing-Claims |
 | 5 Plan | #1752 rebasen, WP7 als erledigt führen | O-B2 |
@@ -122,7 +122,7 @@ Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR** —
 **Ziel:** ein Studio für Website/Landing **und** App.
 - #1737 (Vertrag) → #1738 (Engine nach Projektart) in dieser Reihenfolge.
 - Projektarten `landing`/`website` → SiteOS; `web_app`/`dashboard`/`saas_app` → Code-Builder.
-- Akzeptanz: `test/build-studio/contract.test.ts` grün; jeder Builder-Einstieg landet über `/build`; Tenant nie aus Client-Input.
+- Akzeptanz: `test/build-studio/contract.test.ts` grün; jeder Builder-Einstieg landet über `/build`; Tenant aus dem Client nur nach serverseitiger Mitgliedschaftsprüfung.
 
 ### O-WP4 — Site Builder produktionsfähig (KW 42)
 **Ziel:** Seiten, Sections, Komponenten, Themes, Preview, Bearbeitung in `/builder/:slug`.
@@ -152,7 +152,7 @@ Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR** —
 
 ### O-WP8 — Monetarisierung durchsetzen (KW 42–43)
 **Ziel:** Preisplan = verfügbare Funktion, serverseitig erzwungen.
-- Teil 1: E-O3 entscheiden, #1720 (Plan-Namen-Gates), #1679 (Begriffe), WP2a nach E-O4.
+- Teil 1: E-O3 (§ 19 UStG) umsetzen, #1720 (Plan-Namen-Gates), #1679 (Begriffe), WP2a nach E-O4.
 - Teil 2: Matrix `shared/pricing.ts` × `implementation-status.ts` — jedes verkaufte Feature `live` oder klar als Preview markiert; `siteos/site-entitlements.ts` prüft serverseitig.
 - Funnel-Zuordnung: WP2 (Funnel auf `/audit`) läuft hier ein.
 - Akzeptanz: `entitlement-drift` grün; Upgrade-Flow Free → Starter in Stripe-Testmodus E2E.
@@ -194,7 +194,7 @@ ihr Grün zählt erst nach „Ready for review".
 | | #1710 | behind, nur `enable` | Branch-Update → merge (GO) |
 | | #1723, #1717 | Draft, grün | Ready for review → Branch-Update → merge (GO) |
 | | #1719 | behind, nur `enable` | Branch-Update → merge (GO) |
-| **2 Recht/Claims** | #1748 | Draft, hot-file | **wartet auf E-O3**; danach Textkonflikt mit #1744 |
+| **2 Recht/Claims** | #1748 | Draft, hot-file | widerspricht E-O3 (§ 19 UStG) → Einzel-Freigabe, Vorschlag schließen |
 | | #1739 | behind, nur `enable` | Branch-Update → merge (GO, Rechtstext) |
 | | #1665 | **dirty**, CI vom 28.09. | `main` hineinmergen → neu prüfen |
 | | #1744 | behind, **4 Major offen** (Jahres-Toggle ohne Handler, Jahrespreis → Monats-Checkout, 204 mit Body) | **fixen**, dann merge |
@@ -233,7 +233,7 @@ WebContainer · neue Agenten. Parken = Draft bleibt offen, kein Rebase-Aufwand i
 | E-O4 | WP2a-Migration auf Produktion anwenden | ja, vor O-WP8 Teil 2 | O-WP8, O-WP10 |
 | E-O5 | Publish-Ziel: CF-Pages-Preview je Tenant; Custom Domain im Oktober | Domain bleibt Preview | O-WP9 |
 | E-O6 | Go/No-Go-Runde | 30.10., Ergebnis = Startfenster, kein Datum vorab | O-WP10 |
-| E-O7 | #1746 hängt an geparktem #1727 | **erledigt 09.10.:** Inhalt kam über #1789, #1746 geschlossen | — |
+| E-O7 | #1746 hängt an geparktem #1727 | **erledigt 09.10.:** Inhalt kam über #1789 auf `main`. #1746 ist noch offen; Schließen nur mit Einzel-Freigabe | — |
 
 ---
 

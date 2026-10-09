@@ -8,11 +8,19 @@
 //
 // Returns: { ok: true, updated_count: N, insights_generated: M }
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { jsonResponse, jsonError } from '../_shared/gateway.ts';
+// Sicherheitsmodell (P0/P1-Fix 2026-09-29):
+//   Vorher prüfte der Handler keine Identität; verify_jwt=true ließ jeden
+//   gültigen JWT durch — auch den öffentlichen Anon-Key — und die Function
+//   schrieb mit service_role Scores für ALLE Mandanten.
+//   Jetzt: auth.getUser() + owner/admin-Mitgliedschaft im angefragten
+//   tenant_id (requireAuthAndTenant). Ohne tenant_id keine Ausführung —
+//   der Alle-Mandanten-Modus hatte keinen Cron-Aufrufer (cron.job geprüft).
+//   Scores ohne Datengrundlage werden nicht mehr geschrieben (score.ts).
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant } from '../_shared/auth.ts';
+import { scoreFromSources, type ScoreSources } from './score.ts';
 
 interface DashboardRequest {
   tenant_id?: string;
@@ -48,123 +56,50 @@ interface Dpia {
   status: string;
 }
 
-async function calculateComplianceScore(
+async function loadScoreSources(
   admin: ReturnType<typeof createClient>,
-  tenantId: string
-): Promise<{ overall: number; gdpr: number; nis2: number; dsa: number; ai_act: number }> {
-  // Fetch compliance data
-  const { data: policies } = await admin
-    .from('compliance_policies')
-    .select('status, framework')
-    .eq('tenant_id', tenantId);
-
-  const { data: audits } = await admin
-    .from('audits')
-    .select('findings_count, status')
-    .eq('tenant_id', tenantId)
-    .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
-
-  const { data: incidents } = await admin
-    .from('incidents')
-    .select('status, severity')
-    .eq('tenant_id', tenantId)
-    .eq('status', 'open');
-
-  const { data: dpia } = await admin
-    .from('dpia_assessments')
-    .select('status')
-    .eq('tenant_id', tenantId);
-
-  // Score calculation (0-100)
-  let overallScore = 75; // baseline
-
-  // Policy coverage: each policy documented adds 5 points, max 25
-  if (policies && policies.length > 0) {
-    const documented = policies.filter((p: Policy) => p.status === 'approved').length;
-    overallScore += Math.min((documented / 5) * 25, 25);
-  }
-
-  // Recent audits: recent clean audit adds 15 points
-  if (audits && audits.length > 0) {
-    const recentClean = audits.filter((a: Audit) => a.status === 'passed' && a.findings_count === 0);
-    if (recentClean.length > 0) {
-      overallScore += 15;
-    } else if (audits[0].findings_count === 0) {
-      overallScore += 10;
-    } else {
-      overallScore -= Math.min(audits[0].findings_count * 2, 20);
-    }
-  }
-
-  // Incident response: open incidents deduct points
-  if (incidents && incidents.length > 0) {
-    const criticalCount = incidents.filter((i: Incident) => i.severity === 'critical').length;
-    const highCount = incidents.filter((i: Incident) => i.severity === 'high').length;
-    overallScore -= criticalCount * 10 + highCount * 5;
-  }
-
-  // DPIA status: no pending DPIAs adds 5 points
-  if (dpia && dpia.length === 0) {
-    overallScore += 5;
-  }
-
-  // Clamp score to 0-100
-  overallScore = Math.max(0, Math.min(100, overallScore));
-
-  // Framework-specific scores (simplified)
+  tenantId: string,
+): Promise<ScoreSources> {
+  const [policies, audits, incidents, dpia] = await Promise.all([
+    admin.from('compliance_policies').select('status, framework').eq('tenant_id', tenantId),
+    admin.from('audits').select('findings_count, status').eq('tenant_id', tenantId)
+      .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()),
+    admin.from('incidents').select('status, severity').eq('tenant_id', tenantId).eq('status', 'open'),
+    admin.from('dpia_assessments').select('status').eq('tenant_id', tenantId),
+  ]);
   return {
-    overall: Math.round(overallScore),
-    gdpr: Math.round(overallScore * 1.05),
-    nis2: Math.round(overallScore * 0.98),
-    dsa: Math.round(overallScore * 1.02),
-    ai_act: Math.round(overallScore * 0.95),
+    policies: { data: policies.data as ScoreSources['policies']['data'], error: policies.error },
+    audits: { data: audits.data as ScoreSources['audits']['data'], error: audits.error },
+    incidents: { data: incidents.data as ScoreSources['incidents']['data'], error: incidents.error },
+    dpia: { data: dpia.data as ScoreSources['dpia']['data'], error: dpia.error },
   };
 }
 
 async function updateComplianceScores(
   admin: ReturnType<typeof createClient>,
-  tenantIds?: string[]
-): Promise<number> {
-  let tenants = [];
-
-  if (tenantIds && tenantIds.length > 0) {
-    const { data } = await admin
-      .from('tenants')
-      .select('id')
-      .in('id', tenantIds);
-    tenants = data || [];
-  } else {
-    const { data } = await admin
-      .from('tenants')
-      .select('id');
-    tenants = data || [];
+  tenantId: string,
+): Promise<{ updated: number; insufficient: string[] }> {
+  const outcome = scoreFromSources(await loadScoreSources(admin, tenantId));
+  if (outcome.status === 'insufficient_data') {
+    return { updated: 0, insufficient: outcome.missing };
   }
 
-  let updated = 0;
-  for (const tenant of tenants) {
-    try {
-      const scores = await calculateComplianceScore(admin, tenant.id);
-
-      await admin.rpc('update_compliance_score', {
-        p_tenant_id: tenant.id,
-        p_score_overall: scores.overall,
-        p_score_gdpr: scores.gdpr,
-        p_score_nis2: scores.nis2,
-        p_score_dsa: scores.dsa,
-        p_score_ai_act: scores.ai_act,
-        p_policy_compliance: Math.round(scores.overall * 0.9),
-        p_vendor_risk: Math.round(100 - scores.overall * 0.8),
-        p_incident_response: Math.round(scores.overall * 1.1),
-        p_data_governance: Math.round(scores.overall * 0.95),
-      });
-
-      updated++;
-    } catch (err) {
-      console.error(`Error updating scores for tenant ${tenant.id}:`, err);
-    }
-  }
-
-  return updated;
+  const { error } = await admin.rpc('update_compliance_score', {
+    p_tenant_id: tenantId,
+    p_score_overall: outcome.overall,
+    p_score_gdpr: outcome.gdpr,
+    p_score_nis2: outcome.nis2,
+    p_score_dsa: outcome.dsa,
+    p_score_ai_act: outcome.ai_act,
+    // Kategorie-Werte waren feste Vielfache des Gesamtwerts — ohne eigene
+    // Messung werden sie nicht mehr geschrieben.
+    p_policy_compliance: null,
+    p_vendor_risk: null,
+    p_incident_response: null,
+    p_data_governance: null,
+  });
+  if (error) throw new Error('update_compliance_score failed');
+  return { updated: 1, insufficient: [] };
 }
 
 type Incident = { severity: string; status: string };
@@ -328,6 +263,13 @@ async function generateInsights(
         admin.from('dpia_assessments').select('status').eq('tenant_id', tenant.id),
       ]);
 
+      // Ohne vollständige Datengrundlage keine Empfehlungen: fehlende
+      // Tabellen lieferten vorher [] und erzeugten z. B. immer
+      // "Expand Policy Documentation" für jeden Mandanten.
+      const sourceErrors = [incidents, audits, risks, policies, vendors, dpia]
+        .filter((r) => r.error || !Array.isArray(r.data));
+      if (sourceErrors.length > 0) continue;
+
       const tenantState: TenantState = {
         incidents: incidents.data || [],
         audits: audits.data || [],
@@ -399,13 +341,11 @@ async function generateInsights(
 }
 
 Deno.serve(async (req) => {
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') {
-    return jsonError(405, 'BAD_REQUEST', 'POST only');
+    return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
-
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
 
   let body: DashboardRequest;
   try {
@@ -415,33 +355,47 @@ Deno.serve(async (req) => {
   }
 
   const validActions = ['update_scores', 'generate_insights', 'refresh_all'];
-  if (!validActions.includes(body.action)) {
+  if (!validActions.includes(body?.action)) {
     return jsonError(400, 'BAD_REQUEST', `action must be one of: ${validActions.join(', ')}`);
   }
+
+  // Identität + owner/admin-Mitgliedschaft im angefragten Mandanten,
+  // bevor irgendein service_role-Zugriff passiert.
+  const auth = await requireAuthAndTenant(req, body.tenant_id, ['owner', 'admin']);
+  if (auth instanceof Response) return auth;
+  const admin = auth.admin as unknown as ReturnType<typeof createClient>;
 
   try {
     let scoresUpdated = 0;
     let insightsGenerated = 0;
-
-    const tenantIds = body.tenant_id ? [body.tenant_id] : undefined;
+    let insufficient: string[] = [];
 
     if (body.action === 'update_scores' || body.action === 'refresh_all') {
-      scoresUpdated = await updateComplianceScores(admin, tenantIds);
+      const result = await updateComplianceScores(admin, auth.tenantId);
+      scoresUpdated = result.updated;
+      insufficient = result.insufficient;
     }
 
     if (body.action === 'generate_insights' || body.action === 'refresh_all') {
-      insightsGenerated = await generateInsights(admin, tenantIds);
+      insightsGenerated = await generateInsights(admin, [auth.tenantId]);
     }
 
     return jsonResponse({
       ok: true,
       action: body.action,
+      status: insufficient.length > 0 ? 'insufficient_data' : 'ok',
+      missing_sources: insufficient,
       updated_count: scoresUpdated,
       insights_generated: insightsGenerated,
       timestamp_utc: new Date().toISOString(),
     });
   } catch (e) {
-    console.error('Error in dashboard intelligence:', e);
-    return jsonError(500, 'INTERNAL', (e as Error).message);
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'dashboard-intelligence',
+      tenant_id: auth.tenantId,
+      message: (e as Error).message,
+    }));
+    return jsonError(500, 'INTERNAL_ERROR', 'dashboard intelligence failed');
   }
 });

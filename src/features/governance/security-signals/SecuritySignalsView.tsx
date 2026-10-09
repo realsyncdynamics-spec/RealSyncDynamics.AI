@@ -7,7 +7,7 @@ import { AuthGate } from '../../kodee/connections/AuthGate';
 import { WorkspaceShell } from '../../workspace/WorkspaceShell';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
-  fetchSecuritySignals, fetchRiskLinks, updateSignalStatus,
+  fetchSecuritySignals, fetchRiskLinks, updateSignalStatus, SIGNAL_WRITER_ROLES, SIGNAL_STATUS_FORBIDDEN,
   type SecuritySignalRow, type RiskLinkRow, type SignalSeverity, type SignalStatus,
 } from './securitySignalsApi';
 
@@ -68,7 +68,10 @@ export const SecuritySignalsView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, tenants } = useTenant();
+  // Spiegelt RLS (nur schreibende Rollen setzen den Status) — entscheidend bleibt der Server.
+  const role = tenants.find((t) => t.tenantId === activeTenantId)?.role as string | undefined;
+  const canWrite = role !== undefined && SIGNAL_WRITER_ROLES.has(role);
   const [signals, setSignals] = useState<SecuritySignalRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -241,6 +244,7 @@ function Inner() {
       {detail && (
         <DetailDrawer
           signal={detail}
+          canWrite={canWrite}
           onClose={() => setDetail(null)}
           onStatusChange={onStatusChange}
         />
@@ -283,14 +287,16 @@ function EmptyState({ hasAny }: { hasAny: boolean }) {
 }
 
 function DetailDrawer({
-  signal, onClose, onStatusChange,
+  signal, canWrite, onClose, onStatusChange,
 }: {
   signal: SecuritySignalRow;
+  canWrite: boolean;
   onClose: () => void;
   onStatusChange: (id: string, status: SignalStatus) => void;
 }) {
   const [links, setLinks] = useState<RiskLinkRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
 
   const mapping = (signal.normalized_payload?.governance ?? {}) as GovernanceMappingShape;
@@ -305,10 +311,14 @@ function DetailDrawer({
 
   const setStatus = async (status: SignalStatus) => {
     setBusy(status);
+    setStatusError(null);
     try {
       await updateSignalStatus(signal.id, status);
+      // Erst nach bestätigtem Speichern anzeigen — nie einen ungespeicherten Status.
       onStatusChange(signal.id, status);
-    } catch { /* ignore — UI bleibt nutzbar */ } finally {
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : 'Status konnte nicht gespeichert werden.');
+    } finally {
       setBusy(null);
     }
   };
@@ -434,31 +444,41 @@ function DetailDrawer({
           </section>
         </div>
 
-        {/* CTAs */}
-        <div className="sticky bottom-0 bg-obsidian-900 border-t border-titanium-800 px-5 py-3 flex flex-wrap gap-2">
-          <button
-            onClick={() => setStatus('in_review')}
-            disabled={busy !== null}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-semibold bg-cyan-500/90 text-obsidian-950 hover:bg-cyan-400 transition-colors disabled:opacity-50"
-          >
-            {busy === 'in_review' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
-            Create Risk Review
-          </button>
-          <button
-            onClick={() => setStatus('accepted')}
-            disabled={busy !== null}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-emerald-300 border border-emerald-900 hover:bg-emerald-950/40 transition-colors disabled:opacity-50"
-          >
-            {busy === 'accepted' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            Mark as accepted
-          </button>
-          <button
-            onClick={downloadSnapshot}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-titanium-300 border border-titanium-800 hover:text-titanium-100 transition-colors"
-          >
-            <Server className="h-3.5 w-3.5" />
-            Create Evidence Snapshot
-          </button>
+        {/* CTAs — benannt nach dem, was sie tun: Status setzen bzw. JSON herunterladen.
+            Vorher hießen sie „Create Risk Review“ und „Create Evidence Snapshot“,
+            legten aber weder ein Review noch einen Nachweis im Vault an. */}
+        <div className="sticky bottom-0 bg-obsidian-900 border-t border-titanium-800 px-5 py-3 flex flex-col gap-2">
+          {statusError && (
+            <p role="alert" className="text-xs text-rose-300" data-testid="signal-status-error">{statusError}</p>
+          )}
+          {!canWrite && (
+            <p className="text-xs text-titanium-500" data-testid="signal-status-readonly">{SIGNAL_STATUS_FORBIDDEN}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setStatus('in_review')}
+              disabled={busy !== null || !canWrite}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-semibold bg-cyan-500/90 text-obsidian-950 hover:bg-cyan-400 transition-colors disabled:opacity-50"
+            >
+              {busy === 'in_review' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
+              Status: In Prüfung
+            </button>
+            <button
+              onClick={() => setStatus('accepted')}
+              disabled={busy !== null || !canWrite}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-emerald-300 border border-emerald-900 hover:bg-emerald-950/40 transition-colors disabled:opacity-50"
+            >
+              {busy === 'accepted' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              Status: Akzeptiert
+            </button>
+            <button
+              onClick={downloadSnapshot}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-titanium-300 border border-titanium-800 hover:text-titanium-100 transition-colors"
+            >
+              <Server className="h-3.5 w-3.5" />
+              Rohdaten herunterladen (JSON)
+            </button>
+          </div>
         </div>
       </div>
     </div>

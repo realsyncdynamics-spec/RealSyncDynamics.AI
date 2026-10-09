@@ -2,7 +2,7 @@
 //
 // Lädt externe Tracking-Pixel (Meta, TikTok, GA4, Google Ads, LinkedIn)
 // AUSSCHLIESSLICH nach explizitem Marketing-Consent. Pageview-Tracking via
-// `lib/track.ts` (Supabase, kein Cookie) bleibt davon unabhängig.
+// `lib/track.ts` (Supabase) läuft ebenfalls erst nach Analytics-Consent.
 //
 // Pixel-IDs kommen aus Vite-Env-Vars. Fehlt eine ID → Pixel wird übersprungen
 // (no-op). So kann jede Plattform unabhängig aktiviert werden.

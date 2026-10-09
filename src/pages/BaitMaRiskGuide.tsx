@@ -153,7 +153,7 @@ export function BaitMaRiskGuide() {
             description: 'BAIT AT 4.5, MaRisk AT 7.2, DORA — wie regulierte FinTechs KI-Dienste compliant einsetzen. Mit konkreten BaFin-Anforderungen.',
             datePublished: '2026-05-06',
             inLanguage: 'de-DE',
-            author: { '@type': 'Organization', name: 'RealSync Dynamics' },
+            author: { '@type': 'Organization', name: 'RealSync Dynamics AI' },
           }),
         }}
       />

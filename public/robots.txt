@@ -10,7 +10,8 @@ Disallow: /dashboard
 Disallow: /tenant/
 Disallow: /kodee
 Disallow: /kodee/
-Disallow: /billing/
+# Prefix /billing deckt /billing und /billing/usage ab (kein Index).
+Disallow: /billing
 Disallow: /workflows
 Disallow: /market-gaps
 Disallow: /outreach

@@ -931,6 +931,9 @@ function RoutesWithTracking() {
       <Route path="/app/documents" element={<AppGate><GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/audit" element={<AppGate><GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/settings" element={<AppGate><GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell></AppGate>} />
+      {/* Billing-Aliase: Bookmarks /settings/billing und Kurz-URL /billing
+          landen auf der kanonischen Abrechnung — Ziel trägt AppGate. */}
+      <Route path="/app/settings/billing" element={<Navigate to="/app/billing" replace />} />
       {/* /app/agents ist oben bereits auf GovernanceAgentsCenterView registriert —
           eine zweite Registrierung (AgentsOverviewPage) war unerreichbar und wurde
           nach Freigabe vom 2026-08-23 entfernt; die Unterrouten bleiben. */}
@@ -1087,6 +1090,9 @@ function RoutesWithTracking() {
       <Route path="/auth/register" element={<Navigate to="/welcome" replace />} />
       <Route path="/account" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/activate" element={<Navigate to="/app/activation" replace />} />
+      {/* Kurz-URL /billing → kanonische Abrechnung (/app/billing + AppGate).
+          /billing/usage bleibt eigene Usage-Route und wird nicht umgeleitet. */}
+      <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/signout" element={<LogoutPage />} />
       {/* Canonical app dashboard aliases */}

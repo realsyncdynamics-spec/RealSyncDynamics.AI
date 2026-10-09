@@ -210,7 +210,9 @@ describe('Build studio — CTA + yearly regression', () => {
   });
 
   it('auth gate sends signed-out users to /welcome?next=/build', () => {
-    expect(studioSrc).toContain("encodeURIComponent('/build')");
+    // Ruecksprung behaelt die Query (kind, prompt) — Verhalten in test/build-studio/build-entry.test.tsx.
+    expect(studioSrc).toContain('encodeURIComponent(buildReturnPath)');
+    expect(studioSrc).toContain("query ? `/build?${query}` : '/build'");
     expect(studioSrc).toContain('/welcome?next=');
   });
 

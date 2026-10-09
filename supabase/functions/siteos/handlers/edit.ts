@@ -7,8 +7,14 @@
 //     tenant_id: string,
 //     slug: string,               // Site, deren jüngste Version bearbeitet wird
 //     base_sha256: string,        // Stand, auf dem die Bearbeitung aufsetzt
-//     edits: PageEdit[]           // je Seite: Blockfolge mit redaktionellen Feldern
+//     edits?: PageEdit[],         // je Seite: Blockfolge mit redaktionellen Feldern
+//     pages?: PageOperation[]     // Seiten anlegen, umbenennen, Pfad, duplizieren, löschen
 //   }
+//   Mindestens eines von `edits` und `pages` muss nicht leer sein.
+//
+// Seitenoperationen sind Absichten, keine vom Client gelieferten Seiten.
+// `applyPageOperations` leitet Blöcke, Navigation, Verweise und den Schutz
+// von Rechtsseiten im Core ab. Redaktion läuft zuerst, Struktur danach.
 //
 // ## Was der Server annimmt und was nicht
 //
@@ -38,18 +44,27 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import {
+  MAX_PAGE_TITLE_LENGTH,
+  PAGE_OPERATION_KINDS,
   analyzeBlueprint,
-  applyPageEdits,
+  applySiteEdits,
+  applyPageOperations,
   canonicalHash,
   computeScores,
   isBlockKind,
+  isDesignTemplate,
+  type DesignTemplate,
   type PageEdit,
+  type PageOperation,
   type SiteBlueprint,
 } from '../../../../packages/siteos-core/src/index.ts';
 import { persistBlueprintVersion } from '../persist.ts';
+import { gateSiteEdit } from '../site-entitlements.ts';
 
 const MAX_PAGES = 40;
 const MAX_BLOCKS_PER_PAGE = 60;
+const MAX_PAGE_OPERATIONS = 20;
+const MAX_SLUG_LENGTH = 64;
 const SHA_PATTERN = /^[0-9a-f]{64}$/;
 
 export async function handle(req: Request): Promise<Response> {
@@ -74,9 +89,21 @@ export async function handle(req: Request): Promise<Response> {
   if (!slug) return jsonError(400, 'BAD_REQUEST', 'slug required');
   if (!SHA_PATTERN.test(baseSha)) return jsonError(400, 'BAD_REQUEST', 'base_sha256 must be a sha256 hex');
 
-  const edits = sanitizeEdits(body.edits);
+  let designTemplate: DesignTemplate | null = null;
+  if (body.design_template !== undefined && body.design_template !== null) {
+    if (!isDesignTemplate(body.design_template)) {
+      return jsonError(400, 'BAD_REQUEST', 'design_template is not a known template');
+    }
+    designTemplate = body.design_template;
+  }
+
+  const edits = body.edits === undefined ? [] : sanitizeEdits(body.edits);
   if (edits === null) return jsonError(400, 'BAD_REQUEST', 'edits must be an array of { path, blocks }');
-  if (edits.length === 0) return jsonError(400, 'BAD_REQUEST', 'edits is empty');
+  const pageOps = body.pages === undefined ? [] : sanitizePageOperations(body.pages);
+  if (pageOps === null) return jsonError(400, 'BAD_REQUEST', 'pages must be an array of page operations');
+  if (edits.length === 0 && pageOps.length === 0 && !designTemplate) {
+    return jsonError(400, 'BAD_REQUEST', 'edits, pages and design_template are empty');
+  }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -98,6 +125,10 @@ export async function handle(req: Request): Promise<Response> {
     .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
+  // Bearbeiten erzeugt eine neue Blueprint-Version und braucht siteos.builder.
+  const denied = await gateSiteEdit(admin, tenantId);
+  if (denied) return denied;
+
   try {
     // ── Jüngste Version laden ────────────────────────────────────────────
     const { data: row } = await admin
@@ -115,8 +146,20 @@ export async function handle(req: Request): Promise<Response> {
       return jsonError(409, 'STALE_BASE', `blueprint changed; current sha256 is ${row.content_sha256}`);
     }
 
-    // ── Redaktion anwenden ───────────────────────────────────────────────
-    const applied = applyPageEdits(row.blueprint, edits);
+    // ── Redaktion, dann Seitenstruktur anwenden ─────────────────────────
+    // Beide Wege nehmen nur Absichten entgegen. Der Browser liefert nie einen
+    // fertigen Blueprint. Seitenoperationen arbeiten auf dem redigierten Stand,
+    // damit z. B. ein gleichzeitiges Umbenennen + Inhaltsedit eine Version bleibt.
+    const edited = applySiteEdits(row.blueprint, edits, designTemplate);
+    const structured = pageOps.length > 0
+      ? applyPageOperations(edited.blueprint, pageOps)
+      : { blueprint: edited.blueprint, changes: [], rejected: [] };
+    const applied = {
+      blueprint: structured.blueprint,
+      changes: [...edited.changes, ...structured.changes],
+      rejected: [...edited.rejected, ...structured.rejected],
+      themeChange: edited.themeChange,
+    };
     const blueprintSha256 = await canonicalHash(applied.blueprint);
 
     // Nach der Änderung werden Befunde und Bewertung neu gebildet. Sie auf
@@ -142,9 +185,14 @@ export async function handle(req: Request): Promise<Response> {
       auditAction: 'siteos.blueprint.edit',
       auditPayload: {
         base_sha256: baseSha,
-        change_codes: applied.changes.map((c) => c.code),
+        change_codes: [
+          ...applied.changes.map((c) => c.code),
+          ...(applied.themeChange ? ['theme.template'] : []),
+        ],
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
+        page_operations: pageOps,
       },
     });
     if ('error' in persisted) return jsonError(500, 'INTERNAL', persisted.error);
@@ -160,6 +208,7 @@ export async function handle(req: Request): Promise<Response> {
         findings,
         scores,
         changes: applied.changes,
+        theme_change: applied.themeChange,
         rejected: applied.rejected,
       });
     }
@@ -176,6 +225,7 @@ export async function handle(req: Request): Promise<Response> {
       findings,
       scores,
       changes: applied.changes,
+      theme_change: applied.themeChange,
       rejected: applied.rejected,
       agent_tasks: persisted.tasks,
       provenance_linked: persisted.provenanceLinked,
@@ -216,5 +266,71 @@ function sanitizeEdits(input: unknown): PageEdit[] | null {
     });
     out.push({ path, blocks });
   }
+  return out;
+}
+
+/**
+ * Bringt `pages` in die Form von `PageOperation[]`. Formfehler lehnen die
+ * gesamte Anfrage ab; fachliche Regeln (geschützte Rechtsseite, belegter Slug)
+ * entscheidet ausschließlich der Core und nennt sie unter `rejected`.
+ */
+function sanitizePageOperations(input: unknown): PageOperation[] | null {
+  if (!Array.isArray(input) || input.length > MAX_PAGE_OPERATIONS) return null;
+  const out: PageOperation[] = [];
+
+  for (const raw of input) {
+    if (typeof raw !== 'object' || raw === null) return null;
+    const entry = raw as Record<string, unknown>;
+    const op = typeof entry.op === 'string' ? entry.op : '';
+    if (!(PAGE_OPERATION_KINDS as readonly string[]).includes(op)) return null;
+
+    const text = (key: string, max: number): string | undefined =>
+      typeof entry[key] === 'string' ? (entry[key] as string).slice(0, max) : undefined;
+    const path = text('path', 256);
+
+    switch (op as PageOperation['op']) {
+      case 'create': {
+        const title = text('title', MAX_PAGE_TITLE_LENGTH);
+        if (title === undefined) return null;
+        const requestedSlug = text('slug', MAX_SLUG_LENGTH + 16);
+        out.push({
+          op: 'create',
+          title,
+          ...(requestedSlug !== undefined ? { slug: requestedSlug } : {}),
+        });
+        break;
+      }
+      case 'rename': {
+        const title = text('title', MAX_PAGE_TITLE_LENGTH);
+        if (path === undefined || !path.startsWith('/') || title === undefined) return null;
+        out.push({ op: 'rename', path, title });
+        break;
+      }
+      case 'slug': {
+        const nextSlug = text('slug', MAX_SLUG_LENGTH + 16);
+        if (path === undefined || !path.startsWith('/') || nextSlug === undefined) return null;
+        out.push({ op: 'slug', path, slug: nextSlug });
+        break;
+      }
+      case 'duplicate': {
+        if (path === undefined || !path.startsWith('/')) return null;
+        const title = text('title', MAX_PAGE_TITLE_LENGTH);
+        const nextSlug = text('slug', MAX_SLUG_LENGTH + 16);
+        out.push({
+          op: 'duplicate',
+          path,
+          ...(title !== undefined ? { title } : {}),
+          ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
+        });
+        break;
+      }
+      case 'delete': {
+        if (path === undefined || !path.startsWith('/')) return null;
+        out.push({ op: 'delete', path });
+        break;
+      }
+    }
+  }
+
   return out;
 }

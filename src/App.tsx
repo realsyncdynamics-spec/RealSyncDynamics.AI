@@ -10,6 +10,7 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
+import { LegacySiteOsBuilderRedirect } from './features/build-studio/legacyBuilderRedirect';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
 import { LogoutPage } from './pages/LogoutPage';
@@ -857,7 +858,8 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><EnforcementPanel /><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/siteos/builder" element={<AppGate><Navigate to="/build?kind=website" replace /></AppGate>} />
+      {/* Altes Builder-Ziel: Quell-Links → Transformation, sonst /build — Query bleibt (legacyBuilderRedirect.tsx). */}
+      <Route path="/app/siteos/builder" element={<AppGate><LegacySiteOsBuilderRedirect /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}

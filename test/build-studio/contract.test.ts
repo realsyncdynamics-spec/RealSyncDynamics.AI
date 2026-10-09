@@ -100,7 +100,8 @@ describe('Builder-01 contract', () => {
       app.split('\n').find((line) => line.includes('path="/app/siteos/builder"')) ?? '';
 
     expect(legacyRoute).toContain('<AppGate>');
-    expect(legacyRoute).toContain('Navigate to="/build?kind=website"');
+    // Ziel und Query-Erhalt prueft legacy-builder-redirect.test.tsx am Router.
+    expect(legacyRoute).toContain('<LegacySiteOsBuilderRedirect />');
     expect(siteosDashboard).toContain('to="/build?kind=website"');
     expect(complianceDashboard).toContain("href: '/build?kind=web_app'");
     expect(siteosDashboard).not.toContain('to="/app/siteos/builder"');

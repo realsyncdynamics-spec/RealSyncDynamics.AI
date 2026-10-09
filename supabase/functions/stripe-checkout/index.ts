@@ -19,6 +19,11 @@
 //    One-time purchases land in `entitlement_grants` via the webhook and ADD to
 //    the tenant's subscription entitlements rather than replacing them.
 //
+// Beta-Testmodus (_shared/stripe-mode.ts): STRIPE_MODE != 'live' ⇒ nur
+// sk_test_-Keys und Test-Prices aus STRIPE_TEST_PRICE_<PLAN_KEY>; ein Live-Key
+// führt zu 503 STRIPE_LIVE_KEY_BLOCKED. Antwort trägt `stripe_mode`/`beta_test`,
+// Session-Metadaten `beta_test: 'true'`.
+//
 // `plan_key = 'free_audit'` short-circuits with 400 — there's nothing to charge.
 //
 // Der Plan-Key wird gegen die Pricing-SSoT validiert und normalisiert
@@ -30,6 +35,14 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
+import {
+  resolveStripeSecretKey,
+  stripeKeyErrorStatus,
+  stripeModeMetadata,
+  stripeModeResponseFields,
+  testPriceEnvName,
+  testPriceIdFor,
+} from '../_shared/stripe-mode.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -64,9 +77,12 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
-  if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
-  const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
+  // Beta: STRIPE_MODE (Default 'test') wählt den Key. Im Testmodus wird ein
+  // sk_live_-Key niemals benutzt — fail-closed, bevor irgendetwas passiert.
+  const keyRes = await resolveStripeSecretKey(getSecret);
+  if (!keyRes.ok) return jsonError(stripeKeyErrorStatus(keyRes.code), keyRes.code, keyRes.message);
+  const stripeMode = keyRes.mode;
+  const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -170,18 +186,33 @@ Deno.serve(async (req) => {
   // und die beginnt immer mit `price_`. Alles andere ist ein Platzhalter,
   // ein Sentinel oder leer und wird hier sauber mit PRICE_NOT_CONFIGURED
   // abgewiesen, bevor Stripe ueberhaupt gerufen wird.
-  const { data: products, error: prodErr } = await admin
-    .from('products')
-    .select('stripe_price_id, name')
-    .eq('default_for_plan_key', body.plan_key);
-  if (prodErr) return jsonError(500, 'INTERNAL', prodErr.message);
+  //
+  // Testmodus: `public.products` führt Live-Price-IDs. Die Test-Price kommt
+  // deshalb ausschließlich aus STRIPE_TEST_PRICE_<PLAN_KEY> — ohne Rückfall
+  // auf die Live-ID.
+  let realPrice: { stripe_price_id: string };
+  if (stripeMode === 'test') {
+    const testPrice = testPriceIdFor(body.plan_key);
+    if (!testPrice) {
+      return jsonError(400, 'PRICE_NOT_CONFIGURED',
+        `Testmodus: keine Test-Price für plan_key=${body.plan_key}; Secret ${testPriceEnvName(body.plan_key)}=price_… setzen`);
+    }
+    realPrice = { stripe_price_id: testPrice };
+  } else {
+    const { data: products, error: prodErr } = await admin
+      .from('products')
+      .select('stripe_price_id, name')
+      .eq('default_for_plan_key', body.plan_key);
+    if (prodErr) return jsonError(500, 'INTERNAL', prodErr.message);
 
-  const isLiveStripePrice = (id: string | null | undefined): boolean =>
-    typeof id === 'string' && id.startsWith('price_');
-  const realPrice = (products ?? []).find((p) => isLiveStripePrice(p.stripe_price_id));
-  if (!realPrice) {
-    return jsonError(400, 'PRICE_NOT_CONFIGURED',
-      `no Stripe Price wired for plan_key=${body.plan_key}; insert a real price_xxx into public.products with default_for_plan_key=${body.plan_key}`);
+    const isLiveStripePrice = (id: string | null | undefined): boolean =>
+      typeof id === 'string' && id.startsWith('price_');
+    const livePrice = (products ?? []).find((p) => isLiveStripePrice(p.stripe_price_id));
+    if (!livePrice) {
+      return jsonError(400, 'PRICE_NOT_CONFIGURED',
+        `no Stripe Price wired for plan_key=${body.plan_key}; insert a real price_xxx into public.products with default_for_plan_key=${body.plan_key}`);
+    }
+    realPrice = livePrice;
   }
 
   // Re-use or create the tenant's Stripe Customer.
@@ -226,7 +257,7 @@ Deno.serve(async (req) => {
   // ändert an der Abrechnung nichts mehr.
   // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
-    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, ...stripeModeMetadata(stripeMode) },
   };
   if (!isOneTime && plan.trialDays > 0 && trialEligible) {
     subscriptionData.trial_period_days = plan.trialDays;
@@ -246,10 +277,23 @@ Deno.serve(async (req) => {
     // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).
     if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
       stripeCustomerId = existingSub!.stripe_customer_id!;
-    } else {
+      // Ein im Live-Modus angelegter Customer existiert im Testmodus nicht
+      // (und umgekehrt). Statt mit "No such customer" abzubrechen, legen wir
+      // im Testmodus einen frischen Test-Customer an.
+      if (stripeMode === 'test') {
+        try {
+          const existing = await stripe.customers.retrieve(stripeCustomerId);
+          if ((existing as { deleted?: boolean }).deleted) stripeCustomerId = null;
+        } catch (e) {
+          if ((e as { code?: string }).code !== 'resource_missing') throw e;
+          stripeCustomerId = null;
+        }
+      }
+    }
+    if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,
-        metadata: { tenant_id: body.tenant_id },
+        metadata: { tenant_id: body.tenant_id, ...stripeModeMetadata(stripeMode) },
       });
       stripeCustomerId = customer.id;
     }
@@ -263,6 +307,7 @@ Deno.serve(async (req) => {
         plan_key: body.plan_key,
         pilot: body.pilot ? 'true' : 'false',
         purchase_mode: plan.purchaseMode,
+        ...stripeModeMetadata(stripeMode),
       },
       // `subscription_data` ist im Modus `payment` von Stripe nicht erlaubt und
       // würde die Session-Erstellung mit einem 400 abweisen. Stattdessen tragen
@@ -272,7 +317,7 @@ Deno.serve(async (req) => {
       ...(isOneTime
         ? {
             payment_intent_data: {
-              metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+              metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, ...stripeModeMetadata(stripeMode) },
             },
             // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
             // B2B-Kauf muss ein Belegdokument existieren.
@@ -290,7 +335,12 @@ Deno.serve(async (req) => {
       customer_update: { address: 'auto', name: 'auto' },
     });
 
-    return jsonResponse({ ok: true, url: session.url, session_id: session.id });
+    return jsonResponse({
+      ok: true,
+      url: session.url,
+      session_id: session.id,
+      ...stripeModeResponseFields(stripeMode),
+    });
   } catch (e) {
     const err = e as { message?: string; code?: string; type?: string };
     console.error('[stripe-checkout] stripe error', {

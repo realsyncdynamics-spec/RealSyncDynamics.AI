@@ -13,6 +13,11 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  resolveStripeSecretKey,
+  stripeKeyErrorStatus,
+  stripeModeResponseFields,
+} from '../_shared/stripe-mode.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -32,9 +37,11 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
-  if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
-  const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
+  // Beta: STRIPE_MODE (Default 'test') wählt den Key — siehe _shared/stripe-mode.ts.
+  const keyRes = await resolveStripeSecretKey(getSecret);
+  if (!keyRes.ok) return jsonError(stripeKeyErrorStatus(keyRes.code), keyRes.code, keyRes.message);
+  const stripeMode = keyRes.mode;
+  const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -81,8 +88,15 @@ Deno.serve(async (req) => {
       customer: sub.stripe_customer_id,
       return_url: body.return_url ?? 'https://realsyncdynamicsai.de/app/billing',
     });
-    return jsonResponse({ url: session.url });
+    return jsonResponse({ url: session.url, ...stripeModeResponseFields(stripeMode) });
   } catch (e) {
+    // Testmodus + Customer aus dem Live-Modus (oder umgekehrt): verständlich
+    // melden statt nur "No such customer".
+    if ((e as { code?: string }).code === 'resource_missing') {
+      return jsonError(409, 'STRIPE_MODE_CUSTOMER_MISMATCH',
+        `Das gespeicherte Stripe-Kundenkonto existiert im Stripe-${stripeMode === 'test' ? 'Testmodus' : 'Live-Modus'} nicht. ` +
+        'Bitte zuerst einen Plan im aktuellen Modus buchen.');
+    }
     return jsonError(502, 'STRIPE_ERROR', (e as Error).message);
   }
 });

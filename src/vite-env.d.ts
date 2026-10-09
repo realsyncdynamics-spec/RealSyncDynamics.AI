@@ -11,6 +11,10 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_GITHUB_ENABLED?: string;
   /** 'true' schaltet Governance AI (/app/assistant) ein. Standard: aus. */
   readonly VITE_GOVERNANCE_AI_ENABLED?: string;
+  /** 'live' schaltet Stripe-Live frei; alles andere = Testmodus (Beta-Default). */
+  readonly VITE_STRIPE_MODE?: string;
+  /** pk_test_… im Testmodus, pk_live_… im Live-Modus — nie ein Secret Key. */
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
   readonly VITE_META_PIXEL_ID?: string;
   readonly VITE_TIKTOK_PIXEL_ID?: string;
   readonly VITE_GA4_MEASUREMENT_ID?: string;

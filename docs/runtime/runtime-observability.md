@@ -140,7 +140,7 @@ function MyComponent() {
 - Stored in `localStorage` with timeout tracking
 - Survives page reloads within 12 hours
 - Supports GDPR: no PII, opaque to the user
-- Enables session-level audit trail without requiring user login
+- Groups one session's actions; writing needs a user session (`requireAuthAndTenant`)
 
 ## Audit Trail Queries
 

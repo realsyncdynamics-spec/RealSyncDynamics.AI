@@ -1,21 +1,38 @@
 import { edgeFunctionUrl, fnFetchInit } from './fn-proxy';
+import { getSupabase } from './supabase';
 
-/** Thrown when requireAuth is on (default) and no sb-auth-token is present. */
+/** Thrown when requireAuth is on (default) and there is no valid Supabase session. */
 export const EDGE_AUTH_REQUIRED_MESSAGE =
-  'Nicht authentifiziert – kein Token in localStorage' as const;
+  'Nicht authentifiziert – keine gültige Sitzung' as const;
 
 export function isEdgeAuthRequiredError(message: string | null | undefined): boolean {
   if (!message) return false;
   return (
     message === EDGE_AUTH_REQUIRED_MESSAGE ||
-    /nicht authentifiziert|kein Token in localStorage/i.test(message)
+    /nicht authentifiziert|kein Token in localStorage|keine gültige Sitzung/i.test(message)
   );
+}
+
+/**
+ * Access-Token der aktuellen Supabase-Sitzung (supabase-js frischt es bei
+ * Bedarf auf). Vorher las der Helper `localStorage['sb-auth-token']` — einen
+ * Schlüssel, den nichts schreibt (supabase-js speichert unter
+ * `sb-<projekt>-auth-token`, als JSON). Jeder auth-pflichtige Aufruf
+ * scheiterte deshalb auch angemeldet mit „Nicht authentifiziert“.
+ */
+async function sessionAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // POST-helper für Supabase Edge Functions (Production: same-origin CSRF-Proxy).
 //
 // Unterstützt sowohl auth-required (verify_jwt=true) als auch öffentliche (verify_jwt=false) Funktionen.
-// Bei auth-required: JWT-Token wird aus localStorage geholt und als Bearer-Header gesendet.
+// Bei auth-required: das Access-Token der Supabase-Sitzung wird als Bearer-Header gesendet.
 // Öffentliche Free-Flows (gdpr-audit, cookie-scan, …) MÜSSEN `{ requireAuth: false }` setzen.
 export async function postEdgeFunction<T>(
   fn: string,
@@ -26,9 +43,9 @@ export async function postEdgeFunction<T>(
     'Content-Type': 'application/json',
   };
 
-  // Auth-required Funktionen: JWT als Bearer Token mitschicken
+  // Auth-required Funktionen: JWT der Sitzung als Bearer Token mitschicken
   if (options?.requireAuth !== false) {
-    const token = localStorage.getItem('sb-auth-token');
+    const token = await sessionAccessToken();
     if (!token) {
       throw new Error(EDGE_AUTH_REQUIRED_MESSAGE);
     }

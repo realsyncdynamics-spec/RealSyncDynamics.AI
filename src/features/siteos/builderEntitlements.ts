@@ -13,12 +13,13 @@
 
 import {
   ENTITLEMENT_KEYS,
+  SALES_PLANS,
   checkoutHrefForPlan,
   hasPermission,
   limitOf,
-  planById,
   planEntitlementValue,
   planGrants,
+  planRank,
   resolvePlan,
   type EntitlementKey,
   type Plan,
@@ -175,12 +176,46 @@ export function isWithinSiteCap(
   return siteCount < snapshot.sites;
 }
 
+/** Warum das Studio gesperrt ist — bestimmt, welcher Plan die Sperre hebt. */
+export type BuilderUpgradeReason = 'no_entitlement' | 'sites_exhausted' | 'publish_locked';
+
 /**
- * Upgrade target: Starter monthly checkout (first plan with siteos.builder).
- * Never invent yearly checkout.
+ * Wählt den günstigsten angebotenen Plan, der den konkreten Sperrgrund
+ * tatsächlich aufhebt. Keine Plan-Namensvergleiche, nur Rang + Entitlements.
  */
-export function builderUpgradeHref(_currentPlan?: Plan | PlanId | string | null): string {
-  return checkoutHrefForPlan(planById('starter'), { source: 'build-studio-upgrade' });
+export function builderUpgradeTarget(
+  currentPlan?: Plan | PlanId | string | null,
+  reason: BuilderUpgradeReason = 'no_entitlement',
+): Plan {
+  const current = resolvePlan(currentPlan);
+  const currentRank = current ? planRank(current.id) : -1;
+  const currentSites = current
+    ? (planEntitlementValue(current.planKey, SITEOS_SITES_LIMIT_KEY) ?? 0)
+    : 0;
+  const minRank = reason === 'sites_exhausted' ? currentRank + 1 : currentRank;
+
+  const lifts = (plan: Plan): boolean => {
+    if (reason === 'publish_locked') return planGrants(plan.planKey, SITEOS_PUBLISH_KEY);
+    if (!planGrants(plan.planKey, SITEOS_BUILDER_KEY)) return false;
+    if (reason !== 'sites_exhausted') return true;
+    if (currentSites === -1) return false;
+    const cap = planEntitlementValue(plan.planKey, SITEOS_SITES_LIMIT_KEY);
+    return cap === -1 || (cap ?? 0) > currentSites;
+  };
+
+  return SALES_PLANS.find((plan) => planRank(plan.id) >= minRank && lifts(plan))
+    ?? SALES_PLANS[SALES_PLANS.length - 1];
+}
+
+/** Upgrade-Link für genau den Sperrgrund; Checkout bleibt monatlich. */
+export function builderUpgradeHref(
+  currentPlan?: Plan | PlanId | string | null,
+  reason: BuilderUpgradeReason = 'no_entitlement',
+): string {
+  return checkoutHrefForPlan(
+    builderUpgradeTarget(currentPlan, reason),
+    { source: 'build-studio-upgrade' },
+  );
 }
 
 /** Helper for `useEntitlements().canAccess('siteos.builder')` upgrade URLs. */

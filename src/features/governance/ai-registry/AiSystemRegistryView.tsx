@@ -8,11 +8,17 @@
  * Klasse: `classifyAsset` (Connector-Klasse aus dem DB-Trigger, sonst
  * `enforcementClassOf(metadata.system_type)`, sonst vorsichtig C).
  * Zeilenklick → /app/ai-systems/:id (Klassifizierung).
+ *
+ * KI-Register (Auftrag §14): „KI-System hinzufügen“ schreibt über
+ * governance-resources (owner/admin, serverseitig geprüft); die Ampel kommt
+ * aus Betrieb, Datenstandort, Klasse, Verantwortung und Nachweisen
+ * (registryModel.ts) — nie aus dem Anbieter.
  */
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
+import { fetchAssetEvidenceStats, fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import { useLang } from '../../../i18n/useLang';
 import {
@@ -27,20 +33,36 @@ import {
 } from '../handoff/enforcementModel';
 import { ClassBadge, Panel, TierPill, WarnToast } from '../handoff/ui';
 import { useTenantLoad } from '../handoff/useTenantLoad';
+import { AiSystemForm } from './AiSystemForm';
+import { RegistryLightBadge } from './RegistryLightBadge';
+import {
+  AI_SYSTEM_TYPE_LABEL,
+  assessRegistryEntry,
+  canEditRegistry,
+  label,
+  type RegistryAssessment,
+} from './registryModel';
 
 interface Row {
   asset: DbGovernanceAsset;
   cls: AssetClassification;
+  assessment: RegistryAssessment;
 }
 
 async function loadRows(tenantId: string): Promise<Row[]> {
-  const [assets, connectors] = await Promise.all([
+  const [assets, connectors, evidence] = await Promise.all([
     fetchTenantAssets(tenantId),
     listConnectors(tenantId).catch((): ConnectorRegistryEntry[] => []),
+    // Nachweise nicht ladbar ≠ keine Nachweise: dann keine Ampel-Aussage.
+    fetchAssetEvidenceStats(tenantId).catch(() => null),
   ]);
   return assets
     .filter(isAiSystemAsset)
-    .map((asset) => ({ asset, cls: classifyAsset(asset, connectors) }));
+    .map((asset) => ({
+      asset,
+      cls: classifyAsset(asset, connectors),
+      assessment: assessRegistryEntry(asset, evidence ? (evidence.get(asset.id) ?? { count: 0, latestAt: null }) : null),
+    }));
 }
 
 type Filter = 'all' | EnforcementClass;
@@ -53,10 +75,13 @@ const FILTER_KEY: Record<EnforcementClass, 'filterA' | 'filterB' | 'filterC' | '
 };
 
 export function AiSystemRegistryView() {
-  const { activeTenantId } = useTenant();
-  const { t } = useLang();
+  const { activeTenantId, tenants } = useTenant();
+  const { t, lang } = useLang();
   const [filter, setFilter] = useState<Filter>('all');
+  const [adding, setAdding] = useState(false);
   const [state] = useTenantLoad(activeTenantId, loadRows);
+  // Spiegelt die Serverprüfung (owner/admin); entscheidend bleibt governance-resources.
+  const canEdit = canEditRegistry(tenants.find((x) => x.tenantId === activeTenantId)?.role);
   // Drill-down aus der Hochrisiko-Kachel: ?risk=high (Definition: isHighRiskAiSystem).
   const [params, setParams] = useSearchParams();
   const highRiskOnly = params.get('risk') === 'high';
@@ -87,10 +112,31 @@ export function AiSystemRegistryView() {
             </button>
           ))}
         </div>
-        <Link to="/app/ai-systems/agents" className="rs-chip-sm">
-          Agent Registry
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/app/ai-systems/agents" className="rs-chip-sm">
+            Agent Registry
+          </Link>
+          <button
+            type="button"
+            className="rs-chip-sm rs-chip-sm--primary"
+            data-testid="ai-system-add"
+            disabled={!activeTenantId || !canEdit}
+            title={activeTenantId && !canEdit ? t('regLocked') : undefined}
+            onClick={() => setAdding(true)}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" /> {t('regAdd')}
+          </button>
+        </div>
       </div>
+      {activeTenantId && !canEdit && <p className="rs-note" data-testid="ai-system-add-locked">{t('regLocked')}</p>}
+      {adding && activeTenantId && (
+        <AiSystemForm
+          tenantId={activeTenantId}
+          asset={null}
+          onClose={() => setAdding(false)}
+          onSaved={() => setAdding(false)}
+        />
+      )}
 
       {highRiskOnly && (
         <p className="rs-note" data-testid="ai-systems-risk-filter">
@@ -122,6 +168,7 @@ export function AiSystemRegistryView() {
               <span>{t('riskTier')}</span>
               <span>{t('colArt50')}</span>
               <span>{t('colStatus')}</span>
+              <span>{t('regColLight')}</span>
             </div>
             {state.status === 'loading' && <div className="rs-empty">{t('loading')}</div>}
             {state.status === 'ready' && highRiskOnly && allRows.length > 0 && rows.length === 0 && (
@@ -135,9 +182,11 @@ export function AiSystemRegistryView() {
                 <p className="mt-1">{t('systemsNoneSub')}</p>
               </div>
             )}
-            {visible.map(({ asset, cls }) => {
+            {visible.map(({ asset, cls, assessment }) => {
               const art50 = art50Of(asset);
               const archived = asset.status === 'archived';
+              const typeLabel = label(AI_SYSTEM_TYPE_LABEL, asset.ai_system_type, lang);
+              const vendorModel = [asset.vendor, asset.model_name].filter(Boolean).join(' · ');
               return (
                 <Link
                   key={asset.id}
@@ -149,7 +198,10 @@ export function AiSystemRegistryView() {
                     <span className="rs-cell-main block">{asset.name}</span>
                     <span className="rs-cell-sub block">{asset.owner_email ?? t('noOwner')}</span>
                   </span>
-                  <span className="rs-ellipsis">{cls.systemLabel ?? asset.vendor ?? '—'}</span>
+                  <span className="min-w-0">
+                    <span className="rs-ellipsis block">{typeLabel ?? cls.systemLabel ?? t('regNotSet')}</span>
+                    <span className="rs-cell-sub block">{vendorModel || '—'}</span>
+                  </span>
                   <span>
                     <ClassBadge klasse={cls.klasse} />
                   </span>
@@ -162,6 +214,7 @@ export function AiSystemRegistryView() {
                   <span className="rs-ellipsis" style={{ color: archived ? 'var(--color-rs-fg-3)' : 'var(--color-rs-fg-1)' }}>
                     {archived ? t('stArchived') : cls.source === 'connector' ? t('stMonitored') : t('stNotCaptured')}
                   </span>
+                  <span>{archived ? '—' : <RegistryLightBadge assessment={assessment} lang={lang} />}</span>
                 </Link>
               );
             })}

@@ -41,8 +41,8 @@ export function FinalCta() {
           <Link to="/audit?source=landing-v2-final" className="lv2-btn lv2-btn--gold">
             Free Audit starten
           </Link>
-          <Link to="/demo-tour" className="lv2-btn lv2-btn--glass">
-            Demo ansehen
+          <Link to="/contact-sales?tier=enterprise&source=landing-v2-final" className="lv2-btn lv2-btn--glass">
+            Enterprise anfragen
           </Link>
         </div>
       </div>

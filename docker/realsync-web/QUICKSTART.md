@@ -58,7 +58,6 @@ docker/realsync-web/
 | VITE_SUPABASE_URL | Supabase Dashboard → API Url | ✅ JA |
 | VITE_SUPABASE_ANON_KEY | Supabase Dashboard → API → anon key | ✅ JA |
 | VITE_SENTRY_DSN | sentry.io → Project → DSN | ❌ Optional |
-| VITE_GOOGLE_GENAI_API_KEY | ai.google.dev | ❌ Optional |
 | VITE_STRIPE_PUBLISHABLE_KEY | stripe.com Dashboard | ❌ Optional |
 
 Wenn optional-Variablen leer sind = Features deaktiviert, aber kein Error.

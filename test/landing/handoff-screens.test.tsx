@@ -35,16 +35,29 @@ describe('/pricing (Handoff v2)', () => {
     expect(document.body.textContent).not.toContain('Gespräch anfragen');
   });
 
-  it('yearly mode shows SSOT yearly prices as Coming Soon, not bookable', () => {
+  it('hides the yearly toggle while Stripe yearly prices are unwired', () => {
     mount();
-    fireEvent.click(screen.getByTestId('pricing-billing-yearly'));
+    expect(screen.queryByTestId('pricing-billing-yearly')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
-    const yearly = planById('growth').price.yearlyEur as number;
-    expect(within(growth).getByText(formatPriceEur(yearly).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getAllByText('Jährlich · Coming Soon').length).toBeGreaterThan(0);
-    expect(within(growth).getByRole('button', { name: 'Jährlich · Coming Soon' })).toBeDisabled();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Monatlich buchen');
+    expect(within(growth).getByText(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('14 Tage kostenlos testen');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
+  });
+
+  it('keeps nav and plan copy in the same language after toggle', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('lang-toggle'));
+    expect(screen.getByTestId('lang-toggle')).toHaveAttribute('data-lang', 'en');
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
+    const growth = screen.getByTestId('pricing-card-growth');
+    expect(growth).toHaveAttribute('data-lang', 'en');
+    expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('On request')).toBeInTheDocument();
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
+      'Enterprise inquiry',
+    );
   });
 
   it('shows the gross-price VAT note from the pricing SSOT', () => {

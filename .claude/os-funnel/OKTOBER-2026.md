@@ -1,8 +1,9 @@
 # Oktober-Plan 2026 — RealSync Build Studio (5.10.–31.10.)
 
 **Stand:** 2026-10-05 · gemessen gegen `main@026ab3d` (CI #6221, E2E #5362, CodeQL grün)
+**Fortschreibung:** 2026-10-09 · `main@1aadadf` — siehe Abschnitt 0
 **Owner:** Dominik Steiner
-**Status:** Entwurf, wartet auf GO · **kein Merge, kein Deploy, keine Migration ohne GO**
+**Status:** in Umsetzung · Merge nur nach grünen Pflicht-Checks, kein Deploy/DNS ohne GO
 
 > Leitsatz: Erst müssen **Builder, Tenant-Sicherheit, Entitlements, Publish und
 > Governance** zusammenspielen. Keine neuen isolierten AI-Features.
@@ -15,6 +16,47 @@ Website/Landing + App Builder → Project Model → Governance Engine
 **Benennung:** Die Pakete heißen **O-WP1 … O-WP10**, weil `PLAN.md` WP1–WP7
 bereits belegt (Funnel). Die Funnel-WPs laufen weiter und sind unten zugeordnet,
 nicht dupliziert.
+
+---
+
+## 0. Stand 2026-10-09 (Fortschreibung)
+
+Seit dem 5.10. kamen über 40 PRs auf `main`. Was der Plan für KW 41–44 vorsah,
+steht damit so:
+
+| Paket | Stand | Belege / offen |
+|---|---|---|
+| O-WP1 Stabilisieren | **erledigt** | Security-, Recht- und Laufzeit-Spur gemergt; #1759 (KI-Register-Schreibpfade) fertig, wartet nur auf `Migration validation` (Docker Hub, Fix #1816) |
+| O-WP2 Landing v4 halten | läuft | #1812 (Copy-Ehrlichkeit) gemergt; #1813 (keine Fake-KPIs) in Prüfung; #1809 (Neupositionierung) **Design-Freeze — wartet auf Freigabe** |
+| O-WP3 `/build` als Einstieg | **erledigt** | #1737, #1738, #1771 (Projektart übersteht Login), #1772 (alte Builder-Links → `/build` bzw. Transformation, Query bleibt) |
+| O-WP4 Site Builder | läuft | #1775 (Compliance-Profil nach Redaktion), #1774 (ungespeicherte Änderungen) |
+| O-WP5 App Builder Phase 1 | **erledigt (früher als geplant)** | Inhalt von #1746 kam über #1789 auf `main`; #1746 geschlossen → **E-O7 erledigt** |
+| O-WP6 Governance-Kette | **offen — 0 PRs** | wichtigste Lücke für KW 42/43 |
+| O-WP7 Backend-Verkabelung | läuft | #1745, #1760, #1768 gemergt |
+| O-WP8 Monetarisierung | läuft | Jahrespreise (#1744), Plan-Katalog (#1811), Begriffe (#1679) gemergt; #1748 hängt an **E-O3** |
+| O-WP9 Publish Controller | **vorgezogen** | Gate → Preview → Production (Owner/Admin, explizites GO) über #1789 auf `main`; **Rollback fehlt**, Domain/DNS bleibt Preview (E-O5) |
+| O-WP10 Live-Readiness | blockiert | Cron: 3 Functions antworten 401 (Function-Secret ≠ Vault, siehe unten); CI: Docker-Hub-Ausfälle (#1816) |
+
+**Abweichung vom Plan:** Voice (6 PRs) und Safety-Drafts (#1802–#1804) sind
+„neue Agenten" und waren für Oktober nicht vorgesehen. Sie bleiben geparkt,
+bis O-WP6 steht.
+
+**Cron-Befund (O-WP10):** `scheduler-dispatch`, `memory-decay-worker` und
+`governance-monitoring-scheduler` lehnen pg_cron seit 2026-10-08 22:00 UTC mit
+401 „cron only" ab. Code und Vault sind konsistent; die Function-Secrets
+`CRON_SCHEDULER_DISPATCH_KEY`, `CRON_MEMORY_DECAY_KEY`,
+`CRON_GOVERNANCE_MONITORING_KEY` (und zur Sicherheit `CRON_WEBSITE_RESCAN_KEY`)
+müssen den Wert der gleichnamigen `cron_*`-Vault-Einträge bekommen —
+Vorgehen: `docs/runbooks/cron-vault-secrets.md`. Manueller Schritt im
+Dashboard, kein Code-Fix.
+
+**Entscheidungen:** E-O2 umgesetzt (Vertrag), E-O4 erledigt, E-O5 eingehalten,
+E-O7 erledigt. Offen: **E-O3** (USt), **E-O6** (Go/No-Go 30.10.), Freigabe
+#1809 (Design-Freeze).
+
+**Nächste Schwerpunkte KW 42:** O-WP6 erster Schnitt (Publish-Request →
+Approval → Evidence mit Ablehnungstest), Publish-Rollback (O-WP9),
+Cron-Secrets setzen.
 
 ---
 
@@ -191,7 +233,7 @@ WebContainer · neue Agenten. Parken = Draft bleibt offen, kein Rebase-Aufwand i
 | E-O4 | WP2a-Migration auf Produktion anwenden | ja, vor O-WP8 Teil 2 | O-WP8, O-WP10 |
 | E-O5 | Publish-Ziel: CF-Pages-Preview je Tenant; Custom Domain im Oktober | Domain bleibt Preview | O-WP9 |
 | E-O6 | Go/No-Go-Runde | 30.10., Ergebnis = Startfenster, kein Datum vorab | O-WP10 |
-| E-O7 | #1746 hängt an geparktem #1727 | #1746 eigenständig auf `main` neu schneiden, #1727 bleibt geparkt | O-WP5 |
+| E-O7 | #1746 hängt an geparktem #1727 | **erledigt 09.10.:** Inhalt kam über #1789, #1746 geschlossen | — |
 
 ---
 

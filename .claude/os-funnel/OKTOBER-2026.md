@@ -109,7 +109,7 @@ Jedes Paket: **eine Session, ein Branch von aktuellem `main`, ein Draft-PR.**
 | 4 SEO | #1740, #1701 | nach Landing-Claims |
 | 5 Plan | #1752 rebasen, WP7 als erledigt führen | O-B2 |
 
-- Akzeptanz: jeder PR hat Label **merge / rebase / parken / schließen**; `needs-rebase` per `npm run sync:main`; Auto-Merge-Check `enable` repariert oder bewusst deaktiviert.
+- Akzeptanz: jeder PR hat Label **merge / rebase / parken / schließen**; `needs-rebase` per Branch-Update als Merge („Update branch“). `npm run sync:main` rebased und force-pusht — nur mit Einzel-Freigabe (`.github/PR_TRIAGE_POLICY.md`). Auto-Merge-Check `enable` repariert oder bewusst deaktiviert.
 - Nicht: Massen-Merge für Tempo, Tests deaktivieren.
 
 ### O-WP2 — Landing v4 halten (KW 41)

@@ -325,7 +325,7 @@ export function DsgvoToolVergleich() {
             datePublished: '2026-05-06',
             dateModified: '2026-08-21',
             inLanguage: 'de-DE',
-            author: { '@type': 'Organization', name: 'RealSync Dynamics' },
+            author: { '@type': 'Organization', name: 'RealSync Dynamics AI' },
           }),
         }}
       />

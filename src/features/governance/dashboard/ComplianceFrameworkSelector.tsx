@@ -14,8 +14,6 @@ interface Framework {
   /** null = es gibt (noch) keine Route. Die Karte navigiert dann nicht. */
   path: string | null;
   tier: string;
-  status: 'available' | 'locked' | 'in-progress';
-  completionPercent: number;
   /** Angekündigt, aber ohne Ziel — wird als „In Vorbereitung" ausgewiesen. */
   comingSoon?: boolean;
 }
@@ -29,8 +27,6 @@ const FRAMEWORKS: Framework[] = [
     icon: Shield,
     path: '/app/governance/dsgvo-directory',
     tier: 'free',
-    status: 'available',
-    completionPercent: 45,
   },
   {
     id: 'iso27001',
@@ -40,8 +36,6 @@ const FRAMEWORKS: Framework[] = [
     icon: BarChart3,
     path: '/app/governance/iso27001',
     tier: 'starter',
-    status: 'available',
-    completionPercent: 28,
   },
   {
     id: 'iso42001',
@@ -51,8 +45,6 @@ const FRAMEWORKS: Framework[] = [
     icon: AlertTriangle,
     path: '/app/governance/iso42001',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 12,
   },
   {
     id: 'nis2',
@@ -62,8 +54,6 @@ const FRAMEWORKS: Framework[] = [
     icon: Shield,
     path: '/app/governance/nis2-incidents',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 0,
   },
   {
     id: 'dora',
@@ -75,8 +65,6 @@ const FRAMEWORKS: Framework[] = [
     // und kein Klick, statt eines Knopfes, der in den 404 führt.
     path: null,
     tier: 'enterprise',
-    status: 'in-progress',
-    completionPercent: 0,
     comingSoon: true,
   },
   {
@@ -87,8 +75,6 @@ const FRAMEWORKS: Framework[] = [
     icon: AlertTriangle,
     path: '/app/governance/ai-act-assessment',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 8,
   },
 ];
 
@@ -181,37 +167,24 @@ export function ComplianceFrameworkSelector() {
                   {framework.description}
                 </p>
 
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-titanium-500 font-mono">
-                      COMPLETION
-                    </span>
-                    <span className="text-xs font-semibold text-titanium-300">
-                      {framework.completionPercent}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-titanium-900 rounded-none h-2 overflow-hidden">
-                    <div
-                      className="bg-emerald-500 h-full transition-all"
-                      style={{ width: `${framework.completionPercent}%` }}
-                    />
-                  </div>
-                </div>
+                {/* Kein Fortschrittsbalken: Ein Erfüllungsgrad je Rahmenwerk wird
+                    (noch) nicht aus Mandantendaten berechnet. Die früheren
+                    Werte (45 %, 28 %, 12 % …) waren fest eingetragen. */}
 
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {framework.status === 'available' && (
+                    {/* Status aus dem Plan (Entitlement), nicht fest eingetragen. */}
+                    {accessible && (
                       <span className="inline-flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-none font-mono">
                         <CheckCircle2 className="w-3 h-3" />
-                        Active
+                        Im Plan enthalten
                       </span>
                     )}
-                    {framework.status === 'in-progress' && !framework.comingSoon && (
+                    {!accessible && !framework.comingSoon && (
                       <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded-none font-mono">
-                        <AlertTriangle className="w-3 h-3" />
-                        In Progress
+                        <Lock className="w-3 h-3" />
+                        Nicht im Plan
                       </span>
                     )}
                     {framework.comingSoon && (

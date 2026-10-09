@@ -244,6 +244,23 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnPlatform: true,
   },
   {
+    id: 'automation-n8n',
+    name: 'Automations / n8n Runtime',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Skill-Katalog, automation-trigger und -callback existieren; Skills ohne Workflow-Bindung, Runtime-Host nicht erreichbar. Keine produktive Ausführung.',
+    route: '/app/automations',
+    evidence: [
+      'supabase/functions/automation-trigger/index.ts',
+      'supabase/functions/automation-callback/index.ts',
+      'src/features/automations/AutomationSkillsView.tsx',
+      'test/automations/skill-spalten.test.ts',
+      'PR #1750',
+    ],
+    showOnRoadmap: true,
+  },
+  {
     id: 'policy-engine',
     name: 'Policy Engine',
     status: 'live',

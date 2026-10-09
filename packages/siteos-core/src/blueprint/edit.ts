@@ -28,6 +28,7 @@
 // Blueprint ist eine neue Version in derselben Kette — kein Sonderfall.
 
 import type { BlockKind, SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
+import { applySiteDesignTemplate, designTemplateById, isDesignTemplate, type DesignTemplate } from '../render/templates.ts';
 import type { SiteBrief } from './brief.ts';
 import { briefFromBlueprint } from './refine.ts';
 import { buildBlock, slugify } from './synthesize.ts';
@@ -176,6 +177,54 @@ export function applyPageEdits(blueprint: SiteBlueprint, edits: PageEdit[]): Edi
   }
 
   return { blueprint: { ...blueprint, pages }, changes, rejected };
+}
+
+export interface ThemeChange {
+  template: DesignTemplate;
+  summary: string;
+}
+
+export interface SiteEditResult extends EditResult {
+  themeChange: ThemeChange | null;
+}
+
+/**
+ * Kombiniert redaktionelle Bearbeitung mit einer optionalen Design-Vorlage.
+ * Der Client liefert nur eine Template-ID; Theme-Werte stammen aus dem Core.
+ */
+export function applySiteEdits(
+  blueprint: SiteBlueprint,
+  edits: PageEdit[],
+  designTemplate?: string | null,
+): SiteEditResult {
+  const applied: EditResult = edits.length > 0
+    ? applyPageEdits(blueprint, edits)
+    : { blueprint, changes: [], rejected: [] };
+
+  if (designTemplate === undefined || designTemplate === null) {
+    return { ...applied, themeChange: null };
+  }
+  if (!isDesignTemplate(designTemplate)) {
+    return {
+      ...applied,
+      rejected: [...applied.rejected, `theme.unknown-template:${String(designTemplate)}`],
+      themeChange: null,
+    };
+  }
+
+  const themed = applySiteDesignTemplate(applied.blueprint, designTemplate);
+  if (deepEqual(themed.theme, applied.blueprint.theme)) {
+    return { ...applied, themeChange: null };
+  }
+
+  return {
+    ...applied,
+    blueprint: themed,
+    themeChange: {
+      template: designTemplate,
+      summary: `Design-Vorlage „${designTemplateById(designTemplate).label}" übernommen.`,
+    },
+  };
 }
 
 function applyToPage(page: SitePage, edit: PageEdit, brief: SiteBrief, changes: EditChange[], rejected: string[]): SitePage {

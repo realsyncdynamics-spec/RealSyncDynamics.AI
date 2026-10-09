@@ -5,7 +5,9 @@
 export const DPA_STATUS: readonly string[] = ['none', 'requested', 'signed', 'expired', 'not_required'];
 export const TRANSFER: readonly string[] = ['adequacy', 'scc', 'bcr', 'derogation', 'none', 'unknown'];
 export const RISK: readonly string[] = ['low', 'medium', 'high', 'critical'];
-export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'member'];
+// Must match the memberships_role_check constraint
+// (owner | admin | dpo | editor | viewer_auditor). viewer_auditor is read-only.
+export const WRITER_ROLES: readonly string[] = ['owner', 'admin', 'dpo', 'editor'];
 
 const STRING_FIELDS = ['name', 'legal_name', 'country', 'website', 'privacy_policy_url', 'notes'];
 const TS_FIELDS = ['dpa_signed_at', 'dpa_expires_at'];

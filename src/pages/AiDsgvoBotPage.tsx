@@ -71,7 +71,7 @@ export function AiDsgvoBotPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
       <SEOHead
-        title="AI DSGVO Bot – Compliance Copilot | RealSyncDynamics.AI"
+        title="AI DSGVO Bot – Compliance Copilot | RealSync Dynamics AI"
         description="Stellen Sie Fragen zu DSGVO, AI Act, Website-Risiken und KI-Usecases – und erhalten Sie strukturierte Antworten, Maßnahmen und exportierbare Dokumentationsbausteine."
       />
       <LandingHeader />

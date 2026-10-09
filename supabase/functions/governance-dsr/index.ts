@@ -9,7 +9,7 @@
 //   close   (id, status?('completed'|'rejected'), response_notes?)
 //   export  (id | (subject_ref, tenant_id))  — Art. 15 Auskunft: Datenbestand + Event-Timeline
 //
-// Tenant-membership gated (owner/admin/member can write; viewer is read-only).
+// Tenant-membership gated (owner/admin/dpo/editor can write; viewer_auditor is read-only).
 // Reads happen directly from the SPA via RLS (dsr_requests tenant-read policy).
 //
 // Side effects per write:

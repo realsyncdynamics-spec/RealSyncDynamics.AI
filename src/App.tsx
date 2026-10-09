@@ -537,7 +537,9 @@ function RoutesWithTracking() {
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       {/* Deutsche Alias-URLs (Ads, getippte Adressen). Serverseitig 301 via public/_redirects.
-          /preise liegt bei /pricing (#1608). */}
+          /preise muss auch clientseitig existieren — _redirects greift nicht bei SPA-Navigation. */}
+      <Route path="/preise" element={<Navigate to="/pricing" replace />} />
+      <Route path="/preise/" element={<Navigate to="/pricing" replace />} />
       <Route path="/produkt" element={<Navigate to="/runtime" replace />} />
       <Route path="/loesungen" element={<Navigate to="/branchen" replace />} />
       <Route path="/demo" element={<Navigate to="/demo-tour" replace />} />

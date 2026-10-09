@@ -48,17 +48,19 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
     }
   });
 
-  it('führt kein echtes Gate mehr — alle vier sind aufgelöst', () => {
-    // Bis 2026-09-28 standen hier drei GATE-Einträge fest: Scan-Kontingent,
-    // Monitoring-Takt, Aufbewahrungsdauer. Ein vierter (Browser-Scan per
-    // `.includes(tier)`) lag im blinden Fleck des Prüfers. Aufgelöst:
+  it('führt als echte Gates nur noch audit-monitor-cron — aufgelöst durch #1815', () => {
+    // Bis 2026-09-28 standen hier drei GATE-Dateien fest: Scan-Kontingent,
+    // Monitoring-Takt, Aufbewahrungsdauer. Ein vierter Fall (Browser-Scan per
+    // `.includes(tier)`) lag im blinden Fleck des Prüfers. Aufgelöst in #1720:
     //   - useScanLimits liest nur noch `website.scan_monthly_limit`
-    //   - audit-monitor-cron liest `monitoring.daily` / `.monthly` /
-    //     `.browser_scan` aus dem Abo
     //   - AuditAgent war kein Gate, sondern eine Attrappe; entfernt
-    // Ein neues GATE gehört nicht in die Grundlinie, sondern nach
-    // hasPermission(), hasModule() oder limitOf().
-    expect(baseline.filter((b) => b.art === 'GATE')).toEqual([]);
+    // Takt und Browser-Scan in audit-monitor-cron löst #1815 mit seinem Umbau
+    // der Function (Entscheid vom 2026-10-09: #1815 zuerst). Wer #1815 merged,
+    // nimmt die Datei hier heraus — dann gilt wieder: kein GATE in der
+    // Grundlinie, ein neues gehört nach hasPermission(), hasModule() oder
+    // limitOf().
+    const gates = [...new Set(baseline.filter((b) => b.art === 'GATE').map((b) => b.datei))];
+    expect(gates).toEqual(['supabase/functions/audit-monitor-cron/index.ts']);
   });
 
   it('führt keine Fundstelle doppelt', () => {

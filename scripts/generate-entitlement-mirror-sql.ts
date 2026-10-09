@@ -122,7 +122,7 @@ function versionVon(datei: string): string {
  *     eintraegt. In einer frischen Kette (`Migration validation`) liefe der
  *     Spiegel dann zuerst und braeche am Vokabular-Waechter ab — genau der
  *     Fall von #1720 (`monitoring.browser_scan`, Feature-Migration
- *     `20261009224713`, Spiegel `20261009224841`). Die Regel stand nur im PR-Text; hier wird sie
+ *     `20260928163000`). Die Regel stand nur im PR-Text; hier wird sie
  *     erzwungen.
  *
  * Das betrifft nur das Schreiben eines neuen Spiegels. Bestehende Migrationen,

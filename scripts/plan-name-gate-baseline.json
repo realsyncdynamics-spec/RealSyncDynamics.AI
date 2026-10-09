@@ -104,6 +104,30 @@
     "seit": "2026-09-06"
   },
   {
+    "datei": "supabase/functions/audit-monitor-cron/index.ts",
+    "plan": "starter",
+    "fundstellen": 1,
+    "art": "GATE",
+    "grund": "Monitoring-Takt haengt am Plan-Namen: `d.tier === 'starter'` alle 30 Tage, alle anderen taeglich, gelesen aus der kopierten Spalte monitored_domains.tier statt aus dem Abo. Wird mit #1815 aufgeloest (erlaubteKadenz() aus monitoring.daily/monthly); bis dahin bewusst gefuehrt, damit #1720 nicht dieselbe Datei umbaut.",
+    "seit": "2026-10-09"
+  },
+  {
+    "datei": "supabase/functions/audit-monitor-cron/index.ts",
+    "plan": "agency",
+    "fundstellen": 1,
+    "art": "GATE",
+    "grund": "Scan-Art haengt am Plan-Namen: `['agency','enterprise'].includes(d.tier)` waehlt Playwright statt Fetch. Lag bis zum Listen-Muster im blinden Fleck des Pruefers. #1815 verdrahtet Playwright nicht und loest die Stelle damit auf; ein eigener Katalog-Key wurde am 2026-10-09 bewusst verworfen.",
+    "seit": "2026-10-09"
+  },
+  {
+    "datei": "supabase/functions/audit-monitor-cron/index.ts",
+    "plan": "enterprise",
+    "fundstellen": 1,
+    "art": "GATE",
+    "grund": "Dieselbe Liste wie beim Eintrag zu agency in derselben Datei (Browser-Scan). Wird mit #1815 aufgeloest.",
+    "seit": "2026-10-09"
+  },
+  {
     "datei": "supabase/functions/create-trial-subscription/index.ts",
     "plan": "growth",
     "fundstellen": 1,

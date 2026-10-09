@@ -52,7 +52,7 @@ const LAYERS = [
 
 export function Manifest() {
   usePageMeta({
-    title: 'Das KI-Betriebssystem — RealSyncDynamics.AI',
+    title: 'Das KI-Betriebssystem — RealSync Dynamics AI',
     description:
       'Warum die Zukunft der Arbeit nicht denen gehört, die das beste KI-Tool nutzen, sondern denen, die ein System daraus bauen.',
     url: 'https://RealSyncDynamicsAI.de/manifest',

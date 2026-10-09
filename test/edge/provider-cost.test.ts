@@ -175,6 +175,17 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
     expect(between).toContain("status: 'error'");
   });
 
+  it('ein abgelehnter Fehler-Insert in ai_tool_runs fällt im Log auf', () => {
+    // Supabase wirft dabei nicht; ohne Prüfung fehlte der Lauf still.
+    const inserts = ai.split(".from('ai_tool_runs').insert(").length - 1;
+    const checked = ai.match(/const \{ error: insertError \} = await admin\.from\('ai_tool_runs'\)\.insert\(/g) ?? [];
+    expect(checked.length).toBe(2);
+    expect(ai.match(/logRunInsertError\(insertError,/g) ?? []).toHaveLength(2);
+    expect(ai).toContain("scope: 'ai_tool_runs_insert_failed'");
+    // Erfolgszeile + zwei Fehlerzeilen — kommt ein Insert dazu, hier entscheiden.
+    expect(inserts).toBe(3);
+  });
+
   it('die Antwort an den Client nennt weder Anbieter noch Modell', () => {
     // bot-chat gibt message und details unverändert an anonyme Widget-Nutzer.
     const fn = ai.slice(ai.indexOf('function toolCostUsd('), ai.indexOf('async function resolveResidency('));

@@ -109,18 +109,26 @@ function buildShadowRatingTelemetry(args: {
 }
 
 /**
- * Supabase wirft bei einem abgelehnten Insert nicht, sondern gibt `error`
- * zurück. Für die ai_tool_runs-Fehlerzeilen heißt das: ohne Prüfung fehlt
- * der Lauf still. Protokolliert wird hier; der ursprüngliche Fehler bleibt
- * der, den der Aufrufer bekommt.
+ * Schreibt die ai_tool_runs-Zeile eines fehlgeschlagenen Laufs. Ein
+ * abgelehnter Insert (Supabase liefert `error`) oder ein geworfener
+ * (Netzwerk) wird protokolliert, aber nie weitergereicht: der Aufrufer
+ * bekommt den ursprünglichen Fehler, nicht einen generischen 500.
  */
-function logRunInsertError(
-  error: { message: string } | null,
+async function insertErrorRun(
+  admin: SupabaseClient,
+  row: Record<string, unknown>,
   ctx: { tool_key: string; provider: string; model_id: string },
-): void {
-  if (!error) return;
+): Promise<void> {
+  let message: string | null;
+  try {
+    const { error } = await admin.from('ai_tool_runs').insert(row);
+    message = error ? error.message : null;
+  } catch (e) {
+    message = (e as Error)?.message ?? String(e);
+  }
+  if (message === null) return;
   console.error(JSON.stringify({
-    level: 'error', scope: 'ai_tool_runs_insert_failed', ...ctx, message: error.message,
+    level: 'error', scope: 'ai_tool_runs_insert_failed', ...ctx, message,
   }));
 }
 
@@ -272,7 +280,7 @@ export async function runAiTool(
     );
   } catch (e) {
     if (e instanceof AiInvokeError && e.code === 'MODEL_PRICE_MISSING') {
-      const { error: insertError } = await admin.from('ai_tool_runs').insert({
+      await insertErrorRun(admin, {
         tenant_id: tenantId,
         tool_id: tool.id,
         tool_key: tool.key,
@@ -287,10 +295,7 @@ export async function runAiTool(
           provider: effectiveProvider,
           model_id: effectiveModelId,
         },
-      });
-      logRunInsertError(insertError, {
-        tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId,
-      });
+      }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
     }
     throw e;
   }
@@ -431,7 +436,7 @@ export async function runAiTool(
       actualProviderCostUsd: null,
     });
 
-    const { error: insertError } = await admin.from('ai_tool_runs').insert({
+    await insertErrorRun(admin, {
       tenant_id: tenantId,
       tool_id: tool.id,
       tool_key: tool.key,
@@ -446,10 +451,7 @@ export async function runAiTool(
         provider: effectiveProvider,
         ...shadowRating,
       },
-    });
-    logRunInsertError(insertError, {
-      tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId,
-    });
+    }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
 
     const status = code === 'PROVIDER_NOT_CONFIGURED' ? 503
                  : code === 'PROVIDER_NOT_IMPLEMENTED' ? 501

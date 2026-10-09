@@ -171,19 +171,23 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
     const reserve = ai.indexOf('reserveLlmBudget(admin');
     const between = ai.slice(estimate, reserve);
     expect(between).toContain("e.code === 'MODEL_PRICE_MISSING'");
-    expect(between).toContain(".from('ai_tool_runs').insert(");
+    expect(between).toContain('await insertErrorRun(admin, {');
     expect(between).toContain("status: 'error'");
   });
 
-  it('ein abgelehnter Fehler-Insert in ai_tool_runs fällt im Log auf', () => {
-    // Supabase wirft dabei nicht; ohne Prüfung fehlte der Lauf still.
-    const inserts = ai.split(".from('ai_tool_runs').insert(").length - 1;
-    const checked = ai.match(/const \{ error: insertError \} = await admin\.from\('ai_tool_runs'\)\.insert\(/g) ?? [];
-    expect(checked.length).toBe(2);
-    expect(ai.match(/logRunInsertError\(insertError,/g) ?? []).toHaveLength(2);
-    expect(ai).toContain("scope: 'ai_tool_runs_insert_failed'");
-    // Erfolgszeile + zwei Fehlerzeilen — kommt ein Insert dazu, hier entscheiden.
-    expect(inserts).toBe(3);
+  it('ein abgelehnter Fehler-Insert ersetzt nie den ursprünglichen Fehler', () => {
+    // Supabase wirft bei abgelehntem Insert nicht, bei Netzwerkfehlern schon.
+    // Beides darf MODEL_PRICE_MISSING bzw. den Providerfehler nicht zu einem
+    // generischen 500 machen — deshalb laufen beide Fehlerzeilen über einen
+    // Helfer, der prüft, fängt und loggt.
+    const helper = ai.slice(ai.indexOf('async function insertErrorRun('), ai.indexOf('function toolCostUsd('));
+    expect(helper).toContain("const { error } = await admin.from('ai_tool_runs').insert(row)");
+    expect(helper).toMatch(/\} catch \(e\) \{/);
+    expect(helper).toContain("scope: 'ai_tool_runs_insert_failed'");
+    expect(helper).not.toMatch(/\bthrow\b/);
+    expect(ai.match(/await insertErrorRun\(admin, \{/g) ?? []).toHaveLength(2);
+    // Helfer + Erfolgszeile — ein weiterer direkter Insert gehört hier entschieden.
+    expect(ai.split(".from('ai_tool_runs').insert(").length - 1).toBe(2);
   });
 
   it('die Antwort an den Client nennt weder Anbieter noch Modell', () => {

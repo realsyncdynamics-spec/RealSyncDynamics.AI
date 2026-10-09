@@ -6,7 +6,7 @@ test.describe('[GOV-004/005] EU AI Act Seite', () => {
     await page.goto('/ai-act/', { waitUntil: 'domcontentloaded' });
 
     await expect(
-      page.getByRole('heading', { level: 1, name: /AI Act compliance without a consulting engagement/i }),
+      page.getByRole('heading', { level: 1, name: /EU-AI-Act-Compliance ohne Beratungsprojekt/i }),
     ).toBeVisible();
 
     await expect(

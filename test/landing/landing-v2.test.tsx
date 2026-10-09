@@ -109,10 +109,10 @@ it('shows four plan cards with SSoT prices, no VAT line and a § 19 UStG note', 
   expect(view.container.textContent).not.toMatch(/zzgl\. (gesetzlicher )?USt/i);
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 
-  // Jahres-Toggle zeigt keinen unbuchbaren Jahresbetrag (check:offer-prices).
-  fireEvent.click(screen.getByRole('button', { name: /Jährlich/ }));
+  // Jahres-Toggle bleibt aus, solange Stripe-Jahrespreise fehlen.
+  expect(screen.queryByRole('button', { name: /Jährlich/ })).not.toBeInTheDocument();
+  expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
   expect(text(view.container)).not.toContain(eur(790));
-  expect(within(cards[0] as HTMLElement).getByText(/in Vorbereitung/)).toBeInTheDocument();
 });
 
 it('switches theme and persists it in the shared landing-mode storage', () => {

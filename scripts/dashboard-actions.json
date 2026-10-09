@@ -124,17 +124,17 @@
     },
     {
       "id": "builder.webapp.publish",
-      "route": "/app/siteos/builder",
+      "route": "/unified-entry/transformation",
       "komponente": "src/unified-entry/pages/PreviewSelectionPage.tsx",
       "aktion": "Projekt bauen und veröffentlichen",
       "handler": "src/features/siteos/siteOsApi.ts",
       "backend": "src/features/siteos/siteOsApi.ts",
       "persistenz": "siteos (Edge Functions + Tabellen)",
       "entitlement": "siteos.* (Publish-Gate serverseitig)",
-      "status": "IMPLEMENTED",
-      "luecke": "",
-      "beleg": "siteOsApi.ts:177 buildSite · :424 evaluatePublish ruft functions.invoke('siteos/publish-gate') · elf functions.invoke- und sieben .from()-Aufrufe in der Datei · PreviewSelectionPage importiert features/billing/checkout für den Kauf",
-      "seit": "2026-09-14"
+      "status": "PARTIAL",
+      "luecke": "Die Seite liest die Ausgangsseite (siteos/discover), baut daraus ein mandantengebundenes Projekt (siteos/builder) und übergibt an den Workspace /builder/:slug. Veröffentlicht wird hier nichts: In PreviewSelectionPage.tsx steht kein Publish-Aufruf, nur der Checkout. Publish-Gate, Vorschau und Produktion laufen im Workspace und sind für diesen Einstieg nicht durchgängig belegt. /app/siteos/builder leitet seit #1772 hierher (mit url/domain/auditId) bzw. nach /build weiter; der Dashboard-Link „Web App Builder“ zeigt auf /build?kind=web_app (Code-Builder) und ist hier nicht inventarisiert.",
+      "beleg": "PreviewSelectionPage.tsx:83 functions.invoke('siteos/discover') · :98 buildSite → siteOsApi.ts:194 functions.invoke('siteos/builder') · :104 Übergabe an /builder/:slug · :148 createSiteOsCheckoutSession · kein Publish-Aufruf in PreviewSelectionPage.tsx · App.tsx Route /unified-entry/transformation → PreviewSelectionPage",
+      "seit": "2026-10-09"
     },
     {
       "id": "domain.add",

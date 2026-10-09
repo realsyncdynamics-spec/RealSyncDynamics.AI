@@ -12,6 +12,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { checkTenantQuota, recordChatHistory, type AdminLike } from '../llm-quota.ts';
 import { gatewayHeaders } from '../aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../aiGateway/internalClient.ts';
+import { describeGatewayError } from './gatewayErrorText.ts';
 import {
   buildBriefPrompt,
   validateBriefPayload,
@@ -181,13 +182,18 @@ async function callGateway(tenantId: string, system: string, user: string): Prom
       feature: 'governance_brief_daily',
       task_type: 'governance_reasoning',
       model_profile: 'strict-json',
-      input: { system, user },
+      // Native op-API: `input` ist ein STRING, der Systemprompt gehört in
+      // `system_prompt`. Vorher ging `input` als Objekt (system + user) raus —
+      // jeder Provider lehnt `content: {…}` mit einem 4xx ab, der Gateway
+      // meldete das als 500 INFERENCE_ERROR (45/45 Cron-Aufrufe).
+      input: user,
+      system_prompt: system,
+      max_tokens: 1200,
     }),
   });
 
   if (!resp.ok) {
-    const txt = await resp.text().catch(() => '');
-    throw new Error(`ai-gateway ${resp.status}: ${txt.slice(0, 200)}`);
+    throw new Error(await describeGatewayError(resp));
   }
 
   const json = await resp.json() as {

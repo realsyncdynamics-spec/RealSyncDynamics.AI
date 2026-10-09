@@ -56,7 +56,7 @@ const PRINCIPLES = [
 
 export function DigitalSovereignty() {
   usePageMeta({
-    title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
+    title: 'Digitale Souveränität als Betriebsmodell | RealSync Dynamics AI',
     description:
       'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare ' +
       'DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault ' +

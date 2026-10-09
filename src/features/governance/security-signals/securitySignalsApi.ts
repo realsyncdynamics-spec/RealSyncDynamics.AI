@@ -65,15 +65,28 @@ export async function fetchRiskLinks(signalId: string): Promise<RiskLinkRow[]> {
   return (data as RiskLinkRow[]) ?? [];
 }
 
-/** Setzt den Status eines Signals (z.B. „accepted", „in_review"). */
+/** Rollen, die den Status setzen dürfen (wie public.is_tenant_writer). */
+export const SIGNAL_WRITER_ROLES: ReadonlySet<string> = new Set(['owner', 'admin', 'dpo', 'editor']);
+
+export const SIGNAL_STATUS_FORBIDDEN = 'Ihre Rolle darf den Status von Signalen nicht ändern.';
+
+/**
+ * Setzt den Status eines Signals (z.B. „accepted", „in_review").
+ * RLS lässt nur schreibende Rollen zu und nur die Spalte `status`
+ * (20261005150000). Ein von RLS herausgefiltertes Update meldet keinen
+ * Fehler, sondern 0 Zeilen — das ist hier ein Fehler, sonst zeigte die
+ * Oberfläche einen Status, der nie gespeichert wurde.
+ */
 export async function updateSignalStatus(
   signalId: string,
   status: SignalStatus,
 ): Promise<void> {
   const sb = getSupabase();
-  const { error } = await sb
+  const { data, error } = await sb
     .from('security_signals')
     .update({ status })
-    .eq('id', signalId);
-  if (error) throw new Error(error.message);
+    .eq('id', signalId)
+    .select('id');
+  if (error) throw new Error(error.code === '42501' ? SIGNAL_STATUS_FORBIDDEN : error.message);
+  if (!data || data.length === 0) throw new Error(SIGNAL_STATUS_FORBIDDEN);
 }

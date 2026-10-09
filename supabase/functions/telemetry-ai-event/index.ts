@@ -2,7 +2,7 @@
 //
 // POST /functions/v1/telemetry-ai-event
 // Headers:
-//   x-rsd-tenant-key: <tenant-API-key>     (Pflicht)
+//   x-rsd-tenant-key: rsd_gov_…   (Pflicht; alternativ Authorization: Bearer rsd_gov_…)
 //   content-type:    application/json
 //
 // Body: AiTelemetryEventPayload (siehe src/sdk/telemetry.ts fuer Schema)
@@ -12,10 +12,15 @@
 // ein ai_evidence_events-Eintrag erzeugt — dadurch landet jedes auditrelevante
 // Runtime-Event automatisch im Evidence-Vault.
 //
-// Auth: in dieser PR via einfachem x-rsd-tenant-key-Header (Tenant-Lookup).
-// Folge-PR: HMAC-Signing + Replay-Protection.
+// Auth: Ingest-API-Key aus governance_ingest_keys (wie governance-ingest),
+// Mandant nur aus der Schlüsselzeile. Die rohe Mandanten-UUID gilt NICHT mehr
+// als Schlüssel — damit konnte jeder, der eine UUID kannte, Ereignisse und
+// unlöschbare Nachweise in fremde Mandanten schreiben. ai_system_id und
+// policy_id müssen zum Mandanten gehören. Offen: HMAC-Signing + Replay-Schutz.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { authenticateIngestKey, checkTenantRef } from '../_shared/ingestKeyAuth.ts';
+import { readCappedText } from '../_shared/readCappedBody.ts';
 import {
   evaluatePolicies,
   type PolicyRule,
@@ -32,7 +37,12 @@ import {
 import { logShadowComparison } from '../_shared/pdp/decide.ts';
 
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
-corsHeaders['Access-Control-Allow-Headers'] = 'content-type, x-rsd-tenant-key';
+corsHeaders['Access-Control-Allow-Headers'] = 'authorization, content-type, x-rsd-tenant-key';
+
+/** Telemetrie kommt aus SDK und Konnektoren — Quelle für allowed_sources des Schlüssels. */
+const TELEMETRY_SOURCE = 'sdk';
+/** Ein Telemetrie-Ereignis ist klein; 64 KB reichen weit (DoS-Schutz am öffentlichen Eingang). */
+const MAX_BODY_BYTES = 65_536;
 
 // ─── Schema-Validation ───────────────────────────────────────────────────────
 
@@ -128,14 +138,36 @@ Deno.serve(async (req) => {
     return jsonError(405, 'BAD_METHOD', 'POST only', corsHeaders);
   }
 
-  const tenantKey = req.headers.get('x-rsd-tenant-key');
-  if (!tenantKey) {
-    return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key', corsHeaders);
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return jsonError(503, 'NOT_CONFIGURED', 'telemetry ingest not configured', corsHeaders);
   }
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
 
+  // Mandant ausschließlich aus dem Ingest-Schlüssel — vor jedem Lesen des Bodys.
+  const auth = await authenticateIngestKey(req.headers, async (keyHash) => {
+    const { data, error } = await admin
+      .from('governance_ingest_keys')
+      .select('id, tenant_id, allowed_sources, revoked_at')
+      .eq('key_hash', keyHash)
+      .maybeSingle();
+    return { row: data ?? null, failed: Boolean(error) };
+  }, TELEMETRY_SOURCE);
+  if (!auth.ok) return jsonError(auth.status, auth.code, auth.message, corsHeaders);
+  const tenantId = auth.tenantId;
+
+  // Grenze beim Streamen, nicht nach req.text() (sonst läge der ganze Body
+  // schon im Speicher, bevor 413 käme).
+  const body = await readCappedText(req, MAX_BODY_BYTES);
+  if (!body.ok) {
+    return jsonError(413, 'BODY_TOO_LARGE', `max ${MAX_BODY_BYTES} bytes`, corsHeaders);
+  }
   let payload: unknown;
   try {
-    payload = await req.json();
+    payload = JSON.parse(body.text);
   } catch {
     return jsonError(400, 'BAD_JSON', 'request body must be valid JSON', corsHeaders);
   }
@@ -145,21 +177,20 @@ Deno.serve(async (req) => {
     return jsonError(400, 'VALIDATION', validation.errors!.join(' · '), corsHeaders);
   }
 
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
-
-  // Tenant-Lookup ueber API-Key. In dieser PR existiert die tenant_api_keys-
-  // Tabelle noch nicht — fallback ist tenant_id direkt im Header. Folge-PR
-  // ergaenzt die Lookup-Tabelle + HMAC-Signing.
-  const tenantId = tenantKey.match(/^[0-9a-f-]{36}$/i) ? tenantKey : null;
-  if (!tenantId) {
-    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)', corsHeaders);
-  }
-
   const p = payload as TelemetryPayload;
+
+  // Verweise auf System und Policy nur innerhalb des eigenen Mandanten
+  // (globale Policies ohne Mandant sind erlaubt).
+  const refError =
+    await checkTenantRef(p.ai_system_id, tenantId, async (id) => {
+      const { data, error } = await admin.from('ai_systems').select('tenant_id').eq('id', id).maybeSingle();
+      return { found: Boolean(data), tenantId: (data?.tenant_id as string | null) ?? null, failed: Boolean(error) };
+    }, 'ai_system_id', false)
+    ?? await checkTenantRef(p.policy_id, tenantId, async (id) => {
+      const { data, error } = await admin.from('ai_policies').select('tenant_id').eq('id', id).maybeSingle();
+      return { found: Boolean(data), tenantId: (data?.tenant_id as string | null) ?? null, failed: Boolean(error) };
+    }, 'policy_id', true);
+  if (refError) return jsonError(refError.status, refError.code, refError.message, corsHeaders);
 
   // ─── Policy-Evaluation ─────────────────────────────────────────────────
   // Laedt enabled Policies fuer diesen Tenant (oder global, tenant_id IS NULL)
@@ -227,7 +258,9 @@ Deno.serve(async (req) => {
     .single();
 
   if (insertErr || !insertedEvent) {
-    return jsonError(500, 'INSERT_FAILED', insertErr?.message ?? 'unknown insert error', corsHeaders);
+    // Datenbankmeldungen nicht an den Aufrufer (Schema-Details).
+    console.error('[telemetry-ai-event] insert failed', insertErr?.code ?? 'unknown');
+    return jsonError(500, 'INSERT_FAILED', 'event could not be stored', corsHeaders);
   }
 
   // Auto-Evidence: hohe Risiken oder Policy-Verletzungen landen im Vault.
@@ -246,11 +279,14 @@ Deno.serve(async (req) => {
       risk_level: insertedEvent.risk_level,
       evidence: {
         runtime_event_id: insertedEvent.id,
+        ingest_key_id: auth.keyId,
         vendor: p.vendor,
         model: p.model,
         prompt_category: p.prompt_category,
         data_class: p.data_class,
-        ...p.metadata,
+        // Vom Client gemeldet — eigener Schlüssel, damit es die Felder oben
+        // nicht überschreiben kann.
+        reported_metadata: p.metadata ?? {},
       },
     });
   }

@@ -58,7 +58,7 @@ describe('Inventar und Code stimmen überein', () => {
 
   it('deckt die sechs P0-Flächen aus Issue #1381 ab', () => {
     const routen = new Set(inventar.aktionen.map((a) => a.route));
-    for (const route of ['/app/bots', '/app/agents', '/app/automations', '/build', '/app/siteos/builder', '/app/websites']) {
+    for (const route of ['/app/bots', '/app/agents', '/app/automations', '/build', '/unified-entry/transformation', '/app/websites']) {
       expect(routen.has(route), `${route} fehlt im Inventar`).toBe(true);
     }
   });

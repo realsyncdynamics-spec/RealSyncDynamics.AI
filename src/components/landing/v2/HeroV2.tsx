@@ -11,8 +11,11 @@ import {
 const SOURCE = 'landing-v2-hero';
 
 /**
- * Screen 01 — Hero. Tier-Buttons ziehen Preis + Ziel aus `shared/pricing.ts`;
- * Enterprise geht wie überall auf `/contact-sales`.
+ * Screen 01 — Hero. Der Einstieg zeigt die echten Produktoberflächen:
+ * Scan, Runtime und Enterprise-Anfrage. Die bestehenden Tarif-Buttons
+ * bleiben aus der Pricing-SSoT verdrahtet; der Hero zeigt damit
+ * Produktoberflächen und buchbare Einstiegspfade ohne Demo-CTA und
+ * ohne zweite Preislogik.
  */
 export function HeroV2() {
   const starter = planById('starter');
@@ -46,12 +49,15 @@ export function HeroV2() {
 
         <div className="lv2-hero__cta" role="group" aria-label="Hero-Aktionen">
           <Link
-            to={checkoutHrefForPlan('free', { source: SOURCE })}
+            to={`/audit?source=${SOURCE}`}
             className="lv2-btn lv2-btn--gold"
             data-hero-cta="audit"
             data-testid="hero-primary-cta"
           >
-            Free Audit
+            Governance-Scan starten
+          </Link>
+          <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass" data-hero-cta="runtime">
+            Runtime ansehen
           </Link>
           {tierButtons.map((plan) => (
             <Link
@@ -66,15 +72,18 @@ export function HeroV2() {
           ))}
           <Link
             to="/contact-sales?tier=enterprise&source=landing-v2-hero"
-            className="lv2-btn lv2-btn--glass"
+            className="lv2-btn lv2-btn--glass lv2-btn--enterprise"
             data-hero-cta="enterprise"
             data-testid="hero-secondary-cta"
           >
-            Enterprise
+            Enterprise anfragen
           </Link>
         </div>
 
         <p className="lv2-hero__note">{LV2_HERO_NOTE}</p>
+        <p className="lv2-hero__truthline">
+          Ein Frontend, eine Runtime: Scan, Policy Engine, Evidence, Activation und Command Center führen in dieselbe Produktarchitektur.
+        </p>
       </div>
     </section>
   );

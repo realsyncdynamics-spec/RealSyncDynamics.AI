@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { getPlanBySlug, getFeaturesByPlan, ALL_PLAN_SLUGS } from '../../content/pricingContent';
+import { BetaNotice } from './BetaNotice';
 
 interface PlanDetailPageProps {
   planSlug: string;
@@ -78,6 +79,7 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
             >
               {plan.cta.label}
             </button>
+            <BetaNotice compact className="mt-3" />
           </div>
 
           {/* For whom section */}
@@ -155,9 +157,9 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
             <h2 className="font-display font-bold text-2xl mb-4">Was passiert nach der Buchung?</h2>
             <ol className="space-y-3">
               {[
-                'Sie werden zur Bezahlung weitergeleitet (Stripe)',
+                'Sie werden zur Bezahlung weitergeleitet (Stripe – in der Beta-Testversion im Testmodus, es wird nichts belastet)',
                 'Nach erfolgreicher Zahlung erhalten Sie eine Bestätigungs-E-Mail',
-                'Ihr Account wird sofort aktiviert',
+                'Ihr Account wird aktiviert – die Freischaltung der einzelnen Paket-Funktionen wird in der Beta noch verifiziert',
                 'Sie können sich anmelden und mit der Nutzung beginnen',
               ].map((step, idx) => (
                 <li key={idx} className="flex items-start gap-3">
@@ -178,6 +180,7 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
             >
               {plan.cta.label}
             </button>
+            <BetaNotice compact className="mt-3" />
           </div>
         </div>
       </section>

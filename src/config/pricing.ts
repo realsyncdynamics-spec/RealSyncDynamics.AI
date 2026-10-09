@@ -301,6 +301,21 @@ export function tierById(id: TierId): PricingTier | undefined {
 export const ON_REQUEST_LABEL = 'Auf Anfrage';
 
 /**
+ * Beta-Hinweis für alle Kaufpfade (Landing v4, /pricing, /pricing/:slug,
+ * Checkout). Solange Stripe im Testmodus läuft und die Freischaltung der
+ * Paket-Funktionen im Dashboard nicht je Plan verifiziert ist, muss das vor
+ * jedem Kauf-CTA sichtbar sein. Eine Quelle — nicht pro Seite umformulieren.
+ */
+export const BETA_LABEL = 'Beta-Testversion';
+export const BETA_CHECKOUT_NOTICE =
+  'Zahlungen laufen derzeit im Stripe-Testmodus – es wird nichts belastet. ' +
+  'Die Freischaltung einzelner Paket-Funktionen im Dashboard wird noch verifiziert.';
+/** Kurzform für die App-Shell (eingeloggte Nutzer). */
+export const BETA_APP_NOTICE =
+  'Die Freischaltung der Funktionen je Paket wird noch getestet – einzelne Module können abweichend freigeschaltet sein. ' +
+  'Zahlungen laufen im Stripe-Testmodus.';
+
+/**
  * Der öffentliche Preis eines Tiers — die EINZIGE Stelle, an der aus
  * `priceString` eine Preisangabe für eine Oberfläche wird.
  *

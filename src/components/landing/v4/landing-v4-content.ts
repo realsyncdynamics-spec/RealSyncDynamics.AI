@@ -196,6 +196,13 @@ export const PLANS = V4_PLAN_IDS.map((id) => {
 
 export const V4_PRICING_TAX_NOTE = PRICING_TAX_NOTE;
 
+// ---- Beta-Testversion (Wortlaut aus config/pricing.ts, eine Quelle für alle Kaufpfade) ----
+export { BETA_LABEL as V4_BETA_LABEL, BETA_CHECKOUT_NOTICE as V4_BETA_NOTICE } from '../../../config/pricing';
+
+/** Kurzform für den Hero — Details stehen an den Kauf-CTAs (#pricing, /pricing, Checkout). */
+export const V4_BETA_HERO_NOTE =
+  'Beta-Testversion · Zahlungen im Stripe-Testmodus, es wird nichts belastet · Paket-Freischaltungen im Dashboard werden noch verifiziert';
+
 // ---- 06 Roadmap ----
 // Frozen handoff list removed: V4Roadmap renders from
 // src/product/implementation-status.ts (ROADMAP_*_ITEMS). Do not reintroduce

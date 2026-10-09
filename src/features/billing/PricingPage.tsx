@@ -37,6 +37,7 @@ import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
 import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
+import { BetaNotice } from '../../components/pricing/BetaNotice';
 
 /**
  * /pricing — öffentliche Preisseite der AI Governance Runtime.
@@ -111,6 +112,8 @@ export function PricingPage() {
                 {t('yearlyNote')}
               </p>
             )}
+            {/* Beta-Testversion: Stripe-Testmodus, Paket-Freischaltung noch nicht verifiziert. */}
+            <BetaNotice className="mb-6" />
             <div className="rs-pricing__grid">
               <FreeAuditCard />
               {SELLABLE_PRICING_TIERS.map((tier) => (

@@ -38,6 +38,9 @@ import {
   TOOLS,
   TRUST,
   V4_ROUTES,
+  V4_BETA_HERO_NOTE,
+  V4_BETA_LABEL,
+  V4_BETA_NOTICE,
   V4_PRICING_TAX_NOTE,
   statusOf,
   type TrustIcon,
@@ -100,7 +103,7 @@ export function V4StatusBar() {
       <div className="statusbar-in">
         <i />
         <span>
-          <b>GOVERNANCE RUNTIME</b> · EU-NATIVE
+          <b>{V4_BETA_LABEL.toUpperCase()}</b> · GOVERNANCE RUNTIME · EU-NATIVE
         </span>
         <span>CONTINUOUS EVIDENCE</span>
         <div className="right">
@@ -214,6 +217,12 @@ export function V4Hero() {
       <div className="hero reveal" style={{ animationDelay: '60ms' }}>
         <i className="mark tl" />
         <i className="mark br" />
+        <div className="proof" style={{ marginTop: 0, marginBottom: 20 }}>
+          <span className="chip" data-testid="v4-beta-badge">
+            <i />
+            {V4_BETA_LABEL.toUpperCase()}
+          </span>
+        </div>
         <h1 data-testid="v4-hero-heading">
           <span>{t('v4HeroTitleA')}</span>
           <br />
@@ -254,6 +263,9 @@ export function V4Hero() {
           </button>
         </form>
         <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Befunde nachvollziehbar dokumentiert</p>
+        <p className="scanform-note" data-testid="v4-beta-hero-note">
+          {V4_BETA_HERO_NOTE}
+        </p>
         <div className="proof">
           {HERO_PROOF.map((p) => (
             <span key={p} className="chip">
@@ -688,6 +700,9 @@ export function V4Pricing() {
         </p>
         <p className="sec-note">
           Upgrade-Leiter: Einzel-Domain → Starter · SaaS → Growth · Agentur → Agency · DSB/Enterprise → Anfrage
+        </p>
+        <p className="sec-note" data-testid="v4-beta-notice" style={{ marginTop: 10 }}>
+          <b>{V4_BETA_LABEL}:</b> {V4_BETA_NOTICE}
         </p>
         <div className="cards">
           {PLANS.map((p) => (

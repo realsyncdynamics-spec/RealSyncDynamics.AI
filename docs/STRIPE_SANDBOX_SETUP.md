@@ -122,9 +122,18 @@ GitHub-Repo-Secrets / Build-Env:
 
 `VITE_STRIPE_MODE` wird im Build-Env-Block von
 `.github/workflows/deploy-cloudflare-pages.yml` aus dem gleichnamigen Repo-Secret
-durchgereicht (fehlt es, gilt der sichere Default `test`). Für Live-Betrieb
-**beide** Werte gemeinsam auf `live` setzen: Supabase-Secret `STRIPE_MODE` und
-Repo-Secret `VITE_STRIPE_MODE`.
+durchgereicht (fehlt es, gilt der sichere Default `test`).
+
+Zusätzlich baut die Cloudflare-Git-Integration (Bot „Cloudflare Pages" am PR)
+mit den Build-Variablen des Pages-Projekts, nicht mit Repo-Secrets. Dort
+`VITE_STRIPE_MODE` ebenfalls setzen: Cloudflare-Dashboard → Workers & Pages →
+`realsyncdynamics-ai` → Settings → Variables and Secrets → Production
+(und Preview, falls gewünscht).
+
+Für Live-Betrieb **alle** Stellen gemeinsam auf `live` setzen: Supabase-Secret
+`STRIPE_MODE`, Repo-Secret `VITE_STRIPE_MODE` und die Pages-Build-Variable
+`VITE_STRIPE_MODE`. Weicht der Frontend-Modus ab, bricht der Checkout mit
+`STRIPE_MODE_MISMATCH` ab, sobald der Server eine Live-Session meldet.
 Price-IDs liegen im Frontend nicht vor: Die `VITE_STRIPE_PRICE_*`-Variablen
 werden im Code nicht gelesen.
 

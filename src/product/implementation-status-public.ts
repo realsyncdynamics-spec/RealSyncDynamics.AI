@@ -429,17 +429,17 @@ export const PUBLIC_ROADMAP_COPY: Record<
 /**
  * Resolve customer-facing name + description for a public roadmap card.
  * Never falls back to internal `description` (may contain PRs, components, notes).
+ *
+ * Returns `undefined` when an item has no public copy yet — the landing then
+ * simply omits that card (never throws during render). Missing copy for
+ * roadmap-visible items is caught in CI by test/product/implementation-status.test.ts.
  */
 export function getPublicRoadmapCopy(
   item: ImplementationItem,
   lang: PublicLang = 'de',
-): PublicRoadmapCopy {
+): PublicRoadmapCopy | undefined {
   const entry = PUBLIC_ROADMAP_COPY[item.id];
-  if (!entry) {
-    throw new Error(
-      `Missing PUBLIC_ROADMAP_COPY for roadmap item "${item.id}". Add customer-facing DE/EN copy.`,
-    );
-  }
+  if (!entry) return undefined;
   return entry[lang] ?? entry.de;
 }
 

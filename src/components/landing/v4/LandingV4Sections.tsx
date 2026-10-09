@@ -763,7 +763,12 @@ export function V4Roadmap() {
         </div>
         <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 36 }}>
           {V4_ROADMAP_GROUPS.map((g) => {
-            if (g.items.length === 0) return null;
+            // Items ohne öffentliche Copy werden ausgelassen (nie in Render werfen).
+            const cards = g.items.flatMap((item) => {
+              const copy = getPublicRoadmapCopy(item, lang);
+              return copy ? [{ item, copy }] : [];
+            });
+            if (cards.length === 0) return null;
             const group = PUBLIC_ROADMAP_GROUP[lang][g.status];
             return (
               <div key={g.status} style={filter && filter !== g.status ? { display: 'none' } : undefined}>
@@ -772,8 +777,7 @@ export function V4Roadmap() {
                   <span>{group.eyebrow}</span>
                 </div>
                 <div className="cards" style={{ marginTop: 12 }}>
-                  {g.items.map((item) => {
-                    const copy = getPublicRoadmapCopy(item, lang);
+                  {cards.map(({ item, copy }) => {
                     const route = getPublicRoadmapRoute(item);
                     return (
                       <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')} data-impl-id={item.id}>

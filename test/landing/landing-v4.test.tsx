@@ -7,6 +7,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
 import { resetLangForTests, setLang } from '../../src/i18n/useLang';
+import { PUBLIC_ROADMAP_COPY } from '../../src/product/implementation-status-public';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/v4/heroEarthScene', () => ({ mountHeroEarth: () => () => {} }));
@@ -129,6 +130,23 @@ it('roadmap comes from public copy and omits redirect-only design landings', () 
   for (const h of previewCards) {
     const card = h.closest('.rm-card');
     expect(card?.querySelector('u')?.textContent ?? '').not.toBe('/app/dashboard');
+  }
+});
+
+it('skips roadmap items without public copy instead of crashing /', () => {
+  const id = 'command-center';
+  const saved = PUBLIC_ROADMAP_COPY[id];
+  expect(saved).toBeDefined();
+  delete PUBLIC_ROADMAP_COPY[id];
+  try {
+    const view = mount();
+    const roadmap = view.container.querySelector('#roadmap')!;
+    expect(roadmap).not.toBeNull();
+    expect(roadmap.querySelector(`[data-impl-id="${id}"]`)).toBeNull();
+    expect(roadmap.textContent).not.toContain('Compliance Command Center');
+    expect(roadmap.querySelectorAll('.rm-card').length).toBeGreaterThan(0);
+  } finally {
+    PUBLIC_ROADMAP_COPY[id] = saved;
   }
 });
 

@@ -189,6 +189,8 @@ describe('implementation-status registry', () => {
       expect(PUBLIC_ROADMAP_COPY[item.id], item.id).toBeTruthy();
       for (const lang of ['de', 'en'] as const) {
         const copy = getPublicRoadmapCopy(item, lang);
+        expect(copy, `${item.id}.${lang} public copy`).toBeDefined();
+        if (!copy) continue;
         expect(copy.name.length, `${item.id}.${lang}.name`).toBeGreaterThan(3);
         expect(copy.description.length, `${item.id}.${lang}.description`).toBeGreaterThan(12);
         for (const phrase of banned) {
@@ -206,6 +208,18 @@ describe('implementation-status registry', () => {
         );
       }
     }
+  });
+
+  it('skips (does not throw for) items without public roadmap copy', () => {
+    const base = getImplementation('free-audit')!;
+    const orphan = { ...base, id: 'test-no-public-copy', status: 'coming-soon' as const };
+    expect(PUBLIC_ROADMAP_COPY[orphan.id]).toBeUndefined();
+    for (const lang of ['de', 'en'] as const) {
+      expect(() => getPublicRoadmapCopy(orphan, lang)).not.toThrow();
+      expect(getPublicRoadmapCopy(orphan, lang)).toBeUndefined();
+    }
+    // Never falls back to internal registry name/description.
+    expect(getPublicRoadmapCopy(base, 'de')?.description).not.toBe(base.description);
   });
 
   it('only exposes customer-safe routes on the public roadmap', () => {

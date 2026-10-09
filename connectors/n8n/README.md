@@ -21,7 +21,7 @@ cp RsdAiTelemetry.node.{ts,js} ~/.n8n/custom/
 
 In n8n → Credentials → New → "rsdAiCredentialsApi":
 - **Endpoint:** `https://realsyncdynamicsai.de/api/telemetry/ai-event` (oder Self-Hosted)
-- **Tenant Key:** UUID aus dem RealSyncDynamicsAI-Workspace
+- **Tenant Key:** Ingest-API-Key `rsd_gov_…` aus dem RealSyncDynamicsAI-Workspace (API-Schlüssel; die Mandanten-UUID wird abgelehnt)
 
 ## Use-Case
 

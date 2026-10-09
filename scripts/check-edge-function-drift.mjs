@@ -144,9 +144,24 @@ for (const slug of declaredOff) {
 }
 
 // Check (2): Prod-Drift
+// EDGE_DRIFT_REQUIRE_PROD=1 macht einen uebersprungenen Prod-Check zum Fehler.
+// Grund (Befund F-06, AUDIT/18_FINDINGS.md): ohne Token lief das Skript bis zur
+// Schlusszeile "✅ Kein blockierender Edge-Function-Drift" durch und beendete
+// sich mit 0 — es meldete Erfolg, ohne geprueft zu haben. Genau so konnte die
+// Deploy-Luecke wachsen, waehrend CI gruen blieb. In Workflows setzen, die die
+// Secrets haben; bei Forks bleibt das Flag leer und der Skip ist weiter erlaubt.
+const REQUIRE_PROD = process.env.EDGE_DRIFT_REQUIRE_PROD === '1';
 const deployed = await deployedFunctions();
 if (deployed === null) {
-  console.log('ℹ️  Prod-Drift-Check uebersprungen (kein SUPABASE_ACCESS_TOKEN/PROJECT_ID).');
+  if (REQUIRE_PROD) {
+    errors.push(
+      'PROD_CHECK_SKIPPED: Der Prod-Drift-Check konnte nicht laufen ' +
+      '(SUPABASE_ACCESS_TOKEN/SUPABASE_PROJECT_ID fehlen, oder die Management-API ' +
+      'antwortete nicht), EDGE_DRIFT_REQUIRE_PROD=1 ist aber gesetzt. ' +
+      'Ein uebersprungener Check darf nicht als "kein Drift" gelten.');
+  } else {
+    console.log('ℹ️  Prod-Drift-Check uebersprungen (kein SUPABASE_ACCESS_TOKEN/PROJECT_ID).');
+  }
 } else {
   for (const fn of deployed) {
     const slug = fn.slug ?? fn.name;

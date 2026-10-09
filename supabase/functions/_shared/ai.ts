@@ -13,6 +13,7 @@ import { gateFeature, EntitlementError } from './entitlements.ts';
 import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
+import { NO_USAGE, providerCostUsd, type TokenUsage } from './providerCost.ts';
 import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
 
 export interface RunAiToolOptions {
@@ -106,6 +107,34 @@ function buildShadowRatingTelemetry(args: {
     shadow_credit_estimate: 0,
     wallet_enforced: false as const,
     customer_charge: 0 as const,
+  };
+}
+
+/**
+ * Providerkosten eines runAiTool-Laufs — Einkaufspreis-SSoT zuerst
+ * (providerCost.ts, derselbe Kern wie im governance-agent).
+ *
+ * Führt die SSoT für (Anbieter, Modell) keinen Preis — heute nur Tools eines
+ * Nicht-Anthropic-Anbieters —, gilt der Preis, den das Tool selbst in
+ * ai_tools konfiguriert, mit derselben Formel wie vor Schritt C. Ein NULL wie
+ * im governance-agent geht hier nicht: ai_tool_runs.cost_usd ist NOT NULL und
+ * speist Kontingent, Kosten-Cap und Ledger. Der Rückfall ist kein geratener
+ * Nachbarpreis, sondern die eigene Konfiguration des Tools, und er wird
+ * geloggt und in den Run-Metadaten als cost_source festgehalten.
+ */
+function toolCostUsd(
+  tool: ToolRow,
+  provider: string,
+  modelId: string,
+  usage: TokenUsage,
+  legacyTokens: { input: number; output: number },
+): { usd: number; source: 'ssot' | 'ai_tools' } {
+  const ssot = providerCostUsd(provider, modelId, usage);
+  if (ssot !== null) return { usd: ssot, source: 'ssot' };
+  return {
+    usd: (legacyTokens.input  / 1_000_000) * Number(tool.cost_input_per_million_usd) +
+         (legacyTokens.output / 1_000_000) * Number(tool.cost_output_per_million_usd),
+    source: 'ai_tools',
   };
 }
 
@@ -207,10 +236,18 @@ export async function runAiTool(
   // P4-impl-3 — reserve budget against the monthly USD-cap BEFORE the
   // provider call. Local inference is free at the per-call level and
   // sits outside the LLM-USD cap, so reservation is skipped for ollama.
+  // Vor dem Aufruf ist nicht bekannt, was aus dem Cache kommt — geschätzt
+  // wird deshalb wie bisher alles zum vollen Input-Preis. Abgerechnet wird
+  // beim Settle mit dem tatsächlichen Verbrauch.
   const estimatedUsd = effectiveProvider === 'ollama'
     ? 0
-    : (estimatedInputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
-      (tool.max_tokens       / 1_000_000) * Number(tool.cost_output_per_million_usd);
+    : toolCostUsd(
+        tool,
+        effectiveProvider,
+        effectiveModelId,
+        { ...NO_USAGE, input: estimatedInputTokens, output: tool.max_tokens },
+        { input: estimatedInputTokens, output: tool.max_tokens },
+      ).usd;
   let reservationId: string | null = null;
   if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
     try {
@@ -251,10 +288,23 @@ export async function runAiTool(
 
     // Local inference is free at the per-call level (paid for via VPS),
     // so zero-out cost when the residency override kicked in.
-    const costUsd = effectiveProvider === 'ollama'
-      ? 0
-      : (result.inputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
-        (result.outputTokens / 1_000_000) * Number(tool.cost_output_per_million_usd);
+    const cost = effectiveProvider === 'ollama'
+      ? { usd: 0, source: 'local' as const }
+      : toolCostUsd(
+          tool,
+          effectiveProvider,
+          effectiveModelId,
+          result.pricedUsage,
+          { input: result.inputTokens, output: result.outputTokens },
+        );
+    if (cost.source === 'ai_tools') {
+      console.warn(JSON.stringify({
+        level: 'warn', scope: 'model_price_missing', tool_key: tool.key,
+        provider: effectiveProvider, model_id: effectiveModelId,
+        fallback: 'ai_tools.cost_*',
+      }));
+    }
+    const costUsd = cost.usd;
 
     const shadowRating = buildShadowRatingTelemetry({
       runtimeClass,
@@ -283,6 +333,7 @@ export async function runAiTool(
         ...(opts.metadata ?? {}),
         residency,
         provider: effectiveProvider,
+        cost_source: cost.source,
         ...shadowRating,
       },
     }).select('id').single();

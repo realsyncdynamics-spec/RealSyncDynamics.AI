@@ -11,6 +11,7 @@ import {
   Minus, Radar, Rocket, ShieldCheck, Sparkles, TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useTenantDataVersion } from '../tenantDataEvents';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { getSupabase } from '../../../lib/supabase';
 import {
@@ -64,6 +65,7 @@ import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featu
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
+  const dataVersion = useTenantDataVersion(activeTenantId);
   const { tier, loading: entitlementsLoading } = useEntitlements();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
@@ -98,7 +100,7 @@ export function ComplianceStatusDashboard() {
       .catch((err) => { if (!cancelled) setError((err as Error)?.message ?? String(err)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, dataVersion]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,7 +124,7 @@ export function ComplianceStatusDashboard() {
       }));
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, dataVersion]);
 
   return (
     <>
@@ -153,7 +155,7 @@ function DashboardControlPlane() {
     { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#00B8D4]' },
     { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#C9D1E0]' },
     { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#00B8D4]' },
-    { href: '/app/siteos/builder', label: 'Web App Builder', text: 'SiteOS-Workspace für bestehende Projekte öffnen.', icon: Globe2, accent: 'text-emerald-300' },
+    { href: '/build?kind=web_app', label: 'Web App Builder', text: 'Web-App über den kanonischen Build-Studio-Einstieg starten.', icon: Globe2, accent: 'text-emerald-300' },
   ];
 
   return (

@@ -153,6 +153,7 @@ export function LandingFooter() {
       links: [
         { label: 'Ressourcen', to: '/ressourcen' },
         { label: 'Onboarding erklärt', to: '/onboarding-erklaert' },
+        { label: 'Evidence Runtime', to: '/evidence-runtime' },
         { label: 'KI-Governance in 5 Schritten', to: '/ki-governance-in-5-schritten' },
         { label: 'Dokumentation', to: '/docs' },
         { label: 'Sicherheit', to: '/sicherheit' },

@@ -5,8 +5,12 @@
 //   POST /functions/v1/siteos/edit          Redaktion → neue Version (Block-Editor)
 //   POST /functions/v1/siteos/runtime-scan  die acht Laufzeit-Analysen
 //   POST /functions/v1/siteos/agents        die sieben asynchronen Agenten
+//   POST /functions/v1/siteos/project-bind    aktuelle Site → website_projects (idempotent)
 //   POST /functions/v1/siteos/publish-gate     Freigabebewertung (§7)
 //   POST /functions/v1/siteos/publish-approve  Freigabe erteilen + neu bewerten
+//   POST /functions/v1/siteos/publish-export   ausdrückliches GO → geprüftes Bündel (kein Upload)
+//   POST /functions/v1/siteos/publish-preview  frische Gate-Prüfung → Cloudflare Preview (nie Production)
+//   POST /functions/v1/siteos/publish-production bestätigte reale Preview + GO → Production
 //   POST /functions/v1/siteos/build-anon       Beschreibung -> Blueprint, ohne Konto
 //   POST /functions/v1/siteos/refine-anon      Anweisung -> neue Version, ohne Konto
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
@@ -45,7 +49,10 @@ import { handle as builder } from './handlers/builder.ts';
 import { handle as discover } from './handlers/discover.ts';
 import { handle as edit } from './handlers/edit.ts';
 import { handle as runtimeScan } from './handlers/runtime-scan.ts';
-import { handle as publishGate, handleApprove as publishApprove } from './handlers/publish-gate.ts';
+import { handle as projectBind } from './handlers/project-bind.ts';
+import { handle as publishGate, handleApprove as publishApprove, handleExport as publishExport } from './handlers/publish-gate.ts';
+import { handle as publishPreview } from './handlers/publish-preview.ts';
+import { handle as publishProduction } from './handlers/publish-production.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
 
@@ -57,10 +64,14 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   // Server ab (siteos-core/blueprint/edit.ts). Persistenz wie beim Builder.
   'edit': edit,
   'runtime-scan': runtimeScan,
+  'project-bind': projectBind,
   // Publish Gate (Zielarchitektur §7). Zwei Pfade, ein Slot — dieselbe
   // Begründung wie oben, und beide teilen Auswertung und Persistenz.
   'publish-gate': publishGate,
   'publish-approve': publishApprove,
+  'publish-export': publishExport,
+  'publish-preview': publishPreview,
+  'publish-production': publishProduction,
   // Anonymer Pfad: bauen und verfeinern ohne Konto, uebernehmen mit.
   'build-anon': handleBuildAnon,
   'refine-anon': handleRefineAnon,

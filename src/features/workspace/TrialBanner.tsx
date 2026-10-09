@@ -42,16 +42,16 @@ export function TrialBanner() {
       <Clock3 className={`h-4 w-4 shrink-0 ${trial.endingSoon ? 'text-amber-300' : 'text-cyan-300'}`} />
       <span>
         {expired
-          ? 'Ihre kostenlose Testphase ist abgelaufen.'
+          ? 'Ihre Testphase ist beendet. Sie nutzen jetzt den dauerhaft kostenlosen Zugang — Scan und Audit Center bleiben verfügbar.'
           : days === 1
             ? 'Ihre kostenlose Testphase endet morgen.'
             : `Ihre kostenlose Testphase endet in ${days} Tagen.`}
       </span>
       <Link
-        to="/billing/usage"
+        to={expired ? '/pricing?source=trial-expired' : '/billing/usage'}
         className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
       >
-        Zahlungsmethode hinterlegen →
+        {expired ? 'Pakete ansehen →' : 'Zahlungsmethode hinterlegen →'}
       </Link>
     </div>
   );

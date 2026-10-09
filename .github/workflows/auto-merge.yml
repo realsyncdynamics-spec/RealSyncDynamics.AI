@@ -1,0 +1,111 @@
+name: Auto-merge
+
+# Squash-Auto-Merge nur für PRs gegen main mit Label `automerge`.
+# Merged nicht selbst: GitHub wartet auf die Required Checks des Rulesets
+# "main merge hygiene".
+#
+# Warum so (Entscheidung Dominik, 04.10.):
+# - Label statt Automatik: vorher bekam jeder Nicht-Draft-PR Auto-Merge.
+#   Jetzt nur, wer `automerge` trägt. PRs ohne Label überspringen den Job
+#   komplett (kein roter Check mehr). `automerge` entfernen schaltet Auto-Merge
+#   ab; das Entfernen anderer Labels startet den Job nur bei PRs mit Label.
+# - GitHub-App-Token statt GITHUB_TOKEN: ein mit GITHUB_TOKEN aktivierter
+#   Auto-Merge löst nach dem Merge keine Folge-Workflows aus, "Deploy" und
+#   "Deploy to Cloudflare Pages" liefen dann nicht an. Das App-Token hat nur
+#   contents + pull-requests write; der Workflow selbst bleibt contents: read.
+# - Migrations-Sperre: deploy.yml wendet Migrationen beim Merge automatisch
+#   auf Prod an. PRs, die supabase/migrations/** berühren, bekommen nie
+#   Auto-Merge (eine aktive Freigabe wird abgeschaltet) und werden von Hand
+#   gemergt.
+#
+# Einmalige Einrichtung: Repo-Variable AUTOMERGE_APP_ID, Repo-Secret
+# AUTOMERGE_APP_PRIVATE_KEY, Label `automerge` (Details im einführenden PR).
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize, ready_for_review, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-merge:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (contains(github.event.pull_request.labels.*.name, 'automerge') ||
+       (github.event.action == 'unlabeled' && github.event.label.name == 'automerge'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Enable or disable squash auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Live-Zustand statt Event-Payload: Labels und Auto-Merge können sich
+          # seit dem Auslösen geändert haben.
+          state="$(gh pr view "$PR" --repo "$REPO" --json labels,autoMergeRequest,changedFiles)"
+          has_label="$(jq -r 'any(.labels[]; .name == "automerge")' <<<"$state")"
+          method="$(jq -r '.autoMergeRequest.mergeMethod // empty' <<<"$state")"
+          changed_files="$(jq -r '.changedFiles' <<<"$state")"
+
+          disable_if_active() {
+            if [ -n "$method" ]; then
+              gh pr merge "$PR" --repo "$REPO" --disable-auto
+              echo "Auto-merge abgeschaltet."
+            else
+              echo "Auto-merge war nicht aktiv."
+            fi
+          }
+
+          if [ "$has_label" != "true" ]; then
+            echo "Kein Label 'automerge'."
+            disable_if_active
+            exit 0
+          fi
+
+          # Migrations-Prüfung fail-closed: Ist die Dateiliste nicht lesbar oder
+          # unvollständig (die API liefert höchstens 3000 Dateien), kein Auto-Merge.
+          if [ "$changed_files" -ge 3000 ]; then
+            echo "::warning title=Auto-merge gesperrt::PR hat $changed_files Dateien; die Dateiliste der API ist ab 3000 unvollständig. Bitte manuell mergen."
+            disable_if_active
+            exit 0
+          fi
+          # Auch umbenannte Dateien zählen (previous_filename).
+          if ! files="$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)')"; then
+            echo "::error title=Auto-merge gesperrt::Dateiliste des PR nicht lesbar; Migrations-Prüfung unmöglich."
+            disable_if_active
+            exit 1
+          fi
+          migrations="$(grep '^supabase/migrations/' <<<"$files" || true)"
+          if [ -n "$migrations" ]; then
+            echo "::warning title=Auto-merge gesperrt::PR ändert supabase/migrations/** (deploy.yml wendet Migrationen beim Merge auf Prod an). Bitte manuell mergen."
+            printf '%s\n' "$migrations"
+            disable_if_active
+            exit 0
+          fi
+
+          if [ "$method" = "SQUASH" ]; then
+            echo "Auto-merge bereits aktiv (squash)."
+            exit 0
+          fi
+          gh pr merge "$PR" --repo "$REPO" --squash --auto
+          echo "Squash-Auto-Merge aktiviert."

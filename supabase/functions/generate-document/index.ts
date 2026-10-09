@@ -2,6 +2,10 @@
 // (DSE / AVV / VVT / TOM) basierend auf einem konkreten gdpr_audits-Run.
 //
 // POST /functions/v1/generate-document   (verify_jwt = false; public)
+// Authorization: Bearer <user JWT> optional — required when tenant_id is
+// sent or the audit is already claimed by a tenant (see authz.ts). Binding
+// a document to a tenant needs a writing role (owner/admin/dpo/editor);
+// viewer_auditor gets 403 READ_ONLY_ROLE.
 // Body: { audit_id: UUID, doc_type: 'dse'|'avv'|'vvt'|'tom', tenant_id?: UUID }
 //
 // Response: { ok: true, document_id, html_content, doc_type, domain }
@@ -17,6 +21,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { authorizeDocument, type Membership } from './authz.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DOC_TYPES = ['dse', 'avv', 'vvt', 'tom'] as const;
@@ -405,13 +410,36 @@ Deno.serve(async (req) => {
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
+  // Aufrufer auflösen. Ohne gültiges Nutzer-JWT (z. B. nur Anon-Key) gilt
+  // der Aufruf als anonym — der Free-Audit-Flow bleibt damit öffentlich.
+  let userId: string | null = null;
+  const auth = req.headers.get('Authorization');
+  if (auth?.startsWith('Bearer ')) {
+    const { data: userResp } = await admin.auth.getUser(auth.slice('Bearer '.length));
+    userId = userResp?.user?.id ?? null;
+  }
+
   // Audit-Row laden
   const { data: audit, error: auditErr } = await admin
     .from('gdpr_audits')
-    .select('id, domain, company, issues, score, severity')
+    .select('id, domain, company, issues, score, severity, tenant_id')
     .eq('id', auditId)
     .single();
   if (auditErr || !audit) return jsonError(404, 'AUDIT_NOT_FOUND', 'audit_id does not exist');
+
+  let memberships: Membership[] = [];
+  if (userId) {
+    const { data: rows } = await admin.from('memberships').select('tenant_id, role').eq('user_id', userId);
+    memberships = ((rows ?? []) as { tenant_id: string; role: string }[])
+      .map((r) => ({ tenantId: r.tenant_id, role: r.role }));
+  }
+  const authz = authorizeDocument({
+    auditTenantId: (audit as { tenant_id: string | null }).tenant_id ?? null,
+    requestedTenantId: tenantId,
+    userId,
+    memberships,
+  });
+  if (!authz.ok) return jsonError(authz.status, authz.code, authz.message);
 
   const auditRow = audit as AuditRow;
   const htmlContent = render(docType, auditRow);
@@ -420,7 +448,7 @@ Deno.serve(async (req) => {
   const { data: doc, error: insertErr } = await admin
     .from('generated_documents')
     .insert({
-      tenant_id: tenantId,
+      tenant_id: authz.documentTenantId,
       audit_id: auditRow.id,
       doc_type: docType,
       domain: auditRow.domain,

@@ -15,7 +15,7 @@ import { usePageMeta } from '../lib/usePageMeta';
  */
 export function GovernanceDocs() {
   usePageMeta({
-    title: 'Governance Runtime — API Reference · RealSyncDynamics.AI',
+    title: 'Governance Runtime — API Reference · RealSync Dynamics AI',
     description:
       'API-Referenz für die Governance Runtime: Telemetry-Ingestion, Policy-Engine, Evidence-Vault, Browser-Extension und SDK.',
     url: 'https://RealSyncDynamicsAI.de/docs/governance',

@@ -61,7 +61,7 @@ const actionCards: ActionCard[] = [
   { label: 'Website prüfen', hint: 'Vollständiger Audit', icon: Search, path: '/unified-entry/scan' },
   { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/unified-entry/scan' },
   { label: 'Website verbessern', hint: 'SEO, DSGVO, Performance', icon: Activity, path: '/unified-entry/scan' },
-  { label: 'AI Act Check', hint: 'KI-System prüfen', icon: ShieldCheck, path: '/app/governance/ai-act-assessment' },
+  { label: 'KI-Systeme', hint: 'Inventar und Klassifizierung', icon: ShieldCheck, path: '/app/ai-systems' },
   { label: 'Risikoanalyse', hint: 'Risiken identifizieren', icon: AlertTriangle, path: '/app/governance/gaps' },
   { label: 'Bericht erstellen', hint: 'Compliance Report', icon: FileCheck2, path: '/app/governance/report-builder' },
 ];

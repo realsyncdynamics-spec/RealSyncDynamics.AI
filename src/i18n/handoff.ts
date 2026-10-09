@@ -87,6 +87,7 @@ export const HANDOFF_COPY = {
     navClassify: "Klassifizierung",
     navEnforce: "Enforcement",
     navEvidence: "Evidence",
+    navVoice: "Voice",
     navReports: "Berichte",
     navBilling: "Abrechnung",
     more: "Mehr",
@@ -193,6 +194,7 @@ export const HANDOFF_COPY = {
     navClassify: "Classification",
     navEnforce: "Enforcement",
     navEvidence: "Evidence",
+    navVoice: "Voice",
     navReports: "Reports",
     navBilling: "Billing",
     more: "More",
@@ -369,6 +371,22 @@ export const HANDOFF_EXTRA = {
     residencyLocal: 'Lokal im Haus',
     residencyEu: 'EU-Cloud',
     residencyHybrid: 'Gemischt / offen',
+    // /pricing Fusszeile + Disclaimer (keine Steuertexte — die bleiben SSoT).
+    pricingTrustNote:
+      'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
+    pricingTrialFoot:
+      'Free Audit kostenlos · kein Account nötig · {plans}: {days} Tage kostenlos testen — keine Kosten bis Tag {until}, monatlich kündbar · Enterprise: nach Anfrage, kein Self-Service-Trial',
+    pricingDisclaimerBefore:
+      'Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung. ',
+    pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
+    pricingDisclaimerAfter:
+      ', weil das niemand seriös kann. Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.',
+    // Landing v4 Hero (H1 + Lede). Produktname bleibt EN; „für Europa" lokalisiert.
+    v4HeroTitleA: 'AI Compliance',
+    v4HeroTitleB: 'Operations OS',
+    v4HeroTitleEm: 'für Europa',
+    v4HeroLede1: 'Runtime-Governance für regulierte KI.',
+    v4HeroLede2: 'Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
   },
   en: {
     brandName: 'RealSync Dynamics',
@@ -448,6 +466,20 @@ export const HANDOFF_EXTRA = {
     residencyLocal: 'On-premises',
     residencyEu: 'EU cloud',
     residencyHybrid: 'Mixed / undecided',
+    pricingTrustNote:
+      'Free Audit free of charge · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
+    pricingTrialFoot:
+      'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
+    pricingDisclaimerBefore:
+      'Our outputs are methodologically and technically sound — but no substitute for individual legal advice. ',
+    pricingDisclaimerStrong: 'We do not promise "100% legally secure"',
+    pricingDisclaimerAfter:
+      ', because nobody can seriously make that claim. We recommend having generated documents reviewed by counsel.',
+    v4HeroTitleA: 'AI Compliance',
+    v4HeroTitleB: 'Operations OS',
+    v4HeroTitleEm: 'for Europe',
+    v4HeroLede1: 'Runtime governance for regulated AI.',
+    v4HeroLede2: 'Continuous evidence. Human control. EU-native by design.',
   },
 } as const;
 

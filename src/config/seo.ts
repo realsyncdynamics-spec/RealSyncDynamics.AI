@@ -12,7 +12,7 @@
  * mit `canonical` auf die primaere URL — Duplicate-Content wird konsolidiert.
  *
  * Title-Konvention (vom User-Audit vorgegeben):
- *   max 60 Zeichen, Keyword zuerst, Brand am Ende mit "| RealSyncDynamics.AI"
+ *   max 60 Zeichen, Keyword zuerst, Brand am Ende mit "| RealSync Dynamics AI"
  *
  * Description-Konvention:
  *   130-155 Zeichen, konkret, Nutzen-orientiert, mit Keyword
@@ -26,7 +26,7 @@
  */
 
 export interface SEOConfig {
-  /** Page-Title — sollte mit "| RealSyncDynamics.AI" enden, sonst haengt der Hook " — RealSyncDynamics.AI" an. */
+  /** Page-Title — sollte mit "| RealSync Dynamics AI" enden, sonst haengt der Hook " — RealSync Dynamics AI" an. */
   title: string;
   /** Meta-Description — 130-155 Zeichen ideal. */
   description: string;
@@ -55,7 +55,7 @@ import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'KI-Governance & Kontrollschicht | RealSyncDynamics.AI',
+  title: 'KI-Governance & Kontrollschicht | RealSync Dynamics AI',
   description:
     'Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen.',
 };
@@ -65,10 +65,10 @@ export const DEFAULT_SEO: SEOConfig = {
 const PRICING_PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: 'RealSyncDynamics.AI Compliance Platform',
+  name: 'RealSync Dynamics AI Compliance Platform',
   description:
     'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Evidence-Export. Dauerhafte Domain-Überwachung: Coming Soon.',
-  brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
+  brand: { '@type': 'Brand', name: 'RealSync Dynamics AI' },
   offers: [
     {
       '@type': 'Offer',
@@ -256,7 +256,8 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
   {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'RealSyncDynamics.AI',
+    '@id': `${SITE_URL}/#org`,
+    name: 'RealSync Dynamics AI',
     url: SITE_URL,
     logo: `${SITE_URL}/og-image.png`,
     address: {
@@ -274,17 +275,17 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'RealSyncDynamics.AI – AI Compliance Operations OS für Europa | EU AI Act & DSGVO',
+    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
     description:
-      'Discover, Classify, Enforce, Prove: KI-Inventar, Risikoklassen nach EU AI Act, Policies zur Laufzeit und Hash-Chain-Evidenz – EU-hosted in Frankfurt. Free Audit ohne Kreditkarte.',
+      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'AI Compliance Operations OS for Europe',
+    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
     ogDescription:
       'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
-    title: 'RealSyncDynamics.AI – Landing v2 (Design-Referenz)',
+    title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
     description:
       'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
@@ -297,14 +298,14 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // SPA-Route; als alternative Landing ist sie wie /design/landing-v2 noindex
   // und kanonisch auf /, damit sie nicht mit der Startseite konkurriert.
   '/realsync-landing': {
-    title: 'RealSyncDynamics.AI – Marken-Landing',
+    title: 'RealSync Dynamics AI – Marken-Landing',
     description:
-      'Marken-Landing von RealSyncDynamics.AI: EU-souveräne AI-Governance-Runtime für DSGVO und EU AI Act. Kanonisch ist /.',
+      'Marken-Landing von RealSync Dynamics AI: EU-souveräne AI-Governance-Runtime für DSGVO und EU AI Act. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
   '/design/titan': {
-    title: 'RealSyncDynamics.AI — Titan-Fallbackroute der Governance-Landing',
+    title: 'RealSync Dynamics AI — Titan-Fallbackroute der Governance-Landing',
     description:
       'Fallbackroute der Landing-Positionierung (Legacy-Titan): Control Plane für Enterprise-KI mit Policies, Freigaben, Ausführung und Evidence als Proof-Layer.',
     canonical: `${SITE_URL}/design/titan`,
@@ -313,7 +314,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Fallbackroute: Any model. Any agent. One control plane.',
   },
   '/pricing': {
-    title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
+    title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
       'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
@@ -326,7 +327,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/claude-code-optimizer': {
-    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSyncDynamics.AI',
+    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
     description:
       'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. 14 Tage kostenlos testen.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
@@ -336,7 +337,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/features': {
-    title: 'Funktionen: Website-Scan, AI-Act-Inventar, Audit-Trail | RealSyncDynamics.AI',
+    title: 'Funktionen: Website-Scan, AI-Act-Inventar, Audit-Trail | RealSync Dynamics AI',
     description:
       'Automatische Cookie-Erkennung, Consent-Timing-Analyse, AVV-Generator, VVT, TOM und AI-Act-Risk-Assessment in einer Plattform. EU-Hosting Frankfurt.',
     canonical: `${SITE_URL}/features`,
@@ -346,7 +347,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/audit': {
-    title: 'Kostenloser DSGVO-Audit — URL-Scan in 60 Sekunden | RealSyncDynamics.AI',
+    title: 'Kostenloser DSGVO-Audit — URL-Scan in 60 Sekunden | RealSync Dynamics AI',
     description:
       'Sofortiger Compliance-Score (0-100) für jede URL. Top-Risiken sichtbar, Mini-PDF-Report, kein Account. Echter Playwright-Browser misst Pre-Consent-Tracker.',
     canonical: `${SITE_URL}/audit`,
@@ -369,7 +370,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/ai-governance': {
-    title: 'AI Governance OS für DSGVO und EU AI Act | RealSyncDynamicsAI',
+    title: 'AI Governance OS für DSGVO und EU AI Act | RealSync Dynamics AI',
     description:
       'Inventory · Policy Engine · Evidence Vault · Runtime Telemetry. AI-Systeme inventarisieren, klassifizieren, überwachen und nachweisen — Audit-ready für EU AI Act.',
     canonical: `${SITE_URL}/ai-governance`,
@@ -382,7 +383,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/runtime': {
-    title: 'Runtime — Kontinuierliche Compliance-Überwachung | RealSyncDynamics.AI',
+    title: 'Runtime — Kontinuierliche Compliance-Überwachung | RealSync Dynamics AI',
     description:
       'Governance-Runtime mit kontinuierlicher Überwachung: Compliance-Agenten, überprüfbare Evidence-Reports, dokumentierte Policies und Incident-Tracking. Demo-Surface für Pilot-Evaluierung.',
     canonical: `${SITE_URL}/runtime`,
@@ -395,7 +396,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/ai-act': {
-    title: 'AI Act Governance — Klassifikation & Risiko-Assessment | RealSyncDynamics.AI',
+    title: 'EU-AI-Act-Compliance: Klassifikation & Risiko | RealSync Dynamics AI',
     description:
       'EU AI Act ohne Beratung: AI-Systeme klassifizieren (minimal/limited/high/prohibited), Hochrisiko-Profile, Agent-Oversight und Policy Engine — alle Findings in der Evidence Chain.',
     canonical: `${SITE_URL}/ai-act`,
@@ -411,7 +412,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // eigenen Eintrag: es wird per 301 (public/_redirects) auf diese URL
   // umgeleitet und rendert nie selbst.
   '/warteliste': {
-    title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSyncDynamics.AI',
+    title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSync Dynamics AI',
     description:
       'Sichern Sie sich Ihren Platz für Governance Runtime, Evidence Vault, Policy Packs und Herkunftsnachweis. Kostenlos, unverbindlich, Position sofort sichtbar — EU-gehostet in Frankfurt.',
     canonical: `${SITE_URL}/warteliste`,
@@ -427,7 +428,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/governance-score': {
-    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
+    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSync Dynamics AI',
     description:
       'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
     canonical: `${SITE_URL}/governance-score`,
@@ -437,7 +438,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/digitale-souveraenitaet': {
-    title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
+    title: 'Digitale Souveränität als Betriebsmodell | RealSync Dynamics AI',
     description:
       'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault; dauerhafte Domain-Überwachung als Coming Soon — das Governance OS im Browser-Format.',
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
@@ -463,7 +464,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/contact-sales': {
-    title: 'Founding Access — 14 Tage kostenlos | RealSyncDynamics.AI',
+    title: 'Founding Access — 14 Tage kostenlos | RealSync Dynamics AI',
     description:
       '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
     canonical: `${SITE_URL}/contact-sales`,
@@ -486,9 +487,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Tier 2 — Alternative Pages (high commercial intent) ─────────────────
   '/cookiebot-alternative': {
-    title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSyncDynamics.AI',
+    title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSync Dynamics AI',
     description:
-      'RealSyncDynamics.AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
+      'RealSync Dynamics AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
     canonical: `${SITE_URL}/cookiebot-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -496,7 +497,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dataguard-alternative': {
-    title: 'DataGuard Alternative — automatisierte Compliance ab 79 € | RealSyncDynamics.AI',
+    title: 'DataGuard Alternative — automatisierte Compliance ab 79 € | RealSync Dynamics AI',
     description:
       'Günstigere DataGuard Alternative mit automatischem Website-Scan, Consent-Timing und AI-Act-Compliance. Kein Setup, kein Berater erforderlich.',
     canonical: `${SITE_URL}/dataguard-alternative`,
@@ -506,9 +507,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/onetrust-alternative': {
-    title: 'OneTrust Alternative für KMU und Agenturen | RealSyncDynamics.AI',
+    title: 'OneTrust Alternative für KMU und Agenturen | RealSync Dynamics AI',
     description:
-      'OneTrust ist für Enterprise. RealSyncDynamics.AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 79 €/Monat.',
+      'OneTrust ist für Enterprise. RealSync Dynamics AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 79 €/Monat.',
     canonical: `${SITE_URL}/onetrust-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -516,9 +517,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/usercentrics-alternative': {
-    title: 'Usercentrics Alternative — Compliance statt CMP | RealSyncDynamics.AI',
+    title: 'Usercentrics Alternative — Compliance statt CMP | RealSync Dynamics AI',
     description:
-      'Usercentrics ist ein Cookie-CMP. RealSyncDynamics.AI ist Compliance-Infrastruktur: Pre-Consent-Detection, AI-Act-Modul, Evidence Vault — Made in Germany.',
+      'Usercentrics ist ein Cookie-CMP. RealSync Dynamics AI ist Compliance-Infrastruktur: Pre-Consent-Detection, AI-Act-Modul, Evidence Vault — Made in Germany.',
     canonical: `${SITE_URL}/usercentrics-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -526,9 +527,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/iubenda-alternative': {
-    title: 'Iubenda Alternative — voller Compliance-Stack | RealSyncDynamics.AI',
+    title: 'Iubenda Alternative — voller Compliance-Stack | RealSync Dynamics AI',
     description:
-      'Iubenda generiert Texte. RealSyncDynamics.AI auditet, monitort und remediatet kontinuierlich — mit echtem Headless-Browser, Evidence Vault und AI-Act-Modul.',
+      'Iubenda generiert Texte. RealSync Dynamics AI auditet, monitort und remediatet kontinuierlich — mit echtem Headless-Browser, Evidence Vault und AI-Act-Modul.',
     canonical: `${SITE_URL}/iubenda-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -536,9 +537,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/borlabs-alternative': {
-    title: 'Borlabs Cookie Alternative — alle Stacks, nicht nur WordPress | RealSyncDynamics.AI',
+    title: 'Borlabs Cookie Alternative — alle Stacks, nicht nur WordPress | RealSync Dynamics AI',
     description:
-      'Borlabs ist ein WP-Plugin. RealSyncDynamics.AI ist Compliance-Infrastruktur für WordPress, Shopify, Webflow, custom — mit Pre-Consent-Audit + Fix-Empfehlungen.',
+      'Borlabs ist ein WP-Plugin. RealSync Dynamics AI ist Compliance-Infrastruktur für WordPress, Shopify, Webflow, custom — mit Pre-Consent-Audit + Fix-Empfehlungen.',
     canonical: `${SITE_URL}/borlabs-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -546,9 +547,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/proliance-alternative': {
-    title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
+    title: 'Proliance Alternative — Web-Compliance-Automation | RealSync Dynamics AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
+      'Proliance ist Compliance-Suite. RealSync Dynamics AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Audit-Trail; dauerhafte Überwachung Coming Soon.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -556,9 +557,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/caralegal-alternative': {
-    title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSyncDynamics.AI',
+    title: 'caralegal Alternative — technische Governance-Runtime neben dem DSMS | RealSync Dynamics AI',
     description:
-      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSyncDynamics.AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
+      'caralegal ist auf Datenschutz- und KI-Governance-Dokumentation ausgelegt. RealSync Dynamics AI ist die technische Compliance-Runtime daneben: Detect, Govern, Enforce, Prove — Befund, Policy-Entscheidung, Nachweis.',
     canonical: `${SITE_URL}/caralegal-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -568,7 +569,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Tier 3 — Branchen-Landings ──────────────────────────────────────────
   '/healthtech': {
-    title: 'DSGVO-Compliance für HealthTech & Praxen | RealSyncDynamics.AI',
+    title: 'DSGVO-Compliance für HealthTech & Praxen | RealSync Dynamics AI',
     description:
       'Automatische DSGVO-Prüfung für Gesundheits-Apps, Praxiswebsites und HealthTech-Plattformen. Sensible Patientendaten DSGVO-konform verarbeiten.',
     canonical: `${SITE_URL}/healthtech`,
@@ -579,7 +580,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/fintech': {
-    title: 'DSGVO & BAIT-Compliance für FinTech | RealSyncDynamics.AI',
+    title: 'DSGVO & BAIT-Compliance für FinTech | RealSync Dynamics AI',
     description:
       'Compliance für Finanzdienstleister: DSGVO, BAIT, MaRisk und AI-Act in einem automatisierten Audit. EU-Datenresidenz, Audit-Trail, DSB-Workflows.',
     canonical: `${SITE_URL}/fintech`,
@@ -590,7 +591,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/insurance': {
-    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSyncDynamics.AI',
+    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSync Dynamics AI',
     description:
       'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
     canonical: `${SITE_URL}/insurance`,
@@ -601,7 +602,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/legal-tech': {
-    title: 'DSGVO-Compliance für Kanzleien & Legal Tech | RealSyncDynamics.AI',
+    title: 'DSGVO-Compliance für Kanzleien & Legal Tech | RealSync Dynamics AI',
     description:
       'Automatisierter DSGVO-Check für Anwaltskanzleien. Mandantendaten-Schutz, sichere Kontaktformulare, Impressum und Datenschutzerklärung prüfen.',
     canonical: `${SITE_URL}/legal-tech`,
@@ -612,13 +613,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/kanzleien': {
-    title: 'DSGVO-Compliance für Kanzleien & Legal Tech | RealSyncDynamics.AI',
+    title: 'DSGVO-Compliance für Kanzleien & Legal Tech | RealSync Dynamics AI',
     description:
       'Automatisierter DSGVO-Check für Anwaltskanzleien. Mandantendaten-Schutz, sichere Kontaktformulare, Impressum und Datenschutzerklärung prüfen.',
     canonical: `${SITE_URL}/legal-tech`,
   },
   '/oeffentliche-verwaltung': {
-    title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSyncDynamics.AI',
+    title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSync Dynamics AI',
     description:
       'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault, On-Premise-Option.',
     canonical: `${SITE_URL}/oeffentliche-verwaltung`,
@@ -629,13 +630,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/behoerden': {
-    title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSyncDynamics.AI',
+    title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSync Dynamics AI',
     description:
       'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault, On-Premise-Option.',
     canonical: `${SITE_URL}/oeffentliche-verwaltung`,
   },
   '/online-shops': {
-    title: 'E-Commerce-Compliance — Cookie-Banner, AVV, Tracking | RealSyncDynamics.AI',
+    title: 'E-Commerce-Compliance — Cookie-Banner, AVV, Tracking | RealSync Dynamics AI',
     description:
       'Für Online-Shops: Pre-Consent-Tracker-Detection (Meta Pixel, Google Ads), Cookie-Banner-Audit, AVV mit Stripe/PayPal, automatische Datenschutzerklärung.',
     canonical: `${SITE_URL}/online-shops`,
@@ -646,13 +647,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/ecommerce': {
-    title: 'E-Commerce-Compliance — Cookie-Banner, AVV, Tracking | RealSyncDynamics.AI',
+    title: 'E-Commerce-Compliance — Cookie-Banner, AVV, Tracking | RealSync Dynamics AI',
     description:
       'Für Online-Shops: Pre-Consent-Tracker-Detection (Meta Pixel, Google Ads), Cookie-Banner-Audit, AVV mit Stripe/PayPal, automatische Datenschutzerklärung.',
     canonical: `${SITE_URL}/online-shops`,
   },
   '/personalwesen': {
-    title: 'HR-Compliance — § 26 BDSG, AI-Act-Recruiting | RealSyncDynamics.AI',
+    title: 'HR-Compliance — § 26 BDSG, AI-Act-Recruiting | RealSync Dynamics AI',
     description:
       'Für HR-Abteilungen und HR-Tech: § 26 BDSG, AI-Act-Hochrisiko für KI-Recruiting, Löschfristen, AVV mit ATS-Anbietern. Bewerber-DSE und VVT automatisiert.',
     canonical: `${SITE_URL}/personalwesen`,
@@ -663,13 +664,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/hr-software': {
-    title: 'HR-Software-Compliance — DSGVO + § 26 BDSG + AI Act | RealSyncDynamics.AI',
+    title: 'HR-Software-Compliance — DSGVO + § 26 BDSG + AI Act | RealSync Dynamics AI',
     description:
       'Für HR-Software-Anbieter: § 26 BDSG-konforme Architektur, AI-Act-Klassifikation für Recruiting-Algorithmen, Audit-Trail für Performance-Reviews.',
     canonical: `${SITE_URL}/personalwesen`,
   },
   '/schulen': {
-    title: 'Schulen-Compliance — DSGVO + KMK + Schüler-Datenschutz | RealSyncDynamics.AI',
+    title: 'Schulen-Compliance — DSGVO + KMK + Schüler-Datenschutz | RealSync Dynamics AI',
     description:
       'Für Schulen und Schulträger: KMK-Empfehlungen, DSGVO für Schüler- und Elterndaten, AI-Act für Bildungs-KI, Evidence Vault für Behörden-Auditierung.',
     canonical: `${SITE_URL}/schulen`,
@@ -680,19 +681,19 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/bildung': {
-    title: 'Bildungs-Compliance — DSGVO + AI Act für EduTech | RealSyncDynamics.AI',
+    title: 'Bildungs-Compliance — DSGVO + AI Act für EduTech | RealSync Dynamics AI',
     description:
       'Für EduTech und Hochschulen: DSGVO-konforme Lernplattformen, AI-Act-Klassifikation für adaptive Tests + Proctoring, KMK-Konformität, On-Premise-Option.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/education': {
-    title: 'Education Compliance — GDPR + EU AI Act for EdTech | RealSyncDynamics.AI',
+    title: 'Education Compliance — GDPR + EU AI Act for EdTech | RealSync Dynamics AI',
     description:
       'For EdTech, schools, and universities: GDPR-compliant learning platforms, EU AI Act classification for adaptive testing + proctoring, on-premise option.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/saas-anbieter': {
-    title: 'SaaS-Compliance — Multi-Tenant DSGVO, AVV, Sub-Prozessoren | RealSyncDynamics.AI',
+    title: 'SaaS-Compliance — Multi-Tenant DSGVO, AVV, Sub-Prozessoren | RealSync Dynamics AI',
     description:
       'Für SaaS-Anbieter: Multi-Tenant-Architektur, AVV mit Endkunden, Sub-Prozessor-Liste, DSGVO Art. 32, AI-Act-Klassifikation, EU-Datenresidenz Default.',
     canonical: `${SITE_URL}/saas-anbieter`,
@@ -703,13 +704,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/saas-providers': {
-    title: 'SaaS Compliance — Multi-Tenant GDPR, DPA, Sub-Processors | RealSyncDynamics.AI',
+    title: 'SaaS Compliance — Multi-Tenant GDPR, DPA, Sub-Processors | RealSync Dynamics AI',
     description:
       'For SaaS providers: multi-tenant architecture, DPA with end customers, sub-processor list, GDPR Art. 32, EU AI Act classification, EU residency.',
     canonical: `${SITE_URL}/saas-anbieter`,
   },
   '/fuer-saas': {
-    title: 'Für SaaS-Teams — DSGVO-Compliance als Infrastruktur | RealSyncDynamics.AI',
+    title: 'Für SaaS-Teams — DSGVO-Compliance als Infrastruktur | RealSync Dynamics AI',
     description:
       'Compliance-Layer für SaaS-Teams: API-First, Multi-Tenant, BYOK, Webhooks. Mechanical Input + AI Orchestration + Digital Output. Pilot ab 249 €/Monat.',
     canonical: `${SITE_URL}/fuer-saas`,
@@ -719,7 +720,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/fuer-praxen': {
-    title: 'Für Arztpraxen + Zahnärzte — DSGVO ohne IT-Aufwand | RealSyncDynamics.AI',
+    title: 'Für Arztpraxen + Zahnärzte — DSGVO ohne IT-Aufwand | RealSync Dynamics AI',
     description:
       'DSGVO-Komplettpaket für Arzt- und Zahnarztpraxen: Cookie-Banner, Datenschutzerklärung, AVV mit Praxisverwaltung, Patientendaten-Schutz. Starter ab 79 €/Monat, Growth ab 249 €/Monat.',
     canonical: `${SITE_URL}/fuer-praxen`,
@@ -730,7 +731,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   },
   '/fuer-agenturen': {
     title:
-      'DSGVO-Compliance für Agenturen — alle Kundenprojekte prüfen | RealSyncDynamics.AI',
+      'DSGVO-Compliance für Agenturen — alle Kundenprojekte prüfen | RealSync Dynamics AI',
     description:
       'Als Agentur alle Kundenwebsites automatisch auf DSGVO-Konformität prüfen. Whitelabel-Reports, Multi-Domain-Scanning, Team-Zugänge.',
     canonical: `${SITE_URL}/fuer-agenturen`,
@@ -740,13 +741,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/agencies': {
-    title: 'GDPR Compliance for Marketing Agencies — White-Label Audits | RealSyncDynamics.AI',
+    title: 'GDPR Compliance for Marketing Agencies — White-Label Audits | RealSync Dynamics AI',
     description:
       'Audit engine for agencies: multi-tenant dashboard, white-label reports, API access for bulk scans, CI/CD integration. Deliver GDPR compliance as a service.',
     canonical: `${SITE_URL}/fuer-agenturen`,
   },
   '/steuerberater': {
-    title: 'Steuerberater-Compliance — DSGVO + DATEV + Mandantenschutz | RealSyncDynamics.AI',
+    title: 'Steuerberater-Compliance — DSGVO + DATEV + Mandantenschutz | RealSync Dynamics AI',
     description:
       'Für Steuerberatungs-Kanzleien: DSGVO + § 203 StGB Mandantengeheimnis, DATEV-konforme Schnittstellen, Audit-Trail für Belegverarbeitung.',
     canonical: `${SITE_URL}/steuerberater`,
@@ -757,7 +758,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/steuerkanzlei': {
-    title: 'Steuerkanzlei-Compliance — DSGVO + DATEV + Mandantenschutz | RealSyncDynamics.AI',
+    title: 'Steuerkanzlei-Compliance — DSGVO + DATEV + Mandantenschutz | RealSync Dynamics AI',
     description:
       'Für Steuerkanzleien: DSGVO + § 203 StGB Mandantengeheimnis, DATEV-konforme Schnittstellen, Audit-Trail für Belegverarbeitung, AVV mit Sub-Prozessoren.',
     canonical: `${SITE_URL}/steuerberater`,
@@ -765,7 +766,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Resources / Vergleich / FAQ / Guides ────────────────────────────────
   '/tools': {
-    title: 'Compliance-Tools Hub — Scanner, Generatoren, Checks | RealSyncDynamics.AI',
+    title: 'Compliance-Tools Hub — Scanner, Generatoren, Checks | RealSync Dynamics AI',
     description:
       'Alle DSGVO- und AI-Act-Tools auf einer Seite: Cookie-Scanner, AVV-Generator, Datenschutzerklärung-Generator, EU-AI-Act-Klassifikator, DSFA-Wizard.',
     canonical: `${SITE_URL}/tools`,
@@ -775,7 +776,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dsfa-wizard': {
-    title: 'DSFA-Wizard — Datenschutz-Folgenabschätzung nach Art. 35 DSGVO | RealSyncDynamics.AI',
+    title: 'DSFA-Wizard — Datenschutz-Folgenabschätzung nach Art. 35 DSGVO | RealSync Dynamics AI',
     description:
       'Strukturierte Datenschutz-Folgenabschätzung Schritt für Schritt: Verarbeitungsbeschreibung, Risiko-Bewertung, Maßnahmen. Konform mit Art. 35 DSGVO.',
     canonical: `${SITE_URL}/dsfa-wizard`,
@@ -785,19 +786,43 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'DSFA-Wizard', url: '/dsfa-wizard' },
     ]),
   },
-  '/busseld-rechner': {
-    title: 'DSGVO-Bußgeld-Rechner — Risiko-Schätzung nach Art. 83 | RealSyncDynamics.AI',
+  '/bussgeld-rechner': {
+    title: 'DSGVO-Bußgeld-Rechner — Risiko-Schätzung nach Art. 83 | RealSync Dynamics AI',
     description:
       'Schätzen Sie Ihr DSGVO-Bußgeld-Risiko: Branchen-Faktor, Verstoß-Kategorie (Art. 83 Abs. 4/5), Umsatz und Schweregrad — mit Behörden-Praxis von 2024-2026.',
-    canonical: `${SITE_URL}/busseld-rechner`,
+    canonical: `${SITE_URL}/bussgeld-rechner`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Tools', url: '/tools' },
-      { name: 'Bußgeld-Rechner', url: '/busseld-rechner' },
+      { name: 'Bußgeld-Rechner', url: '/bussgeld-rechner' },
     ]),
   },
+  // Tippfehler-Alias: voller Aufruf bekommt 301 (public/_redirects), die
+  // SPA-Route konsolidiert per canonical.
+  '/busseld-rechner': {
+    title: 'DSGVO-Bußgeld-Rechner — Risiko-Schätzung nach Art. 83 | RealSync Dynamics AI',
+    description:
+      'Schätzen Sie Ihr DSGVO-Bußgeld-Risiko: Branchen-Faktor, Verstoß-Kategorie (Art. 83 Abs. 4/5), Umsatz und Schweregrad — mit Behörden-Praxis von 2024-2026.',
+    canonical: `${SITE_URL}/bussgeld-rechner`,
+  },
+  '/ueber-uns': {
+    title: 'Über uns — KI-Governance aus Europa | RealSync Dynamics AI',
+    description:
+      'Wer hinter RealSync Dynamics AI steht: eine EU-souveräne Kontroll- und Nachweisschicht für KI im Unternehmen, entwickelt und gehostet in Deutschland.',
+    canonical: `${SITE_URL}/ueber-uns`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Über uns', url: '/ueber-uns' },
+    ]),
+  },
+  '/about': {
+    title: 'Über uns — KI-Governance aus Europa | RealSync Dynamics AI',
+    description:
+      'Wer hinter RealSync Dynamics AI steht: eine EU-souveräne Kontroll- und Nachweisschicht für KI im Unternehmen, entwickelt und gehostet in Deutschland.',
+    canonical: `${SITE_URL}/ueber-uns`,
+  },
   '/ressourcen': {
-    title: 'Ressourcen — Whitepaper, Checklisten, Guides | RealSyncDynamics.AI',
+    title: 'Ressourcen — Whitepaper, Checklisten, Guides | RealSync Dynamics AI',
     description:
       'Praxis-Material zu DSGVO + AI Act: BAIT/MaRisk-Guide, Schrems-II-Erklärung, DSGVO-KI-Checkliste, Tool-Vergleiche. Stand 2026, ohne Marketing-Fluff.',
     canonical: `${SITE_URL}/ressourcen`,
@@ -807,13 +832,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/resources': {
-    title: 'Resources — Whitepapers, Checklists, Guides | RealSyncDynamics.AI',
+    title: 'Resources — Whitepapers, Checklists, Guides | RealSync Dynamics AI',
     description:
       'Practical material on GDPR + EU AI Act: BAIT/MaRisk guide, Schrems II explainer, GDPR AI checklist, tool comparisons. Stand 2026, no marketing fluff.',
     canonical: `${SITE_URL}/ressourcen`,
   },
   '/audit-pro': {
-    title: 'Audit Pro — Vollständiger DSGVO + AI-Act-Audit | RealSyncDynamics.AI',
+    title: 'Audit Pro — Vollständiger DSGVO + AI-Act-Audit | RealSync Dynamics AI',
     description:
       'Tiefen-Audit mit allen Findings, Paragraphen-Bezug, Auto-Fix-Empfehlungen und PDF-Report für Datenschutzbeauftragte. Inkl. Consent-Timing + AI-Act-Klassifikation.',
     canonical: `${SITE_URL}/audit-pro`,
@@ -823,7 +848,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dsgvo-tool-vergleich': {
-    title: 'DSGVO-Tool-Vergleich 2026 — Cookiebot vs Usercentrics vs OneTrust | RealSyncDynamics.AI',
+    title: 'DSGVO-Tool-Vergleich 2026 — Cookiebot vs Usercentrics vs OneTrust | RealSync Dynamics AI',
     description:
       'Direkter Feature-Vergleich der wichtigsten DSGVO-Tools. Pre-Consent-Detection, Fix-Empfehlungen, Evidence Vault, AI-Act-Module, Preise — was deckt welches Tool ab?',
     canonical: `${SITE_URL}/dsgvo-tool-vergleich`,
@@ -833,7 +858,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dsgvo-ki-checkliste': {
-    title: 'DSGVO + KI Checkliste 2026 — Praxis-Guide | RealSyncDynamics.AI',
+    title: 'DSGVO + KI Checkliste 2026 — Praxis-Guide | RealSync Dynamics AI',
     description:
       '12 konkrete Prüfpunkte für DSGVO-konformen KI-Einsatz: Rechtsgrundlage, AVV, Schrems-II, AI-Act-Klassifikation, technische Maßnahmen, DSFA-Pflicht.',
     canonical: `${SITE_URL}/dsgvo-ki-checkliste`,
@@ -843,7 +868,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/bait-marisk-compliance-guide': {
-    title: 'BAIT + MaRisk Compliance Guide — KI-Einsatz in Banken | RealSyncDynamics.AI',
+    title: 'BAIT + MaRisk Compliance Guide — KI-Einsatz in Banken | RealSync Dynamics AI',
     description:
       'Praxis-Guide für BaFin-regulierte Institute: BAIT-Anforderungen, MaRisk-Audit-Trail für ML-Modelle, AI-Act-Klassifikation für Credit-Scoring.',
     canonical: `${SITE_URL}/bait-marisk-compliance-guide`,
@@ -853,7 +878,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/onboarding-erklaert': {
-    title: 'Onboarding erklärt — IT verbinden statt ersetzen | RealSyncDynamics.AI',
+    title: 'Onboarding erklärt — IT verbinden statt ersetzen | RealSync Dynamics AI',
     description:
       'Wie das Onboarding abläuft: Unternehmensprofil, Systeme erkennen, verbinden, Datenflüsse analysieren, Risiken und Nachweise — ohne Ihre IT auszutauschen.',
     canonical: `${SITE_URL}/onboarding-erklaert`,
@@ -863,7 +888,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/ki-governance-in-5-schritten': {
-    title: 'KI-Governance in 5 Schritten — vom KI-Register zum laufenden Betrieb | RealSyncDynamics.AI',
+    title: 'KI-Governance in 5 Schritten — vom KI-Register zum laufenden Betrieb | RealSync Dynamics AI',
     description:
       'Unternehmen verstehen, KI-Register aufbauen, Governance-Regeln aktivieren, Nachweise erzeugen, KI sicher betreiben — mehr als eine KI-Richtlinie: ein Betriebssystem für KI-Governance.',
     canonical: `${SITE_URL}/ki-governance-in-5-schritten`,
@@ -872,8 +897,18 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'KI-Governance in 5 Schritten', url: '/ki-governance-in-5-schritten' },
     ]),
   },
+  '/evidence-runtime': {
+    title: 'Continuous Governance Control Plane & Evidence Runtime | RealSyncDynamics.AI',
+    description:
+      'Realen Zustand erkennen, Regeln durchsetzen, Abweichungen beheben, Ergebnisse verifizieren, Nachweise erzeugen — Beweisketten statt Compliance-Score für DSGVO, TDDDG und EU AI Act.',
+    canonical: `${SITE_URL}/evidence-runtime`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Evidence Runtime', url: '/evidence-runtime' },
+    ]),
+  },
   '/schrems-ii-erklaert': {
-    title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSyncDynamics.AI',
+    title: 'Schrems II erklärt — Was EuGH-Urteil C-311/18 bedeutet | RealSync Dynamics AI',
     description:
       'EuGH C-311/18 (Schrems II) hat den Privacy Shield gekippt. Was bedeutet das für SaaS, Cloud, KI-APIs? Konkrete Maßnahmen + EU-Hosting-Optionen.',
     canonical: `${SITE_URL}/schrems-ii-erklaert`,
@@ -883,13 +918,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/faq': {
-    title: 'FAQ — Häufige Fragen zu DSGVO, AI Act & Plattform | RealSyncDynamics.AI',
+    title: 'FAQ — Häufige Fragen zu DSGVO, AI Act & Plattform | RealSync Dynamics AI',
     description:
       'Antworten zu Datenresidenz, AVV, Schrems-II, AI-Act-Klassifikation, Preisen, Setup, Kündigung, Sub-Prozessoren und Audit-Trail. Stand Mai 2026.',
     canonical: `${SITE_URL}/haeufige-fragen`,
   },
   '/haeufige-fragen': {
-    title: 'Häufige Fragen — DSGVO, AI Act und Plattform-Details | RealSyncDynamics.AI',
+    title: 'Häufige Fragen — DSGVO, AI Act und Plattform-Details | RealSync Dynamics AI',
     description:
       'Antworten zu Datenresidenz, AVV, Schrems-II, AI-Act-Klassifikation, Preisen, Setup, Kündigung, Sub-Prozessoren und Audit-Trail. Stand Mai 2026.',
     canonical: `${SITE_URL}/haeufige-fragen`,
@@ -899,7 +934,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/case-studies': {
-    title: 'Case Studies — DSGVO + AI-Act in der Praxis | RealSyncDynamics.AI',
+    title: 'Case Studies — DSGVO + AI-Act in der Praxis | RealSync Dynamics AI',
     description:
       'Anonymisierte Case Studies aus HealthTech, FinTech, LegalTech: konkrete Compliance-Probleme, technische Lösung, Audit-Outcome — mit DSB-Stimmen.',
     canonical: `${SITE_URL}/case-studies`,
@@ -911,7 +946,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Trust / Methodik / Legal ────────────────────────────────────────────
   '/security': {
-    title: 'Security — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSyncDynamics.AI',
+    title: 'Security — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
     description:
       'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
     canonical: `${SITE_URL}/security`,
@@ -921,19 +956,19 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/sicherheit': {
-    title: 'Sicherheit — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSyncDynamics.AI',
+    title: 'Sicherheit — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
     description:
       'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
     canonical: `${SITE_URL}/security`,
   },
   '/methodik': {
-    title: 'Methodik 2026.05.0 — Compliance-Detection-Methodik | RealSyncDynamics.AI',
+    title: 'Methodik 2026.05.0 — Compliance-Detection-Methodik | RealSync Dynamics AI',
     description:
       'Volltransparente Methodik: Playwright-Engine, Regelengine, Tracker-Registry (18 Trackers), Consent-Timing-Algorithmus. Versionierte Releases, öffentlich auditierbar.',
     canonical: `${SITE_URL}/legal/methodology`,
   },
   '/legal/methodology': {
-    title: 'Methodology 2026.05.0 — Compliance Detection | RealSyncDynamics.AI',
+    title: 'Methodology 2026.05.0 — Compliance Detection | RealSync Dynamics AI',
     description:
       'Fully transparent methodology: Playwright engine, rules engine, tracker registry (18 trackers), consent-timing algorithm. Versioned releases, publicly auditable.',
     canonical: `${SITE_URL}/legal/methodology`,
@@ -944,7 +979,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/grenzen': {
-    title: 'Grenzen — Was unsere Plattform NICHT kann | RealSyncDynamics.AI',
+    title: 'Grenzen — Was unsere Plattform NICHT kann | RealSync Dynamics AI',
     description:
       'Was wir bewusst NICHT versprechen: kein "100% rechtssicher", kein Anwalts-Ersatz, kein Audit für Backend-Server, kein automatischer DSB. Klare Grenzen.',
     canonical: `${SITE_URL}/grenzen`,
@@ -954,9 +989,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/legal/privacy': {
-    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
+    title: 'Datenschutzerklärung | RealSync Dynamics AI',
     description:
-      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
+      'Datenschutzerklärung von RealSync Dynamics AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
     canonical: `${SITE_URL}/legal/privacy`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -965,21 +1000,21 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/legal/datenschutz': {
-    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
+    title: 'Datenschutzerklärung | RealSync Dynamics AI',
     description:
-      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
+      'Datenschutzerklärung von RealSync Dynamics AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
     canonical: `${SITE_URL}/legal/privacy`,
   },
   '/datenschutz': {
-    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
+    title: 'Datenschutzerklärung | RealSync Dynamics AI',
     description:
-      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
+      'Datenschutzerklärung von RealSync Dynamics AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
     canonical: `${SITE_URL}/legal/privacy`,
   },
   '/legal/impressum': {
-    title: 'Impressum | RealSyncDynamics.AI',
+    title: 'Impressum | RealSync Dynamics AI',
     description:
-      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
+      'Impressum von RealSync Dynamics AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -988,13 +1023,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/impressum': {
-    title: 'Impressum | RealSyncDynamics.AI',
+    title: 'Impressum | RealSync Dynamics AI',
     description:
-      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
+      'Impressum von RealSync Dynamics AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
   },
   '/legal/sub-processors': {
-    title: 'Sub-Prozessoren & Auftragsverarbeiter (DSGVO Art. 28) | RealSyncDynamics.AI',
+    title: 'Sub-Prozessoren & Auftragsverarbeiter (DSGVO Art. 28) | RealSync Dynamics AI',
     description:
       'Vollständige Liste aller Auftragsverarbeiter: Supabase, Anthropic, Google, OpenAI, Stripe — mit DPA-Links, Regionen und Stand-Datum.',
     canonical: `${SITE_URL}/legal/sub-processors`,
@@ -1005,7 +1040,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/legal/avv': {
-    title: 'AVV-Vorlage (Art. 28 DSGVO) | RealSyncDynamics.AI',
+    title: 'AVV-Vorlage (Art. 28 DSGVO) | RealSync Dynamics AI',
     description:
       'Auftragsverarbeitungsvertrag-Vorlage zum Download nach Art. 28 DSGVO. Inkl. Sub-Prozessoren-Liste, TOMs nach Art. 32, EU-Standardvertragsklauseln (SCCs).',
     canonical: `${SITE_URL}/legal/avv`,
@@ -1016,9 +1051,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/legal/terms': {
-    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    title: 'Allgemeine Geschäftsbedingungen | RealSync Dynamics AI',
     description:
-      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+      'AGB für die Nutzung der RealSync Dynamics AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
     canonical: `${SITE_URL}/legal/terms`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1027,13 +1062,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/agb': {
-    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    title: 'Allgemeine Geschäftsbedingungen | RealSync Dynamics AI',
     description:
-      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+      'AGB für die Nutzung der RealSync Dynamics AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
     canonical: `${SITE_URL}/legal/terms`,
   },
   '/legal/compliance-matrix': {
-    title: 'Compliance-Matrix — DSGVO, AI Act, BAIT, MaRisk | RealSyncDynamics.AI',
+    title: 'Compliance-Matrix — DSGVO, AI Act, BAIT, MaRisk | RealSync Dynamics AI',
     description:
       'Vollständige Mapping-Matrix: welche Plattform-Kontrolle welche Norm erfüllt. DSGVO Art. 32, AI Act Annex III, BAIT, MaRisk, BSI C5, ISO 27001 — Audit-ready.',
     canonical: `${SITE_URL}/legal/compliance-matrix`,
@@ -1050,15 +1085,15 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // nötig), aber Google konsolidiert Link-Equity auf die DE-URL.
 
   '/versicherungen': {
-    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSyncDynamics.AI',
+    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSync Dynamics AI',
     description:
       'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
     canonical: `${SITE_URL}/insurance`,
   },
   '/presse': {
-    title: 'Presse | RealSyncDynamics.AI',
+    title: 'Presse | RealSync Dynamics AI',
     description:
-      'Pressemitteilungen, Medienanfragen und Logos von RealSyncDynamics.AI — EU-native DSGVO- und AI-Act-Compliance-Plattform.',
+      'Pressemitteilungen, Medienanfragen und Logos von RealSync Dynamics AI — EU-native DSGVO- und AI-Act-Compliance-Plattform.',
     canonical: `${SITE_URL}/presse`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1066,13 +1101,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/press': {
-    title: 'Press | RealSyncDynamics.AI',
+    title: 'Press | RealSync Dynamics AI',
     description:
-      'Press releases, media inquiries and logos for RealSyncDynamics.AI — EU-native GDPR + AI Act compliance platform.',
+      'Press releases, media inquiries and logos for RealSync Dynamics AI — EU-native GDPR + AI Act compliance platform.',
     canonical: `${SITE_URL}/presse`,
   },
   '/integrationen': {
-    title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSync Dynamics AI',
     description:
       'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. DSGVO-konforme Datenflüsse, keine Setup-Gebühr.',
     canonical: `${SITE_URL}/integrationen`,
@@ -1082,13 +1117,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/integrations': {
-    title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSync Dynamics AI',
     description:
       'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. GDPR-compliant data flows, no setup fee.',
     canonical: `${SITE_URL}/integrationen`,
   },
   '/marktanalyse': {
-    title: 'DSGVO-Tool-Marktanalyse — DACH 2026 | RealSyncDynamics.AI',
+    title: 'DSGVO-Tool-Marktanalyse — DACH 2026 | RealSync Dynamics AI',
     description:
       'Marktanalyse: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard im Vergleich. Preise, Features, DACH-Tauglichkeit, AI-Act-Readiness — Stand 2026.',
     canonical: `${SITE_URL}/marktanalyse`,
@@ -1098,7 +1133,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/market-analysis': {
-    title: 'GDPR Tool Market Analysis — DACH 2026 | RealSyncDynamics.AI',
+    title: 'GDPR Tool Market Analysis — DACH 2026 | RealSync Dynamics AI',
     description:
       'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
     canonical: `${SITE_URL}/marktanalyse`,

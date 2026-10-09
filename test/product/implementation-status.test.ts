@@ -111,6 +111,17 @@ describe('implementation-status registry', () => {
     expect(getImplementation('frontend-modernize-wizard')?.route).toBe('/app/siteos/modernize');
   });
 
+  it('marks automations/n8n as preview — Skills unlinked, Runtime down', () => {
+    const item = getImplementation('automation-n8n')!;
+    expect(item.status).toBe('preview');
+    expect(isImplementationLive('automation-n8n')).toBe(false);
+    expect(item.route).toBe('/app/automations');
+    expect(item.description.toLowerCase()).toMatch(/ohne workflow|nicht erreichbar|keine produktive/);
+    expect(item.description).not.toMatch(/\b(Pilot|Demo|Call|Sales|Beratung|Termin)\b/i);
+    expect(item.evidence.some((e) => e.includes('automation-trigger'))).toBe(true);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'automation-n8n')).toBe(true);
+  });
+
   it('mentions /login on the welcome/auth entry', () => {
     expect(getImplementation('welcome')?.description).toContain('/login');
     expect(getImplementation('welcome')?.evidence.some((e) => e.includes('LoginPage'))).toBe(true);
@@ -173,9 +184,15 @@ describe('implementation-status registry', () => {
       resolve('src/components/landing/v4/LandingV4Sections.tsx'),
       'utf8',
     );
-    expect(sections).toContain('AI Compliance');
-    expect(sections).toContain('Operations OS');
-    expect(sections).toContain('for Europe');
+    // H1/Lede laufen über i18n (HANDOFF_EXTRA), nicht mehr als Literale im Markup.
+    expect(sections).toContain("t('v4HeroTitleA')");
+    expect(sections).toContain("t('v4HeroTitleB')");
+    expect(sections).toContain("t('v4HeroTitleEm')");
+    const i18n = readFileSync(resolve('src/i18n/handoff.ts'), 'utf8');
+    expect(i18n).toContain("v4HeroTitleEm: 'für Europa'");
+    expect(i18n).toContain("v4HeroTitleEm: 'for Europe'");
+    expect(i18n).toContain("v4HeroTitleA: 'AI Compliance'");
+    expect(i18n).toContain("v4HeroTitleB: 'Operations OS'");
     expect(sections).toContain('Free Audit starten');
     expect(sections).toContain('Runtime ansehen');
     expect(sections).not.toContain('Live Dashboard ansehen');

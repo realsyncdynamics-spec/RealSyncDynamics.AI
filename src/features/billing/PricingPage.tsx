@@ -8,7 +8,7 @@ import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
 import { useLang } from '../../i18n/useLang';
 import { COMPANY } from '../../config/company';
 import {
-  SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE_STANDARD,
+  SELLABLE_PRICING_TIERS, PRICING_TAX_NOTE_STANDARD,
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
@@ -25,9 +25,11 @@ const TRIAL_PLAN_NAMES: string[] = PLANS
   .filter((p) => p.purchaseMode === 'checkout' && p.trialDays > 0)
   .map((p) => p.name);
 const TRIAL_DAYS: number = PLANS.find((p) => p.trialDays > 0)?.trialDays ?? 14;
-const TRIAL_PLAN_LIST: string = TRIAL_PLAN_NAMES.length > 1
-  ? `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} und ${TRIAL_PLAN_NAMES.at(-1)}`
-  : (TRIAL_PLAN_NAMES[0] ?? '');
+function trialPlanList(lang: 'de' | 'en'): string {
+  if (TRIAL_PLAN_NAMES.length <= 1) return TRIAL_PLAN_NAMES[0] ?? '';
+  const conj = lang === 'en' ? 'and' : 'und';
+  return `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} ${conj} ${TRIAL_PLAN_NAMES.at(-1)}`;
+}
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -66,7 +68,7 @@ export function PricingPage() {
   // und scrollt es in den Blick — so bleibt der Weg zur Paket-Auswahl eindeutig.
   const [params] = useSearchParams();
   const selectedPlan = params.get('plan');
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [billing, setBilling] = useState<Billing>('monthly');
   useEffect(() => {
     if (!selectedPlan) return;
@@ -115,13 +117,16 @@ export function PricingPage() {
                 <TierCard key={tier.id} tier={tier} billing={effectiveBilling} selected={tier.id === selectedPlan} />
               ))}
             </div>
-            <div className="rs-pricing__foot">
-              <p>{PRICING_TRUST_NOTE}</p>
-              <p>
-                Free Audit kostenlos · kein Account nötig · {TRIAL_PLAN_LIST}:{' '}
-                {TRIAL_DAYS} Tage kostenlos testen — keine Kosten bis Tag {TRIAL_DAYS + 1}, monatlich kündbar ·
-                {' '}Enterprise: nach Anfrage, kein Self-Service-Trial
+            <div className="rs-pricing__foot" data-testid="pricing-foot">
+              <p data-testid="pricing-trust-note">{t('pricingTrustNote')}</p>
+              <p data-testid="pricing-trial-foot">
+                {t('pricingTrialFoot', {
+                  plans: trialPlanList(lang),
+                  days: TRIAL_DAYS,
+                  until: TRIAL_DAYS + 1,
+                })}
               </p>
+              {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
               <p data-testid="pricing-tax-note">
                 {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
               </p>
@@ -133,13 +138,16 @@ export function PricingPage() {
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           {/* Disclaimer */}
-          <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
+          <div
+            className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none"
+            data-testid="pricing-disclaimer"
+          >
             <div className="flex items-start gap-3">
               <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
               <p className="text-sm text-silver-300 leading-relaxed">
-                Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung.
-                <strong className="text-titanium-200"> Wir versprechen kein "100 % rechtssicher"</strong>, weil das niemand seriös kann.
-                Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.
+                {t('pricingDisclaimerBefore')}
+                <strong className="text-titanium-200">{t('pricingDisclaimerStrong')}</strong>
+                {t('pricingDisclaimerAfter')}
               </p>
             </div>
           </div>

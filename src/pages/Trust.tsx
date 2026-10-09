@@ -16,7 +16,7 @@ import { usePageMeta } from '../lib/usePageMeta';
 
 export function Trust() {
   usePageMeta({
-    title: 'Trust Center — RealSyncDynamics.AI',
+    title: 'Trust Center — RealSync Dynamics AI',
     description:
       'Sicherheit, EU-Hosting, Encryption, Audit-Logs, RBAC, Retention und Immutable Evidence — die Trust-Grundlagen der Governance-Plattform.',
   });

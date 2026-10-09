@@ -105,7 +105,7 @@ const TONE_TEXT: Record<'cyan' | 'amber' | 'violet' | 'emerald', string> = {
 
 export function AgentsPage() {
   usePageMeta({
-    title: 'Agents — Governance-Kontrollebene | RealSync',
+    title: 'Agents — Governance-Kontrollebene | RealSync Dynamics AI',
     description:
       'Vier autonome Agenten in der Governance-Runtime: Drift, KI-Risiko, Evidence, ' +
       'Policy. Demo-Surface mit simulierten Werten — keine Kundendaten.',

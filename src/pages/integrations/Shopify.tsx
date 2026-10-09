@@ -8,7 +8,7 @@ const SUPABASE_FUNCTIONS_URL =
 
 export function ShopifyIntegrationPage() {
   usePageMeta({
-    title: 'Shopify Integration — RealSyncDynamics.AI',
+    title: 'Shopify Integration — RealSync Dynamics AI',
     description:
       'Compliance Monitoring für Shopify-Storefronts: Tracker-, Consent- und Header-Erkennung, Drift-Alerts nach Theme-/App-Änderungen. Keine automatischen Änderungen am Store.',
   });

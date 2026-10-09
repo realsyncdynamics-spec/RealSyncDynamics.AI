@@ -155,7 +155,7 @@ function DashboardControlPlane() {
     { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#00B8D4]' },
     { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#C9D1E0]' },
     { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#00B8D4]' },
-    { href: '/app/siteos/builder', label: 'Web App Builder', text: 'SiteOS-Workspace für bestehende Projekte öffnen.', icon: Globe2, accent: 'text-emerald-300' },
+    { href: '/build?kind=web_app', label: 'Web App Builder', text: 'Web-App über den kanonischen Build-Studio-Einstieg starten.', icon: Globe2, accent: 'text-emerald-300' },
   ];
 
   return (

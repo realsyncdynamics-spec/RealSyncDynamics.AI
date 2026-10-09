@@ -126,11 +126,11 @@ test.describe('Governance OS Workflow', () => {
   });
 
   test.describe('Governance Views Access', () => {
-    test('should load AI Register view', async ({ page }) => {
+    test('legacy AI Register path forwards to the AI system inventory', async ({ page }) => {
       await page.goto(`${baseUrl}/app/governance/ai-register`);
 
-      await expect(page.locator('text=AI-System')).toBeVisible();
-      await expect(page.locator('button:has-text("Hinzufügen")')).toBeVisible();
+      await expect(page).toHaveURL(/\/app\/ai-systems$/);
+      await expect(page.getByTestId('ai-systems-view')).toBeVisible();
     });
 
     test('should load DSGVO Directory view', async ({ page }) => {
@@ -140,11 +140,10 @@ test.describe('Governance OS Workflow', () => {
       await expect(page.locator('text=Art.*5.*DSGVO')).toBeVisible();
     });
 
-    test('should load AI Act Assessment view', async ({ page }) => {
+    test('legacy AI Act assessment path forwards to the AI system inventory', async ({ page }) => {
       await page.goto(`${baseUrl}/app/governance/ai-act-assessment`);
 
-      await expect(page.locator('text=AI-Act-Risikoprüfung')).toBeVisible();
-      await expect(page.locator('text=Minimal|Limited|High|Prohibited')).toBeVisible();
+      await expect(page).toHaveURL(/\/app\/ai-systems$/);
     });
 
     test('should load NIS2 Incidents view', async ({ page }) => {
@@ -239,9 +238,8 @@ test.describe('Governance OS Workflow', () => {
 
     test('should navigate between governance views', async ({ page }) => {
       const views = [
-        '/app/governance/ai-register',
+        '/app/ai-systems',
         '/app/governance/dsgvo-directory',
-        '/app/governance/ai-act-assessment',
       ];
 
       for (const view of views) {

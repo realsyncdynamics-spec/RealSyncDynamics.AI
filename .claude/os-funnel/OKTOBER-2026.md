@@ -26,16 +26,16 @@ steht damit so:
 
 | Paket | Stand | Belege / offen |
 |---|---|---|
-| O-WP1 Stabilisieren | **erledigt** | Security-, Recht- und Laufzeit-Spur gemergt; #1759 (KI-Register-Schreibpfade) fertig, wartet nur auf `Migration validation` (Docker Hub, Fix #1816) |
+| O-WP1 Stabilisieren | **erledigt** | Security-, Recht- und Laufzeit-Spur gemergt, zuletzt #1759 (KI-Register-Schreibpfade nur mit geprüftem Mandanten) |
 | O-WP2 Landing v4 halten | läuft | #1812 (Copy-Ehrlichkeit) gemergt; #1813 (keine Fake-KPIs) in Prüfung; #1809 (Neupositionierung) **Design-Freeze — wartet auf Freigabe** |
 | O-WP3 `/build` als Einstieg | **erledigt** | #1737, #1738, #1771 (Projektart übersteht Login), #1772 (alte Builder-Links → `/build` bzw. Transformation, Query bleibt) |
-| O-WP4 Site Builder | läuft | #1775 (Compliance-Profil nach Redaktion), #1774 (ungespeicherte Änderungen) |
-| O-WP5 App Builder Phase 1 | **erledigt (früher als geplant)** | Inhalt von #1746 kam über #1789 auf `main`; #1746 geschlossen → **E-O7 erledigt** |
+| O-WP4 Site Builder | läuft | #1775 (Compliance-Profil nach Redaktion) und #1774 (ungespeicherte Änderungen) gemergt |
+| O-WP5 App Builder Phase 1 | **erledigt (früher als geplant)** | Inhalt von #1746 kam über #1789 auf `main` → **E-O7 erledigt**; Schließen von #1746 wartet auf Einzel-Freigabe |
 | O-WP6 Governance-Kette | **offen — 0 PRs** | wichtigste Lücke für KW 42/43 |
 | O-WP7 Backend-Verkabelung | läuft | #1745, #1760, #1768 gemergt |
-| O-WP8 Monetarisierung | läuft | Jahrespreise (#1744), Plan-Katalog (#1811), Begriffe (#1679) gemergt; #1748 widerspricht E-O3 (§ 19 UStG) |
+| O-WP8 Monetarisierung | läuft | Jahrespreise (#1744), Plan-Katalog (#1811), Begriffe (#1679), `/preise`-Alias (#1808) gemergt; #1748 widerspricht E-O3 (§ 19 UStG) |
 | O-WP9 Publish Controller | **vorgezogen** | Gate → Preview → Production (Owner/Admin, explizites GO) über #1789 auf `main`; **Rollback fehlt**, Domain/DNS bleibt Preview (E-O5) |
-| O-WP10 Live-Readiness | blockiert | Cron: 3 Functions antworten 401 (Function-Secret ≠ Vault, siehe unten); CI: Docker-Hub-Ausfälle (#1816) |
+| O-WP10 Live-Readiness | blockiert | Cron: 3 Functions antworten 401 (Function-Secret ≠ Vault, siehe unten); CI-Docker-Hub-Ausfälle behoben (#1816, Mirror) |
 
 **Abweichung vom Plan:** Voice (6 PRs) und Safety-Drafts (#1802–#1804) sind
 „neue Agenten" und waren für Oktober nicht vorgesehen. Sie bleiben geparkt,

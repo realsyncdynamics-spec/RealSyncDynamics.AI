@@ -54,6 +54,31 @@ describe('applyPageEdits — Redaktion ändert Inhalt, nicht Merkmale', () => {
     expect(result.rejected).toEqual([]);
   });
 
+  it('kompiliert das Compliance-Profil nach einer echten Redaktion aus den vorhandenen Blöcken neu', async () => {
+    const bp = await sample();
+    const stale = {
+      ...bp,
+      compliance: {
+        ...bp.compliance,
+        consentCategories: ['stale-client-state'],
+        legalBases: ['stale-client-state'],
+        dpiaRequired: !bp.compliance.dpiaRequired,
+      },
+    };
+    const hero = home(stale).blocks.find((b) => b.kind === 'hero')!;
+
+    const result = applyPageEdits(stale, [{
+      path: '/',
+      blocks: asEdits(stale, {
+        hero: { content: { ...hero.content, headline: 'Redaktionell geprüft' } },
+      }),
+    }]);
+
+    expect(result.changes.some((change) => change.code === 'block.edited')).toBe(true);
+    expect(result.blueprint.compliance).toEqual(bp.compliance);
+    expect(result.blueprint.compliance).not.toEqual(stale.compliance);
+  });
+
   it('lässt einen unveränderten generierten Block gekennzeichnet', async () => {
     const bp = await sample();
     const result = applyPageEdits(bp, [{ path: '/', blocks: asEdits(bp) }]);

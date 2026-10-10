@@ -21,6 +21,8 @@ import {
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
 import {
+  getStripeMode,
+  isWebhookSignatureModeCompatible,
   keyModeOf,
   planKeyForTestPrice,
   resolveStripeSecretKey,
@@ -83,68 +85,79 @@ Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
   if (!sig) return new Response('missing signature', { status: 400 });
 
-  const keyRes = await resolveStripeSecretKey(getSecret);
-  if (!keyRes.ok) {
-    return new Response(`${keyRes.code}: ${keyRes.message}`, { status: 500 });
-  }
-  const WEBHOOK_SECRET = await resolveStripeWebhookSecret(getSecret, keyRes.mode, keyRes.source);
-  if (!WEBHOOK_SECRET) {
-    return new Response(
-      keyRes.mode === 'test'
-        ? 'stripe webhook secret not configured (STRIPE_WEBHOOK_SECRET_TEST)'
-        : 'stripe secrets not configured (neither vault nor env)',
-      { status: 500 },
-    );
-  }
-  let stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
+  // Signature authentication is independent of the test API credentials.
+  // A live webhook must continue to work in Beta even without test secrets.
+  const runtimeMode = getStripeMode();
+  const liveSigningSecret = await getSecret('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret');
+  const liveKeyCandidate = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  const liveApiKey = keyModeOf(liveKeyCandidate) === 'live' ? liveKeyCandidate : null;
 
-  // Im Testmodus kommen Events des Live-Endpoints weiter an dieselbe URL. Sie
-  // tragen die Live-Signatur — ohne Prüfung gegen das Live-Secret liefe jedes
-  // in einen 400 und Stripe stellte endlos neu zu.
-  const webhookSecrets = [WEBHOOK_SECRET];
-  let liveWebhookSecret: string | null = null;
-  if (keyRes.mode === 'test') {
-    liveWebhookSecret = await resolveStripeWebhookSecret(getSecret, 'live', 'legacy_var');
-    if (liveWebhookSecret && liveWebhookSecret !== WEBHOOK_SECRET) webhookSecrets.push(liveWebhookSecret);
+  // Never use a live key to fetch test objects or a test key for live objects.
+  const testKeyRes = runtimeMode === 'test' ? await resolveStripeSecretKey(getSecret) : null;
+  const testApiKey = testKeyRes?.ok ? testKeyRes.secretKey : null;
+  const testSigningSecret = runtimeMode === 'test'
+    ? testKeyRes?.ok
+      ? await resolveStripeWebhookSecret(getSecret, 'test', testKeyRes.source)
+      : await getSecret('STRIPE_WEBHOOK_SECRET_TEST', 'stripe_webhook_secret_test')
+    : null;
+
+  const signingCandidates: Array<{ mode: 'test' | 'live'; secret: string }> = [];
+  if (runtimeMode === 'test' && testSigningSecret) {
+    signingCandidates.push({ mode: 'test', secret: testSigningSecret });
+  }
+  if (liveSigningSecret) signingCandidates.push({ mode: 'live', secret: liveSigningSecret });
+  if (signingCandidates.length === 0) {
+    // Configuration failure: 503 allows Stripe to retry a legitimate event.
+    return new Response('stripe webhook signing secrets not configured', { status: 503 });
+  }
+  if (signingCandidates.length === 2 && testSigningSecret === liveSigningSecret) {
+    return new Response('test/live webhook signing secrets must be distinct', { status: 503 });
   }
 
+  // Stripe SDK signature verification is local (no network access here).
+  // Actual API calls use the key of the VERIFIED event mode.
+  const verifierKey = liveApiKey ?? testApiKey;
+  if (!verifierKey) {
+    return new Response('no valid Stripe API key configured for webhook verification', { status: 503 });
+  }
+  const verifier = new Stripe(verifierKey, { apiVersion: '2024-06-20' });
   const raw = await req.text();
   let event: Stripe.Event | null = null;
-  let verifiedWithLiveSecret = false;
+  let verifiedMode: 'test' | 'live' | null = null;
   let signatureError: unknown;
-  for (const webhookSecret of webhookSecrets) {
+  for (const candidate of signingCandidates) {
     try {
-      // constructEventAsync because Deno's WebCrypto is async.
-      event = await stripe.webhooks.constructEventAsync(raw, sig, webhookSecret);
-      verifiedWithLiveSecret = webhookSecret !== WEBHOOK_SECRET && webhookSecret === liveWebhookSecret;
+      event = await verifier.webhooks.constructEventAsync(raw, sig, candidate.secret);
+      verifiedMode = candidate.mode;
       break;
     } catch (err) {
       signatureError = err;
     }
   }
-  if (!event) {
-    return new Response(`signature verify failed: ${(signatureError as Error).message}`, { status: 400 });
-  }
-
-  // Testmodus + mit dem Live-Secret verifiziertes Live-Event: Bestandskunden
-  // dürfen keine Verlängerung/Kündigung verlieren — wie vor der Beta mit dem
-  // Live-Key verarbeiten. Fehlt der Live-Key, 503: Stripe stellt später erneut zu.
-  if (keyRes.mode === 'test' && event.livemode && verifiedWithLiveSecret) {
-    const liveKey = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
-    if (!liveKey || keyModeOf(liveKey) !== 'live') {
-      return new Response('live event received but no sk_live_ key configured', { status: 503 });
-    }
-    stripe = new Stripe(liveKey, { apiVersion: '2024-06-20' });
-  } else if (event.livemode !== (keyRes.mode === 'live')) {
-    // Modus-Gegenprobe: Ein Event aus dem jeweils anderen Stripe-Modus darf
-    // keine Entitlements schreiben. 200 statt 4xx, damit Stripe nicht endlos
-    // erneut zustellt; nichts wird gespeichert.
-    console.warn(`[stripe-webhook] ${event.id} livemode=${event.livemode} ignoriert (STRIPE_MODE=${keyRes.mode})`);
-    return new Response(JSON.stringify({ received: true, ignored: 'stripe_mode_mismatch' }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
+  if (!event || !verifiedMode) {
+    return new Response(`signature verify failed: ${(signatureError as Error)?.message ?? 'unknown error'}`, {
+      status: 400,
     });
   }
+  if (!isWebhookSignatureModeCompatible(event.livemode, verifiedMode)) {
+    return new Response('webhook signature mode does not match event livemode', { status: 400 });
+  }
+  if (verifiedMode === 'test' && runtimeMode !== 'test') {
+    return new Response(JSON.stringify({ received: true, ignored: 'stripe_mode_mismatch' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const eventApiKey = verifiedMode === 'live' ? liveApiKey : testApiKey;
+  if (!eventApiKey) {
+    return new Response(
+      verifiedMode === 'live'
+        ? 'live event received but no sk_live_ key configured'
+        : 'test event received but no sk_test_ key configured',
+      { status: 503 },
+    );
+  }
+  const stripe = new Stripe(eventApiKey, { apiVersion: '2024-06-20' });
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },

@@ -431,18 +431,58 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     repo.failUpdate = true;
     const s = setup({ repo, scanner: driftScan });
     const r1 = await run(s.deps);
-    // Baseline nicht fortgeschrieben → Lauf failed; der eingereihte Alert
-    // wird trotzdem zugestellt (Nachhol-Durchlauf desselben Laufs).
+    // Baseline nicht fortgeschrieben → Lauf failed; der Alert liegt pending in der Outbox.
     expect(r1.body.results[0]).toMatchObject({ status: 'failed', reason: 'persist_failed' });
     expect(repo.outbox).toHaveLength(1);
-    expect(s.alerts).toEqual(['example.de']);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 0 });
+    expect(s.alerts).toEqual([]);
 
-    // Nächster Lauf: dieselbe Baseline, derselbe Stand → gleicher Fingerabdruck.
+    // Nächster Lauf: Nachhol-Pass stellt zu; der Scan erkennt dieselbe Drift
+    // gegen dieselbe Baseline → gleicher Fingerabdruck, keine zweite Mail.
     repo.failUpdate = false;
     const r2 = await run(s.deps);
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1 });
     expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'duplicate' });
     expect(repo.outbox).toHaveLength(1);
     expect(s.alerts).toEqual(['example.de']);
+  });
+
+  it('gleiche Drift mit leicht anderem Risk-Score bleibt ein Duplikat', async () => {
+    const repo = new MemRepo([domain()]);
+    repo.failUpdate = true;
+    const s1 = setup({ repo, scanner: async () => scanOf({ risk_score: 70, trackers: ['google_analytics', 'meta_pixel'] }) });
+    await run(s1.deps);
+    repo.failUpdate = false;
+    const s2 = setup({ repo, scanner: async () => scanOf({ risk_score: 68, trackers: ['google_analytics', 'meta_pixel'] }) });
+    const r2 = await run(s2.deps);
+    expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'duplicate' });
+    expect(repo.outbox).toHaveLength(1);
+    expect(s2.alerts).toEqual(['example.de']);
+  });
+
+  it('Nachhol-Pass läuft vor den Scans und verhungert nicht am Zeitbudget', async () => {
+    // Review-Befund: Lief der Pass erst nach den Scans, blieb er bei
+    // erschöpftem Budget dauerhaft aus.
+    const repo = new MemRepo([domain()]);
+    const first = setup({ repo, scanner: driftScan, alertFails: () => true });
+    await run(first.deps);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 1 });
+
+    const busy = [1, 2, 3].map((i) => domain({
+      id: `b${i}`, domain: `busy${i}.de`, last_scan_at: null, last_risk_score: null, last_trackers: [],
+    }));
+    repo.domains.push(...busy);
+    let elapsed = 0;
+    const second = setup({
+      repo, runBudgetMs: 90_000,
+      now: () => new Date(NOW.getTime() + 2 * DAY + elapsed),
+      scanner: async () => { elapsed += 60_000; return scanOf(); },
+    });
+    const r2 = await run(second.deps);
+    expect(r2.body).toMatchObject({ status: 'partial' });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1 });
+    expect(second.alerts).toEqual(['example.de']);
+    expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 2 });
   });
 
   it('ohne Plan-Freigabe oder Empfänger wird nichts eingereiht', async () => {

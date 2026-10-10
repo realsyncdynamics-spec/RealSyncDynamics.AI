@@ -150,6 +150,23 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
   const results: DomainOutcome[] = [];
   const attemptedAlerts = new Set<string>();
 
+  // Outbox: ältere, noch nicht zugestellte Alerts ZUERST nachholen. Danach
+  // fressen die Scans das Zeitbudget; liefe der Pass erst am Ende, bliebe er bei
+  // vielen Domains dauerhaft aus. Ein Zustellversuch ist billig (ein HTTP-Call),
+  // die Menge ist auf ALERT_RETRY_BATCH begrenzt. Ein Fehler hier macht den Lauf
+  // nicht `failed`, steht aber in der Antwort.
+  const alertRetries: { attempted: number; sent: number; error?: string } = { attempted: 0, sent: 0 };
+  try {
+    for (const a of await repo.pendingAlerts(ALERT_RETRY_BATCH)) {
+      if (now().getTime() - startedAt >= runBudgetMs) break;
+      attemptedAlerts.add(a.id);
+      alertRetries.attempted++;
+      if ((await deliverAlert(a, deps, now)).state === 'sent') alertRetries.sent++;
+    }
+  } catch (e) {
+    alertRetries.error = `pending_alerts: ${(e as Error)?.message ?? String(e)}`;
+  }
+
   for (const d of domains) {
     // Leave unprocessed rows unchanged. The next daily invocation will retry them.
     if (now().getTime() - startedAt >= runBudgetMs) break;
@@ -172,24 +189,6 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
     results.push(await runDomain(d, plan, gate.kadenz, deps, heads, now, uuid, attemptedAlerts));
     if (deps.pauseMs && now().getTime() - startedAt < runBudgetMs) {
       await new Promise((r) => setTimeout(r, deps.pauseMs));
-    }
-  }
-
-  // Outbox: ältere, noch nicht zugestellte Alerts nachholen — nur im Zeitbudget.
-  // Ein Fehler hier macht den Lauf nicht `failed` (die Scans sind gelaufen und
-  // belegt), steht aber in der Antwort.
-  const alertRetries: { attempted: number; sent: number; error?: string } = { attempted: 0, sent: 0 };
-  if (now().getTime() - startedAt < runBudgetMs) {
-    try {
-      for (const a of await repo.pendingAlerts(ALERT_RETRY_BATCH)) {
-        if (attemptedAlerts.has(a.id)) continue;
-        if (now().getTime() - startedAt >= runBudgetMs) break;
-        attemptedAlerts.add(a.id);
-        alertRetries.attempted++;
-        if ((await deliverAlert(a, deps, now)).state === 'sent') alertRetries.sent++;
-      }
-    } catch (e) {
-      alertRetries.error = `pending_alerts: ${(e as Error)?.message ?? String(e)}`;
     }
   }
 
@@ -304,7 +303,7 @@ async function runDomain(
         domain: d.domain,
         recipient: d.alert_email!,
         // Vor updateDomainState: der Fingerabdruck hängt an der alten Baseline.
-        fingerprint: await alertFingerprint(d, scan, drift),
+        fingerprint: await alertFingerprint(d, drift),
         payload: alertPayload(scan, drift),
       });
     }
@@ -325,8 +324,9 @@ async function runDomain(
   if (!drift.has_drift) { out.alert = 'none'; return out; }
   if (!plan.driftAlerts) { out.alert = 'suppressed_plan'; return out; }
   if (!alert) { out.alert = 'no_recipient'; return out; }
+  // Schon in diesem Lauf versucht (Nachhol-Pass) oder nicht mehr offen → kein zweiter Versand.
+  if (attemptedAlerts.has(alert.id) || alert.status !== 'pending') { out.alert = 'duplicate'; return out; }
   attemptedAlerts.add(alert.id);
-  if (alert.status !== 'pending') { out.alert = 'duplicate'; return out; }
   const delivered = await deliverAlert(alert, deps, now);
   out.alert = delivered.state;
   if (delivered.error) out.error = delivered.error;

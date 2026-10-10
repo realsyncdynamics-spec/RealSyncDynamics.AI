@@ -11,7 +11,7 @@
 -- (höchstens MAX_ALERT_ATTEMPTS = 5, dann `failed`).
 --
 -- UNIQUE (monitored_domain_id, fingerprint): Der Fingerabdruck hängt an der
--- alten Baseline + Ergebnis. Scheitert nach dem Einreihen das Fortschreiben der
+-- alten Baseline + Tracker-Delta (ohne Risk-Score). Scheitert nach dem Einreihen das Fortschreiben der
 -- Baseline, erkennt der nächste Lauf dieselbe Drift — und reiht keinen zweiten
 -- Alert ein.
 --

@@ -222,17 +222,16 @@ export function alertPayload(scan: ScanResult, drift: DriftReport): AlertPayload
 }
 
 /**
- * Identität einer Drift: Ausgangsstand (last_scan_at der Baseline) + Ergebnis.
+ * Identität einer Drift: Ausgangsstand (last_scan_at der Baseline) + Tracker-Delta.
  * Scheitert nach dem Einreihen das Fortschreiben der Baseline, erkennt der
  * nächste Lauf dieselbe Drift gegen dieselbe Baseline — gleicher
- * Fingerabdruck, kein zweiter Alert. Bewusst ohne evidence_id/ran_at, die
- * sich je Lauf ändern.
+ * Fingerabdruck, kein zweiter Alert. Bewusst ohne risk_score (schwankt
+ * zwischen Re-Scans leicht) und ohne evidence_id/ran_at, die sich je Lauf ändern.
  */
-export function alertFingerprint(d: MonitoredDomain, scan: ScanResult, drift: DriftReport): Promise<string> {
+export function alertFingerprint(d: MonitoredDomain, drift: DriftReport): Promise<string> {
   return sha256Hex(canonicalJson({
     monitored_domain_id: d.id,
     baseline_scan_at: d.last_scan_at,
-    risk_score: scan.risk_score,
     new_trackers: [...drift.new_trackers].sort(),
     removed_trackers: [...drift.removed_trackers].sort(),
   }));

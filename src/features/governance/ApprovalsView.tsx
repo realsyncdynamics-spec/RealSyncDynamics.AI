@@ -7,7 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
-  listApprovals, approveApproval, rejectApproval,
+  listApprovals, approveApproval, rejectApproval, isApprovalExpired,
   type Approval, type ApprovalStatus,
 } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
@@ -210,6 +210,13 @@ function Row({
           <RefBox icon={<Bot className="h-3.5 w-3.5" />} title="Asset" body={asset.name} meta={`${asset.asset_type} · ${asset.ai_act_class}`} link={`/governance/assets/${asset.id}`} />
         )}
       </div>
+
+      {approval.status === 'pending' && isApprovalExpired(approval.expires_at) && (
+        <div className="mt-3 border-t border-titanium-900 pt-2 flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-titanium-400" data-testid="approval-expired">
+          <Clock className="h-3 w-3" />
+          expired · Frist {new Date(approval.expires_at).toLocaleString('de-DE')}
+        </div>
+      )}
 
       {approval.status !== 'pending' && (
         <div className="mt-3 border-t border-titanium-900 pt-2 flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-titanium-400">

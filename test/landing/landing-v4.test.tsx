@@ -44,20 +44,28 @@ const mount = () =>
 it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   const view = mount();
   // Default-Sprache DE: H1 und Lede deutsch (Produktname bleibt EN).
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS für Europa/ });
+  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS für regulierte KI/ });
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
-  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/für Europa/);
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/für regulierte KI/);
   expect(view.container.querySelector('.loop')?.textContent).toBe('DiscoverClassifyEnforceProve');
   expect(view.container.querySelector('#scan')).toHaveAttribute('href', '/audit');
   expect(view.container.querySelector('#scan')).toHaveAttribute('data-hero-cta', '');
   expect(view.container.querySelector('#scan')).toHaveTextContent('Free Governance Audit');
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
-    'Runtime-Governance für regulierte KI.Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+    'Runtime-Governance für regulierte KI.Kontinuierliche Evidenz statt einmaliger Audits. Menschliche Kontrolle. EU-nativ by Design.',
+  );
+  expect(view.container.querySelector('.loop')?.nextElementSibling).toHaveClass('eu-line');
+  expect(view.container.querySelector('.loop')?.nextElementSibling).toHaveTextContent(
+    'Inventar in Sekunden · Risiken nach Artikel · Policies durchsetzen · Evidence versiegeln',
+  );
+  expect(view.container.querySelector('.hero .cta-row')?.previousElementSibling).toHaveClass('eu-line');
+  expect(view.container.querySelector('.hero .cta-row')?.previousElementSibling).toHaveTextContent(
+    'EU-Hosting Frankfurt · Hash-Chain Evidence · URL genügt · kein Account nötig',
   );
   expect(view.container.querySelector('header .cta-label-mobile')).toHaveTextContent('Audit starten');
   const secondary = view.container.querySelector('.hero .btn-ghost');
   expect(secondary).toHaveAttribute('href', '/governance-runtime');
-  expect(secondary?.textContent).toMatch(/Runtime ansehen/);
+  expect(secondary?.textContent).toMatch(/Dashboard ansehen/);
   expect(secondary?.textContent).not.toMatch(/Live|Demo/i);
   expect(view.container.querySelector('header .cta-pill')).toHaveAttribute('href', '/audit');
   // LIVE_CAPS: Klassifizierung claims public classifier only (no inventory persist).
@@ -70,16 +78,23 @@ it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   expect(classify?.textContent).toMatch(/Klassifikator|Risikoklasse/i);
 });
 
-it('renders English hero heading and lede when EN is active', () => {
+it('renders English hero heading, lede, benefits, trust and secondary CTA when EN is active', () => {
   setLang('en');
-  mount();
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for Europe/ });
-  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/for Europe/);
-  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/für Europa/);
+  const view = mount();
+  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for regulated AI/ });
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/for regulated AI/);
+  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/für regulierte KI/);
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
-    'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
+    'Runtime governance for regulated AI.Continuous evidence instead of one-off audits. Human control. EU-native by design.',
   );
   expect(screen.getByTestId('v4-hero-lede')).not.toHaveTextContent(/regulierter KI/);
+  expect(view.container.querySelector('.loop')?.nextElementSibling).toHaveTextContent(
+    'Inventory in seconds · Risks by article · Enforce policies · Seal evidence',
+  );
+  expect(view.container.querySelector('.hero .cta-row')?.previousElementSibling).toHaveTextContent(
+    'EU hosting in Frankfurt · Hash-chain evidence · A URL is enough · No account needed',
+  );
+  expect(screen.getByRole('link', { name: 'View dashboard' })).toHaveAttribute('href', '/governance-runtime');
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

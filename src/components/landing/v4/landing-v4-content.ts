@@ -138,7 +138,7 @@ export const TOOLS = [
 
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
-  ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.', ''],
+  ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF.', ''],
   ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
   ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],

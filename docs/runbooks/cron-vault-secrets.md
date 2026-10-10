@@ -66,6 +66,7 @@ select vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
 select vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
 select vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 select vault.create_secret('<cron-key>', 'cron_website_rescan_key');
+select vault.create_secret('<cron-key>', 'cron_audit_monitor_key');
 ```
 
 Dieselben Werte als Function Secrets setzen (Namen only):
@@ -76,6 +77,7 @@ Dieselben Werte als Function Secrets setzen (Namen only):
 | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
+| `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 
 `dispatch_cron_function` liest den Vault-Namen zur Laufzeit über
 `public.get_app_secret(...)`. Die Edge Function liest das Function Secret.

@@ -36,6 +36,9 @@ import {
 } from './logic.ts';
 
 const EVIDENCE_APPEND_ATTEMPTS = 3;
+// Conservative budget below Supabase's 150s free-tier wall-clock limit.
+// One already-started scan is allowed to finish; no new work starts after expiry.
+const DEFAULT_RUN_BUDGET_MS = 90_000;
 
 export interface MonitorRepo {
   listActiveDomains(): Promise<MonitoredDomain[]>;
@@ -61,6 +64,8 @@ export interface HandlerDeps {
   uuid?: () => string;
   /** Pause zwischen Domains (ms); Tests setzen 0. */
   pauseMs?: number;
+  /** Maximum elapsed time before stopping further domains (ms). */
+  runBudgetMs?: number;
 }
 
 export type AlertState = 'none' | 'sent' | 'suppressed_plan' | 'no_recipient' | 'not_configured' | 'failed';
@@ -87,6 +92,8 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
   if (!auth.ok) return jsonError(auth.status, auth.code, auth.message);
 
   const now = deps.now ?? (() => new Date());
+  const startedAt = now().getTime();
+  const runBudgetMs = deps.runBudgetMs ?? DEFAULT_RUN_BUDGET_MS;
   const uuid = deps.uuid ?? (() => crypto.randomUUID());
   const { repo } = deps;
 
@@ -103,6 +110,8 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
   const results: DomainOutcome[] = [];
 
   for (const d of domains) {
+    // Leave unprocessed rows unchanged. The next daily invocation will retry them.
+    if (now().getTime() - startedAt >= runBudgetMs) break;
     const base = { domain_id: d.id, domain: d.domain, tenant_id: d.tenant_id };
     if (!plans.has(d.tenant_id)) {
       try { plans.set(d.tenant_id, await deps.plan(d.tenant_id)); }
@@ -120,23 +129,27 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
       continue;
     }
     results.push(await runDomain(d, plan, gate.kadenz, deps, heads, now, uuid));
-    if (deps.pauseMs) await new Promise((r) => setTimeout(r, deps.pauseMs));
+    if (deps.pauseMs && now().getTime() - startedAt < runBudgetMs) {
+      await new Promise((r) => setTimeout(r, deps.pauseMs));
+    }
   }
 
+  const deferred = domains.length - results.length;
   const failed = results.filter((r) => r.status === 'failed').length;
   const body = {
-    ok: failed === 0,
-    status: failed === 0 ? 'ok' : 'failed',
+    ok: failed === 0 && deferred === 0,
+    status: failed > 0 ? 'failed' : deferred > 0 ? 'partial' : 'ok',
     scanner_version: SCANNER_VERSION,
     domains_total: domains.length,
     scanned: results.filter((r) => r.status === 'ok').length,
     skipped: results.filter((r) => r.status === 'skipped').length,
     failed,
+    deferred,
     drifts: results.filter((r) => r.drift).length,
     alerts_sent: results.filter((r) => r.alert === 'sent').length,
     results,
   };
-  return jsonResponse(body, failed === 0 ? 200 : 500);
+  return jsonResponse(body, failed > 0 ? 500 : deferred > 0 ? 202 : 200);
 }
 
 async function runDomain(

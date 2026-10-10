@@ -163,18 +163,31 @@ export function detectDrift(curr: ScanResult, prev: MonitoredDomain): DriftRepor
  */
 export function normalizeCookieScan(domain: string, data: unknown, scannedAt: string): ScanResult {
   const d = (data ?? {}) as Record<string, unknown>;
-  const score = d.riskScore;
-  if (typeof score !== 'number' || !Number.isFinite(score)) throw new Error('scanner returned no riskScore');
-  const trackers = Array.isArray(d.trackers)
-    ? (d.trackers as Array<{ tracker?: unknown }>).map((t) => String(t?.tracker ?? '')).filter(Boolean)
-    : [];
-  const cm = d.consentManager as { detected?: unknown } | undefined;
+  // Exact wire contract of cookie-scan/index.ts. Never turn failed fetches
+  // into a fabricated score of 100 (the scanner can return ok:true on error).
+  if (d.ok !== true || d.fetch_error !== null ||
+      typeof d.fetched_status !== 'number' || d.fetched_status < 200 || d.fetched_status >= 300) {
+    throw new Error('cookie-scan did not fetch a successful response');
+  }
+  const score = d.score;
+  if (typeof score !== 'number' || !Number.isFinite(score) || score < 0 || score > 100) {
+    throw new Error('cookie-scan returned no valid score');
+  }
+  if (!Array.isArray(d.trackers) ||
+      d.trackers.some((t: unknown) => !t || typeof t !== 'object' ||
+        typeof (t as { id?: unknown }).id !== 'string' || !(t as { id: string }).id.trim())) {
+    throw new Error('cookie-scan returned invalid trackers');
+  }
+  if (!Array.isArray(d.cookies) || typeof d.consent_manager_detected !== 'boolean') {
+    throw new Error('cookie-scan returned incomplete cookie/consent data');
+  }
+  const trackers = (d.trackers as Array<{ id: string }>).map((t) => t.id);
   return {
     domain, scan_type: 'fetch',
-    risk_score: Math.max(0, Math.min(100, Math.round(score))),
+    risk_score: Math.round(score),
     trackers: [...new Set(trackers)].sort(),
-    cookie_count: typeof d.cookieCount === 'number' ? d.cookieCount : 0,
-    consent_manager_detected: cm?.detected === true,
+    cookie_count: d.cookies.length,
+    consent_manager_detected: d.consent_manager_detected,
     issues: Array.isArray(d.issues) ? (d.issues as ScanIssue[]) : [],
     scanned_at: scannedAt,
   };

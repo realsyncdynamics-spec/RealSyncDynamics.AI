@@ -81,12 +81,17 @@ class MemRepo implements MonitorRepo {
     return { id: row.id as string };
   }
   async insertResult(row: Record<string, unknown>) { this.results.push(row); }
-  async updateDomainState(id: string, patch: Record<string, unknown>) { this.updates.push({ id, patch }); }
+  async updateDomainState(id: string, patch: Record<string, unknown>) {
+    this.updates.push({ id, patch });
+    const d = this.domains.find((entry) => entry.id === id);
+    if (d) Object.assign(d, patch);
+  }
 }
 
 function setup(o: {
   domains?: MonitoredDomain[]; plan?: PlanView | ((t: string) => Promise<PlanView>);
   scanner?: Scanner | null; cronKey?: string; repo?: MemRepo;
+  now?: () => Date; runBudgetMs?: number;
 }) {
   const repo = o.repo ?? new MemRepo(o.domains ?? [domain()]);
   const alerts: string[] = [];
@@ -99,7 +104,8 @@ function setup(o: {
     scanner: o.scanner === undefined ? async () => scanOf() : o.scanner,
     plan: typeof plan === 'function' ? plan : async () => plan,
     alerter,
-    now: () => NOW,
+    now: o.now ?? (() => NOW),
+    runBudgetMs: o.runBudgetMs,
     uuid: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`,
     pauseMs: 0,
   };
@@ -207,8 +213,29 @@ describe('audit-monitor-cron: Fail-closed', () => {
     expect(repo.results).toEqual([]);
   });
 
-  it('cookie-scan ohne riskScore ist kein Ergebnis', () => {
-    expect(() => normalizeCookieScan('example.de', { trackers: [] }, NOW.toISOString())).toThrow(/riskScore/);
+  it('normalisiert das reale cookie-scan-Antwortformat statt riskScore/tracker', () => {
+    const wire = {
+      ok: true, fetched_status: 200, fetch_error: null, score: 78,
+      trackers: [{ id: 'meta_pixel' }, { id: 'google_analytics' }],
+      cookies: [{ name: 'session' }], consent_manager_detected: true,
+    };
+    expect(normalizeCookieScan('example.de', wire, NOW.toISOString())).toMatchObject({
+      risk_score: 78, trackers: ['google_analytics', 'meta_pixel'],
+      cookie_count: 1, consent_manager_detected: true,
+    });
+  });
+
+  it('fehlender Score, fehlgeschlagener Fetch oder fehlende Tracker sind kein erfolgreicher Scan', () => {
+    const wire = {
+      ok: true, fetched_status: 200, fetch_error: null, score: 80,
+      trackers: [{ id: 'meta_pixel' }], cookies: [], consent_manager_detected: false,
+    };
+    const normalize = (x: unknown) => normalizeCookieScan('example.de', x, NOW.toISOString());
+    expect(() => normalize({ ...wire, score: undefined })).toThrow(/score/);
+    expect(() => normalize({ ...wire, fetch_error: 'timeout' })).toThrow(/successful response/);
+    expect(() => normalize({ ...wire, fetched_status: 403 })).toThrow(/successful response/);
+    expect(() => normalize({ ...wire, trackers: [{ tracker: 'meta_pixel' }] })).toThrow(/trackers/);
+    expect(() => normalize({ ...wire, cookies: undefined })).toThrow(/cookie\/consent/);
   });
 
   it('Evidence-Write schlägt fehl → failed, kein Ergebnis, kein Alert', async () => {
@@ -275,5 +302,28 @@ describe('audit-monitor-cron: Evidence-Chain', () => {
     const snap = (repo.evidence[1].metadata as { snapshot: Record<string, unknown> }).snapshot;
     expect(await evidenceContentHash(snap)).toBe(repo.evidence[1].content_hash);
     expect(canonicalJson(snap)).toContain('"kind":"domain_monitor_run"');
+  });
+});
+
+describe('audit-monitor-cron: bounded processing', () => {
+  it('stops starting new scans when time budget expires and leaves the backlog eligible', async () => {
+    const ds = [1, 2, 3].map((i) => domain({
+      id: `d${i}`, domain: `site${i}.de`,
+      created_at: `2026-10-0${i}T00:00:00Z`,
+    }));
+    let elapsed = 0;
+    const { deps, repo } = setup({
+      domains: ds, runBudgetMs: 90_000,
+      now: () => new Date(NOW.getTime() + elapsed),
+      scanner: async () => { elapsed += 60_000; return scanOf(); },
+    });
+    const first = await run(deps);
+    expect(first.status).toBe(202);
+    expect(first.body).toMatchObject({ ok: false, status: 'partial', scanned: 2, deferred: 1 });
+    expect(repo.updates.map((x) => x.id)).toEqual(['d1', 'd2']);
+    const next = await run(deps);
+    expect(next.status).toBe(200);
+    expect(next.body).toMatchObject({ ok: true, status: 'ok', scanned: 1, deferred: 0 });
+    expect(repo.updates.map((x) => x.id)).toEqual(['d1', 'd2', 'd3']);
   });
 });

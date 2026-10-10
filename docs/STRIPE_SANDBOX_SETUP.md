@@ -98,6 +98,19 @@ Im Stripe-Dashboard oben rechts **Testmodus** einschalten (bzw. eine Sandbox
 - Die verbundene Supabase-Instanz `RealSyncDynamicsLive` ist **produktiv**; es gibt keinen separaten Preview-Project-Branch. Vault-Namen `stripe_secret_key`, `stripe_webhook_secret` sind vorhanden; ob Edge-Env-`STRIPE_SECRET_KEY_TEST`, `STRIPE_MODE`, `STRIPE_TEST_PRICE_*` gesetzt sind, ist damit **nicht** belegt. Keine Secrets auslesen oder ohne getrennte Freigabe auf dem Live-Projekt ändern.
 - Den kontoweiten Rechnungshinweis in Stripe Billing → Rechnungen → Einstellungen/Templates für neue und wiederkehrende Rechnungen setzen und im gesonderten Testprojekt mit PDF und Zahlung prüfen.
 
+### Neue Kunden und Rechnungsfooter
+
+Im Checkout-Code des PR #1819 erhält ein **neu angelegter Stripe-Customer**
+bei `EXEMPT` über `invoice_settings.footer` den kanonischen
+`PRICING_TAX_NOTE_EXEMPT`. Einmalige Käufe geben den Text zusätzlich über
+`invoice_creation.invoice_data.footer` weiter. Bereits vorhandene Stripe-Kunden
+werden nicht automatisch geändert; hier muss die kontoweite Rechnungs-Vorlage
+bzw. der Kunden-Footer separat geprüft und gegebenenfalls angepasst werden.
+
+Verifiziert: Sandbox-Testkunde `cus_VPhKiuivjzVj1H`, unverbindliche
+Rechnungsvorschau zu **349,00 €**, Steuer **0,00 €**, §-19-Footer sichtbar.
+Keine finalisierte PDF-Rechnung und kein kompletter Supabase-E2E-Test.
+
 ## 2. Supabase-Secrets setzen
 
 ```bash

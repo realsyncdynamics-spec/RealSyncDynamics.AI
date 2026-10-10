@@ -9,7 +9,7 @@ import { PublicFooter } from '../brand/PublicFooter';
  * (rounded-chip/card/panel), Monospace ausschließlich für Metadaten.
  *
  * Die Navigation ist bewusst auf den Produkt-Funnel reduziert; der Trial-CTA
- * dominiert optisch, die Enterprise-Demo bleibt als sekundärer Pfad sichtbar.
+ * dominiert optisch.
  */
 
 /**
@@ -51,9 +51,8 @@ export const LANDING_NAV = [
   { label: 'Ressourcen', to: '/ressourcen' },
 ];
 
-// Zentrale CTA-Ziele — Trial primär, Enterprise-Demo sekundär.
+// Zentrale CTA-Ziele — Trial primär.
 export const TRIAL_CTA = '/welcome?source=landing-trial';
-export const DEMO_CTA = '/contact-sales?source=landing-demo';
 export const SCAN_CTA = '/audit?source=landing-scan';
 
 export function LandingHeader() {
@@ -96,7 +95,6 @@ export function LandingFooter() {
       links: [
         { label: 'Über uns', to: '/about' },
         { label: 'Kontakt', to: '/contact-sales' },
-        { label: 'Enterprise-Demo', to: DEMO_CTA },
       ],
     },
     {

@@ -86,4 +86,13 @@ describe('LandingShell uses the shared chrome with identical targets', () => {
     expect(screen.getByRole('link', { name: 'Warteliste' })).toHaveAttribute('href', '/warteliste');
     expect(screen.getAllByRole('link', { name: 'Impressum' }).length).toBeGreaterThan(0);
   });
+
+  it('footer link labels contain no Demo', () => {
+    wrap(<LandingFooter />);
+    const footer = screen.getByTestId('public-footer');
+    const labels = within(footer).getAllByRole('link').map((el) => el.textContent ?? '');
+    for (const label of labels) {
+      expect(label).not.toMatch(/Demo/i);
+    }
+  });
 });

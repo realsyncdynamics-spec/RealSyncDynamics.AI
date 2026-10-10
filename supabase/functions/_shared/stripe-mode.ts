@@ -144,6 +144,22 @@ export function isWebhookSignatureModeCompatible(
   return eventLivemode === (signingSecretMode === 'live');
 }
 
+/**
+ * Select the API key of the verified webhook signing mode. This is separate
+ * from STRIPE_MODE: the Beta endpoint must still handle existing live events.
+ * Never substitute a test key to process live events or vice versa.
+ */
+export function apiKeyForVerifiedWebhookEvent(
+  verifiedMode: StripeMode,
+  liveApiKey: string | null,
+  testApiKey: string | null,
+): string | null {
+  if (verifiedMode === 'live') {
+    return keyModeOf(liveApiKey) === 'live' ? liveApiKey : null;
+  }
+  return keyModeOf(testApiKey) === 'test' ? testApiKey : null;
+}
+
 /** Env-Name der Test-Price-ID eines Plan-Keys, z. B. STRIPE_TEST_PRICE_GOVERNANCE_LAUNCH. */
 export function testPriceEnvName(planKey: string): string {
   return STRIPE_TEST_PRICE_PREFIX + planKey.toUpperCase().replace(/[^A-Z0-9]/g, '_');

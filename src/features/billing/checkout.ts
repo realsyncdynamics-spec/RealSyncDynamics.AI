@@ -14,12 +14,14 @@ export interface CheckoutResult {
 }
 
 /**
- * Die Seite verspricht im Testmodus „es wird nichts belastet". Meldet der
- * Server trotzdem eine Live-Session (STRIPE_MODE=live, VITE_STRIPE_MODE nicht),
- * wird nicht zu Stripe weitergeleitet.
+ * Die Seite verspricht im Testmodus „es wird nichts belastet". Weitergeleitet
+ * wird dann nur, wenn der Server ausdrücklich eine Test-Session meldet: eine
+ * Live-Session (STRIPE_MODE=live, VITE_STRIPE_MODE nicht) ebenso wenig wie eine
+ * Antwort ohne `stripe_mode` (Edge Function vor dem Beta-Rollout, kann live sein).
+ * Frontend live / Server test bleibt zulässig — eine Test-Session belastet nichts.
  */
 function guardStripeMode(result: CheckoutResult): CheckoutResult {
-  if (IS_STRIPE_TEST_MODE && result?.stripe_mode === 'live') {
+  if (IS_STRIPE_TEST_MODE && result?.ok && result.stripe_mode !== 'test') {
     return {
       ok: false,
       error: {

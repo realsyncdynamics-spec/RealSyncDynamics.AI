@@ -132,8 +132,11 @@ mit den Build-Variablen des Pages-Projekts, nicht mit Repo-Secrets. Dort
 
 Für Live-Betrieb **alle** Stellen gemeinsam auf `live` setzen: Supabase-Secret
 `STRIPE_MODE`, Repo-Secret `VITE_STRIPE_MODE` und die Pages-Build-Variable
-`VITE_STRIPE_MODE`. Weicht der Frontend-Modus ab, bricht der Checkout mit
-`STRIPE_MODE_MISMATCH` ab, sobald der Server eine Live-Session meldet.
+`VITE_STRIPE_MODE`. Steht das Frontend auf Test, leitet der Checkout nur weiter,
+wenn der Server ausdrücklich `stripe_mode: "test"` meldet; sonst (Live-Session
+oder Edge Function ohne Modus-Angabe, etwa vor dem Deploy dieser Functions)
+bricht er mit `STRIPE_MODE_MISMATCH` ab. Deshalb die Edge Functions vor oder
+zusammen mit dem Frontend deployen.
 Price-IDs liegen im Frontend nicht vor: Die `VITE_STRIPE_PRICE_*`-Variablen
 werden im Code nicht gelesen.
 

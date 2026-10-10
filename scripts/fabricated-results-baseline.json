@@ -22,6 +22,20 @@
       "seit": "2026-09-14"
     },
     {
+      "datei": "src/components/landing/v4/heroEarthScene.ts",
+      "fundstellen": 8,
+      "art": "ZUFALL",
+      "grund": "Sternenfeld der 3D-Erde im Hero: Position, Farbton und Groesse von 1800 Partikeln. Dekoration; eine feste Liste saehe gleichfoermig aus. Kein Wert wird als Messung gelesen.",
+      "seit": "2026-10-10"
+    },
+    {
+      "datei": "src/components/landing/v4/LandingV4Sections.tsx",
+      "fundstellen": 1,
+      "art": "DEMO",
+      "grund": "`hash()` fuellt die Zellen des Evidence-Ledgers im Dashboard-Mock (0x + 6 Hex-Zeichen, wechselt alle 2200 ms). Der Mock traegt sichtbar das Badge 'Beispielansicht' und die Zeile 'Beispieldaten – keine echten Messwerte' (v4DashExampleBadge/-Note). Faellt diese Kennzeichnung weg, wird daraus ein BEFUND.",
+      "seit": "2026-10-10"
+    },
+    {
       "datei": "src/components/landing/WorkspacePreviewSection.tsx",
       "fundstellen": 1,
       "art": "DEMO",

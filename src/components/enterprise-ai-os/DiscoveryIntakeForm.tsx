@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { getSupabaseUrl } from '../../lib/supabaseUrl';
-
-const SUPABASE_URL = getSupabaseUrl();
+import { useOptionalTenant } from '../../core/access/TenantProvider';
+import { submitDiscoveryIntake } from '../../lib/enterprise-ai-os/discovery';
 
 const DATA_CATEGORY_OPTIONS = [
   { value: 'personal_data', label: 'Personenbezogene Daten' },
@@ -24,6 +23,9 @@ export function DiscoveryIntakeForm({
   const [error, setError] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{ registryId: string; riskLevel: string } | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Mandant aus den eigenen Mitgliedschaften; der Server prüft Rolle und Mitgliedschaft erneut.
+  const tenantState = useOptionalTenant();
+  const tenantId = tenantState?.activeTenantId ?? null;
 
   function toggleCategory(value: string) {
     setSelectedCategories((prev) =>
@@ -33,8 +35,8 @@ export function DiscoveryIntakeForm({
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!SUPABASE_URL) {
-      setError('Supabase ist nicht konfiguriert.');
+    if (!tenantId) {
+      setError('Bitte anmelden — die Meldung wird einem Mandanten zugeordnet.');
       return;
     }
 
@@ -50,28 +52,14 @@ export function DiscoveryIntakeForm({
       containsPersonalData: form.get('containsPersonalData') === 'on',
       containsSensitiveData: form.get('containsSensitiveData') === 'on',
       comment: String(form.get('comment') || '') || undefined,
-      actor: 'self-assessment',
     };
 
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/enterprise-ai-os-discovery-intake`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        },
-      );
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body?.ok) {
-        throw new Error(body?.error ?? `HTTP ${res.status}`);
-      }
-      const registryId = body.registry?.id as string;
-      const riskLevel = (body.runs?.risk?.riskLevel as string) ?? 'unknown';
-      setSuccessInfo({ registryId, riskLevel });
-      onSuccess?.(registryId);
+      const result = await submitDiscoveryIntake(tenantId, payload);
+      setSuccessInfo(result);
+      onSuccess?.(result.registryId);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -149,9 +137,15 @@ export function DiscoveryIntakeForm({
         </div>
       )}
 
+      {!tenantId && !tenantState?.loading && (
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
+          Melden erfordert eine Anmeldung mit schreibender Rolle in einem Mandanten.
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !tenantId}
         className="w-full rounded-2xl bg-[#d4af37] px-6 py-3 text-sm font-semibold text-black disabled:opacity-60"
       >
         {loading ? 'Sende …' : 'KI-System melden'}

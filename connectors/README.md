@@ -24,7 +24,7 @@ Connectors targeten den Telemetry-Endpoint:
 ```
 POST https://realsyncdynamicsai.de/api/telemetry/ai-event
 Headers:
-  x-rsd-tenant-key: <tenant uuid>
+  x-rsd-tenant-key: rsd_gov_…   (Ingest-API-Key, nicht die Mandanten-UUID)
   content-type:    application/json
 ```
 

@@ -30,6 +30,7 @@
 import type { BlockKind, SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import { applySiteDesignTemplate, designTemplateById, isDesignTemplate, type DesignTemplate } from '../render/templates.ts';
 import type { SiteBrief } from './brief.ts';
+import { recompileCompliance } from './pages.ts';
 import { briefFromBlueprint } from './refine.ts';
 import { buildBlock, slugify } from './synthesize.ts';
 
@@ -176,7 +177,12 @@ export function applyPageEdits(blueprint: SiteBlueprint, edits: PageEdit[]): Edi
     }
   }
 
-  return { blueprint: { ...blueprint, pages }, changes, rejected };
+  const next = { ...blueprint, pages };
+  return {
+    blueprint: changes.length > 0 ? recompileCompliance(next) : next,
+    changes,
+    rejected,
+  };
 }
 
 export interface ThemeChange {

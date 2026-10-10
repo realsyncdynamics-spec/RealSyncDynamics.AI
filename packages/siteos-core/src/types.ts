@@ -48,7 +48,18 @@ export type BlockKind =
   | 'cta'
   | 'legal-text'
   | 'ai-disclosure'
-  | 'footer';
+  | 'footer'
+  // Rebuild-Komponenten (2026-09-29). Jede trägt nur belegte Inhalte:
+  // Trust-Leiste, Preise, Referenzen und Ablauf entstehen aus der
+  // Ausgangsseite oder bleiben leer (und werden dann nicht ausgeliefert).
+  | 'trust-bar'
+  | 'problem-solution'
+  | 'process'
+  | 'pricing'
+  | 'case-study'
+  | 'contact-info'
+  | 'governance'
+  | 'automation';
 
 /** Analyse-Dimensionen der Runtime. Deckt die acht Pflicht-Scans ab. */
 export type Dimension =
@@ -117,6 +128,17 @@ export interface SiteSeo {
   structuredDataType: string;
   /** Geo-Signal für lokale Suche. */
   locality: string | null;
+  /**
+   * Belegte Kontaktdaten für JSON-LD (Rebuild-Workflow). Optional: fehlt es,
+   * bleibt das ausgelieferte JSON-LD unverändert.
+   */
+  organization?: {
+    telephone?: string;
+    email?: string;
+    streetAddress?: string;
+    postalCode?: string;
+    sameAs?: string[];
+  };
 }
 
 /**
@@ -144,6 +166,80 @@ export interface BlueprintOrigin {
   /** SHA-256 des Prompts — der Prompt selbst wird nicht dupliziert. */
   promptSha256: string | null;
   createdAt: string;
+  /**
+   * Nur Rebuild (`source: 'import'`): Analyse-Lauf und Snapshot-Hash der
+   * Ausgangsseite, aus denen die Site abgeleitet wurde.
+   *
+   * Serverseitig beim Übernehmen einer Richtung gesetzt; Redaktion und
+   * Überarbeitung tragen es unverändert weiter (sie ändern `origin` nicht).
+   * Damit steht die Bindung im Hash jeder Version: Publish Gate, Status und
+   * Export laden den Backend-Vergleich über genau diesen Lauf — nicht über
+   * „den zuletzt bearbeiteten Lauf zu dieser Adresse".
+   */
+  rebuild?: { runId: string; snapshotSha256: string };
+}
+
+/**
+ * Kontrolliertes Design-System einer Site (Rebuild-Workflow).
+ *
+ * Ergänzt `SiteTheme`, ersetzt es nicht: Das Theme bleibt die Quelle für die
+ * Kontrastprüfung und das Kern-Stylesheet. Das Design-System legt fest, WIE
+ * gestaltet wird — Schrift-Skala, Abstände, Kartenstil, Schaltflächen,
+ * Hero-Variante — aus einer festen Menge von Varianten statt aus freiem CSS.
+ *
+ * Optional: Blueprints ohne `design` werden unverändert gerendert, ihre
+ * Hashes bleiben byte-gleich (`undefined` fällt bei der Kanonisierung weg).
+ */
+export interface DesignSpec {
+  version: 1;
+  /** Gestaltungsrichtung, aus der das System abgeleitet wurde (z. B. `clean-enterprise`). */
+  direction: string;
+  mode: 'light' | 'dark';
+  palette: {
+    accent: string;
+    /** Textfarbe auf dem Akzent (Schaltflächen), AA-geprüft. */
+    accentText: string;
+    surface: string;
+    /** Zweite Fläche für abgesetzte Bänder und Karten. */
+    surfaceAlt: string;
+    foreground: string;
+    muted: string;
+    line: string;
+  };
+  typography: {
+    display: string;
+    body: string;
+    displayWeight: 600 | 700 | 800;
+    scale: 'compact' | 'regular' | 'expressive';
+    tracking: 'normal' | 'tight';
+  };
+  radius: { control: number; card: number };
+  spacing: 'compact' | 'regular' | 'airy';
+  elevation: 'flat' | 'soft';
+  cards: 'bordered' | 'elevated' | 'tinted';
+  sections: 'plain' | 'banded';
+  buttons: { primary: 'solid' | 'pill'; secondary: 'outline' | 'ghost' };
+  hero: 'split' | 'centered' | 'editorial';
+  ctaEmphasis: 'standard' | 'strong';
+  /** Primäre Handlungsaufforderung zusätzlich im Kopfbereich. */
+  headerCta: boolean;
+  motion: 'none' | 'subtle';
+  /** Herleitung in Sätzen — für Oberfläche und Prüfpfad. */
+  notes: string[];
+  /**
+   * Markensignale der Ausgangsseite, aus denen das System abgeleitet wurde.
+   * Erlaubt einer Verfeinerung („mehr wie Premium-Beratung"), die Richtung
+   * neu abzuleiten, ohne die Ausgangsseite erneut zu lesen — und ohne dass
+   * sich die Marke bei jedem Richtungswechsel ein Stück verschiebt.
+   */
+  brand?: {
+    color: string | null;
+    displayFamily: string | null;
+    bodyFamily: string | null;
+    radiusPx: number | null;
+    pill: boolean;
+    dark: boolean;
+  };
 }
 
 /**
@@ -163,6 +259,8 @@ export interface SiteBlueprint {
   seo: SiteSeo;
   compliance: ComplianceProfile;
   origin: BlueprintOrigin;
+  /** Design-System aus dem Rebuild-Workflow; fehlt bei älteren Blueprints. */
+  design?: DesignSpec;
 }
 
 // ─────────────────────────────────────────────────────────────────────

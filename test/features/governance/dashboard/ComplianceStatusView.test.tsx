@@ -406,9 +406,18 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('runtime-event-stream').textContent).toMatch(/Keine Runtime-Events/);
     expect(getByTestId('policy-coverage').textContent).toMatch(/KPI-Snapshot fehlt/);
     expect(getByTestId('alerts-rail').textContent).toMatch(/24h-Summary/);
-    expect(getByText('DSGVO')).toBeInTheDocument();
-    expect(getByText('TISAX')).toBeInTheDocument();
-    expect(getByText('DORA')).toBeInTheDocument();
+    // Rahmenwerke erscheinen im Framework-Strip und in der Command-Center-Übersicht.
+    const strip = getByTestId('framework-strip');
+    expect(strip.textContent).toMatch(/DSGVO/);
+    expect(strip.textContent).toMatch(/TISAX/);
+    expect(strip.textContent).toMatch(/DORA/);
+    // Übersicht (Landing-v4-Layout): keine erfundenen Werte.
+    const fw = getByTestId('overview-frameworks');
+    expect(fw.textContent).toMatch(/NOCH KEINE DATEN/);
+    expect(fw.textContent).not.toMatch(/\d+\s*%/);
+    expect(getByTestId('overview-evidence-chain').textContent).toMatch(/Noch keine Governance-Events/);
+    expect(getByTestId('overview-agent-intent').textContent).toMatch(/Session starten/);
+    void getByText;
   });
 
   it('renders real runtime events and asset flows when provided', () => {

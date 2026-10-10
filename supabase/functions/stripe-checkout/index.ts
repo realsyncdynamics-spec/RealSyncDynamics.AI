@@ -33,7 +33,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE, PRICING_TAX_NOTE_EXEMPT } from '../_shared/pricing.generated.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 import {
   resolveStripeSecretKey,
@@ -297,6 +297,11 @@ Deno.serve(async (req) => {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,
         metadata: { tenant_id: body.tenant_id, ...stripeModeMetadata(stripeMode) },
+        // Neue Kunden erhalten den §19-Hinweis auch auf Folgeabrechnungen.
+        // Bestehende Stripe-Kunden/deren Rechnungs-Defaults werden nicht geändert.
+        ...(PRICING_TAX_MODE === 'EXEMPT'
+          ? { invoice_settings: { footer: PRICING_TAX_NOTE_EXEMPT } }
+          : {}),
       });
       stripeCustomerId = customer.id;
     }
@@ -324,7 +329,12 @@ Deno.serve(async (req) => {
             },
             // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
             // B2B-Kauf muss ein Belegdokument existieren.
-            invoice_creation: { enabled: true },
+            invoice_creation: {
+              enabled: true,
+              ...(PRICING_TAX_MODE === 'EXEMPT'
+                ? { invoice_data: { footer: PRICING_TAX_NOTE_EXEMPT } }
+                : {}),
+            },
           }
         : { subscription_data: subscriptionData }),
       success_url: successUrl,

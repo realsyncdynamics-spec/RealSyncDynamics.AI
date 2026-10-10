@@ -248,6 +248,10 @@ verify_jwt = false
 [functions.audit-drip-cron]
 verify_jwt = false
 
+# audit-monitor-cron: pg_cron 'audit-monitor-daily' (04:00 UTC), Re-Scan der
+# monitored_domains. Bearer ist der dedizierte Key aus Vault
+# cron_audit_monitor_key, gemappt auf das Function Secret
+# CRON_AUDIT_MONITOR_KEY. Fail-closed: ohne Secret 500, sonst 401.
 [functions.audit-monitor-cron]
 verify_jwt = false
 

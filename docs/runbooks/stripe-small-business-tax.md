@@ -31,6 +31,12 @@ Stripe-Sandbox `RealSync Dynamics IA Sandbox`, `livemode=false`:
 - **Offener Befund:** `footer=null`, kein §-19-Hinweis; `invoice_pdf=null`, weil nur unverbindliche Preview.
 - Einrichtung des korrekten Invoice-Footers/Invoice-Templates in der Sandbox und anschließend ein tatsächlicher Checkout-Test stehen aus. Der Preview-Erfolg beweist nicht, dass PR #1819 über Supabase deployt oder dass ein Abo-Zyklus funktioniert.
 
+## Neue Kunden-/Einmalrechnung-Footer im PR #1819
+
+Nach der Checkout-Korrektur wird für **neu erstellte Stripe-Customer** bei `EXEMPT` der Footer `PRICING_TAX_NOTE_EXEMPT` in `invoice_settings.footer` gesetzt. Für `payment`-Checkout (Einmalkauf) wird der gleiche Text ausdrücklich in `invoice_creation.invoice_data.footer` übertragen. Bestehende Customer-Defaults werden nicht überschrieben; dafür ist weiterhin eine Stripe-Kontoeinstellung / geprüfte Migration erforderlich.
+
+**Sandbox-Nachweis, 10.10.2026:** Testkunde `cus_VPhKiuivjzVj1H` mit `invoice_settings.footer` angelegt; unverbindliche Rechnungsvorschau `in_1UOrwKIEauIvbZDCwuptkS6L` zu 349,00 €, `automatic_tax.enabled=false`, `total_taxes=[]`, §-19-Footer sichtbar, kein PDF und keine endgültige Rechnung.
+
 ## Validierung
 
 ```sh

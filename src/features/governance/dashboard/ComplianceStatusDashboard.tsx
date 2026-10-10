@@ -5,6 +5,7 @@
 // Daten aus denselben RLS-Quellen wie das CEO-Cockpit. Keine Mock-Fallbacks.
 
 import { useEffect, useState } from 'react';
+import { brandButtonClass } from '../../../components/brand';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity, AlertTriangle, ArrowRight, Bot, Clock, ChevronRight, FileCheck2, Globe2, LayoutTemplate, Loader2, Lock,
@@ -62,6 +63,7 @@ import {
   type BootstrapStep,
 } from './workspaceBootstrapSteps';
 import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
+import { CommandCenterOverview } from './CommandCenterOverview';
 
 export function ComplianceStatusDashboard() {
   const { activeTenantId, tenants } = useTenant();
@@ -152,9 +154,9 @@ export function ComplianceStatusDashboard() {
 
 function DashboardControlPlane() {
   const tools = [
-    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[#00B8D4]' },
+    { href: '/app/bots', label: 'AI Agents & Bots', text: 'Bots anlegen, Kanäle und Fähigkeiten verwalten.', icon: Bot, accent: 'text-[var(--brand-champ)]' },
     { href: '/app/agents', label: 'Agent Runtime', text: 'Enterprise-Agenten starten und Runs überwachen.', icon: Sparkles, accent: 'text-[#C9D1E0]' },
-    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[#00B8D4]' },
+    { href: '/build', label: 'Frontend & Landing Builder', text: 'Prompt → Website → Vorschau mit SiteOS.', icon: LayoutTemplate, accent: 'text-[var(--brand-champ)]' },
     { href: '/build?kind=web_app', label: 'Web App Builder', text: 'Web-App über den kanonischen Build-Studio-Einstieg starten.', icon: Globe2, accent: 'text-emerald-300' },
   ];
 
@@ -162,18 +164,18 @@ function DashboardControlPlane() {
     <section aria-label="Build and Agent Control Plane" data-testid="dashboard-control-plane" className="mt-4 rounded-2xl border border-titanium-800 bg-obsidian-900/90 overflow-hidden">
       <div className="px-5 py-4 border-b border-titanium-900 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4]">Operate · Build · Automate</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--brand-champ)]">Operate · Build · Automate</p>
           <h2 className="mt-1 text-base font-semibold text-titanium-50">AI Control Plane</h2>
           <p className="mt-1 text-xs text-titanium-400">Direkter Zugriff auf Bots, Agenten und die produktiven SiteOS-Build-Flows.</p>
         </div>
-        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-titanium-50">Alle Module →</Link>
+        <Link to="/app/modules" className="text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-titanium-50">Alle Module →</Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
         {tools.map(({ href, label, text, icon: Icon, accent }) => (
-          <Link key={href} to={href} className="group bg-obsidian-900 px-5 py-4 hover:bg-obsidian-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00B8D4]">
+          <Link key={href} to={href} className="group bg-obsidian-900 px-5 py-4 hover:bg-obsidian-800 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--brand-champ)]">
             <div className="flex items-center justify-between gap-3">
               <Icon className={`h-5 w-5 ${accent}`} />
-              <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-[#00B8D4] transition-colors" />
+              <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-[var(--brand-champ-hi)] transition-colors" />
             </div>
             <p className="mt-4 text-sm font-semibold text-titanium-50">{label}</p>
             <p className="mt-1 text-xs leading-5 text-titanium-400">{text}</p>
@@ -263,8 +265,8 @@ export function ComplianceStatusView({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-titanium-900 pb-4">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4] flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#00B8D4] animate-pulse" aria-hidden />
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--brand-champ)] flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand-champ)] animate-pulse" aria-hidden />
             Governance Command Center
           </p>
           <h1 className="font-display font-bold text-titanium-50 tracking-tight mt-1 text-[clamp(1.25rem,1rem+1.2vw,1.75rem)]">
@@ -320,13 +322,13 @@ export function ComplianceStatusView({
             <button
               type="button"
               onClick={() => navigate('/app/billing')}
-              className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+              className={brandButtonClass({ size: 'md' })}
             >
               Abrechnung prüfen <ArrowRight className="h-4 w-4" />
             </button>
             <Link
               to="/pricing"
-              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-medium hover:border-[#00B8D4] hover:text-[#00B8D4]"
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-medium hover:border-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]"
             >
               Pläne
             </Link>
@@ -336,11 +338,11 @@ export function ComplianceStatusView({
 
       {postCheckoutUnlocked && activeTenantId && (
         <div
-          className="border border-[#00B8D4]/25 bg-[#00B8D4]/5 p-5 space-y-3"
+          className="border border-[var(--brand-line-dark-strong)] bg-[rgba(242,201,138,0.05)] p-5 space-y-3"
           data-testid="post-checkout-domain-cta"
         >
           <div className="flex items-start gap-3">
-            <Globe2 className="h-5 w-5 text-[#00B8D4] mt-0.5 shrink-0" />
+            <Globe2 className="h-5 w-5 text-[var(--brand-champ)] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-sm font-semibold text-titanium-50">
                 Abo aktiv{livePlanId ? ` · ${livePlanId}` : postCheckoutPlan ? ` · ${postCheckoutPlan}` : ''}
@@ -359,7 +361,7 @@ export function ComplianceStatusView({
           <button
             type="button"
             onClick={() => navigate('/app/websites')}
-            className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+            className={brandButtonClass({ size: 'md' })}
           >
             Domain hinterlegen <ArrowRight className="h-4 w-4" />
           </button>
@@ -375,7 +377,7 @@ export function ComplianceStatusView({
           </p>
           <Link
             to="/welcome?next=/app/dashboard"
-            className="mt-4 inline-flex items-center gap-2 text-[#00B8D4] text-sm font-semibold"
+            className="mt-4 inline-flex items-center gap-2 text-[var(--brand-champ)] text-sm font-semibold"
           >
             Workspace einrichten <ArrowRight className="h-4 w-4" />
           </Link>
@@ -408,7 +410,7 @@ export function ComplianceStatusView({
       {isEmptyTenant && (
         <div className="border border-titanium-800 bg-obsidian-900 p-6 space-y-4" data-testid="empty-tenant-cta">
           <div className="flex items-start gap-4">
-            <Rocket className="h-6 w-6 text-[#00B8D4] mt-0.5 shrink-0" />
+            <Rocket className="h-6 w-6 text-[var(--brand-champ)] mt-0.5 shrink-0" />
             <div>
               <h2 className="text-lg font-semibold text-titanium-50">Noch keine Governance-Daten</h2>
               <p className="text-sm text-titanium-300 mt-1">
@@ -422,7 +424,7 @@ export function ComplianceStatusView({
               type="button"
               data-testid="cta-domain-hinterlegen"
               onClick={() => navigate('/app/websites')}
-              className="inline-flex items-center justify-center gap-2 bg-[#1E5AFF] hover:bg-[#1641C4] text-white px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
+              className={brandButtonClass({ size: 'md' })}
             >
               Domain hinterlegen
             </button>
@@ -459,6 +461,8 @@ export function ComplianceStatusView({
 
       {data && !isEmptyTenant && (
         <>
+          {/* Landing-v4-„Compliance Command Center“ mit echten Daten (keine Demo-Werte). */}
+          <CommandCenterOverview data={data} tenantName={tenantName} planLabel={livePlanId} />
           {/* Zone 1 — Top KPI strip (cockpit-derived; separate from score history row) */}
           <section aria-label="KPI-Strip">
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
@@ -506,7 +510,7 @@ export function ComplianceStatusView({
               {data.summary24h && (
                 <section data-testid="summary-24h">
                   <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-[#00B8D4]" />
+                    <Clock className="h-4 w-4 text-[var(--brand-champ)]" />
                     <h2 className="font-display font-semibold text-titanium-50 text-sm">Letzte 24 Stunden</h2>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
@@ -569,7 +573,7 @@ function EventStreamPanel({
         title="Event-Stream"
         subtitle="Neueste Governance-Events aus dem Mandanten."
         action={(
-          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+          <Link to="/app/monitoring" className="text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
             Monitoring →
           </Link>
         )}
@@ -638,7 +642,7 @@ function RiskDistributionPanel({
             ? 'Noch keine Assets mit Risk-Score.'
             : `${assetCount} Assets nach Risk-Score.`}
         action={(
-          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+          <Link to="/app/risks" className="text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
             Risiken →
           </Link>
         )}
@@ -696,7 +700,7 @@ function AssetFlowsPanel({
                   to={flow.href}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-obsidian-800 transition-colors"
                 >
-                  <Radar className="h-3.5 w-3.5 text-[#00B8D4] shrink-0" />
+                  <Radar className="h-3.5 w-3.5 text-[var(--brand-champ)] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-titanium-50">{flow.label}</p>
                     <p className="text-[10px] font-mono text-titanium-500 mt-0.5">
@@ -735,7 +739,7 @@ function PolicyCoveragePanel({
             title={packsLockTitle ?? undefined}
             data-locked={packsLockTitle ? 'true' : 'false'}
             data-testid="policy-coverage-packs-link"
-            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]"
+            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]"
           >
             {packsLockTitle && <Lock className="h-3 w-3" aria-label={packsLockTitle} />}
             Packs →
@@ -888,7 +892,7 @@ function CriticalFindingsRail({
           title="Offene Alerts"
           subtitle={summary ? 'Aus dem 24h-Summary.' : summaryFailed ? '24h-Summary konnte nicht geladen werden.' : '24h-Summary noch nicht verfügbar.'}
           action={(
-            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+            <Link to="/app/alerts" className="text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
               Alle →
             </Link>
           )}
@@ -1031,10 +1035,10 @@ function FrameworkStrip() {
   return (
     <section data-testid="framework-strip" aria-label="Compliance-Frameworks">
       <div className="flex items-center gap-2 mb-3">
-        <ShieldCheck className="h-4 w-4 text-[#00B8D4]" />
+        <ShieldCheck className="h-4 w-4 text-[var(--brand-champ)]" />
         <h2 className="font-display font-semibold text-titanium-50 text-sm">Frameworks</h2>
         <div className="flex-1 h-px bg-titanium-900" />
-        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-[#00B8D4] hover:text-[#00B8D4]">
+        <Link to="/app/governance/frameworks" className="text-[10px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
           Übersicht →
         </Link>
       </div>
@@ -1097,7 +1101,7 @@ function ComplianceKpiStrip({
     <section aria-label="Compliance-KPI" data-testid="compliance-kpi-row">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00B8D4]">Compliance</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--brand-champ)]">Compliance</p>
           <h2 className="text-sm font-semibold text-titanium-50 mt-0.5">Score · Trend · Findings · Incidents</h2>
         </div>
         <p className="text-[10px] font-mono text-titanium-600 hidden sm:block">
@@ -1176,7 +1180,7 @@ function GovernanceKpiScoreCard({
             <button
               type="button"
               onClick={onRetry}
-              className="mt-2 text-[11px] font-mono uppercase tracking-wider text-[#00B8D4] hover:underline"
+              className="mt-2 text-[11px] font-mono uppercase tracking-wider text-[var(--brand-champ)] hover:underline"
             >
               Erneut laden
             </button>
@@ -1241,7 +1245,7 @@ function TrendMetricCard({ direction }: { direction: RiskTrendDirection | null }
   const tone =
     direction === 'improving' ? 'text-emerald-400'
       : direction === 'declining' ? 'text-orange-400'
-        : direction === 'stable' ? 'text-[#00B8D4]'
+        : direction === 'stable' ? 'text-[var(--brand-champ)]'
           : 'text-titanium-600';
 
   return (
@@ -1471,7 +1475,7 @@ function CoverageRow({ label, percent }: { label: string; percent: number }) {
         <span className="font-mono text-sm font-bold text-titanium-50">{pct}%</span>
       </div>
       <div className="mt-2 h-1.5 bg-titanium-900 w-full">
-        <div className="h-full bg-[#00B8D4] transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-[var(--brand-champ)] transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

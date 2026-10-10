@@ -1,0 +1,38 @@
+{
+  // Governed Browser Executor auf Cloudflare Browser Run.
+  //
+  // Ersetzt den Executor-Container (Hostinger-VPS läuft am 2026-10-04 aus)
+  // mit demselben HTTP-Vertrag; browser-execute spricht ihn über die
+  // Supabase-Secrets PLAYWRIGHT_SCANNER_URL / PLAYWRIGHT_SCANNER_KEY.
+  //
+  // NICHT automatisch deployt: es gibt bewusst keinen Deploy-Workflow.
+  // Inbetriebnahme nur nach ausdrücklichem GO — Schritte in README.md.
+  //
+  // Secrets stehen NICHT hier:
+  //   wrangler secret put SCANNER_API_KEY   (= PLAYWRIGHT_SCANNER_KEY in Supabase)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "browser-run-executor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-30",
+  // @cloudflare/playwright braucht nodejs_compat (Datum ab 2025-09-15).
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+
+  "browser": { "binding": "BROWSER" },
+
+  // Eine Executor-Session = ein Durable Object (Name = executor_session_id),
+  // angesprochen in der EU-Jurisdiktion (router.ts).
+  "durable_objects": {
+    "bindings": [{ "name": "SESSIONS", "class_name": "ExecutorSession" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ExecutorSession"] }],
+
+  "vars": {
+    // 10 gleichzeitige Browser sind im Workers-Paid-Plan enthalten.
+    "MAX_SESSIONS": "10",
+    // Ausnahmen für private Hosts: leer lassen.
+    "EXECUTOR_PRIVATE_HOST_ALLOWLIST": ""
+  },
+
+  "observability": { "enabled": true }
+}

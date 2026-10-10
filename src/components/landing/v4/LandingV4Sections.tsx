@@ -228,17 +228,19 @@ export function V4Hero() {
           <LoopArrow />
           Prove
         </p>
+        <p className="eu-line">{t('v4HeroNutzen')}</p>
         <p className="lede" data-testid="v4-hero-lede">
           {t('v4HeroLede1')}
           <br />
           {t('v4HeroLede2')}
         </p>
+        <p className="eu-line">{t('v4HeroTrust')}</p>
         <div className="cta-row">
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
             Free Governance Audit <Arrow />
           </Link>
           <Link className="btn-ghost" to={V4_ROUTES.runtime}>
-            Runtime ansehen
+            {t('v4HeroSecondaryCta')}
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>

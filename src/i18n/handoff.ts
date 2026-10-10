@@ -381,12 +381,15 @@ export const HANDOFF_EXTRA = {
     pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
     pricingDisclaimerAfter:
       ', weil das niemand seriös kann. Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.',
-    // Landing v4 Hero (H1 + Lede). Produktname bleibt EN; „für Europa" lokalisiert.
+    // Landing v4 Hero. Produktname bleibt EN; Hero-Copy lokalisiert.
     v4HeroTitleA: 'AI Compliance',
     v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'für Europa',
+    v4HeroTitleEm: 'für regulierte KI',
     v4HeroLede1: 'Runtime-Governance für regulierte KI.',
-    v4HeroLede2: 'Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+    v4HeroLede2: 'Kontinuierliche Evidenz statt einmaliger Audits. Menschliche Kontrolle. EU-nativ by Design.',
+    v4HeroNutzen: 'Inventar in Sekunden · Risiken nach Artikel · Policies durchsetzen · Evidence versiegeln',
+    v4HeroTrust: 'EU-Hosting Frankfurt · Hash-Chain Evidence · URL genügt · kein Account nötig',
+    v4HeroSecondaryCta: 'Dashboard ansehen',
     // Landing v4 Workspace-Vorschau — sichtbare Beispiel-Kennzeichnung (keine Fake-KPIs).
     v4DashExampleBadge: 'Beispielansicht',
     v4DashExampleNote:
@@ -487,9 +490,12 @@ export const HANDOFF_EXTRA = {
       ', because nobody can seriously make that claim. We recommend having generated documents reviewed by counsel.',
     v4HeroTitleA: 'AI Compliance',
     v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'for Europe',
+    v4HeroTitleEm: 'for regulated AI',
     v4HeroLede1: 'Runtime governance for regulated AI.',
-    v4HeroLede2: 'Continuous evidence. Human control. EU-native by design.',
+    v4HeroLede2: 'Continuous evidence instead of one-off audits. Human control. EU-native by design.',
+    v4HeroNutzen: 'Inventory in seconds · Risks by article · Enforce policies · Seal evidence',
+    v4HeroTrust: 'EU hosting in Frankfurt · Hash-chain evidence · A URL is enough · No account needed',
+    v4HeroSecondaryCta: 'View dashboard',
     v4DashExampleBadge: 'Example view',
     v4DashExampleNote:
       'Example data – not real measurements. Your values come from your own scan.',

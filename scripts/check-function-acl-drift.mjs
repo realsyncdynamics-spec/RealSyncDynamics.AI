@@ -119,6 +119,9 @@ const FORBIDDEN_CLIENT = [
   'ai_evidence_purge_expired',
   // Gate 2 (20260928140100): schreibt in die Evidence-Kette, nur service_role.
   'append_governance_evidence',
+  // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
+  'marketing_consent_before_insert',
+  'marketing_consent_before_update',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

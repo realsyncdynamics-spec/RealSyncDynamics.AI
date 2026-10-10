@@ -13,7 +13,9 @@
 //   SUPABASE_URL=https://<ref>.supabase.co node scripts/smoke-edge-functions.mjs
 //   node scripts/smoke-edge-functions.mjs plans siteos   # nur diese
 //
-// Exit 1, sobald eine Function PREFLIGHT-5XX liefert.
+// Exit 1, sobald eine Function PREFLIGHT-5XX oder PREFLIGHT-CORS liefert.
+// Geschickt wird ein vollstaendiger Browser-Preflight (Origin, Request-Method,
+// Request-Headers); SMOKE_ORIGIN ueberschreibt den Default-Origin.
 //
 // ── Zwei Fallen, die eine reine Statuscode-Zaehlung falsch machen ──
 //
@@ -40,6 +42,18 @@ const CONCURRENCY = 8;
 // Wortlaut der Plattform-Antwort fuer eine nicht existierende Function.
 const PLATFORM_NOT_FOUND = 'Requested function was not found';
 
+// Ein echter Browser-Preflight, nicht ein nacktes OPTIONS: ohne Origin und
+// Access-Control-Request-Method antworten manche Functions anders als auf den
+// Request, den der Browser tatsaechlich schickt. Die Header-Liste entspricht
+// dem, was supabase-js bei `functions.invoke` mitsendet.
+const ORIGIN = process.env.SMOKE_ORIGIN || 'https://realsyncdynamicsai.de';
+const REQUEST_HEADERS = ['authorization', 'x-client-info', 'apikey', 'content-type'];
+const PREFLIGHT_HEADERS = {
+  Origin: ORIGIN,
+  'Access-Control-Request-Method': 'POST',
+  'Access-Control-Request-Headers': REQUEST_HEADERS.join(', '),
+};
+
 if (!BASE) {
   console.error('SUPABASE_URL fehlt (z.B. https://<project-ref>.supabase.co)');
   process.exit(2);
@@ -53,23 +67,59 @@ function repoFunctions() {
     .sort();
 }
 
-function classify(status, body) {
+// Ein 2xx auf den Preflight reicht dem Browser nicht: ohne passenden
+// Access-Control-Allow-Origin verwirft er die Antwort, und ohne freigegebene
+// Header scheitert der Folgeaufruf an `apikey` oder `x-client-info`.
+//
+// Zwei Faelle sind bewusst KEIN Fehler, weil eine naive Pruefung hier
+// Fehlalarme liefert:
+// - Gar kein CORS-Header: Webhooks und Crons (telegram-webhook,
+//   whatsapp-webhook, ...) werden nie aus dem Browser gerufen. Das Urteil heisst
+//   KEIN-CORS und ist ein Hinweis, kein Abbruch.
+// - Allow-Methods ohne POST: eine Function, die nur GET deklariert, beschreibt
+//   sich selbst korrekt. Die Methode wird deshalb nicht geprueft.
+//
+// Als Fehler gilt nur, was erkennbar auf Browser-Zugriff angelegt ist und
+// trotzdem scheitert: Allow-Origin gesetzt, aber falsch, oder Header aus dem
+// Satz `authorization, x-client-info, apikey, content-type` fehlen. Das ist
+// genau der Satz, den supabase-js bei `functions.invoke` sendet und den
+// `_shared/gateway.ts` als Standard setzt.
+function corsGap(headers) {
+  const origin = headers.get('access-control-allow-origin');
+  if (!origin) return { verdict: 'KEIN-CORS', detail: 'keine CORS-Header (Server-zu-Server?)' };
+  if (origin !== '*' && origin !== ORIGIN) {
+    return { verdict: 'PREFLIGHT-CORS', detail: `Access-Control-Allow-Origin ist "${origin}"` };
+  }
+  const allowed = (headers.get('access-control-allow-headers') || '').toLowerCase();
+  if (allowed !== '*') {
+    const list = allowed.split(/\s*,\s*/);
+    const missing = REQUEST_HEADERS.filter((h) => !list.includes(h));
+    if (missing.length) {
+      return { verdict: 'PREFLIGHT-CORS', detail: `Access-Control-Allow-Headers ohne ${missing.join(', ')}` };
+    }
+  }
+  return null;
+}
+
+function classify(status, body, gap) {
   if (status === 404) {
     return body.includes(PLATFORM_NOT_FOUND) ? 'FEHLT' : 'ROUTET-404';
   }
   if (status >= 500) return 'PREFLIGHT-5XX';
   if (status === 401 || status === 403) return 'AUTH';
-  if (status < 400) return 'OK';
+  if (status < 400) return gap ? gap.verdict : 'OK';
   return `HTTP ${status}`;
 }
 
 async function probe(name) {
   const url = `${BASE}/functions/v1/${name}`;
   try {
-    const res = await fetch(url, { method: 'OPTIONS' });
+    const res = await fetch(url, { method: 'OPTIONS', headers: PREFLIGHT_HEADERS });
     // Nur bei 404 und 5xx noetig — sonst bleibt der Koerper ungelesen.
     const body = res.status === 404 || res.status >= 500 ? await res.text() : '';
-    return { name, status: res.status, verdict: classify(res.status, body), body: body.slice(0, 120) };
+    const gap = res.status < 400 ? corsGap(res.headers) : null;
+    const verdict = classify(res.status, body, gap);
+    return { name, status: res.status, verdict, body: (gap?.detail ?? body).slice(0, 120) };
   } catch (err) {
     return { name, status: 0, verdict: 'UNERREICHBAR', body: err.message };
   }
@@ -93,14 +143,16 @@ for (const [verdict, entries] of [...byVerdict].sort()) {
   for (const e of entries) console.log(`  ${e.name}`);
 }
 
-const broken = byVerdict.get('PREFLIGHT-5XX') ?? [];
+const broken = [...(byVerdict.get('PREFLIGHT-5XX') ?? []), ...(byVerdict.get('PREFLIGHT-CORS') ?? [])];
 const missing = byVerdict.get('FEHLT') ?? [];
 const routed = byVerdict.get('ROUTET-404') ?? [];
 
 console.log(
   `\n${results.length} geprueft · ${missing.length} nicht deployt · ` +
   `${routed.length} deployt ohne Handler auf dem Basispfad · ` +
-  `${broken.length} mit Preflight-5xx`);
+  `${(byVerdict.get('PREFLIGHT-5XX') ?? []).length} mit Preflight-5xx · ` +
+  `${(byVerdict.get('PREFLIGHT-CORS') ?? []).length} mit unvollstaendigen CORS-Headern · ` +
+  `${(byVerdict.get('KEIN-CORS') ?? []).length} ohne CORS (Hinweis)`);
 
 if (broken.length) {
   console.error('\nPreflight scheitert — aus dem Browser nicht aufrufbar:');

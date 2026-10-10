@@ -255,8 +255,9 @@ Claim — der kartenlose 14-Tage-Growth-Pilot oder der Stripe-Weg mit
    aus dem Client. Einhängepunkte: `Welcome.tsx`, Dashboard-NBA.
 2. **Governance Initialization verdrahten** — `tenant-audit` in den
    Kundenpfad hängen. Kein Neubau.
-3. **Domain Enrollment verdrahten** — `pilot_enroll_monitoring_source`
-   aufrufen, und getrennt davon klären, wer `governance_assets` erzeugt.
+3. **Domain Enrollment verdrahten** — **erledigt 2026-10-10** (#1846) im
+   `catalog`-Schritt von `provision-tenant`, der auch `governance_assets` anlegt.
+   Greift erst, wenn Schritt 2 den Boot aufruft.
 
 Erst wenn diese Kette eine nachweisbare Spur erzeugt
 (`scan_runs > 0`, `findings > 0`), ist der Boden für den Verdict Layer

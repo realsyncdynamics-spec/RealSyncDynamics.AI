@@ -16,9 +16,8 @@ export function SuccessPage() {
     <div className="max-w-md mx-auto text-center space-y-8 py-12">
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-titanium-50">
-            Ihr AI Governance Workspace ist vorbereitet.
-          </h1>
+          {/* Route ohne Auth-/Setup-Guard: keine Bereitstellung behaupten. */}
+          <h1 className="text-3xl font-bold text-titanium-50">Weiter zu Ihrem Dashboard.</h1>
           <p className="text-lg text-titanium-300">
             Als Nächstes: KI-Systeme erfassen und Pflichten nach EU AI Act und DSGVO zuordnen.
           </p>

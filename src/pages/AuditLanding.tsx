@@ -22,6 +22,7 @@ import {
   PostScanChoiceRow,
 } from '../components/audit/PostScanChoiceRow';
 import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
+import { saveFunnelContext } from '../core/onboarding/funnelContext';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -398,6 +399,12 @@ function GuidedPlanBlock({ report }: { report: Report }) {
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
+  // Scan für die Übernahme nach der Anmeldung festhalten: `claimPendingAudit()`
+  // liest den Trichter-Kontext, nicht `audit_id` aus der /welcome-URL.
+  React.useEffect(() => {
+    if (!report.audit_id) return;
+    saveFunnelContext({ auditId: report.audit_id, domain: report.domain });
+  }, [report.audit_id, report.domain]);
   const config = severityConfig(report.severity);
   const [explainIssue, setExplainIssue] = useState<Issue | null>(null);
   const critCount = report.issues.filter((i) => i.severity === 'critical').length;

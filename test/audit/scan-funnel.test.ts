@@ -119,6 +119,7 @@ describe('PostScanChoiceRow destinations', () => {
     expect(choices[0].title).toBe('Governance-Workspace einrichten');
     expect(choices[0].badge).toBe('live');
     expect(choices.filter((c) => c.primary)).toHaveLength(1);
+    expect(choices[0].primary).toBe(true);
     for (const c of choices) {
       expect(`${c.title} ${c.description}`).not.toMatch(/Tage kostenlos|testen|Trial/i);
       expect(c.to).not.toContain('/unified-entry/scan');

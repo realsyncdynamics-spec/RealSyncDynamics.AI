@@ -10,7 +10,8 @@
 //
 // Auth: Bearer == CRON_SCHEDULER_DISPATCH_KEY (Function secret). pg_cron
 // sends Vault `cron_scheduler_dispatch_key` via dispatch_cron_function.
-// verify_jwt = false; fail-closed if CRON_KEY is empty. Never compare
+// verify_jwt = false. Fail-closed: empty secret → 500 CRON_KEY_MISSING (no
+// work), wrong/missing bearer → 401 "cron only". Never compare
 // inbound Authorization to SUPABASE_SERVICE_ROLE_KEY (service_role is only
 // used after auth for PostgREST/admin).
 
@@ -79,8 +80,14 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   const CRON_KEY = Deno.env.get('CRON_SCHEDULER_DISPATCH_KEY') ?? '';
+  // Fehlendes Function Secret ist Fehlkonfiguration, kein fremder Aufrufer:
+  // 500 statt 401, damit Betrieb „Secret fehlt" von „Secret falsch" trennen
+  // kann (gleicher Vertrag wie email-auth-rescan). Weiterhin fail-closed.
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_SCHEDULER_DISPATCH_KEY not configured');
+  }
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (!CRON_KEY || authHeader !== `Bearer ${CRON_KEY}`) {
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonError(401, 'UNAUTHORIZED', 'cron only');
   }
 

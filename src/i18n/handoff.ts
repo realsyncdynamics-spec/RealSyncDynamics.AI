@@ -387,6 +387,16 @@ export const HANDOFF_EXTRA = {
     v4HeroTitleEm: 'für Europa',
     v4HeroLede1: 'Runtime-Governance für regulierte KI.',
     v4HeroLede2: 'Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+    // Landing v4 Workspace-Vorschau — sichtbare Beispiel-Kennzeichnung (keine Fake-KPIs).
+    v4DashExampleBadge: 'Beispielansicht',
+    v4DashExampleNote:
+      'Beispieldaten – keine echten Messwerte. Ihre Werte entstehen aus Ihrem eigenen Scan.',
+    v4DashExampleAria:
+      'Beispielansicht des Governance-Dashboards mit Beispieldaten, keine echten Messwerte',
+    // Landing v4 Roadmap — kundenorientierter Status, keine interne Registry-Sprache.
+    v4RoadmapLede:
+      'Was Sie heute nutzen können, was wir ausbauen und was als Nächstes kommt — ehrlich gekennzeichnet.',
+    v4RoadmapFilterAll: 'Alle',
   },
   en: {
     brandName: 'RealSync Dynamics',
@@ -480,6 +490,14 @@ export const HANDOFF_EXTRA = {
     v4HeroTitleEm: 'for Europe',
     v4HeroLede1: 'Runtime governance for regulated AI.',
     v4HeroLede2: 'Continuous evidence. Human control. EU-native by design.',
+    v4DashExampleBadge: 'Example view',
+    v4DashExampleNote:
+      'Example data – not real measurements. Your values come from your own scan.',
+    v4DashExampleAria:
+      'Example view of the governance dashboard with sample data, not real measurements',
+    v4RoadmapLede:
+      'What you can use today, what we are building, and what comes next — labelled honestly.',
+    v4RoadmapFilterAll: 'All',
   },
 } as const;
 

@@ -116,7 +116,8 @@ describe('Cron-Functions: Inbound-Auth', () => {
   it('scheduler-dispatch nutzt CRON_SCHEDULER_DISPATCH_KEY (nicht service_role JWT)', () => {
     const src = quelle('scheduler-dispatch');
     expect(src).toContain('CRON_SCHEDULER_DISPATCH_KEY');
-    expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+    expect(src).toMatch(/if \(!CRON_KEY\) \{\s*return jsonError\(500, 'CRON_KEY_MISSING'/);
+    expect(src).toContain("jsonError(401, 'UNAUTHORIZED', 'cron only')");
     expect(src).toMatch(/Bearer \$\{CRON_KEY\}/);
     expect(src).toMatch(/401/);
     expect(src).not.toMatch(

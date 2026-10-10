@@ -231,7 +231,7 @@ function Tile({ icon, label, source, testId, children }: {
       data-testid={testId}
       className="flex flex-col justify-between border border-titanium-900 bg-obsidian-900 px-4 py-3 min-h-[116px]"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00B8D4] flex items-center gap-1.5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--brand-champ)] flex items-center gap-1.5">
         {icon}
         {label}
       </p>
@@ -268,7 +268,7 @@ function TileLink({ to, label }: { to: string; label: string }) {
   return (
     <Link
       to={to}
-      className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[#00B8D4] hover:underline"
+      className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--brand-champ)] hover:underline"
     >
       {label} <ArrowRight className="h-3 w-3" aria-hidden />
     </Link>

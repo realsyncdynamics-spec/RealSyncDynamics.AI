@@ -3,9 +3,9 @@ import { useAgenticTerminal } from './useAgenticTerminal';
 import { Copy, ChevronRight } from 'lucide-react';
 
 const COMMAND_SUGGESTIONS = [
-  { cmd: '/scan', desc: 'Scan website for AI systems' },
+  { cmd: '/scan', desc: 'Where to run a real scan' },
   { cmd: '/upgrade', desc: 'Upgrade subscription tier' },
-  { cmd: '/audit', desc: 'Generate compliance audit' },
+  { cmd: '/audit', desc: 'Where audit reports are created' },
   { cmd: '/register', desc: 'Create account' },
   { cmd: '/pay', desc: 'Request invoice' },
   { cmd: '/help', desc: 'Show help' },

@@ -305,6 +305,13 @@ export function antwortUrsache(beispiel) {
     // kein JSON, weiter unten als Rohtext behandeln
   }
 
+  // Fehlendes Function Secret (500 CRON_KEY_MISSING) ist eine andere Ursache
+  // als ein falsches (401 "cron only"): Secret setzen statt Wert abgleichen.
+  const code = parsed?.error?.code ?? parsed?.code;
+  if (code === 'CRON_KEY_MISSING' || (!parsed && roh.includes('CRON_KEY_MISSING'))) {
+    return 'Function Secret fehlt (CRON_*_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md';
+  }
+
   const enthaeltCronOnly = (wert) => typeof wert === 'string' && wert.toLowerCase().includes('cron only');
   const cronOnlyText =
     enthaeltCronOnly(roh) ||
@@ -316,7 +323,6 @@ export function antwortUrsache(beispiel) {
     return 'Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md';
   }
 
-  const code = parsed?.error?.code ?? parsed?.code;
   const message = parsed?.error?.message ?? parsed?.message;
   if (code && message) return `${code}: ${message}`;
   if (message) return String(message);

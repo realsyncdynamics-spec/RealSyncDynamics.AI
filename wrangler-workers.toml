@@ -1,81 +1,34 @@
-# Cloudflare Workers configuration (Phase 2b Step 3 onwards)
+# Cloudflare Worker — isolated security baseline.
 #
-# This file is separate from wrangler.toml (Pages-only) to allow
-# independent Workers deployment and routing. Pages config remains
-# minimal and uncoupled from Workers infrastructure.
+# Live inventory (2026-10-10):
+# - existing script: realsyncdynamics (currently Hello World only)
+# - production zone: realsyncdynamicsai.de
+# - zone id: 47a3eccb84b03b4f62c9d713f5715736
+# - NO Worker route, custom domain or api.* DNS record
+# - NO R2 bucket
 #
-# Deployment:
-#   wrangler deploy --config wrangler-workers.toml
+# SECURITY GATE: this file intentionally declares NO route/custom_domain.
+# Do not add api.realsyncdynamicsai.de until the tenant-scoped handlers have
+# verified user -> membership -> tenant authorization and security tests pass.
 #
-# Environment:
-#   - production: live traffic (canary 5% for verify-jwt Worker)
-#   - staging: full staging environment
-#
-# Workers deployed:
-#   1. verify-jwt — JWT signature verification at edge (5% canary initially)
-#   2. kv-cache-layer — Policy/control caching with Redis fallback (Phase 2b+)
-#   3. r2-evidence — Evidence Vault dual-write handler (Phase 2b+)
+# Secrets are never committed. The current JWT verifier requires:
+#   SUPABASE_JWT_SECRET
+# and the public variable:
+#   SUPABASE_URL
+# Neither is provisioned by this PR and this PR does not deploy the Worker.
 
-name = "realsyncdynamics-workers"
+name = "realsyncdynamics"
 main = "src/workers/index.ts"
 compatibility_date = "2026-07-20"
 compatibility_flags = ["nodejs_compat"]
 
-# KV Namespaces (Edge caching layer)
-[[kv_namespaces]]
-binding = "POLICY_CACHE"
-id = "6c5f0c5d9e8b7a6f5e4d3c2b1a0f9e8d"
-preview_id = "preview-6c5f0c5d"
-
-[[kv_namespaces]]
-binding = "SESSION_CACHE"
-id = "7d6f1d6e0f9c8b7a6f5e4d3c2b1a0f9e"
-preview_id = "preview-7d6f1d6e"
-
-# R2 Buckets (Evidence Vault dual-write staging)
-[[r2_buckets]]
-binding = "EVIDENCE_VAULT"
-bucket_name = "realsyncdynamics-evidence-vault-prod"
-preview_bucket_name = "realsyncdynamics-evidence-vault-preview"
-
-# Secrets (sensitive config, set via wrangler secret put)
-# - SUPABASE_JWT_SECRET: Used to verify JWT signature locally
-# - SUPABASE_URL: Fallback for non-local verification paths
-# - ANTHROPIC_API_KEY: For future AI-at-edge features
-
-# Production environment (live traffic, canary enabled)
 [env.production]
-route = "https://api.realsyncdynamics.ai/api/*"
-zone_id = "1e8c3b4d5f6e7a8b9c0d1e2f3a4b5c6d"
+# Reference only: zone 47a3eccb84b03b4f62c9d713f5715736
+# No route is configured on purpose.
 
-# Routes with canary deployment for verify-jwt
-[[env.production.routes]]
-pattern = "https://api.realsyncdynamics.ai/api/auth/verify-jwt"
-zone_name = "realsyncdynamics.ai"
-custom_domain = true
+[[env.production.kv_namespaces]]
+binding = "POLICY_CACHE"
+id = "5bb700e74b83404caee6223533db1e90"
 
-# Canary deployment: 5% traffic to new Worker, 95% to current behavior
-[[env.production.canary]]
-enabled = true
-routes = [
-  { pattern = "https://api.realsyncdynamics.ai/api/auth/verify-jwt", percentage = 5 }
-]
-
-# Analytics & observability
-[analytics]
-enabled = true
-
-# Staging environment (100% traffic for full testing before production canary)
-[env.staging]
-route = "https://staging-api.realsyncdynamics.ai/api/*"
-zone_id = "2f9d4c5e6f7a8b9c0d1e2f3a4b5c6d7e"
-
-[[env.staging.routes]]
-pattern = "https://staging-api.realsyncdynamics.ai/api/auth/verify-jwt"
-zone_name = "staging.realsyncdynamics.ai"
-custom_domain = true
-
-# Observability & logging
 [observability]
 enabled = true
-logs = { request = true, response = true }

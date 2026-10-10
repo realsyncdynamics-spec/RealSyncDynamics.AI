@@ -133,7 +133,7 @@ export function ComplianceFrameworkSelector() {
                 className={`
                   text-left p-5 rounded-none border transition-all
                   ${accessible
-                    ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                    ? 'bg-obsidian-900 border-titanium-700 hover:border-[var(--brand-champ)] hover:bg-obsidian-800 cursor-pointer'
                     : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
                   }
                 `}
@@ -142,11 +142,11 @@ export function ComplianceFrameworkSelector() {
                   <div className="flex items-start gap-3 flex-1">
                     <div className={`w-10 h-10 rounded-none flex items-center justify-center shrink-0 ${
                       accessible
-                        ? 'bg-ai-cyan-500/10 border border-ai-cyan-500/30'
+                        ? 'bg-[rgba(242,201,138,0.1)] border border-[var(--brand-line-dark-strong)]'
                         : 'bg-amber-500/10 border border-amber-500/30'
                     }`}>
                       <Icon className={`w-5 h-5 ${
-                        accessible ? 'text-ai-cyan-400' : 'text-amber-600'
+                        accessible ? 'text-[var(--brand-champ)]' : 'text-amber-600'
                       }`} />
                     </div>
                     <div className="flex-1">

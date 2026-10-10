@@ -20,7 +20,7 @@
 // die abgeleiteten Befunde und Signale.
 
 import type { SiteObservation } from '../../../../packages/siteos-core/src/index.ts';
-import { validateScanTarget } from './target.ts';
+import { isPrivateAddressLiteral, validateScanTarget } from './target.ts';
 
 export const FETCH_TIMEOUT_MS = 12_000;
 export const MAX_HTML_BYTES = 1_500_000;
@@ -36,6 +36,40 @@ export const SCANNER_USER_AGENT =
 
 /** Nur zum Testen austauschbar — in Produktion das globale `fetch`. */
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Löst einen Hostnamen in IP-Adressen auf (A und AAAA). Eine leere Liste
+ * heißt: Der Host löst nicht auf. Nur zum Testen austauschbar — in
+ * Produktion `Deno.resolveDns`, siehe `defaultResolver()`.
+ */
+export type ResolveLike = (host: string, signal: AbortSignal) => Promise<string[]>;
+
+type DenoDns = {
+  resolveDns: (query: string, type: 'A' | 'AAAA', options?: { signal?: AbortSignal }) => Promise<string[]>;
+};
+
+/**
+ * Auflösung über `Deno.resolveDns`, dieselbe API wie in email-auth-rescan.
+ *
+ * `null` nur dort, wo es kein `Deno` gibt — also unter Vitest. Die
+ * Edge-Laufzeit hat `Deno` immer, dort ist die Prüfung damit immer aktiv.
+ * Tests, die sie prüfen, injizieren `resolveImpl`.
+ */
+function defaultResolver(): ResolveLike | null {
+  const deno = (globalThis as unknown as { Deno?: Partial<DenoDns> }).Deno;
+  if (typeof deno?.resolveDns !== 'function') return null;
+  const resolveDns = deno.resolveDns.bind(deno) as DenoDns['resolveDns'];
+  return async (host, signal) => {
+    const [v4, v6] = await Promise.allSettled([
+      resolveDns(host, 'A', { signal }),
+      resolveDns(host, 'AAAA', { signal }),
+    ]);
+    return [
+      ...(v4.status === 'fulfilled' ? v4.value : []),
+      ...(v6.status === 'fulfilled' ? v6.value : []),
+    ];
+  };
+}
 
 /**
  * Ein Ziel — Eingabe oder Station einer Weiterleitung — liegt außerhalb der
@@ -63,6 +97,8 @@ export interface GuardedFetchOptions {
   timeoutMs: number;
   headers?: Readonly<Record<string, string>>;
   fetchImpl?: FetchLike;
+  /** Nur für Tests. Ohne Angabe `Deno.resolveDns` (siehe `defaultResolver`). */
+  resolveImpl?: ResolveLike;
 }
 
 /**
@@ -81,11 +117,14 @@ export async function fetchGuarded(raw: string, options: GuardedFetchOptions): P
   // Antwort-Headern. AbortSignal.timeout bleibt nach dem Return aktiv und
   // beendet deshalb auch ein haengendes response.text()/reader.read().
   const signal = AbortSignal.timeout(options.timeoutMs);
-  return await followWithGuard(check.url, fetchImpl, signal, options.headers);
+  const resolve = options.resolveImpl ?? defaultResolver();
+  return await followWithGuard(check.url, fetchImpl, signal, options.headers, resolve);
 }
 
 export interface ObserveOptions {
   fetchImpl?: FetchLike;
+  /** Nur für Tests. Ohne Angabe `Deno.resolveDns` (siehe `defaultResolver`). */
+  resolveImpl?: ResolveLike;
   timeoutMs?: number;
   maxBytes?: number;
   /** Zeitquelle; austauschbar, damit Tests nicht auf die Uhr angewiesen sind. */
@@ -103,7 +142,8 @@ export async function observeSite(url: URL, options: ObserveOptions = {}): Promi
   const startedAt = now();
 
   try {
-    const response = await followWithGuard(url, fetchImpl, controller.signal);
+    const resolve = options.resolveImpl ?? defaultResolver();
+    const response = await followWithGuard(url, fetchImpl, controller.signal, DEFAULT_SCAN_HEADERS, resolve);
     const ttfbMs = now() - startedAt;
 
     const headers: Record<string, string> = {};
@@ -151,16 +191,22 @@ export async function observeSite(url: URL, options: ObserveOptions = {}): Promi
  *
  * Deshalb: `redirect: 'manual'`, jede Zwischenstation durch dieselbe
  * Prüfung, und eine Obergrenze gegen Weiterleitungsschleifen.
+ *
+ * Vor jedem Abruf, also auch vor jeder Station, wird der Host zusätzlich
+ * aufgelöst (`assertPublicResolution`). Erst das fängt Namen ab, die auf
+ * eine private Adresse zeigen — statisch sieht `127.0.0.1.nip.io` öffentlich aus.
  */
 async function followWithGuard(
   start: URL,
   fetchImpl: FetchLike,
   signal: AbortSignal,
   headers: Readonly<Record<string, string>> = DEFAULT_SCAN_HEADERS,
+  resolve: ResolveLike | null = null,
 ): Promise<Response> {
   let current = start;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertPublicResolution(current, resolve, signal);
     const response = await fetchImpl(current.toString(), {
       method: 'GET',
       redirect: 'manual',
@@ -199,6 +245,83 @@ async function followWithGuard(
   }
 
   throw new Error('too many redirects');
+}
+
+/**
+ * DNS-Schranke: Der Host muss auflösen, und **jede** aufgelöste Adresse muss
+ * öffentlich sein. Eine einzige private Adresse genügt zur Ablehnung, weil
+ * nicht feststeht, welche davon `fetch` anschließend wählt.
+ *
+ * Adressliterale werden übersprungen — die hat `validateScanTarget` schon
+ * statisch geprüft. Ohne Auflöser (nur unter Vitest) entfällt die Prüfung.
+ *
+ * Grenze: `fetch` löst danach selbst noch einmal auf. Ein Angreifer mit
+ * eigenem Nameserver und TTL 0 kann zwischen beiden Anfragen die Antwort
+ * wechseln (aktives DNS-Rebinding). Das schließt nur eine Verbindung, die an
+ * die geprüfte Adresse gebunden ist; `fetch` bietet dafür keinen Einstieg.
+ * Abgefangen wird damit jeder Name, der beständig auf ein internes Ziel zeigt.
+ */
+export async function assertPublicResolution(
+  url: URL,
+  resolve: ResolveLike | null,
+  signal: AbortSignal,
+): Promise<void> {
+  if (!resolve) return;
+  const host = url.hostname.toLowerCase();
+  if (host.startsWith('[') || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return;
+
+  const addresses = await resolve(host, signal);
+  if (addresses.length === 0) {
+    // Kein Treffer ist kein Sicherheitsbefund, sondern ein Netzfehler —
+    // genau wie ein `fetch` auf eine Domain, die es nicht gibt.
+    throw new Error('target host does not resolve');
+  }
+  if (addresses.some(isPrivateResolvedAddress)) {
+    throw new TargetRefusedError('target refused: host resolves to a private address');
+  }
+}
+
+/**
+ * Prüft eine aufgelöste Adresse, wie `Deno.resolveDns` sie liefert
+ * (IPv6 ohne Klammern). Ergänzt `isPrivateAddressLiteral` um IPv6-Formen,
+ * die eine IPv4-Adresse in den letzten 32 Bit tragen: IPv4-kompatibel
+ * (`::/96`) und NAT64 (`64:ff9b::/96`). Ein AAAA-Eintrag `64:ff9b::a9fe:a9fe`
+ * zeigt hinter einem NAT64-Gateway auf 169.254.169.254.
+ */
+export function isPrivateResolvedAddress(address: string): boolean {
+  const a = address.trim().toLowerCase();
+  if (!a.includes(':')) return isPrivateAddressLiteral(a);
+  if (isPrivateAddressLiteral(`[${a}]`)) return true;
+  const embedded = embeddedIpv4(a);
+  return embedded !== null && isPrivateAddressLiteral(embedded);
+}
+
+/** IPv4 in den letzten 32 Bit von `::/96`, `::ffff:0:0/96` oder `64:ff9b::/96`, sonst `null`. */
+function embeddedIpv4(v6: string): string | null {
+  let s = v6;
+  const dotted = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
+  if (dotted) {
+    const [o1, o2, o3, o4] = dotted.slice(1).map(Number);
+    s = `${s.slice(0, dotted.index)}${((o1 << 8) | o2).toString(16)}:${((o3 << 8) | o4).toString(16)}`;
+  }
+
+  const parts = s.split('::');
+  if (parts.length > 2) return null;
+  const head = parts[0] ? parts[0].split(':') : [];
+  const tail = parts.length === 2 && parts[1] ? parts[1].split(':') : [];
+  const fill = parts.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0) return null;
+  const groups = [...head, ...Array<string>(fill).fill('0'), ...tail].map((g) => parseInt(g, 16));
+  if (groups.length !== 8 || groups.some((g) => !Number.isInteger(g) || g < 0 || g > 0xffff)) return null;
+
+  const zeros = (from: number, to: number) => groups.slice(from, to).every((g) => g === 0);
+  const compatible = zeros(0, 6);
+  const mapped = zeros(0, 5) && groups[5] === 0xffff;
+  const nat64 = groups[0] === 0x64 && groups[1] === 0xff9b && zeros(2, 6);
+  if (!compatible && !mapped && !nat64) return null;
+
+  const [hi, lo] = [groups[6], groups[7]];
+  return [hi >> 8, hi & 0xff, lo >> 8, lo & 0xff].join('.');
 }
 
 function isRedirect(status: number): boolean {

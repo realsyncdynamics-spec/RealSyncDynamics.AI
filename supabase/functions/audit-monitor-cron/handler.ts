@@ -176,7 +176,7 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
         }
         const plan = plans.get(d.tenant_id)!;
         if (plan instanceof Error) continue;
-        if (!plan.driftAlerts) ineligible = 'plan';
+        ineligible = plan.driftAlerts ? null : 'plan';
       }
       if (ineligible) {
         await repo.markAlert(a.id, { status: 'failed', attempts: a.attempts, last_error: `ineligible: ${ineligible}`, sent_at: null });

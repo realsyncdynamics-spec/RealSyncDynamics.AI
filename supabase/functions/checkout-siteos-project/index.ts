@@ -5,6 +5,8 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { checkoutTaxParams } from '../_shared/checkout-tax.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -112,6 +114,9 @@ Deno.serve(async (req) => {
       cancel_url: `${origin}/app/siteos?checkout=cancelled&site=${encodeURIComponent(body.site_slug ?? '')}`,
       allow_promotion_codes: true,
       customer_creation: 'always',
+      // Steuer, Rechnungsadresse, Rechnung mit § 19-Hinweis und Markthinweis aus dem
+      // Steuermodus der Pricing-SSoT (_shared/checkout-tax.ts).
+      ...checkoutTaxParams({ sessionMode: 'payment', existingCustomer: false, taxMode: PRICING_TAX_MODE }),
     });
 
     return jsonResponse({

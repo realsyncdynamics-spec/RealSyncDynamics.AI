@@ -17,7 +17,8 @@ describe('Stripe webhook continuity during Beta', () => {
   });
 
   it('authenticates the signing secret before selecting a mode-specific API key', () => {
-    expect(webhook).toContain("if (liveSigningSecret) signingCandidates.push({ mode: 'live', secret: liveSigningSecret });");
+    expect(webhook).toContain('liveWebhookSigningCandidate(liveSigningSecret, testSigningSecret, liveApiKey)');
+    expect(webhook).toContain("if (liveCandidate) signingCandidates.push({ mode: 'live', secret: liveCandidate });");
     expect(webhook).toContain('constructEventAsync(raw, sig, candidate.secret)');
     expect(webhook).toContain('isWebhookSignatureModeCompatible(event.livemode, verifiedMode)');
     expect(webhook).toContain('apiKeyForVerifiedWebhookEvent(verifiedMode, liveApiKey, testApiKey)');

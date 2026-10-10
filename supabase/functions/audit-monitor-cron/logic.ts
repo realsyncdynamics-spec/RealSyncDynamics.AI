@@ -5,6 +5,8 @@
 
 import { timingSafeEqual } from '../_shared/timingSafeEqual.ts';
 import { erlaubteKadenz, KADENZ_ABSTAND_MS, type Kadenz } from '../_shared/monitoring-cadence.ts';
+import { canonicalJson } from '../_shared/evidence-hash.ts';
+import { sha256Hex } from '../_shared/hash.ts';
 
 export { canonicalJson, evidenceContentHash, EVIDENCE_HASH_METHOD } from '../_shared/evidence-hash.ts';
 
@@ -193,6 +195,46 @@ export function normalizeCookieScan(domain: string, data: unknown, scannedAt: st
     issues: Array.isArray(d.issues) ? (d.issues as ScanIssue[]) : [],
     scanned_at: scannedAt,
   };
+}
+
+// ─── Drift-Alert (Outbox) ────────────────────────────────────────────────────
+
+/** Zustellversuche je Alert, bevor er als `failed` liegen bleibt (bei täglichem Lauf ≈ 5 Tage). */
+export const MAX_ALERT_ATTEMPTS = 5;
+
+/** Was die Drift-Mail braucht — gespeichert, damit ein späterer Lauf sie ohne Neu-Scan zustellen kann. */
+export interface AlertPayload {
+  risk_score: number;
+  score_delta: number;
+  new_trackers: string[];
+  removed_trackers: string[];
+  critical: boolean;
+}
+
+export function alertPayload(scan: ScanResult, drift: DriftReport): AlertPayload {
+  return {
+    risk_score: scan.risk_score,
+    score_delta: drift.score_delta,
+    new_trackers: drift.new_trackers,
+    removed_trackers: drift.removed_trackers,
+    critical: drift.new_critical_issues.length > 0,
+  };
+}
+
+/**
+ * Identität einer Drift: Ausgangsstand (last_scan_at der Baseline) + Tracker-Delta.
+ * Scheitert nach dem Einreihen das Fortschreiben der Baseline, erkennt der
+ * nächste Lauf dieselbe Drift gegen dieselbe Baseline — gleicher
+ * Fingerabdruck, kein zweiter Alert. Bewusst ohne risk_score (schwankt
+ * zwischen Re-Scans leicht) und ohne evidence_id/ran_at, die sich je Lauf ändern.
+ */
+export function alertFingerprint(d: MonitoredDomain, drift: DriftReport): Promise<string> {
+  return sha256Hex(canonicalJson({
+    monitored_domain_id: d.id,
+    baseline_scan_at: d.last_scan_at,
+    new_trackers: [...drift.new_trackers].sort(),
+    removed_trackers: [...drift.removed_trackers].sort(),
+  }));
 }
 
 // ─── Evidence-Snapshot ───────────────────────────────────────────────────────

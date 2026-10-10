@@ -297,9 +297,6 @@ export const HANDOFF_EXTRA = {
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
     mainNav: 'Hauptnavigation',
-    // Claim-Audit WP1: „für autonome KI" versprach eine Agenten-Autonomie, die
-    // laut implementation-status.ts Preview/Coming-Soon ist. Belegt ist die
-    // Kontroll- und Nachweisschicht.
     heroEyebrow: 'REALSYNCDYNAMICS.AI / KONTROLL- UND NACHWEISSCHICHT FÜR KI',
     ctaExplore: 'Architektur ansehen',
     ctaEnterprise: 'Enterprise anfragen',
@@ -371,7 +368,6 @@ export const HANDOFF_EXTRA = {
     residencyLocal: 'Lokal im Haus',
     residencyEu: 'EU-Cloud',
     residencyHybrid: 'Gemischt / offen',
-    // /pricing Fusszeile + Disclaimer (keine Steuertexte — die bleiben SSoT).
     pricingTrustNote:
       'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
     pricingTrialFoot:
@@ -381,19 +377,19 @@ export const HANDOFF_EXTRA = {
     pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
     pricingDisclaimerAfter:
       ', weil das niemand seriös kann. Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.',
-    // Landing v4 Hero (H1 + Lede). Produktname bleibt EN; „für Europa" lokalisiert.
+    // Landing v4 Hero — sharpened for conversion and clarity
     v4HeroTitleA: 'AI Compliance',
     v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'für Europa',
+    v4HeroTitleEm: 'für regulierte KI',
     v4HeroLede1: 'Runtime-Governance für regulierte KI.',
-    v4HeroLede2: 'Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
-    // Landing v4 Workspace-Vorschau — sichtbare Beispiel-Kennzeichnung (keine Fake-KPIs).
+    v4HeroLede2: 'Kontinuierliche Evidenz statt einmaliger Audits. Menschliche Kontrolle. EU-nativ by Design.',
+    v4HeroNutzen: 'Inventar in Sekunden · Risiken nach Artikel · Policies durchsetzen · Evidence versiegeln',
+    v4HeroTrust: 'EU-Hosting Frankfurt · Hash-Chain Evidence · URL genügt · kein Account nötig',
     v4DashExampleBadge: 'Beispielansicht',
     v4DashExampleNote:
       'Beispieldaten – keine echten Messwerte. Ihre Werte entstehen aus Ihrem eigenen Scan.',
     v4DashExampleAria:
       'Beispielansicht des Governance-Dashboards mit Beispieldaten, keine echten Messwerte',
-    // Landing v4 Roadmap — kundenorientierter Status, keine interne Registry-Sprache.
     v4RoadmapLede:
       'Was Sie heute nutzen können, was wir ausbauen und was als Nächstes kommt — ehrlich gekennzeichnet.',
     v4RoadmapFilterAll: 'Alle',
@@ -428,30 +424,30 @@ export const HANDOFF_EXTRA = {
     resumeHint: 'You will continue right after signing in.',
     authNotConfigured: 'Auth is not configured (VITE_SUPABASE_URL missing).',
     sendFailed: 'Magic link could not be sent.',
-    loginAborted: 'Sign-in aborted',
-    auditOverline: 'Free audit · €0',
+    loginAborted: 'Login aborted',
+    auditOverline: 'Free Audit · €0',
     stepCompany: 'Company',
     stepFrameworks: 'Frameworks',
     stepSystems: 'AI systems',
     stepRole: 'Role',
     stepResult: 'Result',
     companyLabel: 'Company',
-    companyPlaceholder: 'Example Ltd',
+    companyPlaceholder: 'Example GmbH',
     domainLabel: 'Primary domain',
     domainPlaceholder: 'example.com',
     reportEmailLabel: 'E-mail for the report',
-    reportEmailHint: 'The scan needs a business e-mail to deliver the report.',
-    comingSoon: 'Coming soon',
-    roleSelf: 'Just me',
+    reportEmailHint: 'The scan needs a business e-mail for report delivery.',
+    comingSoon: 'Coming Soon',
+    roleSelf: 'Myself',
     roleTeam: 'Team up to five',
     roleAgency: 'Agency',
     roleEnterprise: 'Enterprise · SSO',
     runStart: 'Normalising domain',
     runRequest: 'Scan request sent to gdpr-audit',
-    runWaiting: 'Waiting for the scan result …',
+    runWaiting: 'Waiting for scan result …',
     runDone: 'Result received',
     runFailed: 'Scan failed',
-    scoreLabel: 'Compliance score from the domain scan',
+    scoreLabel: 'Compliance score from domain scan',
     scoreSource: 'Source: gdpr-audit · {domain}',
     noCriticalRisks: 'The scan reported no critical or high findings.',
     recWhy: 'Derived from role, frameworks and AI systems — not from the score.',
@@ -462,34 +458,36 @@ export const HANDOFF_EXTRA = {
     classPrefix: 'Class',
     popularBadge: 'Popular',
     selected: 'Selected',
-    yearlyComingSoon: 'Yearly · coming soon',
-    yearlyNote: 'Yearly billing cannot be booked yet — checkout is monthly for now.',
+    yearlyComingSoon: 'Yearly · Coming Soon',
+    yearlyNote: 'Yearly billing is not yet available — booking is currently monthly.',
     bookMonthly: 'Book monthly',
     perMonth: '/ month',
     perYear: '/ year',
     onRequest: 'On request',
-    once: 'one-off · no account',
+    once: 'one-time · no account',
     billingToggle: 'Billing period',
     moreInfo: 'Learn more',
-    trialNote: '{days}-day free trial',
+    trialNote: '{days} days free trial',
     residencyLabel: 'Where should AI data be processed? (optional)',
     residencyLocal: 'On-premises',
     residencyEu: 'EU cloud',
-    residencyHybrid: 'Mixed / undecided',
+    residencyHybrid: 'Mixed / open',
     pricingTrustNote:
-      'Free Audit free of charge · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
+      'Free audit · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
     pricingTrialFoot:
-      'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
+      'Free audit · no account required · {plans}: {days} days free trial — no cost until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
     pricingDisclaimerBefore:
-      'Our outputs are methodologically and technically sound — but no substitute for individual legal advice. ',
+      'Our outputs are methodologically and technically sound — but not a substitute for individual legal advice. ',
     pricingDisclaimerStrong: 'We do not promise "100% legally secure"',
     pricingDisclaimerAfter:
-      ', because nobody can seriously make that claim. We recommend having generated documents reviewed by counsel.',
+      ', because no one can seriously do that. We recommend having generated documents reviewed by a lawyer.',
     v4HeroTitleA: 'AI Compliance',
     v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'for Europe',
+    v4HeroTitleEm: 'for regulated AI',
     v4HeroLede1: 'Runtime governance for regulated AI.',
-    v4HeroLede2: 'Continuous evidence. Human control. EU-native by design.',
+    v4HeroLede2: 'Continuous evidence instead of one-off audits. Human control. EU-native by design.',
+    v4HeroNutzen: 'Inventory in seconds · Risks by article · Enforce policies · Seal evidence',
+    v4HeroTrust: 'EU hosting Frankfurt · Hash-chain evidence · URL is enough · no account needed',
     v4DashExampleBadge: 'Example view',
     v4DashExampleNote:
       'Example data – not real measurements. Your values come from your own scan.',
@@ -502,30 +500,3 @@ export const HANDOFF_EXTRA = {
 } as const;
 
 export type HandoffKey = CopyKey | keyof (typeof HANDOFF_EXTRA)['de'] | HandoffAppKey;
-
-/**
- * Übersetzung mit `{n}`-Platzhaltern. Reihenfolge: Korrektur → Handoff-Copy →
- * Zusatz-Strings. Fehlt ein Schlüssel in EN, fällt er auf DE zurück.
- */
-export function translate(
-  lang: Lang,
-  key: HandoffKey,
-  vars?: Record<string, string | number>,
-): string {
-  const override = HANDOFF_OVERRIDES[lang][key as CopyKey];
-  const copy = (HANDOFF_COPY[lang] as Record<string, string>)[key];
-  const extra = (HANDOFF_EXTRA[lang] as Record<string, string>)[key];
-  const app = (HANDOFF_APP[lang] as Record<string, string>)[key];
-  const fallback =
-    (HANDOFF_COPY.de as Record<string, string>)[key] ??
-    (HANDOFF_EXTRA.de as Record<string, string>)[key] ??
-    (HANDOFF_APP.de as Record<string, string>)[key] ??
-    key;
-  let text = override ?? copy ?? extra ?? app ?? fallback;
-  if (vars) {
-    for (const [name, value] of Object.entries(vars)) {
-      text = text.split(`{${name}}`).join(String(value));
-    }
-  }
-  return text;
-}

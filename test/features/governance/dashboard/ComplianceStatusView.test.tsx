@@ -412,9 +412,6 @@ describe('ComplianceStatusView', () => {
     expect(strip.textContent).toMatch(/TISAX/);
     expect(strip.textContent).toMatch(/DORA/);
     // Übersicht (Landing-v4-Layout): keine erfundenen Werte.
-    const fw = getByTestId('overview-frameworks');
-    expect(fw.textContent).toMatch(/NOCH KEINE DATEN/);
-    expect(fw.textContent).not.toMatch(/\d+\s*%/);
     expect(getByTestId('overview-evidence-chain').textContent).toMatch(/Noch keine Governance-Events/);
     expect(getByTestId('overview-agent-intent').textContent).toMatch(/Session starten/);
     void getByText;
@@ -552,5 +549,22 @@ describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
       }
       unmount();
     }
+  });
+
+  it('rendert den Rahmenwerk-Reifegrad nicht ohne echte Daten pro Rahmenwerk', () => {
+    const { queryByTestId, getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const overview = getByTestId('command-center-overview');
+    expect(queryByTestId('overview-frameworks')).toBeNull();
+    expect(overview.textContent).not.toMatch(/RAHMENWERK-REIFEGRAD|NOCH KEINE DATEN|ROADMAP/);
+    expect(overview.textContent).not.toMatch(/—/);
+  });
+
+  it('zeigt bei Ladefehler einer KPI-Quelle einen expliziten Fehlerzustand statt Platzhalter', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 }, scoreBasis: { aiSystems: null, controlMappings: null } }),
+    });
+    const tile = getByTestId('overview-tile-ai');
+    expect(tile.getAttribute('data-state')).toBe('error');
+    expect(tile.textContent).toMatch(/konnten nicht geladen werden/);
   });
 });

@@ -7,8 +7,8 @@
 // `.gv4`-Kaskade in styles/landing-v4-classical.css (nur gelesen, nicht
 // geändert). Unterschied zur Landing: KEINE Demo-Zahlen. Jeder Wert stammt
 // aus den bereits geladenen CockpitData; fehlt eine Quelle, zeigen wir einen
-// ehrlichen Zustand („Noch nicht bewertbar“, „Noch keine Daten“, „—“) plus
-// CTA auf eine bestehende Route.
+// echten Backend-Status bzw. einen expliziten Fehlerzustand. Keine
+// Platzhalter, keine Beispielzeilen.
 
 import { Link } from 'react-router-dom';
 import '../../../styles/landing-v4-classical.css';
@@ -19,22 +19,11 @@ import {
 import { collectCriticalFindings } from './ComplianceStatusDashboard';
 import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
 
-/** Rahmenwerke wie auf der Landing. Kein Mandanten-Reifegrad pro Rahmenwerk
- *  in den Dashboard-Quellen → Balken bleiben leer, Label ehrlich. */
-export const OVERVIEW_FRAMEWORKS: Array<{ name: string; status: 'data-missing' | 'roadmap' }> = [
-  { name: 'DSGVO', status: 'data-missing' },
-  { name: 'EU AI ACT', status: 'data-missing' },
-  { name: 'ISO 27001', status: 'data-missing' },
-  { name: 'NIS2', status: 'data-missing' },
-  { name: 'TISAX', status: 'roadmap' },
-  { name: 'DORA', status: 'roadmap' },
-];
-
 const SEVERITY_RANK = { critical: 0, high: 1 } as const;
 
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
-  if (!Number.isFinite(diff)) return '—';
+  if (!Number.isFinite(diff)) return '';
   const m = Math.max(0, Math.round(diff / 60_000));
   if (m < 60) return `VOR ${m} MIN`;
   const h = Math.round(m / 60);
@@ -64,32 +53,45 @@ export function CommandCenterOverview({
   const chain = data.recentEvents.slice(0, 4);
   const agentPath = isGovernanceAiEnabled() ? GOVERNANCE_AI_PATH : '/app/agents';
 
-  const tiles: Array<{ key: string; value: string; suffix?: string; label: string; cta?: { to: string; label: string } }> = [
-    {
+  type Tile = {
+    key: string;
+    label: string;
+    value?: string;
+    suffix?: string;
+    /** Echter Backend-Status ohne Zahl (z. B. scoreStatus insufficient_data). */
+    state?: string;
+    /** Ladefehler der Quelle — expliziter Fehlerzustand statt Platzhalter. */
+    error?: string;
+    cta?: { to: string; label: string };
+  };
+  const tiles: Tile[] = [];
+  if (scoreOk) {
+    tiles.push({ key: 'score', label: 'GOVERNANCE SCORE', value: String(data.score), suffix: '/100' });
+  } else if (data.scoreStatus === 'insufficient_data') {
+    tiles.push({
       key: 'score',
-      value: scoreOk ? String(data.score) : '—',
-      suffix: scoreOk ? '/100' : undefined,
-      label: scoreOk ? 'GOVERNANCE SCORE' : 'GOVERNANCE SCORE · NOCH NICHT BEWERTBAR',
-      cta: scoreOk ? undefined : { to: '/app/ai-systems', label: 'KI-Systeme & Controls erfassen →' },
-    },
-    {
-      key: 'findings',
-      value: findingCount === null ? '—' : String(findingCount),
-      label: findingCount === null ? 'OFFENE FINDINGS · NICHT VOLLSTÄNDIG GELADEN' : 'OFFENE FINDINGS',
-    },
-    {
-      key: 'evidence',
-      value: evidenceCount === null ? '—' : String(evidenceCount),
-      label: 'EVIDENCE-EINTRÄGE',
-      cta: evidenceCount === 0 ? { to: '/app/audit', label: 'Audit starten →' } : undefined,
-    },
-    {
-      key: 'ai',
-      value: aiSystems === null ? '—' : String(aiSystems),
-      label: 'KI-SYSTEME',
-      cta: aiSystems === 0 ? { to: '/app/ai-systems', label: 'KI-System erfassen →' } : undefined,
-    },
-  ];
+      label: 'GOVERNANCE SCORE',
+      state: 'Noch nicht bewertbar',
+      cta: { to: '/app/ai-systems', label: 'KI-Systeme & Controls erfassen →' },
+    });
+  } else {
+    tiles.push({ key: 'score', label: 'GOVERNANCE SCORE', error: 'Score nicht verlässlich — Datenquellen unvollständig geladen.' });
+  }
+  tiles.push(findingCount === null
+    ? { key: 'findings', label: 'OFFENE FINDINGS', error: 'Findings-Quellen konnten nicht vollständig geladen werden.' }
+    : { key: 'findings', label: 'OFFENE FINDINGS', value: String(findingCount) });
+  tiles.push(evidenceCount === null
+    ? { key: 'evidence', label: 'EVIDENCE-EINTRÄGE', error: 'Evidence konnte nicht geladen werden.' }
+    : {
+        key: 'evidence', label: 'EVIDENCE-EINTRÄGE', value: String(evidenceCount),
+        cta: evidenceCount === 0 ? { to: '/app/audit', label: 'Audit starten →' } : undefined,
+      });
+  tiles.push(aiSystems === null
+    ? { key: 'ai', label: 'KI-SYSTEME', error: 'KI-Systeme konnten nicht geladen werden.' }
+    : {
+        key: 'ai', label: 'KI-SYSTEME', value: String(aiSystems),
+        cta: aiSystems === 0 ? { to: '/app/ai-systems', label: 'KI-System erfassen →' } : undefined,
+      });
 
   return (
     <div className="gv4" data-testid="command-center-overview" style={{ background: 'transparent' }}>
@@ -106,11 +108,22 @@ export function CommandCenterOverview({
 
           <div className="tiles">
             {tiles.map((t) => (
-              <div key={t.key} className="tile" data-testid={`overview-tile-${t.key}`}>
-                <b>
-                  {t.value}
-                  {t.suffix ? <i>{t.suffix}</i> : null}
-                </b>
+              <div
+                key={t.key}
+                className="tile"
+                data-testid={`overview-tile-${t.key}`}
+                data-state={t.error ? 'error' : t.state ? 'status' : 'value'}
+              >
+                {t.value !== undefined ? (
+                  <b>
+                    {t.value}
+                    {t.suffix ? <i>{t.suffix}</i> : null}
+                  </b>
+                ) : t.state ? (
+                  <b style={{ fontSize: 20 }}>{t.state}</b>
+                ) : (
+                  <b role="alert" style={{ fontSize: 14, color: '#ffd7c2' }}>{t.error}</b>
+                )}
                 <span>{t.label}</span>
                 {t.cta && (
                   <div style={{ marginTop: 8 }}>
@@ -122,37 +135,21 @@ export function CommandCenterOverview({
           </div>
 
           <div className="split">
-            <div className="panel" data-testid="overview-frameworks">
-              <div className="panel-head">
-                RAHMENWERK-REIFEGRAD<b>{OVERVIEW_FRAMEWORKS.length} RAHMENWERKE</b>
-              </div>
-              <div>
-                {OVERVIEW_FRAMEWORKS.map((fw) => (
-                  <div key={fw.name} className="fw">
-                    <s>{fw.name}</s>
-                    <div className="bar" aria-hidden="true">
-                      <u style={{ width: '0%' }} />
-                    </div>
-                    <em>{fw.status === 'roadmap' ? 'ROADMAP' : 'NOCH KEINE DATEN'}</em>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            {/* Rahmenwerk-Reifegrad: erst rendern, wenn es echte Reifegrade pro
+                Rahmenwerk je Mandant gibt. Heute existiert keine solche Quelle →
+                Sektion bewusst ausgeblendet (keine leeren Balken, keine Labels). */}
             <div className="panel" data-testid="overview-findings">
               <div className="panel-head">
                 OFFENE FINDINGS<b>PRIORISIERT</b>
               </div>
               <div>
                 {!findingsComplete && sorted.length === 0 ? (
-                  <div className="finding" role="status">
-                    <span className="sev sev-mid">—</span>
-                    <em>Befunde nicht vollständig geladen.</em>
-                    <u />
+                  <div className="intent" role="alert" data-testid="overview-findings-error">
+                    <div className="field">Findings-Quellen konnten nicht vollständig geladen werden.</div>
                   </div>
                 ) : sorted.length === 0 && mediumHints.length === 0 ? (
                   <div className="intent" data-testid="overview-findings-empty">
-                    <div className="field">Keine offenen Findings. Ein Audit liefert die erste Befundliste.</div>
+                    <div className="field">Keine offenen Findings.</div>
                     <Link className="go" to="/app/audit">Audit starten</Link>
                   </div>
                 ) : (
@@ -180,14 +177,16 @@ export function CommandCenterOverview({
           <div className="split">
             <div className="panel" data-testid="overview-evidence-chain">
               <div className="panel-head">
-                EVIDENCE-CHAIN<b>{chain.length > 0 ? 'NEUESTE EVENTS' : 'LEER'}</b>
+                EVIDENCE-CHAIN{chain.length > 0 ? <b>NEUESTE EVENTS</b> : null}
               </div>
               <div>
                 {eventsFailed ? (
-                  <div className="row"><s>—</s><em>Event-Quelle vorübergehend nicht verfügbar.</em><u /></div>
+                  <div className="intent" role="alert" data-testid="overview-chain-error">
+                    <div className="field">Governance-Events konnten nicht geladen werden.</div>
+                  </div>
                 ) : chain.length === 0 ? (
                   <div className="intent">
-                    <div className="field">Noch keine Governance-Events. Website hinterlegen und scannen.</div>
+                    <div className="field">Noch keine Governance-Events.</div>
                     <Link className="go" to="/app/websites">Website hinzufügen</Link>
                   </div>
                 ) : (

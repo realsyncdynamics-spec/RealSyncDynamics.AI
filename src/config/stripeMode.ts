@@ -9,7 +9,7 @@
  * Im Frontend liegen KEINE Secrets und KEINE Price-IDs (die löst die Edge
  * Function auf). Hier wird nur verhindert, dass im Testmodus ein Live-
  * Publishable-Key oder ein Live-Payment-Link ausgeliefert wird.
- * Setup: docs/STRIPE_SANDBOX_SETUP.md
+ * Setup: operations/stripe/STRIPE_SANDBOX_SETUP.md
  */
 
 export type StripeMode = 'test' | 'live';

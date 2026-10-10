@@ -3,7 +3,7 @@
  * Routen, auflösbare In-Page-Anker, Roadmap-Filter, Scan-Formular.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
 import { resetLangForTests, setLang } from '../../src/i18n/useLang';
@@ -80,6 +80,44 @@ it('renders English hero heading and lede when EN is active', () => {
     'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
   );
   expect(screen.getByTestId('v4-hero-lede')).not.toHaveTextContent(/regulierter KI/);
+});
+
+it('presents the governance loop as four ordered, clearly titled steps', () => {
+  mount();
+  const loop = screen.getByRole('region', { name: 'Governance Loop' });
+  const list = within(loop).getByRole('list');
+  expect(list.tagName).toBe('OL');
+  const steps = within(list).getAllByRole('listitem');
+  expect(steps).toHaveLength(4);
+  expect(steps.map((step) => within(step).getByRole('heading', { level: 3 }).textContent))
+    .toEqual(['Discover', 'Classify', 'Enforce', 'Prove']);
+  expect(steps[2]).toHaveTextContent('Menschen geben frei');
+  expect(steps[3]).toHaveTextContent('Drift erkennen');
+});
+
+it('keeps live module badges distinct from planned capabilities and policy example data', () => {
+  const view = mount();
+  const cards = Array.from(view.container.querySelectorAll('#platform .card'))
+    .filter((card) => card.querySelector('h3'));
+  expect(cards).toHaveLength(7);
+  for (const card of cards) {
+    expect(card.querySelector('.card-tag.status[data-st="live"]')).toHaveTextContent('LIVE');
+    expect(card.querySelector('h3')).not.toHaveAttribute('style');
+    expect(card.querySelector('.body')).not.toBeEmptyDOMElement();
+  }
+  expect(cards.filter((card) => card.tagName === 'A').map((card) => card.getAttribute('href')))
+    .toEqual(['/ai-act-klassifikator', '/evidence', '/runtime']);
+  expect(cards[1]).toHaveTextContent('ohne Speichern ins Inventar');
+  const planned = view.container.querySelector('#platform .rm-card.dashed')!;
+  expect(planned.querySelector('[data-st="live"]')).toBeNull();
+  expect(planned).toHaveTextContent('noch nicht in Produktion');
+  const preview = view.container.querySelector('#dashboard .app')!;
+  expect(preview).toHaveAttribute('data-example-preview', 'true');
+  expect(preview.querySelector('.panel-head')).toHaveTextContent('POLICY PACKS');
+  const frameworks = preview.querySelectorAll('.fw');
+  expect(frameworks).toHaveLength(6);
+  expect(frameworks[4]).toHaveTextContent('TISAXNEXT');
+  expect(frameworks[5]).toHaveTextContent('DORANEXT');
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

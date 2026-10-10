@@ -67,7 +67,8 @@ describe('gdpr-audit: Mandanten-Scan ohne IP-Limit und ohne Lead', () => {
     expect(ddl).toMatch(/email\s+TEXT NOT NULL/);
     // email ist immer ein String ('' für Mandanten- und Optimizer-Scans) und
     // wird nicht mehr zu null umgewandelt.
-    expect(src).toMatch(/from\('gdpr_audits'\)\.insert\(\{[\s\S]*?\n\s*email,\n/);
+    // Insert-Objekt steht entweder inline oder (mit Consent-Fallback) in auditBase.
+    expect(src).toMatch(/(?:from\('gdpr_audits'\)\.insert\(\{|const auditBase = \{)[\s\S]*?\n\s*email,\n/);
     expect(src).not.toMatch(/email:\s*[^,\n]*\|\|\s*null/);
   });
 });

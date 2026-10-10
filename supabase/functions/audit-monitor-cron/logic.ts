@@ -165,8 +165,10 @@ export function normalizeCookieScan(domain: string, data: unknown, scannedAt: st
   const d = (data ?? {}) as Record<string, unknown>;
   // Exact wire contract of cookie-scan/index.ts. Never turn failed fetches
   // into a fabricated score of 100 (the scanner can return ok:true on error).
+  // Terminal 3xx counts as success, as in cookie-scan itself
+  // (`status >= 300 && status < 400`): fetchGuarded follows real redirects.
   if (d.ok !== true || d.fetch_error !== null ||
-      typeof d.fetched_status !== 'number' || d.fetched_status < 200 || d.fetched_status >= 300) {
+      typeof d.fetched_status !== 'number' || d.fetched_status < 200 || d.fetched_status >= 400) {
     throw new Error('cookie-scan did not fetch a successful response');
   }
   const score = d.score;

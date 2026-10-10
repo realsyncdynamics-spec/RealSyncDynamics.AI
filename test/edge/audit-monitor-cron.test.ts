@@ -238,6 +238,23 @@ describe('audit-monitor-cron: Fail-closed', () => {
     expect(() => normalize({ ...wire, cookies: undefined })).toThrow(/cookie\/consent/);
   });
 
+  it('akzeptiert terminale 3xx wie cookie-scan selbst (Grenze < 400)', () => {
+    // fetchGuarded folgt 301/302/303/307/308 selbst; als 3xx kommen nur
+    // Endstationen zurück (300, 304, Redirect ohne Location). cookie-scan
+    // wertet sie als Erfolg (`status >= 300 && status < 400`) und liefert
+    // einen Score — der Monitor darf sie nicht als Fehllauf verwerfen.
+    const wire = {
+      ok: true, fetch_error: null, score: 80,
+      trackers: [], cookies: [], consent_manager_detected: false,
+    };
+    const normalize = (status: number) =>
+      normalizeCookieScan('example.de', { ...wire, fetched_status: status }, NOW.toISOString());
+    expect(normalize(304).risk_score).toBe(80);
+    expect(normalize(399).risk_score).toBe(80);
+    expect(() => normalize(400)).toThrow(/successful response/);
+    expect(() => normalize(199)).toThrow(/successful response/);
+  });
+
   it('Evidence-Write schlägt fehl → failed, kein Ergebnis, kein Alert', async () => {
     const repo = new MemRepo([domain()]);
     repo.failEvidence = true;

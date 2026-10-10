@@ -93,7 +93,8 @@ async function fetchStatsDirect(supa: ReturnType<typeof createClient>) {
     supa.from('gdpr_audits').select('*', { count: 'exact', head: true }).gte('created_at', oneDayAgo),
     supa.from('sales_leads').select('*', { count: 'exact', head: true }).gte('created_at', oneDayAgo),
     supa.from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', oneDayAgo).eq('is_bot', false),
-    supa.from('gdpr_audits').select('*', { count: 'exact', head: true }).is('email_sent_at', null).gte('created_at', oneDayAgo),
+    // Audits ohne Empfänger (email = '': Mandanten-/Optimizer-Scan) sind nicht „unversendet“.
+    supa.from('gdpr_audits').select('*', { count: 'exact', head: true }).is('email_sent_at', null).neq('email', '').gte('created_at', oneDayAgo),
     supa.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supa.from('tenants').select('*', { count: 'exact', head: true }),
     supa.from('outreach_contacts').select('*', { count: 'exact', head: true }),

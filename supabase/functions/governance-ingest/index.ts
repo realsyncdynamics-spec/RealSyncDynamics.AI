@@ -19,6 +19,8 @@
 //   5. Insert events
 //   6. Insert caller-supplied evidence + auto `policy_snapshot` evidence for every
 //      event that the engine matched
+//      — caller-supplied content_hash / previous_hash are stored as
+//        metadata.client_* only; the hash-chain columns stay null (evidence.ts)
 //   7. Stamp `last_used_at` on the API key
 //   8. Fire enabled tenant webhooks whose `min_risk_level` is matched by the
 //      event (HMAC-SHA256 signed payload, 3s timeout, last_status persisted).
@@ -28,6 +30,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex } from '../_shared/hash.ts';
+import { callerEvidenceRow } from './evidence.ts';
 import {
   evaluatePolicies,
   type AssetForEval,
@@ -253,17 +256,12 @@ Deno.serve(async (req) => {
   insertedEvents!.forEach((ev, idx) => {
     const caller = items[idx].evidence ?? [];
     for (const e of caller) {
-      evidenceRows.push({
-        tenant_id: keyRow.tenant_id,
-        event_id: ev.id,
-        asset_id: items[idx].event.asset_id ?? null,
-        evidence_type: e.evidence_type,
-        title: e.title,
-        storage_path: e.storage_path ?? null,
-        content_hash: e.content_hash ?? null,
-        previous_hash: e.previous_hash ?? null,
-        metadata: e.metadata ?? {},
-      });
+      // Caller hashes go to metadata.client_*; the chain columns stay null (evidence.ts).
+      evidenceRows.push(callerEvidenceRow(e, {
+        tenantId: keyRow.tenant_id,
+        eventId: ev.id,
+        assetId: items[idx].event.asset_id ?? null,
+      }));
     }
     const decision = decisions[idx];
     if (decision) {

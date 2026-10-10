@@ -160,7 +160,37 @@ export async function handleApprove(req: Request): Promise<Response> {
     return jsonError(409, 'CONFLICT', 'evaluation is not bound to a blueprint version');
   }
 
+  const { data: blueprint } = await ctx.admin
+    .from('siteos_blueprints')
+    .select('slug')
+    .eq('id', evaluation.blueprint_id).eq('tenant_id', ctx.tenantId)
+    .maybeSingle<{ slug: string }>();
+  if (!blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
+
   const nowIso = new Date().toISOString();
+
+  // Jede Freigabe braucht einen Evidence-Eintrag (O-WP6). Er landet in
+  // derselben Custody-Kette wie das spätere GO und wird vor der Freigabe
+  // geschrieben: Ohne Nachweis gibt es keine Freigabe.
+  try {
+    await appendCustodyEvent(ctx.admin, {
+      tenantId: ctx.tenantId,
+      assetRef: `siteos:artifact:${ctx.tenantId}:${blueprint.slug}`,
+      contentSha256: evaluation.artifact_sha256,
+      action: 'audited',
+      issuer: `user:${ctx.userId}`,
+      timestamp: nowIso,
+    });
+  } catch (provErr) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_publish_approval_custody_failed',
+      artifact_sha256: evaluation.artifact_sha256,
+      error: (provErr as Error)?.message ?? String(provErr),
+    }));
+    return jsonError(500, 'INTERNAL', 'approval could not be linked to custody evidence');
+  }
+
   const { error: updateErr } = await ctx.admin
     .from('siteos_publish_evaluations')
     .update({ approved_by: ctx.userId, approved_at: nowIso, approval_reason: reason.slice(0, MAX_REASON_LENGTH) })

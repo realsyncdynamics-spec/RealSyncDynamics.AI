@@ -290,10 +290,10 @@ describe('Feature Quotas by Tier', () => {
     expect(growth.botsQuota.channels.length).toBe(3); // website, whatsapp, telegram
   });
 
-  it('agency should allow 10 bots with 25k answers/month', () => {
+  it('agency should allow 10 bots with 10k answers/month', () => {
     const agency = tierById('agency')!;
     expect(agency.botsQuota.maxBots).toBe(10);
-    expect(agency.botsQuota.maxAnswersPerMonth).toBe(25000);
+    expect(agency.botsQuota.maxAnswersPerMonth).toBe(10000);
     expect(agency.botsQuota.channels.length).toBe(7); // all channels
   });
 

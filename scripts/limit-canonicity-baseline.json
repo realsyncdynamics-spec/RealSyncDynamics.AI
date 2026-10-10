@@ -1,17 +1,6 @@
 [
   {
     "plan": "agency",
-    "feld": "answersPerMonth",
-    "key": "limit.bot_messages_monthly",
-    "preisseite": 25000,
-    "berechtigung": 10000,
-    "richtung": "ausweitung",
-    "availability": "self_service",
-    "grund": "Self-Service-Plan (Agency wieder verkaufbar): die Preisseite ist kanonisch. Korrektur wirkt auf Neu- und Bestandskunden.",
-    "kanonische_quelle": "preisseite"
-  },
-  {
-    "plan": "agency",
     "feld": "apiCallsPerMonth",
     "key": "limit.api_calls_monthly",
     "preisseite": 50000,

@@ -266,8 +266,8 @@ export function CaralegalAlternative() {
           <p className="text-sm text-titanium-300 leading-relaxed">
             Eine Runtime ist erst dann vollständig, wenn sie Drift bemerkt, ohne dass jemand
             den Scan erneut auslöst. {monitoring.name} ist heute{' '}
-            {STATUS_LABEL[monitoring.status].toLowerCase()} — wiederkehrende Nachprüfung
-            läuft, der öffentliche Dauerüberwachungs-Funnel noch nicht. Wir schreiben das
+            {STATUS_LABEL[monitoring.status].toLowerCase()} — eine wiederkehrende Nachprüfung
+            ist geplant (Coming Soon), heute laufen Einmal-Scans. Wir schreiben das
             hier hin, statt „kontinuierlich" zu behaupten: Eine Governance-Schicht, die ihre
             eigene Reife falsch darstellt, disqualifiziert sich beim ersten Audit.
           </p>

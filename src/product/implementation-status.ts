@@ -201,7 +201,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'DSGVO- & Tracking-Audit',
     status: 'live',
     group: 'compliance',
-    description: 'Cookie-/Tracker-Scan mit Bericht und wiederkehrender Nachprüfung.',
+    description: 'Cookie-/Tracker-Scan mit Bericht.',
     route: '/audit',
     evidence: ['src/config/platform-capabilities.ts#gdpr-audit'],
     showOnPlatform: true,
@@ -536,11 +536,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'coming-soon',
     group: 'compliance',
     description:
-      'Post-Scan „Diese Domain überwachen“ — Cron/monitored_domains partiell; öffentlicher Funnel Coming Soon.',
+      'Täglicher Re-Scan der monitored_domains (plan-gated, Drift nur bei Delta, Evidence je Lauf) im Code; Aktivierung ausstehend (Cron-Secret). Öffentlicher Funnel „Diese Domain überwachen“ Coming Soon.',
     route: '/app/monitoring',
     evidence: [
       'src/components/audit/PostScanChoiceRow.tsx',
       'supabase/functions/audit-monitor-cron',
+      'supabase/migrations/20261009230000_audit_monitor_daily_cron.sql',
       'docs/product/scan-funnel.md',
     ],
     showOnRoadmap: true,

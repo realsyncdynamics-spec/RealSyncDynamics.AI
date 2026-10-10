@@ -1,8 +1,9 @@
 -- SiteOS Rebuild-Workflow — Läufe (DISCOVER → ASSESS → REBUILD → … → GOVERN).
 --
 -- Ersatz-Schnitt 1 aus #1727 (geschlossen, Triage 10.10.2026): dort als
--- 20260929150000 angelegt, inhaltlich unverändert, neue Version oberhalb des
--- Stands auf main. Die Handler, die diese Tabelle schreiben, kommen in
+-- 20260929150000 angelegt, neue Version oberhalb des Stands auf main.
+-- Einzige inhaltliche Abweichung: authenticated verliert die Schreibrechte
+-- aus den Default Privileges (REVOKE … FROM anon, authenticated, Codex-Review). Die Handler, die diese Tabelle schreiben, kommen in
 -- eigenen Folge-PRs; bis dahin bleibt sie leer.
 --
 -- Ein Lauf hält, was vom Lesen einer bestehenden Website bleibt: den

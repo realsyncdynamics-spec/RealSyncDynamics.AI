@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 
 const app = readFileSync('src/App.tsx', 'utf8');
 const element = (path: string) => {
-  const m = app.match(new RegExp(`<Route path="${path.replace(/[/]/g, '\\/')}" element=\\{(.*?)\\} />`));
+  const esc = path.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const m = app.match(new RegExp(`<Route path="${esc}" element=\\{(.*?)\\} />`));
   if (!m) throw new Error(`Route ${path} fehlt`);
   return m[1];
 };

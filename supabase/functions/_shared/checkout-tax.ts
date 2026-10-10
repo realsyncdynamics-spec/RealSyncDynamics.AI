@@ -138,3 +138,34 @@ export function reviewInvoiceTax(input: {
   if (!input.footer?.includes(PRICING_TAX_NOTE_EXEMPT)) findings.push('EXEMPT_NOTE_MISSING');
   return findings;
 }
+
+export type BillingCountryGateResult =
+  | { ok: true }
+  | { ok: false; code: 'MARKET_NOT_SUPPORTED'; country: string };
+
+/**
+ * Serverseitige Markt-Sperre VOR der Session-Erstellung.
+ *
+ * Hosted Stripe Checkout kann das Land der Rechnungsadresse nicht
+ * einschränken. Deshalb sperrt der Server jeden bekannten Nicht-DE-Hinweis,
+ * bevor überhaupt eine Session (und damit eine Zahlungsmöglichkeit) entsteht:
+ *  - `declared`: vom Client angegebenes Rechnungsland (optional, `billing_country`)
+ *  - `customerCountry`: Adresse eines bestehenden Stripe-Customers
+ * Ist ein Land bekannt und nicht in TAX_CHECKED_MARKETS → Sperre.
+ * Unbekannt (Neukunde ohne Angabe) → erlaubt; die Nachkontrolle in
+ * `stripe-webhook` (reviewCheckoutTax → billing.tax_review_required) fängt
+ * den Rest, Erstattung/Kündigung entscheidet ein Mensch.
+ */
+export function billingCountryGate(input: {
+  declared?: string | null;
+  customerCountry?: string | null;
+}): BillingCountryGateResult {
+  for (const raw of [input.declared, input.customerCountry]) {
+    const c = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+    if (c && !isTaxCheckedMarket(c)) return { ok: false, code: 'MARKET_NOT_SUPPORTED', country: c };
+  }
+  return { ok: true };
+}
+
+export const MARKET_NOT_SUPPORTED_MESSAGE =
+  'Self-Service-Kauf ist derzeit nur mit Rechnungsadresse in Deutschland möglich. Bitte über /contact-sales anfragen.';

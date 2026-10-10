@@ -29,7 +29,9 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
-import { checkoutTaxParams, invoiceFooter } from '../_shared/checkout-tax.ts';
+import {
+  checkoutTaxParams, invoiceFooter, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE,
+} from '../_shared/checkout-tax.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -82,11 +84,17 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
+  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean; billing_country?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
+  }
+  // Markt-Sperre (§ 19 / TAX_CHECKED_MARKETS) für ein angegebenes Rechnungsland —
+  // vor jedem Stripe-Aufruf.
+  {
+    const gate = billingCountryGate({ declared: body.billing_country });
+    if (!gate.ok) return jsonError(400, gate.code, MARKET_NOT_SUPPORTED_MESSAGE);
   }
 
   // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten
@@ -247,6 +255,13 @@ Deno.serve(async (req) => {
     // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).
     if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
       stripeCustomerId = existingSub!.stripe_customer_id!;
+      // Bestehender Customer mit hinterlegter Nicht-DE-Adresse: keine Session.
+      const existing = await stripe.customers.retrieve(stripeCustomerId);
+      const customerCountry = 'deleted' in existing && existing.deleted
+        ? null
+        : (existing as Stripe.Customer).address?.country ?? null;
+      const gate = billingCountryGate({ customerCountry });
+      if (!gate.ok) return jsonError(400, gate.code, MARKET_NOT_SUPPORTED_MESSAGE);
     } else {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,
@@ -258,9 +273,25 @@ Deno.serve(async (req) => {
     // Abo-Rechnungen erzeugt Stripe selbst und übernimmt die Fußzeile vom
     // Customer. Deshalb vor jedem Checkout an den Steuermodus angleichen:
     // im EXEMPT-Modus der § 19-Hinweis (§ 34a UStDV), sonst leer.
-    await stripe.customers.update(stripeCustomerId!, {
-      invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
-    });
+    // Einmalkauf: Die Rechnungsfußzeile kommt aus invoice_creation.invoice_data,
+    // ein fehlgeschlagenes Customer-Update darf den Kauf nicht blockieren (nur
+    // loggen). Abo: Fußzeile kommt NUR vom Customer → Fehler bleibt blockierend.
+    if (isOneTime) {
+      try {
+        await stripe.customers.update(stripeCustomerId!, {
+          invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
+        });
+      } catch (e) {
+        const err = e as { message?: string; code?: string; type?: string };
+        console.error('[stripe-checkout] customer footer update failed (one-time, continuing)', {
+          message: err?.message, code: err?.code, type: err?.type,
+        });
+      }
+    } else {
+      await stripe.customers.update(stripeCustomerId!, {
+        invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: isOneTime ? 'payment' : 'subscription',

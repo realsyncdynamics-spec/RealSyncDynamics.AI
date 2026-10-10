@@ -6,7 +6,7 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
-import { checkoutTaxParams } from '../_shared/checkout-tax.ts';
+import { checkoutTaxParams, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE } from '../_shared/checkout-tax.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
     project_name?: string;
     redesign?: boolean;
     return_url?: string;
+    billing_country?: string;
   };
   try {
     body = await req.json();
@@ -53,6 +54,9 @@ Deno.serve(async (req) => {
 
   const tenantId = body.tenant_id?.trim();
   if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  // Markt-Sperre (§ 19 / TAX_CHECKED_MARKETS) vor jedem Stripe-Aufruf.
+  const marketGate = billingCountryGate({ declared: body.billing_country });
+  if (!marketGate.ok) return jsonError(400, marketGate.code, MARKET_NOT_SUPPORTED_MESSAGE);
   if (body.redesign !== true) return jsonError(400, 'BAD_REQUEST', 'redesign confirmation required');
 
   const sourceUrl = body.source_url?.trim() ?? '';

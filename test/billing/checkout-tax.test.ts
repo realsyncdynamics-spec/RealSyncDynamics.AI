@@ -200,3 +200,39 @@ describe('Verdrahtung: kein Checkout setzt automatic_tax am Helper vorbei', () =
     expect(src).toContain('reviewInvoiceTax(');
   });
 });
+
+describe('billingCountryGate (serverseitige Markt-Sperre vor der Session)', () => {
+  it('erlaubt DE und unbekanntes Land', async () => {
+    const { billingCountryGate } = await import('../../supabase/functions/_shared/checkout-tax');
+    expect(billingCountryGate({ declared: 'DE' })).toEqual({ ok: true });
+    expect(billingCountryGate({ declared: ' de ' })).toEqual({ ok: true });
+    expect(billingCountryGate({})).toEqual({ ok: true });
+    expect(billingCountryGate({ declared: '', customerCountry: null })).toEqual({ ok: true });
+  });
+  it('sperrt bekanntes Nicht-DE-Land (Angabe oder Customer-Adresse)', async () => {
+    const { billingCountryGate } = await import('../../supabase/functions/_shared/checkout-tax');
+    expect(billingCountryGate({ declared: 'AT' })).toEqual({ ok: false, code: 'MARKET_NOT_SUPPORTED', country: 'AT' });
+    expect(billingCountryGate({ declared: 'DE', customerCountry: 'ch' })).toEqual({ ok: false, code: 'MARKET_NOT_SUPPORTED', country: 'CH' });
+  });
+  it('alle drei Checkout-Handler prüfen das Land vor dem Stripe-Aufruf', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const f of ['stripe-checkout', 'checkout-siteos-project', 'checkout-website-rebuild']) {
+      const src = readFileSync(`supabase/functions/${f}/index.ts`, 'utf8');
+      const gate = src.indexOf('billingCountryGate({ declared: body.billing_country })');
+      expect(gate, f).toBeGreaterThan(-1);
+      expect(gate, f).toBeLessThan(src.indexOf('checkout.sessions.create'));
+    }
+    const sc = readFileSync('supabase/functions/stripe-checkout/index.ts', 'utf8');
+    expect(sc).toContain('billingCountryGate({ customerCountry })');
+  });
+});
+
+describe('stripe-checkout: Footer-Update', () => {
+  it('Einmalkauf: Fehler wird geloggt, blockiert nicht; Abo: bleibt blockierend', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('supabase/functions/stripe-checkout/index.ts', 'utf8');
+    const block = src.slice(src.indexOf('if (isOneTime) {\n      try {'), src.indexOf('const session = await stripe.checkout.sessions.create'));
+    expect(block).toContain('console.error(\'[stripe-checkout] customer footer update failed (one-time, continuing)\'');
+    expect(block).toMatch(/\} else \{\n\s+await stripe\.customers\.update/);
+  });
+});

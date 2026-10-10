@@ -240,11 +240,6 @@ describe('isPrivateResolvedAddress', () => {
 describe('Standard-Auflösung in der Edge-Laufzeit (Quelltext)', () => {
   const code = readFileSync('supabase/functions/_shared/public-scan/observe.ts', 'utf8');
 
-  it('fragt A und AAAA über Deno.resolveDns, mit der Deadline als Signal', () => {
-    expect(code).toContain("resolveDns(host, 'A', { signal })");
-    expect(code).toContain("resolveDns(host, 'AAAA', { signal })");
-  });
-
   it('prüft vor jedem Abruf, auch vor jeder Weiterleitung', () => {
     const schleife = code.slice(code.indexOf('async function followWithGuard('));
     const pruefung = schleife.indexOf('await assertPublicResolution(current, resolve, signal)');
@@ -255,5 +250,82 @@ describe('Standard-Auflösung in der Edge-Laufzeit (Quelltext)', () => {
 
   it('fetchGuarded und observeSite nutzen beide den Standard-Auflöser', () => {
     expect(code.match(/options\.resolveImpl \?\? defaultResolver\(\)/g)?.length).toBe(2);
+  });
+});
+
+/**
+ * Der Standard-Auflöser, so wie er in der Edge-Laufzeit läuft: über ein
+ * gesetztes `globalThis.Deno`. Nur `NotFound` gilt als „kein Eintrag dieser
+ * Familie“; jeder andere Fehler bricht ab, damit nicht nur eine Familie
+ * geprüft wird, während `fetch` danach beide auflöst.
+ */
+describe('Standard-Auflöser über Deno.resolveDns', () => {
+  type Antwort = string[] | Error;
+  const g = globalThis as unknown as { Deno?: unknown };
+
+  function mitDeno<T>(deno: unknown, lauf: () => Promise<T>): Promise<T> {
+    const vorher = g.Deno;
+    g.Deno = deno;
+    return lauf().finally(() => {
+      if (vorher === undefined) delete g.Deno;
+      else g.Deno = vorher;
+    });
+  }
+
+  function dns(tabelle: Record<string, Antwort>) {
+    const fragen: Array<{ host: string; typ: string; signal?: AbortSignal }> = [];
+    const resolveDns = async (host: string, typ: string, opts?: { signal?: AbortSignal }) => {
+      fragen.push({ host, typ, signal: opts?.signal });
+      const a = tabelle[`${host} ${typ}`];
+      if (a === undefined) throw Object.assign(new Error('no records'), { name: 'NotFound' });
+      if (a instanceof Error) throw a;
+      return a;
+    };
+    return { deno: { resolveDns }, fragen };
+  }
+
+  it('fragt A und AAAA mit der Deadline; fehlendes AAAA (NotFound) ist kein Fehler', async () => {
+    const { deno, fragen } = dns({ 'firma.de A': ['93.184.215.14'] });
+    const res = await mitDeno(deno, () =>
+      fetchGuarded('https://firma.de', { timeoutMs: 1000, fetchImpl: async () => new Response('ok') }),
+    );
+    expect(await res.text()).toBe('ok');
+    expect(fragen.map((f) => f.typ).sort()).toEqual(['A', 'AAAA']);
+    expect(fragen.every((f) => f.signal instanceof AbortSignal)).toBe(true);
+  });
+
+  it('lehnt eine private Adresse aus der AAAA-Familie ab', async () => {
+    const { deno } = dns({ 'boese.example A': ['93.184.215.14'], 'boese.example AAAA': ['::1'] });
+    await expect(
+      mitDeno(deno, () => fetchGuarded('https://boese.example/', { timeoutMs: 1000, fetchImpl: async () => new Response('x') })),
+    ).rejects.toBeInstanceOf(TargetRefusedError);
+  });
+
+  it('bricht ab, wenn eine Familie mit einem anderen Fehler scheitert — kein Abruf', async () => {
+    const besucht: string[] = [];
+    const zeit = Object.assign(new Error('timed out'), { name: 'TimedOut' });
+    const { deno } = dns({ 'firma.de A': ['93.184.215.14'], 'firma.de AAAA': zeit });
+    await expect(
+      mitDeno(deno, () =>
+        fetchGuarded('https://firma.de', {
+          timeoutMs: 1000,
+          fetchImpl: async (input) => { besucht.push(input); return new Response('x'); },
+        }),
+      ),
+    ).rejects.toThrow(/timed out/);
+    expect(besucht).toEqual([]);
+  });
+
+  it('bricht ab, wenn Deno existiert, resolveDns aber fehlt — kein ungeprüfter Abruf', async () => {
+    const besucht: string[] = [];
+    await expect(
+      mitDeno({}, () =>
+        fetchGuarded('https://firma.de', {
+          timeoutMs: 1000,
+          fetchImpl: async (input) => { besucht.push(input); return new Response('x'); },
+        }),
+      ),
+    ).rejects.toThrow(/resolveDns unavailable/);
+    expect(besucht).toEqual([]);
   });
 });

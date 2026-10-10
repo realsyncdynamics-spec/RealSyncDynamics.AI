@@ -51,23 +51,31 @@ type DenoDns = {
 /**
  * Auflösung über `Deno.resolveDns`, dieselbe API wie in email-auth-rescan.
  *
- * `null` nur dort, wo es kein `Deno` gibt — also unter Vitest. Die
- * Edge-Laufzeit hat `Deno` immer, dort ist die Prüfung damit immer aktiv.
- * Tests, die sie prüfen, injizieren `resolveImpl`.
+ * `null` nur dort, wo es kein `Deno` gibt — also unter Vitest. Gibt es
+ * `Deno`, aber kein `resolveDns`, wird abgebrochen statt ungeprüft
+ * abgerufen. Die Edge-Laufzeit hat beides, dort ist die Prüfung immer aktiv.
+ *
+ * Nur `NotFound` (kein Eintrag dieser Familie) zählt als leeres Ergebnis —
+ * ein Host mit nur A- oder nur AAAA-Einträgen bleibt prüfbar. Jeder andere
+ * Fehler (Zeitüberschreitung, Abbruch, SERVFAIL) bricht ab: Sonst würde eine
+ * gescheiterte Familie verworfen und die Schranke nur die andere prüfen,
+ * während `fetch` danach beide auflöst.
  */
 function defaultResolver(): ResolveLike | null {
   const deno = (globalThis as unknown as { Deno?: Partial<DenoDns> }).Deno;
-  if (typeof deno?.resolveDns !== 'function') return null;
+  if (deno === undefined) return null;
+  if (typeof deno.resolveDns !== 'function') {
+    throw new Error('Deno.resolveDns unavailable — DNS guard cannot run');
+  }
   const resolveDns = deno.resolveDns.bind(deno) as DenoDns['resolveDns'];
   return async (host, signal) => {
-    const [v4, v6] = await Promise.allSettled([
-      resolveDns(host, 'A', { signal }),
-      resolveDns(host, 'AAAA', { signal }),
-    ]);
-    return [
-      ...(v4.status === 'fulfilled' ? v4.value : []),
-      ...(v6.status === 'fulfilled' ? v6.value : []),
-    ];
+    const family = (type: 'A' | 'AAAA') =>
+      resolveDns(host, type, { signal }).catch((error: unknown) => {
+        if ((error as { name?: string } | null)?.name === 'NotFound') return [];
+        throw error;
+      });
+    const [v4, v6] = await Promise.all([family('A'), family('AAAA')]);
+    return [...v4, ...v6];
   };
 }
 

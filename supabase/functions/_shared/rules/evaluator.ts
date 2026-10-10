@@ -60,7 +60,7 @@ export interface Finding {
   remediation: ComplianceRule['remediation'];
 }
 
-export const RULE_ENGINE_VERSION = '2026.05.0';
+export const RULE_ENGINE_VERSION = '2026.10.0';
 
 import gdpr from './gdpr.json' with { type: 'json' };
 import aiAct from './ai-act.json' with { type: 'json' };

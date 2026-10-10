@@ -102,7 +102,6 @@ describe('Cron-Functions: Inbound-Auth', () => {
     // Welle 3: intern, schreiben per Service-Role in fremde Tenants.
     'governance-risk-escalate',
     'compliance-alert-trigger',
-    'audit-monitor-cron',
   ])(
     '%s weist Aufrufe ohne Service-Role-Bearer mit 401 ab',
     (fn) => {
@@ -112,6 +111,16 @@ describe('Cron-Functions: Inbound-Auth', () => {
       expect(src).toMatch(/401/);
     },
   );
+
+  it('audit-monitor-cron nutzt CRON_AUDIT_MONITOR_KEY (nicht service_role JWT)', () => {
+    const src = quelle('audit-monitor-cron');
+    expect(src).toContain("Deno.env.get('CRON_AUDIT_MONITOR_KEY')");
+    expect(src).toContain('checkCronAuth(CRON_KEY');
+    expect(src).not.toMatch(/Bearer \$\{SERVICE_KEY\}/);
+    const logic = quelle('audit-monitor-cron', 'logic.ts');
+    expect(logic).toMatch(/status: 401/);
+    expect(logic).toMatch(/cron only/);
+  });
 
   it('scheduler-dispatch nutzt CRON_SCHEDULER_DISPATCH_KEY (nicht service_role JWT)', () => {
     const src = quelle('scheduler-dispatch');
@@ -154,10 +163,12 @@ describe('Welle 3 — was neben dem Gate repariert wurde', () => {
     expect(trigger.indexOf('await logAlert(')).toBeLessThan(trigger.indexOf("hasFeature(entitlements, 'alerts.email')"));
     expect(trigger).toContain('email_skipped_entitlement_missing');
 
-    const cron = quelle('audit-monitor-cron');
-    expect(cron).toMatch(/if \(await mayAlert\(supabase, d\.tenant_id\)\)/);
-    // Ergebnis wird auch ohne Versand gespeichert.
-    expect(cron.indexOf('mayAlert(supabase')).toBeLessThan(cron.indexOf("from('audit_monitor_results').insert"));
+    // audit-monitor-cron: Ergebnis wird vor (und unabhängig von) dem Versand
+    // gespeichert; der Versand hängt an plan.driftAlerts (alerts.email +
+    // monitoring.drift). Verhalten: test/edge/audit-monitor-cron.test.ts.
+    const cron = quelle('audit-monitor-cron', 'handler.ts');
+    expect(cron).toMatch(/if \(!plan\.driftAlerts\)/);
+    expect(cron.indexOf('repo.insertResult(')).toBeLessThan(cron.indexOf('if (!plan.driftAlerts)'));
   });
 
   it('governance-risk-score bleibt bewusst ohne Plan-Gate', () => {

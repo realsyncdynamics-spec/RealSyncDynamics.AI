@@ -30,6 +30,8 @@ import type { AuditRecord, EngineRunResult, FileRecord, GovernanceContext } from
 
 type Pane = 'preview' | 'code' | 'audit';
 
+const DEFAULT_CODE_PROMPT = 'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.';
+
 const GATE_PROBE =
   '<boltArtifact title="gate"><boltAction type="file" filePath="index.html">held</boltAction></boltArtifact>';
 
@@ -84,9 +86,11 @@ function toLocal(row: {
 export function BoltWorkbench({
   ctx,
   projectSlug,
+  initialPrompt,
 }: {
   ctx: GovernanceContext;
   projectSlug: string;
+  initialPrompt?: string | null;
 }): ReactElement {
   const engineRef = useRef(new BoltEngine(ctx));
   const abortRef = useRef<AbortController | null>(null);
@@ -94,9 +98,7 @@ export function BoltWorkbench({
   const [project, setProject] = useState<BuilderProject>(() =>
     newProject(ctx.tenantId, projectSlug, projectSlug),
   );
-  const [prompt, setPrompt] = useState(
-    'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.',
-  );
+  const [prompt, setPrompt] = useState(() => initialPrompt ?? DEFAULT_CODE_PROMPT);
   const [busy, setBusy] = useState(false);
   const [stream, setStream] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +110,11 @@ export function BoltWorkbench({
   const [previewKey, setPreviewKey] = useState(0);
   const [serverPersist, setServerPersist] = useState<'idle' | 'ok' | 'blocked'>('idle');
   const [lastChange, setLastChange] = useState<string | undefined>();
+
+  // A new /build handoff pre-fills the editor; it never starts an AI call automatically.
+  useEffect(() => {
+    if (initialPrompt) setPrompt(initialPrompt);
+  }, [initialPrompt]);
 
   const refreshList = useCallback(() => {
     void (async () => {
@@ -379,7 +386,7 @@ export function BoltWorkbench({
     setActivePath(null);
     setStream('');
     setError(null);
-    setPrompt('Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.');
+    setPrompt(initialPrompt ?? DEFAULT_CODE_PROMPT);
   }
 
   function openListed(id: string) {

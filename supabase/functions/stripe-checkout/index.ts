@@ -28,7 +28,10 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import {
+  checkoutTaxParams, invoiceFooter, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE, marketGateMessage,
+} from '../_shared/checkout-tax.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -81,11 +84,17 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
+  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean; billing_country?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
+  }
+  // Markt-Sperre (§ 19 / TAX_CHECKED_MARKETS) für ein angegebenes Rechnungsland —
+  // vor jedem Stripe-Aufruf.
+  {
+    const gate = billingCountryGate({ declared: body.billing_country, requireDeclared: true });
+    if (!gate.ok) return jsonError(400, gate.code, marketGateMessage(gate.code));
   }
 
   // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten
@@ -246,12 +255,42 @@ Deno.serve(async (req) => {
     // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).
     if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
       stripeCustomerId = existingSub!.stripe_customer_id!;
+      // Bestehender Customer mit hinterlegter Nicht-DE-Adresse: keine Session.
+      const existing = await stripe.customers.retrieve(stripeCustomerId);
+      const customerCountry = 'deleted' in existing && existing.deleted
+        ? null
+        : (existing as Stripe.Customer).address?.country ?? null;
+      const gate = billingCountryGate({ customerCountry });
+      if (!gate.ok) return jsonError(400, gate.code, marketGateMessage(gate.code));
     } else {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,
         metadata: { tenant_id: body.tenant_id },
       });
       stripeCustomerId = customer.id;
+    }
+
+    // Abo-Rechnungen erzeugt Stripe selbst und übernimmt die Fußzeile vom
+    // Customer. Deshalb vor jedem Checkout an den Steuermodus angleichen:
+    // im EXEMPT-Modus der § 19-Hinweis (§ 34a UStDV), sonst leer.
+    // Einmalkauf: Die Rechnungsfußzeile kommt aus invoice_creation.invoice_data,
+    // ein fehlgeschlagenes Customer-Update darf den Kauf nicht blockieren (nur
+    // loggen). Abo: Fußzeile kommt NUR vom Customer → Fehler bleibt blockierend.
+    if (isOneTime) {
+      try {
+        await stripe.customers.update(stripeCustomerId!, {
+          invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
+        });
+      } catch (e) {
+        const err = e as { message?: string; code?: string; type?: string };
+        console.error('[stripe-checkout] customer footer update failed (one-time, continuing)', {
+          message: err?.message, code: err?.code, type: err?.type,
+        });
+      }
+    } else {
+      await stripe.customers.update(stripeCustomerId!, {
+        invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -274,20 +313,19 @@ Deno.serve(async (req) => {
             payment_intent_data: {
               metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
             },
-            // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
-            // B2B-Kauf muss ein Belegdokument existieren.
-            invoice_creation: { enabled: true },
           }
         : { subscription_data: subscriptionData }),
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
-      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
-      automatic_tax: { enabled: true },
-      billing_address_collection: 'required',
-      tax_id_collection: { enabled: true },
-      customer_update: { address: 'auto', name: 'auto' },
+      // Steuer, Rechnungsadresse, Rechnung (Einmalkauf) und Hinweis über dem
+      // Bezahlknopf: aus dem Steuermodus der Pricing-SSoT, nie fest verdrahtet.
+      // EXEMPT (§ 19 UStG) → keine Steuerberechnung. Siehe _shared/checkout-tax.ts.
+      ...checkoutTaxParams({
+        sessionMode: isOneTime ? 'payment' : 'subscription',
+        existingCustomer: true,
+        taxMode: PRICING_TAX_MODE,
+      }),
     });
 
     return jsonResponse({ ok: true, url: session.url, session_id: session.id });

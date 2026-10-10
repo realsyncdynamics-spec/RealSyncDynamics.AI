@@ -47,6 +47,7 @@ export async function createCheckoutSession(
       plan_key: planKey,
       return_url: typeof window !== 'undefined' ? window.location.origin : request.successUrl,
       pilot,
+      billing_country: 'DE',
     },
   });
 

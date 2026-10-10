@@ -3,6 +3,15 @@ import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 
 export type { PlanKey };
 
+/**
+ * Self-Service-Checkout verkauft nur an Rechnungsadressen in Deutschland
+ * (§ 19 UStG / TAX_CHECKED_MARKETS). Der Server verlangt `billing_country`
+ * und lehnt alles ≠ DE vor jedem Stripe-Aufruf ab.
+ */
+export const CHECKOUT_BILLING_COUNTRY = 'DE' as const;
+export const CHECKOUT_BILLING_COUNTRY_NOTICE =
+  'Self-Service-Kauf nur mit Rechnungsadresse in Deutschland. Andere Länder: bitte über /contact-sales.';
+
 export interface CheckoutResult {
   ok: boolean;
   url?: string;
@@ -41,7 +50,10 @@ export async function createCheckoutSession(
 
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const { data, error } = await getSupabase().functions.invoke('stripe-checkout', {
-    body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
+    body: {
+      tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot,
+      billing_country: CHECKOUT_BILLING_COUNTRY,
+    },
   });
   if (error) return readCheckoutError(error);
   return data as CheckoutResult;
@@ -68,6 +80,7 @@ export async function createSiteOsCheckoutSession(args: {
       tier: 'governance_launch',
       redesign: true,
       return_url: window.location.origin,
+      billing_country: CHECKOUT_BILLING_COUNTRY,
     },
   });
   if (error) return readCheckoutError(error);

@@ -31,6 +31,12 @@ Im Testmodus gilt (fail-closed):
   ebenfalls `503`; falsche Signaturen erhalten `400`. Identische Live-/Test-
   Signing-Secrets werden zur Vermeidung uneindeutiger Zuordnung abgewiesen.
   Testereignisse dürfen niemals mit Live-API-Schlüsseln verarbeitet werden.
+  **Legacy-Testbetrieb:** Verwenden eine ältere Testinstallation und der
+  Webhook denselben Test-Signing-Secret in den bisherigen `STRIPE_WEBHOOK_SECRET`
+  und den aufgelösten Testwerten, ohne dass ein Live-API-Key vorhanden ist,
+  wird dieser Secret nur als *Test*-Kandidat geführt. Sind dagegen echter
+  Live-Key und identische Test-/Live-Secrets vorhanden, bleibt der Webhook
+  aus Sicherheitsgründen gesperrt.
 - Testkäufe melden keine Conversions an Werbeplattformen.
 - Antworten von `stripe-checkout`, `stripe-checkout-verify`, `stripe-portal`,
   `checkout-siteos-project`, `checkout-website-rebuild` enthalten

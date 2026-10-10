@@ -100,10 +100,33 @@ describe('PostScanChoiceRow destinations', () => {
       findings: [{ id: '1', severity: 'high', title: 't', detail: 'd' }],
     });
     expect(choices).toHaveLength(4);
-    expect(choices[0].badge).toBe('coming-soon');
-    expect(choices[1].to).toBe('/onboarding/aud-1');
-    expect(choices[2].to).toContain('%2Fapp%2Factivation');
-    expect(choices[3].badge).toBe('preview');
+    expect(choices[0].id).toBe('activation');
+    expect(choices.filter((c) => c.primary)).toHaveLength(1);
+    expect(choices[0].primary).toBe(true);
+    const byId = Object.fromEntries(choices.map((c) => [c.id, c]));
+    expect(byId.monitor.badge).toBe('coming-soon');
+    expect(byId['fix-plan'].to).toBe('/onboarding/aud-1');
+    expect(byId.activation.to).toContain('%2Fapp%2Factivation');
+    expect(byId.export.badge).toBe('preview');
+  });
+
+  it('leads with the workspace setup as the single primary step, without trial promise', () => {
+    const choices = buildPostScanChoices({
+      auditId: 'aud-1',
+      domain: 'example.com',
+      score: 62,
+      severity: 'high',
+      hasFindings: false,
+    });
+    expect(choices[0].id).toBe('activation');
+    expect(choices[0].title).toBe('Governance-Workspace einrichten');
+    expect(choices[0].badge).toBe('live');
+    expect(choices.filter((c) => c.primary)).toHaveLength(1);
+    expect(choices[0].primary).toBe(true);
+    for (const c of choices) {
+      expect(`${c.title} ${c.description}`).not.toMatch(/Tage kostenlos|testen|Trial/i);
+      expect(c.to).not.toContain('/unified-entry/scan');
+    }
   });
 });
 

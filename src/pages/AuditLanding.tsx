@@ -22,6 +22,8 @@ import {
   PostScanChoiceRow,
 } from '../components/audit/PostScanChoiceRow';
 import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
+import { saveFunnelContext } from '../core/onboarding/funnelContext';
+import { clearPendingAudit, readPendingAudit } from '../core/onboarding/claimAudit';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -398,6 +400,16 @@ function GuidedPlanBlock({ report }: { report: Report }) {
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
+  // Scan für die Übernahme nach der Anmeldung festhalten: `claimPendingAudit()`
+  // liest den Trichter-Kontext, nicht `audit_id` aus der /welcome-URL.
+  // Ein älterer Pending-Eintrag (z. B. aus dem Trial-CTA eines früheren Scans)
+  // hat bei der Übernahme Vorrang — deshalb verwerfen, wenn er zu einem anderen Scan gehört.
+  React.useEffect(() => {
+    if (!report.audit_id) return;
+    const pending = readPendingAudit();
+    if (pending && pending.audit_id !== report.audit_id) clearPendingAudit();
+    saveFunnelContext({ auditId: report.audit_id, domain: report.domain });
+  }, [report.audit_id, report.domain]);
   const config = severityConfig(report.severity);
   const [explainIssue, setExplainIssue] = useState<Issue | null>(null);
   const critCount = report.issues.filter((i) => i.severity === 'critical').length;
@@ -475,8 +487,6 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           })),
         })}
       />
-
-      <TrialCtaBlock report={report} />
 
       {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
 
@@ -577,6 +587,9 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <NextStepBlock report={report} />
 
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
+
+      {/* Upgrade-Angebote erst nach dem kostenlosen Einstieg (PostScanChoiceRow oben, E-F6). */}
+      <TrialCtaBlock report={report} />
 
       <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>

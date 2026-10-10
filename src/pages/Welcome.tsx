@@ -405,8 +405,10 @@ export function Welcome() {
               {/* Step 1 — Account: OAuth-Provider zuerst, Magic-Link als Fallback */}
               {step === 1 && !magicSent && (
                 <div className="space-y-5">
+                  {/* OAuth kehrt wie der Magic-Link auf /welcome (inkl. ?next=) zurück:
+                      nur dort laufen claimPendingAudit() und danach die Weiterleitung. */}
                   <OAuthProviderButtons
-                    redirectAfterAuthTo={params.get('next') ?? undefined}
+                    redirectAfterAuthTo={`${window.location.pathname}${window.location.search}`}
                   />
                   <div className="flex items-center gap-3">
                     <div className="h-px flex-1 bg-titanium-700/40" />

@@ -131,8 +131,7 @@ export function PostRegisterOnboardingPage() {
   if (step === 'success') {
     return (
       <div className="max-w-md mx-auto text-center space-y-6">
-        <div className="text-5xl">🎉</div>
-        <h1 className="text-3xl font-bold text-titanium-50">Ihr kostenloses Konto ist bereit.</h1>
+        <h1 className="text-3xl font-bold text-titanium-50">Ihr AI Governance Workspace ist vorbereitet.</h1>
         <p className="text-lg text-titanium-300">
           <strong>Dauerhaft kostenlos.</strong> Domain-Scan, Governance Score und Audit Center
           ohne Zeitlimit. Upgrade jederzeit aus dem Dashboard — Growth {planById('growth').trialDays} Tage

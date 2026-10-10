@@ -4,7 +4,9 @@
 // Stripe must be configured with the secret stored in STRIPE_WEBHOOK_SECRET
 // (live) or STRIPE_WEBHOOK_SECRET_TEST (Beta-Testmodus, STRIPE_MODE != 'live').
 // Events, deren `livemode` nicht zu STRIPE_MODE passt, werden quittiert und
-// ignoriert — kein Test-Kauf schaltet im Live-Betrieb frei und umgekehrt.
+// ignoriert — kein Test-Kauf schaltet im Live-Betrieb frei. Ausnahme Testmodus:
+// mit dem Live-Secret verifizierte Live-Events (Bestandskunden: Verlängerung,
+// Kündigung) werden mit dem Live-Key normal verarbeitet.
 // Tenant linkage:
 //   We expect every Stripe Customer (or Subscription) to carry
 //   `metadata.tenant_id` matching a row in public.tenants. Without it, we
@@ -19,6 +21,7 @@ import {
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
 import {
+  keyModeOf,
   planKeyForTestPrice,
   resolveStripeSecretKey,
   resolveStripeWebhookSecret,
@@ -93,25 +96,27 @@ Deno.serve(async (req) => {
       { status: 500 },
     );
   }
-  const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
+  let stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
 
   // Im Testmodus kommen Events des Live-Endpoints weiter an dieselbe URL. Sie
   // tragen die Live-Signatur — ohne Prüfung gegen das Live-Secret liefe jedes
-  // in einen 400 und Stripe stellte endlos neu zu. Verifiziert werden sie
-  // danach von der Modus-Gegenprobe unten mit 200 verworfen.
+  // in einen 400 und Stripe stellte endlos neu zu.
   const webhookSecrets = [WEBHOOK_SECRET];
+  let liveWebhookSecret: string | null = null;
   if (keyRes.mode === 'test') {
-    const liveWebhookSecret = await resolveStripeWebhookSecret(getSecret, 'live', 'legacy_var');
+    liveWebhookSecret = await resolveStripeWebhookSecret(getSecret, 'live', 'legacy_var');
     if (liveWebhookSecret && liveWebhookSecret !== WEBHOOK_SECRET) webhookSecrets.push(liveWebhookSecret);
   }
 
   const raw = await req.text();
   let event: Stripe.Event | null = null;
+  let verifiedWithLiveSecret = false;
   let signatureError: unknown;
   for (const webhookSecret of webhookSecrets) {
     try {
       // constructEventAsync because Deno's WebCrypto is async.
       event = await stripe.webhooks.constructEventAsync(raw, sig, webhookSecret);
+      verifiedWithLiveSecret = webhookSecret !== WEBHOOK_SECRET && webhookSecret === liveWebhookSecret;
       break;
     } catch (err) {
       signatureError = err;
@@ -121,10 +126,19 @@ Deno.serve(async (req) => {
     return new Response(`signature verify failed: ${(signatureError as Error).message}`, { status: 400 });
   }
 
-  // Modus-Gegenprobe: Ein Event aus dem jeweils anderen Stripe-Modus darf
-  // keine Entitlements schreiben. 200 statt 4xx, damit Stripe nicht endlos
-  // erneut zustellt; nichts wird gespeichert.
-  if (event.livemode !== (keyRes.mode === 'live')) {
+  // Testmodus + mit dem Live-Secret verifiziertes Live-Event: Bestandskunden
+  // dürfen keine Verlängerung/Kündigung verlieren — wie vor der Beta mit dem
+  // Live-Key verarbeiten. Fehlt der Live-Key, 503: Stripe stellt später erneut zu.
+  if (keyRes.mode === 'test' && event.livemode && verifiedWithLiveSecret) {
+    const liveKey = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+    if (!liveKey || keyModeOf(liveKey) !== 'live') {
+      return new Response('live event received but no sk_live_ key configured', { status: 503 });
+    }
+    stripe = new Stripe(liveKey, { apiVersion: '2024-06-20' });
+  } else if (event.livemode !== (keyRes.mode === 'live')) {
+    // Modus-Gegenprobe: Ein Event aus dem jeweils anderen Stripe-Modus darf
+    // keine Entitlements schreiben. 200 statt 4xx, damit Stripe nicht endlos
+    // erneut zustellt; nichts wird gespeichert.
     console.warn(`[stripe-webhook] ${event.id} livemode=${event.livemode} ignoriert (STRIPE_MODE=${keyRes.mode})`);
     return new Response(JSON.stringify({ received: true, ignored: 'stripe_mode_mismatch' }), {
       status: 200,

@@ -20,8 +20,13 @@ Im Testmodus gilt (fail-closed):
   **nie** benutzt → Checkout antwortet `503 STRIPE_LIVE_KEY_BLOCKED`.
 - Price-IDs kommen **nicht** aus `public.products` (dort stehen die Live-IDs),
   sondern aus `STRIPE_TEST_PRICE_<PLAN_KEY>`. Fehlt sie → `400 PRICE_NOT_CONFIGURED`.
-- Webhook prüft mit `STRIPE_WEBHOOK_SECRET_TEST`. Events mit `livemode=true`
-  werden quittiert und ignoriert (`ignored: stripe_mode_mismatch`).
+- Webhook prüft mit `STRIPE_WEBHOOK_SECRET_TEST` und zusätzlich mit dem
+  Live-Secret `STRIPE_WEBHOOK_SECRET`. Mit dem Live-Secret verifizierte
+  Live-Events (Bestandskunden: Verlängerung, Kündigung, Zahlungsausfall) werden
+  mit dem Live-Key `STRIPE_SECRET_KEY` normal verarbeitet; fehlt der Live-Key,
+  antwortet der Webhook `503` und Stripe stellt später erneut zu. Andere Events
+  mit falschem `livemode` werden quittiert und ignoriert
+  (`ignored: stripe_mode_mismatch`).
 - Testkäufe melden keine Conversions an Werbeplattformen.
 - Antworten von `stripe-checkout`, `stripe-checkout-verify`, `stripe-portal`,
   `checkout-siteos-project`, `checkout-website-rebuild` enthalten
@@ -65,11 +70,11 @@ Im Stripe-Dashboard oben rechts **Testmodus** einschalten (bzw. eine Sandbox
      `invoice.payment_failed`, `charge.failed`, `charge.refunded`
    - Signing Secret `whsec_…` kopieren.
 
-> **Live-Webhook:** Der bestehende Live-Endpoint zeigt auf dieselbe URL. Im
-> Testmodus schlägt dessen Signaturprüfung fehl (400) und Stripe stellt erneut
-> zu. Vorher prüfen, ob es **zahlende Live-Abos** gibt. Falls nein: Live-Endpoint
-> während der Beta im Live-Dashboard deaktivieren. Falls ja: nicht umschalten,
-> ohne das vorher zu klären.
+> **Live-Webhook:** Der bestehende Live-Endpoint zeigt auf dieselbe URL und
+> bleibt aktiv. Im Testmodus verarbeitet der Webhook dessen Events weiter mit dem
+> Live-Key, solange `STRIPE_WEBHOOK_SECRET` und `STRIPE_SECRET_KEY` (live)
+> gesetzt bleiben — Bestandskunden verlieren also keine Verlängerung oder
+> Kündigung. Diese beiden Live-Secrets daher während der Beta **nicht** löschen.
 
 ## 2. Supabase-Secrets setzen
 

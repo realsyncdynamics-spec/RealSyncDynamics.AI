@@ -126,30 +126,36 @@ describe('osChrome — entkoppelt von der Marketing-Palette', () => {
   });
 
   /**
-   * Die Handoff-v2-Werte (HANDOFF.md „Design Tokens"), eingefroren zum
-   * Palettenwechsel in Phase 2. Ein spaeterer Farbwechsel soll wieder eine
-   * bewusste Entscheidung sein, kein Nebeneffekt.
+   * Brand-v4-Werte (src/styles/brand-v4-tokens.css), eingefroren zum
+   * Palettenwechsel Handoff v2 → v4 (Visual-Unification PR 2). Ein spaeterer
+   * Farbwechsel soll wieder eine bewusste Entscheidung sein, kein Nebeneffekt.
    */
-  const HANDOFF_V2: Readonly<Record<string, string>> = {
-    OS_GOLD: '#00B8D4',
-    OS_BG: '#070B14',
-    OS_CREAM: '#1E5AFF',
-    OS_CREAM_ALT: '#1641C4',
-    OS_CREAM_TEXT: '#FFFFFF',
+  const BRAND_V4: Readonly<Record<string, string>> = {
+    OS_GOLD: '#F2C98A',
+    OS_BG: '#050607',
+    OS_CREAM: '#F2C98A',
+    OS_CREAM_ALT: '#FBE7BD',
+    OS_CREAM_TEXT: '#050607',
     OS_H1: 'clamp(2.5rem, 1.2rem + 4.2vw, 4.25rem)',
     OS_H2: 'clamp(1.8125rem, 1.15rem + 2.3vw, 2.75rem)',
-    OS_LINE: '#1F2B48',
+    OS_LINE: '#2B261D',
     OS_MONO: "'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace",
-    OS_MUTED: '#8A95AC',
-    OS_PANEL: '#0D1322',
-    OS_SERIF: "'Newsreader', Georgia, 'Times New Roman', serif",
-    OS_TEXT: '#F2F5FA',
+    OS_MUTED: '#A3ABB3',
+    OS_PANEL: '#0B0D0F',
+    OS_SERIF: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
+    OS_TEXT: '#F3F2F2',
   };
 
-  it('traegt die Handoff-v2-Werte, unveraendert', () => {
+  it('traegt die Brand-v4-Werte, unveraendert', () => {
     const werte: Record<string, unknown> = { ...osChrome };
-    for (const [name, wert] of Object.entries(HANDOFF_V2)) {
-      expect(werte[name], `${name} weicht von den Handoff-v2-Tokens ab.`).toBe(wert);
+    for (const [name, wert] of Object.entries(BRAND_V4)) {
+      expect(werte[name], `${name} weicht von den Brand-v4-Tokens ab.`).toBe(wert);
+    }
+  });
+
+  it('das App-Chrome traegt kein Handoff-Cyan/-Blau mehr', () => {
+    for (const wert of ['#00b8d4', '#1e5aff', '#1641c4', '#4fd4e8']) {
+      expect(osChromeSrc.toLowerCase().replace(/\/\*[\s\S]*?\*\//g, '')).not.toContain(wert);
     }
   });
 

@@ -791,7 +791,7 @@ export const PLANS: Plan[] = [
     ctaLabel: 'Agency starten',
     limits: {
       bots: 10,
-      answersPerMonth: 25_000,
+      answersPerMonth: 10_000,
       domains: 10,
       sites: 10,
       automationRunsPerMonth: 500,
@@ -847,7 +847,7 @@ export const PLANS: Plan[] = [
         'n8n-Anbindung und Kodee Server-Assistent (Preview)',
         'REST-API und Webhooks für CI/CD',
         '500 Automationsläufe pro Monat (Preview)',
-        '10 Governance-Bots mit 25.000 Antworten (alle Kanäle inkl. Voice)',
+        '10 Governance-Bots mit 10.000 Antworten (alle Kanäle inkl. Voice)',
         '10 SiteOS-Websites; Publish-Berechtigung — öffentliches Deploy Preview',
       ],
       multi_tenant_reseller: [

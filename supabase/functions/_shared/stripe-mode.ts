@@ -151,7 +151,14 @@ export function testPriceIdFor(planKey: string): string | null {
 export function planKeyForTestPrice(priceId: string | null | undefined): string | null {
   if (!priceId || getStripeMode() !== 'test') return null;
   let entries: Record<string, string>;
-  try { entries = Deno.env.toObject(); } catch { return null; }
+  // Die lokale Deno-Typdeklaration deklariert nur env.get(); zur Laufzeit
+  // stellt Deno.env.toObject() die vorhandenen Test-Price-Variablen bereit.
+  // Optionaler Zugriff hält Typecheck und eingeschränkte Test-Runtimes stabil.
+  try {
+    const env = Deno.env as typeof Deno.env & { toObject?: () => Record<string, string> };
+    if (typeof env.toObject !== 'function') return null;
+    entries = env.toObject();
+  } catch { return null; }
   for (const [name, value] of Object.entries(entries)) {
     if (name.startsWith(STRIPE_TEST_PRICE_PREFIX) && value.trim() === priceId) {
       return name.slice(STRIPE_TEST_PRICE_PREFIX.length).toLowerCase();

@@ -21,9 +21,16 @@ describe('Stripe Checkout — tax mode alignment', () => {
     expect(EDGE_TAX_MODE === 'EU_STANDARD').toBe(false);
   });
 
+  it('adds the §19 invoice footer to new customers and one-time invoices', () => {
+    expect(CHECKOUT).toContain("invoice_settings: { footer: PRICING_TAX_NOTE_EXEMPT }");
+    expect(CHECKOUT).toContain("invoice_data: { footer: PRICING_TAX_NOTE_EXEMPT }");
+    expect(CHECKOUT).toContain("PRICING_TAX_MODE === 'EXEMPT'");
+    expect(CHECKOUT).not.toContain('stripe.customers.update(');
+  });
+
   it('derives automatic_tax from the server-side pricing SSoT, not a fixed true flag', () => {
     expect(CHECKOUT).toContain(
-      "import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';",
+      "import { normalizePlanKey, planByKey, PRICING_TAX_MODE, PRICING_TAX_NOTE_EXEMPT } from '../_shared/pricing.generated.ts';",
     );
     const taxAssignments = [...CHECKOUT.matchAll(/automatic_tax:\s*\{\s*enabled:\s*([^}]+)\}/g)];
     expect(taxAssignments).toHaveLength(1);

@@ -1,17 +1,15 @@
 // CommandCenterOverview — Kopf des /app/dashboard im Look der Landing-v4-
 // Sektion „Compliance Command Center“ (LandingV4Sections.tsx → V4Workspace).
 //
-// JSX-Struktur und Klassen (`.app`, `.tiles`, `.tile`, `.split`, `.panel`,
-// `.panel-head`, `.fw`, `.bar`, `.finding`, `.sev-*`, `.row`, `.intent`,
-// `.intent-chips`) sind 1:1 übernommen; die Optik kommt aus derselben
-// `.gv4`-Kaskade in styles/landing-v4-classical.css (nur gelesen, nicht
-// geändert). Unterschied zur Landing: KEINE Demo-Zahlen. Jeder Wert stammt
+// Struktur wie die Landing-Vorschau, Optik über die App-Klassen `cc-*`
+// (src/styles/command-center.css, --brand-*-Tokens) und SeverityBadge.
+// Kein Import der Landing-Kaskade. Unterschied zur Landing: KEINE Demo-Zahlen. Jeder Wert stammt
 // aus den bereits geladenen CockpitData; fehlt eine Quelle, zeigen wir einen
 // echten Backend-Status bzw. einen expliziten Fehlerzustand. Keine
 // Platzhalter, keine Beispielzeilen.
 
 import { Link } from 'react-router-dom';
-import '../../../styles/landing-v4-classical.css';
+import { ButtonLink, SeverityBadge } from '../../../components/brand';
 import {
   ACTION_SOURCES, SIGNAL_SOURCES, sourcesOk,
   type CockpitData,
@@ -93,132 +91,137 @@ export function CommandCenterOverview({
         cta: aiSystems === 0 ? { to: '/app/ai-systems', label: 'KI-System erfassen →' } : undefined,
       });
 
+  const meta = [planLabel ? `PLAN ${planLabel.toUpperCase()}` : null, tenantName?.toUpperCase() ?? null]
+    .filter(Boolean)
+    .join(' · ');
+  const notice = 'text-sm text-[var(--brand-muted)]';
+  const errorText = 'text-sm text-[#ffd7c2]';
+
   return (
-    <div className="gv4" data-testid="command-center-overview" style={{ background: 'transparent' }}>
-      <div className="app" role="region" aria-label="Compliance Command Center" style={{ marginTop: 0 }}>
-        <div className="app-main">
-          <div className="app-head">
-            <h3>Compliance Command Center</h3>
-            <span>
-              {[planLabel ? `PLAN ${planLabel.toUpperCase()}` : null, tenantName?.toUpperCase() ?? null]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
-          </div>
+    <section
+      data-testid="command-center-overview"
+      aria-label="Compliance Command Center"
+      className="flex flex-col gap-[var(--brand-space-4)]"
+    >
+      <div className="flex flex-wrap items-baseline gap-[var(--brand-space-3)]">
+        <h2 className="m-0 font-[family-name:var(--brand-serif)] text-[22px] font-semibold tracking-tight text-[var(--brand-paper)]">
+          Compliance Command Center
+        </h2>
+        {meta && <span className="cc-tile__label">{meta}</span>}
+      </div>
 
-          <div className="tiles">
-            {tiles.map((t) => (
-              <div
-                key={t.key}
-                className="tile"
-                data-testid={`overview-tile-${t.key}`}
-                data-state={t.error ? 'error' : t.state ? 'status' : 'value'}
-              >
-                {t.value !== undefined ? (
-                  <b>
-                    {t.value}
-                    {t.suffix ? <i>{t.suffix}</i> : null}
-                  </b>
-                ) : t.state ? (
-                  <b style={{ fontSize: 20 }}>{t.state}</b>
-                ) : (
-                  <b role="alert" style={{ fontSize: 14, color: '#ffd7c2' }}>{t.error}</b>
-                )}
-                <span>{t.label}</span>
-                {t.cta && (
-                  <div style={{ marginTop: 8 }}>
-                    <Link to={t.cta.to} style={{ fontSize: 12 }}>{t.cta.label}</Link>
-                  </div>
-                )}
+      <div className="cc-tiles">
+        {tiles.map((t) => (
+          <div
+            key={t.key}
+            className="cc-tile"
+            data-testid={`overview-tile-${t.key}`}
+            data-state={t.error ? 'error' : t.state ? 'status' : 'value'}
+          >
+            {t.value !== undefined ? (
+              <b className="cc-tile__value">
+                {t.value}
+                {t.suffix ? <span className="cc-tile__unit">{t.suffix}</span> : null}
+              </b>
+            ) : t.state ? (
+              <b className="cc-tile__value text-[20px]">{t.state}</b>
+            ) : (
+              <p role="alert" className={`m-0 ${errorText}`}>{t.error}</p>
+            )}
+            <span className="cc-tile__label">{t.label}</span>
+            {t.cta && (
+              <div className="mt-2">
+                <Link to={t.cta.to} className="text-xs text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
+                  {t.cta.label}
+                </Link>
               </div>
-            ))}
+            )}
           </div>
+        ))}
+      </div>
 
-          <div className="split">
-            {/* Rahmenwerk-Reifegrad: erst rendern, wenn es echte Reifegrade pro
-                Rahmenwerk je Mandant gibt. Heute existiert keine solche Quelle →
-                Sektion bewusst ausgeblendet (keine leeren Balken, keine Labels). */}
-            <div className="panel" data-testid="overview-findings">
-              <div className="panel-head">
-                OFFENE FINDINGS<b>PRIORISIERT</b>
-              </div>
-              <div>
-                {!findingsComplete && sorted.length === 0 ? (
-                  <div className="intent" role="alert" data-testid="overview-findings-error">
-                    <div className="field">Findings-Quellen konnten nicht vollständig geladen werden.</div>
-                  </div>
-                ) : sorted.length === 0 && mediumHints.length === 0 ? (
-                  <div className="intent" data-testid="overview-findings-empty">
-                    <div className="field">Keine offenen Findings.</div>
-                    <Link className="go" to="/app/audit">Audit starten</Link>
-                  </div>
-                ) : (
-                  <>
-                    {sorted.slice(0, 5).map((f) => (
-                      <Link key={f.id} to={f.href} className="finding" style={{ color: 'inherit' }}>
-                        <span className="sev sev-high">{f.level === 'critical' ? 'KRITISCH' : 'HOCH'}</span>
-                        <em>{f.title}</em>
-                        <u>{f.detail}</u>
-                      </Link>
-                    ))}
-                    {mediumHints.slice(0, Math.max(0, 5 - sorted.length)).map((h) => (
-                      <div key={h} className="finding">
-                        <span className="sev sev-mid">MITTEL</span>
-                        <em>{h}</em>
-                        <u />
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
+      {/* Rahmenwerk-Reifegrad (.cc-framework-bar): erst rendern, wenn es echte
+          Reifegrade pro Rahmenwerk je Mandant gibt. Heute existiert keine
+          solche Quelle → Sektion bewusst ausgeblendet. */}
+
+      <div className="grid grid-cols-1 gap-[var(--brand-space-3)] lg:grid-cols-2">
+        <div className="cc-panel" data-testid="overview-findings">
+          <div className="cc-panel__head">
+            Offene Findings{sorted.length + mediumHints.length > 0 ? <span className="cc-panel__meta">Priorisiert</span> : null}
+          </div>
+          {!findingsComplete && sorted.length === 0 ? (
+            <div className="cc-panel__body" role="alert" data-testid="overview-findings-error">
+              <p className={`m-0 ${errorText}`}>Findings-Quellen konnten nicht vollständig geladen werden.</p>
             </div>
-          </div>
-
-          <div className="split">
-            <div className="panel" data-testid="overview-evidence-chain">
-              <div className="panel-head">
-                EVIDENCE-CHAIN{chain.length > 0 ? <b>NEUESTE EVENTS</b> : null}
-              </div>
-              <div>
-                {eventsFailed ? (
-                  <div className="intent" role="alert" data-testid="overview-chain-error">
-                    <div className="field">Governance-Events konnten nicht geladen werden.</div>
-                  </div>
-                ) : chain.length === 0 ? (
-                  <div className="intent">
-                    <div className="field">Noch keine Governance-Events.</div>
-                    <Link className="go" to="/app/websites">Website hinzufügen</Link>
-                  </div>
-                ) : (
-                  chain.map((e) => (
-                    <div key={e.id} className="row" data-testid={`overview-chain-${e.id}`}>
-                      <s>{e.eventType.toUpperCase()}</s>
-                      <em>{e.title}</em>
-                      <u>{relTime(e.createdAt)}</u>
-                    </div>
-                  ))
-                )}
-              </div>
+          ) : sorted.length === 0 && mediumHints.length === 0 ? (
+            <div className="cc-panel__body flex flex-wrap items-center gap-[var(--brand-space-3)]" data-testid="overview-findings-empty">
+              <p className={`m-0 flex-1 ${notice}`}>Keine offenen Findings.</p>
+              <ButtonLink to="/app/audit" size="sm">Audit starten</ButtonLink>
             </div>
-
-            <div className="panel" data-testid="overview-agent-intent">
-              <div className="panel-head">
-                AGENT OS · INTENT<b>REVIEW-PFLICHTIG</b>
-              </div>
-              <div className="intent">
-                <Link className="field" to={agentPath}>Was möchtest du erledigen?</Link>
-                <Link className="go" to={agentPath}>Session starten</Link>
-              </div>
-              <div className="intent-chips">
-                <Link to="/app/websites"><span>Website scannen</span></Link>
-                <Link to="/app/ai-systems"><span>KI-System erfassen</span></Link>
-                <Link to="/app/audit"><span>Audit starten</span></Link>
-                <Link to="/app/evidence"><span>Evidence ansehen</span></Link>
-              </div>
+          ) : (
+            <div>
+              {sorted.slice(0, 5).map((f) => (
+                <Link key={f.id} to={f.href} className="cc-finding no-underline">
+                  <SeverityBadge severity="hoch" label={f.level === 'critical' ? 'Kritisch' : undefined} />
+                  <span className="cc-finding__title">{f.title}</span>
+                  <span className="cc-finding__meta">{f.detail}</span>
+                </Link>
+              ))}
+              {mediumHints.slice(0, Math.max(0, 5 - sorted.length)).map((h) => (
+                <div key={h} className="cc-finding">
+                  <SeverityBadge severity="mittel" />
+                  <span className="cc-finding__title">{h}</span>
+                  <span className="cc-finding__meta" />
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+
+        <div className="cc-panel" data-testid="overview-evidence-chain">
+          <div className="cc-panel__head">
+            Evidence-Chain{chain.length > 0 ? <span className="cc-panel__meta">Neueste Events</span> : null}
           </div>
+          {eventsFailed ? (
+            <div className="cc-panel__body" role="alert" data-testid="overview-chain-error">
+              <p className={`m-0 ${errorText}`}>Governance-Events konnten nicht geladen werden.</p>
+            </div>
+          ) : chain.length === 0 ? (
+            <div className="cc-panel__body flex flex-wrap items-center gap-[var(--brand-space-3)]">
+              <p className={`m-0 flex-1 ${notice}`}>Noch keine Governance-Events.</p>
+              <ButtonLink to="/app/websites" size="sm">Website hinzufügen</ButtonLink>
+            </div>
+          ) : (
+            <div>
+              {chain.map((e) => (
+                <div key={e.id} className="cc-finding" data-testid={`overview-chain-${e.id}`}>
+                  <span className="cc-finding__meta truncate">{e.eventType}</span>
+                  <span className="cc-finding__title">{e.title}</span>
+                  <span className="cc-finding__meta text-[var(--brand-titan)]">{relTime(e.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      <div className="cc-panel" data-testid="overview-agent-intent">
+        <div className="cc-panel__head">
+          Agent OS · Intent<span className="cc-panel__meta">Review-pflichtig</span>
+        </div>
+        <div className="cc-panel__body flex flex-col gap-[var(--brand-space-3)]">
+          <div className="flex flex-wrap items-center gap-[var(--brand-space-3)]">
+            <p className={`m-0 flex-1 ${notice}`}>Was möchtest du erledigen?</p>
+            <ButtonLink to={agentPath} size="sm">Session starten</ButtonLink>
+          </div>
+          <nav className="cc-intent-chips" aria-label="Schnellaktionen">
+            <Link className="cc-intent-chip no-underline" to="/app/websites">Website scannen</Link>
+            <Link className="cc-intent-chip no-underline" to="/app/ai-systems">KI-System erfassen</Link>
+            <Link className="cc-intent-chip no-underline" to="/app/audit">Audit starten</Link>
+            <Link className="cc-intent-chip no-underline" to="/app/evidence">Evidence ansehen</Link>
+          </nav>
+        </div>
+      </div>
+    </section>
   );
 }

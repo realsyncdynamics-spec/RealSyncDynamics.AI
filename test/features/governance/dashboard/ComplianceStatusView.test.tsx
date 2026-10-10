@@ -567,4 +567,14 @@ describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
     expect(tile.getAttribute('data-state')).toBe('error');
     expect(tile.textContent).toMatch(/konnten nicht geladen werden/);
   });
+
+  it('nutzt cc-*-Klassen und SeverityBadge statt der Landing-Kaskade', () => {
+    const { getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const overview = getByTestId('command-center-overview');
+    expect(overview.closest('.gv4')).toBeNull();
+    expect(overview.querySelector('.cc-tiles')).not.toBeNull();
+    expect(overview.querySelectorAll('.cc-panel').length).toBeGreaterThan(0);
+    const badge = getByTestId('overview-findings').querySelector('[data-severity]');
+    if (badge) expect(badge.className).toMatch(/cc-severity--(hoch|mittel|niedrig)/);
+  });
 });

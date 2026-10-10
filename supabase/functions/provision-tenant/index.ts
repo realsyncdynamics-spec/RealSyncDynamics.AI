@@ -151,12 +151,44 @@ async function stepCatalog(c: Ctx): Promise<BootStepResult> {
     c.websiteAssetId = ins.id;
     created = true;
   }
+  const monitoring = await enrollMonitoring(c, systemUrl);
   return {
     step: 'catalog',
     status: 'done',
     created,
-    detail: { domain: c.domain, asset_id: c.websiteAssetId, scan: scan ? 'imported' : 'none' },
+    detail: { domain: c.domain, asset_id: c.websiteAssetId, scan: scan ? 'imported' : 'none', monitoring },
   };
+}
+
+// Die Domain landet in monitoring_sources, der Tabelle, die der
+// governance-monitoring-scheduler liest. Ob tatsaechlich gescannt wird,
+// entscheidet dort das Plan-Gate je Quelle, nicht dieser Schritt.
+//
+// Ein Fehler hier laesst den catalog-Schritt trotzdem `done` melden: Ein
+// gescheiterter Schritt sperrt alle folgenden, und Policy-Bundle, Ingest-Key
+// und erste Evidence haengen nicht am Monitoring. Der naechste Boot-Lauf holt
+// das Enrollment nach, weil die RPC vorhandene Quellen unveraendert laesst.
+async function enrollMonitoring(c: Ctx, systemUrl: string): Promise<'enrolled' | 'failed'> {
+  const { data: sourceId, error } = await c.admin.rpc('pilot_enroll_monitoring_source', {
+    p_tenant_id: c.tenantId,
+    p_url: systemUrl,
+    p_name: c.domain,
+  });
+  if (error || typeof sourceId !== 'string') {
+    console.error('[provision-tenant] monitoring enrollment failed', error);
+    return 'failed';
+  }
+  if (c.websiteAssetId) {
+    const { error: le } = await c.admin.from('monitoring_sources')
+      .update({ asset_id: c.websiteAssetId })
+      .eq('id', sourceId)
+      .is('asset_id', null);
+    if (le) {
+      console.error('[provision-tenant] monitoring asset link failed', le);
+      return 'failed';
+    }
+  }
+  return 'enrolled';
 }
 
 async function stepPolicyBundle(c: Ctx): Promise<BootStepResult> {

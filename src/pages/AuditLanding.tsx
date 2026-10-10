@@ -116,15 +116,19 @@ export function AuditLanding() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function runScan({ domain, email, company }: AuditStepperInput) {
+  async function runScan({ domain, email, company, marketingConsent }: AuditStepperInput) {
     setLoading(true); setError(null); setReport(null);
     try {
       const normalizedUrl = domain.match(/^https?:\/\//i) ? domain : `https://${domain}`;
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
+      const consentLocale = (document.documentElement.lang || 'de').toLowerCase().startsWith('en')
+        ? 'en'
+        : 'de';
       // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
       // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
+      // marketing_consent: boolean only; consent_at is set by the DB trigger (PR A).
       const data = await postEdgeFunction<Report>('gdpr-audit', {
         url: normalizedUrl,
         email,
@@ -132,6 +136,8 @@ export function AuditLanding() {
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
+        marketing_consent: marketingConsent === true,
+        consent_locale: consentLocale,
       }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });

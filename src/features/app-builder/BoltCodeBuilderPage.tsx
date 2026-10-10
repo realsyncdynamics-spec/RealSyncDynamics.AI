@@ -8,6 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useEntitlements } from '../../core/billing/useEntitlements';
 import { canOpenAppBuilder, resolveBuilderEntitlements } from '../siteos/builderEntitlements';
+import { readCodeEntryPrompt } from '../build-studio/entry';
 import { BoltWorkbench } from './BoltWorkbench';
 import type { GovernanceContext } from './bolt/types';
 
@@ -15,6 +16,7 @@ export default function BoltCodeBuilderPage(): ReactElement {
   const navigate = useNavigate();
   const location = useLocation();
   const { slug = 'app' } = useParams<{ slug: string }>();
+  const initialPrompt = readCodeEntryPrompt(location.state);
   const { activeTenantId, loading: tenantLoading } = useTenant();
   const { isAuthenticated, user } = useSupabaseAuth();
   const entitlements = useEntitlements();
@@ -111,7 +113,7 @@ export default function BoltCodeBuilderPage(): ReactElement {
           Zurück zu SiteOS / Puck
         </Link>
       </div>
-      <BoltWorkbench ctx={ctx} projectSlug={slug} />
+      <BoltWorkbench ctx={ctx} projectSlug={slug} initialPrompt={initialPrompt} />
     </div>
   );
 }

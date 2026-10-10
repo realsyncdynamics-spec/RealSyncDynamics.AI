@@ -1,11 +1,12 @@
 /**
- * Honest runtime matrix for the srcDoc preview.
+ * Honest runtime matrix for srcDoc and the opt-in Sandpack preview.
  *
  * This is a document-sandbox, not a Bolt/Lovable/WebContainer runtime.
  * WebContainer stays disabled (COOP/COEP = production infrastructure).
  */
 
-import { WEBCONTAINER_BACKEND, type FileRecord } from './types';
+import type { FileRecord } from './types';
+import { SANDPACK_PREVIEW_ENABLED } from './preview-flags';
 
 export type RuntimeSupport = 'yes' | 'no' | 'partial';
 
@@ -16,7 +17,8 @@ export interface RuntimeCapability {
   detail: string;
 }
 
-export const RUNTIME_CAPABILITIES: readonly RuntimeCapability[] = [
+export function runtimeCapabilities(sandpackAvailable = SANDPACK_PREVIEW_ENABLED): readonly RuntimeCapability[] {
+  return [
   {
     id: 'html-css',
     label: 'HTML + CSS',
@@ -38,14 +40,18 @@ export const RUNTIME_CAPABILITIES: readonly RuntimeCapability[] = [
   {
     id: 'esm-imports',
     label: 'ESM import / bundler',
-    support: 'no',
-    detail: 'No bundler, no import maps, CSP default-src none blocks module specifiers and http(s) imports.',
+    support: sandpackAvailable ? 'partial' : 'no',
+    detail: sandpackAvailable
+      ? 'Local React imports are bundled inside Sandpack only. No Vite plugins or Node runtime.'
+      : 'No bundler, no import maps, CSP default-src none blocks module specifiers and http(s) imports.',
   },
   {
     id: 'react',
     label: 'React / JSX runtime',
-    support: 'no',
-    detail: 'No CDN, no JSX transform, no node_modules. A React app is stored as source, not executed.',
+    support: sandpackAvailable ? 'partial' : 'no',
+    detail: sandpackAvailable
+      ? 'Opt-in Sandpack iframe preview for simple React/JSX. Requires network and an allowed iframe; no Node, backend, or deploy.'
+      : 'No CDN, no JSX transform, no node_modules. A React app is stored as source, not executed.',
   },
   {
     id: 'client-routing',
@@ -65,7 +71,10 @@ export const RUNTIME_CAPABILITIES: readonly RuntimeCapability[] = [
     support: 'no',
     detail: 'WEBCONTAINER_BACKEND=disabled. Shell/start/build stay HOLD. No COOP/COEP.',
   },
-] as const;
+  ];
+}
+
+export const RUNTIME_CAPABILITIES = runtimeCapabilities();
 
 export function capabilityById(id: string): RuntimeCapability | undefined {
   return RUNTIME_CAPABILITIES.find((c) => c.id === id);
@@ -75,32 +84,50 @@ export interface ProjectRuntimeAssessment {
   capabilities: RuntimeCapability[];
   warnings: string[];
   executable: boolean;
+  previewRuntime: 'srcdoc' | 'sandpack';
 }
 
-const REACT_MARK = /\bfrom\s+['"]react['"]|\brequire\(\s*['"]react['"]|cdn\.jsdelivr|unpkg\.com\/react/i;
+const REACT_MARK = /\bfrom\s+['"]react(?:\/[^'"]+)?['"]|\brequire\(\s*['"]react['"]|unpkg\.com\/react/i;
 const ESM_MARK = /\bimport\s+(?:type\s+)?[\w*{]\s*from\s+['"][^./]|^\s*import\s+['"][^./]/m;
 const ROUTER_MARK = /\b(createBrowserRouter|BrowserRouter|react-router-dom|history\.pushState)\b/;
 const CDN_MARK = /<(script|link)[^>]+(https?:)?\/\//i;
 
-export function assessProjectRuntime(files: FileRecord[]): ProjectRuntimeAssessment {
+export function hasReactProject(files: readonly Pick<FileRecord, 'path' | 'content'>[]): boolean {
+  return files.some((f) =>
+    /\.(jsx|tsx)$/i.test(f.path) || REACT_MARK.test(f.content) ||
+    (f.path === 'package.json' && /"react"\s*:/.test(f.content)),
+  );
+}
+
+export function assessProjectRuntime(
+  files: FileRecord[],
+  sandpackAvailable = SANDPACK_PREVIEW_ENABLED,
+): ProjectRuntimeAssessment {
   const joined = files.map((f) => f.content).join('\n');
   const warnings: string[] = [];
-  if (files.some((f) => REACT_MARK.test(f.content))) {
+  const react = hasReactProject(files);
+  const useSandpack = sandpackAvailable && react;
+  if (react && !useSandpack) {
     warnings.push('React/JSX erkannt — Quelltext wird gespeichert, aber in srcDoc nicht ausgeführt.');
   }
-  if (ESM_MARK.test(joined)) {
+  if (ESM_MARK.test(joined) && !useSandpack) {
     warnings.push('ESM-Import ohne Bundler — unter der Preview-CSP nicht ladbar.');
   }
   if (ROUTER_MARK.test(joined)) {
-    warnings.push('History-Router erkannt — srcDoc hat keine navigierbare Origin-URL.');
+    warnings.push(useSandpack
+      ? 'History-Router: nur Vorschau, keine produktiven Routen oder Server-Rewrites.'
+      : 'History-Router erkannt — srcDoc hat keine navigierbare Origin-URL.');
   }
   if (files.some((f) => CDN_MARK.test(f.content))) {
-    warnings.push('Externe Assets/CDN — von default-src none blockiert.');
+    warnings.push(useSandpack
+      ? 'Externe Assets/CDN liegen außerhalb der kontrollierten React-Vorschau.'
+      : 'Externe Assets/CDN — von default-src none blockiert.');
   }
   const hasHtml = files.some((f) => f.path.endsWith('.html'));
   return {
-    capabilities: [...RUNTIME_CAPABILITIES],
+    capabilities: [...runtimeCapabilities(sandpackAvailable)],
     warnings,
-    executable: hasHtml && warnings.length === 0,
+    executable: useSandpack || (hasHtml && warnings.length === 0),
+    previewRuntime: useSandpack ? 'sandpack' : 'srcdoc',
   };
 }

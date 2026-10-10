@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { FileCode2, Loader2, Play, Plus, RefreshCw, ShieldOff, Square, Trash2, Wrench } from 'lucide-react';
 import { BoltEngine } from './bolt/engine';
-import { htmlFromFiles, sandboxTokens } from './bolt/preview';
+import { BuilderPreview } from './BuilderPreview';
 import { classifyPrompt } from './bolt/governance-gate';
 import { diagnoseFiles, type Diagnostic } from './bolt/diagnostics';
 import { repairPrompt } from './bolt/error-recovery';
@@ -175,10 +175,6 @@ export function BoltWorkbench({
 
   const files = useMemo(() => Object.values(result?.snapshot.files ?? {}), [result]);
   const current: FileRecord | undefined = files.find((f) => f.path === activePath) ?? files[0];
-  const previewHtml = useMemo(
-    () => (files.length ? htmlFromFiles(files, isolation) : ''),
-    [files, isolation],
-  );
   const diagnostics: Diagnostic[] = useMemo(() => diagnoseFiles(files), [files]);
   const tally = useMemo(() => {
     const runs = result?.runs ?? [];
@@ -630,15 +626,11 @@ export function BoltWorkbench({
                   </button>
                 ) : null}
               </div>
-              {previewHtml ? (
-                <iframe
-                  key={previewKey}
-                  title="Governed preview"
-                  srcDoc={previewHtml}
-                  sandbox={sandboxTokens(isolation)}
-                  referrerPolicy="no-referrer"
-                  allow=""
-                  className="h-full min-h-[360px] w-full bg-[#0A0A0B]"
+              {files.length ? (
+                <BuilderPreview
+                  key={`${ctx.tenantId}:${projectSlug}:${project.id}:${previewKey}`}
+                  files={files}
+                  isolation={isolation}
                 />
               ) : (
                 <div className="grid place-items-center p-6 text-center">

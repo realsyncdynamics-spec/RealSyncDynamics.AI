@@ -401,7 +401,7 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     const second = setup({ repo, scanner: driftScan, now: () => new Date(NOW.getTime() + 2 * DAY) });
     const r2 = await run(second.deps);
     expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: false, alert: 'none' });
-    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1 });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
     expect(second.alerts).toEqual(['example.de']);
     expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 2 });
   });
@@ -423,6 +423,23 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     for (let i = 0; i < MAX_ALERT_ATTEMPTS + 2; i++) await run(s.deps);
     expect(repo.outbox).toHaveLength(1);
     expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 0 });
+  });
+
+  it('Nachhol-Pass verwirft Alerts nach Plan-Downgrade oder Deaktivierung ohne Mail', async () => {
+    for (const change of ['downgrade', 'deactivated'] as const) {
+      const repo = new MemRepo([domain()]);
+      const first = setup({ repo, scanner: driftScan, alertFails: () => true });
+      await run(first.deps);
+      expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 1 });
+
+      if (change === 'deactivated') repo.domains.splice(0, 1);
+      const later = setup({ repo, scanner: driftScan, now: () => new Date(NOW.getTime() + 2 * DAY),
+        ...(change === 'downgrade' ? { plan: PLANS.starter } : {}) });
+      const r = await run(later.deps);
+      expect(r.body.alert_retries).toEqual({ attempted: 0, sent: 0, dropped: 1 });
+      expect(later.alerts).toEqual([]);
+      expect(repo.outbox[0]).toMatchObject({ status: 'failed', attempts: 1 });
+    }
   });
 
   it('scheitert das Einreihen, rückt die Baseline nicht vor und es geht keine Mail raus', async () => {
@@ -450,7 +467,7 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     // gegen dieselbe Baseline → gleicher Fingerabdruck, keine zweite Mail.
     repo.failUpdate = false;
     const r2 = await run(s.deps);
-    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1 });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
     expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'duplicate' });
     expect(repo.outbox).toHaveLength(1);
     expect(s.alerts).toEqual(['example.de']);
@@ -489,7 +506,7 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     });
     const r2 = await run(second.deps);
     expect(r2.body).toMatchObject({ status: 'partial' });
-    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1 });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
     expect(second.alerts).toEqual(['example.de']);
     expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 2 });
   });

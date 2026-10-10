@@ -155,13 +155,37 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
   // vielen Domains dauerhaft aus. Ein Zustellversuch ist billig (ein HTTP-Call),
   // die Menge ist auf ALERT_RETRY_BATCH begrenzt. Ein Fehler hier macht den Lauf
   // nicht `failed`, steht aber in der Antwort.
-  const alertRetries: { attempted: number; sent: number; error?: string } = { attempted: 0, sent: 0 };
+  //
+  // Vor jeder Zustellung zählt der AKTUELLE Stand: Domain noch aktiv, Empfänger
+  // gesetzt, Plan erlaubt Drift-Mails. Sonst wird der Alert verworfen (failed,
+  // ohne Versuch) — sonst bekäme ein Tenant nach Kündigung/Downgrade noch Mails.
+  // Plan nicht ladbar → bleibt pending (transient).
+  const alertRetries: { attempted: number; sent: number; dropped: number; error?: string } =
+    { attempted: 0, sent: 0, dropped: 0 };
+  const byId = new Map(domains.map((d) => [d.id, d]));
   try {
     for (const a of await repo.pendingAlerts(ALERT_RETRY_BATCH)) {
       if (now().getTime() - startedAt >= runBudgetMs) break;
       attemptedAlerts.add(a.id);
+      const d = byId.get(a.monitored_domain_id);
+      let ineligible: string | null = !d ? 'domain_inactive' : !d.alert_email ? 'no_recipient' : null;
+      if (d && !ineligible) {
+        if (!plans.has(d.tenant_id)) {
+          try { plans.set(d.tenant_id, await deps.plan(d.tenant_id)); }
+          catch (e) { plans.set(d.tenant_id, e instanceof Error ? e : new Error(String(e))); }
+        }
+        const plan = plans.get(d.tenant_id)!;
+        if (plan instanceof Error) continue;
+        if (!plan.driftAlerts) ineligible = 'plan';
+      }
+      if (ineligible) {
+        await repo.markAlert(a.id, { status: 'failed', attempts: a.attempts, last_error: `ineligible: ${ineligible}`, sent_at: null });
+        alertRetries.dropped++;
+        continue;
+      }
       alertRetries.attempted++;
-      if ((await deliverAlert(a, deps, now)).state === 'sent') alertRetries.sent++;
+      // Aktuellen Empfänger nehmen — eine geänderte Adresse gilt auch für offene Alerts.
+      if ((await deliverAlert({ ...a, recipient: d!.alert_email! }, deps, now)).state === 'sent') alertRetries.sent++;
     }
   } catch (e) {
     alertRetries.error = `pending_alerts: ${(e as Error)?.message ?? String(e)}`;

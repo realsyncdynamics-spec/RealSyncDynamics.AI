@@ -41,6 +41,12 @@ und umgekehrt.
 
 ## ai-act.json
 
+### Unreleased — Version-Bump offen
+
+- `AI_ACT_LIMITED_RISK_CHATBOT`: Fundstelle auf **Art. 50 Abs. 1** (vorher Art. 52 aus dem Entwurf 2021, PR #1665).
+- `AI_ACT_LIMITED_RISK_CHATBOT`: Offensichtlichkeits-Ausnahme aus Art. 50 Abs. 1 abgebildet — neue Bedingung `ai_use_case.interaction_obvious not_equals true`; `description` sagt „voraussichtlich nicht erfüllt" statt „verletzt". Der Scanner setzt den Fakt nicht, Scan-Ergebnisse bleiben unverändert.
+- Kein Version-Bump: `2026.05.0` ist zugleich die öffentlich beworbene Methodik-Version (`seo.ts`, Report-Footer). Ob und wie gebumpt wird, ist eine Produktentscheidung.
+
 ### 2026.05.0 — 2026-05-09 (initial, dating back to PR #103)
 
 - 7 Rules: Prohibited (Emotion-Recognition Workplace, Social Scoring), High-Risk (Recruiting, Education, Credit-Scoring), Limited (Chatbot), GPAI (Foundation-Model)

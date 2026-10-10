@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4)
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -37,7 +37,7 @@ den falschen Bestand. Wer ihn wörtlich ausführt, baut einen zweiten Trichter.
 | **B8** | Landing unterliegt dem **Design-Freeze** („Papier & Waldgrün", Tokens in `index.css`). **Nachtrag 2026-10-03:** gemessen galt das für `DesignGovernanceAiLanding`. Seit #1686 ist `/` = Landing v2, visuelle Quelle `src/styles/landing-v2.css`; der Freeze gilt jetzt dieser Seite. | `CLAUDE.md` Abschnitt „Website bauen" | WP1 ändert Texte und Struktur, keine Tokens. **Heute:** WP1 geschlossen (§3) — Landing-Änderungen brauchen eine neue Freigabe. |
 | **B9** | Oberhalb von Enterprise (1.249 €) steht im SSoT **Partner zu 1.999 €**. | `shared/pricing.ts` | Klären, ob Partner ein Programm (nicht öffentlich) oder eine Stufe ist — sonst widerspricht es „Enterprise ist die höchste Stufe" (**E-F4**). |
 | **B10** | Das Doku-Budget ist **exakt voll**: `docs/` 235/235 Dateien, 2.697/2.700 KB (`npm run check:context`, CI). | `.claude/context-budget.json`, `scripts/check-context-budget.mjs` | Jedes neue `docs/`-Dokument bricht CI. Dieser Plan liegt deshalb unter `.claude/`. Neue Specs nur gegen Archivierung eines alten Dokuments. |
-| **B11** | Kartenlose Testphasen **laufen nie ab**: `create-trial-subscription` schreibt `status='trialing'` + `trial_end` ohne Stripe-Subscription; der Entitlement-Resolver (`20260920130000_bots_quota_enforcement.sql`, `abo_wirksam`) prüft `trial_end` nicht, und kein Job setzt abgelaufene Testphasen zurück. | Migration `20260920130000`, `create-trial-subscription/index.ts` | Growth-Rechte ohne Ende. **WP2a** (Migration, separates GO): Resolver prüft `trial_end > now()`. WP2 erst danach mergen. **Im Repo:** `20260928160000_wp2a_trial_end_expiry.sql` (liest `trial_end`, ersatzweise `trial_ends_at`; ohne Ende = Stripe-Testphase, läuft weiter), Test `test/runtime/db/trial-expiry.db.test.ts`. Anwendung auf Produktion nur mit GO. |
+| **B11** | Kartenlose Testphasen **laufen nie ab**: `create-trial-subscription` schreibt `status='trialing'` + `trial_end` ohne Stripe-Subscription; der Entitlement-Resolver (`20260920130000_bots_quota_enforcement.sql`, `abo_wirksam`) prüft `trial_end` nicht, und kein Job setzt abgelaufene Testphasen zurück. | Migration `20260920130000`, `create-trial-subscription/index.ts` | Growth-Rechte ohne Ende. **WP2a** (Migration, separates GO): Resolver prüft `trial_end > now()`. WP2 erst danach mergen. **Im Repo:** `20260928160000_wp2a_trial_end_expiry.sql` (liest `trial_end`, ersatzweise `trial_ends_at`; ohne Ende = Stripe-Testphase, läuft weiter), Test `test/runtime/db/trial-expiry.db.test.ts`. Anwendung auf Produktion nur mit GO. **Nachtrag 2026-10-10:** mit #1716 auf `main` gemergt. |
 
 **Was schon richtig ist und bleibt:** Tenant-Auflösung über `memberships`
 (`create-trial-subscription`, `save-company-profile`), ehrliche
@@ -98,22 +98,36 @@ Freigabe und ein neues Arbeitspaket.
 E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blockierend)
       │
       ├─X WP1 Landing-Copy ─────────────┐   ERLEDIGT #1673; Hero von #1686 überholt — nicht erneut aufgreifen
-      ├─► WP5 Agent-Register-Quelle ────┤   (parallel möglich, keine Datei-Überschneidung)
+      ├─✓ WP5 Agent-Register-Quelle ────┤   ERLEDIGT #1658
       │                                 ▼
-      └─► WP2a Trial-Ablauf (GO) ─► WP2 Funnel auf /audit ──► WP3 AI-OS-Setup in Activation ──► WP4 Command-Center-Kacheln
+      └─✓ WP2a Trial-Ablauf (#1716) ─► WP2 Funnel auf /audit (OFFEN) ──✓ WP3 AI-OS-Setup (#1730) ──✓ WP4 Command-Center-Kacheln (#1733)
                                                                               │
-                                                             WP6 Governed Evolution (nur Doku, jederzeit)
+                                                             WP6 Governed Evolution (nur Doku, jederzeit; OFFEN)
 ```
+
+Stand 2026-10-10 (gegen `main@c90fcdd`): ✓ = gemergt. WP3 und WP4 liefen vor WP2;
+WP2 hängt fachlich an E-F6 und wird damit nicht mehr von WP3/WP4 blockiert.
 
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
 |---|---|---|---|---|
 | ~~**WP1**~~ | ⛔ **Geschlossen** — Landing schärfen. Umgesetzt in `6523ac2` (#1673). Seit #1686 tragen `GovernanceOsHero.tsx` und `DesignGovernanceAiLanding.tsx` nur `/design/governance-ai`; `HomepageBriefSections.tsx` und `hero-content.ts` laufen über die eingebettete `ArchitectureSection` weiter auf `/`. | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | — | erledigt |
-| **WP2a** | Trial-Ablauf erzwingen (Resolver prüft `trial_end`) | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | **Migration = separates GO** |
+| ~~**WP2a**~~ | ✅ **Erledigt** — Trial-Ablauf erzwingen (Resolver prüft `trial_end`). Gemergt in `f8defb3` (#1716): `20260928160000_wp2a_trial_end_expiry.sql` + `test/runtime/db/trial-expiry.db.test.ts`. | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | erledigt |
 | **WP2** | Funnel auf `/audit` ausrichten | `pages/AuditLanding.tsx`, `components/audit/PostScanChoiceRow.tsx`, `TrialOfferPage.tsx`, `SuccessPage.tsx`, `PostRegisterOnboardingPage.tsx` (nur Copy), `shared/pricing.ts` (Starter `trialDays`) | mittel | Preise/Angebot |
-| **WP3** | AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben) | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | — (keine Migration) |
-| **WP4** | Command Center: Inventar · Agenten · Freigaben · Evidence | `features/governance/dashboard/*`, vorhandene APIs | niedrig | — |
-| **WP5** | Ein Agent-Register | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | — |
-| **WP6** | Governed-Evolution-Spec | `.claude/os-funnel/governed-evolution.md` | keins | — |
+| ~~**WP3**~~ | ✅ **Erledigt** — AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben). Gemergt in `17a716a` (#1730). | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | erledigt |
+| ~~**WP4**~~ | ✅ **Erledigt** — Command Center: Inventar · Agenten · Freigaben · Evidence. Gemergt in `299a743` (#1733), Duplikat #1747 geschlossen. Folgepunkte siehe unten. | `features/governance/dashboard/*`, vorhandene APIs | niedrig | erledigt |
+| ~~**WP5**~~ | ✅ **Erledigt** — Ein Agent-Register mit abgeleitetem Reifegrad. Gemergt (#1658, 2026-09-27). | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | erledigt |
+| **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. | `.claude/os-funnel/governed-evolution.md` | keins | — |
+
+**WP4-Folgepunkte (bewusst nicht in #1733):**
+
+- **Zwei KI-Zahlen auf `/app/dashboard`:** `HandoffOverview` zählt „KI-Systeme“ aus
+  `governance_assets` (`isAiSystemAsset`), die Kachel „KI-Inventar“ zählt `ai_systems`.
+  Beide nennen ihre Quelle, können aber voneinander abweichen. Produktentscheidung offen.
+- **Mandantenwechsel:** `HandoffOverview` und `ComplianceStatusView` zeigen beim Wechsel
+  einen Render lang die Cockpit-Zahlen des vorigen Mandanten (Bestand, vor WP4). Fix als
+  eigener kleiner PR mit demselben `dataTenantId`-Guard wie die Kachelreihe.
+- **Abgelaufene Freigaben:** `pending`-Einträge mit abgelaufenem `expires_at` zählen mit,
+  bis ein Job sie auf `expired` setzt (gleiches Verhalten wie der bestehende Badge).
 
 Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
 AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.

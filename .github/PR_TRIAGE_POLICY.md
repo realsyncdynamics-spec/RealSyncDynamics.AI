@@ -52,6 +52,6 @@ Ein Konflikt allein ist kein Schließgrund.
 
 ### Feste Produktentscheidungen (Stand 27.09.2026)
 - **Enterprise-Preis:** 1.249 € ist die höchste Stufe und die einzige Quelle. Eine Stufe „Enterprise Plus“ gibt es nicht. README, Pricing und Landing weichen nicht ab. Im Pricing-Hinweis steht: „Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.“ Die Angleichung von README und Pricing kommt als eigener PR in der Phase Legal/Pricing.
-- **Landing-Basis:** Seit #1686 ist `src/pages/LandingV2.tsx` die kanonische Startseite auf `/`. Frühere Landing-Fassungen unter `/design/*` sind nur reversible Referenzen und keine Designvorgabe für `/`. Design-, Hero- und Landing-PRs werden nicht pauschal zusammengeführt; Änderungen erfolgen als kleine Folge-PRs gegen den aktuellen `main`.
+- **Landing-Basis:** Seit #1751 ist `src/pages/LandingV4.tsx` die kanonische Startseite auf `/` (vorher seit #1686 `LandingV2.tsx`, heute nur noch Referenz unter `/design/landing-v2`). Frühere Landing-Fassungen sind keine Designvorgabe für `/`. Design-, Hero- und Landing-PRs werden nicht pauschal zusammengeführt; Änderungen erfolgen als kleine Folge-PRs gegen den aktuellen `main`.
 - **Kein Restaurant- oder branchenfremder Scope im Kernprodukt.** Bots und Agenten gehören nur als abgegrenztes Modul, als Demo oder als separate App auf die Governance-Infrastruktur.
 - **WIP-Stopp:** Solange mehr als 20 PRs offen sind, werden keine neuen Feature-PRs angelegt, auch nicht von Agenten oder Copilot. Ausgenommen sind Triage-, Ersatz-, Security- und Docs-PRs zur Umsetzung dieser Policy.

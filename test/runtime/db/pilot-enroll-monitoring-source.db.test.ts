@@ -33,7 +33,7 @@ const skip = !getDbUrl();
 const d = skip ? describe.skip : describe;
 
 const SERVER = { role: 'service_role' } as const;
-const URL = 'https://example.com';
+const SITE_URL = 'https://example.com';
 
 interface PgError extends Error { code?: string }
 
@@ -46,7 +46,7 @@ d('pilot_enroll_monitoring_source', () => {
   });
   afterEach(async () => { await closeDb(ctx); });
 
-  async function enroll(tenantId: string, url = URL, name = 'example.com'): Promise<string> {
+  async function enroll(tenantId: string, url = SITE_URL, name = 'example.com'): Promise<string> {
     return ctx.withClaims(SERVER, async () => {
       const { rows } = await ctx.client.query<{ id: string }>(
         `SELECT public.pilot_enroll_monitoring_source($1, $2, $3) AS id`,
@@ -128,7 +128,7 @@ d('pilot_enroll_monitoring_source', () => {
     const { tenantId, userId } = await createTenantWithMember(ctx);
 
     const err = await ctx.withClaims({ sub: userId, role: 'authenticated' }, () =>
-      ctx.client.query(`SELECT public.pilot_enroll_monitoring_source($1, $2, $3)`, [tenantId, URL, 'example.com']),
+      ctx.client.query(`SELECT public.pilot_enroll_monitoring_source($1, $2, $3)`, [tenantId, SITE_URL, 'example.com']),
     ).catch((e: PgError) => e);
 
     expect((err as PgError).code).toBe('42501');

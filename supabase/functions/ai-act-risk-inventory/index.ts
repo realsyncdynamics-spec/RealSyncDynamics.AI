@@ -12,6 +12,9 @@
 //   - update { id, ...patch }
 //   - delete { id }
 //
+// Lesen: jedes Mitglied. create/update/delete: nur owner, admin, dpo, editor.
+// Direktes Schreiben über PostgREST ist seit 20261005120000 gesperrt.
+//
 // Jede create-Op loggt zusätzlich in ai_tool_runs (tool_key='ai_act_risk_inventory')
 // für die Audit-Spur — analog zum Pflichtfeld aus CLAUDE.md
 // ("jeder externe Call wird in ai_tool_runs / workflow_runs geloggt").
@@ -22,6 +25,12 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 
 type Severity = 'prohibited' | 'high' | 'limited' | 'minimal';
 const SEVERITIES: readonly Severity[] = ['prohibited', 'high', 'limited', 'minimal'] as const;
+
+/**
+ * Schreibende Mandantenrollen (wie public.is_tenant_writer) — viewer_auditor
+ * liest nur. Seit 20261005120000 schreibt ausschließlich diese Function.
+ */
+const WRITER_ROLES: ReadonlySet<string> = new Set(['owner', 'admin', 'dpo', 'editor']);
 
 interface InventoryRow {
   id: string;
@@ -109,16 +118,20 @@ Deno.serve(async (req) => {
     tenantIdForCheck = (existing as { tenant_id: string }).tenant_id;
   }
 
-  // Membership-Check (für alle Operationen).
+  // Membership-Check (für alle Operationen); Ändern nur mit schreibender Rolle.
   if (tenantIdForCheck) {
     const { data: member, error: mErr } = await userClient
       .from('memberships')
-      .select('id')
+      .select('role')
       .eq('tenant_id', tenantIdForCheck)
       .eq('user_id', userId)
       .maybeSingle();
     if (mErr)     return jsonError(500, 'DB_ERROR', mErr.message);
     if (!member)  return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+    const mutating = body.op === 'create' || body.op === 'update' || body.op === 'delete';
+    if (mutating && !WRITER_ROLES.has(String((member as { role?: unknown }).role))) {
+      return jsonError(403, 'FORBIDDEN', 'Ihre Rolle darf das Inventar nur lesen.');
+    }
 
     // AP9 Welle 3: Das Inventar ist Teil des Risikoregisters
     // (`governance.risk_register`, ab Growth). Das Zugriffsregister sperrt

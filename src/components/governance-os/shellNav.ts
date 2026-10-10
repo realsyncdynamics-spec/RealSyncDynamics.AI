@@ -1,15 +1,15 @@
 /**
- * Handoff v2 §5 — die sieben Hauptbereiche der App-Shell.
+ * Handoff v2 §5 — Hauptbereiche der App-Shell (Übersicht … Abrechnung)
+ * plus Voice (PR 5/6, read-only Prüfpfad).
  *
- * Eine feste Liste, weil der Entwurf genau diese sieben Bereiche als
- * Produktgerüst vorgibt (Discover · Classify · Enforce · Prove). Alle
- * übrigen Module bleiben über `TAB_MODULES` erreichbar — in der Seitenleiste
+ * Eine feste Liste als Produktgerüst (Discover · Classify · Enforce · Prove).
+ * Alle übrigen Module bleiben über `TAB_MODULES` erreichbar — in der Seitenleiste
  * unter „Weitere Module", mobil im Burger-Menü.
  */
 import type { EntitlementKey } from '@/shared/pricing';
 import type { HandoffKey } from '../../i18n/handoff';
 
-export type ShellNavId = 'overview' | 'systems' | 'classify' | 'enforce' | 'evidence' | 'reports' | 'billing';
+export type ShellNavId = 'overview' | 'systems' | 'classify' | 'enforce' | 'evidence' | 'voice' | 'reports' | 'billing';
 
 export interface ShellNavItem {
   id: ShellNavId;
@@ -27,11 +27,14 @@ export const SHELL_NAV: readonly ShellNavItem[] = [
   { id: 'overview', labelKey: 'navOverview', route: '/app/dashboard' },
   // Free gewährt governance.ai_register ⇒ offen.
   { id: 'systems', labelKey: 'navSystems', route: '/app/ai-systems', entitlementKeys: ['governance.ai_register'] },
-  // ai_classification.limited = 0 in Free ⇒ Schloss. Speicherpfad fehlt noch (P1-2).
+  // ai_classification.limited = 0 in Free ⇒ Schloss. Kein Plan gewährt den Key
+  // (minPlan null) — Tooltip sagt „noch nicht verfügbar“, kein Upgrade-CTA.
   { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems', entitlementKeys: ['ai_classification.limited'] },
   // Route /app/policy-packs verlangt policy.packs (Register) — Schloss und Sperre aus derselben Quelle.
   { id: 'enforce', labelKey: 'navEnforce', route: '/app/policy-packs', entitlementKeys: ['policy.packs'] },
   { id: 'evidence', labelKey: 'navEvidence', route: '/app/evidence' },
+  // Read-only Voice-Sessions (PR 5/6) — kein Entitlement-Gate; Auth via AppGate.
+  { id: 'voice', labelKey: 'navVoice', route: '/app/voice' },
   { id: 'reports', labelKey: 'navReports', route: '/app/reports' },
   { id: 'billing', labelKey: 'navBilling', route: '/app/billing' },
 ] as const;
@@ -55,6 +58,7 @@ export function activeShellNav(pathname: string): ShellNavId | null {
   if (pathname === '/app/ai-systems' || pathname.startsWith('/app/ai-systems/')) return 'systems';
   if (pathname.startsWith('/app/policy-packs')) return 'enforce';
   if (pathname === '/app/evidence' || pathname.startsWith('/app/evidence/')) return 'evidence';
+  if (pathname === '/app/voice' || pathname.startsWith('/app/voice/')) return 'voice';
   if (pathname.startsWith('/app/reports')) return 'reports';
   if (pathname.startsWith('/app/billing')) return 'billing';
   return null;
@@ -67,6 +71,7 @@ export const SHELL_TITLES: Readonly<Record<ShellNavId | 'app', { title: HandoffK
   classify: { title: 'ttlClassify', sub: 'subClassify' },
   enforce: { title: 'ttlEnforce', sub: 'subEnforce' },
   evidence: { title: 'ttlEvidence', sub: 'subEvidence' },
+  voice: { title: 'ttlVoice', sub: 'subVoice' },
   reports: { title: 'ttlReports', sub: 'subReports' },
   billing: { title: 'ttlBilling', sub: 'subBilling' },
   app: { title: 'ttlApp', sub: 'subApp' },

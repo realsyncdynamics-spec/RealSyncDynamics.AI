@@ -9,7 +9,7 @@ const SUPABASE_FUNCTIONS_URL =
 
 export function ShopifySuccessPage() {
   usePageMeta({
-    title: 'Shopify verbunden — RealSyncDynamics.AI',
+    title: 'Shopify verbunden — RealSync Dynamics AI',
     description: 'Dein Shopify-Store ist verbunden. Starte den ersten Compliance-Scan.',
   });
 

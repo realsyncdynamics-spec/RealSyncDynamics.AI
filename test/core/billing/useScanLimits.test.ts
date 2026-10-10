@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useScanLimits } from '../../../src/core/billing/useScanLimits';
 import * as useEntitlementsModule from '../../../src/core/billing/useEntitlements';
 import * as supabaseModule from '../../../src/lib/supabase';
+import * as tenantModule from '../../../src/core/access/TenantProvider';
 import { TenantProvider } from '../../../src/core/access/TenantProvider';
 import React from 'react';
 
@@ -14,8 +15,9 @@ describe('useScanLimits', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(TenantProvider, { children });
 
-  it('returns null for paid tier users', () => {
-    // Mock useEntitlements to return paid tier
+  it('returns null when the plan carries no scan limit', () => {
+    // Seit 2026-09-28 entscheidet allein `website.scan_monthly_limit`, nicht
+    // der Plan-Name. `null` kommt hier aus dem Wert, nicht aus `tier`.
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'starter',
       loading: false,
@@ -57,7 +59,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }],
                 error: undefined,
               }),
@@ -84,6 +86,61 @@ describe('useScanLimits', () => {
     }
   });
 
+  it('counts a paid plan whose catalog value is finite — the name decides nothing', async () => {
+    // Bis 2026-09-28 stand vor der Zählung `if (tier !== 'free') return`.
+    // Ein bezahlter Plan mit endlichem Kontingent wäre damit still unbegrenzt
+    // gewesen — unter BASE + MODULE + SCALE genau der Fehler, den
+    // Zielarchitektur §10 ausschließt. Dieser Fall hält das fest.
+    vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
+      tier: 'growth',
+      loading: false,
+      error: undefined,
+      features: {},
+      hasFeature: () => true,
+      getLimit: () => 5,
+      canAccess: () => ({ allowed: true }),
+      paymentState: { status: null, pastDueSince: null, graceDaysRemaining: null },
+    });
+
+    vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
+
+    // Ein aktiver Mandant, direkt gesetzt. Der echte TenantProvider fände im
+    // Test keinen (listMyTenants ist nicht gemockt) — dann bräche der Hook
+    // vor der Zählung ab, und dieser Fall bewiese nichts.
+    // `beforeEach` ruft nur clearAllMocks, das stellt Spies nicht zurück —
+    // ohne mockRestore() unten bekämen die folgenden Fälle diesen Mandanten.
+    const tenantSpy = vi.spyOn(tenantModule, 'useTenant').mockReturnValue(
+      { activeTenantId: 'tenant-1' } as unknown as ReturnType<typeof tenantModule.useTenant>,
+    );
+
+    const mockSupabase = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            gte: vi.fn().mockReturnValue({
+              lt: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: undefined }),
+            }),
+          }),
+        }),
+      }),
+    };
+    vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue(mockSupabase as any);
+
+    try {
+      const { result } = renderHook(() => useScanLimits());
+
+      // Kein `if (result.current)` wie in den Fällen darüber: Gerade dass
+      // überhaupt ein Status entsteht, ist hier die Aussage. `waitFor` statt
+      // fester Wartezeit — sonst hinge der Fall an der Geschwindigkeit des Runners.
+      await waitFor(() => expect(result.current).not.toBeNull());
+      expect(result.current?.limit).toBe(5);
+      expect(result.current?.used).toBe(1);
+      expect(mockSupabase.from).toHaveBeenCalledWith('scans');
+    } finally {
+      tenantSpy.mockRestore();
+    }
+  });
+
   it('returns isAtLimit=true when used >= limit', async () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'free',
@@ -106,7 +163,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }, { id: '3' }],
                 error: undefined,
               }),
@@ -151,7 +208,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: [],
                 error: undefined,
               }),
@@ -194,7 +251,7 @@ describe('useScanLimits', () => {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             gte: vi.fn().mockReturnValue({
-              lte: vi.fn().mockResolvedValue({
+              lt: vi.fn().mockResolvedValue({
                 data: null,
                 error: new Error('Database error'),
               }),

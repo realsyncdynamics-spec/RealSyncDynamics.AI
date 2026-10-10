@@ -42,6 +42,11 @@ export interface DbGovernanceAsset {
   intended_purpose?: string | null;
   deployment_context?: string | null;
   affected_groups?: string[];
+  // KI-Register (Migration 20261005130000). Optional wie oben.
+  ai_system_type?: string | null;
+  model_name?: string | null;
+  deployment_model?: string | null;
+  data_residency?: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -196,6 +201,27 @@ export async function countTenantEvidenceSince(tenantId: string, sinceIso: strin
     .gte('created_at', sinceIso);
   if (error) throw new Error(error.message);
   return count ?? 0;
+}
+
+/**
+ * Nachweise je Asset (View governance_asset_evidence_stats, security_invoker →
+ * RLS von governance_evidence). Wirft bei Fehler — ein Lesefehler ist kein
+ * „keine Nachweise“.
+ */
+export async function fetchAssetEvidenceStats(
+  tenantId: string,
+): Promise<Map<string, { count: number; latestAt: string | null }>> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_asset_evidence_stats')
+    .select('asset_id, evidence_count, latest_evidence_at')
+    .eq('tenant_id', tenantId);
+  if (error) throw new Error(error.message);
+  const out = new Map<string, { count: number; latestAt: string | null }>();
+  for (const row of (data ?? []) as Array<{ asset_id: string; evidence_count: number; latest_evidence_at: string | null }>) {
+    out.set(row.asset_id, { count: row.evidence_count, latestAt: row.latest_evidence_at });
+  }
+  return out;
 }
 
 export async function fetchTenantAssets(tenantId: string): Promise<DbGovernanceAsset[]> {

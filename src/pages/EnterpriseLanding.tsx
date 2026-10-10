@@ -17,7 +17,7 @@ import { CTA } from '../content/runtimeVocab';
 
 export function EnterpriseLanding() {
   usePageMeta({
-    title: 'Enterprise Governance Platform — RealSyncDynamics.AI',
+    title: 'Enterprise Governance Platform — RealSync Dynamics AI',
     description: 'Continuous Compliance Runtime für Großunternehmen. Evidence Vault, Multi-Tenant, 4h SLA, Audit-Ready.',
     url: 'https://realsyncdynamicsai.de/enterprise',
   });

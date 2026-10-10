@@ -15,13 +15,11 @@ export const LV2_H1_GOLD = 'for Europe';
 export const LV2_PIPELINE = ['Discover', 'Assess', 'Govern', 'Execute', 'Verify', 'Prove'] as const;
 
 export const LV2_STACK = [
-  'EU-Hosted Runtime',
-  'Supabase Frankfurt',
-  'Evidence Vault / Hash-Chain',
-  'Ollama local',
-  'Multi-Tenant RLS',
-  'n8n',
-  'Stripe',
+  'Cloudflare Pages · Frontend',
+  'Supabase · Postgres / Auth / RLS',
+  'Supabase Edge Functions · Deno',
+  'Evidence Vault · Hash-Chain',
+  'Stripe Billing',
 ] as const;
 
 export const LV2_HERO_NOTE =
@@ -129,12 +127,73 @@ export interface Lv2EuCard {
 }
 
 export const LV2_EU_NATIVE: Lv2EuCard[] = [
-  { icon: 'server', title: 'EU-Hosted Runtime', text: 'Policy-Engine und API-Gateway in deutschen Rechenzentren.' },
-  { icon: 'database', title: 'Supabase Frankfurt', text: 'Postgres in eu-central-1, verschlüsselt at rest und in transit.' },
-  { icon: 'layers', title: 'Multi-Tenant RLS', text: 'Mandantentrennung auf Datenbankebene per Row-Level Security.' },
-  { icon: 'cpu', title: 'Ollama local', text: 'Klassifizierung mit lokal betriebenen Open-Weight-Modellen.' },
-  { icon: 'workflow', title: 'n8n Workflows', text: 'Self-hosted Automatisierung für Freigaben und Eskalationen.' },
-  { icon: 'creditcard', title: 'Stripe Billing', text: 'Abrechnung in Euro, Zahlung per Karte oder SEPA-Lastschrift.' },
+  { icon: 'server', title: 'Cloudflare Pages', text: 'Die öffentliche React/Vite-SPA wird über die Cloudflare-Git-Integration aus main ausgeliefert.' },
+  { icon: 'database', title: 'Supabase · Data & Auth', text: 'Postgres, Auth und mandantenfähige Row-Level Security bilden die autoritative Daten- und Identitätsschicht.' },
+  { icon: 'layers', title: 'Supabase Edge Functions', text: 'Deno-Functions liefern die serverseitigen API- und Governance-Funktionen unter /functions/v1/*.' },
+  { icon: 'creditcard', title: 'Stripe Billing', text: 'Self-Service-Billing für die buchbaren Pläne; Enterprise führt bewusst in die Anfrage statt in einen Fake-Checkout.' },
+];
+
+export interface Lv2InfrastructureItem {
+  layer: string;
+  title: string;
+  status: 'PROD PATH' | 'LIVE SURFACE';
+  path: string;
+  to: string;
+  cta: string;
+  text: string;
+}
+
+/**
+ * Sichtbarer Spiegel der produktiven Infrastruktur. Die Labels beschreiben
+ * den im Repository verdrahteten Produktionspfad — keine erfundenen Uptime-
+ * oder Kundendaten.
+ */
+export const LV2_INFRASTRUCTURE: readonly Lv2InfrastructureItem[] = [
+  {
+    layer: '01 · DELIVERY',
+    title: 'Cloudflare Pages',
+    status: 'PROD PATH',
+    path: 'main → build:full → Cloudflare Pages',
+    to: '/',
+    cta: 'Live-Surface',
+    text: 'Frontend-Auslieferung über Cloudflare Pages. Der GitHub-Workflow validiert den Build; die Cloudflare-Git-Integration ist der dokumentierte Produktionspfad.',
+  },
+  {
+    layer: '02 · DATA / IDENTITY',
+    title: 'Supabase',
+    status: 'PROD PATH',
+    path: 'Postgres · Auth · RLS · Edge Functions',
+    to: '/sicherheit',
+    cta: 'Security ansehen',
+    text: 'Postgres, Auth, Tenant-Isolation per RLS und Deno Edge Functions bilden die server-autoritative Daten- und API-Schicht.',
+  },
+  {
+    layer: '03 · GOVERNANCE',
+    title: 'Runtime + Policy Engine',
+    status: 'LIVE SURFACE',
+    path: '/governance-runtime · /policy-engine',
+    to: '/policy-engine',
+    cta: 'Policy Engine öffnen',
+    text: 'Risiko, Freigaben und ausführbare Governance-Regeln liegen auf echten Produktseiten und führen in dieselbe Runtime.',
+  },
+  {
+    layer: '04 · PROOF',
+    title: 'Evidence Vault',
+    status: 'LIVE SURFACE',
+    path: '/evidence-vault · /app/evidence',
+    to: '/evidence-vault',
+    cta: 'Evidence ansehen',
+    text: 'Hash-Chain, Prüfpfad und Evidence-Flächen werden als eigener Proof-Layer sichtbar — nicht nur als Claim im Hero.',
+  },
+  {
+    layer: '05 · ENTRY PATH',
+    title: 'Activation → Command Center',
+    status: 'LIVE SURFACE',
+    path: '/welcome → /app/activation → /app/dashboard',
+    to: '/welcome?next=/app/dashboard',
+    cta: 'Command Center öffnen',
+    text: 'Login, Governance Activation und Command Center sind ein zusammenhängender Produktpfad — ohne Demo-Zahlen auf der Startseite.',
+  },
 ];
 
 export interface Lv2Faq {
@@ -145,7 +204,7 @@ export interface Lv2Faq {
 export const LV2_FAQ: Lv2Faq[] = [
   {
     q: 'Wo werden unsere Daten verarbeitet?',
-    a: 'Ausschließlich in der EU – Runtime und Datenbank laufen in Frankfurt am Main. Modelle können lokal über Ollama betrieben werden.',
+    a: 'Ausschließlich in der EU – Runtime und Datenbank laufen in Frankfurt am Main.',
   },
   {
     q: 'Welche Regelwerke deckt die Plattform ab?',

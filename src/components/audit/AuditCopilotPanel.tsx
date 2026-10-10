@@ -314,7 +314,7 @@ export function AuditCopilotPanel({ issue, domain, auditId, open, onClose }: Aud
         </header>
 
         <div className="border-b border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-[11px] text-cyan-300 leading-relaxed">
-          <span className="font-semibold">KI-System (Art. 52 EU AI Act):</span> Die Erklärungen werden von einer KI generiert. Keine Rechtsberatung – Prüfung durch Spezialist empfohlen.
+          <span className="font-semibold">KI-System (Art. 50 Abs. 1 EU AI Act):</span> Die Erklärungen werden von einer KI generiert. Keine Rechtsberatung – Prüfung durch Spezialist empfohlen.
         </div>
 
         {phase === 'rate_limited' && (

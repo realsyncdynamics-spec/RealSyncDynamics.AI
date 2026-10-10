@@ -8,7 +8,7 @@ export function NotFoundPage() {
       {/* noIndex: der SPA-Fallback liefert fuer unbekannte Pfade HTTP 200 —
           ohne noindex entstehen Soft-404s im Google-Index (SEO-Audit 2026-08).
           Der Statuscode selbst ist auf Cloudflare Pages nicht beeinflussbar. */}
-      <SEOHead title="Seite nicht gefunden | RealSyncDynamics.AI" description="Diese Seite existiert nicht." noIndex />
+      <SEOHead title="Seite nicht gefunden | RealSync Dynamics AI" description="Diese Seite existiert nicht." noIndex />
       <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-titanium-600 mb-4">404</p>
       <h1 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 mb-3 text-center">
         Seite nicht gefunden

@@ -1,6 +1,6 @@
 # AI Governance OS — Funnel-Plan Phase 1
 
-**Stand:** 2026-09-27 · gemessen gegen `main@f392939`
+**Stand:** 2026-09-27 · gemessen gegen `main@f392939` (Ursprungsbefund §1–§3) · **WP-Fortschritt §4:** 2026-10-10 gegen `main@c90fcdd`
 **Owner:** Dominik Steiner
 **Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4)
 
@@ -100,13 +100,14 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
       ├─X WP1 Landing-Copy ─────────────┐   ERLEDIGT #1673; Hero von #1686 überholt — nicht erneut aufgreifen
       ├─✓ WP5 Agent-Register-Quelle ────┤   ERLEDIGT #1658
       │                                 ▼
-      └─✓ WP2a Trial-Ablauf (#1716) ─► WP2 Funnel auf /audit (OFFEN) ──✓ WP3 AI-OS-Setup (#1730) ──✓ WP4 Command-Center-Kacheln (#1733)
-                                                                              │
-                                                             WP6 Governed Evolution (nur Doku, jederzeit; OFFEN)
+      ├─✓ WP2a Trial-Ablauf (#1716) ──✓ WP3 AI-OS-Setup (#1730) ──✓ WP4 Command-Center-Kacheln (#1733)
+      │
+      ├─► WP2 Funnel auf /audit (OFFEN; hängt an E-F6, nicht an WP3/WP4)
+      └─► WP6 Governed Evolution (nur Doku, jederzeit; OFFEN)
 ```
 
-Stand 2026-10-10 (gegen `main@c90fcdd`): ✓ = gemergt. WP3 und WP4 liefen vor WP2;
-WP2 hängt fachlich an E-F6 und wird damit nicht mehr von WP3/WP4 blockiert.
+Stand 2026-10-10 (gegen `main@c90fcdd`): ✓ = gemergt, ► = offen. Tatsächliche Reihenfolge:
+WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockiert.
 
 | WP | Titel | Dateien (Kern) | Risiko | Freigabe nötig für |
 |---|---|---|---|---|
@@ -127,7 +128,10 @@ WP2 hängt fachlich an E-F6 und wird damit nicht mehr von WP3/WP4 blockiert.
   einen Render lang die Cockpit-Zahlen des vorigen Mandanten (Bestand, vor WP4). Fix als
   eigener kleiner PR mit demselben `dataTenantId`-Guard wie die Kachelreihe.
 - **Abgelaufene Freigaben:** `pending`-Einträge mit abgelaufenem `expires_at` zählen mit,
-  bis ein Job sie auf `expired` setzt (gleiches Verhalten wie der bestehende Badge).
+  solange ihr gespeicherter Status `pending` bleibt (gleiches Verhalten wie der bestehende
+  Badge). Für `governance_approvals` gibt es derzeit **keinen** Ablaufjob; `expired` setzt
+  `governance-approvals` nur für `pdp_approval_gates`, die Browser-Reservierung prüft
+  `expires_at` nur beim Einlösen.
 
 Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
 AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.

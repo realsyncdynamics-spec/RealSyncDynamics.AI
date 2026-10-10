@@ -201,7 +201,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'DSGVO- & Tracking-Audit',
     status: 'live',
     group: 'compliance',
-    description: 'Cookie-/Tracker-Scan mit Bericht und wiederkehrender Nachprüfung.',
+    description: 'Cookie-/Tracker-Scan mit Bericht.',
     route: '/audit',
     evidence: ['src/config/platform-capabilities.ts#gdpr-audit'],
     showOnPlatform: true,

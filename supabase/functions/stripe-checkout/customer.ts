@@ -70,3 +70,10 @@ export function customerSearchQuery(tenantId: string): string {
 /** Generische Browser-Antwort für Stripe-Fehler — keine rohe Stripe-Meldung. */
 export const STRIPE_ERROR_PUBLIC_MESSAGE =
   'Checkout konnte nicht gestartet werden. Bitte später erneut versuchen.';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** tenant_id muss eine UUID sein (Voraussetzung für die Stripe-Search-Query). */
+export function isValidTenantId(id: unknown): id is string {
+  return typeof id === 'string' && UUID_RE.test(id);
+}

@@ -5,6 +5,7 @@ import {
   customerIdempotencyKey,
   customerSearchQuery,
   STRIPE_ERROR_PUBLIC_MESSAGE,
+  isValidTenantId,
 } from '../supabase/functions/stripe-checkout/customer';
 
 const T = '11111111-2222-3333-4444-555555555555';
@@ -47,5 +48,16 @@ describe('stripe-checkout Folge-Fixes', () => {
     expect(src).toContain("jsonError(502, 'STRIPE_ERROR', STRIPE_ERROR_PUBLIC_MESSAGE)");
     expect(src).not.toMatch(/stripe checkout failed: \$\{/);
     expect(STRIPE_ERROR_PUBLIC_MESSAGE).not.toMatch(/stripe/i);
+  });
+
+  it('tenant_id muss UUID sein, Prüfung vor jedem Stripe-Call', () => {
+    expect(isValidTenantId(T)).toBe(true);
+    expect(isValidTenantId("x' OR '1")).toBe(false);
+    expect(isValidTenantId('')).toBe(false);
+    expect(isValidTenantId(42)).toBe(false);
+    const guard = src.indexOf('!isValidTenantId(body.tenant_id)');
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(src.indexOf('new Stripe(') > guard ? src.indexOf('new Stripe(') : src.indexOf('customers.search'));
+    expect(guard).toBeLessThan(src.indexOf('customers.search'));
   });
 });

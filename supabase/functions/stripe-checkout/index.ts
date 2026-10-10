@@ -32,6 +32,7 @@ import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 import {
   isRealStripeCustomerId, isTrialEligibleForCheckout,
   customerIdempotencyKey, customerSearchQuery, STRIPE_ERROR_PUBLIC_MESSAGE,
+  isValidTenantId,
 } from './customer.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -89,6 +90,11 @@ Deno.serve(async (req) => {
 
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
+  }
+  // tenant_id fließt in die Stripe-Search-Query — nur UUIDs zulassen, sonst
+  // 400 ohne jeden Stripe-Aufruf.
+  if (!isValidTenantId(body.tenant_id)) {
+    return jsonError(400, 'BAD_REQUEST', 'invalid tenant_id');
   }
 
   // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten

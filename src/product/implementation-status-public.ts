@@ -119,11 +119,11 @@ export const PUBLIC_ROADMAP_COPY: Record<
     de: {
       name: 'DSGVO- & Tracking-Audit',
       description:
-        'Cookie- und Tracker-Scan mit Bericht und wiederkehrender Nachprüfung.',
+        'Cookie- und Tracker-Scan mit Bericht.',
     },
     en: {
       name: 'GDPR & tracking audit',
-      description: 'Cookie and tracker scan with a report and recurring re-checks.',
+      description: 'Cookie and tracker scan with report.',
     },
   },
   'governance-runtime-core': {

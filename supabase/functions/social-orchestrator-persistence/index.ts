@@ -12,14 +12,22 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 import { buildCorsHeaders, handleOptions } from "../_shared/gateway.ts";
+import { requireServiceRole } from "../_shared/auth.ts";
 
-// Aufrufer ist der Browser ueber `supabase.functions.invoke`
-// (src/core/social-orchestrator/persistenceClient.ts). Das ist
-// cross-origin, also schickt der Browser zuerst OPTIONS. Ohne
-// Preflight-Antwort und ohne CORS-Header auf den echten Antworten
-// verwirft er den Aufruf, bevor er rausgeht — gemessen am
-// 2026-10-03: OPTIONS liefert 500 "Unexpected end of JSON input",
-// weil `req.json()` auf den leeren Preflight-Koerper trifft.
+// Preflight: gemessen am 2026-10-03 lieferte OPTIONS 500 "Unexpected end
+// of JSON input", weil `req.json()` auf den leeren Preflight-Koerper traf.
+// Der Preflight bleibt beantwortet, damit die Function sauber antwortet
+// statt zu werfen.
+//
+// Zugriff: nur Service-Role. Die drei Tabellen haben kein tenant_id, ihre
+// RLS-Policies erlauben ausschliesslich service_role — die Daten sind
+// mandantenuebergreifend und fuer Backend-Aufrufer gedacht (siehe Kopf:
+// "call these endpoints from Edge Functions"). Vorher reichte der
+// oeffentliche Anon-Key, der verify_jwt passiert, um DLQ-Eintraege zu
+// lesen, zu loeschen und Audit-Eintraege zu schreiben. Ein Login allein
+// wuerde das nicht beheben: ohne tenant_id saehe jeder Nutzer alle
+// Mandanten. Die Browser-Klassen in persistenceClient.ts werden nirgends
+// instanziiert.
 const cors = buildCorsHeaders("POST, OPTIONS");
 const jsonHeaders = { ...cors, "Content-Type": "application/json" };
 
@@ -229,6 +237,9 @@ function calculateNextRetryTime(retryCount: number): string {
 Deno.serve(async (req: Request) => {
   const preflight = handleOptions(req, cors);
   if (preflight) return preflight;
+
+  const denied = requireServiceRole(req);
+  if (denied) return denied;
 
   try {
     const { action, payload } = await req.json();

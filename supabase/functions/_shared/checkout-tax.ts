@@ -141,7 +141,8 @@ export function reviewInvoiceTax(input: {
 
 export type BillingCountryGateResult =
   | { ok: true }
-  | { ok: false; code: 'MARKET_NOT_SUPPORTED'; country: string };
+  | { ok: false; code: 'MARKET_NOT_SUPPORTED'; country: string }
+  | { ok: false; code: 'MISSING_BILLING_COUNTRY' };
 
 /**
  * Serverseitige Markt-Sperre VOR der Session-Erstellung.
@@ -152,14 +153,20 @@ export type BillingCountryGateResult =
  *  - `declared`: vom Client angegebenes Rechnungsland (optional, `billing_country`)
  *  - `customerCountry`: Adresse eines bestehenden Stripe-Customers
  * Ist ein Land bekannt und nicht in TAX_CHECKED_MARKETS → Sperre.
- * Unbekannt (Neukunde ohne Angabe) → erlaubt; die Nachkontrolle in
+ * Mit `requireDeclared` (alle Checkout-Handler) ist die Angabe Pflicht.
+ * Ohne Pflicht wäre unbekannt → erlaubt; die Nachkontrolle in
  * `stripe-webhook` (reviewCheckoutTax → billing.tax_review_required) fängt
  * den Rest, Erstattung/Kündigung entscheidet ein Mensch.
  */
 export function billingCountryGate(input: {
   declared?: string | null;
   customerCountry?: string | null;
+  /** Pflichtangabe: fehlt `declared`, wird mit MISSING_BILLING_COUNTRY gesperrt. */
+  requireDeclared?: boolean;
 }): BillingCountryGateResult {
+  if (input.requireDeclared && !(typeof input.declared === 'string' && input.declared.trim())) {
+    return { ok: false, code: 'MISSING_BILLING_COUNTRY' };
+  }
   for (const raw of [input.declared, input.customerCountry]) {
     const c = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
     if (c && !isTaxCheckedMarket(c)) return { ok: false, code: 'MARKET_NOT_SUPPORTED', country: c };
@@ -169,3 +176,10 @@ export function billingCountryGate(input: {
 
 export const MARKET_NOT_SUPPORTED_MESSAGE =
   'Self-Service-Kauf ist derzeit nur mit Rechnungsadresse in Deutschland möglich. Bitte über /contact-sales anfragen.';
+
+export const MISSING_BILLING_COUNTRY_MESSAGE =
+  'billing_country fehlt. Self-Service-Kauf nur mit Rechnungsadresse in Deutschland (billing_country: "DE").';
+
+export function marketGateMessage(code: 'MARKET_NOT_SUPPORTED' | 'MISSING_BILLING_COUNTRY'): string {
+  return code === 'MISSING_BILLING_COUNTRY' ? MISSING_BILLING_COUNTRY_MESSAGE : MARKET_NOT_SUPPORTED_MESSAGE;
+}

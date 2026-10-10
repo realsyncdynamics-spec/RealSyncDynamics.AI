@@ -218,7 +218,7 @@ describe('billingCountryGate (serverseitige Markt-Sperre vor der Session)', () =
     const { readFileSync } = await import('node:fs');
     for (const f of ['stripe-checkout', 'checkout-siteos-project', 'checkout-website-rebuild']) {
       const src = readFileSync(`supabase/functions/${f}/index.ts`, 'utf8');
-      const gate = src.indexOf('billingCountryGate({ declared: body.billing_country })');
+      const gate = src.indexOf('billingCountryGate({ declared: body.billing_country, requireDeclared: true })');
       expect(gate, f).toBeGreaterThan(-1);
       expect(gate, f).toBeLessThan(src.indexOf('checkout.sessions.create'));
     }
@@ -234,5 +234,25 @@ describe('stripe-checkout: Footer-Update', () => {
     const block = src.slice(src.indexOf('if (isOneTime) {\n      try {'), src.indexOf('const session = await stripe.checkout.sessions.create'));
     expect(block).toContain('console.error(\'[stripe-checkout] customer footer update failed (one-time, continuing)\'');
     expect(block).toMatch(/\} else \{\n\s+await stripe\.customers\.update/);
+  });
+});
+
+describe('billing_country Pflicht', () => {
+  it('fehlt → MISSING_BILLING_COUNTRY, ≠ DE → MARKET_NOT_SUPPORTED, DE → ok', async () => {
+    const { billingCountryGate, marketGateMessage } = await import('../../supabase/functions/_shared/checkout-tax');
+    expect(billingCountryGate({ requireDeclared: true })).toEqual({ ok: false, code: 'MISSING_BILLING_COUNTRY' });
+    expect(billingCountryGate({ declared: '  ', requireDeclared: true })).toEqual({ ok: false, code: 'MISSING_BILLING_COUNTRY' });
+    expect(billingCountryGate({ declared: 'FR', requireDeclared: true })).toMatchObject({ ok: false, code: 'MARKET_NOT_SUPPORTED' });
+    expect(billingCountryGate({ declared: 'DE', requireDeclared: true })).toEqual({ ok: true });
+    expect(marketGateMessage('MISSING_BILLING_COUNTRY')).toMatch(/billing_country/);
+    expect(marketGateMessage('MARKET_NOT_SUPPORTED')).toMatch(/Deutschland/);
+  });
+  it('alle Frontend-Aufrufer senden billing_country', async () => {
+    const { readFileSync } = await import('node:fs');
+    const co = readFileSync('src/features/billing/checkout.ts', 'utf8');
+    expect(co.match(/billing_country: CHECKOUT_BILLING_COUNTRY/g)?.length).toBe(2);
+    expect(readFileSync('src/lib/stripe.ts', 'utf8')).toContain("billing_country: 'DE'");
+    const { CHECKOUT_BILLING_COUNTRY } = await import('../../src/features/billing/checkout');
+    expect(CHECKOUT_BILLING_COUNTRY).toBe('DE');
   });
 });

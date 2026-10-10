@@ -30,7 +30,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
 import {
-  checkoutTaxParams, invoiceFooter, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE,
+  checkoutTaxParams, invoiceFooter, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE, marketGateMessage,
 } from '../_shared/checkout-tax.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 
@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
   // Markt-Sperre (§ 19 / TAX_CHECKED_MARKETS) für ein angegebenes Rechnungsland —
   // vor jedem Stripe-Aufruf.
   {
-    const gate = billingCountryGate({ declared: body.billing_country });
-    if (!gate.ok) return jsonError(400, gate.code, MARKET_NOT_SUPPORTED_MESSAGE);
+    const gate = billingCountryGate({ declared: body.billing_country, requireDeclared: true });
+    if (!gate.ok) return jsonError(400, gate.code, marketGateMessage(gate.code));
   }
 
   // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten
@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
         ? null
         : (existing as Stripe.Customer).address?.country ?? null;
       const gate = billingCountryGate({ customerCountry });
-      if (!gate.ok) return jsonError(400, gate.code, MARKET_NOT_SUPPORTED_MESSAGE);
+      if (!gate.ok) return jsonError(400, gate.code, marketGateMessage(gate.code));
     } else {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,

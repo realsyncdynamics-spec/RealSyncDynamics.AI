@@ -4,7 +4,7 @@ import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide
 import { getSupabase } from '../../lib/supabase';
 import { tierByPlanKey } from '../../config/pricing';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
-import { createCheckoutSession } from './checkout';
+import { createCheckoutSession, CHECKOUT_BILLING_COUNTRY_NOTICE } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
@@ -623,6 +623,10 @@ function ConsentGateShell({
               </>
             )}
           </button>
+
+          <p className="mt-3 text-xs text-silver-400 text-center" data-testid="checkout-billing-country-notice">
+            {CHECKOUT_BILLING_COUNTRY_NOTICE}
+          </p>
 
           <div className="mt-4 text-[11px] font-mono uppercase tracking-wider text-silver-500 text-center">
             Angemeldet als {userEmail}

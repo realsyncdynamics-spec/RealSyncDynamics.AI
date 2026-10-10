@@ -6,7 +6,7 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
-import { checkoutTaxParams, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE } from '../_shared/checkout-tax.ts';
+import { checkoutTaxParams, billingCountryGate, MARKET_NOT_SUPPORTED_MESSAGE, marketGateMessage } from '../_shared/checkout-tax.ts';
 
 const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -40,8 +40,8 @@ Deno.serve(async (req) => {
   let body: { source_url?: string; tier?: Tier; audit_id?: string; tenant_id?: string; company?: string; return_url?: string; redesign?: boolean; site_slug?: string; project_name?: string; billing_country?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
   // Markt-Sperre (§ 19 / TAX_CHECKED_MARKETS) vor jedem Stripe-Aufruf.
-  const marketGate = billingCountryGate({ declared: body.billing_country });
-  if (!marketGate.ok) return jsonError(400, marketGate.code, MARKET_NOT_SUPPORTED_MESSAGE);
+  const marketGate = billingCountryGate({ declared: body.billing_country, requireDeclared: true });
+  if (!marketGate.ok) return jsonError(400, marketGate.code, marketGateMessage(marketGate.code));
   const sourceUrl = (body.source_url ?? '').trim();
   if (!URL_RE.test(sourceUrl)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
   let domain = ''; try { domain = new URL(sourceUrl).hostname.toLowerCase(); } catch { return jsonError(400, 'INVALID_URL', 'unparsable url'); }

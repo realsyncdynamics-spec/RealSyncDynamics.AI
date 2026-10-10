@@ -23,6 +23,7 @@ import {
 } from '../components/audit/PostScanChoiceRow';
 import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
 import { saveFunnelContext } from '../core/onboarding/funnelContext';
+import { clearPendingAudit, readPendingAudit } from '../core/onboarding/claimAudit';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -401,8 +402,12 @@ function GuidedPlanBlock({ report }: { report: Report }) {
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
   // Scan für die Übernahme nach der Anmeldung festhalten: `claimPendingAudit()`
   // liest den Trichter-Kontext, nicht `audit_id` aus der /welcome-URL.
+  // Ein älterer Pending-Eintrag (z. B. aus dem Trial-CTA eines früheren Scans)
+  // hat bei der Übernahme Vorrang — deshalb verwerfen, wenn er zu einem anderen Scan gehört.
   React.useEffect(() => {
     if (!report.audit_id) return;
+    const pending = readPendingAudit();
+    if (pending && pending.audit_id !== report.audit_id) clearPendingAudit();
     saveFunnelContext({ auditId: report.audit_id, domain: report.domain });
   }, [report.audit_id, report.domain]);
   const config = severityConfig(report.severity);

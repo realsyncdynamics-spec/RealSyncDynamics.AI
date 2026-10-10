@@ -7,6 +7,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
 import { resetLangForTests, setLang } from '../../src/i18n/useLang';
+import { PUBLIC_ROADMAP_COPY } from '../../src/product/implementation-status-public';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/v4/heroEarthScene', () => ({ mountHeroEarth: () => () => {} }));
@@ -98,21 +99,23 @@ it('filters roadmap groups by status', () => {
     Array.from(view.container.querySelectorAll<HTMLElement>('#roadmap .group-head'))
       .filter((h) => (h.parentElement as HTMLElement).style.display !== 'none')
       .map((h) => h.querySelector('h3')?.textContent);
-  expect(groups()).toEqual(['LIVE', 'IN PREVIEW', 'NEXT']);
-  fireEvent.click(screen.getByRole('button', { name: 'IN PREVIEW' }));
-  expect(groups()).toEqual(['IN PREVIEW']);
-  expect(screen.getByRole('button', { name: 'IN PREVIEW' })).toHaveAttribute('aria-pressed', 'true');
+  expect(groups()).toEqual(['Live', 'In Arbeit', 'Geplant']);
+  fireEvent.click(screen.getByRole('button', { name: 'In Arbeit' }));
+  expect(groups()).toEqual(['In Arbeit']);
+  expect(screen.getByRole('button', { name: 'In Arbeit' })).toHaveAttribute('aria-pressed', 'true');
 });
 
-it('roadmap comes from the registry and omits redirect-only design landings', () => {
+it('roadmap comes from public copy and omits redirect-only design landings', () => {
   const view = mount();
   const roadmap = view.container.querySelector('#roadmap')!;
-  expect(roadmap.textContent).toContain('Product-Registry');
+  expect(roadmap.textContent).toContain('ehrlich gekennzeichnet');
   expect(roadmap.textContent).toContain('Compliance Command Center');
-  expect(roadmap.textContent).toContain('CommandCenterDashboard');
   expect(roadmap.textContent).toContain('/ai-act-klassifikator');
-  expect(roadmap.textContent).toContain('EU-AI-Act-Inventar (Persistenz)');
-  expect(roadmap.textContent).toMatch(/kein Upgrade|keinem Plan/i);
+  expect(roadmap.textContent).toContain('EU-AI-Act-Inventar');
+  expect(roadmap.textContent).toMatch(/nicht freigeschaltet|Inventar speichern/i);
+  expect(roadmap.textContent).not.toContain('Product-Registry');
+  expect(roadmap.textContent).not.toContain('CommandCenterDashboard');
+  expect(roadmap.textContent).not.toContain('AgentOsPanel');
   expect(roadmap.textContent).not.toContain('produktionsreifer E2E-Pfad offen');
   expect(roadmap.textContent).not.toContain('sind aber nicht der Live-Hero');
   expect(roadmap.textContent).not.toContain('/ai-act-governance');
@@ -128,6 +131,80 @@ it('roadmap comes from the registry and omits redirect-only design landings', ()
     const card = h.closest('.rm-card');
     expect(card?.querySelector('u')?.textContent ?? '').not.toBe('/app/dashboard');
   }
+});
+
+it('skips roadmap items without public copy instead of crashing /', () => {
+  const id = 'command-center';
+  const saved = PUBLIC_ROADMAP_COPY[id];
+  expect(saved).toBeDefined();
+  delete PUBLIC_ROADMAP_COPY[id];
+  try {
+    const view = mount();
+    const roadmap = view.container.querySelector('#roadmap')!;
+    expect(roadmap).not.toBeNull();
+    expect(roadmap.textContent).not.toContain('Compliance Command Center');
+    expect(roadmap.querySelectorAll('.rm-card').length).toBeGreaterThan(0);
+  } finally {
+    PUBLIC_ROADMAP_COPY[id] = saved;
+  }
+});
+
+it('marks the dashboard preview as example data (visible, not only aria)', () => {
+  const view = mount();
+  const section = view.container.querySelector('#dashboard')!;
+  const dash = section.querySelector('.app')!;
+  const note = screen.getByTestId('v4-dash-example-note');
+  expect(dash).toHaveAttribute('data-demo-kpis', 'true');
+  expect(dash.getAttribute('aria-label')).toMatch(/Beispielansicht|Beispieldaten/i);
+  expect(dash.querySelector('.url')?.textContent).toBe('realsyncdynamicsai.de/app/dashboard');
+  expect(dash.querySelector('.url')?.textContent).not.toContain('realsyncdynamics.ai');
+  expect(dash.querySelector('.app-bar .tag')?.textContent).toBe('Beispielansicht');
+  // Note sits outside the dark preview frame (sibling before .app), clearly readable.
+  expect(dash.contains(note)).toBe(false);
+  expect(note.compareDocumentPosition(dash) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(note.textContent).toMatch(/Beispieldaten.*keine echten Messwerte.*eigenen Scan/i);
+});
+
+it('marks the dashboard preview in EN when language is English', () => {
+  setLang('en');
+  mount();
+  expect(screen.getByTestId('v4-dash-example-note').textContent).toMatch(
+    /Example data.*not real measurements.*own scan/i,
+  );
+  const dash = document.querySelector('#dashboard .app')!;
+  expect(dash.querySelector('.app-bar .tag')?.textContent).toBe('Example view');
+  expect(dash.getAttribute('aria-label')).toMatch(/Example view|sample data/i);
+});
+
+it('roadmap public markup leaks no internal registry details', () => {
+  const view = mount();
+  const roadmap = view.container.querySelector('#roadmap')!;
+  const text = roadmap.textContent ?? '';
+  for (const banned of [
+    'CommandCenterDashboard',
+    'AgentOsPanel',
+    '#1743',
+    '#1331',
+    'Messung',
+    'Dominik',
+    'Auto-Merge',
+    'optimizer',
+    'Kugel',
+  ] as const) {
+    expect(text.toLowerCase(), banned).not.toContain(banned.toLowerCase());
+  }
+  expect(text).not.toMatch(/#\d{3,5}/);
+  expect(text).not.toMatch(/claude-code-optimizer/i);
+  expect(text).not.toContain('Interaktive Governance-Kugel');
+  // Internal registry IDs must not leak into public markup (e.g. provider names in ids).
+  expect(roadmap.querySelector('[data-impl-id]')).toBeNull();
+  expect(roadmap.innerHTML).not.toContain('governance-sphere-interactive');
+  expect(roadmap.innerHTML.toLowerCase()).not.toContain('hostinger');
+  // PascalCase component-like identifiers (e.g. FooBarPanel) must not appear.
+  expect(text).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
+  // Internal tooling routes must not render as public labels.
+  const routes = Array.from(roadmap.querySelectorAll('.rm-card u')).map((u) => u.textContent ?? '');
+  expect(routes.some((r) => /optimizer|chatbot|siteos/i.test(r))).toBe(false);
 });
 
 it('sends the scan form into /audit with the URL', () => {

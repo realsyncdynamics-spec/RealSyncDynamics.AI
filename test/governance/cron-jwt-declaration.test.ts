@@ -63,7 +63,8 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
     ] as const) {
       const src = source(slug);
       expect(src).toContain(`Deno.env.get('${env}')`);
-      expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+      expect(src).toMatch(/if \(!CRON_KEY\) \{\s*return jsonError\(500, 'CRON_KEY_MISSING'/);
+      expect(src).toMatch(/authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`/);
       expect(src).not.toMatch(
         /authHeader\s*!==\s*`Bearer \$\{(SERVICE_KEY|SERVICE_ROLE)\}`/,
       );

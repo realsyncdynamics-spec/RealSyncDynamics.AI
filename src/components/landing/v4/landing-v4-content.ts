@@ -7,8 +7,9 @@ import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/
  * LandingChannelTools.tsx (Stand Handoff) und wird hier bewusst eingefroren,
  * damit die Design-Route deckungsgleich mit der Referenz bleibt.
  *
- * Ausnahme: die öffentliche #roadmap-Sektion liest live aus
- * `src/product/implementation-status.ts` (keine parallele Claim-Liste).
+ * Ausnahme: die öffentliche #roadmap-Sektion liest Status/Route aus
+ * `src/product/implementation-status.ts` und kundenorientierte Texte aus
+ * `implementation-status-public.ts` (keine parallele Claim-Liste, keine internen Details).
  */
 
 /** Ziel-Routen der Referenz (`wire()`-Tabelle) — relativ, damit .ai und .de funktionieren. */
@@ -37,14 +38,15 @@ const CAPABILITY_ROUTE: Record<string, string> = {
 export type V4Status = 'live' | 'preview' | 'next';
 
 /**
- * Status-Semantik der Referenz (`tag()`): LIVE → live · PREVIEW / GEPLANT /
- * IN ENTWICKLUNG / EMPFOHLEN → preview · COMING / NEXT → next.
+ * Status-Semantik der Referenz (`tag()`): LIVE → live · PREVIEW / IN ARBEIT /
+ * IN PROGRESS / IN ENTWICKLUNG / EMPFOHLEN → preview · COMING / NEXT / GEPLANT /
+ * PLANNED → next.
  */
 export function statusOf(label: string): V4Status | undefined {
   const t = label.trim().toUpperCase();
   if (t === 'LIVE') return 'live';
-  if (/^(PREVIEW|GEPLANT|IN ENTWICKLUNG|EMPFOHLEN)/.test(t)) return 'preview';
-  if (/^(COMING|NEXT)/.test(t)) return 'next';
+  if (/^(PREVIEW|IN ARBEIT|IN PROGRESS|IN ENTWICKLUNG|EMPFOHLEN)/.test(t)) return 'preview';
+  if (/^(COMING|NEXT|GEPLANT|PLANNED)/.test(t)) return 'next';
   return undefined;
 }
 
@@ -152,9 +154,8 @@ export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({
 }));
 
 export const BUILDING_CAPS = [
-  ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist nicht in Produktion (Messung 2026-08-17).'],
+  ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist noch nicht in Produktion.'],
 ] as const;
-
 export const GOV_STEPS = [
   ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
   ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],

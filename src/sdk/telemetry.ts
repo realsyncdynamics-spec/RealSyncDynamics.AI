@@ -97,7 +97,10 @@ export interface AiTelemetryEvent {
 export interface TelemetryClientOptions {
   /** Vollstaendige URL der Edge-Function. */
   endpoint: string;
-  /** Tenant-API-Key (Pflicht). In dieser PR: tenant uuid. */
+  /**
+   * Ingest-API-Key `rsd_gov_…` (Pflicht) — anlegen unter API-Schlüssel
+   * (owner/admin). Die Mandanten-UUID ist kein Schlüssel und wird abgelehnt.
+   */
   tenantKey: string;
   /** Custom fetch (z.B. fuer Node 18-, Service-Worker). Default: globalThis.fetch. */
   fetchImpl?: typeof fetch;

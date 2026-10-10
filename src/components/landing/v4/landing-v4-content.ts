@@ -7,7 +7,8 @@ import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/
  * LandingChannelTools.tsx (Stand Handoff) und wird hier bewusst eingefroren,
  * damit die Design-Route deckungsgleich mit der Referenz bleibt.
  *
- * Ausnahme: die öffentliche #roadmap-Sektion liest Status/Route aus
+ * Ausnahme: Loop- und Plattform-Copy werden für die öffentliche Landing gestrafft;
+ * die öffentliche #roadmap-Sektion liest Status/Route aus
  * `src/product/implementation-status.ts` und kundenorientierte Texte aus
  * `implementation-status-public.ts` (keine parallele Claim-Liste, keine internen Details).
  */
@@ -74,10 +75,10 @@ export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
 ];
 
 export const LOOP_NODES = [
-  ['01 · DETECT', 'Discover', 'Headers, Cookies, Tracker, AI-Endpoints und Third-Parties in Sekunden inventarisiert.'],
-  ['02 · GOVERN', 'Classify', 'Findings nach DSGVO-Artikel und AI-Act-Risikoklasse eingeordnet, ins Register überführt.'],
-  ['03 · AUTOMATE', 'Enforce', 'Policies als ausführbare Kontrollen — Agenten schlagen Fixes vor, Freigaben bleiben beim Menschen.'],
-  ['04 · MONITOR', 'Prove', 'Jeder Lauf in der Evidence-Chain versiegelt; Drift wird in Echtzeit erkannt und dokumentiert.'],
+  ['01 · DETECT', 'Discover', 'Headers, Cookies, Tracker, KI-Endpoints und Drittanbieter erfassen — Datenflüsse sichtbar machen.'],
+  ['02 · GOVERN', 'Classify', 'Findings nach DSGVO-Artikel und AI-Act-Risikoklasse einordnen — Anforderungen klar zuordnen.'],
+  ['03 · AUTOMATE', 'Enforce', 'Policies als Kontrollen ausführen — Agenten schlagen Fixes vor, Menschen geben frei.'],
+  ['04 · MONITOR', 'Prove', 'Läufe in der Nachweiskette versiegeln — Drift erkennen und nachvollziehbar dokumentieren.'],
 ] as const;
 
 export const ANCHORS = [
@@ -138,13 +139,13 @@ export const TOOLS = [
 
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
-  ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF.', ''],
-  ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
+  ['DSGVO- & Tracking-Audit', 'Cookies, Tracker und Drittanbieter prüfen, Einwilligungspflichten erkennen — mit PDF-Bericht.', ''],
+  ['EU-AI-Act-Klassifizierung', 'Risikoklasse nach Annex III einordnen, Anforderungen ableiten — im öffentlichen Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
-  ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],
-  ['AI Gateway', 'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.', ''],
+  ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen exportieren — für interne Kontrollen und externe Prüfer.', ''],
+  ['AI Gateway', 'Modellaufrufe kontrollieren, protokollieren und Kosten erfassen — mit EU-Option.', ''],
   ['Evidence Vault', 'Hash-verkettete Nachweiskette mit Aufbewahrung, Compliance-Hold und Integritätsprüfung.', '/evidence-vault'],
-  ['Policy Engine', 'Governance-Regeln nicht nur dokumentieren, sondern als ausführbare Kontrolllogik durchsetzen.', '/policy-engine'],
+  ['Policy Engine', 'Governance-Regeln als ausführbare Kontrollen durchsetzen — statt nur dokumentieren.', '/policy-engine'],
 ] as const;
 
 export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({

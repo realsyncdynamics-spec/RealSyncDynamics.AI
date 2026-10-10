@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  apiKeyForVerifiedWebhookEvent,
   getStripeMode,
+  isWebhookSignatureModeCompatible,
   keyModeOf,
   planKeyForTestPrice,
   resolveStripeSecretKey,
@@ -100,6 +102,31 @@ describe('Stripe beta mode — key separation', () => {
       stripe_webhook_secret: 'whsec_live_fake_unit_test',
     }), 'test', 'test_var');
     expect(secret).toBe('whsec_test_fake_unit_test');
+  });
+
+  it('binds a verified live event to a live key even without test credentials', () => {
+    expect(apiKeyForVerifiedWebhookEvent(
+      'live', 'sk_live_unit_test', null,
+    )).toBe('sk_live_unit_test');
+    expect(apiKeyForVerifiedWebhookEvent(
+      'live', null, 'sk_test_unit_test',
+    )).toBeNull();
+  });
+
+  it('never lets a test-signed event use the live API key', () => {
+    expect(apiKeyForVerifiedWebhookEvent(
+      'test', 'sk_live_unit_test', null,
+    )).toBeNull();
+    expect(apiKeyForVerifiedWebhookEvent(
+      'test', 'sk_live_unit_test', 'sk_test_unit_test',
+    )).toBe('sk_test_unit_test');
+  });
+
+  it('requires the event livemode flag to match its signing secret mode', () => {
+    expect(isWebhookSignatureModeCompatible(true, 'live')).toBe(true);
+    expect(isWebhookSignatureModeCompatible(false, 'test')).toBe(true);
+    expect(isWebhookSignatureModeCompatible(true, 'test')).toBe(false);
+    expect(isWebhookSignatureModeCompatible(false, 'live')).toBe(false);
   });
 
   it('resolves only configured test price IDs and cannot synthesize live prices', () => {

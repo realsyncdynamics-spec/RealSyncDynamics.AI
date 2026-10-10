@@ -303,10 +303,16 @@ Deno.serve(async (req) => {
       }
     }
   } catch (err) {
-    if (err instanceof EvidenceChainBusyError) {
-      return jsonError(503, 'EVIDENCE_CHAIN_CONFLICT', err.message);
-    }
-    return jsonError(500, 'EVIDENCE_INSERT_FAILED', (err as Error)?.message ?? String(err));
+    // Not retryable as-is: the events (and any evidence appended before the
+    // failure) are already stored. Report exactly what was written so the
+    // client can reconcile instead of replaying the whole request.
+    const partial = {
+      partial: true,
+      event_ids: insertedEvents!.map((e) => e.id),
+      evidence_ids: insertedEvidence.map((e) => e.id),
+    };
+    const code = err instanceof EvidenceChainBusyError ? 'EVIDENCE_CHAIN_CONFLICT' : 'EVIDENCE_INSERT_FAILED';
+    return jsonError(500, code, (err as Error)?.message ?? String(err), corsHeaders, partial);
   }
 
   // Auto policy_snapshot for every engine-matched event (unchanged: not chained).
@@ -337,7 +343,13 @@ Deno.serve(async (req) => {
       .from('governance_evidence')
       .insert(evidenceRows)
       .select('id');
-    if (evErr) return jsonError(500, 'EVIDENCE_INSERT_FAILED', evErr.message);
+    if (evErr) {
+      return jsonError(500, 'EVIDENCE_INSERT_FAILED', evErr.message, corsHeaders, {
+        partial: true,
+        event_ids: insertedEvents!.map((e) => e.id),
+        evidence_ids: insertedEvidence.map((e) => e.id),
+      });
+    }
     insertedEvidence = [...insertedEvidence, ...(ev ?? [])];
   }
 

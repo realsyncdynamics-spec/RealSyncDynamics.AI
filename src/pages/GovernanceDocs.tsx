@@ -205,11 +205,14 @@ export function GovernanceDocs() {
                 {[
                   ['400', 'BAD_REQUEST',    'JSON ungültig oder Pflichtfeld fehlt'],
                   ['400', 'BATCH_TOO_LARGE','> 50 Events in einem Request'],
+                  ['400', 'EVIDENCE_TOO_MANY', '> 50 Evidence-Einträge in einem Request'],
                   ['401', 'UNAUTHORIZED',   'Fehlender / ungültiger / widerrufener Bearer-Token'],
                   ['403', 'FORBIDDEN',      'Operation nur für Owner/Admin des Tenants'],
                   ['403', 'CROSS_TENANT',   'asset_id / policy_id gehört zu anderem Tenant'],
                   ['404', 'NOT_FOUND',      'asset_id / policy_id existiert nicht'],
                   ['500', 'INSERT_FAILED',  'DB-Constraint-Violation (siehe message)'],
+                  ['500', 'EVIDENCE_INSERT_FAILED', 'Evidence nicht gespeichert; Events bereits gespeichert (details.event_ids / evidence_ids), nicht blind wiederholen'],
+                  ['500', 'EVIDENCE_CHAIN_CONFLICT', 'Evidence-Kette dauerhaft belegt; Teilstand in details, nicht blind wiederholen'],
                 ].map((row) => (
                   <tr key={row[1]} className="border-b border-silver-700/20">
                     <td className="py-2 pr-3 font-mono text-amber-300">{row[0]}</td>

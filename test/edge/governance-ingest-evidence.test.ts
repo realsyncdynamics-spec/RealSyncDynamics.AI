@@ -123,9 +123,11 @@ describe('governance-ingest: Verdrahtung', () => {
     expect(src).toMatch(/\.not\('content_hash', 'is', null\)\s*\.order\('created_at', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)/);
   });
 
-  it('Obergrenze je Request und 503 bei dauerhaft bewegtem Kopf', () => {
+  it('Obergrenze je Request; Fehler nach Teilschreiben melden den Teilstand statt Retry zu signalisieren', () => {
     expect(MAX_CALLER_EVIDENCE).toBe(50);
     expect(src).toContain("'EVIDENCE_TOO_MANY'");
-    expect(src).toContain("jsonError(503, 'EVIDENCE_CHAIN_CONFLICT'");
+    expect(src).not.toMatch(/jsonError\(503/);
+    expect(src).toMatch(/partial: true,\s*event_ids: insertedEvents!\.map\(\(e\) => e\.id\),\s*evidence_ids: insertedEvidence\.map\(\(e\) => e\.id\)/);
+    expect(src).toContain("err instanceof EvidenceChainBusyError ? 'EVIDENCE_CHAIN_CONFLICT' : 'EVIDENCE_INSERT_FAILED'");
   });
 });

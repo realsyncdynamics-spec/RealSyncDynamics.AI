@@ -4,6 +4,7 @@ import {
   getStripeMode,
   isWebhookSignatureModeCompatible,
   keyModeOf,
+  liveWebhookSigningCandidate,
   planKeyForTestPrice,
   resolveStripeSecretKey,
   resolveStripeWebhookSecret,
@@ -127,6 +128,29 @@ describe('Stripe beta mode — key separation', () => {
     expect(isWebhookSignatureModeCompatible(false, 'test')).toBe(true);
     expect(isWebhookSignatureModeCompatible(true, 'test')).toBe(false);
     expect(isWebhookSignatureModeCompatible(false, 'live')).toBe(false);
+  });
+
+  it('accepts old test-only signing-credential pairing without duplicate candidates', () => {
+    expect(liveWebhookSigningCandidate(
+      'whsec_test_legacy', 'whsec_test_legacy', null,
+    )).toBeNull();
+    expect(liveWebhookSigningCandidate(
+      'whsec_test_legacy', 'whsec_test_legacy', 'sk_test_legacy',
+    )).toBeNull();
+  });
+
+  it('preserves live signing candidate for active or missing live API key', () => {
+    expect(liveWebhookSigningCandidate(
+      'whsec_live', 'whsec_test', 'sk_live_key',
+    )).toBe('whsec_live');
+    expect(liveWebhookSigningCandidate(
+      'whsec_live', null, null,
+    )).toBe('whsec_live');
+    // When a live API key exists, equal signing secrets stay ambiguous
+    // and are refused by the webhook handler rather than silently resolved.
+    expect(liveWebhookSigningCandidate(
+      'whsec_shared', 'whsec_shared', 'sk_live_key',
+    )).toBe('whsec_shared');
   });
 
   it('resolves only configured test price IDs and cannot synthesize live prices', () => {

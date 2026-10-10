@@ -4,7 +4,7 @@
  * never from the URL.
  */
 import { processAIGatewayRequest, processAIGatewayStream } from '../../core/ai-gateway/gateway';
-import { BUILDER_SYSTEM_PROMPT } from './bolt/system-prompt';
+import { builderSystemPrompt } from './bolt/system-prompt';
 import { formatContextPack, packProjectContext, type ContextFile } from './bolt/context-pack';
 import type { Diagnostic } from './bolt/diagnostics';
 
@@ -46,7 +46,7 @@ export async function generateViaRealSyncGateway(args: {
   const res = await processAIGatewayRequest({
     prompt: packed,
     provider: 'local',
-    systemPrompt: BUILDER_SYSTEM_PROMPT,
+    systemPrompt: builderSystemPrompt(args.prompt, args.files),
     feature: 'app_builder_code',
     tenantId: args.tenantId,
     timeoutMs: BUILDER_TIMEOUT_MS,
@@ -82,7 +82,7 @@ export async function generateViaRealSyncGatewayStream(
     {
       prompt: packed,
       provider: 'local',
-      systemPrompt: BUILDER_SYSTEM_PROMPT,
+      systemPrompt: builderSystemPrompt(args.prompt, args.files),
       feature: 'app_builder_code',
       tenantId: args.tenantId,
       timeoutMs: BUILDER_TIMEOUT_MS,

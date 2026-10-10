@@ -1,244 +1,103 @@
 /**
- * audit-monitor-cron — Täglicher Compliance-Monitoring-Cron-Job
+ * audit-monitor-cron — täglicher Re-Scan der monitored_domains.
  *
- * Cron-Schedule (pg_cron, im Supabase SQL-Editor einrichten):
- *   SELECT cron.schedule(
- *     'audit-monitor-daily',
- *     '0 3 * * *',
- *     $$ SELECT net.http_post(
- *       url := 'https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/audit-monitor-cron',
- *       headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.service_role_key'))
- *     ) $$
- *   );
+ * Auth: Bearer == CRON_AUDIT_MONITOR_KEY (Function Secret). pg_cron schickt
+ * ihn über Vault `cron_audit_monitor_key` (dispatch_cron_function, Job
+ * `audit-monitor-daily`, 04:00 UTC, Migration 20261009230000). Fail-closed:
+ * leerer Key → 500 (keine Arbeit), falscher/fehlender Bearer → 401
+ * "cron only". Der inbound Authorization wird nie mit
+ * SUPABASE_SERVICE_ROLE_KEY verglichen; service_role dient nur dem
+ * DB-Zugriff nach der Prüfung.
  *
- * Was dieser Job tut:
- * 1. Holt alle aktiven Monitoring-Domains aus monitored_domains
- * 2. Scannt jede Domain (fetch für Starter/Growth, Playwright für Agency/Enterprise)
- * 3. Drift-Detection gegen letzten Scan
- * 4. E-Mail-Alert via Resend bei neuen kritischen Findings
- * 5. Persistiert in audit_monitor_results
+ *   SELECT cron.schedule('audit-monitor-daily', '0 4 * * *',
+ *     $$ SELECT public.dispatch_cron_function('audit-monitor-cron',
+ *          'cron_audit_monitor_key', jsonb_build_object('trigger','cron')) $$);
+ *
+ * Plan-Gate (tenant_entitlements, nicht die Client-Spalte `tier`):
+ *   monitoring.daily → täglich, monitoring.monthly → monatlich, sonst kein
+ *   Dauerbetrieb (Free = Einmal-Scan); höchstens limit.domains Domains je
+ *   Tenant; Drift-Mail nur mit alerts.email + monitoring.drift.
+ * Jeder Lauf (auch ohne Delta, auch Fehler) → governance_evidence
+ * (append_governance_evidence, Hash-Chain je Tenant).
+ *
+ * Logik: handler.ts / logic.ts / repo.ts, Tests: test/edge/audit-monitor-cron.test.ts.
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { jsonError } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
+import { handleAuditMonitor, type Alerter, type Scanner } from './handler.ts';
+import { createSupabaseRepo } from './repo.ts';
+import { checkCronAuth, normalizeCookieScan, planViewFrom } from './logic.ts';
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const RESEND_KEY   = Deno.env.get('RESEND_API_KEY') ?? '';
-const PW_URL       = Deno.env.get('PLAYWRIGHT_SCANNER_URL') ?? '';
-const PW_KEY       = Deno.env.get('PLAYWRIGHT_SCANNER_KEY') ?? '';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface MonitoredDomain {
-  id: string; tenant_id: string; domain: string;
-  tier: 'starter' | 'growth' | 'agency' | 'enterprise';
-  last_scan_at: string | null; last_risk_score: number | null;
-  last_trackers: string[]; alert_email: string | null; active: boolean;
-}
-interface ScanResult {
-  domain: string; risk_score: number; trackers: string[];
-  cookie_count: number; consent_manager_detected: boolean;
-  issues: Array<{ id: string; risk: string; issue: string }>;
-  scanned_at: string; scan_type: 'fetch' | 'playwright';
-}
-interface DriftReport {
-  has_drift: boolean; new_trackers: string[]; removed_trackers: string[];
-  score_delta: number; new_critical_issues: Array<{ id: string; risk: string; issue: string }>;
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }
 
-// ---------------------------------------------------------------------------
-// Scan: fetch (Starter / Growth)
-// ---------------------------------------------------------------------------
-async function scanWithFetch(domain: string): Promise<ScanResult> {
-  const url = domain.startsWith('http') ? domain : `https://${domain}`;
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data, error } = await supabase.functions.invoke('cookie-scan', {
-    body: { url, includeDetails: true },
-  });
-  if (error) throw new Error(`cookie-scan: ${error.message}`);
-  return {
-    domain, scan_type: 'fetch',
-    risk_score: data?.riskScore ?? 50,
-    trackers: (data?.trackers ?? []).map((t: { tracker: string }) => t.tracker),
-    cookie_count: data?.cookieCount ?? 0,
-    consent_manager_detected: data?.consentManager?.detected ?? false,
-    issues: data?.issues ?? [],
-    scanned_at: new Date().toISOString(),
-  };
-}
+/** Die Entitlements, an denen der Dauerbetrieb hängt (ausgewertet in planViewFrom). */
+const PLAN_KEYS = ['monitoring.daily', 'monitoring.monthly', 'monitoring.drift', 'alerts.email'] as const;
 
-// ---------------------------------------------------------------------------
-// Scan: Playwright (Agency / Enterprise)
-// ---------------------------------------------------------------------------
-async function scanWithPlaywright(domain: string): Promise<ScanResult> {
-  if (!PW_URL) return scanWithFetch(domain);
-  const url = domain.startsWith('http') ? domain : `https://${domain}`;
-  const resp = await fetch(`${PW_URL}/scan/full`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(PW_KEY ? { 'x-api-key': PW_KEY } : {}) },
-    body: JSON.stringify({ url }),
-  });
-  if (!resp.ok) { console.warn(`[monitor] PW failed ${resp.status}, fallback`); return scanWithFetch(domain); }
-  const d = await resp.json();
-  const trackers: string[] = d.trackers_detected ?? [];
-  const critical = ['google_analytics','meta_pixel','tiktok_pixel'];
-  const score = Math.max(0, 100 - trackers.filter(t => critical.includes(t)).length * 20);
-  return {
-    domain, scan_type: 'playwright', risk_score: score,
-    trackers, cookie_count: d.cookie_count ?? 0,
-    consent_manager_detected: d.consent_manager?.detected ?? false,
-    issues: trackers.map(t => ({ id: `tracker-${t}`, risk: critical.includes(t) ? 'critical' : 'high', issue: `Tracker: ${t}` })),
-    scanned_at: new Date().toISOString(),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Drift Detection
-// ---------------------------------------------------------------------------
-function detectDrift(curr: ScanResult, prev: MonitoredDomain): DriftReport {
-  const prevT = prev.last_trackers ?? [];
-  const newT = curr.trackers.filter(t => !prevT.includes(t));
-  const removedT = prevT.filter(t => !curr.trackers.includes(t));
-  const delta = (prev.last_risk_score ?? 100) - curr.risk_score;
-  const newCrit = curr.issues.filter(i => i.risk === 'critical' && newT.some(t => i.id.includes(t)));
-  return { has_drift: newT.length > 0 || removedT.length > 0 || Math.abs(delta) > 10,
-    new_trackers: newT, removed_trackers: removedT, score_delta: delta, new_critical_issues: newCrit };
-}
-
-// ---------------------------------------------------------------------------
-// E-Mail Alert
-// ---------------------------------------------------------------------------
-async function sendAlert(domain: MonitoredDomain, drift: DriftReport, scan: ScanResult) {
-  if (!domain.alert_email || !RESEND_KEY) return;
-  if (!drift.has_drift && drift.new_critical_issues.length === 0) return;
-  const subject = drift.new_critical_issues.length > 0
-    ? `⚠️ Kritisch: ${domain.domain}` : `📊 Drift: ${domain.domain}`;
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: 'RealSyncDynamics <monitor@realsyncdynamicsai.de>',
-      to: [domain.alert_email], subject,
-      html: `<div style="font-family:sans-serif;max-width:600px">
-        <h2>Compliance-Alert</h2>
-        <p><b>Domain:</b> ${domain.domain}</p>
-        <p><b>Risk-Score:</b> ${scan.risk_score}/100 (Δ ${drift.score_delta > 0 ? '-' : '+'}${Math.abs(drift.score_delta)})</p>
-        ${drift.new_trackers.length > 0 ? `<h3 style="color:#dc2626">Neue Tracker</h3><ul>${drift.new_trackers.map(t=>`<li>${t}</li>`).join('')}</ul>` : ''}
-        ${drift.removed_trackers.length > 0 ? `<h3 style="color:#16a34a">Entfernte Tracker</h3><ul>${drift.removed_trackers.map(t=>`<li>${t}</li>`).join('')}</ul>` : ''}
-        <p><a href="https://realsyncdynamicsai.de/dashboard" style="background:#1a1a2e;color:white;padding:10px 20px;text-decoration:none">Dashboard öffnen</a></p>
-      </div>`,
-    }),
-  });
-  console.log(`[monitor] alert → ${domain.alert_email}`);
-}
-
-// ---------------------------------------------------------------------------
-// Darf dieser Tenant E-Mail-Alerts bekommen? (`alerts.email`, ab Starter)
-// ---------------------------------------------------------------------------
-// Der Scan und das Ergebnis in audit_monitor_results hängen nicht am Plan —
-// nur der Versand. Schlägt das Laden der Entitlements fehl, wird nicht
-// gesendet (fail closed), damit ein Datenbankfehler keinen kostenlosen
-// Versand freischaltet; der Grund steht im Log.
-async function mayAlert(supabase: ReturnType<typeof createClient>, tenantId: string): Promise<boolean> {
+Deno.serve(async (req) => {
   try {
-    const ent = await loadEntitlementsForTenant(supabase, tenantId);
-    return hasFeature(ent, 'alerts.email');
-  } catch (err) {
-    console.warn(`[monitor] entitlements for ${tenantId} unavailable, alert suppressed:`, err);
-    return false;
-  }
-}
+    const CRON_KEY = Deno.env.get('CRON_AUDIT_MONITOR_KEY') ?? '';
+    const pre = checkCronAuth(CRON_KEY, req.headers.get('Authorization'));
+    if (!pre.ok && req.method !== 'OPTIONS') return jsonError(pre.status, pre.code, pre.message);
 
-// ---------------------------------------------------------------------------
-// shouldScan heute?
-// ---------------------------------------------------------------------------
-function shouldScan(d: MonitoredDomain): boolean {
-  if (!d.last_scan_at) return true;
-  const hrs = (Date.now() - new Date(d.last_scan_at).getTime()) / 36e5;
-  return d.tier === 'starter' ? hrs >= 720 : hrs >= 20; // starter=30d, rest=täglich
-}
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+    const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!SUPABASE_URL || !SERVICE_KEY) return jsonError(500, 'CONFIG_MISSING', 'supabase env missing');
+    const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 
-// ---------------------------------------------------------------------------
-// Main Handler
-// ---------------------------------------------------------------------------
-Deno.serve(async (req: Request) => {
-  const preflight = handleOptions(req);
-  if (preflight) return preflight;
+    const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-  // AP9 Welle 3: `verify_jwt = false` — bis hier konnte jeder Aufrufer alle
-  // überwachten Domains scannen lassen (Playwright-Kosten, Resend-Versand).
-  // Der Kopf dieser Datei verlangt seit jeher den Service-Role-Bearer aus dem
-  // Cron; jetzt wird er auch geprüft. In Produktion ist derzeit kein Cron-Job
-  // für diese Function registriert (gemessen 2026-09-01, `cron.job`).
-  const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SERVICE_KEY}`) {
-    return jsonResponse({ ok: false, error: 'cron only' }, 401);
-  }
+    // Bestehender Scanner: Edge Function cookie-scan (fetch-basiert).
+    const scanner: Scanner = async (d) => {
+      const url = d.domain.startsWith('http') ? d.domain : `https://${d.domain}`;
+      const { data, error } = await db.functions.invoke('cookie-scan', { body: { url, includeDetails: true } });
+      if (error) throw new Error(`cookie-scan: ${error.message}`);
+      return normalizeCookieScan(d.domain, data, new Date().toISOString());
+    };
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-  const t0 = Date.now();
-  const log: Array<{ domain: string; ok: boolean; drift: boolean; alerted: boolean; err?: string }> = [];
+    // Bestehender Benachrichtigungsweg (Resend, wie zuvor in dieser Function).
+    const alerter: Alerter = async (d, drift, scan) => {
+      if (!RESEND_KEY || !d.alert_email) return 'not_configured';
+      const li = (xs: string[]) => xs.map((t) => `<li>${esc(t)}</li>`).join('');
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'RealSyncDynamics <monitor@realsyncdynamicsai.de>',
+          to: [d.alert_email],
+          subject: drift.new_critical_issues.length > 0 ? `Kritisch: ${d.domain}` : `Drift: ${d.domain}`,
+          html: `<div style="font-family:sans-serif;max-width:600px">
+            <h2>Täglicher Re-Scan: Änderung erkannt</h2>
+            <p><b>Domain:</b> ${esc(d.domain)}</p>
+            <p><b>Risk-Score:</b> ${scan.risk_score}/100 (Δ ${-drift.score_delta} gegenüber dem letzten Lauf)</p>
+            ${drift.new_trackers.length ? `<h3>Neue Tracker</h3><ul>${li(drift.new_trackers)}</ul>` : ''}
+            ${drift.removed_trackers.length ? `<h3>Entfernte Tracker</h3><ul>${li(drift.removed_trackers)}</ul>` : ''}
+            <p><a href="https://realsyncdynamicsai.de/dashboard">Dashboard öffnen</a></p></div>`,
+        }),
+      });
+      if (!resp.ok) throw new Error(`resend ${resp.status}`);
+      return 'sent';
+    };
 
-  try {
-    const { data: domains, error: dbErr } = await supabase
-      .from('monitored_domains').select('*').eq('active', true)
-      .order('last_scan_at', { ascending: true, nullsFirst: true });
-    if (dbErr) throw dbErr;
-    if (!domains?.length) return jsonResponse({ ok: true, message: 'no domains', ms: Date.now()-t0 });
-
-    console.log(`[monitor] ${domains.length} domains to check`);
-
-    for (const d of domains as MonitoredDomain[]) {
-      if (!shouldScan(d)) { console.log(`[monitor] skip ${d.domain}`); continue; }
-      console.log(`[monitor] scan ${d.domain} (tier=${d.tier})`);
-      try {
-        const scan = ['agency','enterprise'].includes(d.tier) && PW_URL
-          ? await scanWithPlaywright(d.domain)
-          : await scanWithFetch(d.domain);
-
-        const drift = d.last_scan_at ? detectDrift(scan, d) : { has_drift: false, new_trackers: [], removed_trackers: [], score_delta: 0, new_critical_issues: [] };
-        let alerted = false;
-        if (drift.has_drift || drift.new_critical_issues.length > 0) {
-          if (await mayAlert(supabase, d.tenant_id)) {
-            await sendAlert(d, drift, scan);
-            alerted = true;
-          } else {
-            console.log(`[monitor] alert suppressed for ${d.domain}: alerts.email not in plan`);
-          }
-        }
-
-        await supabase.from('monitored_domains').update({
-          last_scan_at: scan.scanned_at, last_risk_score: scan.risk_score, last_trackers: scan.trackers,
-        }).eq('id', d.id);
-
-        await supabase.from('audit_monitor_results').insert({
-          monitored_domain_id: d.id, tenant_id: d.tenant_id, domain: d.domain,
-          risk_score: scan.risk_score, trackers: scan.trackers,
-          cookie_count: scan.cookie_count, consent_manager_detected: scan.consent_manager_detected,
-          drift_detected: drift.has_drift, new_trackers: drift.new_trackers,
-          removed_trackers: drift.removed_trackers, score_delta: drift.score_delta,
-          raw_result: scan, scan_type: scan.scan_type, scanned_at: scan.scanned_at,
+    return await handleAuditMonitor(req, {
+      cronKey: CRON_KEY,
+      repo: createSupabaseRepo(db),
+      scanner,
+      plan: async (tenantId) => {
+        const ent = await loadEntitlementsForTenant(db, tenantId);
+        return planViewFrom({
+          has: (k) => (PLAN_KEYS as readonly string[]).includes(k) && hasFeature(ent, k),
+          limit: (k) => (ent.byKey[k] ? ent.byKey[k].value : null),
         });
-
-        log.push({ domain: d.domain, ok: true, drift: drift.has_drift, alerted });
-        console.log(`[monitor] ✓ ${d.domain} score=${scan.risk_score} drift=${drift.has_drift}`);
-      } catch (err) {
-        console.error(`[monitor] ✗ ${d.domain}`, err);
-        log.push({ domain: d.domain, ok: false, drift: false, alerted: false, err: String(err) });
-      }
-      await new Promise(r => setTimeout(r, 2000));
-    }
-
-    return jsonResponse({
-      ok: true, ms: Date.now()-t0, timestamp: new Date().toISOString(),
-      scanned: log.filter(r=>r.ok).length, drifts: log.filter(r=>r.drift).length,
-      alerts: log.filter(r=>r.alerted).length, errors: log.filter(r=>!r.ok).length, log,
+      },
+      alerter,
+      pauseMs: 2000,
     });
-
-  } catch (err) {
-    return jsonResponse({ ok: false, error: String(err) }, 500);
+  } catch (e) {
+    console.error('[audit-monitor-cron] unhandled', e);
+    return jsonError(500, 'INTERNAL', 'internal error');
   }
 });

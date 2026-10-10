@@ -65,7 +65,7 @@ function Inner() {
               </p>
               <button
                 onClick={() => navigate('/app/ai-systems')}
-                className="inline-flex items-center gap-2 text-sm text-ai-cyan-400 hover:text-ai-cyan-300"
+                className="inline-flex items-center gap-2 text-sm text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]"
               >
                 Zum KI-Inventar <ArrowRight className="w-4 h-4" />
               </button>

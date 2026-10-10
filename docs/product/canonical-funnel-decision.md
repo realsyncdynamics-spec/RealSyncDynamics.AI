@@ -113,7 +113,7 @@ Zeilen bleiben unsichtbar.
 > setzt dort `asset_id` auf dieses Asset. Damit leistet derselbe Schritt beide
 > Hälften der Abgrenzung unten. Ob gescannt wird, entscheidet weiterhin das
 > Plan-Gate im `governance-monitoring-scheduler`.
-> Migration `20261010120000` ändert die RPC: Eine vorhandene Quelle wird nicht
+> Migration `20261010113700` ändert die RPC: Eine vorhandene Quelle wird nicht
 > mehr reaktiviert und ihr `next_scan_at` nicht mehr vorgezogen — sonst hätte
 > jeder Status-Abruf von `provision-tenant` einen Scan ausgelöst und eine
 > pausierte Quelle wieder eingeschaltet.

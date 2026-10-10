@@ -2,12 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../../features/supabase/SupabaseAuthContext';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
-import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
 import { formatUpgradeMessage } from './agents/PaymentAgent';
 import { createCheckoutSession } from '../../billing/checkout';
-import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
 import { useTerminalSessionPersistence } from './useTerminalSessionPersistence';
-import type { ScanResult } from './agents/TriageAgent';
 
 export interface TerminalMessage {
   id: string;
@@ -278,8 +275,8 @@ Type /help for available commands.`,
             role: 'agent',
             content: `Available Commands:
 Scanning & Compliance:
-/scan <URL>           - Scan website for AI systems & compliance gaps
-/audit <SCANID>       - Generate compliance audit report
+/scan <URL>           - Where to run a real website scan (/app/websites)
+/audit                - Where audit reports are created (/app/audit)
 /status               - Show account status & scan quota
 /history              - Show last 5 scans & audits
 
@@ -322,32 +319,21 @@ Session: ${sessionId?.slice(0, 8)}`,
           };
           responses.push(historyMsg);
         } else if (parsed.type === 'scan') {
-          // Triage Agent: Scan website
-          const url = parsed.args.url as string;
-          const mockScan: ScanResult = {
-            scanId: crypto.randomUUID(),
-            url,
-            findingsCount: Math.floor(Math.random() * 25),
-            riskLevel: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)] as any,
-            systemsClassified: Math.floor(Math.random() * 10),
-            findings: [],
-          };
-
-          const recommendation = triageAnalyze(mockScan);
-          const triageMessages = formatTriageMessage(mockScan, recommendation);
-          responses.push(...triageMessages);
-
-          const agentBox = formatTriageAgentBox(recommendation);
-          const agentMsg: TerminalMessage = {
+          // Bis 2026-09-28 baute dieser Zweig ein `mockScan` mit gewürfelter
+          // Befundzahl und Risikostufe — für die Domain des Nutzers — und
+          // leitete daraus eine Tarifempfehlung ab. Das Terminal scannt nicht;
+          // statt eine Messung zu behaupten, verweist es auf die Fläche, auf
+          // der ein echter, gespeicherter Scan entsteht.
+          // `args.url` ist nur bei gültiger URL gesetzt (parseCommand).
+          const url = parsed.args.url as string | undefined;
+          responses.push({
             id: crypto.randomUUID(),
             role: 'agent',
-            content: agentBox,
+            content: `Das Terminal führt keine Scans aus.
+Einen echten Scan${url ? ` von ${url}` : ''} mit gespeicherten Befunden starten Sie unter /app/websites.`,
             timestamp: new Date(),
             type: 'info',
-          };
-          responses.push(agentMsg);
-
-          setContext({ ...context, scanId: mockScan.scanId });
+          });
         } else if (parsed.type === 'upgrade') {
           // Payment Agent: echte Stripe-Session über die Edge Function
           // `stripe-checkout`. Vorher wurde hier lokal eine URL
@@ -394,33 +380,18 @@ Session: ${sessionId?.slice(0, 8)}`,
             }
           }
         } else if (parsed.type === 'audit') {
-          // Audit Agent: Generate compliance audit
-          const scanId = parsed.args.scanId as string | undefined;
-          if (!scanId && !context.scanId) {
-            const errorMsg: TerminalMessage = {
-              id: crypto.randomUUID(),
-              role: 'agent',
-              content: `❌ No scan ID provided. Run /scan first or use /audit <scanId>`,
-              timestamp: new Date(),
-              type: 'error',
-            };
-            responses.push(errorMsg);
-          } else {
-            const audit = generateAudit(scanId || context.scanId || 'unknown', 'free');
-            const auditMessages = formatAuditMessage(audit, 'free');
-            responses.push(...auditMessages);
-
-            const agentBox = formatAuditAgentBox('free', audit.auditId);
-            const agentMsg: TerminalMessage = {
-              id: crypto.randomUUID(),
-              role: 'agent',
-              content: agentBox,
-              timestamp: new Date(),
-              type: 'info',
-            };
-            responses.push(agentMsg);
-            setContext({ ...context, lastAuditId: audit.auditId });
-          }
+          // Bis 2026-09-28 meldete dieser Zweig „Evidence-Chain: N items
+          // sealed" mit gewürfeltem N, eine erfundene Dateigröße und einen
+          // Download-Link auf eine Domain, die nichts ausliefert. Ein
+          // Audit-Bericht mit Prüfpfad entsteht nur unter /app/audit.
+          responses.push({
+            id: crypto.randomUUID(),
+            role: 'agent',
+            content: `Das Terminal erzeugt keine Audit-Berichte.
+Berichte mit versiegeltem Prüfpfad entstehen unter /app/audit.`,
+            timestamp: new Date(),
+            type: 'info',
+          });
         } else if (parsed.type === 'register') {
           // Registration flow
           const email = parsed.args.email as string | undefined;

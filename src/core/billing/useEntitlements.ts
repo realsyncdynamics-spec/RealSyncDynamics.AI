@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTenant } from '../access/TenantProvider';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
@@ -215,12 +215,22 @@ export function useEntitlements(): UserEntitlements {
     fetchEntitlements();
   }, [fetchEntitlements]);
 
-  const features = entitlements.reduce(
-    (acc, ent) => {
-      acc[ent.key] = ent.value;
-      return acc;
-    },
-    {} as Record<string, boolean | number>,
+  // Memoisiert, nicht nur aus Stilgruenden: `hasFeature` und `getLimit` haengen
+  // an `features`. Ohne Memo war das bei jedem Render ein neues Objekt, damit
+  // jeder Callback neu — und jeder Effekt, der einen davon in seinen
+  // Abhaengigkeiten fuehrt, lief bei jedem Render. `useScanLimits` setzt bei
+  // einem endlichen Kontingent Status, rendert neu und fragt erneut ab: eine
+  // Schleife, die nur deshalb nie lief, weil alle Plaene -1 tragen.
+  const features = useMemo(
+    () =>
+      entitlements.reduce(
+        (acc, ent) => {
+          acc[ent.key] = ent.value;
+          return acc;
+        },
+        {} as Record<string, boolean | number>,
+      ),
+    [entitlements],
   );
 
   const hasFeature = useCallback(

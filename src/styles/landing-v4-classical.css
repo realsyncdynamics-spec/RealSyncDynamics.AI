@@ -1360,6 +1360,56 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
   div.gv4[data-theme="day"] .card[data-tier] .plan-cta:not(.featured .plan-cta), div.gv4[data-theme="day"] .card[data-tier="agency"] .plan-cta, div.gv4[data-theme="day"] .card[data-tier="starter"] .plan-cta, div.gv4[data-theme="day"] .card[data-tier="growth"] .plan-cta, div.gv4[data-theme="day"] .featured .plan-cta { border: 1px solid #b68235 !important; background: transparent !important; color: #7d5411 !important; box-shadow: none !important; }
   div.gv4[data-theme="day"] .card[data-tier] .plan-cta:hover { background: rgba(182,130,53,.12) !important; }
 
+  /*
+   * Day theme bleaches .tile/.panel/h3 to cream-ink + transparent fills.
+   * The #dashboard .app preview must stay a dark product chrome mock —
+   * otherwise KPIs and the Command-Center header become unreadable.
+   */
+  div.gv4[data-theme="day"] #dashboard .app {
+    --text: #eef2f7;
+    --muted: #a9b4c0;
+    --titan: #8b939d;
+    --silver: #d7dde5;
+    --line: rgba(214, 220, 228, 0.18);
+    --line-soft: rgba(214, 220, 228, 0.1);
+    color: var(--text);
+  }
+  div.gv4[data-theme="day"] #dashboard .app .tile,
+  div.gv4[data-theme="day"] #dashboard .app .panel {
+    background: linear-gradient(150deg, rgba(40, 43, 48, 0.7), rgba(20, 22, 25, 0.8)) !important;
+    border: 1px solid var(--line-soft) !important;
+    color: var(--text) !important;
+    box-shadow: none !important;
+  }
+  div.gv4[data-theme="day"] #dashboard .app .app-head h3,
+  div.gv4[data-theme="day"] #dashboard .app .tile b {
+    color: var(--silver) !important;
+    -webkit-text-fill-color: var(--silver) !important;
+    background: none !important;
+  }
+  div.gv4[data-theme="day"] #dashboard .app .app-head span,
+  div.gv4[data-theme="day"] #dashboard .app .tile span,
+  div.gv4[data-theme="day"] #dashboard .app .tile b i,
+  div.gv4[data-theme="day"] #dashboard .app .nav-item,
+  div.gv4[data-theme="day"] #dashboard .app .panel-head,
+  div.gv4[data-theme="day"] #dashboard .app .fw,
+  div.gv4[data-theme="day"] #dashboard .app .finding,
+  div.gv4[data-theme="day"] #dashboard .app .row,
+  div.gv4[data-theme="day"] #dashboard .app .intent,
+  div.gv4[data-theme="day"] #dashboard .app .intent-chips span {
+    color: var(--muted) !important;
+  }
+  div.gv4[data-theme="day"] #dashboard .app .nav-item.active,
+  div.gv4[data-theme="day"] #dashboard .app .finding em,
+  div.gv4[data-theme="day"] #dashboard .app .row em,
+  div.gv4[data-theme="day"] #dashboard .app .panel-head {
+    color: var(--text) !important;
+  }
+  div.gv4[data-theme="day"] #dashboard .app p {
+    color: var(--muted) !important;
+    font-family: var(--ff-mono) !important;
+    font-style: normal !important;
+  }
 
   /* ── Hero balance refinement 2026-10-06 ─────────────────────────────
      Owner-approved visual pass: smaller globe, clearer CTA hierarchy,

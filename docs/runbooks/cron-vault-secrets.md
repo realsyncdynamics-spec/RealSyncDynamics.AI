@@ -13,7 +13,8 @@ Menschen.
 
 Die drei Cron-Empfänger prüfen **nicht** den `service_role` JWT. Sie vergleichen
 den inbound `Authorization: Bearer …` gegen dedizierte Function Secrets
-(fail-closed: leerer Key → 401). `SUPABASE_SERVICE_ROLE_KEY` darf nach Auth noch
+(fail-closed: leerer Key → `500 CRON_KEY_MISSING`, falscher Bearer →
+`401 cron only`). `SUPABASE_SERVICE_ROLE_KEY` darf nach Auth noch
 für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 
 | pg_cron Job | Edge Function | Vault-Secret (pg_cron / `dispatch_cron_function`) | Function Secret (Edge) |

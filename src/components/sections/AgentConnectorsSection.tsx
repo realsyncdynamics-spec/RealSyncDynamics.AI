@@ -51,7 +51,7 @@ const wrapped = wrapAnthropicClient(claude, {
       'Importierbares JSON-Blueprint mit HTTP-Modul-Vorlage. Connection-fertig fuer eu1.make.com. Felder per Drag&Drop aus Vorgaenger-Modulen mappbar.',
     snippet: `Webhook → OpenAI → HTTP (RSD Telemetry) → Mailgun
               POST /api/telemetry/ai-event
-              x-rsd-tenant-key: <UUID>`,
+              x-rsd-tenant-key: rsd_gov_…`,
   },
 ];
 

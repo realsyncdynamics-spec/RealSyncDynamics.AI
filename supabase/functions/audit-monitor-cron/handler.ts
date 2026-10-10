@@ -11,29 +11,54 @@
 //      nur die ersten limit.domains Domains je Tenant, Kadenz laut Plan.
 //   4. je fällige Domain: Scan → Drift NUR gegen den letzten Lauf derselben
 //      Domain → Evidence (hash-chained, governance_evidence) für JEDEN Lauf,
-//      auch ohne Delta und auch bei Scan-Fehler → erst danach Ergebnis/
-//      Domain-Status → Alert NUR bei Delta.
+//      auch ohne Delta und auch bei Scan-Fehler → erst danach Ergebnis →
+//      Alert NUR bei Delta in die Outbox (audit_monitor_alerts) → erst dann
+//      Domain-Status (Baseline) → Zustellung.
 //   5. Fail-closed: fehlt der Scanner, scheitert der Scan oder der
 //      Evidence-Write, ist der Lauf `failed`; kein Status-Update, kein Alert,
 //      Antwort ok:false (HTTP 500).
+//   6. Outbox: Ein Alert ist eingereiht, bevor die Baseline vorrückt. Scheitert
+//      die Zustellung, bleibt er `pending` und wird in späteren Läufen erneut
+//      zugestellt (höchstens MAX_ALERT_ATTEMPTS). Der Fingerabdruck verhindert
+//      einen zweiten Alert für dieselbe Drift; die Alert-ID geht als
+//      Idempotency-Key an Resend.
 
 import { handleOptions, jsonError, jsonResponse } from '../_shared/gateway.ts';
 import type { Kadenz } from '../_shared/monitoring-cadence.ts';
 import {
   EVIDENCE_HASH_METHOD,
   EVIDENCE_TITLE,
+  MAX_ALERT_ATTEMPTS,
   SCANNER_VERSION,
+  alertFingerprint,
+  alertPayload,
   buildSnapshot,
   checkCronAuth,
   detectDrift,
   evidenceContentHash,
   gateDomain,
   rankWithinTenant,
-  type DriftReport,
+  type AlertPayload,
   type MonitoredDomain,
   type PlanView,
   type ScanResult,
 } from './logic.ts';
+
+/** Ein Drift-Alert in der Outbox (audit_monitor_alerts). */
+export interface AlertRecord {
+  id: string;
+  monitored_domain_id: string;
+  tenant_id: string;
+  domain: string;
+  recipient: string;
+  fingerprint: string;
+  payload: AlertPayload;
+  status: 'pending' | 'sent' | 'failed';
+  attempts: number;
+}
+
+/** Wie viele ältere, noch nicht zugestellte Alerts ein Lauf höchstens nachholt. */
+const ALERT_RETRY_BATCH = 50;
 
 const EVIDENCE_APPEND_ATTEMPTS = 3;
 // Conservative budget below Supabase's 150s free-tier wall-clock limit.
@@ -47,11 +72,22 @@ export interface MonitorRepo {
   appendEvidence(row: Record<string, unknown>, expectedPreviousHash: string | null): Promise<{ id: string } | 'conflict'>;
   insertResult(row: Record<string, unknown>): Promise<void>;
   updateDomainState(id: string, patch: Record<string, unknown>): Promise<void>;
+  /**
+   * Reiht einen Alert ein; idempotent auf (monitored_domain_id, fingerprint).
+   * Gibt den gespeicherten Datensatz zurück — bei Duplikat den vorhandenen.
+   */
+  enqueueAlert(row: Omit<AlertRecord, 'status' | 'attempts'>): Promise<AlertRecord>;
+  /** Noch nicht zugestellte Alerts, älteste zuerst. */
+  pendingAlerts(limit: number): Promise<AlertRecord[]>;
+  markAlert(id: string, patch: { status: AlertRecord['status']; attempts: number; last_error: string | null; sent_at: string | null }): Promise<void>;
 }
 
 export type Scanner = (d: MonitoredDomain) => Promise<ScanResult>;
-/** Bestehender Benachrichtigungsweg (Resend). 'not_configured' = kein Provider-Key. */
-export type Alerter = (d: MonitoredDomain, drift: DriftReport, scan: ScanResult) => Promise<'sent' | 'not_configured'>;
+/**
+ * Bestehender Benachrichtigungsweg (Resend). 'not_configured' = kein Provider-Key.
+ * `alert.id` ist als Idempotency-Key zu verwenden.
+ */
+export type Alerter = (alert: AlertRecord) => Promise<'sent' | 'not_configured'>;
 
 export interface HandlerDeps {
   cronKey: string | undefined;
@@ -68,7 +104,11 @@ export interface HandlerDeps {
   runBudgetMs?: number;
 }
 
-export type AlertState = 'none' | 'sent' | 'suppressed_plan' | 'no_recipient' | 'not_configured' | 'failed';
+/**
+ * `failed` = Zustellung gescheitert, Alert bleibt `pending` für den nächsten Lauf.
+ * `duplicate` = dieselbe Drift war schon eingereiht und ist bereits zugestellt.
+ */
+export type AlertState = 'none' | 'sent' | 'suppressed_plan' | 'no_recipient' | 'not_configured' | 'failed' | 'duplicate';
 
 export interface DomainOutcome {
   domain_id: string;
@@ -108,6 +148,7 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
   const plans = new Map<string, PlanView | Error>();
   const heads = new Map<string, string | null>();
   const results: DomainOutcome[] = [];
+  const attemptedAlerts = new Set<string>();
 
   for (const d of domains) {
     // Leave unprocessed rows unchanged. The next daily invocation will retry them.
@@ -128,9 +169,27 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
       results.push({ ...base, status: 'skipped', reason: gate.reason });
       continue;
     }
-    results.push(await runDomain(d, plan, gate.kadenz, deps, heads, now, uuid));
+    results.push(await runDomain(d, plan, gate.kadenz, deps, heads, now, uuid, attemptedAlerts));
     if (deps.pauseMs && now().getTime() - startedAt < runBudgetMs) {
       await new Promise((r) => setTimeout(r, deps.pauseMs));
+    }
+  }
+
+  // Outbox: ältere, noch nicht zugestellte Alerts nachholen — nur im Zeitbudget.
+  // Ein Fehler hier macht den Lauf nicht `failed` (die Scans sind gelaufen und
+  // belegt), steht aber in der Antwort.
+  const alertRetries: { attempted: number; sent: number; error?: string } = { attempted: 0, sent: 0 };
+  if (now().getTime() - startedAt < runBudgetMs) {
+    try {
+      for (const a of await repo.pendingAlerts(ALERT_RETRY_BATCH)) {
+        if (attemptedAlerts.has(a.id)) continue;
+        if (now().getTime() - startedAt >= runBudgetMs) break;
+        attemptedAlerts.add(a.id);
+        alertRetries.attempted++;
+        if ((await deliverAlert(a, deps, now)).state === 'sent') alertRetries.sent++;
+      }
+    } catch (e) {
+      alertRetries.error = `pending_alerts: ${(e as Error)?.message ?? String(e)}`;
     }
   }
 
@@ -147,6 +206,7 @@ export async function handleAuditMonitor(req: Request, deps: HandlerDeps): Promi
     deferred,
     drifts: results.filter((r) => r.drift).length,
     alerts_sent: results.filter((r) => r.alert === 'sent').length,
+    alert_retries: alertRetries,
     results,
   };
   return jsonResponse(body, failed > 0 ? 500 : deferred > 0 ? 202 : 200);
@@ -160,6 +220,7 @@ async function runDomain(
   heads: Map<string, string | null>,
   now: () => Date,
   uuid: () => string,
+  attemptedAlerts: Set<string>,
 ): Promise<DomainOutcome> {
   const out: DomainOutcome = { domain_id: d.id, domain: d.domain, tenant_id: d.tenant_id, status: 'failed' };
   const ranAt = now().toISOString();
@@ -221,7 +282,11 @@ async function runDomain(
     return out;
   }
 
-  // 4. Ergebnis + Domain-Status (Baseline für den nächsten Vergleich)
+  // 4. Ergebnis → Alert in die Outbox (nur bei Delta) → erst dann Domain-Status
+  //    (Baseline für den nächsten Vergleich). Scheitert das Einreihen, rückt
+  //    die Baseline nicht vor: Der nächste Lauf erkennt dieselbe Drift erneut.
+  const wantsAlert = drift.has_drift && plan.driftAlerts && !!d.alert_email;
+  let alert: AlertRecord | null = null;
   try {
     await deps.repo.insertResult({
       monitored_domain_id: d.id, tenant_id: d.tenant_id, domain: d.domain,
@@ -231,6 +296,18 @@ async function runDomain(
       removed_trackers: drift.removed_trackers, score_delta: drift.score_delta,
       raw_result: { ...scan, evidence_id: out.evidence_id }, scan_type: scan.scan_type, scanned_at: scan.scanned_at,
     });
+    if (wantsAlert) {
+      alert = await deps.repo.enqueueAlert({
+        id: uuid(),
+        monitored_domain_id: d.id,
+        tenant_id: d.tenant_id,
+        domain: d.domain,
+        recipient: d.alert_email!,
+        // Vor updateDomainState: der Fingerabdruck hängt an der alten Baseline.
+        fingerprint: await alertFingerprint(d, scan, drift),
+        payload: alertPayload(scan, drift),
+      });
+    }
     await deps.repo.updateDomainState(d.id, {
       last_scan_at: scan.scanned_at, last_risk_score: scan.risk_score, last_trackers: scan.trackers,
     });
@@ -247,8 +324,43 @@ async function runDomain(
   // 5. Alert NUR bei Delta — nie ein "alles ok".
   if (!drift.has_drift) { out.alert = 'none'; return out; }
   if (!plan.driftAlerts) { out.alert = 'suppressed_plan'; return out; }
-  if (!d.alert_email) { out.alert = 'no_recipient'; return out; }
-  try { out.alert = await deps.alerter(d, drift, scan); }
-  catch (e) { out.alert = 'failed'; out.error = `alert_failed: ${(e as Error)?.message ?? String(e)}`; }
+  if (!alert) { out.alert = 'no_recipient'; return out; }
+  attemptedAlerts.add(alert.id);
+  if (alert.status !== 'pending') { out.alert = 'duplicate'; return out; }
+  const delivered = await deliverAlert(alert, deps, now);
+  out.alert = delivered.state;
+  if (delivered.error) out.error = delivered.error;
   return out;
+}
+
+/**
+ * Ein Zustellversuch. `sent` → erledigt; sonst bleibt der Alert `pending`,
+ * bis MAX_ALERT_ATTEMPTS erreicht ist (dann `failed`). Scheitert das
+ * Markieren nach erfolgreichem Versand, bleibt er `pending` — der nächste
+ * Lauf stellt mit derselben Alert-ID (Idempotency-Key) erneut zu.
+ */
+async function deliverAlert(
+  a: AlertRecord,
+  deps: HandlerDeps,
+  now: () => Date,
+): Promise<{ state: AlertState; error?: string }> {
+  const attempts = a.attempts + 1;
+  let state: AlertState;
+  let lastError: string | null = null;
+  try {
+    state = await deps.alerter(a);
+    if (state === 'not_configured') lastError = 'not_configured';
+  } catch (e) {
+    state = 'failed';
+    lastError = (e as Error)?.message ?? String(e);
+  }
+  const status: AlertRecord['status'] = state === 'sent' ? 'sent' : attempts >= MAX_ALERT_ATTEMPTS ? 'failed' : 'pending';
+  try {
+    await deps.repo.markAlert(a.id, {
+      status, attempts, last_error: lastError, sent_at: state === 'sent' ? now().toISOString() : null,
+    });
+  } catch (e) {
+    return { state, error: `alert_mark_failed: ${(e as Error)?.message ?? String(e)}` };
+  }
+  return state === 'failed' ? { state, error: `alert_failed: ${lastError}` } : { state };
 }

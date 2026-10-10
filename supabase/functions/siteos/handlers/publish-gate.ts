@@ -148,13 +148,18 @@ export async function handleApprove(req: Request): Promise<Response> {
 
   const { data: evaluation } = await ctx.admin
     .from('siteos_publish_evaluations')
-    .select('id, blueprint_id, artifact_sha256, human_approval_required')
+    .select('id, blueprint_id, artifact_sha256, human_approval_required, approved_by')
     .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ id: string; blueprint_id: string | null; artifact_sha256: string; human_approval_required: boolean }>();
+    .maybeSingle<{ id: string; blueprint_id: string | null; artifact_sha256: string; human_approval_required: boolean; approved_by: string | null }>();
 
   if (!evaluation) return jsonError(404, 'NOT_FOUND', 'evaluation not found for this tenant');
   if (!evaluation.human_approval_required) {
     return jsonError(409, 'CONFLICT', 'this evaluation does not await an approval');
+  }
+  // Vor dem Nachweis prüfen, damit eine wiederholte Freigabe keinen
+  // zweiten Custody-Eintrag erzeugt.
+  if (evaluation.approved_by) {
+    return jsonError(409, 'CONFLICT', 'this evaluation is already approved');
   }
   if (!evaluation.blueprint_id) {
     return jsonError(409, 'CONFLICT', 'evaluation is not bound to a blueprint version');
@@ -172,13 +177,16 @@ export async function handleApprove(req: Request): Promise<Response> {
   // Jede Freigabe braucht einen Evidence-Eintrag (O-WP6). Er landet in
   // derselben Custody-Kette wie das spätere GO und wird vor der Freigabe
   // geschrieben: Ohne Nachweis gibt es keine Freigabe.
+  // Issuer ist der Mandant wie beim GO: Die Provenance-Prüfung wertet jeden
+  // Actor-Wechsel in einer Kette als strittige Eigentümerschaft. Die
+  // freigebende Person steht in `approved_by` und im Audit-Log.
   try {
     await appendCustodyEvent(ctx.admin, {
       tenantId: ctx.tenantId,
       assetRef: `siteos:artifact:${ctx.tenantId}:${blueprint.slug}`,
       contentSha256: evaluation.artifact_sha256,
       action: 'audited',
-      issuer: `user:${ctx.userId}`,
+      issuer: `tenant:${ctx.tenantId}`,
       timestamp: nowIso,
     });
   } catch (provErr) {
@@ -191,14 +199,20 @@ export async function handleApprove(req: Request): Promise<Response> {
     return jsonError(500, 'INTERNAL', 'approval could not be linked to custody evidence');
   }
 
-  const { error: updateErr } = await ctx.admin
+  const { data: updated, error: updateErr } = await ctx.admin
     .from('siteos_publish_evaluations')
     .update({ approved_by: ctx.userId, approved_at: nowIso, approval_reason: reason.slice(0, MAX_REASON_LENGTH) })
-    .eq('id', evaluationId).eq('tenant_id', ctx.tenantId);
+    .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
+    .is('approved_by', null)
+    .select('id');
 
   if (updateErr) {
     console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_approval_failed', error: updateErr.message }));
     return jsonError(500, 'INTERNAL', 'could not record approval');
+  }
+  // Eine gleichzeitige Freigabe kam zuvor; ihr Nachweis zählt.
+  if (!updated || updated.length === 0) {
+    return jsonError(409, 'CONFLICT', 'this evaluation is already approved');
   }
 
   await audit(ctx.admin, {

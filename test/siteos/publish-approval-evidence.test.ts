@@ -8,6 +8,10 @@
 // Export-Handler: Die Ablehnung fällt, bevor GO-Evidence oder Audit
 // geschrieben werden. (2) prüft den Approve-Handler: Der Custody-Eintrag
 // entsteht vor der Freigabe und sperrt fail-closed.
+//
+// Grenze: Der Handler ist Deno-Code (jsr-Imports) und lässt sich in Vitest
+// nicht laden. Die Handler-Teile sind deshalb Quelltext-Verträge wie in
+// `publish-export-contract.test.ts`, keine Verhaltenstests.
 
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -100,15 +104,36 @@ describe('O-WP6 (2) — jede Freigabe hat einen Evidence-Eintrag', () => {
     expect(src).toContain("return jsonError(500, 'INTERNAL', 'approval could not be linked to custody evidence')");
   });
 
-  it('liegt in derselben Kette wie das GO und ist der freigebenden Person zugerechnet', () => {
+  it('liegt in derselben Kette und mit demselben Actor wie das GO', () => {
     const approve = approveSrc();
     const exp = exportSrc();
     const chain = 'assetRef: `siteos:artifact:${ctx.tenantId}:';
+    const issuer = 'issuer: `tenant:${ctx.tenantId}`';
     expect(approve).toContain(chain);
     expect(exp).toContain(chain);
+    // Die Provenance-Prüfung wertet einen Actor-Wechsel in der Kette als
+    // strittige Eigentümerschaft — Freigabe und GO müssen gleich zeichnen.
+    expect(approve).toContain(issuer);
+    expect(exp).toContain(issuer);
+    expect(approve).not.toContain('issuer: `user:');
     expect(approve).toContain("action: 'audited'");
-    expect(approve).toContain('issuer: `user:${ctx.userId}`');
     expect(approve).toContain('contentSha256: evaluation.artifact_sha256');
+  });
+
+  it('die freigebende Person bleibt in approved_by und im Audit-Log zugerechnet', () => {
+    const src = approveSrc();
+    expect(src).toContain('approved_by: ctx.userId');
+    expect(src).toContain('actor_user_id: ctx.userId');
+  });
+
+  it('eine wiederholte Freigabe erzeugt keinen zweiten Nachweis', () => {
+    const src = approveSrc();
+    const alreadyApproved = src.indexOf('if (evaluation.approved_by)');
+    const custody = src.indexOf('appendCustodyEvent');
+    expect(alreadyApproved).toBeGreaterThanOrEqual(0);
+    expect(custody).toBeGreaterThan(alreadyApproved);
+    expect(src).toContain(".is('approved_by', null)");
+    expect(src).toContain('updated.length === 0');
   });
 
   it('Freigabe bleibt auf berechtigte Rollen und eine Begründung beschränkt', () => {

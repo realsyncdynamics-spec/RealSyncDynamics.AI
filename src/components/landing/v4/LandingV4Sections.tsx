@@ -780,7 +780,7 @@ export function V4Roadmap() {
                   {cards.map(({ item, copy }) => {
                     const route = getPublicRoadmapRoute(item);
                     return (
-                      <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')} data-impl-id={item.id}>
+                      <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')}>
                         <div className="rm-top">
                           <h4>{copy.name}</h4>
                           <StatusTag

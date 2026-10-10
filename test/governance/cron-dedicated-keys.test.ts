@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 /**
  * Live-Hotfix-Vertrag: Drift-Guard bleibt (verify_jwt=false + eigener
  * Bearer-Check), Credential ist der dedizierte CRON_* Function Secret,
- * fail-closed bei leerem Key. SUPABASE_SERVICE_ROLE_KEY darf nach Auth für
+ * fail-closed bei leerem Key (500 CRON_KEY_MISSING, wie email-auth-rescan —
+ * damit „Secret fehlt" von „Secret falsch" (401 "cron only") unterscheidbar ist). SUPABASE_SERVICE_ROLE_KEY darf nach Auth für
  * PostgREST genutzt werden — nie mit dem inbound Authorization verglichen.
  */
 
@@ -40,15 +41,21 @@ describe('Cron-Trio: dedizierter CRON_* Key, fail-closed', () => {
       expect(src()).toContain(vault);
     });
 
-    it(`${slug}: leerer Key → 401 (fail-closed)`, () => {
-      expect(src()).toMatch(/!CRON_KEY\s*\|\|/);
-      expect(src()).toMatch(/401/);
-      expect(src()).toMatch(/cron only/);
+    it(`${slug}: leerer Key → 500 CRON_KEY_MISSING (fail-closed, vor dem Bearer-Vergleich)`, () => {
+      const text = src();
+      const missing = text.search(/if \(!CRON_KEY\) \{\s*return jsonError\(500, 'CRON_KEY_MISSING', /);
+      expect(missing).toBeGreaterThanOrEqual(0);
+      expect(text).toContain(`'CRON_KEY_MISSING', '${env} not configured'`);
+      // Die 500 steht vor dem Bearer-Vergleich: ohne Secret läuft nichts.
+      const compare = text.search(/authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`/);
+      expect(compare).toBeGreaterThan(missing);
+      // Fehlendes Secret ist nicht mehr als 401 "cron only" getarnt.
+      expect(text).not.toMatch(/!CRON_KEY\s*\|\|/);
     });
 
-    it(`${slug}: falscher Bearer → 401`, () => {
-      expect(src()).toMatch(/authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`/);
-      expect(src()).toMatch(/401/);
+    it(`${slug}: falscher Bearer → 401 "cron only" (unverändert)`, () => {
+      expect(src()).toMatch(/if \(authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`\) \{\s*return [^\n]*401/);
+      expect(src()).toMatch(/cron only/);
     });
 
     it(`${slug}: inbound Auth vergleicht nicht gegen SERVICE_ROLE`, () => {

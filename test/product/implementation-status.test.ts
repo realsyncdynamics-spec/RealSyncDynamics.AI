@@ -188,6 +188,8 @@ describe('implementation-status registry', () => {
     for (const item of publicItems) {
       expect(PUBLIC_ROADMAP_COPY[item.id], item.id).toBeTruthy();
       for (const lang of ['de', 'en'] as const) {
+        // The registry entry itself must exist, so the DE fallback cannot mask a missing EN text.
+        expect(PUBLIC_ROADMAP_COPY[item.id]?.[lang], `${item.id}.${lang} registry entry`).toBeTruthy();
         const copy = getPublicRoadmapCopy(item, lang);
         expect(copy, `${item.id}.${lang} public copy`).toBeDefined();
         if (!copy) continue;

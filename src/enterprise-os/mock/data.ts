@@ -459,7 +459,7 @@ export const COMPLIANCE_OBLIGATIONS: ComplianceObligation[] = [
   {
     id: 'ob-5',
     title: 'Transparenzhinweis für Support-Chatbot ergänzen',
-    framework: 'EU AI Act Art. 52',
+    framework: 'EU AI Act Art. 50',
     status: 'low',
     dueDate: '10.07.2026',
     owner: 'Lena Vogel',

@@ -12,6 +12,12 @@
     ]
   },
   "permissions": {
+    "allow": [
+      "Edit(shared/pricing.ts)",
+      "Edit(supabase/functions/_shared/pricing.generated.ts)",
+      "Edit(supabase/functions/stripe-checkout/**)",
+      "Edit(supabase/migrations/**)"
+    ],
     "deny": [
       "Bash(npm install*)",
       "Bash(npm ci*)",

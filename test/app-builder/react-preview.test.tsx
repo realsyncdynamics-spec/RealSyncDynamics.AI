@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { builderSystemPrompt, BUILDER_REACT_SYSTEM_PROMPT, BUILDER_SYSTEM_PROMPT } from '../../src/features/app-builder/bolt/system-prompt';
 import { sandpackProject } from '../../src/features/app-builder/bolt/sandpack-project';
 
@@ -10,7 +11,9 @@ afterEach(() => {
   cleanup();
   vi.unstubAllEnvs();
   vi.doUnmock('../../src/features/app-builder/SandpackReactPreview');
+  vi.doUnmock('@codesandbox/sandpack-react');
   vi.resetModules();
+  vi.useRealTimers();
 });
 
 describe('React prompt mode', () => {
@@ -71,6 +74,45 @@ describe('preview flag and user gating', () => {
     await preview('false');
     expect(screen.getByTitle('Governed preview')).toHaveAttribute('srcdoc');
     expect(screen.queryByText('React-Vorschau starten')).toBeNull();
+  });
+
+  describe('Sandpack startup lifecycle', () => {
+    async function runtime() {
+      vi.useFakeTimers();
+      let listener: (message: { type: string }) => void = () => {};
+      vi.doMock('@codesandbox/sandpack-react', () => ({
+        SandpackProvider: ({ children }: { children: ReactNode }) => children,
+        useSandpackClient: () => ({
+          iframe: { current: null },
+          sandpack: { status: 'running', error: null },
+          // Like Sandpack, this hook supplies a new listen function every render.
+          listen: (callback: typeof listener) => {
+            listener = callback;
+            return () => {};
+          },
+        }),
+      }));
+      const { default: Preview } = await import('../../src/features/app-builder/SandpackReactPreview');
+      const unavailable = vi.fn();
+      const view = render(<Preview files={app} onUnavailable={unavailable} />);
+      return { Preview, unavailable, view, done: () => listener({ type: 'done' }) };
+    }
+
+    it('does not rearm the startup timeout after successful compilation and rerender', async () => {
+      const { Preview, unavailable, view, done } = await runtime();
+      act(done);
+      view.rerender(<Preview files={[...app]} onUnavailable={unavailable} />);
+      act(() => vi.advanceTimersByTime(31_000));
+      expect(unavailable).not.toHaveBeenCalled();
+    });
+
+    it('does not extend the startup deadline when the provider rerenders', async () => {
+      const { Preview, unavailable, view } = await runtime();
+      act(() => vi.advanceTimersByTime(20_000));
+      view.rerender(<Preview files={[...app]} onUnavailable={unavailable} />);
+      act(() => vi.advanceTimersByTime(10_001));
+      expect(unavailable).toHaveBeenCalledOnce();
+    });
   });
 
   it('keeps landing projects on srcDoc with the flag enabled', async () => {

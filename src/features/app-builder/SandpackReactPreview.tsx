@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { SandpackProvider, useSandpackClient } from '@codesandbox/sandpack-react';
 import { sandpackProject } from './bolt/sandpack-project';
 import type { FileRecord } from './bolt/types';
@@ -7,10 +7,16 @@ export const SANDPACK_BUNDLER_URL = 'https://2-19-8-sandpack.codesandbox.io/';
 
 function PreviewFrame({ onUnavailable }: { onUnavailable: () => void }) {
   const { iframe, sandpack, listen } = useSandpackClient();
+  const ready = useRef(false);
+  const startupDeadline = useRef(Date.now() + 30_000);
   useEffect(() => {
-    const timer = window.setTimeout(onUnavailable, 30_000);
+    if (ready.current) return;
+    const timer = window.setTimeout(onUnavailable, Math.max(0, startupDeadline.current - Date.now()));
     const unsubscribe = listen((message) => {
-      if (message.type === 'start' || message.type === 'done') window.clearTimeout(timer);
+      if (message.type === 'done') {
+        ready.current = true;
+        window.clearTimeout(timer);
+      }
     });
     return () => {
       window.clearTimeout(timer);

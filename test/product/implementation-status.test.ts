@@ -14,6 +14,11 @@ import {
   getImplementation,
   isImplementationLive,
 } from '../../src/product/implementation-status';
+import {
+  PUBLIC_ROADMAP_COPY,
+  getPublicRoadmapCopy,
+  getPublicRoadmapRoute,
+} from '../../src/product/implementation-status-public';
 
 describe('implementation-status registry', () => {
   it('has unique ids and valid statuses', () => {
@@ -111,6 +116,17 @@ describe('implementation-status registry', () => {
     expect(getImplementation('frontend-modernize-wizard')?.route).toBe('/app/siteos/modernize');
   });
 
+  it('marks automations/n8n as preview — Skills unlinked, Runtime down', () => {
+    const item = getImplementation('automation-n8n')!;
+    expect(item.status).toBe('preview');
+    expect(isImplementationLive('automation-n8n')).toBe(false);
+    expect(item.route).toBe('/app/automations');
+    expect(item.description.toLowerCase()).toMatch(/ohne workflow|nicht erreichbar|keine produktive/);
+    expect(item.description).not.toMatch(/\b(Pilot|Demo|Call|Sales|Beratung|Termin)\b/i);
+    expect(item.evidence.some((e) => e.includes('automation-trigger'))).toBe(true);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'automation-n8n')).toBe(true);
+  });
+
   it('mentions /login on the welcome/auth entry', () => {
     expect(getImplementation('welcome')?.description).toContain('/login');
     expect(getImplementation('welcome')?.evidence.some((e) => e.includes('LoginPage'))).toBe(true);
@@ -127,7 +143,7 @@ describe('implementation-status registry', () => {
     expect(docs).not.toMatch(/cyan buttons/);
   });
 
-  it('Landing v4 roadmap renders from the registry', () => {
+  it('Landing v4 roadmap renders from the registry via public copy', () => {
     const landing = readFileSync(resolve('src/pages/LandingV4.tsx'), 'utf8');
     const sections = readFileSync(
       resolve('src/components/landing/v4/LandingV4Sections.tsx'),
@@ -145,10 +161,75 @@ describe('implementation-status registry', () => {
     expect(sections).toContain('ROADMAP_LIVE_ITEMS');
     expect(sections).toContain('ROADMAP_PREVIEW_ITEMS');
     expect(sections).toContain('ROADMAP_COMING_SOON_ITEMS');
+    expect(sections).toContain('getPublicRoadmapCopy');
+    expect(sections).not.toMatch(/\{item\.description\}/);
+    expect(sections).not.toMatch(/\{item\.name\}/);
     expect(content).not.toMatch(/export const ROADMAP =/);
     expect(content).toContain('Registry-live: DSGVO');
     expect(content).not.toContain('Live: DSGVO, EU AI Act, ISO 27001 und NIS2');
     expect(roadmapLegacy).toContain('ROADMAP_PREVIEW_ITEMS');
+  });
+
+  it('covers every public roadmap item with customer-facing DE/EN copy', () => {
+    const publicItems = [...ROADMAP_LIVE_ITEMS, ...ROADMAP_PREVIEW_ITEMS, ...ROADMAP_COMING_SOON_ITEMS];
+    const banned = [
+      'CommandCenterDashboard',
+      'AgentOsPanel',
+      '#1743',
+      '#1331',
+      'Messung',
+      'Dominik',
+      'Auto-Merge',
+      'optimizer',
+      'Kugel',
+    ] as const;
+    expect(publicItems.some((i) => i.id === 'governance-sphere-interactive')).toBe(false);
+    expect(getImplementation('governance-sphere-interactive')?.showOnRoadmap).toBe(false);
+    for (const item of publicItems) {
+      expect(PUBLIC_ROADMAP_COPY[item.id], item.id).toBeTruthy();
+      for (const lang of ['de', 'en'] as const) {
+        // The registry entry itself must exist, so the DE fallback cannot mask a missing EN text.
+        expect(PUBLIC_ROADMAP_COPY[item.id]?.[lang], `${item.id}.${lang} registry entry`).toBeTruthy();
+        const copy = getPublicRoadmapCopy(item, lang);
+        expect(copy, `${item.id}.${lang} public copy`).toBeDefined();
+        if (!copy) continue;
+        expect(copy.name.length, `${item.id}.${lang}.name`).toBeGreaterThan(3);
+        expect(copy.description.length, `${item.id}.${lang}.description`).toBeGreaterThan(12);
+        for (const phrase of banned) {
+          expect(copy.name.toLowerCase(), `${item.id} name has ${phrase}`).not.toContain(
+            phrase.toLowerCase(),
+          );
+          expect(copy.description.toLowerCase(), `${item.id} desc has ${phrase}`).not.toContain(
+            phrase.toLowerCase(),
+          );
+        }
+        expect(copy.description).not.toMatch(/#\d{3,5}/);
+        expect(copy.name).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
+        expect(copy.description).not.toMatch(
+          /\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/,
+        );
+      }
+    }
+  });
+
+  it('skips (does not throw for) items without public roadmap copy', () => {
+    const base = getImplementation('free-audit')!;
+    const orphan = { ...base, id: 'test-no-public-copy', status: 'coming-soon' as const };
+    expect(PUBLIC_ROADMAP_COPY[orphan.id]).toBeUndefined();
+    for (const lang of ['de', 'en'] as const) {
+      expect(() => getPublicRoadmapCopy(orphan, lang)).not.toThrow();
+      expect(getPublicRoadmapCopy(orphan, lang)).toBeUndefined();
+    }
+    // Never falls back to internal registry name/description.
+    expect(getPublicRoadmapCopy(base, 'de')?.description).not.toBe(base.description);
+  });
+
+  it('only exposes customer-safe routes on the public roadmap', () => {
+    expect(getPublicRoadmapRoute(getImplementation('free-audit')!)).toBe('/audit');
+    expect(getPublicRoadmapRoute(getImplementation('pricing-monthly')!)).toBe('/pricing');
+    expect(getPublicRoadmapRoute(getImplementation('ai-gateway')!)).toBeUndefined();
+    expect(getPublicRoadmapRoute(getImplementation('channel-bots')!)).toBeUndefined();
+    expect(getPublicRoadmapRoute(getImplementation('frontend-modernize-wizard')!)).toBeUndefined();
   });
 
   it('forbids unqualified complete-runtime claims on Landing v4', () => {

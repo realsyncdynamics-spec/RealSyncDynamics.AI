@@ -149,13 +149,18 @@ export function useAiGovernanceData(): AiGovernanceData {
         const livePolicies = (policiesRes.data ?? []).map((r) => mapPolicy(r as AiPolicyRow));
         const liveEvents = (eventsRes.data ?? []).map((r) => mapEvidence(r as AiEvidenceRow));
 
-        const anyLive = liveSystems.length > 0 || livePolicies.length > 0 || liveEvents.length > 0;
+        // LIVE nur, wenn KEINE Liste auf Beispieldaten zurückfällt und nichts
+        // fehlschlug. Vorher reichte eine einzige echte Zeile: Die drei globalen
+        // Standard-Policies sieht jeder angemeldete Nutzer — das Badge stand dann
+        // auf „LIVE“ über Demo-Systemen und Demo-Ereignissen.
+        const usesDemo = liveSystems.length === 0 || livePolicies.length === 0 || liveEvents.length === 0;
+        const failed = Boolean(systemsRes.error || policiesRes.error || eventsRes.error);
 
         setData({
           aiSystems: liveSystems.length > 0 ? liveSystems : demoAiSystems,
           policies: livePolicies.length > 0 ? livePolicies : demoPolicies,
           evidenceEvents: liveEvents.length > 0 ? liveEvents : demoEvidenceEvents,
-          live: anyLive,
+          live: !usesDemo && !failed,
           loading: false,
           error: systemsRes.error?.message ?? policiesRes.error?.message ?? eventsRes.error?.message ?? null,
         });

@@ -16,7 +16,7 @@ export function ContentPageLayout(props: {
   children: ReactNode;
   related?: RelatedLink[];
 }) {
-  usePageMeta({ title: `${props.title} | RealSyncDynamics.AI`, description: props.description });
+  usePageMeta({ title: `${props.title} | RealSync Dynamics AI`, description: props.description });
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">

@@ -165,6 +165,10 @@ function BuildOsChrome({ subtitle }: { subtitle?: string }) {
 export default function BuildStudioPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const buildReturnPath = useMemo(() => {
+    const query = params.toString();
+    return query ? `/build?${query}` : '/build';
+  }, [params]);
   const { isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
   const {
     tier,
@@ -310,7 +314,7 @@ export default function BuildStudioPage() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={`/welcome?next=${encodeURIComponent('/build')}`} replace />;
+    return <Navigate to={`/welcome?next=${encodeURIComponent(buildReturnPath)}`} replace />;
   }
 
   if (!entitled && entitlements.ssotReady) {

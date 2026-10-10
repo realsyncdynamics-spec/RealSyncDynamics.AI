@@ -244,6 +244,23 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnPlatform: true,
   },
   {
+    id: 'automation-n8n',
+    name: 'Automations / n8n Runtime',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Skill-Katalog, automation-trigger und -callback existieren; Skills ohne Workflow-Bindung, Runtime-Host nicht erreichbar. Keine produktive Ausführung.',
+    route: '/app/automations',
+    evidence: [
+      'supabase/functions/automation-trigger/index.ts',
+      'supabase/functions/automation-callback/index.ts',
+      'src/features/automations/AutomationSkillsView.tsx',
+      'test/automations/skill-spalten.test.ts',
+      'PR #1750',
+    ],
+    showOnRoadmap: true,
+  },
+  {
     id: 'policy-engine',
     name: 'Policy Engine',
     status: 'live',
@@ -312,7 +329,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'Two-pane Studio unter /build (App Builder + Frontend Designer). Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter, öffentliches Deploy/Domain bleibt Preview.',
+      'Two-pane Studio unter /build (App Builder + Frontend Designer). Create/Claim plan-gated (limit.sites / siteos.builder); Publish-Berechtigung ab Starter. Publish Controller gebaut (Gate → Cloudflare-Vorschau → Produktion nur mit Owner/Admin-GO); eigene Domain, DNS und Rollback fehlen. Produktstatus bleibt Preview.',
     route: '/build',
     evidence: [
       'src/unified-entry/pages/BuildStudioPage.tsx',
@@ -501,7 +518,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',
     ],
-    showOnRoadmap: true,
+    // Internal visual experiment — not customer-facing on the public roadmap.
+    showOnRoadmap: false,
   },
   {
     id: 'pricing-yearly',

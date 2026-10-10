@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DiscoveryIntakeForm } from '../components/enterprise-ai-os/DiscoveryIntakeForm';
-import { getSupabaseUrl } from '../lib/supabaseUrl';
+import { useOptionalTenant } from '../core/access/TenantProvider';
+import { listPendingDiscovery } from '../lib/enterprise-ai-os/discovery';
 
 interface PendingSystem {
   id: string;
@@ -19,8 +20,6 @@ interface PendingSystem {
   created_at: string;
 }
 
-const SUPABASE_URL = getSupabaseUrl();
-
 const RISK_BADGE: Record<string, string> = {
   prohibited: 'bg-red-500/20 text-red-300 border-red-500/40',
   high: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
@@ -33,26 +32,28 @@ export function EnterpriseAiOsDiscovery() {
   const [pending, setPending] = useState<PendingSystem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Offene Meldungen gehören einem Mandanten; ohne Anmeldung gibt es keine Liste.
+  const tenantState = useOptionalTenant();
+  const tenantId = tenantState?.activeTenantId ?? null;
+  const tenantLoading = tenantState?.loading ?? false;
 
   const reload = useCallback(async () => {
-    if (!SUPABASE_URL) {
-      setError('Supabase ist nicht konfiguriert.');
-      setLoading(false);
+    if (!tenantId) {
+      setPending([]);
+      setError(tenantLoading ? null : 'Offene Meldungen sind nur angemeldet und mit Mandant sichtbar.');
+      setLoading(tenantLoading);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/enterprise-ai-os-discovery-pending?limit=100`);
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? `HTTP ${res.status}`);
-      setPending((body?.pending ?? []) as PendingSystem[]);
+      setPending(await listPendingDiscovery<PendingSystem>(tenantId));
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId, tenantLoading]);
 
   useEffect(() => { void reload(); }, [reload]);
 

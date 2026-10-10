@@ -100,6 +100,9 @@ describe('PostScanChoiceRow destinations', () => {
       findings: [{ id: '1', severity: 'high', title: 't', detail: 'd' }],
     });
     expect(choices).toHaveLength(4);
+    expect(choices[0].id).toBe('activation');
+    expect(choices.filter((c) => c.primary)).toHaveLength(1);
+    expect(choices[0].primary).toBe(true);
     const byId = Object.fromEntries(choices.map((c) => [c.id, c]));
     expect(byId.monitor.badge).toBe('coming-soon');
     expect(byId['fix-plan'].to).toBe('/onboarding/aud-1');

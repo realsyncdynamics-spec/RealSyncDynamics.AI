@@ -7,7 +7,7 @@
  */
 
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
-import { readFunnelContext } from './funnelContext';
+import { AUDIT_PARAM, DOMAIN_PARAM, readFunnelContext } from './funnelContext';
 
 export const PENDING_AUDIT_KEY = 'rsd_pending_audit';
 
@@ -62,6 +62,19 @@ export function readPendingAudit(): PendingAudit | null {
   const funnel = readFunnelContext();
   if (funnel?.auditId) {
     return { audit_id: funnel.auditId, domain: funnel.domain };
+  }
+  // Letzter Rückfall: `/welcome?…&audit_id=` aus der Post-Scan-Wahl. Greift,
+  // wenn der Browser Storage blockiert — sonst ginge der Scan beim Login verloren.
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get(AUDIT_PARAM);
+      if (id && UUID_RE.test(id)) {
+        return { audit_id: id, domain: params.get(DOMAIN_PARAM) ?? undefined };
+      }
+    }
+  } catch {
+    /* keine URL lesbar */
   }
   return null;
 }

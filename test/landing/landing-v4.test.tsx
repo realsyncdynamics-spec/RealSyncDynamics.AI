@@ -142,7 +142,6 @@ it('skips roadmap items without public copy instead of crashing /', () => {
     const view = mount();
     const roadmap = view.container.querySelector('#roadmap')!;
     expect(roadmap).not.toBeNull();
-    expect(roadmap.querySelector(`[data-impl-id="${id}"]`)).toBeNull();
     expect(roadmap.textContent).not.toContain('Compliance Command Center');
     expect(roadmap.querySelectorAll('.rm-card').length).toBeGreaterThan(0);
   } finally {
@@ -197,7 +196,10 @@ it('roadmap public markup leaks no internal registry details', () => {
   expect(text).not.toMatch(/#\d{3,5}/);
   expect(text).not.toMatch(/claude-code-optimizer/i);
   expect(text).not.toContain('Interaktive Governance-Kugel');
-  expect(roadmap.querySelector('[data-impl-id="governance-sphere-interactive"]')).toBeNull();
+  // Internal registry IDs must not leak into public markup (e.g. provider names in ids).
+  expect(roadmap.querySelector('[data-impl-id]')).toBeNull();
+  expect(roadmap.innerHTML).not.toContain('governance-sphere-interactive');
+  expect(roadmap.innerHTML.toLowerCase()).not.toContain('hostinger');
   // PascalCase component-like identifiers (e.g. FooBarPanel) must not appear.
   expect(text).not.toMatch(/\b[A-Z][a-zA-Z]+(?:Dashboard|Panel|View|Shell|Wizard|Host)\b/);
   // Internal tooling routes must not render as public labels.

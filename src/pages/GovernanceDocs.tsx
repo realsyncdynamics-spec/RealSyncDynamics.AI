@@ -140,7 +140,8 @@ export function GovernanceDocs() {
               <Field name="risk_level"    value="info · low · medium · high · critical" />
               <Field name="policy_action" value="allow · log · warn · block · require_approval" />
               <Field name="evidence_type" value="screenshot · har · json · log · pdf · hash · policy_snapshot · approval · pull_request" />
-              <Field name="content_hash" value="optional · wird als metadata.client_content_hash gespeichert, nicht in der Evidence-Kette" />
+              <Field name="content_hash" value="optional · bleibt als metadata.client_content_hash erhalten; die Evidence-Kette hasht der Server selbst" />
+              <Field name="evidence" value="max. 50 Einträge pro Request; jeder wird serverseitig an die Hash-Kette des Mandanten angehängt" />
             </FieldList>
 
             <SubHeading>Curl Example</SubHeading>

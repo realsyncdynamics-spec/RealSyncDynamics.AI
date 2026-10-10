@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { usePageMeta } from '../../lib/usePageMeta';
+import { PublicHeader } from '../../components/brand/PublicHeader';
+import { PublicFooter } from '../../components/brand/PublicFooter';
 
 interface RelatedLink {
   to: string;
@@ -19,14 +21,18 @@ export function ContentPageLayout(props: {
   usePageMeta({ title: `${props.title} | RealSync Dynamics AI`, description: props.description });
   return (
     <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
-      <header className="h-14 border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] flex items-center justify-between gap-3 px-4">
-        <Link to="/" className="flex shrink-0 items-center gap-2 text-[var(--brand-titan)] hover:text-[var(--brand-champ)] text-sm">
-          <ArrowLeft className="h-4 w-4" /> Startseite
-        </Link>
-        <div className="truncate text-[11px] font-[family-name:var(--brand-mono)] uppercase tracking-[0.22em] text-[var(--brand-champ)]">
-          {props.eyebrow}
-        </div>
-      </header>
+      <PublicHeader
+        subbar={
+          <>
+            <Link to="/" className="flex shrink-0 items-center gap-2 text-[var(--brand-titan)] hover:text-[var(--brand-champ)] text-sm">
+              <ArrowLeft className="h-4 w-4" /> Startseite
+            </Link>
+            <div className="ml-auto truncate text-[11px] font-[family-name:var(--brand-mono)] uppercase tracking-[0.22em] text-[var(--brand-champ)]">
+              {props.eyebrow}
+            </div>
+          </>
+        }
+      />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <article className="prose-content">
@@ -81,6 +87,7 @@ export function ContentPageLayout(props: {
           </div>
         </section>
       </main>
+      <PublicFooter />
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { CTA } from '../content/runtimeVocab';
 // Hauptnav. Reihenfolge: Was (Produkt) → für wen (Lösungen) → warum
 // vertrauenswürdig (Sicherheit) → Preise → Dokumentation → Login.
 // Alle Ziele sind existierende Routen.
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { label: 'Produkt',       to: '/runtime' },
   { label: 'Lösungen',      to: '/branchen' },
   { label: 'Sicherheit',    to: '/sicherheit' },

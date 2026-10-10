@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { Navbar } from './Navbar';
+import { NAV_ITEMS } from './Navbar';
+import { PublicHeader } from './brand/PublicHeader';
+import { PublicFooter } from './brand/PublicFooter';
 import { CTA } from '../content/runtimeVocab';
 
 // PageShell — every product surface (/runtime, /ai-act, /docs, /evidence)
@@ -20,7 +22,11 @@ export function PageShell({
 }) {
   return (
     <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
-      <Navbar />
+      <PublicHeader
+        position="fixed"
+        nav={NAV_ITEMS}
+        cta={{ label: CTA.startFree, to: '/audit?source=nav-activate', mobileTo: '/audit?source=nav-activate-mobile' }}
+      />
 
       <main className="pt-20">
         <header className="border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] px-4 sm:px-6 py-16 sm:py-20">
@@ -67,6 +73,7 @@ export function PageShell({
           </div>
         </section>
       </main>
+      <PublicFooter />
     </div>
   );
 }

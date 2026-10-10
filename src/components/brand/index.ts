@@ -6,3 +6,8 @@ export type { BrandStatus } from './StatusBadge';
 export { Input } from './Input';
 export { SeverityBadge, SEVERITY_LABELS } from './SeverityBadge';
 export type { Severity, SeverityLang } from './SeverityBadge';
+export { PublicHeader } from './PublicHeader';
+export type { PublicHeaderProps, PublicHeaderLink, PublicHeaderCta } from './PublicHeader';
+export { PublicFooter } from './PublicFooter';
+export type { PublicFooterColumn, PublicFooterLink } from './PublicFooter';
+export { PublicPageFrame } from './PublicPageFrame';

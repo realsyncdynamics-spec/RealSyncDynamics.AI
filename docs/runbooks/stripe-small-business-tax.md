@@ -22,6 +22,15 @@ Die Edge Function `stripe-checkout` leitet `automatic_tax.enabled` nun direkt au
 5. Vor Öffnung für ausländische Kunden B2B-/B2C- und OSS-Regelungen mit Steuerberatung klären oder länderbezogene Sales-Gates einführen.
 6. PR #1819 ändert dieselbe Checkout-Datei. Fix **gezielt** nach dem Beta-Code integrieren, niemals dessen Datei durch die ältere `main`-Version ersetzen. CI/Review prüfen, **keinen Merge/Deploy ohne separate Freigabe**.
 
+## Verifizierte Sandbox-Rechnungsvorschau (10.10.2026)
+
+Stripe-Sandbox `RealSync Dynamics IA Sandbox`, `livemode=false`:
+- Stripe Tax Settings: `pending`, fehlendes `head_office`; keine Tax-Registrierungen.
+- Direkte API-Rechnungsvorschau (`in_1UOrphIEauIvbZDC8VZvEIYl`, **keine** finalisierte Rechnung/kein Checkout-E2E).
+- Position: 79,00 EUR; `automatic_tax.enabled=false`; `total_taxes=[]`; Endbetrag 79,00 EUR.
+- **Offener Befund:** `footer=null`, kein §-19-Hinweis; `invoice_pdf=null`, weil nur unverbindliche Preview.
+- Einrichtung des korrekten Invoice-Footers/Invoice-Templates in der Sandbox und anschließend ein tatsächlicher Checkout-Test stehen aus. Der Preview-Erfolg beweist nicht, dass PR #1819 über Supabase deployt oder dass ein Abo-Zyklus funktioniert.
+
 ## Validierung
 
 ```sh

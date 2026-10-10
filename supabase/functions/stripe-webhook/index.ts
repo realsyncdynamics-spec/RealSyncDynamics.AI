@@ -25,6 +25,7 @@ import {
   getStripeMode,
   isWebhookSignatureModeCompatible,
   keyModeOf,
+  liveWebhookSigningCandidate,
   planKeyForTestPrice,
   resolveStripeSecretKey,
   resolveStripeWebhookSecret,
@@ -106,7 +107,10 @@ Deno.serve(async (req) => {
   if (runtimeMode === 'test' && testSigningSecret) {
     signingCandidates.push({ mode: 'test', secret: testSigningSecret });
   }
-  if (liveSigningSecret) signingCandidates.push({ mode: 'live', secret: liveSigningSecret });
+  // Legacy test-only installs reuse STRIPE_WEBHOOK_SECRET for test events.
+  // Avoid classifying that one secret simultaneously as test and live.
+  const liveCandidate = liveWebhookSigningCandidate(liveSigningSecret, testSigningSecret, liveApiKey);
+  if (liveCandidate) signingCandidates.push({ mode: 'live', secret: liveCandidate });
   if (signingCandidates.length === 0) {
     // Configuration failure: 503 allows Stripe to retry a legitimate event.
     return new Response('stripe webhook signing secrets not configured', { status: 503 });

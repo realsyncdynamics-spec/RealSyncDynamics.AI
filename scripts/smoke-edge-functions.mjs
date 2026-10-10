@@ -13,7 +13,8 @@
 //   SUPABASE_URL=https://<ref>.supabase.co node scripts/smoke-edge-functions.mjs
 //   node scripts/smoke-edge-functions.mjs plans siteos   # nur diese
 //
-// Exit 1, sobald eine Function PREFLIGHT-5XX oder PREFLIGHT-CORS liefert.
+// Exit 1, sobald eine Function PREFLIGHT-5XX, PREFLIGHT-CORS oder UNERREICHBAR
+// liefert.
 // Geschickt wird ein vollstaendiger Browser-Preflight (Origin, Request-Method,
 // Request-Headers); SMOKE_ORIGIN ueberschreibt den Default-Origin.
 //
@@ -90,13 +91,15 @@ function corsGap(headers) {
   if (origin !== '*' && origin !== ORIGIN) {
     return { verdict: 'PREFLIGHT-CORS', detail: `Access-Control-Allow-Origin ist "${origin}"` };
   }
-  const allowed = (headers.get('access-control-allow-headers') || '').toLowerCase();
-  if (allowed !== '*') {
-    const list = allowed.split(/\s*,\s*/);
-    const missing = REQUEST_HEADERS.filter((h) => !list.includes(h));
-    if (missing.length) {
-      return { verdict: 'PREFLIGHT-CORS', detail: `Access-Control-Allow-Headers ohne ${missing.join(', ')}` };
-    }
+  // Ein `*` in Allow-Headers deckt laut Fetch-Spec alles ab — ausser
+  // `authorization`. Das muss immer ausdruecklich genannt sein.
+  const list = (headers.get('access-control-allow-headers') || '').toLowerCase().split(/\s*,\s*/);
+  const wildcard = list.includes('*');
+  const missing = REQUEST_HEADERS.filter(
+    (h) => !list.includes(h) && (h === 'authorization' || !wildcard),
+  );
+  if (missing.length) {
+    return { verdict: 'PREFLIGHT-CORS', detail: `Access-Control-Allow-Headers ohne ${missing.join(', ')}` };
   }
   return null;
 }
@@ -143,7 +146,13 @@ for (const [verdict, entries] of [...byVerdict].sort()) {
   for (const e of entries) console.log(`  ${e.name}`);
 }
 
-const broken = [...(byVerdict.get('PREFLIGHT-5XX') ?? []), ...(byVerdict.get('PREFLIGHT-CORS') ?? [])];
+// UNERREICHBAR zaehlt mit: ein Netz- oder DNS-Fehler darf nicht als gruen
+// durchgehen, sonst meldet ein Lauf ohne jede Antwort Erfolg.
+const broken = [
+  ...(byVerdict.get('PREFLIGHT-5XX') ?? []),
+  ...(byVerdict.get('PREFLIGHT-CORS') ?? []),
+  ...(byVerdict.get('UNERREICHBAR') ?? []),
+];
 const missing = byVerdict.get('FEHLT') ?? [];
 const routed = byVerdict.get('ROUTET-404') ?? [];
 
@@ -152,10 +161,11 @@ console.log(
   `${routed.length} deployt ohne Handler auf dem Basispfad · ` +
   `${(byVerdict.get('PREFLIGHT-5XX') ?? []).length} mit Preflight-5xx · ` +
   `${(byVerdict.get('PREFLIGHT-CORS') ?? []).length} mit unvollstaendigen CORS-Headern · ` +
-  `${(byVerdict.get('KEIN-CORS') ?? []).length} ohne CORS (Hinweis)`);
+  `${(byVerdict.get('KEIN-CORS') ?? []).length} ohne CORS (Hinweis) · ` +
+  `${(byVerdict.get('UNERREICHBAR') ?? []).length} unerreichbar`);
 
 if (broken.length) {
-  console.error('\nPreflight scheitert — aus dem Browser nicht aufrufbar:');
+  console.error('\nPreflight scheitert oder keine Antwort — aus dem Browser nicht aufrufbar:');
   for (const e of broken) console.error(`  - ${e.name}: ${e.status} ${e.body}`);
   process.exit(1);
 }

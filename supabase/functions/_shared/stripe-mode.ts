@@ -160,6 +160,27 @@ export function apiKeyForVerifiedWebhookEvent(
   return keyModeOf(testApiKey) === 'test' ? testApiKey : null;
 }
 
+/**
+ * Older test-only environments can legitimately store both the test API key
+ * and its whsec_test signing secret in the old unsuffixed variables.
+ * Without a live API key, the same signing secret must not be registered as
+ * BOTH a live and a test candidate — that would reject every test event.
+ *
+ * If a live key exists and both modes share a signing secret, the handler's
+ * ambiguity guard still fails closed rather than allowing cross-mode events.
+ */
+export function liveWebhookSigningCandidate(
+  liveSigningSecret: string | null,
+  testSigningSecret: string | null,
+  liveApiKey: string | null,
+): string | null {
+  if (!liveSigningSecret) return null;
+  if (liveSigningSecret === testSigningSecret && keyModeOf(liveApiKey) !== 'live') {
+    return null;
+  }
+  return liveSigningSecret;
+}
+
 /** Env-Name der Test-Price-ID eines Plan-Keys, z. B. STRIPE_TEST_PRICE_GOVERNANCE_LAUNCH. */
 export function testPriceEnvName(planKey: string): string {
   return STRIPE_TEST_PRICE_PREFIX + planKey.toUpperCase().replace(/[^A-Z0-9]/g, '_');

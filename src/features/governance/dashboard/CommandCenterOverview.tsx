@@ -8,7 +8,8 @@
 // echten Backend-Status bzw. einen expliziten Fehlerzustand. Keine
 // Platzhalter, keine Beispielzeilen.
 
-import { Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ButtonLink, SeverityBadge } from '../../../components/brand';
 import {
   ACTION_SOURCES, SIGNAL_SOURCES, sourcesOk,
@@ -50,6 +51,13 @@ export function CommandCenterOverview({
   const eventsFailed = data.partialFailures.some((f) => f.startsWith('events:'));
   const chain = data.recentEvents.slice(0, 4);
   const agentPath = isGovernanceAiEnabled() ? GOVERNANCE_AI_PATH : '/app/agents';
+  const navigate = useNavigate();
+  const [intent, setIntent] = useState('');
+  const startSession = (e: FormEvent) => {
+    e.preventDefault();
+    const q = intent.trim();
+    navigate(q ? `${agentPath}?intent=${encodeURIComponent(q)}` : agentPath);
+  };
 
   type Tile = {
     key: string;
@@ -94,20 +102,18 @@ export function CommandCenterOverview({
   const meta = [planLabel ? `PLAN ${planLabel.toUpperCase()}` : null, tenantName?.toUpperCase() ?? null]
     .filter(Boolean)
     .join(' · ');
-  const notice = 'text-sm text-[var(--brand-muted)]';
-  const errorText = 'text-sm text-[#ffd7c2]';
 
   return (
     <section
       data-testid="command-center-overview"
       aria-label="Compliance Command Center"
-      className="flex flex-col gap-[var(--brand-space-4)]"
+      className="cc-page"
     >
-      <div className="flex flex-wrap items-baseline gap-[var(--brand-space-3)]">
-        <h2 className="m-0 font-[family-name:var(--brand-serif)] text-[22px] font-semibold tracking-tight text-[var(--brand-paper)]">
+      <div className="cc-page__head">
+        <h2 className="cc-page__title">
           Compliance Command Center
         </h2>
-        {meta && <span className="cc-tile__label">{meta}</span>}
+        {meta && <span className="cc-page__meta">{meta}</span>}
       </div>
 
       <div className="cc-tiles">
@@ -124,17 +130,15 @@ export function CommandCenterOverview({
                 {t.suffix ? <span className="cc-tile__unit">{t.suffix}</span> : null}
               </b>
             ) : t.state ? (
-              <b className="cc-tile__value text-[20px]">{t.state}</b>
+              <b className="cc-tile__value">{t.state}</b>
             ) : (
-              <p role="alert" className={`m-0 ${errorText}`}>{t.error}</p>
+              <p role="alert" className="cc-panel__error">{t.error}</p>
             )}
             <span className="cc-tile__label">{t.label}</span>
             {t.cta && (
-              <div className="mt-2">
-                <Link to={t.cta.to} className="text-xs text-[var(--brand-champ)] hover:text-[var(--brand-champ-hi)]">
-                  {t.cta.label}
-                </Link>
-              </div>
+              <Link to={t.cta.to} className="cc-intent-chip">
+                {t.cta.label}
+              </Link>
             )}
           </div>
         ))}
@@ -144,24 +148,22 @@ export function CommandCenterOverview({
           Reifegrade pro Rahmenwerk je Mandant gibt. Heute existiert keine
           solche Quelle → Sektion bewusst ausgeblendet. */}
 
-      <div className="grid grid-cols-1 gap-[var(--brand-space-3)] lg:grid-cols-2">
+      <div className="cc-split">
         <div className="cc-panel" data-testid="overview-findings">
           <div className="cc-panel__head">
             Offene Findings{sorted.length + mediumHints.length > 0 ? <span className="cc-panel__meta">Priorisiert</span> : null}
           </div>
           {!findingsComplete && sorted.length === 0 ? (
-            <div className="cc-panel__body" role="alert" data-testid="overview-findings-error">
-              <p className={`m-0 ${errorText}`}>Findings-Quellen konnten nicht vollständig geladen werden.</p>
-            </div>
+            <p className="cc-panel__error" role="alert" data-testid="overview-findings-error">Findings-Quellen konnten nicht vollständig geladen werden.</p>
           ) : sorted.length === 0 && mediumHints.length === 0 ? (
-            <div className="cc-panel__body flex flex-wrap items-center gap-[var(--brand-space-3)]" data-testid="overview-findings-empty">
-              <p className={`m-0 flex-1 ${notice}`}>Keine offenen Findings.</p>
+            <div className="cc-panel__body" data-testid="overview-findings-empty">
+              <p className="cc-panel__empty">Keine offenen Findings.</p>
               <ButtonLink to="/app/audit" size="sm">Audit starten</ButtonLink>
             </div>
           ) : (
             <div>
               {sorted.slice(0, 5).map((f) => (
-                <Link key={f.id} to={f.href} className="cc-finding no-underline">
+                <Link key={f.id} to={f.href} className="cc-finding cc-finding--link">
                   <SeverityBadge severity="hoch" label={f.level === 'critical' ? 'Kritisch' : undefined} />
                   <span className="cc-finding__title">{f.title}</span>
                   <span className="cc-finding__meta">{f.detail}</span>
@@ -183,21 +185,19 @@ export function CommandCenterOverview({
             Evidence-Chain{chain.length > 0 ? <span className="cc-panel__meta">Neueste Events</span> : null}
           </div>
           {eventsFailed ? (
-            <div className="cc-panel__body" role="alert" data-testid="overview-chain-error">
-              <p className={`m-0 ${errorText}`}>Governance-Events konnten nicht geladen werden.</p>
-            </div>
+            <p className="cc-panel__error" role="alert" data-testid="overview-chain-error">Governance-Events konnten nicht geladen werden.</p>
           ) : chain.length === 0 ? (
-            <div className="cc-panel__body flex flex-wrap items-center gap-[var(--brand-space-3)]">
-              <p className={`m-0 flex-1 ${notice}`}>Noch keine Governance-Events.</p>
+            <div className="cc-panel__body">
+              <p className="cc-panel__empty">Noch keine Governance-Events.</p>
               <ButtonLink to="/app/websites" size="sm">Website hinzufügen</ButtonLink>
             </div>
           ) : (
             <div>
               {chain.map((e) => (
-                <div key={e.id} className="cc-finding" data-testid={`overview-chain-${e.id}`}>
-                  <span className="cc-finding__meta truncate">{e.eventType}</span>
-                  <span className="cc-finding__title">{e.title}</span>
-                  <span className="cc-finding__meta text-[var(--brand-titan)]">{relTime(e.createdAt)}</span>
+                <div key={e.id} className="cc-chain-row" data-testid={`overview-chain-${e.id}`}>
+                  <span className="cc-chain-row__type">{e.eventType}</span>
+                  <span className="cc-chain-row__title">{e.title}</span>
+                  <span className="cc-chain-row__time">{relTime(e.createdAt)}</span>
                 </div>
               ))}
             </div>
@@ -209,16 +209,23 @@ export function CommandCenterOverview({
         <div className="cc-panel__head">
           Agent OS · Intent<span className="cc-panel__meta">Review-pflichtig</span>
         </div>
-        <div className="cc-panel__body flex flex-col gap-[var(--brand-space-3)]">
-          <div className="flex flex-wrap items-center gap-[var(--brand-space-3)]">
-            <p className={`m-0 flex-1 ${notice}`}>Was möchtest du erledigen?</p>
-            <ButtonLink to={agentPath} size="sm">Session starten</ButtonLink>
-          </div>
+        <div className="cc-panel__body">
+          <form className="cc-intent" onSubmit={startSession}>
+            <input
+              className="cc-intent__field"
+              type="text"
+              value={intent}
+              onChange={(e) => setIntent(e.target.value)}
+              placeholder="Was möchtest du erledigen?"
+              aria-label="Was möchtest du erledigen?"
+            />
+            <button type="submit" className="cc-intent__go">Session starten</button>
+          </form>
           <nav className="cc-intent-chips" aria-label="Schnellaktionen">
-            <Link className="cc-intent-chip no-underline" to="/app/websites">Website scannen</Link>
-            <Link className="cc-intent-chip no-underline" to="/app/ai-systems">KI-System erfassen</Link>
-            <Link className="cc-intent-chip no-underline" to="/app/audit">Audit starten</Link>
-            <Link className="cc-intent-chip no-underline" to="/app/evidence">Evidence ansehen</Link>
+            <Link className="cc-intent-chip" to="/app/websites">Website scannen</Link>
+            <Link className="cc-intent-chip" to="/app/ai-systems">KI-System erfassen</Link>
+            <Link className="cc-intent-chip" to="/app/audit">Audit starten</Link>
+            <Link className="cc-intent-chip" to="/app/evidence">Evidence ansehen</Link>
           </nav>
         </div>
       </div>

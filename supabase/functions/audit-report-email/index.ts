@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, skipped: 'already_sent', sent_at: audit.email_sent_at }, 200, corsHeaders);
   }
 
+  // Mandanten- und Optimizer-Scans speichern email = '' (keine Adresse).
+  if (!audit.email) {
+    return jsonResponse({ ok: true, skipped: 'no_recipient' }, 200, corsHeaders);
+  }
+
   const apiKey = await getResendKey(supa);
   if (!apiKey) {
     return jsonResponse({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' }, 200, corsHeaders);

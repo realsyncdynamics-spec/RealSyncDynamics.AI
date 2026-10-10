@@ -332,9 +332,11 @@ async function handleAudit(req: Request): Promise<Response> {
   const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
     url,
     domain,
-    // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
-    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
-    email: isTenantScan ? '' : email || null,
+    // gdpr_audits.email ist NOT NULL. Mandanten- und Optimizer-Scans ohne
+    // Adresse speichern '' statt null: keine E-Mail, kein Drip
+    // (audit_email_drip überspringt ''). Der Lead-Pfad hat oben eine
+    // validierte Adresse erzwungen.
+    email,
     company,
     score,
     severity,

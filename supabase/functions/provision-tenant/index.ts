@@ -183,7 +183,10 @@ async function enrollMonitoring(c: Ctx, systemUrl: string): Promise<'enrolled' |
       .update({ asset_id: c.websiteAssetId })
       .eq('id', sourceId)
       .is('asset_id', null);
-    if (le) console.error('[provision-tenant] monitoring asset link failed', le);
+    if (le) {
+      console.error('[provision-tenant] monitoring asset link failed', le);
+      return 'failed';
+    }
   }
   return 'enrolled';
 }

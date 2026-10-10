@@ -1,5 +1,5 @@
 /**
- * Domain Enrollment — `pilot_enroll_monitoring_source` (Migration 20261010113700).
+ * Domain Enrollment — `pilot_enroll_monitoring_source` (Migration 20261010163000).
  *
  * ## Warum gegen echtes Postgres
  *
@@ -42,7 +42,7 @@ d('pilot_enroll_monitoring_source', () => {
 
   beforeEach(async () => {
     ctx = await openDb();
-    await applyMigration(ctx, MIGRATIONS_DIR, '20261010113700_pilot_enroll_monitoring_source_insert_only.sql');
+    await applyMigration(ctx, MIGRATIONS_DIR, '20261010163000_pilot_enroll_monitoring_source_insert_only.sql');
   });
   afterEach(async () => { await closeDb(ctx); });
 

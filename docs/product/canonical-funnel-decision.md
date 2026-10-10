@@ -113,7 +113,7 @@ Zeilen bleiben unsichtbar.
 > setzt dort `asset_id` auf dieses Asset. Damit leistet derselbe Schritt beide
 > Hälften der Abgrenzung unten. Ob gescannt wird, entscheidet weiterhin das
 > Plan-Gate im `governance-monitoring-scheduler`.
-> Migration `20261010113700` ändert die RPC: Eine vorhandene Quelle wird nicht
+> Migration `20261010163000` ändert die RPC: Eine vorhandene Quelle wird nicht
 > mehr reaktiviert und ihr `next_scan_at` nicht mehr vorgezogen — sonst hätte
 > jeder Status-Abruf von `provision-tenant` einen Scan ausgelöst und eine
 > pausierte Quelle wieder eingeschaltet.
@@ -122,8 +122,9 @@ Zeilen bleiben unsichtbar.
 >   Stripe-Webhook). Das Enrollment greift also erst, wenn Schritt 2 den Boot
 >   in den Kundenpfad hängt.
 > * `monitored_domains` / `audit-monitor-cron` ist seit 2026-10-09 ein zweiter
->   aktiver Monitoring-Pfad ohne Eintragsweg. Welche Tabelle kanonisch ist, ist
->   noch nicht entschieden.
+>   aktiver Monitoring-Pfad ohne Eintragsweg. Für das Boot-Enrollment ist am
+>   2026-10-10 `monitoring_sources` gewählt. Ob `monitored_domains` danach
+>   zurückgebaut oder zusammengeführt wird, ist nicht entschieden.
 
 `pilot_enroll_monitoring_source(p_tenant_id uuid, p_url text, p_name text)`
 ist live vorhanden, `SECURITY DEFINER`, mit `search_path`-Bindung, und

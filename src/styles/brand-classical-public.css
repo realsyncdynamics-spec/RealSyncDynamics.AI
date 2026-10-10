@@ -1,0 +1,243 @@
+/*
+ * Classical v4 — reusable editorial surfaces for public content.
+ *
+ * Brand values + self-hosted fonts come exclusively from brand-v4-tokens.css.
+ * Scoped: intentionally does not touch .gv4 (the design-locked homepage),
+ * the authenticated Governance OS, checkout state, or audit-result severity UI.
+ *
+ * The product pages retain their existing dark, technical content bands;
+ * headings and conversion panels become the light "paper + ink + gold"
+ * editorial language of the approved Landing v4 reference.
+ */
+.rs-classical-page {
+  --classical-rule: color-mix(in srgb, var(--brand-ink) 15%, transparent);
+  --classical-muted: #57534e;
+  --classical-quiet: #6b665e;
+  font-family: var(--brand-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.rs-classical-page .rs-classical-hero,
+.rs-classical-page .rs-classical-footer,
+.rs-classical-page .rs-classical-seo-nav,
+.rs-classical-page .rs-classical-seo-head,
+.rs-classical-page .rs-classical-seo-disclaimer {
+  background: var(--brand-paper);
+  color: var(--brand-ink);
+  border-color: var(--classical-rule);
+}
+
+.rs-classical-page .rs-classical-hero,
+.rs-classical-page .rs-classical-seo-head {
+  position: relative;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.34), transparent 80%);
+}
+
+.rs-classical-page .rs-classical-eyebrow {
+  font-family: var(--brand-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+  color: var(--brand-gold-ink);
+}
+
+.rs-classical-page .rs-classical-title {
+  margin: 0;
+  max-width: 19ch;
+  font-family: var(--brand-serif);
+  font-weight: 500;
+  font-size: clamp(2.7rem, 7vw, 5.75rem);
+  line-height: 1.01;
+  letter-spacing: -.025em;
+  color: var(--brand-ink);
+  hyphens: manual;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.rs-classical-page .rs-classical-copy {
+  max-width: 68ch;
+  color: var(--classical-muted);
+  font-family: var(--brand-body);
+  font-size: clamp(1rem, 1.4vw, 1.18rem);
+  line-height: 1.7;
+}
+
+.rs-classical-page .rs-classical-footer-title {
+  font-family: var(--brand-serif);
+  font-weight: 500;
+  font-size: clamp(2.35rem, 5vw, 3.65rem);
+  line-height: 1.04;
+  letter-spacing: -.02em;
+  color: var(--brand-ink);
+}
+
+.rs-classical-page .rs-classical-action {
+  min-height: 44px;
+  border-radius: var(--brand-radius-md);
+  font-family: var(--brand-sans);
+  font-size: .875rem;
+  font-weight: 650;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+.rs-classical-page .rs-classical-action--primary {
+  color: var(--brand-paper);
+  background: var(--brand-ink);
+  border: 1px solid var(--brand-ink);
+}
+.rs-classical-page .rs-classical-action--primary:hover {
+  background: var(--brand-gold-ink);
+  border-color: var(--brand-gold-ink);
+  color: #fff;
+}
+
+.rs-classical-page .rs-classical-action--secondary {
+  color: var(--brand-ink);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--brand-ink) 30%, transparent);
+}
+.rs-classical-page .rs-classical-action--secondary:hover {
+  border-color: var(--brand-gold-ink);
+  color: var(--brand-gold-ink);
+  background: color-mix(in srgb, var(--brand-gold) 7%, transparent);
+}
+
+.rs-classical-page :is(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--brand-gold-ink);
+  outline-offset: 3px;
+}
+
+/* Public SEO articles: preserve rich content, make long text accessible. */
+.rs-classical-page.rs-classical-seo {
+  background: var(--brand-paper);
+  color: var(--brand-ink);
+}
+
+.rs-classical-seo .rs-classical-seo-nav a {
+  color: var(--brand-ink);
+  transition: color 180ms ease;
+}
+.rs-classical-seo .rs-classical-seo-nav a:hover {
+  color: var(--brand-gold-ink);
+}
+
+.rs-classical-seo .rs-classical-seo-disclaimer {
+  background: color-mix(in srgb, var(--brand-gold) 7%, var(--brand-paper));
+  border-left: 2px solid var(--brand-gold);
+}
+
+.rs-classical-seo .rs-classical-prose {
+  max-width: 72ch;
+  color: var(--classical-muted);
+  font-family: var(--brand-body);
+  font-size: clamp(1rem, 1.4vw, 1.09rem);
+  line-height: 1.79;
+}
+
+.rs-classical-seo .rs-classical-prose :is(h2, h3) {
+  font-family: var(--brand-serif);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  line-height: 1.18;
+  color: var(--brand-ink);
+  letter-spacing: -.015em;
+}
+
+.rs-classical-seo .rs-classical-prose :is(code, strong) {
+  color: var(--brand-ink);
+}
+
+.rs-classical-seo .rs-classical-seo-footer {
+  border-color: var(--classical-rule);
+  background: var(--brand-paper-2);
+  color: var(--classical-muted);
+}
+
+.rs-classical-seo .rs-classical-seo-footer a:hover { color: var(--brand-gold-ink); }
+
+@media (max-width: 640px) {
+  .rs-classical-page .rs-classical-title {
+    font-size: clamp(2.3rem, 10vw, 3.15rem);
+    line-height: 1.07;
+    letter-spacing: -.018em;
+  }
+  .rs-classical-page .rs-classical-hero { padding-block: 3.5rem; }
+  .rs-classical-page .rs-classical-action { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-classical-page .rs-classical-action { transition: none; }
+}
+
+/* Legible breadcrumbs, disclaimer and footer on paper. */
+.rs-classical-seo .rs-classical-seo-nav nav,
+.rs-classical-seo .rs-classical-seo-nav nav span {
+  color: var(--classical-muted);
+}
+.rs-classical-seo .rs-classical-seo-nav nav a {
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-seo-disclaimer :is(p, svg) {
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-seo-disclaimer svg {
+  color: var(--brand-gold-ink);
+}
+.rs-classical-seo .rs-classical-seo-footer :is(span, a) {
+  color: var(--classical-muted);
+}
+.rs-classical-seo .rs-classical-seo-footer a:hover {
+  color: var(--brand-gold-ink);
+}
+
+/* Public SEO conversion band: dark ink within a light editorial page. */
+.rs-classical-seo .rs-classical-cta-section {
+  background: var(--brand-ink);
+  border-color: color-mix(in srgb, var(--brand-gold) 45%, transparent);
+}
+.rs-classical-seo .rs-classical-cta-section h2 {
+  font-family: var(--brand-serif);
+  font-weight: 500;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1.1;
+  color: var(--brand-paper);
+}
+.rs-classical-seo .rs-classical-cta-section .surface-gold {
+  border-radius: var(--brand-radius-md);
+  min-height: 44px;
+}
+
+/* FAQ: fully readable, keyboard-navigable details on paper. */
+.rs-classical-seo .rs-classical-faq {
+  background: var(--brand-paper);
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq > div > div:first-child > div:first-child {
+  color: var(--brand-gold-ink);
+}
+.rs-classical-seo .rs-classical-faq h2 {
+  font-family: var(--brand-serif);
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  font-weight: 500;
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq details {
+  background: #fff;
+  border: 1px solid var(--classical-rule);
+  border-radius: var(--brand-radius-md);
+}
+.rs-classical-seo .rs-classical-faq details[open] {
+  border-color: color-mix(in srgb, var(--brand-gold) 55%, transparent);
+}
+.rs-classical-seo .rs-classical-faq details summary > span {
+  font-family: var(--brand-sans);
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq details > div {
+  font-family: var(--brand-body);
+  color: var(--classical-muted);
+  line-height: 1.7;
+}

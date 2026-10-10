@@ -27,7 +27,7 @@ export function AuditCTA({
   secondaryLabel = 'Monitoring ansehen',
 }: Props) {
   return (
-    <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 bg-obsidian-900/40">
+    <section className="rs-classical-cta-section border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 bg-obsidian-900/40">
       <div className="max-w-3xl mx-auto text-center">
         <Activity className="h-5 w-5 text-gold-400 mx-auto mb-3" strokeWidth={1.5} />
         <h2 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight leading-tight mb-3">

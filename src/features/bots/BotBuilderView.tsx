@@ -7,6 +7,7 @@ import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { getBot, updateBot, deleteBot } from './api';
 import type { Bot, BotChannel, BotVertical, RestaurantBotConfig, RestaurantMenuItem } from './types';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 /** /app/bots/:botId — Bot-Builder: Persona, Kanal, Fähigkeiten, Integration. */
 export function BotBuilderView() {
@@ -14,7 +15,7 @@ export function BotBuilderView() {
 }
 
 const FUNCTIONS_BASE = (() => {
-  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? '';
+  const url = (getSupabaseUrl()) ?? '';
   return url ? `${url.replace(/\/$/, '')}/functions/v1` : 'https://<projekt>.supabase.co/functions/v1';
 })();
 

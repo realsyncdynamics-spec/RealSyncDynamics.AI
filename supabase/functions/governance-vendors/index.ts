@@ -8,7 +8,7 @@
 //   update (id, ...patch)
 //   delete (id)
 //
-// Tenant-membership gated (owner/admin/member can write; viewer is read-only).
+// Tenant-membership gated (owner/admin/dpo/editor can write; viewer_auditor is read-only).
 // Reads happen directly from the SPA via RLS (vendors tenant-read policy).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';

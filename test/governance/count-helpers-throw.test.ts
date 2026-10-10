@@ -7,6 +7,9 @@ describe('Pflicht-Zähler dürfen RLS-/Netzfehler nicht als 0 schlucken', () => 
     'src/features/governance/dpiasApi.ts',
     'src/features/governance/approvalsApi.ts',
     'src/features/governance/vendorsApi.ts',
+    // WP4: eigener ai_systems-Zähler der OS-Kachelreihe. Muss dieselbe
+    // Regel erfüllen, weil useAiGovernanceData sonst auf Demo-Daten fällt.
+    'src/features/governance/dashboard/osControlStripData.ts',
   ])('%s wirft bei error statt 0 zurückzugeben', (file) => {
     const source = readFileSync(file, 'utf8');
     expect(source).toMatch(/if \(error\) throw new Error\(error\.message\)/);

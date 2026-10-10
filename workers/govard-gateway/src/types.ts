@@ -54,6 +54,12 @@ export interface Command {
   completed_at: string | null;
 }
 
+/** Parameter der Workflow-Instanz, die einen freigegebenen Command ausführt. */
+export interface CommandWorkflowParams {
+  org_id: string;
+  command_id: string;
+}
+
 // ---------------------------------------------------------------
 // Policies
 // ---------------------------------------------------------------

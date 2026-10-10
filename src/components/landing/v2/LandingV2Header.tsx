@@ -6,8 +6,9 @@ import { LV2_BRAND } from './landing-v2-content';
 export type Lv2Theme = 'dark' | 'light';
 
 const NAV = [
-  { label: 'Produkt', href: '#produkt' },
-  { label: 'Evidence', href: '#evidence' },
+  { label: 'Runtime', to: '/governance-runtime' },
+  { label: 'Policy Engine', to: '/policy-engine' },
+  { label: 'Evidence', to: '/evidence-vault' },
   { label: 'Preise', href: '#preise' },
 ] as const;
 
@@ -75,7 +76,7 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
 
   const cta = (
     <Link to="/audit?source=landing-v2" className="lv2-btn lv2-btn--gold lv2-btn--pill" data-lv2-cta="audit">
-      Free Audit starten
+      Governance-Scan starten
     </Link>
   );
 
@@ -87,12 +88,18 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             {LV2_BRAND}
           </Link>
           <nav className="lv2-nav" aria-label="Hauptnavigation">
-            {NAV.map((item) => (
-              <a key={item.href} href={item.href}>
-                {item.label}
-              </a>
-            ))}
-            <Link to="/login">Login</Link>
+            {NAV.map((item) =>
+              'to' in item ? (
+                <Link key={item.to} to={item.to}>
+                  {item.label}
+                </Link>
+              ) : (
+                <a key={item.href} href={item.href}>
+                  {item.label}
+                </a>
+              ),
+            )}
+            <Link to="/welcome">Login</Link>
             <ThemePill theme={theme} onChange={onThemeChange} />
             {cta}
           </nav>
@@ -123,12 +130,18 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             </button>
           </div>
           <nav aria-label="Mobile Navigation">
-            {NAV.map((item) => (
-              <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
-                {item.label}
-              </a>
-            ))}
-            <Link to="/login" onClick={() => setMenuOpen(false)}>
+            {NAV.map((item) =>
+              'to' in item ? (
+                <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </Link>
+              ) : (
+                <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
+                  {item.label}
+                </a>
+              ),
+            )}
+            <Link to="/welcome" onClick={() => setMenuOpen(false)}>
               Login
             </Link>
           </nav>
@@ -145,12 +158,18 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             {LV2_BRAND}
           </a>
           <nav className="lv2-nav" aria-label="Sticky-Navigation">
-            {NAV.map((item) => (
-              <a key={item.href} href={item.href} tabIndex={sticky ? 0 : -1}>
-                {item.label}
-              </a>
-            ))}
-            <Link to="/login" tabIndex={sticky ? 0 : -1}>
+            {NAV.map((item) =>
+              'to' in item ? (
+                <Link key={item.to} to={item.to} tabIndex={sticky ? 0 : -1}>
+                  {item.label}
+                </Link>
+              ) : (
+                <a key={item.href} href={item.href} tabIndex={sticky ? 0 : -1}>
+                  {item.label}
+                </a>
+              ),
+            )}
+            <Link to="/welcome" tabIndex={sticky ? 0 : -1}>
               Login
             </Link>
           </nav>
@@ -159,7 +178,7 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             className="lv2-btn lv2-btn--gold lv2-btn--pill"
             tabIndex={sticky ? 0 : -1}
           >
-            Free Audit starten
+            Governance-Scan starten
           </Link>
         </div>
       </div>

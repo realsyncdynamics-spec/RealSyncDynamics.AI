@@ -16,9 +16,15 @@ on:
         type: boolean
         default: false
 
+# Nur von main: workflow_dispatch läuft sonst mit dem Stand eines beliebigen
+# Branches und schreibt dessen Migrationen und Functions nach Prod
+# (Feature-Matrix Phase 1, Befund 7). Der Wächter verhindert Versehen; gegen
+# einen absichtlich veränderten Workflow auf einem Branch schützt nur eine
+# GitHub-Environment-Regel („Deployment branches: main“) in den Repo-Settings.
 jobs:
   db-push:
     name: Push migrations
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -88,6 +94,7 @@ jobs:
 
   functions-deploy:
     name: Deploy edge functions
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

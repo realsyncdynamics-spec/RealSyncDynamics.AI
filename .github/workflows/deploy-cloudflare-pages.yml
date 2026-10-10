@@ -154,6 +154,27 @@ jobs:
           VITE_STRIPE_PRICE_STARTER_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_STARTER_YEARLY }}
           VITE_STRIPE_PRICE_GROWTH_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_GROWTH_YEARLY }}
           VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
+          # Öffentliche Frontend-Werte (landen im Bundle — nur Publishable/IDs, nie Secrets).
+          # Fehlt ein Repo-Secret, ist der Wert leer und das Feature bleibt aus.
+          VITE_SUPABASE_ANON_JWT: ${{ secrets.VITE_SUPABASE_ANON_JWT }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+          VITE_STRIPE_AUDIT_PRO_LINK: ${{ secrets.VITE_STRIPE_AUDIT_PRO_LINK }}
+          VITE_STRIPE_CONNECT_ID: ${{ secrets.VITE_STRIPE_CONNECT_ID }}
+          VITE_GOOGLE_OAUTH_ID: ${{ secrets.VITE_GOOGLE_OAUTH_ID }}
+          VITE_SENTRY_TRACES_SAMPLE_RATE: ${{ secrets.VITE_SENTRY_TRACES_SAMPLE_RATE }}
+          VITE_MARKETING_ANALYTICS_ENABLED: ${{ secrets.VITE_MARKETING_ANALYTICS_ENABLED }}
+          VITE_GOOGLE_ADS_ID: ${{ secrets.VITE_GOOGLE_ADS_ID }}
+          VITE_GOOGLE_ADS_LABEL_LEAD: ${{ secrets.VITE_GOOGLE_ADS_LABEL_LEAD }}
+          VITE_GOOGLE_ADS_LABEL_TRIAL: ${{ secrets.VITE_GOOGLE_ADS_LABEL_TRIAL }}
+          VITE_GOOGLE_ADS_LABEL_PURCHASE: ${{ secrets.VITE_GOOGLE_ADS_LABEL_PURCHASE }}
+          VITE_LINKEDIN_CONVERSION_LEAD: ${{ secrets.VITE_LINKEDIN_CONVERSION_LEAD }}
+          VITE_LINKEDIN_CONVERSION_TRIAL: ${{ secrets.VITE_LINKEDIN_CONVERSION_TRIAL }}
+          VITE_LINKEDIN_CONVERSION_PURCHASE: ${{ secrets.VITE_LINKEDIN_CONVERSION_PURCHASE }}
+          VITE_AUTH_GOOGLE_ENABLED: ${{ secrets.VITE_AUTH_GOOGLE_ENABLED }}
+          VITE_AUTH_AZURE_ENABLED: ${{ secrets.VITE_AUTH_AZURE_ENABLED }}
+          VITE_AUTH_GITHUB_ENABLED: ${{ secrets.VITE_AUTH_GITHUB_ENABLED }}
+          VITE_AUTH_LINKEDIN_ENABLED: ${{ secrets.VITE_AUTH_LINKEDIN_ENABLED }}
           PRERENDER_STRICT: '1'
         run: npm run build:full
       - name: Generate 404 fallback for dynamic routes
@@ -231,7 +252,13 @@ jobs:
         run: |
           BASE="https://realsyncdynamicsai.de"
           PRERENDERED="/pricing /audit /governance-runtime"
-          SHELL_ROUTES="/ /app"
+          # /realsync-landing: hier ueberschattete bis 2026-09-28 die statische
+          # Datei public/realsync-landing.html die SPA-Route. Ihr Inline-
+          # Redirect wurde ab der CSP-Haertung vom 2026-09-18 blockiert; die
+          # Seite zeigte zehn Tage nur „Redirecting…" und lieferte weiter 200.
+          # Die Shell-Pruefung unten erkennt genau das: Eine solche Stub-Datei
+          # hat weder das Root-Element noch das Einstiegs-Bundle.
+          SHELL_ROUTES="/ /app /realsync-landing"
           FAILED=""
 
           title_of() {

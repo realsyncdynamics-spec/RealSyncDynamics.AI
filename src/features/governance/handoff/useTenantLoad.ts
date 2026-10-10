@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTenantDataVersion } from '../tenantDataEvents';
 
 export type LoadState<T> =
   | { status: 'idle' }
@@ -17,6 +18,7 @@ export function useTenantLoad<T>(
 ): [LoadState<T>, () => void] {
   const [state, setState] = useState<LoadState<T>>({ status: 'idle' });
   const [nonce, setNonce] = useState(0);
+  const dataVersion = useTenantDataVersion(tenantId);
 
   useEffect(() => {
     if (!tenantId) {
@@ -36,7 +38,7 @@ export function useTenantLoad<T>(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, nonce, ...deps]);
+  }, [tenantId, nonce, dataVersion, ...deps]);
 
   return [state, () => setNonce((n) => n + 1)];
 }

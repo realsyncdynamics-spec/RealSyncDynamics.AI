@@ -134,7 +134,8 @@ export function BoltWorkbench({
         setServerPersist('blocked');
       }
       setProjects(listed);
-      const match = listed.find((p) => p.slug === projectSlug) ?? listed[0];
+      // Exact slug only. Falling back to another project would save the new app as its next version.
+      const match = listed.find((p) => p.slug === projectSlug);
       if (match) {
         const loadedRemote = await loadBuilderProject(ctx.tenantId, match.id);
         const loaded = loadedRemote.kind === 'ok' ? toLocal(loadedRemote.data) : loadProject(ctx.tenantId, match.id);

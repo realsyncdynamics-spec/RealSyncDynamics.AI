@@ -10,9 +10,9 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
+import { LegacySiteOsBuilderRedirect } from './features/build-studio/legacyBuilderRedirect';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
-import { DesignGovernanceAiLanding } from './pages/design/DesignGovernanceAiLanding';
 import { LogoutPage } from './pages/LogoutPage';
 import { Welcome } from './pages/Welcome';
 // FlowProvider stays eager (wraps Routes at root); FlowStepRoute is lazy below.
@@ -25,23 +25,17 @@ const DemoTourStartPage = lazy(() => import('./pages/DemoTourStartPage').then((m
 const DemoTourSignupPage = lazy(() => import('./pages/DemoTourSignupPage').then((m) => ({ default: m.DemoTourSignupPage })));
 const DemoTourCheckoutPage = lazy(() => import('./pages/DemoTourCheckoutPage').then((m) => ({ default: m.DemoTourCheckoutPage })));
 const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m) => ({ default: m.DemoTourDashboard })));
-const DesignLedgerLanding = lazy(() => import('./pages/design/DesignLedgerLanding').then((m) => ({ default: m.DesignLedgerLanding })));
-const DesignTribunalLanding = lazy(() => import('./pages/design/DesignTribunalLanding').then((m) => ({ default: m.DesignTribunalLanding })));
-const MainLanding = lazy(() => import('./pages/MainLanding').then((m) => ({ default: m.MainLanding })));
 const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default: m.LandingV2 })));
-const GovernanceRuntimeLayerPage = lazy(() => import('./pages/GovernanceRuntimeLayerPage').then((m) => ({ default: m.GovernanceRuntimeLayerPage })));
+const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
-const RealSyncDynamicsLanding = lazy(() => import('./marketing/landing/RealSyncDynamicsLanding').then((m) => ({ default: m.RealSyncDynamicsLanding })));
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
 const GovernanceBrowserPage = lazy(() => import('./pages/GovernanceBrowserPage').then((m) => ({ default: m.GovernanceBrowserPage })));
-const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
-const LandingPagesOverview = lazy(() => import('./pages/LandingPagesOverview').then((m) => ({ default: m.LandingPagesOverview })));
 const AgenciesLanding = lazy(() => import('./pages/AgenciesLanding').then((m) => ({ default: m.AgenciesLanding })));
 const AuditLanding = lazy(() => import('./pages/AuditLanding').then((m) => ({ default: m.AuditLanding })));
 const AutomationsLanding = lazy(() => import('./pages/AutomationsLanding').then((m) => ({ default: m.AutomationsLanding })));
@@ -52,6 +46,7 @@ const AiActFaq = lazy(() => import('./pages/AiActFaq').then((m) => ({ default: m
 const SchremsIIErklaert = lazy(() => import('./pages/SchremsIIErklaert').then((m) => ({ default: m.SchremsIIErklaert })));
 const OnboardingErklaert = lazy(() => import('./pages/OnboardingErklaert').then((m) => ({ default: m.OnboardingErklaert })));
 const KiGovernanceFuenfSchritte = lazy(() => import('./pages/KiGovernanceFuenfSchritte').then((m) => ({ default: m.KiGovernanceFuenfSchritte })));
+const EvidenceRuntime = lazy(() => import('./pages/EvidenceRuntime').then((m) => ({ default: m.EvidenceRuntime })));
 const BaitMaRiskGuide = lazy(() => import('./pages/BaitMaRiskGuide').then((m) => ({ default: m.BaitMaRiskGuide })));
 const NewsletterConfirm = lazy(() => import('./pages/NewsletterConfirm').then((m) => ({ default: m.NewsletterConfirm })));
 const CaseStudies = lazy(() => import('./pages/CaseStudies').then((m) => ({ default: m.CaseStudies })));
@@ -198,6 +193,8 @@ const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) 
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+// Voice dashboard (PR 5/6) — read-only sessions behind AppGate + shell.
+const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter').then((m) => ({ default: m.VoiceRouter })));
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
 // Standard aus). GovernanceAiRoute zeigt dann nur einen Hinweis und lädt den Workspace nicht.
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
@@ -284,9 +281,7 @@ const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const LocalAiOnboardingView = lazy(() => import('./features/local-ai/LocalAiOnboardingView').then((m) => ({ default: m.LocalAiOnboardingView })));
-const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
 const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
-const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
 const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
@@ -501,18 +496,16 @@ function RoutesWithTracking() {
           <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
           <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
           <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
-      {/* Public — Claude Design visual layer, existing RealSync backend routes. */}
-      {/* Public `/` = Landing v2 (Claude-Design-Handoff). Governance-OS-Landing bleibt unter /design/governance-ai. */}
-      <Route path="/" element={<LandingV2 />} />
-
-      {/* Reversible design references; no duplicate backend/runtime paths. */}
-      <Route path="/design/governance-ai" element={<DesignGovernanceAiLanding />} />
-      <Route path="/design/titan" element={<MainLanding />} />
-      {/* Landing v2 — Claude-Design-Handoff „AI Compliance Operations OS for Europe“. */}
+      {/* Public `/` = Landing v4 „Klassisch" (Claude-Design-Handoff v4, 1:1) — das einzige
+          öffentliche Frontend. Ältere Landing-/Design-Varianten leiten auf `/`;
+          v2 bleibt nur als Referenz unter /design/landing-v2. */}
+      <Route path="/" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
-      <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
-      <Route path="/design/ledger" element={<DesignLedgerLanding />} />
-      <Route path="/design/tribunal" element={<DesignTribunalLanding />} />
+      <Route path="/design/governance-ai" element={<Navigate to="/" replace />} />
+      <Route path="/design/titan" element={<Navigate to="/" replace />} />
+      <Route path="/design/ledger" element={<Navigate to="/" replace />} />
+      <Route path="/design/tribunal" element={<Navigate to="/" replace />} />
+      <Route path="/governance-runtime-layer" element={<Navigate to="/" replace />} />
 
       {/* Der kanonische Scan-Einstieg ist `/audit` (siehe
           docs/product/canonical-funnel-decision.md). `/scan` gab es kurzzeitig
@@ -526,10 +519,10 @@ function RoutesWithTracking() {
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
-      <Route path="/landing" element={<Landing />} />
-      <Route path="/landingpages" element={<LandingPagesOverview />} />
-      <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
-      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
+      <Route path="/landing" element={<Navigate to="/" replace />} />
+      <Route path="/landingpages" element={<Navigate to="/" replace />} />
+      <Route path="/landing-uebersicht" element={<Navigate to="/" replace />} />
+      <Route path="/realsync-landing" element={<Navigate to="/" replace />} />
       <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
@@ -544,7 +537,9 @@ function RoutesWithTracking() {
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       {/* Deutsche Alias-URLs (Ads, getippte Adressen). Serverseitig 301 via public/_redirects.
-          /preise liegt bei /pricing (#1608). */}
+          /preise muss auch clientseitig existieren — _redirects greift nicht bei SPA-Navigation. */}
+      <Route path="/preise" element={<Navigate to="/pricing" replace />} />
+      <Route path="/preise/" element={<Navigate to="/pricing" replace />} />
       <Route path="/produkt" element={<Navigate to="/runtime" replace />} />
       <Route path="/loesungen" element={<Navigate to="/branchen" replace />} />
       <Route path="/demo" element={<Navigate to="/demo-tour" replace />} />
@@ -599,6 +594,7 @@ function RoutesWithTracking() {
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
       <Route path="/onboarding-erklaert" element={<OnboardingErklaert />} />
       <Route path="/ki-governance-in-5-schritten" element={<KiGovernanceFuenfSchritte />} />
+      <Route path="/evidence-runtime" element={<EvidenceRuntime />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
       <Route path="/case-studies" element={<CaseStudies />} />
@@ -754,8 +750,9 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
-      {/* Bußgeld-Rechner: aliases for the correct-spelling URLs.
-          Canonical /busseld-rechner stays the SEO target. */}
+      {/* Bußgeld-Rechner: /bussgeld-rechner ist kanonisch (SEO-Sprint KW 40).
+          Die Tippfehler-URL /busseld-rechner bleibt als SPA-Route erhalten
+          und wird beim vollen Aufruf per 301 umgeleitet (public/_redirects). */}
       <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
       <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
       <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />
@@ -787,6 +784,8 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceAiRoute /></AppGate>} />
       <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
@@ -803,9 +802,12 @@ function RoutesWithTracking() {
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/websites" element={<AppGate><GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 2 Governance Views: Multi-Framework Compliance */}
-      <Route path="/app/governance/ai-register" element={<AppGate><GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell></AppGate>} />
+      {/* KI-Register und AI-Act-Prüfung leben unter /app/ai-systems (Inventar + Klassifizierung).
+          Die früheren Ansichten riefen relative /functions/v1-URLs auf (SPA-Fallback statt Supabase)
+          und speicherten nichts — sie sind entfernt, die Pfade bleiben als Weiterleitung. */}
+      <Route path="/app/governance/ai-register" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/dsgvo-directory" element={<AppGate><GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/ai-act-assessment" element={<AppGate><GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance/ai-act-assessment" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/industrial-ot" element={<AppGate><GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/memory" element={<AppGate><GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/nis2-incidents" element={<AppGate><GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell></AppGate>} />
@@ -858,7 +860,8 @@ function RoutesWithTracking() {
       <Route path="/app/evidence-vault" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/policy-packs" element={<AppGate><GovernanceBrowserShell><EnforcementPanel /><PolicyPacksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos" element={<AppGate><GovernanceBrowserShell><SiteOsDashboardView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/siteos/builder" element={<AppGate><SiteOsBuilderPage /></AppGate>} />
+      {/* Altes Builder-Ziel: Quell-Links → Transformation, sonst /build — Query bleibt (legacyBuilderRedirect.tsx). */}
+      <Route path="/app/siteos/builder" element={<AppGate><LegacySiteOsBuilderRedirect /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
@@ -932,6 +935,9 @@ function RoutesWithTracking() {
       <Route path="/app/documents" element={<AppGate><GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/audit" element={<AppGate><GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/settings" element={<AppGate><GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell></AppGate>} />
+      {/* Billing-Aliase: Bookmarks /settings/billing und Kurz-URL /billing
+          landen auf der kanonischen Abrechnung — Ziel trägt AppGate. */}
+      <Route path="/app/settings/billing" element={<Navigate to="/app/billing" replace />} />
       {/* /app/agents ist oben bereits auf GovernanceAgentsCenterView registriert —
           eine zweite Registrierung (AgentsOverviewPage) war unerreichbar und wurde
           nach Freigabe vom 2026-08-23 entfernt; die Unterrouten bleiben. */}
@@ -1088,6 +1094,9 @@ function RoutesWithTracking() {
       <Route path="/auth/register" element={<Navigate to="/welcome" replace />} />
       <Route path="/account" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/activate" element={<Navigate to="/app/activation" replace />} />
+      {/* Kurz-URL /billing → kanonische Abrechnung (/app/billing + AppGate).
+          /billing/usage bleibt eigene Usage-Route und wird nicht umgeleitet. */}
+      <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/signout" element={<LogoutPage />} />
       {/* Canonical app dashboard aliases */}

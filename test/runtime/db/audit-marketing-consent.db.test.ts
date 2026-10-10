@@ -1,0 +1,394 @@
+/**
+ * PR A (#1806) — marketing consent columns + triggers.
+ * Must work even when audit_email_drip objects are absent (live ledger mismatch).
+ */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { closeDb, getDbUrl, openDb, type DbCtx } from './db-helpers';
+
+const skip = !getDbUrl();
+const d = skip ? describe.skip : describe;
+
+const MIGRATION = resolve(
+  __dirname,
+  '../../../supabase/migrations/20261008133000_audit_marketing_consent.sql',
+);
+
+async function insertLead(
+  ctx: DbCtx,
+  opts: {
+    email: string;
+    consent?: boolean;
+    version?: string | null;
+    at?: string | null;
+    revokedAt?: string | null;
+  },
+): Promise<{
+  id: string;
+  marketing_consent: boolean;
+  marketing_consent_at: string | null;
+  marketing_consent_text_version: string | null;
+  marketing_consent_revoked_at: string | null;
+}> {
+  const { rows } = await ctx.client.query<{
+    id: string;
+    marketing_consent: boolean;
+    marketing_consent_at: string | null;
+    marketing_consent_text_version: string | null;
+    marketing_consent_revoked_at: string | null;
+  }>(
+    `INSERT INTO public.sales_leads (
+       email, source, path,
+       marketing_consent, marketing_consent_at, marketing_consent_text_version,
+       marketing_consent_revoked_at
+     ) VALUES ($1, 'audit_lp', '/audit', $2, $3::timestamptz, $4, $5::timestamptz)
+     RETURNING id, marketing_consent,
+               marketing_consent_at::text AS marketing_consent_at,
+               marketing_consent_text_version,
+               marketing_consent_revoked_at::text AS marketing_consent_revoked_at`,
+    [
+      opts.email,
+      opts.consent ?? false,
+      opts.at ?? null,
+      opts.version ?? null,
+      opts.revokedAt ?? null,
+    ],
+  );
+  return rows[0]!;
+}
+
+async function insertAudit(
+  ctx: DbCtx,
+  opts: {
+    email: string;
+    consent?: boolean;
+    version?: string | null;
+  },
+): Promise<string> {
+  const { rows } = await ctx.client.query<{ id: string }>(
+    `INSERT INTO public.gdpr_audits (
+       url, domain, email, score, severity, issues, ip_hash,
+       marketing_consent, marketing_consent_text_version
+     ) VALUES (
+       $1, 'consent-test.example', $2, 80, 'low', '[]'::jsonb, 'test-hash',
+       $3, $4
+     ) RETURNING id`,
+    [
+      `https://consent-test.example/${opts.email}`,
+      opts.email,
+      opts.consent ?? false,
+      opts.version ?? null,
+    ],
+  );
+  return rows[0]!.id;
+}
+
+/**
+ * Runs a statement that is expected to fail inside a SAVEPOINT so the
+ * per-test transaction (db-helpers) is not aborted (25P02) for later
+ * statements. Returns the query promise for `rejects` assertions.
+ */
+async function expectFailing(
+  ctx: DbCtx,
+  sql: string,
+  params: unknown[] = [],
+): Promise<unknown> {
+  await ctx.client.query('SAVEPOINT expect_fail');
+  try {
+    const res = await ctx.client.query(sql, params);
+    await ctx.client.query('RELEASE SAVEPOINT expect_fail');
+    return res;
+  } catch (err) {
+    await ctx.client.query('ROLLBACK TO SAVEPOINT expect_fail');
+    throw err;
+  }
+}
+
+d('PR A marketing consent (DB)', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  it('migration SQL does not reference audit_email_drip', () => {
+    const sql = readFileSync(MIGRATION, 'utf8');
+    expect(sql.toLowerCase()).not.toMatch(/audit_email_drip/);
+  });
+
+  it('applies cleanly when drip table/functions are absent (live ledger mismatch)', async () => {
+    // Simulate production: drip migration marked applied but objects missing.
+    await ctx!.client.query(`DROP TABLE IF EXISTS public.audit_email_drip CASCADE`);
+    await ctx!.client.query(`DROP FUNCTION IF EXISTS public.audit_email_drip_due(int) CASCADE`);
+    await ctx!.client.query(`DROP FUNCTION IF EXISTS public.audit_email_drip_advance(uuid, text) CASCADE`);
+    await ctx!.client.query(`DROP FUNCTION IF EXISTS public.audit_email_drip_create_for_audit() CASCADE`);
+    await ctx!.client.query(`DROP FUNCTION IF EXISTS public.audit_email_drip_unsubscribe(uuid) CASCADE`);
+
+    const sql = readFileSync(MIGRATION, 'utf8');
+    await expect(ctx!.client.query(sql)).resolves.toBeTruthy();
+
+    const { rows } = await ctx!.client.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'sales_leads'
+            AND column_name = 'marketing_consent'
+       ) AS exists`,
+    );
+    expect(rows[0]?.exists).toBe(true);
+  });
+
+  it('insert with consent sets server timestamp and keeps allowlisted version', async () => {
+    const { rows: nowBefore } = await ctx!.client.query<{ now: string }>(
+      `SELECT clock_timestamp()::text AS now`,
+    );
+    const row = await insertLead(ctx!, {
+      email: `ok_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+      at: '2020-01-01T00:00:00.000Z', // client forgery — must be ignored
+    });
+    expect(row.marketing_consent).toBe(true);
+    expect(row.marketing_consent_text_version).toBe('audit_followup_v1_de');
+    expect(row.marketing_consent_at).toBeTruthy();
+    const { rows: nowAfter } = await ctx!.client.query<{ now: string }>(
+      `SELECT clock_timestamp()::text AS now`,
+    );
+    const atMs = Date.parse(row.marketing_consent_at!);
+    const clientMs = Date.parse('2020-01-01T00:00:00.000Z');
+    const dbBeforeMs = Date.parse(nowBefore[0]!.now);
+    const dbAfterMs = Date.parse(nowAfter[0]!.now);
+    // Not the forged client value …
+    expect(atMs).not.toBe(clientMs);
+    expect(atMs).toBeGreaterThan(Date.parse('2021-01-01T00:00:00.000Z'));
+    // … but the server's clock: within 60s of DB time around the insert.
+    // (now() is the transaction start, so it is <= clock_timestamp() before.)
+    expect(atMs).toBeGreaterThanOrEqual(dbBeforeMs - 60_000);
+    expect(atMs).toBeLessThanOrEqual(dbAfterMs + 1_000);
+    const { rows: drift } = await ctx!.client.query<{ ok: boolean }>(
+      `SELECT abs(extract(epoch FROM ($1::timestamptz - now()))) < 60 AS ok`,
+      [row.marketing_consent_at],
+    );
+    expect(drift[0]?.ok).toBe(true);
+  });
+
+  it('rejects bad text_version', async () => {
+    await expect(
+      insertLead(ctx!, {
+        email: `bad_${Date.now()}@example.com`,
+        consent: true,
+        version: 'not_a_real_version',
+      }),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('without consent nulls proof fields', async () => {
+    const row = await insertLead(ctx!, {
+      email: `no_${Date.now()}@example.com`,
+      consent: false,
+      version: 'audit_followup_v1_en',
+      at: '2020-01-01T00:00:00.000Z',
+    });
+    expect(row.marketing_consent).toBe(false);
+    expect(row.marketing_consent_at).toBeNull();
+    expect(row.marketing_consent_text_version).toBeNull();
+  });
+
+  it('proof fields are immutable once set; revocation is sticky', async () => {
+    const row = await insertLead(ctx!, {
+      email: `imm_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_en',
+    });
+
+    await expect(
+      expectFailing(
+        ctx!,
+        `UPDATE public.sales_leads
+            SET marketing_consent_text_version = 'audit_followup_v1_de'
+          WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+
+    await expect(
+      expectFailing(
+        ctx!,
+        `UPDATE public.sales_leads SET marketing_consent = false WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+
+    await ctx!.client.query(
+      `UPDATE public.sales_leads
+          SET marketing_consent_revoked_at = '2020-01-01T00:00:00Z'
+        WHERE id = $1`,
+      [row.id],
+    );
+    const { rows: after } = await ctx!.client.query<{ revoked: string }>(
+      `SELECT marketing_consent_revoked_at::text AS revoked
+         FROM public.sales_leads WHERE id = $1`,
+      [row.id],
+    );
+    expect(after[0]?.revoked).toBeTruthy();
+    expect(Date.parse(after[0]!.revoked)).toBeGreaterThan(Date.parse('2021-01-01T00:00:00Z'));
+
+    await expect(
+      expectFailing(
+        ctx!,
+        `UPDATE public.sales_leads SET marketing_consent_revoked_at = NULL WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('same rules apply on gdpr_audits', async () => {
+    const id = await insertAudit(ctx!, {
+      email: `audit_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+    });
+    const { rows } = await ctx!.client.query<{ at: string; version: string }>(
+      `SELECT marketing_consent_at::text AS at, marketing_consent_text_version AS version
+         FROM public.gdpr_audits WHERE id = $1`,
+      [id],
+    );
+    expect(rows[0]?.at).toBeTruthy();
+    expect(rows[0]?.version).toBe('audit_followup_v1_de');
+  });
+
+  it('forged marketing_consent_revoked_at on INSERT is nulled', async () => {
+    const row = await insertLead(ctx!, {
+      email: `forge_revoke_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+      revokedAt: '2020-01-01T00:00:00.000Z',
+    });
+    expect(row.marketing_consent).toBe(true);
+    expect(row.marketing_consent_revoked_at).toBeNull();
+  });
+
+  it('refuses granting consent via UPDATE on a false row', async () => {
+    const row = await insertLead(ctx!, {
+      email: `upd_false_${Date.now()}@example.com`,
+      consent: false,
+    });
+    await expect(
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('refuses granting consent via UPDATE on a revoked row', async () => {
+    const row = await insertLead(ctx!, {
+      email: `upd_revoked_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+    });
+    await ctx!.client.query(
+      `UPDATE public.sales_leads SET marketing_consent_revoked_at = now() WHERE id = $1`,
+      [row.id],
+    );
+    // Consent stays true as proof; "re-grant" attempt that flips false→true
+    // is simulated by first forcing a false+revoked path is impossible under
+    // immutability. Assert grant-on-UPDATE is blocked for a never-granted
+    // revoked-marked row (false + sticky revoke), then for the true+revoked row
+    // via trying to change version (immutable) and via false→true after a
+    // separate false+revoked insert.
+    const neverGranted = await insertLead(ctx!, {
+      email: `upd_revoked_false_${Date.now()}@example.com`,
+      consent: false,
+    });
+    await ctx!.client.query(
+      `UPDATE public.sales_leads SET marketing_consent_revoked_at = now() WHERE id = $1`,
+      [neverGranted.id],
+    );
+    await expect(
+      expectFailing(
+        ctx!,
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [neverGranted.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+
+    // True + revoked: proof fields remain immutable (cannot "re-grant" by rewrite).
+    await expect(
+      expectFailing(
+        ctx!,
+        `UPDATE public.sales_leads
+            SET marketing_consent = true,
+                marketing_consent_text_version = 'audit_followup_v1_en'
+          WHERE id = $1`,
+        [row.id],
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('authenticated/anon UPDATE under RLS affects 0 rows (does not throw)', async () => {
+    const row = await insertLead(ctx!, {
+      email: `authz_${Date.now()}@example.com`,
+      consent: true,
+      version: 'audit_followup_v1_de',
+    });
+
+    // withClaims({ role: 'anon' }) still SETs ROLE authenticated (db-helpers).
+    // Without an UPDATE policy, Postgres returns 0 rows — not 42501.
+    const result = await ctx!.withClaims({ role: 'anon' }, async () =>
+      ctx!.client.query(
+        `UPDATE public.sales_leads
+            SET marketing_consent_revoked_at = now()
+          WHERE id = $1
+          RETURNING id`,
+        [row.id],
+      ),
+    );
+    expect(result.rowCount).toBe(0);
+
+    const { rows } = await ctx!.client.query<{ revoked: string | null }>(
+      `SELECT marketing_consent_revoked_at::text AS revoked
+         FROM public.sales_leads WHERE id = $1`,
+      [row.id],
+    );
+    expect(rows[0]?.revoked).toBeNull();
+
+    await expect(
+      ctx!.withClaims({ role: 'anon' }, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.sales_leads (email, marketing_consent, marketing_consent_text_version)
+           VALUES ('anon@example.com', true, 'audit_followup_v1_de')`,
+        );
+      }),
+    ).rejects.toMatchObject({ code: '42501' });
+  });
+
+  it('trigger functions revoke EXECUTE from anon/authenticated', async () => {
+    const { rows } = await ctx!.client.query<{
+      name: string;
+      anon_exec: boolean;
+      auth_exec: boolean;
+    }>(
+      `SELECT p.proname AS name,
+              has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec,
+              has_function_privilege('authenticated', p.oid, 'EXECUTE') AS auth_exec
+         FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname IN (
+            'marketing_consent_before_insert',
+            'marketing_consent_before_update'
+          )`,
+    );
+    expect(rows).toHaveLength(2);
+    for (const r of rows) {
+      expect(r.anon_exec, r.name).toBe(false);
+      expect(r.auth_exec, r.name).toBe(false);
+    }
+  });
+});

@@ -140,8 +140,8 @@
           "Falls AI-generated Content (Bilder, Texte) ausgegeben wird: Markierung als KI-erzeugt"
         ]
       },
-      "version": "2026.05.0",
-      "updated_at": "2026-05-07"
+      "version": "2026.10.0",
+      "updated_at": "2026-10-10"
     },
     {
       "id": "AI_ACT_GPAI_FOUNDATION_MODEL",

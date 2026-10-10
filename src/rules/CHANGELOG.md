@@ -41,11 +41,12 @@ und umgekehrt.
 
 ## ai-act.json
 
-### Unreleased — Version-Bump offen
+### 2026.10.0 — 2026-10-10
 
 - `AI_ACT_LIMITED_RISK_CHATBOT`: Fundstelle auf **Art. 50 Abs. 1** (vorher Art. 52 aus dem Entwurf 2021, PR #1665).
 - `AI_ACT_LIMITED_RISK_CHATBOT`: Offensichtlichkeits-Ausnahme aus Art. 50 Abs. 1 abgebildet — neue Bedingung `ai_use_case.interaction_obvious not_equals true`; `description` sagt „voraussichtlich nicht erfüllt" statt „verletzt". Der Scanner setzt den Fakt nicht, Scan-Ergebnisse bleiben unverändert.
-- Kein Version-Bump: `2026.05.0` ist zugleich die öffentlich beworbene Methodik-Version (`seo.ts`, Report-Footer). Ob und wie gebumpt wird, ist eine Produktentscheidung.
+- `RULE_ENGINE_VERSION` (`src/rules/types.ts`, `supabase/functions/_shared/rules/evaluator.ts`) und Regel-`version` auf `2026.10.0`, damit Befunde vor und nach der Änderung über `rule_engine` unterscheidbar sind.
+- **Bewusst nicht mitgezogen:** die öffentliche „Methodik 2026.05.0" (`seo.ts`, Report-Footer, Scanner-/LiveFindings-Sections). Engine-Version und beworbene Methodik-Version laufen ab hier getrennt.
 
 ### 2026.05.0 — 2026-05-09 (initial, dating back to PR #103)
 

@@ -344,12 +344,14 @@ async function deliverAlert(
   deps: HandlerDeps,
   now: () => Date,
 ): Promise<{ state: AlertState; error?: string }> {
-  const attempts = a.attempts + 1;
+  let attempts = a.attempts + 1;
   let state: AlertState;
   let lastError: string | null = null;
   try {
     state = await deps.alerter(a);
-    if (state === 'not_configured') lastError = 'not_configured';
+    // Fehlender Provider-Key ist kein Zustellversuch: Der Alert bleibt pending,
+    // bis Resend konfiguriert ist, statt nach MAX_ALERT_ATTEMPTS still zu verfallen.
+    if (state === 'not_configured') { lastError = 'not_configured'; attempts = a.attempts; }
   } catch (e) {
     state = 'failed';
     lastError = (e as Error)?.message ?? String(e);

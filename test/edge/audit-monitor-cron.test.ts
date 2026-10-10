@@ -416,6 +416,15 @@ describe('audit-monitor-cron: Alert-Outbox', () => {
     expect(repo.outbox[0]).toMatchObject({ status: 'failed', attempts: MAX_ALERT_ATTEMPTS });
   });
 
+  it('fehlender Resend-Key verbraucht keine Versuche; der Alert bleibt pending', async () => {
+    const repo = new MemRepo([domain()]);
+    const s = setup({ repo, scanner: driftScan });
+    s.deps.alerter = async () => 'not_configured';
+    for (let i = 0; i < MAX_ALERT_ATTEMPTS + 2; i++) await run(s.deps);
+    expect(repo.outbox).toHaveLength(1);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 0 });
+  });
+
   it('scheitert das Einreihen, rückt die Baseline nicht vor und es geht keine Mail raus', async () => {
     const repo = new MemRepo([domain()]);
     repo.failEnqueue = true;

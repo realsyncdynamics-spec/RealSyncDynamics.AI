@@ -244,6 +244,21 @@ describe('extractFacts', () => {
     });
   }
 
+  it('beachtet die Offensichtlichkeits-Ausnahme aus Art. 50 Abs. 1', () => {
+    // Der Scanner setzt `interaction_obvious` nie (aus dem HTML nicht
+    // beobachtbar) — die Regel muss dann feuern wie bisher. Erst eine
+    // ausdrueckliche Bewertung `true` unterdrueckt den Befund; `false`
+    // aendert nichts.
+    const basis = AUSLOESER.AI_ACT_LIMITED_RISK_CHATBOT();
+    const aiUseCase = basis.ai_use_case as Record<string, unknown>;
+    expect(aiUseCase.interaction_obvious).toBeUndefined();
+
+    const mit = (wert: boolean) =>
+      evaluateAll({ ...basis, ai_use_case: { ...aiUseCase, interaction_obvious: wert } }).map((f) => f.rule_id);
+    expect(mit(false)).toContain('AI_ACT_LIMITED_RISK_CHATBOT');
+    expect(mit(true)).not.toContain('AI_ACT_LIMITED_RISK_CHATBOT');
+  });
+
   it('schweigt bei einer mangelfreien Seite', () => {
     // Ohne diese Gegenprobe wuerde ein Evaluator, der einfach alles meldet,
     // die drei Tests darueber ebenfalls bestehen.

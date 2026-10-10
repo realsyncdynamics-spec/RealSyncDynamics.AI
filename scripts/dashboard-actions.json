@@ -17,10 +17,10 @@
       "aktion": "Browser-Session öffnen (Assist, Co-Pilot, Autonom)",
       "handler": "src/features/governance/browser/useBrowserRuntime.ts",
       "backend": "src/features/governance/browser/browserExecutorClient.ts",
-      "persistenz": "browser_sessions, browser_actions, governance_evidence (Migration 20261001100000, setzt auf browser_executions aus 20260930190000 auf)",
+      "persistenz": "browser_sessions, browser_actions, governance_evidence (Migration 20261010143814, setzt auf browser_executions aus 20260930190000 auf)",
       "entitlement": "ai.tool.automations serverseitig in browser-execute; Co-Pilot und Autonom nur ueber serverseitige Capabilities (can_copilot/can_autonomous mit reasons[])",
       "status": "BLOCKED",
-      "luecke": "Infrastruktur fehlt: In Production sind PLAYWRIGHT_SCANNER_URL und PLAYWRIGHT_SCANNER_KEY nicht gesetzt; browser-execute meldet EXECUTOR_NOT_CONFIGURED, die Session-Anlage endet fail-closed mit EXECUTOR_OFFLINE. Der bisherige Executor-Host (Hostinger-VPS) laeuft am 2026-10-04 aus; entschieden ist Cloudflare Browser Run (Worker + Durable Object, gleicher HTTP-Vertrag), noch nicht gebaut/deployt. Migration 20261001100000 ist nicht auf Production angewendet, der Branch ist nicht deployt.",
+      "luecke": "Infrastruktur fehlt: In Production sind PLAYWRIGHT_SCANNER_URL und PLAYWRIGHT_SCANNER_KEY nicht gesetzt; browser-execute meldet EXECUTOR_NOT_CONFIGURED, die Session-Anlage endet fail-closed mit EXECUTOR_OFFLINE. Der bisherige Executor-Host (Hostinger-VPS) laeuft am 2026-10-04 aus; entschieden ist Cloudflare Browser Run (Worker + Durable Object, gleicher HTTP-Vertrag), noch nicht gebaut/deployt. Migration 20261010143814 ist nicht auf Production angewendet, der Branch ist nicht deployt.",
       "beleg": "supabase/functions/browser-execute/handler.ts: session_create prueft Rolle, Entitlement (:376), Capabilities, Executor-Health (EXECUTOR_OFFLINE), Evidence-Store und hoechstens 3 offene Sessions (DB-Trigger browser_sessions_enforce_open_limit mit Advisory-Lock) und schreibt browser.session.opened als gekettete Evidence (:442). Tests: test/browser-runtime/handler.test.ts, test/executor/executor-chromium.test.ts (echtes Chromium, lokal), test/runtime/db/browser-runtime-sessions.db.test.ts.",
       "seit": "2026-09-29"
     },

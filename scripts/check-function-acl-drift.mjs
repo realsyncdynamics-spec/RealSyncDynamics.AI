@@ -123,7 +123,7 @@ const FORBIDDEN_CLIENT = [
   // aufrufbar waere das ein Freigabe-Bypass — nur browser-execute.
   'reserve_browser_execution',
   'finish_browser_execution',
-  // Browser-Runtime (20261001100000): Entscheidung + Evidence atomar, nur
+  // Browser-Runtime (20261010143814): Entscheidung + Evidence atomar, nur
   // governance-approvals / browser-execute; Session-Limit als Trigger.
   'decide_governance_approval',
   'browser_sessions_enforce_open_limit',

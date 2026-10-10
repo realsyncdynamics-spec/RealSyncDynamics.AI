@@ -5,7 +5,7 @@
  *   - append_governance_evidence: Compare-and-Swap auf den Kettenkopf
  *   - reserve_browser_execution / finish_browser_execution (#1728,
  *     20260930190000): gleiche Prüfreihenfolge und Rückgaben, UNIQUE(approval_id)
- *   - decide_governance_approval (20261001100000): Entscheidung nur mit Evidence
+ *   - decide_governance_approval (20261010143814): Entscheidung nur mit Evidence
  *   - browser_sessions_enforce_open_limit: höchstens 3 offene Sessions
  *   - bedingte Session-Updates (status ∈ expected)
  * Die echte Datenbanksemantik prüfen test/runtime/db/browser-runtime-sessions.db.test.ts

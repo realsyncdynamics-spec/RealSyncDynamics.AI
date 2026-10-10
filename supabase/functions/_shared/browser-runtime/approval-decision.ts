@@ -1,5 +1,5 @@
 // Freigabe entscheiden — Status und gekettete Evidence in EINER Transaktion
-// (RPC decide_governance_approval, Migration 20261001100000). Deno-frei.
+// (RPC decide_governance_approval, Migration 20261010143814). Deno-frei.
 //
 // Ohne geschriebene Evidence gibt es keine Entscheidung: Bewegt sich der
 // Kettenkopf zwischen Lesen und Schreiben, rollt die Datenbank Status UND

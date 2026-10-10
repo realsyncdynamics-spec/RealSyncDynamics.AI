@@ -1,6 +1,6 @@
 /**
  * Governed Browser Runtime — Datenbankzusagen
- * (20261001100000_browser_runtime_governed_sessions.sql, baut auf
+ * (20261010143814_browser_runtime_governed_sessions.sql, baut auf
  * 20260930190000_browser_execution_reservations.sql aus #1728 auf).
  *
  *   - browser_sessions: Mitglieder lesen nur den eigenen Mandanten, niemand

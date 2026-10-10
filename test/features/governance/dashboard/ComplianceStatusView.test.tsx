@@ -542,4 +542,15 @@ describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
     expect(getByTestId('no-critical-findings')).toBeInTheDocument();
     expect(getByTestId('open-measures').textContent).toContain('1 offene Posten');
   });
+
+  it('übernimmt keine Landing-Beispielzahlen (78/100, 1.284 Evidence, 82 %/64 %, „Beispielansicht“) ins App-Markup', () => {
+    for (const data of [fixture({ counts: ZERO }), fixture({ counts: { ...ZERO, incidents: 1 } })]) {
+      const { container, unmount } = rendered({ data });
+      const text = container.textContent ?? '';
+      for (const demo of ['78/100', '1.284', '1284', '82 %', '82%', '64 %', '64%', 'Beispielansicht', 'ANCHORED', 'EU-CENTRAL']) {
+        expect(text).not.toContain(demo);
+      }
+      unmount();
+    }
+  });
 });

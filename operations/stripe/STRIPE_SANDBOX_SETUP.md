@@ -20,13 +20,17 @@ Im Testmodus gilt (fail-closed):
   **nie** benutzt → Checkout antwortet `503 STRIPE_LIVE_KEY_BLOCKED`.
 - Price-IDs kommen **nicht** aus `public.products` (dort stehen die Live-IDs),
   sondern aus `STRIPE_TEST_PRICE_<PLAN_KEY>`. Fehlt sie → `400 PRICE_NOT_CONFIGURED`.
-- Webhook prüft mit `STRIPE_WEBHOOK_SECRET_TEST` und zusätzlich mit dem
-  Live-Secret `STRIPE_WEBHOOK_SECRET`. Mit dem Live-Secret verifizierte
-  Live-Events (Bestandskunden: Verlängerung, Kündigung, Zahlungsausfall) werden
-  mit dem Live-Key `STRIPE_SECRET_KEY` normal verarbeitet; fehlt der Live-Key,
-  antwortet der Webhook `503` und Stripe stellt später erneut zu. Andere Events
-  mit falschem `livemode` werden quittiert und ignoriert
-  (`ignored: stripe_mode_mismatch`).
+- Webhook-Signaturen werden unabhängig vom Test-API-Key mit
+  `STRIPE_WEBHOOK_SECRET_TEST` (falls vorhanden) bzw. dem vorhandenen
+  `STRIPE_WEBHOOK_SECRET` (Live) geprüft. Das signierte Event-`livemode`
+  muss zum erkannten Signing-Secret-Modus passen. Für Live-Events wird
+  ausschließlich der Live-Key `STRIPE_SECRET_KEY` verwendet — **auch wenn
+  `STRIPE_SECRET_KEY_TEST` oder `STRIPE_WEBHOOK_SECRET_TEST` fehlen**.
+  Fehlt der zum *verifizierten* Event passende API-Key, antwortet der Webhook
+  `503`, damit Stripe erneut zustellen kann. Bei fehlenden Signing-Secrets
+  ebenfalls `503`; falsche Signaturen erhalten `400`. Identische Live-/Test-
+  Signing-Secrets werden zur Vermeidung uneindeutiger Zuordnung abgewiesen.
+  Testereignisse dürfen niemals mit Live-API-Schlüsseln verarbeitet werden.
 - Testkäufe melden keine Conversions an Werbeplattformen.
 - Antworten von `stripe-checkout`, `stripe-checkout-verify`, `stripe-portal`,
   `checkout-siteos-project`, `checkout-website-rebuild` enthalten

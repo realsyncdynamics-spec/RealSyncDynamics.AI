@@ -132,6 +132,18 @@ export async function resolveStripeWebhookSecret(
   return await read('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret');
 }
 
+/**
+ * A valid Stripe signature only authenticates the event for the signing
+ * endpoint. The signed event's livemode must also match that endpoint.
+ * Never infer an event's account mode solely from its unsigned payload.
+ */
+export function isWebhookSignatureModeCompatible(
+  eventLivemode: boolean,
+  signingSecretMode: StripeMode,
+): boolean {
+  return eventLivemode === (signingSecretMode === 'live');
+}
+
 /** Env-Name der Test-Price-ID eines Plan-Keys, z. B. STRIPE_TEST_PRICE_GOVERNANCE_LAUNCH. */
 export function testPriceEnvName(planKey: string): string {
   return STRIPE_TEST_PRICE_PREFIX + planKey.toUpperCase().replace(/[^A-Z0-9]/g, '_');

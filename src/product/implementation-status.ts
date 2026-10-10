@@ -518,7 +518,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',
     ],
-    showOnRoadmap: true,
+    // Internal visual experiment — not customer-facing on the public roadmap.
+    showOnRoadmap: false,
   },
   {
     id: 'pricing-yearly',

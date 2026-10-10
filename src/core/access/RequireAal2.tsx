@@ -86,7 +86,7 @@ export function RequireAal2({ action, children }: Props) {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md border border-amber-500/40 bg-obsidian-900 p-6 space-y-4">
+      <div className="w-full max-w-md border border-[var(--brand-line-dark-strong)] bg-[var(--brand-bg-2)] rounded-[var(--brand-radius-lg)] p-6 space-y-4">
         <div className="flex items-center gap-3">
           <ShieldAlert className="h-7 w-7 text-amber-400 shrink-0" />
           <div>
@@ -116,12 +116,12 @@ export function RequireAal2({ action, children }: Props) {
                 inputMode="numeric"
                 autoFocus
                 placeholder="123456"
-                className="bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm font-mono w-32 outline-none focus:border-cyan-400"
+                className="bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm font-mono w-32 outline-none focus:border-[var(--brand-champ)]"
               />
               <button
                 onClick={confirmStepUp}
                 disabled={busy || otp.trim().length < 6}
-                className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 disabled:opacity-40"
+                className="inline-flex items-center gap-2 bg-[var(--brand-champ)] text-[var(--brand-bg-0)] px-4 py-2 text-sm font-semibold hover:bg-[var(--brand-champ-hi)] disabled:opacity-40"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />} MFA bestätigen
               </button>
@@ -137,7 +137,7 @@ export function RequireAal2({ action, children }: Props) {
             </p>
             <a
               href="/settings/security"
-              className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300"
+              className="inline-flex items-center gap-2 bg-[var(--brand-champ)] text-[var(--brand-bg-0)] px-5 py-3 text-sm font-semibold hover:bg-[var(--brand-champ-hi)]"
             >
               <KeyRound className="h-4 w-4" /> MFA einrichten
             </a>

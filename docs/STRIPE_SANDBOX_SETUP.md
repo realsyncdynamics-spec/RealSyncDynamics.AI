@@ -40,9 +40,12 @@ Im Stripe-Dashboard oben rechts **Testmodus** einschalten (bzw. eine Sandbox
 
 1. **API-Schlüssel**: Entwickler → API-Schlüssel → `sk_test_…` (Secret) und
    `pk_test_…` (Publishable) kopieren.
-2. **Produkte und Preise** anlegen, Spiegel von `shared/pricing.ts`
-   (EUR, Preise **inkl. USt.** = `tax_behavior: inclusive`, wie live).
-   Bei jedem Preis unter *Metadaten* `plan_key` = Plan-Key setzen.
+2. **Produkte und Preise** anlegen, Spiegel von `shared/pricing.ts`.
+   Solange `PRICING_TAX_MODE='EXEMPT'` gilt, sind die EUR-Beträge Endpreise
+   **ohne gesonderten Umsatzsteuerausweis**. `tax_behavior: inclusive` ist
+   keine Festlegung des rechtlichen Steuerstatus; die bestehenden Sandbox-Preise
+   stehen auf `unspecified`. Bei jedem Preis unter *Metadaten*
+   `plan_key` = Plan-Key setzen.
 
    | Plan-Key | Name | Preis | Typ | Testphase |
    |---|---|---|---|---|
@@ -55,9 +58,11 @@ Im Stripe-Dashboard oben rechts **Testmodus** einschalten (bzw. eine Sandbox
    `*_yearly` (Jahrespreise sind nicht verdrahtet), `free_audit`.
    Optional `website_rebuild_managed|premium|enterprise` — haben aktuell keinen
    Aufrufer im Frontend.
-3. **Stripe Tax** (Einstellungen → Steuern) im Testmodus aktivieren und
-   Ursprungsadresse hinterlegen — `stripe-checkout` nutzt `automatic_tax`,
-   ohne das scheitert die Session-Erstellung.
+3. **Steuerkonfiguration:** `stripe-checkout` setzt in `EXEMPT`
+   `automatic_tax: { enabled: false }`. Stripe Tax muss dafür **nicht**
+   aktiviert werden; dies ist keine EU-weite steuerliche Freigabe.
+   Stripe Tax nur nach geprüfter Steuer-/Registrierungslage bei `EU_STANDARD`
+   konfigurieren. Bei Bedarf Ursprungsadresse erst im entsprechenden Modus setzen.
 4. **Kundenportal** (Einstellungen → Billing → Kundenportal) im Testmodus
    einmal speichern — sonst scheitert `stripe-portal`.
 5. **Webhook-Endpoint** (Entwickler → Webhooks → Endpoint hinzufügen):
@@ -75,6 +80,23 @@ Im Stripe-Dashboard oben rechts **Testmodus** einschalten (bzw. eine Sandbox
 > Live-Key, solange `STRIPE_WEBHOOK_SECRET` und `STRIPE_SECRET_KEY` (live)
 > gesetzt bleiben — Bestandskunden verlieren also keine Verlängerung oder
 > Kündigung. Diese beiden Live-Secrets daher während der Beta **nicht** löschen.
+
+### Verifizierter Sandbox-Stand am 10.10.2026
+
+**Nur Stripe-Sandbox**, keine produktive Supabase-Umstellung:
+
+| Plan-Key | Preis-ID im Testaccount | Betrag | Status |
+|---|---|---:|---|
+| `starter` | `price_1TYvGTIEauIvbZDCz7GK3sPZ` | 79 €/Monat | Metadatum `plan_key` gesetzt |
+| `growth` | `price_1TYvGWIEauIvbZDCJiNkgMrR` | 249 €/Monat | Metadatum `plan_key` gesetzt |
+| `agency` | `price_1TYvGYIEauIvbZDCA5lUaoFE` | 699 €/Monat | Metadatum `plan_key` gesetzt |
+| `governance_launch` | `price_1UOrttIEauIvbZDCLdB9JoQn` | 349 € einmalig | Testprodukt + Preis erstellt |
+
+- `Tax Settings` in dieser Sandbox: `pending`/keine Registrierungen; bei `EXEMPT` mit `automatic_tax.enabled=false` blockiert das die Checkout-Session nicht.
+- Einem **vorhandenen Testkunden** wurde `invoice_settings.footer = 'Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.'` zugewiesen. Unverbindliche Rechnungsvorschau: 79,00 € Gesamt, Steuer 0,00 €, Footer sichtbar. **Nicht** kontoweit hinterlegt; neue Kunden bekommen den Hinweis bisher nicht automatisch.
+- Direkte `cs_test_…`-Sessions wurden für Starter (mit/ohne 14-Tage-Trial) und Governance Launch erstellt. Keine Zahlung, kein echter Webhook und kein Entitlement-Test über Supabase.
+- Die verbundene Supabase-Instanz `RealSyncDynamicsLive` ist **produktiv**; es gibt keinen separaten Preview-Project-Branch. Vault-Namen `stripe_secret_key`, `stripe_webhook_secret` sind vorhanden; ob Edge-Env-`STRIPE_SECRET_KEY_TEST`, `STRIPE_MODE`, `STRIPE_TEST_PRICE_*` gesetzt sind, ist damit **nicht** belegt. Keine Secrets auslesen oder ohne getrennte Freigabe auf dem Live-Projekt ändern.
+- Den kontoweiten Rechnungshinweis in Stripe Billing → Rechnungen → Einstellungen/Templates für neue und wiederkehrende Rechnungen setzen und im gesonderten Testprojekt mit PDF und Zahlung prüfen.
 
 ## 2. Supabase-Secrets setzen
 

@@ -60,6 +60,45 @@ export async function githubHmacSha256Hex(rawBody: string, secret: string): Prom
 }
 
 /**
+ * Read a request body as UTF-8 text, at most `maxBytes` bytes. Counts bytes
+ * while streaming and cancels on overflow, so an unsigned oversized request
+ * is rejected before it is held in memory. A declared Content-Length above
+ * the limit is rejected without reading. Returns null when too large.
+ */
+export async function readBodyLimited(
+  body: ReadableStream<Uint8Array> | null,
+  contentLength: string | null,
+  maxBytes: number,
+): Promise<string | null> {
+  const declared = Number(contentLength ?? '');
+  if (contentLength !== null && Number.isFinite(declared) && declared > maxBytes) {
+    await body?.cancel().catch(() => {});
+    return null;
+  }
+  if (!body) return '';
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    bytes.set(c, offset);
+    offset += c.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+/**
  * Verify X-Hub-Signature-256 (sha256=<hex>) with constant-time compare.
  * Missing/invalid header or empty secret → false.
  */

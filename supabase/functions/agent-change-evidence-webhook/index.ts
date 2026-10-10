@@ -16,6 +16,7 @@ import {
   buildEvidenceRow,
   extractChangeSet,
   isUniqueViolation,
+  readBodyLimited,
   verifyGithubSignature,
 } from '../_shared/agentChangeEvidence/githubWebhook.ts';
 
@@ -36,8 +37,9 @@ Deno.serve(async (req) => {
     return jsonError(503, 'CONFIG', 'GITHUB_WEBHOOK_SECRET not configured', CORS);
   }
 
-  const rawBody = await req.text();
-  if (rawBody.length > MAX_BODY) {
+  // Grenze in Bytes, beim Lesen durchgesetzt — nicht erst nach req.text().
+  const rawBody = await readBodyLimited(req.body, req.headers.get('content-length'), MAX_BODY);
+  if (rawBody === null) {
     return jsonError(413, 'BODY_TOO_LARGE', 'max 2 MB', CORS);
   }
 

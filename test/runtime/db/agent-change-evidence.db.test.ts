@@ -191,4 +191,45 @@ d('agent_change_evidence / schema + RLS', () => {
       }),
     ).rejects.toBeTruthy();
   });
+
+  it('repo binding only in canonical lowercase (webhook looks up lower(full_name))', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ace-case' });
+    await expect(
+      als(ctx!, 'service_role', null, async () => {
+        await ctx!.client.query(
+          `INSERT INTO public.github_repo_tenant_bindings (tenant_id, repo_full_name)
+           VALUES ($1, 'Acme/App')`,
+          [A.tenantId],
+        );
+      }),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('append-only: direct UPDATE/DELETE blocked, tenant deletion cascades', async () => {
+    const A = await createTenantWithMember(ctx!, { tenantName: 'ace-cascade' });
+    const B = await createTenantWithMember(ctx!, { tenantName: 'ace-keep' });
+    await ctx!.client.query(
+      `INSERT INTO public.agent_change_evidence (tenant_id, event, repo, diff_hash, delivery_id)
+       VALUES ($1, 'push', 'acme/c', 'h', 'del-cascade-a'), ($2, 'push', 'acme/k', 'h', 'del-cascade-b')`,
+      [A.tenantId, B.tenantId],
+    );
+
+    // Auch als Tabelleneigentümer (stärker als service_role) gesperrt.
+    for (const sql of [
+      `UPDATE public.agent_change_evidence SET risk_level = 'high' WHERE delivery_id = 'del-cascade-a'`,
+      `DELETE FROM public.agent_change_evidence WHERE delivery_id = 'del-cascade-a'`,
+    ]) {
+      const sp = `sp_${Math.random().toString(36).slice(2, 10)}`;
+      await ctx!.client.query(`SAVEPOINT ${sp}`);
+      await expect(ctx!.client.query(sql)).rejects.toMatchObject({ code: '42501' });
+      await ctx!.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+    }
+
+    await ctx!.client.query(`DELETE FROM public.tenants WHERE id = $1`, [A.tenantId]);
+    const { rows } = await ctx!.client.query<{ delivery_id: string }>(
+      `SELECT delivery_id FROM public.agent_change_evidence
+       WHERE delivery_id IN ('del-cascade-a', 'del-cascade-b') ORDER BY 1`,
+    );
+    expect(rows.map((r) => r.delivery_id)).toEqual(['del-cascade-b']);
+  });
 });

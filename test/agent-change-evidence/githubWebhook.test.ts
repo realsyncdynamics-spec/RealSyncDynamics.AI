@@ -6,6 +6,7 @@ import {
   extractChangeSet,
   githubHmacSha256Hex,
   isUniqueViolation,
+  readBodyLimited,
   verifyGithubSignature,
 } from '../../supabase/functions/_shared/agentChangeEvidence/githubWebhook';
 
@@ -124,5 +125,41 @@ describe('agentChangeEvidence / extract + hash + idempotency helpers', () => {
     expect(isUniqueViolation({ code: '23505' })).toBe(true);
     expect(isUniqueViolation({ message: 'duplicate key value violates unique constraint' })).toBe(true);
     expect(isUniqueViolation({ code: '42501', message: 'denied' })).toBe(false);
+  });
+});
+
+describe('agentChangeEvidence / readBodyLimited', () => {
+  const stream = (...parts: string[]) =>
+    new ReadableStream<Uint8Array>({
+      start(c) {
+        for (const p of parts) c.enqueue(new TextEncoder().encode(p));
+        c.close();
+      },
+    });
+
+  it('returns the full text within the limit', async () => {
+    expect(await readBodyLimited(stream('{"a":', '1}'), null, 100)).toBe('{"a":1}');
+  });
+
+  it('counts UTF-8 bytes, not UTF-16 code units', async () => {
+    // 'ä' = 2 Bytes: 3 Zeichen, 6 Bytes.
+    expect(await readBodyLimited(stream('äää'), null, 5)).toBeNull();
+    expect(await readBodyLimited(stream('äää'), null, 6)).toBe('äää');
+  });
+
+  it('stops while streaming when no Content-Length is declared', async () => {
+    expect(await readBodyLimited(stream('x'.repeat(60), 'x'.repeat(60)), null, 100)).toBeNull();
+  });
+
+  it('rejects a declared Content-Length above the limit without reading', async () => {
+    expect(await readBodyLimited(stream('x'), '101', 100)).toBeNull();
+  });
+
+  it('does not trust an understated Content-Length', async () => {
+    expect(await readBodyLimited(stream('x'.repeat(150)), '10', 100)).toBeNull();
+  });
+
+  it('treats a missing body as empty', async () => {
+    expect(await readBodyLimited(null, null, 100)).toBe('');
   });
 });

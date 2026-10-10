@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS public.github_repo_tenant_bindings (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT github_repo_tenant_bindings_repo_nonempty
     CHECK (length(trim(repo_full_name)) > 0),
+  -- Der Webhook sucht mit lower(full_name); eine Bindung in anderer
+  -- Schreibweise träfe nie und könnte neben der kanonischen stehen.
+  CONSTRAINT github_repo_tenant_bindings_repo_lowercase
+    CHECK (repo_full_name = lower(trim(repo_full_name))),
   CONSTRAINT github_repo_tenant_bindings_repo_unique
     UNIQUE (repo_full_name)
 );
@@ -77,11 +81,23 @@ COMMENT ON COLUMN public.agent_change_evidence.payload_ref IS
   'Metadaten: changed_paths, hit_classes, github_delivery — niemals Patch-Inhalt.';
 
 -- Append-only: no UPDATE / DELETE for clients (service_role also blocked by trigger).
+-- Einzige Ausnahme: das ON DELETE CASCADE beim Löschen des Mandanten. Erkannt
+-- daran, dass der Aufruf aus einem anderen Trigger kommt (RI-Kaskade) UND der
+-- Mandant nicht mehr existiert. Ein direktes DELETE oder eines aus einem
+-- fremden Trigger bei bestehendem Mandanten bleibt gesperrt. SECURITY DEFINER,
+-- damit der Blick auf tenants nicht an RLS des Aufrufers hängt.
 CREATE OR REPLACE FUNCTION public.agent_change_evidence_block_modification()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
+  IF TG_OP = 'DELETE'
+     AND pg_trigger_depth() > 1
+     AND NOT EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = OLD.tenant_id) THEN
+    RETURN OLD;
+  END IF;
   RAISE EXCEPTION 'agent_change_evidence is append-only. Insert a new row instead of modifying.'
     USING ERRCODE = '42501';
 END;

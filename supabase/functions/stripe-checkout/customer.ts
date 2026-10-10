@@ -38,8 +38,42 @@ const LIVE_SUBSCRIPTION_STATES = new Set(['active', 'trialing', 'past_due']);
 
 /** Eine Testphase pro Mandant; Free-/Platzhalter-Zeilen verbrauchen sie nicht. */
 export function isTrialEligibleForCheckout(row: ExistingSubRow | null | undefined): boolean {
+  if (!row) return true;
+  // Echter Stripe-Customer mit Trial-Ende in der Historie: Testphase ist
+  // verbraucht — unabhängig vom plan_key (auch wenn die Zeile inzwischen
+  // wieder auf einen Free-Plan zurückgesetzt wurde).
+  if (isRealStripeCustomerId(row.stripe_customer_id) && (row.trial_end || row.trial_ends_at)) {
+    return false;
+  }
   if (!isRealSubscriptionRow(row)) return true;
   const hadTrial = Boolean(row.trial_end || row.trial_ends_at);
   const hasLive = LIVE_SUBSCRIPTION_STATES.has(row.status ?? '');
   return !hadTrial && !hasLive;
+}
+
+/**
+ * Idempotency-Key für `stripe.customers.create`: tenant- und nutzerbasiert,
+ * damit Doppelklicks/Retries innerhalb von 24 h keinen zweiten Customer
+ * erzeugen. Der Nutzer ist enthalten, weil Stripe bei gleichem Key, aber
+ * anderen Parametern (andere E-Mail) mit einem Fehler antwortet.
+ */
+export function customerIdempotencyKey(tenantId: string, userId: string): string {
+  return `stripe-checkout-customer:${tenantId}:${userId}`;
+}
+
+/** Stripe-Search-Query für einen bereits angelegten Customer dieses Mandanten. */
+export function customerSearchQuery(tenantId: string): string {
+  const safe = tenantId.replace(/[^A-Za-z0-9_-]/g, '');
+  return `metadata['tenant_id']:'${safe}'`;
+}
+
+/** Generische Browser-Antwort für Stripe-Fehler — keine rohe Stripe-Meldung. */
+export const STRIPE_ERROR_PUBLIC_MESSAGE =
+  'Checkout konnte nicht gestartet werden. Bitte später erneut versuchen.';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** tenant_id muss eine UUID sein (Voraussetzung für die Stripe-Search-Query). */
+export function isValidTenantId(id: unknown): id is string {
+  return typeof id === 'string' && UUID_RE.test(id);
 }

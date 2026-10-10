@@ -29,7 +29,11 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
-import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
+import {
+  isRealStripeCustomerId, isTrialEligibleForCheckout,
+  customerIdempotencyKey, customerSearchQuery, STRIPE_ERROR_PUBLIC_MESSAGE,
+  isValidTenantId,
+} from './customer.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -86,6 +90,11 @@ Deno.serve(async (req) => {
 
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
+  }
+  // tenant_id fließt in die Stripe-Search-Query — nur UUIDs zulassen, sonst
+  // 400 ohne jeden Stripe-Aufruf.
+  if (!isValidTenantId(body.tenant_id)) {
+    return jsonError(400, 'BAD_REQUEST', 'invalid tenant_id');
   }
 
   // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten
@@ -188,7 +197,10 @@ Deno.serve(async (req) => {
   let stripeCustomerId: string | null = null;
   const { data: existingSub, error: subErr } = await admin
     .from('subscriptions').select('stripe_customer_id, plan_key, status, trial_end, trial_ends_at')
-    .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
+    .eq('tenant_id', body.tenant_id)
+    // Feste Sortierung: bei (unerwartet) mehreren Zeilen immer die jüngste.
+    .order('updated_at', { ascending: false, nullsFirst: false })
+    .limit(1).maybeSingle();
   // Ein Lookup-Fehler darf nicht wie „kein Abo" aussehen — sonst bekäme ein
   // Bestandskunde bei einem DB-Aussetzer eine zweite Testphase und einen
   // zweiten Stripe-Customer.
@@ -247,11 +259,22 @@ Deno.serve(async (req) => {
     if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
       stripeCustomerId = existingSub!.stripe_customer_id!;
     } else {
-      const customer = await stripe.customers.create({
-        email: userEmail ?? undefined,
-        metadata: { tenant_id: body.tenant_id },
+      // Doppelte Customers vermeiden: Ein abgebrochener Checkout hinterlässt
+      // einen Customer, den erst der Webhook (checkout.session.completed →
+      // upsert auf tenant_id) in `subscriptions` nachträgt. Daher zuerst einen
+      // vorhandenen Customer dieses Mandanten suchen, sonst idempotent anlegen.
+      const found = await stripe.customers.search({
+        query: customerSearchQuery(body.tenant_id), limit: 1,
       });
-      stripeCustomerId = customer.id;
+      if (found.data[0]?.id) {
+        stripeCustomerId = found.data[0].id;
+      } else {
+        const customer = await stripe.customers.create({
+          email: userEmail ?? undefined,
+          metadata: { tenant_id: body.tenant_id },
+        }, { idempotencyKey: customerIdempotencyKey(body.tenant_id, userId) });
+        stripeCustomerId = customer.id;
+      }
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -296,7 +319,7 @@ Deno.serve(async (req) => {
     console.error('[stripe-checkout] stripe error', {
       message: err?.message, code: err?.code, type: err?.type,
     });
-    return jsonError(502, 'STRIPE_ERROR', `stripe checkout failed: ${(e as Error).message}`);
+    return jsonError(502, 'STRIPE_ERROR', STRIPE_ERROR_PUBLIC_MESSAGE);
   }
 });
 

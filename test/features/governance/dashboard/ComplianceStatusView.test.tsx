@@ -406,9 +406,15 @@ describe('ComplianceStatusView', () => {
     expect(getByTestId('runtime-event-stream').textContent).toMatch(/Keine Runtime-Events/);
     expect(getByTestId('policy-coverage').textContent).toMatch(/KPI-Snapshot fehlt/);
     expect(getByTestId('alerts-rail').textContent).toMatch(/24h-Summary/);
-    expect(getByText('DSGVO')).toBeInTheDocument();
-    expect(getByText('TISAX')).toBeInTheDocument();
-    expect(getByText('DORA')).toBeInTheDocument();
+    // Rahmenwerke erscheinen im Framework-Strip und in der Command-Center-Übersicht.
+    const strip = getByTestId('framework-strip');
+    expect(strip.textContent).toMatch(/DSGVO/);
+    expect(strip.textContent).toMatch(/TISAX/);
+    expect(strip.textContent).toMatch(/DORA/);
+    // Übersicht (Landing-v4-Layout): keine erfundenen Werte.
+    expect(getByTestId('overview-evidence-chain').textContent).toMatch(/Noch keine Governance-Events/);
+    expect(getByTestId('overview-agent-intent').textContent).toMatch(/Session starten/);
+    void getByText;
   });
 
   it('renders real runtime events and asset flows when provided', () => {
@@ -532,5 +538,43 @@ describe('Gate 1 — Ladefehler sind nie „alles gut“', () => {
     const { getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, approvals: 1 } }) });
     expect(getByTestId('no-critical-findings')).toBeInTheDocument();
     expect(getByTestId('open-measures').textContent).toContain('1 offene Posten');
+  });
+
+  it('übernimmt keine Landing-Beispielzahlen (78/100, 1.284 Evidence, 82 %/64 %, „Beispielansicht“) ins App-Markup', () => {
+    for (const data of [fixture({ counts: ZERO }), fixture({ counts: { ...ZERO, incidents: 1 } })]) {
+      const { container, unmount } = rendered({ data });
+      const text = container.textContent ?? '';
+      for (const demo of ['78/100', '1.284', '1284', '82 %', '82%', '64 %', '64%', 'Beispielansicht', 'ANCHORED', 'EU-CENTRAL']) {
+        expect(text).not.toContain(demo);
+      }
+      unmount();
+    }
+  });
+
+  it('rendert den Rahmenwerk-Reifegrad nicht ohne echte Daten pro Rahmenwerk', () => {
+    const { queryByTestId, getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const overview = getByTestId('command-center-overview');
+    expect(queryByTestId('overview-frameworks')).toBeNull();
+    expect(overview.textContent).not.toMatch(/RAHMENWERK-REIFEGRAD|NOCH KEINE DATEN|ROADMAP/);
+    expect(overview.textContent).not.toMatch(/—/);
+  });
+
+  it('zeigt bei Ladefehler einer KPI-Quelle einen expliziten Fehlerzustand statt Platzhalter', () => {
+    const { getByTestId } = rendered({
+      data: fixture({ counts: { ...ZERO, incidents: 1 }, scoreBasis: { aiSystems: null, controlMappings: null } }),
+    });
+    const tile = getByTestId('overview-tile-ai');
+    expect(tile.getAttribute('data-state')).toBe('error');
+    expect(tile.textContent).toMatch(/konnten nicht geladen werden/);
+  });
+
+  it('nutzt cc-*-Klassen und SeverityBadge statt der Landing-Kaskade', () => {
+    const { getByTestId } = rendered({ data: fixture({ counts: { ...ZERO, incidents: 1 } }) });
+    const overview = getByTestId('command-center-overview');
+    expect(overview.closest('.gv4')).toBeNull();
+    expect(overview.querySelector('.cc-tiles')).not.toBeNull();
+    expect(overview.querySelectorAll('.cc-panel').length).toBeGreaterThan(0);
+    const badge = getByTestId('overview-findings').querySelector('[data-severity]');
+    if (badge) expect(badge.className).toMatch(/cc-severity--(hoch|mittel|niedrig)/);
   });
 });

@@ -8,10 +8,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   assessSnapshot,
+  buildDirections,
   buildSnapshot,
   derivePositioning,
   sealSnapshot,
   type Assessment,
+  type DirectionBuild,
   type Positioning,
   type SnapshotInput,
   type SourceSnapshot,
@@ -61,11 +63,12 @@ export interface RebuildCase {
   snapshot: SourceSnapshot;
   positioning: Positioning;
   assessment: Assessment;
+  builds: DirectionBuild[];
 }
 
 const cache = new Map<CaseName, Promise<RebuildCase>>();
 
-/** Versiegelter Snapshot → Positionierung → Bewertung (zwischengespeichert). Richtungen folgen mit Schnitt 3. */
+/** Versiegelter Snapshot → Positionierung → Bewertung → Richtungen (zwischengespeichert). */
 export function rebuildCase(name: CaseName): Promise<RebuildCase> {
   let pending = cache.get(name);
   if (!pending) {
@@ -73,7 +76,8 @@ export function rebuildCase(name: CaseName): Promise<RebuildCase> {
       const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(name)));
       const positioning = derivePositioning(snapshot);
       const assessment = assessSnapshot(snapshot, positioning, AT);
-      return { snapshot, positioning, assessment };
+      const builds = buildDirections(snapshot, positioning, assessment, { createdAt: AT });
+      return { snapshot, positioning, assessment, builds };
     })();
     cache.set(name, pending);
   }

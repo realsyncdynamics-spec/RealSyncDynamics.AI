@@ -1,28 +1,39 @@
 // Rebuild-Workflow — Härtung nach dem unabhängigen Review (2026-09-29).
 //
-// Schnitt 2 aus #1727 (DISCOVER/ASSESS). Festgehalten wird, was ein Review mit
-// synthetischen Seiten gezeigt hatte, soweit es Analyse und Bewertung betrifft:
+// Schnitte 2 und 2b aus #1727 (DISCOVER/ASSESS, REBUILD/REFINE/AUTOMATE).
+// Festgehalten wird, was ein Review mit synthetischen Seiten gezeigt hatte:
 //   • keine erfundenen Aussagen aus Fehllesungen der Quelle (Jahresangabe aus
 //     „Kunden über 60 Jahre", unsichtbare JSON-LD-Bewertung als sichtbare Behauptung);
 //   • feindliche Seiten verbrauchen keine quadratische Rechenzeit;
 //   • gespeichert wird nur, was Postgres annimmt (keine halben Emoji);
-//   • Adressen ohne Link-Charakter und gesperrte Adressbereiche werden erkannt.
-// Die Fälle zu Richtungen, Backend-Vergleich, Checkliste und Export folgen mit
-// den späteren Schnitten.
+//   • Adressen ohne Link-Charakter und gesperrte Adressbereiche werden erkannt;
+//   • kein Ort aus Wendungen, kein Seitentitel „Startseite" als Überschrift;
+//   • Bindung an den Analyse-Lauf, Hero-Variante nur aus der festen Menge.
+// Die Fälle zu Backend-Vergleich, Checkliste, rechtswirksamen Feldern und
+// Export folgen mit dem PUBLISH-Schnitt.
 
 import { describe, expect, it } from 'vitest';
 import {
+  buildDirection,
   buildSnapshot,
+  canonicalHash,
+  composeHero,
+  composeSeo,
+  derivePositioning,
   extractPage,
   isBlockedAddress,
+  localityFromText,
+  planNextSteps,
+  renderSite,
   sealSnapshot,
   toWellFormed,
   wellFormedText,
+  type SiteBlueprint,
   type SnapshotInput,
 } from '../../packages/siteos-core/src/index';
 import { decodeEntities } from '../../packages/siteos-core/src/rebuild/html';
-import { isScriptOrDataUrl } from '../../packages/siteos-core/src/rebuild/text';
-import { AT } from './rebuild-helpers';
+import { isScriptOrDataUrl, splitTitle, stripLegalSuffix } from '../../packages/siteos-core/src/rebuild/text';
+import { AT, rebuildCase } from './rebuild-helpers';
 
 const PAGE = 'https://www.dach-beispiel.example/';
 
@@ -209,5 +220,140 @@ describe('Gesperrte Adressbereiche', () => {
     ['fe80::1', true],
   ])('%s → gesperrt: %s', (address, blocked) => {
     expect(isBlockedAddress(address)).toBe(blocked);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Neubau (Schnitt 2b): keine erfundenen Aussagen, Bindung, Ausgabe
+// ─────────────────────────────────────────────────────────────────────
+
+describe('Ort nur, wo einer steht', () => {
+  it.each([
+    ['Ihr Partner in Sachen Dachsanierung', null],
+    ['Dachdecker in Leipzig', 'Leipzig'],
+    ['Ihr Partner in Sachen Heizung in Leipzig und Umgebung', 'Leipzig'],
+    ['Heizungsbau in Bad Homburg', 'Bad Homburg'],
+    ['Handwerk in St. Ingbert', 'St. Ingbert'],
+    ['Qualität in Handwerksqualität', null],
+    ['Schnelle Hilfe in Ihrer Nähe', null],
+    ['Beratung in Deutsch und Englisch', null],
+    ['In Leipzig seit 1998.', 'Leipzig'],
+    ['Fertig in Rekordzeit', null],
+  ])('„%s" → %s', (text, expected) => {
+    expect(localityFromText(text)).toBe(expected);
+  });
+
+  it('eine Wendung wie „in Sachen …" wird nicht zum Ort der Site', async () => {
+    const html = page(`<h1>Ihr Partner in Sachen Dachsanierung</h1>${FILLER}`, '<title>Ihr Partner in Sachen Dachsanierung</title>');
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(html)));
+    const positioning = derivePositioning(snapshot);
+    expect(positioning.locality.status).toBe('unknown');
+    const hero = composeHero(snapshot, positioning, 'local-trust', []);
+    expect(hero.eyebrow ?? '').not.toContain('Sachen');
+    expect(hero.headline).not.toMatch(/(aus|in) Sachen Dachsanierung (aus|in) /);
+    // Kein Ort in JSON-LD, Seitentitel oder Überschrift der gebauten Site.
+    const build = buildDirection(snapshot, positioning, { engineVersion: 'x', assessedAt: AT, criteria: [], findings: [], overall: 0 }, 'local-trust', { createdAt: AT });
+    expect(build.blueprint.seo.locality).toBeNull();
+    expect(build.blueprint.seo.defaultTitle).not.toMatch(/(in|aus) Sachen Dachsanierung (in|aus) /);
+  });
+});
+
+describe('Kein Knopf ins Leere', () => {
+  it('ohne Leistungsblock und ohne Telefon kein „Leistungen ansehen" auf #leistungen', async () => {
+    const html = page(`<h1>Dach Beispiel</h1>${FILLER}`);
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(html)));
+    const positioning = derivePositioning(snapshot);
+    const build = buildDirection(snapshot, positioning, { engineVersion: 'x', assessedAt: AT, criteria: [], findings: [], overall: 0 }, 'local-trust', { createdAt: AT });
+    const home = build.blueprint.pages.find((p) => p.path === '/');
+    expect(home?.blocks.some((b) => b.kind === 'services')).toBe(false);
+    const hero = home?.blocks.find((b) => b.kind === 'hero');
+    expect(hero?.content.secondaryCta).toBeUndefined();
+    expect(renderSite(build.blueprint, { presentation: 'showcase' }).find((p) => p.path === '/')?.html ?? '').not.toContain('href="#leistungen"');
+  });
+});
+
+describe('Seitentitel ohne Aussage wird keine Überschrift', () => {
+  it('„Startseite – Müller Bau" ergibt weder H1 noch Seitentitel „Startseite"', async () => {
+    const html = page(`<header><a href="/"><img src="/logo.png" alt="Müller Bau Logo"></a></header><main>${FILLER}</main>`, '<title>Startseite – Müller Bau</title>');
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(html)));
+    const positioning = derivePositioning(snapshot);
+    const hero = composeHero(snapshot, positioning, 'clean-enterprise', []);
+    const seo = composeSeo(snapshot, positioning);
+    expect(hero.headline).not.toMatch(/^Startseite/);
+    expect(seo.title).not.toMatch(/^Startseite in/);
+  });
+});
+
+describe('Bindung an den Analyse-Lauf', () => {
+  it('steht im Blueprint und damit in seinem Hash', async () => {
+    const { snapshot, positioning, assessment } = await rebuildCase('handwerk');
+    const run = { id: '11111111-2222-4333-8444-555555555555', snapshotSha256: await canonicalHash(snapshot) };
+    const unbound = buildDirection(snapshot, positioning, assessment, 'local-trust', { createdAt: AT });
+    const bound = buildDirection(snapshot, positioning, assessment, 'local-trust', { createdAt: AT, run });
+    const again = buildDirection(snapshot, positioning, assessment, 'local-trust', { createdAt: AT, run });
+    expect(unbound.blueprint.origin.rebuild).toBeUndefined();
+    expect(bound.blueprint.origin.rebuild).toEqual({ runId: run.id, snapshotSha256: run.snapshotSha256 });
+    expect(await canonicalHash(bound.blueprint)).not.toBe(await canonicalHash(unbound.blueprint));
+    expect(await canonicalHash(bound.blueprint)).toBe(await canonicalHash(again.blueprint));
+    // Ausgeliefert wird die Bindung nicht — sie ist Nachweis, kein Inhalt.
+    expect(renderSite(bound.blueprint, { presentation: 'showcase' }).map((p) => p.html).join('')).not.toContain(run.id);
+  });
+});
+
+describe('Nächste Schritte', () => {
+  it('„OpenAI (neu)" ist keine lokale KI, „Ollama (lokal)" schon', async () => {
+    const { snapshot, builds } = await rebuildCase('steuer');
+    const local = (name: string) => planNextSteps({ blueprint: builds[0].blueprint, snapshot, connectors: [{ systemType: 'ai_gateway', status: 'connected', displayName: name }] }).find((s) => s.key === 'local-ai')?.connection;
+    expect(local('OpenAI (neu)')).toBe('not-connected');
+    expect(local('Deutsch-Übersetzer')).toBe('not-connected');
+    expect(local('Ollama (lokal)')).toBe('connected');
+    expect(local('eu_local Gateway')).toBe('connected');
+  });
+});
+
+describe('Gestalteter Renderer', () => {
+  it('setzt die Hero-Variante nur aus der festen Menge in ein class-Attribut', async () => {
+    const { builds } = await rebuildCase('handwerk');
+    const bp = builds[0].blueprint;
+    const hostile: SiteBlueprint = { ...bp, design: { ...(bp.design as NonNullable<SiteBlueprint['design']>), hero: '"><img src=x onerror=alert(1)>' as never } };
+    const html = renderSite(hostile, { presentation: 'showcase' }).find((p) => p.path === '/')?.html ?? '';
+    expect(html).not.toContain('onerror=alert(1)');
+    expect(html).toMatch(/class="rs-hero rs-hero--(split|centered|editorial|compact)"/);
+  });
+});
+
+describe('Titel, Namen und Anführungszeichen mit langen Leerraum- und Zeichenfolgen', () => {
+  const runs = (ch: string) => `A${ch.repeat(60_000)}B`;
+  const quick = (fn: () => void) => {
+    const started = performance.now();
+    fn();
+    return performance.now() - started;
+  };
+
+  it('Titel-Segmente und Rechtsform — gleiches Ergebnis wie bisher, lineare Laufzeit', () => {
+    expect(splitTitle('Müller Bau  |  Heizung – Leipzig')).toEqual(['Müller Bau', 'Heizung', 'Leipzig']);
+    expect(splitTitle('Müller Bau|Sanitär')).toEqual(['Müller Bau', 'Sanitär']);
+    expect(splitTitle('Bad-Sanierung Leipzig')).toEqual(['Bad-Sanierung Leipzig']);
+    expect(stripLegalSuffix('Müller Haustechnik GmbH')).toBe('Müller Haustechnik');
+    expect(stripLegalSuffix('Berger Steuerberatungsgesellschaft mbH')).toBe('Berger');
+    expect(stripLegalSuffix('Kanzlei Weiß, PartG mbB')).toBe('Kanzlei Weiß');
+    expect(stripLegalSuffix('Nordlicht AI GmbH & Co. KG')).toBe('Nordlicht AI');
+    for (const ch of ['\t', ' ', '-', '|']) {
+      expect(quick(() => { splitTitle(runs(ch)); stripLegalSuffix(runs(ch)); })).toBeLessThan(1000);
+    }
+  });
+
+  it('Positionierung einer Seite mit feindlichem Titel bleibt schnell', async () => {
+    const title = `Start${'\t'.repeat(40_000)}x${' '.repeat(40_000)}in${'\t'.repeat(20_000)}A${'-'.repeat(20_000)}`;
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(page(`<h1>Dach</h1>${FILLER}`, `<title>${title}</title>`))));
+    expect(quick(() => { derivePositioning(snapshot); })).toBeLessThan(2000);
+  });
+
+  it('Anführungszeichen um eine Kundenstimme', async () => {
+    const { builds } = await rebuildCase('handwerk');
+    const bp = builds[0].blueprint;
+    const quote = `${'"'.repeat(60_000)}Sehr sauber gearbeitet.`;
+    const withQuote: SiteBlueprint = { ...bp, pages: bp.pages.map((p) => ({ ...p, blocks: p.blocks.map((b) => (b.kind === 'testimonials' ? { ...b, content: { ...b.content, items: [{ quote, author: 'A. K.' }] } } : b)) })) };
+    expect(quick(() => { renderSite(withQuote, { presentation: 'showcase' }); })).toBeLessThan(2000);
   });
 });

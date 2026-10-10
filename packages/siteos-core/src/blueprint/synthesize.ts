@@ -281,6 +281,48 @@ export function buildBlock(
           ],
         },
       };
+
+    // ── Rebuild-Komponenten ─────────────────────────────────────────
+    // Leer angelegt, wo nur belegte Inhalte zulässig sind: Eine
+    // Trust-Leiste, Preise oder Referenzen ohne Quelle wären erfunden. Die
+    // Markierung `requiresRealContent` meldet den leeren Zustand in der
+    // Analyse (`content.awaiting-real-content`); der Renderer liefert ihn
+    // nicht aus.
+    case 'trust-bar':
+      return { ...base, content: { items: [], requiresRealContent: true } };
+
+    case 'problem-solution':
+      return {
+        ...base,
+        content: {
+          heading: 'Worum es geht',
+          problem: `Sie suchen ${brief.services.slice(0, 2).join(' und ') || 'eine Lösung'}${brief.locality ? ` in ${brief.locality}` : ''}?`,
+          solution: brief.summary,
+          points: brief.services.slice(0, 4).map((label) => ({ label })),
+        },
+      };
+
+    case 'process':
+      return { ...base, content: { heading: 'Ablauf', steps: [], requiresRealContent: true } };
+
+    case 'pricing':
+      return { ...base, content: { heading: 'Preise', items: [], requiresRealContent: true } };
+
+    case 'case-study':
+      return { ...base, content: { heading: 'Referenzen', items: [], requiresRealContent: true } };
+
+    case 'contact-info':
+      return { ...base, aiGenerated: false, content: { heading: 'Kontakt' } };
+
+    case 'governance':
+      // Aussagen leitet der Renderer aus dem Blueprint ab (Formulare,
+      // Einwilligungsschranken, KI-Hinweis) — sie stimmen dadurch immer.
+      return { ...base, aiGenerated: false, content: { heading: 'Datenschutz & Transparenz' } };
+
+    case 'automation':
+      // Nur mit tatsächlich eingerichteten Abläufen befüllbar; bis dahin
+      // leer und nicht ausgeliefert.
+      return { ...base, content: { heading: 'Was nach Ihrer Anfrage passiert', steps: [], requiresRealContent: true } };
   }
 }
 

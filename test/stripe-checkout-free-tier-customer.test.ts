@@ -22,7 +22,11 @@ describe('stripe-checkout: Free-Tier-Platzhalter-Customer', () => {
   });
 
   it('free_audit-Zeile zählt nicht als laufendes Abo, auch mit cus_', () => {
-    expect(isTrialEligibleForCheckout({ stripe_customer_id: 'cus_X', plan_key: 'free_audit', status: 'active', trial_end: '2026-01-01' })).toBe(true);
+    expect(isTrialEligibleForCheckout({ stripe_customer_id: 'cus_X', plan_key: 'free_audit', status: 'active' })).toBe(true);
+  });
+
+  it('free_audit-Zeile mit cus_ UND Trial-Historie → Testphase verbraucht', () => {
+    expect(isTrialEligibleForCheckout({ stripe_customer_id: 'cus_X', plan_key: 'free_audit', status: 'active', trial_end: '2026-01-01' })).toBe(false);
   });
 
   it('kein Abo → trial-berechtigt', () => {

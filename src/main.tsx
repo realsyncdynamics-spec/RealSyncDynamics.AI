@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
+import './styles/brand-v4-tokens.css';
 import './styles/enterprise-hero.css';
 import { validateGeminiConfig } from './lib/gemini.ts';
 import { initSentry } from './lib/sentry.ts';

@@ -77,7 +77,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     learnMorePath: '/audit',
     name: 'DSGVO- & Tracking-Audit',
     description:
-      'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.',
+      'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF.',
     status: 'live',
     backedBy: ['gdpr-audit', 'cookie-scan', 'cookie-scan-deep', 'audit-report-pdf', 'audit-monitor-cron'],
   },

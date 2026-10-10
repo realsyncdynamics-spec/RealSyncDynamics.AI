@@ -21,6 +21,7 @@ import {
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
 import {
+  apiKeyForVerifiedWebhookEvent,
   getStripeMode,
   isWebhookSignatureModeCompatible,
   keyModeOf,
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const eventApiKey = verifiedMode === 'live' ? liveApiKey : testApiKey;
+  const eventApiKey = apiKeyForVerifiedWebhookEvent(verifiedMode, liveApiKey, testApiKey);
   if (!eventApiKey) {
     return new Response(
       verifiedMode === 'live'

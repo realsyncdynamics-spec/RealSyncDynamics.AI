@@ -170,3 +170,74 @@
 @media (prefers-reduced-motion: reduce) {
   .rs-classical-page .rs-classical-action { transition: none; }
 }
+
+/* Legible breadcrumbs, disclaimer and footer on paper. */
+.rs-classical-seo .rs-classical-seo-nav nav,
+.rs-classical-seo .rs-classical-seo-nav nav span {
+  color: var(--classical-muted);
+}
+.rs-classical-seo .rs-classical-seo-nav nav a {
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-seo-disclaimer :is(p, svg) {
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-seo-disclaimer svg {
+  color: var(--brand-gold-ink);
+}
+.rs-classical-seo .rs-classical-seo-footer :is(span, a) {
+  color: var(--classical-muted);
+}
+.rs-classical-seo .rs-classical-seo-footer a:hover {
+  color: var(--brand-gold-ink);
+}
+
+/* Public SEO conversion band: dark ink within a light editorial page. */
+.rs-classical-seo .rs-classical-cta-section {
+  background: var(--brand-ink);
+  border-color: color-mix(in srgb, var(--brand-gold) 45%, transparent);
+}
+.rs-classical-seo .rs-classical-cta-section h2 {
+  font-family: var(--brand-serif);
+  font-weight: 500;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1.1;
+  color: var(--brand-paper);
+}
+.rs-classical-seo .rs-classical-cta-section .surface-gold {
+  border-radius: var(--brand-radius-md);
+  min-height: 44px;
+}
+
+/* FAQ: fully readable, keyboard-navigable details on paper. */
+.rs-classical-seo .rs-classical-faq {
+  background: var(--brand-paper);
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq > div > div:first-child > div:first-child {
+  color: var(--brand-gold-ink);
+}
+.rs-classical-seo .rs-classical-faq h2 {
+  font-family: var(--brand-serif);
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  font-weight: 500;
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq details {
+  background: #fff;
+  border: 1px solid var(--classical-rule);
+  border-radius: var(--brand-radius-md);
+}
+.rs-classical-seo .rs-classical-faq details[open] {
+  border-color: color-mix(in srgb, var(--brand-gold) 55%, transparent);
+}
+.rs-classical-seo .rs-classical-faq details summary > span {
+  font-family: var(--brand-sans);
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+.rs-classical-seo .rs-classical-faq details > div {
+  font-family: var(--brand-body);
+  color: var(--classical-muted);
+  line-height: 1.7;
+}

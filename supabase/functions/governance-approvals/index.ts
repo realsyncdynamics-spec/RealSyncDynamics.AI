@@ -23,8 +23,14 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { createEvidenceChainRepo } from '../_shared/evidence-chain-repo.ts';
+import { resolveApproval, type ApprovalResolverRepo } from './resolve.ts';
 
-const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired'];
+// Seit 2026-09-29 (Browser-Runtime): cancelled/executed/failed zusätzlich.
+// Ausführung (executed/failed) steht nicht im Freigabe-Status, sondern in
+// browser_executions (#1728) — die Liste liefert sie als `execution` mit.
+const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired', 'cancelled'];
+const GATE_STATUS = ['pending', 'approved', 'rejected', 'expired'];
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -98,11 +104,22 @@ async function handleList(admin: SupabaseAdminClient, userId: string, body: Reco
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
 
+  // Abgelaufene offene Freigaben sind nicht mehr entscheidbar — sichtbar machen.
+  await (admin as unknown as {
+    from(t: string): { update(r: Record<string, unknown>): { eq(c: string, v: unknown): { eq(c: string, v: unknown): { lt(c: string, v: unknown): Promise<unknown> } } } };
+  }).from('governance_approvals')
+    .update({ status: 'expired' })
+    .eq('tenant_id', tenant_id)
+    .eq('status', 'pending')
+    .lt('expires_at', new Date().toISOString());
+
   const { data, error } = await admin.from('governance_approvals')
     .select(`
       id, tenant_id, event_id, policy_id, asset_id, status, requested_action,
       resolved_by, resolved_at, resolution_reason, expires_at, created_at,
-      event:governance_events!inner(id,title,summary,risk_level,event_type,event_source,vendor,model_name,data_types,created_at),
+      requested_by, browser_session_id,
+      event:governance_events!inner(id,title,summary,risk_level,event_type,event_source,vendor,model_name,data_types,created_at,payload),
+      execution:browser_executions(id,status,reserved_at,finished_at,detail),
       policy:governance_policies(id,name,severity,policy_type),
       asset:governance_assets(id,name,asset_type,ai_act_class)
     `)
@@ -121,54 +138,41 @@ async function handleResolve(
   const approval_id = body.approval_id as string;
   const reason = (body.reason as string | undefined)?.toString().slice(0, 2000) ?? null;
   if (!approval_id) return jsonError(400, 'BAD_REQUEST', 'approval_id required');
-  if (target === 'rejected' && !reason) {
-    return jsonError(400, 'BAD_REQUEST', 'reason required when rejecting');
-  }
 
-  const { data: row } = await admin.from('governance_approvals')
-    .select('id, tenant_id, event_id, asset_id, status')
-    .eq('id', approval_id).maybeSingle();
-  if (!row) return jsonError(404, 'NOT_FOUND', 'approval not found');
-  if (row.status !== 'pending') {
-    return jsonError(409, 'ALREADY_RESOLVED', `approval is ${row.status}`);
-  }
-  if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) {
-    return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
-  }
-
-  const resolvedAt = new Date().toISOString();
-  const { error: updErr } = await admin.from('governance_approvals')
-    .update({
-      status: target,
-      resolved_by: userId,
-      resolved_at: resolvedAt,
-      resolution_reason: reason,
-    })
-    .eq('id', approval_id);
-  if (updErr) throw updErr;
-
-  // Drop an evidence row on the parent event so the audit trail
-  // captures the decision permanently.
-  await admin.from('governance_evidence').insert({
-    tenant_id: row.tenant_id,
-    event_id: row.event_id,
-    asset_id: row.asset_id,
-    evidence_type: 'approval',
-    title: target === 'approved' ? 'Approval granted' : 'Approval denied',
-    storage_path: null,
-    content_hash: null,
-    previous_hash: null,
-    metadata: {
-      approval_id,
-      status: target,
-      resolved_by_user_id: userId,
-      resolved_by_email: userEmail,
-      resolved_at: resolvedAt,
-      reason,
+  // deno-lint-ignore no-explicit-any
+  const db = admin as any;
+  const chain = createEvidenceChainRepo(db);
+  const repo: ApprovalResolverRepo = {
+    ...chain,
+    async getApproval(id) {
+      const { data } = await db.from('governance_approvals')
+        .select('id, tenant_id, event_id, asset_id, status, expires_at, browser_session_id, requested_by')
+        .eq('id', id).maybeSingle();
+      return data ?? null;
     },
-  });
+    async roleOf(uid, tenantId) {
+      const { data } = await db.from('memberships')
+        .select('role').eq('tenant_id', tenantId).eq('user_id', uid).maybeSingle();
+      return (data?.role as string | undefined) ?? null;
+    },
+    async releaseBrowserSession(tenantId, sessionId, nowIso) {
+      await db.from('browser_sessions')
+        .update({ status: 'ready', next_action: null, updated_at: nowIso })
+        .eq('tenant_id', tenantId).eq('id', sessionId).eq('status', 'awaiting_approval');
+    },
+  };
 
-  return jsonResponse({ ok: true, status: target, resolved_at: resolvedAt });
+  const outcome = await resolveApproval(repo, {
+    approvalId: approval_id,
+    userId,
+    userEmail,
+    target,
+    reason,
+    now: new Date(),
+    evidenceId: crypto.randomUUID(),
+  });
+  if (!outcome.ok) return jsonError(outcome.http, outcome.code, outcome.message);
+  return jsonResponse({ ok: true, status: outcome.status, resolved_at: outcome.resolved_at, evidence_id: outcome.evidence_id });
 }
 
 async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
@@ -185,8 +189,8 @@ async function handleGatesList(admin: any, userId: string, body: Record<string, 
   const tenant_id = body.tenant_id as string;
   const status = (body.status as string) ?? 'pending';
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
-  if (!ALLOWED_STATUS.includes(status)) {
-    return jsonError(400, 'BAD_REQUEST', `status must be one of ${ALLOWED_STATUS.join('|')}`);
+  if (!GATE_STATUS.includes(status)) {
+    return jsonError(400, 'BAD_REQUEST', `status must be one of ${GATE_STATUS.join('|')}`);
   }
   // Listen duerfen owner/admin und jede Rolle, die freigeben koennte —
   // ein reiner Freigeber muss seine offene Arbeit sehen.

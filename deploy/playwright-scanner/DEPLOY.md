@@ -96,16 +96,10 @@ Existing screenshot scan.
 
 Governed low-level browser executor.
 
-Supported actions:
-
-- `navigate`
-- `scroll`
-- `click`
-- `type`
-- `select`
-- `extract`
-- `wait`
-- `screenshot`
+Supported actions: `navigate`, `scroll`, `click`, `type`, `select`, `submit`,
+`extract`, `read_text`, `read_dom`, `wait`, `screenshot`, `back`, `forward`,
+`reload`, `download`. Body: `{ session_id, actions, require_session,
+include_frame, expected_url }`.
 
 The scanner itself does not decide policy. `browser-execute` performs identity,
 tenant, risk and human-approval checks before forwarding governed actions.
@@ -115,8 +109,25 @@ tenant, risk and human-approval checks before forwarding governed actions.
 - Scanner startup fails when `SCANNER_API_KEY` is missing.
 - Browser sessions are ephemeral and expire after inactivity.
 - Session IDs received from the Edge Function are namespaced by tenant.
-- Private/local network destinations are blocked both on initial navigation and
-  through a context-wide request guard.
+- Private/local network destinations are blocked on three layers:
+  1. initial navigation (`assertNavigable`, DNS-aware),
+  2. a context-wide request guard (`context.route`) — which does **not** see
+     HTTP redirect hops (verified with Playwright 1.59),
+  3. an in-process egress proxy (`egress-proxy.ts`, 127.0.0.1 only): Chromium is
+     launched with `proxy: { server }` (Playwright forces `<-loopback>`), every
+     connection — redirect hops, sub-resources, WebSockets via CONNECT — is
+     checked and connected to the **pinned, validated IP** (no DNS rebinding
+     between check and connect). WebRTC UDP outside the proxy is disabled.
+- After every action and before every frame the live page URL is re-checked
+  (`isLandingAllowed`); a page that ended up on a blocked address is reset to
+  `about:blank` before any frame, text or DOM leaves the executor
+  (`LANDED_ON_BLOCKED_URL`).
+- Approvals are bound to the live page: `expected_url` mismatch → `409 PAGE_CHANGED`,
+  nothing is executed.
+- Errors leave the executor only as fixed codes (`session-core.ts` `errorCode`),
+  never as Playwright messages (they can contain selectors or typed input).
+- Downloads are accepted only inside a `download` action; any other download is
+  cancelled and counted (`downloads_blocked`).
 - The scanner has a bounded action count, wait duration, selector length and
   input length.
 - `click`, `type` and `select` require human approval in

@@ -459,7 +459,7 @@ export function OnboardingErklaert() {
       </Section>
 
       {/* ABGRENZUNG / EBENEN */}
-      <Section eyebrow="Abgrenzung" title="RealSyncDynamics.AI ersetzt Ihr ERP nicht">
+      <Section eyebrow="Abgrenzung" title="RealSync Dynamics AI ersetzt Ihr ERP nicht">
         <div className="max-w-3xl mb-10 space-y-4 text-base sm:text-lg text-slate-600 leading-relaxed">
           <p>
             Ihr ERP bleibt Ihr ERP. Ihre Warenwirtschaft bleibt Ihre Warenwirtschaft. Ihr CRM

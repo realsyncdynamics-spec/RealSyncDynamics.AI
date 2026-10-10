@@ -14,8 +14,6 @@ interface Framework {
   /** null = es gibt (noch) keine Route. Die Karte navigiert dann nicht. */
   path: string | null;
   tier: string;
-  status: 'available' | 'locked' | 'in-progress';
-  completionPercent: number;
   /** Angekündigt, aber ohne Ziel — wird als „In Vorbereitung" ausgewiesen. */
   comingSoon?: boolean;
 }
@@ -29,8 +27,6 @@ const FRAMEWORKS: Framework[] = [
     icon: Shield,
     path: '/app/governance/dsgvo-directory',
     tier: 'free',
-    status: 'available',
-    completionPercent: 45,
   },
   {
     id: 'iso27001',
@@ -40,8 +36,6 @@ const FRAMEWORKS: Framework[] = [
     icon: BarChart3,
     path: '/app/governance/iso27001',
     tier: 'starter',
-    status: 'available',
-    completionPercent: 28,
   },
   {
     id: 'iso42001',
@@ -51,8 +45,6 @@ const FRAMEWORKS: Framework[] = [
     icon: AlertTriangle,
     path: '/app/governance/iso42001',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 12,
   },
   {
     id: 'nis2',
@@ -62,8 +54,6 @@ const FRAMEWORKS: Framework[] = [
     icon: Shield,
     path: '/app/governance/nis2-incidents',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 0,
   },
   {
     id: 'dora',
@@ -75,8 +65,6 @@ const FRAMEWORKS: Framework[] = [
     // und kein Klick, statt eines Knopfes, der in den 404 führt.
     path: null,
     tier: 'enterprise',
-    status: 'in-progress',
-    completionPercent: 0,
     comingSoon: true,
   },
   {
@@ -87,8 +75,6 @@ const FRAMEWORKS: Framework[] = [
     icon: AlertTriangle,
     path: '/app/governance/ai-act-assessment',
     tier: 'growth',
-    status: 'in-progress',
-    completionPercent: 8,
   },
 ];
 
@@ -147,7 +133,7 @@ export function ComplianceFrameworkSelector() {
                 className={`
                   text-left p-5 rounded-none border transition-all
                   ${accessible
-                    ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                    ? 'bg-obsidian-900 border-titanium-700 hover:border-[var(--brand-champ)] hover:bg-obsidian-800 cursor-pointer'
                     : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
                   }
                 `}
@@ -156,11 +142,11 @@ export function ComplianceFrameworkSelector() {
                   <div className="flex items-start gap-3 flex-1">
                     <div className={`w-10 h-10 rounded-none flex items-center justify-center shrink-0 ${
                       accessible
-                        ? 'bg-ai-cyan-500/10 border border-ai-cyan-500/30'
+                        ? 'bg-[rgba(242,201,138,0.1)] border border-[var(--brand-line-dark-strong)]'
                         : 'bg-amber-500/10 border border-amber-500/30'
                     }`}>
                       <Icon className={`w-5 h-5 ${
-                        accessible ? 'text-ai-cyan-400' : 'text-amber-600'
+                        accessible ? 'text-[var(--brand-champ)]' : 'text-amber-600'
                       }`} />
                     </div>
                     <div className="flex-1">
@@ -181,37 +167,24 @@ export function ComplianceFrameworkSelector() {
                   {framework.description}
                 </p>
 
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-titanium-500 font-mono">
-                      COMPLETION
-                    </span>
-                    <span className="text-xs font-semibold text-titanium-300">
-                      {framework.completionPercent}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-titanium-900 rounded-none h-2 overflow-hidden">
-                    <div
-                      className="bg-emerald-500 h-full transition-all"
-                      style={{ width: `${framework.completionPercent}%` }}
-                    />
-                  </div>
-                </div>
+                {/* Kein Fortschrittsbalken: Ein Erfüllungsgrad je Rahmenwerk wird
+                    (noch) nicht aus Mandantendaten berechnet. Die früheren
+                    Werte (45 %, 28 %, 12 % …) waren fest eingetragen. */}
 
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {framework.status === 'available' && (
+                    {/* Status aus dem Plan (Entitlement), nicht fest eingetragen. */}
+                    {accessible && (
                       <span className="inline-flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-none font-mono">
                         <CheckCircle2 className="w-3 h-3" />
-                        Active
+                        Im Plan enthalten
                       </span>
                     )}
-                    {framework.status === 'in-progress' && !framework.comingSoon && (
+                    {!accessible && !framework.comingSoon && (
                       <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded-none font-mono">
-                        <AlertTriangle className="w-3 h-3" />
-                        In Progress
+                        <Lock className="w-3 h-3" />
+                        Nicht im Plan
                       </span>
                     )}
                     {framework.comingSoon && (

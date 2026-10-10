@@ -66,5 +66,5 @@ export const RUNTIME_PREVIEW_CARDS: readonly RuntimePreviewCard[] = [
   { id: 'risk',       label: 'RISK SCORE',     value: '87/100',    detail: 'Governance-Risiko, gewichtet',    tone: 'info', ratio: 0.87, offset: 'lg:ml-0' },
   { id: 'evidence',   label: 'EVIDENCE VAULT', value: '1.248',     detail: 'Nachweise in der Hash-Kette',     tone: 'info', offset: 'lg:ml-28' },
   { id: 'ai-act',     label: 'EU AI ACT',      value: 'BEREIT',    detail: 'Risikoklassen zugeordnet',        tone: 'ok',   offset: 'lg:ml-8' },
-  { id: 'monitoring', label: 'MONITORING',     value: 'AKTIV',     detail: 'Wiederkehrende Nachprüfung',      tone: 'info', offset: 'lg:ml-24' },
+  { id: 'monitoring', label: 'MONITORING',     value: 'GEPLANT',   detail: 'Domain-Überwachung: Coming Soon', tone: 'info', offset: 'lg:ml-24' },
 ];

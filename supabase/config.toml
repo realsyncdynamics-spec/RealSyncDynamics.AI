@@ -244,6 +244,10 @@ verify_jwt = false
 [functions.audit-drip-cron]
 verify_jwt = false
 
+# audit-monitor-cron: pg_cron 'audit-monitor-daily' (04:00 UTC), Re-Scan der
+# monitored_domains. Bearer ist der dedizierte Key aus Vault
+# cron_audit_monitor_key, gemappt auf das Function Secret
+# CRON_AUDIT_MONITOR_KEY. Fail-closed: ohne Secret 500, sonst 401.
 [functions.audit-monitor-cron]
 verify_jwt = false
 
@@ -292,6 +296,11 @@ verify_jwt = false
 
 
 # ── Enterprise AI OS public surfaces ──
+# enterprise-ai-os-discovery-intake: braucht eine echte Nutzersitzung mit
+# schreibender Rolle. Das prueft der Handler ueber requireAuthAndTenant aus
+# _shared/auth.ts — body.tenantId ist dort nur ein Claim. verify_jwt bleibt
+# false wie deployt (Edge-Function-Drift-Guard); das Plattform-Gate liesse den
+# Anon-Key ohnehin durch und ersetzt die Pruefung im Handler nicht.
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false
 

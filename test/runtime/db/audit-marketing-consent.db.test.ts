@@ -84,6 +84,27 @@ async function insertAudit(
   return rows[0]!.id;
 }
 
+/**
+ * Runs a statement that is expected to fail inside a SAVEPOINT so the
+ * per-test transaction (db-helpers) is not aborted (25P02) for later
+ * statements. Returns the query promise for `rejects` assertions.
+ */
+async function expectFailing(
+  ctx: DbCtx,
+  sql: string,
+  params: unknown[] = [],
+): Promise<unknown> {
+  await ctx.client.query('SAVEPOINT expect_fail');
+  try {
+    const res = await ctx.client.query(sql, params);
+    await ctx.client.query('RELEASE SAVEPOINT expect_fail');
+    return res;
+  } catch (err) {
+    await ctx.client.query('ROLLBACK TO SAVEPOINT expect_fail');
+    throw err;
+  }
+}
+
 d('PR A marketing consent (DB)', () => {
   let ctx: DbCtx | null = null;
   beforeEach(async () => { ctx = await openDb(); });
@@ -117,7 +138,9 @@ d('PR A marketing consent (DB)', () => {
   });
 
   it('insert with consent sets server timestamp and keeps allowlisted version', async () => {
-    const before = Date.now();
+    const { rows: nowBefore } = await ctx!.client.query<{ now: string }>(
+      `SELECT clock_timestamp()::text AS now`,
+    );
     const row = await insertLead(ctx!, {
       email: `ok_${Date.now()}@example.com`,
       consent: true,
@@ -127,9 +150,25 @@ d('PR A marketing consent (DB)', () => {
     expect(row.marketing_consent).toBe(true);
     expect(row.marketing_consent_text_version).toBe('audit_followup_v1_de');
     expect(row.marketing_consent_at).toBeTruthy();
+    const { rows: nowAfter } = await ctx!.client.query<{ now: string }>(
+      `SELECT clock_timestamp()::text AS now`,
+    );
     const atMs = Date.parse(row.marketing_consent_at!);
-    expect(atMs).toBeGreaterThanOrEqual(before - 1000);
-    expect(atMs).toBeLessThan(Date.parse('2021-01-01T00:00:00.000Z')); // not the forged 2020 stamp
+    const clientMs = Date.parse('2020-01-01T00:00:00.000Z');
+    const dbBeforeMs = Date.parse(nowBefore[0]!.now);
+    const dbAfterMs = Date.parse(nowAfter[0]!.now);
+    // Not the forged client value …
+    expect(atMs).not.toBe(clientMs);
+    expect(atMs).toBeGreaterThan(Date.parse('2021-01-01T00:00:00.000Z'));
+    // … but the server's clock: within 60s of DB time around the insert.
+    // (now() is the transaction start, so it is <= clock_timestamp() before.)
+    expect(atMs).toBeGreaterThanOrEqual(dbBeforeMs - 60_000);
+    expect(atMs).toBeLessThanOrEqual(dbAfterMs + 1_000);
+    const { rows: drift } = await ctx!.client.query<{ ok: boolean }>(
+      `SELECT abs(extract(epoch FROM ($1::timestamptz - now()))) < 60 AS ok`,
+      [row.marketing_consent_at],
+    );
+    expect(drift[0]?.ok).toBe(true);
   });
 
   it('rejects bad text_version', async () => {
@@ -162,7 +201,8 @@ d('PR A marketing consent (DB)', () => {
     });
 
     await expect(
-      ctx!.client.query(
+      expectFailing(
+        ctx!,
         `UPDATE public.sales_leads
             SET marketing_consent_text_version = 'audit_followup_v1_de'
           WHERE id = $1`,
@@ -171,7 +211,8 @@ d('PR A marketing consent (DB)', () => {
     ).rejects.toMatchObject({ code: '23514' });
 
     await expect(
-      ctx!.client.query(
+      expectFailing(
+        ctx!,
         `UPDATE public.sales_leads SET marketing_consent = false WHERE id = $1`,
         [row.id],
       ),
@@ -192,7 +233,8 @@ d('PR A marketing consent (DB)', () => {
     expect(Date.parse(after[0]!.revoked)).toBeGreaterThan(Date.parse('2021-01-01T00:00:00Z'));
 
     await expect(
-      ctx!.client.query(
+      expectFailing(
+        ctx!,
         `UPDATE public.sales_leads SET marketing_consent_revoked_at = NULL WHERE id = $1`,
         [row.id],
       ),
@@ -266,7 +308,8 @@ d('PR A marketing consent (DB)', () => {
       [neverGranted.id],
     );
     await expect(
-      ctx!.client.query(
+      expectFailing(
+        ctx!,
         `UPDATE public.sales_leads
             SET marketing_consent = true,
                 marketing_consent_text_version = 'audit_followup_v1_en'
@@ -277,7 +320,8 @@ d('PR A marketing consent (DB)', () => {
 
     // True + revoked: proof fields remain immutable (cannot "re-grant" by rewrite).
     await expect(
-      ctx!.client.query(
+      expectFailing(
+        ctx!,
         `UPDATE public.sales_leads
             SET marketing_consent = true,
                 marketing_consent_text_version = 'audit_followup_v1_en'

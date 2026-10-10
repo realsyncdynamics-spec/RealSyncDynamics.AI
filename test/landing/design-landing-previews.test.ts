@@ -14,7 +14,7 @@ describe('design landing previews', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
     expect(app).toMatch(/path="\/"\s+element=\{<LandingV4/);
     expect(app).toContain('path="/design/landing-v2"');
-    for (const path of ['/design/governance-ai', '/design/titan', '/design/ledger', '/design/tribunal', '/landing', '/realsync-landing']) {
+    for (const path of ['/design/governance-ai', '/design/titan', '/design/ledger', '/design/tribunal', '/governance-runtime-layer', '/landing', '/realsync-landing']) {
       expect(app).toMatch(new RegExp(`path="${path}" element=\\{<Navigate to="/" replace />\\}`));
     }
     expect(app).not.toContain('<MainLanding');

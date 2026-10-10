@@ -77,6 +77,21 @@ d('siteos_rebuild_runs / schema + RLS', () => {
     expect(rows).toEqual([{ rls: true }]);
   });
 
+  it('Rechte: authenticated nur SELECT, anon nichts — unabhängig von RLS', async () => {
+    // Die Default Privileges geben jeder neuen Tabelle Schreibrechte für
+    // anon/authenticated. Ohne REVOKE hinge die Schreibsperre allein am Fehlen
+    // einer Schreib-Policy. Diese Prüfung liest die Rechte selbst.
+    const { rows } = await ctx!.client.query<{ rolle: string; recht: string; hat: boolean }>(
+      `SELECT r AS rolle, p AS recht,
+              has_table_privilege(r, 'public.siteos_rebuild_runs', p) AS hat
+       FROM unnest(ARRAY['anon', 'authenticated']) AS r,
+            unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) AS p
+       ORDER BY 1, 2`,
+    );
+    const erlaubt = rows.filter((z) => z.hat).map((z) => `${z.rolle}:${z.recht}`);
+    expect(erlaubt).toEqual(['authenticated:SELECT']);
+  });
+
   it('nur service_role schreibt; authenticated und anon nicht', async () => {
     const A = await createTenantWithMember(ctx!, { tenantName: 'srr-ins' });
 

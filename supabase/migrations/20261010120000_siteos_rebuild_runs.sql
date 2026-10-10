@@ -119,7 +119,11 @@ CREATE POLICY "siteos_rebuild_runs_service" ON public.siteos_rebuild_runs
   FOR ALL TO service_role
   USING (true) WITH CHECK (true);
 
-REVOKE ALL ON public.siteos_rebuild_runs FROM anon;
+-- Default Privileges geben anon und authenticated SELECT/INSERT/UPDATE/DELETE
+-- auf jede neue Tabelle; GRANT SELECT allein nimmt davon nichts weg. Erst alles
+-- entziehen, dann nur Lesen zurückgeben — sonst hinge „nur service_role
+-- schreibt" allein am Fehlen einer Schreib-Policy. Muster wie tenant_onboarding.
+REVOKE ALL ON public.siteos_rebuild_runs FROM anon, authenticated;
 GRANT SELECT ON public.siteos_rebuild_runs TO authenticated;
 GRANT ALL ON public.siteos_rebuild_runs TO service_role;
 

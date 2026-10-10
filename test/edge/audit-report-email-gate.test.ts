@@ -89,6 +89,13 @@ describe('audit-report-email: Verdrahtung', () => {
     for (const r of responses) expect(r).not.toMatch(/audit\.email\b/);
   });
 
+  it('versendet nichts an Audits ohne Adresse (Mandanten-/Optimizer-Scan)', () => {
+    const guard = code.indexOf('if (!audit.email)');
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(code.indexOf('api.resend.com'));
+    expect(code).toContain("skipped: 'no_recipient'");
+  });
+
   it('Kopfkommentar und config.toml widersprechen sich nicht', () => {
     const block = config.match(/\[functions\.audit-report-email\]\s*\n\s*verify_jwt\s*=\s*(\w+)/);
     expect(block?.[1]).toBe('false');

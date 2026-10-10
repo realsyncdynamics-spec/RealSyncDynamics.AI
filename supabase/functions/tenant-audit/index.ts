@@ -35,13 +35,18 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { internalScanHeaders, TENANT_SCAN_LIMIT_PER_HOUR } from '../_shared/internal-scan-call.ts';
-import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { runTenantAuditPipeline, type GdprAuditResponse } from './pipeline.ts';
 import { createAuditRepo } from './repo.ts';
 import { checkNavigationUrl } from '../_shared/browser-runtime/url.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Der Browser schickt X-Tenant-Id nur, wenn der Preflight ihn erlaubt. Mit den
+// Standard-Headern brach fetch() vorher ab — das UI meldete „Scan-Dienst nicht
+// erreichbar“, ohne dass die Function je lief.
+const preflightHeaders = buildCorsHeaders('POST, OPTIONS', ['x-tenant-id']);
 
 // Issue → Finding-Mapping ist in _shared/audit-mapping.ts ausgelagert,
 // damit Vitest die pure Heuristik testen kann (kein Deno-Runtime).
@@ -50,7 +55,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // dokumentiert (test/edge/tenant-audit-pipeline.test.ts).
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req); if (preflight) return preflight;
+  const preflight = handleOptions(req, preflightHeaders); if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;

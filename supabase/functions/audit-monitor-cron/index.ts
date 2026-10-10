@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     // Bestehender Scanner: Edge Function cookie-scan (fetch-basiert).
     const scanner: Scanner = async (d) => {
-      const url = d.domain.startsWith('http') ? d.domain : `https://${d.domain}`;
+      const url = /^https?:\/\//i.test(d.domain) ? d.domain : `https://${d.domain}`;
       const { data, error } = await db.functions.invoke('cookie-scan', { body: { url, includeDetails: true } });
       if (error) throw new Error(`cookie-scan: ${error.message}`);
       return normalizeCookieScan(d.domain, data, new Date().toISOString());
@@ -68,6 +68,8 @@ Deno.serve(async (req) => {
       const li = (xs: string[]) => xs.map((t) => `<li>${esc(t)}</li>`).join('');
       const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
+        // Hängt Resend, zählt der Versuch als gescheitert (Outbox wiederholt) statt den Lauf zu blockieren.
+        signal: AbortSignal.timeout(10_000),
         headers: {
           Authorization: `Bearer ${RESEND_KEY}`,
           'Content-Type': 'application/json',

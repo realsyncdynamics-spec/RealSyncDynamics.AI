@@ -6,7 +6,6 @@ import './index.css';
 import './styles/brand-v4-tokens.css';
 import './styles/command-center.css';
 import './styles/enterprise-hero.css';
-import { validateGeminiConfig } from './lib/gemini.ts';
 import { initSentry } from './lib/sentry.ts';
 import { captureAffiliateRef } from './lib/affiliate.ts';
 import { initPerformanceMonitoring } from './lib/performance/index.ts';
@@ -24,9 +23,6 @@ captureAffiliateRef();
 // CSRF-Cookie für same-origin mutierende Requests. 404 im Vite-Dev ist ok.
 void ensureCsrfCookie();
 
-// Soft probe — logs a warning if Gemini is unset but never blocks render.
-// Hard validation moves to call sites that actually use the Gemini SDK.
-validateGeminiConfig();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

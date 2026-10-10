@@ -150,7 +150,7 @@ ist kanonisch.
 
 | Plan | Feld | Key | Preisseite | Berechtigung |
 |---|---|---|---:|---:|
-| `agency` | `answersPerMonth` | `limit.bot_messages_monthly` | 25.000 | 10.000 |
+| `agency` | `answersPerMonth` | `limit.bot_messages_monthly` | 10.000 | 10.000 (kanonisch, angeglichen) |
 | `agency` | `apiCallsPerMonth` | `limit.api_calls_monthly` | 50.000 | 25.000 |
 | `agency` | `bulkJobsPerMonth` | `limit.bulk_jobs_monthly` | 100 | 50 |
 | `partner` | `answersPerMonth` | `limit.bot_messages_monthly` | 100.000 | 50.000 |

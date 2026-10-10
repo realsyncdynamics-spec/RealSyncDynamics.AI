@@ -46,22 +46,22 @@ export function OptimizerLayout({
   usePageMeta({ title: metaTitle, description: metaDescription, url: metaUrl });
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
       {/* Marken-Header */}
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
+      <header className="h-14 border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] flex items-center px-4">
         <Link
           to="/"
           className="flex items-center gap-2.5"
           aria-label="Zur Startseite"
         >
-          <div className="w-8 h-8 rounded-none bg-obsidian-950 border border-titanium-700 flex items-center justify-center">
-            <Cpu className="h-4 w-4 text-security-400" />
+          <div className="w-8 h-8 rounded-[var(--brand-radius-md)] bg-[var(--brand-bg-1)] border border-[var(--brand-line-dark-strong)] flex items-center justify-center">
+            <Cpu className="h-4 w-4 text-[var(--brand-champ)]" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">
+            <div className="font-[family-name:var(--brand-serif)] font-semibold text-base tracking-tight text-[var(--brand-champ-hi)]">
               Cloud Code Optimizer
             </div>
-            <div className="text-[11px] text-titanium-400 font-medium">RealSync Dynamics</div>
+            <div className="text-[11px] text-[var(--brand-titan)] font-medium">RealSync Dynamics</div>
           </div>
         </Link>
       </header>
@@ -78,7 +78,7 @@ export function OptimizerLayout({
             {backTo ? (
               <Link
                 to={backTo}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-sm text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--brand-radius-md)] text-sm text-[var(--brand-titan)] hover:text-[var(--brand-champ)] hover:bg-[rgba(242,201,138,0.08)] transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" /> Zurück
               </Link>

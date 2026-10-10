@@ -38,3 +38,6 @@ export * from './workflows/skills.ts';
 export * from './workflows/workflows.ts';
 
 export { buildSiteFromPrompt } from './pipeline.ts';
+
+// Rebuild-Workflow (bestehende Website → gestalteter Neubau mit Nachweisen).
+export * from './rebuild/index.ts';

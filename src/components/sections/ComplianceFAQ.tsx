@@ -55,7 +55,7 @@ export function ComplianceFAQ({
   eyebrow = 'FAQ',
 }: Props) {
   return (
-    <section className="px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+    <section className="rs-classical-faq px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">

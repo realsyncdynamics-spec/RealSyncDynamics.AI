@@ -130,6 +130,21 @@ describe('Rechenzeit bei feindlichen Seiten', () => {
     expect(within(3000, () => { extract(html); })).toBe(true);
   });
 
+  it('Zehntausende gleiche Vertrauens-Listenpunkte erzeugen keine Belegflut', () => {
+    const html = page(`<ul>${'<li>Meisterbetrieb</li>'.repeat(35_000)}</ul>`);
+    let result: ReturnType<typeof extract> | null = null;
+    expect(within(3000, () => { result = extract(html); })).toBe(true);
+    expect(result!.page.trust.length).toBeLessThanOrEqual(24);
+    expect(result!.evidence.length).toBeLessThan(200);
+  });
+
+  it('Zehntausende gleiche Frage-Antwort-Paare im selben Container', () => {
+    const html = page(`<div>${'<h3>Wie lange dauert das?</h3><p>Etwa zwei Wochen ab Auftrag.</p>'.repeat(17_500)}</div>`);
+    let result: ReturnType<typeof extract> | null = null;
+    expect(within(3000, () => { result = extract(html); })).toBe(true);
+    expect(result!.evidence.length).toBeLessThan(200);
+  });
+
   it('Zehntausende „Kunden"-Überschriften über einem Logo-Abschnitt', () => {
     const html = page(`<section>${'<h3>Unsere Kunden</h3>'.repeat(35_000)}<img src="/a.png"><img src="/b.png"><img src="/c.png"></section>`);
     expect(within(3000, () => { extract(html); })).toBe(true);
@@ -141,6 +156,19 @@ describe('Rechenzeit bei feindlichen Seiten', () => {
     expect(within(3000, () => {
       extract(page(FILLER), [{ url: `${PAGE}a.css`, css: nested.slice(0, 600_000) }, { url: `${PAGE}b.css`, css: selector.slice(0, 600_000) }]);
     })).toBe(true);
+  });
+});
+
+describe('Fehlerhaftes JSON-LD', () => {
+  it('überspringt FAQ-Einträge, die kein Objekt sind, statt die Seite abzubrechen', () => {
+    const ld = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'FAQPage',
+      mainEntity: [null, 'Text', { '@type': 'Question', name: 'Wie lange dauert eine Dachsanierung?', acceptedAnswer: null },
+        { '@type': 'Question', name: 'Wie lange dauert eine Dachsanierung?', acceptedAnswer: { '@type': 'Answer', text: 'In der Regel zwei bis drei Wochen ab Auftrag.' } }],
+    });
+    const html = page(FILLER, `<title>Dach Beispiel GmbH</title><script type="application/ld+json">${ld}</script>`);
+    const { page: extracted } = extractPage({ url: PAGE, html, statusCode: 200, fetchedAt: AT }, 0);
+    expect(extracted.faqs.map((f) => f.question)).toEqual(['Wie lange dauert eine Dachsanierung?']);
   });
 });
 

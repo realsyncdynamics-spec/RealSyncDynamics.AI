@@ -553,6 +553,29 @@ export function elementPath(el: HtmlElement): string {
   return prefix + segments.join('>');
 }
 
+// Position je Tag unter einem Elternelement — einmal je Elternelement
+// berechnet. Ohne den Zwischenspeicher scannte jeder Pfad alle Geschwister
+// jedes Vorfahren; bei Zehntausenden gleichen Geschwistern wurde das
+// quadratisch. Der Baum ändert sich nach `parseHtml` nicht mehr.
+const siblingIndexes = new WeakMap<HtmlElement, { position: Map<HtmlElement, number>; count: Map<string, number> }>();
+
+function siblingIndex(parent: HtmlElement): { position: Map<HtmlElement, number>; count: Map<string, number> } {
+  let index = siblingIndexes.get(parent);
+  if (!index) {
+    const position = new Map<HtmlElement, number>();
+    const count = new Map<string, number>();
+    for (const child of parent.children) {
+      if (child.type !== 'element') continue;
+      const n = (count.get(child.tag) ?? 0) + 1;
+      count.set(child.tag, n);
+      position.set(child, n);
+    }
+    index = { position, count };
+    siblingIndexes.set(parent, index);
+  }
+  return index;
+}
+
 function segmentOf(el: HtmlElement): string {
   let segment = el.tag;
   const id = el.attrs.id;
@@ -564,14 +587,9 @@ function segmentOf(el: HtmlElement): string {
   }
   const parent = el.parent;
   if (parent) {
-    let sameTag = 0;
-    let position = 0;
-    for (const child of parent.children) {
-      if (child.type !== 'element' || child.tag !== el.tag) continue;
-      sameTag += 1;
-      if (child === el) position = sameTag;
-    }
-    if (sameTag > 1) segment += `:nth-of-type(${position})`;
+    const { position, count } = siblingIndex(parent);
+    const sameTag = count.get(el.tag) ?? 0;
+    if (sameTag > 1) segment += `:nth-of-type(${position.get(el) ?? 0})`;
   }
   return segment;
 }

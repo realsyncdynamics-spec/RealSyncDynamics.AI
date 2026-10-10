@@ -805,21 +805,27 @@ function readTrust(
   ev: EvidenceRecorder,
 ): TrustSignal[] {
   const out: TrustSignal[] = [];
-  const push = (signal: TrustSignal) => {
+  const sources: string[] = [];
+  // `source` ist eine fertige Beleg-ID oder das Element, aus dem der Beleg
+  // erst entsteht — und zwar nur für angenommene Signale. Sonst erzeugte eine
+  // Seite mit Zehntausenden gleichen Treffern ebenso viele Belege.
+  const push = (signal: Omit<TrustSignal, 'ev'>, source: string | HtmlElement) => {
     if (out.length >= MAX_TRUST) return;
+    const key = typeof source === 'string' ? source : `@${source.start}`;
     const value = signal.value.toLowerCase();
     // Dieselbe Aussage nur einmal — auch wenn zwei Muster sie treffen
     // („Meisterbetrieb seit 1998" ist Zertifikat und Jahresangabe zugleich),
-    // und keine Teilaussage neben der vollständigen aus demselben Beleg.
-    const duplicate = out.some((s) => {
+    // und keine Teilaussage neben der vollständigen aus derselben Quelle.
+    const duplicate = out.some((s, i) => {
       const other = s.value.toLowerCase();
-      return other === value || (s.ev === signal.ev && (other.includes(value) || value.includes(other)));
+      return other === value || (sources[i] === key && (other.includes(value) || value.includes(other)));
     });
     if (duplicate) return;
-    out.push(signal);
+    out.push({ ...signal, ev: typeof source === 'string' ? source : ev.element(source) });
+    sources.push(key);
   };
 
-  for (const link of legalLinks) push({ kind: link.kind, value: link.href, detail: null, ev: link.ev });
+  for (const link of legalLinks) push({ kind: link.kind, value: link.href, detail: null }, link.ev);
 
   // Begriffe im sichtbaren Text und in Alternativtexten
   for (const node of textElements(body)) {
@@ -832,7 +838,7 @@ function readTrust(
         const match = pattern.exec(text);
         if (!match) break;
         if (kind === 'years' && !yearsAboutCompany(text, match.index, match[0])) continue;
-        push({ kind, value: trustPhrase(text, match.index, match[0].length, kind), detail: null, ev: ev.element(node) });
+        push({ kind, value: trustPhrase(text, match.index, match[0].length, kind), detail: null }, node);
       }
     }
   }
@@ -842,7 +848,7 @@ function readTrust(
     for (const { kind, pattern } of TRUST_TERMS) {
       if (kind === 'guarantee' || kind === 'years') continue;
       pattern.lastIndex = 0;
-      if (pattern.exec(alt)) push({ kind, value: alt.trim(), detail: 'Bild', ev: ev.element(img) });
+      if (pattern.exec(alt)) push({ kind, value: alt.trim(), detail: 'Bild' }, img);
     }
   }
 
@@ -858,7 +864,7 @@ function readTrust(
     if (quote.length < 30 || quote.length > 400) continue;
     const authorEl = findFirst(container, (el) => el.tag === 'cite' || el.tag === 'figcaption' || /(author|name|autor|kunde)/.test(identityOf(el)));
     const author = authorEl ? textOf(authorEl, 80) : null;
-    push({ kind: 'testimonial', value: quote, detail: author && author !== quote ? author : null, ev: ev.element(container) });
+    push({ kind: 'testimonial', value: quote, detail: author && author !== quote ? author : null }, container);
   }
 
   // Strukturierte Bewertungen — nur, wenn die Quelle sie auch **zeigt**.
@@ -868,11 +874,11 @@ function readTrust(
   if (jsonLd.ratingValue !== null && jsonLd.ev && ratingVisible(body, jsonLd.ratingValue)) {
     const count = jsonLd.reviewCount !== null ? ` (${jsonLd.reviewCount} Bewertungen)` : '';
     const platforms = [...new Set(thirdParty.filter((t) => t.category === 'reviews').map((t) => reviewPlatform(t.host)).filter((p): p is string => p !== null))];
-    push({ kind: 'rating', value: `${formatDecimal(jsonLd.ratingValue)} von 5${count}`, detail: platforms.length === 1 ? platforms[0] : null, ev: jsonLd.ev });
+    push({ kind: 'rating', value: `${formatDecimal(jsonLd.ratingValue)} von 5${count}`, detail: platforms.length === 1 ? platforms[0] : null }, jsonLd.ev);
   }
 
   for (const resource of thirdParty) {
-    if (resource.category === 'reviews') push({ kind: 'review-widget', value: resource.host, detail: null, ev: resource.ev });
+    if (resource.category === 'reviews') push({ kind: 'review-widget', value: resource.host, detail: null }, resource.ev);
   }
 
   // Kundenlogos: Abschnitt mit passender Überschrift und mindestens drei
@@ -891,7 +897,7 @@ function readTrust(
     const logos = findAll(scope, byTag('img'));
     if (logos.length < 3) continue;
     const alts = logos.map((l) => (l.attrs.alt ?? '').trim()).filter((a) => a !== '').slice(0, 6);
-    push({ kind: 'client-logos', value: `${logos.length} Logos unter „${text}"`, detail: alts.length > 0 ? alts.join(', ') : null, ev: ev.element(scope) });
+    push({ kind: 'client-logos', value: `${logos.length} Logos unter „${text}"`, detail: alts.length > 0 ? alts.join(', ') : null }, scope);
     break;
   }
 
@@ -925,11 +931,12 @@ function readPrices(body: HtmlElement, inChrome: (el: HtmlElement) => boolean, e
 
 function readFaqs(body: HtmlElement, jsonLd: JsonLdFacts, ev: EvidenceRecorder): SourceFaq[] {
   const out: SourceFaq[] = [];
-  const push = (question: string, answer: string, evidence: string) => {
+  // Beleg erst nach Grenze und Dublettenprüfung — abgelehnte Paare erzeugen keinen.
+  const push = (question: string, answer: string, evidence: string | HtmlElement) => {
     const q = question.trim();
     const a = answer.trim();
     if (q.length < 6 || a.length < 10 || out.length >= MAX_FAQ || out.some((f) => f.question === q)) return;
-    out.push({ question: q.slice(0, 200), answer: a.slice(0, 600), ev: evidence });
+    out.push({ question: q.slice(0, 200), answer: a.slice(0, 600), ev: typeof evidence === 'string' ? evidence : ev.element(evidence) });
   };
 
   for (const details of findAll(body, byTag('details'))) {
@@ -937,7 +944,7 @@ function readFaqs(body: HtmlElement, jsonLd: JsonLdFacts, ev: EvidenceRecorder):
     if (!summary) continue;
     const question = textOf(summary, 200);
     const answer = textOf(details, 800).slice(question.length).trim();
-    push(question, answer, ev.element(details));
+    push(question, answer, details);
   }
   // Definitionslisten: je Elternelement ein Durchlauf — jedes <dt> bekommt
   // das nächste <dd> (mehrere <dt> vor einem <dd> teilen es). Linear, auch
@@ -951,7 +958,7 @@ function readFaqs(body: HtmlElement, jsonLd: JsonLdFacts, ev: EvidenceRecorder):
       if (child.type !== 'element') continue;
       if (child.tag === 'dt') pending.push(child);
       else if (child.tag === 'dd' && pending.length > 0) {
-        for (const dt of pending) push(textOf(dt, 200), textOf(child, 600), ev.element(parent));
+        for (const dt of pending) push(textOf(dt, 200), textOf(child, 600), parent);
         pending = [];
         if (out.length >= MAX_FAQ) break;
       }
@@ -977,7 +984,7 @@ function readFaqs(body: HtmlElement, jsonLd: JsonLdFacts, ev: EvidenceRecorder):
     for (const child of parent.children) {
       if (child.type !== 'element') continue;
       if (open) {
-        if (['p', 'div'].includes(child.tag)) push(textOf(open, 200), textOf(child, 600), ev.element(open));
+        if (['p', 'div'].includes(child.tag)) push(textOf(open, 200), textOf(child, 600), open);
         open = null;
       }
       if (wanted.has(child)) open = child;
@@ -1186,9 +1193,12 @@ function readJsonLd(doc: HtmlDocument, ev: EvidenceRecorder): JsonLdFacts {
       if (types.some((t) => t === 'FAQPage')) {
         const entities = Array.isArray(node.mainEntity) ? node.mainEntity : [];
         for (const entity of entities.slice(0, 12)) {
-          const q = str((entity as Record<string, unknown>).name);
-          const answer = (entity as Record<string, unknown>).acceptedAnswer as Record<string, unknown> | undefined;
-          const a = answer ? str(answer.text) : null;
+          // Seitendaten: `null` oder Text statt Objekt überspringen, nicht abbrechen.
+          if (!entity || typeof entity !== 'object') continue;
+          const record = entity as Record<string, unknown>;
+          const q = str(record.name);
+          const answer = record.acceptedAnswer;
+          const a = answer && typeof answer === 'object' ? str((answer as Record<string, unknown>).text) : null;
           if (q && a) {
             facts.faq.push({ question: q.slice(0, 200), answer: stripTags(a).slice(0, 600) });
             used = true;

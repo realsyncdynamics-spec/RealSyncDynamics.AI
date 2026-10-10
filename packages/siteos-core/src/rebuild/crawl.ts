@@ -7,7 +7,8 @@
 
 /** Kennung, mit der sich der Abruf bei der fremden Website ausweist. */
 export const REBUILD_USER_AGENT = 'RealSyncDynamicsAI-SiteOS-Rebuild/1.0 (+https://realsyncdynamicsai.de)';
-const OWN_AGENT_TOKEN = 'realsyncdynamicsai';
+/** Eigene Produktkennungen für robots.txt (RFC 9309: exakt, Groß-/Kleinschreibung egal). */
+const OWN_AGENT_TOKENS: ReadonlySet<string> = new Set(['realsyncdynamicsai', 'realsyncdynamicsai-siteos-rebuild']);
 
 // ─────────────────────────────────────────────────────────────────────
 // Eingabe-Adresse
@@ -93,7 +94,7 @@ export function isBlockedAddress(hostOrIp: string): boolean {
 
   const parts = host.split('.');
   if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p))) return false;
-  const [a, b] = parts.map(Number);
+  const [a, b, c] = parts.map(Number);
   if (parts.map(Number).some((n) => n > 255)) return true;
   return (
     a === 0
@@ -103,7 +104,9 @@ export function isBlockedAddress(hostOrIp: string): boolean {
     || (a === 172 && b >= 16 && b <= 31)
     || (a === 192 && b === 168)
     || (a === 100 && b >= 64 && b <= 127)
-    || (a === 192 && b === 0)
+    || (a === 192 && b === 0 && (c === 0 || c === 2)) // IETF-Protokolle, TEST-NET-1
+    || (a === 198 && b === 51 && c === 100) // TEST-NET-2
+    || (a === 203 && b === 0 && c === 113) // TEST-NET-3
     || (a === 198 && (b === 18 || b === 19))
     || a >= 224
   );
@@ -158,7 +161,7 @@ export function parseRobots(text: string): RobotsRules {
     if (field === 'disallow' && value !== '') current.disallow.push(value);
   }
 
-  const own = groups.find((g) => g.agents.some((a) => a !== '*' && OWN_AGENT_TOKEN.includes(a.replace(/[^a-z0-9]/g, '')) && a.length > 3));
+  const own = groups.find((g) => g.agents.some((a) => OWN_AGENT_TOKENS.has(a.split('/')[0].trim())));
   const star = groups.find((g) => g.agents.includes('*'));
   const chosen = own ?? star;
   return { found: true, allow: chosen?.allow ?? [], disallow: chosen?.disallow ?? [], sitemaps };
@@ -274,7 +277,7 @@ export function planCrawl(start: URL, candidates: CrawlCandidate[], max: number,
     if (/\.(pdf|jpe?g|png|gif|svg|webp|zip|docx?|xlsx?|mp4|xml|txt)$/i.test(url.pathname)) continue;
     const key = canonicalPageKey(url);
     if (key === home) continue;
-    if (robots && !robotsAllows(url.pathname, robots)) continue;
+    if (robots && !robotsAllows(`${url.pathname}${url.search}`, robots)) continue;
 
     const haystack = `${decodeSafe(url.pathname).toLowerCase()} ${(candidate.label ?? '').toLowerCase()}`;
     let score = 0;

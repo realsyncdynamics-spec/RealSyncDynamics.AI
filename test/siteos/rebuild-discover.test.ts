@@ -48,6 +48,14 @@ describe('DISCOVER — Eingabe und SSRF-Schranke', () => {
     expect(isBlockedAddress('93.184.216.34')).toBe(false);
     expect(isBlockedAddress('::ffff:127.0.0.1')).toBe(true);
   });
+
+  it('sperrt nur die reservierten 192.0.x-Bereiche und die Dokumentationsnetze', () => {
+    expect(isBlockedAddress('192.0.78.24')).toBe(false); // öffentlich (u. a. Hosting)
+    expect(isBlockedAddress('192.0.0.8')).toBe(true);
+    expect(isBlockedAddress('192.0.2.10')).toBe(true); // TEST-NET-1
+    expect(isBlockedAddress('198.51.100.7')).toBe(true); // TEST-NET-2
+    expect(isBlockedAddress('203.0.113.9')).toBe(true); // TEST-NET-3
+  });
 });
 
 describe('DISCOVER — robots.txt und Sitemap', () => {
@@ -71,6 +79,10 @@ describe('DISCOVER — robots.txt und Sitemap', () => {
   it('beachtet eine Gruppe für die eigene Kennung vorrangig', () => {
     const own = parseRobots('User-agent: *\nAllow: /\n\nUser-agent: RealSyncDynamicsAI\nDisallow: /');
     expect(robotsAllows('/', own)).toBe(false);
+    const byFullName = parseRobots('User-agent: *\nAllow: /\n\nUser-agent: RealSyncDynamicsAI-SiteOS-Rebuild\nDisallow: /');
+    expect(robotsAllows('/', byFullName)).toBe(false);
+    const unrelated = parseRobots('User-agent: *\nAllow: /\n\nUser-agent: sync\nDisallow: /');
+    expect(robotsAllows('/', unrelated)).toBe(true);
   });
 
   it('unterscheidet Sitemap-Index und URL-Liste', () => {
@@ -101,6 +113,14 @@ describe('DISCOVER — Auswahl der Unterseiten', () => {
     const a = planCrawl(start, candidates, 2);
     expect(a).toHaveLength(2);
     expect(planCrawl(start, [...candidates].reverse(), 2)).toEqual(a);
+  });
+
+  it('wendet robots.txt-Regeln auf Pfad und Query an', () => {
+    const withQuery = [
+      { url: 'https://www.beispiel.de/leistungen?seite=2', label: 'Leistungen', inNavigation: true },
+      { url: 'https://www.beispiel.de/kontakt', label: 'Kontakt', inNavigation: true },
+    ];
+    expect(planCrawl(start, withQuery, 5, parseRobots('User-agent: *\nDisallow: /*?'))).toEqual(['https://www.beispiel.de/kontakt']);
   });
 
   it('findet Stylesheets derselben Website und interne Links', () => {

@@ -97,6 +97,7 @@ export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-29T08:43Z';
  */
 export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'add-auditor',
+  'agent-change-evidence-webhook',
   'agent-os-runner',
   'agent-scheduler',
   'ai-act-auto-classify',

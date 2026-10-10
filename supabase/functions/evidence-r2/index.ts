@@ -137,7 +137,9 @@ Deno.serve(async (req) => {
         return jsonError(502, 'STORAGE_ERROR', 'could not store evidence');
       }
 
-      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.blob.put', target_type: 'evidence_blob', target_id: key, payload: { sha256, size: bytes.length, mime_type: mime, deduplicated: alreadyStored } });
+      const putAudit = await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.blob.put', target_type: 'evidence_blob', target_id: key, payload: { sha256, size: bytes.length, mime_type: mime, deduplicated: alreadyStored } });
+      // Retry ist idempotent (write-once, Key enthält den Hash).
+      if (!putAudit.ok) return jsonError(500, 'AUDIT_FAILED', 'evidence stored but audit failed; retry');
       return jsonResponse({ ok: true, key, sha256, size: bytes.length, deduplicated: alreadyStored });
     }
 
@@ -155,7 +157,8 @@ Deno.serve(async (req) => {
     if (bytes.length > MAX_OBJECT_BYTES) return jsonError(413, 'PAYLOAD_TOO_LARGE', 'object exceeds response limit');
     const sha256 = bufToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
 
-    await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.blob.get', target_type: 'evidence_blob', target_id: key, payload: { sha256, size: bytes.length } });
+    const getAudit = await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.blob.get', target_type: 'evidence_blob', target_id: key, payload: { sha256, size: bytes.length } });
+    if (!getAudit.ok) return jsonError(500, 'AUDIT_FAILED', 'could not audit evidence read');
     return jsonResponse({ ok: true, key, sha256, size: bytes.length, mime_type: res.headers.get('content-type'), content_base64: encodeBase64(bytes) });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'evidence_r2_failed', op, error: (e as Error)?.message ?? String(e) }));

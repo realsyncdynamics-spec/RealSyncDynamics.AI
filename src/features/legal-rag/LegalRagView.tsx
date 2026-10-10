@@ -7,6 +7,7 @@ import {
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 type LegalFramework =
   | 'gdpr' | 'ai_act' | 'nis2' | 'dsa' | 'data_act'
@@ -78,7 +79,7 @@ function LegalRagInner() {
       if (!session) { setError('Bitte erneut anmelden.'); return; }
 
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/legal-retrieve`,
+        `${getSupabaseUrl()}/functions/v1/legal-retrieve`,
         {
           method: 'POST',
           headers: {

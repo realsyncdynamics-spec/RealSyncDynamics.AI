@@ -64,6 +64,13 @@ jobs:
       # bemerkt, weil check:pricing nirgends lief.
       - name: Pricing-Kanonizitaet (SSoT, Deno-Zwilling, Plan-Katalog)
         run: npm run check:pricing
+      # Dasselbe Prinzip fuer die EINKAUFSpreise: was ein Providertoken kostet,
+      # steht in shared/model-prices.ts, und der Deno-Zwilling muss byte-gleich
+      # bleiben. Vorher lagen Providerpreise an vier Stellen gleichzeitig
+      # (ai_tools, MODEL_PRICING, zwei Schaetzfunktionen im governance-agent),
+      # drei davon mit falschen Zahlen.
+      - name: Modellpreis-Kanonizitaet (SSoT, Deno-Zwilling)
+        run: npm run check:model-prices
       - name: Kontingent-Kanonizitaet (Ratsche gegen neue Divergenzen)
         run: npm run check:limits
       # Ein oeffentlich zugesicherter Preis ist ein Angebot und darf nur dort
@@ -215,28 +222,38 @@ jobs:
         if: steps.relevant.outputs.run == 'true'
         run: |
           set -euo pipefail
+          # Zuerst Googles Docker-Hub-Mirror (ohne Anmeldung, ohne das
+          # Pull-Limit von Docker Hub), dann Docker Hub selbst. Der Digest
+          # bindet den Inhalt: beide Quellen liefern byte-gleich dasselbe Image.
+          # Am 2026-10-09 scheiterte Docker Hub ueber Stunden an
+          # `toomanyrequests` und Timeouts von auth.docker.io — vier Laeufe
+          # von #1759 ohne eine einzige ausgefuehrte Migration.
+          quellen="mirror.gcr.io/$POSTGRES_IMAGE $POSTGRES_IMAGE"
           for versuch in 1 2 3 4; do
-            if docker pull "$POSTGRES_IMAGE"; then
-              geholt=1
-              break
-            fi
+            for quelle in $quellen; do
+              if docker pull "$quelle"; then
+                bild="$quelle"
+                break 2
+              fi
+              echo "::warning::Pull von $quelle fehlgeschlagen (Versuch $versuch/4)"
+            done
             if [ "$versuch" = 4 ]; then
-              echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch 4/4)"
               break
             fi
             wartezeit=$((versuch * versuch * 5))
-            echo "::warning::Pull von $POSTGRES_IMAGE fehlgeschlagen (Versuch $versuch/4) — neuer Versuch in ${wartezeit}s"
+            echo "::warning::Keine Quelle erreichbar — neuer Versuch in ${wartezeit}s"
             sleep "$wartezeit"
           done
-          if [ "${geholt:-0}" != 1 ]; then
-            echo "::error::Image $POSTGRES_IMAGE nach vier Versuchen nicht erreichbar — Registry-Stoerung, kein Befund an den Migrationen."
+          if [ -z "${bild:-}" ]; then
+            echo "::error::Image $POSTGRES_IMAGE weder ueber mirror.gcr.io noch ueber Docker Hub erreichbar (vier Versuche) — Registry-Stoerung, kein Befund an den Migrationen."
             exit 1
           fi
+          echo "Postgres-Image geholt von: $bild"
           docker run --detach --name "$POSTGRES_CONTAINER" \
             --env POSTGRES_PASSWORD=postgres \
             --env POSTGRES_DB=postgres \
             --publish 5432:5432 \
-            "$POSTGRES_IMAGE"
+            "$bild"
       - name: Auf Postgres warten
         if: steps.relevant.outputs.run == 'true'
         run: |

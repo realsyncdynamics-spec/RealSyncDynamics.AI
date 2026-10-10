@@ -89,6 +89,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Hashes, Snapshots und Prüfpfade (read-only im Free Audit)',
   },
   {
+    id: 'voice',
+    label: 'Voice',
+    icon: 'Mic',
+    route: '/app/voice',
+    status: 'live',
+    gate: { kind: 'all' },
+    description: 'Governed Voice Sessions · Tool-Verdicts · Evidenz (read-only)',
+  },
+  {
     id: 'ai-systems',
     label: 'KI-Systeme',
     icon: 'Cpu',
@@ -141,6 +150,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     gate: { kind: 'module', module: 'policy_engine' },
     description: 'Auftragsverarbeiter und Drittparteienrisiko',
+  },
+  {
+    id: 'vendor-exposure',
+    label: 'Vendor Exposure',
+    icon: 'ShieldAlert',
+    route: '/app/vendor-exposure',
+    status: 'beta',
+    gate: { kind: 'module', module: 'policy_engine' },
+    description: 'Executive Drittparteien-Exposure aus Risiko, DPA und Transferstatus',
   },
   {
     id: 'reports',
@@ -234,6 +252,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     gate: { kind: 'all' },
     description: 'Governance-Agents und ihre Läufe',
+  },
+  {
+    // Geräte-lokales Setup: Verbindung, Rolle, Governance-Test, Profil. Kein Server-Speicher.
+    id: 'local-ai',
+    label: 'Local AI',
+    icon: 'Cpu',
+    route: '/app/local-ai/onboarding',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Lokale KI (Ollama) prüfen, testen und kontrolliert freischalten',
   },
   {
     id: 'bots',

@@ -3,27 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Title ~60 Zeichen, Hauptkeyword zuerst; Description 130-155 Zeichen
-         (SEO-Report 2026-08: Title zu lang, Description deutlich zu lang).
-         62 Zeichen: Keyword vollstaendig vorn, nur das Brand-Suffix koennte
-         in der SERP abgeschnitten werden. -->
-    <title>RealSyncDynamics.AI — The Governance OS for Autonomous AI</title>
-    <meta name="description" content="RealSyncDynamics.AI ist die Control Plane für Enterprise-KI: Any model. Any agent. One control plane. EU AI Act, DSGVO und ISO 42001 als Evidence-Proof-Layer." />
-    <meta name="keywords" content="AI Governance Runtime, Runtime Compliance, Continuous AI Governance, EU AI Act Monitoring, Agentic Compliance, Evidence Infrastructure, Operational Governance Runtime, DSGVO Monitoring, TTDSG Consent Monitoring" />
+    <!-- Static fallback metadata mirrors the canonical / landing. React SEOHead owns route-specific metadata after hydration. -->
+    <title>KI-Governance & Kontrollschicht | RealSync Dynamics AI</title>
+    <meta name="description" content="Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen." />
+    <meta name="keywords" content="AI Governance, Enterprise AI Governance, EU AI Act, DSGVO, AI Control Plane, Evidence Infrastructure, KI Governance, Policy Enforcement" />
     <meta name="theme-color" content="#02040a" />
-    <meta property="og:title" content="The Governance OS for Autonomous AI" />
-    <meta property="og:description" content="Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI." />
-    <meta property="og:site_name" content="RealSyncDynamics.AI" />
+    <meta property="og:title" content="Die Kontrollschicht für KI im Unternehmen | RealSync Dynamics AI" />
+    <meta property="og:description" content="Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen — provider-neutral und EU-fokussiert." />
+    <meta property="og:site_name" content="RealSync Dynamics AI" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
     <meta property="og:url" content="https://realsyncdynamicsai.de/" />
     <meta property="og:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="RealSyncDynamics.AI — The Governance OS for Autonomous AI" />
+    <meta property="og:image:alt" content="RealSync Dynamics AI — Kontroll- und Nachweisschicht für Enterprise-KI" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="The Governance OS for Autonomous AI" />
-    <meta name="twitter:description" content="Europa braucht Kontrolle über Frontier-KI: RealSyncDynamics.AI baut die Kontroll-, Autorisierungs- und Evidence-Layer zwischen Unternehmen und KI." />
+    <meta name="twitter:title" content="Die Kontrollschicht für KI im Unternehmen | RealSync Dynamics AI" />
+    <meta name="twitter:description" content="Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen." />
     <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <!--
       Security headers via meta-equivalents.
@@ -81,8 +78,8 @@
         {
           "@type": "Organization",
           "@id": "https://realsyncdynamicsai.de/#org",
-          "name": "RealSync Dynamics",
-          "alternateName": "RealSyncDynamics.AI",
+          "name": "RealSync Dynamics AI",
+          "alternateName": ["RealSyncDynamics.AI", "RealSync"],
           "url": "https://realsyncdynamicsai.de/",
           "logo": "https://realsyncdynamicsai.de/og-image.png",
           "description": "Europäische Runtime-native AI-Governance-Plattform — Website-Scans und KI-Inventar für Web-, Daten- und KI-Systeme, regulatorische Risiko-Erkennung und kryptografisch nachvollziehbare Evidenz. Dauerhafte Domain-Überwachung: Coming Soon. EU-Hosting, DSGVO / TTDSG / EU AI Act.",
@@ -110,13 +107,13 @@
           "@type": "WebSite",
           "@id": "https://realsyncdynamicsai.de/#website",
           "url": "https://realsyncdynamicsai.de/",
-          "name": "RealSyncDynamics.AI",
+          "name": "RealSync Dynamics AI",
           "publisher": {"@id": "https://realsyncdynamicsai.de/#org"},
           "inLanguage": "de-DE"
         },
         {
           "@type": "SoftwareApplication",
-          "name": "RealSyncDynamics.AI",
+          "name": "RealSync Dynamics AI",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
           "description": "Runtime-native AI-Governance- und Compliance-Plattform: Website-Scans und KI-Inventar für Web-, Daten- und KI-Systeme, regulatorische Risiko-Erkennung, kryptografisch nachvollziehbare Evidenz, Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). Dauerhafte Domain-Überwachung: Coming Soon. EU-Hosting. Unterstützt Anforderungen aus DSGVO Art. 32, EU AI Act, BAIT und MaRisk.",
@@ -139,19 +136,6 @@
       gerendert (SEO-Audit 2026-08). FAQPage-Markup lebt auf /ai-act-faq, wo die
       Fragen als Akkordeon sichtbar sind (src/config/seo.ts).
     -->
-    <script type="text/javascript">
-      // SPA on GitHub Pages — restore deep-link path written by 404.html.
-      // Pattern: rafgraph/spa-github-pages
-      (function (l) {
-        if (l.search[1] === '/') {
-          var decoded = l.search.slice(1).split('&').map(function (s) {
-            return s.replace(/~and~/g, '&');
-          }).join('?');
-          window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash);
-        }
-      }(window.location));
-    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -162,7 +146,7 @@
       but readable for crawlers and accessibility tools without JS.
     -->
     <noscript>
-      <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
+      <p>RealSync Dynamics AI — DSGVO-konforme KI-Compliance-Plattform.</p>
       <ul>
         <li><a href="/legal/privacy">Datenschutzerklärung</a></li>
         <li><a href="/legal/impressum">Impressum</a></li>

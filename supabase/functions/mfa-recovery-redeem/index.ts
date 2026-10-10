@@ -10,12 +10,7 @@
 // Body: { code: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
-
-async function sha256Hex(input: string): Promise<string> {
-  const norm = input.replace(/[\s-]+/g, '').toUpperCase();
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(norm));
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+import { findConsumableRecoveryCode, sha256HexRecoveryCode } from '../_shared/mfaRecovery.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -44,21 +39,35 @@ Deno.serve(async (req) => {
     const code = body.code as string | undefined;
     if (!code || typeof code !== 'string') return jsonResponse({ error: 'missing_code' }, 400);
 
-    const codeHash = await sha256Hex(code);
+    const codeHash = await sha256HexRecoveryCode(code);
 
     // Passenden, unbenutzten Code des Nutzers finden.
-    const { data: row } = await admin
+    const { data: rows } = await admin
       .from('mfa_recovery_codes')
-      .select('id')
+      .select('id,user_id,code_hash,used_at')
       .eq('user_id', user.id)
       .eq('code_hash', codeHash)
       .is('used_at', null)
-      .maybeSingle();
+      .limit(10);
 
-    if (!row) return jsonResponse({ error: 'invalid_code' }, 401);
+    const matched = findConsumableRecoveryCode((rows ?? []) as Array<{
+      id: string;
+      user_id: string;
+      code_hash: string;
+      used_at: string | null;
+    }>, user.id, codeHash);
+
+    if (!matched) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // Code verbrauchen.
-    await admin.from('mfa_recovery_codes').update({ used_at: new Date().toISOString() }).eq('id', row.id);
+    const { data: consumed, error: consumeErr } = await admin.from('mfa_recovery_codes')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', matched.id)
+      .eq('user_id', user.id)
+      .is('used_at', null)
+      .select('id')
+      .maybeSingle();
+    if (consumeErr || !consumed) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // TOTP-Faktoren des Nutzers entfernen → Neu-Enrollment nötig.
     // deno-lint-ignore no-explicit-any

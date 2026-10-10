@@ -16,13 +16,17 @@
  * kaputt gemeldet; eine Regel über den letzten Lauf meldet sie als repariert.
  */
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
+  antwortUrsache,
   beschreibeStatus,
   causeKey,
   erwarteterAbstandMinuten,
   evaluate,
   evaluateAntworten,
   evaluateFrische,
+  groupAntwortenByCause,
   groupByCause,
   SQL,
   SQL_ANTWORTEN,
@@ -274,6 +278,86 @@ describe('Klasse C — Antwort-Ebene', () => {
     ]);
     expect(a.summeSchlecht).toBe(4);
   });
+
+  it('vereinheitlicht alle cron-only-Antwortformen auf dieselbe Ursache', () => {
+    const ursachen = [
+      antwortUrsache('{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}'),
+      antwortUrsache('{"error":"cron only"}'),
+      antwortUrsache('{"ok":false,"error":"cron only"}'),
+    ];
+    expect(new Set(ursachen).size).toBe(1);
+    expect(ursachen[0]).toContain('cron-vault-secrets.md');
+  });
+
+  it('meldet CRON_KEY_MISSING als fehlendes Function Secret, nicht als Mismatch', () => {
+    const fehlt = [
+      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_MEMORY_DECAY_KEY not configured"}}'),
+      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_SCHEDULER_DISPATCH_KEY not configured"}}'),
+      antwortUrsache('{"code":"CRON_KEY_MISSING","message":"CRON_WEBSITE_RESCAN_KEY not configured"}'),
+      antwortUrsache('CRON_KEY_MISSING'),
+    ];
+    expect(new Set(fehlt).size).toBe(1);
+    expect(fehlt[0]).toContain('Function Secret fehlt (CRON_*_KEY nicht gesetzt)');
+    expect(fehlt[0]).toContain('cron-vault-secrets.md');
+    expect(fehlt[0]).not.toContain('mismatch');
+    // Der Mismatch-Fall bleibt unverändert.
+    expect(antwortUrsache('{"error":"cron only"}')).toContain('Function Secret mismatch');
+  });
+
+  it('trennt 500 CRON_KEY_MISSING von 401 cron-only als zwei Ursachen', () => {
+    const gruppen = groupAntwortenByCause([
+      { art: 'antwort', status: '401', anzahl: 8, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+      {
+        art: 'antwort',
+        status: '500',
+        anzahl: 3,
+        von: 'a',
+        bis: 'b',
+        beispiel: '{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_GOVERNANCE_MONITORING_KEY not configured"}}',
+      },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0].ursache).toContain('Function Secret mismatch');
+    expect(gruppen[1]).toEqual({
+      anzahl: 3,
+      ursache: expect.stringContaining('Function Secret fehlt (CRON_*_KEY nicht gesetzt)'),
+    });
+  });
+
+  it('gruppiert die 40x-401-Messung vom 2026-09-22 zu einer Ursache', () => {
+    const gruppen = groupAntwortenByCause([
+      {
+        art: 'antwort',
+        status: '401',
+        anzahl: 40,
+        von: '2026-09-22 06:15:00.339121+00',
+        bis: '2026-09-22 12:00:00.655852+00',
+        beispiel: '{"ok":false,"error":{"code":"UNAUTHORIZED","message":"cron only"}}',
+      },
+    ]);
+    expect(gruppen).toEqual([
+      {
+        anzahl: 40,
+        ursache: expect.stringContaining('cron-vault-secrets.md'),
+      },
+    ]);
+  });
+
+  it('trennt 401 cron-only von 503 upstream als zwei Ursachen', () => {
+    const gruppen = groupAntwortenByCause([
+      { art: 'antwort', status: '401', anzahl: 40, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+      { art: 'antwort', status: '503', anzahl: 2, von: 'a', bis: 'b', beispiel: '{"code":"UPSTREAM","message":"upstream timeout"}' },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0]).toEqual({
+      anzahl: 40,
+      ursache: expect.stringContaining('cron-vault-secrets.md'),
+    });
+    expect(gruppen[1]).toEqual({
+      anzahl: 2,
+      ursache: 'UPSTREAM: upstream timeout',
+    });
+  });
 });
 
 describe('Beschriftung der Antwortzeilen', () => {
@@ -290,10 +374,37 @@ describe('Beschriftung der Antwortzeilen', () => {
 });
 
 describe('SQL_ANTWORTEN', () => {
-  it('liest die Antwort-Tabelle und zählt Dispatch-Läufe im selben Fenster', () => {
+  it('ordnet Antworten exakt ueber die Request-ID zu, nicht ueber Zeit', () => {
     expect(SQL_ANTWORTEN).toContain('net._http_response');
-    expect(SQL_ANTWORTEN).toContain('dispatch_cron_function');
+    expect(SQL_ANTWORTEN).toContain('public.cron_dispatch_requests');
+    expect(SQL_ANTWORTEN).toContain('JOIN net._http_response r ON r.id = l.request_id');
+    // Das Zeitfenster-Matching zaehlte fremde net.http_post-Antworten mit.
+    expect(SQL_ANTWORTEN).not.toContain('EXISTS');
+    expect(SQL_ANTWORTEN).not.toContain('l.start_time');
+    // Juengere Dispatches koennen noch unterwegs sein.
+    expect(SQL_ANTWORTEN).toContain("q.dispatched_at < now() - interval '2 minutes'");
     // Das Fenster muss zur Aufbewahrung von net._http_response passen.
     expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
+    expect(SQL_ANTWORTEN).toContain("GROUP BY 1, left(coalesce(r.content, ''), 200)");
+  });
+});
+
+describe('Migration 20260927170000: dispatch_cron_function protokolliert die Request-ID', () => {
+  const sql = readFileSync(
+    resolve(__dirname, '../../supabase/migrations/20260927170000_cron_dispatch_request_log.sql'),
+    'utf8',
+  );
+
+  it('legt die Tabelle an und sperrt sie fuer Clients', () => {
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.cron_dispatch_requests');
+    expect(sql).toContain('ENABLE ROW LEVEL SECURITY');
+    expect(sql).toMatch(/REVOKE ALL ON public\.cron_dispatch_requests FROM PUBLIC, anon, authenticated/);
+  });
+
+  it('schreibt die ID von net.http_post und gibt sie weiter zurueck', () => {
+    expect(sql).toContain('v_request_id := net.http_post(');
+    expect(sql).toContain('INSERT INTO public.cron_dispatch_requests (request_id, function_name)');
+    expect(sql).toContain('RETURN v_request_id;');
+    expect(sql).toContain("SET search_path = ''");
   });
 });

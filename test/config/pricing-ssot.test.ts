@@ -127,6 +127,33 @@ describe('Pricing SSoT — Struktur', () => {
     }
   });
 
+  it('markiert nicht-live Module ehrlich (Registry-aligned, kein „Im Produkt:“)', () => {
+    const expected: Record<string, 'preview' | 'coming-soon'> = {
+      // automation-n8n = preview
+      n8n: 'preview',
+      // channel-bots = preview
+      ai_bots: 'preview',
+      voice: 'preview',
+      whatsapp: 'preview',
+      telegram: 'preview',
+      website_chat: 'preview',
+      multi_channel_messaging: 'preview',
+      // Human Handoff: kein Code → Roadmap
+      human_handoff: 'coming-soon',
+      // Kodee: kein Registry-Eintrag, VPS abgelaufen → Roadmap
+      kodee: 'coming-soon',
+      // framework-tisax-dora = coming-soon
+      tisax: 'coming-soon',
+      dora: 'coming-soon',
+    };
+    for (const [id, availability] of Object.entries(expected)) {
+      const mod = ALL_MODULES.find((m) => m.id === id);
+      expect(mod, id).toBeDefined();
+      expect(mod!.availability, id).toBe(availability);
+      expect(mod!.description, id).not.toMatch(/Im Produkt:/);
+    }
+  });
+
   it('Add-ons sind nur für Pläne buchbar, die sie auch führen', () => {
     for (const addon of ADDONS) {
       for (const planId of addon.availableFor) {

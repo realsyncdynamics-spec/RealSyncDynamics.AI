@@ -17,7 +17,7 @@ OpenAI-Modul) auf die HTTP-Body-Felder mappen:
 | Field | Quelle |
 |---|---|
 | `rsd_endpoint` | konstant: `https://realsyncdynamicsai.de/api/telemetry/ai-event` |
-| `rsd_tenant_key` | konstant: deine Tenant-UUID |
+| `rsd_tenant_key` | konstant: dein Ingest-API-Key `rsd_gov_…` (nicht die Tenant-UUID) |
 | `vendor` | aus Vorgänger-Modul (z.B. `openai`) |
 | `model` | aus Vorgänger-Modul (`gpt-4.1`, `claude-opus-4-7`) |
 | `event_type` | konstant: `response_received` |

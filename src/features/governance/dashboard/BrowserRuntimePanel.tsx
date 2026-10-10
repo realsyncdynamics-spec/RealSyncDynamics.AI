@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { brandButtonClass } from '../../../components/brand';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,6 +15,7 @@ import {
   Type,
 } from 'lucide-react';
 import { useBrowserSession } from '../../../lib/useBrowserSession';
+import { useTenant } from '../../../core/access/TenantProvider';
 import {
   BrowserExecutorError,
   executeBrowserActions,
@@ -22,6 +24,7 @@ import {
   type BrowserExecutorAction,
   type BrowserPlanStep,
 } from '../browser/browserExecutorClient';
+import { consumedApprovalMessage } from '../browser/consumedApproval';
 
 type AgentMode = 'assist' | 'copilot' | 'autonomous';
 type RunOutcome = 'ok' | 'approval' | 'error';
@@ -75,6 +78,28 @@ export function urlFromInput(value: string): string | null {
   return normalizeUrl(raw);
 }
 
+export type RuntimeBadgeState = 'active' | 'preview' | 'inactive';
+
+/**
+ * Statusanzeigen der Runtime — nur aus geprüften Zuständen:
+ *   navigation  active  = serverseitiger Executor erreichbar (Health-Probe)
+ *               preview = nur clientseitige Browser-Preview (öffnet den Audit-Pfad)
+ *   evidence    active  = Executor erreichbar; nur seine Aktionen erzeugen
+ *               Evidence (browser-execute → governance_evidence). Die Preview
+ *               schreibt keine.
+ * Ohne mitgliedschaftsgebundenen Mandanten ist beides inaktiv.
+ */
+export function runtimeStatus(input: { tenantBound: boolean; executorConnected: boolean }): {
+  navigation: RuntimeBadgeState;
+  evidence: RuntimeBadgeState;
+} {
+  if (!input.tenantBound) return { navigation: 'inactive', evidence: 'inactive' };
+  return {
+    navigation: input.executorConnected ? 'active' : 'preview',
+    evidence: input.executorConnected ? 'active' : 'inactive',
+  };
+}
+
 function openGovernedBrowser(url: string) {
   window.dispatchEvent(new CustomEvent('realsync:browser-open', { detail: { url } }));
 }
@@ -105,6 +130,9 @@ function resultSummary(result: unknown): string {
 
 export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string | null }) {
   const sessionId = useBrowserSession();
+  const { tenants } = useTenant();
+  // Aktiver Mandant stammt aus der RLS-gescopten memberships-Liste (TenantProvider).
+  const tenantBound = activeTenantId !== null && (tenants ?? []).some((t) => t.tenantId === activeTenantId);
   const [mode, setMode] = useState<AgentMode>('assist');
   const [task, setTask] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -154,13 +182,14 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     () => [
       { label: 'Navigate', available: executorConnected, icon: Globe2 },
       { label: 'Scan', available: Boolean(activeTenantId), icon: ShieldCheck },
-      { label: 'Evidence', available: Boolean(activeTenantId), icon: FileCheck2 },
+      { label: 'Evidence', available: tenantBound && executorConnected, icon: FileCheck2 },
       { label: 'Scroll', available: executorConnected, icon: ScrollText },
       { label: 'Click', available: executorConnected, icon: MousePointer2 },
       { label: 'Type', available: executorConnected, icon: Type },
     ],
-    [executorConnected, activeTenantId],
+    [executorConnected, activeTenantId, tenantBound],
   );
+  const status = runtimeStatus({ tenantBound, executorConnected });
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -292,6 +321,15 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           return 'approval';
         }
       }
+      if (error instanceof BrowserExecutorError) {
+        const consumed = consumedApprovalMessage(error);
+        if (consumed) {
+          setPendingApprovalId(null);
+          setPendingAction(null);
+          setActionResult(consumed);
+          return 'error';
+        }
+      }
       setActionResult(
         error instanceof Error ? error.message : 'Browser-Aktion fehlgeschlagen.',
       );
@@ -319,7 +357,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     >
       <div className="flex flex-col gap-4 border-b border-titanium-800 px-5 py-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-3xl">
-          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-400">
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--brand-champ)]">
             <CircleDot className="h-3 w-3" aria-hidden="true" />
             RealSync Browser Runtime
           </div>
@@ -331,25 +369,30 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-          {/* Navigation = clientseitige Preview, Evidence = Mandanten-Log —
-              beides nur mit aktivem Mandanten, sonst ehrlich „inaktiv“. */}
+          {/* Nur geprüfte Zustände — siehe runtimeStatus(). */}
           <span
+            data-testid="runtime-badge-navigation"
             className={
-              activeTenantId
+              status.navigation === 'active'
                 ? 'border border-emerald-900 bg-emerald-950/30 px-2.5 py-1 text-emerald-300'
                 : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
             }
           >
-            {activeTenantId ? 'NAVIGATION ACTIVE' : 'NAVIGATION INACTIVE'}
+            {status.navigation === 'active'
+              ? 'NAVIGATION ACTIVE'
+              : status.navigation === 'preview'
+                ? 'NAVIGATION PREVIEW'
+                : 'NAVIGATION INACTIVE'}
           </span>
           <span
+            data-testid="runtime-badge-evidence"
             className={
-              activeTenantId
-                ? 'border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300'
+              status.evidence === 'active'
+                ? 'border border-[var(--brand-line-dark)] bg-[rgba(242,201,138,0.06)] px-2.5 py-1 text-[var(--brand-champ)]'
                 : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'
             }
           >
-            {activeTenantId ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
+            {status.evidence === 'active' ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
           </span>
           <span
             className={
@@ -380,12 +423,12 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                 onChange={(event) => setTask(event.target.value)}
                 placeholder="URL oder Aufgabe, z. B. „Prüfe, ob example.com einen Cookie-Banner zeigt“"
                 maxLength={1000}
-                className="min-w-0 flex-1 border border-titanium-700 bg-obsidian-900 px-3 py-3 text-sm text-titanium-100 outline-none placeholder:text-titanium-600 focus:border-cyan-500"
+                className="min-w-0 flex-1 border border-titanium-700 bg-obsidian-900 px-3 py-3 text-sm text-titanium-100 outline-none placeholder:text-titanium-600 focus:border-[var(--brand-champ)]"
               />
               <button
                 type="submit"
                 disabled={planning || !task.trim()}
-                className="inline-flex items-center justify-center gap-2 bg-cyan-500 px-4 py-3 text-sm font-semibold text-obsidian-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-45"
+                className={brandButtonClass({ size: 'md' })}
               >
                 {planning ? 'Plane…' : !task.trim() || urlFromInput(task) ? 'Browser öffnen' : 'Planen'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -400,10 +443,10 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           )}
 
           {plan && (
-            <div className="mt-3 border border-cyan-900 bg-obsidian-900 p-4" data-testid="browser-task-plan">
+            <div className="mt-3 border border-[var(--brand-line-dark)] bg-obsidian-900 p-4" data-testid="browser-task-plan">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Aktionsplan</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-champ)]">Aktionsplan</div>
                   {plan.summary && <p className="mt-1 text-sm text-titanium-200">{plan.summary}</p>}
                 </div>
                 {mode === 'copilot' && (
@@ -411,7 +454,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                     type="button"
                     onClick={() => void runPlan()}
                     disabled={!executorConnected || executing || runningPlan || stepStatus.every((st) => st === 'done')}
-                    className="inline-flex items-center gap-2 bg-cyan-500 px-3 py-2 text-xs font-semibold text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-45"
+                    className={brandButtonClass({ size: 'sm' })}
                   >
                     {runningPlan ? 'Läuft…' : 'Plan ausführen'}
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -438,7 +481,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                           status === 'done' ? 'text-emerald-300'
                             : status === 'error' ? 'text-red-300'
                               : status === 'approval' ? 'text-amber-300'
-                                : status === 'running' ? 'text-cyan-300' : 'text-titanium-500'
+                                : status === 'running' ? 'text-[var(--brand-champ)]' : 'text-titanium-500'
                         }`}
                       >
                         {status === 'done' ? 'erledigt' : status === 'error' ? 'Fehler' : status === 'approval' ? 'wartet' : status === 'running' ? 'läuft' : 'offen'}
@@ -447,7 +490,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                         type="button"
                         onClick={() => void runStep(index)}
                         disabled={!executorConnected || executing || runningPlan || status === 'done'}
-                        className="shrink-0 border border-cyan-800 px-2 py-1 text-[11px] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
+                        className="shrink-0 border border-[var(--brand-line-dark-strong)] px-2 py-1 text-[11px] text-[var(--brand-champ-hi)] disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         Ausführen
                       </button>
@@ -476,7 +519,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   onClick={() => setMode(id)}
                   className={`border px-3 py-3 text-left text-sm transition ${
                     mode === id
-                      ? 'border-cyan-500 bg-cyan-950/30 text-cyan-200'
+                      ? 'border-[var(--brand-champ)] bg-[rgba(242,201,138,0.08)] text-[var(--brand-champ-hi)]'
                       : 'border-titanium-800 bg-obsidian-900 text-titanium-400'
                   } disabled:cursor-not-allowed disabled:opacity-45`}
                   title={description}
@@ -501,7 +544,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   Read-only Aktionen laufen direkt. Click, Type und Select benötigen Human Approval.
                 </div>
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-cyan-400">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--brand-champ)]">
                 {mode === 'copilot' ? 'co-pilot' : 'assist'}
               </span>
             </div>
@@ -580,7 +623,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
               <button
                 type="submit"
                 disabled={!executorConnected || executing}
-                className="inline-flex items-center gap-2 bg-cyan-500 px-4 py-2.5 text-xs font-semibold text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-45"
+                className={brandButtonClass({ size: 'sm' })}
               >
                 {executing ? 'Ausführung…' : 'Governed Action ausführen'}
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -600,7 +643,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                     onClick={() => void (pendingStepIndex !== null
                       ? runStep(pendingStepIndex, pendingApprovalId)
                       : runAction(pendingAction, pendingApprovalId))}
-                    className="border border-cyan-800 px-3 py-2.5 text-xs font-medium text-cyan-200 disabled:opacity-45"
+                    className="border border-[var(--brand-line-dark-strong)] px-3 py-2.5 text-xs font-medium text-[var(--brand-champ-hi)] disabled:opacity-45"
                   >
                     Nach Freigabe erneut ausführen
                   </button>
@@ -618,7 +661,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {capabilities.map(({ label, available, icon: Icon }) => (
               <div key={label} className="border border-titanium-800 bg-obsidian-900 px-3 py-3">
-                <Icon className={`h-4 w-4 ${available ? 'text-cyan-400' : 'text-titanium-600'}`} aria-hidden="true" />
+                <Icon className={`h-4 w-4 ${available ? 'text-[var(--brand-champ)]' : 'text-titanium-600'}`} aria-hidden="true" />
                 <div className="mt-2 text-xs font-medium text-titanium-200">{label}</div>
                 <div className={`mt-1 font-mono text-[9px] uppercase tracking-wider ${available ? 'text-emerald-400' : 'text-titanium-600'}`}>
                   {available ? 'available' : 'executor needed'}
@@ -630,15 +673,15 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
 
         <aside className="p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-titanium-400">
-            <Bot className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+            <Bot className="h-4 w-4 text-[var(--brand-champ)]" aria-hidden="true" />
             Governance Control
           </div>
 
           <dl className="mt-4 divide-y divide-titanium-800 border border-titanium-800 bg-obsidian-900 text-xs">
             <div className="flex items-center justify-between gap-3 px-3 py-3">
               <dt className="text-titanium-500">Tenant authority</dt>
-              <dd className={activeTenantId ? 'text-emerald-300' : 'text-amber-300'}>
-                {activeTenantId ? 'membership-bound' : 'not resolved'}
+              <dd className={tenantBound ? 'text-emerald-300' : 'text-amber-300'}>
+                {tenantBound ? 'membership-bound' : 'not resolved'}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-3">
@@ -655,7 +698,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-3">
               <dt className="text-titanium-500">Policy authority</dt>
-              <dd className="text-cyan-300">server-side</dd>
+              <dd className="text-[var(--brand-champ)]">server-side</dd>
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-3">
               <dt className="text-titanium-500">Mutation approval</dt>
@@ -670,14 +713,14 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <Link
               to="/app/approvals"
-              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-cyan-800"
+              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-[var(--brand-line-dark-strong)]"
             >
               Approvals
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to="/app/evidence"
-              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-cyan-800"
+              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-[var(--brand-line-dark-strong)]"
             >
               Evidence
               <ArrowRight className="h-3.5 w-3.5" />
@@ -685,7 +728,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </div>
 
           <div className="mt-4 flex items-start gap-2 border border-titanium-800 bg-obsidian-900 px-3 py-3 text-[11px] leading-5 text-titanium-500">
-            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" aria-hidden="true" />
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-champ)]" aria-hidden="true" />
             Der Executor ist eine isolierte Headless-Runtime. Die eingebettete Browser-Preview ist noch kein Live-Video derselben Chromium-Session. Autonomous bleibt gesperrt, bis Planner und sichere Session-Visualisierung integriert sind.
           </div>
         </aside>

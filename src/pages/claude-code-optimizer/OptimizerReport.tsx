@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, FileText, Wrench, ShieldCheck, Search } from 'lucide-react';
 import { usePageMeta } from '../../lib/usePageMeta';
+import { tierById } from '../../config/pricing';
 import {
   OptimizerShell,
   IntroBanner,
@@ -142,7 +143,11 @@ export function OptimizerReport() {
                       : 'border border-titanium-700 text-titanium-100 hover:border-titanium-400 hover:bg-obsidian-800'
                   }`}
                 >
-                  <Wrench className="h-4 w-4" /> {pkg.name} buchen <ArrowRight className="h-4 w-4" />
+                  <Wrench className="h-4 w-4" />{' '}
+                  {/* Ein Plan ohne Festpreis wird angefragt, nicht gebucht — die
+                      Beschriftung kommt dann aus der SSoT („Enterprise anfragen"). */}
+                  {tierById(pkg.key)?.priceOnRequest ? tierById(pkg.key)?.cta.label : `${pkg.name} buchen`}{' '}
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             );

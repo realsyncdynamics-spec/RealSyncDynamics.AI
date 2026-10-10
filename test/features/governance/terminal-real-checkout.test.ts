@@ -26,7 +26,7 @@
  * Seither läuft `/upgrade` über `billing/checkout.ts` → Edge Function
  * `stripe-checkout`, und Name wie Preis kommen aus der Pricing-SSoT.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planByKey } from '../../../shared/pricing';
@@ -36,7 +36,11 @@ const read = (rel: string) => readFileSync(resolve(ROOT, rel), 'utf8');
 
 const HOOK = read('src/features/governance/terminal/useAgenticTerminal.ts');
 const PAYMENT_AGENT = read('src/features/governance/terminal/agents/PaymentAgent.ts');
-const BARREL = read('src/features/governance/terminal/agents/index.ts');
+// Die Barrel-Datei ist seit 2026-09-28 entfernt: Nach dem Abschalten der
+// Terminal-Attrappen (/scan, /audit) hatte sie keinen Importeur mehr. Die
+// Prüfung unten bleibt, falls sie zurückkommt.
+const BARREL_PATH = 'src/features/governance/terminal/agents/index.ts';
+const BARREL = existsSync(resolve(ROOT, BARREL_PATH)) ? read(BARREL_PATH) : '';
 
 /** Kommentare ausblenden — dort steht die Historie, warum es den Test gibt. */
 const code = (source: string) =>

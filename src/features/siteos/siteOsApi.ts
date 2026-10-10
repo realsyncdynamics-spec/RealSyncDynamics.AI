@@ -8,7 +8,10 @@
 import { getSupabase } from '../../lib/supabase';
 import type {
   EditChange,
+  PageChange,
   PageEdit,
+  PageOperation,
+  ThemeChange,
   AgentKey,
   PublishGateEvaluation,
   RefinementChange,
@@ -204,7 +207,9 @@ export interface EditResponse {
   blueprint: SiteBlueprint;
   findings: RuntimeFinding[];
   scores: ScoreBreakdown;
-  changes: EditChange[];
+  /** Blockänderungen und Seitenoperationen in Anwendungsreihenfolge. */
+  changes: (EditChange | PageChange)[];
+  theme_change: ThemeChange | null;
   rejected: string[];
   provenance_linked?: boolean;
 }
@@ -221,7 +226,11 @@ export async function editSite(args: {
   tenant_id: string;
   slug: string;
   base_sha256: string;
-  edits: PageEdit[];
+  edits?: PageEdit[];
+  /** Strukturänderungen als Absicht; der Server leitet die neue Seite ab. */
+  pages?: PageOperation[];
+  /** Nur eine bekannte Template-ID; Theme-Werte setzt der Server aus dem Core. */
+  design_template?: string;
 }): Promise<SiteOsResult<EditResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/edit', { body: args });
@@ -264,6 +273,7 @@ export async function runAgent(tenantId: string, runId?: string): Promise<SiteOs
 /** Die jüngste gespeicherte Version einer Site — Grundlage des Workspace. */
 export interface StoredBlueprintRow {
   id: string;
+  project_id: string | null;
   version: number;
   blueprint: SiteBlueprint;
   content_sha256: string;
@@ -285,7 +295,7 @@ export async function loadLatestBlueprint(tenantId: string, slug: string): Promi
   const sb = getSupabase();
   const { data, error } = await sb
     .from('siteos_blueprints')
-    .select('id, version, blueprint, content_sha256, prev_hash, status, origin_source, origin_model, created_at')
+    .select('id, project_id, version, blueprint, content_sha256, prev_hash, status, origin_source, origin_model, created_at')
     .eq('tenant_id', tenantId).eq('slug', slug)
     .order('version', { ascending: false }).limit(1)
     .maybeSingle();
@@ -404,6 +414,33 @@ export async function listBlueprintChain(tenantId: string, slug: string): Promis
   return data ?? [];
 }
 
+export interface SiteProjectBindingResponse {
+  ok: true;
+  created: boolean;
+  project: {
+    id: string;
+    name: string;
+    status: string;
+  };
+  blueprint_id: string;
+  version: number;
+  audit_recorded?: boolean;
+}
+
+/**
+ * Einmalige Brücke zwischen SiteOS-Blueprint und Website Operations.
+ * Serverseitig tenant-/rollen-/entitlement-geprüft und idempotent.
+ */
+export async function bindSiteProject(args: {
+  tenant_id: string;
+  blueprint_id: string;
+}): Promise<SiteOsResult<SiteProjectBindingResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/project-bind', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as SiteProjectBindingResponse };
+}
+
 // ── Publish Gate (Zielarchitektur §7) ───────────────────────────────────
 //
 // G2: Diese Wrapper reichen das Ergebnis unverändert durch. Es wird nichts
@@ -442,6 +479,115 @@ export async function approvePublish(args: {
   const { data, error } = await sb.functions.invoke('siteos/publish-approve', { body: args });
   if (error) return await mapErrorDetailed(error);
   return { kind: 'ok', data: data as { ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation } };
+}
+
+export interface PublishExportFile {
+  path: string;
+  content: string;
+  sha256: string;
+  bytes: number;
+}
+
+export interface PublishExportResponse {
+  ok: true;
+  manifest: {
+    format: 'realsync-siteos-export/1';
+    slug: string;
+    version: number;
+    blueprint_sha256: string;
+    artifact_sha256: string;
+    evaluation_id: string;
+    go_by: string;
+    go_at: string;
+    base_url: string | null;
+    files: Array<Omit<PublishExportFile, 'content'>>;
+  };
+  files: PublishExportFile[];
+}
+
+/**
+ * Ausdrückliches Veröffentlichungs-GO. Der Server bewertet frisch und liefert
+ * ausschließlich das hashgebundene Release-Bündel zurück; dieser Wrapper
+ * führt selbst keinen Upload aus.
+ */
+export async function exportPublish(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_go: true;
+  confirm_preview: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishExportResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-export', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishExportResponse };
+}
+
+export interface PublishPreviewResponse {
+  ok: true;
+  preview: {
+    url: string;
+    deployment_id: string;
+    project_name: string;
+    branch: string;
+    environment: string | null;
+    artifact_sha256: string;
+    evaluation_id: string;
+    production: false;
+  };
+}
+
+/**
+ * Deployt ausschließlich eine Cloudflare-Pages-Vorschau nach frischer
+ * Gate-Bewertung. Das ist noch kein Veröffentlichungs-GO: Erst die reale
+ * Vorschau kann anschließend bestätigt und über publish-export freigegeben
+ * werden. Der Browser sendet weder Dateien noch Artefakt-Hash.
+ */
+export async function deployPublishPreview(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_preview_deploy: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishPreviewResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-preview', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishPreviewResponse };
+}
+
+export interface PublishProductionResponse {
+  ok: true;
+  production: {
+    url: string;
+    deployment_id: string;
+    project_name: string;
+    branch: string;
+    environment: 'production';
+    artifact_sha256: string;
+    evaluation_id: string;
+    preview_deployment_id: string;
+    deployed_at: string;
+    production: true;
+    recording_complete: boolean;
+    recording_warnings: string[];
+  };
+}
+
+/**
+ * Finaler Cutover nach realer Vorschau. Der Server akzeptiert keine Dateien,
+ * keine Ziel-ID und keinen Artefakt-Hash aus dem Browser.
+ */
+export async function deployPublishProduction(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_preview: true;
+  confirm_go: true;
+  base_url?: string;
+}): Promise<SiteOsResult<PublishProductionResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-production', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishProductionResponse };
 }
 
 // ── Anonymer Build (Zielarchitektur: Idee → Vorschau → Konto → Claim) ───

@@ -34,7 +34,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = „Papier & Waldgrün“ (hell, Serif-Headlines, Waldgrün trägt die Handlung); Token zentral in `src/index.css` (`.ga-context.rs-handoff`), siehe `AGENTS.md`. App/Dashboard bleibt dunkel. Design-Freeze: bestehende Tokens/Komponenten nicht umstylen ohne Freigabe.
+Startseite `/` = **Landing v4 „Klassisch"** (`src/pages/LandingV4.tsx`, 1:1-Port des Claude-Design-Handoffs v4) — das einzige öffentliche Frontend. Sektionen in `src/components/landing/v4/`, 3D-Erde in `heroEarthScene.ts`, Optik ausschließlich in `src/styles/landing-v4-classical.css` (gekapselte Referenz-Kaskade unter `.gv4` — nicht von Hand umformatieren). Alte Landing-/Design-Routen leiten auf `/`; v2 bleibt als Referenz unter `/design/landing-v2`. Design-Freeze: v4 nicht ersetzen oder grundlegend umstylen ohne Freigabe.
 
 ## Harte Verbote
 

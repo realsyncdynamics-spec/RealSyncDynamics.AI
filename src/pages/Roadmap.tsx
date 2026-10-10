@@ -45,7 +45,7 @@ function statusBorder(status: ImplementationStatus): string {
 
 export function Roadmap() {
   usePageMeta({
-    title: 'Roadmap — RealSyncDynamics.AI',
+    title: 'Roadmap — RealSync Dynamics AI',
     description:
       'Live, Preview und Coming Soon — ehrlicher Implementierungsstatus der Governance Runtime.',
     url: 'https://realsyncdynamicsai.de/roadmap',

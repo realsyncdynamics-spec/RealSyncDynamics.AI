@@ -132,7 +132,7 @@ describe('runChecks', () => {
   });
 
   it('stuft ein fehlendes Impressum außerhalb DE nur als Hinweis ein', () => {
-    // § 5 TMG greift nicht weltweit — ein englischsprachiges .com darf dafür
+    // § 5 DDG greift nicht weltweit — ein englischsprachiges .com darf dafür
     // keinen schweren Befund bekommen. Der Code unterscheidet sich mit:
     // `no_imprint_link` (DE, critical) gegen `no_imprint_link_non_de` (info).
     const html = '<html lang="en"><body><a href="/privacy">Privacy</a></body></html>';
@@ -243,6 +243,21 @@ describe('extractFacts', () => {
       expect(evaluateAll(bauen()).map((f) => f.rule_id)).toContain(ruleId);
     });
   }
+
+  it('beachtet die Offensichtlichkeits-Ausnahme aus Art. 50 Abs. 1', () => {
+    // Der Scanner setzt `interaction_obvious` nie (aus dem HTML nicht
+    // beobachtbar) — die Regel muss dann feuern wie bisher. Erst eine
+    // ausdrueckliche Bewertung `true` unterdrueckt den Befund; `false`
+    // aendert nichts.
+    const basis = AUSLOESER.AI_ACT_LIMITED_RISK_CHATBOT();
+    const aiUseCase = basis.ai_use_case as Record<string, unknown>;
+    expect(aiUseCase.interaction_obvious).toBeUndefined();
+
+    const mit = (wert: boolean) =>
+      evaluateAll({ ...basis, ai_use_case: { ...aiUseCase, interaction_obvious: wert } }).map((f) => f.rule_id);
+    expect(mit(false)).toContain('AI_ACT_LIMITED_RISK_CHATBOT');
+    expect(mit(true)).not.toContain('AI_ACT_LIMITED_RISK_CHATBOT');
+  });
 
   it('schweigt bei einer mangelfreien Seite', () => {
     // Ohne diese Gegenprobe wuerde ein Evaluator, der einfach alles meldet,
@@ -361,6 +376,84 @@ Datenschutz: <a href="/cdn-cgi/l/email-protection#d4a4a6bda2b5b7ad94a6b1b5b8a7ad
     </body>`;
     const ids = deepCheckImprint(html).map((i) => i.id);
     expect(ids).toContain('sub_imprint_no_contact');
+  });
+
+  // § 5 Abs. 1 Nr. 2 DDG verlangt neben der E-Mail einen zweiten schnellen
+  // Kontaktweg — laut EuGH C-298/07 genuegt eine elektronische Anfragemaske,
+  // ein Telefon ist nicht Pflicht.
+  const IMPRINT_BASE = '<p>Rechtsform: GmbH</p><p>Musterstrasse 1<br>12345 Berlin</p>';
+
+  it('meldet kein sub_imprint_no_contact bei Email + Link aufs Kontaktformular, ohne Telefon', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p>E-Mail: info@muster.de · <a href="/kontakt">Kontaktformular</a></p></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).not.toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet kein sub_imprint_no_contact bei Email + Formular auf der Seite, ohne Telefon', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p>E-Mail: info@muster.de</p><form><textarea name="msg"></textarea></form></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).not.toContain('sub_imprint_no_contact');
+  });
+
+  it('meldet sub_imprint_no_contact bei Email ohne zweiten Kontaktweg', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p></body>`;
+    const issue = deepCheckImprint(html).find((i) => i.id === 'sub_imprint_no_contact');
+    expect(issue?.detail).toContain('zweiter');
+  });
+
+  it('wertet nur Kontaktseiten-Pfade als Kontaktweg, keine Teilstring-Treffer', () => {
+    for (const href of [
+      '/products/contact-lenses',
+      '/kontaktlinsen',
+      '#kontakt',
+      '/products?next=/contact',
+      '/products#next=/contact',
+    ]) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}
+        <p>E-Mail: info@muster.de · <a href="${href}">x</a></p></body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), href).toContain('sub_imprint_no_contact');
+    }
+  });
+
+  it('wertet Formular oder Kontaktlink nur in echtem Markup, nicht im Skript', () => {
+    const inScript = [
+      '<script>var t = "<form><textarea></textarea></form>";</script >',
+      `<script>var a = '<a href="/kontakt">k</a>';</script >`,
+    ];
+    for (const s of inScript) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${s}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), s).toContain('sub_imprint_no_contact');
+    }
+  });
+
+  it('ignoriert Formular oder Kontaktlink in HTML-Kommentaren', () => {
+    const inComment = [
+      '<!-- <form><textarea></textarea></form> -->',
+      '<!-- <a href="/kontakt">Kontakt</a> -->',
+      '<!-- unterminiert <form><textarea></textarea></form>',
+    ];
+    for (const c of inComment) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${c}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), c).toContain('sub_imprint_no_contact');
+    }
+  });
+
+  it('verlangt eine textarea innerhalb eines <form>', () => {
+    const unassociated = [
+      '<textarea></textarea>',
+      '<textarea></textarea><form></form>',
+      '<form></form><textarea></textarea>',
+    ];
+    for (const m of unassociated) {
+      const html = `<!doctype html><body>${IMPRINT_BASE}<p>E-Mail: info@muster.de</p>${m}</body>`;
+      expect(deepCheckImprint(html).map((i) => i.id), m).toContain('sub_imprint_no_contact');
+    }
+  });
+
+  it('wertet einen mailto:contact@-Link nicht als Kontaktformular', () => {
+    const html = `<!doctype html><body>${IMPRINT_BASE}
+      <p><a href="mailto:contact@muster.de">contact@muster.de</a></p></body>`;
+    expect(deepCheckImprint(html).map((i) => i.id)).toContain('sub_imprint_no_contact');
   });
 });
 

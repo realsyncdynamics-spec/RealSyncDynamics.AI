@@ -10,13 +10,20 @@
 // Idempotent: skips send if email_sent_at already set.
 // Graceful: if RESEND_API_KEY missing, returns 200 with skipped=true.
 //
-// Auth: verify_jwt=false (public fire-and-forget after free scan).
-// Must NEVER echo the recipient email in the HTTP response — UUID alone
-// must not leak PII. Residual risk: knowing the audit UUID can still trigger
-// a send (idempotent); harden with a one-time send token in a follow-up.
+// Auth: `verify_jwt = false` (supabase/config.toml). Der einzige reale Aufrufer
+// ist der anonyme Browser direkt nach dem Free-Scan (AuditChatHero,
+// AuditLanding) — ohne JWT, ohne Header. Die Grenze zieht `decideSend`
+// (./gate.ts): ohne Bearer nur innerhalb von FRESH_WINDOW_MS nach
+// `created_at`; mit Service-Role-Bearer jederzeit. Einen Cron-Sweep für
+// unversandte Audits gibt es derzeit nicht (kein cron.schedule, `gdpr-audit`
+// verkettet nicht) — der Bearer-Pfad hält ihn nur offen.
+//
+// Die Antwort nennt die Empfängeradresse nie: Wer den Versand auslöst, soll
+// sie darüber nicht erfahren.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { decideSend } from './gate.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
@@ -59,8 +66,23 @@ Deno.serve(async (req) => {
   if (error || !row) return jsonError(404, 'NOT_FOUND', 'audit not found', corsHeaders);
 
   const audit = row as AuditRow;
+  const decision = decideSend({
+    authHeader: req.headers.get('Authorization'),
+    serviceKey: SUPABASE_SERVICE_ROLE_KEY,
+    createdAt: audit.created_at,
+    now: Date.now(),
+  });
+  if (decision === 'denied') {
+    return jsonError(403, 'FORBIDDEN', 'send window closed', corsHeaders);
+  }
+
   if (audit.email_sent_at) {
     return jsonResponse({ ok: true, skipped: 'already_sent', sent_at: audit.email_sent_at }, 200, corsHeaders);
+  }
+
+  // Mandanten- und Optimizer-Scans speichern email = '' (keine Adresse).
+  if (!audit.email) {
+    return jsonResponse({ ok: true, skipped: 'no_recipient' }, 200, corsHeaders);
   }
 
   const apiKey = await getResendKey(supa);

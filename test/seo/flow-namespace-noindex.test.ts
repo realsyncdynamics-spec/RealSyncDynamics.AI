@@ -70,12 +70,17 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
-  it('hält die Homepage-SEO auf der Control-Plane-Positionierung', () => {
-    expect(SEO_CONFIG['/'].title).toBe('RealSyncDynamics.AI — The Governance OS for Autonomous AI');
-    expect(SEO_CONFIG['/'].description).toContain('Control Plane für Enterprise-KI');
-    expect(SEO_CONFIG['/'].description).toContain('Any model. Any agent. One control plane.');
-    expect(SEO_CONFIG['/'].ogTitle).toBe('The Governance OS for Autonomous AI');
-    expect(SEO_CONFIG['/'].ogDescription).toContain('Kontroll-, Autorisierungs- und Evidence-Layer');
+  it('hält die Homepage-SEO auf der Landing-v2-Positionierung', () => {
+    expect(SEO_CONFIG['/'].title).toBe(
+      'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    );
+    // SEO-Sprint KW 40: DE-Seite komplett deutsch, Marke einheitlich.
+    expect(SEO_CONFIG['/'].description).toContain('Erfassen, einstufen, steuern, nachweisen');
+    expect(SEO_CONFIG['/'].ogTitle).toBe('KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO');
+    expect(SEO_CONFIG['/'].canonical).toBe('https://realsyncdynamicsai.de/');
+    // Design-Referenz ist Duplikat der Startseite: noindex + Canonical auf /.
+    expect(SEO_CONFIG['/design/landing-v2'].noIndex).toBe(true);
+    expect(SEO_CONFIG['/design/landing-v2'].canonical).toBe('https://realsyncdynamicsai.de/');
   });
 
   it('prüft den Namespace vor dem Map-Lookup (Reihenfolge im Quelltext)', () => {

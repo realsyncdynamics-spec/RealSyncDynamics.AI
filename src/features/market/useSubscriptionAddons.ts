@@ -15,6 +15,7 @@ import {
   type AddonApiError,
   type AddonListing,
 } from './subscriptionAddons';
+import { isBillingSandbox, sandboxApply, sandboxListing } from './billingSandbox';
 
 export interface SubscriptionAddonsState {
   listing: AddonListing | null;
@@ -23,6 +24,7 @@ export interface SubscriptionAddonsState {
   busy: AddOnId | null;
   error: AddonApiError['error'] | null;
   canManage: boolean;
+  sandbox: boolean;
   reload: () => Promise<void>;
   add: (addonId: AddOnId, quantity?: number) => Promise<boolean>;
   remove: (addonId: AddOnId) => Promise<boolean>;
@@ -34,22 +36,38 @@ export function useSubscriptionAddons(): SubscriptionAddonsState {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<AddOnId | null>(null);
   const [error, setError] = useState<AddonApiError['error'] | null>(null);
+  const [sandboxBooked, setSandboxBooked] = useState<{ id: AddOnId; quantity: number }[]>([]);
+  const sandbox = isBillingSandbox();
 
   const rolle = tenants.find((t) => t.tenantId === activeTenantId)?.role;
   const canManage = rolle === 'owner' || rolle === 'admin';
 
   const reload = useCallback(async () => {
+    if (sandbox) {
+      setListing(sandboxListing(sandboxBooked));
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!activeTenantId || !isSupabaseConfigured()) { setLoading(false); return; }
     setLoading(true);
     const result = await invokeSubscriptionAddons(activeTenantId, 'list');
     if (result.ok) { setListing(result); setError(null); }
     else setError(result.error);
     setLoading(false);
-  }, [activeTenantId]);
+  }, [activeTenantId, sandbox, sandboxBooked]);
 
   useEffect(() => { void reload(); }, [reload]);
 
   const change = useCallback(async (action: 'add' | 'remove', addonId: AddOnId, quantity?: number) => {
+    if (sandbox) {
+      setBusy(addonId);
+      const next = sandboxApply(sandboxBooked, action, addonId, quantity ?? 1);
+      setSandboxBooked(next);
+      setListing(sandboxListing(next));
+      setBusy(null);
+      return true;
+    }
     if (!activeTenantId) return false;
     setBusy(addonId);
     setError(null);
@@ -61,14 +79,15 @@ export function useSubscriptionAddons(): SubscriptionAddonsState {
     // von dort, nicht aus dieser Auflistung.
     void refresh();
     return true;
-  }, [activeTenantId, refresh]);
+  }, [activeTenantId, refresh, sandbox, sandboxBooked]);
 
   return {
     listing,
     loading,
     busy,
     error,
-    canManage,
+    canManage: sandbox || canManage,
+    sandbox,
     reload,
     add: (addonId, quantity) => change('add', addonId, quantity),
     remove: (addonId) => change('remove', addonId),

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle, Loader, Plus, Trash2 } from 'lucide-react';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Integration {
   id: string;
@@ -55,7 +56,7 @@ export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettin
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/integrations?tenant_id=eq.${tenantId}`,
+        `${getSupabaseUrl()}/rest/v1/integrations?tenant_id=eq.${tenantId}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -107,7 +108,7 @@ export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettin
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/integrations?id=eq.${integrationId}`,
+        `${getSupabaseUrl()}/rest/v1/integrations?id=eq.${integrationId}`,
         {
           method: 'DELETE',
           headers: {
@@ -128,7 +129,7 @@ export function IntegrationSettings({ tenantId, accessToken }: IntegrationSettin
     try {
       const syncEndpoint = provider === 'stripe' ? 'sync-stripe-metrics' : 'sync-ga-metrics';
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${syncEndpoint}`,
+        `${getSupabaseUrl()}/functions/v1/${syncEndpoint}`,
         {
           method: 'POST',
           headers: {

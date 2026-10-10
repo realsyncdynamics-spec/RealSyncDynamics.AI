@@ -29,6 +29,7 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -185,9 +186,24 @@ Deno.serve(async (req) => {
 
   // Re-use or create the tenant's Stripe Customer.
   let stripeCustomerId: string | null = null;
-  const { data: existingSub } = await admin
-    .from('subscriptions').select('stripe_customer_id')
+  const { data: existingSub, error: subErr } = await admin
+    .from('subscriptions').select('stripe_customer_id, plan_key, status, trial_end, trial_ends_at')
     .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
+  // Ein Lookup-Fehler darf nicht wie „kein Abo" aussehen — sonst bekäme ein
+  // Bestandskunde bei einem DB-Aussetzer eine zweite Testphase und einen
+  // zweiten Stripe-Customer.
+  if (subErr) return jsonError(500, 'INTERNAL', subErr.message);
+
+  // Eine Testphase pro Mandant. Wer schon eine hatte (kartenlos über
+  // `create-trial-subscription` oder über Stripe — beide hinterlassen ein
+  // Trial-Ende in der Abo-Zeile) oder ein laufendes Abo führt (Upgrade),
+  // zahlt ab der ersten Abbuchung. Ohne diese Prüfung bekäme jeder erneute
+  // Checkout desselben Mandanten wieder 14 Tage geschenkt. Spiegelbild:
+  // `isTrialEligible()` in src/core/billing/trial.ts für die Anzeige.
+  // Free-Tier-Zeilen (plan_key free_audit/free_tier bzw. Platzhalter-Customer
+  // `free_tier_no_stripe_<tenant_id>`) zählen weder als laufendes Abo noch als
+  // verbrauchte Testphase — Free-Nutzer bekommen die 14 Tage.
+  const trialEligible = isTrialEligibleForCheckout(existingSub);
 
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
@@ -200,16 +216,22 @@ Deno.serve(async (req) => {
   // Aufrufer ein Abo als Einmalzahlung abschließen.
   const isOneTime = plan.purchaseMode === 'one_time';
 
-  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
-  // Triggered via body.pilot=true (typically set from /contact-sales after
-  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
-  // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  // Trial: Die Pricing-SSoT (`plan.trialDays`) entscheidet allein, ob ein
+  // Abo mit Testphase startet. Die Preisseite bewirbt „14 Tage kostenlos
+  // testen" für Starter/Growth — bis hierher wurde der Trial aber nur mit
+  // `body.pilot === true` gesetzt, das öffentliche CTAs nie senden. Ergebnis:
+  // beworbener Trial, sofortige Abbuchung. Stripe belastet erst nach Ablauf
+  // der Testphase — Kündigung innerhalb der Frist bleibt kostenfrei.
+  // `pilot` markiert nur noch Sales-Piloten (Metadaten für Auswertung),
+  // ändert an der Abrechnung nichts mehr.
   // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (!isOneTime && body.pilot === true && plan.trialDays > 0) {
+  if (!isOneTime && plan.trialDays > 0 && trialEligible) {
     subscriptionData.trial_period_days = plan.trialDays;
+  }
+  if (!isOneTime && body.pilot === true) {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 
@@ -219,8 +241,11 @@ Deno.serve(async (req) => {
   // das dann nur als generisches "Failed to send a request to the Edge
   // Function" ohne nutzbare Fehlermeldung im Frontend.
   try {
-    if (existingSub?.stripe_customer_id) {
-      stripeCustomerId = existingSub.stripe_customer_id;
+    // Nur echte Stripe-Customer (`cus_…`) wiederverwenden. Der Free-Tier-
+    // Platzhalter `free_tier_no_stripe_<tenant_id>` würde von Stripe mit
+    // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).
+    if (isRealStripeCustomerId(existingSub?.stripe_customer_id)) {
+      stripeCustomerId = existingSub!.stripe_customer_id!;
     } else {
       const customer = await stripe.customers.create({
         email: userEmail ?? undefined,
@@ -267,6 +292,10 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ ok: true, url: session.url, session_id: session.id });
   } catch (e) {
+    const err = e as { message?: string; code?: string; type?: string };
+    console.error('[stripe-checkout] stripe error', {
+      message: err?.message, code: err?.code, type: err?.type,
+    });
     return jsonError(502, 'STRIPE_ERROR', `stripe checkout failed: ${(e as Error).message}`);
   }
 });

@@ -86,6 +86,8 @@ const REQUIRED_AUTHENTICATED = [
   'governance_kpi_timeseries_data',
   'incident_correlation_export',
   'runtime_events_verify_chain',
+  // Gate 2 (20260928140000): einziger Client-Schreibpfad für findings.status.
+  'set_finding_status',
   'siteos_site_overview',
   'tenant_entitlements',
   'update_onboarding_progress',
@@ -115,6 +117,11 @@ const FORBIDDEN_CLIENT = [
   // Stand 2026-09-27 in Prod fuer anon ausfuehrbar, obwohl die Migration nur
   // service_role wollte (20260927114512).
   'ai_evidence_purge_expired',
+  // Gate 2 (20260928140100): schreibt in die Evidence-Kette, nur service_role.
+  'append_governance_evidence',
+  // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
+  'marketing_consent_before_insert',
+  'marketing_consent_before_update',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

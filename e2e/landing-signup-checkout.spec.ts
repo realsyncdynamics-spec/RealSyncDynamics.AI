@@ -21,8 +21,8 @@ import { test, expect } from '@playwright/test';
  */
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.E2E_BASE_URL || 'http://localhost:3000';
-const TEST_EMAIL = 'steinerdominik1982@gmail.com';
-const TEST_PASSWORD = 'TestPass123!@#';
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? '';
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? '';
 
 test.describe('Landing → Signup → Checkout Journey', () => {
   test.beforeEach(async ({ page }) => {
@@ -76,6 +76,11 @@ test.describe('Landing → Signup → Checkout Journey', () => {
   });
 
   test('[J-004] Neue Registrierung mit Email durchführen', async ({ page }) => {
+    test.skip(
+      !TEST_EMAIL || !TEST_PASSWORD,
+      'E2E_TEST_EMAIL/E2E_TEST_PASSWORD fehlen — echter Registrierungs-Test wird nicht mit Klartext-Credentials ausgeführt.',
+    );
+
     // Zur Sign-up-Seite
     await page.goto(`${BASE_URL}/os/signup`);
     await page.waitForLoadState('networkidle');

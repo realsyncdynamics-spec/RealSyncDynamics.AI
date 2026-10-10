@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 type OperationType = 'view' | 'export' | 'filter_apply' | 'sync_trigger' | 'integration_connect';
 type ResourceType = 'dashboard' | 'metrics' | 'export' | 'integration' | 'tool_config';
@@ -47,7 +48,7 @@ export function useAuditLog(options: UseAuditLogOptions = { enabled: true }) {
 
         // Insert into audit log via RPC
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/log_seo_dashboard_operation`,
+          `${getSupabaseUrl()}/rest/v1/rpc/log_seo_dashboard_operation`,
           {
             method: 'POST',
             headers: {

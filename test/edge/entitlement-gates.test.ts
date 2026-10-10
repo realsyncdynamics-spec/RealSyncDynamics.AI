@@ -102,7 +102,6 @@ describe('Cron-Functions: Inbound-Auth', () => {
     // Welle 3: intern, schreiben per Service-Role in fremde Tenants.
     'governance-risk-escalate',
     'compliance-alert-trigger',
-    'audit-monitor-cron',
   ])(
     '%s weist Aufrufe ohne Service-Role-Bearer mit 401 ab',
     (fn) => {
@@ -113,10 +112,21 @@ describe('Cron-Functions: Inbound-Auth', () => {
     },
   );
 
+  it('audit-monitor-cron nutzt CRON_AUDIT_MONITOR_KEY (nicht service_role JWT)', () => {
+    const src = quelle('audit-monitor-cron');
+    expect(src).toContain("Deno.env.get('CRON_AUDIT_MONITOR_KEY')");
+    expect(src).toContain('checkCronAuth(CRON_KEY');
+    expect(src).not.toMatch(/Bearer \$\{SERVICE_KEY\}/);
+    const logic = quelle('audit-monitor-cron', 'logic.ts');
+    expect(logic).toMatch(/status: 401/);
+    expect(logic).toMatch(/cron only/);
+  });
+
   it('scheduler-dispatch nutzt CRON_SCHEDULER_DISPATCH_KEY (nicht service_role JWT)', () => {
     const src = quelle('scheduler-dispatch');
     expect(src).toContain('CRON_SCHEDULER_DISPATCH_KEY');
-    expect(src).toMatch(/!CRON_KEY\s*\|\|/);
+    expect(src).toMatch(/if \(!CRON_KEY\) \{\s*return jsonError\(500, 'CRON_KEY_MISSING'/);
+    expect(src).toContain("jsonError(401, 'UNAUTHORIZED', 'cron only')");
     expect(src).toMatch(/Bearer \$\{CRON_KEY\}/);
     expect(src).toMatch(/401/);
     expect(src).not.toMatch(
@@ -153,10 +163,12 @@ describe('Welle 3 — was neben dem Gate repariert wurde', () => {
     expect(trigger.indexOf('await logAlert(')).toBeLessThan(trigger.indexOf("hasFeature(entitlements, 'alerts.email')"));
     expect(trigger).toContain('email_skipped_entitlement_missing');
 
-    const cron = quelle('audit-monitor-cron');
-    expect(cron).toMatch(/if \(await mayAlert\(supabase, d\.tenant_id\)\)/);
-    // Ergebnis wird auch ohne Versand gespeichert.
-    expect(cron.indexOf('mayAlert(supabase')).toBeLessThan(cron.indexOf("from('audit_monitor_results').insert"));
+    // audit-monitor-cron: Ergebnis wird vor (und unabhängig von) dem Versand
+    // gespeichert; der Versand hängt an plan.driftAlerts (alerts.email +
+    // monitoring.drift). Verhalten: test/edge/audit-monitor-cron.test.ts.
+    const cron = quelle('audit-monitor-cron', 'handler.ts');
+    expect(cron).toMatch(/if \(!plan\.driftAlerts\)/);
+    expect(cron.indexOf('repo.insertResult(')).toBeLessThan(cron.indexOf('if (!plan.driftAlerts)'));
   });
 
   it('governance-risk-score bleibt bewusst ohne Plan-Gate', () => {
@@ -253,5 +265,56 @@ describe('Der Kunde kann sich nicht selbst freischalten', () => {
     expect(toggle).toMatch(/if \(enabled\) \{[\s\S]*requireWebhooksEntitlement/);
     const revoke = src.slice(src.indexOf('async function handleRevoke'));
     expect(revoke).not.toContain('requireWebhooksEntitlement');
+  });
+});
+
+describe('Welle 5 — der Aufrufer des website-operations-agent', () => {
+  // Die Tenant-Grenze selbst liegt seit #1392 in
+  // `test/security/website-operations-agent-auth.test.ts` — Resolver,
+  // Reihenfolge und Wegfall der Existenzpruefung sind dort abgedeckt und
+  // werden hier nicht doppelt behauptet. Offen blieb der Weg davor und
+  // danach: wie die Oberflaeche die Function erreicht, und woher ihr
+  // Erfolgszustand kommt.
+  it('gibt den persistierten Datensatz zurueck statt eines behaupteten Erfolgs', () => {
+    const src = quelle('website-operations-agent');
+    // Der Response traegt die Zeile, die das UPDATE zurueckgemeldet hat.
+    expect(src).toContain('project: persisted,');
+    expect(src).toMatch(/\.eq\('id', project\.id\)\s*\n\s*\.select\(/);
+  });
+
+  it('meldet keinen Erfolg, wenn das Speichern scheitert', () => {
+    const src = quelle('website-operations-agent');
+    // Ohne diese Pruefung schrieb die Function bei einem fehlgeschlagenen
+    // UPDATE trotzdem ein Erfolgs-Log und antwortete 200 mit `project: null`.
+    expect(src).toContain('const { data: persisted, error: persistError }');
+    const pruefung = src.indexOf('if (persistError || !persisted)');
+    const erfolgsLog = src.indexOf("title: 'Website Generated'");
+    const antwort = src.indexOf('jsonResponse(response, 200)');
+    expect(pruefung, 'Fehlerpruefung nach dem UPDATE fehlt').toBeGreaterThan(-1);
+    expect(pruefung, 'Fehlerpruefung muss vor dem Erfolgs-Log stehen').toBeLessThan(erfolgsLog);
+    expect(pruefung, 'Fehlerpruefung muss vor der Antwort stehen').toBeLessThan(antwort);
+    expect(src).toContain("jsonError(\n        500,\n        'DB_UPDATE',");
+  });
+
+  it('gibt den Erfolg als Body zurueck, nicht als Status', () => {
+    const src = quelle('website-operations-agent');
+    // `jsonResponse(body, status)` gegen `jsonError(status, code, message)`:
+    // der Dreher liess den Erfolgsfall werfen und mit 500 antworten,
+    // nachdem bereits geschrieben und generiert worden war.
+    expect(src).toContain('jsonResponse(response, 200)');
+    expect(src).not.toMatch(/jsonResponse\(\s*\d/);
+  });
+
+  it('der Wizard ruft die Function ueber den Session-Token auf, nicht ueber die User-ID', () => {
+    const src = readFileSync('src/features/website-operations/CreateWebsiteWizard.tsx', 'utf8');
+    expect(src).toContain('sb.functions.invoke(');
+    expect(src).toContain("'website-operations-agent'");
+    // Eine User-ID ist kein Token, und `/functions/v1/...` ist nicht der
+    // Supabase-Host, sondern die Pages-Domain — dort greift der Catch-all
+    // auf `index.html`, was mit HTTP 200 antwortet.
+    expect(src).not.toContain('Bearer ${user?.id}');
+    expect(src).not.toContain("fetch('/functions/v1/website-operations-agent'");
+    // Der Endpunkt `/api/website-projects` existiert in diesem Stack nicht.
+    expect(src).not.toContain("fetch('/api/website-projects'");
   });
 });

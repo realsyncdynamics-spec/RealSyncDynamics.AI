@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, PlayCircle, AlertTriangle } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface AuditIssue {
   id: string;
@@ -35,7 +36,7 @@ const SEVERITY_CLS: Record<string, string> = {
  * `{ ok, run_id, n8n_execution_id }` und fuehrt den Skill asynchron ueber n8n
  * aus, nicht synchron gegen `gdpr-audit`. Solange der Skill `dsgvo-audit`
  * zudem ohne `n8n_workflow_id` geseedet ist, bricht der Trigger bereits mit
- * 409 NOT_BOUND ab. Der Button fuehrt also einen echten Serveraufruf aus, kann
+ * 409 skill_not_linked ab. Der Button fuehrt also einen echten Serveraufruf aus, kann
  * aber im aktuellen Stand kein Ergebnis anzeigen.
  *
  * Bewertung und Belege: scripts/dashboard-actions.json, "automation.run"
@@ -60,7 +61,7 @@ export function AutomationSkillRunner({ tenantId }: { tenantId: string }) {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { setError('Bitte erneut anmelden.'); return; }
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/automation-trigger`, {
+      const resp = await fetch(`${getSupabaseUrl()}/functions/v1/automation-trigger`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

@@ -32,7 +32,7 @@ import { getSeoForPath, type SEOConfig } from '../config/seo';
  */
 
 export interface SEOHeadProps {
-  /** Page-Title — wird zu "{title} — RealSyncDynamics.AI" gesetzt */
+  /** Page-Title — wird zu "{title} — RealSync Dynamics AI" gesetzt */
   title?: string;
   /** Meta-Description — Soll 130-160 Zeichen sein */
   description?: string;
@@ -46,20 +46,24 @@ export interface SEOHeadProps {
   noIndex?: boolean;
 }
 
-const SITE_NAME = 'RealSyncDynamics.AI';
+const SITE_NAME = 'RealSync Dynamics AI';
 const SITE_URL = 'https://realsyncdynamicsai.de';
 const DEFAULT_OG_IMAGE = '/og-image.png';
-const TITLE_SUFFIX = ' — RealSyncDynamics.AI';
+const TITLE_SUFFIX = ' — RealSync Dynamics AI';
 
 /**
  * Sollen wir den Brand-Suffix anhaengen? Nur wenn der Title nicht bereits
- * den Brandnamen enthaelt — dabei toleriert werden beide Schreibweisen
- * "RealSyncDynamics.AI" und "RealSyncDynamicsAI" (Marketing-Title-Strings
- * lassen den Punkt manchmal weg).
+ * den Brandnamen enthaelt. Kanonische Schreibweise ist "RealSync Dynamics AI"
+ * (SEO-Sprint KW 40); die Altformen "RealSyncDynamics.AI" und
+ * "RealSyncDynamicsAI" werden weiter erkannt, damit kein Doppel-Suffix entsteht.
  */
 function hasBrandMention(s: string): boolean {
   const lower = s.toLowerCase();
-  return lower.includes('realsyncdynamics.ai') || lower.includes('realsyncdynamicsai');
+  return (
+    lower.includes('realsync dynamics ai') ||
+    lower.includes('realsyncdynamics.ai') ||
+    lower.includes('realsyncdynamicsai')
+  );
 }
 
 export function SEOHead(props: SEOHeadProps = {}): null {

@@ -89,10 +89,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 194;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 195;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-10T12:49Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-10T17:10Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -158,6 +158,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'enterprise-ai-os-founding-access',
   'evidence-anchor',
   'evidence-export',
+  'evidence-r2',
   'evidence-vault',
   'evidence-vault-export',
   'export-audit',

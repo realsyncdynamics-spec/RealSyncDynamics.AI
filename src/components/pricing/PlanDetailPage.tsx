@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { getPlanBySlug, getFeaturesByPlan, ALL_PLAN_SLUGS } from '../../content/pricingContent';
+import { BetaNotice } from './BetaNotice';
+import { BETA_PAYMENT_NOTE } from '../../config/pricing';
 
 interface PlanDetailPageProps {
   planSlug: string;
@@ -71,6 +73,7 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
 
           {/* Main CTA button */}
           <div className="mb-12">
+            <BetaNotice compact className="mb-3" />
             <button
               onClick={() => navigate(plan.checkoutPath)}
               className="w-full surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90"
@@ -155,9 +158,9 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
             <h2 className="font-display font-bold text-2xl mb-4">Was passiert nach der Buchung?</h2>
             <ol className="space-y-3">
               {[
-                'Sie werden zur Bezahlung weitergeleitet (Stripe)',
+                `Sie werden zur Bezahlung weitergeleitet (Stripe – ${BETA_PAYMENT_NOTE})`,
                 'Nach erfolgreicher Zahlung erhalten Sie eine Bestätigungs-E-Mail',
-                'Ihr Account wird sofort aktiviert',
+                'Ihr Account wird aktiviert – die Freischaltung der einzelnen Paket-Funktionen wird in der Beta noch verifiziert',
                 'Sie können sich anmelden und mit der Nutzung beginnen',
               ].map((step, idx) => (
                 <li key={idx} className="flex items-start gap-3">
@@ -172,6 +175,7 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
 
           {/* Bottom CTA */}
           <div className="mb-12">
+            <BetaNotice compact className="mb-3" />
             <button
               onClick={() => navigate(plan.checkoutPath)}
               className="w-full surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90"

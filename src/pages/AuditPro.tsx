@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, ArrowRight, CheckCircle2, FileText, Award, Clock } from 'lucide-react';
+import { paymentLinkForMode } from '../config/stripeMode';
 
-const STRIPE_PAYMENT_LINK = (import.meta.env.VITE_STRIPE_AUDIT_PRO_LINK as string | undefined)
-  || '/checkout/growth?source=audit_pro';
+// Beta-Testmodus: ein Live-Payment-Link wird verworfen (src/config/stripeMode.ts).
+const STRIPE_PAYMENT_LINK = paymentLinkForMode(
+  import.meta.env.VITE_STRIPE_AUDIT_PRO_LINK as string | undefined,
+  '/checkout/growth?source=audit_pro',
+);
 
 export function AuditPro() {
   return (

@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { tierByPlanKey } from '../../config/pricing';
+import { IS_STRIPE_TEST_MODE } from '../../config/stripeMode';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 import { createCheckoutSession } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
@@ -11,6 +12,7 @@ import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
 import { getEntitlementsForTenant } from '../../core/usage/usage-service';
 import { isTrialEligible } from '../../core/billing/trial';
+import { BetaNotice } from '../../components/pricing/BetaNotice';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -509,7 +511,7 @@ function ConsentGateShell({
             </p>
           ) : (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
-              Erste Abbuchung sofort nach Bestellung
+              {IS_STRIPE_TEST_MODE ? 'Beta-Testmodus · keine echte Abbuchung' : 'Erste Abbuchung sofort nach Bestellung'}
             </p>
           )}
           <p className="text-center text-xs text-silver-500 -mt-3 mb-6">
@@ -519,6 +521,8 @@ function ConsentGateShell({
             </Link>{' '}
             — ohne Karte.
           </p>
+
+          <BetaNotice compact className="mb-5" />
 
           <div className="space-y-3 mb-5">
             <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">

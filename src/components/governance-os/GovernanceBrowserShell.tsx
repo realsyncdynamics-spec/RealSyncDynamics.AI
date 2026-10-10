@@ -18,6 +18,7 @@ import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
+import { BetaShellBanner } from './BetaShellBanner';
 import { CommandCenter } from './CommandCenter';
 import {
   buildCommandCatalog,
@@ -128,6 +129,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
             Zahlungsverzug vorliegt. */}
         <PaymentGraceBanner />
+
+        {/* Beta-Testversion: Paket-Freischaltungen werden noch verifiziert. */}
+        <BetaShellBanner />
 
         {mobileMenuOpen && (
           <nav

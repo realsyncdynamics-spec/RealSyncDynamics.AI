@@ -537,7 +537,9 @@ function RoutesWithTracking() {
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       {/* Deutsche Alias-URLs (Ads, getippte Adressen). Serverseitig 301 via public/_redirects.
-          /preise liegt bei /pricing (#1608). */}
+          /preise muss auch clientseitig existieren — _redirects greift nicht bei SPA-Navigation. */}
+      <Route path="/preise" element={<Navigate to="/pricing" replace />} />
+      <Route path="/preise/" element={<Navigate to="/pricing" replace />} />
       <Route path="/produkt" element={<Navigate to="/runtime" replace />} />
       <Route path="/loesungen" element={<Navigate to="/branchen" replace />} />
       <Route path="/demo" element={<Navigate to="/demo-tour" replace />} />
@@ -680,7 +682,7 @@ function RoutesWithTracking() {
       <Route path="/integrations/stripe/callback" element={<StripeOAuthCallback />} />
       <Route path="/shopify/success" element={<ShopifySuccessPage />} />
       <Route path="/shopify/error" element={<ShopifyErrorPage />} />
-      <Route path="/app/settings/integrations/telegram" element={<AppGate><TelegramIntegrationPage /></AppGate>} />
+      <Route path="/app/settings/integrations/telegram" element={<AppGate><GovernanceBrowserShell><TelegramIntegrationPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/ai-act-governance" element={<AiActGovernancePage />} />
       <Route path="/agent-governance" element={<AgentGovernancePage />} />
@@ -775,16 +777,16 @@ function RoutesWithTracking() {
       {/* SMB Experience Layer — vereinfachte Ansicht für Einzelunternehmer/kleine
           Unternehmen. Zusätzliche Sicht auf dieselben Services; die
           Enterprise-Ansicht (/app/dashboard) bleibt unverändert. */}
-      <Route path="/app/mein-geschaeft" element={<AppGate><SmbDashboardView /></AppGate>} />
+      <Route path="/app/mein-geschaeft" element={<AppGate><GovernanceBrowserShell><SmbDashboardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/simple" element={<Navigate to="/app/mein-geschaeft" replace />} />
-      <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
+      <Route path="/app/intelligence" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><DashboardView /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
-      <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
+      <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/assistant" element={<AppGate><GovernanceAiRoute /></AppGate>} />
+      <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
@@ -826,9 +828,9 @@ function RoutesWithTracking() {
       <Route path="/app/governance/remediation-plans" element={<AppGate><GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/audit-reports" element={<AppGate><GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/api-keys" element={<AppGate><GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/recommendation" element={<AppGate><GovernanceWorkflowRecommendation /></AppGate>} />
+      <Route path="/app/governance/recommendation" element={<AppGate><GovernanceBrowserShell><GovernanceWorkflowRecommendation /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 3: Advanced Governance Views */}
-      <Route path="/app/governance/frameworks" element={<AppGate><ComplianceFrameworkSelector /></AppGate>} />
+      <Route path="/app/governance/frameworks" element={<AppGate><GovernanceBrowserShell><ComplianceFrameworkSelector /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso-42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001ComplianceHub /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 5A: ISO Templates & Advanced Reporting */}
       <Route path="/app/governance/iso-control-library" element={<AppGate><GovernanceBrowserShell><IsoControlLibraryView /></GovernanceBrowserShell></AppGate>} />
@@ -863,14 +865,14 @@ function RoutesWithTracking() {
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
-      <Route path="/app/siteos/claim" element={<AppGate><SiteOsClaimView /></AppGate>} />
+      <Route path="/app/siteos/claim" element={<AppGate><GovernanceBrowserShell><SiteOsClaimView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/inbox" element={<AppGate><GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/whatsapp" element={<AppGate><GovernanceBrowserShell><WhatsAppChannelsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/:botId" element={<AppGate><GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/monitoring/legacy" element={<AppGate><GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/security-signals" element={<AppGate><GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/legal-rag" element={<AppGate><LegalRagView /></AppGate>} />
+      <Route path="/app/legal-rag" element={<AppGate><GovernanceBrowserShell><LegalRagView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/workflows" element={<AppGate><GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/risks" element={<AppGate><GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/compliance" element={<AppGate><GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell></AppGate>} />
@@ -924,11 +926,11 @@ function RoutesWithTracking() {
       {/* Admin Panel Routes — die Unterseiten hatten bis 2026-09-01 keinen
           Auth-Wrapper (Befund Zugriffsregister); AppGate ist rein additiv. */}
       <Route path="/app/admin" element={<AppGate><GovernanceBrowserShell><AdminDashboard /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/admin/members" element={<AppGate><AdminMembersPage /></AppGate>} />
-      <Route path="/app/admin/settings" element={<AppGate><AdminSettingsPage /></AppGate>} />
-      <Route path="/app/admin/billing" element={<AppGate><AdminBillingPage /></AppGate>} />
-      <Route path="/app/admin/api-keys" element={<AppGate><AdminAPIKeysPage /></AppGate>} />
-      <Route path="/app/admin/audit" element={<AppGate><AdminAuditPage /></AppGate>} />
+      <Route path="/app/admin/members" element={<AppGate><GovernanceBrowserShell><AdminMembersPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/admin/settings" element={<AppGate><GovernanceBrowserShell><AdminSettingsPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/admin/billing" element={<AppGate><GovernanceBrowserShell><AdminBillingPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/admin/api-keys" element={<AppGate><GovernanceBrowserShell><AdminAPIKeysPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/admin/audit" element={<AppGate><GovernanceBrowserShell><AdminAuditPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/agents" element={<AppGate><GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/documents" element={<AppGate><GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/audit" element={<AppGate><GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell></AppGate>} />

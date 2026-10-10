@@ -105,7 +105,25 @@ Zeilen bleiben unsichtbar.
 **Fehlt**: genau ein serverseitig autorisierter Writer auf
 `(user_id, tenant_id, claimed_at)`.
 
-### 3.2 Domain Enrollment — **existiert, kein Aufrufer**
+### 3.2 Domain Enrollment — **existiert, kein Aufrufer** (Stand 2026-08-23)
+
+> **Nachtrag 2026-10-10 — verdrahtet.** Aufrufer ist der `catalog`-Schritt von
+> `provision-tenant` (Tenant-Boot): Er legt das `governance_assets`-Objekt der
+> Domain an, trägt die Domain danach per RPC in `monitoring_sources` ein und
+> setzt dort `asset_id` auf dieses Asset. Damit leistet derselbe Schritt beide
+> Hälften der Abgrenzung unten. Ob gescannt wird, entscheidet weiterhin das
+> Plan-Gate im `governance-monitoring-scheduler`.
+> Migration `20261010120000` ändert die RPC: Eine vorhandene Quelle wird nicht
+> mehr reaktiviert und ihr `next_scan_at` nicht mehr vorgezogen — sonst hätte
+> jeder Status-Abruf von `provision-tenant` einen Scan ausgelöst und eine
+> pausierte Quelle wieder eingeschaltet.
+> Offen bleiben zwei Dinge:
+> * `provision-tenant` hat im Repo keinen Aufrufer (kein Frontend-Aufruf, kein
+>   Stripe-Webhook). Das Enrollment greift also erst, wenn Schritt 2 den Boot
+>   in den Kundenpfad hängt.
+> * `monitored_domains` / `audit-monitor-cron` ist seit 2026-10-09 ein zweiter
+>   aktiver Monitoring-Pfad ohne Eintragsweg. Welche Tabelle kanonisch ist, ist
+>   noch nicht entschieden.
 
 `pilot_enroll_monitoring_source(p_tenant_id uuid, p_url text, p_name text)`
 ist live vorhanden, `SECURITY DEFINER`, mit `search_path`-Bindung, und
@@ -255,8 +273,11 @@ Claim — der kartenlose 14-Tage-Growth-Pilot oder der Stripe-Weg mit
    aus dem Client. Einhängepunkte: `Welcome.tsx`, Dashboard-NBA.
 2. **Governance Initialization verdrahten** — `tenant-audit` in den
    Kundenpfad hängen. Kein Neubau.
-3. **Domain Enrollment verdrahten** — `pilot_enroll_monitoring_source`
-   aufrufen, und getrennt davon klären, wer `governance_assets` erzeugt.
+3. **Domain Enrollment verdrahten** — **im Tenant-Boot verdrahtet 2026-10-10**
+   (`catalog`-Schritt von `provision-tenant`, der auch das
+   `governance_assets`-Objekt erzeugt; siehe Nachtrag in 3.2). Wirkt erst für
+   Kunden, wenn Schritt 2 den Boot in den Kundenpfad hängt: Stand 2026-10-10
+   ruft im Repo niemand `provision-tenant` auf.
 
 Erst wenn diese Kette eine nachweisbare Spur erzeugt
 (`scan_runs > 0`, `findings > 0`), ist der Boden für den Verdict Layer

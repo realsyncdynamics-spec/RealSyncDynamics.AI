@@ -1,7 +1,7 @@
 # Governed Evolution — Zielbild-Spec
 
 **Stand:** 2026-10-10 (WP6-Prüfung gegen `main@5679551`) · **Status:** COMING SOON · nur Doku, keine Implementierung
-**Einordnung:** Umsetzung **frühestens nach AP-3** (`governance_policies` als Tenant-SSoT). Zielbild für Agent OS Premium. AP-3 ist nur als Referenz vorhanden (§6, Punkt O2).
+**Einordnung:** Umsetzung **frühestens nach AP-3**. Der WP6-Auftrag (`.claude/commands/wp6-governed-evolution.md`) beschreibt AP-3 als „`governance_policies` als Tenant-SSoT"; eine Definition oder ein Status von AP-3 ist im Repo sonst nicht auffindbar (§6, Punkt O2). Zielbild für Agent OS Premium.
 
 > Agenten dürfen handeln — aber nur innerhalb der Governance-Runtime.
 > Governed Evolution erweitert das um einen Satz: Die Runtime darf sich
@@ -28,7 +28,7 @@ Verification → Evidence`, siehe `.claude/os-funnel/PLAN.md` §2).
 | 3 | Einordnung gegen den Änderungsraum (§3) | `in_scope` · `substantial_modification_candidate` | ja | fehlt |
 | 4 | Simulation gegen historische Entscheidungen (Shadow) | Verdikt-Differenz | ja | **teilweise**: Vergleich zweier Engines live, kein Replay eines Vorschlags |
 | 5 | Governance-Gate | Freigabe über `governance_approvals` | **nie** automatisch | vorhanden |
-| 6 | Übernahme mit neuer Version | versionierte Policy/Config | nur nach 5 | **fehlt**: keine Policy-Versionshistorie |
+| 6 | Übernahme mit neuer Version | versionierte Policy/Config | nur nach 5 | **teilweise**: Snapshots bei Änderung/Löschung, keine bei Anlage, kein lesender Code |
 | 7 | Evidence | unveränderlicher Eintrag inkl. Vorschlag, Simulation, Freigeber | ja | vorhanden, Ziel offen (E-GE4) |
 
 ## 3. Änderungsraum und „wesentliche Veränderung"
@@ -105,9 +105,9 @@ Daraus folgen zwei getrennte Grenzen:
 | Shadow-Beobachtung | **Tabelle vorhanden**, Spalten `source`, `legacy_status`, `v2_status`, `diverged`, `snapshot_version`, `detail`. Sie vergleicht **Alt-Engine und PDP v2 im Live-Betrieb** — kein Replay eines Änderungsvorschlags gegen historische Entscheidungen. `source` später erweitert. | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql`, `20260904120000_pdp_shadow_log_channels.sql` |
 | ~~`observation_kind` (comparison · decision_only)~~ | **fehlt** — die frühere Fassung dieser Spec nannte die Spalte „laut Entscheidung 2026-09-21". Weder Spalte noch Entscheidung sind im Repo belegt (§6, O1). | — |
 | Policy-Speicher | **vorhanden**: `governance_policies` (mandantenbezogen über `tenant_id`). Herkunft aus Policy-Packs inkl. `template_version`. | `supabase/migrations/20260512000000_governance_events.sql`, `20260928150000_tenant_boot_provisioning.sql` |
-| Policy-Versionshistorie | **fehlt** — Policies werden in-place geändert (`trg_governance_policies_updated_at`); `template_version` hält nur die Pack-Herkunft fest, keinen Verlauf der Mandanten-Policy. Voraussetzung für Ablaufschritt 6. | `20260512000000_governance_events.sql` (Trigger) |
+| Policy-Versionshistorie | **teilweise vorhanden**: `governance_policy_versions` speichert per Trigger `snapshot_versions` einen Snapshot **nach jeder Änderung oder Löschung** von `governance_policies` (ebenso `governance_assets`). Es fehlen ein Snapshot bei **Anlage** einer Policy und jeder Code, der die Historie liest (kein Treffer in `supabase/functions`, `src`, `shared`). `template_version` hält nur die Pack-Herkunft fest. | `20260620000004_governance_policy_versions.sql` |
 | Evidence (Prüfpfad) | **vorhanden**: `audit_evidence`, **nicht** hash-verkettet. | angelegt `20260507100000_audit_evidence.sql`, abgeglichen `20260906000000_reconcile_audit_evidence.sql` |
-| Evidence (hash-verkettet) | **vorhanden**: `governance_evidence` (`content_hash`, `previous_hash`) und `evidence_snapshots` (`content_sha256`, `prev_hash`, append-only, Retention). | `20260512000000_governance_events.sql`, `20260701140000_evidence_vault_advanced.sql` |
+| Evidence (hash-verkettet) | **zwei Stufen**: `governance_evidence` hat `content_hash`/`previous_hash`, aber **keine** Sperre gegen Ändern oder Löschen. Verzweigungsfreies Anhängen sichert `append_governance_evidence` (Mandantensperre + erwarteter Vorgänger-Hash) — genutzt von `tenant-audit` und `email-auth-rescan`; `governance-approvals` und `browser-execute` schreiben weiterhin direkt. `evidence_snapshots` (`content_sha256`, `prev_hash`) ist per Trigger `trg_evidence_snapshots_immutable` **append-only**, mit Retention. | `20260512000000_governance_events.sql`, `20260928140100_gate2_evidence_append_rpc.sql`, `20260701140000_evidence_vault_advanced.sql` |
 | Signale, Vorschläge, Änderungsraum | **fehlt** — keine Tabelle, kein Typ, keine Funktion (`evolution_*`, Änderungsraum) in `src/`, `shared/`, `supabase/`. | — |
 
 ## 5. Was bewusst nicht gebaut wird
@@ -123,9 +123,11 @@ Daraus folgen zwei getrennte Grenzen:
 - **E-GE1:** Granularität des Änderungsraums (je Policy · je Agent · je Mandant)
 - **E-GE2:** Wer darf freigeben (Rolle aus `memberships`, Vier-Augen ab Risiko hoch?)
 - **E-GE3:** Aufbewahrung von abgelehnten Vorschlägen (Evidence ja/nein, Frist)
-- **E-GE4 (neu):** Evidence-Ziel für Ablaufschritt 7 — `audit_evidence` ist nicht
-  hash-verkettet; „unveränderlich" trägt nur `governance_evidence` oder
-  `evidence_snapshots`.
+- **E-GE4 (neu):** Evidence-Ziel für Ablaufschritt 7. `audit_evidence` ist nicht
+  hash-verkettet. `governance_evidence` ist verkettet, aber nicht gegen Ändern
+  oder Löschen gesperrt, und Freigaben (`governance-approvals`) schreiben dort
+  bisher am Anhänge-Schutz vorbei. Durch die Datenbank erzwungen unveränderlich
+  ist nur `evidence_snapshots`.
 
 **Offene Punkte aus der WP6-Prüfung**
 
@@ -138,4 +140,6 @@ Daraus folgen zwei getrennte Grenzen:
   AP-3 beschrieben ist.
 - **O3:** Ablaufschritt 4 braucht ein Replay gegen historische Entscheidungen;
   `pdp_shadow_log` liefert das nicht.
-- **O4:** Ablaufschritt 6 braucht eine Versionshistorie für `governance_policies`.
+- **O4:** Ablaufschritt 6 braucht eine vollständige Versionshistorie für
+  `governance_policies`: `governance_policy_versions` erfasst Änderung und
+  Löschung, aber nicht die Anlage, und kein Code liest die Historie bisher.

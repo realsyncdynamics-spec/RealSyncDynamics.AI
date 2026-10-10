@@ -33,7 +33,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
 import { isRealStripeCustomerId, isTrialEligibleForCheckout } from './customer.ts';
 import {
   resolveStripeSecretKey,
@@ -330,9 +330,11 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
-      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
-      automatic_tax: { enabled: true },
+      // Der Steuermodus stammt aus derselben Pricing-SSoT wie die Rechtstexte.
+      // EXEMPT (§ 19 UStG) deaktiviert Stripe Tax für NEUE Checkout-Sessions.
+      // EU_STANDARD darf erst nach steuerlicher und Stripe-seitiger Freigabe
+      // produktiv aktiviert werden. Bestandsabos bleiben unverändert.
+      automatic_tax: { enabled: PRICING_TAX_MODE === 'EU_STANDARD' },
       billing_address_collection: 'required',
       tax_id_collection: { enabled: true },
       customer_update: { address: 'auto', name: 'auto' },

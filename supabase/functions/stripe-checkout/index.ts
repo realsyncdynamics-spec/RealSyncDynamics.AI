@@ -282,9 +282,11 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
-      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
-      automatic_tax: { enabled: true },
+      // Kleinunternehmer nach § 19 UStG (Entscheidung 10.10.2026): keine USt.
+      // Stripe Tax bleibt aus — ein Steuerausweis auf der Rechnung würde nach
+      // § 14c UStG trotzdem eine Steuerschuld auslösen. Erst bei Wechsel zur
+      // Regelbesteuerung wieder einschalten (zusammen mit Impressum/AGB).
+      automatic_tax: { enabled: false },
       billing_address_collection: 'required',
       tax_id_collection: { enabled: true },
       customer_update: { address: 'auto', name: 'auto' },

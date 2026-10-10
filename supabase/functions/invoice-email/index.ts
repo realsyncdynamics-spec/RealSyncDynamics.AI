@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
   const html = renderInvoiceEmail(tenant.name, inv);
   const subject = `Invoice ${inv.stripe_invoice_id.slice(-8).toUpperCase()} — RealSyncDynamics.AI`;
   const fromAddr = Deno.env.get('INVOICE_EMAIL_FROM') ?? 'billing@realsyncdynamicsai.de';
-  const fromName = 'RealSync Dynamics Billing';
+  const fromName = 'RealSync Dynamics AI Billing';
 
   // Prepare email payload
   const emailPayload = {
@@ -229,6 +229,10 @@ function renderInvoiceEmail(tenantName: string, inv: InvoiceRow): string {
           </tr>
         </table>
 
+        <p style="margin:0 0 16px 0;font-size:13px;line-height:1.6;color:#52525b;">
+          Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+        </p>
+
         <p style="margin:24px 0 0 0;font-size:14px;line-height:1.6;color:#52525b;">
           Alle Rechnungen und Zahlungsinformationen finden Sie jederzeit im <strong>Abrechnung-Dashboard</strong> unter Ihrem Workspace.
         </p>
@@ -245,7 +249,7 @@ function renderInvoiceEmail(tenantName: string, inv: InvoiceRow): string {
           <a href="https://RealSyncDynamicsAI.de/legal/privacy" style="color:#0284c7;">Datenschutz</a> ·
           <a href="https://RealSyncDynamicsAI.de/legal/terms" style="color:#0284c7;">Bedingungen</a>
         </p>
-        <p style="margin:0;">RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</p>
+        <p style="margin:0;">RealSync Dynamics AI · Made in Germany · EU-Hosted (Frankfurt)</p>
       </td></tr>
     </table>
   </td></tr>

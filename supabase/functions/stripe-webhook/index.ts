@@ -95,13 +95,30 @@ Deno.serve(async (req) => {
   }
   const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
 
+  // Im Testmodus kommen Events des Live-Endpoints weiter an dieselbe URL. Sie
+  // tragen die Live-Signatur — ohne Prüfung gegen das Live-Secret liefe jedes
+  // in einen 400 und Stripe stellte endlos neu zu. Verifiziert werden sie
+  // danach von der Modus-Gegenprobe unten mit 200 verworfen.
+  const webhookSecrets = [WEBHOOK_SECRET];
+  if (keyRes.mode === 'test') {
+    const liveWebhookSecret = await resolveStripeWebhookSecret(getSecret, 'live', 'legacy_var');
+    if (liveWebhookSecret && liveWebhookSecret !== WEBHOOK_SECRET) webhookSecrets.push(liveWebhookSecret);
+  }
+
   const raw = await req.text();
-  let event: Stripe.Event;
-  try {
-    // constructEventAsync because Deno's WebCrypto is async.
-    event = await stripe.webhooks.constructEventAsync(raw, sig, WEBHOOK_SECRET);
-  } catch (err) {
-    return new Response(`signature verify failed: ${(err as Error).message}`, { status: 400 });
+  let event: Stripe.Event | null = null;
+  let signatureError: unknown;
+  for (const webhookSecret of webhookSecrets) {
+    try {
+      // constructEventAsync because Deno's WebCrypto is async.
+      event = await stripe.webhooks.constructEventAsync(raw, sig, webhookSecret);
+      break;
+    } catch (err) {
+      signatureError = err;
+    }
+  }
+  if (!event) {
+    return new Response(`signature verify failed: ${(signatureError as Error).message}`, { status: 400 });
   }
 
   // Modus-Gegenprobe: Ein Event aus dem jeweils anderen Stripe-Modus darf

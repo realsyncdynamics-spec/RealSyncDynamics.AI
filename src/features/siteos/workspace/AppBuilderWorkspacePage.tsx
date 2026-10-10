@@ -18,7 +18,7 @@
 // Production-Cutover aus dem Editor. Eine reale Cloudflare-Preview läuft
 // ausschließlich über den serverseitig bewerteten SiteOS-Publish-Pfad.
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight, Check, ChevronLeft, Code2, ExternalLink, Eye, Loader2, Monitor, PencilLine, Save, ShieldCheck,
@@ -201,6 +201,23 @@ export default function AppBuilderWorkspacePage(): ReactElement {
     () => localBlueprint ? renderSite(localBlueprint, { baseUrl: sourceUrl ?? undefined, presentation: 'showcase' }).find((p) => p.path === pagePath)?.html ?? '' : '',
     [localBlueprint, sourceUrl, pagePath],
   );
+
+  // ── Ungespeicherte Änderungen schützen ────────────────────────────────
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
+
+  const confirmLeave = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (dirty && !window.confirm('Es gibt ungespeicherte Änderungen. Ohne Speichern verlassen?')) {
+      event.preventDefault();
+    }
+  };
 
   // ── Speichern — Redaktion und Seitenoperationen, ein Weg ─────────────
   // Seitenoperationen werden zusammen mit offenen Puck-Änderungen in genau
@@ -426,7 +443,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
   const topbar = (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-black/[.08] bg-white/95 px-3 backdrop-blur sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-        <Link to="/app/siteos" className="shrink-0 rounded-lg p-2 hover:bg-black/[.05]" aria-label="Zur Übersicht"><ChevronLeft size={18} /></Link>
+        <Link to="/app/siteos" onClick={confirmLeave} className="shrink-0 rounded-lg p-2 hover:bg-black/[.05]" aria-label="Zur Übersicht"><ChevronLeft size={18} /></Link>
         <div className="hidden h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#07111f] text-cyan-300 sm:grid"><Sparkles size={15} /></div>
         <div className="min-w-0">
           <div className="truncate text-sm font-bold">{stored.blueprint.name}</div>
@@ -455,7 +472,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         <div className="hidden items-center gap-1 rounded-lg bg-black/[.04] p-1 sm:flex" role="group" aria-label="Ansicht">
           <button onClick={() => setMode('edit')} aria-pressed={mode === 'edit'} className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] ${mode === 'edit' ? 'bg-white shadow' : ''}`}><PencilLine size={13} /> Bearbeiten</button>
           <button onClick={() => setMode('preview')} aria-pressed={mode === 'preview'} className={`inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] ${mode === 'preview' ? 'bg-white shadow' : ''}`}><Eye size={13} /> Vorschau</button>
-          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px]" data-testid="open-code-builder"><Code2 size={14} /> Code</Link>
+          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} onClick={confirmLeave} className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px]" data-testid="open-code-builder"><Code2 size={14} /> Code</Link>
         </div>
         <button
           onClick={() => void check()}
@@ -550,7 +567,7 @@ export default function AppBuilderWorkspacePage(): ReactElement {
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1 sm:hidden" role="group" aria-label="Ansicht">
           <button onClick={() => setMode('edit')} aria-pressed={mode === 'edit'} className={`rounded-md p-1.5 ${mode === 'edit' ? 'bg-white shadow' : ''}`} aria-label="Bearbeiten"><PencilLine size={14} /></button>
           <button onClick={() => setMode('preview')} aria-pressed={mode === 'preview'} className={`rounded-md p-1.5 ${mode === 'preview' ? 'bg-white shadow' : ''}`} aria-label="Vorschau"><Eye size={14} /></button>
-          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} className="rounded-md p-1.5" aria-label="Code-Builder" data-testid="open-code-builder-mobile"><Code2 size={14} /></Link>
+          <Link to={`/builder/${encodeURIComponent(slug)}/code${location.search}`} onClick={confirmLeave} className="rounded-md p-1.5" aria-label="Code-Builder" data-testid="open-code-builder-mobile"><Code2 size={14} /></Link>
         </div>
         <div className="flex items-center gap-1 rounded-lg bg-black/[.04] p-1" role="group" aria-label="Gerät">
           <button onClick={() => setDevice('desktop')} className={`rounded-md p-1.5 ${device === 'desktop' ? 'bg-white shadow' : ''}`} aria-label="Desktop" aria-pressed={device === 'desktop'}><Monitor size={14} /></button>

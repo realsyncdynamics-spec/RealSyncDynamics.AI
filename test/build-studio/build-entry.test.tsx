@@ -13,8 +13,13 @@ const session = vi.hoisted(() => ({
   resumeBuild: vi.fn(async (): Promise<unknown> => null),
 }));
 
+const auth = vi.hoisted(() => ({
+  isAuthenticated: true,
+  isLoading: false,
+}));
+
 vi.mock('../../src/features/supabase/SupabaseAuthContext', () => ({
-  useSupabaseAuth: () => ({ isAuthenticated: true, isLoading: false }),
+  useSupabaseAuth: () => auth,
 }));
 
 vi.mock('../../src/core/billing/useEntitlements', () => ({
@@ -41,6 +46,15 @@ function CodeTarget() {
   return <div data-testid="code-builder">{location.pathname}</div>;
 }
 
+function WelcomeTarget() {
+  const location = useLocation();
+  return (
+    <div data-testid="welcome-next">
+      {new URLSearchParams(location.search).get('next')}
+    </div>
+  );
+}
+
 function GoTo({ to }: { to: string }) {
   const navigate = useNavigate();
   return (
@@ -64,6 +78,7 @@ function renderAt(url: string) {
           }
         />
         <Route path="/builder/:slug/code" element={<CodeTarget />} />
+        <Route path="/welcome" element={<WelcomeTarget />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -71,9 +86,22 @@ function renderAt(url: string) {
 
 describe('/build entry by kind', () => {
   beforeEach(() => {
+    auth.isAuthenticated = true;
+    auth.isLoading = false;
     session.startBuild.mockClear();
     session.resumeBuild.mockReset();
     session.resumeBuild.mockImplementation(async () => null);
+  });
+
+  it('preserves the selected project kind across the login redirect', async () => {
+    auth.isAuthenticated = false;
+    renderAt('/build?kind=dashboard');
+
+    expect((await screen.findByTestId('welcome-next')).textContent).toBe(
+      '/build?kind=dashboard',
+    );
+    expect(session.startBuild).not.toHaveBeenCalled();
+    expect(session.resumeBuild).not.toHaveBeenCalled();
   });
 
   it('defaults to the website flow', async () => {

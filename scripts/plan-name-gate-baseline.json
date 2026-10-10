@@ -1,18 +1,10 @@
 [
   {
-    "datei": "src/core/billing/useScanLimits.ts",
-    "plan": "free",
-    "fundstellen": 1,
-    "art": "GATE",
-    "grund": "Kontingent haengt am Plan-Namen: `tier !== 'free'` ueberspringt die Zaehlung fuer jeden bezahlten Plan vollstaendig. Unter BASE + MODULE + SCALE waere die Scan-Anzahl eine SCALE-Achse; diese Zeile gaebe dann still allen unbegrenzt. Kanonisch waere limitOf('limit.scans_*'). Aenderung verschiebt Berechtigungen -> CLAUDE.md §10.3 Fragepflicht.",
-    "seit": "2026-09-06"
-  },
-  {
-    "datei": "src/features/governance/terminal/agents/AuditAgent.ts",
-    "plan": "free",
-    "fundstellen": 3,
-    "art": "GATE",
-    "grund": "Aufbewahrungsdauer haengt am Plan-Namen: 30 Tage im Free-Plan, sonst 2 Jahre. Aufbewahrung ist ein Kontingent und beruehrt zugleich die Evidence-Zusage. Kanonisch waere limitOf('limit.evidence_retention_*').",
+    "datei": "shared/onboarding.ts",
+    "plan": "partner",
+    "fundstellen": 2,
+    "art": "ABLAUF",
+    "grund": "Waehlt Onboarding-Schritte: Partner ueberspringt zwei Fragen. Kein Berechtigungs-Gate, aber am Plan-Namen haengend. Kanonisch waere ein Merkmal am Plan (z. B. availability oder ein onboarding-Feld).",
     "seit": "2026-09-06"
   },
   {
@@ -24,6 +16,62 @@
     "seit": "2026-09-06"
   },
   {
+    "datei": "src/features/governance/terminal/useAgenticTerminal.ts",
+    "plan": "starter",
+    "fundstellen": 2,
+    "art": "KAUFWEG",
+    "grund": "Eingabepruefung von /upgrade und /pay im Terminal: welche Plan-Namen der Befehl annimmt. Kein Berechtigungs-Gate. Sichtbar seit dem 2026-09-28, als der Pruefer .includes(tier) lernte; die Stelle ist aelter. Kanonisch waere SELF_SERVICE_PLANS aus shared/pricing.ts.",
+    "seit": "2026-09-28"
+  },
+  {
+    "datei": "src/features/governance/terminal/useAgenticTerminal.ts",
+    "plan": "growth",
+    "fundstellen": 2,
+    "art": "KAUFWEG",
+    "grund": "Dieselbe Eingabeliste von /upgrade und /pay wie beim Eintrag zu starter in derselben Datei. Kein Gate; kanonisch waere SELF_SERVICE_PLANS statt einer eigenen Namensliste im Terminal.",
+    "seit": "2026-09-28"
+  },
+  {
+    "datei": "src/features/governance/terminal/useAgenticTerminal.ts",
+    "plan": "agency",
+    "fundstellen": 2,
+    "art": "KAUFWEG",
+    "grund": "Dieselbe Eingabeliste von /upgrade und /pay. Agency ist auf main (2026-09-28) availability 'self_service' mit purchaseMode 'checkout' — der Eintrag in der Liste ist inhaltlich richtig, haengt nur am Namen statt an SELF_SERVICE_PLANS.",
+    "seit": "2026-09-28"
+  },
+  {
+    "datei": "src/features/governance/terminal/useAgenticTerminal.ts",
+    "plan": "partner",
+    "fundstellen": 2,
+    "art": "KAUFWEG",
+    "grund": "Dieselbe Eingabeliste von /upgrade und /pay — und die einzige inhaltliche Abweichung darin: Partner ist availability 'legacy', purchaseMode 'inquiry'. Die Liste nimmt den Namen an, createCheckoutSession weist ihn danach mit INQUIRY_ONLY ab (stripe-checkout ebenso). Mit SELF_SERVICE_PLANS entfiele er.",
+    "seit": "2026-09-28"
+  },
+  {
+    "datei": "src/lib/optimizer/tiers.ts",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Beschriftung: 'Kostenlos' statt eines Betrags. Kein Gate. Waere ueber price.monthlyEur === 0 ausdrueckbar und damit katalogfest.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/claude-code-optimizer/OptimizerKit.tsx",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Preisbeschriftung: '0 €' gegen 'individuell' bei priceEur === 0. Kein Gate.",
+    "seit": "2026-09-06"
+  },
+  {
+    "datei": "src/pages/claude-code-optimizer/OptimizerReport.tsx",
+    "plan": "free",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Laesst den plan-Parameter in der URL weg, wenn Free gewaehlt ist. Kein Gate.",
+    "seit": "2026-09-06"
+  },
+  {
     "datei": "src/pages/optimizer/OptimizerCheckout.tsx",
     "plan": "free",
     "fundstellen": 1,
@@ -32,11 +80,11 @@
     "seit": "2026-09-06"
   },
   {
-    "datei": "supabase/functions/create-trial-subscription/index.ts",
-    "plan": "growth",
-    "fundstellen": 1,
-    "art": "KAUFWEG",
-    "grund": "Testphase wird nur fuer Growth angelegt. Das ist eine Vertriebsentscheidung ueber ein einzelnes Produkt, kein Funktionsumfang — gehoert in den Katalog (z. B. ein trial-Feld am Plan), nicht in die Function.",
+    "datei": "src/pages/optimizer/OptimizerPricing.tsx",
+    "plan": "free",
+    "fundstellen": 2,
+    "art": "ANZEIGE",
+    "grund": "Beschriftung und CTA-Text der Free-Karte auf der Optimizer-Preisseite. Kein Gate: die Karte zeigt denselben Funktionsumfang, nur mit anderem Wortlaut. Katalogfest waere price.monthlyEur === 0 statt des Namens.",
     "seit": "2026-09-06"
   },
   {
@@ -56,43 +104,11 @@
     "seit": "2026-09-06"
   },
   {
-    "datei": "shared/onboarding.ts",
-    "plan": "partner",
-    "fundstellen": 2,
-    "art": "ABLAUF",
-    "grund": "Waehlt Onboarding-Schritte: Partner ueberspringt zwei Fragen. Kein Berechtigungs-Gate, aber am Plan-Namen haengend. Kanonisch waere ein Merkmal am Plan (z. B. availability oder ein onboarding-Feld).",
-    "seit": "2026-09-06"
-  },
-  {
-    "datei": "src/lib/optimizer/tiers.ts",
-    "plan": "free",
+    "datei": "supabase/functions/create-trial-subscription/index.ts",
+    "plan": "growth",
     "fundstellen": 1,
-    "art": "ANZEIGE",
-    "grund": "Beschriftung: 'Kostenlos' statt eines Betrags. Kein Gate. Waere ueber price.monthlyEur === 0 ausdrueckbar und damit katalogfest.",
-    "seit": "2026-09-06"
-  },
-  {
-    "datei": "src/pages/optimizer/OptimizerPricing.tsx",
-    "plan": "free",
-    "fundstellen": 2,
-    "art": "ANZEIGE",
-    "grund": "Beschriftung und CTA-Text der Free-Karte auf der Optimizer-Preisseite. Kein Gate: die Karte zeigt denselben Funktionsumfang, nur mit anderem Wortlaut. Katalogfest waere price.monthlyEur === 0 statt des Namens.",
-    "seit": "2026-09-06"
-  },
-  {
-    "datei": "src/pages/claude-code-optimizer/OptimizerKit.tsx",
-    "plan": "free",
-    "fundstellen": 1,
-    "art": "ANZEIGE",
-    "grund": "Preisbeschriftung: '0 €' gegen 'individuell' bei priceEur === 0. Kein Gate.",
-    "seit": "2026-09-06"
-  },
-  {
-    "datei": "src/pages/claude-code-optimizer/OptimizerReport.tsx",
-    "plan": "free",
-    "fundstellen": 1,
-    "art": "ANZEIGE",
-    "grund": "Laesst den plan-Parameter in der URL weg, wenn Free gewaehlt ist. Kein Gate.",
+    "art": "KAUFWEG",
+    "grund": "Testphase wird nur fuer Growth angelegt. Das ist eine Vertriebsentscheidung ueber ein einzelnes Produkt, kein Funktionsumfang — gehoert in den Katalog (z. B. ein trial-Feld am Plan), nicht in die Function.",
     "seit": "2026-09-06"
   },
   {

@@ -289,6 +289,41 @@ describe('Klasse C — Antwort-Ebene', () => {
     expect(ursachen[0]).toContain('cron-vault-secrets.md');
   });
 
+  it('meldet CRON_KEY_MISSING als fehlendes Function Secret, nicht als Mismatch', () => {
+    const fehlt = [
+      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_MEMORY_DECAY_KEY not configured"}}'),
+      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_SCHEDULER_DISPATCH_KEY not configured"}}'),
+      antwortUrsache('{"code":"CRON_KEY_MISSING","message":"CRON_WEBSITE_RESCAN_KEY not configured"}'),
+      antwortUrsache('CRON_KEY_MISSING'),
+    ];
+    expect(new Set(fehlt).size).toBe(1);
+    expect(fehlt[0]).toContain('Function Secret fehlt (CRON_*_KEY nicht gesetzt)');
+    expect(fehlt[0]).toContain('cron-vault-secrets.md');
+    expect(fehlt[0]).not.toContain('mismatch');
+    // Der Mismatch-Fall bleibt unverändert.
+    expect(antwortUrsache('{"error":"cron only"}')).toContain('Function Secret mismatch');
+  });
+
+  it('trennt 500 CRON_KEY_MISSING von 401 cron-only als zwei Ursachen', () => {
+    const gruppen = groupAntwortenByCause([
+      { art: 'antwort', status: '401', anzahl: 8, von: 'a', bis: 'b', beispiel: '{"error":"cron only"}' },
+      {
+        art: 'antwort',
+        status: '500',
+        anzahl: 3,
+        von: 'a',
+        bis: 'b',
+        beispiel: '{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_GOVERNANCE_MONITORING_KEY not configured"}}',
+      },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0].ursache).toContain('Function Secret mismatch');
+    expect(gruppen[1]).toEqual({
+      anzahl: 3,
+      ursache: expect.stringContaining('Function Secret fehlt (CRON_*_KEY nicht gesetzt)'),
+    });
+  });
+
   it('gruppiert die 40x-401-Messung vom 2026-09-22 zu einer Ursache', () => {
     const gruppen = groupAntwortenByCause([
       {

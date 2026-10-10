@@ -150,6 +150,32 @@ describe('REFINE — Zielgruppe mit Compliance-Untergrenze', () => {
     expect(result.changes.find((c) => c.code === 'intent.handwerker.industry')?.complianceNote).toMatch(/mindestens so streng/);
   });
 
+  it('hält die Untergrenze auch über weitere Überarbeitungen nach dem Branchenwechsel', async () => {
+    const { builds } = await rebuildCase('handwerk');
+    const base = builds[0].blueprint;
+    const praxis: SiteBlueprint = {
+      ...base,
+      industry: 'zahnarzt',
+      compliance: {
+        ...base.compliance,
+        specialCategories: true,
+        dpiaRequired: true,
+        policyPackIds: ['dsgvo-core', 'dsgvo-health', 'eu-ai-act-transparency'],
+        controlRefs: ['GDPR-ART-9', 'GDPR-ART-32', 'GDPR-ART-35'],
+        legalBases: [...base.compliance.legalBases, 'Art. 9 Abs. 2 lit. h DSGVO'],
+      },
+    };
+    const switched = reviseBlueprint(praxis, { intents: ['fuer-handwerker'] }).blueprint;
+    for (const next of [['serioeser'], ['mehr-lokal']] as RevisionIntentKey[][]) {
+      const later = reviseBlueprint(switched, { intents: next }).blueprint.compliance;
+      expect(later.specialCategories, next.join()).toBe(true);
+      expect(later.dpiaRequired, next.join()).toBe(true);
+      expect(later.policyPackIds, next.join()).toEqual(expect.arrayContaining(['dsgvo-health']));
+      expect(later.controlRefs, next.join()).toEqual(expect.arrayContaining(['GDPR-ART-9', 'GDPR-ART-35']));
+      expect(later.legalBases, next.join()).toEqual(expect.arrayContaining(['Art. 9 Abs. 2 lit. h DSGVO']));
+    }
+  });
+
   it('„für Steuerberater" benennt das Angebot und ordnet Ablauf und Fragen vor das Gespräch', async () => {
     const { builds } = await rebuildCase('handwerk');
     const result = reviseBlueprint(builds[0].blueprint, { intents: ['fuer-steuerberater'] });

@@ -980,8 +980,8 @@ function bridgeThemeToDesign(
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Leitet das Profil aus den Blöcken neu ab. Hat sich die Branche geändert,
- * gilt das bisherige Profil als Untergrenze: Pflichten der alten Einstufung
+ * Leitet das Profil aus den Blöcken neu ab. Das bisherige Profil gilt dabei
+ * als Untergrenze: Pflichten einer früheren Einstufung
  * (besondere Kategorien, DSFA, Policy-Packs, Kontrollen, Rechtsgrundlagen)
  * bleiben stehen. Einwilligungskategorien folgen allein den Blöcken — eine
  * Kategorie ohne Block wäre eine Angabe ohne Gegenstand.
@@ -989,18 +989,18 @@ function bridgeThemeToDesign(
 function recompile(original: SiteBlueprint, bp: SiteBlueprint, changes: RefinementChange[]): SiteBlueprint {
   const preset = getIndustryPreset(bp.industry);
   const derived = deriveCompliance(briefFromBlueprint(bp), bp.pages, preset.compliance);
-  const floor = original.industry !== bp.industry ? original.compliance : null;
+  // Immer, nicht nur beim Branchenwechsel selbst — sonst fiele das Profil
+  // bei der nächsten Überarbeitung still auf das Preset der neuen Branche.
+  const floor = original.compliance;
   const union = (a: string[], b: string[]) => [...new Set([...a, ...b])].sort();
-  const compliance = floor
-    ? {
-        specialCategories: derived.specialCategories || floor.specialCategories,
-        legalBases: union(derived.legalBases, floor.legalBases),
-        consentCategories: derived.consentCategories,
-        policyPackIds: union(derived.policyPackIds, floor.policyPackIds),
-        controlRefs: union(derived.controlRefs, floor.controlRefs),
-        dpiaRequired: derived.dpiaRequired || floor.dpiaRequired,
-      }
-    : derived;
+  const compliance = {
+    specialCategories: derived.specialCategories || floor.specialCategories,
+    legalBases: union(derived.legalBases, floor.legalBases),
+    consentCategories: derived.consentCategories,
+    policyPackIds: union(derived.policyPackIds, floor.policyPackIds),
+    controlRefs: union(derived.controlRefs, floor.controlRefs),
+    dpiaRequired: derived.dpiaRequired || floor.dpiaRequired,
+  };
   if (compliance.dpiaRequired && !original.compliance.dpiaRequired && !changes.some((c) => c.code === 'compliance.dpia-required')) {
     changes.push({
       code: 'compliance.dpia-required',

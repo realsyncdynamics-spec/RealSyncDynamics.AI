@@ -258,6 +258,20 @@ describe('Ort nur, wo einer steht', () => {
   });
 });
 
+describe('Kein Knopf ins Leere', () => {
+  it('ohne Leistungsblock und ohne Telefon kein „Leistungen ansehen" auf #leistungen', async () => {
+    const html = page(`<h1>Dach Beispiel</h1>${FILLER}`);
+    const snapshot = await sealSnapshot(buildSnapshot(snapshotInput(html)));
+    const positioning = derivePositioning(snapshot);
+    const build = buildDirection(snapshot, positioning, { engineVersion: 'x', assessedAt: AT, criteria: [], findings: [], overall: 0 }, 'local-trust', { createdAt: AT });
+    const home = build.blueprint.pages.find((p) => p.path === '/');
+    expect(home?.blocks.some((b) => b.kind === 'services')).toBe(false);
+    const hero = home?.blocks.find((b) => b.kind === 'hero');
+    expect(hero?.content.secondaryCta).toBeUndefined();
+    expect(renderSite(build.blueprint, { presentation: 'showcase' }).find((p) => p.path === '/')?.html ?? '').not.toContain('href="#leistungen"');
+  });
+});
+
 describe('Seitentitel ohne Aussage wird keine Überschrift', () => {
   it('„Startseite – Müller Bau" ergibt weder H1 noch Seitentitel „Startseite"', async () => {
     const html = page(`<header><a href="/"><img src="/logo.png" alt="Müller Bau Logo"></a></header><main>${FILLER}</main>`, '<title>Startseite – Müller Bau</title>');

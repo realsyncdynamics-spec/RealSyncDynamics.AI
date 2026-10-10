@@ -196,7 +196,10 @@ export function buildDirection(
   const omitted: { kind: BlockKind; reason: string }[] = [];
   const seo = composeSeo(snapshot, positioning);
   const primary = primaryCta(snapshot, positioning, FORM_ANCHOR);
-  const secondary = secondaryCta(snapshot, primary, SERVICES_ANCHOR);
+  // Ohne erkanntes Angebot gibt es keinen Leistungsblock und damit keinen
+  // Anker `#leistungen` — dann lieber kein zweiter Knopf als einer ins Leere.
+  const offered = secondaryCta(snapshot, primary, SERVICES_ANCHOR);
+  const secondary = offered.href === SERVICES_ANCHOR && ing.offers.length === 0 ? null : offered;
   // Die Nachweiszeile im Hero nur, wo die Vertrauensleiste nicht ohnehin
   // direkt darunter steht — sonst stünde dasselbe zweimal übereinander.
   const trustFollowsHero = HOME_PLANS[key][1] === 'trust-bar' && ing.trust.length > 0;
@@ -527,7 +530,7 @@ interface MakeContext {
   ing: Ingredients;
   hero: ReturnType<typeof composeHero>;
   primary: { label: string; href: string };
-  secondary: { label: string; href: string };
+  secondary: { label: string; href: string } | null;
   design: NonNullable<SiteBlueprint['design']>;
   isHome: boolean;
   brief: SiteBrief;
@@ -580,7 +583,7 @@ function makeBlock(
         headline: ctx.hero.headline,
         subline: ctx.hero.subline ?? undefined,
         primaryCta: { label: ctx.primary.label, href: ctx.primary.href },
-        secondaryCta: { label: ctx.secondary.label, href: ctx.secondary.href },
+        secondaryCta: ctx.secondary ? { label: ctx.secondary.label, href: ctx.secondary.href } : undefined,
         proof: ctx.hero.proof ?? undefined,
         media,
         variant: ctx.design.hero,

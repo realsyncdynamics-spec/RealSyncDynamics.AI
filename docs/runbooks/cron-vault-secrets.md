@@ -13,7 +13,8 @@ Menschen.
 
 Die drei Cron-Empfänger prüfen **nicht** den `service_role` JWT. Sie vergleichen
 den inbound `Authorization: Bearer …` gegen dedizierte Function Secrets
-(fail-closed: leerer Key → 401). `SUPABASE_SERVICE_ROLE_KEY` darf nach Auth noch
+(fail-closed: leerer Key → `500 CRON_KEY_MISSING`, falscher Bearer →
+`401 cron only`). `SUPABASE_SERVICE_ROLE_KEY` darf nach Auth noch
 für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 
 | pg_cron Job | Edge Function | Vault-Secret (pg_cron / `dispatch_cron_function`) | Function Secret (Edge) |
@@ -22,6 +23,7 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `governance-monitoring-hourly` / `-daily` | `governance-monitoring-scheduler` | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `memory-decay-hourly` | `memory-decay-worker` | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
+| `audit-monitor-daily` | `audit-monitor-cron` | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
@@ -65,6 +67,7 @@ select vault.create_secret('<cron-key>', 'cron_scheduler_dispatch_key');
 select vault.create_secret('<cron-key>', 'cron_governance_monitoring_key');
 select vault.create_secret('<cron-key>', 'cron_memory_decay_key');
 select vault.create_secret('<cron-key>', 'cron_website_rescan_key');
+select vault.create_secret('<cron-key>', 'cron_audit_monitor_key');
 ```
 
 Dieselben Werte als Function Secrets setzen (Namen only):
@@ -75,6 +78,7 @@ Dieselben Werte als Function Secrets setzen (Namen only):
 | `cron_governance_monitoring_key` | `CRON_GOVERNANCE_MONITORING_KEY` |
 | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
+| `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 
 `dispatch_cron_function` liest den Vault-Namen zur Laufzeit über
 `public.get_app_secret(...)`. Die Edge Function liest das Function Secret.
@@ -97,6 +101,18 @@ HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
 `401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer und Body
 `{"trigger":"manual","dry_run":true}`.
 
+### `audit-monitor-daily` → `audit-monitor-cron` (neu, 2026-10-09)
+
+Täglich 04:00 UTC Re-Scan der `monitored_domains` (Kadenz je Plan: täglich mit
+`monitoring.daily`, monatlich mit nur `monitoring.monthly`, sonst kein
+Dauerbetrieb). Reihenfolge nach dem Merge: Vault-Eintrag `cron_audit_monitor_key`
++ Function Secret `CRON_AUDIT_MONITOR_KEY` (derselbe Zufallswert) → Migration
+`20261009230000_audit_monitor_daily_cron.sql` → Deploy der Function.
+Fail-closed: Vault fehlt → Lauf `failed` ohne HTTP-Request; Secret fehlt →
+`500 CRON_KEY_MISSING`; Werte verschieden → `401 cron only`; Scan- oder
+Evidence-Fehler → Antwort `ok:false` (HTTP 500), kein Alert. Drift-Mails nutzen
+das vorhandene `RESEND_API_KEY`; fehlt es, steht `alert: not_configured` im Ergebnis.
+
 ## Prüfen, dass es gewirkt hat
 
 Der nächste Lauf kommt binnen 15 Minuten (`scan-scheduler-dispatch`).
@@ -107,7 +123,8 @@ from cron.job j
 join cron.job_run_details d on d.jobid = j.jobid
 where j.jobname in (
   'scan-scheduler-dispatch','governance-monitoring-hourly',
-  'memory-decay-hourly','governance-monitoring-daily','website-rescan-daily'
+  'memory-decay-hourly','governance-monitoring-daily','website-rescan-daily',
+  'audit-monitor-daily'
 )
 order by d.start_time desc
 limit 8;

@@ -127,6 +127,9 @@ const FORBIDDEN_CLIENT = [
   // governance-approvals / browser-execute; Session-Limit als Trigger.
   'decide_governance_approval',
   'browser_sessions_enforce_open_limit',
+  // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
+  'marketing_consent_before_insert',
+  'marketing_consent_before_update',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

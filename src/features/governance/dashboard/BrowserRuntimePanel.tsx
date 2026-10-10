@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { brandButtonClass } from '../../../components/brand';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -367,7 +368,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     >
       <div className="flex flex-col gap-4 border-b border-titanium-800 px-5 py-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-3xl">
-          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-400">
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--brand-champ)]">
             <CircleDot className="h-3 w-3" aria-hidden="true" />
             RealSync Browser Runtime
           </div>
@@ -391,7 +392,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           <span
             data-testid="runtime-badge-evidence"
             className={status.evidence === 'active'
-              ? 'border border-cyan-900 bg-cyan-950/30 px-2.5 py-1 text-cyan-300'
+              ? 'border border-[var(--brand-line-dark)] bg-[rgba(242,201,138,0.06)] px-2.5 py-1 text-[var(--brand-champ)]'
               : 'border border-titanium-800 px-2.5 py-1 text-titanium-500'}
           >
             {status.evidence === 'active' ? 'EVIDENCE ACTIVE' : 'EVIDENCE INACTIVE'}
@@ -426,13 +427,13 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                 onChange={(event) => setTask(event.target.value)}
                 placeholder="URL oder Aufgabe, z. B. „Prüfe, ob example.com einen Cookie-Banner zeigt“"
                 maxLength={1000}
-                className="min-w-0 flex-1 border border-titanium-700 bg-obsidian-900 px-3 py-3 text-sm text-titanium-100 outline-none placeholder:text-titanium-600 focus:border-cyan-500"
+                className="min-w-0 flex-1 border border-titanium-700 bg-obsidian-900 px-3 py-3 text-sm text-titanium-100 outline-none placeholder:text-titanium-600 focus:border-[var(--brand-champ)]"
               />
               <button
                 type="submit"
                 disabled={planning || rt.busy || !task.trim() || Boolean(submitBlockedReason)}
                 title={submitBlockedReason ?? undefined}
-                className="inline-flex items-center justify-center gap-2 bg-cyan-500 px-4 py-3 text-sm font-semibold text-obsidian-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-45"
+                className={brandButtonClass({ size: 'md' })}
               >
                 {planning ? 'Plane…' : !task.trim() || inputUrl ? (session ? 'Öffnen' : 'Browser öffnen') : 'Planen'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -481,10 +482,10 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           )}
 
           {plan && (
-            <div className="mt-3 border border-cyan-900 bg-obsidian-900 p-4" data-testid="browser-task-plan">
+            <div className="mt-3 border border-[var(--brand-line-dark)] bg-obsidian-900 p-4" data-testid="browser-task-plan">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Aktionsplan</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--brand-champ)]">Aktionsplan</div>
                   {plan.summary && <p className="mt-1 text-sm text-titanium-200">{plan.summary}</p>}
                 </div>
                 {modeOf === 'copilot' && (
@@ -492,7 +493,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                     type="button"
                     onClick={() => void runPlan()}
                     disabled={!session || rt.busy || runningPlan || stepStatus.every((st) => st === 'done')}
-                    className="inline-flex items-center gap-2 bg-cyan-500 px-3 py-2 text-xs font-semibold text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-45"
+                    className={brandButtonClass({ size: 'sm' })}
                   >
                     {runningPlan ? 'Läuft…' : 'Plan ausführen'}
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -516,7 +517,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                         )}
                       </div>
                       <span className={`shrink-0 font-mono text-[10px] uppercase ${
-                        s === 'done' ? 'text-emerald-300' : s === 'error' ? 'text-red-300' : s === 'approval' ? 'text-amber-300' : s === 'running' ? 'text-cyan-300' : 'text-titanium-500'
+                        s === 'done' ? 'text-emerald-300' : s === 'error' ? 'text-red-300' : s === 'approval' ? 'text-amber-300' : s === 'running' ? 'text-[var(--brand-champ)]' : 'text-titanium-500'
                       }`}>
                         {s === 'done' ? 'erledigt' : s === 'error' ? 'Fehler' : s === 'approval' ? 'wartet' : s === 'running' ? 'läuft' : 'offen'}
                       </span>
@@ -525,7 +526,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                         onClick={() => void runStep(index, 'human')}
                         disabled={!avail.available || rt.busy || runningPlan || s === 'done'}
                         title={avail.reason ?? undefined}
-                        className="shrink-0 border border-cyan-800 px-2 py-1 text-[11px] text-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
+                        className="shrink-0 border border-[var(--brand-line-dark-strong)] px-2 py-1 text-[11px] text-[var(--brand-champ-hi)] disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         Ausführen
                       </button>
@@ -547,7 +548,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   onClick={() => setMode(id)}
                   data-testid={`agent-mode-${id}`}
                   className={`border px-3 py-3 text-left text-sm transition ${
-                    modeOf === id ? 'border-cyan-500 bg-cyan-950/30 text-cyan-200' : 'border-titanium-800 bg-obsidian-900 text-titanium-400'
+                    modeOf === id ? 'border-[var(--brand-champ)] bg-[rgba(242,201,138,0.08)] text-[var(--brand-champ-hi)]' : 'border-titanium-800 bg-obsidian-900 text-titanium-400'
                   } disabled:cursor-not-allowed ${!enabled ? 'opacity-45' : ''}`}
                   title={description}
                 >
@@ -572,7 +573,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   Der Server entscheidet: lesende Aktionen nach Policy, Click/Type/Select/Submit/Download nur nach Freigabe.
                 </div>
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-cyan-400">{modeOf}</span>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--brand-champ)]">{modeOf}</span>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -633,7 +634,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                 type="submit"
                 disabled={!availability(actionType).available || rt.busy}
                 title={availability(actionType).reason ?? undefined}
-                className="inline-flex items-center gap-2 bg-cyan-500 px-4 py-2.5 text-xs font-semibold text-obsidian-950 disabled:cursor-not-allowed disabled:opacity-45"
+                className={brandButtonClass({ size: 'sm' })}
               >
                 {rt.busy ? 'Ausführung…' : 'Governed Action ausführen'}
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -676,7 +677,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
                   <img src={`data:image/png;base64,${last.result.screenshot.base64}`} alt="Screenshot der Session" className="max-h-48 border border-titanium-800" />
                 )}
                 {last.evidence?.event_id && (
-                  <Link to={`/app/events/${last.evidence.event_id}`} className="inline-flex items-center gap-1 text-cyan-300 underline">
+                  <Link to={`/app/events/${last.evidence.event_id}`} className="inline-flex items-center gap-1 text-[var(--brand-champ)] underline">
                     Evidence-Datensatz öffnen <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
@@ -696,7 +697,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
               const ok = Boolean(a?.available);
               return (
                 <div key={type} className="border border-titanium-800 bg-obsidian-900 px-3 py-3" data-capability={type} data-available={ok}>
-                  <Icon className={`h-4 w-4 ${ok ? 'text-cyan-400' : 'text-titanium-600'}`} aria-hidden="true" />
+                  <Icon className={`h-4 w-4 ${ok ? 'text-[var(--brand-champ)]' : 'text-titanium-600'}`} aria-hidden="true" />
                   <div className="mt-2 text-xs font-medium text-titanium-200">{label}</div>
                   <div className={`mt-1 font-mono text-[9px] uppercase tracking-wider ${ok ? 'text-emerald-400' : 'text-titanium-600'}`}>
                     {!a ? 'prüfe' : ok ? (a.requires_approval ? 'available · approval' : 'available') : reasonText(a.reason)}
@@ -709,7 +710,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
 
         <aside className="p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-titanium-400">
-            <Bot className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+            <Bot className="h-4 w-4 text-[var(--brand-champ)]" aria-hidden="true" />
             Governance Control
           </div>
 
@@ -740,7 +741,7 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-3">
               <dt className="text-titanium-500">Policy authority</dt>
-              <dd className="text-right text-cyan-300">
+              <dd className="text-right text-[var(--brand-champ)]">
                 {caps ? `server · ${caps.policy.policy_id}@${caps.policy.policy_version}` : 'prüfe…'}
                 {caps && !caps.policy.tenant_policies_loaded && <span className="block text-amber-300">Mandanten-Policies nicht ladbar</span>}
               </dd>
@@ -766,12 +767,12 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </dl>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            <Link to="/app/approvals" className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-cyan-800">
+            <Link to="/app/approvals" className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-[var(--brand-line-dark-strong)]">
               Approvals <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to={last?.evidence?.event_id ? `/app/events/${last.evidence.event_id}` : '/app/evidence'}
-              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-cyan-800"
+              className="inline-flex items-center justify-between border border-titanium-800 bg-obsidian-900 px-3 py-3 text-xs font-medium text-titanium-200 hover:border-[var(--brand-line-dark-strong)]"
             >
               Evidence <ArrowRight className="h-3.5 w-3.5" />
             </Link>

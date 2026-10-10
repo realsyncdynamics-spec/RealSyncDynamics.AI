@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { gatesIn } from '../../scripts/check-plan-name-gates.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 const BASELINE = resolve(ROOT, 'scripts/plan-name-gate-baseline.json');
@@ -47,17 +48,18 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
     }
   });
 
-  it('nennt die drei echten Gates namentlich', () => {
-    // Diese drei entscheiden, was ein zahlender Kunde bekommt: Kontingent,
-    // Monitoring-Takt, Aufbewahrungsdauer. Verschwindet einer aus der Liste,
-    // ohne dass die Fundstelle behoben wurde, ist die Ratsche stumpf
-    // geworden — deshalb stehen sie hier fest.
-    const gates = baseline.filter((b) => b.art === 'GATE').map((b) => b.datei).sort();
-    expect(gates).toEqual([
-      'src/core/billing/useScanLimits.ts',
-      'src/features/governance/terminal/agents/AuditAgent.ts',
-      'supabase/functions/audit-monitor-cron/index.ts',
-    ]);
+  it('führt kein echtes Gate mehr in der Grundlinie', () => {
+    // Bis 2026-09-28 standen hier drei GATE-Dateien fest: Scan-Kontingent,
+    // Monitoring-Takt, Aufbewahrungsdauer. Ein vierter Fall (Browser-Scan per
+    // `.includes(tier)`) lag im blinden Fleck des Prüfers. Aufgelöst in #1720:
+    //   - useScanLimits liest nur noch `website.scan_monthly_limit`
+    //   - AuditAgent war kein Gate, sondern eine Attrappe; entfernt
+    // Takt und Browser-Scan in audit-monitor-cron löst #1815: die Function
+    // liest monitoring.daily/monthly + limit.domains statt Plan-Namen.
+    // Damit gilt: kein GATE in der Grundlinie, ein neues gehört nach
+    // hasPermission(), hasModule() oder limitOf().
+    const gates = [...new Set(baseline.filter((b) => b.art === 'GATE').map((b) => b.datei))];
+    expect(gates).toEqual([]);
   });
 
   it('führt keine Fundstelle doppelt', () => {
@@ -66,7 +68,58 @@ describe('Grundlinie der Plan-Namen-Gates', () => {
   });
 });
 
+describe('gatesIn — was der Prüfer als Gate erkennt', () => {
+  // Am Muster selbst geprüft, nicht am Bestand: Im Repo steht gerade keine
+  // mehrzeilige Liste, also bliebe eine Rückkehr zur zeilenweisen Prüfung in
+  // jedem Lauf gegen den Bestand unsichtbar.
+  const plaene = (src: string) => gatesIn(src).map((g) => `${g.zeile}:${g.plan}`);
+
+  it('erkennt eine Namensliste mit .includes(tier) in einer Zeile', () => {
+    expect(plaene("const s = ['agency','enterprise'].includes(d.tier);")).toEqual(['1:agency', '1:enterprise']);
+  });
+
+  it('erkennt dieselbe Liste über mehrere Zeilen umbrochen', () => {
+    const src = "const ok =\n  [\n    'agency',\n    'enterprise',\n  ].includes(d.tier);";
+    expect(plaene(src)).toEqual(['2:agency', '2:enterprise']);
+  });
+
+  it('erkennt Plan-Namen auch in einer gemischten Liste', () => {
+    expect(plaene("if (['free', ...weitere].includes(plan)) return;")).toEqual(['1:free']);
+  });
+
+  it('übergeht Kommentarzeilen, die die Regel nur zitieren', () => {
+    expect(plaene("// ['agency'].includes(tier)\n * if (plan === 'free')")).toEqual([]);
+  });
+
+  it('meldet keine Liste, die gegen etwas anderes als einen Plan prüft', () => {
+    expect(plaene("['agency'].includes(source)")).toEqual([]);
+  });
+});
+
 describe('Der Prüfer selbst', () => {
+  it('findet genau, was die Grundlinie führt — in beide Richtungen', () => {
+    // Zwei Fehler, die derselbe Test fängt:
+    //
+    // 1. Der blinde Fleck kehrt zurück. Die Eingabelisten von /upgrade und
+    //    /pay im Terminal sind nur über das `.includes(tier)`-Muster sichtbar
+    //    (8 Fundstellen). Bricht das Muster weg, erscheinen sie hier als
+    //    „verschwunden" — und die Zählung stimmt nicht mehr.
+    // 2. Die Grundlinie lügt. Wer eine Fundstelle behebt, ohne `--update` zu
+    //    laufen, lässt einen Eintrag stehen, der nichts mehr zählt. Genau das
+    //    stand am 2026-09-28 in der Schwester-Grundlinie der erfundenen Werte:
+    //    „Behoben in PR #1375" — der PR war nie gemergt.
+    const out = execFileSync('node', ['scripts/check-plan-name-gates.mjs', '--json'], {
+      cwd: ROOT, encoding: 'utf8',
+    });
+    const result = JSON.parse(out) as {
+      summary: { gefunden: number };
+      verschwunden: { datei: string; plan: string }[];
+    };
+    expect(result.verschwunden.map((v) => `${v.datei}::${v.plan}`)).toEqual([]);
+    const gefuehrt = baseline.reduce((n, b) => n + b.fundstellen, 0);
+    expect(result.summary.gefunden).toBe(gefuehrt);
+  });
+
   it('läuft gegen den aktuellen Stand grün', () => {
     // Wenn dieser Test bricht, ist eine NEUE Zugriffsprüfung auf einen
     // Plan-Namen dazugekommen. Sie gehört nach hasPermission(), hasModule()

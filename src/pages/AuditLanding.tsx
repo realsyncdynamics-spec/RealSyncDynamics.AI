@@ -488,8 +488,6 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         })}
       />
 
-      <TrialCtaBlock report={report} />
-
       {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
 
       {/* Business Impact Summary */}
@@ -589,6 +587,9 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <NextStepBlock report={report} />
 
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
+
+      {/* Upgrade-Angebote erst nach dem kostenlosen Einstieg (PostScanChoiceRow oben, E-F6). */}
+      <TrialCtaBlock report={report} />
 
       <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>

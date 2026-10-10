@@ -37,8 +37,12 @@ async function als<T>(
     await ctx.client.query(`RELEASE SAVEPOINT ${sp}`);
     return out;
   } catch (err) {
-    await ctx.client.query(`RESET ROLE`);
+    // Erst zurückrollen: nach einem Fehler ist die Transaktion abgebrochen
+    // (25P02), jedes weitere Statement — auch RESET ROLE — scheitert, bis
+    // ROLLBACK TO SAVEPOINT sie wiederherstellt. Gleiche Reihenfolge wie
+    // withClaims in db-helpers.ts.
     await ctx.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+    await ctx.client.query(`RESET ROLE`);
     throw err;
   }
 }

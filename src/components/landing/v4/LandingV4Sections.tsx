@@ -6,10 +6,15 @@ import {
   ROADMAP_COMING_SOON_ITEMS,
   ROADMAP_LIVE_ITEMS,
   ROADMAP_PREVIEW_ITEMS,
-  STATUS_LABEL,
   type ImplementationItem,
   type ImplementationStatus,
 } from '../../../product/implementation-status';
+import {
+  PUBLIC_ROADMAP_GROUP,
+  PUBLIC_STATUS_LABEL,
+  getPublicRoadmapCopy,
+  getPublicRoadmapRoute,
+} from '../../../product/implementation-status-public';
 import {
   ANCHORS,
   APP_FINDINGS,
@@ -30,7 +35,6 @@ import {
   LIVE_CAPS,
   LOOP_NODES,
   PLANS,
-  ROADMAP_FILTERS,
   TOOLS,
   TRUST,
   V4_ROUTES,
@@ -370,6 +374,7 @@ function Ledger() {
 }
 
 export function V4Workspace() {
+  const { t } = useLang();
   return (
     <section className="band band-a" id="dashboard">
       <div className="band-in">
@@ -381,19 +386,31 @@ export function V4Workspace() {
           Nach dem Free Audit läuft Ihre Runtime im Command Center weiter — Rahmenwerk-Reifegrade, offene Findings,
           Evidence-Chain und der Agent-Intent auf einer Fläche.
         </p>
+        <p className="sec-note" data-testid="v4-dash-example-note" style={{ marginTop: 18, maxWidth: '52rem' }}>
+          {t('v4DashExampleNote')}
+        </p>
 
-        <div className="app">
+        <div
+          className="app"
+          role="region"
+          aria-label={t('v4DashExampleAria')}
+          data-demo-kpis="true"
+          data-example-preview="true"
+          style={{ marginTop: 16 }}
+        >
           <div className="app-bar">
             <div className="dots">
               <i />
               <i />
               <i />
             </div>
-            <div className="url">realsyncdynamics.ai/app/dashboard</div>
-            <span className="tag">DEMO · BEISPIELDATEN</span>
+            <div className="url">realsyncdynamicsai.de/app/dashboard</div>
+            <span className="tag" aria-hidden="true">
+              {t('v4DashExampleBadge')}
+            </span>
           </div>
           <div className="app-body">
-            <nav className="app-nav">
+            <nav className="app-nav" aria-hidden="true">
               <div className="nav-group">GOVERNANCE OS</div>
               {APP_NAV.map(([label, badge, active]) => (
                 <div key={label} className={'nav-item' + (active ? ' active' : '')}>
@@ -407,7 +424,7 @@ export function V4Workspace() {
                 <h3>Compliance Command Center</h3>
                 <span>PLAN GROWTH · EU-CENTRAL</span>
               </div>
-              <div className="tiles">
+              <div className="tiles" aria-hidden="true">
                 {APP_TILES.map(([v, suffix, k]) => (
                   <div key={k} className="tile">
                     <b>
@@ -418,7 +435,7 @@ export function V4Workspace() {
                   </div>
                 ))}
               </div>
-              <div className="split">
+              <div className="split" aria-hidden="true">
                 <div className="panel">
                   <div className="panel-head">
                     RAHMENWERK-REIFEGRAD<b>6 POLICY PACKS</b>
@@ -450,7 +467,7 @@ export function V4Workspace() {
                   </div>
                 </div>
               </div>
-              <div className="split">
+              <div className="split" aria-hidden="true">
                 <div className="panel">
                   <div className="panel-head">
                     EVIDENCE-CHAIN<b>ANCHORED</b>
@@ -709,39 +726,26 @@ export function V4Pricing() {
   );
 }
 
-/** Roadmap mit Filter ALLE · LIVE · IN PREVIEW · NEXT — aus dem Product-Registry. */
+/** Roadmap groups — customer-facing copy from implementation-status-public.ts. */
 const V4_ROADMAP_GROUPS: {
-  title: string;
-  eyebrow: string;
   status: ImplementationStatus;
   dashed: boolean;
   items: readonly ImplementationItem[];
 }[] = [
-  {
-    title: 'LIVE',
-    eyebrow: 'SHIPPED · REACHABLE',
-    status: 'live',
-    dashed: false,
-    items: ROADMAP_LIVE_ITEMS,
-  },
-  {
-    title: 'IN PREVIEW',
-    eyebrow: 'DRAFT · NOT PRODUCTION-COMPLETE',
-    status: 'preview',
-    dashed: true,
-    items: ROADMAP_PREVIEW_ITEMS,
-  },
-  {
-    title: 'NEXT',
-    eyebrow: 'COMING SOON',
-    status: 'coming-soon',
-    dashed: true,
-    items: ROADMAP_COMING_SOON_ITEMS,
-  },
+  { status: 'live', dashed: false, items: ROADMAP_LIVE_ITEMS },
+  { status: 'preview', dashed: true, items: ROADMAP_PREVIEW_ITEMS },
+  { status: 'coming-soon', dashed: true, items: ROADMAP_COMING_SOON_ITEMS },
 ];
 
 export function V4Roadmap() {
-  const [filter, setFilter] = useState('');
+  const { lang, t } = useLang();
+  const [filter, setFilter] = useState<'' | ImplementationStatus>('');
+  const filters: { label: string; key: '' | ImplementationStatus }[] = [
+    { label: t('v4RoadmapFilterAll'), key: '' },
+    { label: PUBLIC_STATUS_LABEL[lang].live, key: 'live' },
+    { label: PUBLIC_STATUS_LABEL[lang].preview, key: 'preview' },
+    { label: PUBLIC_STATUS_LABEL[lang]['coming-soon'], key: 'coming-soon' },
+  ];
   return (
     <section className="band band-a" id="roadmap">
       <div className="band-in">
@@ -749,42 +753,50 @@ export function V4Roadmap() {
         <h2>
           Was live ist. <em>Was als Nächstes kommt.</em>
         </h2>
-        <p className="sec-lede">
-          Status je Modul aus dem Product-Registry — live, in Preview oder als Nächstes. Keine doppelten Marketing-Claims.
-        </p>
+        <p className="sec-lede">{t('v4RoadmapLede')}</p>
         <div id="v3-filter">
-          {ROADMAP_FILTERS.map(([label, key]) => (
-            <button key={label} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+          {filters.map(({ label, key }) => (
+            <button key={key || 'all'} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}>
               {label}
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 44 }}>
-          {V4_ROADMAP_GROUPS.map((g) =>
-            g.items.length === 0 ? null : (
-              <div key={g.title} style={filter && !g.title.startsWith(filter) ? { display: 'none' } : undefined}>
+        <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 36 }}>
+          {V4_ROADMAP_GROUPS.map((g) => {
+            // Items ohne öffentliche Copy werden ausgelassen (nie in Render werfen).
+            const cards = g.items.flatMap((item) => {
+              const copy = getPublicRoadmapCopy(item, lang);
+              return copy ? [{ item, copy }] : [];
+            });
+            if (cards.length === 0) return null;
+            const group = PUBLIC_ROADMAP_GROUP[lang][g.status];
+            return (
+              <div key={g.status} style={filter && filter !== g.status ? { display: 'none' } : undefined}>
                 <div className="group-head">
-                  <h3>{g.title}</h3>
-                  <span>{g.eyebrow}</span>
+                  <h3>{group.title}</h3>
+                  <span>{group.eyebrow}</span>
                 </div>
-                <div className="cards" style={{ marginTop: 0 }}>
-                  {g.items.map((item) => (
-                    <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')}>
-                      <div className="rm-top">
-                        <h4>{item.name}</h4>
-                        <StatusTag
-                          className={'status' + (g.dashed ? ' dashed' : '')}
-                          label={STATUS_LABEL[item.status]}
-                        />
+                <div className="cards" style={{ marginTop: 12 }}>
+                  {cards.map(({ item, copy }) => {
+                    const route = getPublicRoadmapRoute(item);
+                    return (
+                      <div key={item.id} className={'rm-card' + (g.dashed ? ' dashed' : '')} data-impl-id={item.id}>
+                        <div className="rm-top">
+                          <h4>{copy.name}</h4>
+                          <StatusTag
+                            className={'status' + (g.dashed ? ' dashed' : '')}
+                            label={PUBLIC_STATUS_LABEL[lang][item.status]}
+                          />
+                        </div>
+                        <p>{copy.description}</p>
+                        {route ? <u>{route}</u> : null}
                       </div>
-                      <p>{item.description}</p>
-                      {item.route ? <u>{item.route}</u> : null}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
       </div>
     </section>

@@ -99,19 +99,19 @@ der Triage-Welle vom 10.10., weil der PR nebenbei die Token-Rechte von
 
 | ID | Frage | Status / Entscheidung | Begründung |
 |---|---|---|---|
-| **E-V1** | Design für `/` | ✅ **Landing v4 „Classical"** ersetzt v2 auf `/` und ist Vorlage für die weitere Plattform. Nur Dunkel, **kein** Theme-Schalter. | Stärkste Designrichtung; der Schalter war im Export ohnehin nicht bedienbar. |
+| **E-V1** | Design für `/` | ✅ **Landing v4 „Classical“** ersetzt v2 auf `/` und ist Vorlage für die weitere Plattform. Nur Dunkel, **kein** Theme-Schalter. | Stärkste Designrichtung; der Schalter war im Export ohnehin nicht bedienbar. |
 | **E-V2** | Ablaufkette | ✅ **Die sechs Stufen vom 28.09. bleiben** (Discover → Assess → Govern → Execute → Verify → Prove). Keine Vier-Schritt-Kette als Betriebsschleife. | Eine Kette pro Seite; die Sechs ist entschieden und im Code verankert. |
 | **E-V3** | Free in der Preistabelle | ✅ **Ja**: Free (`free_audit`) als erste Spalte, Angebot laut E-F6. | E-F6 macht das kostenlose Konto zum Einstieg. |
 | **E-V4** | Hero-Motiv | ✅ **Statisches Europa-Bild als LCP.** 3D-Erde höchstens als späteres Desktop-Extra (nur nach Lighthouse-Messung, self-hosted, Startwinkel Europa). | Der Export-Globus zeigte beim Laden Amerika; ~3,5 MB 3D-Assets. |
 | **E-V5** | `eu_local` nach VPS-Abschaltung | ⏳ offen: entfällt oder zieht um (wohin)? | Entscheidet die Überarbeitung der Rechtstexte (Datenschutz, Unterauftragsverarbeiter). |
 | **E-V6** | Hostinger als Auftragsverarbeiter | ⏳ offen: bleibt (z. B. Mail) oder entfällt? | Entscheidet `SubProcessors.tsx`. |
 | **E-V7** | On-Prem / SCIM | ⏳ offen. Empfehlung: **nicht angeboten → streichen**. | SCIM nicht gebaut (ADR 0008), On-Prem in keinem Plan. |
-| **E-V8** | Enterprise-SSO im Katalog | ⏳ offen. Empfehlung: „Single Sign-On (Preview, auf Anfrage)". Katalogänderung = Einzel-Freigabe. | SSO ist Vorschau, kein Build. |
+| **E-V8** | Enterprise-SSO im Katalog | ⏳ offen. Empfehlung: „Single Sign-On (Preview, auf Anfrage)“. Katalogänderung = Einzel-Freigabe. | SSO ist Vorschau, kein Build. |
 | **E-V9** | Roadmap-Eintrag `agent-os-hostinger-workers` | ⏳ offen. Empfehlung: **streichen**. | VPS ist ausgelaufen; Produktion = Cloudflare + Supabase. |
 
 **Umsetzung von E-V1–E-V4:** nicht über den damals geplanten WP7 (#1742
 fertigstellen, am 04.10. geschlossen), sondern über #1751 („Landing v4 Klassisch,
-1:1 aus dem Design-Bundle", gemergt 04.10.). **Abweichung zu E-V4 (Stand
+1:1 aus dem Design-Bundle“, gemergt 04.10.). **Abweichung zu E-V4 (Stand
 `main` 10.10.):** `LandingV4.tsx` lädt die 3D-Erde (`heroEarthScene`, three.js im
 eigenen Chunk) nach dem ersten Paint auf jedem Gerät, nicht nur auf Desktop und
 ohne dokumentierte Lighthouse-Messung. Ob E-V4 nachgezogen oder angepasst wird,

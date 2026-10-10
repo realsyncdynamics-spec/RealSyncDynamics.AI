@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939` (Ursprungsbefund §1–§3) · **WP-Fortschritt §4:** 2026-10-10 gegen `main@c90fcdd`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4)
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben (WP2 derzeit gesperrt bis zur E-F6-Neufassung, §4) · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4) · **E-V1–E-V4 entschieden (2026-10-04)**, Landing v4 mit #1751 auf `/`
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -92,6 +92,32 @@ Freigabe und ein neues Arbeitspaket.
 
 ---
 
+**Nachtrag 2026-10-04 (Dominik Steiner): Landing v4.** Grundlage war die Prüfung des
+Claude-Design-Exports Landing v4. Übernommen am 10.10.2026 aus #1752 (geschlossen in
+der Triage-Welle vom 10.10., weil der PR nebenbei die Token-Rechte von
+`auto-merge.yml` geändert hätte). Status je Zeile: Stand 04.10.2026.
+
+| ID | Frage | Status / Entscheidung | Begründung |
+|---|---|---|---|
+| **E-V1** | Design für `/` | ✅ **Landing v4 „Classical“** ersetzt v2 auf `/` und ist Vorlage für die weitere Plattform. Nur Dunkel, **kein** Theme-Schalter. | Stärkste Designrichtung; der Schalter war im Export ohnehin nicht bedienbar. |
+| **E-V2** | Ablaufkette | ✅ **Die sechs Stufen vom 28.09. bleiben** (Discover → Assess → Govern → Execute → Verify → Prove). Keine Vier-Schritt-Kette als Betriebsschleife. | Eine Kette pro Seite; die Sechs ist entschieden und im Code verankert. |
+| **E-V3** | Free in der Preistabelle | ✅ **Ja**: Free (`free_audit`) als erste Spalte, Angebot laut E-F6. | E-F6 macht das kostenlose Konto zum Einstieg. |
+| **E-V4** | Hero-Motiv | ✅ **Statisches Europa-Bild als LCP.** 3D-Erde höchstens als späteres Desktop-Extra (nur nach Lighthouse-Messung, self-hosted, Startwinkel Europa). | Der Export-Globus zeigte beim Laden Amerika; ~3,5 MB 3D-Assets. |
+| **E-V5** | `eu_local` nach VPS-Abschaltung | ⏳ offen: entfällt oder zieht um (wohin)? | Entscheidet die Überarbeitung der Rechtstexte (Datenschutz, Unterauftragsverarbeiter). |
+| **E-V6** | Hostinger als Auftragsverarbeiter | ⏳ offen: bleibt (z. B. Mail) oder entfällt? | Entscheidet `SubProcessors.tsx`. |
+| **E-V7** | On-Prem / SCIM | ⏳ offen. Empfehlung: **nicht angeboten → streichen**. | SCIM nicht gebaut (ADR 0008), On-Prem in keinem Plan. |
+| **E-V8** | Enterprise-SSO im Katalog | ⏳ offen. Empfehlung: „Single Sign-On (Preview, auf Anfrage)“. Katalogänderung = Einzel-Freigabe. | SSO ist Vorschau, kein Build. |
+| **E-V9** | Roadmap-Eintrag `agent-os-hostinger-workers` | ⏳ offen. Empfehlung: **streichen**. | VPS ist ausgelaufen; Produktion = Cloudflare + Supabase. |
+
+**Umsetzung von E-V1–E-V4:** nicht über den damals geplanten WP7 (#1742
+fertigstellen, am 04.10. geschlossen), sondern über #1751 („Landing v4 Klassisch,
+1:1 aus dem Design-Bundle“, gemergt 04.10.). **Abweichung zu E-V4 (Stand
+`main` 10.10.):** `LandingV4.tsx` lädt die 3D-Erde (`heroEarthScene`, three.js im
+eigenen Chunk) nach dem ersten Paint auf jedem Gerät, nicht nur auf Desktop und
+ohne dokumentierte Lighthouse-Messung. Ob E-V4 nachgezogen oder angepasst wird,
+ist eine eigene Freigabe (Design-Freeze in `CLAUDE.md`). E-V3 ist hier nicht neu
+gemessen.
+
 ## 4. Arbeitspakete und Reihenfolge
 
 ```
@@ -118,6 +144,8 @@ WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockie
 | ~~**WP4**~~ | ✅ **Erledigt** — Command Center: Inventar · Agenten · Freigaben · Evidence. Gemergt in `299a743` (#1733), Duplikat #1747 geschlossen. Folgepunkte siehe unten. | `features/governance/dashboard/*`, vorhandene APIs | niedrig | erledigt |
 | ~~**WP5**~~ | ✅ **Erledigt** — Ein Agent-Register mit abgeleitetem Reifegrad. Gemergt (#1658, 2026-09-27). | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | erledigt |
 | **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. | `.claude/os-funnel/governed-evolution.md` | keins | — |
+| **WP7** | Landing v4 auf `/`. ✅ **Erledigt über #1751** (04.10.); der geplante Weg über #1742 ist entfallen. ⏸ **Offen bleibt die Abweichung zu E-V4** (3D-Erde auf jedem Gerät, siehe Nachtrag §3): E-V4 nachziehen (3D nur Desktop, nach Lighthouse-Messung) oder E-V4 anpassen — Entscheidung Dominik Steiner, eigene Freigabe (Design-Freeze); bis dahin zurückgestellt. | `LandingV4.tsx`, `heroEarthScene.ts` | niedrig | Design-Freeze |
+| **WP7a** | SSoT-Bereinigung: Bot-Laufzeit eine Wahrheit, toter `PLANS`-Export, SSO-/SCIM-/On-Prem-Claims, Hostinger-Roadmap. ⏳ **Offen.** Der Auftrag stand in #1752 (`.claude/commands/wp7a-ssot-cleanup.md`) und ist vor einem Neustart gegen den aktuellen `main` zu prüfen; Teile warten auf E-V7–E-V9. | `platform-capabilities.ts`, `implementation-status.ts`, `runtimeVocab.ts`, `GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx` | mittel | Katalog (E-V8), Claims (E-V7, E-V9) |
 
 **WP4-Folgepunkte (bewusst nicht in #1733):**
 

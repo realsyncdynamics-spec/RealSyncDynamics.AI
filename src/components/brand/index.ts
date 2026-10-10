@@ -4,3 +4,8 @@ export { Card, brandCardClass } from './Card';
 export { StatusBadge, STATUS_LABELS, STATUS_COLOR_VAR } from './StatusBadge';
 export type { BrandStatus } from './StatusBadge';
 export { Input } from './Input';
+export { PublicHeader } from './PublicHeader';
+export type { PublicHeaderProps, PublicHeaderLink, PublicHeaderCta } from './PublicHeader';
+export { PublicFooter } from './PublicFooter';
+export type { PublicFooterColumn, PublicFooterLink } from './PublicFooter';
+export { PublicPageFrame } from './PublicPageFrame';

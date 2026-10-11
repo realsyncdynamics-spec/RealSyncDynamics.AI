@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { LV2_H1_SILVER } from '../../src/components/landing/v2/landing-v2-content';
 
-/** Regex-sicher escapen — der Substring ist Text, keine Regex-Syntax. */
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const publicRoutes = [
   { id: 'FE-001', path: '/', label: 'Startseite', heading: /Risiken auf Ihrer Website.*und bei KI erkennen/i },

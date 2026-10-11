@@ -264,7 +264,7 @@ describe('implementation-status registry', () => {
     expect(i18n).toContain("v4HeroTitleA: 'Risiken auf Ihrer Website'");
     expect(i18n).toContain("v4HeroTitleB: 'und bei KI erkennen'");
     expect(sections).toContain('Free Audit starten');
-    expect(sections).toContain('Runtime ansehen');
+    expect(sections).toContain("t('v4HeroSecondaryCta')");
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
     const landing = getImplementation('public-landing')!;

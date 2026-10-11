@@ -90,9 +90,9 @@ it('presents the governance loop as four ordered, clearly titled steps', () => {
   const steps = within(list).getAllByRole('listitem');
   expect(steps).toHaveLength(4);
   expect(steps.map((step) => within(step).getByRole('heading', { level: 3 }).textContent))
-    .toEqual(['Discover', 'Classify', 'Enforce', 'Prove']);
-  expect(steps[2]).toHaveTextContent('Menschen geben frei');
-  expect(steps[3]).toHaveTextContent('Drift erkennen');
+    .toEqual(['Scan', 'Einordnen', 'Beheben', 'Dokumentieren']);
+  expect(steps[2]).toHaveTextContent('ohne Berater und ohne Fachchinesisch');
+  expect(steps[3]).toHaveTextContent('nachvollziehbar festhalten');
 });
 
 it('keeps live module badges distinct from planned capabilities and policy example data', () => {

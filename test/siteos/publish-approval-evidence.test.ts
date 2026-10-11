@@ -91,7 +91,7 @@ describe('O-WP6 (2) — jede Freigabe hat einen Evidence-Eintrag', () => {
   it('schreibt einen Custody-Eintrag, bevor die Freigabe gespeichert wird', () => {
     const src = approveSrc();
     const custody = src.indexOf('appendCustodyEvent');
-    const update = src.indexOf('.update({ approved_by: ctx.userId');
+    const update = src.indexOf('approved_by: ctx.userId, approved_at: nowIso');
     const audit = src.indexOf("action: 'siteos.publish.approve'");
     expect(custody).toBeGreaterThanOrEqual(0);
     expect(update).toBeGreaterThan(custody);
@@ -134,6 +134,39 @@ describe('O-WP6 (2) — jede Freigabe hat einen Evidence-Eintrag', () => {
     expect(custody).toBeGreaterThan(alreadyApproved);
     expect(src).toContain(".is('approved_by', null)");
     expect(src).toContain('updated.length === 0');
+  });
+
+  it('gleichzeitige Freigaben: atomarer Anspruch vor dem Nachweis', () => {
+    const src = approveSrc();
+    const claim = src.indexOf('.update({ approval_claimed_at: nowIso })');
+    const custody = src.indexOf('appendCustodyEvent');
+    const finalize = src.indexOf('approved_by: ctx.userId, approved_at: nowIso');
+    expect(claim).toBeGreaterThanOrEqual(0);
+    expect(custody).toBeGreaterThan(claim);
+    expect(finalize).toBeGreaterThan(custody);
+    // Nur ein freier oder verwaister Anspruch darf übernommen werden;
+    // wer verliert, bricht ohne Nachweis ab.
+    expect(src).toContain('.or(`approval_claimed_at.is.null,approval_claimed_at.lt.${staleIso}`)');
+    expect(src).toContain('claimed.length === 0');
+    expect(src.indexOf('claimed.length === 0')).toBeLessThan(custody);
+  });
+
+  it('gescheiterter Nachweis gibt den Anspruch frei; abgeschlossen wird nur der eigene', () => {
+    const src = approveSrc();
+    expect(src).toContain('.update({ approval_claimed_at: null })');
+    // Freigeben und Abschließen treffen nur den eigenen Anspruch.
+    expect(src.split(".eq('approval_claimed_at', nowIso).is('approved_by', null)").length - 1).toBe(2);
+  });
+
+  it('die Anspruchs-Spalte ist additiv und kein Freigabe-Signal', () => {
+    const migration = readFileSync(
+      resolve(ROOT, 'supabase/migrations/20261011070000_siteos_publish_approval_claim.sql'),
+      'utf8',
+    );
+    expect(migration).toContain('ADD COLUMN IF NOT EXISTS approval_claimed_at TIMESTAMPTZ');
+    expect(migration).not.toMatch(/DROP|ALTER COLUMN|CONSTRAINT/i);
+    // runEvaluation zählt weiter nur approved_by als Freigabe.
+    expect(handler).toContain(".not('approved_by', 'is', null)");
   });
 
   it('Freigabe bleibt auf berechtigte Rollen und eine Begründung beschränkt', () => {

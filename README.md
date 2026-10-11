@@ -186,7 +186,7 @@ Siehe auch: [`docs/QA_VISUAL_FUNCTIONAL_TESTRUN.md`](docs/QA_VISUAL_FUNCTIONAL_T
 - **Frontend:** statische Vite-Build via GitHub Actions auf Hostinger-VPS,
   hinter Traefik. Siehe `deploy/README.md`.
 - **Edge Functions:** via Supabase MCP / `supabase functions deploy`.
-  Siehe `supabase/functions/*/`.
+  Siehe `supabase/functions/*/ `.
 - **Migrations:** `supabase/migrations/` — automatisch via
   `supabase db push` oder per Dashboard-SQL-Editor.
 - **EU-lokal-Stack:** `deploy/ollama-traefik/` — Ollama + n8n + Open
@@ -214,3 +214,5 @@ Proprietär — © 2026 RealSync Dynamics. Alle Rechte vorbehalten.
 ## SiteOS Customer Builder
 
 Der Website-Transformation-Flow erzeugt nach dem Audit einen echten SiteOS-Blueprint und rendert daraus eine vollständige Website-Preview für Desktop/Tablet/Mobile. Die Preview ist der Einstieg in den Builder und nicht nur eine statische Designauswahl.
+
+<!-- redeploy-trigger: 2026-10-11T13:46Z for landing texts from 8fa2bf4 -->

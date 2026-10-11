@@ -259,12 +259,12 @@ describe('implementation-status registry', () => {
     expect(sections).toContain("t('v4HeroTitleB')");
     expect(sections).toContain("t('v4HeroTitleEm')");
     const i18n = readFileSync(resolve('src/i18n/handoff.ts'), 'utf8');
-    expect(i18n).toContain("v4HeroTitleEm: 'für Europa'");
-    expect(i18n).toContain("v4HeroTitleEm: 'for Europe'");
+    expect(i18n).toContain("v4HeroTitleEm: 'für regulierte KI'");
+    expect(i18n).toContain("v4HeroTitleEm: 'for regulated AI'");
     expect(i18n).toContain("v4HeroTitleA: 'AI Compliance'");
     expect(i18n).toContain("v4HeroTitleB: 'Operations OS'");
     expect(sections).toContain('Free Audit starten');
-    expect(sections).toContain('Runtime ansehen');
+    expect(sections).toContain("t('v4HeroSecondaryCta')");
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
     const landing = getImplementation('public-landing')!;

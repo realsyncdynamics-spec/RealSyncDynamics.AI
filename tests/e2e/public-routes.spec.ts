@@ -1,11 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { LV2_H1_SILVER } from '../../src/components/landing/v2/landing-v2-content';
 
-/** Regex-sicher escapen — der Substring ist Text, keine Regex-Syntax. */
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const publicRoutes = [
-  { id: 'FE-001', path: '/', label: 'Startseite', heading: new RegExp(escapeRegex(LV2_H1_SILVER), 'i') },
+  { id: 'FE-001', path: '/', label: 'Startseite', heading: /Risiken auf Ihrer Website.*und bei KI erkennen/i },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Ihr KI-Bestand in vier Fragen/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /EU-AI-Act-Compliance ohne Beratungsprojekt/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },

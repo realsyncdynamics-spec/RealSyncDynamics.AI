@@ -387,8 +387,8 @@ export const HANDOFF_EXTRA = {
     v4HeroTitleEm: 'für regulierte KI',
     v4HeroLede1: 'Runtime-Governance für regulierte KI.',
     v4HeroLede2: 'Kontinuierliche Evidenz statt einmaliger Audits. Menschliche Kontrolle. EU-nativ by Design.',
-    v4HeroNutzen: 'Inventar in Sekunden · Risiken nach Artikel · Policies durchsetzen · Evidence versiegeln',
-    v4HeroTrust: 'EU-Hosting Frankfurt · Hash-Chain Evidence · URL genügt · kein Account nötig',
+    v4HeroNutzen: 'Inventar in Sekunden · Risiken prüfen · Policies durchsetzen · Scan-Befunde einsehen',
+    v4HeroTrust: 'EU-Datenebene in Frankfurt · Scan mit E-Mail · kein Account nötig',
     v4HeroSecondaryCta: 'Dashboard ansehen',
     // Landing v4 Workspace-Vorschau — sichtbare Beispiel-Kennzeichnung (keine Fake-KPIs).
     v4DashExampleBadge: 'Beispielansicht',
@@ -493,8 +493,8 @@ export const HANDOFF_EXTRA = {
     v4HeroTitleEm: 'for regulated AI',
     v4HeroLede1: 'Runtime governance for regulated AI.',
     v4HeroLede2: 'Continuous evidence instead of one-off audits. Human control. EU-native by design.',
-    v4HeroNutzen: 'Inventory in seconds · Risks by article · Enforce policies · Seal evidence',
-    v4HeroTrust: 'EU hosting in Frankfurt · Hash-chain evidence · A URL is enough · No account needed',
+    v4HeroNutzen: 'Inventory in seconds · Review risks · Enforce policies · Explore scan findings',
+    v4HeroTrust: 'EU data plane in Frankfurt · Email required for scan · No account needed',
     v4HeroSecondaryCta: 'View dashboard',
     v4DashExampleBadge: 'Example view',
     v4DashExampleNote:

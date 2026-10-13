@@ -20,6 +20,7 @@ import {
   V4Evidence,
   V4Footer,
   V4Header,
+  V4Hero,
   V4LoopBand,
   V4Platform,
   V4Pricing,
@@ -30,7 +31,6 @@ import {
   V4Workspace,
 } from '../components/landing/v4/LandingV4Sections';
 import '../styles/landing-v4-classical.css';
-import { ModernV4Hero } from '../components/landing/v4/ModernV4Hero';
 
 const REVEAL_SELECTOR = '.card, .rm-card, .ent > div, .loop-node, .sec-lede';
 const SPOTLIGHT_SELECTOR = '.card, .rm-card, .ent > div';
@@ -151,7 +151,7 @@ export function LandingV4() {
       <div id="page">
         <V4StatusBar />
         <V4Header />
-        <ModernV4Hero />
+        <V4Hero />
         <V4Ticker />
         <V4LoopBand />
         <V4Workspace />

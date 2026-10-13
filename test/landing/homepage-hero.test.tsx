@@ -198,8 +198,9 @@ it('self-check result counts only the given answers and links to real routes', (
   const check = view.container.querySelector('#governance-check') as HTMLElement;
   const section = within(check);
   expect(section.getByText(/Beantworten Sie die Fragen/)).toBeInTheDocument();
-  fireEvent.click(section.getAllByLabelText('Ja')[0]);
-  fireEvent.click(section.getAllByLabelText('Nein')[1]);
+  fireEvent.click(section.getByLabelText('Ja'));
+  fireEvent.click(section.getByRole('button', { name: /Weiter/ }));
+  fireEvent.click(section.getByLabelText('Nein'));
   expect(section.getByText('1 von 8 Kontrollen vorhanden')).toBeInTheDocument();
   expect(section.getByText(/2 von 8 beantwortet · 1 offen oder unklar/)).toBeInTheDocument();
   expect(section.getByRole('link', { name: /Governance-Scan starten/ })).toHaveAttribute('href', '/audit');

@@ -6,6 +6,7 @@
 // in P0 rahmt der Shell das neue Status-Home (/app) und verlinkt in die
 // vorhandenen Governance-Routen.
 import React, { useEffect, useState } from 'react';
+import '../../styles/realsync-premium-foundation.css';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
@@ -108,7 +109,7 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
   );
 
   return (
-    <div className="h-screen flex bg-obsidian-950 text-titanium-100 overflow-hidden">
+    <div className="rs-premium rs-premium--workspace h-screen flex bg-obsidian-950 text-titanium-100 overflow-hidden">
       {/* Desktop-Sidebar */}
       <div className="hidden lg:flex">{Sidebar}</div>
 

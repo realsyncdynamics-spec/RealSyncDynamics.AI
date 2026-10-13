@@ -30,6 +30,7 @@ import {
   type TenantStatus,
 } from '../../lib/status/statusAdapter';
 import { WorkflowView } from './components/WorkflowView';
+import { BusinessOverview } from './BusinessOverview';
 import { CommandSessionPanel } from './CommandSessionPanel';
 import { useCommandCenter } from './hooks/useCommandCenter';
 
@@ -196,6 +197,8 @@ export function DashboardView() {
             </div>
           ))}
         </div>
+
+        <BusinessOverview status={status} insights={insights} />
 
         {activeTab === 'dashboard' ? (
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">

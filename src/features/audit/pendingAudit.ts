@@ -19,10 +19,12 @@
  * Die Kennung wird nach der Übernahme entfernt, nicht aufbewahrt.
  */
 import {
+  AuditClaimError,
   PENDING_AUDIT_ID_KEY,
   claimPendingAudit as claimViaRpc,
   clearPendingAudit as clearAllPending,
 } from '../../core/onboarding/claimAudit';
+import type { ClaimErrorCode } from '../../../supabase/functions/_shared/audit-claim';
 
 const KEY = PENDING_AUDIT_ID_KEY;
 
@@ -70,38 +72,50 @@ export interface ClaimResult {
  * Dashboard-Karte benutzen. Vorher rief diese Datei die Edge Function
  * `audit-claim`; zu jenem Zeitpunkt war sie nicht deployt, und die
  * Übernahme aus dem Unified-Entry-Pfad schlug still fehl. Deployt ist sie
- * inzwischen (gemessen 2026-09-04) — sie hat nur keinen Aufrufer mehr, und
- * das soll so bleiben: ein Schreibweg. Der Mandant ergibt
- * sich aus der Mitgliedschaft des angemeldeten Nutzers; `tenantId` bleibt
- * als Parameter erhalten, damit Aufrufer unverändert bleiben.
+ * inzwischen (gemessen 2026-09-04) und ruft seit 2026-10-13 selbst nur
+ * noch diese RPC auf — ein Schreibweg.
  *
- * Die Notiz wird auch bei `ALREADY_CLAIMED` entfernt — das Audit gehört dann
- * jemandem, und ein Wiederholungsversuch bei jedem Anmelden hätte keinen
- * anderen Ausgang.
+ * `tenantId` ist der aktive Arbeitsbereich. Er wird nur verwendet, wenn der
+ * Nutzer zu mehreren gehört und die RPC deshalb eine Auswahl verlangt.
+ *
+ * Endgültige Ausgänge (`ALREADY_CLAIMED`, `NOT_FOUND`, fremde E-Mail)
+ * entfernen die Notiz bereits in `claimViaRpc` — ein Wiederholungsversuch
+ * bei jedem Anmelden hätte keinen anderen Ausgang.
  */
-export async function claimPendingAudit(_tenantId?: string | null): Promise<ClaimResult | null> {
-  const auditId = readPendingAudit();
-  if (!auditId) return null;
+export async function claimPendingAudit(tenantId?: string | null): Promise<ClaimResult | null> {
+  const outcome = await claimPendingAuditWithStatus(tenantId);
+  return outcome.status === 'claimed' ? outcome.result : null;
+}
 
+export type ClaimOutcome =
+  | { status: 'none' }
+  | { status: 'claimed'; result: ClaimResult }
+  | { status: 'failed'; code: ClaimErrorCode; message: string; retryable: boolean };
+
+/**
+ * Wie `claimPendingAudit`, aber mit dem Ausgang — damit die Oberfläche eine
+ * gescheiterte Übernahme erklären und einen erneuten Versuch anbieten kann,
+ * statt sie zu verschweigen. Wirft nicht.
+ */
+export async function claimPendingAuditWithStatus(tenantId?: string | null): Promise<ClaimOutcome> {
+  // Kein Vorab-Blick nur in diesen Merkplatz: `claimViaRpc` liest alle drei
+  // (Sitzung, Permalink-Notiz, Trichter-Kontext) und kehrt ohne Netzaufruf
+  // zurück, wenn keiner etwas enthält.
   try {
-    const result = await claimViaRpc();
-    if (!result) return null;
+    const result = await claimViaRpc(tenantId);
+    if (!result) return { status: 'none' };
     return {
-      ok: true,
-      already_claimed: result.already_claimed,
-      audit_id: result.audit_id,
-      tenant_id: result.tenant_id,
-      domain: result.domain || undefined,
+      status: 'claimed',
+      result: {
+        ok: true,
+        already_claimed: result.already_claimed,
+        audit_id: result.audit_id,
+        tenant_id: result.tenant_id,
+        domain: result.domain || undefined,
+      },
     };
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    // Endgültige Ausgänge: Die Notiz weg, sonst versucht es der Browser bei
-    // jeder Anmeldung erneut.
-    if (/bereits zu einem anderen Arbeitsbereich|nicht gefunden|ALREADY_CLAIMED|NOT_FOUND/i.test(message)) {
-      clearPendingAudit();
-    }
-    // Alles andere (Netz, mehrdeutiger Mandant) bleibt liegen und darf es
-    // beim nächsten Mal noch einmal versuchen.
-    return null;
+    const failure = e instanceof AuditClaimError ? e : new AuditClaimError('INTERNAL');
+    return { status: 'failed', code: failure.code, message: failure.message, retryable: failure.retryable };
   }
 }

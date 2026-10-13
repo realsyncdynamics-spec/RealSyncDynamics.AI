@@ -6,7 +6,6 @@ import { LandingV2Header, type Lv2Theme } from '../components/landing/v2/Landing
 import {
   AiActTimeline,
   EuNativeGrid,
-  EvidenceChainPreview,
   FrameworkStrip,
   LifecycleGrid,
 } from '../components/landing/v2/LandingV2Sections';
@@ -16,19 +15,19 @@ import { GovernanceControlRoom } from '../components/landing/GovernanceControlRo
 import { GovernanceSelfCheck } from '../components/landing/GovernanceSelfCheck';
 import { HeroV5 } from '../components/landing/v5/HeroV5';
 import { BetaRibbon, V5BetaProgram, V5Loop, V5Roadmap } from '../components/landing/v5/V5Sections';
+import { EvidenceEngine } from '../components/landing/v5/EvidenceEngine';
 import '../styles/governance-os-landing.css';
 import '../styles/landing-v2.css';
 import '../styles/landing-v5.css';
 
 /**
  * Landing v5 — Zusammenführung (Owner, 13.10.2026):
- *  - Hero, Buttons, Flows, Design: Landing v2 („AI Compliance Operations OS“-Optik)
- *  - Texte: Live-Landing v4 (i18n `v4Hero*`, LOOP_NODES) — klar, ohne Fachchinesisch
- *  - Neu: echte three.js-3D-Szene, 3D-Ebenen/Buttons, Beta-Testphase, Roadmap aus SSoT
+ *  - Hero, Buttons, Flows, Design: Landing v2
+ *  - Texte: Live-Landing v4 (i18n `v4Hero*`, LOOP_NODES)
+ *  - Evidence: EvidenceEngine (ersetzt EvidenceChainPreview)
+ *  - three.js-Hero, Beta-Testphase, Roadmap aus SSoT
  *
  * Nichts überschrieben: v4 bleibt unter /design/landing-v4, v2 unter /design/landing-v2.
- * Preis-CTAs bleiben auf der Pricing-SSoT; in der Beta leitet /checkout/:planKey
- * in die kostenlose Registrierung um (src/config/beta.ts).
  */
 function Embed({ children }: { children: ReactNode }) {
   return <div className="lv2-embed ga-context rs-handoff">{children}</div>;
@@ -36,9 +35,7 @@ function Embed({ children }: { children: ReactNode }) {
 
 export function LandingV5() {
   const { mode, setMode } = useLandingMode();
-  void mode; // re-render nach Umschalten
-  // Design-Vorgabe: dunkel/Gold als Start. Erst eine bewusste Wahl im
-  // Umschalter (gespeichert) oder später gesetzte Präferenz ändert das.
+  void mode;
   const chosen = typeof window !== 'undefined' ? readStored() : null;
   const theme: Lv2Theme = chosen === 'light' ? 'light' : 'dark';
   const setTheme = useCallback((next: Lv2Theme) => setMode(next === 'light' ? 'light' : 'gold'), [setMode]);
@@ -57,7 +54,7 @@ export function LandingV5() {
           <GovernanceControlRoom />
         </Embed>
         <LifecycleGrid />
-        <EvidenceChainPreview />
+        <EvidenceEngine />
         <AiActTimeline />
         <EuNativeGrid />
         <Embed>

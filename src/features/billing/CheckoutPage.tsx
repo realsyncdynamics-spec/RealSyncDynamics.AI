@@ -11,6 +11,7 @@ import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
 import { getEntitlementsForTenant } from '../../core/usage/usage-service';
 import { isTrialEligible } from '../../core/billing/trial';
+import { betaSignupHref, isBetaPlan } from '../../config/beta';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -88,6 +89,13 @@ export function CheckoutPage() {
     }
     if (plan.purchaseMode === 'inquiry') {
       window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
+      return;
+    }
+    // Beta-Testphase (src/config/beta.ts): Starter/Growth/Agency werden nicht
+    // verkauft, sondern kostenlos getestet → Registrierung + Dashboard.
+    // `?purchase=1` lässt bewusste Käufe weiter in den Stripe-Checkout.
+    if (isBetaPlan(plan.id) && searchParams.get('purchase') !== '1') {
+      window.location.href = betaSignupHref(plan.id, searchParams.get('source') ?? 'checkout-beta-redirect');
       return;
     }
     // Stillgelegte Pläne (Partner) behalten ihren Kaufmodus, weil ihre

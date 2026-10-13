@@ -10,9 +10,10 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Landing v4 on / and redirects older design references to /', () => {
+  it('serves Landing v5 on /, keeps v4/v2 as references and redirects older design references to /', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<LandingV4/);
+    expect(app).toMatch(/path="\/"\s+element=\{<LandingV5/);
+    expect(app).toContain('path="/design/landing-v4"');
     expect(app).toContain('path="/design/landing-v2"');
     for (const path of ['/design/governance-ai', '/design/titan', '/design/ledger', '/design/tribunal', '/governance-runtime-layer', '/landing', '/realsync-landing']) {
       expect(app).toMatch(new RegExp(`path="${path}" element=\\{<Navigate to="/" replace />\\}`));

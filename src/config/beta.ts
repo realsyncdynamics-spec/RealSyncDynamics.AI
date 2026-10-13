@@ -3,8 +3,10 @@
  * Checkout-Umleitung (Entscheidung Owner 13.10.2026: erst testen lassen,
  * dann Geld verlangen).
  *
- * Schalter: `VITE_BETA_PHASE=off` im Build beendet die Beta-Darstellung
- * überall auf einmal. Default = an.
+ * Schalter: Default = AUS. Die Beta-Darstellung ist nur aktiv, wenn der Build
+ * ausdrücklich `VITE_BETA_PHASE=on` (oder `true`) setzt. Grund: Solange WP-3
+ * (serverseitiges beta-enroll) fehlt, darf die UI keinen kostenlosen
+ * Growth-Zugang versprechen und den normalen Checkout nicht umleiten.
  *
  * Wichtig (Claims vs. Runtime): Diese Datei steuert nur das Frontend.
  * Dass Beta-Mandanten serverseitig wirklich Growth-Funktionen erhalten,
@@ -13,10 +15,14 @@
  */
 import { safeInternalPath } from '../lib/safeInternalPath';
 
-const flag = (import.meta.env?.VITE_BETA_PHASE ?? 'on').toString().toLowerCase();
+/** Beta nur bei explizitem Opt-in (`on`/`true`); alles andere = aus. */
+export function isBetaFlagOn(raw: unknown): boolean {
+  const flag = (raw ?? '').toString().trim().toLowerCase();
+  return flag === 'on' || flag === 'true';
+}
 
 export const BETA = {
-  active: flag !== 'off' && flag !== 'false' && flag !== '0',
+  active: isBetaFlagOn(import.meta.env?.VITE_BETA_PHASE),
   /** Anzeige-Ende der Beta (nur Text, keine Logik). */
   endsLabel: '31. Januar 2027',
   /** Planstufe, deren Umfang Beta-Tester testen dürfen. */

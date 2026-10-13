@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const STRIPE_TEST_MODE = process.env.STRIPE_TEST_MODE === 'true';
-const BETA_ACTIVE = !['off', 'false', '0'].includes((process.env.VITE_BETA_PHASE ?? 'on').toLowerCase());
+const BETA_ACTIVE = ['on', 'true'].includes((process.env.VITE_BETA_PHASE ?? '').trim().toLowerCase());
 
 // Während der Beta (src/config/beta.ts) leitet /checkout/:plan in die
 // Registrierung um; `?purchase=1` ist der bewusste Kaufpfad in den Checkout.
@@ -31,7 +31,7 @@ test.describe('[CO] Checkout', () => {
   });
 
   test('[CO-006] Beta: Checkout ohne ?purchase=1 leitet in die kostenlose Registrierung', async ({ page }) => {
-    test.skip(!BETA_ACTIVE, 'Beta-Phase ist abgeschaltet (VITE_BETA_PHASE=off)');
+    test.skip(!BETA_ACTIVE, 'Beta-Phase ist aus (Default; nur mit VITE_BETA_PHASE=on aktiv)');
     await page.goto('/checkout/starter/', { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/welcome\?/);
     const url = new URL(page.url());

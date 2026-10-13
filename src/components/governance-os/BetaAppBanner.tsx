@@ -7,7 +7,7 @@ const KEY = 'rsd-beta-banner-dismissed';
 /**
  * Beta-Hinweis im Dashboard (alle /app/*-Flächen). Zeigt Testphase, Ende
  * und den Feedback-Weg. Ausblendbar pro Browser (nur Komfort, kein State
- * mit Bedeutung). Verschwindet mit `VITE_BETA_PHASE=off` überall.
+ * mit Bedeutung). Nur sichtbar mit `VITE_BETA_PHASE=on` (Default aus).
  */
 export function BetaAppBanner() {
   const [hidden, setHidden] = useState(() => {

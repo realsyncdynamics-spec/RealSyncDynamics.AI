@@ -49,19 +49,30 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
+      'Landing v5 auf `/`: H1 „Risiken auf Ihrer Website und bei KI erkennen und nachweisen.“ (i18n `v4Hero*`), Primär-CTA „Kostenlosen Check starten“ (/audit), Tarif-Kacheln Starter / Growth / Agency mit Preisen aus der Pricing-SSoT (→ /checkout), „Enterprise anfragen“, URL-Feld „Prüfen“ (/audit?url=), Link „Governance OS ansehen“ (/governance-runtime); three.js-Europa-Szene im Hero, darunter Ablauf in vier Schritten, Preise, Roadmap aus dieser Registry und FAQ. Beta-Elemente (Band, Beta-Programm, 0-€-Kacheln) nur bei `VITE_BETA_PHASE=on` — Default aus.',
     route: '/',
     evidence: [
-      'src/pages/LandingV4.tsx',
-      'src/components/landing/v4/LandingV4Sections.tsx',
-      'src/components/landing/v4/landing-v4-content.ts',
-      'src/components/landing/v4/heroEarthScene.ts',
-      'src/styles/landing-v4-classical.css',
+      'src/pages/LandingV5.tsx',
+      'src/components/landing/v5/HeroV5.tsx',
+      'src/components/landing/v5/V5Sections.tsx',
+      'src/config/beta.ts',
       'src/App.tsx',
-      'test/landing/landing-v4.test.tsx',
-      'PR #1751',
+      'test/landing/landing-v5-beta.test.tsx',
     ],
     showOnRoadmap: false,
+  },
+  {
+    id: 'beta-phase',
+    name: 'Offene Beta (kostenloser Growth-Zugang)',
+    status: 'preview',
+    group: 'activation',
+    description:
+      'Geplant: kostenloser Growth-Zugang für Beta-Tester bis 31.01.2027 — serverseitige Vergabe via beta-enroll (WP-3) fehlt noch; Dashboard-Feedback und automatischer Erst-Scan folgen in WP-4. Frontend-Schalter `VITE_BETA_PHASE` ist per Default aus; nicht live.',
+    evidence: [
+      'src/config/beta.ts',
+      'test/landing/landing-v5-beta.test.tsx',
+      'docs/claude/BETA_V5_WORKPLAN.md',
+    ],
   },
   {
     id: 'design-landing-ledger',

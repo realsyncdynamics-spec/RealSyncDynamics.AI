@@ -58,10 +58,12 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing + earth hero at Landing v4 evidence', () => {
+  it('points public landing at Landing v5 evidence + earth hero', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
-    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(true);
+    expect(landing.evidence).toContain('src/pages/LandingV5.tsx');
+    expect(landing.evidence).toContain('src/config/beta.ts');
+    expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
     expect(landing.evidence.some((e) => e.includes('DesignGovernanceAiLanding'))).toBe(false);
 
     const earth = getImplementation('hero-earth-scenery')!;
@@ -69,6 +71,13 @@ describe('implementation-status registry', () => {
     expect(earth.evidence.some((e) => e.includes('heroEarthScene'))).toBe(true);
     expect(earth.evidence.some((e) => e.includes('MainLanding'))).toBe(false);
     expect(earth.description.toLowerCase()).toContain('three.js');
+  });
+
+  it('lists the beta phase as preview, never live', () => {
+    const beta = getImplementation('beta-phase')!;
+    expect(beta.status).toBe('preview');
+    expect(beta.description).toContain('WP-3');
+    expect(beta.description).toContain('31.01.2027');
   });
 
   it('does not claim Agent OS is mounted on live /app/dashboard', () => {
@@ -136,8 +145,9 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('docs/product/implementation-status.md'))).toBe(true);
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
-    expect(docs).toContain('Landing v4');
-    expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('Landing v5');
+    expect(docs).not.toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('beta-phase');
     expect(docs).toContain('/ai-act-klassifikator');
     expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);

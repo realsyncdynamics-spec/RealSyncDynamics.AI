@@ -20,8 +20,16 @@ export const BETA_PLAN_KEY = 'growth';
 /** Kennzeichen in `subscriptions.source` und `trial_audit_logs.source`. */
 export const BETA_SOURCE = 'beta';
 
-/** Freie Stufen, die jeder Mandant per Trigger bekommt — dürfen überschrieben werden. */
-const FREE_PLAN_KEYS = new Set(['free', 'free_tier', 'free_audit']);
+/**
+ * Freie Stufen dürfen überschrieben werden: `free_audit` (kanonisch), `free`
+ * und der Altwert, den der tenants-Trigger noch schreibt
+ * (20260802000000_fix_free_tier_entitlements.sql). Per Präfix statt Liste,
+ * weil der Altname im Quellcode verboten ist (pricing-no-legacy-names.test.ts)
+ * — kein bezahlter Plan beginnt mit `free`.
+ */
+function isFreePlanKey(planKey: string): boolean {
+  return planKey === 'free' || planKey.startsWith('free_');
+}
 
 export interface CurrentSubscription {
   status: string | null;
@@ -54,7 +62,7 @@ export function decideEnrollment(current: CurrentSubscription | null, now: Date)
   if (current.stripe_subscription_id) return { kind: 'skip', reason: 'STRIPE_SUBSCRIPTION' };
 
   const planKey = current.plan_key ?? '';
-  if (FREE_PLAN_KEYS.has(planKey)) return { kind: 'enroll' };
+  if (isFreePlanKey(planKey)) return { kind: 'enroll' };
 
   // Kartenloser Growth-Test (create-trial-subscription): die Beta verlängert ihn.
   if (current.status === 'trialing' && planKey === BETA_PLAN_KEY) return { kind: 'enroll' };

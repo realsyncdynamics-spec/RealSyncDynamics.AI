@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BETA } from '../../config/beta';
+import { useBetaEnrollment, type BetaEnrollState } from '../../features/billing/useBetaEnrollment';
 
 const KEY = 'rsd-beta-banner-dismissed';
 
@@ -8,8 +9,12 @@ const KEY = 'rsd-beta-banner-dismissed';
  * Beta-Hinweis im Dashboard (alle /app/*-Flächen). Zeigt Testphase, Ende
  * und den Feedback-Weg. Ausblendbar pro Browser (nur Komfort, kein State
  * mit Bedeutung). Verschwindet mit `VITE_BETA_PHASE=off` überall.
+ *
+ * Löst außerdem die serverseitige Beta-Anmeldung aus (`useBetaEnrollment`,
+ * WP-3) und meldet das Ergebnis — auch wenn der Hinweis ausgeblendet ist.
  */
 export function BetaAppBanner() {
+  const enrollment = useBetaEnrollment();
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem(KEY) === '1';
@@ -17,7 +22,9 @@ export function BetaAppBanner() {
       return false;
     }
   });
-  if (!BETA.active || hidden) return null;
+  if (!BETA.active) return null;
+  const notice = enrollmentNotice(enrollment);
+  if (hidden && !notice) return null;
   const dismiss = () => {
     try {
       localStorage.setItem(KEY, '1');
@@ -36,7 +43,8 @@ export function BetaAppBanner() {
         {BETA.badge}
       </span>
       <span>
-        Kostenlose Testphase bis {BETA.endsLabel}. Einige Module sind als BETA markiert und können sich noch ändern.
+        {notice ??
+          `Kostenlose Testphase bis ${BETA.endsLabel}. Einige Module sind als BETA markiert und können sich noch ändern.`}
       </span>
       <Link to="/kontakt?topic=beta-feedback" className="underline" style={{ color: '#d6ae52' }}>
         Feedback geben
@@ -46,4 +54,24 @@ export function BetaAppBanner() {
       </button>
     </div>
   );
+}
+
+/** Nur Zustände mit Neuigkeitswert; sonst gilt der allgemeine Beta-Hinweis. */
+function enrollmentNotice(state: BetaEnrollState): string | null {
+  switch (state.status) {
+    case 'pending':
+      return 'Beta-Zugang wird eingerichtet …';
+    case 'enrolled':
+      return state.fresh
+        ? `Beta aktiv: Sie testen den vollen Growth-Umfang kostenlos bis ${BETA.endsLabel}.`
+        : null;
+    case 'skipped':
+      return 'Ihr bestehendes Abo bleibt unverändert — die Beta-Freischaltung ist dafür nicht nötig.';
+    case 'error':
+      return state.retryable
+        ? 'Der Beta-Zugang konnte noch nicht eingerichtet werden. Wir versuchen es beim nächsten Öffnen erneut.'
+        : `Der Beta-Zugang konnte nicht eingerichtet werden: ${state.message}`;
+    default:
+      return null;
+  }
 }

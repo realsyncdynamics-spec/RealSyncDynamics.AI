@@ -41,6 +41,9 @@ export function CheckoutPage() {
   const { planKey } = useParams<{ planKey: string }>();
   const [searchParams] = useSearchParams();
   const isPilot = searchParams.get('pilot') === 'true';
+  // Bewusster Kauf während der Beta: muss den Login-Umweg überleben, sonst
+  // landet der Käufer nach der Anmeldung wieder in der Beta-Umleitung.
+  const isPurchase = searchParams.get('purchase') === '1';
   const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const [checkoutErr, setCheckoutErr] = useState<StripeDiagnostic | null>(null);
@@ -230,7 +233,7 @@ export function CheckoutPage() {
 
   if (auth.status === 'no_user') {
     // Preserve query (e.g. ?pilot=true) so Welcome returns to the same checkout URL.
-    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
+    const checkoutPath = checkoutReturnPath(validPlan, isPilot, isPurchase);
     return (
       <NoUserShell
         title={`Anmelden, um ${tier.name} zu buchen`}
@@ -243,7 +246,7 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_tenant') {
-    const checkoutPath = `/checkout/${validPlan}${isPilot ? '?pilot=true' : ''}`;
+    const checkoutPath = checkoutReturnPath(validPlan, isPilot, isPurchase);
     return (
       <ShellWithMessage
         title="Workspace einrichten"
@@ -648,4 +651,13 @@ function ConsentGateShell({
       </main>
     </div>
   );
+}
+
+/** Rückkehr-URL nach Login/Workspace-Setup; behält `pilot` und `purchase`. */
+function checkoutReturnPath(plan: string, pilot: boolean, purchase: boolean): string {
+  const q = new URLSearchParams();
+  if (pilot) q.set('pilot', 'true');
+  if (purchase) q.set('purchase', '1');
+  const query = q.toString();
+  return `/checkout/${plan}${query ? `?${query}` : ''}`;
 }

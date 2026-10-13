@@ -8,7 +8,7 @@ const publicRoutes = [
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },
   { id: 'FE-006', path: '/healthtech', label: 'HealthTech', heading: /KI in HealthTech/i },
   { id: 'FE-007', path: '/saas-anbieter/', label: 'SaaS-Anbieter', heading: /DSGVO für B2B-SaaS/i },
-  { id: 'FE-008', path: '/checkout/starter/', label: 'Checkout Starter', heading: /Anmelden, um Starter zu buchen/i },
+  { id: 'FE-008', path: '/checkout/starter/?purchase=1', label: 'Checkout Starter', heading: /Anmelden, um Starter zu buchen/i },
 ];
 
 for (const route of publicRoutes) {

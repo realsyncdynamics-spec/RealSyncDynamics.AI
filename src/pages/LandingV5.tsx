@@ -15,6 +15,8 @@ import { FinalCta, LandingFaq, LandingV2Footer } from '../components/landing/v2/
 import { GovernanceControlRoom } from '../components/landing/GovernanceControlRoom';
 import { GovernanceSelfCheck } from '../components/landing/GovernanceSelfCheck';
 import { HeroV5 } from '../components/landing/v5/HeroV5';
+import { V5UnifiedEntry } from '../components/landing/v5/V5UnifiedEntry';
+import '../components/landing/v5/v5-unified-entry.css';
 import { BetaRibbon, V5BetaProgram, V5Loop, V5Roadmap } from '../components/landing/v5/V5Sections';
 import '../styles/governance-os-landing.css';
 import '../styles/landing-v2.css';
@@ -52,6 +54,7 @@ export function LandingV5() {
         <HeroV5 />
         <FrameworkStrip />
         <V5Loop />
+        <V5UnifiedEntry />
         <V5BetaProgram />
         <Embed>
           <GovernanceControlRoom />

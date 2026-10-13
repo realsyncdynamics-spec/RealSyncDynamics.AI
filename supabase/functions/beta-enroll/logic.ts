@@ -3,6 +3,8 @@
 // Liegt im Function-Verzeichnis statt in `_shared/`: eine Änderung dort schaltet
 // `deploy.yml` auf `deploy_all`.
 
+import { planByKey } from '../_shared/pricing.generated.ts';
+
 /**
  * Ende der offenen Beta: 31.01.2027, 24:00 Uhr Berlin (exklusiv).
  *
@@ -21,14 +23,13 @@ export const BETA_PLAN_KEY = 'growth';
 export const BETA_SOURCE = 'beta';
 
 /**
- * Freie Stufen dürfen überschrieben werden: `free_audit` (kanonisch), `free`
- * und der Altwert, den der tenants-Trigger noch schreibt
- * (20260802000000_fix_free_tier_entitlements.sql). Per Präfix statt Liste,
- * weil der Altname im Quellcode verboten ist (pricing-no-legacy-names.test.ts)
- * — kein bezahlter Plan beginnt mit `free`.
+ * Freie Stufen dürfen überschrieben werden. Entschieden über den Kaufmodus der
+ * Pricing-SSoT, nicht über Plan-Namen (check:plan-name-gates) — die
+ * Alias-Tabelle löst dabei auch den Altwert auf, den der tenants-Trigger noch
+ * schreibt (20260802000000_fix_free_tier_entitlements.sql).
  */
 function isFreePlanKey(planKey: string): boolean {
-  return planKey === 'free' || planKey.startsWith('free_');
+  return planByKey(planKey)?.purchaseMode === 'free';
 }
 
 export interface CurrentSubscription {

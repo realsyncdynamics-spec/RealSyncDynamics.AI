@@ -1,8 +1,10 @@
 /**
- * Landing v4 — Referenz/Rückfall unter /design/landing-v4. Nur Aussagen, die die
- * Runtime deckt (Freigabe Dominik, 13.10.2026): Policy-Pack-Zahl folgt dem Status,
- * kein On-Prem-Angebot, Evidence-Ledger ohne Städte-Knoten.
+ * Landing v6 (`/`) und v4 (Referenz/Rückfall unter /design/landing-v4) — nur Aussagen,
+ * die die Runtime deckt (Freigabe Dominik, 13.10.2026): Policy-Pack-Zahl folgt dem
+ * Status, kein On-Prem-Angebot, Evidence-Ledger ohne Städte-Knoten.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -46,6 +48,16 @@ it('counts only live policy packs as live; TISAX/DORA stay coming soon like the 
   const { container } = mount();
   expect(container.querySelector('.trust p')).toHaveTextContent(HERO_PACKS_LINE);
   expect(container.textContent).not.toMatch(/SECHS POLICY PACKS|6 POLICY PACKS/i);
+});
+
+it('v6 on / names four live packs and marks TISAX/DORA coming soon, as the registry does', () => {
+  expect(getImplementation('framework-tisax-dora')?.status).not.toBe('live');
+  const v6 = readFileSync(resolve(__dirname, '../../src/components/landing/v6/LandingV6View.tsx'), 'utf8');
+  expect(v6).not.toMatch(/SECHS POLICY PACKS|6 POLICY PACKS/i);
+  expect(v6).toContain('4 POLICY PACKS LIVE');
+  expect(v6).not.toMatch(/·\s*next</);
+  expect(v6).toContain('TISAX · Coming Soon');
+  expect(v6).toContain('DORA · Coming Soon');
 });
 
 it('offers no on-prem operation', () => {

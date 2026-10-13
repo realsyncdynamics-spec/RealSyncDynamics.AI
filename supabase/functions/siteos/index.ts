@@ -16,6 +16,10 @@
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+//   POST /functions/v1/siteos/rebuild-analyze  Rebuild: Ausgangsseite lesen, belegen, bewerten
+//   POST /functions/v1/siteos/rebuild-select   Rebuild: Richtung → Blueprint (Herkunft import)
+//   POST /functions/v1/siteos/rebuild-refine   Rebuild: benannte Überarbeitungen + Freitext
+//   POST /functions/v1/siteos/rebuild-status   Rebuild: Lauf-Bindung, nächste Schritte
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
@@ -55,6 +59,13 @@ import { handle as publishPreview } from './handlers/publish-preview.ts';
 import { handle as publishProduction } from './handlers/publish-production.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
+import {
+  handleAnalyze as rebuildAnalyze,
+  handleRefine as rebuildRefine,
+  handleSelect as rebuildSelect,
+  handleStatus as rebuildStatus,
+} from './handlers/rebuild.ts';
+import { REBUILD_DEPS } from './rebuild-deps.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
@@ -79,6 +90,13 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'claim': handleClaim,
   // Web App Builder file trees. Distinct from Puck `edit` / siteos_blueprints.
   'code-persist': codePersist,
+  // Rebuild-Workflow: bestehende Website → gestalteter Neubau mit Nachweisen.
+  // Ein Handler-Modul, vier Pfade — sie teilen Snapshot, Lauf und Nachweis.
+  // Resolver und Plan-Schranken aus `rebuild-deps.ts` (kanonisch).
+  'rebuild-analyze': (req) => rebuildAnalyze(req, REBUILD_DEPS),
+  'rebuild-select': (req) => rebuildSelect(req, REBUILD_DEPS),
+  'rebuild-refine': (req) => rebuildRefine(req, REBUILD_DEPS),
+  'rebuild-status': (req) => rebuildStatus(req, REBUILD_DEPS),
 };
 
 Deno.serve((req) => {

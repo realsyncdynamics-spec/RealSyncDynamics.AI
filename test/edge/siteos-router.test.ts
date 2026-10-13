@@ -31,6 +31,7 @@ const ENDPOINTS = [
   'publish-approve', 'publish-export', 'publish-gate', 'publish-preview', 'publish-production',
   'build-anon', 'refine-anon', 'session', 'claim',
   'code-persist',
+  'rebuild-analyze', 'rebuild-select', 'rebuild-refine', 'rebuild-status',
 ];
 
 /**
@@ -68,6 +69,12 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'session': 'anonymous',
   'claim': 'anonymous',
   'code-persist': 'code-persist',
+  // Rebuild-Workflow: vier Pfade, ein Modul — Snapshot, Lauf und Nachweis
+  // sind gemeinsam.
+  'rebuild-analyze': 'rebuild',
+  'rebuild-select': 'rebuild',
+  'rebuild-refine': 'rebuild',
+  'rebuild-status': 'rebuild',
 });
 
 describe('siteos Router — resolveEndpoint', () => {

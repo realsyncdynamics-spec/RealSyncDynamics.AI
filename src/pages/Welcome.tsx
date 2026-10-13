@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import '../styles/realsync-premium-foundation.css';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CheckCircle2, ArrowRight, Copy, Check, AlertTriangle, ArrowLeft, Loader2, Mail,
@@ -331,7 +332,7 @@ export function Welcome() {
   }
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="rs-premium rs-premium--auth min-h-screen bg-obsidian-950 text-titanium-100">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.95fr)]">
         <div className="flex min-h-screen flex-col">
           <header className="flex h-14 shrink-0 items-center border-b border-titanium-900 bg-obsidian-900 px-4">

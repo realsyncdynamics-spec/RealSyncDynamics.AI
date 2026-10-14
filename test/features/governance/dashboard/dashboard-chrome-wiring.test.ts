@@ -143,10 +143,12 @@ describe('empty-state CTAs and bootstrap next steps', () => {
       scanCount: 0,
       activationStatus: 'none',
     });
-    expect(empty.map((s) => s.id)).toEqual(['add-domain', 'start-audit', 'activation']);
+    // Kein Schritt zum öffentlichen /audit: dessen Ergebnis landet nicht im Workspace.
+    expect(empty.map((s) => s.id)).toEqual(['add-domain', 'activation']);
     expect(empty[0].href).toBe('/app/websites');
-    expect(empty[1].href).toBe('/audit?source=dashboard');
-    expect(empty[2].href).toBe('/app/activation');
+    expect(empty[1].href).toBe('/app/activation');
+    expect(empty.some((s) => s.href.startsWith('/audit'))).toBe(false);
+    expect(empty.map((s) => s.detail).join(' ')).not.toContain('/app/');
 
     const hasDomainNoScan = computeWorkspaceBootstrapSteps({
       websiteCount: 1,

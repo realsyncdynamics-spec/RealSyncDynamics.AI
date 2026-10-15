@@ -2,6 +2,7 @@
 // Zeigt registrierte Domains + letzte Scan-Ergebnisse; triggert Audits.
 // Kein Demo-Fallback: ohne Login leer, nach Login nur Mandanten-Daten.
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Globe, Plus, RefreshCw, AlertTriangle, CheckCircle2,
   Clock, XCircle, Search, Shield, Activity, LogIn,
@@ -9,7 +10,7 @@ import {
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   listWebsitesForTenant, listScanRuns, triggerTenantAudit, addWebsiteForTenant, WEBSITE_WRITER_ROLES,
-  type TenantWebsite,
+  normaliseDomain, type TenantWebsite,
 } from '../scans/scansApi';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import type { FindingSeverity } from '../../../types/governance/finding';
@@ -17,6 +18,7 @@ import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import { getSupabase } from '../../../lib/supabase';
 import { TenantCustomDomainPanel } from '../../website-operations/TenantCustomDomainPanel';
 import { WEBSITE_AUDIT_CTA_LABEL } from '../dashboard/dashboardSignals';
+import { readAuditPrefill } from '../../audit/auditPrefill';
 
 interface WebsiteRow {
   id: string;
@@ -177,11 +179,12 @@ function WebsiteCard({ row, onScan, scanning, scanError = null }: {
 }
 
 function AddDomainModal({
-  onAdd, onClose, initial,
+  onAdd, onClose, initial, submitLabel = 'Hinzufügen',
 }: {
   onAdd: (domain: string) => void;
   onClose: () => void;
   initial?: string;
+  submitLabel?: string;
 }) {
   const [value, setValue] = useState(initial ?? '');
   return (
@@ -205,7 +208,7 @@ function AddDomainModal({
             onClick={() => value.trim() && onAdd(value.trim())}
             className="px-3 py-1.5 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
           >
-            Hinzufügen
+            {submitLabel}
           </button>
         </div>
       </div>
@@ -229,6 +232,17 @@ function _WebsiteGovernanceView() {
   const [error, setError] = useState<string | null>(null);
   const [loadingSites, setLoadingSites] = useState(false);
   const [domainHint, setDomainHint] = useState<string | null>(null);
+  // Für welchen Mandanten die Liste fertig geladen ist — erst dann darf die
+  // Vorbelegung aus der Adresszeile entscheiden, ob die Domain schon existiert.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  // Einstieg aus „Audit starten“ / Adresszeile: `?domain=` vorbelegen. Der
+  // Audit startet nie allein aus der URL — immer erst nach einem Klick.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [prefill, setPrefill] = useState(() => readAuditPrefill(location.search));
+  const [addPrefill, setAddPrefill] = useState<string | null>(null);
+  const [auditOffer, setAuditOffer] = useState<string | null>(null);
 
   useEffect(() => {
     if (tenantLoading) return;
@@ -269,6 +283,7 @@ function _WebsiteGovernanceView() {
 
       if (cancelled) return;
       setRows(nextSites.map((w) => rowFromSite(w, latestBySite.get(w.id) ?? null)));
+      setLoadedFor(activeTenantId);
     }).catch((e) => {
       if (cancelled) return;
       setRows([]);
@@ -279,6 +294,28 @@ function _WebsiteGovernanceView() {
 
     return () => { cancelled = true; };
   }, [activeTenantId, tenantLoading, canAdd]);
+
+  // Neue Vorbelegung bei erneutem Einstieg, während die Seite offen ist.
+  useEffect(() => {
+    const next = readAuditPrefill(location.search);
+    if (next) setPrefill(next);
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!prefill || !activeTenantId || loadedFor !== activeTenantId) return;
+    const domain = normaliseDomain(prefill);
+    const existing = domain ? rows.find((r) => r.domain === domain) : undefined;
+    if (existing) {
+      setAuditOffer(existing.id);
+    } else if (canAdd) {
+      setAddPrefill(prefill);
+    } else {
+      setError('Ihre Rolle darf keine Websites anlegen.');
+    }
+    setPrefill('');
+    // Query entfernen: Neu laden öffnet den Dialog nicht noch einmal.
+    navigate(location.pathname, { replace: true });
+  }, [prefill, activeTenantId, loadedFor, rows, canAdd, navigate, location.pathname]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -314,15 +351,18 @@ function _WebsiteGovernanceView() {
     }
   }
 
-  async function handleAdd(domain: string) {
+  async function handleAdd(domain: string, opts: { audit?: boolean } = {}) {
     setAddOpen(false);
+    setAddPrefill(null);
     if (!activeTenantId) {
       setError('Bitte einloggen, um eine Domain zu hinterlegen.');
       return;
     }
     try {
       const w = await addWebsiteForTenant(activeTenantId, domain);
-      setRows((prev) => [rowFromSite(w, null), ...prev.filter((r) => r.domain !== w.domain)]);
+      const row = rowFromSite(w, null);
+      setRows((prev) => [row, ...prev.filter((r) => r.domain !== w.domain)]);
+      if (opts.audit) await handleScan(row);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Domain konnte nicht hinzugefügt werden.');
     }
@@ -374,6 +414,37 @@ function _WebsiteGovernanceView() {
             </div>
           ))}
         </div>
+
+        {auditOffer && (() => {
+          const offered = rows.find((r) => r.id === auditOffer);
+          if (!offered) return null;
+          return (
+            <div
+              data-testid="website-audit-offer"
+              className="flex flex-wrap items-center gap-3 border border-[#00B8D4]/40 bg-obsidian-900 px-4 py-3 text-xs font-mono text-titanium-200"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="text-titanium-50">{offered.domain}</span> ist bereits hinterlegt.
+              </span>
+              <button
+                type="button"
+                onClick={() => { setAuditOffer(null); void handleScan(offered); }}
+                disabled={scanning === offered.id}
+                className="px-3 py-1.5 bg-[#1E5AFF] text-white hover:bg-[#1641C4] disabled:opacity-40"
+              >
+                {WEBSITE_AUDIT_CTA_LABEL}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditOffer(null)}
+                aria-label="Hinweis schließen"
+                className="text-titanium-500 hover:text-titanium-300"
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })()}
 
         {error && (
           <div className="flex items-center gap-2 bg-red-950/40 border border-red-900 px-4 py-2 text-xs font-mono text-red-400">
@@ -471,9 +542,17 @@ function _WebsiteGovernanceView() {
 
       {addOpen && (
         <AddDomainModal
-          onAdd={handleAdd}
+          onAdd={(domain) => void handleAdd(domain)}
           onClose={() => setAddOpen(false)}
           initial={domainHint ?? undefined}
+        />
+      )}
+      {addPrefill !== null && !addOpen && (
+        <AddDomainModal
+          onAdd={(domain) => void handleAdd(domain, { audit: true })}
+          onClose={() => setAddPrefill(null)}
+          initial={addPrefill}
+          submitLabel="Hinzufügen und Audit starten"
         />
       )}
     </div>

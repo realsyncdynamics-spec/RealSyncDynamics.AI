@@ -192,7 +192,7 @@ export async function addWebsiteForTenant(
   return data as TenantWebsite;
 }
 
-function normaliseDomain(raw: string): string | null {
+export function normaliseDomain(raw: string): string | null {
   const s = (raw ?? '').trim().toLowerCase()
     .replace(/^https?:\/\//, '')
     .replace(/\/.*$/, '')

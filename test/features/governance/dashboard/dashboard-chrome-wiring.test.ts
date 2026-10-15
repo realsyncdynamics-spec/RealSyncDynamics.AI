@@ -36,8 +36,9 @@ function appRegisters(path: string): boolean {
 }
 
 describe('dashboard chrome wiring — no dead TopBar actions', () => {
-  it('Audit starten opens the public scan path', () => {
-    expect(TOP_BAR).toMatch(/navigate\(['"]\/audit['"]\)/);
+  it('Audit starten opens the workspace audit, not the public scan', () => {
+    expect(TOP_BAR).toMatch(/navigate\(['"]\/app\/websites['"]\)/);
+    expect(TOP_BAR).not.toMatch(/navigate\(['"]\/audit['"]\)/);
   });
 
   it('Evidence opens /app/evidence', () => {
@@ -54,7 +55,7 @@ describe('dashboard chrome wiring — no dead TopBar actions', () => {
   });
 
   it('registers TopBar destinations in App.tsx', () => {
-    for (const path of ['/audit', '/app/evidence', '/app/reports', '/app/dashboard']) {
+    for (const path of ['/app/websites', '/app/evidence', '/app/reports', '/app/dashboard']) {
       expect(appRegisters(path), `missing route ${path}`).toBe(true);
     }
   });

@@ -1,7 +1,7 @@
 import { Search, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { auditPathFor } from '../../features/audit/auditPrefill';
+import { websiteAuditPathFor } from '../../features/audit/auditPrefill';
 
 interface GovernanceAddressBarProps {
   onLoadUrl?: (url: string) => void;
@@ -36,15 +36,14 @@ export function GovernanceAddressBar({ onLoadUrl, activeUrl }: GovernanceAddress
   // Zeige die aktive URL wenn nicht im Fokus und eine geladen ist
   const displayValue = focused ? value : (activeUrl && !value ? activeUrl : value);
 
-  // Enter startet immer den Audit mit vorbelegtem Domain-Feld (`?domain=`).
-  // Früher: URL → eingebettete Vorschau, sonst ein Audit-Link mit target-Parameter — den
-  // Parameter las /audit nicht, die Eingabe ging verloren; und der Platzhalter
-  // versprach eine Suche über KI-Systeme, Vendoren und Risiken, die es hier
-  // nicht gibt. Die Vorschau bleibt als eigener, beschrifteter Knopf.
+  // Enter startet den Website-Audit im Workspace mit vorbelegter Domain
+  // (`/app/websites?domain=`). Bis 2026-10-15 ging es zum öffentlichen /audit:
+  // Gast-Scan außerhalb der App, erneute E-Mail-Abfrage, Ergebnis nicht in der
+  // Übersicht. Die Vorschau bleibt als eigener, beschrifteter Knopf.
   const startAudit = () => {
     const input = value.trim();
     if (!input) return;
-    navigate(auditPathFor(input, 'app-search'));
+    navigate(websiteAuditPathFor(input, 'app-search'));
     setValue('');
   };
 

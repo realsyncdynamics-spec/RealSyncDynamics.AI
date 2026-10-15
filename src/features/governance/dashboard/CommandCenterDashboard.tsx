@@ -31,6 +31,7 @@ import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
+import { ObligationsPanel } from './ObligationsPanel';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { computeStartPanel } from './startPanelModel';
 
@@ -180,6 +181,14 @@ export function CommandCenterDashboard() {
           data={tenantData}
         />
       )}
+      {/* Pflichten aus der Selbstauskunft (aiSetup): ergänzt die Einrichtung
+          oben um das, was KI-VO und DSGVO konkret verlangen. Bewusst außerhalb
+          der zugeklappten Detailansicht — das ist der spürbare Nutzen. */}
+      <ObligationsPanel
+        key={`obligations-${activeTenantId ?? 'no-tenant'}`}
+        activeTenantId={activeTenantId}
+        reloadKey={reloadKey}
+      />
       {/* Detailansicht: das bestehende Cockpit bleibt vollständig erhalten,
           ist aber nachgelagert. Während der Einrichtung zugeklappt — sonst
           dominieren Null- und Leerzustände den ersten Eindruck. */}

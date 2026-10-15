@@ -8,11 +8,17 @@
 
 export type CorsHeaders = Record<string, string>;
 
-/** Standard-CORS-Header. `methods` z.B. 'GET, OPTIONS' oder 'POST, OPTIONS'. */
-export function buildCorsHeaders(methods = 'POST, OPTIONS'): CorsHeaders {
+const BASE_ALLOW_HEADERS = ['authorization', 'x-client-info', 'apikey', 'content-type'];
+
+/**
+ * Standard-CORS-Header. `methods` z.B. 'GET, OPTIONS' oder 'POST, OPTIONS'.
+ * `extraHeaders` für eigene Request-Header (z.B. 'x-tenant-id') — fehlt einer
+ * hier, blockiert der Browser-Preflight den Aufruf, bevor die Function läuft.
+ */
+export function buildCorsHeaders(methods = 'POST, OPTIONS', extraHeaders: readonly string[] = []): CorsHeaders {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': [...BASE_ALLOW_HEADERS, ...extraHeaders].join(', '),
     'Access-Control-Allow-Methods': methods,
   };
 }

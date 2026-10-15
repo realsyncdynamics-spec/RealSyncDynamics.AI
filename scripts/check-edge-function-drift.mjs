@@ -18,6 +18,7 @@
 //           bekannter Altbestand, der noch aufgeraeumt werden muss → WARNUNG)
 //        - UNDECLARED_NO_JWT: live verify_jwt=false, im Repo vorhanden, aber in
 //          config.toml NICHT als verify_jwt=false deklariert → FEHLER
+//        - NICHT_DEPLOYT: im Repo vorhanden, aber nicht live → WARNUNG
 //   3) Prod-seitig (gleiche Bedingung): die deployte Menge gegen die
 //      handgepflegte Liste in src/config/production-edge-functions.ts diffen.
 //      Diese Liste ist keine Doku, sondern Laufzeit-Eingabe: Sie entscheidet,
@@ -200,7 +201,28 @@ if (deployed === null) {
     }
   }
 
-  console.log(`✓ ${deployed.length} live Functions geprueft, ${repo.size} im Repo, ${allow.size} allowlisted.`);
+  // Check (3): Repo -> Prod. Bis zum 2026-08-19 lief die Pruefung
+  // ausschliesslich ueber die live deployten Functions. Die Gegenrichtung —
+  // fertiger Code im Repo, den in Produktion niemand erreichen kann — war
+  // damit strukturell unsichtbar: der taegliche Lauf meldete monatelang gruen
+  // und schrieb dabei "100 live geprueft, 180 im Repo" in den Log. Die Zahlen
+  // standen da, verglichen hat sie niemand.
+  //
+  // Bewusst WARNUNG, nicht FEHLER: ein Fehler wuerde den Guard waehrend jedes
+  // laufenden Rollouts rot faerben und damit genau die Signalwirkung
+  // zerstoeren, um die es hier geht. Sobald Repo und `supabase functions list`
+  // dauerhaft deckungsgleich sind, gehoert die Meldung hochgestuft.
+  const deployedSlugs = new Set(deployed.map((fn) => fn.slug ?? fn.name));
+  const notDeployed = [...repo].filter((slug) => !deployedSlugs.has(slug)).sort();
+  if (notDeployed.length > 0) {
+    warnings.push(
+      `NICHT_DEPLOYT: ${notDeployed.length} Function(s) liegen im Repo, sind aber nicht live — ` +
+      `in Produktion also nicht verfuegbar: ${notDeployed.join(', ')}.`);
+  }
+
+  console.log(
+    `✓ ${deployed.length} live Functions geprueft, ${repo.size} im Repo, ` +
+    `${notDeployed.length} nicht deployt, ${allow.size} allowlisted.`);
 }
 
 for (const w of warnings) console.warn(`⚠️  ${w}`);

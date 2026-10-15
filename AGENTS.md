@@ -9,35 +9,20 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
-### Public Landing `/`: Landing v2 ist die Referenz
+### Public Landing und Frontend — gezielt weiterentwickeln
 
-Verbindlich seit PR #1686: `/` rendert `src/pages/LandingV2.tsx`. Das
-aktuelle Design bleibt bestehen. Frühere Landing-Fassungen und ihre Regeln
-(Graphite/Ink/Ice-v3, Papier/Waldgrün, Titan) sind nur noch Design-Referenzen
-unter separaten Vorschau-Routen und **keine Arbeitsanweisung für `/`**.
+Stand 10.10.2026: `/` rendert `src/pages/LandingV4.tsx`.
+Die tatsächliche Routenzuordnung in `src/App.tsx` ist maßgeblich.
 
-- **Aktive visuelle Quelle:** `src/styles/landing-v2.css`.
-- **Eingebettete Governance-Module:** `src/styles/governance-os-landing.css`
-  innerhalb von `.lv2-embed.ga-context.rs-handoff`; diese Bridge ist Teil der
-  aktuellen Landing v2 und kein eigenes Root-Theme.
-- **Theme-Switch bleibt:** `LandingV2` nutzt `useLandingMode()` und
-  `LandingV2Header` bietet den vorhandenen Hell/Dunkel-Schalter. Keine alte
-  „kein Farbmodus auf /“-Regel mehr anwenden.
-- **Aktuelle Komponenten:** `components/landing/v2/*` plus die bewusst
-  wiederverwendeten Live-Module `GovernanceControlRoom`,
-  `ArchitectureSection` und `GovernanceSelfCheck`.
-- **Inhalte/Preise:** Landing-v2-Copy aus
-  `components/landing/v2/landing-v2-content.ts`; Planpreise und
-  Checkout-Ziele ausschließlich aus `shared/pricing.ts`.
-- **Routing:** `src/App.tsx` ist maßgeblich. `/design/landing-v2`,
-  `/design/governance-ai` und `/design/titan` sind reversible
-  Design-Referenzen; sie bestimmen nicht die Gestaltung von `/`.
-- **Design-Freeze:** `LandingV2`, ihre aktiven v2-Komponenten und
-  `landing-v2.css` nicht durch ältere Landing-Komponenten ersetzen und nicht
-  grundlegend umstylen, solange Dominik keine neue Designrichtung freigibt.
-- **Metadaten:** Monospace dort beibehalten, wo das aktuelle v2-Design sie
-  verwendet. Risk-/Statusfarben bleiben semantisch von Brand-/VIP-Akzenten
-  getrennt.
+- **Aktive Komponenten:** `src/components/landing/v4/`.
+- **Aktive Gestaltung:** `src/styles/landing-v4-classical.css`, gekapselt unter `.gv4`.
+- **Referenzen:** `/design/landing-v2` bleibt als Vorschau erreichbar.
+  `/design/governance-ai` und `/design/titan` leiten auf `/` um.
+- **Inhalte/Preise:** Planpreise und Checkout-Ziele aus `shared/pricing.ts`.
+- **Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026):**
+  Frontend und Landingpage gezielt verbessern. V4 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
+- **Metadaten:** Monospace für technische Daten beibehalten.
+  Risk-/Statusfarben bleiben semantisch von Brand-/VIP-Akzenten getrennt.
 
 **Alte Landing-Dateien sind kein Löschbeleg.** Vor Cleanup weiterhin
 Importgraph, Tests, Registries und Vorschau-Routen prüfen. `npm run check:dead`

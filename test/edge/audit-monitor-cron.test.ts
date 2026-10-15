@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   handleAuditMonitor,
+  type AlertRecord,
   type Alerter,
   type HandlerDeps,
   type MonitorRepo,
@@ -19,6 +20,7 @@ import {
   detectDrift,
   evidenceContentHash,
   gateDomain,
+  MAX_ALERT_ATTEMPTS,
   normalizeCookieScan,
   planViewFrom,
   type MonitoredDomain,
@@ -69,7 +71,10 @@ class MemRepo implements MonitorRepo {
   evidence: Array<Record<string, unknown>> = [];
   results: Array<Record<string, unknown>> = [];
   updates: Array<{ id: string; patch: Record<string, unknown> }> = [];
+  outbox: AlertRecord[] = [];
   failEvidence = false;
+  failEnqueue = false;
+  failUpdate = false;
   constructor(public domains: MonitoredDomain[], public head: string | null = null) {}
   async listActiveDomains() { return this.domains; }
   async latestEvidenceHash() { return this.head; }
@@ -82,9 +87,24 @@ class MemRepo implements MonitorRepo {
   }
   async insertResult(row: Record<string, unknown>) { this.results.push(row); }
   async updateDomainState(id: string, patch: Record<string, unknown>) {
+    if (this.failUpdate) throw new Error('monitored_domains update: boom');
     this.updates.push({ id, patch });
     const d = this.domains.find((entry) => entry.id === id);
     if (d) Object.assign(d, patch);
+  }
+  async enqueueAlert(row: Omit<AlertRecord, 'status' | 'attempts'>) {
+    if (this.failEnqueue) throw new Error('audit_monitor_alerts insert: boom');
+    const dup = this.outbox.find((a) => a.monitored_domain_id === row.monitored_domain_id && a.fingerprint === row.fingerprint);
+    if (dup) return { ...dup };
+    const rec: AlertRecord = { ...row, status: 'pending', attempts: 0 };
+    this.outbox.push(rec);
+    return { ...rec };
+  }
+  async pendingAlerts(limit: number) {
+    return this.outbox.filter((a) => a.status === 'pending').slice(0, limit).map((a) => ({ ...a }));
+  }
+  async markAlert(id: string, patch: { status: AlertRecord['status']; attempts: number }) {
+    Object.assign(this.outbox.find((a) => a.id === id)!, { status: patch.status, attempts: patch.attempts });
   }
 }
 
@@ -92,10 +112,16 @@ function setup(o: {
   domains?: MonitoredDomain[]; plan?: PlanView | ((t: string) => Promise<PlanView>);
   scanner?: Scanner | null; cronKey?: string; repo?: MemRepo;
   now?: () => Date; runBudgetMs?: number;
+  /** true → Resend antwortet mit Fehler. */
+  alertFails?: () => boolean;
 }) {
   const repo = o.repo ?? new MemRepo(o.domains ?? [domain()]);
   const alerts: string[] = [];
-  const alerter: Alerter = async (d) => { alerts.push(d.domain); return 'sent'; };
+  const alerter: Alerter = async (a) => {
+    if (o.alertFails?.()) throw new Error('resend 503');
+    alerts.push(a.domain);
+    return 'sent';
+  };
   let n = 0;
   const plan = o.plan ?? PLANS.growth;
   const deps: HandlerDeps = {
@@ -342,5 +368,158 @@ describe('audit-monitor-cron: bounded processing', () => {
     expect(next.status).toBe(200);
     expect(next.body).toMatchObject({ ok: true, status: 'ok', scanned: 1, deferred: 0 });
     expect(repo.updates.map((x) => x.id)).toEqual(['d1', 'd2', 'd3']);
+  });
+});
+
+describe('audit-monitor-cron: Alert-Outbox', () => {
+  // Neuer Tracker gegenüber der Baseline aus domain() → Drift.
+  const driftScan: Scanner = async () => scanOf({ trackers: ['google_analytics', 'meta_pixel'] });
+
+  it('reiht den Alert ein und markiert ihn nach erfolgreichem Versand als sent', async () => {
+    const { deps, repo, alerts } = setup({ scanner: driftScan });
+    const r = await run(deps);
+    expect(r.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'sent' });
+    expect(repo.outbox).toHaveLength(1);
+    expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 1, recipient: 'ops@example.de' });
+    expect(alerts).toEqual(['example.de']);
+  });
+
+  it('gescheiterter Versand bleibt pending und wird im nächsten Lauf nachgeholt', async () => {
+    // Der Befund aus dem Review: Die Baseline rückt vor, also ist derselbe
+    // Stand im nächsten Lauf kein Delta mehr — die Mail darf trotzdem nicht
+    // verloren gehen.
+    let resendDown = true;
+    const repo = new MemRepo([domain()]);
+    const first = setup({ repo, scanner: driftScan, alertFails: () => resendDown });
+    const r1 = await run(first.deps);
+    expect(r1.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'failed' });
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 1 });
+    expect(repo.domains[0].last_trackers).toEqual(['google_analytics', 'meta_pixel']);
+    expect(first.alerts).toEqual([]);
+
+    resendDown = false;
+    const second = setup({ repo, scanner: driftScan, now: () => new Date(NOW.getTime() + 2 * DAY) });
+    const r2 = await run(second.deps);
+    expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: false, alert: 'none' });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
+    expect(second.alerts).toEqual(['example.de']);
+    expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 2 });
+  });
+
+  it(`gibt nach ${MAX_ALERT_ATTEMPTS} Versuchen auf (failed) und versucht es danach nicht mehr`, async () => {
+    const repo = new MemRepo([domain()]);
+    const s = setup({ repo, scanner: driftScan, alertFails: () => true });
+    // Erster Lauf scannt + 1. Versuch; danach ist die Domain nicht fällig,
+    // nur der Nachhol-Durchlauf versucht es erneut.
+    for (let i = 0; i < MAX_ALERT_ATTEMPTS + 2; i++) await run(s.deps);
+    expect(repo.outbox).toHaveLength(1);
+    expect(repo.outbox[0]).toMatchObject({ status: 'failed', attempts: MAX_ALERT_ATTEMPTS });
+  });
+
+  it('fehlender Resend-Key verbraucht keine Versuche; der Alert bleibt pending', async () => {
+    const repo = new MemRepo([domain()]);
+    const s = setup({ repo, scanner: driftScan });
+    s.deps.alerter = async () => 'not_configured';
+    for (let i = 0; i < MAX_ALERT_ATTEMPTS + 2; i++) await run(s.deps);
+    expect(repo.outbox).toHaveLength(1);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 0 });
+  });
+
+  it('Nachhol-Pass verwirft Alerts nach Plan-Downgrade oder Deaktivierung ohne Mail', async () => {
+    for (const change of ['downgrade', 'deactivated'] as const) {
+      const repo = new MemRepo([domain()]);
+      const first = setup({ repo, scanner: driftScan, alertFails: () => true });
+      await run(first.deps);
+      expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 1 });
+
+      if (change === 'deactivated') repo.domains.splice(0, 1);
+      const later = setup({ repo, scanner: driftScan, now: () => new Date(NOW.getTime() + 2 * DAY),
+        ...(change === 'downgrade' ? { plan: PLANS.starter } : {}) });
+      const r = await run(later.deps);
+      expect(r.body.alert_retries).toEqual({ attempted: 0, sent: 0, dropped: 1 });
+      expect(later.alerts).toEqual([]);
+      expect(repo.outbox[0]).toMatchObject({ status: 'failed', attempts: 1 });
+    }
+  });
+
+  it('scheitert das Einreihen, rückt die Baseline nicht vor und es geht keine Mail raus', async () => {
+    const repo = new MemRepo([domain()]);
+    repo.failEnqueue = true;
+    const s = setup({ repo, scanner: driftScan });
+    const r = await run(s.deps);
+    expect(r.body.results[0]).toMatchObject({ status: 'failed', reason: 'persist_failed' });
+    expect(repo.updates).toEqual([]);
+    expect(s.alerts).toEqual([]);
+  });
+
+  it('dieselbe Drift nach gescheitertem Baseline-Update erzeugt keine zweite Mail', async () => {
+    const repo = new MemRepo([domain()]);
+    repo.failUpdate = true;
+    const s = setup({ repo, scanner: driftScan });
+    const r1 = await run(s.deps);
+    // Baseline nicht fortgeschrieben → Lauf failed; der Alert liegt pending in der Outbox.
+    expect(r1.body.results[0]).toMatchObject({ status: 'failed', reason: 'persist_failed' });
+    expect(repo.outbox).toHaveLength(1);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 0 });
+    expect(s.alerts).toEqual([]);
+
+    // Nächster Lauf: Nachhol-Pass stellt zu; der Scan erkennt dieselbe Drift
+    // gegen dieselbe Baseline → gleicher Fingerabdruck, keine zweite Mail.
+    repo.failUpdate = false;
+    const r2 = await run(s.deps);
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
+    expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'duplicate' });
+    expect(repo.outbox).toHaveLength(1);
+    expect(s.alerts).toEqual(['example.de']);
+  });
+
+  it('gleiche Drift mit leicht anderem Risk-Score bleibt ein Duplikat', async () => {
+    const repo = new MemRepo([domain()]);
+    repo.failUpdate = true;
+    const s1 = setup({ repo, scanner: async () => scanOf({ risk_score: 70, trackers: ['google_analytics', 'meta_pixel'] }) });
+    await run(s1.deps);
+    repo.failUpdate = false;
+    const s2 = setup({ repo, scanner: async () => scanOf({ risk_score: 68, trackers: ['google_analytics', 'meta_pixel'] }) });
+    const r2 = await run(s2.deps);
+    expect(r2.body.results[0]).toMatchObject({ status: 'ok', drift: true, alert: 'duplicate' });
+    expect(repo.outbox).toHaveLength(1);
+    expect(s2.alerts).toEqual(['example.de']);
+  });
+
+  it('Nachhol-Pass läuft vor den Scans und verhungert nicht am Zeitbudget', async () => {
+    // Review-Befund: Lief der Pass erst nach den Scans, blieb er bei
+    // erschöpftem Budget dauerhaft aus.
+    const repo = new MemRepo([domain()]);
+    const first = setup({ repo, scanner: driftScan, alertFails: () => true });
+    await run(first.deps);
+    expect(repo.outbox[0]).toMatchObject({ status: 'pending', attempts: 1 });
+
+    const busy = [1, 2, 3].map((i) => domain({
+      id: `b${i}`, domain: `busy${i}.de`, last_scan_at: null, last_risk_score: null, last_trackers: [],
+    }));
+    repo.domains.push(...busy);
+    let elapsed = 0;
+    const second = setup({
+      repo, runBudgetMs: 90_000,
+      now: () => new Date(NOW.getTime() + 2 * DAY + elapsed),
+      scanner: async () => { elapsed += 60_000; return scanOf(); },
+    });
+    const r2 = await run(second.deps);
+    expect(r2.body).toMatchObject({ status: 'partial' });
+    expect(r2.body.alert_retries).toEqual({ attempted: 1, sent: 1, dropped: 0 });
+    expect(second.alerts).toEqual(['example.de']);
+    expect(repo.outbox[0]).toMatchObject({ status: 'sent', attempts: 2 });
+  });
+
+  it('ohne Plan-Freigabe oder Empfänger wird nichts eingereiht', async () => {
+    const starter = setup({ plan: PLANS.starter, scanner: driftScan,
+      domains: [domain({ last_scan_at: new Date(NOW.getTime() - 40 * DAY).toISOString() })] });
+    await run(starter.deps);
+    expect(starter.repo.outbox).toEqual([]);
+
+    const noMail = setup({ scanner: driftScan, domains: [domain({ alert_email: null })] });
+    const r = await run(noMail.deps);
+    expect(r.body.results[0]).toMatchObject({ drift: true, alert: 'no_recipient' });
+    expect(noMail.repo.outbox).toEqual([]);
   });
 });

@@ -66,7 +66,9 @@ import {
 } from '../../features/build-studio/contract';
 import {
   BUILD_KIND_LABEL,
+  CODE_ENTRY_PROMPT_MAX_CHARS,
   codeEntryHref,
+  codeEntryState,
   parseBuildKind,
 } from '../../features/build-studio/entry';
 import { useEntitlements } from '../../core/billing/useEntitlements';
@@ -339,7 +341,14 @@ export default function BuildStudioPage() {
         setError('Bitte geben Sie einen Namen oder eine kurze Beschreibung an.');
         return;
       }
-      navigate(codeEntryHref(kind, brand, text));
+      const brief = text || brand.trim();
+      const handoff = codeEntryState(brief);
+      if (!handoff) {
+        setError(`Bitte geben Sie eine Beschreibung mit höchstens ${CODE_ENTRY_PROMPT_MAX_CHARS} Zeichen ein.`);
+        return;
+      }
+      // History state transports only the user's brief, never credentials or tenant authority.
+      navigate(codeEntryHref(kind, brand, text), { state: handoff });
       return;
     }
     if (text.length < 10) {

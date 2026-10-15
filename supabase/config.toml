@@ -74,6 +74,10 @@ verify_jwt = false
 [functions.shopify-webhooks]
 verify_jwt = false
 
+# Agent Change Evidence: GitHub push/pull_request webhook (HMAC, no JWT).
+[functions.agent-change-evidence-webhook]
+verify_jwt = false
+
 [functions.shopify-callback]
 verify_jwt = false
 

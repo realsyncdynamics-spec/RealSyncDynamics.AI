@@ -221,13 +221,13 @@ export function V4Hero() {
           <span>{t('v4HeroTitleB')}</span> <em>{t('v4HeroTitleEm')}</em>
         </h1>
         <p className="loop">
-          Discover
+          {t('v4HeroLoop1')}
           <LoopArrow />
-          Classify
+          {t('v4HeroLoop2')}
           <LoopArrow />
-          Enforce
+          {t('v4HeroLoop3')}
           <LoopArrow />
-          Prove
+          {t('v4HeroLoop4')}
         </p>
         <p className="lede" data-testid="v4-hero-lede">
           {t('v4HeroLede1')}
@@ -236,10 +236,10 @@ export function V4Hero() {
         </p>
         <div className="cta-row">
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
-            Free Governance Audit <Arrow />
+            {t('v4HeroPrimaryCta')} <Arrow />
           </Link>
           <Link className="btn-ghost" to={V4_ROUTES.runtime}>
-            Runtime ansehen
+            {t('v4HeroSecondaryCta')}
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>
@@ -310,16 +310,16 @@ export function V4Ticker() {
 export function V4LoopBand() {
   return (
     <section className="loopband" aria-label="Governance Loop">
-      <div className="loop-grid">
-        <div className="loop-wire" />
+      <ol className="loop-grid" role="list">
+        <li className="loop-wire" aria-hidden="true" role="presentation" />
         {LOOP_NODES.map(([k, h, p]) => (
-          <div key={k} className="loop-node">
+          <li key={k} className="loop-node">
             <small>{k}</small>
             <h3>{h}</h3>
             <p>{p}</p>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }
@@ -439,7 +439,7 @@ export function V4Workspace() {
               <div className="split" aria-hidden="true">
                 <div className="panel">
                   <div className="panel-head">
-                    RAHMENWERK-REIFEGRAD<b>6 POLICY PACKS</b>
+                    POLICY PACKS<b>RAHMENWERK-REIFEGRAD</b>
                   </div>
                   <div>
                     {APP_FRAMEWORKS.map(([name, pct, label]) => (
@@ -542,17 +542,14 @@ export function V4Platform() {
           Eine Runtime. <em>Kontrollierte KI-Governance.</em>
         </h2>
         <p className="sec-lede">
-          RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem
-          durchgängigen operativen Kontrollprozess.
+          Risiken erkennen. Regeln durchsetzen. Nachweise bereitstellen — in einem durchgängigen Kontrollprozess.
         </p>
         <div className="cards">
           {LIVE_CAPS.map(({ name, desc, route }) => {
             const body = (
               <>
-                <p className="card-tag" data-st="live">
-                  LIVE
-                </p>
-                <h3 style={CARD_H3(18)}>{name}</h3>
+                <StatusTag className="card-tag status" label="LIVE" />
+                <h3>{name}</h3>
                 <p className="body">{desc}</p>
                 {route ? (
                   <u

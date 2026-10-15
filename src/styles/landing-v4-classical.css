@@ -940,9 +940,9 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
 
   .gv4 .loopband { position: relative; z-index: 1; padding: clamp(40px, 5vw, 64px) 4vw; border-top: 1px solid var(--line-soft);
               background: linear-gradient(180deg, rgba(20,22,25,.7), rgba(16,17,20,.82)); }
-  .gv4 .loop-grid { width: 100%; max-width: 1500px; margin: 0 auto; display: grid;
-               grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 0; position: relative; }
-  .gv4 .loop-node { position: relative; padding: 30px 22px 22px 26px; border-left: 1px solid var(--line); }
+  .gv4 .loop-grid { width: 100%; max-width: 1500px; margin: 0 auto; padding: 0; list-style: none; display: grid;
+               grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--space-4); position: relative; }
+  .gv4 .loop-node { position: relative; padding: var(--space-8) var(--space-6) var(--space-6); border-left: 1px solid var(--line); }
   .gv4 .loop-node::before { content: ''; position: absolute; left: -5px; top: 8px; width: 9px; height: 9px;
                        border-radius: var(--radius-full); background: var(--bronze-lite);
                        box-shadow: 0 0 0 4px rgba(201,162,74,.18), 0 0 14px rgba(230,201,138,.6); }
@@ -1508,3 +1508,14 @@ div.gv4 { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
     .gv4 #hud { width: min(62vw, 52vh); right: -22%; top: 44%; opacity: .72; }
     .gv4 #bg .scrim { background: linear-gradient(100deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.72) 56%, rgba(0,0,0,.35) 78%, transparent 100%); }
   }
+
+  /* Features: gezielte Hierarchie innerhalb der Classical-Kaskade. */
+  .gv4 .loop-node h3 { margin-top: var(--space-3); font-size: 30px !important; font-weight: 600 !important; }
+  .gv4 .loop-node p { margin-top: var(--space-3); max-width: 34ch; }
+  .gv4 #platform .card:has([data-st="live"]) { border-color: var(--line); }
+  .gv4 #platform .card h3 { margin: var(--space-4) 0 0; font-size: 24px !important; font-weight: 600 !important; line-height: 1.2; text-wrap: balance; }
+  .gv4 #platform .card-tag[data-st="live"] { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 600; border: 1px solid currentColor; }
+  .gv4 #platform .card-tag[data-st="live"]::before { content: ''; width: 5px; height: 5px; background: currentColor; }
+  .gv4 #dashboard .fw { padding-block: var(--space-3); }
+  .gv4 #dashboard .fw s { font-weight: 600; }
+  .gv4 #dashboard .fw em { font-variant-numeric: tabular-nums; }

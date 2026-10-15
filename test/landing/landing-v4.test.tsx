@@ -3,7 +3,7 @@
  * Routen, auflösbare In-Page-Anker, Roadmap-Filter, Scan-Formular.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LandingV4 } from '../../src/pages/LandingV4';
 import { resetLangForTests, setLang } from '../../src/i18n/useLang';
@@ -44,20 +44,20 @@ const mount = () =>
 it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
   const view = mount();
   // Default-Sprache DE: H1 und Lede deutsch (Produktname bleibt EN).
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS für Europa/ });
+  screen.getByRole('heading', { level: 1, name: /Risiken auf Ihrer Website.*und bei KI erkennen und nachweisen/ });
   expect(view.container.querySelectorAll('h1')).toHaveLength(1);
-  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/für Europa/);
-  expect(view.container.querySelector('.loop')?.textContent).toBe('DiscoverClassifyEnforceProve');
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/und nachweisen/);
+  expect(view.container.querySelector('.loop')?.textContent).toBe('PrüfenVerstehenHandelnNachweisen');
   expect(view.container.querySelector('#scan')).toHaveAttribute('href', '/audit');
   expect(view.container.querySelector('#scan')).toHaveAttribute('data-hero-cta', '');
-  expect(view.container.querySelector('#scan')).toHaveTextContent('Free Governance Audit');
+  expect(view.container.querySelector('#scan')).toHaveTextContent('Kostenlosen Check starten');
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
-    'Runtime-Governance für regulierte KI.Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+    'Prüfen Sie Ihre Website kostenlos auf Datenschutzrisiken.Erhalten Sie klare Ergebnisse und konkrete Hinweise für die nächsten Schritte.',
   );
   expect(view.container.querySelector('header .cta-label-mobile')).toHaveTextContent('Audit starten');
   const secondary = view.container.querySelector('.hero .btn-ghost');
   expect(secondary).toHaveAttribute('href', '/governance-runtime');
-  expect(secondary?.textContent).toMatch(/Runtime ansehen/);
+  expect(secondary?.textContent).toMatch(/Governance OS ansehen/);
   expect(secondary?.textContent).not.toMatch(/Live|Demo/i);
   expect(view.container.querySelector('header .cta-pill')).toHaveAttribute('href', '/audit');
   // LIVE_CAPS: Klassifizierung claims public classifier only (no inventory persist).
@@ -73,13 +73,51 @@ it('renders the v4 hero: H1, loop and CTAs into real routes', () => {
 it('renders English hero heading and lede when EN is active', () => {
   setLang('en');
   mount();
-  screen.getByRole('heading', { level: 1, name: /AI Compliance\s*Operations OS for Europe/ });
-  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/for Europe/);
-  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/für Europa/);
+  screen.getByRole('heading', { level: 1, name: /Identify risks on your website.*and in your AI use with clear evidence/ });
+  expect(screen.getByTestId('v4-hero-heading')).toHaveTextContent(/with clear evidence/);
+  expect(screen.getByTestId('v4-hero-heading')).not.toHaveTextContent(/und nachweisen/);
   expect(screen.getByTestId('v4-hero-lede')).toHaveTextContent(
-    'Runtime governance for regulated AI.Continuous evidence. Human control. EU-native by design.',
+    'Check your website for privacy risks for free.Get clear findings and practical guidance on what to do next.',
   );
   expect(screen.getByTestId('v4-hero-lede')).not.toHaveTextContent(/regulierter KI/);
+});
+
+it('presents the governance loop as four ordered, clearly titled steps', () => {
+  mount();
+  const loop = screen.getByRole('region', { name: 'Governance Loop' });
+  const list = within(loop).getByRole('list');
+  expect(list.tagName).toBe('OL');
+  const steps = within(list).getAllByRole('listitem');
+  expect(steps).toHaveLength(4);
+  expect(steps.map((step) => within(step).getByRole('heading', { level: 3 }).textContent))
+    .toEqual(['Scan', 'Einordnen', 'Beheben', 'Dokumentieren']);
+  expect(steps[2]).toHaveTextContent('ohne Berater und ohne Fachchinesisch');
+  expect(steps[3]).toHaveTextContent('nachvollziehbar festhalten');
+});
+
+it('keeps live module badges distinct from planned capabilities and policy example data', () => {
+  const view = mount();
+  const cards = Array.from(view.container.querySelectorAll('#platform .card'))
+    .filter((card) => card.querySelector('h3'));
+  expect(cards).toHaveLength(7);
+  for (const card of cards) {
+    expect(card.querySelector('.card-tag.status[data-st="live"]')).toHaveTextContent('LIVE');
+    expect(card.querySelector('h3')).not.toHaveAttribute('style');
+    expect(card.querySelector('.body')).not.toBeEmptyDOMElement();
+  }
+  expect(cards.filter((card) => card.tagName === 'A').map((card) => card.getAttribute('href')))
+    .toEqual(['/ai-act-klassifikator', '/evidence', '/runtime']);
+  expect(cards[1]).toHaveTextContent('ohne Speichern ins Inventar');
+  const planned = view.container.querySelector('#platform .rm-card.dashed')!;
+  expect(planned.querySelector('[data-st="live"]')).toBeNull();
+  expect(planned).toHaveTextContent('noch nicht in Produktion');
+  const preview = view.container.querySelector('#dashboard .app')!;
+  expect(preview).toHaveAttribute('data-example-preview', 'true');
+  expect(preview.querySelector('.panel-head')).toHaveTextContent('POLICY PACKS');
+  const frameworks = preview.querySelectorAll('.fw');
+  expect(frameworks).toHaveLength(6);
+  expect(frameworks[4]).toHaveTextContent('TISAXNEXT');
+  expect(frameworks[5]).toHaveTextContent('DORANEXT');
 });
 
 it('keeps every in-page anchor resolvable and every route link relative', () => {

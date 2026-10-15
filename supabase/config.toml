@@ -206,6 +206,13 @@ verify_jwt = true
 [functions.ai-gateway]
 verify_jwt = true
 
+# ai-os-control — internes AI-OS (/admin/ai-os). Nur Plattform-Operatoren
+# (is_platform_operator() mit dem Nutzer-JWT); Schreibaktionen zusätzlich AAL2
+# + Bestätigung + Eintrag in ai_os_action_log (fail-closed). GitHub-Zugriff
+# über das Function-Secret AI_OS_GITHUB_TOKEN.
+[functions.ai-os-control]
+verify_jwt = true
+
 [functions.audit-report-pdf]
 verify_jwt = false
 

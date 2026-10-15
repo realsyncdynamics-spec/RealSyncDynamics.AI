@@ -393,6 +393,7 @@ const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').th
 const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
+const AiOsCommandCenter = lazy(() => import('./features/ai-os/AiOsCommandCenter').then((m) => ({ default: m.AiOsCommandCenter })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const ConversionBillingView = lazy(() => import('./features/admin/billing/ConversionBillingView').then((m) => ({ default: m.ConversionBillingView })));
 const ComplianceGovernanceView = lazy(() => import('./features/admin/compliance/ComplianceGovernanceView').then((m) => ({ default: m.ComplianceGovernanceView })));
@@ -1064,6 +1065,9 @@ function RoutesWithTracking() {
           (admin_funnel_leads → is_platform_operator), nicht der Router. */}
       <Route path="/app/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
+      {/* Internes AI-OS — nur Plattform-Operatoren, Prüfung serverseitig in ai-os-control. */}
+      <Route path="/admin/ai-os" element={<AiOsCommandCenter />} />
+      <Route path="/admin/ai-os/:section" element={<AiOsCommandCenter />} />
       <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />
       <Route path="/admin/billing" element={<ConversionBillingView />} />

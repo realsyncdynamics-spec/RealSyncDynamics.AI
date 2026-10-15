@@ -1065,6 +1065,9 @@ function RoutesWithTracking() {
       <Route path="/admin" element={<SuperAdminDashboard />} />
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
+      {/* Lead-Verwaltung im System-Bereich. Zugriff prüft die Datenbank
+          (admin_funnel_leads → is_platform_operator), nicht der Router. */}
+      <Route path="/app/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />

@@ -336,6 +336,8 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
   { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
   { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
+  // WP-3: im Repo; Deploy nach Freigabe der Migration 20261013090000_beta_enrollments.
+  { slug: 'beta-enroll', surface: 'App-Shell — BetaAppBanner (Beta-Anmeldung nach ?beta=1)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

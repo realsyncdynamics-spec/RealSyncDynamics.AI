@@ -21,6 +21,7 @@ export const FN_PROXY_ALLOW = [
   'sales-lead',
   'save-company-profile',
   'create-trial-subscription',
+  'beta-enroll',
 ] as const;
 
 const ALLOW = new Set<string>(FN_PROXY_ALLOW);

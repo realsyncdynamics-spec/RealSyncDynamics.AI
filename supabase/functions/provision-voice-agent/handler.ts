@@ -47,6 +47,7 @@ export interface VoiceAgentRow {
   stripe_subscription_id: string | null;
   last_stripe_event_id: string | null;
   attempts: number;
+  last_error: string | null;
   claimed_at: string | null;
 }
 

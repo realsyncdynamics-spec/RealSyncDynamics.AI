@@ -130,7 +130,7 @@ export function Impressum() {
             </p>
           ) : (
             <p>
-              Kleinunternehmer i. S. v. § 19 UStG (Umsatzsteuer-Befreiung). Es wird keine Umsatzsteuer ausgewiesen.
+              Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: wird nach Zuteilung durch das Bundeszentralamt für Steuern ergänzt.
             </p>
           )}
         </Section>

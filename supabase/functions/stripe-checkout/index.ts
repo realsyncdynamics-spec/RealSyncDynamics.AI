@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
 
     // Abo-Rechnungen erzeugt Stripe selbst und übernimmt die Fußzeile vom
     // Customer. Deshalb vor jedem Checkout an den Steuermodus angleichen:
-    // im EXEMPT-Modus der § 19-Hinweis (§ 34a UStDV), sonst leer.
+    // EU_STANDARD: leer — entfernt alte § 19-Fußzeilen bei Bestandskunden.
     // Einmalkauf: Die Rechnungsfußzeile kommt aus invoice_creation.invoice_data,
     // ein fehlgeschlagenes Customer-Update darf den Kauf nicht blockieren (nur
     // loggen). Abo: Fußzeile kommt NUR vom Customer → Fehler bleibt blockierend.
@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
       allow_promotion_codes: true,
       // Steuer, Rechnungsadresse, Rechnung (Einmalkauf) und Hinweis über dem
       // Bezahlknopf: aus dem Steuermodus der Pricing-SSoT, nie fest verdrahtet.
-      // EXEMPT (§ 19 UStG) → keine Steuerberechnung. Siehe _shared/checkout-tax.ts.
+      // EU_STANDARD → automatic_tax an, Preise müssen tax_behavior=exclusive sein. Siehe _shared/checkout-tax.ts.
       ...checkoutTaxParams({
         sessionMode: isOneTime ? 'payment' : 'subscription',
         existingCustomer: true,

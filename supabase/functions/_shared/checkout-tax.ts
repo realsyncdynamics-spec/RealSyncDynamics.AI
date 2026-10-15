@@ -10,8 +10,11 @@
 //                jede Rechnung trägt den § 19-Hinweis (§ 34a Nr. 5 UStDV). Die
 //                Steuernummer (Nr. 2) kommt als Standard-Steuer-ID aus den
 //                Stripe-Rechnungseinstellungen.
-//   EU_STANDARD  Regelbesteuerung. Stripe Tax berechnet die USt aus
-//                Kundenadresse und Tax-Registrierungen.
+//   EU_STANDARD  Regelbesteuerung (aktiv seit 2026-10-15). Preise netto,
+//                tax_behavior=exclusive; Stripe Tax schlägt die USt aus
+//                Kundenadresse + Registrierungen (DE standard, OSS union) auf.
+//                EU-B2B mit gültiger USt-IdNr. (tax_id_collection) →
+//                Reverse Charge, Hinweis setzt Stripe selbst auf die Rechnung.
 //
 // Warum das zählt: Weist eine Rechnung Umsatzsteuer aus, wird der Betrag nach
 // § 14c UStG geschuldet — auch von Kleinunternehmern. Ein fest verdrahtetes
@@ -107,7 +110,8 @@ export function checkoutTaxParams(opts: {
 export type CheckoutTaxFinding =
   | 'BILLING_COUNTRY_MISSING'
   | 'MARKET_NOT_TAX_CHECKED'
-  | 'TAX_CHARGED_IN_EXEMPT_MODE';
+  | 'TAX_CHARGED_IN_EXEMPT_MODE'
+  | 'TAX_MISSING_IN_STANDARD_MODE';
 
 /** Prüfung eines abgeschlossenen Checkouts. Leeres Ergebnis = nichts zu tun. */
 export function reviewCheckoutTax(input: {
@@ -120,6 +124,13 @@ export function reviewCheckoutTax(input: {
   if (!input.billingCountry?.trim()) findings.push('BILLING_COUNTRY_MISSING');
   else if (!isTaxCheckedMarket(input.billingCountry)) findings.push('MARKET_NOT_TAX_CHECKED');
   if (taxMode === 'EXEMPT' && (input.taxAmountCents ?? 0) > 0) findings.push('TAX_CHARGED_IN_EXEMPT_MODE');
+  // Regelbesteuerung: Inlandskauf (DE) ohne USt deutet auf fehlende Stripe-Tax-
+  // Registrierung oder einen inklusiven/alten Preis hin → manuelle Prüfung.
+  if (
+    taxMode === 'EU_STANDARD' &&
+    input.billingCountry?.trim().toUpperCase() === 'DE' &&
+    (input.taxAmountCents ?? 0) === 0
+  ) findings.push('TAX_MISSING_IN_STANDARD_MODE');
   return findings;
 }
 

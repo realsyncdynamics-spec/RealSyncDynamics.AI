@@ -42,6 +42,7 @@ import {
   statusOf,
   type TrustIcon,
 } from './landing-v4-content';
+import { formatNetGrossLine } from '@/shared/pricing';
 
 /*
  * Markup und Klassennamen folgen 1:1 der Referenz `The Governance AI v4.html`
@@ -699,6 +700,7 @@ export function V4Pricing() {
               <h3 className="plan-price">
                 {p.price} €<span>/ MONAT</span>
               </h3>
+              <p className="sec-note" data-testid={`v4-vat-${p.id}`}>{formatNetGrossLine(Number(p.price))}</p>
               <p className="body">{p.tagline}</p>
               <ul>
                 {p.l.map((b) => (

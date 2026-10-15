@@ -12,7 +12,7 @@ import {
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
-import { checkoutHrefForPlan } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatNetGrossLine } from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
@@ -451,6 +451,11 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
         <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
         <span className="rs-price-card__suffix">{suffix}</span>
       </div>
+      {!tier.priceOnRequest && COMPANY.taxMode === 'EU_STANDARD' && (
+        <p className="rs-price-card__vat" data-testid={`pricing-vat-${tier.id}`}>
+          {formatNetGrossLine(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur, lang === 'en' ? 'en' : 'de')}
+        </p>
+      )}
 
       <p className="rs-price-card__tagline">{tagline}</p>
       <FeatureList items={[...bullets]} />

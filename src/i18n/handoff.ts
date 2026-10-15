@@ -16,9 +16,8 @@
  *   auditFoot  `gdpr-audit` speichert Domain und E-Mail für Bericht und
  *              Report-Mail (Tabelle `gdpr_audits`). „Keine Speicherung ohne
  *              Einwilligung" wäre falsch.
- *   pricingSub „Preise netto" passt nicht zur Kleinunternehmer-Regel
- *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
- *              breiter als belegt; übrig bleibt, was stimmt.
+ *   pricingSub  Regelbesteuerung (2026-10-15): „Preise netto zzgl. 19 % USt";
+ *              „alle Daten in der EU" ist breiter als belegt und entfällt.
  *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
  *   heroA–C, sub1, sub2  Positionierung nach Entscheidung E-F3 (2026-09-27):
  *              „Die Kontrollschicht für KI im Unternehmen." Kategorie bleibt
@@ -77,11 +76,11 @@ export const HANDOFF_COPY = {
     start: "Audit starten",
     toDash: "Dashboard öffnen",
     pricingTitle: "Vom kostenlosen Audit bis zur Agentur-Suite.",
-    pricingSub: "Monatlich kündbar. Preise netto. Alle Daten in der EU verarbeitet und gespeichert.",
+    pricingSub: "Monatlich kündbar. Preise netto zzgl. 19 % USt.",
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",
-    pricingFoot: "Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise auf Anfrage.",
+    pricingFoot: "Alle Preise netto zzgl. 19 % USt. Enterprise auf Anfrage.",
     navOverview: "Übersicht",
     navSystems: "KI-Systeme",
     navClassify: "Klassifizierung",
@@ -184,11 +183,11 @@ export const HANDOFF_COPY = {
     start: "Run audit",
     toDash: "Open dashboard",
     pricingTitle: "From free audit to agency suite.",
-    pricingSub: "Cancel monthly. Prices net. All data processed and stored in the EU.",
+    pricingSub: "Cancel monthly. Prices net, plus 19% VAT.",
     monthly: "Monthly",
     yearly: "Yearly",
     popular: "Popular",
-    pricingFoot: "Note: invoices issued without VAT under § 19 UStG (small business). Enterprise on request.",
+    pricingFoot: "All prices net, plus 19% VAT (EU B2B with valid VAT ID: reverse charge). Enterprise on request.",
     navOverview: "Overview",
     navSystems: "AI systems",
     navClassify: "Classification",

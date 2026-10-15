@@ -91,9 +91,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
       <section aria-label="Unterstützte Regelwerke" style={{ borderTop: "1px solid var(--rs-line)", borderBottom: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(24px,1.6vw,48px) var(--px)", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px 40px" }}>
-          <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>SECHS POLICY PACKS · EIN PRÜFPFAD</span>
+          <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>4 POLICY PACKS LIVE · EIN PRÜFPFAD</span>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px clamp(24px,2.4vw,72px)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(18px,1.4vw,40px)", color: "var(--rs-fg2)" }}>
-            <span>DSGVO</span><span>EU AI Act</span><span>ISO 27001</span><span>NIS2</span><span style={{ color: "var(--rs-fg3)" }}>TISAX · next</span><span style={{ color: "var(--rs-fg3)" }}>DORA · next</span>
+            <span>DSGVO</span><span>EU AI Act</span><span>ISO 27001</span><span>NIS2</span><span style={{ color: "var(--rs-fg3)" }}>TISAX · Coming Soon</span><span style={{ color: "var(--rs-fg3)" }}>DORA · Coming Soon</span>
           </div>
         </div>
       </section>

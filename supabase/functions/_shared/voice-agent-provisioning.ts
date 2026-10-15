@@ -87,6 +87,61 @@ export function planEnqueue(existing: ExistingVoiceAgent | null, desired: VoiceD
   return { action: 'none' };
 }
 
+/**
+ * Obergrenze der Aufbewahrung beim Provider — die abgenommene Vorlage steht
+ * auf 7 Tagen. Ein Kundenagent darf nicht länger aufbewahren als abgenommen.
+ */
+export const MAX_RETENTION_DAYS = 7;
+
+/** Ausschnitt aus GET /v1/convai/agents/{id} → platform_settings. */
+export interface AgentPlatformSettings {
+  auth?: { enable_auth?: boolean; require_origin_header?: boolean; allowlist?: unknown[] };
+  privacy?: {
+    record_voice?: boolean;
+    retention_days?: number;
+    delete_audio?: boolean;
+    delete_transcript_and_pii?: boolean;
+    zero_retention_mode?: boolean;
+    conversation_history_redaction?: { enabled?: boolean };
+  };
+  call_limits?: { daily_limit?: number; agent_concurrency_limit?: number; bursting_enabled?: boolean };
+}
+
+/**
+ * Read-back nach der Bereitstellung, fail-closed: Was hier verletzt ist, darf
+ * nicht live gehen — egal ob die Vorlage abgedriftet ist oder der PATCH
+ * etwas zurückgesetzt hat. Leere Liste = in Ordnung.
+ */
+export function agentGuaranteeViolations(s: AgentPlatformSettings, expectedDailyLimit: number | null): string[] {
+  const v: string[] = [];
+  if (s.auth?.enable_auth !== true) v.push('auth.enable_auth is not true');
+  if (s.privacy?.record_voice !== false) v.push('privacy.record_voice is not false');
+  const days = s.privacy?.retention_days;
+  if (typeof days !== 'number' || days < 1 || days > MAX_RETENTION_DAYS) {
+    v.push(`privacy.retention_days=${String(days)} outside 1..${MAX_RETENTION_DAYS}`);
+  }
+  if (expectedDailyLimit !== null && s.call_limits?.daily_limit !== expectedDailyLimit) {
+    v.push(`call_limits.daily_limit=${String(s.call_limits?.daily_limit)} expected ${expectedDailyLimit}`);
+  }
+  return v;
+}
+
+/** Belegbare Einstellungen für die Evidenz (keine Secrets, keine Allowlist-Inhalte). */
+export function settingsForEvidence(s: AgentPlatformSettings): Record<string, unknown> {
+  return {
+    auth_enabled: s.auth?.enable_auth ?? null,
+    require_origin_header: s.auth?.require_origin_header ?? null,
+    record_voice: s.privacy?.record_voice ?? null,
+    retention_days: s.privacy?.retention_days ?? null,
+    delete_audio: s.privacy?.delete_audio ?? null,
+    delete_transcript_and_pii: s.privacy?.delete_transcript_and_pii ?? null,
+    zero_retention_mode: s.privacy?.zero_retention_mode ?? null,
+    pii_redaction_enabled: s.privacy?.conversation_history_redaction?.enabled ?? null,
+    daily_limit: s.call_limits?.daily_limit ?? null,
+    agent_concurrency_limit: s.call_limits?.agent_concurrency_limit ?? null,
+  };
+}
+
 /** Anzeigename beim Provider: auffindbar und dem Mandanten zuordenbar. */
 export function agentName(tenantId: string, tenantName: string | null): string {
   const label = (tenantName ?? '').replace(/\s+/g, ' ').trim() || 'Mandant';

@@ -6,12 +6,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  agentGuaranteeViolations,
   agentName,
   dailyCallLimit,
   desiredStateFor,
   planEnqueue,
   readVoiceEntitlements,
   safeError,
+  type AgentPlatformSettings,
   type VoiceEntitlements,
 } from '../../supabase/functions/_shared/voice-agent-provisioning';
 import { canonicalJson, evidenceContentHash } from '../../supabase/functions/_shared/evidence-hash';
@@ -70,6 +72,20 @@ describe('Regeln', () => {
       .toEqual({ action: 'update', desired: 'active' });
   });
 
+  it('Read-back-Garantien: Auth, keine Aufzeichnung, Aufbewahrung ≤ 7 Tage, Tageslimit', () => {
+    expect(agentGuaranteeViolations(templateSettings(), 50)).toEqual([]);
+    expect(agentGuaranteeViolations(templateSettings(), null)).toEqual([]);
+    expect(agentGuaranteeViolations({}, 5)).toEqual([
+      'auth.enable_auth is not true',
+      'privacy.record_voice is not false',
+      'privacy.retention_days=undefined outside 1..7',
+      'call_limits.daily_limit=undefined expected 5',
+    ]);
+    const s = templateSettings();
+    s.privacy!.retention_days = 30;
+    expect(agentGuaranteeViolations(s, 50)).toEqual(['privacy.retention_days=30 outside 1..7']);
+  });
+
   it('Agent-Name ist dem Mandanten zuordenbar', () => {
     expect(agentName(TENANT, '  ACME   GmbH ')).toBe('RealSync Voice · ACME GmbH · 11111111');
     expect(agentName(TENANT, null)).toBe('RealSync Voice · Mandant · 11111111');
@@ -94,7 +110,7 @@ describe('ElevenLabs-Client', () => {
     expect(await client.duplicateAgent('tpl_1', 'Name')).toBe('agent_new');
     await client.updateAgent('agent_new', {
       name: 'Name', tags: ['realsync'],
-      platform_settings: { auth: { enable_auth: true }, call_limits: { daily_limit: 5 } },
+      platform_settings: { call_limits: { agent_concurrency_limit: 2, daily_limit: 5 } },
     });
 
     expect(calls[0].url).toBe('https://api.eu.residency.elevenlabs.io/v1/convai/agents/tpl_1/duplicate');
@@ -104,8 +120,19 @@ describe('ElevenLabs-Client', () => {
     expect(calls[1].url).toBe('https://api.eu.residency.elevenlabs.io/v1/convai/agents/agent_new');
     expect(calls[1].init.method).toBe('PATCH');
     expect(JSON.parse(String(calls[1].init.body)).platform_settings).toEqual({
-      auth: { enable_auth: true }, call_limits: { daily_limit: 5 },
+      call_limits: { agent_concurrency_limit: 2, daily_limit: 5 },
     });
+  });
+
+  it('liest platform_settings per GET ohne Body', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const client = createElevenLabsClient('k', ELEVENLABS_EU_BASE, async (url, init) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ agent_id: 'a', platform_settings: templateSettings() }), { status: 200 });
+    });
+    expect(await client.getAgentSettings('a')).toEqual(templateSettings());
+    expect(calls[0].init.method).toBe('GET');
+    expect(calls[0].init.body).toBeUndefined();
   });
 
   it('wirft bei Fehlerstatus und bei fehlender agent_id, ohne den Key zu nennen', async () => {
@@ -130,13 +157,33 @@ interface World {
   failBotInsert?: string;
 }
 
+/** Ausgelesene Vorlage agent_4801m4z42njceeqb9svq930eg42f, Stand 2026-10-15 (read-only). */
+function templateSettings(): AgentPlatformSettings {
+  return {
+    auth: { enable_auth: true, allowlist: [], require_origin_header: true },
+    privacy: {
+      record_voice: false, retention_days: 7, delete_audio: true, delete_transcript_and_pii: false,
+      zero_retention_mode: false, conversation_history_redaction: { enabled: false },
+    },
+    call_limits: { agent_concurrency_limit: 2, daily_limit: 50, bursting_enabled: false },
+  };
+}
+
 class FakeProvider implements VoiceProviderClient {
   duplicates: Array<{ template: string; name: string }> = [];
   patches: Array<{ agentId: string; patch: AgentPatch }> = [];
+  agents = new Map<string, AgentPlatformSettings>();
   failPatches = 0;
+  /** Simuliert einen PATCH, der platform_settings ersetzt statt zu mergen. */
+  patchReplacesSettings = false;
   async duplicateAgent(template: string, name: string) {
     this.duplicates.push({ template, name });
-    return `agent_${this.duplicates.length}`;
+    const id = `agent_${this.duplicates.length}`;
+    this.agents.set(id, templateSettings());
+    return id;
+  }
+  async getAgentSettings(agentId: string) {
+    return structuredClone(this.agents.get(agentId) ?? {});
   }
   async updateAgent(agentId: string, patch: AgentPatch) {
     if (this.failPatches > 0) {
@@ -144,6 +191,11 @@ class FakeProvider implements VoiceProviderClient {
       throw new Error('elevenlabs PATCH → 503: upstream');
     }
     this.patches.push({ agentId, patch });
+    if (!patch.platform_settings) return;
+    const cur = this.agents.get(agentId) ?? {};
+    this.agents.set(agentId, this.patchReplacesSettings
+      ? { call_limits: patch.platform_settings.call_limits }
+      : { ...cur, call_limits: { ...cur.call_limits, ...patch.platform_settings.call_limits } });
   }
 }
 
@@ -254,17 +306,18 @@ describe('Handler: Zugriff', () => {
 });
 
 describe('Handler: Bereitstellung', () => {
-  it('bots-Zeile → Duplikat → Auth an + Tageslimit → Evidenz → active', async () => {
+  it('bots-Zeile → Duplikat → Tageslimit → Read-back → Evidenz → active', async () => {
     const w = world();
     const res = await call(w);
     expect(res.status).toBe(200);
     expect(res.body.outcomes).toEqual([{ tenant_id: TENANT, result: 'active', provider_agent_id: 'agent_1' }]);
 
     expect(w.provider.duplicates).toEqual([{ template: 'tpl_realsync', name: 'RealSync Voice · ACME GmbH · 11111111' }]);
+    // Kein auth/privacy im PATCH (geerbt), call_limits vollständig mit Vorlagenwerten.
     expect(w.provider.patches[0].patch).toEqual({
       name: 'RealSync Voice · ACME GmbH · 11111111',
       tags: ['realsync', `tenant:${TENANT}`],
-      platform_settings: { auth: { enable_auth: true }, call_limits: { daily_limit: 5 } },
+      platform_settings: { call_limits: { agent_concurrency_limit: 2, daily_limit: 5, bursting_enabled: false } },
     });
     expect(w.bots.get('bot_1')).toEqual({ enabled: true, config: { provider: 'elevenlabs', provider_agent_id: 'agent_1' } });
 
@@ -286,17 +339,48 @@ describe('Handler: Bereitstellung', () => {
     expect(ev.metadata.snapshot).toMatchObject({
       kind: 'voice_agent.provisioned', tenant_id: TENANT, provider_agent_id: 'agent_1',
       template_agent_id: 'tpl_realsync', stripe_subscription_id: 'sub_1', stripe_event_id: 'evt_1',
-      config: { auth_enabled: true, daily_limit: 5, monthly_minutes: 500 },
+      config: {
+        daily_limit: 5, monthly_minutes: 500,
+        verified: {
+          auth_enabled: true, require_origin_header: true, record_voice: false, retention_days: 7,
+          delete_audio: true, delete_transcript_and_pii: false, zero_retention_mode: false,
+          pii_redaction_enabled: false, daily_limit: 5, agent_concurrency_limit: 2,
+        },
+      },
     });
     expect(ev.content_hash).toBe(await evidenceContentHash(ev.metadata.snapshot));
     expect(canonicalJson(ev.metadata.snapshot)).not.toMatch(/sk_|api_key/i);
     expect(ev.evidence_type).toBe('json');
   });
 
-  it('unbegrenzte Minuten: kein call_limits im PATCH', async () => {
+  it('unbegrenzte Minuten: kein platform_settings im PATCH, Vorlagenlimit bleibt', async () => {
     const w = world({ ent: { voice: true, monthlyMinutes: null } });
     await call(w);
-    expect(w.provider.patches[0].patch.platform_settings).toEqual({ auth: { enable_auth: true } });
+    expect(w.provider.patches[0].patch.platform_settings).toBeUndefined();
+    expect(w.rows[0].status).toBe('active');
+  });
+
+  it('PATCH setzt Privacy/Auth zurück: Read-back schlägt an, failed, Bot bleibt aus, keine Evidenz', async () => {
+    const w = world();
+    w.provider.patchReplacesSettings = true;
+    await call(w);
+    expect(w.rows[0].status).toBe('failed');
+    expect(w.rows[0].last_error).toMatch(/agent guarantees violated: auth\.enable_auth is not true; privacy\.record_voice/);
+    expect(w.bots.get('bot_1')?.enabled).toBe(false);
+    expect(w.evidence).toHaveLength(0);
+  });
+
+  it('abgedriftete Vorlage (Aufbewahrung 30 Tage) geht nicht live', async () => {
+    const w = world();
+    const orig = w.provider.duplicateAgent.bind(w.provider);
+    w.provider.duplicateAgent = async (t, n) => {
+      const id = await orig(t, n);
+      w.provider.agents.get(id)!.privacy!.retention_days = 30;
+      return id;
+    };
+    await call(w);
+    expect(w.rows[0]).toMatchObject({ status: 'failed' });
+    expect(w.rows[0].last_error).toMatch(/retention_days=30/);
   });
 
   it('Fehler nach dem Duplizieren: failed, nächster Lauf dupliziert NICHT erneut', async () => {

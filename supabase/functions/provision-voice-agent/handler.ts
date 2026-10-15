@@ -7,7 +7,9 @@
 //      STALE_CLAIM_MS erneut) — zwei parallele Läufe bearbeiten nie dieselbe Zeile
 //   2. Soll-Zustand aus tenant_entitlements() neu bestimmen (bots.voice)
 //   3a. aktiv:  bots-Zeile sicherstellen → Vorlage duplizieren (agent_id sofort
-//       speichern) → Name/Tags/Auth/Tageslimit setzen → Evidenz → 'active'
+//       speichern) → Name/Tags/Tageslimit setzen → Read-back fail-closed
+//       (Auth an, keine Aufzeichnung, Aufbewahrung ≤ 7 Tage, Limit) →
+//       Bot an → Evidenz mit den gelesenen Werten → 'active'
 //   3b. gesperrt: bots.enabled = false → Evidenz → 'suspended'
 //   4. Fehler: 'failed' + last_error; der nächste Lauf setzt dort fort, wo der
 //      letzte aufgehört hat (bot_id / provider_agent_id bleiben erhalten).
@@ -16,7 +18,10 @@ import { EVIDENCE_HASH_METHOD, evidenceContentHash } from '../_shared/evidence-h
 import {
   MAX_PROVISION_ATTEMPTS,
   STALE_CLAIM_MS,
+  agentGuaranteeViolations,
   agentName,
+  settingsForEvidence,
+  type AgentPlatformSettings,
   dailyCallLimit,
   desiredStateFor,
   safeError,
@@ -68,17 +73,22 @@ export interface ProvisionRepo {
   appendEvidence(row: Record<string, unknown>, expectedPreviousHash: string | null): Promise<{ id: string } | 'conflict'>;
 }
 
+/**
+ * Bewusst ohne `auth` und `privacy`: beides erbt das Duplikat von der
+ * abgenommenen Vorlage. `call_limits` geht vollständig (Werte der Vorlage +
+ * neues Tageslimit), falls der Provider Unterobjekte ersetzt statt zu mergen.
+ */
 export interface AgentPatch {
   name: string;
   tags: string[];
-  platform_settings: {
-    auth: { enable_auth: true };
-    call_limits?: { daily_limit: number };
+  platform_settings?: {
+    call_limits: NonNullable<AgentPlatformSettings['call_limits']> & { daily_limit: number };
   };
 }
 
 export interface VoiceProviderClient {
   duplicateAgent(templateAgentId: string, name: string): Promise<string>;
+  getAgentSettings(agentId: string): Promise<AgentPlatformSettings>;
   updateAgent(agentId: string, patch: AgentPatch): Promise<void>;
 }
 
@@ -215,22 +225,29 @@ async function activate(row: VoiceAgentRow, ent: VoiceEntitlements, deps: Handle
   }
 
   const daily = dailyCallLimit(ent.monthlyMinutes, deps.avgCallMinutes);
+  const before = await deps.provider.getAgentSettings(agentId);
   const patch: AgentPatch = {
     name,
     tags: ['realsync', `tenant:${row.tenant_id}`],
-    platform_settings: {
-      auth: { enable_auth: true },
-      ...(daily === null ? {} : { call_limits: { daily_limit: daily } }),
-    },
+    ...(daily === null
+      ? {}
+      : { platform_settings: { call_limits: { ...(before.call_limits ?? {}), daily_limit: daily } } }),
   };
   await deps.provider.updateAgent(agentId, patch);
 
+  // Read-back: belegt wird, was beim Provider tatsächlich gilt.
+  const after = await deps.provider.getAgentSettings(agentId);
+  const violations = agentGuaranteeViolations(after, daily);
+  if (violations.length > 0) {
+    throw new Error(`agent guarantees violated: ${violations.join('; ')}`);
+  }
+
   const config = {
     name,
-    auth_enabled: true,
     daily_limit: daily,
     monthly_minutes: ent.monthlyMinutes,
     avg_call_minutes: deps.avgCallMinutes,
+    verified: settingsForEvidence(after),
   };
   await repo.setBotState(botId, true, { provider: 'elevenlabs', provider_agent_id: agentId });
 

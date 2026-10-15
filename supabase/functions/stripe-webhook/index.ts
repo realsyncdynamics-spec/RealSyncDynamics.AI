@@ -17,6 +17,12 @@ import {
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
 import { invoiceSubscriptionId, type InvoiceSubscriptionShape } from '../_shared/stripe-invoice.ts';
+import {
+  desiredStateFor,
+  planEnqueue,
+  readVoiceEntitlements,
+  type ExistingVoiceAgent,
+} from '../_shared/voice-agent-provisioning.ts';
 
 // Re-export for unit tests that import pickPlanItem from this module.
 export { pickPlanItem };
@@ -125,6 +131,9 @@ Deno.serve(async (req) => {
         // verspätetes Ereignis einer abgelösten Subscription (siehe
         // syncSubscription) darf auch die Add-ons nicht anfassen.
         if (applied) await syncAddonItems(admin, sub);
+        // Nach Plan- und Add-on-Sync, damit tenant_entitlements() den neuen
+        // Stand sieht (bots.voice kommt aus Plan oder Add-on „Voice“).
+        if (applied) await enqueueVoiceAgent(admin, sub, event.id);
         if (event.type === 'customer.subscription.created') {
           await recordTrialEventIfApplicable(admin, event, 'trial_started');
         }
@@ -322,6 +331,85 @@ async function syncAddonItems(admin: SupabaseClient, sub: Stripe.Subscription): 
       if (e2) throw new Error(`entitlement_grants: ${e2.message}`);
     }
   }
+}
+
+/**
+ * Voice-Agent einreihen (public.tenant_voice_agents, Migration 20261015090000).
+ *
+ * Soll-Zustand allein aus `bots.voice` in tenant_entitlements(). Nur ein
+ * echter Wechsel (oder eine gescheiterte Zeile) setzt `status = 'pending'`
+ * und stößt provision-voice-agent im Hintergrund an. Die Arbeit beim
+ * Provider läuft dort — der Webhook bleibt schnell; geht der Anstoß verloren,
+ * holt der Reconcile-Lauf die Zeile ab.
+ *
+ * Fehlt die Tabelle (Function vor Migration deployt), darf der Abo-Sync
+ * nicht scheitern: Warnung statt Stripe-Retry. Jeder andere DB-Fehler wirft,
+ * damit Stripe erneut zustellt (alle Schritte sind idempotent).
+ */
+async function enqueueVoiceAgent(admin: SupabaseClient, sub: Stripe.Subscription, eventId: string): Promise<void> {
+  const customer = sub.customer;
+  const tenantId =
+    (sub.metadata && sub.metadata.tenant_id) ||
+    (typeof customer === 'object' && customer && 'metadata' in customer ? customer.metadata?.tenant_id : undefined);
+  if (!tenantId) return;
+
+  const { data: entRows, error: entErr } = await admin.rpc('tenant_entitlements', { p_tenant_id: tenantId });
+  if (entErr) throw new Error(`tenant_entitlements: ${entErr.message}`);
+  const desired = desiredStateFor(readVoiceEntitlements((entRows ?? []) as { key: string; value: number }[]));
+
+  const { data: existing, error: readErr } = await admin
+    .from('tenant_voice_agents')
+    .select('id, desired_state, status')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (readErr) {
+    if (isMissingRelation(readErr)) {
+      console.warn(`[stripe-webhook] tenant_voice_agents fehlt — Voice-Agent für ${tenantId} nicht eingereiht`);
+      return;
+    }
+    throw new Error(`tenant_voice_agents: ${readErr.message}`);
+  }
+
+  const plan = planEnqueue(existing as ExistingVoiceAgent | null, desired);
+  if (plan.action === 'none') return;
+
+  const fields = {
+    desired_state: plan.desired,
+    status: 'pending',
+    attempts: 0,
+    last_error: null,
+    claimed_at: null,
+    stripe_subscription_id: sub.id,
+    last_stripe_event_id: eventId,
+  };
+  const { error: writeErr } = plan.action === 'insert'
+    ? await admin.from('tenant_voice_agents').upsert({ tenant_id: tenantId, ...fields }, { onConflict: 'tenant_id' })
+    : await admin.from('tenant_voice_agents').update(fields).eq('id', (existing as { id: string }).id);
+  if (writeErr) throw new Error(`tenant_voice_agents: ${writeErr.message}`);
+
+  const key = await getSecret('VOICE_PROVISION_KEY', 'voice_provision_key');
+  if (!key) {
+    console.warn(`[stripe-webhook] VOICE_PROVISION_KEY fehlt — ${tenantId} wartet auf den Reconcile-Lauf`);
+    return;
+  }
+  const trigger = fetch(`${SUPABASE_URL}/functions/v1/provision-voice-agent`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ tenant_id: tenantId }),
+  }).then(async (r) => {
+    if (!r.ok) console.error(`[stripe-webhook] provision-voice-agent ${tenantId}: ${r.status} ${await r.text().catch(() => '')}`);
+  }).catch((e) => {
+    console.error(`[stripe-webhook] provision-voice-agent ${tenantId} threw: ${(e as Error).message}`);
+  });
+  // @ts-ignore — EdgeRuntime is provided by Supabase Edge Runtime
+  if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(trigger);
+  }
+}
+
+function isMissingRelation(err: { code?: string; message?: string }): boolean {
+  return err.code === '42P01' || err.code === 'PGRST205' || /does not exist|schema cache/i.test(err.message ?? '');
 }
 
 // deno-lint-ignore no-explicit-any

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import '../../styles/realsync-premium-foundation.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -251,7 +252,7 @@ export function SetupAssistant() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 px-4"
+      className="rs-premium rs-premium--setup min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 px-4"
       style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
       <div className="w-full max-w-2xl">

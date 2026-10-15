@@ -7,6 +7,7 @@
 // Basis-URL: EU-Datenresidenz per Default. Abweichung nur bewusst über
 // ELEVENLABS_API_BASE (z. B. wenn der Workspace nicht EU-residiert ist).
 
+import type { AgentPlatformSettings } from '../_shared/voice-agent-provisioning.ts';
 import type { AgentPatch, VoiceProviderClient } from './handler.ts';
 
 export const ELEVENLABS_EU_BASE = 'https://api.eu.residency.elevenlabs.io';
@@ -27,11 +28,11 @@ export function createElevenLabsClient(
 ): VoiceProviderClient {
   const root = base.replace(/\/+$/, '');
 
-  async function call(method: 'POST' | 'PATCH', path: string, body: unknown): Promise<unknown> {
+  async function call(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<unknown> {
     const res = await fetchImpl(`${root}${path}`, {
       method,
       headers: { 'xi-api-key': apiKey, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     const text = await res.text();
@@ -54,6 +55,11 @@ export function createElevenLabsClient(
         throw new ElevenLabsError('elevenlabs duplicate: response without agent_id', 502);
       }
       return agentId;
+    },
+    async getAgentSettings(agentId) {
+      const data = await call('GET', `/v1/convai/agents/${encodeURIComponent(agentId)}`);
+      const settings = (data as { platform_settings?: unknown }).platform_settings;
+      return (settings && typeof settings === 'object' ? settings : {}) as AgentPlatformSettings;
     },
     async updateAgent(agentId, patch: AgentPatch) {
       await call('PATCH', `/v1/convai/agents/${encodeURIComponent(agentId)}`, patch);

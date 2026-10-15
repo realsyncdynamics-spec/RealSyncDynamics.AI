@@ -8,10 +8,11 @@
 > verbessern — aber nur innerhalb eines vorab erklärten Änderungsraums.
 
 **Warum erst nach AP-3:** Schritt 6 (§2) übernimmt Änderungen „mit neuer
-Version“. `governance_policies` hat heute keine eigene Version oder Historie;
-eine Änderung überschreibt die Zeile (§4). Ohne Policy-SSoT mit Versionen gibt es
-nichts, gegen das ein Vorschlag als Diff formuliert, simuliert und belegt werden
-kann. AP-3 steht nur als Name in `.claude/os-funnel/PLAN.md` §4 (Reihenfolge
+Version“. `governance_policies` hat keine Versionsnummer; es gibt nur eine
+Nachher-Historie (`governance_policy_versions` sichert den alten Stand bei
+UPDATE/DELETE, nicht bei Anlage, und kein Code liest sie, §4). Ohne Policy-SSoT
+mit adressierbaren Versionen gibt es nichts, gegen das ein Vorschlag als Diff
+formuliert, simuliert und belegt werden kann. AP-3 steht nur als Name in `.claude/os-funnel/PLAN.md` §4 (Reihenfolge
 AP-1a → … → AP-3); ein Auftragstext liegt im Repo nicht vor (offener Punkt O6).
 Vorarbeit im Bestand: `20260928150000_tenant_boot_provisioning.sql` ergänzt
 Herkunft (`source_pack_id`, `source_template_id`, `template_version`) und
@@ -38,7 +39,7 @@ Verification → Evidence`, siehe `.claude/os-funnel/PLAN.md` §2).
 | 3 | Einordnung gegen den Änderungsraum (§3) | `in_scope` · `substantial_modification_candidate` | ja | fehlt |
 | 4 | Simulation gegen historische Entscheidungen (Shadow) | Verdikt-Differenz | ja | teilweise: Live-Vergleich und versionierte Snapshots vorhanden, Replay fehlt |
 | 5 | Governance-Gate | Freigabe über `governance_approvals` bzw. `pdp_approval_gates` | **nie** automatisch | vorhanden, mit Lücken |
-| 6 | Übernahme mit neuer Version | versionierte Policy/Config | nur nach 5 | teilweise: nur `policy_snapshots` versioniert |
+| 6 | Übernahme mit neuer Version | versionierte Policy/Config | nur nach 5 | teilweise: `policy_snapshots` versioniert, `governance_policy_versions` nur Historie |
 | 7 | Evidence | unveränderlicher Eintrag inkl. Vorschlag, Simulation, Freigeber | ja | vorhanden: `ai_evidence_events` |
 
 ## 3. Änderungsraum und „wesentliche Veränderung“
@@ -88,7 +89,8 @@ ELI `http://data.europa.eu/eli/reg/2024/1689/oj`. Die folgenden Normen sind
 - Wer im Produkt „Anbieter“ eines gesteuerten KI-Systems ist, ist offen (E-GE4).
 
 *Prüfhinweis:* Der amtliche deutsche Wortlaut auf EUR-Lex war bei der WP6-Prüfung
-nicht abrufbar; die Wiedergabe oben ist nicht gegen ihn verifiziert. Laut
+nicht abrufbar; die Wiedergabe oben ist nicht gegen ihn verifiziert. Ein
+wörtliches Zitat (EUR-Lex-Abruf 2026-10-10) steht in PR #1854. Laut
 buzer.de wurde Art. 43 durch die **Verordnung (EU) 2026/1744** (ABl. vom
 24.7.2026) geändert; ob Abs. 4, Art. 3 Nr. 23 oder Art. 25 betroffen sind, ist
 offen (O7). *Rechtliche Einordnung vor Umsetzung mit einer fachkundigen Stelle
@@ -100,11 +102,12 @@ prüfen.*
 |---|---|---|---|
 | Freigaben | vorhanden, mit Lücken | `supabase/migrations/20260513200000_governance_approvals.sql` · `supabase/functions/governance-approvals/index.ts` | `status` ∈ `pending/approved/rejected/expired`; auflösen nur `owner`/`admin` über `memberships`. Hängt an `event_id` (NOT NULL, UNIQUE) → ein Vorschlag braucht ein `governance_events`-Ereignis. Kein Ablaufjob für `expires_at` (PLAN §4, WP4-Folgepunkte). Keine Spalte für den Antragsteller, also keine Sperre gegen Selbstfreigabe. |
 | Rollen-Gates | vorhanden (in der Erstfassung nicht genannt) | `supabase/migrations/20260824120000_org_subject_model_approval_gates.sql` · `governance-approvals` (`gate_approve`/`gate_reject`) | `pdp_approval_gates` mit `approver_role` (Rolle aus `role_bindings`), `requested_by`/`resolved_by`, setzt `expired` beim Auflösen, schreibt Evidence in `ai_evidence_events`. Naheliegender Träger für Schritt 5 und E-GE2. |
-| Shadow-Beobachtung | vorhanden — **Erstfassung korrigiert** | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` | `pdp_shadow_log` hat **keine** Spalte `observation_kind`; die zitierte „Entscheidung 2026-09-21“ ist im Repo nicht auffindbar. Tatsächlich: `source` (`telemetry-ai-event`/`governance-ingest`/`ai-gateway`), `legacy_status`, `v2_status`, `diverged`, `snapshot_version`, `detail`. Zweck: Live-Vergleich Alt-Engine ↔ PDP v2, **kein** Replay historischer Entscheidungen. Schreiben nur `service_role`, Mandant liest. |
+| Shadow-Beobachtung | vorhanden — **Erstfassung korrigiert** | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` · `20260904120000_pdp_shadow_log_channels.sql` (erweitert `source`) | `pdp_shadow_log` hat **keine** Spalte `observation_kind`; die zitierte „Entscheidung 2026-09-21“ ist im Repo nicht auffindbar. Tatsächlich: `source` (Ingest-Kanäle), `legacy_status`, `v2_status`, `diverged`, `snapshot_version`, `detail`. Zweck: Live-Vergleich Alt-Engine ↔ PDP v2, **kein** Replay historischer Entscheidungen. Schreiben nur `service_role`, Mandant liest. |
 | Policy-Snapshots | vorhanden (in der Erstfassung nicht genannt) | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` | `policy_snapshots`: `UNIQUE (tenant_id, version)`, `compiled` jsonb, entsteht nur serverseitig (`governance-decide`). Einzige versionierte Policy-Grundlage — Basis für Schritt 4 und 6. |
-| Policy-Speicher | vorhanden, **ohne Versionierung** | `supabase/migrations/20260512000000_governance_events.sql` · Ergänzungen `20260515600000_multi_environment.sql` (`environment`), `20260928150000_tenant_boot_provisioning.sql` (Herkunft, `mode`) | Keine eigene Versions- oder Historienspalte; `updated_at`-Trigger, Änderung in place. `template_version` beschreibt die Vorlage, nicht die Mandanten-Policy. SSoT-Ausbau = AP-3. |
-| Evidence | vorhanden — **Erstfassung korrigiert** | `supabase/migrations/20260510_ai_governance_core.sql` (Hash-Kette `event_hash`/`prev_hash`/`chain_index`) · `20260901090000_evidence_append_only_anchors.sql` (UPDATE/DELETE gesperrt) | Träger ist `ai_evidence_events`. Die Erstfassung nannte `audit_evidence` (`20260507100000_audit_evidence.sql`, `20260906000000_reconcile_audit_evidence.sql`): zwar append-only, aber für Website-Scan-Belege (`type` ∈ screenshot, request_log, cookie_dump, dom_snapshot, script_reference, response_header; `audit_id` NOT NULL) — für Governance-Entscheidungen ungeeignet. |
-| Governance-Evidence-Kette | vorhanden, mit Lücke | `supabase/migrations/20260512000000_governance_events.sql` (`governance_evidence`) · `20260928140100_gate2_evidence_append_rpc.sql` (`append_governance_evidence`) | `governance-approvals` schreibt die Freigabe-Evidence direkt mit `content_hash`/`previous_hash` = `null`, also **außerhalb** der Kette — obwohl der Kopfkommentar der Approvals-Migration „hash-chained“ sagt (O1). |
+| Policy-Speicher | vorhanden, **ohne Versionsnummer** | `supabase/migrations/20260512000000_governance_events.sql` · Ergänzungen `20260515600000_multi_environment.sql` (`environment`), `20260928150000_tenant_boot_provisioning.sql` (Herkunft, `mode`) | Änderung in place (`updated_at`-Trigger). `template_version` beschreibt die Vorlage, nicht die Mandanten-Policy. SSoT-Ausbau = AP-3. |
+| Policy-Historie | teilweise vorhanden | `supabase/migrations/20260620000004_governance_policy_versions.sql` | `governance_policy_versions`: SECURITY-DEFINER-Trigger sichert den **alten** Stand bei UPDATE/DELETE von `governance_policies` (und `governance_assets`); Mandant liest, schreibt nicht. Fehlt: Eintrag bei Anlage, Versionsnummer, lesender Code (kein Treffer in `src/`, `shared/`, `supabase/functions/`). |
+| Evidence | vorhanden — **Erstfassung korrigiert** | `supabase/migrations/20260510_ai_governance_core.sql` (Hash-Kette `event_hash`/`prev_hash`/`chain_index`) · `20260901090000_evidence_append_only_anchors.sql` (UPDATE/DELETE gesperrt) | Träger ist `ai_evidence_events`. Die Erstfassung nannte `audit_evidence` (`20260507100000_audit_evidence.sql`, `20260906000000_reconcile_audit_evidence.sql`): zwar append-only, aber für Website-Scan-Belege (`type` ∈ screenshot, request_log, cookie_dump, dom_snapshot, script_reference, response_header; `audit_id` NOT NULL) — für Governance-Entscheidungen ungeeignet. Ebenfalls per Trigger unveränderlich: `evidence_snapshots` (`20260701140000_evidence_vault_advanced.sql`, `prev_hash`-verkettet, Retention) — Ablage des Evidence Vault, nicht der Entscheidungs-Pfad. |
+| Governance-Evidence-Kette | vorhanden, mit Lücke | `supabase/migrations/20260512000000_governance_events.sql` (`governance_evidence`) · `20260928140100_gate2_evidence_append_rpc.sql` (`append_governance_evidence`) | Keine Sperre gegen UPDATE/DELETE gefunden. `governance-approvals` schreibt die Freigabe-Evidence direkt mit `content_hash`/`previous_hash` = `null`, also **außerhalb** der Kette — obwohl der Kopfkommentar der Approvals-Migration „hash-chained“ sagt; laut Kopfkommentar von `20260928140100` umgeht auch `browser-execute` die RPC (O1). |
 | Signale, Vorschläge, Änderungsraum | **fehlt** | — (kein `evolution_*` im Repo) | Neu in einer späteren Umsetzung, nach AP-3. |
 
 ## 5. Was bewusst nicht gebaut wird
@@ -130,7 +133,7 @@ Nicht Teil von WP6 (kein Code), je eigener PR mit eigener Freigabe:
 - **O1** Freigabe-Evidence aus `governance-approvals` über `append_governance_evidence` in die Kette bringen.
 - **O2** `governance_approvals` ohne Antragsteller-Spalte → keine Selbstfreigabe-Sperre (betrifft E-GE2; braucht Migration).
 - **O3** Kein Ablaufjob für `governance_approvals.expires_at`.
-- **O4** Versionierung der Mandanten-Policies (AP-3).
+- **O4** Versionierung der Mandanten-Policies (AP-3): `governance_policy_versions` um Anlage-Eintrag und Versionsnummer ergänzen oder durch eine SSoT-Version ersetzen; bisher liest kein Code die Historie.
 - **O5** Replay-Simulation gegen historische Entscheidungen fehlt (Schritt 4).
 - **O6** AP-3 hat im Repo keinen Auftragstext.
 - **O7** Amtlichen Wortlaut von Art. 3 Nr. 23, Art. 25 Abs. 1 Buchst. b und Art. 43 Abs. 4 auf EUR-Lex prüfen, Änderungen durch VO (EU) 2026/1744 einarbeiten.

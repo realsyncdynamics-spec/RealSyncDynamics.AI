@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BETA } from '../../config/beta';
 import { useBetaEnrollment, type BetaEnrollState } from '../../features/billing/useBetaEnrollment';
 
@@ -12,9 +12,16 @@ const KEY = 'rsd-beta-banner-dismissed';
  *
  * Löst außerdem die serverseitige Beta-Anmeldung aus (`useBetaEnrollment`,
  * WP-3) und meldet das Ergebnis — auch wenn der Hinweis ausgeblendet ist.
+ *
+ * Auf /app/dashboard entfällt der allgemeine Beta-Text: Die Kunden-Startansicht
+ * zeigt Testphase und Zahlungsstatus dort als eine Zeile im Fortschritt —
+ * sonst stünden Beta-, Trial- und Zahlungshinweis gleichrangig übereinander.
+ * Anmelde-Meldungen mit Neuigkeitswert erscheinen weiterhin.
  */
 export function BetaAppBanner() {
   const enrollment = useBetaEnrollment();
+  const { pathname } = useLocation();
+  const onDashboard = pathname === '/app/dashboard';
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem(KEY) === '1';
@@ -24,7 +31,7 @@ export function BetaAppBanner() {
   });
   if (!BETA.active) return null;
   const notice = enrollmentNotice(enrollment);
-  if (hidden && !notice) return null;
+  if ((hidden || onDashboard) && !notice) return null;
   const dismiss = () => {
     try {
       localStorage.setItem(KEY, '1');

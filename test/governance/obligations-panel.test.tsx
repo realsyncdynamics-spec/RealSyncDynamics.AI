@@ -16,7 +16,20 @@ const mocks = vi.hoisted(() => ({
   load: vi.fn(),
   save: vi.fn(),
   notify: vi.fn(),
+  signals: vi.fn(),
+  progress: vi.fn(),
+  setDone: vi.fn(),
 }));
+
+vi.mock('../../src/features/governance/dashboard/obligationProgress', async (orig) => {
+  const actual = await orig<typeof import('../../src/features/governance/dashboard/obligationProgress')>();
+  return {
+    ...actual,
+    loadObligationSignals: mocks.signals,
+    loadObligationProgress: mocks.progress,
+    setObligationDone: mocks.setDone,
+  };
+});
 
 vi.mock('../../src/features/activation/activationApi', async (orig) => {
   const actual = await orig<typeof import('../../src/features/activation/activationApi')>();
@@ -38,8 +51,19 @@ import {
 } from '../../src/features/governance/dashboard/obligationsFromSetup';
 import { ObligationsPanel } from '../../src/features/governance/dashboard/ObligationsPanel';
 import { createEmptyAiSetup } from '../../src/features/activation/aiSetupCatalog';
+import {
+  obligationStatus,
+  type ObligationSignals,
+} from '../../src/features/governance/dashboard/obligationProgress';
 
 const ids = (list: { id: string }[]) => list.map((o) => o.id);
+
+const SIGNALS_EMPTY: ObligationSignals = {
+  aiSystems: { ok: true, value: 0 },
+  vendors: { ok: true, value: [] },
+  dpias: { ok: true, value: { total: 0, open: 0 } },
+};
+
 
 describe('deriveObligations', () => {
   it('ohne Angaben oder mit „keine KI" gibt es keine Pflicht', () => {
@@ -136,6 +160,11 @@ describe('ObligationsPanel', () => {
     mocks.load.mockReset();
     mocks.save.mockReset();
     mocks.notify.mockReset();
+    mocks.signals.mockReset();
+    mocks.progress.mockReset();
+    mocks.setDone.mockReset();
+    mocks.signals.mockResolvedValue(SIGNALS_EMPTY);
+    mocks.progress.mockResolvedValue({});
   });
 
   it('Fehler beim Lesen → Hinweis, keine Schnellauswahl', async () => {
@@ -189,6 +218,35 @@ describe('ObligationsPanel', () => {
     expect(screen.queryByTestId('obligations-list')).toBeNull();
   });
 
+  it('Fortschritt: automatisch erkannt + von Hand abhaken', async () => {
+    mocks.load.mockResolvedValue(record({
+      ...createEmptyAiSetup(), aiSystems: ['openai'], botsAgents: [], dataClasses: [],
+    }));
+    mocks.signals.mockResolvedValue({ ...SIGNALS_EMPTY, aiSystems: { ok: true, value: 2 } });
+    mocks.setDone.mockResolvedValue({ ai_literacy: { doneAt: '2026-10-15T10:00:00.000Z' } });
+    renderPanel();
+    expect(await screen.findByText('1 von 2 erledigt')).toBeTruthy();
+    expect(screen.getByTestId('obligation-status-ai_inventory').textContent).toContain('2 KI-Systeme');
+    // Inventar ist automatisch erkannt → kein Haken; nur KI-Kompetenz ist abhakbar
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes).toHaveLength(1);
+    fireEvent.click(boxes[0]);
+    await waitFor(() => expect(mocks.setDone).toHaveBeenCalledWith('t-1', 'ai_literacy', true));
+    expect(await screen.findByText('2 von 2 erledigt')).toBeTruthy();
+    expect(screen.getByTestId('obligation-status-ai_literacy').textContent).toContain('15.10.2026');
+  });
+
+  it('Fortschritt nicht lesbar → kein Haken möglich, Status „nicht lesbar"', async () => {
+    mocks.load.mockResolvedValue(record({
+      ...createEmptyAiSetup(), aiSystems: ['local'], botsAgents: [], dataClasses: [],
+    }));
+    mocks.progress.mockRejectedValue(new Error('rls'));
+    renderPanel();
+    await waitFor(() =>
+      expect(screen.getByTestId('obligation-status-ai_literacy').textContent).toContain('nicht lesbar'));
+    expect((screen.getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
+  });
+
   it('gespeicherte Angaben → Pflichtenliste mit Zählung und Links', async () => {
     mocks.load.mockResolvedValue(record({
       ...createEmptyAiSetup(), aiSystems: ['openai'], botsAgents: ['website_chat'], dataClasses: ['customer'],
@@ -197,5 +255,59 @@ describe('ObligationsPanel', () => {
     expect(await screen.findByText(/5 Pflichten/)).toBeTruthy();
     expect(screen.getByRole('link', { name: /Anbieter erfassen/ }).getAttribute('href')).toBe('/app/vendors');
     expect(screen.queryByRole('button', { name: /Angaben speichern/ })).toBeNull();
+  });
+});
+
+
+describe('obligationStatus', () => {
+  const [, , , avv] = deriveObligations({
+    aiSystems: ['openai', 'microsoft_copilot'], botsAgents: [], dataClasses: ['customer'],
+  });
+  const ext = ['openai', 'microsoft_copilot'];
+
+  it('AVV: Anbieter fehlt / AVV fehlt / alles da', () => {
+    expect(avv.id).toBe('processor_contract');
+    expect(obligationStatus(avv, SIGNALS_EMPTY, {}, ext).state).toBe('open');
+
+    const partial = obligationStatus(avv, {
+      ...SIGNALS_EMPTY,
+      vendors: { ok: true, value: [
+        { name: 'OpenAI Ireland Ltd.', legal_name: null, dpa_status: 'signed' },
+        { name: 'Microsoft 365', legal_name: null, dpa_status: 'requested' },
+      ] },
+    }, {}, ext);
+    expect(partial.state).toBe('partial');
+    expect(partial.detail).toContain('AVV fehlt: Microsoft');
+
+    const done = obligationStatus(avv, {
+      ...SIGNALS_EMPTY,
+      vendors: { ok: true, value: [
+        { name: 'ChatGPT', legal_name: 'OpenAI OpCo', dpa_status: 'signed' },
+        { name: 'Azure', legal_name: null, dpa_status: 'not_required' },
+      ] },
+    }, {}, ext);
+    expect(done.state).toBe('done');
+  });
+
+  it('Quelle fehlgeschlagen → unknown, nie offen oder erledigt', () => {
+    expect(obligationStatus(avv, { ...SIGNALS_EMPTY, vendors: { ok: false } }, {}, ext).state)
+      .toBe('unknown');
+  });
+
+  it('DSFA: keine / in Bearbeitung / abgeschlossen', () => {
+    const dpia = deriveObligations({ aiSystems: ['local'], botsAgents: [], dataClasses: ['health'] })
+      .find((o) => o.id === 'dpia_health')!;
+    const at = (total: number, open: number) =>
+      obligationStatus(dpia, { ...SIGNALS_EMPTY, dpias: { ok: true, value: { total, open } } }, {}, []).state;
+    expect(at(0, 0)).toBe('open');
+    expect(at(2, 1)).toBe('partial');
+    expect(at(2, 0)).toBe('done');
+  });
+
+  it('manuelle Pflicht: markiert / offen / Fortschritt nicht lesbar', () => {
+    const [lit] = deriveObligations({ aiSystems: ['local'], botsAgents: [], dataClasses: [] });
+    expect(obligationStatus(lit, null, { ai_literacy: { doneAt: '2026-10-01T08:00:00Z' } }, []).state).toBe('done');
+    expect(obligationStatus(lit, null, {}, []).state).toBe('open');
+    expect(obligationStatus(lit, null, null, []).state).toBe('unknown');
   });
 });

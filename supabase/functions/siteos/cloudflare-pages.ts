@@ -157,6 +157,47 @@ export async function getPagesDeployment(args: {
 }
 
 /**
+ * Point production back at an earlier production deployment. Cloudflare
+ * serves the stored deployment again; nothing is uploaded or rebuilt.
+ */
+export async function rollbackPagesDeployment(args: {
+  accountId: string;
+  apiToken: string;
+  projectName: string;
+  deploymentId: string;
+  fetchImpl?: typeof fetch;
+}): Promise<PagesDeploymentRef> {
+  const fetchImpl = args.fetchImpl ?? fetch;
+  requireCredentials(args.accountId, args.apiToken);
+  const deployment = await cfRequest<PagesDeploymentApi>(
+    fetchImpl,
+    `/accounts/${encodeURIComponent(args.accountId)}/pages/projects/${encodeURIComponent(args.projectName)}/deployments/${encodeURIComponent(args.deploymentId)}/rollback`,
+    args.apiToken,
+    { method: 'POST' },
+  );
+  if (!deployment || !deployment.id || !deployment.url) {
+    throw new CloudflarePagesError(
+      502,
+      'CLOUDFLARE_BAD_RESPONSE',
+      'Cloudflare rollback response lacked id/url',
+    );
+  }
+  if (deployment.environment !== 'production') {
+    throw new CloudflarePagesError(
+      502,
+      'PRODUCTION_NOT_CONFIRMED',
+      'Cloudflare did not confirm the rollback as production',
+    );
+  }
+  return {
+    id: deployment.id,
+    url: deployment.url,
+    environment: deployment.environment,
+    branch: deployment.deployment_trigger?.metadata?.branch ?? null,
+  };
+}
+
+/**
  * Deploy a governed release to a preview branch only.
  * Can create the Direct Upload project when it does not exist yet.
  */

@@ -11,6 +11,7 @@
 //   POST /functions/v1/siteos/publish-export   ausdrückliches GO → geprüftes Bündel (kein Upload)
 //   POST /functions/v1/siteos/publish-preview  frische Gate-Prüfung → Cloudflare Preview (nie Production)
 //   POST /functions/v1/siteos/publish-production bestätigte reale Preview + GO → Production
+//   POST /functions/v1/siteos/publish-rollback   Production → vorheriger Live-Stand (Owner/Admin)
 //   POST /functions/v1/siteos/build-anon       Beschreibung -> Blueprint, ohne Konto
 //   POST /functions/v1/siteos/refine-anon      Anweisung -> neue Version, ohne Konto
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
@@ -53,6 +54,7 @@ import { handle as projectBind } from './handlers/project-bind.ts';
 import { handle as publishGate, handleApprove as publishApprove, handleExport as publishExport } from './handlers/publish-gate.ts';
 import { handle as publishPreview } from './handlers/publish-preview.ts';
 import { handle as publishProduction } from './handlers/publish-production.ts';
+import { handle as publishRollback } from './handlers/publish-rollback.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
 
@@ -72,6 +74,7 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'publish-export': publishExport,
   'publish-preview': publishPreview,
   'publish-production': publishProduction,
+  'publish-rollback': publishRollback,
   // Anonymer Pfad: bauen und verfeinern ohne Konto, uebernehmen mit.
   'build-anon': handleBuildAnon,
   'refine-anon': handleRefineAnon,

@@ -91,27 +91,49 @@ const sorted = (m: Map<string, CostBucket>) =>
     .sort((a, b) => b.amountUsd - a.amountUsd);
 
 const ROW_CAP = 20_000;
+/** PostgREST liefert je Anfrage höchstens `max_rows` (Supabase-Standard 1000). */
+const PAGE_SIZE = 1_000;
+
+/**
+ * Liest seitenweise bis ROW_CAP. Ohne Paging kämen still nur die ersten 1000
+ * Zeilen an — die Summen wären zu niedrig, ohne dass es jemand sieht.
+ */
+async function readPaged(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>,
+): Promise<{ data: Array<Record<string, unknown>>; error: unknown; truncated: boolean }> {
+  const rows: Array<Record<string, unknown>> = [];
+  for (let from = 0; from < ROW_CAP; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+    if (error) return { data: rows, error, truncated: false };
+    const chunk = (data ?? []) as Array<Record<string, unknown>>;
+    rows.push(...chunk);
+    if (chunk.length < PAGE_SIZE) return { data: rows, error: null, truncated: false };
+  }
+  return { data: rows, error: null, truncated: true };
+}
 
 async function costs(ctx: OpContext): Promise<OpResult> {
   const days = 30;
   const since = new Date(ctx.now.getTime() - days * 86_400_000).toISOString();
 
-  const ledger = await ctx.admin
+  const ledger = await readPaged((from, to) => ctx.admin
     .from('tenant_cost_ledger')
     .select('vendor, model_ref, cost_kind, amount_usd')
     .gte('occurred_at', since)
     .eq('is_simulated', false)
-    .limit(ROW_CAP);
-  const runs = await ctx.admin
+    .order('id', { ascending: true })
+    .range(from, to));
+  const runs = await readPaged((from, to) => ctx.admin
     .from('ai_tool_runs')
     .select('tool_key, input_tokens, output_tokens, cost_usd, status')
     .gte('created_at', since)
-    .limit(ROW_CAP);
+    .order('id', { ascending: true })
+    .range(from, to));
 
   const byVendor = new Map<string, CostBucket>();
   const byModel = new Map<string, CostBucket>();
   const byKind = new Map<string, CostBucket>();
-  for (const r of (ledger.data ?? []) as Array<Record<string, unknown>>) {
+  for (const r of ledger.data) {
     const amount = Number(r.amount_usd);
     addTo(byVendor, String(r.vendor ?? 'unbekannt'), amount);
     addTo(byModel, String(r.model_ref ?? 'unbekannt'), amount);
@@ -121,7 +143,7 @@ async function costs(ctx: OpContext): Promise<OpResult> {
   let inputTokens = 0;
   let outputTokens = 0;
   let errors = 0;
-  for (const r of (runs.data ?? []) as Array<Record<string, unknown>>) {
+  for (const r of runs.data) {
     addTo(byTool, String(r.tool_key), Number(r.cost_usd));
     inputTokens += Number(r.input_tokens) || 0;
     outputTokens += Number(r.output_tokens) || 0;
@@ -137,8 +159,8 @@ async function costs(ctx: OpContext): Promise<OpResult> {
         ? { available: false, error: 'tenant_cost_ledger nicht lesbar' }
         : {
           available: true,
-          rows: (ledger.data ?? []).length,
-          truncated: (ledger.data ?? []).length >= ROW_CAP,
+          rows: ledger.data.length,
+          truncated: ledger.truncated,
           totalUsd: sorted(byVendor).reduce((s, b) => s + b.amountUsd, 0),
           byVendor: sorted(byVendor),
           byModel: sorted(byModel).slice(0, 15),
@@ -148,8 +170,8 @@ async function costs(ctx: OpContext): Promise<OpResult> {
         ? { available: false, error: 'ai_tool_runs nicht lesbar' }
         : {
           available: true,
-          rows: (runs.data ?? []).length,
-          truncated: (runs.data ?? []).length >= ROW_CAP,
+          rows: runs.data.length,
+          truncated: runs.truncated,
           inputTokens,
           outputTokens,
           errorRuns: errors,

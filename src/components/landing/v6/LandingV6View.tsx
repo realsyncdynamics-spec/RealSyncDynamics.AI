@@ -50,14 +50,14 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "inherit" }}>Anmelden</Link>
               </>) : null}
               <button type="button" onClick={v.toggleTheme} aria-label={v.toggleLabel} title={v.toggleLabel} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "4px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", cursor: "pointer", color: "var(--rs-fg)" }}>
-                <span style={v.sunStyle}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg></span>
-                <span style={v.moonStyle}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
+                <span style={v.sunStyle}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg></span>
+                <span style={v.moonStyle}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
               </button>
               {v.showLinks ? (<>
                 <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "var(--rs-btn)", color: "#FFFDF6", border: "1px solid var(--rs-acc)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Check starten</Link>
               </>) : null}
               {v.showBurger ? (<>
-                <button type="button" onClick={v.toggleMenu} aria-label="Menü öffnen" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+                <button type="button" onClick={v.toggleMenu} aria-label="Menü öffnen" aria-expanded={v.menuOpen} aria-controls="lv6-menu" data-lv6-menu-trigger style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
               </>) : null}
             </nav>
           </div>
@@ -72,7 +72,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <p style={{ margin: "clamp(20px,1.8vw,56px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,2vw,68px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
             <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", maxWidth: "40em", fontSize: "clamp(16px,1.2vw,40px)", lineHeight: "1.6", color: "var(--rs-fg2)", textWrap: "pretty" }}>RealSync prüft Ihre Website und Ihren KI-Einsatz nach DSGVO und EU AI Act – mit Paragraphenbezug, konkreten Maßnahmen und einem Nachweis, den Sie Datenschutzbeauftragten und Prüfern vorlegen können.</p>
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Check starten<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
             </div>
             <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
@@ -107,7 +107,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" }}>
               <p style={{ margin: "0", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Anbieter und Betreiber von KI-Systemen müssen Risiken bewerten, Kontrollen umsetzen und Konformität dokumentieren – fortlaufend, nicht einmalig. Verstöße gegen verbotene Praktiken können mit bis zu 35 Mio. € oder 7 % des weltweiten Jahresumsatzes geahndet werden.</p>
-              <button type="button" onClick={v.openClassifier} style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Eigene Risikoklasse in 3 Minuten prüfen<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></button>
+              <button type="button" onClick={v.openClassifier} style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Eigene Risikoklasse in 3 Minuten prüfen<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></button>
             </div>
           </div>
           <ol style={{ listStyle: "none", margin: "clamp(48px,4.5vw,120px) 0 0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", borderTop: "1px solid var(--rs-line)" }}>
@@ -165,11 +165,11 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
             <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
               {v.agentNo.map((a, aI) => (<Fragment key={aI}>
-                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
+                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
               </Fragment>))}
             </ul>
           </div>
-          <div aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+          <div role="group" aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
               <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
@@ -199,7 +199,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
               <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Nach dem Free Audit läuft Ihre Runtime im Command Center weiter — Rahmenwerk-Reifegrade, offene Findings, Evidence-Chain und der Agent-Intent auf einer Fläche.</p>
             </div>
-            <Link to={v.href.dashboard} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Zum Command Center<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Zum Command Center<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
           </div>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", overflow: "hidden" }}>
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", padding: "18px var(--card-p)", borderBottom: "1px solid var(--rs-line)" }}><span style={{ fontSize: "var(--fs-body)" }}>Governance Control Room · Workspace „Demo“</span><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Beispielumgebung · Demo-Daten</span></div>
@@ -235,9 +235,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Menschliche Aufsicht</span><span style={{ color: "var(--rs-fg3)" }}>Art. 14</span></li>
               <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Verzeichnis von Verarbeitungstätigkeiten</span><span style={{ color: "var(--rs-fg3)" }}>Art. 30 DSGVO</span></li>
             </ul>
-            <Link to={v.href.dashboard} style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Im Dashboard ansehen<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Im Dashboard ansehen<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
           </div>
-          <div aria-label="Beispiel Hash-Chain" style={{ display: "flex", flexDirection: "column", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
+          <div role="group" aria-label="Beispiel Hash-Chain" style={{ display: "flex", flexDirection: "column", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
             {v.chain.map((b, bI) => (<Fragment key={bI}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
                 <div style={b.cardStyle}>
@@ -307,7 +307,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 </li>
               </Fragment>))}
             </ol>
-            <aside style={{ position: "sticky", top: "120px", padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <aside aria-live="polite" style={{ position: "sticky", top: "120px", padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
               <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>IHR ERGEBNIS</span>
               {v.checkEmpty ? (<>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Beantworten Sie die Fragen – das Ergebnis erscheint hier.</p>
@@ -336,8 +336,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <h2 style={{ margin: "0", maxWidth: "18ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Pläne für die <span style={{ color: "var(--rs-acc)" }}>Governance Runtime.</span></h2>
             </div>
             {v.yearlyEnabled ? (<div role="radiogroup" aria-label="Abrechnungszeitraum" style={{ display: "flex", padding: "4px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)" }}>
-              <button type="button" onClick={v.setMonthly} style={v.cycleMonthlyStyle}>Monatlich</button>
-              <button type="button" onClick={v.setYearly} style={v.cycleYearlyStyle}>Jährlich · 2 Monate gratis</button>
+              <button type="button" role="radio" aria-checked={!v.isYearly} onClick={v.setMonthly} style={v.cycleMonthlyStyle}>Monatlich</button>
+              <button type="button" role="radio" aria-checked={v.isYearly} onClick={v.setYearly} style={v.cycleYearlyStyle}>Jährlich · 2 Monate gratis</button>
             </div>) : (<p data-testid="pricing-yearly-disabled" style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Monatlich · Jährlich demnächst</p>)}
           </div>
           <div style={{ marginTop: "clamp(48px,4.5vw,120px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,250px),1fr))", gap: "16px", alignItems: "stretch" }}>
@@ -351,7 +351,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <p style={{ margin: "-8px 0 0", minHeight: "1.4em", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{p.billingNote}</p>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>{p.desc}</p>
                 <ul style={{ listStyle: "none", margin: "0", padding: "16px 0 0", borderTop: "1px solid var(--rs-line)", display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)", flex: "1" }}>
-                  {p.features.map((f, fI) => (<Fragment key={fI}><li style={{ display: "flex", gap: "10px" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: "2px", color: "var(--rs-acc)" }}><path d="M20 6 9 17l-5-5"></path></svg><span>{f}</span></li></Fragment>))}
+                  {p.features.map((f, fI) => (<Fragment key={fI}><li style={{ display: "flex", gap: "10px" }}><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: "2px", color: "var(--rs-acc)" }}><path d="M20 6 9 17l-5-5"></path></svg><span>{f}</span></li></Fragment>))}
                 </ul>
                 <Link to={p.href} data-plan-cta={p.id} style={p.btnStyle}>{p.cta}</Link>
               </article>
@@ -369,19 +369,19 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Wo werden unsere Daten verarbeitet?<span style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Wo werden unsere Daten verarbeitet?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Datenbank und Nachweise liegen in der EU (Supabase, Frankfurt am Main). Welche KI-Anbieter eingebunden werden, legen Sie per Policy fest – alle Sub-Prozessoren sind unter <Link to="/legal/sub-processors" style={{ color: "var(--rs-acc)" }}>Sub-Prozessoren</Link> gelistet.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Welche Regelwerke deckt die Plattform ab?<span style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Welche Regelwerke deckt die Plattform ab?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>DSGVO, EU AI Act, ISO 27001 und NIS2 als Policy Packs. TISAX und DORA stehen auf der Roadmap.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst das Free Audit?<span style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst das Free Audit?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Ein kostenloser Check Ihrer Website: Cookies, Tracker und KI-Einbindung werden erfasst, Risiken mit Paragraphenbezug (DSGVO, TTDSG, EU AI Act) benannt und konkrete Hinweise gegeben – Ergebnis in unter 90 Sekunden.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Kann ich monatlich kündigen?<span style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Kann ich monatlich kündigen?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>{v.faqCancel}</p>
             </details>
           </div>
@@ -394,7 +394,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(38px,4.6vw,150px)", lineHeight: "1.05", letterSpacing: "-.02em", textWrap: "balance" }}><span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Governance statt </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Checkliste.</span></h2>
           <p style={{ margin: "0", maxWidth: "34em", fontSize: "var(--fs-lead)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.</p>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px" }}>
-            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", gap: "12px", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "0", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-lead)", boxShadow: "0 0 22px var(--rs-glow),inset 0 1px 0 rgba(255,255,255,.35)" }}>Free Audit starten<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", gap: "12px", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "0", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-lead)", boxShadow: "0 0 22px var(--rs-glow),inset 0 1px 0 rgba(255,255,255,.35)" }}>Free Audit starten<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
             <button type="button" onClick={v.goPricing} style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-lead)" }}>Preise ansehen</button>
           </div>
         </div>
@@ -427,12 +427,12 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       </footer>
 
       {v.menuOpen ? (<>
-        <div style={{ position: "fixed", inset: "0", zIndex: "60", background: "var(--rs-bg)", display: "flex", flexDirection: "column", padding: "20px", animation: "rsIn 200ms cubic-bezier(.2,.8,.2,1)" }}>
+        <div id="lv6-menu" role="dialog" aria-modal="true" aria-label="Menü" style={{ position: "fixed", inset: "0", zIndex: "60", background: "var(--rs-bg)", display: "flex", flexDirection: "column", padding: "20px", animation: "rsIn 200ms cubic-bezier(.2,.8,.2,1)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "20px", fontWeight: "500" }}>RealSyncDynamics.AI</span>
-            <button type="button" onClick={v.toggleMenu} aria-label="Menü schließen" style={{ width: "44px", height: "44px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+            <button type="button" onClick={v.toggleMenu} aria-label="Menü schließen" style={{ width: "44px", height: "44px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
-          <nav style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
+          <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkt</a>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
@@ -455,15 +455,15 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <span style={{ fontSize: "11px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-acc)" }}>{v.modalKicker}</span>
                 <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "24px" }}>{v.modalTitle}</span>
               </div>
-              <button type="button" onClick={v.closeModal} aria-label="Schließen" style={{ flex: "none", width: "40px", height: "40px", borderRadius: "8px", border: "1px solid var(--rs-line)", background: "transparent", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+              <button type="button" onClick={v.closeModal} aria-label="Schließen" style={{ flex: "none", width: "40px", height: "40px", borderRadius: "8px", border: "1px solid var(--rs-line)", background: "transparent", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
 
             <div style={{ flex: "1", overflow: "auto", padding: "24px" }}>
 
               {v.showStepper ? (<>
-                <ol style={{ listStyle: "none", margin: "0 0 28px", padding: "0", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <ol aria-label="Schritte" style={{ listStyle: "none", margin: "0 0 28px", padding: "0", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   {v.stepper.map((st, stI) => (<Fragment key={stI}>
-                    <li style={st.style}><span style={st.numStyle}>{st.num}</span>{st.label}</li>
+                    <li aria-current={st.current ? "step" : undefined} style={st.style}><span aria-hidden="true" style={st.numStyle}>{st.num}</span>{st.label}</li>
                   </Fragment>))}
                 </ol>
               </>) : null}
@@ -482,21 +482,21 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               {v.isAudit1 ? (<>
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Welche KI-Anwendungen setzen Sie ein? *</span>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: "8px" }}>
+                    <span id="lv6-uses" style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Welche KI-Anwendungen setzen Sie ein? *</span>
+                    <div role="group" aria-labelledby="lv6-uses" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: "8px" }}>
                       {v.useCases.map((u, uI) => (<Fragment key={uI}>
-                        <button type="button" onClick={u.toggle} style={u.style}><span style={u.boxStyle}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{u.label}</button>
+                        <button type="button" aria-pressed={u.on} onClick={u.toggle} style={u.style}><span aria-hidden="true" style={u.boxStyle}><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{u.label}</button>
                       </Fragment>))}
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))", gap: "20px" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Ihre Rolle *</span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>{v.roles.map((r, rI) => (<Fragment key={rI}><button type="button" onClick={r.pick} style={r.style}>{r.label}</button></Fragment>))}</div>
+                      <span id="lv6-role" style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Ihre Rolle *</span>
+                      <div role="group" aria-labelledby="lv6-role" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>{v.roles.map((r, rI) => (<Fragment key={rI}><button type="button" aria-pressed={r.on} onClick={r.pick} style={r.style}>{r.label}</button></Fragment>))}</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Anzahl KI-Systeme *</span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>{v.counts.map((r, rI) => (<Fragment key={rI}><button type="button" onClick={r.pick} style={r.style}>{r.label}</button></Fragment>))}</div>
+                      <span id="lv6-count" style={{ fontSize: "13px", fontWeight: "500", color: "var(--rs-fg2)" }}>Anzahl KI-Systeme *</span>
+                      <div role="group" aria-labelledby="lv6-count" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>{v.counts.map((r, rI) => (<Fragment key={rI}><button type="button" aria-pressed={r.on} onClick={r.pick} style={r.style}>{r.label}</button></Fragment>))}</div>
                     </div>
                   </div>
                 </div>
@@ -543,10 +543,10 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
             {v.showFooter ? (<>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", padding: "16px 24px", borderTop: "1px solid var(--rs-line)" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--rs-fg3)" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Berechnung lokal im Browser · nichts wird übertragen</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--rs-fg3)" }}><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Berechnung lokal im Browser · nichts wird übertragen</span>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {v.showBack ? (<><button type="button" onClick={v.back} style={v.ui.ghost}>Zurück</button></>) : null}
-                  <button type="button" onClick={v.next} style={v.nextStyle}>{v.nextLabel}</button>
+                  <button type="button" aria-disabled={!v.canNext} onClick={v.next} style={v.nextStyle}>{v.nextLabel}</button>
                 </div>
               </div>
             </>) : null}

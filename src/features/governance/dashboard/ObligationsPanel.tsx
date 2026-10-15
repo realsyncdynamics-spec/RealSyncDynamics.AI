@@ -14,7 +14,7 @@
  *   - Laden · Fehler („nicht lesbar", nie eine leere Liste)
  *   - Keine Angaben → Schnellauswahl mit Live-Vorschau, Speichern auf Klick
  *   - „Keine KI im Einsatz" → ehrlicher Hinweis, Link zum Ändern
- *   - Angaben vorhanden → Pflichtenliste
+ *   - Angaben vorhanden → Pflichtenliste mit Fortschritt (ObligationTracker)
  *
  * Nichts wird ausgeführt. Jede Zeile navigiert nur ins zuständige Modul.
  */
@@ -38,8 +38,9 @@ import {
 } from '../../activation/aiSetupCatalog';
 import { notifyTenantDataChanged } from '../tenantDataEvents';
 import {
-  countByKind, deriveObligations, usesAnyAi, type Obligation, type ObligationInput,
+  deriveObligations, usesAnyAi, type Obligation, type ObligationInput,
 } from './obligationsFromSetup';
+import { ObligationTracker } from './ObligationTracker';
 
 interface Props {
   activeTenantId: string | null;
@@ -159,7 +160,12 @@ export function ObligationsPanel({ activeTenantId, reloadKey }: Props) {
         )}
 
         {state.kind === 'ready' && saved && usesAnyAi(saved) && (
-          <ObligationList list={deriveObligations(saved)} editable />
+          <ObligationTracker
+            tenantId={activeTenantId}
+            setup={saved}
+            company={state.record?.organization.company ?? ''}
+            reloadKey={reloadKey}
+          />
         )}
       </div>
     </section>
@@ -273,18 +279,10 @@ function ChipGroup({ legend, options, selected, onToggle }: {
   );
 }
 
-/** Pflichtenliste. `editable` zeigt den Link zum Ändern der Angaben. */
-function ObligationList({ list, editable = false }: { list: Obligation[]; editable?: boolean }) {
-  const { duties, checks } = countByKind(list);
+/** Vorschau-Liste in der Schnellauswahl (noch nicht gespeichert). */
+function ObligationList({ list }: { list: Obligation[] }) {
   return (
-    <div className="mt-2" data-testid="obligations-list">
-      {editable && (
-        <h2 className="font-display text-lg font-semibold text-titanium-50">
-          {duties} {duties === 1 ? 'Pflicht' : 'Pflichten'}
-          {checks > 0 && <> · {checks} {checks === 1 ? 'Prüfpunkt' : 'Prüfpunkte'}</>}
-          <span className="font-sans text-sm font-normal text-titanium-400"> aus Ihren Angaben</span>
-        </h2>
-      )}
+    <div className="mt-2" data-testid="obligations-preview">
       <ul className="mt-2 divide-y divide-titanium-900">
         {list.map((o) => (
           <li key={o.id} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -306,13 +304,11 @@ function ObligationList({ list, editable = false }: { list: Obligation[]; editab
                 {o.basis}{o.since && <> · {o.since}</>} · {o.because}
               </p>
             </div>
-            <RowLink to={o.to} label={o.cta} />
           </li>
         ))}
       </ul>
       <p className="mt-2 text-[11px] text-titanium-600">
-        Regelbasiert aus Ihrer Selbstauskunft abgeleitet. Startpunkt, keine Rechtsberatung, kein Score.
-        {editable && <> <Link to="/app/activation" className="underline hover:text-titanium-400">Angaben ändern</Link></>}
+        Regelbasiert aus Ihrer Auswahl abgeleitet. Startpunkt, keine Rechtsberatung, kein Score.
       </p>
     </div>
   );

@@ -47,7 +47,7 @@ export type ObligationInput = Pick<AiSetup, 'aiSystems' | 'botsAgents' | 'dataCl
 };
 
 /** Externe Cloud-Anbieter: Daten verlassen das eigene Haus. */
-const EXTERNAL_AI_IDS = [
+export const EXTERNAL_AI_IDS = [
   'openai', 'anthropic', 'google', 'microsoft_copilot', 'xai', 'automation_make_zapier_n8n',
 ] as const;
 

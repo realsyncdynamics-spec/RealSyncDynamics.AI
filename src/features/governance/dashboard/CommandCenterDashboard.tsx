@@ -31,6 +31,7 @@ import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
+import { ObligationsPanel } from './ObligationsPanel';
 
 export function CommandCenterDashboard() {
   const { activeTenantId, tenants, loading: tenantLoading, entitlements, hasFeature } = useTenant();
@@ -125,6 +126,13 @@ export function CommandCenterDashboard() {
   return (
     <>
       <TrialBanner />
+      {/* Erster spürbarer Nutzen: Pflichten aus der Selbstauskunft (aiSetup).
+          Steht oben, damit ein frischer Mandant nicht zuerst nur Nullen sieht. */}
+      <ObligationsPanel
+        key={`obligations-${activeTenantId ?? 'no-tenant'}`}
+        activeTenantId={activeTenantId}
+        reloadKey={reloadKey}
+      />
       {/* Handoff v2 §6: Übersicht im Entwurfsraster — dieselben Cockpit-Daten
           (Score, Maßnahmen, Evidenz) plus Inventar/Policies/Connectoren. */}
       <HandoffOverview

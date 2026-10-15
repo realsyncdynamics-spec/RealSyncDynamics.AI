@@ -1,0 +1,175 @@
+/* Kunden-Startansicht (/app/dashboard) — nur --color-rs-*-Tokens, damit
+   Hell- und Dunkel-Theme der App-Shell ohne Zusatzregeln greifen.
+   Statusfarben sparsam: Cyan = Fortschritt/Aktion, Amber nur bei echtem
+   Handlungsdruck (Testphase endet), Grün nur für „eingerichtet“. */
+
+.rs-start { gap: 20px; padding-bottom: 8px; }
+
+/* Zone 1 — Hero */
+.rs-start__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--color-rs-border-strong);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-rs-primary) 14%, transparent), transparent 60%),
+    var(--color-rs-bg-1);
+}
+@media (min-width: 768px) { .rs-start__hero { padding: 28px 32px; } }
+.rs-start__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rs-start__chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-rs-border-strong);
+  color: var(--color-rs-fg-1);
+}
+.rs-start__chip--ok { border-color: var(--color-rs-success); color: var(--color-rs-success); }
+.rs-start__headline {
+  font-family: var(--font-rs-title);
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-rs-fg-0);
+  max-width: 40ch;
+}
+@media (min-width: 768px) { .rs-start__headline { font-size: 30px; } }
+.rs-start__lead { font-size: 15px; line-height: 1.55; color: var(--color-rs-fg-1); max-width: 62ch; }
+.rs-start__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 6px; }
+.rs-start__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+  background: var(--color-rs-primary);
+  transition: background 150ms ease;
+}
+.rs-start__cta:hover { background: var(--color-rs-primary-hover); }
+.rs-start__cta:focus-visible,
+.rs-start__link:focus-visible,
+.rs-start__step-link:focus-visible,
+.rs-start__more a:focus-visible,
+.rs-start__result:focus-visible {
+  outline: 2px solid var(--color-rs-cyan);
+  outline-offset: 2px;
+}
+.rs-start__link { font-size: 14px; color: var(--color-rs-fg-1); text-decoration: underline; text-underline-offset: 3px; }
+.rs-start__link:hover { color: var(--color-rs-fg-0); }
+
+/* Zone 2 + 3 — Raster: Fortschritt links, Kernbereiche rechts */
+.rs-start__grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1100px) { .rs-start__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+
+.rs-start__progress { display: flex; flex-direction: column; gap: 12px; }
+.rs-start__progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rs-start__bar { height: 6px; border-radius: 999px; background: var(--color-rs-bg-3); overflow: hidden; }
+.rs-start__bar-fill { height: 100%; border-radius: inherit; background: var(--color-rs-cyan); transition: width 300ms ease; }
+.rs-start__steps { display: flex; flex-direction: column; gap: 2px; }
+.rs-start__step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 6px; border-radius: 6px; }
+.rs-start__step--next { background: color-mix(in srgb, var(--color-rs-cyan) 10%, transparent); }
+.rs-start__step-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-rs-border-strong);
+  color: var(--color-rs-fg-3);
+}
+.rs-start__step--done .rs-start__step-icon {
+  border-color: var(--color-rs-cyan);
+  background: var(--color-rs-cyan);
+  color: var(--color-rs-bg-0);
+}
+.rs-start__step--next .rs-start__step-icon { border-color: var(--color-rs-cyan); color: var(--color-rs-cyan); }
+.rs-start__step-label { display: block; font-size: 14px; color: var(--color-rs-fg-0); }
+.rs-start__step--done .rs-start__step-label { color: var(--color-rs-fg-2); }
+.rs-start__step-benefit { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--color-rs-fg-2); }
+.rs-start__badge {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--color-rs-cyan);
+  border: 1px solid color-mix(in srgb, var(--color-rs-cyan) 50%, transparent);
+}
+.rs-start__step-link {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-rs-cyan);
+}
+.rs-start__step-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.rs-start__account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-rs-border);
+  font-size: 13px;
+  color: var(--color-rs-fg-2);
+}
+.rs-start__account--attention { color: var(--color-rs-warning); }
+
+.rs-start__core { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .rs-start__core { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .rs-start__core { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1400px) { .rs-start__core { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rs-start__tile { display: flex; flex-direction: column; gap: 6px; }
+.rs-start__tile-state { font-size: 14px; color: var(--color-rs-fg-0); }
+.rs-start__tile-cta { align-self: flex-start; margin-top: auto; padding-top: 6px; }
+
+/* Zone 4 — Ergebnisse */
+.rs-start__results { display: flex; flex-direction: column; gap: 10px; }
+.rs-start__results-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  font-size: 14px;
+  color: var(--color-rs-fg-1);
+}
+.rs-start__results-list { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .rs-start__results-list { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.rs-start__result { display: flex; flex-direction: column; gap: 4px; height: 100%; }
+.rs-start__result:hover { border-color: var(--color-rs-border-strong); }
+.rs-start__result-value { font-size: 15px; font-weight: 600; color: var(--color-rs-fg-0); }
+
+/* Zone 5 — Weitere Module */
+.rs-start__more { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.rs-start__more ul { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.rs-start__more a { font-size: 13px; color: var(--color-rs-fg-1); }
+.rs-start__more a:hover { color: var(--color-rs-cyan); }
+
+/* Detailansicht — bestehendes Cockpit, nachgelagert */
+.rs-start-details { border-top: 1px solid var(--color-rs-border); }
+.rs-start-details > summary {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-rs-fg-1);
+  list-style-position: inside;
+}
+@media (min-width: 1024px) { .rs-start-details > summary { padding: 16px 24px; } }
+.rs-start-details > summary:hover { color: var(--color-rs-fg-0); }
+.rs-start-details > summary:focus-visible { outline: 2px solid var(--color-rs-cyan); outline-offset: -2px; }
+.rs-start-details__hint { display: block; margin-top: 2px; font-weight: 400; font-size: 12.5px; color: var(--color-rs-fg-2); }

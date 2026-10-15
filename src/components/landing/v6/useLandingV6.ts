@@ -546,10 +546,13 @@ export function useLandingV6() {
     beta: { active: BETA.active, endsShort: BETA.endsLabel },
     href: {
       audit: `/audit?source=${SOURCE}`,
+      // Eigene Quelle, damit der Trichter Check → Scan messbar ist.
+      auditCheck: `/audit?source=${SOURCE}-check`,
       login: '/login',
       dashboard: '/app/dashboard',
       enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
+      betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },
     goPricing,
     stages: STAGES,

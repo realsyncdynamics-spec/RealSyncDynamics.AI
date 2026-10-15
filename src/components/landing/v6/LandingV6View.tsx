@@ -76,6 +76,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
             </div>
             <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
+            {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: alle Funktionen kostenlos testen bis {v.beta.endsShort}</Link></p>) : null}
           </div>
         </div>
 
@@ -157,40 +158,6 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       </section>
 
 
-      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
-          <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
-            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
-            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
-                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
-              </Fragment>))}
-            </ul>
-          </div>
-          <div aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
-            </div>
-            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
-            <div style={{ padding: "var(--card-p)", border: "2px solid var(--rs-acc)", borderRadius: "16px", background: "var(--rs-bg)", boxShadow: "0 0 28px var(--rs-glow)", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}><span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>POLICY AUTHORITY</span><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></div>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {v.gateChecks.map((g, gI) => (<Fragment key={gI}><span style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>{g}</span></Fragment>))}
-              </div>
-            </div>
-            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>EXECUTION · KEINE POLICY AUTHORITY</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section id="control-room" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: "28px" }}>
@@ -249,6 +216,40 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 {b.link ? (<><div style={{ width: "1px", height: "24px", marginLeft: "32px", background: "var(--rs-acc)" }}></div></>) : null}
               </div>
             </Fragment>))}
+          </div>
+        </div>
+      </section>
+
+      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
+        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+          <div>
+            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
+            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
+            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
+            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
+              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
+                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
+              </Fragment>))}
+            </ul>
+          </div>
+          <div aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
+            </div>
+            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
+            <div style={{ padding: "var(--card-p)", border: "2px solid var(--rs-acc)", borderRadius: "16px", background: "var(--rs-bg)", boxShadow: "0 0 28px var(--rs-glow)", display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}><span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>POLICY AUTHORITY</span><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></div>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {v.gateChecks.map((g, gI) => (<Fragment key={gI}><span style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>{g}</span></Fragment>))}
+              </div>
+            </div>
+            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
+            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>EXECUTION · KEINE POLICY AUTHORITY</span>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
+            </div>
           </div>
         </div>
       </section>
@@ -318,9 +319,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{v.checkLevel}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.checkText}</p>
               </>) : null}
-              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären.</p>
+              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.checkHas ? "Nächster Schritt: Ihre Einschätzung mit einem Scan Ihrer Domain belegen – kostenlos, ohne Konto." : "Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären."}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Governance-Scan starten</Link>
+                <Link to={v.href.auditCheck} data-testid="check-audit-cta" style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Governance-Scan starten</Link>
                 <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
               </div>
             </aside>
@@ -410,7 +411,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Produkt" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>PRODUKT</span>
-            <a href="#produkt">Plattform</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
+            <a href="#produkt">Plattform</a><a href="#control-room">Control Room</a><a href="#evidence">Evidence Vault</a><a href="#agenten">Agent Governance</a><a href="#check">Governance-Check</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>
@@ -434,8 +435,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkt</a>
-            <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
+            <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#check" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance-Check</a>
             <a href="#preise" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Preise</a>
             <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>

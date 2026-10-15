@@ -306,6 +306,15 @@ function Inner({ session }: { session: Session }) {
                 </CardContent>
               </Card>
             </Link>
+
+            <Link to="/admin/ai-os">
+              <Card variant="default" className="hover:border-titanium/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <p className="font-semibold text-titanium-100">AI Command Center</p>
+                  <p className="text-xs text-titanium-400 mt-1">Agenten, Skills, Routinen, Wissen, CI, Kosten, Prüfpfad</p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
       </div>

@@ -6,10 +6,6 @@ import './index.css';
 import './styles/brand-v4-tokens.css';
 import './styles/command-center.css';
 import './styles/enterprise-hero.css';
-// Startseite v6: Tokens/Layout müssen schon beim vorgerenderten HTML greifen,
-// sonst rendert / bis zum Laden des Lazy-Chunks ohne --px/--fs-* (CLS 0,41).
-// Alle Regeln sind auf `.lv6` begrenzt.
-import './styles/landing-v6.css';
 import { validateGeminiConfig } from './lib/gemini.ts';
 import { initSentry } from './lib/sentry.ts';
 import { captureAffiliateRef } from './lib/affiliate.ts';

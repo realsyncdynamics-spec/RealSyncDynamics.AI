@@ -182,26 +182,6 @@
   --rs-acc-g: linear-gradient(180deg, #0092a8 0%, #006b7c 100%);
 }
 
-/*
- * Kopfleiste: Höhe darf sich beim Nachladen der Schriften nicht ändern
- * (Font-Swap ließ die Zeile umbrechen → CLS 0,41 auf /). Ab Tablet-Breite
- * einzeilig, die linke Gruppe wird bei Platzmangel abgeschnitten.
- */
-@media (min-width: 900px) {
-  .lv6 .lv6-topbar {
-    flex-wrap: nowrap !important;
-    white-space: nowrap;
-  }
-  .lv6 .lv6-topbar > div:first-child {
-    min-width: 0;
-    overflow: hidden;
-    flex-wrap: nowrap !important;
-  }
-  .lv6 .lv6-topbar > a {
-    flex: none;
-  }
-}
-
 /* Hero-Karte: WebP mit JPEG-Fallback (image-set). Europa soll klar
    sichtbar sein: im Dunkelmodus leicht aufgehellt, Maske nur am linken Rand. */
 .lv6 .lv6-map {

@@ -36,7 +36,9 @@ it('keeps the free scan as primary hero CTA and adds the beta offer below it', (
     expect(beta).toBeNull();
     return;
   }
-  expect(beta).toHaveTextContent(`Offene Beta: alle Funktionen kostenlos testen bis ${BETA.endsLabel}`);
+  expect(beta).toHaveTextContent(`Offene Beta: kostenlos testen bis ${BETA.endsLabel} · keine Kreditkarte`);
+  // Claims-Grenze aus config/beta.ts: bis WP-3 nur „kostenlos testen“ versprechen.
+  expect(beta).not.toHaveTextContent(/alle Funktionen/);
   const href = beta?.getAttribute('href') ?? '';
   expect(href.startsWith('/welcome?')).toBe(true);
   expect(new URLSearchParams(href.split('?')[1]).get('source')).toBe('landing-v6-hero');
@@ -47,7 +49,7 @@ it('routes the self-check into the domain scan with its own source', () => {
   const check = within(view.container.querySelector('#check') as HTMLElement);
   expect(check.getByText(/den kostenlosen Website-Check starten/)).toBeInTheDocument();
   fireEvent.click(check.getAllByRole('radio')[0]);
-  expect(check.getByText(/Ihre Einschätzung mit einem Scan Ihrer Domain belegen/)).toBeInTheDocument();
+  expect(check.getByText(/Ihre Einschätzung mit dem kostenlosen Website-Check Ihrer Domain belegen/)).toBeInTheDocument();
   expect(check.getByTestId('check-audit-cta')).toHaveAttribute('href', '/audit?source=landing-v6-check');
 });
 

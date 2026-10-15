@@ -76,7 +76,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
             </div>
             <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
-            {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: alle Funktionen kostenlos testen bis {v.beta.endsShort}</Link></p>) : null}
+            {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: kostenlos testen bis {v.beta.endsShort} · keine Kreditkarte</Link></p>) : null}
           </div>
         </div>
 
@@ -319,7 +319,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{v.checkLevel}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.checkText}</p>
               </>) : null}
-              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.checkHas ? "Nächster Schritt: Ihre Einschätzung mit einem Scan Ihrer Domain belegen – kostenlos, ohne Konto." : "Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären."}</p>
+              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.checkHas ? "Nächster Schritt: Ihre Einschätzung mit dem kostenlosen Website-Check Ihrer Domain belegen – ohne Konto." : "Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären."}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                 <Link to={v.href.auditCheck} data-testid="check-audit-cta" style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Governance-Scan starten</Link>
                 <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
@@ -411,7 +411,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Produkt" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>PRODUKT</span>
-            <a href="#produkt">Plattform</a><a href="#control-room">Control Room</a><a href="#evidence">Evidence Vault</a><a href="#agenten">Agent Governance</a><a href="#check">Governance-Check</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
+            <a href="#produkt">Plattform</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>
@@ -435,8 +435,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkt</a>
-            <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
+            <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
             <a href="#check" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance-Check</a>
             <a href="#preise" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Preise</a>
             <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>

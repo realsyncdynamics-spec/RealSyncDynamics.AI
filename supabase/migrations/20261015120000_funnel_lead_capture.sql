@@ -33,11 +33,17 @@
 -- 6. `admin_funnel_leads()` / `admin_funnel_kpis()` — Lesezugriff für die
 --    Lead-Verwaltung, nur für Plattform-Operatoren (`is_platform_operator()`,
 --    ADR 0011), geprüft in der Funktion.
--- 7. Follow-up-Mail-Serie (audit_email_drip) nur noch mit wirksamer
---    Einwilligung fällig — ein Scan allein ist kein Opt-in. Abgesichert gegen
---    fehlende Drip-Objekte im Live-Projekt.
--- 8. `purge_stale_funnel_leads()` — Löschkonzept als Funktion, NICHT
---    eingeplant. Frist und Einplanung sind eine Entscheidung (Rechtstext).
+-- 7. Double-Opt-in für Follow-up-E-Mails: Token am Lead,
+--    `request_followup_doi()` / `confirm_followup_doi()`.
+-- 8. Follow-up-Mail-Serie (audit_email_drip) nur noch fällig mit Einwilligung
+--    am Audit UND bestätigtem Double-Opt-in am Lead — ein Scan allein ist
+--    kein Opt-in. Abgesichert gegen fehlende Drip-Objekte im Live-Projekt.
+-- 9. Art. 17: `erase_lead_data()` (Konto-Löschung, gdpr-delete) und
+--    `admin_erase_lead_data()` (Anfrage ohne Konto, nur Plattform-Operatoren).
+-- 10. `purge_stale_funnel_leads()` — Löschkonzept: Leads ohne Konto, Kauf und
+--    bestätigte Einwilligung nach Inaktivität löschen, alte anonyme Scans
+--    anonymisieren. Die Einplanung liegt in einer eigenen Migration
+--    (20261015130000), damit Frist und Zeitplan getrennt freigegeben werden.
 --
 -- RLS bleibt unverändert: keine anon/authenticated-Policy für INSERT/UPDATE
 -- auf `sales_leads`; Lesen weiterhin nur super_admin. Mandanten sehen
@@ -54,7 +60,16 @@ ALTER TABLE public.sales_leads
   ADD COLUMN IF NOT EXISTS tenant_id         uuid,
   ADD COLUMN IF NOT EXISTS user_id           uuid,
   ADD COLUMN IF NOT EXISTS last_activity_at  timestamptz,
-  ADD COLUMN IF NOT EXISTS submission_count  integer NOT NULL DEFAULT 1;
+  ADD COLUMN IF NOT EXISTS submission_count  integer NOT NULL DEFAULT 1,
+  -- Double-Opt-in für Follow-up-E-Mails (UWG § 7). Getrennt von den
+  -- Einwilligungs-Spalten aus 20261008133000, deren Nachweis unveränderlich ist.
+  ADD COLUMN IF NOT EXISTS followup_doi_token        uuid,
+  ADD COLUMN IF NOT EXISTS followup_doi_sent_at      timestamptz,
+  ADD COLUMN IF NOT EXISTS followup_doi_confirmed_at timestamptz;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sales_leads_followup_doi_token_uidx
+  ON public.sales_leads (followup_doi_token)
+  WHERE followup_doi_token IS NOT NULL;
 
 DO $$
 BEGIN
@@ -381,6 +396,7 @@ RETURNS TABLE (
   pilot_status     text,
   conversion_stage text,
   marketing_consent boolean,
+  followup_confirmed boolean,
   submission_count integer
 )
 LANGUAGE plpgsql
@@ -444,6 +460,7 @@ BEGIN
          END,
          s.conv,
          s.marketing_consent AND s.marketing_consent_revoked_at IS NULL,
+         s.followup_doi_confirmed_at IS NOT NULL AND s.marketing_consent_revoked_at IS NULL,
          s.submission_count
     FROM staged s
    WHERE p_stage IS NULL OR s.conv = p_stage
@@ -525,7 +542,73 @@ $$;
 REVOKE ALL ON FUNCTION public.admin_funnel_kpis(integer) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_funnel_kpis(integer) TO authenticated;
 
--- ── 8. Follow-up-Mails nur mit Einwilligung ────────────────────────────────
+-- ── 8. Double-Opt-in für Follow-up-E-Mails ─────────────────────────────────
+--
+-- Die Checkbox im Scan ist die Einwilligung; wirksam für Werbung wird sie
+-- erst mit der Bestätigung per Link (DOI). Der Token hängt am Lead, nicht am
+-- Audit: Wer mehrfach scannt, bekommt nicht mehrere Bestätigungs-Mails.
+
+CREATE OR REPLACE FUNCTION public.request_followup_doi(p_lead_id uuid)
+RETURNS TABLE (token uuid, email text)
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+BEGIN
+  -- Höchstens eine Bestätigungs-Mail pro 24 h; bestätigte Leads nie erneut.
+  RETURN QUERY
+  UPDATE public.sales_leads l
+     SET followup_doi_token   = coalesce(l.followup_doi_token, gen_random_uuid()),
+         followup_doi_sent_at = pg_catalog.now()
+   WHERE l.id = p_lead_id
+     AND l.lead_key IS NOT NULL
+     AND l.followup_doi_confirmed_at IS NULL
+     AND l.marketing_consent_revoked_at IS NULL
+     AND (l.followup_doi_sent_at IS NULL OR l.followup_doi_sent_at < pg_catalog.now() - interval '24 hours')
+  RETURNING l.followup_doi_token, l.email;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.request_followup_doi(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.request_followup_doi(uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.confirm_followup_doi(p_token uuid)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_confirmed timestamptz;
+  v_revoked   timestamptz;
+  v_id        uuid;
+BEGIN
+  IF p_token IS NULL THEN RETURN 'not_found'; END IF;
+  SELECT l.id, l.followup_doi_confirmed_at, l.marketing_consent_revoked_at
+    INTO v_id, v_confirmed, v_revoked
+    FROM public.sales_leads l
+   WHERE l.followup_doi_token = p_token
+   FOR UPDATE;
+  IF v_id IS NULL THEN RETURN 'not_found'; END IF;
+  IF v_revoked IS NOT NULL THEN RETURN 'revoked'; END IF;
+  IF v_confirmed IS NOT NULL THEN RETURN 'already_confirmed'; END IF;
+  -- Bestätigungs-Links verfallen nach 30 Tagen.
+  IF EXISTS (SELECT 1 FROM public.sales_leads l
+              WHERE l.id = v_id AND l.followup_doi_sent_at < pg_catalog.now() - interval '30 days') THEN
+    RETURN 'expired';
+  END IF;
+  UPDATE public.sales_leads
+     SET followup_doi_confirmed_at = pg_catalog.now(),
+         last_activity_at = pg_catalog.now()
+   WHERE id = v_id;
+  RETURN 'confirmed';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.confirm_followup_doi(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.confirm_followup_doi(uuid) TO service_role;
+
+-- ── 9. Follow-up-Mails nur mit Einwilligung UND Double-Opt-in ──────────────
 --
 -- Befund (Repo-Schema 20260507120000): `trg_audit_create_drip` legt für JEDES
 -- Audit mit E-Mail eine dreiteilige Mail-Serie an (Tag 3/14/30, Mail 3 bewirbt
@@ -534,9 +617,10 @@ GRANT EXECUTE ON FUNCTION public.admin_funnel_kpis(integer) TO authenticated;
 -- Besucher, die den Stepper danach verlassen. Ein Scan ist kein Opt-in.
 --
 -- Das Gate sitzt an der Stelle, die den Versand freigibt: Fällig ist eine
--- Serie nur, wenn das zugehörige Audit eine wirksame Einwilligung trägt
--- (marketing_consent AND marketing_consent_revoked_at IS NULL — genau die
--- Regel aus 20261008133000). Die Drip-Zeilen bleiben unangetastet.
+-- Serie nur, wenn das Audit eine wirksame Einwilligung trägt (Regel aus
+-- 20261008133000) UND der verknüpfte Lead den Double-Opt-in bestätigt hat.
+-- Die Drip-Zeilen bleiben unangetastet; bestätigt jemand später, laufen die
+-- fälligen Mails ab dann.
 --
 -- Abgesichert wie 20261008133000: Im Live-Projekt können Drip-Objekte oder
 -- Consent-Spalten fehlen (Ledger-Abweichung). Dann wird nichts ersetzt und
@@ -558,12 +642,15 @@ BEGIN
         SELECT d.id, d.audit_id, d.email, d.current_step, d.unsubscribe_token
           FROM public.audit_email_drip d
           JOIN public.gdpr_audits a ON a.id = d.audit_id
+          JOIN public.sales_leads l ON l.id = a.sales_lead_id
          WHERE d.unsubscribed = false
            AND d.next_send_at IS NOT NULL
            AND d.next_send_at <= now()
            AND d.current_step < 3
            AND a.marketing_consent = true
            AND a.marketing_consent_revoked_at IS NULL
+           AND l.followup_doi_confirmed_at IS NOT NULL
+           AND l.marketing_consent_revoked_at IS NULL
          ORDER BY d.next_send_at ASC
          LIMIT p_limit;
       $body$
@@ -576,7 +663,94 @@ BEGIN
 END
 $drip$;
 
--- ── 9. Löschkonzept (Funktion, bewusst NICHT eingeplant) ───────────────────
+-- ── 10. Art. 17: Lead-Daten einer Person löschen ───────────────────────────
+--
+-- Wird von gdpr-delete (Konto-Löschung) und von der Lead-Verwaltung
+-- (Löschanfrage ohne Konto) aufgerufen. Löscht Leads und Anmeldungen der
+-- Adresse, anonymisiert Scans (das Ergebnis zur Domain bleibt, die Person
+-- nicht) und beendet laufende Mail-Serien. Rechnungsdaten liegen nicht hier.
+
+CREATE OR REPLACE FUNCTION public.erase_lead_data(p_email text, p_user_id uuid DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_email  text := lower(btrim(coalesce(p_email, '')));
+  v_leads  integer := 0;
+  v_audits integer := 0;
+  v_drips  integer := 0;
+  v_news   integer := 0;
+  v_wait   integer := 0;
+BEGIN
+  IF v_email = '' AND p_user_id IS NULL THEN
+    RAISE EXCEPTION 'email or user required' USING ERRCODE = '22023';
+  END IF;
+
+  IF to_regclass('public.audit_email_drip') IS NOT NULL AND v_email <> '' THEN
+    EXECUTE 'DELETE FROM public.audit_email_drip WHERE lower(email) = $1' USING v_email;
+    GET DIAGNOSTICS v_drips = ROW_COUNT;
+  END IF;
+
+  UPDATE public.gdpr_audits a
+     SET email = '', company = NULL, ip_hash = '', user_agent = NULL  -- ip_hash ist NOT NULL
+   WHERE (v_email <> '' AND lower(a.email) = v_email)
+      OR (p_user_id IS NOT NULL AND a.user_id = p_user_id AND a.email <> '');
+  GET DIAGNOSTICS v_audits = ROW_COUNT;
+
+  DELETE FROM public.sales_leads l
+   WHERE (v_email <> '' AND lower(l.email) = v_email)
+      OR (p_user_id IS NOT NULL AND l.user_id = p_user_id);
+  GET DIAGNOSTICS v_leads = ROW_COUNT;
+
+  IF to_regclass('public.newsletter_subscribers') IS NOT NULL AND v_email <> '' THEN
+    EXECUTE 'DELETE FROM public.newsletter_subscribers WHERE lower(email) = $1' USING v_email;
+    GET DIAGNOSTICS v_news = ROW_COUNT;
+  END IF;
+  IF to_regclass('public.waitlist_signups') IS NOT NULL AND v_email <> '' THEN
+    EXECUTE 'DELETE FROM public.waitlist_signups WHERE lower(email) = $1' USING v_email;
+    GET DIAGNOSTICS v_wait = ROW_COUNT;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'sales_leads_deleted', v_leads,
+    'gdpr_audits_anonymized', v_audits,
+    'drip_rows_deleted', v_drips,
+    'newsletter_rows_deleted', v_news,
+    'waitlist_rows_deleted', v_wait
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.erase_lead_data(text, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.erase_lead_data(text, uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.admin_erase_lead_data(p_email text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF NOT public.is_platform_operator() THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF p_email IS NULL OR position('@' IN p_email) < 2 THEN
+    RAISE EXCEPTION 'email required' USING ERRCODE = '22023';
+  END IF;
+  -- Konten löscht nur der Nutzer selbst (gdpr-delete) — hier nur Lead-Daten.
+  v_result := public.erase_lead_data(p_email, NULL);
+  RETURN v_result;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_erase_lead_data(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_erase_lead_data(text) TO authenticated;
+
+-- ── 11. Löschkonzept (Funktion; Einplanung in 20261015130000) ──────────────
 
 CREATE OR REPLACE FUNCTION public.purge_stale_funnel_leads(p_inactive_for interval DEFAULT interval '12 months')
 RETURNS integer
@@ -590,15 +764,26 @@ BEGIN
   IF p_inactive_for IS NULL OR p_inactive_for < interval '30 days' THEN
     RAISE EXCEPTION 'retention below 30 days refused' USING ERRCODE = '22023';
   END IF;
-  -- Nur Funnel-Leads ohne Konto, ohne Kauf, ohne wirksame Einwilligung.
-  -- gdpr_audits.sales_lead_id wird per FK auf NULL gesetzt (ON DELETE SET NULL).
+  -- Gelöscht werden Funnel-Leads ohne Konto, ohne Kauf und ohne bestätigte,
+  -- nicht widerrufene Einwilligung. gdpr_audits.sales_lead_id wird per FK auf
+  -- NULL gesetzt (ON DELETE SET NULL).
   DELETE FROM public.sales_leads l
    WHERE l.lead_key IS NOT NULL
      AND l.tenant_id IS NULL
      AND l.converted_at IS NULL
-     AND NOT (l.marketing_consent AND l.marketing_consent_revoked_at IS NULL)
+     AND NOT (l.followup_doi_confirmed_at IS NOT NULL AND l.marketing_consent_revoked_at IS NULL)
      AND coalesce(l.last_activity_at, l.created_at) < pg_catalog.now() - p_inactive_for;
   GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  -- Anonyme Scans ohne Lead und ohne Konto verlieren nach derselben Frist
+  -- ihren Personenbezug; das Ergebnis zur Domain bleibt.
+  UPDATE public.gdpr_audits a
+     SET email = '', company = NULL, ip_hash = '', user_agent = NULL  -- ip_hash ist NOT NULL
+   WHERE a.claimed_at IS NULL
+     AND a.sales_lead_id IS NULL
+     AND a.email <> ''
+     AND a.created_at < pg_catalog.now() - p_inactive_for;
+
   RETURN v_deleted;
 END;
 $$;
@@ -607,6 +792,6 @@ REVOKE ALL ON FUNCTION public.purge_stale_funnel_leads(interval) FROM PUBLIC, an
 GRANT EXECUTE ON FUNCTION public.purge_stale_funnel_leads(interval) TO service_role;
 
 COMMENT ON FUNCTION public.purge_stale_funnel_leads(interval) IS
-  'Löschkonzept für Funnel-Leads ohne Konto/Kauf/Einwilligung. Nicht eingeplant — Frist ist eine Freigabe-Entscheidung.';
+  'Löschkonzept für Funnel-Leads ohne Konto/Kauf/bestätigte Einwilligung; anonymisiert alte anonyme Scans. Eingeplant in 20261015130000.';
 
 COMMIT;

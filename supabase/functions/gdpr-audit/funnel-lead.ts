@@ -166,3 +166,28 @@ export async function recordFunnelEvent(
     console.error('gdpr-audit: funnel event threw', { message: (e as Error)?.message });
   }
 }
+
+/**
+ * Double-Opt-in für Follow-up-E-Mails anfordern. Liefert Token und Adresse
+ * nur, wenn eine Bestätigungs-Mail fällig ist (nicht bestätigt, nicht
+ * widerrufen, letzte Mail älter als 24 h) — sonst `null`. Wirft nie.
+ */
+export async function requestFollowupDoi(
+  db: FunnelDbClient,
+  leadId: string,
+): Promise<{ token: string; email: string } | null> {
+  try {
+    const { data, error } = await db.rpc('request_followup_doi', { p_lead_id: leadId });
+    if (error) {
+      if (!isMissingRpcError(error)) console.error('gdpr-audit: request_followup_doi failed', { code: error.code });
+      return null;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row !== 'object') return null;
+    const { token, email } = row as { token?: unknown; email?: unknown };
+    return typeof token === 'string' && typeof email === 'string' ? { token, email } : null;
+  } catch (e) {
+    console.error('gdpr-audit: request_followup_doi threw', { message: (e as Error)?.message });
+    return null;
+  }
+}

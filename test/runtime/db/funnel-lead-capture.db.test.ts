@@ -239,48 +239,136 @@ d('funnel lead capture (DB)', () => {
     expect(kpis).toHaveProperty('pilot_to_customer_rate');
   });
 
-  it('11: no follow-up mail series is due without consent — a scan alone is no opt-in', async () => {
+  it('double opt-in: token on request, 24h throttle, confirm once, revoked/expired refused', async () => {
+    const { lead_id } = await capture(ctx!, 'doi@kunde.example', 'kunde.example', { consent: true });
+    const first = await ctx!.client.query<{ token: string; email: string }>(
+      `SELECT * FROM public.request_followup_doi($1)`, [lead_id]);
+    expect(first.rows).toHaveLength(1);
+    expect(first.rows[0]!.email).toBe('doi@kunde.example');
+    // zweiter Scan innerhalb von 24 h → keine zweite Bestätigungs-Mail
+    const again = await ctx!.client.query(`SELECT * FROM public.request_followup_doi($1)`, [lead_id]);
+    expect(again.rows).toHaveLength(0);
+
+    const token = first.rows[0]!.token;
+    const c1 = await ctx!.client.query(`SELECT public.confirm_followup_doi($1) AS s`, [token]);
+    expect(c1.rows[0].s).toBe('confirmed');
+    const c2 = await ctx!.client.query(`SELECT public.confirm_followup_doi($1) AS s`, [token]);
+    expect(c2.rows[0].s).toBe('already_confirmed');
+    const unknown = await ctx!.client.query(`SELECT public.confirm_followup_doi(gen_random_uuid()) AS s`);
+    expect(unknown.rows[0].s).toBe('not_found');
+    // bestätigte Leads bekommen nie wieder eine Bestätigungs-Mail
+    await ctx!.client.query(`UPDATE public.sales_leads SET followup_doi_sent_at = now() - interval '2 days' WHERE id = $1`, [lead_id]);
+    expect((await ctx!.client.query(`SELECT * FROM public.request_followup_doi($1)`, [lead_id])).rows).toHaveLength(0);
+
+    // abgelaufener Link
+    const exp = await capture(ctx!, 'expired@kunde.example', 'kunde.example', { consent: true });
+    const t2 = (await ctx!.client.query<{ token: string }>(`SELECT * FROM public.request_followup_doi($1)`, [exp.lead_id])).rows[0]!.token;
+    await ctx!.client.query(`UPDATE public.sales_leads SET followup_doi_sent_at = now() - interval '31 days' WHERE id = $1`, [exp.lead_id]);
+    expect((await ctx!.client.query(`SELECT public.confirm_followup_doi($1) AS s`, [t2])).rows[0].s).toBe('expired');
+
+    // Nur service_role darf DOI anfordern/bestätigen.
+    const op = await createTenantWithMember(ctx!);
+    await expect(ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, () =>
+      ctx!.client.query(`SELECT public.confirm_followup_doi($1)`, [token]))).rejects.toMatchObject({ code: '42501' });
+  });
+
+  it('11: no follow-up mail series is due without consent AND confirmed double opt-in', async () => {
     const { rows: hasDrip } = await ctx!.client.query(
       `SELECT to_regclass('public.audit_email_drip') IS NOT NULL AS ok`,
     );
     if (!hasDrip[0].ok) return; // Live-Ledger ohne Drip-Objekte: Gate wird übersprungen (siehe Migration).
-    const mk = async (email: string, consent: boolean) => (await ctx!.client.query<{ id: string }>(
-      `INSERT INTO public.gdpr_audits (url, domain, email, score, severity, issues, ip_hash,
-                                       marketing_consent, marketing_consent_text_version)
-       VALUES ('https://kunde.example', 'kunde.example', $1, 70, 'medium', '[]'::jsonb, 'iphash', $2, $3)
-       RETURNING id`,
-      [email, consent, consent ? 'audit_followup_v1_de' : null],
-    )).rows[0]!.id;
-    const without = await mk(`noconsent_${Date.now()}@kunde.example`, false);
-    const withConsent = await mk(`consent_${Date.now()}@kunde.example`, true);
-    // Die Serie entsteht weiterhin per Trigger — fällig wird sie nur mit Einwilligung.
+    const stamp = Date.now();
+    const mk = async (email: string, consent: boolean) => {
+      const { lead_id } = await capture(ctx!, email, 'kunde.example', { consent });
+      const id = (await ctx!.client.query<{ id: string }>(
+        `INSERT INTO public.gdpr_audits (url, domain, email, score, severity, issues, ip_hash,
+                                         marketing_consent, marketing_consent_text_version, sales_lead_id)
+         VALUES ('https://kunde.example', 'kunde.example', $1, 70, 'medium', '[]'::jsonb, 'iphash', $2, $3, $4)
+         RETURNING id`,
+        [email, consent, consent ? 'audit_followup_v1_de' : null, lead_id],
+      )).rows[0]!.id;
+      return { id, lead_id };
+    };
+    const without = await mk(`noconsent_${stamp}@kunde.example`, false);
+    const unconfirmed = await mk(`unconfirmed_${stamp}@kunde.example`, true);
+    const confirmed = await mk(`confirmed_${stamp}@kunde.example`, true);
+    const tok = (await ctx!.client.query<{ token: string }>(
+      `SELECT * FROM public.request_followup_doi($1)`, [confirmed.lead_id])).rows[0]!.token;
+    await ctx!.client.query(`SELECT public.confirm_followup_doi($1)`, [tok]);
+
+    // Die Serie entsteht weiterhin per Trigger — fällig wird sie nur mit Einwilligung + DOI.
     await ctx!.client.query(
-      `UPDATE public.audit_email_drip SET next_send_at = now() - interval '1 minute' WHERE audit_id IN ($1, $2)`,
-      [without, withConsent],
+      `UPDATE public.audit_email_drip SET next_send_at = now() - interval '1 minute' WHERE audit_id = ANY($1::uuid[])`,
+      [[without.id, unconfirmed.id, confirmed.id]],
     );
-    const { rows: due } = await ctx!.client.query<{ audit_id: string }>(
-      `SELECT audit_id FROM public.audit_email_drip_due(1000)`,
-    );
-    const ids = due.map((r) => r.audit_id);
-    expect(ids).toContain(withConsent);
-    expect(ids).not.toContain(without);
+    const due = async () => (await ctx!.client.query<{ audit_id: string }>(
+      `SELECT audit_id FROM public.audit_email_drip_due(1000)`)).rows.map((r) => r.audit_id);
+    const ids = await due();
+    expect(ids).toContain(confirmed.id);
+    expect(ids).not.toContain(unconfirmed.id);
+    expect(ids).not.toContain(without.id);
 
     // Widerruf beendet die Serie.
-    await ctx!.client.query(`UPDATE public.gdpr_audits SET marketing_consent_revoked_at = now() WHERE id = $1`, [withConsent]);
-    const { rows: after } = await ctx!.client.query<{ audit_id: string }>(
-      `SELECT audit_id FROM public.audit_email_drip_due(1000)`,
-    );
-    expect(after.map((r) => r.audit_id)).not.toContain(withConsent);
+    await ctx!.client.query(`UPDATE public.gdpr_audits SET marketing_consent_revoked_at = now() WHERE id = $1`, [confirmed.id]);
+    expect(await due()).not.toContain(confirmed.id);
   });
 
-  it('retention purge removes only inactive leads without account, purchase or consent', async () => {
+  it('Art. 17: erase_lead_data removes leads, anonymizes scans, ends mail series; admin variant is gated', async () => {
+    const email = `erase_${Date.now()}@kunde.example`;
+    const { lead_id } = await capture(ctx!, email, 'kunde.example', { consent: true });
+    const auditId = await insertAudit(ctx!, email, lead_id);
+    const other = await capture(ctx!, 'bleibt@kunde.example', 'kunde.example');
+
+    const op = await createTenantWithMember(ctx!);
+    const member = await createTenantWithMember(ctx!);
+    await expect(ctx!.withClaims({ sub: member.userId, role: 'authenticated' }, () =>
+      ctx!.client.query(`SELECT public.admin_erase_lead_data($1)`, [email]))).rejects.toMatchObject({ code: '42501' });
+    await expect(ctx!.withClaims({ sub: member.userId, role: 'authenticated' }, () =>
+      ctx!.client.query(`SELECT public.erase_lead_data($1, NULL)`, [email]))).rejects.toMatchObject({ code: '42501' });
+
+    await ctx!.client.query(`INSERT INTO public.platform_operators (user_id) VALUES ($1)`, [op.userId]);
+    const result = await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, async () =>
+      (await ctx!.client.query(`SELECT public.admin_erase_lead_data($1) AS r`, [email.toUpperCase()])).rows[0].r);
+    expect(result.sales_leads_deleted).toBe(1);
+    expect(result.gdpr_audits_anonymized).toBe(1);
+
+    expect(await lead(ctx!, `${email}|kunde.example`)).toHaveLength(0);
+    const { rows: a } = await ctx!.client.query(`SELECT email, company, ip_hash FROM public.gdpr_audits WHERE id = $1`, [auditId]);
+    expect(a[0]).toEqual({ email: '', company: null, ip_hash: '' });
+    const { rows: rest } = await ctx!.client.query(`SELECT id FROM public.sales_leads WHERE id = $1`, [other.lead_id]);
+    expect(rest).toHaveLength(1);
+    const { rows: hasDrip } = await ctx!.client.query(`SELECT to_regclass('public.audit_email_drip') IS NOT NULL AS ok`);
+    if (hasDrip[0].ok) {
+      const { rows: d } = await ctx!.client.query(`SELECT count(*)::int AS n FROM public.audit_email_drip WHERE lower(email) = $1`, [email]);
+      expect(d[0].n).toBe(0);
+    }
+  });
+
+  it('retention purge keeps account, purchase and confirmed consent; anonymizes old anonymous scans; is scheduled', async () => {
     await capture(ctx!, 'old@kunde.example', 'kunde.example');
-    await capture(ctx!, 'optin@kunde.example', 'kunde.example', { consent: true });
+    await capture(ctx!, 'unconfirmed@kunde.example', 'kunde.example', { consent: true });
+    const kept = await capture(ctx!, 'optin@kunde.example', 'kunde.example', { consent: true });
+    const tok = (await ctx!.client.query<{ token: string }>(`SELECT * FROM public.request_followup_doi($1)`, [kept.lead_id])).rows[0]!.token;
+    await ctx!.client.query(`SELECT public.confirm_followup_doi($1)`, [tok]);
     await ctx!.client.query(`UPDATE public.sales_leads SET last_activity_at = now() - interval '2 years' WHERE lead_key IS NOT NULL`);
+
+    const { rows: anon } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.gdpr_audits (url, domain, email, score, severity, issues, ip_hash, created_at)
+       VALUES ('https://alt.example', 'alt.example', 'alt@alt.example', 50, 'medium', '[]'::jsonb, 'h', now() - interval '2 years')
+       RETURNING id`);
+
     await expectSqlState(ctx!, `SELECT public.purge_stale_funnel_leads(interval '1 day')`, [], '22023');
     const { rows } = await ctx!.client.query(`SELECT public.purge_stale_funnel_leads(interval '12 months') AS n`);
-    expect(rows[0].n).toBeGreaterThanOrEqual(1);
+    expect(rows[0].n).toBeGreaterThanOrEqual(2);
     expect(await lead(ctx!, 'old@kunde.example|kunde.example')).toHaveLength(0);
+    expect(await lead(ctx!, 'unconfirmed@kunde.example|kunde.example')).toHaveLength(0);
     expect(await lead(ctx!, 'optin@kunde.example|kunde.example')).toHaveLength(1);
+    const { rows: a } = await ctx!.client.query(`SELECT email FROM public.gdpr_audits WHERE id = $1`, [anon[0]!.id]);
+    expect(a[0].email).toBe('');
+
+    const { rows: job } = await ctx!.client.query(
+      `SELECT schedule, command FROM cron.job WHERE jobname = 'funnel-lead-retention-daily'`);
+    expect(job).toHaveLength(1);
+    expect(job[0].command).toContain("purge_stale_funnel_leads(interval '12 months')");
   });
 });

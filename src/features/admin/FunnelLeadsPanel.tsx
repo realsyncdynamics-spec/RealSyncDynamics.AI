@@ -6,6 +6,7 @@ import {
   PILOT_STATUS_LABELS,
   SCAN_STATUS_LABELS,
   SOURCE_LABELS,
+  eraseLeadData,
   formatRate,
   loadFunnelKpis,
   loadFunnelLeads,
@@ -25,6 +26,24 @@ export function FunnelLeadsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // Löschen braucht einen zweiten Klick in der Zeile (der Viewer zeigt kein confirm()).
+  const [pendingErase, setPendingErase] = useState<string | null>(null);
+  const [eraseNote, setEraseNote] = useState<string | null>(null);
+
+  async function erase(row: FunnelLeadRow) {
+    setEraseNote(null);
+    try {
+      const r = await eraseLeadData(row.email);
+      setEraseNote(
+        `Gelöscht: ${r.sales_leads_deleted} Lead(s), ${r.gdpr_audits_anonymized} Scan(s) anonymisiert, ` +
+        `${r.drip_rows_deleted} Mail-Serie(n) beendet.`,
+      );
+      setPendingErase(null);
+      setReloadKey((n) => n + 1);
+    } catch (e) {
+      setEraseNote(`Löschen fehlgeschlagen: ${(e as Error).message}`);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +116,10 @@ export function FunnelLeadsPanel() {
         </div>
       )}
 
+      {eraseNote && (
+        <p role="status" className="text-sm text-titanium-200 border border-titanium-800 bg-obsidian-900 p-3 mb-4">{eraseNote}</p>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-titanium-400 text-sm py-12 justify-center">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Lade…
@@ -117,6 +140,7 @@ export function FunnelLeadsPanel() {
                 <th scope="col" className="text-left px-3 py-2 font-bold">Scan</th>
                 <th scope="col" className="text-left px-3 py-2 font-bold">Pilot</th>
                 <th scope="col" className="text-left px-3 py-2 font-bold">Conversion</th>
+                <th scope="col" className="text-left px-3 py-2 font-bold"><span className="sr-only">Aktionen</span></th>
               </tr>
             </thead>
             <tbody>
@@ -136,7 +160,11 @@ export function FunnelLeadsPanel() {
                   </td>
                   <td className="px-3 py-2 align-top">
                     <span className="text-xs font-mono text-titanium-200 break-all">{r.email}</span>
-                    {r.marketing_consent && <div className="text-[10px] text-emerald-400">Einwilligung Follow-up</div>}
+                    {r.marketing_consent && (
+                      <div className={`text-[10px] ${r.followup_confirmed ? 'text-emerald-400' : 'text-amber-300'}`}>
+                        {r.followup_confirmed ? 'Follow-up bestätigt (DOI)' : 'Einwilligung, DOI offen'}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2 align-top text-xs text-fuchsia-300 font-mono">{SOURCE_LABELS[r.source ?? ''] ?? r.source ?? '—'}</td>
                   <td className="px-3 py-2 align-top text-xs text-titanium-300">{SCAN_STATUS_LABELS[r.scan_status] ?? r.scan_status}</td>
@@ -145,6 +173,27 @@ export function FunnelLeadsPanel() {
                     {r.registered && <div className="text-[10px] text-titanium-500">Konto verknüpft</div>}
                   </td>
                   <td className="px-3 py-2 align-top text-xs font-bold text-titanium-100">{CONVERSION_LABELS[r.conversion_stage] ?? r.conversion_stage}</td>
+                  <td className="px-3 py-2 align-top text-xs whitespace-nowrap">
+                    {pendingErase === r.id ? (
+                      <span className="inline-flex gap-2">
+                        <button type="button" onClick={() => void erase(r)} className="px-2 py-1 border border-red-700 text-red-300 hover:bg-red-950/40 rounded-none">
+                          Endgültig löschen
+                        </button>
+                        <button type="button" onClick={() => setPendingErase(null)} className="px-2 py-1 border border-titanium-800 text-titanium-300 rounded-none">
+                          Abbrechen
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPendingErase(r.id)}
+                        className="px-2 py-1 border border-titanium-800 text-titanium-400 hover:text-titanium-100 rounded-none"
+                        aria-label={`Daten von ${r.email} löschen (Art. 17)`}
+                      >
+                        Löschen (Art. 17)
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

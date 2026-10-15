@@ -35,6 +35,8 @@ export interface FunnelLeadRow {
   pilot_status: string;
   conversion_stage: ConversionStage;
   marketing_consent: boolean;
+  /** Double-Opt-in bestätigt — erst dann gehen Follow-up-Mails raus. */
+  followup_confirmed: boolean;
   submission_count: number;
 }
 
@@ -103,4 +105,22 @@ export async function loadFunnelKpis(days = 90): Promise<FunnelKpis> {
   const { data, error } = await getSupabase().rpc('admin_funnel_kpis', { p_days: days });
   if (error) throw new Error(error.message);
   return data as FunnelKpis;
+}
+
+export interface LeadErasureResult {
+  sales_leads_deleted: number;
+  gdpr_audits_anonymized: number;
+  drip_rows_deleted: number;
+  newsletter_rows_deleted: number;
+  waitlist_rows_deleted: number;
+}
+
+/**
+ * Löschanfrage nach Art. 17 für eine Person ohne Konto. Die RPC prüft die
+ * Plattform-Rolle selbst; Konten löscht nur der Nutzer über gdpr-delete.
+ */
+export async function eraseLeadData(email: string): Promise<LeadErasureResult> {
+  const { data, error } = await getSupabase().rpc('admin_erase_lead_data', { p_email: email });
+  if (error) throw new Error(error.message);
+  return data as LeadErasureResult;
 }

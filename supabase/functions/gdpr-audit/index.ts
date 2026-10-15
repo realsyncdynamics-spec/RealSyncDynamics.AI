@@ -42,10 +42,12 @@ import {
   markFunnelLeadScan,
   normalizeLeadDomain,
   recordFunnelEvent,
+  requestFollowupDoi,
   resolveFunnelSource,
   sanitizeEntryTag,
   type FunnelDbClient,
 } from './funnel-lead.ts';
+import { followupConfirmUrl, sendFollowupDoi } from './followup-doi.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -173,6 +175,17 @@ async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
     privacyFound: privacyHtml !== null,
     imprintFound: imprintHtml !== null,
   };
+}
+
+/** Resend-Key wie in audit-report-email: Env zuerst, dann Vault-RPC. */
+async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
+  const env = Deno.env.get('RESEND_API_KEY');
+  if (env && env.startsWith('re_')) return env;
+  try {
+    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
+    if (typeof data === 'string' && data.startsWith('re_')) return data;
+  } catch { /* RPC fehlt — dann keine Bestätigungs-Mail */ }
+  return null;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -307,6 +320,20 @@ async function handleAudit(req: Request, state: AuditRequestState): Promise<Resp
       leadId = captured.leadId;
       await recordFunnelEvent(funnelDb, 'lead_saved', { source: leadSource, is_new_lead: captured.isNew });
       await recordFunnelEvent(funnelDb, 'scan_started', { source: leadSource });
+      // Checkbox gesetzt → Double-Opt-in anstoßen. Ohne Bestätigung per Link
+      // geht keine Follow-up-Mail raus (Gate in audit_email_drip_due).
+      if (consentCols.marketing_consent) {
+        const doi = await requestFollowupDoi(funnelDb, leadId);
+        const apiKey = doi ? await getResendKey(admin) : null;
+        if (doi && apiKey) {
+          await sendFollowupDoi({
+            apiKey,
+            from: `RealSyncDynamics.AI <${Deno.env.get('AUDIT_EMAIL_FROM') ?? 'audit@realsyncdynamicsai.de'}>`,
+            to: doi.email,
+            confirmUrl: followupConfirmUrl(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de', doi.token),
+          });
+        }
+      }
     } else {
       if (captured.reason !== 'rpc_missing') {
         console.error('gdpr-audit: capture_funnel_lead failed', { reason: captured.reason, code: captured.code });

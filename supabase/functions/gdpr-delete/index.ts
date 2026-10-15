@@ -12,7 +12,11 @@
 //      betroffener Tenants — User muss erst übertragen.
 //   4. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
 //      preserves Compliance/Buchhaltung, entfernt PII-Verknüpfung.
-//   5. Memberships hart löschen (eigene Rolle in Tenants).
+//   5. Lead- und Scan-Daten der Adresse löschen bzw. anonymisieren
+//      (RPC erase_lead_data: sales_leads, Scan-E-Mail, Mail-Serien,
+//      Newsletter/Warteliste). Fehler hier brechen die Löschung ab, bevor
+//      das Konto weg ist — sonst bliebe die Adresse ohne Zuordnung zurück.
+//   5b. Memberships hart löschen (eigene Rolle in Tenants).
 //   6. auth.users löschen via admin API → CASCADE löscht profiles,
 //      workflows (owner_id), c2pa_assets (owner_id) etc.
 //
@@ -100,6 +104,17 @@ Deno.serve(async (req) => {
       : null)
     .filter(Boolean);
 
+  // ── Lead-/Scan-Daten (Art. 17) ────────────────────────────────────────────
+  const { data: leadErasure, error: eraseErr } = await admin.rpc('erase_lead_data', {
+    p_email: userEmail ?? '',
+    p_user_id: userId,
+  });
+  if (eraseErr && eraseErr.code !== 'PGRST202' && eraseErr.code !== '42883') {
+    // Keine Details nach außen (könnten die Adresse enthalten).
+    console.error('gdpr-delete: erase_lead_data failed', { code: eraseErr.code });
+    return jsonError(500, 'INTERNAL', 'lead data erasure failed');
+  }
+
   // ── Memberships löschen ───────────────────────────────────────────────────
   const { error: memErr } = await admin.from('memberships').delete().eq('user_id', userId);
   if (memErr) return jsonError(500, 'INTERNAL', `memberships delete failed: ${memErr.message}`);
@@ -115,5 +130,6 @@ Deno.serve(async (req) => {
     cascade_deleted: ['profiles', 'memberships', 'workflows', 'c2pa_assets'],
     retained_for_legitimate_interest: ['workflow_runs (anonymized)', 'ai_tool_runs (anonymized)', 'subscriptions (HGB/AO 10 Jahre)'],
     anonymization_warnings: anonymizationErrors,
+    lead_data: leadErasure ?? { skipped: 'erase_lead_data not deployed' },
   });
 });

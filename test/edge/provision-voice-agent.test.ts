@@ -203,7 +203,7 @@ function row(over: Partial<VoiceAgentRow> = {}): VoiceAgentRow {
   return {
     id: 'row-1', tenant_id: TENANT, bot_id: null, provider: 'elevenlabs',
     provider_agent_id: null, template_agent_id: null, desired_state: 'active', status: 'pending',
-    stripe_subscription_id: 'sub_1', last_stripe_event_id: 'evt_1', attempts: 0, claimed_at: null,
+    stripe_subscription_id: 'sub_1', last_stripe_event_id: 'evt_1', attempts: 0, last_error: null, claimed_at: null,
     ...over,
   };
 }

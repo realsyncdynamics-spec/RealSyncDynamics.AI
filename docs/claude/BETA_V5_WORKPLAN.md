@@ -39,6 +39,12 @@ Problem: Das Frontend sagt „alle Funktionen kostenlos testen“ — die Plattf
 - Ablauf 31.01.2027: Cron setzt `status='expired'` → bestehender Payment/Downgrade-Pfad. 14 Tage vorher Mail.
 - Tests: Entitlement-Parität (`npm run check:entitlements`), Tenant-Isolation (RLS).
 
+**Umsetzung (PR „Beta-Zugang serverseitig“), Abweichungen vom Plan:**
+- Ablauf **ohne Cron**: `tenant_entitlements_resolve()` liest `trial_end` (20260928160000) — `beta-enroll` setzt `trial_end = trial_ends_at = current_period_end = 2027-01-31 24:00 Berlin`. `current_period_end` allein hätte nie geendet. Mail 14 Tage vorher: offen (eigener Schritt).
+- Aufruf **in der App-Shell** statt in `/welcome` (`useBetaEnrollment` in `BetaAppBanner`): Welcome navigiert vor der Mandantenanlage; der Wunsch wird gemerkt und nachgeholt.
+- Nur owner/admin; nie über Stripe-Abos oder laufende nicht-freie Abos (`supabase/functions/beta-enroll/logic.ts`). Vorzustand in `beta_enrollments`.
+- Bekannt: `trial_end` verbraucht die spätere 14-Tage-Stripe-Testphase (`isTrialEligibleForCheckout`); Frontend-`resolveEntitlements` prüft `trial_end` nicht (vorbestehend).
+
 ## WP-4 — Dashboard „echt“ für Beta-Tester
 
 Dateien: `/app/dashboard` → `DashboardRouter` (per grep lokalisieren), `scripts/seed-beta-tenant.ts` als Vorlage.

@@ -5,7 +5,7 @@ export type { PlanKey };
 
 /**
  * Self-Service-Checkout verkauft nur an Rechnungsadressen in Deutschland
- * (§ 19 UStG / TAX_CHECKED_MARKETS). Der Server verlangt `billing_country`
+ * (TAX_CHECKED_MARKETS; Regelbesteuerung seit 2026-10-15). Der Server verlangt `billing_country`
  * und lehnt alles ≠ DE vor jedem Stripe-Aufruf ab.
  */
 export const CHECKOUT_BILLING_COUNTRY = 'DE' as const;

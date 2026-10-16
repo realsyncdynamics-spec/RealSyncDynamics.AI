@@ -33,7 +33,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         <div style={{ position: "relative", zIndex: "2", borderBottom: "1px solid var(--rs-line)" }}>
           <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "10px var(--px)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", fontFamily: "'JetBrains Mono Optional',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px" }}><span>EU-gehostet · Frankfurt (eu-central-1)</span><span>DSGVO · EU AI Act · ISO 27001 · NIS2</span></div>
-            {v.beta.active ? (<Link to={v.href.betaRibbon} data-hero-cta="beta" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0", border: "0", background: "none", color: "var(--rs-fg2)", cursor: "pointer", font: "inherit" }}><span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "var(--rs-acc)" }}></span>Offene Beta bis {v.beta.endsShort} – alle Funktionen kostenlos<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>→</span></Link>) : null}
+            {v.beta.active ? (<Link to={v.href.betaRibbon} data-hero-cta="beta" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0", border: "0", background: "none", color: "var(--rs-fg2)", cursor: "pointer", font: "inherit" }}><span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "var(--rs-acc)" }}></span>Offene Beta bis {v.beta.endsShort} – kostenlos testen<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>→</span></Link>) : null}
           </div>
         </div>
 

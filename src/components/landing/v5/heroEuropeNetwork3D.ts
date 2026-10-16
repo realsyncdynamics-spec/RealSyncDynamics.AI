@@ -18,6 +18,11 @@
 import * as THREE from 'three';
 
 const LAND_MASK = '/textures/hero-v4/earth_specular_2048.jpg';
+
+const seeded = (seed: number) => {
+  let s = seed;
+  return () => (s = (s * 16807) % 2147483647) / 2147483647;
+};
 const R = 2;
 
 /** [Name, lat, lon] — Frankfurt zuerst (Hub). */
@@ -148,12 +153,15 @@ export function mountHeroEurope({ canvas, visibilityTarget, accent = '#d6ae52' }
 
   // Sterne (drei Tiefenebenen).
   {
+    // Deterministischer PRNG (wie v4/heroEarthScene): gleicher Sternhimmel bei
+    // jedem Aufruf, und kein `Math.random()` in einer Oberfläche (check:fabrication).
+    const rand = seeded(97);
     const n = 1400;
     const pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
-      const r = 30 + Math.random() * 60;
-      const t = Math.random() * Math.PI * 2;
-      const p = Math.acos(2 * Math.random() - 1);
+      const r = 30 + rand() * 60;
+      const t = rand() * Math.PI * 2;
+      const p = Math.acos(2 * rand() - 1);
       pos.set([r * Math.sin(p) * Math.cos(t), r * Math.sin(p) * Math.sin(t), -Math.abs(r * Math.cos(p))], i * 3);
     }
     const g = new THREE.BufferGeometry();

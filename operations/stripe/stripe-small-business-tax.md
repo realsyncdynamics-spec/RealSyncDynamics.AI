@@ -2,7 +2,9 @@
 
 ## Entscheidung / Geltungsbereich
 
-Die Pricing-SSoT (`shared/pricing.ts`) steht aktuell auf `PRICING_TAX_MODE='EXEMPT'`. Das ist die dokumentierte **Produktkonfiguration**, kein steuerlicher Nachweis des Finanzamts. PR #1748 (Umstellung der Rechtstexte auf `EU_STANDARD`) ist geschlossen und nicht gemergt. Ohne gesicherte steuerliche Klärung **keine Umstellung auf Regelbesteuerung** vornehmen.
+**Stand 16.10.2026:** Owner-Entscheidung vom 15.10.2026: **Regelbesteuerung, § 19 UStG entfällt**. Umsetzung in PR #1896 (`PRICING_TAX_MODE='EU_STANDARD'`, Preise netto zzgl. 19 % USt, eigener `checkoutTaxParams`-Helper). Bis #1896 gemergt ist, steht die Pricing-SSoT (`shared/pricing.ts`) noch auf `PRICING_TAX_MODE='EXEMPT'`.
+
+Der Code dieses PRs hängt nur an `PRICING_TAX_MODE`: Der § 19-Fuß wird ausschließlich bei `EXEMPT` gesetzt, `automatic_tax` ist bei `EU_STANDARD` an. Nach #1896 schaltet er also ohne weitere Änderung auf Regelbesteuerung um; die Abschnitte zu § 19 unten gelten nur bis dahin. Wer als Zweiter merged, führt die Steuerzeilen in `stripe-checkout` auf `checkoutTaxParams` zusammen.
 
 Die Edge Function `stripe-checkout` leitet `automatic_tax.enabled` nun direkt aus der generierten Pricing-SSoT ab. `EXEMPT` deaktiviert automatische Stripe-Tax-Berechnung **nur für neue Checkout-Sessions**; `EU_STANDARD` darf erst nach geprüfter rechtlicher und Stripe-Konfiguration aktiviert werden.
 
@@ -15,7 +17,7 @@ Die Edge Function `stripe-checkout` leitet `automatic_tax.enabled` nun direkt au
 
 ## Vor Live-Freigabe verpflichtend
 
-1. Steuerstatus/ggf. Verzicht auf § 19, Rechnungen und bereits erzielte Umsätze **anhand der Finanzamtsunterlagen** bestätigen.
+1. Wechsel zur Regelbesteuerung (Entscheidung 15.10.2026), USt-IdNr. und bereits erzielte Umsätze **anhand der Finanzamtsunterlagen** bestätigen.
 2. Den richtigen Stripe-Live-Account verbinden/prüfen: `Tax Settings`, alle Registrierungen, aktive Checkout-Sessions, bestehende Subscriptions und Rechnungen. Aktuell war über die Stripe-App **nur die Sandbox** zugänglich (10.10.2026: Tax `pending`, keine Registrierungen). Daraus folgt keine Aussage über Live.
 3. Im Stripe-Dashboard in **Billing → Invoices → Templates/Settings** einen korrekten §-19-Hinweis für neue Rechnungen (auch wiederkehrende) hinterlegen und Test-PDF prüfen. Beispiel: `Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.` Das allein ersetzt keine fachliche Freigabe.
 4. In Testumgebung End-to-End `payment` und `subscription` einschließlich Checkout-Betrag, PDF-Rechnung, Webhook-Fulfillment sowie Renewal/Cancel testen. Ein Sandbox-Kauf ist keine Live-Zahlung.

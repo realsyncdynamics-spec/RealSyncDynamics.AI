@@ -5,12 +5,14 @@ import { LV2_BRAND } from './landing-v2-content';
 
 export type Lv2Theme = 'dark' | 'light';
 
-const NAV = [
+export type Lv2NavItem = { label: string; to: string } | { label: string; href: string };
+
+const NAV: readonly Lv2NavItem[] = [
   { label: 'Runtime', to: '/governance-runtime' },
   { label: 'Policy Engine', to: '/policy-engine' },
   { label: 'Evidence', to: '/evidence-vault' },
   { label: 'Preise', href: '#preise' },
-] as const;
+];
 
 interface ThemePillProps {
   theme: Lv2Theme;
@@ -43,13 +45,15 @@ function ThemePill({ theme, onChange }: ThemePillProps) {
 interface LandingV2HeaderProps {
   theme: Lv2Theme;
   onThemeChange: (next: Lv2Theme) => void;
+  /** Optional: eigene Navigation (z. B. Sprungmarken der Startseite). */
+  nav?: readonly Lv2NavItem[];
 }
 
 /**
  * Header (absolut über dem Hero), Vollbild-Menü < 1000px und Sticky-CTA-Bar
  * ab `scrollY > 85vh`. Login führt auf die bestehende `/login`-Route.
  */
-export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) {
+export function LandingV2Header({ theme, onThemeChange, nav = NAV }: LandingV2HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
 
@@ -88,7 +92,7 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             {LV2_BRAND}
           </Link>
           <nav className="lv2-nav" aria-label="Hauptnavigation">
-            {NAV.map((item) =>
+            {nav.map((item) =>
               'to' in item ? (
                 <Link key={item.to} to={item.to}>
                   {item.label}
@@ -130,7 +134,7 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             </button>
           </div>
           <nav aria-label="Mobile Navigation">
-            {NAV.map((item) =>
+            {nav.map((item) =>
               'to' in item ? (
                 <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)}>
                   {item.label}
@@ -158,7 +162,7 @@ export function LandingV2Header({ theme, onThemeChange }: LandingV2HeaderProps) 
             {LV2_BRAND}
           </a>
           <nav className="lv2-nav" aria-label="Sticky-Navigation">
-            {NAV.map((item) =>
+            {nav.map((item) =>
               'to' in item ? (
                 <Link key={item.to} to={item.to} tabIndex={sticky ? 0 : -1}>
                   {item.label}

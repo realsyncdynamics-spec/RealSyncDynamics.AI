@@ -41,6 +41,32 @@ describe('Landing v5 + Beta-Testphase', () => {
     expect(co).toContain("searchParams.get('purchase') !== '1'");
   });
 
+  it('Startseite folgt der Sektionsfolge des Claude-Designs, Navigation per Sprungmarken', () => {
+    const page = read('src/pages/LandingV5.tsx');
+    const order = [
+      '<HeroV5',
+      '<FrameworkStrip',
+      '<AiActTimeline',
+      '<LifecycleGrid',
+      '<ArchitectureSection',
+      '<GovernanceControlRoom',
+      '<EvidenceChainPreview',
+      '<EuNativeGrid',
+      '<GovernanceSelfCheck',
+      '<PricingV2',
+      '<LandingFaq',
+      '<FinalCta',
+    ];
+    const positions = order.map((tag) => page.indexOf(tag));
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    for (const href of ['#produkt', '#architecture', '#governance-check', '#preise']) {
+      expect(page).toContain(`href: '${href}'`);
+    }
+    expect(page).toContain('<BetaRibbon');
+    expect(page).toContain('<V5BetaProgram');
+  });
+
   it('Roadmap liest nur die Implementation-Status-SSoT', () => {
     const s = read('src/components/landing/v5/V5Sections.tsx');
     expect(s).toContain('ROADMAP_PREVIEW_ITEMS');

@@ -2,7 +2,7 @@ import { useCallback, type ReactNode } from 'react';
 import { SEOHead } from '../components/SEOHead';
 import { readStored, useLandingMode } from '../components/landing/landing-mode';
 import { BETA } from '../config/beta';
-import { LandingV2Header, type Lv2Theme } from '../components/landing/v2/LandingV2Header';
+import { LandingV2Header, type Lv2NavItem, type Lv2Theme } from '../components/landing/v2/LandingV2Header';
 import {
   AiActTimeline,
   EuNativeGrid,
@@ -14,24 +14,38 @@ import { PricingV2 } from '../components/landing/v2/PricingV2';
 import { FinalCta, LandingFaq, LandingV2Footer } from '../components/landing/v2/LandingV2Footer';
 import { GovernanceControlRoom } from '../components/landing/GovernanceControlRoom';
 import { GovernanceSelfCheck } from '../components/landing/GovernanceSelfCheck';
+import { ArchitectureSection } from '../components/landing/HomepageBriefSections';
 import { HeroV5 } from '../components/landing/v5/HeroV5';
-import { V5UnifiedEntry } from '../components/landing/v5/V5UnifiedEntry';
-import '../components/landing/v5/v5-unified-entry.css';
-import { BetaRibbon, V5BetaProgram, V5Loop, V5Roadmap } from '../components/landing/v5/V5Sections';
+import { BetaRibbon, V5BetaProgram } from '../components/landing/v5/V5Sections';
 import '../styles/governance-os-landing.css';
 import '../styles/landing-v2.css';
 import '../styles/landing-v5.css';
 
 /**
- * Landing v5 — Zusammenführung (Owner, 13.10.2026):
+ * Landing v5 — Sektionsfolge nach dem Claude-Design „Landing v4“ (Export
+ * „RealSyncDynamics_AI_App_5“, 13.10.2026): Hero · Regulierung · Der Rahmen ·
+ * Lifecycle · Agent Governance · Control Room · Evidence · EU-native ·
+ * Governance-Check · Preise · FAQ · CTA. Navigation als Sprungmarken.
+ * Beta-Band und Beta-Programm bleiben (Funktion der Testphase). Roadmap steht
+ * unter /roadmap (Footer-Link); Ablauf- und Einstiegskarten sind Komponenten
+ * geblieben, aber nicht mehr Teil der Startseite.
+ *
+ * Zusammenführung (Owner, 13.10.2026):
  *  - Hero, Buttons, Flows, Design: Landing v2 („AI Compliance Operations OS“-Optik)
- *  - Texte: Live-Landing v4 (i18n `v4Hero*`, LOOP_NODES) — klar, ohne Fachchinesisch
+ *  - Texte: Live-Landing v4 (i18n `v4Hero*`) — klar, ohne Fachchinesisch
  *  - Neu: echte three.js-3D-Szene, 3D-Ebenen/Buttons, Beta-Testphase, Roadmap aus SSoT
  *
  * Nichts überschrieben: v4 bleibt unter /design/landing-v4, v2 unter /design/landing-v2.
  * Preis-CTAs bleiben auf der Pricing-SSoT; in der Beta leitet /checkout/:planKey
  * in die kostenlose Registrierung um (src/config/beta.ts).
  */
+const HOME_NAV: readonly Lv2NavItem[] = [
+  { label: 'Produkt', href: '#produkt' },
+  { label: 'Agenten', href: '#architecture' },
+  { label: 'Check', href: '#governance-check' },
+  { label: 'Preise', href: '#preise' },
+];
+
 function Embed({ children }: { children: ReactNode }) {
   return <div className="lv2-embed ga-context rs-handoff">{children}</div>;
 }
@@ -49,25 +63,25 @@ export function LandingV5() {
     <div className="lv2 v5" data-lv2-theme={theme} data-landing-mode={chosen ?? 'gold'} style={{ ['--v5-ribbon-h' as string]: BETA.active ? '40px' : '0px' }}>
       <SEOHead />
       <BetaRibbon source="landing-v5-ribbon" />
-      <LandingV2Header theme={theme} onThemeChange={setTheme} />
+      <LandingV2Header theme={theme} onThemeChange={setTheme} nav={HOME_NAV} />
       <main>
         <HeroV5 />
         <FrameworkStrip />
-        <V5Loop />
-        <V5UnifiedEntry />
-        <V5BetaProgram />
+        <AiActTimeline />
+        <LifecycleGrid />
+        <Embed>
+          <ArchitectureSection />
+        </Embed>
         <Embed>
           <GovernanceControlRoom />
         </Embed>
-        <LifecycleGrid />
         <EvidenceChainPreview />
-        <AiActTimeline />
         <EuNativeGrid />
         <Embed>
           <GovernanceSelfCheck />
         </Embed>
+        <V5BetaProgram />
         <PricingV2 />
-        <V5Roadmap />
         <LandingFaq />
         <FinalCta />
       </main>

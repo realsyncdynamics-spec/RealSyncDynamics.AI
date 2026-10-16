@@ -4,7 +4,10 @@ import {
   RUNTIME_CAPABILITIES,
   assessProjectRuntime,
   capabilityById,
+  hasReactProject,
+  runtimeCapabilities,
 } from '../../src/features/app-builder/bolt/runtime-capability';
+import { sandpackPreviewEnabled } from '../../src/features/app-builder/bolt/preview-flags';
 
 const rec = (path: string, content: string) => ({
   path,
@@ -18,8 +21,8 @@ describe('runtime capability matrix', () => {
   it('documents html/css/js as yes and react/esm/router/cdn/webcontainer as no', () => {
     expect(capabilityById('html-css')?.support).toBe('yes');
     expect(capabilityById('local-js')?.support).toBe('yes');
-    expect(capabilityById('react')?.support).toBe('no');
-    expect(capabilityById('esm-imports')?.support).toBe('no');
+    expect(runtimeCapabilities(false).find((c) => c.id === 'react')?.support).toBe('no');
+    expect(runtimeCapabilities(false).find((c) => c.id === 'esm-imports')?.support).toBe('no');
     expect(capabilityById('client-routing')?.support).toBe('no');
     expect(capabilityById('external-assets')?.support).toBe('no');
     expect(capabilityById('webcontainer')?.support).toBe('no');
@@ -44,7 +47,7 @@ describe('runtime capability matrix', () => {
     const assessment = assessProjectRuntime([
       rec('App.tsx', "import React from 'react'; export default function App(){return <div/>}"),
       rec('index.html', '<script src="https://unpkg.com/react@18/umd/react.development.js"></script>'),
-    ]);
+    ], false);
     expect(assessment.executable).toBe(false);
     expect(assessment.warnings.length).toBeGreaterThan(0);
     expect(assessment.warnings.some((w) => /React/i.test(w))).toBe(true);
@@ -55,5 +58,35 @@ describe('runtime capability matrix', () => {
       rec('app.js', 'window.history.pushState({}, "", "/kunden");'),
     ]);
     expect(assessment.warnings.some((w) => /History-Router/i.test(w))).toBe(true);
+  });
+
+  it('requires exactly true for the opt-in flag', () => {
+    for (const value of [null, '', 'false', '1', 'TRUE', true]) {
+      expect(sandpackPreviewEnabled(value)).toBe(false);
+    }
+    expect(sandpackPreviewEnabled('true')).toBe(true);
+  });
+
+  it('detects automatic JSX runtime without an explicit React import', () => {
+    expect(hasReactProject([rec('src/App.tsx', 'export default () => <div />;')])).toBe(true);
+    expect(hasReactProject([rec('src/App.jsx', 'export default () => <div />;')])).toBe(true);
+    expect(hasReactProject([rec('package.json', '{"dependencies":{"react":"19.0.0"}}')])).toBe(true);
+    expect(hasReactProject([rec('app.js', 'document.body.textContent = "ok";')])).toBe(false);
+  });
+
+  it('selects Sandpack only for React projects when enabled', () => {
+    const files = [rec('src/App.tsx', 'export default () => <div />;')];
+    expect(assessProjectRuntime(files, false).previewRuntime).toBe('srcdoc');
+    expect(assessProjectRuntime(files, false).executable).toBe(false);
+    expect(assessProjectRuntime(files, true).previewRuntime).toBe('sandpack');
+    expect(assessProjectRuntime(files, true).executable).toBe(true);
+    expect(assessProjectRuntime([rec('index.html', '<h1>Landing</h1>')], true).previewRuntime).toBe('srcdoc');
+  });
+
+  it('reports React/ESM as partial without enabling Node or WebContainer', () => {
+    const capabilities = runtimeCapabilities(true);
+    expect(capabilities.find((c) => c.id === 'react')?.support).toBe('partial');
+    expect(capabilities.find((c) => c.id === 'esm-imports')?.support).toBe('partial');
+    expect(capabilities.find((c) => c.id === 'webcontainer')?.support).toBe('no');
   });
 });

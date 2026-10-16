@@ -105,7 +105,7 @@ describe('CSP wird tatsächlich in das Dokument gesetzt', () => {
 
 /**
  * Der eigentliche Wächter: Er liest den Quellcode, nicht die Absicht.
- * Ein neuer Rahmen mit der verbotenen Kombination lässt diesen Test
+ * Ein neuer same-origin Rahmen mit der verbotenen Kombination lässt diesen Test
  * fehlschlagen, auch wenn er `preview-sandbox.ts` gar nicht kennt.
  */
 describe('Kein Rahmen im Repository mit der verbotenen Kombination', () => {
@@ -119,12 +119,14 @@ describe('Kein Rahmen im Repository mit der verbotenen Kombination', () => {
     return acc;
   }
 
-  it('findet nirgends allow-scripts zusammen mit allow-same-origin', () => {
+  it('findet allow-scripts zusammen mit allow-same-origin nur im externen Sandpack-Rahmen', () => {
     const offenders: string[] = [];
     for (const file of [...sourceFiles(join(ROOT, 'src')), ...sourceFiles(join(ROOT, 'packages'))]) {
       const source = readFileSync(file, 'utf-8');
       // Nur die Datei, die das Verbot beschreibt, darf beide Marken nennen.
       if (file.endsWith('preview-sandbox.ts')) continue;
+      // Separate fixed origin, not srcDoc; checked explicitly below.
+      if (file === join(ROOT, 'src/features/app-builder/SandpackReactPreview.tsx')) continue;
       for (const match of source.matchAll(/sandbox\s*=\s*["'{]([^"'}]*)["'}]/g)) {
         if (hasForbiddenSandboxCombination(match[1])) {
           offenders.push(`${file.replace(ROOT, '')}: ${match[1]}`);
@@ -132,6 +134,17 @@ describe('Kein Rahmen im Repository mit der verbotenen Kombination', () => {
       }
     }
     expect(offenders, offenders.join('\n')).toEqual([]);
+  });
+
+  it('bindet die Sandpack-Ausnahme an eine feste externe Herkunft ohne srcDoc', () => {
+    const source = readFileSync(join(ROOT, 'src/features/app-builder/SandpackReactPreview.tsx'), 'utf-8');
+    expect(source).toContain("SANDPACK_BUNDLER_URL = 'https://2-19-8-sandpack.codesandbox.io/'");
+    expect(source).toContain('src={SANDPACK_BUNDLER_URL}');
+    expect(source).toContain('bundlerURL: SANDPACK_BUNDLER_URL');
+    expect(source).not.toContain('srcDoc');
+    expect(source.match(/<iframe\b/g)).toHaveLength(1);
+    expect(source).not.toMatch(/allow-(?:popups|forms|downloads|top-navigation)/);
+    expect(source).toContain('allow=""');
   });
 
   it('benennt das verbotene Paar unmissverständlich', () => {

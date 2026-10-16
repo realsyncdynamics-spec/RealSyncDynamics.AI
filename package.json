@@ -63,6 +63,7 @@
     "migrate:rename": "node scripts/rename-migration.mjs"
   },
   "dependencies": {
+    "@codesandbox/sandpack-react": "2.20.0",
     "@google/genai": "^1.29.0",
     "@puckeditor/core": "^0.23.0",
     "@react-pdf/renderer": "^4.5.1",

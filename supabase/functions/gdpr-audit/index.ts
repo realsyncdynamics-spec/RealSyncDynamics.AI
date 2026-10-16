@@ -281,7 +281,7 @@ async function handleAudit(req: Request): Promise<Response> {
     // Eine Weiterleitung auf ein unzulaessiges Ziel ist kein Befund ueber die
     // Seite, sondern eine verweigerte Pruefung — das sagen wir auch so.
     if (e instanceof TargetRefusedError) {
-      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Seite leitet auf ein Ziel weiter, das nicht geprueft werden darf.');
+      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Adresse oder eine ihrer Weiterleitungen zeigt auf ein Ziel, das nicht geprueft werden darf.');
     }
     fetchError = (e as Error).message ?? 'fetch failed';
   }

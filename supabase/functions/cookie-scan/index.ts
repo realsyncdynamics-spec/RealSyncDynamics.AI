@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     if (err instanceof TargetRefusedError) {
-      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Seite leitet auf ein Ziel weiter, das nicht geprüft werden darf.');
+      return jsonError(400, 'REDIRECT_BLOCKED', 'Die Adresse oder eine ihrer Weiterleitungen zeigt auf ein Ziel, das nicht geprüft werden darf.');
     }
     fetchError = err instanceof Error ? err.message : String(err);
   }

@@ -509,4 +509,304 @@ Beides ist okay. Aber nicht zu schauen, ist die schlechteste Option.
 Kostenlosen Check starten → realsyncdynamicsai.de/audit`,
     hashtags: ['#FreeAudit', '#DSGVO', '#Compliance'],
   },
+  // ─── Serie „Art. 26 in 12 Posts“ ─────────────────────────────────────────
+  // Ein Post je Prüfpunkt, gleiche Reihenfolge wie BETREIBER_PFLICHTEN in
+  // src/content/aiActBetreiberpflichten.ts; CTA führt in den Selbstcheck.
+  // Fristen nach VO (EU) 2026/1744 (Digital Omnibus).
+  {
+    id: 'li-021-art26-betriebsanleitung',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'kmu_geschaeftsfuehrung'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Art. 26 AI Act in 12 Posts. Teil 1: die Betriebsanleitung.',
+    body:
+`Wer Hochrisiko-KI einsetzt, ist „Betreiber“ und hat ab dem 2. Dezember 2027 eigene Pflichten aus Art. 26. Der Digital Omnibus hat die Frist verschoben, nicht gestrichen.
+
+In dieser Serie nehmen wir jede Pflicht einzeln vor. Eine pro Post, mit einer Prüffrage zum Mitnehmen.
+
+Teil 1/12 – Abs. 1: Verwendung gemäß Betriebsanleitung.
+
+Klingt banal. In der Praxis heißt das:
+· Die Betriebsanleitung des Anbieters liegt vor, für jedes System.
+· Es ist festgelegt, wofür das System eingesetzt werden darf. Und wofür nicht.
+· Technische und organisatorische Maßnahmen sorgen dafür, dass es so bleibt.
+
+Prüffrage: Könnten Sie heute für jedes KI-System im Haus die Betriebsanleitung vorlegen?
+
+Alle 12 Prüfpunkte als Selbstcheck, fünf Minuten, läuft im Browser:
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#KIVerordnung', '#AIGovernance', '#Compliance'],
+  },
+  {
+    id: 'li-022-art26-aufsicht',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'dsb_internal'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Menschliche Aufsicht heißt nicht: Irgendwer schaut mal drüber.',
+    body:
+`Teil 2/12 – Art. 26 Abs. 2 AI Act.
+
+Die Aufsicht über ein Hochrisiko-System muss bei Menschen liegen, die drei Dinge mitbringen:
+· Kompetenz
+· Schulung
+· Befugnis
+
+Der dritte Punkt fehlt am häufigsten. Wer die KI-Empfehlung nur abnicken darf, übt keine Aufsicht aus. Aufsicht heißt: übersteuern können. Und im Zweifel stoppen.
+
+Dazu kommt: Der Betreiber muss diese Personen unterstützen, mit Zeit, Informationen und Rückendeckung.
+
+Prüffrage: Steht für jedes System fest, wer es beaufsichtigt, und darf diese Person „Nein“ sagen?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#HumanOversight', '#AIGovernance'],
+  },
+  {
+    id: 'li-023-art26-eingabedaten',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'developer'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Ihre KI ist nur so gut wie das, was Sie hineingeben.',
+    body:
+`Teil 3/12 – Art. 26 Abs. 4 AI Act.
+
+Soweit Sie die Eingabedaten kontrollieren, müssen sie für den Zweck relevant und ausreichend repräsentativ sein.
+
+Beispiel Personalauswahl: Sieht das Screening-Tool nur Lebensläufe aus einer Region, einer Altersgruppe oder einem Karriereweg, liegt das Problem nicht beim Anbieter. Es liegt bei den Daten, die Sie einspeisen.
+
+Was hilft:
+· Datenquellen je System dokumentieren
+· regelmäßig auf Lücken und Verzerrungen prüfen
+· Änderungen an den Daten nachvollziehbar halten
+
+Prüffrage: Wer im Haus ist dafür zuständig, die Eingabedaten Ihrer KI-Systeme zu prüfen?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#DataQuality', '#AIGovernance'],
+  },
+  {
+    id: 'li-024-art26-ueberwachung',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'developer'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Die Inbetriebnahme ist nicht das Ende der Prüfung, sondern der Anfang.',
+    body:
+`Teil 4/12 – Art. 26 Abs. 5 AI Act.
+
+Betreiber müssen den Betrieb ihrer Hochrisiko-Systeme anhand der Betriebsanleitung überwachen. Und den Anbieter informieren, wenn etwas auffällt.
+
+Überwachung braucht drei Dinge:
+· Kennzahlen: Woran erkennen Sie, dass das System anders arbeitet als erwartet?
+· Rhythmus: Wer schaut wann hin?
+· Daten: Ohne Protokolle der Modellaufrufe gibt es nichts zu überwachen.
+
+Beim dritten Punkt setzen wir an: Ein Prüfpfad über jeden Modellaufruf ist die Grundlage, auf der Überwachung überhaupt erst möglich wird.
+
+Prüffrage: Woran würden Sie merken, dass Ihr KI-System seit drei Wochen schlechter entscheidet?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#Monitoring', '#AIGovernance'],
+  },
+  {
+    id: 'li-025-art26-risiko-aussetzen',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['kmu_geschaeftsfuehrung', 'compliance_lead'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Wer darf in Ihrem Unternehmen eine KI abschalten?',
+    body:
+`Teil 5/12 – Art. 26 Abs. 5 AI Act.
+
+Gibt es Grund zur Annahme, dass ein Hochrisiko-System trotz bestimmungsgemäßer Nutzung ein Risiko für Gesundheit, Sicherheit oder Grundrechte birgt, muss der Betreiber:
+1. unverzüglich Anbieter oder Händler und die Marktüberwachungsbehörde informieren
+2. die Nutzung aussetzen
+
+Organisatorisch ist der zweite Schritt die eigentliche Hürde. Ein System anzuhalten, auf dem ein Prozess läuft, entscheidet niemand spontan. Das muss vorher geklärt sein:
+· Wer hat die Befugnis?
+· Was ist der Ersatzprozess?
+· Wer informiert wen?
+
+Prüffrage: Gibt es für Ihre KI-Systeme eine dokumentierte Stopp-Befugnis?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#RiskManagement', '#AIGovernance'],
+  },
+  {
+    id: 'li-026-art26-vorfaelle',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'dsb_internal'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Schwerwiegender KI-Vorfall: Wen rufen Sie zuerst an?',
+    body:
+`Teil 6/12 – Art. 26 Abs. 5 AI Act.
+
+Die Antwort steht im Gesetz: zuerst den Anbieter. Danach Einführer oder Händler und die zuständige Marktüberwachungsbehörde. Und zwar unverzüglich.
+
+Wer das erst im Ernstfall nachliest, verliert Zeit.
+
+Was in den Notfallplan gehört:
+· die Meldekette mit Ansprechpartnern beim Anbieter
+· die zuständige Behörde
+· wer intern meldet und wer dokumentiert
+· Zeitpunkte für jeden Schritt
+
+Prüffrage: Steht die Meldekette für KI-Vorfälle schon in Ihrem Notfallhandbuch?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#IncidentResponse', '#Compliance'],
+  },
+  {
+    id: 'li-027-art26-protokolle',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead', 'developer'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Sechs Monate: So lange müssen KI-Protokolle mindestens aufbewahrt werden.',
+    body:
+`Teil 7/12 – Art. 26 Abs. 6 AI Act.
+
+Betreiber müssen automatisch erzeugte Protokolle ihrer Hochrisiko-Systeme mindestens sechs Monate aufbewahren. Jedenfalls die, die unter ihrer Kontrolle stehen.
+
+Der Nebensatz ist die eigentliche Frage: Welche Protokolle liegen bei Ihnen, welche beim Anbieter? Viele Unternehmen wissen es nicht. Und merken es erst, wenn jemand nachfragt.
+
+Bei uns ist das der Kern des Produkts: Jeder Modellaufruf landet im Prüfpfad und lässt sich als Nachweis exportieren.
+
+Prüffrage: Könnten Sie heute die Protokolle eines KI-Systems von vor fünf Monaten vorlegen?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#Logging', '#EvidenceVault'],
+  },
+  {
+    id: 'li-028-art26-arbeitsplatz',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['kmu_geschaeftsfuehrung', 'dsb_internal'],
+    cta: 'betreiber_selfcheck',
+    hook: 'KI am Arbeitsplatz? Erst der Betriebsrat, dann der Go-live.',
+    body:
+`Teil 8/12 – Art. 26 Abs. 7 AI Act.
+
+Bevor ein Hochrisiko-System am Arbeitsplatz in Betrieb geht, müssen Arbeitnehmervertretung und betroffene Beschäftigte informiert werden.
+
+Hochrisiko am Arbeitsplatz ist häufiger als gedacht. Anhang III nennt ausdrücklich KI für:
+· Stellenausschreibungen und Bewerberauswahl
+· Entscheidungen über Beförderung und Kündigung
+· Aufgabenzuweisung nach Verhalten oder persönlichen Merkmalen
+· Leistungs- und Verhaltensüberwachung
+
+In Deutschland kommen die Mitbestimmungsrechte nach dem Betriebsverfassungsgesetz dazu.
+
+Prüffrage: Ist die Information des Betriebsrats ein fester Schritt in Ihrem KI-Einführungsprozess?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#HRTech', '#Betriebsrat'],
+  },
+  {
+    id: 'li-029-art26-registrierung',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['compliance_lead'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Für Behörden gilt: ohne Registrierung kein Einsatz.',
+    body:
+`Teil 9/12 – Art. 26 Abs. 8 AI Act.
+
+Öffentliche Stellen, die Hochrisiko-KI einsetzen, haben eine zusätzliche Pflicht: Das System muss in der EU-Datenbank registriert sein (Art. 49).
+
+Ist es das nicht, darf die Behörde es nicht verwenden. Sie muss dann den Anbieter oder Händler informieren.
+
+Für Kommunen, Landes- und Bundesbehörden heißt das konkret:
+· Registrierungsstatus vor jeder Beschaffung prüfen
+· den Nachweis in die Vergabeunterlagen aufnehmen
+· Bestandssysteme bis zum Stichtag nachziehen
+
+Dazu kommt für öffentliche Stellen eine Grundrechte-Folgenabschätzung nach Art. 27.
+
+Prüffrage: Steht der Registrierungsnachweis schon in Ihren Vergabeunterlagen für KI?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#PublicSector', '#Vergabe'],
+  },
+  {
+    id: 'li-030-art26-dsfa',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['dsb_internal', 'dsb_external'],
+    cta: 'betreiber_selfcheck',
+    hook: 'AI Act und DSGVO arbeiten zusammen. Art. 26 Abs. 9 zeigt, wie.',
+    body:
+`Teil 10/12 – Art. 26 Abs. 9 AI Act.
+
+Der Anbieter eines Hochrisiko-Systems muss Ihnen Informationen liefern: Zweck, Leistungsgrenzen, Risiken, Anforderungen an die Eingabedaten (Art. 13).
+
+Art. 26 Abs. 9 sagt: Nutzen Sie genau diese Informationen für Ihre Datenschutz-Folgenabschätzung nach Art. 35 DSGVO, soweit eine DSFA erforderlich ist.
+
+Das ist eine gute Nachricht. Wer die Anbieterunterlagen sauber ablegt, hat einen großen Teil der DSFA-Grundlagen schon.
+
+Der häufige Fehler: DSFA und KI-Dokumentation liegen in zwei Abteilungen, die nicht miteinander reden.
+
+Prüffrage: Liegt die Anbieterdokumentation Ihrer KI-Systeme bei der DSFA oder in einem anderen Ordner?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#DSGVO', '#DSFA'],
+  },
+  {
+    id: 'li-031-art26-betroffene',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['kmu_geschaeftsfuehrung', 'dsb_internal'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Wussten Sie, dass Sie Bewerbende informieren müssen, wenn KI mitentscheidet?',
+    body:
+`Teil 11/12 – Art. 26 Abs. 11 AI Act.
+
+Wer ein Hochrisiko-System nach Anhang III einsetzt, um über Menschen zu entscheiden oder dabei zu unterstützen, muss diese Menschen darüber informieren.
+
+Das betrifft zum Beispiel:
+· Bewerbende, deren Unterlagen eine KI vorsortiert
+· Kundinnen und Kunden, deren Kreditwürdigkeit eine KI bewertet
+· Prüflinge, deren Leistungen eine KI beurteilt
+
+Dazu kommt Art. 86: Betroffene können eine Erläuterung verlangen, welche Rolle die KI bei einer Entscheidung gespielt hat, die sie erheblich beeinträchtigt.
+
+Diese Pflicht fehlt in vielen Zusammenfassungen. Im Bewerbungsportal sollte sie nicht fehlen.
+
+Prüffrage: Steht in Ihrem Bewerbungsprozess, dass eine KI beteiligt ist?
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#Recruiting', '#Transparenz'],
+  },
+  {
+    id: 'li-032-art25-rollenwechsel',
+    channel: 'linkedin',
+    theme: 'ai_act',
+    persona: ['founder', 'compliance_lead', 'developer'],
+    cta: 'betreiber_selfcheck',
+    hook: 'Vom Betreiber zum Anbieter, ohne es zu merken.',
+    body:
+`Teil 12/12 – Art. 25 AI Act.
+
+Zum Schluss die Pflicht, die nicht in Art. 26 steht, aber alles verändert.
+
+Sie werden selbst zum Anbieter eines Hochrisiko-Systems, wenn Sie:
+1. es unter Ihrem Namen oder Ihrer Marke in Verkehr bringen oder in Betrieb nehmen
+2. es wesentlich verändern
+3. ein anderes KI-System so umwidmen, dass es hochriskant wird. Zum Beispiel einen allgemeinen Chatbot, der plötzlich Bewerbungen vorsortiert.
+
+Dann gelten zusätzlich die Anbieterpflichten nach Art. 16: Risikomanagement, technische Dokumentation, Konformitätsbewertung, CE-Kennzeichnung.
+
+Das passiert selten mit Absicht. Meist ist es ein Projekt, das „nur kurz“ erweitert wurde.
+
+Prüffrage: Hat jemand dokumentiert, warum Sie bei jedem Ihrer KI-Systeme Betreiber bleiben?
+
+Damit ist die Serie komplett. Alle 12 Prüfpunkte als Selbstcheck:
+
+Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
+    hashtags: ['#AIAct', '#KIVerordnung', '#AIGovernance', '#Compliance'],
+  },
 ];

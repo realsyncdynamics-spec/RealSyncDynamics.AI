@@ -166,7 +166,10 @@ test.describe('Pricing Flow', () => {
     // würde gegen die CheckoutPage-Reihenfolge (inquiry vor legacy) laufen.
 
     test('agency checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/agency`);
+      // `?purchase=1`: bewusster Kaufpfad — ohne ihn leitet die Beta in die
+      // Registrierung um (src/config/beta.ts), und der Test gewann nur das
+      // Rennen gegen die Umleitung.
+      await page.goto(`${BASE_URL}/checkout/agency?purchase=1`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(/\/checkout\/agency/);
       await expect(page).not.toHaveURL(/source=checkout-retired/);

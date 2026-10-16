@@ -6,6 +6,7 @@ import {
 import { getSupabase } from '../../lib/supabase';
 import { useCurrentTenant } from '../../lib/useCurrentTenant';
 import { useBrowserSession } from '../../lib/useBrowserSession';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface EmbeddedBrowserCanvasProps {
   url: string;
@@ -90,7 +91,7 @@ export function EmbeddedBrowserCanvas({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
 
-      const resp = await fetch('/functions/v1/log-tool-run', {
+      const resp = await fetch(`${getSupabaseUrl()}/functions/v1/log-tool-run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,9 +1,10 @@
 /**
  * Landing v6 (`/`) — Hero unter den Buttons.
  *
- * Vertrag: Während der Beta steht der Beta-Hinweis direkt unter dem
- * Haupt-Button und führt in die Registrierung. Der Beispielbefund ist als
- * Beispiel gekennzeichnet und entspricht einer echten Scanner-Regel
+ * Vertrag: Direkt unter den Buttons steht, dass „ohne Konto“ für den Check
+ * gilt. Der Hero verspricht nicht „alle Funktionen“ (bis WP-3 nur „kostenlos
+ * testen“; der Beta-Hinweis selbst kommt aus #1892). Der Beispielbefund ist
+ * als Beispiel gekennzeichnet und entspricht einer echten Scanner-Regel
  * (Titel, Schweregrad, Normbezug), damit die Landing nichts verspricht,
  * was der Prüfbericht nicht liefert.
  */
@@ -13,7 +14,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV6 } from '../../src/pages/LandingV6';
-import { BETA } from '../../src/config/beta';
 
 beforeEach(() => {
   localStorage.clear();
@@ -34,20 +34,18 @@ const mount = () =>
     </MemoryRouter>,
   );
 
-it('shows the beta note right below the primary CTA and links into signup', () => {
-  expect(BETA.active).toBe(true);
+it('keeps the check hint right below the buttons and no all-features claim in the hero', () => {
   const { container } = mount();
   const primary = container.querySelector('[data-testid="hero-primary-cta"]');
-  const note = container.querySelector('[data-hero-beta-note]');
   expect(primary).not.toBeNull();
-  expect(note).not.toBeNull();
-  // Der Hinweis folgt direkt auf die Button-Reihe.
-  expect(primary?.parentElement?.nextElementSibling).toBe(note);
-  expect(note).toHaveTextContent(BETA.endsLabel);
-  const link = note?.querySelector('a');
-  const href = new URL(link?.getAttribute('href') ?? '', 'https://x.invalid');
-  expect(href.pathname).toBe('/welcome');
-  expect(href.searchParams.get('beta')).toBe('1');
+  // Die Hinweiszeile folgt direkt auf die Button-Reihe und bezieht „ohne Konto“ auf den Check.
+  expect(primary?.parentElement?.nextElementSibling).toHaveTextContent(
+    'Check: Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte',
+  );
+  // Textspalte des Heros (Kicker bis Beispielbefund); die Beta-Leiste oben prüft check:landing-claims.
+  const column = primary?.parentElement?.parentElement;
+  expect(column?.querySelector('h1')).not.toBeNull();
+  expect(column).not.toHaveTextContent(/alle Funktionen/);
 });
 
 it('labels the sample finding as an example and mirrors a real scanner rule', () => {

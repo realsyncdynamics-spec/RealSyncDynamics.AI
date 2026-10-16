@@ -35,7 +35,10 @@ const mocks = vi.hoisted(() => {
         return {
           select: () => ({
             eq: () => ({
-              eq: async () => ({ count: state.approvals.count, error: state.approvals.error }),
+              // countPendingApprovals: tenant_id → status 'pending' → expires_at > jetzt
+              eq: () => ({
+                gt: async () => ({ count: state.approvals.count, error: state.approvals.error }),
+              }),
             }),
           }),
         };

@@ -74,14 +74,33 @@ export const approveApproval = (approval_id: string, reason?: string) =>
 export const rejectApproval = (approval_id: string, reason: string) =>
   call<ResolveResult>({ op: 'reject', approval_id, reason });
 
-/** Fast count of pending approvals for the badge — direct Supabase read via RLS. */
+/**
+ * Ist die Frist einer Freigabe erreicht? Spiegel von `isApprovalExpired` in
+ * `supabase/functions/_shared/approvalExpiry.ts` (das Frontend importiert
+ * nicht aus supabase/); ein Test hält beide Fassungen gleich.
+ */
+export function isApprovalExpired(expiresAt: string | null | undefined, now: Date = new Date()): boolean {
+  if (!expiresAt) return false;
+  const t = new Date(expiresAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return t <= now.getTime();
+}
+
+/**
+ * Fast count of open approvals for the badge — direct Supabase read via RLS.
+ * Offen = status 'pending' UND Frist noch nicht abgelaufen (expires_at > jetzt).
+ * Es gibt keinen Job, der abgelaufene Einträge auf 'expired' setzt; ohne den
+ * Zeitfilter zählte die Kachel sie dauerhaft als „wartend“. Dieselbe Regel
+ * gilt in der Edge Function `governance-approvals` (Liste und Entscheidung).
+ */
 export async function countPendingApprovals(tenant_id: string): Promise<number> {
   const sb = getSupabase();
   const { count, error } = await sb
     .from('governance_approvals')
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenant_id)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString());
   if (error) throw new Error(error.message);
   return count ?? 0;
 }

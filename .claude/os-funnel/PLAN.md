@@ -118,6 +118,22 @@ ohne dokumentierte Lighthouse-Messung. Ob E-V4 nachgezogen oder angepasst wird,
 ist eine eigene Freigabe (Design-Freeze in `CLAUDE.md`). E-V3 ist hier nicht neu
 gemessen.
 
+**Nachtrag 2026-10-14 (Dominik Steiner): Responsive / Mobile (WP8).** Repo nicht neu gemessen; Pfade mit `(?)` löst die Session auf.
+
+**Ziel:** Der Funnel `/` → `/audit` → `/welcome` → `/app/activation` → `/app/dashboard` funktioniert ab **360 px Breite** ohne horizontales Scrollen. Er bleibt bedienbar und lesbar.
+Gemeint ist eine Ebene für Layout und Verhalten. Es ist **kein Redesign**.
+
+**Nicht Ziel:** neue Farb- oder Typo-Tokens, neue Landing-Version, neue Claims, Änderungen an E-V2/E-V3, 3D-Entscheidung (E-V4).
+
+| ID | Frage | Status / Empfehlung | Begründung |
+|---|---|---|---|
+| **E-R1** | Mindestbreite | ⏳ offen. Empfehlung: **360 px** als Pflicht, 320 px „lesbar, nicht optimiert“ | 360 px deckt die gängigen Android-Geräte ab. 320 px kostet viel und bringt wenig. |
+| **E-R2** | Darf WP8 `/` (Landing v6) anfassen? | ⏳ offen. Empfehlung: **ja, nur Fehlerbehebung** (Overflow, Tap-Ziele, Bildgrößen), **keine Tokens**. Eigene Freigabe wegen Design-Freeze | Freeze schützt die Optik. Eine kaputte Darstellung auf dem Handy ist kein Design. |
+| **E-R3** | Breakpoints | ⏳ offen. Empfehlung: **ein Satz** für Landing und App, aus dem Bestand gelesen (nicht neu erfunden). Nur Layout-Variablen, keine Design-Tokens | Heute vermutlich je Landing-CSS eigene Werte (`landing-v2.css` u. a.) |
+| **E-R4** | Datentabellen in `/app` auf dem Handy | ⏳ offen. Empfehlung: **Listen → Karten** unter 768 px. Dichte Tabellen (Evidence, Freigaben) → horizontaler Scroll **im Container** mit fixierter erster Spalte | Karten für Übersicht, Tabelle für Prüfarbeit |
+| **E-R5** | App-Navigation mobil | ⏳ offen. Empfehlung: **Drawer** (Menü-Button), keine Bottom-Nav | Kleinster Eingriff in die bestehende Shell |
+| **E-R6** | 3D/three.js auf Mobile | ✅ ergibt sich aus E-V4: auf Mobile **kein** three.js-Chunk. Prüfen, dass v6 ihn nirgends nachlädt | v6 nutzt statisches Europa-Bild |
+
 ## 4. Arbeitspakete und Reihenfolge
 
 ```
@@ -146,6 +162,31 @@ WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockie
 | **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. | `.claude/os-funnel/governed-evolution.md` | keins | — |
 | **WP7** | Landing v4 auf `/`. ✅ **Erledigt über #1751** (04.10.); der geplante Weg über #1742 ist entfallen. ⏸ **Offen bleibt die Abweichung zu E-V4** (3D-Erde auf jedem Gerät, siehe Nachtrag §3): E-V4 nachziehen (3D nur Desktop, nach Lighthouse-Messung) oder E-V4 anpassen — Entscheidung Dominik Steiner, eigene Freigabe (Design-Freeze); bis dahin zurückgestellt. | `LandingV4.tsx`, `heroEarthScene.ts` | niedrig | Design-Freeze |
 | **WP7a** | SSoT-Bereinigung: Bot-Laufzeit eine Wahrheit, toter `PLANS`-Export, SSO-/SCIM-/On-Prem-Claims, Hostinger-Roadmap. ⏳ **Offen.** Der Auftrag stand in #1752 (`.claude/commands/wp7a-ssot-cleanup.md`) und ist vor einem Neustart gegen den aktuellen `main` zu prüfen; Teile warten auf E-V7–E-V9. | `platform-capabilities.ts`, `implementation-status.ts`, `runtimeVocab.ts`, `GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx` | mittel | Katalog (E-V8), Claims (E-V7, E-V9) |
+| **WP8a** | **Messung zuerst.** Viewport-Smoke für 360 / 390 / 768 / 1024 / 1440 px auf den Funnel-Routen. Erstmals auch Lighthouse **mobil** für `/` und `/audit` (E-V4 hatte keine dokumentierte Messung). Prüft: kein horizontaler Overflow, Tap-Ziele, Input-Schriftgröße, CLS. **Keine UI-Änderung.** | Test-Datei neu (Ort nach Bestand des Repo-Smoke-Tests), ggf. `package.json`-Script `check:responsive` | keins | — |
+| **WP8b** | Public-Funnel mobil: `/`, `/audit`, `/pricing`, `/login`, `/welcome`. Nur Befunde aus 8a | Landing-v6-Komponente `(?)`, `AuditLanding.tsx`, `PostScanChoiceRow.tsx`, Pricing-Seite `(?)`, `GovernanceFooter.tsx`, `AssistentChip.tsx` | mittel | Design-Freeze (E-R2) |
+| **WP8c** | App-Shell: Navigation als Drawer, Safe-Area, `100dvh`, Formulare in `/app/activation` | App-Layout `(?)`, `features/activation/*` | mittel | E-R5 |
+| **WP8d** | Command Center + Register mobil: Kachelreihe aus WP4 mit Container Queries, Tabellen nach E-R4 | `CommandCenterDashboard.tsx`, `features/governance/dashboard/*`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | E-R4 |
+
+**WP8 Responsive / Mobile (Nachtrag 2026-10-14):**
+
+```
+WIP-Stopp ── offene PRs ≤ 20 (Policy) ──► WP8a Messung (nur Tests) ──► WP8b Public-Funnel ──► WP8c App-Shell ──► WP8d Command Center
+                                               │
+                                               └── liefert die Befundliste, aus der 8b–8d ihren Umfang ziehen
+```
+
+**Reihenfolge-Regel:** WP8a vor allen anderen. Ohne Messung gibt es keinen Umfang, und ohne Umfang gibt es keinen PR.
+WP8 läuft neben AP-x und G-x und mischt sich nicht mit ihnen.
+**Start erst, wenn der WIP-Stopp aufgehoben ist.** Zuerst die fünf v5-PRs (#1872, #1873, #1875, #1877, #1882) schließen oder umziehen, weil v5 nur noch Referenz ist.
+
+**Akzeptanzkriterien (messbar, für 8b–8d):**
+
+- `document.documentElement.scrollWidth <= window.innerWidth` auf jeder Funnel-Route bei 360 px
+- Tap-Ziele mindestens 24 × 24 px (WCAG 2.2, 2.5.8 AA), primäre CTAs 44 × 44 px
+- Eingabefelder mindestens 16 px Schrift (kein iOS-Auto-Zoom)
+- CLS < 0,1 mobil auf `/` und `/audit`
+- Kein three.js-Request auf Mobile (Netzwerk-Log in 8a)
+- Keine Änderung an Design-Tokens (`index.css`, Landing-CSS-Variablen): per Diff belegt
 
 **WP4-Folgepunkte (bewusst nicht in #1733):**
 

@@ -79,6 +79,17 @@ export const EDITABLE_CONTENT: Readonly<Record<BlockKind, Readonly<Record<string
   map: { heading: TEXT },
   cta: { headline: TEXT, href: URL },
   'legal-text': {},
+  // Rebuild-Komponenten (Schnitt 2b aus #1727). Nur redaktionelle Felder;
+  // Sichtbarkeit, Formularziele und Bildrechte folgen mit der Rollenprüfung
+  // im Edit-Handler.
+  'trust-bar': { heading: TEXT, items: { type: 'list', max: 8, item: { label: TEXT } } },
+  'problem-solution': { heading: TEXT, problem: LONG, solution: LONG, points: { type: 'list', max: 6, item: { label: TEXT } } },
+  process: { heading: TEXT, steps: { type: 'list', max: 8, item: { title: TEXT, text: LONG_NULLABLE } } },
+  pricing: { heading: TEXT, items: { type: 'list', max: 8, item: { label: TEXT, price: TEXT, note: LONG_NULLABLE } }, note: LONG_NULLABLE },
+  'case-study': { heading: TEXT, items: { type: 'list', max: 8, item: { title: TEXT, text: LONG } } },
+  'contact-info': { heading: TEXT, phone: TEXT, phoneHref: URL, email: TEXT, address: LONG_NULLABLE, hours: TEXT },
+  governance: { heading: TEXT },
+  automation: { heading: TEXT, steps: { type: 'list', max: 8, item: { label: TEXT, text: LONG_NULLABLE } } },
   'ai-disclosure': {},
   footer: {},
 });
@@ -90,6 +101,7 @@ export const FORM_FIELD_NAMES = Object.freeze(['name', 'email', 'phone', 'messag
 export const ADDABLE_KINDS: readonly BlockKind[] = Object.freeze([
   'hero', 'features', 'services', 'about', 'team', 'testimonials', 'faq',
   'contact-form', 'booking', 'map', 'cta',
+  'trust-bar', 'problem-solution', 'process', 'pricing', 'case-study', 'contact-info', 'governance', 'automation',
 ]);
 
 /**
@@ -482,6 +494,14 @@ export function labelFor(kind: BlockKind): string {
     case 'legal-text': return 'Rechtstext';
     case 'ai-disclosure': return 'KI-Hinweis';
     case 'footer': return 'Fußbereich';
+    case 'trust-bar': return 'Trust-Leiste';
+    case 'problem-solution': return 'Problem & Lösung';
+    case 'process': return 'Ablauf';
+    case 'pricing': return 'Preise';
+    case 'case-study': return 'Referenzen';
+    case 'contact-info': return 'Kontaktdaten';
+    case 'governance': return 'Datenschutz & Transparenz';
+    case 'automation': return 'Automatisierung';
   }
 }
 

@@ -85,3 +85,22 @@ export function attr(name: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '';
   return ` ${name}="${escapeHtml(value)}"`;
 }
+
+/**
+ * Mehrzeiliger Klartext als Absätze — für eingesetzte Rechtstexte.
+ * Leerzeilen trennen Absätze, einfache Umbrüche werden zu `<br>`; jeder Teil
+ * läuft durch `escapeHtml`. Kein Markup aus der Eingabe, auch kein „nur
+ * fett": Der Text kommt aus einem Eingabefeld.
+ *
+ * `null`, wenn kein Text vorliegt — der Aufrufer entscheidet, was dann steht.
+ */
+export function textBlockHtml(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const paragraphs = value
+    .replace(/\r\n?/g, '\n')
+    .split(/\n[ \t]*\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p !== '');
+  if (paragraphs.length === 0) return null;
+  return paragraphs.map((p) => `<p>${p.split('\n').map((line) => escapeHtml(line.trim())).join('<br>')}</p>`).join('\n');
+}

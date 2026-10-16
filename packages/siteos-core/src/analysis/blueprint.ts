@@ -22,8 +22,91 @@ export function analyzeBlueprint(blueprint: SiteBlueprint): RuntimeFinding[] {
     ...checkContrast(blueprint),
     ...checkSeo(blueprint),
     ...checkContentReadiness(blueprint),
+    ...checkFormTargets(blueprint),
+    ...checkLegalTexts(blueprint),
     ...checkDpia(blueprint),
   ];
+}
+
+// ── Formularziele (übernommene Seiten) ──────────────────────────────────
+
+/**
+ * Ein Ziel, das eine Anfrage tatsächlich erreicht: https-Endpunkt oder
+ * mailto. Ein relativer Pfad zählt nicht — die statische Site hat dort
+ * keinen Empfänger.
+ */
+export function isDeliverableFormTarget(target: unknown): boolean {
+  if (typeof target !== 'string') return false;
+  const value = target.trim();
+  if (/^mailto:[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(value)) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Bei einer übernommenen Seite (`origin.source === 'import'`) wird kein
+ * Formularziel geraten: Das Ziel der Ausgangsseite ist oft ein CMS-Endpunkt,
+ * der aus einer statischen Seite ins Leere liefe. Bis eine Person ein Ziel
+ * einträgt, gingen Anfragen verloren — das sperrt die Veröffentlichung.
+ *
+ * Neubauten aus dem Builder sind nicht betroffen; ihre Formulare folgen
+ * dem bisherigen Auslieferungsweg.
+ */
+const LEGAL_REFERENCES: Readonly<Record<string, { title: string; reference: string; dimension: RuntimeFinding['dimension']; severity: RuntimeFinding['severity'] }>> = {
+  'legal:impressum': { title: 'Impressum', reference: '§ 5 DDG', dimension: 'gdpr', severity: 'critical' },
+  'legal:privacy-policy': { title: 'Datenschutzerklärung', reference: 'Art. 13 DSGVO', dimension: 'gdpr', severity: 'critical' },
+  'legal:accessibility-statement': { title: 'Erklärung zur Barrierefreiheit', reference: 'BFSG § 14', dimension: 'accessibility', severity: 'medium' },
+};
+
+/**
+ * Bei übernommenen Seiten wird der Wortlaut der Rechtstexte vom
+ * Verantwortlichen eingesetzt (RealSync erzeugt keine Rechtstexte). Eine
+ * angelegte, aber leere Impressumsseite ist im Auslieferungszustand so gut
+ * wie keine — der Befund sperrt deshalb wie ein fehlendes Impressum.
+ */
+function checkLegalTexts(bp: SiteBlueprint): RuntimeFinding[] {
+  if (bp.origin.source !== 'import') return [];
+  const findings: RuntimeFinding[] = [];
+  for (const { page, block } of eachBlock(bp)) {
+    if (block.kind !== 'legal-text') continue;
+    const ref = LEGAL_REFERENCES[String(block.content.documentRef)];
+    if (!ref) continue;
+    const body = typeof block.content.body === 'string' ? block.content.body.trim() : '';
+    if (body.length >= 40) continue;
+    findings.push({
+      code: 'gdpr.legal-text-empty',
+      dimension: ref.dimension,
+      severity: ref.severity,
+      title: `${ref.title}: Wortlaut fehlt`,
+      reference: ref.reference,
+      remediation: `Den Wortlaut auf der Seite ${page.path} im Editor einsetzen. RealSync erzeugt keine Rechtstexte — er muss vom Verantwortlichen stammen und zur neuen Website passen.`,
+      locator: `${page.path}#${block.id}`,
+    });
+  }
+  return findings;
+}
+
+function checkFormTargets(bp: SiteBlueprint): RuntimeFinding[] {
+  if (bp.origin.source !== 'import') return [];
+  const findings: RuntimeFinding[] = [];
+  for (const { page, block } of eachBlock(bp)) {
+    if (!DATA_ENTRY_KINDS.has(block.kind) || block.content.hidden === true) continue;
+    if (isDeliverableFormTarget(block.content.target)) continue;
+    findings.push({
+      code: 'content.form-target-missing',
+      dimension: 'content',
+      severity: 'critical',
+      title: 'Formular ohne Ziel — Anfragen würden nicht ankommen',
+      reference: 'Betriebssicherheit (Backend-Erhalt)',
+      remediation: 'Im Formular ein Ziel eintragen (https-Endpunkt oder mailto:) oder das Formular ausblenden.',
+      locator: `${page.path}#${block.id}`,
+    });
+  }
+  return findings;
 }
 
 // ── DSGVO / DDG: Pflichtseiten ──────────────────────────────────────────
@@ -295,13 +378,19 @@ function checkContentReadiness(bp: SiteBlueprint): RuntimeFinding[] {
   for (const { page, block } of eachBlock(bp)) {
     const content = block.content as {
       items?: unknown;
+      steps?: unknown;
       requiresRealContent?: unknown;
       members?: unknown;
+      hidden?: unknown;
     };
 
-    // Blöcke, die ausdrücklich echte Inhalte verlangen (Bewertungen, Team),
-    // dürfen nicht leer live gehen — sonst steht dort eine Platzhalterhülle.
-    if (content.requiresRealContent === true && Array.isArray(content.items) && content.items.length === 0) {
+    // Blöcke, die ausdrücklich echte Inhalte verlangen (Bewertungen, Team,
+    // eingerichtete Abläufe), dürfen nicht leer live gehen — sonst steht
+    // dort eine Platzhalterhülle. Ausgeblendete Blöcke werden nicht
+    // ausgeliefert und sind deshalb kein Befund.
+    const empty = (Array.isArray(content.items) && content.items.length === 0)
+      || (content.items === undefined && Array.isArray(content.steps) && content.steps.length === 0);
+    if (content.requiresRealContent === true && content.hidden !== true && empty) {
       findings.push({
         code: 'content.awaiting-real-content',
         dimension: 'content',

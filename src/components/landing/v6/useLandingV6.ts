@@ -379,6 +379,7 @@ export function useLandingV6() {
     const on = audit.uses.includes(u.id);
     return {
       ...u,
+      on,
       style: chip(on),
       boxStyle: box(on),
       toggle: () =>
@@ -386,8 +387,8 @@ export function useLandingV6() {
     };
   });
   const pickA = (k: 'role' | 'count', value: string) => () => setAudit((s) => ({ ...s, [k]: value }));
-  const roles = ROLES.map(([value, l]) => ({ label: l, style: chip(audit.role === value), pick: pickA('role', value) }));
-  const counts = COUNTS.map(([value, l]) => ({ label: l, style: chip(audit.count === value), pick: pickA('count', value) }));
+  const roles = ROLES.map(([value, l]) => ({ label: l, on: audit.role === value, style: chip(audit.role === value), pick: pickA('role', value) }));
+  const counts = COUNTS.map(([value, l]) => ({ label: l, on: audit.count === value, style: chip(audit.count === value), pick: pickA('count', value) }));
   const sel = USE_CASES.filter((u) => audit.uses.includes(u.id));
   const riskCounts = {
     high: sel.filter((u) => u.risk === 'high').length,
@@ -447,6 +448,7 @@ export function useLandingV6() {
   const stepper = stepLabels.map((l, i) => ({
     num: i < auditStep ? '✓' : String(i + 1),
     label: l,
+    current: i === auditStep,
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -607,6 +609,7 @@ export function useLandingV6() {
     toggleLabel: theme === 'dark' ? 'Hellen Modus aktivieren' : 'Dunklen Modus aktivieren',
     toggleTheme,
     toggleMenu: () => setMenu((m) => !m),
+    isYearly: yearly,
     cycleMonthlyStyle: seg(!yearly),
     cycleYearlyStyle: seg(yearly),
     setMonthly: () => setCycle('monthly'),
@@ -630,6 +633,7 @@ export function useLandingV6() {
     back: () => setAuditStep((s) => Math.max(0, s - 1)),
     next,
     nextLabel: auditStep === 0 ? 'Weiter' : auditStep === 1 ? 'Ergebnis anzeigen' : 'Website-Check starten',
+    canNext,
     nextStyle: canNext ? ui.primary : ui.primaryOff,
     isAudit0: modal && auditStep === 0,
     isAudit1: modal && auditStep === 1,

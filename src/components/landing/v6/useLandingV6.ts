@@ -552,6 +552,7 @@ export function useLandingV6() {
       dashboard: '/app/dashboard',
       enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
+      betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },
     goPricing,
     stages: STAGES,

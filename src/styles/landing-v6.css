@@ -184,10 +184,10 @@
 
 /* Hero-Karte: WebP mit JPEG-Fallback (image-set), Maske wie im Design. */
 .lv6 .lv6-map {
-  background-image: url('/landing-v6/europe-network.jpg');
+  background-image: url('/landing-v6/europe-network-v2.jpg');
   background-image: image-set(
-    url('/landing-v6/europe-network.webp') type('image/webp'),
-    url('/landing-v6/europe-network.jpg') type('image/jpeg')
+    url('/landing-v6/europe-network-v2.webp') type('image/webp'),
+    url('/landing-v6/europe-network-v2.jpg') type('image/jpeg')
   );
 }
 

@@ -6,6 +6,7 @@ import {
   RECHTSSTAND,
   SELBSTCHECK_PATH,
 } from '../../content/aiActBetreiberpflichten';
+import { CTA } from '../../content/runtimeVocab';
 
 /**
  * /ai-act-betreiberpflichten — Fachseite zu Art. 26 KI-VO mit Art.-25-Rollencheck.
@@ -188,8 +189,8 @@ export function AiActBetreiberpflichten() {
               <Link to={`${SELBSTCHECK_PATH}?source=betreiberpflichten-footer`} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
                 Selbstcheck starten <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/contact-sales?source=betreiberpflichten" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Beratung anfragen
+              <Link to="/audit?source=betreiberpflichten" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                {CTA.startGovernanceAudit}
               </Link>
               <Link to="/ai-act-faq" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
                 AI-Act-FAQ

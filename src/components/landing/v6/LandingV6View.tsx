@@ -20,7 +20,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <a href="#produkt">Plattform</a><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
                 <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Login</Link>
               </>) : null}
-              <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Check starten</Link>
+              <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
             </div>
           </div>
         </div>
@@ -28,7 +28,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
       <main id="main">
       <section id="top" style={{ position: "relative", minHeight: "100vh", overflowX: "clip", display: "flex", flexDirection: "column", backgroundImage: "radial-gradient(ellipse 50% 60% at 18% 30%,rgba(128,128,128,.07) 0%,transparent 70%)" }}>
-        <div aria-hidden="true" className="lv6-map" style={{ position: "absolute", top: "0", right: "0", bottom: "0", width: "min(100%,max(40%,calc(100vh * .66)))", backgroundSize: "cover", backgroundPosition: "left center", WebkitMaskImage: "linear-gradient(90deg,transparent 0%,#000 30%)", maskImage: "linear-gradient(90deg,transparent 0%,#000 30%)", filter: "var(--rs-map-filter) hue-rotate(var(--rs-hue))", mixBlendMode: "var(--rs-map-blend)" as CSSProperties["mixBlendMode"], opacity: v.mapOpacity, pointerEvents: "none" }}></div>
+        <div aria-hidden="true" className="lv6-map" style={{ position: "absolute", top: "0", right: "0", bottom: "0", width: "min(100%,max(50%,calc(100vh * .8)))", backgroundSize: "cover", backgroundPosition: "center 40%", WebkitMaskImage: "linear-gradient(90deg,transparent 0%,#000 22%)", maskImage: "linear-gradient(90deg,transparent 0%,#000 22%)", filter: "var(--rs-map-filter) hue-rotate(var(--rs-hue))", mixBlendMode: "var(--rs-map-blend)" as CSSProperties["mixBlendMode"], opacity: v.mapOpacity, pointerEvents: "none" }}></div>
 
         <div style={{ position: "relative", zIndex: "2", borderBottom: "1px solid var(--rs-line)" }}>
           <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "10px var(--px)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", fontFamily: "'JetBrains Mono Optional',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>
@@ -54,7 +54,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <span style={v.moonStyle}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
               </button>
               {v.showLinks ? (<>
-                <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "var(--rs-btn)", color: "#FFFDF6", border: "1px solid var(--rs-acc)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Check starten</Link>
+                <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "var(--rs-btn)", color: "#FFFDF6", border: "1px solid var(--rs-acc)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
               </>) : null}
               {v.showBurger ? (<>
                 <button type="button" onClick={v.toggleMenu} aria-label="Menü öffnen" aria-expanded={v.menuOpen} aria-controls="lv6-menu" data-lv6-menu-trigger style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
@@ -72,17 +72,18 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <p style={{ margin: "clamp(20px,1.8vw,56px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,2vw,68px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
             <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", maxWidth: "40em", fontSize: "clamp(16px,1.2vw,40px)", lineHeight: "1.6", color: "var(--rs-fg2)", textWrap: "pretty" }}>RealSync prüft Ihre Website und Ihren KI-Einsatz nach DSGVO und EU AI Act – mit Paragraphenbezug, konkreten Maßnahmen und einem Nachweis, den Sie Datenschutzbeauftragten und Prüfern vorlegen können.</p>
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
             </div>
             <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
+            {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: kostenlos testen bis {v.beta.endsShort} · keine Kreditkarte</Link></p>) : null}
           </div>
         </div>
 
         <div style={{ position: "relative", zIndex: "1", borderTop: "1px solid var(--rs-line)", background: "var(--rs-nav)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
           <dl style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "0 var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))" }}>
             <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>90 s</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>bis zum ersten Befund</dd></div>
-            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>Art.-Bezug</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>DSGVO, TTDSG und EU AI Act je Befund</dd></div>
+            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>Art.-Bezug</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>DSGVO, TDDDG und EU AI Act je Befund</dd></div>
             <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>SHA-256</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>verkettete Nachweise im Evidence Vault</dd></div>
             <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>EU</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Datenhaltung in Frankfurt</dd></div>
           </dl>
@@ -150,46 +151,12 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             </Fragment>))}
           </div>
           <div style={{ marginTop: "32px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Kostenlosen Check starten</Link>
+            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Kostenlosen Website-Check starten</Link>
             <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
           </div>
         </div>
       </section>
 
-
-      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
-          <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
-            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
-            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
-                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
-              </Fragment>))}
-            </ul>
-          </div>
-          <div role="group" aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
-            </div>
-            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
-            <div style={{ padding: "var(--card-p)", border: "2px solid var(--rs-acc)", borderRadius: "16px", background: "var(--rs-bg)", boxShadow: "0 0 28px var(--rs-glow)", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}><span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>POLICY AUTHORITY</span><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></div>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {v.gateChecks.map((g, gI) => (<Fragment key={gI}><span style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>{g}</span></Fragment>))}
-              </div>
-            </div>
-            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>EXECUTION · KEINE POLICY AUTHORITY</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section id="control-room" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
@@ -197,7 +164,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div>
               <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>IHR WORKSPACE</p>
               <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
-              <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Nach dem Free Audit läuft Ihre Runtime im Command Center weiter — Rahmenwerk-Reifegrade, offene Findings, Evidence-Chain und der Agent-Intent auf einer Fläche.</p>
+              <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Nach der Anmeldung läuft Ihre Governance im Command Center weiter: Rahmenwerk-Reifegrade, offene Befunde, Evidence-Chain und Agent-Entscheidungen auf einer Fläche.</p>
             </div>
             <Link to={v.href.dashboard} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Zum Command Center<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
           </div>
@@ -249,6 +216,40 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 {b.link ? (<><div style={{ width: "1px", height: "24px", marginLeft: "32px", background: "var(--rs-acc)" }}></div></>) : null}
               </div>
             </Fragment>))}
+          </div>
+        </div>
+      </section>
+
+      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
+        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+          <div>
+            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
+            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
+            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
+            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
+              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
+                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
+              </Fragment>))}
+            </ul>
+          </div>
+          <div role="group" aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
+            </div>
+            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
+            <div style={{ padding: "var(--card-p)", border: "2px solid var(--rs-acc)", borderRadius: "16px", background: "var(--rs-bg)", boxShadow: "0 0 28px var(--rs-glow)", display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}><span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>POLICY AUTHORITY</span><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></div>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {v.gateChecks.map((g, gI) => (<Fragment key={gI}><span style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>{g}</span></Fragment>))}
+              </div>
+            </div>
+            <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
+            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>EXECUTION · KEINE POLICY AUTHORITY</span>
+              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
+            </div>
           </div>
         </div>
       </section>
@@ -318,9 +319,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{v.checkLevel}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.checkText}</p>
               </>) : null}
-              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären.</p>
+              <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.checkHas ? "Nächster Schritt: Ihre Einschätzung mit dem kostenlosen Website-Check Ihrer Domain belegen – ohne Konto." : "Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären."}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Governance-Scan starten</Link>
+                <Link to={v.href.auditCheck} data-testid="check-audit-cta" style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Kostenlosen Website-Check starten</Link>
                 <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
               </div>
             </aside>
@@ -377,8 +378,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>DSGVO, EU AI Act, ISO 27001 und NIS2 als Policy Packs. TISAX und DORA stehen auf der Roadmap.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst das Free Audit?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
-              <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Ein kostenloser Check Ihrer Website: Cookies, Tracker und KI-Einbindung werden erfasst, Risiken mit Paragraphenbezug (DSGVO, TTDSG, EU AI Act) benannt und konkrete Hinweise gegeben – Ergebnis in unter 90 Sekunden.</p>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst der kostenlose Website-Check?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Wir rufen Ihre Startseite sowie Impressum und Datenschutzseite ab und suchen typische Fehler: fehlendes HTTPS, Tracker oder Cookies vor der Einwilligung, fehlendes Impressum, Chatbot ohne KI-Hinweis. Sie erhalten eine Punktzahl von 0 bis 100, die wichtigsten Risiken mit Paragraf (DSGVO, TDDDG, EU AI Act) und eine Tarif-Empfehlung passend zu Ihren Angaben – per E-Mail und als Link. Ihre KI-Systeme ordnen Sie mit der KI-Act-Einordnung oben auf dieser Seite ein. Der Check zeigt technische Hinweise auf Risiken. Er ersetzt keine Rechtsberatung und keine Zertifizierung.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
               <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Kann ich monatlich kündigen?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
@@ -392,11 +393,12 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         <div style={{ maxWidth: "min(100%,clamp(900px,56vw,1800px))", margin: "0 auto", padding: "var(--sec-y) var(--px)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "28px" }}>
           <p style={{ margin: "0", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>ONE GOVERNANCE PLANE</p>
           <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(38px,4.6vw,150px)", lineHeight: "1.05", letterSpacing: "-.02em", textWrap: "balance" }}><span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Governance statt </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Checkliste.</span></h2>
-          <p style={{ margin: "0", maxWidth: "34em", fontSize: "var(--fs-lead)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.</p>
+          <p style={{ margin: "0", maxWidth: "34em", fontSize: "var(--fs-lead)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Starten Sie mit einem kostenlosen Website-Check: Punktzahl und wichtigste Risiken in 90 Sekunden.</p>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px" }}>
-            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", gap: "12px", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "0", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-lead)", boxShadow: "0 0 22px var(--rs-glow),inset 0 1px 0 rgba(255,255,255,.35)" }}>Free Audit starten<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", gap: "12px", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "0", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-lead)", boxShadow: "0 0 22px var(--rs-glow),inset 0 1px 0 rgba(255,255,255,.35)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
             <button type="button" onClick={v.goPricing} style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-lead)" }}>Preise ansehen</button>
           </div>
+          <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>Der Check zeigt technische Hinweise auf Risiken. Er ersetzt keine Rechtsberatung und keine Zertifizierung.</p>
         </div>
       </section>
 
@@ -414,7 +416,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>
-            <Link to="/governance-runtime">Governance Runtime</Link><Link to="/agent-governance">Agent Governance</Link><Link to="/legal/sub-processors">Sub-Prozessoren</Link><Link to="/contact-sales?intent=enterprise">Enterprise anfragen</Link>
+            <Link to="/governance-runtime">Governance Runtime</Link><Link to="/agent-governance">Agent Governance (Vorschau)</Link><Link to="/legal/sub-processors">Sub-Prozessoren</Link><Link to="/contact-sales?intent=enterprise">Enterprise anfragen</Link>
           </nav>
           <nav aria-label="Rechtliches" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>RECHTLICHES</span>
@@ -441,7 +443,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>
           </nav>
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <Link to={v.href.audit} style={{ minHeight: "56px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", fontSize: "17px", cursor: "pointer" }}>Kostenlosen Check starten</Link>
+            <Link to={v.href.audit} style={{ minHeight: "56px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", fontSize: "17px", cursor: "pointer" }}>Kostenlosen Website-Check starten</Link>
             <Link to={v.href.enterprise} style={{ minHeight: "56px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", fontSize: "17px", cursor: "pointer" }}>Enterprise anfragen</Link>
           </div>
         </div>

@@ -343,7 +343,7 @@ export function useLandingV6() {
         listPrice: beta && !tier.priceOnRequest ? formatPriceEur(listEur) : null,
         unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : '/ Monat',
         billingNote: tier.priceOnRequest
-          ? 'SLA & dedizierter Tenant'
+          ? 'SLA · bis zu 5 Organisationen'
           : beta
             ? `kostenlos bis ${BETA.endsLabel}`
             : useYearly
@@ -548,10 +548,13 @@ export function useLandingV6() {
     beta: { active: BETA.active, endsShort: BETA.endsLabel },
     href: {
       audit: `/audit?source=${SOURCE}`,
+      // Eigene Quelle, damit der Trichter Check → Scan messbar ist.
+      auditCheck: `/audit?source=${SOURCE}-check`,
       login: '/login',
       dashboard: '/app/dashboard',
       enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
+      betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },
     goPricing,
     stages: STAGES,
@@ -592,9 +595,9 @@ export function useLandingV6() {
     checkLevel: lvl[0],
     checkText: lvl[1],
     checkBar: { width: (score / 8) * 100 + '%', height: '100%', background: tone, transition: 'width 320ms cubic-bezier(.2,.8,.2,1)' } as CSSProperties,
-    showLinks: vw >= 1000,
-    showBurger: vw < 1000,
-    mapOpacity: vw >= 1100 ? 1 : 0.35,
+    showLinks: vw >= 1180,
+    showBurger: vw < 1180,
+    mapOpacity: vw >= 760 ? 1 : 0.6,
     showSticky: scrolled && !modal,
     menuOpen: menu,
     plans,

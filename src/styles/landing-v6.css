@@ -120,7 +120,7 @@
   --rs-h1: linear-gradient(180deg, #ffffff 0%, #e4e4e2 45%, #a9a9a7 100%);
   --rs-chip: rgba(255, 255, 255, 0.035);
   --rs-chip-b: rgba(255, 255, 255, 0.28);
-  --rs-map-filter: none;
+  --rs-map-filter: brightness(1.18) contrast(1.06);
   --rs-map-blend: normal;
   --rs-toggle: rgba(255, 255, 255, 0.06);
   --rs-hshadow: 0 6px 18px rgba(0, 0, 0, 0.55);
@@ -182,7 +182,8 @@
   --rs-acc-g: linear-gradient(180deg, #0092a8 0%, #006b7c 100%);
 }
 
-/* Hero-Karte: WebP mit JPEG-Fallback (image-set), Maske wie im Design. */
+/* Hero-Karte: WebP mit JPEG-Fallback (image-set). Europa soll klar
+   sichtbar sein: im Dunkelmodus leicht aufgehellt, Maske nur am linken Rand. */
 .lv6 .lv6-map {
   background-image: url('/landing-v6/europe-network-v2.jpg');
   background-image: image-set(

@@ -447,6 +447,11 @@ verify_jwt = false
 [functions.bot-voice-webhook]
 verify_jwt = false
 
+# Intern: stripe-webhook und pg_cron rufen mit Bearer VOICE_PROVISION_KEY
+# (eigene Prüfung in der Function, fail-closed). Kein User-JWT.
+[functions.provision-voice-agent]
+verify_jwt = false
+
 # whatsapp-webhook wird von Metas Servern (WhatsApp Business Cloud API) ohne
 # JWT aufgerufen. Authentizität über X-Hub-Signature-256 (WHATSAPP_APP_SECRET)
 # + phone_number_id-Mapping in whatsapp_channels; Feature-Gate bots.whatsapp.

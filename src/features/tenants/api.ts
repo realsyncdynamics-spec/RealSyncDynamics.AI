@@ -25,6 +25,19 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('tenant-invite', { body });
   if (error) {
+    // Bei 4xx/5xx liefert supabase-js nur „non-2xx status code“; Code und
+    // Begründung der Function (z. B. SEAT_LIMIT_REACHED) stehen im Body.
+    const context = (error as { context?: Response }).context;
+    if (context && typeof context.clone === 'function') {
+      try {
+        const parsed = await context.clone().json() as { error?: { code?: unknown; message?: unknown } };
+        if (typeof parsed?.error?.code === 'string' && typeof parsed.error.message === 'string') {
+          return { ok: false, error: { code: parsed.error.code, message: parsed.error.message } } as T;
+        }
+      } catch {
+        // Kein lesbarer Body — dann bleibt es beim Netzfehler.
+      }
+    }
     return { ok: false, error: { code: 'NETWORK', message: error.message } } as T;
   }
   return data as T;

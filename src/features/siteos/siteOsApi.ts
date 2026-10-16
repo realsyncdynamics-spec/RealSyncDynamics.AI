@@ -481,6 +481,38 @@ export async function approvePublish(args: {
   return { kind: 'ok', data: data as { ok: true; approved_evaluation_id: string; evaluation: PublishGateEvaluation } };
 }
 
+export interface PublishRollbackResponse {
+  ok: true;
+  rollback: {
+    url: string;
+    deployment_id: string;
+    project_name: string;
+    from_deployment_id: string;
+    to_deployment_id: string;
+    artifact_sha256: string;
+    evaluation_id: string;
+    rolled_back_at: string;
+    recording_complete: boolean;
+    recording_warnings: string[];
+  };
+}
+
+/**
+ * Production auf den vorherigen Live-Stand zurücksetzen. Das Ziel bestimmt
+ * der Server; der Browser schickt nur Bestätigung und Begründung.
+ */
+export async function rollbackPublishProduction(args: {
+  tenant_id: string;
+  blueprint_id: string;
+  confirm_rollback: true;
+  reason: string;
+}): Promise<SiteOsResult<PublishRollbackResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/publish-rollback', { body: args });
+  if (error) return await mapErrorDetailed(error);
+  return { kind: 'ok', data: data as PublishRollbackResponse };
+}
+
 export interface PublishExportFile {
   path: string;
   content: string;

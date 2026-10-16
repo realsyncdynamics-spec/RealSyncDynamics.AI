@@ -28,7 +28,7 @@ import { resolveEndpoint, ROUTER_SLUG } from '../../supabase/functions/siteos/re
 /** Muss mit der Route-Map in supabase/functions/siteos/index.ts übereinstimmen. */
 const ENDPOINTS = [
   'agents', 'builder', 'discover', 'edit', 'runtime-scan', 'project-bind',
-  'publish-approve', 'publish-export', 'publish-gate', 'publish-preview', 'publish-production',
+  'publish-approve', 'publish-export', 'publish-gate', 'publish-preview', 'publish-production', 'publish-rollback',
   'build-anon', 'refine-anon', 'session', 'claim',
   'code-persist',
 ];
@@ -61,6 +61,7 @@ const HANDLER_FILES: Readonly<Record<string, string>> = Object.freeze({
   'publish-export': 'publish-gate',
   'publish-preview': 'publish-preview',
   'publish-production': 'publish-production',
+  'publish-rollback': 'publish-rollback',
   // Bauen, verfeinern und uebernehmen teilen Sitzungsladen, Prüfpfad-Gate
   // und Ablaufregel. Getrennte Dateien hiessen drei Kopien davon.
   'build-anon': 'anonymous',

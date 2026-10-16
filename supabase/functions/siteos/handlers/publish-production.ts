@@ -400,6 +400,11 @@ export async function handle(req: Request): Promise<Response> {
   const recordingWarnings: string[] = [];
   const nextConfiguration = { ...configuration };
   nextConfiguration.siteos_cloudflare_project_name = deployment.project.name;
+  // Der bisherige Live-Stand bleibt als Rollback-Ziel erhalten
+  // (siteos/publish-rollback). Genau ein Schritt zurück.
+  if (isRecord(configuration.siteos_last_production)) {
+    nextConfiguration.siteos_previous_production = configuration.siteos_last_production;
+  }
   nextConfiguration.siteos_last_production = {
     deployment_id: deployment.id,
     branch: deployment.branch,

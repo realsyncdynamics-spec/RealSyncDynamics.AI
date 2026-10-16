@@ -71,13 +71,6 @@ const BOOTSTRAP: BootstrapStep[] = [
     level: 'high',
   },
   {
-    id: 'start-audit',
-    title: 'Audit starten',
-    detail: 'Öffentlicher Website-Scan.',
-    href: '/audit?source=dashboard',
-    level: 'high',
-  },
-  {
     id: 'activation',
     title: 'Activation starten',
     detail: 'Organisation und Scope festlegen.',
@@ -133,10 +126,7 @@ describe('ComplianceStatusView — empty but actionable', () => {
     });
     expect(queryByTestId('no-open-actions')).toBeNull();
     expect(getByTestId('bootstrap-step-add-domain')).toHaveAttribute('href', '/app/websites');
-    expect(getByTestId('bootstrap-step-start-audit')).toHaveAttribute(
-      'href',
-      '/audit?source=dashboard',
-    );
+    expect(queryByTestId('bootstrap-step-start-audit')).toBeNull();
     expect(getByTestId('bootstrap-step-activation')).toHaveAttribute('href', '/app/activation');
   });
 });

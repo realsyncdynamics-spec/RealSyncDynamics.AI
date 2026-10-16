@@ -36,8 +36,9 @@ function appRegisters(path: string): boolean {
 }
 
 describe('dashboard chrome wiring — no dead TopBar actions', () => {
-  it('Audit starten opens the public scan path', () => {
-    expect(TOP_BAR).toMatch(/navigate\(['"]\/audit['"]\)/);
+  it('Audit starten opens the workspace audit, not the public scan', () => {
+    expect(TOP_BAR).toMatch(/navigate\(['"]\/app\/websites['"]\)/);
+    expect(TOP_BAR).not.toMatch(/navigate\(['"]\/audit['"]\)/);
   });
 
   it('Evidence opens /app/evidence', () => {
@@ -54,7 +55,7 @@ describe('dashboard chrome wiring — no dead TopBar actions', () => {
   });
 
   it('registers TopBar destinations in App.tsx', () => {
-    for (const path of ['/audit', '/app/evidence', '/app/reports', '/app/dashboard']) {
+    for (const path of ['/app/websites', '/app/evidence', '/app/reports', '/app/dashboard']) {
       expect(appRegisters(path), `missing route ${path}`).toBe(true);
     }
   });
@@ -143,10 +144,12 @@ describe('empty-state CTAs and bootstrap next steps', () => {
       scanCount: 0,
       activationStatus: 'none',
     });
-    expect(empty.map((s) => s.id)).toEqual(['add-domain', 'start-audit', 'activation']);
+    // Kein Schritt zum öffentlichen /audit: dessen Ergebnis landet nicht im Workspace.
+    expect(empty.map((s) => s.id)).toEqual(['add-domain', 'activation']);
     expect(empty[0].href).toBe('/app/websites');
-    expect(empty[1].href).toBe('/audit?source=dashboard');
-    expect(empty[2].href).toBe('/app/activation');
+    expect(empty[1].href).toBe('/app/activation');
+    expect(empty.some((s) => s.href.startsWith('/audit'))).toBe(false);
+    expect(empty.map((s) => s.detail).join(' ')).not.toContain('/app/');
 
     const hasDomainNoScan = computeWorkspaceBootstrapSteps({
       websiteCount: 1,

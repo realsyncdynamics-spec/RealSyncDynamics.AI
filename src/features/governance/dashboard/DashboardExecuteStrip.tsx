@@ -2,7 +2,13 @@ import { Link } from 'react-router-dom';
 import { brandButtonClass } from '../../../components/brand';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 
-/** Block 4 on /app/dashboard — one executable entry, no mesh, no coming-soon. */
+/**
+ * Block 4 on /app/dashboard — one executable entry, no mesh, no coming-soon.
+ *
+ * Ziel ist der Website-Audit im Workspace (/app/websites → tenant-audit), nicht
+ * der öffentliche Scan unter /audit: dessen Ergebnis (gdpr_audits) erscheint
+ * nicht im Command Center und fragt eingeloggte Nutzer erneut nach der E-Mail.
+ */
 export function DashboardExecuteStrip() {
   return (
     <section
@@ -17,15 +23,15 @@ export function DashboardExecuteStrip() {
             Ausführen
           </p>
           <p className="mt-1 text-sm text-titanium-200">
-            Compliance-Audit einer Domain starten (DSGVO / EU AI Act). Agenten laufen unter{' '}
+            Website-Audit (HTML/Header) einer hinterlegten Domain starten — Ergebnisse landen im Workspace. Agenten laufen unter{' '}
             <Link to="/app/agents" className="text-[var(--brand-champ)] hover:underline">Agents</Link>.
           </p>
         </div>
         <Link
-          to="/audit"
+          to="/app/websites"
           className={brandButtonClass({ size: 'md' })}
         >
-          Prüfung öffnen <ArrowRight className="h-4 w-4" />
+          Zum Website-Audit <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

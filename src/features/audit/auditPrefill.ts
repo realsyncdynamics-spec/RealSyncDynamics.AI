@@ -40,3 +40,18 @@ export function auditPathFor(value: string, source?: string): string {
   const query = params.toString();
   return query ? `/audit?${query}` : '/audit';
 }
+
+/**
+ * In-App-Gegenstück zu `auditPathFor()`: Website-Audit im Workspace
+ * (`/app/websites` → tenant-audit). Dort landet das Ergebnis in `websites` und
+ * `scan_runs` — die Quellen der Übersicht. `/audit` bleibt der öffentliche
+ * Gast-Scan (Landing, Cmd+K), dessen Ergebnis nicht im Workspace erscheint.
+ */
+export function websiteAuditPathFor(value: string, source?: string): string {
+  const params = new URLSearchParams();
+  const trimmed = value.trim().slice(0, AUDIT_PREFILL_MAX);
+  if (trimmed) params.set('domain', trimmed);
+  if (source) params.set('source', source);
+  const query = params.toString();
+  return query ? `/app/websites?${query}` : '/app/websites';
+}

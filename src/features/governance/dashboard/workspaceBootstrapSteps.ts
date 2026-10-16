@@ -47,21 +47,14 @@ export function computeWorkspaceBootstrapSteps(
   const steps: BootstrapStep[] = [];
 
   if (input.websiteCount === 0) {
+    // Ohne Domain kein eigener Audit-Schritt: Der öffentliche Scan (/audit)
+    // landet nicht im Workspace (gdpr_audits zählt hier nicht, nur websites +
+    // scan_runs). Der Website-Audit-Schritt erscheint, sobald die Domain steht.
     steps.push({
       id: 'add-domain',
       title: 'Domain hinterlegen',
-      detail: 'Ohne Domain bleiben Score und Zähler leer — Website unter Websites verbinden.',
+      detail: 'Ohne Domain bleiben Score und Zähler leer. Danach startet der Website-Audit direkt auf der Domain-Karte.',
       href: '/app/websites',
-      level: 'high',
-    });
-  }
-
-  if (input.websiteCount === 0) {
-    steps.push({
-      id: 'start-audit',
-      title: 'Audit starten',
-      detail: 'Öffentlicher Website-Scan mit Domain-Feld — Ergebnisse können dem Workspace zugeordnet werden.',
-      href: '/audit?source=dashboard',
       level: 'high',
     });
   } else if (input.websiteCount !== null && input.scanCount === 0) {
@@ -95,7 +88,7 @@ export function computeWorkspaceBootstrapSteps(
     steps.push({
       id: 'activation',
       title: 'Activation starten',
-      detail: 'Organisation und Governance-Scope festlegen — Beta unter /app/activation.',
+      detail: 'Organisation und Governance-Scope festlegen (Beta).',
       href: '/app/activation',
       level: 'medium',
     });

@@ -30,7 +30,8 @@ describe('Angebot kostenloses Konto — eine Quelle', () => {
   });
 
   it.each(CONSUMERS)('$path liest den Wortlaut aus freeAccountOffer', ({ source }) => {
-    expect(source).toContain('features/billing/freeAccountOffer');
+    // Relativer oder absoluter Import — beide enthalten den Modulnamen.
+    expect(source).toContain('freeAccountOffer');
     // Keine eigene Ableitung von Tagen oder Preisen neben dem Modul.
     expect(source).not.toContain('trialDays');
     expect(source).not.toContain('formatPriceEur(');

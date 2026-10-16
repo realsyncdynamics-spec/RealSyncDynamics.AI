@@ -1,5 +1,6 @@
 import { getSupabase } from '../../lib/supabase';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { IS_STRIPE_TEST_MODE } from '../../config/stripeMode';
 
 export type { PlanKey };
 
@@ -8,6 +9,28 @@ export interface CheckoutResult {
   url?: string;
   session_id?: string;
   error?: { code: string; message: string };
+  /** Vom Server gemeldeter Stripe-Modus (supabase/functions/_shared/stripe-mode.ts). */
+  stripe_mode?: 'test' | 'live';
+}
+
+/**
+ * Die Seite verspricht im Testmodus „es wird nichts belastet". Weitergeleitet
+ * wird dann nur, wenn der Server ausdrücklich eine Test-Session meldet: eine
+ * Live-Session (STRIPE_MODE=live, VITE_STRIPE_MODE nicht) ebenso wenig wie eine
+ * Antwort ohne `stripe_mode` (Edge Function vor dem Beta-Rollout, kann live sein).
+ * Frontend live / Server test bleibt zulässig — eine Test-Session belastet nichts.
+ */
+function guardStripeMode(result: CheckoutResult): CheckoutResult {
+  if (IS_STRIPE_TEST_MODE && result?.ok && result.stripe_mode !== 'test') {
+    return {
+      ok: false,
+      error: {
+        code: 'STRIPE_MODE_MISMATCH',
+        message: 'Zahlungsmodus uneinheitlich konfiguriert – Checkout abgebrochen, es wurde nichts belastet.',
+      },
+    };
+  }
+  return result;
 }
 
 async function readCheckoutError(error: unknown): Promise<CheckoutResult> {
@@ -44,7 +67,7 @@ export async function createCheckoutSession(
     body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
   });
   if (error) return readCheckoutError(error);
-  return data as CheckoutResult;
+  return guardStripeMode(data as CheckoutResult);
 }
 
 /**
@@ -71,5 +94,5 @@ export async function createSiteOsCheckoutSession(args: {
     },
   });
   if (error) return readCheckoutError(error);
-  return data as CheckoutResult;
+  return guardStripeMode(data as CheckoutResult);
 }

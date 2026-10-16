@@ -5,19 +5,28 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  getStripeMode,
+  resolveStripeSecretKey,
+  stripeKeyErrorStatus,
+  stripeModeMetadata,
+  stripeModeResponseFields,
+  testPriceEnvName,
+  testPriceIdFor,
+} from '../_shared/stripe-mode.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PLAN_KEY = 'governance_launch';
 
-async function getStripeSecret(): Promise<string | null> {
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   try {
-    const { data } = await admin.rpc('get_app_secret', { secret_name: 'stripe_secret_key' });
+    const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
     if (typeof data === 'string' && data) return data;
   } catch { /* env fallback */ }
-  return Deno.env.get('STRIPE_SECRET_KEY') ?? null;
+  return Deno.env.get(envVar) ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -67,21 +76,35 @@ Deno.serve(async (req) => {
   if (membershipError) return jsonError(500, 'INTERNAL', membershipError.message);
   if (!membership) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data: product, error: productError } = await admin
-    .from('products')
-    .select('id, stripe_price_id, name, default_for_plan_key')
-    .eq('default_for_plan_key', PLAN_KEY)
-    .not('stripe_price_id', 'like', 'internal_default_%')
-    .limit(1)
-    .maybeSingle();
-  if (productError) return jsonError(500, 'INTERNAL', productError.message);
+  // Beta: STRIPE_MODE (Default 'test'). Testmodus nimmt die Price aus
+  // STRIPE_TEST_PRICE_GOVERNANCE_LAUNCH statt aus public.products (Live-IDs).
+  const stripeMode = getStripeMode();
+  let product: { stripe_price_id: string } | null = null;
+  if (stripeMode === 'test') {
+    const testPrice = testPriceIdFor(PLAN_KEY);
+    if (!testPrice) {
+      return jsonError(400, 'PRICE_NOT_CONFIGURED',
+        `Testmodus: keine Test-Price für ${PLAN_KEY}; Secret ${testPriceEnvName(PLAN_KEY)}=price_… setzen`);
+    }
+    product = { stripe_price_id: testPrice };
+  } else {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    const { data, error: productError } = await admin
+      .from('products')
+      .select('id, stripe_price_id, name, default_for_plan_key')
+      .eq('default_for_plan_key', PLAN_KEY)
+      .not('stripe_price_id', 'like', 'internal_default_%')
+      .limit(1)
+      .maybeSingle();
+    if (productError) return jsonError(500, 'INTERNAL', productError.message);
+    product = data;
+  }
   if (!product?.stripe_price_id) return jsonError(400, 'PRICE_NOT_CONFIGURED', `no Stripe Price configured for ${PLAN_KEY}`);
 
-  const secret = await getStripeSecret();
-  if (!secret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'Stripe is not configured');
+  const keyRes = await resolveStripeSecretKey(getSecret);
+  if (!keyRes.ok) return jsonError(stripeKeyErrorStatus(keyRes.code), keyRes.code, keyRes.message);
 
-  const stripe = new Stripe(secret, { apiVersion: '2024-06-20' });
+  const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
   let price: Stripe.Price;
   try {
     price = await stripe.prices.retrieve(product.stripe_price_id);
@@ -99,6 +122,7 @@ Deno.serve(async (req) => {
     product_type: 'managed_website',
     redesign: 'true',
     source_url: sourceUrl,
+    ...stripeModeMetadata(stripeMode),
   };
   if (body.site_slug) metadata.site_slug = body.site_slug.trim();
   if (body.project_name) metadata.project_name = body.project_name.trim();
@@ -120,6 +144,7 @@ Deno.serve(async (req) => {
       session_id: session.id,
       mode: session.mode,
       plan_key: PLAN_KEY,
+      ...stripeModeResponseFields(stripeMode),
     });
   } catch (error) {
     return jsonError(500, 'STRIPE_CREATE_FAILED', (error as Error).message);

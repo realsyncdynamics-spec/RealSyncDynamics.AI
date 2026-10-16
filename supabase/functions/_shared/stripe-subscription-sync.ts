@@ -6,6 +6,7 @@
 import type Stripe from 'npm:stripe@16.12.0';
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { normalizePlanKey } from './pricing.generated.ts';
+import { planKeyForTestPrice } from './stripe-mode.ts';
 
 /** Minimal admin surface needed for subscription upsert. */
 export type SubscriptionSyncAdmin = {
@@ -50,7 +51,8 @@ export async function loadAddonPriceIds(admin: SupabaseClient): Promise<Set<stri
 }
 
 /**
- * Resolve plan_key: price.metadata → products.default_for_plan_key → free_audit.
+ * Resolve plan_key: price.metadata → products.default_for_plan_key →
+ * (Beta-Testmodus) STRIPE_TEST_PRICE_<PLAN_KEY> → free_audit.
  * Never invent a paid plan when lookup fails.
  */
 export async function resolvePlanKeyFromItem(
@@ -71,6 +73,9 @@ export async function resolvePlanKeyFromItem(
       (data as { default_for_plan_key?: string } | null)?.default_for_plan_key,
     );
     if (fromProducts) return fromProducts;
+
+    const fromTestPrice = normalizePlanKey(planKeyForTestPrice(priceId));
+    if (fromTestPrice) return fromTestPrice;
   }
 
   return 'free_audit';

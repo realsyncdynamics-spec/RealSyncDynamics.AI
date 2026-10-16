@@ -1,4 +1,5 @@
 import { PRICING_TAX_MODE } from '@/shared/pricing';
+import { STRIPE_MODE, publishableKeyForMode } from './stripeMode';
 
 /**
  * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
@@ -74,7 +75,7 @@ export interface CompanyConfig {
  *
  * WICHTIG:
  * - Abgleich mit Impressum: Einzelunternehmen, Neuhaus am Rennweg, kein HRB
- * - Stripe-Keys kommen aus .env: VITE_STRIPE_PUBLISHABLE_KEY
+ * - Stripe-Keys kommen aus .env: VITE_STRIPE_PUBLISHABLE_KEY, Modus aus VITE_STRIPE_MODE
  * - registryEntry bleibt null, solange legalForm === 'Einzelunternehmen'
  */
 export const COMPANY: CompanyConfig = {
@@ -103,8 +104,10 @@ export const COMPANY: CompanyConfig = {
     country: 'Germany',
   },
 
-  stripeAccountMode: 'test', // Switch to 'live' for production
-  stripePublishableKey: (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || '',
+  // Beta: Testmodus, solange VITE_STRIPE_MODE nicht exakt 'live' ist
+  // (src/config/stripeMode.ts). Ein pk_live_-Key wird im Testmodus verworfen.
+  stripeAccountMode: STRIPE_MODE,
+  stripePublishableKey: publishableKeyForMode(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined),
 
   // Aus der Pricing-SSoT (shared/pricing.ts), damit Frontend und Edge Functions
   // denselben Steuerhinweis zeigen.

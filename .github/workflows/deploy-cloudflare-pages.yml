@@ -158,6 +158,7 @@ jobs:
           # Fehlt ein Repo-Secret, ist der Wert leer und das Feature bleibt aus.
           VITE_SUPABASE_ANON_JWT: ${{ secrets.VITE_SUPABASE_ANON_JWT }}
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+          VITE_STRIPE_MODE: ${{ secrets.VITE_STRIPE_MODE }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           VITE_STRIPE_AUDIT_PRO_LINK: ${{ secrets.VITE_STRIPE_AUDIT_PRO_LINK }}
           VITE_STRIPE_CONNECT_ID: ${{ secrets.VITE_STRIPE_CONNECT_ID }}

@@ -30,6 +30,13 @@ const RESOURCES: Resource[] = [
     icon: <AlertTriangle className="h-5 w-5" />,
   },
   {
+    href: '/ai-act-betreiberpflichten',
+    title: 'AI Act Betreiberpflichten (Art. 26)',
+    description: 'Zwölf Prüfpunkte für Betreiber von Hochrisiko-KI, neue Fristen nach dem Digital Omnibus, Art.-25-Rollencheck und Selbstcheck im Browser.',
+    badge: 'Checkliste',
+    icon: <FileText className="h-5 w-5" />,
+  },
+  {
     href: '/evidence-runtime',
     title: 'Evidence Runtime erklärt',
     description: 'Closed Loop von Detect bis Prove: wie aus dem realen Systemzustand Beweisketten für DSGVO, TDDDG und EU AI Act werden — mit ehrlichem Status je Architektur-Ebene.',

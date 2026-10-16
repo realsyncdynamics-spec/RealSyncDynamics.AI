@@ -329,13 +329,6 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'avv-generator', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
-  { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
-  { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
   // WP-3: im Repo; Deploy nach Freigabe der Migration 20261013090000_beta_enrollments.
   { slug: 'beta-enroll', surface: 'App-Shell — BetaAppBanner (Beta-Anmeldung nach ?beta=1)', publicPath: false },
 ];

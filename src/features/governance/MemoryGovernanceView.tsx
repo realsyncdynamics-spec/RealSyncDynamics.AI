@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 /**
  * RFC-003 Memory Governance — Sichtbarkeit für den Decay-Zustand.
@@ -83,7 +84,7 @@ function Inner() {
 
     try {
       const token = await (await import('../../lib/auth')).getAuthToken();
-      const response = await fetch('/functions/v1/governance-memory', {
+      const response = await fetch(`${getSupabaseUrl()}/functions/v1/governance-memory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

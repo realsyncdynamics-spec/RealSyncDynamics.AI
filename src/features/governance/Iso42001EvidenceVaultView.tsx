@@ -9,6 +9,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface EvidenceItem {
   id: string;
@@ -77,7 +78,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/iso42001-evidence-vault?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-evidence-vault?tenant_id=${activeTenantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -141,7 +142,7 @@ function Inner() {
       formData.append('tags', JSON.stringify(tags));
 
       const response = await fetch(
-        `/functions/v1/iso42001-evidence-vault?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-evidence-vault?tenant_id=${activeTenantId}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -562,7 +563,7 @@ export function DetailPanel({
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/iso42001-evidence-vault?tenant_id=${tenantId}&evidence_id=${evidence.id}&archived=true`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-evidence-vault?tenant_id=${tenantId}&evidence_id=${evidence.id}&archived=true`,
         { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } }
       );
 

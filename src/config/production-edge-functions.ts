@@ -89,10 +89,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 195;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 196;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-10T17:10Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-16T12:07Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -123,6 +123,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'automation-callback',
   'automation-trigger',
   'automation-trigger-trial-webhook',
+  'beta-enroll',
   'bot-chat',
   'bot-voice-webhook',
   'browser-action-log',
@@ -329,8 +330,6 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  // WP-3: im Repo; Deploy nach Freigabe der Migration 20261013090000_beta_enrollments.
-  { slug: 'beta-enroll', surface: 'App-Shell — BetaAppBanner (Beta-Anmeldung nach ?beta=1)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

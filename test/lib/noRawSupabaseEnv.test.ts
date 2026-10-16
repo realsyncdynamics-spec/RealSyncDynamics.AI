@@ -35,3 +35,25 @@ describe('Supabase-Basis-URL', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// Regression: `fetch('/functions/v1/…')` ging relativ gegen den Pages-Host.
+// Dort greift der SPA-Fallback (`/*  /index.html  200`) — die Ansicht bekam
+// HTML statt JSON und blieb leer (u. a. ISO-42001-, DSGVO-, NIS2-Ansichten).
+// Edge Functions laufen über supabase.functions.invoke, postEdgeFunction oder
+// `${getSupabaseUrl()}/functions/v1/…`.
+describe('Edge-Function-Aufrufe', () => {
+  it('rufen /functions/v1 nie relativ zum SPA-Host auf', () => {
+    const RELATIVE = /fetch\(\s*['"`]\/functions\/v1\//;
+    // Auskommentierter Code ruft nichts auf.
+    const code = (rel: string) =>
+      readFileSync(join(ROOT, rel), 'utf8')
+        .split('\n')
+        .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+        .join('\n');
+    const offenders = walk(ROOT)
+      .map((f) => relative(ROOT, f).replace(/\\/g, '/'))
+      .filter((rel) => !rel.includes('__tests__/'))
+      .filter((rel) => RELATIVE.test(code(rel)));
+    expect(offenders).toEqual([]);
+  });
+});

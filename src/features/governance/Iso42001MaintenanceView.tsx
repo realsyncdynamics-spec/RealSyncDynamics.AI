@@ -8,6 +8,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface ComplianceEvent {
   id: string;
@@ -66,7 +67,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/maintenance-schedule?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/maintenance-schedule?tenant_id=${activeTenantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

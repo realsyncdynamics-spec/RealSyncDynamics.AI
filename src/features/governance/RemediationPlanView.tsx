@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface RemediationPlan {
   id: string;
@@ -59,7 +60,7 @@ function Inner() {
 
     try {
       const response = await fetch(
-        `/functions/v1/governance-resources?tenant_id=${activeTenantId}&resource_type=remediation_plans`,
+        `${getSupabaseUrl()}/functions/v1/governance-resources?tenant_id=${activeTenantId}&resource_type=remediation_plans`,
         { headers: { Authorization: `Bearer ${(await import('../../lib/auth')).getAuthToken()}` } }
       );
       if (!response.ok) throw new Error('Failed to load');

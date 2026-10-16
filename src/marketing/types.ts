@@ -38,7 +38,8 @@ export type CTAKey =
   | 'pricing'
   | 'partners'
   | 'docs_evidence'
-  | 'contact_sales';
+  | 'contact_sales'
+  | 'betreiber_selfcheck';
 
 /**
  * Single Source of Truth fuer alle CTAs der Promotion-Engine.
@@ -51,6 +52,7 @@ export const CTA_TARGETS: Record<CTAKey, { label: string; href: string }> = {
   partners:       { label: 'Partner-Pilot anfragen',    href: '/partners' },
   docs_evidence:  { label: 'Evidence-Modell lesen',     href: '/evidence' },
   contact_sales:  { label: 'Sales kontaktieren',        href: '/contact-sales' },
+  betreiber_selfcheck: { label: 'Kostenlosen Selbstcheck starten', href: '/ai-act-betreiberpflichten/selbstcheck' },
 };
 
 export interface ContentAsset {

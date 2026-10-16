@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939` (Ursprungsbefund §1–§3) · **WP-Fortschritt §4:** 2026-10-10 gegen `main@c90fcdd`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben (WP2 derzeit gesperrt bis zur E-F6-Neufassung, §4) · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4) · **E-V1–E-V4 entschieden (2026-10-04)**, Landing v4 mit #1751 auf `/`
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben (WP2 derzeit gesperrt bis zur E-F6-Neufassung, §4) · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4) · **Nachtrag 2026-10-16:** WP2 geschlossen (durch E-F6 überholt, §4) · **E-V1–E-V4 entschieden (2026-10-04)**, Landing v4 mit #1751 auf `/`
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -128,7 +128,7 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
       │                                 ▼
       ├─✓ WP2a Trial-Ablauf (#1716) ──✓ WP3 AI-OS-Setup (#1730) ──✓ WP4 Command-Center-Kacheln (#1733)
       │
-      ├─⏸ WP2 Funnel auf /audit (OFFEN, GESPERRT bis /wp2-funnel auf E-F6 umgeschrieben ist)
+      ├─X WP2 Funnel auf /audit         GESCHLOSSEN 2026-10-16 — durch E-F6 überholt, nicht erneut aufgreifen
       └─► WP6 Governed Evolution (nur Doku, jederzeit; OFFEN)
 ```
 
@@ -139,7 +139,7 @@ WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockie
 |---|---|---|---|---|
 | ~~**WP1**~~ | ⛔ **Geschlossen** — Landing schärfen. Umgesetzt in `6523ac2` (#1673). Seit #1686 tragen `GovernanceOsHero.tsx` und `DesignGovernanceAiLanding.tsx` nur `/design/governance-ai`; `HomepageBriefSections.tsx` und `hero-content.ts` laufen über die eingebettete `ArchitectureSection` weiter auf `/`. | `GovernanceOsHero.tsx`, `hero-content.ts`, `HomepageBriefSections.tsx`, `DesignGovernanceAiLanding.tsx` | — | erledigt |
 | ~~**WP2a**~~ | ✅ **Erledigt** — Trial-Ablauf erzwingen (Resolver prüft `trial_end`). Gemergt in `f8defb3` (#1716): `20260928160000_wp2a_trial_end_expiry.sql` + `test/runtime/db/trial-expiry.db.test.ts`. | `supabase/migrations/*` (neu), Test gegen `abo_wirksam` | hoch | erledigt |
-| **WP2** | Funnel auf `/audit` ausrichten. ⏸ **Gesperrt:** `.claude/commands/wp2-funnel.md` steht noch auf E-F1 (Starter `trialDays` 14 → 0, Growth-Testphase als Einstieg) und widerspricht damit E-F6 (kostenloses Konto, Starter behält 14 Tage). `/wp2-funnel` erst ausführen, wenn der Auftrag auf E-F6 umgeschrieben und freigegeben ist. | `pages/AuditLanding.tsx`, `components/audit/PostScanChoiceRow.tsx`, `TrialOfferPage.tsx`, `SuccessPage.tsx`, `PostRegisterOnboardingPage.tsx` (nur Copy), `shared/pricing.ts` (Starter `trialDays`) | mittel | Preise/Angebot; Neufassung des Auftrags |
+| ~~**WP2**~~ | ⛔ **Geschlossen (2026-10-16)** — durch E-F6 überholt, das auf `main` bereits umgesetzt ist (kostenloses Konto als Einstieg, Growth-Testphase per `FreePlanPanel`, Starter behält 14 Tage). Abgleich und Restpunkte (eine Angebots-Konstante; ungenutzte Route `/unified-entry/success`) im Überholt-Hinweis von `.claude/commands/wp2-funnel.md`. | — | — | erledigt |
 | ~~**WP3**~~ | ✅ **Erledigt** — AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben). Gemergt in `17a716a` (#1730). | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | erledigt |
 | ~~**WP4**~~ | ✅ **Erledigt** — Command Center: Inventar · Agenten · Freigaben · Evidence. Gemergt in `299a743` (#1733), Duplikat #1747 geschlossen. Folgepunkte siehe unten. | `features/governance/dashboard/*`, vorhandene APIs | niedrig | erledigt |
 | ~~**WP5**~~ | ✅ **Erledigt** — Ein Agent-Register mit abgeleitetem Reifegrad. Gemergt (#1658, 2026-09-27). | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | erledigt |

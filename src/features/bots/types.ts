@@ -24,6 +24,12 @@ export interface RestaurantBotConfig {
 export interface BotConfig {
   vertical?: BotVertical;
   restaurant?: RestaurantBotConfig;
+  /**
+   * Websites, von denen `bot-chat` Nachrichten annimmt (Origin, z. B.
+   * `https://shop.example.de`). Fehlt der Eintrag, ist der Bot von überall
+   * erreichbar; eine leere Liste sperrt ihn. Siehe `_shared/bot-chat-guard.ts`.
+   */
+  allowed_origins?: string[];
   [key: string]: unknown;
 }
 

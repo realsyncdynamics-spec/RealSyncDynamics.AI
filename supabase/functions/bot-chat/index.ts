@@ -10,17 +10,20 @@
 // }
 //
 // Ablauf:
+//   0. Eingaben prüfen, Bremse je Quelle           parseBotChatInput, checkAnonRateLimit
 //   1. Bot auflösen (tenant + enabled)            resolveBot
-//   2. Feature-Gate                               bots.enabled
-//   3. Monats-Quota prüfen + zählen               limit.bot_messages_monthly
-//   4. Konversation upserten + User-Nachricht persistieren
-//   5. Verlauf laden, Prompt bauen, AI aufrufen   runAiTool('bot_reply')
-//   6. Antwort persistieren + zurückgeben
+//   2. Herkunft gegen config.allowed_origins      decideOrigin
+//   3. Feature-Gate                               bots.enabled
+//   4. Takt je Mandant und Konversation           bot_messages der letzten Minute
+//   5. Monats-Quota prüfen + zählen               limit.bot_messages_monthly
+//   6. User-Nachricht persistieren, Richtlinien, AI aufrufen, Antwort speichern
 //
-// verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
+// verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id) plus die
+// Schranken aus `_shared/bot-chat-guard.ts`. Abgelehnte Anfragen verbuchen
+// weder Kontingent noch Modellkosten — alle Schranken stehen vor Schritt 5.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
+import { corsHeaders, handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
@@ -30,11 +33,21 @@ import {
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
+import { sha256Hex } from '../_shared/hash.ts';
+import { checkAnonRateLimit } from '../_shared/anonRateLimit.ts';
+import {
+  SOURCE_REQUESTS_PER_MINUTE, decideOrigin, exceededScope, parseBotChatInput,
+} from '../_shared/bot-chat-guard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const MAX_MESSAGE_CHARS = 4000;
+function rateLimited(scope: string): Response {
+  return new Response(
+    JSON.stringify({ ok: false, error: { code: 'RATE_LIMITED', message: 'Zu viele Nachrichten. Bitte kurz warten.', details: { scope } } }),
+    { status: 429, headers: { ...corsHeaders, 'content-type': 'application/json', 'retry-after': '60' } },
+  );
+}
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -48,21 +61,25 @@ Deno.serve(async (req) => {
     return jsonError(400, 'BAD_REQUEST', 'invalid json body');
   }
 
-  const tenantId = String(body.tenant_id ?? '');
-  const botId = String(body.bot_id ?? '');
-  const message = typeof body.message === 'string' ? body.message : '';
-  const conversationRef = body.conversation_ref ? String(body.conversation_ref) : null;
-  const contactLabel = body.contact_label ? String(body.contact_label) : null;
+  const input = parseBotChatInput(body);
+  if (!input.ok) return jsonError(400, 'BAD_REQUEST', input.message);
+  const { tenantId, botId, message, conversationRef, contactLabel } = input.value;
 
-  if (!message.trim()) return jsonError(400, 'BAD_REQUEST', 'message required');
-  if (message.length > MAX_MESSAGE_CHARS) {
-    return jsonError(400, 'BAD_REQUEST', `message too long (>${MAX_MESSAGE_CHARS} chars)`);
-  }
+  // Bremse je Quelle — vor jedem Datenbankzugriff. Nur im Arbeitsspeicher
+  // (siehe anonRateLimit.ts); die belastbare Grenze ist der Takt unten.
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const source = checkAnonRateLimit(await sha256Hex(ip), {
+    bucket: 'bot-chat', max: SOURCE_REQUESTS_PER_MINUTE, windowMs: 60_000,
+  });
+  if (!source.allowed) return rateLimited('source');
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   try {
     const bot = await resolveBot(admin, tenantId, botId);
+
+    const origin = decideOrigin(req.headers.get('origin'), bot.config);
+    if (!origin.allowed) return jsonError(403, 'ORIGIN_NOT_ALLOWED', 'Dieser Bot ist für diese Website nicht freigegeben.');
 
     // Feature-Gate: Tenant-Plan muss Bots freigeschaltet haben.
     try {
@@ -71,6 +88,27 @@ Deno.serve(async (req) => {
       if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
       throw e;
     }
+
+    // Takt aus der Datenbank: über Isolate und Kaltstarts hinweg gültig.
+    const since = new Date(Date.now() - 60_000).toISOString();
+    const tenantRecent = await admin.from('bot_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId).eq('role', 'user').gte('created_at', since);
+    if (tenantRecent.error) throw new Error(tenantRecent.error.message);
+
+    const conversationId = await upsertConversation(admin, bot, {
+      channel: 'chat', externalRef: conversationRef, contactLabel,
+    });
+    const conversationRecent = await admin.from('bot_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId).eq('role', 'user').gte('created_at', since);
+    if (conversationRecent.error) throw new Error(conversationRecent.error.message);
+
+    const exceeded = exceededScope({
+      conversation: conversationRecent.count ?? 0,
+      tenant: tenantRecent.count ?? 0,
+    });
+    if (exceeded) return rateLimited(exceeded);
 
     // Monats-Quota prüfen + zählen (vor dem AI-Aufruf).
     try {
@@ -81,10 +119,6 @@ Deno.serve(async (req) => {
       }
       throw e;
     }
-
-    const conversationId = await upsertConversation(admin, bot, {
-      channel: 'chat', externalRef: conversationRef, contactLabel,
-    });
 
     await insertMessage(admin, bot, conversationId, 'user', message.trim());
 
@@ -171,11 +205,15 @@ Deno.serve(async (req) => {
       conversation_id: conversationId,
       reply: ai.output,
       run_id: ai.runId,
+      origin_unrestricted: !origin.restricted,
     });
   } catch (e) {
     if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);
     if (e instanceof AiInvokeError) return jsonError(e.status, e.code, e.message, undefined, e.details);
     if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
-    return jsonError(500, 'INTERNAL', (e as Error).message);
+    // Interne Fehlertexte (Tabellen, Constraints) gehen ins Log, nicht an
+    // einen anonymen Aufrufer.
+    console.error(JSON.stringify({ level: 'error', scope: 'bot_chat_failed', error: (e as Error)?.message }));
+    return jsonError(500, 'INTERNAL', 'Die Nachricht konnte gerade nicht verarbeitet werden.');
   }
 });

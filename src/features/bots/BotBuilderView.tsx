@@ -8,6 +8,7 @@ import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card'
 import { getBot, updateBot, deleteBot } from './api';
 import type { Bot, BotChannel, BotVertical, RestaurantBotConfig, RestaurantMenuItem } from './types';
 import { getSupabaseUrl } from '../../lib/supabaseUrl';
+import { normalizeOrigin } from '../../../supabase/functions/_shared/bot-chat-guard';
 
 /** /app/bots/:botId — Bot-Builder: Persona, Kanal, Fähigkeiten, Integration. */
 export function BotBuilderView() {
@@ -31,12 +32,17 @@ function BotBuilderInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [originsText, setOriginsText] = useState('');
 
   useEffect(() => {
     if (!activeTenantId || !botId) return;
     setLoading(true); setError(null);
     getBot(activeTenantId, botId)
-      .then((b) => { if (!b) setError('Bot nicht gefunden.'); else setBot(b); })
+      .then((b) => {
+        if (!b) { setError('Bot nicht gefunden.'); return; }
+        setBot(b);
+        setOriginsText((b.config.allowed_origins ?? []).join('\n'));
+      })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
   }, [activeTenantId, botId]);
@@ -68,6 +74,23 @@ function BotBuilderInner() {
         },
       },
     } : prev);
+  }
+
+  /**
+   * Leeres Feld → Eintrag entfernen (Bot von überall erreichbar). Sonst nur
+   * gültige Origins speichern; bleibt keiner übrig, ist der Bot gesperrt.
+   */
+  function setAllowedOrigins(text: string) {
+    setOriginsText(text);
+    setBot((prev) => {
+      if (!prev) return prev;
+      const { allowed_origins: _drop, ...rest } = prev.config;
+      if (!text.trim()) return { ...prev, config: rest };
+      const origins = Array.from(new Set(
+        text.split(/\s+/).map(normalizeOrigin).filter((o): o is string => o !== null),
+      ));
+      return { ...prev, config: { ...rest, allowed_origins: origins } };
+    });
   }
 
   function optionalNumber(value: string): number | undefined {
@@ -405,6 +428,27 @@ function BotBuilderInner() {
               <CardHeader title="Integration" eyebrow="Endpoints" subtitle="Identifiziere den Bot über tenant_id + bot_id." />
               <CardBody className="space-y-3">
                 <CodeBlock label="Chat-Endpoint" value={`POST ${FUNCTIONS_BASE}/bot-chat`} />
+                <div>
+                  <label htmlFor="bot-allowed-origins" className="block text-xs font-medium text-titanium-300 mb-1">
+                    Erlaubte Websites für den Chat (eine Adresse pro Zeile)
+                  </label>
+                  <textarea
+                    id="bot-allowed-origins"
+                    rows={3}
+                    value={originsText}
+                    onChange={(e) => setAllowedOrigins(e.target.value)}
+                    placeholder="https://www.ihre-firma.de"
+                    aria-describedby="bot-allowed-origins-hint"
+                    className="w-full rounded-md border border-titanium-700 bg-obsidian-800 px-3 py-2 text-sm text-titanium-50"
+                  />
+                  <p id="bot-allowed-origins-hint" className="mt-1 text-xs text-titanium-500">
+                    {!originsText.trim()
+                      ? 'Leer: Der Chat nimmt Nachrichten von jeder Website an. Tragen Sie Ihre Domain ein, damit Fremde Ihr Kontingent nicht verbrauchen können.'
+                      : (bot.config.allowed_origins ?? []).length === 0
+                        ? 'Keine gültige Adresse erkannt — der Chat ist damit gesperrt. Format: https://www.ihre-firma.de'
+                        : `Freigegeben: ${(bot.config.allowed_origins ?? []).join(', ')}`}
+                  </p>
+                </div>
                 <CodeBlock label="tenant_id" value={bot.tenant_id} />
                 <CodeBlock label="bot_id" value={bot.id} />
                 {bot.channel === 'voice' && (

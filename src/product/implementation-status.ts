@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-04';
+export const IMPLEMENTATION_MEASURED_AT = '2026-10-17';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,19 +49,50 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
+      'Landing v6 auf `/` (seit #1881): H1 „The Governance OS für DSGVO und EU AI Act.“, Unterzeile „Website- und KI-Risiken erkennen. Prüffähig nachweisen.“; Primär-CTA „Kostenlosen Website-Check starten“ (/audit), Sekundär-CTA „Enterprise anfragen“ (/contact-sales), Login (/login); Tarif-Kacheln aus der Pricing-SSoT (→ /checkout bzw. in der Beta → Beta-Registrierung), Steuerhinweis aus `pricingTaxNote`; Control Room als „Beispielumgebung · Demo-Daten“ gekennzeichnet; Footer-Links u. a. /governance-runtime und /roadmap. Beta-Elemente (Hero-Link, Ribbon) folgen `BETA.active` (`src/config/beta.ts`). Landing v5 (`HeroV5`/`V5Sections`) bleibt unter /design/landing-v5, v4 unter /design/landing-v4.',
     route: '/',
     evidence: [
-      'src/pages/LandingV4.tsx',
-      'src/components/landing/v4/LandingV4Sections.tsx',
-      'src/components/landing/v4/landing-v4-content.ts',
-      'src/components/landing/v4/heroEarthScene.ts',
-      'src/styles/landing-v4-classical.css',
+      'src/pages/LandingV6.tsx',
+      'src/components/landing/v6/LandingV6View.tsx',
+      'src/components/landing/v6/useLandingV6.ts',
+      'src/styles/landing-v6.css',
+      'src/config/beta.ts',
       'src/App.tsx',
-      'test/landing/landing-v4.test.tsx',
-      'PR #1751',
+      'test/landing/landing-v6-funnel.test.tsx',
+      'test/landing/landing-claims-v4-v6.test.tsx',
     ],
     showOnRoadmap: false,
+  },
+  {
+    id: 'beta-phase',
+    name: 'Offene Beta (kostenloser Growth-Umfang bis 31.01.2027)',
+    status: 'live',
+    group: 'activation',
+    description:
+      'Live seit WP-3 (#1874): Edge Function `beta-enroll` (verify_jwt, nur owner/admin, idempotent, nie über Stripe-Abos) setzt den Mandanten über den bestehenden Entitlement-Pfad auf Growth `trialing` bis 31.01.2027 (`trial_end`, Rückfall ohne Cron); Aufruf aus der App-Shell (`useBetaEnrollment` in `BetaAppBanner`) nach Registrierung über `?beta=1`. Frontend-Schalter `VITE_BETA_PHASE` unverändert (Default an). Offen (WP-4, separater Eintrag `beta-dashboard-onboarding`): Feedback-Button im Dashboard und geführter Erst-Scan.',
+    route: '/welcome?beta=1',
+    evidence: [
+      'supabase/functions/beta-enroll/index.ts',
+      'supabase/functions/beta-enroll/logic.ts',
+      'src/features/billing/useBetaEnrollment.ts',
+      'src/components/governance-os/BetaAppBanner.tsx',
+      'src/config/beta.ts',
+      'src/config/production-edge-functions.ts',
+      'test/edge/beta-enroll.test.ts',
+      'docs/claude/BETA_V5_WORKPLAN.md',
+    ],
+  },
+  {
+    id: 'beta-dashboard-onboarding',
+    name: 'Beta: Dashboard-Feedback + geführter Erst-Scan (WP-4)',
+    status: 'preview',
+    group: 'activation',
+    description:
+      'In Arbeit (WP-4): Feedback läuft heute über `/kontakt?topic=beta-feedback` aus dem Beta-Banner; Feedback-Button im Dashboard (Tabelle `beta_feedback`, RLS, Admin-Ansicht) und geführter Erststart für leere Mandanten (Domain → Scan → Befunde, echte Daten statt Demo-Zahlen) fehlen noch.',
+    evidence: [
+      'docs/claude/BETA_V5_WORKPLAN.md',
+      'src/components/governance-os/BetaAppBanner.tsx',
+    ],
   },
   {
     id: 'design-landing-ledger',

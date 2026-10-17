@@ -19,6 +19,7 @@ import {
   getPublicRoadmapCopy,
   getPublicRoadmapRoute,
 } from '../../src/product/implementation-status-public';
+import { isEdgeFunctionInProduction, isKnownUnbacked } from '../../src/config/production-edge-functions';
 
 describe('implementation-status registry', () => {
   it('has unique ids and valid statuses', () => {
@@ -31,8 +32,8 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('bumps measured date after Landing v4 re-measure', () => {
-    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-04');
+  it('bumps measured date after Landing v6 / beta re-measure', () => {
+    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-17');
   });
 
   it('keeps yearly billing off live; free audit live', () => {
@@ -58,10 +59,14 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing + earth hero at Landing v4 evidence', () => {
+  it('points public landing at Landing v6 evidence (earth hero unchanged)', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
-    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(true);
+    expect(landing.evidence).toContain('src/pages/LandingV6.tsx');
+    expect(landing.evidence).toContain('src/config/beta.ts');
+    expect(landing.description).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
+    for (const path of landing.evidence) expect(existsSync(resolve(path)), path).toBe(true);
     expect(landing.evidence.some((e) => e.includes('DesignGovernanceAiLanding'))).toBe(false);
 
     const earth = getImplementation('hero-earth-scenery')!;
@@ -69,6 +74,27 @@ describe('implementation-status registry', () => {
     expect(earth.evidence.some((e) => e.includes('heroEarthScene'))).toBe(true);
     expect(earth.evidence.some((e) => e.includes('MainLanding'))).toBe(false);
     expect(earth.description.toLowerCase()).toContain('three.js');
+  });
+
+  it('lists the beta phase live via beta-enroll; WP-4 parts stay in progress', () => {
+    const beta = getImplementation('beta-phase')!;
+    expect(beta.status).toBe('live');
+    expect(beta.description).toContain('beta-enroll');
+    expect(beta.description).toContain('31.01.2027');
+    expect(beta.description).toContain('WP-4');
+    expect(beta.evidence).toContain('supabase/functions/beta-enroll/index.ts');
+    expect(isEdgeFunctionInProduction('beta-enroll')).toBe(true);
+    expect(isKnownUnbacked('beta-enroll')).toBe(false);
+    for (const path of beta.evidence) expect(existsSync(resolve(path)), path).toBe(true);
+
+    const wp4 = getImplementation('beta-dashboard-onboarding')!;
+    expect(wp4.status).toBe('preview');
+    expect(wp4.description).toContain('WP-4');
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'beta-dashboard-onboarding')).toBe(true);
+    for (const id of ['beta-phase', 'beta-dashboard-onboarding']) {
+      expect(PUBLIC_ROADMAP_COPY[id]?.de, id).toBeTruthy();
+      expect(PUBLIC_ROADMAP_COPY[id]?.en, id).toBeTruthy();
+    }
   });
 
   it('does not claim Agent OS is mounted on live /app/dashboard', () => {
@@ -136,8 +162,10 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('docs/product/implementation-status.md'))).toBe(true);
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
-    expect(docs).toContain('Landing v4');
-    expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('Landing v6');
+    expect(docs).not.toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('beta-phase');
+    expect(docs).toContain('beta-dashboard-onboarding');
     expect(docs).toContain('/ai-act-klassifikator');
     expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);

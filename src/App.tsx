@@ -96,7 +96,6 @@ const DashboardPreviewPage = lazy(() => import('./unified-entry/pages/DashboardP
 const TrialOfferPage = lazy(() => import('./unified-entry/pages/TrialOfferPage').then((m) => ({ default: m.TrialOfferPage })));
 const RegisterPage = lazy(() => import('./unified-entry/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const PostRegisterOnboardingPage = lazy(() => import('./unified-entry/pages/PostRegisterOnboardingPage').then((m) => ({ default: m.PostRegisterOnboardingPage })));
-const SuccessPage = lazy(() => import('./unified-entry/pages/SuccessPage').then((m) => ({ default: m.SuccessPage })));
 const PathChoicePage = lazy(() => import('./unified-entry/pages/PathChoicePage').then((m) => ({ default: m.PathChoicePage })));
 const FlowStepRoute = lazy(() => import('./flow/FlowStepRoute').then((m) => ({ default: m.FlowStepRoute })));
 const AvvGenerator = lazy(() => import('./pages/AvvGenerator').then((m) => ({ default: m.AvvGenerator })));
@@ -1214,18 +1213,9 @@ function RoutesWithTracking() {
           </SupabaseAuthProvider>
         }
       />
-      <Route
-        path="/unified-entry/success"
-        element={
-          <SupabaseAuthProvider>
-            <TenantProvider>
-              <UnifiedEntryShell currentStep={5} totalSteps={5} showProgress={false}>
-                <SuccessPage />
-              </UnifiedEntryShell>
-            </TenantProvider>
-          </SupabaseAuthProvider>
-        }
-      />
+      {/* Früher eigene Willkommensseite, von keiner Stelle angesteuert; Kauf
+          endet auf /checkout/success, das kostenlose Konto direkt im Dashboard. */}
+      <Route path="/unified-entry/success" element={<Navigate to="/app/dashboard" replace />} />
 
       {/* Geführter Flow — erklärt jeden Klick auf einer eigenen Seite.
           `/flow/*` fängt auch verschachtelte Slugs wie `checkout/starter`. */}

@@ -75,8 +75,18 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
             </div>
-            <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
+            <p style={{ margin: "10px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Check: Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
             {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: kostenlos testen bis {v.beta.endsShort} · keine Kreditkarte</Link></p>) : null}
+            <figure data-hero-sample-finding aria-labelledby="lv6-sample-cap" style={{ margin: "clamp(24px,2vw,60px) 0 0", maxWidth: "36em", padding: "clamp(14px,1vw,28px) clamp(16px,1.2vw,32px)", borderRadius: "8px", border: "1px solid var(--rs-line)", background: "var(--rs-nav)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+              <figcaption id="lv6-sample-cap" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "4px 16px", fontFamily: "'JetBrains Mono Optional',monospace", fontSize: "var(--fs-small)", letterSpacing: ".06em", color: "var(--rs-fg3)" }}><span>BEISPIELBEFUND · so sieht ein Prüfbericht aus</span><span>keine echte Website</span></figcaption>
+              <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 10px" }}>
+                <span style={{ padding: "2px 8px", borderRadius: "4px", border: "1px solid var(--rs-acc)", color: "var(--rs-acc)", fontSize: "var(--fs-small)", fontWeight: "600" }}>Schweregrad: mittel</span>
+                <span style={{ fontFamily: "'JetBrains Mono Optional',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>DSGVO Art. 6 Abs. 1 · Art. 44</span>
+              </div>
+              <p style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", fontWeight: "600", color: "var(--rs-fg)" }}>Google Fonts dynamisch eingebunden</p>
+              <p style={{ margin: "4px 0 0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Schriften werden vom Google-CDN geladen; dabei gehen IP-Adressen der Besucher an Google in den USA.</p>
+              <p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg)" }}><strong style={{ fontWeight: "600" }}>Maßnahme:</strong> Schriften lokal hosten oder erst nach Einwilligung laden. Aufwand ca. 10–15 min.</p>
+            </figure>
           </div>
         </div>
 

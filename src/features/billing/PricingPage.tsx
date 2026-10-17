@@ -14,6 +14,7 @@ import {
 } from '../../config/pricing';
 import { checkoutHrefForPlan } from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
+import { BETA, betaSignupHref, isBetaPlan } from '../../config/beta';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -30,6 +31,15 @@ function trialPlanList(lang: 'de' | 'en'): string {
   const conj = lang === 'en' ? 'and' : 'und';
   return `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} ${conj} ${TRIAL_PLAN_NAMES.at(-1)}`;
 }
+
+function betaPlanList(lang: 'de' | 'en'): string {
+  const names = SELLABLE_PRICING_TIERS.filter((tier) => isBetaPlan(tier.plan.id)).map((tier) => tier.name);
+  if (names.length <= 1) return names[0] ?? '';
+  const conj = lang === 'en' ? 'and' : 'und';
+  return `${names.slice(0, -1).join(', ')} ${conj} ${names.at(-1)}`;
+}
+
+const betaUntil = (lang: 'de' | 'en'): string => (lang === 'en' ? BETA.endsLabelEn : BETA.endsLabel);
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -111,6 +121,15 @@ export function PricingPage() {
                 {t('yearlyNote')}
               </p>
             )}
+            {BETA.active && (
+              <div className="rs-pricing__beta" role="note" data-testid="pricing-beta-notice">
+                <span className="rs-pill rs-pill--primary">{BETA.badge}</span>
+                <div>
+                  <p className="rs-pricing__beta-title">{t('pricingBetaTitle')}</p>
+                  <p className="rs-pricing__beta-body">{t('pricingBetaBody', { until: betaUntil(lang) })}</p>
+                </div>
+              </div>
+            )}
             <div className="rs-pricing__grid">
               <FreeAuditCard />
               {SELLABLE_PRICING_TIERS.map((tier) => (
@@ -118,13 +137,17 @@ export function PricingPage() {
               ))}
             </div>
             <div className="rs-pricing__foot" data-testid="pricing-foot">
-              <p data-testid="pricing-trust-note">{t('pricingTrustNote')}</p>
+              <p data-testid="pricing-trust-note">
+                {BETA.active ? t('pricingBetaTrustNote', { until: betaUntil(lang) }) : t('pricingTrustNote')}
+              </p>
               <p data-testid="pricing-trial-foot">
-                {t('pricingTrialFoot', {
-                  plans: trialPlanList(lang),
-                  days: TRIAL_DAYS,
-                  until: TRIAL_DAYS + 1,
-                })}
+                {BETA.active
+                  ? t('pricingBetaFoot', { plans: betaPlanList(lang), until: betaUntil(lang) })
+                  : t('pricingTrialFoot', {
+                      plans: trialPlanList(lang),
+                      days: TRIAL_DAYS,
+                      until: TRIAL_DAYS + 1,
+                    })}
               </p>
               {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
               <p data-testid="pricing-tax-note">
@@ -409,22 +432,32 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
   const checkoutHref = showYearly
     ? checkoutHrefForPlan(tier.plan, { interval: 'year', source: 'pricing' })
     : tier.cta.href;
-  const ctaHref = checkoutHref.startsWith('http')
-    ? checkoutHref
-    : withAuditContext(checkoutHref, auditContext);
+  // Offene Beta: Self-Service-Pläne werden kostenlos getestet statt gekauft —
+  // dieselbe Regel und dasselbe Ziel wie auf der Startseite (useLandingV6).
+  const beta = !tier.priceOnRequest && isBetaPlan(tier.plan.id);
+  const ctaHref = beta
+    ? betaSignupHref(tier.plan.id, 'pricing')
+    : checkoutHref.startsWith('http')
+      ? checkoutHref
+      : withAuditContext(checkoutHref, auditContext);
+  const listPrice = formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
   const priceDisplay = tier.priceOnRequest
     ? t('onRequest')
-    : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
+    : beta
+      ? formatPriceEur(0)
+      : listPrice;
   const suffix = tier.priceOnRequest
     ? (lang === 'en' ? 'custom offer' : tier.priceSuffix)
-    : showYearly
-      ? t('perYear')
-      : t('perMonth');
+    : beta
+      ? t('pricingBetaPrice', { until: betaUntil(lang) })
+      : showYearly
+        ? t('perYear')
+        : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;
   const bullets = copy?.bullets ?? tier.bullets.slice(0, 5);
-  const ctaLabel = copy?.ctaLabel ?? tier.cta.label;
+  const ctaLabel = beta ? t('pricingBetaCta') : copy?.ctaLabel ?? tier.cta.label;
   const go = () => {
     if (ctaHref.startsWith('http')) window.open(ctaHref, '_blank', 'noopener');
     else window.location.href = ctaHref;
@@ -451,6 +484,11 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
         <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
         <span className="rs-price-card__suffix">{suffix}</span>
       </div>
+      {beta && (
+        <p className="rs-price-card__list-price" data-testid={`pricing-list-price-${tier.id}`}>
+          <s>{t('pricingBetaListPrice', { price: `${listPrice} ${showYearly ? t('perYear') : t('perMonth')}` })}</s>
+        </p>
+      )}
 
       <p className="rs-price-card__tagline">{tagline}</p>
       <FeatureList items={[...bullets]} />

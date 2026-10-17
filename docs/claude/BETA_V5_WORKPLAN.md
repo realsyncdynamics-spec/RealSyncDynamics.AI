@@ -75,6 +75,12 @@ Basis vorhanden: `token_tracking`, `tenant_cost_ledger`, `agent_runs_metering`, 
 - `/roadmap`: Beta-Meilensteine (Start, Feedback-Runden, Ende 31.01.2027, Preise ab Feb. 2027) aus einer Konstante in `src/config/beta.ts`.
 - `/pricing`: Enterprise mit Preis sichtbar (SSoT `shared/pricing.ts`, 1.249 €), Beta-Hinweis über allen Self-Service-Plänen, Credits-Tabelle (nach WP-5).
 
+**Umsetzung (PR „WP-7 Roadmap + Pricing auf Beta“), Abweichungen vom Plan:**
+- `/roadmap`: `BETA_MILESTONES` in `src/config/beta.ts` (Start, Feedback-Runden ohne Datum, Ende, Listenpreise ab Feb. 2027); nur bei `BETA.active`.
+- `/pricing`: Beta-Hinweis über dem Raster; Starter/Growth/Agency zeigen 0 € + durchgestrichenen Listenpreis, CTA „Kostenlos testen“ → `betaSignupHref` (vorher Label „14 Tage …“, Ziel landete über `/checkout` ohnehin in der Beta-Registrierung). Fußzeile spricht von der Beta statt vom 14-Tage-Trial.
+- **Enterprise bleibt „Auf Anfrage“**: 1.249 € auszuweisen widerspricht `tierPriceLabel` / `test/pricing/tier-price-label.test.ts` und `check:offer-prices` (Vertragsplan ohne Kaufpfad). Braucht eine eigene Owner-Entscheidung.
+- Credits-Tabelle offen bis WP-5.
+
 ## Reihenfolge
 
 WP-1 (PR) → WP-3 → WP-4 → WP-2 → WP-6 → WP-5 → WP-7. WP-3 ist Pflicht, bevor die Beta öffentlich beworben wird (sonst Claim ohne Runtime).

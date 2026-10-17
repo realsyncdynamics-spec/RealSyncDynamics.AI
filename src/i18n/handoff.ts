@@ -379,6 +379,17 @@ export const HANDOFF_EXTRA = {
       'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
     pricingTrialFoot:
       'Free Audit kostenlos · kein Account nötig · {plans}: {days} Tage kostenlos testen — keine Kosten bis Tag {until}, monatlich kündbar · Enterprise: nach Anfrage, kein Self-Service-Trial',
+    // /pricing während der offenen Beta (src/config/beta.ts).
+    pricingBetaTitle: 'Offene Beta: Starter, Growth und Agency kostenlos testen',
+    pricingBetaBody:
+      'Bis {until} zahlen Sie nichts — keine Kreditkarte, kein Abo, keine automatische Verlängerung. Danach gelten die angezeigten Listenpreise. Enterprise bleibt auf Anfrage.',
+    pricingBetaPrice: 'kostenlos bis {until}',
+    pricingBetaListPrice: 'Listenpreis {price}',
+    pricingBetaCta: 'Kostenlos testen',
+    pricingBetaTrustNote:
+      'Free Audit kostenlos · Beta kostenlos bis {until} · Keine Kreditkarte · Keine Setup-Gebühren · Made in Germany',
+    pricingBetaFoot:
+      'Free Audit kostenlos · kein Account nötig · {plans}: kostenlos bis {until}, danach Listenpreis, monatlich kündbar · Enterprise: nach Anfrage, kein Self-Service-Trial',
     pricingDisclaimerBefore:
       'Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung. ',
     pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
@@ -492,6 +503,16 @@ export const HANDOFF_EXTRA = {
       'Free Audit free of charge · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
     pricingTrialFoot:
       'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
+    pricingBetaTitle: 'Open beta: try Starter, Growth and Agency for free',
+    pricingBetaBody:
+      'You pay nothing until {until} — no credit card, no subscription, no automatic renewal. After that, the list prices shown apply. Enterprise stays on request.',
+    pricingBetaPrice: 'free until {until}',
+    pricingBetaListPrice: 'List price {price}',
+    pricingBetaCta: 'Try for free',
+    pricingBetaTrustNote:
+      'Free Audit free of charge · Beta free until {until} · No credit card · No setup fees · Made in Germany',
+    pricingBetaFoot:
+      'Free Audit free of charge · no account needed · {plans}: free until {until}, then list price, cancel monthly · Enterprise: on request, no self-service trial',
     pricingDisclaimerBefore:
       'Our outputs are methodologically and technically sound — but no substitute for individual legal advice. ',
     pricingDisclaimerStrong: 'We do not promise "100% legally secure"',

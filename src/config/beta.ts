@@ -19,6 +19,7 @@ export const BETA = {
   active: flag !== 'off' && flag !== 'false' && flag !== '0',
   /** Anzeige-Ende der Beta (nur Text, keine Logik). */
   endsLabel: '31. Januar 2027',
+  endsLabelEn: '31 January 2027',
   /** Planstufe, deren Umfang Beta-Tester testen dürfen. */
   testPlan: 'growth' as const,
   badge: 'BETA',
@@ -31,6 +32,49 @@ export const BETA = {
     'Daten jederzeit exportier- und löschbar',
   ],
 } as const;
+
+export interface BetaMilestone {
+  id: 'start' | 'feedback' | 'end' | 'prices';
+  when: string;
+  title: string;
+  body: string;
+}
+
+/**
+ * Beta-Fahrplan für /roadmap. Nur Termine, die feststehen — Feedback-Runden
+ * haben bewusst kein Datum. Das Ende spiegelt `trial_end` aus `beta-enroll`.
+ */
+export const BETA_MILESTONES: readonly BetaMilestone[] = [
+  {
+    id: 'start',
+    when: 'Oktober 2026',
+    title: 'Offene Beta startet',
+    body: 'Starter, Growth und Agency kostenlos testen — keine Kreditkarte, kein Abo.',
+  },
+  {
+    id: 'feedback',
+    when: 'Laufend',
+    title: 'Feedback-Runden',
+    body: 'Ihre Rückmeldungen bestimmen, was wir als Nächstes bauen. Feedback geht direkt aus der App oder über das Kontaktformular an uns.',
+  },
+  {
+    id: 'end',
+    when: BETA.endsLabel,
+    title: 'Beta endet',
+    body: 'Die kostenlosen Testzugänge laufen aus. Es verlängert sich nichts automatisch, Ihre Daten bleiben exportier- und löschbar.',
+  },
+  {
+    id: 'prices',
+    when: 'Ab Februar 2027',
+    title: 'Listenpreise gelten',
+    body: 'Wer weitermachen möchte, bucht einen Plan zu den Preisen auf der Preisseite.',
+  },
+];
+
+/** Meilenstein, in dem wir gerade stehen (nur Anzeige). */
+export function currentBetaMilestone(): BetaMilestone['id'] {
+  return BETA.active ? 'feedback' : 'prices';
+}
 
 /** Plan-IDs, die während der Beta nicht gekauft, sondern kostenlos getestet werden. */
 const BETA_PLANS = new Set(['starter', 'growth', 'agency']);

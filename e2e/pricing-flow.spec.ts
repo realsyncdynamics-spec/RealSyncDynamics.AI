@@ -58,7 +58,8 @@ test.describe('Pricing Flow', () => {
 
       const bookButton = page.locator('[data-testid="pricing-book-growth"]');
       await bookButton.click();
-      await expect(page).toHaveURL(/\/checkout\/growth/);
+      // Offene Beta (src/config/beta.ts): Growth wird getestet, nicht gekauft.
+      await expect(page).toHaveURL(/\/checkout\/growth|\/welcome\?beta=1&plan=growth/);
     });
 
     test('self-service checkout pages stay on checkout path', async ({ page }) => {

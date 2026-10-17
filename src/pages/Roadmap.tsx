@@ -20,6 +20,7 @@ import {
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
+import { BETA, BETA_MILESTONES, betaSignupHref, currentBetaMilestone } from '../config/beta';
 
 /**
  * /roadmap — public status board from implementation-status.ts SSOT.
@@ -43,11 +44,75 @@ function statusBorder(status: ImplementationStatus): string {
   }
 }
 
+function BetaTimeline() {
+  const current = currentBetaMilestone();
+  return (
+    <section aria-labelledby="beta-timeline-heading" className="mt-12" data-testid="roadmap-beta">
+      <h2
+        id="beta-timeline-heading"
+        className="mb-4 text-[11px] tracking-[.2em]"
+        style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+      >
+        BETA-FAHRPLAN
+      </h2>
+      <ol className="grid gap-3 md:grid-cols-4">
+        {BETA_MILESTONES.map((m) => {
+          const isCurrent = m.id === current;
+          return (
+            <li
+              key={m.id}
+              className="flex flex-col border p-5"
+              aria-current={isCurrent ? 'step' : undefined}
+              data-testid={`roadmap-beta-${m.id}`}
+              style={{
+                borderColor: isCurrent ? LANDING_ACCENT : 'rgba(154,154,161,0.45)',
+                background: 'linear-gradient(135deg, rgba(20,21,25,0.7), rgba(7,9,13,0.72))',
+              }}
+            >
+              <p className="flex items-center justify-between gap-2 text-[10px] tracking-[.14em]" style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}>
+                <span>{m.when.toUpperCase()}</span>
+                {isCurrent && (
+                  <span className="border px-2 py-0.5 text-[8px]" style={{ borderColor: LANDING_ACCENT }}>
+                    JETZT
+                  </span>
+                )}
+              </p>
+              <h3 className="mt-3 text-lg tracking-tight" style={{ fontFamily: LANDING_SERIF, fontWeight: 500 }}>
+                {m.title}
+              </h3>
+              <p className="mt-2 flex-1 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+                {m.body}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link
+          to={betaSignupHref(BETA.testPlan, 'roadmap')}
+          className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] font-semibold"
+          style={{ backgroundColor: LANDING_BUTTON, color: LANDING_BUTTON_TEXT }}
+        >
+          Kostenlos testen
+        </Link>
+        <Link
+          to="/kontakt?topic=beta-feedback"
+          className="inline-flex items-center gap-2 rounded-full border px-6 py-3 text-[11px] font-medium"
+          style={{ borderColor: `${LANDING_ACCENT}80`, color: '#e8ddc8' }}
+        >
+          Feedback geben
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export function Roadmap() {
   usePageMeta({
     title: 'Roadmap — RealSync Dynamics AI',
-    description:
-      'Live, Preview und Coming Soon — ehrlicher Implementierungsstatus der Governance Runtime.',
+    description: BETA.active
+      ? `Beta-Fahrplan bis ${BETA.endsLabel} und ehrlicher Implementierungsstatus der Governance Runtime: Live, Preview und Coming Soon.`
+      : 'Live, Preview und Coming Soon — ehrlicher Implementierungsstatus der Governance Runtime.',
     url: 'https://realsyncdynamicsai.de/roadmap',
   });
 
@@ -84,6 +149,8 @@ export function Roadmap() {
           Quelle: <span className="font-mono text-[12px]">src/product/implementation-status.ts</span>.
           Keine erfundenen Ship-Dates. Preview = UI/API erreichbar, Backend unvollständig.
         </p>
+
+        {BETA.active && <BetaTimeline />}
 
         <div className="mt-12 space-y-10">
           {SECTIONS.map(({ status, items }) => {

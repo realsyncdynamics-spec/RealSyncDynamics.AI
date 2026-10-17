@@ -224,12 +224,14 @@ test.describe('Kauf-Trichter', () => {
     await dismissConsent(page);
 
     // §14: Eine Kauf-Schaltflaeche, die nichts tut, ist schlimmer als keine.
-    const kaufen = page.getByRole('button', { name: /14 Tage kostenlos testen/i }).first();
+    // Offene Beta (src/config/beta.ts): „Kostenlos testen" → Registrierung;
+    // nach der Beta wieder „14 Tage kostenlos testen" → Checkout.
+    const kaufen = page.getByRole('button', { name: /kostenlos testen/i }).first();
     await expect(kaufen, 'Keine Kauf-Schaltflaeche auf der Preisseite').toBeVisible();
     await expect(kaufen).toBeEnabled();
     await kaufen.click();
 
-    await expect(page, 'Kauf-Schaltflaeche loest keine Navigation aus').toHaveURL(/\/checkout\//);
+    await expect(page, 'Kauf-Schaltflaeche loest keine Navigation aus').toHaveURL(/\/checkout\/|\/welcome\?beta=1/);
   });
 
   test('Checkout verlangt Anmeldung und verspricht die Rueckkehr', async ({ page }) => {

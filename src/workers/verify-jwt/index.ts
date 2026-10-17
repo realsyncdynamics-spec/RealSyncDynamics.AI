@@ -1,58 +1,39 @@
 /**
- * Cloudflare Worker: JWT Verification
+ * Cloudflare Worker: Supabase JWT verification.
  *
- * Route: POST /api/auth/verify-jwt
- * Purpose: Verify Supabase JWT locally at edge without round-trip to Supabase auth service
+ * SECURITY BOUNDARY
+ * -----------------
+ * This handler is the only application endpoint exposed by src/workers/index.ts.
+ * Tenant-scoped policy/evidence routes stay disconnected until they have a
+ * verified user -> membership -> tenant authorization chain. A syntactic
+ * "Bearer " prefix is never sufficient authorization.
  *
- * Performance: <50ms latency (vs. 100-300ms for auth.getUser() RPC)
- * Canary: 5% production traffic initially, scale to 100% after validation
- *
- * Accepts:
- *   POST /api/auth/verify-jwt
- *   Authorization: Bearer <jwt>
- *
- * Returns (200 OK):
- *   { ok: true, user_id: "...", email: "...", aal: "aal1|aal2" }
- *
- * Returns (401 Unauthorized):
- *   { ok: false, error: "invalid_token" | "expired_token" | "missing_token" }
- *
- * Flow:
- * 1. Extract Bearer token from Authorization header
- * 2. Decode JWT (base64url payload)
- * 3. Verify signature using SUPABASE_JWT_SECRET (Ed25519 or HS256)
- * 4. Check expiration (exp claim)
- * 5. Return user_id, email, aal claim
- *
- * Note: This Worker ONLY verifies JWT signature + expiration.
- * It does NOT check tenant membership (that stays in governance-agent Edge Function via RLS).
- * This maintains security: Worker is stateless, tenant isolation happens in DB layer.
+ * Current signing mode is deliberately fail-closed: HS256 only. If the
+ * Supabase project moves to an asymmetric signing key, add a JWKS-based
+ * verifier in a separately reviewed security change instead of overloading
+ * SUPABASE_JWT_SECRET with a public key.
  */
 
-// Cloudflare Workers environment types
-interface KVNamespace {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
-  delete(key: string): Promise<void>;
-}
-
-interface Env {
+export interface VerifyJwtEnv {
   SUPABASE_JWT_SECRET: string;
+  /** Public project URL, e.g. https://project-ref.supabase.co */
   SUPABASE_URL: string;
-  POLICY_CACHE: KVNamespace;
-  SESSION_CACHE: KVNamespace;
 }
 
 interface JwtPayload {
-  sub: string;        // user_id (UUID)
+  sub?: string;
   email?: string;
-  email_verified?: boolean;
   aal?: 'aal1' | 'aal2';
   exp?: number;
   iat?: number;
   iss?: string;
-  aud?: string;
+  aud?: string | string[];
   [key: string]: unknown;
+}
+
+interface JwtHeader {
+  alg?: string;
+  typ?: string;
 }
 
 interface VerifyResponse {
@@ -60,213 +41,146 @@ interface VerifyResponse {
   user_id?: string;
   email?: string;
   aal?: 'aal1' | 'aal2';
-  error?: string;
+  error?: 'invalid_token' | 'expired_token' | 'missing_token';
 }
 
-/**
- * Decode base64url to string (RFC 7515)
- * Handles: base64url → base64 → binary → UTF-8
- */
-function decodeBase64Url(input: string): string {
-  const b64 = input
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function decodeBase64UrlBytes(input: string): Uint8Array {
+  const b64 = input.replace(/-/g, '+').replace(/_/g, '/');
   const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
   const binary = atob(padded);
-  // Properly decode UTF-8 bytes
-  return new TextDecoder().decode(
-    new Uint8Array([...binary].map(c => c.charCodeAt(0)))
-  );
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
 
-/**
- * Parse JWT without verification (for claim inspection)
- */
-function parseJwtUnsafe(token: string): { header: unknown; payload: JwtPayload } | null {
+function decodeBase64Url(input: string): string {
+  return new TextDecoder().decode(decodeBase64UrlBytes(input));
+}
+
+function parseJwtUnsafe(token: string): { header: JwtHeader; payload: JwtPayload } | null {
   const parts = token.split('.');
-  if (parts.length !== 3) return null;
+  if (parts.length !== 3 || parts.some((part) => !part)) return null;
 
   try {
-    const header = JSON.parse(decodeBase64Url(parts[0]));
-    const payload = JSON.parse(decodeBase64Url(parts[1])) as JwtPayload;
-    return { header, payload };
+    return {
+      header: JSON.parse(decodeBase64Url(parts[0])) as JwtHeader,
+      payload: JSON.parse(decodeBase64Url(parts[1])) as JwtPayload,
+    };
   } catch {
     return null;
   }
 }
 
-/**
- * Verify HMAC-SHA256 signature (most common for Supabase JWTs in non-EU deployments)
- */
 async function verifyHmacSignature(
   token: string,
   secret: string,
-  signatureB64: string
+  signatureB64: string,
 ): Promise<boolean> {
-  const parts = token.split('.');
-  const message = `${parts[0]}.${parts[1]}`;
-
-  // Convert secret to bytes (HMAC key)
-  const keyBuffer = new TextEncoder().encode(secret);
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keyBuffer,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['verify']
-  );
-
-  // Decode signature from base64url
-  const signatureBytes = Uint8Array.from(
-    atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/'))
-      .split('')
-      .map(c => c.charCodeAt(0))
-  );
-
-  // Verify
-  const isValid = await crypto.subtle.verify(
-    'HMAC',
-    key,
-    signatureBytes,
-    new TextEncoder().encode(message)
-  );
-
-  return isValid;
-}
-
-/**
- * Verify Ed25519 signature (EU deployment option, more secure for JWTs)
- */
-async function verifyEd25519Signature(
-  token: string,
-  publicKeyPem: string,
-  signatureB64: string
-): Promise<boolean> {
-  const parts = token.split('.');
-  const message = `${parts[0]}.${parts[1]}`;
+  if (!secret) return false;
 
   try {
-    // Parse PEM (expected format: -----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----)
-    const pemContent = publicKeyPem
-      .replace('-----BEGIN PUBLIC KEY-----', '')
-      .replace('-----END PUBLIC KEY-----', '')
-      .replace(/\s/g, '');
-
-    const keyBuffer = Uint8Array.from(
-      atob(pemContent)
-        .split('')
-        .map(c => c.charCodeAt(0))
-    );
-
+    const [header, payload] = token.split('.');
     const key = await crypto.subtle.importKey(
       'raw',
-      keyBuffer,
-      'Ed25519',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['verify']
+      ['verify'],
     );
 
-    const signatureBytes = Uint8Array.from(
-      atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/'))
-        .split('')
-        .map(c => c.charCodeAt(0))
-    );
-
-    const isValid = await crypto.subtle.verify(
-      'Ed25519',
+    return await crypto.subtle.verify(
+      'HMAC',
       key,
-      signatureBytes,
-      new TextEncoder().encode(message)
+      decodeBase64UrlBytes(signatureB64),
+      new TextEncoder().encode(`${header}.${payload}`),
     );
-
-    return isValid;
-  } catch (e) {
-    console.error('Ed25519 signature verification failed:', e);
+  } catch {
     return false;
   }
 }
 
-/**
- * Verify Supabase JWT: signature + expiration
- *
- * Security considerations:
- * - Signature verification ensures JWT wasn't tampered with
- * - Expiration check ensures token is still valid
- * - Does NOT check revocation (that's handled by Supabase metadata lookup in governance-agent)
- * - Does NOT check tenant membership (handled by RLS in DB layer)
- *
- * This keeps the Worker stateless and focused on cryptographic verification only.
- */
-async function verifyJwt(token: string, secret: string): Promise<VerifyResponse> {
-  // Parse JWT structure
+function expectedIssuer(supabaseUrl: string): string | null {
+  try {
+    const url = new URL(supabaseUrl);
+    if (url.protocol !== 'https:') return null;
+    return `${url.origin}/auth/v1`;
+  } catch {
+    return null;
+  }
+}
+
+function audienceAllowsAuthenticated(aud: JwtPayload['aud']): boolean {
+  return typeof aud === 'string'
+    ? aud === 'authenticated'
+    : Array.isArray(aud) && aud.includes('authenticated');
+}
+
+async function verifyJwt(
+  token: string,
+  env: VerifyJwtEnv,
+): Promise<VerifyResponse> {
   const parsed = parseJwtUnsafe(token);
-  if (!parsed) {
+  if (!parsed) return { ok: false, error: 'invalid_token' };
+
+  // Fail closed on algorithm ambiguity. Asymmetric signing requires JWKS.
+  if (parsed.header.alg !== 'HS256' || parsed.header.typ !== 'JWT') {
     return { ok: false, error: 'invalid_token' };
   }
 
-  const { header, payload } = parsed;
-  const headerObj = header as { alg?: string; typ?: string };
+  const signature = token.split('.')[2];
+  const signatureValid = await verifyHmacSignature(
+    token,
+    env.SUPABASE_JWT_SECRET,
+    signature,
+  );
+  if (!signatureValid) return { ok: false, error: 'invalid_token' };
 
-  // Check expiration
-  if (payload.exp && Date.now() > payload.exp * 1000) {
+  const issuer = expectedIssuer(env.SUPABASE_URL);
+  if (
+    !issuer ||
+    parsed.payload.iss !== issuer ||
+    !audienceAllowsAuthenticated(parsed.payload.aud) ||
+    typeof parsed.payload.sub !== 'string' ||
+    !UUID_RE.test(parsed.payload.sub) ||
+    typeof parsed.payload.exp !== 'number'
+  ) {
+    return { ok: false, error: 'invalid_token' };
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (parsed.payload.exp <= nowSeconds) {
     return { ok: false, error: 'expired_token' };
   }
 
-  // Verify signature based on algorithm
-  const parts = token.split('.');
-  const signatureB64 = parts[2];
-
-  let isValid = false;
-  const alg = headerObj.alg;
-
-  if (alg === 'HS256') {
-    // HMAC-SHA256 (most common for Supabase)
-    isValid = await verifyHmacSignature(token, secret, signatureB64);
-  } else if (alg === 'EdDSA') {
-    // Ed25519 (if Supabase is configured for Ed25519)
-    // In this case, `secret` would be the public key in PEM format
-    isValid = await verifyEd25519Signature(token, secret, signatureB64);
-  } else {
-    // Unsupported algorithm
+  // Reject tokens issued materially in the future.
+  if (typeof parsed.payload.iat === 'number' && parsed.payload.iat > nowSeconds + 60) {
     return { ok: false, error: 'invalid_token' };
   }
 
-  if (!isValid) {
-    return { ok: false, error: 'invalid_token' };
-  }
-
-  // Signature valid, return claims
   return {
     ok: true,
-    user_id: payload.sub,
-    email: payload.email,
-    aal: payload.aal as 'aal1' | 'aal2' | undefined,
+    user_id: parsed.payload.sub,
+    email: parsed.payload.email,
+    aal: parsed.payload.aal,
   };
 }
 
-/**
- * Main handler: POST /api/auth/verify-jwt
- *
- * Timing target: <50ms (all operations are CPU-bound crypto, no I/O)
- */
 export async function handleVerifyJwt(
   request: Request,
-  env: Env
+  env: VerifyJwtEnv,
 ): Promise<Response> {
-  // Only accept POST
   if (request.method !== 'POST') {
     return new Response(
       JSON.stringify({ ok: false, error: 'method_not_allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
+      { status: 405, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
     );
   }
 
-  // Extract Bearer token
   const auth = request.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) {
     return new Response(
       JSON.stringify({ ok: false, error: 'missing_token' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
+      { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -274,43 +188,16 @@ export async function handleVerifyJwt(
   if (!token) {
     return new Response(
       JSON.stringify({ ok: false, error: 'missing_token' }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
+      { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
     );
   }
 
-  // Verify JWT
-  const result = await verifyJwt(token, env.SUPABASE_JWT_SECRET);
-
-  const statusCode = result.ok ? 200 : 401;
+  const result = await verifyJwt(token, env);
   return new Response(JSON.stringify(result), {
-    status: statusCode,
+    status: result.ok ? 200 : 401,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'X-Worker-Time': `${Date.now()}`,
+      'Cache-Control': 'no-store',
     },
   });
 }
-
-/**
- * Durable Objects: VerifyJwtCounter
- * (Optional enhancement: track verify-jwt calls for metrics)
- * Not implemented in initial canary, added post-validation.
- */
-
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-
-    // Route to verify-jwt handler
-    if (url.pathname === '/api/auth/verify-jwt') {
-      return handleVerifyJwt(request, env);
-    }
-
-    // 404 for unknown routes
-    return new Response(
-      JSON.stringify({ error: 'not_found' }),
-      { status: 404, headers: { 'Content-Type': 'application/json' } }
-    );
-  },
-};

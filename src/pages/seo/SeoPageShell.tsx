@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { PublicHeader } from '../../components/brand/PublicHeader';
+import { PublicFooter } from '../../components/brand/PublicFooter';
 
 /**
  * Shared chrome for the SEO money pages: top bar, breadcrumb, visible
@@ -30,28 +32,32 @@ export function SeoPageShell({
 }: Props) {
   return (
     <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
-      <header className="h-14 border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] flex items-center px-4">
-        <Link
-          to="/"
-          className="p-1.5 rounded-[var(--brand-radius-md)] hover:bg-[rgba(242,201,138,0.08)] text-[var(--brand-titan)] hover:text-[var(--brand-champ)] mr-3"
-          aria-label="Zur Startseite"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <nav className="flex items-center gap-2 min-w-0 flex-wrap text-[11px] font-[family-name:var(--brand-mono)] uppercase tracking-[0.18em] text-[var(--brand-titan)]">
-          <Link to="/" className="hover:text-[var(--brand-champ)]">Home</Link>
-          {breadcrumbs?.map((c) => (
-            <span key={c.name} className="flex items-center gap-2">
-              <span aria-hidden="true">›</span>
-              {c.href ? (
-                <Link to={c.href} className="hover:text-[var(--brand-champ)]">{c.name}</Link>
-              ) : (
-                <span className="text-[var(--brand-champ-hi)]">{c.name}</span>
-              )}
-            </span>
-          ))}
-        </nav>
-      </header>
+      <PublicHeader
+        subbar={
+          <>
+          <Link
+            to="/"
+            className="p-1.5 rounded-[var(--brand-radius-md)] hover:bg-[rgba(242,201,138,0.08)] text-[var(--brand-titan)] hover:text-[var(--brand-champ)] mr-3"
+            aria-label="Zur Startseite"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <nav className="flex items-center gap-2 min-w-0 flex-wrap text-[11px] font-[family-name:var(--brand-mono)] uppercase tracking-[0.18em] text-[var(--brand-titan)]">
+            <Link to="/" className="hover:text-[var(--brand-champ)]">Home</Link>
+            {breadcrumbs?.map((c) => (
+              <span key={c.name} className="flex items-center gap-2">
+                <span aria-hidden="true">›</span>
+                {c.href ? (
+                  <Link to={c.href} className="hover:text-[var(--brand-champ)]">{c.name}</Link>
+                ) : (
+                  <span className="text-[var(--brand-champ-hi)]">{c.name}</span>
+                )}
+              </span>
+            ))}
+          </nav>
+          </>
+        }
+      />
 
       <section className="px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-6">
         <div className="max-w-3xl mx-auto text-center">
@@ -75,19 +81,21 @@ export function SeoPageShell({
 
       <main>{children}</main>
 
-      <footer className="border-t border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] px-4 sm:px-6 py-8">
-        <div className="max-w-5xl mx-auto text-xs text-[var(--brand-titan)] flex flex-wrap items-center justify-between gap-3">
-          <span>© 2026 RealSync Dynamics · Made in Germany · Hosted in EU</span>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/audit" className="hover:text-[var(--brand-champ)]">Audit</Link>
-            <Link to="/pricing" className="hover:text-[var(--brand-champ)]">Preise</Link>
-            <Link to="/resources" className="hover:text-[var(--brand-champ)]">Ressourcen</Link>
-            <Link to="/blog" className="hover:text-[var(--brand-champ)]">Blog</Link>
-            <Link to="/legal/methodology" className="hover:text-[var(--brand-champ)]">Methodik</Link>
-            <Link to="/legal/privacy" className="hover:text-[var(--brand-champ)]">Datenschutz</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter
+        linkColumns={[
+          {
+            title: 'Weiterführend',
+            links: [
+              { label: 'Audit', to: '/audit' },
+              { label: 'Preise', to: '/pricing' },
+              { label: 'Ressourcen', to: '/resources' },
+              { label: 'Blog', to: '/blog' },
+              { label: 'Methodik', to: '/legal/methodology' },
+              { label: 'Datenschutz', to: '/legal/privacy' },
+            ],
+          },
+        ]}
+      />
     </div>
   );
 }

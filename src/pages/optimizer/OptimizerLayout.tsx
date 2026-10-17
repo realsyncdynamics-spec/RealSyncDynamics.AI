@@ -19,6 +19,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Cpu } from 'lucide-react';
 
 import { usePageMeta } from '../../lib/usePageMeta';
+import { PublicHeader } from '../../components/brand/PublicHeader';
+import { PublicFooter } from '../../components/brand/PublicFooter';
 import { PageTypeChip, type PageType } from './components/PageTypeChip';
 import { StepIndicator } from './components/StepIndicator';
 
@@ -48,23 +50,21 @@ export function OptimizerLayout({
   return (
     <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
       {/* Marken-Header */}
-      <header className="h-14 border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] flex items-center px-4">
-        <Link
-          to="/"
-          className="flex items-center gap-2.5"
-          aria-label="Zur Startseite"
-        >
-          <div className="w-8 h-8 rounded-[var(--brand-radius-md)] bg-[var(--brand-bg-1)] border border-[var(--brand-line-dark-strong)] flex items-center justify-center">
-            <Cpu className="h-4 w-4 text-[var(--brand-champ)]" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-[family-name:var(--brand-serif)] font-semibold text-base tracking-tight text-[var(--brand-champ-hi)]">
-              Cloud Code Optimizer
-            </div>
-            <div className="text-[11px] text-[var(--brand-titan)] font-medium">RealSync Dynamics</div>
-          </div>
-        </Link>
-      </header>
+      <PublicHeader
+        brand={
+          <span className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-[var(--brand-radius-md)] bg-[var(--brand-bg-1)] border border-[var(--brand-line-dark-strong)] flex items-center justify-center">
+              <Cpu className="h-4 w-4 text-[var(--brand-champ)]" />
+            </span>
+            <span className="leading-tight">
+              <span className="block font-[family-name:var(--brand-serif)] font-semibold text-base tracking-tight text-[var(--brand-champ-hi)]">
+                Cloud Code Optimizer
+              </span>
+              <span className="block font-[family-name:var(--brand-sans)] text-[11px] text-[var(--brand-titan)] font-medium">RealSync Dynamics</span>
+            </span>
+          </span>
+        }
+      />
 
       <main className="px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-3xl mx-auto">
@@ -91,6 +91,7 @@ export function OptimizerLayout({
           {children}
         </div>
       </main>
+      <PublicFooter />
     </div>
   );
 }

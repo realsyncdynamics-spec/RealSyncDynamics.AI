@@ -641,6 +641,14 @@
 .rs-pricing__yearly-note {
   margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-rs-fg-1);
 }
+/* Offene Beta (src/config/beta.ts) — Hinweis über den Self-Service-Plänen */
+.rs-pricing__beta {
+  margin-top: 24px; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+  border: 1px solid var(--color-rs-primary); border-radius: 8px; background: var(--color-rs-bg-1);
+}
+.rs-pricing__beta-title { font-size: 15px; font-weight: 600; color: var(--color-rs-fg-0); }
+.rs-pricing__beta-body { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--color-rs-fg-1); }
+.rs-price-card__list-price { margin-top: 4px; font-size: 12px; color: var(--color-rs-fg-2); }
 
 /* ── Free Audit (Stepper) ──────────────────────────────────────────────── */
 .rs-audit { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100svh - 79px); }

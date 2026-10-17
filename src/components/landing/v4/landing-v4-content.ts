@@ -74,6 +74,19 @@ export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
   ['DORA', true],
 ];
 
+/**
+ * Zeile über den Rahmenwerk-Chips — aus HERO_FRAMEWORKS abgeleitet, damit Zahl und
+ * Status nicht auseinanderlaufen. Vorher „SECHS POLICY PACKS“ bei vier live;
+ * TISAX/DORA sind `framework-tisax-dora` (coming-soon). Freigabe Dominik, 13.10.2026.
+ */
+export const HERO_PACKS_LINE = (() => {
+  const live = HERO_FRAMEWORKS.filter(([, next]) => !next).length;
+  const next = HERO_FRAMEWORKS.filter(([, isNext]) => isNext).map(([name]) => name);
+  return next.length
+    ? `${live} POLICY PACKS LIVE · ${next.join('/')} COMING SOON`
+    : `${live} POLICY PACKS · EIN PRÜFPFAD`;
+})();
+
 export const LOOP_NODES = [
   ['01 · PRÜFEN', 'Scan', 'Cookies, Tracker und KI-Einbindung Ihrer Website erfassen — in unter 90 Sekunden.'],
   ['02 · VERSTEHEN', 'Einordnen', 'Risiken mit Paragraphenbezug (DSGVO, TTDSG, EU AI Act) klar benennen.'],
@@ -119,12 +132,17 @@ export const APP_FINDINGS = [
   ['NIEDRIG', 'sev-low', 'Security-Header unvollständig', 'ISO 27001 A.8'],
 ] as const;
 
-/** Evidence-Ledger: die ersten vier Knoten aus NODES der Referenz. */
+/**
+ * Evidence-Ledger im Dashboard-Mock (Beispielansicht): Ereignisarten der Nachweiskette.
+ * Die Referenz zeigte Städte als „Knoten“ (Berlin · Brüssel · Frankfurt · Stockholm) —
+ * das suggerierte eine verteilte Infrastruktur. Real: eine Kette, Datenhaltung Supabase
+ * Frankfurt (siehe Footer „BETRIEB“). Freigabe Dominik, 13.10.2026.
+ */
 export const LEDGER_NODES = [
-  ['BERLIN', 'AI Act Registry'],
-  ['BRÜSSEL', 'Risk Classification'],
-  ['FRANKFURT', 'EU Runtime · eu-central'],
-  ['STOCKHOLM', 'Evidence Node'],
+  ['SCAN', 'Website-Audit'],
+  ['RISIKO', 'AI-Act-Einordnung'],
+  ['FREIGABE', 'Entscheidung durch Menschen'],
+  ['EXPORT', 'Prüfbericht'],
 ] as const;
 
 export const INTENT_CHIPS = ['AI-Act-Klassifikation prüfen', '§13-Update draften', 'Evidence exportieren', 'Drift erklären'] as const;

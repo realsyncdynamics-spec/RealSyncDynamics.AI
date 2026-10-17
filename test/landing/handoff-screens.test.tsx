@@ -12,6 +12,7 @@ import { PricingPage } from '../../src/features/billing/PricingPage';
 import { AuditStepper, recommendPlan } from '../../src/components/audit/AuditStepper';
 import { resetLangForTests } from '../../src/i18n/useLang';
 import { formatPriceEur, planById } from '../../src/config/pricing';
+import { BETA } from '../../src/config/beta';
 
 beforeEach(() => {
   localStorage.clear();
@@ -39,8 +40,11 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.queryByTestId('pricing-billing-yearly')).not.toBeInTheDocument();
     expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
-    expect(within(growth).getByText(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('14 Tage kostenlos testen');
+    // Offene Beta (Default-Build): 0 € plus durchgestrichener Listenpreis.
+    expect(within(growth).getByTestId('pricing-list-price-growth')).toHaveTextContent(
+      formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '),
+    );
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Kostenlos testen');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
   });
 
@@ -52,7 +56,7 @@ describe('/pricing (Handoff v2)', () => {
     const growth = screen.getByTestId('pricing-card-growth');
     expect(growth).toHaveAttribute('data-lang', 'en');
     expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Try for free');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('On request')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
       'Enterprise inquiry',
@@ -63,7 +67,26 @@ describe('/pricing (Handoff v2)', () => {
     mount();
     expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('zzgl. 19 % USt');
     expect(screen.getByTestId('pricing-tax-note')).not.toHaveTextContent('§ 19');
-    expect(screen.getByTestId('pricing-vat-starter')).toHaveTextContent(/94,01/);
+    // Beta-Karten tragen die USt-Zeile im Listenpreis, sonst eigene Zeile.
+    const starterVat = BETA.active ? 'pricing-list-price-starter' : 'pricing-vat-starter';
+    expect(screen.getByTestId(starterVat)).toHaveTextContent(/94,01/);
+  });
+
+  it.runIf(BETA.active)('adds the net/VAT note to every beta text (DE)', () => {
+    mount();
+    expect(screen.getByTestId('pricing-beta-notice')).toHaveTextContent('Listenpreise (netto zzgl. 19 % USt)');
+    expect(screen.getByTestId('pricing-list-price-growth')).toHaveTextContent(/netto zzgl\. 19 % USt · 296,31\s€ brutto/);
+    expect(screen.queryByTestId('pricing-vat-growth')).toBeNull();
+    expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent('danach Listenpreis (netto zzgl. 19 % USt)');
+    expect(document.body.textContent).not.toContain('§ 19');
+  });
+
+  it.runIf(BETA.active)('adds the net/VAT note to every beta text (EN)', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('lang-toggle'));
+    expect(screen.getByTestId('pricing-beta-notice')).toHaveTextContent('list prices shown apply (net, plus 19% VAT)');
+    expect(screen.getByTestId('pricing-list-price-growth')).toHaveTextContent(/net, plus 19% VAT · 296,31\s€ gross/);
+    expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent('then list price (net, plus 19% VAT)');
   });
 });
 

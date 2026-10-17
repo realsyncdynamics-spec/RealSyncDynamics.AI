@@ -1,5 +1,5 @@
 /**
- * Customer-facing copy for the public landing roadmap (#roadmap on Landing v4).
+ * Customer-facing copy for the public landing roadmap (#roadmap sections on the public landings).
  *
  * Internal `name` / `description` / `evidence` in implementation-status.ts stay
  * for registry, docs, and tests. Public markup must render ONLY these fields.
@@ -55,6 +55,30 @@ export const PUBLIC_ROADMAP_COPY: Record<
   string,
   Record<PublicLang, PublicRoadmapCopy>
 > = {
+  'beta-phase': {
+    de: {
+      name: 'Offene Beta',
+      description:
+        'Starter, Growth und Agency bis 31. Januar 2027 kostenlos testen: Nach der Registrierung erhält Ihr Konto den Growth-Umfang — ohne Kreditkarte und ohne automatische Verlängerung.',
+    },
+    en: {
+      name: 'Open beta',
+      description:
+        'Try Starter, Growth and Agency for free until 31 January 2027: after sign-up your account gets the Growth scope — no credit card and no automatic renewal.',
+    },
+  },
+  'beta-dashboard-onboarding': {
+    de: {
+      name: 'Beta: Feedback und Erst-Scan im Dashboard',
+      description:
+        'Feedback direkt aus dem Dashboard und ein geführter erster Scan für neue Konten. Bis dahin erreicht uns Ihr Feedback über das Kontaktformular.',
+    },
+    en: {
+      name: 'Beta: feedback and first scan in the dashboard',
+      description:
+        'Send feedback straight from the dashboard and get a guided first scan for new accounts. Until then, your feedback reaches us via the contact form.',
+    },
+  },
   'free-audit': {
     de: {
       name: 'Governance-Scan',

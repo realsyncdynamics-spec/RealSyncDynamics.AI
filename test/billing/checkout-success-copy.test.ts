@@ -25,7 +25,7 @@ describe('CheckoutSuccess — German product copy', () => {
     expect(SUCCESS).toContain("params.set('sync', 'pending')");
     expect(SUCCESS).toContain('Sync erneut prüfen');
     // Soft-continue must mark sync=pending — never redirect as unlocked.
-    expect(SUCCESS).toMatch(/if \(last\?\.pending\)/);
+    expect(SUCCESS).toMatch(/if \(last\.pending\)/);
   });
 
   it('shows verifying chrome while loading — never green success before verify', () => {

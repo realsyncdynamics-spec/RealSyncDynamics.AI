@@ -5,6 +5,17 @@ import { useTenant } from '../core/access/TenantProvider';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { invalidateEntitlementsCache } from '../core/billing/useEntitlements';
+import {
+  VERIFY_NETWORK,
+  VERIFY_TIMEOUT,
+  isRetriableVerifyError,
+  parseVerifyResponse,
+  resolveVerifiedPlan,
+  tenantCandidates,
+  type VerifyOutcome,
+} from '../features/billing/checkoutVerify';
+
+const VERIFY_TIMEOUT_MS = 15_000;
 
 /**
  * /checkout/success — Stripe success_url landet hier mit session_id + plan_key.
@@ -24,6 +35,7 @@ export function CheckoutSuccess() {
   const tenantState = useTenant();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorRetriable, setErrorRetriable] = useState(false);
   const [statusText, setStatusText] = useState('Zahlung wird bestätigt …');
   const [verifiedPlan, setVerifiedPlan] = useState<string | null>(null);
   const [syncPending, setSyncPending] = useState(false);
@@ -34,10 +46,11 @@ export function CheckoutSuccess() {
   const planKey = searchParams.get('plan_key');
 
   const goDashboardSynced = useCallback(
-    (subId: string, plan: string) => {
-      navigate(
-        `/app/dashboard?subscription=${encodeURIComponent(subId)}&plan=${encodeURIComponent(plan)}`,
-      );
+    (subId: string | null, plan: string) => {
+      const params = new URLSearchParams();
+      if (subId) params.set('subscription', subId);
+      params.set('plan', plan);
+      navigate(`/app/dashboard?${params.toString()}`);
     },
     [navigate],
   );
@@ -74,44 +87,57 @@ export function CheckoutSuccess() {
       return tenantState.activeTenantId;
     }
 
-    async function verifyOnce(
-      accessToken: string,
-      tenantId: string,
-    ): Promise<{ ok: boolean; pending?: boolean; subscription?: { id?: string }; error?: string }> {
-      const response = await fetch(
-        `${getSupabaseUrl()}/functions/v1/stripe-checkout-verify`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+    // Alle Workspaces, in denen der Nutzer einen Checkout starten durfte.
+    async function ownerAdminTenants(userId: string): Promise<{ tenantId: string; role: string }[]> {
+      const { data } = await getSupabase()
+        .from('memberships')
+        .select('tenant_id, role')
+        .eq('user_id', userId)
+        .in('role', ['owner', 'admin']);
+      return (data ?? []).map((m) => ({ tenantId: m.tenant_id as string, role: m.role as string }));
+    }
+
+    async function verifyOnce(accessToken: string, tenantId: string): Promise<VerifyOutcome> {
+      try {
+        const response = await fetch(
+          `${getSupabaseUrl()}/functions/v1/stripe-checkout-verify`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              session_id: sessionId,
+              tenant_id: tenantId,
+            }),
+            signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
           },
-          body: JSON.stringify({
-            session_id: sessionId,
-            tenant_id: tenantId,
-          }),
-        },
-      );
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        return {
-          ok: false,
-          error: data?.error?.message || data?.message || 'Checkout konnte nicht verifiziert werden',
-        };
+        );
+        const data = await response.json().catch(() => ({}));
+        return parseVerifyResponse(response.ok, data);
+      } catch (err) {
+        const timedOut = (err as Error)?.name === 'TimeoutError' || (err as Error)?.name === 'AbortError';
+        return parseVerifyResponse(false, { error: { code: timedOut ? VERIFY_TIMEOUT : VERIFY_NETWORK } });
       }
-      return data;
+    }
+
+    function fail(message: string, retriable: boolean) {
+      setError(message);
+      setErrorRetriable(retriable);
+      setLoading(false);
     }
 
     async function verifyCheckout() {
       setLoading(true);
       setError(null);
+      setErrorRetriable(false);
       setSyncPending(false);
       setPendingSubId(null);
       setStatusText('Zahlung wird bestätigt …');
 
       if (!sessionId) {
-        setError('Checkout-Session fehlt');
-        setLoading(false);
+        fail('Checkout-Session fehlt', false);
         return;
       }
 
@@ -124,10 +150,10 @@ export function CheckoutSuccess() {
         navigate(`/welcome?next=${encodeURIComponent(next)}`, { replace: true });
         return;
       }
+      const userId = auth.user.id;
 
       if (!isSupabaseConfigured()) {
-        setError('Supabase ist nicht konfiguriert');
-        setLoading(false);
+        fail('Supabase ist nicht konfiguriert', false);
         return;
       }
 
@@ -147,37 +173,59 @@ export function CheckoutSuccess() {
         const tenantId = await waitForTenantId();
         if (cancelled) return;
         if (!tenantId) {
-          setError('Kein Workspace gefunden. Bitte Workspace unter /welcome einrichten.');
-          setLoading(false);
+          fail('Kein Workspace gefunden. Bitte Workspace unter /welcome einrichten.', false);
           return;
         }
 
         setStatusText('Abo wird mit Stripe abgeglichen …');
-        let last: Awaited<ReturnType<typeof verifyOnce>> | null = null;
-        for (let attempt = 0; attempt < 6; attempt++) {
-          last = await verifyOnce(accessToken, tenantId);
+        // Der Checkout gehört genau einem Workspace (metadata.tenant_id). Ist
+        // nach der Rückkehr ein anderer aktiv, die übrigen Owner/Admin-
+        // Workspaces durchprobieren; der Server entscheidet über den Treffer.
+        let candidates = [tenantId];
+        let matchedTenantId = tenantId;
+        let last: VerifyOutcome | null = null;
+        for (let i = 0; i < candidates.length; i++) {
+          matchedTenantId = candidates[i];
+          last = await verifyOnce(accessToken, matchedTenantId);
           if (cancelled) return;
-          if (!last.ok) {
-            setError(last.error || 'Checkout konnte nicht verifiziert werden');
-            setLoading(false);
-            return;
+          if (last.ok || (last.code !== 'TENANT_MISMATCH' && last.code !== 'FORBIDDEN')) break;
+          if (i === 0) {
+            candidates = tenantCandidates(tenantId, await ownerAdminTenants(userId));
+            if (cancelled) return;
           }
-          if (!last.pending) break;
-          setStatusText(`Webhook-Sync ausstehend … Versuch ${attempt + 1}/6`);
+        }
+
+        for (let attempt = 0; last?.ok && last.pending && attempt < 5; attempt++) {
+          setStatusText(`Webhook-Sync ausstehend … Versuch ${attempt + 2}/6`);
           await new Promise((r) => setTimeout(r, 2000));
+          if (cancelled) return;
+          last = await verifyOnce(accessToken, matchedTenantId);
+          if (cancelled) return;
+        }
+
+        if (!last) {
+          fail('Der Checkout konnte nicht verifiziert werden.', true);
+          return;
+        }
+        if (!last.ok) {
+          fail(last.message, isRetriableVerifyError(last.code));
+          return;
         }
 
         invalidateEntitlementsCache();
+        if (matchedTenantId !== tenantState.activeTenantId) {
+          tenantState.setActiveTenant(matchedTenantId);
+        }
         await tenantState.refresh();
         if (cancelled) return;
 
-        const plan = planKey || 'unknown';
+        const plan = resolveVerifiedPlan(last.subscription, planKey) ?? 'unknown';
         setVerifiedPlan(plan);
-        const subId = last?.subscription?.id ?? null;
+        const subId = last.subscription?.id ?? null;
 
         // Stripe paid, but our subscriptions/entitlements row is not there yet
         // (webhook lag or missing Vault secrets). Do not claim "Abo aktiv".
-        if (last?.pending) {
+        if (last.pending) {
           setPendingSubId(subId);
           setSyncPending(true);
           setStatusText('Zahlung bei Stripe bestätigt — Abo-Sync noch ausstehend.');
@@ -191,13 +239,12 @@ export function CheckoutSuccess() {
         // Freigabe 2026-09-01: Nach dem Kauf → /app/dashboard (nicht /app/billing).
         setTimeout(() => {
           if (!cancelled) {
-            goDashboardSynced(subId ?? 'synced', plan);
+            goDashboardSynced(subId, plan);
           }
         }, 1200);
-      } catch (err) {
+      } catch {
         if (cancelled) return;
-        setError((err as Error).message || 'Netzwerkfehler');
-        setLoading(false);
+        fail('Keine Verbindung zum Server. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.', true);
       }
     }
 
@@ -225,7 +272,16 @@ export function CheckoutSuccess() {
       <div className="min-h-screen flex items-center justify-center bg-obsidian-900">
         <div className="max-w-md w-full mx-4 p-8 bg-obsidian-800 border border-titanium-700 rounded-card">
           <h1 className="text-2xl font-bold text-titanium-50 mb-4">Checkout unvollständig</h1>
-          <p className="text-titanium-300 mb-6">{error}</p>
+          <p className="text-titanium-300 mb-6" role="alert">{error}</p>
+          {errorRetriable && (
+            <button
+              type="button"
+              onClick={() => setRetryKey((k) => k + 1)}
+              className="w-full mb-2 px-4 py-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 font-semibold rounded-card transition-colors"
+            >
+              Erneut prüfen
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate('/app/dashboard')}

@@ -8,12 +8,14 @@ import { AGENT_STATUS_LABEL, COCKPITS } from './cockpits';
  */
 export function BusinessOsCockpit() {
   const [index, setIndex] = useState(0);
+  const [switched, setSwitched] = useState(false);
   const tabs = useRef<Array<HTMLButtonElement | null>>([]);
   const c = COCKPITS[index];
 
   const select = (next: number) => {
     const i = (next + COCKPITS.length) % COCKPITS.length;
     setIndex(i);
+    setSwitched(true);
     tabs.current[i]?.focus();
   };
 
@@ -45,7 +47,10 @@ export function BusinessOsCockpit() {
             aria-controls="bos-panel"
             tabIndex={i === index ? 0 : -1}
             className="bos-tab"
-            onClick={() => setIndex(i)}
+            onClick={() => {
+              setIndex(i);
+              setSwitched(true);
+            }}
           >
             {item.tab}
           </button>
@@ -57,7 +62,7 @@ export function BusinessOsCockpit() {
         role="tabpanel"
         id="bos-panel"
         aria-labelledby={`bos-tab-${c.id}`}
-        className="bos-screen"
+        className={switched ? 'bos-screen bos-screen-in' : 'bos-screen'}
         data-testid="business-os-cockpit"
       >
         <div className="bos-screen-head">

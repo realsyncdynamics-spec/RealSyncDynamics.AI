@@ -10,12 +10,13 @@
 //   3. Pre-flight: User darf nicht alleiniger Owner eines Tenants sein
 //      (sonst würden andere Members ihren Zugriff verlieren). 409 mit Liste
 //      betroffener Tenants — User muss erst übertragen.
-//   4. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
-//      preserves Compliance/Buchhaltung, entfernt PII-Verknüpfung.
-//   5. Lead- und Scan-Daten der Adresse löschen bzw. anonymisieren
+//   4. Lead- und Scan-Daten der Adresse löschen bzw. anonymisieren
 //      (RPC erase_lead_data: sales_leads, Scan-E-Mail, Mail-Serien,
-//      Newsletter/Warteliste). Fehler hier brechen die Löschung ab, bevor
-//      das Konto weg ist — sonst bliebe die Adresse ohne Zuordnung zurück.
+//      Newsletter/Warteliste). FAIL CLOSED: Jeder Fehler — auch eine noch
+//      nicht ausgerollte RPC — bricht ab, BEVOR am Konto etwas geändert ist
+//      (lead-erasure.ts). Sonst bliebe die Adresse ohne Zuordnung zurück.
+//   5. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
+//      preserves Compliance/Buchhaltung, entfernt PII-Verknüpfung.
 //   5b. Memberships hart löschen (eigene Rolle in Tenants).
 //   6. auth.users löschen via admin API → CASCADE löscht profiles,
 //      workflows (owner_id), c2pa_assets (owner_id) etc.
@@ -28,6 +29,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { checkLeadErasure } from './lead-erasure.ts';
 
 const CONFIRM_PHRASE = 'DELETE-MY-ACCOUNT';
 
@@ -92,6 +94,18 @@ Deno.serve(async (req) => {
       undefined, { sole_owner_of: soleOwnerTenants });
   }
 
+  // ── Lead-/Scan-Daten (Art. 17) — zuerst, fail closed ──────────────────────
+  const { data: leadErasureData, error: eraseErr } = await admin.rpc('erase_lead_data', {
+    p_email: userEmail ?? '',
+    p_user_id: userId,
+    p_origin: 'account_deletion',
+  });
+  const leadErasure = checkLeadErasure(leadErasureData, eraseErr);
+  if (!leadErasure.ok) {
+    console.error('gdpr-delete: erase_lead_data failed', { code: leadErasure.logCode });
+    return jsonError(leadErasure.status, leadErasure.code, leadErasure.message);
+  }
+
   // ── Anonymisieren statt löschen (Audit-Retention) ─────────────────────────
   const anonymizations = await Promise.allSettled([
     admin.from('workflow_runs').update({ triggered_by: null }).eq('triggered_by', userId),
@@ -104,17 +118,6 @@ Deno.serve(async (req) => {
       : null)
     .filter(Boolean);
 
-  // ── Lead-/Scan-Daten (Art. 17) ────────────────────────────────────────────
-  const { data: leadErasure, error: eraseErr } = await admin.rpc('erase_lead_data', {
-    p_email: userEmail ?? '',
-    p_user_id: userId,
-  });
-  if (eraseErr && eraseErr.code !== 'PGRST202' && eraseErr.code !== '42883') {
-    // Keine Details nach außen (könnten die Adresse enthalten).
-    console.error('gdpr-delete: erase_lead_data failed', { code: eraseErr.code });
-    return jsonError(500, 'INTERNAL', 'lead data erasure failed');
-  }
-
   // ── Memberships löschen ───────────────────────────────────────────────────
   const { error: memErr } = await admin.from('memberships').delete().eq('user_id', userId);
   if (memErr) return jsonError(500, 'INTERNAL', `memberships delete failed: ${memErr.message}`);
@@ -125,11 +128,13 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
-    deleted_user: { id: userId, email: userEmail },
+    // Keine E-Mail-Adresse in der Antwort: Der Aufrufer kennt sie, und die
+    // Antwort kann in Logs, Proxys oder Fehlerberichten landen.
+    deleted_user: { id: userId },
     anonymized_tables: ['workflow_runs', 'ai_tool_runs'],
     cascade_deleted: ['profiles', 'memberships', 'workflows', 'c2pa_assets'],
     retained_for_legitimate_interest: ['workflow_runs (anonymized)', 'ai_tool_runs (anonymized)', 'subscriptions (HGB/AO 10 Jahre)'],
     anonymization_warnings: anonymizationErrors,
-    lead_data: leadErasure ?? { skipped: 'erase_lead_data not deployed' },
+    lead_data: leadErasure.counts,
   });
 });

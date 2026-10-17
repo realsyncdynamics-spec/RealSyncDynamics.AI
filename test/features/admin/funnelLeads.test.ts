@@ -60,7 +60,7 @@ describe('Zugriff (unberechtigter Zugriff auf Lead-Verwaltung)', () => {
   it('the Art. 17 erase RPC for leads without account is gated the same way', () => {
     const erase = migration.slice(migration.indexOf('FUNCTION public.admin_erase_lead_data'));
     expect(erase.slice(0, 800)).toMatch(/IF NOT public\.is_platform_operator\(\) THEN\s*RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501'/);
-    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.erase_lead_data\(text, uuid\) FROM PUBLIC, anon, authenticated;/);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.erase_lead_data\(text, uuid, text, uuid\) FROM PUBLIC, anon, authenticated;/);
     expect(panel).toContain('Endgültig löschen');
   });
   it('no new RLS policy opens sales_leads to tenants', () => {

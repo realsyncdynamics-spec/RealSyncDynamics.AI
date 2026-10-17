@@ -84,6 +84,6 @@ describe('confirmation and erasure endpoints', () => {
     const delUser = gdprDelete.indexOf('admin.auth.admin.deleteUser(userId)');
     expect(erase).toBeGreaterThan(0);
     expect(erase).toBeLessThan(delUser);
-    expect(gdprDelete).toMatch(/console\.error\('gdpr-delete: erase_lead_data failed', \{ code: eraseErr\.code \}\)/);
+    expect(gdprDelete).toMatch(/console\.error\('gdpr-delete: erase_lead_data failed', \{ code: leadErasure\.logCode \}\)/);
   });
 });

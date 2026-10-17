@@ -344,6 +344,70 @@ d('funnel lead capture (DB)', () => {
     }
   });
 
+  it('Art. 17: every erasure is logged with origin and actor, without the plain address', async () => {
+    const email = `log_${Date.now()}@kunde.example`;
+    await capture(ctx!, email, 'kunde.example');
+    const op = await createTenantWithMember(ctx!);
+    await ctx!.client.query(`INSERT INTO public.platform_operators (user_id) VALUES ($1)`, [op.userId]);
+    await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, () =>
+      ctx!.client.query(`SELECT public.admin_erase_lead_data($1)`, [email]));
+    const self = await createTenantWithMember(ctx!);
+    await ctx!.client.query(`SELECT public.erase_lead_data($1, $2, 'account_deletion')`, ['self@kunde.example', self.userId]);
+
+    const { rows } = await ctx!.client.query(
+      `SELECT origin, actor_user_id, subject_user, email_sha256, counts::text AS counts
+         FROM public.lead_erasure_log ORDER BY created_at`);
+    const opRow = rows.find((r) => r.origin === 'operator_request')!;
+    expect(opRow.actor_user_id).toBe(op.userId);
+    expect(opRow.email_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(opRow.counts).toContain('"sales_leads_deleted": 1');
+    const selfRow = rows.find((r) => r.origin === 'account_deletion')!;
+    expect(selfRow.actor_user_id).toBe(self.userId);
+    expect(selfRow.subject_user).toBe(self.userId);
+    expect(JSON.stringify(rows)).not.toContain('@kunde.example');
+
+    await expectSqlState(ctx!, `SELECT public.erase_lead_data('x@kunde.example', NULL, 'evil')`, [], '22023');
+    // Das Protokoll ist für Clients weder les- noch schreibbar.
+    const read = await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, () =>
+      ctx!.client.query(`SELECT count(*) FROM public.lead_erasure_log`))
+      .then(() => 'readable', (e) => (e as { code?: string }).code);
+    expect(read).toBe('42501');
+  });
+
+  it('every SECURITY DEFINER function of this migration pins search_path and is closed to anon/PUBLIC', async () => {
+    const names = [
+      'sales_leads_sync_audit_claim', 'subscriptions_funnel_events',
+      'admin_funnel_leads', 'admin_funnel_kpis', 'admin_erase_lead_data', 'audit_email_drip_due',
+    ];
+    const { rows } = await ctx!.client.query<{ proname: string; prosecdef: boolean; proconfig: string[] | null; anon_exec: boolean; public_exec: boolean }>(
+      `SELECT p.proname, p.prosecdef, p.proconfig,
+              has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec,
+              coalesce(EXISTS (SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE'), true) AS public_exec
+         FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public' AND p.proname = ANY($1::text[])`,
+      [names],
+    );
+    const definer = rows.filter((r) => r.prosecdef);
+    expect(definer.length).toBeGreaterThanOrEqual(5);
+    for (const r of definer) {
+      expect((r.proconfig ?? []).some((c) => c.startsWith('search_path=')), r.proname).toBe(true);
+      expect(r.anon_exec, `${r.proname} anon`).toBe(false);
+      expect(r.public_exec, `${r.proname} PUBLIC`).toBe(false);
+    }
+    // Die Schreib-RPCs sind nicht SECURITY DEFINER und nur für service_role.
+    const { rows: writers } = await ctx!.client.query<{ proname: string; prosecdef: boolean; auth_exec: boolean }>(
+      `SELECT p.proname, p.prosecdef, has_function_privilege('authenticated', p.oid, 'EXECUTE') AS auth_exec
+         FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname IN ('capture_funnel_lead', 'mark_funnel_lead_scan', 'request_followup_doi',
+                            'confirm_followup_doi', 'erase_lead_data', 'purge_stale_funnel_leads')`);
+    expect(writers).toHaveLength(6);
+    for (const w of writers) {
+      expect(w.prosecdef, w.proname).toBe(false);
+      expect(w.auth_exec, w.proname).toBe(false);
+    }
+  });
+
   it('retention purge keeps account, purchase and confirmed consent; anonymizes old anonymous scans; is scheduled', async () => {
     await capture(ctx!, 'old@kunde.example', 'kunde.example');
     await capture(ctx!, 'unconfirmed@kunde.example', 'kunde.example', { consent: true });

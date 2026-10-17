@@ -126,6 +126,7 @@ const ToolsHub = lazy(() => import('./pages/ToolsHub').then((m) => ({ default: m
 const HealthTechLanding = lazy(() => import('./pages/HealthTechLanding').then((m) => ({ default: m.HealthTechLanding })));
 const KmuWebsiteLanding = lazy(() => import('./pages/KmuWebsiteLanding').then((m) => ({ default: m.KmuWebsiteLanding })));
 const Branchen = lazy(() => import('./pages/Branchen').then((m) => ({ default: m.Branchen })));
+const AiBusinessOs = lazy(() => import('./pages/AiBusinessOs').then((m) => ({ default: m.AiBusinessOs })));
 const IndustryDetail = lazy(() => import('./pages/branchen/IndustryDetail').then((m) => ({ default: m.IndustryDetail })));
 const LegalTechLanding = lazy(() => import('./pages/LegalTechLanding').then((m) => ({ default: m.LegalTechLanding })));
 const OneTrustAlternative = lazy(() => import('./pages/OneTrustAlternative').then((m) => ({ default: m.OneTrustAlternative })));
@@ -655,6 +656,7 @@ function RoutesWithTracking() {
       <Route path="/cloud-code-optimizer" element={<Navigate to="/claude-code-optimizer" replace />} />
       {/* Industry-Doorways */}
       <Route path="/branchen" element={<Branchen />} />
+      <Route path="/ai-business-os" element={<AiBusinessOs />} />
       <Route path="/branchen/:slug" element={<IndustryDetail />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
       {/* Website + Chat-/Telefon-Assistent für kleine Betriebe (Handwerk, Praxen, Kanzleien) */}

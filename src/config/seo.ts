@@ -815,6 +815,12 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Über uns', url: '/ueber-uns' },
     ]),
   },
+  '/ai-business-os': {
+    title: 'AI Business OS — Ihr Branchen-Dashboard für KI-Assistenten | RealSync Dynamics AI',
+    description:
+      'Individuelles AI Business Dashboard für Handwerk, Arztpraxis, Kanzlei, Gastronomie und Industrie: AI-Assistenten, Workflows und Freigaben an einem Ort, auf dem EU-gehosteten Governance OS.',
+    canonical: `${SITE_URL}/ai-business-os`,
+  },
   '/about': {
     title: 'Über uns — KI-Governance aus Europa | RealSync Dynamics AI',
     description:

@@ -12,8 +12,9 @@ import { ArrowRight, Loader2, Search, Sparkles } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getEntitlementsForTenant } from '../../core/usage/usage-service';
 import { getFreeAccessReason, type FreeAccessReason } from '../../core/billing/trial';
-import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
+import { checkoutHrefForPlan, planById } from '@/shared/pricing';
 import { startGrowthTrial } from '../billing/startGrowthTrial';
+import { FREE_ACCOUNT_HEADLINE, growthTrialOfferLabel, starterFromPriceLabel } from '../billing/freeAccountOffer';
 
 const FREE_SCOPE = [
   'Domain-Scan mit Governance Score 0–100',
@@ -68,7 +69,6 @@ export function FreePlanPanel() {
   };
 
   const starter = planById('starter');
-  const growth = planById('growth');
   const starterHref = checkoutHrefForPlan(starter, { source: 'workspace-free' });
 
   return (
@@ -87,7 +87,7 @@ export function FreePlanPanel() {
           <h3 className="font-display font-bold text-lg text-titanium-50 tracking-tight">
             {currentReason === 'trial_expired'
               ? 'Ihre Testphase ist beendet — Ihr Zugang bleibt.'
-              : 'Dauerhaft kostenlos. Kein Zeitdruck.'}
+              : FREE_ACCOUNT_HEADLINE}
           </h3>
           <p className="text-sm text-titanium-400 mt-1 max-w-xl">
             Machen Sie sich in Ruhe mit der Plattform vertraut. Der einfache Scan bleibt ohne
@@ -121,14 +121,14 @@ export function FreePlanPanel() {
               className="inline-flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 text-white text-xs font-semibold px-3 py-2 transition-colors"
             >
               {trialState === 'starting' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Growth {growth.trialDays} Tage kostenlos testen
+              {growthTrialOfferLabel()}
             </button>
           )}
           <Link
             to={starterHref}
             className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-100 text-xs font-semibold px-3 py-2 transition-colors"
           >
-            Starter ab {formatPriceEur(starter.price.monthlyEur)} / Monat
+            {starterFromPriceLabel()}
           </Link>
           <Link
             to="/pricing?source=workspace-free"

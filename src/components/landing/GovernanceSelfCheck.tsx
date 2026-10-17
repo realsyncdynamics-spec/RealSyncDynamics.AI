@@ -27,12 +27,13 @@ type Answer = 'yes' | 'no' | 'unsure';
 const OPTIONS: readonly { value: Answer; label: string }[] = [
   { value: 'yes', label: 'Ja' },
   { value: 'no', label: 'Nein' },
-  { value: 'unsure', label: 'Unklar' },
+  { value: 'unsure', label: 'Weiß ich nicht' },
 ];
 
 export function GovernanceSelfCheck() {
   const baseId = useId();
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const total = GOVERNANCE_CHECK_QUESTIONS.length;
   const answered = Object.keys(answers).length;
@@ -53,12 +54,16 @@ export function GovernanceSelfCheck() {
         </h2>
         <p className="os-lede">
           Kein automatischer Scan: Das Ergebnis beruht ausschließlich auf Ihren Antworten. Nichts wird gespeichert
-          oder übertragen.
+          oder übertragen. Eine Frage pro Schritt – so behalten Sie den Überblick.
         </p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
+          <div>
+            <div className="mb-4 flex items-center justify-between text-sm" style={{color:GA_MUTED}}><span>Frage {currentIndex + 1} von {total}</span><span>{answered} beantwortet</span></div>
+            <div className="mb-5 h-2 overflow-hidden rounded-full bg-slate-300/20" role="progressbar" aria-label="Fortschritt des Governance-Checks" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answered}><div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${(answered / total) * 100}%` }} /></div>
           <ol className="border" style={{ borderColor: GA_LINE_SOFT }}>
             {GOVERNANCE_CHECK_QUESTIONS.map((q, i) => {
+              if (i !== currentIndex) return null;
               const legendId = `${baseId}-${q.id}`;
               return (
                 <li key={q.id} className="border-b px-4 py-4 last:border-b-0 sm:px-5" style={{ borderColor: GA_LINE_SOFT }}>
@@ -105,6 +110,8 @@ export function GovernanceSelfCheck() {
               );
             })}
           </ol>
+          <div className="mt-4 flex items-center justify-between gap-3"><button type="button" disabled={currentIndex===0} onClick={()=>setCurrentIndex(i=>Math.max(0,i-1))} className="rounded-lg border px-5 py-3 text-sm font-semibold disabled:opacity-40" style={{borderColor:GA_LINE_SOFT,color:GA_MUTED}}>Zurück</button><button type="button" disabled={!answers[GOVERNANCE_CHECK_QUESTIONS[currentIndex].id] || currentIndex===total-1} onClick={()=>setCurrentIndex(i=>Math.min(total-1,i+1))} className="rounded-lg bg-cyan-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Weiter →</button></div>
+          </div>
 
           <aside
             className="h-fit border p-5 sm:p-6 lg:sticky lg:top-6"

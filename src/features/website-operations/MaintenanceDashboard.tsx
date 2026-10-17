@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import './MaintenanceDashboard.css';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface HealthMetrics {
   performance_score: number;
@@ -69,7 +70,7 @@ export function MaintenanceDashboard({ projectId }: MaintenanceDashboardProps) {
   async function triggerScan() {
     setIsScanning(true);
     try {
-      const response = await fetch('/functions/v1/website-maintenance-agent', {
+      const response = await fetch(`${getSupabaseUrl()}/functions/v1/website-maintenance-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

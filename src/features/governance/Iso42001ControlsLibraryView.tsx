@@ -8,6 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import { getAuthToken } from '../../lib/auth';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface ControlLibraryItem {
   id: string;
@@ -63,7 +64,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/iso42001-controls-library?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-controls-library?tenant_id=${activeTenantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

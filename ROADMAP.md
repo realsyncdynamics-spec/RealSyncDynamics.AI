@@ -36,7 +36,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 
 ## Preisstruktur
 
-> **Single Source of Truth:** `src/config/pricing.ts`. Diese Tabelle nur Marketing-Erlaeuterung.
+> **Single Source of Truth:** `shared/pricing.ts` (`src/config/pricing.ts` leitet die Anzeige nur daraus ab). Diese Tabelle nur Marketing-Erlaeuterung.
 
 | Plan | Preis | Zielgruppe |
 |---|---|---|
@@ -44,7 +44,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 | Starter | 79 EUR/Monat | Kleine Unternehmen, Freelancer, lokale Businesses |
 | Growth / Business | 249 EUR/Monat | KMU, E-Commerce, SaaS — **Hauptprodukt** |
 | Agency Suite | 699 EUR/Monat | Webagenturen, Datenschutzberater, IT-Dienstleister |
-| Enterprise | ab 1.500 EUR/Monat | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
+| Enterprise | Auf Anfrage | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
 
 ### Free Audit
 - URL Scan + Compliance Score
@@ -68,7 +68,8 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 - API-Zugriff + Kundenverwaltung
 - Automatische Reports + Prioritaets-Scans
 
-### Enterprise (ab 1.500 EUR/Monat)
+### Enterprise (Auf Anfrage)
+- Kein oeffentlicher Preis und kein Self-Service-Checkout: Abschluss per Anfrage (`purchaseMode: 'inquiry'`, `priceOnRequest: true` in `shared/pricing.ts`; der dort hinterlegte Betrag ist nur interner Listenpreis)
 - Individuelle Regeln + SLA + Hosting-Optionen
 - Compliance API + AI Act Module + DSB Integration
 - Continuous Compliance + Evidence Vault + Audit Trails

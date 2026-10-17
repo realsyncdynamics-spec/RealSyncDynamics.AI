@@ -12,6 +12,7 @@ import { PricingPage } from '../../src/features/billing/PricingPage';
 import { AuditStepper, recommendPlan } from '../../src/components/audit/AuditStepper';
 import { resetLangForTests } from '../../src/i18n/useLang';
 import { formatPriceEur, planById } from '../../src/config/pricing';
+import { BETA } from '../../src/config/beta';
 
 beforeEach(() => {
   localStorage.clear();
@@ -66,7 +67,26 @@ describe('/pricing (Handoff v2)', () => {
     mount();
     expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('zzgl. 19 % USt');
     expect(screen.getByTestId('pricing-tax-note')).not.toHaveTextContent('§ 19');
-    expect(screen.getByTestId('pricing-vat-starter')).toHaveTextContent(/94,01/);
+    // Beta-Karten tragen die USt-Zeile im Listenpreis, sonst eigene Zeile.
+    const starterVat = BETA.active ? 'pricing-list-price-starter' : 'pricing-vat-starter';
+    expect(screen.getByTestId(starterVat)).toHaveTextContent(/94,01/);
+  });
+
+  it.runIf(BETA.active)('adds the net/VAT note to every beta text (DE)', () => {
+    mount();
+    expect(screen.getByTestId('pricing-beta-notice')).toHaveTextContent('Listenpreise (netto zzgl. 19 % USt)');
+    expect(screen.getByTestId('pricing-list-price-growth')).toHaveTextContent(/netto zzgl\. 19 % USt · 296,31\s€ brutto/);
+    expect(screen.queryByTestId('pricing-vat-growth')).toBeNull();
+    expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent('danach Listenpreis (netto zzgl. 19 % USt)');
+    expect(document.body.textContent).not.toContain('§ 19');
+  });
+
+  it.runIf(BETA.active)('adds the net/VAT note to every beta text (EN)', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('lang-toggle'));
+    expect(screen.getByTestId('pricing-beta-notice')).toHaveTextContent('list prices shown apply (net, plus 19% VAT)');
+    expect(screen.getByTestId('pricing-list-price-growth')).toHaveTextContent(/net, plus 19% VAT · 296,31\s€ gross/);
+    expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent('then list price (net, plus 19% VAT)');
   });
 });
 

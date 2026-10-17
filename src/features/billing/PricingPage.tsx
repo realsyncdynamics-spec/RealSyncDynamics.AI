@@ -441,6 +441,10 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       ? checkoutHref
       : withAuditContext(checkoutHref, auditContext);
   const listPrice = formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
+  // Regelbesteuerung: „zzgl. 19 % USt · … brutto" aus der SSoT (shared/pricing.ts).
+  const vatLine = !tier.priceOnRequest && COMPANY.taxMode === 'EU_STANDARD'
+    ? formatNetGrossLine(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur, lang === 'en' ? 'en' : 'de')
+    : null;
   const priceDisplay = tier.priceOnRequest
     ? t('onRequest')
     : beta
@@ -484,14 +488,20 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
         <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
         <span className="rs-price-card__suffix">{suffix}</span>
       </div>
-      {beta && (
+      {beta ? (
+        // Beta-Karte: Listenpreis netto mit USt-Zeile in einer Zeile (#1896-Helper),
+        // damit „zzgl. 19 % USt" nicht doppelt unter der Karte steht.
         <p className="rs-price-card__list-price" data-testid={`pricing-list-price-${tier.id}`}>
-          <s>{t('pricingBetaListPrice', { price: `${listPrice} ${showYearly ? t('perYear') : t('perMonth')}` })}</s>
+          <s>
+            {t('pricingBetaListPrice', {
+              price: `${listPrice} ${showYearly ? t('perYear') : t('perMonth')}`,
+              vat: vatLine ?? '',
+            })}
+          </s>
         </p>
-      )}
-      {!tier.priceOnRequest && COMPANY.taxMode === 'EU_STANDARD' && (
+      ) : vatLine !== null && (
         <p className="rs-price-card__vat" data-testid={`pricing-vat-${tier.id}`}>
-          {formatNetGrossLine(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur, lang === 'en' ? 'en' : 'de')}
+          {vatLine}
         </p>
       )}
 

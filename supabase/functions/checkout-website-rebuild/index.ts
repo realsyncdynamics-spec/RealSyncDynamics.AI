@@ -5,11 +5,23 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  getStripeMode,
+  resolveStripeSecretKey,
+  stripeKeyErrorStatus,
+  stripeModeMetadata,
+  stripeModeResponseFields,
+  testPriceEnvName,
+  testPriceIdFor,
+} from '../_shared/stripe-mode.ts';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
+// Env-only (wie bisher). Der Key wird pro Request über STRIPE_MODE aufgelöst
+// (Beta-Default 'test', Live-Key im Testmodus gesperrt) — nicht mehr beim
+// Modul-Laden, damit ein fehlender Key nicht den CORS-Preflight crasht.
+const readEnvSecret = (envVar: string, _vaultName: string): Promise<string | null> =>
+  Promise.resolve(Deno.env.get(envVar) ?? null);
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const TIER_PLAN_KEY: Record<string, string> = {
@@ -49,10 +61,22 @@ Deno.serve(async (req) => {
     const member = await requireTenantMember(req, tenantId);
     if ('error' in member) return member.error;
   }
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data: products, error: prodErr } = await admin.from('products').select('stripe_price_id, name').eq('default_for_plan_key', planKey);
-  if (prodErr) return jsonError(500, 'INTERNAL', prodErr.message);
-  const realPrice = (products ?? []).find((p) => typeof p.stripe_price_id === 'string' && !p.stripe_price_id.startsWith('internal_default_'));
+  const keyRes = await resolveStripeSecretKey(readEnvSecret);
+  if (!keyRes.ok) return jsonError(stripeKeyErrorStatus(keyRes.code), keyRes.code, keyRes.message);
+  const stripeMode = getStripeMode();
+  const stripe = new Stripe(keyRes.secretKey, { apiVersion: '2024-06-20' });
+  let realPrice: { stripe_price_id: string } | undefined;
+  if (stripeMode === 'test') {
+    // Testmodus: Test-Price aus STRIPE_TEST_PRICE_<PLAN_KEY>, nie die Live-ID aus public.products.
+    const testPrice = testPriceIdFor(planKey);
+    if (!testPrice) return jsonError(400, 'PRICE_NOT_CONFIGURED', `Testmodus: Secret ${testPriceEnvName(planKey)}=price_… setzen`);
+    realPrice = { stripe_price_id: testPrice };
+  } else {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+    const { data: products, error: prodErr } = await admin.from('products').select('stripe_price_id, name').eq('default_for_plan_key', planKey);
+    if (prodErr) return jsonError(500, 'INTERNAL', prodErr.message);
+    realPrice = (products ?? []).find((p) => typeof p.stripe_price_id === 'string' && !p.stripe_price_id.startsWith('internal_default_'));
+  }
   if (!realPrice) return jsonError(400, 'PRICE_NOT_CONFIGURED', `no Stripe Price for plan_key=${planKey}`);
   let price: Stripe.Price;
   try { price = await stripe.prices.retrieve(realPrice.stripe_price_id); } catch (e) { return jsonError(502, 'STRIPE_PRICE_LOOKUP_FAILED', (e as Error).message); }
@@ -66,6 +90,7 @@ Deno.serve(async (req) => {
     ...(body.audit_id ? { audit_id: body.audit_id } : {}), ...(body.company ? { company: body.company } : {}),
     ...(body.site_slug ? { site_slug: body.site_slug.trim() } : {}), ...(body.project_name ? { project_name: body.project_name.trim() } : {}),
     ...(tier === 'governance_launch' ? { redesign: 'true' } : {}),
+    ...stripeModeMetadata(stripeMode),
   };
   const successPath = tier === 'governance_launch' ? '/app/siteos' : '/dsgvo-website/danke';
   const cancelPath = tier === 'governance_launch' ? '/app/siteos' : '/dsgvo-website';
@@ -75,8 +100,8 @@ Deno.serve(async (req) => {
     cancel_url: `${origin}${cancelPath}?checkout=cancelled&site=${encodeURIComponent(body.site_slug ?? '')}`,
     allow_promotion_codes: true, customer_creation: mode === 'payment' ? 'always' : undefined,
     custom_text: { submit: { message: `DSGVO-konformer Rebuild für ${domain} — Bestätigung & Setup-Link kommen per E-Mail.` } },
-    ...(mode === 'subscription' && body.tenant_id ? { subscription_data: { metadata: { tenant_id: body.tenant_id, plan_key: planKey } } } : {}),
+    ...(mode === 'subscription' && body.tenant_id ? { subscription_data: { metadata: { tenant_id: body.tenant_id, plan_key: planKey, ...stripeModeMetadata(stripeMode) } } } : {}),
   };
-  try { const session = await stripe.checkout.sessions.create(sessionParams); return jsonResponse({ ok: true, url: session.url, session_id: session.id, tier, mode, domain, plan_key: planKey }); }
+  try { const session = await stripe.checkout.sessions.create(sessionParams); return jsonResponse({ ok: true, url: session.url, session_id: session.id, tier, mode, domain, plan_key: planKey, ...stripeModeResponseFields(stripeMode) }); }
   catch (e) { return jsonError(500, 'STRIPE_CREATE_FAILED', (e as Error).message); }
 });

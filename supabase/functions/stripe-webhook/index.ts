@@ -1,7 +1,12 @@
 // Stripe webhook receiver — idempotent subscription sync.
 //
 // Endpoint: POST /functions/v1/stripe-webhook
-// Stripe must be configured with the secret stored in STRIPE_WEBHOOK_SECRET.
+// Stripe must be configured with the secret stored in STRIPE_WEBHOOK_SECRET
+// (live) or STRIPE_WEBHOOK_SECRET_TEST (Beta-Testmodus, STRIPE_MODE != 'live').
+// Events, deren `livemode` nicht zu STRIPE_MODE passt, werden quittiert und
+// ignoriert — kein Test-Kauf schaltet im Live-Betrieb frei. Ausnahme Testmodus:
+// mit dem Live-Secret verifizierte Live-Events (Bestandskunden: Verlängerung,
+// Kündigung) werden mit dem Live-Key normal verarbeitet.
 // Tenant linkage:
 //   We expect every Stripe Customer (or Subscription) to carry
 //   `metadata.tenant_id` matching a row in public.tenants. Without it, we
@@ -15,6 +20,16 @@ import {
   pickPlanItem,
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
+import {
+  apiKeyForVerifiedWebhookEvent,
+  getStripeMode,
+  isWebhookSignatureModeCompatible,
+  keyModeOf,
+  liveWebhookSigningCandidate,
+  planKeyForTestPrice,
+  resolveStripeSecretKey,
+  resolveStripeWebhookSecret,
+} from '../_shared/stripe-mode.ts';
 
 // Re-export for unit tests that import pickPlanItem from this module.
 export { pickPlanItem };
@@ -72,21 +87,82 @@ Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature');
   if (!sig) return new Response('missing signature', { status: 400 });
 
-  const STRIPE_SECRET = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
-  const WEBHOOK_SECRET = await getSecret('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret');
-  if (!STRIPE_SECRET || !WEBHOOK_SECRET) {
-    return new Response('stripe secrets not configured (neither vault nor env)', { status: 500 });
-  }
-  const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
+  // Signature authentication is independent of the test API credentials.
+  // A live webhook must continue to work in Beta even without test secrets.
+  const runtimeMode = getStripeMode();
+  const liveSigningSecret = await getSecret('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret');
+  const liveKeyCandidate = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  const liveApiKey = keyModeOf(liveKeyCandidate) === 'live' ? liveKeyCandidate : null;
 
-  const raw = await req.text();
-  let event: Stripe.Event;
-  try {
-    // constructEventAsync because Deno's WebCrypto is async.
-    event = await stripe.webhooks.constructEventAsync(raw, sig, WEBHOOK_SECRET);
-  } catch (err) {
-    return new Response(`signature verify failed: ${(err as Error).message}`, { status: 400 });
+  // Never use a live key to fetch test objects or a test key for live objects.
+  const testKeyRes = runtimeMode === 'test' ? await resolveStripeSecretKey(getSecret) : null;
+  const testApiKey = testKeyRes?.ok ? testKeyRes.secretKey : null;
+  const testSigningSecret = runtimeMode === 'test'
+    ? testKeyRes?.ok
+      ? await resolveStripeWebhookSecret(getSecret, 'test', testKeyRes.source)
+      : await getSecret('STRIPE_WEBHOOK_SECRET_TEST', 'stripe_webhook_secret_test')
+    : null;
+
+  const signingCandidates: Array<{ mode: 'test' | 'live'; secret: string }> = [];
+  if (runtimeMode === 'test' && testSigningSecret) {
+    signingCandidates.push({ mode: 'test', secret: testSigningSecret });
   }
+  // Legacy test-only installs reuse STRIPE_WEBHOOK_SECRET for test events.
+  // Avoid classifying that one secret simultaneously as test and live.
+  const liveCandidate = liveWebhookSigningCandidate(liveSigningSecret, testSigningSecret, liveApiKey);
+  if (liveCandidate) signingCandidates.push({ mode: 'live', secret: liveCandidate });
+  if (signingCandidates.length === 0) {
+    // Configuration failure: 503 allows Stripe to retry a legitimate event.
+    return new Response('stripe webhook signing secrets not configured', { status: 503 });
+  }
+  if (signingCandidates.length === 2 && testSigningSecret === liveSigningSecret) {
+    return new Response('test/live webhook signing secrets must be distinct', { status: 503 });
+  }
+
+  // Stripe SDK signature verification is local (no network access here).
+  // Actual API calls use the key of the VERIFIED event mode.
+  const verifierKey = liveApiKey ?? testApiKey;
+  if (!verifierKey) {
+    return new Response('no valid Stripe API key configured for webhook verification', { status: 503 });
+  }
+  const verifier = new Stripe(verifierKey, { apiVersion: '2024-06-20' });
+  const raw = await req.text();
+  let event: Stripe.Event | null = null;
+  let verifiedMode: 'test' | 'live' | null = null;
+  let signatureError: unknown;
+  for (const candidate of signingCandidates) {
+    try {
+      event = await verifier.webhooks.constructEventAsync(raw, sig, candidate.secret);
+      verifiedMode = candidate.mode;
+      break;
+    } catch (err) {
+      signatureError = err;
+    }
+  }
+  if (!event || !verifiedMode) {
+    return new Response(`signature verify failed: ${(signatureError as Error)?.message ?? 'unknown error'}`, {
+      status: 400,
+    });
+  }
+  if (!isWebhookSignatureModeCompatible(event.livemode, verifiedMode)) {
+    return new Response('webhook signature mode does not match event livemode', { status: 400 });
+  }
+  if (verifiedMode === 'test' && runtimeMode !== 'test') {
+    return new Response(JSON.stringify({ received: true, ignored: 'stripe_mode_mismatch' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const eventApiKey = apiKeyForVerifiedWebhookEvent(verifiedMode, liveApiKey, testApiKey);
+  if (!eventApiKey) {
+    return new Response(
+      verifiedMode === 'live'
+        ? 'live event received but no sk_live_ key configured'
+        : 'test event received but no sk_test_ key configured',
+      { status: 503 },
+    );
+  }
+  const stripe = new Stripe(eventApiKey, { apiVersion: '2024-06-20' });
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
@@ -473,6 +549,11 @@ async function resolveOneTimePlanKey(
   const fromPrice = normalizePlanKey(price?.metadata?.plan_key);
   if (fromPrice) return fromPrice;
 
+  // Beta-Testmodus: Test-Prices stehen nicht in public.products, sondern in
+  // STRIPE_TEST_PRICE_<PLAN_KEY>.
+  const fromTestPrice = normalizePlanKey(planKeyForTestPrice(price?.id));
+  if (fromTestPrice) return fromTestPrice;
+
   if (price?.id) {
     const { data } = await admin
       .from('products')
@@ -834,6 +915,9 @@ async function reportPurchaseToAdPlatforms(
 ): Promise<void> {
   const amount = session.amount_total ?? 0;
   if (amount <= 0) return;
+  // Testkäufe (Beta-Sandbox) dürfen keine Conversions an Werbeplattformen
+  // melden — sonst verfälschen 4242-Testkarten Kampagnen-Attribution.
+  if (!session.livemode) return;
 
   try {
     await reportServerConversion({

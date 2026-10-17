@@ -58,13 +58,19 @@ function walk(dir) {
   return out;
 }
 
-const files = SCOPE_DIRS.flatMap((d) => {
-  try {
-    return walk(d);
-  } catch {
-    return [];
-  }
-});
+// Beta-Texte aus der Konfiguration landen direkt in Hero und Ribbon.
+const SCOPE_FILES = [join(root, 'src/config/beta.ts')];
+
+const files = [
+  ...SCOPE_DIRS.flatMap((d) => {
+    try {
+      return walk(d);
+    } catch {
+      return [];
+    }
+  }),
+  ...SCOPE_FILES,
+];
 
 let failed = false;
 

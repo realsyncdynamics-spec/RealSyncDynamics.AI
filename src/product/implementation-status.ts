@@ -714,4 +714,6 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   'Complete Runtime',
   'vollständig verfügbar',
   'vollständig produktionsbereit',
+  // Beta: bis WP-3 die Freischaltung serverseitig absichert, nur „kostenlos testen“.
+  'alle Funktionen kostenlos',
 ] as const;

@@ -431,3 +431,50 @@ describe('Gate 2 · review #1698', () => {
     expect(db.findings[0].status).toBe('acknowledged');
   });
 });
+
+describe('Asset-Bindung 0 / 1 / >1 (2026-09-29)', () => {
+  it('>1 passende Websites ohne website_id: 409 WEBSITE_AMBIGUOUS mit Kandidaten, kein Lauf', async () => {
+    const second = { id: '55555555-5555-4555-8555-555555555555', tenant_id: TENANT, domain: 'example.de', governance_asset_id: null };
+    const { db, deps } = setup({
+      websites: [
+        { id: WEBSITE, tenant_id: TENANT, domain: 'www.example.de', governance_asset_id: ASSET },
+        second,
+      ],
+    });
+    const r = await runTenantAuditPipeline(deps, { ...input, websiteId: null });
+    expect(r).toMatchObject({ ok: false, status: 409, code: 'WEBSITE_AMBIGUOUS' });
+    if (!r.ok) {
+      expect((r.details?.candidates as Array<{ id: string }>).map((c) => c.id).sort()).toEqual([WEBSITE, second.id].sort());
+    }
+    expect(db.scan_runs).toEqual([]);
+    expect(db.evidence).toEqual([]);
+  });
+
+  it('>1 passende Websites mit gewählter website_id: Lauf an genau diese Website', async () => {
+    const second = { id: '55555555-5555-4555-8555-555555555555', tenant_id: TENANT, domain: 'example.de', governance_asset_id: null };
+    const { deps } = setup({
+      websites: [
+        { id: WEBSITE, tenant_id: TENANT, domain: 'www.example.de', governance_asset_id: ASSET },
+        second,
+      ],
+    });
+    const r = await runTenantAuditPipeline(deps, { ...input, websiteId: second.id });
+    expect(r).toMatchObject({ ok: true, website_id: second.id });
+  });
+
+  it('0 passende Websites: definierter Lauf ohne Asset', async () => {
+    const { db, deps } = setup({ websites: [] });
+    const r = await runTenantAuditPipeline(deps, { ...input, websiteId: null });
+    expect(r).toMatchObject({ ok: true, website_id: null, asset_id: null });
+    expect(db.scan_runs).toHaveLength(1);
+  });
+});
+
+describe('Kontingent des Detektors', () => {
+  it('429 von gdpr-audit wird als 429 RATE_LIMITED gemeldet, nicht als 502', async () => {
+    const { db, deps } = setup({}, async () => ({ httpStatus: 429, text: '{"ok":false,"error":{"code":"RATE_LIMITED"}}' }));
+    const r = await runTenantAuditPipeline(deps, input);
+    expect(r).toMatchObject({ ok: false, status: 429, code: 'RATE_LIMITED' });
+    expect(db.scan_runs).toHaveLength(1);
+  });
+});

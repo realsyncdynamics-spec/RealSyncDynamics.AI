@@ -3,8 +3,8 @@
  * (Referenz `The Governance AI v4.html`, gebündelt `dist/realsync-landing-v4.html`).
  *
  * Dunkler Hero mit 3D-Erde (Sonne, Mond, Mars, ISS), darunter Classical-
- * Sektionen (Papier #f3f2f2, Tinte #201f1d, Gold #b68235; Cormorant Garamond ·
- * Lora · JetBrains Mono). Startseite `/` und einziges öffentliches Frontend
+ * Sektionen (Papier #f3f2f2, Tinte #201f1d, Gold #b68235; Playfair Display ·
+ * Inter · DM Mono). Startseite `/` und einziges öffentliches Frontend
  * (Freigabe Owner); v2 bleibt als Referenz unter /design/landing-v2.
  *
  * Verhalten wie in der Referenz: Scroll-Fortschritt, Hero-Parallax,

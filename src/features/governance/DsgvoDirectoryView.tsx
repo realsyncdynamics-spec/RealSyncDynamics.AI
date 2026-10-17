@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface DataProcessing {
   id: string;
@@ -43,7 +44,7 @@ function Inner() {
 
     try {
       const response = await fetch(
-        `/functions/v1/governance-resources?tenant_id=${activeTenantId}&resource_type=data_processing`,
+        `${getSupabaseUrl()}/functions/v1/governance-resources?tenant_id=${activeTenantId}&resource_type=data_processing`,
         { headers: { Authorization: `Bearer ${(await import('../../lib/auth')).getAuthToken()}` } }
       );
       if (!response.ok) throw new Error('Failed to load');
@@ -254,7 +255,7 @@ function CreateProcessingModal({
     setLoading(true);
 
     try {
-      const response = await fetch('/functions/v1/governance-resources', {
+      const response = await fetch(`${getSupabaseUrl()}/functions/v1/governance-resources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

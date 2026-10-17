@@ -13,23 +13,10 @@ type Endpoint = {
 const ENDPOINTS: Endpoint[] = [
   {
     method: 'POST',
-    path: '/functions/v1/audit',
+    path: '/functions/v1/gdpr-audit',
     desc: 'Website-Audit triggern (DSGVO-Score, fehlende Pflichtangaben, Cookie-Banner-Check)',
     auth: 'none',
-    example: '{ "url": "https://example.com" }',
-  },
-  {
-    method: 'GET',
-    path: '/functions/v1/audit?id=<uuid>',
-    desc: 'Bestehenden Audit-Report abrufen (mit Vergleich zu Vorrun)',
-    auth: 'bearer',
-  },
-  {
-    method: 'POST',
-    path: '/functions/v1/avv-generator',
-    desc: 'AVV-Vorlage generieren (Auftragsverarbeiter-Vertrag, PDF + Markdown)',
-    auth: 'bearer',
-    example: '{ "tenant_id": "...", "processor": "Stripe Payments Europe Ltd." }',
+    example: '{ "url": "https://example.com", "email": "..." }',
   },
   {
     method: 'POST',
@@ -37,18 +24,6 @@ const ENDPOINTS: Endpoint[] = [
     desc: 'AI-Act-Risiko-Klassifikation für einen Use-Case (Limited / High / Prohibited)',
     auth: 'bearer',
     example: '{ "use_case": "Bewerber-Vorauswahl", "domain": "HR" }',
-  },
-  {
-    method: 'POST',
-    path: '/functions/v1/dsfa',
-    desc: 'DSFA-Wizard-Entwurf für Art. 35 DSGVO Use-Case',
-    auth: 'bearer',
-  },
-  {
-    method: 'GET',
-    path: '/functions/v1/sub-processors',
-    desc: 'Sub-Processors-Liste deines Tenants als JSON (für Customer-Selfservice)',
-    auth: 'bearer',
   },
   {
     method: 'POST',
@@ -97,7 +72,7 @@ const METHOD_COLOR: Record<Endpoint['method'], string> = {
 };
 
 /**
- * Aus `/functions/v1/audit?id=<uuid>` wird `audit`.
+ * Aus `/functions/v1/gdpr-audit?id=<uuid>` wird `gdpr-audit`.
  *
  * Die Pfade oben sind die Dokumentation; ob dahinter etwas antwortet,
  * entscheidet allein die Messung in `production-edge-functions.ts`. Ein
@@ -151,7 +126,7 @@ export function ApiDocs() {
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Key ist tenant-scoped — kann nur Daten lesen/schreiben, die zum Tenant gehören</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Rate-Limits: Starter 60/min, Growth 600/min, Agency 6000/min, Enterprise verhandelbar</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Bei 429: <code className="text-amber-300 text-xs">Retry-After</code>-Header wird gesetzt</span></li>
-              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Public-Endpoints (audit, sales-lead, newsletter) brauchen keinen Key — IP-Rate-Limit greift</span></li>
+              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Public-Endpoints (gdpr-audit, sales-lead, newsletter) brauchen keinen Key — IP-Rate-Limit greift</span></li>
             </ul>
           </Section>
 

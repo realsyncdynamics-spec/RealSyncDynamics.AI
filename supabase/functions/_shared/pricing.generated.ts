@@ -3002,9 +3002,23 @@ export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
 /** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
-export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise netto zzgl. 19 % USt.';
 
-/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+/** Regelsteuersatz DE (§ 12 Abs. 1 UStG). Nur für die Brutto-Anzeige; berechnet wird in Stripe Tax. */
+export const PRICING_VAT_RATE_DE = 0.19;
+
+/** Bruttobetrag (DE, 19 %) zu einem Nettobetrag, kaufmännisch auf Cent gerundet. 79 → 94,01. */
+export function grossEurFromNet(netEur: number, rate: number = PRICING_VAT_RATE_DE): number {
+  return Math.round(netEur * (1 + rate) * 100) / 100;
+}
+
+/** „zzgl. 19 % USt · 94,01 € brutto" — Zusatzzeile unter Netto-Preisen. */
+export function formatNetGrossLine(netEur: number, lang: 'de' | 'en' = 'de'): string {
+  const gross = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(grossEurFromNet(netEur));
+  return lang === 'en' ? `plus 19% VAT · ${gross} gross` : `zzgl. 19 % USt · ${gross} brutto`;
+}
+
+/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Seit 2026-10-15 NICHT mehr gültig (Regelbesteuerung); nur noch für den Modus EXEMPT/Tests. */
 export const PRICING_TAX_NOTE_EXEMPT =
   'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
 
@@ -3012,11 +3026,12 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**
  * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
- * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
- * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
- * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ * Entscheidung Dominik 2026-10-15: Regelbesteuerung, § 19 UStG entfällt.
+ * Preise sind NETTO; Stripe Tax schlägt 19 % USt auf (tax_behavior exclusive),
+ * EU-B2B mit gültiger USt-IdNr. → Reverse Charge über Stripe Tax.
+ * `COMPANY.taxMode` (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

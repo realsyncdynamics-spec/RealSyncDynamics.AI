@@ -1,7 +1,7 @@
 /**
  * Landing v2 (`/design/landing-v2`) — Vertrag des Claude-Design-Handoffs:
  * H1, Pipeline, Tier-Buttons aus der Pricing-SSoT, Sektionsreihenfolge,
- * Preise ohne USt-Ausweis (§ 19 UStG), Hell/Dunkel-Umschaltung.
+ * Nettopreise zzgl. 19 % USt (Regelbesteuerung seit 2026-10-15), Hell/Dunkel-Umschaltung.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -89,7 +89,7 @@ it('keeps the handoff section order and resolvable in-page anchors', () => {
   }
 });
 
-it('shows four plan cards with SSoT prices, no VAT line and a § 19 UStG note', () => {
+it('shows four plan cards with SSoT net prices, VAT+gross line, no § 19 note', () => {
   const view = mount();
   const cards = view.container.querySelectorAll('.lv2-plan');
   expect(cards).toHaveLength(4);
@@ -105,8 +105,11 @@ it('shows four plan cards with SSoT prices, no VAT line and a § 19 UStG note', 
   );
 
   const foot = view.container.querySelector('.lv2-pricing__foot')!;
-  expect(foot.textContent).toContain('§ 19 UStG');
-  expect(view.container.textContent).not.toMatch(/zzgl\. (gesetzlicher )?USt/i);
+  expect(foot.textContent).toContain('zzgl. 19 % USt');
+  expect(view.container.textContent).not.toMatch(/§ 19/);
+  expect(within(cards[0] as HTMLElement).getByText(/94,01/)).toBeInTheDocument();
+  expect(within(cards[1] as HTMLElement).getByText(/296,31/)).toBeInTheDocument();
+  expect(within(cards[2] as HTMLElement).getByText(/831,81/)).toBeInTheDocument();
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 
   // Jahres-Toggle bleibt aus, solange Stripe-Jahrespreise fehlen.

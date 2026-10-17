@@ -6,6 +6,7 @@ import { CTA } from '../../../content/runtimeVocab';
 import { tierById, type PricingTier } from '../../../config/pricing';
 import {
   checkoutHrefForPlan,
+  formatNetGrossLine,
   formatPriceEur,
   pricingTaxNote,
   PLANS,
@@ -104,6 +105,13 @@ export function PricingV2() {
                 <p className="lv2-plan__price" data-text={tier.priceOnRequest ? 'true' : undefined}>
                   <span>{price}</span> <small>{suffix}</small>
                 </p>
+                {!tier.priceOnRequest && COMPANY.taxMode === 'EU_STANDARD' && (
+                  <p className="lv2-plan__vat" data-testid={`lv2-vat-${plan.id}`}>
+                    {formatNetGrossLine(
+                      yearly && plan.price.yearlyEur !== null ? plan.price.yearlyEur : plan.price.monthlyEur,
+                    )}
+                  </p>
+                )}
                 <p className="lv2-plan__note">
                   {tier.priceOnRequest ? 'SLA & dedizierter Tenant' : 'monatlich kündbar'}
                 </p>

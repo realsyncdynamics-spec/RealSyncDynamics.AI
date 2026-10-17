@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
  *      gegen scripts/production-readiness-check.mjs Check `impressum-vat`
  *      versto&szlig;en. Solange VITE_BUSINESS_VAT_ID leer ist, weist die
  *      Umsatzsteuer-Sektion stattdessen sachlich auf die
- *      Kleinunternehmerregelung (§ 19 UStG) hin — nicht als Alarm.
+ *      Regelbesteuerung (USt-IdNr. bzw. Hinweis auf Zuteilung) hin — nicht als Alarm.
  *
  *   DEV-Hinweis-Banner ist absichtlich nur in `npm run dev` sichtbar, nicht
  *   im Playwright-Lauf (der gegen den PROD-Build laeuft).
@@ -51,13 +51,11 @@ test.describe('/legal/impressum', () => {
     expect(body).not.toContain('USt-IdNr. fehlt');
   });
 
-  test('USt-Sektion zeigt Kleinunternehmer-Hinweis statt Alarm', async ({ page }) => {
+  test('USt-Sektion: Regelbesteuerung, kein § 19-Hinweis', async ({ page }) => {
     await page.goto('/legal/impressum');
-    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, rendert die
-    // Umsatzsteuer-Sektion den sachlichen Hinweis auf § 19 UStG
-    // (Kleinunternehmerregelung) statt einer USt-IdNr.
-    await expect(
-      page.getByText(/Kleinunternehmer/i).first(),
-    ).toBeVisible();
+    // Regelbesteuerung seit 2026-10-15: USt-IdNr. (oder Hinweis auf
+    // Zuteilung), nie mehr ein § 19-Hinweis.
+    await expect(page.getByText(/§ 27 a Umsatzsteuergesetz/i).first()).toBeVisible();
+    await expect(page.getByText(/Kleinunternehmer/i)).toHaveCount(0);
   });
 });

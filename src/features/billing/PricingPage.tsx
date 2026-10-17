@@ -12,7 +12,7 @@ import {
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
-import { checkoutHrefForPlan } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatNetGrossLine } from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
 import { BETA, betaSignupHref, isBetaPlan } from '../../config/beta';
 
@@ -487,6 +487,11 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       {beta && (
         <p className="rs-price-card__list-price" data-testid={`pricing-list-price-${tier.id}`}>
           <s>{t('pricingBetaListPrice', { price: `${listPrice} ${showYearly ? t('perYear') : t('perMonth')}` })}</s>
+        </p>
+      )}
+      {!tier.priceOnRequest && COMPANY.taxMode === 'EU_STANDARD' && (
+        <p className="rs-price-card__vat" data-testid={`pricing-vat-${tier.id}`}>
+          {formatNetGrossLine(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur, lang === 'en' ? 'en' : 'de')}
         </p>
       )}
 

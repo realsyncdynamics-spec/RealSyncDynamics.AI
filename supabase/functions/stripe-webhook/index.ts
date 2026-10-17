@@ -10,7 +10,8 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
-import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { reviewCheckoutTax, reviewInvoiceTax } from '../_shared/checkout-tax.ts';
 import {
   pickPlanItem,
   syncSubscriptionFromStripe,
@@ -143,6 +144,9 @@ Deno.serve(async (req) => {
       case 'invoice.created':
       case 'invoice.payment_failed':
         await syncInvoice(admin, event.data.object as Stripe.Invoice);
+        if (event.type === 'invoice.finalized') {
+          await flagInvoiceTaxReview(admin, event.data.object as Stripe.Invoice);
+        }
         if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
           await recordPaymentEvent(admin, event);
         }
@@ -180,6 +184,7 @@ Deno.serve(async (req) => {
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
         await reportPurchaseToAdPlatforms(session, req);
+        await flagCheckoutTaxReview(admin, session);
         break;
       }
       // Add more handlers as the billing surface grows; ignore unknown types.
@@ -540,6 +545,91 @@ async function syncInvoice(admin: SupabaseAdminClient, inv: Stripe.Invoice): Pro
     .from('stripe_invoices')
     .upsert(row, { onConflict: 'stripe_invoice_id' });
   if (error) throw error;
+}
+
+// Steuer-Prüfung nach dem Kauf (Regeln in _shared/checkout-tax.ts).
+//
+// Stripe Checkout kann das Land der Rechnungsadresse nicht einschränken, und
+// ausgewiesene Steuer wäre im EXEMPT-Modus nach § 14c UStG geschuldet. Beides
+// wird hier erkannt, aber NICHT automatisch korrigiert: Erstattung, Kündigung
+// oder Freigabe nach steuerlicher Klärung entscheidet ein Mensch. Deshalb
+// best effort — ein Befund hält die Webhook-Verarbeitung nie auf.
+async function flagCheckoutTaxReview(admin: SupabaseClient, session: Stripe.Checkout.Session): Promise<void> {
+  const billingCountry = session.customer_details?.address?.country ?? null;
+  const taxCents = session.total_details?.amount_tax ?? 0;
+  const findings = reviewCheckoutTax({ taxMode: PRICING_TAX_MODE, billingCountry, taxAmountCents: taxCents });
+  if (findings.length === 0) return;
+  await recordTaxReview(admin, {
+    tenantId: session.metadata?.tenant_id ?? null,
+    targetType: 'stripe_checkout_session',
+    targetId: session.id,
+    findings,
+    details: {
+      billing_country: billingCountry,
+      tax_cents: taxCents,
+      amount_total_cents: session.amount_total ?? 0,
+      currency: session.currency ?? null,
+      mode: session.mode,
+      livemode: session.livemode,
+    },
+  });
+}
+
+async function flagInvoiceTaxReview(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
+  const findings = reviewInvoiceTax({ taxMode: PRICING_TAX_MODE, taxAmountCents: inv.tax ?? 0, footer: inv.footer });
+  if (findings.length === 0) return;
+  await recordTaxReview(admin, {
+    tenantId: inv.subscription_details?.metadata?.tenant_id ?? inv.metadata?.tenant_id ?? null,
+    targetType: 'stripe_invoice',
+    targetId: inv.id,
+    findings,
+    details: {
+      number: inv.number ?? null,
+      tax_cents: inv.tax ?? 0,
+      total_cents: inv.total ?? 0,
+      currency: inv.currency ?? null,
+      billing_reason: inv.billing_reason ?? null,
+      livemode: inv.livemode,
+    },
+  });
+}
+
+async function recordTaxReview(
+  admin: SupabaseClient,
+  args: {
+    tenantId: string | null;
+    targetType: string;
+    targetId: string;
+    findings: string[];
+    details: Record<string, unknown>;
+  },
+): Promise<void> {
+  // Immer im Function-Log, auch ohne Mandant (z. B. Rebuild-Kauf ohne Login).
+  console.error(JSON.stringify({
+    level: 'error',
+    scope: 'billing_tax_review',
+    tax_mode: PRICING_TAX_MODE,
+    tenant_id: args.tenantId,
+    target_type: args.targetType,
+    target_id: args.targetId,
+    findings: args.findings,
+    ...args.details,
+  }));
+  if (!args.tenantId) return;
+  try {
+    const { error } = await admin.from('governance_admin_log').insert({
+      tenant_id: args.tenantId,
+      actor_user_id: null,
+      actor_email: 'stripe-webhook',
+      action: 'billing.tax_review_required',
+      target_type: args.targetType,
+      target_id: args.targetId,
+      payload: { tax_mode: PRICING_TAX_MODE, findings: args.findings, ...args.details },
+    });
+    if (error) console.error(`[stripe-webhook] tax review log failed: ${error.message}`);
+  } catch (e) {
+    console.error(`[stripe-webhook] tax review log failed: ${(e as Error).message}`);
+  }
 }
 
 // deno-lint-ignore no-explicit-any

@@ -135,7 +135,7 @@ export function ImpressumPage() {
         },
         {
           heading: 'Umsatzsteuer',
-          body: ['Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.'],
+          body: ['Regelbesteuerung. Alle Preise netto zzgl. 19 % Umsatzsteuer. USt-IdNr. gemäß § 27 a UStG: siehe Impressum.'],
         },
         {
           heading: 'Hinweis',

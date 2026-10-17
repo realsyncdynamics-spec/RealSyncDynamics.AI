@@ -209,7 +209,7 @@ export function areLegalDocsComplete(): {
 } {
   const missing: string[] = [];
 
-  // Kleinunternehmer § 19 UStG: USt-IdNr. optional bis zur Vergabe.
+  // Regelbesteuerung: USt-IdNr. für Einzelunternehmen bis zur Zuteilung optional (Steuernummer genügt, § 14 Abs. 4 Nr. 2 UStG).
   if (COMPANY.legalForm !== 'Einzelunternehmen' && !COMPANY.vatId) {
     missing.push('USt-IdNr. (Umsatzsteuer-Identifikationsnummer)');
   }

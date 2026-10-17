@@ -62,9 +62,11 @@ describe('/pricing (Handoff v2)', () => {
     );
   });
 
-  it('shows the § 19 UStG note from the company SSOT', () => {
+  it('shows the VAT note (Regelbesteuerung) and net+gross per tile', () => {
     mount();
-    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('§ 19 UStG');
+    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('zzgl. 19 % USt');
+    expect(screen.getByTestId('pricing-tax-note')).not.toHaveTextContent('§ 19');
+    expect(screen.getByTestId('pricing-vat-starter')).toHaveTextContent(/94,01/);
   });
 });
 

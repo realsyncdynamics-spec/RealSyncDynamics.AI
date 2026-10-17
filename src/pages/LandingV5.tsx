@@ -25,7 +25,7 @@ import '../styles/landing-v5.css';
 /**
  * Landing v5 — Zusammenführung (Owner, 13.10.2026):
  *  - Hero, Buttons, Flows, Design: Landing v2 („AI Compliance Operations OS“-Optik)
- *  - Texte: Live-Landing v4 (i18n `v4Hero*`, LOOP_NODES) — klar, ohne Fachchinesisch
+ *  - Texte: H1/CTA aus i18n `v4Hero*`, übrige v5-Texte in landing-v5-content.ts (DE/EN)
  *  - Neu: echte three.js-3D-Szene, 3D-Ebenen/Buttons, Beta-Testphase, Roadmap aus SSoT
  *
  * Nichts überschrieben: v4 bleibt unter /design/landing-v4, v2 unter /design/landing-v2.

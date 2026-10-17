@@ -7,7 +7,8 @@ import {
   STATUS_LABEL,
   type ImplementationItem,
 } from '../../../product/implementation-status';
-import { LOOP_NODES } from '../v4/landing-v4-content';
+import { useLang } from '../../../i18n/useLang';
+import { V5_COPY } from './landing-v5-content';
 
 /** Schmales Band ganz oben — nur in der Beta. */
 export function BetaRibbon({ source = 'ribbon' }: { source?: string }) {
@@ -17,7 +18,7 @@ export function BetaRibbon({ source = 'ribbon' }: { source?: string }) {
       <span className="v5-ribbon__dot" aria-hidden="true" />
       <span>
         <b>{BETA.badge}</b>
-        <span className="v5-ribbon__long"> · Offene Testphase bis {BETA.endsLabel} — alle Funktionen kostenlos, keine Kreditkarte.</span>
+        <span className="v5-ribbon__long"> · Offene Testphase bis {BETA.endsLabel} — kostenlos registrieren, keine Kreditkarte. Funktionen im Preview-Status sind gekennzeichnet.</span>
       </span>
       <Link to={betaSignupHref(BETA.testPlan, source)}>Jetzt kostenlos testen →</Link>
     </div>
@@ -26,19 +27,22 @@ export function BetaRibbon({ source = 'ribbon' }: { source?: string }) {
 
 /** 4-Schritte-Ablauf mit den klaren v4-Texten im v2-Kartenstil (3D-Karten). */
 export function V5Loop() {
+  const c = V5_COPY[useLang().lang];
   return (
     <section id="ablauf" className="lv2__section v5-loop" aria-labelledby="v5-loop-title">
       <div className="lv2__wrap">
-        <p className="lv2__kicker">So funktioniert es</p>
+        <p className="lv2__kicker">{c.loopKicker}</p>
         <h2 id="v5-loop-title" className="lv2__h2">
-          Vier Schritte. <span className="is-gold">Ohne Fachchinesisch.</span>
+          {c.loopTitleA} <span className="is-gold">{c.loopTitleEm}</span>
         </h2>
+        <p className="v5-intro">{c.loopIntro}</p>
         <ol className="v5-cards">
-          {LOOP_NODES.map(([kicker, title, text], i) => (
+          {c.loop.map(([kicker, title, text, benefit], i) => (
             <li key={kicker} className="v5-card3d" style={{ ['--i' as string]: i }}>
               <span className="v5-card3d__k">{kicker}</span>
               <h3>{title}</h3>
               <p>{text}</p>
+              <p className="v5-card3d__benefit">{benefit}</p>
             </li>
           ))}
         </ol>
@@ -56,7 +60,7 @@ export function V5BetaProgram() {
         <div>
           <p className="lv2__kicker">Beta-Testphase</p>
           <h2 id="v5-beta-title" className="lv2__h2">
-            Testen Sie alles. <span className="is-gold">Zahlen Sie nichts.</span>
+            Kostenlos testen, <span className="is-gold">solange die Beta läuft.</span>
           </h2>
           <p className="v5-beta__sub">{BETA.sub}</p>
           <ul className="v5-checks">
@@ -76,19 +80,19 @@ export function V5BetaProgram() {
         <ol className="v5-steps" aria-label="Ablauf der Beta">
           <li>
             <b>1 · Registrieren</b>
-            <span>E-Mail-Code oder Google — in unter einer Minute.</span>
+            <span>Mit E-Mail-Code oder Google-Konto anmelden.</span>
           </li>
           <li>
             <b>2 · Website verbinden</b>
-            <span>Domain eintragen, erster Scan startet automatisch.</span>
+            <span>Domain eintragen — der erste Scan startet automatisch.</span>
           </li>
           <li>
             <b>3 · Im Dashboard arbeiten</b>
-            <span>Befunde, Maßnahmen, KI-Register und Nachweise an einem Ort.</span>
+            <span>Befunde, Maßnahmen und Nachweise an einem Ort; Module im Preview-Status sind gekennzeichnet.</span>
           </li>
           <li>
             <b>4 · Feedback geben</b>
-            <span>Direkt im Dashboard — jede Rückmeldung landet bei uns im Backlog.</span>
+            <span>Direkt im Dashboard — Ihre Rückmeldung hilft uns, Prioritäten zu setzen.</span>
           </li>
         </ol>
       </div>
@@ -116,20 +120,22 @@ function RoadmapCol({ title, status, items }: { title: string; status: string; i
 
 /** Ehrliche Roadmap — liest ausschließlich die Implementation-Status-SSoT. */
 export function V5Roadmap() {
+  const c = V5_COPY[useLang().lang];
   return (
     <section id="roadmap" className="lv2__section v5-rm" aria-labelledby="v5-rm-title">
       <div className="lv2__wrap">
-        <p className="lv2__kicker">Roadmap · gemessen, nicht versprochen</p>
+        <p className="lv2__kicker">{c.rmKicker}</p>
         <h2 id="v5-rm-title" className="lv2__h2">
-          Was heute läuft — <span className="is-gold">und was als Nächstes kommt.</span>
+          {c.rmTitleA} <span className="is-gold">{c.rmTitleEm}</span>
         </h2>
+        <p className="v5-intro">{c.rmIntro}</p>
         <div className="v5-rm__grid">
-          <RoadmapCol title="Live" status="live" items={ROADMAP_LIVE_ITEMS} />
-          <RoadmapCol title="In der Beta" status="preview" items={ROADMAP_PREVIEW_ITEMS} />
-          <RoadmapCol title="Geplant" status="next" items={ROADMAP_COMING_SOON_ITEMS} />
+          <RoadmapCol title={c.rmLive} status="live" items={ROADMAP_LIVE_ITEMS} />
+          <RoadmapCol title={c.rmPreview} status="preview" items={ROADMAP_PREVIEW_ITEMS} />
+          <RoadmapCol title={c.rmNext} status="next" items={ROADMAP_COMING_SOON_ITEMS} />
         </div>
         <p className="v5-rm__more">
-          <Link to="/roadmap">Vollständige Roadmap ansehen →</Link>
+          <Link to="/roadmap">{c.rmMore}</Link>
         </p>
       </div>
     </section>

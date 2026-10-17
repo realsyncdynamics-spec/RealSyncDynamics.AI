@@ -4,6 +4,7 @@ import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing'
 import { useLang } from '../../../i18n/useLang';
 import { BETA, betaSignupHref } from '../../../config/beta';
 import { LV2_STACK } from '../v2/landing-v2-content';
+import { V5_COPY } from './landing-v5-content';
 
 const SOURCE = 'landing-v5-hero';
 
@@ -20,7 +21,8 @@ const SOURCE = 'landing-v5-hero';
  * sondern in die kostenlose Beta-Registrierung.
  */
 export function HeroV5() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const c = V5_COPY[lang];
   const navigate = useNavigate();
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -133,7 +135,7 @@ export function HeroV5() {
         </ol>
 
         <p className="v5-lede v5-layer" style={{ ['--z' as string]: '24px' }} data-testid="v4-hero-lede">
-          {t('v4HeroLede1')} {t('v4HeroLede2')}
+          {c.lede}
         </p>
 
         <ul className="lv2-stack v5-layer" style={{ ['--z' as string]: '14px' }} aria-label="Infrastruktur">
@@ -172,7 +174,7 @@ export function HeroV5() {
             data-hero-cta="enterprise"
             data-testid="hero-secondary-cta"
           >
-            Enterprise anfragen
+            {c.enterprise}
           </Link>
         </div>
 
@@ -180,20 +182,20 @@ export function HeroV5() {
           <input
             type="url"
             inputMode="url"
-            placeholder="ihre-website.de"
-            aria-label="Website-URL für den kostenlosen Check"
+            placeholder={c.scanPlaceholder}
+            aria-label={c.scanLabel}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
           <button type="submit" className="lv2-btn lv2-btn--gold">
-            Prüfen
+            {c.scanButton}
           </button>
         </form>
 
         <p className="lv2-hero__note v5-layer" style={{ ['--z' as string]: '10px' }}>
           {BETA.active
-            ? `Kostenlos · Ergebnis in 90 Sekunden · keine Kreditkarte · Beta bis ${BETA.endsLabel}`
-            : 'Kostenlos · Ergebnis in 90 Sekunden · keine Kreditkarte erforderlich'}
+            ? `${c.note} · Beta bis ${BETA.endsLabel}`
+            : c.note}
         </p>
         <Link to="/governance-runtime" className="v5-secondary v5-layer" style={{ ['--z' as string]: '10px' }}>
           {t('v4HeroSecondaryCta')} →

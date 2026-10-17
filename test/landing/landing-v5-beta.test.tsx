@@ -24,11 +24,13 @@ describe('Landing v5 + Beta-Testphase', () => {
     expect(q.get('next')?.startsWith('/app/dashboard')).toBe(true);
   });
 
-  it('Hero nutzt v4-Texte (i18n) und v2-Buttons, kein zweites Preis-Schema', () => {
+  it('Hero nutzt H1/CTA aus i18n, v5-Texte und v2-Buttons, kein zweites Preis-Schema', () => {
     const hero = read('src/components/landing/v5/HeroV5.tsx');
-    for (const key of ['v4HeroTitleA', 'v4HeroTitleB', 'v4HeroTitleEm', 'v4HeroLede1', 'v4HeroPrimaryCta']) {
+    for (const key of ['v4HeroTitleA', 'v4HeroTitleB', 'v4HeroTitleEm', 'v4HeroPrimaryCta']) {
       expect(hero).toContain(key);
     }
+    // Lede/Nebentexte kommen aus der v5-Textdatei (DE/EN).
+    expect(hero).toContain('V5_COPY');
     expect(hero).toContain('lv2-btn--gold');
     expect(hero).toContain('planById');
     expect(hero).not.toMatch(/\b(79|249|699)\s?€/);

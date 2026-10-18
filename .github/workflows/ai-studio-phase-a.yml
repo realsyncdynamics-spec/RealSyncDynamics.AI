@@ -1,0 +1,31 @@
+name: AI Studio Phase A
+on:
+  pull_request:
+    paths:
+      - 'src/features/ai-studio/**'
+      - 'test/ai-studio/**'
+      - '.github/workflows/ai-studio-phase-a.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase-a:
+    name: AI Studio unit and full Vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: TypeScript lint
+        run: npm run lint
+      - name: Studio regression tests
+        run: npx vitest run test/ai-studio/playground.test.tsx
+      - name: Full Vitest suite
+        run: npm run test

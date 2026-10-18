@@ -109,9 +109,10 @@ function VoiceSessionsList({ tenantId }: { tenantId: string }) {
     );
   }
 
-  // Kein Fortschritts- oder Zeitversprechen: `apps/agent-runtime` hat keinen
-  // Deploy-Pfad, Telefonie ist nicht angebunden. „Demnächst verfügbar" erst,
-  // wenn es einen belastbaren Freigabeplan gibt.
+  // Kein Fortschritts- oder Zeitversprechen: Die Voice-Runtime ist nicht live
+  // (Deploy-Workflow existiert, bricht aber mangels Repo-Secrets fail-closed ab),
+  // Telefonie ist nicht angebunden. „Demnächst verfügbar" erst, wenn es einen
+  // belastbaren Freigabeplan gibt.
   if (sessions.length === 0) {
     return (
       <div

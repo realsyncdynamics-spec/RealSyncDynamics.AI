@@ -322,7 +322,9 @@ function WebsitesTab() {
               <td className="px-3 py-2.5">
                 <button
                   type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  disabled
+                  title="Beispieldaten — für diese Zeile gibt es keine Detailansicht"
+                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-2 py-0.5 opacity-50 cursor-not-allowed"
                 >
                   Details
                 </button>
@@ -390,7 +392,9 @@ function AiSystemsTab() {
               <td className="px-3 py-2.5">
                 <button
                   type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  disabled
+                  title="Beispieldaten — für diese Zeile gibt es keine Detailansicht"
+                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-2 py-0.5 opacity-50 cursor-not-allowed"
                 >
                   Details
                 </button>
@@ -448,7 +452,9 @@ function DokumenteTab() {
               <td className="px-3 py-2.5">
                 <button
                   type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  disabled
+                  title="Beispieldaten — für diese Zeile gibt es keine Detailansicht"
+                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-2 py-0.5 opacity-50 cursor-not-allowed"
                 >
                   Ansehen
                 </button>
@@ -502,7 +508,9 @@ function RichtlinienTab() {
               <td className="px-3 py-2.5">
                 <button
                   type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  disabled
+                  title="Beispieldaten — für diese Zeile gibt es keine Detailansicht"
+                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-2 py-0.5 opacity-50 cursor-not-allowed"
                 >
                   Prüfen
                 </button>

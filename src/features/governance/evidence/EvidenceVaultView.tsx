@@ -13,7 +13,7 @@ import {
   fetchTenantEvents,
   fetchTenantEvidence,
 } from '../governanceApi';
-import { listTimeline } from '../../evidence-vault/evidenceVaultApi';
+import { exportEvidenceBundle, listTimeline } from '../../evidence-vault/evidenceVaultApi';
 import {
   exportAnalytics,
   triggerBlobDownload,
@@ -36,9 +36,7 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  Package,
   Eye,
-  GitCompare,
   Plus,
   Minus,
   Loader2,
@@ -126,8 +124,11 @@ function EmptyTab({ title, hint }: { title: string; hint: string }) {
 
 interface EvidenceHandlers {
   onExport: (prefix: string, format: ExportFormat, key: string) => void;
+  /** Signiertes Aufsichtsbehörden-Bundle (evidence-vault-export, JSON). */
+  onExportBundle: (key: string) => void;
+  /** Hash-Nachweis eines Snapshots als JSON — genau die Werte der Karte. */
+  onDownloadSnapshot: (snap: Snapshot) => void;
   onViewEvidence: (item: EvidenceItem) => void;
-  onCompare: () => void;
   onShowTimeline: () => void;
   busy: string | null;
 }
@@ -266,23 +267,18 @@ function SnapshotsTab({
           </div>
           <div className="border-t border-titanium-900 px-3 py-2 flex items-center gap-2">
             <button
-              onClick={() => handlers.onExport(`Snapshot-${snap.domain}`, 'pdf', `snap-${snap.id}`)}
-              disabled={handlers.busy === `snap-${snap.id}`}
-              className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1 disabled:opacity-50"
-            >
-              {handlers.busy === `snap-${snap.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}Herunterladen
-            </button>
-            <button
-              onClick={handlers.onCompare}
+              type="button"
+              onClick={() => handlers.onDownloadSnapshot(snap)}
+              title="Hash-Nachweis dieses Snapshots als JSON"
               className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1"
             >
-              <GitCompare className="h-3 w-3" />Vergleichen
+              <Download className="h-3 w-3" />Hash-Nachweis
             </button>
             <button
               onClick={handlers.onShowTimeline}
               className="flex-1 text-[10px] font-mono text-teal-500 hover:text-teal-300 border border-teal-900 hover:border-teal-700 py-1 flex items-center justify-center gap-1"
             >
-              <Eye className="h-3 w-3" />Nachweis
+              <Eye className="h-3 w-3" />Zeitleiste
             </button>
           </div>
         </div>
@@ -441,13 +437,9 @@ function ChangeTrackingTab({
   );
 }
 
-const QUICK_EXPORTS: { label: string; icon: ReactNode; format: ExportFormat }[] = [
-  { label: 'PDF Paket',           icon: <FileText className="h-3.5 w-3.5" />, format: 'pdf' },
-  { label: 'CSV Evidence',        icon: <Activity className="h-3.5 w-3.5" />, format: 'csv' },
-  { label: 'JSON-LD (DSR)',       icon: <Package className="h-3.5 w-3.5" />, format: 'csv' },
-  { label: 'Behörden-Bundle',     icon: <Shield className="h-3.5 w-3.5" />, format: 'pdf' },
-  { label: 'Wirtschaftsprüfer-ZIP', icon: <Download className="h-3.5 w-3.5" />, format: 'pdf' },
-];
+// Nur Exporte, die der Server wirklich erzeugt. Früher liefen „PDF Paket“,
+// „JSON-LD“, „Behörden-Bundle“ und „Wirtschaftsprüfer-ZIP“ alle auf den
+// KPI-Export (PDF = 4-Byte-Stub); der Name auf dem Knopf stimmte nie.
 
 function ExportsTab({ handlers }: { handlers: EvidenceHandlers }) {
   return (
@@ -455,17 +447,26 @@ function ExportsTab({ handlers }: { handlers: EvidenceHandlers }) {
       <div>
         <h3 className="text-[10px] font-mono uppercase tracking-wider text-titanium-500 mb-3">Schnell-Export</h3>
         <div className="flex flex-wrap gap-2">
-          {QUICK_EXPORTS.map((qe) => (
-            <button
-              key={qe.label}
-              onClick={() => handlers.onExport(qe.label, qe.format, `qe-${qe.label}`)}
-              disabled={handlers.busy === `qe-${qe.label}`}
-              className="flex items-center gap-2 border border-titanium-900 hover:border-teal-700 bg-obsidian-900 hover:bg-obsidian-800 px-3 py-2 text-[11px] font-mono text-titanium-300 hover:text-titanium-100 transition-colors disabled:opacity-50"
-            >
-              <span className="text-teal-500">{handlers.busy === `qe-${qe.label}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : qe.icon}</span>
-              {qe.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => handlers.onExportBundle('qe-bundle')}
+            disabled={handlers.busy === 'qe-bundle'}
+            title="Signierte Ereigniskette mit Prüfanleitung (evidence-vault-export) · ab Starter"
+            className="flex items-center gap-2 border border-titanium-900 hover:border-teal-700 bg-obsidian-900 hover:bg-obsidian-800 px-3 py-2 text-[11px] font-mono text-titanium-300 hover:text-titanium-100 transition-colors disabled:opacity-50"
+          >
+            <span className="text-teal-500">{handlers.busy === 'qe-bundle' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5" />}</span>
+            Behörden-Bundle (JSON, signiert)
+          </button>
+          <button
+            type="button"
+            onClick={() => handlers.onExport('KPI-Verlauf', 'csv', 'qe-kpi')}
+            disabled={handlers.busy === 'qe-kpi'}
+            title="Governance-Kennzahlen der letzten 90 Tage · ab Starter"
+            className="flex items-center gap-2 border border-titanium-900 hover:border-teal-700 bg-obsidian-900 hover:bg-obsidian-800 px-3 py-2 text-[11px] font-mono text-titanium-300 hover:text-titanium-100 transition-colors disabled:opacity-50"
+          >
+            <span className="text-teal-500">{handlers.busy === 'qe-kpi' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Activity className="h-3.5 w-3.5" />}</span>
+            KPI-Verlauf (CSV)
+          </button>
         </div>
       </div>
       <EmptyTab
@@ -568,6 +569,28 @@ function _EvidenceVaultView() {
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
+  async function runBundleExport(key: string) {
+    if (!activeTenantId) {
+      showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
+      return;
+    }
+    setBusy(key);
+    try {
+      const r = await exportEvidenceBundle({ tenant_id: activeTenantId });
+      if (r.kind !== 'ok') {
+        showToast(r.kind === 'forbidden' ? 'Kein Zugriff auf diesen Mandanten.' : r.message, 'error');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(blob, `evidence-bundle-${new Date().toISOString().slice(0, 10)}.json`);
+      showToast(`Behörden-Bundle exportiert (${r.data.count} Ereignisse).`);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function runExport(prefix: string, format: ExportFormat, key: string) {
     if (!activeTenantId) {
       showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
@@ -593,11 +616,22 @@ function _EvidenceVaultView() {
   const handlers: EvidenceHandlers = {
     busy,
     onExport: (prefix, format, key) => void runExport(prefix, format, key),
+    onExportBundle: (key) => void runBundleExport(key),
+    onDownloadSnapshot: (snap) => {
+      const blob = new Blob([JSON.stringify({
+        snapshot_id: snap.id,
+        subject_ref: snap.domain,
+        version: snap.version,
+        hash: snap.hash,
+        legal_hold: snap.onHold,
+        exported_at: new Date().toISOString(),
+      }, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(blob, `snapshot-${snap.domain.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-v${snap.version}.json`);
+    },
     onViewEvidence: (item) => {
       if (item.eventId) navigate(`/app/events/${item.eventId}`);
       else showToast('Dieser Nachweis hat kein hinterlegtes Ereignis.', 'error');
     },
-    onCompare: () => setActiveTab('changes'),
     onShowTimeline: () => setActiveTab('timeline'),
   };
 
@@ -621,7 +655,7 @@ function _EvidenceVaultView() {
             </p>
           </div>
           <button
-            onClick={() => runExport('Evidence-Vault', 'csv', 'hdr-export')}
+            onClick={() => void runBundleExport('hdr-export')}
             disabled={busy === 'hdr-export'}
             className="flex items-center gap-2 border border-[#00B8D4]/40 hover:border-[#00B8D4] bg-[#00B8D4]/10 hover:bg-[#00B8D4]/15 px-3 py-1.5 text-[11px] font-mono text-[#00B8D4] transition-colors disabled:opacity-50"
           >

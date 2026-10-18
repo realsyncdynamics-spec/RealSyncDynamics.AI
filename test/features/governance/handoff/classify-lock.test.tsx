@@ -115,6 +115,15 @@ function renderAt(path: string) {
   );
 }
 
+// Der Mount-Effekt (setTier(storedTier)) kann unter Last nach dem ersten Klick
+// laufen; wie in ai-system-detail-route.test.tsx klicken, bis die Wahl steht.
+async function pickTier(name: RegExp) {
+  await waitFor(() => {
+    fireEvent.click(screen.getByRole('button', { name }));
+    expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
+  });
+}
+
 describe('Klassifizierung — Speichern über classify_asset', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -166,7 +175,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    await pickTier(/Hoch/);
     fireEvent.click(screen.getByTestId('classify-save'));
     await waitFor(() => expect(api.saveAssetClassification).toHaveBeenCalledTimes(1));
     expect(api.saveAssetClassification).toHaveBeenCalledWith({
@@ -184,7 +193,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     );
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    await pickTier(/Hoch/);
     fireEvent.click(screen.getByTestId('classify-save'));
     await waitFor(() => expect(screen.getByRole('button', { name: /Minimal/ })).toBeDisabled());
     expect(screen.getByRole('combobox', { name: 'Annex III' })).toBeDisabled();

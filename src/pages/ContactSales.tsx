@@ -35,6 +35,11 @@ function isFoundingIntent(source: string, intent: string | null): boolean {
   return /\bfounding\b/.test(hay);
 }
 
+/** Individuelles Webdesign (Frontend-Service) — persönlich, kein Enterprise-/Founding-Funnel. */
+function isWebdesignIntent(intent: string | null): boolean {
+  return (intent ?? '').toLowerCase() === 'webdesign';
+}
+
 function planBadgeLabel(key: PlanKey): string {
   const plan = planByKey(key);
   if (!plan) return key;
@@ -107,6 +112,9 @@ export function ContactSales() {
     if (i === 'policy-customization') {
       setForm((prev) => ({ ...prev, use_case: 'compliance' }));
     }
+    if (isWebdesignIntent(i)) {
+      setForm((prev) => ({ ...prev, use_case: 'webdesign' }));
+    }
 
     const fromIntent = defaultInquiryPlanFromIntent(i);
     const resolved = fromQuery ?? fromIntent;
@@ -121,7 +129,8 @@ export function ContactSales() {
 
   const inquiryPlan = isInquiryPlanKey(planKey);
   const isInquiry = inquirySignal || inquiryPlan;
-  const showFoundingCopy = !isInquiry || isFoundingIntent(inboundSource ?? '', intent);
+  const isWebdesign = !isInquiry && isWebdesignIntent(intent);
+  const showFoundingCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
   const showPlanBadge = isInquiry && planKey !== null;
 
   function handleChange(field: keyof FormState) {
@@ -200,12 +209,25 @@ export function ContactSales() {
       <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
-          <p className="text-sm text-titanium-300 leading-relaxed mb-5">
-            Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
-            automatisiert per E-Mail. Die Architektur ist parallel transparent
-            dokumentiert.
-          </p>
+          {isWebdesign ? (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — Ihre Projektanfrage ist da.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Dominik Steiner sieht sich Ihr Vorhaben persönlich an und meldet
+                sich per E-Mail – mit Rückfragen oder einem Vorschlag für das
+                Erstgespräch.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
+                automatisiert per E-Mail. Die Architektur ist parallel transparent
+                dokumentiert.
+              </p>
+            </>
+          )}
           <div className="flex flex-col gap-2">
             <Link to="/legal/sub-processors"
               className="text-sm text-security-400 hover:underline">→ Sub-Prozessoren</Link>
@@ -216,20 +238,28 @@ export function ContactSales() {
     );
   }
 
-  const headerTitle = showFoundingCopy
-    ? 'Founding Access / Kontakt'
-    : 'Enterprise / Partner Anfrage';
-  const headerSub = showFoundingCopy
-    ? 'AI Agent antwortet sofort'
-    : 'Vertrieb prüft die Anfrage';
+  const headerTitle = isWebdesign
+    ? 'Website-Projekt anfragen'
+    : showFoundingCopy
+      ? 'Founding Access / Kontakt'
+      : 'Enterprise / Partner Anfrage';
+  const headerSub = isWebdesign
+    ? 'Persönlich mit Dominik Steiner'
+    : showFoundingCopy
+      ? 'AI Agent antwortet sofort'
+      : 'Vertrieb prüft die Anfrage';
 
-  const headline = showFoundingCopy
+  const headline = isWebdesign
+    ? 'Ihre Website individuell gestalten'
+    : showFoundingCopy
     ? (planKey
       ? `${planBadgeLabel(planKey)} — Founding Access`
       : 'Founding Access anfragen')
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
-  const intro = showFoundingCopy
+  const intro = isWebdesign
+    ? 'Beschreiben Sie kurz Ihr Unternehmen und was Ihre Website leisten soll – neu oder Relaunch. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen oder einem Termin für das Erstgespräch. Ein Festangebot erhalten Sie nach dieser Prüfung.'
+    : showFoundingCopy
     ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
@@ -319,6 +349,7 @@ export function ContactSales() {
             <select value={form.use_case} onChange={handleChange('use_case')}
               className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500">
               <option value="">— bitte wählen —</option>
+              <option value="webdesign">Website / Landingpage individuell gestalten</option>
               <option value="compliance">DSGVO / Compliance / Audit-Pflicht</option>
               <option value="legal">Anwaltskanzlei / Mandantengeheimnis</option>
               <option value="health">HealthTech / Patientendaten</option>

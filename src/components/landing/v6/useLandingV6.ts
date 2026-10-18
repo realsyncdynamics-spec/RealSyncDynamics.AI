@@ -40,44 +40,12 @@ const RISK: Record<RiskId, [string, string]> = {
   min: ['Minimal', '#10B981'],
 };
 
-const STAGES = [
-  { n: '01', k: 'PRÜFEN', t: 'Scan', d: 'Website, Cookies, Tracker und KI-Einbindung erfassen.', preview: false },
-  { n: '02', k: 'EINORDNEN', t: 'Einordnen', d: 'Risiken mit Paragraphenbezug klar benennen.', preview: false },
-  { n: '03', k: 'HANDELN', t: 'Beheben', d: 'Konkrete Schritte, was Sie ändern müssen.', preview: false },
-  { n: '04', k: 'NACHWEISEN', t: 'Dokumentieren', d: 'Alles dokumentieren, damit Sie es vorlegen können.', preview: false },
-  // SSoT: dauerhafte Domain-Überwachung ist „Coming Soon" → als Preview kennzeichnen.
-  { n: '05', k: 'BEOBACHTEN', t: 'Monitoring', d: 'Laufend prüfen, wenn sich etwas ändert.', preview: true },
-  { n: '06', k: 'AUSWERTEN', t: 'Berichten', d: 'Klare Übersicht für Sie, den Datenschutzbeauftragten oder den Prüfer.', preview: false },
-];
 const AGENT_NO = [
   'seine eigene Identität bestimmen',
   'seinen Tenant wählen',
   'Policies außer Kraft setzen',
   'eigene kritische Aktionen genehmigen',
 ];
-// Beispielwerte — im UI ausdrücklich als „Demo-Daten" gekennzeichnet.
-const KPIS = [
-  { l: 'Aktive KI-Systeme', v: '12' },
-  { l: 'Policy-Entscheidungen · 7 Tage', v: '184' },
-  { l: 'Offene Freigaben', v: '3', c: 'var(--rs-acc)' },
-  { l: 'Blockierte Ausführungen', v: '2', c: '#E5484D' },
-  { l: 'Evidence-Einträge', v: '1.248' },
-];
-type Decision = 'allow' | 'warn' | 'block' | 'require_approval' | 'log_only';
-const DECISIONS: { t: string; agent: string; action: string; r: Decision }[] = [
-  { t: '09:41:12', agent: 'finance-agent', action: 'payment.create', r: 'require_approval' },
-  { t: '09:40:57', agent: 'support-agent', action: 'model.invoke · external', r: 'block' },
-  { t: '09:40:31', agent: 'code-assistant', action: 'repo.pr.describe', r: 'allow' },
-  { t: '09:39:48', agent: 'marketing-flow', action: 'content.publish', r: 'warn' },
-  { t: '09:39:02', agent: 'chat-assistant', action: 'model.invoke · eu-local', r: 'log_only' },
-];
-const DEC_C: Record<Decision, string> = {
-  allow: '#10B981',
-  warn: '#F5A524',
-  block: '#E5484D',
-  require_approval: 'var(--rs-acc)',
-  log_only: 'var(--rs-fg3)',
-};
 const CHAIN = [
   { n: '48213', time: '14:02:11 UTC', event: 'Modell-Freigabe · credit-scoring-v3', hash: 'a3f9…c41e', prev: '7b20…9d05', last: false },
   { n: '48214', time: '14:02:13 UTC', event: 'Policy PII-Filter angewendet', hash: 'e81c…02ab', prev: 'a3f9…c41e', last: false },
@@ -154,11 +122,12 @@ const EMPTY_AUDIT: AuditState = { company: '', industry: '', size: '', role: '',
 export function useLandingV6() {
   const navigate = useNavigate();
   const { setMode } = useLandingMode();
-  // Wie v5: dunkel/Gold als Start, erst eine gespeicherte Wahl ändert das
-  // (eigener State, weil `mode` ohne Speicherwert dem OS folgt).
+  // Dunkel als Start, erst eine gespeicherte Wahl ändert das (eigener State,
+  // weil `mode` ohne Speicherwert dem OS folgt). Akzent seit der KMU-Phase 1
+  // fest Cyan (#22D3EE); ein früher gespeichertes „gold“ zählt als dunkel.
   const [stored, setStored] = useState<LandingMode | null>(() => (typeof window === 'undefined' ? null : readStored()));
   const theme: 'dark' | 'light' = stored === 'light' ? 'light' : 'dark';
-  const accent: 'gold' | 'cyan' = stored === 'cyan' ? 'cyan' : 'gold';
+  const accent = 'cyan' as const;
 
   const [vw, setVw] = useState<number>(() => (typeof window === 'undefined' ? 1400 : window.innerWidth));
   const [scrolled, setScrolled] = useState(false);
@@ -203,7 +172,7 @@ export function useLandingV6() {
   // ---- Styles aus dem Design (dynamisch, daher hier statt CSS)
   const pill = (active: boolean): CSSProperties =>
     active
-      ? { display: 'flex', padding: '6px', borderRadius: '9999px', background: 'var(--rs-acc)', color: '#FFFDF6', transition: 'all 200ms' }
+      ? { display: 'flex', padding: '6px', borderRadius: '9999px', background: 'var(--rs-acc)', color: 'var(--rs-on-acc)', transition: 'all 200ms' }
       : { display: 'flex', padding: '6px', borderRadius: '9999px', opacity: 0.6, transition: 'all 200ms' };
   const seg = (active: boolean): CSSProperties => ({
     padding: '8px 16px',
@@ -212,7 +181,7 @@ export function useLandingV6() {
     cursor: 'pointer',
     fontSize: 'var(--fs-small)',
     background: active ? 'var(--rs-acc)' : 'transparent',
-    color: active ? '#FFFDF6' : 'var(--rs-fg2)',
+    color: active ? 'var(--rs-on-acc)' : 'var(--rs-fg2)',
     transition: 'all 200ms cubic-bezier(.2,.8,.2,1)',
     whiteSpace: 'nowrap',
   });
@@ -241,7 +210,7 @@ export function useLandingV6() {
     justifyContent: 'center',
     border: active ? '1px solid var(--rs-acc)' : '1px solid var(--rs-chip-b)',
     background: active ? 'var(--rs-acc)' : 'transparent',
-    color: active ? '#FFFDF6' : 'transparent',
+    color: active ? 'var(--rs-on-acc)' : 'transparent',
   });
   const badge = (r: RiskId): CSSProperties => ({
     flex: 'none',
@@ -263,7 +232,7 @@ export function useLandingV6() {
     borderRadius: '8px',
     border: '1px solid var(--rs-acc)',
     background: 'var(--rs-btn)',
-    color: '#FFFDF6',
+    color: 'var(--rs-on-acc)',
     fontSize: '15px',
     cursor: 'pointer',
     boxShadow: '0 0 18px var(--rs-glow)',
@@ -367,7 +336,7 @@ export function useLandingV6() {
           : planHref(plan, useYearly ? 'year' : 'month', SOURCE),
         cardStyle: featured ? { ...card, border: '2px solid var(--rs-acc)', boxShadow: '0 0 28px var(--rs-glow)' } : card,
         btnStyle: featured
-          ? { ...cardBtn, border: '1px solid var(--rs-acc)', background: 'var(--rs-btn)', color: '#FFFDF6' }
+          ? { ...cardBtn, border: '1px solid var(--rs-acc)', background: 'var(--rs-btn)', color: 'var(--rs-on-acc)' }
           : cardBtn,
       };
     });
@@ -479,7 +448,7 @@ export function useLandingV6() {
       fontSize: '11px',
       fontWeight: 600,
       background: i <= auditStep ? 'var(--rs-acc)' : 'var(--rs-chip)',
-      color: i <= auditStep ? '#FFFDF6' : 'var(--rs-fg3)',
+      color: i <= auditStep ? 'var(--rs-on-acc)' : 'var(--rs-fg3)',
     } as CSSProperties,
   }));
   const panelStyle: CSSProperties = mobile
@@ -524,7 +493,7 @@ export function useLandingV6() {
         on,
         pick: () => setCheck((s) => ({ ...s, [i]: value })),
         style: on
-          ? { ...pillBase, border: '1px solid var(--rs-acc)', background: 'var(--rs-acc)', color: '#FFFDF6' }
+          ? { ...pillBase, border: '1px solid var(--rs-acc)', background: 'var(--rs-acc)', color: 'var(--rs-on-acc)' }
           : { ...pillBase, border: '1px solid var(--rs-chip-b)', background: 'var(--rs-chip)', color: 'var(--rs-fg)' },
       };
     }),
@@ -540,10 +509,10 @@ export function useLandingV6() {
   const tone = score >= 7 ? '#10B981' : score >= 4 ? '#F5A524' : '#E5484D';
 
   const toggleTheme = useCallback(() => {
-    const nextMode: LandingMode = theme === 'dark' ? 'light' : accent === 'cyan' ? 'cyan' : 'gold';
+    const nextMode: LandingMode = theme === 'dark' ? 'light' : 'cyan';
     setStored(nextMode);
     setMode(nextMode);
-  }, [setMode, theme, accent]);
+  }, [setMode, theme]);
 
   const goPricing = () => {
     const el = document.getElementById('preise');
@@ -562,27 +531,15 @@ export function useLandingV6() {
       auditCheck: `/audit?source=${SOURCE}-check`,
       login: '/login',
       dashboard: '/app/dashboard',
+      register: `/welcome?source=${SOURCE}-journey`,
+      webdesign: '/kontakt',
       enterprise: ENTERPRISE_HREF,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
       betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },
     goPricing,
-    stages: STAGES,
     agentNo: AGENT_NO,
     gateChecks: ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'],
-    crKpis: KPIS.map((k) => ({
-      ...k,
-      style: {
-        fontFamily: "'Source Serif 4',Georgia,serif",
-        fontSize: 'clamp(36px,2.6vw,80px)',
-        lineHeight: 1,
-        color: k.c || 'var(--rs-fg)',
-      } as CSSProperties,
-    })),
-    decisions: DECISIONS.map((d) => ({
-      ...d,
-      style: { padding: '4px 10px', borderRadius: '4px', border: '1px solid ' + DEC_C[d.r], color: DEC_C[d.r], whiteSpace: 'nowrap' } as CSSProperties,
-    })),
     chain: CHAIN.map((b) => ({
       ...b,
       link: !b.last,
@@ -605,8 +562,10 @@ export function useLandingV6() {
     checkLevel: lvl[0],
     checkText: lvl[1],
     checkBar: { width: (score / 8) * 100 + '%', height: '100%', background: tone, transition: 'width 320ms cubic-bezier(.2,.8,.2,1)' } as CSSProperties,
-    showLinks: vw >= 1180,
-    showBurger: vw < 1180,
+    // Fünf Ankerlinks + Login + CTA brauchen mehr Breite als die frühere Vierer-Navigation.
+    showLinks: vw >= 1280,
+    showBurger: vw < 1280,
+    compactCta: vw < 520,
     // Karte bleibt Bühne, konkurriert aber nicht mit Headline und CTA.
     mapOpacity: vw >= 760 ? 0.82 : 0.5,
     showSticky: scrolled && !modal,

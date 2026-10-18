@@ -275,13 +275,13 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    title: 'Datenschutz & KI-Risiken für KMU verstehen – kostenloser Website-Check | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'Für kleine und mittlere Unternehmen: Risiken auf Ihrer Website und beim KI-Einsatz erkennen, verständlich einordnen und Maßnahmen dokumentieren. Kostenloser Website-Check ohne Konto.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'KI und Datenschutz verstehen. Risiken erkennen. Maßnahmen nachweisen.',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'RealSyncDynamics.AI hilft KMU, Datenschutz- und KI-Risiken zu erkennen, Maßnahmen zu organisieren und Ergebnisse nachvollziehbar zu dokumentieren – Datenhaltung in Frankfurt.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {

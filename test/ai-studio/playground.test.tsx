@@ -94,6 +94,31 @@ describe('AI Studio Playground / Gateway contract', () => {
     expect(screen.getByText(/Schreibe eine Nachricht/)).toBeInTheDocument();
   });
 
+  it('discards a delayed response when the signed-in account changes', async () => {
+    const response = deferred<{ data: { ok: true; output: string }; error: null }>();
+    state.invoke.mockReturnValue(response.promise);
+    const view = mount();
+    send('Private Anfrage');
+    state.session = { user: { id: 'user-b' }, access_token: 'different-token' };
+    state.getSession.mockResolvedValue({ data: { session: state.session } });
+    view.rerender(<MemoryRouter><AiStudioPlayground /></MemoryRouter>);
+    await waitFor(() => expect(screen.queryByText('Private Anfrage')).toBeNull());
+    response.resolve({ data: { ok: true, output: 'Antwort von user-a' }, error: null });
+    await waitFor(() => expect(screen.queryByText('Antwort von user-a')).toBeNull());
+  });
+
+  it('does not show a delayed gateway error after a tenant switch', async () => {
+    const response = deferred<{ data: null; error: Error }>();
+    state.invoke.mockReturnValue(response.promise);
+    const view = mount();
+    send('Vor Wechsel');
+    state.tenant = 'tenant-b';
+    view.rerender(<MemoryRouter><AiStudioPlayground /></MemoryRouter>);
+    await waitFor(() => expect(screen.queryByText('Vor Wechsel')).toBeNull());
+    response.resolve({ data: null, error: new Error('Alter Mandant: Fehler') });
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  });
+
   it('does not send a request when the user is signed out', () => {
     state.session = null;
     mount();

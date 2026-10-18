@@ -120,9 +120,16 @@ function VoiceSessionsList({ tenantId }: { tenantId: string }) {
         data-testid="voice-sessions-empty"
       >
         <Mic className="h-8 w-8 mx-auto text-titanium-600 mb-3" aria-hidden />
-        <p className="text-sm text-titanium-200">Sprachfunktionen sind derzeit nicht nutzbar.</p>
+        <p className="text-sm text-titanium-200">Voice Agent · Geplant</p>
         <p className="mt-2 text-xs text-titanium-500 max-w-md mx-auto leading-relaxed">
-          Sobald das Modul freigegeben ist, können Sie hier Ihre Voice-Sessions einsehen.
+          Die Sprachintegration ist in Vorbereitung. Sobald der Voice Agent aktiv ist,
+          erscheinen Ihre Gespräche hier mit vollständigem Prüfpfad.
+        </p>
+        <p
+          className="mt-4 inline-block border border-amber-800/60 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-300"
+          data-testid="voice-status-preparing"
+        >
+          Status: In Vorbereitung
         </p>
       </div>
     );

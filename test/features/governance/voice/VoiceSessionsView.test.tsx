@@ -48,11 +48,12 @@ describe('VoiceSessionsView', () => {
     listMock.mockResolvedValueOnce([]);
     renderView();
     await waitFor(() => expect(screen.getByTestId('voice-sessions-empty')).toBeInTheDocument());
-    expect(screen.getByText('Sprachfunktionen sind derzeit nicht nutzbar.')).toBeInTheDocument();
+    expect(screen.getByText('Voice Agent · Geplant')).toBeInTheDocument();
+    expect(screen.getByTestId('voice-status-preparing')).toHaveTextContent('Status: In Vorbereitung');
     expect(screen.getByTestId('voice-module-status').textContent).toBe('Geplant');
+    // Keine internen Entwicklerhinweise und kein Zeitversprechen im Kunden-Empty-State.
     const empty = screen.getByTestId('voice-sessions-empty');
-    // Kein Repo-Pfad und kein Zeitversprechen in Kundensicht.
-    expect(empty.textContent).not.toMatch(/apps\/agent-runtime/);
+    expect(empty.textContent).not.toMatch(/agent-runtime|Deploy-Pfad|nicht angebunden/);
     expect(empty.textContent).not.toMatch(/in Kürze|demnächst|finalen Integration/i);
   });
 
@@ -62,7 +63,7 @@ describe('VoiceSessionsView', () => {
     await waitFor(() => expect(screen.getByTestId('voice-sessions-error')).toBeInTheDocument());
     expect(screen.getByText(/konnten nicht geladen werden/i)).toBeInTheDocument();
     expect(screen.queryByTestId('voice-sessions-list')).toBeNull();
-    expect(screen.queryByText('Sprachfunktionen sind derzeit nicht nutzbar.')).toBeNull();
+    expect(screen.queryByTestId('voice-sessions-empty')).toBeNull();
   });
 
   it('fetcht nicht ohne Tenant und zeigt Hinweis', async () => {

@@ -99,7 +99,7 @@ export function Features() {
               title="Konversations-Bots (ab Growth)"
               wide
               bullets={[
-                'Eigene Bots für Chat, Telefonie (Voice), Telegram & WhatsApp — im Bot-Builder selbst konfiguriert',
+                'Eigene Bots für Chat, Telegram & WhatsApp — im Bot-Builder selbst konfiguriert; Telefonie (Voice) geplant',
                 'Fähigkeiten zuschaltbar: Terminbuchung und Bestellannahme',
                 'Persona, Begrüßung und Kanal pro Bot; Einbindung per Web-Endpoint bzw. Twilio-Webhook',
                 'Jede Antwort DSGVO-konform gedeckelt, mandantengetrennt (RLS) und mit Prüfpfad geloggt',

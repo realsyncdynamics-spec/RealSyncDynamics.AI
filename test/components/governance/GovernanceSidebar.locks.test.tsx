@@ -55,12 +55,12 @@ describe('GovernanceSidebar — Free-Mandant', () => {
     expect(screen.getByTestId('side-badge-evidence')).toHaveTextContent('1');
   });
 
-  it('Tooltip nennt den Mindestplan bzw. ehrlich „noch nicht verfügbar“', () => {
+  it('Tooltip nennt den Mindestplan bzw. „in Vorbereitung“', () => {
     renderSidebar();
     expect(screen.getByTestId('side-nav-enforce')).toHaveAttribute('title', expect.stringMatching(/ab Starter/));
     expect(screen.getByTestId('side-nav-classify')).toHaveAttribute(
       'title',
-      expect.stringMatching(/noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei/),
+      expect.stringMatching(/in Vorbereitung und noch in keinem Plan enthalten/),
     );
   });
 
@@ -95,7 +95,7 @@ describe('Mobile Navigation — gleiche Schlösser wie die Seitenleiste', () => 
     expect(screen.getByRole('link', { name: /Enforcement/ })).toHaveAttribute('title', expect.stringMatching(/ab Starter/));
     expect(screen.getByRole('link', { name: /Klassifizierung/ })).toHaveAttribute(
       'title',
-      expect.stringMatching(/noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei/),
+      expect.stringMatching(/in Vorbereitung und noch in keinem Plan enthalten/),
     );
     expect(screen.getByRole('link', { name: /^KI-Systeme$/ })).not.toHaveAttribute('title');
   });

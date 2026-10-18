@@ -14,7 +14,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const tenant = vi.hoisted(() => ({ role: 'owner' as string }));
-const resources = vi.hoisted(() => ({ createAsset: vi.fn(), updateAsset: vi.fn(), classifyAsset: vi.fn() }));
+const resources = vi.hoisted(() => ({ createAsset: vi.fn(), updateAsset: vi.fn(), saveAssetClassification: vi.fn() }));
 
 vi.mock('@/src/core/access/TenantProvider', () => ({
   useTenant: () => ({

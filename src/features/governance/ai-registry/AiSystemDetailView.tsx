@@ -21,7 +21,7 @@ import { ArrowRight, FileDown, Lock, Pencil, Save } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { decideNavLock } from '../../../components/governance-os/navAccess';
 import { fetchAssetEvidenceStats, fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
-import { classifyAsset } from '../resourcesApi';
+import { saveAssetClassification } from '../resourcesApi';
 import { notifyTenantDataChanged } from '../tenantDataEvents';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import {
@@ -182,7 +182,7 @@ function ClassificationDetail({
     if (saving || !dirty || classifyLocked) return;
     setSaving(true);
     setSaveError(null);
-    const result = await classifyAsset({
+    const result = await saveAssetClassification({
       asset_id: asset.id,
       ai_act_class: tier ? tierDefinition(tier).dbValue : 'unknown',
       annex_iii_category: annex,

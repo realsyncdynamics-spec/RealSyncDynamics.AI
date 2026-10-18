@@ -90,10 +90,10 @@ vi.mock('@/src/features/governance/gatesApi', () => ({
   ]),
 }));
 const api = vi.hoisted(() => ({
-  classifyAsset: vi.fn(async () => ({ ok: true })),
+  saveAssetClassification: vi.fn(async () => ({ ok: true })),
 }));
 vi.mock('@/src/features/governance/resourcesApi', () => ({
-  classifyAsset: api.classifyAsset,
+  saveAssetClassification: api.saveAssetClassification,
   createAsset: vi.fn(),
   updateAsset: vi.fn(),
 }));
@@ -119,7 +119,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
   beforeEach(() => {
     window.localStorage.clear();
     resetLangForTests();
-    api.classifyAsset.mockClear();
+    api.saveAssetClassification.mockClear();
   });
 
   it('Mitglied ohne owner/admin: Eingaben gesperrt, kein Speichern', async () => {
@@ -152,8 +152,8 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     expect(save).not.toBeDisabled();
 
     fireEvent.click(save);
-    await waitFor(() => expect(api.classifyAsset).toHaveBeenCalledTimes(1));
-    expect(api.classifyAsset).toHaveBeenCalledWith({
+    await waitFor(() => expect(api.saveAssetClassification).toHaveBeenCalledTimes(1));
+    expect(api.saveAssetClassification).toHaveBeenCalledWith({
       asset_id: 'a1',
       ai_act_class: 'high',
       annex_iii_category: 'employment',
@@ -163,7 +163,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
 
   it('Serverfehler wird angezeigt, Entwurf bleibt', async () => {
     ent.role = 'admin';
-    api.classifyAsset.mockResolvedValueOnce({ ok: false, error: { code: 'FORBIDDEN', message: 'must be owner or admin' } } as never);
+    api.saveAssetClassification.mockResolvedValueOnce({ ok: false, error: { code: 'FORBIDDEN', message: 'must be owner or admin' } } as never);
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Minimal/ }));

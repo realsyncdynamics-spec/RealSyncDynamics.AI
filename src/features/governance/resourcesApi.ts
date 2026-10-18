@@ -116,7 +116,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 
 export const createAsset  = (input: CreateAssetInput)  => call<AssetResult>({ op: 'create_asset', ...input });
 export const updateAsset  = (input: UpdateAssetInput)  => call<AssetResult>({ op: 'update_asset', ...input });
-export const classifyAsset = (input: ClassifyAssetInput) => call<AssetResult>({ op: 'classify_asset', ...input });
+export const saveAssetClassification = (input: ClassifyAssetInput) => call<AssetResult>({ op: 'classify_asset', ...input });
 export const archiveAsset = (asset_id: string)         => call<BareResult>({ op: 'archive_asset', asset_id });
 export const createPolicy = (input: CreatePolicyInput) => call<PolicyResult>({ op: 'create_policy', ...input });
 export const togglePolicy = (policy_id: string, enabled: boolean) =>

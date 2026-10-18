@@ -28,5 +28,7 @@ jobs:
         run: npm run lint
       - name: Studio regression tests
         run: npx vitest run test/ai-studio/playground.test.tsx
+      - name: Gateway auth and tenant contract tests
+        run: npx vitest run test/edge/ai-gateway-auth.test.ts
       - name: Full Vitest suite
         run: npm run test

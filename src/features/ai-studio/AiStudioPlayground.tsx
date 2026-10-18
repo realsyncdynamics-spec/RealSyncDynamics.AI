@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -32,6 +32,7 @@ function responseText(value: GatewayResult): string | null {
 export default function AiStudioPlayground() {
   const { session } = useSupabaseAuth();
   const tenant = useTenant();
+  const requestEpoch = useRef(0);
   const [profile, setProfile] = useState<ModelProfile>('fast-local');
   const [instruction, setInstruction] = useState('');
   const [prompt, setPrompt] = useState('');
@@ -41,6 +42,8 @@ export default function AiStudioPlayground() {
   const [meta, setMeta] = useState('');
   // Invalidate displayed messages when the account or tenant changes.
   useEffect(() => {
+    requestEpoch.current += 1;
+    setBusy(false);
     setTurns([]);
     setPrompt('');
     setError('');
@@ -54,6 +57,7 @@ export default function AiStudioPlayground() {
     if (!input || !tenantId || !session?.access_token || busy) return;
     setError('');
     setBusy(true);
+    const epoch = ++requestEpoch.current;
     setPrompt('');
     const previous = turns;
     setTurns([...previous, { role: 'user', text: input }]);
@@ -80,13 +84,13 @@ export default function AiStudioPlayground() {
       if (answer === null) throw new Error('KI-Gateway hat keine lesbare Textantwort geliefert.');
       // Guard stale responses after tenant/account navigation.
       const current = await getSupabase().auth.getSession();
-      if (current.data.session?.user.id !== session.user.id) return;
+      if (epoch !== requestEpoch.current || current.data.session?.user.id !== session.user.id) return;
       setTurns((value) => [...value, { role: 'assistant', text: answer }]);
       setMeta([data.provider, data.model, data.trace_id && `Trace ${data.trace_id}`, data.usage?.total_tokens != null && `${data.usage.total_tokens} Tokens`].filter(Boolean).join(' · '));
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Unbekannter Gateway-Fehler');
+      if (epoch === requestEpoch.current) setError(failure instanceof Error ? failure.message : 'Unbekannter Gateway-Fehler');
     } finally {
-      setBusy(false);
+      if (epoch === requestEpoch.current) setBusy(false);
     }
   };
 

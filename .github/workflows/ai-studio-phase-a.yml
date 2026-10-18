@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/features/ai-studio/**'
       - 'test/ai-studio/**'
+      - 'test/edge/ai-gateway-auth.test.ts'
       - '.github/workflows/ai-studio-phase-a.yml'
   workflow_dispatch:
 

@@ -4,7 +4,7 @@
  * Kein Demo-Fallback: ohne Login leer, nach Login nur Mandanten-Daten.
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   countTenantEvidence,
@@ -112,12 +112,24 @@ function C2paBadge() {
   );
 }
 
-function EmptyTab({ title, hint }: { title: string; hint: string }) {
+function EmptyTab({
+  title, hint, lead, action,
+}: { title: string; hint: string; lead?: string; action?: { label: string; href: string } }) {
   return (
     <div className="py-16 flex flex-col items-center gap-2 text-center px-6" data-testid="evidence-vault-empty">
       <FileText className="h-7 w-7 text-titanium-700" />
       <p className="text-sm text-titanium-200">{title}</p>
+      {lead && <p className="text-sm text-titanium-400 max-w-md">{lead}</p>}
       <p className="text-[11px] font-mono text-titanium-500 max-w-md">{hint}</p>
+      {action && (
+        <Link
+          to={action.href}
+          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4]"
+          data-testid="evidence-vault-empty-cta"
+        >
+          {action.label}
+        </Link>
+      )}
     </div>
   );
 }
@@ -163,8 +175,10 @@ function TimelineTab({
   if (items.length === 0) {
     return (
       <EmptyTab
-        title="Noch keine Nachweise"
+        title="Noch keine Nachweise vorhanden"
+        lead="Sobald Sie ein KI-System registrieren, protokolliert Governance OS Anlage, Einstufung und Änderungen automatisch als Nachweis."
         hint="Die Timeline zeigt nur Herkunftsnachweise dieses Mandanten. Keine Demo-Daten und keine Fake-Scores — 0 ist ein gültiger leerer Stand."
+        action={{ label: 'Nachweise erzeugen', href: '/app/onboarding' }}
       />
     );
   }

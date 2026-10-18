@@ -1,40 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import {
-  ArrowLeft, ArrowRight, Bot, ShieldCheck, KeyRound, Check,
-  AlertTriangle, Loader2, Copy, ShieldAlert, Rocket, Building2,
+  ArrowLeft, ArrowRight, Check, ChevronDown, Circle, Download, Loader2, ShieldCheck,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
-import { createAsset, createPolicy } from './resourcesApi';
-import { createIngestKey } from './keysApi';
-import type {
-  GovernanceAssetType, AiActClass,
-  GovernancePolicyType, GovernancePolicyAction, GovernanceRiskLevel,
-} from './types';
+import { autoMapAsset, createAsset, saveAssetClassification } from './resourcesApi';
+import { fetchAssetEvidenceStats, type DbGovernanceAsset } from './governanceApi';
+import { downloadConformityDossier } from '../../lib/ai-act/conformityDossier';
+import {
+  obligationsFor,
+  runFirstAudit,
+  suggestClassification,
+  TIER_LABEL,
+  TIER_SUMMARY,
+  USE_CASE_EXAMPLES,
+  type ClassificationSuggestion,
+  type FirstAuditResult,
+  type SuggestedTier,
+} from './onboarding/firstAuditModel';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import { RegistryWriteNotice, useCanEditRegistry } from './ai-registry/RegistryWriteAccess';
+import './onboarding/first-audit.css';
 
 /**
- * /governance/onboarding — first-time wizard, sprachlich deckungsgleich mit
- * der Marketing-Seite /ki-governance-in-5-schritten:
+ * /app/onboarding — Compliance-Assistent statt SaaS-Wizard: in wenigen
+ * Minuten vom ersten KI-System zum ersten Audit.
  *
- *   1. Unternehmen verstehen  — Überblick (Tenant + was folgt), speichert nichts
- *   2. KI-Register aufbauen   — erstes governed System (Asset)
- *   3. Governance-Regeln      — optionale erste Policy (Default: PII nicht an
- *                               externe LLMs)
- *   4. Nachweise erzeugen     — erster rsd_gov_… Ingest-Token (einmalige
- *                               Anzeige); ab hier landet jedes Ereignis im
- *                               Audit-Log
- *   5. KI sicher betreiben    — Zusammenfassung, Extension, erster Event
+ *   1. Anlegen        — Name + Einsatzzweck → create_asset (Klasse unbekannt)
+ *   2. Klassifizieren — Ersteinordnung nach EU AI Act, anpassbar; „Nachweise
+ *                       erzeugen“ speichert sie über classify_asset (später
+ *                       im KI-Register jederzeit änderbar)
+ *   3. Dokumentieren  — Kontrollen aus der Klasse ableiten (auto_map),
+ *                       Annex-IV-Dossier als Download
+ *   4. Auditieren     — Prüfpunkte aus echten Feldern + Nachweisen
+ *   → Erfolgsmeldung mit nächsten Schritten
  *
- * Schritte 2–4 nutzen dieselben Edge Functions wie die CRUD-Oberflächen,
- * Onboarding-Artefakte sind also vollwertig. Ohne owner/admin ist der
- * Assistent nur zum Ansehen: Hinweis ab Schritt 1, Anlegen gesperrt — der
- * Server lehnt create_asset ohnehin ab.
+ * Entscheidungen liegen in onboarding/firstAuditModel.ts (ohne React testbar).
+ * Ingest-Keys und Policies bleiben unter /app/keys und /app/policies.
+ *
+ * Ohne owner/admin ist der Assistent nur zum Ansehen: Hinweis ab Schritt 1,
+ * Registrieren gesperrt — der Server lehnt create_asset ohnehin ab.
  */
 function _OnboardingView() {
-  return <AuthGate>{() => <Inner />}</AuthGate>;
+  return <AuthGate>{(session) => <Inner session={session} />}</AuthGate>;
 }
 
 export const OnboardingView = withPerformanceMonitoring(
@@ -43,327 +53,167 @@ export const OnboardingView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 'register' | 'classify' | 'evidence' | 'audit' | 'done';
 
-function Inner() {
+const FLOW: ReadonlyArray<{ id: Exclude<Step, 'done'>; label: string }> = [
+  { id: 'register', label: 'Anlegen' },
+  { id: 'classify', label: 'Klassifizieren' },
+  { id: 'evidence', label: 'Dokumentieren' },
+  { id: 'audit', label: 'Auditieren' },
+];
+
+function Inner({ session }: { session: Session }) {
   const navigate = useNavigate();
-  const { tenants, activeTenantId, setActiveTenant } = useTenant();
-  const [step, setStep] = useState<Step>(1);
-  const [assetId, setAssetId] = useState<string | null>(null);
-  const [policyId, setPolicyId] = useState<string | null>(null);
-  const [keyName, setKeyName] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const { activeTenantId } = useTenant();
   const canEdit = useCanEditRegistry();
+  const [step, setStep] = useState<Step>('register');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [asset, setAsset] = useState<DbGovernanceAsset | null>(null);
 
-  // Defensive: if no tenant, hold here. AuthGate ensures user is logged in.
+  const restart = () => {
+    setName('');
+    setDescription('');
+    setAsset(null);
+    setStep('register');
+  };
+
   if (!activeTenantId) {
     return (
       <Shell step={step}>
-        <div className="text-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin mx-auto text-titanium-400 mb-3" />
-          <p className="text-sm text-titanium-400">Tenant wird geladen…</p>
-        </div>
+        <p className="rs-note rs-fa__loading">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Workspace wird geladen …
+        </p>
       </Shell>
     );
   }
 
   return (
-    <Shell step={step} tenantSelector={tenants.length > 1 ? (
-      <select
-        value={activeTenantId ?? ''}
-        onChange={(e) => setActiveTenant(e.target.value)}
-        className="bg-obsidian-950 border border-titanium-900 text-titanium-200 text-xs rounded-none px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-obsidian-800 max-w-[200px]"
-      >
-        {tenants.map((t) => <option key={t.tenantId} value={t.tenantId}>{t.name}</option>)}
-      </select>
-    ) : undefined}>
-      {step === 1 && (
-        <OverviewStep
-          tenantName={tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null}
+    <Shell step={step}>
+      {step === 'register' && (
+        <RegisterStep
+          tenantId={activeTenantId}
+          ownerEmail={session?.user?.email ?? null}
           canEdit={canEdit}
-          onDone={() => setStep(2)}
+          name={name}
+          description={description}
+          onChange={(n, d) => { setName(n); setDescription(d); }}
+          onDone={(a) => { setAsset(a); setStep('classify'); }}
         />
       )}
-      {step === 2 && (
-        <AssetStep
-          tenantId={activeTenantId}
-          canEdit={canEdit}
-          onDone={(id) => { setAssetId(id); setStep(3); }}
-        />
+      {step === 'classify' && asset && (
+        <ClassifyStep asset={asset} onSaved={(a) => { setAsset(a); setStep('evidence'); }} />
       )}
-      {step === 3 && (
-        <PolicyStep
-          tenantId={activeTenantId}
-          onDone={(id) => { setPolicyId(id); setStep(4); }}
-          onSkip={() => setStep(4)}
-        />
+      {step === 'evidence' && asset && (
+        <EvidenceStep asset={asset} onDone={() => setStep('audit')} />
       )}
-      {step === 4 && (
-        <KeyStep
-          tenantId={activeTenantId}
-          onDone={(name, raw) => { setKeyName(name); setToken(raw); setStep(5); }}
-        />
+      {step === 'audit' && asset && (
+        <AuditStep tenantId={activeTenantId} asset={asset} onDone={() => setStep('done')} />
       )}
-      {step === 5 && (
-        <DoneStep
-          assetId={assetId}
-          policyId={policyId}
-          keyName={keyName}
-          token={token}
-          onFinish={() => navigate('/app/dashboard')}
-        />
+      {step === 'done' && (
+        <DoneStep onAnother={restart} onFinish={() => navigate('/app/dashboard')} />
       )}
     </Shell>
   );
 }
 
-/* ── Step 1: Überblick ─────────────────────────────────────────── */
+/* ── Schritt 1: KI-System registrieren ─────────────────────────── */
 
-const WEG = [
-  { n: 2, titel: 'KI-Register aufbauen', text: 'Erstes KI-System mit Typ, Anbieter und AI-Act-Klasse erfassen.' },
-  { n: 3, titel: 'Governance-Regeln aktivieren', text: 'Eine Policy, die bei Verstößen automatisch greift.' },
-  { n: 4, titel: 'Nachweise erzeugen', text: 'Ingest-Key anlegen — ab dann landet jedes Ereignis im Audit-Log.' },
-  { n: 5, titel: 'KI sicher betreiben', text: 'Extension oder SDK verbinden, erster Event, Dashboard.' },
-];
-
-function OverviewStep({
-  tenantName, canEdit, onDone,
-}: { tenantName: string | null; canEdit: boolean; onDone: () => void }) {
-  return (
-    <StepCard
-      icon={<Building2 />}
-      eyebrow="Schritt 1 von 5"
-      title="Unternehmen verstehen"
-      subtitle={`Wir richten die Governance für ${tenantName ? `„${tenantName}"` : 'Deinen Workspace'} ein. Kein Fragebogen: Jeder weitere Schritt legt etwas an, das dauerhaft im System bleibt.`}
-    >
-      <ol className="border border-titanium-900 bg-obsidian-950/60 divide-y divide-titanium-900">
-        {WEG.map((w) => (
-          <li key={w.n} className="flex items-start gap-3 p-3">
-            <span className="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-none border border-titanium-700 text-[11px] font-mono text-titanium-400">
-              {w.n}
-            </span>
-            <div>
-              <div className="text-sm font-semibold text-titanium-100">{w.titel}</div>
-              <div className="text-[13px] text-titanium-400 leading-relaxed">{w.text}</div>
-            </div>
-          </li>
-        ))}
-      </ol>
-      {!canEdit && <RegistryWriteNotice className={lockedCls} />}
-      <div className="flex items-center justify-end pt-5">
-        <button
-          type="button"
-          onClick={onDone}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400"
-        >
-          Los geht&apos;s <ArrowRight className="h-4 w-4" />
-        </button>
-      </div>
-    </StepCard>
-  );
-}
-
-/* ── Step 2: KI-Register (Asset) ───────────────────────────────── */
-
-const ASSET_TYPES: GovernanceAssetType[] = [
-  'ai_system', 'website', 'agent', 'model', 'api', 'workflow', 'vendor', 'dataset', 'repository',
-];
-const AI_ACT_CLASSES: AiActClass[] = ['minimal', 'limited', 'high', 'prohibited', 'unknown'];
-
-function AssetStep({
-  tenantId, canEdit, onDone,
-}: { tenantId: string; canEdit: boolean; onDone: (id: string) => void }) {
-  const [name, setName] = useState('');
-  const [assetType, setAssetType] = useState<GovernanceAssetType>('ai_system');
-  const [vendor, setVendor] = useState('');
-  // Keine vorausgewählte Einstufung: „limited“ als Vorgabe landete ungeprüft als Klasse (Auftrag §14/§3).
-  const [aiActClass, setAiActClass] = useState<AiActClass>('unknown');
+function RegisterStep({
+  tenantId, ownerEmail, canEdit, name, description, onChange, onDone,
+}: {
+  tenantId: string;
+  ownerEmail: string | null;
+  canEdit: boolean;
+  name: string;
+  description: string;
+  onChange: (name: string, description: string) => void;
+  onDone: (asset: DbGovernanceAsset) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ready = name.trim().length > 0 && description.trim().length > 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canEdit || busy) return;
-    setError(null); setBusy(true);
+    if (!ready || !canEdit || busy) return;
+    setError(null);
+    setBusy(true);
     const r = await createAsset({
       tenant_id: tenantId,
-      asset_type: assetType,
+      asset_type: 'ai_system',
       name: name.trim(),
-      vendor: vendor.trim() || undefined,
-      ai_act_class: aiActClass,
+      description: description.trim(),
+      intended_purpose: description.trim(),
+      ai_act_class: 'unknown',
+      owner_email: ownerEmail ?? undefined,
+      metadata: { source: 'first_audit_onboarding' },
     });
     setBusy(false);
-    if (!r.ok || !r.asset) { setError(r.error?.message ?? 'Erstellen fehlgeschlagen'); return; }
-    onDone(r.asset.id);
-  };
-
-  return (
-    <StepCard
-      icon={<Bot />}
-      eyebrow="Schritt 2 von 5"
-      title="KI-Register aufbauen"
-      subtitle="Lege Dein erstes KI-System im Register an — z. B. Deinen Chatbot, Deine Website oder einen Agent. Anbieter und AI-Act-Klasse machen es bewertbar."
-    >
-      <form onSubmit={submit} className="space-y-3">
-        <Field label="Name">
-          <input
-            type="text" required maxLength={200}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="z. B. Customer Support Copilot"
-            className={inputCls}
-            autoFocus
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Asset-Typ">
-            <select value={assetType} onChange={(e) => setAssetType(e.target.value as GovernanceAssetType)} className={inputCls}>
-              {ASSET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </Field>
-          <Field label="AI-Act-Klasse">
-            <select value={aiActClass} onChange={(e) => setAiActClass(e.target.value as AiActClass)} className={inputCls}>
-              {AI_ACT_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-        </div>
-        <Field label="Vendor (optional)">
-          <input
-            type="text" maxLength={200}
-            value={vendor}
-            onChange={(e) => setVendor(e.target.value)}
-            placeholder="OpenAI, Anthropic, self-hosted …"
-            className={inputCls}
-          />
-        </Field>
-
-        {error && <ErrorBox>{error}</ErrorBox>}
-        {!canEdit && <RegistryWriteNotice className={lockedCls} />}
-
-        <div className="flex items-center justify-between pt-2">
-          <Link to="/app/websites" className="text-xs text-titanium-400 hover:text-titanium-200">
-            Onboarding abbrechen
-          </Link>
-          <button
-            type="submit"
-            disabled={busy || !canEdit || !name.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
-          >
-            {busy ? 'Erstelle…' : 'Weiter'} <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </form>
-    </StepCard>
-  );
-}
-
-/* ── Step 3: Regeln (Policy) ────────────────────────────────────────────── */
-
-const POLICY_TYPES: GovernancePolicyType[] = [
-  'data_transfer', 'human_review', 'logging_required', 'vendor_restriction',
-  'model_usage', 'retention', 'security', 'ai_act', 'gdpr',
-];
-const SEVERITIES: GovernanceRiskLevel[] = ['low', 'medium', 'high', 'critical'];
-const ACTIONS: GovernancePolicyAction[] = ['log', 'warn', 'require_approval', 'block'];
-
-function PolicyStep({
-  tenantId, onDone, onSkip,
-}: { tenantId: string; onDone: (id: string) => void; onSkip: () => void }) {
-  const [name, setName] = useState('Block PII to external LLMs');
-  const [policyType, setPolicyType] = useState<GovernancePolicyType>('data_transfer');
-  const [severity, setSeverity] = useState<GovernanceRiskLevel>('high');
-  const [action, setAction] = useState<GovernancePolicyAction>('block');
-  const [conditionStr, setConditionStr] = useState('{"data_types": ["customer_data", "employee_data"]}');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    let parsed: Record<string, unknown> = {};
-    try {
-      parsed = conditionStr.trim() ? JSON.parse(conditionStr) : {};
-      if (typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
-    } catch {
-      setError('Condition muss valides JSON-Objekt sein, z. B. { "data_types": ["customer_data"] }');
+    if (!r.ok || !r.asset) {
+      setError(r.error?.message ?? 'Das KI-System konnte nicht registriert werden.');
       return;
     }
-    setBusy(true);
-    const r = await createPolicy({
-      tenant_id: tenantId,
-      name: name.trim(),
-      policy_type: policyType,
-      severity, action, condition: parsed, enabled: true,
-    });
-    setBusy(false);
-    if (!r.ok || !r.policy) { setError(r.error?.message ?? 'Erstellen fehlgeschlagen'); return; }
-    onDone(r.policy.id);
+    onDone(r.asset);
   };
 
   return (
     <StepCard
-      icon={<ShieldCheck />}
-      eyebrow="Schritt 3 von 5"
-      title="Governance-Regeln aktivieren"
-      subtitle="Lege eine Regel an, die bei Verstößen automatisch greift — keine Richtlinie im PDF, sondern aktive Durchsetzung. Beispiel: PII darf nicht an externe LLMs."
+      index={1}
+      title="KI-System hinzufügen"
+      lead="Beschreiben Sie kurz, welche KI in Ihrem Unternehmen eingesetzt wird. Governance OS erstellt daraus automatisch die erste Dokumentation."
     >
-      <div className="mb-4 border border-amber-500/30 bg-amber-500/5 p-3 text-[12px] text-amber-200 leading-relaxed">
-        <strong className="text-amber-100">Tipp:</strong> 10 fertige Best-Practice-Policies (GDPR · AI Act · SOC 2 · Schrems) gibt's in der{' '}
-        <Link to="/app/policies/templates" className="font-semibold underline underline-offset-2 hover:text-amber-100">
-          Template-Library
-        </Link>{' '}— ein Klick installiert.
+      <div className="rs-fa__examples">
+        <span className="rs-note">Beispiele:</span>
+        <ul>
+          {USE_CASE_EXAMPLES.map((ex) => (
+            <li key={ex.label}>
+              <button
+                type="button"
+                className="rs-fa__example"
+                onClick={() => onChange(ex.name, ex.description)}
+                aria-label={`Beispiel übernehmen: ${ex.label}`}
+              >
+                {ex.label}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        <Field label="Name">
+      <form onSubmit={submit} className="rs-fa__form">
+        <label className="rs-field">
+          Name des KI-Systems
           <input
-            type="text" required maxLength={200}
+            className="rs-field__input"
+            type="text"
+            required
+            maxLength={200}
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputCls}
+            onChange={(e) => onChange(e.target.value, description)}
+            placeholder="z. B. Kundenservice-Chatbot"
+            autoFocus
           />
-        </Field>
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Typ">
-            <select value={policyType} onChange={(e) => setPolicyType(e.target.value as GovernancePolicyType)} className={inputCls}>
-              {POLICY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </Field>
-          <Field label="Severity">
-            <select value={severity} onChange={(e) => setSeverity(e.target.value as GovernanceRiskLevel)} className={inputCls}>
-              {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
-          <Field label="Aktion">
-            <select value={action} onChange={(e) => setAction(e.target.value as GovernancePolicyAction)} className={inputCls}>
-              {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </Field>
-        </div>
-        <Field label="Condition (JSON)">
+        </label>
+        <label className="rs-field">
+          Beschreibung — Wofür wird dieses System eingesetzt?
           <textarea
+            className="rs-field__input rs-fa__textarea"
+            required
+            maxLength={2000}
             rows={3}
-            value={conditionStr}
-            onChange={(e) => setConditionStr(e.target.value)}
-            className={`${inputCls} font-mono text-xs`}
+            value={description}
+            onChange={(e) => onChange(name, e.target.value)}
+            placeholder="Beantwortet Kundenanfragen auf unserer Website."
           />
-        </Field>
-
-        {error && <ErrorBox>{error}</ErrorBox>}
-
-        <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs text-titanium-400 hover:text-titanium-200"
-          >
-            Überspringen
-          </button>
-          <button
-            type="submit"
-            disabled={busy || !name.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
-          >
-            {busy ? 'Erstelle…' : 'Weiter'} <ArrowRight className="h-3.5 w-3.5" />
+        </label>
+        {error && <p role="alert" className="rs-fa__error">{error}</p>}
+        {!canEdit && <RegistryWriteNotice className="rs-fa__hint" />}
+        <div className="rs-fa__actions">
+          <button type="submit" className="rs-fa__cta" disabled={!ready || !canEdit || busy}>
+            {busy ? 'Wird registriert …' : 'System registrieren'}
+            {busy
+              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
       </form>
@@ -371,282 +221,408 @@ function PolicyStep({
   );
 }
 
-/* ── Step 4: Nachweise (Key) ───────────────────────────────────────────────── */
+/* ── Schritt 2: Risiko-Klassifizierung ─────────────────────────── */
 
-function KeyStep({
-  tenantId, onDone,
-}: { tenantId: string; onDone: (name: string, token: string) => void }) {
-  const [name, setName] = useState('First production key');
+const TIER_OPTIONS: readonly SuggestedTier[] = ['minimal', 'limited', 'high', 'prohibited'];
+
+function ClassifyStep({
+  asset, onSaved,
+}: {
+  asset: DbGovernanceAsset;
+  onSaved: (asset: DbGovernanceAsset) => void;
+}) {
+  const [suggestion, setSuggestion] = useState<ClassificationSuggestion | null>(null);
+  const [tier, setTier] = useState<SuggestedTier>('limited');
+  const [showDetails, setShowDetails] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null); setBusy(true);
-    const r = await createIngestKey(tenantId, name.trim(), [], 60);
+  const assess = () => {
+    const s = suggestClassification(asset.name, asset.intended_purpose ?? asset.description ?? '');
+    setSuggestion(s);
+    setTier(s.tier);
+  };
+
+  const save = async () => {
+    if (!suggestion) return;
+    setError(null);
+    setBusy(true);
+    const r = await saveAssetClassification({ asset_id: asset.id, ai_act_class: tier });
     setBusy(false);
-    if (!r.ok || !r.token) { setError(r.error?.message ?? 'Erstellen fehlgeschlagen'); return; }
-    onDone(name.trim(), r.token);
+    if (!r.ok || !r.asset) {
+      setError(r.error?.message ?? 'Die Einstufung konnte nicht gespeichert werden.');
+      return;
+    }
+    onSaved(r.asset);
   };
+
+  const adjusted = suggestion !== null && tier !== suggestion.tier;
 
   return (
     <StepCard
-      icon={<KeyRound />}
-      eyebrow="Schritt 4 von 5"
-      title="Nachweise erzeugen"
-      subtitle="Der Ingest-Key verbindet Browser-Extension, SDK und Agent-Runtime mit der Ingest-API. Ab dann wird jedes Ereignis im Audit-Log als Nachweis festgehalten."
+      index={2}
+      title="Risikoeinstufung starten"
+      lead={`Governance OS analysiert „${asset.name}“ anhand des EU AI Act und schlägt eine erste Risikoeinstufung vor.`}
     >
-      <form onSubmit={submit} className="space-y-3">
-        <Field label="Bezeichnung">
-          <input
-            type="text" required maxLength={120}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputCls}
-          />
-        </Field>
+      <p className="rs-fa__hint">Sie können alle Angaben später im KI-Register anpassen.</p>
 
-        <div className="flex items-start gap-2.5 text-xs text-amber-200 bg-amber-950/30 border border-amber-900 rounded-none p-2.5">
-          <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-          Der Token wird auf der nächsten Seite genau einmal angezeigt.
-          Speichere ihn dann sicher (Vault / 1Password). Server speichert nur den sha256-Hash.
-        </div>
-
-        {error && <ErrorBox>{error}</ErrorBox>}
-
-        <div className="flex items-center justify-end pt-2">
-          <button
-            type="submit"
-            disabled={busy || !name.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
-          >
-            {busy ? 'Erstelle…' : 'Token generieren'} <ArrowRight className="h-3.5 w-3.5" />
+      {!suggestion ? (
+        <div className="rs-fa__actions">
+          <button type="button" className="rs-fa__cta" onClick={assess}>
+            Risikobewertung durchführen <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-      </form>
-    </StepCard>
-  );
-}
+      ) : (
+        <section
+          className={`rs-fa__result rs-fa__result--${tier}`}
+          aria-labelledby="fa-result-title"
+          data-testid="onboarding-classification"
+        >
+          <span className="rs-overline">{adjusted ? 'Angepasste Einstufung' : 'Vorläufige Einstufung'}</span>
+          <h3 id="fa-result-title" className="rs-fa__result-title">{TIER_LABEL[tier]}</h3>
+          <p className="rs-fa__result-text">{TIER_SUMMARY[tier]}</p>
+          {suggestion.needsReview && !adjusted && (
+            <p className="rs-note" data-testid="onboarding-needs-review">
+              Aus der Beschreibung ließ sich keine eindeutige Kategorie ableiten — die Einstufung ist bewusst
+              vorsichtig gewählt. Bitte prüfen Sie sie in den Details.
+            </p>
+          )}
 
-/* ── Step 5: Betrieb (Done) ──────────────────────────────────────────────── */
-
-function DoneStep({
-  assetId, policyId, keyName, token, onFinish,
-}: {
-  assetId: string | null;
-  policyId: string | null;
-  keyName: string | null;
-  token: string | null;
-  onFinish: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const copyToken = async () => {
-    if (!token) return;
-    try { await navigator.clipboard.writeText(token); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
-  };
-
-  return (
-    <StepCard
-      icon={<Rocket />}
-      eyebrow="Schritt 5 von 5"
-      title="KI sicher betreiben"
-      subtitle="Die Governance Runtime ist aktiv. Speichere den Token, verbinde die Extension oder schick den ersten Event — danach läuft Governance im Betrieb, nicht als Einmal-Aktion."
-    >
-      <div className="space-y-4">
-        <div className="border border-titanium-900 bg-obsidian-950/60 p-3 space-y-1.5">
-          <CheckLine done={!!assetId}>KI-System im Register</CheckLine>
-          <CheckLine done={!!policyId}>Governance-Regel aktiv (optional)</CheckLine>
-          <CheckLine done={!!token}>Ingest-Key „{keyName}" generiert</CheckLine>
-        </div>
-
-        {token && (
-          <>
-            <div className="flex items-start gap-2.5 text-xs text-amber-200 bg-amber-950/50 border border-amber-800 rounded-none p-3">
-              <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
-              <div>
-                <div className="font-bold">Einmalige Anzeige</div>
-                <div className="text-amber-200/80 mt-0.5">
-                  Beim Verlassen ist der Token weg. Wir speichern nur den sha256-Hash und können ihn nicht
-                  nochmal anzeigen.
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-titanium-400 mb-1.5">
-                Ingest Token
-              </label>
-              <div className="flex items-stretch gap-2">
-                <code className="flex-1 bg-obsidian-950 border border-titanium-900 text-amber-200 text-xs font-mono rounded-none px-3 py-2.5 break-all">
-                  {token}
-                </code>
-                <button
-                  type="button"
-                  onClick={copyToken}
-                  className="px-3 py-2 bg-obsidian-800 hover:bg-obsidian-700 text-titanium-200 rounded-none border border-titanium-900"
-                  aria-label="Token kopieren"
+          {showDetails && (
+            <div id="fa-details" className="rs-fa__details">
+              <dl>
+                <dt>Begründung des Vorschlags</dt>
+                <dd>
+                  {suggestion.rationale}
+                  {suggestion.articleRef !== '—' && <span className="rs-mono"> · {suggestion.articleRef}</span>}
+                </dd>
+                <dt>Pflichten bei „{TIER_LABEL[tier]}“</dt>
+                <dd>
+                  <ul>
+                    {obligationsFor(tier).map((o) => (
+                      <li key={`${o.article}-${o.de}`}>
+                        <span className="rs-mono">{o.article}</span> {o.de}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </dl>
+              <label className="rs-field">
+                Einstufung anpassen
+                <select
+                  className="rs-select"
+                  value={tier}
+                  onChange={(e) => setTier(e.target.value as SuggestedTier)}
                 >
-                  {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-titanium-400 mb-1.5">
-                Erster Event-Call
+                  {TIER_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {TIER_LABEL[t]}{t === suggestion.tier ? ' (Vorschlag)' : ''}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <pre className="bg-obsidian-950 border border-titanium-900 text-xs font-mono text-titanium-300 rounded-none p-3 overflow-x-auto">
-{`curl -X POST https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/governance-ingest \\
-  -H "Authorization: Bearer ${token}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"event":{"event_type":"hello","event_source":"manual","title":"first event"}}'`}
-              </pre>
+              <p className="rs-note">
+                Technische Ersteinordnung, keine Rechtsberatung. Die verbindliche Einstufung prüfen Sie mit Ihrer
+                Rechts- oder Datenschutzberatung.
+              </p>
             </div>
-          </>
-        )}
+          )}
 
-        <div className="border border-titanium-900 bg-obsidian-950/60 p-3 text-[13px] text-silver-300 leading-relaxed">
-          <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-amber-300 mb-1.5">
-            Browser-Extension
+          {error && <p role="alert" className="rs-fa__error">{error}</p>}
+
+          <div className="rs-fa__actions">
+            <button
+              type="button"
+              className="rs-fa__secondary"
+              aria-expanded={showDetails}
+              aria-controls="fa-details"
+              onClick={() => setShowDetails((v) => !v)}
+            >
+              {showDetails ? 'Details ausblenden' : 'Details ansehen'}
+              <ChevronDown className={`h-4 w-4 ${showDetails ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            <button type="button" className="rs-fa__cta" onClick={save} disabled={busy}>
+              {busy ? 'Wird gespeichert …' : 'Nachweise erzeugen'}
+              {busy
+                ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+            </button>
           </div>
-          chrome://extensions → Developer mode → Load unpacked → <code>extension-governance/</code> aus dem Repo wählen.
-          Token im Popup eintragen, fertig.
-        </div>
-
-        <div className="flex items-center justify-end pt-2">
-          <button
-            onClick={onFinish}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400"
-          >
-            Zum Dashboard <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        </section>
+      )}
     </StepCard>
   );
 }
 
-/* ── Shell + bits ──────────────────────────────────────────────── */
+/* ── Schritt 3: Nachweise erzeugen ─────────────────────────────── */
 
-function Shell({
-  step, tenantSelector, children,
-}: { step: Step; tenantSelector?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <Link to="/app/websites" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
-              <Rocket className="h-4 w-4 text-white" />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Governance Onboarding</div>
-              <div className="text-[11px] text-titanium-400 font-medium">5 Schritte zur laufenden KI-Governance</div>
-            </div>
-          </div>
-        </div>
-        {tenantSelector}
-      </header>
+type DocsState =
+  | { status: 'idle' }
+  | { status: 'busy' }
+  | { status: 'done'; mapped: number | null; error: string | null };
 
-      <Progress step={step} />
+function EvidenceStep({ asset, onDone }: { asset: DbGovernanceAsset; onDone: () => void }) {
+  const [docs, setDocs] = useState<DocsState>({ status: 'idle' });
+  const tier = asset.ai_act_class === 'unknown' ? null : asset.ai_act_class;
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        {children}
-      </main>
-    </div>
-  );
-}
+  const generate = async () => {
+    setDocs({ status: 'busy' });
+    const r = await autoMapAsset(asset.id);
+    setDocs({
+      status: 'done',
+      mapped: r.ok ? (r.applied ?? 0) : null,
+      error: r.ok ? null : (r.error?.message ?? 'Kontrollen konnten nicht zugeordnet werden.'),
+    });
+  };
 
-function Progress({ step }: { step: Step }) {
-  const steps: Array<{ n: Step; label: string }> = [
-    { n: 1, label: 'Überblick' },
-    { n: 2, label: 'Register' },
-    { n: 3, label: 'Regeln' },
-    { n: 4, label: 'Nachweise' },
-    { n: 5, label: 'Betrieb' },
+  const downloadDossier = () =>
+    downloadConformityDossier({
+      system: {
+        name: asset.name,
+        provider: asset.vendor,
+        riskLabel: tier ? TIER_LABEL[tier] : 'Nicht bestimmt',
+        intendedPurpose: asset.intended_purpose ?? asset.description,
+        owner: asset.owner_email,
+      },
+      changeLog: [`${new Date(asset.created_at).toLocaleString('de-DE')}: KI-System angelegt und eingestuft`],
+    });
+
+  const done = docs.status === 'done';
+  const items: Array<{ label: string; detail: string; ok: boolean }> = [
+    { label: 'Systembeschreibung', detail: `„${asset.name}“ mit Einsatzzweck gespeichert`, ok: true },
+    {
+      label: 'Verantwortlichkeiten',
+      detail: asset.owner_email ? `Verantwortlich: ${asset.owner_email}` : 'Noch keine verantwortliche Person — im KI-Register ergänzen',
+      ok: !!asset.owner_email,
+    },
+    {
+      label: 'Risikobewertung',
+      detail: done && docs.mapped !== null
+        ? `${tier ? TIER_LABEL[tier] : 'Einstufung'} · ${docs.mapped} Prüfkontrollen zugeordnet`
+        : `${tier ? TIER_LABEL[tier] : 'Einstufung'} gespeichert`,
+      ok: !done || docs.mapped !== null,
+    },
+    { label: 'Änderungsverlauf', detail: 'Anlage und Einstufung mit Zeitstempel protokolliert', ok: true },
+    { label: 'Audit-Protokoll', detail: 'Jede weitere Änderung landet im Audit-Log Ihres Workspace', ok: true },
   ];
+
   return (
-    <div className="border-b border-titanium-900 bg-obsidian-900/50 px-4 py-3">
-      <div className="max-w-2xl mx-auto flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider">
-        {steps.map((s, idx) => {
-          const isDone = step > s.n;
-          const isActive = step === s.n;
+    <StepCard
+      index={3}
+      title="Audit-Nachweise vorbereiten"
+      lead="Governance OS erstellt die Dokumentation und Nachweise für dieses KI-System aus Ihren Angaben."
+    >
+      <p className="rs-overline">Enthalten</p>
+      <ul className="rs-fa__checklist" data-testid="onboarding-evidence-items">
+        {items.map((it) => {
+          const state = !done ? 'planned' : it.ok ? 'done' : 'open';
           return (
-            <React.Fragment key={s.n}>
-              <span className={`flex items-center gap-1.5 ${
-                isActive ? 'text-amber-300' : isDone ? 'text-emerald-300' : 'text-titanium-500'
-              }`}>
-                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-none border ${
-                  isActive ? 'bg-amber-500 border-amber-500 text-obsidian-950' :
-                  isDone ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' :
-                  'border-titanium-700 text-titanium-500'
-                }`}>
-                  {isDone ? <Check className="h-3 w-3" /> : s.n}
-                </span>
-                {s.label}
+            <li key={it.label} className={`rs-fa__check rs-fa__check--${state}`}>
+              <span className="rs-fa__check-icon" aria-hidden="true">
+                {state === 'open' ? <Circle className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
               </span>
-              {idx < steps.length - 1 && <span className="text-titanium-700">·</span>}
-            </React.Fragment>
+              <span>
+                <span className="rs-fa__check-label">
+                  {it.label}
+                  <span className="sr-only">
+                    {state === 'done' ? ' – erstellt' : state === 'open' ? ' – offen' : ' – wird erstellt'}
+                  </span>
+                </span>
+                {done && <span className="rs-fa__check-detail">{it.detail}</span>}
+              </span>
+            </li>
           );
         })}
+      </ul>
+
+      {done && docs.error && (
+        <p role="alert" className="rs-fa__error">
+          {docs.error} Das System ist gespeichert; Kontrollen können Sie später im KI-Register zuordnen.
+        </p>
+      )}
+
+      <div className="rs-fa__actions">
+        {!done ? (
+          <button type="button" className="rs-fa__cta" onClick={generate} disabled={docs.status === 'busy'}>
+            {docs.status === 'busy' ? 'Dokumentation wird erzeugt …' : 'Dokumentation erzeugen'}
+            {docs.status === 'busy'
+              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        ) : (
+          <>
+            <button type="button" className="rs-fa__cta" onClick={onDone}>
+              Weiter zum Audit <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" className="rs-fa__secondary" onClick={downloadDossier}>
+              <Download className="h-4 w-4" aria-hidden="true" /> Dossier herunterladen
+            </button>
+          </>
+        )}
       </div>
+    </StepCard>
+  );
+}
+
+/* ── Schritt 4: Erstes Audit ───────────────────────────────────── */
+
+function AuditStep({
+  tenantId, asset, onDone,
+}: { tenantId: string; asset: DbGovernanceAsset; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<FirstAuditResult | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    const evidence = await fetchAssetEvidenceStats(tenantId)
+      .then((m) => m.get(asset.id) ?? { count: 0, latestAt: null })
+      .catch(() => null);
+    setResult(runFirstAudit(asset, evidence));
+    setBusy(false);
+  };
+
+  return (
+    <StepCard
+      index={4}
+      title="Audit starten"
+      lead="Prüfen Sie Ihr KI-System auf Vollständigkeit, Compliance und Dokumentationsstatus."
+    >
+      {!result ? (
+        <div className="rs-fa__actions">
+          <button type="button" className="rs-fa__cta" onClick={run} disabled={busy}>
+            {busy ? 'Audit läuft …' : 'Audit ausführen'}
+            {busy
+              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              : <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </div>
+      ) : (
+        <section className="rs-fa__audit" aria-label="Audit-Ergebnis" data-testid="onboarding-audit-result">
+          <div className="rs-fa__score">
+            <span className="rs-note">Audit-Score</span>
+            <span className="rs-fa__score-value">
+              {result.score === null ? '—' : <>{result.score}<small> / 100</small></>}
+            </span>
+            <span className="rs-note">
+              {result.score === null
+                ? 'Nachweise konnten nicht geladen werden — kein Score ohne Datenbasis.'
+                : `${result.checks.filter((c) => c.passed).length} von ${result.checks.length} Prüfpunkten erfüllt`}
+            </span>
+          </div>
+          <dl className="rs-fa__findings">
+            <div>
+              <dt>Dokumentation vollständig</dt>
+              <dd>{result.documentationComplete ? 'Ja' : 'Noch nicht'}</dd>
+            </div>
+            <div>
+              <dt>Offene Risiken</dt>
+              <dd>
+                {result.openRisks.length === 0 ? 'Keine' : (
+                  <ul>{result.openRisks.map((r) => <li key={r}>{r}</li>)}</ul>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Fehlende Angaben</dt>
+              <dd>
+                {result.missing.length === 0 ? 'Keine' : (
+                  <ul>{result.missing.map((m) => <li key={m}>{m}</li>)}</ul>
+                )}
+              </dd>
+            </div>
+          </dl>
+          <div className="rs-fa__actions">
+            <button type="button" className="rs-fa__cta" onClick={onDone}>
+              Einrichtung abschließen <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+            {result.missing.length > 0 && (
+              <Link to={`/app/ai-systems/${asset.id}`} className="rs-fa__link">
+                Fehlende Angaben ergänzen
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+    </StepCard>
+  );
+}
+
+/* ── Erfolgsmeldung ────────────────────────────────────────────── */
+
+function DoneStep({ onAnother, onFinish }: { onAnother: () => void; onFinish: () => void }) {
+  return (
+    <section className="rs-panel rs-fa__card rs-fa__done" aria-labelledby="fa-done-title" data-testid="onboarding-done">
+      <span className="rs-fa__done-icon" aria-hidden="true"><ShieldCheck className="h-6 w-6" /></span>
+      <h2 id="fa-done-title" className="rs-fa__title">Governance eingerichtet</h2>
+      <p className="rs-fa__lead">
+        Ihr erstes KI-System wurde erfolgreich registriert. Governance OS verfolgt nun Änderungen, Dokumentation
+        und Compliance-Status dieses Systems.
+      </p>
+      <p className="rs-overline">Nächste Schritte</p>
+      <ul className="rs-fa__next">
+        <li><button type="button" className="rs-fa__link" onClick={onAnother}>Weitere Systeme erfassen</button></li>
+        <li><Link to="/app/websites" className="rs-fa__link">Website verbinden</Link></li>
+        <li><Link to="/app/audit" className="rs-fa__link">Audit-Bericht exportieren</Link></li>
+      </ul>
+      <div className="rs-fa__actions">
+        <button type="button" className="rs-fa__cta" onClick={onFinish}>
+          Zum Dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+      <p className="rs-note">
+        Für Entwickler: Ereignisse aus eigenen Anwendungen binden Sie über einen{' '}
+        <Link to="/app/keys" className="rs-fa__link">Ingest-Key</Link> an.
+      </p>
+    </section>
+  );
+}
+
+/* ── Rahmen ────────────────────────────────────────────────────── */
+
+function Shell({ step, children }: { step: Step; children: React.ReactNode }) {
+  const current = step === 'done' ? FLOW.length : FLOW.findIndex((s) => s.id === step);
+  return (
+    <div className="rs-apppage rs-fa" data-testid="first-audit-onboarding">
+      <header className="rs-fa__head">
+        <Link to="/app/dashboard" className="rs-fa__back">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Dashboard
+        </Link>
+        <div>
+          <p className="rs-overline">Governance OS · Erstes Audit</p>
+          <p className="rs-note">Anlegen → Klassifizieren → Dokumentieren → Auditieren · ca. 3 Minuten</p>
+        </div>
+      </header>
+      <ol className="rs-fa__progress" aria-label="Fortschritt">
+        {FLOW.map((s, i) => {
+          const state = i < current ? 'done' : i === current ? 'active' : 'todo';
+          return (
+            <li
+              key={s.id}
+              className={`rs-fa__progress-step rs-fa__progress-step--${state}`}
+              aria-current={state === 'active' ? 'step' : undefined}
+            >
+              <span className="rs-fa__progress-dot" aria-hidden="true">
+                {state === 'done' ? <Check className="h-3 w-3" /> : i + 1}
+              </span>
+              {s.label}
+            </li>
+          );
+        })}
+      </ol>
+      <main className="rs-fa__main">{children}</main>
     </div>
   );
 }
 
 function StepCard({
-  icon, eyebrow, title, subtitle, children,
-}: {
-  icon: React.ReactNode; eyebrow: string; title: string; subtitle: string; children: React.ReactNode;
-}) {
+  index, title, lead, children,
+}: { index: number; title: string; lead: string; children: React.ReactNode }) {
   return (
-    <div className="bg-obsidian-900 border border-titanium-900 p-6">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="h-4 w-4 text-amber-300">{icon}</span>
-        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-amber-300">{eyebrow}</span>
-      </div>
-      <h2 className="font-display font-bold text-xl text-titanium-50 tracking-tight mb-1">{title}</h2>
-      <p className="text-sm text-titanium-400 mb-5 leading-relaxed">{subtitle}</p>
+    <section className="rs-panel rs-fa__card" aria-labelledby={`fa-step-${index}`}>
+      <p className="rs-overline rs-cyan">Schritt {index} von {FLOW.length}</p>
+      <h2 id={`fa-step-${index}`} className="rs-fa__title">{title}</h2>
+      <p className="rs-fa__lead">{lead}</p>
       {children}
-    </div>
+    </section>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] font-mono uppercase tracking-wider text-titanium-400 mb-1">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function ErrorBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-2 text-xs text-red-300 bg-red-950/50 border border-red-900 rounded-none p-2.5">
-      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {children}
-    </div>
-  );
-}
-
-function CheckLine({ done, children }: { done: boolean; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className={`inline-flex items-center justify-center w-4 h-4 rounded-none border ${
-        done ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'border-titanium-700 text-titanium-500'
-      }`}>
-        {done && <Check className="h-3 w-3" />}
-      </span>
-      <span className={done ? 'text-titanium-200' : 'text-titanium-500'}>{children}</span>
-    </div>
-  );
-}
-
-const lockedCls =
-  'mt-4 text-xs text-amber-200 bg-amber-950/40 border border-amber-900 rounded-none p-2.5 leading-relaxed';
-
-const inputCls =
-  'w-full bg-obsidian-950 border border-titanium-900 text-titanium-100 text-sm rounded-none px-3 py-2 outline-none focus:border-amber-500';

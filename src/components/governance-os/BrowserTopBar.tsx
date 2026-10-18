@@ -90,7 +90,15 @@ export function BrowserTopBar({
           <span className="hidden lg:inline">{t('shellSearch')}</span>
           <kbd className="rs-kbd hidden md:inline">⌘K</kbd>
         </button>
-        <button type="button" onClick={() => navigate('/audit')} className="rs-chip-sm rs-chip-sm--primary hidden md:inline-flex">
+        {/* Compliance-Audit der KI-Systeme: Register mit Ampel je System
+            (Dokumentation, Risiken, AI-Act-Pflichten). Leeres Register führt
+            von dort in den Ablauf „Erstes Audit“. Website-Scan: Adresszeile. */}
+        <button
+          type="button"
+          onClick={() => navigate('/app/ai-systems')}
+          className="rs-chip-sm rs-chip-sm--primary hidden md:inline-flex"
+          title={t('shellAuditHint')}
+        >
           {t('shellAudit')}
         </button>
         <button

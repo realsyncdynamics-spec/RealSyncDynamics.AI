@@ -36,7 +36,15 @@ export interface PrimaryAction {
   detail: string;
   cta: string;
   href: string;
+  /** Was der Kunde in diesem Ablauf erreicht — nur beim Willkommens-Hero. */
+  highlights?: readonly string[];
+  /** Ehrliche Zeitangabe für den Ablauf, falls bekannt. */
+  duration?: string;
 }
+
+/** Erstbesuch: geführter Ablauf Anlegen → Klassifizieren → Dokumentieren → Auditieren. */
+export const FIRST_AUDIT_HREF = '/app/onboarding';
+export const DEMO_HREF = '/demo-tour';
 
 export interface StartPanelModel {
   steps: SetupStep[];
@@ -74,12 +82,20 @@ export function computeStartPanel(input: StartPanelInput): StartPanelModel {
       cta: 'Konto ansehen',
     },
     {
+      id: 'ai-system',
+      label: 'Erstes KI-System anlegen',
+      benefit: 'Grundlage für Risikoklasse nach EU AI Act, Nachweise und erstes Audit.',
+      state: stateOf(hasAiSystem),
+      href: FIRST_AUDIT_HREF,
+      cta: 'KI-System anlegen',
+    },
+    {
       id: 'website',
-      label: 'Website hinterlegen',
-      benefit: 'Ohne Domain kann nichts geprüft werden.',
+      label: 'Website verbinden',
+      benefit: 'Chatbots, Domains und Compliance-Scans zentral verwalten.',
       state: stateOf(hasWebsite),
       href: '/app/websites',
-      cta: 'Website hinterlegen',
+      cta: 'Website verbinden',
     },
     {
       id: 'scan',
@@ -88,14 +104,6 @@ export function computeStartPanel(input: StartPanelInput): StartPanelModel {
       state: stateOf(hasScan),
       href: '/app/websites',
       cta: 'Scan starten',
-    },
-    {
-      id: 'ai-system',
-      label: 'Erstes KI-System erfassen',
-      benefit: 'Grundlage für Risikoklasse nach EU AI Act und Governance-Score.',
-      state: stateOf(hasAiSystem),
-      href: '/app/onboarding',
-      cta: 'KI-System erfassen',
     },
     {
       id: 'activation',
@@ -112,12 +120,8 @@ export function computeStartPanel(input: StartPanelInput): StartPanelModel {
   const complete = !pending && doneCount === steps.length;
 
   const primary = primaryAction(hasWebsite, hasScan, hasAiSystem, activated, complete);
-  // Zweitaktion nur, solange der Website-Pfad vorne steht und noch kein
-  // KI-System erfasst ist — wer keine Website hat, kann so trotzdem starten.
-  const secondary =
-    (primary?.stepId === 'website' || primary?.stepId === 'scan') && hasAiSystem === false
-      ? { label: 'KI-System erfassen', href: '/app/onboarding' }
-      : null;
+  // Zweitaktion nur beim Erstbesuch: wer noch zögert, sieht erst die Demo.
+  const secondary = primary?.stepId === 'ai-system' ? { label: 'Demo ansehen', href: DEMO_HREF } : null;
 
   return {
     steps,
@@ -132,9 +136,12 @@ export function computeStartPanel(input: StartPanelInput): StartPanelModel {
 }
 
 /**
- * Genau eine Hauptaktion. Reihenfolge: Website → Scan → KI-System → Rahmen →
- * Risiken prüfen. Ein unbekannter Vorgänger blockiert die Empfehlung, damit
- * wir nie „Scan starten“ sagen, während die Website-Liste noch lädt.
+ * Genau eine Hauptaktion. Reihenfolge: KI-System → Website → Scan → Rahmen →
+ * Risiken prüfen. Das KI-System steht vorne, weil der Ablauf Anlegen →
+ * Klassifizieren → Dokumentieren → Auditieren der Erwartung von
+ * Geschäftsführung und Datenschutz entspricht. Ein unbekannter Vorgänger
+ * blockiert die Empfehlung, damit wir nie „Scan starten“ sagen, während
+ * noch geladen wird.
  */
 function primaryAction(
   hasWebsite: boolean | null,
@@ -143,14 +150,30 @@ function primaryAction(
   activated: boolean | null,
   complete: boolean,
 ): PrimaryAction | null {
+  if (hasAiSystem === null) return null;
+  if (!hasAiSystem) {
+    // „Willkommen“ nur beim echten Erstbesuch — wer schon eine Website
+    // verbunden hat, ist kein neuer Kunde mehr.
+    const returning = hasWebsite === true || hasScan === true;
+    return {
+      stepId: 'ai-system',
+      headline: returning ? 'Erfassen Sie Ihr erstes KI-System' : 'Willkommen bei Governance OS',
+      detail:
+        'Erfassen Sie Ihre KI-Systeme, prüfen Sie Risiken nach DSGVO und EU AI Act und erzeugen Sie Ihre erste Audit-Dokumentation in wenigen Minuten.',
+      cta: 'Erstes KI-System anlegen',
+      href: FIRST_AUDIT_HREF,
+      highlights: ['KI-Systeme registrieren', 'Risiken klassifizieren', 'Nachweise erzeugen', 'Audit starten'],
+      duration: 'Geschätzte Dauer: 3 Minuten',
+    };
+  }
   if (hasWebsite === null) return null;
   if (!hasWebsite) {
     return {
       stepId: 'website',
-      headline: 'Starten Sie mit Ihrem ersten Website-Scan',
+      headline: 'Verbinden Sie Ihre Website',
       detail:
-        'Hinterlegen Sie Ihre Domain. Der Scan zeigt in wenigen Minuten, wo Ihre Website bei DSGVO und Tracking nachbessern sollte.',
-      cta: 'Website hinterlegen & scannen',
+        'Verbinden Sie Ihre Website, um Chatbots, Domains und Compliance-Scans zentral zu verwalten. Der erste Scan zeigt in wenigen Minuten, wo Sie bei DSGVO und Tracking nachbessern sollten.',
+      cta: 'Website verbinden',
       href: '/app/websites',
     };
   }
@@ -163,17 +186,6 @@ function primaryAction(
         'Ihre Domain ist hinterlegt. Der Scan prüft HTML und Header Ihrer Website und liefert die ersten Befunde.',
       cta: 'Scan jetzt starten',
       href: '/app/websites',
-    };
-  }
-  if (hasAiSystem === null) return null;
-  if (!hasAiSystem) {
-    return {
-      stepId: 'ai-system',
-      headline: 'Erfassen Sie Ihr erstes KI-System',
-      detail:
-        'Danach ordnen wir es einer Risikoklasse nach EU AI Act zu und berechnen Ihren Governance-Score.',
-      cta: 'KI-System erfassen',
-      href: '/app/onboarding',
     };
   }
   if (activated === null) return null;

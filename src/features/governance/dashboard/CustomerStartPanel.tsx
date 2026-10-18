@@ -3,8 +3,9 @@
  * Rangfolge (statt gleichgewichteter Banner, Null-Kacheln und Statuslabels):
  *
  *   1. Hero: Workspace, Reifestatus, EINE Hauptbotschaft, EINE Hauptaktion
+ *      (Erstbesuch: „Willkommen bei Governance OS“ → erstes KI-System)
  *   2. Einrichtungsfortschritt (Checkliste + Balken) inkl. Testphase-Zeile
- *   3. Drei Kernbereiche: Websites & Scans · KI-Systeme · Risiken & Maßnahmen
+ *   3. Drei Kernbereiche: KI-Systeme · Websites & Scans · Risiken & Maßnahmen
  *   4. Ergebnisse & Nachweise — kompakt; leer = ein Satz + eine Aktion
  *   5. Weitere Module (nachgelagert)
  *
@@ -17,7 +18,12 @@ import type { CockpitData } from '../cockpit/cockpitData';
 import type { TrialStatus } from '../../../core/billing/trial';
 import { HIGH_RISK_SYSTEMS_ROUTE } from '../handoff/enforcementModel';
 import { daysSince, formatAgeDe, riskAttentionSignals } from './dashboardSignals';
-import { computeAccountNotice, type StartPanelInput, type StartPanelModel } from './startPanelModel';
+import {
+  computeAccountNotice,
+  FIRST_AUDIT_HREF,
+  type StartPanelInput,
+  type StartPanelModel,
+} from './startPanelModel';
 import './customer-start.css';
 
 const SECONDARY_MODULES: ReadonlyArray<{ label: string; href: string }> = [
@@ -70,6 +76,17 @@ export function CustomerStartPanel({
         <p className="rs-start__lead">
           {primary?.detail ?? 'Wir prüfen gerade, was in Ihrem Workspace schon eingerichtet ist.'}
         </p>
+        {primary?.highlights && (
+          <ul className="rs-start__highlights" data-testid="start-highlights">
+            {primary.highlights.map((h) => (
+              <li key={h}>
+                <Check className="h-4 w-4" aria-hidden="true" />
+                {h}
+              </li>
+            ))}
+          </ul>
+        )}
+        {primary?.duration && <p className="rs-note" data-testid="start-duration">{primary.duration}</p>}
         {primary && (
           <div className="rs-start__actions">
             <Link to={primary.href} className="rs-start__cta" data-testid="start-primary-cta">
@@ -161,16 +178,16 @@ export function CustomerStartPanel({
         {/* Zone 3 — drei Kernbereiche: Zustand · Nutzen · nächste Aktion. */}
         <div className="rs-start__core" data-testid="start-core">
           <CoreTile
-            testId="core-websites"
-            title="Websites & Scans"
-            benefit="Findet Tracking-, Cookie- und Datenschutz-Lücken Ihrer Website."
-            {...websitesTile(facts, lastScanRunAt)}
-          />
-          <CoreTile
             testId="core-ai-systems"
             title="KI-Systeme"
-            benefit="Ordnet jedes System einer Risikoklasse nach EU AI Act zu."
+            benefit="Ordnet jedes System einer Risikoklasse nach EU AI Act zu und prüft Dokumentation und Nachweise."
             {...aiSystemsTile(facts)}
+          />
+          <CoreTile
+            testId="core-websites"
+            title="Websites & Scans"
+            benefit="Verwaltet Chatbots, Domains und Compliance-Scans Ihrer Website zentral."
+            {...websitesTile(facts, lastScanRunAt)}
           />
           <CoreTile
             testId="core-risks"
@@ -182,7 +199,7 @@ export function CustomerStartPanel({
       </div>
 
       {/* Zone 4 — Ergebnisse & Nachweise. */}
-      <ResultsZone facts={facts} data={data} fallback={primary} />
+      <ResultsZone facts={facts} data={data} />
 
       {/* Zone 5 — nachgelagerte Module. */}
       <nav className="rs-start__more" aria-label="Weitere Module" data-testid="start-more">
@@ -208,7 +225,7 @@ function websitesTile(facts: StartPanelInput, lastScanRunAt: string | null): Til
   const { websiteCount: sites, scanCount: scans } = facts;
   if (sites === null) return { state: 'Wird geladen …', cta: null };
   if (sites === 0) {
-    return { state: 'Noch keine Website hinterlegt.', cta: { label: 'Website hinterlegen', href: '/app/websites' } };
+    return { state: 'Noch keine Website verbunden.', cta: { label: 'Website verbinden', href: '/app/websites' } };
   }
   const label = plural(sites, 'Website', 'Websites');
   if (scans === null) return { state: `${label} hinterlegt.`, cta: { label: 'Websites ansehen', href: '/app/websites' } };
@@ -226,7 +243,7 @@ function aiSystemsTile(facts: StartPanelInput): TileState {
   const n = facts.aiSystemCount;
   if (n === null) return { state: 'Wird geladen …', cta: null };
   if (n === 0) {
-    return { state: 'Noch kein KI-System erfasst.', cta: { label: 'Erstes KI-System erfassen', href: '/app/onboarding' } };
+    return { state: 'Noch keine KI-Systeme registriert.', cta: { label: 'KI-System anlegen', href: FIRST_AUDIT_HREF } };
   }
   return { state: `${plural(n, 'KI-System', 'KI-Systeme')} erfasst.`, cta: { label: 'KI-Systeme verwalten', href: '/app/ai-systems' } };
 }
@@ -240,7 +257,7 @@ function risksTile(facts: StartPanelInput, data: CockpitData | null, firstStepHr
   const nothingToAssess = (facts.scanCount ?? 0) === 0 && (facts.aiSystemCount ?? 0) === 0;
   if (nothingToAssess) {
     return {
-      state: 'Risiken erscheinen nach Ihrem ersten Scan oder KI-System.',
+      state: 'Risiken erscheinen nach Ihrem ersten KI-System oder Scan.',
       cta: { label: 'Zuerst einrichten', href: firstStepHref },
     };
   }
@@ -262,15 +279,7 @@ function CoreTile({ title, benefit, state, cta, testId }: TileState & { title: s
   );
 }
 
-function ResultsZone({
-  facts,
-  data,
-  fallback,
-}: {
-  facts: StartPanelInput;
-  data: CockpitData | null;
-  fallback: { cta: string; href: string } | null;
-}) {
+function ResultsZone({ facts, data }: { facts: StartPanelInput; data: CockpitData | null }) {
   const score = data?.scoreStatus === 'ok' ? data.score : null;
   const evidence =
     data && !data.partialFailures.some((f) => f.startsWith('evidence-total:')) ? data.evidenceHealth.totalCount : null;
@@ -280,17 +289,16 @@ function ResultsZone({
     <section className="rs-start__results" aria-labelledby="start-results-title" data-testid="start-results">
       <h2 id="start-results-title" className="rs-overline">Ergebnisse & Nachweise</h2>
       {empty ? (
-        <p className="rs-panel rs-start__results-empty" data-testid="start-results-empty">
+        <div className="rs-panel rs-start__results-empty" data-testid="start-results-empty">
           <span>
-            Governance-Score, Nachweise und Risikoeinstufung erscheinen hier automatisch, sobald Ihr erster Scan und
-            Ihr erstes KI-System vorliegen.
+            <strong className="rs-start__results-empty-title">Noch keine Nachweise vorhanden</strong>
+            Sobald Sie ein KI-System registrieren, protokolliert Governance OS Anlage, Einstufung und Änderungen
+            automatisch als Nachweis.
           </span>
-          {fallback && (
-            <Link to={fallback.href} className="rs-start__step-link">
-              {fallback.cta} →
-            </Link>
-          )}
-        </p>
+          <Link to={FIRST_AUDIT_HREF} className="rs-start__step-link">
+            Nachweise erzeugen →
+          </Link>
+        </div>
       ) : (
         <ul className="rs-start__results-list">
           <ResultItem label="Governance-Score" value={score === null ? 'Noch keine Bewertung' : `${score} / 100`} href="/app/risks" />

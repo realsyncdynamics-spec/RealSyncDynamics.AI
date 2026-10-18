@@ -104,7 +104,7 @@ describe('AI Studio Playground / Gateway contract', () => {
     expect(screen.queryByText('KI', { exact: true })).toBeNull();
   });
 
-  it('allows a fresh request after a gateway failure without reusing stale context', async () => {
+  it('allows a new request and clears the error after a gateway failure', async () => {
     state.invoke
       .mockResolvedValueOnce({ data: null, error: new Error('Temporär nicht verfügbar') })
       .mockResolvedValueOnce({ data: { ok: true, output: 'Wieder erreichbar' }, error: null });

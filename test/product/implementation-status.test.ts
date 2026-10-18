@@ -58,10 +58,11 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing + earth hero at Landing v4 evidence', () => {
+  it('points public landing at Landing v6 and the earth hero at the v4 preview', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
-    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV6'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('DesignGovernanceAiLanding'))).toBe(false);
 
     const earth = getImplementation('hero-earth-scenery')!;
@@ -69,6 +70,7 @@ describe('implementation-status registry', () => {
     expect(earth.evidence.some((e) => e.includes('heroEarthScene'))).toBe(true);
     expect(earth.evidence.some((e) => e.includes('MainLanding'))).toBe(false);
     expect(earth.description.toLowerCase()).toContain('three.js');
+    expect(earth.route).toBe('/design/landing-v4');
   });
 
   it('does not claim Agent OS is mounted on live /app/dashboard', () => {
@@ -268,7 +270,7 @@ describe('implementation-status registry', () => {
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
     const landing = getImplementation('public-landing')!;
-    expect(landing.description).toContain('/governance-runtime');
+    expect(landing.description).toContain('/audit');
     expect(landing.description).not.toContain('/demo-tour/dashboard');
     const content = readFileSync(
       resolve('src/components/landing/v4/landing-v4-content.ts'),

@@ -61,3 +61,22 @@ it('shows proof (Control Room, Evidence) before Agent Governance', () => {
   expect(ids.indexOf('evidence')).toBeLessThan(ids.indexOf('agenten'));
   expect(ids.indexOf('agenten')).toBeLessThan(ids.indexOf('check'));
 });
+
+it('offers both website paths: automatic SiteOS draft and personal design with Dominik', () => {
+  const view = mount();
+  const ids = Array.from(view.container.querySelectorAll('section[id]')).map((s) => s.id);
+  expect(ids.indexOf('websites')).toBeGreaterThan(-1);
+  expect(ids.indexOf('websites')).toBeLessThan(ids.indexOf('preise'));
+  const sec = within(screen.getByTestId('landing-websites'));
+  expect(view.container.querySelector('[data-website-cta="auto"]')).toHaveAttribute('href', '/build');
+  expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveAttribute(
+    'href',
+    '/contact-sales?intent=webdesign&source=landing-v6-websites',
+  );
+  // Ehrlicher Status: Builder/Veröffentlichung sind Preview, nur Weg 1 trägt das Badge.
+  expect(sec.getAllByText('PREVIEW')).toHaveLength(1);
+  expect(sec.getByRole('link', { name: 'Leistungsumfang ansehen' })).toHaveAttribute('href', '/frontend-builder');
+  // Hauptnavigation erst ab 1180 px (jsdom: 1024) — Footer-Navigation rendert immer.
+  expect(within(screen.getByRole('navigation', { name: 'Produkt' })).getByRole('link', { name: 'Websites' }))
+    .toHaveAttribute('href', '#websites');
+});

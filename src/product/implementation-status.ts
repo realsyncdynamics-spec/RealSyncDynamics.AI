@@ -49,17 +49,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act“, Primär-CTA kostenloser Website-Check (/audit), Sekundär-CTA Enterprise anfragen (/contact-sales); dunkler Europa-Hero mit Goldakzenten, darunter Plattform, Control Room (Demo-Daten), Evidence, Agenten, Sicherheit, Governance-Check, Website-Angebot (automatisch via SiteOS oder individuell über /frontend-builder), Preise und FAQ. Landing v4 bleibt unter /design/landing-v4.',
     route: '/',
     evidence: [
-      'src/pages/LandingV4.tsx',
-      'src/components/landing/v4/LandingV4Sections.tsx',
-      'src/components/landing/v4/landing-v4-content.ts',
-      'src/components/landing/v4/heroEarthScene.ts',
-      'src/styles/landing-v4-classical.css',
+      'src/pages/LandingV6.tsx',
+      'src/components/landing/v6/LandingV6View.tsx',
+      'src/components/landing/v6/useLandingV6.ts',
+      'src/styles/landing-v6.css',
       'src/App.tsx',
-      'test/landing/landing-v4.test.tsx',
-      'PR #1751',
+      'test/landing/landing-v6-funnel.test.tsx',
     ],
     showOnRoadmap: false,
   },
@@ -284,8 +282,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'visual',
     description:
-      'Live-Hero auf `/`: three.js-Szene (mountHeroEarth) hinter Landing-v4-Typografie — Blue-Marble/Night/Clouds/Normal/Specular, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver.',
-    route: '/',
+      'Hero der Designvorschau `/design/landing-v4` (nicht mehr auf `/`, dort Landing v6): three.js-Szene (mountHeroEarth) hinter Landing-v4-Typografie — Blue-Marble/Night/Clouds/Normal/Specular, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver.',
+    route: '/design/landing-v4',
     evidence: [
       'src/components/landing/v4/heroEarthScene.ts',
       'src/pages/LandingV4.tsx',
@@ -512,7 +510,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Landing-v4 three.js Earth hero instead).',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (dort Landing v6; three.js-Erde nur in /design/landing-v4).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',

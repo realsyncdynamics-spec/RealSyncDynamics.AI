@@ -48,6 +48,46 @@ const STAGES = [
   { n: '05', k: 'BEOBACHTEN', t: 'Monitoring', d: 'Laufend prüfen, wenn sich etwas ändert.', preview: true },
   { n: '06', k: 'AUSWERTEN', t: 'Berichten', d: 'Klare Übersicht für Sie, den Datenschutzbeauftragten oder den Prüfer.', preview: false },
 ];
+
+/**
+ * Website-Angebot: zwei klar getrennte Wege für KMU. Weg 1 nutzt SiteOS
+ * (Builder in Vorschau), Weg 2 ist der persönliche Frontend-Service.
+ * Der Status bleibt ehrlich: Veröffentlichung/eigene Domain sind Preview.
+ */
+const WEBSITE_PATHS = [
+  {
+    id: 'auto',
+    k: 'WEG 1 · AUTOMATISCH',
+    t: 'Landingpage automatisch erstellen',
+    d: 'Sie beschreiben Ihr Unternehmen – SiteOS erstellt daraus einen strukturierten Seitenentwurf. Texte und Reihenfolge passen Sie danach selbst an.',
+    points: [
+      'Gliederung, Texte und Seitenaufbau aus Ihrer Beschreibung',
+      'Drei Designvorlagen: Modern Minimal, Bento Bold, Dark Professional',
+      'Blockeditor mit Desktop-, Tablet- und Mobilansicht',
+      'Bestehende Website? Analyse und Redesign-Vorschau vor der Umstellung',
+    ],
+    note: 'Vorschau-Phase: Veröffentlichung und eigene Domain werden schrittweise freigeschaltet.',
+    preview: true,
+    primary: { label: 'Landingpage-Entwurf starten', href: '/build' },
+    secondary: { label: 'Bestehende Website modernisieren', href: `/handwerk-website?source=${SOURCE}-websites` },
+  },
+  {
+    id: 'custom',
+    k: 'WEG 2 · PERSÖNLICH',
+    t: 'Website individuell gestalten – mit Dominik Steiner',
+    d: 'Wenn eine Vorlage nicht reicht: Dominik Steiner, Inhaber von RealSyncDynamics, plant, gestaltet und setzt Ihre Website gemeinsam mit Ihnen um.',
+    points: [
+      'Persönliches Erstgespräch zu Ziel, Zielgruppe und Inhalten',
+      'Eigenständiges Design statt Vorlage, responsiv umgesetzt',
+      'Komponenten, CMS-Anbindung und grundlegende Performance-Optimierung',
+      'Festangebot nach Prüfung Ihrer Anfrage',
+    ],
+    note: 'Ihre Anfrage geht direkt an Dominik – nicht in den Enterprise-Vertrieb.',
+    preview: false,
+    primary: { label: 'Projekt mit Dominik besprechen', href: `/contact-sales?intent=webdesign&source=${SOURCE}-websites` },
+    secondary: { label: 'Leistungsumfang ansehen', href: '/frontend-builder' },
+  },
+] as const;
 const AGENT_NO = [
   'seine eigene Identität bestimmen',
   'seinen Tenant wählen',
@@ -558,6 +598,7 @@ export function useLandingV6() {
     },
     goPricing,
     stages: STAGES,
+    websitePaths: WEBSITE_PATHS,
     agentNo: AGENT_NO,
     gateChecks: ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'],
     crKpis: KPIS.map((k) => ({

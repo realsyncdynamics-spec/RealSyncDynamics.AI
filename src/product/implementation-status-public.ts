@@ -1,5 +1,5 @@
 /**
- * Customer-facing copy for the public landing roadmap (#roadmap on Landing v4).
+ * Customer-facing copy for the public landing roadmap (/roadmap; Startseite ist Landing v6).
  *
  * Internal `name` / `description` / `evidence` in implementation-status.ts stay
  * for registry, docs, and tests. Public markup must render ONLY these fields.

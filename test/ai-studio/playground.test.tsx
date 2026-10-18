@@ -80,6 +80,30 @@ describe('AI Studio Playground / Gateway contract', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Limit erreicht'));
   });
 
+  it('reports a missing provider (503) without a fabricated reply', async () => {
+    state.invoke.mockResolvedValue({ data: { ok: false, error: { code: 'NO_PROVIDER', message: 'Kein lokales Modell verfügbar' } }, error: null });
+    mount();
+    send();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Kein lokales Modell verfügbar'));
+    expect(screen.queryByText('KI', { exact: true })).toBeNull();
+  });
+
+  it('fails closed on a malformed successful gateway envelope', async () => {
+    state.invoke.mockResolvedValue({ data: { ok: true, output: { unexpected: true } }, error: null });
+    mount();
+    send();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('keine lesbare Textantwort'));
+    expect(screen.queryByText('[object Object]')).toBeNull();
+  });
+
+  it('handles a rejected invocation without rendering an assistant reply', async () => {
+    state.invoke.mockRejectedValue(new Error('Gateway timeout'));
+    mount();
+    send();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gateway timeout'));
+    expect(screen.queryByText('KI', { exact: true })).toBeNull();
+  });
+
   it('discards responses when the active tenant changes during a request', async () => {
     const response = deferred<{ data: { ok: true; output: string }; error: null }>();
     state.invoke.mockReturnValue(response.promise);

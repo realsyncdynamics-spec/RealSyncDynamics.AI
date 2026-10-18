@@ -3,13 +3,19 @@
 // Holt fällige Drip-Rows (Tag 3 / 14 / 30 nach Audit-Erstellung), sendet
 // pro Step die zugehörige Email via Resend, advanced den Drip-State.
 // Bei Fehler bleibt next_send_at gleich → automatischer Retry am nächsten Tag.
+//
+// Versand nur mit Marketing-Einwilligung (gdpr_audits.marketing_consent, nicht
+// widerrufen). Zeilen ohne Einwilligung werden stillgelegt (unsubscribed), damit
+// sie nicht täglich erneut fällig werden. Ist die Einwilligung nicht lesbar,
+// wird nichts gesendet (fail-closed).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { NO_CONSENT_REASON, partitionByConsent, type AuditConsentRow } from './consent-gate.ts';
 
 interface DueRow {
   id: string;
-  audit_id: string;
+  audit_id: string | null;
   email: string;
   current_step: number;
   unsubscribe_token: string;
@@ -36,9 +42,33 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: error.message }, 500);
   }
 
-  const rows = (due ?? []) as DueRow[];
-  if (rows.length === 0) {
+  const dueRows = (due ?? []) as DueRow[];
+  if (dueRows.length === 0) {
     return jsonResponse({ ok: true, sent: 0, message: 'no due drips' });
+  }
+
+  const auditIds = [...new Set(dueRows.map((r) => r.audit_id).filter((id): id is string => !!id))];
+  let audits: AuditConsentRow[] = [];
+  if (auditIds.length > 0) {
+    const { data: consentRows, error: consentErr } = await admin
+      .from('gdpr_audits')
+      .select('id, marketing_consent, marketing_consent_revoked_at')
+      .in('id', auditIds);
+    if (consentErr) {
+      // Ohne lesbare Einwilligung keine Werbung — morgen erneut versuchen.
+      console.error('audit-drip-cron: consent lookup failed', consentErr.code);
+      return jsonResponse({ ok: false, error: 'consent lookup failed' }, 500);
+    }
+    audits = (consentRows ?? []) as AuditConsentRow[];
+  }
+
+  const { allowed: rows, blocked } = partitionByConsent(dueRows, audits);
+  if (blocked.length > 0) {
+    const { error: blockErr } = await admin
+      .from('audit_email_drip')
+      .update({ unsubscribed: true, next_send_at: null, last_error: NO_CONSENT_REASON, updated_at: new Date().toISOString() })
+      .in('id', blocked.map((r) => r.id));
+    if (blockErr) console.error('audit-drip-cron: blocking rows without consent failed', blockErr.code);
   }
 
   const sent: string[] = [];
@@ -95,7 +125,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonResponse({ ok: true, sent: sent.length, failed: failed.length, total_due: rows.length });
+  return jsonResponse({
+    ok: true,
+    sent: sent.length,
+    failed: failed.length,
+    skipped_no_consent: blocked.length,
+    total_due: dueRows.length,
+  });
 });
 
 interface TemplateContext {
@@ -136,7 +172,7 @@ function templateFor(step: number, ctx: TemplateContext): { subject: string; htm
         <h1 style="font-size:22px;color:#0f172a;font-weight:700;margin:0 0 16px">In den letzten 14 Tagen…</h1>
         <p style="margin:0 0 16px">…haben sich auf vielen Sites Tracker-Sets geändert (Google-Tag-Manager-Templates, neue Marketing-Tags, A/B-Tests). Score-Drift ist die Regel, nicht die Ausnahme.</p>
         <p style="margin:0 0 24px"><strong>Empfehlung:</strong> Re-Audit deiner Site, Vergleich mit dem Stand vor 14 Tagen. Score-Differenz wird automatisch hervorgehoben.</p>
-        <a href="${ctx.site}/audit?source=drip-step2&email=${encodeURIComponent(ctx.email)}" style="display:inline-block;padding:12px 20px;background:#6366f1;color:#fff;text-decoration:none;font-weight:600;border-radius:0">Re-Audit starten</a>
+        <a href="${ctx.site}/audit?source=drip-step2" style="display:inline-block;padding:12px 20px;background:#6366f1;color:#fff;text-decoration:none;font-weight:600;border-radius:0">Re-Audit starten</a>
         <p style="margin:32px 0 8px;font-size:13px;color:#6b7280">Möchtest du wöchentliche Re-Audits + Alerts? <a href="${ctx.site}/cookie-consent-sdk" style="color:#6366f1">Pro-Tier ansehen (49 €/M)</a></p>
       `, unsubscribe),
     };

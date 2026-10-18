@@ -397,7 +397,10 @@ async function handleAudit(req: Request): Promise<Response> {
       safe,
     ),
   );
-  if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
+  if (auditErr) {
+    console.error('gdpr-audit: gdpr_audits insert failed', consentInsertErrorLog(auditErr));
+    return jsonError(500, 'INTERNAL', 'Audit konnte nicht gespeichert werden. Bitte später erneut versuchen.');
+  }
 
   // P0 Privacy: never return raw email on the public response.
   // Email stays persisted for CRM / audit-report-email delivery.

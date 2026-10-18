@@ -2,12 +2,15 @@
 //
 // Endpoint: POST /functions/v1/kodee
 // Auth:     Authorization: Bearer <user JWT>
-// Body:     { v?: 1, connection_id: uuid, action: ActionName, args?: ... }
+// Body:     { v?: 1, tenant_id: uuid, connection_id: uuid, action: ActionName, args?: ... }
 // Response: KodeeResponse<T> — see ./types.ts
 //
 // Flow:
 //   1. Validate request shape
 //   2. Verify caller via Supabase Auth (user JWT)
+//   2b. Caller is a member of tenant_id and the tenant holds
+//       `ai.tool.vps_status` (Agency+). The Kodee chat stays open on Free;
+//       SSH actions do not.
 //   3. Load vps_connections row WHERE id=? AND owner_id=auth.uid()
 //      (defense-in-depth — RLS would also enforce this if we used the user client)
 //   4. Decrypt SSH private key from vps_ssh_keys (service-role only)
@@ -18,6 +21,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatch } from './actions.ts';
 import { decryptPrivateKey } from './secrets.ts';
 import { loadConnectionForUser } from '../_shared/connections.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import {
   API_VERSION,
   type ActionName,
@@ -51,8 +55,11 @@ Deno.serve(async (req) => {
   } catch {
     return jsonError(400, 'BAD_REQUEST', 'invalid json', undefined, start);
   }
-  if (!body || typeof body.connection_id !== 'string' || !ALLOWED_ACTIONS.includes(body.action)) {
-    return jsonError(400, 'BAD_REQUEST', 'connection_id and supported action required', undefined, start);
+  if (
+    !body || typeof body.tenant_id !== 'string' || typeof body.connection_id !== 'string' ||
+    !ALLOWED_ACTIONS.includes(body.action)
+  ) {
+    return jsonError(400, 'BAD_REQUEST', 'tenant_id, connection_id and supported action required', undefined, start);
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -70,10 +77,27 @@ Deno.serve(async (req) => {
   }
   const userId = userResp.user.id;
 
+  // 2b. Tenant membership (RLS via user JWT) + entitlement
+  const { data: member, error: memberErr } = await userClient
+    .from('memberships').select('id')
+    .eq('tenant_id', body.tenant_id).eq('user_id', userId).maybeSingle();
+  if (memberErr) return jsonError(500, 'INTERNAL', memberErr.message, undefined, start, body.action);
+  if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant', undefined, start, body.action);
+
   // 3. Load connection (service-role bypass RLS to also fetch keys, but enforce owner_id explicitly)
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
+
+  try {
+    await gateFeature(adminClient, body.tenant_id, 'ai.tool.vps_status');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      const status = e.code === 'INTERNAL' ? 500 : 403;
+      return jsonError(status, e.code === 'INTERNAL' ? 'INTERNAL' : 'FORBIDDEN', e.message, undefined, start, body.action);
+    }
+    throw e;
+  }
 
   const conn = await loadConnectionForUser(adminClient, userId, body.connection_id);
   if (!conn) return jsonError(404, 'NOT_FOUND', 'connection not found', undefined, start, body.action);

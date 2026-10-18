@@ -27,6 +27,8 @@ export function isWriteAction(a: ActionName): boolean {
 
 export interface KodeeRequest {
   v?: number;
+  /** Mandant, gegen dessen Entitlements `ai.tool.vps_status` geprüft wird. */
+  tenant_id: string;
   connection_id: string;
   action: ActionName;
   args?: ActionArgs;

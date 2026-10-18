@@ -27,9 +27,9 @@ export const SHELL_NAV: readonly ShellNavItem[] = [
   { id: 'overview', labelKey: 'navOverview', route: '/app/dashboard' },
   // Free gewährt governance.ai_register ⇒ offen.
   { id: 'systems', labelKey: 'navSystems', route: '/app/ai-systems', entitlementKeys: ['governance.ai_register'] },
-  // ai_classification.limited = 0 in Free ⇒ Schloss. Kein Plan gewährt den Key
-  // (minPlan null) — Tooltip sagt „in Vorbereitung“, kein Upgrade-CTA.
-  { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems', entitlementKeys: ['ai_classification.limited'] },
+  // Klassifizierung im KI-Register (/app/ai-systems/:id) speichert über
+  // governance-resources classify_asset (owner/admin) — gleicher Key wie das Register.
+  { id: 'classify', labelKey: 'navClassify', route: '/app/ai-systems', entitlementKeys: ['governance.ai_register'] },
   // Route /app/policy-packs verlangt policy.packs (Register) — Schloss und Sperre aus derselben Quelle.
   { id: 'enforce', labelKey: 'navEnforce', route: '/app/policy-packs', entitlementKeys: ['policy.packs'] },
   { id: 'evidence', labelKey: 'navEvidence', route: '/app/evidence' },

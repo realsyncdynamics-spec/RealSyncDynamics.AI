@@ -6,6 +6,7 @@ import {
   FeatureKey,
   UsageLimits,
 } from './types';
+import { classifyBillingAccount } from './billingAccount';
 import {
   hasModule,
   hasPermission,
@@ -155,6 +156,7 @@ export function resolveEntitlements(
     planKey,
     status: subscription.status,
     trialEnd: subscription.trialEnd,
+    accountKind: classifyBillingAccount(subscription),
     isActive,
     features,
     limits,

@@ -15,6 +15,7 @@ import {
   BETA_PLAN_KEY,
   betaOpen,
   decideEnrollment,
+  newEnrollmentOpen,
   sanitizeSource,
 } from '../../supabase/functions/beta-enroll/logic';
 import { BETA } from '../../src/config/beta';
@@ -81,6 +82,43 @@ describe('decideEnrollment', () => {
   });
 });
 
+describe('Neuaufnahme geschlossen (BETA_NEW_ENROLLMENT=off)', () => {
+  const closed = { acceptNew: false };
+
+  it('bestätigt bestehende Beta-Zugänge unverändert (kein rückwirkender Entzug)', () => {
+    expect(
+      decideEnrollment({ status: 'trialing', plan_key: 'growth', source: 'beta', trial_end: BETA_ENDS_AT }, NOW, closed),
+    ).toEqual({ kind: 'already' });
+  });
+
+  it('nimmt neue Mandanten nicht mehr auf', () => {
+    expect(decideEnrollment(null, NOW, closed)).toEqual({ kind: 'skip', reason: 'NEW_ENROLLMENT_CLOSED' });
+    expect(decideEnrollment({ status: 'active', plan_key: 'free_audit' }, NOW, closed)).toEqual({
+      kind: 'skip',
+      reason: 'NEW_ENROLLMENT_CLOSED',
+    });
+    // Kartenloser Growth-Test wird nicht mehr auf das Beta-Ende verlängert.
+    expect(decideEnrollment({ status: 'trialing', plan_key: 'growth', trial_end: FUTURE }, NOW, closed)).toEqual({
+      kind: 'skip',
+      reason: 'NEW_ENROLLMENT_CLOSED',
+    });
+  });
+
+  it('lässt Stripe- und laufende Abos weiter mit ihrem eigenen Grund unberührt', () => {
+    expect(decideEnrollment({ status: 'active', plan_key: 'starter', stripe_subscription_id: 'sub_1' }, NOW, closed))
+      .toEqual({ kind: 'skip', reason: 'STRIPE_SUBSCRIPTION' });
+    expect(decideEnrollment({ status: 'active', plan_key: 'agency' }, NOW, closed))
+      .toEqual({ kind: 'skip', reason: 'ACTIVE_SUBSCRIPTION' });
+  });
+
+  it('Default bleibt offen — Produktion unverändert, bis das Secret gesetzt wird', () => {
+    expect(newEnrollmentOpen(undefined)).toBe(true);
+    expect(newEnrollmentOpen('on')).toBe(true);
+    for (const f of ['off', 'OFF', 'false', '0']) expect(newEnrollmentOpen(f)).toBe(false);
+    expect(decideEnrollment(null, NOW)).toEqual({ kind: 'enroll' });
+  });
+});
+
 describe('betaOpen / Beta-Ende', () => {
   it('ist offen bis zum Beta-Ende und danach zu', () => {
     expect(betaOpen(undefined, NOW)).toBe(true);
@@ -135,7 +173,8 @@ describe('beta-enroll — Quelltext', () => {
   });
 
   it('entscheidet vor dem Schreiben und liefert ok:true auch bei skip', () => {
-    expect(CODE).toContain('decideEnrollment(current, now)');
+    expect(CODE).toContain('decideEnrollment(current, now, {');
+    expect(CODE).toContain("acceptNew: newEnrollmentOpen(Deno.env.get('BETA_NEW_ENROLLMENT'))");
     expect(CODE).toMatch(/ok: true, enrolled: false, reason: decision\.reason/);
   });
 

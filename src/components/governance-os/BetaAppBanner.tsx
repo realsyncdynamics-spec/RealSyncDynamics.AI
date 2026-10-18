@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BETA } from '../../config/beta';
-import { useBetaEnrollment, type BetaEnrollState } from '../../features/billing/useBetaEnrollment';
+import { useBetaEnrollment } from '../../features/billing/useBetaEnrollment';
+import { useAccountStatus } from '../../features/billing/useAccountStatus';
+import { betaBannerText, enrollmentNotice } from '../../features/billing/betaNotice';
 
 const KEY = 'rsd-beta-banner-dismissed';
 
 /**
  * Beta-Hinweis im Dashboard (alle /app/*-Flächen). Zeigt Testphase, Ende
  * und den Feedback-Weg. Ausblendbar pro Browser (nur Komfort, kein State
- * mit Bedeutung). Verschwindet mit `VITE_BETA_PHASE=off` überall.
+ * mit Bedeutung). Der allgemeine Text erscheint nur für Beta-Mandanten
+ * (`subscriptions.source = 'beta'`), nicht für Stripe- oder Testkunden.
  *
  * Löst außerdem die serverseitige Beta-Anmeldung aus (`useBetaEnrollment`,
  * WP-3) und meldet das Ergebnis — auch wenn der Hinweis ausgeblendet ist.
@@ -20,6 +23,7 @@ const KEY = 'rsd-beta-banner-dismissed';
  */
 export function BetaAppBanner() {
   const enrollment = useBetaEnrollment();
+  const { kind } = useAccountStatus();
   const { pathname } = useLocation();
   const onDashboard = pathname === '/app/dashboard';
   const [hidden, setHidden] = useState(() => {
@@ -29,9 +33,10 @@ export function BetaAppBanner() {
       return false;
     }
   });
-  if (!BETA.active) return null;
-  const notice = enrollmentNotice(enrollment);
+  const notice = enrollmentNotice(enrollment, BETA.endsLabel);
   if ((hidden || onDashboard) && !notice) return null;
+  const text = betaBannerText({ kind, notice, endsLabel: BETA.endsLabel });
+  if (!text) return null;
   const dismiss = () => {
     try {
       localStorage.setItem(KEY, '1');
@@ -50,8 +55,7 @@ export function BetaAppBanner() {
         {BETA.badge}
       </span>
       <span>
-        {notice ??
-          `Kostenlose Testphase bis ${BETA.endsLabel}. Einige Module sind als BETA markiert und können sich noch ändern.`}
+        {text}
       </span>
       <Link to="/kontakt?topic=beta-feedback" className="underline" style={{ color: '#d6ae52' }}>
         Feedback geben
@@ -61,24 +65,4 @@ export function BetaAppBanner() {
       </button>
     </div>
   );
-}
-
-/** Nur Zustände mit Neuigkeitswert; sonst gilt der allgemeine Beta-Hinweis. */
-function enrollmentNotice(state: BetaEnrollState): string | null {
-  switch (state.status) {
-    case 'pending':
-      return 'Beta-Zugang wird eingerichtet …';
-    case 'enrolled':
-      return state.fresh
-        ? `Beta aktiv: Sie testen den vollen Growth-Umfang kostenlos bis ${BETA.endsLabel}.`
-        : null;
-    case 'skipped':
-      return 'Ihr bestehendes Abo bleibt unverändert — die Beta-Freischaltung ist dafür nicht nötig.';
-    case 'error':
-      return state.retryable
-        ? 'Der Beta-Zugang konnte noch nicht eingerichtet werden. Wir versuchen es beim nächsten Öffnen erneut.'
-        : `Der Beta-Zugang konnte nicht eingerichtet werden: ${state.message}`;
-    default:
-      return null;
-  }
 }

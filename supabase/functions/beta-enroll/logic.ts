@@ -44,7 +44,7 @@ export interface CurrentSubscription {
 export type EnrollDecision =
   | { kind: 'enroll' }
   | { kind: 'already' }
-  | { kind: 'skip'; reason: 'STRIPE_SUBSCRIPTION' | 'ACTIVE_SUBSCRIPTION' };
+  | { kind: 'skip'; reason: 'STRIPE_SUBSCRIPTION' | 'ACTIVE_SUBSCRIPTION' | 'NEW_ENROLLMENT_CLOSED' };
 
 /**
  * Darf die Beta über das bestehende Abo gelegt werden?
@@ -54,9 +54,21 @@ export type EnrollDecision =
  * nicht-freies Abo), wird nie angefasst — `subscriptions` trägt
  * `UNIQUE (tenant_id)`, ein Upsert würde es ersetzen.
  */
-export function decideEnrollment(current: CurrentSubscription | null, now: Date): EnrollDecision {
+export function decideEnrollment(
+  current: CurrentSubscription | null,
+  now: Date,
+  { acceptNew = true }: { acceptNew?: boolean } = {},
+): EnrollDecision {
+  // Bestandsschutz zuerst: Ein gewährter Beta-Zugang bleibt, auch wenn die
+  // Beta keine neuen Mandanten mehr aufnimmt.
+  if (current?.source === BETA_SOURCE) return { kind: 'already' };
+  const decision = decideNewEnrollment(current, now);
+  if (decision.kind === 'enroll' && !acceptNew) return { kind: 'skip', reason: 'NEW_ENROLLMENT_CLOSED' };
+  return decision;
+}
+
+function decideNewEnrollment(current: CurrentSubscription | null, now: Date): EnrollDecision {
   if (!current) return { kind: 'enroll' };
-  if (current.source === BETA_SOURCE) return { kind: 'already' };
 
   // Stripe-Abos (auch gekündigte) bleiben unberührt: der Auflöser liest
   // zuerst `stripe_price_id`, und Stripe-Webhooks schreiben dieselbe Zeile.
@@ -84,6 +96,16 @@ export function betaOpen(flag: string | undefined, now: Date): boolean {
   const f = (flag ?? 'on').toLowerCase();
   if (f === 'off' || f === 'false' || f === '0') return false;
   return now.getTime() < new Date(BETA_ENDS_AT).getTime();
+}
+
+/**
+ * Nimmt die Beta neue Mandanten auf? `BETA_NEW_ENROLLMENT=off` (Function-Secret)
+ * schließt nur die Neuaufnahme — bestehende Beta-Zugänge bleiben bestätigt,
+ * anders als `BETA_PHASE=off`, das die Function ganz schließt. Default = an.
+ */
+export function newEnrollmentOpen(flag: string | undefined): boolean {
+  const f = (flag ?? 'on').toLowerCase();
+  return !(f === 'off' || f === 'false' || f === '0');
 }
 
 /** Marketing-Quelle aus dem Body — nur ein kurzer Slug, sonst `beta`. */

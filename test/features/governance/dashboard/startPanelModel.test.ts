@@ -75,27 +75,27 @@ describe('Kunden-Startansicht — genau ein nächster Schritt', () => {
 });
 
 describe('Testphase und Zahlung — eine Zeile statt zwei Banner', () => {
-  const beta = { active: true, endsLabel: '31. Januar 2027' };
+  const beta = { endsLabel: '31. Januar 2027' };
 
-  it('Beta: keine Zahlungsaufforderung', () => {
-    const n = computeAccountNotice({ daysRemaining: 109, endingSoon: false }, beta);
+  it('Beta-Mandant: keine Zahlungsaufforderung', () => {
+    const n = computeAccountNotice({ daysRemaining: 109, endingSoon: false }, beta, 'beta');
     expect(n?.text).toContain('noch 109 Tage');
     expect(n?.text).toContain('keine Zahlungsdaten nötig');
     expect(n?.link).toBeNull();
     expect(n?.tone).toBe('neutral');
   });
 
-  it('ohne Beta: Zahlungsdaten-Link, Hervorhebung erst kurz vor Ende', () => {
-    const off = { active: false, endsLabel: '' };
-    expect(computeAccountNotice({ daysRemaining: 20, endingSoon: false }, off)?.tone).toBe('neutral');
-    const soon = computeAccountNotice({ daysRemaining: 2, endingSoon: true }, off);
+  it('kartenlose Testphase: Zahlungsdaten-Link, Hervorhebung erst kurz vor Ende', () => {
+    expect(computeAccountNotice({ daysRemaining: 20, endingSoon: false }, beta, 'trial')?.tone).toBe('neutral');
+    const soon = computeAccountNotice({ daysRemaining: 2, endingSoon: true }, beta, 'trial');
     expect(soon?.tone).toBe('attention');
     expect(soon?.link?.href).toBe('/billing/usage');
-    expect(computeAccountNotice(null, off)).toBeNull();
+    expect(computeAccountNotice(null, beta, 'trial')).toBeNull();
+    expect(computeAccountNotice(null, beta, null)).toBeNull();
   });
 
   it('abgelaufen: kostenloser Zugang + Pakete', () => {
-    const n = computeAccountNotice({ daysRemaining: 0, endingSoon: true }, beta);
+    const n = computeAccountNotice({ daysRemaining: 0, endingSoon: true }, beta, 'beta');
     expect(n?.link?.href).toBe('/pricing?source=trial-expired');
   });
 });

@@ -14,7 +14,7 @@ import {
   type ComplianceKpiRow,
 } from '../../../lib/status/statusAdapter';
 import { loadCockpitData, type CockpitData } from '../cockpit/cockpitData';
-import { useTrialStatus } from '../../workspace/TrialBanner';
+import { useAccountStatus } from '../../billing/useAccountStatus';
 import { listScanRuns, listWebsitesForTenant } from '../scans/scansApi';
 import { loadGovernanceActivation } from '../../activation/activationApi';
 import {
@@ -80,7 +80,7 @@ export function CommandCenterDashboard() {
   const [bootstrapSteps, setBootstrapSteps] = useState<BootstrapStep[]>([]);
   // Dieselben Fakten wie die Bootstrap-Schritte — speisen die Kunden-Startansicht.
   const [facts, setFacts] = useState<WorkspaceFacts>(UNKNOWN_FACTS);
-  const trial = useTrialStatus();
+  const { trial, kind: accountKind } = useAccountStatus();
   const [complianceKpi, setComplianceKpi] = useState<ComplianceKpiRow>(EMPTY_COMPLIANCE_KPI_ROW);
   // „Erneut laden“: erhöht den Schlüssel und lädt ALLE Dashboard-Quellen neu
   // (Cockpit, KPI-Zeile, Übersicht, Workspace-Schritte) — kein Seiten-Reload.
@@ -177,6 +177,7 @@ export function CommandCenterDashboard() {
           model={startModel}
           lastScanRunAt={tenantFacts.lastScanRunAt}
           trial={trial}
+          accountKind={accountKind}
           data={tenantData}
         />
       )}

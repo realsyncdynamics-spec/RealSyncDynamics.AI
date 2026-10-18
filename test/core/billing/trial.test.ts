@@ -106,6 +106,10 @@ describe('isTrialEligible', () => {
     expect(isTrialEligible(decision)).toBe(false);
   });
 
+  it('freie Stufe zählt nicht als laufendes Abo (Spiegel von stripe-checkout)', () => {
+    expect(isTrialEligible({ ...baseDecision, planKey: 'free_audit' as const, status: 'active' as const, trialEnd: null })).toBe(true);
+  });
+
   it('laufendes Abo (Upgrade) bekommt keine Testphase', () => {
     expect(isTrialEligible({ ...baseDecision, status: 'active' as const, trialEnd: null })).toBe(false);
     expect(isTrialEligible({ ...baseDecision, status: 'trialing' as const, trialEnd: '2026-06-21T12:00:00Z' })).toBe(false);

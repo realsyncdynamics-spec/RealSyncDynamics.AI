@@ -1,41 +1,21 @@
 // TrialBanner — zeigt die verbleibende Testlaufzeit (Stripe `trialing`)
 // im Workspace an, mit Link zur Zahlungsmethoden-Verwaltung.
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3 } from 'lucide-react';
-import { useTenant } from '../../core/access/TenantProvider';
-import { getEntitlementsForTenant } from '../../core/usage/usage-service';
-import { getTrialStatus, type TrialStatus } from '../../core/billing/trial';
+import type { TrialStatus } from '../../core/billing/trial';
+import { useAccountStatus } from '../billing/useAccountStatus';
 
 /**
- * Lädt den Stripe-Testphasenstatus des aktiven Mandanten. `null` = keine
- * laufende Testphase oder nicht ladbar (rein informativ, kein Fehlerzustand).
+ * Testphasenstatus des aktiven Mandanten. `null` = keine laufende Testphase
+ * oder nicht ladbar (rein informativ, kein Fehlerzustand).
  * Auch von der Kunden-Startansicht des Dashboards genutzt.
  */
 export function useTrialStatus(): TrialStatus | null {
-  const { activeTenantId } = useTenant();
-  const [trial, setTrial] = useState<TrialStatus | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!activeTenantId) { setTrial(null); return; }
-    (async () => {
-      try {
-        const decision = await getEntitlementsForTenant(activeTenantId);
-        if (!cancelled) setTrial(getTrialStatus(decision));
-      } catch {
-        // Trial-Hinweis ist informativ — bei Fehler einfach nicht anzeigen.
-        if (!cancelled) setTrial(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [activeTenantId]);
-
-  return trial;
+  return useAccountStatus().trial;
 }
 
 export function TrialBanner() {
-  const trial = useTrialStatus();
+  const { trial, kind } = useAccountStatus();
 
   if (!trial) return null;
 
@@ -58,12 +38,15 @@ export function TrialBanner() {
             ? 'Ihre kostenlose Testphase endet morgen.'
             : `Ihre kostenlose Testphase endet in ${days} Tagen.`}
       </span>
-      <Link
-        to={expired ? '/pricing?source=trial-expired' : '/billing/usage'}
-        className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
-      >
-        {expired ? 'Pakete ansehen →' : 'Zahlungsmethode hinterlegen →'}
-      </Link>
+      {/* Beta: keine Zahlungsdaten nötig. Stripe-Testphase: Zahlungsmittel liegt schon vor. */}
+      {expired || kind !== 'beta' ? (
+        <Link
+          to={expired ? '/pricing?source=trial-expired' : kind === 'stripe' ? '/app/billing' : '/billing/usage'}
+          className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+        >
+          {expired ? 'Pakete ansehen →' : kind === 'stripe' ? 'Abo verwalten →' : 'Zahlungsmethode hinterlegen →'}
+        </Link>
+      ) : null}
     </div>
   );
 }

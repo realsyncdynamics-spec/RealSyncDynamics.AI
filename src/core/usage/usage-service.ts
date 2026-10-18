@@ -73,7 +73,7 @@ export async function getEntitlementsForTenant(tenantId: string): Promise<Entitl
   const [tenantRow, subRow, memberCount, currentRole, usageRows] = await Promise.all([
     sb.from('tenants').select('id,is_public_sector').eq('id', tenantId).maybeSingle(),
     sb.from('subscriptions')
-      .select('stripe_customer_id,stripe_subscription_id,stripe_product_id,stripe_price_id,plan_key,billing_interval,status,quantity,cancel_at_period_end,current_period_end,trial_end')
+      .select('stripe_customer_id,stripe_subscription_id,stripe_product_id,stripe_price_id,plan_key,billing_interval,status,quantity,cancel_at_period_end,current_period_end,trial_end,source')
       .eq('tenant_id', tenantId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -106,6 +106,7 @@ export async function getEntitlementsForTenant(tenantId: string): Promise<Entitl
         currentPeriodEnd: subRow.data.current_period_end,
         trialEnd: subRow.data.trial_end ?? null,
         addOns: [],
+        source: subRow.data.source ?? null,
       }
     : freeSnapshot();
 

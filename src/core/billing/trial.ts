@@ -76,7 +76,46 @@ export function getFreeAccessReason(
  * ab der ersten Abbuchung. Dieselbe Regel gilt serverseitig in
  * `stripe-checkout` gegen die Abo-Zeile — hier nur für die ehrliche Anzeige.
  */
-export function isTrialEligible(decision: EntitlementDecision): boolean {
+export function isTrialEligible(decision: Pick<EntitlementDecision, 'planKey' | 'status' | 'trialEnd'>): boolean {
+  // Wie `isRealSubscriptionRow()` in stripe-checkout: Die freie Stufe ist kein
+  // laufendes Abo und keine verbrauchte Testphase. Ohne diese Weiche zeigte
+  // der Checkout neuen Kunden (Free-Zeile mit `active`) „Abbuchung sofort“,
+  // während Stripe die beworbenen 14 Tage gewährte.
+  if (planByKey(decision.planKey)?.purchaseMode === 'free') return true;
   if (LIVE_SUBSCRIPTION_STATES.has(decision.status)) return false;
   return !decision.trialEnd;
+}
+
+/**
+ * Vorlauf, den Stripe Checkout für ein festes Testphasen-Ende
+ * (`subscription_data.trial_end`) mindestens verlangt: 48 Stunden.
+ */
+export const MIN_CHECKOUT_TRIAL_END_LEAD_MS = 48 * 60 * 60 * 1000;
+
+export type CheckoutTrialPreview =
+  | { kind: 'days'; days: number }
+  | { kind: 'until'; trialEnd: string }
+  | { kind: 'none' };
+
+/**
+ * Welche Testphase bekäme dieser Mandant im Stripe-Checkout?
+ *
+ * Beta-Mandanten behalten beim Kauf ihre gewährte Laufzeit: Stripe rechnet
+ * erst ab dem Beta-Ende ab (`trial_end`), statt 14 Tage ab heute zu geben
+ * oder sofort abzubuchen. Läuft die Beta in weniger als 48 Stunden aus oder
+ * ist sie vorbei, gilt die Sofort-Abbuchung — die Testphase ist verbraucht.
+ * Spiegel von `checkoutTrialFor()` in supabase/functions/stripe-checkout/customer.ts.
+ */
+export function previewCheckoutTrial(
+  decision: Pick<EntitlementDecision, 'accountKind' | 'planKey' | 'status' | 'trialEnd'>,
+  trialDays: number,
+  now: Date = new Date(),
+): CheckoutTrialPreview {
+  if (decision.accountKind === 'beta') {
+    const end = decision.trialEnd ? Date.parse(decision.trialEnd) : Number.NaN;
+    const runsLongEnough =
+      decision.status === 'trialing' && Number.isFinite(end) && end - now.getTime() >= MIN_CHECKOUT_TRIAL_END_LEAD_MS;
+    return runsLongEnough ? { kind: 'until', trialEnd: decision.trialEnd! } : { kind: 'none' };
+  }
+  return trialDays > 0 && isTrialEligible(decision) ? { kind: 'days', days: trialDays } : { kind: 'none' };
 }

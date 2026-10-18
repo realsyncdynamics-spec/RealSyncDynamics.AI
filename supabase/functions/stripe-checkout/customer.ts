@@ -25,6 +25,9 @@ export interface ExistingSubRow {
   status?: string | null;
   trial_end?: string | null;
   trial_ends_at?: string | null;
+  /** `'beta'` = offene Beta (beta-enroll). Bleibt nach einem Kauf stehen. */
+  source?: string | null;
+  stripe_subscription_id?: string | null;
 }
 
 /** Zählt die Zeile als echtes (ehemaliges) Stripe-Abo? Free-/Platzhalter-Zeilen nicht. */
@@ -42,4 +45,39 @@ export function isTrialEligibleForCheckout(row: ExistingSubRow | null | undefine
   const hadTrial = Boolean(row.trial_end || row.trial_ends_at);
   const hasLive = LIVE_SUBSCRIPTION_STATES.has(row.status ?? '');
   return !hadTrial && !hasLive;
+}
+
+/** Stripe Checkout verlangt für `subscription_data.trial_end` mindestens 48 h Vorlauf. */
+export const MIN_TRIAL_END_LEAD_MS = 48 * 60 * 60 * 1000;
+
+export type CheckoutTrial =
+  | { kind: 'days'; days: number }
+  | { kind: 'until'; trialEndUnix: number }
+  | { kind: 'none' };
+
+/**
+ * Testphase für eine neue Checkout-Session.
+ *
+ * Beta-Mandanten (Zeile von `beta-enroll`, noch ohne Stripe-Abo) behalten
+ * beim Kauf ihre gewährte Laufzeit: Stripe rechnet erst ab dem Beta-Ende ab.
+ * Ohne diese Weiche zählte die Beta-Zeile (kein `cus_`-Customer) als „nie
+ * gekauft“ und bekam 14 Tage ab heute — der Webhook hätte das Beta-Ende in
+ * derselben Zeile dann vorgezogen. Eine abgelaufene Beta ist eine verbrauchte
+ * Testphase. Alle anderen: `trialDays` aus der SSoT, eine Testphase pro
+ * Mandant. Spiegel für die Anzeige: `previewCheckoutTrial()` in
+ * src/core/billing/trial.ts.
+ */
+export function checkoutTrialFor(
+  row: ExistingSubRow | null | undefined,
+  trialDays: number,
+  now: Date,
+): CheckoutTrial {
+  if (row?.source === 'beta' && !row.stripe_subscription_id) {
+    const end = Date.parse(row.trial_end ?? row.trial_ends_at ?? '');
+    if (row.status === 'trialing' && Number.isFinite(end) && end - now.getTime() >= MIN_TRIAL_END_LEAD_MS) {
+      return { kind: 'until', trialEndUnix: Math.floor(end / 1000) };
+    }
+    return { kind: 'none' };
+  }
+  return trialDays > 0 && isTrialEligibleForCheckout(row) ? { kind: 'days', days: trialDays } : { kind: 'none' };
 }

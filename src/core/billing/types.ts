@@ -2,6 +2,7 @@
 // Die frueheren Parallel-Welten (bronze/silver/gold, *_governance) sind
 // entfallen — es gibt genau sechs Plaene.
 import type { PlanKey as CanonicalPlanKey, BillingInterval as CanonicalInterval } from '@/shared/pricing';
+import type { BillingAccountKind } from './billingAccount';
 
 export type PlanKey = CanonicalPlanKey;
 
@@ -95,6 +96,8 @@ export interface SubscriptionSnapshot {
   currentPeriodEnd: string | null;
   trialEnd: string | null;
   addOns: string[];
+  /** `subscriptions.source` — `'beta'` = offene Beta (beta-enroll), sonst leer. */
+  source?: string | null;
 }
 
 export interface TenantContext {
@@ -113,6 +116,8 @@ export interface EntitlementDecision {
   limits: UsageLimits;
   seatsAllowed: number | null;
   trialEnd: string | null;
+  /** Art des Vertragsverhältnisses (billingAccount.ts) — steuert Zahlungs- und Beta-Hinweise. */
+  accountKind?: BillingAccountKind;
   overages: {
     seatsExceeded: boolean;
     assetsExceeded: boolean;

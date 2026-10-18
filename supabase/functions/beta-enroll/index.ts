@@ -41,6 +41,7 @@ import {
   BETA_SOURCE,
   betaOpen,
   decideEnrollment,
+  newEnrollmentOpen,
   sanitizeSource,
 } from './logic.ts';
 
@@ -116,7 +117,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (readErr) throw readErr;
 
-    const decision = decideEnrollment(current, now);
+    const decision = decideEnrollment(current, now, {
+      acceptNew: newEnrollmentOpen(Deno.env.get('BETA_NEW_ENROLLMENT')),
+    });
 
     if (decision.kind === 'skip') {
       // Kein Fehler für den Client: ein zahlender Mandant behält sein Abo.

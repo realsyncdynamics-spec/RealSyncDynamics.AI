@@ -51,3 +51,23 @@ export function betaSignupHref(plan: string = BETA.testPlan, source = 'beta'): s
   const q = new URLSearchParams({ beta: '1', plan, source, next });
   return `/welcome?${q.toString()}`;
 }
+
+const isOff = (raw: unknown) => ['off', 'false', '0'].includes(String(raw ?? 'on').toLowerCase());
+
+/**
+ * Leitet `/checkout/<starter|growth|agency>` in die Beta-Registrierung um?
+ *
+ * Eigener Schalter neben `BETA.active`: `VITE_BETA_CHECKOUT=off` schaltet
+ * neue Kunden auf den regulären Stripe-Checkout (Preise und `trialDays` aus
+ * `shared/pricing.ts`), ohne die Beta für bestehende Beta-Mandanten zu
+ * beenden. Default = an, also wie bisher. Serverseitiges Gegenstück für
+ * Neuanmeldungen: Secret `BETA_NEW_ENROLLMENT` in `beta-enroll`.
+ */
+export const BETA_CHECKOUT_REDIRECT = BETA.active && !isOff(import.meta.env?.VITE_BETA_CHECKOUT);
+
+export function redirectsCheckoutToBeta(
+  planIdOrKey: string | undefined | null,
+  { purchase = false, redirect = BETA_CHECKOUT_REDIRECT }: { purchase?: boolean; redirect?: boolean } = {},
+): boolean {
+  return redirect && !purchase && isBetaPlan(planIdOrKey);
+}

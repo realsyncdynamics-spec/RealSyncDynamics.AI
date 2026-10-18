@@ -21,7 +21,7 @@ export interface BetaEnrollResponse {
   ok: true;
   enrolled: boolean;
   alreadyEnrolled?: boolean;
-  reason?: 'STRIPE_SUBSCRIPTION' | 'ACTIVE_SUBSCRIPTION';
+  reason?: 'STRIPE_SUBSCRIPTION' | 'ACTIVE_SUBSCRIPTION' | 'NEW_ENROLLMENT_CLOSED';
   planKey?: string;
   endsAt?: string;
 }

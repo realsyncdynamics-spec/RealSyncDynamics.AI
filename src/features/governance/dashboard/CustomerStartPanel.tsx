@@ -15,6 +15,7 @@ import { ArrowRight, Check, Circle, Loader2 } from 'lucide-react';
 import { BETA } from '../../../config/beta';
 import type { CockpitData } from '../cockpit/cockpitData';
 import type { TrialStatus } from '../../../core/billing/trial';
+import type { BillingAccountKind } from '../../../core/billing/billingAccount';
 import { HIGH_RISK_SYSTEMS_ROUTE } from '../handoff/enforcementModel';
 import { daysSince, formatAgeDe, riskAttentionSignals } from './dashboardSignals';
 import { computeAccountNotice, type StartPanelInput, type StartPanelModel } from './startPanelModel';
@@ -38,6 +39,7 @@ export function CustomerStartPanel({
   model,
   lastScanRunAt,
   trial,
+  accountKind = null,
   data,
 }: {
   tenantName: string | null;
@@ -45,9 +47,11 @@ export function CustomerStartPanel({
   model: StartPanelModel;
   lastScanRunAt: string | null;
   trial: TrialStatus | null;
+  /** Vertragsverhältnis des Mandanten — entscheidet, ob „keine Zahlungsdaten nötig“ stimmt. */
+  accountKind?: BillingAccountKind | null;
   data: CockpitData | null;
 }) {
-  const account = computeAccountNotice(trial, BETA);
+  const account = computeAccountNotice(trial, BETA, accountKind);
   const { primary, secondary } = model;
   const percent = Math.round((model.doneCount / model.totalCount) * 100);
 

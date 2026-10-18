@@ -10,8 +10,8 @@ import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
 import { getEntitlementsForTenant } from '../../core/usage/usage-service';
-import { isTrialEligible } from '../../core/billing/trial';
-import { betaSignupHref, isBetaPlan } from '../../config/beta';
+import { previewCheckoutTrial } from '../../core/billing/trial';
+import { betaSignupHref, redirectsCheckoutToBeta } from '../../config/beta';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -63,6 +63,9 @@ export function CheckoutPage() {
   // Kunden nur besser, nie schlechter als zugesagt.
   const [trialEligibility, setTrialEligibility] =
     useState<'pending' | 'eligible' | 'ineligible' | 'unavailable'>('pending');
+  // Beta-Mandant: Stripe rechnet erst ab dem Ende des gewährten Beta-Zugangs
+  // ab (`checkoutTrialFor` in stripe-checkout) — die Seite zeigt dieses Datum.
+  const [betaTrialEnd, setBetaTrialEnd] = useState<string | null>(null);
 
   // 1. Validate planKey gegen die SSoT
   const validPlan: PlanKey | null = normalizePlanKey(planKey);
@@ -96,8 +99,9 @@ export function CheckoutPage() {
     }
     // Beta-Testphase (src/config/beta.ts): Starter/Growth/Agency werden nicht
     // verkauft, sondern kostenlos getestet → Registrierung + Dashboard.
-    // `?purchase=1` lässt bewusste Käufe weiter in den Stripe-Checkout.
-    if (isBetaPlan(plan.id) && searchParams.get('purchase') !== '1') {
+    // `?purchase=1` lässt bewusste Käufe weiter in den Stripe-Checkout;
+    // `VITE_BETA_CHECKOUT=off` schaltet die Umleitung für alle ab.
+    if (redirectsCheckoutToBeta(plan.id, { purchase: searchParams.get('purchase') === '1' })) {
       window.location.href = betaSignupHref(plan.id, searchParams.get('source') ?? 'checkout-beta-redirect');
       return;
     }
@@ -176,7 +180,10 @@ export function CheckoutPage() {
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
       try {
         const decision = await getEntitlementsForTenant(firstTenant.tenant_id);
-        if (!cancelled) setTrialEligibility(isTrialEligible(decision) ? 'eligible' : 'ineligible');
+        if (cancelled) return;
+        const preview = previewCheckoutTrial(decision, validPlan ? (planByKey(validPlan)?.trialDays ?? 0) : 0);
+        setTrialEligibility(preview.kind === 'days' ? 'eligible' : 'ineligible');
+        setBetaTrialEnd(preview.kind === 'until' ? preview.trialEnd : null);
       } catch {
         if (!cancelled) setTrialEligibility('unavailable');
       }
@@ -267,6 +274,7 @@ export function CheckoutPage() {
       tier={tier}
       userEmail={auth.userEmail}
       trialDays={trialEligibility === 'eligible' ? trialDays : 0}
+      betaTrialEnd={betaTrialEnd}
       termsPending={trialEligibility === 'pending'}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
@@ -436,11 +444,22 @@ function NoUserShell({
 // Both ticks are recorded in marketing analytics so we have a timestamped
 // trail of consent — separate from the Stripe session itself.
 
+/** Exklusives Ende (00:00 Uhr Berlin des Folgetags) als letzter Beta-Tag. */
+function formatBetaEnd(iso: string): string {
+  return new Date(Date.parse(iso) - 1).toLocaleDateString('de-DE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Berlin',
+  });
+}
+
 function ConsentGateShell({
   planKey,
   tier,
   userEmail,
   trialDays,
+  betaTrialEnd = null,
   termsPending,
   agreedToTerms,
   onAgreedToTerms,
@@ -455,6 +474,8 @@ function ConsentGateShell({
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   trialDays:                number;
+  /** Ende des gewährten Beta-Zugangs (exklusiv, ISO) — Abrechnung erst danach. */
+  betaTrialEnd?:            string | null;
   /** Trial-Berechtigung noch nicht geprüft: Konditionen offen, Bestellen gesperrt. */
   termsPending:             boolean;
   agreedToTerms:            boolean;
@@ -499,7 +520,19 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {hasTrial ? (
+          {betaTrialEnd ? (
+            <div
+              className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 text-center"
+              data-testid="checkout-beta-carryover"
+            >
+              <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
+                ✅ Ihr Beta-Zugang bleibt kostenlos
+              </p>
+              <p className="font-mono text-xs text-emerald-200">
+                Erste Abbuchung erst nach Ende Ihres Beta-Zugangs am {formatBetaEnd(betaTrialEnd)}. Vorher jederzeit kündbar — dann fällt nichts an.
+              </p>
+            </div>
+          ) : hasTrial ? (
             <div
               className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center"
               data-testid="checkout-trial-banner"

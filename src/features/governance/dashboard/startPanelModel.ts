@@ -8,6 +8,7 @@
  * Schritt als offen oder erledigt behauptet und keine Hauptaktion erfunden.
  */
 import type { ActivationBootstrapStatus } from './workspaceBootstrapSteps';
+import type { BillingAccountKind } from '../../../core/billing/billingAccount';
 
 export interface StartPanelInput {
   websiteCount: number | null;
@@ -207,12 +208,19 @@ export interface AccountNotice {
 
 /**
  * Eine Zeile für Testphase und Zahlung statt zwei konkurrierender Banner.
- * In der Beta braucht es keine Zahlungsdaten (config/beta.ts: „keine
- * Kreditkarte“) — dann gibt es auch keinen Zahlungs-Aufruf.
+ *
+ * Maßgeblich ist das Vertragsverhältnis dieses Mandanten (`kind`, aus
+ * `subscriptions` über billingAccount.ts), nicht der Build-Schalter der Beta:
+ * - `beta`: „keine Zahlungsdaten nötig“ — auch nachdem die Beta keine
+ *   Neukunden mehr aufnimmt; der gewährte Zugang läuft unverändert weiter.
+ * - `stripe`: Zahlungsmittel liegt schon bei Stripe; nach der Testphase
+ *   wird abgerechnet → „Abo verwalten“.
+ * - kartenlose Testphase oder unbekannt: Zahlungsdaten vor Ende hinterlegen.
  */
 export function computeAccountNotice(
   trial: { daysRemaining: number; endingSoon: boolean } | null,
-  beta: { active: boolean; endsLabel: string },
+  beta: { endsLabel: string },
+  kind: BillingAccountKind | null,
 ): AccountNotice | null {
   if (trial && trial.daysRemaining <= 0) {
     return {
@@ -224,7 +232,7 @@ export function computeAccountNotice(
   const days = trial
     ? trial.daysRemaining === 1 ? 'endet morgen' : `noch ${trial.daysRemaining} Tage`
     : null;
-  if (beta.active) {
+  if (kind === 'beta') {
     return {
       text: days
         ? `Kostenlose Testphase · ${days} · keine Zahlungsdaten nötig`
@@ -234,9 +242,17 @@ export function computeAccountNotice(
     };
   }
   if (!trial) return null;
+  const tone = trial.endingSoon ? 'attention' : 'neutral';
+  if (kind === 'stripe') {
+    return {
+      text: `Testphase · ${days} · danach monatliche Abrechnung`,
+      link: { label: 'Abo verwalten', href: '/app/billing' },
+      tone,
+    };
+  }
   return {
     text: `Testphase · ${days}`,
     link: { label: 'Zahlungsdaten vor Ende der Testphase hinterlegen', href: '/billing/usage' },
-    tone: trial.endingSoon ? 'attention' : 'neutral',
+    tone,
   };
 }

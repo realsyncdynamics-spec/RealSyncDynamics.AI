@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   /** Beta-Testphase: `off` beendet Beta-Banner und Checkout-Umleitung (src/config/beta.ts). */
   readonly VITE_BETA_PHASE?: string;
+  /** `off`: `/checkout/*` geht für neue Kunden in den regulären Stripe-Checkout statt in die Beta. */
+  readonly VITE_BETA_CHECKOUT?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SUPABASE_ANON_JWT?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;

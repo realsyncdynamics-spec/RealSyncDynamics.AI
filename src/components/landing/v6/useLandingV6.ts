@@ -77,7 +77,7 @@ const WEBSITE_PATHS = [
     t: 'Website individuell gestalten – mit Dominik Steiner',
     d: 'Wenn eine Vorlage nicht reicht: Dominik Steiner, Inhaber von RealSyncDynamics, plant, gestaltet und setzt Ihre Website gemeinsam mit Ihnen um.',
     points: [
-      'Persönliches Erstgespräch zu Ziel, Zielgruppe und Inhalten',
+      'Persönliche Abstimmung zu Ziel, Zielgruppe und Inhalten',
       'Eigenständiges Design statt Vorlage, responsiv umgesetzt',
       'Komponenten, CMS-Anbindung und grundlegende Performance-Optimierung',
       'Festangebot nach Prüfung Ihrer Anfrage',

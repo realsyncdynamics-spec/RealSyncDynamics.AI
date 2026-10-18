@@ -214,8 +214,8 @@ export function ContactSales() {
               <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — Ihre Projektanfrage ist da.</h1>
               <p className="text-sm text-titanium-300 leading-relaxed mb-5">
                 Dominik Steiner sieht sich Ihr Vorhaben persönlich an und meldet
-                sich per E-Mail – mit Rückfragen oder einem Vorschlag für das
-                Erstgespräch.
+                sich per E-Mail – mit Rückfragen oder einem Vorschlag für die
+                nächsten Schritte.
               </p>
             </>
           ) : (
@@ -258,7 +258,7 @@ export function ContactSales() {
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
   const intro = isWebdesign
-    ? 'Beschreiben Sie kurz Ihr Unternehmen und was Ihre Website leisten soll – neu oder Relaunch. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen oder einem Termin für das Erstgespräch. Ein Festangebot erhalten Sie nach dieser Prüfung.'
+    ? 'Beschreiben Sie kurz Ihr Unternehmen und was Ihre Website leisten soll – neu oder Relaunch. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Ein Festangebot erhalten Sie nach dieser Prüfung.'
     : showFoundingCopy
     ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';

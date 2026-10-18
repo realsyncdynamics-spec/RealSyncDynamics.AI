@@ -104,6 +104,25 @@ describe('AI Studio Playground / Gateway contract', () => {
     expect(screen.queryByText('KI', { exact: true })).toBeNull();
   });
 
+  it('allows a fresh request after a gateway failure without reusing stale context', async () => {
+    state.invoke
+      .mockResolvedValueOnce({ data: null, error: new Error('Temporär nicht verfügbar') })
+      .mockResolvedValueOnce({ data: { ok: true, output: 'Wieder erreichbar' }, error: null });
+    mount();
+    send('Erste Anfrage');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Temporär nicht verfügbar'));
+    send('Zweite Anfrage');
+    await waitFor(() => expect(screen.getByText('Wieder erreichbar')).toBeInTheDocument());
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(state.invoke).toHaveBeenCalledTimes(2);
+    expect(state.invoke).toHaveBeenLastCalledWith('ai-gateway', expect.objectContaining({
+      body: expect.objectContaining({
+        tenant_id: 'tenant-a',
+        input: expect.stringContaining('Nutzer: Zweite Anfrage'),
+      }),
+    }));
+  });
+
   it('discards responses when the active tenant changes during a request', async () => {
     const response = deferred<{ data: { ok: true; output: string }; error: null }>();
     state.invoke.mockReturnValue(response.promise);

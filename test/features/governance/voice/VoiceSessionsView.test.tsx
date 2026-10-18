@@ -48,8 +48,8 @@ describe('VoiceSessionsView', () => {
     listMock.mockResolvedValueOnce([]);
     renderView();
     await waitFor(() => expect(screen.getByTestId('voice-sessions-empty')).toBeInTheDocument());
-    expect(screen.getByText('Voice Agent · Demnächst verfügbar')).toBeInTheDocument();
-    expect(screen.getByTestId('voice-status-preparing')).toHaveTextContent('Status: Vorbereitung läuft');
+    expect(screen.getByText('Voice Agent · Geplant')).toBeInTheDocument();
+    expect(screen.getByTestId('voice-status-preparing')).toHaveTextContent('Status: In Vorbereitung');
     // Keine internen Entwicklerhinweise im Kunden-Empty-State.
     const empty = screen.getByTestId('voice-sessions-empty');
     expect(empty.textContent).not.toMatch(/agent-runtime|Deploy-Pfad|nicht angebunden/);

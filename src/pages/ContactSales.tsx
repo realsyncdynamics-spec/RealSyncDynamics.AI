@@ -216,24 +216,35 @@ export function ContactSales() {
     );
   }
 
-  const headerTitle = showFoundingCopy
-    ? 'Founding Access / Kontakt'
-    : 'Enterprise / Partner Anfrage';
-  const headerSub = showFoundingCopy
-    ? 'AI Agent antwortet sofort'
-    : 'Vertrieb prüft die Anfrage';
+  // Hero-CTA „Gespräch vereinbaren“ (Landing v6): eigener Text statt Founding-Copy.
+  const consult = !isInquiry && intent === 'gespraech';
 
-  const headline = showFoundingCopy
-    ? (planKey
-      ? `${planBadgeLabel(planKey)} — Founding Access`
-      : 'Founding Access anfragen')
-    : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
+  const headerTitle = consult
+    ? 'Gespräch vereinbaren'
+    : showFoundingCopy
+      ? 'Founding Access / Kontakt'
+      : 'Enterprise / Partner Anfrage';
+  const headerSub = consult
+    ? 'Wir melden uns per E-Mail'
+    : showFoundingCopy
+      ? 'AI Agent antwortet sofort'
+      : 'Vertrieb prüft die Anfrage';
 
-  const intro = showFoundingCopy
-    ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
-    : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
+  const headline = consult
+    ? 'Gespräch vereinbaren'
+    : showFoundingCopy
+      ? (planKey
+        ? `${planBadgeLabel(planKey)} — Founding Access`
+        : 'Founding Access anfragen')
+      : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
-  const submitLabel = showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const intro = consult
+    ? 'Sie möchten vor dem Start mit jemandem sprechen? Beschreiben Sie kurz, wo Sie beim KI-Einsatz stehen und was Sie klären wollen. Wir melden uns per E-Mail mit Terminvorschlägen.'
+    : showFoundingCopy
+      ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
+      : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
+
+  const submitLabel = consult ? 'Gespräch anfragen' : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

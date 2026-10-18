@@ -35,6 +35,14 @@ function isFoundingIntent(source: string, intent: string | null): boolean {
   return /\bfounding\b/.test(hay);
 }
 
+/**
+ * Persönliches Gespräch (Hero-CTA Landing v6) — Anfrage per Formular, keine
+ * automatische Terminbuchung. Kein Founding-/Enterprise-Funnel.
+ */
+function isGespraechIntent(intent: string | null): boolean {
+  return (intent ?? '').toLowerCase() === 'gespraech';
+}
+
 function planBadgeLabel(key: PlanKey): string {
   const plan = planByKey(key);
   if (!plan) return key;
@@ -121,7 +129,8 @@ export function ContactSales() {
 
   const inquiryPlan = isInquiryPlanKey(planKey);
   const isInquiry = inquirySignal || inquiryPlan;
-  const showFoundingCopy = !isInquiry || isFoundingIntent(inboundSource ?? '', intent);
+  const isGespraech = !isInquiry && isGespraechIntent(intent);
+  const showFoundingCopy = !isGespraech && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
   const showPlanBadge = isInquiry && planKey !== null;
 
   function handleChange(field: keyof FormState) {
@@ -200,12 +209,24 @@ export function ContactSales() {
       <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
-          <p className="text-sm text-titanium-300 leading-relaxed mb-5">
-            Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
-            automatisiert per E-Mail. Die Architektur ist parallel transparent
-            dokumentiert.
-          </p>
+          {isGespraech ? (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke für Ihre Anfrage.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Ihre Anfrage ist eingegangen. Wir melden uns per E-Mail zu den
+                nächsten Schritten.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
+                automatisiert per E-Mail. Die Architektur ist parallel transparent
+                dokumentiert.
+              </p>
+            </>
+          )}
           <div className="flex flex-col gap-2">
             <Link to="/legal/sub-processors"
               className="text-sm text-security-400 hover:underline">→ Sub-Prozessoren</Link>
@@ -216,35 +237,32 @@ export function ContactSales() {
     );
   }
 
-  // Hero-CTA „Gespräch vereinbaren“ (Landing v6): eigener Text statt Founding-Copy.
-  const consult = !isInquiry && intent === 'gespraech';
-
-  const headerTitle = consult
-    ? 'Gespräch vereinbaren'
+  const headerTitle = isGespraech
+    ? 'Persönliches Gespräch'
     : showFoundingCopy
       ? 'Founding Access / Kontakt'
       : 'Enterprise / Partner Anfrage';
-  const headerSub = consult
-    ? 'Wir melden uns per E-Mail'
+  const headerSub = isGespraech
+    ? 'Antwort per E-Mail'
     : showFoundingCopy
       ? 'AI Agent antwortet sofort'
       : 'Vertrieb prüft die Anfrage';
 
-  const headline = consult
-    ? 'Gespräch vereinbaren'
+  const headline = isGespraech
+    ? 'Anfrage für ein persönliches Gespräch'
     : showFoundingCopy
       ? (planKey
         ? `${planBadgeLabel(planKey)} — Founding Access`
         : 'Founding Access anfragen')
       : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
-  const intro = consult
-    ? 'Sie möchten vor dem Start mit jemandem sprechen? Beschreiben Sie kurz, wo Sie beim KI-Einsatz stehen und was Sie klären wollen. Wir melden uns per E-Mail mit Terminvorschlägen.'
+  const intro = isGespraech
+    ? 'Sie möchten vor dem Start mit jemandem sprechen? Beschreiben Sie kurz, wo Sie beim KI-Einsatz stehen und was Sie klären wollen. Wir melden uns per E-Mail zu den nächsten Schritten.'
     : showFoundingCopy
       ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
       : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = consult ? 'Gespräch anfragen' : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const submitLabel = isGespraech ? 'Gespräch anfragen' : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

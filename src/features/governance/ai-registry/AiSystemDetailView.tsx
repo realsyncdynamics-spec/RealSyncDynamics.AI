@@ -165,18 +165,21 @@ function ClassificationDetail({
 
   const [tier, setTier] = useState<TierId | null>(storedTier);
   const [annex, setAnnex] = useState<AnnexIIICategory | null>(storedAnnex);
-  const [art50, setArt50] = useState<boolean>(storedArt50 ?? false);
+  // null = nicht erfasst; bleibt null, bis der Schalter bedient wird (kein stilles „nein“).
+  const [art50, setArt50] = useState<boolean | null>(storedArt50);
 
   useEffect(() => {
     setTier(storedTier);
     setAnnex(storedAnnex);
-    setArt50(storedArt50 ?? false);
+    setArt50(storedArt50);
   }, [storedTier, storedAnnex, storedArt50]);
 
-  const dirty = tier !== storedTier || annex !== storedAnnex || art50 !== (storedArt50 ?? false);
+  const dirty = tier !== storedTier || annex !== storedAnnex || art50 !== storedArt50;
   const annexMeta = annex ? ANNEX_III_CATEGORIES.find((c) => c.id === annex) : null;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Während des Speicherns gesperrt: spätere Eingaben fehlten im Request und gingen beim Neuladen verloren.
+  const inputsLocked = classifyLocked || saving;
 
   async function onSaveClassification() {
     if (saving || !dirty || classifyLocked) return;
@@ -186,7 +189,7 @@ function ClassificationDetail({
       asset_id: asset.id,
       ai_act_class: tier ? tierDefinition(tier).dbValue : 'unknown',
       annex_iii_category: annex,
-      art50,
+      ...(art50 === null ? {} : { art50 }),
     });
     setSaving(false);
     if (!result.ok) {
@@ -200,7 +203,7 @@ function ClassificationDetail({
   function onDiscard() {
     setTier(storedTier);
     setAnnex(storedAnnex);
-    setArt50(storedArt50 ?? false);
+    setArt50(storedArt50);
     setSaveError(null);
   }
 
@@ -280,7 +283,7 @@ function ClassificationDetail({
               className="rs-tier"
               style={colorVar(def.colorVar)}
               aria-pressed={tier === def.id}
-              disabled={classifyLocked}
+              disabled={inputsLocked}
               onClick={() => setTier(def.id)}
             >
               <span className="rs-tier__name">{t(def.labelKey)}</span>
@@ -300,7 +303,7 @@ function ClassificationDetail({
             className="rs-select"
             aria-label={t('annexTitle')}
             value={annex ?? ''}
-            disabled={classifyLocked}
+            disabled={inputsLocked}
             onChange={(e) => setAnnex(isAnnexCategory(e.target.value) ? e.target.value : null)}
           >
             <option value="">—</option>
@@ -326,9 +329,9 @@ function ClassificationDetail({
               type="button"
               role="switch"
               className="rs-toggle"
-              aria-checked={art50}
+              aria-checked={art50 === true}
               aria-label={t('art50Toggle')}
-              disabled={classifyLocked}
+              disabled={inputsLocked}
               onClick={() => setArt50((v) => !v)}
             />
           </div>

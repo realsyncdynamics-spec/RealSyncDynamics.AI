@@ -4,7 +4,7 @@
  * mehr an ai_classification.limited (kein Plan gewährt den Key).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const ent = vi.hoisted(() => ({ values: {} as Record<string, number>, role: 'member' as string }));
@@ -159,6 +159,37 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
       annex_iii_category: 'employment',
       art50: true,
     });
+  });
+
+  it('Art. 50 nicht erfasst und nicht bedient: Speichern lässt art50 weg', async () => {
+    ent.role = 'owner';
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    fireEvent.click(screen.getByTestId('classify-save'));
+    await waitFor(() => expect(api.saveAssetClassification).toHaveBeenCalledTimes(1));
+    expect(api.saveAssetClassification).toHaveBeenCalledWith({
+      asset_id: 'a1',
+      ai_act_class: 'high',
+      annex_iii_category: null,
+    });
+  });
+
+  it('Während des Speicherns sind die Eingaben gesperrt', async () => {
+    ent.role = 'owner';
+    let resolve!: (v: unknown) => void;
+    api.saveAssetClassification.mockImplementationOnce(
+      () => new Promise((r) => { resolve = r; }) as never,
+    );
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    fireEvent.click(screen.getByTestId('classify-save'));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Minimal/ })).toBeDisabled());
+    expect(screen.getByRole('combobox', { name: 'Annex III' })).toBeDisabled();
+    expect(screen.getByRole('switch')).toBeDisabled();
+    await act(async () => resolve({ ok: true }));
   });
 
   it('Serverfehler wird angezeigt, Entwurf bleibt', async () => {

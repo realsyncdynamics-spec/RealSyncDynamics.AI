@@ -61,7 +61,7 @@ const QUESTIONS: Question[] = [
   {
     addonId: 'voice',
     question: 'Soll ein Sprachkanal über Telefonie dazukommen?',
-    hint: 'Ein- und ausgehende Anrufe mit IVR, mehrsprachig.',
+    hint: 'Ein- und ausgehende Anrufe mit IVR, mehrsprachig. Demnächst verfügbar — Bereitstellung läuft.',
   },
   {
     addonId: 'compliance_pack',

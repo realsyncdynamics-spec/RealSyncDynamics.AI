@@ -40,6 +40,7 @@ interface AuditEvent {
 
 type TrailState =
   | { status: 'loading' }
+  | { status: 'no-tenant' }
   | { status: 'ready'; events: AuditEvent[] }
   | { status: 'error' };
 
@@ -83,7 +84,10 @@ export function AuditExportView() {
   const [trail, setTrail] = useState<TrailState>({ status: 'loading' });
 
   useEffect(() => {
-    if (!activeTenantId) return;
+    if (!activeTenantId) {
+      setTrail({ status: 'no-tenant' });
+      return;
+    }
     let cancelled = false;
     setTrail({ status: 'loading' });
     fetchTenantEvents(activeTenantId, 20)
@@ -160,6 +164,9 @@ export function AuditExportView() {
           <p className="flex items-center gap-2 text-xs text-titanium-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Wird geladen …
           </p>
+        )}
+        {trail.status === 'no-tenant' && (
+          <p className="text-xs text-titanium-500">Kein aktiver Mandant. Bitte einen Mandanten auswählen, um den Prüfpfad zu sehen.</p>
         )}
         {trail.status === 'error' && (
           <p className="text-xs text-red-300">Der Prüfpfad konnte nicht geladen werden. Bitte später erneut versuchen.</p>

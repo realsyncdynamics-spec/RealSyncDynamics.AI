@@ -13,7 +13,7 @@ import {
   fetchTenantEvents,
   fetchTenantEvidence,
 } from '../governanceApi';
-import { exportEvidenceBundle, listTimeline } from '../../evidence-vault/evidenceVaultApi';
+import { exportEvidenceBundle, listSnapshotsForVerification, listTimeline } from '../../evidence-vault/evidenceVaultApi';
 import {
   exportAnalytics,
   triggerBlobDownload,
@@ -126,7 +126,7 @@ interface EvidenceHandlers {
   onExport: (prefix: string, format: ExportFormat, key: string) => void;
   /** Signiertes Aufsichtsbehörden-Bundle (evidence-vault-export, JSON). */
   onExportBundle: (key: string) => void;
-  /** Hash-Nachweis eines Snapshots als JSON — genau die Werte der Karte. */
+  /** Hash-Nachweis eines Snapshots als JSON: Kette des Subjekts bis zu dieser Version, nachrechenbar. */
   onDownloadSnapshot: (snap: Snapshot) => void;
   onViewEvidence: (item: EvidenceItem) => void;
   onShowTimeline: () => void;
@@ -269,8 +269,9 @@ function SnapshotsTab({
             <button
               type="button"
               onClick={() => handlers.onDownloadSnapshot(snap)}
+              disabled={handlers.busy === `snap-${snap.id}`}
               title="Hash-Nachweis dieses Snapshots als JSON"
-              className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1"
+              className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1 disabled:opacity-50"
             >
               <Download className="h-3 w-3" />Hash-Nachweis
             </button>
@@ -591,6 +592,39 @@ function _EvidenceVaultView() {
     }
   }
 
+  // Exportiert die Rohfelder, aus denen packages/evidence-chain den event_hash
+  // nachrechnet (inkl. prev_hash und event_timestamp), für alle Versionen bis
+  // zu dieser — sonst ist weder Inhalt noch Kette prüfbar.
+  async function runSnapshotProof(snap: Snapshot) {
+    if (!activeTenantId) {
+      showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
+      return;
+    }
+    const key = `snap-${snap.id}`;
+    setBusy(key);
+    try {
+      const records = await listSnapshotsForVerification(activeTenantId);
+      const chain = records.filter((r) => r.subject_ref === snap.domain && r.version <= snap.version);
+      if (!chain.some((r) => r.version === snap.version)) {
+        showToast('Snapshot nicht gefunden — bitte Seite neu laden.', 'error');
+        return;
+      }
+      const blob = new Blob([JSON.stringify({
+        snapshot_id: snap.id,
+        subject_ref: snap.domain,
+        version: snap.version,
+        legal_hold: snap.onHold,
+        exported_at: new Date().toISOString(),
+        chain,
+      }, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(blob, `snapshot-${snap.domain.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-v${snap.version}.json`);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function runExport(prefix: string, format: ExportFormat, key: string) {
     if (!activeTenantId) {
       showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
@@ -617,17 +651,7 @@ function _EvidenceVaultView() {
     busy,
     onExport: (prefix, format, key) => void runExport(prefix, format, key),
     onExportBundle: (key) => void runBundleExport(key),
-    onDownloadSnapshot: (snap) => {
-      const blob = new Blob([JSON.stringify({
-        snapshot_id: snap.id,
-        subject_ref: snap.domain,
-        version: snap.version,
-        hash: snap.hash,
-        legal_hold: snap.onHold,
-        exported_at: new Date().toISOString(),
-      }, null, 2)], { type: 'application/json' });
-      triggerBlobDownload(blob, `snapshot-${snap.domain.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-v${snap.version}.json`);
-    },
+    onDownloadSnapshot: (snap) => void runSnapshotProof(snap),
     onViewEvidence: (item) => {
       if (item.eventId) navigate(`/app/events/${item.eventId}`);
       else showToast('Dieser Nachweis hat kein hinterlegtes Ereignis.', 'error');

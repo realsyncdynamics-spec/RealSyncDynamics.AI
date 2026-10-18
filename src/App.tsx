@@ -261,6 +261,7 @@ const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBu
 // Blueprint-Synthese, Analyse und Renderer in ihr Bündel. Eager importiert
 // läge das im kritischen Pfad jeder Landingpage.
 const BuildStudioPage = lazy(() => import('./unified-entry/pages/BuildStudioPage'));
+const AiStudioPlayground = lazy(() => import('./features/ai-studio/AiStudioPlayground'));
 const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').then((m) => ({ default: m.SiteOsClaimView })));
 const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernizeWizard').then((m) => ({ default: m.FmtModernizeWizard })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
@@ -793,6 +794,7 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/ai-studio" element={<AppGate><GovernanceBrowserShell><AiStudioPlayground /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />

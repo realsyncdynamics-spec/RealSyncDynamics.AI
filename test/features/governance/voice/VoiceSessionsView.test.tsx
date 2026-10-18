@@ -51,8 +51,9 @@ describe('VoiceSessionsView', () => {
     expect(screen.getByText('Noch keine Voice-Sessions.')).toBeInTheDocument();
     expect(screen.getByText(/Voice-Runtime-Dienst ist noch nicht live/i)).toBeInTheDocument();
     const empty = screen.getByTestId('voice-sessions-empty');
-    expect(empty.textContent).toMatch(/\(apps\/agent-runtime hat keinen Deploy-Pfad/);
-    expect(empty.textContent).not.toMatch(/\(\s*\(apps\/agent-runtime/);
+    expect(empty.textContent).toMatch(/Telefonie ist nicht\s+angebunden/);
+    // Keine internen Repo-Pfade im Kundentext.
+    expect(empty.textContent).not.toMatch(/apps\/agent-runtime/);
   });
 
   it('zeigt Fehler-State ohne Beispieldaten', async () => {

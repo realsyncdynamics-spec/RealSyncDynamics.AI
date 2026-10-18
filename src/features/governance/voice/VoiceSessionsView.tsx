@@ -109,6 +109,9 @@ function VoiceSessionsList({ tenantId }: { tenantId: string }) {
     );
   }
 
+  // Kein Fortschritts- oder Zeitversprechen: `apps/agent-runtime` hat keinen
+  // Deploy-Pfad, Telefonie ist nicht angebunden. „Demnächst verfügbar" erst,
+  // wenn es einen belastbaren Freigabeplan gibt.
   if (sessions.length === 0) {
     return (
       <div
@@ -116,11 +119,9 @@ function VoiceSessionsList({ tenantId }: { tenantId: string }) {
         data-testid="voice-sessions-empty"
       >
         <Mic className="h-8 w-8 mx-auto text-titanium-600 mb-3" aria-hidden />
-        <p className="text-sm text-titanium-200">Noch keine Voice-Sessions.</p>
+        <p className="text-sm text-titanium-200">Sprachfunktionen sind derzeit nicht nutzbar.</p>
         <p className="mt-2 text-xs text-titanium-500 max-w-md mx-auto leading-relaxed">
-          Der Voice-Runtime-Dienst ist noch nicht live geschaltet
-          (<span className="font-mono">apps/agent-runtime</span> hat keinen Deploy-Pfad;
-          Telefonie ist nicht angebunden). Sobald Sessions geschrieben werden, erscheinen sie hier.
+          Sobald das Modul freigegeben ist, können Sie hier Ihre Voice-Sessions einsehen.
         </p>
       </div>
     );
@@ -162,8 +163,8 @@ export function VoiceSessionsView() {
           </div>
           <div>
             <h1 className="text-sm font-semibold tracking-tight text-titanium-50">Voice</h1>
-            <p className="text-[11px] text-titanium-500">
-              Governed Voice Sessions · read-only · Prüfpfad
+            <p className="text-[11px] text-titanium-500" data-testid="voice-module-status">
+              Geplant
             </p>
           </div>
         </div>

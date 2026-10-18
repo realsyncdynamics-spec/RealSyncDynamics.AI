@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
+  parseClassificationFields,
   parseRegistryFields,
   sanitizeAssetMetadata,
 } from '../../supabase/functions/governance-resources/registryFields';
@@ -58,6 +59,28 @@ describe('parseRegistryFields — update', () => {
   });
 });
 
+describe('parseClassificationFields — classify_asset', () => {
+  it('übernimmt Klasse, Annex III und Art. 50; null leert die Kategorie', () => {
+    expect(parseClassificationFields({ ai_act_class: 'high', annex_iii_category: 'employment', art50: true }))
+      .toEqual({ ok: true, patch: { ai_act_class: 'high', annex_iii_category: 'employment', art50: true } });
+    expect(parseClassificationFields({ annex_iii_category: null }))
+      .toEqual({ ok: true, patch: { annex_iii_category: null } });
+    expect(parseClassificationFields({ ai_act_class: 'unknown' }))
+      .toEqual({ ok: true, patch: { ai_act_class: 'unknown' } });
+  });
+
+  it.each([
+    [{ ai_act_class: 'extreme' }],
+    [{ ai_act_class: null }],
+    [{ annex_iii_category: 'marketing' }],
+    [{ art50: 'yes' }],
+    [{}],
+    [{ tenant_id: 'x', risk_score: 99 }],
+  ])('lehnt %j ab', (body) => {
+    expect(parseClassificationFields(body).ok).toBe(false);
+  });
+});
+
 describe('sanitizeAssetMetadata', () => {
   it('entfernt system_type — die Durchsetzbarkeits-Klasse wird abgeleitet, nie eingegeben', () => {
     expect(sanitizeAssetMetadata({ system_type: 'ai_gateway', source: 'onboarding' })).toEqual({ source: 'onboarding' });
@@ -83,5 +106,18 @@ describe('governance-resources — Verdrahtung (Quelltext)', () => {
   it('create_asset: Register-Felder geprüft, Client-Metadaten bereinigt', () => {
     expect(code).toContain("parseRegistryFields(b, 'create')");
     expect(code).toContain('metadata: sanitizeAssetMetadata(b.metadata)');
+  });
+
+  it('classify_asset: Mandant aus der Zeile, owner/admin, nicht archiviert, Art. 50 in metadata, Audit', () => {
+    const start = code.indexOf('async function classifyAsset(');
+    expect(start).toBeGreaterThan(-1);
+    const body = code.slice(start, code.indexOf('async function archiveAsset('));
+    expect(code).toContain("case 'classify_asset':");
+    expect(body).toContain('isOwnerOrAdmin(admin, userId, row.tenant_id)');
+    expect(body).toContain('ASSET_ARCHIVED');
+    expect(body).toContain('parseClassificationFields(b)');
+    expect(body).toContain('update.metadata = { ...meta, art50 }');
+    expect(body).toContain("action: 'asset.classify'");
+    expect(body).not.toMatch(/b\.tenant_id/);
   });
 });

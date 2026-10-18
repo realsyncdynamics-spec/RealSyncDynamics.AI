@@ -100,3 +100,46 @@ export function sanitizeAssetMetadata(meta: unknown): Record<string, unknown> {
   const { system_type: _ignored, ...rest } = meta as Record<string, unknown>;
   return rest;
 }
+
+// Klassifizierung (classify_asset) — dieselben Wertelisten wie die
+// CHECK-Constraints auf governance_assets und src/lib/ai-act/annexCategories.ts.
+export const AI_ACT_CLASSES = ['minimal', 'limited', 'high', 'prohibited', 'unknown'] as const;
+export const ANNEX_III_CATEGORIES = [
+  'biometrics', 'critical_infrastructure', 'education', 'employment',
+  'essential_services', 'law_enforcement', 'migration', 'justice_democracy',
+] as const;
+
+export type ClassificationPatch = {
+  ai_act_class?: string;
+  annex_iii_category?: string | null;
+  /** landet in metadata.art50 (art50Of im Frontend liest dort) */
+  art50?: boolean;
+};
+export type ClassificationResult = { ok: true; patch: ClassificationPatch } | { ok: false; error: string };
+
+/**
+ * Liest Risikostufe, Annex-III-Kategorie und Art.-50-Pflicht. Nur vorhandene
+ * Schlüssel landen im Patch; `annex_iii_category: null` leert die Kategorie.
+ * Mindestens ein Feld ist Pflicht.
+ */
+export function parseClassificationFields(b: Record<string, unknown>): ClassificationResult {
+  const patch: ClassificationPatch = {};
+  if (has(b, 'ai_act_class')) {
+    const v = b.ai_act_class;
+    if (typeof v !== 'string' || !(AI_ACT_CLASSES as readonly string[]).includes(v)) {
+      return { ok: false, error: `ai_act_class must be one of ${AI_ACT_CLASSES.join('|')}` };
+    }
+    patch.ai_act_class = v;
+  }
+  if (has(b, 'annex_iii_category')) {
+    const v = optionalEnum(b.annex_iii_category, ANNEX_III_CATEGORIES);
+    if (v === undefined) return { ok: false, error: `annex_iii_category must be one of ${ANNEX_III_CATEGORIES.join('|')}` };
+    patch.annex_iii_category = v;
+  }
+  if (has(b, 'art50')) {
+    if (typeof b.art50 !== 'boolean') return { ok: false, error: 'art50 must be a boolean' };
+    patch.art50 = b.art50;
+  }
+  if (Object.keys(patch).length === 0) return { ok: false, error: 'no classification fields' };
+  return { ok: true, patch };
+}

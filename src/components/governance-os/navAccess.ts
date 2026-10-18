@@ -22,8 +22,8 @@
  *    die Durchsetzung bleibt serverseitig).
  * 3. Nur wenn ein Punkt weder Keys noch Register-Eintrag hat und ein
  *    Legacy-Gate (`module`/`permission`/`limit`) trägt, entscheidet weiter
- *    der Plan (heute: Kodee, Herkunftsnachweis, Team, Audit Center — nicht
- *    Teil von P0).
+ *    der Plan (heute: Herkunftsnachweis, Team, Audit Center — nicht Teil
+ *    von P0). Kodee ist offen; SSH-Aktionen sperrt die View selbst.
  */
 import type { EntitlementKey, PlanId } from '@/shared/pricing';
 import { cheapestPlanForKeys, requirementForPath } from '../../core/access/featureAccess';

@@ -3,10 +3,13 @@
  * Eine Anfrage, keine Terminbuchung: weder Terminvorschläge noch
  * Founding-/Enterprise-Copy versprechen.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ContactSales } from '../../src/pages/ContactSales';
+import { CTA } from '../../src/content/runtimeVocab';
 
 afterEach(() => {
   cleanup();
@@ -26,7 +29,7 @@ it('shows a conversation request instead of Founding Access for intent=gespraech
   expect(screen.queryByText(/Founding Access/)).toBeNull();
   expect(screen.queryByText(/14 Tage kostenloser Enterprise-Zugang/)).toBeNull();
   expect(screen.queryByText(/Terminvorschl/)).toBeNull();
-  expect(screen.getByRole('button', { name: 'Gespräch anfragen' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: CTA.gespraech })).toBeInTheDocument();
 });
 
 it('confirms receipt without promising an automatic reply or appointment', async () => {
@@ -37,11 +40,16 @@ it('confirms receipt without promising an automatic reply or appointment', async
   fireEvent.change(container.querySelector('input[type="email"]') as HTMLInputElement, {
     target: { value: 'kontakt@example.de' },
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Gespräch anfragen' }));
+  fireEvent.click(screen.getByRole('button', { name: CTA.gespraech }));
 
   expect(await screen.findByText(/Ihre Anfrage ist eingegangen\. Wir melden uns per E-Mail zu den nächsten Schritten\./)).toBeInTheDocument();
   expect(screen.queryByText(/AI Agent/)).toBeNull();
   const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
   expect(body.intent).toBe('gespraech');
   expect(body.plan_key).toBeUndefined();
+});
+
+it('Hero-Button auf / nutzt die freigegebene CTA aus runtimeVocab', () => {
+  const view = readFileSync(resolve(__dirname, '../../src/components/landing/v6/LandingV6View.tsx'), 'utf8');
+  expect(view).toContain(`>${CTA.gespraech}</Link>`);
 });

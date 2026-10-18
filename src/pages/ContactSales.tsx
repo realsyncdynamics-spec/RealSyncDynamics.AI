@@ -4,6 +4,7 @@ import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { CTA } from '../content/runtimeVocab';
 import { ensureCsrfCookie } from '../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
@@ -262,7 +263,7 @@ export function ContactSales() {
       ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
       : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = isGespraech ? 'Gespräch anfragen' : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const submitLabel = isGespraech ? CTA.gespraech : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

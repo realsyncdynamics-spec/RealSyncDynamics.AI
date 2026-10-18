@@ -1,0 +1,12 @@
+{
+  "name": "realsync-mods",
+  "owner": { "name": "RealSyncDynamics" },
+  "metadata": { "description": "Claude-Code-Mods für die Entwicklung von RealSyncDynamics.AI (nicht Teil der Anwendung)." },
+  "plugins": [
+    {
+      "name": "realsync-mission-control",
+      "source": "./realsync-mission-control",
+      "description": "Agenten, Aufgaben, Dateien, Kontext, Git/CI und Freigaben für riskante Aktionen in einem Pane."
+    }
+  ]
+}

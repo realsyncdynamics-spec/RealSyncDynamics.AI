@@ -27,3 +27,8 @@ auslagern — Budget nicht anheben.
 
 `hooks/session-start.sh` darf **kein** `npm install` ausführen (Cloud-Timeout
 + Kontextmüll). Nur `exit 0`.
+
+## Mods
+
+`mods/realsync-mission-control/` ist ein Claude-Code-Mod (Agenten, Kontext,
+Git/CI, Freigaben für riskante Aktionen). Doku und Installation stehen in dessen `README.md`.

@@ -1,0 +1,23 @@
+{
+  "name": "realsync-mission-control",
+  "version": "0.1.0",
+  "description": "RealSync Mission Control: Agenten, Aufgaben, Dateien, Kontext, Git/CI und Freigaben für riskante Aktionen in einem Pane.",
+  "author": { "name": "RealSyncDynamics" },
+  "keywords": ["mods", "monitoring", "safety", "git", "realsync"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "safety": {
+      "type": "string",
+      "title": "Safety Control",
+      "description": "an: riskante Aktionen werden angehalten und brauchen eine Freigabe im Dialog. aus: nur protokollieren (z. B. wenn Blast Radius genutzt wird).",
+      "default": "an",
+      "options": ["an", "aus"]
+    },
+    "repo": {
+      "type": "string",
+      "title": "GitHub-Repository",
+      "description": "owner/repo für die PR- und CI-Abfrage über die gh-CLI.",
+      "default": "realsyncdynamics-spec/RealSyncDynamics.AI"
+    }
+  }
+}

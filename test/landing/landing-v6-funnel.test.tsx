@@ -76,6 +76,11 @@ it('offers both website paths: automatic SiteOS draft and individual web design'
   );
   // Ehrlicher Status: Builder/Veröffentlichung sind Preview, nur Weg 1 trägt das Badge.
   expect(sec.getAllByText('PREVIEW')).toHaveLength(1);
+  // Design-DNA (AGENTS.md): 90°-Ecken im ganzen Abschnitt, Status-Metadaten in Monospace.
+  expect(sec.getByText('PREVIEW').style.fontFamily).toMatch(/monospace/);
+  for (const el of screen.getByTestId('landing-websites').querySelectorAll<HTMLElement>('[style*="border-radius"]')) {
+    expect(el.style.borderRadius).toMatch(/^0(px)?$/);
+  }
   expect(sec.getByRole('link', { name: 'Leistungsumfang ansehen' })).toHaveAttribute('href', '/frontend-builder');
   // Haupt-CTA der Dienstleistung ist die kanonische Ausnahme aus runtimeVocab.
   expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveTextContent(CTA.webdesign);

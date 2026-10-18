@@ -337,8 +337,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Zwei Wege, ein Anspruch: datenschutzbewusst gebaut und in der EU betrieben. Wählen Sie, wie viel Sie selbst machen möchten.</p>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "24px" }}>
             {v.websitePaths.map((w) => (<Fragment key={w.id}>
-              <article data-website-path={w.id} style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{w.k}</span>{w.preview ? (<span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span>) : null}</div>
+              <article data-website-path={w.id} style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "0", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{w.k}</span>{w.preview ? (<span style={{ padding: "3px 10px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span>) : null}</div>
                 <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{w.t}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{w.d}</p>
                 <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -346,18 +346,18 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 </ul>
                 <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{w.note}</p>
                 <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                  <Link to={w.primary.href} data-website-cta={w.id} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>{w.primary.label}</Link>
-                  <Link to={w.secondary.href} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>{w.secondary.label}</Link>
+                  <Link to={w.primary.href} data-website-cta={w.id} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>{w.primary.label}</Link>
+                  <Link to={w.secondary.href} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>{w.secondary.label}</Link>
                 </div>
               </article>
             </Fragment>))}
           </div>
-          <div data-testid="landing-websites-extension" style={{ marginTop: "24px", padding: "var(--card-p)", border: "1px dashed var(--rs-chip-b)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "18px" }}>
+          <div data-testid="landing-websites-extension" style={{ marginTop: "24px", padding: "var(--card-p)", border: "1px dashed var(--rs-chip-b)", borderRadius: "0", display: "flex", flexDirection: "column", gap: "18px" }}>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{v.websiteExtension.k}</span>
             <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{v.websiteExtension.t}</h3>
             <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.websiteExtension.d}</p>
             <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", gap: "12px" }}>
-              {v.websiteExtension.examples.map((ex) => (<li key={ex.k} style={{ padding: "14px 16px", borderRadius: "10px", background: "var(--rs-bg2)", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><strong style={{ display: "block", fontWeight: "600" }}>{ex.k}</strong><span style={{ color: "var(--rs-fg2)" }}>{ex.d}</span></li>))}
+              {v.websiteExtension.examples.map((ex) => (<li key={ex.k} style={{ padding: "14px 16px", borderRadius: "0", background: "var(--rs-bg2)", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><strong style={{ display: "block", fontWeight: "600" }}>{ex.k}</strong><span style={{ color: "var(--rs-fg2)" }}>{ex.d}</span></li>))}
             </ul>
             <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6" }}>{v.websiteExtension.modules}</p>
             <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.websiteExtension.note}</p>

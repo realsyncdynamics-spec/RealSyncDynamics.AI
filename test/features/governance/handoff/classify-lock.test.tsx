@@ -154,7 +154,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     expect(save).toBeDisabled();
     expect(screen.getByTestId('classify-save-status')).toHaveTextContent(/keine offenen Änderungen/);
 
-    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    await pickTier(/Hoch/);
     fireEvent.change(screen.getByRole('combobox', { name: 'Annex III' }), { target: { value: 'employment' } });
     fireEvent.click(screen.getByRole('switch'));
     expect(screen.getByTestId('draft-unsaved')).toBeInTheDocument();
@@ -206,7 +206,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     api.saveAssetClassification.mockResolvedValueOnce({ ok: false, error: { code: 'FORBIDDEN', message: 'must be owner or admin' } } as never);
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /Minimal/ }));
+    await pickTier(/Minimal/);
     fireEvent.click(screen.getByTestId('classify-save'));
     expect(await screen.findByRole('alert')).toHaveTextContent('must be owner or admin');
     expect(screen.getByTestId('draft-unsaved')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('Klassifizierung — Speichern über classify_asset', () => {
     ent.role = 'owner';
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /Hoch/ }));
+    await pickTier(/Hoch/);
     fireEvent.click(screen.getByRole('button', { name: 'Verwerfen' }));
     expect(screen.queryByTestId('draft-unsaved')).toBeNull();
     expect(screen.getByRole('button', { name: /Begrenzt/ })).toHaveAttribute('aria-pressed', 'true');

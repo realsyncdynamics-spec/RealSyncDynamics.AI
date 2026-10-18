@@ -343,7 +343,7 @@ export function useLandingV6() {
         listPrice: beta && !tier.priceOnRequest ? formatPriceEur(listEur) : null,
         unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : '/ Monat',
         billingNote: tier.priceOnRequest
-          ? 'SLA · bis zu 5 Organisationen'
+          ? 'SLA nach Vereinbarung · bis zu 5 Organisationen'
           : beta
             ? `kostenlos bis ${BETA.endsLabel}`
             : useYearly

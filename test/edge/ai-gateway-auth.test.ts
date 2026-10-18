@@ -70,6 +70,7 @@ const FEATURES = [
   'governance_brief_daily',
   'document_classification',
   'openai_compat',
+  'ai_studio',
   'whatever_new_feature',
 ];
 
@@ -231,6 +232,30 @@ async function errCode(res: Response): Promise<string> {
   const j = (await res.json()) as { error?: { code?: string } };
   return j.error?.code ?? '';
 }
+
+describe('AI Studio — server gateway auth/tenant contract', () => {
+  it('accepts a valid user in their tenant without bypassing the gateway', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq(body('ai_studio'), userHeaders));
+    expect(res.status).toBe(200);
+    expect(h.calls).toHaveLength(1);
+    expect(h.calls[0]).toMatchObject({ feature: 'ai_studio', tenant_id: T1, model_profile: 'fast-local' });
+  });
+
+  it('rejects an omitted tenant before provider inference', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq(body('ai_studio', { tenant_id: undefined }), userHeaders));
+    expect(res.status).toBe(400);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it('rejects a foreign tenant before provider inference', async () => {
+    const h = makeHarness();
+    const res = await h.handler(opReq(body('ai_studio', { tenant_id: T2 }), userHeaders));
+    expect(res.status).toBe(403);
+    expect(h.calls).toHaveLength(0);
+  });
+});
 
 // ── Nutzerpfad: Anon / kein Header / service_role ───────────────────
 

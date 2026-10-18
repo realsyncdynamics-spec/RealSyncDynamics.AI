@@ -17,8 +17,10 @@ function mountAt(search: string) {
 
 it('shows a personal website inquiry instead of Founding Access for intent=webdesign', async () => {
   mountAt('?source=frontend-builder&intent=webdesign');
-  expect(await screen.findByRole('heading', { level: 1, name: 'Ihre Website individuell gestalten' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Individuelles Webdesign anfragen' })).toBeInTheDocument();
   expect(screen.queryByText(/Founding Access/)).toBeNull();
+  expect(screen.queryByText(/14 Tage kostenloser Enterprise-Zugang/)).toBeNull();
+  expect(screen.getByText(/persönliches Festangebot nach Projektumfang/)).toBeInTheDocument();
   expect(screen.getByRole('combobox')).toHaveValue('webdesign');
   expect(screen.getByRole('button', { name: 'Anfrage senden' })).toBeInTheDocument();
 });

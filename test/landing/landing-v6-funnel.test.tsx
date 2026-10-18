@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { LandingV6View } from '../../src/components/landing/v6/LandingV6View';
 import { useLandingV6 } from '../../src/components/landing/v6/useLandingV6';
 import { BETA } from '../../src/config/beta';
+import { CTA } from '../../src/content/runtimeVocab';
 
 function Harness() {
   return <LandingV6View v={useLandingV6()} />;
@@ -32,7 +33,7 @@ it('keeps the free scan as primary hero CTA and adds the beta offer below it', (
   mount();
   expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('href', '/audit?source=landing-v6');
   const beta = screen.queryByTestId('hero-beta-link');
-  if (!BETA.active) {
+  if (!(BETA.active && BETA.publicOffer)) {
     expect(beta).toBeNull();
     return;
   }
@@ -62,7 +63,7 @@ it('shows proof (Control Room, Evidence) before Agent Governance', () => {
   expect(ids.indexOf('agenten')).toBeLessThan(ids.indexOf('check'));
 });
 
-it('offers both website paths: automatic SiteOS draft and personal design with Dominik', () => {
+it('offers both website paths: automatic SiteOS draft and individual web design', () => {
   const view = mount();
   const ids = Array.from(view.container.querySelectorAll('section[id]')).map((s) => s.id);
   expect(ids.indexOf('websites')).toBeGreaterThan(-1);
@@ -76,7 +77,32 @@ it('offers both website paths: automatic SiteOS draft and personal design with D
   // Ehrlicher Status: Builder/Veröffentlichung sind Preview, nur Weg 1 trägt das Badge.
   expect(sec.getAllByText('PREVIEW')).toHaveLength(1);
   expect(sec.getByRole('link', { name: 'Leistungsumfang ansehen' })).toHaveAttribute('href', '/frontend-builder');
+  // Haupt-CTA der Dienstleistung ist die kanonische Ausnahme aus runtimeVocab.
+  expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveTextContent(CTA.webdesign);
+  expect(sec.queryByText(/Projekt mit Dominik besprechen/)).toBeNull();
+  // Erweiterung: individuelle Dashboards, Bots/Workflows nur „soweit verfügbar“.
+  const ext = within(screen.getByTestId('landing-websites-extension'));
+  for (const branche of ['Handwerk', 'Arztpraxis', 'Kanzlei']) expect(ext.getByText(branche)).toBeInTheDocument();
+  expect(ext.getByText(/Bots .*KI-Workflows und Integrationen/)).toBeInTheDocument();
+  expect(ext.getByText(/tatsächlich verfügbar/)).toBeInTheDocument();
   // Hauptnavigation erst ab 1180 px (jsdom: 1024) — Footer-Navigation rendert immer.
   expect(within(screen.getByRole('navigation', { name: 'Produkt' })).getByRole('link', { name: 'Websites' }))
     .toHaveAttribute('href', '#websites');
+});
+
+it('shows regular SaaS prices with the 14-day trial instead of a blanket free beta', () => {
+  const view = mount();
+  const pricing = view.container.querySelector('#preise') as HTMLElement;
+  // Entscheidung 18.10.2026: kein Pauschalversprechen „kostenlos bis …“ mehr.
+  expect(BETA.publicOffer).toBe(false);
+  expect(pricing).not.toHaveTextContent(`kostenlos bis ${BETA.endsLabel}`);
+  expect(pricing).not.toHaveTextContent(/Offene Beta/);
+  expect(pricing).toHaveTextContent('79 €');
+  expect(pricing).toHaveTextContent('249 €');
+  expect(pricing).toHaveTextContent('699 €');
+  expect(pricing).toHaveTextContent('Starter und Growth können Sie 14 Tage kostenlos testen.');
+  const starter = view.container.querySelector('[data-plan-cta="starter"]');
+  expect(starter).toHaveTextContent('14 Tage kostenlos testen');
+  expect(starter?.getAttribute('href')?.startsWith('/checkout/')).toBe(true);
+  expect(view.container.querySelector('[data-plan-cta="agency"]')?.getAttribute('href')?.startsWith('/checkout/')).toBe(true);
 });

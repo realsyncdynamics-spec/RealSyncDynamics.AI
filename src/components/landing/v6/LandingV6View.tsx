@@ -332,7 +332,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
       <section id="websites" data-testid="landing-websites" style={{ borderTop: "1px solid var(--rs-line)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
-          <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>WEBSITES FÜR KMU</p>
+          <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>WEBSITES & DASHBOARDS FÜR KMU</p>
           <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Ihre Website: <span style={{ color: "var(--rs-acc)" }}>automatisch erstellt oder persönlich gestaltet.</span></h2>
           <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Zwei Wege, ein Anspruch: datenschutzbewusst gebaut und in der EU betrieben. Wählen Sie, wie viel Sie selbst machen möchten.</p>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "24px" }}>
@@ -351,6 +351,16 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 </div>
               </article>
             </Fragment>))}
+          </div>
+          <div data-testid="landing-websites-extension" style={{ marginTop: "24px", padding: "var(--card-p)", border: "1px dashed var(--rs-chip-b)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{v.websiteExtension.k}</span>
+            <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{v.websiteExtension.t}</h3>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.websiteExtension.d}</p>
+            <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", gap: "12px" }}>
+              {v.websiteExtension.examples.map((ex) => (<li key={ex.k} style={{ padding: "14px 16px", borderRadius: "10px", background: "var(--rs-bg2)", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><strong style={{ display: "block", fontWeight: "600" }}>{ex.k}</strong><span style={{ color: "var(--rs-fg2)" }}>{ex.d}</span></li>))}
+            </ul>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6" }}>{v.websiteExtension.modules}</p>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.websiteExtension.note}</p>
           </div>
         </div>
       </section>

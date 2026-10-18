@@ -50,44 +50,65 @@ const STAGES = [
 ];
 
 /**
- * Website-Angebot: zwei klar getrennte Wege für KMU. Weg 1 nutzt SiteOS
- * (Builder in Vorschau), Weg 2 ist der persönliche Frontend-Service.
- * Der Status bleibt ehrlich: Veröffentlichung/eigene Domain sind Preview.
+ * Website-Angebot: zwei klar getrennte Wege für KMU (Entscheidung Owner
+ * 18.10.2026). Weg 1 ist Software im Self-Service (SiteOS-Builder, Vorschau),
+ * Weg 2 die individuelle Dienstleistung mit Projektanfrage (`CTA.webdesign`)
+ * — eigenständiges Angebot, keine Enterprise-Testphase. Der Status bleibt
+ * ehrlich: Veröffentlichung/eigene Domain sind Preview, Konditionen dafür
+ * folgen bei Freischaltung.
  */
 const WEBSITE_PATHS = [
   {
     id: 'auto',
     k: 'WEG 1 · AUTOMATISCH',
     t: 'Landingpage automatisch erstellen',
-    d: 'Sie beschreiben Ihr Unternehmen – SiteOS erstellt daraus einen strukturierten Seitenentwurf. Texte und Reihenfolge passen Sie danach selbst an.',
+    d: 'Sie beschreiben Ihr Unternehmen – SiteOS erstellt daraus einen strukturierten Seitenentwurf. Texte und Reihenfolge passen Sie danach selbst an, ohne Verkaufsgespräch.',
     points: [
       'Gliederung, Texte und Seitenaufbau aus Ihrer Beschreibung',
       'Drei Designvorlagen: Modern Minimal, Bento Bold, Dark Professional',
       'Blockeditor mit Desktop-, Tablet- und Mobilansicht',
       'Bestehende Website? Analyse und Redesign-Vorschau vor der Umstellung',
     ],
-    note: 'Vorschau-Phase: Veröffentlichung und eigene Domain werden schrittweise freigeschaltet.',
+    note: 'Vorschau-Phase: Veröffentlichung und eigene Domain werden schrittweise freigeschaltet. Die Konditionen dafür nennen wir bei Freischaltung gesondert.',
     preview: true,
     primary: { label: 'Landingpage-Entwurf starten', href: '/build' },
     secondary: { label: 'Bestehende Website modernisieren', href: `/handwerk-website?source=${SOURCE}-websites` },
   },
   {
     id: 'custom',
-    k: 'WEG 2 · PERSÖNLICH',
-    t: 'Website individuell gestalten – mit Dominik Steiner',
-    d: 'Wenn eine Vorlage nicht reicht: Dominik Steiner, Inhaber von RealSyncDynamics, plant, gestaltet und setzt Ihre Website gemeinsam mit Ihnen um.',
+    k: 'WEG 2 · INDIVIDUELL',
+    t: 'Individuelles Webdesign – persönlich mit Dominik Steiner',
+    d: 'Wenn eine Vorlage nicht reicht: Dominik Steiner, Inhaber von RealSyncDynamics, plant, gestaltet und setzt Ihre Landingpage oder Website gemeinsam mit Ihnen um.',
     points: [
       'Persönliche Abstimmung zu Ziel, Zielgruppe und Inhalten',
       'Eigenständiges Design statt Vorlage, responsiv umgesetzt',
       'Komponenten, CMS-Anbindung und grundlegende Performance-Optimierung',
-      'Festangebot nach Prüfung Ihrer Anfrage',
+      'Persönliches Festangebot nach Projektumfang',
     ],
-    note: 'Ihre Anfrage geht direkt an Dominik – nicht in den Enterprise-Vertrieb.',
+    note: 'Eigenständige Dienstleistung mit direkter Projektanfrage – keine Enterprise-Testphase und kein Software-Abo.',
     preview: false,
-    primary: { label: 'Projekt mit Dominik besprechen', href: `/contact-sales?intent=webdesign&source=${SOURCE}-websites` },
+    primary: { label: CTA.webdesign, href: `/contact-sales?intent=webdesign&source=${SOURCE}-websites` },
     secondary: { label: 'Leistungsumfang ansehen', href: '/frontend-builder' },
   },
 ] as const;
+
+/**
+ * Erweiterung zu Weg 2: maßgeschneiderte Dashboards. Bots, KI-Workflows und
+ * Integrationen nur „soweit verfügbar“ — Bot-Laufzeit und Automations sind
+ * laut `implementation-status.ts` (channel-bots, automation-n8n) noch Preview.
+ */
+const WEBSITE_EXTENSION = {
+  k: 'ERWEITERUNG',
+  t: 'Individuelle Dashboards für Ihren Betrieb',
+  d: 'Auf Wunsch wird aus der Website mehr: ein Dashboard, das zu Ihren Abläufen passt – etwa für Handwerksbetriebe, Arztpraxen oder Kanzleien.',
+  examples: [
+    { k: 'Handwerk', d: 'Anfragen, Aufträge und Termine an einem Ort' },
+    { k: 'Arztpraxis', d: 'Terminwünsche und Rückfragen strukturiert statt per Telefonzettel' },
+    { k: 'Kanzlei', d: 'Mandatsanfragen und Fristen übersichtlich vorsortiert' },
+  ],
+  modules: 'Ergänzbar um Bots (Website-Chat, Terminbuchung, WhatsApp, Telefon), KI-Workflows und Integrationen in Ihre bestehenden Systeme.',
+  note: 'Einige dieser Bausteine sind noch in der Vorschau. Wir bauen nur ein, was für Ihren Anwendungsfall tatsächlich verfügbar ist – das klären wir verbindlich im Festangebot. Nennen Sie den Wunsch einfach in Ihrer Webdesign-Anfrage.',
+} as const;
 const AGENT_NO = [
   'seine eigene Identität bestimmen',
   'seinen Tenant wählen',
@@ -175,8 +196,19 @@ function bullets(tier: PricingTier): string[] {
   return tier.bullets.filter((b) => b.trim().length > 0).slice(0, 4);
 }
 
+/**
+ * Öffentliches Beta-Angebot („kostenlos bis …“) — seit 18.10.2026 aus
+ * (`BETA.publicOffer`). Dann gelten Listenpreis und `trialDays` aus der SSoT.
+ */
+const BETA_OFFER = BETA.active && BETA.publicOffer;
+
+/** Tarife mit Testphase, z. B. „Starter und Growth“ — aus `trialDays`, nicht hart codiert. */
+const TRIAL_PLANS = PLANS.filter((p) => p.trialDays > 0 && p.purchaseMode !== 'inquiry' && p.availability !== 'legacy');
+const TRIAL_PLAN_NAMES = TRIAL_PLANS.map((p) => p.name).join(' und ');
+const TRIAL_DAYS = Math.max(0, ...TRIAL_PLANS.map((p) => p.trialDays));
+
 function planHref(plan: Plan, interval: 'month' | 'year', source: string): string {
-  if (isBetaPlan(plan.id)) return betaSignupHref(plan.id, source);
+  if (BETA_OFFER && isBetaPlan(plan.id)) return betaSignupHref(plan.id, source);
   return checkoutHrefForPlan(plan, { interval, source });
 }
 
@@ -370,7 +402,7 @@ export function useLandingV6() {
     .map((tier) => {
       const plan = tier.plan;
       const inquiry = tier.priceOnRequest || plan.purchaseMode === 'inquiry';
-      const beta = BETA.active && isBetaPlan(plan.id);
+      const beta = BETA_OFFER && isBetaPlan(plan.id);
       const useYearly = yearly && !inquiry && yearlyAvailable(plan);
       const listEur = useYearly && plan.price.yearlyEur !== null ? plan.price.yearlyEur : plan.price.monthlyEur;
       const priceLabel = tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : formatPriceEur(listEur);
@@ -388,7 +420,9 @@ export function useLandingV6() {
             ? `kostenlos bis ${BETA.endsLabel}`
             : useYearly
               ? 'jährlich abgerechnet'
-              : 'monatlich kündbar',
+              : plan.trialDays > 0
+                ? `${plan.trialDays} Tage kostenlos testen · monatlich kündbar`
+                : 'monatlich kündbar',
         desc: plan.outcomeHeadline,
         features: bullets(tier),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
@@ -403,12 +437,13 @@ export function useLandingV6() {
     });
 
   const taxNote = pricingTaxNote(COMPANY.taxMode);
-  const pricingFoot = BETA.active
+  const trialNote = TRIAL_PLAN_NAMES && TRIAL_DAYS > 0 ? `${TRIAL_PLAN_NAMES} können Sie ${TRIAL_DAYS} Tage kostenlos testen.` : '';
+  const pricingFoot = BETA_OFFER
     ? `Offene Beta bis ${BETA.endsLabel}: Starter, Growth und Agency kostenlos testen – keine Kreditkarte, kein Abo. Danach gelten die durchgestrichenen Listenpreise. ${taxNote}`
-    : `${taxNote} Bezahlung per Karte oder SEPA-Lastschrift über Stripe.`;
-  const faqCancel = BETA.active
+    : `${trialNote} ${taxNote} Bezahlung per Karte oder SEPA-Lastschrift über Stripe.`.trim();
+  const faqCancel = BETA_OFFER
     ? `Während der Beta (bis ${BETA.endsLabel}) zahlen Sie nichts – kein Abo, keine Kreditkarte. Danach sind Starter, Growth und Agency monatlich kündbar.`
-    : 'Ja. Starter, Growth und Agency sind monatlich kündbar.';
+    : `Ja. Starter, Growth und Agency sind monatlich kündbar. ${trialNote}`.trim();
 
   // ---- KI-Act-Einordnung (lokal)
   const field = (name: 'company' | 'industry' | 'size') => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -457,11 +492,15 @@ export function useLandingV6() {
   ).map((t, i) => ({ i: '0' + (i + 1), t }));
   const recId: SellableId = audit.count === 'l' ? 'agency' : riskCounts.high || audit.count === 'm' ? 'growth' : 'starter';
   const recPlan = PLANS.find((p) => p.id === recId);
-  const recBeta = BETA.active && isBetaPlan(recId);
+  const recBeta = BETA_OFFER && isBetaPlan(recId);
   const recMonthly = recPlan ? formatPriceEur(recPlan.price.monthlyEur) : '';
   const rec = {
     name: recPlan?.name ?? recId,
-    price: recBeta ? `0 € in der Beta · danach ${recMonthly} / Monat` : `${recMonthly} / Monat`,
+    price: recBeta
+      ? `0 € in der Beta · danach ${recMonthly} / Monat`
+      : recPlan && recPlan.trialDays > 0
+        ? `${recMonthly} / Monat · ${recPlan.trialDays} Tage kostenlos testen`
+        : `${recMonthly} / Monat`,
     cta: recBeta ? `${recPlan?.name ?? ''} kostenlos testen` : `${recPlan?.name ?? ''} starten`,
     reason:
       recId === 'agency'
@@ -585,7 +624,7 @@ export function useLandingV6() {
     accent,
     ui,
     year: new Date().getFullYear(),
-    beta: { active: BETA.active, endsShort: BETA.endsLabel },
+    beta: { active: BETA_OFFER, endsShort: BETA.endsLabel },
     href: {
       audit: `/audit?source=${SOURCE}`,
       // Eigene Quelle, damit der Trichter Check → Scan messbar ist.
@@ -599,6 +638,7 @@ export function useLandingV6() {
     goPricing,
     stages: STAGES,
     websitePaths: WEBSITE_PATHS,
+    websiteExtension: WEBSITE_EXTENSION,
     agentNo: AGENT_NO,
     gateChecks: ['Identity', 'Tenant', 'Policy', 'Risk', 'Approval'],
     crKpis: KPIS.map((k) => ({

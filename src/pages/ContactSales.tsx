@@ -35,7 +35,11 @@ function isFoundingIntent(source: string, intent: string | null): boolean {
   return /\bfounding\b/.test(hay);
 }
 
-/** Individuelles Webdesign (Frontend-Service) — persönlich, kein Enterprise-/Founding-Funnel. */
+/**
+ * Individuelles Webdesign (Landingpages, Websites, maßgeschneiderte Dashboards)
+ * — eigenständige Dienstleistung, kein Enterprise-/Founding-Funnel
+ * (Entscheidung Owner 18.10.2026, `CTA.webdesign`).
+ */
 function isWebdesignIntent(intent: string | null): boolean {
   return (intent ?? '').toLowerCase() === 'webdesign';
 }
@@ -239,7 +243,7 @@ export function ContactSales() {
   }
 
   const headerTitle = isWebdesign
-    ? 'Website-Projekt anfragen'
+    ? 'Individuelle Dienstleistung'
     : showFoundingCopy
       ? 'Founding Access / Kontakt'
       : 'Enterprise / Partner Anfrage';
@@ -250,7 +254,7 @@ export function ContactSales() {
       : 'Vertrieb prüft die Anfrage';
 
   const headline = isWebdesign
-    ? 'Ihre Website individuell gestalten'
+    ? 'Individuelles Webdesign anfragen'
     : showFoundingCopy
     ? (planKey
       ? `${planBadgeLabel(planKey)} — Founding Access`
@@ -258,7 +262,7 @@ export function ContactSales() {
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
   const intro = isWebdesign
-    ? 'Beschreiben Sie kurz Ihr Unternehmen und was Ihre Website leisten soll – neu oder Relaunch. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Ein Festangebot erhalten Sie nach dieser Prüfung.'
+    ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
     : showFoundingCopy
     ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
@@ -349,7 +353,7 @@ export function ContactSales() {
             <select value={form.use_case} onChange={handleChange('use_case')}
               className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500">
               <option value="">— bitte wählen —</option>
-              <option value="webdesign">Website / Landingpage individuell gestalten</option>
+              <option value="webdesign">Individuelles Webdesign: Landingpage, Website oder Dashboard</option>
               <option value="compliance">DSGVO / Compliance / Audit-Pflicht</option>
               <option value="legal">Anwaltskanzlei / Mandantengeheimnis</option>
               <option value="health">HealthTech / Patientendaten</option>

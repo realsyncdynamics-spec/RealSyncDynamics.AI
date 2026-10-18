@@ -17,6 +17,17 @@ const flag = (import.meta.env?.VITE_BETA_PHASE ?? 'on').toString().toLowerCase()
 
 export const BETA = {
   active: flag !== 'off' && flag !== 'false' && flag !== '0',
+  /**
+   * Öffentliches Pauschalangebot „kostenlos bis {endsLabel}“ auf der
+   * Website. Entscheidung Owner 18.10.2026: aus — die Startseite zeigt die
+   * regulären Preise aus `shared/pricing.ts` (Starter 79 €, Growth 249 €,
+   * Agency 699 € pro Monat, 14 Tage Test für Tarife mit `trialDays`).
+   * Checkout-Umleitung, `beta-enroll` und App-Hinweise hängen weiter nur an
+   * `active`: Bereits gewährte Beta-Zugänge bleiben unberührt. Das Ende der
+   * Beta-Neuanmeldung braucht einen eigenen Schritt, weil die App-Hinweise
+   * heute jeden Mandanten als Beta-Mandanten behandeln.
+   */
+  publicOffer: false as boolean,
   /** Anzeige-Ende der Beta (nur Text, keine Logik). */
   endsLabel: '31. Januar 2027',
   /** Planstufe, deren Umfang Beta-Tester testen dürfen. */

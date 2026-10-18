@@ -1,5 +1,6 @@
 /**
- * Customer-facing copy for the public landing roadmap (/roadmap; Startseite ist Landing v6).
+ * Customer-facing copy for the public landing roadmap (/roadmap; #roadmap auf der
+ * Referenz /design/landing-v4). Landing v6 auf `/` hat keinen Roadmap-Abschnitt.
  *
  * Internal `name` / `description` / `evidence` in implementation-status.ts stay
  * for registry, docs, and tests. Public markup must render ONLY these fields.
@@ -208,14 +209,26 @@ export const PUBLIC_ROADMAP_COPY: Record<
   },
   'channel-bots': {
     de: {
-      name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
+      name: 'Bot-Laufzeit — Chat, WhatsApp, Telegram',
       description:
         'In Arbeit: Bots anlegen und speichern geht; die produktive Laufzeit, die Nachrichten beantwortet, folgt.',
     },
     en: {
-      name: 'Bot runtime — chat, WhatsApp, phone',
+      name: 'Bot runtime — chat, WhatsApp, Telegram',
       description:
         'In progress: create and save bots today; the production runtime that answers messages is next.',
+    },
+  },
+  'voice-telephony': {
+    de: {
+      name: 'Voice / Telefonie',
+      description:
+        'Geplant: Bots auch am Telefon — Sprachkanal mit Prüfpfad. Heute noch nicht verfügbar.',
+    },
+    en: {
+      name: 'Voice / telephony',
+      description:
+        'Planned: bots on the phone too — a voice channel with traceable logging. Not available yet.',
     },
   },
   'automation-n8n': {
@@ -452,6 +465,7 @@ export const PUBLIC_ROADMAP_ROUTE_ALLOWLIST = new Set([
   '/audit',
   '/pricing',
   '/#pricing',
+  '/#preise',
   '/governance-runtime',
   '/ai-act-klassifikator',
   '/app',
@@ -472,5 +486,5 @@ export const PUBLIC_ROADMAP_ROUTE_ALLOWLIST = new Set([
 export function getPublicRoadmapRoute(item: ImplementationItem): string | undefined {
   const route = item.route;
   if (!route || !PUBLIC_ROADMAP_ROUTE_ALLOWLIST.has(route)) return undefined;
-  return route === '/#pricing' ? '/pricing' : route;
+  return route === '/#pricing' || route === '/#preise' ? '/pricing' : route;
 }

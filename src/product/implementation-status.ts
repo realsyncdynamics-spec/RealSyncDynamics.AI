@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-04';
+export const IMPLEMENTATION_MEASURED_AT = '2026-10-18';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,15 +49,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act“, Primär-CTA kostenloser Website-Check (/audit), Sekundär-CTA Enterprise anfragen (/contact-sales); dunkler Europa-Hero mit Goldakzenten, darunter Plattform, Control Room (Demo-Daten), Evidence, Agenten, Sicherheit, Governance-Check, Website-Angebot (automatisch via SiteOS oder individuell über /frontend-builder), Preise und FAQ. Landing v4 bleibt unter /design/landing-v4.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT mit 14 Tagen Test für Starter und Growth, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
       'src/components/landing/v6/LandingV6View.tsx',
       'src/components/landing/v6/useLandingV6.ts',
       'src/styles/landing-v6.css',
-      'src/App.tsx',
+      'public/landing-v6/europe-network.webp',
+      'src/App.tsx#/',
       'test/landing/landing-v6-funnel.test.tsx',
+      'test/landing/landing-v6-a11y.test.tsx',
     ],
     showOnRoadmap: false,
   },
@@ -113,7 +115,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Free Audit starten',
+    ctaLabel: 'Kostenlosen Website-Check starten',
   },
   {
     id: 'app-shell',
@@ -216,16 +218,36 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'channel-bots',
-    name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
+    name: 'Bot-Laufzeit — Chat, WhatsApp, Telegram',
     status: 'preview',
     group: 'channels',
     description:
-      'Start-Routen und Builder-UI erreichbar; volle Provider-Laufzeit noch Preview.',
+      'Start-Routen und Builder-UI für Chat-, WhatsApp- und Telegram-Bots erreichbar; volle Provider-Laufzeit noch Preview. Telefonie ist ein eigener Eintrag (voice-telephony, Coming Soon).',
     route: '/chatbot/start',
     evidence: [
       'src/pages/product-entry',
       'src/config/public-nav.ts',
       'src/features/governance bots views',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: true,
+  },
+  {
+    id: 'voice-telephony',
+    name: 'Voice / Telefonie',
+    status: 'coming-soon',
+    group: 'channels',
+    description:
+      'Telefonie-Kanal (Voice Agent) geplant: /app/voice zeigt nur eine read-only Session-Liste mit Leerzustand „Voice Agent · Geplant“; Features- und FAQ-Seite nennen Telefonie als geplant (#1921). Code für apps/agent-runtime (/voice-tool, /voice-sessions) und den Twilio-Webhook bot-voice-webhook liegt im Tree, aber es gibt keinen funktionierenden Deploy-Pfad für apps/agent-runtime (letzter Lauf von deploy-agent-runtime-vps.yml am 06.10.2026 fehlgeschlagen) und keine produktiv angebundene Telefonie (Rufnummer/Provider). Nicht live.',
+    route: '/app/voice',
+    evidence: [
+      'src/features/governance/voice/VoiceSessionsView.tsx',
+      'src/pages/Features.tsx',
+      'src/pages/Faq.tsx',
+      'apps/agent-runtime/README.md',
+      '.github/workflows/deploy-agent-runtime-vps.yml',
+      'supabase/functions/bot-voice-webhook/index.ts',
+      'PR #1921',
     ],
     showOnPlatform: false,
     showOnRoadmap: true,
@@ -279,14 +301,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'hero-earth-scenery',
     name: 'Photoreal Earth Hero Backdrop',
-    status: 'live',
+    status: 'preview',
     group: 'visual',
     description:
-      'Hero der Designvorschau `/design/landing-v4` (nicht mehr auf `/`, dort Landing v6): three.js-Szene (mountHeroEarth) hinter Landing-v4-Typografie — Blue-Marble/Night/Clouds/Normal/Specular, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver.',
+      'Nicht mehr auf `/`: Landing v6 nutzt ein statisches Europa-Bild. Die three.js-Szene (mountHeroEarth — Blue-Marble/Night/Clouds, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver) läuft nur noch in der Referenz Landing v4 unter /design/landing-v4.',
     route: '/design/landing-v4',
     evidence: [
       'src/components/landing/v4/heroEarthScene.ts',
       'src/pages/LandingV4.tsx',
+      'src/App.tsx#/design/landing-v4',
       'public/textures/hero-v4/',
       'test/landing/landing-v4.test.tsx',
       'PR #1751',
@@ -298,12 +321,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Monatspläne Starter / Growth / Agency',
     status: 'live',
     group: 'billing',
-    description: 'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden.',
-    route: '/#pricing',
+    description:
+      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) regulär mit Listenpreis aus der SSoT; Tarife mit `trialDays` (Starter, Growth) 14 Tage kostenlos testen. Das öffentliche Beta-Pauschalangebot ist aus (`BETA.publicOffer = false`, Owner-Entscheidung 18.10.2026); der Checkout leitet bei `BETA.active` vorerst weiter in die Beta um.',
+    route: '/#preise',
     evidence: [
       'shared/pricing.ts',
-      'src/components/landing/v4/landing-v4-content.ts#PLANS',
-      'src/components/landing/v4/LandingV4Sections.tsx#V4Pricing',
+      'src/config/beta.ts',
+      'src/components/landing/v6/useLandingV6.ts#plans',
+      'src/components/landing/v6/LandingV6View.tsx#preise',
     ],
     showOnRoadmap: false,
   },
@@ -315,8 +340,29 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
     route: '/contact-sales',
     evidence: [
-      'src/components/landing/v4/LandingV4Sections.tsx#V4Enterprise',
+      'src/components/landing/v6/useLandingV6.ts#href.enterprise',
+      'src/components/landing/v6/LandingV6View.tsx#hero-secondary-cta',
       'src/pages/ContactSales.tsx',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'beta-phase',
+    name: 'Offene Beta (Growth-Zugang)',
+    status: 'preview',
+    group: 'billing',
+    description:
+      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Offen (WP-4): Feedback im Dashboard und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
+    route: '/welcome',
+    evidence: [
+      'supabase/functions/beta-enroll/index.ts',
+      'supabase/functions/beta-enroll/logic.ts',
+      'src/features/billing/useBetaEnrollment.ts',
+      'src/config/beta.ts',
+      'src/config/production-edge-functions.ts#beta-enroll',
+      'test/edge/beta-enroll.test.ts',
+      'docs/claude/BETA_V5_WORKPLAN.md#WP-4',
+      'PR #1874',
     ],
     showOnRoadmap: false,
   },
@@ -510,7 +556,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (dort Landing v6; three.js-Erde nur in /design/landing-v4).',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Landing v6 uses a static Europe image).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',

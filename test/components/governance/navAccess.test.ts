@@ -131,10 +131,10 @@ describe('Randfälle wie RouteEntitlementGate', () => {
     expect(navLock('classify').minPlan).toBeNull();
   });
 
-  it('Klassifizierung-Tooltip: noch nicht verfügbar, kein Upgrade schaltet frei', () => {
+  it('Klassifizierung-Tooltip: in Kürze verfügbar, kein Upgrade-Hinweis', () => {
     const lock = navLock('classify');
     expect(navLockTitle('Klassifizierung', lock)).toBe(
-      'Klassifizierung ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.',
+      'Klassifizierung befindet sich in der finalen Entwicklungsphase — in Kürze verfügbar.',
     );
   });
 });

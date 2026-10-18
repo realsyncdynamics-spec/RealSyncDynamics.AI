@@ -1,0 +1,115 @@
+/* Scoped to /webdesign. Self-hosted product fonts only — CSP blocks Google Fonts. */
+.wd {
+  --paper: #f4efe6;
+  --cream: #fbf8f2;
+  --ink: #1c1916;
+  --muted: #6b645c;
+  --line: #e2d9cc;
+  --copper: #a34b2e;
+  --panel: #241f1b;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wd * { box-sizing: border-box; }
+.wd a { color: inherit; text-decoration: none; }
+.wd h1, .wd h2, .wd h3 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; letter-spacing: -0.03em; text-wrap: balance; margin: 0; }
+.wd p { text-wrap: pretty; margin: 0; }
+.wd button, .wd input, .wd select, .wd textarea { font: inherit; color: inherit; }
+.wd :focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
+.wd-wrap { width: min(72rem, calc(100% - 2.5rem)); margin-inline: auto; }
+.wd-kicker { font-family: Manrope, sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); }
+.wd-muted { color: var(--muted); }
+.wd-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4rem; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(10px); }
+.wd-brand { display: flex; align-items: center; gap: 0.75rem; }
+.wd-mark { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 1px solid var(--ink); font-family: "Cormorant Garamond", serif; font-size: 1.15rem; }
+.wd-brand small { display: block; color: var(--muted); font-size: 0.75rem; }
+.wd-nav { display: none; gap: 1.15rem; }
+.wd-nav a:hover { color: var(--copper); }
+.wd-cta, .wd-ghost {
+  display: inline-flex; align-items: center; justify-content: center; height: 3rem; padding: 0 1.25rem;
+  font-size: 0.875rem; font-weight: 600; border: 1px solid transparent; cursor: pointer;
+}
+.wd-cta { background: var(--copper); color: var(--paper); }
+.wd-ghost { border-color: color-mix(in srgb, var(--ink) 20%, transparent); background: transparent; }
+.wd-cta:hover, .wd-ghost:hover { opacity: 0.92; }
+.wd-hero { display: grid; gap: 3rem; align-items: center; padding: 3.5rem 0 3rem; }
+.wd-hero h1 { font-size: clamp(2.4rem, 5vw, 3.7rem); line-height: 1.05; }
+.wd-hero h1 span { display: block; margin-top: 0.35rem; color: var(--copper); font-style: italic; }
+.wd-lead { max-width: 38rem; margin-top: 1.4rem; font-size: 1.125rem; color: var(--muted); }
+.wd-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
+.wd-fine { margin-top: 0.9rem; font-size: 0.875rem; color: var(--muted); }
+.wd-fine a { text-decoration: underline; text-underline-offset: 3px; }
+.wd-sheet { border: 1px solid var(--line); background: var(--cream); box-shadow: 0 30px 50px -28px rgb(28 25 22 / 0.4); }
+.wd-sheet-bar { display: flex; align-items: center; justify-content: space-between; height: 2.75rem; padding: 0 1rem; border-bottom: 1px solid var(--line); }
+.wd-dots { display: flex; gap: 0.35rem; }
+.wd-dots i { width: 0.6rem; height: 0.6rem; border-radius: 99px; background: var(--line); display: block; }
+.wd-sheet-body { background: var(--paper); padding: 1.75rem 1.5rem; }
+.wd-sheet-body strong { display: block; margin-top: 0.8rem; font-family: "Cormorant Garamond", serif; font-size: 2.3rem; font-weight: 500; letter-spacing: -0.03em; }
+.wd-steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.875rem; }
+.wd-steps3 span { display: block; color: var(--muted); font-size: 0.75rem; }
+.wd-caption { margin-top: 0.7rem; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.wd-proof { display: grid; border-block: 1px solid var(--line); }
+.wd-proof li { list-style: none; padding: 1.25rem 0; }
+.wd-proof li + li { border-top: 1px solid var(--line); }
+.wd-section { padding: 4.5rem 0; }
+.wd-section h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; margin-top: 0.6rem; }
+.wd-cream { background: var(--cream); border-top: 1px solid var(--line); }
+.wd-grid { display: grid; gap: 1px; margin-top: 2.2rem; border: 1px solid var(--line); background: var(--line); }
+.wd-grid article { background: var(--paper); padding: 1.4rem; }
+.wd-grid h3 { font-family: Manrope, sans-serif; font-size: 1.05rem; letter-spacing: 0; font-weight: 600; }
+.wd-services { margin-top: 2rem; border-top: 1px solid var(--line); }
+.wd-services li { display: grid; grid-template-columns: 3.2rem 1fr; gap: 0.8rem; align-items: baseline; padding: 1.05rem 0; border-bottom: 1px solid var(--line); list-style: none; font-size: 1.05rem; }
+.wd-services b { font-family: "Cormorant Garamond", serif; font-size: 1.5rem; font-weight: 500; color: var(--copper); }
+.wd-process { display: grid; gap: 1.5rem; margin-top: 2rem; }
+.wd-process li { list-style: none; border-top: 1px solid var(--ink); padding-top: 0.8rem; }
+.wd-process b { font-family: "Cormorant Garamond", serif; color: var(--copper); font-size: 1.5rem; font-weight: 500; }
+.wd-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+.wd-tabs button { height: 2.75rem; padding: 0 0.9rem; border: 1px solid var(--line); background: transparent; cursor: pointer; }
+.wd-tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.wd-study { margin-top: 1rem; display: grid; gap: 1.25rem; }
+.wd-study p { color: var(--muted); }
+.wd-frame { min-height: 16rem; border: 1px solid var(--line); padding: 1.25rem; }
+.wd-frame.praxis { background: #f7f4ee; text-align: center; }
+.wd-frame.kanzlei { background: #f4f1ea; display: grid; grid-template-columns: 7rem 1fr; }
+.wd-frame.kanzlei aside { background: #1b2740; color: #f4efe6; margin: -1.25rem 1rem -1.25rem -1.25rem; padding: 1.25rem 0.8rem; }
+.wd-frame.handwerk { background: #f0e2d4; }
+.wd-swatches { display: flex; gap: 0.4rem; margin-top: 1rem; }
+.wd-swatches i { height: 2.4rem; flex: 1; background: #5c4030; }
+.wd-swatches i:nth-child(2) { background: #c4a484; }
+.wd-swatches i:nth-child(3) { background: #8a6248; }
+.wd-frame.studio { background: #fbf8f2; }
+.wd-frame h3 { font-size: 2rem; margin: 0.4rem 0; }
+.wd-claim { background: var(--panel); color: var(--paper); }
+.wd-claim blockquote { margin: 0; font-family: "Cormorant Garamond", serif; font-size: clamp(1.8rem, 3vw, 2.6rem); font-style: italic; line-height: 1.2; }
+.wd-form { border: 1px solid var(--line); background: var(--cream); padding: 1.25rem; box-shadow: 0 30px 50px -28px rgb(28 25 22 / 0.4); }
+.wd-fields { display: grid; gap: 0.9rem; }
+.wd-fields label { display: block; font-size: 0.875rem; color: var(--muted); }
+.wd-fields input, .wd-fields select, .wd-fields textarea { width: 100%; margin-top: 0.35rem; border: 1px solid var(--line); background: var(--paper); padding: 0.7rem 0.75rem; }
+.wd-fields textarea { min-height: 8rem; resize: vertical; }
+.wd-error { color: #8a2b24; font-size: 0.875rem; }
+.wd-footer { border-top: 1px solid var(--line); padding: 2.5rem 0 3rem; font-size: 0.875rem; color: var(--muted); }
+.wd-footer a { text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 800px) {
+  .wd-nav { display: flex; }
+  .wd-header .wd-cta { display: inline-flex; }
+  .wd-hero { grid-template-columns: 1.2fr 0.8fr; padding-top: 4.5rem; }
+  .wd-proof { grid-template-columns: repeat(3, 1fr); }
+  .wd-proof li + li { border-top: 0; border-left: 1px solid var(--line); padding-left: 1.5rem; }
+  .wd-grid { grid-template-columns: repeat(3, 1fr); }
+  .wd-process { grid-template-columns: repeat(4, 1fr); }
+  .wd-study { grid-template-columns: 1fr 1fr; align-items: start; }
+  .wd-contact { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 2.5rem; }
+  .wd-fields.two { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 799px) {
+  .wd-header .wd-cta { display: none; }
+  .wd-frame.kanzlei { grid-template-columns: 1fr; }
+  .wd-frame.kanzlei aside { margin: -1.25rem -1.25rem 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-cta, .wd-ghost, .wd-tabs button { transition: none; }
+}

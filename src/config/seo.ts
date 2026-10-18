@@ -1138,6 +1138,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
     canonical: `${SITE_URL}/marktanalyse`,
   },
+  '/webdesign': {
+    title: 'Webdesign | RealSync Dynamics AI',
+    description:
+      'Individuelle One-Page-Websites und Landingpages von Dominik Steiner. Für Selbstständige, Praxen, Kanzleien und Handwerk — persönlich, nicht von der Stange.',
+    canonical: `${SITE_URL}/webdesign`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Webdesign', url: '/webdesign' },
+    ]),
+  },
 };
 
 /**

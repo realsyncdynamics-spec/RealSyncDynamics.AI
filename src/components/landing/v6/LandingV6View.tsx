@@ -412,7 +412,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Produkt" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>PRODUKT</span>
-            <a href="#produkt">Plattform</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
+            <a href="#produkt">Plattform</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link><Link to="/webdesign">Webdesign</Link>
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>

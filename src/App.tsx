@@ -125,6 +125,7 @@ const BusseldRechner = lazy(() => import('./pages/BusseldRechner').then((m) => (
 const ToolsHub = lazy(() => import('./pages/ToolsHub').then((m) => ({ default: m.ToolsHub })));
 const HealthTechLanding = lazy(() => import('./pages/HealthTechLanding').then((m) => ({ default: m.HealthTechLanding })));
 const KmuWebsiteLanding = lazy(() => import('./pages/KmuWebsiteLanding').then((m) => ({ default: m.KmuWebsiteLanding })));
+const WebdesignLanding = lazy(() => import('./pages/WebdesignLanding').then((m) => ({ default: m.WebdesignLanding })));
 const Branchen = lazy(() => import('./pages/Branchen').then((m) => ({ default: m.Branchen })));
 const IndustryDetail = lazy(() => import('./pages/branchen/IndustryDetail').then((m) => ({ default: m.IndustryDetail })));
 const LegalTechLanding = lazy(() => import('./pages/LegalTechLanding').then((m) => ({ default: m.LegalTechLanding })));
@@ -659,6 +660,7 @@ function RoutesWithTracking() {
       <Route path="/healthtech" element={<HealthTechLanding />} />
       {/* Website + Chat-/Telefon-Assistent für kleine Betriebe (Handwerk, Praxen, Kanzleien) */}
       <Route path="/handwerk-website" element={<KmuWebsiteLanding />} />
+      <Route path="/webdesign" element={<WebdesignLanding />} />
       <Route path="/kmu-website" element={<Navigate to="/handwerk-website" replace />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}

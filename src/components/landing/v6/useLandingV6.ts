@@ -553,6 +553,8 @@ export function useLandingV6() {
       login: '/login',
       dashboard: '/app/dashboard',
       enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
+      // Gesprächswunsch ohne Tarifbindung; ContactSales zeigt dafür eigene Copy.
+      consult: `/contact-sales?intent=gespraech&source=${SOURCE}-hero`,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
       betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },

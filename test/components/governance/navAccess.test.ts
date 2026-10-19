@@ -9,7 +9,6 @@ import { PLAN_ENTITLEMENTS, type EntitlementKey } from '@/shared/pricing';
 import { SHELL_NAV } from '../../../src/components/governance-os/shellNav';
 import { GOVERNANCE_MODULES } from '../../../src/components/governance-os/governanceModules';
 import { decideNavLock, navRequiredKeys, type NavEntitlements } from '../../../src/components/governance-os/navAccess';
-import { navLockTitle } from '../../../src/components/governance-os/useNavLock';
 import { decideAccess, requirementForPath } from '../../../src/core/access/featureAccess';
 
 function entitlementsOf(planKey: string, extra: Partial<Record<EntitlementKey, number>> = {}): NavEntitlements {
@@ -45,10 +44,8 @@ describe('Hauptnavigation — Free-Mandant', () => {
     expect(navLock('systems').locked).toBe(false);
   });
 
-  it('Klassifizierung ist gesperrt (ai_classification.limited = 0)', () => {
-    const lock = navLock('classify');
-    expect(lock.locked).toBe(true);
-    expect(lock.missing).toEqual(['ai_classification.limited']);
+  it('Klassifizierung ist offen (governance.ai_register; Speichern prüft owner/admin serverseitig)', () => {
+    expect(navLock('classify').locked).toBe(false);
   });
 
   it('Übersicht, Evidence, Berichte, Abrechnung bleiben offen', () => {
@@ -127,14 +124,7 @@ describe('Randfälle wie RouteEntitlementGate', () => {
     expect(navLock('enforce', { ...FREE, available: false }).locked).toBe(false);
   });
 
-  it('kein wählbarer Plan gewährt ai_classification.limited ⇒ minPlan null (kein erfundener Mindestplan)', () => {
-    expect(navLock('classify').minPlan).toBeNull();
-  });
-
-  it('Klassifizierung-Tooltip: noch nicht verfügbar, kein Upgrade schaltet frei', () => {
-    const lock = navLock('classify');
-    expect(navLockTitle('Klassifizierung', lock)).toBe(
-      'Klassifizierung ist noch nicht verfügbar — kein Upgrade schaltet dieses Modul frei.',
-    );
+  it('Klassifizierung hängt nicht mehr an ai_classification.limited (kein Plan gewährt den Key)', () => {
+    expect(nav('classify').entitlementKeys).not.toContain('ai_classification.limited');
   });
 });

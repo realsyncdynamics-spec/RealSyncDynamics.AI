@@ -2,8 +2,9 @@
  * /app/ai-systems/:id — Klassifizierung (Handoff v2 §8).
  *
  * Prüft Route (lazy, AppGate + Shell), echte Daten statt Beispielsystemen,
- * Klasse aus shared/enforcement-classes und dass eine Stufenwahl ohne
- * Backend-Pfad sichtbar als „Entwurf · nicht gespeichert" markiert ist.
+ * Klasse aus shared/enforcement-classes und dass eine Stufenwahl bis zum
+ * Speichern (classify_asset, owner/admin) als „Entwurf · nicht gespeichert"
+ * markiert ist. Speichern, Rollensperre: classify-lock.test.tsx.
  */
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 vi.mock('@/src/core/access/TenantProvider', () => ({
-  useTenant: () => ({ activeTenantId: 'tenant-1', tenants: [], loading: false }),
+  useTenant: () => ({ activeTenantId: 'tenant-1', tenants: [{ tenantId: 'tenant-1', role: 'owner' }], loading: false }),
 }));
 
 const assets = [
@@ -145,7 +146,7 @@ describe('AiSystemDetailView', () => {
     expect(screen.getByTestId('classify-overline')).toHaveTextContent('AI-Gateway · Klasse A');
   });
 
-  it('markiert eine Stufenwahl als Entwurf, weil es keinen Speicherpfad gibt', async () => {
+  it('markiert eine Stufenwahl bis zum Speichern als Entwurf', async () => {
     renderAt('/app/ai-systems/a1');
     const hochrisiko = () => screen.getByRole('button', { name: /Hochrisiko/ });
     await waitFor(() => expect(hochrisiko()).toBeInTheDocument());

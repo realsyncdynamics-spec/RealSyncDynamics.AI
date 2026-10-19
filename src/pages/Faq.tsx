@@ -112,14 +112,15 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
-    q: 'Kann ich Konversations-Bots (Chat, Telefonie, WhatsApp) einsetzen?',
+    q: 'Kann ich Konversations-Bots (Chat, WhatsApp, Telefonie) einsetzen?',
     a: (
       <>
         <p>
           Ja — ab dem <strong className="text-titanium-50">Growth</strong>-Tier sind Konversations-Bots inklusive.
           Du legst sie selbst im Bot-Builder an (Persona, Begrüßung, Kanal) und bindest sie per Web-Endpoint
           bzw. Twilio-Webhook ein. Optional aktivierbar: <strong className="text-titanium-50">Terminbuchung</strong> und
-          <strong className="text-titanium-50"> Bestellannahme</strong>.
+          <strong className="text-titanium-50"> Bestellannahme</strong>. Der Telefonie-Kanal (Voice Agent) ist geplant
+          und in Vorbereitung.
         </p>
         {/* Kontingente kommen aus der Pricing-SSoT — keine gepflegten Zahlen. */}
         <ul className="list-disc pl-5 space-y-1 mt-2">

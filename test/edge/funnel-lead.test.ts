@@ -124,7 +124,7 @@ describe('captureFunnelLead', () => {
   it('never forwards a consent version without consent', async () => {
     const { db, rpc } = mockDb({ data: [{ lead_id: 'L1', is_new: true }], error: null });
     await captureFunnelLead(db, { ...INPUT, marketingConsent: false, consentVersion: 'audit_followup_v1_de' });
-    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_marketing_consent: false, p_consent_version: null });
+    expect((rpc.mock.calls[0] as unknown[])[1]).toMatchObject({ p_marketing_consent: false, p_consent_version: null });
   });
 
   it('signals rpc_missing so gdpr-audit can use the legacy insert', async () => {

@@ -29,7 +29,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { checkLeadErasure } from './lead-erasure.ts';
+import { anonymizationFailures, checkLeadErasure } from './lead-erasure.ts';
 
 const CONFIRM_PHRASE = 'DELETE-MY-ACCOUNT';
 
@@ -106,25 +106,36 @@ Deno.serve(async (req) => {
     return jsonError(leadErasure.status, leadErasure.code, leadErasure.message);
   }
 
-  // ── Anonymisieren statt löschen (Audit-Retention) ─────────────────────────
+  // ── Anonymisieren statt löschen (Audit-Retention) — fail closed ──────────
+  // Ein Datenbankfehler kommt als `{ error }` zurück, nicht als abgelehntes
+  // Promise; anonymizationFailures wertet beides aus. Scheitert eine
+  // Anonymisierung, bleibt das Konto bestehen — sonst hingen Läufe an einer
+  // gelöschten Person, die niemand mehr zuordnen oder bereinigen kann.
+  const ANON_TABLES = ['workflow_runs', 'ai_tool_runs'] as const;
   const anonymizations = await Promise.allSettled([
     admin.from('workflow_runs').update({ triggered_by: null }).eq('triggered_by', userId),
     admin.from('ai_tool_runs').update({ user_id: null }).eq('user_id', userId),
   ]);
-
-  const anonymizationErrors = anonymizations
-    .map((r, i) => r.status === 'rejected'
-      ? { table: ['workflow_runs', 'ai_tool_runs'][i], error: String(r.reason) }
-      : null)
-    .filter(Boolean);
+  const anonymizationErrors = anonymizationFailures(anonymizations, ANON_TABLES);
+  if (anonymizationErrors.length > 0) {
+    console.error('gdpr-delete: anonymization failed', { failures: anonymizationErrors });
+    return jsonError(500, 'ANONYMIZATION_FAILED',
+      'Die Löschung konnte nicht abgeschlossen werden. Ihr Konto besteht weiter; bitte versuchen Sie es später erneut.');
+  }
 
   // ── Memberships löschen ───────────────────────────────────────────────────
   const { error: memErr } = await admin.from('memberships').delete().eq('user_id', userId);
-  if (memErr) return jsonError(500, 'INTERNAL', `memberships delete failed: ${memErr.message}`);
+  if (memErr) {
+    console.error('gdpr-delete: memberships delete failed', { code: memErr.code });
+    return jsonError(500, 'INTERNAL', 'Die Löschung konnte nicht abgeschlossen werden.');
+  }
 
   // ── auth.users löschen — cascade-Delete via FK ────────────────────────────
   const { error: authErr } = await admin.auth.admin.deleteUser(userId);
-  if (authErr) return jsonError(500, 'INTERNAL', `auth.deleteUser failed: ${authErr.message}`);
+  if (authErr) {
+    console.error('gdpr-delete: auth.deleteUser failed', { status: (authErr as { status?: number }).status ?? null });
+    return jsonError(500, 'INTERNAL', 'Die Löschung konnte nicht abgeschlossen werden.');
+  }
 
   return jsonResponse({
     ok: true,
@@ -134,7 +145,8 @@ Deno.serve(async (req) => {
     anonymized_tables: ['workflow_runs', 'ai_tool_runs'],
     cascade_deleted: ['profiles', 'memberships', 'workflows', 'c2pa_assets'],
     retained_for_legitimate_interest: ['workflow_runs (anonymized)', 'ai_tool_runs (anonymized)', 'subscriptions (HGB/AO 10 Jahre)'],
-    anonymization_warnings: anonymizationErrors,
     lead_data: leadErasure.counts,
+    // Zufällige Vorgangsnummer aus lead_erasure_log — Beleg ohne Personenbezug.
+    erasure_receipt_id: leadErasure.receiptId,
   });
 });

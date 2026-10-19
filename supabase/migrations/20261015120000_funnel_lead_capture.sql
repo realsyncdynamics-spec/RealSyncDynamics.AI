@@ -670,26 +670,37 @@ $drip$;
 -- Adresse, anonymisiert Scans (das Ergebnis zur Domain bleibt, die Person
 -- nicht) und beendet laufende Mail-Serien. Rechnungsdaten liegen nicht hier.
 
--- Nachweis jeder Löschung (Art. 5 Abs. 2, Art. 17): wer, wann, auf welchem
--- Weg, wie viel. Die Adresse steht nur als SHA-256 darin — genug, um eine
--- erneute Anfrage zuzuordnen, ohne die gelöschte Adresse im Klartext zu halten.
+-- Nachweis jeder Löschung (Art. 5 Abs. 2, Art. 17): wann, auf welchem Weg,
+-- wie viel, und bei Operator-Löschungen wer gehandelt hat.
+--
+-- BEWUSST KEIN BEZUG ZUR PERSON. Weder Adresse noch Hash noch Konto-ID: Ein
+-- Hash vorhersagbarer Adressen ist per Vergleich wiedererkennbar (Prüfung
+-- vom 19.10.2026), und ein HMAC bräuchte einen Schlüssel, den die rein in
+-- SQL laufende Operator-Löschung in der Datenbank halten müsste. Stattdessen
+-- ist die Zeilen-ID eine zufällige Vorgangsnummer: Sie geht als Beleg an die
+-- betroffene Person (Antwort von gdpr-delete bzw. Anzeige in /app/leads) und
+-- lässt sich nicht aus der Adresse zurückrechnen.
+--
+-- Aufbewahrung: 3 Jahre (purge_stale_funnel_leads), danach gelöscht.
 -- RLS an, keine Policy: Schreiben nur über erase_lead_data, Lesen nur
 -- service_role.
 CREATE TABLE IF NOT EXISTS public.lead_erasure_log (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email_sha256   text,
-  subject_user   uuid,
-  actor_user_id  uuid,
-  origin         text NOT NULL CHECK (origin IN ('account_deletion', 'operator_request')),
-  counts         jsonb NOT NULL DEFAULT '{}'::jsonb,
-  created_at     timestamptz NOT NULL DEFAULT now()
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  origin           text NOT NULL CHECK (origin IN ('account_deletion', 'operator_request')),
+  operator_user_id uuid,
+  counts           jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT lead_erasure_log_operator_chk CHECK (
+    (origin = 'operator_request' AND operator_user_id IS NOT NULL)
+    OR (origin = 'account_deletion' AND operator_user_id IS NULL)
+  )
 );
 ALTER TABLE public.lead_erasure_log ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.lead_erasure_log FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON public.lead_erasure_log TO service_role;
 
 COMMENT ON TABLE public.lead_erasure_log IS
-  'Nachweis von Art.-17-Löschungen der Lead-/Scan-Daten. E-Mail nur als SHA-256. Kein Lesezugriff für Clients.';
+  'Nachweis von Art.-17-Löschungen der Lead-/Scan-Daten ohne Personenbezug; id = Vorgangsnummer für die betroffene Person. Aufbewahrung 3 Jahre. Kein Client-Zugriff.';
 
 DROP FUNCTION IF EXISTS public.erase_lead_data(text, uuid);
 
@@ -712,12 +723,16 @@ DECLARE
   v_news   integer := 0;
   v_wait   integer := 0;
   v_counts jsonb;
+  v_receipt uuid;
 BEGIN
   IF v_email = '' AND p_user_id IS NULL THEN
     RAISE EXCEPTION 'email or user required' USING ERRCODE = '22023';
   END IF;
   IF p_origin IS NULL OR p_origin NOT IN ('account_deletion', 'operator_request') THEN
     RAISE EXCEPTION 'invalid origin' USING ERRCODE = '22023';
+  END IF;
+  IF p_origin = 'operator_request' AND p_actor IS NULL THEN
+    RAISE EXCEPTION 'operator required' USING ERRCODE = '22023';
   END IF;
 
   IF to_regclass('public.audit_email_drip') IS NOT NULL AND v_email <> '' THEN
@@ -754,16 +769,12 @@ BEGIN
   );
 
   -- Im selben Statement wie die Löschung: ohne Nachweis keine Löschung.
-  INSERT INTO public.lead_erasure_log (email_sha256, subject_user, actor_user_id, origin, counts)
-  VALUES (
-    CASE WHEN v_email = '' THEN NULL ELSE encode(extensions.digest(v_email, 'sha256'), 'hex') END,
-    p_user_id,
-    coalesce(p_actor, p_user_id),
-    p_origin,
-    v_counts
-  );
+  -- Kein Personenbezug im Nachweis (siehe Tabellenkommentar).
+  INSERT INTO public.lead_erasure_log (origin, operator_user_id, counts)
+  VALUES (p_origin, CASE WHEN p_origin = 'operator_request' THEN p_actor END, v_counts)
+  RETURNING id INTO v_receipt;
 
-  RETURN v_counts;
+  RETURN v_counts || jsonb_build_object('receipt_id', v_receipt);
 END;
 $$;
 
@@ -818,6 +829,12 @@ BEGIN
      AND NOT (l.followup_doi_confirmed_at IS NOT NULL AND l.marketing_consent_revoked_at IS NULL)
      AND coalesce(l.last_activity_at, l.created_at) < pg_catalog.now() - p_inactive_for;
   GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  -- Lösch-Nachweise werden nach 3 Jahren selbst gelöscht (Regelverjährung
+  -- § 195 BGB als Obergrenze für die Nachweispflicht; Frist ist Teil der
+  -- Freigabe zur Löschfrist).
+  DELETE FROM public.lead_erasure_log g
+   WHERE g.created_at < pg_catalog.now() - interval '3 years';
 
   -- Anonyme Scans ohne Lead und ohne Konto verlieren nach derselben Frist
   -- ihren Personenbezug; das Ergebnis zur Domain bleibt.

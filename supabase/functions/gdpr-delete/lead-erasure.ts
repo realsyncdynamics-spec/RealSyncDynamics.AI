@@ -18,7 +18,7 @@ export interface LeadErasureCounts {
 }
 
 export type LeadErasureCheck =
-  | { ok: true; counts: LeadErasureCounts }
+  | { ok: true; counts: LeadErasureCounts; receiptId: string | null }
   | { ok: false; status: 500 | 503; code: string; message: string; logCode: string | null };
 
 const KEYS: Array<keyof LeadErasureCounts> = [
@@ -58,5 +58,32 @@ export function checkLeadErasure(
   }
   const counts = {} as LeadErasureCounts;
   for (const k of KEYS) counts[k] = (data as Record<string, number>)[k]!;
-  return { ok: true, counts };
+  // Vorgangsnummer aus lead_erasure_log — Beleg für die betroffene Person,
+  // ohne Bezug zur Adresse.
+  const receipt = (data as Record<string, unknown>).receipt_id;
+  return { ok: true, counts, receiptId: typeof receipt === 'string' ? receipt : null };
+}
+
+/**
+ * Ergebnis der Anonymisierungs-Abfragen auswerten.
+ *
+ * Ein Supabase-Query meldet einen Datenbankfehler als `{ error }` und wird
+ * dabei NICHT abgelehnt. `Promise.allSettled` allein sieht deshalb nur
+ * Netzwerk-/Laufzeitfehler (Prüfung vom 19.10.2026). Beides zählt hier als
+ * Fehlschlag; der Aufrufer bricht ab, bevor das Konto gelöscht wird.
+ */
+export function anonymizationFailures(
+  results: ReadonlyArray<PromiseSettledResult<{ error: { code?: string; message?: string } | null } | null | undefined>>,
+  tables: readonly string[],
+): Array<{ table: string; code: string | null }> {
+  const failures: Array<{ table: string; code: string | null }> = [];
+  results.forEach((r, i) => {
+    const table = tables[i] ?? `#${i}`;
+    if (r.status === 'rejected') {
+      failures.push({ table, code: 'rejected' });
+    } else if (!r.value || r.value.error) {
+      failures.push({ table, code: r.value?.error?.code ?? 'no_result' });
+    }
+  });
+  return failures;
 }

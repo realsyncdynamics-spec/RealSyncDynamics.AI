@@ -113,6 +113,8 @@ export interface LeadErasureResult {
   drip_rows_deleted: number;
   newsletter_rows_deleted: number;
   waitlist_rows_deleted: number;
+  /** Vorgangsnummer für die betroffene Person (lead_erasure_log.id). */
+  receipt_id: string;
 }
 
 /**

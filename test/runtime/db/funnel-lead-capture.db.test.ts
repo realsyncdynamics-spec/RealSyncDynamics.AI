@@ -344,34 +344,50 @@ d('funnel lead capture (DB)', () => {
     }
   });
 
-  it('Art. 17: every erasure is logged with origin and actor, without the plain address', async () => {
+  it('Art. 17: every erasure leaves a receipt without any reference to the person', async () => {
     const email = `log_${Date.now()}@kunde.example`;
     await capture(ctx!, email, 'kunde.example');
     const op = await createTenantWithMember(ctx!);
     await ctx!.client.query(`INSERT INTO public.platform_operators (user_id) VALUES ($1)`, [op.userId]);
-    await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, () =>
-      ctx!.client.query(`SELECT public.admin_erase_lead_data($1)`, [email]));
+    const opResult = await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, async () =>
+      (await ctx!.client.query(`SELECT public.admin_erase_lead_data($1) AS r`, [email])).rows[0].r);
     const self = await createTenantWithMember(ctx!);
-    await ctx!.client.query(`SELECT public.erase_lead_data($1, $2, 'account_deletion')`, ['self@kunde.example', self.userId]);
+    const selfResult = (await ctx!.client.query(
+      `SELECT public.erase_lead_data($1, $2, 'account_deletion') AS r`, ['self@kunde.example', self.userId])).rows[0].r;
 
-    const { rows } = await ctx!.client.query(
-      `SELECT origin, actor_user_id, subject_user, email_sha256, counts::text AS counts
-         FROM public.lead_erasure_log ORDER BY created_at`);
-    const opRow = rows.find((r) => r.origin === 'operator_request')!;
-    expect(opRow.actor_user_id).toBe(op.userId);
-    expect(opRow.email_sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(opRow.counts).toContain('"sales_leads_deleted": 1');
-    const selfRow = rows.find((r) => r.origin === 'account_deletion')!;
-    expect(selfRow.actor_user_id).toBe(self.userId);
-    expect(selfRow.subject_user).toBe(self.userId);
-    expect(JSON.stringify(rows)).not.toContain('@kunde.example');
+    expect(opResult.receipt_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(selfResult.receipt_id).toMatch(/^[0-9a-f-]{36}$/);
+    const { rows } = await ctx!.client.query(`SELECT * FROM public.lead_erasure_log ORDER BY created_at`);
+    // Spalten: nur Vorgang, Herkunft, Operator, Mengen, Zeitpunkt.
+    expect(Object.keys(rows[0]).sort()).toEqual(['counts', 'created_at', 'id', 'operator_user_id', 'origin']);
+    const opRow = rows.find((r) => r.id === opResult.receipt_id)!;
+    expect(opRow).toMatchObject({ origin: 'operator_request', operator_user_id: op.userId });
+    expect(opRow.counts.sales_leads_deleted).toBe(1);
+    const selfRow = rows.find((r) => r.id === selfResult.receipt_id)!;
+    expect(selfRow).toMatchObject({ origin: 'account_deletion', operator_user_id: null });
+    // Kein Wert, aus dem sich Adresse oder Konto zurückgewinnen ließe.
+    const dump = JSON.stringify(rows);
+    expect(dump).not.toContain('@kunde.example');
+    expect(dump).not.toContain(self.userId);
+    for (const e of [email, 'self@kunde.example']) {
+      const { rows: h } = await ctx!.client.query(`SELECT encode(extensions.digest($1, 'sha256'), 'hex') AS h`, [e]);
+      expect(dump).not.toContain(h[0].h);
+    }
 
     await expectSqlState(ctx!, `SELECT public.erase_lead_data('x@kunde.example', NULL, 'evil')`, [], '22023');
+    await expectSqlState(ctx!, `SELECT public.erase_lead_data('x@kunde.example', NULL, 'operator_request')`, [], '22023');
     // Das Protokoll ist für Clients weder les- noch schreibbar.
     const read = await ctx!.withClaims({ sub: op.userId, role: 'authenticated' }, () =>
       ctx!.client.query(`SELECT count(*) FROM public.lead_erasure_log`))
       .then(() => 'readable', (e) => (e as { code?: string }).code);
     expect(read).toBe('42501');
+
+    // Aufbewahrung: Nachweise älter als 3 Jahre löscht der tägliche Lauf.
+    await ctx!.client.query(`UPDATE public.lead_erasure_log SET created_at = now() - interval '4 years' WHERE id = $1`, [opResult.receipt_id]);
+    await ctx!.client.query(`SELECT public.purge_stale_funnel_leads(interval '12 months')`);
+    const { rows: left } = await ctx!.client.query(`SELECT id FROM public.lead_erasure_log`);
+    expect(left.map((r) => r.id)).not.toContain(opResult.receipt_id);
+    expect(left.map((r) => r.id)).toContain(selfResult.receipt_id);
   });
 
   it('every SECURITY DEFINER function of this migration pins search_path and is closed to anon/PUBLIC', async () => {

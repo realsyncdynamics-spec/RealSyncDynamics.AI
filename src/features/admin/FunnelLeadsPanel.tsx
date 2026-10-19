@@ -36,7 +36,7 @@ export function FunnelLeadsPanel() {
       const r = await eraseLeadData(row.email);
       setEraseNote(
         `Gelöscht: ${r.sales_leads_deleted} Lead(s), ${r.gdpr_audits_anonymized} Scan(s) anonymisiert, ` +
-        `${r.drip_rows_deleted} Mail-Serie(n) beendet.`,
+        `${r.drip_rows_deleted} Mail-Serie(n) beendet. Vorgangsnummer für die Person: ${r.receipt_id}`,
       );
       setPendingErase(null);
       setReloadKey((n) => n + 1);

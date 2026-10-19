@@ -61,3 +61,19 @@ it('shows proof (Control Room, Evidence) before Agent Governance', () => {
   expect(ids.indexOf('evidence')).toBeLessThan(ids.indexOf('agenten'));
   expect(ids.indexOf('agenten')).toBeLessThan(ids.indexOf('check'));
 });
+
+it('keeps one filled CTA in the hero and ties the plan row to it with its own source', () => {
+  mount();
+  const plans = within(screen.getByRole('group', { name: 'Pläne und Preise' }));
+  const links = plans.getAllByRole('link').filter((a) => a.hasAttribute('data-hero-cta') && a.getAttribute('data-hero-cta')!.startsWith('plan-'));
+  expect(links.length).toBeGreaterThan(0);
+  for (const a of links) {
+    const href = a.getAttribute('href') ?? '';
+    expect(new URLSearchParams(href.split('?')[1]).get('source')).toBe('landing-v6-hero');
+  }
+  // Enterprise bleibt erreichbar, jetzt als Teil der Preiszeile statt als zweiter Hero-Button.
+  const enterprise = screen.getByTestId('hero-secondary-cta');
+  expect(enterprise).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=landing-v6');
+  expect(enterprise).toHaveTextContent('Auf Anfrage');
+  expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
+});

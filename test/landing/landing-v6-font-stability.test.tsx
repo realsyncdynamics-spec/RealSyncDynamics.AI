@@ -44,7 +44,7 @@ it('declares the strip font with font-display: optional on the same file', () =>
 
 it('sets the top strip in the optional font, with no swap face before the generic fallback', () => {
   mount();
-  const label = screen.getAllByText('EU-gehostet · Frankfurt (eu-central-1)')[0];
+  const label = screen.getAllByText('Datenhaltung Frankfurt (eu-central-1) · DSGVO · EU AI Act')[0];
   const strip = label.closest<HTMLElement>('[style*="font-family"]');
   expect(strip?.style.fontFamily).toMatch(/^['"]?JetBrains Mono Optional['"]?,\s*monospace$/);
 });

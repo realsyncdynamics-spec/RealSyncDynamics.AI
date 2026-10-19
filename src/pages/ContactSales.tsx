@@ -4,6 +4,7 @@ import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { CTA } from '../content/runtimeVocab';
 import { ensureCsrfCookie } from '../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
 
@@ -123,6 +124,9 @@ export function ContactSales() {
   const isInquiry = inquirySignal || inquiryPlan;
   const showFoundingCopy = !isInquiry || isFoundingIntent(inboundSource ?? '', intent);
   const showPlanBadge = isInquiry && planKey !== null;
+  // Hero-CTA „Gespräch anfragen“ (Landing v6): persönliche Gesprächsanfrage
+  // ohne Tarifbindung. Keine Terminbuchung — Antwort per E-Mail.
+  const consult = !isInquiry && intent === 'gespraech';
 
   function handleChange(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -200,12 +204,24 @@ export function ContactSales() {
       <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
-          <p className="text-sm text-titanium-300 leading-relaxed mb-5">
-            Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
-            automatisiert per E-Mail. Die Architektur ist parallel transparent
-            dokumentiert.
-          </p>
+          {consult ? (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke für Ihre Anfrage.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Ihre Anfrage ist eingegangen. Wir melden uns per E-Mail zu den
+                nächsten Schritten.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
+              <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+                Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
+                automatisiert per E-Mail. Die Architektur ist parallel transparent
+                dokumentiert.
+              </p>
+            </>
+          )}
           <div className="flex flex-col gap-2">
             <Link to="/legal/sub-processors"
               className="text-sm text-security-400 hover:underline">→ Sub-Prozessoren</Link>
@@ -216,11 +232,8 @@ export function ContactSales() {
     );
   }
 
-  // Hero-CTA „Gespräch vereinbaren“ (Landing v6): eigener Text statt Founding-Copy.
-  const consult = !isInquiry && intent === 'gespraech';
-
   const headerTitle = consult
-    ? 'Gespräch vereinbaren'
+    ? 'Persönliches Gespräch'
     : showFoundingCopy
       ? 'Founding Access / Kontakt'
       : 'Enterprise / Partner Anfrage';
@@ -231,7 +244,7 @@ export function ContactSales() {
       : 'Vertrieb prüft die Anfrage';
 
   const headline = consult
-    ? 'Gespräch vereinbaren'
+    ? 'Anfrage für ein persönliches Gespräch'
     : showFoundingCopy
       ? (planKey
         ? `${planBadgeLabel(planKey)} — Founding Access`
@@ -239,12 +252,12 @@ export function ContactSales() {
       : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
   const intro = consult
-    ? 'Sie möchten vor dem Start mit jemandem sprechen? Beschreiben Sie kurz, wo Sie beim KI-Einsatz stehen und was Sie klären wollen. Wir melden uns per E-Mail mit Terminvorschlägen.'
+    ? 'Sie möchten vor dem Start mit jemandem sprechen? Beschreiben Sie kurz, wo Sie beim KI-Einsatz stehen und was Sie klären wollen. Wir melden uns per E-Mail zu den nächsten Schritten.'
     : showFoundingCopy
       ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
       : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = consult ? 'Gespräch anfragen' : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const submitLabel = consult ? CTA.consult : showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

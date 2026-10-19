@@ -90,8 +90,9 @@ export const PLANS = [
  * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf
  * öffentlichen CTAs erlaubt sind. RealSyncDynamics.AI ist ein vollständig
  * automatisiertes Self-Service-SaaS — jede CTA muss eine Aktion sein, die
- * der Nutzer ohne Mensch ausführen kann. Einzige Ausnahme: Enterprise
- * (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
+ * der Nutzer ohne Mensch ausführen kann. Ausnahmen (kontaktbasiert):
+ *   - Enterprise (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
+ *   - Gesprächsanfrage (`consult` → `/contact-sales?intent=gespraech`).
  *
  *   Kostenlos starten     → Free Audit / Onboarding
  *   Audit starten         → Scan auslösen
@@ -102,7 +103,10 @@ export const PLANS = [
  *   Report herunterladen  → PDF/JSON-Report
  *   Jetzt upgraden        → Tarifwechsel (self-serve)
  *   Tarif starten         → Tarif self-serve kaufen (inkl. Agency)
- *   Enterprise anfragen   → EINZIGE kontaktbasierte CTA
+ *   Enterprise anfragen   → kontaktbasiert (Software-Vertrag)
+ *   Gespräch anfragen     → kontaktbasiert (persönliche Gesprächsanfrage,
+ *                           Antwort per E-Mail, keine Terminbuchung).
+ *                           Owner-Freigabe 19.10.2026, Hero Landing v6.
  */
 export const CTA = {
   startFree:          'Kostenlos starten',
@@ -115,6 +119,7 @@ export const CTA = {
   upgrade:            'Jetzt upgraden',
   startPlan:          'Tarif starten',
   enterprise:         'Enterprise anfragen',
+  consult:            'Gespräch anfragen',
   foundingAccess:     'Founding Access sichern',
   startFreeAudit:     'Kostenlosen Audit starten',
   viewAutomationSkills: 'Automation Skills ansehen',

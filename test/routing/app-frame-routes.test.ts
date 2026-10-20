@@ -19,7 +19,6 @@ const FRAMED: Record<string, string> = {
   '/app/intelligence': '<AppGate><GovernanceBrowserShell><ProtectedRoute><DashboardView /></ProtectedRoute></GovernanceBrowserShell></AppGate>',
   '/app/risk': '<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>',
   '/app/assistant': '<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>',
-  '/app/governance/recommendation': '<AppGate><GovernanceBrowserShell><GovernanceWorkflowRecommendation /></GovernanceBrowserShell></AppGate>',
   '/app/governance/frameworks': '<AppGate><GovernanceBrowserShell><ComplianceFrameworkSelector /></GovernanceBrowserShell></AppGate>',
   '/app/siteos/claim': '<AppGate><GovernanceBrowserShell><SiteOsClaimView /></GovernanceBrowserShell></AppGate>',
   '/app/legal-rag': '<AppGate><GovernanceBrowserShell><LegalRagView /></GovernanceBrowserShell></AppGate>',

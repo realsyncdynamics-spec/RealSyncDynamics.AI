@@ -14,7 +14,7 @@
 //   - Server-/Netzwerkfehler: ehrliche Meldung + „Erneut versuchen"; der
 //     US-Routing-Hinweis wird angezeigt statt die Nachricht still zu
 //     verwerfen.
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -39,6 +39,8 @@ import { GOVERNANCE_AGENTS, type GovernanceAgentId } from './governanceAgents';
 export interface GovernanceChatSidebarProps {
   open: boolean;
   onClose: () => void;
+  /** Vorbefüllter Text (z. B. aus „Session starten“); wird nicht automatisch gesendet. */
+  prefill?: { id: number; text: string } | null;
 }
 
 
@@ -75,7 +77,7 @@ const COMMAND_ACTIONS = [
   { label: 'AI Telefonbot erstellen', description: 'Voice Agent konfigurieren', icon: Phone, to: '/phonebot/start' },
 ] as const;
 
-export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarProps) {
+export function GovernanceChatSidebar({ open, onClose, prefill = null }: GovernanceChatSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
@@ -90,6 +92,12 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
   const hasTenant = Boolean(activeTenantId);
   const context = getContext(location.pathname);
   const currentAgent = GOVERNANCE_AGENTS.find((a) => a.id === selectedAgent) ?? GOVERNANCE_AGENTS[0];
+
+  useEffect(() => {
+    if (!prefill) return;
+    setInputValue(prefill.text);
+    textareaRef.current?.focus();
+  }, [prefill]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);

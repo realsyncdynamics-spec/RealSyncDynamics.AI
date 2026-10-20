@@ -77,3 +77,18 @@ it('keeps one filled CTA in the hero and ties the plan row to it with its own so
   expect(enterprise).toHaveTextContent('Auf Anfrage');
   expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
 });
+
+it('offers the full classifier after the local result, with its own source', () => {
+  mount();
+  fireEvent.click(screen.getAllByRole('button', { name: /Eigene Risikoklasse/ })[0]);
+  fireEvent.change(screen.getByPlaceholderText('Muster GmbH'), { target: { value: 'Muster GmbH' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Weiter' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Kunden-Chatbot' }));
+  fireEvent.click(within(screen.getByRole('group', { name: 'Ihre Rolle *' })).getAllByRole('button')[0]);
+  fireEvent.click(within(screen.getByRole('group', { name: 'Anzahl KI-Systeme *' })).getAllByRole('button')[0]);
+  fireEvent.click(screen.getByRole('button', { name: 'Ergebnis anzeigen' }));
+  const deep = screen.getByTestId('classifier-deep-link');
+  expect(deep).toHaveAttribute('href', '/ai-act-klassifikator?source=landing-v6-classifier');
+  // Die lokale Einordnung bleibt ehrlich als „nichts übertragen“ markiert, die Vertiefung nicht.
+  expect(screen.getByText(/an unseren Server übertragen/)).toBeInTheDocument();
+});

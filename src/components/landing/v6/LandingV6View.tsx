@@ -556,6 +556,13 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                     </div>
                     <Link to={v.rec.href} style={v.ui.primary}>{v.rec.cta}</Link>
                   </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 0 0", borderTop: "1px solid var(--rs-line)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", maxWidth: "52ch" }}>
+                      <span style={{ fontSize: "15px" }}>Ihr Anwendungsfall ist nicht dabei?</span>
+                      <span style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--rs-fg3)" }}>Im ausführlichen Klassifikator beschreiben Sie Ihr System in eigenen Worten und beantworten die Anhang-III-Fragen. Die Beschreibung wird dafür an unseren Server übertragen und KI-gestützt ausgewertet.</span>
+                    </div>
+                    <Link to={v.href.classifierDeep} onClick={v.closeModal} data-testid="classifier-deep-link" style={v.ui.ghost}>Ausführlich klassifizieren</Link>
+                  </div>
                   <p style={{ margin: "0", fontSize: "13px", lineHeight: "1.5", color: "var(--rs-fg3)" }}>Diese Einordnung ist vorläufig und ersetzt keine Rechtsberatung. Sie wird nur in Ihrem Browser berechnet – nichts wird gespeichert oder übertragen.</p>
                 </div>
               </>) : null}

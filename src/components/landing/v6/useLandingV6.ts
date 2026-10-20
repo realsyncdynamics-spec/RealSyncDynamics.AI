@@ -560,6 +560,8 @@ export function useLandingV6() {
       audit: `/audit?source=${SOURCE}`,
       // Eigene Quelle, damit der Trichter Check → Scan messbar ist.
       auditCheck: `/audit?source=${SOURCE}-check`,
+      // Vertiefung der lokalen Einordnung: Freitext + Anhang-III-Fragen.
+      classifierDeep: `/ai-act-klassifikator?source=${SOURCE}-classifier`,
       login: '/login',
       dashboard: '/app/dashboard',
       enterprise: ENTERPRISE_HREF,

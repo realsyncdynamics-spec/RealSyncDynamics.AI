@@ -14,13 +14,13 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       {v.showSticky ? (<>
         <div style={{ position: "fixed", top: "0", left: "0", right: "0", zIndex: "40", background: "var(--rs-nav)", backdropFilter: "blur(12px) saturate(140%)", WebkitBackdropFilter: "blur(12px) saturate(140%)", borderBottom: "1px solid var(--rs-line)", animation: "rsIn 200ms cubic-bezier(.2,.8,.2,1)" }}>
           <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "12px var(--px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
-            <a href="#top" style={{ fontSize: "clamp(17px,1.1vw,28px)", fontWeight: "500" }}>RealSyncDynamics.AI</a>
-            <div style={{ display: "flex", alignItems: "center", gap: "clamp(14px,1.6vw,40px)", fontSize: "var(--fs-body)", whiteSpace: "nowrap" }}>
+            <a href="#top" className="lv6-sticky-logo" style={{ fontSize: "clamp(17px,1.1vw,28px)", fontWeight: "500" }}>RealSyncDynamics.AI</a>
+            <div className="lv6-sticky-actions" style={{ display: "flex", alignItems: "center", gap: "clamp(14px,1.6vw,40px)", fontSize: "var(--fs-body)", whiteSpace: "nowrap" }}>
               {v.showLinks ? (<>
                 <a href="#produkt">Plattform</a><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
                 <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Login</Link>
               </>) : null}
-              <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
+              <Link to={v.href.audit} className="lv6-sticky-cta" style={{ whiteSpace: "nowrap", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
             </div>
           </div>
         </div>
@@ -38,9 +38,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
 
         <header style={{ position: "relative", zIndex: "2" }}>
-          <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(18px,1.6vw,44px) var(--px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "clamp(10px,3vw,24px)" }}>
-            <a href="#top" style={{ fontSize: "max(clamp(16px,4.9vw,19px),min(1.45vw,44px))", fontWeight: "600", letterSpacing: "-.015em", color: "var(--rs-fg)", whiteSpace: "nowrap" }}>RealSyncDynamics<span style={{ color: "var(--rs-acc)" }}>.AI</span></a>
-            <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "max(clamp(8px,3.6vw,14px),min(2vw,60px))", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
+          <div className="lv6-header-bar" style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(18px,1.6vw,44px) var(--px)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <a href="#top" className="lv6-logo" style={{ fontWeight: "600", letterSpacing: "-.015em", color: "var(--rs-fg)", whiteSpace: "nowrap" }}>RealSyncDynamics<span style={{ color: "var(--rs-acc)" }}>.AI</span></a>
+            <nav aria-label="Hauptnavigation" className="lv6-nav" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
               {v.showLinks ? (<>
                 <a href="#produkt" style={{ color: "var(--rs-fg2)" }}>Plattform</a>
                 <a href="#evidence" style={{ color: "var(--rs-fg2)" }}>Evidence</a>
@@ -77,7 +77,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
             <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>Jeder Befund mit Paragraphenbezug und konkreter Maßnahme – vorlegbar bei Datenschutzbeauftragten und Prüfern.</p>
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 max(clamp(14px,4.62vw,18px),min(1.7vw,52px))", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "max(clamp(13px,4vw,15px),min(1.05vw,34px))", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" className="lv6-hero-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>

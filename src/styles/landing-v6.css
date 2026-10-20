@@ -182,6 +182,81 @@
   --rs-acc-g: linear-gradient(180deg, #0092a8 0%, #006b7c 100%);
 }
 
+/* Header, Hero-CTA und Sticky-Leiste auf schmalen Handys.
+   Werte stehen hier statt inline, weil Inline-Styles keine Media Queries
+   kennen. Ab 390 px gelten die Werte aus dem Design unverändert.
+   Platzbedarf bei 320 px (16 px Rand, 288 px Spalte): Logo 155 + 8 +
+   Theme-Schalter 68 + 8 + Menü 44 = 283 px; CTA 13 px ≈ 281 px. */
+.lv6 .lv6-header-bar {
+  gap: 24px;
+}
+.lv6 .lv6-logo {
+  font-size: clamp(19px, 1.45vw, 44px);
+}
+.lv6 .lv6-nav {
+  gap: clamp(14px, 2vw, 60px);
+}
+.lv6 .lv6-hero-cta {
+  padding: 0 clamp(22px, 1.7vw, 52px);
+  font-size: clamp(15px, 1.05vw, 34px);
+}
+.lv6 .lv6-sticky-cta {
+  padding: 10px 20px;
+  font-size: var(--fs-body);
+  text-align: center;
+}
+
+/* Unter 560 px passen Logo und CTA nicht nebeneinander in die Sticky-Leiste:
+   Der CTA bekommt die ganze Zeile, das Logo steht weiter im Seitenkopf. */
+@media (max-width: 559.98px) {
+  .lv6 .lv6-sticky-logo {
+    display: none;
+  }
+  .lv6 .lv6-sticky-actions,
+  .lv6 .lv6-sticky-cta {
+    flex: 1;
+  }
+}
+
+@media (max-width: 389.98px) {
+  .lv6 .lv6-header-bar {
+    gap: 12px;
+  }
+  .lv6 .lv6-logo {
+    font-size: 17px;
+  }
+  .lv6 .lv6-nav {
+    gap: 10px;
+  }
+  .lv6 .lv6-hero-cta {
+    padding: 0 16px;
+    font-size: 14px;
+  }
+  .lv6 .lv6-sticky-cta {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Unter 360 px reicht der Platz nur mit schmalerem Seitenrand (20 → 16 px). */
+@media (max-width: 359.98px) {
+  .lv6[data-rs-theme] {
+    --px: 16px;
+  }
+  .lv6 .lv6-header-bar,
+  .lv6 .lv6-nav {
+    gap: 8px;
+  }
+  .lv6 .lv6-logo {
+    font-size: 15px;
+  }
+  .lv6 .lv6-hero-cta,
+  .lv6 .lv6-sticky-cta {
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+}
+
 /* Hero-Karte: WebP mit JPEG-Fallback (image-set). Europa soll klar
    sichtbar sein: im Dunkelmodus leicht aufgehellt, Maske nur am linken Rand. */
 .lv6 .lv6-map {

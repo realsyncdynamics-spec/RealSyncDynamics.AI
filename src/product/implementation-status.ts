@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Preise aus der SSoT, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Prüf-Flow Prüfen → Verstehen → Handeln → Nachweisen, einziger gefüllter CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6, Header-CTA als Outline), Preiszeile aus der SSoT (Starter, Growth, Agency mit Quelle landing-v6-hero; Enterprise „Auf Anfrage“ → /contact-sales?tier=enterprise; Preise zzgl. USt.); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Preise aus der SSoT, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
@@ -191,7 +191,6 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'supabase/functions/ai-act-risk-inventory/index.ts',
       'src/core/billing/FeatureGate.tsx#ai_classification.limited',
       'src/components/governance-os/useNavLock.ts',
-      'src/i18n/handoffApp.ts#classifyLocked',
       'PR #1743',
     ],
     showOnRoadmap: true,
@@ -338,7 +337,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Enterprise-Anfrage',
     status: 'live',
     group: 'billing',
-    description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
+    description:
+      'Enterprise per Anfrage (/contact-sales?tier=enterprise) — kein Self-Service-Checkout; auf der Landing v6 als „Auf Anfrage“ in der Hero-Preiszeile (hero-secondary-cta) und in der Preis-Sektion.',
     route: '/contact-sales',
     evidence: [
       'src/components/landing/v6/useLandingV6.ts#href.enterprise',

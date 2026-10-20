@@ -32,7 +32,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
         <div style={{ position: "relative", zIndex: "2", borderBottom: "1px solid var(--rs-line)" }}>
           <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "10px var(--px)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", fontFamily: "'JetBrains Mono Optional',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px" }}><span>EU-gehostet · Frankfurt (eu-central-1)</span><span>DSGVO · EU AI Act · ISO 27001 · NIS2</span></div>
+            <span>Datenhaltung Frankfurt (eu-central-1) · DSGVO · EU AI Act</span>
             {v.beta.active ? (<Link to={v.href.betaRibbon} data-hero-cta="beta" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0", border: "0", background: "none", color: "var(--rs-fg2)", cursor: "pointer", font: "inherit" }}><span style={{ width: "6px", height: "6px", borderRadius: "9999px", background: "var(--rs-acc)" }}></span>Offene Beta bis {v.beta.endsShort} – kostenlos testen<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>→</span></Link>) : null}
           </div>
         </div>
@@ -54,7 +54,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <span style={v.moonStyle}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
               </button>
               {v.showLinks ? (<>
-                <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "var(--rs-btn)", color: "#FFFDF6", border: "1px solid var(--rs-acc)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
+                <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "transparent", color: "var(--rs-fg)", border: "1px solid var(--rs-chip-b)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
               </>) : null}
               {v.showBurger ? (<>
                 <button type="button" onClick={v.toggleMenu} aria-label="Menü öffnen" aria-expanded={v.menuOpen} aria-controls="lv6-menu" data-lv6-menu-trigger style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "44px", height: "44px", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
@@ -69,14 +69,34 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <h1 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
               <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>The Governance OS </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>für DSGVO und EU AI Act.</span>
             </h1>
-            <p style={{ margin: "clamp(20px,1.8vw,56px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,2vw,68px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
-            <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", maxWidth: "40em", fontSize: "clamp(16px,1.2vw,40px)", lineHeight: "1.6", color: "var(--rs-fg2)", textWrap: "pretty" }}>RealSync prüft Ihre Website und Ihren KI-Einsatz nach DSGVO und EU AI Act – mit Paragraphenbezug, konkreten Maßnahmen und einem Nachweis, den Sie Datenschutzbeauftragten und Prüfern vorlegen können.</p>
-            <div style={{ marginTop: "clamp(28px,2.6vw,80px)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
-              <Link to={v.href.enterprise} data-hero-cta="enterprise" data-testid="hero-secondary-cta" style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "transparent", border: "1px solid var(--rs-chip-b)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)" }}>Enterprise anfragen</Link>
+            <ol aria-label="Ablauf" style={{ listStyle: "none", margin: "clamp(24px,2.2vw,64px) 0 0", padding: "0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", fontFamily: "'JetBrains Mono',monospace", fontSize: "clamp(12px,.85vw,26px)", fontWeight: "600", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rs-fg2)" }}>
+              {["Prüfen", "Verstehen", "Handeln", "Nachweisen"].map((step, i) => (
+                <li key={step} style={{ display: "flex", alignItems: "center", gap: "14px", color: i === 3 ? "var(--rs-acc)" : undefined }}>{i > 0 ? (<span aria-hidden="true" style={{ color: "var(--rs-fg3)" }}>→</span>) : null}{step}</li>
+              ))}
+            </ol>
+            <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
+            <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>Jeder Befund mit Paragraphenbezug und konkreter Maßnahme – vorlegbar bei Datenschutzbeauftragten und Prüfern.</p>
+            <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
             </div>
-            <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
-            {v.beta.active ? (<p style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}><Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: kostenlos testen bis {v.beta.endsShort} · keine Kreditkarte</Link></p>) : null}
+            <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>
+              <p style={{ margin: "0 0 12px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
+                {v.beta.active ? (<Link to={v.href.betaHero} data-hero-cta="beta-hero" data-testid="hero-beta-link" style={{ color: "var(--rs-acc)" }}>Offene Beta: kostenlos testen bis {v.beta.endsShort} · keine Kreditkarte</Link>) : "Direkt mit einem Plan starten"}
+                <span aria-hidden="true" style={{ color: "var(--rs-fg3)" }}> · </span>
+                <a href="#preise" style={{ color: "var(--rs-fg2)", textDecoration: "underline", textUnderlineOffset: "3px", textDecorationColor: "var(--rs-line)" }}>Leistungen vergleichen</a>
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {v.plans.map((p) => (
+                  <Link key={p.id} to={p.heroHref} data-hero-cta={p.id === "enterprise" ? "enterprise" : `plan-${p.id}`} data-testid={p.id === "enterprise" ? "hero-secondary-cta" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: "8px", minHeight: "44px", padding: "0 clamp(14px,1vw,28px)", borderRadius: "6px", border: p.featured ? "1px solid var(--rs-acc)" : "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", fontSize: "var(--fs-small)", whiteSpace: "nowrap" }}>
+                    <span>{p.name}</span>
+                    <strong style={{ fontWeight: "600" }}>{p.heroPrice}</strong>
+                    {p.heroListPrice ? (<span style={{ color: "var(--rs-fg3)", textDecoration: "line-through" }}><span className="sr-only">statt </span>{p.heroListPrice}</span>) : null}
+                  </Link>
+                ))}
+              </div>
+              <p data-testid="hero-vat-hint" style={{ margin: "8px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Preise {v.vatHint}</p>
+            </div>
           </div>
         </div>
 
@@ -347,7 +367,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                   <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{p.name}</h3>
                   {p.featured ? (<><span style={{ padding: "4px 10px", borderRadius: "9999px", background: "var(--rs-acc-soft)", color: "var(--rs-acc)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em" }}>EMPFOHLEN</span></>) : null}
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap" }}>{p.listPrice ? (<s style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>{p.listPrice}</s>) : null}<span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(40px,2.6vw,80px)", lineHeight: "1" }}>{p.priceLabel}</span><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{p.unit}</span></div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap" }}>{p.listPrice ? (<s style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>{p.listPrice}</s>) : null}<span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(40px,2.6vw,80px)", lineHeight: "1" }}>{p.priceLabel}</span><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{p.unit}</span>{p.priceOnRequest ? null : (<span data-testid="pricing-vat-hint" style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{v.vatHint}</span>)}</div>
                 <p style={{ margin: "-8px 0 0", minHeight: "1.4em", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{p.billingNote}</p>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>{p.desc}</p>
                 <ul style={{ listStyle: "none", margin: "0", padding: "16px 0 0", borderTop: "1px solid var(--rs-line)", display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)", flex: "1" }}>

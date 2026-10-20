@@ -21,6 +21,9 @@ import { readStored, useLandingMode, type LandingMode } from '../landing-mode';
  */
 
 const SOURCE = 'landing-v6';
+/** Kurzer Nettopreis-Hinweis für Hero-Preiszeile und Preis-Sektion. */
+export const VAT_HINT = 'zzgl. USt.';
+const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;
 
 type RiskId = 'high' | 'trans' | 'min';
 const USE_CASES: { id: string; label: string; risk: RiskId; ref: string }[] = [
@@ -340,6 +343,7 @@ export function useLandingV6() {
         name: plan.name,
         featured,
         priceLabel,
+        priceOnRequest: Boolean(tier.priceOnRequest),
         listPrice: beta && !tier.priceOnRequest ? formatPriceEur(listEur) : null,
         unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : '/ Monat',
         billingNote: tier.priceOnRequest
@@ -351,6 +355,15 @@ export function useLandingV6() {
               : 'monatlich kündbar',
         desc: plan.outcomeHeadline,
         features: bullets(tier),
+        // Hero-Preiszeile: immer Monatspreis, eigene Quelle für die Trichter-Messung.
+        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
+        heroListPrice: beta && !tier.priceOnRequest ? formatPriceEur(plan.price.monthlyEur) : null,
+        heroHref:
+          plan.id === 'enterprise'
+            ? ENTERPRISE_HREF
+            : inquiry
+              ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })
+              : planHref(plan, 'month', `${SOURCE}-hero`),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
         href: inquiry
           ? checkoutHrefForPlan(plan, { source: SOURCE })
@@ -552,7 +565,7 @@ export function useLandingV6() {
       auditCheck: `/audit?source=${SOURCE}-check`,
       login: '/login',
       dashboard: '/app/dashboard',
-      enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
+      enterprise: ENTERPRISE_HREF,
       betaRibbon: betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`),
       betaHero: betaSignupHref(BETA.testPlan, `${SOURCE}-hero`),
     },
@@ -597,11 +610,14 @@ export function useLandingV6() {
     checkBar: { width: (score / 8) * 100 + '%', height: '100%', background: tone, transition: 'width 320ms cubic-bezier(.2,.8,.2,1)' } as CSSProperties,
     showLinks: vw >= 1180,
     showBurger: vw < 1180,
-    mapOpacity: vw >= 760 ? 1 : 0.6,
+    // Karte bleibt Bühne, konkurriert aber nicht mit Headline und CTA.
+    mapOpacity: vw >= 760 ? 0.82 : 0.5,
     showSticky: scrolled && !modal,
     menuOpen: menu,
     plans,
     yearlyEnabled: YEARLY_BILLING_ENABLED,
+    // Nettopreise: RealSync ist seit 15.10.2026 regelbesteuert.
+    vatHint: VAT_HINT,
     pricingFoot,
     faqCancel,
     sunStyle: pill(theme === 'light'),

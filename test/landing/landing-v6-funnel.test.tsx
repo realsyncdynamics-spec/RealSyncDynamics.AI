@@ -61,3 +61,30 @@ it('shows proof (Control Room, Evidence) before Agent Governance', () => {
   expect(ids.indexOf('evidence')).toBeLessThan(ids.indexOf('agenten'));
   expect(ids.indexOf('agenten')).toBeLessThan(ids.indexOf('check'));
 });
+
+it('keeps one filled CTA in the hero and ties the plan row to it with its own source', () => {
+  mount();
+  const plans = within(screen.getByRole('group', { name: 'Pläne und Preise' }));
+  const links = plans.getAllByRole('link').filter((a) => a.hasAttribute('data-hero-cta') && a.getAttribute('data-hero-cta')!.startsWith('plan-'));
+  expect(links.length).toBeGreaterThan(0);
+  for (const a of links) {
+    const href = a.getAttribute('href') ?? '';
+    expect(new URLSearchParams(href.split('?')[1]).get('source')).toBe('landing-v6-hero');
+  }
+  // Enterprise bleibt erreichbar, jetzt als Teil der Preiszeile statt als zweiter Hero-Button.
+  const enterprise = screen.getByTestId('hero-secondary-cta');
+  expect(enterprise).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=landing-v6');
+  expect(enterprise).toHaveTextContent('Auf Anfrage');
+  expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
+});
+
+it('drops the 90-second claim and marks hero and pricing prices as net (zzgl. USt.)', () => {
+  const view = mount();
+  expect(view.container.textContent).not.toMatch(/90\s*(Sekunden|Sek\.|s\b)/);
+  expect(screen.getByText('Kostenlos · ohne Konto · keine Kreditkarte')).toBeInTheDocument();
+  const row = screen.getByRole('group', { name: 'Pläne und Preise' });
+  expect(within(row).getByTestId('hero-vat-hint')).toHaveTextContent('zzgl. USt.');
+  const pricing = within(view.container.querySelector('#preise') as HTMLElement);
+  expect(pricing.getAllByTestId('pricing-vat-hint').length).toBeGreaterThan(0);
+  for (const el of pricing.getAllByTestId('pricing-vat-hint')) expect(el).toHaveTextContent('zzgl. USt.');
+});

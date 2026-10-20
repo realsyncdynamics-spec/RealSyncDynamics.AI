@@ -41,11 +41,11 @@ function renderSidebar() {
 }
 
 describe('GovernanceSidebar — Free-Mandant', () => {
-  it('Enforcement zu, KI-Systeme offen, Klassifizierung zu', () => {
+  it('Enforcement zu, KI-Systeme und Klassifizierung offen', () => {
     renderSidebar();
     expect(screen.getByTestId('side-nav-enforce')).toHaveAttribute('data-locked', 'true');
     expect(screen.getByTestId('side-nav-systems')).toHaveAttribute('data-locked', 'false');
-    expect(screen.getByTestId('side-nav-classify')).toHaveAttribute('data-locked', 'true');
+    expect(screen.getByTestId('side-nav-classify')).toHaveAttribute('data-locked', 'false');
   });
 
   it('gesperrter Punkt zeigt kein Badge (Enforcement-Badge 0 entfällt)', () => {
@@ -55,12 +55,12 @@ describe('GovernanceSidebar — Free-Mandant', () => {
     expect(screen.getByTestId('side-badge-evidence')).toHaveTextContent('1');
   });
 
-  it('Tooltip nennt den Mindestplan bzw. „in Vorbereitung“', () => {
+  it('Tooltip nennt den Mindestplan; Klassifizierung ohne Schloss-Titel', () => {
     renderSidebar();
     expect(screen.getByTestId('side-nav-enforce')).toHaveAttribute('title', expect.stringMatching(/ab Starter/));
-    expect(screen.getByTestId('side-nav-classify')).toHaveAttribute(
+    expect(screen.getByTestId('side-nav-classify')).not.toHaveAttribute(
       'title',
-      expect.stringMatching(/in Vorbereitung und noch in keinem Plan enthalten/),
+      expect.stringMatching(/in Vorbereitung/),
     );
   });
 
@@ -86,17 +86,14 @@ describe('Mobile Navigation — gleiche Schlösser wie die Seitenleiste', () => 
     expect(screen.getByRole('link', { name: /KI-Systeme/ })).toHaveAttribute('data-locked', 'false');
   });
 
-  it('Burger-Menü: Enforcement und Klassifizierung mit Schloss-Titel', () => {
+  it('Burger-Menü: Enforcement mit Schloss-Titel, Klassifizierung offen', () => {
     render(
       <MemoryRouter initialEntries={['/app/dashboard']}>
         <MobileShellMenu />
       </MemoryRouter>,
     );
     expect(screen.getByRole('link', { name: /Enforcement/ })).toHaveAttribute('title', expect.stringMatching(/ab Starter/));
-    expect(screen.getByRole('link', { name: /Klassifizierung/ })).toHaveAttribute(
-      'title',
-      expect.stringMatching(/in Vorbereitung und noch in keinem Plan enthalten/),
-    );
+    expect(screen.getByRole('link', { name: /Klassifizierung/ })).not.toHaveAttribute('title');
     expect(screen.getByRole('link', { name: /^KI-Systeme$/ })).not.toHaveAttribute('title');
   });
 });

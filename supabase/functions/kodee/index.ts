@@ -2,14 +2,18 @@
 //
 // Endpoint: POST /functions/v1/kodee
 // Auth:     Authorization: Bearer <user JWT>
-// Body:     { v?: 1, connection_id: uuid, action: ActionName, args?: ... }
+// Body:     { v?: 1, tenant_id?: uuid, connection_id: uuid, action: ActionName, args?: ... }
 // Response: KodeeResponse<T> — see ./types.ts
 //
 // Flow:
 //   1. Validate request shape
 //   2. Verify caller via Supabase Auth (user JWT)
-//   3. Load vps_connections row WHERE id=? AND owner_id=auth.uid()
+//   3. Load vps_connections row the caller owns or shares via tenant
 //      (defense-in-depth — RLS would also enforce this if we used the user client)
+//   3b. The connection's tenant (or, for a personal connection, the
+//       caller's tenant_id) holds `ai.tool.vps_status` (Agency+). The Kodee
+//       chat stays open on Free; SSH actions do not. tenant_id is optional
+//       so clients from before this gate keep working on tenant connections.
 //   4. Decrypt SSH private key from vps_ssh_keys (service-role only)
 //   5. Dispatch to action implementation
 //   6. Audit-log the result and return JSON
@@ -18,6 +22,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatch } from './actions.ts';
 import { decryptPrivateKey } from './secrets.ts';
 import { loadConnectionForUser } from '../_shared/connections.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import {
   API_VERSION,
   type ActionName,
@@ -51,7 +56,10 @@ Deno.serve(async (req) => {
   } catch {
     return jsonError(400, 'BAD_REQUEST', 'invalid json', undefined, start);
   }
-  if (!body || typeof body.connection_id !== 'string' || !ALLOWED_ACTIONS.includes(body.action)) {
+  if (
+    !body || typeof body.connection_id !== 'string' || !ALLOWED_ACTIONS.includes(body.action) ||
+    (body.tenant_id !== undefined && typeof body.tenant_id !== 'string')
+  ) {
     return jsonError(400, 'BAD_REQUEST', 'connection_id and supported action required', undefined, start);
   }
 
@@ -77,6 +85,33 @@ Deno.serve(async (req) => {
 
   const conn = await loadConnectionForUser(adminClient, userId, body.connection_id);
   if (!conn) return jsonError(404, 'NOT_FOUND', 'connection not found', undefined, start, body.action);
+
+  // 3b. Entitlement of the tenant that owns the server, not of a tenant the
+  //     client names — otherwise an Agency membership elsewhere would unlock
+  //     a Free tenant's connection. Personal connections fall back to the
+  //     caller's tenant_id, which needs a membership (RLS via user JWT).
+  let gateTenantId = conn.tenant_id;
+  if (!gateTenantId) {
+    if (!body.tenant_id) {
+      return jsonError(403, 'FORBIDDEN', 'tenant_id required for personal connections', undefined, start, body.action);
+    }
+    const { data: member, error: memberErr } = await userClient
+      .from('memberships').select('id')
+      .eq('tenant_id', body.tenant_id).eq('user_id', userId).maybeSingle();
+    if (memberErr) return jsonError(500, 'INTERNAL', memberErr.message, undefined, start, body.action);
+    if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant', undefined, start, body.action);
+    gateTenantId = body.tenant_id;
+  }
+
+  try {
+    await gateFeature(adminClient, gateTenantId, 'ai.tool.vps_status');
+  } catch (e) {
+    if (e instanceof EntitlementError) {
+      const status = e.code === 'INTERNAL' ? 500 : 403;
+      return jsonError(status, e.code === 'INTERNAL' ? 'INTERNAL' : 'FORBIDDEN', e.message, undefined, start, body.action);
+    }
+    throw e;
+  }
 
   // 4. Decrypt private key (only required for SSH-backed actions)
   let privateKey = '';

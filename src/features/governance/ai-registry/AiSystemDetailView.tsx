@@ -5,16 +5,11 @@
  * Die Durchsetzbarkeits-Klasse wird angezeigt, nicht gewählt — sie kommt aus
  * `shared/enforcement-classes.ts` (bzw. dem DB-Trigger am Connector).
  *
- * Risikostufe, Annex III und Art. 50 sind hier bearbeitbar, aber NICHT
- * speicherbar: `governanceApi` liest nur, und `governance-resources` kennt
- * kein Asset-Update (nur create/archive). Jede Abweichung vom gespeicherten
- * Stand trägt deshalb sichtbar „Entwurf · nicht gespeichert". Ein dauerhafter
- * Hinweis sagt das auch ohne Änderung (P0-2).
- *
- * Ohne `ai_classification.limited` (Free) sind die Eingaben gesperrt — dieselbe
- * Entscheidung wie das Schloss „Klassifizierung“ in der Seitenleiste
- * (decideNavLock / navAccess.ts). Die Seite selbst bleibt als KI-System-Detail
- * erreichbar (governance.ai_register).
+ * Risikostufe, Annex III und Art. 50 speichert „Klassifizierung speichern“
+ * über governance-resources `classify_asset` (owner/admin, serverseitig
+ * gegen `memberships` geprüft; Art. 50 landet in `metadata.art50`). Bis zum
+ * Speichern trägt jede Abweichung vom gespeicherten Stand sichtbar
+ * „Entwurf · nicht gespeichert“. Ohne owner/admin sind die Eingaben gesperrt.
  *
  * Registerdaten (Auftrag §14: Typ, Anbieter, Modell, Betrieb, Datenstandort,
  * Zweck, Verantwortung, Status, Nachweise, Ampel) sind über
@@ -22,10 +17,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, FileDown, Lock, Pencil } from 'lucide-react';
+import { ArrowRight, FileDown, Lock, Pencil, Save } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { decideNavLock } from '../../../components/governance-os/navAccess';
 import { fetchAssetEvidenceStats, fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
+import { saveAssetClassification } from '../resourcesApi';
+import { notifyTenantDataChanged } from '../tenantDataEvents';
 import { listConnectors, type ConnectorRegistryEntry } from '../gatesApi';
 import {
   ANNEX_III_CATEGORIES,
@@ -150,13 +147,11 @@ function ClassificationDetail({
   lang: 'de' | 'en';
 }) {
   const { t } = useLang();
-  const { loading: entLoading, entitlements, hasFeature } = useTenant();
-  // Gleiche Entscheidung wie das Nav-Schloss „Klassifizierung“ (navAccess.ts).
-  const classifyLocked = decideNavLock(
-    { route: '/app/ai-systems', keys: ['ai_classification.limited'] },
-    { loading: entLoading, available: entitlements != null, hasFeature },
-    null,
-  ).locked;
+  const { loading: entLoading, entitlements, hasFeature, tenants, activeTenantId } = useTenant();
+  // Spiegelt die Serverprüfung von classify_asset (owner/admin); archiviert ist nur lesbar.
+  const canEdit = canEditRegistry(tenants.find((x) => x.tenantId === activeTenantId)?.role);
+  const archived = asset.status === 'archived';
+  const classifyLocked = !canEdit || archived;
   // „Zu Enforcement“: gleiche Entscheidung wie Nav-Schloss und Routensperre (policy.packs).
   const enforceLocked = decideNavLock(
     { route: '/app/policy-packs', keys: ['policy.packs'] },
@@ -170,16 +165,47 @@ function ClassificationDetail({
 
   const [tier, setTier] = useState<TierId | null>(storedTier);
   const [annex, setAnnex] = useState<AnnexIIICategory | null>(storedAnnex);
-  const [art50, setArt50] = useState<boolean>(storedArt50 ?? false);
+  // null = nicht erfasst; bleibt null, bis der Schalter bedient wird (kein stilles „nein“).
+  const [art50, setArt50] = useState<boolean | null>(storedArt50);
 
   useEffect(() => {
     setTier(storedTier);
     setAnnex(storedAnnex);
-    setArt50(storedArt50 ?? false);
+    setArt50(storedArt50);
   }, [storedTier, storedAnnex, storedArt50]);
 
-  const dirty = tier !== storedTier || annex !== storedAnnex || art50 !== (storedArt50 ?? false);
+  const dirty = tier !== storedTier || annex !== storedAnnex || art50 !== storedArt50;
   const annexMeta = annex ? ANNEX_III_CATEGORIES.find((c) => c.id === annex) : null;
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Während des Speicherns gesperrt: spätere Eingaben fehlten im Request und gingen beim Neuladen verloren.
+  const inputsLocked = classifyLocked || saving;
+
+  async function onSaveClassification() {
+    if (saving || !dirty || classifyLocked) return;
+    setSaving(true);
+    setSaveError(null);
+    const result = await saveAssetClassification({
+      asset_id: asset.id,
+      ai_act_class: tier ? tierDefinition(tier).dbValue : 'unknown',
+      annex_iii_category: annex,
+      ...(art50 === null ? {} : { art50 }),
+    });
+    setSaving(false);
+    if (!result.ok) {
+      setSaveError(result.error?.message ?? t('loadFailed'));
+      return;
+    }
+    // Lädt Liste, Detail und Cockpit neu; danach ist der gespeicherte Stand der neue Ausgangspunkt.
+    notifyTenantDataChanged(asset.tenant_id);
+  }
+
+  function onDiscard() {
+    setTier(storedTier);
+    setAnnex(storedAnnex);
+    setArt50(storedArt50);
+    setSaveError(null);
+  }
 
   function onDossier() {
     downloadConformityDossier({
@@ -244,9 +270,10 @@ function ClassificationDetail({
             {dirty && <DraftBadge />}
           </span>
         </div>
-        <p className="rs-note mb-3" data-testid="classify-no-save">{t('classifyNoSavePath')}</p>
         {classifyLocked && (
-          <p className="rs-note mb-3" data-testid="classify-locked">{t('classifyLocked')}</p>
+          <p className="rs-note mb-3" data-testid="classify-locked">
+            {archived ? t('classifyArchived') : t('classifyRoleLocked')}
+          </p>
         )}
         <div className="rs-tiers" role="group" aria-label={t('riskTier')}>
           {TIERS.map((def) => (
@@ -256,7 +283,7 @@ function ClassificationDetail({
               className="rs-tier"
               style={colorVar(def.colorVar)}
               aria-pressed={tier === def.id}
-              disabled={classifyLocked}
+              disabled={inputsLocked}
               onClick={() => setTier(def.id)}
             >
               <span className="rs-tier__name">{t(def.labelKey)}</span>
@@ -264,7 +291,6 @@ function ClassificationDetail({
             </button>
           ))}
         </div>
-        {dirty && <p className="rs-note mt-3">{t('classifyDraftNote')}</p>}
       </Panel>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -277,7 +303,7 @@ function ClassificationDetail({
             className="rs-select"
             aria-label={t('annexTitle')}
             value={annex ?? ''}
-            disabled={classifyLocked}
+            disabled={inputsLocked}
             onChange={(e) => setAnnex(isAnnexCategory(e.target.value) ? e.target.value : null)}
           >
             <option value="">—</option>
@@ -303,9 +329,9 @@ function ClassificationDetail({
               type="button"
               role="switch"
               className="rs-toggle"
-              aria-checked={art50}
+              aria-checked={art50 === true}
               aria-label={t('art50Toggle')}
-              disabled={classifyLocked}
+              disabled={inputsLocked}
               onClick={() => setArt50((v) => !v)}
             />
           </div>
@@ -313,6 +339,37 @@ function ClassificationDetail({
           <p className="rs-note mt-2">{storedArt50 === null ? t('art50Unknown') : null}</p>
         </Panel>
       </div>
+
+      {!classifyLocked && (
+        <Panel className="rs-panel--pad20" testId="classify-save-bar">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="rs-note" aria-live="polite" data-testid="classify-save-status">
+              {dirty ? t('classifyDraftNote') : t('classifyUpToDate')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {dirty && (
+                <button type="button" className="rs-chip-sm" onClick={onDiscard} disabled={saving}>
+                  {t('classifyDiscard')}
+                </button>
+              )}
+              <button
+                type="button"
+                className="rs-chip-sm rs-chip-sm--primary"
+                data-testid="classify-save"
+                disabled={!dirty || saving}
+                onClick={onSaveClassification}
+              >
+                <Save className="h-3.5 w-3.5" aria-hidden="true" /> {saving ? t('regSaving') : t('classifySave')}
+              </button>
+            </div>
+          </div>
+          {saveError && (
+            <p role="alert" className="rs-note mt-2" style={{ color: 'var(--color-rs-danger)' }}>
+              {saveError}
+            </p>
+          )}
+        </Panel>
+      )}
 
       <Panel className="rs-panel--pad20" testId="obligations">
         <div className="rs-panel__head">

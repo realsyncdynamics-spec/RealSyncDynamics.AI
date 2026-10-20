@@ -1,17 +1,17 @@
 /**
- * P0-2 — Klassifizierung ohne ai_classification.limited (Free): Eingaben
- * gesperrt, gleiche Entscheidung wie das Nav-Schloss; dauerhafter Hinweis,
- * dass es noch keinen Speicherpfad gibt.
+ * Klassifizierung im KI-Register: speicherbar über governance-resources
+ * classify_asset für owner/admin (Server prüft), sonst lesend. Hängt nicht
+ * mehr an ai_classification.limited (kein Plan gewährt den Key).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-const ent = vi.hoisted(() => ({ values: {} as Record<string, number> }));
+const ent = vi.hoisted(() => ({ values: {} as Record<string, number>, role: 'member' as string }));
 vi.mock('@/src/core/access/TenantProvider', () => ({
   useTenant: () => ({
     activeTenantId: 'tenant-1',
-    tenants: [],
+    tenants: [{ tenantId: 'tenant-1', role: ent.role }],
     loading: false,
     entitlements: { byKey: {} },
     hasFeature: (key: string) => (ent.values[key] ?? 0) !== 0,
@@ -89,6 +89,14 @@ vi.mock('@/src/features/governance/gatesApi', () => ({
     },
   ]),
 }));
+const api = vi.hoisted(() => ({
+  saveAssetClassification: vi.fn(async () => ({ ok: true })),
+}));
+vi.mock('@/src/features/governance/resourcesApi', () => ({
+  saveAssetClassification: api.saveAssetClassification,
+  createAsset: vi.fn(),
+  updateAsset: vi.fn(),
+}));
 vi.mock('@/src/lib/ai-act/conformityDossier', () => ({
   downloadConformityDossier: vi.fn(),
 }));
@@ -107,32 +115,110 @@ function renderAt(path: string) {
   );
 }
 
-describe('Klassifizierung — Entitlement ai_classification.limited', () => {
+// Der Mount-Effekt (setTier(storedTier)) kann unter Last nach dem ersten Klick
+// laufen; wie in ai-system-detail-route.test.tsx klicken, bis die Wahl steht.
+async function pickTier(name: RegExp) {
+  await waitFor(() => {
+    fireEvent.click(screen.getByRole('button', { name }));
+    expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
+  });
+}
+
+describe('Klassifizierung — Speichern über classify_asset', () => {
   beforeEach(() => {
     window.localStorage.clear();
     resetLangForTests();
+    api.saveAssetClassification.mockClear();
   });
 
-  it('Free: Eingaben gesperrt, Hinweis „in Vorbereitung“ und „nicht gespeichert“', async () => {
+  it('Mitglied ohne owner/admin: Eingaben gesperrt, kein Speichern', async () => {
+    ent.role = 'member';
     ent.values = { ...(PLAN_ENTITLEMENTS.free_audit as Record<string, number>) };
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
-    expect(screen.getByTestId('classify-locked')).toHaveTextContent(
-      /in Vorbereitung und noch in keinem Plan enthalten/,
-    );
-    expect(screen.getByTestId('classify-no-save')).toHaveTextContent(/nicht gespeichert/);
+    expect(screen.getByTestId('classify-locked')).toHaveTextContent(/Nur Owner oder Admin/);
     expect(screen.getByRole('button', { name: /Begrenzt/ })).toBeDisabled();
     expect(screen.getByRole('switch')).toBeDisabled();
+    expect(screen.queryByTestId('classify-save')).toBeNull();
     // „Zu Enforcement“ trägt das Schloss (policy.packs fehlt in Free).
     expect(screen.getByTestId('to-enforce-locked')).toBeInTheDocument();
   });
 
-  it('mit Entitlement: Eingaben aktiv, Speicherpfad-Hinweis bleibt', async () => {
-    ent.values = { 'ai_classification.limited': 1 };
+  it('Owner im Free-Plan: Eingaben aktiv, Speichern schreibt Klasse, Annex III und Art. 50', async () => {
+    ent.role = 'owner';
+    ent.values = { ...(PLAN_ENTITLEMENTS.free_audit as Record<string, number>) };
     renderAt('/app/ai-systems/a1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
     expect(screen.queryByTestId('classify-locked')).toBeNull();
-    expect(screen.getByTestId('classify-no-save')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Begrenzt/ })).not.toBeDisabled();
+    const save = screen.getByTestId('classify-save');
+    expect(save).toBeDisabled();
+    expect(screen.getByTestId('classify-save-status')).toHaveTextContent(/keine offenen Änderungen/);
+
+    await pickTier(/Hoch/);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Annex III' }), { target: { value: 'employment' } });
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.getByTestId('draft-unsaved')).toBeInTheDocument();
+    expect(save).not.toBeDisabled();
+
+    fireEvent.click(save);
+    await waitFor(() => expect(api.saveAssetClassification).toHaveBeenCalledTimes(1));
+    expect(api.saveAssetClassification).toHaveBeenCalledWith({
+      asset_id: 'a1',
+      ai_act_class: 'high',
+      annex_iii_category: 'employment',
+      art50: true,
+    });
+  });
+
+  it('Art. 50 nicht erfasst und nicht bedient: Speichern lässt art50 weg', async () => {
+    ent.role = 'owner';
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await pickTier(/Hoch/);
+    fireEvent.click(screen.getByTestId('classify-save'));
+    await waitFor(() => expect(api.saveAssetClassification).toHaveBeenCalledTimes(1));
+    expect(api.saveAssetClassification).toHaveBeenCalledWith({
+      asset_id: 'a1',
+      ai_act_class: 'high',
+      annex_iii_category: null,
+    });
+  });
+
+  it('Während des Speicherns sind die Eingaben gesperrt', async () => {
+    ent.role = 'owner';
+    let resolve!: (v: unknown) => void;
+    api.saveAssetClassification.mockImplementationOnce(
+      () => new Promise((r) => { resolve = r; }) as never,
+    );
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    await pickTier(/Hoch/);
+    fireEvent.click(screen.getByTestId('classify-save'));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Minimal/ })).toBeDisabled());
+    expect(screen.getByRole('combobox', { name: 'Annex III' })).toBeDisabled();
+    expect(screen.getByRole('switch')).toBeDisabled();
+    await act(async () => resolve({ ok: true }));
+  });
+
+  it('Serverfehler wird angezeigt, Entwurf bleibt', async () => {
+    ent.role = 'admin';
+    api.saveAssetClassification.mockResolvedValueOnce({ ok: false, error: { code: 'FORBIDDEN', message: 'must be owner or admin' } } as never);
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    await pickTier(/Minimal/);
+    fireEvent.click(screen.getByTestId('classify-save'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('must be owner or admin');
+    expect(screen.getByTestId('draft-unsaved')).toBeInTheDocument();
+  });
+
+  it('Verwerfen setzt auf den gespeicherten Stand zurück', async () => {
+    ent.role = 'owner';
+    renderAt('/app/ai-systems/a1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Support-Chatbot' })).toBeInTheDocument());
+    await pickTier(/Hoch/);
+    fireEvent.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    expect(screen.queryByTestId('draft-unsaved')).toBeNull();
+    expect(screen.getByRole('button', { name: /Begrenzt/ })).toHaveAttribute('aria-pressed', 'true');
   });
 });

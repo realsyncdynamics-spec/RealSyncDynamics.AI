@@ -52,9 +52,10 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'ISO42001',
     description: 'AI Management System - Künstliche Intelligenz Compliance',
     icon: AlertTriangle,
+    // Der Hub hat keine Plan-Schranke (kein Entitlement-Key für ISO 42001).
     path: '/app/governance/iso42001-hub',
     entitlement: null,
-    tier: 'growth',
+    tier: 'free',
   },
   {
     id: 'nis2',
@@ -226,7 +227,7 @@ export function ComplianceFrameworkSelector() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">FREE TIER</p>
-              <p className="text-titanium-300">DSGVO</p>
+              <p className="text-titanium-300">DSGVO, ISO 42001</p>
             </div>
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">STARTER</p>
@@ -234,7 +235,7 @@ export function ComplianceFrameworkSelector() {
             </div>
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">GROWTH+</p>
-              <p className="text-titanium-300">ISO 42001, NIS2, EU AI Act</p>
+              <p className="text-titanium-300">NIS2, EU AI Act</p>
             </div>
           </div>
         </div>

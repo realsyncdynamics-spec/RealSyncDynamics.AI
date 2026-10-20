@@ -38,9 +38,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
 
         <header style={{ position: "relative", zIndex: "2" }}>
-          <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(18px,1.6vw,44px) var(--px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px" }}>
-            <a href="#top" style={{ fontSize: "clamp(19px,1.45vw,44px)", fontWeight: "600", letterSpacing: "-.015em", color: "var(--rs-fg)", whiteSpace: "nowrap" }}>RealSyncDynamics<span style={{ color: "var(--rs-acc)" }}>.AI</span></a>
-            <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "clamp(14px,2vw,60px)", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
+          <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(18px,1.6vw,44px) var(--px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "clamp(10px,3vw,24px)" }}>
+            <a href="#top" style={{ fontSize: "max(clamp(16px,4.9vw,19px),min(1.45vw,44px))", fontWeight: "600", letterSpacing: "-.015em", color: "var(--rs-fg)", whiteSpace: "nowrap" }}>RealSyncDynamics<span style={{ color: "var(--rs-acc)" }}>.AI</span></a>
+            <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "max(clamp(8px,3.6vw,14px),min(2vw,60px))", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
               {v.showLinks ? (<>
                 <a href="#produkt" style={{ color: "var(--rs-fg2)" }}>Plattform</a>
                 <a href="#evidence" style={{ color: "var(--rs-fg2)" }}>Evidence</a>
@@ -77,7 +77,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
             <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>Jeder Befund mit Paragraphenbezug und konkreter Maßnahme – vorlegbar bei Datenschutzbeauftragten und Prüfern.</p>
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 max(clamp(14px,4.62vw,18px),min(1.7vw,52px))", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "max(clamp(13px,4vw,15px),min(1.05vw,34px))", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Ergebnis in unter 90 Sekunden · ohne Konto · keine Kreditkarte</p>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>

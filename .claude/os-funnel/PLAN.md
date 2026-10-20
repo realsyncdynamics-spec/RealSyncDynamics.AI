@@ -2,7 +2,7 @@
 
 **Stand:** 2026-09-27 · gemessen gegen `main@f392939` (Ursprungsbefund §1–§3) · **WP-Fortschritt §4:** 2026-10-10 gegen `main@c90fcdd`
 **Owner:** Dominik Steiner
-**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben (WP2 derzeit gesperrt bis zur E-F6-Neufassung, §4) · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4) · **Nachtrag 2026-10-16:** WP2 geschlossen (durch E-F6 überholt, §4) · **E-V1–E-V4 entschieden (2026-10-04)**, Landing v4 mit #1751 auf `/`
+**Status:** Plan verbindlich · E-F1–E-F2 entschieden (2026-09-27), E-F6 entschieden (2026-09-29, ersetzt die Angebotsmechanik aus E-F1) · **E-F3 abgelöst, WP1 geschlossen (2026-10-03)** · WP2–WP6 freigegeben (WP2 derzeit gesperrt bis zur E-F6-Neufassung, §4) · **Nachtrag 2026-10-10:** WP2a, WP3, WP4, WP5 gemergt; offen sind WP2 und WP6 (§4) · **Nachtrag 2026-10-16:** WP2 geschlossen (durch E-F6 überholt, §4) · **Nachtrag 2026-10-20:** WP6 erledigt (`19f0f5c`); WP8 wartet weiter auf den WIP-Stopp (offene PRs am 20.10.: 69, Grenze 20) · **E-V1–E-V4 entschieden (2026-10-04)**, Landing v4 mit #1751 auf `/`
 
 > Leitsatz: Kein neuer KI-Hype-Layer. Das bestehende Produkt wird so geschärft,
 > dass realsyncdynamicsai.de einen klaren SaaS-Funnel verkauft:
@@ -145,7 +145,7 @@ E-F1–E-F2 ✅ entschieden · E-F3 ⛔ abgelöst (E-F4/E-F5 offen, nicht blocki
       ├─✓ WP2a Trial-Ablauf (#1716) ──✓ WP3 AI-OS-Setup (#1730) ──✓ WP4 Command-Center-Kacheln (#1733)
       │
       ├─X WP2 Funnel auf /audit         GESCHLOSSEN 2026-10-16 — durch E-F6 überholt, nicht erneut aufgreifen
-      └─► WP6 Governed Evolution (nur Doku, jederzeit; OFFEN)
+      └─✓ WP6 Governed Evolution (nur Doku)   ERLEDIGT 19f0f5c (17.10.)
 ```
 
 Stand 2026-10-10 (gegen `main@c90fcdd`): ✓ = gemergt, ► = offen, ⏸ = gesperrt. Tatsächliche Reihenfolge:
@@ -159,7 +159,7 @@ WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockie
 | ~~**WP3**~~ | ✅ **Erledigt** — AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben). Gemergt in `17a716a` (#1730). | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | erledigt |
 | ~~**WP4**~~ | ✅ **Erledigt** — Command Center: Inventar · Agenten · Freigaben · Evidence. Gemergt in `299a743` (#1733), Duplikat #1747 geschlossen. Folgepunkte siehe unten. | `features/governance/dashboard/*`, vorhandene APIs | niedrig | erledigt |
 | ~~**WP5**~~ | ✅ **Erledigt** — Ein Agent-Register mit abgeleitetem Reifegrad. Gemergt (#1658, 2026-09-27). | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | erledigt |
-| **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. | `.claude/os-funnel/governed-evolution.md` | keins | — |
+| ~~**WP6**~~ | ✅ **Erledigt** — Governed-Evolution-Spec gegen den Code-Bestand belegt (Stand `main@a7ffc94`), gemergt als `19f0f5c` (17.10.). Der ältere Parallel-PR #1854 (gleicher Inhalt, Branch `docs/wp6-governed-evolution`) ist damit überholt. Offene Punkte O1–O7 und E-GE4 stehen in `governed-evolution.md`. | `.claude/os-funnel/governed-evolution.md` | keins | erledigt |
 | **WP7** | Landing v4 auf `/`. ✅ **Erledigt über #1751** (04.10.); der geplante Weg über #1742 ist entfallen. ⏸ **Offen bleibt die Abweichung zu E-V4** (3D-Erde auf jedem Gerät, siehe Nachtrag §3): E-V4 nachziehen (3D nur Desktop, nach Lighthouse-Messung) oder E-V4 anpassen — Entscheidung Dominik Steiner, eigene Freigabe (Design-Freeze); bis dahin zurückgestellt. | `LandingV4.tsx`, `heroEarthScene.ts` | niedrig | Design-Freeze |
 | **WP7a** | SSoT-Bereinigung: Bot-Laufzeit eine Wahrheit, toter `PLANS`-Export, SSO-/SCIM-/On-Prem-Claims, Hostinger-Roadmap. ⏳ **Offen.** Der Auftrag stand in #1752 (`.claude/commands/wp7a-ssot-cleanup.md`) und ist vor einem Neustart gegen den aktuellen `main` zu prüfen; Teile warten auf E-V7–E-V9. | `platform-capabilities.ts`, `implementation-status.ts`, `runtimeVocab.ts`, `GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx` | mittel | Katalog (E-V8), Claims (E-V7, E-V9) |
 | **WP8a** | **Messung zuerst.** Viewport-Smoke für 360 / 390 / 768 / 1024 / 1440 px auf den Funnel-Routen. Erstmals auch Lighthouse **mobil** für `/` und `/audit` (E-V4 hatte keine dokumentierte Messung). Prüft: kein horizontaler Overflow, Tap-Ziele, Input-Schriftgröße, CLS. **Keine UI-Änderung.** | Test-Datei neu (Ort nach Bestand des Repo-Smoke-Tests), ggf. `package.json`-Script `check:responsive` | keins | — |

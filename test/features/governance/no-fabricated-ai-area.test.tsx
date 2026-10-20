@@ -52,6 +52,17 @@ describe('Rahmenwerk-Auswahl', () => {
     expect(screen.getAllByText('Nicht im Plan').length).toBeGreaterThan(0);
     expect(screen.getByText('In Vorbereitung')).toBeInTheDocument();
   });
+
+  it('„Frameworks nach Plan" folgt PLAN_ENTITLEMENTS', () => {
+    render(<MemoryRouter><ComplianceFrameworkSelector /></MemoryRouter>);
+    const group = (label: string) => screen.getByText(label).nextElementSibling?.textContent;
+    // governance.ai_register ab Free, policy.iso27001 ab Growth, policy.nis2 ab Agency.
+    expect(group('FREE TIER')).toBe('DSGVO / GDPR, ISO 42001, EU AI Act');
+    expect(group('GROWTH+')).toBe('ISO 27001');
+    expect(group('AGENCY+')).toBe('NIS2 Directive');
+    expect(group('IN VORBEREITUNG')).toBe('DORA');
+    expect(screen.queryByText('STARTER')).toBeNull();
+  });
 });
 
 describe('ISO-42001-Hub', () => {

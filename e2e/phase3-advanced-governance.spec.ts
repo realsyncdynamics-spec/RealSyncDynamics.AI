@@ -47,10 +47,10 @@ test.describe('Phase 3: Advanced Governance Views', () => {
       }),
     ).toBeVisible();
 
-    // Tier listings should show which frameworks are available
+    // Tier listings come from PLAN_ENTITLEMENTS; Starter unlocks no further framework
     await expect(page.getByText(/FREE TIER/i)).toBeVisible();
-    await expect(page.getByText(/STARTER/i)).toBeVisible();
     await expect(page.getByText(/GROWTH\+/i)).toBeVisible();
+    await expect(page.getByText(/AGENCY\+/i)).toBeVisible();
   });
 
   test('Free tier users can access DSGVO framework', async ({ page }) => {

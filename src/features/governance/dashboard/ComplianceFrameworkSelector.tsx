@@ -4,6 +4,13 @@ import {
   BarChart3, Shield, AlertTriangle, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
+import {
+  PLAN_ENTITLEMENTS,
+  PLAN_ORDER,
+  planById,
+  type EntitlementKey,
+  type PlanId,
+} from '@/shared/pricing';
 
 interface Framework {
   id: string;
@@ -18,8 +25,7 @@ interface Framework {
    * null = ohne Plan-Schranke. Früher stand hier implizit `governance.<id>` —
    * diese Keys gibt es nicht, deshalb war jede Karte für jeden Kunden gesperrt.
    */
-  entitlement: string | null;
-  tier: string;
+  entitlement: EntitlementKey | null;
   /** Angekündigt, aber ohne Ziel — wird als „In Vorbereitung" ausgewiesen. */
   comingSoon?: boolean;
 }
@@ -33,7 +39,6 @@ const FRAMEWORKS: Framework[] = [
     icon: Shield,
     path: '/app/documents',
     entitlement: null,
-    tier: 'free',
   },
   {
     id: 'iso27001',
@@ -44,7 +49,6 @@ const FRAMEWORKS: Framework[] = [
     // ISO 27001 ist als Policy Pack umgesetzt (policy-packs, Key policy.iso27001).
     path: '/app/policy-packs',
     entitlement: 'policy.iso27001',
-    tier: 'starter',
   },
   {
     id: 'iso42001',
@@ -55,7 +59,6 @@ const FRAMEWORKS: Framework[] = [
     // Der Hub hat keine Plan-Schranke (kein Entitlement-Key für ISO 42001).
     path: '/app/governance/iso42001-hub',
     entitlement: null,
-    tier: 'free',
   },
   {
     id: 'nis2',
@@ -66,7 +69,6 @@ const FRAMEWORKS: Framework[] = [
     // NIS2 ist als Policy Pack umgesetzt (policy-packs, Key policy.nis2).
     path: '/app/policy-packs',
     entitlement: 'policy.nis2',
-    tier: 'growth',
   },
   {
     id: 'dora',
@@ -78,7 +80,6 @@ const FRAMEWORKS: Framework[] = [
     // und kein Klick, statt eines Knopfes, der in den 404 führt.
     path: null,
     entitlement: null,
-    tier: 'enterprise',
     comingSoon: true,
   },
   {
@@ -89,9 +90,48 @@ const FRAMEWORKS: Framework[] = [
     icon: AlertTriangle,
     path: '/app/ai-systems',
     entitlement: 'governance.ai_register',
-    tier: 'growth',
   },
 ];
+
+/**
+ * Kleinster Plan, der den Key freischaltet — gelesen aus PLAN_ENTITLEMENTS,
+ * damit der Kasten „Frameworks nach Plan" nicht von der echten Schranke
+ * abweicht. Vorher stand dort eine handgepflegte Stufe, die bei ISO 27001,
+ * NIS2 und EU AI Act falsch war.
+ */
+function lowestPlanFor(entitlement: EntitlementKey | null): PlanId | null {
+  if (entitlement === null) return 'free';
+  return PLAN_ORDER.find((id) => {
+    const val = PLAN_ENTITLEMENTS[planById(id).planKey]?.[entitlement];
+    return val === -1 || (typeof val === 'number' && val > 0);
+  }) ?? null;
+}
+
+interface PlanGroup {
+  label: string;
+  names: string[];
+}
+
+function frameworksByPlan(): PlanGroup[] {
+  const groups = new Map<PlanId, string[]>();
+  const comingSoon: string[] = [];
+  for (const framework of FRAMEWORKS) {
+    const plan = framework.comingSoon ? null : lowestPlanFor(framework.entitlement);
+    if (plan === null) {
+      comingSoon.push(framework.name);
+      continue;
+    }
+    groups.set(plan, [...(groups.get(plan) ?? []), framework.name]);
+  }
+  const result: PlanGroup[] = PLAN_ORDER.filter((id) => groups.has(id)).map((id) => ({
+    label: id === 'free' ? 'FREE TIER' : `${planById(id).name.toUpperCase()}+`,
+    names: groups.get(id) ?? [],
+  }));
+  if (comingSoon.length > 0) result.push({ label: 'IN VORBEREITUNG', names: comingSoon });
+  return result;
+}
+
+const PLAN_GROUPS = frameworksByPlan();
 
 export function ComplianceFrameworkSelector() {
   const navigate = useNavigate();
@@ -224,19 +264,13 @@ export function ComplianceFrameworkSelector() {
           <h3 className="text-lg font-semibold text-titanium-50 mb-3">
             Frameworks nach Plan
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-titanium-500 font-mono text-xs mb-2">FREE TIER</p>
-              <p className="text-titanium-300">DSGVO, ISO 42001</p>
-            </div>
-            <div>
-              <p className="text-titanium-500 font-mono text-xs mb-2">STARTER</p>
-              <p className="text-titanium-300">ISO 27001</p>
-            </div>
-            <div>
-              <p className="text-titanium-500 font-mono text-xs mb-2">GROWTH+</p>
-              <p className="text-titanium-300">NIS2, EU AI Act</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            {PLAN_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-titanium-500 font-mono text-xs mb-2">{group.label}</p>
+                <p className="text-titanium-300">{group.names.join(', ')}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

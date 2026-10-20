@@ -296,7 +296,7 @@ export function WebStudioLanding() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-7">
             <a href="#kontakt" className="wst-btn group rounded-full px-7 py-5 text-base tracking-tight">
-              <span>Kostenloses Erstgespräch anfragen</span>
+              <span>Projekt kostenlos einschätzen lassen</span>
               <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 group-hover:opacity-100 transition-all" aria-hidden="true" />
             </a>
             <a href="#kalkulator" className="px-6 py-4 text-sm font-medium text-[#f4f2ee]/80 hover:text-white transition-colors flex items-center gap-2">
@@ -533,7 +533,7 @@ export function WebStudioLanding() {
                 </button>
               </div>
             </div>
-            <p className="mt-4 text-center text-xs text-[#f4f2ee]/50">Richtwert, kein verbindliches Angebot. Das Festpreis-Angebot erhältst du nach dem Erstgespräch.</p>
+            <p className="mt-4 text-center text-xs text-[#f4f2ee]/50">Richtwert, kein verbindliches Angebot. Das verbindliche Festpreis-Angebot erhältst du nach Prüfung deiner Anfrage.</p>
           </div>
         </section>
 
@@ -662,7 +662,7 @@ export function WebStudioLanding() {
                   <div className="text-center max-w-xl mx-auto mb-10">
                     <p className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full wst-glass border border-white/10 text-xs text-indigo-400 mb-3">
                       <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
-                      Kostenloses 30-Minuten-Erstgespräch
+                      Kostenlose Projekteinschätzung
                     </p>
                     <h2 className="wst-display text-2xl sm:text-4xl font-semibold mb-3">Lass uns über dein Projekt sprechen</h2>
                     <p className="text-sm text-[#f4f2ee]/70 leading-relaxed">

@@ -125,6 +125,7 @@ const BusseldRechner = lazy(() => import('./pages/BusseldRechner').then((m) => (
 const ToolsHub = lazy(() => import('./pages/ToolsHub').then((m) => ({ default: m.ToolsHub })));
 const HealthTechLanding = lazy(() => import('./pages/HealthTechLanding').then((m) => ({ default: m.HealthTechLanding })));
 const KmuWebsiteLanding = lazy(() => import('./pages/KmuWebsiteLanding').then((m) => ({ default: m.KmuWebsiteLanding })));
+const WebStudioLanding = lazy(() => import('./pages/WebStudioLanding').then((m) => ({ default: m.WebStudioLanding })));
 const Branchen = lazy(() => import('./pages/Branchen').then((m) => ({ default: m.Branchen })));
 const IndustryDetail = lazy(() => import('./pages/branchen/IndustryDetail').then((m) => ({ default: m.IndustryDetail })));
 const LegalTechLanding = lazy(() => import('./pages/LegalTechLanding').then((m) => ({ default: m.LegalTechLanding })));
@@ -660,6 +661,9 @@ function RoutesWithTracking() {
       {/* Website + Chat-/Telefon-Assistent für kleine Betriebe (Handwerk, Praxen, Kanzleien) */}
       <Route path="/handwerk-website" element={<KmuWebsiteLanding />} />
       <Route path="/kmu-website" element={<Navigate to="/handwerk-website" replace />} />
+      {/* Web-Studio: Landingpages & Websites als Dienstleistung (AI-Studio-Entwurf, 20.10.2026) */}
+      <Route path="/web-studio" element={<WebStudioLanding />} />
+      <Route path="/webdesign" element={<Navigate to="/web-studio" replace />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
       <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />

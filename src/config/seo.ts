@@ -729,6 +729,30 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Für Praxen', url: '/fuer-praxen' },
     ]),
   },
+  '/web-studio': {
+    title: 'Landingpages & Websites zum Festpreis — Web-Studio | RealSync Dynamics AI',
+    description:
+      'High-Converting Landingpages und Websites ab 1.890 € Festpreis: Copywriting, Figma-Design, PageSpeed 90+ mobil, DSGVO-konformes Tracking, Launch in 7–14 Tagen.',
+    canonical: `${SITE_URL}/web-studio`,
+    jsonLd: [
+      breadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Web-Studio', url: '/web-studio' },
+      ]),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        name: 'Landingpages & Websites',
+        serviceType: 'Webdesign und Webentwicklung',
+        provider: { '@type': 'Organization', name: 'RealSync Dynamics AI', url: SITE_URL },
+        areaServed: ['DE', 'AT', 'CH'],
+        offers: [
+          { '@type': 'Offer', name: 'Landingpage Sprint', price: '1890', priceCurrency: 'EUR' },
+          { '@type': 'Offer', name: 'Full Brand Website', price: '3890', priceCurrency: 'EUR' },
+        ],
+      },
+    ],
+  },
   '/fuer-agenturen': {
     title:
       'DSGVO-Compliance für Agenturen — alle Kundenprojekte prüfen | RealSync Dynamics AI',

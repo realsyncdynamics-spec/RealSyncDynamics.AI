@@ -28,7 +28,8 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { checkoutTaxParams, invoiceFooter } from '../_shared/checkout-tax.ts';
 import {
   isRealStripeCustomerId, isTrialEligibleForCheckout,
   customerIdempotencyKey, customerSearchQuery, STRIPE_ERROR_PUBLIC_MESSAGE,
@@ -277,6 +278,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Abo-Rechnungen erzeugt Stripe selbst und übernimmt die Fußzeile vom
+    // Customer. Deshalb vor jedem Abo-Checkout an den Steuermodus angleichen:
+    // EXEMPT → § 19-Hinweis (§ 34a UStDV), EU_STANDARD → leer (entfernt einen
+    // alten § 19-Hinweis). Einmalkäufe setzen die Fußzeile über invoice_creation.
+    if (!isOneTime) {
+      await stripe.customers.update(stripeCustomerId!, {
+        invoice_settings: { footer: invoiceFooter(PRICING_TAX_MODE) },
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: isOneTime ? 'payment' : 'subscription',
       customer: stripeCustomerId!,
@@ -297,20 +308,19 @@ Deno.serve(async (req) => {
             payment_intent_data: {
               metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
             },
-            // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
-            // B2B-Kauf muss ein Belegdokument existieren.
-            invoice_creation: { enabled: true },
           }
         : { subscription_data: subscriptionData }),
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      // Stripe Tax: Regelbesteuerung aktiv. Stripe berechnet die USt anhand
-      // der Kundenadresse und der hinterlegten Tax-Registrierungen.
-      automatic_tax: { enabled: true },
-      billing_address_collection: 'required',
-      tax_id_collection: { enabled: true },
-      customer_update: { address: 'auto', name: 'auto' },
+      // Steuer, Rechnungsadresse, Rechnung (Einmalkauf) und Hinweis über dem
+      // Bezahlknopf aus dem Steuermodus der Pricing-SSoT, nie fest verdrahtet.
+      // EU_STANDARD → Stripe Tax schlägt die USt auf die Netto-Preise auf.
+      ...checkoutTaxParams({
+        sessionMode: isOneTime ? 'payment' : 'subscription',
+        existingCustomer: true,
+        taxMode: PRICING_TAX_MODE,
+      }),
     });
 
     return jsonResponse({ ok: true, url: session.url, session_id: session.id });

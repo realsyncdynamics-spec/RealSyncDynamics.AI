@@ -414,17 +414,30 @@ export async function logShadowComparison(
     v2_status: string | null;
     snapshot_version: string;
     detail?: Record<string, unknown>;
+    // Beobachtungsart (Migration 20261020130000). Vorgabe 'comparison' hält
+    // alle bestehenden Aufrufer unverändert gültig. 'decision_only' ist für
+    // Kanäle ohne Legacy-Pfad (ai-gateway, governance-router): Dort gibt es
+    // nichts zu vergleichen — legacy_status wird erzwungen NULL und
+    // diverged false, damit kein erfundener A/B-Vergleich entsteht. Die
+    // Datenbank erzwingt dieselbe Regel per CHECK
+    // (pdp_shadow_log_decision_only_honest); hier steht sie zusätzlich,
+    // damit ein falscher Aufruf gar nicht erst zum Insert-Fehler im
+    // Hintergrund wird.
+    observation_kind?: 'comparison' | 'decision_only';
   },
 ): Promise<void> {
   try {
+    const kind = entry.observation_kind ?? 'comparison';
+    const legacy = kind === 'decision_only' ? null : entry.legacy_status;
     const { error } = await admin.from('pdp_shadow_log').insert({
       tenant_id: entry.tenant_id,
       source: entry.source,
-      legacy_status: entry.legacy_status,
+      legacy_status: legacy,
       v2_status: entry.v2_status,
-      diverged: entry.legacy_status !== entry.v2_status,
+      diverged: kind === 'comparison' && legacy !== entry.v2_status,
       snapshot_version: entry.snapshot_version,
       detail: entry.detail ?? {},
+      observation_kind: kind,
     });
     if (error) console.error('[pdp] shadow log insert failed', error.message);
   } catch (e) {

@@ -141,7 +141,7 @@ describe('Pricing SSoT — Struktur', () => {
       // Human Handoff: kein Code → Roadmap
       human_handoff: 'coming-soon',
       // Kodee: kein Registry-Eintrag, VPS abgelaufen → Roadmap
-      kodee: 'coming-soon',
+      kodee: 'preview',
       // framework-tisax-dora = coming-soon
       tisax: 'coming-soon',
       dora: 'coming-soon',

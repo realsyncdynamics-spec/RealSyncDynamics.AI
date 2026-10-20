@@ -171,7 +171,7 @@ const ITEMS: Item[] = [
     a: (
       <>
         <p>
-          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent, ab dem <strong className="text-titanium-50">Enterprise</strong>-Tier.
+          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent. Den Kodee-Chat gibt es in allen Plänen; SSH-Server-Aktionen ab dem <strong className="text-titanium-50">Agency</strong>-Plan.
           Er verbindet sich per SSH mit deinem Server und hilft bei Status- und Log-Checks, DNS/TLS-Prüfung sowie
           Deployment-Aufgaben — inklusive Risiko-Advisor, der Schreib-Aktionen (z. B. Neustarts) vorab bewertet.
         </p>

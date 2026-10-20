@@ -20,6 +20,7 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
     const sent = await mockScanBackend(page);
 
     await page.goto('/audit', { waitUntil: 'domcontentloaded' });
+    await dismissConsentBanner(page);
     await page.locator('input[name="domain"]').fill(testDomains.safe);
     await page.locator('input[name="email"]').fill(SYNTHETIC_EMAIL);
     await page.getByTestId('audit-start').click();
@@ -38,6 +39,7 @@ test.describe('[GOV] DSGVO-Audit mobil', () => {
   test('[GOV-003] Formular ist mobil bedienbar und zeigt das Ergebnis', async ({ page }) => {
     const sent = await mockScanBackend(page);
     await page.goto('/audit', { waitUntil: 'domcontentloaded' });
+    await dismissConsentBanner(page);
 
     // Keine horizontale Scrollleiste auf Telefonbreite.
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -47,7 +49,19 @@ test.describe('[GOV] DSGVO-Audit mobil', () => {
     await page.locator('input[name="domain"]').fill(`https://www.${testDomains.safe}/kontakt`);
     await page.locator('input[name="email"]').fill(SYNTHETIC_EMAIL);
     await expect(page.getByTestId('audit-privacy-notice')).toBeVisible();
-    await page.getByTestId('audit-start').tap();
+    // Der Start-Button liegt vollständig im Bild — ein zu langer Text in der
+    // Aktionszeile schob den Stepper vorher seitlich aus dem Viewport.
+    const start = page.getByTestId('audit-start');
+    await start.scrollIntoViewIfNeeded();
+    const box = await start.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390 + 1);
+    expect(await page.evaluate(() => {
+      const main = document.querySelector('.rs-audit__main');
+      return main ? main.scrollWidth - main.clientWidth : 0;
+    })).toBeLessThanOrEqual(1);
+    await start.tap();
     await expect.poll(() => sent.length).toBe(1);
     expect(sent[0]!.url).toBe(`https://${testDomains.safe}`);
 
@@ -58,6 +72,20 @@ test.describe('[GOV] DSGVO-Audit mobil', () => {
     await expect(page.getByTestId('audit-score-ring')).toBeVisible();
   });
 });
+
+/**
+ * Das Cookie-Banner liegt fixiert über dem unteren Bildrand und damit über
+ * dem Start-Button, bis eine Entscheidung fällt — so ist es gewollt. Der Test
+ * trifft sie wie ein Besucher: alles ablehnen.
+ */
+async function dismissConsentBanner(page: import('@playwright/test').Page): Promise<void> {
+  const reject = page.getByTestId('consent-reject-all');
+  // Das Banner erscheint nach dem ersten Rendern; kurz darauf warten.
+  if (await reject.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false)) {
+    await reject.click();
+    await expect(reject).toBeHidden();
+  }
+}
 
 /** Synthetische Testadresse — nie eine echte Person. */
 const SYNTHETIC_EMAIL = 'e2e-lead@example.com';

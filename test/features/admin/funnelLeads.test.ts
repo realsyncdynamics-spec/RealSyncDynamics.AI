@@ -19,7 +19,11 @@ describe('FUNNEL_FILTERS', () => {
     ]);
   });
   it('every stage filter is accepted by admin_funnel_leads', () => {
-    const allow = migration.match(/p_stage NOT IN \(([^)]+)\)/)?.[1] ?? '';
+    // Nur die Filterliste von admin_funnel_leads — capture_funnel_lead hat
+    // weiter oben eine eigene p_stage-Liste (captured, scan_started).
+    const fn = migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.admin_funnel_leads'));
+    const allow = fn.match(/p_stage NOT IN \(([^)]+)\)/)?.[1] ?? '';
+    expect(allow).not.toBe('');
     for (const f of FUNNEL_FILTERS.filter((x) => x.id !== 'all')) {
       expect(allow).toContain(`'${f.id}'`);
       expect(CONVERSION_LABELS[f.id as keyof typeof CONVERSION_LABELS]).toBeTruthy();

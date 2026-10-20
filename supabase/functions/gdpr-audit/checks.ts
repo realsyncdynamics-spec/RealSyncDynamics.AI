@@ -839,6 +839,13 @@ export function extractFacts(input: ExtractFactsInput): Record<string, unknown> 
     // Versehen. Wer sie schliessen will, entscheidet damit eine
     // Produktfrage (strengere Bewertung als bisher) — und das gehört
     // entschieden, nicht nebenbei mitgeliefert.
+    // `ai_use_case.interaction_obvious` bleibt **bewusst ungesetzt**.
+    //
+    // Art. 50 Abs. 1 nimmt Fälle aus, in denen die KI-Interaktion aus
+    // Umständen und Kontext offensichtlich ist. Das ist eine Wertung, kein
+    // Markup-Merkmal — aus dem HTML nicht beobachtbar. Die Regel prüft
+    // `not_equals true`: ungesetzt feuert sie wie bisher, nur eine
+    // ausdrückliche Bewertung (`true`) unterdrückt den Befund.
     ai_use_case: {
       is_chatbot: isChatbot,
       disclosure_visible: ai.has_disclosure,

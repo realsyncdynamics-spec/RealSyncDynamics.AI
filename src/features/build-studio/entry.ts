@@ -14,6 +14,34 @@ import {
 
 export const DEFAULT_BUILD_KIND: BuildProjectKind = 'website';
 
+/** Maximum brief size for transient, same-tab navigation state. No prompt in the URL. */
+export const CODE_ENTRY_PROMPT_MAX_CHARS = 8_000;
+
+export interface CodeBuilderHandoffState {
+  codeBuilderHandoff: {
+    source: 'build-studio';
+    prompt: string;
+  };
+}
+
+/** Content handoff only. This is never an authentication or tenant claim. */
+export function codeEntryState(description: string): CodeBuilderHandoffState | null {
+  const prompt = description.trim();
+  if (!prompt || prompt.length > CODE_ENTRY_PROMPT_MAX_CHARS) return null;
+  return { codeBuilderHandoff: { source: 'build-studio', prompt } };
+}
+
+/** Ignore malformed/oversized state (including direct navigation without a handoff). */
+export function readCodeEntryPrompt(state: unknown): string | null {
+  if (!state || typeof state !== 'object') return null;
+  const value = (state as { codeBuilderHandoff?: unknown }).codeBuilderHandoff;
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { source?: unknown; prompt?: unknown };
+  if (candidate.source !== 'build-studio' || typeof candidate.prompt !== 'string') return null;
+  const prompt = candidate.prompt.trim();
+  return prompt && prompt.length <= CODE_ENTRY_PROMPT_MAX_CHARS ? prompt : null;
+}
+
 export const BUILD_KIND_LABEL: Readonly<Record<BuildProjectKind, string>> = {
   landing: 'Landingpage',
   website: 'Website',

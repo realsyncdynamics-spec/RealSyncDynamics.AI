@@ -9,6 +9,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as fn from '../../supabase/functions/governance-resources/registryFields';
 import * as ui from '../../src/features/governance/ai-registry/registryModel';
+import { ANNEX_III_CATEGORIES } from '../../src/lib/ai-act/annexCategories';
+import { TIERS } from '../../src/features/governance/handoff/enforcementModel';
 
 const sql = readFileSync(
   resolve(__dirname, '../../supabase/migrations/20261005130000_governance_assets_ai_registry_fields.sql'),
@@ -30,6 +32,11 @@ describe('KI-Register — Parität DB ↔ Edge Function ↔ Oberfläche', () => 
   ] as const)('%s', (column, server, client) => {
     expect([...server]).toEqual([...client]);
     expect(checkValues(column)).toEqual([...server]);
+  });
+
+  it('classify_asset: Annex III und Risikostufen gleich wie in der Oberfläche', () => {
+    expect([...fn.ANNEX_III_CATEGORIES]).toEqual(ANNEX_III_CATEGORIES.map((c) => c.id));
+    expect([...fn.AI_ACT_CLASSES].sort()).toEqual([...TIERS.map((t) => t.dbValue), 'unknown'].sort());
   });
 
   it('Auftrag §14: genau diese Systemtypen', () => {

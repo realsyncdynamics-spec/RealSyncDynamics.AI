@@ -62,10 +62,14 @@ describe('gdpr-audit: Mandanten-Scan ohne IP-Limit und ohne Lead', () => {
     expect(src).toContain("const email = isTenantScan ? '' : ");
   });
 
-  it('Mandanten-Scan verletzt gdpr_audits.email NOT NULL nicht (\'\' statt null)', () => {
+  it('Scans ohne Adresse verletzen gdpr_audits.email NOT NULL nicht (\'\' statt null)', () => {
     const ddl = readFileSync('supabase/migrations/20260506110000_gdpr_audits.sql', 'utf8');
     expect(ddl).toMatch(/email\s+TEXT NOT NULL/);
-    expect(src).toContain("email: isTenantScan ? '' : email || null,");
+    // email ist immer ein String ('' für Mandanten- und Optimizer-Scans) und
+    // wird nicht mehr zu null umgewandelt.
+    // Insert-Objekt steht entweder inline oder (mit Consent-Fallback) in auditBase.
+    expect(src).toMatch(/(?:from\('gdpr_audits'\)\.insert\(\{|const auditBase = \{)[\s\S]*?\n\s*email,\n/);
+    expect(src).not.toMatch(/email:\s*[^,\n]*\|\|\s*null/);
   });
 });
 

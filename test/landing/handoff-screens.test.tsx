@@ -87,7 +87,7 @@ describe('/audit stepper', () => {
     fireEvent.click(screen.getByTestId('audit-next'));
     fireEvent.click(screen.getByRole('radio', { name: 'Agentur' }));
     fireEvent.click(screen.getByTestId('audit-start'));
-    expect(onRun).toHaveBeenCalledWith({ domain: 'muster.de', email: 'a@b.de', company: '' });
+    expect(onRun).toHaveBeenCalledWith({ domain: 'muster.de', email: 'a@b.de', company: '', marketingConsent: false });
 
     view.rerender(
       <MemoryRouter>

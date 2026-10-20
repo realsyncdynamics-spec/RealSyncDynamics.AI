@@ -7,7 +7,8 @@ import { PRICING_TAX_NOTE, checkoutHrefForPlan, formatLimit, planById } from '@/
  * LandingChannelTools.tsx (Stand Handoff) und wird hier bewusst eingefroren,
  * damit die Design-Route deckungsgleich mit der Referenz bleibt.
  *
- * Ausnahme: die öffentliche #roadmap-Sektion liest Status/Route aus
+ * Ausnahme: Loop- und Plattform-Copy werden für die öffentliche Landing gestrafft;
+ * die öffentliche #roadmap-Sektion liest Status/Route aus
  * `src/product/implementation-status.ts` und kundenorientierte Texte aus
  * `implementation-status-public.ts` (keine parallele Claim-Liste, keine internen Details).
  */
@@ -56,12 +57,12 @@ export const HUD_ORBITS = [
   { rx: 490, ry: 420, rot: -6 },
 ] as const;
 
-export const HERO_PROOF = ['EVIDENCE-CHAIN', 'AI-ACT-KLASSIFIKATION', 'PROVENANCE · C2PA'] as const;
+export const HERO_PROOF = ['KOSTENLOSER CHECK', 'KLARER BERICHT', 'PARAGRAPHENBEZUG'] as const;
 
 export const HERO_KPIS = [
-  ['6', 'POLICY PACKS'],
-  ['EU', 'DATENRESIDENZ'],
-  ['LAUFEND', 'NACHWEISFÜHRUNG'],
+  ['90s', 'BIS ZUM ERGEBNIS'],
+  ['EU', 'HOSTING'],
+  ['0 €', 'FÜR DEN ERSTEN CHECK'],
 ] as const;
 
 export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
@@ -73,11 +74,24 @@ export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
   ['DORA', true],
 ];
 
+/**
+ * Zeile über den Rahmenwerk-Chips — aus HERO_FRAMEWORKS abgeleitet, damit Zahl und
+ * Status nicht auseinanderlaufen. Vorher „SECHS POLICY PACKS“ bei vier live;
+ * TISAX/DORA sind `framework-tisax-dora` (coming-soon). Freigabe Dominik, 13.10.2026.
+ */
+export const HERO_PACKS_LINE = (() => {
+  const live = HERO_FRAMEWORKS.filter(([, next]) => !next).length;
+  const next = HERO_FRAMEWORKS.filter(([, isNext]) => isNext).map(([name]) => name);
+  return next.length
+    ? `${live} POLICY PACKS LIVE · ${next.join('/')} COMING SOON`
+    : `${live} POLICY PACKS · EIN PRÜFPFAD`;
+})();
+
 export const LOOP_NODES = [
-  ['01 · DETECT', 'Discover', 'Headers, Cookies, Tracker, AI-Endpoints und Third-Parties in Sekunden inventarisiert.'],
-  ['02 · GOVERN', 'Classify', 'Findings nach DSGVO-Artikel und AI-Act-Risikoklasse eingeordnet, ins Register überführt.'],
-  ['03 · AUTOMATE', 'Enforce', 'Policies als ausführbare Kontrollen — Agenten schlagen Fixes vor, Freigaben bleiben beim Menschen.'],
-  ['04 · MONITOR', 'Prove', 'Jeder Lauf in der Evidence-Chain versiegelt; Drift wird in Echtzeit erkannt und dokumentiert.'],
+  ['01 · PRÜFEN', 'Scan', 'Cookies, Tracker und KI-Einbindung Ihrer Website erfassen — in unter 90 Sekunden.'],
+  ['02 · VERSTEHEN', 'Einordnen', 'Risiken mit Paragraphenbezug (DSGVO, TTDSG, EU AI Act) klar benennen.'],
+  ['03 · HANDELN', 'Beheben', 'Konkrete Hinweise, was Sie ändern müssen — ohne Berater und ohne Fachchinesisch.'],
+  ['04 · NACHWEISEN', 'Dokumentieren', 'Alles nachvollziehbar festhalten, damit Sie es einem Prüfer vorlegen können.'],
 ] as const;
 
 export const ANCHORS = [
@@ -118,12 +132,17 @@ export const APP_FINDINGS = [
   ['NIEDRIG', 'sev-low', 'Security-Header unvollständig', 'ISO 27001 A.8'],
 ] as const;
 
-/** Evidence-Ledger: die ersten vier Knoten aus NODES der Referenz. */
+/**
+ * Evidence-Ledger im Dashboard-Mock (Beispielansicht): Ereignisarten der Nachweiskette.
+ * Die Referenz zeigte Städte als „Knoten“ (Berlin · Brüssel · Frankfurt · Stockholm) —
+ * das suggerierte eine verteilte Infrastruktur. Real: eine Kette, Datenhaltung Supabase
+ * Frankfurt (siehe Footer „BETRIEB“). Freigabe Dominik, 13.10.2026.
+ */
 export const LEDGER_NODES = [
-  ['BERLIN', 'AI Act Registry'],
-  ['BRÜSSEL', 'Risk Classification'],
-  ['FRANKFURT', 'EU Runtime · eu-central'],
-  ['STOCKHOLM', 'Evidence Node'],
+  ['SCAN', 'Website-Audit'],
+  ['RISIKO', 'AI-Act-Einordnung'],
+  ['FREIGABE', 'Entscheidung durch Menschen'],
+  ['EXPORT', 'Prüfbericht'],
 ] as const;
 
 export const INTENT_CHIPS = ['AI-Act-Klassifikation prüfen', '§13-Update draften', 'Evidence exportieren', 'Drift erklären'] as const;
@@ -138,13 +157,13 @@ export const TOOLS = [
 
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
-  ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF.', ''],
-  ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
+  ['DSGVO- & Tracking-Audit', 'Cookies, Tracker und Drittanbieter prüfen, Einwilligungspflichten erkennen — mit PDF-Bericht.', ''],
+  ['EU-AI-Act-Klassifizierung', 'Risikoklasse nach Annex III einordnen, Anforderungen ableiten — im öffentlichen Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
-  ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],
-  ['AI Gateway', 'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.', ''],
+  ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen exportieren — für interne Kontrollen und externe Prüfer.', ''],
+  ['AI Gateway', 'Modellaufrufe kontrollieren, protokollieren und Kosten erfassen — mit EU-Option.', ''],
   ['Evidence Vault', 'Hash-verkettete Nachweiskette mit Aufbewahrung, Compliance-Hold und Integritätsprüfung.', '/evidence-vault'],
-  ['Policy Engine', 'Governance-Regeln nicht nur dokumentieren, sondern als ausführbare Kontrolllogik durchsetzen.', '/policy-engine'],
+  ['Policy Engine', 'Governance-Regeln als ausführbare Kontrollen durchsetzen — statt nur dokumentieren.', '/policy-engine'],
 ] as const;
 
 export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({
@@ -157,22 +176,22 @@ export const BUILDING_CAPS = [
   ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist noch nicht in Produktion.'],
 ] as const;
 export const GOV_STEPS = [
-  ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
-  ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],
-  ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
-  ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
-  ['05', 'EVIDENCE', 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.'],
-  ['06', 'AUDIT', 'Eine konsistente Governance-Historie für Management, interne Kontrollen und Audits bereitstellen.'],
+  ['01', 'PRÜFEN', 'Website, Cookies, Tracker und KI-Einbindung erfassen.'],
+  ['02', 'EINORDNEN', 'Risiken mit Paragraphenbezug klar benennen.'],
+  ['03', 'HANDELN', 'Konkrete Schritte, was Sie ändern müssen.'],
+  ['04', 'NACHWEISEN', 'Alles dokumentieren, damit Sie es vorlegen können.'],
+  ['05', 'BEOBACHTEN', 'Laufend prüfen, wenn sich etwas ändert.'],
+  ['06', 'AUSWERTEN', 'Klare Übersicht für Sie, den Datenschutzbeauftragten oder den Prüfer.'],
 ] as const;
 
 // ---- 04 Evidence & Trust (MainLanding.tsx TrustItem) — Lucide-Pfade wie in der Referenz ----
 export type TrustIcon = 'shield' | 'lock' | 'file' | 'code';
 
 export const TRUST: ReadonlyArray<readonly [TrustIcon, string, string]> = [
-  ['shield', 'DSGVO', 'Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess.'],
-  ['lock', 'EU AI Act', 'Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme.'],
-  ['file', 'Nachweis-Export', 'Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer.'],
-  ['code', 'Code Compliance', 'Claude Code prüft und unterstützt konkrete technische Remediation.'],
+  ['shield', 'DSGVO', 'Cookies, Tracker und Einwilligungen prüfen und dokumentieren.'],
+  ['lock', 'EU AI Act', 'KI-Einbindung und Transparenzpflichten klar benennen.'],
+  ['file', 'Nachweis-Export', 'Prüfungen und Entscheidungen als Bericht für Prüfer exportieren.'],
+  ['code', 'Code Compliance', 'Technische Hinweise, was auf der Website angepasst werden sollte.'],
 ];
 
 // ---- 05 Tarife (shared/pricing.ts) ----
@@ -236,4 +255,4 @@ export const ENTERPRISE_TILES = [
   ],
 ] as const;
 
-export const CLOSING_PILLS = ['DSGVO', 'EU AI ACT', 'POLICY PACKS', 'EVIDENCE VAULT', 'CLAUDE CODE', 'NACHWEIS-EXPORT'] as const;
+export const CLOSING_PILLS = ['DSGVO', 'EU AI ACT', 'KOSTENLOSER CHECK', 'KLARER BERICHT', 'NACHWEIS-EXPORT', 'EU-HOSTING'] as const;

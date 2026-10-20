@@ -4,6 +4,44 @@ description: WP2 Funnel auf /audit ausrichten (Angebots-Copy aus SSoT, Starter-T
 
 # WP2 — Funnel auf `/audit` ausrichten
 
+> ## ⛔ Überholt — nicht mehr ausführen (Stand 2026-10-16)
+>
+> **Dieses Arbeitspaket ist geschlossen.** Der Auftrag unten beruht auf E-F1
+> (Growth-Testphase als Einstieg, Starter `trialDays` 14 → 0). **E-F6**
+> (2026-09-29, `PLAN.md` §3) hat das ersetzt: dauerhaft kostenloses Konto als
+> Einstieg, Growth-Testphase und Starter-Kauf als Upgrade-Angebote, Starter
+> behält 14 Tage. E-F6 ist auf `main` bereits umgesetzt. Wer den Auftrag wörtlich
+> ausführt, nimmt eine spätere Entscheidung zurück.
+>
+> Gemessen auf `main` @ `6d7067c`:
+>
+> | Ziel (E-F6) | Stand | Beleg |
+> |---|---|---|
+> | Registrierung ohne Testphase, Einstieg = kostenloses Konto | ✅ | `TrialOfferPage.tsx` („Dauerhaft kostenlos. Kein Zeitdruck.“), `PostRegisterOnboardingPage.tsx` ruft `create-trial-subscription` nicht mehr auf |
+> | Growth-Testphase als Upgrade im Dashboard, mit aktivem Mandanten | ✅ | `FreePlanPanel.tsx` → `startGrowthTrial(activeTenantId)` (`features/billing/startGrowthTrial.ts`, sendet `tenantId`) |
+> | Abgelaufene Testphase fällt sichtbar auf Free zurück | ✅ | `FreePlanPanel.tsx` (`trial_expired`: „Ihre Testphase ist beendet — Ihr Zugang bleibt.“); WP2a #1716 gemergt, E-O4 erledigt (`OKTOBER-2026.md`) |
+> | Starter behält `trialDays: 14`, im Checkout eingelöst | ✅ | `shared/pricing.ts` (Starter), `stripe-checkout` setzt `trial_period_days` aus `plan.trialDays` |
+> | Kein Trial-Versprechen ohne Einlöseweg | ✅ | `test/config/pricing-ssot.test.ts`: jeder Plan mit `trialDays > 0` ist `checkout` und nicht `legacy` |
+> | Preise und Tage aus der SSoT | ✅ | `formatPriceEur`/`planById`/`growth.trialDays` in `FreePlanPanel`, `TrialOfferPage`, `PostRegisterOnboardingPage` |
+> | Keine Verlinkung auf `/unified-entry/scan` aus Landing oder `/audit` | ✅ | kein Treffer in `src/pages`, `src/components/landing`, `src/components/audit` |
+> | Ein Angebotstext an **einer** Stelle | ❌ offen | Wortlaut steht dreifach (`FreePlanPanel`, `TrialOfferPage`, `PostRegisterOnboardingPage`); nur Zahlen kommen aus der SSoT |
+>
+> Zusätzlich hat sich der Einstieg verschoben: `/build` ist das beworbene Tor,
+> `/unified-entry/scan` bleibt erreichbar und wird vom Studio verlinkt
+> (`src/App.tsx`, Kommentar an der Route). Die Prämisse „ScanEntryPage nicht
+> verlinken“ gilt damit nicht mehr pauschal.
+>
+> **Restpunkte** — klein, jeweils eigener PR mit eigener Freigabe, kein WP2:
+>
+> - Angebotstext als eine Konstante, gelesen von `FreePlanPanel`,
+>   `TrialOfferPage` und `PostRegisterOnboardingPage`.
+> - `SuccessPage.tsx` titelt noch „Willkommen!“. Die Route
+>   `/unified-entry/success` wird von keiner Stelle in `src/` angesteuert —
+>   entscheiden: entfernen oder bewusst anbinden.
+>
+> Der Auftrag bleibt stehen, weil er dokumentiert, was einmal geplant war. Als
+> Anweisung gilt er nicht mehr.
+
 **Voraussetzung:** ✅ E-F1 entschieden (2026-09-27): 14-Tage-Growth-Testphase. E-F5 offen, nicht blockierend · **Branch:** `feat/wp2-audit-funnel-offer`
 **Freigabe:** Preise/Angebot = Einzel-Freigabe im PR
 

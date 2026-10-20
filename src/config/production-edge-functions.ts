@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-10-10T12:49Z, Drift-Guard (PR #1830) gegen RealSyncDynamicsLive:
+ * **194 ACTIVE**, neu `agent-change-evidence-webhook` (#1769) als STALE_PROD_LIST — Liste hier nachgezogen.
+ *
  * 2026-09-29T08:43Z, Drift-Guard (PR #1668) gegen RealSyncDynamicsLive:
  * **193 ACTIVE**, neu `provision-tenant` (#1695) als STALE_PROD_LIST — Liste hier nachgezogen.
  *
@@ -86,10 +89,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 193;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 196;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-29T08:43Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-16T12:07Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -97,6 +100,7 @@ export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-09-29T08:43Z';
  */
 export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'add-auditor',
+  'agent-change-evidence-webhook',
   'agent-os-runner',
   'agent-scheduler',
   'ai-act-auto-classify',
@@ -119,6 +123,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'automation-callback',
   'automation-trigger',
   'automation-trigger-trial-webhook',
+  'beta-enroll',
   'bot-chat',
   'bot-voice-webhook',
   'browser-action-log',
@@ -154,6 +159,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'enterprise-ai-os-founding-access',
   'evidence-anchor',
   'evidence-export',
+  'evidence-r2',
   'evidence-vault',
   'evidence-vault-export',
   'export-audit',
@@ -324,13 +330,6 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'avv-generator', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
-  { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
-  { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

@@ -52,29 +52,39 @@ Deno.serve(async (req) => {
 
     // Bestehender Scanner: Edge Function cookie-scan (fetch-basiert).
     const scanner: Scanner = async (d) => {
-      const url = d.domain.startsWith('http') ? d.domain : `https://${d.domain}`;
+      const url = /^https?:\/\//i.test(d.domain) ? d.domain : `https://${d.domain}`;
       const { data, error } = await db.functions.invoke('cookie-scan', { body: { url, includeDetails: true } });
       if (error) throw new Error(`cookie-scan: ${error.message}`);
       return normalizeCookieScan(d.domain, data, new Date().toISOString());
     };
 
     // Bestehender Benachrichtigungsweg (Resend, wie zuvor in dieser Function).
-    const alerter: Alerter = async (d, drift, scan) => {
-      if (!RESEND_KEY || !d.alert_email) return 'not_configured';
+    // Rendert aus dem gespeicherten Outbox-Payload; die Alert-ID ist der
+    // Idempotency-Key, damit eine Wiederholung nach erfolgreichem Versand
+    // (Markieren gescheitert) bei Resend nicht doppelt zustellt.
+    const alerter: Alerter = async (a) => {
+      if (!RESEND_KEY || !a.recipient) return 'not_configured';
+      const p = a.payload;
       const li = (xs: string[]) => xs.map((t) => `<li>${esc(t)}</li>`).join('');
       const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+        // Hängt Resend, zählt der Versuch als gescheitert (Outbox wiederholt) statt den Lauf zu blockieren.
+        signal: AbortSignal.timeout(10_000),
+        headers: {
+          Authorization: `Bearer ${RESEND_KEY}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': `audit-monitor-alert/${a.id}`,
+        },
         body: JSON.stringify({
           from: 'RealSyncDynamics <monitor@realsyncdynamicsai.de>',
-          to: [d.alert_email],
-          subject: drift.new_critical_issues.length > 0 ? `Kritisch: ${d.domain}` : `Drift: ${d.domain}`,
+          to: [a.recipient],
+          subject: p.critical ? `Kritisch: ${a.domain}` : `Drift: ${a.domain}`,
           html: `<div style="font-family:sans-serif;max-width:600px">
             <h2>Täglicher Re-Scan: Änderung erkannt</h2>
-            <p><b>Domain:</b> ${esc(d.domain)}</p>
-            <p><b>Risk-Score:</b> ${scan.risk_score}/100 (Δ ${-drift.score_delta} gegenüber dem letzten Lauf)</p>
-            ${drift.new_trackers.length ? `<h3>Neue Tracker</h3><ul>${li(drift.new_trackers)}</ul>` : ''}
-            ${drift.removed_trackers.length ? `<h3>Entfernte Tracker</h3><ul>${li(drift.removed_trackers)}</ul>` : ''}
+            <p><b>Domain:</b> ${esc(a.domain)}</p>
+            <p><b>Risk-Score:</b> ${p.risk_score}/100 (Δ ${-p.score_delta} gegenüber dem letzten Lauf)</p>
+            ${p.new_trackers.length ? `<h3>Neue Tracker</h3><ul>${li(p.new_trackers)}</ul>` : ''}
+            ${p.removed_trackers.length ? `<h3>Entfernte Tracker</h3><ul>${li(p.removed_trackers)}</ul>` : ''}
             <p><a href="https://realsyncdynamicsai.de/dashboard">Dashboard öffnen</a></p></div>`,
         }),
       });

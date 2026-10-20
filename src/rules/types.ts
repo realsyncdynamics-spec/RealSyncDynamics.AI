@@ -81,4 +81,4 @@ export interface Finding {
  * Methodology-Version, die das Rule-Set tagged.
  * Bei jedem Rule-Add/Update müssen wir diese Version bumpen.
  */
-export const RULE_ENGINE_VERSION = '2026.05.0';
+export const RULE_ENGINE_VERSION = '2026.10.0';

@@ -9,6 +9,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import { getAuthToken } from '../../lib/auth';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Iso42001ControlDetail {
   id: string;
@@ -84,7 +85,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/iso42001-control-detail?tenant_id=${activeTenantId}&control_id=${controlId}`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-control-detail?tenant_id=${activeTenantId}&control_id=${controlId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -113,7 +114,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/iso42001-control-update`,
+        `${getSupabaseUrl()}/functions/v1/iso42001-control-detail`,
         {
           method: 'POST',
           headers: {

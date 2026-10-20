@@ -27,6 +27,8 @@ const DemoTourCheckoutPage = lazy(() => import('./pages/DemoTourCheckoutPage').t
 const DemoTourDashboard = lazy(() => import('./pages/DemoTourDashboard').then((m) => ({ default: m.DemoTourDashboard })));
 const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default: m.LandingV2 })));
 const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
+const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
+const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -499,7 +501,14 @@ function RoutesWithTracking() {
       {/* Public `/` = Landing v4 „Klassisch" (Claude-Design-Handoff v4, 1:1) — das einzige
           öffentliche Frontend. Ältere Landing-/Design-Varianten leiten auf `/`;
           v2 bleibt nur als Referenz unter /design/landing-v2. */}
-      <Route path="/" element={<LandingV4 />} />
+      {/* 13.10.2026: Landing v5 (v2-Design/Hero/Buttons + v4-Texte + 3D + Beta) ist Startseite.
+          v4 bleibt unverändert als Referenz/Rückfall unter /design/landing-v4. */}
+      {/* 13.10.2026 (Owner): Landing v6 (Claude-Design „The Governance OS für DSGVO und
+          EU AI Act", Inhalte an Pricing-SSoT/Beta/Implementierungsstatus angepasst) ist
+          Startseite. v5 bleibt unverändert als Referenz/Rückfall unter /design/landing-v5. */}
+      <Route path="/" element={<LandingV6 />} />
+      <Route path="/design/landing-v5" element={<LandingV5 />} />
+      <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
       <Route path="/design/governance-ai" element={<Navigate to="/" replace />} />
       <Route path="/design/titan" element={<Navigate to="/" replace />} />

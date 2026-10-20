@@ -191,7 +191,6 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'supabase/functions/ai-act-risk-inventory/index.ts',
       'src/core/billing/FeatureGate.tsx#ai_classification.limited',
       'src/components/governance-os/useNavLock.ts',
-      'src/i18n/handoffApp.ts#classifyLocked',
       'PR #1743',
     ],
     showOnRoadmap: true,

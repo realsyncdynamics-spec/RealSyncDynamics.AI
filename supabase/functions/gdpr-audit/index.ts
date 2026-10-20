@@ -2,7 +2,8 @@
 // Public endpoint — verify_jwt is disabled per-function via deploy.yml.
 //
 // POST /functions/v1/gdpr-audit   (verify_jwt = false; public endpoint)
-// Body: { url: string, email?: string, company?: string, plan?: string, source?: string }
+// Body: { url: string, email?: string, company?: string, plan?: string, source?: string,
+//         marketing_consent?: boolean, consent_locale?: 'de' | 'en' }
 //
 // The public optimizer path intentionally supports domain-only scans without
 // collecting an email. Lead/audit email capture remains mandatory for the
@@ -29,6 +30,12 @@ import {
   isDuplicateOfHeuristic,
   type Issue,
 } from './checks.ts';
+import {
+  consentInsertErrorLog,
+  insertWithConsentColumnFailSafe,
+  marketingConsentWrite,
+  resolveConsentLocale,
+} from './marketing-consent.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -174,7 +181,15 @@ async function handleAudit(req: Request): Promise<Response> {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  let body: { url?: string; email?: string; company?: string; plan?: string; source?: string };
+  let body: {
+    url?: string;
+    email?: string;
+    company?: string;
+    plan?: string;
+    source?: string;
+    marketing_consent?: boolean;
+    consent_locale?: string;
+  };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   // Mandanten-Scan aus tenant-audit (Service-Role-Key + Caller-Header):
@@ -185,6 +200,12 @@ async function handleAudit(req: Request): Promise<Response> {
   const email = isTenantScan ? '' : (body.email ?? '').trim().toLowerCase();
   const company = isTenantScan ? null : (body.company ?? '').trim().slice(0, 200) || null;
   const isOptimizerScan = body.source === 'optimizer';
+  // Opt-in only on strict true. Never accept client marketing_consent_at —
+  // the BEFORE INSERT trigger sets the server timestamp.
+  const consentCols = marketingConsentWrite(
+    body.marketing_consent === true,
+    resolveConsentLocale(body.consent_locale),
+  );
 
   const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
   const planRaw = (body.plan ?? '').trim().toLowerCase();
@@ -315,8 +336,8 @@ async function handleAudit(req: Request): Promise<Response> {
   const planTag = plan ? ` · plan=${plan}` : '';
   let leadId: string | null = null;
   if (!isOptimizerScan && !isTenantScan) {
-    const { data: leadRow } = await admin.from('sales_leads').insert({
-      name: null,
+    const leadBase = {
+      name: null as string | null,
       email,
       company,
       use_case: 'compliance',
@@ -325,16 +346,35 @@ async function handleAudit(req: Request): Promise<Response> {
       path: '/audit',
       user_agent: req.headers.get('user-agent')?.slice(0, 500),
       ip_hash: ipHash,
-    }).select('id').single();
+    };
+    const { data: leadRow, error: leadErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
+      (row) => admin.from('sales_leads').insert(row).select('id').single(),
+      leadBase,
+      consentCols,
+      (safe) => console.error(
+        'gdpr-audit: sales_leads consent columns missing — retry without consent',
+        safe,
+      ),
+    );
+    if (leadErr) {
+      // Never log full PostgREST error (details may contain email).
+      console.error('gdpr-audit: sales_leads insert failed', consentInsertErrorLog(leadErr));
+    }
     leadId = leadRow?.id ?? null;
   }
 
-  const { data: auditRow, error: auditErr } = await admin.from('gdpr_audits').insert({
+  const auditConsentCols = (isTenantScan || isOptimizerScan)
+    ? marketingConsentWrite(false, 'de')
+    : consentCols;
+
+  const auditBase = {
     url,
     domain,
-    // gdpr_audits.email ist NOT NULL. Mandanten-Scans speichern '' statt
-    // null: keine E-Mail, kein Drip (audit_email_drip überspringt '').
-    email: isTenantScan ? '' : email || null,
+    // gdpr_audits.email ist NOT NULL. Mandanten- und Optimizer-Scans ohne
+    // Adresse speichern '' statt null: keine E-Mail, kein Drip
+    // (audit_email_drip überspringt ''). Der Lead-Pfad hat oben eine
+    // validierte Adresse erzwungen.
+    email,
     company,
     score,
     severity,
@@ -346,7 +386,17 @@ async function handleAudit(req: Request): Promise<Response> {
     user_agent: req.headers.get('user-agent')?.slice(0, 500),
     ip_hash: ipHash,
     sales_lead_id: leadId,
-  }).select('id').single();
+  };
+
+  const { data: auditRow, error: auditErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
+    (row) => admin.from('gdpr_audits').insert(row).select('id').single(),
+    auditBase,
+    auditConsentCols,
+    (safe) => console.error(
+      'gdpr-audit: gdpr_audits consent columns missing — retry without consent',
+      safe,
+    ),
+  );
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 
   // P0 Privacy: never return raw email on the public response.

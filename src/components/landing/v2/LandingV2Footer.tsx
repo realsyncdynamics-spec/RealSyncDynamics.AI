@@ -112,7 +112,7 @@ export function LandingV2Footer() {
             © {new Date().getFullYear()} RealSync Dynamics AI Dominik Steiner · {COMPANY.legalForm} ·{' '}
             {hq.postalCode} {hq.city}
           </span>
-          <span>Kleinunternehmer i. S. v. § 19 UStG · DE</span>
+          <span>Alle Preise zzgl. gesetzlicher Umsatzsteuer · DE</span>
         </div>
       </div>
     </footer>

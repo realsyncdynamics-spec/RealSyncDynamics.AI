@@ -3016,7 +3016,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

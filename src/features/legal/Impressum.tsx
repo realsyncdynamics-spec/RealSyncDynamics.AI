@@ -130,7 +130,8 @@ export function Impressum() {
             </p>
           ) : (
             <p>
-              Kleinunternehmer i. S. v. § 19 UStG (Umsatzsteuer-Befreiung). Es wird keine Umsatzsteuer ausgewiesen.
+              {/* TODO(Dominik): USt-IdNr. nach Vergabe durch das BZSt in VITE_BUSINESS_VAT_ID setzen — keine Nummer erfinden. */}
+              Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.
             </p>
           )}
         </Section>

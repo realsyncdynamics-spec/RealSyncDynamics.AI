@@ -36,7 +36,7 @@ const view = readFileSync(
  * Die zuletzt angewandte Definition von `pdp_shadow_readiness()`.
  *
  * Nicht gegen die Erstmigration prüfen: Die Funktion wird ersetzt, sobald
- * die Auswertung wächst (zuerst 20261020130000, observation_kind). Ein Test,
+ * die Auswertung wächst (zuerst 20261020143000, observation_kind). Ein Test,
  * der die überholte Datei liest, nickt eine Definition ab, die in der
  * Datenbank gar nicht mehr gilt — dieselbe Sorte stiller Behauptung, die
  * diese Datei verhindern soll.
@@ -196,7 +196,7 @@ describe('Die Oberfläche behauptet nichts, was sie nicht weiß', () => {
 // ───────────────────────────────────────────────────────────────────────────
 describe('Beobachtungsart (AP-1a) — kein erfundener A/B-Vergleich', () => {
   const kindMigration = readFileSync(
-    resolve(MIGRATIONS, '20261020130000_pdp_shadow_observation_kind.sql'), 'utf8',
+    resolve(MIGRATIONS, '20261020143000_pdp_shadow_observation_kind.sql'), 'utf8',
   );
 
   it('kennt genau die zwei Beobachtungsarten', () => {

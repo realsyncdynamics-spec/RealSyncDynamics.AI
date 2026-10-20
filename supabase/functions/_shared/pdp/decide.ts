@@ -414,7 +414,7 @@ export async function logShadowComparison(
     v2_status: string | null;
     snapshot_version: string;
     detail?: Record<string, unknown>;
-    // Beobachtungsart (Migration 20261020130000). Vorgabe 'comparison' hält
+    // Beobachtungsart (Migration 20261020143000). Vorgabe 'comparison' hält
     // alle bestehenden Aufrufer unverändert gültig. 'decision_only' ist für
     // Kanäle ohne Legacy-Pfad (ai-gateway, governance-router): Dort gibt es
     // nichts zu vergleichen — legacy_status wird erzwungen NULL und

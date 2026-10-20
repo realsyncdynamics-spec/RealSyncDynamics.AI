@@ -283,11 +283,7 @@ const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const LocalAiOnboardingView = lazy(() => import('./features/local-ai/LocalAiOnboardingView').then((m) => ({ default: m.LocalAiOnboardingView })));
-const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
 const IndustrialOtWizardView = lazy(() => import('./features/governance/IndustrialOtWizardView').then((m) => ({ default: m.IndustrialOtWizardView })));
-const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
-const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
-const Iso42001View = lazy(() => import('./features/governance/Iso42001View').then((m) => ({ default: m.Iso42001View })));
 const Iso42001ControlDetailView = lazy(() => import('./features/governance/Iso42001ControlDetailView').then((m) => ({ default: m.Iso42001ControlDetailView })));
 const CertificationReadinessDashboard = lazy(() => import('./features/governance/CertificationReadinessDashboard').then((m) => ({ default: m.CertificationReadinessDashboard })));
 const Iso42001ControlsLibraryView = lazy(() => import('./features/governance/Iso42001ControlsLibraryView').then((m) => ({ default: m.Iso42001ControlsLibraryView })));
@@ -299,12 +295,6 @@ const MemoryGovernanceView = lazy(() => import('./features/governance/MemoryGove
 const Iso42001GapAnalysisView = lazy(() => import('./features/governance/Iso42001GapAnalysisView').then((m) => ({ default: m.Iso42001GapAnalysisView })));
 const Iso42001RemediationWorkflowView = lazy(() => import('./features/governance/Iso42001RemediationWorkflowView').then((m) => ({ default: m.Iso42001RemediationWorkflowView })));
 const Iso42001MaintenanceView = lazy(() => import('./features/governance/Iso42001MaintenanceView').then((m) => ({ default: m.Iso42001MaintenanceView })));
-const GapAnalysisView = lazy(() => import('./features/governance/GapAnalysisView').then((m) => ({ default: m.GapAnalysisView })));
-const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
-const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
-const AuditReportAdvancedViewNew = lazy(() => import('./features/governance/AuditReportAdvancedView').then((m) => ({ default: m.AuditReportAdvancedView })));
-const GovernanceApiKeysView = lazy(() => import('./features/governance/GovernanceApiKeysView').then((m) => ({ default: m.GovernanceApiKeysView })));
-const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
 // ── Phase 5A: ISO Templates & Advanced Reporting (3 new views)
 const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
 const ReportBuilderView = lazy(() => import('./features/governance/reporting/AdvancedReportingView').then((m) => ({ default: m.AdvancedReportingView })));
@@ -815,14 +805,19 @@ function RoutesWithTracking() {
           Die früheren Ansichten riefen relative /functions/v1-URLs auf (SPA-Fallback statt Supabase)
           und speicherten nichts — sie sind entfernt, die Pfade bleiben als Weiterleitung. */}
       <Route path="/app/governance/ai-register" element={<Navigate to="/app/ai-systems" replace />} />
-      <Route path="/app/governance/dsgvo-directory" element={<AppGate><GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell></AppGate>} />
+      {/* Das frühere Verzeichnis hatte kein Backend (Laden/Anlegen scheiterten, Bearbeiten/Löschen waren Attrappen).
+          Das Verarbeitungsverzeichnis nach Art. 30 DSGVO erzeugt /app/documents (generate-document). */}
+      <Route path="/app/governance/dsgvo-directory" element={<Navigate to="/app/documents" replace />} />
       <Route path="/app/governance/ai-act-assessment" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/app/governance/industrial-ot" element={<AppGate><GovernanceBrowserShell><IndustrialOtWizardView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/memory" element={<AppGate><GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/nis2-incidents" element={<AppGate><GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/iso27001" element={<AppGate><GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell></AppGate>} />
+      {/* Diese Pfade zeigten Ansichten, die governance-resources per GET abfragten (die Function
+          nimmt nur POST an) und den Token als Promise sendeten — sie luden nie Daten. Die Funktion
+          lebt jeweils an der Zielroute (ISO 27001/NIS2 als Policy Packs). */}
+      <Route path="/app/governance/nis2-incidents" element={<Navigate to="/app/policy-packs" replace />} />
+      <Route path="/app/governance/iso27001" element={<Navigate to="/app/policy-packs" replace />} />
       <Route path="/app/governance/iso42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001CertificationHubView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/iso42001" element={<AppGate><GovernanceBrowserShell><Iso42001View /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance/iso42001" element={<Navigate to="/app/governance/iso42001-library" replace />} />
       <Route path="/app/governance/iso42001-readiness" element={<AppGate><GovernanceBrowserShell><CertificationReadinessDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso42001-library" element={<AppGate><GovernanceBrowserShell><Iso42001ControlsLibraryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso42001-auditors" element={<AppGate><GovernanceBrowserShell><AuditorEngagementView /></GovernanceBrowserShell></AppGate>} />
@@ -832,12 +827,12 @@ function RoutesWithTracking() {
       <Route path="/app/governance/iso42001-remediation" element={<AppGate><GovernanceBrowserShell><Iso42001RemediationWorkflowView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso42001-maintenance" element={<AppGate><GovernanceBrowserShell><Iso42001MaintenanceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso42001/:controlId" element={<AppGate><GovernanceBrowserShell><Iso42001ControlDetailView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/gaps" element={<AppGate><GovernanceBrowserShell><GapAnalysisView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/evidence-vault-advanced" element={<AppGate><GovernanceBrowserShell><EvidenceVaultAdvancedViewNew /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/remediation-plans" element={<AppGate><GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/audit-reports" element={<AppGate><GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/api-keys" element={<AppGate><GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance/recommendation" element={<AppGate><GovernanceBrowserShell><GovernanceWorkflowRecommendation /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance/gaps" element={<Navigate to="/app/risks" replace />} />
+      <Route path="/app/governance/evidence-vault-advanced" element={<Navigate to="/app/evidence-vault" replace />} />
+      <Route path="/app/governance/remediation-plans" element={<Navigate to="/app/remediation" replace />} />
+      <Route path="/app/governance/audit-reports" element={<Navigate to="/app/reports" replace />} />
+      <Route path="/app/governance/api-keys" element={<Navigate to="/app/keys" replace />} />
+      <Route path="/app/governance/recommendation" element={<Navigate to="/app/dashboard" replace />} />
       {/* Phase 3: Advanced Governance Views */}
       <Route path="/app/governance/frameworks" element={<AppGate><GovernanceBrowserShell><ComplianceFrameworkSelector /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/iso-42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001ComplianceHub /></GovernanceBrowserShell></AppGate>} />

@@ -17,6 +17,7 @@ import {
 } from '../cockpit/cockpitData';
 import { collectCriticalFindings } from './ComplianceStatusDashboard';
 import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
+import { ASSISTANT_PROMPT_EVENT } from '../../../components/governance-os/assistantPrompt';
 
 const SEVERITY_RANK = { critical: 0, high: 1 } as const;
 
@@ -53,10 +54,18 @@ export function CommandCenterOverview({
   const agentPath = isGovernanceAiEnabled() ? GOVERNANCE_AI_PATH : '/app/agents';
   const navigate = useNavigate();
   const [intent, setIntent] = useState('');
+  // Früher: `?intent=` an die Agenten-Route — das las niemand, die Eingabe
+  // ging verloren. Jetzt landet sie vorbefüllt im Assistenten der Shell
+  // (GovernanceBrowserShell hört auf das Ereignis); gesendet wird erst dort.
   const startSession = (e: FormEvent) => {
     e.preventDefault();
     const q = intent.trim();
-    navigate(q ? `${agentPath}?intent=${encodeURIComponent(q)}` : agentPath);
+    if (!q) {
+      navigate(agentPath);
+      return;
+    }
+    window.dispatchEvent(new CustomEvent(ASSISTANT_PROMPT_EVENT, { detail: { prompt: q } }));
+    setIntent('');
   };
 
   type Tile = {

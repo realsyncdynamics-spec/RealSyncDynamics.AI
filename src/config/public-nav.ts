@@ -82,7 +82,7 @@ export const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [
           },
           {
             label: 'Controls',
-            to: '/welcome?next=/app/governance/iso27001',
+            to: '/welcome?next=/app/policy-packs',
             description: 'Kontrollen im Governance OS',
             badge: 'live',
           },

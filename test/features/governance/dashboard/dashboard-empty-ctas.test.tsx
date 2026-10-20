@@ -117,7 +117,7 @@ describe('ComplianceStatusView — empty but actionable', () => {
     expect(getByTestId('framework-strip')).toBeInTheDocument();
     expect(getByTestId('framework-dsgvo')).toHaveAttribute(
       'href',
-      '/app/governance/dsgvo-directory',
+      '/app/documents',
     );
     expect(getByTestId('framework-tisax-roadmap')).toBeInTheDocument();
   });

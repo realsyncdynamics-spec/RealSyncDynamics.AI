@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Lock, Sparkles } from 'lucide-react';
 import { OS_CREAM_BTN } from '../../components/governance-os/osChrome';
 import { STATUS_LABEL } from '../../product/implementation-status';
+import { BETA } from '../../config/beta';
+import { BetaActivateButton } from '../billing/BetaActivateButton';
 import {
   builderUpgradeHref,
   type BuilderEntitlementSnapshot,
@@ -84,10 +86,22 @@ export function BuilderUpgradePanel({
         </p>
       )}
 
+      {/* Offene Beta: der Gate bietet zuerst die kostenlose Freischaltung an,
+          erst dahinter den Kauf. Nach Beta-Ende bleibt nur der Kaufpfad. */}
+      {BETA.active && reason === 'no_entitlement' && (
+        <div className="mt-8">
+          <BetaActivateButton source="build-studio" className={OS_CREAM_BTN} />
+        </div>
+      )}
+
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           to={href}
-          className={`inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold uppercase tracking-wider ${OS_CREAM_BTN}`}
+          className={`inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold uppercase tracking-wider ${
+            BETA.active && reason === 'no_entitlement'
+              ? 'border border-titanium-700 text-titanium-300 hover:text-titanium-50'
+              : OS_CREAM_BTN
+          }`}
           data-testid="builder-upgrade-cta"
         >
           {isEnterpriseInquiry ? 'Enterprise anfragen' : 'Plan freischalten'}

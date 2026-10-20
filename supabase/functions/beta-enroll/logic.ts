@@ -41,6 +41,13 @@ export interface CurrentSubscription {
   trial_ends_at?: string | null;
 }
 
+/** Stripe-Endzustände: kein Geld bewegt sich mehr, keine Webhooks folgen. */
+const STRIPE_ENDED = new Set(['canceled', 'unpaid', 'incomplete_expired']);
+
+export function stripeSubscriptionEnded(status: string | null | undefined): boolean {
+  return STRIPE_ENDED.has((status ?? '').toLowerCase());
+}
+
 export type EnrollDecision =
   | { kind: 'enroll' }
   | { kind: 'already' }
@@ -58,9 +65,19 @@ export function decideEnrollment(current: CurrentSubscription | null, now: Date)
   if (!current) return { kind: 'enroll' };
   if (current.source === BETA_SOURCE) return { kind: 'already' };
 
-  // Stripe-Abos (auch gekündigte) bleiben unberührt: der Auflöser liest
-  // zuerst `stripe_price_id`, und Stripe-Webhooks schreiben dieselbe Zeile.
-  if (current.stripe_subscription_id) return { kind: 'skip', reason: 'STRIPE_SUBSCRIPTION' };
+  // Laufende Stripe-Abos bleiben unberührt: der Auflöser liest zuerst
+  // `stripe_price_id`, und Stripe-Webhooks schreiben dieselbe Zeile.
+  //
+  // Ein **beendetes** Stripe-Abo (canceled, unpaid, incomplete_expired) zählt
+  // beim Auflöser bereits als frei — der Mandant sieht „Kostenlose Testphase“
+  // und bliebe ohne diese Ausnahme trotzdem auf Free Audit (Claims vs.
+  // Runtime). Für ihn sendet Stripe keine Events mehr; ein späteres neues
+  // Abo trägt eine neue `stripe_subscription_id` und überschreibt die Beta
+  // per Webhook — zahlend gewinnt. index.ts leert beim Enroll die alten
+  // Stripe-Kennungen, damit der Auflöser über `plan_key` geht.
+  if (current.stripe_subscription_id && !stripeSubscriptionEnded(current.status)) {
+    return { kind: 'skip', reason: 'STRIPE_SUBSCRIPTION' };
+  }
 
   const planKey = current.plan_key ?? '';
   if (isFreePlanKey(planKey)) return { kind: 'enroll' };

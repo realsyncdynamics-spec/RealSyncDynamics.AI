@@ -160,6 +160,16 @@ Deno.serve(async (req) => {
         current_period_end: BETA_ENDS_AT,
         source: BETA_SOURCE,
         updated_at: nowIso,
+        // Beendetes Stripe-Abo (logic.ts): die alten Kennungen würden den
+        // Auflöser sonst auf den alten `stripe_price_id` lenken. Vorzustand
+        // steht in `beta_enrollments`; der Kunde bleibt über
+        // `stripe_customer_id` erhalten.
+        stripe_subscription_id: null,
+        stripe_price_id: null,
+        stripe_product_id: null,
+        cancel_at_period_end: false,
+        canceled_at: null,
+        past_due_since: null,
       }, { onConflict: 'tenant_id' })
       .select('id, plan_key, status, trial_end')
       .single();

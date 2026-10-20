@@ -43,11 +43,19 @@ describe('decideEnrollment', () => {
     ).toEqual({ kind: 'already' });
   });
 
-  it('fasst kein Stripe-Abo an — auch kein gekündigtes', () => {
-    for (const status of ['active', 'trialing', 'past_due', 'canceled']) {
+  it('fasst kein laufendes Stripe-Abo an', () => {
+    for (const status of ['active', 'trialing', 'past_due', 'incomplete']) {
       expect(
         decideEnrollment({ status, plan_key: 'starter', stripe_subscription_id: 'sub_123' }, NOW),
       ).toEqual({ kind: 'skip', reason: 'STRIPE_SUBSCRIPTION' });
+    }
+  });
+
+  it('meldet nach einem beendeten Stripe-Abo an (zählt beim Auflöser als frei)', () => {
+    for (const status of ['canceled', 'unpaid', 'incomplete_expired']) {
+      expect(
+        decideEnrollment({ status, plan_key: 'growth', stripe_subscription_id: 'sub_123' }, NOW),
+      ).toEqual({ kind: 'enroll' });
     }
   });
 

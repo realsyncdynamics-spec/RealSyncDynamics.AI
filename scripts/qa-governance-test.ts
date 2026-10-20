@@ -188,22 +188,22 @@ const probes: Probe[] = [
     },
   },
 
-  // ── Kleinunternehmer §19 UStG — no VAT ID on Impressum ───────────────────
+  // ── Regelbesteuerung (seit 20.10.2026) — kein § 19-Hinweis mehr ──────────
 
   {
-    name: 'Impressum does NOT show a USt-IdNr. (§19 UStG Kleinunternehmer)',
+    name: 'Impressum claims no Kleinunternehmer status (business is USt-pflichtig)',
     run: async () => {
       const p = await getPage('/legal/impressum');
       if (!p.ok) return { ok: false, status: p.status, detail: `HTTP ${p.status}` };
-      const hasVatId = /USt\.?-?IdNr\.?\s*:?\s*DE\d{9}/i.test(p.body);
-      if (hasVatId) {
+      if (/Kleinunternehmer|§\s*19\s*UStG/i.test(p.body)) {
         return {
           ok: false,
           status: p.status,
-          detail: 'USt-IdNr. DE… found on Impressum — business is Kleinunternehmer (§19 UStG); remove or check status',
+          detail: '§ 19 UStG / Kleinunternehmer found on Impressum — business is USt-pflichtig (PRICING_TAX_MODE=EU_STANDARD)',
         };
       }
-      return { ok: true, status: p.status, detail: 'no VAT ID present (correct for §19 UStG)' };
+      const vatId = p.body.match(/\bDE\d{9}\b/)?.[0];
+      return { ok: true, status: p.status, detail: vatId ? `USt-IdNr. ${vatId} shown` : 'no § 19 claim; USt-IdNr. pending' };
     },
   },
 

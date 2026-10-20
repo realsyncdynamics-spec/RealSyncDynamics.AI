@@ -59,9 +59,9 @@ describe('/pricing (Handoff v2)', () => {
     );
   });
 
-  it('shows the § 19 UStG note from the company SSOT', () => {
+  it('shows the statutory VAT note from the company SSOT', () => {
     mount();
-    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('§ 19 UStG');
+    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('Alle Preise zzgl. gesetzlicher Umsatzsteuer.');
   });
 });
 

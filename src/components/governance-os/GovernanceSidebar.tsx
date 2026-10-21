@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import {
   Home, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
   Building2, BarChart3, Users, Settings, Lock,
@@ -86,6 +87,66 @@ function isActiveRoute(route: string, pathname: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
+/** Navigation-only grouping: all module routes and entitlement checks remain sourced from TAB_MODULES. */
+const MORE_GROUPS = [
+  {
+    title: "Websites & Governance",
+    ids: [
+      "websites",
+      "risks",
+      "monitoring",
+      "security-signals",
+      "ambient-ai",
+      "vendors",
+      "vendor-exposure",
+      "audit",
+      "policy-packs",
+      "provenance"
+    ],
+    open: true
+  },
+  {
+    title: "KI, Bots & Automatisierung",
+    ids: [
+      "agents",
+      "bots",
+      "workflows",
+      "automations",
+      "local-ai",
+      "governance-router",
+      "kodee",
+      "scheduler",
+      "bulk"
+    ],
+    open: true
+  },
+  {
+    title: "Dokumente & Zusammenarbeit",
+    ids: [
+      "documents",
+      "evidence-vault",
+      "alerts",
+      "actions",
+      "team"
+    ],
+    open: false
+  },
+  {
+    title: "Workspace & Verwaltung",
+    ids: [
+      "modules",
+      "activation",
+      "marketplace",
+      "settings"
+    ],
+    open: false
+  }
+] as const;
+
+function groupForModule(id: string): string {
+  return MORE_GROUPS.find((group) => (group.ids as readonly string[]).includes(id))?.title ?? 'Weitere Werkzeuge';
+}
+
 function MoreItem({ module, active, lock }: { module: GovernanceModule; active: boolean; lock: NavLock }) {
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
   const locked = lock.locked;
@@ -162,19 +223,32 @@ export function GovernanceSidebar() {
       </div>
 
       {moreModules.length > 0 && (
-        <>
-          <p className="rs-side__label">{t('shellMoreModules')}</p>
-          <div className="rs-side__group">
-            {moreModules.map((module) => (
-              <MoreItem
-                key={module.id}
-                module={module}
-                active={isActiveRoute(module.route, pathname)}
-                lock={lockFor({ route: module.route, module })}
-              />
-            ))}
-          </div>
-        </>
+        <div aria-label="Alle weiteren Module" className="rs-side__group">
+          {Array.from(new Set(moreModules.map((module) => groupForModule(module.id)))).map((groupTitle) => {
+            const modules = moreModules.filter((module) => groupForModule(module.id) === groupTitle);
+            const selected = modules.some((module) => isActiveRoute(module.route, pathname));
+            const group = MORE_GROUPS.find((item) => item.title === groupTitle);
+            return (
+              <details key={groupTitle} className="group rs-side__section" defaultOpen={selected || group?.open === true}>
+                <summary className="rs-side__item rs-side__item--small cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
+                  <Layers className="rs-side__icon" aria-hidden="true" />
+                  <span className="rs-side__text">{groupTitle}</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <div className="rs-side__group border-l border-titanium-800 ml-4 pl-1">
+                  {modules.map((module) => (
+                    <MoreItem
+                      key={module.id}
+                      module={module}
+                      active={isActiveRoute(module.route, pathname)}
+                      lock={lockFor({ route: module.route, module })}
+                    />
+                  ))}
+                </div>
+              </details>
+            );
+          })}
+        </div>
       )}
 
       <div className="rs-plan">

@@ -44,7 +44,7 @@ describe('AI-first dashboard overview', () => {
       partialFailures: [],
       evidenceHealth: { totalCount: 12 },
       summary24h: { open_alerts: 2 },
-    } as CockpitData;
+    } as unknown as CockpitData;
     mount(KNOWN, data);
     expect(screen.getByTestId('ai-metric-Websites').textContent).toBe('1');
     expect(screen.getByTestId('ai-metric-KI-Systeme').textContent).toBe('4');

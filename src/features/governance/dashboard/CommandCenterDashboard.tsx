@@ -198,7 +198,6 @@ export function CommandCenterDashboard() {
           dominieren Null- und Leerzustände den ersten Eindruck. */}
       <details
         className="rs-start-details"
-        defaultOpen={false}
         data-testid="dashboard-details"
       >
         <summary>

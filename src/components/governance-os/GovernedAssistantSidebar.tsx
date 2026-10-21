@@ -9,7 +9,7 @@ import {
 } from '../../features/ai-routing/governedAssistantApi';
 
 interface Message { role: 'user' | 'assistant'; text: string; error?: boolean }
-interface Props { open: boolean; onClose: () => void; prefill?: { id: number; text: string } | null }
+interface Props { open: boolean; onClose: () => void; prefill?: { id: number; text: string } | null; activeEmbedUrl?: string | null }
 
 // Session-only cache, keyed by authenticated user AND tenant. No localStorage,
 // sessionStorage or server-side transcript persistence is introduced in this PR.

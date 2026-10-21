@@ -47,3 +47,17 @@ export function routeGovernedAssistant(args: {
     ? 'quality-local' : 'fast-local';
   return { allowed: true, profile, zone: 'eu_private', reason: 'Verifizierter EU-Privatpfad ohne Cloud-Fallback; keine Tool-Ausführung.' };
 }
+
+/**
+ * Conservative syntactic tripwire. It catches common identifiers even when
+ * a caller falsely declares content public/internal. This is NOT exhaustive
+ * PII detection and never establishes lawful processing on its own.
+ */
+export function containsLikelyPersonalData(message: string): boolean {
+  const patterns = [
+    /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/,
+    /\bDE\d{2}(?:[\s]?\d){20}\b/i,
+    /(?:\+\d[\s./-]?(?:\d[\s./-]?){9,}\d|\b0(?:\d[\s./-]?){9,}\d)/,
+  ];
+  return patterns.some((pattern) => pattern.test(message));
+}

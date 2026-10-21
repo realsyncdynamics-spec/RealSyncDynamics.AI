@@ -131,7 +131,7 @@ export function Impressum() {
           ) : (
             <p>
               {/* TODO(Dominik): USt-IdNr. nach Vergabe durch das BZSt in VITE_BUSINESS_VAT_ID setzen — keine Nummer erfinden. */}
-              Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.
+              Eine Umsatzsteuer-Identifikationsnummer ist noch nicht vergeben.
             </p>
           )}
         </Section>

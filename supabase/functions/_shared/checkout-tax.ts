@@ -25,7 +25,6 @@
 import {
   PRICING_TAX_MODE,
   PRICING_TAX_NOTE_EXEMPT,
-  PRICING_TAX_NOTE_STANDARD,
   type PricingTaxMode,
 } from './pricing.generated.ts';
 
@@ -34,8 +33,20 @@ export const TAX_CHECKED_MARKETS: readonly string[] = ['DE'];
 
 const MARKET_NAMES: Record<string, string> = { DE: 'Deutschland' };
 
-/** Kundenkreis bei Regelbesteuerung — Wortlaut wie AGB § 1 Abs. 2. */
-const B2B_NOTICE = 'Angebot ausschließlich für Unternehmer i. S. d. § 14 BGB.';
+/** Kundenkreis und Preisangabe bei Regelbesteuerung — wie AGB § 1 Abs. 2 und § 4 Abs. 2. */
+const B2B_NOTICE = 'Angebot ausschließlich für Unternehmer i. S. d. § 14 BGB, Preise zzgl. gesetzlicher Umsatzsteuer.';
+
+/**
+ * Pflichtfeld im Checkout: aktive Bestätigung, dass ein Unternehmen kauft.
+ * Ein reiner Hinweis genügt bei Netto-Preisen nicht, um Verbraucher
+ * wirksam auszuschließen; das Feld ist die Kontrollmaßnahme dazu.
+ */
+const B2B_COMPANY_FIELD = {
+  key: 'firma',
+  label: { type: 'custom' as const, custom: 'Firmenname (nur für Unternehmen)' },
+  type: 'text' as const,
+  optional: false,
+};
 
 export function isTaxCheckedMarket(country: string | null | undefined): boolean {
   if (!country) return false;
@@ -55,7 +66,7 @@ export function checkoutSubmitNotice(taxMode: PricingTaxMode = PRICING_TAX_MODE)
     : `Self-Service-Kauf derzeit nur mit Rechnungsadresse in: ${maerkte.join(', ')}.`;
   return taxMode === 'EXEMPT'
     ? `${markt} ${PRICING_TAX_NOTE_EXEMPT}`
-    : `${B2B_NOTICE} ${PRICING_TAX_NOTE_STANDARD} ${markt}`;
+    : `${B2B_NOTICE} ${markt}`;
 }
 
 export interface CheckoutTaxParams {
@@ -65,6 +76,7 @@ export interface CheckoutTaxParams {
   customer_update?: { address: 'auto'; name: 'auto' };
   invoice_creation?: { enabled: boolean; invoice_data?: { footer: string } };
   custom_text: { submit: { message: string } };
+  custom_fields?: Array<typeof B2B_COMPANY_FIELD>;
 }
 
 /**
@@ -96,6 +108,10 @@ export function checkoutTaxParams(opts: {
 
   if (opts.existingCustomer) {
     params.customer_update = { address: 'auto', name: 'auto' };
+  }
+
+  if (taxMode === 'EU_STANDARD') {
+    params.custom_fields = [B2B_COMPANY_FIELD];
   }
 
   if (opts.sessionMode === 'payment') {
@@ -145,7 +161,52 @@ export function reviewCheckoutTax(input: {
   return findings;
 }
 
+/** Minimal-Form einer Stripe-Rechnung, wie sie in beiden API-Versionen ankommt. */
+export interface InvoiceLike {
+  total?: number | null;
+  total_excluding_tax?: number | null;
+  /** nur bis API 2024-xx; in 2026-04-22.dahlia entfallen */
+  tax?: number | null;
+  customer_address?: { country?: string | null } | null;
+  footer?: string | null;
+  metadata?: Record<string, string> | null;
+  /** nur bis API 2024-xx */
+  subscription_details?: { metadata?: Record<string, string> | null } | null;
+  /** ab API basil/dahlia */
+  parent?: { subscription_details?: { metadata?: Record<string, string> | null } | null } | null;
+}
+
+/**
+ * Steuerrelevante Rechnungsdaten, unabhängig von der API-Version des
+ * Webhook-Payloads. Der Produktions-Webhook hat keine feste Version und
+ * bekommt die Konto-Standardversion (2026-04-22.dahlia) — dort fehlen `tax`
+ * und `subscription_details`. Steuer daher als total − total_excluding_tax.
+ */
+export function invoiceTaxFacts(inv: InvoiceLike): {
+  taxCents: number;
+  totalCents: number;
+  customerCountry: string | null;
+  footer: string | null;
+  tenantId: string | null;
+} {
+  const total = inv.total ?? 0;
+  const taxCents = typeof inv.total_excluding_tax === 'number'
+    ? total - inv.total_excluding_tax
+    : inv.tax ?? 0;
+  return {
+    taxCents,
+    totalCents: total,
+    customerCountry: inv.customer_address?.country ?? null,
+    footer: inv.footer ?? null,
+    tenantId: inv.parent?.subscription_details?.metadata?.tenant_id
+      ?? inv.subscription_details?.metadata?.tenant_id
+      ?? inv.metadata?.tenant_id
+      ?? null,
+  };
+}
+
 export type InvoiceTaxFinding =
+  | 'CUSTOMER_COUNTRY_MISSING'
   | 'TAX_MISSING_IN_STANDARD_MODE'
   | 'EXEMPT_NOTE_IN_STANDARD_MODE'
   | 'TAX_CHARGED_IN_EXEMPT_MODE'
@@ -163,6 +224,7 @@ export function reviewInvoiceTax(input: {
   const findings: InvoiceTaxFinding[] = [];
   const hasExemptNote = Boolean(input.footer?.includes(PRICING_TAX_NOTE_EXEMPT));
   if (taxMode === 'EU_STANDARD') {
+    if ((input.totalCents ?? 0) > 0 && !input.customerCountry?.trim()) findings.push('CUSTOMER_COUNTRY_MISSING');
     if (taxMissing(taxMode, input.customerCountry, input.totalCents, input.taxAmountCents)) {
       findings.push('TAX_MISSING_IN_STANDARD_MODE');
     }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { COMPANY } from '../../../config/company';
+import { pricingTaxNote } from '@/shared/pricing';
 import { LV2_BRAND, LV2_FAQ } from './landing-v2-content';
 
 /* ── 08 FAQ ──────────────────────────────────────────────────────────── */
@@ -112,7 +113,7 @@ export function LandingV2Footer() {
             © {new Date().getFullYear()} RealSync Dynamics AI Dominik Steiner · {COMPANY.legalForm} ·{' '}
             {hq.postalCode} {hq.city}
           </span>
-          <span>Alle Preise zzgl. gesetzlicher Umsatzsteuer · DE</span>
+          <span>{pricingTaxNote(COMPANY.taxMode)} · DE</span>
         </div>
       </div>
     </footer>

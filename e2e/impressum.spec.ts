@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  *      unvollstaendig" oder „USt-IdNr. fehlt" — das wuerde gleichzeitig
  *      gegen scripts/production-readiness-check.mjs Check `impressum-vat`
  *      versto&szlig;en. Solange VITE_BUSINESS_VAT_ID leer ist, steht in der
- *      Umsatzsteuer-Sektion stattdessen ein sachlicher USt-Hinweis
+ *      Umsatzsteuer-Sektion stattdessen sachlich „noch nicht vergeben“
  *      (Regelbesteuerung seit 20.10.2026) — nicht als Alarm und ohne
  *      § 19 UStG.
  *
@@ -54,11 +54,11 @@ test.describe('/legal/impressum', () => {
 
   test('USt-Sektion zeigt sachlichen USt-Hinweis statt Alarm, kein § 19', async ({ page }) => {
     await page.goto('/legal/impressum');
-    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, rendert die
-    // Umsatzsteuer-Sektion den sachlichen Hinweis zur Regelbesteuerung
-    // statt einer USt-IdNr. Ein § 19-Hinweis wäre seit 20.10.2026 falsch.
+    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, sagt die
+    // Umsatzsteuer-Sektion sachlich, dass noch keine USt-IdNr. vergeben ist.
+    // Ein § 19-Hinweis wäre seit 20.10.2026 falsch.
     await expect(
-      page.getByText(/zzgl\. der gesetzlichen Umsatzsteuer/i).first(),
+      page.getByText(/Umsatzsteuer-Identifikationsnummer ist noch nicht vergeben/i).first(),
     ).toBeVisible();
     await expect(page.getByText(/Kleinunternehmer/i)).toHaveCount(0);
   });

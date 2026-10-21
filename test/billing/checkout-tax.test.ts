@@ -27,6 +27,7 @@ import {
   checkoutSubmitNotice,
   checkoutTaxParams,
   invoiceFooter,
+  invoiceTaxFacts,
   isTaxCheckedMarket,
   reviewCheckoutTax,
   reviewInvoiceTax,
@@ -93,6 +94,26 @@ describe('checkoutTaxParams: Steuerberechnung folgt dem Steuermodus', () => {
     expect(p.custom_text.submit.message.startsWith('DSGVO-konformer Rebuild für example.de. ')).toBe(true);
     expect(p.custom_text.submit.message).toContain(checkoutSubmitNotice('EU_STANDARD'));
   });
+
+  it('EU_STANDARD: Pflichtfeld Firmenname — aktive Bestätigung des B2B-Kaufs', () => {
+    const p = checkoutTaxParams({ taxMode: 'EU_STANDARD', sessionMode: 'subscription', existingCustomer: true });
+    expect(p.custom_fields).toHaveLength(1);
+    const [feld] = p.custom_fields!;
+    expect(feld.type).toBe('text');
+    expect(feld.optional).toBe(false);
+    expect(feld.label.custom).toMatch(/Firmenname/);
+    expect(feld.label.custom.length).toBeLessThanOrEqual(50);
+  });
+
+  it('EXEMPT: kein Firmen-Pflichtfeld', () => {
+    const p = checkoutTaxParams({ taxMode: 'EXEMPT', sessionMode: 'subscription', existingCustomer: true });
+    expect(p).not.toHaveProperty('custom_fields');
+  });
+
+  it('der Preis-Hinweis der SSoT nennt den B2B-Kundenkreis direkt bei den Preisen', () => {
+    expect(PRICING_TAX_NOTE_STANDARD).toMatch(/Unternehmer/);
+    expect(PRICING_TAX_NOTE_STANDARD).toMatch(/zzgl\. gesetzlicher Umsatzsteuer/);
+  });
 });
 
 describe('invoiceFooter', () => {
@@ -109,15 +130,15 @@ describe('checkoutSubmitNotice', () => {
   it('EU_STANDARD: nur Unternehmer, Preise zzgl. USt, Rechnungsadresse in Deutschland', () => {
     const text = checkoutSubmitNotice('EU_STANDARD');
     expect(text).toContain('Rechnungsadresse in Deutschland');
-    expect(text).toContain('ausschließlich für Unternehmer');
-    expect(text).toContain(PRICING_TAX_NOTE_STANDARD);
+    expect(text).toContain('ausschließlich für Unternehmer i. S. d. § 14 BGB');
+    expect(text).toContain('zzgl. gesetzlicher Umsatzsteuer');
     expect(text).not.toContain('§ 19');
   });
 
   it('EXEMPT: § 19-Hinweis statt „zzgl. USt“', () => {
     const text = checkoutSubmitNotice('EXEMPT');
     expect(text).toContain(PRICING_TAX_NOTE_EXEMPT);
-    expect(text).not.toContain(PRICING_TAX_NOTE_STANDARD);
+    expect(text).not.toContain('zzgl.');
   });
 
   it('bleibt unter Stripes Grenze von 1200 Zeichen', () => {
@@ -201,9 +222,56 @@ describe('reviewInvoiceTax: Prüfung jeder finalisierten Rechnung', () => {
       .toEqual([]);
   });
 
+  it('EU_STANDARD: Rechnung ohne Kundenland → manuelle Prüfung (Stripe Tax hatte keinen Standort)', () => {
+    expect(reviewInvoiceTax({ taxMode: 'EU_STANDARD', customerCountry: null, totalCents: 24900, taxAmountCents: 0, footer: null }))
+      .toEqual(['CUSTOMER_COUNTRY_MISSING']);
+  });
+
   it('EXEMPT ohne § 19-Hinweis und mit Steuer → beide Befunde', () => {
     expect(reviewInvoiceTax({ taxMode: 'EXEMPT', customerCountry: 'DE', totalCents: 24900, taxAmountCents: 100, footer: null }))
       .toEqual(['TAX_CHARGED_IN_EXEMPT_MODE', 'EXEMPT_NOTE_MISSING']);
+  });
+});
+
+describe('invoiceTaxFacts: Rechnungsdaten aus beiden Stripe-API-Versionen', () => {
+  // Der Produktions-Webhook hat keine feste API-Version und bekommt
+  // Payloads in der Konto-Standardversion (2026-04-22.dahlia). Dort fehlen
+  // `tax`, `subscription` und `subscription_details`; der Mandant steht
+  // unter `parent.subscription_details.metadata`.
+  const dahlia = {
+    total: 29631,
+    total_excluding_tax: 24900,
+    total_taxes: [{ amount: 4731 }],
+    customer_address: { country: 'DE' },
+    footer: null,
+    metadata: {},
+    parent: { type: 'subscription_details', subscription_details: { metadata: { tenant_id: 'T-1' }, subscription: 'sub_1' } },
+  };
+
+  it('dahlia: Steuer = total − total_excluding_tax, Mandant aus parent', () => {
+    expect(invoiceTaxFacts(dahlia)).toEqual({
+      taxCents: 4731, totalCents: 29631, customerCountry: 'DE', footer: null, tenantId: 'T-1',
+    });
+  });
+
+  it('2024-06-20: `tax` und `subscription_details` am Objekt', () => {
+    const alt = {
+      total: 29631, total_excluding_tax: 24900, tax: 4731,
+      customer_address: { country: 'DE' }, footer: null,
+      subscription_details: { metadata: { tenant_id: 'T-2' } },
+    };
+    expect(invoiceTaxFacts(alt)).toMatchObject({ taxCents: 4731, tenantId: 'T-2' });
+  });
+
+  it('ohne total_excluding_tax: Rückfall auf `tax`, sonst 0', () => {
+    expect(invoiceTaxFacts({ total: 24900, total_excluding_tax: null, tax: 100 }).taxCents).toBe(100);
+    expect(invoiceTaxFacts({ total: 24900 }).taxCents).toBe(0);
+  });
+
+  it('ein korrekt besteuerter dahlia-Beleg erzeugt keinen Befund', () => {
+    const f = invoiceTaxFacts(dahlia);
+    expect(reviewInvoiceTax({ taxMode: 'EU_STANDARD', customerCountry: f.customerCountry, totalCents: f.totalCents, taxAmountCents: f.taxCents, footer: f.footer }))
+      .toEqual([]);
   });
 });
 
@@ -227,5 +295,8 @@ describe('Verdrahtung: kein Checkout setzt automatic_tax am Helper vorbei', () =
     const src = read('stripe-webhook');
     expect(src).toContain('reviewCheckoutTax(');
     expect(src).toContain('reviewInvoiceTax(');
+    // Rechnungsfelder versionsfest lesen, nie direkt `inv.tax`.
+    expect(src).toContain('invoiceTaxFacts(');
+    expect(src).not.toMatch(/taxAmountCents:\s*inv\.tax/);
   });
 });

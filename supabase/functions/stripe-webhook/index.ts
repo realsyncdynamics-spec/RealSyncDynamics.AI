@@ -11,7 +11,7 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
 import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
-import { reviewCheckoutTax, reviewInvoiceTax } from '../_shared/checkout-tax.ts';
+import { invoiceTaxFacts, reviewCheckoutTax, reviewInvoiceTax, type InvoiceLike } from '../_shared/checkout-tax.ts';
 import {
   pickPlanItem,
   syncSubscriptionFromStripe,
@@ -581,25 +581,27 @@ async function flagCheckoutTaxReview(admin: SupabaseClient, session: Stripe.Chec
 }
 
 async function flagInvoiceTaxReview(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
-  const customerCountry = inv.customer_address?.country ?? null;
+  // Versionsfest lesen: Der Produktions-Webhook bekommt Payloads in der
+  // Konto-Standardversion (2026-04-22.dahlia) ohne `tax`/`subscription_details`.
+  const facts = invoiceTaxFacts(inv as unknown as InvoiceLike);
   const findings = reviewInvoiceTax({
     taxMode: PRICING_TAX_MODE,
-    customerCountry,
-    totalCents: inv.total ?? 0,
-    taxAmountCents: inv.tax ?? 0,
-    footer: inv.footer,
+    customerCountry: facts.customerCountry,
+    totalCents: facts.totalCents,
+    taxAmountCents: facts.taxCents,
+    footer: facts.footer,
   });
   if (findings.length === 0) return;
   await recordTaxReview(admin, {
-    tenantId: inv.subscription_details?.metadata?.tenant_id ?? inv.metadata?.tenant_id ?? null,
+    tenantId: facts.tenantId,
     targetType: 'stripe_invoice',
     targetId: inv.id,
     findings,
     details: {
       number: inv.number ?? null,
-      customer_country: customerCountry,
-      tax_cents: inv.tax ?? 0,
-      total_cents: inv.total ?? 0,
+      customer_country: facts.customerCountry,
+      tax_cents: facts.taxCents,
+      total_cents: facts.totalCents,
       currency: inv.currency ?? null,
       billing_reason: inv.billing_reason ?? null,
       livemode: inv.livemode,

@@ -12,7 +12,7 @@ import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
  *
  * Anwendbares Recht: deutsches Recht ohne UN-Kaufrecht (CISG).
  *
- * Verbraucher-/Unternehmer-Trennung: das Angebot richtet sich primär
+ * Verbraucher-/Unternehmer-Trennung: das Angebot richtet sich ausschließlich
  * an Unternehmer i. S. v. §14 BGB. Konsumenten-spezifische
  * Pflichthinweise (Widerrufsrecht §312g BGB, ODR-Plattform, etc.)
  * sind dennoch vollständig dokumentiert — wenn ein Verbraucher das

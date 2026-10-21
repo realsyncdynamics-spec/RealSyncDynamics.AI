@@ -105,7 +105,7 @@ it('shows four plan cards with SSoT prices, and the statutory VAT note', () => {
   );
 
   const foot = view.container.querySelector('.lv2-pricing__foot')!;
-  expect(foot.textContent).toContain('Alle Preise zzgl. gesetzlicher Umsatzsteuer.');
+  expect(foot.textContent).toContain('Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.');
   expect(view.container.textContent).not.toMatch(/§ ?19 UStG|Kleinunternehmer/);
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 

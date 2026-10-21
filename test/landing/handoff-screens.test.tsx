@@ -61,7 +61,7 @@ describe('/pricing (Handoff v2)', () => {
 
   it('shows the statutory VAT note from the company SSOT', () => {
     mount();
-    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('Alle Preise zzgl. gesetzlicher Umsatzsteuer.');
+    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.');
   });
 });
 

@@ -11,7 +11,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonError, jsonResponse } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
-import { routeGovernedAssistant } from './policy.ts';
+import { containsLikelyPersonalData, routeGovernedAssistant } from './policy.ts';
 
 const MAX_PROMPT_LENGTH = 8_000;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -62,6 +62,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   ]);
   if (membershipError || !membership || policyError || !tenant) {
     return jsonError(403, 'FORBIDDEN', 'No verified tenant access or policy', corsHeaders);
+  }
+  // Defense in depth: obvious personal identifiers are refused even if the
+  // caller has declared the content public/internal. Not a full classifier.
+  if (containsLikelyPersonalData(message)) {
+    return jsonError(403, 'POTENTIAL_PERSONAL_DATA', 'Mögliche personenbezogene Daten erkannt. Inhalt vor KI-Verarbeitung bereinigen und Rechtsgrundlage prüfen.', corsHeaders);
   }
   const route = routeGovernedAssistant({
     runtimeVerified: Deno.env.get('GOVERNED_ASSISTANT_EU_RUNTIME_VERIFIED') === 'true',

@@ -32,6 +32,7 @@ import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
+import { AiOsDashboardOverview } from './AiOsDashboardOverview';
 import { computeStartPanel } from './startPanelModel';
 
 interface WorkspaceFacts {
@@ -167,18 +168,30 @@ export function CommandCenterDashboard() {
 
   return (
     <>
-      {/* Kunden-Startansicht: eine Botschaft, ein nächster Schritt, Fortschritt,
-          drei Kernbereiche, Ergebnisse, weitere Module. Testphase/Zahlung
-          stehen dort als eine Zeile im Fortschritt (statt TrialBanner). */}
+      {/* AI-centered dashboard. Facts and KPIs reuse the existing tenant-safe loaders. */}
+      <AiOsDashboardOverview
+        tenantName={tenantName}
+        hasTenant={Boolean(activeTenantId)}
+        facts={startFacts}
+        model={startModel}
+        data={tenantData}
+        loading={loading || tenantLoading}
+        error={error}
+        onRetry={retry}
+      />
+      {/* Preserve every onboarding action and account/trial notice in an accessible details section. */}
       {activeTenantId && (
-        <CustomerStartPanel
-          tenantName={tenantName}
-          facts={startFacts}
-          model={startModel}
-          lastScanRunAt={tenantFacts.lastScanRunAt}
-          trial={trial}
-          data={tenantData}
-        />
+        <details className="rs-start-details" data-testid="ai-dashboard-onboarding-details">
+          <summary>Einrichtung, Fortschritt und Kundenstatus im Detail</summary>
+          <CustomerStartPanel
+            tenantName={tenantName}
+            facts={startFacts}
+            model={startModel}
+            lastScanRunAt={tenantFacts.lastScanRunAt}
+            trial={trial}
+            data={tenantData}
+          />
+        </details>
       )}
       {/* Detailansicht: das bestehende Cockpit bleibt vollständig erhalten,
           ist aber nachgelagert. Während der Einrichtung zugeklappt — sonst

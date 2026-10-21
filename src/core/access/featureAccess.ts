@@ -65,7 +65,6 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   { route: '/app/bots/whatsapp', label: 'WhatsApp-Kanal', allOf: ['bots.whatsapp'] },
   { route: '/app/agents/susi', label: 'Telefon-Agent', allOf: ['bots.voice'] },
   { route: '/app/webhooks', label: 'Webhooks', allOf: ['webhooks.enabled'] },
-  { route: '/app/governance/api-keys', label: 'API-Schlüssel', allOf: ['api.access'] },
 
   // ── Automate ────────────────────────────────────────────────────────────
   { route: '/app/workflows', label: 'Workflows', allOf: ['ai.tool.workflows'] },
@@ -76,7 +75,6 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   { route: '/app/governance/bulk-operations', label: 'Bulk-Operationen', allOf: ['bulk.jobs'] },
   { route: '/app/alerts', label: 'Alerts', allOf: ['alerts.email'] },
   { route: '/app/remediation', label: 'Behebungspläne', allOf: ['fix.snippets'] },
-  { route: '/app/governance/remediation-plans', label: 'Behebungspläne', allOf: ['fix.snippets'] },
   { route: '/app/terminal', label: 'Kodee', allOf: ['ai.tool.vps_status'] },
 
   // ── Build ───────────────────────────────────────────────────────────────
@@ -113,9 +111,6 @@ export const APP_FEATURE_ACCESS: readonly FeatureRequirement[] = [
   { route: '/app/vendors', label: 'Dienstleister', allOf: ['policy.packs'] },
   { route: '/app/dpia', label: 'Datenschutz-Folgenabschätzung', allOf: ['policy.packs'] },
   { route: '/app/evidence-vault', label: 'Evidence Vault (erweitert)', allOf: ['evidence.advanced'] },
-  { route: '/app/governance/evidence-vault-advanced', label: 'Evidence Vault (erweitert)', allOf: ['evidence.advanced'] },
-  { route: '/app/governance/nis2-incidents', label: 'NIS2-Meldungen', allOf: ['policy.nis2'] },
-  { route: '/app/governance/iso27001', label: 'ISO 27001', allOf: ['policy.iso27001'] },
   { route: '/app/governance/iso-control-library', label: 'ISO-Kontrollbibliothek', allOf: ['policy.iso27001'] },
 ];
 

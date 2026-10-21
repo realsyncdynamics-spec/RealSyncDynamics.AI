@@ -2,7 +2,11 @@
  * Free Audit — Stepper aus dem Governance-OS-Handoff v2 (§ 3).
  *
  * Vier Fragen (Unternehmen + Domain, Rahmenwerke, KI-Systeme, Rolle), dann
- * Lauf und Ergebnis. Der Score kommt AUSSCHLIESSLICH aus dem echten
+ * Ergebnis. **Der Scan startet direkt nach Schritt 1** („Kostenlosen
+ * Governance Scan starten“): Domain und E-Mail gehen sofort an den Server,
+ * der den Lead speichert, BEVOR er die Seite abruft. Wer nach Schritt 1
+ * abbricht, ist trotzdem erfasst; die drei Folgefragen laufen parallel zum
+ * Scan und verkürzen die gefühlte Wartezeit. Der Score kommt AUSSCHLIESSLICH aus dem echten
  * `gdpr-audit`-Scan (über `onRun` in AuditLanding) — die Score-Formel und das
  * getaktete Log des Prototyps sind bewusst nicht übernommen. Das Log zeigt
  * nur Ereignisse, die tatsächlich stattfinden (Anfrage gesendet, Antwort da,
@@ -23,6 +27,7 @@ import type { HandoffKey } from '../../i18n/handoff';
 import { enforcementClassOf } from '../../../shared/enforcement-classes';
 import { formatPriceEur, tierById, type TierId } from '../../config/pricing';
 import { saveScanProfile, type ScanResidency, type ScanRole } from '../../features/onboarding/scanProfile';
+import { isValidLeadEmail, normalizeDomainInput } from '../../features/audit/leadContext';
 
 export interface AuditStepperIssue {
   id: string;
@@ -43,6 +48,8 @@ export interface AuditStepperInput {
   company: string;
   /** Explicit opt-in for follow-up e-mails (incl. offers). Default false. */
   marketingConsent: boolean;
+  /** Honeypot — für Menschen unsichtbar; gefüllt = Skript. Server verwirft. */
+  honeypot?: string;
 }
 
 type Role = ScanRole;
@@ -88,7 +95,6 @@ const QUESTIONS: ReadonlyArray<[HandoffKey, HandoffKey]> = [
   ['q3', 'q3hint'],
 ];
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * Plan-Empfehlung aus Rolle, Rahmenwerken und Systemen (Handoff-Regel):
@@ -145,6 +151,7 @@ export function AuditStepper({
   report,
   onRun,
   onReset,
+  onReveal,
 }: {
   initialDomain: string;
   running: boolean;
@@ -152,6 +159,8 @@ export function AuditStepper({
   report: AuditStepperReport | null;
   onRun: (input: AuditStepperInput) => void;
   onReset: () => void;
+  /** Schritt „Ergebnis“ erreicht — erst dann zeigt die Seite den Bericht. */
+  onReveal?: () => void;
 }) {
   const { t, lang } = useLang();
   const formId = useId();
@@ -165,9 +174,15 @@ export function AuditStepper({
   const [role, setRole] = useState<Role | null>(null);
   const [residency, setResidency] = useState<ScanResidency | null>(null);
   const [started, setStarted] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  // Welche Kombination aus Domain + E-Mail zuletzt gescannt wurde. Wer aus
+  // Schritt 2 zurückgeht und nichts ändert, löst keinen zweiten Scan aus.
+  const [runKey, setRunKey] = useState<string | null>(null);
 
+  const normalizedDomain = normalizeDomainInput(domain);
+  const domainTouched = domain.trim().length > 3;
   const stepValid = [
-    domain.trim().length > 2 && EMAIL_RE.test(email.trim()),
+    normalizedDomain !== null && isValidLeadEmail(email),
     frameworks.length > 0,
     true,
     role !== null,
@@ -175,29 +190,40 @@ export function AuditStepper({
 
   const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
-  const start = () => {
-    setStarted(true);
+  /** Schritt 1 abgeschickt: Lead + Scan sofort an den Server. */
+  const startScan = () => {
+    if (!normalizedDomain) return;
+    const key = `${email.trim().toLowerCase()}|${normalizedDomain}`;
+    if (key !== runKey || (!running && error)) {
+      setRunKey(key);
+      setStarted(true);
+      onRun({
+        domain: normalizedDomain,
+        email: email.trim(),
+        company: company.trim(),
+        marketingConsent,
+        honeypot,
+      });
+    }
+    setStep(1);
+  };
+
+  const reveal = () => {
+    saveScanProfile({ company: company.trim(), domain: normalizedDomain ?? domain.trim(), frameworks, systems, role, residency });
     setStep(4);
-    saveScanProfile({ company: company.trim(), domain: domain.trim(), frameworks, systems, role, residency });
-    onRun({
-      domain: domain.trim(),
-      email: email.trim(),
-      company: company.trim(),
-      marketingConsent,
-    });
+    onReveal?.();
   };
 
   const next = (event?: FormEvent) => {
     event?.preventDefault();
-    if (step < 3 && stepValid[step]) setStep(step + 1);
-    else if (step === 3 && stepValid[3]) start();
+    if (step === 0 && stepValid[0]) startScan();
+    else if (step > 0 && step < 3 && stepValid[step]) setStep(step + 1);
+    else if (step === 3 && stepValid[3]) reveal();
   };
 
   const back = () => {
+    // Zurück aus dem Ergebnis behält das Ergebnis — der Scan ist gelaufen.
     if (step === 4) {
-      if (running) return;
-      onReset();
-      setStarted(false);
       setStep(3);
       return;
     }
@@ -207,6 +233,7 @@ export function AuditStepper({
   const newScan = () => {
     onReset();
     setStarted(false);
+    setRunKey(null);
     setStep(0);
   };
 
@@ -228,7 +255,7 @@ export function AuditStepper({
         <h1 className="rs-audit__title">{t('auditTitle')}</h1>
         <ol className="rs-steps" aria-label={t('auditTitle')}>
           {STEP_KEYS.map((key, i) => {
-            const isDone = i < step || (i === 4 && done);
+            const isDone = i < step || (i === 4 && done && step === 4);
             const isActive = i === step && !(i === 4 && done);
             return (
               <li
@@ -257,6 +284,17 @@ export function AuditStepper({
             <>
               <h2 className="rs-audit__q">{t(QUESTIONS[step][0])}</h2>
               <p className="rs-audit__hint">{t(QUESTIONS[step][1])}</p>
+              {step > 0 && started && running && (
+                <p className="rs-audit__hint" role="status" data-testid="audit-running-background" style={{ fontSize: 13 }}>
+                  {t('scanRunningBackground')}
+                </p>
+              )}
+              {step > 0 && started && error && !running && (
+                <div className="rs-alert" role="alert" data-testid="audit-error-early" style={{ marginTop: 12 }}>
+                  <AlertTriangle size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>{error}</span>
+                </div>
+              )}
             </>
           )}
 
@@ -288,6 +326,28 @@ export function AuditStepper({
                   placeholder={t('domainPlaceholder')}
                   value={domain}
                   onChange={(e) => setDomain(e.target.value.slice(0, 255))}
+                  aria-invalid={domainTouched && normalizedDomain === null ? true : undefined}
+                  aria-describedby={domainTouched && normalizedDomain === null ? 'audit-domain-error' : undefined}
+                />
+                {domainTouched && normalizedDomain === null && (
+                  <p id="audit-domain-error" className="rs-audit__hint" role="status" style={{ fontSize: 13, marginTop: 6 }}>
+                    {t('domainInvalid')}
+                  </p>
+                )}
+              </div>
+              {/* Honeypot: für Menschen unsichtbar, für Screenreader verborgen,
+                  nicht per Tab erreichbar. Füllt ein Skript es aus, verwirft
+                  der Server die Anfrage, bevor ein Lead entsteht. */}
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+                <label htmlFor="audit-company-website">Website (nicht ausfüllen)</label>
+                <input
+                  id="audit-company-website"
+                  name="company_website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
                 />
               </div>
               <div>
@@ -306,6 +366,15 @@ export function AuditStepper({
                 />
                 <p id="audit-email-hint" className="rs-audit__hint" style={{ fontSize: 13, marginTop: 6 }}>
                   {t('reportEmailHint')}
+                </p>
+                <p
+                  id="audit-privacy-notice"
+                  className="rs-audit__hint"
+                  data-testid="audit-privacy-notice"
+                  style={{ fontSize: 13, marginTop: 6 }}
+                >
+                  {t('leadPrivacyNotice')}{' '}
+                  <Link to="/legal/privacy">{t('followUpConsentPrivacy')}</Link>
                 </p>
               </div>
               <div>
@@ -502,7 +571,9 @@ export function AuditStepper({
                   type="button"
                   className="rs-btn rs-btn--outline rs-btn--h44"
                   onClick={back}
-                  disabled={step === 0 || running}
+                  // Zurück ist auch während des Scans erlaubt: Er läuft ab
+                  // Schritt 1 im Hintergrund weiter.
+                  disabled={step === 0}
                 >
                   {t('back')}
                 </button>
@@ -512,9 +583,9 @@ export function AuditStepper({
                     form={formId}
                     className="rs-btn rs-btn--primary rs-btn--h44"
                     disabled={!stepValid[step]}
-                    data-testid={step === 3 ? 'audit-start' : 'audit-next'}
+                    data-testid={step === 0 ? 'audit-start' : step === 3 ? 'audit-reveal' : 'audit-next'}
                   >
-                    {step === 3 ? t('start') : t('next')}
+                    {step === 0 ? t('startScan') : step === 3 ? t('showResult') : t('next')}
                   </button>
                 )}
               </>

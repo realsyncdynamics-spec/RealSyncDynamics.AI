@@ -1010,10 +1010,10 @@ const FRAMEWORK_STRIP: Array<{
   path: string | null;
   maturity: FrameworkMaturity;
 }> = [
-  { id: 'dsgvo', label: 'DSGVO', path: '/app/governance/dsgvo-directory', maturity: 'live' },
+  { id: 'dsgvo', label: 'DSGVO', path: '/app/documents', maturity: 'live' },
   { id: 'eu-ai-act', label: 'EU AI Act', path: '/app/governance/ai-act-assessment', maturity: 'beta' },
-  { id: 'iso', label: 'ISO', path: '/app/governance/iso27001', maturity: 'beta' },
-  { id: 'nis2', label: 'NIS2', path: '/app/governance/nis2-incidents', maturity: 'beta' },
+  { id: 'iso', label: 'ISO', path: '/app/policy-packs', maturity: 'beta' },
+  { id: 'nis2', label: 'NIS2', path: '/app/policy-packs', maturity: 'beta' },
   // Honest Roadmap: no dedicated TISAX/DORA surface yet — not Policy Packs.
   { id: 'tisax', label: 'TISAX', path: null, maturity: 'roadmap' },
   { id: 'dora', label: 'DORA', path: null, maturity: 'roadmap' },

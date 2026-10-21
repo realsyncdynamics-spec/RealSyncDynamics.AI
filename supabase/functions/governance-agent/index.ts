@@ -393,6 +393,23 @@ async function handleChat(
     .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
   if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
 
+  // Legacy Anthropic tenant chat includes tenant-scoped tools. It cannot satisfy
+  // the AI OS EU-private rule. Default to DENY before quotas, history, tool
+  // reads or any outbound model call. This env toggle is an explicit,
+  // operator-owned migration exception; it is NOT a substitute for GDPR review.
+  // Never permit an exception where the workspace enforces EU-local residency.
+  const { data: tenantPolicyRow, error: tenantPolicyError } = await admin.from('tenants')
+    .select('ai_data_residency_policy').eq('id', tenant_id).maybeSingle();
+  if (tenantPolicyError || !tenantPolicyRow) {
+    return jsonError(503, 'TENANT_POLICY_UNAVAILABLE', 'Tenant residency policy could not be verified');
+  }
+  if (tenantPolicyRow.ai_data_residency_policy === 'enforce_eu_local') {
+    return jsonError(403, 'RESIDENCY_POLICY_BLOCKED', 'This tenant requires EU-local inference; the legacy agent cannot provide it.');
+  }
+  if (Deno.env.get('GOVERNANCE_LEGACY_CLOUD_CHAT_ENABLED') !== 'true') {
+    return jsonError(403, 'LEGACY_CLOUD_CHAT_DISABLED', 'The legacy cloud chat is disabled. Use the governed AI OS assistant.');
+  }
+
   // Plan-coupled monthly LLM quota — see migration
   // 20260609000000_llm_query_quota_history.sql. Runs after membership
   // check so we don't leak quota state for tenants the user can't see.

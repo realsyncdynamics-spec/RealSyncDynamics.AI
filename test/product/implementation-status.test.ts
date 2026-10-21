@@ -183,6 +183,23 @@ describe('implementation-status registry', () => {
     );
   });
 
+  it('registers KI-Register live and Kodee preview with SSH from Agency', () => {
+    const reg = getImplementation('ai-system-registry')!;
+    expect(reg.status).toBe('live');
+    expect(reg.route).toBe('/app/ai-systems');
+    expect(reg.description).toContain('classify_asset');
+    expect(reg.evidence.some((e) => e.includes('governance-resources/index.ts#classify_asset'))).toBe(true);
+    expect(getImplementation('ai-act-inventory-persist')?.description).toContain('/app/risk-inventory');
+
+    const kodee = getImplementation('kodee')!;
+    expect(kodee.status).toBe('preview');
+    expect(kodee.route).toBe('/kodee');
+    expect(kodee.description).toContain('ai.tool.vps_status');
+    expect(kodee.description).not.toMatch(/ab Enterprise/);
+    expect(kodee.evidence).toContain('supabase/functions/kodee/index.ts');
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'kodee')).toBe(true);
+  });
+
   it('registers frontend-builder live and modernize wizard preview', () => {
     expect(isImplementationLive('public-frontend-builder')).toBe(true);
     expect(getImplementation('public-frontend-builder')?.route).toBe('/frontend-builder');

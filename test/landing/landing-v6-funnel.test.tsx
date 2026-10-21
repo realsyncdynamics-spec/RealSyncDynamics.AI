@@ -95,19 +95,30 @@ it('offers both website paths: automatic SiteOS draft and individual web design'
     .toHaveAttribute('href', '#websites');
 });
 
-it('shows regular SaaS prices with the 14-day trial instead of a blanket free beta', () => {
+it('keeps the public beta offer while list prices stay in the SSoT', () => {
   const view = mount();
   const pricing = view.container.querySelector('#preise') as HTMLElement;
-  // Entscheidung 18.10.2026: kein Pauschalversprechen „kostenlos bis …“ mehr.
-  expect(BETA.publicOffer).toBe(false);
-  expect(pricing).not.toHaveTextContent(`kostenlos bis ${BETA.endsLabel}`);
-  expect(pricing).not.toHaveTextContent(/Offene Beta/);
+  // Entscheidung 21.10.2026: Beta-Angebot bleibt, bis sein Ende gesondert freigegeben wird.
+  expect(BETA.publicOffer).toBe(true);
+  if (!BETA.active) return;
+  expect(pricing).toHaveTextContent(`kostenlos bis ${BETA.endsLabel}`);
   expect(pricing).toHaveTextContent('79 €');
   expect(pricing).toHaveTextContent('249 €');
   expect(pricing).toHaveTextContent('699 €');
-  expect(pricing).toHaveTextContent('Starter und Growth können Sie 14 Tage kostenlos testen.');
-  const starter = view.container.querySelector('[data-plan-cta="starter"]');
-  expect(starter).toHaveTextContent('14 Tage kostenlos testen');
-  expect(starter?.getAttribute('href')?.startsWith('/checkout/')).toBe(true);
-  expect(view.container.querySelector('[data-plan-cta="agency"]')?.getAttribute('href')?.startsWith('/checkout/')).toBe(true);
+});
+
+it('keeps one filled CTA in the hero and ties the plan row to it with its own source', () => {
+  mount();
+  const plans = within(screen.getByRole('group', { name: 'Pläne und Preise' }));
+  const links = plans.getAllByRole('link').filter((a) => a.hasAttribute('data-hero-cta') && a.getAttribute('data-hero-cta')!.startsWith('plan-'));
+  expect(links.length).toBeGreaterThan(0);
+  for (const a of links) {
+    const href = a.getAttribute('href') ?? '';
+    expect(new URLSearchParams(href.split('?')[1]).get('source')).toBe('landing-v6-hero');
+  }
+  // Enterprise bleibt erreichbar, jetzt als Teil der Preiszeile statt als zweiter Hero-Button.
+  const enterprise = screen.getByTestId('hero-secondary-cta');
+  expect(enterprise).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=landing-v6');
+  expect(enterprise).toHaveTextContent('Auf Anfrage');
+  expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
 });

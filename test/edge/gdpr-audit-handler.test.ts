@@ -15,8 +15,12 @@ const src = readFileSync('supabase/functions/gdpr-audit/index.ts', 'utf8');
 
 describe('gdpr-audit fängt unbehandelte Fehler', () => {
   it('Deno.serve delegiert an handleAudit und fängt alles darunter', () => {
-    expect(src).toMatch(/Deno\.serve\(async \(req\) => \{\s*try \{\s*return await handleAudit\(req\);/);
+    // Seit dem Lead-Trichter trägt der Aufruf einen Zustand pro Anfrage
+    // (welcher Lead gerade gescannt wird), damit der Catch den Absturz am
+    // Lead vermerken kann. Die Zusage bleibt: alles darunter wird gefangen.
+    expect(src).toMatch(/Deno\.serve\(async \(req\) => \{\s*const state: AuditRequestState = \{ leadId: null \};\s*try \{\s*return await handleAudit\(req, state\);/);
     expect(src).toMatch(/catch \(e\) \{[\s\S]*?jsonError\(500, 'INTERNAL'/);
+    expect(src).toMatch(/catch \(e\) \{[\s\S]*?jsonError\(500, 'SCAN_FAILED_LEAD_SAVED'/);
   });
 
   it('die Antwort im Fehlerfall geht über jsonError, also mit CORS-Headern', () => {
@@ -25,6 +29,6 @@ describe('gdpr-audit fängt unbehandelte Fehler', () => {
   });
 
   it('der Handler selbst heißt handleAudit und nimmt den Request entgegen', () => {
-    expect(src).toContain('async function handleAudit(req: Request): Promise<Response>');
+    expect(src).toContain('async function handleAudit(req: Request, state: AuditRequestState): Promise<Response>');
   });
 });

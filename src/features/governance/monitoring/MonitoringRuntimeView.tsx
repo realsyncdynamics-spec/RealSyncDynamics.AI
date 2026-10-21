@@ -149,7 +149,7 @@ interface AlertRuleRow {
   channels: string;
 }
 
-const INITIAL_ALERT_RULES: AlertRuleRow[] = [
+const ALERT_RULES: AlertRuleRow[] = [
   { id: 'r-1', name: 'Neuer Tracker erkannt',        active: true,  channels: 'E-Mail + Dashboard' },
   { id: 'r-2', name: 'Pre-Consent Tracking',         active: true,  channels: 'E-Mail + Dashboard' },
   { id: 'r-3', name: 'Score unter 60',               active: true,  channels: 'Dashboard'          },
@@ -269,6 +269,20 @@ function StatusCell({ status }: { status: DomainStatus }) {
   );
 }
 
+/** Verweis auf das echte Modul — die Vorschau-Zeilen selbst haben keine Detailansicht. */
+function ModuleLink({ to, label }: { to: string; label: string }) {
+  return (
+    <div className="px-3 pt-3 pb-1">
+      <Link
+        to={to}
+        className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 transition-colors"
+      >
+        Ihre echten Daten: {label} öffnen →
+      </Link>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tab: Websites
 // ---------------------------------------------------------------------------
@@ -285,7 +299,6 @@ function WebsitesTab() {
             <Th>Findings</Th>
             <Th>Nächster Scan</Th>
             <Th>Frequenz</Th>
-            <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
@@ -319,18 +332,11 @@ function WebsitesTab() {
               <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-500">
                 {row.frequency}
               </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Details
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <ModuleLink to="/app/websites" label="Websites" />
     </div>
   );
 }
@@ -350,7 +356,6 @@ function AiSystemsTab() {
             <Th>Letzte Prüfung</Th>
             <Th>Risk Class</Th>
             <Th>Compliance</Th>
-            <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
@@ -387,18 +392,11 @@ function AiSystemsTab() {
                   {row.compliance}%
                 </span>
               </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Details
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <ModuleLink to="/app/ai-systems" label="KI-Systeme" />
     </div>
   );
 }
@@ -418,7 +416,6 @@ function DokumenteTab() {
             <Th>Letzte Änderung</Th>
             <Th>Gültig bis</Th>
             <Th>Verantwortlicher</Th>
-            <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
@@ -445,18 +442,11 @@ function DokumenteTab() {
               <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
                 {row.owner}
               </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Ansehen
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <ModuleLink to="/app/documents" label="Dokumente" />
     </div>
   );
 }
@@ -475,7 +465,6 @@ function RichtlinienTab() {
             <Th>Framework</Th>
             <Th>Letzte Prüfung</Th>
             <Th>Nächste Prüfung</Th>
-            <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
@@ -499,18 +488,11 @@ function RichtlinienTab() {
               <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
                 {row.nextCheck}
               </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Prüfen
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <ModuleLink to="/app/monitoring/rules" label="Compliance-Regeln" />
     </div>
   );
 }
@@ -570,14 +552,6 @@ function ActiveAlertsPanel() {
 // Sektion 3: Alert-Regeln
 // ---------------------------------------------------------------------------
 function AlertRulesPanel() {
-  const [rules, setRules] = useState<AlertRuleRow[]>(INITIAL_ALERT_RULES);
-
-  function toggleRule(id: string) {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-titanium-900">
@@ -585,49 +559,35 @@ function AlertRulesPanel() {
           Alert-Regeln
         </span>
       </div>
-      <div className="divide-y divide-titanium-900 flex-1">
-        {rules.map((rule) => (
-          <div key={rule.id} className="px-4 py-2.5 hover:bg-obsidian-900/50 transition-colors">
-            <div className="flex items-center gap-3">
-              {/* Toggle */}
-              <button
-                type="button"
-                onClick={() => toggleRule(rule.id)}
-                // Vorschau: keine Speicherung — ein Umschalten wäre reiner Client-State.
-                disabled
-                title="Vorschau — Alert-Regeln sind noch nicht speicherbar"
-                className={`relative inline-flex h-4 w-7 shrink-0 items-center border-0 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                  rule.active ? 'bg-teal-500' : 'bg-titanium-700'
-                }`}
-                aria-label={rule.active ? 'Deaktivieren' : 'Aktivieren'}
-              >
-                <span
-                  className={`inline-block h-3 w-3 bg-white transition-transform ${
-                    rule.active ? 'translate-x-3.5' : 'translate-x-0.5'
-                  }`}
-                />
-              </button>
-              <div className="flex-1 min-w-0">
-                <span className="text-[12px] text-titanium-100 leading-tight block truncate">
-                  {rule.name}
-                </span>
-                <span className="font-mono text-[10px] text-titanium-500">
-                  {rule.channels}
-                </span>
-              </div>
+      <ul className="divide-y divide-titanium-900 flex-1">
+        {ALERT_RULES.map((rule) => (
+          <li key={rule.id} className="px-4 py-2.5 flex items-center gap-3">
+            {/* Vorschau: nur lesbarer Status, kein Schalter — Regeln werden unter /app/monitoring/rules gepflegt. */}
+            <span
+              className={`w-10 shrink-0 font-mono text-[10px] uppercase tracking-wider ${
+                rule.active ? 'text-teal-400' : 'text-titanium-500'
+              }`}
+            >
+              {rule.active ? 'An' : 'Aus'}
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[12px] text-titanium-100 leading-tight block truncate">
+                {rule.name}
+              </span>
+              <span className="font-mono text-[10px] text-titanium-500">
+                {rule.channels}
+              </span>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
       <div className="px-4 py-3 border-t border-titanium-900">
-        <button
-          type="button"
-          disabled
-          title="Vorschau — Alert-Regeln sind noch nicht speicherbar"
-          className="w-full font-mono text-[10px] uppercase tracking-wider text-teal-400 border border-teal-900 px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        <Link
+          to="/app/monitoring/rules"
+          className="block w-full text-center font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors"
         >
-          + Regel hinzufügen
-        </button>
+          Regeln verwalten →
+        </Link>
       </div>
     </div>
   );

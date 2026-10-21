@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  X, RefreshCw, ExternalLink, Shield, ScanLine, FileCheck2,
+  X, RefreshCw, ExternalLink, Shield, ScanLine,
   AlertTriangle, Loader2,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
@@ -125,7 +125,6 @@ export function EmbeddedBrowserCanvas({
         browserAction: 'preview_load',
         status: 'completed',
         url,
-        httpStatus: 200,
         startedAt: new Date(startTimeRef.current).toISOString(),
         completedAt: new Date(endTime).toISOString(),
         durationMs: duration,
@@ -213,26 +212,6 @@ export function EmbeddedBrowserCanvas({
     onScan(scanUrl);
   };
 
-  const handleEvidenceGenerate = (evidenceUrl: string) => {
-    if (tenant?.id && sessionId) {
-      logBrowserAction({
-        tenantId: tenant.id,
-        sessionId,
-        workflowId,
-        runId,
-        toolName: 'governance-evidence',
-        browserAction: 'evidence_generate',
-        status: 'started',
-        url: evidenceUrl,
-        startedAt: new Date().toISOString(),
-        metadata: {
-          evidenceType: 'screenshot-hash',
-        },
-      });
-    }
-    onScan(evidenceUrl);
-  };
-
   const handleOpenExternal = () => {
     if (tenant?.id && sessionId) {
       logBrowserAction({
@@ -313,18 +292,23 @@ export function EmbeddedBrowserCanvas({
           <ScanLine className="h-3 w-3" />
           Scan starten
         </button>
-        <button
-          onClick={() => handleEvidenceGenerate(url)}
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleOpenExternal}
           className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-titanium-200 bg-obsidian-800 border border-titanium-700 hover:border-titanium-500 transition-colors"
         >
-          <FileCheck2 className="h-3 w-3" />
-          Evidence erzeugen
-        </button>
-        {evidenceLogged && (
-          <span className="font-mono text-[9px] text-emerald-400 ml-auto">
-            ✓ Vorschau protokolliert
-          </span>
-        )}
+          <ExternalLink className="h-3 w-3" />
+          In neuem Tab öffnen
+        </a>
+        {/* Die Content-Security-Policy (frame-src) lässt fremde Seiten hier
+            nicht zu; das load-Ereignis feuert trotzdem. Deshalb kein „Vorschau
+            geladen“, nur der Hinweis und die Protokollierung des Aufrufs. */}
+        <span className="font-mono text-[9px] text-titanium-500 ml-auto hidden md:inline">
+          Externe Seiten werden aus Sicherheitsgründen meist nicht eingebettet
+          {evidenceLogged ? ' · Aufruf protokolliert' : ''}
+        </span>
       </div>
 
       {/* Iframe-Fläche */}

@@ -16,7 +16,7 @@ import { GovernanceCanvas } from './GovernanceCanvas';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
-import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { GovernedAssistantSidebar } from './GovernedAssistantSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
 import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
@@ -193,7 +193,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           )}
 
           {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
-          <GovernanceChatSidebar
+          <GovernedAssistantSidebar
             open={assistantOpen}
             onClose={() => setAssistantOpen((v) => !v)}
             prefill={assistantPrompt}

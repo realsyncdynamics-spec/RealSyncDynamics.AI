@@ -25,7 +25,7 @@ export function routeGovernedAssistant(args: {
       || (args.selection !== 'auto' && args.selection !== 'eu_precise')) {
     return { allowed: false, code: 'UNSUPPORTED_SELECTION', reason: 'Unbekannter Zweck, Datenklasse oder Ausführungswunsch.' };
   }
-  if (args.tenantPolicy === 'enforce_cloud') {
+  if (args.tenantPolicy !== 'user_choice' && args.tenantPolicy !== 'enforce_eu_local') {
     return { allowed: false, code: 'TENANT_POLICY_CONFLICT', reason: 'Mandantenrichtlinie verlangt Cloud, aber für diesen Assistenten ist kein geprüfter Cloud-Pfad freigeschaltet.' };
   }
   if (!args.runtimeVerified) {

@@ -12,7 +12,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from './entitlements.ts';
 import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
-import { requireVerifiedAiResidency, ResidencyUnavailableError } from './residencyGuard.ts';
+import { requireVerifiedAiResidency } from './residencyGuard.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
 import { NO_USAGE, providerCostUsd, type TokenUsage } from './providerCost.ts';
 import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
@@ -172,19 +172,21 @@ async function resolveResidency(
   tenantId: string,
   userId: string | null,
 ): Promise<Residency> {
-  let result: { data: unknown; error: unknown };
   try {
-    result = await admin.rpc('resolve_ai_residency', {
+    const result = await admin.rpc('resolve_ai_residency', {
       p_tenant_id: tenantId,
       p_user_id: userId,
     });
+    // A SQL failure, null, or unknown value must NEVER enable cloud inference.
+    return requireVerifiedAiResidency(result);
   } catch {
-    console.error('[runAiTool] residency RPC unavailable; inference blocked');
-    throw new ResidencyUnavailableError();
+    console.error('[runAiTool] residency unavailable; inference blocked');
+    throw new AiInvokeError(
+      'AI data residency could not be verified; inference blocked.',
+      'RESIDENCY_UNAVAILABLE',
+      503,
+    );
   }
-  // Reject BOTH SQL/permission errors and unexpected/null response values.
-  // Never convert policy uncertainty to cloud inference.
-  return requireVerifiedAiResidency(result);
 }
 
 export async function runAiTool(

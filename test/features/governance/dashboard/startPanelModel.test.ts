@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   computeAccountNotice,
+  computeRisksTile,
   computeStartPanel,
 } from '../../../../src/features/governance/dashboard/startPanelModel';
 
@@ -111,5 +112,40 @@ describe('Dashboard-Verdrahtung', () => {
 
   it('Startansicht hat genau eine Hauptaktion', () => {
     expect(PANEL.match(/data-testid="start-primary-cta"/g)).toHaveLength(1);
+  });
+});
+
+describe('Kachel „Risiken & Maßnahmen“ — Zahl und Ziel passen zusammen', () => {
+  const BASE = { scanCount: 1, aiSystemCount: 0, firstStepHref: '/app/websites' };
+
+  it('ein offener Punkt verlinkt auf seine eigene Seite, nicht pauschal auf /app/risks', () => {
+    const t = computeRisksTile({ ...BASE, items: [{ title: 'Betroffenenanfrage (access)', href: '/app/dsr' }] });
+    expect(t.state).toBe('1 offener Punkt: Betroffenenanfrage (access).');
+    expect(t.cta).toEqual({ label: 'Jetzt prüfen', href: '/app/dsr' });
+  });
+
+  it('mehrere Punkte: Zahl plus wichtigster Punkt als Ziel', () => {
+    const t = computeRisksTile({
+      ...BASE,
+      items: [
+        { title: 'Datenleck CRM', href: '/app/incidents' },
+        { title: 'Tracking ohne Einwilligung', href: '/app/websites' },
+      ],
+    });
+    expect(t.state).toBe('2 offene Punkte, zuerst: Datenleck CRM.');
+    expect(t.cta?.href).toBe('/app/incidents');
+  });
+
+  it('nichts offen und nichts zu bewerten: zuerst einrichten', () => {
+    const t = computeRisksTile({ ...BASE, scanCount: 0, items: [] });
+    expect(t.cta).toEqual({ label: 'Zuerst einrichten', href: '/app/websites' });
+  });
+
+  it('nichts offen nach Scan: Risikoübersicht', () => {
+    expect(computeRisksTile({ ...BASE, items: [] }).state).toBe('Aktuell keine offenen Punkte.');
+  });
+
+  it('noch nicht geladen: keine Zahl, keine Aktion', () => {
+    expect(computeRisksTile({ ...BASE, items: null })).toEqual({ state: 'Wird geladen …', cta: null });
   });
 });

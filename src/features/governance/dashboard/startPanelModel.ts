@@ -240,3 +240,52 @@ export function computeAccountNotice(
     tone: trial.endingSoon ? 'attention' : 'neutral',
   };
 }
+
+/** Ein offener Punkt mit Deep-Link auf die Seite, die ihn tatsächlich zeigt. */
+export interface OpenRiskItem {
+  title: string;
+  href: string;
+}
+
+export interface RisksTileState {
+  state: string;
+  cta: { label: string; href: string } | null;
+}
+
+/**
+ * Kachel „Risiken & Maßnahmen“. Die offenen Punkte stammen aus verschiedenen
+ * Quellen (Vorfälle, Betroffenenanfragen, DSFA, erhöhte Assets,
+ * Scanner-Befunde) — `/app/risks` zeigt nur Vorfälle. Deshalb führt die
+ * Aktion zum wichtigsten Punkt selbst, nie pauschal in die Risikoübersicht,
+ * wo der gezählte Punkt sonst fehlt („1 offener Punkt“ vs. „0 Risiken“).
+ * `items === null` heißt „noch nicht geladen“.
+ */
+export function computeRisksTile(input: {
+  items: readonly OpenRiskItem[] | null;
+  scanCount: number | null;
+  aiSystemCount: number | null;
+  firstStepHref: string;
+}): RisksTileState {
+  const { items } = input;
+  if (!items) return { state: 'Wird geladen …', cta: null };
+  if (items.length === 1) {
+    return {
+      state: `1 offener Punkt: ${items[0].title}.`,
+      cta: { label: 'Jetzt prüfen', href: items[0].href },
+    };
+  }
+  if (items.length > 1) {
+    return {
+      state: `${items.length} offene Punkte, zuerst: ${items[0].title}.`,
+      cta: { label: 'Wichtigsten Punkt prüfen', href: items[0].href },
+    };
+  }
+  const nothingToAssess = (input.scanCount ?? 0) === 0 && (input.aiSystemCount ?? 0) === 0;
+  if (nothingToAssess) {
+    return {
+      state: 'Risiken erscheinen nach Ihrem ersten Scan oder KI-System.',
+      cta: { label: 'Zuerst einrichten', href: input.firstStepHref },
+    };
+  }
+  return { state: 'Aktuell keine offenen Punkte.', cta: { label: 'Risikoübersicht', href: '/app/risks' } };
+}

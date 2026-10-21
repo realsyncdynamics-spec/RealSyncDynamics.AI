@@ -57,6 +57,18 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const endRef = useRef<HTMLDivElement>(null);
   const inFlightId = useRef<string | null>(null);
 
+  // Never retain a previous account's in-memory transcript after auth changes.
+  // Tenant switching retains only conversations belonging to the same user.
+  const previousUser = useRef<string | null>(user?.id ?? null);
+  useEffect(() => {
+    const nextUser = user?.id ?? null;
+    if (previousUser.current !== nextUser) {
+      conversations.clear();
+      previousUser.current = nextUser;
+    }
+    if (!nextUser) conversations.clear();
+  }, [user?.id]);
+
   useEffect(() => {
     setMessages(key ? conversations.get(key) ?? [] : []);
     setRenderedKey(key);

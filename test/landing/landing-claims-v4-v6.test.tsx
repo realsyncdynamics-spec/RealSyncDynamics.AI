@@ -73,3 +73,17 @@ it('labels evidence ledger rows by event type, not by city nodes', () => {
   expect(container.textContent).not.toMatch(/STOCKHOLM|Evidence Node/);
   expect(container.textContent).toContain('Entscheidung durch Menschen');
 });
+
+it('v6 on / makes no unbacked speed, enforcement or SLA claims', () => {
+  const v6 = readFileSync(resolve(__dirname, '../../src/components/landing/v6/LandingV6View.tsx'), 'utf8');
+  const hook = readFileSync(resolve(__dirname, '../../src/components/landing/v6/useLandingV6.ts'), 'utf8');
+  // Scan-Dauer ist nirgends gemessen oder zugesichert (docs/audit, D-09).
+  expect(v6).not.toMatch(/90\s*(Sekunden|s\b)/);
+  expect(v6).not.toContain('bis zum ersten Befund');
+  // PEP-Default ist der Beobachtungsmodus (AI_GATEWAY_ENFORCEMENT ?? 'shadow').
+  expect(v6).not.toContain('Enforcement statt Empfehlung');
+  expect(v6).toContain('Beobachtungsmodus als Standard');
+  // Enterprise: Wortlaut wie in shared/pricing.ts (badges: 'SLA nach Vereinbarung').
+  expect(hook).toContain("'SLA nach Vereinbarung · bis zu 5 Organisationen'");
+  expect(`${v6}${hook}`).not.toContain('dedizierter Tenant');
+});

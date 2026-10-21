@@ -54,12 +54,14 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const [modelInfo, setModelInfo] = useState<string | null>(null);
   const [traceId, setTraceId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const inFlightId = useRef<string | null>(null);
 
   useEffect(() => {
     setMessages(key ? conversations.get(key) ?? [] : []);
     setRenderedKey(key);
     setInput('');
     setSending(false);
+    inFlightId.current = null;
     setModelInfo(null);
     setTraceId(null);
   }, [key]);
@@ -70,7 +72,9 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const send = useCallback(async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const message = input.trim();
-    if (!key || !activeTenantId || !message || sending) return;
+    if (!key || !activeTenantId || !message || sending || inFlightId.current) return;
+    const requestId = crypto.randomUUID();
+    inFlightId.current = requestId;
     setSending(true);
     setModelInfo(null);
     setTraceId(null);
@@ -97,7 +101,10 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
         error: true,
       }]);
     } finally {
-      if (currentKey.current === key) setSending(false);
+      if (inFlightId.current === requestId) {
+        inFlightId.current = null;
+        if (currentKey.current === key) setSending(false);
+      }
     }
   }, [activeTenantId, dataClass, input, key, purpose, selection, sending]);
 

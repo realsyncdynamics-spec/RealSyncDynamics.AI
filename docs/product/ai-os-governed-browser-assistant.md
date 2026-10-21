@@ -10,7 +10,7 @@ Die existierende `GovernanceBrowserShell` bleibt der einheitliche Auth-geschütz
 - Danach geht ausschließlich der minimierte aktuelle Text über die bestehende `ai-gateway`-Function; deren Cloud-Fallback ist im aktuellen Code aus. Keine Tools, keine externen Aktionen, keine automatischen Veröffentlichungen, keine Datenbank-Query-Groundings.
 - Kein Client darf eigene Provider, Model-IDs, externe Endpunkte oder Freigaben durchreichen.
 - Keine Browser-Storage-Persistenz für den neuen Chat; nur sitzungsinterner Speicher getrennt nach angemeldetem Nutzer und Tenant. Laufende Antworten werden bei Tenantwechsel verworfen.
-- Ältere `governance-agent`-Tenant-Cloud-Konversationen sind standardmäßig deaktiviert (`GOVERNANCE_LEGACY_CLOUD_CHAT_ENABLED` müsste bewusst aktiviert werden). Bei `enforce_eu_local` werden sie unabhängig vom Flag abgelehnt.
+- Der neue Browser-Assistent steht hinter `VITE_GOVERNED_ASSISTANT_ENABLED` (standardmäßig `false`), um bis zur Backend-/Sicherheitsfreigabe die alte UI nicht zu ersetzen. Der bisherige `governance-agent` behält für nicht-EU-only-Tenants seine vorhandene Cloud-Einwilligungsprüfung; bei `enforce_eu_local` wird sein nicht-EU-konformer Pfad strikt abgelehnt.
 
 ## Geltende Sicherheitsgrenzen
 - **Nicht kategorisiert:** blockieren.
@@ -23,7 +23,7 @@ Die existierende `GovernanceBrowserShell` bleibt der einheitliche Auth-geschütz
 - Die Policy der bestehenden `ai-gateway`-PEP läuft separat und war standardmäßig `shadow`; Cloud-Freigaben über diesen Pfad sind **nicht** Teil dieses PRs.
 
 ## Produktions-Freigabegates – harte Blocker
-1. EU-Laufzeit tatsächlich verifizieren: physischer Betreiberstandort, Konfiguration von LM Studio/Ollama, Egress-Regeln, DNS/Netzwerk, Log-Speicherort, Backups und Unterauftragnehmer. Reines Setzen des Flags zählt **nicht** als Nachweis.
+1. Nachweislich sicheren Rollout planen: neue Edge Function bereitstellen, EU- und Sicherheitsfreigabe dokumentieren, erst danach `VITE_GOVERNED_ASSISTANT_ENABLED=true` in einem separat freigegebenen Build setzen. Bis dahin bleibt der Legacy-Assistent sichtbar.\n2. EU-Laufzeit tatsächlich verifizieren: physischer Betreiberstandort, Konfiguration von LM Studio/Ollama, Egress-Regeln, DNS/Netzwerk, Log-Speicherort, Backups und Unterauftragnehmer. Reines Setzen des Flags zählt **nicht** als Nachweis.
 2. DSGVO prüfen: Verarbeitungskategorien und Rechtsgrundlagen je Zweck, AVV / Unterauftragsverarbeiter, Datenminimierung, Speicherfristen, Löschung, Informationspflichten und Datenschutz-Folgenabschätzung soweit erforderlich.
 3. EU AI Act prüfen: Rolle als Anbieter/Betreiber, Zweck, Risikoklasse, Transparenzpflichten, menschliche Aufsicht und verbotene bzw. hochriskante Anwendungsfälle; keine automatische Entscheidung über Betroffene.
 4. Serverintegration testen: 401 ohne JWT, 403 für fremden Tenant, blocked bei unbekannten Policies und Datenklassen, block bei fehlendem Audit, keine Übertragung an Cloud, Ausfall der EU-Inferenz = 503, Quotas und Limits.

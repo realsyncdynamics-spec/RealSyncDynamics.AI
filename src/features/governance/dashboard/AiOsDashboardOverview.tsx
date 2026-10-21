@@ -44,13 +44,13 @@ function metricValue(value: number | null | undefined): string {
 function metrics(facts: StartPanelInput, data: CockpitData | null): Metric[] {
   // Unknown and failed sources must never be presented as zero.
   const evidenceUnavailable = !data || data.partialFailures.some((f) => f.startsWith('evidence-total:'));
-  const alertUnavailable = !data?.summary24h || data.partialFailures.some((f) => f.startsWith('summary24h:'));
+  const alertUnavailable = !data?.summary24h || data.partialFailures.some((f) => f.startsWith('summary24h:') || f.startsWith('summary-24h:'));
   return [
     { label: 'Websites', value: metricValue(facts.websiteCount), href: '/app/websites', icon: Globe, description: 'Erfasste Domains' },
     { label: 'KI-Systeme', value: metricValue(facts.aiSystemCount), href: '/app/ai-systems', icon: Bot, description: 'Im Register' },
     { label: 'Governance-Score', value: data?.scoreStatus === 'ok' ? `${metricValue(data.score)} / 100` : '—', href: '/app/risks', icon: ShieldCheck, description: 'Keine Zertifizierung' },
-    { label: 'Evidence', value: metricValue(evidenceUnavailable ? null : data.evidenceHealth.totalCount), href: '/app/evidence', icon: FileCheck2, description: 'Erfasste Nachweise' },
-    { label: 'Offene Alerts', value: metricValue(alertUnavailable ? null : data.summary24h?.open_alerts), href: '/app/alerts', icon: Activity, description: 'Monitoring-Signale' },
+    { label: 'Evidence', value: metricValue(evidenceUnavailable ? null : data?.evidenceHealth.totalCount), href: '/app/evidence', icon: FileCheck2, description: 'Erfasste Nachweise' },
+    { label: 'Offene Alerts', value: metricValue(alertUnavailable ? null : data?.summary24h?.open_alerts), href: '/app/alerts', icon: Activity, description: 'Monitoring-Signale' },
   ];
 }
 

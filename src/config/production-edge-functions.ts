@@ -330,6 +330,13 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
+  {
+    // Staged Rollout: Sidebar nur mit VITE_GOVERNED_ASSISTANT_ENABLED=true
+    // (Standard AUS). Eintrag entfällt mit dem freigegebenen Deploy.
+    slug: 'governed-assistant',
+    surface: 'GovernedAssistantSidebar im AI-OS-Workspace (hinter Feature-Flag)',
+    publicPath: false,
+  },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

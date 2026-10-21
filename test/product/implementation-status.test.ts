@@ -94,7 +94,8 @@ describe('implementation-status registry', () => {
     expect(landing.description).toContain('/audit?source=landing-v6');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
-    expect(hook).toContain('enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`');
+    expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;');
+    expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
 
     const cta = getImplementation('free-audit')!.ctaLabel!;
     expect(cta).toBe('Kostenlosen Website-Check starten');

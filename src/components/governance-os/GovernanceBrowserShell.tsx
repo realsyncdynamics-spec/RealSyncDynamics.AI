@@ -45,6 +45,14 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const navigate = useNavigate();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // AI-first canvas opens alongside the contextual assistant on wide screens.
+  // Small laptop/mobile views start with the drawer closed to protect space.
+  useEffect(() => {
+    if ((location.pathname === '/app/ai' || location.pathname === '/app/dashboard')
+        && typeof window !== 'undefined' && window.matchMedia('(min-width: 1440px)').matches) {
+      setAssistantOpen(true);
+    }
+  }, [location.pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
@@ -197,6 +205,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             open={assistantOpen}
             onClose={() => setAssistantOpen((v) => !v)}
             prefill={assistantPrompt}
+            activeEmbedUrl={embeddedUrl}
           />
         </div>
 

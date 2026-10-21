@@ -27,7 +27,8 @@ const TASK_SYSTEM_PROMPTS: Record<string, string> = {
 };
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') return handleOptions(req);
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'Only POST is supported', corsHeaders);
   let body: Record<string, unknown>;
   try {

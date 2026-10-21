@@ -56,7 +56,7 @@ export function routeGovernedAssistant(args: {
 export function containsLikelyPersonalData(message: string): boolean {
   const patterns = [
     /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/,
-    /\bDE\d{2}(?:[\s]?\d){20}\b/i,
+    /\bDE\d{2}(?:[\s]?\d){18}\b/i,
     /(?:\+\d[\s./-]?(?:\d[\s./-]?){9,}\d|\b0(?:\d[\s./-]?){9,}\d)/,
   ];
   return patterns.some((pattern) => pattern.test(message));

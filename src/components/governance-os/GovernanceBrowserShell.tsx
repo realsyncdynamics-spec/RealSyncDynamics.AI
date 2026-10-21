@@ -49,7 +49,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   // Small laptop/mobile views start with the drawer closed to protect space.
   useEffect(() => {
     if ((location.pathname === '/app/ai' || location.pathname === '/app/dashboard')
-        && typeof window !== 'undefined' && window.matchMedia('(min-width: 1440px)').matches) {
+        && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1440px)').matches) {
       setAssistantOpen(true);
     }
   }, [location.pathname]);

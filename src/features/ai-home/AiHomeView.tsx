@@ -12,7 +12,7 @@ export function AiHomeView() {
   return (
     <main className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-5 py-12 text-titanium-100" data-testid="ai-os-home">
       <div className="mb-4 flex items-center gap-2 text-sm text-titanium-400">
-        <ShieldCheck className="h-5 w-5 text-[#00B8D4]" aria-hidden="true" />
+        <ShieldCheck className="h-5 w-5 text-[var(--color-rs-primary)]" aria-hidden="true" />
         <span>RealSync AI OS</span>
       </div>
       <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Was möchtest du heute erledigen?</h1>

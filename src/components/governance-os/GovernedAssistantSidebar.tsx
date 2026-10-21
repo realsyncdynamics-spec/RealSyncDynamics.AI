@@ -36,7 +36,7 @@ const ROUTES: ReadonlyArray<[AssistantSelection, string]> = [
   ['eu_precise', 'EU-lokal · Präzise'],
 ];
 
-export function GovernedAssistantSidebar({ open, onClose, prefill = null }: Props) {
+export function GovernedAssistantSidebar({ open, onClose, prefill = null, activeEmbedUrl = null }: Props) {
   const location = useLocation();
   const { activeTenantId } = useTenant();
   const { user } = useSupabaseAuth();
@@ -56,7 +56,7 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null }: Prop
     setModelInfo(null);
     setTraceId(null);
   }, [key]);
-  useEffect(() => setPurpose(purposeForPath(location.pathname)), [location.pathname]);
+  useEffect(() => setPurpose(activeEmbedUrl ? 'web' : purposeForPath(location.pathname)), [location.pathname, activeEmbedUrl]);
   useEffect(() => { if (prefill) setInput(prefill.text); }, [prefill]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, sending]);
 
@@ -137,6 +137,7 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null }: Prop
               {ROUTES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
+          <p className="truncate text-[11px] text-titanium-500" title={activeEmbedUrl ?? location.pathname}>Kontext: {activeEmbedUrl ? 'Eingebettete Website' : location.pathname}</p>
           <p className="text-[11px] leading-4 text-titanium-500">Die angegebene Datenklasse ist ein Hinweis, keine Freigabe. Eine automatisierte vollständige Datenklassifizierung ist noch nicht aktiviert. Cloud-Modelle sind hier gesperrt.</p>
         </section>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4" role="log" aria-label="Konversation">

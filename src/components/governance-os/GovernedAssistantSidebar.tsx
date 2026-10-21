@@ -42,6 +42,10 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const { user } = useSupabaseAuth();
   const key = activeTenantId && user?.id ? `${user.id}:${activeTenantId}` : null;
   const [messages, setMessages] = useState<Message[]>([]);
+  const [renderedKey, setRenderedKey] = useState<string | null>(null);
+  const currentKey = useRef<string | null>(key);
+  currentKey.current = key;
+  const visibleMessages = renderedKey === key ? messages : [];
   const [purpose, setPurpose] = useState<AssistantPurpose>(() => purposeForPath(location.pathname));
   const [dataClass, setDataClass] = useState<AssistantDataClass>('unknown');
   const [selection, setSelection] = useState<AssistantSelection>('auto');
@@ -53,6 +57,9 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
 
   useEffect(() => {
     setMessages(key ? conversations.get(key) ?? [] : []);
+    setRenderedKey(key);
+    setInput('');
+    setSending(false);
     setModelInfo(null);
     setTraceId(null);
   }, [key]);
@@ -65,12 +72,15 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
     const message = input.trim();
     if (!key || !activeTenantId || !message || sending) return;
     setSending(true);
+    setModelInfo(null);
+    setTraceId(null);
     setInput('');
     const userMessage: Message = { role: 'user', text: message };
     // Optimistic local UI; no outbound action happens before the server PEP.
     setMessages((prev) => [...prev, userMessage]);
     try {
       const reply = await askGovernedAssistant({ tenantId: activeTenantId, message, purpose, dataClass, selection });
+      if (currentKey.current !== key) return; // switch-user/tenant guard
       const next: Message = { role: 'assistant', text: reply.output };
       setMessages((prev) => {
         const updated = [...prev, next];
@@ -80,13 +90,14 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
       setModelInfo(`${reply.provider} · ${reply.profile} · EU-Ausführungspfad`);
       setTraceId(reply.trace_id);
     } catch (err) {
+      if (currentKey.current !== key) return;
       setMessages((prev) => [...prev, {
         role: 'assistant',
         text: err instanceof Error ? err.message : 'Anfrage wurde aus Sicherheitsgründen abgebrochen.',
         error: true,
       }]);
     } finally {
-      setSending(false);
+      if (currentKey.current === key) setSending(false);
     }
   }, [activeTenantId, dataClass, input, key, purpose, selection, sending]);
 
@@ -141,12 +152,12 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
           <p className="text-[11px] leading-4 text-titanium-500">Die angegebene Datenklasse ist ein Hinweis, keine Freigabe. Eine automatisierte vollständige Datenklassifizierung ist noch nicht aktiviert. Cloud-Modelle sind hier gesperrt.</p>
         </section>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4" role="log" aria-label="Konversation">
-          {messages.length === 0 && <div className="py-10 text-center">
+          {visibleMessages.length === 0 && <div className="py-10 text-center">
             <Bot className="mx-auto h-9 w-9 text-titanium-500" aria-hidden="true" />
             <p className="mt-3 text-sm font-medium text-titanium-200">Was kann ich für dich erledigen?</p>
             <p className="mt-2 text-xs text-titanium-500">Fragen und Entwürfe – keine ungeprüften Datenübertragungen oder Aktionen.</p>
           </div>}
-          {messages.map((item, i) => (
+          {visibleMessages.map((item, i) => (
             <div key={i} className={`rounded-xl px-3 py-2 text-sm leading-6 whitespace-pre-wrap break-words ${item.role === 'user' ? 'ml-6 bg-obsidian-800 text-titanium-100' : item.error ? 'mr-6 border border-rose-700/50 bg-rose-950/20 text-rose-200' : 'mr-6 text-titanium-200'}`} role={item.error ? 'alert' : undefined}>
               {item.text}
             </div>

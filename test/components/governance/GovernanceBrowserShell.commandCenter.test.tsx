@@ -26,6 +26,11 @@ vi.mock('../../../src/components/governance-os/GovernanceStatusBar', () => ({
 vi.mock('../../../src/components/governance-os/MobileBottomNavigation', () => ({
   MobileBottomNavigation: () => null,
 }));
+vi.mock('../../../src/components/governance-os/GovernanceChatSidebar', () => ({
+  GovernanceChatSidebar: ({ open }: { open: boolean }) => (
+    <div data-testid="legacy-assistant" data-open={open ? '1' : '0'} />
+  ),
+}));
 vi.mock('../../../src/components/governance-os/GovernedAssistantSidebar', () => ({
   GovernedAssistantSidebar: ({ open }: { open: boolean }) => (
     <div data-testid="assistant" data-open={open ? '1' : '0'} />
@@ -100,6 +105,20 @@ describe('GovernanceBrowserShell — Command Center', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('behält den bisherigen Assistenten bis zur separaten Rollout-Freigabe', () => {
+    renderShell('/app/ai');
+    expect(screen.getByTestId('legacy-assistant')).toBeInTheDocument();
+    expect(screen.queryByTestId('assistant')).not.toBeInTheDocument();
+  });
+
+  it('aktiviert den neuen Assistenten nur über das ausdrückliche Feature-Flag', () => {
+    vi.stubEnv('VITE_GOVERNED_ASSISTANT_ENABLED', 'true');
+    renderShell('/app/ai');
+    expect(screen.getByTestId('assistant')).toBeInTheDocument();
+    expect(screen.queryByTestId('legacy-assistant')).not.toBeInTheDocument();
   });
 
   it('öffnet das Command Center mit Ctrl+K', () => {

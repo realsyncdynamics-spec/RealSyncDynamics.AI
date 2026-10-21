@@ -26,8 +26,8 @@ vi.mock('../../../src/components/governance-os/GovernanceStatusBar', () => ({
 vi.mock('../../../src/components/governance-os/MobileBottomNavigation', () => ({
   MobileBottomNavigation: () => null,
 }));
-vi.mock('../../../src/components/governance-os/GovernanceChatSidebar', () => ({
-  GovernanceChatSidebar: ({ open }: { open: boolean }) => (
+vi.mock('../../../src/components/governance-os/GovernedAssistantSidebar', () => ({
+  GovernedAssistantSidebar: ({ open }: { open: boolean }) => (
     <div data-testid="assistant" data-open={open ? '1' : '0'} />
   ),
 }));

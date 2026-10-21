@@ -40,6 +40,7 @@ import {
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
 import { createServerGatewayFromEnv, localInferenceLabel } from '../_shared/aiGateway/serverFromEnv.ts';
+import { requireVerifiedAiResidency, ResidencyUnavailableError } from '../_shared/residencyGuard.ts';
 import {
   routeOfSlug,
   parseChatRequest,
@@ -117,17 +118,18 @@ async function authenticate(req: Request, admin: SupabaseClient): Promise<KeyRow
 }
 
 async function resolveResidency(admin: SupabaseClient, tenantId: string): Promise<AiResidency> {
-  const { data, error } = await admin.rpc('resolve_ai_residency', {
-    p_tenant_id: tenantId,
-    p_user_id: null,
-  });
-  // Fail-open analog zu _shared/ai.ts: ohne RPC-Ergebnis gilt cloud.
-  // Ein EU-lokal-Mandant kann in diesem Ausfall Cloud sehen. Bewusst, kein Fail-closed.
-  if (error) {
-    console.error('[governance-router] resolve_ai_residency failed, defaulting to cloud', error.message);
-    return 'cloud';
+  let result: { data: unknown; error: unknown };
+  try {
+    result = await admin.rpc('resolve_ai_residency', {
+      p_tenant_id: tenantId,
+      p_user_id: null,
+    });
+  } catch {
+    console.error('[governance-router] residency RPC unavailable; inference blocked');
+    throw new ResidencyUnavailableError();
   }
-  return data === 'eu_local' ? 'eu_local' : 'cloud';
+  // An unverified policy may never unlock a cloud model or model catalogue.
+  return requireVerifiedAiResidency(result);
 }
 
 async function pdpCheck(
@@ -233,6 +235,9 @@ Deno.serve(async (req) => {
 
     return err(404, 'NOT_FOUND', `unknown route: ${req.method} ${route}`);
   } catch (error) {
+    if (error instanceof ResidencyUnavailableError) {
+      return err(error.status, error.code, error.message);
+    }
     const mapped = mapInferenceError(error);
     return err(mapped.status, mapped.code, mapped.message);
   }

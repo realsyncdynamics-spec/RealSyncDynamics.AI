@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ArrowUp, Bot, ChevronDown, LockKeyhole, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { ArrowUp, Bot, LockKeyhole, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import {

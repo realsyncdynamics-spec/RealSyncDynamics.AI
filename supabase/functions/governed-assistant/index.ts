@@ -40,7 +40,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
   const tenantId = typeof body.tenant_id === 'string' ? body.tenant_id : '';
   const message = typeof body.message === 'string' ? body.message.trim() : '';
-  if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(tenantId) || !message || message.length > MAX_PROMPT_LENGTH) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId) || !message || message.length > MAX_PROMPT_LENGTH) {
     return jsonError(400, 'BAD_REQUEST', 'Tenant and message (1–8000 characters) required', corsHeaders);
   }
   const authorization = req.headers.get('authorization') ?? '';
@@ -65,7 +65,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
   const route = routeGovernedAssistant({
     runtimeVerified: Deno.env.get('GOVERNED_ASSISTANT_EU_RUNTIME_VERIFIED') === 'true',
-    tenantPolicy: String(tenant.ai_data_residency_policy ?? 'user_choice'),
+    tenantPolicy: String(tenant.ai_data_residency_policy ?? ''),
     purpose: body.purpose,
     dataClass: body.data_class,
     selection: body.selection,

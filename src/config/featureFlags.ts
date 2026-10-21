@@ -32,3 +32,14 @@ export function isGovernanceAiEnabled(): boolean {
   if (raw === 'false') return false;
   return GOVERNANCE_AI_DEFAULT;
 }
+
+/**
+ * Neue browserartige, serverseitig kontrollierte AI-OS-Assistenz.
+ * Standardmäßig AUS: erst nach Deploy des geprüften governed-assistant
+ * Edge Endpunkts und erfolgreichem Residency/Policy-Audit einschalten.
+ *
+ * Kein Sicherheitsersatz: die Edge Function erzwingt alle Regeln selbst.
+ */
+export function isGovernedAssistantEnabled(): boolean {
+  return import.meta.env?.VITE_GOVERNED_ASSISTANT_ENABLED === 'true';
+}

@@ -36,9 +36,11 @@ describe('governance-router — Auth- und Datengrenzen', () => {
     expect(SRC).toContain('AI_GATEWAY_ENFORCEMENT');
   });
 
-  it('Residenz-RPC fällt bewusst auf cloud zurück — analog zu runAiTool', () => {
-    expect(SRC).toContain('resolve_ai_residency failed, defaulting to cloud');
-    expect(SRC).toMatch(/if \(error\) \{[\s\S]*?return 'cloud'/);
+  it('Residency-RPC ist fail closed, auch bei Ausfall und unerwarteten Werten', () => {
+    expect(SRC).toContain('requireVerifiedAiResidency(result)');
+    expect(SRC).toContain('throw new ResidencyUnavailableError()');
+    expect(SRC).toContain("error instanceof ResidencyUnavailableError");
+    expect(SRC).not.toContain('defaulting to cloud');
   });
 
   it('UI nennt den OpenAI-Base-URL-Pfad', () => {

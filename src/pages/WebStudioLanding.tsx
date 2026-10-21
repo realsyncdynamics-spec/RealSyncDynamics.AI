@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Sliders,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { ensureCsrfCookie } from '../lib/csrf';
@@ -48,7 +49,7 @@ interface ProjectType {
   desc: string;
   basePrice: number;
   baseDays: number;
-  icon: React.ElementType;
+  icon: LucideIcon;
 }
 
 const PROJECT_TYPES: ProjectType[] = [
@@ -63,7 +64,7 @@ interface Addon {
   label: string;
   hint: string;
   price: number;
-  icon: React.ElementType;
+  icon: LucideIcon;
   iconClass: string;
 }
 

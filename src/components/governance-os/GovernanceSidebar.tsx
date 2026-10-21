@@ -130,6 +130,10 @@ export function GovernanceSidebar() {
       </Link>
 
       <div className="rs-side__group">
+        <Link to="/app/ai" aria-current={pathname === '/app/ai' ? 'page' : undefined} className="rs-side__item" data-testid="side-ai-home">
+          <Sparkles className="rs-side__icon" aria-hidden="true" />
+          <span className="rs-side__text">KI-Startseite</span>
+        </Link>
         {SHELL_NAV.map((item) => {
           const Icon = NAV_ICONS[item.id];
           const lock = lockFor({ route: item.route, keys: item.entitlementKeys });

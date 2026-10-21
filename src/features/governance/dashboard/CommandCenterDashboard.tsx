@@ -198,7 +198,7 @@ export function CommandCenterDashboard() {
           dominieren Null- und Leerzustände den ersten Eindruck. */}
       <details
         className="rs-start-details"
-        open={!activeTenantId || startModel.complete}
+        defaultOpen={false}
         data-testid="dashboard-details"
       >
         <summary>

@@ -22,6 +22,11 @@ describe('Governed assistant routing policy', () => {
     });
   });
 
+  it('blocks unknown or missing tenant policy', () => {
+    expect(routeGovernedAssistant({ ...base, tenantPolicy: '' })).toMatchObject({ allowed: false, code: 'TENANT_POLICY_CONFLICT' });
+    expect(routeGovernedAssistant({ ...base, tenantPolicy: 'unrecognized' })).toMatchObject({ allowed: false, code: 'TENANT_POLICY_CONFLICT' });
+  });
+
   it('routes unclassified as well as sensitive requests to EU-private, never cloud', () => {
     for (const dataClass of ['unknown', 'public', 'internal', 'personal', 'special_category']) {
       const result = routeGovernedAssistant({ ...base, dataClass });

@@ -191,12 +191,13 @@ export function WebStudioLanding() {
 
   const { price, days } = useMemo(() => {
     const selected = PROJECT_TYPES.find((p) => p.id === calcType) ?? PROJECT_TYPES[0];
-    let p = selected.basePrice;
+    // Aufpreise nur aus ADDONS, damit Liste und Rechner nicht auseinanderlaufen.
+    const p = selected.basePrice + ADDONS.reduce((sum, a) => sum + (addons[a.key] ? a.price : 0), 0);
     let d = selected.baseDays;
-    if (addons.copy) { p += 590; d += 2; }
-    if (addons.cms) { p += 490; d += 2; }
-    if (addons.lang) { p += 690; d += 3; }
-    if (addons.express) { p += 790; d = Math.max(4, Math.round(d * 0.55)); }
+    if (addons.copy) d += 2;
+    if (addons.cms) d += 2;
+    if (addons.lang) d += 3;
+    if (addons.express) d = Math.max(4, Math.round(d * 0.55));
     return { price: p, days: d };
   }, [calcType, addons]);
 

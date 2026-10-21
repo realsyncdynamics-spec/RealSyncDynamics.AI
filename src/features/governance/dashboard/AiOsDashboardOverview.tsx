@@ -69,7 +69,7 @@ export function AiOsDashboardOverview({
     <div className="mx-auto w-full max-w-[1480px] px-4 pb-7 pt-7 sm:px-6 lg:px-8" data-testid="ai-os-dashboard-overview">
       <section aria-labelledby="ai-dashboard-headline" className="mx-auto flex w-full max-w-3xl flex-col items-center py-10 text-center sm:py-14">
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-titanium-800 bg-obsidian-900 px-4 py-2 text-xs tracking-wide text-titanium-300">
-          <Sparkles className="h-4 w-4 text-[#00B8D4]" aria-hidden="true" />
+          <Sparkles className="h-4 w-4 text-[var(--color-rs-primary)]" aria-hidden="true" />
           <span>RealSync AI OS</span>
           {tenantName && <span className="max-w-44 truncate text-titanium-500">· {tenantName}</span>}
         </div>
@@ -96,7 +96,7 @@ export function AiOsDashboardOverview({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-lg border border-titanium-700 px-3 py-2 text-sm text-titanium-200 hover:bg-obsidian-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+          className="inline-flex items-center gap-2 rounded-lg border border-titanium-700 px-3 py-2 text-sm text-titanium-200 hover:bg-obsidian-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-rs-primary)]"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" /> Aktualisieren
         </button>
@@ -120,10 +120,10 @@ export function AiOsDashboardOverview({
 
       <section aria-label="Live-Status" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-testid="ai-dashboard-metrics">
         {cards.map(({ label, value, href, icon: Icon, description }) => (
-          <Link key={href + label} to={href} className="group min-w-0 rounded-xl border border-titanium-800 bg-obsidian-900/80 p-4 transition-colors hover:border-titanium-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400">
+          <Link key={href + label} to={href} className="group min-w-0 rounded-xl border border-titanium-800 bg-obsidian-900/80 p-4 transition-colors hover:border-titanium-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-rs-primary)]">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-titanium-400">{label}</span>
-              <Icon className="h-4 w-4 text-titanium-500 group-hover:text-cyan-300" aria-hidden="true" />
+              <Icon className="h-4 w-4 text-titanium-500 group-hover:text-[var(--color-rs-primary)]" aria-hidden="true" />
             </div>
             <p className="mt-4 text-2xl font-semibold tabular-nums text-titanium-50" data-testid={`ai-metric-${label}`}>{loading && !data && value === '—' ? '—' : value}</p>
             <p className="mt-1 text-xs text-titanium-500">{description}</p>
@@ -135,15 +135,15 @@ export function AiOsDashboardOverview({
         <section aria-labelledby="dashboard-tools-title">
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 id="dashboard-tools-title" className="text-lg font-semibold text-titanium-50">Anwendungen öffnen</h2>
-            <Link to="/app/modules" className="inline-flex items-center gap-1 text-sm text-cyan-300 hover:underline">
+            <Link to="/app/modules" className="inline-flex items-center gap-1 text-sm text-[var(--color-rs-primary)] hover:underline">
               Alle Module <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
           <nav aria-label="Anwendungen" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {ACCESS.map(({ title, detail, href, icon: Icon }) => (
-              <Link key={href} to={href} className="group flex min-w-0 flex-col gap-3 rounded-xl border border-titanium-800 bg-obsidian-900/70 p-5 transition-colors hover:border-cyan-500/50 hover:bg-obsidian-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400">
+              <Link key={href} to={href} className="group flex min-w-0 flex-col gap-3 rounded-xl border border-titanium-800 bg-obsidian-900/70 p-5 transition-colors hover:border-[var(--color-rs-primary)] hover:bg-obsidian-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-rs-primary)]">
                 <div className="flex items-center justify-between">
-                  <Icon className="h-5 w-5 text-cyan-300" aria-hidden="true" />
+                  <Icon className="h-5 w-5 text-[var(--color-rs-primary)]" aria-hidden="true" />
                   <ArrowRight className="h-4 w-4 text-titanium-500 group-hover:text-titanium-100" aria-hidden="true" />
                 </div>
                 <div>
@@ -161,7 +161,7 @@ export function AiOsDashboardOverview({
             <span className="text-xs text-titanium-400">{model.doneCount} / {model.totalCount} erledigt</span>
           </div>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-titanium-800" role="progressbar" aria-label="Einrichtung" aria-valuenow={model.doneCount} aria-valuemin={0} aria-valuemax={model.totalCount}>
-            <div className="h-full rounded-full bg-cyan-400" style={{ width: `${Math.round(100 * model.doneCount / Math.max(1, model.totalCount))}%` }} />
+            <div className="h-full rounded-full bg-[var(--color-rs-primary)]" style={{ width: `${Math.round(100 * model.doneCount / Math.max(1, model.totalCount))}%` }} />
           </div>
           <p className="mt-5 text-xs uppercase tracking-wider text-titanium-500">{model.maturity}</p>
           <h3 className="mt-2 text-base font-semibold text-titanium-100">
@@ -171,7 +171,7 @@ export function AiOsDashboardOverview({
             {next?.detail ?? 'Sobald Daten verfügbar sind, erscheinen hier die nächsten sinnvollen Aufgaben.'}
           </p>
           {next && (
-            <Link to={next.href} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#00B8D4] px-4 py-2.5 text-sm font-semibold text-obsidian-950 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" data-testid="ai-dashboard-next-action">
+            <Link to={next.href} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--color-rs-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--rs-on-primary)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white" data-testid="ai-dashboard-next-action">
               {next.cta} <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}

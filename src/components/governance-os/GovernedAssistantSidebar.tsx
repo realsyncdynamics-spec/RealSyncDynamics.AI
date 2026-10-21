@@ -48,6 +48,7 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const visibleMessages = renderedKey === key ? messages : [];
   const [purpose, setPurpose] = useState<AssistantPurpose>(() => purposeForPath(location.pathname));
   const [dataClass, setDataClass] = useState<AssistantDataClass>('unknown');
+  const classBlocked = dataClass === 'unknown' || dataClass === 'personal' || dataClass === 'special_category';
   const [selection, setSelection] = useState<AssistantSelection>('auto');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -72,7 +73,7 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
   const send = useCallback(async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const message = input.trim();
-    if (!key || !activeTenantId || !message || sending || inFlightId.current) return;
+    if (!key || !activeTenantId || !message || classBlocked || sending || inFlightId.current) return;
     const requestId = crypto.randomUUID();
     inFlightId.current = requestId;
     setSending(true);
@@ -106,7 +107,7 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
         if (currentKey.current === key) setSending(false);
       }
     }
-  }, [activeTenantId, dataClass, input, key, purpose, selection, sending]);
+  }, [activeTenantId, classBlocked, dataClass, input, key, purpose, selection, sending]);
 
   useEffect(() => {
     if (!open) return;
@@ -183,10 +184,13 @@ export function GovernedAssistantSidebar({ open, onClose, prefill = null, active
               className="min-h-12 w-full resize-y bg-transparent p-2 text-sm text-titanium-100 outline-none placeholder:text-titanium-500" />
             <div className="flex items-center justify-between px-1 pb-1">
               <span className="text-[10px] text-titanium-500">Zuerst prüfen, dann senden</span>
-              <button type="submit" disabled={!key || !input.trim() || sending} aria-label="Sicher anfragen"
+              <button type="submit" disabled={!key || classBlocked || !input.trim() || sending} aria-label="Sicher anfragen"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-rs-primary)] text-[var(--rs-on-primary)] disabled:opacity-40"><ArrowUp className="h-4 w-4" /></button>
             </div>
           </form>
+          {classBlocked && <p role="status" className="mt-2 text-xs text-amber-200">
+            {dataClass === 'unknown' ? 'Vor dem Versand die Datenklasse festlegen.' : 'Für personenbezogene Daten fehlt noch die geprüfte Rechtsgrundlage und Freigabe. Keine KI-Verarbeitung.'}
+          </p>}
           {!key && <p role="status" className="mt-2 text-xs text-amber-200">Bitte zuerst einen gültigen Workspace auswählen.</p>}
         </footer>
       </aside>

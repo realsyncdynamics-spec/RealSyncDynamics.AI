@@ -21,7 +21,7 @@ export function AiCommandComposer({ compact = false }: { compact?: boolean }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className={`w-full rounded-2xl border border-titanium-700 bg-obsidian-900 p-3 shadow-lg transition-colors focus-within:border-cyan-500/70 ${compact ? '' : 'mt-9 max-w-2xl'}`}
+      className={`w-full rounded-2xl border border-titanium-700 bg-obsidian-900 p-3 shadow-lg transition-colors focus-within:border-[var(--color-rs-primary)] ${compact ? '' : 'mt-9 max-w-2xl'}`}
       data-testid="ai-command-composer"
     >
       <label htmlFor={compact ? 'ai-dashboard-prompt' : 'ai-os-prompt'} className="sr-only">
@@ -49,7 +49,7 @@ export function AiCommandComposer({ compact = false }: { compact?: boolean }) {
         <button
           type="submit"
           disabled={!prompt.trim()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#00B8D4] text-obsidian-950 transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-rs-primary)] text-[var(--rs-on-primary)] transition-opacity disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           aria-label="Im Assistenten öffnen"
         >
           <ArrowUp className="h-4 w-4" aria-hidden="true" />

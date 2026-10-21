@@ -17,6 +17,8 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernedAssistantSidebar } from './GovernedAssistantSidebar';
+import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { isGovernedAssistantEnabled } from '../../config/featureFlags';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
 import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
@@ -45,14 +47,15 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const navigate = useNavigate();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const governedAssistantEnabled = isGovernedAssistantEnabled();
   // AI-first canvas opens alongside the contextual assistant on wide screens.
   // Small laptop/mobile views start with the drawer closed to protect space.
   useEffect(() => {
-    if ((location.pathname === '/app/ai' || location.pathname === '/app/dashboard')
+    if (governedAssistantEnabled && (location.pathname === '/app/ai' || location.pathname === '/app/dashboard')
         && typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1440px)').matches) {
       setAssistantOpen(true);
     }
-  }, [location.pathname]);
+  }, [governedAssistantEnabled, location.pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
@@ -201,12 +204,20 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           )}
 
           {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
-          <GovernedAssistantSidebar
-            open={assistantOpen}
-            onClose={() => setAssistantOpen((v) => !v)}
-            prefill={assistantPrompt}
-            activeEmbedUrl={embeddedUrl}
-          />
+          {governedAssistantEnabled ? (
+            <GovernedAssistantSidebar
+              open={assistantOpen}
+              onClose={() => setAssistantOpen((v) => !v)}
+              prefill={assistantPrompt}
+              activeEmbedUrl={embeddedUrl}
+            />
+          ) : (
+            <GovernanceChatSidebar
+              open={assistantOpen}
+              onClose={() => setAssistantOpen((v) => !v)}
+              prefill={assistantPrompt}
+            />
+          )}
         </div>
 
         <MobileBottomNavigation />

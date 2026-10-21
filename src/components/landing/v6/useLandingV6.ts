@@ -88,7 +88,7 @@ const WEBSITE_PATHS = [
     ],
     note: 'Eigenständige Dienstleistung mit direkter Projektanfrage – keine Enterprise-Testphase und kein Software-Abo.',
     preview: false,
-    primary: { label: CTA.webdesign, href: `/contact-sales?intent=webdesign&source=${SOURCE}-websites` },
+    primary: { label: CTA.webdesign, href: `/web-studio?source=${SOURCE}-websites` },
     secondary: { label: 'Leistungsumfang ansehen', href: '/frontend-builder' },
   },
 ] as const;

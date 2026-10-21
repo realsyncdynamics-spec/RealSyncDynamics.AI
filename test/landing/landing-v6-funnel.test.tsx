@@ -72,7 +72,7 @@ it('offers both website paths: automatic SiteOS draft and individual web design'
   expect(view.container.querySelector('[data-website-cta="auto"]')).toHaveAttribute('href', '/build');
   expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveAttribute(
     'href',
-    '/contact-sales?intent=webdesign&source=landing-v6-websites',
+    '/web-studio?source=landing-v6-websites',
   );
   // Ehrlicher Status: Builder/Veröffentlichung sind Preview, nur Weg 1 trägt das Badge.
   expect(sec.getAllByText('PREVIEW')).toHaveLength(1);

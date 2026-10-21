@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { containsLikelyPersonalData, routeGovernedAssistant } from '../../../supabase/functions/governed-assistant/policy';
+import { containsLikelyPersonalData, routeGovernedAssistant } from '../../supabase/functions/governed-assistant/policy';
 
 const base = {
   runtimeVerified: true,

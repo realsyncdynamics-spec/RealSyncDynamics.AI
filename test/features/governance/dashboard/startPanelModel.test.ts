@@ -106,7 +106,8 @@ describe('Dashboard-Verdrahtung', () => {
     expect(COMMAND).not.toContain('<TrialBanner');
     expect(COMMAND.indexOf('<CustomerStartPanel')).toBeLessThan(COMMAND.indexOf('<HandoffOverview'));
     expect(COMMAND).toContain('dashboard-details');
-    expect(COMMAND).toContain('defaultOpen={false}');
+    expect(COMMAND).toContain('data-testid="dashboard-details"');
+    expect(COMMAND).not.toContain('open={!activeTenantId || startModel.complete}');
     expect(COMMAND).toContain('<AiOsDashboardOverview');
     expect(COMMAND.indexOf('<AiOsDashboardOverview')).toBeLessThan(COMMAND.indexOf('<CustomerStartPanel'));
   });

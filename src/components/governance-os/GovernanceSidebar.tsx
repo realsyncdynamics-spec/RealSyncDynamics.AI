@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import {
@@ -166,6 +167,50 @@ function MoreItem({ module, active, lock }: { module: GovernanceModule; active: 
   );
 }
 
+
+function MoreGroup({
+  title, modules, pathname, lockFor, initiallyOpen,
+}: {
+  title: string;
+  modules: GovernanceModule[];
+  pathname: string;
+  lockFor: ReturnType<typeof useNavLock>;
+  initiallyOpen: boolean;
+}) {
+  const active = modules.some((module) => isActiveRoute(module.route, pathname));
+  const [expanded, setExpanded] = useState(initiallyOpen || active);
+
+  // Route changes must reveal the active module without forcing unrelated
+  // groups open or preventing users from collapsing them afterwards.
+  useEffect(() => {
+    if (active) setExpanded(true);
+  }, [active]);
+
+  return (
+    <details
+      className="group rs-side__section"
+      open={expanded}
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
+    >
+      <summary className="rs-side__item rs-side__item--small cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
+        <Layers className="rs-side__icon" aria-hidden="true" />
+        <span className="rs-side__text">{title}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="rs-side__group border-l border-titanium-800 ml-4 pl-1">
+        {modules.map((module) => (
+          <MoreItem
+            key={module.id}
+            module={module}
+            active={isActiveRoute(module.route, pathname)}
+            lock={lockFor({ route: module.route, module })}
+          />
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export function GovernanceSidebar() {
   const { pathname } = useLocation();
   const { plan, loading: planLoading } = useActivePlan();
@@ -233,23 +278,14 @@ export function GovernanceSidebar() {
             const selected = modules.some((module) => isActiveRoute(module.route, pathname));
             const group = MORE_GROUPS.find((item) => item.title === groupTitle);
             return (
-              <details key={groupTitle} className="group rs-side__section" defaultOpen={selected || group?.open === true}>
-                <summary className="rs-side__item rs-side__item--small cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
-                  <Layers className="rs-side__icon" aria-hidden="true" />
-                  <span className="rs-side__text">{groupTitle}</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
-                </summary>
-                <div className="rs-side__group border-l border-titanium-800 ml-4 pl-1">
-                  {modules.map((module) => (
-                    <MoreItem
-                      key={module.id}
-                      module={module}
-                      active={isActiveRoute(module.route, pathname)}
-                      lock={lockFor({ route: module.route, module })}
-                    />
-                  ))}
-                </div>
-              </details>
+              <MoreGroup
+                key={groupTitle}
+                title={groupTitle}
+                modules={modules}
+                pathname={pathname}
+                lockFor={lockFor}
+                initiallyOpen={group?.open === true}
+              />
             );
           })}
         </div>

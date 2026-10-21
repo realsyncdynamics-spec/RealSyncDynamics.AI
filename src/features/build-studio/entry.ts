@@ -17,6 +17,8 @@ export const DEFAULT_BUILD_KIND: BuildProjectKind = 'website';
 /** Maximum brief size for transient, same-tab navigation state. No prompt in the URL. */
 export const CODE_ENTRY_PROMPT_MAX_CHARS = 8_000;
 
+const CODE_ENTRY_PROMPT_STORAGE_KEY = 'rsd:code-builder:handoff-prompt';
+
 export interface CodeBuilderHandoffState {
   codeBuilderHandoff: {
     source: 'build-studio';
@@ -31,6 +33,30 @@ export function codeEntryState(description: string): CodeBuilderHandoffState | n
   return { codeBuilderHandoff: { source: 'build-studio', prompt } };
 }
 
+/** Persist the brief for the current tab so a lost history state can still be recovered. */
+export function writeCodeEntryPrompt(prompt: string): void {
+  const trimmed = prompt.trim();
+  if (!trimmed || trimmed.length > CODE_ENTRY_PROMPT_MAX_CHARS) return;
+  try {
+    sessionStorage.setItem(CODE_ENTRY_PROMPT_STORAGE_KEY, trimmed);
+  } catch {
+    // Storage may be unavailable (private mode, quota). History state remains the primary path.
+  }
+}
+
+/** Read and clear a previously stored brief. Returns null when missing or invalid. */
+export function consumeStoredCodeEntryPrompt(): string | null {
+  try {
+    const raw = sessionStorage.getItem(CODE_ENTRY_PROMPT_STORAGE_KEY);
+    if (raw == null) return null;
+    sessionStorage.removeItem(CODE_ENTRY_PROMPT_STORAGE_KEY);
+    const prompt = raw.trim();
+    return prompt && prompt.length <= CODE_ENTRY_PROMPT_MAX_CHARS ? prompt : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Ignore malformed/oversized state (including direct navigation without a handoff). */
 export function readCodeEntryPrompt(state: unknown): string | null {
   if (!state || typeof state !== 'object') return null;
@@ -40,6 +66,11 @@ export function readCodeEntryPrompt(state: unknown): string | null {
   if (candidate.source !== 'build-studio' || typeof candidate.prompt !== 'string') return null;
   const prompt = candidate.prompt.trim();
   return prompt && prompt.length <= CODE_ENTRY_PROMPT_MAX_CHARS ? prompt : null;
+}
+
+/** Prefer history state; fall back to the transient sessionStorage brief. */
+export function resolveCodeEntryPrompt(state: unknown): string | null {
+  return readCodeEntryPrompt(state) ?? consumeStoredCodeEntryPrompt();
 }
 
 export const BUILD_KIND_LABEL: Readonly<Record<BuildProjectKind, string>> = {

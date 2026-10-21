@@ -441,6 +441,7 @@ const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then(
 import { CookieConsent } from './components/CookieConsent';
 import { ScrollToTop } from './components/ScrollToTop';
 import { GovernanceBrowserShell } from './components/governance-os/GovernanceBrowserShell';
+import { AiHomeView } from './features/ai-home/AiHomeView';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
 import { DemoModeProvider } from './core/demo/DemoModeProvider';
@@ -768,7 +769,8 @@ function RoutesWithTracking() {
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
       {/* Onboarding-First-Routing: /app kanonisiert auf das gegatete Dashboard.
           Kein Onboarding-Zwang (kein Hard-Lockout) — nur Kanonisierung. */}
-      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app" element={<Navigate to="/app/ai" replace />} />
+      <Route path="/app/ai" element={<AppGate><GovernanceBrowserShell><AiHomeView /></GovernanceBrowserShell></AppGate>} />
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).

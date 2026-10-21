@@ -183,7 +183,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'compliance',
     description:
-      'Klassifikation ins Register/Inventar speichern ist nicht freigeschaltet: ai_classification.limited steht in keinem Plan (kein Upgrade entsperrt; Lock-Copy nach #1743). UI-Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory-Pfad existieren, Persistenz funktioniert noch nicht (fehlender Persist-Pfad / P1-2). Nicht live.',
+      'Nur der Pfad Klassifikator → /app/risk-inventory: Ergebnis aus /ai-act-klassifikator ins Tenant-Inventar speichern ist nicht freigeschaltet (ai_classification.limited steht in keinem Plan, kein Upgrade entsperrt; Lock-Copy nach #1743). Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory existieren, Persistenz fehlt noch. Klassifikation im KI-Register siehe ai-system-registry.',
     route: '/app/risk-inventory',
     evidence: [
       'src/pages/AiActClassifier.tsx#saveToInventory',
@@ -192,6 +192,42 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/core/billing/FeatureGate.tsx#ai_classification.limited',
       'src/components/governance-os/useNavLock.ts',
       'PR #1743',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'ai-system-registry',
+    name: 'KI-Register',
+    status: 'live',
+    group: 'compliance',
+    description:
+      'KI-Register unter /app/ai-systems: Systeme auflisten und anlegen, Registerdaten pflegen (governance-resources op update_asset) und Klassifikation (Risikostufe, Annex III, Art. 50) in /app/ai-systems/:id speichern (op classify_asset).',
+    route: '/app/ai-systems',
+    evidence: [
+      'supabase/functions/governance-resources/index.ts#classify_asset',
+      'supabase/functions/governance-resources/registryFields.ts',
+      'src/features/governance/ai-registry/AiSystemDetailView.tsx',
+      'test/edge/governance-resources-registry-fields.test.ts',
+      'test/features/governance/handoff/ai-system-detail-route.test.tsx',
+      'test/features/governance/handoff/classify-lock.test.tsx',
+      'PR #1924',
+    ],
+  },
+  {
+    id: 'kodee',
+    name: 'Kodee (VPS-Assistent)',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Kodee-Chat unter /kodee in allen Plänen; SSH-Server-Aktionen erfordern ai.tool.vps_status (Agency, Enterprise, Partner) — clientseitig im ActionRunner und serverseitig in der Edge Function kodee (verbindungsbesitzender Tenant, sonst 403).',
+    route: '/kodee',
+    evidence: [
+      'supabase/functions/kodee/index.ts',
+      'src/components/governance-os/governanceModules.ts#kodee',
+      'src/features/kodee/ActionRunner.tsx',
+      'test/features/kodee/ActionRunner.entitlement.test.tsx',
+      'PR #1917',
+      'PR #1922',
     ],
     showOnRoadmap: true,
   },

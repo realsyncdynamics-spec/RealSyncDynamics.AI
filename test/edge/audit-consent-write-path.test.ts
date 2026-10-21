@@ -48,8 +48,9 @@ describe('AuditStepper checkbox', () => {
   it('defaults unchecked and does not require consent to submit', () => {
     expect(stepper).toMatch(/const \[marketingConsent, setMarketingConsent\] = useState\(false\)/);
     expect(stepper).toMatch(/data-testid="audit-followup-consent"/);
+    // Schritt 1 hängt nur an Domain + E-Mail, nie an der Einwilligung.
     expect(stepper).toMatch(
-      /const stepValid = \[\s*domain\.trim\(\)\.length > 2 && EMAIL_RE\.test\(email\.trim\(\)\),/,
+      /const stepValid = \[\s*normalizedDomain !== null && isValidLeadEmail\(email\),/,
     );
   });
 

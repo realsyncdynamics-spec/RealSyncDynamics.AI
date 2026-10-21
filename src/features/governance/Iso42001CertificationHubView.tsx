@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
+  ArrowLeft, Brain, Loader2, AlertTriangle, ArrowRight,
   Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive, AlertCircle, Wrench, RotateCcw,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -31,15 +31,6 @@ const CERTIFICATION_MODULES = [
     route: '/app/governance/iso42001-library',
     color: 'blue',
     badge: 'Library',
-  },
-  {
-    id: 'implementation',
-    title: 'Control Implementations',
-    description: 'Track status and maturity of each ISO 42001 control implementation',
-    icon: CheckCircle2,
-    route: '/app/governance/iso42001',
-    color: 'green',
-    badge: 'Live',
   },
   {
     id: 'readiness',

@@ -41,7 +41,14 @@ describe('Rahmenwerk-Auswahl', () => {
 
   it('Status aus dem Plan: enthalten, nicht enthalten, in Vorbereitung', () => {
     render(<MemoryRouter><ComplianceFrameworkSelector /></MemoryRouter>);
-    expect(screen.getAllByText('Im Plan enthalten')).toHaveLength(1); // nur DSGVO im Mock-Plan
+    // DSGVO und ISO 42001 haben keine Plan-Schranke; ISO 27001, NIS2 und
+    // EU AI Act verlangen Keys, die der Mock-Plan nicht hat.
+    const included = screen.getAllByText('Im Plan enthalten');
+    expect(included).toHaveLength(2);
+    expect(included.map((el) => el.closest('button')?.textContent)).toEqual([
+      expect.stringContaining('GDPR'),
+      expect.stringContaining('ISO42001'),
+    ]);
     expect(screen.getAllByText('Nicht im Plan').length).toBeGreaterThan(0);
     expect(screen.getByText('In Vorbereitung')).toBeInTheDocument();
   });

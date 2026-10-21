@@ -358,7 +358,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'billing',
     description:
-      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) regulär mit Listenpreis aus der SSoT; Tarife mit `trialDays` (Starter, Growth) 14 Tage kostenlos testen. Das öffentliche Beta-Pauschalangebot ist aus (`BETA.publicOffer = false`, Owner-Entscheidung 18.10.2026); der Checkout leitet bei `BETA.active` vorerst weiter in die Beta um.',
+      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) bleibt das öffentliche Beta-Angebot sichtbar (`BETA.publicOffer = true`, Owner-Entscheidung 21.10.2026); die Listenpreise aus der SSoT sind unverändert.',
     route: '/#preise',
     evidence: [
       'shared/pricing.ts',

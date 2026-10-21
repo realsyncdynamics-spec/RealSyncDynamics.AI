@@ -198,8 +198,8 @@ function bullets(tier: PricingTier): string[] {
 }
 
 /**
- * Öffentliches Beta-Angebot („kostenlos bis …“) — seit 18.10.2026 aus
- * (`BETA.publicOffer`). Dann gelten Listenpreis und `trialDays` aus der SSoT.
+ * Öffentliches Beta-Angebot („kostenlos bis …“), schaltbar über
+ * `BETA.publicOffer`. Aus: Listenpreis und `trialDays` aus der SSoT.
  */
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 

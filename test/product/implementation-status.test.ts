@@ -138,10 +138,10 @@ describe('implementation-status registry', () => {
     expect(beta.description).toMatch(/WP-4/);
     expect(beta.description).toMatch(/noch nicht vollständig/);
     expect(beta.evidence).toContain('PR #1874');
-    // Owner-Entscheidung 18.10.2026: Startseite mit regulären Preisen, kein Beta-Pauschalangebot.
+    // Owner-Entscheidung 21.10.2026: Beta-Angebot bleibt öffentlich, Listenpreise unverändert.
     const monthly = getImplementation('pricing-monthly')!;
-    expect(monthly.description).toContain('BETA.publicOffer = false');
-    expect(monthly.description).not.toMatch(/durchgestrichen/);
+    expect(monthly.description).toContain('BETA.publicOffer = true');
+    expect(monthly.description).toContain('€79 / €249 / €699');
     expect(existsSync(resolve('supabase/functions/beta-enroll/index.ts'))).toBe(true);
   });
 

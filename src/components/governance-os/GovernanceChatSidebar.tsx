@@ -138,6 +138,16 @@ export function GovernanceChatSidebar({ open, onClose, prefill = null }: Governa
     void send(action);
   };
 
+  // Escape closes the mobile drawer and the desktop assistant alike.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   if (!open) {
     return (
       <div className="hidden lg:flex w-8 shrink-0 flex-col items-center justify-center bg-obsidian-900 border-l border-titanium-900">
@@ -150,7 +160,17 @@ export function GovernanceChatSidebar({ open, onClose, prefill = null }: Governa
   }
 
   return (
-    <aside className="hidden lg:flex w-[380px] shrink-0 flex-col bg-obsidian-900 border-l border-titanium-900 h-full overflow-hidden">
+    <>
+      <button
+        type="button"
+        aria-label="Assistent schließen"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-obsidian-950/75 lg:hidden"
+      />
+      <aside
+        aria-label="RealSync AI Assistent"
+        className="fixed inset-y-0 right-0 z-50 flex w-[min(100vw,380px)] flex-col overflow-hidden border-l border-titanium-900 bg-obsidian-900 lg:static lg:z-auto lg:h-full lg:w-[380px] lg:shrink-0"
+      >
       <div className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-titanium-900">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[#00B8D4]" />
@@ -245,6 +265,7 @@ export function GovernanceChatSidebar({ open, onClose, prefill = null }: Governa
         </div>
         <p className="mt-1.5 text-center font-mono text-[9px] text-titanium-600">↵ senden · keine Rechtsberatung</p>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

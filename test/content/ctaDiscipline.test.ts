@@ -11,7 +11,8 @@ import { CI_FORBIDDEN_CTA } from '../../src/content/runtimeVocab';
  * Beratung" (siehe /about → „Was uns unterscheidet"). Ein Termin-/Sales-CTA
  * im öffentlichen Frontend widerspricht dieser Positionierung direkt und
  * verwirrt die Zielgruppe (Self-Service-App oder Account-Manager?).
- * Einzige erlaubte kontaktbasierte CTA: `CTA.enterprise`.
+ * Erlaubte kontaktbasierte CTAs: `CTA.enterprise` (Software) und
+ * `CTA.webdesign` (individuelle Dienstleistung, Entscheidung 18.10.2026).
  *
  * Der Test läuft in `npm test` und fängt Drift, bevor der PR-Gate greift.
  */

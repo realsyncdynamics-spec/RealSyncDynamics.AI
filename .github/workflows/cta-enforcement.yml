@@ -49,7 +49,7 @@ jobs:
             echo ""
             echo "::error::Verbotene CTA-/Kontakt-Phrasen im öffentlichen Frontend gefunden."
             echo "RealSyncDynamics.AI ist Self-Service-SaaS: keine Beratungs-/Pilot-/Demo-/Call-/Sales-Sprache."
-            echo "Erlaubte CTAs siehe src/content/runtimeVocab.ts → CTA. Einzige kontaktbasierte CTA: 'Enterprise anfragen'."
+            echo "Erlaubte CTAs siehe src/content/runtimeVocab.ts → CTA. Kontaktbasiert nur: 'Enterprise anfragen' und 'Individuelles Webdesign anfragen'."
             exit 1
           fi
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { priceForPlanKey } from '@/shared/pricing';
-import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle, ShieldCheck, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -263,6 +263,21 @@ function Inner({ session }: { session: Session }) {
                 <CardContent>
                   <p className="text-2xl font-bold text-petrol">—</p>
                   <p className="text-xs text-titanium-400 mt-1">Leads in Pipeline</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/admin/beta-feedback">
+              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Beta-Feedback
+                  </CardTitle>
+                  <CardDescription>Meldungen der Beta-Tester aus der App (Mandant, Route)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-titanium-400 mt-1">Triage: wo im Produkt hakt es?</p>
                 </CardContent>
               </Card>
             </Link>

@@ -19,6 +19,7 @@ import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
 import { BetaAppBanner } from './BetaAppBanner';
+import { BetaFeedbackButton } from './BetaFeedbackButton';
 import { CommandCenter } from './CommandCenter';
 import {
   buildCommandCatalog,
@@ -212,6 +213,13 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           items={commandItems}
           onRun={handleRunCommand}
         />
+
+        {/* WP-4: Beta-Feedback von jeder /app-Seite aus — auch wenn der
+            Beta-Hinweis ausgeblendet ist. Rendert sich ohne Beta selbst weg.
+            Auf kleinen Bildschirmen oberhalb der Bottom-Navigation. */}
+        <div className="hidden lg:block">
+          <BetaFeedbackButton variant="floating" />
+        </div>
       </div>
     </AppGate>
   );

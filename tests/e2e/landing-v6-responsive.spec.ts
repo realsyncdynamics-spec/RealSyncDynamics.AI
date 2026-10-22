@@ -274,16 +274,19 @@ test.describe('Landing v6 — Tablet und Desktop', () => {
     });
   }
 
-  test('1440 px im dunklen und hellen Modus ohne Überlauf', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    for (const mode of ['gold', 'light'] as const) {
+  // Eigene Page je Modus: `addInitScript` sammelt sich sonst pro Aufruf an,
+  // und das zuerst registrierte Skript würde beim zweiten Durchlauf den
+  // Light-Modus wieder mit „gold“ überschreiben (Review-Hinweis zu a67000b).
+  for (const mode of ['gold', 'light'] as const) {
+    test(`1440 px im ${mode === 'light' ? 'hellen' : 'dunklen'} Modus ohne Überlauf`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
       await openLanding(page, mode);
       await expect(page.getByTestId('landing-v6')).toHaveAttribute('data-rs-theme', mode === 'light' ? 'light' : 'dark');
       const hero = await heroExtent(page);
       expect(hero.right).toBeLessThanOrEqual(1440 + TOLERANCE);
       expect(await lineCount(page, '[data-testid="hero-primary-cta"]')).toBe(1);
-    }
-  });
+    });
+  }
 
   test('Reflow bei 200 % Zoom (1280 px → 640 CSS-px): kein Überlauf', async ({ page }, testInfo) => {
     // 200 % Browser-Zoom auf 1280 px entspricht 640 CSS-Pixeln Viewport.

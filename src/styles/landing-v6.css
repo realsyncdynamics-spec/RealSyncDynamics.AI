@@ -193,8 +193,12 @@
 .lv6 .lv6-logo {
   font-size: clamp(19px, 1.45vw, 44px);
 }
+/* Seit dem fünften Menüpunkt „Websites“ (#1931) ragte die Desktop-Navigation
+   bei 1280–1920 px um 12–59 px über die Inhaltsspalte hinaus (gemessen live am
+   22.10.2026). 1.2vw statt 2vw hält Logo, Menü, Login, Theme-Schalter und CTA
+   innerhalb der Spalte; ab 390 px bleibt der Mindestabstand 14 px. */
 .lv6 .lv6-nav {
-  gap: clamp(14px, 2vw, 60px);
+  gap: clamp(14px, 1.2vw, 60px);
 }
 .lv6 .lv6-hero-cta {
   padding: 0 clamp(22px, 1.7vw, 52px);

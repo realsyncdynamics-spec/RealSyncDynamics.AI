@@ -1,9 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
+import { requireAuthAndTenant } from "../_shared/auth.ts";
 
 interface ExecutionRequest {
   recommendationId: string;
   tenantId: string;
-  userId: string;
+  /** Wird ignoriert — die Nutzer-ID kommt aus dem verifizierten JWT. */
+  userId?: string;
   dryRun?: boolean;
 }
 
@@ -212,16 +214,25 @@ async function alignComplianceFrameworks(
 
 async function handleRequest(req: Request): Promise<Response> {
   const body = (await req.json()) as ExecutionRequest;
-  const { recommendationId, tenantId, userId, dryRun = false } = body;
+  const { recommendationId, tenantId, dryRun = false } = body;
 
-  if (!recommendationId || !tenantId || !userId) {
+  if (!recommendationId || !tenantId) {
     return new Response(
       JSON.stringify({
-        error: "recommendationId, tenantId, and userId required",
+        error: "recommendationId and tenantId required",
       }),
       { status: 400 }
     );
   }
+
+  // Mandant und Nutzer kommen nicht aus dem Body: Vorher konnte jeder
+  // eingeloggte Nutzer eine fremde tenantId angeben und mit der Service-Role
+  // Policies, Mitigations und Ausführungsprotokolle dieses Mandanten
+  // schreiben. Jetzt gilt: verifiziertes JWT + Mitgliedschaft (owner/admin),
+  // userId ist die verifizierte Nutzer-ID, nie der Wert aus dem Body.
+  const auth = await requireAuthAndTenant(req, tenantId, ["owner", "admin"]);
+  if (auth instanceof Response) return auth;
+  const userId = auth.user.id;
 
   try {
     const result = await executeOptimization(recommendationId, tenantId, userId, dryRun);

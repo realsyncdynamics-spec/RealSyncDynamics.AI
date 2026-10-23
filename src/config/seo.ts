@@ -951,9 +951,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Trust / Methodik / Legal ────────────────────────────────────────────
   '/security': {
-    title: 'Security — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
+    title: 'Security – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -961,9 +961,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/sicherheit': {
-    title: 'Sicherheit — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
+    title: 'Sicherheit – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
   },
   '/methodik': {

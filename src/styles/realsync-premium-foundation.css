@@ -1,0 +1,38 @@
+/* RealSync Premium Foundation — additive, opt-in surface scope.
+   Existing brand-v4 tokens, tenant access, business logic and routes remain unchanged. */
+.rs-premium {
+  --rs-p-bg: #080b0f;
+  --rs-p-surface: #121922;
+  --rs-p-elevated: #18212b;
+  --rs-p-border: #26323d;
+  --rs-p-text: #f2f5f7;
+  --rs-p-muted: #a8b3bd;
+  --rs-p-accent: #22d3ee;
+  --rs-p-radius: 16px;
+  --rs-p-focus: 0 0 0 3px rgba(34,211,238,.34);
+  color: var(--rs-p-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.rs-premium.rs-premium--auth,
+.rs-premium.rs-premium--setup {
+  background: radial-gradient(ellipse at 85% 7%,rgba(34,211,238,.10),transparent 42%),var(--rs-p-bg);
+}
+.rs-premium :is(button,a,input,textarea,select):focus-visible{
+  outline: 2px solid var(--rs-p-accent);
+  outline-offset: 3px;
+}
+.rs-premium :is(button,a){transition:background-color .16s ease,border-color .16s ease,color .16s ease}
+.rs-premium :is(input,textarea,select){accent-color:var(--rs-p-accent)}
+.rs-premium :is(h1,h2,h3){letter-spacing:-.025em}
+.rs-premium.rs-premium--setup :is([class*="bg-slate-900"],[class*="bg-slate-950"]){
+ background-color:var(--rs-p-surface);
+}
+.rs-premium.rs-premium--setup :is([class*="rounded-xl"],[class*="rounded-2xl"]){
+ border-radius:var(--rs-p-radius);
+}
+.rs-premium.rs-premium--workspace {
+ --rs-p-focus: 0 0 0 3px rgba(34,211,238,.34);
+}
+.rs-premium.rs-premium--workspace :is([class*="bg-obsidian-900"]){background-color:var(--rs-p-surface)}
+.rs-premium.rs-premium--workspace :is([class*="border-titanium-900"]){border-color:var(--rs-p-border)}
+@media(prefers-reduced-motion:reduce){.rs-premium :is(button,a){transition:none}}

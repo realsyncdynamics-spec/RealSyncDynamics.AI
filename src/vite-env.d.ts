@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
+  /** Beta-Testphase: `off` beendet Beta-Banner und Checkout-Umleitung (src/config/beta.ts). */
+  readonly VITE_BETA_PHASE?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SUPABASE_ANON_JWT?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;

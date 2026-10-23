@@ -10,9 +10,14 @@
 //   3. Pre-flight: User darf nicht alleiniger Owner eines Tenants sein
 //      (sonst würden andere Members ihren Zugriff verlieren). 409 mit Liste
 //      betroffener Tenants — User muss erst übertragen.
-//   4. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
+//   4. Lead- und Scan-Daten der Adresse löschen bzw. anonymisieren
+//      (RPC erase_lead_data: sales_leads, Scan-E-Mail, Mail-Serien,
+//      Newsletter/Warteliste). FAIL CLOSED: Jeder Fehler — auch eine noch
+//      nicht ausgerollte RPC — bricht ab, BEVOR am Konto etwas geändert ist
+//      (lead-erasure.ts). Sonst bliebe die Adresse ohne Zuordnung zurück.
+//   5. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
 //      preserves Compliance/Buchhaltung, entfernt PII-Verknüpfung.
-//   5. Memberships hart löschen (eigene Rolle in Tenants).
+//   5b. Memberships hart löschen (eigene Rolle in Tenants).
 //   6. auth.users löschen via admin API → CASCADE löscht profiles,
 //      workflows (owner_id), c2pa_assets (owner_id) etc.
 //
@@ -24,6 +29,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { anonymizationFailures, checkLeadErasure } from './lead-erasure.ts';
 
 const CONFIRM_PHRASE = 'DELETE-MY-ACCOUNT';
 
@@ -88,32 +94,59 @@ Deno.serve(async (req) => {
       undefined, { sole_owner_of: soleOwnerTenants });
   }
 
-  // ── Anonymisieren statt löschen (Audit-Retention) ─────────────────────────
+  // ── Lead-/Scan-Daten (Art. 17) — zuerst, fail closed ──────────────────────
+  const { data: leadErasureData, error: eraseErr } = await admin.rpc('erase_lead_data', {
+    p_email: userEmail ?? '',
+    p_user_id: userId,
+    p_origin: 'account_deletion',
+  });
+  const leadErasure = checkLeadErasure(leadErasureData, eraseErr);
+  if (!leadErasure.ok) {
+    console.error('gdpr-delete: erase_lead_data failed', { code: leadErasure.logCode });
+    return jsonError(leadErasure.status, leadErasure.code, leadErasure.message);
+  }
+
+  // ── Anonymisieren statt löschen (Audit-Retention) — fail closed ──────────
+  // Ein Datenbankfehler kommt als `{ error }` zurück, nicht als abgelehntes
+  // Promise; anonymizationFailures wertet beides aus. Scheitert eine
+  // Anonymisierung, bleibt das Konto bestehen — sonst hingen Läufe an einer
+  // gelöschten Person, die niemand mehr zuordnen oder bereinigen kann.
+  const ANON_TABLES = ['workflow_runs', 'ai_tool_runs'] as const;
   const anonymizations = await Promise.allSettled([
     admin.from('workflow_runs').update({ triggered_by: null }).eq('triggered_by', userId),
     admin.from('ai_tool_runs').update({ user_id: null }).eq('user_id', userId),
   ]);
-
-  const anonymizationErrors = anonymizations
-    .map((r, i) => r.status === 'rejected'
-      ? { table: ['workflow_runs', 'ai_tool_runs'][i], error: String(r.reason) }
-      : null)
-    .filter(Boolean);
+  const anonymizationErrors = anonymizationFailures(anonymizations, ANON_TABLES);
+  if (anonymizationErrors.length > 0) {
+    console.error('gdpr-delete: anonymization failed', { failures: anonymizationErrors });
+    return jsonError(500, 'ANONYMIZATION_FAILED',
+      'Die Löschung konnte nicht abgeschlossen werden. Ihr Konto besteht weiter; bitte versuchen Sie es später erneut.');
+  }
 
   // ── Memberships löschen ───────────────────────────────────────────────────
   const { error: memErr } = await admin.from('memberships').delete().eq('user_id', userId);
-  if (memErr) return jsonError(500, 'INTERNAL', `memberships delete failed: ${memErr.message}`);
+  if (memErr) {
+    console.error('gdpr-delete: memberships delete failed', { code: memErr.code });
+    return jsonError(500, 'INTERNAL', 'Die Löschung konnte nicht abgeschlossen werden.');
+  }
 
   // ── auth.users löschen — cascade-Delete via FK ────────────────────────────
   const { error: authErr } = await admin.auth.admin.deleteUser(userId);
-  if (authErr) return jsonError(500, 'INTERNAL', `auth.deleteUser failed: ${authErr.message}`);
+  if (authErr) {
+    console.error('gdpr-delete: auth.deleteUser failed', { status: (authErr as { status?: number }).status ?? null });
+    return jsonError(500, 'INTERNAL', 'Die Löschung konnte nicht abgeschlossen werden.');
+  }
 
   return jsonResponse({
     ok: true,
-    deleted_user: { id: userId, email: userEmail },
+    // Keine E-Mail-Adresse in der Antwort: Der Aufrufer kennt sie, und die
+    // Antwort kann in Logs, Proxys oder Fehlerberichten landen.
+    deleted_user: { id: userId },
     anonymized_tables: ['workflow_runs', 'ai_tool_runs'],
     cascade_deleted: ['profiles', 'memberships', 'workflows', 'c2pa_assets'],
     retained_for_legitimate_interest: ['workflow_runs (anonymized)', 'ai_tool_runs (anonymized)', 'subscriptions (HGB/AO 10 Jahre)'],
-    anonymization_warnings: anonymizationErrors,
+    lead_data: leadErasure.counts,
+    // Zufällige Vorgangsnummer aus lead_erasure_log — Beleg ohne Personenbezug.
+    erasure_receipt_id: leadErasure.receiptId,
   });
 });

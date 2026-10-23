@@ -48,11 +48,11 @@ describe('VoiceSessionsView', () => {
     listMock.mockResolvedValueOnce([]);
     renderView();
     await waitFor(() => expect(screen.getByTestId('voice-sessions-empty')).toBeInTheDocument());
-    expect(screen.getByText('Noch keine Voice-Sessions.')).toBeInTheDocument();
-    expect(screen.getByText(/Voice-Runtime-Dienst ist noch nicht live/i)).toBeInTheDocument();
+    expect(screen.getByText('Voice Agent · Geplant')).toBeInTheDocument();
+    expect(screen.getByTestId('voice-status-preparing')).toHaveTextContent('Status: In Vorbereitung');
+    // Keine internen Entwicklerhinweise im Kunden-Empty-State.
     const empty = screen.getByTestId('voice-sessions-empty');
-    expect(empty.textContent).toMatch(/\(apps\/agent-runtime hat keinen Deploy-Pfad/);
-    expect(empty.textContent).not.toMatch(/\(\s*\(apps\/agent-runtime/);
+    expect(empty.textContent).not.toMatch(/agent-runtime|Deploy-Pfad|nicht angebunden/);
   });
 
   it('zeigt Fehler-State ohne Beispieldaten', async () => {
@@ -61,7 +61,7 @@ describe('VoiceSessionsView', () => {
     await waitFor(() => expect(screen.getByTestId('voice-sessions-error')).toBeInTheDocument());
     expect(screen.getByText(/konnten nicht geladen werden/i)).toBeInTheDocument();
     expect(screen.queryByTestId('voice-sessions-list')).toBeNull();
-    expect(screen.queryByText('Noch keine Voice-Sessions.')).toBeNull();
+    expect(screen.queryByTestId('voice-sessions-empty')).toBeNull();
   });
 
   it('fetcht nicht ohne Tenant und zeigt Hinweis', async () => {

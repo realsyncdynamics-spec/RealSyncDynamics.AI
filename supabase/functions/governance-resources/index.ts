@@ -7,6 +7,7 @@
 //   { op: 'update_asset',     asset_id, name?, description?, owner_email?, vendor?,
 //                             intended_purpose?, ai_system_type?, model_name?,
 //                             deployment_model?, data_residency?, status? }
+//   { op: 'classify_asset',   asset_id, ai_act_class?, annex_iii_category?, art50? }
 //   { op: 'archive_asset',    asset_id }
 //   { op: 'create_policy',    tenant_id, name, policy_type, severity, action, condition, ... }
 //   { op: 'toggle_policy',    policy_id, enabled }
@@ -23,7 +24,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
-import { parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
+import { parseClassificationFields, parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -111,6 +112,7 @@ Deno.serve(async (req) => {
     switch (body.op) {
       case 'create_asset':    return await createAsset(admin, userId, userEmail, body);
       case 'update_asset':    return await updateAsset(admin, userId, userEmail, body);
+      case 'classify_asset':  return await classifyAsset(admin, userId, userEmail, body);
       case 'archive_asset':   return await archiveAsset(admin, userId, userEmail, body);
       case 'create_policy':   return await createPolicy(admin, userId, userEmail, body);
       case 'toggle_policy':   return await togglePolicy(admin, userId, userEmail, body);
@@ -183,6 +185,47 @@ async function updateAsset(admin: SupabaseAdminClient, userId: string, userEmail
     tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail,
     action: 'asset.update', target_type: 'governance_asset', target_id: asset_id,
     payload: { fields: Object.keys(fields.patch).sort() },
+  });
+  const { data: updated } = await admin.from('governance_assets').select('*').eq('id', asset_id).maybeSingle();
+  return jsonResponse({ ok: true, asset: updated });
+}
+
+
+async function classifyAsset(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+  const asset_id = b.asset_id as string;
+  if (!asset_id || typeof asset_id !== 'string') return jsonError(400, 'BAD_REQUEST', 'asset_id required');
+
+  const { data } = await admin.from('governance_assets')
+    .select('tenant_id, status, ai_act_class, annex_iii_category, metadata').eq('id', asset_id).maybeSingle();
+  const row = data as {
+    tenant_id: string; status: string; ai_act_class: string;
+    annex_iii_category: string | null; metadata: Record<string, unknown> | null;
+  } | null;
+  if (!row) return jsonError(404, 'NOT_FOUND', 'asset not found');
+  // Mandant aus der Zeile, nicht aus dem Body; Rolle gegen memberships.
+  if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  if (row.status === 'archived') return jsonError(409, 'ASSET_ARCHIVED', 'archived assets cannot be edited');
+
+  const fields = parseClassificationFields(b);
+  if (!fields.ok) return jsonError(400, 'BAD_REQUEST', fields.error);
+
+  const { art50, ...columns } = fields.patch;
+  const update: Record<string, unknown> = { ...columns };
+  if (art50 !== undefined) {
+    const meta = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata) ? row.metadata : {};
+    update.metadata = { ...meta, art50 };
+  }
+
+  const { error } = await admin.from('governance_assets').update(update).eq('id', asset_id);
+  if (error) throw error;
+  const before: Record<string, unknown> = {};
+  if (columns.ai_act_class !== undefined) before.ai_act_class = row.ai_act_class;
+  if (columns.annex_iii_category !== undefined) before.annex_iii_category = row.annex_iii_category;
+  if (art50 !== undefined) before.art50 = typeof row.metadata?.art50 === 'boolean' ? row.metadata.art50 : null;
+  await audit(admin, {
+    tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail,
+    action: 'asset.classify', target_type: 'governance_asset', target_id: asset_id,
+    payload: { before, after: fields.patch },
   });
   const { data: updated } = await admin.from('governance_assets').select('*').eq('id', asset_id).maybeSingle();
   return jsonResponse({ ok: true, asset: updated });

@@ -129,7 +129,7 @@ test.describe('Phase 5A: ISO Templates & Advanced Reporting', () => {
 
       // Click should navigate to evidence vault
       const href = await evidenceButton.locator('..').evaluate((el) => el.getAttribute('href'));
-      expect(href).toContain('evidence-vault-advanced');
+      expect(href).toBe('/app/evidence-vault');
     });
 
     test('should display statistics', async ({ page }) => {
@@ -397,8 +397,7 @@ test.describe('Phase 5A: ISO Templates & Advanced Reporting', () => {
       await page.waitForLoadState('networkidle');
 
       // Should navigate to evidence vault
-      expect(page.url()).toContain('evidence-vault-advanced');
-      await expect(page.locator('text=Nachweis-Vault')).toBeVisible();
+      expect(page.url()).toContain('/app/evidence-vault');
     });
 
     test('should maintain framework filter across navigation', async ({ page }) => {

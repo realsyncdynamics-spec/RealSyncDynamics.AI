@@ -113,7 +113,9 @@ test.describe('Pricing Flow', () => {
 
     test('all bookable checkout pages should be accessible', async ({ page }) => {
       for (const planKey of CHECKOUT_PLAN_KEYS) {
-        await page.goto(`${BASE_URL}/checkout/${planKey}`);
+        // `?purchase=1`: bewusster Kaufpfad — ohne ihn leitet die Beta in die
+        // Registrierung um (src/config/beta.ts).
+        await page.goto(`${BASE_URL}/checkout/${planKey}?purchase=1`);
         await page.waitForLoadState('domcontentloaded');
 
         expect(page.url()).toContain(`/checkout/${planKey}`);
@@ -122,7 +124,7 @@ test.describe('Pricing Flow', () => {
 
     test('Jahres-Checkout ohne verdrahteten Preis leitet auf den Monats-Checkout', async ({ page }) => {
       for (const [yearlyKey, monthlyKey] of UNWIRED_YEARLY_REDIRECTS) {
-        await page.goto(`${BASE_URL}/checkout/${yearlyKey}`);
+        await page.goto(`${BASE_URL}/checkout/${yearlyKey}?purchase=1`);
         // Am Ende verankert: `/checkout/starter` ist ein Praefix von
         // `/checkout/starter_yearly`. Ohne `(\?|$)` waere die Wartebedingung
         // schon von der Ausgangs-URL erfuellt und der Test gruen, bevor die
@@ -164,7 +166,10 @@ test.describe('Pricing Flow', () => {
     // würde gegen die CheckoutPage-Reihenfolge (inquiry vor legacy) laufen.
 
     test('agency checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/agency`);
+      // `?purchase=1`: bewusster Kaufpfad — ohne ihn leitet die Beta in die
+      // Registrierung um (src/config/beta.ts), und der Test gewann nur das
+      // Rennen gegen die Umleitung.
+      await page.goto(`${BASE_URL}/checkout/agency?purchase=1`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(/\/checkout\/agency/);
       await expect(page).not.toHaveURL(/source=checkout-retired/);

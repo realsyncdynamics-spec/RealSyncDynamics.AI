@@ -53,6 +53,14 @@ export interface UpdateAssetInput {
   status?: 'draft' | 'active' | 'under_review' | 'approved';
 }
 
+/** Klassifizierung: Risikostufe, Annex III, Art. 50 (metadata.art50). */
+export interface ClassifyAssetInput {
+  asset_id: string;
+  ai_act_class?: AiActClass;
+  annex_iii_category?: string | null;
+  art50?: boolean;
+}
+
 export interface CreatePolicyInput {
   tenant_id: string;
   name: string;
@@ -108,6 +116,7 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 
 export const createAsset  = (input: CreateAssetInput)  => call<AssetResult>({ op: 'create_asset', ...input });
 export const updateAsset  = (input: UpdateAssetInput)  => call<AssetResult>({ op: 'update_asset', ...input });
+export const saveAssetClassification = (input: ClassifyAssetInput) => call<AssetResult>({ op: 'classify_asset', ...input });
 export const archiveAsset = (asset_id: string)         => call<BareResult>({ op: 'archive_asset', asset_id });
 export const createPolicy = (input: CreatePolicyInput) => call<PolicyResult>({ op: 'create_policy', ...input });
 export const togglePolicy = (policy_id: string, enabled: boolean) =>

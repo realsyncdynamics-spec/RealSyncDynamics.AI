@@ -12,10 +12,10 @@
 // Ablauf:
 //   1. Bot auflösen (tenant + enabled)            resolveBot
 //   2. Feature-Gate                               bots.enabled
-//   3. Monats-Quota prüfen + zählen               limit.bot_messages_monthly
-//   4. Konversation upserten + User-Nachricht persistieren
-//   5. Verlauf laden, Prompt bauen, AI aufrufen   runAiTool('bot_reply')
-//   6. Antwort persistieren + zurückgeben
+//   3. Bestehenden Verlauf lesend laden, Bot-PEP pruefen (ohne Speichern)
+//   4. Nur bei erlaubter Nachricht: Monats-Quota pruefen + zaehlen
+//   5. Konversation/Nachricht speichern, KI aufrufen
+//   6. Antwort persistieren + zurueckgeben
 //
 // verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
 
@@ -25,7 +25,7 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import {
-  resolveBot, upsertConversation, insertMessage, loadRecentHistory,
+  resolveBot, findExistingConversationId, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError,
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
@@ -72,7 +72,39 @@ Deno.serve(async (req) => {
       throw e;
     }
 
-    // Monats-Quota prüfen + zählen (vor dem AI-Aufruf).
+    // Read-only lookup first: denied requests must not create or modify
+    // conversation rows, bot messages or contact labels.
+    const existingConversationId = await findExistingConversationId(
+      admin, bot, conversationRef,
+    );
+    const priorHistory = existingConversationId
+      ? await loadRecentHistory(admin, existingConversationId, 12)
+      : [];
+
+    // Shared Bot-PEP decides before ANY conversation persistence, quota
+    // consumption or inference. The PDP sees signal names, not raw text.
+    const verdict = await enforceBotMessage(admin, {
+      tenant_id: tenantId,
+      bot_id: bot.id,
+      channel: 'bot-chat',
+      message,
+      history_length: priorHistory.length,
+      capability_keys: Object.keys(bot.capabilities ?? {}),
+    });
+
+    if (!verdict.allowed) {
+      // Do not persist refused user text or a synthetic assistant message.
+      // Existing conversation IDs may be returned without modifying state.
+      return jsonResponse({
+        ok: true,
+        conversation_id: existingConversationId,
+        reply: verdict.safe_reply,
+        run_id: null,
+        policy_blocked: true,
+      });
+    }
+
+    // Billable quota and storage only after the content is permitted.
     try {
       await consumeUsage(admin, tenantId, 'limit.bot_messages_monthly', 1, { bot_id: bot.id });
     } catch (e) {
@@ -85,47 +117,7 @@ Deno.serve(async (req) => {
     const conversationId = await upsertConversation(admin, bot, {
       channel: 'chat', externalRef: conversationRef, contactLabel,
     });
-
     await insertMessage(admin, bot, conversationId, 'user', message.trim());
-
-    const history = await loadRecentHistory(admin, conversationId, 12);
-    // Die zuletzt eingefügte User-Nachricht ist bereits Teil von `history`;
-    // entferne sie, damit sie nicht doppelt im Prompt landet.
-    const priorHistory = history.slice(0, -1);
-
-    // ── Richtlinien des Mandanten (P2-5, PEP) ───────────────────────
-    //
-    // Vor dem Modellaufruf: Danach ist das Geld ausgegeben und die Antwort
-    // erzeugt. Der Nachrichtentext verlaesst diesen Prozess nicht — an den
-    // PDP gehen nur Signalnamen (siehe _shared/pdp/botmessage.ts).
-    const verdict = await enforceBotMessage(admin, {
-      tenant_id: tenantId,
-      bot_id: bot.id,
-      channel: 'bot-chat',
-      message,
-      history_length: priorHistory.length,
-      capability_keys: Object.keys(bot.capabilities ?? {}),
-    });
-
-    if (!verdict.allowed) {
-      // Der Sperrgrund geht in den Pruefpfad, NICHT an den Absender: Er ist
-      // Kunde des Mandanten, nicht der Mandant. Ihm die Regel zu nennen,
-      // gaebe interne Richtlinien an einen Dritten preis.
-      await insertMessage(admin, bot, conversationId, 'assistant', verdict.safe_reply!, {
-        metadata: {
-          channel: 'chat', policy_blocked: true,
-          policy_decision: verdict.decision, policy_reasons: verdict.reasons,
-          policy_signals: verdict.signals,
-        },
-      });
-      return jsonResponse({
-        ok: true,
-        conversation_id: conversationId,
-        reply: verdict.safe_reply,
-        run_id: null,
-        policy_blocked: true,
-      });
-    }
 
     const restaurantTurn = await runRestaurantConversationTurn(
       admin,

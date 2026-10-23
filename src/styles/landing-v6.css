@@ -1,0 +1,203 @@
+/*
+ * Landing v6 — Claude-Design-Handoff „The Governance OS für DSGVO und EU AI Act"
+ * (Artefakt vom 13.10.2026). Alle Regeln sind auf `.lv6` begrenzt; andere
+ * Seiten und frühere Landing-Fassungen bleiben unberührt.
+ *
+ * Schriften: Inter + JetBrains Mono kommen aus src/index.css,
+ * Source Serif 4 (OFL) liegt lokal unter /fonts (CSP font-src 'self').
+ */
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/source-serif-4-latin-ext-var.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/source-serif-4-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Obere Leiste (Mono) ohne Schriftwechsel nach dem ersten Rendern.
+ * Bei 1350 px Breite ist die Zeile bis auf ~1 px gefüllt: Die Ersatzschrift
+ * (z. B. DejaVu Sans Mono, 0,3 % breiter) bricht sie in zwei Zeilen um, der
+ * spätere Wechsel auf JetBrains Mono zog die Seite 27 px hoch (CLS 0,38).
+ * `optional` + Preload in LandingV6.tsx: Die Schrift gilt, wenn sie zum ersten
+ * Rendern da ist; sonst bleibt die Ersatzschrift für diesen Aufruf, ohne Sprung.
+ * Gleiche Datei wie 'JetBrains Mono' in src/index.css.
+ */
+@font-face {
+  font-family: 'JetBrains Mono Optional';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: optional;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.lv6 {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.lv6 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.lv6 a:hover {
+  color: var(--rs-acc);
+}
+
+.lv6 button {
+  font: inherit;
+}
+
+.lv6 input::placeholder {
+  color: var(--rs-fg3);
+}
+
+.lv6 select option {
+  color: #0a1020;
+}
+
+.lv6 details summary::-webkit-details-marker {
+  display: none;
+}
+
+.lv6 :focus-visible {
+  outline: 2px solid var(--rs-acc);
+  outline-offset: 2px;
+}
+
+@keyframes rsIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lv6[data-rs-theme] {
+  --wrap: min(100%, clamp(1200px, 84vw, 2400px));
+  --px: clamp(20px, 3.25vw, 120px);
+  --sec-y: clamp(72px, 7vw, 200px);
+  --fs-kicker: clamp(12px, 0.72vw, 20px);
+  --fs-h2: clamp(34px, 3.6vw, 112px);
+  --fs-h3: clamp(22px, 1.5vw, 44px);
+  --fs-lead: clamp(16px, 1.08vw, 30px);
+  --fs-body: clamp(15px, 0.88vw, 24px);
+  --fs-small: clamp(13px, 0.74vw, 20px);
+  --card-p: clamp(24px, 1.8vw, 52px);
+}
+
+.lv6[data-rs-theme='dark'] {
+  --rs-bg: #121212;
+  --rs-bg2: #171717;
+  --rs-surface: rgba(255, 255, 255, 0.03);
+  --rs-line: rgba(255, 255, 255, 0.1);
+  --rs-grid: rgba(255, 255, 255, 0.035);
+  --rs-shine: rgba(255, 255, 255, 0.16);
+  --rs-fg: #f4f4f2;
+  --rs-fg2: #b9b9b6;
+  --rs-fg3: #8a8a88;
+  --rs-dot: #8a8a88;
+  --rs-h1: linear-gradient(180deg, #ffffff 0%, #e4e4e2 45%, #a9a9a7 100%);
+  --rs-chip: rgba(255, 255, 255, 0.035);
+  --rs-chip-b: rgba(255, 255, 255, 0.28);
+  --rs-map-filter: brightness(1.18) contrast(1.06);
+  --rs-map-blend: normal;
+  --rs-toggle: rgba(255, 255, 255, 0.06);
+  --rs-hshadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --rs-scrim: rgba(0, 0, 0, 0.6);
+  --rs-nav: rgba(18, 18, 18, 0.78);
+  color-scheme: dark;
+}
+
+.lv6[data-rs-theme='light'] {
+  --rs-bg: #f3f1ec;
+  --rs-bg2: #eae7e0;
+  --rs-surface: rgba(255, 255, 255, 0.75);
+  --rs-line: rgba(10, 16, 32, 0.12);
+  --rs-grid: rgba(10, 16, 32, 0.045);
+  --rs-shine: rgba(255, 255, 255, 0.95);
+  --rs-fg: #0a1020;
+  --rs-fg2: #4a5878;
+  --rs-fg3: #6b7690;
+  --rs-dot: #8a95ac;
+  --rs-h1: linear-gradient(180deg, #1f2a44 0%, #0a1020 100%);
+  --rs-chip: rgba(255, 255, 255, 0.7);
+  --rs-chip-b: rgba(10, 16, 32, 0.18);
+  --rs-map-filter: invert(1) hue-rotate(180deg) saturate(1.3) contrast(0.9);
+  --rs-map-blend: multiply;
+  --rs-toggle: rgba(10, 16, 32, 0.05);
+  --rs-hshadow: 0 2px 10px rgba(10, 16, 32, 0.08);
+  --rs-scrim: rgba(10, 16, 32, 0.35);
+  --rs-nav: rgba(243, 241, 236, 0.82);
+  color-scheme: light;
+}
+
+.lv6[data-rs-accent='gold'] {
+  --rs-acc: #d6ae52;
+  --rs-acc-soft: rgba(214, 174, 82, 0.12);
+  --rs-acc-g: linear-gradient(180deg, #e9c66f 0%, #c99a3a 55%, #a87a26 100%);
+  --rs-btn: linear-gradient(180deg, #d9b35c 0%, #b98a33 100%);
+  --rs-glow: rgba(222, 176, 76, 0.45);
+  --rs-hue: 0deg;
+}
+
+.lv6[data-rs-theme='light'][data-rs-accent='gold'] {
+  --rs-acc: #9a7224;
+  --rs-acc-soft: rgba(154, 114, 36, 0.1);
+  --rs-acc-g: linear-gradient(180deg, #b8892f 0%, #8c6519 100%);
+}
+
+.lv6[data-rs-accent='cyan'] {
+  --rs-acc: #22c3dd;
+  --rs-acc-soft: rgba(34, 195, 221, 0.12);
+  --rs-acc-g: linear-gradient(180deg, #3fd4ec 0%, #14afcb 100%);
+  --rs-btn: linear-gradient(180deg, #22c8e2 0%, #0797b4 100%);
+  --rs-glow: rgba(0, 184, 212, 0.45);
+  --rs-hue: 150deg;
+}
+
+.lv6[data-rs-theme='light'][data-rs-accent='cyan'] {
+  --rs-acc: #007f93;
+  --rs-acc-soft: rgba(0, 127, 147, 0.1);
+  --rs-acc-g: linear-gradient(180deg, #0092a8 0%, #006b7c 100%);
+}
+
+/* Hero-Karte: WebP mit JPEG-Fallback (image-set). Europa soll klar
+   sichtbar sein: im Dunkelmodus leicht aufgehellt, Maske nur am linken Rand. */
+.lv6 .lv6-map {
+  background-image: url('/landing-v6/europe-network.jpg');
+  background-image: image-set(
+    url('/landing-v6/europe-network.webp') type('image/webp'),
+    url('/landing-v6/europe-network.jpg') type('image/jpeg')
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv6 *,
+  .lv6 *::before,
+  .lv6 *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

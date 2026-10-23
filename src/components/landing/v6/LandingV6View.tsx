@@ -18,7 +18,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div style={{ display: "flex", alignItems: "center", gap: "clamp(14px,1.6vw,40px)", fontSize: "var(--fs-body)", whiteSpace: "nowrap" }}>
               {v.showLinks ? (<>
                 <a href="#produkt">Plattform</a><a href="#websites">Websites</a><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
-                <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Login</Link>
+                <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Anmelden</Link>
               </>) : null}
               <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
             </div>
@@ -495,7 +495,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
             <a href="#check" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance-Check</a>
             <a href="#preise" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Preise</a>
-            <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>
+            <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Anmelden</Link>
           </nav>
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
             <Link to={v.href.audit} style={{ minHeight: "56px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", fontSize: "17px", cursor: "pointer" }}>Kostenlosen Website-Check starten</Link>

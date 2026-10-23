@@ -275,11 +275,13 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    // Titel, Beschreibung und OG-Titel folgen der H1 von Landing v6, damit
+    // Suchtreffer und Startseite dieselbe Botschaft tragen (ohne englisches „The“).
+    title: 'Governance OS für DSGVO & EU AI Act | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'Website- und KI-Risiken erkennen und prüffähig nachweisen – mit Paragraphenbezug, EU-AI-Act-Risikoklassen und Hosting in Frankfurt. Kostenloser Website-Check.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'Governance OS für DSGVO und EU AI Act',
     ogDescription:
       'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
     jsonLd: LANDING_V2_JSONLD,

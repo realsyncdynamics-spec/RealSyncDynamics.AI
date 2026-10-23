@@ -10,7 +10,7 @@ Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 
 ## Einstieg
 
-- [Startseite](https://realsyncdynamicsai.de/): AI Compliance Operations OS for Europe
+- [Startseite](https://realsyncdynamicsai.de/): Governance OS für DSGVO und EU AI Act
 - [Kostenloser Audit](https://realsyncdynamicsai.de/audit): DSGVO-Scan einer Website-URL, Ergebnis in etwa 60 Sekunden
 - [AI Governance OS](https://realsyncdynamicsai.de/ai-governance): Inventar, Risikoklassifizierung, Policies, Evidence
 - [Funktionen](https://realsyncdynamicsai.de/features): Website-Scan, AI-Act-Inventar, Audit-Trail

@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-04';
+export const IMPLEMENTATION_MEASURED_AT = '2026-10-18';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,17 +49,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v4 „Klassisch“ auf `/`: H1 „AI Compliance Operations OS for Europe“, Primär-CTA Free Audit (/audit), Sekundär-CTA Runtime ansehen (/governance-runtime); dunkler Hero mit three.js-Erde, darunter Classical-Bänder (Papier/Tinte/Gold) — Workspace-Vorschau, Tools, Plattform, Evidence, Preise, Roadmap, Enterprise.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT mit 14 Tagen Test für Starter und Growth, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
-      'src/pages/LandingV4.tsx',
-      'src/components/landing/v4/LandingV4Sections.tsx',
-      'src/components/landing/v4/landing-v4-content.ts',
-      'src/components/landing/v4/heroEarthScene.ts',
-      'src/styles/landing-v4-classical.css',
-      'src/App.tsx',
-      'test/landing/landing-v4.test.tsx',
-      'PR #1751',
+      'src/pages/LandingV6.tsx',
+      'src/components/landing/v6/LandingV6View.tsx',
+      'src/components/landing/v6/useLandingV6.ts',
+      'src/styles/landing-v6.css',
+      'public/landing-v6/europe-network.webp',
+      'src/App.tsx#/',
+      'test/landing/landing-v6-funnel.test.tsx',
+      'test/landing/landing-v6-a11y.test.tsx',
     ],
     showOnRoadmap: false,
   },
@@ -115,7 +115,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Free Audit starten',
+    ctaLabel: 'Kostenlosen Website-Check starten',
   },
   {
     id: 'app-shell',
@@ -183,7 +183,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'compliance',
     description:
-      'Klassifikation ins Register/Inventar speichern ist nicht freigeschaltet: ai_classification.limited steht in keinem Plan (kein Upgrade entsperrt; Lock-Copy nach #1743). UI-Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory-Pfad existieren, Persistenz funktioniert noch nicht (fehlender Persist-Pfad / P1-2). Nicht live.',
+      'Nur der Pfad Klassifikator → /app/risk-inventory: Ergebnis aus /ai-act-klassifikator ins Tenant-Inventar speichern ist nicht freigeschaltet (ai_classification.limited steht in keinem Plan, kein Upgrade entsperrt; Lock-Copy nach #1743). Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory existieren, Persistenz fehlt noch. Klassifikation im KI-Register siehe ai-system-registry.',
     route: '/app/risk-inventory',
     evidence: [
       'src/pages/AiActClassifier.tsx#saveToInventory',
@@ -192,6 +192,42 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/core/billing/FeatureGate.tsx#ai_classification.limited',
       'src/components/governance-os/useNavLock.ts',
       'PR #1743',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'ai-system-registry',
+    name: 'KI-Register',
+    status: 'live',
+    group: 'compliance',
+    description:
+      'KI-Register unter /app/ai-systems: Systeme auflisten und anlegen, Registerdaten pflegen (governance-resources op update_asset) und Klassifikation (Risikostufe, Annex III, Art. 50) in /app/ai-systems/:id speichern (op classify_asset).',
+    route: '/app/ai-systems',
+    evidence: [
+      'supabase/functions/governance-resources/index.ts#classify_asset',
+      'supabase/functions/governance-resources/registryFields.ts',
+      'src/features/governance/ai-registry/AiSystemDetailView.tsx',
+      'test/edge/governance-resources-registry-fields.test.ts',
+      'test/features/governance/handoff/ai-system-detail-route.test.tsx',
+      'test/features/governance/handoff/classify-lock.test.tsx',
+      'PR #1924',
+    ],
+  },
+  {
+    id: 'kodee',
+    name: 'Kodee (VPS-Assistent)',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Kodee-Chat unter /kodee in allen Plänen; SSH-Server-Aktionen erfordern ai.tool.vps_status (Agency, Enterprise, Partner) — clientseitig im ActionRunner und serverseitig in der Edge Function kodee (verbindungsbesitzender Tenant, sonst 403).',
+    route: '/kodee',
+    evidence: [
+      'supabase/functions/kodee/index.ts',
+      'src/components/governance-os/governanceModules.ts#kodee',
+      'src/features/kodee/ActionRunner.tsx',
+      'test/features/kodee/ActionRunner.entitlement.test.tsx',
+      'PR #1917',
+      'PR #1922',
     ],
     showOnRoadmap: true,
   },
@@ -218,16 +254,36 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   },
   {
     id: 'channel-bots',
-    name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
+    name: 'Bot-Laufzeit — Chat, WhatsApp, Telegram',
     status: 'preview',
     group: 'channels',
     description:
-      'Start-Routen und Builder-UI erreichbar; volle Provider-Laufzeit noch Preview.',
+      'Start-Routen und Builder-UI für Chat-, WhatsApp- und Telegram-Bots erreichbar; volle Provider-Laufzeit noch Preview. Telefonie ist ein eigener Eintrag (voice-telephony, Coming Soon).',
     route: '/chatbot/start',
     evidence: [
       'src/pages/product-entry',
       'src/config/public-nav.ts',
       'src/features/governance bots views',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: true,
+  },
+  {
+    id: 'voice-telephony',
+    name: 'Voice / Telefonie',
+    status: 'coming-soon',
+    group: 'channels',
+    description:
+      'Telefonie-Kanal (Voice Agent) geplant: /app/voice zeigt nur eine read-only Session-Liste mit Leerzustand „Voice Agent · Geplant“; Features- und FAQ-Seite nennen Telefonie als geplant (#1921). Code für apps/agent-runtime (/voice-tool, /voice-sessions) und den Twilio-Webhook bot-voice-webhook liegt im Tree, aber es gibt keinen funktionierenden Deploy-Pfad für apps/agent-runtime (letzter Lauf von deploy-agent-runtime-vps.yml am 06.10.2026 fehlgeschlagen) und keine produktiv angebundene Telefonie (Rufnummer/Provider). Nicht live.',
+    route: '/app/voice',
+    evidence: [
+      'src/features/governance/voice/VoiceSessionsView.tsx',
+      'src/pages/Features.tsx',
+      'src/pages/Faq.tsx',
+      'apps/agent-runtime/README.md',
+      '.github/workflows/deploy-agent-runtime-vps.yml',
+      'supabase/functions/bot-voice-webhook/index.ts',
+      'PR #1921',
     ],
     showOnPlatform: false,
     showOnRoadmap: true,
@@ -281,14 +337,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'hero-earth-scenery',
     name: 'Photoreal Earth Hero Backdrop',
-    status: 'live',
+    status: 'preview',
     group: 'visual',
     description:
-      'Live-Hero auf `/`: three.js-Szene (mountHeroEarth) hinter Landing-v4-Typografie — Blue-Marble/Night/Clouds/Normal/Specular, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver.',
-    route: '/',
+      'Nicht mehr auf `/`: Landing v6 nutzt ein statisches Europa-Bild. Die three.js-Szene (mountHeroEarth — Blue-Marble/Night/Clouds, Sonne, Mond, Mars, ISS; lazy nach erstem Paint, kein WebGL unter navigator.webdriver) läuft nur noch in der Referenz Landing v4 unter /design/landing-v4.',
+    route: '/design/landing-v4',
     evidence: [
       'src/components/landing/v4/heroEarthScene.ts',
       'src/pages/LandingV4.tsx',
+      'src/App.tsx#/design/landing-v4',
       'public/textures/hero-v4/',
       'test/landing/landing-v4.test.tsx',
       'PR #1751',
@@ -300,12 +357,14 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Monatspläne Starter / Growth / Agency',
     status: 'live',
     group: 'billing',
-    description: 'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden.',
-    route: '/#pricing',
+    description:
+      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) bleibt das öffentliche Beta-Angebot sichtbar (`BETA.publicOffer = true`, Owner-Entscheidung 21.10.2026); die Listenpreise aus der SSoT sind unverändert.',
+    route: '/#preise',
     evidence: [
       'shared/pricing.ts',
-      'src/components/landing/v4/landing-v4-content.ts#PLANS',
-      'src/components/landing/v4/LandingV4Sections.tsx#V4Pricing',
+      'src/config/beta.ts',
+      'src/components/landing/v6/useLandingV6.ts#plans',
+      'src/components/landing/v6/LandingV6View.tsx#preise',
     ],
     showOnRoadmap: false,
   },
@@ -317,8 +376,29 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
     route: '/contact-sales',
     evidence: [
-      'src/components/landing/v4/LandingV4Sections.tsx#V4Enterprise',
+      'src/components/landing/v6/useLandingV6.ts#href.enterprise',
+      'src/components/landing/v6/LandingV6View.tsx#hero-secondary-cta',
       'src/pages/ContactSales.tsx',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'beta-phase',
+    name: 'Offene Beta (Growth-Zugang)',
+    status: 'preview',
+    group: 'billing',
+    description:
+      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Offen (WP-4): Feedback im Dashboard und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
+    route: '/welcome',
+    evidence: [
+      'supabase/functions/beta-enroll/index.ts',
+      'supabase/functions/beta-enroll/logic.ts',
+      'src/features/billing/useBetaEnrollment.ts',
+      'src/config/beta.ts',
+      'src/config/production-edge-functions.ts#beta-enroll',
+      'test/edge/beta-enroll.test.ts',
+      'docs/claude/BETA_V5_WORKPLAN.md#WP-4',
+      'PR #1874',
     ],
     showOnRoadmap: false,
   },
@@ -512,7 +592,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'visual',
     description:
-      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Landing-v4 three.js Earth hero instead).',
+      'GovernanceSphereHost (DEMO/SIMULATED-HUD, orbit Earth) exists as component — not mounted on public `/` (Landing v6 uses a static Europe image).',
     evidence: [
       'src/components/governance-frontend/GovernanceSphereHost.tsx',
       'test/landing/governance-sphere.test.ts',

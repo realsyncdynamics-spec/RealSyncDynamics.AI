@@ -754,6 +754,16 @@
   .rs-audit__options--grid { grid-template-columns: 1fr; }
   .rs-result { grid-template-columns: 1fr; justify-items: start; }
 }
+/* Telefonbreite: „Zurück“ und „Kostenlosen Governance Scan starten“ passen
+   nicht nebeneinander. Ohne Umbruch lief die Aktionszeile über den Rand und
+   schob den Stepper seitlich (Playwright GOV-003, 390 px). */
+@media (max-width: 560px) {
+  .rs-audit__actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .rs-audit__actions .rs-btn {
+    flex: 1 1 auto; min-width: 0; height: auto; min-height: 44px;
+    padding-block: 10px; white-space: normal; text-align: center; line-height: 1.25;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .rs-progress__bar--indeterminate { animation: none; width: 100%; opacity: 0.6; }
 }

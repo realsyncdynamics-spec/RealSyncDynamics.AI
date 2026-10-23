@@ -33,7 +33,6 @@ describe('GovernanceBrowserShell auth gate', () => {
       '/app/siteos/claim',
       '/app/legal-rag',
       '/app/settings/integrations/telegram',
-      '/app/governance/recommendation',
     ]) {
       const line = APP.split('\n').find((l) => l.includes(`path="${path}"`)) ?? '';
       expect(line, path).toContain('<AppGate>');

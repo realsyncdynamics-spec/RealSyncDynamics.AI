@@ -8,6 +8,7 @@ import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
 import { EmptyStateGraphic } from '../../components/visual/EmptyStateGraphic';
+import { FunnelLeadsPanel } from './FunnelLeadsPanel';
 
 interface SalesLead {
   id: string;
@@ -33,7 +34,7 @@ interface AuditRow {
   created_at: string;
 }
 
-type Tab = 'leads' | 'audits';
+type Tab = 'funnel' | 'leads' | 'audits';
 
 export function LeadsView() {
   return <AuthGate>{(session) => <Inner session={session} />}</AuthGate>;
@@ -41,7 +42,7 @@ export function LeadsView() {
 
 function Inner({ session }: { session: Session }) {
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<Tab>('leads');
+  const [tab, setTab] = useState<Tab>('funnel');
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
@@ -139,12 +140,15 @@ function Inner({ session }: { session: Session }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Kpi icon={<Mail />} label="Sales-Leads" value={leads.length} />
           <Kpi icon={<FileSearch />} label="Audits" value={audits.length} />
-          <Kpi icon={<Target />} label="Audit→Lead" value={leads.filter((l) => l.source === 'audit_lp').length} sub="von /audit" />
+          {/* Seit dem Lead-Trichter (20261015120000) tragen Scan-Leads kanonische
+              Quellen; 'audit_lp' bleibt für Bestandszeilen mitgezählt. */}
+          <Kpi icon={<Target />} label="Audit→Lead" value={leads.filter((l) => l.source === 'audit_lp' || l.source === 'governance_scan' || l.source === 'landing').length} sub="von /audit" />
           <Kpi icon={<Users />} label="Heute" value={leads.filter((l) => isToday(l.created_at)).length} />
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-4 border-b border-titanium-900">
+          <Tab id="funnel" current={tab} setTab={setTab} />
           <Tab id="leads" current={tab} setTab={setTab} count={leads.length} />
           <Tab id="audits" current={tab} setTab={setTab} count={audits.length} />
         </div>
@@ -155,7 +159,9 @@ function Inner({ session }: { session: Session }) {
           </div>
         )}
 
-        {loading
+        {tab === 'funnel'
+          ? <FunnelLeadsPanel />
+          : loading
           ? (<div className="flex items-center gap-2 text-titanium-400 text-sm py-12 justify-center"><Loader2 className="h-4 w-4 animate-spin" /> Lade…</div>)
           : tab === 'leads' ? (
             <>
@@ -282,8 +288,8 @@ function Kpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string
   );
 }
 
-function Tab({ id, current, setTab, count }: { id: Tab; current: Tab; setTab: (t: Tab) => void; count: number }) {
-  const labels: Record<Tab, string> = { leads: 'Sales-Leads', audits: 'Audits' };
+function Tab({ id, current, setTab, count }: { id: Tab; current: Tab; setTab: (t: Tab) => void; count?: number }) {
+  const labels: Record<Tab, string> = { funnel: 'Lead-Trichter', leads: 'Sales-Leads', audits: 'Audits' };
   return (
     <button
       onClick={() => setTab(id)}
@@ -293,7 +299,7 @@ function Tab({ id, current, setTab, count }: { id: Tab; current: Tab; setTab: (t
           : 'border-transparent text-titanium-400 hover:text-titanium-200'
       }`}
     >
-      {labels[id]} <span className="text-xs text-titanium-500 font-mono">({count})</span>
+      {labels[id]} {count !== undefined && <span className="text-xs text-titanium-500 font-mono">({count})</span>}
     </button>
   );
 }

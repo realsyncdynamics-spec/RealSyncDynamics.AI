@@ -236,6 +236,40 @@ describe('ObligationsPanel', () => {
     expect(screen.getByTestId('obligation-status-ai_literacy').textContent).toContain('15.10.2026');
   });
 
+  it('während ein Haken speichert, sind alle Haken gesperrt', async () => {
+    mocks.load.mockResolvedValue(record({
+      ...createEmptyAiSetup(), aiSystems: ['local'], botsAgents: ['website_chat'], dataClasses: [],
+    }));
+    let release: (v: unknown) => void = () => {};
+    mocks.setDone.mockReturnValue(new Promise((r) => { release = r; }));
+    renderPanel();
+    await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+    await waitFor(() =>
+      expect((screen.getAllByRole('checkbox')[0] as HTMLInputElement).disabled).toBe(false));
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    await waitFor(() => {
+      for (const box of screen.getAllByRole('checkbox')) {
+        expect((box as HTMLInputElement).disabled).toBe(true);
+      }
+    });
+    release({ ai_literacy: { doneAt: '2026-10-23T09:00:00.000Z' } });
+    await waitFor(() =>
+      expect((screen.getAllByRole('checkbox')[1] as HTMLInputElement).disabled).toBe(false));
+  });
+
+  it('PDF-Export erst, wenn alle Quellen geladen sind', async () => {
+    mocks.load.mockResolvedValue(record({
+      ...createEmptyAiSetup(), aiSystems: ['local'], botsAgents: [], dataClasses: [],
+    }));
+    let resolveSignals: (v: unknown) => void = () => {};
+    mocks.signals.mockReturnValue(new Promise((r) => { resolveSignals = r; }));
+    renderPanel();
+    const btn = await screen.findByRole('button', { name: /Als PDF/ });
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
+    resolveSignals(SIGNALS_EMPTY);
+    await waitFor(() => expect((btn as HTMLButtonElement).disabled).toBe(false));
+  });
+
   it('Fortschritt nicht lesbar → kein Haken möglich, Status „nicht lesbar"', async () => {
     mocks.load.mockResolvedValue(record({
       ...createEmptyAiSetup(), aiSystems: ['local'], botsAgents: [], dataClasses: [],
@@ -260,9 +294,9 @@ describe('ObligationsPanel', () => {
 
 
 describe('obligationStatus', () => {
-  const [, , , avv] = deriveObligations({
+  const avv = deriveObligations({
     aiSystems: ['openai', 'microsoft_copilot'], botsAgents: [], dataClasses: ['customer'],
-  });
+  }).find((o) => o.id === 'processor_contract')!;
   const ext = ['openai', 'microsoft_copilot'];
 
   it('AVV: Anbieter fehlt / AVV fehlt / alles da', () => {

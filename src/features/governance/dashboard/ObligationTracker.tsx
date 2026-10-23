@@ -75,6 +75,9 @@ export function ObligationTracker({ tenantId, setup, company, reloadKey }: Props
     external,
   ));
   const done = countDone(statuses);
+  // Export erst, wenn alle Quellen geantwortet haben — sonst hielte das PDF
+  // einen Zwischenstand („nicht lesbar"/„offen") dauerhaft fest.
+  const sourcesReady = signals !== null && progress.kind !== 'loading';
   const { duties, checks } = countByKind(list);
   const pct = list.length === 0 ? 0 : Math.round((done / list.length) * 100);
 
@@ -92,7 +95,7 @@ export function ObligationTracker({ tenantId, setup, company, reloadKey }: Props
   }
 
   async function downloadPdf() {
-    if (pdfState === 'rendering') return;
+    if (pdfState === 'rendering' || !sourcesReady) return;
     setPdfState('rendering');
     try {
       const [{ pdf }, { ObligationsTemplate }] = await Promise.all([
@@ -150,7 +153,8 @@ export function ObligationTracker({ tenantId, setup, company, reloadKey }: Props
         <button
           type="button"
           onClick={() => { void downloadPdf(); }}
-          disabled={pdfState === 'rendering'}
+          disabled={pdfState === 'rendering' || !sourcesReady}
+          title={sourcesReady ? undefined : 'Status wird noch geladen'}
           className="inline-flex items-center gap-1.5 border border-titanium-700 px-3 py-1.5 text-[12px] font-semibold text-titanium-100 hover:border-[var(--brand-champ)] disabled:opacity-50"
         >
           {pdfState === 'rendering'
@@ -181,7 +185,9 @@ export function ObligationTracker({ tenantId, setup, company, reloadKey }: Props
             o={o}
             status={statuses[i]}
             busy={busyId === o.id}
-            canToggle={progress.kind === 'ready'}
+            /* Alle Haken sperren, solange einer speichert: jeder Schreibvorgang
+               ersetzt das ganze JSON, zwei parallele würden sich überschreiben. */
+            canToggle={progress.kind === 'ready' && busyId === null}
             onToggle={(next) => { void toggle(o, next); }}
           />
         ))}

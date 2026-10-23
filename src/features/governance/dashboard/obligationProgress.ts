@@ -115,11 +115,18 @@ export async function setObligationDone(
   const progress = asObligationProgress(org.obligationProgress);
   if (done) progress[obligationId] = { doneAt: now.toISOString() };
   else delete progress[obligationId];
-  const { error } = await getSupabase()
+  // `.select()` liefert die geänderten Zeilen zurück. RLS filtert ein UPDATE
+  // ohne Schreibrecht still auf null Zeilen — ohne diese Prüfung meldete die
+  // Oberfläche „gespeichert", und der Haken wäre nach dem Neuladen weg.
+  const { data, error } = await getSupabase()
     .from('governance_activations')
     .update({ organization: { ...org, obligationProgress: progress }, updated_at: now.toISOString() })
-    .eq('tenant_id', tenantId);
+    .eq('tenant_id', tenantId)
+    .select('tenant_id');
   if (error) throw new Error(error.message);
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('Keine Schreibberechtigung für diesen Workspace.');
+  }
   return progress;
 }
 

@@ -9,6 +9,7 @@ import { Logo } from '../components/Logo';
 import { PhotorealEarthGlobe } from '../components/visual/PhotorealEarthGlobe';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
+import { clearLeadContext, readLeadContext } from '../features/audit/leadContext';
 import { safeInternalPath } from '../lib/safeInternalPath';
 
 /**
@@ -34,11 +35,13 @@ export function Welcome() {
   const isPostCheckoutWizard = Boolean(sessionId);
   const resumeNext = safeInternalPath(params.get('next'));
   const [step, setStep] = useState<number>(1);
-  const [email, setEmail] = useState('');
+  // Vorbelegung aus dem Governance-Scan (gleicher Tab, siehe leadContext.ts):
+  // Wer Domain und E-Mail dort schon eingegeben hat, tippt sie nicht erneut.
+  const [email, setEmail] = useState(() => readLeadContext()?.email ?? '');
   const [name, setName] = useState('');
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [domain, setDomain] = useState('');
+  const [domain, setDomain] = useState(() => readLeadContext()?.domain ?? '');
   const [error, setError] = useState<string | null>(null);
   const [magicSent, setMagicSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -77,8 +80,11 @@ export function Welcome() {
     let cancelled = false;
 
     const resumeAfterAuth = (userEmail: string | undefined) => {
-      setEmail((prev) => prev || userEmail || '');
+      // Angemeldet gilt die Konto-Adresse, nicht die Vorbelegung aus dem Scan.
+      setEmail((prev) => userEmail || prev || '');
       void claimPendingAudit().catch(() => null);
+      // Angemeldet: Die Vorbelegung hat ihren Zweck erfüllt.
+      clearLeadContext();
 
       const nextParam = safeInternalPath(
         new URLSearchParams(window.location.search).get('next'),

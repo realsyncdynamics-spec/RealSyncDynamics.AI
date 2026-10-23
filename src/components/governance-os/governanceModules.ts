@@ -296,8 +296,10 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Terminal',
     route: '/kodee',
     status: 'live',
-    gate: { kind: 'module', module: 'kodee' },
-    description: 'Server-Operations-Assistent per SSH',
+    // Chat offen (Gateway-Kontingent je Plan); SSH-Aktionen und Diagnose
+    // verlangen ai.tool.vps_status (ActionRunner, KodeeView, functions/kodee).
+    gate: { kind: 'all' },
+    description: 'Server-Operations-Assistent · SSH-Aktionen ab Agency',
   },
   {
     id: 'provenance',

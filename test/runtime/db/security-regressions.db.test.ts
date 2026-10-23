@@ -319,12 +319,26 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
     expect(rows[0]).toEqual({ anon: false, auth: false, svc: true });
   });
 
-  it('die sieben Client-RPCs behalten authenticated — sonst waere es der 23.08. erneut', async () => {
-    // Diese sieben stehen auch in REQUIRED_AUTHENTICATED von
+  it('create_api_key ist nur fuer service_role ausfuehrbar', async () => {
+    // Legt Schluessel fuer jedes p_tenant_id ohne Mitgliedschaftspruefung an
+    // und war fuer authenticated offen (20261020090000). Kein Client-Aufrufer.
+    const { rows } = await ctx!.client.query<{ anon: boolean; auth: boolean; svc: boolean }>(`
+      SELECT has_function_privilege('anon', f, 'EXECUTE') AS anon,
+             has_function_privilege('authenticated', f, 'EXECUTE') AS auth,
+             has_function_privilege('service_role', f, 'EXECUTE') AS svc
+      FROM (SELECT 'public.create_api_key(uuid,text,text[],integer)'::regprocedure AS f) x
+    `);
+
+    expect(rows[0]).toEqual({ anon: false, auth: false, svc: true });
+  });
+
+  it('die sechs Client-RPCs behalten authenticated — sonst waere es der 23.08. erneut', async () => {
+    // Diese sechs stehen auch in REQUIRED_AUTHENTICATED von
     // scripts/check-function-acl-drift.mjs. Wer sie mitentzieht, wiederholt
-    // den Fehler, den 20260826000001 reparieren musste.
+    // den Fehler, den 20260826000001 reparieren musste. create_api_key ist
+    // seit 20261020090000 bewusst nicht mehr dabei (Test darueber).
     const CLIENT_RPCS = [
-      'bulk_scan_batch_progress', 'create_api_key', 'evidence_vault_timeline',
+      'bulk_scan_batch_progress', 'evidence_vault_timeline',
       'governance_kpi_latest_snapshot', 'governance_kpi_range',
       'governance_kpi_timeseries_data', 'tenant_entitlements',
     ];

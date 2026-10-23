@@ -31,8 +31,8 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('bumps measured date after Landing v4 re-measure', () => {
-    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-04');
+  it('bumps measured date after Landing v6 re-measure', () => {
+    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-18');
   });
 
   it('keeps yearly billing off live; free audit live', () => {
@@ -58,17 +58,92 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing + earth hero at Landing v4 evidence', () => {
+  it('points public landing at Landing v6; earth hero only on /design/landing-v4', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
-    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(true);
-    expect(landing.evidence.some((e) => e.includes('DesignGovernanceAiLanding'))).toBe(false);
+    expect(landing.route).toBe('/');
+    expect(landing.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
+    expect(landing.evidence.some((e) => e.includes('heroEarthScene'))).toBe(false);
+    expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
+    expect(landing.description).not.toMatch(/three\.js/i);
+    for (const e of landing.evidence) {
+      const path = e.split('#')[0];
+      if (path.startsWith('src/') || path.startsWith('test/') || path.startsWith('public/')) {
+        expect(existsSync(resolve(path)), e).toBe(true);
+      }
+    }
 
     const earth = getImplementation('hero-earth-scenery')!;
-    expect(earth.status).toBe('live');
+    expect(earth.status).toBe('preview');
+    expect(earth.route).toBe('/design/landing-v4');
+    expect(earth.showOnRoadmap).toBe(false);
     expect(earth.evidence.some((e) => e.includes('heroEarthScene'))).toBe(true);
-    expect(earth.evidence.some((e) => e.includes('MainLanding'))).toBe(false);
     expect(earth.description.toLowerCase()).toContain('three.js');
+    expect(earth.description).toContain('Nicht mehr auf `/`');
+  });
+
+  it('keeps H1 and CTAs of the registry in sync with Landing v6', () => {
+    const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
+    const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
+    const landing = getImplementation('public-landing')!;
+    expect(view).toContain('The Governance OS </span>');
+    expect(view).toContain('für DSGVO und EU AI Act.</span>');
+    expect(landing.description).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(landing.description).toContain('/audit?source=landing-v6');
+    expect(landing.description).toContain('/contact-sales?tier=enterprise');
+    expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
+    expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;');
+    expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
+
+    const cta = getImplementation('free-audit')!.ctaLabel!;
+    expect(cta).toBe('Kostenlosen Website-Check starten');
+    expect(view).toContain(`>${cta}<`);
+
+    for (const id of ['pricing-monthly', 'enterprise-inquiry'] as const) {
+      const item = getImplementation(id)!;
+      expect(item.evidence.some((e) => e.includes('landing/v6/')), id).toBe(true);
+      expect(item.evidence.some((e) => e.includes('landing/v4/')), id).toBe(false);
+    }
+  });
+
+  it('splits voice/telephony off channel-bots as coming soon', () => {
+    const bots = getImplementation('channel-bots')!;
+    expect(bots.name).not.toMatch(/Telefon/i);
+    expect(PUBLIC_ROADMAP_COPY['channel-bots'].de.name).not.toMatch(/Telefon/i);
+    expect(PUBLIC_ROADMAP_COPY['channel-bots'].en.name).not.toMatch(/phone/i);
+
+    const voice = getImplementation('voice-telephony')!;
+    expect(voice.status).toBe('coming-soon');
+    expect(isImplementationLive('voice-telephony')).toBe(false);
+    expect(voice.evidence).toEqual(
+      expect.arrayContaining([
+        'src/features/governance/voice/VoiceSessionsView.tsx',
+        'src/pages/Features.tsx',
+        'src/pages/Faq.tsx',
+        'PR #1921',
+      ]),
+    );
+    expect(voice.description).toMatch(/apps\/agent-runtime/);
+    expect(voice.description).toMatch(/Nicht live/);
+    expect(ROADMAP_COMING_SOON_ITEMS.some((i) => i.id === 'voice-telephony')).toBe(true);
+    expect(getPublicRoadmapRoute(voice)).toBeUndefined();
+  });
+
+  it('registers the open beta: beta-enroll live, WP-4 still open', () => {
+    const beta = getImplementation('beta-phase')!;
+    expect(beta.status).toBe('preview');
+    expect(beta.description).toContain('beta-enroll');
+    expect(beta.description).toContain('31.01.2027');
+    expect(beta.description).toMatch(/WP-4/);
+    expect(beta.description).toMatch(/noch nicht vollständig/);
+    expect(beta.evidence).toContain('PR #1874');
+    // Owner-Entscheidung 21.10.2026: Beta-Angebot bleibt öffentlich, Listenpreise unverändert.
+    const monthly = getImplementation('pricing-monthly')!;
+    expect(monthly.description).toContain('BETA.publicOffer = true');
+    expect(monthly.description).toContain('€79 / €249 / €699');
+    expect(existsSync(resolve('supabase/functions/beta-enroll/index.ts'))).toBe(true);
   });
 
   it('does not claim Agent OS is mounted on live /app/dashboard', () => {
@@ -109,6 +184,23 @@ describe('implementation-status registry', () => {
     );
   });
 
+  it('registers KI-Register live and Kodee preview with SSH from Agency', () => {
+    const reg = getImplementation('ai-system-registry')!;
+    expect(reg.status).toBe('live');
+    expect(reg.route).toBe('/app/ai-systems');
+    expect(reg.description).toContain('classify_asset');
+    expect(reg.evidence.some((e) => e.includes('governance-resources/index.ts#classify_asset'))).toBe(true);
+    expect(getImplementation('ai-act-inventory-persist')?.description).toContain('/app/risk-inventory');
+
+    const kodee = getImplementation('kodee')!;
+    expect(kodee.status).toBe('preview');
+    expect(kodee.route).toBe('/kodee');
+    expect(kodee.description).toContain('ai.tool.vps_status');
+    expect(kodee.description).not.toMatch(/ab Enterprise/);
+    expect(kodee.evidence).toContain('supabase/functions/kodee/index.ts');
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'kodee')).toBe(true);
+  });
+
   it('registers frontend-builder live and modernize wizard preview', () => {
     expect(isImplementationLive('public-frontend-builder')).toBe(true);
     expect(getImplementation('public-frontend-builder')?.route).toBe('/frontend-builder');
@@ -136,8 +228,10 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('docs/product/implementation-status.md'))).toBe(true);
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
-    expect(docs).toContain('Landing v4');
-    expect(docs).toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('Landing v6');
+    expect(docs).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(docs).not.toContain('AI Compliance Operations OS for Europe');
+    expect(docs).toContain('2026-10-18');
     expect(docs).toContain('/ai-act-klassifikator');
     expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);
@@ -268,7 +362,7 @@ describe('implementation-status registry', () => {
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
     const landing = getImplementation('public-landing')!;
-    expect(landing.description).toContain('/governance-runtime');
+    expect(landing.description).toContain('/audit');
     expect(landing.description).not.toContain('/demo-tour/dashboard');
     const content = readFileSync(
       resolve('src/components/landing/v4/landing-v4-content.ts'),

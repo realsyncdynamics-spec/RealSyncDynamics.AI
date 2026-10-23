@@ -51,6 +51,7 @@ export interface SEOConfig {
 }
 
 import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+import { BETA, BETA_PUBLIC_OFFER } from './beta';
 
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
@@ -61,6 +62,39 @@ export const DEFAULT_SEO: SEOConfig = {
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
+
+/**
+ * Monats-Abo als schema.org-Offer. Während der offenen Beta
+ * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
+ * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
+ * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise netto
+ * (`PRICING_TAX_MODE = EU_STANDARD`, zzgl. USt, nur B2B).
+ */
+function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
+  const list = {
+    '@type': 'UnitPriceSpecification',
+    price: String(listEur),
+    priceCurrency: 'EUR',
+    billingDuration: 'P1M',
+    valueAddedTaxIncluded: false,
+  };
+  if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
+  const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
+  afterBeta.setUTCDate(afterBeta.getUTCDate() + 1);
+  return {
+    '@type': 'Offer',
+    name,
+    price: '0',
+    priceCurrency: 'EUR',
+    priceValidUntil: BETA.endsIso,
+    url,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat zzgl. USt, monatlich kündbar.`,
+    priceSpecification: [
+      { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
+      { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },
+    ],
+  };
+}
 
 const PRICING_PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
@@ -83,45 +117,9 @@ const PRICING_PRODUCT_JSONLD = {
         priceType: 'https://schema.org/InvoicePrice',
       },
     },
-    {
-      '@type': 'Offer',
-      name: 'Starter',
-      price: '79',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '79',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Growth',
-      price: '249',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '249',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Agency',
-      price: '699',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/checkout/agency`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '699',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
+    subscriptionOffer('Starter', 79, `${SITE_URL}/pricing`),
+    subscriptionOffer('Growth', 249, `${SITE_URL}/pricing`),
+    subscriptionOffer('Agency', 699, `${SITE_URL}/checkout/agency`),
     {
       '@type': 'Offer',
       name: 'Enterprise',
@@ -316,7 +314,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Offene Beta: alle Tarife 0 € bis 31.01.2027, keine Kreditkarte. Danach Starter 79 €, Growth 249 €, Agency 699 € pro Monat zzgl. USt. Enterprise auf Anfrage.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -329,7 +327,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/claude-code-optimizer': {
     title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. 14 Tage kostenlos testen.',
+      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. Offene Beta: kostenlos bis 31.01.2027.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -464,13 +462,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/contact-sales': {
-    title: 'Founding Access — 14 Tage kostenlos | RealSync Dynamics AI',
+    title: 'Enterprise-Beta – kostenlos bis 31.01.2027 | RealSync Dynamics AI',
     description:
-      '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
+      'Enterprise-Beta: Testzugang kostenlos bis 31.01.2027, keine Kreditkarte, kein Abo. Danach Preis auf Anfrage. Gegenleistung: Feedback und Verbesserungsideen.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
-      { name: 'Founding Access', url: '/contact-sales' },
+      { name: 'Enterprise-Beta', url: '/contact-sales' },
     ]),
   },
 

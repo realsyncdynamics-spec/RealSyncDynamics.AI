@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from '../Logo';
+import { TRY_FREE } from '../../config/beta';
 
 /**
  * Geteilter Light-Theme-Rahmen für die öffentlichen Funnel-Seiten
@@ -90,7 +91,7 @@ export function LandingHeader() {
             to={TRIAL_CTA}
             className="group inline-flex items-center gap-1.5 bg-[var(--brand-champ)] text-[var(--brand-bg-0)] hover:bg-[var(--brand-champ-hi)] rounded-[var(--brand-radius-md)] px-4 py-2 text-sm font-semibold tracking-tight transition-colors"
           >
-            14 Tage testen
+            {TRY_FREE.cta}
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
           </SmartLink>
         </div>
@@ -126,7 +127,7 @@ export function LandingHeader() {
               to={TRIAL_CTA}
               className="flex items-center justify-between px-3 py-3 mt-2 text-base font-semibold rounded-[var(--brand-radius-md)] bg-[var(--brand-champ)] text-[var(--brand-bg-0)]"
             >
-              14 Tage kostenlos testen <ArrowRight className="h-4 w-4" />
+              {TRY_FREE.cta} <ArrowRight className="h-4 w-4" />
             </SmartLink>
           </div>
         </div>

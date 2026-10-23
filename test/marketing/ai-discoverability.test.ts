@@ -59,8 +59,12 @@ describe('public/llms.txt', () => {
       const plan = byId.get(id);
       expect(plan, `Plan ${id} fehlt in PLANS`).toBeDefined();
       expect(plan!.priceOnRequest).not.toBe(true);
-      expect(llms).toContain(`${label}: ${plan!.price.monthlyEur} €/Monat`);
+      expect(llms).toContain(`${label} ${plan!.price.monthlyEur} €`);
     }
+    // Offene Beta: Listenpreise nur als „danach“, nie als aktueller Preis.
+    expect(llms).toMatch(/Offene Beta: alle Tarife 0 € bis 31\.01\.2027/);
+    expect(llms).toMatch(/Danach gilt der Listenpreis: Starter \d+ € \/ Growth \d+ € \/ Agency \d+ € pro Monat/);
+    expect(llms).not.toMatch(/14 Tage|Tag 15/);
     const free = byId.get('free');
     expect(free?.price.monthlyEur).toBe(0);
     expect(llms).toContain('Free Audit: 0 €');

@@ -39,8 +39,13 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.queryByTestId('pricing-billing-yearly')).not.toBeInTheDocument();
     expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
-    expect(within(growth).getByText(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('14 Tage kostenlos testen');
+    // Offene Beta: 0 € bis Beta-Ende, Listenpreis nur durchgestrichen als „danach“.
+    expect(within(growth).getByText(formatPriceEur(0).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(growth).getByText('kostenlos bis 31. Januar 2027')).toBeInTheDocument();
+    const listPrice = within(growth).getByTestId('pricing-list-price-growth');
+    expect(listPrice).toHaveTextContent(/^danach/);
+    expect(listPrice.querySelector('s')).toHaveTextContent(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '));
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Kostenlos testen');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
   });
 
@@ -52,7 +57,7 @@ describe('/pricing (Handoff v2)', () => {
     const growth = screen.getByTestId('pricing-card-growth');
     expect(growth).toHaveAttribute('data-lang', 'en');
     expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Try for free');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('On request')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
       'Enterprise inquiry',

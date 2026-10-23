@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { BETA } from '../config/beta';
+import { CTA } from '../content/runtimeVocab';
 
 const MODULES = [
   'AI Inventory',
@@ -32,7 +34,7 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="max-w-4xl">
           <div className="mb-6 inline-flex rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-4 py-2 text-sm text-[#d4af37]">
-            Founding Access · 14 Tage kostenlos · für 100 Unternehmen bis 02.08.2026
+            Enterprise-Beta · kostenlos bis {BETA.endsLabel}
           </div>
 
           <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
@@ -47,10 +49,10 @@ export function EnterpriseAiOs() {
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
             <Link
-              to="/enterprise-ai-os/founding-access"
+              to="/contact-sales?source=founding"
               className="rounded-2xl bg-[#d4af37] px-6 py-4 text-center font-semibold text-black shadow-lg shadow-[#d4af37]/20"
             >
-              Founding Access starten
+              {CTA.enterprise}
             </Link>
 
             <Link
@@ -116,18 +118,18 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 pb-24">
         <div className="rounded-3xl border border-[#d4af37]/30 bg-[#d4af37]/10 p-8">
           <h2 className="text-2xl font-semibold text-[#d4af37]">
-            Founding Access für 100 Unternehmen bis 02.08.2026
+            Enterprise-Beta – kostenlos bis {BETA.endsLabel}
           </h2>
           <p className="mt-4 max-w-3xl text-zinc-200">
-            Erhalte 14 Tage Zugang zu allen Enterprise-Funktionen. Dafür hilfst du mit echtem
+            Teste alle Enterprise-Funktionen während der offenen Beta. Dafür hilfst du mit echtem
             Produktfeedback, Verbesserungsvorschlägen und Screenshots von Fehlern beim Aufbau
             einer europäischen AI-Governance-Plattform.
           </p>
           <Link
-            to="/enterprise-ai-os/founding-access"
+            to="/contact-sales?source=founding"
             className="mt-8 inline-flex rounded-2xl bg-[#d4af37] px-6 py-4 font-semibold text-black"
           >
-            Kostenlosen Zugang aktivieren
+            {CTA.enterprise}
           </Link>
         </div>
 

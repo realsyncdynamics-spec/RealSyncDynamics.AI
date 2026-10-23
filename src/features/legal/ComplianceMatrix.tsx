@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Printer } from 'lucide-react';
+import { CTA } from '../../content/runtimeVocab';
 
 type Cell = 'yes' | 'no' | 'partial' | string;
 
@@ -172,7 +173,7 @@ export function ComplianceMatrix() {
         <div className="mt-10 print:hidden flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/contact-sales?source=compliance_matrix"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">
-            Founding Access starten <ArrowRight className="h-4 w-4" />
+            {CTA.enterprise} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link to="/legal/avv"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none">

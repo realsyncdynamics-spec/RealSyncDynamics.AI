@@ -26,7 +26,7 @@ const gdprAudit = readFileSync(resolve(ROOT, 'supabase/functions/gdpr-audit/inde
 
 describe('sales-lead: keine Mail an die übergebene Adresse', () => {
   it('hat keinen Versandpfad mehr', () => {
-    expect(salesLead).not.toMatch(/api\.resend\.com/);
+    expect(salesLead).not.toMatch(/RESEND_API_(KEY|URL)/);
     expect(salesLead).not.toMatch(/sendStarterOffer/);
     expect(salesLead).not.toMatch(/offer_email_queued/);
     expect(existsSync(resolve(ROOT, 'supabase/functions/sales-lead/offer.ts'))).toBe(false);

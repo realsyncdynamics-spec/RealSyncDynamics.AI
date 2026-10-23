@@ -85,7 +85,7 @@ describe('honest empty states', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('Noch keine Nachweise')).toBeInTheDocument();
+      expect(screen.getByText('Noch keine Nachweise vorhanden')).toBeInTheDocument();
     });
     expect(document.body.textContent).not.toMatch(/atelier-nord/i);
     expect(document.body.textContent).not.toMatch(/1\.247/);
@@ -102,7 +102,7 @@ describe('honest empty states', () => {
     await waitFor(() => {
       expect(screen.getByText('Nachweise nicht verfügbar')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Noch keine Nachweise')).not.toBeInTheDocument();
+    expect(screen.queryByText('Noch keine Nachweise vorhanden')).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/atelier-nord/i);
     expect(document.body.textContent).not.toMatch(/1\.247/);
   });
@@ -118,6 +118,6 @@ describe('honest empty states', () => {
     await waitFor(() => {
       expect(screen.getByText('Nachweise nicht verfügbar')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Noch keine Nachweise')).not.toBeInTheDocument();
+    expect(screen.queryByText('Noch keine Nachweise vorhanden')).not.toBeInTheDocument();
   });
 });

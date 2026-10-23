@@ -424,8 +424,11 @@ function _WebsiteGovernanceView() {
             {company && (
               <p className="font-display text-lg text-titanium-50 mb-1">{company}</p>
             )}
-            <p className="font-mono text-sm text-titanium-400">Noch keine Domain hinterlegt.</p>
-            <p className="mt-2 max-w-md text-xs text-titanium-600">
+            <p className="font-display text-base text-titanium-100">Noch keine Website verbunden</p>
+            <p className="mt-2 max-w-md text-sm text-titanium-400">
+              Verbinden Sie Ihre Website, um Chatbots, Domains und Compliance-Scans zentral zu verwalten.
+            </p>
+            <p className="mt-1 max-w-md text-xs text-titanium-600">
               Domains und Scan-Zähler bleiben leer (0), bis Sie eine Domain hinzufügen — keine Demo-Scores.
             </p>
             {domainHint && (
@@ -442,7 +445,7 @@ function _WebsiteGovernanceView() {
               className="mt-5 flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-[#1E5AFF] text-white hover:bg-[#1641C4] disabled:opacity-40"
             >
               <Plus className="h-3.5 w-3.5" />
-              {domainHint ? `${domainHint} übernehmen` : 'Erste Domain hinzufügen'}
+              {domainHint ? `${domainHint} verbinden` : 'Website verbinden'}
             </button>
           </div>
         ) : filtered.length === 0 ? (

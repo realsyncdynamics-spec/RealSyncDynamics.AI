@@ -36,8 +36,9 @@ function appRegisters(path: string): boolean {
 }
 
 describe('dashboard chrome wiring — no dead TopBar actions', () => {
-  it('Audit starten opens the public scan path', () => {
-    expect(TOP_BAR).toMatch(/navigate\(['"]\/audit['"]\)/);
+  it('Compliance Audit starten opens the AI system register (audit per system)', () => {
+    expect(TOP_BAR).toMatch(/navigate\(['"]\/app\/ai-systems['"]\)/);
+    expect(TOP_BAR).toContain("title={t('shellAuditHint')}");
   });
 
   it('Evidence opens /app/evidence', () => {

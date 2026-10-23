@@ -27,6 +27,12 @@ export function isWriteAction(a: ActionName): boolean {
 
 export interface KodeeRequest {
   v?: number;
+  /**
+   * Aktiver Mandant. Nur für persönliche Verbindungen (`tenant_id` NULL)
+   * maßgeblich; sonst prüft der Server die Entitlements des Mandanten der
+   * Verbindung. Optional, damit Clients ohne das Feld weiterlaufen.
+   */
+  tenant_id?: string;
   connection_id: string;
   action: ActionName;
   args?: ActionArgs;

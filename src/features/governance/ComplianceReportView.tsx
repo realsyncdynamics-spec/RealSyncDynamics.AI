@@ -188,8 +188,9 @@ function Inner() {
           <p className="text-[13px] text-titanium-300 leading-relaxed mb-4">
             Liest Assets, Policies, Events, Evidence, Framework-Controls und Mappings des aktuellen
             Tenants über tenant-RLS, sortiert deterministisch und serialisiert als JSON. Der SHA-256
-            der Bytes ist die Integritäts-Anker — gleicher DB-Stand erzeugt gleiches File mit
-            gleichem Hash.
+            der Bytes ist der Integritäts-Anker dieser Datei — jede spätere Änderung fällt beim
+            Nachrechnen auf. Report-ID und Zeitstempel gehören zur Datei, ein neuer Export hat
+            daher einen eigenen Hash.
           </p>
           {error && (
             <div className="mb-3 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
@@ -253,7 +254,7 @@ function Inner() {
             Nutzung durch Auditoren
           </div>
           <ul className="list-disc list-inside space-y-1.5">
-            <li>Die Datei ist deterministisch hashbar — zwei Operatoren bekommen denselben SHA-256.</li>
+            <li>Der Hash belegt die Unversehrtheit genau dieser Datei; jeder neue Export (neue Report-ID, neuer Zeitstempel) hat einen eigenen.</li>
             <li>Hash gehört in das Übergabe-Protokoll. Auditor kann später verifizieren: <code>sha256sum &lt;file&gt;</code>.</li>
             <li>
               Sealed-Timestamping mit serverseitigem Receipt (DB-Anchor, signiertes Datum) ist

@@ -57,11 +57,13 @@ export async function triggerComplianceCheckWorkflow(
   tenantId: string
 ): Promise<WorkflowExecutionResult> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('trigger-workflow', {
+  // Die Function heißt `workflow-trigger` (nicht `trigger-workflow`) und
+  // antwortet mit `{ ok, run_id, n8n_execution_id }` — hier auf das
+  // UI-Ergebnis abgebildet.
+  const { data, error } = await sb.functions.invoke('workflow-trigger', {
     body: {
       workflow_id: workflowId,
       tenant_id: tenantId,
-      trigger_type: 'manual',
     },
   });
 
@@ -74,7 +76,13 @@ export async function triggerComplianceCheckWorkflow(
     };
   }
 
-  return data as WorkflowExecutionResult;
+  const ack = (data ?? {}) as { ok?: boolean; run_id?: string; n8n_execution_id?: string | null };
+  return {
+    success: ack.ok === true,
+    execution_id: ack.run_id ?? '',
+    status: ack.ok === true ? 'running' : 'error',
+    data: ack,
+  };
 }
 
 export async function getWorkflowRuns(

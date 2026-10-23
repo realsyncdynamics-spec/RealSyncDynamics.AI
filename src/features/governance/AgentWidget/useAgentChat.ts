@@ -27,7 +27,7 @@ const WELCOME: ChatMessage = {
  * kann es erneut versuchen (`retry`).
  */
 export const ASSISTANT_UNAVAILABLE =
-  'Der Assistent ist gerade nicht erreichbar. Bitte später erneut versuchen.';
+  'Der Assistent antwortet gerade nicht. Ihre Daten und alle übrigen Funktionen sind davon nicht betroffen – bitte gleich erneut versuchen.';
 
 /** Letzte fehlgeschlagene Nachricht — Grundlage für „Erneut versuchen". */
 interface FailedSend {

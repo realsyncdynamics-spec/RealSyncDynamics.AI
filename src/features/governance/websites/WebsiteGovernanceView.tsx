@@ -35,7 +35,15 @@ const SEV_CFG: Record<FindingSeverity, { label: string; cls: string; dot: string
   info:     { label: 'Info',     cls: 'text-blue-400 bg-blue-950/40 border-blue-900',       dot: 'bg-blue-500' },
 };
 
-function SeverityBadge({ sev }: { sev: FindingSeverity | null }) {
+function SeverityBadge({ scan }: { scan: ScanRun | null }) {
+  const sev = scan?.severity_max ?? null;
+  if (!scan || scan.status !== 'completed') {
+    return (
+      <span className="flex items-center gap-1.5 px-2 py-0.5 border text-[10px] font-mono text-titanium-400 bg-obsidian-800 border-titanium-800">
+        {scan?.status === 'failed' ? 'Fehlgeschlagen' : scan?.status === 'running' ? 'Läuft' : 'Nicht geprüft'}
+      </span>
+    );
+  }
   if (!sev) {
     return (
       <span className="flex items-center gap-1.5 px-2 py-0.5 border text-[10px] font-mono text-teal-400 bg-teal-950/20 border-teal-900">
@@ -115,7 +123,7 @@ function WebsiteCard({ row, onScan, scanning, scanError = null }: {
               </div>
             </div>
           </div>
-          <SeverityBadge sev={scan?.severity_max ?? null} />
+          <SeverityBadge scan={scan} />
         </div>
       </div>
 
@@ -281,7 +289,7 @@ function _WebsiteGovernanceView() {
   const counts = useMemo(() => ({
     total: rows.length,
     critical: rows.filter((r) => r.lastScan?.severity_max === 'critical').length,
-    clean:    rows.filter((r) => r.lastScan?.finding_count === 0).length,
+    clean:    rows.filter((r) => r.lastScan?.status === 'completed' && r.lastScan.finding_count === 0).length,
   }), [rows]);
 
   async function handleScan(row: WebsiteRow) {

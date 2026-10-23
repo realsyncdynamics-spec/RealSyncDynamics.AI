@@ -80,48 +80,10 @@ test.describe('Governance OS Workflow', () => {
   });
 
   test.describe('Tier Recommendation Engine', () => {
-    test('should recommend appropriate tier based on complexity', async ({ page }) => {
-      // Complete onboarding with extensive usage
+    // Die frühere Ansicht lud nie Daten (GET auf eine POST-only-Function).
+    test('legacy recommendation path forwards to the dashboard', async ({ page }) => {
       await page.goto(`${baseUrl}/app/governance/recommendation`);
-
-      // Wait for recommendation to load
-      await page.waitForLoadState('networkidle');
-
-      // Verify tier recommendation displayed
-      const tierHeading = page.locator('text=/Wir empfehlen:.*(?:Starter|Growth|Agency|Enterprise|Partner)/');
-      await expect(tierHeading).toBeVisible();
-
-      // Verify pricing displayed
-      await expect(page.locator('text=/€.*\\/.*Monat/')).toBeVisible();
-    });
-
-    test('should show required features for recommended tier', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/recommendation`);
-
-      // Wait for recommendations
-      await page.waitForLoadState('networkidle');
-
-      // Verify features section
-      await expect(page.locator('text=Erforderliche Features')).toBeVisible();
-
-      // Verify at least one feature badge
-      const featureBadges = page.locator('[class*="badge"]');
-      await expect(featureBadges).toBeTruthy();
-    });
-
-    test('should have working upgrade button', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/recommendation`);
-
-      // Wait for recommendation
-      await page.waitForLoadState('networkidle');
-
-      // Find and click upgrade button
-      const upgradeButton = page.locator('button, a').filter({ hasText: /Upgrade|Jetzt|upgraden/ }).first();
-
-      if (await upgradeButton.isVisible()) {
-        const checkoutUrl = await upgradeButton.getAttribute('href');
-        expect(checkoutUrl).toMatch(/checkout\/(starter|growth|agency|enterprise|partner)/);
-      }
+      await expect(page).toHaveURL(/\/app\/dashboard$/);
     });
   });
 
@@ -133,11 +95,10 @@ test.describe('Governance OS Workflow', () => {
       await expect(page.getByTestId('ai-systems-view')).toBeVisible();
     });
 
-    test('should load DSGVO Directory view', async ({ page }) => {
+    test('legacy DSGVO directory path forwards to the document generator', async ({ page }) => {
       await page.goto(`${baseUrl}/app/governance/dsgvo-directory`);
 
-      await expect(page.locator('text=DSGVO-Verzeichnis')).toBeVisible();
-      await expect(page.locator('text=Art.*5.*DSGVO')).toBeVisible();
+      await expect(page).toHaveURL(/\/app\/documents$/);
     });
 
     test('legacy AI Act assessment path forwards to the AI system inventory', async ({ page }) => {
@@ -146,60 +107,28 @@ test.describe('Governance OS Workflow', () => {
       await expect(page).toHaveURL(/\/app\/ai-systems$/);
     });
 
-    test('should load NIS2 Incidents view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/nis2-incidents`);
-
-      await expect(page.locator('text=NIS2-Meldepflichten')).toBeVisible();
-      await expect(page.locator('text=6 Stunden|24 Stunden|72 Stunden')).toBeVisible();
+    test('legacy NIS2 and ISO 27001 paths forward to the policy packs', async ({ page }) => {
+      for (const legacy of ['/app/governance/nis2-incidents', '/app/governance/iso27001']) {
+        await page.goto(`${baseUrl}${legacy}`);
+        await expect(page).toHaveURL(/\/app\/policy-packs$/);
+      }
     });
 
-    test('should load ISO 27001 Controls view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/iso27001`);
-
-      await expect(page.locator('text=ISO 27001')).toBeVisible();
-      await expect(page.locator('text=Compliance Score')).toBeVisible();
-    });
-
-    test('should load ISO 42001 Controls view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/iso42001`);
-
-      await expect(page.locator('text=ISO 42001')).toBeVisible();
-      await expect(page.locator('text=AI Management')).toBeVisible();
-    });
-
-    test('should load Gap Analysis view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/gaps`);
-
-      await expect(page.locator('text=Gap-Analyse')).toBeVisible();
-      await expect(page.locator('text=Compliance-Lücken')).toBeVisible();
-    });
-
-    test('should load Evidence Vault view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/evidence-vault-advanced`);
-
-      await expect(page.locator('text=Nachweis-Vault')).toBeVisible();
-      await expect(page.locator('button:has-text("Hochladen")')).toBeVisible();
-    });
-
-    test('should load Remediation Plans view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/remediation-plans`);
-
-      await expect(page.locator('text=Behebungsplan')).toBeVisible();
-      await expect(page.locator('text=Fortschritt')).toBeVisible();
-    });
-
-    test('should load Audit Reports view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/audit-reports`);
-
-      await expect(page.locator('text=Audit-Berichte')).toBeVisible();
-      await expect(page.locator('text=Multi-Framework')).toBeVisible();
-    });
-
-    test('should load API Keys view', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/api-keys`);
-
-      await expect(page.locator('text=API-Keys')).toBeVisible();
-      await expect(page.locator('button:has-text("Neuer Key")')).toBeVisible();
+    // Diese Pfade zeigten Ansichten ohne funktionierendes Backend; sie leiten
+    // jetzt auf die Flächen um, die die Funktion wirklich bereitstellen.
+    test('legacy governance paths forward to working surfaces', async ({ page }) => {
+      const forwards: Array<[string, RegExp]> = [
+        ['/app/governance/iso42001', /\/app\/governance\/iso42001-library$/],
+        ['/app/governance/gaps', /\/app\/risks$/],
+        ['/app/governance/evidence-vault-advanced', /\/app\/evidence-vault$/],
+        ['/app/governance/remediation-plans', /\/app\/remediation$/],
+        ['/app/governance/audit-reports', /\/app\/reports$/],
+        ['/app/governance/api-keys', /\/app\/keys$/],
+      ];
+      for (const [legacy, target] of forwards) {
+        await page.goto(`${baseUrl}${legacy}`);
+        await expect(page).toHaveURL(target);
+      }
     });
   });
 
@@ -207,7 +136,7 @@ test.describe('Governance OS Workflow', () => {
     test('should show upgrade prompt for restricted features', async ({ page }) => {
       // This test assumes user on Starter tier
       // Some features should show upgrade gates
-      await page.goto(`${baseUrl}/app/governance/iso42001`);
+      await page.goto(`${baseUrl}/app/governance/iso42001-library`);
 
       // If on Starter tier, should see upgrade prompt
       const upgradePrompt = page.locator('text=/Feature gesperrt|Upgrade/i');
@@ -221,25 +150,10 @@ test.describe('Governance OS Workflow', () => {
   });
 
   test.describe('Filter & Navigation', () => {
-    test('should filter gap analysis by severity', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/gaps`);
-
-      // Select critical severity filter
-      const severityFilter = page.locator('select').filter({ hasText: 'Schweregrad' });
-      await severityFilter.selectOption('critical');
-
-      // Verify filter applied (cards update or empty state shown)
-      await page.waitForLoadState('networkidle');
-
-      // Should see either critical gaps or empty state
-      const criticalBadges = page.locator('text=/KRITISCH|Keine Lücken/');
-      await expect(criticalBadges).toBeTruthy();
-    });
-
     test('should navigate between governance views', async ({ page }) => {
       const views = [
         '/app/ai-systems',
-        '/app/governance/dsgvo-directory',
+        '/app/documents',
       ];
 
       for (const view of views) {
@@ -247,30 +161,6 @@ test.describe('Governance OS Workflow', () => {
         await expect(page).toHaveURL(new RegExp(view));
         await page.waitForLoadState('networkidle');
       }
-    });
-  });
-
-  test.describe('Compliance Scoring', () => {
-    test('should calculate and display compliance scores', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/iso27001`);
-
-      // Verify compliance score displayed
-      await expect(page.locator('text=Compliance Score')).toBeVisible();
-
-      // Verify percentage shown
-      const scorePercent = page.locator('[class*="bold"]').filter({ hasText: /^\d+%$/ });
-      await expect(scorePercent).toBeTruthy();
-    });
-
-    test('should show framework-specific scores', async ({ page }) => {
-      await page.goto(`${baseUrl}/app/governance/audit-reports`);
-
-      // Look for framework scores section
-      const frameworkScores = page.locator('text=Framework|Scores');
-      const scoreVisible = await frameworkScores.isVisible();
-
-      // Either shows detailed scores or summary
-      expect(scoreVisible).toBeTruthy();
     });
   });
 });

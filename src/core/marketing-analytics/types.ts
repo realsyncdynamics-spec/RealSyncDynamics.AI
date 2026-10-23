@@ -11,7 +11,11 @@ export type MarketingEventName =
   | 'pricing_viewed'
   | 'checkout_started'
   | 'checkout_completed'
-  | 'subscription_cancelled';
+  | 'subscription_cancelled'
+  // Lead-Trichter: Client meldet nur Ansicht und Absenden. Gespeichert,
+  // gestartet, abgeschlossen, Pilot und Abo belegt ausschliesslich der Server.
+  | 'lead_form_viewed'
+  | 'lead_submitted';
 
 export type AttributionModel = 'last_touch' | 'first_touch' | 'linear';
 

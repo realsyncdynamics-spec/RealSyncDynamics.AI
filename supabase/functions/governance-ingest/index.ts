@@ -19,8 +19,9 @@
 //   5. Insert events
 //   6. Insert caller-supplied evidence + auto `policy_snapshot` evidence for every
 //      event that the engine matched
-//      — caller-supplied content_hash / previous_hash are stored as
-//        metadata.client_* only; the hash-chain columns stay null (evidence.ts)
+//      — caller evidence is chained server-side: snapshot hash + locked
+//        compare-and-swap append (append_governance_evidence); the caller's
+//        own content_hash / previous_hash stay in metadata.client_* (evidence.ts)
 //   7. Stamp `last_used_at` on the API key
 //   8. Fire enabled tenant webhooks whose `min_risk_level` is matched by the
 //      event (HMAC-SHA256 signed payload, 3s timeout, last_status persisted).
@@ -30,7 +31,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex } from '../_shared/hash.ts';
-import { callerEvidenceRow } from './evidence.ts';
+import {
+  appendCallerEvidence,
+  EvidenceChainBusyError,
+  MAX_CALLER_EVIDENCE,
+  type ChainStore,
+} from './evidence.ts';
 import {
   evaluatePolicies,
   type AssetForEval,
@@ -145,12 +151,21 @@ Deno.serve(async (req) => {
   for (let i = 0; i < items.length; i++) {
     const v = validateEvent(items[i].event, allowedSources);
     if (v) return jsonError(400, 'BAD_REQUEST', `events[${i}]: ${v}`);
+    if (items[i].evidence != null && !Array.isArray(items[i].evidence)) {
+      return jsonError(400, 'BAD_REQUEST', `events[${i}].evidence must be an array`);
+    }
     if (items[i].evidence) {
       for (let j = 0; j < items[i].evidence!.length; j++) {
         const ev = validateEvidence(items[i].evidence![j]);
         if (ev) return jsonError(400, 'BAD_REQUEST', `events[${i}].evidence[${j}]: ${ev}`);
       }
     }
+  }
+
+  // Each caller evidence row is one locked chain append — bound the work per request.
+  const callerEvidenceCount = items.reduce((n, i) => n + (i.evidence?.length ?? 0), 0);
+  if (callerEvidenceCount > MAX_CALLER_EVIDENCE) {
+    return jsonError(400, 'EVIDENCE_TOO_MANY', `max ${MAX_CALLER_EVIDENCE} evidence items per request`);
   }
 
   // Cross-tenant guard + fetch full asset rows for policy evaluation
@@ -251,18 +266,58 @@ Deno.serve(async (req) => {
     .select('id');
   if (insertErr) return jsonError(500, 'INSERT_FAILED', insertErr.message);
 
-  // Caller-supplied evidence + auto policy_snapshot for every engine-matched event
+  // Caller evidence: one chain link each, appended under the tenant's chain
+  // lock (evidence.ts). Same head query and order as append_governance_evidence.
+  const chain: ChainStore = {
+    async latestHead(tenantId) {
+      const { data, error } = await admin.from('governance_evidence')
+        .select('content_hash')
+        .eq('tenant_id', tenantId)
+        .not('content_hash', 'is', null)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(1);
+      if (error) throw new Error(`governance_evidence head: ${error.message}`);
+      return (data?.[0]?.content_hash as string | undefined) ?? null;
+    },
+    async append(row, expectedPreviousHash) {
+      const { data, error } = await admin.rpc('append_governance_evidence', {
+        p_row: row,
+        p_expected_previous_hash: expectedPreviousHash,
+      });
+      if (error) throw new Error(`append_governance_evidence: ${error.message}`);
+      return data ? { id: data as string } : 'conflict';
+    },
+  };
+
+  let insertedEvidence: Array<{ id: string }> = [];
+  try {
+    for (let idx = 0; idx < insertedEvents!.length; idx++) {
+      for (const e of items[idx].evidence ?? []) {
+        insertedEvidence.push(await appendCallerEvidence(chain, e, {
+          tenantId: keyRow.tenant_id,
+          eventId: insertedEvents![idx].id,
+          assetId: items[idx].event.asset_id ?? null,
+          evidenceId: crypto.randomUUID(),
+        }));
+      }
+    }
+  } catch (err) {
+    // Not retryable as-is: the events (and any evidence appended before the
+    // failure) are already stored. Report exactly what was written so the
+    // client can reconcile instead of replaying the whole request.
+    const partial = {
+      partial: true,
+      event_ids: insertedEvents!.map((e) => e.id),
+      evidence_ids: insertedEvidence.map((e) => e.id),
+    };
+    const code = err instanceof EvidenceChainBusyError ? 'EVIDENCE_CHAIN_CONFLICT' : 'EVIDENCE_INSERT_FAILED';
+    return jsonError(500, code, (err as Error)?.message ?? String(err), corsHeaders, partial);
+  }
+
+  // Auto policy_snapshot for every engine-matched event (unchanged: not chained).
   const evidenceRows: Array<Record<string, unknown>> = [];
   insertedEvents!.forEach((ev, idx) => {
-    const caller = items[idx].evidence ?? [];
-    for (const e of caller) {
-      // Caller hashes go to metadata.client_*; the chain columns stay null (evidence.ts).
-      evidenceRows.push(callerEvidenceRow(e, {
-        tenantId: keyRow.tenant_id,
-        eventId: ev.id,
-        assetId: items[idx].event.asset_id ?? null,
-      }));
-    }
     const decision = decisions[idx];
     if (decision) {
       evidenceRows.push({
@@ -283,14 +338,19 @@ Deno.serve(async (req) => {
     }
   });
 
-  let insertedEvidence: Array<{ id: string }> = [];
   if (evidenceRows.length > 0) {
     const { data: ev, error: evErr } = await admin
       .from('governance_evidence')
       .insert(evidenceRows)
       .select('id');
-    if (evErr) return jsonError(500, 'EVIDENCE_INSERT_FAILED', evErr.message);
-    insertedEvidence = ev ?? [];
+    if (evErr) {
+      return jsonError(500, 'EVIDENCE_INSERT_FAILED', evErr.message, corsHeaders, {
+        partial: true,
+        event_ids: insertedEvents!.map((e) => e.id),
+        evidence_ids: insertedEvidence.map((e) => e.id),
+      });
+    }
+    insertedEvidence = [...insertedEvidence, ...(ev ?? [])];
   }
 
   const usedAt = new Date().toISOString();

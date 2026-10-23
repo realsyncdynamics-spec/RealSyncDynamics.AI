@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
+  ArrowLeft, Brain, Loader2, AlertTriangle, ArrowRight,
   Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive, AlertCircle, Wrench, RotateCcw,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface CertificationStatus {
   overall_score: number;
@@ -30,15 +31,6 @@ const CERTIFICATION_MODULES = [
     route: '/app/governance/iso42001-library',
     color: 'blue',
     badge: 'Library',
-  },
-  {
-    id: 'implementation',
-    title: 'Control Implementations',
-    description: 'Track status and maturity of each ISO 42001 control implementation',
-    icon: CheckCircle2,
-    route: '/app/governance/iso42001',
-    color: 'green',
-    badge: 'Live',
   },
   {
     id: 'readiness',
@@ -156,7 +148,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/certification-readiness?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/certification-readiness?tenant_id=${activeTenantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

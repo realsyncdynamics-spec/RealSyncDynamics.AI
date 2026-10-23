@@ -250,7 +250,7 @@ export function HandoffOverview({
         <StatCard
           label={t('kEvidence')}
           value={evidenceTotal}
-          sub={evidenceHashed === null ? null : t('kEvidenceSubReal', { n: evidenceHashed })}
+          sub={evidenceTotal === 0 ? t('kEvidenceNone') : evidenceHashed === null ? null : t('kEvidenceSubReal', { n: evidenceHashed })}
           accent="var(--color-rs-cyan)"
           testId="kpi-evidence"
           to="/app/evidence"

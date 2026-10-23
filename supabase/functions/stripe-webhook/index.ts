@@ -16,6 +16,7 @@ import {
   pickPlanItem,
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
+import { invoiceSubscriptionId, type InvoiceSubscriptionShape } from '../_shared/stripe-invoice.ts';
 
 // Re-export for unit tests that import pickPlanItem from this module.
 export { pickPlanItem };
@@ -152,7 +153,7 @@ Deno.serve(async (req) => {
         }
         if (event.type === 'invoice.paid') {
           const inv = event.data.object as Stripe.Invoice;
-          const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id;
+          const subId = invoiceSubscriptionId(inv as InvoiceSubscriptionShape);
           if (subId) {
             const { data: sub } = await admin
               .from('subscriptions')
@@ -505,7 +506,7 @@ async function resolveOneTimePlanKey(
 // deno-lint-ignore no-explicit-any
 async function syncInvoice(admin: SupabaseAdminClient, inv: Stripe.Invoice): Promise<void> {
   const customerId = typeof inv.customer === 'string' ? inv.customer : inv.customer?.id ?? null;
-  const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id ?? null;
+  const subId = invoiceSubscriptionId(inv as InvoiceSubscriptionShape);
 
   // Best-effort tenant lookup via subscriptions table — keeps invoices joinable.
   let tenantId: string | null = null;

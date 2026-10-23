@@ -159,6 +159,7 @@ describe('„Braucht Aufmerksamkeit“', () => {
     }), NOW);
     expect(out.map((s) => s.id)).toEqual(['risk-w1', 'finding-f1']);
     expect(out[0].reason).toBe('Risiko-Score 68 · Hoch (ab 50)');
+    expect(out[0].href).toBe('/app/assets/w1');
     expect(out[1].reason).toBe('Scanner-Befund · mittel · vor 89 Tagen');
   });
 

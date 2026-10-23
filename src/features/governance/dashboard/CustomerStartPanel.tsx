@@ -17,7 +17,7 @@ import type { CockpitData } from '../cockpit/cockpitData';
 import type { TrialStatus } from '../../../core/billing/trial';
 import { HIGH_RISK_SYSTEMS_ROUTE } from '../handoff/enforcementModel';
 import { daysSince, formatAgeDe, riskAttentionSignals } from './dashboardSignals';
-import { computeAccountNotice, type StartPanelInput, type StartPanelModel } from './startPanelModel';
+import { computeAccountNotice, computeRisksTile, type StartPanelInput, type StartPanelModel } from './startPanelModel';
 import './customer-start.css';
 
 const SECONDARY_MODULES: ReadonlyArray<{ label: string; href: string }> = [
@@ -232,19 +232,16 @@ function aiSystemsTile(facts: StartPanelInput): TileState {
 }
 
 function risksTile(facts: StartPanelInput, data: CockpitData | null, firstStepHref: string): TileState {
-  if (!data) return { state: 'Wird geladen …', cta: null };
-  const open = data.actions.length + riskAttentionSignals(data.signals).length;
-  if (open > 0) {
-    return { state: `${plural(open, 'offener Punkt', 'offene Punkte')}.`, cta: { label: 'Jetzt prüfen', href: '/app/risks' } };
-  }
-  const nothingToAssess = (facts.scanCount ?? 0) === 0 && (facts.aiSystemCount ?? 0) === 0;
-  if (nothingToAssess) {
-    return {
-      state: 'Risiken erscheinen nach Ihrem ersten Scan oder KI-System.',
-      cta: { label: 'Zuerst einrichten', href: firstStepHref },
-    };
-  }
-  return { state: 'Aktuell keine offenen Punkte.', cta: { label: 'Risikoübersicht', href: '/app/risks' } };
+  // Fristgebundene Pflichten zuerst (bereits priorisiert), dann Risiko-Signale.
+  const items = data
+    ? [...data.actions, ...riskAttentionSignals(data.signals)].map(({ title, href }) => ({ title, href }))
+    : null;
+  return computeRisksTile({
+    items,
+    scanCount: facts.scanCount,
+    aiSystemCount: facts.aiSystemCount,
+    firstStepHref,
+  });
 }
 
 function CoreTile({ title, benefit, state, cta, testId }: TileState & { title: string; benefit: string; testId: string }) {

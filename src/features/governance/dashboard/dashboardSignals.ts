@@ -361,7 +361,8 @@ export function riskAttentionSignals(
       id: `risk-${asset.id}`,
       title: asset.name,
       reason: `Risiko-Score ${asset.score} · ${RISK_BUCKET_LABEL[asset.bucket]} (ab ${RISK_THRESHOLDS[asset.bucket as 'high' | 'critical']})`,
-      href: '/app/risk-inventory',
+      // governance_assets-Detail — /app/risk-inventory liest eine andere Tabelle.
+      href: `/app/assets/${encodeURIComponent(asset.id)}`,
     });
   }
   for (const f of openFindings(signals.findings ?? [])) {

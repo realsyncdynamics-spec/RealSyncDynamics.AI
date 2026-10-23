@@ -15,11 +15,11 @@ export function SuccessPage() {
   return (
     <div className="max-w-md mx-auto text-center space-y-8 py-12">
       <div className="space-y-6">
-        <div className="text-6xl animate-bounce">🎉</div>
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-titanium-50">Willkommen!</h1>
-          <p className="text-xl text-titanium-300">
-            Ihr Governance-Dashboard ist bereit.
+          {/* Route ohne Auth-/Setup-Guard: keine Bereitstellung behaupten. */}
+          <h1 className="text-3xl font-bold text-titanium-50">Weiter zu Ihrem Dashboard.</h1>
+          <p className="text-lg text-titanium-300">
+            Als Nächstes: KI-Systeme erfassen und Pflichten nach EU AI Act und DSGVO zuordnen.
           </p>
         </div>
       </div>

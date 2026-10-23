@@ -13,6 +13,7 @@ import {
   AUDIT_PREFILL_MAX,
   auditPathFor,
   readAuditPrefill,
+  websiteAuditPathFor,
 } from '@/src/features/audit/auditPrefill';
 import { GovernanceAddressBar } from '@/src/components/governance-os/GovernanceAddressBar';
 
@@ -63,14 +64,29 @@ function AuditProbe() {
   return <output data-testid="audit-prefill">{readAuditPrefill(search)}</output>;
 }
 
-describe('GovernanceAddressBar → /audit', () => {
+describe('websiteAuditPathFor', () => {
+  it('führt in den Workspace-Audit mit ?domain=', () => {
+    expect(websiteAuditPathFor('example.com', 'app-search')).toBe(
+      '/app/websites?domain=example.com&source=app-search',
+    );
+    expect(readAuditPrefill('?domain=example.com&source=app-search')).toBe('example.com');
+  });
+
+  it('leere Eingabe → nacktes /app/websites', () => {
+    expect(websiteAuditPathFor('   ')).toBe('/app/websites');
+  });
+});
+
+// Seit 2026-10-15: Die Adresszeile in der App führt in den Workspace-Audit
+// (/app/websites), nicht mehr zum öffentlichen Gast-Scan /audit.
+describe('GovernanceAddressBar → /app/websites', () => {
   it('Enter mit Domain startet den Audit (nicht die Vorschau)', () => {
     const onLoadUrl = vi.fn();
     render(
       <MemoryRouter initialEntries={['/app/dashboard']}>
         <Routes>
           <Route path="/app/dashboard" element={<GovernanceAddressBar onLoadUrl={onLoadUrl} />} />
-          <Route path="/audit" element={<AuditProbe />} />
+          <Route path="/app/websites" element={<AuditProbe />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -94,12 +110,12 @@ describe('GovernanceAddressBar → /audit', () => {
     expect(onLoadUrl).toHaveBeenCalledWith('https://example.com/');
   });
 
-  it('übergibt die Suche so, dass /audit sie vorbelegt', () => {
+  it('übergibt die Suche so, dass /app/websites sie vorbelegt', () => {
     render(
       <MemoryRouter initialEntries={['/app/dashboard']}>
         <Routes>
           <Route path="/app/dashboard" element={<GovernanceAddressBar />} />
-          <Route path="/audit" element={<AuditProbe />} />
+          <Route path="/app/websites" element={<AuditProbe />} />
         </Routes>
       </MemoryRouter>,
     );

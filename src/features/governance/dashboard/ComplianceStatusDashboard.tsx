@@ -432,9 +432,10 @@ export function ComplianceStatusView({
               type="button"
               data-testid="cta-audit-starten"
               onClick={() => navigate('/audit?source=dashboard')}
+              title="Öffentlicher Schnell-Check: Ergebnis erscheint nicht im Workspace. Dafür Domain hinterlegen."
               className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-200 px-4 py-2 text-sm font-semibold font-mono uppercase tracking-wider"
             >
-              Audit starten
+              Schnell-Check (öffentlich)
             </button>
             <button
               type="button"
@@ -956,7 +957,7 @@ function BootstrapTasksRail({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-titanium-50 truncate">{action.title}</p>
                     <p className="text-xs text-titanium-400 flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3 w-3" /> {action.detail}
+                      <Clock className="h-3 w-3 shrink-0" aria-hidden /> {action.detail}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-titanium-600 shrink-0" />
@@ -977,9 +978,8 @@ function BootstrapTasksRail({
                   <StatusBadge level={step.level} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-titanium-50 truncate">{step.title}</p>
-                    <p className="text-xs text-titanium-400 flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3 w-3" /> {step.detail}
-                    </p>
+                    {/* Kein Uhr-Symbol: Workspace-Schritte haben keine Frist. */}
+                    <p className="text-xs text-titanium-400 mt-0.5">{step.detail}</p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-titanium-600 shrink-0" />
                 </Link>

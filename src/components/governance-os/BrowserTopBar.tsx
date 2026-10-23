@@ -90,7 +90,8 @@ export function BrowserTopBar({
           <span className="hidden lg:inline">{t('shellSearch')}</span>
           <kbd className="rs-kbd hidden md:inline">⌘K</kbd>
         </button>
-        <button type="button" onClick={() => navigate('/audit')} className="rs-chip-sm rs-chip-sm--primary hidden md:inline-flex">
+        {/* Workspace-Audit, nicht der öffentliche Gast-Scan /audit (Ergebnis landet sonst nicht in der Übersicht). */}
+        <button type="button" onClick={() => navigate('/app/websites')} className="rs-chip-sm rs-chip-sm--primary hidden md:inline-flex">
           {t('shellAudit')}
         </button>
         <button

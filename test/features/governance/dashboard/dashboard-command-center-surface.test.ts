@@ -29,6 +29,9 @@ describe('Command Center surface', () => {
     expect(command).toContain('BrowserRuntimePanel');
     expect(strip).toContain('/app/agents');
     expect(strip).toContain('dashboard-execute-strip');
+    // Ausführen führt in den Workspace-Audit, nicht in den öffentlichen Scan.
+    expect(strip).toContain('to="/app/websites"');
+    expect(strip).not.toMatch(/to="\/audit"/);
   });
 
   it('shows honest browser runtime capability boundaries', () => {

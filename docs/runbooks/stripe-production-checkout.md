@@ -31,16 +31,16 @@ preview without writing.
 
 Table: `public.products`
 
-Live catalog (`acct_1TYVIyREjTWueUcG`) — UEm* active tax-incl. prices (`20260913000000`):
+Live catalog (`acct_1TYVIyREjTWueUcG`) — USab* active net prices, `tax_behavior=exclusive` (`20261020130000`; replaced the tax-incl. UEm* series from `20260913000000` on 2026-10-20):
 
 | plan_key | stripe_price_id | notes |
 |---|---|---|
-| `starter` | `price_1UEmHiREjTWueUcGX2cfEi25` | €79/mo |
-| `growth` | `price_1UEmHmREjTWueUcGiCQMB8H4` | €249/mo |
-| `agency` | `price_1UEmHoREjTWueUcGqeO4LGud` | €699/mo |
-| `enterprise` | `price_1UEmHqREjTWueUcG0oqZkb5O` | inquiry |
-| `partner` | `price_1UEmHsREjTWueUcGFlIItOiz` | legacy Scale |
-| `governance_launch` | `price_1UEmHtREjTWueUcGhjY7Gvhp` | €349 once |
+| `starter` | `price_1USabFREjTWueUcGDg9wod9W` | €79/mo |
+| `growth` | `price_1USabNREjTWueUcGu814PvJc` | €249/mo |
+| `agency` | `price_1USabPREjTWueUcGbaNG5WeB` | €699/mo |
+| `enterprise` | `price_1USabSREjTWueUcGzUEzTaie` | inquiry |
+| `partner` | `price_1USabUREjTWueUcGk8ao5bWw` | legacy Scale |
+| `governance_launch` | `price_1USabjREjTWueUcG45xZUZgM` | €349 once |
 
 No yearly Stripe prices; yearly rows keep non-`price_*` sentinels.
 

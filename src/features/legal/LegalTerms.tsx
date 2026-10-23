@@ -5,14 +5,14 @@ import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
  * Allgemeine Geschäftsbedingungen (AGB) — RealSyncDynamics.AI
  *
  * Konservative B2B-SaaS-Standard-AGB für die RealSync Dynamics
- * (Einzelunternehmen Dominik Steiner, Kleinunternehmer §19 UStG).
+ * (Einzelunternehmen Dominik Steiner, umsatzsteuerpflichtig, Regelbesteuerung).
  *
  * Geltungsbereich: Nutzung der unter `realsyncdynamicsai.de`
  * angebotenen SaaS-Plattform für KI- und DSGVO-Governance.
  *
  * Anwendbares Recht: deutsches Recht ohne UN-Kaufrecht (CISG).
  *
- * Verbraucher-/Unternehmer-Trennung: das Angebot richtet sich primär
+ * Verbraucher-/Unternehmer-Trennung: das Angebot richtet sich ausschließlich
  * an Unternehmer i. S. v. §14 BGB. Konsumenten-spezifische
  * Pflichthinweise (Widerrufsrecht §312g BGB, ODR-Plattform, etc.)
  * sind dennoch vollständig dokumentiert — wenn ein Verbraucher das
@@ -91,8 +91,8 @@ export function LegalTerms() {
             <Link to="/impressum" className="text-security-400">Impressum</Link>.
           </p>
           <p>
-            (2) Das Angebot richtet sich primär an Unternehmer im Sinne
-            von §&nbsp;14 BGB. Wird die Plattform durch einen Verbraucher
+            (2) Das Angebot richtet sich ausschließlich an Unternehmer
+            i.&nbsp;S.&nbsp;d. §&nbsp;14 BGB. Wird die Plattform dennoch durch einen Verbraucher
             i.&nbsp;S.&nbsp;v. §&nbsp;13 BGB genutzt, gelten die zwingenden
             verbraucherschützenden Vorschriften (insbesondere §§&nbsp;312&nbsp;ff. BGB)
             vorrangig vor diesen AGB.
@@ -171,9 +171,8 @@ export function LegalTerms() {
             angegeben, in Euro.
           </p>
           <p>
-            (2) Hinweis: der Anbieter ist Kleinunternehmer im Sinne von
-            §&nbsp;19 UStG. Es wird keine Umsatzsteuer ausgewiesen und
-            erhoben.
+            (2) Alle Preise verstehen sich zzgl. der gesetzlichen
+            Umsatzsteuer.
           </p>
           <p>
             (3) Die Abrechnung erfolgt über den Zahlungsdienstleister

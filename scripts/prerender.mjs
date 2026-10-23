@@ -189,18 +189,23 @@ function titleOf(html) {
 }
 
 /**
- * dist/404.html: die NotFoundPage, gerendert für einen Pfad ohne Route.
+ * dist/__not-found.html: die NotFoundPage, gerendert für einen Pfad ohne Route.
  * `functions/_middleware.ts` liefert sie mit HTTP 404 für unbekannte Pfade
  * aus (src/lib/spaNotFound.ts). Canonical und og:url zeigten sonst auf den
  * Hilfspfad; eine 404-Seite hat keine kanonische URL.
+ *
+ * NICHT `404.html`: Liegt die im Root, liefert Cloudflare Pages sie für jeden
+ * Pfad ohne Datei mit 404 aus und ignoriert `/* /index.html 200` — auch für
+ * echte SPA-Routen (/app/dashboard, gemessen an der Preview von PR #1969).
  */
+export const NOT_FOUND_FILE = '__not-found.html';
 const NOT_FOUND_PROBE = '/__rsd-404';
 async function writeNotFoundPage(page) {
   const html = (await renderRoute(page, NOT_FOUND_PROBE))
     .replace(/<link rel="canonical"[^>]*>/gi, '')
     .replace(/<meta property="og:url"[^>]*>/gi, '');
-  await writeFile(join(DIST, '404.html'), html, 'utf8');
-  console.log(`[prerender] ✓ 404.html (${titleOf(html)})`);
+  await writeFile(join(DIST, NOT_FOUND_FILE), html, 'utf8');
+  console.log(`[prerender] ✓ ${NOT_FOUND_FILE} (${titleOf(html)})`);
 }
 
 async function writeRoute(route, html) {
@@ -322,7 +327,7 @@ async function main() {
       await writeNotFoundPage(page);
     } catch (e) {
       stats.failed++;
-      console.error(`[prerender] FAIL 404.html: ${e instanceof Error ? e.message : String(e)}`);
+      console.error(`[prerender] FAIL ${NOT_FOUND_FILE}: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       await page.close();
     }

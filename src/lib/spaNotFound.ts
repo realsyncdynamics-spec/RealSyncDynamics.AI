@@ -6,7 +6,7 @@
  * anschließend „Seite nicht gefunden“ zeigt. `functions/_middleware.ts` ruft
  * `withSpaNotFoundStatus` nach `context.next()` auf: Liefert die Antwort HTML
  * für einen Pfad, den keine Route aus `src/App.tsx` kennt, wird daraus 404 —
- * mit dem vorgerenderten `dist/404.html` als Inhalt, falls vorhanden. Die
+ * mit dem vorgerenderten `dist/__not-found.html` als Inhalt, falls vorhanden. Die
  * Shell lädt dieselben Bundles, die Ansicht im Browser bleibt unverändert.
  *
  * Bewusst nur HTML mit Status 200: Redirects (301/308), JSON der Functions,

@@ -13,7 +13,8 @@ interface PagesEnv {
  *
  * Danach: unbekannte SPA-Pfade bekommen HTTP 404 statt der 200-Shell aus dem
  * `/* /index.html 200`-Fallback (siehe src/lib/spaNotFound.ts). Inhalt ist das
- * vorgerenderte dist/404.html (scripts/prerender.mjs).
+ * vorgerenderte dist/__not-found.html (scripts/prerender.mjs; bewusst nicht
+ * 404.html — die schaltet auf Pages den SPA-Fallback ab).
  */
 export async function onRequest(context: {
   request: Request;
@@ -30,6 +31,6 @@ export async function onRequest(context: {
   const response = await context.next();
   const assets = context.env?.ASSETS;
   return withSpaNotFoundStatus(context.request, response, async () =>
-    assets ? assets.fetch(new URL('/404', context.request.url)) : null,
+    assets ? assets.fetch(new URL('/__not-found', context.request.url)) : null,
   );
 }

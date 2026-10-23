@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Server, AlertTriangle, CheckCircle2, Code } from 'lucide-react';
+import { CTA } from '../content/runtimeVocab';
 
 export function SaasAnbieterLanding() {
   return (
@@ -93,7 +94,7 @@ export function SaasAnbieterLanding() {
                 Tarif starten <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/contact-sales?source=saas-anbieter" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Founding Access starten
+                {CTA.enterprise}
               </Link>
               <Link to="/avv-generator" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
                 AVV-Generator probieren

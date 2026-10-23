@@ -5,6 +5,7 @@ import { Logo } from '../../components/Logo';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { OAuthProviderButtons } from '../../features/auth/OAuthProviderButtons';
+import { TRY_FREE } from '../../config/beta';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
@@ -120,7 +121,7 @@ export function AuthPage({ mode }: AuthPageProps) {
               </div>
 
               <Button type="submit" variant="primary" size="lg" className="mt-2 w-full">
-                {isSignup ? '14 Tage kostenlos starten' : 'Anmelden'} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                {isSignup ? TRY_FREE.cta : 'Anmelden'} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
 
               <p className="text-center text-xs text-titanium-500">
@@ -135,7 +136,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                   <>
                     Noch kein Konto?{' '}
                     <Link to="/os/signup" className="text-security-400 hover:text-security-300">
-                      14 Tage kostenlos testen
+                      {TRY_FREE.cta}
                     </Link>
                   </>
                 )}

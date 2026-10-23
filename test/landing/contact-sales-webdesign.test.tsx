@@ -1,6 +1,6 @@
 /**
  * /contact-sales?intent=webdesign — Webdesign-Anfragen landen nicht im
- * Founding-/Enterprise-Funnel, sondern als persönliche Projektanfrage.
+ * Enterprise-Beta-Funnel, sondern als persönliche Projektanfrage.
  */
 import { afterEach, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -15,17 +15,19 @@ function mountAt(search: string) {
   return render(<MemoryRouter initialEntries={[`/contact-sales${search}`]}><ContactSales /></MemoryRouter>);
 }
 
-it('shows a personal website inquiry instead of Founding Access for intent=webdesign', async () => {
+it('shows a personal website inquiry instead of the Enterprise beta for intent=webdesign', async () => {
   mountAt('?source=frontend-builder&intent=webdesign');
   expect(await screen.findByRole('heading', { level: 1, name: 'Individuelles Webdesign anfragen' })).toBeInTheDocument();
-  expect(screen.queryByText(/Founding Access/)).toBeNull();
-  expect(screen.queryByText(/14 Tage kostenloser Enterprise-Zugang/)).toBeNull();
+  expect(screen.queryByText(/Enterprise-Beta/)).toBeNull();
   expect(screen.getByText(/persönliches Festangebot nach Projektumfang/)).toBeInTheDocument();
   expect(screen.getByRole('combobox')).toHaveValue('webdesign');
   expect(screen.getByRole('button', { name: 'Anfrage senden' })).toBeInTheDocument();
 });
 
-it('keeps the Founding Access copy for plain contact links', () => {
+it('shows the Enterprise beta copy for plain contact links', () => {
   mountAt('?source=landing');
-  expect(screen.getByRole('heading', { level: 1, name: 'Founding Access anfragen' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1, name: 'Enterprise-Beta anfragen' })).toBeInTheDocument();
+  expect(screen.getByText(/kostenlos bis 31\. Januar 2027/)).toBeInTheDocument();
+  // Kein Kontingent: /contact-sales schreibt über sales-lead, ohne Obergrenze.
+  expect(document.body.textContent).not.toMatch(/100 Unternehmen|14 Tage|Founding Access/);
 });

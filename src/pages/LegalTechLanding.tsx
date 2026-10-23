@@ -1,5 +1,7 @@
 import { Scale, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLanding';
+import { CTA } from '../content/runtimeVocab';
+import { TRY_FREE } from '../config/beta';
 
 export function LegalTechLanding() {
   return (
@@ -24,7 +26,7 @@ export function LegalTechLanding() {
         cta: {
           heading: 'Mandanten-Geheimnis bleibt geheim. KI-Vorteil bleibt erhalten.',
           buttons: [
-            { to: '/contact-sales?source=legaltech', label: 'Founding Access starten', variant: 'primary' },
+            { to: '/contact-sales?source=legaltech', label: CTA.enterprise, variant: 'primary' },
             { to: '/audit', label: 'Kanzlei-Site auditieren', variant: 'secondary' },
             { to: '/avv-generator', label: 'AVV-Template', variant: 'ghost' },
           ],
@@ -120,8 +122,8 @@ export function LegalTechLanding() {
           <strong className="text-titanium-50">Starter 79 €/M</strong> für Solo-Anwälte ·
           <strong className="text-titanium-50"> Growth 249 €/M</strong> für Teams (Multi-Tenant + API) ·
           <strong className="text-titanium-50"> Enterprise</strong> nach Vertrag für mittelgroße Kanzleien
-          (Mandanten-Sites nach Vertrag + White-Label-Reports). Starter und Growth 14 Tage kostenlos
-          testen · Mandanten-Setup AI-geführt in einem Schritt.
+          (Mandanten-Sites nach Vertrag + White-Label-Reports). Starter und Growth {TRY_FREE.phrase}
+          testen, danach gilt der genannte Listenpreis · Mandanten-Setup AI-geführt in einem Schritt.
         </p>
       </Section>
     </BranchenLanding>

@@ -6,6 +6,7 @@ import {
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 import { ensureCsrfCookie } from '../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
+import { BETA } from '../config/beta';
 
 interface FormState {
   name: string;
@@ -30,6 +31,10 @@ function looksLikeEnterprisePartnerIntent(...parts: Array<string | null | undefi
   return /\b(enterprise|partner|scale)\b/.test(hay);
 }
 
+/**
+ * Alt-Links mit `?source=founding…` (früheres Founding-Programm,
+ * endete 02.08.2026) landen heute in derselben Enterprise-Beta-Ansicht.
+ */
 function isFoundingIntent(source: string, intent: string | null): boolean {
   const hay = `${source} ${intent ?? ''}`.toLowerCase();
   return /\bfounding\b/.test(hay);
@@ -37,7 +42,7 @@ function isFoundingIntent(source: string, intent: string | null): boolean {
 
 /**
  * Individuelles Webdesign (Landingpages, Websites, maßgeschneiderte Dashboards)
- * — eigenständige Dienstleistung, kein Enterprise-/Founding-Funnel
+ * — eigenständige Dienstleistung, kein Enterprise-Beta-Funnel
  * (Entscheidung Owner 18.10.2026, `CTA.webdesign`).
  */
 function isWebdesignIntent(intent: string | null): boolean {
@@ -134,7 +139,7 @@ export function ContactSales() {
   const inquiryPlan = isInquiryPlanKey(planKey);
   const isInquiry = inquirySignal || inquiryPlan;
   const isWebdesign = !isInquiry && isWebdesignIntent(intent);
-  const showFoundingCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
+  const showBetaCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
   const showPlanBadge = isInquiry && planKey !== null;
 
   function handleChange(field: keyof FormState) {
@@ -244,30 +249,30 @@ export function ContactSales() {
 
   const headerTitle = isWebdesign
     ? 'Individuelle Dienstleistung'
-    : showFoundingCopy
-      ? 'Founding Access / Kontakt'
+    : showBetaCopy
+      ? 'Enterprise-Beta / Kontakt'
       : 'Enterprise / Partner Anfrage';
   const headerSub = isWebdesign
     ? 'Persönlich mit Dominik Steiner'
-    : showFoundingCopy
+    : showBetaCopy
       ? 'AI Agent antwortet sofort'
       : 'Vertrieb prüft die Anfrage';
 
   const headline = isWebdesign
     ? 'Individuelles Webdesign anfragen'
-    : showFoundingCopy
+    : showBetaCopy
     ? (planKey
-      ? `${planBadgeLabel(planKey)} — Founding Access`
-      : 'Founding Access anfragen')
+      ? `${planBadgeLabel(planKey)} — Enterprise-Beta`
+      : 'Enterprise-Beta anfragen')
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
   const intro = isWebdesign
     ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
-    : showFoundingCopy
-    ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
+    : showBetaCopy
+    ? `Enterprise-Beta – kostenlos bis ${BETA.endsLabel}. Keine Kreditkarte, kein Abo; danach Preis auf Anfrage. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und meldet sich per E-Mail mit dem Beta-Zugang.`
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const submitLabel = showBetaCopy ? 'Enterprise-Beta anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

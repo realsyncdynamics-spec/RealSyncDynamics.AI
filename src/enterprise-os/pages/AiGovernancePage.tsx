@@ -7,6 +7,7 @@ import { Button } from '../components/Button';
 import { Badge, StatusBadge } from '../components/Badge';
 import { Card, CardHeader, CardBody } from '../components/Card';
 import { AI_RISK_CLASSES, AI_USE_CASES } from '../mock/data';
+import { TRY_FREE } from '../../config/beta';
 
 export function AiGovernancePage() {
   return (
@@ -29,7 +30,7 @@ export function AiGovernancePage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
+                {TRY_FREE.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/os/app/ai-usecases">
@@ -128,7 +129,7 @@ export function AiGovernancePage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
+                {TRY_FREE.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>

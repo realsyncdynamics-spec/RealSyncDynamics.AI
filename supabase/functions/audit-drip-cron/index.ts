@@ -4,14 +4,15 @@
 // pro Step die zugehörige Email via Resend, advanced den Drip-State.
 // Bei Fehler bleibt next_send_at gleich → automatischer Retry am nächsten Tag.
 //
-// Versand nur mit Marketing-Einwilligung (gdpr_audits.marketing_consent, nicht
-// widerrufen). Zeilen ohne Einwilligung werden stillgelegt (unsubscribed), damit
-// sie nicht täglich erneut fällig werden. Ist die Einwilligung nicht lesbar,
-// wird nichts gesendet (fail-closed).
+// Versand nur mit Einwilligung am Audit UND bestätigtem Double-Opt-in am Lead,
+// beides nicht widerrufen (gleiche Regel wie audit_email_drip_due seit
+// 20261015120000, hier noch einmal geprüft). Gesperrte Zeilen bleiben
+// unverändert. Ist die Einwilligung nicht lesbar, wird nichts gesendet
+// (fail-closed).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
-import { NO_CONSENT_REASON, partitionByConsent, type AuditConsentRow } from './consent-gate.ts';
+import { partitionByConsent, type AuditConsentRow, type LeadDoiRow } from './consent-gate.ts';
 
 interface DueRow {
   id: string;
@@ -49,27 +50,34 @@ Deno.serve(async (req) => {
 
   const auditIds = [...new Set(dueRows.map((r) => r.audit_id).filter((id): id is string => !!id))];
   let audits: AuditConsentRow[] = [];
+  let leads: LeadDoiRow[] = [];
   if (auditIds.length > 0) {
-    const { data: consentRows, error: consentErr } = await admin
+    const { data: auditRows, error: auditErr } = await admin
       .from('gdpr_audits')
-      .select('id, marketing_consent, marketing_consent_revoked_at')
+      .select('id, marketing_consent, marketing_consent_revoked_at, sales_lead_id')
       .in('id', auditIds);
-    if (consentErr) {
+    if (auditErr) {
       // Ohne lesbare Einwilligung keine Werbung — morgen erneut versuchen.
-      console.error('audit-drip-cron: consent lookup failed', consentErr.code);
+      console.error('audit-drip-cron: consent lookup failed', auditErr.code);
       return jsonResponse({ ok: false, error: 'consent lookup failed' }, 500);
     }
-    audits = (consentRows ?? []) as AuditConsentRow[];
+    audits = (auditRows ?? []) as AuditConsentRow[];
+
+    const leadIds = [...new Set(audits.map((a) => a.sales_lead_id).filter((id): id is string => !!id))];
+    if (leadIds.length > 0) {
+      const { data: leadRows, error: leadErr } = await admin
+        .from('sales_leads')
+        .select('id, followup_doi_confirmed_at, marketing_consent_revoked_at')
+        .in('id', leadIds);
+      if (leadErr) {
+        console.error('audit-drip-cron: doi lookup failed', leadErr.code);
+        return jsonResponse({ ok: false, error: 'consent lookup failed' }, 500);
+      }
+      leads = (leadRows ?? []) as LeadDoiRow[];
+    }
   }
 
-  const { allowed: rows, blocked } = partitionByConsent(dueRows, audits);
-  if (blocked.length > 0) {
-    const { error: blockErr } = await admin
-      .from('audit_email_drip')
-      .update({ unsubscribed: true, next_send_at: null, last_error: NO_CONSENT_REASON, updated_at: new Date().toISOString() })
-      .in('id', blocked.map((r) => r.id));
-    if (blockErr) console.error('audit-drip-cron: blocking rows without consent failed', blockErr.code);
-  }
+  const { allowed: rows, blocked } = partitionByConsent(dueRows, audits, leads);
 
   const sent: string[] = [];
   const failed: { id: string; error: string }[] = [];

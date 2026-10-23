@@ -2,36 +2,56 @@
 // Deno-Abhängigkeiten, damit Vitest sie direkt prüfen kann.
 //
 // Die Drip-Mails (Tag 3 / 14 / 30) enthalten Angebote (Pro-Tier, Audit-Pro).
-// Der Trigger `audit_email_drip_create_for_audit` legt aber für JEDES Audit
-// mit E-Mail eine Drip-Zeile an, unabhängig von der Checkbox im Audit-Formular.
-// Deshalb entscheidet der Cron vor dem Versand: gesendet wird nur, wenn das
-// zugehörige gdpr_audit eine ausdrückliche, nicht widerrufene Einwilligung trägt.
-
-export const NO_CONSENT_REASON = 'no_marketing_consent';
+// Seit 20261015120000 filtert `audit_email_drip_due` bereits in der Datenbank
+// auf Einwilligung am Audit UND bestätigten Double-Opt-in am Lead. Dort ist der
+// Ersatz der Funktion aber abgesichert: Fehlen im Live-Projekt Objekte, bleibt
+// die alte, ungefilterte Funktion stehen. Der Cron prüft deshalb dieselbe Regel
+// noch einmal, bevor er sendet (Verteidigung in der Tiefe).
+//
+// Gesperrte Zeilen werden nicht verändert — bestätigt jemand später den
+// Double-Opt-in, laufen die fälligen Mails ab dann (wie in der Migration).
 
 export interface AuditConsentRow {
   id: string;
   marketing_consent: boolean | null;
   marketing_consent_revoked_at: string | null;
+  sales_lead_id: string | null;
 }
 
-export function dripAllowed(row: AuditConsentRow | undefined): boolean {
-  return !!row && row.marketing_consent === true && !row.marketing_consent_revoked_at;
+export interface LeadDoiRow {
+  id: string;
+  followup_doi_confirmed_at: string | null;
+  marketing_consent_revoked_at: string | null;
+}
+
+export function dripAllowed(audit: AuditConsentRow | undefined, lead: LeadDoiRow | undefined): boolean {
+  return (
+    !!audit &&
+    audit.marketing_consent === true &&
+    !audit.marketing_consent_revoked_at &&
+    !!lead &&
+    !!lead.followup_doi_confirmed_at &&
+    !lead.marketing_consent_revoked_at
+  );
 }
 
 /**
- * Teilt fällige Drip-Zeilen in versandfähig und gesperrt. Fehlt das Audit
- * (gelöscht, audit_id null) oder die Einwilligung, ist die Zeile gesperrt.
+ * Teilt fällige Drip-Zeilen in versandfähig und gesperrt. Fehlt das Audit,
+ * der Lead, die Einwilligung oder die Bestätigung, ist die Zeile gesperrt.
  */
 export function partitionByConsent<T extends { audit_id: string | null }>(
   rows: readonly T[],
   audits: readonly AuditConsentRow[],
+  leads: readonly LeadDoiRow[],
 ): { allowed: T[]; blocked: T[] } {
-  const byId = new Map(audits.map((a) => [a.id, a]));
+  const auditById = new Map(audits.map((a) => [a.id, a]));
+  const leadById = new Map(leads.map((l) => [l.id, l]));
   const allowed: T[] = [];
   const blocked: T[] = [];
   for (const row of rows) {
-    if (row.audit_id && dripAllowed(byId.get(row.audit_id))) allowed.push(row);
+    const audit = row.audit_id ? auditById.get(row.audit_id) : undefined;
+    const lead = audit?.sales_lead_id ? leadById.get(audit.sales_lead_id) : undefined;
+    if (dripAllowed(audit, lead)) allowed.push(row);
     else blocked.push(row);
   }
   return { allowed, blocked };

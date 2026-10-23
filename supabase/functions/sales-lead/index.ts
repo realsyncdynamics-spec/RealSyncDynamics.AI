@@ -7,15 +7,15 @@
 // }
 //
 // Public leads are rate-limited, stored in public.sales_leads and optionally
-// forwarded to the configured team webhook. Website-builder leads that
-// explicitly requested the Starter offer AND sent `marketing_consent: true`
-// also receive the three-month-free offer by email via the existing Resend
-// configuration (see ./offer.ts — consent is never inferred from `source`).
+// forwarded to the configured team webhook. This endpoint sends no mail to the
+// submitted address: it is public and unauthenticated, so the caller controls
+// both the recipient and any consent flag. Marketing mail needs a verified
+// opt-in (double opt-in on sales_leads, see gdpr-audit/followup-doi.ts).
 //
 // Inquiry plans (purchaseMode === 'inquiry', e.g. enterprise / partner):
 //   - plan_key is required (or tier that normalizes to a known inquiry key)
 //   - source is normalized to `contact-sales`
-// Non-inquiry callers (upgrade clicks, waitlist, starter offer) stay unchanged.
+// Non-inquiry callers (upgrade clicks, waitlist) stay unchanged.
 //
 // ── Warteliste (mode='waitlist') ────────────────────────────────────────────
 // Zusätzlich bedient dieser Endpunkt die Warteliste der Landingpage
@@ -36,12 +36,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
-import {
-  STARTER_OFFER_SUBJECT,
-  hasExplicitMarketingConsent,
-  shouldSendStarterOffer,
-  starterOfferHtml,
-} from './offer.ts';
 
 // Preflight muss GET mit abdecken (Wartelisten-Zähler). Die bestehenden
 // POST-Antworten behalten `corsHeaders` — der Unterschied ist ausschliesslich
@@ -50,8 +44,6 @@ import {
 const cors = buildCorsHeaders('GET, POST, OPTIONS');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESEND_API_URL = 'https://api.resend.com/emails';
-const FROM_EMAIL = 'alerts@realsyncdynamicsai.de';
 
 /** Max host length (DNS label budget) and list size for inquiry domains. */
 const MAX_DOMAIN_LEN = 253;
@@ -71,26 +63,6 @@ async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function sendStarterOffer(email: string, name?: string | null, company?: string | null): Promise<void> {
-  const apiKey = Deno.env.get('RESEND_API_KEY');
-  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
-
-  const html = starterOfferHtml(name, company);
-
-  const response = await fetch(RESEND_API_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM_EMAIL, to: email, subject: STARTER_OFFER_SUBJECT, html }),
-    signal: AbortSignal.timeout(5000),
-  });
-
-  // Nur den Status nach oben geben — die Provider-Antwort kann die
-  // Empfängeradresse enthalten und landet sonst im Function-Log.
-  if (!response.ok) {
-    throw new Error(`Resend API error: ${response.status}`);
-  }
 }
 
 /** Nur bekannte utm_*-Schlüssel übernehmen — kein Freitext-JSON aus dem Client. */
@@ -206,7 +178,6 @@ Deno.serve(async (req: Request) => {
     note?: string;
     referrer?: string;
     utm?: unknown;
-    marketing_consent?: unknown;
   };
   try { body = JSON.parse(text); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
@@ -311,7 +282,7 @@ Deno.serve(async (req: Request) => {
     looksLikeEnterprisePartnerIntent(intent, useCase, tier, rawPlanKey);
 
   // Enforce inquiry contract only when inquiry intent is present — never for
-  // waitlist (handled above), starter offer, or generic upgrade/contact forms
+  // waitlist (handled above) or generic upgrade/contact forms
   // that omit plan_key and do not signal enterprise/partner.
   if (isInquiryPlan || contactSalesInquiry) {
     if (!planKey) {
@@ -348,8 +319,6 @@ Deno.serve(async (req: Request) => {
     ...(planKey ? { plan_key: planKey } : {}),
     ...(domainsPersisted.length ? { domains: domainsPersisted } : {}),
     ...(companyDomain ? { company_domain: companyDomain } : {}),
-    // Einwilligung nur, wenn der Client sie ausdrücklich mitschickt — nie aus `source` ableiten.
-    ...(hasExplicitMarketingConsent(body) ? { marketing_consent: true } : {}),
   };
 
   const { data, error } = await admin.from('sales_leads').insert({
@@ -370,17 +339,6 @@ Deno.serve(async (req: Request) => {
   if (error) {
     console.error('sales-lead: insert failed', error.code);
     return jsonError(500, 'INTERNAL', 'Anfrage konnte nicht gespeichert werden. Bitte später erneut versuchen.');
-  }
-
-  const offerQueued = shouldSendStarterOffer({ source: body.source, intent, tier, marketing_consent: body.marketing_consent });
-  if (offerQueued) {
-    try {
-      await sendStarterOffer(email, name, company);
-    } catch (emailError) {
-      console.error('starter offer email failed:', (emailError as Error).message);
-      // The lead is already safely captured. Do not turn an email-provider
-      // failure into a lost lead or a duplicate form submission.
-    }
   }
 
   const webhook = Deno.env.get('SALES_LEAD_WEBHOOK_URL');
@@ -415,6 +373,5 @@ Deno.serve(async (req: Request) => {
     id: data?.id,
     created_at: data?.created_at,
     plan_key: planKey ?? undefined,
-    offer_email_queued: offerQueued,
   });
 });

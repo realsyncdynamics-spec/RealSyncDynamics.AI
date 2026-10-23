@@ -2990,8 +2990,12 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
-export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/**
+ * Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`.
+ * Nennt den Kundenkreis direkt bei den Preisen: Netto-Preise sind nur
+ * zulässig, wenn das Angebot erkennbar auf Unternehmer beschränkt ist (AGB § 1 Abs. 2).
+ */
+export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.';
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
@@ -3005,7 +3009,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

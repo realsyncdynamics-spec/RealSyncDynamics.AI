@@ -138,7 +138,14 @@ function Inner() {
       const patch: Partial<GovernanceAlert> = { status: newStatus };
       if (newStatus === 'acknowledged') patch.acknowledged_at = new Date().toISOString();
       if (newStatus === 'resolved')     patch.resolved_at     = new Date().toISOString();
-      await sb.from('governance_alerts').update(patch).eq('id', alertId);
+      // Ohne Fehlerprüfung zeigte die Liste „bestätigt/erledigt“, auch wenn
+      // das Schreiben scheiterte.
+      const { error: updateError } = await sb.from('governance_alerts').update(patch).eq('id', alertId);
+      if (updateError) {
+        setError(`Status konnte nicht gespeichert werden: ${updateError.message}`);
+        return;
+      }
+      setError(null);
       setAlerts((prev) =>
         prev.map((a) => (a.id === alertId ? { ...a, ...patch } : a))
       );

@@ -180,6 +180,16 @@ export function AiSystemRegistryView() {
               <div className="rs-empty" data-testid="ai-systems-empty">
                 <p className="font-semibold text-[color:var(--color-rs-fg-0)]">{t('systemsNone')}</p>
                 <p className="mt-1">{t('systemsNoneSub')}</p>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="rs-chip-sm rs-chip-sm--primary mt-3"
+                    data-testid="ai-system-add-empty"
+                    onClick={() => setAdding(true)}
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden="true" /> {t('regAdd')}
+                  </button>
+                )}
               </div>
             )}
             {visible.map(({ asset, cls, assessment }) => {

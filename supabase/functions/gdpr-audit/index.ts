@@ -36,6 +36,18 @@ import {
   marketingConsentWrite,
   resolveConsentLocale,
 } from './marketing-consent.ts';
+import {
+  captureFunnelLead,
+  isHoneypotTripped,
+  markFunnelLeadScan,
+  normalizeLeadDomain,
+  recordFunnelEvent,
+  requestFollowupDoi,
+  resolveFunnelSource,
+  sanitizeEntryTag,
+  type FunnelDbClient,
+} from './funnel-lead.ts';
+import { followupConfirmUrl, sendFollowupDoi } from './followup-doi.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -165,6 +177,17 @@ async function scanSubpages(url: string, html: string): Promise<SubpageScan> {
   };
 }
 
+/** Resend-Key wie in audit-report-email: Env zuerst, dann Vault-RPC. */
+async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
+  const env = Deno.env.get('RESEND_API_KEY');
+  if (env && env.startsWith('re_')) return env;
+  try {
+    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
+    if (typeof data === 'string' && data.startsWith('re_')) return data;
+  } catch { /* RPC fehlt — dann keine Bestätigungs-Mail */ }
+  return null;
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest('SHA-256', buf);
@@ -173,7 +196,20 @@ async function sha256Hex(input: string): Promise<string> {
     .join('');
 }
 
-async function handleAudit(req: Request): Promise<Response> {
+/**
+ * Pro Anfrage: welcher Lead gerade gescannt wird. Der Fehlerpfad in
+ * `Deno.serve` braucht ihn, um einen abgestürzten Scan am Lead zu vermerken —
+ * der Lead selbst bleibt dabei erhalten.
+ */
+interface AuditRequestState {
+  leadId: string | null;
+}
+
+/** Antwort, wenn der Scan scheitert, der Lead aber schon gespeichert ist. */
+const SCAN_FAILED_LEAD_SAVED =
+  'Der Scan konnte nicht abgeschlossen werden. Ihre Angaben sind gespeichert — bitte versuchen Sie es später erneut.';
+
+async function handleAudit(req: Request, state: AuditRequestState): Promise<Response> {
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -189,8 +225,13 @@ async function handleAudit(req: Request): Promise<Response> {
     source?: string;
     marketing_consent?: boolean;
     consent_locale?: string;
+    /** Honeypot — bleibt bei Menschen leer (siehe AuditStepper). */
+    company_website?: string;
   };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
+
+  // Bot-Schutz vor jeder weiteren Arbeit: kein Lead, kein Abruf fremder Seiten.
+  if (isHoneypotTripped(body)) return jsonError(400, 'BAD_REQUEST', 'invalid request');
 
   // Mandanten-Scan aus tenant-audit (Service-Role-Key + Caller-Header):
   // kein IP-Limit (tenant-audit begrenzt pro Mandant), kein Lead, keine E-Mail.
@@ -210,8 +251,9 @@ async function handleAudit(req: Request): Promise<Response> {
   const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
   const planRaw = (body.plan ?? '').trim().toLowerCase();
   const plan = ALLOWED_PLANS.has(planRaw) ? planRaw : null;
-  const sourceTag = (body.source ?? '').trim().slice(0, 200) || null;
-  const leadSource = sourceTag ?? 'audit_lp';
+  // Kanonische Lead-Quelle (landing, pricing, …) statt des rohen ?source=-Tags.
+  const leadSource = resolveFunnelSource(body.source);
+  const entryTag = sanitizeEntryTag(body.source);
 
   if (!url || !URL_RE.test(url)) return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
   if (!isOptimizerScan && !isTenantScan && (!email || !EMAIL_RE.test(email))) {
@@ -253,6 +295,81 @@ async function handleAudit(req: Request): Promise<Response> {
   try { domain = new URL(url).hostname.toLowerCase(); }
   catch { return jsonError(400, 'INVALID_URL', 'unparsable url'); }
 
+  // ── Lead ZUERST speichern, dann scannen ───────────────────────────────────
+  // Vorher entstand der Lead erst nach dem Abruf der fremden Seite: Ein
+  // Absturz im Scan verlor ihn, jeder weitere Scan legte ein Duplikat an.
+  // Jetzt: dedupliziert über lower(email)|domain (RPC capture_funnel_lead),
+  // gespeichert, bevor irgendetwas Fremdes passiert. Der Scan reichert den
+  // Lead danach nur noch an. Optimizer- und Mandanten-Scans sind keine Leads.
+  const funnelDb = admin as unknown as FunnelDbClient;
+  let leadId: string | null = null;
+  if (!isOptimizerScan && !isTenantScan) {
+    const captured = await captureFunnelLead(funnelDb, {
+      email,
+      domain: normalizeLeadDomain(domain),
+      company,
+      source: leadSource,
+      entryTag,
+      path: '/audit',
+      ipHash,
+      userAgent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
+      marketingConsent: consentCols.marketing_consent,
+      consentVersion: consentCols.marketing_consent_text_version,
+    });
+    if (captured.ok) {
+      leadId = captured.leadId;
+      await recordFunnelEvent(funnelDb, 'lead_saved', { source: leadSource, is_new_lead: captured.isNew });
+      await recordFunnelEvent(funnelDb, 'scan_started', { source: leadSource });
+      // Checkbox gesetzt → Double-Opt-in anstoßen. Ohne Bestätigung per Link
+      // geht keine Follow-up-Mail raus (Gate in audit_email_drip_due).
+      if (consentCols.marketing_consent) {
+        const doi = await requestFollowupDoi(funnelDb, leadId);
+        const apiKey = doi ? await getResendKey(admin) : null;
+        if (doi && apiKey) {
+          await sendFollowupDoi({
+            apiKey,
+            from: `RealSyncDynamics.AI <${Deno.env.get('AUDIT_EMAIL_FROM') ?? 'audit@realsyncdynamicsai.de'}>`,
+            to: doi.email,
+            confirmUrl: followupConfirmUrl(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de', doi.token),
+          });
+        }
+      }
+    } else {
+      if (captured.reason !== 'rpc_missing') {
+        console.error('gdpr-audit: capture_funnel_lead failed', { reason: captured.reason, code: captured.code });
+      }
+      // Altpfad (Migration noch nicht ausgerollt oder RPC-Fehler): wie bisher
+      // eine Zeile in sales_leads — aber ebenfalls VOR dem Scan.
+      const planTag = plan ? ` · plan=${plan}` : '';
+      const leadBase = {
+        name: null as string | null,
+        email,
+        company,
+        use_case: 'compliance',
+        message: `Audit-LP: ${url}${planTag}`,
+        source: leadSource,
+        path: '/audit',
+        user_agent: req.headers.get('user-agent')?.slice(0, 500),
+        ip_hash: ipHash,
+      };
+      const { data: leadRow, error: leadErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
+        (row) => admin.from('sales_leads').insert(row).select('id').single(),
+        leadBase,
+        consentCols,
+        (safe) => console.error(
+          'gdpr-audit: sales_leads consent columns missing — retry without consent',
+          safe,
+        ),
+      );
+      if (leadErr) {
+        // Never log full PostgREST error (details may contain email).
+        console.error('gdpr-audit: sales_leads insert failed', consentInsertErrorLog(leadErr));
+      }
+      leadId = leadRow?.id ?? null;
+    }
+  }
+  state.leadId = leadId;
+
   // Fetch target — 10s timeout, max 1MB
   let html = '';
   let status: number | null = null;
@@ -281,6 +398,10 @@ async function handleAudit(req: Request): Promise<Response> {
     // Eine Weiterleitung auf ein unzulaessiges Ziel ist kein Befund ueber die
     // Seite, sondern eine verweigerte Pruefung — das sagen wir auch so.
     if (e instanceof TargetRefusedError) {
+      if (leadId) {
+        await markFunnelLeadScan(funnelDb, leadId, 'failed');
+        await recordFunnelEvent(funnelDb, 'scan_failed', { source: leadSource });
+      }
       return jsonError(400, 'REDIRECT_BLOCKED', 'Die Seite leitet auf ein Ziel weiter, das nicht geprueft werden darf.');
     }
     fetchError = (e as Error).message ?? 'fetch failed';
@@ -330,39 +451,8 @@ async function handleAudit(req: Request): Promise<Response> {
 
   const { score, severity } = scoreReport(issues);
 
-  // Only lead-magnet submissions create sales_leads. The optimizer performs a
-  // domain-only public scan and must never require or invent an email address.
-  // A tenant scan is a governance action, not a lead.
-  const planTag = plan ? ` · plan=${plan}` : '';
-  let leadId: string | null = null;
-  if (!isOptimizerScan && !isTenantScan) {
-    const leadBase = {
-      name: null as string | null,
-      email,
-      company,
-      use_case: 'compliance',
-      message: `Audit-LP: ${url} → score ${score}/100 (${severity})${planTag}`,
-      source: leadSource,
-      path: '/audit',
-      user_agent: req.headers.get('user-agent')?.slice(0, 500),
-      ip_hash: ipHash,
-    };
-    const { data: leadRow, error: leadErr } = await insertWithConsentColumnFailSafe<{ id: string }>(
-      (row) => admin.from('sales_leads').insert(row).select('id').single(),
-      leadBase,
-      consentCols,
-      (safe) => console.error(
-        'gdpr-audit: sales_leads consent columns missing — retry without consent',
-        safe,
-      ),
-    );
-    if (leadErr) {
-      // Never log full PostgREST error (details may contain email).
-      console.error('gdpr-audit: sales_leads insert failed', consentInsertErrorLog(leadErr));
-    }
-    leadId = leadRow?.id ?? null;
-  }
-
+  // Der Lead ist oben bereits gespeichert (vor dem Scan). Optimizer- und
+  // Mandanten-Scans haben keinen; `leadId` ist dann null.
   const auditConsentCols = (isTenantScan || isOptimizerScan)
     ? marketingConsentWrite(false, 'de')
     : consentCols;
@@ -399,8 +489,19 @@ async function handleAudit(req: Request): Promise<Response> {
   );
   if (auditErr) {
     console.error('gdpr-audit: gdpr_audits insert failed', consentInsertErrorLog(auditErr));
+    if (leadId) {
+      await markFunnelLeadScan(funnelDb, leadId, 'failed');
+      await recordFunnelEvent(funnelDb, 'scan_failed', { source: leadSource });
+      return jsonError(500, 'SCAN_FAILED_LEAD_SAVED', SCAN_FAILED_LEAD_SAVED);
+    }
     return jsonError(500, 'INTERNAL', 'Audit konnte nicht gespeichert werden. Bitte später erneut versuchen.');
   }
+
+  if (leadId) {
+    await markFunnelLeadScan(funnelDb, leadId, 'completed', auditRow!.id);
+    await recordFunnelEvent(funnelDb, 'scan_completed', { source: leadSource });
+  }
+  state.leadId = null; // Scan ist durch — ein späterer Fehler betrifft ihn nicht mehr.
 
   // P0 Privacy: never return raw email on the public response.
   // Email stays persisted for CRM / audit-report-email delivery.
@@ -433,10 +534,23 @@ async function handleAudit(req: Request): Promise<Response> {
 // docs/product/free-scan-recovery.md). Deshalb wird hier alles gefangen und
 // als CORS-fähiges JSON ausgeliefert; die Ursache steht im Function-Log.
 Deno.serve(async (req) => {
+  const state: AuditRequestState = { leadId: null };
   try {
-    return await handleAudit(req);
+    return await handleAudit(req, state);
   } catch (e) {
-    console.error('gdpr-audit: unhandled error', e);
+    console.error('gdpr-audit: unhandled error', (e as Error)?.message ?? 'unknown');
+    // Der Lead ist vor dem Scan gespeichert worden; der Absturz wird an ihm
+    // vermerkt, gelöscht wird nichts.
+    if (state.leadId) {
+      try {
+        const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+          auth: { persistSession: false },
+        }) as unknown as FunnelDbClient;
+        await markFunnelLeadScan(admin, state.leadId, 'failed');
+        await recordFunnelEvent(admin, 'scan_failed', { source: 'governance_scan' });
+      } catch { /* Markierung ist Beiwerk */ }
+      return jsonError(500, 'SCAN_FAILED_LEAD_SAVED', SCAN_FAILED_LEAD_SAVED);
+    }
     return jsonError(500, 'INTERNAL', 'Audit konnte nicht abgeschlossen werden. Bitte später erneut versuchen.');
   }
 });

@@ -112,7 +112,7 @@
     "seit": "2026-09-06"
   },
   {
-    "datei": "supabase/functions/sales-lead/index.ts",
+    "datei": "supabase/functions/sales-lead/offer.ts",
     "plan": "starter",
     "fundstellen": 1,
     "art": "KAMPAGNE",

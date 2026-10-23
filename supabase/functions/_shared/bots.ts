@@ -93,6 +93,26 @@ export async function resolveBot(
 }
 
 /**
+ * Non-mutating conversation lookup for the bot policy preflight. A denied
+ * message may be evaluated against existing history, but must not create
+ * a conversation, store an identifier/label, or persist the denied text.
+ */
+export async function findExistingConversationId(
+  admin: SupabaseAdmin,
+  bot: BotRow,
+  externalRef: string | null,
+): Promise<string | null> {
+  if (!externalRef) return null;
+  const { data, error } = await admin
+    .from('bot_conversations').select('id')
+    .eq('tenant_id', bot.tenant_id)
+    .eq('bot_id', bot.id)
+    .eq('external_ref', externalRef).maybeSingle();
+  if (error) throw new BotError((error as { message: string }).message, 'INTERNAL', 500);
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+/**
  * Holt eine bestehende Konversation per (bot_id, external_ref) oder legt sie
  * an. external_ref ist die Session-/Anruf-/Chat-Referenz des Kanals.
  */
@@ -104,13 +124,8 @@ export async function upsertConversation(
   const channel = opts.channel ?? bot.channel;
   const externalRef = opts.externalRef ?? null;
 
-  if (externalRef) {
-    const { data: existing, error: selErr } = await admin
-      .from('bot_conversations').select('id')
-      .eq('bot_id', bot.id).eq('external_ref', externalRef).maybeSingle();
-    if (selErr) throw new BotError((selErr as { message: string }).message, 'INTERNAL', 500);
-    if (existing) return (existing as { id: string }).id;
-  }
+  const existingId = await findExistingConversationId(admin, bot, externalRef);
+  if (existingId) return existingId;
 
   const { data, error } = await admin.from('bot_conversations').insert({
     tenant_id: bot.tenant_id,

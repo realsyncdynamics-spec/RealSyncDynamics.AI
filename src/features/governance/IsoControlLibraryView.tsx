@@ -92,7 +92,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4 justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/app/governance/iso27001" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400">
+          <Link to="/app/governance/frameworks" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
@@ -334,7 +334,7 @@ function Inner() {
 
                       <div className="flex gap-2 pt-2">
                         <Link
-                          to={`/app/governance/evidence-vault-advanced?control=${control.id}`}
+                          to="/app/evidence-vault"
                           className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-none transition-colors inline-flex items-center justify-center gap-2"
                         >
                           <Zap className="h-3 w-3" />

@@ -1,6 +1,6 @@
 /**
- * Customer-facing copy for the public landing roadmap (#roadmap on Landing v4,
- * reference under /design/landing-v4; Landing v6 on `/` has no roadmap section).
+ * Customer-facing copy for the public landing roadmap (/roadmap; #roadmap auf der
+ * Referenz /design/landing-v4). Landing v6 auf `/` hat keinen Roadmap-Abschnitt.
  *
  * Internal `name` / `description` / `evidence` in implementation-status.ts stay
  * for registry, docs, and tests. Public markup must render ONLY these fields.
@@ -199,12 +199,36 @@ export const PUBLIC_ROADMAP_COPY: Record<
     de: {
       name: 'EU-AI-Act-Inventar',
       description:
-        'In Arbeit: Klassifikationen dauerhaft im Tenant-Inventar speichern — Oberfläche vorhanden, Speichern noch nicht freigeschaltet.',
+        'In Arbeit: Ergebnisse des öffentlichen Klassifikators ins Tenant-Inventar übernehmen — Oberfläche vorhanden, Speichern noch nicht freigeschaltet.',
     },
     en: {
       name: 'EU AI Act inventory',
       description:
-        'In progress: persist classifications in the tenant inventory — UI exists, saving is not unlocked yet.',
+        'In progress: carry results of the public classifier into the tenant inventory — UI exists, saving is not unlocked yet.',
+    },
+  },
+  'ai-system-registry': {
+    de: {
+      name: 'KI-Register',
+      description:
+        'KI-Systeme erfassen, Registerdaten pflegen und die Klassifikation (Risikostufe, Annex III, Art. 50) speichern.',
+    },
+    en: {
+      name: 'AI system register',
+      description:
+        'Record AI systems, maintain register data and save the classification (risk level, Annex III, Art. 50).',
+    },
+  },
+  'kodee': {
+    de: {
+      name: 'Kodee — Server-Assistent',
+      description:
+        'In Arbeit: Kodee-Chat in allen Plänen; SSH-Server-Aktionen ab Agency.',
+    },
+    en: {
+      name: 'Kodee — server assistant',
+      description:
+        'In progress: Kodee chat on all plans; SSH server actions from Agency.',
     },
   },
   'channel-bots': {

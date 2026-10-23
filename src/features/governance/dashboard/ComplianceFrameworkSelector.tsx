@@ -13,6 +13,12 @@ interface Framework {
   icon: React.ComponentType<{ className: string }>;
   /** null = es gibt (noch) keine Route. Die Karte navigiert dann nicht. */
   path: string | null;
+  /**
+   * Entitlement-Key aus shared/pricing.ts, den die Zielfläche verlangt;
+   * null = ohne Plan-Schranke. Früher stand hier implizit `governance.<id>` —
+   * diese Keys gibt es nicht, deshalb war jede Karte für jeden Kunden gesperrt.
+   */
+  entitlement: string | null;
   tier: string;
   /** Angekündigt, aber ohne Ziel — wird als „In Vorbereitung" ausgewiesen. */
   comingSoon?: boolean;
@@ -25,7 +31,8 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'GDPR',
     description: 'Datenschutz-Grundverordnung - Basis für alle EU-Organisationen',
     icon: Shield,
-    path: '/app/governance/dsgvo-directory',
+    path: '/app/documents',
+    entitlement: null,
     tier: 'free',
   },
   {
@@ -34,7 +41,9 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'ISO27001',
     description: 'Informationssicherheits-Management System',
     icon: BarChart3,
-    path: '/app/governance/iso27001',
+    // ISO 27001 ist als Policy Pack umgesetzt (policy-packs, Key policy.iso27001).
+    path: '/app/policy-packs',
+    entitlement: 'policy.iso27001',
     tier: 'starter',
   },
   {
@@ -43,8 +52,10 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'ISO42001',
     description: 'AI Management System - Künstliche Intelligenz Compliance',
     icon: AlertTriangle,
-    path: '/app/governance/iso42001',
-    tier: 'growth',
+    // Der Hub hat keine Plan-Schranke (kein Entitlement-Key für ISO 42001).
+    path: '/app/governance/iso42001-hub',
+    entitlement: null,
+    tier: 'free',
   },
   {
     id: 'nis2',
@@ -52,7 +63,9 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'NIS2',
     description: 'Netzwerk- und Informationssicherheitsrichtlinie (EU)',
     icon: Shield,
-    path: '/app/governance/nis2-incidents',
+    // NIS2 ist als Policy Pack umgesetzt (policy-packs, Key policy.nis2).
+    path: '/app/policy-packs',
+    entitlement: 'policy.nis2',
     tier: 'growth',
   },
   {
@@ -64,6 +77,7 @@ const FRAMEWORKS: Framework[] = [
     // DORA hat im Repo keine Route und kein Entitlement — deshalb kein Ziel
     // und kein Klick, statt eines Knopfes, der in den 404 führt.
     path: null,
+    entitlement: null,
     tier: 'enterprise',
     comingSoon: true,
   },
@@ -73,7 +87,8 @@ const FRAMEWORKS: Framework[] = [
     shortCode: 'AI-ACT',
     description: 'Regulierung von Künstlicher Intelligenz in der EU',
     icon: AlertTriangle,
-    path: '/app/governance/ai-act-assessment',
+    path: '/app/ai-systems',
+    entitlement: 'governance.ai_register',
     tier: 'growth',
   },
 ];
@@ -85,7 +100,7 @@ export function ComplianceFrameworkSelector() {
 
   const isAccessible = (framework: Framework): boolean => {
     if (framework.comingSoon || !framework.path) return false;
-    return hasFeature(`governance.${framework.id}`);
+    return framework.entitlement === null || hasFeature(framework.entitlement);
   };
 
   const handleFrameworkClick = (framework: Framework) => {
@@ -94,7 +109,7 @@ export function ComplianceFrameworkSelector() {
     if (isAccessible(framework)) {
       navigate(framework.path);
     } else {
-      const access = canAccess(`governance.${framework.id}`);
+      const access = canAccess(framework.entitlement ?? '');
       if (access.upgradeUrl) {
         navigate(access.upgradeUrl);
       } else {
@@ -129,12 +144,15 @@ export function ComplianceFrameworkSelector() {
                 onClick={() => handleFrameworkClick(framework)}
                 onMouseEnter={() => setHoveredFramework(framework.id)}
                 onMouseLeave={() => setHoveredFramework(null)}
-                disabled={!accessible}
+                // Gesperrt ≠ deaktiviert: Der Klick führt zum Upgrade-Pfad.
+                disabled={framework.comingSoon || !framework.path}
                 className={`
                   text-left p-5 rounded-none border transition-all
                   ${accessible
                     ? 'bg-obsidian-900 border-titanium-700 hover:border-[var(--brand-champ)] hover:bg-obsidian-800 cursor-pointer'
-                    : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                    : framework.comingSoon
+                      ? 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                      : 'bg-obsidian-950 border-titanium-900 opacity-60 hover:opacity-100 cursor-pointer'
                   }
                 `}
               >
@@ -209,7 +227,7 @@ export function ComplianceFrameworkSelector() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">FREE TIER</p>
-              <p className="text-titanium-300">DSGVO</p>
+              <p className="text-titanium-300">DSGVO, ISO 42001</p>
             </div>
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">STARTER</p>
@@ -217,7 +235,7 @@ export function ComplianceFrameworkSelector() {
             </div>
             <div>
               <p className="text-titanium-500 font-mono text-xs mb-2">GROWTH+</p>
-              <p className="text-titanium-300">ISO 42001, NIS2, EU AI Act</p>
+              <p className="text-titanium-300">NIS2, EU AI Act</p>
             </div>
           </div>
         </div>

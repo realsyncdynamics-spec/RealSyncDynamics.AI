@@ -17,7 +17,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <a href="#top" style={{ fontSize: "clamp(17px,1.1vw,28px)", fontWeight: "500" }}>RealSyncDynamics.AI</a>
             <div style={{ display: "flex", alignItems: "center", gap: "clamp(14px,1.6vw,40px)", fontSize: "var(--fs-body)", whiteSpace: "nowrap" }}>
               {v.showLinks ? (<>
-                <a href="#produkt">Plattform</a><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
+                <a href="#produkt">Plattform</a><a href="#websites">Websites</a><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
                 <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Login</Link>
               </>) : null}
               <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Website-Check starten</Link>
@@ -43,6 +43,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "clamp(14px,2vw,60px)", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
               {v.showLinks ? (<>
                 <a href="#produkt" style={{ color: "var(--rs-fg2)" }}>Plattform</a>
+                <a href="#websites" style={{ color: "var(--rs-fg2)" }}>Websites</a>
                 <a href="#evidence" style={{ color: "var(--rs-fg2)" }}>Evidence</a>
                 <a href="#architektur" style={{ color: "var(--rs-fg2)" }}>Sicherheit</a>
                 <a href="#preise" style={{ color: "var(--rs-fg2)" }}>Preise</a>
@@ -348,6 +349,41 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </section>
 
+      <section id="websites" data-testid="landing-websites" style={{ borderTop: "1px solid var(--rs-line)" }}>
+        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
+          <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>WEBSITES & DASHBOARDS FÜR KMU</p>
+          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Ihre Website: <span style={{ color: "var(--rs-acc)" }}>automatisch erstellt oder persönlich gestaltet.</span></h2>
+          <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Zwei Wege, ein Anspruch: datenschutzbewusst gebaut und in der EU betrieben. Wählen Sie, wie viel Sie selbst machen möchten.</p>
+          <div style={{ marginTop: "clamp(40px,4vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "24px" }}>
+            {v.websitePaths.map((w) => (<Fragment key={w.id}>
+              <article data-website-path={w.id} style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "0", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{w.k}</span>{w.preview ? (<span style={{ padding: "3px 10px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span>) : null}</div>
+                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{w.t}</h3>
+                <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{w.d}</p>
+                <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {w.points.map((pt) => (<li key={pt} style={{ display: "flex", gap: "10px", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>✓</span><span>{pt}</span></li>))}
+                </ul>
+                <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{w.note}</p>
+                <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                  <Link to={w.primary.href} data-website-cta={w.id} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>{w.primary.label}</Link>
+                  <Link to={w.secondary.href} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>{w.secondary.label}</Link>
+                </div>
+              </article>
+            </Fragment>))}
+          </div>
+          <div data-testid="landing-websites-extension" style={{ marginTop: "24px", padding: "var(--card-p)", border: "1px dashed var(--rs-chip-b)", borderRadius: "0", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{v.websiteExtension.k}</span>
+            <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{v.websiteExtension.t}</h3>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.websiteExtension.d}</p>
+            <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", gap: "12px" }}>
+              {v.websiteExtension.examples.map((ex) => (<li key={ex.k} style={{ padding: "14px 16px", borderRadius: "0", background: "var(--rs-bg2)", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><strong style={{ display: "block", fontWeight: "600" }}>{ex.k}</strong><span style={{ color: "var(--rs-fg2)" }}>{ex.d}</span></li>))}
+            </ul>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6" }}>{v.websiteExtension.modules}</p>
+            <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.websiteExtension.note}</p>
+          </div>
+        </div>
+      </section>
+
       <section id="preise" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "28px" }}>
@@ -431,7 +467,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Produkt" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>PRODUKT</span>
-            <a href="#produkt">Plattform</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
+            <a href="#produkt">Plattform</a><a href="#websites">Websites</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>
@@ -455,6 +491,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkt</a>
+            <a href="#websites" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Websites</a>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
             <a href="#check" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance-Check</a>

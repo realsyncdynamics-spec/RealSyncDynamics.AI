@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { LandingV6View } from '../../src/components/landing/v6/LandingV6View';
 import { useLandingV6 } from '../../src/components/landing/v6/useLandingV6';
 import { BETA } from '../../src/config/beta';
+import { CTA } from '../../src/content/runtimeVocab';
 
 function Harness() {
   return <LandingV6View v={useLandingV6()} />;
@@ -32,7 +33,7 @@ it('keeps the free scan as primary hero CTA and adds the beta offer below it', (
   mount();
   expect(screen.getByTestId('hero-primary-cta')).toHaveAttribute('href', '/audit?source=landing-v6');
   const beta = screen.queryByTestId('hero-beta-link');
-  if (!BETA.active) {
+  if (!(BETA.active && BETA.publicOffer)) {
     expect(beta).toBeNull();
     return;
   }
@@ -60,6 +61,50 @@ it('shows proof (Control Room, Evidence) before Agent Governance', () => {
   expect(ids.indexOf('control-room')).toBeLessThan(ids.indexOf('evidence'));
   expect(ids.indexOf('evidence')).toBeLessThan(ids.indexOf('agenten'));
   expect(ids.indexOf('agenten')).toBeLessThan(ids.indexOf('check'));
+});
+
+it('offers both website paths: automatic SiteOS draft and individual web design', () => {
+  const view = mount();
+  const ids = Array.from(view.container.querySelectorAll('section[id]')).map((s) => s.id);
+  expect(ids.indexOf('websites')).toBeGreaterThan(-1);
+  expect(ids.indexOf('websites')).toBeLessThan(ids.indexOf('preise'));
+  const sec = within(screen.getByTestId('landing-websites'));
+  expect(view.container.querySelector('[data-website-cta="auto"]')).toHaveAttribute('href', '/build');
+  expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveAttribute(
+    'href',
+    '/contact-sales?intent=webdesign&source=landing-v6-websites',
+  );
+  // Ehrlicher Status: Builder/Veröffentlichung sind Preview, nur Weg 1 trägt das Badge.
+  expect(sec.getAllByText('PREVIEW')).toHaveLength(1);
+  // Design-DNA (AGENTS.md): 90°-Ecken im ganzen Abschnitt, Status-Metadaten in Monospace.
+  expect(sec.getByText('PREVIEW').style.fontFamily).toMatch(/monospace/);
+  for (const el of screen.getByTestId('landing-websites').querySelectorAll<HTMLElement>('[style*="border-radius"]')) {
+    expect(el.style.borderRadius).toMatch(/^0(px)?$/);
+  }
+  expect(sec.getByRole('link', { name: 'Leistungsumfang ansehen' })).toHaveAttribute('href', '/frontend-builder');
+  // Haupt-CTA der Dienstleistung ist die kanonische Ausnahme aus runtimeVocab.
+  expect(view.container.querySelector('[data-website-cta="custom"]')).toHaveTextContent(CTA.webdesign);
+  expect(sec.queryByText(/Projekt mit Dominik besprechen/)).toBeNull();
+  // Erweiterung: individuelle Dashboards, Bots/Workflows nur „soweit verfügbar“.
+  const ext = within(screen.getByTestId('landing-websites-extension'));
+  for (const branche of ['Handwerk', 'Arztpraxis', 'Kanzlei']) expect(ext.getByText(branche)).toBeInTheDocument();
+  expect(ext.getByText(/Bots .*KI-Workflows und Integrationen/)).toBeInTheDocument();
+  expect(ext.getByText(/tatsächlich verfügbar/)).toBeInTheDocument();
+  // Hauptnavigation erst ab 1180 px (jsdom: 1024) — Footer-Navigation rendert immer.
+  expect(within(screen.getByRole('navigation', { name: 'Produkt' })).getByRole('link', { name: 'Websites' }))
+    .toHaveAttribute('href', '#websites');
+});
+
+it('keeps the public beta offer while list prices stay in the SSoT', () => {
+  const view = mount();
+  const pricing = view.container.querySelector('#preise') as HTMLElement;
+  // Entscheidung 21.10.2026: Beta-Angebot bleibt, bis sein Ende gesondert freigegeben wird.
+  expect(BETA.publicOffer).toBe(true);
+  if (!BETA.active) return;
+  expect(pricing).toHaveTextContent(`kostenlos bis ${BETA.endsLabel}`);
+  expect(pricing).toHaveTextContent('79 €');
+  expect(pricing).toHaveTextContent('249 €');
+  expect(pricing).toHaveTextContent('699 €');
 });
 
 it('keeps one filled CTA in the hero and ties the plan row to it with its own source', () => {

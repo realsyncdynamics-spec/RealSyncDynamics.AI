@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Prüf-Flow Prüfen → Verstehen → Handeln → Nachweisen, einziger gefüllter CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6, Header-CTA als Outline), Preiszeile aus der SSoT (Starter, Growth, Agency mit Quelle landing-v6-hero; Enterprise „Auf Anfrage“ → /contact-sales?tier=enterprise; Preise zzgl. USt.); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Preise aus der SSoT, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT mit 14 Tagen Test für Starter und Growth, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
@@ -183,7 +183,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'compliance',
     description:
-      'Klassifikation ins Register/Inventar speichern ist nicht freigeschaltet: ai_classification.limited steht in keinem Plan (kein Upgrade entsperrt; Lock-Copy nach #1743). UI-Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory-Pfad existieren, Persistenz funktioniert noch nicht (fehlender Persist-Pfad / P1-2). Nicht live.',
+      'Nur der Pfad Klassifikator → /app/risk-inventory: Ergebnis aus /ai-act-klassifikator ins Tenant-Inventar speichern ist nicht freigeschaltet (ai_classification.limited steht in keinem Plan, kein Upgrade entsperrt; Lock-Copy nach #1743). Button „In Tenant-Inventar speichern“ und ai-act-risk-inventory existieren, Persistenz fehlt noch. Klassifikation im KI-Register siehe ai-system-registry.',
     route: '/app/risk-inventory',
     evidence: [
       'src/pages/AiActClassifier.tsx#saveToInventory',
@@ -192,6 +192,42 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/core/billing/FeatureGate.tsx#ai_classification.limited',
       'src/components/governance-os/useNavLock.ts',
       'PR #1743',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'ai-system-registry',
+    name: 'KI-Register',
+    status: 'live',
+    group: 'compliance',
+    description:
+      'KI-Register unter /app/ai-systems: Systeme auflisten und anlegen, Registerdaten pflegen (governance-resources op update_asset) und Klassifikation (Risikostufe, Annex III, Art. 50) in /app/ai-systems/:id speichern (op classify_asset).',
+    route: '/app/ai-systems',
+    evidence: [
+      'supabase/functions/governance-resources/index.ts#classify_asset',
+      'supabase/functions/governance-resources/registryFields.ts',
+      'src/features/governance/ai-registry/AiSystemDetailView.tsx',
+      'test/edge/governance-resources-registry-fields.test.ts',
+      'test/features/governance/handoff/ai-system-detail-route.test.tsx',
+      'test/features/governance/handoff/classify-lock.test.tsx',
+      'PR #1924',
+    ],
+  },
+  {
+    id: 'kodee',
+    name: 'Kodee (VPS-Assistent)',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Kodee-Chat unter /kodee in allen Plänen; SSH-Server-Aktionen erfordern ai.tool.vps_status (Agency, Enterprise, Partner) — clientseitig im ActionRunner und serverseitig in der Edge Function kodee (verbindungsbesitzender Tenant, sonst 403).',
+    route: '/kodee',
+    evidence: [
+      'supabase/functions/kodee/index.ts',
+      'src/components/governance-os/governanceModules.ts#kodee',
+      'src/features/kodee/ActionRunner.tsx',
+      'test/features/kodee/ActionRunner.entitlement.test.tsx',
+      'PR #1917',
+      'PR #1922',
     ],
     showOnRoadmap: true,
   },
@@ -322,7 +358,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'billing',
     description:
-      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) während der offenen Beta als „kostenlos testen“ mit durchgestrichenem Listenpreis aus der SSoT.',
+      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) bleibt das öffentliche Beta-Angebot sichtbar (`BETA.publicOffer = true`, Owner-Entscheidung 21.10.2026); die Listenpreise aus der SSoT sind unverändert.',
     route: '/#preise',
     evidence: [
       'shared/pricing.ts',

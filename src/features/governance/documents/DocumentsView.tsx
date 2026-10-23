@@ -59,16 +59,18 @@ interface GovernanceDoc {
 }
 
 // ── Dokument-Definitionen (Fallback / Vorlagenkatalog) ──────────────────────
+// Ohne erzeugtes Dokument gibt es keinen Stand: früher standen hier feste
+// Werte („Aktuell · v3.2 · 14.06.2026“), die wie Mandantendaten aussahen.
 const DOCUMENTS: GovernanceDoc[] = [
   {
     id: 'dse',
     title: 'Datenschutzerklärung',
     subtitle: 'DSE',
     reference: 'Art. 13/14 DSGVO',
-    status: 'aktuell',
-    updatedAt: '14.06.2026',
-    version: 'v3.2',
-    owner: 'DSB',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
     docType: 'dse',
   },
   {
@@ -76,10 +78,10 @@ const DOCUMENTS: GovernanceDoc[] = [
     title: 'Auftragsverarbeitungsvertrag',
     subtitle: 'AVV',
     reference: 'Art. 28 DSGVO',
-    status: 'aktuell',
-    updatedAt: '01.06.2026',
-    version: 'v2.1',
-    owner: 'Legal',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
     docType: 'avv',
   },
   {
@@ -87,10 +89,10 @@ const DOCUMENTS: GovernanceDoc[] = [
     title: 'Verarbeitungsverzeichnis',
     subtitle: 'VVT',
     reference: 'Art. 30 DSGVO',
-    status: 'veraltet',
-    updatedAt: '15.03.2026',
-    version: 'v1.8',
-    owner: 'DSB',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
     docType: 'vvt',
   },
   {
@@ -98,10 +100,10 @@ const DOCUMENTS: GovernanceDoc[] = [
     title: 'Technische & Org. Maßnahmen',
     subtitle: 'TOM',
     reference: 'Art. 32 DSGVO',
-    status: 'aktuell',
-    updatedAt: '02.05.2026',
-    version: 'v2.0',
-    owner: 'IT-Security',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
     docType: 'tom',
   },
   {
@@ -109,20 +111,20 @@ const DOCUMENTS: GovernanceDoc[] = [
     title: 'Impressum',
     subtitle: 'IMP',
     reference: 'TMG §5',
-    status: 'aktuell',
-    updatedAt: '10.01.2026',
-    version: 'v1.0',
-    owner: 'GF',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
   },
   {
     id: 'dsfa',
     title: 'Datenschutz-Folgenabschätzung',
     subtitle: 'DSFA',
     reference: 'Art. 35 DSGVO',
-    status: 'entwurf',
-    updatedAt: '12.06.2026',
-    version: 'v0.6',
-    owner: 'DSB',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
   },
   {
     id: 'ai-act',
@@ -139,10 +141,10 @@ const DOCUMENTS: GovernanceDoc[] = [
     title: 'Einwilligungsdokumentation',
     subtitle: 'ED',
     reference: 'Art. 7 DSGVO',
-    status: 'veraltet',
-    updatedAt: '20.02.2026',
-    version: 'v1.3',
-    owner: 'Marketing',
+    status: 'fehlend',
+    updatedAt: '—',
+    version: '—',
+    owner: '—',
   },
 ];
 
@@ -197,7 +199,7 @@ function StatusBadge({ status }: { status: DocStatus }) {
     },
     fehlend: {
       icon: <XCircle className="h-3 w-3" />,
-      label: 'Fehlend',
+      label: 'Nicht erzeugt',
       classes: 'bg-red-600/20 border-red-600/40 text-red-400',
     },
   };
@@ -530,7 +532,7 @@ export function DocumentsView() {
               alle: `Alle (${counts.alle})`,
               aktuell: `Aktuell (${counts.aktuell})`,
               veraltet: `Veraltet (${counts.veraltet})`,
-              fehlend: `Fehlend (${counts.fehlend})`,
+              fehlend: `Nicht erzeugt (${counts.fehlend})`,
             };
             return (
               <button

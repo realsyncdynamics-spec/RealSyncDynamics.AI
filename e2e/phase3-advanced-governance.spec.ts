@@ -63,8 +63,8 @@ test.describe('Phase 3: Advanced Governance Views', () => {
     // Should be able to click it
     await dsgvoCard.click();
 
-    // Should navigate to DSGVO directory
-    await expect(page).toHaveURL(/\/app\/governance\/dsgvo-directory/);
+    // Should navigate to the DSGVO documents (VVT nach Art. 30)
+    await expect(page).toHaveURL(/\/app\/documents/);
   });
 
   test('Locked frameworks show lock icon for restricted tiers', async ({ page }) => {

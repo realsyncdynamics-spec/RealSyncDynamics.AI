@@ -94,10 +94,8 @@ describe('implementation-status registry', () => {
     expect(landing.description).toContain('/audit?source=landing-v6');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
-    expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`');
-    expect(hook).toContain('enterprise: ENTERPRISE_HREF');
-    expect(landing.description).not.toContain('Enterprise anfragen');
-    expect(landing.description).toContain('Prüfen → Verstehen → Handeln → Nachweisen');
+    expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;');
+    expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
 
     const cta = getImplementation('free-audit')!.ctaLabel!;
     expect(cta).toBe('Kostenlosen Website-Check starten');
@@ -141,6 +139,10 @@ describe('implementation-status registry', () => {
     expect(beta.description).toMatch(/WP-4/);
     expect(beta.description).toMatch(/noch nicht vollständig/);
     expect(beta.evidence).toContain('PR #1874');
+    // Owner-Entscheidung 21.10.2026: Beta-Angebot bleibt öffentlich, Listenpreise unverändert.
+    const monthly = getImplementation('pricing-monthly')!;
+    expect(monthly.description).toContain('BETA.publicOffer = true');
+    expect(monthly.description).toContain('€79 / €249 / €699');
     expect(existsSync(resolve('supabase/functions/beta-enroll/index.ts'))).toBe(true);
   });
 
@@ -180,6 +182,23 @@ describe('implementation-status registry', () => {
     expect(ROADMAP_LIVE_ITEMS.find((i) => i.id === 'ai-act-classify')?.route).toBe(
       '/ai-act-klassifikator',
     );
+  });
+
+  it('registers KI-Register live and Kodee preview with SSH from Agency', () => {
+    const reg = getImplementation('ai-system-registry')!;
+    expect(reg.status).toBe('live');
+    expect(reg.route).toBe('/app/ai-systems');
+    expect(reg.description).toContain('classify_asset');
+    expect(reg.evidence.some((e) => e.includes('governance-resources/index.ts#classify_asset'))).toBe(true);
+    expect(getImplementation('ai-act-inventory-persist')?.description).toContain('/app/risk-inventory');
+
+    const kodee = getImplementation('kodee')!;
+    expect(kodee.status).toBe('preview');
+    expect(kodee.route).toBe('/kodee');
+    expect(kodee.description).toContain('ai.tool.vps_status');
+    expect(kodee.description).not.toMatch(/ab Enterprise/);
+    expect(kodee.evidence).toContain('supabase/functions/kodee/index.ts');
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'kodee')).toBe(true);
   });
 
   it('registers frontend-builder live and modernize wizard preview', () => {
@@ -343,6 +362,7 @@ describe('implementation-status registry', () => {
     expect(sections).not.toContain('Live Dashboard ansehen');
     expect(sections).not.toContain('/demo-tour/dashboard');
     const landing = getImplementation('public-landing')!;
+    expect(landing.description).toContain('/audit');
     expect(landing.description).not.toContain('/demo-tour/dashboard');
     const content = readFileSync(
       resolve('src/components/landing/v4/landing-v4-content.ts'),

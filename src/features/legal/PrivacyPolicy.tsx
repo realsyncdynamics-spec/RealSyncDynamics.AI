@@ -75,14 +75,16 @@ export function PrivacyPolicy() {
             <li><strong>Nutzungsdaten:</strong> AI-Tool-Aufrufe (Prompt-Inhalt, Output, Token-Counts, Kosten), Workflow-Ausführungen, Asset-Metadaten.</li>
             <li><strong>Zahlungsdaten:</strong> über Stripe; wir speichern Customer-ID und Subscription-Status — keine Karten-/IBAN-Daten.</li>
             <li><strong>Technische Daten:</strong> IP-Adresse (kurzzeitig in Server-Logs), User-Agent, Login-Zeitpunkt.</li>
+            <li id="governance-scan"><strong>Kostenloser Governance-Scan (ohne Konto):</strong> Website-Domain, geschäftliche E-Mail-Adresse, optional Unternehmensname, das Scan-Ergebnis zur Domain sowie ein Hash der IP-Adresse (Missbrauchs- und Mengenbegrenzung). Wir speichern diese Angaben, sobald Sie den Scan starten, um den Scan durchzuführen, Ihnen Ergebnis und Bericht zuzuordnen und ein späteres Konto damit zu verknüpfen. Den Bericht versenden wir über Resend (siehe Sub-Prozessoren).</li>
+            <li><strong>Follow-up-E-Mails nach dem Scan:</strong> nur, wenn Sie die optionale Checkbox setzen <em>und</em> die Einwilligung über den Link in unserer Bestätigungs-E-Mail bestätigen (Double-Opt-in). Wir speichern Zeitpunkt und Textfassung der Einwilligung als Nachweis.</li>
           </ul>
         </Section>
 
         <Section title="4. Rechtsgrundlagen (Art. 6 DSGVO)">
           <ul className="list-disc pl-5 space-y-1.5">
-            <li><strong>Art. 6 Abs. 1 lit. b</strong> — Vertragserfüllung: Account-, Subscription-, Workspace-Daten.</li>
+            <li><strong>Art. 6 Abs. 1 lit. b</strong> — Vertragserfüllung und vorvertragliche Maßnahmen: Account-, Subscription-, Workspace-Daten; Durchführung des von Ihnen angeforderten Governance-Scans und Zustellung des Berichts.</li>
             <li><strong>Art. 6 Abs. 1 lit. f</strong> — Berechtigtes Interesse: technische Logs zur Sicherheit, Audit-Trail, Cost-Tracking.</li>
-            <li><strong>Art. 6 Abs. 1 lit. a</strong> — Einwilligung: Cookie-Banner für nicht-notwendige Cookies, Marketing-Mails.</li>
+            <li><strong>Art. 6 Abs. 1 lit. a</strong> — Einwilligung: Cookie-Banner für nicht-notwendige Cookies, Marketing-Mails, Follow-up-E-Mails nach dem Scan (Double-Opt-in, jederzeit widerrufbar).</li>
             <li><strong>Art. 6 Abs. 1 lit. c</strong> — Rechtliche Pflicht: handels- und steuerrechtliche Aufbewahrung von Rechnungen (10 Jahre, HGB/AO).</li>
           </ul>
         </Section>
@@ -164,6 +166,7 @@ export function PrivacyPolicy() {
             <li>Audit-Logs (AI-Tool-Calls, Workflow-Runs): bis Account-Löschung; danach anonymisiert für Cost-Tracking.</li>
             <li>Rechnungen / Subscriptions: 10 Jahre nach § 257 HGB / § 147 AO.</li>
             <li>Magic-Link-E-Mails: nicht persistiert.</li>
+            <li>Governance-Scan ohne Konto: 12 Monate nach Ihrer letzten Aktivität (z. B. letzter Scan). Danach löschen wir die Angaben zur Person automatisch; das Scan-Ergebnis zur Domain bleibt ohne Personenbezug. Ausgenommen sind Angaben, die mit einem Konto verknüpft wurden, und bestätigte, nicht widerrufene Einwilligungen in Follow-up-E-Mails — diese bis zum Widerruf.</li>
           </ul>
         </Section>
 
@@ -171,7 +174,7 @@ export function PrivacyPolicy() {
           <ul className="list-disc pl-5 space-y-1.5">
             <li><strong>Art. 15</strong> Auskunftsrecht — Selfservice-Export unter <Link to="/settings/account" className="text-security-400">/settings/account</Link>.</li>
             <li><strong>Art. 16</strong> Recht auf Berichtigung — direkt im Profil.</li>
-            <li><strong>Art. 17</strong> Recht auf Löschung — Selfservice-Löschung unter /settings/account.</li>
+            <li><strong>Art. 17</strong> Recht auf Löschung — Selfservice-Löschung unter /settings/account; sie umfasst auch Ihre Scan- und Lead-Daten. Ohne Konto genügt eine E-Mail an die unten genannte Adresse.</li>
             <li><strong>Art. 20</strong> Datenübertragbarkeit — der Export liefert maschinenlesbares JSON.</li>
             <li><strong>Art. 21</strong> Widerspruchsrecht gegen Verarbeitung auf Grundlage berechtigter Interessen.</li>
             <li><strong>Art. 77</strong> Beschwerderecht bei der zuständigen Aufsichtsbehörde — für uns:

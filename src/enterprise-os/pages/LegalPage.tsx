@@ -135,7 +135,8 @@ export function ImpressumPage() {
         },
         {
           heading: 'Umsatzsteuer',
-          body: ['Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.'],
+          // TODO(Dominik): USt-IdNr. ergänzen, sobald vergeben.
+          body: ['Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.'],
         },
         {
           heading: 'Hinweis',

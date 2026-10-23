@@ -463,7 +463,10 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           </dl>
           <dl className="divide-y divide-titanium-900">
             <SummaryRow icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Compliance Score" value={`${report.score} / 100`} valueClass={config.color} />
-            <SummaryRow icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Status" value={config.label} valueClass={config.color} />
+            <SummaryRow
+              icon={report.severity === 'pass' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+              label="Status" value={config.label} valueClass={config.color}
+            />
             <SummaryRow label="Kritische Befunde" value={String(critCount)} valueClass={critCount > 0 ? 'text-rose-300' : 'text-emerald-300'} />
             <SummaryRow label="Mittlere Befunde" value={String(medCount)} valueClass={medCount > 0 ? 'text-amber-300' : 'text-emerald-300'} />
             <SummaryRow label="Niedrige Befunde" value={String(lowCount)} valueClass="text-titanium-300" />
@@ -590,9 +593,10 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             <div className="p-5 bg-obsidian-900 border border-titanium-700 rounded-none flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-titanium-100 mt-0.5 shrink-0" />
               <div>
-                <div className="font-display font-bold text-titanium-50 mb-0.5">Saubere Site!</div>
+                <div className="font-display font-bold text-titanium-50 mb-0.5">Keine Befunde im Schnell-Scan</div>
                 <div className="text-sm text-titanium-300">
-                  Keiner unserer 12 Standard-Checks hat angeschlagen. Glückwunsch — das ist seltener als Du denkst.
+                  Geprüft wurden Sicherheits-Header, Impressum, Datenschutzerklärung, Tracker und Cookie-Einwilligung.
+                  Nicht geprüft: Auftragsverarbeitungsverträge, Verarbeitungsverzeichnis und KI-Einsatz — dafür ist der nächste Schritt unten gedacht.
                 </div>
               </div>
             </div>
@@ -813,8 +817,10 @@ function severityConfig(s: Severity): {
       summary: (n) => `${n} Befunde mittlerer Schweregrad-Bewertung. Im regulären Sprint adressierbar.` };
     case 'low':      return { label: 'Solide Basis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: (n) => `${n} kleinere Findings. Best-Practice-Verbesserungen.` };
-    case 'pass':     return { label: 'Audit bestanden', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',
-      summary: () => 'Keiner unserer Checks hat angeschlagen. Sehr selten — Glückwunsch.' };
+    // Kein „bestanden": Der Schnell-Scan sichert keine Konformität zu
+    // (Sprachregel in supabase/functions/gdpr-audit/checks.ts).
+    case 'pass':     return { label: 'Keine Befunde', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',
+      summary: () => 'Der Schnell-Scan hat Header, Pflichtseiten und Tracker geprüft und nichts gefunden. Verträge, Verarbeitungsverzeichnis und KI-Einsatz sieht er nicht — die gehören in die vollständige Prüfung.' };
     default:         return { label: 'Audit-Ergebnis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: () => '' };
   }
@@ -838,7 +844,7 @@ function SummaryRow({ icon, label, value, valueClass, mono, small }: {
 /** "Geschäftsführer-in-10-Sekunden"-Satz — fasst Schwere + Anzahl der Befunde zusammen. */
 function plainLanguageResult(critCount: number, medCount: number, lowCount: number): string {
   if (critCount === 0 && medCount === 0 && lowCount === 0) {
-    return 'Es wurden keine DSGVO-Verstöße oder technischen Verbesserungspunkte erkannt. Sehr gutes Ergebnis.';
+    return 'Der Schnell-Scan hat keine Befunde gemeldet. Eine Bestätigung der DSGVO-Konformität ist das nicht — nur ein guter Ausgangspunkt.';
   }
   if (critCount > 0) {
     const critText =

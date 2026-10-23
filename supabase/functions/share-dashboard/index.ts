@@ -1,11 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { jwtDecode } from 'https://esm.sh/jwt-decode@4.0.0'
+import type { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { requireTenantMembership, requireUser } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function withCors(res: Response): Response {
+  const headers = new Headers(res.headers)
+  for (const [k, v] of Object.entries(corsHeaders)) headers.set(k, v)
+  return new Response(res.body, { status: res.status, headers })
 }
 
 interface ShareRequest {
@@ -25,32 +31,34 @@ serve(async (req: Request) => {
   }
 
   try {
-    const auth = req.headers.get('Authorization')
-    if (!auth) throw new Error('Missing authorization header')
-
-    const token = auth.replace('Bearer ', '')
-    const decoded = jwtDecode(token) as { sub: string; user_metadata?: { tenant_id?: string } }
-    const userId = decoded.sub
-    const tenantId = decoded.user_metadata?.tenant_id
-
-    if (!tenantId) throw new Error('Tenant ID not found in token')
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-    )
+    // Vorher: Token nur dekodiert, nicht verifiziert; Mandant aus
+    // den Nutzer-Metadaten des Tokens (vom Nutzer selbst änderbar). Jetzt: JWT über
+    // Supabase verifizieren, Mandant aus der Dashboard-Ansicht selbst ableiten
+    // und die Mitgliedschaft in diesem Mandanten prüfen.
+    const authCtx = await requireUser(req)
+    if (authCtx instanceof Response) return withCors(authCtx)
+    const userId = authCtx.user.id
+    const supabase = authCtx.admin
 
     const body = await req.json() as ShareRequest
+    if (!body.dashboard_view_id || typeof body.dashboard_view_id !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'dashboard_view_id required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Verify user owns the dashboard or is admin
     const { data: view, error: viewError } = await supabase
       .from('seo_dashboard_views')
       .select('*')
       .eq('id', body.dashboard_view_id)
-      .eq('tenant_id', tenantId)
       .single()
 
-    if (viewError || !view) {
+    // 404 für „nicht vorhanden“ und „fremder Mandant“ gleichermaßen, damit
+    // die Antwort keine Existenz fremder Ansichten verrät.
+    const tenantId: string | null = view?.tenant_id ?? null
+    const isMember = tenantId ? await requireTenantMembership(supabase, userId, tenantId) : false
+    if (viewError || !view || !tenantId || !isMember) {
       return new Response(
         JSON.stringify({ error: 'Dashboard view not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,14 +66,7 @@ serve(async (req: Request) => {
     }
 
     const isOwner = view.created_by === userId
-    const { data: teamMember } = await supabase
-      .from('team_members')
-      .select('role')
-      .eq('tenant_id', tenantId)
-      .eq('user_id', userId)
-      .single()
-
-    const isAdmin = teamMember?.role === 'admin' || teamMember?.role === 'owner'
+    const isAdmin = await requireTenantMembership(supabase, userId, tenantId, ['owner', 'admin'])
 
     if (!isOwner && !isAdmin) {
       return new Response(

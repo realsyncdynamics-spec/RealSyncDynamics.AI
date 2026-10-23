@@ -110,13 +110,5 @@
     "art": "KAUFWEG",
     "grund": "Testphase wird nur fuer Growth angelegt. Das ist eine Vertriebsentscheidung ueber ein einzelnes Produkt, kein Funktionsumfang — gehoert in den Katalog (z. B. ein trial-Feld am Plan), nicht in die Function.",
     "seit": "2026-09-06"
-  },
-  {
-    "datei": "supabase/functions/sales-lead/index.ts",
-    "plan": "starter",
-    "fundstellen": 1,
-    "art": "KAMPAGNE",
-    "grund": "Bedingung einer Aktion ('starter_3_months_free'): greift nur, wenn Quelle, Absicht und Plan zusammenpassen. Zeitlich begrenzt und an einen benannten Plan gebunden — hier ist der Name der Gegenstand, nicht das Gate.",
-    "seit": "2026-09-06"
   }
 ]

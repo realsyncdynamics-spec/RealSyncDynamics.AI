@@ -494,7 +494,7 @@ async function handleAudit(req: Request, state: AuditRequestState): Promise<Resp
       await recordFunnelEvent(funnelDb, 'scan_failed', { source: leadSource });
       return jsonError(500, 'SCAN_FAILED_LEAD_SAVED', SCAN_FAILED_LEAD_SAVED);
     }
-    return jsonError(500, 'INTERNAL', 'Audit konnte nicht gespeichert werden.');
+    return jsonError(500, 'INTERNAL', 'Audit konnte nicht gespeichert werden. Bitte später erneut versuchen.');
   }
 
   if (leadId) {

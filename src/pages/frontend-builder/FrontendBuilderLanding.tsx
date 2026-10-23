@@ -844,7 +844,7 @@ function ClosingCta() {
             Projekt qualifizieren
           </button>
           <Link
-            to="/contact-sales?source=frontend-builder"
+            to="/contact-sales?source=frontend-builder&intent=webdesign"
             className="inline-flex items-center gap-2 rounded-sm border px-5 py-3 text-sm font-semibold"
             style={{ borderColor: 'rgba(255,255,255,0.12)', color: LANDING_TEXT }}
           >

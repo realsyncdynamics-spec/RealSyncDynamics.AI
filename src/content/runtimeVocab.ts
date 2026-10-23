@@ -90,8 +90,12 @@ export const PLANS = [
  * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf
  * öffentlichen CTAs erlaubt sind. RealSyncDynamics.AI ist ein vollständig
  * automatisiertes Self-Service-SaaS — jede CTA muss eine Aktion sein, die
- * der Nutzer ohne Mensch ausführen kann. Einzige Ausnahme: Enterprise
- * (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
+ * der Nutzer ohne Mensch ausführen kann. Ausnahmen (kontaktbasiert):
+ *   - Enterprise (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
+ *   - Individuelle Dienstleistung (`webdesign` → Landingpages, Websites und
+ *     maßgeschneiderte Dashboards nach Projektumfang, persönliches
+ *     Festangebot). Entscheidung Owner 18.10.2026: eigenständiges Angebot,
+ *     keine Enterprise-Testphase. Die Softwareprodukte bleiben Self-Service.
  *
  *   Kostenlos starten     → Free Audit / Onboarding
  *   Audit starten         → Scan auslösen
@@ -102,7 +106,8 @@ export const PLANS = [
  *   Report herunterladen  → PDF/JSON-Report
  *   Jetzt upgraden        → Tarifwechsel (self-serve)
  *   Tarif starten         → Tarif self-serve kaufen (inkl. Agency)
- *   Enterprise anfragen   → EINZIGE kontaktbasierte CTA
+ *   Enterprise anfragen   → kontaktbasiert (Software-Vertrag)
+ *   Individuelles Webdesign anfragen → kontaktbasiert (Dienstleistung)
  */
 export const CTA = {
   startFree:          'Kostenlos starten',
@@ -115,6 +120,7 @@ export const CTA = {
   upgrade:            'Jetzt upgraden',
   startPlan:          'Tarif starten',
   enterprise:         'Enterprise anfragen',
+  webdesign:          'Individuelles Webdesign anfragen',
   foundingAccess:     'Founding Access sichern',
   startFreeAudit:     'Kostenlosen Audit starten',
   viewAutomationSkills: 'Automation Skills ansehen',
@@ -154,8 +160,8 @@ export const CI_FORBIDDEN_CTA = [
   'Vertrieb kontaktieren',
   'Sales kontaktieren',
   // Termin-/Kalender-Sprache: widerspricht direkt der Positionierung
-  // „Tools statt Beratung". Auch der Enterprise-Pfad — die einzige
-  // kontaktbasierte Ausnahme — nutzt `CTA.enterprise`, nicht einen Termin.
+  // „Tools statt Beratung". Auch die kontaktbasierten Ausnahmen nutzen
+  // `CTA.enterprise` bzw. `CTA.webdesign`, nicht einen Termin.
   'Termin vereinbaren',
   'Termin buchen',
   'Beratungsanfrage',

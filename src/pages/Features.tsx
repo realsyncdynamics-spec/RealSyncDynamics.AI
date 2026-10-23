@@ -99,7 +99,7 @@ export function Features() {
               title="Konversations-Bots (ab Growth)"
               wide
               bullets={[
-                'Eigene Bots für Chat, Telefonie (Voice), Telegram & WhatsApp — im Bot-Builder selbst konfiguriert',
+                'Eigene Bots für Chat, Telegram & WhatsApp — im Bot-Builder selbst konfiguriert; Telefonie (Voice) geplant',
                 'Fähigkeiten zuschaltbar: Terminbuchung und Bestellannahme',
                 'Persona, Begrüßung und Kanal pro Bot; Einbindung per Web-Endpoint bzw. Twilio-Webhook',
                 'Jede Antwort DSGVO-konform gedeckelt, mandantengetrennt (RLS) und mit Prüfpfad geloggt',
@@ -109,7 +109,7 @@ export function Features() {
           <div className="md:col-span-2">
             <FeatureBlock
               icon={<Server className="h-5 w-5 text-emerald-400" />}
-              title="Kodee — VPS-Assistent (ab Enterprise)"
+              title="Kodee — VPS-Assistent (Chat in allen Plänen, SSH-Aktionen ab Agency)"
               wide
               bullets={[
                 'Verbindet sich per SSH mit deinem Server — Status, Logs, Disk, DNS- und TLS-Prüfung',

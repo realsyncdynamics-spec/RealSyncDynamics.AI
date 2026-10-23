@@ -18,6 +18,7 @@ import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
+import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
 import {
   buildCommandCatalog,
@@ -28,6 +29,7 @@ import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
 import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
+import { ASSISTANT_PROMPT_EVENT, type AssistantPromptDetail } from './assistantPrompt';
 import '../../styles/governance-os-app.css';
 
 interface GovernanceBrowserShellProps {
@@ -46,6 +48,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
+  // Vorbefüllter Text für den Assistenten; `id` erzwingt das Übernehmen auch
+  // bei gleichem Text.
+  const [assistantPrompt, setAssistantPrompt] = useState<{ id: number; text: string } | null>(null);
 
   const commandItems = useMemo(() => buildCommandCatalog(), []);
 
@@ -68,6 +73,17 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     window.addEventListener('realsync:browser-open', onOpenBrowser);
     return () => window.removeEventListener('realsync:browser-open', onOpenBrowser);
   }, []);
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      const text = (event as CustomEvent<AssistantPromptDetail>).detail?.prompt?.trim();
+      if (!text) return;
+      setAssistantPrompt({ id: Date.now(), text });
+      setAssistantOpen(true);
+    };
+    window.addEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
+    return () => window.removeEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
+  }, []);
+
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
     navigate(auditPathFor(url, 'app-embedded-scan'));
@@ -128,6 +144,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
             Zahlungsverzug vorliegt. */}
         <PaymentGraceBanner />
+        <BetaAppBanner />
 
         {mobileMenuOpen && (
           <nav
@@ -179,6 +196,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           <GovernanceChatSidebar
             open={assistantOpen}
             onClose={() => setAssistantOpen((v) => !v)}
+            prefill={assistantPrompt}
           />
         </div>
 

@@ -30,6 +30,7 @@ import {
   type TenantStatus,
 } from '../../lib/status/statusAdapter';
 import { WorkflowView } from './components/WorkflowView';
+import { BusinessOverview } from './BusinessOverview';
 import { CommandSessionPanel } from './CommandSessionPanel';
 import { useCommandCenter } from './hooks/useCommandCenter';
 
@@ -62,7 +63,7 @@ const actionCards: ActionCard[] = [
   { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/unified-entry/scan' },
   { label: 'Website verbessern', hint: 'SEO, DSGVO, Performance', icon: Activity, path: '/unified-entry/scan' },
   { label: 'KI-Systeme', hint: 'Inventar und Klassifizierung', icon: ShieldCheck, path: '/app/ai-systems' },
-  { label: 'Risikoanalyse', hint: 'Risiken identifizieren', icon: AlertTriangle, path: '/app/governance/gaps' },
+  { label: 'Risikoanalyse', hint: 'Risiken identifizieren', icon: AlertTriangle, path: '/app/risks' },
   { label: 'Bericht erstellen', hint: 'Compliance Report', icon: FileCheck2, path: '/app/governance/report-builder' },
 ];
 
@@ -197,6 +198,8 @@ export function DashboardView() {
           ))}
         </div>
 
+        <BusinessOverview status={status} insights={insights} />
+
         {activeTab === 'dashboard' ? (
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
             <main className="min-w-0">
@@ -251,7 +254,7 @@ export function DashboardView() {
 
               <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between"><div><h2 className="font-semibold">Letzte Aktivitäten</h2><p className="text-xs text-slate-400">Live aus Governance-, SiteOS- und Agent-Ereignissen.</p></div><button type="button" onClick={() => navigate('/app/overview')} className="text-xs font-semibold text-sky-700">Alle Aktivitäten <ArrowRight className="ml-1 inline" size={13} /></button></div>
-                <div className="divide-y divide-slate-100">{insights.length > 0 ? insights.map((item) => <button type="button" key={item.id} onClick={() => navigate('/app/governance/gaps')} className="flex w-full items-center gap-4 py-3 text-left hover:bg-slate-50"><div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.severity === 'critical' ? 'bg-red-50 text-red-600' : item.severity === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.severity === 'critical' ? <XCircle size={17} /> : item.severity === 'warning' ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}</div><div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{item.title}</div><div className="text-xs text-slate-400">{item.insight_type}</div></div><ArrowRight size={15} className="text-slate-300" /></button>) : <div className="py-8 text-center text-sm text-slate-400">Noch keine aktiven Aktivitäten. Governance AI füllt den Feed mit echten Ereignissen, sobald Daten vorliegen.</div>}</div>
+                <div className="divide-y divide-slate-100">{insights.length > 0 ? insights.map((item) => <button type="button" key={item.id} onClick={() => navigate('/app/risks')} className="flex w-full items-center gap-4 py-3 text-left hover:bg-slate-50"><div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.severity === 'critical' ? 'bg-red-50 text-red-600' : item.severity === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.severity === 'critical' ? <XCircle size={17} /> : item.severity === 'warning' ? <AlertTriangle size={17} /> : <CheckCircle2 size={17} />}</div><div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{item.title}</div><div className="text-xs text-slate-400">{item.insight_type}</div></div><ArrowRight size={15} className="text-slate-300" /></button>) : <div className="py-8 text-center text-sm text-slate-400">Noch keine aktiven Aktivitäten. Governance AI füllt den Feed mit echten Ereignissen, sobald Daten vorliegen.</div>}</div>
               </section>
             </main>
 

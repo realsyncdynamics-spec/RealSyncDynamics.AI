@@ -71,13 +71,13 @@ export function OptimizationView() {
       setAnalyzing(true);
       setError(null);
 
-      const response = await fetch('/api/optimize-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId }),
+      // Direkt an die Edge Function: `/api/optimize-*` gab es auf Pages nie,
+      // und der Same-Origin-Proxy (`/api/fn`) führt optimize-* nicht.
+      const { error: fnError } = await supabase.functions.invoke('optimize-analyze', {
+        body: { tenantId },
       });
 
-      if (!response.ok) throw new Error('Analysis failed');
+      if (fnError) throw new Error('Analysis failed');
       await loadOptimizations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis error');
@@ -90,17 +90,15 @@ export function OptimizationView() {
     try {
       setExecuting((prev) => ({ ...prev, [recommendationId]: true }));
 
-      const response = await fetch('/api/optimize-execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { error: fnError } = await supabase.functions.invoke('optimize-execute', {
+        body: {
           recommendationId,
           tenantId,
           userId: (await supabase.auth.getUser()).data.user?.id,
-        }),
+        },
       });
 
-      if (!response.ok) throw new Error('Execution failed');
+      if (fnError) throw new Error('Execution failed');
       await loadOptimizations();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution error');

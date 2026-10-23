@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { formatPriceEur, planById } from '@/shared/pricing';
+import {
+  FREE_ACCOUNT_HEADLINE,
+  growthTrialOfferLabel,
+  starterFromPriceLabel,
+} from '../../features/billing/freeAccountOffer';
 
 /**
  * Angebotsseite nach dem Scan — seit E-F6 (`.claude/os-funnel/PLAN.md`) das
@@ -9,8 +13,6 @@ import { formatPriceEur, planById } from '@/shared/pricing';
  */
 export function TrialOfferPage() {
   const navigate = useNavigate();
-  const starter = planById('starter');
-  const growth = planById('growth');
 
   const included = [
     'Domain-Scan mit Governance Score 0–100',
@@ -18,14 +20,14 @@ export function TrialOfferPage() {
     'Audit Center mit einsehbarem Prüfpfad',
     'Kompakter PDF-Bericht',
     'Governance-Dashboard zum Kennenlernen',
-    `Upgrade jederzeit — Growth ${growth.trialDays} Tage testen, ohne Karte`,
+    `Upgrade jederzeit — ${growthTrialOfferLabel()}, ohne Karte`,
   ];
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <div className="text-center space-y-4">
         <p className="text-sm font-medium text-petrol-500 uppercase tracking-wider">Kostenloses Konto</p>
-        <h1 className="text-4xl font-bold text-titanium-50">Dauerhaft kostenlos. Kein Zeitdruck.</h1>
+        <h1 className="text-4xl font-bold text-titanium-50">{FREE_ACCOUNT_HEADLINE}</h1>
         <p className="text-xl text-titanium-300">
           Legen Sie Ihr Konto an und machen Sie sich in Ruhe mit der Plattform vertraut.
           Der einfache Scan bleibt kostenlos — ohne Karte, ohne Ablaufdatum.
@@ -39,8 +41,8 @@ export function TrialOfferPage() {
         </div>
         <div className="text-sm text-titanium-400 pt-4 border-t border-titanium-700">
           ✓ Keine Karte, keine Testphase, kein Abo<br />
-          ✓ Growth {growth.trialDays} Tage kostenlos testen — jederzeit aus dem Dashboard<br />
-          ✓ Starter ab {formatPriceEur(starter.price.monthlyEur)} / Monat, monatlich kündbar
+          ✓ {growthTrialOfferLabel()} — jederzeit aus dem Dashboard<br />
+          ✓ {starterFromPriceLabel()}, monatlich kündbar
         </div>
       </div>
 

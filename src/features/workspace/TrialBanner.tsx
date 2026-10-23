@@ -7,7 +7,12 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { getEntitlementsForTenant } from '../../core/usage/usage-service';
 import { getTrialStatus, type TrialStatus } from '../../core/billing/trial';
 
-export function TrialBanner() {
+/**
+ * Lädt den Stripe-Testphasenstatus des aktiven Mandanten. `null` = keine
+ * laufende Testphase oder nicht ladbar (rein informativ, kein Fehlerzustand).
+ * Auch von der Kunden-Startansicht des Dashboards genutzt.
+ */
+export function useTrialStatus(): TrialStatus | null {
   const { activeTenantId } = useTenant();
   const [trial, setTrial] = useState<TrialStatus | null>(null);
 
@@ -25,6 +30,12 @@ export function TrialBanner() {
     })();
     return () => { cancelled = true; };
   }, [activeTenantId]);
+
+  return trial;
+}
+
+export function TrialBanner() {
+  const trial = useTrialStatus();
 
   if (!trial) return null;
 

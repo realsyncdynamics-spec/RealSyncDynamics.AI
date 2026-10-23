@@ -74,20 +74,31 @@ describe('/audit stepper', () => {
     expect(recommendPlan('self', ['dsgvo', 'ai_act'], ['chatbot'])).toBe('starter');
   });
 
-  it('runs the real scan callback and shows the score from the report only', () => {
+  it('starts the real scan right after step 1 and shows the score from the report only', () => {
     const onRun = vi.fn();
-    const props = { initialDomain: 'muster.de', running: false, error: null, onReset: vi.fn(), onRun };
+    const onReveal = vi.fn();
+    const props = { initialDomain: 'muster.de', running: false, error: null, onReset: vi.fn(), onRun, onReveal };
     const view = render(<MemoryRouter><AuditStepper {...props} report={null} /></MemoryRouter>);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Ihr KI-Bestand in vier Fragen.');
     expect(screen.getByLabelText('Hauptdomain')).toHaveValue('muster.de');
     fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'a@b.de' } });
-    fireEvent.click(screen.getByTestId('audit-next'));
+    // Lead + Scan gehen nach Schritt 1 an den Server — nicht erst nach vier Fragen.
+    expect(screen.getByTestId('audit-start')).toHaveTextContent('Kostenlosen Governance Scan starten');
+    fireEvent.click(screen.getByTestId('audit-start'));
+    expect(onRun).toHaveBeenCalledTimes(1);
+    expect(onRun).toHaveBeenCalledWith({ domain: 'muster.de', email: 'a@b.de', company: '', marketingConsent: false, honeypot: '' });
     expect(screen.getByRole('button', { name: /TISAX \/ DORA/ })).toBeDisabled();
+    // Zurück und unverändert erneut absenden löst keinen zweiten Scan aus.
+    fireEvent.click(screen.getByRole('button', { name: 'Zurück' }));
+    fireEvent.click(screen.getByTestId('audit-start'));
+    expect(onRun).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByTestId('audit-next'));
     fireEvent.click(screen.getByTestId('audit-next'));
     fireEvent.click(screen.getByRole('radio', { name: 'Agentur' }));
-    fireEvent.click(screen.getByTestId('audit-start'));
-    expect(onRun).toHaveBeenCalledWith({ domain: 'muster.de', email: 'a@b.de', company: '', marketingConsent: false });
+    expect(onReveal).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('audit-reveal'));
+    expect(onReveal).toHaveBeenCalledTimes(1);
+    expect(onRun).toHaveBeenCalledTimes(1);
 
     view.rerender(
       <MemoryRouter>
@@ -100,6 +111,64 @@ describe('/audit stepper', () => {
     expect(screen.getByTestId('audit-score-ring')).toHaveAccessibleName(/63 \/ 100/);
     expect(screen.getByText('Tracking vor Einwilligung')).toBeInTheDocument();
     expect(screen.getByTestId('audit-plan-recommendation')).toHaveTextContent('Agency');
+  });
+
+  it('re-runs the scan when the domain changes after going back', () => {
+    const onRun = vi.fn();
+    render(<MemoryRouter><AuditStepper initialDomain="muster.de" running={false} error={null} report={null} onReset={vi.fn()} onRun={onRun} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'a@b.de' } });
+    fireEvent.click(screen.getByTestId('audit-start'));
+    fireEvent.click(screen.getByRole('button', { name: 'Zurück' }));
+    fireEvent.change(screen.getByLabelText('Hauptdomain'), { target: { value: 'https://www.andere-firma.de/impressum' } });
+    fireEvent.click(screen.getByTestId('audit-start'));
+    expect(onRun).toHaveBeenCalledTimes(2);
+    expect(onRun.mock.calls[1]![0]).toMatchObject({ domain: 'andere-firma.de' });
+  });
+
+  it('rejects invalid domains and e-mails before anything is sent', () => {
+    const onRun = vi.fn();
+    render(<MemoryRouter><AuditStepper initialDomain="" running={false} error={null} report={null} onReset={vi.fn()} onRun={onRun} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText('Hauptdomain'), { target: { value: 'localhost' } });
+    fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'a@b.de' } });
+    expect(screen.getByTestId('audit-start')).toBeDisabled();
+    expect(screen.getByText('Bitte eine gültige Domain angeben, z. B. muster.de.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Hauptdomain'), { target: { value: 'muster.de' } });
+    fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'kein-at-zeichen' } });
+    expect(screen.getByTestId('audit-start')).toBeDisabled();
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it('shows the privacy notice and keeps the honeypot hidden and out of tab order', () => {
+    render(<MemoryRouter><AuditStepper initialDomain="muster.de" running={false} error={null} report={null} onReset={vi.fn()} onRun={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByTestId('audit-privacy-notice')).toHaveTextContent(/Domain, E-Mail/);
+    expect(screen.getByTestId('audit-privacy-notice')).toHaveTextContent(/Werbliche E-Mails nur mit Ihrer Einwilligung/);
+    const hp = document.getElementById('audit-company-website') as HTMLInputElement;
+    expect(hp).toBeTruthy();
+    expect(hp.tabIndex).toBe(-1);
+    expect(hp.closest('[aria-hidden="true"]')).not.toBeNull();
+    // Einwilligung ist optional und standardmäßig aus.
+    expect(screen.getByTestId('audit-followup-consent')).not.toBeChecked();
+  });
+
+  it('is operable on mobile keyboards (input types, autocomplete)', () => {
+    render(<MemoryRouter><AuditStepper initialDomain="" running={false} error={null} report={null} onReset={vi.fn()} onRun={vi.fn()} /></MemoryRouter>);
+    const domain = screen.getByLabelText('Hauptdomain');
+    const email = screen.getByLabelText('E-Mail für den Bericht');
+    expect(domain).toHaveAttribute('inputmode', 'url');
+    expect(domain).toHaveAttribute('autocomplete', 'url');
+    expect(email).toHaveAttribute('type', 'email');
+    expect(email).toHaveAttribute('autocomplete', 'email');
+    expect(screen.getByLabelText('Unternehmen')).toHaveAttribute('autocomplete', 'organization');
+  });
+
+  it('surfaces a scan error while the visitor is still answering', () => {
+    const props = { initialDomain: 'muster.de', report: null, onReset: vi.fn(), onRun: vi.fn() };
+    const view = render(<MemoryRouter><AuditStepper {...props} running error={null} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'a@b.de' } });
+    fireEvent.click(screen.getByTestId('audit-start'));
+    expect(screen.getByTestId('audit-running-background')).toBeInTheDocument();
+    view.rerender(<MemoryRouter><AuditStepper {...props} running={false} error="Der Scan konnte nicht abgeschlossen werden. Ihre Angaben sind gespeichert." /></MemoryRouter>);
+    expect(screen.getByTestId('audit-error-early')).toHaveTextContent(/Ihre Angaben sind gespeichert/);
   });
 
   it('AuditLanding still calls gdpr-audit and keeps the ?domain= prefill', () => {

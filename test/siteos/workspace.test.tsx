@@ -56,6 +56,7 @@ vi.mock('../../src/core/billing/useEntitlements', () => ({
 }));
 vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({ activeTenantId: 'tenant-1', loading: false }),
+  useOptionalTenant: () => ({ activeTenantId: 'tenant-1', loading: false, refresh: vi.fn() }),
 }));
 vi.mock('../../src/features/billing/checkout', () => ({ createSiteOsCheckoutSession: vi.fn() }));
 const previewFrame = vi.fn();

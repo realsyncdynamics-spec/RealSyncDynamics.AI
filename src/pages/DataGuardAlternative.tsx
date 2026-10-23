@@ -9,6 +9,7 @@ import {
   ComparisonTable,
   WarningCallout,
 } from './alternative/AlternativeLanding';
+import { TRY_FREE } from '../config/beta';
 
 export function DataGuardAlternative() {
   return (
@@ -39,8 +40,8 @@ export function DataGuardAlternative() {
           </>
         ),
         cta: {
-          heading: 'Pilot in 14 Tagen — keine Kreditkarte, kein Vertragsbinding',
-          sub: 'Alle Tools, alle Tiers, 14 Tage. Falls es nicht passt: einfach laufen lassen.',
+          heading: `Pilot ${TRY_FREE.phrase} — keine Kreditkarte, kein Vertragsbinding`,
+          sub: 'Alle Tools, alle Tiers. Falls es nicht passt: einfach laufen lassen.',
           buttons: [
             { to: '/pricing', label: 'Tarif starten', variant: 'primary' },
             { to: '/audit?source=dataguard-alt', label: 'Kostenlos starten', variant: 'secondary' },
@@ -157,7 +158,7 @@ export function DataGuardAlternative() {
 
       <Section title="Migration / Hybrid-Setup">
         <ol className="list-decimal list-inside space-y-2 text-sm">
-          <li>14 Tage Pilot-Trial bei uns starten — alle Tools kostenfrei testen.</li>
+          <li>Pilot bei uns starten ({TRY_FREE.phrase}) — alle Tools kostenfrei testen.</li>
           <li>
             Bestehende Verarbeitungen aus DataGuard-VVT in unseren{' '}
             <Link to="/vvt-wizard" className="text-security-400 hover:text-security-300">

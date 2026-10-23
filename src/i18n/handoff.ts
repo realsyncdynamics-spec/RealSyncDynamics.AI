@@ -384,9 +384,17 @@ export const HANDOFF_EXTRA = {
     residencyHybrid: 'Gemischt / offen',
     // /pricing Fusszeile + Disclaimer (keine Steuertexte — die bleiben SSoT).
     pricingTrustNote:
-      'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
+      'Free Audit kostenlos · {days} Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
     pricingTrialFoot:
       'Free Audit kostenlos · kein Account nötig · {plans}: {days} Tage kostenlos testen — keine Kosten bis Tag {until}, monatlich kündbar · Enterprise: nach Anfrage, kein Self-Service-Trial',
+    // Offene Beta (`BETA_PUBLIC_OFFER`): ersetzt Trust-Note, Trial-Fusszeile und Karten-CTA.
+    pricingTrustNoteBeta:
+      'Offene Beta: alle Tarife kostenlos bis {until} · Anmeldung genügt, keine Kreditkarte · Danach Listenpreis, monatlich kündbar · Made in Germany',
+    pricingTrialFootBeta:
+      'Free Audit kostenlos · kein Account nötig · {plans}: kostenlos bis {until}, danach gilt der durchgestrichene Listenpreis, monatlich kündbar · Enterprise: Preis auf Anfrage',
+    pricingBetaCta: 'Kostenlos testen',
+    pricingBetaPriceNote: 'kostenlos bis {until}',
+    pricingBetaListPrice: 'danach',
     pricingDisclaimerBefore:
       'Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung. ',
     pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
@@ -503,9 +511,16 @@ export const HANDOFF_EXTRA = {
     residencyEu: 'EU cloud',
     residencyHybrid: 'Mixed / undecided',
     pricingTrustNote:
-      'Free Audit free of charge · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
+      'Free Audit free of charge · {days}-day free trial · Cancel monthly · No setup fees · Made in Germany',
     pricingTrialFoot:
       'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
+    pricingTrustNoteBeta:
+      'Open beta: all plans free until {until} · Sign-up is enough, no credit card · Then list price, cancel monthly · Made in Germany',
+    pricingTrialFootBeta:
+      'Free Audit free of charge · no account needed · {plans}: free until {until}, then the struck-through list price applies, cancel monthly · Enterprise: price on request',
+    pricingBetaCta: 'Try for free',
+    pricingBetaPriceNote: 'free until {until}',
+    pricingBetaListPrice: 'then',
     pricingDisclaimerBefore:
       'Our outputs are methodologically and technically sound — but no substitute for individual legal advice. ',
     pricingDisclaimerStrong: 'We do not promise "100% legally secure"',

@@ -215,7 +215,6 @@ export function Manifest() {
           <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/about" className="hover:text-titanium-300">Über uns</Link>
-            <Link to="/blog" className="hover:text-titanium-300">Blog</Link>
           </div>
         </div>
       </footer>

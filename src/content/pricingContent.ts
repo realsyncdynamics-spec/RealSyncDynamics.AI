@@ -300,7 +300,7 @@ export const pricingPlans: PricingPlan[] = [
     ],
     trial: {
       days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15, monatlich kündbar',
+      description: 'Keine Kosten während der Testphase, monatlich kündbar.',
     },
   },
   {
@@ -356,7 +356,7 @@ export const pricingPlans: PricingPlan[] = [
     ],
     trial: {
       days: 14,
-      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15, monatlich kündbar',
+      description: 'Keine Kosten während der Testphase, monatlich kündbar.',
     },
   },
   {

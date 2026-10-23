@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT mit 14 Tagen Test für Starter und Growth, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise als offenes Beta-Angebot (0 € bis 31.01.2027, Listenpreise aus der SSoT nur durchgestrichen als „danach“), FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',

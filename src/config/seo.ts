@@ -51,6 +51,7 @@ export interface SEOConfig {
 }
 
 import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+import { BETA, BETA_PUBLIC_OFFER } from './beta';
 
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
@@ -61,6 +62,39 @@ export const DEFAULT_SEO: SEOConfig = {
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
+
+/**
+ * Monats-Abo als schema.org-Offer. Während der offenen Beta
+ * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
+ * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
+ * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise netto
+ * (`PRICING_TAX_MODE = EU_STANDARD`, zzgl. USt, nur B2B).
+ */
+function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
+  const list = {
+    '@type': 'UnitPriceSpecification',
+    price: String(listEur),
+    priceCurrency: 'EUR',
+    billingDuration: 'P1M',
+    valueAddedTaxIncluded: false,
+  };
+  if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
+  const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
+  afterBeta.setUTCDate(afterBeta.getUTCDate() + 1);
+  return {
+    '@type': 'Offer',
+    name,
+    price: '0',
+    priceCurrency: 'EUR',
+    priceValidUntil: BETA.endsIso,
+    url,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat zzgl. USt, monatlich kündbar.`,
+    priceSpecification: [
+      { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
+      { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },
+    ],
+  };
+}
 
 const PRICING_PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
@@ -83,45 +117,9 @@ const PRICING_PRODUCT_JSONLD = {
         priceType: 'https://schema.org/InvoicePrice',
       },
     },
-    {
-      '@type': 'Offer',
-      name: 'Starter',
-      price: '79',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '79',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Growth',
-      price: '249',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '249',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Agency',
-      price: '699',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/checkout/agency`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '699',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
+    subscriptionOffer('Starter', 79, `${SITE_URL}/pricing`),
+    subscriptionOffer('Growth', 249, `${SITE_URL}/pricing`),
+    subscriptionOffer('Agency', 699, `${SITE_URL}/checkout/agency`),
     {
       '@type': 'Offer',
       name: 'Enterprise',
@@ -316,7 +314,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Offene Beta: alle Tarife 0 € bis 31.01.2027, keine Kreditkarte. Danach Starter 79 €, Growth 249 €, Agency 699 € pro Monat zzgl. USt. Enterprise auf Anfrage.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -329,7 +327,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/claude-code-optimizer': {
     title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. 14 Tage kostenlos testen.',
+      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. Offene Beta: kostenlos bis 31.01.2027.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -464,13 +462,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/contact-sales': {
-    title: 'Founding Access — 14 Tage kostenlos | RealSync Dynamics AI',
+    title: 'Enterprise-Beta – kostenlos bis 31.01.2027 | RealSync Dynamics AI',
     description:
-      '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
+      'Enterprise-Beta: Testzugang kostenlos bis 31.01.2027, keine Kreditkarte, kein Abo. Danach Preis auf Anfrage. Gegenleistung: Feedback und Verbesserungsideen.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
-      { name: 'Founding Access', url: '/contact-sales' },
+      { name: 'Enterprise-Beta', url: '/contact-sales' },
     ]),
   },
 
@@ -946,9 +944,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Trust / Methodik / Legal ────────────────────────────────────────────
   '/security': {
-    title: 'Security — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
+    title: 'Security – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -956,9 +954,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/sicherheit': {
-    title: 'Sicherheit — ISO 27001-Track, BSI C5, EU-Datenresidenz | RealSync Dynamics AI',
+    title: 'Sicherheit – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture: ISO 27001-Track, BSI C5, EU-Datenresidenz Default, kryptografische Audit-Trails (Evidence Vault), Penetration-Test-Reports, BYOK.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
   },
   '/methodik': {
@@ -1027,6 +1025,32 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Impressum von RealSync Dynamics AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
+  },
+  '/legal/widerruf': {
+    title: 'Widerrufsbelehrung – Frist & Muster | RealSync Dynamics AI',
+    description:
+      'Widerrufsbelehrung für Verbraucher nach Art. 246a EGBGB: Widerrufsfrist, Folgen des Widerrufs und Muster-Widerrufsformular für digitale Dienstleistungen.',
+    canonical: `${SITE_URL}/legal/widerruf`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Widerrufsbelehrung', url: '/legal/widerruf' },
+    ]),
+  },
+  '/widerruf': {
+    title: 'Widerrufsbelehrung – Frist & Muster | RealSync Dynamics AI',
+    description:
+      'Widerrufsbelehrung für Verbraucher nach Art. 246a EGBGB: Widerrufsfrist, Folgen des Widerrufs und Muster-Widerrufsformular für digitale Dienstleistungen.',
+    canonical: `${SITE_URL}/legal/widerruf`,
+  },
+  '/roadmap': {
+    title: 'Roadmap – Live, Preview, Coming Soon | RealSync Dynamics AI',
+    description:
+      'Ehrlicher Implementierungsstatus der Governance Runtime: was heute live ist, was als Preview läuft und was noch Coming Soon ist – gepflegt im Status-Register.',
+    canonical: `${SITE_URL}/roadmap`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Roadmap', url: '/roadmap' },
+    ]),
   },
   '/legal/sub-processors': {
     title: 'Sub-Prozessoren & Auftragsverarbeiter (DSGVO Art. 28) | RealSync Dynamics AI',
@@ -1137,6 +1161,216 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
     canonical: `${SITE_URL}/marktanalyse`,
+  },
+  // ─── Tools, Branchen-Guides, API, Changelog, Status ───────────────────────
+  // Fielen bis 2026-10 auf DEFAULT_SEO zurück (generischer Titel auf 20
+  // Sitemap-Seiten, siehe test/landing/sitemap-seo-coverage.test.ts).
+  // Aliasse (/api, /release-notes) konsolidieren per canonical auf die Hauptseite.
+  '/ai-act-klassifikator': {
+    title: 'AI-Act-Klassifikator – Risiko prüfen | RealSync Dynamics AI',
+    description:
+      'KI-System nach EU AI Act einordnen: verbotene Praktik, Hochrisiko nach Annex III oder Transparenzpflicht. Registry-basiert und deterministisch ausgewertet.',
+    canonical: `${SITE_URL}/ai-act-klassifikator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'AI-Act-Klassifikator', url: '/ai-act-klassifikator' },
+    ]),
+  },
+  '/ai-act-workflows': {
+    title: 'AI-Act-Inventar – Use-Cases einordnen | RealSync Dynamics AI',
+    description:
+      'Alle KI-Use-Cases Ihrer Firma erfassen – Chatbot, Lead-Scoring, Bewerber-Screening – und indikativ nach Annex III einordnen. Speicherung nur im Browser.',
+    canonical: `${SITE_URL}/ai-act-workflows`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'AI-Act-Inventar', url: '/ai-act-workflows' },
+    ]),
+  },
+  '/api': {
+    title: 'API – programmatischer Zugriff | RealSync Dynamics AI',
+    description:
+      'REST-API der Governance-Runtime: tenant-scoped API-Keys, Rate-Limits und ein Audit-Log pro Aufruf. Im Growth-Tarif enthalten, betrieben in der EU (Frankfurt).',
+    canonical: `${SITE_URL}/api-docs`,
+  },
+  '/api-docs': {
+    title: 'API-Dokumentation – Keys, Endpunkte | RealSync Dynamics AI',
+    description:
+      'Dokumentation der RealSync-API: Authentifizierung per API-Key, Endpunkte, Rate-Limits und Audit-Log je Aufruf. Für eigene Integrationen ab dem Growth-Tarif.',
+    canonical: `${SITE_URL}/api-docs`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'API-Dokumentation', url: '/api-docs' },
+    ]),
+  },
+  '/avv-generator': {
+    title: 'AVV-Generator – Vertrag nach Art. 28 | RealSync Dynamics AI',
+    description:
+      'Auftragsverarbeitungsvertrag nach Art. 28 DSGVO in drei Schritten erstellen – kostenlos und ohne Account. Vorlage, keine Rechtsberatung: bitte prüfen lassen.',
+    canonical: `${SITE_URL}/avv-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'AVV-Generator', url: '/avv-generator' },
+    ]),
+  },
+  '/bait-compliance': {
+    title: 'BAIT-Compliance – IT-Prüfung belegen | RealSync Dynamics AI',
+    description:
+      'BAIT für Banken: Audit-Trails, Revisionssicherheit und Auslagerungsbewertung für Cloud- und KI-Dienste nachvollziehbar dokumentieren – mit Evidence-Export.',
+    canonical: `${SITE_URL}/bait-compliance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Branchen', url: '/branchen' },
+      { name: 'BAIT-Compliance', url: '/bait-compliance' },
+    ]),
+  },
+  '/branchen': {
+    title: 'Branchen – Compliance nach Sektor | RealSync Dynamics AI',
+    description:
+      'Compliance-Bezugspunkte je Branche: AI Act für HealthTech, § 203 StGB für Legal-Tech, BAIT und MaRisk für FinTech, VAIT für Versicherer, OZG für Behörden.',
+    canonical: `${SITE_URL}/branchen`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Branchen', url: '/branchen' },
+    ]),
+  },
+  '/changelog': {
+    title: 'Changelog – was wir gebaut haben | RealSync Dynamics AI',
+    description:
+      'Chronologisches Änderungsprotokoll der Plattform: neue Funktionen, Korrekturen und Rechtstexte, ohne Marketing-Gloss. Die jüngsten Einträge sind öffentlich.',
+    canonical: `${SITE_URL}/changelog`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Changelog', url: '/changelog' },
+    ]),
+  },
+  '/release-notes': {
+    title: 'Release Notes – neue Funktionen | RealSync Dynamics AI',
+    description:
+      'Release Notes der AI-Governance-Runtime: neue Funktionen, Fehlerbehebungen und geänderte Rechtstexte chronologisch – dieselben Einträge wie im Changelog.',
+    canonical: `${SITE_URL}/changelog`,
+  },
+  '/cookie-compliance': {
+    title: 'Cookie-Compliance – TDDDG prüfen | RealSync Dynamics AI',
+    description:
+      'Cookie-Banner nach TDDDG und DSGVO prüfen: gleichwertiger Ablehnen-Button, kein Tracking vor Einwilligung, AVV mit allen Anbietern – inklusive Fix-Pfad.',
+    canonical: `${SITE_URL}/cookie-compliance`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'Cookie-Compliance', url: '/cookie-compliance' },
+    ]),
+  },
+  '/cookie-consent-sdk': {
+    title: 'Cookie-Consent-SDK – Banner per Code | RealSync Dynamics AI',
+    description:
+      'Cookie-Banner mit einer Zeile Code einbinden: drei gleichwertige Buttons, kein Dark Pattern, kein Cookie vor der Einwilligung. Ausgerichtet an DSGVO und TDDDG.',
+    canonical: `${SITE_URL}/cookie-consent-sdk`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'Cookie-Consent-SDK', url: '/cookie-consent-sdk' },
+    ]),
+  },
+  '/datenpanne-meldung': {
+    title: 'Datenpanne melden – 72-h-Countdown | RealSync Dynamics AI',
+    description:
+      'Meldepflicht nach Art. 33 DSGVO im Blick: Zeitpunkt der Kenntnisnahme eintragen, 72-Stunden-Timer starten, zuständige Aufsichtsbehörde und Checkliste finden.',
+    canonical: `${SITE_URL}/datenpanne-meldung`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'Datenpanne melden', url: '/datenpanne-meldung' },
+    ]),
+  },
+  '/datenschutz-generator': {
+    title: 'Datenschutz-Generator – DSE erstellen | RealSync Dynamics AI',
+    description:
+      'Datenschutzerklärung nach DSGVO in drei Schritten erstellen – kostenlos und ohne Anmeldung. Eine Vorlage mit Verantwortlichem, Cookies und Betroffenenrechten.',
+    canonical: `${SITE_URL}/datenschutz-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'Datenschutz-Generator', url: '/datenschutz-generator' },
+    ]),
+  },
+  '/dokumente-bundle': {
+    title: 'DSGVO-Dokumente – 5 Pflicht-PDFs | RealSync Dynamics AI',
+    description:
+      'Fünf DSGVO-Pflichtdokumente – Datenschutzerklärung, AVV, VVT, TOM und DSFA – aus Ihren Firmendaten befüllt und als PDF herunterladbar, mit Methodik-Version.',
+    canonical: `${SITE_URL}/dokumente-bundle`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'DSGVO-Dokumente', url: '/dokumente-bundle' },
+    ]),
+  },
+  '/eu-ai-act-check': {
+    title: 'EU-AI-Act-Check – in 60 Sekunden | RealSync Dynamics AI',
+    description:
+      'Zwölf Fragen, Annex-III-Mapping, sofortige Indikation: Ist Ihr KI-System verboten, hochriskant oder transparenzpflichtig? Mit Pflichtenliste je Risikoklasse.',
+    canonical: `${SITE_URL}/eu-ai-act-check`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'EU-AI-Act-Check', url: '/eu-ai-act-check' },
+    ]),
+  },
+  '/marisk-audit': {
+    title: 'MaRisk-Audit – KI als OpRisk belegen | RealSync Dynamics AI',
+    description:
+      'KI-Modelle als operationelles Risiko nach MaRisk abbilden: Risikoanalyse, Modellinventar und Auslagerungen mit einem prüffähigen Audit-Trail dokumentieren.',
+    canonical: `${SITE_URL}/marisk-audit`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Branchen', url: '/branchen' },
+      { name: 'MaRisk-Audit', url: '/marisk-audit' },
+    ]),
+  },
+  '/enterprise-konfigurator': {
+    title: 'Enterprise konfigurieren – Bausteine | RealSync Dynamics AI',
+    description:
+      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, Konditionen auf Anfrage.',
+    canonical: `${SITE_URL}/enterprise-konfigurator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Preise', url: '/pricing' },
+      { name: 'Enterprise-Konfigurator', url: '/enterprise-konfigurator' },
+    ]),
+  },
+  '/status': {
+    title: 'Systemstatus – Komponenten & Vorfälle | RealSync Dynamics AI',
+    description:
+      'Betriebsstatus der Plattform: API und Edge Functions, Datenbank und Hosting in der EU (eu-central-1), dazu ein offenes Incident-Log mit Ausfällen und Wartungen.',
+    canonical: `${SITE_URL}/status`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Systemstatus', url: '/status' },
+    ]),
+  },
+  '/tom-generator': {
+    title: 'TOM-Generator – Art. 32 dokumentieren | RealSync Dynamics AI',
+    description:
+      'Technische und organisatorische Maßnahmen nach Art. 32 DSGVO strukturiert erfassen und als exportfertiges Dokument ausgeben. Eine Vorlage, keine Rechtsberatung.',
+    canonical: `${SITE_URL}/tom-generator`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'TOM-Generator', url: '/tom-generator' },
+    ]),
+  },
+  '/vvt-wizard': {
+    title: 'VVT-Wizard – Verzeichnis nach Art. 30 | RealSync Dynamics AI',
+    description:
+      'Verzeichnis von Verarbeitungstätigkeiten nach Art. 30 DSGVO Schritt für Schritt erfassen und als PDF exportieren – mit Zweck, Rechtsgrundlage und Fristen.',
+    canonical: `${SITE_URL}/vvt-wizard`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'VVT-Wizard', url: '/vvt-wizard' },
+    ]),
   },
 };
 

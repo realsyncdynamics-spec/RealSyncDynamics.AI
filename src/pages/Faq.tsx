@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
 import { SALES_PLANS, formatLimit } from '@/shared/pricing';
+import { TRY_FREE } from '../config/beta';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -60,7 +61,7 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
+        <p>Vier Tiers — Starter und Growth {TRY_FREE.phrase}, danach gelten diese Listenpreise; Enterprise nach Vertrag:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>

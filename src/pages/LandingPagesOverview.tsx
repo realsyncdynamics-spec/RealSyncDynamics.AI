@@ -62,7 +62,7 @@ const GROUPS: LandingGroup[] = [
     entries: [
       { path: '/enterprise', title: 'Enterprise', description: 'Enterprise-Landing.' },
       { path: '/enterprise-ai-os', title: 'Enterprise AI-OS', description: 'AI-Betriebssystem für Unternehmen.' },
-      { path: '/enterprise-ai-os/founding-access', title: 'Founding Access', description: 'Founding-Access-Programm.' },
+      { path: '/enterprise-ai-os/founding-access', title: 'Founding-Programm (beendet)', description: 'Endete am 02.08.2026, verweist auf die Enterprise-Beta.' },
       { path: '/os', title: 'Enterprise-OS Landing', description: 'Landing der Enterprise-OS-Suite.' },
       { path: '/os/audit', title: 'OS Audit', description: 'Audit-Landing im Enterprise-OS.' },
     ],

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { getPlanBySlug, getFeaturesByPlan, ALL_PLAN_SLUGS } from '../../content/pricingContent';
+import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '../../config/beta';
 
 interface PlanDetailPageProps {
   planSlug: string;
@@ -32,6 +33,12 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
   const prevPlan = planIndex > 0 ? navSlugs[planIndex - 1] : null;
   const nextPlan = planIndex >= 0 && planIndex < navSlugs.length - 1 ? navSlugs[planIndex + 1] : null;
 
+  // Offene Beta wie auf /pricing: 0 € bis Beta-Ende, Listenpreis nur „danach“,
+  // CTA in die Anmeldung. Free Audit und Enterprise bleiben unverändert.
+  const beta = BETA_PUBLIC_OFFER && plan.price > 0 && isBetaPlan(plan.slug);
+  const ctaHref = beta ? betaSignupHref(plan.slug.replace(/_yearly$/, ''), 'pricing-detail') : plan.checkoutPath;
+  const ctaLabel = beta ? 'Kostenlos testen' : plan.cta.label;
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50" data-testid={`plan-detail-${plan.slug}`}>
       {/* Top bar */}
@@ -54,14 +61,25 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
             )}
             <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">{plan.name}</h1>
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-3xl font-bold">{plan.priceString}</span>
-              <span className="text-sm text-silver-300">{plan.interval}</span>
+              <span className="text-3xl font-bold">{beta ? '0 €' : plan.priceString}</span>
+              <span className="text-sm text-silver-300">{beta ? `kostenlos bis ${BETA.endsLabel}` : plan.interval}</span>
             </div>
+            {beta && (
+              <p className="text-sm text-silver-300 mb-4" data-testid="plan-detail-list-price">
+                danach <s>{plan.priceString}</s> {plan.interval}
+              </p>
+            )}
             <p className="text-lg text-silver-300 leading-relaxed">{plan.shortDescription}</p>
           </div>
 
           {/* Trial info */}
-          {plan.trial && (
+          {beta ? (
+            <div className="mb-8 p-4 bg-obsidian-900/60 border border-titanium-200/30 rounded-none" data-testid="plan-detail-beta">
+              <p className="text-sm text-titanium-300">
+                <strong>Offene Beta: kostenlos bis {BETA.endsLabel}.</strong> Anmeldung genügt, keine Kreditkarte, kein Abo. Danach gilt der Listenpreis, monatlich kündbar.
+              </p>
+            </div>
+          ) : plan.trial && (
             <div className="mb-8 p-4 bg-obsidian-900/60 border border-titanium-200/30 rounded-none">
               <p className="text-sm text-titanium-300">
                 <strong>{plan.trial.days} Tage kostenlos testen.</strong> {plan.trial.description}
@@ -72,11 +90,11 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
           {/* Main CTA button */}
           <div className="mb-12">
             <button
-              onClick={() => navigate(plan.checkoutPath)}
+              onClick={() => navigate(ctaHref)}
               className="w-full surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90"
               data-testid="plan-cta-button"
             >
-              {plan.cta.label}
+              {ctaLabel}
             </button>
           </div>
 
@@ -173,10 +191,10 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
           {/* Bottom CTA */}
           <div className="mb-12">
             <button
-              onClick={() => navigate(plan.checkoutPath)}
+              onClick={() => navigate(ctaHref)}
               className="w-full surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90"
             >
-              {plan.cta.label}
+              {ctaLabel}
             </button>
           </div>
         </div>

@@ -7,8 +7,9 @@
  */
 
 import React from 'react';
-import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE, tierPriceLabel } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, tierPriceLabel } from '../../config/pricing';
 import { getComplianceBanner } from '../../lib/compliance-notices';
+import { TRY_FREE } from '../../config/beta';
 
 export interface PlanSelectorProps {
   selectedPlan?: TierId;
@@ -35,7 +36,7 @@ export function PlanSelector({
           </h2>
           <p className="text-titanium-300 max-w-2xl mx-auto">
             Von kostenlos bis Enterprise — alle Funktionen skalieren mit deinen Anforderungen.
-            Starter, Growth und Agency: 14 Tage kostenlos testen, jederzeit kündbar.
+            {TRY_FREE.plans}
             Enterprise und Partner: auf Anfrage.
           </p>
         </div>
@@ -137,7 +138,7 @@ export function PlanSelector({
 
         {/* Trust Note */}
         <div className="text-center text-sm text-titanium-400">
-          {PRICING_TRUST_NOTE}
+          {TRY_FREE.trustNote}
         </div>
       </div>
     </div>

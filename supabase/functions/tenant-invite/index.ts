@@ -11,9 +11,14 @@
 // Owner / admin can create / list / revoke invites for their tenants.
 // Any authenticated user can accept a token (we match the email if it
 // is verified on the auth.users record).
+//
+// Nutzerplätze (`limit.team_seats`) werden beim Einladen und beim Annehmen
+// geprüft — siehe `_shared/seat-limit.ts`. Überschreitung → 402.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
+import { loadEntitlementsForTenant } from '../_shared/entitlements.ts';
+import { decideSeat, seatDecisionMessage, type SeatPhase } from '../_shared/seat-limit.ts';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
@@ -75,10 +80,10 @@ Deno.serve(async (req) => {
 
   try {
     switch (body.op) {
-      case 'create': return await handleCreate(admin, userId, body);
+      case 'create': return await handleCreate(admin, userId, body, seatGate(admin));
       case 'list':   return await handleList(admin, userId, body);
       case 'revoke': return await handleRevoke(admin, userId, body);
-      case 'accept': return await handleAccept(admin, userId, userEmail, body);
+      case 'accept': return await handleAccept(admin, userId, userEmail, body, seatGate(admin));
       default:       return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
@@ -86,7 +91,49 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
+/** Prüft die Plätze eines Mandanten; `null` heißt frei, sonst die Ablehnung. */
+type SeatGate = (tenantId: string, phase: SeatPhase, userId?: string) => Promise<Response | null>;
+
+function seatGate(admin: SupabaseClient): SeatGate {
+  return async (tenantId, phase, userId) => {
+    const ent = await loadEntitlementsForTenant(admin, tenantId);
+
+    const members = await admin.from('memberships')
+      .select('user_id', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+    if (members.error) throw members.error;
+
+    let pendingInvites = 0;
+    if (phase === 'invite') {
+      const pending = await admin.from('tenant_invites')
+        .select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId)
+        .is('accepted_at', null).is('revoked_at', null)
+        .gt('expires_at', new Date().toISOString());
+      if (pending.error) throw pending.error;
+      pendingInvites = pending.count ?? 0;
+    }
+
+    let alreadyMember = false;
+    if (phase === 'accept' && userId) {
+      const own = await admin.from('memberships').select('user_id')
+        .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+      if (own.error) throw own.error;
+      alreadyMember = own.data !== null;
+    }
+
+    const decision = decideSeat({
+      phase,
+      limit: ent.byKey['limit.team_seats']?.value,
+      members: members.count ?? 0,
+      pendingInvites,
+      alreadyMember,
+    });
+    if (decision.ok) return null;
+    return jsonError(402, decision.code, seatDecisionMessage(decision, phase), corsHeaders,
+      decision.code === 'SEAT_LIMIT_REACHED' ? { limit: decision.limit, used: decision.used } : undefined);
+  };
+}
+
+async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>, seats: SeatGate) {
   const tenant_id = body.tenant_id as string;
   const email = String(body.email ?? '').trim().toLowerCase();
   const role = body.role as Role;
@@ -103,6 +150,9 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Re
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
+
+  const seatRefusal = await seats(tenant_id, 'invite');
+  if (seatRefusal) return seatRefusal;
 
   const token = randomToken();
   const token_hash = await sha256Hex(token);
@@ -152,7 +202,7 @@ async function handleRevoke(admin: SupabaseAdminClient, userId: string, body: Re
   return jsonResponse({ ok: true });
 }
 
-async function handleAccept(admin: SupabaseAdminClient, userId: string, userEmail: string, body: Record<string, unknown>) {
+async function handleAccept(admin: SupabaseAdminClient, userId: string, userEmail: string, body: Record<string, unknown>, seats: SeatGate) {
   const token = body.token as string;
   if (!token) return jsonError(400, 'BAD_REQUEST', 'token required');
 
@@ -169,6 +219,9 @@ async function handleAccept(admin: SupabaseAdminClient, userId: string, userEmai
   if (invite.email && userEmail && invite.email.toLowerCase() !== userEmail.toLowerCase()) {
     return jsonError(403, 'EMAIL_MISMATCH', `invite is for ${invite.email}, you are signed in as ${userEmail}`);
   }
+
+  const seatRefusal = await seats(invite.tenant_id, 'accept', userId);
+  if (seatRefusal) return seatRefusal;
 
   // Idempotent membership upsert (don't error on existing).
   const { error: memErr } = await admin.from('memberships').insert({

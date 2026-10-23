@@ -165,6 +165,7 @@ function DeleteButton({ session }: { session: Session }) {
           <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
           <div>
             <strong className="block mb-1">Das löscht deinen Account unwiderruflich.</strong>
+            <span className="block mb-1">Workspaces, in denen du das einzige Mitglied bist, werden mitgelöscht.</span>
             <span>Tipp <code className="bg-red-950/60 px-1.5 py-0.5 text-red-200">{CONFIRM_PHRASE}</code> exakt unten ein, um zu bestätigen.</span>
           </div>
         </div>

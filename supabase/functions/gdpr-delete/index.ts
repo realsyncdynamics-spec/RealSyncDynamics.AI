@@ -7,9 +7,11 @@
 // Reihenfolge:
 //   1. JWT verify
 //   2. Confirm-Phrase prüfen — Schutz gegen versehentliche Aufrufe
-//   3. Pre-flight: User darf nicht alleiniger Owner eines Tenants sein
-//      (sonst würden andere Members ihren Zugriff verlieren). 409 mit Liste
-//      betroffener Tenants — User muss erst übertragen.
+//   3. Pre-flight (Probelauf der RPC delete_sole_member_tenants): Workspaces,
+//      deren einziger Owner der User ist, werden mitgelöscht — außer sie haben
+//      weitere Mitglieder (409 SOLE_OWNER, erst übertragen), Stripe-Abrechnung
+//      (409 BILLING_RETENTION) oder aufbewahrungspflichtige Nachweise
+//      (409 WORKSPACE_RETAINED). FAIL CLOSED, nichts geändert (tenant-cleanup.ts).
 //   4. Lead- und Scan-Daten der Adresse löschen bzw. anonymisieren
 //      (RPC erase_lead_data: sales_leads, Scan-E-Mail, Mail-Serien,
 //      Newsletter/Warteliste). FAIL CLOSED: Jeder Fehler — auch eine noch
@@ -17,6 +19,8 @@
 //      (lead-erasure.ts). Sonst bliebe die Adresse ohne Zuordnung zurück.
 //   5. Audit-Logs anonymisieren (triggered_by/user_id → NULL):
 //      preserves Compliance/Buchhaltung, entfernt PII-Verknüpfung.
+//   5a. Ein-Personen-Workspaces löschen (dieselbe RPC, echter Lauf; prüft
+//      unter Sperre erneut — eine Einladung seit Schritt 3 blockiert).
 //   5b. Memberships hart löschen (eigene Rolle in Tenants).
 //   6. auth.users löschen via admin API → CASCADE löscht profiles,
 //      workflows (owner_id), c2pa_assets (owner_id) etc.
@@ -30,6 +34,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { anonymizationFailures, checkLeadErasure } from './lead-erasure.ts';
+import { checkTenantCleanup } from './tenant-cleanup.ts';
 
 const CONFIRM_PHRASE = 'DELETE-MY-ACCOUNT';
 
@@ -67,31 +72,15 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // ── Pre-flight: Tenants in denen User alleiniger Owner ist ────────────────
-  const { data: ownerships, error: ownErr } = await admin
-    .from('memberships')
-    .select('tenant_id, tenant:tenants(name)')
-    .eq('user_id', userId)
-    .eq('role', 'owner');
-  if (ownErr) return jsonError(500, 'INTERNAL', ownErr.message);
-
-  const soleOwnerTenants: { tenant_id: string; name: string }[] = [];
-  for (const ownership of ownerships ?? []) {
-    const { count } = await admin
-      .from('memberships')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', ownership.tenant_id)
-      .eq('role', 'owner');
-    if ((count ?? 0) === 1) {
-      // deno-lint-ignore no-explicit-any
-      soleOwnerTenants.push({ tenant_id: ownership.tenant_id, name: (ownership as any).tenant?.name ?? '?' });
-    }
-  }
-
-  if (soleOwnerTenants.length > 0) {
-    return jsonError(409, 'SOLE_OWNER',
-      'Du bist alleiniger Owner mindestens eines Workspaces. Übertrage erst Ownership oder lösche den Workspace.',
-      undefined, { sole_owner_of: soleOwnerTenants });
+  // ── Pre-flight: eigene Ein-Personen-Workspaces (Probelauf, ändert nichts) ──
+  const { data: tenantPlanData, error: tenantPlanErr } = await admin.rpc('delete_sole_member_tenants', {
+    p_user_id: userId,
+    p_dry_run: true,
+  });
+  const tenantPlan = checkTenantCleanup(tenantPlanData, tenantPlanErr);
+  if (!tenantPlan.ok) {
+    console.error('gdpr-delete: workspace pre-flight blocked', { code: tenantPlan.logCode });
+    return jsonError(tenantPlan.status, tenantPlan.code, tenantPlan.message, undefined, tenantPlan.details);
   }
 
   // ── Lead-/Scan-Daten (Art. 17) — zuerst, fail closed ──────────────────────
@@ -123,6 +112,21 @@ Deno.serve(async (req) => {
       'Die Löschung konnte nicht abgeschlossen werden. Ihr Konto besteht weiter; bitte versuchen Sie es später erneut.');
   }
 
+  // ── Ein-Personen-Workspaces löschen — fail closed ────────────────────────
+  // Die RPC prüft unter Sperre erneut. Scheitert sie jetzt, sind Lead-Daten
+  // und Läufe schon bereinigt, das Konto besteht aber weiter.
+  const { data: tenantDelData, error: tenantDelErr } = await admin.rpc('delete_sole_member_tenants', {
+    p_user_id: userId,
+    p_dry_run: false,
+  });
+  const tenantCleanup = checkTenantCleanup(tenantDelData, tenantDelErr);
+  if (!tenantCleanup.ok) {
+    console.error('gdpr-delete: workspace deletion failed', { code: tenantCleanup.logCode });
+    return jsonError(tenantCleanup.status, tenantCleanup.code,
+      'Die Löschung konnte nicht abgeschlossen werden. Dein Konto besteht weiter; bitte versuche es später erneut.',
+      undefined, tenantCleanup.details);
+  }
+
   // ── Memberships löschen ───────────────────────────────────────────────────
   const { error: memErr } = await admin.from('memberships').delete().eq('user_id', userId);
   if (memErr) {
@@ -146,6 +150,8 @@ Deno.serve(async (req) => {
     cascade_deleted: ['profiles', 'memberships', 'workflows', 'c2pa_assets'],
     retained_for_legitimate_interest: ['workflow_runs (anonymized)', 'ai_tool_runs (anonymized)', 'subscriptions (HGB/AO 10 Jahre)'],
     lead_data: leadErasure.counts,
+    // Anzahl gelöschter Ein-Personen-Workspaces (samt Mitgliedschaft und Free-Platzhalter).
+    deleted_workspaces: tenantCleanup.tenants,
     // Zufällige Vorgangsnummer aus lead_erasure_log — Beleg ohne Personenbezug.
     erasure_receipt_id: leadErasure.receiptId,
   });

@@ -14,7 +14,7 @@
 //   - Server-/Netzwerkfehler: ehrliche Meldung + „Erneut versuchen"; der
 //     US-Routing-Hinweis wird angezeigt statt die Nachricht still zu
 //     verwerfen.
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -32,13 +32,15 @@ import {
 } from 'lucide-react';
 import { ChatMessageView } from '../../features/governance/AgentWidget/ChatMessageView';
 import { useAgentChat } from '../../features/governance/AgentWidget/useAgentChat';
-import { AssistantRetry, UsRoutingBanner } from '../../features/governance/AgentWidget/AssistantNotices';
+import { AssistantFallbackLinks, AssistantRetry, UsRoutingBanner } from '../../features/governance/AgentWidget/AssistantNotices';
 import { useTenant } from '../../core/access/TenantProvider';
 import { GOVERNANCE_AGENTS, type GovernanceAgentId } from './governanceAgents';
 
 export interface GovernanceChatSidebarProps {
   open: boolean;
   onClose: () => void;
+  /** Vorbefüllter Text (z. B. aus „Session starten“); wird nicht automatisch gesendet. */
+  prefill?: { id: number; text: string } | null;
 }
 
 
@@ -75,7 +77,7 @@ const COMMAND_ACTIONS = [
   { label: 'AI Telefonbot erstellen', description: 'Voice Agent konfigurieren', icon: Phone, to: '/phonebot/start' },
 ] as const;
 
-export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarProps) {
+export function GovernanceChatSidebar({ open, onClose, prefill = null }: GovernanceChatSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
@@ -90,6 +92,12 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
   const hasTenant = Boolean(activeTenantId);
   const context = getContext(location.pathname);
   const currentAgent = GOVERNANCE_AGENTS.find((a) => a.id === selectedAgent) ?? GOVERNANCE_AGENTS[0];
+
+  useEffect(() => {
+    if (!prefill) return;
+    setInputValue(prefill.text);
+    textareaRef.current?.focus();
+  }, [prefill]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -205,6 +213,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
         {messages.map((msg) => <ChatMessageView key={msg.id} message={msg} />)}
         {canRetry && <AssistantRetry onRetry={() => void retry()} />}
+        {canRetry && <AssistantFallbackLinks />}
         {isLoading && (
           <div className="flex items-start gap-2">
             <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center bg-[#00B8D4] text-[10px] font-bold text-[#1a1917] font-mono">RS</div>

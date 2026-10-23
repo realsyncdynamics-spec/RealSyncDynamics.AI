@@ -10,7 +10,10 @@ import {
 } from 'lucide-react';
 import { runAction, type ActionName, type RunActionArgs, type RunActionResult } from './api';
 import { adviseAction, type AdviseResult } from './advise';
+import { Link } from 'react-router-dom';
 import { useTenant } from '../../core/access/TenantProvider';
+import { cheapestPlanForKeys } from '../../core/access/featureAccess';
+import { planById } from '@/shared/pricing';
 
 const WRITE_ACTIONS: ActionName[] = ['vps.service.restart', 'vps.compose.up', 'vps.compose.restart'];
 const isWrite = (a: ActionName) => WRITE_ACTIONS.includes(a);
@@ -86,6 +89,8 @@ const ACTIONS: ActionDef[] = [
 
 export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
   const { activeTenantId, hasFeature } = useTenant();
+  // SSH-Aktionen ab Agency; der Server prüft denselben Key (functions/kodee).
+  const canRun = !!activeTenantId && hasFeature('ai.tool.vps_status');
   const canAdvise = !!activeTenantId && hasFeature('ai.tool.vps_action_advisor');
   const [openAction, setOpenAction] = useState<ActionName | null>(null);
   const [args, setArgs] = useState<RunActionArgs>({});
@@ -96,7 +101,7 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
   const disabled = !connectionId || busy;
 
   const fire = async (def: ActionDef) => {
-    if (!connectionId) return;
+    if (!connectionId || !activeTenantId) return;
     if (def.fields?.some((f) => f.required && !args[f.key])) {
       setOpenAction(def.action);
       return;
@@ -110,7 +115,7 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
     }
     setBusy(true); onBusyChange?.(true);
     try {
-      const result = await runAction(connectionId, def.action, args);
+      const result = await runAction(activeTenantId, connectionId, def.action, args);
       onResult(def.action, args, result);
       setOpenAction(null);
       setArgs({});
@@ -131,6 +136,15 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
       setAdviseBusy(false);
     }
   };
+
+  if (!canRun) {
+    return (
+      <p className="max-w-3xl mx-auto w-full mb-2 text-xs text-titanium-500" data-testid="kodee-actions-locked">
+        Server-Aktionen per SSH sind ab {planById(cheapestPlanForKeys(['ai.tool.vps_status']) ?? 'agency').name} verfügbar.
+        {' '}<Link to="/app/billing" className="underline hover:text-titanium-300">Tarife ansehen</Link>
+      </p>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto w-full mb-2">

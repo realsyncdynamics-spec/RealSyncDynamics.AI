@@ -21,6 +21,7 @@ vi.mock('@/src/features/governance/governanceApi', () => ({
 
 vi.mock('@/src/features/evidence-vault/evidenceVaultApi', () => ({
   listTimeline: vi.fn(async () => []),
+  exportEvidenceBundle: vi.fn(),
 }));
 
 vi.mock('@/src/features/governance/audit/auditExportApi', () => ({

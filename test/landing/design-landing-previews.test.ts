@@ -52,6 +52,6 @@ describe('design landing previews', () => {
     expect(reg).toContain('src/App.tsx#/design/ledger→/');
     expect(reg).toContain('src/App.tsx#/design/tribunal→/');
     expect(reg).toMatch(/id: 'public-landing'[\s\S]*?status: 'live'/);
-    expect(reg).toMatch(/id: 'public-landing'[\s\S]*?LandingV4/);
+    expect(reg).toMatch(/id: 'public-landing'[\s\S]*?LandingV6/);
   });
 });

@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface CertificationReadiness {
   overall_score: number; // 0-100
@@ -83,7 +84,7 @@ function Inner() {
     try {
       const token = await getAuthToken();
       const response = await fetch(
-        `/functions/v1/certification-readiness?tenant_id=${activeTenantId}`,
+        `${getSupabaseUrl()}/functions/v1/certification-readiness?tenant_id=${activeTenantId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

@@ -1,10 +1,12 @@
 // Governance Gap Analysis Engine
 // Analyzes tenant's compliance frameworks and creates/updates compliance gaps
 // POST /functions/v1/governance-gap-analyzer
-// Authorization: Bearer <service_role or anon with tenant_id>
+// Authorization: Bearer <service_role> (interne Aufrufer, jeder Mandant)
+//            oder Bearer <user JWT> mit owner/admin-Mitgliedschaft im tenant_id
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireAuthAndTenant, requireServiceRole } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -24,6 +26,15 @@ Deno.serve(async (req) => {
 
   if (!body.tenant_id) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  }
+
+  // Vorher reichte ein beliebiges gültiges JWT, um für jeden tenant_id
+  // compliance_gaps mit der Service-Role zu schreiben. Interne Aufrufer
+  // weisen sich mit dem Service-Role-Key aus; Nutzer brauchen eine
+  // owner/admin-Mitgliedschaft im angefragten Mandanten.
+  if (requireServiceRole(req) !== null) {
+    const auth = await requireAuthAndTenant(req, body.tenant_id, ['owner', 'admin']);
+    if (auth instanceof Response) return auth;
   }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {

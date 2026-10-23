@@ -17,6 +17,7 @@ jede Abweichung einem Change zugeordnet bleibt.
 | `PLAN.md` | Ist-Befund, Entscheidungen, Reihenfolge, Gates (diese Datei) |
 | `../commands/wp1-landing.md` … `wp6-governed-evolution.md` | Session-Auftrag je WP, in Claude Code als `/wp1-landing` … `/wp6-governed-evolution` aufrufbar |
 | `governed-evolution.md` | Zielbild-Spec Governed Evolution (nur Doku) |
+| `ZIELBILD.md` | **Zielbild der fertigen Plattform** (2026-10-24) — verbindlicher Maßstab für alle WPs und PRs: Phasen 1–3, Referenz-Szenario, Claims-Regel |
 
 ---
 

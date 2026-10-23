@@ -1026,6 +1026,32 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Impressum von RealSync Dynamics AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
   },
+  '/legal/widerruf': {
+    title: 'Widerrufsbelehrung – Frist & Muster | RealSync Dynamics AI',
+    description:
+      'Widerrufsbelehrung für Verbraucher nach Art. 246a EGBGB: Widerrufsfrist, Folgen des Widerrufs und Muster-Widerrufsformular für digitale Dienstleistungen.',
+    canonical: `${SITE_URL}/legal/widerruf`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Widerrufsbelehrung', url: '/legal/widerruf' },
+    ]),
+  },
+  '/widerruf': {
+    title: 'Widerrufsbelehrung – Frist & Muster | RealSync Dynamics AI',
+    description:
+      'Widerrufsbelehrung für Verbraucher nach Art. 246a EGBGB: Widerrufsfrist, Folgen des Widerrufs und Muster-Widerrufsformular für digitale Dienstleistungen.',
+    canonical: `${SITE_URL}/legal/widerruf`,
+  },
+  '/roadmap': {
+    title: 'Roadmap – Live, Preview, Coming Soon | RealSync Dynamics AI',
+    description:
+      'Ehrlicher Implementierungsstatus der Governance Runtime: was heute live ist, was als Preview läuft und was noch Coming Soon ist – gepflegt im Status-Register.',
+    canonical: `${SITE_URL}/roadmap`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Roadmap', url: '/roadmap' },
+    ]),
+  },
   '/legal/sub-processors': {
     title: 'Sub-Prozessoren & Auftragsverarbeiter (DSGVO Art. 28) | RealSync Dynamics AI',
     description:

@@ -188,6 +188,21 @@ function titleOf(html) {
     .trim();
 }
 
+/**
+ * dist/404.html: die NotFoundPage, gerendert für einen Pfad ohne Route.
+ * `functions/_middleware.ts` liefert sie mit HTTP 404 für unbekannte Pfade
+ * aus (src/lib/spaNotFound.ts). Canonical und og:url zeigten sonst auf den
+ * Hilfspfad; eine 404-Seite hat keine kanonische URL.
+ */
+const NOT_FOUND_PROBE = '/__rsd-404';
+async function writeNotFoundPage(page) {
+  const html = (await renderRoute(page, NOT_FOUND_PROBE))
+    .replace(/<link rel="canonical"[^>]*>/gi, '')
+    .replace(/<meta property="og:url"[^>]*>/gi, '');
+  await writeFile(join(DIST, '404.html'), html, 'utf8');
+  console.log(`[prerender] ✓ 404.html (${titleOf(html)})`);
+}
+
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === '' ? join(DIST, 'index.html') : join(DIST, `${cleanRoute}.html`);
@@ -301,6 +316,16 @@ async function main() {
         await page.close();
       }
     }, CONCURRENCY);
+    const page = await context.newPage();
+    try {
+      await attachPageGuards(page);
+      await writeNotFoundPage(page);
+    } catch (e) {
+      stats.failed++;
+      console.error(`[prerender] FAIL 404.html: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      await page.close();
+    }
   } finally {
     await context.close().catch(() => {});
     await browser.close().catch(() => {});

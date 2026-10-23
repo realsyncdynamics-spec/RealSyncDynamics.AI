@@ -392,6 +392,7 @@ const OutreachView = lazy(() => import('./features/outreach/OutreachView').then(
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
 const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
+const BetaFeedbackView = lazy(() => import('./features/admin/BetaFeedbackView').then((m) => ({ default: m.BetaFeedbackView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const ConversionBillingView = lazy(() => import('./features/admin/billing/ConversionBillingView').then((m) => ({ default: m.ConversionBillingView })));
@@ -1063,6 +1064,9 @@ function RoutesWithTracking() {
       {/* Lead-Verwaltung im System-Bereich. Zugriff prüft die Datenbank
           (admin_funnel_leads → is_platform_operator), nicht der Router. */}
       <Route path="/app/leads" element={<LeadsView />} />
+      {/* WP-4: Beta-Feedback-Triage. Zugriff prüft die Datenbank
+          (admin_beta_feedback → is_platform_operator), nicht der Router. */}
+      <Route path="/admin/beta-feedback" element={<BetaFeedbackView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />

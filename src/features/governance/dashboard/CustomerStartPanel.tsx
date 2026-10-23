@@ -18,6 +18,7 @@ import type { TrialStatus } from '../../../core/billing/trial';
 import { HIGH_RISK_SYSTEMS_ROUTE } from '../handoff/enforcementModel';
 import { daysSince, formatAgeDe, riskAttentionSignals } from './dashboardSignals';
 import { computeAccountNotice, type StartPanelInput, type StartPanelModel } from './startPanelModel';
+import { SampleDataPanel } from './SampleDataPanel';
 import './customer-start.css';
 
 const SECONDARY_MODULES: ReadonlyArray<{ label: string; href: string }> = [
@@ -39,6 +40,8 @@ export function CustomerStartPanel({
   lastScanRunAt,
   trial,
   data,
+  tenantId = null,
+  canManageSampleData = false,
 }: {
   tenantName: string | null;
   facts: StartPanelInput;
@@ -46,6 +49,9 @@ export function CustomerStartPanel({
   lastScanRunAt: string | null;
   trial: TrialStatus | null;
   data: CockpitData | null;
+  /** WP-4: Beispieldaten-Angebot (nur in der Beta, nur mit Mandant). */
+  tenantId?: string | null;
+  canManageSampleData?: boolean;
 }) {
   const account = computeAccountNotice(trial, BETA);
   const { primary, secondary } = model;
@@ -183,6 +189,14 @@ export function CustomerStartPanel({
 
       {/* Zone 4 — Ergebnisse & Nachweise. */}
       <ResultsZone facts={facts} data={data} fallback={primary} />
+
+      {/* WP-4 — Beispieldaten: erst nach den echten Ergebnissen, nie als
+          Ersatz dafür. Rendert sich ohne Beta oder unbekanntem Bestand weg. */}
+      {tenantId && (
+        <section className="rs-panel" aria-label="Beispieldaten" data-testid="start-sample-data">
+          <SampleDataPanel tenantId={tenantId} canManage={canManageSampleData} />
+        </section>
+      )}
 
       {/* Zone 5 — nachgelagerte Module. */}
       <nav className="rs-start__more" aria-label="Weitere Module" data-testid="start-more">

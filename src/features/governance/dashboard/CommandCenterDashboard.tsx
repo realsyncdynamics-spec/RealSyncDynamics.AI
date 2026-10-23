@@ -66,7 +66,11 @@ export function CommandCenterDashboard() {
   const { lang } = useLang();
   // Live-Plan für den Post-Checkout-Banner (sonst bliebe er ewig „Sync ausstehend“).
   const { tier, loading: entitlementsLoading } = useEntitlements();
-  const rawTenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+  const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
+  const rawTenantName = activeTenant?.name ?? null;
+  // Beispieldaten ändern den Score des Mandanten — wie bei beta-enroll nur
+  // owner/admin (die Function prüft das erneut serverseitig).
+  const canManageSampleData = activeTenant?.role === 'owner' || activeTenant?.role === 'admin';
   // DE: „Workspace von …“ statt englischem Genitiv aus dem Signup-Trigger.
   const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
   const [data, setData] = useState<CockpitData | null>(null);
@@ -178,6 +182,8 @@ export function CommandCenterDashboard() {
           lastScanRunAt={tenantFacts.lastScanRunAt}
           trial={trial}
           data={tenantData}
+          tenantId={activeTenantId}
+          canManageSampleData={canManageSampleData}
         />
       )}
       {/* Detailansicht: das bestehende Cockpit bleibt vollständig erhalten,

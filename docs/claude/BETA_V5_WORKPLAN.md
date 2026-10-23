@@ -53,6 +53,12 @@ Dateien: `/app/dashboard` → `DashboardRouter` (per grep lokalisieren), `script
 - Jede Kachel: echter Wert oder ehrlicher Leerzustand mit Aktion. Keine statischen Mock-Werte im App-Bereich.
 - Feedback-Button (statt `/kontakt?topic=beta-feedback`): Tabelle `beta_feedback` (tenant_id, user_id, route, text, created_at, RLS), Admin-Ansicht.
 
+**Umsetzung (PR „Dashboard echt für Beta-Tester“), Stand 22.10.2026:**
+- Geführter Erststart war bereits da (`CustomerStartPanel` + `startPanelModel.ts`: Website → Scan → KI-System → Rahmen; `null` = unbekannt, nie „erledigt“ behauptet). Kacheln lesen nur echte Quellen; keine statischen Mock-Werte im Dashboard gefunden.
+- Beispieldaten: Edge Function `beta-sample-data` (`action: load|remove`, owner/admin, Mandant aus Principal). Fünf `governance_assets`-Zeilen mit `metadata.sample=true` + Namenspräfix „[Beispiel] “, generischer Mittelstand (kein Healthcare wie `seed-beta-tenant.ts`). `remove` löscht nur markierte Zeilen des Mandanten. UI: `SampleDataPanel` unter den Ergebnissen, nur in der Beta.
+- Feedback: Migration `20261022090000_beta_feedback.sql` (additiv, **Einzel-Freigabe**) — Insert per RLS (eigene `user_id`, `is_tenant_member`), Team liest über RPC `admin_beta_feedback()` (`is_platform_operator()`). `BetaFeedbackButton` (Link im Beta-Hinweis + Floating-Knopf in der Shell), Admin-Ansicht `/admin/beta-feedback` (+ Karte im Super-Admin-Dashboard).
+- Offen: 14-Tage-Mail vor Beta-Ende (WP-3), Issue-Form für Triage (WP-6).
+
 ## WP-5 — Agent-Credits (Abrechnung agentischer Aktionen)
 
 Basis vorhanden: `token_tracking`, `tenant_cost_ledger`, `agent_runs_metering`, `stripe_meter_sync` (Migrationen 2026-05…07). Nichts neu erfinden, darauf aufbauen.

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { BETA } from '../../config/beta';
 import { useBetaEnrollment, type BetaEnrollState } from '../../features/billing/useBetaEnrollment';
+import { BetaFeedbackButton } from './BetaFeedbackButton';
 
 const KEY = 'rsd-beta-banner-dismissed';
 
@@ -53,9 +54,9 @@ export function BetaAppBanner() {
         {notice ??
           `Kostenlose Testphase bis ${BETA.endsLabel}. Einige Module sind als BETA markiert und können sich noch ändern.`}
       </span>
-      <Link to="/kontakt?topic=beta-feedback" className="underline" style={{ color: '#d6ae52' }}>
-        Feedback geben
-      </Link>
+      {/* WP-4: Feedback landet in `beta_feedback` (Mandant, Nutzer, Route),
+          nicht mehr im allgemeinen Kontaktformular. */}
+      <BetaFeedbackButton variant="link" />
       <button type="button" onClick={dismiss} className="ml-auto opacity-70 hover:opacity-100" aria-label="Beta-Hinweis ausblenden">
         ✕
       </button>

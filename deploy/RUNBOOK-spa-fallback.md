@@ -4,8 +4,9 @@
 > aus der GitHub-Pages-Zeit (2026-05) und sind historisch. Heute gilt:
 > `public/_redirects` schickt unbekannte Pfade per `/* /index.html 200` auf die
 > Shell; `functions/_middleware.ts` setzt für HTML-Antworten auf Pfade ohne
-> Route aus `src/App.tsx` den Status **404** und liefert `dist/404.html`
-> (vorgerendert, `scripts/prerender.mjs`). Routenliste:
+> Route aus `src/App.tsx` den Status **404** und liefert `dist/__not-found.html`
+> (vorgerendert, `scripts/prerender.mjs`). **Keine `dist/404.html` deployen:** Pages
+> liefert sie sonst für jeden Pfad ohne Datei mit 404 aus — auch für `/app/*`. Routenliste:
 > `src/config/spaRoutes.generated.ts` (`npm run sync:spa-routes`, läuft in
 > `build:base`). Prüfen: `curl -sI https://realsyncdynamicsai.de/gibtsnicht123`
 > → `HTTP/2 404`; bekannte SPA-Routen (`/app/dashboard`) bleiben 200.

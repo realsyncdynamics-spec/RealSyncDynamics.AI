@@ -177,12 +177,17 @@ jobs:
           VITE_AUTH_LINKEDIN_ENABLED: ${{ secrets.VITE_AUTH_LINKEDIN_ENABLED }}
           PRERENDER_STRICT: '1'
         run: npm run build:full
-      - name: Generate 404 fallback for dynamic routes
-        # Der Prerender schreibt dist/404.html (NotFoundPage); functions/_middleware.ts
-        # liefert sie mit HTTP 404 aus. Nur wenn sie fehlt, die Shell als Ersatz nehmen —
-        # sonst überschriebe die Startseiten-Kopie die 404-Ansicht.
+      - name: Check prerendered routes
+        # Bewusst KEINE dist/404.html: Liegt sie im Root, liefert Cloudflare Pages sie
+        # für jeden Pfad ohne Datei mit HTTP 404 aus und ignoriert `/* /index.html 200`
+        # — auch echte SPA-Routen wie /app/dashboard (gemessen an der Preview von
+        # PR #1969). Den 404-Status setzt functions/_middleware.ts, Inhalt kommt aus
+        # dist/__not-found.html (scripts/prerender.mjs).
         run: |
-          [ -f dist/404.html ] || cp dist/index.html dist/404.html
+          if [ -f dist/404.html ]; then
+            echo "ERROR: dist/404.html schaltet den SPA-Fallback von Cloudflare Pages ab"
+            exit 1
+          fi
           if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
             echo "ERROR: expected prerendered routes missing"
             ls -la dist/ | head -20

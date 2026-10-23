@@ -94,11 +94,17 @@ describe('Verdrahtung', () => {
   it('die Middleware ruft withSpaNotFoundStatus nach context.next() auf', () => {
     const mw = read('functions/_middleware.ts');
     expect(mw).toMatch(/const response = await context\.next\(\);[\s\S]*withSpaNotFoundStatus\(/);
-    expect(mw).toContain("new URL('/404', context.request.url)");
+    expect(mw).toContain("new URL('/__not-found', context.request.url)");
   });
 
-  it('der Prerender schreibt dist/404.html, der Deploy überschreibt sie nicht', () => {
-    expect(read('scripts/prerender.mjs')).toContain("join(DIST, '404.html')");
-    expect(read('.github/workflows/deploy-cloudflare-pages.yml')).toContain('[ -f dist/404.html ] || cp dist/index.html dist/404.html');
+  it('der Prerender schreibt dist/__not-found.html und nie eine 404.html', () => {
+    // Eine Root-404.html schaltet auf Cloudflare Pages den SPA-Fallback ab:
+    // /app/dashboard lieferte an der Preview HTTP 404 statt 200.
+    const prerender = read('scripts/prerender.mjs');
+    expect(prerender).toContain("NOT_FOUND_FILE = '__not-found.html'");
+    expect(prerender).not.toMatch(/join\(DIST, '404\.html'\)/);
+    const deploy = read('.github/workflows/deploy-cloudflare-pages.yml');
+    expect(deploy).not.toContain('cp dist/index.html dist/404.html');
+    expect(deploy).toContain('[ -f dist/404.html ]');
   });
 });

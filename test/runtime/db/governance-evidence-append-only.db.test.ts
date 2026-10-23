@@ -1,5 +1,5 @@
 /**
- * governance_evidence append-only (20261016120000_governance_evidence_append_only.sql).
+ * governance_evidence append-only (20261023120000_governance_evidence_append_only.sql).
  *
  * Die Hash-Kette pro Mandant lag in einer Tabelle, die jeder mit
  * service_role nachträglich ändern oder löschen konnte. Geprüft wird —

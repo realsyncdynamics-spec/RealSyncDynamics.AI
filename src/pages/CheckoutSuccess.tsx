@@ -277,7 +277,7 @@ export function CheckoutSuccess() {
             <button
               type="button"
               onClick={() => setRetryKey((k) => k + 1)}
-              className="w-full mb-2 px-4 py-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 font-semibold rounded-card transition-colors"
+              className="w-full mb-2 px-4 py-2 bg-[#e8ddc8] hover:bg-[#f0e6d4] text-obsidian-950 font-semibold rounded-none transition-colors"
             >
               Erneut prüfen
             </button>

@@ -1,5 +1,15 @@
 # Runbook — SPA Fallback / Unknown-Route 404
 
+> **Stand 2026-10-23 — Edge ist Cloudflare Pages.** Die Probes unten stammen
+> aus der GitHub-Pages-Zeit (2026-05) und sind historisch. Heute gilt:
+> `public/_redirects` schickt unbekannte Pfade per `/* /index.html 200` auf die
+> Shell; `functions/_middleware.ts` setzt für HTML-Antworten auf Pfade ohne
+> Route aus `src/App.tsx` den Status **404** und liefert `dist/404.html`
+> (vorgerendert, `scripts/prerender.mjs`). Routenliste:
+> `src/config/spaRoutes.generated.ts` (`npm run sync:spa-routes`, läuft in
+> `build:base`). Prüfen: `curl -sI https://realsyncdynamicsai.de/gibtsnicht123`
+> → `HTTP/2 404`; bekannte SPA-Routen (`/app/dashboard`) bleiben 200.
+
 **Linked issue:** #269
 **Last external probe:** 2026-05-16 00:46 UTC
 **Owner:** infra / on-call

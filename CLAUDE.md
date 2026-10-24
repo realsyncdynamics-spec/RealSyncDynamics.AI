@@ -1,62 +1,49 @@
 # CLAUDE.md
 # RealSyncDynamicsAI — kurzer Arbeitskontext für Claude Code
 
-Diese Datei muss **kurz bleiben** (≤ ~150 Zeilen). Lange Ledger, Deploy-Zahlen und Audit-Kästen gehören **nicht** hierher — sie verbrennen Tokens in jeder Cloud-Session.
+Kurz halten (≤ ~150 Zeilen). Ledger, Deploy-Zahlen und Audit-Kästen gehören nach `docs/`.
+Budget-Ratsche: `npm run check:context` (CI) — Budget nicht anheben.
+Ebene 1 (globale Regeln, Profile, Freigaben) steht in `AGENTS.md` und wird hier importiert:
 
-Nur bei Bedarf öffnen (nie ganz reinziehen): `docs/ARCHITECTURE_CURRENT.md`,
-`docs/claude/CONTEXT_POLICY.md`. Budget-Ratsche: `npm run check:context` (CI) —
-Budget nicht anheben.
-
----
-
-## Produkt
-
-EU-souveräne AI-Governance-Runtime (DSGVO, EU AI Act). Live: https://realsyncdynamicsai.de
-Kein Chatbot. Governance-Schicht zwischen Mensch, Firma, Agenten, Daten.
+@AGENTS.md
 
 ## Stack (Ist)
 
 - Frontend: **Vite 6 + React 19 + TS strict + Tailwind 4**. **Kein Next.js, kein RSC, kein shadcn.**
 - Routing: `react-router-dom` in `src/App.tsx`
-- Backend: Supabase EU (Postgres + RLS + Edge Functions). Service-Role **nur** in Edge Functions.
+- Backend: Supabase EU (Postgres + RLS + Edge Functions). Service-Role **nur** serverseitig.
 - Deploy: **Cloudflare Pages** (`dist/` via GitHub Actions / wrangler). **Kein Vercel.**
 - AI: Anthropic / Google / OpenAI (Cloud) oder Ollama (eu_local). Jeder Call wird geloggt.
 - SiteOS Workspace: `/builder/:slug` (Puck-Editor). Erstbau `/unified-entry/transformation` leitet dorthin. Client sendet nur Reihenfolge + redaktionelle Felder an `siteos/edit`.
+- Voice-Runtime: `apps/agent-runtime` (eigene CI, eigener VPS-Deploy).
+- Live: https://realsyncdynamicsai.de
 
-## Website bauen — Scope
+## Kontext sparen
 
-Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
+- Vor der Arbeit das passende Profil lesen, nicht alle.
+- Nie einlesen: `.archive/`, `*.sql.bak`, Lockfiles, `*.generated.ts`, Reports (Read-Deny in `.claude/settings.json`; nicht per Shell umgehen). In `.archive/root-docs/` nur gezielt greppen.
+- Kein Repo-Root-Glob. `supabase/`, `platform/`, `services/`, `apps/`, `docs/` nur durchsuchen, wenn Auftrag oder Profil es verlangen.
+- Nur bei Bedarf und abschnittsweise öffnen: `docs/ARCHITECTURE_CURRENT.md`, `docs/claude/CONTEXT_POLICY.md`.
 
-- `src/pages/` (Public Pages, eager in `App.tsx`)
-- `src/components/` soweit Landing sie importiert
-- `src/index.css` (Design-Tokens stehen im `@theme`-Block), `src/config/seo.ts`
-- `packages/siteos-core` nur wenn der Builder betroffen ist
-
-**Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
-
-Startseite `/` = **Landing v6** (`src/pages/LandingV6.tsx`: Claude-Design „The Governance OS für DSGVO und EU AI Act“; Markup `src/components/landing/v6/LandingV6View.tsx`, Logik/Preise/CTA-Ziele `useLandingV6.ts`, Tokens `src/styles/landing-v6.css`). v5 bleibt unter `/design/landing-v5`. Beta-Schalter `src/config/beta.ts` (`VITE_BETA_PHASE=off` beendet die Testphase). Arbeitsplan: `docs/claude/BETA_V5_WORKPLAN.md` (nur den jeweiligen WP-Abschnitt lesen). v4 bleibt unter `/design/landing-v4`, v2 unter `/design/landing-v2`. Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026): Frontend und Landingpage gezielt verbessern. V6 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
-
-## Harte Verbote
-
-- Keine Secrets, keine Service-Role, keine Admin-Calls im Browser
-- Keine destruktiven Migrations
-- CLAUDE.md nicht wieder mit Messprotokollen aufblasen (`check:context`)
-- Kein `npm install` als Session-Hook in Cloud (siehe `.claude/hooks/session-start.sh`)
-- Lockfiles / `*.generated.ts` / Reports nicht per Read öffnen (`.claude/settings.json`)
-
-## Befehle (lokal / wenn nötig)
+## Befehle
 
 ```bash
-npm install          # einmalig, nicht pro Session
 npm run dev
+npm run lint         # tsc --noEmit
+npm test             # vitest
 npm run build        # Vite → dist/
 ```
 
-Nach UI-Arbeit: nur betroffene Dateien ändern, kleinen PR, keine Repo-weiten Refactors.
+Abhängigkeiten stellt das Setup-Skript der Cloud-Umgebung bereit (`docs/claude/CONTEXT_POLICY.md`).
+Agenten installieren nicht selbst: `npm install`/`npm ci` sind gesperrt, kein Ausweichen über `npx`, Scratchpad oder globale Pakete.
+Kein `npm install` als Session-Hook (`.claude/hooks/session-start.sh`).
 
 ## Git / Merge
 
-Kein Direkt-Push auf `main`. Squash-only, Branch per `npm run sync:main` auf `origin/main` rebasen. Konflikte lokal lösen, nicht im GitHub-Web-Editor. Playbook: `docs/MERGE_CONFLICT_CONCEPT.md`. Hygiene: `npm run merge:hygiene`.
+Kein Direkt-Push auf `main`. Squash-Merge. Branch aktualisieren durch Merge von `origin/main`
+(oder „Update branch“ per Merge). Rebase, Force-Push und `npm run sync:main` (rebased; `--push`
+= force-with-lease) nur mit Einzel-Freigabe (`.github/PR_TRIAGE_POLICY.md`). Konflikte lokal lösen,
+nicht im GitHub-Web-Editor. Playbook: `docs/MERGE_CONFLICT_CONCEPT.md`. Hygiene: `npm run merge:hygiene`.
 
 ## MCP
 

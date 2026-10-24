@@ -2,6 +2,8 @@
 
 **Stand:** 2026-08-13
 
+> **Hinweis 24.10.2026:** Die Angaben zur Startseite (`MainLanding.tsx`) sind veraltet. Maßgeblich ist das Element von `<Route path="/">` in `src/App.tsx` (Stand 24.10.2026: `src/pages/LandingV6.tsx`). Die übrigen Abschnitte wurden dabei nicht neu geprüft.
+
 This document describes the current product shape after the landing-page integration work. The key architectural rule is: **the landing page is an acquisition and product-entry surface; the Governance Runtime remains the core.**
 
 ## 1. Product layers
@@ -63,7 +65,7 @@ This document describes the current product shape after the landing-page integra
 RealSyncDynamics.AI/
 ├── src/                         # Main Vite/React product SPA
 │   ├── pages/                   # Public pages + product entry flows
-│   │   ├── MainLanding.tsx      # Current public homepage
+│   │   ├── MainLanding.tsx      # Former homepage (see note above)
 │   │   ├── optimizer/           # Claude Code Optimizer flow
 │   │   ├── product-entry-points/# Scan/chat/phone entry points
 │   │   └── ...
@@ -108,7 +110,7 @@ RealSyncDynamics.AI/
 
 ## 3. Landing-page product surface
 
-`src/pages/MainLanding.tsx` is intentionally thin at the product boundary. It owns positioning, visual composition, the Free Audit CTA and the initial domain handoff. The reusable tool cards live in `src/components/landing/LandingChannelTools.tsx`.
+_(Veraltet, siehe Hinweis oben.)_ `src/pages/MainLanding.tsx` is intentionally thin at the product boundary. It owns positioning, visual composition, the Free Audit CTA and the initial domain handoff. The reusable tool cards live in `src/components/landing/LandingChannelTools.tsx`.
 
 The current tool surface is:
 

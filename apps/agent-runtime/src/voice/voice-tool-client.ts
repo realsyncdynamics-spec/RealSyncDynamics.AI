@@ -3,10 +3,13 @@
  *
  * Die Session-Runtime ruft nur die Policy-Kante auf — keine Tool-Ausführung.
  * Bearer-Token und Base-URL kommen aus der Umgebung (injizierbar für Tests).
+ * Session-Zustand und Einwilligung gehen nicht mit: /voice-tool liest sie
+ * serverseitig aus der laufenden Session (SEC-05).
  */
 
-import { VOICE_AGENT_ID, type VoiceConsent, type VoicePolicyDecision, type VoiceVerdict } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoicePolicyDecision, type VoiceVerdict } from '../voice-types.js';
 
+/** Startwerte einer Session (Kill-Switch, Zähler, Limits) — nur für startSession. */
 export interface VoiceToolSessionSnapshot {
   killSwitch: boolean;
   turnCount: number;
@@ -20,8 +23,6 @@ export interface VoiceToolHttpRequest {
   requestId: string;
   tool: string;
   args: Record<string, unknown>;
-  session: VoiceToolSessionSnapshot;
-  consent: VoiceConsent | null;
 }
 
 export type VoiceToolHttpOutcome =
@@ -81,8 +82,6 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
             requestId: request.requestId,
             tool: request.tool,
             args: request.args,
-            session: request.session,
-            consent: request.consent,
           }),
           signal: controller.signal,
         });

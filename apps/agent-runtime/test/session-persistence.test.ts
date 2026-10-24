@@ -506,3 +506,66 @@ describe('SupabaseVoiceStore — Session-Mapping (Mock-Client)', () => {
     assert.equal(ctx!.tenantId, TENANT);
   });
 });
+
+describe('resolveToolPolicyContext — Kill-Switch aus dem Store (SEC-05)', () => {
+  /** Liest während des /voice-tool-Aufrufs den Policy-Kontext wie das Gateway. */
+  function capturingHarness(store = createMemoryVoiceStore()) {
+    const contexts: Array<Awaited<ReturnType<VoiceSessionRuntime['resolveToolPolicyContext']>>> = [];
+    const h = persistHarness({
+      store,
+      voiceToolImpl: async (req) => {
+        contexts.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool));
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    return { h, contexts };
+  }
+
+  it('Kill-Switch, der nach dem Start in voice_sessions gesetzt wird, greift beim nächsten Call', async () => {
+    const c = capturingHarness();
+    seedActiveConfig(c.h.store);
+    const { session, socket } = await openPersisted(c.h);
+
+    socket.server(functionCall('call_1', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    assert.equal(c.contexts[0]?.session.killSwitch, false);
+
+    await c.h.store.updateSessionStatus(TENANT, session.sessionId, { killSwitch: true });
+    socket.server(functionCall('call_2', 'lookup_kb', { query: 'b' }));
+    await wait(20);
+    assert.equal(c.contexts[1]?.session.killSwitch, true);
+  });
+
+  it('Lesefehler oder fehlende Zeile → Kill-Switch gilt als aktiv (fail-closed)', async () => {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    const c = capturingHarness(store);
+    const { socket } = await openPersisted(c.h);
+
+    store.getSession = async () => {
+      throw new Error('http_503');
+    };
+    socket.server(functionCall('call_err', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    assert.equal(c.contexts[0]?.session.killSwitch, true);
+
+    store.getSession = async () => null;
+    socket.server(functionCall('call_gone', 'lookup_kb', { query: 'b' }));
+    await wait(20);
+    assert.equal(c.contexts[1]?.session.killSwitch, true);
+  });
+
+  it('Mandant, Zähler und Limits kommen aus der Session, nicht vom Caller', async () => {
+    const c = capturingHarness();
+    seedActiveConfig(c.h.store);
+    const { session, socket } = await openPersisted(c.h);
+    socket.server(functionCall('call_1', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    const ctx = c.contexts[0]!;
+    assert.equal(ctx.session.sessionId, session.sessionId);
+    assert.equal(ctx.session.tenantId, TENANT);
+    assert.equal(ctx.session.toolCount, 0);
+    assert.deepEqual(ctx.session.rateLimit, { maxTurns: 20, maxTools: 8 });
+    assert.equal(ctx.session.grant?.botId, BOT);
+  });
+});

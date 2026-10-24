@@ -139,6 +139,21 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
 - Unbekannte Tools, kaputte Args, Timeout/Fehler von `/voice-tool` →
   fail-closed `denied` an das Modell.
 - Kein `voice_channels` / `bot_agents`.
+- **Policy-Zustand nur serverseitig (SEC-05).** Der `/voice-tool`-Body trägt
+  nur `tenantId`, `agentId`, `sessionId`, `requestId`, `tool`, `args`
+  (`session`/`consent` älterer Clients werden verworfen). Die Runtime meldet
+  jeden Call vor dem Aufruf an; `/voice-tool` entscheidet nur über so einen
+  angemeldeten Call und liest Zähler, Rate-Limit und Tool-Rechte aus der
+  laufenden Session, den Kill-Switch vor jeder Entscheidung frisch aus
+  `voice_sessions.kill_switch` (Lesefehler → aktiv). Alles andere →
+  `403 voice_session_unknown`.
+- **Einwilligung gilt als nicht nachgewiesen**, bis es einen echten
+  Einwilligungsnachweis gibt: Die beim Start behauptete Einwilligung zählt
+  nicht, Tool-Calls scheitern an der Consent-Prüfung (`verifyConsent` in den
+  Runtime-Optionen, Default lehnt ab).
+- **Einzelinstanz (SEC-06).** Runtime und `/voice-tool` müssen im selben
+  Prozess laufen; mehrere Instanzen oder ein Neustart führen zu
+  `voice_session_unknown` (fail-closed, keine Offenlegung).
 
 ### Tool-Gateway (PR 4)
 
@@ -326,7 +341,9 @@ curl -X POST http://localhost:8787/run-agent \
     "requestId":"req_xyz"
   }'
 
-# Voice: lookup_kb → ALLOW
+# Voice: direkter Aufruf ohne von der Runtime angemeldeten Call
+# → 403 voice_session_unknown (SEC-05). Entscheidungen gibt es nur für
+# tool.calls aus einer laufenden Session dieses Prozesses.
 curl -X POST http://localhost:8787/voice-tool \
   -H "Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" \
   -H "Content-Type: application/json" \
@@ -336,9 +353,7 @@ curl -X POST http://localhost:8787/voice-tool \
     "sessionId":"sess_1",
     "requestId":"req_voice_1",
     "tool":"lookup_kb",
-    "args":{"query":"öffnungszeiten"},
-    "session":{"killSwitch":false,"turnCount":1,"toolCount":0,"rateLimit":{"maxTurns":20,"maxTools":8}},
-    "consent":{"purposes":["execute_tools","store_evidence"],"withdrawnAt":null}
+    "args":{"query":"öffnungszeiten"}
   }'
 ```
 
@@ -349,8 +364,9 @@ curl -X POST http://localhost:8787/voice-tool \
 | `ALLOW` | 200 | `{ ok: true, reviewRequired: false }` |
 | `REQUIRE_CONFIRMATION` | 200 | `{ ok: true, reviewRequired: true }` |
 | `DENY` | 403 | `{ ok: false, reason: denied_by_channel_policy }` |
+| — (kein angemeldeter Call) | 403 | `{ ok: false, reason: voice_session_unknown }` |
 
-`denied_by_channel_policy` ist additiv in `DenyReason`. `evaluate()`
+`denied_by_channel_policy` und `voice_session_unknown` sind additiv in `DenyReason`. `evaluate()`
 erzeugt ihn nicht.
 
 ## Sicherheit

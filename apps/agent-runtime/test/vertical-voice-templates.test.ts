@@ -121,6 +121,45 @@ describe('vertical voice template safety', () => {
   });
 });
 
+describe('runtime validation of untrusted JSON (review SEC-04)', () => {
+  /** Simuliert einen Request-Body: Typen gelten zur Laufzeit nicht. */
+  const forged = (patch: Record<string, unknown>): VerticalVoiceAgentConfig =>
+    ({ ...base, ...patch }) as unknown as VerticalVoiceAgentConfig;
+
+  const cases: Array<[string, VerticalVoiceAgentConfig, string]> = [
+    ['unknown lifecycle', forged({ lifecycle: 'superadmin' }), 'Unbekannter Lebenszyklus-Status.'],
+    ['lifecycle as number', forged({ lifecycle: 1 }), 'Unbekannter Lebenszyklus-Status.'],
+    ['empty channels', forged({ channels: [] }), 'Kanäle ungültig: mindestens ein bekannter Kanal, keine Duplikate.'],
+    ['unknown channel', forged({ channels: ['fax'] }), 'Kanäle ungültig: mindestens ein bekannter Kanal, keine Duplikate.'],
+    ['duplicate channel', forged({ channels: ['web', 'web'] }), 'Kanäle ungültig: mindestens ein bekannter Kanal, keine Duplikate.'],
+    ['channels as string', forged({ channels: 'web' }), 'Kanäle ungültig: mindestens ein bekannter Kanal, keine Duplikate.'],
+    ['unknown tool', forged({ enabledTools: ['lookup_kb', 'drop_tables'] }), 'Tool-Liste ungültig.'],
+    ['tools as object', forged({ enabledTools: { 0: 'lookup_kb' } }), 'Tool-Liste ungültig.'],
+    ['recording as string', forged({ recordingEnabled: 'false' }), 'Feld recordingEnabled muss true oder false sein.'],
+    ['retention as string', forged({ retentionDays: '7' }), 'Feld retentionDays muss eine Zahl sein.'],
+    ['tenantId as number', forged({ tenantId: 42 }), 'Feld tenantId fehlt oder ist kein Text.'],
+    ['missing agentId', forged({ agentId: undefined }), 'Feld agentId fehlt oder ist kein Text.'],
+    ['handoff as object', forged({ humanHandoffContact: { email: 'x' } }), 'Feld humanHandoffContact muss Text oder null sein.'],
+  ];
+
+  for (const [name, config, expected] of cases) {
+    it(`rejects ${name} without throwing and without tools`, () => {
+      assert.ok(validateVerticalVoiceAgent(config).includes(expected), name);
+      assert.deepEqual(effectiveVoiceTools(config), []);
+      assert.deepEqual(toVoiceBotConfigFields(config), { language: 'de-DE', offered_tools: [], status: 'draft' });
+    });
+  }
+
+  it('rejects non-object input', () => {
+    for (const input of [null, 'config', 7, []]) {
+      const config = input as unknown as VerticalVoiceAgentConfig;
+      assert.deepEqual(validateVerticalVoiceAgent(config), ['Konfiguration ist kein Objekt.']);
+      assert.deepEqual(effectiveVoiceTools(config), []);
+      assert.equal(toVoiceBotConfigFields(config).status, 'draft');
+    }
+  });
+});
+
 describe('law office template (elevated data sensitivity)', () => {
   const kanzlei: VerticalVoiceAgentConfig = {
     ...base,
@@ -138,6 +177,24 @@ describe('law office template (elevated data sensitivity)', () => {
     );
     assert.deepEqual(effectiveVoiceTools(kanzlei), []);
     assert.deepEqual(effectiveVoiceTools({ ...kanzlei, privacyReviewApprovedAt: 'kein Datum' }), []);
+  });
+
+  it('rejects timestamps that Date.parse alone would accept (review SEC-02)', () => {
+    const now = new Date('2026-10-24T12:00:00.000Z');
+    for (const value of [
+      '1',
+      '2026',
+      '2026-02-30T00:00:00Z',
+      '2026-10-20T09:00:00+02:00',
+      '2026-10-20',
+      '2099-01-01T00:00:00.000Z',
+    ]) {
+      assert.deepEqual(effectiveVoiceTools({ ...kanzlei, privacyReviewApprovedAt: value }, now), [], value);
+    }
+    assert.deepEqual(
+      effectiveVoiceTools({ ...kanzlei, privacyReviewApprovedAt: '2026-10-20T09:00:00Z' }, now),
+      ['lookup_kb', 'create_ticket', 'handoff_human'],
+    );
   });
 
   it('allows a draft without review and activation after review', () => {

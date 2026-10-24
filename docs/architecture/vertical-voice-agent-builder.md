@@ -80,7 +80,7 @@ ausgeführt · `BLOCKIERT` = wartet auf Entscheidung oder Freigabe.
 | Voice-Policy, 8 Checks, Verdict `ALLOW`/`DENY`/`REQUIRE_CONFIRMATION`, `decidedBy: 'policy-engine'` | `apps/agent-runtime/src/voice-policy.ts` (`evaluateVoiceToolRequest`) | BESTÄTIGT (13 Tests `test/voice-policy.test.ts` lokal grün) |
 | Tool-Katalog (5 Tools, Risiko, Default-Verdict) | `apps/agent-runtime/src/voice-tools.ts` | BESTÄTIGT |
 | Nora als Referenz-Agent (`agent_voice_nora_v01`) | `apps/agent-runtime/src/voice-types.ts` | BESTÄTIGT |
-| Permission-Check ist an `VOICE_AGENT_ID` gebunden; Bots unterscheiden sich nur über `offered_tools` | `voice-policy.ts` (Check `permission`), `voice/session-runtime.ts` (`intersectOfferedTools`) | TEILWEISE — reicht für Vorlagen, kein Agent-spezifisches Tool-Recht in der Policy |
+| Permission-Check ist an `VOICE_AGENT_ID` gebunden; Bots unterscheiden sich nur über `offered_tools` | `voice-policy.ts` (Check `permission`), `voice/session-runtime.ts` (`intersectOfferedTools`) | TEILWEISE — Vorlagen sind **keine** Autorisierungsgrenze; kein agent-spezifisches Tool-Recht in der Policy (SEC-01) |
 | Tool-Gateway: Policy → Ausführung → Verifikation → Evidenz, fail-closed ohne Store | `apps/agent-runtime/src/voice/tool-gateway.ts` | TEILWEISE (Tests lokal NICHT GEPRÜFT, s. u.) |
 | Echte Executor nur für `schedule_appointment` (→ `bot_appointments`); übrige Tools `not_configured` | `apps/agent-runtime/src/voice/tool-executors.ts` | TEILWEISE |
 | Realtime-Provider-Adapter (Grok), Provider-Interface | `apps/agent-runtime/src/providers/grok-provider.ts`, `packages/agent-runtime-contracts/src/voice-provider.ts` | TEILWEISE — ein Adapter, keine EU-/lokale Alternative |
@@ -88,7 +88,7 @@ ausgeführt · `BLOCKIERT` = wartet auf Entscheidung oder Freigabe.
 | Datenmodell: `voice_bot_configs`, `voice_number_bindings`, `voice_sessions`, `voice_tool_requests`, `voice_executions`, `voice_evidence`; RLS Lesen = Tenant-Mitglied, Schreiben Konfiguration = Owner/Admin, Rest = Service-Role; Trigger erzwingen Reihenfolge Entscheidung → Ausführung → Evidenz | `supabase/migrations/20260928130000_voice_runtime_foundation.sql` | TEILWEISE — `status` kennt kein `review`; kein Feld für Vorlage, Datenschutzprüfung, Retention, Handoff-Kontakt |
 | Dashboard `/app/voice` (read-only Sessions, Evidenz) hinter `AppGate` | `src/features/governance/voice/*`, `src/App.tsx` | TEILWEISE — keine Konfiguration, kein Kill-Switch-Schalter |
 | Telefonie-Webhook (Twilio-Signatur, Tenant nur aus `voice_number_bindings`, PEP `enforceBotMessage`) | `supabase/functions/bot-voice-webhook/index.ts` | TEILWEISE — Antwortpfad über `runAiTool`, nicht über den Tool-Gateway; Produktivbetrieb NICHT GEPRÜFT |
-| Branchenvorlagen + Validierung + DB-Abbildung | `apps/agent-runtime/src/vertical-voice-templates.ts` | BESTÄTIGT (20 Tests `test/vertical-voice-templates.test.ts`) |
+| Branchenvorlagen + Laufzeitvalidierung + DB-Abbildung (nicht an die Runtime angebunden) | `apps/agent-runtime/src/vertical-voice-templates.ts` | BESTÄTIGT (35 Tests `test/vertical-voice-templates.test.ts`) |
 
 ### Befunde im Foundation-Branch (in diesem PR behoben)
 
@@ -103,11 +103,23 @@ ausgeführt · `BLOCKIERT` = wartet auf Entscheidung oder Freigabe.
 3. `effectiveVoiceTools` gab aktiven, aber ungültigen Konfigurationen (z. B. mit
    Telefonie oder Aufzeichnung) Tools zurück → jetzt fail-closed.
 
+### Review-Befunde zu PR #1974 (Stand 24.10.2026)
+
+Phase 1 ist eine Foundation, **keine** Runtime-Autorisierung und keine
+Produktivfreigabe für Branchenagenten.
+
+| ID | Befund | Schwere | In diesem PR | Offen / wo |
+|---|---|---|---|---|
+| SEC-01 | Voice-Policy prüft Tool-Rechte gegen die feste Nora-ID und den globalen Katalog, nicht gegen eine serverseitig aufgelöste Agent-/Tenant-Konfiguration. Vorlagen beschränken nur, was angeboten wird. | hoch (bestehende Lücke) | nur dokumentiert, auch im Code-Kommentar von `effectiveVoiceTools` | Paket 4: Security-PR an `voice-policy.ts` mit Cross-Agent- und Cross-Tenant-Tests, Einzel-Freigabe |
+| SEC-02 | Kanzlei-Freigabe hing an `Date.parse(privacyReviewApprovedAt)`. Das akzeptierte auch `"1"`, `"2026"`, unmögliche Kalenderdaten und Zeitpunkte in der Zukunft. | mittel | Nur kanonische, vergangene UTC-Zeitpunkte; Tests für alle genannten Fälle | Ein Zeitstempel beweist keine Prüfung. Nötig ist eine serverseitig geführte Freigabe (Prüfer-ID, Ergebnis, Konfigurationsversion, Evidence-Referenz), nur von Owner/Admin schreibbar → Paket 2 |
+| SEC-03 | `toVoiceBotConfigFields` schützt nur seinen eigenen Schreibpfad. Die bestehende RLS (`voice_bot_configs admin-insert`/`admin-update`) erlaubt Owner/Admin, `status = 'active'` und beliebige `offered_tools` direkt zu schreiben; Vorlage, Freigabe, Retention und Handoff sind nicht persistiert. | mittel (bestehende Lücke) | dokumentiert | Paket 2: Spalten und Aktivierung nur über eine serverseitige Prüfung (Edge Function oder Trigger), Freigabehistorie, RLS-Test mit zwei Tenants |
+| SEC-04 | Keine Laufzeitprüfung von `lifecycle`, `channels`, `enabledTools` und Feldtypen; leere Kanal-Liste erlaubt; `trim()` auf Nicht-Text warf. | mittel | **behoben:** Formprüfung vor jeder inhaltlichen Prüfung, nie Exception, keine Tools und Status `draft` bei jedem Formfehler; 14 Negativtests mit manipuliertem JSON | Schema am API-Rand (zod im Gateway bzw. in der Edge Function) kommt mit Paket 2/3 |
+
 ### Fehlende Komponenten, Prioritäten, PR-Grenzen
 
 | # | Paket | Abhängigkeit | Security-Gate | Tests | PR-Grenze | Status |
 |---|---|---|---|---|---|---|
-| 1 | Foundation (dieser PR) | — | Fail-closed-Vorlagen, kein Policy-Eingriff | `node --test test/vertical-voice-templates.test.ts` | nur `apps/agent-runtime/src/vertical-voice-templates.ts`, Test, Doku | in Review |
+| 1 | Foundation (dieser PR) | — | Fail-closed-Vorlagen, kein Policy-Eingriff | `node --test test/vertical-voice-templates.test.ts` | nur `apps/agent-runtime/src/vertical-voice-templates.ts`, Test, Doku | in Review (bedingt freigabefähig als Foundation) |
 | 2 | Migration: Vorlagen-Felder an `voice_bot_configs` (`template_id`, `privacy_review_approved_at`, `retention_days`, `handoff_contact`, Status `review`) — additiv | 1 | RLS unverändert prüfen, kein Service-Role im Client | Migration-Lint, RLS-Test mit zwei Tenants | **eigener Migrations-PR, Einzel-Freigabe** | BLOCKIERT (Freigabe) |
 | 3 | Agent-Builder-UI `/app/voice/builder` (Wizard, Vorschau, Validierung clientseitig = Anzeige, serverseitig = Entscheidung) | 1, für Speichern 2 | Kein Schreiben ohne Owner/Admin-RLS; keine Secrets | Vitest für Wizard-Logik, Playwright-Smoke | `src/features/governance/voice/builder/*` + eine Zeile in `src/App.tsx` (Hotspot → seriell) | offen |
 | 4 | Policy: Agent-spezifisches Tool-Recht statt fester `VOICE_AGENT_ID` | 2 | **Security-PR**, unabhängiges Review | bestehende 13 Policy-Tests + Cross-Agent-/Cross-Tenant-Fälle | nur `voice-policy.ts` + Tests | BLOCKIERT (Security-Freigabe) |

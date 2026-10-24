@@ -521,7 +521,7 @@ describe('resolveToolPolicyContext — Kill-Switch aus dem Store (SEC-05)', () =
     const h = persistHarness({
       store,
       voiceToolImpl: async (req) => {
-        contexts.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool));
+        contexts.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args));
         return { ok: false, reason: 'test_stop' };
       },
     });

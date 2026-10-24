@@ -51,6 +51,7 @@ import {
   type VoiceToolGateway,
 } from './tool-gateway.js';
 import {
+  canonicalToolArgs,
   createVoiceToolClient,
   sanitizeToolArgs,
   type VoiceToolClient,
@@ -135,6 +136,8 @@ export interface SessionRuntimeOptions {
 
 interface PendingToolCall {
   readonly tool: VoiceToolName;
+  /** canonicalToolArgs der Args, die die Runtime an /voice-tool schickt und danach ausführt. */
+  readonly args: string;
   /** toolCount vor diesem Call, reserviert vor dem Await. */
   readonly toolCount: number;
   /** true nach dem ersten resolveToolPolicyContext — jede Anmeldung bekommt höchstens eine Entscheidung. */
@@ -239,7 +242,9 @@ export class VoiceSessionRuntime {
   /**
    * Policy-Eingabe für /voice-tool, ausschließlich serverseitig (SEC-01, SEC-05):
    *  - nur für einen Call, den diese Runtime gerade selbst angemeldet hat
-   *    (sessionId + requestId + tool); sonst undefined → DENY
+   *    (sessionId + requestId + tool + kanonische args); sonst undefined → DENY
+   *  - abweichende args werden vor dem Verbrauch abgelehnt: keine Entscheidung,
+   *    die Anmeldung bleibt für den echten Call offen
    *  - höchstens einmal pro Anmeldung: der erste Aufruf verbraucht sie,
    *    jeder weitere (Replay, paralleler Doppel-Request) → undefined
    *  - nicht mehr nach Beginn eines Abbruchs
@@ -251,10 +256,13 @@ export class VoiceSessionRuntime {
     sessionId: string,
     requestId: string,
     tool: string,
+    args: Record<string, unknown>,
   ): Promise<VoiceToolPolicyContext | undefined> {
     const live = this.sessions.get(sessionId);
     const pending = live?.pendingToolCalls.get(requestId);
     if (!live || live.closed || !pending || pending.tool !== tool || pending.resolved) return undefined;
+    // Policy hängt von den args ab (PII, priority): andere args → kein Kontext.
+    if (canonicalToolArgs(args) !== pending.args) return undefined;
     // Synchron vor dem ersten Await verbraucht: zwei gleichzeitige Requests
     // können nicht beide eine Entscheidung bekommen.
     pending.resolved = true;
@@ -643,7 +651,8 @@ export class VoiceSessionRuntime {
     }
 
     const clean = sanitizeToolArgs(rawArgs as Record<string, unknown>);
-    if (clean === null) {
+    const boundArgs = clean === null ? null : canonicalToolArgs(clean);
+    if (clean === null || boundArgs === null) {
       return deniedResult('invalid_arguments', callId);
     }
 
@@ -658,7 +667,12 @@ export class VoiceSessionRuntime {
     // Reservierung vor dem Await: parallele Calls bekommen verschiedene
     // toolCounts, und /voice-tool kennt nur diesen angemeldeten Call (SEC-05).
     live.usedRequestIds.add(requestId);
-    live.pendingToolCalls.set(requestId, { tool: call.name, toolCount: live.toolCount, resolved: false });
+    live.pendingToolCalls.set(requestId, {
+      tool: call.name,
+      args: boundArgs,
+      toolCount: live.toolCount,
+      resolved: false,
+    });
     live.toolCount += 1;
 
     let outcome: VoiceToolHttpOutcome;
@@ -796,6 +810,7 @@ function defaultVoiceToolTimeoutMs(): number {
 
 export { createWsSocketFactory } from './ws-socket-factory.js';
 export {
+  canonicalToolArgs,
   createVoiceToolClient,
   sanitizeToolArgs,
   type VoiceToolClient,

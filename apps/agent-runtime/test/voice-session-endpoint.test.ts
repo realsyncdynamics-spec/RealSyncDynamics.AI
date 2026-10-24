@@ -24,6 +24,7 @@ import {
   createVoiceToolGateway,
   type VoiceConsentVerifier,
   type VoiceToolHttpOutcome,
+  type VoiceToolHttpRequest,
 } from '../src/voice/session-runtime.js';
 import type { VoiceSessionConfig, VoiceProviderSession } from '../src/voice-provider-types.js';
 
@@ -108,6 +109,8 @@ async function startHarness(overrides: {
   /** Runtime ruft /voice-tool dieses Servers echt per HTTP auf. */
   loopback?: boolean;
   verifyConsent?: VoiceConsentVerifier;
+  /** Läuft nach der Anmeldung des Calls, vor dem echten /voice-tool-Request (nur mit loopback). */
+  beforeVoiceTool?: (req: VoiceToolHttpRequest) => Promise<void>;
 } = {}): Promise<Harness> {
   resetProcessVoiceRuntimeForTests();
   const store = createMemoryVoiceStore();
@@ -179,6 +182,7 @@ async function startHarness(overrides: {
     voiceToolClient: {
       evaluate: async (req) => {
         if (!overrides.loopback) return { ok: false, reason: 'unused' };
+        await overrides.beforeVoiceTool?.(req);
         const outcome = await createVoiceToolClient({ baseUrl, getApiToken: () => TOKEN }).evaluate(req);
         outcomes.push(outcome);
         return outcome;
@@ -453,13 +457,19 @@ describe('POST /voice-tool — Rechte und Zustand nur aus der Session (SEC-01, S
     return { sessionId: String(res.json.session_id), socket: h.sockets.at(-1)! };
   }
 
-  async function callTool(h: Harness, socket: MockSocket, callId: string, tool: string) {
+  async function callTool(
+    h: Harness,
+    socket: MockSocket,
+    callId: string,
+    tool: string,
+    args: Record<string, unknown> = { query: 'x' },
+  ) {
     const before = h.outcomes.length;
     socket.server({
       type: 'response.function_call_arguments.done',
       call_id: callId,
       name: tool,
-      arguments: JSON.stringify({ query: 'x' }),
+      arguments: JSON.stringify(args),
     });
     for (let i = 0; i < 100 && h.outcomes.length === before; i += 1) {
       await new Promise<void>((r) => setTimeout(r, 5));
@@ -581,6 +591,60 @@ describe('POST /voice-tool — Rechte und Zustand nur aus der Session (SEC-01, S
       assert.equal(second?.ok, false);
       assert.equal(second?.decision?.verdict, 'DENY');
       assert.equal(trace(second).find((s) => s.check === 'kill_switch')?.result, 'fail');
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('Manipulation mit gleicher sessionId, requestId und Tool, aber anderen Args → 403 ohne Entscheidung; echter Call → ALLOW', async () => {
+    const args = { query: 'Öffnungszeiten', filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } } };
+    const forgedArgs: Array<Record<string, unknown>> = [
+      // REQUIRE_CONFIRMATION/PII-Pfad wäre bei Entscheidung erreichbar
+      { ...args, priority: 'high' },
+      { ...args, query: 'Max Mustermann, IBAN DE89370400440532013000' },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b', 'c'] } } },
+      { ...args, filter: { lang: 'en', scope: { site: 'hq', tags: ['a', 'b'] } } },
+      {},
+    ];
+    const forged: Array<{ status: number; json: Record<string, unknown> }> = [];
+    let outcomesBefore = -1;
+    const h = await startHarness({
+      loopback: true,
+      verifyConsent: trustClaimed,
+      beforeVoiceTool: async (req) => {
+        for (const other of forgedArgs) {
+          const body = {
+            tenantId: req.tenantId,
+            agentId: 'agent_voice_nora_v01',
+            sessionId: req.sessionId,
+            requestId: req.requestId,
+            tool: req.tool,
+            args: other,
+          };
+          forged.push(await postJson(h.baseUrl, '/voice-tool', body, auth));
+        }
+        outcomesBefore = h.outcomes.length;
+      },
+    });
+    try {
+      const { sessionId, socket } = await startSession(h, BOT);
+      const outcome = await callTool(h, socket, 'call_bound', 'lookup_kb', args);
+
+      assert.equal(forged.length, forgedArgs.length);
+      for (const res of forged) {
+        assert.equal(res.status, 403);
+        assert.equal(res.json.reason, 'voice_session_unknown');
+        assert.equal(res.json.decision, undefined, 'keine Policy-Entscheidung');
+        assert.equal(res.json.verdict, undefined);
+        assert.equal((res.json.auditEvent as { status?: string } | undefined)?.status, 'denied');
+      }
+      assert.equal(outcomesBefore, 0, 'Fehlversuche laufen vor dem echten Request');
+
+      // Anmeldung nicht verbraucht: der echte Call bekommt seine Entscheidung.
+      assert.equal(outcome?.ok, true);
+      assert.equal(outcome?.decision?.verdict, 'ALLOW');
+      assert.equal(outcome?.decision?.requestId, 'vt_call_bound');
+      assert.equal(outcome?.decision?.sessionId, sessionId);
     } finally {
       await new Promise<void>((r) => h.server.close(() => r()));
     }

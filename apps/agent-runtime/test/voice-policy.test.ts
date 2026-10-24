@@ -5,6 +5,7 @@ import { evaluate } from '../src/policy-engine.js';
 import { evaluateVoiceToolRequest, toGatewayDecision } from '../src/voice-policy.js';
 import {
   VOICE_AGENT_ID,
+  VOICE_AGENT_TOOLS,
   type VoiceConsent,
   type VoiceSessionState,
   type VoiceToolName,
@@ -21,6 +22,7 @@ function session(
     turnCount: 1,
     toolCount: 0,
     rateLimit: { maxTurns: 20, maxTools: 8 },
+    grant: { agentId: VOICE_AGENT_ID, botId: 'bot_mueller', tools: VOICE_AGENT_TOOLS },
     ...overrides,
   };
 }
@@ -156,6 +158,73 @@ describe('evaluateVoiceToolRequest', () => {
     });
     assert.equal(d.verdict, 'DENY');
     assert.match(d.reason, /Consent/);
+  });
+
+  it('SEC-01: ohne serverseitigen Grant wird jedes Tool abgelehnt', () => {
+    for (const tool of VOICE_AGENT_TOOLS) {
+      const d = evaluateVoiceToolRequest({
+        session: session({ grant: null }),
+        request: request(tool, {}),
+        consent: consent(),
+      });
+      assert.equal(d.verdict, 'DENY', tool);
+      assert.equal(d.trace.find((s) => s.check === 'permission')?.result, 'fail');
+    }
+  });
+
+  it('SEC-01: Bot-Grant begrenzt die Tools, auch für die Nora-ID', () => {
+    const grant = { agentId: VOICE_AGENT_ID, botId: 'bot_kanzlei', tools: ['lookup_kb', 'handoff_human'] as const };
+    const allowed = evaluateVoiceToolRequest({
+      session: session({ grant }),
+      request: request('lookup_kb', { query: 'x' }),
+      consent: consent(),
+    });
+    assert.equal(allowed.verdict, 'ALLOW');
+    for (const tool of ['create_ticket', 'schedule_appointment', 'export_transcript'] as const) {
+      const d = evaluateVoiceToolRequest({
+        session: session({ grant }),
+        request: request(tool, {}),
+        consent: consent(),
+      });
+      assert.equal(d.verdict, 'DENY', tool);
+      assert.match(d.trace.find((s) => s.check === 'permission')?.detail ?? '', /bot_kanzlei/);
+    }
+  });
+
+  it('SEC-01: fremde Agent-ID im Request trifft den Session-Grant nicht', () => {
+    const d = evaluateVoiceToolRequest({
+      session: session(),
+      request: request('lookup_kb', { query: 'x' }, { agentId: 'agent_voice_other' }),
+      consent: consent(),
+    });
+    assert.equal(d.verdict, 'DENY');
+    assert.match(d.reason, /Agent nicht an diese Session gebunden/);
+  });
+
+  it('SEC-01: Grant mit Tool außerhalb des Katalogs öffnet nichts', () => {
+    const d = evaluateVoiceToolRequest({
+      session: session({
+        grant: {
+          agentId: VOICE_AGENT_ID,
+          botId: 'bot_mueller',
+          tools: ['delete_all_data' as VoiceToolName],
+        },
+      }),
+      request: request('delete_all_data' as VoiceToolName, {}),
+      consent: consent(),
+    });
+    assert.equal(d.verdict, 'DENY');
+  });
+
+  it('SEC-01: Grant von Mandant A gilt nicht für Requests von Mandant B', () => {
+    const d = evaluateVoiceToolRequest({
+      session: session({ tenantId: 'tenant_a' }),
+      request: request('lookup_kb', { query: 'x' }, { tenantId: 'tenant_b' }),
+      consent: consent(),
+    });
+    assert.equal(d.verdict, 'DENY');
+    assert.match(d.reason, /Tenant-Isolation/);
+    assert.equal(d.trace.some((s) => s.check === 'permission'), false);
   });
 
   it('mappt DENY auf den Gateway ohne evaluate() zu ändern', () => {

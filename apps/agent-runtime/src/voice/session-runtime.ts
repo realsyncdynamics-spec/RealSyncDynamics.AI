@@ -34,7 +34,12 @@ import {
   type VoiceToolDefinition,
   type VoiceToolResult,
 } from '../voice-provider-types.js';
-import { VOICE_AGENT_ID, type VoiceConsent, type VoiceToolName } from '../voice-types.js';
+import {
+  VOICE_AGENT_ID,
+  type VoiceConsent,
+  type VoiceToolGrant,
+  type VoiceToolName,
+} from '../voice-types.js';
 import { VOICE_TOOLS } from '../voice-tools.js';
 import { createSupabaseVoiceStoreFromEnv } from './supabase-voice-store.js';
 import {
@@ -181,6 +186,23 @@ export class VoiceSessionRuntime {
     return live
       ? { tenantId: live.tenantId, botId: live.botId, sessionId: live.sessionId }
       : undefined;
+  }
+
+  /**
+   * Serverseitige Tool-Freigabe für /voice-tool (SEC-01): Mandant und Tools
+   * aus der laufenden Session dieses Prozesses. Unbekannte Session → undefined.
+   */
+  getToolGrant(sessionId: string): { tenantId: string; grant: VoiceToolGrant } | undefined {
+    const live = this.sessions.get(sessionId);
+    if (!live) return undefined;
+    return {
+      tenantId: live.tenantId,
+      grant: {
+        agentId: VOICE_AGENT_ID,
+        botId: live.botId,
+        tools: CONTRACT_TOOL_NAMES.filter((name) => live.offeredTools.has(name)),
+      },
+    };
   }
 
   /** true wenn ein Persistenz-Store konfiguriert ist (HTTP-Start verlangt das). */

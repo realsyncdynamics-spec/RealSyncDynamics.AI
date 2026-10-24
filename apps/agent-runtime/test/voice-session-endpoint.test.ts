@@ -411,3 +411,110 @@ describe('mapVoiceStartError', () => {
     });
   });
 });
+
+describe('POST /voice-tool — Tool-Rechte aus der Session (SEC-01)', () => {
+  const TENANT_B = '33333333-3333-3333-3333-333333333333';
+  const BOT_B = '44444444-4444-4444-4444-444444444444';
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const consent = {
+    purposes: ['execute_tools', 'store_evidence'],
+    withdrawn_at: null,
+  };
+
+  async function startSession(h: Harness, botId: string): Promise<string> {
+    const res = await postJson(h.baseUrl, '/voice-sessions', { bot_id: botId, consent }, auth);
+    assert.equal(res.status, 201);
+    return String(res.json.session_id);
+  }
+
+  function toolBody(sessionId: string, tenantId: string, tool: string) {
+    return {
+      tenantId,
+      agentId: 'agent_voice_nora_v01',
+      sessionId,
+      requestId: `req_${tool}`,
+      tool,
+      args: {},
+      session: { killSwitch: false, turnCount: 1, toolCount: 0, rateLimit: { maxTurns: 20, maxTools: 8 } },
+      consent: { purposes: ['execute_tools', 'store_evidence'], withdrawnAt: null },
+    };
+  }
+
+  function permission(json: Record<string, unknown>) {
+    const decision = json.decision as { trace: Array<{ check: string; result: string; detail: string }> };
+    return decision.trace.find((s) => s.check === 'permission');
+  }
+
+  it('erlaubt nur Tools aus offered_tools des Bots', async () => {
+    const h = await startHarness();
+    try {
+      const sessionId = await startSession(h, BOT);
+      const ok = await postJson(h.baseUrl, '/voice-tool', toolBody(sessionId, TENANT, 'lookup_kb'), auth);
+      assert.equal(ok.status, 200);
+      assert.equal(ok.json.verdict, 'ALLOW');
+
+      for (const tool of ['create_ticket', 'export_transcript', 'handoff_human']) {
+        const res = await postJson(h.baseUrl, '/voice-tool', toolBody(sessionId, TENANT, tool), auth);
+        assert.equal(res.status, 403, tool);
+        assert.equal(res.json.verdict, 'DENY', tool);
+        assert.equal(permission(res.json)?.result, 'fail', tool);
+      }
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('unbekannte Session bekommt keine Tools', async () => {
+    const h = await startHarness();
+    try {
+      const res = await postJson(
+        h.baseUrl,
+        '/voice-tool',
+        toolBody('55555555-5555-5555-5555-555555555555', TENANT, 'lookup_kb'),
+        auth,
+      );
+      assert.equal(res.status, 403);
+      assert.match(permission(res.json)?.detail ?? '', /Keine serverseitige Tool-Freigabe/);
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('Session von Mandant A ist für Mandant B gesperrt, Bot B erbt keine Tools von Bot A', async () => {
+    const h = await startHarness();
+    h.store.seedBotConfig({
+      tenantId: TENANT_B,
+      botId: BOT_B,
+      provider: 'grok',
+      model: 'grok-voice-think-fast-2.0',
+      disclosureText: DISCLOSURE,
+      policyRef: POLICY,
+      offeredTools: ['lookup_kb'],
+      status: 'active',
+    });
+    try {
+      const sessionA = await startSession(h, BOT);
+      const sessionB = await startSession(h, BOT_B);
+
+      const crossTenant = await postJson(h.baseUrl, '/voice-tool', toolBody(sessionA, TENANT_B, 'lookup_kb'), auth);
+      assert.equal(crossTenant.status, 403);
+      const trace = (crossTenant.json.decision as { trace: Array<{ check: string; result: string }> }).trace;
+      assert.equal(trace.find((s) => s.check === 'tenant')?.result, 'fail');
+
+      const crossBot = await postJson(
+        h.baseUrl,
+        '/voice-tool',
+        toolBody(sessionB, TENANT_B, 'schedule_appointment'),
+        auth,
+      );
+      assert.equal(crossBot.status, 403);
+      assert.match(permission(crossBot.json)?.detail ?? '', new RegExp(BOT_B));
+
+      const ownB = await postJson(h.baseUrl, '/voice-tool', toolBody(sessionB, TENANT_B, 'lookup_kb'), auth);
+      assert.equal(ownB.status, 200);
+      assert.equal(ownB.json.verdict, 'ALLOW');
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+});

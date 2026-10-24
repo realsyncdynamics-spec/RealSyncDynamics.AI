@@ -35,9 +35,9 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     const onRequest = OPTIMIZER_PACKAGES.filter(
       (pkg) => tierById(pkg.key)?.priceOnRequest === true,
     );
-    // Die Liste darf nicht leer sein — sonst prüft der Test nichts mehr,
-    // etwa weil Enterprise aus den Paketen entfernt wurde.
-    expect(onRequest.length).toBeGreaterThan(0);
+    // Seit 2026-10-24 ist Enterprise per Checkout buchbar und kein
+    // Auf-Anfrage-Plan mehr; heute führt kein Paket einen solchen Plan. Die
+    // Regel bleibt für den Fall stehen, dass wieder einer dazukommt.
 
     for (const pkg of onRequest) {
       expect(pkg.price, `Paket "${pkg.name}"`).toBe('Auf Anfrage');
@@ -55,6 +55,8 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
       return tier !== undefined && !tier.priceOnRequest && tier.priceEur > 0;
     });
     expect(fixed.length).toBeGreaterThan(0);
+    // Enterprise nennt seit 2026-10-24 seinen Festpreis.
+    expect(fixed.map((pkg) => pkg.key)).toContain('enterprise');
 
     // Genau der Betrag aus der SSoT — eine bloße Ziffernprüfung ließe einen
     // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch.

@@ -47,7 +47,9 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
     ['growth', 'price_1UEmHmREjTWueUcGiCQMB8H4', true],
     ['agency', 'price_1UEmHoREjTWueUcGqeO4LGud', true],
     ['governance_launch', 'price_1UEmHtREjTWueUcGhjY7Gvhp', true],
-    // Enterprise Price exists live — but purchaseMode=inquiry, kein Checkout.
+    // Enterprise: alter 1.249-€-Preis. Seit 2026-10-24 Checkout zu 1.498 € —
+    // der neue Preis folgt mit eigener Migration; bis dahin sperrt die
+    // Betragsprüfung (PRICE_MISMATCH) den alten.
     ['enterprise', 'price_1UEmHqREjTWueUcG0oqZkb5O', true],
     ['partner', 'price_1UEmHsREjTWueUcGFlIItOiz', true],
     // Platzhalter — sehen wie eine Price aus, sind aber keine.
@@ -122,13 +124,22 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
       }
     });
 
-    it('Enterprise behält Live-Price in products, bleibt aber inquiry (kein Self-Service)', () => {
+    it('Enterprise ist monatlich per Checkout kaufbar, die Jahresvariante bleibt gesperrt', () => {
       const enterprise = PLANS.find((p) => p.id === 'enterprise')!;
-      expect(enterprise.purchaseMode).toBe('inquiry');
-      expect(enterprise.priceOnRequest).toBe(true);
+      expect(enterprise.purchaseMode).toBe('checkout');
+      expect(enterprise.priceOnRequest ?? false).toBe(false);
       expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
-      expect(SOURCE).toContain('ENTERPRISE_SELF_SERVICE_BLOCKED');
-      expect(isLiveStripePrice('price_1UEmHqREjTWueUcG0oqZkb5O')).toBe(true);
+      expect(SOURCE).toContain("ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise_yearly'])");
+    });
+
+    it('checkout gleicht den Stripe-Betrag mit der SSoT ab, bevor er eine Session anlegt', () => {
+      // Price-ID (products) und Anzeige (SSoT) werden getrennt ausgerollt.
+      // Ohne Abgleich rechnete ein alter Preis still einen anderen Betrag ab.
+      expect(SOURCE).toContain('stripe.prices.retrieve(realPrice.stripe_price_id)');
+      expect(SOURCE).toContain('PRICE_MISMATCH');
+      expect(SOURCE.indexOf('stripePriceMatchesPlan(')).toBeLessThan(
+        SOURCE.indexOf('stripe.checkout.sessions.create('),
+      );
     });
 
     it('checkout resolves prices only via default_for_plan_key (no hardcoded TfsV)', () => {

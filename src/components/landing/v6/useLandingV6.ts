@@ -429,12 +429,9 @@ export function useLandingV6() {
         // Hero-Preiszeile: immer Monatspreis, eigene Quelle für die Trichter-Messung.
         heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
         heroListPrice: beta && !tier.priceOnRequest ? formatPriceEur(plan.price.monthlyEur) : null,
-        heroHref:
-          plan.id === 'enterprise'
-            ? ENTERPRISE_HREF
-            : inquiry
-              ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })
-              : planHref(plan, 'month', `${SOURCE}-hero`),
+        heroHref: inquiry
+          ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })
+          : planHref(plan, 'month', `${SOURCE}-hero`),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
         href: inquiry
           ? checkoutHrefForPlan(plan, { source: SOURCE })

@@ -66,18 +66,18 @@ describe('Pricing Tiers (6-Tier Model, monthly only in Live Stripe)', () => {
 
   it('should have 5 public tiers sorted by price ascending', () => {
     expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    // Preis-aufsteigend: Enterprise (1.249 €) steht VOR Partner (1.999 €),
+    // Preis-aufsteigend: Enterprise (1.498 €) steht VOR Partner (1.999 €),
     // damit das Pricing-Grid die Pakete in korrekter Preisreihenfolge zeigt.
     const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'partner'];
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
-  it('should have enterprise tier as inquiry (list price stored, not sellable)', () => {
+  it('should have enterprise tier as self-service checkout at 1.498 €', () => {
     const enterprise = tierById('enterprise');
     expect(enterprise?.id).toBe('enterprise');
-    expect(enterprise?.priceEur).toBe(1249);
-    expect(enterprise?.priceOnRequest).toBe(true);
-    expect(enterprise?.plan.purchaseMode).toBe('inquiry');
+    expect(enterprise?.priceEur).toBe(1498);
+    expect(enterprise?.priceOnRequest).toBe(false);
+    expect(enterprise?.plan.purchaseMode).toBe('checkout');
     expect(enterprise?.name).toBe('Enterprise');
   });
 
@@ -249,21 +249,14 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  it('enterprise fuehrt seit AP2 in den Vertrieb, nicht in den Checkout', () => {
-    // Enterprise ist ab AP2 ein Vertrag: `purchaseMode: 'inquiry'`. Der
-    // Self-Service endet bei Growth. Bestehende Enterprise-Abos rechnen
-    // unveraendert weiter ab — betroffen ist allein der Neuabschluss.
+  it('enterprise fuehrt seit 2026-10-24 in den Checkout, ohne Trial', () => {
+    // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat direkt ueber
+    // Checkout verkauft und ist ab Tag 1 kostenpflichtig.
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/contact-sales');
-    expect(enterprise.cta.href).not.toContain('/checkout/');
-    // COMMERCIAL-SSOT: temporary production hotfix.
-    // Canonical source migration tracked in Phase 2.
-    // Ergaenzend zum Kaufmodus: kein Self-Service-Trial und kein
-    // oeffentlicher Festpreis. Ohne diese drei Zusicherungen bewarb die
-    // Seite weiter „14 Tage kostenlos testen" zu 1.249 € fuer einen Plan,
-    // den der Checkout gar nicht abschliessen kann.
+    expect(enterprise.cta.href).toContain('/checkout/enterprise');
+    expect(enterprise.cta.href).not.toContain('/contact-sales');
     expect(enterprise.plan.trialDays).toBe(0);
-    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.priceOnRequest).toBe(false);
     expect(enterprise.cta.href).not.toContain('pilot=true');
   });
 });

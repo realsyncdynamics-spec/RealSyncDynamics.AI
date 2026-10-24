@@ -482,14 +482,11 @@ export const pricingPlans: PricingPlan[] = [
     name: 'Enterprise',
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
-    // Enterprise wird vertraglich vereinbart und manuell fakturiert
-    // (products.default_for_plan_key='enterprise' traegt bewusst nur einen
-    // Sentinel, keine echte Stripe-Price). Deshalb kein oeffentlicher
-    // Festpreis: `price: 0` unterdrueckt den Intervall-Zusatz, der Betrag
-    // steht als interner Listenpreis in shared/pricing.ts.
-    price: 0,
-    priceString: 'Individuelles Angebot',
-    interval: 'individuell',
+    // Seit 2026-10-24 (Dominik) per Self-Service-Checkout buchbar, ohne
+    // Testphase. Betrag muss shared/pricing.ts entsprechen.
+    price: 1498,
+    priceString: '1.498',
+    interval: 'mtl.',
     recommended: false,
     shortDescription: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen, Multi-Org-Verwaltung und SLA-Bedarf.',
     targetAudience: 'Für Großunternehmen, regulierte Industrien, Behörden, Finanzdienstleister und Organisationen mit erweiterten Governance- und Compliance-Prozessen.',
@@ -505,10 +502,10 @@ export const pricingPlans: PricingPlan[] = [
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?plan=enterprise&intent=enterprise',
+      label: 'Enterprise starten',
+      href: '/checkout/enterprise',
     },
-    checkoutPath: '/contact-sales?plan=enterprise&intent=enterprise',
+    checkoutPath: '/checkout/enterprise',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',

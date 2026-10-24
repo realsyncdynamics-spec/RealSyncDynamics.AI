@@ -62,11 +62,11 @@ export function tierCovers(tier: OptimizerTierId, min: OptimizerTierId): boolean
 }
 
 /**
- * Self-Service-Checkout ist nur für starter/growth/agency verfügbar
- * (siehe VALID_PLAN_KEYS in features/billing/CheckoutPage). free braucht
- * keinen Checkout; scale/enterprise laufen über den Kontakt-/Sales-Pfad.
+ * Self-Service-Checkout ist für starter/growth/agency und seit 2026-10-24
+ * auch für enterprise verfügbar. free braucht keinen Checkout; partner
+ * (scale) läuft über den Kontakt-/Sales-Pfad.
  */
-const SELF_SERVE_PLAN_KEYS = new Set<TierId>(['starter', 'growth', 'agency']);
+const SELF_SERVE_PLAN_KEYS = new Set<TierId>(['starter', 'growth', 'agency', 'enterprise']);
 
 export function isSelfServeCheckout(planKey: TierId): boolean {
   return SELF_SERVE_PLAN_KEYS.has(planKey);
@@ -85,7 +85,7 @@ export function realPriceEur(tier: OptimizerTier): number {
 export function formatTierPrice(tier: OptimizerTier): string {
   if (tier.planKey === 'free') return 'Kostenlos';
   const real = tierById(tier.planKey);
-  // Enterprise/Partner: kein Self-Service-Festpreis — nie €1249 als Angebot zeigen.
+  // Pläne ohne Self-Service-Festpreis (priceOnRequest / inquiry) zeigen keinen Betrag.
   if (real?.priceOnRequest || real?.plan.purchaseMode === 'inquiry') {
     return 'Individuell';
   }

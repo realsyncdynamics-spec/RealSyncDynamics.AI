@@ -24,8 +24,9 @@ import { GA_DISPLAY, GA_LINE_SOFT, GA_MONO, GA_MUTED, GA_TITAN } from './governa
 import { SectionHeading } from './GovernanceSectionChrome';
 
 /**
- * Feste Reihenfolge auf `/`: drei Self-Service-Stufen plus Enterprise. Enterprise
- * zeigt „Auf Anfrage" (`priceOnRequest`) und führt auf die Anfrage-Strecke.
+ * Feste Reihenfolge auf `/`: Starter, Growth, Agency und Enterprise — seit
+ * 2026-10-24 alle vier per Self-Service-Checkout buchbar. Ein Plan mit
+ * `priceOnRequest` zeigte „Auf Anfrage" und führte auf die Anfrage-Strecke.
  */
 const LANDING_PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
 

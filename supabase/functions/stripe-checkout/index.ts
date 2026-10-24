@@ -35,12 +35,15 @@ import {
   customerIdempotencyKey, customerSearchQuery, STRIPE_ERROR_PUBLIC_MESSAGE,
   isValidTenantId,
 } from './customer.ts';
+import { stripePriceMatchesPlan } from './price-match.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
 // Plan-Keys, die niemals über Self-Service gekauft oder als Trial gestartet
-// werden dürfen (Monats- und Jahresvariante).
-const ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise', 'enterprise_yearly']);
+// werden dürfen. Seit 2026-10-24 (Dominik) ist Enterprise monatlich per
+// Checkout kaufbar; die Jahresvariante bleibt gesperrt (keine Jahres-Prices
+// in Stripe, `yearlyCheckoutUnavailable`).
+const ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise_yearly']);
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -125,19 +128,17 @@ Deno.serve(async (req) => {
   // COMMERCIAL-SSOT: temporary production hotfix.
   // Canonical source migration tracked in Phase 2.
   //
-  // Harter Stopp für neue Enterprise-Selbstbedienung — bewusst unabhängig von
-  // `purchaseMode` UND von `availability`, damit weder ein Zurückdrehen auf
-  // 'checkout' noch eine Umstufung der Verfügbarkeit den Enterprise-Trial
-  // stillschweigend wieder öffnet. Enterprise wird vertraglich vereinbart
-  // und manuell fakturiert (`availability: 'contract'`).
+  // Harter Stopp für die Enterprise-Jahresvariante — bewusst unabhängig von
+  // `purchaseMode` UND von `availability`. Der Monatsplan ist seit
+  // 2026-10-24 per Checkout kaufbar (ohne Trial, `trialDays: 0`).
   //
   // Wirkt ausschliesslich auf NEUE Checkout-Sessions. Bestehende Abos und
   // laufende Trials liegen in `public.subscriptions` und werden hier nicht
   // gelesen, nicht geschrieben und nicht beendet.
   if (ENTERPRISE_SELF_SERVICE_BLOCKED.has(planKey)) {
     return jsonError(400, 'ENTERPRISE_CONTRACT_ONLY',
-      `${plan.name} wird vertraglich vereinbart und manuell fakturiert. ` +
-      `Kein Self-Service-Checkout und kein Self-Service-Trial — bitte über /contact-sales anfragen.`);
+      `${plan.name} jährlich ist nicht im Self-Service buchbar — ` +
+      `bitte monatlich buchen oder über /contact-sales anfragen.`);
   }
   body.plan_key = planKey;
 
@@ -254,6 +255,22 @@ Deno.serve(async (req) => {
   // das dann nur als generisches "Failed to send a request to the Edge
   // Function" ohne nutzbare Fehlermeldung im Frontend.
   try {
+    // Der Betrag des Stripe-Price muss dem angezeigten SSoT-Betrag
+    // entsprechen. Price-ID (Migration) und Anzeige (Deploy) werden getrennt
+    // ausgerollt — ein Rest der alten Price-ID darf nie still einen anderen
+    // Betrag abrechnen. Vor dem Customer-Anlegen, damit nichts liegen bleibt.
+    const stripePrice = await stripe.prices.retrieve(realPrice.stripe_price_id);
+    if (!stripePriceMatchesPlan(stripePrice, plan.price, isOneTime)) {
+      console.error('[stripe-checkout] price mismatch', {
+        plan_key: body.plan_key, price_id: realPrice.stripe_price_id,
+        unit_amount: stripePrice.unit_amount, currency: stripePrice.currency,
+        interval: stripePrice.recurring?.interval ?? null,
+      });
+      return jsonError(409, 'PRICE_MISMATCH',
+        `Der hinterlegte Stripe-Preis für ${plan.name} passt nicht zum angezeigten Preis. ` +
+        `Der Checkout ist gesperrt, bis der Preis angeglichen ist.`);
+    }
+
     // Nur echte Stripe-Customer (`cus_…`) wiederverwenden. Der Free-Tier-
     // Platzhalter `free_tier_no_stripe_<tenant_id>` würde von Stripe mit
     // „No such customer" abgelehnt (→ 502 für jeden Free-Tenant).

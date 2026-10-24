@@ -46,8 +46,8 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     expect(f?.recurring).toBe(false);
   });
 
-  it('Enterprise has priceString="1.249"', () => {
-    expect(tierById('enterprise')?.priceString).toBe('1.249');
+  it('Enterprise has priceString="1.498"', () => {
+    expect(tierById('enterprise')?.priceString).toBe('1.498');
   });
 
   it('every tier has a non-empty bullets array', () => {

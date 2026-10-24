@@ -133,6 +133,14 @@ describe('sales-lead: inquiry plan_key + domains', () => {
     expect(pricingShared).toMatch(/purchaseMode:\s*['"]inquiry['"]/);
   });
 
+  it('nimmt Enterprise-Anfragen an, obwohl Enterprise seit 2026-10-24 per Checkout buchbar ist', () => {
+    // Ohne das wiese sales-lead jede „Enterprise anfragen"-Anfrage
+    // (/contact-sales?intent=enterprise → plan_key=enterprise) mit
+    // INVALID_PLAN_KEY ab, sobald Enterprise kein inquiry-Plan mehr ist.
+    expect(salesLead).toMatch(/acceptsSalesInquiry\s*=\s*isInquiryPlan\s*\|\|\s*plan\?\.id\s*===\s*['"]enterprise['"]/);
+    expect(salesLead).toMatch(/if \(!acceptsSalesInquiry\)/);
+  });
+
   it('accepts plan_key in the body type and caps it', () => {
     expect(salesLead).toMatch(/plan_key\?:\s*string/);
     expect(salesLead).toMatch(/cap\(body\.plan_key,\s*\d+\)/);

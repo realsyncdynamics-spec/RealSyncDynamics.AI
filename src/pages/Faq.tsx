@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
-import { SALES_PLANS, formatLimit } from '@/shared/pricing';
+import { SALES_PLANS, formatLimit, formatPriceEur, planById } from '@/shared/pricing';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -60,15 +60,14 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise nach Vertrag:</p>
+        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise ohne Testphase:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
           <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
-          {/* COMMERCIAL-SSOT: kein Festpreis — Enterprise wird vertraglich
-              vereinbart und manuell fakturiert; der Self-Service-Checkout
-              kann 1.249 € nicht einloesen. */}
-          <li><strong className="text-titanium-50">Enterprise</strong> auf Anfrage — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          {/* COMMERCIAL-SSOT: Betrag aus shared/pricing.ts — seit 2026-10-24
+              per Self-Service-Checkout buchbar. */}
+          <li><strong className="text-titanium-50">Enterprise</strong> {formatPriceEur(planById('enterprise').price.monthlyEur)}/Monat — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>

@@ -53,7 +53,7 @@ describe('Pricing SSoT — Struktur', () => {
       ['starter', 79],
       ['growth', 249],
       ['agency', 699],
-      ['enterprise', 1249],
+      ['enterprise', 1498],
       ['partner', 1999],
     ]);
   });
@@ -450,25 +450,27 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     }
   });
 
-  it('Enterprise ist anfragepflichtig, ohne Festpreis und ohne Trial', () => {
+  it('Enterprise ist monatlich per Checkout kaufbar, ohne Trial (Dominik 2026-10-24)', () => {
     const enterprise = planById('enterprise');
-    expect(enterprise.purchaseMode).toBe('inquiry');
-    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.purchaseMode).toBe('checkout');
+    expect(enterprise.availability).toBe('self_service');
+    expect(enterprise.priceOnRequest ?? false).toBe(false);
+    expect(enterprise.price.monthlyEur).toBe(1498);
     expect(enterprise.trialDays).toBe(0);
 
-    // Auch die Jahresvariante darf keinen Kaufpfad öffnen.
-    for (const interval of ['month', 'year'] as const) {
-      const href = checkoutHrefForPlan(enterprise, { interval });
-      expect(href).not.toContain('/checkout/');
-      expect(href).not.toContain('pilot=true');
-    }
+    const href = checkoutHrefForPlan(enterprise, { interval: 'month' });
+    expect(href).toContain('/checkout/enterprise?');
+    expect(href).not.toContain('pilot=true');
+
+    // Die Jahresvariante hat keinen Stripe-Preis und bleibt gesperrt.
+    expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
   });
 
   it('ein Trial-Versprechen setzt einen einlösbaren Kaufpfad voraus', () => {
     // Verhindert die Rückkehr des Enterprise-Falls über einen anderen Plan:
     // Trial-Tage ohne Einlöseweg sind ein Versprechen ohne Deckung. Zwei
     // Wege führen dahin, und beide sind hier gesperrt — kein
-    // Self-Service-Checkout (Enterprise), oder stillgelegt, sodass
+    // Self-Service-Checkout (Enterprise bis 2026-10-24), oder stillgelegt, sodass
     // `stripe-checkout` den Neuabschluss mit PLAN_RETIRED abweist (Agency).
     for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
       expect(plan.purchaseMode).toBe('checkout');

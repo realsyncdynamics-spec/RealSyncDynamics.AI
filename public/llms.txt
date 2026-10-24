@@ -20,8 +20,7 @@ Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 ## Preise
 
 - [Preisübersicht](https://realsyncdynamicsai.de/pricing)
-- Free Audit: 0 €. Starter: 79 €/Monat. Growth: 249 €/Monat. Agency: 699 €/Monat.
-- Enterprise: Preis auf Anfrage über den Vertrieb.
+- Free Audit: 0 €. Starter: 79 €/Monat. Growth: 249 €/Monat. Agency: 699 €/Monat. Enterprise: 1498 €/Monat.
 - Monatlich kündbar. Verbindlich ist die Preisseite.
 
 ## Rechtliches

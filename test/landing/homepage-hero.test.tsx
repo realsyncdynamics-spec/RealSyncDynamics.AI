@@ -207,11 +207,12 @@ it('self-check result counts only the given answers and links to real routes', (
   expect(section.getByRole('link', { name: 'Enterprise anfragen' })).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=home-check');
 });
 
-it('shows Enterprise on request, without a public price', () => {
+it('shows Enterprise with its checkout price (self-service since 2026-10-24)', () => {
   const view = mount();
   const pricing = view.container.querySelector('#pricing') as HTMLElement;
   expect(within(pricing).getByText('ENTERPRISE')).toBeInTheDocument();
-  expect(within(pricing).getByText('Auf Anfrage')).toBeInTheDocument();
+  expect(within(pricing).getByText('1.498 €')).toBeInTheDocument();
+  expect(within(pricing).queryByText('Auf Anfrage')).toBeNull();
 });
 
 it('uses the Europe map v2 with WebP + PNG sources and no colour-mode switch', () => {

@@ -360,13 +360,15 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
     // SEC-01/SEC-05: Mandant, Tool-Rechte, Zähler, Rate-Limit, Kill-Switch und
     // Einwilligung kommen aus der laufenden Session dieses Prozesses (Kill-Switch
     // zusätzlich frisch aus dem Store), nie aus dem Body. Entschieden wird nur
-    // über einen Call, den die Runtime gerade selbst angemeldet hat. Zeigt
+    // über einen Call, den die Runtime gerade selbst angemeldet hat, und nur mit
+    // genau dessen Args (andere Args verbrauchen die Anmeldung nicht). Zeigt
     // AGENT_RUNTIME_VOICE_TOOL_BASE_URL auf einen anderen Prozess, kennt dieser
     // den Call nicht und lehnt ab (fail-closed, Einzelinstanz — SEC-06).
     const context = await voiceRuntime.resolveToolPolicyContext(
       body.sessionId,
       body.requestId,
       body.tool,
+      body.args,
     );
     if (!context) {
       const auditEvent = emitAuditEvent({

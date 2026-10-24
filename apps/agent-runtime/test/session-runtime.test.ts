@@ -10,6 +10,7 @@ import {
 } from '../src/providers/grok-provider.js';
 import {
   VoiceSessionRuntime,
+  canonicalToolArgs,
   createMemoryVoiceStore,
   createVoiceToolClient,
   createVoiceToolGateway,
@@ -513,7 +514,7 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     const h = harness({
       voiceToolImpl: async (req) => {
         // Wie das Gateway: Zähler kommen serverseitig aus der Session (SEC-05).
-        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
+        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
         seen.push(ctx!.session.toolCount);
         turns.push(ctx!.session.turnCount);
         await gate;
@@ -565,9 +566,9 @@ describe('VoiceSessionRuntime — Policy-Kontext nur serverseitig (SEC-05)', () 
     let otherRequest: Ctx;
     const h = harness({
       voiceToolImpl: async (req) => {
-        inFlight = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
-        otherTool = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, 'create_ticket');
-        otherRequest = await h.runtime.resolveToolPolicyContext(req.sessionId, 'vt_forged', req.tool);
+        inFlight = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        otherTool = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, 'create_ticket', req.args);
+        otherRequest = await h.runtime.resolveToolPolicyContext(req.sessionId, 'vt_forged', req.tool, req.args);
         return { ok: false, reason: 'test_stop' };
       },
     });
@@ -577,8 +578,8 @@ describe('VoiceSessionRuntime — Policy-Kontext nur serverseitig (SEC-05)', () 
     assert.equal(inFlight?.session.tenantId, 'tenant_mueller_sanitaer');
     assert.equal(otherTool, undefined);
     assert.equal(otherRequest, undefined);
-    assert.equal(await h.runtime.resolveToolPolicyContext('sess_rt_1', 'vt_call_p', 'lookup_kb'), undefined);
-    assert.equal(await h.runtime.resolveToolPolicyContext('sess_unknown', 'vt_call_p', 'lookup_kb'), undefined);
+    assert.equal(await h.runtime.resolveToolPolicyContext('sess_rt_1', 'vt_call_p', 'lookup_kb', { query: 'x' }), undefined);
+    assert.equal(await h.runtime.resolveToolPolicyContext('sess_unknown', 'vt_call_p', 'lookup_kb', { query: 'x' }), undefined);
   });
 
   it('behauptete Einwilligung zählt ohne Nachweis nicht; mit Verifier schon', async () => {
@@ -587,7 +588,7 @@ describe('VoiceSessionRuntime — Policy-Kontext nur serverseitig (SEC-05)', () 
       const h = harness({
         verifyConsent,
         voiceToolImpl: async (req) => {
-          const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
+          const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
           consent = ctx?.consent;
           return { ok: false, reason: 'test_stop' };
         },
@@ -616,7 +617,7 @@ describe('VoiceSessionRuntime — Policy-Kontext nur serverseitig (SEC-05)', () 
     let killSwitch: boolean | undefined;
     const h = harness({
       voiceToolImpl: async (req) => {
-        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
+        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
         killSwitch = ctx?.session.killSwitch;
         return { ok: false, reason: 'test_stop' };
       },
@@ -657,7 +658,7 @@ describe('VoiceSessionRuntime — Abbruch, Replay, Bindung (SEC-05 Härtung)', (
       toolGateway: recordingGateway(handled),
       voiceToolImpl: async (req) => {
         await gate;
-        afterClose = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
+        afterClose = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
         return allowOutcome(req);
       },
     });
@@ -726,7 +727,7 @@ describe('VoiceSessionRuntime — Abbruch, Replay, Bindung (SEC-05 Härtung)', (
     const got: unknown[] = [];
     const h = harness({
       voiceToolImpl: async (req) => {
-        const resolve = () => h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool);
+        const resolve = () => h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
         got.push(...(await Promise.all([resolve(), resolve()])));
         got.push(await resolve());
         return { ok: false, reason: 'test_stop' };
@@ -778,6 +779,123 @@ describe('VoiceSessionRuntime — Abbruch, Replay, Bindung (SEC-05 Härtung)', (
     await wait(20);
     assert.equal(h.voiceToolCalls.length, 2);
     assert.equal(h.voiceToolCalls[1]!.requestId, 'vt_call_new');
+  });
+
+  it('abweichende Args → kein Kontext und Anmeldung nicht verbraucht; gleiche Args in anderer Key-Reihenfolge → Kontext', async () => {
+    const args = { query: 'Öffnungszeiten', filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } } };
+    const forged: Array<Record<string, unknown>> = [
+      { ...args, priority: 'high' },
+      { query: 'Öffnungszeiten' },
+      { ...args, query: 'Max Mustermann, IBAN DE89370400440532013000' },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['b', 'a'] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'branch', tags: ['a', 'b'] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'], extra: true } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 2] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } }, tenantId: 'tenant_x' },
+    ];
+    const reordered = { filter: { scope: { tags: ['a', 'b'], site: 'hq' }, lang: 'de' }, query: 'Öffnungszeiten' };
+    const got: { forged: unknown[]; legit?: unknown; replay?: unknown } = { forged: [] };
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        for (const other of forged) {
+          got.forged.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, other));
+        }
+        got.legit = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, reordered);
+        got.replay = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    await openRuntime(h);
+    h.emit(toolCall('call_args', 'lookup_kb', args));
+    await wait(20);
+    assert.equal(got.forged.length, forged.length);
+    assert.ok(got.forged.every((c) => c === undefined), 'keine Entscheidung zu abweichenden Args');
+    assert.ok(got.legit, 'Anmeldung nach den Fehlversuchen noch offen');
+    assert.equal(got.replay, undefined, 'danach verbraucht');
+  });
+
+  it('parallel: abweichende Args verbrauchen die Anmeldung nicht, passende bekommt genau einen Kontext', async () => {
+    let results: unknown[] = [];
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        const resolve = (args: Record<string, unknown>) =>
+          h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, args);
+        results = await Promise.all([
+          resolve({ ...req.args, priority: 'high' }),
+          resolve(req.args),
+          resolve({ query: 'anders' }),
+          resolve(req.args),
+        ]);
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    await openRuntime(h);
+    h.emit(toolCall('call_par', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(results[0], undefined);
+    assert.ok(results[1], 'erster passender Abruf');
+    assert.equal(results[2], undefined);
+    assert.equal(results[3], undefined, 'zweiter passender Abruf: verbraucht');
+  });
+
+  it('nicht serialisierbare Args → invalid_arguments, keine Anmeldung', async () => {
+    const h = harness();
+    await openRuntime(h);
+    const cyclic: Record<string, unknown> = { query: 'x' };
+    cyclic.self = cyclic;
+    h.emit(toolCall('call_cyclic', 'lookup_kb', cyclic));
+    h.emit(toolCall('call_bigint', 'lookup_kb', { query: 'x', n: 1n }));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 0);
+    assert.deepEqual(
+      h.results.map((r) => r.output.reason),
+      ['invalid_arguments', 'invalid_arguments'],
+    );
+  });
+});
+
+describe('canonicalToolArgs — kanonische Normalisierung (SEC-05)', () => {
+  it('Key-Reihenfolge egal auf jeder Ebene, auch in Objekten in Arrays', () => {
+    const a = { b: 1, a: { d: [{ y: 2, x: 1 }, 'z'], c: null } };
+    const b = { a: { c: null, d: [{ x: 1, y: 2 }, 'z'] }, b: 1 };
+    assert.equal(canonicalToolArgs(a), canonicalToolArgs(b));
+    assert.equal(canonicalToolArgs(a), '{"a":{"c":null,"d":[{"x":1,"y":2},"z"]},"b":1}');
+  });
+
+  it('Werte, Typen, Array-Reihenfolge und zusätzliche Keys zählen, auch verschachtelt', () => {
+    const base = canonicalToolArgs({ q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: true } } });
+    for (const other of [
+      { q: 'x', f: { n: '1', l: ['a', 'b'], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: ['b', 'a'], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: 'true' } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: true, m: null } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: {} } },
+      { q: 'x', f: { n: 1, l: ['a', 'b', null], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: { 0: 'a', 1: 'b' }, o: { k: true } } },
+      { q: 'x ', f: { n: 1, l: ['a', 'b'], o: { k: true } } },
+    ]) {
+      assert.notEqual(canonicalToolArgs(other), base, JSON.stringify(other));
+    }
+  });
+
+  it('identisch nach dem JSON-Transport zu /voice-tool', () => {
+    const args = {
+      when: new Date('2026-10-10T09:00:00.000Z'),
+      skip: undefined,
+      list: [undefined, Number.NaN, -0, 1e21],
+      nested: { z: 'ü\u2028"', a: { '10': 1, '9': 2, b: 3 } },
+    };
+    const wire = JSON.parse(JSON.stringify(args)) as Record<string, unknown>;
+    assert.equal(canonicalToolArgs(wire), canonicalToolArgs(args));
+    assert.equal(canonicalToolArgs({ a: 1, skip: undefined }), canonicalToolArgs({ a: 1 }));
+  });
+
+  it('nicht serialisierbar → null', () => {
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    assert.equal(canonicalToolArgs(cyclic), null);
+    assert.equal(canonicalToolArgs({ n: 1n }), null);
+    assert.equal(canonicalToolArgs(undefined), null);
   });
 });
 

@@ -160,6 +160,12 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
   `voice_session_unknown`. Jede `callId` gilt einmal pro Session, auch nach
   Abschluss (`duplicate_call_id`). Die Entscheidung muss genau die
   `requestId` des Calls tragen (`request_mismatch`).
+- **Args gebunden.** Die Anmeldung speichert die Args in kanonischer Form
+  (JSON-Roundtrip, Keys auf jeder Ebene sortiert, Array-Reihenfolge zählt).
+  `/voice-tool` vergleicht die Body-Args damit *vor* dem Verbrauch: andere
+  Args bei gleicher `sessionId`/`requestId`/`tool` → `voice_session_unknown`,
+  keine Policy-Entscheidung, die Anmeldung bleibt für den echten Call offen.
+  Nicht serialisierbare Args → `invalid_arguments` ohne Anmeldung.
 - **Abbruch.** `closeSession` / `session.closed` markieren die Session
   synchron vor dem ersten Await. Danach: keine Anmeldung, kein Kontext,
   kein Gateway-Aufruf (`session_closed`).

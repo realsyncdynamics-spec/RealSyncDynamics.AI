@@ -310,21 +310,8 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
     requestId: z.string().min(1),
     tool: z.string().min(1),
     args: z.record(z.unknown()).default({}),
-    session: z.object({
-      killSwitch: z.boolean(),
-      turnCount: z.number().int().nonnegative(),
-      toolCount: z.number().int().nonnegative(),
-      rateLimit: z.object({
-        maxTurns: z.number().int().positive(),
-        maxTools: z.number().int().positive(),
-      }),
-    }),
-    consent: z
-      .object({
-        purposes: z.array(z.enum(voiceConsentPurposes)),
-        withdrawnAt: z.string().nullable(),
-      })
-      .nullable(),
+    // SEC-05: session/consent aus älteren Clients werden verworfen (zod strip),
+    // die Policy liest beides serverseitig.
   });
 
   /**
@@ -370,21 +357,42 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       return;
     }
 
-    // SEC-01: Mandant und Tool-Rechte kommen aus der laufenden Session dieses
-    // Prozesses, nicht aus dem Body. Unbekannte Session → kein Grant → DENY.
-    // Zeigt AGENT_RUNTIME_VOICE_TOOL_BASE_URL auf einen anderen Prozess, kennt
-    // dieser die Session nicht und lehnt ab (fail-closed).
-    const bound = voiceRuntime.getToolGrant(body.sessionId);
+    // SEC-01/SEC-05: Mandant, Tool-Rechte, Zähler, Rate-Limit, Kill-Switch und
+    // Einwilligung kommen aus der laufenden Session dieses Prozesses (Kill-Switch
+    // zusätzlich frisch aus dem Store), nie aus dem Body. Entschieden wird nur
+    // über einen Call, den die Runtime gerade selbst angemeldet hat. Zeigt
+    // AGENT_RUNTIME_VOICE_TOOL_BASE_URL auf einen anderen Prozess, kennt dieser
+    // den Call nicht und lehnt ab (fail-closed, Einzelinstanz — SEC-06).
+    const context = await voiceRuntime.resolveToolPolicyContext(
+      body.sessionId,
+      body.requestId,
+      body.tool,
+    );
+    if (!context) {
+      const auditEvent = emitAuditEvent({
+        status: 'denied',
+        reviewRequired: false,
+        reason: 'voice_session_unknown',
+        request: {
+          tenantId: body.tenantId,
+          agentId: body.agentId,
+          taskType: 'voice_tool',
+          requestedTool: body.tool,
+          requestId: body.requestId,
+        },
+      });
+      res.status(403).json({
+        ok: false,
+        status: 'denied',
+        reason: 'voice_session_unknown',
+        agent: { id: agent.id, name: agent.name },
+        auditEvent,
+      });
+      return;
+    }
+
     const decision = evaluateVoiceToolRequest({
-      session: {
-        sessionId: body.sessionId,
-        tenantId: bound?.tenantId ?? body.tenantId,
-        killSwitch: body.session.killSwitch,
-        turnCount: body.session.turnCount,
-        toolCount: body.session.toolCount,
-        rateLimit: body.session.rateLimit,
-        grant: bound?.grant ?? null,
-      },
+      session: context.session,
       request: {
         requestId: body.requestId,
         sessionId: body.sessionId,
@@ -395,7 +403,7 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
         proposedBy: 'llm',
         createdAt: new Date().toISOString(),
       },
-      consent: body.consent,
+      consent: context.consent,
     });
 
     const gateway = toGatewayDecision(decision.verdict);

@@ -12,6 +12,9 @@
  *
  * Grenzen:
  *  - tenantId/botId ausschließlich aus Session-Kontext / DB-Snapshot.
+ *  - /voice-tool entscheidet nur über Calls, die diese Runtime selbst
+ *    angemeldet hat; Zähler, Kill-Switch und Einwilligung kommen aus der
+ *    Session bzw. dem Store, nie aus dem Request-Body (SEC-05).
  *  - Disclosure ist Pflicht und wird verbatim gesprochen.
  *  - Kein voice_channels / bot_agents. Keine Secrets im Code/Log.
  *  - evaluate() in policy-engine.ts bleibt unberührt.
@@ -37,7 +40,7 @@ import {
 import {
   VOICE_AGENT_ID,
   type VoiceConsent,
-  type VoiceToolGrant,
+  type VoiceSessionState,
   type VoiceToolName,
 } from '../voice-types.js';
 import { VOICE_TOOLS } from '../voice-tools.js';
@@ -50,6 +53,7 @@ import {
   createVoiceToolClient,
   sanitizeToolArgs,
   type VoiceToolClient,
+  type VoiceToolHttpOutcome,
   type VoiceToolSessionSnapshot,
 } from './voice-tool-client.js';
 import type { VoiceStore } from './voice-store.js';
@@ -85,6 +89,29 @@ export interface VoiceSessionStartRequest {
   consent: VoiceConsent | null;
 }
 
+/**
+ * Prüft die beim Start behauptete Einwilligung gegen einen Nachweis.
+ * null → nicht verifiziert → die Consent-Prüfung lehnt jede Tool-Anfrage ab.
+ */
+export type VoiceConsentVerifier = (input: {
+  tenantId: string;
+  botId: string;
+  sessionId: string;
+  claimed: VoiceConsent | null;
+}) => Promise<VoiceConsent | null> | VoiceConsent | null;
+
+/** Serverseitige Eingabe der Kanal-Policy für einen angemeldeten Call (SEC-01, SEC-05). */
+export interface VoiceToolPolicyContext {
+  session: VoiceSessionState;
+  consent: VoiceConsent | null;
+}
+
+/**
+ * Default bis zu einem echten Einwilligungsnachweis: Die Behauptung aus dem
+ * Start-Request zählt nicht (fail-closed).
+ */
+const unverifiedConsent: VoiceConsentVerifier = () => null;
+
 export interface SessionRuntimeOptions {
   socketFactory?: RealtimeSocketFactory;
   getApiKey?: ApiKeyGetter;
@@ -101,6 +128,14 @@ export interface SessionRuntimeOptions {
    */
   store?: VoiceStore | null;
   env?: NodeJS.Dict<string | undefined>;
+  /** Default: keine Einwilligung gilt als nachgewiesen. */
+  verifyConsent?: VoiceConsentVerifier;
+}
+
+interface PendingToolCall {
+  readonly tool: VoiceToolName;
+  /** toolCount vor diesem Call, reserviert vor dem Await. */
+  readonly toolCount: number;
 }
 
 interface LiveSession {
@@ -112,6 +147,8 @@ interface LiveSession {
   readonly consent: VoiceConsent | null;
   readonly policyRef: string | null;
   readonly persist: boolean;
+  /** Calls, die gerade an /voice-tool gehen — nur diese bekommen eine Entscheidung. */
+  readonly pendingToolCalls: Map<string, PendingToolCall>;
   turnCount: number;
   toolCount: number;
 }
@@ -122,6 +159,7 @@ export class VoiceSessionRuntime {
   private readonly toolGateway: VoiceToolGateway;
   private readonly store: VoiceStore | null;
   private readonly onEvent: ((event: VoiceProviderEvent) => void) | undefined;
+  private readonly verifyConsent: VoiceConsentVerifier;
   private readonly sessions = new Map<string, LiveSession>();
 
   constructor(options: SessionRuntimeOptions = {}) {
@@ -153,6 +191,7 @@ export class VoiceSessionRuntime {
         ? createVoiceToolGateway({ store: this.store })
         : createVoiceToolGateway({ env: {} }));
     this.onEvent = options.onEvent;
+    this.verifyConsent = options.verifyConsent ?? unverifiedConsent;
   }
 
   /** Startet eine Voice-Session. Disclosure/Config fehlt → reject. */
@@ -189,20 +228,61 @@ export class VoiceSessionRuntime {
   }
 
   /**
-   * Serverseitige Tool-Freigabe für /voice-tool (SEC-01): Mandant und Tools
-   * aus der laufenden Session dieses Prozesses. Unbekannte Session → undefined.
+   * Policy-Eingabe für /voice-tool, ausschließlich serverseitig (SEC-01, SEC-05):
+   *  - nur für einen Call, den diese Runtime gerade selbst angemeldet hat
+   *    (sessionId + requestId + tool); sonst undefined → DENY
+   *  - Zähler und Rate-Limit aus der laufenden Session
+   *  - Kill-Switch zusätzlich frisch aus voice_sessions; Lesefehler → aktiv
+   *  - Einwilligung nur, wenn verifyConsent sie bestätigt
    */
-  getToolGrant(sessionId: string): { tenantId: string; grant: VoiceToolGrant } | undefined {
+  async resolveToolPolicyContext(
+    sessionId: string,
+    requestId: string,
+    tool: string,
+  ): Promise<VoiceToolPolicyContext | undefined> {
     const live = this.sessions.get(sessionId);
-    if (!live) return undefined;
-    return {
-      tenantId: live.tenantId,
-      grant: {
-        agentId: VOICE_AGENT_ID,
+    const pending = live?.pendingToolCalls.get(requestId);
+    if (!live || !pending || pending.tool !== tool) return undefined;
+
+    const killSwitch = live.session.killSwitch || (await this.readStoredKillSwitch(live));
+    let consent: VoiceConsent | null;
+    try {
+      consent = await this.verifyConsent({
+        tenantId: live.tenantId,
         botId: live.botId,
-        tools: CONTRACT_TOOL_NAMES.filter((name) => live.offeredTools.has(name)),
+        sessionId: live.sessionId,
+        claimed: live.consent,
+      });
+    } catch {
+      consent = null;
+    }
+
+    return {
+      session: {
+        sessionId: live.sessionId,
+        tenantId: live.tenantId,
+        killSwitch,
+        turnCount: live.turnCount,
+        toolCount: pending.toolCount,
+        rateLimit: { ...live.session.rateLimit },
+        grant: {
+          agentId: VOICE_AGENT_ID,
+          botId: live.botId,
+          tools: CONTRACT_TOOL_NAMES.filter((name) => live.offeredTools.has(name)),
+        },
       },
+      consent,
     };
+  }
+
+  private async readStoredKillSwitch(live: LiveSession): Promise<boolean> {
+    if (!live.persist || !this.store) return false;
+    try {
+      const row = await this.store.getSession(live.tenantId, live.sessionId);
+      return !row || row.killSwitch || row.status === 'killed';
+    } catch {
+      return true;
+    }
   }
 
   /** true wenn ein Persistenz-Store konfiguriert ist (HTTP-Start verlangt das). */
@@ -276,6 +356,7 @@ export class VoiceSessionRuntime {
       consent: request.consent,
       policyRef: resolved.policyRef,
       persist: true,
+      pendingToolCalls: new Map(),
       turnCount: request.session.turnCount,
       toolCount: request.session.toolCount,
     };
@@ -368,6 +449,7 @@ export class VoiceSessionRuntime {
       consent: request.consent,
       policyRef: null,
       persist: false,
+      pendingToolCalls: new Map(),
       turnCount: request.session.turnCount,
       toolCount: request.session.toolCount,
     };
@@ -521,23 +603,27 @@ export class VoiceSessionRuntime {
       return deniedResult('invalid_arguments', callId);
     }
 
-    const toolCountForPolicy = live.toolCount;
+    const requestId = `vt_${callId}`;
+    if (live.pendingToolCalls.has(requestId)) {
+      return deniedResult('duplicate_call_id', callId);
+    }
+    // Reservierung vor dem Await: parallele Calls bekommen verschiedene
+    // toolCounts, und /voice-tool kennt nur diesen angemeldeten Call (SEC-05).
+    live.pendingToolCalls.set(requestId, { tool: call.name, toolCount: live.toolCount });
     live.toolCount += 1;
 
-    const outcome = await this.voiceTool.evaluate({
-      tenantId: live.tenantId,
-      sessionId: live.sessionId,
-      requestId: `vt_${callId}`,
-      tool: call.name,
-      args: clean,
-      session: {
-        killSwitch: live.session.killSwitch,
-        turnCount: live.turnCount,
-        toolCount: toolCountForPolicy,
-        rateLimit: live.session.rateLimit,
-      },
-      consent: live.consent,
-    });
+    let outcome: VoiceToolHttpOutcome;
+    try {
+      outcome = await this.voiceTool.evaluate({
+        tenantId: live.tenantId,
+        sessionId: live.sessionId,
+        requestId,
+        tool: call.name,
+        args: clean,
+      });
+    } finally {
+      live.pendingToolCalls.delete(requestId);
+    }
 
     const decision = outcome.decision;
     if (!decision) {

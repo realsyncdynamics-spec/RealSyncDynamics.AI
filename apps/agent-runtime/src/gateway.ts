@@ -370,14 +370,20 @@ export function createGatewayApp(options: GatewayAppOptions = {}): express.Expre
       return;
     }
 
+    // SEC-01: Mandant und Tool-Rechte kommen aus der laufenden Session dieses
+    // Prozesses, nicht aus dem Body. Unbekannte Session → kein Grant → DENY.
+    // Zeigt AGENT_RUNTIME_VOICE_TOOL_BASE_URL auf einen anderen Prozess, kennt
+    // dieser die Session nicht und lehnt ab (fail-closed).
+    const bound = voiceRuntime.getToolGrant(body.sessionId);
     const decision = evaluateVoiceToolRequest({
       session: {
         sessionId: body.sessionId,
-        tenantId: body.tenantId,
+        tenantId: bound?.tenantId ?? body.tenantId,
         killSwitch: body.session.killSwitch,
         turnCount: body.session.turnCount,
         toolCount: body.session.toolCount,
         rateLimit: body.session.rateLimit,
+        grant: bound?.grant ?? null,
       },
       request: {
         requestId: body.requestId,

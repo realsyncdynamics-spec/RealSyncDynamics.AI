@@ -12,6 +12,7 @@ import {
   createSupabaseVoiceStore,
   createSupabaseVoiceStoreFromEnv,
   createVoiceToolGateway,
+  type VoiceExecutionGuard,
 } from '../src/voice/tool-gateway.js';
 import type { VoiceDbClient } from '../src/voice/supabase-voice-store.js';
 import { VOICE_TOOL_EXECUTORS } from '../src/voice/tool-executors.js';
@@ -37,6 +38,9 @@ function decision(
     ...overrides,
   };
 }
+
+/** Guard wie aus einer laufenden Session (SEC-05). */
+const liveGuard: VoiceExecutionGuard = { recheck: async () => true, isLive: () => true };
 
 describe('VoiceToolGateway — Policy-Gates', () => {
   it('führt bei DENY nicht aus und setzt verified=false', async () => {
@@ -79,7 +83,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
 
   it('verified nur nach Re-Read (id + tenant_id) mit external_ref', async () => {
     const store = createMemoryVoiceStore();
-    const gateway = createVoiceToolGateway({ store });
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: true });
     const result = await gateway.handle({
       tenantId: 'tenant_1',
       botId: 'bot_1',
@@ -88,6 +92,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
       tool: 'schedule_appointment',
       args: { when: '2026-10-10T09:00:00.000Z', customer_name: 'Max Mustermann' },
       decision: decision({ verdict: 'ALLOW', risk: 'medium' }),
+      executionGuard: liveGuard,
     });
     assert.equal(result.outcome, 'executed');
     assert.equal(result.verified, true);
@@ -103,7 +108,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
     const store = createMemoryVoiceStore();
     const originalGet = store.getAppointment.bind(store);
     store.getAppointment = async () => null;
-    const gateway = createVoiceToolGateway({ store });
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: true });
     const result = await gateway.handle({
       tenantId: 'tenant_1',
       botId: 'bot_1',
@@ -112,6 +117,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
       tool: 'schedule_appointment',
       args: { customer_name: 'Max', when: 'Fr 9:00' },
       decision: decision({ verdict: 'ALLOW' }),
+      executionGuard: liveGuard,
     });
     assert.equal(result.outcome, 'failed');
     assert.equal(result.verified, false);
@@ -155,7 +161,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
 
   it('fehlt customer_name → invalid_arguments, keine Ausführung', async () => {
     const store = createMemoryVoiceStore();
-    const gateway = createVoiceToolGateway({ store });
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: true });
     const result = await gateway.handle({
       tenantId: 'tenant_1',
       botId: 'bot_1',
@@ -164,6 +170,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
       tool: 'schedule_appointment',
       args: { when: 'Fr 9:00' },
       decision: decision({ verdict: 'ALLOW' }),
+      executionGuard: liveGuard,
     });
     assert.equal(result.outcome, 'failed');
     assert.equal(result.verified, false);
@@ -179,7 +186,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
 
   it('verwirft eingeschleustes tenantId/botId in Args', async () => {
     const store = createMemoryVoiceStore();
-    const gateway = createVoiceToolGateway({ store });
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: true });
     const result = await gateway.handle({
       tenantId: 'tenant_1',
       botId: 'bot_1',
@@ -192,6 +199,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
         botId: 'bot_evil',
       },
       decision: decision({ verdict: 'ALLOW' }),
+      executionGuard: liveGuard,
     });
     assert.equal(result.outcome, 'executed');
     assert.equal(result.verified, true);
@@ -260,7 +268,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
       }
       return realUpdate(tenantId, executionId, patch);
     };
-    const gateway = createVoiceToolGateway({ store });
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: true });
     const result = await gateway.handle({
       tenantId: 'tenant_1',
       botId: 'bot_1',
@@ -269,6 +277,7 @@ describe('VoiceToolGateway — Policy-Gates', () => {
       tool: 'schedule_appointment',
       args: { customer_name: 'Max', when: '2026-10-10T09:00:00.000Z' },
       decision: decision({ verdict: 'ALLOW' }),
+      executionGuard: liveGuard,
     });
     assert.equal(result.outcome, 'failed');
     assert.equal(result.verified, false);
@@ -276,6 +285,106 @@ describe('VoiceToolGateway — Policy-Gates', () => {
     assert.notEqual(result.outcome, 'executed');
     assert.ok(updates >= 1);
     assert.ok(!JSON.stringify(result.output).includes('http_500'));
+  });
+});
+
+describe('VoiceToolGateway — Prüfung vor dem Executor (SEC-05)', () => {
+  function appointmentCounter(store: ReturnType<typeof createMemoryVoiceStore>) {
+    const counter = { writes: 0 };
+    const insertAppointment = store.insertAppointment.bind(store);
+    store.insertAppointment = async (row) => {
+      counter.writes += 1;
+      return insertAppointment(row);
+    };
+    return counter;
+  }
+
+  async function schedule(
+    store: ReturnType<typeof createMemoryVoiceStore>,
+    options: { allowWriteTools?: boolean; executionGuard?: VoiceExecutionGuard },
+  ) {
+    const gateway = createVoiceToolGateway({ store, allowWriteTools: options.allowWriteTools });
+    return gateway.handle({
+      tenantId: 'tenant_1',
+      botId: 'bot_1',
+      sessionId: 'sess_1',
+      callId: 'call_guard',
+      tool: 'schedule_appointment',
+      args: { customer_name: 'Max', when: '2026-10-10T09:00:00.000Z' },
+      decision: decision({ verdict: 'ALLOW' }),
+      executionGuard: options.executionGuard,
+    });
+  }
+
+  it('schreibende Tools ohne allowWriteTools → write_tool_disabled, kein Schreibzugriff', async () => {
+    const store = createMemoryVoiceStore();
+    const counter = appointmentCounter(store);
+    const result = await schedule(store, { executionGuard: liveGuard });
+    assert.equal(result.outcome, 'denied');
+    assert.equal(result.output.reason, 'write_tool_disabled');
+    assert.equal(counter.writes, 0);
+    const evidence = await store.listEvidence('tenant_1', 'sess_1');
+    assert.deepEqual(evidence.find((e) => e.kind === 'tool.result')?.payload, {
+      status: 'blocked',
+      reason: 'write_tool_disabled',
+    });
+  });
+
+  it('ohne Guard → execution_guard_missing, kein Executor', async () => {
+    const store = createMemoryVoiceStore();
+    const counter = appointmentCounter(store);
+    const result = await schedule(store, { allowWriteTools: true });
+    assert.equal(result.outcome, 'denied');
+    assert.equal(result.output.reason, 'execution_guard_missing');
+    assert.equal(counter.writes, 0);
+  });
+
+  it('recheck false oder Fehler → session_inactive, Ausführung als failed protokolliert', async () => {
+    for (const recheck of [async () => false, async () => Promise.reject(new Error('store_down'))]) {
+      const store = createMemoryVoiceStore();
+      const counter = appointmentCounter(store);
+      const updates: Array<{ status?: string; errorCode?: string | null }> = [];
+      const updateExecution = store.updateExecution.bind(store);
+      store.updateExecution = async (tenantId, executionId, patch) => {
+        updates.push(patch);
+        return updateExecution(tenantId, executionId, patch);
+      };
+      const result = await schedule(store, {
+        allowWriteTools: true,
+        executionGuard: { recheck, isLive: () => true },
+      });
+      assert.equal(result.outcome, 'denied');
+      assert.equal(result.output.reason, 'session_inactive');
+      assert.equal(counter.writes, 0);
+      assert.equal(updates.at(-1)?.status, 'failed');
+      assert.equal(updates.at(-1)?.errorCode, 'session_inactive');
+    }
+  });
+
+  it('Abbruch während des Re-Reads → isLive wird danach geprüft, kein Executor', async () => {
+    const store = createMemoryVoiceStore();
+    const counter = appointmentCounter(store);
+    let live = true;
+    const result = await schedule(store, {
+      allowWriteTools: true,
+      executionGuard: {
+        recheck: async () => {
+          live = false; // Abbruch kommt, während der Kill-Switch gelesen wird
+          return true;
+        },
+        isLive: () => live,
+      },
+    });
+    assert.equal(result.output.reason, 'session_inactive');
+    assert.equal(counter.writes, 0);
+  });
+
+  it('Guard ok → Executor läuft genau einmal', async () => {
+    const store = createMemoryVoiceStore();
+    const counter = appointmentCounter(store);
+    const result = await schedule(store, { allowWriteTools: true, executionGuard: liveGuard });
+    assert.equal(result.outcome, 'executed');
+    assert.equal(counter.writes, 1);
   });
 });
 
@@ -291,6 +400,7 @@ describe('VoiceToolGateway — Hash-Kette', () => {
       tool: 'lookup_kb',
       args: { query: 'x' },
       decision: decision({ verdict: 'ALLOW', sessionId: 'sess_hash' }),
+      executionGuard: liveGuard,
     });
     const chain = await store.listEvidence('tenant_1', 'sess_hash');
     assert.ok(chain.length >= 3);

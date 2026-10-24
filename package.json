@@ -60,6 +60,7 @@
     "check:dead": "node scripts/check-dead-code.mjs",
     "check:fabrication": "node scripts/check-fabricated-results.mjs",
     "check:dashboard": "node scripts/check-dashboard-actions.mjs",
+    "check:responsive": "node scripts/check-responsive.mjs",
     "migrate:rename": "node scripts/rename-migration.mjs"
   },
   "dependencies": {

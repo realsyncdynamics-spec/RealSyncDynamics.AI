@@ -14,6 +14,7 @@ coverage/
 /scans/
 test-results/
 playwright-report/
+responsive-report.json
 playwright/.cache/
 
 # Agent-Skills (installiert via `npx skills add ...`) — pro-Maschine,

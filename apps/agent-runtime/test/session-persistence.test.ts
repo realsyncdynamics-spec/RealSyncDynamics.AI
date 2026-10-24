@@ -20,6 +20,7 @@ import {
   type VoiceToolHttpRequest,
 } from '../src/voice/session-runtime.js';
 import type { VoiceDbClient } from '../src/voice/supabase-voice-store.js';
+import { VOICE_TOOL_EXECUTORS } from '../src/voice/tool-executors.js';
 import type { VoiceToolDefinition } from '../src/voice-provider-types.js';
 import type { VoicePolicyDecision } from '../src/voice-types.js';
 
@@ -165,6 +166,8 @@ function persistHarness(
     store?: ReturnType<typeof createMemoryVoiceStore>;
     voiceToolImpl?: (req: VoiceToolHttpRequest) => Promise<VoiceToolHttpOutcome>;
     allowWriteTools?: boolean;
+    /** Kein toolGateway injizieren — die Runtime baut ihr Gateway wie in Produktion selbst. */
+    defaultGateway?: boolean;
   } = {},
 ): PersistHarness {
   const store = overrides.store ?? createMemoryVoiceStore();
@@ -221,7 +224,9 @@ function persistHarness(
     provider,
     voiceToolClient: client,
     store,
-    toolGateway: createVoiceToolGateway({ store, allowWriteTools: overrides.allowWriteTools }),
+    ...(overrides.defaultGateway
+      ? {}
+      : { toolGateway: createVoiceToolGateway({ store, allowWriteTools: overrides.allowWriteTools }) }),
     getApiKey: () => PLACEHOLDER_KEY,
   });
   return h;
@@ -635,5 +640,91 @@ describe('Kill-Switch zwischen Entscheidung und Executor (SEC-05 Härtung)', () 
     const { appointments, result } = await run('write_tools_off');
     assert.equal(appointments, 0);
     assert.deepEqual(result, { status: 'blocked', reason: 'write_tool_disabled' });
+  });
+});
+
+describe('Produktionspfad ohne injiziertes Gateway (SEC-05 Regression)', () => {
+  // Wie gateway.ts → new VoiceSessionRuntime(): Die Runtime baut ihr Gateway
+  // selbst (createVoiceToolGateway({ store })). Bricht, sobald eine
+  // Produktionsinitialisierung schreibende Tools freischaltet.
+  async function runDefault(callId: string, tool: string, args: Record<string, unknown>) {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    const writes = { appointments: 0, executions: 0, executorCalls: 0 };
+    const insertAppointment = store.insertAppointment.bind(store);
+    store.insertAppointment = async (row) => {
+      writes.appointments += 1;
+      return insertAppointment(row);
+    };
+    const insertExecution = store.insertExecution.bind(store);
+    store.insertExecution = async (row) => {
+      writes.executions += 1;
+      return insertExecution(row);
+    };
+    const original = VOICE_TOOL_EXECUTORS.schedule_appointment;
+    VOICE_TOOL_EXECUTORS.schedule_appointment = async (ctx) => {
+      writes.executorCalls += 1;
+      return original(ctx);
+    };
+    try {
+      const h = persistHarness({ store, defaultGateway: true });
+      const { session, socket } = await openPersisted(h);
+      socket.server(functionCall(callId, tool, args));
+      await wait(50);
+      const evidence = await store.listEvidence(TENANT, session.sessionId);
+      const sent = socket.sent.find(
+        (m) => (m.item as { call_id?: string } | undefined)?.call_id === callId,
+      );
+      const output = JSON.parse((sent?.item as { output: string }).output) as {
+        outcome: string;
+        verified: boolean;
+        output: Record<string, unknown>;
+      };
+      return { h, writes, evidence, output };
+    } finally {
+      VOICE_TOOL_EXECUTORS.schedule_appointment = original;
+    }
+  }
+
+  it('schedule_appointment → write_tool_disabled: kein Termin, kein Executor, Grund in der Evidence', async () => {
+    const { h, writes, evidence, output } = await runDefault('call_prod_write', 'schedule_appointment', {
+      customer_name: 'Max',
+      when: '2026-10-10T09:00:00.000Z',
+    });
+
+    // Die Policy hat ALLOW entschieden — gesperrt hat das Gateway, nicht die Policy.
+    assert.equal(h.voiceToolCalls.length, 1);
+    assert.equal(writes.appointments, 0, 'kein Datensatz in bot_appointments');
+    assert.equal(writes.executorCalls, 0, 'kein Aufruf des schreibenden Executors');
+    assert.equal(writes.executions, 0, 'keine voice_executions-Zeile');
+
+    assert.deepEqual(output, {
+      outcome: 'denied',
+      verified: false,
+      output: { reason: 'write_tool_disabled', verdict: 'ALLOW' },
+    });
+
+    // Nachvollziehbar: Anfrage, Entscheidung und Sperrgrund an derselben toolRequestId.
+    const request = evidence.find((e) => e.kind === 'tool.request');
+    const decision = evidence.find((e) => e.kind === 'policy.decision');
+    const result = evidence.find((e) => e.kind === 'tool.result');
+    assert.equal(request?.payload.provider_call_id, 'call_prod_write');
+    assert.equal(request?.payload.tool, 'schedule_appointment');
+    assert.equal(decision?.payload.verdict, 'ALLOW');
+    assert.deepEqual(result?.payload, { status: 'blocked', reason: 'write_tool_disabled' });
+    assert.ok(request?.toolRequestId);
+    assert.equal(decision?.toolRequestId, request?.toolRequestId);
+    assert.equal(result?.toolRequestId, request?.toolRequestId);
+  });
+
+  it('Gegenprobe: lesendes Tool passiert die Schreibsperre im selben Aufbau', async () => {
+    const { writes, evidence, output } = await runDefault('call_prod_read', 'lookup_kb', { query: 'x' });
+    assert.equal(writes.executions, 1, 'Executor-Pfad erreicht (Guard der Session vorhanden)');
+    assert.equal(writes.appointments, 0);
+    assert.equal(output.output.reason, 'not_configured');
+    assert.notEqual(
+      evidence.find((e) => e.kind === 'tool.result')?.payload.reason,
+      'write_tool_disabled',
+    );
   });
 });

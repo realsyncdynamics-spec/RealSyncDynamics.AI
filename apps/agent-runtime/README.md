@@ -179,7 +179,11 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
   geklärt ist, sind schreibende Tools (`VOICE_WRITE_TOOLS`:
   `schedule_appointment`) im Gateway gesperrt (`write_tool_disabled`).
   `allowWriteTools` gibt es nur als Code-Option für Tests, bewusst ohne
-  Env-Schalter.
+  Env-Schalter. Abgesichert durch `test/write-tools-guard.test.ts`
+  (AST-Prüfung über `src/`: keine Freigabe außerhalb von `tool-gateway.ts`,
+  `createVoiceToolGateway` nur mit `store`/`env`, kein Executor-Aufruf am
+  Gateway vorbei) und den Regressionstest „Produktionspfad ohne injiziertes
+  Gateway“ in `test/session-persistence.test.ts`.
 
 ### Tool-Gateway (PR 4)
 

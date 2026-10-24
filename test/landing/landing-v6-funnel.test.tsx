@@ -119,6 +119,6 @@ it('keeps one filled CTA in the hero and ties the plan row to it with its own so
   // Enterprise bleibt erreichbar, jetzt als Teil der Preiszeile statt als zweiter Hero-Button.
   const enterprise = screen.getByTestId('hero-secondary-cta');
   expect(enterprise).toHaveAttribute('href', '/contact-sales?tier=enterprise&source=landing-v6');
-  expect(enterprise).toHaveTextContent('Auf Anfrage');
+  expect(enterprise).toHaveTextContent('ab 1.498 € / Monat');
   expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
 });

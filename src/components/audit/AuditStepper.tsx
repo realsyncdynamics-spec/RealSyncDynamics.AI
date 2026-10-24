@@ -1,3 +1,4 @@
+import { startingPriceLabel } from '../../../shared/pricing';
 /**
  * Free Audit — Stepper aus dem Governance-OS-Handoff v2 (§ 3).
  *
@@ -532,7 +533,7 @@ export function AuditStepper({
                       <p style={{ marginTop: 6, fontSize: 18, fontWeight: 600, color: 'var(--color-rs-fg-0)' }}>
                         {recommended.name} ·{' '}
                         {recommended.priceOnRequest
-                          ? t('onRequest')
+                          ? (startingPriceLabel(recommended.plan) ? `${startingPriceLabel(recommended.plan)} ${t('perMonth')}` : t('onRequest'))
                           : `${formatPriceEur(recommended.priceEur)} ${t('perMonth')}`}
                       </p>
                       <p className="rs-audit__hint" style={{ fontSize: 13, marginTop: 4 }}>{t('recWhy')}</p>

@@ -4,7 +4,7 @@ import { BETA, betaSignupHref, isBetaPlan } from '../../../config/beta';
 import { COMPANY } from '../../../config/company';
 import { tierById, type PricingTier } from '../../../config/pricing';
 import { CTA } from '../../../content/runtimeVocab';
-import { checkoutHrefForPlan, formatPriceEur, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
+import { checkoutHrefForPlan, startingPriceLabel, formatPriceEur, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
 import { readStored, useLandingMode, type LandingMode } from '../landing-mode';
 
 /**
@@ -406,7 +406,8 @@ export function useLandingV6() {
       const beta = BETA_OFFER && isBetaPlan(plan.id);
       const useYearly = yearly && !inquiry && yearlyAvailable(plan);
       const listEur = useYearly && plan.price.yearlyEur !== null ? plan.price.yearlyEur : plan.price.monthlyEur;
-      const priceLabel = tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : formatPriceEur(listEur);
+      const startingLabel = startingPriceLabel(plan);
+      const priceLabel = tier.priceOnRequest ? (startingLabel ?? 'Auf Anfrage') : beta ? formatPriceEur(0) : formatPriceEur(listEur);
       const featured = plan.highlight;
       return {
         id: plan.id,
@@ -427,7 +428,7 @@ export function useLandingV6() {
         desc: plan.outcomeHeadline,
         features: bullets(tier),
         // Hero-Preiszeile: immer Monatspreis, eigene Quelle für die Trichter-Messung.
-        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
+        heroPrice: tier.priceOnRequest ? (startingLabel ? `${startingLabel} / Monat` : 'Auf Anfrage') : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
         heroListPrice: beta && !tier.priceOnRequest ? formatPriceEur(plan.price.monthlyEur) : null,
         heroHref:
           plan.id === 'enterprise'

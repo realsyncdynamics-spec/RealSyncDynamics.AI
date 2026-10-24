@@ -438,9 +438,11 @@ export interface Plan {
    * `true` = kein oeffentlich zugesicherter Festpreis. Der Betrag in `price`
    * bleibt interner Listenpreis (DB-Katalog, Angebotskalkulation), darf aber
    * nirgends als kaufbares Festpreis-Angebot ausgewiesen werden. Oberflaechen
-   * zeigen stattdessen „Auf Anfrage".
+   * zeigen den expliziten Einstiegspreis (`startingMonthlyEur`) oder „Auf Anfrage".
    */
   priceOnRequest?: boolean;
+  /** Öffentlicher monatlicher Einstiegspreis für individuelle Verträge, kein Checkout-Preis. */
+  startingMonthlyEur?: number;
   /**
    * COMMERCIAL-SSOT: temporary production hotfix.
    * Canonical source migration tracked in Phase 2.
@@ -860,7 +862,7 @@ export const PLANS: Plan[] = [
     trialDays: 0,
   },
 
-  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
+  // ── Enterprise — ab 1.498 € / Monat ──────────────────────────────────────
   // Live Stripe Price exists in public.products (UEm catalog, #1362) — but only
   // for Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
   // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
@@ -873,6 +875,7 @@ export const PLANS: Plan[] = [
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     priceOnRequest: true,
+    startingMonthlyEur: 1_498,
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
     currency: 'EUR',
@@ -3032,3 +3035,8 @@ export function pricingTaxNote(mode: PricingTaxMode): string {
  * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
  */
 export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);
+
+/** Öffentlicher Einstiegspreis; individuelle Vertragskonditionen bleiben vorbehalten. */
+export function startingPriceLabel(plan: Plan): string | null {
+  return plan.startingMonthlyEur === undefined ? null : `ab ${formatPriceEur(plan.startingMonthlyEur)}`;
+}

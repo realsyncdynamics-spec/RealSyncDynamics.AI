@@ -85,7 +85,7 @@ export function PlanSelector({
                   <div className="mb-4">
                     <div className="text-3xl font-bold text-titanium-50">
                       {tierPriceLabel(tier, '')}
-                      {!tier.priceOnRequest && <span className="text-lg text-titanium-400"> €</span>}
+                      {(!tier.priceOnRequest || tier.startingMonthlyEur !== undefined) && <span className="text-lg text-titanium-400"> €</span>}
                     </div>
                     <p className="text-sm text-titanium-400">{tier.priceSuffix}</p>
                   </div>

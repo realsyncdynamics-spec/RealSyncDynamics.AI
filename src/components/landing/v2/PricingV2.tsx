@@ -7,6 +7,7 @@ import { tierById, type PricingTier } from '../../../config/pricing';
 import {
   checkoutHrefForPlan,
   formatPriceEur,
+  startingPriceLabel,
   pricingTaxNote,
   PLANS,
 } from '@/shared/pricing';
@@ -78,7 +79,7 @@ export function PricingV2() {
             const yearly =
               cycle === 'year' && !tier.priceOnRequest && yearlyAvailable(plan);
             const price = tier.priceOnRequest
-              ? 'Auf Anfrage'
+              ? (startingPriceLabel(plan) ?? 'Auf Anfrage')
               : formatPriceEur(
                   yearly && plan.price.yearlyEur !== null
                     ? plan.price.yearlyEur

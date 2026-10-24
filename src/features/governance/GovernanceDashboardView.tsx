@@ -1,3 +1,4 @@
+import { startingPriceLabel } from '../../../shared/pricing';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -33,7 +34,7 @@ const UPGRADE_TIER_BLURBS: Record<string, string> = {
 const UPGRADE_TIERS = SELLABLE_PRICING_TIERS.map((tier) => ({
   tier: tier.name,
   // Ein Plan ohne oeffentlichen Festpreis darf hier keinen Betrag zeigen.
-  price: tier.priceOnRequest ? 'Auf Anfrage' : `${formatPriceEur(tier.priceEur)}/Monat`,
+  price: tier.priceOnRequest ? (startingPriceLabel(tier.plan) ? `${startingPriceLabel(tier.plan)}/Monat` : 'Auf Anfrage') : `${formatPriceEur(tier.priceEur)}/Monat`,
   desc: UPGRADE_TIER_BLURBS[tier.plan.id] ?? tier.plan.outcomeHeadline,
   href: checkoutHrefForPlan(tier.plan, { source: 'governance_dashboard' }),
   // Der Trial-Hinweis folgt der SSoT: kein Trial, kein Versprechen.

@@ -21,12 +21,23 @@ import { describe, expect, it } from 'vitest';
 import { ON_REQUEST_LABEL, PRICING_TIERS, tierPriceLabel } from '../../src/config/pricing';
 
 describe('tierPriceLabel', () => {
+  it('Enterprise zeigt den monatlichen Einstiegspreis und bleibt ein Vertragstarif', () => {
+    const tier = PRICING_TIERS.find((t) => t.id === 'enterprise')!;
+    expect(tierPriceLabel(tier)).toBe('ab 1.498 €');
+    expect(tier.plan.purchaseMode).toBe('inquiry');
+    expect(tier.plan.availability).toBe('contract');
+    expect(tier.plan.trialDays).toBe(0);
+    expect(tier.plan.yearlyCheckoutUnavailable).toBe(true);
+    expect(tier.plan.price.monthlyEur).toBe(1_249);
+  });
+
   it('es gibt mindestens einen Anfrage-Plan — sonst prüft der Test nichts', () => {
     expect(PRICING_TIERS.some((t) => t.priceOnRequest)).toBe(true);
   });
 
-  it('ein Anfrage-Plan zeigt das Label und keine Ziffer, gleich mit welchem Suffix', () => {
-    for (const tier of PRICING_TIERS.filter((t) => t.priceOnRequest)) {
+  it('ein Anfrage-Plan ohne Einstiegspreis zeigt das Label und keine Ziffer', () => {
+    expect(tierPriceLabel({ priceOnRequest: true, priceString: '1.249' })).toBe(ON_REQUEST_LABEL);
+    for (const tier of PRICING_TIERS.filter((t) => t.priceOnRequest && t.startingMonthlyEur === undefined)) {
       for (const suffix of [' €', '€', ' €/Mo.', '']) {
         const label = tierPriceLabel(tier, suffix);
         expect(label, `${tier.id} mit Suffix "${suffix}"`).toBe(ON_REQUEST_LABEL);

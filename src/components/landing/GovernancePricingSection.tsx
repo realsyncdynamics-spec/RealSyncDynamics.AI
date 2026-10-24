@@ -109,7 +109,7 @@ export function GovernancePricingSection() {
                   }}
                 >
                   {tierPriceLabel(tier)}
-                  {tier.priceOnRequest ? null : (
+                  {tier.priceOnRequest && tier.startingMonthlyEur === undefined ? null : (
                   <span
                     className="ml-2 text-[11px] tracking-[.14em]"
                     style={{

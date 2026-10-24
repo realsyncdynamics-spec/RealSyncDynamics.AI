@@ -44,4 +44,4 @@ liefert nur Kandidaten, keine automatische Löschfreigabe.
 
 ## PR-Triage-Policy (verbindlich)
 
-Wer offene PRs mergt, schließt, rebased oder neu anlegt, liest vorher `.github/PR_TRIAGE_POLICY.md` und hält sich daran. Sie regelt Einzel-Freigaben, Security-Vorrang, Konflikt- und Hotspot-Wege, WIP-Stopp und feste Produktentscheidungen (u. a. Enterprise 1.249 € als höchste Stufe).
+Wer offene PRs mergt, schließt, rebased oder neu anlegt, liest vorher `.github/PR_TRIAGE_POLICY.md` und hält sich daran. Sie regelt Einzel-Freigaben, Security-Vorrang, Konflikt- und Hotspot-Wege, WIP-Stopp und feste Produktentscheidungen (u. a. Enterprise ab 1.498 € pro Monat, Vertragsanfrage).

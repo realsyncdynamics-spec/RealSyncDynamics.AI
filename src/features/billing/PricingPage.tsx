@@ -1,3 +1,4 @@
+import { startingPriceLabel } from '../../../shared/pricing';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
@@ -413,10 +414,10 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
     ? checkoutHref
     : withAuditContext(checkoutHref, auditContext);
   const priceDisplay = tier.priceOnRequest
-    ? t('onRequest')
+    ? (startingPriceLabel(tier.plan) ?? t('onRequest'))
     : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
   const suffix = tier.priceOnRequest
-    ? (lang === 'en' ? 'custom offer' : tier.priceSuffix)
+    ? (tier.startingMonthlyEur !== undefined ? t('perMonth') : lang === 'en' ? 'custom offer' : tier.priceSuffix)
     : showYearly
       ? t('perYear')
       : t('perMonth');

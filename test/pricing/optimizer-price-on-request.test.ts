@@ -31,7 +31,7 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     }
   });
 
-  it('ein Auf-Anfrage-Plan zeigt „Auf Anfrage" statt eines Betrags', () => {
+  it('ein Vertragstarif zeigt nur den freigegebenen Einstiegspreis', () => {
     const onRequest = OPTIMIZER_PACKAGES.filter(
       (pkg) => tierById(pkg.key)?.priceOnRequest === true,
     );
@@ -40,10 +40,8 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     expect(onRequest.length).toBeGreaterThan(0);
 
     for (const pkg of onRequest) {
-      expect(pkg.price, `Paket "${pkg.name}"`).toBe('Auf Anfrage');
-      // Doppelt geprüft, weil die Zeichenkette künftig anders lauten mag:
-      // Eine Ziffer darf dort unter keinen Umständen stehen.
-      expect(pkg.price, `Paket "${pkg.name}"`).not.toMatch(/\d/);
+      expect(pkg.price, `Paket "${pkg.name}"`).toBe('ab 1.498 €/Mo.');
+      expect(tierById(pkg.key)?.plan.purchaseMode).toBe('inquiry');
     }
   });
 

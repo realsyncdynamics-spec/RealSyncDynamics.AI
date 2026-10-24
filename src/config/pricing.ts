@@ -86,9 +86,11 @@ export interface PricingTier {
    * Canonical source migration tracked in Phase 2.
    *
    * `true` = kein oeffentlich zugesicherter Festpreis. Oberflaechen zeigen
-   * „Auf Anfrage" statt `priceEur`. Der Betrag bleibt interner Listenpreis.
+   * den expliziten Einstiegspreis oder „Auf Anfrage" statt `priceEur`.
+   * Der Betrag bleibt interner Listenpreis.
    */
   priceOnRequest: boolean;
+  startingMonthlyEur?: number;
   /** Formatierter Betrag ohne Währungszeichen, z.B. "1.999" */
   priceString: string;
   /** "/ Monat", "/ Jahr" oder "einmalig · kein Account" */
@@ -151,7 +153,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
   const id = (isYearly ? `${plan.id}_yearly` : plan.id) as TierId;
 
   const priceSuffix = plan.priceOnRequest === true
-    ? 'individuelles Angebot'
+    ? (plan.startingMonthlyEur !== undefined ? '/ Monat' : 'individuelles Angebot')
     : isOneTime
     ? 'einmalig'
     : plan.price.monthlyEur === 0
@@ -165,6 +167,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     plan,
     priceEur,
     priceOnRequest: plan.priceOnRequest === true,
+    startingMonthlyEur: plan.startingMonthlyEur,
     priceString: new Intl.NumberFormat('de-DE').format(priceEur),
     priceSuffix,
     // Free (0 €) und Einmalprodukte (Betrag in `oneTimeEur`) sind beide
@@ -316,12 +319,14 @@ export const ON_REQUEST_LABEL = 'Auf Anfrage';
  * Deshalb liegt die Regel hier, und `test/pricing/tier-price-label.test.ts`
  * verbietet den direkten Zugriff auf `.priceString` in Anzeigen.
  *
- * @param suffix wird nur an einen echten Betrag gehängt, nie an das Label.
+ * Freigegebene Einstiegspreise werden mit „ab“ ausgegeben.
+ * @param suffix wird nur an einen Betrag gehängt, nie an „Auf Anfrage“.
  */
 export function tierPriceLabel(
-  tier: Pick<PricingTier, 'priceOnRequest' | 'priceString'>,
+  tier: Pick<PricingTier, 'priceOnRequest' | 'priceString' | 'startingMonthlyEur'>,
   suffix = ' €',
 ): string {
+  if (tier.startingMonthlyEur !== undefined) return `ab ${new Intl.NumberFormat('de-DE').format(tier.startingMonthlyEur)}${suffix}`;
   return tier.priceOnRequest ? ON_REQUEST_LABEL : `${tier.priceString}${suffix}`;
 }
 

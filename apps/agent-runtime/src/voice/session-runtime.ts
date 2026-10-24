@@ -47,6 +47,7 @@ import { VOICE_TOOLS } from '../voice-tools.js';
 import { createSupabaseVoiceStoreFromEnv } from './supabase-voice-store.js';
 import {
   createVoiceToolGateway,
+  type VoiceExecutionGuard,
   type VoiceToolGateway,
 } from './tool-gateway.js';
 import {
@@ -136,6 +137,8 @@ interface PendingToolCall {
   readonly tool: VoiceToolName;
   /** toolCount vor diesem Call, reserviert vor dem Await. */
   readonly toolCount: number;
+  /** true nach dem ersten resolveToolPolicyContext — jede Anmeldung bekommt höchstens eine Entscheidung. */
+  resolved: boolean;
 }
 
 interface LiveSession {
@@ -149,6 +152,10 @@ interface LiveSession {
   readonly persist: boolean;
   /** Calls, die gerade an /voice-tool gehen — nur diese bekommen eine Entscheidung. */
   readonly pendingToolCalls: Map<string, PendingToolCall>;
+  /** Alle requestIds dieser Session; eine wiederverwendete callId wird abgelehnt. */
+  readonly usedRequestIds: Set<string>;
+  /** Synchron gesetzt, sobald ein Abbruch beginnt — danach startet keine Ausführung mehr. */
+  closed: boolean;
   turnCount: number;
   toolCount: number;
 }
@@ -208,6 +215,8 @@ export class VoiceSessionRuntime {
 
   async closeSession(sessionId: string): Promise<void> {
     const live = this.sessions.get(sessionId);
+    // Vor dem ersten Await: laufende Calls dürfen ab hier nichts mehr ausführen.
+    if (live) live.closed = true;
     try {
       await this.provider.closeSession(sessionId);
     } finally {
@@ -231,6 +240,9 @@ export class VoiceSessionRuntime {
    * Policy-Eingabe für /voice-tool, ausschließlich serverseitig (SEC-01, SEC-05):
    *  - nur für einen Call, den diese Runtime gerade selbst angemeldet hat
    *    (sessionId + requestId + tool); sonst undefined → DENY
+   *  - höchstens einmal pro Anmeldung: der erste Aufruf verbraucht sie,
+   *    jeder weitere (Replay, paralleler Doppel-Request) → undefined
+   *  - nicht mehr nach Beginn eines Abbruchs
    *  - Zähler und Rate-Limit aus der laufenden Session
    *  - Kill-Switch zusätzlich frisch aus voice_sessions; Lesefehler → aktiv
    *  - Einwilligung nur, wenn verifyConsent sie bestätigt
@@ -242,7 +254,10 @@ export class VoiceSessionRuntime {
   ): Promise<VoiceToolPolicyContext | undefined> {
     const live = this.sessions.get(sessionId);
     const pending = live?.pendingToolCalls.get(requestId);
-    if (!live || !pending || pending.tool !== tool) return undefined;
+    if (!live || live.closed || !pending || pending.tool !== tool || pending.resolved) return undefined;
+    // Synchron vor dem ersten Await verbraucht: zwei gleichzeitige Requests
+    // können nicht beide eine Entscheidung bekommen.
+    pending.resolved = true;
 
     const killSwitch = live.session.killSwitch || (await this.readStoredKillSwitch(live));
     let consent: VoiceConsent | null;
@@ -279,10 +294,34 @@ export class VoiceSessionRuntime {
     if (!live.persist || !this.store) return false;
     try {
       const row = await this.store.getSession(live.tenantId, live.sessionId);
-      return !row || row.killSwitch || row.status === 'killed';
+      return (
+        !row ||
+        row.killSwitch ||
+        row.status === 'killed' ||
+        row.status === 'ended' ||
+        row.status === 'failed'
+      );
     } catch {
       return true;
     }
+  }
+
+  /** Session läuft noch in diesem Prozess und kein Abbruch hat begonnen (synchron). */
+  private isLive(live: LiveSession): boolean {
+    return !live.closed && this.sessions.get(live.sessionId) === live;
+  }
+
+  /**
+   * Zweite Prüfung direkt vor dem Executor (Tool-Gateway): Kill-Switch frisch
+   * aus dem Store, danach synchron Abbruch/Session — im selben Tick wie der
+   * Executor-Start. Ein Kill-Switch, den ein anderer Prozess nach dem Re-Read
+   * setzt, ist nicht abgedeckt (siehe README, SEC-05 Restrisiko).
+   */
+  private executionGuard(live: LiveSession): VoiceExecutionGuard {
+    return {
+      recheck: async () => !live.session.killSwitch && !(await this.readStoredKillSwitch(live)),
+      isLive: () => this.isLive(live),
+    };
   }
 
   /** true wenn ein Persistenz-Store konfiguriert ist (HTTP-Start verlangt das). */
@@ -357,6 +396,8 @@ export class VoiceSessionRuntime {
       policyRef: resolved.policyRef,
       persist: true,
       pendingToolCalls: new Map(),
+      usedRequestIds: new Set(),
+      closed: false,
       turnCount: request.session.turnCount,
       toolCount: request.session.toolCount,
     };
@@ -450,6 +491,8 @@ export class VoiceSessionRuntime {
       policyRef: null,
       persist: false,
       pendingToolCalls: new Map(),
+      usedRequestIds: new Set(),
+      closed: false,
       turnCount: request.session.turnCount,
       toolCount: request.session.toolCount,
     };
@@ -546,6 +589,7 @@ export class VoiceSessionRuntime {
     if (event.type === 'session.closed' || event.type === 'error') {
       this.onEvent?.(event);
       if (event.type === 'session.closed') {
+        live.closed = true;
         const removed = this.sessions.delete(live.sessionId);
         if (removed && live.persist && this.store) {
           void this.finalizePersistedSession(
@@ -603,13 +647,18 @@ export class VoiceSessionRuntime {
       return deniedResult('invalid_arguments', callId);
     }
 
+    if (!this.isLive(live)) {
+      return deniedResult('session_closed', callId);
+    }
     const requestId = `vt_${callId}`;
-    if (live.pendingToolCalls.has(requestId)) {
+    // Laufend oder schon erledigt: jede callId genau einmal pro Session.
+    if (live.usedRequestIds.has(requestId)) {
       return deniedResult('duplicate_call_id', callId);
     }
     // Reservierung vor dem Await: parallele Calls bekommen verschiedene
     // toolCounts, und /voice-tool kennt nur diesen angemeldeten Call (SEC-05).
-    live.pendingToolCalls.set(requestId, { tool: call.name, toolCount: live.toolCount });
+    live.usedRequestIds.add(requestId);
+    live.pendingToolCalls.set(requestId, { tool: call.name, toolCount: live.toolCount, resolved: false });
     live.toolCount += 1;
 
     let outcome: VoiceToolHttpOutcome;
@@ -659,6 +708,19 @@ export class VoiceSessionRuntime {
         output: { reason: 'tenant_session_mismatch', agentId: VOICE_AGENT_ID },
       };
     }
+    // Die Entscheidung trägt kein Tool-Feld; die requestId ist die einzige
+    // Bindung an genau diesen Call (Tool steckt in der Anmeldung).
+    if (decision.requestId !== requestId) {
+      return {
+        callId,
+        outcome: 'denied',
+        verified: false,
+        output: { reason: 'request_mismatch', agentId: VOICE_AGENT_ID },
+      };
+    }
+    if (!this.isLive(live)) {
+      return deniedResult('session_closed', callId);
+    }
 
     return this.toolGateway.handle({
       tenantId: live.tenantId,
@@ -670,6 +732,7 @@ export class VoiceSessionRuntime {
       decision,
       confirmed: false,
       policyRef: live.policyRef ?? undefined,
+      executionGuard: this.executionGuard(live),
     });
   }
 }
@@ -745,5 +808,6 @@ export {
   createSupabaseVoiceStore,
   createSupabaseVoiceStoreFromEnv,
   VOICE_GENESIS_HASH,
+  type VoiceExecutionGuard,
   type VoiceToolGateway,
 } from './tool-gateway.js';

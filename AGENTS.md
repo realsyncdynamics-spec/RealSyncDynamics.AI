@@ -1,47 +1,58 @@
-# RealSync Lead Architect Persona
+# AGENTS.md — Globale Agentenregeln (Ebene 1)
 
-## Rolle
-Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung von EU-nativen AI-SaaS-Lösungen mit Fokus auf digitaler Souveränität, C2PA-Herkunftsnachweisen und Enterprise-Sicherheit.
+Gilt für jeden Agenten in diesem Repo (Claude Code, Codex, Copilot, Subagenten).
+Claude Code lädt diese Datei über den Import in `CLAUDE.md`. Profile und Policies
+dürfen diese Regeln verschärfen, nie lockern.
 
-## Design-DNA (Hard-Edge Industrial UI)
-- **Farben:** Obsidian-Schwarz (#0A0A0B), Titanium-Silber (#E2E2E2), Security-Blue (#0052FF).
-- **Layout:** „Sovereign Grid“ (40px Raster).
-- **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
-- **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
+**Produkt:** EU-souveräne AI-Governance-Runtime (DSGVO, EU AI Act). Governance-Schicht
+zwischen Mensch, Firma, Agenten und Daten. Kein Chatbot.
 
-### Public Landing und Frontend — gezielt weiterentwickeln
+## Regelhierarchie
 
-Stand 10.10.2026: `/` rendert `src/pages/LandingV4.tsx`.
-Die tatsächliche Routenzuordnung in `src/App.tsx` ist maßgeblich.
+1. Diese Datei
+2. `CLAUDE.md` — Claude-Arbeitskontext (Stack, Befehle, Kontextregeln)
+3. Genau ein Aufgabenprofil aus `docs/claude/profiles/` (Tabelle unten)
+4. `.github/PR_TRIAGE_POLICY.md` — PRs, Freigaben, Merge, Rebase, Deploy
+5. Nachweise nach `.github/pull_request_template.md`
 
-- **Aktive Komponenten:** `src/components/landing/v4/`.
-- **Aktive Gestaltung:** `src/styles/landing-v4-classical.css`, gekapselt unter `.gv4`.
-- **Referenzen:** `/design/landing-v2` bleibt als Vorschau erreichbar.
-  `/design/governance-ai` und `/design/titan` leiten auf `/` um.
-- **Inhalte/Preise:** Planpreise und Checkout-Ziele aus `shared/pricing.ts`.
-- **Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026):**
-  Frontend und Landingpage gezielt verbessern. V4 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
-- **Metadaten:** Monospace für technische Daten beibehalten.
-  Risk-/Statusfarben bleiben semantisch von Brand-/VIP-Akzenten getrennt.
+Bei Widerspruch gehen Sicherheitsregeln und ausdrückliche Einzel-Freigaben vor.
+Technische Wahrheit ist der Code, kein Dokument (Startseite = Element von
+`<Route path="/">` in `src/App.tsx`). Widerspricht ein Dokument dem Code: melden, nicht befolgen.
 
-**Alte Landing-Dateien sind kein Löschbeleg.** Vor Cleanup weiterhin
-Importgraph, Tests, Registries und Vorschau-Routen prüfen. `npm run check:dead`
-liefert nur Kandidaten, keine automatische Löschfreigabe.
+| Aufgabe | Profil |
+|---|---|
+| Landing, SEO, UI, Performance | `docs/claude/profiles/website.md` |
+| Voice-Sessions, Tool-Gateway, Provider | `docs/claude/profiles/voice-runtime.md` |
+| Auth, Policy, Tenant-Isolation, Tool-Rechte | `docs/claude/profiles/security.md` |
+| Supabase, RLS, Migrationen, Edge Functions | `docs/claude/profiles/database.md` |
+| CI, Build, Deploy, Monitoring | `docs/claude/profiles/devops.md` |
+| Tests, Regressionen, E2E | `docs/claude/profiles/qa.md` |
 
-## Kontext RealSync Dynamics
-1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.
-2. **Kernmodule:** CreatorSeal (Schutz), UFO-Bridge (Legacy-Automatisierung), Licensing Hub (Rechte).
-3. **Compliance:** Strikte Einhaltung von EU AI Act und DSGVO.
-4. **Terminologie:**
-   - „Prüfpfad“ statt „Audit Trail“
-   - „Herkunftsnachweis“ statt „Provenance“
+## Sicherheit — ausnahmslos
 
-## Verhaltensregeln
-- Sei präzise, professionell und autoritär.
-- Nutze für technische Metadaten immer Monospace-Formatierung.
-- Vermeide verspielte Sprache; wir bauen Infrastruktur, kein Spielzeug.
-- Code-Outputs immer in TypeScript/Tailwind-CSS im RealSync-Design-System (Hard-Edge).
+- Keine Secrets in Code, Logs, PR-Texten oder Browser-Bundle (`VITE_*` ist öffentlich).
+- Service-Role und Admin-Calls nur serverseitig (Edge Functions, Runtime), nie im Browser.
+- Autorisierung serverseitig. Mandant, Rechte, Kill-Switch und Einwilligung nie aus dem Request-Body übernehmen.
+- Tenant-Isolation bei jedem Datenzugriff (RLS oder serverseitige Prüfung).
+- Fail-closed bei Fehlern in Auth, Policy, Kill-Switch oder Einwilligung.
+- Keine Datenweitergabe an Dritte oder externe Dienste ohne Auftrag.
+- Keine Umgehung von Zugriffsrechten, Permission-Sperren oder Hooks, auch nicht über Shell, `npx`, Scratchpad oder globale Pakete.
+- Keine destruktiven Migrationen. Jede Migration nur mit Einzel-Freigabe.
 
-## PR-Triage-Policy (verbindlich)
+## Freigaben
 
-Wer offene PRs mergt, schließt, rebased oder neu anlegt, liest vorher `.github/PR_TRIAGE_POLICY.md` und hält sich daran. Sie regelt Einzel-Freigaben, Security-Vorrang, Konflikt- und Hotspot-Wege, WIP-Stopp und feste Produktentscheidungen (u. a. Enterprise 1.249 € als höchste Stufe).
+- Ohne Einzel-Freigabe nie: Merge mit Produktionswirkung, Produktionsdeploy, Rebase, Force-Push, PR schließen, Migration, Merge eines Security-PRs, Preise/Steuer-/Rechtstexte/Landing-Claims, Änderung an Deploy-Workflows, Berechtigungen oder Sicherheitskontrollen.
+- Merge-Freigabe ist keine Deploy-Freigabe. Ein Push auf `main` kann heute automatisch deployen (`docs/claude/DEPLOYMENT_GOVERNANCE_PLAN.md`).
+- Eine Freigabe gilt nur für die genannte Aktion und den genannten PR.
+- Agenten setzen kein `automerge`-Label. Ein Label ersetzt keine Freigabe.
+
+**Autonom** (im eigenen Arbeitsbranch und Profil): lesen, analysieren, nichtdestruktive lokale Prüfungen, Diff-Reviews, Befunde dokumentieren, Commits und Pushes auf den eigenen Branch, Draft-PRs unter Beachtung des WIP-Stopps.
+
+## Nachweise
+
+- Nur ausgeführte Prüfungen melden: Befehl, Umgebung, Ergebnis.
+- Gefilterter Typecheck, Stubs, abweichende oder fehlende Abhängigkeiten → `TEILWEISE`, zählt nicht als grün. Maßgeblich ist die CI auf dem aktuellen Head.
+- Eine Cloudflare-Preview belegt nur den Frontend-Build, nicht Runtime, Edge Functions oder DB.
+- Abschluss: Branch, voller Commit-SHA, Dateien, Prüfungen, Security-Befunde, offene Risiken, nötige Entscheidungen. Kurz, keine Wiederholung früherer Berichte.
+
+Sprache: Deutsch, präzise. „Prüfpfad“ statt „Audit Trail“, „Herkunftsnachweis“ statt „Provenance“, technische Bezeichner in `Monospace`.

@@ -1,0 +1,4 @@
+{
+  "_comment": "Routen, auf denen check:responsive Befunde als Fehler wertet (Exit 1). WP8a startet leer (Warnstufe); 8b-8d tragen hier die Routen ein, deren Befunde sie behoben haben (PLAN .claude/os-funnel/PLAN.md §4).",
+  "routes": []
+}

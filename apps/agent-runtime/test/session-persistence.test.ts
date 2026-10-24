@@ -164,6 +164,7 @@ function persistHarness(
   overrides: {
     store?: ReturnType<typeof createMemoryVoiceStore>;
     voiceToolImpl?: (req: VoiceToolHttpRequest) => Promise<VoiceToolHttpOutcome>;
+    allowWriteTools?: boolean;
   } = {},
 ): PersistHarness {
   const store = overrides.store ?? createMemoryVoiceStore();
@@ -187,6 +188,7 @@ function persistHarness(
           verdict: 'ALLOW',
           tenantId: req.tenantId,
           sessionId: req.sessionId,
+          requestId: req.requestId,
         }),
       };
     },
@@ -219,7 +221,7 @@ function persistHarness(
     provider,
     voiceToolClient: client,
     store,
-    toolGateway: createVoiceToolGateway({ store }),
+    toolGateway: createVoiceToolGateway({ store, allowWriteTools: overrides.allowWriteTools }),
     getApiKey: () => PLACEHOLDER_KEY,
   });
   return h;
@@ -567,5 +569,71 @@ describe('resolveToolPolicyContext — Kill-Switch aus dem Store (SEC-05)', () =
     assert.equal(ctx.session.toolCount, 0);
     assert.deepEqual(ctx.session.rateLimit, { maxTurns: 20, maxTools: 8 });
     assert.equal(ctx.session.grant?.botId, BOT);
+  });
+});
+
+describe('Kill-Switch zwischen Entscheidung und Executor (SEC-05 Härtung)', () => {
+  type Mode = 'none' | 'kill_before_executor' | 'read_error' | 'write_tools_off';
+
+  async function run(mode: Mode) {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    let appointments = 0;
+    const insertAppointment = store.insertAppointment.bind(store);
+    store.insertAppointment = async (row) => {
+      appointments += 1;
+      return insertAppointment(row);
+    };
+    const h = persistHarness({ store, allowWriteTools: mode !== 'write_tools_off' });
+    const { session, socket } = await openPersisted(h);
+
+    if (mode === 'kill_before_executor') {
+      // Kill-Switch aus einem anderen Prozess, nachdem /voice-tool ALLOW
+      // entschieden hat und während das Gateway die Ausführung vorbereitet.
+      const insertExecution = store.insertExecution.bind(store);
+      store.insertExecution = async (row) => {
+        await store.updateSessionStatus(TENANT, session.sessionId, { killSwitch: true });
+        return insertExecution(row);
+      };
+    }
+    if (mode === 'read_error') {
+      store.getSession = async () => {
+        throw new Error('http_503');
+      };
+    }
+
+    socket.server(
+      functionCall('call_appt', 'schedule_appointment', {
+        customer_name: 'Max',
+        when: '2026-10-10T09:00:00.000Z',
+      }),
+    );
+    await wait(50);
+    const evidence = await store.listEvidence(TENANT, session.sessionId);
+    return { appointments, result: evidence.filter((e) => e.kind === 'tool.result').at(-1)?.payload };
+  }
+
+  it('Kill-Switch nach der Entscheidung → keine Ausführung, Evidence blocked', async () => {
+    const { appointments, result } = await run('kill_before_executor');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'session_inactive' });
+  });
+
+  it('Lesefehler beim zweiten Check → keine Ausführung (fail-closed)', async () => {
+    const { appointments, result } = await run('read_error');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'session_inactive' });
+  });
+
+  it('ohne Kill-Switch wird ausgeführt und verifiziert', async () => {
+    const { appointments, result } = await run('none');
+    assert.equal(appointments, 1);
+    assert.equal(result?.status, 'succeeded');
+  });
+
+  it('schreibende Tools sind ohne allowWriteTools gesperrt (Default)', async () => {
+    const { appointments, result } = await run('write_tools_off');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'write_tool_disabled' });
   });
 });

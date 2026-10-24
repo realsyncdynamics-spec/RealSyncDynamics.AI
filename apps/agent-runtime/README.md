@@ -154,6 +154,32 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
 - **Einzelinstanz (SEC-06).** Runtime und `/voice-tool` müssen im selben
   Prozess laufen; mehrere Instanzen oder ein Neustart führen zu
   `voice_session_unknown` (fail-closed, keine Offenlegung).
+- **Eine Anmeldung, eine Entscheidung (SEC-05 Härtung).** Der erste Abruf
+  des Policy-Kontexts verbraucht die Anmeldung; jeder weitere Request mit
+  derselben `requestId` (Replay, paralleler Doppel-Request) →
+  `voice_session_unknown`. Jede `callId` gilt einmal pro Session, auch nach
+  Abschluss (`duplicate_call_id`). Die Entscheidung muss genau die
+  `requestId` des Calls tragen (`request_mismatch`).
+- **Abbruch.** `closeSession` / `session.closed` markieren die Session
+  synchron vor dem ersten Await. Danach: keine Anmeldung, kein Kontext,
+  kein Gateway-Aufruf (`session_closed`).
+- **Zweite Prüfung vor dem Executor.** Das Tool-Gateway liest den
+  Kill-Switch unmittelbar vor dem Executor erneut (`voice_sessions`:
+  `kill_switch`, `status` killed/ended/failed; Lesefehler → blockiert) und
+  prüft danach synchron, ob die Session noch läuft. Zwischen dieser Prüfung
+  und dem Executor-Start liegt kein Await. Blockiert → `session_inactive`,
+  `voice_executions` failed, Evidence `tool.result` `blocked`. Ohne Guard
+  führt das Gateway nicht aus (`execution_guard_missing`).
+- **Restrisiko, schreibende Tools gesperrt.** Atomar ist das nur gegenüber
+  einem Abbruch in diesem Prozess. Ein Kill-Switch, den ein anderer Prozess
+  (z. B. Staff-UI) *nach* dem Re-Read setzt, kann eine bereits startende
+  Ausführung nicht mehr verhindern (Fenster ≈ ein Store-Roundtrip). Ein
+  atomarer Schutz bräuchte eine Prüfung in derselben DB-Transaktion wie der
+  Schreibzugriff (RPC/Trigger → Migration, nicht Teil dieses PRs). Bis das
+  geklärt ist, sind schreibende Tools (`VOICE_WRITE_TOOLS`:
+  `schedule_appointment`) im Gateway gesperrt (`write_tool_disabled`).
+  `allowWriteTools` gibt es nur als Code-Option für Tests, bewusst ohne
+  Env-Schalter.
 
 ### Tool-Gateway (PR 4)
 
@@ -169,7 +195,8 @@ Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
 - `verified: true` nur nach Re-Read des Datensatzes (`id` + `tenant_id`,
   `external_ref` = diese ID); sonst `mismatch` / `failed`.
 - Echter Executor: `schedule_appointment` → `bot_appointments` (via Store).
-  Fehlt `customer_name` → `invalid_arguments`, keine Ausführung.
+  Fehlt `customer_name` → `invalid_arguments`, keine Ausführung. Derzeit
+  gesperrt (`write_tool_disabled`, siehe Restrisiko SEC-05 oben).
 - Bewusst `not_configured`: `lookup_kb`, `create_ticket`, `handoff_human`,
   `export_transcript` (kein Backend im Repo).
 - Keine neuen Tool-Namen `read_availability` / `book_appointment` (kein

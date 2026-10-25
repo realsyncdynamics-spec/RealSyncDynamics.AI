@@ -160,7 +160,7 @@ describe('Stripe Integration', () => {
     expect(isPlanFixedPrice('starter')).toBe(true); // €79
     expect(isPlanFixedPrice('growth')).toBe(true); // €249
     expect(isPlanFixedPrice('agency')).toBe(true); // €699
-    expect(isPlanFixedPrice('enterprise')).toBe(false); // inquiry / priceOnRequest
+    expect(isPlanFixedPrice('enterprise')).toBe(true); // €1.498, Checkout seit 2026-10-24
     expect(isPlanFixedPrice('partner')).toBe(false); // inquiry / legacy
   });
 

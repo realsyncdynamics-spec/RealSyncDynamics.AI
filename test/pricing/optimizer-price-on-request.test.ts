@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 
 import { OPTIMIZER_PACKAGES } from '../../src/pages/claude-code-optimizer/OptimizerKit';
 import { tierById } from '../../src/config/pricing';
+import { monthlyPriceText } from '../../shared/pricing';
 
 describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
   it('jedes Paket verweist auf einen Plan der SSoT', () => {
@@ -59,9 +60,17 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     expect(fixed.map((pkg) => pkg.key)).toContain('enterprise');
 
     // Genau der Betrag aus der SSoT — eine bloße Ziffernprüfung ließe einen
-    // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch.
+    // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch. Pläne mit
+    // `netPriceLabel` (Enterprise) tragen den Netto-Hinweis aus der SSoT.
     for (const pkg of fixed) {
-      expect(pkg.price, `Paket "${pkg.name}"`).toBe(`${tierById(pkg.key)!.priceString} €/Mo.`);
+      const tier = tierById(pkg.key)!;
+      const expected = tier.plan.netPriceLabel
+        ? monthlyPriceText(tier.plan)
+        : `${tier.priceString} €/Mo.`;
+      expect(pkg.price, `Paket "${pkg.name}"`).toBe(expected);
     }
+    expect(OPTIMIZER_PACKAGES.find((pkg) => pkg.key === 'enterprise')?.price).toBe(
+      '1.498 €/Monat netto',
+    );
   });
 });

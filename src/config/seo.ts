@@ -469,13 +469,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/contact-sales': {
-    title: 'Enterprise-Beta – kostenlos bis 31.01.2027 | RealSync Dynamics AI',
+    title: 'Enterprise anfragen – SLA, Multi-Org | RealSync Dynamics AI',
     description:
-      'Enterprise-Beta: Testzugang kostenlos bis 31.01.2027, keine Kreditkarte, kein Abo. Danach Preis auf Anfrage. Gegenleistung: Feedback und Verbesserungsideen.',
+      'Enterprise kostet 1.498 €/Monat netto, ohne Testphase und direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
-      { name: 'Enterprise-Beta', url: '/contact-sales' },
+      { name: 'Enterprise anfragen', url: '/contact-sales' },
     ]),
   },
 
@@ -1339,7 +1339,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/enterprise-konfigurator': {
     title: 'Enterprise konfigurieren – Bausteine | RealSync Dynamics AI',
     description:
-      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, Konditionen auf Anfrage.',
+      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat netto.',
     canonical: `${SITE_URL}/enterprise-konfigurator`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

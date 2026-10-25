@@ -61,7 +61,7 @@ export function ProlianceAlternative() {
       <ComparisonTable
         competitor="Proliance"
         rows={[
-          { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '79–249 €/M (Self-Service) · Enterprise auf Anfrage' },
+          { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '79–249 €/M (Self-Service) · Enterprise 1.498 €/M netto' },
           { f: 'Externer DSB stellen', o: 'yes', r: 'no' },
           { f: 'Beratung im Preis enthalten', o: 'yes', r: 'no' },
           { f: 'AVV-Generator (Self-Service)', o: 'partial', r: 'yes' },

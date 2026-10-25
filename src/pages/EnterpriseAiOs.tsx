@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
 import { BETA } from '../config/beta';
 import { CTA } from '../content/runtimeVocab';
+import { monthlyPriceText, planById } from '@/shared/pricing';
+
+/** Enterprise ist nicht Teil der Beta: Festpreis, direkt per Checkout buchbar. */
+const ENTERPRISE = planById('enterprise');
 
 const MODULES = [
   'AI Inventory',
@@ -34,7 +38,7 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="max-w-4xl">
           <div className="mb-6 inline-flex rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-4 py-2 text-sm text-[#d4af37]">
-            Enterprise-Beta · kostenlos bis {BETA.endsLabel}
+            Enterprise · {monthlyPriceText(ENTERPRISE)}
           </div>
 
           <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
@@ -118,19 +122,27 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 pb-24">
         <div className="rounded-3xl border border-[#d4af37]/30 bg-[#d4af37]/10 p-8">
           <h2 className="text-2xl font-semibold text-[#d4af37]">
-            Enterprise-Beta – kostenlos bis {BETA.endsLabel}
+            Enterprise – {monthlyPriceText(ENTERPRISE)}, direkt buchbar
           </h2>
           <p className="mt-4 max-w-3xl text-zinc-200">
-            Teste alle Enterprise-Funktionen während der offenen Beta. Dafür hilfst du mit echtem
-            Produktfeedback, Verbesserungsvorschlägen und Screenshots von Fehlern beim Aufbau
-            einer europäischen AI-Governance-Plattform.
+            Enterprise ist nicht Teil der offenen Beta: Du buchst direkt, ohne Testphase, und nutzt alle
+            Enterprise-Funktionen ab dem ersten Tag. Starter, Growth und Agency sind bis{' '}
+            {BETA.endsLabel} kostenlos. Fragen zu Umfang oder SLA beantworten wir über die Anfrage.
           </p>
-          <Link
-            to="/contact-sales?source=founding"
-            className="mt-8 inline-flex rounded-2xl bg-[#d4af37] px-6 py-4 font-semibold text-black"
-          >
-            {CTA.enterprise}
-          </Link>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              to="/checkout/enterprise"
+              className="inline-flex rounded-2xl bg-[#d4af37] px-6 py-4 font-semibold text-black"
+            >
+              {ENTERPRISE.ctaLabel}
+            </Link>
+            <Link
+              to="/contact-sales?source=founding"
+              className="inline-flex rounded-2xl border border-[#d4af37]/40 px-6 py-4 font-semibold text-[#d4af37]"
+            >
+              {CTA.enterprise}
+            </Link>
+          </div>
         </div>
 
         <p className="mt-6 text-xs text-zinc-500">

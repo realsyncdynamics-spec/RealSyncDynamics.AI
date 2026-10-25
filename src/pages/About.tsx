@@ -91,7 +91,7 @@ export function About() {
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong className="text-titanium-50">Faire Preise</strong>: Free Audit kostenlos · {TRY_FREE.plans} Listenpreise danach: Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Enterprise nach Vertrag. Keine Setup-Fees.</span>
+                <span><strong className="text-titanium-50">Faire Preise</strong>: Free Audit kostenlos · {TRY_FREE.plans} Listenpreise danach: Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Enterprise 1.498 €/M netto, direkt buchbar. Keine Setup-Fees.</span>
               </li>
             </ul>
           </Section>

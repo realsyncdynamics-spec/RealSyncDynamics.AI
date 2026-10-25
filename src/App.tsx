@@ -617,7 +617,7 @@ function RoutesWithTracking() {
       <Route path="/kontakt" element={<KontaktPage />} />
       <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
-      {/* Enterprise AI OS — Landing, Altadresse des Founding-Programms (→ Enterprise-Beta) + Dashboard */}
+      {/* Enterprise AI OS — Landing, Altadresse des Founding-Programms (→ Enterprise-Checkout) + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />

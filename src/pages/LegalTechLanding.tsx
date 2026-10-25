@@ -121,8 +121,8 @@ export function LegalTechLanding() {
         <p>
           <strong className="text-titanium-50">Starter 79 €/M</strong> für Solo-Anwälte ·
           <strong className="text-titanium-50"> Growth 249 €/M</strong> für Teams (Multi-Tenant + API) ·
-          <strong className="text-titanium-50"> Enterprise</strong> nach Vertrag für mittelgroße Kanzleien
-          (Mandanten-Sites nach Vertrag + White-Label-Reports). Starter und Growth {TRY_FREE.phrase}
+          <strong className="text-titanium-50"> Enterprise 1.498 €/M netto</strong> für mittelgroße Kanzleien
+          (mehrere Mandanten-Sites + White-Label-Reports), direkt buchbar. Starter und Growth {TRY_FREE.phrase}
           testen, danach gilt der genannte Listenpreis · Mandanten-Setup AI-geführt in einem Schritt.
         </p>
       </Section>

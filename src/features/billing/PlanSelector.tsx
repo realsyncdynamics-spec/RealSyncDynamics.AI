@@ -10,6 +10,7 @@ import React from 'react';
 import { SELLABLE_PRICING_TIERS, type TierId, TIER_ACCENT, tierPriceLabel } from '../../config/pricing';
 import { getComplianceBanner } from '../../lib/compliance-notices';
 import { TRY_FREE } from '../../config/beta';
+import { monthlyPriceText, planById } from '@/shared/pricing';
 
 export interface PlanSelectorProps {
   selectedPlan?: TierId;
@@ -37,7 +38,7 @@ export function PlanSelector({
           <p className="text-titanium-300 max-w-2xl mx-auto">
             Von kostenlos bis Enterprise — alle Funktionen skalieren mit deinen Anforderungen.
             {TRY_FREE.plans}
-            Enterprise und Partner: auf Anfrage.
+            Enterprise: {monthlyPriceText(planById('enterprise'))}, direkt buchbar. Partner: auf Anfrage.
           </p>
         </div>
 

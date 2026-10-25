@@ -31,7 +31,7 @@ const mount = () =>
 it('keeps German footer and disclaimer under DE', () => {
   mount();
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(
-    /Offene Beta: alle Tarife kostenlos bis 31\. Januar 2027/,
+    /Offene Beta: Starter, Growth und Agency kostenlos bis 31\. Januar 2027/,
   );
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(/keine Kreditkarte/);
   expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(/kein Account nötig/);
@@ -39,6 +39,9 @@ it('keeps German footer and disclaimer under DE', () => {
     /Starter, Growth und Agency: kostenlos bis 31\. Januar 2027, danach gilt der durchgestrichene Listenpreis/,
   );
   expect(screen.getByTestId('pricing-foot')).not.toHaveTextContent(/14 Tage|Tag 15/);
+  // Enterprise ist nicht Teil der Beta: Festpreis, direkt buchbar.
+  expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(/Enterprise: direkt buchbar, ohne Testphase/);
+  expect(screen.getByTestId('pricing-trial-foot')).not.toHaveTextContent(/auf Anfrage/);
   expect(screen.getByTestId('pricing-disclaimer')).toHaveTextContent(
     /Unsere Outputs sind methodisch und technisch fundiert/,
   );
@@ -51,7 +54,7 @@ it('renders English footer and disclaimer under EN', () => {
   expect(screen.getByTestId('lang-toggle')).toHaveAttribute('data-lang', 'en');
 
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(
-    /Open beta: all plans free until 31 January 2027/,
+    /Open beta: Starter, Growth and Agency free until 31 January 2027/,
   );
   expect(screen.getByTestId('pricing-trust-note')).not.toHaveTextContent(/kostenlos testen/);
 

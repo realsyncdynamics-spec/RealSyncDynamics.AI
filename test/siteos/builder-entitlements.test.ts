@@ -141,7 +141,9 @@ describe('builderEntitlements — siteos.* keys', () => {
     expect(builderUpgradeTarget('starter', 'sites_exhausted').id).toBe('growth');
     expect(builderUpgradeTarget('growth', 'sites_exhausted').id).toBe('agency');
     expect(builderUpgradeTarget('free', 'sites_exhausted').id).toBe('starter');
-    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/contact-sales');
+    // Enterprise ist seit 2026-10-24 per Checkout buchbar (vorher /contact-sales).
+    expect(builderUpgradeTarget('agency', 'sites_exhausted').id).toBe('enterprise');
+    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/checkout/enterprise');
     expect(builderUpgradeTarget('free', 'publish_locked').id).toBe('starter');
 
     // Besitzt der aktuelle Plan das fehlende Recht laut SSoT bereits,

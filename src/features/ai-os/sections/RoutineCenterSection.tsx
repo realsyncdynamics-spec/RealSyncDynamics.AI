@@ -31,7 +31,7 @@ export function RoutineCenterSection({ session }: { session: AiOsSession }) {
       {data?.configured === false && <NotConfigured message={data.message} />}
 
       {ROUTINES.map((r) => {
-        const live = data?.routines.find((x) => x.id === r.id);
+        const live = data?.routines?.find((x) => x.id === r.id);
         return (
           <section key={r.id} className="aios-panel">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -80,7 +80,7 @@ export function RoutineCenterSection({ session }: { session: AiOsSession }) {
       })}
 
       <Panel title="pg_cron-Jobs (Supabase, live)" source="RPC admin_system_health().cron_jobs">
-        {!data ? null : data.cronJobs === null ? (
+        {!data ? null : data.cronJobs == null ? (
           <Empty>admin_system_health nicht lesbar.</Empty>
         ) : data.cronJobs.length === 0 ? (
           <Empty>Keine pg_cron-Jobs gemeldet.</Empty>

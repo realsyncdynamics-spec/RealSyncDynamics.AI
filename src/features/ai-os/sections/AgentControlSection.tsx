@@ -23,7 +23,7 @@ export function AgentControlSection({ session }: { session: AiOsSession }) {
   const routines = useAiOsResource<RoutinesResponse>('routines');
   const agent = AGENTS.find((a) => a.id === selected)!;
   const agentRoutines = ROUTINES.filter((r) => r.agent === agent.id);
-  const live = routines.result?.ok ? routines.result.data.routines : [];
+  const live = routines.result?.ok ? (routines.result.data.routines ?? []) : [];
 
   return (
     <>

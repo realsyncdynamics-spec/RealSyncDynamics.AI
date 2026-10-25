@@ -30,7 +30,7 @@ function SkillCard({ skill, session, routines }: {
   const command = buildSkillCommand(skill, values);
   const missing = skill.inputs.filter((i) => i.required && !(values[i.name] ?? '').trim()).map((i) => i.name);
   const routine = skill.routineId ? getRoutine(skill.routineId) : undefined;
-  const live = routine && routines.result?.ok ? routines.result.data.routines.find((r) => r.id === routine.id) : undefined;
+  const live = routine && routines.result?.ok ? routines.result.data.routines?.find((r) => r.id === routine.id) : undefined;
 
   async function copy() {
     try {

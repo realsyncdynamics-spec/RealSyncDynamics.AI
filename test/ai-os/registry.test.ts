@@ -131,7 +131,7 @@ describe('Edge Function ai-os-control', () => {
 });
 
 describe('Migration ai_os_action_log', () => {
-  const sql = read('supabase/migrations/20261015190000_ai_os_action_log.sql');
+  const sql = read('supabase/migrations/20261025120000_ai_os_action_log.sql');
   it('ist rein additiv', () => {
     expect(sql).not.toMatch(/\bDROP\s+TABLE\b|\bTRUNCATE\b|\bDELETE\s+FROM\b|\bALTER\s+TABLE\s+\S+\s+DROP\b/i);
   });

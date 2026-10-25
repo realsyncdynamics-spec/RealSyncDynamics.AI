@@ -35,7 +35,7 @@ export function outgoingLinks(note: KnowledgeNote): string[] {
 function titleOf(note: KnowledgeNote): string {
   if (!note.content) return note.path;
   const { meta, body } = parseFrontmatter(note.content);
-  return meta.title ?? /^#\s+(.+)$/m.exec(body)?.[1] ?? note.path.split('/').pop()!;
+  return meta.title ?? /^#[ \t]+(\S.*)$/m.exec(body)?.[1] ?? note.path.split('/').pop()!;
 }
 
 function Editor({ session, initial, onDone }: {

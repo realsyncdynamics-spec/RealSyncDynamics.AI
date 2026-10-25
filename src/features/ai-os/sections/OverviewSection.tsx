@@ -67,7 +67,7 @@ export function OverviewSection({ session }: { session: AiOsSession }) {
         />
         <Kpi
           label="Routinen aktiv"
-          value={value(routines.result, (d) => `${d.routines.filter((r) => r.state === 'active').length}/${ROUTINES.length}`, routines.loading)}
+          value={value(routines.result, (d) => `${(d.routines ?? []).filter((r) => r.state === 'active').length}/${ROUTINES.length}`, routines.loading)}
           sub="GitHub-Workflow-Zustand"
         />
         <Kpi
@@ -87,7 +87,7 @@ export function OverviewSection({ session }: { session: AiOsSession }) {
           {mainRed.length > 0 && <li>Rote Workflows auf main zuerst: <Link className="aios-link" to="/admin/ai-os/entwicklung">Entwicklung & CI</Link>.</li>}
           {session.aal !== 'aal2' && <li>Für Starten/Pausieren und Wissens-PRs mit zweitem Faktor anmelden (<Link className="aios-link" to="/settings/security">Sicherheit</Link>).</li>}
           {!session.githubConfigured && <li>GitHub-Token als Function-Secret hinterlegen (siehe docs/ai-os/README.md).</li>}
-          {routines.result?.ok && routines.result.data.routines.some((r) => r.state === 'not_found') && (
+          {routines.result?.ok && (routines.result.data.routines ?? []).some((r) => r.state === 'not_found') && (
             <li>AI-OS-Workflows sind noch nicht auf main — sie erscheinen nach dem Merge dieses Pakets.</li>
           )}
           <li>Skills in einer Claude-Code-Sitzung ausführen: <Link className="aios-link" to="/admin/ai-os/skills">Skill-Bibliothek</Link>.</li>

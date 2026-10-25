@@ -1,5 +1,5 @@
 /**
- * AI-OS — `ai_os_action_log` (20261015190000_ai_os_action_log.sql).
+ * AI-OS — `ai_os_action_log` (20261025120000_ai_os_action_log.sql).
  *
  * Belegt gegen echtes Postgres:
  *  - Clients dürfen nicht schreiben; nur service_role fügt ein.

@@ -97,6 +97,23 @@ describe('Wissensnotizen', () => {
     expect(body).toBe('# X\n');
   });
 
+  it('liest CRLF-Notizen, ignoriert ungültige Schlüssel und Zeilen ohne Doppelpunkt', () => {
+    const { meta, body } = parseFrontmatter("---\r\ntitle: 'Y'\r\nowner-x: no\r\nnur text\r\nreviewed: 2026-10-02\r\n---\r\nRest");
+    expect(meta).toEqual({ title: 'Y', reviewed: '2026-10-02' });
+    expect(body).toBe('Rest');
+  });
+
+  it('läuft auch bei präparierten Zeilen linear (CodeQL js/polynomial-redos)', () => {
+    const evil = `---\nA:${'\t'.repeat(50_000)}x\n${'B:'.repeat(20_000)}\n---\n`;
+    const start = Date.now();
+    parseFrontmatter(evil);
+    expect(Date.now() - start).toBeLessThan(500);
+  });
+
+  it('ohne schließendes --- gilt der Text als Rumpf', () => {
+    expect(parseFrontmatter('---\ntitle: X\n')).toEqual({ meta: {}, body: '---\ntitle: X\n' });
+  });
+
   it('meldet fehlende Felder und veraltete Prüfdaten', () => {
     const issues = checkKnowledgeNotes(
       [
@@ -135,6 +152,12 @@ describe('renderMarkdown', () => {
       ],
     });
     expect(md).toContain('| a\\|b |');
+    const escaped = renderMarkdown({
+      routine: 'x', title: 'T', generatedAt: 'now', health: 'ok', apiCalls: 0, data: {},
+      sections: [{ heading: 'Backslash', table: { head: ['A'], rows: [['a\\|b']] } }],
+    });
+    // Ein Backslash vor der Pipe darf das Maskieren nicht aufheben (CodeQL js/incomplete-sanitization).
+    expect(escaped).toContain('| a\\\\\\|b |');
     expect(md).toContain('Nichts.');
     expect(md).toContain('GitHub-API-Aufrufe: 2');
   });

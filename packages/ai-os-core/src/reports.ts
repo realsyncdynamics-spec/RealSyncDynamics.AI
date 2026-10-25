@@ -224,16 +224,44 @@ export interface NoteMeta {
   status?: string;
 }
 
-/** Minimaler YAML-Frontmatter-Leser (nur `key: value`-Zeilen). */
+/**
+ * Minimaler YAML-Frontmatter-Leser (nur `key: value`-Zeilen).
+ *
+ * Bewusst ohne reguläre Ausdrücke mit Wiederholungen: Notizinhalte kommen
+ * aus dem Command Center (Nutzereingabe). Zeilenweises Zerlegen mit indexOf
+ * läuft linear — kein katastrophales Backtracking (CodeQL js/polynomial-redos).
+ */
 export function parseFrontmatter(text: string): { meta: NoteMeta; body: string } {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
-  if (!m) return { meta: {}, body: text };
+  const lines = text.split('\n');
+  if ((lines[0] ?? '').replace('\r', '') !== '---') return { meta: {}, body: text };
+  const end = lines.findIndex((l, i) => i > 0 && l.replace('\r', '') === '---');
+  if (end < 0) return { meta: {}, body: text };
   const meta: Record<string, string> = {};
-  for (const line of m[1].split(/\r?\n/)) {
-    const kv = /^([a-zA-Z_]+):\s*(.*)$/.exec(line.trim());
-    if (kv) meta[kv[1]] = kv[2].replace(/^["']|["']$/g, '');
+  for (const raw of lines.slice(1, end)) {
+    const line = raw.trim();
+    const colon = line.indexOf(':');
+    if (colon <= 0) continue;
+    const key = line.slice(0, colon);
+    if (!isFrontmatterKey(key)) continue;
+    meta[key] = stripQuotes(line.slice(colon + 1).trim());
   }
-  return { meta: meta as NoteMeta, body: text.slice(m[0].length) };
+  return { meta: meta as NoteMeta, body: lines.slice(end + 1).join('\n') };
+}
+
+function isFrontmatterKey(key: string): boolean {
+  for (const ch of key) {
+    const lower = ch >= 'a' && ch <= 'z';
+    const upper = ch >= 'A' && ch <= 'Z';
+    if (!lower && !upper && ch !== '_') return false;
+  }
+  return key.length > 0;
+}
+
+function stripQuotes(value: string): string {
+  const first = value[0];
+  const last = value[value.length - 1];
+  if (value.length >= 2 && (first === '"' || first === "'") && last === first) return value.slice(1, -1);
+  return value;
 }
 
 export interface NoteIssue { path: string; problem: string }
@@ -284,8 +312,9 @@ const HEALTH_LABEL: Record<Health, string> = {
   unknown: '⚪ ohne Daten',
 };
 
+/** Markdown-Tabellenzelle: erst Backslashes, dann Pipes maskieren, Zeilenumbrüche glätten. */
 function cell(text: string): string {
-  return text.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 }
 
 export function renderMarkdown(report: RoutineReport): string {

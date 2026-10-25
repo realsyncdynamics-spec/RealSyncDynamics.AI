@@ -330,6 +330,8 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
+  // Internes AI-OS: im Repo; Deploy nach Freigabe (Migration ai_os_action_log + Secret AI_OS_GITHUB_TOKEN).
+  { slug: 'ai-os-control', surface: '/admin/ai-os — AI Command Center (nur Plattform-Operatoren)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

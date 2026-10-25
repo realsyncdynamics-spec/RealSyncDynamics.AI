@@ -30,8 +30,9 @@ export interface RoutineLive {
 export interface RoutinesResponse {
   configured?: boolean;
   message?: string;
-  routines: RoutineLive[];
-  cronJobs: Array<{ name: string; schedule: string; active: boolean }> | null;
+  /** Fehlt, wenn die Quelle nicht verbunden ist — dann wie leer behandeln. */
+  routines?: RoutineLive[];
+  cronJobs?: Array<{ name: string; schedule: string; active: boolean }> | null;
   apiCalls?: number;
 }
 

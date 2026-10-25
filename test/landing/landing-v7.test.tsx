@@ -55,7 +55,7 @@ it('prices plans from the SSoT and respects the beta offer', () => {
     const amount = card.querySelector('.lv7-amt')?.textContent ?? '';
     if (BETA_OFFER) {
       expect(amount).toContain(formatPriceEur(0));
-      expect(card.querySelector('s')).toHaveTextContent(formatPriceEur(plan.price.monthlyEur));
+      expect(card.querySelector('s')?.textContent).toContain(formatPriceEur(plan.price.monthlyEur));
       expect(within(card).getByRole('link').getAttribute('href')).toMatch(/^\/welcome\?/);
     } else {
       expect(amount).toContain(formatPriceEur(plan.price.monthlyEur));

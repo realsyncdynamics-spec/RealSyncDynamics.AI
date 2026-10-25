@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Globe, Users, TrendingUp, Lock } from 'lucide-react';
 import { Logo } from '../../components/Logo';
-import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, planById } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, monthlyPriceText, planById } from '@/shared/pricing';
 
 const ENTERPRISE = planById('enterprise');
 
@@ -159,9 +159,10 @@ export function AgenciesSolution() {
                 // COMMERCIAL-SSOT: temporary production hotfix.
                 // Canonical source migration tracked in Phase 2.
                 // Partner ist seit AP2 stillgelegt (`availability: 'legacy'`);
-                // ein Festpreis waere hier ein Angebot ohne Kaufpfad. Die
-                // Mandanten-Kapazitaet wird vertraglich vereinbart.
-                pricing: 'Enterprise nach Vertrag · Mandanten-Kapazität nach Vereinbarung · Endkundenpreis frei kalkulierbar',
+                // ein Festpreis waere hier ein Angebot ohne Kaufpfad. Enterprise
+                // hat einen Festpreis mit Checkout; die Mandanten-Kapazitaet
+                // darueber hinaus wird vertraglich vereinbart.
+                pricing: `Enterprise ${monthlyPriceText(ENTERPRISE)} · Mandanten-Kapazität nach Vereinbarung · Endkundenpreis frei kalkulierbar`,
                 margin: 'Verdopplung der Governance-Revenue pro Kunde',
               },
               {

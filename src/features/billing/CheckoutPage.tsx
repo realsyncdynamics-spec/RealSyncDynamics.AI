@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { tierByPlanKey } from '../../config/pricing';
-import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { formatPriceEur, monthlyPriceText, normalizePlanKey, planById, planByKey, type PlanKey } from '@/shared/pricing';
 import { createCheckoutSession } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
@@ -213,7 +213,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfügbar monatlich: starter (79 €) / growth (249 €) / agency (699 €). Enterprise nur auf Anfrage.`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfügbar monatlich: starter (${formatPriceEur(planById('starter').price.monthlyEur)}) / growth (${formatPriceEur(planById('growth').price.monthlyEur)}) / agency (${formatPriceEur(planById('agency').price.monthlyEur)}) / enterprise (${monthlyPriceText(planById('enterprise'))}).`}
         cta={{ label: 'Zur Preisübersicht', to: '/pricing' }}
         backTo="/pricing"
       />

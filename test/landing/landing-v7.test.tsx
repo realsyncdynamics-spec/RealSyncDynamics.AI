@@ -10,6 +10,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV7 } from '../../src/pages/LandingV7';
 import { BETA } from '../../src/config/beta';
+import { tierById, tierPriceLabel } from '../../src/config/pricing';
 import { CHANNEL_TOOLS } from '../../src/components/landing/LandingChannelTools';
 import { getImplementation, PLATFORM_LIVE_ITEMS, ROADMAP_PREVIEW_ITEMS } from '../../src/product/implementation-status';
 import { formatPriceEur, PLANS } from '@/shared/pricing';
@@ -62,10 +63,13 @@ it('prices plans from the SSoT and respects the beta offer', () => {
   }
 });
 
-it('never shows the internal Enterprise list price and keeps TISAX/DORA coming soon', () => {
+it('shows the Enterprise price only via tierPriceLabel and keeps TISAX/DORA coming soon', () => {
   const { container } = mount();
-  expect(container.textContent).not.toContain('1.249');
-  expect(container.textContent).toContain('Auf Anfrage');
+  const tier = tierById('enterprise');
+  if (!tier) throw new Error('Enterprise fehlt in der SSoT');
+  // Folgt der SSoT: „Auf Anfrage“, solange priceOnRequest gilt, sonst der Festpreis.
+  expect(container.textContent).toContain(tierPriceLabel(tier));
+  if (tier.priceOnRequest) expect(container.textContent).not.toContain(tier.priceString);
   expect(getImplementation('framework-tisax-dora')?.status).not.toBe('live');
   expect(container.textContent).not.toMatch(/sechs Rahmenwerke|TISAX und DORA als aktive/);
   expect(container.textContent).toMatch(/TISAX und DORA: Coming Soon/);

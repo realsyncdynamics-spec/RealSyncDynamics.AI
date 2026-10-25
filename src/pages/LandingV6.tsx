@@ -17,12 +17,12 @@ import '../styles/landing-v6.css';
  */
 /**
  * Schrift der oberen Leiste vorab laden — zusammen mit `font-display: optional`
- * ('JetBrains Mono Optional' in landing-v6.css). Ohne beides kam die Schrift erst
+ * ('DM Mono Optional' in landing-v6.css). Ohne beides kam die Schrift erst
  * nach dem ersten Bild, die Leiste sprang von zwei Zeilen auf eine und zog die
  * Seite 27 px hoch (Lighthouse CLS 0,41). React hebt den Link in den <head>,
  * der Prerender übernimmt ihn in die HTML von `/`.
  */
-const STRIP_FONT_URL = '/fonts/jetbrains-mono-latin.woff2';
+const STRIP_FONT_URL = '/fonts/dm-mono-latin-400-normal.woff2';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

@@ -14,7 +14,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV6 } from '../../src/pages/LandingV6';
 
-const FONT_URL = '/fonts/jetbrains-mono-latin.woff2';
+const FONT_URL = '/fonts/dm-mono-latin-400-normal.woff2';
 const css = readFileSync(resolve(__dirname, '../../src/styles/landing-v6.css'), 'utf8');
 
 beforeEach(() => {
@@ -37,7 +37,7 @@ const mount = () =>
   );
 
 it('declares the strip font with font-display: optional on the same file', () => {
-  const face = css.match(/@font-face\s*\{[^}]*font-family:\s*'JetBrains Mono Optional'[^}]*\}/)?.[0] ?? '';
+  const face = css.match(/@font-face\s*\{[^}]*font-family:\s*'DM Mono Optional'[^}]*\}/)?.[0] ?? '';
   expect(face).toMatch(/font-display:\s*optional/);
   expect(face).toContain(`url('${FONT_URL}')`);
 });
@@ -46,7 +46,7 @@ it('sets the top strip in the optional font, with no swap face before the generi
   mount();
   const label = screen.getAllByText('Datenhaltung Frankfurt (eu-central-1) · DSGVO · EU AI Act')[0];
   const strip = label.closest<HTMLElement>('[style*="font-family"]');
-  expect(strip?.style.fontFamily).toMatch(/^['"]?JetBrains Mono Optional['"]?,\s*monospace$/);
+  expect(strip?.style.fontFamily).toMatch(/^['"]?DM Mono Optional['"]?,\s*monospace$/);
 });
 
 it('preloads that font file in the document head', () => {

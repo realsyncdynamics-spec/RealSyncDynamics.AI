@@ -291,6 +291,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  '/design/landing-v7': {
+    title: 'RealSync Dynamics AI – Landing v7 (Design-Vorschau)',
+    description:
+      'Design-Vorschau „AI Compliance Operations OS for Europe“ mit Titan- und Nacht-Darstellung. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   // Marken-Landing aus LandingPagesOverview. Bis 2026-09-28 lieferte
   // Cloudflare hier `public/realsync-landing.html` aus — ein Inline-Redirect,
   // den die CSP-Haertung vom 2026-09-18 (`script-src` ohne 'unsafe-inline')

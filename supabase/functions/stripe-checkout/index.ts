@@ -35,7 +35,7 @@ import {
   customerIdempotencyKey, customerSearchQuery, STRIPE_ERROR_PUBLIC_MESSAGE,
   isValidTenantId,
 } from './customer.ts';
-import { stripePriceMatchesPlan } from './price-match.ts';
+import { checkStripePrice, stripeEnvironmentFromKey } from './price-match.ts';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -259,16 +259,26 @@ Deno.serve(async (req) => {
     // entsprechen. Price-ID (Migration) und Anzeige (Deploy) werden getrennt
     // ausgerollt — ein Rest der alten Price-ID darf nie still einen anderen
     // Betrag abrechnen. Vor dem Customer-Anlegen, damit nichts liegen bleibt.
+    // Für Pläne mit Eintrag in PLAN_STRIPE_EXPECTATIONS (Enterprise) zusätzlich
+    // Umgebung, Steuermodus und Produkt; unbekannte Umgebung oder fehlende
+    // Produkt-Zuordnung sperren den Checkout.
     const stripePrice = await stripe.prices.retrieve(realPrice.stripe_price_id);
-    if (!stripePriceMatchesPlan(stripePrice, plan.price, isOneTime)) {
+    const priceCheck = checkStripePrice(
+      stripePrice, plan.price, isOneTime, body.plan_key!, stripeEnvironmentFromKey(stripeSecret),
+    );
+    if (!priceCheck.ok) {
       console.error('[stripe-checkout] price mismatch', {
-        plan_key: body.plan_key, price_id: realPrice.stripe_price_id,
+        plan_key: body.plan_key, price_id: realPrice.stripe_price_id, reason: priceCheck.reason,
         unit_amount: stripePrice.unit_amount, currency: stripePrice.currency,
         interval: stripePrice.recurring?.interval ?? null,
+        interval_count: stripePrice.recurring?.interval_count ?? null,
+        active: stripePrice.active, livemode: stripePrice.livemode,
+        tax_behavior: stripePrice.tax_behavior ?? null,
+        product: typeof stripePrice.product === 'string' ? stripePrice.product : stripePrice.product?.id ?? null,
       });
       return jsonError(409, 'PRICE_MISMATCH',
-        `Der hinterlegte Stripe-Preis für ${plan.name} passt nicht zum angezeigten Preis. ` +
-        `Der Checkout ist gesperrt, bis der Preis angeglichen ist.`);
+        `Der hinterlegte Stripe-Preis für ${plan.name} passt nicht zum angezeigten Preis ` +
+        `oder ist nicht freigegeben. Der Checkout ist gesperrt, bis der Preis angeglichen ist.`);
     }
 
     // Nur echte Stripe-Customer (`cus_…`) wiederverwenden. Der Free-Tier-

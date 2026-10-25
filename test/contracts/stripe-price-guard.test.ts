@@ -137,9 +137,11 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
       // Ohne Abgleich rechnete ein alter Preis still einen anderen Betrag ab.
       expect(SOURCE).toContain('stripe.prices.retrieve(realPrice.stripe_price_id)');
       expect(SOURCE).toContain('PRICE_MISMATCH');
-      expect(SOURCE.indexOf('stripePriceMatchesPlan(')).toBeLessThan(
-        SOURCE.indexOf('stripe.checkout.sessions.create('),
-      );
+      const check = SOURCE.indexOf('checkStripePrice(');
+      expect(check).toBeGreaterThan(-1);
+      expect(check).toBeLessThan(SOURCE.indexOf('stripe.checkout.sessions.create('));
+      // Die Umgebung kommt aus dem tatsächlich verwendeten Secret-Key.
+      expect(SOURCE).toContain('stripeEnvironmentFromKey(stripeSecret)');
     });
 
     it('checkout resolves prices only via default_for_plan_key (no hardcoded TfsV)', () => {

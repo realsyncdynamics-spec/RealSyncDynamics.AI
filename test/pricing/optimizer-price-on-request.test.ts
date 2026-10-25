@@ -69,8 +69,5 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
         : `${tier.priceString} €/Mo.`;
       expect(pkg.price, `Paket "${pkg.name}"`).toBe(expected);
     }
-    expect(OPTIMIZER_PACKAGES.find((pkg) => pkg.key === 'enterprise')?.price).toBe(
-      '1.498 €/Monat netto',
-    );
   });
 });

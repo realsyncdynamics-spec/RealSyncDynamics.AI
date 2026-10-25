@@ -114,9 +114,12 @@ describe('Canonical dashboard only', () => {
 
 describe('Checkout invalid-plan copy is monthly-only', () => {
   it('does not advertise yearly or scale as available checkout plans', () => {
-    expect(CHECKOUT).toContain('starter (79');
-    expect(CHECKOUT).toContain('growth (249');
-    expect(CHECKOUT).toContain('agency (699');
+    // Preise kommen aus der SSoT (shared/pricing.ts), nicht als Literale.
+    expect(CHECKOUT).toContain("starter (${formatPriceEur(planById('starter').price.monthlyEur)})");
+    expect(CHECKOUT).toContain("growth (${formatPriceEur(planById('growth').price.monthlyEur)})");
+    expect(CHECKOUT).toContain("agency (${formatPriceEur(planById('agency').price.monthlyEur)})");
+    expect(CHECKOUT).toContain("enterprise (${monthlyPriceText(planById('enterprise'))})");
+    expect(CHECKOUT).not.toMatch(/Enterprise nur auf Anfrage/);
     expect(CHECKOUT).not.toMatch(/monatlich oder jährlich/);
     expect(CHECKOUT).not.toMatch(/agency \/ scale/);
   });

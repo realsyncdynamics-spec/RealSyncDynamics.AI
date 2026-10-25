@@ -14,7 +14,7 @@
  * Karte.
  */
 
-import { tierById, type TierId } from '../../config/pricing';
+import { monthlyPriceText, tierById, type TierId } from '../../config/pricing';
 
 export type OptimizerTierId = 'gratis' | 'bronze' | 'silber' | 'gold' | 'platin' | 'diamant';
 
@@ -81,7 +81,7 @@ export function realPriceEur(tier: OptimizerTier): number {
   return tierById(tier.planKey)?.priceEur ?? 0;
 }
 
-/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat". */
+/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat" / "1.498 €/Monat netto". */
 export function formatTierPrice(tier: OptimizerTier): string {
   if (tier.planKey === 'free') return 'Kostenlos';
   const real = tierById(tier.planKey);
@@ -90,5 +90,7 @@ export function formatTierPrice(tier: OptimizerTier): string {
     return 'Individuell';
   }
   const price = real?.priceEur ?? 0;
-  return price === 0 ? 'Individuell' : `€${price} / Monat`;
+  if (price === 0) return 'Individuell';
+  // Nettopreis-Pläne (Enterprise) überall als „1.498 €/Monat netto“.
+  return real?.plan.netPriceLabel ? monthlyPriceText(real.plan) : `€${price} / Monat`;
 }

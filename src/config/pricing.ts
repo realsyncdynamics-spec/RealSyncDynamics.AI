@@ -25,6 +25,7 @@ import {
   checkoutHrefForPlan,
   formatPriceEur,
   formatLimit,
+  monthlyPriceSuffix,
   addonsFor,
   ADDONS,
   type Plan,
@@ -156,7 +157,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     ? 'einmalig'
     : plan.price.monthlyEur === 0
       ? 'einmalig · kein Account'
-      : isYearly ? '/ Jahr' : '/ Monat';
+      : isYearly ? '/ Jahr' : monthlyPriceSuffix(plan);
 
   return {
     id,

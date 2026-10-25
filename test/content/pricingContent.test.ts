@@ -391,7 +391,8 @@ describe('pricingContent', () => {
     it('enterprise weist den Checkout-Preis aus der SSoT aus', () => {
       const enterprise = getPlanBySlug('enterprise');
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
-      expect(enterprise?.priceString).toBe('1.498');
+      expect(enterprise?.priceString).toBe('1.498 €');
+      expect(enterprise?.interval).toBe('/ Monat netto');
       expect(enterprise?.cta.href).toBe('/checkout/enterprise');
     });
 

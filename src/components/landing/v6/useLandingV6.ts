@@ -4,7 +4,7 @@ import { BETA, betaSignupHref, isBetaPlan } from '../../../config/beta';
 import { COMPANY } from '../../../config/company';
 import { tierById, type PricingTier } from '../../../config/pricing';
 import { CTA } from '../../../content/runtimeVocab';
-import { checkoutHrefForPlan, formatPriceEur, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
 import { readStored, useLandingMode, type LandingMode } from '../landing-mode';
 
 /**
@@ -414,7 +414,7 @@ export function useLandingV6() {
         featured,
         priceLabel,
         listPrice: beta && !tier.priceOnRequest ? formatPriceEur(listEur) : null,
-        unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : '/ Monat',
+        unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : monthlyPriceSuffix(plan),
         billingNote: tier.priceOnRequest
           ? 'SLA nach Vereinbarung · bis zu 5 Organisationen'
           : beta
@@ -427,7 +427,7 @@ export function useLandingV6() {
         desc: plan.outcomeHeadline,
         features: bullets(tier),
         // Hero-Preiszeile: immer Monatspreis, eigene Quelle für die Trichter-Messung.
-        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
+        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} ${monthlyPriceSuffix(plan)}`,
         heroListPrice: beta && !tier.priceOnRequest ? formatPriceEur(plan.price.monthlyEur) : null,
         heroHref: inquiry
           ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })

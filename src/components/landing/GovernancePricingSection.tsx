@@ -120,7 +120,7 @@ export function GovernancePricingSection() {
                       WebkitTextFillColor: GA_TITAN,
                     }}
                   >
-                    / MONAT
+                    {tier.priceSuffix.toUpperCase()}
                   </span>
                   )}
                 </h3>

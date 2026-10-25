@@ -485,8 +485,8 @@ export const pricingPlans: PricingPlan[] = [
     // Seit 2026-10-24 (Dominik) per Self-Service-Checkout buchbar, ohne
     // Testphase. Betrag muss shared/pricing.ts entsprechen.
     price: 1498,
-    priceString: '1.498',
-    interval: 'mtl.',
+    priceString: '1.498 €',
+    interval: '/ Monat netto',
     recommended: false,
     shortDescription: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen, Multi-Org-Verwaltung und SLA-Bedarf.',
     targetAudience: 'Für Großunternehmen, regulierte Industrien, Behörden, Finanzdienstleister und Organisationen mit erweiterten Governance- und Compliance-Prozessen.',

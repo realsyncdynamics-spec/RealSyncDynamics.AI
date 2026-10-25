@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Shield, Zap, BarChart3, Lightbulb } from 'lucide-react';
 import { Logo } from '../../components/Logo';
-import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, planById } from '@/shared/pricing';
 
 const ENTERPRISE = planById('enterprise');
 
@@ -204,7 +204,7 @@ export function SaaSSolution() {
             */}
             <div className="font-display font-bold text-4xl text-titanium-50 mb-2">
               {formatPriceEur(ENTERPRISE.price.monthlyEur)}
-              <span className="text-base font-normal text-silver-400"> / Monat</span>
+              <span className="text-base font-normal text-silver-400"> {monthlyPriceSuffix(ENTERPRISE)}</span>
             </div>
             <p className="text-silver-400 mb-6">Enterprise — für SaaS-Anbieter, bis zu {ENTERPRISE.limits.sites} Websites/Produkte</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">

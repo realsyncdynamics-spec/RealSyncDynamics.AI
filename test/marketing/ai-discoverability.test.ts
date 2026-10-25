@@ -61,8 +61,14 @@ describe('public/llms.txt', () => {
       const plan = byId.get(id);
       expect(plan, `Plan ${id} fehlt in PLANS`).toBeDefined();
       expect(plan!.priceOnRequest).not.toBe(true);
-      expect(llms).toContain(`${label}: ${plan!.price.monthlyEur} €/Monat`);
+      // Nettopreis-Pläne (Enterprise) stehen als „1.498 €/Monat netto“.
+      const amount = plan!.netPriceLabel
+        ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat netto`
+        : `${plan!.price.monthlyEur} €/Monat`;
+      expect(llms).toContain(`${label}: ${amount}`);
     }
+    expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);
+    expect(llms).not.toMatch(/\bab 1[.]?498/);
     const free = byId.get('free');
     expect(free?.price.monthlyEur).toBe(0);
     expect(llms).toContain('Free Audit: 0 €');

@@ -65,7 +65,7 @@ describe('formatTierPrice', () => {
   });
   it('zeigt Enterprise (Diamant) seit 2026-10-24 als Self-Service-Preis', () => {
     const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise checkout
-    expect(formatTierPrice(diamant)).toBe('€1498 / Monat');
+    expect(formatTierPrice(diamant)).toBe('1.498\u00a0€/Monat netto');
   });
   it('zeigt für Partner (Platin) keinen Fake-Festpreis', () => {
     const platin = OPTIMIZER_TIERS.find((t) => t.id === 'platin')!;

@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
-import { SALES_PLANS, formatLimit, formatPriceEur, planById } from '@/shared/pricing';
+import { SALES_PLANS, formatLimit, formatPriceEur, monthlyPriceText, planById } from '@/shared/pricing';
+import { BETA } from '../config/beta';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
+
+// COMMERCIAL-SSOT: Beträge aus shared/pricing.ts. Entscheidung Dominik
+// 2026-10-24: Starter, Growth und Agency bleiben Beta-Tarife; Enterprise ist
+// nicht Teil der Beta und kostet vom ersten Tag an 1.498 €/Monat netto.
+const BETA_OFFER = BETA.active && BETA.publicOffer;
+const STARTER = planById('starter');
+const GROWTH = planById('growth');
+const AGENCY = planById('agency');
+const ENTERPRISE = planById('enterprise');
+const listPrice = (eur: number) => `${formatPriceEur(eur)}/Monat`;
+const betaPrice = (eur: number) =>
+  BETA_OFFER ? `Beta-Tarif: kostenlos bis ${BETA.endsLabel}, danach ${listPrice(eur)}` : listPrice(eur);
 
 const ITEMS: Item[] = [
   {
@@ -60,14 +73,17 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Vier Tiers — Starter und Growth mit 14-Tage-Pilot, Enterprise ohne Testphase:</p>
+        <p>
+          {BETA_OFFER
+            ? `Starter, Growth und Agency sind Beta-Tarife und bis ${BETA.endsLabel} kostenlos, danach gelten die Listenpreise. Enterprise ist nicht Teil der Beta und kostet vom ersten Tag an ${monthlyPriceText(ENTERPRISE)}, ohne Testphase:`
+            : `Starter und Growth mit 14-Tage-Pilot, Agency und Enterprise ohne Testphase:`}
+        </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
-          <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
-          <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
-          {/* COMMERCIAL-SSOT: Betrag aus shared/pricing.ts — seit 2026-10-24
-              per Self-Service-Checkout buchbar. */}
-          <li><strong className="text-titanium-50">Enterprise</strong> {formatPriceEur(planById('enterprise').price.monthlyEur)}/Monat — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          <li><strong className="text-titanium-50">Starter</strong> {betaPrice(STARTER.price.monthlyEur)} — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
+          <li><strong className="text-titanium-50">Growth</strong> {betaPrice(GROWTH.price.monthlyEur)} — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
+          <li><strong className="text-titanium-50">Agency</strong> {betaPrice(AGENCY.price.monthlyEur)} — bis {AGENCY.limits.domains} Domains, White-Label-Reports, API + Webhooks</li>
+          <li><strong className="text-titanium-50">Enterprise</strong> {monthlyPriceText(ENTERPRISE)}, ohne Testphase — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>

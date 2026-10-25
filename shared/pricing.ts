@@ -471,6 +471,14 @@ export interface Plan {
    * rot, solange nur eine der beiden Seiten stimmt.
    */
   yearlyCheckoutUnavailable?: boolean;
+  /**
+   * `true` = der Monatspreis erscheint auf jeder Oberfläche ausdrücklich als
+   * Nettopreis („1.498 €/Monat netto“), nicht nur über den Steuerhinweis im
+   * Fußtext. Enterprise (Dominik 2026-10-24): ab Tag 1 kostenpflichtig, ohne
+   * Testphase und nicht Teil der Beta. Anzeige über `monthlyPriceSuffix()` und
+   * `monthlyPriceText()`.
+   */
+  netPriceLabel?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
@@ -865,6 +873,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
+    netPriceLabel: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -2968,6 +2977,16 @@ export function formatPriceEur(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+/** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
+export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
+  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+}
+
+/** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
+export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */

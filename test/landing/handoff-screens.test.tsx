@@ -30,6 +30,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(document.querySelectorAll('[data-testid^="pricing-card-"]')).toHaveLength(4);
     const enterprise = screen.getByTestId('pricing-card-enterprise');
     expect(within(enterprise).getByText(formatPriceEur(planById('enterprise').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(enterprise).getByText('/ Monat netto')).toBeInTheDocument();
     expect(within(enterprise).queryByText('Auf Anfrage')).toBeNull();
     expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise starten');
     expect(document.body.textContent).not.toContain('Gespräch anfragen');
@@ -55,6 +56,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
     expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
     expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('On request')).toBeNull();
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('/ month excl. VAT')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
       'Start Enterprise',
     );

@@ -953,7 +953,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/security': {
     title: 'Security – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -963,7 +963,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/sicherheit': {
     title: 'Sicherheit – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Audit-Trail, offene Lücken und Roadmap ohne Zertifikat.',
+      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
   },
   '/methodik': {
@@ -1328,7 +1328,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/marisk-audit': {
     title: 'MaRisk-Audit – KI als OpRisk belegen | RealSync Dynamics AI',
     description:
-      'KI-Modelle als operationelles Risiko nach MaRisk abbilden: Risikoanalyse, Modellinventar und Auslagerungen mit einem prüffähigen Audit-Trail dokumentieren.',
+      'KI-Modelle als operationelles Risiko nach MaRisk abbilden: Risikoanalyse, Modellinventar und Auslagerungen mit einem lückenlosen Prüfpfad dokumentieren.',
     canonical: `${SITE_URL}/marisk-audit`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

@@ -233,8 +233,9 @@ export interface NoteMeta {
  */
 export function parseFrontmatter(text: string): { meta: NoteMeta; body: string } {
   const lines = text.split('\n');
-  if ((lines[0] ?? '').replace('\r', '') !== '---') return { meta: {}, body: text };
-  const end = lines.findIndex((l, i) => i > 0 && l.replace('\r', '') === '---');
+  const isFence = (l: string) => l.trimEnd() === '---';
+  if (!isFence(lines[0] ?? '')) return { meta: {}, body: text };
+  const end = lines.findIndex((l, i) => i > 0 && isFence(l));
   if (end < 0) return { meta: {}, body: text };
   const meta: Record<string, string> = {};
   for (const raw of lines.slice(1, end)) {

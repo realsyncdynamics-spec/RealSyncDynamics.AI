@@ -110,6 +110,12 @@ describe('Wissensnotizen', () => {
     expect(Date.now() - start).toBeLessThan(500);
   });
 
+  it('erkennt Begrenzer mit mehrfachem \\r und Leerzeichen am Zeilenende', () => {
+    const { meta, body } = parseFrontmatter('---\r\r\ntitle: Z\n--- \r\nRest');
+    expect(meta).toEqual({ title: 'Z' });
+    expect(body).toBe('Rest');
+  });
+
   it('ohne schließendes --- gilt der Text als Rumpf', () => {
     expect(parseFrontmatter('---\ntitle: X\n')).toEqual({ meta: {}, body: '---\ntitle: X\n' });
   });

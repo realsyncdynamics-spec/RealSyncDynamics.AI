@@ -45,14 +45,18 @@ export interface PlanStripeExpectation {
  * werden nur gegen Betrag, Währung und Intervall geprüft.
  *
  * Enterprise (Dominik 2026-10-24): 1.498 €/Monat netto, also
- * `tax_behavior=exclusive`. Die Produkt-IDs sind noch nicht verifiziert —
- * Migration 20260912055500 nennt für Live `prod_UxG9V9clbqV7qw`, das muss
- * zusammen mit der neuen Price-ID in Stripe bestätigt werden. Bis dahin lehnt
- * der Checkout Enterprise ab.
+ * `tax_behavior=exclusive`.
+ *
+ * Live-Produkt-Kandidat aus Migration 20260912055500: `prod_UxG9V9clbqV7qw`.
+ * Noch **nicht** gesetzt — muss zusammen mit der neuen Price-ID (149800 Cent)
+ * in Stripe verifiziert werden. Siehe docs/runbooks/enterprise-stripe-1498.md
+ * und PR #1984. Bis dahin: PRODUCT_NOT_CONFIGURED.
  */
 export const PLAN_STRIPE_EXPECTATIONS: Readonly<Record<string, PlanStripeExpectation>> = {
   enterprise: {
     taxBehavior: 'exclusive',
+    // TODO(PR#1984): nach Stripe-Verifikation setzen, z. B.
+    // productId: { live: 'prod_UxG9V9clbqV7qw', test: null },
     productId: { live: null, test: null },
   },
 };

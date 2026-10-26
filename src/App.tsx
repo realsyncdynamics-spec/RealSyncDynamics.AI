@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, generatePath, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, generatePath, useLocation, useParams } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
@@ -457,6 +457,37 @@ function ParamRedirect({ to }: { to: string }) {
   return <Navigate to={generatePath(to, params as Record<string, string>)} replace />;
 }
 
+/**
+ * WP10 — Kanonischer Onboarding-Redirect: leitet überzählige Einstiege per
+ * `<Navigate replace>` auf den Zielpfad (`/audit` → `/welcome` → `/app/activation`
+ * → `/app/dashboard`) um und erhält Query-Parameter (inkl. `:scanId` aus
+ * `/onboarding/:scanId`).
+ */
+export function canonicalOnboardingRedirectTarget(
+  targetPathname: string,
+  search: string,
+  sourcePathname?: string,
+): string {
+  const params = new URLSearchParams(search);
+  if (sourcePathname?.startsWith('/onboarding/')) {
+    const rawScanId = sourcePathname.slice('/onboarding/'.length).split('/')[0];
+    if (rawScanId) {
+      let decoded = rawScanId;
+      try {
+        decoded = decodeURIComponent(rawScanId);
+      } catch {
+        // Fallback auf Rohwert bei ungültigem Encoding.
+      }
+      if (!params.has('scanId')) {
+        params.set('scanId', decoded);
+      }
+    }
+  }
+  const qs = params.toString();
+  if (!qs) return targetPathname;
+  return targetPathname.includes('?') ? `${targetPathname}&${qs}` : `${targetPathname}?${qs}`;
+}
+
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
 function LazyFallback() {
@@ -469,6 +500,9 @@ function LazyFallback() {
 
 function RoutesWithTracking() {
   useTrackPageview();
+  const { pathname, search } = useLocation();
+  const withSearch = (target: string) =>
+    canonicalOnboardingRedirectTarget(target, search, pathname);
   return (
     <>
       <SEOHead />
@@ -594,8 +628,8 @@ function RoutesWithTracking() {
       <Route path="/shopify-dsgvo"   element={<ShopifyDsgvoLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
-      {/* Guided post-scan onboarding flow — Phase 2 */}
-      <Route path="/onboarding/:scanId" element={<GovernanceOnboarding />} />
+      {/* Guided post-scan onboarding flow — Phase 2 (WP10: kanonisch /app/activation) */}
+      <Route path="/onboarding/:scanId" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/recommendation/:scanId" element={<GovernanceRecommendation />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
@@ -640,8 +674,8 @@ function RoutesWithTracking() {
       <Route path="/checkout/success" element={<CheckoutSuccess />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup" element={<Welcome />} />
-      {/* Phase 2: Free Tier Setup Assistant (3-step wizard) */}
-      <Route path="/setup-assistant" element={<AppGate><SetupAssistant /></AppGate>} />
+      {/* Phase 2: Free Tier Setup Assistant → WP10 kanonisch /app/activation */}
+      <Route path="/setup-assistant" element={<Navigate to={withSearch('/app/activation')} replace />} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Claude Code Optimizer — geführter, seitenweiser Flow.
@@ -908,7 +942,7 @@ function RoutesWithTracking() {
       <Route path="/app/vvt" element={<AppGate><GovernanceBrowserShell><RuntimeVvtView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/webhooks" element={<AppGate><GovernanceBrowserShell><GovernanceWebhooksView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/terminal" element={<AppGate><GovernanceBrowserShell><GovernanceTerminalView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/onboarding" element={<AppGate><GovernanceBrowserShell><GovernanceOnboardingView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/onboarding" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/app/mappings" element={<AppGate><GovernanceBrowserShell><GovernanceMappingsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/events/:eventId" element={<AppGate><GovernanceBrowserShell><GovernanceEventDetailView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assets/:assetId" element={<AppGate><GovernanceBrowserShell><GovernanceAssetDetailView /></GovernanceBrowserShell></AppGate>} />
@@ -1007,7 +1041,7 @@ function RoutesWithTracking() {
       <Route path="/governance/vvt" element={<Navigate to="/app/vvt" replace />} />
       <Route path="/governance/agents" element={<Navigate to="/app/ai-systems" replace />} />
       <Route path="/governance/webhooks" element={<Navigate to="/app/webhooks" replace />} />
-      <Route path="/governance/onboarding" element={<Navigate to="/app/onboarding" replace />} />
+      <Route path="/governance/onboarding" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/governance/mappings" element={<Navigate to="/app/mappings" replace />} />
       <Route path="/governance/events/:eventId" element={<ParamRedirect to="/app/events/:eventId" />} />
       <Route path="/governance/assets/:assetId" element={<ParamRedirect to="/app/assets/:assetId" />} />
@@ -1137,7 +1171,7 @@ function RoutesWithTracking() {
       <Route path="/os/login" element={<Navigate to="/welcome?next=/app/dashboard" replace />} />
       <Route path="/os/signup" element={<Navigate to="/welcome?next=/app/dashboard" replace />} />
       <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
-      <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
+      <Route path="/os/welcome" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
       {/* Der Prototyp-Workspace unter /os/app/* ist entfernt: zwoelf Routen auf
@@ -1166,81 +1200,25 @@ function RoutesWithTracking() {
       <Route path="/unified-entry" element={<Navigate to="/build" replace />} />
       <Route path="/unified-entry/build" element={<Navigate to="/build" replace />} />
       <Route path="/build" element={<BuildStudioPage />} />
-      <Route
-        path="/unified-entry/scan"
-        element={
-          <UnifiedEntryShell currentStep={1} totalSteps={5}>
-            <ScanEntryPage />
-          </UnifiedEntryShell>
-        }
-      />
-      <Route
-        path="/unified-entry/entscheidung"
-        element={
-          <UnifiedEntryShell currentStep={2} totalSteps={5}>
-            <PathChoicePage />
-          </UnifiedEntryShell>
-        }
-      />
-      <Route
-        path="/unified-entry/preview"
-        element={
-          <UnifiedEntryShell currentStep={2} totalSteps={5}>
-            <DashboardPreviewPage />
-          </UnifiedEntryShell>
-        }
-      />
+      {/* WP10: Überzählige Onboarding-Einstiege leiten unter Erhalt der Query-Parameter
+          auf den kanonischen Zielpfad (/audit → /welcome → /app/activation → /app/dashboard). */}
+      <Route path="/unified-entry/scan" element={<Navigate to={withSearch('/audit')} replace />} />
+      <Route path="/unified-entry/entscheidung" element={<Navigate to={withSearch('/welcome')} replace />} />
+      <Route path="/unified-entry/preview" element={<Navigate to={withSearch('/welcome')} replace />} />
       <Route path="/unified-entry/transformation" element={<SiteOsBuilderPage />} />
       {/* App Builder Workspace: Puck bleibt der visuelle Editor unter /builder/:slug.
           Die Code-Workbench ist additiv unter /builder/:slug/code — kein zweites Produkt.
           Anmeldung prüft die jeweilige Seite selbst, damit `next` erhalten bleibt. */}
       <Route path="/builder/:slug/code" element={<BoltCodeBuilderPage />} />
       <Route path="/builder/:slug" element={<AppBuilderWorkspacePage />} />
-      <Route
-        path="/unified-entry/trial-offer"
-        element={
-          <UnifiedEntryShell currentStep={3} totalSteps={5}>
-            <TrialOfferPage />
-          </UnifiedEntryShell>
-        }
-      />
-      <Route
-        path="/unified-entry/register"
-        element={
-          <UnifiedEntryShell currentStep={3} totalSteps={5}>
-            <RegisterPage />
-          </UnifiedEntryShell>
-        }
-      />
-      <Route
-        path="/unified-entry/onboarding"
-        element={
-          <SupabaseAuthProvider>
-            <TenantProvider>
-              <UnifiedEntryShell currentStep={4} totalSteps={5}>
-                <PostRegisterOnboardingPage />
-              </UnifiedEntryShell>
-            </TenantProvider>
-          </SupabaseAuthProvider>
-        }
-      />
-      <Route
-        path="/unified-entry/success"
-        element={
-          <SupabaseAuthProvider>
-            <TenantProvider>
-              <UnifiedEntryShell currentStep={5} totalSteps={5} showProgress={false}>
-                <SuccessPage />
-              </UnifiedEntryShell>
-            </TenantProvider>
-          </SupabaseAuthProvider>
-        }
-      />
+      <Route path="/unified-entry/trial-offer" element={<Navigate to={withSearch('/welcome')} replace />} />
+      <Route path="/unified-entry/register" element={<Navigate to={withSearch('/welcome')} replace />} />
+      <Route path="/unified-entry/onboarding" element={<Navigate to={withSearch('/app/activation')} replace />} />
+      <Route path="/unified-entry/success" element={<Navigate to={withSearch('/app/dashboard')} replace />} />
 
-      {/* Geführter Flow — erklärt jeden Klick auf einer eigenen Seite.
-          `/flow/*` fängt auch verschachtelte Slugs wie `checkout/starter`. */}
-      <Route path="/flow" element={<Navigate to="/flow/start-scan" replace />} />
-      <Route path="/flow/*" element={<FlowStepRoute />} />
+      {/* Geführter Flow — WP10: leitet auf den kanonischen Scan-Einstieg /audit um. */}
+      <Route path="/flow" element={<Navigate to={withSearch('/audit')} replace />} />
+      <Route path="/flow/*" element={<Navigate to={withSearch('/audit')} replace />} />
 
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />

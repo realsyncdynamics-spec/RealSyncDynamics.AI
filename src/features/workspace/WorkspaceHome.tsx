@@ -503,9 +503,10 @@ function AuthPanel({ onClose }: { onClose: () => void }) {
 
     try {
       const sb = getSupabase();
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/app` : '/app';
       const { error: err } = await sb.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/app` },
+        options: { emailRedirectTo: redirectUrl },
       });
       if (err) throw err;
       setSent(true);

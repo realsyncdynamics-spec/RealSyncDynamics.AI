@@ -69,6 +69,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/app/audit",
   "/app/automations",
   "/app/bauen",
+  "/app/beispiel",
   "/app/billing",
   "/app/bots",
   "/app/bots/:botId",

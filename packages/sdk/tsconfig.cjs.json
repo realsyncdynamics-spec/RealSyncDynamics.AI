@@ -3,10 +3,8 @@
   "compilerOptions": {
     "module": "commonjs",
     "outDir": "./dist/cjs",
-    "declaration": true,
-    "declarationDir": "./dist",
-    "declarationMap": true,
-    "sourceMap": true
+    "rootDir": "./src",
+    "declaration": false
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "test"]

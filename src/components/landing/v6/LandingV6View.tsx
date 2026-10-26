@@ -211,16 +211,16 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </Link>
           </div>
-          <div style={{ marginTop: “clamp(40px,4vw,96px)”, border: “1px solid var(--rs-line)”, borderRadius: “16px”, background: “var(--rs-bg)”, overflow: “hidden” }}>
-            <div className=”flex-between” style={{ gap: “12px”, padding: “18px var(--card-p)”, borderBottom: “1px solid var(--rs-line)” }}>
-              <span style={{ fontSize: “var(--fs-body)” }}>Governance Control Room · Workspace „Demo”</span>
-              <span className=”mono text-tertiary”>Beispielumgebung · Demo-Daten</span>
+          <div style={{ marginTop: "clamp(40px,4vw,96px)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", overflow: "hidden" }}>
+            <div className="flex-between" style={{ gap: "12px", padding: "18px var(--card-p)", borderBottom: "1px solid var(--rs-line)" }}>
+              <span style={{ fontSize: "var(--fs-body)" }}>Governance Control Room · Workspace „Demo"</span>
+              <span className="mono text-tertiary">Beispielumgebung · Demo-Daten</span>
             </div>
-            <div className=”grid-fit”>
+            <div className="grid-fit">
               {v.crKpis.map((kpi, kpiI) => (
                 <Fragment key={kpiI}>
                   <div>
-                    <span className=”card-label”>{kpi.l}</span>
+                    <span className="card-label">{kpi.l}</span>
                     <span style={kpi.style}>{kpi.v}</span>
                   </div>
                 </Fragment>

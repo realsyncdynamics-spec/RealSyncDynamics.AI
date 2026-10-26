@@ -60,6 +60,7 @@ import {
 } from '../../../../packages/siteos-core/src/index.ts';
 import { persistBlueprintVersion } from '../persist.ts';
 import { gateSiteEdit } from '../site-entitlements.ts';
+import { canEditSite } from '../approval-policy.ts';
 
 const MAX_PAGES = 40;
 const MAX_BLOCKS_PER_PAGE = 60;
@@ -121,9 +122,14 @@ export async function handle(req: Request): Promise<Response> {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const { data: member } = await admin
-    .from('memberships').select('user_id')
-    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+    .from('memberships').select('role')
+    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle<{ role: string }>();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+  // Bearbeiten ist Operate (ADR 0005): owner, admin, editor. `dpo` prüft,
+  // `viewer_auditor` liest — beide erzeugen keine Versionen.
+  if (!canEditSite(member.role)) {
+    return jsonError(403, 'FORBIDDEN', `role "${member.role}" may not edit a site`);
+  }
 
   // Bearbeiten erzeugt eine neue Blueprint-Version und braucht siteos.builder.
   const denied = await gateSiteEdit(admin, tenantId);

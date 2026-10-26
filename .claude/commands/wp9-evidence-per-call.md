@@ -35,19 +35,28 @@ Befund (26.10.2026): `supabase/functions/ai-gateway/handler.ts` bucht für angem
 `usage_events` über `bookUsage()`. Der PDP-Verdict aus `deps.pdpCheck()` (`warn` mit `reasons`, Block als Response) geht an den Client,
 wird aber nicht persistiert. Nur der anonyme Pfad (`audit_anon`) schreibt ein Protokoll (`anon_chat_runs`).
 Das Produktversprechen „jeder KI-Call wird geloggt“ ist damit nicht belegt.
+`supabase/functions/ai-invoke/index.ts` bucht ebenfalls nur `recordUsage` (`_shared/usage.ts`).
 
-Ziel: Jeder erfolgreiche und jeder blockierte angemeldete Call erzeugt genau einen Evidence-Eintrag.
+Ziel-Tabelle existiert bereits: `ai_evidence_events` (Migration `20260510_ai_governance_core.sql`),
+append-only seit `20260901090000`, Hash-Kette per DB-Trigger (`prev_hash`/`event_hash`/`chain_index`),
+gelesen von `evidence-vault-export` und `evidence-anchor`. **Keine Migration nötig.**
+Schreibmuster: `governance-decide/index.ts`, `telemetry-ai-event/index.ts`.
+
+Ziel: Jeder erfolgreiche und jeder blockierte angemeldete Call erzeugt genau einen `ai_evidence_events`-Eintrag.
 
 Aufgaben:
-1. Bestehende Evidence-Schreibpfade sichten, nicht neu erfinden:
-   `supabase/functions/governance-evidence-handler/index.ts`, `packages/evidence-chain/src/index.ts`,
-   Tabelle `evidence_items` (Health-Probe in `_shared/health.ts`).
+1. Helper in `supabase/functions/_shared/aiGateway/` (z. B. `callEvidence.ts`): baut den Insert.
+   `event_type` `ai:call` bzw. `ai:call_blocked`; `risk_level` aus dem Verdict (allow → info, warn → low,
+   Block → high); `evidence`-JSON: tenant_id, feature, route, provider, model, Region/Residency, Tokens,
+   Verdict, request_id. **Keine Prompt- oder Antwortinhalte** speichern (Datensparsamkeit), höchstens
+   Länge und sha256 über `_shared/hash.ts`.
 2. In `ai-gateway/handler.ts` neben `bookUsage()` eine injizierbare Dependency `recordEvidence`
-   (gleiches Muster wie `anonAuditLog`): tenant_id, feature, route, provider, model, Region/Residency,
-   Tokens, Verdict, request_id. **Keine Prompt- oder Antwortinhalte** speichern (Datensparsamkeit).
-3. Fehlerverhalten festlegen und testen: Evidence-Schreibfehler wird geloggt; ob der Call dann fail-closed
+   (gleiches Muster wie `recordUsage`, verdrahtet in `index.ts`).
+3. `ai-invoke/index.ts`: denselben Helper nach `runAiTool` aufrufen.
+4. Fehlerverhalten festlegen und testen: Evidence-Schreibfehler wird geloggt; ob der Call dann fail-closed
    abbricht, ist eine Owner-Entscheidung → im PR als Frage stellen, Default: fail-open mit Alarm-Log.
-4. Reicht das bestehende Schema nicht: Migration **nur als Vorschlag** im PR beschreiben, nicht anlegen.
-5. Unit-Tests für Erfolg, `warn`, Block (`pdpCheck` liefert Response), Streaming-Abschluss (`onDone`) und Schreibfehler.
+5. Unit-Tests für Erfolg, `warn`, Block (`pdpCheck` liefert Response), Streaming-Abschluss (`onDone`),
+   Schreibfehler und „kein Prompt-Text im evidence-JSON“. Anonymer Pfad bleibt unverändert.
 
-Nicht in diesem WP: UI-Anzeige der Einträge (folgt in WP11), ai-invoke (eigenes Folge-WP).
+Nicht in diesem WP: UI-Anzeige der Einträge (folgt in WP11), Migration/neue Tabelle,
+Änderungen an `evidence-anchor`/`evidence-vault-export`.

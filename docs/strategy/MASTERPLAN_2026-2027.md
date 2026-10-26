@@ -68,7 +68,9 @@ nachweisbar protokolliert, klassifiziert und freigegeben ist. Daran hängen Umsa
 2. **M2 Ein Dashboard.** `/app/dashboard` (Command Center) ist das einzige Kunden-Dashboard. Die übrigen werden zu
    Tabs/Modulen darin oder per Redirect stillgelegt. Mock-Dashboards (`EnterpriseAiOsDashboard`, `mock-data.ts`) entfernen.
 3. **M3 Lückenlose KI-Call-Evidence.** Jeder authentifizierte `ai-gateway`/`ai-invoke`-Call erzeugt einen
-   Evidence-Eintrag (Tenant, Modell, Provider-Region, Zweck, Token, Policy-Entscheid, Hash-Kette über `packages/evidence-chain`).
+   Evidence-Eintrag (Tenant, Modell, Provider-Region, Zweck, Token, Policy-Entscheid). Ziel ist die bestehende
+   Tabelle `ai_evidence_events`: append-only, Hash-Kette per DB-Trigger (`prev_hash`/`event_hash`/`chain_index`),
+   bereits von `evidence-vault-export` und `evidence-anchor` gelesen — **keine Migration nötig**.
    Das ist das Produktversprechen, ohne das der Rest nicht trägt.
 4. **M4 Governance-Kette O-WP6.** Publish-/Agenten-Request → Approval (`governance_approvals`) → Evidence, mit
    Ablehnungstest. Dazu Publish-Rollback (O-WP9).
@@ -187,6 +189,8 @@ Arbeitsweise bleibt wie gehabt: **ein WP pro Session und PR**, Merge, Migration,
 - **E-F4** Partner 1.999 €, **E-F5** `/unified-entry/scan` vs. `/audit` als kanonischer Scan-Einstieg (Empfehlung: `/audit`)
 - **E-V5–E-V9** (eu_local, On-Prem/SCIM, SSO), **E-R1–E-R5** (Responsive WP8)
 - Welche Dashboards und Landings endgültig stillgelegt werden (Empfehlung siehe M2 und Routen-Diät)
+- **M3-Fehlerverhalten:** Evidence-Schreibfehler fail-open (Antwort geht raus, Fehler wird geloggt) oder fail-closed
+  (Call scheitert ohne Nachweis). Empfehlung: fail-open plus Alerting, fail-closed ab Enterprise
 
 ---
 

@@ -50,9 +50,10 @@ import {
 } from '../../../../packages/siteos-core/src/index.ts';
 import type { PolicyEngineState } from '../../../../packages/siteos-core/src/index.ts';
 import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
+import { SITE_APPROVER_ROLES, checkApproval } from '../approval-policy.ts';
 
-/** Rollen, die eine Freigabe erteilen dürfen. */
-const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
+/** Rollen, die eine Freigabe erteilen dürfen (zentral in approval-policy.ts). */
+const APPROVER_ROLES = SITE_APPROVER_ROLES;
 
 /**
  * Das ausdrückliche Veröffentlichungs-GO ist enger als die fachliche
@@ -170,10 +171,26 @@ export async function handleApprove(req: Request): Promise<Response> {
 
   const { data: blueprint } = await ctx.admin
     .from('siteos_blueprints')
-    .select('slug')
+    .select('slug, created_by')
     .eq('id', evaluation.blueprint_id).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ slug: string }>();
+    .maybeSingle<{ slug: string; created_by: string | null }>();
   if (!blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
+
+  // Vier-Augen: Wer die bewertete Version erstellt hat, gibt sie nicht
+  // frei — außer als einziges freigabeberechtigtes Mitglied, dann
+  // dokumentiert. Dieselbe Regel erzwingt der Trigger aus Migration
+  // 20261025100000 auch gegen service_role.
+  const { count: eligibleApproverCount } = await ctx.admin
+    .from('memberships').select('user_id', { count: 'exact', head: true })
+    .eq('tenant_id', ctx.tenantId).in('role', [...SITE_APPROVER_ROLES]);
+  const fourEyes = checkApproval({
+    approverId: ctx.userId,
+    approverRole: ctx.role,
+    authorId: blueprint.created_by,
+    eligibleApproverCount: eligibleApproverCount ?? 0,
+    reason,
+  });
+  if (!fourEyes.allowed) return jsonError(fourEyes.status, fourEyes.code, fourEyes.message);
 
   const nowIso = new Date().toISOString();
   const staleIso = new Date(Date.now() - APPROVAL_CLAIM_TTL_MS).toISOString();
@@ -233,6 +250,7 @@ export async function handleApprove(req: Request): Promise<Response> {
     .from('siteos_publish_evaluations')
     .update({
       approved_by: ctx.userId, approved_at: nowIso, approval_reason: reason.slice(0, MAX_REASON_LENGTH),
+      self_approval: fourEyes.selfApproval,
       approval_claimed_at: null,
     })
     .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
@@ -247,7 +265,12 @@ export async function handleApprove(req: Request): Promise<Response> {
   await audit(ctx.admin, {
     tenant_id: ctx.tenantId, actor_user_id: ctx.userId, actor_email: ctx.userEmail,
     action: 'siteos.publish.approve', target_type: 'siteos_publish_evaluation', target_id: evaluationId,
-    payload: { artifact_sha256: evaluation.artifact_sha256, reason: reason.slice(0, MAX_REASON_LENGTH), role: ctx.role },
+    payload: {
+      artifact_sha256: evaluation.artifact_sha256,
+      reason: reason.slice(0, MAX_REASON_LENGTH),
+      role: ctx.role,
+      self_approval: fourEyes.selfApproval,
+    },
   });
 
   // Die Freigabe hebt die Bewertung nicht auf — sie erzeugt eine neue.

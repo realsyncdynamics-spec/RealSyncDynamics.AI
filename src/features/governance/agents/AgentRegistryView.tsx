@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Bot } from 'lucide-react';
-import { AGENT_CATALOG, countByMaturity } from './agentCatalog';
+import { AGENT_CATALOG, agentAnchor, countByMaturity } from './agentCatalog';
 import { AgentCard } from './AgentCard';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { STATUS_LABEL, type ImplementationStatus } from '../../../product/implementation-status';
@@ -39,6 +39,18 @@ const FILTERS: readonly { id: Filter; label: string }[] = [
 
 export function AgentRegistryInner() {
   const [filter, setFilter] = useState<Filter>('all');
+  const { hash } = useLocation();
+
+  // Sprung aus der Seitenleiste (#agent-<id>): Filter zurücksetzen, damit die
+  // Karte sichtbar ist, und dorthin scrollen. Der Router scrollt nicht selbst.
+  useEffect(() => {
+    if (!hash.startsWith('#agent-')) return;
+    setFilter('all');
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash]);
 
   const agents = AGENT_CATALOG;
   const filtered = useMemo(
@@ -132,7 +144,9 @@ export function AgentRegistryInner() {
               Keine Einträge in dieser Ansicht.
             </p>
           ) : (
-            filtered.map((agent) => <AgentCard key={agent.id} agent={agent} />)
+            filtered.map((agent) => (
+              <AgentCard key={agent.id} agent={agent} highlighted={hash === `#${agentAnchor(agent.id)}`} />
+            ))
           )}
         </div>
       </main>

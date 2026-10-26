@@ -60,10 +60,10 @@ export function WorkspaceHome() {
 
   useEffect(() => {
     const sb = getSupabase();
-    const { data: sub } = sb.auth.onAuthStateChange((_evt, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_evt, session) => {
       setIsAuth(!!session?.user);
     });
-    return () => sub?.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
   if (isAuth) {
@@ -81,7 +81,7 @@ export function WorkspaceHome() {
   return (
     <WorkspaceShell title="Übersicht" onGate={() => setAuthOpen(true)}>
       <DemoInner onAuthOpen={() => setAuthOpen(true)} />
-      {/*{authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}*/}
+      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
     </WorkspaceShell>
   );
 }

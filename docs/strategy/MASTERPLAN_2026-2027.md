@@ -3,7 +3,7 @@
 Stand: 26.10.2026 · Code-Basis `main@5c3e718` · Laufzeit-Abgleich read-only gegen Supabase-Projekt
 `RealSyncDynamicsLive` (Logs 24 h, Tabellen 30 Tage) am 26.10.2026.
 
-Status: **Vorschlag, nicht freigegeben.** Ersetzt die Erstfassung aus PR #2009 inhaltlich. Ziele, Preise,
+Status: **Überarbeitete Planfassung; keine Implementierungs-, Merge- oder Produktionsfreigabe.** Ersetzt die Erstfassung aus PR #2009 inhaltlich. Ziele, Preise,
 Stilllegungen und Rechtsaussagen sind Owner-Entscheidungen (§8). Dieses Dokument gibt **keine**
 Routenlöschung, keine Preisänderung und keine Rechtsfrist frei.
 
@@ -34,15 +34,22 @@ Jede Ist-Aussage trägt einen dieser Status:
 
 ## 1. Rechtsgrundlage
 
-- In Repo-Dokumenten taucht eine **„Verordnung (EU) 2026/1744“** als Änderung von Art. 43 AI Act auf
-  (`.claude/os-funnel/governed-evolution.md`, Quelle dort: buzer.de, nicht EUR-Lex). Sie ist **nicht gegen
-  das Amtsblatt / EUR-Lex verifiziert**. Status: **Prüfbefund**.
-- **Bis zur Prüfung amtlicher Quellen** (EUR-Lex, Amtsblatt) werden aus ihr **keine Fristen, keine
-  Produktänderungen und keine Kampagnen** abgeleitet. Das gilt auch für alle anderen Fristen, die im Plan
-  genannt werden (z. B. Art. 4 AI Act „seit Feb. 2025“): vor Verwendung in Produkt-Copy oder Marketing gegen
-  den amtlichen Text der VO (EU) 2024/1689 in der geltenden Fassung prüfen.
-- Offener Prüfauftrag: **O7** aus `governed-evolution.md` (Art. 3 Nr. 23, Art. 25 Abs. 1 Buchst. b,
-  Art. 43 Abs. 4). Rechtliche Einordnung mit einer fachkundigen Stelle.
+Amtlicher Quellenabgleich vom 26.10.2026 (Ergänzung zu Revision 3): Die EU-Kommission bestätigt die VO (EU) 2026/1744 und das Inkrafttreten am 27.07.2026. Sie ist nicht mehr nur ein unbelegter Prüfbefund.
+
+| Thema | Bestätigter Planungspunkt | Einschränkung |
+|---|---|---|
+| Hochrisiko Anhang III | betreffende Anforderungen ab 02.12.2027 | Kein allgemeiner Aufschub aller AI-Act-Pflichten |
+| Hochrisiko Anhang I | betreffende Anforderungen ab 02.08.2028 | Einordnung nach Produkt und Rolle erforderlich |
+| Art. 50 | Transparenzregeln grundsätzlich seit 02.08.2026 | Einzelpflichten unterscheiden sich nach Rolle/System |
+| Art. 50 Abs. 2, Übergang | 02.12.2026 für bestimmte Anbieter synthetische Inhalte erzeugender Systeme, die vor dem 02.08.2026 auf den Markt kamen | Keine allgemeine Dezemberfrist für jede Website oder jeden KI-Nutzer |
+| Neue Verbote | bestimmte nicht einvernehmliche sexuelle Deepfakes und Darstellungen sexuellen Kindesmissbrauchs ab 02.12.2026 | Andere Verbote gelten bereits |
+
+Quellen:
+- EU-Kommission, Rechtsakt und Inkrafttreten: https://commission.europa.eu/law/law-making-process/better-regulation/simplification-implementation-and-enforcement/simplification_en
+- Amtlicher Zeitplan: https://ai-act-service-desk.ec.europa.eu/en/ai-act/eu-ai-act-implementation-timeline
+- Änderungsakt: https://eur-lex.europa.eu/eli/reg/2026/1744/oj/eng
+
+Der direkte EUR-Lex-Abruf war hier durch eine JavaScript-Prüfung blockiert. Vor konkreter rechtlicher Implementierung den authentischen Amtsblatttext prüfen. Der genaue aktuelle Art.-4-Wortlaut und O7 (Art. 3 Nr. 23, Art. 25 Abs. 1 Buchst. b, Art. 43 Abs. 4) bleiben gesondert zu prüfen. Keine pauschalen Compliance-Garantien; dieses Dokument gibt keine Änderungen an Rechtstexten oder Kampagnen frei.
 
 ---
 
@@ -87,13 +94,13 @@ Der Plan rechnet deshalb **nicht** mit einer angenommenen Stundenzahl:
 | I-2 | „`/admin/*` und `/dashboard/*` ohne Router-Guard“ | **belegt (Code), aber kein Sicherheitsbefund** | Kein Guard auf Router-Ebene (`src/App.tsx:969–972`, `1070–1082`). Aber: 8 von 10 `/admin`-Seiten prüfen `profiles.is_super_admin` in der Komponente; die Admin-RPCs prüfen serverseitig (z. B. `admin_customers_list`, `admin_system_health`). `/admin/social` und `/admin/onboarding` laufen über `AuthGate` + Mandanten-Kontext. Eine ausnutzbare Lücke ist **nicht nachgewiesen** → Router-Guard ist Defense-in-Depth (P1), nicht Phase 0. |
 | I-3 | `/dashboard/enterprise-ai-os` mit Mock | **belegt (Code)** | `src/pages/EnterpriseAiOsDashboard.tsx` importiert `mockAiSystems` u. a. aus `lib/enterprise-ai-os/mock-data`, öffentlich erreichbar (`src/App.tsx:631`). Ehrlichkeitsthema (M8), kein Sicherheitsproblem. |
 | I-4 | „3 Cron-Functions antworten 401“ | **veraltet** → neuer Befund **belegt (Laufzeit)** | Letzte 24 h: `scheduler-dispatch` 91×, `governance-monitoring-scheduler` 23×, `memory-decay-worker` 23× **HTTP 500**, keine erfolgreichen Läufe. Im Code ist für die beiden letzteren `500` ausschließlich `CRON_KEY_MISSING` (leeres Function-Secret); bei `scheduler-dispatch` zusätzlich „could not load due schedules“. Vault hat 9 `cron_*`-Einträge. Wahrscheinliche Ursache: Function-Secrets fehlen. Behebung laut `docs/runbooks/cron-vault-secrets.md` (manueller Schritt, kein Code). |
-| I-5 | Evidence-Lücke im `ai-gateway` | **belegt (Code)**; Laufzeit-Auswirkung derzeit 0 | Authentifizierter Pfad: `logAccess` (Konsole) + `bookUsage` → `usage_events` (`supabase/functions/ai-gateway/handler.ts:265–296`, `490–538`); `pdpCheck`/`decide` schreibt keinen Evidence-Eintrag. Kein Schreibzugriff auf `ai_evidence_events`. In 30 Tagen gab es keine authentifizierten Calls (0 `usage_events`), also aktuell kein Datenverlust, aber das Produktversprechen „jeder Call wird geloggt“ ist im Code nicht erfüllt. |
+| I-5 | Evidence-Lücke im `ai-gateway` | **belegt (Code)**; Laufzeit-Auswirkung derzeit 0 | Authentifizierter Pfad: `logAccess` (Konsole) + `bookUsage` → `usage_events` (`supabase/functions/ai-gateway/handler.ts:265–296`, `490–538`); `pdpCheck`/`decide` schreibt keinen Evidence-Eintrag. Kein Schreibzugriff auf `ai_evidence_events`. 0 `usage_events` belegen nur fehlende gespeicherte Nutzungsereignisse, nicht das Ausbleiben sämtlicher Calls oder Datenverluste. Das Produktversprechen muss durch einen Ende-zu-Ende-Test geprüft werden. |
 | I-6 | Freigabe-Evidence außerhalb der Hash-Kette | **belegt (Code)** | `supabase/functions/governance-approvals/index.ts:152–160` schreibt `governance_evidence` mit `content_hash: null`, `previous_hash: null` statt über `append_governance_evidence` (O1). |
 | I-7 | „Trial-Expiry-Migration (E-O4) auf Prod offen“ | **widerlegt** | `20260928160000` ist in `supabase_migrations.schema_migrations` eingetragen (Laufzeit); `.claude/os-funnel/OKTOBER-2026.md` führt E-O4 als erledigt. |
 | I-8 | Enterprise 1.249 € | **belegt (Code) – aber abweichend von Owner-Vorgabe** | Siehe §5. |
 | I-9 | 38 CI-Workflows, Sitemap 109 URLs | **belegt (Code)** | `.github/workflows/` (38 Dateien), `public/sitemap.xml` (109 `<loc>`). |
 | I-10 | ca. 12 Dashboards, 6 Agenten-Oberflächen, 6+ Onboarding-Einstiege, Entitlements in ca. 45 Functions | **Prüfbefund** | Nicht nachgezählt. Vor WP10/WP11/WP12 mit Datei-Liste belegen. |
-| I-11 | Beta endet 31.01.2027 | **Prüfbefund** | Gegen `src/config/beta.ts` prüfen, bevor Kampagnen oder Mails darauf aufbauen. |
+| I-11 | Beta endet 31.01.2027 | **belegt (Code), nur Anzeige** | `src/config/beta.ts`: `endsLabel` nennt 31. Januar 2027 ausdrücklich als Text ohne Ablaufautomatik. `publicOffer` ist an; `active` ist per Build-Flag steuerbar. Server-Ablauf, Stripe-Trial und tatsächliche Berechtigungen sind separat zu prüfen. |
 
 ---
 
@@ -108,7 +115,7 @@ Der Plan rechnet deshalb **nicht** mit einer angenommenen Stundenzahl:
 - **Folge für den Plan:** Der Masterplan nennt **keinen Enterprise-Betrag**, bis Preisquelle (SSoT),
   Stripe-Price und tatsächlich buchbarer Tarif übereinstimmen. Abgleich ist Owner-Entscheidung **E-P1** (§8).
 - Übrige Stufen (Starter 79 €, Growth 249 €, Agency 699 €, Partner 1.999 €, Governance Launch 349 €) stehen so
-  in der SSoT; Partner 1.999 € ist weiterhin offene Entscheidung E-F4. Gründerpreis und Jahrespreise sind
+  in der SSoT; Partner ist in `shared/pricing.ts` als `availability: legacy` markiert; der interne Wert 1.999 € ist kein aktives Neukundenangebot. Eine Reaktivierung bleibt eigene Entscheidung E-F4. Gründerpreis und Jahrespreise sind
   Vorschläge, keine Angebote.
 
 ---
@@ -125,7 +132,7 @@ Aufgenommen wird nur, was in §4 als **belegt** markiert ist und Sicherheit, Evi
 | **P0-4** | Freigabe-Evidence außerhalb der Hash-Kette | I-6 | `governance-approvals` auf `append_governance_evidence` umstellen (O1); Abgleich mit offenem PR #2006 | Code, eigener PR | Neuer Eintrag hat `content_hash`/`previous_hash` gesetzt, Kette lückenlos |
 
 Entscheidung vor P0-3: **fail-open** (Antwort geht raus, Fehler wird geloggt und alarmiert) oder
-**fail-closed** (Call scheitert ohne Nachweis). Empfehlung: fail-open plus Alarm, fail-closed ab Enterprise.
+**fail-closed** (Call scheitert ohne Nachweis). Die Entscheidung wird nach Schutzbedarf und zugesagter Nachweispflicht getroffen, nicht allein nach Tarif. Vor Umsetzung sind Datenminimierung, Wiederholung/Idempotenz, Parallelität, Providerfehler und Evidence-Schreibfehler zu testen.
 
 **Nicht in Phase 0** (aus der Erstfassung entfernt):
 
@@ -160,7 +167,7 @@ Planungsziele (§2).
   ob Self-Service-Checkout gewollt ist
 - **E-K1 Kapazität:** tatsächlich verfügbare Stunden/Woche und Review-Fenster
 - **E-Z1 Ziele:** Planungswerte für Workspaces, Conversion, MRR (nach erstem Messzeitraum)
-- **E-R1 Recht:** Prüfung VO (EU) 2026/1744 und O7 durch fachkundige Stelle; bis dahin keine Ableitungen
+- **E-R1 Recht:** Amtliche Existenz und Zeitplan bestätigt (§1); genaue Artikelanwendung, Art. 4 und O7 durch fachkundige Stelle prüfen, bevor Produkttexte geändert werden
 - **P0-1:** Cron-Secrets setzen (manueller Schritt)
 - **P0-3:** fail-open vs. fail-closed
 - E-F4 Partner 1.999 €, E-F5 `/audit` als kanonischer Scan-Einstieg, Gründerpreis, Jahrespreise

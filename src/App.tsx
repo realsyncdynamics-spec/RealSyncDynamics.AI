@@ -196,6 +196,7 @@ const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) 
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+const SampleWorkspacePage = lazy(() => import('./features/governance/dashboard/SampleWorkspacePage').then((m) => ({ default: m.SampleWorkspacePage })));
 // Voice dashboard (PR 5/6) — read-only sessions behind AppGate + shell.
 const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter').then((m) => ({ default: m.VoiceRouter })));
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
@@ -787,6 +788,8 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      {/* WP-4: Dashboard mit erfundenen Beispieldaten — liest und schreibt nichts. */}
+      <Route path="/app/beispiel" element={<AppGate><GovernanceBrowserShell><SampleWorkspacePage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />

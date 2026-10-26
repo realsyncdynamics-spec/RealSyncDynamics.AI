@@ -250,13 +250,22 @@ export async function runScan(args: {
   return { kind: 'ok', data: data as ScanResponse };
 }
 
-export async function approveAgentRun(tenantId: string, runId: string): Promise<SiteOsResult<{ run_id: string }>> {
+/**
+ * Gibt einen wartenden Agentenlauf frei (owner/admin/dpo, nicht der
+ * Auslöser). `reason` ist Pflicht, wenn der Auslöser als einziges
+ * freigabeberechtigtes Mitglied selbst freigibt (≥ 30 Zeichen).
+ */
+export async function approveAgentRun(
+  tenantId: string,
+  runId: string,
+  reason?: string,
+): Promise<SiteOsResult<{ run_id: string; self_approval?: boolean }>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos/agents', {
-    body: { op: 'approve', tenant_id: tenantId, run_id: runId },
+    body: { op: 'approve', tenant_id: tenantId, run_id: runId, ...(reason ? { reason } : {}) },
   });
   if (error) return mapError(error);
-  return { kind: 'ok', data: data as { run_id: string } };
+  return { kind: 'ok', data: data as { run_id: string; self_approval?: boolean } };
 }
 
 export async function runAgent(tenantId: string, runId?: string): Promise<SiteOsResult<{ ran: boolean; applied?: string[] }>> {

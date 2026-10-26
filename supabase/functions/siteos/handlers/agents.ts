@@ -4,7 +4,10 @@
 // Auth: Authorization: Bearer <user JWT>
 // Body:
 //   { op: 'list',    tenant_id, status? }
-//   { op: 'approve', tenant_id, run_id }        // gibt einen wartenden Lauf frei
+//   { op: 'approve', tenant_id, run_id, reason? } // gibt einen wartenden Lauf frei
+//                                               // (owner/admin/dpo, nicht der
+//                                               // Auslöser; reason Pflicht bei
+//                                               // dokumentierter Selbstfreigabe)
 //   { op: 'run',     tenant_id, run_id? }       // arbeitet einen bzw. den
 //                                               // nächsten Lauf ab
 //
@@ -20,6 +23,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
 import { audit } from '../../_shared/auditLog.ts';
 import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
+import { SITE_APPROVER_ROLES, checkApproval } from '../approval-policy.ts';
 import {
   AGENTS,
   analyzeBlueprint,
@@ -78,8 +82,8 @@ export async function handle(req: Request): Promise<Response> {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const { data: member } = await admin
-    .from('memberships').select('user_id')
-    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
+    .from('memberships').select('role')
+    .eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle<{ role: string }>();
   if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
   try {
@@ -103,26 +107,71 @@ export async function handle(req: Request): Promise<Response> {
     if (op === 'approve') {
       const runId = String(body.run_id ?? '').trim();
       if (!runId) return jsonError(400, 'BAD_REQUEST', 'run_id required');
+      const reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 1000) : '';
+
+      // Rolle zuerst: Freigeben ist Prüfen, nicht Lesen (ADR 0005).
+      if (!SITE_APPROVER_ROLES.has(member.role)) {
+        return jsonError(403, 'FORBIDDEN', `role "${member.role}" may not approve an agent run`);
+      }
+
+      const { data: run } = await admin
+        .from('siteos_agent_runs')
+        .select('id, requested_by')
+        .eq('tenant_id', tenantId).eq('id', runId).eq('status', 'awaiting_approval')
+        .maybeSingle<{ id: string; requested_by: string | null }>();
+      if (!run) return jsonError(409, 'CONFLICT', 'run is not awaiting approval');
+
+      const { count: eligibleApproverCount } = await admin
+        .from('memberships').select('user_id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId).in('role', [...SITE_APPROVER_ROLES]);
+
+      // Vier-Augen: Wer den Lauf ausgelöst hat, gibt ihn nicht frei.
+      // Dieselbe Regel erzwingt der Trigger aus Migration 20261025100000.
+      const check = checkApproval({
+        approverId: userId,
+        approverRole: member.role,
+        authorId: run.requested_by,
+        eligibleApproverCount: eligibleApproverCount ?? 0,
+        reason,
+      });
+      if (!check.allowed) return jsonError(check.status, check.code, check.message);
 
       // Die Freigabe gilt nur für genau den wartenden Lauf; ein bereits
       // laufender oder abgeschlossener Lauf lässt sich nicht nachträglich
       // freigeben.
+      const nowIso = new Date().toISOString();
       const { data: updated, error } = await admin
         .from('siteos_agent_runs')
-        .update({ status: 'queued', approval_id: userId })
+        .update({
+          status: 'queued',
+          approval_id: userId, // historisch; maßgeblich ist approved_by
+          approved_by: userId,
+          approved_at: nowIso,
+          approval_reason: reason || null,
+          self_approval: check.selfApproval,
+        })
         .eq('tenant_id', tenantId).eq('id', runId).eq('status', 'awaiting_approval')
+        .is('approved_by', null)
         .select('id, agent').maybeSingle();
 
-      if (error) return jsonError(500, 'INTERNAL', 'could not approve run');
+      if (error) {
+        console.error(JSON.stringify({ level: 'error', scope: 'siteos_agent_approve_failed', error: error.message }));
+        return jsonError(500, 'INTERNAL', 'could not approve run');
+      }
       if (!updated) return jsonError(409, 'CONFLICT', 'run is not awaiting approval');
 
       await audit(admin, {
         tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail,
         action: 'siteos.agent.approve', target_type: 'siteos_agent_run', target_id: runId,
-        payload: { agent: updated.agent },
+        payload: {
+          agent: updated.agent,
+          role: member.role,
+          self_approval: check.selfApproval,
+          ...(reason ? { reason } : {}),
+        },
       });
 
-      return jsonResponse({ ok: true, run_id: runId, status: 'queued' });
+      return jsonResponse({ ok: true, run_id: runId, status: 'queued', self_approval: check.selfApproval });
     }
 
     // ── op === 'run' ───────────────────────────────────────────────────

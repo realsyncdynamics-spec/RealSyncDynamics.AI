@@ -160,7 +160,7 @@ export const AUTOMATE_MODULES: ModuleDefinition[] = [
   { id: 'scheduler', area: 'automate', name: 'Scheduler', description: 'Zeitplaner für wiederkehrende Aufgaben wie regelmäßige Checks oder Berichte. Im Produkt: geplante Läufe (täglich/wöchentlich/monatlich) mit Prioritäts-Queue.', icon: 'CalendarClock' },
   { id: 'workflows', area: 'automate', name: 'Workflows', description: 'Wiederholbare Prozessketten mit Schritten, Rollen, Bedingungen und Freigaben. Im Produkt: mehrstufige Governance-Abläufe mit Freigaben und Eskalation.', icon: 'GitBranch' },
   { id: 'n8n', area: 'automate', name: 'n8n', description: 'Workflow-Automatisierungsplattform, die APIs, Datenbanken und Dienste über Abläufe verbindet. Preview: Webhook-Trigger, Workflow-Läufe, Rückschreiben von Ergebnissen — noch keine produktive Ausführung.', icon: 'Workflow', availability: 'preview' },
-  { id: 'kodee', area: 'automate', name: 'Kodee', description: 'Produktname, kein Fachbegriff: der eingebaute Assistent für den Serverbetrieb. Auf der Roadmap.', icon: 'Terminal', availability: 'coming-soon' },
+  { id: 'kodee', area: 'automate', name: 'Kodee', description: 'Produktname, kein Fachbegriff: der eingebaute Assistent für den Serverbetrieb. Preview: Chat in allen Plänen, SSH-Server-Aktionen ab Agency.', icon: 'Terminal', availability: 'preview' },
   { id: 'bulk_jobs', area: 'automate', name: 'Bulk Jobs', description: 'Massenverarbeitung: viele Datensätze oder Prüfungen in einem Durchgang. Im Produkt: Massenläufe über viele Domains — CSV-Import, Queue, Retry.', icon: 'Layers' },
   { id: 'automation_engine', area: 'automate', name: 'Automation Engine', description: 'Ausführungslogik hinter Automationen: startet Trigger, wertet Bedingungen aus, protokolliert Ergebnisse. Im Produkt: führt Governance-Skills mit Kontingent und Protokollierung aus.', icon: 'Cpu' },
   { id: 'alerts', area: 'automate', name: 'Alerts', description: 'Warnmeldungen bei Ereignissen oder Regelverstößen. Im Produkt: Benachrichtigungen bei neuen Findings — E-Mail, Slack, Teams, Webhook.', icon: 'Bell' },
@@ -334,7 +334,7 @@ export interface PlanPermissions {
   evidenceVault: boolean;
   /** Nachweispakete exportieren */
   auditExport: boolean;
-  /** Single Sign-On */
+  /** Single Sign-On (Registry `enterprise-sso`: coming-soon, ADR 0007) */
   sso: boolean;
   /** Massenläufe */
   bulkOperations: boolean;
@@ -947,6 +947,10 @@ export const PLANS: Plan[] = [
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
         'Zentrale Benutzerverwaltung mit Rollen und Rechten',
+        // Registry `enterprise-sso` = coming-soon (ADR 0007). Literal bleibt unverändert,
+        // damit `20261010090000_canonical_plan_catalog.sql` (`generate-plan-catalog-sql.ts`)
+        // keine neue DB-Migration erzwingt; `src/config/pricing.ts` und Landing v7
+        // kennzeichnen den Punkt öffentlich als „Single Sign-On (Coming Soon)“.
         'Single Sign-On',
         'White-Label mit Branding, Logo und Farben',
       ],
@@ -3001,8 +3005,12 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 export const PRICING_TRUST_NOTE =
   'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
-/** Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`. */
-export const PRICING_TAX_NOTE_STANDARD = 'Alle Preise zzgl. gesetzlicher Umsatzsteuer.';
+/**
+ * Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`.
+ * Nennt den Kundenkreis direkt bei den Preisen: Netto-Preise sind nur
+ * zulässig, wenn das Angebot erkennbar auf Unternehmer beschränkt ist (AGB § 1 Abs. 2).
+ */
+export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.';
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
@@ -3016,7 +3024,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

@@ -369,6 +369,14 @@ export const HANDOFF_EXTRA = {
     once: 'einmalig · kein Account',
     billingToggle: 'Abrechnungszeitraum',
     moreInfo: 'Mehr erfahren',
+    // Lead-Erfassung im Scan (Schritt 1). Der Scan startet direkt nach
+    // diesem Schritt; die drei Folgefragen laufen parallel zum Scan.
+    startScan: 'Kostenlosen Governance Scan starten',
+    showResult: 'Ergebnis anzeigen',
+    leadPrivacyNotice:
+      'Wir speichern Domain, E-Mail und – falls angegeben – den Unternehmensnamen, um den Scan durchzuführen und Ihnen das Ergebnis zuzuordnen. Werbliche E-Mails nur mit Ihrer Einwilligung.',
+    scanRunningBackground: 'Der Scan läuft bereits – beantworten Sie in der Zwischenzeit drei kurze Fragen.',
+    domainInvalid: 'Bitte eine gültige Domain angeben, z. B. muster.de.',
     trialNote: '{days} Tage kostenlos testen',
     residencyLabel: 'Wo sollen KI-Daten verarbeitet werden? (optional)',
     residencyLocal: 'Lokal im Haus',
@@ -385,11 +393,17 @@ export const HANDOFF_EXTRA = {
     pricingDisclaimerAfter:
       ', weil das niemand seriös kann. Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.',
     // Landing v4 Hero (H1 + Lede). Produktname bleibt EN; „für Europa" lokalisiert.
-    v4HeroTitleA: 'AI Compliance',
-    v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'für Europa',
-    v4HeroLede1: 'Runtime-Governance für regulierte KI.',
-    v4HeroLede2: 'Kontinuierliche Evidenz. Menschliche Kontrolle. EU-nativ by Design.',
+    v4HeroTitleA: 'Risiken auf Ihrer Website',
+    v4HeroTitleB: 'und bei KI erkennen',
+    v4HeroTitleEm: 'und nachweisen.',
+    v4HeroLede1: 'Prüfen Sie Ihre Website kostenlos auf Datenschutzrisiken.',
+    v4HeroLede2: 'Erhalten Sie klare Ergebnisse und konkrete Hinweise für die nächsten Schritte.',
+    v4HeroLoop1: 'Prüfen',
+    v4HeroLoop2: 'Verstehen',
+    v4HeroLoop3: 'Handeln',
+    v4HeroLoop4: 'Nachweisen',
+    v4HeroPrimaryCta: 'Kostenlosen Check starten',
+    v4HeroSecondaryCta: 'Governance OS ansehen',
     // Landing v4 Workspace-Vorschau — sichtbare Beispiel-Kennzeichnung (keine Fake-KPIs).
     v4DashExampleBadge: 'Beispielansicht',
     v4DashExampleNote:
@@ -477,6 +491,12 @@ export const HANDOFF_EXTRA = {
     once: 'one-off · no account',
     billingToggle: 'Billing period',
     moreInfo: 'Learn more',
+    startScan: 'Start free governance scan',
+    showResult: 'Show result',
+    leadPrivacyNotice:
+      'We store the domain, e-mail and – if provided – company name to run the scan and assign the result to you. Marketing e-mails only with your consent.',
+    scanRunningBackground: 'The scan is already running – answer three short questions in the meantime.',
+    domainInvalid: 'Please enter a valid domain, e.g. example.com.',
     trialNote: '{days}-day free trial',
     residencyLabel: 'Where should AI data be processed? (optional)',
     residencyLocal: 'On-premises',
@@ -491,11 +511,17 @@ export const HANDOFF_EXTRA = {
     pricingDisclaimerStrong: 'We do not promise "100% legally secure"',
     pricingDisclaimerAfter:
       ', because nobody can seriously make that claim. We recommend having generated documents reviewed by counsel.',
-    v4HeroTitleA: 'AI Compliance',
-    v4HeroTitleB: 'Operations OS',
-    v4HeroTitleEm: 'for Europe',
-    v4HeroLede1: 'Runtime governance for regulated AI.',
-    v4HeroLede2: 'Continuous evidence. Human control. EU-native by design.',
+    v4HeroTitleA: 'Identify risks on your website',
+    v4HeroTitleB: 'and in your AI use',
+    v4HeroTitleEm: 'with clear evidence.',
+    v4HeroLede1: 'Check your website for privacy risks for free.',
+    v4HeroLede2: 'Get clear findings and practical guidance on what to do next.',
+    v4HeroLoop1: 'Check',
+    v4HeroLoop2: 'Understand',
+    v4HeroLoop3: 'Act',
+    v4HeroLoop4: 'Document',
+    v4HeroPrimaryCta: 'Start free check',
+    v4HeroSecondaryCta: 'Explore Governance OS',
     v4DashExampleBadge: 'Example view',
     v4DashExampleNote:
       'Example data – not real measurements. Your values come from your own scan.',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, AlertTriangle, CheckCircle2, Loader2,
@@ -15,6 +15,8 @@ import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
 import { readAuditPrefill } from '../features/audit/auditPrefill';
+import { rememberLeadContext } from '../features/audit/leadContext';
+import { trackMarketingEvent } from '../lib/marketingAnalytics';
 import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 import {
@@ -22,6 +24,8 @@ import {
   PostScanChoiceRow,
 } from '../components/audit/PostScanChoiceRow';
 import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
+import { saveFunnelContext } from '../core/onboarding/funnelContext';
+import { clearPendingAudit, readPendingAudit } from '../core/onboarding/claimAudit';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -102,11 +106,25 @@ export function AuditLanding() {
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [stepperGen, setStepperGen] = useState(0);
+  // Der Scan startet nach Schritt 1 und läuft parallel zu den Folgefragen.
+  // Den vollständigen Bericht zeigt die Seite erst, wenn der Besucher beim
+  // Schritt „Ergebnis“ angekommen ist.
+  const [revealed, setRevealed] = useState(false);
+  // Nur die Antwort des JÜNGSTEN Laufs zählt: Wer in Schritt 1 zurückgeht und
+  // eine andere Domain abschickt, darf nicht vom alten Ergebnis überholt werden.
+  const runSeq = useRef(0);
+
+  useEffect(() => {
+    trackMarketingEvent('lead_form_viewed', { metadata: { form: 'governance_scan' } });
+  }, []);
 
   /** Zurück aus Lauf/Fehler: Antworten behalten, Ergebnis verwerfen. */
   function clearResult() {
+    runSeq.current += 1;
     setReport(null);
     setError(null);
+    setRevealed(false);
+    setLoading(false);
   }
 
   /** „Neuer Scan" aus dem Bericht: Stepper von vorn. */
@@ -116,8 +134,10 @@ export function AuditLanding() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function runScan({ domain, email, company, marketingConsent }: AuditStepperInput) {
+  async function runScan({ domain, email, company, marketingConsent, honeypot }: AuditStepperInput) {
+    const seq = ++runSeq.current;
     setLoading(true); setError(null); setReport(null);
+    trackMarketingEvent('lead_submitted', { metadata: { form: 'governance_scan' } });
     try {
       const normalizedUrl = domain.match(/^https?:\/\//i) ? domain : `https://${domain}`;
       const params = new URLSearchParams(window.location.search);
@@ -138,8 +158,14 @@ export function AuditLanding() {
         source,
         marketing_consent: marketingConsent === true,
         consent_locale: consentLocale,
+        // Honeypot: leer bei Menschen. Der Server verwirft gefüllte Anfragen.
+        company_website: honeypot || undefined,
       }, { requireAuth: false });
+      if (seq !== runSeq.current) return;
       setReport(data);
+      // Für den Übergang zum Pilot: Domain + E-Mail im Tab merken, damit
+      // /welcome sie vorbelegt — nicht in der URL (siehe leadContext.ts).
+      rememberLeadContext({ email, domain });
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id && SUPABASE_URL) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
@@ -159,9 +185,10 @@ export function AuditLanding() {
         }).catch(() => { /* non-blocking */ });
       }
     } catch (e) {
+      if (seq !== runSeq.current) return;
       setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (seq === runSeq.current) setLoading(false);
     }
   }
 
@@ -179,9 +206,10 @@ export function AuditLanding() {
         report={report}
         onRun={(input) => { void runScan(input); }}
         onReset={clearResult}
+        onReveal={() => setRevealed(true)}
       />
 
-      {report && (
+      {report && revealed && (
         <div className="flow-context bg-obsidian-950 text-titanium-100 border-t border-titanium-900">
           <main className="px-4 sm:px-6 py-12 sm:py-16">
             <div className="max-w-3xl mx-auto">
@@ -398,6 +426,16 @@ function GuidedPlanBlock({ report }: { report: Report }) {
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
+  // Scan für die Übernahme nach der Anmeldung festhalten: `claimPendingAudit()`
+  // liest den Trichter-Kontext, nicht `audit_id` aus der /welcome-URL.
+  // Ein älterer Pending-Eintrag (z. B. aus dem Trial-CTA eines früheren Scans)
+  // hat bei der Übernahme Vorrang — deshalb verwerfen, wenn er zu einem anderen Scan gehört.
+  React.useEffect(() => {
+    if (!report.audit_id) return;
+    const pending = readPendingAudit();
+    if (pending && pending.audit_id !== report.audit_id) clearPendingAudit();
+    saveFunnelContext({ auditId: report.audit_id, domain: report.domain });
+  }, [report.audit_id, report.domain]);
   const config = severityConfig(report.severity);
   const [explainIssue, setExplainIssue] = useState<Issue | null>(null);
   const critCount = report.issues.filter((i) => i.severity === 'critical').length;
@@ -475,8 +513,6 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           })),
         })}
       />
-
-      <TrialCtaBlock report={report} />
 
       {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
 
@@ -577,6 +613,9 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <NextStepBlock report={report} />
 
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
+
+      {/* Upgrade-Angebote erst nach dem kostenlosen Einstieg (PostScanChoiceRow oben, E-F6). */}
+      <TrialCtaBlock report={report} />
 
       <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>

@@ -1,0 +1,56 @@
+/* Scoped V4 hero refresh: isolated from the legacy classical theme. */
+.rs-modern-hero{position:relative;z-index:2;padding:clamp(3rem,6vw,6rem) max(20px,calc((100vw - 1440px)/2));background:linear-gradient(120deg,#f9fbfd 0%,#edf5fa 53%,#d9eaf5 100%);color:#10253a;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+.rs-modern-hero:before{content:"";pointer-events:none;position:absolute;width:65vw;height:65vw;max-width:950px;max-height:950px;right:-20%;top:-45%;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.20),transparent 68%)}
+.rs-modern-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(28px,4vw,72px);align-items:center;position:relative}
+.rs-modern-hero .rs-modern-copy,.rs-modern-product{min-width:0}
+.rs-modern-hero .rs-modern-eyebrow{font-size:12px;letter-spacing:.11em;font-weight:800;color:#087fad;margin:0 0 26px}
+.rs-modern-eyebrow span{color:#45657b;margin-left:10px;letter-spacing:0;font-weight:600}
+.rs-modern-hero h1{font-size:clamp(42px,4.3vw,76px);letter-spacing:-.055em;line-height:1.06;font-weight:800;margin:0 0 22px;color:#11243b}
+.rs-modern-hero h1 span{color:#00a6ce}
+.rs-modern-hero .rs-modern-claim{font-size:clamp(18px,1.55vw,24px);line-height:1.28;font-weight:700;color:#1b3b51;margin:0 0 12px}
+.rs-modern-explainer{max-width:600px;font-size:16px;line-height:1.65;color:#456175;margin:0}
+.rs-modern-steps{display:flex;flex-wrap:wrap;gap:8px 16px;list-style:none;padding:0;margin:26px 0}
+.rs-modern-steps li{font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.04em;color:#096f94;display:flex;gap:7px;align-items:center}
+.rs-modern-steps li:not(:last-child):after{content:"→";margin-left:10px;color:#7899ad}
+.rs-modern-steps b{font-size:10px;color:#739bac}
+.rs-modern-form{background:#fff;border:1px solid #d0e5ef;padding:18px;border-radius:18px;box-shadow:0 12px 42px #13425b12;max-width:650px}
+.rs-modern-form label{display:block;font-size:14px;font-weight:800;margin-bottom:10px;color:#17344b}
+.rs-modern-form>div{display:flex;gap:8px}
+.rs-modern-form input{min-width:0;flex:1;font:inherit;font-size:14px;border:1px solid #c4d9e6;background:#f7fbfd;border-radius:10px;color:#14283b;padding:13px}
+.rs-modern-form button{background:#00abd1;color:#fff;border:0;border-radius:10px;font-size:13px;font-weight:800;padding:12px 16px;cursor:pointer}
+.rs-modern-form button:hover,.rs-modern-form button:focus-visible{background:#087c9f}
+.rs-modern-form p{font-size:11px;color:#597384;margin:10px 0 0;line-height:1.5}
+.rs-modern-links{display:flex;flex-wrap:wrap;gap:20px;margin-top:18px}
+.rs-modern-links a{font-weight:700;color:#116c90;font-size:13px;text-decoration:none}
+.rs-modern-product{background:#0d1825;color:#e9f3f8;border:1px solid #3a6985;border-radius:20px;box-shadow:0 24px 60px #00233a35,0 0 0 5px #2cbce615;overflow:hidden;transform:perspective(1400px) rotateY(-3deg)}
+.rs-modern-app-top{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #2a4154;padding:17px 19px;font-size:13px}
+.rs-modern-app-top strong span:not(.rs-modern-r){color:#25c6e8}
+.rs-modern-r{font-size:22px;font-weight:900;color:#24d5ef;margin-right:7px}
+.rs-modern-demo{font-size:10px;color:#9cbbca;border:1px solid #38566a;border-radius:50px;padding:6px 8px}
+.rs-modern-app-body{display:flex;min-height:470px}
+.rs-modern-sidebar{width:145px;flex-shrink:0;border-right:1px solid #273d52;padding:20px 11px;display:flex;flex-direction:column;gap:6px;background:#101e2d}
+.rs-modern-sidebar>b{font-size:9px;letter-spacing:.12em;color:#90aabb;margin-bottom:10px}
+.rs-modern-sidebar>span{font-size:11px;padding:10px 8px;color:#a6bbc9;border-radius:7px}
+.rs-modern-sidebar>.selected{background:#123c51;color:#5ee0f3}
+.rs-modern-main{flex:1;padding:23px;min-width:0}
+.rs-modern-mini{font-size:10px;color:#59cfed;letter-spacing:.13em;font-weight:800;margin:0 0 8px}
+.rs-modern-main h2{font-size:25px;line-height:1.2;color:#fff;font-weight:800;letter-spacing:-.03em;margin:0}
+.rs-modern-sub{font-size:12px;color:#9bb3c4;margin:8px 0 20px}
+.rs-modern-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.rs-modern-stat-grid>div{border:1px solid #2f4b60;background:#142a3b;border-radius:11px;padding:12px 10px}
+.rs-modern-stat-grid small,.rs-modern-stat-grid span{display:block;font-size:10px;color:#92aabd}
+.rs-modern-stat-grid strong{display:block;font-size:22px;color:#57d8e9;margin:5px 0}
+.rs-modern-findings{background:#102333;border:1px solid #29485d;border-radius:12px;margin-top:15px;padding:16px}
+.rs-modern-findings h3{font-size:13px;font-weight:800;color:#f1f8fc;display:flex;justify-content:space-between;margin:0 0 10px}
+.rs-modern-findings h3 span{font-size:9px;color:#77a6bc}
+.rs-modern-finding{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid #2a4151}
+.rs-modern-finding-dot{width:7px;height:7px;background:#26c6dd;border-radius:50%;flex:none}
+.rs-modern-finding>div{min-width:0;flex:1}
+.rs-modern-finding strong{display:block;font-size:11px;color:#e4eff6}
+.rs-modern-finding p{font-size:10px;color:#95afc0;margin:3px 0 0;line-height:1.35}
+.rs-modern-finding em{font-style:normal;color:#72d4e5;background:#14384b;font-size:9px;padding:5px 7px;border-radius:10px}
+.rs-modern-proof{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:15px;font-size:9px;color:#80cde0}
+.rs-modern-bottom-note{text-align:center;color:#506e80;font-size:12px;margin:38px 0 0}
+@media(max-width:1080px){.rs-modern-wrap{grid-template-columns:1fr}.rs-modern-product{transform:none;max-width:800px}.rs-modern-hero{padding-left:24px;padding-right:24px}}
+@media(max-width:620px){.rs-modern-hero{padding:38px 16px}.rs-modern-hero h1{font-size:clamp(36px,10vw,52px)}.rs-modern-eyebrow span{display:block;margin:9px 0 0}.rs-modern-form>div{flex-direction:column}.rs-modern-form button{min-height:48px}.rs-modern-sidebar{display:none}.rs-modern-main{padding:15px}.rs-modern-app-body{min-height:0}.rs-modern-app-top{flex-direction:column;align-items:flex-start}.rs-modern-stat-grid{gap:5px}.rs-modern-stat-grid>div{padding:9px 6px}.rs-modern-stat-grid strong{font-size:17px}.rs-modern-finding em{display:none}}
+@media(prefers-reduced-motion:reduce){.rs-modern-product{transform:none}}

@@ -210,6 +210,12 @@ export interface ComplianceStatusViewProps {
    * tenant_entitlements (CommandCenterDashboard), wie RouteEntitlementGate.
    */
   packsLockTitle?: string | null;
+  /**
+   * Beispielansicht (/app/beispiel): erfundene Daten. Der Untertitel sagt das,
+   * statt „aus Ihren Mandantendaten“, und die Prüfer-Mappe entfällt — sie
+   * würde die echten Daten des Mandanten drucken.
+   */
+  sample?: boolean;
 }
 
 export function ComplianceStatusView({
@@ -224,6 +230,7 @@ export function ComplianceStatusView({
   entitlementsLoading = false,
   onRetry,
   packsLockTitle = null,
+  sample = false,
 }: ComplianceStatusViewProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -273,11 +280,13 @@ export function ComplianceStatusView({
             {tenantName ? `Status · ${tenantName}` : 'Compliance-Status'}
           </h1>
           <p className="text-sm text-titanium-400 mt-1">
-            Score, Residualrisiko, Evidence und Audit-Readiness — aus Ihren Mandantendaten.
+            {sample
+              ? 'Score, Residualrisiko, Evidence und Audit-Readiness — erfundene Beispieldaten, nicht aus Ihrem Workspace.'
+              : 'Score, Residualrisiko, Evidence und Audit-Readiness — aus Ihren Mandantendaten.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {activeTenantId && (
+          {activeTenantId && !sample && (
             <Link to="/app/cockpit/brief">
               <Button variant="secondary" size="md">
                 <FileCheck2 className="h-4 w-4" /> Prüfer-Mappe
@@ -1010,10 +1019,10 @@ const FRAMEWORK_STRIP: Array<{
   path: string | null;
   maturity: FrameworkMaturity;
 }> = [
-  { id: 'dsgvo', label: 'DSGVO', path: '/app/governance/dsgvo-directory', maturity: 'live' },
+  { id: 'dsgvo', label: 'DSGVO', path: '/app/documents', maturity: 'live' },
   { id: 'eu-ai-act', label: 'EU AI Act', path: '/app/governance/ai-act-assessment', maturity: 'beta' },
-  { id: 'iso', label: 'ISO', path: '/app/governance/iso27001', maturity: 'beta' },
-  { id: 'nis2', label: 'NIS2', path: '/app/governance/nis2-incidents', maturity: 'beta' },
+  { id: 'iso', label: 'ISO', path: '/app/policy-packs', maturity: 'beta' },
+  { id: 'nis2', label: 'NIS2', path: '/app/policy-packs', maturity: 'beta' },
   // Honest Roadmap: no dedicated TISAX/DORA surface yet — not Policy Packs.
   { id: 'tisax', label: 'TISAX', path: null, maturity: 'roadmap' },
   { id: 'dora', label: 'DORA', path: null, maturity: 'roadmap' },

@@ -26,6 +26,12 @@ const CLIENT_ALLOWED_EVENTS = new Set([
   'audit_completed',
   'pricing_viewed',
   'checkout_started',
+  // Lead-Trichter (Governance-Scan). Was der Server belegen kann —
+  // lead_saved, scan_started, scan_completed, pilot_started,
+  // subscription_activated — schreibt ausschliesslich der Server
+  // (gdpr-audit bzw. Trigger auf subscriptions), nie der Browser.
+  'lead_form_viewed',
+  'lead_submitted',
 ]);
 
 const MAX_EVENT_VALUE = 10_000; // EUR — sanity cap fuer client-supplied Werte

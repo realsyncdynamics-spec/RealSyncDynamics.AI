@@ -106,16 +106,16 @@ describe('command center catalog destinations', () => {
 });
 
 describe('framework strip honesty', () => {
-  it('wires DSGVO / AI Act / ISO / NIS2 to existing governance views', () => {
-    expect(DASHBOARD).toContain("path: '/app/governance/dsgvo-directory'");
+  it('wires DSGVO / AI Act / ISO / NIS2 to the surfaces that implement them', () => {
+    // DSGVO → VVT-Generator, ISO 27001 / NIS2 → Policy Packs (policy.iso27001 / policy.nis2).
+    expect(DASHBOARD).toContain("{ id: 'dsgvo', label: 'DSGVO', path: '/app/documents'");
     expect(DASHBOARD).toContain("path: '/app/governance/ai-act-assessment'");
-    expect(DASHBOARD).toContain("path: '/app/governance/iso27001'");
-    expect(DASHBOARD).toContain("path: '/app/governance/nis2-incidents'");
+    expect(DASHBOARD).toContain("{ id: 'iso', label: 'ISO', path: '/app/policy-packs'");
+    expect(DASHBOARD).toContain("{ id: 'nis2', label: 'NIS2', path: '/app/policy-packs'");
     for (const path of [
-      '/app/governance/dsgvo-directory',
+      '/app/documents',
       '/app/governance/ai-act-assessment',
-      '/app/governance/iso27001',
-      '/app/governance/nis2-incidents',
+      '/app/policy-packs',
     ]) {
       expect(appRegisters(path), path).toBe(true);
     }

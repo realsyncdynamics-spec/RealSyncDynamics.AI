@@ -13,6 +13,7 @@ import type {
   GovernancePolicyType, GovernancePolicyAction, GovernanceRiskLevel,
 } from './types';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { RegistryWriteNotice, useCanEditRegistry } from './ai-registry/RegistryWriteAccess';
 
 /**
  * /governance/onboarding — first-time wizard, sprachlich deckungsgleich mit
@@ -28,7 +29,9 @@ import { withPerformanceMonitoring } from './withPerformanceMonitoring';
  *   5. KI sicher betreiben    — Zusammenfassung, Extension, erster Event
  *
  * Schritte 2–4 nutzen dieselben Edge Functions wie die CRUD-Oberflächen,
- * Onboarding-Artefakte sind also vollwertig.
+ * Onboarding-Artefakte sind also vollwertig. Ohne owner/admin ist der
+ * Assistent nur zum Ansehen: Hinweis ab Schritt 1, Anlegen gesperrt — der
+ * Server lehnt create_asset ohnehin ab.
  */
 function _OnboardingView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
@@ -50,6 +53,7 @@ function Inner() {
   const [policyId, setPolicyId] = useState<string | null>(null);
   const [keyName, setKeyName] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const canEdit = useCanEditRegistry();
 
   // Defensive: if no tenant, hold here. AuthGate ensures user is logged in.
   if (!activeTenantId) {
@@ -76,12 +80,14 @@ function Inner() {
       {step === 1 && (
         <OverviewStep
           tenantName={tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null}
+          canEdit={canEdit}
           onDone={() => setStep(2)}
         />
       )}
       {step === 2 && (
         <AssetStep
           tenantId={activeTenantId}
+          canEdit={canEdit}
           onDone={(id) => { setAssetId(id); setStep(3); }}
         />
       )}
@@ -121,8 +127,8 @@ const WEG = [
 ];
 
 function OverviewStep({
-  tenantName, onDone,
-}: { tenantName: string | null; onDone: () => void }) {
+  tenantName, canEdit, onDone,
+}: { tenantName: string | null; canEdit: boolean; onDone: () => void }) {
   return (
     <StepCard
       icon={<Building2 />}
@@ -143,6 +149,7 @@ function OverviewStep({
           </li>
         ))}
       </ol>
+      {!canEdit && <RegistryWriteNotice className={lockedCls} />}
       <div className="flex items-center justify-end pt-5">
         <button
           type="button"
@@ -164,8 +171,8 @@ const ASSET_TYPES: GovernanceAssetType[] = [
 const AI_ACT_CLASSES: AiActClass[] = ['minimal', 'limited', 'high', 'prohibited', 'unknown'];
 
 function AssetStep({
-  tenantId, onDone,
-}: { tenantId: string; onDone: (id: string) => void }) {
+  tenantId, canEdit, onDone,
+}: { tenantId: string; canEdit: boolean; onDone: (id: string) => void }) {
   const [name, setName] = useState('');
   const [assetType, setAssetType] = useState<GovernanceAssetType>('ai_system');
   const [vendor, setVendor] = useState('');
@@ -176,6 +183,7 @@ function AssetStep({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit || busy) return;
     setError(null); setBusy(true);
     const r = await createAsset({
       tenant_id: tenantId,
@@ -230,6 +238,7 @@ function AssetStep({
         </Field>
 
         {error && <ErrorBox>{error}</ErrorBox>}
+        {!canEdit && <RegistryWriteNotice className={lockedCls} />}
 
         <div className="flex items-center justify-between pt-2">
           <Link to="/app/websites" className="text-xs text-titanium-400 hover:text-titanium-200">
@@ -237,7 +246,7 @@ function AssetStep({
           </Link>
           <button
             type="submit"
-            disabled={busy || !name.trim()}
+            disabled={busy || !canEdit || !name.trim()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
           >
             {busy ? 'Erstelle…' : 'Weiter'} <ArrowRight className="h-3.5 w-3.5" />
@@ -635,6 +644,9 @@ function CheckLine({ done, children }: { done: boolean; children: React.ReactNod
     </div>
   );
 }
+
+const lockedCls =
+  'mt-4 text-xs text-amber-200 bg-amber-950/40 border border-amber-900 rounded-none p-2.5 leading-relaxed';
 
 const inputCls =
   'w-full bg-obsidian-950 border border-titanium-900 text-titanium-100 text-sm rounded-none px-3 py-2 outline-none focus:border-amber-500';

@@ -50,9 +50,10 @@ import {
 } from '../../../../packages/siteos-core/src/index.ts';
 import type { PolicyEngineState } from '../../../../packages/siteos-core/src/index.ts';
 import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
+import { SITE_APPROVER_ROLES, checkApproval } from '../approval-policy.ts';
 
-/** Rollen, die eine Freigabe erteilen dürfen. */
-const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
+/** Rollen, die eine Freigabe erteilen dürfen (zentral in approval-policy.ts). */
+const APPROVER_ROLES = SITE_APPROVER_ROLES;
 
 /**
  * Das ausdrückliche Veröffentlichungs-GO ist enger als die fachliche
@@ -62,6 +63,9 @@ const APPROVER_ROLES = new Set(['owner', 'admin', 'dpo']);
 const PUBLISHER_ROLES = new Set(['owner', 'admin']);
 
 const MAX_REASON_LENGTH = 1000;
+
+/** Nach dieser Zeit gilt ein nicht abgeschlossener Freigabe-Anspruch als verwaist. */
+const APPROVAL_CLAIM_TTL_MS = 5 * 60 * 1000;
 
 /**
  * Der Admin-Client, wie ihn die übrigen Handler benutzen.
@@ -148,33 +152,125 @@ export async function handleApprove(req: Request): Promise<Response> {
 
   const { data: evaluation } = await ctx.admin
     .from('siteos_publish_evaluations')
-    .select('id, blueprint_id, artifact_sha256, human_approval_required')
+    .select('id, blueprint_id, artifact_sha256, human_approval_required, approved_by')
     .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ id: string; blueprint_id: string | null; artifact_sha256: string; human_approval_required: boolean }>();
+    .maybeSingle<{ id: string; blueprint_id: string | null; artifact_sha256: string; human_approval_required: boolean; approved_by: string | null }>();
 
   if (!evaluation) return jsonError(404, 'NOT_FOUND', 'evaluation not found for this tenant');
   if (!evaluation.human_approval_required) {
     return jsonError(409, 'CONFLICT', 'this evaluation does not await an approval');
   }
+  // Vor dem Nachweis prüfen, damit eine wiederholte Freigabe keinen
+  // zweiten Custody-Eintrag erzeugt.
+  if (evaluation.approved_by) {
+    return jsonError(409, 'CONFLICT', 'this evaluation is already approved');
+  }
   if (!evaluation.blueprint_id) {
     return jsonError(409, 'CONFLICT', 'evaluation is not bound to a blueprint version');
   }
 
-  const nowIso = new Date().toISOString();
-  const { error: updateErr } = await ctx.admin
-    .from('siteos_publish_evaluations')
-    .update({ approved_by: ctx.userId, approved_at: nowIso, approval_reason: reason.slice(0, MAX_REASON_LENGTH) })
-    .eq('id', evaluationId).eq('tenant_id', ctx.tenantId);
+  const { data: blueprint } = await ctx.admin
+    .from('siteos_blueprints')
+    .select('slug, created_by')
+    .eq('id', evaluation.blueprint_id).eq('tenant_id', ctx.tenantId)
+    .maybeSingle<{ slug: string; created_by: string | null }>();
+  if (!blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
 
-  if (updateErr) {
-    console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_approval_failed', error: updateErr.message }));
+  // Vier-Augen: Wer die bewertete Version erstellt hat, gibt sie nicht
+  // frei — außer als einziges freigabeberechtigtes Mitglied, dann
+  // dokumentiert. Dieselbe Regel erzwingt der Trigger aus Migration
+  // 20261025100000 auch gegen service_role.
+  const { count: eligibleApproverCount } = await ctx.admin
+    .from('memberships').select('user_id', { count: 'exact', head: true })
+    .eq('tenant_id', ctx.tenantId).in('role', [...SITE_APPROVER_ROLES]);
+  const fourEyes = checkApproval({
+    approverId: ctx.userId,
+    approverRole: ctx.role,
+    authorId: blueprint.created_by,
+    eligibleApproverCount: eligibleApproverCount ?? 0,
+    reason,
+  });
+  if (!fourEyes.allowed) return jsonError(fourEyes.status, fourEyes.code, fourEyes.message);
+
+  const nowIso = new Date().toISOString();
+  const staleIso = new Date(Date.now() - APPROVAL_CLAIM_TTL_MS).toISOString();
+
+  // Erst die Bewertung atomar beanspruchen, dann den Nachweis schreiben
+  // (Migration 20261011070000). Wer bei gleichzeitigen Freigaben verliert,
+  // bricht hier ab, bevor ein Nachweis entsteht. Ein verwaister Anspruch
+  // (Abbruch zwischen Anspruch und Abschluss) verfällt nach der TTL.
+  const { data: claimed, error: claimErr } = await ctx.admin
+    .from('siteos_publish_evaluations')
+    .update({ approval_claimed_at: nowIso })
+    .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
+    .is('approved_by', null)
+    .or(`approval_claimed_at.is.null,approval_claimed_at.lt.${staleIso}`)
+    .select('id');
+  if (claimErr) {
+    console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_approval_claim_failed', error: claimErr.message }));
+    return jsonError(500, 'INTERNAL', 'could not record approval');
+  }
+  if (!claimed || claimed.length === 0) {
+    return jsonError(409, 'CONFLICT', 'this evaluation is already approved or an approval is in progress');
+  }
+
+  // Jede Freigabe braucht einen Evidence-Eintrag (O-WP6). Er landet in
+  // derselben Custody-Kette wie das spätere GO und wird vor der Freigabe
+  // geschrieben: Ohne Nachweis gibt es keine Freigabe.
+  // Issuer ist der Mandant wie beim GO: Die Provenance-Prüfung wertet jeden
+  // Actor-Wechsel in einer Kette als strittige Eigentümerschaft. Die
+  // freigebende Person steht in `approved_by` und im Audit-Log.
+  try {
+    await appendCustodyEvent(ctx.admin, {
+      tenantId: ctx.tenantId,
+      assetRef: `siteos:artifact:${ctx.tenantId}:${blueprint.slug}`,
+      contentSha256: evaluation.artifact_sha256,
+      action: 'audited',
+      issuer: `tenant:${ctx.tenantId}`,
+      timestamp: nowIso,
+    });
+  } catch (provErr) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'siteos_publish_approval_custody_failed',
+      artifact_sha256: evaluation.artifact_sha256,
+      error: (provErr as Error)?.message ?? String(provErr),
+    }));
+    // Anspruch freigeben, damit ein neuer Versuch möglich bleibt.
+    await ctx.admin
+      .from('siteos_publish_evaluations')
+      .update({ approval_claimed_at: null })
+      .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
+      .eq('approval_claimed_at', nowIso).is('approved_by', null);
+    return jsonError(500, 'INTERNAL', 'approval could not be linked to custody evidence');
+  }
+
+  // Abschluss nur für den eigenen Anspruch.
+  const { data: updated, error: updateErr } = await ctx.admin
+    .from('siteos_publish_evaluations')
+    .update({
+      approved_by: ctx.userId, approved_at: nowIso, approval_reason: reason.slice(0, MAX_REASON_LENGTH),
+      self_approval: fourEyes.selfApproval,
+      approval_claimed_at: null,
+    })
+    .eq('id', evaluationId).eq('tenant_id', ctx.tenantId)
+    .eq('approval_claimed_at', nowIso).is('approved_by', null)
+    .select('id');
+
+  if (updateErr || !updated || updated.length === 0) {
+    console.error(JSON.stringify({ level: 'error', scope: 'siteos_publish_approval_failed', error: updateErr?.message ?? 'claim lost' }));
     return jsonError(500, 'INTERNAL', 'could not record approval');
   }
 
   await audit(ctx.admin, {
     tenant_id: ctx.tenantId, actor_user_id: ctx.userId, actor_email: ctx.userEmail,
     action: 'siteos.publish.approve', target_type: 'siteos_publish_evaluation', target_id: evaluationId,
-    payload: { artifact_sha256: evaluation.artifact_sha256, reason: reason.slice(0, MAX_REASON_LENGTH), role: ctx.role },
+    payload: {
+      artifact_sha256: evaluation.artifact_sha256,
+      reason: reason.slice(0, MAX_REASON_LENGTH),
+      role: ctx.role,
+      self_approval: fourEyes.selfApproval,
+    },
   });
 
   // Die Freigabe hebt die Bewertung nicht auf — sie erzeugt eine neue.

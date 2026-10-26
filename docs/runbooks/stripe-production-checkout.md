@@ -31,16 +31,16 @@ preview without writing.
 
 Table: `public.products`
 
-Live catalog (`acct_1TYVIyREjTWueUcG`) — UEm* active tax-incl. prices (`20260913000000`):
+Live catalog (`acct_1TYVIyREjTWueUcG`) — USab* active net prices, `tax_behavior=exclusive` (`20261020130000`; replaced the tax-incl. UEm* series from `20260913000000` on 2026-10-20):
 
 | plan_key | stripe_price_id | notes |
 |---|---|---|
-| `starter` | `price_1UEmHiREjTWueUcGX2cfEi25` | €79/mo |
-| `growth` | `price_1UEmHmREjTWueUcGiCQMB8H4` | €249/mo |
-| `agency` | `price_1UEmHoREjTWueUcGqeO4LGud` | €699/mo |
-| `enterprise` | `price_1UEmHqREjTWueUcG0oqZkb5O` | inquiry |
-| `partner` | `price_1UEmHsREjTWueUcGFlIItOiz` | legacy Scale |
-| `governance_launch` | `price_1UEmHtREjTWueUcGhjY7Gvhp` | €349 once |
+| `starter` | `price_1USabFREjTWueUcGDg9wod9W` | €79/mo |
+| `growth` | `price_1USabNREjTWueUcGu814PvJc` | €249/mo |
+| `agency` | `price_1USabPREjTWueUcGbaNG5WeB` | €699/mo |
+| `enterprise` | `price_1USabSREjTWueUcGzUEzTaie` | inquiry |
+| `partner` | `price_1USabUREjTWueUcGk8ao5bWw` | legacy Scale |
+| `governance_launch` | `price_1USabjREjTWueUcG45xZUZgM` | €349 once |
 
 No yearly Stripe prices; yearly rows keep non-`price_*` sentinels.
 
@@ -192,11 +192,19 @@ FROM public.subscriptions
 WHERE created_at > NOW() - INTERVAL '7 days'
 ORDER BY created_at DESC;
 
--- Recent webhook deliveries
-SELECT source, event_type, status, created_at
+-- Recent webhook deliveries (Stripe event id, event type, receive time)
+SELECT id, type, processed_at
 FROM public.webhook_events
-WHERE source = 'stripe' AND created_at > NOW() - INTERVAL '24 hours'
-ORDER BY created_at DESC LIMIT 20;
+WHERE processed_at > NOW() - INTERVAL '24 hours'
+ORDER BY processed_at DESC LIMIT 20;
+
+-- Last delivery overall (an empty 24 h window is normal without traffic)
+SELECT max(processed_at) AS last_event, count(*) AS total
+FROM public.webhook_events;
 ```
 
-All three queries are read-only and tenant-scoped via RLS.
+All three queries are read-only. `public.webhook_events` has only the
+columns `id` (Stripe event id), `type`, `payload` and `processed_at`; there is
+no `source`/`status`/`created_at`. It is deny-by-default under RLS (service
+role and super-admin read only), so run these in the SQL editor or with a
+super-admin session, not as a normal tenant user.

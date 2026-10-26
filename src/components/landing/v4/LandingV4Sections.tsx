@@ -28,6 +28,7 @@ import {
   GOV_STEPS,
   HERO_FRAMEWORKS,
   HERO_KPIS,
+  HERO_PACKS_LINE,
   HERO_PROOF,
   HUD_ORBITS,
   INTENT_CHIPS,
@@ -220,13 +221,13 @@ export function V4Hero() {
           <span>{t('v4HeroTitleB')}</span> <em>{t('v4HeroTitleEm')}</em>
         </h1>
         <p className="loop">
-          Discover
+          {t('v4HeroLoop1')}
           <LoopArrow />
-          Classify
+          {t('v4HeroLoop2')}
           <LoopArrow />
-          Enforce
+          {t('v4HeroLoop3')}
           <LoopArrow />
-          Prove
+          {t('v4HeroLoop4')}
         </p>
         <p className="lede" data-testid="v4-hero-lede">
           {t('v4HeroLede1')}
@@ -235,10 +236,10 @@ export function V4Hero() {
         </p>
         <div className="cta-row">
           <Link className="btn-primary" to={V4_ROUTES.audit} id="scan" data-hero-cta="">
-            Free Governance Audit <Arrow />
+            {t('v4HeroPrimaryCta')} <Arrow />
           </Link>
           <Link className="btn-ghost" to={V4_ROUTES.runtime}>
-            Runtime ansehen
+            {t('v4HeroSecondaryCta')}
           </Link>
         </div>
         <form className="scanform" onSubmit={onScan}>
@@ -271,7 +272,7 @@ export function V4Hero() {
           ))}
         </div>
         <div className="trust">
-          <p>SECHS POLICY PACKS · EIN PRÜFPFAD</p>
+          <p>{HERO_PACKS_LINE}</p>
           <div className="frameworks">
             {HERO_FRAMEWORKS.map(([f, next]) => (
               <span key={f} className={next ? 'next' : undefined}>
@@ -362,9 +363,9 @@ function Ledger() {
   }, []);
   return (
     <div>
-      {LEDGER_NODES.map(([city, role], i) => (
-        <div key={city} className="row">
-          <s>{city}</s>
+      {LEDGER_NODES.map(([step, role], i) => (
+        <div key={step} className="row">
+          <s>{step}</s>
           <em>{role}</em>
           <u style={i in lit ? { color: lit[i] ? 'var(--bronze-lite)' : 'var(--titan)' } : undefined}>{cells[i]}</u>
         </div>
@@ -896,7 +897,7 @@ export function V4Footer() {
           C2PA Content Credentials
         </div>
         <div>
-          <b>KONTAKT</b>Enterprise per Anfrage — SSO, On-Prem, Custom-DPA, Behördenvertrag.
+          <b>KONTAKT</b>Enterprise per Anfrage — SSO, Custom-DPA, Behördenvertrag.
           <br />
           <Link to={V4_ROUTES.contactSales}>Enterprise anfragen</Link>
         </div>

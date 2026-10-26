@@ -89,10 +89,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 194;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 196;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-10T12:49Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-16T12:07Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -123,6 +123,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'automation-callback',
   'automation-trigger',
   'automation-trigger-trial-webhook',
+  'beta-enroll',
   'bot-chat',
   'bot-voice-webhook',
   'browser-action-log',
@@ -158,6 +159,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'enterprise-ai-os-founding-access',
   'evidence-anchor',
   'evidence-export',
+  'evidence-r2',
   'evidence-vault',
   'evidence-vault-export',
   'export-audit',
@@ -328,13 +330,6 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'avv-generator', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'dsfa', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'sub-processors', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },
-  { slug: 'export-bulk-results', surface: 'features/bulk — Export', publicPath: false },
-  { slug: 'iso42001-control-update', surface: 'features/governance — Control-Detail', publicPath: false },
-  { slug: 'trigger-workflow', surface: 'features/workflows', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

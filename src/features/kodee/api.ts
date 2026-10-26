@@ -44,13 +44,14 @@ export interface RunActionResult<T = unknown> {
 }
 
 export async function runAction<T = unknown>(
+  tenantId: string,
   connectionId: string,
   action: ActionName,
   args?: RunActionArgs,
 ): Promise<RunActionResult<T>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('kodee', {
-    body: { v: 1, connection_id: connectionId, action, args },
+    body: { v: 1, tenant_id: tenantId, connection_id: connectionId, action, args },
   });
   if (error) {
     return {

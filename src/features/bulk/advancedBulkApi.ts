@@ -121,25 +121,6 @@ export async function retryFailedDomains(batchId: string): Promise<{ retried_cou
 }
 
 /**
- * Export batch results in specified format.
- */
-export async function exportBatchResults(
-  batchId: string,
-  format: 'json' | 'csv' | 'pdf'
-): Promise<Blob> {
-  const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('export-bulk-results', {
-    body: {
-      batch_id: batchId,
-      format,
-    },
-  });
-
-  if (error) throw error;
-  return new Blob([JSON.stringify(data)], { type: 'application/octet-stream' });
-}
-
-/**
  * Real-time subscription to batch progress updates via WebSocket.
  * Returns unsubscribe function.
  */

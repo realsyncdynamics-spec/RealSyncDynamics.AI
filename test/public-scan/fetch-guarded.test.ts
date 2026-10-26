@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   fetchGuarded,
+  isPrivateResolvedAddress,
   TargetRefusedError,
 } from '../../supabase/functions/_shared/public-scan/observe';
 
@@ -112,4 +113,219 @@ describe('gdpr-audit und cookie-scan nutzen die Schranke (Quelltext)', () => {
       expect(code).toMatch(/instanceof TargetRefusedError/);
     });
   }
+});
+
+/**
+ * DNS-Schranke (`assertPublicResolution`). `validateScanTarget` sieht nur den
+ * Namen: `127.0.0.1.nip.io` oder ein eigener A-Eintrag auf 10.0.0.5 sahen
+ * öffentlich aus und wurden abgerufen. Jetzt wird vor jedem Abruf und vor
+ * jeder Weiterleitung aufgelöst; eine einzige private Adresse lehnt ab.
+ */
+describe('fetchGuarded — DNS-Schranke', () => {
+  function aufloeser(tabelle: Record<string, string[]>) {
+    const gefragt: string[] = [];
+    const resolveImpl = async (host: string) => {
+      gefragt.push(host);
+      return tabelle[host] ?? [];
+    };
+    return { resolveImpl, gefragt };
+  }
+
+  it.each([
+    ['127.0.0.1'],
+    ['10.0.0.5'],
+    ['169.254.169.254'],
+    ['::1'],
+    ['fd00::1'],
+    ['::ffff:169.254.169.254'],
+    ['64:ff9b::a9fe:a9fe'],
+    ['::ffff:7f00:1'],
+  ])('lehnt einen Namen ab, der auf %s zeigt — ohne Abruf', async (adresse) => {
+    const besucht: string[] = [];
+    const { resolveImpl } = aufloeser({ 'boese.example': [adresse] });
+    await expect(
+      fetchGuarded('https://boese.example/', {
+        timeoutMs: 1000,
+        resolveImpl,
+        fetchImpl: async (input) => { besucht.push(input); return new Response('geheim'); },
+      }),
+    ).rejects.toBeInstanceOf(TargetRefusedError);
+    expect(besucht).toEqual([]);
+  });
+
+  it('lehnt ab, sobald eine von mehreren Adressen privat ist', async () => {
+    const { resolveImpl } = aufloeser({ 'gemischt.example': ['93.184.215.14', '10.0.0.5'] });
+    await expect(
+      fetchGuarded('https://gemischt.example/', { timeoutMs: 1000, resolveImpl, fetchImpl: async () => new Response('x') }),
+    ).rejects.toBeInstanceOf(TargetRefusedError);
+  });
+
+  it('prüft jede Weiterleitung: Station mit privater Auflösung wird nie abgerufen', async () => {
+    const besucht: string[] = [];
+    const { resolveImpl, gefragt } = aufloeser({
+      'firma.de': ['93.184.215.14'],
+      'intern.example': ['192.168.1.10'],
+    });
+    await expect(
+      fetchGuarded('https://firma.de', {
+        timeoutMs: 1000,
+        resolveImpl,
+        fetchImpl: async (input) => {
+          besucht.push(input);
+          return umleitung('https://intern.example/admin');
+        },
+      }),
+    ).rejects.toBeInstanceOf(TargetRefusedError);
+    expect(besucht).toEqual(['https://firma.de/']);
+    expect(gefragt).toEqual(['firma.de', 'intern.example']);
+  });
+
+  it('ruft öffentliche Ziele ab, auch IPv6 und NAT64 einer öffentlichen Adresse', async () => {
+    const { resolveImpl } = aufloeser({ 'firma.de': ['93.184.215.14', '2606:2800:21f:cb07:6820:80da:af6b:8b2c', '64:ff9b::5db8:d70e'] });
+    const res = await fetchGuarded('https://firma.de', {
+      timeoutMs: 1000,
+      resolveImpl,
+      fetchImpl: async () => new Response('<html>ok</html>', { status: 200 }),
+    });
+    expect(await res.text()).toBe('<html>ok</html>');
+  });
+
+  it('ein Name ohne Auflösung ist ein Netzfehler, keine Ablehnung — und kein Abruf', async () => {
+    const besucht: string[] = [];
+    const { resolveImpl } = aufloeser({});
+    const fehler = await fetchGuarded('https://gibt-es-nicht.example/', {
+      timeoutMs: 1000,
+      resolveImpl,
+      fetchImpl: async (input) => { besucht.push(input); return new Response('x'); },
+    }).catch((e: unknown) => e);
+    expect(fehler).toBeInstanceOf(Error);
+    expect(fehler).not.toBeInstanceOf(TargetRefusedError);
+    expect((fehler as Error).message).toMatch(/does not resolve/);
+    expect(besucht).toEqual([]);
+  });
+
+  it('fragt bei einem öffentlichen Adressliteral nicht nach', async () => {
+    const { resolveImpl, gefragt } = aufloeser({});
+    await fetchGuarded('https://93.184.215.14/', { timeoutMs: 1000, resolveImpl, fetchImpl: async () => new Response('ok') });
+    expect(gefragt).toEqual([]);
+  });
+
+  it('gibt dem Auflöser die Deadline mit', async () => {
+    let erhalten: AbortSignal | undefined;
+    await fetchGuarded('https://firma.de', {
+      timeoutMs: 1000,
+      resolveImpl: async (_host, signal) => { erhalten = signal; return ['93.184.215.14']; },
+      fetchImpl: async () => new Response('ok'),
+    });
+    expect(erhalten).toBeInstanceOf(AbortSignal);
+  });
+});
+
+describe('isPrivateResolvedAddress', () => {
+  it.each([
+    ['10.1.2.3', true],
+    ['100.64.0.1', true],
+    ['::', true],
+    ['fe80::1', true],
+    ['::127.0.0.1', true],
+    ['64:ff9b::10.0.0.1', true],
+    ['93.184.215.14', false],
+    ['2a00:1450:4001:82f::200e', false],
+    ['64:ff9b::808:808', false],
+  ])('%s → privat: %s', (adresse, erwartet) => {
+    expect(isPrivateResolvedAddress(adresse)).toBe(erwartet);
+  });
+});
+
+describe('Standard-Auflösung in der Edge-Laufzeit (Quelltext)', () => {
+  const code = readFileSync('supabase/functions/_shared/public-scan/observe.ts', 'utf8');
+
+  it('prüft vor jedem Abruf, auch vor jeder Weiterleitung', () => {
+    const schleife = code.slice(code.indexOf('async function followWithGuard('));
+    const pruefung = schleife.indexOf('await assertPublicResolution(current, resolve, signal)');
+    const abruf = schleife.indexOf('await fetchImpl(current.toString()');
+    expect(pruefung).toBeGreaterThan(-1);
+    expect(pruefung).toBeLessThan(abruf);
+  });
+
+  it('fetchGuarded und observeSite nutzen beide den Standard-Auflöser', () => {
+    expect(code.match(/options\.resolveImpl \?\? defaultResolver\(\)/g)?.length).toBe(2);
+  });
+});
+
+/**
+ * Der Standard-Auflöser, so wie er in der Edge-Laufzeit läuft: über ein
+ * gesetztes `globalThis.Deno`. Nur `NotFound` gilt als „kein Eintrag dieser
+ * Familie“; jeder andere Fehler bricht ab, damit nicht nur eine Familie
+ * geprüft wird, während `fetch` danach beide auflöst.
+ */
+describe('Standard-Auflöser über Deno.resolveDns', () => {
+  type Antwort = string[] | Error;
+  const g = globalThis as unknown as { Deno?: unknown };
+
+  function mitDeno<T>(deno: unknown, lauf: () => Promise<T>): Promise<T> {
+    const vorher = g.Deno;
+    g.Deno = deno;
+    return lauf().finally(() => {
+      if (vorher === undefined) delete g.Deno;
+      else g.Deno = vorher;
+    });
+  }
+
+  function dns(tabelle: Record<string, Antwort>) {
+    const fragen: Array<{ host: string; typ: string; signal?: AbortSignal }> = [];
+    const resolveDns = async (host: string, typ: string, opts?: { signal?: AbortSignal }) => {
+      fragen.push({ host, typ, signal: opts?.signal });
+      const a = tabelle[`${host} ${typ}`];
+      if (a === undefined) throw Object.assign(new Error('no records'), { name: 'NotFound' });
+      if (a instanceof Error) throw a;
+      return a;
+    };
+    return { deno: { resolveDns }, fragen };
+  }
+
+  it('fragt A und AAAA mit der Deadline; fehlendes AAAA (NotFound) ist kein Fehler', async () => {
+    const { deno, fragen } = dns({ 'firma.de A': ['93.184.215.14'] });
+    const res = await mitDeno(deno, () =>
+      fetchGuarded('https://firma.de', { timeoutMs: 1000, fetchImpl: async () => new Response('ok') }),
+    );
+    expect(await res.text()).toBe('ok');
+    expect(fragen.map((f) => f.typ).sort()).toEqual(['A', 'AAAA']);
+    expect(fragen.every((f) => f.signal instanceof AbortSignal)).toBe(true);
+  });
+
+  it('lehnt eine private Adresse aus der AAAA-Familie ab', async () => {
+    const { deno } = dns({ 'boese.example A': ['93.184.215.14'], 'boese.example AAAA': ['::1'] });
+    await expect(
+      mitDeno(deno, () => fetchGuarded('https://boese.example/', { timeoutMs: 1000, fetchImpl: async () => new Response('x') })),
+    ).rejects.toBeInstanceOf(TargetRefusedError);
+  });
+
+  it('bricht ab, wenn eine Familie mit einem anderen Fehler scheitert — kein Abruf', async () => {
+    const besucht: string[] = [];
+    const zeit = Object.assign(new Error('timed out'), { name: 'TimedOut' });
+    const { deno } = dns({ 'firma.de A': ['93.184.215.14'], 'firma.de AAAA': zeit });
+    await expect(
+      mitDeno(deno, () =>
+        fetchGuarded('https://firma.de', {
+          timeoutMs: 1000,
+          fetchImpl: async (input) => { besucht.push(input); return new Response('x'); },
+        }),
+      ),
+    ).rejects.toThrow(/timed out/);
+    expect(besucht).toEqual([]);
+  });
+
+  it('bricht ab, wenn Deno existiert, resolveDns aber fehlt — kein ungeprüfter Abruf', async () => {
+    const besucht: string[] = [];
+    await expect(
+      mitDeno({}, () =>
+        fetchGuarded('https://firma.de', {
+          timeoutMs: 1000,
+          fetchImpl: async (input) => { besucht.push(input); return new Response('x'); },
+        }),
+      ),
+    ).rejects.toThrow(/resolveDns unavailable/);
+    expect(besucht).toEqual([]);
+  });
 });

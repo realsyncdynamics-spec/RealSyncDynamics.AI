@@ -8,6 +8,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface RemediationTask {
   id: string;
@@ -74,7 +75,7 @@ function Inner() {
       if (filter.assigned_to) params.append('assigned_to', filter.assigned_to);
 
       const response = await fetch(
-        `/functions/v1/remediation-workflow?${params}`,
+        `${getSupabaseUrl()}/functions/v1/remediation-workflow?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

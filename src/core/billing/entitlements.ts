@@ -100,14 +100,33 @@ function limitsForPlan(plan: Plan): UsageLimits {
   };
 }
 
+/** Freie Stufe, auf die eine abgelaufene Testphase zurückfällt (wie `usage-service`). */
+const EXPIRED_TRIAL_PLAN_KEY = 'free_audit' as const;
+
+/**
+ * Kartenlose Testphase (Growth-Test, offene Beta) mit gespeichertem Ende, das
+ * erreicht ist. Spiegelt `abo_wirksam` in `tenant_entitlements_resolve()`
+ * (20260928160000): ohne gespeichertes Ende beendet Stripe den Test per Status.
+ */
+export function isTrialExpired(subscription: Pick<SubscriptionSnapshot, 'status' | 'trialEnd'>, now: Date): boolean {
+  if (subscription.status !== 'trialing' || !subscription.trialEnd) return false;
+  const end = Date.parse(subscription.trialEnd);
+  return Number.isFinite(end) && end <= now.getTime();
+}
+
 export function resolveEntitlements(
   subscription: SubscriptionSnapshot,
   tenant: TenantContext,
   usage: CurrentUsage,
+  now: Date = new Date(),
 ): EntitlementDecision {
+  // Abgelaufene Testphase: wie auf dem Server die freie Stufe, nicht der
+  // Testplan — sonst zeigt die UI nach dem Beta-Ende weiter Growth an.
+  const trialExpired = isTrialExpired(subscription, now);
+  const planKey = trialExpired ? EXPIRED_TRIAL_PLAN_KEY : subscription.planKey;
   // Altdaten mit `scale` werden transparent auf `partner` abgebildet;
   // unbekannte Keys fallen defensiv auf den Free-Plan zurück.
-  const plan = resolvePlan(subscription.planKey) ?? resolvePlan('free')!;
+  const plan = resolvePlan(planKey) ?? resolvePlan('free')!;
   const limits = limitsForPlan(plan);
 
   const isActive =
@@ -133,7 +152,7 @@ export function resolveEntitlements(
   ) as Record<FeatureKey, boolean>;
 
   return {
-    planKey: subscription.planKey,
+    planKey,
     status: subscription.status,
     trialEnd: subscription.trialEnd,
     isActive,

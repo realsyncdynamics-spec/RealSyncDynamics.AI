@@ -17,7 +17,9 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { BrowserAgentDrawer } from './BrowserAgentDrawer';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
+import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
 import {
   buildCommandCatalog,
@@ -28,6 +30,7 @@ import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
 import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
+import { ASSISTANT_PROMPT_EVENT, type AssistantPromptDetail } from './assistantPrompt';
 import '../../styles/governance-os-app.css';
 
 interface GovernanceBrowserShellProps {
@@ -43,9 +46,16 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const navigate = useNavigate();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // Browser-Agent rechts; schließt den Assistenten und umgekehrt.
+  const [browserAgentOpen, setBrowserAgentOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
+  // Vorbefüllter Text für den Assistenten; `id` erzwingt das Übernehmen auch
+  // bei gleichem Text.
+  const [assistantPrompt, setAssistantPrompt] = useState<
+    { id: number; text: string; agent?: AssistantPromptDetail['agent'] } | null
+  >(null);
 
   const commandItems = useMemo(() => buildCommandCatalog(), []);
 
@@ -68,6 +78,19 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     window.addEventListener('realsync:browser-open', onOpenBrowser);
     return () => window.removeEventListener('realsync:browser-open', onOpenBrowser);
   }, []);
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      const detail = (event as CustomEvent<AssistantPromptDetail>).detail;
+      const text = detail?.prompt?.trim();
+      if (!text) return;
+      setAssistantPrompt({ id: Date.now(), text, agent: detail?.agent });
+      setBrowserAgentOpen(false);
+      setAssistantOpen(true);
+    };
+    window.addEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
+    return () => window.removeEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
+  }, []);
+
   const handleCloseEmbed = () => setEmbeddedUrl(null);
   const handleScan = (url: string) => {
     navigate(auditPathFor(url, 'app-embedded-scan'));
@@ -78,6 +101,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     (item: CommandDefinition) => {
       if (!isCommandRunnable(item)) return;
       if (item.actionId === 'open-assistant') {
+        setBrowserAgentOpen(false);
         setAssistantOpen(true);
         return;
       }
@@ -117,7 +141,16 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
-          onOpenAssistant={() => setAssistantOpen((v) => !v)}
+          onOpenAssistant={() => {
+            setBrowserAgentOpen(false);
+            setAssistantOpen((v) => !v);
+          }}
+          assistantOpen={assistantOpen}
+          browserAgentOpen={browserAgentOpen}
+          onToggleBrowserAgent={() => {
+            setAssistantOpen(false);
+            setBrowserAgentOpen((v) => !v);
+          }}
           onOpenCommandCenter={() => setCommandCenterOpen(true)}
           onLoadUrl={handleLoadUrl}
           activeEmbedUrl={embeddedUrl ?? undefined}
@@ -128,6 +161,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             einem eingeschränkten Konto. Rendert sich selbst weg, wenn kein
             Zahlungsverzug vorliegt. */}
         <PaymentGraceBanner />
+        <BetaAppBanner />
 
         {mobileMenuOpen && (
           <nav
@@ -175,10 +209,13 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             </GovernanceCanvas>
           )}
 
+          <BrowserAgentDrawer open={browserAgentOpen} onClose={() => setBrowserAgentOpen(false)} />
+
           {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
           <GovernanceChatSidebar
             open={assistantOpen}
             onClose={() => setAssistantOpen((v) => !v)}
+            prefill={assistantPrompt}
           />
         </div>
 

@@ -173,6 +173,8 @@ export async function handle(req: Request): Promise<Response> {
         status: task.requiresApproval ? 'awaiting_approval' : 'queued',
         finding_codes: task.findingCodes, severity_max: task.severityMax,
         requires_approval: task.requiresApproval,
+        // Auslöser: darf diesen Lauf nicht selbst freigeben (Vier-Augen).
+        requested_by: userId,
         // Beschriftung nach §8. Der Anlass wird hier aus dem Auslöser des
         // Scans abgeleitet und nicht gesetzt: ein Cron-Lauf ist Change
         // Monitoring, ein Deploy-Lauf Publishing Governance.

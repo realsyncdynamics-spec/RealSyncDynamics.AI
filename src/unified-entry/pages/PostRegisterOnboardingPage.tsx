@@ -6,7 +6,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
 import { SECTORS, type SectorId } from '../../config/sectors';
-import { formatPriceEur, planById } from '@/shared/pricing';
+import { growthTrialOfferLabel, starterFromPriceLabel } from '../../features/billing/freeAccountOffer';
 
 /**
  * Die Function, die diesen Schritt trägt.
@@ -131,12 +131,11 @@ export function PostRegisterOnboardingPage() {
   if (step === 'success') {
     return (
       <div className="max-w-md mx-auto text-center space-y-6">
-        <div className="text-5xl">🎉</div>
-        <h1 className="text-3xl font-bold text-titanium-50">Ihr kostenloses Konto ist bereit.</h1>
+        <h1 className="text-3xl font-bold text-titanium-50">Ihr AI Governance Workspace ist vorbereitet.</h1>
         <p className="text-lg text-titanium-300">
           <strong>Dauerhaft kostenlos.</strong> Domain-Scan, Governance Score und Audit Center
-          ohne Zeitlimit. Upgrade jederzeit aus dem Dashboard — Growth {planById('growth').trialDays} Tage
-          kostenlos testen oder Starter ab {formatPriceEur(planById('starter').price.monthlyEur)} / Monat.
+          ohne Zeitlimit. Upgrade jederzeit aus dem Dashboard — {growthTrialOfferLabel()} oder{' '}
+          {starterFromPriceLabel()}.
         </p>
         <div className="flex flex-col gap-3">
           <button onClick={() => navigate('/app/dashboard')} className="w-full px-6 py-3 bg-petrol-600 hover:bg-petrol-700 text-white font-medium rounded-lg transition-colors">Zum Dashboard</button>

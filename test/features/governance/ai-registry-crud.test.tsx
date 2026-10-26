@@ -8,13 +8,17 @@
  *   TenantProvider, kein metadata.system_type.
  * - Bearbeiten schickt nur Register-Felder (keine Klasse, kein Mandant).
  * - Die Ampel kommt aus den Daten: ohne Angaben „Unzureichende Daten“.
+ * - Leeres Register: Assistent (/app/onboarding) als Haupteinstieg,
+ *   „Direkt hinzufügen“ nur für owner/admin — dasselbe Formular, derselbe
+ *   create_asset-Pfad.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import type { DbGovernanceAsset } from '@/src/features/governance/governanceApi';
 
 const tenant = vi.hoisted(() => ({ role: 'owner' as string }));
-const resources = vi.hoisted(() => ({ createAsset: vi.fn(), updateAsset: vi.fn() }));
+const resources = vi.hoisted(() => ({ createAsset: vi.fn(), updateAsset: vi.fn(), saveAssetClassification: vi.fn() }));
 
 vi.mock('@/src/core/access/TenantProvider', () => ({
   useTenant: () => ({
@@ -49,10 +53,21 @@ vi.mock('@/src/lib/ai-act/conformityDossier', () => ({ downloadConformityDossier
 
 import { AiSystemRegistryView } from '@/src/features/governance/ai-registry/AiSystemRegistryView';
 import { AiSystemDetailView } from '@/src/features/governance/ai-registry/AiSystemDetailView';
+import { fetchTenantAssets } from '@/src/features/governance/governanceApi';
 import { resetLangForTests } from '@/src/i18n/useLang';
 
 function renderRegistry() {
   return render(<MemoryRouter><AiSystemRegistryView /></MemoryRouter>);
+}
+function renderEmptyRegistry() {
+  return render(
+    <MemoryRouter initialEntries={['/app/ai-systems']}>
+      <Routes>
+        <Route path="/app/ai-systems" element={<AiSystemRegistryView />} />
+        <Route path="/app/onboarding" element={<p data-testid="onboarding-page">Onboarding</p>} />
+      </Routes>
+    </MemoryRouter>,
+  );
 }
 function renderDetail(id: string) {
   return render(
@@ -65,6 +80,7 @@ function renderDetail(id: string) {
 beforeEach(() => {
   resetLangForTests();
   tenant.role = 'owner';
+  vi.mocked(fetchTenantAssets).mockResolvedValue(assets as unknown as DbGovernanceAsset[]);
   resources.createAsset.mockReset().mockResolvedValue({ ok: true, asset: { id: 'new' } });
   resources.updateAsset.mockReset().mockResolvedValue({ ok: true, asset: { id: 'a1' } });
 });
@@ -124,6 +140,67 @@ describe('/app/ai-systems — KI-System hinzufügen', () => {
     fireEvent.change(within(form).getByLabelText(/^Systemtyp/), { target: { value: 'bot' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Anlegen' }));
     expect(await within(form).findByRole('alert')).toHaveTextContent('must be owner or admin');
+  });
+});
+
+describe('/app/ai-systems — leeres Register', () => {
+  beforeEach(() => {
+    vi.mocked(fetchTenantAssets).mockResolvedValue([]);
+  });
+
+  it('owner: Assistent und „Direkt hinzufügen“ sichtbar', async () => {
+    renderEmptyRegistry();
+    const empty = await screen.findByTestId('ai-systems-empty');
+    expect(empty).toHaveTextContent('Noch keine KI-Systeme registriert');
+    expect(within(empty).getByTestId('ai-systems-empty-cta')).toHaveAttribute('href', '/app/onboarding');
+    expect(within(empty).getByTestId('ai-systems-direct-add')).toHaveTextContent('Direkt hinzufügen');
+  });
+
+  it('Klick auf den Assistenten führt nach /app/onboarding', async () => {
+    renderEmptyRegistry();
+    fireEvent.click(await screen.findByTestId('ai-systems-empty-cta'));
+    expect(await screen.findByTestId('onboarding-page')).toBeInTheDocument();
+  });
+
+  it.each(['editor', 'dpo', 'viewer_auditor'])('%s: keine direkte Aktion, Assistent bleibt', async (role) => {
+    tenant.role = role;
+    renderEmptyRegistry();
+    const empty = await screen.findByTestId('ai-systems-empty');
+    expect(within(empty).queryByTestId('ai-systems-direct-add')).toBeNull();
+    expect(within(empty).getByTestId('ai-systems-empty-cta')).toBeInTheDocument();
+    expect(empty).not.toHaveTextContent('Eingabeformular');
+    expect(screen.getByTestId('ai-system-add')).toBeDisabled();
+  });
+
+  it('„Direkt hinzufügen“ öffnet das bestehende Formular und legt genau einmal an', async () => {
+    let resolve!: (v: unknown) => void;
+    resources.createAsset.mockReturnValue(new Promise((r) => { resolve = r; }));
+    renderEmptyRegistry();
+    fireEvent.click(await screen.findByTestId('ai-systems-direct-add'));
+    const dialog = screen.getByTestId('ai-system-form');
+    fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: 'Website-Chatbot' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Systemtyp/), { target: { value: 'bot' } });
+    const form = dialog.querySelector('form')!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(resources.createAsset).toHaveBeenCalledTimes(1);
+    expect(resources.createAsset.mock.calls[0]![0]).toMatchObject({
+      tenant_id: 'tenant-1', asset_type: 'ai_system', name: 'Website-Chatbot', ai_act_class: 'unknown',
+    });
+    resolve({ ok: true, asset: { id: 'new' } });
+    await waitFor(() => expect(screen.queryByTestId('ai-system-form')).toBeNull());
+  });
+
+  it('Serverablehnung aus dem Leerzustand bleibt sichtbar, kein Schließen', async () => {
+    resources.createAsset.mockResolvedValue({ ok: false, error: { code: 'VALIDATION', message: 'invalid ai_system_type' } });
+    renderEmptyRegistry();
+    fireEvent.click(await screen.findByTestId('ai-systems-direct-add'));
+    const dialog = screen.getByTestId('ai-system-form');
+    fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: 'X' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Systemtyp/), { target: { value: 'bot' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Anlegen' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('invalid ai_system_type');
+    expect(screen.getByTestId('ai-system-form')).toBeInTheDocument();
   });
 });
 

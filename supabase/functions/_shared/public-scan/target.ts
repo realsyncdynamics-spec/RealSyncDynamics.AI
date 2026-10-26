@@ -37,11 +37,16 @@ export function normalizeScanInput(raw: string): string {
  * Prüft ein Scan-Ziel. Erlaubt sind ausschließlich http/https auf
  * öffentliche Hosts über die Standard-Ports.
  *
- * Bekannte Grenze: DNS-Rebinding schließt das nicht aus — dafür müsste der
- * Host vor dem Abruf aufgelöst und die Verbindung an die geprüfte Adresse
- * gebunden werden. Die Schranke senkt die Angriffsfläche, ersetzt aber
- * keine Netzsegmentierung. Diese Grenze steht hier, damit die nächste
- * Sitzung sie kennt statt sie neu zu entdecken.
+ * Diese Prüfung ist statisch: Sie sieht nur den Namen. Ob er auf eine
+ * private Adresse zeigt, prüft `assertPublicResolution` in `observe.ts`
+ * vor jedem Abruf und jeder Weiterleitung.
+ *
+ * Bekannte Grenze: Aktives DNS-Rebinding (eigener Nameserver, TTL 0, andere
+ * Antwort zwischen Prüfung und Verbindungsaufbau) bleibt möglich — dafür
+ * müsste die Verbindung an die geprüfte Adresse gebunden werden, und `fetch`
+ * bietet dafür keinen Einstieg. Die Schranke senkt die Angriffsfläche,
+ * ersetzt aber keine Netzsegmentierung. Diese Grenze steht hier, damit die
+ * nächste Sitzung sie kennt statt sie neu zu entdecken.
  */
 export function validateScanTarget(raw: string): TargetCheck {
   const normalized = normalizeScanInput(raw);

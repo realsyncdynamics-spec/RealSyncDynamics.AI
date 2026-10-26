@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 /**
  * Gemeinsame Hinweise der Assistenten-Flächen (AgentWidget tenant/anon,
  * App-Shell-Seitenleiste): US-Routing-Bestätigung und „Erneut versuchen".
@@ -39,6 +41,31 @@ export function AssistantRetry({ onRetry }: { onRetry: () => void }) {
       >
         Erneut versuchen
       </button>
+    </div>
+  );
+}
+
+/**
+ * Ausweichwege, wenn der Assistent nicht antwortet: Ein Ausfall des Chats
+ * soll nicht wie ein Ausfall des Produkts wirken. Nur in der App-Shell
+ * (eingeloggter Mandant) verwendet — die Ziele sind /app-Routen.
+ */
+export function AssistantFallbackLinks() {
+  const links = [
+    { label: 'Website-Scan starten', to: '/app/websites' },
+    { label: 'Risiken prüfen', to: '/app/risks' },
+    { label: 'Support kontaktieren', to: '/kontakt?topic=support' },
+  ];
+  return (
+    <div className="pl-8 text-[12px] text-titanium-400" data-testid="assistant-fallback">
+      <p>Alles andere funktioniert weiter. Direkt weiter mit:</p>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+        {links.map((l) => (
+          <Link key={l.to} to={l.to} className="text-[#00B8D4] hover:underline">
+            {l.label} →
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

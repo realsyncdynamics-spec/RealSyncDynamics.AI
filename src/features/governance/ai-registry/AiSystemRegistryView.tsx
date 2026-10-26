@@ -179,7 +179,30 @@ export function AiSystemRegistryView() {
             {state.status === 'ready' && allRows.length === 0 && (
               <div className="rs-empty" data-testid="ai-systems-empty">
                 <p className="font-semibold text-[color:var(--color-rs-fg-0)]">{t('systemsNone')}</p>
-                <p className="mt-1">{t('systemsNoneSub')}</p>
+                <p className="mt-1">{t(canEdit ? 'systemsNoneSub' : 'systemsNoneSubGuided')}</p>
+                {/* Assistent = bevorzugter Einstieg; „Direkt hinzufügen“ öffnet dasselbe
+                    Formular wie oben. Beide schreiben über governance-resources. */}
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <Link
+                    to="/app/onboarding"
+                    className="rs-chip-sm rs-chip-sm--primary inline-flex"
+                    data-testid="ai-systems-empty-cta"
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t('systemsNoneCta')}
+                  </Link>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="rs-chip-sm"
+                      data-testid="ai-systems-direct-add"
+                      title={t('regDirectAddHint')}
+                      onClick={() => setAdding(true)}
+                    >
+                      {t('regDirectAdd')}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             {visible.map(({ asset, cls, assessment }) => {

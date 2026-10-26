@@ -23,9 +23,23 @@ import { notifyTenantDataChanged, useTenantDataVersion } from '../governance/ten
 import { getSupabase } from '../../lib/supabase';
 import { listCatalog, listActivations, listTenantMappings, setPackActive, type PolicyPack, type PacksError } from './policyPacksApi';
 import { cheapestPlanForKeys } from '../../core/access/featureAccess';
-import { planById } from '@/shared/pricing';
+import { planById, type EntitlementKey } from '@/shared/pricing';
 
 /** Mindestplan aus PLAN_ENTITLEMENTS statt Literal (früher fälschlich „Agency“; tatsächlich Starter). */
+export const PACK_FRAMEWORK_ENTITLEMENTS: Readonly<Record<string, EntitlementKey>> = {
+  NIS2: 'policy.nis2',
+  ISO_27001: 'policy.iso27001',
+};
+
+export function requiredKeysForPack(frameworks: readonly string[]): EntitlementKey[] {
+  const keys = new Set<EntitlementKey>(['policy.packs']);
+  for (const fw of frameworks) {
+    const key = PACK_FRAMEWORK_ENTITLEMENTS[fw.toUpperCase()];
+    if (key) keys.add(key);
+  }
+  return Array.from(keys);
+}
+
 const PACKS_MIN_PLAN = (() => {
   const id = cheapestPlanForKeys(['policy.packs']);
   return id ? planById(id).name : null;
@@ -259,7 +273,9 @@ function PacksInner() {
     .map((m) => ({ framework: m.framework, control_code: m.control_code }));
 
   const recommendations: PackRecommendation[] = topRecommendations(
-    catalog.map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks, controls: p.controls })),
+    catalog
+      .filter((p) => requiredKeysForPack(p.frameworks).every((k) => hasFeature(k)))
+      .map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks, controls: p.controls })),
     {
       activeFrameworks: deriveActiveFrameworks(mappings),
       hasHighRiskAI: highRisk > 0,
@@ -390,6 +406,11 @@ function PacksInner() {
             const cov = computeCoverage(pack.controls, mappings);
             const band = coverageBand(cov.percent);
             const isExpanded = expandedPacks.has(pack.id);
+            const reqKeys = requiredKeysForPack(pack.frameworks);
+            const missingKeys = reqKeys.filter((k) => !hasFeature(k));
+            const packUnlocked = missingKeys.length === 0;
+            const packMinPlanId = !packUnlocked ? cheapestPlanForKeys(reqKeys) : null;
+            const packMinPlanName = packMinPlanId ? planById(packMinPlanId).name : null;
             return (
               <Card key={pack.id} className={isActive ? 'border-emerald-500/40' : undefined}>
                 <CardHeader
@@ -502,11 +523,22 @@ function PacksInner() {
                       </div>
                     )}
 
+                    {!isActive && !packUnlocked && (
+                      <div
+                        data-testid={`pack-plan-hint-${pack.id}`}
+                        className="border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-[11px] text-amber-300"
+                      >
+                        {packMinPlanName
+                          ? `Dieses Rahmenwerk-Pack ist ab ${packMinPlanName} verfügbar (${missingKeys.join(', ')}).`
+                          : `Für dieses Pack fehlt die Berechtigung (${missingKeys.join(', ')}).`}
+                      </div>
+                    )}
+
                     <Button
                       variant={isActive ? 'secondary' : 'primary'}
                       size="sm"
                       onClick={() => onToggle(pack)}
-                      disabled={busy === pack.id || !enabled || !activeTenantId}
+                      disabled={busy === pack.id || (!isActive && !packUnlocked) || !activeTenantId}
                     >
                       {isActive
                         ? <><Check className="h-3.5 w-3.5" /> Aktiviert — deaktivieren</>

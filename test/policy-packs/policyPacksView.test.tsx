@@ -7,10 +7,14 @@ vi.mock('@/src/features/kodee/connections/AuthGate', () => ({
   AuthGate: ({ children }: { children: () => ReactNode }) => <>{children()}</>,
 }));
 
+const tenantFeatures = vi.hoisted(() => ({
+  granted: new Set<string>(['policy.packs', 'policy.nis2', 'policy.iso27001']),
+}));
+
 vi.mock('@/src/core/access/TenantProvider', () => ({
   useTenant: () => ({
     activeTenantId: 'tenant-1',
-    hasFeature: () => true,
+    hasFeature: (key: string) => tenantFeatures.granted.has(key),
     tenants: [{ tenantId: 'tenant-1', role: 'owner', industry: 'saas' }],
     refresh: vi.fn(),
   }),
@@ -51,11 +55,12 @@ vi.mock('@/src/features/governance/resourcesApi', () => ({
   autoMapAsset: mocks.autoMapAsset,
 }));
 
-import { PolicyPacksView } from '@/src/features/policy-packs/PolicyPacksView';
+import { PolicyPacksView, requiredKeysForPack } from '@/src/features/policy-packs/PolicyPacksView';
 
-describe('PolicyPacksView — Controls aufklappbar & per upsert_mapping umschaltbar', () => {
+describe('PolicyPacksView — Controls aufklappbar, per upsert_mapping umschaltbar & Rahmenwerk-Entitlements', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    tenantFeatures.granted = new Set(['policy.packs', 'policy.nis2', 'policy.iso27001']);
     mocks.listCatalog.mockResolvedValue([
       {
         id: 'dsgvo-essentials',
@@ -67,6 +72,22 @@ describe('PolicyPacksView — Controls aufklappbar & per upsert_mapping umschalt
           { framework: 'GDPR', control_code: 'Art.5' },
           { framework: 'GDPR', control_code: 'Art.30' },
         ],
+      },
+      {
+        id: 'nis2-cybersecurity',
+        name: 'NIS2 Cybersecurity',
+        description: 'NIS2-Pflichten',
+        industry: 'all',
+        frameworks: ['NIS2'],
+        controls: [{ framework: 'NIS2', control_code: 'Art.21' }],
+      },
+      {
+        id: 'iso-27001-foundation',
+        name: 'ISO 27001 Foundation',
+        description: 'ISMS Basis',
+        industry: 'all',
+        frameworks: ['ISO_27001'],
+        controls: [{ framework: 'ISO_27001', control_code: 'A.5.1' }],
       },
     ]);
     mocks.listActivations.mockResolvedValue(new Set(['dsgvo-essentials']));
@@ -112,5 +133,22 @@ describe('PolicyPacksView — Controls aufklappbar & per upsert_mapping umschalt
       expect(mocks.upsertMapping).toHaveBeenCalledWith('asset-1', 'ctrl-5', 'implemented'),
     );
     expect(screen.getByTestId('pack-coverage-dsgvo-essentials')).toHaveTextContent('50% · 1/2');
+  });
+
+  it('prüft Rahmenwerk-Entitlements (policy.nis2, policy.iso27001) direkt an den Pack-Karten', async () => {
+    tenantFeatures.granted = new Set(['policy.packs']);
+    expect(requiredKeysForPack(['NIS2', 'DORA'])).toEqual(['policy.packs', 'policy.nis2']);
+    expect(requiredKeysForPack(['ISO_27001'])).toEqual(['policy.packs', 'policy.iso27001']);
+
+    render(
+      <MemoryRouter>
+        <PolicyPacksView />
+      </MemoryRouter>,
+    );
+
+    const nis2Hint = await screen.findByTestId('pack-plan-hint-nis2-cybersecurity');
+    expect(nis2Hint).toHaveTextContent('policy.nis2');
+    const isoHint = await screen.findByTestId('pack-plan-hint-iso-27001-foundation');
+    expect(isoHint).toHaveTextContent('policy.iso27001');
   });
 });

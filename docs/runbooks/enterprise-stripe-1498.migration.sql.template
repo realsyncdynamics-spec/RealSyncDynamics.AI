@@ -2,7 +2,8 @@
 --
 -- Vorlage, keine Migration. Siehe docs/runbooks/enterprise-stripe-1498.md.
 -- Abhängig von #1982 (SSoT purchaseMode=checkout, endliche Quotas).
--- Alte Catalog-Price (1.249 €): price_1TxLdLREjTWueUcGRaXie8Vs
+-- Aktuelle Enterprise-Price (1.249 €, netto/exclusive seit 20261020130000):
+--   price_1USabSREjTWueUcGzUEzTaie (davor price_1TxLdLREjTWueUcGRaXie8Vs)
 -- Neuer Price muss in Stripe existieren BEVOR diese Migration deployed wird:
 --   unit_amount=149800, currency=eur, interval=month, interval_count=1,
 --   tax_behavior=exclusive, active=true, livemode=true.

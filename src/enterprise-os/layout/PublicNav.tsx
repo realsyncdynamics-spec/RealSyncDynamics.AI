@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { Button } from '../components/Button';
+import { TRY_FREE } from '../../config/beta';
 
 const LINKS = [
   { label: 'Produkt', to: '/os/app' },
@@ -39,7 +40,7 @@ export function PublicNav({ overlay = false }: { overlay?: boolean }) {
           </Link>
           <Link to="/os/pricing">
             <Button variant="primary" size="sm">
-              14 Tage kostenlos starten <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              {TRY_FREE.cta} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>
@@ -77,7 +78,7 @@ export function PublicNav({ overlay = false }: { overlay?: boolean }) {
           </nav>
           <Link to="/os/pricing" onClick={() => setOpen(false)} className="mt-3 block">
             <Button variant="primary" size="md" className="w-full">
-              14 Tage kostenlos starten <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              {TRY_FREE.cta} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>

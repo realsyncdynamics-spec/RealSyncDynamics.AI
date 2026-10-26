@@ -4,6 +4,7 @@ import {
   ArrowLeft, ShieldCheck, ArrowRight, BookOpen, Globe, Building2, FileText, Layers,
   AlertTriangle, GitMerge, Plug,
 } from 'lucide-react';
+import { CTA } from '../content/runtimeVocab';
 
 interface Resource {
   href: string;
@@ -167,7 +168,7 @@ export function Resources() {
                 Erstmal Site auditen <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/contact-sales?source=resources" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Founding Access starten
+                {CTA.enterprise}
               </Link>
             </div>
           </div>

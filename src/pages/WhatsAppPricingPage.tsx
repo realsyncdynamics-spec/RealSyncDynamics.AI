@@ -3,6 +3,7 @@ import { LandingNavbar } from '../components/LandingNavbar';
 import { PublicFooter } from '../enterprise-os/layout/PublicFooter';
 import { Check, MessageCircle, Users, Shield, Zap } from 'lucide-react';
 import { CapabilityAvailabilityNotice } from '../components/landing/CapabilityAvailabilityNotice';
+import { BETA_PUBLIC_OFFER, TRY_FREE } from '../config/beta';
 
 /**
  * Dedicated WhatsApp Pricing Page
@@ -181,7 +182,7 @@ export function WhatsAppPricingPage() {
             to="/checkout/growth?channel=whatsapp&source=pricing"
             className="px-8 py-3 bg-security-600 hover:bg-security-700 text-white font-semibold rounded-lg transition-colors inline-block text-center"
           >
-            14 Tage kostenlos testen
+            {TRY_FREE.cta}
           </Link>
           <Link
             to="/contact-sales?channel=whatsapp&source=pricing"
@@ -213,7 +214,7 @@ export function WhatsAppPricingPage() {
       <section className="px-4 py-16 max-w-7xl mx-auto w-full">
         <h2 className="text-3xl font-bold mb-2 text-center">Transparente Preise</h2>
         <p className="text-titanium-400 text-center mb-12">
-          Alle Tiers beinhalten WhatsApp-Integration. Monatlich kündbar. 14 Tage kostenlos testen.
+          Alle Tiers beinhalten WhatsApp-Integration. {TRY_FREE.note}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -241,10 +242,15 @@ export function WhatsAppPricingPage() {
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-3xl font-bold">
-                      {tier.monthlyPrice === null ? 'Auf Anfrage' : `${tier.monthlyPrice}€`}
+                      {tier.monthlyPrice === null ? 'Auf Anfrage' : BETA_PUBLIC_OFFER ? '0€' : `${tier.monthlyPrice}€`}
                     </span>
-                    <span className="text-titanium-400 text-sm">/Monat</span>
+                    <span className="text-titanium-400 text-sm">
+                      {tier.monthlyPrice !== null && BETA_PUBLIC_OFFER ? TRY_FREE.phrase : '/Monat'}
+                    </span>
                   </div>
+                  {tier.monthlyPrice !== null && BETA_PUBLIC_OFFER && (
+                    <p className="text-titanium-400 text-sm">danach <s>{tier.monthlyPrice}€</s> /Monat</p>
+                  )}
                 </div>
 
                 <div className="mb-6 p-3 rounded bg-obsidian-800/50 text-xs">
@@ -355,7 +361,7 @@ export function WhatsAppPricingPage() {
       <section className="px-4 py-16 max-w-4xl mx-auto w-full text-center">
         <h2 className="text-3xl font-bold mb-4">Bereit anzufangen?</h2>
         <p className="text-titanium-400 mb-8">
-          14 Tage kostenlos testen. Keine Kreditkarte erforderlich. Monatlich kündbar.
+          {TRY_FREE.note}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import { GovernanceRuntimeDashboard } from "../features/governance/GovernanceRuntimeDashboard";
 import { usePageMeta } from "../lib/usePageMeta";
+import { CTA } from '../content/runtimeVocab';
 
 /**
  * /governance-runtime — public preview of the Operational AI Governance
@@ -33,7 +34,7 @@ export function GovernanceRuntimePage() {
           to="/contact-sales?intent=governance-runtime"
           className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
         >
-          Founding Access starten <ArrowRight className="h-3.5 w-3.5" />
+          {CTA.enterprise} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </header>
 
@@ -58,7 +59,7 @@ export function GovernanceRuntimePage() {
               to="/contact-sales?intent=governance-runtime"
               className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
             >
-              Founding Access starten <ArrowRight className="h-4 w-4" />
+              {CTA.enterprise} <ArrowRight className="h-4 w-4" />
             </Link>
 
             <Link

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Newspaper, Download, Mail, Image as ImageIcon, FileText, Quote } from 'lucide-react';
 import { COMPETITOR_PRICING } from '../config/competitor-pricing';
+import { monthlyPriceText, planById } from '@/shared/pricing';
 
 const FACTS = [
   { k: 'Gegründet', v: '2026 · Frankfurt am Main' },
@@ -9,7 +10,10 @@ const FACTS = [
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
-  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Enterprise auf Anfrage' },
+  {
+    k: 'Pricing',
+    v: `Free Audit kostenlos · Starter ${monthlyPriceText(planById('starter'))} · Growth ${monthlyPriceText(planById('growth'))} · Agency ${monthlyPriceText(planById('agency'))} · Enterprise ${monthlyPriceText(planById('enterprise'))}, direkt buchbar`,
+  },
 ];
 
 const QUOTES = [

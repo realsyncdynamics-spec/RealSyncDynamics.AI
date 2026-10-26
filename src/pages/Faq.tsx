@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
 import { SALES_PLANS, formatLimit, formatPriceEur, monthlyPriceText, planById } from '@/shared/pricing';
-import { BETA } from '../config/beta';
+import { BETA, TRY_FREE } from '../config/beta';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -76,7 +76,7 @@ const ITEMS: Item[] = [
         <p>
           {BETA_OFFER
             ? `Starter, Growth und Agency sind Beta-Tarife und bis ${BETA.endsLabel} kostenlos, danach gelten die Listenpreise. Enterprise ist nicht Teil der Beta und kostet vom ersten Tag an ${monthlyPriceText(ENTERPRISE)}, ohne Testphase:`
-            : `Starter und Growth mit 14-Tage-Pilot, Agency und Enterprise ohne Testphase:`}
+            : `Starter und Growth ${TRY_FREE.phrase} testen, Agency und Enterprise ohne Testphase:`}
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>

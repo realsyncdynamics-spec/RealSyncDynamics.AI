@@ -170,7 +170,10 @@ export function collide(ours, theirs, label) {
   const findings = [];
   for (const m of ours) {
     const clash = theirs.versions.get(m.version);
-    if (clash && clash !== m.file) {
+    // Eintraege fremder PRs tragen das Praefix "#<nr>: ". Derselbe Dateiname
+    // ist dieselbe Migration — ein gestapelter PR, der den Stand seines
+    // Vorgaengers mitbringt —, keine zweite Vergabe der Version.
+    if (clash && clash.replace(/^#\d+: /, '') !== m.file) {
       findings.push({
         kind: 'version',
         detail: `${m.file} belegt Version ${m.version} — ${label} hat dort bereits ${clash}.`,

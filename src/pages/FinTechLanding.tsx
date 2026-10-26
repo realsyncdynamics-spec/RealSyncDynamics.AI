@@ -1,5 +1,6 @@
 import { Briefcase, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLanding';
+import { CTA } from '../content/runtimeVocab';
 
 export function FinTechLanding() {
   return (
@@ -24,7 +25,7 @@ export function FinTechLanding() {
         cta: {
           heading: 'BaFin-ready bis Ende 2026 — wir machen es in 14 Tagen.',
           buttons: [
-            { to: '/contact-sales?source=fintech', label: 'Founding Access starten', variant: 'primary' },
+            { to: '/contact-sales?source=fintech', label: CTA.enterprise, variant: 'primary' },
             { to: '/bait-marisk-compliance-guide', label: 'BAIT-Guide', variant: 'secondary' },
             { to: '/audit', label: 'Site-Scan', variant: 'ghost' },
           ],

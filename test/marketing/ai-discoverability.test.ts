@@ -69,6 +69,7 @@ describe('public/llms.txt', () => {
     }
     expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);
     expect(llms).not.toMatch(/\bab 1[.]?498/);
+    expect(llms).not.toMatch(/14 Tage|Tag 15/);
     const free = byId.get('free');
     expect(free?.price.monthlyEur).toBe(0);
     expect(llms).toContain('Free Audit: 0 €');

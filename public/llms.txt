@@ -5,7 +5,7 @@
 > KI-Agenten und Daten — KI-Systeme erfassen, klassifizieren, Regeln durchsetzen,
 > Nachweise laufend erzeugen.
 
-Sprache der Website: Deutsch. Betreiber: RealSync Dynamics.AI, Deutschland.
+Sprache der Website: Deutsch. Betreiber: RealSync Dynamics AI (Inh. Dominik Steiner), Deutschland.
 Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 
 ## Einstieg

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight, AlertTriangle, ArrowLeft, Clock } from 'lucide-react';
+import { CTA } from '../content/runtimeVocab';
 
 interface FaqEntry {
   q: string;
@@ -110,7 +111,7 @@ export function AiActFaq() {
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Link to="/contact-sales?source=ai-act-faq" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                  Founding Access starten <ArrowRight className="h-4 w-4" />
+                  {CTA.enterprise} <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link to="/legal/compliance-matrix" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                   Compliance-Matrix

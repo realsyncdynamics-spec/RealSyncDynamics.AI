@@ -81,7 +81,7 @@ export const HANDOFF_COPY = {
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",
-    pricingFoot: "Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise auf Anfrage.",
+    pricingFoot: "Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise direkt buchbar, ohne Testphase.",
     navOverview: "Übersicht",
     navSystems: "KI-Systeme",
     navClassify: "Klassifizierung",
@@ -188,7 +188,7 @@ export const HANDOFF_COPY = {
     monthly: "Monthly",
     yearly: "Yearly",
     popular: "Popular",
-    pricingFoot: "Note: invoices issued without VAT under § 19 UStG (small business). Enterprise on request.",
+    pricingFoot: "Note: invoices issued without VAT under § 19 UStG (small business). Enterprise can be booked directly, no trial.",
     navOverview: "Overview",
     navSystems: "AI systems",
     navClassify: "Classification",
@@ -385,9 +385,17 @@ export const HANDOFF_EXTRA = {
     residencyHybrid: 'Gemischt / offen',
     // /pricing Fusszeile + Disclaimer (keine Steuertexte — die bleiben SSoT).
     pricingTrustNote:
-      'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
+      'Free Audit kostenlos · {days} Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany',
     pricingTrialFoot:
-      'Free Audit kostenlos · kein Account nötig · {plans}: {days} Tage kostenlos testen — keine Kosten bis Tag {until}, monatlich kündbar · Enterprise: nach Anfrage, kein Self-Service-Trial',
+      'Free Audit kostenlos · kein Account nötig · {plans}: {days} Tage kostenlos testen — keine Kosten bis Tag {until}, monatlich kündbar · Enterprise: direkt buchbar, ohne Testphase',
+    // Offene Beta (`BETA_PUBLIC_OFFER`): ersetzt Trust-Note, Trial-Fusszeile und Karten-CTA.
+    pricingTrustNoteBeta:
+      'Offene Beta: Starter, Growth und Agency kostenlos bis {until} · Anmeldung genügt, keine Kreditkarte · Danach Listenpreis, monatlich kündbar · Made in Germany',
+    pricingTrialFootBeta:
+      'Free Audit kostenlos · kein Account nötig · {plans}: kostenlos bis {until}, danach gilt der durchgestrichene Listenpreis, monatlich kündbar · Enterprise: direkt buchbar, ohne Testphase',
+    pricingBetaCta: 'Kostenlos testen',
+    pricingBetaPriceNote: 'kostenlos bis {until}',
+    pricingBetaListPrice: 'danach',
     pricingDisclaimerBefore:
       'Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung. ',
     pricingDisclaimerStrong: 'Wir versprechen kein "100 % rechtssicher"',
@@ -505,9 +513,16 @@ export const HANDOFF_EXTRA = {
     residencyEu: 'EU cloud',
     residencyHybrid: 'Mixed / undecided',
     pricingTrustNote:
-      'Free Audit free of charge · 14-day free trial · Cancel monthly · No setup fees · Made in Germany',
+      'Free Audit free of charge · {days}-day free trial · Cancel monthly · No setup fees · Made in Germany',
     pricingTrialFoot:
-      'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: on request, no self-service trial',
+      'Free Audit free of charge · no account needed · {plans}: {days}-day free trial — no charge until day {until}, cancel monthly · Enterprise: book directly, no trial',
+    pricingTrustNoteBeta:
+      'Open beta: Starter, Growth and Agency free until {until} · Sign-up is enough, no credit card · Then list price, cancel monthly · Made in Germany',
+    pricingTrialFootBeta:
+      'Free Audit free of charge · no account needed · {plans}: free until {until}, then the struck-through list price applies, cancel monthly · Enterprise: book directly, no trial',
+    pricingBetaCta: 'Try for free',
+    pricingBetaPriceNote: 'free until {until}',
+    pricingBetaListPrice: 'then',
     pricingDisclaimerBefore:
       'Our outputs are methodologically and technically sound — but no substitute for individual legal advice. ',
     pricingDisclaimerStrong: 'We do not promise "100% legally secure"',

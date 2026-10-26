@@ -606,7 +606,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: [],
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     limits: {
       bots: 1,
       answersPerMonth: 500,
@@ -686,7 +686,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: true,
     badges: ['Empfohlen'],
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     limits: {
       bots: 2,
       answersPerMonth: 2_000,
@@ -3008,7 +3008,7 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 
 /** Vertrauenshinweis unter Pricing-Karten. */
 export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+  'Free Audit kostenlos · Kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
 /**
  * Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`.

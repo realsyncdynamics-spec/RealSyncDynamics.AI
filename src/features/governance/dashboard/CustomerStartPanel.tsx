@@ -13,6 +13,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Circle, Loader2 } from 'lucide-react';
 import { BETA } from '../../../config/beta';
+import { BetaFeedback } from '../../../components/governance-os/BetaFeedback';
 import type { CockpitData } from '../cockpit/cockpitData';
 import type { TrialStatus } from '../../../core/billing/trial';
 import { HIGH_RISK_SYSTEMS_ROUTE } from '../handoff/enforcementModel';
@@ -156,6 +157,9 @@ export function CustomerStartPanel({
               )}
             </p>
           )}
+          {/* Der Beta-Hinweis mit Feedback-Knopf entfällt auf /app/dashboard —
+              deshalb steht das Formular hier unter der Testphase-Zeile. */}
+          {BETA.active && <BetaFeedback />}
         </section>
 
         {/* Zone 3 — drei Kernbereiche: Zustand · Nutzen · nächste Aktion. */}

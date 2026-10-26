@@ -34,12 +34,12 @@ export function FinalCta() {
           Compliance, die sich beweisen lässt.
         </h2>
         <p className="lv2__lead">
-          Starten Sie mit einem kostenlosen Audit Ihrer KI-Systeme – Governance Score, Top-Risiken
-          und Planempfehlung in 90 Sekunden.
+          Prüfen Sie Ihre Website kostenlos auf Datenschutzrisiken – Risikobewertung und konkrete
+          Hinweise in 90 Sekunden. Kein Account, keine Kreditkarte.
         </p>
         <div className="lv2-cta-row">
           <Link to="/audit?source=landing-v2-final" className="lv2-btn lv2-btn--gold">
-            Free Audit starten
+            Kostenlosen Check starten
           </Link>
           <Link to="/contact-sales?tier=enterprise&source=landing-v2-final" className="lv2-btn lv2-btn--glass">
             Enterprise anfragen
@@ -93,7 +93,7 @@ export function LandingV2Footer() {
         <div className="lv2-footer__grid">
           <div className="lv2-footer__brand">
             <span className="lv2-logo">{LV2_BRAND}</span>
-            <p>AI Compliance Operations OS for Europe. Entwickelt und betrieben in Thüringen, Deutschland.</p>
+            <p>DSGVO- und EU-AI-Act-Compliance für Ihre Website. Entwickelt und betrieben in Thüringen, Deutschland.</p>
           </div>
           {COLUMNS.map((col) => (
             <nav key={col.title} aria-labelledby={`lv2-footer-${col.title}`}>

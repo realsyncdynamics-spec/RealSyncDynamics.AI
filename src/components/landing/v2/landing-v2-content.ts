@@ -11,8 +11,8 @@ export const LV2_BRAND = 'RealSyncDynamics.AI';
 export const LV2_H1_SILVER = 'AI Compliance Operations OS';
 export const LV2_H1_GOLD = 'for Europe';
 
-/** Betriebsschleife — sechs Stufen wie auf der Live-Seite (Entscheidung Dominik, 28.09.2026). */
-export const LV2_PIPELINE = ['Discover', 'Assess', 'Govern', 'Execute', 'Verify', 'Prove'] as const;
+/** Betriebsschleife — sechs Stufen, jetzt in klarem Deutsch (WP-2). */
+export const LV2_PIPELINE = ['Prüfen', 'Einordnen', 'Handeln', 'Nachweisen', 'Beobachten', 'Auswerten'] as const;
 
 export const LV2_STACK = [
   'Cloudflare Pages · Frontend',
@@ -81,27 +81,27 @@ export interface Lv2LifecycleStep {
 export const LV2_LIFECYCLE: Lv2LifecycleStep[] = [
   {
     index: '01',
-    name: 'Discover',
-    title: 'KI-Inventar in Echtzeit',
-    text: 'Erfasst Modelle, Agenten und Schatten-KI über APIs, Workflows und SaaS-Integrationen – mit Owner, Zweck und Datenflüssen.',
+    name: 'Prüfen',
+    title: 'Cookies, Tracker und KI erfassen',
+    text: 'Cookies, Tracker und KI-Einbindung Ihrer Website erfassen — in unter 90 Sekunden.',
   },
   {
     index: '02',
-    name: 'Classify',
-    title: 'Risikoklassen nach EU AI Act',
-    text: 'Ordnet jedes System begründet ein – verboten, hochriskant, transparenzpflichtig oder minimal – inklusive Rollenprüfung Anbieter/Betreiber.',
+    name: 'Einordnen',
+    title: 'Risiken mit Paragraphenbezug benennen',
+    text: 'Risiken mit Bezug zu DSGVO, TTDSG und EU AI Act klar benennen — verständlich, ohne Fachchinesisch.',
   },
   {
     index: '03',
-    name: 'Enforce',
-    title: 'Policies zur Laufzeit',
-    text: 'Setzt Kontrollen direkt im Request-Pfad durch: PII-Filter, Human-in-the-Loop, Modell-Freigaben und Nutzungsgrenzen je Mandant.',
+    name: 'Handeln',
+    title: 'Konkrete Schritte, was Sie ändern müssen',
+    text: 'Konkrete Hinweise, was Sie ändern müssen — ohne Berater und ohne Fachchinesisch.',
   },
   {
     index: '04',
-    name: 'Prove',
-    title: 'Prüffähige Evidenz',
-    text: 'Jede Entscheidung wird verkettet und archiviert – exportierbar als technische Dokumentation für Auditoren und Behörden.',
+    name: 'Nachweisen',
+    title: 'Alles dokumentieren und vorlegen können',
+    text: 'Alles nachvollziehbar festhalten, damit Sie es einem Prüfer vorlegen können.',
   },
 ];
 
@@ -208,11 +208,11 @@ export const LV2_FAQ: Lv2Faq[] = [
   },
   {
     q: 'Welche Regelwerke deckt die Plattform ab?',
-    a: 'EU AI Act, DSGVO und ISO/IEC 42001. Controls lassen sich zusätzlich auf NIS2 und interne Richtlinien mappen.',
+    a: 'EU AI Act, DSGVO, TTDSG und ISO/IEC 42001. Kontrollen lassen sich zusätzlich auf NIS2 und interne Richtlinien mappen.',
   },
   {
-    q: 'Was umfasst das Free Audit?',
-    a: 'Eine Bestandsaufnahme Ihrer KI-Systeme, eine vorläufige Risikoklassifizierung nach EU AI Act und einen priorisierten Maßnahmenplan – ohne Account und ohne Kreditkarte.',
+    q: 'Was umfasst der kostenlose Check?',
+    a: 'Eine Prüfung Ihrer Website auf Cookies, Tracker und KI-Einbindungen – mit Risikobewertung und konkreten Hinweisen. Kein Account, keine Kreditkarte.',
   },
   {
     q: 'Kann ich monatlich kündigen?',

@@ -88,7 +88,7 @@ export function LifecycleGrid() {
       <div className="lv2__wrap">
         <p className="lv2__kicker">{LV2_PIPELINE.join(' → ')}</p>
         <h2 id="lv2-produkt-title" className="lv2__h2">
-          Ein Betriebssystem für den gesamten Compliance-Lebenszyklus.
+          Von der Prüfung bis zum Nachweis – alles in einem Schritt.
         </h2>
 
         <ol className="lv2-lifecycle">
@@ -105,7 +105,7 @@ export function LifecycleGrid() {
 
         <div className="lv2-cta-row">
           <Link to="/audit?source=landing-v2-produkt" className="lv2-btn lv2-btn--gold">
-            Free Audit starten
+            Kostenlosen Check starten
           </Link>
           <Link to="/governance-runtime" className="lv2-btn lv2-btn--glass">
             Runtime ansehen

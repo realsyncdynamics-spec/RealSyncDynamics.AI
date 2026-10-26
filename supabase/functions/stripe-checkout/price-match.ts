@@ -50,12 +50,12 @@ export interface PlanStripeExpectation {
  * Live-Produkt-Kandidat aus Migration 20260912055500: `prod_UxG9V9clbqV7qw`.
  * Noch **nicht** gesetzt — muss zusammen mit der neuen Price-ID (149800 Cent)
  * in Stripe verifiziert werden. Siehe docs/runbooks/enterprise-stripe-1498.md
- * und PR #1984. Bis dahin: PRODUCT_NOT_CONFIGURED.
+ * und PR #1995. Bis dahin: PRODUCT_NOT_CONFIGURED.
  */
 export const PLAN_STRIPE_EXPECTATIONS: Readonly<Record<string, PlanStripeExpectation>> = {
   enterprise: {
     taxBehavior: 'exclusive',
-    // TODO(PR#1984): nach Stripe-Verifikation setzen, z. B.
+    // TODO(PR#1995): nach Stripe-Verifikation setzen, z. B.
     // productId: { live: 'prod_UxG9V9clbqV7qw', test: null },
     productId: { live: null, test: null },
   },

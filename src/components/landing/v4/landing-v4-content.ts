@@ -72,10 +72,10 @@ export const HERO_FRAMEWORKS: ReadonlyArray<readonly [string, boolean]> = [
 ];
 
 export const LOOP_NODES = [
-  ['01 · DETECT', 'Discover', 'Headers, Cookies, Tracker, AI-Endpoints und Third-Parties in Sekunden inventarisiert.'],
-  ['02 · GOVERN', 'Classify', 'Findings nach DSGVO-Artikel und AI-Act-Risikoklasse eingeordnet, ins Register überführt.'],
-  ['03 · AUTOMATE', 'Enforce', 'Policies als ausführbare Kontrollen — Agenten schlagen Fixes vor, Freigaben bleiben beim Menschen.'],
-  ['04 · MONITOR', 'Prove', 'Jeder Lauf in der Evidence-Chain versiegelt; Drift wird in Echtzeit erkannt und dokumentiert.'],
+  ['01 · SCAN', 'Entdecken', 'KI-Systeme, Datenschutz-Risiken und Compliance-Lücken in Sekundenschnelle erfassen.'],
+  ['02 · ANALYSIEREN', 'Bewerten', 'Automatische Einordnung nach DSGVO, EU AI Act und internen Richtlinien.'],
+  ['03 · KONTROLLIEREN', 'Durchsetzen', 'Policies als operative Kontrollen — mit auditfähigen Freigabeprozessen.'],
+  ['04 · NACHWEISEN', 'Dokumentieren', 'Jede Entscheidung in der Evidence-Chain versiegelt. Compliance kontinuierlich nachweisbar.'],
 ] as const;
 
 export const ANCHORS = [
@@ -131,18 +131,18 @@ export const TOOLS = [
   ['AUTOMATION · WHATSAPP', 'WhatsApp Bot', 'WhatsApp-Kundenkommunikation über den echten Bot-Builder — mit Persona, Wissensbasis, Termin- und Anfrageprozessen sowie Governance und Evidence.'],
   ['VOICE · GOVERNANCE', 'Telefonbot', 'KI-Telefonassistenz über den bestehenden Bot-Builder — mit Voice-Kanal, Human Handoff, Terminannahme, Policy Enforcement und auditierbaren Gesprächen.'],
   ['AI · WEBSITE', 'DSGVO Web App Builder', 'Website zuerst prüfen, DSGVO- und Governance-Befund erfassen und anschließend in den bestehenden Web-App-Transformation-Flow übergeben.'],
-  ['ENGINEERING · GOVERNANCE', 'Claude Code Optimizer', 'Repository auf DSGVO- und EU-AI-Act-Risiken prüfen, konkrete Fixes erzeugen und Prüfungen als Evidence in den Entwicklungsworkflow integrieren.'],
+  ['ENGINEERING · GOVERNANCE', 'Developer Security Suite', 'Repositories auf DSGVO- und EU-AI-Act-Risiken prüfen, konkrete Fixes generieren und Compliance-Evidence direkt in CI/CD integrieren.'],
 ] as const;
 
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
-  ['DSGVO- & Tracking-Audit', 'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF und wiederkehrender Nachprüfung.', ''],
-  ['EU-AI-Act-Klassifizierung', 'KI-Systeme öffentlich nach Annex III / Risikoklasse einordnen und Anforderungen ableiten — über den Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
-  ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
-  ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen als auditfähigen Export — für interne Kontrollen und externe Prüfer.', ''],
-  ['AI Gateway', 'Jeder Modellaufruf läuft über eine kontrollierte Schicht mit Protokollierung, Kostenerfassung und EU-Option.', ''],
-  ['Evidence Vault', 'Hash-verkettete Nachweiskette mit Aufbewahrung, Compliance-Hold und Integritätsprüfung.', '/evidence-vault'],
-  ['Policy Engine', 'Governance-Regeln nicht nur dokumentieren, sondern als ausführbare Kontrolllogik durchsetzen.', '/policy-engine'],
+  ['DSGVO- & Tracking-Audit', 'Websites in Sekunden prüfen: Cookies, Tracker, Drittanbieter und Einwilligungspflichten erfassen — mit revisionssicheren Befunden.', ''],
+  ['EU-AI-Act-Klassifizierung', 'KI-Systeme automatisch nach Risiko einordnen — für Portfolio-Übersicht ohne Inventar-Eintrag.', '/ai-act-klassifikator'],
+  ['Governance Runtime', 'Risiken, Policies, Incidents und Freigaben in einer operativen Kontrollschicht — in Echtzeit.', ''],
+  ['Evidence Export', 'Revisionssichere Nachweise für Audits, Behörden und interne Kontrollen — Hash-verkettet.', ''],
+  ['AI Gateway', 'Jeder KI-Aufruf läuft durch eine Kontrollschicht — Protokollierung, Compliance-Checks, EU-Option.', ''],
+  ['Evidence Vault', 'Hash-verkettete Nachweiskette — Aufbewahrung, Compliance-Hold, Integrität prüfbar.', '/evidence-vault'],
+  ['Policy Engine', 'Governance-Regeln nicht nur dokumentieren, sondern operativ durchsetzen — technisch, nicht nur papiergebunden.', '/policy-engine'],
 ] as const;
 
 export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({
@@ -156,22 +156,22 @@ export const BUILDING_CAPS = [
 ] as const;
 
 export const GOV_STEPS = [
-  ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
-  ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],
-  ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
-  ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
-  ['05', 'EVIDENCE', 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.'],
-  ['06', 'AUDIT', 'Eine konsistente Governance-Historie für Management, interne Kontrollen und Audits bereitstellen.'],
+  ['01', 'ERFASSEN', 'KI-Systeme, Datenflüsse und Verarbeitungsvorgänge automatisch inventarisieren.'],
+  ['02', 'BEWERTEN', 'Automatische Risikoklassifikation gegen DSGVO, EU AI Act und interne Standards.'],
+  ['03', 'DEFINIEREN', 'Governance-Policies zentral festlegen — rollenbezogen, technikunabhängig.'],
+  ['04', 'DURCHSETZEN', 'Policies operativ aktivieren — mit auditfähigen Freigabeprozessen, keine Umgehung möglich.'],
+  ['05', 'NACHWEISEN', 'Jede Prüfung, Entscheidung und Änderung in der Evidence-Chain unveränderbar dokumentiert.'],
+  ['06', 'AUDITIEREN', 'Konsistente Governance-Historie für interne Kontrollen, Prüfer und Behörden.'],
 ] as const;
 
 // ---- 04 Evidence & Trust (MainLanding.tsx TrustItem) — Lucide-Pfade wie in der Referenz ----
 export type TrustIcon = 'shield' | 'lock' | 'file' | 'code';
 
 export const TRUST: ReadonlyArray<readonly [TrustIcon, string, string]> = [
-  ['shield', 'DSGVO', 'Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess.'],
-  ['lock', 'EU AI Act', 'Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme.'],
-  ['file', 'Nachweis-Export', 'Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer.'],
-  ['code', 'Code Compliance', 'Claude Code prüft und unterstützt konkrete technische Remediation.'],
+  ['shield', 'DSGVO-Konformität', 'Kontinuierliche Überwachung von Verarbeitung, Risiko, Policies und Nachweisen — in Echtzeit.'],
+  ['lock', 'EU AI Act Readiness', 'Automatische Risikoklassifikation, Transparenzanforderungen und rollenbezogene Dokumentation.'],
+  ['file', 'Revisionssichere Nachweise', 'Hash-verkettete Evidence-Chain — jede Entscheidung unveränderbar dokumentiert für Audits.'],
+  ['code', 'Code & Entwicklung', 'Governance direkt in den Dev-Workflow integrieren — DSGVO und AI Act im CI/CD.'],
 ];
 
 // ---- 05 Tarife (shared/pricing.ts) ----

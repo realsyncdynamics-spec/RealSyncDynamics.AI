@@ -79,7 +79,30 @@ async function emitEvent(args: {
   }
 }
 
+async function logCronExecution(
+  functionName: string,
+  status: 'success' | 'failure',
+  httpStatus: number,
+  errorCode?: string,
+  errorMessage?: string,
+  durationMs?: number
+) {
+  try {
+    await admin.from('cron_execution_logs').insert({
+      function_name: functionName,
+      status,
+      http_status: httpStatus,
+      error_code: errorCode || null,
+      error_message: errorMessage ? errorMessage.slice(0, 500) : null,
+      execution_duration_ms: durationMs || null,
+    });
+  } catch (e) {
+    console.error('[memory-decay-worker] cron logging failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
+  const startedAtForLogging = Date.now();
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
 
@@ -88,10 +111,14 @@ Deno.serve(async (req) => {
   // falscher Bearer → 401. RPCs bleiben service_role-only auf der DB-Seite.
   const CRON_KEY = Deno.env.get('CRON_MEMORY_DECAY_KEY') ?? '';
   if (!CRON_KEY) {
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'failure', 500, 'CRON_KEY_MISSING', 'CRON_MEMORY_DECAY_KEY not configured', durationMs);
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_MEMORY_DECAY_KEY not configured', corsHeaders);
   }
   const authHeader = req.headers.get('Authorization') ?? '';
   if (authHeader !== `Bearer ${CRON_KEY}`) {
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'failure', 401, 'UNAUTHORIZED', 'Invalid cron key', durationMs);
     return jsonResponse({ error: 'cron only' }, 401, corsHeaders);
   }
 
@@ -155,9 +182,13 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - startedAt,
     };
     console.log('[memory-decay-worker] tick complete', summary);
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'success', 200, undefined, undefined, durationMs);
     return jsonResponse({ success: true, ...summary }, 200, corsHeaders);
   } catch (err) {
     console.error('[memory-decay-worker] tick failed:', err);
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'failure', 500, 'INTERNAL', (err as Error).message, durationMs);
     return jsonResponse({ error: (err as Error).message, run_id: runId }, 500, corsHeaders);
   }
 });

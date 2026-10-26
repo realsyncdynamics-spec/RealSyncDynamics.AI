@@ -192,7 +192,31 @@ async function createAlert(
 
 // ── Hauptlogik ───────────────────────────────────────────────────────────────
 
+async function logCronExecution(
+  sb: SupabaseClient,
+  functionName: string,
+  status: 'success' | 'failure',
+  httpStatus: number,
+  errorCode?: string,
+  errorMessage?: string,
+  durationMs?: number
+) {
+  try {
+    await sb.from('cron_execution_logs').insert({
+      function_name: functionName,
+      status,
+      http_status: httpStatus,
+      error_code: errorCode || null,
+      error_message: errorMessage ? errorMessage.slice(0, 500) : null,
+      execution_duration_ms: durationMs || null,
+    });
+  } catch (e) {
+    console.error('[governance-monitoring-scheduler] cron logging failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
+  const startedAt = Date.now();
   const preflight = handleOptions(req);
   if (preflight) return preflight;
 
@@ -201,10 +225,16 @@ Deno.serve(async (req) => {
   // CRON_KEY_MISSING (Fehlkonfiguration, kein Lauf), falscher Bearer → 401.
   const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_MONITORING_KEY') ?? '';
   if (!CRON_KEY) {
+    const durationMs = Date.now() - startedAt;
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+    await logCronExecution(sb, 'governance-monitoring-scheduler', 'failure', 500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_MONITORING_KEY not configured', durationMs);
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_MONITORING_KEY not configured');
   }
   const authHeader = req.headers.get('Authorization') ?? '';
   if (authHeader !== `Bearer ${CRON_KEY}`) {
+    const durationMs = Date.now() - startedAt;
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+    await logCronExecution(sb, 'governance-monitoring-scheduler', 'failure', 401, 'UNAUTHORIZED', 'Invalid cron key', durationMs);
     return jsonResponse({ error: 'cron only' }, 401);
   }
 
@@ -219,10 +249,14 @@ Deno.serve(async (req) => {
     .limit(50);
 
   if (fetchErr) {
+    const durationMs = Date.now() - startedAt;
+    await logCronExecution(sb, 'governance-monitoring-scheduler', 'failure', 500, 'INTERNAL', fetchErr.message, durationMs);
     return jsonResponse({ error: fetchErr.message }, 500);
   }
 
   if (!sources || sources.length === 0) {
+    const durationMs = Date.now() - startedAt;
+    await logCronExecution(sb, 'governance-monitoring-scheduler', 'success', 200, undefined, undefined, durationMs);
     return jsonResponse({ processed: 0, message: 'Keine fälligen Quellen' });
   }
 
@@ -351,6 +385,9 @@ Deno.serve(async (req) => {
 
     results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined });
   }
+
+  const durationMs = Date.now() - startedAt;
+  await logCronExecution(sb, 'governance-monitoring-scheduler', 'success', 200, undefined, undefined, durationMs);
 
   return jsonResponse({ processed: results.length, results });
 });

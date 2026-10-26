@@ -1,6 +1,6 @@
 # Runbook — Enterprise Stripe 1.498 €/Monat netto
 
-**Abhängig von #1982.** Ziel: Live-Checkout für `plan_key=enterprise` mit
+Ziel: Live-Checkout für `plan_key=enterprise` mit
 Betrag 1.498 € (netto), `tax_behavior=exclusive`, ohne Testphase.
 
 ## Ist-Stand (Stand 2026-10-25)
@@ -8,7 +8,7 @@ Betrag 1.498 € (netto), `tax_behavior=exclusive`, ohne Testphase.
 | Feld | Wert |
 |------|------|
 | SSoT-Preis (`shared/pricing.ts`) | 1.498 €/Monat netto |
-| Alte Live-Price in `public.products` | `price_1TxLdLREjTWueUcGRaXie8Vs` (1.249 €) |
+| Alte Live-Price in `public.products` | `price_1USabSREjTWueUcGzUEzTaie` (1.249 €, `exclusive`, seit Migration `20261020130000`; vorher `price_1UEmHq…`, davor `price_1TxLd…`) |
 | Live-Produkt-Kandidat | `prod_UxG9V9clbqV7qw` (aus Migration `20260912055500`) |
 | `PLAN_STRIPE_EXPECTATIONS.enterprise.productId` | `live: null`, `test: null` → Checkout: `PRODUCT_NOT_CONFIGURED` |
 | Jahres-Checkout | weiterhin gesperrt (`enterprise_yearly`) |
@@ -42,19 +42,27 @@ product         == <verifizierte prod_…>
 
 ## Code nach Verifikation
 
-1. `supabase/migrations/20261025120000_enterprise_stripe_price_1498.sql`
-   - `price_REPLACE_ME` durch echte Live-Price-ID ersetzen
-   - `DO`-Block muss genau einen Enterprise-Default mit neuer ID + Name sehen
-2. `supabase/functions/stripe-checkout/price-match.ts`
-   - `PLAN_STRIPE_EXPECTATIONS.enterprise.productId.live` = verifizierte Product-ID
-   - optional `.test` setzen, sonst bleibt Test-Checkout gesperrt
-3. CI: unit (price-match), Migration validation, manueller Smoke
-   `POST /stripe-checkout` mit `plan_key=enterprise` → Session-URL, kein `PRICE_MISMATCH`
+1. **Migration anlegen:** `docs/runbooks/enterprise-stripe-1498.template.sql`
+   als neue Datei nach `supabase/migrations/` kopieren.
+   - Zeitstempel nach der letzten Migration auf `main` wählen.
+     `npm run check:migration-collisions` darf keine Kollision mit offenen PRs melden.
+   - `price_ERSETZEN` durch die verifizierte Live-Price-ID ersetzen.
+   - Die Vorlage stellt **in place** um (wie `20261020130000`). Die
+     `products`-Zeile behält ihre `id` und damit alle `product_entitlements`.
+     Eine neue Zeile hätte keine Kontingente.
+   - Sie bricht ab, wenn nicht genau ein Enterprise-Datensatz mit neuer ID und
+     neuem Namen übrig bleibt. Das gilt auch bei Wiederholung.
+   - Solange die Datei nur Vorlage ist, liegt sie bewusst **nicht** unter
+     `supabase/migrations/`. `deploy.yml` wendet Migrationen nach dem Merge an,
+     und eine absichtlich abbrechende Migration würde jeden Deploy blockieren.
+2. **Erwartetes Stripe-Produkt eintragen:**
+   `supabase/functions/stripe-checkout/price-match.ts`
+   - `PLAN_STRIPE_EXPECTATIONS.enterprise.productId.live` auf die verifizierte Product-ID setzen.
+   - Optional `.test` setzen. Bleibt es `null`, ist der Test-Checkout weiter gesperrt.
+3. **Prüfen:** CI (`unit` inkl. `test/stripe-checkout-price-match.test.ts`,
+   `Migration validation`). Danach manueller Smoke-Test
+   `POST /stripe-checkout` mit `plan_key=enterprise`: Session-URL, kein
+   `PRICE_MISMATCH`.
 
-## Reihenfolge Merge
-
-1. #1982 (SSoT + Quotas + Checkout-Logik ohne Live-Price)
-2. Dieser PR (nur nach echten IDs)
-3. #1983 rebasen (Beta-Texte)
-
-**Merge und Produktionsdeploy brauchen separate Freigabe.**
+**Merge, Anwendung der Migration auf Produktion und Produktionsdeploy brauchen
+jeweils eine separate Freigabe.**

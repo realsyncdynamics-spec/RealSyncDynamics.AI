@@ -1,6 +1,6 @@
 // Voice-Agent je Mandant — gemeinsame Regeln für stripe-webhook (einreihen)
 // und provision-voice-agent (umsetzen). Tabelle: public.tenant_voice_agents
-// (Migration 20261026090000).
+// (Migration 20261026151700).
 //
 // Rechte-Quelle ist ausschließlich `tenant_entitlements()`: `bots.voice`
 // entscheidet, ob ein Agent laufen soll, `limit.bot_voice_minutes_monthly`

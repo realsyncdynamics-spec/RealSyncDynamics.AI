@@ -333,14 +333,14 @@ async function syncAddonItems(admin: SupabaseClient, sub: Stripe.Subscription): 
 }
 
 /**
- * Voice-Agent einreihen (public.tenant_voice_agents, Migration 20261026090000).
+ * Voice-Agent einreihen (public.tenant_voice_agents, Migration 20261026151700).
  *
  * Soll-Zustand allein aus `bots.voice` in tenant_entitlements(). Nur ein
  * echter Wechsel, eine gescheiterte Zeile oder geänderte Minuten eines
  * aktiven Agenten setzen `status = 'pending'` und stoßen
  * provision-voice-agent im Hintergrund an. Die Arbeit beim Provider läuft
  * dort — der Webhook bleibt schnell; geht der Anstoß verloren, holt der
- * Reconcile-Lauf (pg_cron, 20261026090100) die Zeile ab.
+ * Reconcile-Lauf (pg_cron, 20261026151800) die Zeile ab.
  *
  * Fehlt die Tabelle (Function vor Migration deployt), darf der Abo-Sync
  * nicht scheitern: Warnung statt Stripe-Retry. Jeder andere DB-Fehler wirft,

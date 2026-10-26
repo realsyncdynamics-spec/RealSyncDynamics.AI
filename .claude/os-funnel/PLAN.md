@@ -134,6 +134,30 @@ Gemeint ist eine Ebene für Layout und Verhalten. Es ist **kein Redesign**.
 | **E-R5** | App-Navigation mobil | ⏳ offen. Empfehlung: **Drawer** (Menü-Button), keine Bottom-Nav | Kleinster Eingriff in die bestehende Shell |
 | **E-R6** | 3D/three.js auf Mobile | ✅ ergibt sich aus E-V4: auf Mobile **kein** three.js-Chunk. Prüfen, dass v6 ihn nirgends nachlädt | v6 nutzt statisches Europa-Bild |
 
+**Nachtrag 2026-10-26: Enterprise-Zielpreis (E-P1, WP14).** Gemessen gegen `main@4df1fde`.
+
+**Vorgabe:** Enterprise kostet künftig **1.498 €/Monat netto**. Heute führen SSoT, Stripe, Checkout und
+Anzeige noch 1.249 € (`shared/pricing.ts`: `monthlyEur: 1_249`, `priceOnRequest: true`,
+`purchaseMode: 'inquiry'`; `stripe-checkout` sperrt Enterprise per `ENTERPRISE_SELF_SERVICE_BLOCKED`).
+Die Umsetzung liegt in #1995 (Self-Service-Checkout, SSoT, Kontingente, drei additive Migrationen) und
+dem darauf gestapelten #1999 (Anzeige, Beta nur Starter/Growth/Agency). Dieser Nachtrag ändert **keinen**
+Preis und keine Funktion. Er hält fest, was vor einem Merge offen ist.
+
+| ID | Frage | Status | Begründung |
+|---|---|---|---|
+| **E-P1** | Enterprise 1.498 €/Monat netto statt 1.249 € | ⏳ Vorgabe Owner, **nicht wirksam**. Wirksam erst mit a–e und Merge-GO für #1995 → #1999 | Preis wirkt auf SSoT, Stripe, Checkout, Entitlements und Anzeige zugleich. Eine Ebene allein erzeugt Drift. |
+| E-P1 a | Stripe-Price und Produkt-ID | ⏳ offen. Live-Price `149800` Cent, EUR, monatlich, `interval_count = 1`, `tax_behavior = exclusive`; Produkt-ID verifizieren (Kandidat im Repo `prod_UxG9V9clbqV7qw`) | Ohne IDs zeigt die Seite 1.498 €, der Checkout lehnt jeden Kauf ab (`PRODUCT_NOT_CONFIGURED`). Falsch abgerechnet wird nichts. |
+| E-P1 b | Jahrespreis | ⏳ offen. #1995: kein öffentlicher Jahrespreis, kein Jahres-Checkout; 14.980 € nur interner Listenwert | Deckt sich mit „keine Jahres-Prices in Stripe“ (Live-Katalog 2026-09-12). |
+| E-P1 c | Policy und Plan angleichen | ⏳ offen. `.github/PR_TRIAGE_POLICY.md` nennt „1.249 € ist die höchste Stufe und die einzige Quelle“; `AGENTS.md` verweist darauf; §1 dieses Plans nennt „Enterprise 1.249 € im SSoT“ | Solange die Policy 1.249 € festschreibt, widerspricht jeder 1.498-€-Merge ihr. Angleichung als eigener Docs-PR nach Owner-GO, nicht in WP14. |
+| E-P1 d | Steuer-Wording | ⏳ offen. Policy verlangt „Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen“; #1995 zeigt „netto“ und setzt `tax_behavior = exclusive` | Beides zugleich ist widersprüchlich. Owner klärt die steuerliche Lage, danach eine Formulierung für Pricing und Checkout. |
+| E-P1 e | Abgrenzung zu Partner 1.999 € | ⏳ offen, hängt an **E-F4** | 1.498 € bleibt unter Partner. Ob Partner eine Stufe oder ein Programm ist, entscheidet weiter E-F4. |
+
+**Arbeitsauftrag:** `.claude/commands/wp14-enterprise-preis.md` (`/wp14-enterprise-preis`). Reiner Prüfauftrag:
+Abgleich-Matrix über SSoT, Stripe, Checkout, Entitlements und öffentliche Anzeige auf den Heads von #1995/#1999,
+Restfundstellen „1.249 €“/„auf Anfrage“, Liste der Stripe-Werte für den Owner. WP14 baut nichts nach, was
+#1995/#1999 schon enthalten; Befunde gehen als Kommentar an diese PRs.
+**Reihenfolge:** E-P1 a–e → Merge-GO #1995 → #1999 → Docs-PR Policy/Plan (E-P1 c). Neue PRs nur unter WIP-Stopp-Regel.
+
 ## 4. Arbeitspakete und Reihenfolge
 
 ```

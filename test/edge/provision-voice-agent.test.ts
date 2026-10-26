@@ -586,3 +586,26 @@ describe('Review-Befunde (Codex, PR #1889)', () => {
     expect(w.bots.get('bot_1')?.enabled).toBe(true);
   });
 });
+
+describe('Reconcile: Robustheit', () => {
+  it('Lesefehler bei einem Mandanten hält den Lauf nicht an', async () => {
+    const w = world({
+      rows: [
+        row({ id: 'row-a', tenant_id: '22222222-2222-4222-8222-222222222222', status: 'active', bot_id: 'bot_a', provider_agent_id: 'agent_a', config_snapshot: { monthly_minutes: 500, daily_limit: 5 } }),
+        row({ id: 'row-b', status: 'active', bot_id: 'bot_b', provider_agent_id: 'agent_b', config_snapshot: { monthly_minutes: 500, daily_limit: 5 } }),
+      ],
+    });
+    const d = deps(w);
+    const load = d.repo.loadVoiceEntitlements.bind(d.repo);
+    d.repo.loadVoiceEntitlements = async (t) => {
+      if (t.startsWith('2222')) throw new Error('tenant_entitlements: timeout');
+      return load(t);
+    };
+    const res = await handleProvisionVoiceAgent({ method: 'POST', authorization: `Bearer ${KEY}`, body: {} }, d);
+    expect(res.status).toBe(200);
+    expect(res.body.outcomes).toEqual([
+      { tenant_id: '22222222-2222-4222-8222-222222222222', result: 'failed', provider_agent_id: 'agent_a', error: 'tenant_entitlements: timeout' },
+      { tenant_id: TENANT, result: 'unchanged', provider_agent_id: 'agent_b' },
+    ]);
+  });
+});

@@ -185,14 +185,20 @@ export async function handleProvisionVoiceAgent(
   } else {
     rows = await deps.repo.listOpen(staleBefore, MAX_PROVISION_ATTEMPTS, RECONCILE_BATCH);
     for (const settled of await deps.repo.listSettled(RECONCILE_BATCH)) {
-      const ent = await deps.repo.loadVoiceEntitlements(settled.tenant_id);
-      if (!settledRowIsStale(settled, ent, deps.avgCallMinutes)) {
-        await deps.repo.markReconciled(settled.id);
-        outcomes.push({ tenant_id: settled.tenant_id, result: 'unchanged', provider_agent_id: settled.provider_agent_id });
-        continue;
+      // Ein Mandant mit Lesefehler hält die übrigen nicht auf; reconciled_at
+      // bleibt alt, der nächste Lauf versucht ihn zuerst wieder.
+      try {
+        const ent = await deps.repo.loadVoiceEntitlements(settled.tenant_id);
+        if (!settledRowIsStale(settled, ent, deps.avgCallMinutes)) {
+          await deps.repo.markReconciled(settled.id);
+          outcomes.push({ tenant_id: settled.tenant_id, result: 'unchanged', provider_agent_id: settled.provider_agent_id });
+          continue;
+        }
+        const requeued = await deps.repo.requeue(settled);
+        if (requeued) rows.push(requeued);
+      } catch (err) {
+        outcomes.push({ tenant_id: settled.tenant_id, result: 'failed', provider_agent_id: settled.provider_agent_id, error: safeError(err) });
       }
-      const requeued = await deps.repo.requeue(settled);
-      if (requeued) rows.push(requeued);
     }
   }
 

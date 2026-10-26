@@ -108,6 +108,29 @@ describe('implementation-status registry', () => {
     }
   });
 
+  it('registers enterprise-sso as coming-soon (ADR 0007) and updates stripe-checkout-e2e migration evidence', () => {
+    const sso = getImplementation('enterprise-sso')!;
+    expect(sso).toBeDefined();
+    expect(sso.status).toBe('coming-soon');
+    expect(isImplementationLive('enterprise-sso')).toBe(false);
+    expect(sso.description).toContain('ADR 0007');
+    expect(sso.description).toContain('0 aktive Provider');
+    expect(sso.description).toContain('signInWithSSO');
+    expect(sso.description).toContain('sso-provision');
+    expect(sso.description).toContain('tenant_sso_domains');
+    expect(ROADMAP_COMING_SOON_ITEMS.some((i) => i.id === 'enterprise-sso')).toBe(true);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].de.description).toMatch(/Geplant:/);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].en.description).toMatch(/Planned:/);
+
+    const stripeE2e = getImplementation('stripe-checkout-e2e')!;
+    expect(stripeE2e.evidence).toContain(
+      'supabase/migrations/20261020130000_stripe_live_net_exclusive_price_ids.sql',
+    );
+    expect(stripeE2e.evidence).not.toContain(
+      'supabase/migrations/20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql',
+    );
+  });
+
   it('splits voice/telephony off channel-bots as coming soon', () => {
     const bots = getImplementation('channel-bots')!;
     expect(bots.name).not.toMatch(/Telefon/i);

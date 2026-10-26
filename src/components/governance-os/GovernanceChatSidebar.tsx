@@ -39,8 +39,11 @@ import { GOVERNANCE_AGENTS, type GovernanceAgentId } from './governanceAgents';
 export interface GovernanceChatSidebarProps {
   open: boolean;
   onClose: () => void;
-  /** Vorbefüllter Text (z. B. aus „Session starten“); wird nicht automatisch gesendet. */
-  prefill?: { id: number; text: string } | null;
+  /**
+   * Vorbefüllter Text (z. B. aus „Session starten“); wird nicht automatisch
+   * gesendet. `agent` wählt den Agenten vor (Agenten-Eingabe der Übersicht).
+   */
+  prefill?: { id: number; text: string; agent?: GovernanceAgentId } | null;
 }
 
 
@@ -95,6 +98,7 @@ export function GovernanceChatSidebar({ open, onClose, prefill = null }: Governa
 
   useEffect(() => {
     if (!prefill) return;
+    if (prefill.agent) setSelectedAgent(prefill.agent);
     setInputValue(prefill.text);
     textareaRef.current?.focus();
   }, [prefill]);

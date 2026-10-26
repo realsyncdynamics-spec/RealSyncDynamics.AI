@@ -360,12 +360,15 @@ export function beschreibeStatus(status) {
  * anderen unterscheidet — Klasse, Status, Ursache, Jobnamen —, die Anzahl
  * steht daneben und zaehlt fuer den Vergleich nicht.
  */
-export function befundZeilen({ broken = [], veraltet = [], antwort = null }) {
+// Typ per JSDoc statt Default-Werten im Destructuring: `tsc` (allowJs)
+// leitete daraus `never[]` bzw. `null` ab und lehnte jeden Aufruf ab.
+/** @param {{ broken?: any[], veraltet?: any[], antwort?: any }} befund */
+export function befundZeilen({ broken, veraltet, antwort }) {
   const zeilen = [];
-  for (const [ursache, jobs] of groupByCause(broken)) {
+  for (const [ursache, jobs] of groupByCause(broken ?? [])) {
     zeilen.push({ schluessel: `A · letzter Lauf gescheitert · ${ursache} · ${[...jobs].sort().join(', ')}`, anzahl: null });
   }
-  for (const r of veraltet) {
+  for (const r of veraltet ?? []) {
     zeilen.push({ schluessel: `B · ueberfaellig · ${r.name}`, anzahl: null });
   }
   if (antwort) {

@@ -1,5 +1,7 @@
 // Command Center entry for /app/dashboard.
-// Uses ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
+// Start view (CustomerStartPanel) first; the detail view below holds
+// HandoffOverview, OsControlStrip, BrowserRuntimePanel and
+// ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
 // the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 

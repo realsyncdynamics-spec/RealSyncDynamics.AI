@@ -107,6 +107,10 @@
 }
 
 .lv6[data-rs-theme='dark'] {
+  --rs-on-accent: #121212;
+  --rs-status-allow: #10b981;
+  --rs-status-warn: #f5a524;
+  --rs-status-block: #e5484d;
   --rs-bg: #121212;
   --rs-bg2: #171717;
   --rs-surface: rgba(255, 255, 255, 0.03);
@@ -130,6 +134,10 @@
 }
 
 .lv6[data-rs-theme='light'] {
+  --rs-on-accent: #fffdf6;
+  --rs-status-allow: #08754f;
+  --rs-status-warn: #875707;
+  --rs-status-block: #bd2931;
   --rs-bg: #f3f1ec;
   --rs-bg2: #eae7e0;
   --rs-surface: rgba(255, 255, 255, 0.75);
@@ -138,7 +146,7 @@
   --rs-shine: rgba(255, 255, 255, 0.95);
   --rs-fg: #0a1020;
   --rs-fg2: #4a5878;
-  --rs-fg3: #6b7690;
+  --rs-fg3: #59647b;
   --rs-dot: #8a95ac;
   --rs-h1: linear-gradient(180deg, #1f2a44 0%, #0a1020 100%);
   --rs-chip: rgba(255, 255, 255, 0.7);
@@ -156,13 +164,13 @@
   --rs-acc: #d6ae52;
   --rs-acc-soft: rgba(214, 174, 82, 0.12);
   --rs-acc-g: linear-gradient(180deg, #e9c66f 0%, #c99a3a 55%, #a87a26 100%);
-  --rs-btn: linear-gradient(180deg, #d9b35c 0%, #b98a33 100%);
+  --rs-btn: linear-gradient(180deg, #89611c 0%, #71501a 100%);
   --rs-glow: rgba(222, 176, 76, 0.45);
   --rs-hue: 0deg;
 }
 
 .lv6[data-rs-theme='light'][data-rs-accent='gold'] {
-  --rs-acc: #9a7224;
+  --rs-acc: #7c591b;
   --rs-acc-soft: rgba(154, 114, 36, 0.1);
   --rs-acc-g: linear-gradient(180deg, #b8892f 0%, #8c6519 100%);
 }
@@ -171,7 +179,7 @@
   --rs-acc: #22c3dd;
   --rs-acc-soft: rgba(34, 195, 221, 0.12);
   --rs-acc-g: linear-gradient(180deg, #3fd4ec 0%, #14afcb 100%);
-  --rs-btn: linear-gradient(180deg, #22c8e2 0%, #0797b4 100%);
+  --rs-btn: linear-gradient(180deg, #00778b 0%, #005e70 100%);
   --rs-glow: rgba(0, 184, 212, 0.45);
   --rs-hue: 150deg;
 }
@@ -200,4 +208,20 @@
     transition-duration: 0ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Inline links remain identifiable without perceiving their accent color. */
+.lv6 p a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Keep every menu action reachable on short screens and at larger text sizes. */
+.lv6 #lv6-menu {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lv6 #lv6-menu > * {
+  flex-shrink: 0;
 }

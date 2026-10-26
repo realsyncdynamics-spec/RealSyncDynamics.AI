@@ -198,51 +198,83 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       </section>
 
 
-      <section id="control-room" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
+      <section id="control-room" className="section-alt">
+        <div className="section-content">
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: "28px" }}>
             <div>
-              <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>IHR WORKSPACE</p>
-              <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
-              <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Nach der Anmeldung läuft Ihre Governance im Command Center weiter: Rahmenwerk-Reifegrade, offene Befunde, Evidence-Chain und Agent-Entscheidungen auf einer Fläche.</p>
+              <p className="section-kicker">IHR WORKSPACE</p>
+              <h2 className="section-heading" style={{ maxWidth: "22ch" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
+              <p className="section-lead">Nach der Anmeldung läuft Ihre Governance im Command Center weiter: Rahmenwerk-Reifegrade, offene Befunde, Evidence-Chain und Agent-Entscheidungen auf einer Fläche.</p>
             </div>
-            <Link to={v.href.dashboard} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Zum Command Center<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} className="btn-primary">Zum Command Center
+              {' '}
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </Link>
           </div>
-          <div style={{ marginTop: "clamp(40px,4vw,96px)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", overflow: "hidden" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", padding: "18px var(--card-p)", borderBottom: "1px solid var(--rs-line)" }}><span style={{ fontSize: "var(--fs-body)" }}>Governance Control Room · Workspace „Demo“</span><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Beispielumgebung · Demo-Daten</span></div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,180px),1fr))", gap: "1px", background: "var(--rs-line)", borderBottom: "1px solid var(--rs-line)" }}>
-              {v.crKpis.map((kpi, kpiI) => (<Fragment key={kpiI}>
-                <div style={{ background: "var(--rs-bg)", padding: "var(--card-p)", display: "flex", flexDirection: "column", gap: "10px" }}><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{kpi.l}</span><span style={kpi.style}>{kpi.v}</span></div>
-              </Fragment>))}
+          <div style={{ marginTop: “clamp(40px,4vw,96px)”, border: “1px solid var(--rs-line)”, borderRadius: “16px”, background: “var(--rs-bg)”, overflow: “hidden” }}>
+            <div className=”flex-between” style={{ gap: “12px”, padding: “18px var(--card-p)”, borderBottom: “1px solid var(--rs-line)” }}>
+              <span style={{ fontSize: “var(--fs-body)” }}>Governance Control Room · Workspace „Demo”</span>
+              <span className=”mono text-tertiary”>Beispielumgebung · Demo-Daten</span>
+            </div>
+            <div className=”grid-fit”>
+              {v.crKpis.map((kpi, kpiI) => (
+                <Fragment key={kpiI}>
+                  <div>
+                    <span className=”card-label”>{kpi.l}</span>
+                    <span style={kpi.style}>{kpi.v}</span>
+                  </div>
+                </Fragment>
+              ))}
             </div>
             <div style={{ padding: "8px var(--card-p) 12px" }}>
               <div style={{ padding: "14px 0", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>LETZTE POLICY-ENTSCHEIDUNGEN</div>
-              {v.decisions.map((d, dI) => (<Fragment key={dI}>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(80px,auto) minmax(0,1fr) auto", gap: "16px", alignItems: "center", padding: "14px 0", borderTop: "1px solid var(--rs-line)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
-                  <span style={{ color: "var(--rs-fg3)" }}>{d.t}</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ color: "var(--rs-fg)" }}>{d.agent}</span><span style={{ color: "var(--rs-fg3)" }}> · {d.action}</span></span>
-                  <span style={d.style}>{d.r}</span>
-                </div>
-              </Fragment>))}
+              {v.decisions.map((d, dI) => (
+                <Fragment key={dI}>
+                  <div className="mono" style={{ display: "grid", gridTemplateColumns: "minmax(80px,auto) minmax(0,1fr) auto", gap: "16px", alignItems: "center", padding: "14px 0", borderTop: "1px solid var(--rs-line)" }}>
+                    <span className="text-tertiary">{d.t}</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ color: "var(--rs-fg)" }}>{d.agent}</span>
+                      <span className="text-tertiary"> · {d.action}</span>
+                    </span>
+                    <span style={d.style}>{d.r}</span>
+                  </div>
+                </Fragment>
+              ))}
             </div>
           </div>
-          <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Beispielwerte zur Veranschaulichung, keine Kundendaten. Ihr eigener Control Room entsteht nach dem Login aus Ihren Systemen.</p>
+          <p className="text-tertiary" style={{ margin: "16px 0 0", fontSize: "var(--fs-small)" }}>Beispielwerte zur Veranschaulichung, keine Kundendaten. Ihr eigener Control Room entsteht nach dem Login aus Ihren Systemen.</p>
         </div>
       </section>
 
-      <section id="evidence" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+      <section id="evidence" className="section-alt">
+        <div className="section-content" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
           <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>EVIDENCE & TRUST</p>
-            <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Compliance, die sich <span style={{ color: "var(--rs-acc)" }}>beweisen lässt.</span></h2>
-            <p style={{ margin: "28px 0 0", maxWidth: "36em", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Technische Dokumentation</span><span style={{ color: "var(--rs-fg3)" }}>Anhang IV</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Automatische Protokollierung</span><span style={{ color: "var(--rs-fg3)" }}>Art. 12</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Menschliche Aufsicht</span><span style={{ color: "var(--rs-fg3)" }}>Art. 14</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Verzeichnis von Verarbeitungstätigkeiten</span><span style={{ color: "var(--rs-fg3)" }}>Art. 30 DSGVO</span></li>
+            <p className="section-kicker">EVIDENCE & TRUST</p>
+            <h2 className="section-heading">Compliance, die sich <span style={{ color: "var(--rs-acc)" }}>beweisen lässt.</span></h2>
+            <p className="section-lead" style={{ marginTop: "28px", maxWidth: "36em" }}>PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p>
+            <ul className="list-basic" style={{ marginTop: "36px" }}>
+              <li className="list-item">
+                <span>Technische Dokumentation</span>
+                <span className="text-tertiary">Anhang IV</span>
+              </li>
+              <li className="list-item">
+                <span>Automatische Protokollierung</span>
+                <span className="text-tertiary">Art. 12</span>
+              </li>
+              <li className="list-item">
+                <span>Menschliche Aufsicht</span>
+                <span className="text-tertiary">Art. 14</span>
+              </li>
+              <li className="list-item">
+                <span>Verzeichnis von Verarbeitungstätigkeiten</span>
+                <span className="text-tertiary">Art. 30 DSGVO</span>
+              </li>
             </ul>
-            <Link to={v.href.dashboard} style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Im Dashboard ansehen<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} className="btn-secondary" style={{ marginTop: "28px" }}>
+              Im Dashboard ansehen
+              {' '}
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </Link>
           </div>
           <div role="group" aria-label="Beispiel Hash-Chain" style={{ display: "flex", flexDirection: "column", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
             {v.chain.map((b, bI) => (<Fragment key={bI}>
@@ -260,16 +292,21 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </section>
 
-      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+      <section id="agenten" className="section-grid">
+        <div className="section-content" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
           <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
-            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
-            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
-                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
-              </Fragment>))}
+            <p className="section-kicker">AGENT GOVERNANCE</p>
+            <h2 className="section-heading" style={{ maxWidth: "22ch" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
+            <p className="section-lead">Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
+            <ul className="list-basic" style={{ marginTop: "36px" }}>
+              {v.agentNo.map((a, aI) => (
+                <Fragment key={aI}>
+                  <li className="list-item-secondary">
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="list-icon"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    <span><span className="text-tertiary">Ein Agent kann nicht </span>{a}</span>
+                  </li>
+                </Fragment>
+              ))}
             </ul>
           </div>
           <div role="group" aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
@@ -294,18 +331,18 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </section>
 
-      <section id="architektur" style={{ borderTop: "1px solid var(--rs-line)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "40px 80px", alignItems: "end" }}>
+      <section id="architektur" className="section">
+        <div className="section-content">
+          <div className="grid-2col" style={{ alignItems: "end" }}>
             <div>
-              <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>EU-NATIVE BY DESIGN</p>
-              <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Datenhaltung in Europa. Nachvollziehbar dokumentiert.</h2>
+              <p className="section-kicker">EU-NATIVE BY DESIGN</p>
+              <h2 className="section-heading">Datenhaltung in Europa. Nachvollziehbar dokumentiert.</h2>
             </div>
-            <p style={{ margin: "0", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Datenbank und Evidence Vault liegen in der EU – Supabase in Frankfurt am Main. Welche KI-Anbieter Daten erhalten, legen Sie per Policy fest; alle Sub-Prozessoren sind offen gelistet, mit Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.</p>
+            <p className="section-lead" style={{ margin: "0" }}>Datenbank und Evidence Vault liegen in der EU – Supabase in Frankfurt am Main. Welche KI-Anbieter Daten erhalten, legen Sie per Policy fest; alle Sub-Prozessoren sind offen gelistet, mit Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.</p>
           </div>
-          <dl style={{ margin: "clamp(48px,4.5vw,120px) 0 0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "16px" }}>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>EU-Datenhaltung</dt>
+          <dl className="grid-cards" style={{ marginTop: "clamp(48px,4.5vw,120px)" }}>
+            <div className="card">
+              <dt className="card-title">EU-Datenhaltung</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Policy-Entscheidungen, Prüfpfade und Nachweise werden in der EU gespeichert.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>

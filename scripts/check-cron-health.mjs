@@ -46,6 +46,8 @@
 // (Fork-PRs) wird sauber uebersprungen (Exit 0). API-/Netz-Fehler failen NICHT
 // hart (≠ Befund) — aber es gibt dann auch keinen gruenen Haken.
 
+import { formatBefundZeile } from './cron-befund.mjs';
+
 export const SQL = `
 WITH letzter AS (
   SELECT DISTINCT ON (d.jobid)
@@ -352,6 +354,34 @@ export function beschreibeStatus(status) {
   return /^\d+$/.test(s) ? `HTTP ${s}` : 'ohne Antwort (Zeitueberschreitung)';
 }
 
+/**
+ * Alle drei Befundklassen als Zeilen fuer `drift-alert.yml` (siehe
+ * scripts/cron-befund.mjs). Der Schluessel traegt, was einen Befund von einem
+ * anderen unterscheidet — Klasse, Status, Ursache, Jobnamen —, die Anzahl
+ * steht daneben und zaehlt fuer den Vergleich nicht.
+ */
+export function befundZeilen({ broken = [], veraltet = [], antwort = null }) {
+  const zeilen = [];
+  for (const [ursache, jobs] of groupByCause(broken)) {
+    zeilen.push({ schluessel: `A · letzter Lauf gescheitert · ${ursache} · ${[...jobs].sort().join(', ')}`, anzahl: null });
+  }
+  for (const r of veraltet) {
+    zeilen.push({ schluessel: `B · ueberfaellig · ${r.name}`, anzahl: null });
+  }
+  if (antwort) {
+    const nach = new Map();
+    for (const a of antwort.schlecht) {
+      const schluessel = `C · ${beschreibeStatus(a.status)} · ${antwortUrsache(a.beispiel)}`;
+      nach.set(schluessel, (nach.get(schluessel) ?? 0) + (a.anzahl ?? 0));
+    }
+    for (const [schluessel, anzahl] of nach) zeilen.push({ schluessel, anzahl });
+    if (antwort.ohneAntwort > 0) {
+      zeilen.push({ schluessel: 'C · Dispatch ohne jede Antwort', anzahl: antwort.ohneAntwort });
+    }
+  }
+  return zeilen;
+}
+
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────
 // Nur wenn direkt gestartet: der Test importiert evaluate/groupByCause.
 
@@ -504,5 +534,9 @@ if (direkt) {
     'Invariante: Jeder aktive produktive Cron-Job muss innerhalb seiner erwarteten\n' +
     'Kadenz tatsaechlich eine erfolgreiche Function-Ausfuehrung erzeugen.\n',
   );
+  // Maschinenlesbar fuer drift-alert.yml: Ursache und Wechsel im Issue.
+  for (const z of befundZeilen({ broken, veraltet, antwort })) {
+    console.error(formatBefundZeile(z));
+  }
   process.exit(ADVISORY ? 0 : 1);
 }

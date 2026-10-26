@@ -3,7 +3,7 @@
 // Ersetzt den Chat als Post-Login-Einstieg: Status-first, in 3 Sekunden
 // erfassbar. Nutzt ausschliesslich vorhandene, RLS-gescopte Count-Helfer —
 // keine erfundenen Daten. Kacheln verlinken in die bestehenden Views.
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
@@ -66,8 +66,6 @@ export function WorkspaceHome() {
     return () => sub?.unsubscribe();
   }, []);
 
-  const gate = useCallback(() => setAuthOpen(true), []);
-
   if (isAuth) {
     return (
       <AuthGate>
@@ -81,7 +79,7 @@ export function WorkspaceHome() {
   }
 
   return (
-    <WorkspaceShell title="Übersicht" onGate={gate}>
+    <WorkspaceShell title="Übersicht" onGate={() => setAuthOpen(true)}>
       <DemoInner onAuthOpen={() => setAuthOpen(true)} />
       {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
     </WorkspaceShell>

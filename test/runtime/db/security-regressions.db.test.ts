@@ -491,6 +491,13 @@ d('Aufruferbindung — onboarding_tenant_policy_packs und claim_gdpr_audit', () 
     const email = `claim_ok_${Date.now()}@example.com`;
     const A = await createTenantWithMember(ctx!, { userEmail: email });
     await ctx!.client.query(`UPDATE auth.users SET email_confirmed_at = now() WHERE id = $1`, [A.userId]);
+    // Der Signup-Trigger on_auth_user_created hat dem Nutzer schon einen
+    // eigenen Mandanten als owner angelegt. Mit zwei owner-Mitgliedschaften
+    // waehlt claim_gdpr_audit eine davon beliebig. Der Test braucht genau eine.
+    await ctx!.client.query(
+      `DELETE FROM public.memberships WHERE user_id = $1 AND tenant_id <> $2`,
+      [A.userId, A.tenantId],
+    );
     const auditId = await seedAudit(email);
 
     const { rows } = await ctx!.withClaims({ sub: A.userId }, () =>

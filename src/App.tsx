@@ -498,10 +498,12 @@ function RoutesWithTracking() {
       {/* 13.10.2026 (Owner): Landing v6 (Claude-Design „The Governance OS für DSGVO und
           EU AI Act", Inhalte an Pricing-SSoT/Beta/Implementierungsstatus angepasst) ist
           Startseite. v5 bleibt unverändert als Referenz/Rückfall unter /design/landing-v5. */}
-      <Route path="/" element={<LandingV6 />} />
-      {/* 25.10.2026: Design-Vorschau Titan/Nacht (Artefakt „AI Compliance Operations OS
-          for Europe"), Inhalte aus SSoT/Registry — nicht die Startseite. */}
+      {/* 26.10.2026 (Owner): Landing v7 (Artefakt „AI Compliance Operations OS for Europe",
+          Titan/Nacht, Inhalte aus SSoT/Registry) ist Startseite. v6 bleibt als Referenz/Rückfall
+          unter /design/landing-v6; /design/landing-v7 bleibt für bereits geteilte Vorschau-Links. */}
+      <Route path="/" element={<LandingV7 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />

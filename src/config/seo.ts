@@ -292,9 +292,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
   '/design/landing-v7': {
-    title: 'RealSync Dynamics AI – Landing v7 (Design-Vorschau)',
+    title: 'RealSync Dynamics AI – Landing v7 (Vorschau-Link)',
     description:
-      'Design-Vorschau „AI Compliance Operations OS for Europe“ mit Titan- und Nacht-Darstellung. Kanonisch ist /.',
+      'Vorschau-Link der Startseite „AI Compliance Operations OS for Europe“ (Titan/Nacht). Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/landing-v6': {
+    title: 'RealSync Dynamics AI – Landing v6 (Design-Referenz)',
+    description:
+      'Design-Referenz der früheren Startseite „The Governance OS für DSGVO und EU AI Act“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

@@ -39,10 +39,21 @@ const mount = (path = '/design/landing-v7') =>
 
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 
-it('is routed as design preview; / stays Landing v6', () => {
+it('is the start page; v6 stays reachable as reference', () => {
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
-  expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
+  expect(app).toMatch(/path="\/"\s+element=\{<LandingV7/);
   expect(app).toMatch(/path="\/design\/landing-v7" element=\{<LandingV7 \/>\}/);
+  expect(app).toMatch(/path="\/design\/landing-v6" element=\{<LandingV6 \/>\}/);
+});
+
+it('has one H1 with spaced words and the registry CTA label', () => {
+  mount('/');
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('AI Compliance Operations OS for Europe');
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  // Footer-Links wie auf v6 (E2E FE-004 prüft /impressum und /datenschutz).
+  const footer = within(document.querySelector('footer') as HTMLElement);
+  expect(footer.getByRole('link', { name: 'Impressum' })).toHaveAttribute('href', '/impressum');
+  expect(footer.getByRole('link', { name: 'Datenschutz' })).toHaveAttribute('href', '/datenschutz');
 });
 
 it('prices plans from the SSoT and respects the beta offer', () => {

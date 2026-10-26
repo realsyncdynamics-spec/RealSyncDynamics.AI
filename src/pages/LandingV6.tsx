@@ -6,7 +6,8 @@ import { useLandingV6 } from '../components/landing/v6/useLandingV6';
 import '../styles/landing-v6.css';
 
 /**
- * Landing v6 — Startseite `/` (Owner-Freigabe 13.10.2026).
+ * Landing v6 — bis 26.10.2026 Startseite `/`, seitdem Referenz/Rückfall unter
+ * /design/landing-v6 (Startseite ist Landing v7).
  *
  * Design: Claude-Design-Handoff „The Governance OS für DSGVO und EU AI Act".
  * Inhalte an Pricing-SSoT, Beta-Schalter und Implementierungsstatus angepasst

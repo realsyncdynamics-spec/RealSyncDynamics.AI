@@ -45,6 +45,9 @@ export const HREF = {
   enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`,
 } as const;
 
+/** Primär-CTA zum kostenlosen Scan — Beschriftung aus dem Registry wie auf v6. */
+export const AUDIT_CTA = getImplementation('free-audit')?.ctaLabel ?? CTA.startFreeAudit;
+
 /** Kreislauf aus dem Hero: Discover → Classify → Enforce → Prove. */
 export const FLOW = ['DISCOVER', 'CLASSIFY', 'ENFORCE', 'PROVE'] as const;
 

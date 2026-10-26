@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { CTA } from '../../../content/runtimeVocab';
 import { EuropeMapCanvas, type Lv7Theme } from './EuropeMapCanvas';
 import {
+  AUDIT_CTA,
   DEMO_KPIS,
   enterpriseContent,
   EVIDENCE,
@@ -73,7 +74,7 @@ export function LandingV7View({ theme, onTheme }: { theme: Lv7Theme; onTheme: (t
           <div className="lv7-hero-shade" aria-hidden="true" />
           <div className="lv7-hero-copy">
             <h1 id="lv7-h1">
-              <span className="lv7-l lv7-t">AI Compliance</span>
+              <span className="lv7-l lv7-t">AI Compliance</span>{' '}
               <span className="lv7-l">
                 <span className="lv7-t">Operations OS </span>
                 <span className="lv7-e">for Europe</span>
@@ -131,7 +132,7 @@ export function LandingV7View({ theme, onTheme }: { theme: Lv7Theme; onTheme: (t
                 </p>
                 <div className="lv7-cta-row lv7-cta-hero">
                   <Link className="lv7-cta2 lv7-cyan" to={HREF.audit}>
-                    {CTA.startFreeAudit} <Arrow />
+                    {AUDIT_CTA} <Arrow />
                   </Link>
                   <Link className="lv7-cta2 lv7-ghost-cyan" to={HREF.dashboard}>
                     {CTA.openDashboard}
@@ -438,10 +439,12 @@ export function LandingV7View({ theme, onTheme }: { theme: Lv7Theme; onTheme: (t
             © {new Date().getFullYear()} RealSync Dynamics AI · Made in Thüringen · EU-native by design · Datenverkehr stilisiert
           </span>
           <nav aria-label="Rechtliches">
-            <Link to="/legal/impressum">Impressum</Link>
-            <Link to="/legal/privacy">Datenschutz</Link>
+            <Link to="/impressum">Impressum</Link>
+            <Link to="/datenschutz">Datenschutz</Link>
             <Link to="/agb">AGB</Link>
+            <Link to="/legal/widerruf">Widerruf</Link>
             <Link to="/legal/sub-processors">Sub-Prozessoren</Link>
+            <Link to="/kontakt">Kontakt</Link>
           </nav>
         </div>
       </footer>

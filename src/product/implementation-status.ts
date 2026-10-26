@@ -56,6 +56,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/components/landing/v6/LandingV6View.tsx',
       'src/components/landing/v6/useLandingV6.ts',
       'src/styles/landing-v6.css',
+      'src/styles/landing-v6-components.css',
       'public/landing-v6/europe-network.webp',
       'src/App.tsx#/',
       'test/landing/landing-v6-funnel.test.tsx',

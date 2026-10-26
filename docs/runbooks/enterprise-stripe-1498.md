@@ -42,11 +42,11 @@ product         == <verifizierte prod_…>
 
 ## Code nach Verifikation
 
-1. **Migration anlegen:** `docs/runbooks/enterprise-stripe-1498.template.sql`
-   als neue Datei nach `supabase/migrations/` kopieren.
+1. **Migration anlegen:** `docs/runbooks/enterprise-stripe-1498.migration.sql.template`
+   nach `supabase/migrations/<Timestamp>_enterprise_stripe_price_1498.sql` kopieren.
    - Zeitstempel nach der letzten Migration auf `main` wählen.
      `npm run check:migration-collisions` darf keine Kollision mit offenen PRs melden.
-   - `price_ERSETZEN` durch die verifizierte Live-Price-ID ersetzen.
+   - `price_REPLACE_ME` durch die verifizierte Live-Price-ID ersetzen.
    - Die Vorlage stellt **in place** um (wie `20261020130000`). Die
      `products`-Zeile behält ihre `id` und damit alle `product_entitlements`.
      Eine neue Zeile hätte keine Kontingente.
@@ -54,7 +54,8 @@ product         == <verifizierte prod_…>
      neuem Namen übrig bleibt. Das gilt auch bei Wiederholung.
    - Solange die Datei nur Vorlage ist, liegt sie bewusst **nicht** unter
      `supabase/migrations/`. `deploy.yml` wendet Migrationen nach dem Merge an,
-     und eine absichtlich abbrechende Migration würde jeden Deploy blockieren.
+     und `Migration validation` spielt jede Datei dort ein. Mit dem Platzhalter
+     bricht die Vorlage ab und würde CI und Deploy blockieren.
 2. **Erwartetes Stripe-Produkt eintragen:**
    `supabase/functions/stripe-checkout/price-match.ts`
    - `PLAN_STRIPE_EXPECTATIONS.enterprise.productId.live` auf die verifizierte Product-ID setzen.

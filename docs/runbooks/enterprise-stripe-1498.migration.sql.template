@@ -1,4 +1,4 @@
--- VORLAGE, KEINE MIGRATION. Erst nach Stripe-Verifikation (siehe
+-- VORLAGE, KEINE MIGRATION (PR #1995). Erst nach Stripe-Verifikation (siehe
 -- enterprise-stripe-1498.md) als neue Datei unter supabase/migrations/
 -- anlegen: Zeitstempel nach der letzten Migration auf main und ohne
 -- Kollision mit offenen PRs (`npm run check:migration-collisions`).
@@ -23,11 +23,12 @@
 DO $$
 DECLARE
   v_old  CONSTANT text := 'price_1USabSREjTWueUcGzUEzTaie';
-  v_new  CONSTANT text := 'price_ERSETZEN';  -- verifizierte Live-Price-ID
+  v_new  CONSTANT text := 'price_REPLACE_ME';  -- verifizierte Live-Price-ID
   v_name CONSTANT text := 'Enterprise (Self-Service-Checkout · 1.498 € / Monat netto)';
   v_rows int;
 BEGIN
-  IF v_new !~ '^price_[A-Za-z0-9]+$' OR v_new = 'price_ERSETZEN' THEN
+  -- Platzhalter-Erkennung ohne das Wort selbst: übersteht Suchen/Ersetzen.
+  IF v_new !~ '^price_[A-Za-z0-9]+$' OR strpos(v_new, 'REPLACE' || '_ME') > 0 THEN
     RAISE EXCEPTION 'Vorlage nicht ausgefüllt: v_new ist keine verifizierte Price-ID (%)', v_new;
   END IF;
 

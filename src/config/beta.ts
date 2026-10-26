@@ -61,3 +61,37 @@ export function betaSignupHref(plan: string = BETA.testPlan, source = 'beta'): s
   const q = new URLSearchParams({ beta: '1', plan, source, next });
   return `/welcome?${q.toString()}`;
 }
+
+/** Ein Meilenstein der Beta-Phase — Datum und Beschriftung. */
+export interface BetaMilestone {
+  /** Anzeigedatum (kein ISO-Datum, kein Versprechen). */
+  date: string;
+  label: string;
+}
+
+/**
+ * Öffentliche Meilensteine der Beta. Kein exaktes Datum, kein Commit.
+ * Gelesen von /roadmap — eine Quelle für beide Seiten.
+ */
+export const BETA_MILESTONES: readonly BetaMilestone[] = [
+  {
+    date: 'Oktober 2026',
+    label: 'Beta-Start: alle Funktionen kostenlos testen — kein Zeitdruck.',
+  },
+  {
+    date: 'November 2026',
+    label: 'Feedback-Runde 1 — Website-Scan, DSGVO-Audit, Evidence-Kette.',
+  },
+  {
+    date: 'Dezember 2026',
+    label: 'Feedback-Runde 2 — AI-OS-Setup, Governance Workspace, Agenten-Register.',
+  },
+  {
+    date: 'Januar 2027',
+    label: `Letzter Beta-Monat — Ende ${BETA.endsLabel}.`,
+  },
+  {
+    date: 'Ab Februar 2027',
+    label: 'Reguläre Preise: Starter 79 €, Growth 249 €, Agency 699 € / Monat.',
+  },
+] as const;

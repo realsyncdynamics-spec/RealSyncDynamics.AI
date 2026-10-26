@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut, ShieldCheck } from 'lucide-react';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut, ShieldCheck, Globe } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { LangToggle } from '../handoff/LangToggle';
@@ -14,6 +14,10 @@ interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
   onToggleMobile: () => void;
   onOpenAssistant: () => void;
+  /** Zustand der ausklappbaren Panels rechts (für aria-expanded). */
+  assistantOpen?: boolean;
+  browserAgentOpen?: boolean;
+  onToggleBrowserAgent?: () => void;
   onOpenCommandCenter: () => void;
   onLoadUrl: (url: string) => void;
   activeEmbedUrl?: string;
@@ -23,7 +27,8 @@ interface BrowserTopBarProps {
  * Kopfzeile der App — Handoff v2 §5 (56px, Titel 15px Inter Tight + Sub 13px).
  *
  * Rechts: Command Center (⌘K), Landing · Preise, DE/EN, „EU · Frankfurt"
- * (Supabase-Region eu-central-1), Avatar mit Initialen des echten Nutzers.
+ * (Supabase-Region eu-central-1), die ausklappbaren Panels Assistent und
+ * Browser-Agent, Avatar mit Initialen des echten Nutzers.
  * „RUNTIME LIVE" aus dem Entwurf fehlt bewusst: Es gibt keinen Laufzeit-
  * Status, der diese Aussage deckt. „Login" entfällt, weil hier nur
  * angemeldete Nutzer landen — an seiner Stelle steht „Abmelden".
@@ -32,6 +37,9 @@ export function BrowserTopBar({
   mobileMenuOpen,
   onToggleMobile,
   onOpenAssistant,
+  assistantOpen = false,
+  browserAgentOpen = false,
+  onToggleBrowserAgent,
   onOpenCommandCenter,
   onLoadUrl,
   activeEmbedUrl,
@@ -121,10 +129,32 @@ export function BrowserTopBar({
           <LangToggle />
         </span>
         <span className="rs-region hidden lg:inline-flex">{t('shellRegion')}</span>
-        <button type="button" onClick={onOpenAssistant} className="rs-chip-sm">
+        {/* Rechts oben zum Ausklappen: Assistent und Browser-Agent — immer nur
+            eines offen (GovernanceBrowserShell). */}
+        <button
+          type="button"
+          onClick={onOpenAssistant}
+          className="rs-chip-sm"
+          aria-expanded={assistantOpen}
+          aria-label={t('shellAssistant')}
+        >
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">{t('shellAssistant')}</span>
         </button>
+        {onToggleBrowserAgent && (
+          <button
+            type="button"
+            onClick={onToggleBrowserAgent}
+            className="rs-chip-sm"
+            aria-expanded={browserAgentOpen}
+            aria-controls={browserAgentOpen ? 'browser-agent-drawer' : undefined}
+            aria-label={t('shellBrowserAgent')}
+            data-testid="topbar-browser-agent"
+          >
+            <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">{t('shellBrowserAgent')}</span>
+          </button>
+        )}
         {isAuthenticated && (
           <button
             type="button"

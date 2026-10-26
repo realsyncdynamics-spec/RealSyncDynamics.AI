@@ -124,6 +124,14 @@ const FORBIDDEN_CLIENT = [
   // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
   'marketing_consent_before_insert',
   'marketing_consent_before_update',
+  // Browser-Freigaben (20260930190000, #1728): Einmal-Verbrauch. Client-
+  // aufrufbar waere das ein Freigabe-Bypass — nur browser-execute.
+  'reserve_browser_execution',
+  'finish_browser_execution',
+  // Browser-Runtime (20261026171722): Entscheidung + Evidence atomar, nur
+  // service_role; Session-Limit als Trigger.
+  'decide_governance_approval',
+  'browser_sessions_enforce_open_limit',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

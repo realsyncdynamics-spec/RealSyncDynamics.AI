@@ -118,12 +118,6 @@ const FORBIDDEN_CLIENT = [
   'ai_evidence_purge_expired',
   // Gate 2 (20260928140100): schreibt in die Evidence-Kette, nur service_role.
   'append_governance_evidence',
-  // 20261020090000: erzeugt API-Schluessel fuer beliebige p_tenant_id ohne
-  // Mitgliedschaftspruefung. Kein Client-Aufrufer, nur service_role.
-  'create_api_key',
-  // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
-  'marketing_consent_before_insert',
-  'marketing_consent_before_update',
   // Browser-Freigaben (20260930190000, #1728): Einmal-Verbrauch. Client-
   // aufrufbar waere das ein Freigabe-Bypass — nur browser-execute.
   'reserve_browser_execution',
@@ -132,6 +126,12 @@ const FORBIDDEN_CLIENT = [
   // service_role; Session-Limit als Trigger.
   'decide_governance_approval',
   'browser_sessions_enforce_open_limit',
+  // 20261020090000: erzeugt API-Schluessel fuer beliebige p_tenant_id ohne
+  // Mitgliedschaftspruefung. Kein Client-Aufrufer, nur service_role.
+  'create_api_key',
+  // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
+  'marketing_consent_before_insert',
+  'marketing_consent_before_update',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

@@ -55,7 +55,7 @@ Dateien: `/app/dashboard` → `DashboardRouter` (per grep lokalisieren), `script
 
 **Umsetzung (PR „Dashboard echt: Beta-Feedback“), Stand gegen den Plan:**
 - Geführter Erststart und ehrliche Kacheln: bereits durch #1894 (`CustomerStartPanel`, `startPanelModel.ts`). Kachel-Prüfung ohne Befund: keine statischen Werte im Dashboard.
-- Feedback: Migration `20261025140000_beta_feedback.sql` (additiv, Einzel-Freigabe). Schreiben nur Mitglieder als sie selbst, Lesen eigene Einträge, alle nur `is_platform_operator()`. Formular `BetaFeedback` in der Startansicht und im Beta-Hinweis; Route ohne Query/Hash. Admin-Ansicht `/admin/beta-feedback`.
+- Feedback: Migration `20261026153000_beta_feedback.sql` (additiv, Einzel-Freigabe). Schreiben nur Mitglieder als sie selbst, Lesen eigene Einträge, alle nur `is_platform_operator()`. Formular `BetaFeedback` in der Startansicht und im Beta-Hinweis; Route ohne Query/Hash. Admin-Ansicht `/admin/beta-feedback`.
 - Beispieldaten: erledigt durch #1990 als feste Beispielansicht unter `/app/beispiel` (liest und schreibt nichts in der Datenbank). Bewusst weder Daten im Kundenmandanten noch ein zweiter Mandant pro Nutzer.
 
 ## WP-5 — Agent-Credits (Abrechnung agentischer Aktionen)

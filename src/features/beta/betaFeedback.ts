@@ -1,6 +1,6 @@
 // Beta-Feedback aus der App (WP-4, docs/claude/BETA_V5_WORKPLAN.md).
 //
-// Schreibt direkt in `beta_feedback` (Migration 20261025140000). Die
+// Schreibt direkt in `beta_feedback` (Migration 20261026153000). Die
 // Datenbank prüft per RLS, dass der Nutzer Mitglied des Mandanten ist und nur
 // als er selbst schreibt; `user_id` setzt der Spalten-Default `auth.uid()`.
 // Diese Datei ist der einzige Zugriffspunkt der App auf die Tabelle.

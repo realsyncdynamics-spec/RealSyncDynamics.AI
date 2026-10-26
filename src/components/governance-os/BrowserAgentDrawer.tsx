@@ -18,9 +18,15 @@ const BrowserRuntimePanel = lazy(() =>
  * — kein zweiter Agent, nur ein schneller Zugang von jeder /app-Seite.
  */
 export function BrowserAgentDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // Mandant erst im geöffneten Zustand lesen: Die Shell rendert den Drawer
+  // immer mit, auch dort, wo (noch) kein TenantProvider darüber liegt.
+  if (!open) return null;
+  return <BrowserAgentDrawerPanel onClose={onClose} />;
+}
+
+function BrowserAgentDrawerPanel({ onClose }: { onClose: () => void }) {
   const { activeTenantId } = useTenant();
   const { t } = useLang();
-  if (!open) return null;
   return (
     <aside id="browser-agent-drawer" className="rs-browser-drawer" aria-label={t('browserAgentTitle')} data-testid="browser-agent-drawer">
       <div className="rs-browser-drawer__head">

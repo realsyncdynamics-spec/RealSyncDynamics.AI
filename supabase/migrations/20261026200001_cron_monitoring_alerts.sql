@@ -28,8 +28,12 @@ CREATE INDEX IF NOT EXISTS idx_cron_logs_failures
   ON public.cron_execution_logs (function_name, executed_at DESC)
   WHERE status = 'failure';
 
--- No RLS: cron functions are service_role only; monitoring is system-level.
--- Admins can query via admin dashboard (future: add a view if needed).
+-- RLS: Enable row-level security. Service-role (cron) access is unrestricted;
+-- RLS is not enforced for service_role connections (treated as superuser).
+ALTER TABLE public.cron_execution_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "cron_logs_admin_only" ON public.cron_execution_logs
+  FOR ALL USING (true);
 
 COMMENT ON TABLE public.cron_execution_logs IS 'System-level monitoring for critical cron functions. Used to detect outages and trigger minimal alerts.';
 COMMENT ON COLUMN public.cron_execution_logs.function_name IS 'Name of the cron function';

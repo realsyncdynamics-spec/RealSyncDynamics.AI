@@ -384,12 +384,118 @@ const sdk = new RealSyncDynamicsSDK({
 });
 ```
 
+## Examples
+
+### Node.js Example
+```typescript
+import { RealSyncDynamicsSDK } from '@realsyncdynamics/sdk';
+
+const sdk = new RealSyncDynamicsSDK({
+  apiKey: process.env.REALSYNCDYNAMICS_API_KEY,
+});
+
+// Get compliance dashboard
+const dashboard = await sdk.getDashboardSummary('tenant-123');
+console.log(`Compliance: ${dashboard.compliance_score?.score_overall}/100`);
+
+// Create alert rule
+const rule = await sdk.createAlertRule('tenant-123', {
+  rule_name: 'Critical Risk Alert',
+  trigger_event: 'risk_detected',
+  severity_threshold: 'critical',
+  enabled: true,
+  actions: [
+    { action: 'alert_email', recipients: ['admin@example.com'] },
+  ],
+});
+
+// Subscribe to webhooks
+const subscription = await sdk.subscribeToWebhook('tenant-123', {
+  url: 'https://your-api.example.com/webhooks/compliance',
+  events: ['risk.detected', 'audit.completed'],
+});
+```
+
+See [examples/](./examples/) directory for complete examples in Node.js and React.
+
+## Development
+
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+
+### Setup
+```bash
+npm install
+```
+
+### Build
+```bash
+npm run build
+```
+
+This produces three output formats:
+- **CommonJS** - `dist/cjs/` (Node.js)
+- **ESM** - `dist/esm/` (Browsers, bundlers)
+- **Types** - `dist/index.d.ts` (TypeScript)
+
+### Test
+```bash
+npm test
+```
+
+### Lint
+```bash
+npm run lint
+```
+
+### Release & Publishing
+
+#### Manual Publishing
+```bash
+# Build first
+npm run build
+
+# Test the package locally
+npm link
+
+# Then in another project
+npm link @realsyncdynamics/sdk
+
+# When ready, publish to npm
+npm publish --access public
+```
+
+#### Automated Publishing (GitHub Actions)
+1. Create a git tag: `git tag sdk-v1.0.0`
+2. Push the tag: `git push origin sdk-v1.0.0`
+3. GitHub Actions automatically:
+   - Builds and tests
+   - Publishes to npm
+   - Creates GitHub Release
+
+**Prerequisites:**
+- Set `NPM_TOKEN` secret in GitHub repository settings
+- npm token should have publish permissions for @realsyncdynamics/sdk
+
 ## Support
 
 - **Documentation**: https://docs.realsyncdynamicsai.de
 - **API Reference**: https://api-docs.realsyncdynamicsai.de
+- **Examples**: See [examples/](./examples/) directory
 - **Issues**: https://github.com/realsyncdynamics/sdk-ts/issues
 - **Email**: support@realsyncdynamicsai.de
+
+## Changelog
+
+### v1.0.0 (Current)
+- Initial release
+- Full API coverage for dashboard, risks, insights, KPIs
+- Alert rules and webhook management
+- Branding configuration
+- C2PA manifest generation
+- Comprehensive TypeScript types
+- Node.js and React examples
 
 ## License
 

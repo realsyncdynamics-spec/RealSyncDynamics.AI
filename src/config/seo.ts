@@ -275,13 +275,13 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    title: 'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'DSGVO und EU AI Act für KMU: kostenloser Website-Check, KI-Inventar und prüffähige Nachweise – verständlich erklärt, gehostet in Frankfurt.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'DSGVO & EU AI Act – machbar für Ihr Unternehmen',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'Für KMU: Website- und KI-Risiken erkennen, konkrete Maßnahmen umsetzen und prüffähig nachweisen – ohne eigene Compliance-Abteilung, betrieben in der EU.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
@@ -301,7 +301,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/design/landing-v6': {
     title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
     description:
-      'Gleiche Seite wie die Startseite „The Governance OS für DSGVO und EU AI Act“. Kanonisch ist /.',
+      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

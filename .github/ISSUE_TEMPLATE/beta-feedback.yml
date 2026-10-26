@@ -1,0 +1,78 @@
+name: Beta feedback (internal triage)
+description: Turn an entry from /admin/beta-feedback into a tracked item. Internal team use only.
+title: "[Beta-Feedback]: "
+labels: ["beta", "beta-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Internal triage of tester feedback from the `beta_feedback` table (admin view `/admin/beta-feedback`).
+        Reference the entry by its id and route only. Do not copy tenant names, e-mail addresses or other personal data into this issue.
+
+  - type: input
+    id: feedback_id
+    attributes:
+      label: Feedback entry
+      description: Id and created_at of the beta_feedback row.
+      placeholder: "a1b2c3d4-… · 2026-10-26 14:05"
+    validations:
+      required: true
+
+  - type: input
+    id: route
+    attributes:
+      label: Route
+      description: The route stored with the entry (stored without query or hash).
+      placeholder: "/app/dashboard"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Bug / defect
+        - Unclear UI or wording
+        - Missing feature
+        - Performance
+        - Praise / no action
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary of the feedback
+      description: Paraphrase what the tester reported. Quote only if the text contains no personal data.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Triage priority
+      options:
+        - Low - nice to have
+        - Medium - affects several testers or a core flow
+        - High - blocks a core flow
+        - Critical - security, tenant isolation or data integrity
+    validations:
+      required: true
+
+  - type: textarea
+    id: next_step
+    attributes:
+      label: Proposed next step
+      description: Fix, clarify with tester, add to roadmap, or close as won't fix.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Triage checks
+      options:
+        - label: I removed tenant names, e-mail addresses and other personal data.
+          required: true
+        - label: I searched existing beta-feedback issues for the same topic.
+          required: true

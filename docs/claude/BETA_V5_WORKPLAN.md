@@ -75,6 +75,12 @@ Basis vorhanden: `token_tracking`, `tenant_cost_ledger`, `agent_runs_metering`, 
 - Preview-Deploy pro PR (Cloudflare Pages Preview, bestehender Workflow `deploy-cloudflare-pages.yml`) + Lighthouse (bestehend).
 - Branch-Ziel ≤ 7 offene Branches/PRs bleibt.
 
+**Umsetzung (PR „WP-6 GitHub-Infra“), Stand gegen den Plan:**
+- Issue-Form `beta-feedback.yml` angelegt (Verweis nur über Eintrags-ID und Route, keine personenbezogenen Daten).
+- Kein eigener Job „landing-v5“: `tsc` läuft in `gates`, `test/landing` in `unit` (`npm test`), `check-landing-claims` in `cta-enforcement.yml` bei Änderungen an `src/pages`/`src/components`. Ein Zusatzjob wäre doppelt.
+- Preview-Deploy und Lighthouse laufen bereits pro PR.
+- Labels nicht angelegt (Repo-Einstellung, eigene Freigabe). Die Form setzt `beta`/`beta-feedback`, sobald es sie gibt.
+
 ## WP-7 — Roadmap-Seite & Pricing-Seite auf Beta
 
 - `/roadmap`: Beta-Meilensteine (Start, Feedback-Runden, Ende 31.01.2027, Preise ab Feb. 2027) aus einer Konstante in `src/config/beta.ts`.

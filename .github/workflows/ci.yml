@@ -308,7 +308,7 @@ jobs:
           ALTER DEFAULT PRIVILEGES IN SCHEMA public
             GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated, service_role;
           CREATE SCHEMA IF NOT EXISTS auth;
-          CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
+          CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, email_confirmed_at TIMESTAMPTZ, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
           -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht konstant
           -- antworten. Der vorherige Stub lieferte hart NULL::uuid. Damit waere
           -- is_tenant_member() immer false, jede RLS-Policy haette immer

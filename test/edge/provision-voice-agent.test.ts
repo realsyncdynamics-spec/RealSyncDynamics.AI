@@ -13,6 +13,7 @@ import {
   planEnqueue,
   readVoiceEntitlements,
   safeError,
+  settledRowIsStale,
   type AgentPlatformSettings,
   type VoiceEntitlements,
 } from '../../supabase/functions/_shared/voice-agent-provisioning';
@@ -25,6 +26,7 @@ import {
 import {
   handleProvisionVoiceAgent,
   type AgentPatch,
+  type FinishRun,
   type HandlerDeps,
   type ProvisionRepo,
   type VoiceAgentRow,
@@ -60,16 +62,42 @@ describe('Regeln', () => {
     expect(dailyCallLimit(null)).toBeNull();
   });
 
-  it('reiht nur echte Wechsel und gescheiterte Zeilen ein', () => {
-    expect(planEnqueue(null, 'active')).toEqual({ action: 'insert', desired: 'active' });
-    expect(planEnqueue(null, 'suspended')).toEqual({ action: 'none' });
-    expect(planEnqueue({ desired_state: 'active', status: 'active' }, 'active')).toEqual({ action: 'none' });
-    expect(planEnqueue({ desired_state: 'active', status: 'active' }, 'suspended'))
+  it('reiht nur echte Wechsel, gescheiterte Zeilen und geänderte Minuten ein', () => {
+    const on = { voice: true, monthlyMinutes: 500 };
+    const off = { voice: false, monthlyMinutes: null };
+    const applied = { monthly_minutes: 500, daily_limit: 5 };
+    expect(planEnqueue(null, on)).toEqual({ action: 'insert', desired: 'active' });
+    expect(planEnqueue(null, off)).toEqual({ action: 'none' });
+    expect(planEnqueue({ desired_state: 'active', status: 'active', config_snapshot: applied }, on)).toEqual({ action: 'none' });
+    expect(planEnqueue({ desired_state: 'active', status: 'active', config_snapshot: applied }, off))
       .toEqual({ action: 'update', desired: 'suspended' });
-    expect(planEnqueue({ desired_state: 'suspended', status: 'suspended' }, 'active'))
+    expect(planEnqueue({ desired_state: 'suspended', status: 'suspended' }, on))
       .toEqual({ action: 'update', desired: 'active' });
-    expect(planEnqueue({ desired_state: 'active', status: 'failed' }, 'active'))
+    expect(planEnqueue({ desired_state: 'active', status: 'failed' }, on))
       .toEqual({ action: 'update', desired: 'active' });
+    // Befund 4: Plan-Wechsel mit anderem Minutenkontingent, bots.voice bleibt.
+    expect(planEnqueue({ desired_state: 'active', status: 'active', config_snapshot: applied }, { voice: true, monthlyMinutes: null }))
+      .toEqual({ action: 'update', desired: 'active' });
+    expect(planEnqueue({ desired_state: 'active', status: 'active', config_snapshot: applied }, { voice: true, monthlyMinutes: 2500 }))
+      .toEqual({ action: 'update', desired: 'active' });
+    // Läuft gerade oder wartet: der Worker liest die Entitlements ohnehin frisch.
+    expect(planEnqueue({ desired_state: 'active', status: 'pending' }, { voice: true, monthlyMinutes: 2500 }))
+      .toEqual({ action: 'none' });
+  });
+
+  it('Reconcile erkennt abgeschlossene Zeilen, die nicht mehr passen', () => {
+    const applied = { monthly_minutes: 500, daily_limit: 5 };
+    const on = { voice: true, monthlyMinutes: 500 };
+    expect(settledRowIsStale({ status: 'active', config_snapshot: applied }, on, 3)).toBe(false);
+    // Befund 2: Grant abgelaufen, kein Stripe-Ereignis.
+    expect(settledRowIsStale({ status: 'active', config_snapshot: applied }, { voice: false, monthlyMinutes: null }, 3)).toBe(true);
+    expect(settledRowIsStale({ status: 'suspended', config_snapshot: applied }, on, 3)).toBe(true);
+    expect(settledRowIsStale({ status: 'suspended', config_snapshot: applied }, { voice: false, monthlyMinutes: null }, 3)).toBe(false);
+    expect(settledRowIsStale({ status: 'active', config_snapshot: applied }, { voice: true, monthlyMinutes: 2500 }, 3)).toBe(true);
+    // Geänderte Annahme VOICE_AVG_CALL_MINUTES → anderes Tageslimit.
+    expect(settledRowIsStale({ status: 'active', config_snapshot: applied }, on, 2)).toBe(true);
+    // Alt-Zeile ohne Snapshot wird einmal nachgezogen.
+    expect(settledRowIsStale({ status: 'active', config_snapshot: {} }, on, 3)).toBe(true);
   });
 
   it('Read-back-Garantien: Auth, keine Aufzeichnung, Aufbewahrung ≤ 7 Tage, Tageslimit', () => {
@@ -152,9 +180,12 @@ interface World {
   bots: Map<string, { enabled: boolean; config: Record<string, unknown> }>;
   evidence: Array<Record<string, unknown>>;
   provider: FakeProvider;
-  /** Simuliert den Webhook, der während eines Laufs neu einreiht. */
+  /** Simuliert den Webhook / einen zweiten Lauf, der vor dem Abschluss dazwischenkommt. */
   onBeforeFinish?: (row: VoiceAgentRow) => void;
   failBotInsert?: string;
+  /** Simuliert einen Kettenkopf, der sich bei jedem Abschluss bewegt. */
+  evidenceAlwaysConflicts?: boolean;
+  finishCalls: FinishRun[];
 }
 
 /** Ausgelesene Vorlage agent_4801m4z42njceeqb9svq930eg42f, Stand 2026-10-15 (read-only). */
@@ -204,6 +235,7 @@ function row(over: Partial<VoiceAgentRow> = {}): VoiceAgentRow {
     id: 'row-1', tenant_id: TENANT, bot_id: null, provider: 'elevenlabs',
     provider_agent_id: null, template_agent_id: null, desired_state: 'active', status: 'pending',
     stripe_subscription_id: 'sub_1', last_stripe_event_id: 'evt_1', attempts: 0, last_error: null, claimed_at: null,
+    config_snapshot: {},
     ...over,
   };
 }
@@ -226,13 +258,41 @@ function makeRepo(w: World): ProvisionRepo {
       return { ...cur };
     },
     async update(id, patch) { Object.assign(find(id), patch); },
-    async finish(id, claimedAt, patch) {
-      const cur = find(id);
+    // Gleiche Semantik wie finish_tenant_voice_agent(): alles oder nichts.
+    async finishRun(input) {
+      w.finishCalls.push(input);
+      const cur = find(input.id);
       w.onBeforeFinish?.(cur);
-      if (cur.status !== 'provisioning' || cur.claimed_at !== claimedAt) return false;
-      Object.assign(cur, patch);
-      return true;
+      if (cur.status !== 'provisioning' || cur.claimed_at !== input.claimedAt) return 'lost_claim';
+      if (input.evidence) {
+        const head = (w.evidence.at(-1)?.content_hash as string | undefined) ?? null;
+        if (w.evidenceAlwaysConflicts || head !== input.expectedPreviousHash) return 'evidence_conflict';
+        w.evidence.push(input.evidence);
+      }
+      if (cur.bot_id && input.botEnabled !== null) {
+        const bot = w.bots.get(cur.bot_id)!;
+        w.bots.set(cur.bot_id, { enabled: input.botEnabled, config: input.botConfig ?? bot.config });
+      }
+      Object.assign(cur, {
+        status: input.status,
+        config_snapshot: input.configSnapshot ?? cur.config_snapshot,
+        last_error: input.lastError,
+        claimed_at: null,
+        attempts: input.status === 'failed' ? cur.attempts : 0,
+        reconciled: true,
+      });
+      return 'ok';
     },
+    async listSettled() {
+      return w.rows.filter((r) => r.status === 'active' || r.status === 'suspended').map((r) => ({ ...r }));
+    },
+    async requeue(r) {
+      const cur = find(r.id);
+      if (cur.status !== r.status) return null;
+      Object.assign(cur, { status: 'pending', attempts: 0, last_error: null, claimed_at: null });
+      return { ...cur };
+    },
+    async markReconciled(id) { Object.assign(find(id), { reconciled: true }); },
     async loadVoiceEntitlements() { return w.ent; },
     async tenantName() { return 'ACME GmbH'; },
     async createVoiceBot() {
@@ -241,15 +301,8 @@ function makeRepo(w: World): ProvisionRepo {
       w.bots.set(id, { enabled: false, config: {} });
       return id;
     },
-    async setBotState(id, enabled, config) { w.bots.set(id, { enabled, config }); },
     async latestEvidenceHash() {
       return (w.evidence.at(-1)?.content_hash as string | undefined) ?? null;
-    },
-    async appendEvidence(r, expected) {
-      const head = (w.evidence.at(-1)?.content_hash as string | undefined) ?? null;
-      if (head !== expected) return 'conflict';
-      w.evidence.push(r);
-      return { id: String(r.id) };
     },
   };
 }
@@ -261,6 +314,7 @@ function world(over: Partial<World> = {}): World {
     bots: new Map(),
     evidence: [],
     provider: new FakeProvider(),
+    finishCalls: [],
     ...over,
   };
 }
@@ -457,5 +511,78 @@ describe('Handler: Kündigung', () => {
     await call(w, {});
     expect(w.rows[0].status).toBe('suspended');
     expect(w.bots.get('bot_1')?.enabled).toBe(false);
+  });
+});
+
+describe('Review-Befunde (Codex, PR #1889)', () => {
+  const applied = { monthly_minutes: 500, daily_limit: 5, avg_call_minutes: 3 };
+  const activeRow = (over: Partial<VoiceAgentRow> = {}) => row({
+    status: 'active', bot_id: 'bot_1', provider_agent_id: 'agent_1', template_agent_id: 'tpl_realsync',
+    config_snapshot: applied, ...over,
+  });
+  const liveWorld = (over: Partial<World> = {}) => {
+    const w = world({ rows: [activeRow()], ...over });
+    w.bots.set('bot_1', { enabled: true, config: { provider: 'elevenlabs', provider_agent_id: 'agent_1' } });
+    w.provider.agents.set('agent_1', templateSettings());
+    return w;
+  };
+
+  it('1 · überholter Lauf: ein neuerer Lauf hat gesperrt — nichts wird eingeschaltet oder belegt', async () => {
+    const w = world();
+    w.onBeforeFinish = (cur) => {
+      // Ein zweiter Lauf hat die Zeile nach einer Kündigung übernommen und gesperrt.
+      Object.assign(cur, { status: 'suspended', desired_state: 'suspended', claimed_at: null });
+      w.onBeforeFinish = undefined;
+    };
+    const res = await call(w);
+    expect(res.body.outcomes).toMatchObject([{ result: 'skipped' }]);
+    expect(w.rows[0].status).toBe('suspended');
+    expect(w.bots.get('bot_1')?.enabled).toBe(false);
+    expect(w.evidence).toHaveLength(0);
+  });
+
+  it('3 · Evidenz scheitert dauerhaft: failed, Bot nie eingeschaltet, kein Beleg', async () => {
+    const w = world({ evidenceAlwaysConflicts: true });
+    await call(w);
+    expect(w.rows[0].status).toBe('failed');
+    expect(w.rows[0].last_error).toMatch(/evidence chain head/);
+    expect(w.bots.get('bot_1')?.enabled).toBe(false);
+    expect(w.evidence).toHaveLength(0);
+    expect(w.finishCalls.at(-1)).toMatchObject({ status: 'failed', botEnabled: false, evidence: null });
+  });
+
+  it('3 · Neukonfiguration eines laufenden Agenten scheitert: Bot wird ausgeschaltet (fail-closed)', async () => {
+    const w = liveWorld({ ent: { voice: true, monthlyMinutes: 2500 } });
+    w.provider.failPatches = 1;
+    await call(w, {});
+    expect(w.rows[0]).toMatchObject({ status: 'failed' });
+    expect(w.bots.get('bot_1')?.enabled).toBe(false);
+  });
+
+  it('2 · Reconcile: Grant abgelaufen ohne Stripe-Ereignis → gesperrt, belegt', async () => {
+    const w = liveWorld({ ent: { voice: false, monthlyMinutes: null } });
+    const res = await call(w, {});
+    expect(res.body.outcomes).toEqual([{ tenant_id: TENANT, result: 'suspended', provider_agent_id: 'agent_1' }]);
+    expect(w.bots.get('bot_1')?.enabled).toBe(false);
+    expect((w.evidence[0].metadata as { snapshot: { kind: string } }).snapshot.kind).toBe('voice_agent.suspended');
+  });
+
+  it('2 · Reconcile: passende Zeile bleibt unangetastet und wird als geprüft markiert', async () => {
+    const w = liveWorld();
+    const res = await call(w, {});
+    expect(res.body.outcomes).toEqual([{ tenant_id: TENANT, result: 'unchanged', provider_agent_id: 'agent_1' }]);
+    expect(w.provider.patches).toHaveLength(0);
+    expect(w.evidence).toHaveLength(0);
+    expect((w.rows[0] as unknown as { reconciled?: boolean }).reconciled).toBe(true);
+  });
+
+  it('4 · Minuten geändert, bots.voice bleibt: neues Tageslimit, kein neues Duplikat', async () => {
+    const w = liveWorld({ ent: { voice: true, monthlyMinutes: 2500 } });
+    const res = await call(w, {});
+    expect(res.body.outcomes).toMatchObject([{ result: 'active', provider_agent_id: 'agent_1' }]);
+    expect(w.provider.duplicates).toHaveLength(0);
+    expect(w.provider.patches[0].patch.platform_settings?.call_limits.daily_limit).toBe(27);
+    expect(w.rows[0].config_snapshot).toMatchObject({ monthly_minutes: 2500, daily_limit: 27 });
+    expect(w.bots.get('bot_1')?.enabled).toBe(true);
   });
 });

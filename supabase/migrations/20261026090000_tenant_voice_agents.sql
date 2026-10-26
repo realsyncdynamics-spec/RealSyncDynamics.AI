@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS public.tenant_voice_agents (
     attempts               INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
     last_error             TEXT,
     claimed_at             TIMESTAMPTZ,
+    -- Letzte Prüfung einer abgeschlossenen Zeile durch den Reconcile-Lauf
+    -- (abgelaufene Grants, geänderte Minuten). Rotiert die Abholliste.
+    reconciled_at          TIMESTAMPTZ,
     provisioned_at         TIMESTAMPTZ,
     suspended_at           TIMESTAMPTZ,
     created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -111,6 +114,83 @@ CREATE POLICY "tenant_voice_agents tenant-read"
 -- Kein INSERT/UPDATE/DELETE für anon/authenticated: Bereitstellung und
 -- Sperre schreibt ausschließlich die Service-Role.
 REVOKE INSERT, UPDATE, DELETE ON public.tenant_voice_agents FROM anon, authenticated;
+
+-- Abschluss eines Laufs in EINER Transaktion: Claim prüfen → Evidenz
+-- anhängen → Bot schalten → Status setzen. Ein überholter Lauf (Claim
+-- verloren) verändert nichts; scheitert die Evidenz, bleibt alles, wie es
+-- war. Damit kann kein Bot eingeschaltet sein, ohne dass Beleg und Status
+-- dazu passen.
+--
+-- Rückgabe: 'ok' | 'lost_claim' | 'evidence_conflict' (Kettenkopf bewegt —
+-- neu lesen, neu hashen, erneut aufrufen).
+CREATE OR REPLACE FUNCTION public.finish_tenant_voice_agent(
+    p_id                     UUID,
+    p_claimed_at             TIMESTAMPTZ,
+    p_status                 TEXT,
+    p_bot_enabled            BOOLEAN,
+    p_bot_config             JSONB,
+    p_config_snapshot        JSONB,
+    p_last_error             TEXT,
+    p_evidence               JSONB,
+    p_expected_previous_hash TEXT
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $$
+DECLARE
+    r    public.tenant_voice_agents%ROWTYPE;
+    v_ev UUID;
+BEGIN
+    IF p_status NOT IN ('active', 'suspended', 'failed') THEN
+        RAISE EXCEPTION 'finish_tenant_voice_agent: invalid status %', p_status USING ERRCODE = '22023';
+    END IF;
+
+    SELECT * INTO r FROM public.tenant_voice_agents WHERE id = p_id FOR UPDATE;
+    IF NOT FOUND OR r.status <> 'provisioning' OR r.claimed_at IS DISTINCT FROM p_claimed_at THEN
+        RETURN 'lost_claim';
+    END IF;
+
+    IF p_evidence IS NOT NULL THEN
+        IF (p_evidence ->> 'tenant_id')::uuid IS DISTINCT FROM r.tenant_id THEN
+            RAISE EXCEPTION 'finish_tenant_voice_agent: evidence tenant mismatch' USING ERRCODE = '42501';
+        END IF;
+        v_ev := public.append_governance_evidence(p_evidence, p_expected_previous_hash);
+        IF v_ev IS NULL THEN
+            RETURN 'evidence_conflict';
+        END IF;
+    END IF;
+
+    IF r.bot_id IS NOT NULL AND p_bot_enabled IS NOT NULL THEN
+        UPDATE public.bots
+           SET enabled = p_bot_enabled,
+               config  = COALESCE(p_bot_config, config)
+         WHERE id = r.bot_id AND tenant_id = r.tenant_id;
+    END IF;
+
+    UPDATE public.tenant_voice_agents SET
+        status          = p_status,
+        config_snapshot = COALESCE(p_config_snapshot, config_snapshot),
+        last_error      = p_last_error,
+        claimed_at      = NULL,
+        reconciled_at   = now(),
+        attempts        = CASE WHEN p_status = 'failed' THEN attempts ELSE 0 END,
+        provisioned_at  = CASE WHEN p_status = 'active' THEN now() ELSE provisioned_at END,
+        suspended_at    = CASE WHEN p_status = 'suspended' THEN now()
+                               WHEN p_status = 'active' THEN NULL
+                               ELSE suspended_at END
+     WHERE id = p_id;
+
+    RETURN 'ok';
+END;
+$$;
+
+COMMENT ON FUNCTION public.finish_tenant_voice_agent(UUID, TIMESTAMPTZ, TEXT, BOOLEAN, JSONB, JSONB, TEXT, JSONB, TEXT) IS
+    'Schließt einen provision-voice-agent-Lauf atomar ab (Claim → Evidenz → Bot → Status). Nur service_role.';
+
+REVOKE ALL     ON FUNCTION public.finish_tenant_voice_agent(UUID, TIMESTAMPTZ, TEXT, BOOLEAN, JSONB, JSONB, TEXT, JSONB, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.finish_tenant_voice_agent(UUID, TIMESTAMPTZ, TEXT, BOOLEAN, JSONB, JSONB, TEXT, JSONB, TEXT) TO service_role;
 
 COMMENT ON TABLE public.tenant_voice_agents IS
     'Voice-Agent je Mandant beim Provider (ElevenLabs): Verknüpfung zu public.bots, Soll-/Ist-Zustand aus bots.voice. Nur Service-Role schreibt.';

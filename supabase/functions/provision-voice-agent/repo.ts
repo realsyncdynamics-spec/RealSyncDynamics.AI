@@ -2,11 +2,11 @@
 
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { readVoiceEntitlements, type EntitlementLike } from '../_shared/voice-agent-provisioning.ts';
-import type { ProvisionRepo, VoiceAgentRow } from './handler.ts';
+import type { FinishResult, ProvisionRepo, VoiceAgentRow } from './handler.ts';
 
 // Ein Literal (keine Verkettung): supabase-js leitet den Zeilentyp aus dem
 // String-Literal ab, ein verketteter `string` ergibt GenericStringError.
-const COLUMNS = 'id, tenant_id, bot_id, provider, provider_agent_id, template_agent_id, desired_state, status, stripe_subscription_id, last_stripe_event_id, attempts, claimed_at';
+const COLUMNS = 'id, tenant_id, bot_id, provider, provider_agent_id, template_agent_id, desired_state, status, stripe_subscription_id, last_stripe_event_id, attempts, last_error, claimed_at, config_snapshot';
 
 interface PgResult<T> {
   data: T | null;
@@ -57,14 +57,47 @@ export function createSupabaseRepo(db: SupabaseClient): ProvisionRepo {
       unwrap(r, 'tenant_voice_agents update');
     },
 
-    async finish(id, claimedAt, patch) {
-      const r: PgResult<Array<{ id: string }>> = await db.from('tenant_voice_agents')
-        .update(patch)
-        .eq('id', id)
-        .eq('status', 'provisioning')
-        .eq('claimed_at', claimedAt)
-        .select('id');
-      return (unwrap(r, 'tenant_voice_agents finish') ?? []).length > 0;
+    async finishRun(input) {
+      const r: PgResult<string> = await db.rpc('finish_tenant_voice_agent', {
+        p_id: input.id,
+        p_claimed_at: input.claimedAt,
+        p_status: input.status,
+        p_bot_enabled: input.botEnabled,
+        p_bot_config: input.botConfig,
+        p_config_snapshot: input.configSnapshot,
+        p_last_error: input.lastError,
+        p_evidence: input.evidence,
+        p_expected_previous_hash: input.expectedPreviousHash,
+      });
+      const result = unwrap(r, 'finish_tenant_voice_agent');
+      if (result !== 'ok' && result !== 'lost_claim' && result !== 'evidence_conflict') {
+        throw new Error(`finish_tenant_voice_agent: unexpected result ${String(result)}`);
+      }
+      return result as FinishResult;
+    },
+
+    async listSettled(limit) {
+      const r: PgResult<VoiceAgentRow[]> = await db.from('tenant_voice_agents')
+        .select(COLUMNS)
+        .in('status', ['active', 'suspended'])
+        .order('reconciled_at', { ascending: true, nullsFirst: true })
+        .limit(limit);
+      return unwrap(r, 'tenant_voice_agents settled') ?? [];
+    },
+
+    async requeue(row) {
+      const r: PgResult<VoiceAgentRow[]> = await db.from('tenant_voice_agents')
+        .update({ status: 'pending', attempts: 0, last_error: null, claimed_at: null })
+        .eq('id', row.id)
+        .eq('status', row.status)
+        .select(COLUMNS);
+      return (unwrap(r, 'tenant_voice_agents requeue') ?? [])[0] ?? null;
+    },
+
+    async markReconciled(id) {
+      const r: PgResult<unknown> = await db.from('tenant_voice_agents')
+        .update({ reconciled_at: new Date().toISOString() }).eq('id', id);
+      unwrap(r, 'tenant_voice_agents reconciled');
     },
 
     async loadVoiceEntitlements(tenantId) {
@@ -92,11 +125,6 @@ export function createSupabaseRepo(db: SupabaseClient): ProvisionRepo {
       return unwrap(r, 'bots insert').id;
     },
 
-    async setBotState(botId, enabled, config) {
-      const r: PgResult<unknown> = await db.from('bots').update({ enabled, config }).eq('id', botId);
-      unwrap(r, 'bots update');
-    },
-
     async latestEvidenceHash(tenantId) {
       const r: PgResult<Array<{ content_hash: string | null }>> = await db.from('governance_evidence')
         .select('content_hash')
@@ -107,15 +135,6 @@ export function createSupabaseRepo(db: SupabaseClient): ProvisionRepo {
         .order('id', { ascending: false })
         .limit(1);
       return unwrap(r, 'governance_evidence')?.[0]?.content_hash ?? null;
-    },
-
-    async appendEvidence(row, expectedPreviousHash) {
-      const r: PgResult<string | null> = await db.rpc('append_governance_evidence', {
-        p_row: row,
-        p_expected_previous_hash: expectedPreviousHash,
-      });
-      if (r.error) throw new Error(`append_governance_evidence: ${r.error.message}`);
-      return r.data ? { id: r.data } : 'conflict';
     },
   };
 }

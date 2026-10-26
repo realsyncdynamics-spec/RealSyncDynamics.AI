@@ -6,13 +6,19 @@
 //   1. beanspruchen (pending/failed → provisioning; hängende Claims nach
 //      STALE_CLAIM_MS erneut) — zwei parallele Läufe bearbeiten nie dieselbe Zeile
 //   2. Soll-Zustand aus tenant_entitlements() neu bestimmen (bots.voice)
-//   3a. aktiv:  bots-Zeile sicherstellen → Vorlage duplizieren (agent_id sofort
-//       speichern) → Name/Tags/Tageslimit setzen → Read-back fail-closed
-//       (Auth an, keine Aufzeichnung, Aufbewahrung ≤ 7 Tage, Limit) →
-//       Bot an → Evidenz mit den gelesenen Werten → 'active'
-//   3b. gesperrt: bots.enabled = false → Evidenz → 'suspended'
-//   4. Fehler: 'failed' + last_error; der nächste Lauf setzt dort fort, wo der
-//      letzte aufgehört hat (bot_id / provider_agent_id bleiben erhalten).
+//   3a. aktiv:  bots-Zeile sicherstellen (aus) → Vorlage duplizieren (agent_id
+//       sofort speichern) → Name/Tags/Tageslimit setzen → Read-back fail-closed
+//       (Auth an, keine Aufzeichnung, Aufbewahrung ≤ 7 Tage, Limit)
+//   3b. gesperrt: nichts beim Provider
+//   4. Abschluss atomar per finish_tenant_voice_agent(): Claim prüfen →
+//      Evidenz anhängen → Bot schalten → Status. Ein überholter Lauf ändert
+//      nichts; ohne Beleg wird kein Bot eingeschaltet.
+//   5. Fehler: 'failed' + last_error, Bot aus (fail-closed); der nächste Lauf
+//      setzt fort, wo der letzte aufgehört hat (bot_id / provider_agent_id).
+//
+// Reconcile (Aufruf ohne tenant_id, pg_cron): zusätzlich abgeschlossene
+// Zeilen rotierend gegen die Entitlements prüfen — abgelaufene Grants und
+// geänderte Minuten kommen ohne Stripe-Ereignis an.
 
 import { EVIDENCE_HASH_METHOD, evidenceContentHash } from '../_shared/evidence-hash.ts';
 import {
@@ -25,6 +31,7 @@ import {
   dailyCallLimit,
   desiredStateFor,
   safeError,
+  settledRowIsStale,
   type VoiceAgentStatus,
   type VoiceDesiredState,
   type VoiceEntitlements,
@@ -49,6 +56,22 @@ export interface VoiceAgentRow {
   attempts: number;
   last_error: string | null;
   claimed_at: string | null;
+  config_snapshot: Record<string, unknown> | null;
+}
+
+export type FinishResult = 'ok' | 'lost_claim' | 'evidence_conflict';
+
+export interface FinishRun {
+  id: string;
+  claimedAt: string;
+  status: 'active' | 'suspended' | 'failed';
+  /** null = Bot nicht anfassen. */
+  botEnabled: boolean | null;
+  botConfig: Record<string, unknown> | null;
+  configSnapshot: Record<string, unknown> | null;
+  lastError: string | null;
+  evidence: Record<string, unknown> | null;
+  expectedPreviousHash: string | null;
 }
 
 export interface ProvisionRepo {
@@ -60,18 +83,20 @@ export interface ProvisionRepo {
    * schneller war (WHERE-Bedingung greift nach dem Row-Lock erneut).
    */
   claim(row: VoiceAgentRow, nowIso: string, staleBefore: string): Promise<VoiceAgentRow | null>;
+  /** Zwischenstände (bot_id, provider_agent_id) — Fakten, unabhängig vom Ausgang. */
   update(id: string, patch: Record<string, unknown>): Promise<void>;
-  /**
-   * Endzustand nur, solange der eigene Claim gilt (claimed_at unverändert).
-   * Hat der Webhook die Zeile inzwischen neu eingereiht, gewinnt er.
-   */
-  finish(id: string, claimedAt: string, patch: Record<string, unknown>): Promise<boolean>;
+  /** finish_tenant_voice_agent(): Claim → Evidenz → Bot → Status in einer Transaktion. */
+  finishRun(input: FinishRun): Promise<FinishResult>;
+  /** Abgeschlossene Zeilen (active / suspended), älteste Prüfung zuerst. */
+  listSettled(limit: number): Promise<VoiceAgentRow[]>;
+  /** settled → pending, nur wenn der Status noch unverändert ist. */
+  requeue(row: VoiceAgentRow): Promise<VoiceAgentRow | null>;
+  markReconciled(id: string): Promise<void>;
   loadVoiceEntitlements(tenantId: string): Promise<VoiceEntitlements>;
   tenantName(tenantId: string): Promise<string | null>;
+  /** Neue bots-Zeile, ausgeschaltet — eingeschaltet wird nur im Abschluss. */
   createVoiceBot(tenantId: string, name: string): Promise<string>;
-  setBotState(botId: string, enabled: boolean, config: Record<string, unknown>): Promise<void>;
   latestEvidenceHash(tenantId: string): Promise<string | null>;
-  appendEvidence(row: Record<string, unknown>, expectedPreviousHash: string | null): Promise<{ id: string } | 'conflict'>;
 }
 
 /**
@@ -124,7 +149,7 @@ export interface HandlerResponse {
 
 export interface RowOutcome {
   tenant_id: string;
-  result: 'active' | 'suspended' | 'failed' | 'skipped';
+  result: 'active' | 'suspended' | 'failed' | 'skipped' | 'unchanged';
   provider_agent_id?: string | null;
   error?: string;
 }
@@ -153,14 +178,24 @@ export async function handleProvisionVoiceAgent(
   const staleBefore = new Date(now.getTime() - STALE_CLAIM_MS).toISOString();
 
   let rows: VoiceAgentRow[];
+  const outcomes: RowOutcome[] = [];
   if (tenantId) {
     const row = await deps.repo.getByTenant(tenantId);
     rows = row ? [row] : [];
   } else {
     rows = await deps.repo.listOpen(staleBefore, MAX_PROVISION_ATTEMPTS, RECONCILE_BATCH);
+    for (const settled of await deps.repo.listSettled(RECONCILE_BATCH)) {
+      const ent = await deps.repo.loadVoiceEntitlements(settled.tenant_id);
+      if (!settledRowIsStale(settled, ent, deps.avgCallMinutes)) {
+        await deps.repo.markReconciled(settled.id);
+        outcomes.push({ tenant_id: settled.tenant_id, result: 'unchanged', provider_agent_id: settled.provider_agent_id });
+        continue;
+      }
+      const requeued = await deps.repo.requeue(settled);
+      if (requeued) rows.push(requeued);
+    }
   }
 
-  const outcomes: RowOutcome[] = [];
   for (const row of rows) {
     outcomes.push(await processRow(row, deps, staleBefore));
   }
@@ -194,10 +229,18 @@ export async function processRow(
     return await suspend(claimed, deps);
   } catch (err) {
     const error = safeError(err);
-    await repo.finish(claimed.id, claimed.claimed_at ?? nowIso, {
+    // Fail-closed: ein gescheiterter Lauf lässt keinen Bot eingeschaltet —
+    // auch keinen, der vorher lief und nur neu konfiguriert werden sollte.
+    await repo.finishRun({
+      id: claimed.id,
+      claimedAt: claimed.claimed_at ?? nowIso,
       status: 'failed',
-      last_error: error,
-      claimed_at: null,
+      botEnabled: false,
+      botConfig: null,
+      configSnapshot: null,
+      lastError: error,
+      evidence: null,
+      expectedPreviousHash: null,
     });
     return { tenant_id: claimed.tenant_id, result: 'failed', provider_agent_id: claimed.provider_agent_id, error };
   }
@@ -250,59 +293,44 @@ async function activate(row: VoiceAgentRow, ent: VoiceEntitlements, deps: Handle
     avg_call_minutes: deps.avgCallMinutes,
     verified: settingsForEvidence(after),
   };
-  await repo.setBotState(botId, true, { provider: 'elevenlabs', provider_agent_id: agentId });
-
-  const occurredAt = deps.now().toISOString();
-  await writeEvidence(deps, row, {
-    kind: 'voice_agent.provisioned',
-    title: EVIDENCE_TITLE_PROVISIONED,
-    botId,
-    agentId,
-    templateAgentId,
-    config,
-    occurredAt,
-  });
-
-  await repo.finish(row.id, row.claimed_at!, {
+  const result = await finishWithEvidence(deps, row, {
     status: 'active',
-    config_snapshot: config,
-    provisioned_at: occurredAt,
-    suspended_at: null,
-    last_error: null,
-    claimed_at: null,
-    attempts: 0,
+    botEnabled: true,
+    botConfig: { provider: 'elevenlabs', provider_agent_id: agentId },
+    configSnapshot: config,
+    evidence: {
+      kind: 'voice_agent.provisioned',
+      title: EVIDENCE_TITLE_PROVISIONED,
+      botId,
+      agentId,
+      templateAgentId,
+      config,
+    },
   });
+  if (result === 'lost_claim') return { tenant_id: row.tenant_id, result: 'skipped', provider_agent_id: agentId };
   return { tenant_id: row.tenant_id, result: 'active', provider_agent_id: agentId };
 }
 
 async function suspend(row: VoiceAgentRow, deps: HandlerDeps): Promise<RowOutcome> {
-  const { repo } = deps;
-  const occurredAt = deps.now().toISOString();
-  if (row.bot_id) {
-    await repo.setBotState(row.bot_id, false, {
-      provider: 'elevenlabs',
-      provider_agent_id: row.provider_agent_id,
-    });
-  }
   // Ein nie bereitgestellter Agent hinterlässt nichts, was zu belegen wäre.
-  if (row.bot_id || row.provider_agent_id) {
-    await writeEvidence(deps, row, {
-      kind: 'voice_agent.suspended',
-      title: EVIDENCE_TITLE_SUSPENDED,
-      botId: row.bot_id,
-      agentId: row.provider_agent_id,
-      templateAgentId: row.template_agent_id,
-      config: null,
-      occurredAt,
-    });
-  }
-  await repo.finish(row.id, row.claimed_at!, {
+  const hasSomething = Boolean(row.bot_id || row.provider_agent_id);
+  const result = await finishWithEvidence(deps, row, {
     status: 'suspended',
-    suspended_at: occurredAt,
-    last_error: null,
-    claimed_at: null,
-    attempts: 0,
+    botEnabled: false,
+    botConfig: { provider: 'elevenlabs', provider_agent_id: row.provider_agent_id },
+    configSnapshot: null,
+    evidence: hasSomething
+      ? {
+        kind: 'voice_agent.suspended',
+        title: EVIDENCE_TITLE_SUSPENDED,
+        botId: row.bot_id,
+        agentId: row.provider_agent_id,
+        templateAgentId: row.template_agent_id,
+        config: null,
+      }
+      : null,
   });
+  if (result === 'lost_claim') return { tenant_id: row.tenant_id, result: 'skipped', provider_agent_id: row.provider_agent_id };
   return { tenant_id: row.tenant_id, result: 'suspended', provider_agent_id: row.provider_agent_id };
 }
 
@@ -313,50 +341,85 @@ interface EvidenceInput {
   agentId: string | null;
   templateAgentId: string | null;
   config: Record<string, unknown> | null;
-  occurredAt: string;
+}
+
+interface FinishInput {
+  status: 'active' | 'suspended';
+  botEnabled: boolean;
+  botConfig: Record<string, unknown>;
+  configSnapshot: Record<string, unknown> | null;
+  evidence: EvidenceInput | null;
 }
 
 /**
- * Hängt an die governance_evidence-Kette des Mandanten an (gleiche Konvention
- * wie email-auth-rescan: JCS-Snapshot, previous_hash im Snapshot, Append nur
- * am aktuellen Kettenkopf). Scheitert das, scheitert der Lauf — ohne Beleg
- * gilt der Agent nicht als bereitgestellt.
+ * Abschluss mit Beleg an der governance_evidence-Kette des Mandanten
+ * (gleiche Konvention wie email-auth-rescan: JCS-Snapshot, previous_hash im
+ * Snapshot, Append nur am aktuellen Kettenkopf). Evidenz, Bot und Status
+ * gehen in EINER Transaktion; bewegt sich der Kettenkopf, wird neu gehasht.
+ * Scheitert das dauerhaft, scheitert der Lauf — ohne Beleg gilt der Agent
+ * nicht als bereitgestellt.
  */
-async function writeEvidence(deps: HandlerDeps, row: VoiceAgentRow, input: EvidenceInput): Promise<string> {
+async function finishWithEvidence(deps: HandlerDeps, row: VoiceAgentRow, input: FinishInput): Promise<'ok' | 'lost_claim'> {
   const { repo } = deps;
+  const base = {
+    id: row.id,
+    claimedAt: row.claimed_at!,
+    status: input.status,
+    botEnabled: input.botEnabled,
+    botConfig: input.botConfig,
+    configSnapshot: input.configSnapshot,
+    lastError: null,
+  };
+  if (!input.evidence) {
+    const r = await repo.finishRun({ ...base, evidence: null, expectedPreviousHash: null });
+    if (r === 'evidence_conflict') throw new Error('finish without evidence reported evidence_conflict');
+    return r;
+  }
   const evidenceId = deps.uuid();
+  const occurredAt = deps.now().toISOString();
   for (let attempt = 0; attempt < EVIDENCE_APPEND_ATTEMPTS; attempt++) {
     const previousHash = await repo.latestEvidenceHash(row.tenant_id);
-    const snapshot: Record<string, unknown> = {
-      kind: input.kind,
-      evidence_id: evidenceId,
-      tenant_id: row.tenant_id,
-      voice_agent_id: row.id,
-      bot_id: input.botId,
-      provider: row.provider,
-      provider_agent_id: input.agentId,
-      template_agent_id: input.templateAgentId,
-      config: input.config,
-      stripe_subscription_id: row.stripe_subscription_id,
-      stripe_event_id: row.last_stripe_event_id,
-      actor: 'provision-voice-agent',
-      occurred_at: input.occurredAt,
-      previous_hash: previousHash,
-    };
-    const contentHash = await evidenceContentHash(snapshot);
-    const appended = await repo.appendEvidence({
-      id: evidenceId,
-      tenant_id: row.tenant_id,
-      event_id: null,
-      asset_id: null,
-      evidence_type: 'json',
-      title: input.title,
-      storage_path: null,
-      content_hash: contentHash,
-      previous_hash: previousHash,
-      metadata: { snapshot, hash_method: EVIDENCE_HASH_METHOD, source: 'provision-voice-agent' },
-    }, previousHash);
-    if (appended !== 'conflict') return appended.id;
+    const evidence = await evidenceRow(row, input.evidence, evidenceId, occurredAt, previousHash);
+    const r = await repo.finishRun({ ...base, evidence, expectedPreviousHash: previousHash });
+    if (r !== 'evidence_conflict') return r;
   }
   throw new Error('evidence chain head kept moving — retry later');
+}
+
+async function evidenceRow(
+  row: VoiceAgentRow,
+  input: EvidenceInput,
+  evidenceId: string,
+  occurredAt: string,
+  previousHash: string | null,
+): Promise<Record<string, unknown>> {
+  const snapshot: Record<string, unknown> = {
+    kind: input.kind,
+    evidence_id: evidenceId,
+    tenant_id: row.tenant_id,
+    voice_agent_id: row.id,
+    bot_id: input.botId,
+    provider: row.provider,
+    provider_agent_id: input.agentId,
+    template_agent_id: input.templateAgentId,
+    config: input.config,
+    stripe_subscription_id: row.stripe_subscription_id,
+    stripe_event_id: row.last_stripe_event_id,
+    actor: 'provision-voice-agent',
+    occurred_at: occurredAt,
+    previous_hash: previousHash,
+  };
+  const contentHash = await evidenceContentHash(snapshot);
+  return {
+    id: evidenceId,
+    tenant_id: row.tenant_id,
+    event_id: null,
+    asset_id: null,
+    evidence_type: 'json',
+    title: input.title,
+    storage_path: null,
+    content_hash: contentHash,
+    previous_hash: previousHash,
+    metadata: { snapshot, hash_method: EVIDENCE_HASH_METHOD, source: 'provision-voice-agent' },
+  };
 }

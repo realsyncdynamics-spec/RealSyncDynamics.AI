@@ -1,6 +1,6 @@
 // Voice-Agent je Mandant — gemeinsame Regeln für stripe-webhook (einreihen)
 // und provision-voice-agent (umsetzen). Tabelle: public.tenant_voice_agents
-// (Migration 20261015090000).
+// (Migration 20261026090000).
 //
 // Rechte-Quelle ist ausschließlich `tenant_entitlements()`: `bots.voice`
 // entscheidet, ob ein Agent laufen soll, `limit.bot_voice_minutes_monthly`
@@ -66,6 +66,8 @@ export function dailyCallLimit(
 export interface ExistingVoiceAgent {
   desired_state: VoiceDesiredState;
   status: VoiceAgentStatus;
+  /** Zuletzt angewandte Konfiguration (monthly_minutes, avg_call_minutes, daily_limit …). */
+  config_snapshot?: Record<string, unknown> | null;
 }
 
 export type EnqueuePlan =
@@ -75,16 +77,48 @@ export type EnqueuePlan =
 
 /**
  * Was der Webhook nach einem Abo-Ereignis tun soll. Nur echte Zustands-
- * wechsel (und gescheiterte Zeilen) lösen Arbeit aus — ein monatliches
- * `customer.subscription.updated` provisioniert nichts neu.
+ * wechsel, gescheiterte Zeilen und ein geändertes Minutenkontingent eines
+ * aktiven Agenten lösen Arbeit aus — ein monatliches
+ * `customer.subscription.updated` ohne Änderung provisioniert nichts neu.
  */
-export function planEnqueue(existing: ExistingVoiceAgent | null, desired: VoiceDesiredState): EnqueuePlan {
+export function planEnqueue(existing: ExistingVoiceAgent | null, ent: VoiceEntitlements): EnqueuePlan {
+  const desired = desiredStateFor(ent);
   if (!existing) {
     return desired === 'active' ? { action: 'insert', desired } : { action: 'none' };
   }
   if (existing.desired_state !== desired) return { action: 'update', desired };
   if (existing.status === 'failed') return { action: 'update', desired };
+  if (existing.status === 'active' && minutesChanged(existing.config_snapshot, ent.monthlyMinutes)) {
+    return { action: 'update', desired };
+  }
   return { action: 'none' };
+}
+
+function minutesChanged(snapshot: Record<string, unknown> | null | undefined, monthlyMinutes: number | null): boolean {
+  const applied = snapshot?.monthly_minutes;
+  return (applied === undefined ? null : applied) !== monthlyMinutes;
+}
+
+/**
+ * Reconcile einer abgeschlossenen Zeile (active / suspended): passt der
+ * umgesetzte Zustand noch zu den Entitlements? Fängt ab, was ohne Stripe-
+ * Ereignis passiert — abgelaufene oder widerrufene Grants, geänderte Minuten,
+ * eine geänderte Gesprächsdauer-Annahme (VOICE_AVG_CALL_MINUTES).
+ */
+export function settledRowIsStale(
+  row: { status: VoiceAgentStatus; config_snapshot?: Record<string, unknown> | null },
+  ent: VoiceEntitlements,
+  avgCallMinutes: number,
+): boolean {
+  const desired = desiredStateFor(ent);
+  if (row.status === 'active' && desired === 'suspended') return true;
+  if (row.status === 'suspended' && desired === 'active') return true;
+  if (row.status === 'active') {
+    if (minutesChanged(row.config_snapshot, ent.monthlyMinutes)) return true;
+    const applied = row.config_snapshot?.daily_limit;
+    return (applied === undefined ? null : applied) !== dailyCallLimit(ent.monthlyMinutes, avgCallMinutes);
+  }
+  return false;
 }
 
 /**

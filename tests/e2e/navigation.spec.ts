@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('[FE-002] Navigation und primäre CTAs', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/marketing', { waitUntil: 'domcontentloaded' });
   });
 
   test('Hauptnavigation ist vorhanden', async ({ page }) => {

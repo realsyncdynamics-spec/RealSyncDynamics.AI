@@ -1,0 +1,55 @@
+/* Beispielansicht (/app/beispiel) — nur --color-rs-*-Tokens wie die
+   Startansicht. Der Hinweis bleibt beim Scrollen oben, damit erfundene
+   Zahlen nie ohne Kennzeichnung im Bild stehen. */
+
+.rs-sample { display: flex; flex-direction: column; gap: 20px; }
+
+.rs-sample__banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px dashed var(--color-rs-warning);
+  background: var(--color-rs-bg-1);
+  color: var(--color-rs-fg-1);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.rs-sample__label {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-rs-warning);
+  color: var(--color-rs-warning);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rs-sample__text { flex: 1 1 32ch; margin: 0; }
+.rs-sample__back {
+  color: var(--color-rs-fg-0);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+/* Einstieg auf /app/dashboard, solange die Einrichtung offen ist. */
+.rs-sample-entry {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--color-rs-fg-2);
+}
+.rs-sample-entry a {
+  color: var(--color-rs-fg-0);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

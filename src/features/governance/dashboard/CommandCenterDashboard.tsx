@@ -4,6 +4,7 @@
 // and /app/modules.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useTenantDataVersion } from '../tenantDataEvents';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
@@ -34,6 +35,7 @@ import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
+import './sample-workspace.css';
 
 interface WorkspaceFacts {
   /** Mandant, zu dem die Fakten gehören — Schutz gegen den Wechsel-Frame. */
@@ -183,6 +185,15 @@ export function CommandCenterDashboard() {
           trial={trial}
           data={tenantData}
         />
+      )}
+      {/* WP-4: Während der Einrichtung zeigt die Beispielansicht, wie das
+          Dashboard mit Daten aussieht — ohne Beispieldaten im Mandanten.
+          Erst bei einem nachweislich offenen Schritt, sonst blitzte der
+          Hinweis bei eingerichteten Workspaces während des Ladens auf. */}
+      {activeTenantId && startModel.steps.some((step) => step.state === 'open') && (
+        <p className="rs-sample-entry" data-testid="sample-entry">
+          So sieht es eingerichtet aus: <Link to="/app/beispiel">Dashboard mit erfundenen Beispieldaten ansehen</Link>
+        </p>
       )}
       {/* Detailansicht: das bestehende Cockpit bleibt vollständig erhalten,
           ist aber nachgelagert. Während der Einrichtung zugeklappt — sonst

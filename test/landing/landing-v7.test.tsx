@@ -74,7 +74,7 @@ it('prices plans from the SSoT and respects the beta offer', () => {
   }
 });
 
-it('shows the Enterprise price only via tierPriceLabel and keeps TISAX/DORA coming soon', () => {
+it('shows the Enterprise price only via tierPriceLabel and keeps TISAX/DORA and SSO coming soon', () => {
   const { container } = mount();
   const tier = tierById('enterprise');
   if (!tier) throw new Error('Enterprise fehlt in der SSoT');
@@ -82,8 +82,13 @@ it('shows the Enterprise price only via tierPriceLabel and keeps TISAX/DORA comi
   expect(container.textContent).toContain(tierPriceLabel(tier));
   if (tier.priceOnRequest) expect(container.textContent).not.toContain(tier.priceString);
   expect(getImplementation('framework-tisax-dora')?.status).not.toBe('live');
+  expect(getImplementation('enterprise-sso')?.status).toBe('coming-soon');
   expect(container.textContent).not.toMatch(/sechs Rahmenwerke|TISAX und DORA als aktive/);
   expect(container.textContent).toMatch(/TISAX und DORA: Coming Soon/);
+  expect(screen.getByRole('heading', { name: 'Single Sign-On · Coming Soon' })).toBeInTheDocument();
+  expect(container.textContent).toMatch(/Single Sign-On \(SAML\/OIDC\): Coming Soon \(Geplant\)/);
+  const incl = container.querySelector('.lv7-incl') as HTMLElement;
+  expect(incl.textContent).toContain('Single Sign-On (Coming Soon)');
 });
 
 it('takes platform, tools and roadmap status from the registry', () => {

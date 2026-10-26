@@ -2,7 +2,6 @@ name: Beta Feedback
 description: Intern – Triage aus beta_feedback-Tabelle
 title: "[Beta Feedback] "
 labels: [beta, beta-feedback]
-
 body:
   - type: markdown
     attributes:

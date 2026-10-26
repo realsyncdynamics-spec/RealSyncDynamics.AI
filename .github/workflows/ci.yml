@@ -83,6 +83,14 @@ jobs:
       # prueft der Guard den Betrag, nicht den Plannamen.
       - name: Angebots-Sicherheit (Ratsche gegen Preise ohne Kaufpfad)
         run: npm run check:offer-prices
+      # Claims = Runtime: Auf der Landing darf kein Feature als live stehen,
+      # das die Plattform nicht real liefert, und keine verbotene
+      # Marketing-Phrase. `check:landing-claims` prueft genau das gegen
+      # `src/product/implementation-status.ts` — bis hierher lief der Guard
+      # nur lokal, nie in CI. Ein PR, der einen Claim ohne Runtime-Eintrag
+      # hinzufuegt, kam damit ungeprueft durch. Jetzt blockiert er den Merge.
+      - name: Landing-Claims (Claims = Runtime, keine verbotenen Phrasen)
+        run: npm run check:landing-claims
 
   unit:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft

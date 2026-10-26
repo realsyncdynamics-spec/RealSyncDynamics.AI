@@ -17,7 +17,8 @@ import {
 } from '../cockpit/cockpitData';
 import { collectCriticalFindings } from './ComplianceStatusDashboard';
 import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../../config/featureFlags';
-import { ASSISTANT_PROMPT_EVENT } from '../../../components/governance-os/assistantPrompt';
+import { ASSISTANT_PROMPT_EVENT, type AssistantPromptDetail } from '../../../components/governance-os/assistantPrompt';
+import { GOVERNANCE_AGENTS, type GovernanceAgentId } from '../../../components/governance-os/governanceAgents';
 
 const SEVERITY_RANK = { critical: 0, high: 1 } as const;
 
@@ -54,9 +55,11 @@ export function CommandCenterOverview({
   const agentPath = isGovernanceAiEnabled() ? GOVERNANCE_AI_PATH : '/app/agents';
   const navigate = useNavigate();
   const [intent, setIntent] = useState('');
+  const [agent, setAgent] = useState<GovernanceAgentId>(GOVERNANCE_AGENTS[0].id);
   // Früher: `?intent=` an die Agenten-Route — das las niemand, die Eingabe
-  // ging verloren. Jetzt landet sie vorbefüllt im Assistenten der Shell
-  // (GovernanceBrowserShell hört auf das Ereignis); gesendet wird erst dort.
+  // ging verloren. Jetzt landet sie samt gewähltem Agenten vorbefüllt im
+  // Assistenten der Shell (GovernanceBrowserShell hört auf das Ereignis);
+  // gesendet wird erst dort.
   const startSession = (e: FormEvent) => {
     e.preventDefault();
     const q = intent.trim();
@@ -64,7 +67,8 @@ export function CommandCenterOverview({
       navigate(agentPath);
       return;
     }
-    window.dispatchEvent(new CustomEvent(ASSISTANT_PROMPT_EVENT, { detail: { prompt: q } }));
+    const detail: AssistantPromptDetail = { prompt: q, agent };
+    window.dispatchEvent(new CustomEvent(ASSISTANT_PROMPT_EVENT, { detail }));
     setIntent('');
   };
 
@@ -124,6 +128,49 @@ export function CommandCenterOverview({
         </h2>
         {meta && <span className="cc-page__meta">{meta}</span>}
       </div>
+
+      {/* Agenten-Eingabe zuerst (Design System „RealSync Dashboard“,
+          AgentComposer). Kein Modus „EU-lokal“ und kein Mikrofon: Der
+          Assistent läuft heute über Anthropic (USA) und hat keinen
+          Sprachmodus — beides wird erst angeboten, wenn es verdrahtet ist. */}
+      <section className="cc-composer" data-testid="overview-agent-intent" aria-labelledby="cc-composer-title">
+        <h3 id="cc-composer-title" className="cc-composer__title">Was sollen wir prüfen?</h3>
+        <form className="cc-composer__box" onSubmit={startSession}>
+          <input
+            className="cc-composer__field"
+            type="text"
+            value={intent}
+            onChange={(e) => setIntent(e.target.value)}
+            placeholder="Was möchtest du erledigen?"
+            aria-label="Was möchtest du erledigen?"
+          />
+          <div className="cc-composer__bar">
+            <label className="cc-composer__agent">
+              <span className="cc-composer__agent-label">Agent</span>
+              <select
+                className="cc-composer__select"
+                value={agent}
+                onChange={(e) => setAgent(e.target.value as GovernanceAgentId)}
+                data-testid="overview-agent-select"
+              >
+                {GOVERNANCE_AGENTS.map((a) => (
+                  <option key={a.id} value={a.id}>{a.label}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="cc-intent__go">Session starten</button>
+          </div>
+        </form>
+        <p className="cc-composer__note">
+          Öffnet den Assistenten vorbefüllt. Gesendet wird erst dort, nach dem Hinweis zur Datenverarbeitung. Review-pflichtig.
+        </p>
+        <nav className="cc-intent-chips cc-composer__chips" aria-label="Schnellaktionen">
+          <Link className="cc-intent-chip" to="/app/websites">Website scannen</Link>
+          <Link className="cc-intent-chip" to="/app/ai-systems">KI-System erfassen</Link>
+          <Link className="cc-intent-chip" to="/app/audit">Audit starten</Link>
+          <Link className="cc-intent-chip" to="/app/evidence">Evidence ansehen</Link>
+        </nav>
+      </section>
 
       <div className="cc-tiles">
         {tiles.map((t) => (
@@ -211,31 +258,6 @@ export function CommandCenterOverview({
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="cc-panel" data-testid="overview-agent-intent">
-        <div className="cc-panel__head">
-          Agent OS · Intent<span className="cc-panel__meta">Review-pflichtig</span>
-        </div>
-        <div className="cc-panel__body">
-          <form className="cc-intent" onSubmit={startSession}>
-            <input
-              className="cc-intent__field"
-              type="text"
-              value={intent}
-              onChange={(e) => setIntent(e.target.value)}
-              placeholder="Was möchtest du erledigen?"
-              aria-label="Was möchtest du erledigen?"
-            />
-            <button type="submit" className="cc-intent__go">Session starten</button>
-          </form>
-          <nav className="cc-intent-chips" aria-label="Schnellaktionen">
-            <Link className="cc-intent-chip" to="/app/websites">Website scannen</Link>
-            <Link className="cc-intent-chip" to="/app/ai-systems">KI-System erfassen</Link>
-            <Link className="cc-intent-chip" to="/app/audit">Audit starten</Link>
-            <Link className="cc-intent-chip" to="/app/evidence">Evidence ansehen</Link>
-          </nav>
         </div>
       </div>
     </section>

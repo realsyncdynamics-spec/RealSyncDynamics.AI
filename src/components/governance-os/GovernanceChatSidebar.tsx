@@ -35,12 +35,13 @@ import { useAgentChat } from '../../features/governance/AgentWidget/useAgentChat
 import { AssistantFallbackLinks, AssistantRetry, UsRoutingBanner } from '../../features/governance/AgentWidget/AssistantNotices';
 import { useTenant } from '../../core/access/TenantProvider';
 import { GOVERNANCE_AGENTS, type GovernanceAgentId } from './governanceAgents';
+import type { AssistantPrefill } from './assistantPrompt';
 
 export interface GovernanceChatSidebarProps {
   open: boolean;
   onClose: () => void;
-  /** Vorbefüllter Text (z. B. aus „Session starten“); wird nicht automatisch gesendet. */
-  prefill?: { id: number; text: string } | null;
+  /** Vorbefüllter Text (z. B. aus der Agenten-Eingabe); wird nicht automatisch gesendet. */
+  prefill?: AssistantPrefill | null;
 }
 
 
@@ -96,6 +97,7 @@ export function GovernanceChatSidebar({ open, onClose, prefill = null }: Governa
   useEffect(() => {
     if (!prefill) return;
     setInputValue(prefill.text);
+    if (prefill.agent) setSelectedAgent(prefill.agent);
     textareaRef.current?.focus();
   }, [prefill]);
 

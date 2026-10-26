@@ -42,6 +42,10 @@ export const APP_RADIUS_PILL = 9999;
 
 /** Breite der Seitenleiste ab `lg`. */
 export const APP_SIDEBAR_WIDTH = 248;
+/** Breite der eingeklappten Seitenleiste (Icon-Rail). */
+export const APP_SIDEBAR_RAIL_WIDTH = 64;
+/** Breite der ausklappbaren Panels rechts (Assistent, Browser-OS-Agent). */
+export const APP_SIDE_PANEL_WIDTH = 360;
 /** Hoehe eines Navigationseintrags in der Seitenleiste. */
 export const APP_NAV_ITEM_HEIGHT = 38;
 /** Hoehe der Kopfzeile. */

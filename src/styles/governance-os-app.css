@@ -177,6 +177,73 @@
   text-align: center;
   color: var(--color-rs-fg-1);
 }
+/* Unterkategorien (Design System „RealSync Dashboard“, SideNav). */
+.rs-side ul { list-style: none; margin: 0; padding: 0; }
+.rs-side__group[hidden] { display: none; }
+.rs-side__section { display: flex; flex-direction: column; gap: 2px; }
+.rs-side__section + .rs-side__section { margin-top: 2px; }
+.rs-side__group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-family: var(--font-rs-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-2);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.rs-side__group-head:hover { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
+.rs-side__group-head:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: -2px; }
+.rs-side__group-label { flex: 1; text-align: left; }
+.rs-side__count { font-size: 10px; letter-spacing: 0; color: var(--color-rs-fg-3); }
+.rs-side__chev { width: 14px; height: 14px; flex-shrink: 0; transform: rotate(-90deg); transition: transform 150ms ease; }
+.rs-side__chev--open { transform: none; }
+.rs-side__section .rs-side__group { margin-bottom: 6px; }
+.rs-side__item[aria-current='page'] { box-shadow: inset 2px 0 0 var(--color-rs-primary); }
+.rs-side__tag {
+  font-family: var(--font-rs-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-3);
+}
+.rs-side__collapse {
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rs-side--rail { align-items: center; padding: 16px 8px; }
+.rs-side--rail .rs-side__brand { padding: 0 0 16px; }
+.rs-side--rail .rs-side__collapse { margin-top: auto; }
+.rs-side__rail-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-rs-fg-2);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.rs-side__rail-btn:hover { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
+.rs-side__rail-btn:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: -2px; }
+.rs-side__rail-btn[aria-current='true'] { background: var(--color-rs-bg-2); box-shadow: inset 2px 0 0 var(--color-rs-primary); }
+.rs-side__rail-btn[aria-current='true'] .rs-side__icon { color: var(--color-rs-primary); }
+
 .rs-plan {
   margin-top: auto;
   flex-shrink: 0;
@@ -241,6 +308,113 @@
 .rs-chip-sm--primary { background: var(--color-rs-primary); border-color: var(--color-rs-primary); color: var(--rs-on-primary); }
 .rs-chip-sm--primary:hover { background: var(--color-rs-primary-hover); border-color: var(--color-rs-primary-hover); color: var(--rs-on-primary); }
 .rs-chip-sm--danger:hover { border-color: rgba(229, 72, 77, 0.6); color: #ffb4b6; }
+.rs-chip-sm--active { background: var(--color-rs-bg-2); border-color: var(--color-rs-border-strong); color: var(--color-rs-fg-0); }
+
+/* Profilmenü (Landing, Preise, Sprache, Region, Abmelden). */
+.rs-profile { position: relative; }
+.rs-profile__btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-rs-fg-2);
+  cursor: pointer;
+}
+.rs-profile__btn:hover { border-color: var(--color-rs-border); color: var(--color-rs-fg-0); }
+.rs-profile__btn:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: 1px; }
+.rs-profile__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--color-rs-border);
+  border-radius: 4px;
+  background: var(--color-rs-bg-1);
+}
+.rs-profile__email {
+  margin: 0;
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--color-rs-border);
+  font-family: var(--font-rs-mono);
+  font-size: 10.5px;
+  color: var(--color-rs-fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-profile__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--color-rs-fg-1);
+  text-decoration: none;
+  cursor: pointer;
+}
+.rs-profile__item:hover { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
+.rs-profile__item:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: -2px; }
+.rs-profile__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; }
+
+/* Panel rechts (Browser-OS-Agent). Ab lg neben dem Inhalt, darunter darüber. */
+.rs-sidepanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  flex-shrink: 0;
+  background: var(--color-rs-bg-1);
+  border-left: 1px solid var(--color-rs-border);
+  overflow: hidden;
+}
+@media (min-width: 1024px) {
+  .rs-sidepanel { position: static; height: 100%; z-index: auto; }
+}
+.rs-sidepanel__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  flex-shrink: 0;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--color-rs-border);
+  color: var(--color-rs-fg-2);
+}
+.rs-sidepanel__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-rs-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-sidepanel__body { display: flex; flex-direction: column; gap: 16px; padding: 16px; overflow-y: auto; }
+.rs-sidepanel__text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--color-rs-fg-1); }
 .rs-kbd { font-family: var(--font-rs-mono); font-size: 10px; color: var(--color-rs-fg-3); border: 1px solid var(--color-rs-border); border-radius: 4px; padding: 1px 4px; }
 .rs-region {
   display: inline-flex;

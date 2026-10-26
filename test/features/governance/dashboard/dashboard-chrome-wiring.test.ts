@@ -48,8 +48,10 @@ describe('dashboard chrome wiring — no dead TopBar actions', () => {
     expect(TOP_BAR).toMatch(/navigate\(['"]\/app\/reports['"]\)/);
   });
 
-  it('Assistent stays in-shell (sidebar toggle), logo lands on dashboard', () => {
-    expect(TOP_BAR).toContain('onOpenAssistant');
+  it('Assistent and Browser-OS-Agent stay in-shell (panel toggles), logo lands on dashboard', () => {
+    expect(TOP_BAR).toContain('onTogglePanel');
+    expect(TOP_BAR).toContain("id: 'assistant'");
+    expect(TOP_BAR).toContain("id: 'browser'");
     expect(TOP_BAR).toMatch(/to=["']\/app\/dashboard["']/);
   });
 

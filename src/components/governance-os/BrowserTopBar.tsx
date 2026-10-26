@@ -1,6 +1,6 @@
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut, ShieldCheck } from 'lucide-react';
-import { GovernanceAddressBar } from './GovernanceAddressBar';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Search, LogOut, ShieldCheck, Globe, UserRound } from 'lucide-react';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { LangToggle } from '../handoff/LangToggle';
 import { useLang } from '../../i18n/useLang';
@@ -8,46 +8,47 @@ import { initialsFromEmail } from '../../features/governance/handoff/enforcement
 import { OS_FOCUS_RING } from './osChrome';
 import { APP_HEADER_HEIGHT } from './app-theme';
 import { SHELL_TITLES, activeShellNav } from './shellNav';
+import type { ShellPanelId } from './shellPanels';
 import '../../styles/governance-os-app.css';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
   onToggleMobile: () => void;
-  onOpenAssistant: () => void;
+  /** Offenes Panel rechts oder null — es ist immer höchstens eines offen. */
+  openPanel: ShellPanelId | null;
+  onTogglePanel: (id: ShellPanelId) => void;
   onOpenCommandCenter: () => void;
-  onLoadUrl: (url: string) => void;
-  activeEmbedUrl?: string;
 }
 
 /**
- * Kopfzeile der App — Handoff v2 §5 (56px, Titel 15px Inter Tight + Sub 13px).
+ * Kopfzeile der App — Design System „RealSync Dashboard“, Komponente TopBar.
  *
- * Rechts: Command Center (⌘K), Landing · Preise, DE/EN, „EU · Frankfurt"
- * (Supabase-Region eu-central-1), Avatar mit Initialen des echten Nutzers.
+ * Links Titel und Untertitel des Bereichs. Rechts: Command Center (⌘K),
+ * „Audit starten“ und die Schalter für **Assistent** und **Browser-OS-Agent**
+ * (je ein Panel rechts, `aria-expanded`, ein zweiter Klick schließt).
+ * Landing, Preise, Sprache, Region und Abmelden liegen im Profilmenü, damit
+ * rechts oben Platz für die beiden Panels bleibt. Die Adresszeile der
+ * eingebetteten Ansicht wohnt jetzt im Browser-OS-Agent-Panel.
+ *
  * „RUNTIME LIVE" aus dem Entwurf fehlt bewusst: Es gibt keinen Laufzeit-
- * Status, der diese Aussage deckt. „Login" entfällt, weil hier nur
- * angemeldete Nutzer landen — an seiner Stelle steht „Abmelden".
+ * Status, der diese Aussage deckt.
  */
 export function BrowserTopBar({
   mobileMenuOpen,
   onToggleMobile,
-  onOpenAssistant,
+  openPanel,
+  onTogglePanel,
   onOpenCommandCenter,
-  onLoadUrl,
-  activeEmbedUrl,
 }: BrowserTopBarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { logout, isAuthenticated, user } = useSupabaseAuth();
   const { t } = useLang();
   const titles = SHELL_TITLES[activeShellNav(pathname) ?? 'app'];
-  const initials = initialsFromEmail(user?.email ?? null);
 
-  async function handleSignOut() {
-    await logout();
-    // Full navigation clears in-memory tenant/entitlement state.
-    window.location.href = '/';
-  }
+  const panels: { id: ShellPanelId; label: string; Icon: typeof Sparkles }[] = [
+    { id: 'assistant', label: t('shellAssistant'), Icon: Sparkles },
+    { id: 'browser', label: t('shellBrowserAgent'), Icon: Globe },
+  ];
 
   return (
     <header className="rs-apphead rs-ui" style={{ minHeight: APP_HEADER_HEIGHT }}>
@@ -73,11 +74,7 @@ export function BrowserTopBar({
         <span className="rs-apphead__sub hidden sm:block">{t(titles.sub)}</span>
       </div>
 
-      {/* Address Bar — echte URLs öffnen die eingebettete Ansicht. */}
-      <div className="hidden min-w-0 flex-1 justify-center xl:flex">
-        <GovernanceAddressBar onLoadUrl={onLoadUrl} activeUrl={activeEmbedUrl} />
-      </div>
-      <div className="flex-1 xl:hidden" />
+      <div className="flex-1" />
 
       <div className="flex shrink-0 items-center gap-1.5">
         <button
@@ -111,37 +108,99 @@ export function BrowserTopBar({
         >
           <FileBarChart2 className="h-4 w-4" />
         </button>
-        <Link to="/" className="rs-chip-sm hidden 2xl:inline-flex">
-          {t('shellLanding')}
-        </Link>
-        <Link to="/pricing" className="rs-chip-sm hidden 2xl:inline-flex">
-          {t('shellPricing')}
-        </Link>
-        <span className="hidden sm:inline-flex">
-          <LangToggle />
-        </span>
-        <span className="rs-region hidden lg:inline-flex">{t('shellRegion')}</span>
-        <button type="button" onClick={onOpenAssistant} className="rs-chip-sm">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">{t('shellAssistant')}</span>
-        </button>
-        {isAuthenticated && (
+        {panels.map(({ id, label, Icon }) => (
           <button
+            key={id}
             type="button"
-            onClick={() => void handleSignOut()}
-            className="rs-apphead__icon-btn"
-            aria-label="Abmelden"
-            title={t('shellLogout')}
+            onClick={() => onTogglePanel(id)}
+            className={`rs-chip-sm${openPanel === id ? ' rs-chip-sm--active' : ''}`}
+            aria-label={label}
+            aria-expanded={openPanel === id}
+            aria-controls={openPanel === id ? `shell-panel-${id}` : undefined}
+            data-testid={`shell-toggle-${id}`}
           >
-            <LogOut className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="hidden md:inline" aria-hidden="true">{label}</span>
           </button>
-        )}
-        {initials && (
-          <span className="rs-avatar" title={user?.email} aria-label={user?.email} data-testid="shell-avatar">
-            {initials}
-          </span>
-        )}
+        ))}
+        <ProfileMenu />
       </div>
     </header>
+  );
+}
+
+/**
+ * Profilmenü am Avatar: Landing, Preise, Sprache, Region, Abmelden.
+ * Schließt mit Escape, Klick außerhalb und nach einer Wahl.
+ */
+function ProfileMenu() {
+  const { logout, isAuthenticated, user } = useSupabaseAuth();
+  const { t } = useLang();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const initials = initialsFromEmail(user?.email ?? null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  async function handleSignOut() {
+    await logout();
+    // Full navigation clears in-memory tenant/entitlement state.
+    window.location.href = '/';
+  }
+
+  return (
+    <div className="rs-profile" ref={rootRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="rs-profile__btn"
+        aria-label={user?.email ? `${t('shellProfileMenu')}: ${user.email}` : t('shellProfileMenu')}
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => setOpen((v) => !v)}
+        data-testid="shell-profile-toggle"
+      >
+        {initials ? (
+          <span className="rs-avatar" data-testid="shell-avatar" aria-hidden="true">{initials}</span>
+        ) : (
+          <UserRound className="h-4 w-4" aria-hidden="true" />
+        )}
+      </button>
+      {open && (
+        <div id={menuId} className="rs-profile__menu" data-testid="shell-profile-menu">
+          {user?.email && <p className="rs-profile__email">{user.email}</p>}
+          <Link to="/" className="rs-profile__item" onClick={() => setOpen(false)}>{t('shellLanding')}</Link>
+          <Link to="/pricing" className="rs-profile__item" onClick={() => setOpen(false)}>{t('shellPricing')}</Link>
+          <div className="rs-profile__row">
+            <LangToggle />
+            <span className="rs-region">{t('shellRegion')}</span>
+          </div>
+          {isAuthenticated && (
+            <button type="button" className="rs-profile__item" onClick={() => void handleSignOut()}>
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('shellLogout')}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

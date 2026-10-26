@@ -138,6 +138,8 @@ describe('GovernanceBrowserShell — Command Center', () => {
 
   it.each(['/app/home', '/app/evidence'])('entfernt die Website beim Modulwechsel von %s', (initial) => {
     renderShell(initial);
+    // Die Adresszeile liegt im Browser-OS-Agent-Panel (rechts oben).
+    fireEvent.click(screen.getByRole('button', { name: 'Browser-OS-Agent' }));
     fireEvent.click(screen.getByRole('button', { name: 'Website öffnen' }));
     expect(screen.getByTestId('embedded-page')).toBeInTheDocument();
     // Modulwechsel ueber die Seitenleiste — der Weg, den der Desktop seit
@@ -145,6 +147,40 @@ describe('GovernanceBrowserShell — Command Center', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Nachweise öffnen' }));
     expect(screen.queryByTestId('embedded-page')).not.toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent('/app/evidence');
+  });
+
+  it('Assistent und Browser-OS-Agent: höchstens ein Panel offen, zweiter Klick schließt', () => {
+    renderShell();
+    const assistantToggle = screen.getByRole('button', { name: 'Assistent' });
+    const browserToggle = screen.getByRole('button', { name: 'Browser-OS-Agent' });
+    expect(screen.getByTestId('assistant')).toHaveAttribute('data-open', '0');
+    expect(screen.queryByTestId('browser-agent-panel')).not.toBeInTheDocument();
+
+    fireEvent.click(assistantToggle);
+    expect(screen.getByTestId('assistant')).toHaveAttribute('data-open', '1');
+    expect(assistantToggle).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(browserToggle);
+    expect(screen.getByTestId('assistant')).toHaveAttribute('data-open', '0');
+    expect(screen.getByTestId('browser-agent-panel')).toBeInTheDocument();
+    expect(browserToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(assistantToggle).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(browserToggle);
+    expect(screen.queryByTestId('browser-agent-panel')).not.toBeInTheDocument();
+    expect(browserToggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('Landing, Preise und Abmelden liegen im Profilmenü', () => {
+    renderShell();
+    expect(screen.queryByRole('link', { name: 'Preise' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('shell-profile-toggle'));
+    const menu = screen.getByTestId('shell-profile-menu');
+    expect(within(menu).getByRole('link', { name: 'Landing' })).toHaveAttribute('href', '/');
+    expect(within(menu).getByRole('link', { name: 'Preise' })).toHaveAttribute('href', '/pricing');
+    expect(within(menu).getByRole('button', { name: /Abmelden/ })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByTestId('shell-profile-menu')).not.toBeInTheDocument();
   });
 
   it('öffnet das Command Center mit Meta+K (Cmd)', () => {

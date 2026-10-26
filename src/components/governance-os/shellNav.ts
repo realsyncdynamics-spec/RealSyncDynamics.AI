@@ -39,6 +39,56 @@ export const SHELL_NAV: readonly ShellNavItem[] = [
   { id: 'billing', labelKey: 'navBilling', route: '/app/billing' },
 ] as const;
 
+/**
+ * Seitenleiste in sieben Unterkategorien (Design System „RealSync Dashboard“,
+ * Komponente SideNav) — entlang Discover · Classify · Enforce · Prove.
+ *
+ * Ein Eintrag verweist entweder auf einen Hauptbereich aus `SHELL_NAV`
+ * (Zähler, Klassifizierungs-Sprung) oder per ID auf ein Modul aus
+ * `GOVERNANCE_MODULES`. Kein Modul entfällt: Test
+ * `test/components/governance/shellNavGroups.test.ts` prüft, dass jedes
+ * Modul genau einmal vorkommt.
+ */
+export type ShellNavGroupId = 'start' | 'capture' | 'assess' | 'enforce' | 'prove' | 'agents' | 'admin';
+
+export type ShellNavEntry =
+  | { kind: 'shell'; id: ShellNavId }
+  | { kind: 'module'; id: string };
+
+export interface ShellNavGroup {
+  id: ShellNavGroupId;
+  labelKey: HandoffKey;
+  entries: readonly ShellNavEntry[];
+}
+
+const shell = (id: ShellNavId): ShellNavEntry => ({ kind: 'shell', id });
+const mod = (id: string): ShellNavEntry => ({ kind: 'module', id });
+
+export const SHELL_NAV_GROUPS: readonly ShellNavGroup[] = [
+  { id: 'start', labelKey: 'navGroupStart', entries: [shell('overview'), mod('home'), mod('activation'), mod('modules')] },
+  {
+    id: 'capture',
+    labelKey: 'navGroupCapture',
+    entries: [mod('websites'), shell('systems'), shell('classify'), mod('ambient-ai'), mod('vendors'), mod('vendor-exposure'), mod('local-ai')],
+  },
+  { id: 'assess', labelKey: 'navGroupAssess', entries: [mod('risks'), mod('dpia'), mod('monitoring'), mod('security-signals'), mod('alerts')] },
+  {
+    id: 'enforce',
+    labelKey: 'navGroupEnforce',
+    entries: [
+      shell('enforce'), mod('remediation'), mod('actions'), mod('workflows'),
+      mod('automations'), mod('scheduler'), mod('bulk'), mod('governance-router'),
+    ],
+  },
+  {
+    id: 'prove',
+    labelKey: 'navGroupProve',
+    entries: [shell('evidence'), mod('evidence-vault'), mod('provenance'), mod('audit'), shell('reports'), mod('documents'), shell('voice')],
+  },
+  { id: 'agents', labelKey: 'navGroupAgents', entries: [mod('agents'), mod('bots'), mod('kodee'), mod('marketplace')] },
+  { id: 'admin', labelKey: 'navGroupAdmin', entries: [mod('team'), shell('billing'), mod('settings')] },
+] as const;
+
 /** Routen, die die Hauptliste schon abdeckt (für „Weitere Module"). */
 export const SHELL_NAV_ROUTES: ReadonlySet<string> = new Set([
   ...SHELL_NAV.map((i) => i.route),

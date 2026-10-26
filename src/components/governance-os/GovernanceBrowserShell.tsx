@@ -2,10 +2,12 @@
 // Handoff v2 §5: 248px-Seitenleiste, 56px-Kopfzeile, mobile Tab-Bar mit fünf Tabs;
 // alle übrigen Bereiche (Klassifizierung, Abrechnung, Module) im Burger-Menü.
 //
-// Layout ab `lg`: TopBar → [Sidebar + Canvas + GovernanceChatSidebar] → StatusBar
+// Layout ab `lg`: TopBar → [Sidebar + Canvas + Panel rechts] → StatusBar
+// Panel rechts (Design System „RealSync Dashboard“): Assistent oder
+// Browser-OS-Agent, je über einen Schalter rechts oben; höchstens eines offen.
 // Darunter: TopBar → (Burger-Menü mit GovernanceTabs) → Canvas → MobileBottomNav
-// Embedded Browser: Address-Bar-Eingabe einer echten URL öffnet EmbeddedBrowserCanvas
-// über dem Canvas; Chat-Sidebar bleibt seitlich sichtbar.
+// Embedded Browser: „Vorschau“ im Browser-OS-Agent-Panel öffnet EmbeddedBrowserCanvas
+// über dem Canvas; das Panel bleibt seitlich sichtbar.
 // Command Center: Ctrl/Cmd+K öffnet die Befehlspalette über dem Shell-Chrome.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -17,6 +19,8 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { BrowserAgentPanel } from './BrowserAgentPanel';
+import { togglePanel, type ShellPanelId } from './shellPanels';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
 import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
@@ -29,7 +33,7 @@ import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
 import { AppGate } from '../../features/auth/AppGate';
 import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
-import { ASSISTANT_PROMPT_EVENT, type AssistantPromptDetail } from './assistantPrompt';
+import { ASSISTANT_PROMPT_EVENT, type AssistantPrefill, type AssistantPromptDetail } from './assistantPrompt';
 import '../../styles/governance-os-app.css';
 
 interface GovernanceBrowserShellProps {
@@ -44,13 +48,13 @@ interface GovernanceBrowserShellProps {
 export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState<ShellPanelId | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
-  // Vorbefüllter Text für den Assistenten; `id` erzwingt das Übernehmen auch
-  // bei gleichem Text.
-  const [assistantPrompt, setAssistantPrompt] = useState<{ id: number; text: string } | null>(null);
+  // Vorbefüllter Text (und optional Agent) für den Assistenten; `id` erzwingt
+  // das Übernehmen auch bei gleichem Text.
+  const [assistantPrompt, setAssistantPrompt] = useState<AssistantPrefill | null>(null);
 
   const commandItems = useMemo(() => buildCommandCatalog(), []);
 
@@ -75,10 +79,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   }, []);
   useEffect(() => {
     const onPrompt = (event: Event) => {
-      const text = (event as CustomEvent<AssistantPromptDetail>).detail?.prompt?.trim();
+      const detail = (event as CustomEvent<AssistantPromptDetail>).detail;
+      const text = detail?.prompt?.trim();
       if (!text) return;
-      setAssistantPrompt({ id: Date.now(), text });
-      setAssistantOpen(true);
+      setAssistantPrompt({ id: Date.now(), text, agent: detail?.agent });
+      setOpenPanel('assistant');
     };
     window.addEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
     return () => window.removeEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
@@ -94,7 +99,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     (item: CommandDefinition) => {
       if (!isCommandRunnable(item)) return;
       if (item.actionId === 'open-assistant') {
-        setAssistantOpen(true);
+        setOpenPanel('assistant');
         return;
       }
       if (item.path) {
@@ -133,10 +138,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
-          onOpenAssistant={() => setAssistantOpen((v) => !v)}
+          openPanel={openPanel}
+          onTogglePanel={(id) => setOpenPanel((current) => togglePanel(current, id))}
           onOpenCommandCenter={() => setCommandCenterOpen(true)}
-          onLoadUrl={handleLoadUrl}
-          activeEmbedUrl={embeddedUrl ?? undefined}
         />
 
         {/* Zahlungshinweis über den Tabs: Während der Grace Period ändert sich
@@ -192,12 +196,20 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
             </GovernanceCanvas>
           )}
 
-          {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
+          {/* Assistent: 380px offen, 32px-Leiste zu. Bleibt gemountet, damit
+              die Unterhaltung beim Wechsel zum Browser-OS-Agent erhalten bleibt. */}
           <GovernanceChatSidebar
-            open={assistantOpen}
-            onClose={() => setAssistantOpen((v) => !v)}
+            open={openPanel === 'assistant'}
+            onClose={() => setOpenPanel((current) => togglePanel(current, 'assistant'))}
             prefill={assistantPrompt}
           />
+          {openPanel === 'browser' && (
+            <BrowserAgentPanel
+              onClose={() => setOpenPanel(null)}
+              onLoadUrl={handleLoadUrl}
+              activeUrl={embeddedUrl ?? undefined}
+            />
+          )}
         </div>
 
         <MobileBottomNavigation />

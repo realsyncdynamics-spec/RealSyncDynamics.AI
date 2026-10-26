@@ -274,14 +274,16 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
+  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „The Governance
+  // OS für DSGVO und EU AI Act.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    title: 'Governance OS für DSGVO und EU AI Act | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'Prüfen, verstehen, handeln, nachweisen: DSGVO und EU AI Act in einem Kontrollprozess, gehostet in Frankfurt. Starten Sie mit dem kostenlosen Website-Check.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'Das Governance OS für DSGVO und EU AI Act',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'Risiken erkennen, Richtlinien prüfen und durchsetzen, Nachweise bereitstellen – in einem durchgängigen Kontrollprozess. Datenbank und Evidence Vault liegen in der EU.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {

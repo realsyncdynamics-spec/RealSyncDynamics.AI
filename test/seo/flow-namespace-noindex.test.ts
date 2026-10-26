@@ -70,13 +70,12 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
-  it('hält die Homepage-SEO auf der Landing-v2-Positionierung', () => {
-    expect(SEO_CONFIG['/'].title).toBe(
-      'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
-    );
+  it('hält die Homepage-SEO auf der Positionierung der Startseite (Landing v6)', () => {
     // SEO-Sprint KW 40: DE-Seite komplett deutsch, Marke einheitlich.
-    expect(SEO_CONFIG['/'].description).toContain('Erfassen, einstufen, steuern, nachweisen');
-    expect(SEO_CONFIG['/'].ogTitle).toBe('KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO');
+    expect(SEO_CONFIG['/'].title).toBe('Governance OS für DSGVO und EU AI Act | RealSync Dynamics AI');
+    expect(SEO_CONFIG['/'].description).toContain('Prüfen, verstehen, handeln, nachweisen');
+    expect(SEO_CONFIG['/'].description).toContain('kostenlosen Website-Check');
+    expect(SEO_CONFIG['/'].ogTitle).toBe('Das Governance OS für DSGVO und EU AI Act');
     expect(SEO_CONFIG['/'].canonical).toBe('https://realsyncdynamicsai.de/');
     // Design-Referenz ist Duplikat der Startseite: noindex + Canonical auf /.
     expect(SEO_CONFIG['/design/landing-v2'].noIndex).toBe(true);

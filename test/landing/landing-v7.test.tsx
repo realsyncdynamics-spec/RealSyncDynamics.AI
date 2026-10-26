@@ -1,5 +1,5 @@
 /**
- * Landing v7 (/design/landing-v7) — Design-Artefakt Titan/Nacht. Optik aus dem
+ * Landing v7 (/design/landing-v7, Vorschau) — Design-Artefakt Titan/Nacht. Optik aus dem
  * Artefakt, Aussagen aus SSoT und Registry: Beta-/Listenpreise, Enterprise
  * „Auf Anfrage“, TISAX/DORA Coming Soon, Status aus implementation-status.ts.
  */
@@ -39,15 +39,15 @@ const mount = (path = '/design/landing-v7') =>
 
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 
-it('is the start page; v6 stays reachable as reference', () => {
+it('stays reachable as preview; v6 is the start page again', () => {
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
-  expect(app).toMatch(/path="\/"\s+element=\{<LandingV7/);
+  expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
   expect(app).toMatch(/path="\/design\/landing-v7" element=\{<LandingV7 \/>\}/);
   expect(app).toMatch(/path="\/design\/landing-v6" element=\{<LandingV6 \/>\}/);
 });
 
 it('has one H1 with spaced words and the registry CTA label', () => {
-  mount('/');
+  mount();
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('AI Compliance Operations OS for Europe');
   expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   // Footer-Links wie auf v6 (E2E FE-004 prüft /impressum und /datenschutz).

@@ -8,9 +8,9 @@ import { LandingV7View } from '../components/landing/v7/LandingV7View';
 import '../styles/landing-v7.css';
 
 /**
- * Landing v7 — Startseite `/` (Owner-Entscheidung 26.10.2026), Artefakt
- * „AI Compliance Operations OS for Europe“ vom 25.10.2026. /design/landing-v7
- * bleibt für geteilte Vorschau-Links, v6 liegt unter /design/landing-v6.
+ * Landing v7 — Vorschau unter /design/landing-v7, Artefakt „AI Compliance
+ * Operations OS for Europe“ vom 25.10.2026. War am 26.10.2026 kurz Startseite;
+ * seitdem ist wieder Landing v6 auf `/` (Owner-Entscheidung 26.10.2026).
  *
  * Zwei Darstellungen: Titan (Gold auf Graphit) und Nacht (Cyan). Die Wahl
  * teilt sich den Speicher mit den anderen Landings (`landing-mode`):

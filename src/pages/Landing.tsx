@@ -565,7 +565,7 @@ function BetaProgramSection() {
           Im Gegenzug: {BETA_GEGENLEISTUNG.join(' · ')}.
         </p>
         <Link
-          to="/welcome?source=landing-beta&intent=founding"
+          to="/app"
           className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
         >
           {CTA.applyForBeta} <ArrowRight className="h-4 w-4" />

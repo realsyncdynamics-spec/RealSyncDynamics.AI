@@ -3,12 +3,12 @@
 // Ersetzt den Chat als Post-Login-Einstieg: Status-first, in 3 Sekunden
 // erfassbar. Nutzt ausschliesslich vorhandene, RLS-gescopte Count-Helfer —
 // keine erfundenen Daten. Kacheln verlinken in die bestehenden Views.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
   Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck,
-  Bell, TrendingDown, TrendingUp, Clock, ShieldX, CheckCircle2,
+  Bell, TrendingDown, TrendingUp, Clock, ShieldX, CheckCircle2, X,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -45,15 +45,46 @@ interface Summary24h {
   next_scan_at: string | null;
 }
 
+const DEMO_COUNTS: Counts = {
+  incidents: 1,
+  dpias: 2,
+  dsr: { total: 4, overdue: 0 },
+  approvals: 3,
+  vendorsNoDpa: 1,
+};
+const DEMO_SCORE = 87;
+
 export function WorkspaceHome() {
+  const [isAuth, setIsAuth] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => {
+    const sb = getSupabase();
+    const { data: sub } = sb.auth.onAuthStateChange((_evt, session) => {
+      setIsAuth(!!session?.user);
+    });
+    return () => sub?.unsubscribe();
+  }, []);
+
+  const gate = useCallback(() => setAuthOpen(true), []);
+
+  if (isAuth) {
+    return (
+      <AuthGate>
+        {() => (
+          <WorkspaceShell title="Übersicht">
+            <Inner />
+          </WorkspaceShell>
+        )}
+      </AuthGate>
+    );
+  }
+
   return (
-    <AuthGate>
-      {() => (
-        <WorkspaceShell title="Übersicht">
-          <Inner />
-        </WorkspaceShell>
-      )}
-    </AuthGate>
+    <WorkspaceShell title="Übersicht" onGate={gate}>
+      <DemoInner onAuthOpen={() => setAuthOpen(true)} />
+      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
+    </WorkspaceShell>
   );
 }
 
@@ -358,6 +389,178 @@ function Inner() {
           <NavCard to="/app/risks" icon={Search} title="Risiken" body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
         </div>
       </section>
+    </div>
+  );
+}
+
+function DemoInner({ onAuthOpen }: { onAuthOpen: () => void }) {
+  const { tenants } = useTenant();
+  const activeTenant = tenants[0] ?? null;
+  const score = DEMO_SCORE;
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <div className="bg-obsidian-800 border border-titanium-800 p-4 rounded-none">
+        <p className="text-sm text-titanium-300 mb-3">Dies ist eine Demo-Ansicht. Melden Sie sich an, um auf Ihr echtes Governance-Dashboard zuzugreifen.</p>
+        <button
+          onClick={onAuthOpen}
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 text-sm font-semibold"
+        >
+          Anmelden
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display font-bold text-2xl text-titanium-50 tracking-tight">
+            {activeTenant ? `Governance · ${activeTenant.name}` : 'Governance-Übersicht'}
+          </h2>
+          <p className="text-sm text-titanium-400 mt-1">Status, offene Aufgaben und Objekte auf einen Blick.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={onAuthOpen}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 text-sm font-semibold"
+          >
+            <Plus className="h-4 w-4" /> Website hinzufügen
+          </button>
+        </div>
+      </div>
+
+      <ScoreCard score={score} loading={false} />
+
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-cyan-400" />
+            <h3 className="font-display font-semibold text-titanium-50 text-sm">Posteingang · 24h</h3>
+          </div>
+        </div>
+        <div className="border border-titanium-900 divide-y divide-titanium-900 bg-obsidian-900">
+          <InboxRow to="/app/incidents" label="Vorfälle" count={DEMO_COUNTS.incidents} loading={false} icon={AlertTriangle} severity />
+          <InboxRow to="/app/compliance?tab=dsr" label="Überf. Anfragen (DSR)" count={DEMO_COUNTS.dsr.overdue} loading={false} icon={Clock} severity={DEMO_COUNTS.dsr.overdue > 0} />
+          <InboxRow to="/app/compliance?tab=approvals" label="Freigaben ausstehend" count={DEMO_COUNTS.approvals} loading={false} icon={UserCheck} />
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-px bg-titanium-900">
+        <Tile to="/app/incidents" icon={AlertTriangle} label="Vorfälle" value={DEMO_COUNTS.incidents} loading={false} accent="rose" />
+        <Tile to="/app/compliance?tab=dpias" icon={ClipboardCheck} label="DSFA offen" value={DEMO_COUNTS.dpias} loading={false} accent="amber" />
+        <Tile to="/app/compliance?tab=dsr" icon={FileCheck2} label="DSR offen" value={DEMO_COUNTS.dsr.total} loading={false} accent="cyan" />
+        <Tile to="/app/compliance?tab=approvals" icon={UserCheck} label="Freigaben" value={DEMO_COUNTS.approvals} loading={false} accent="cyan" />
+        <Tile to="/app/risks" icon={ShieldX} label="Vendor-Risiken" value={DEMO_COUNTS.vendorsNoDpa} loading={false} accent="rose" />
+      </section>
+
+      <section className="mb-8 border border-titanium-900 bg-obsidian-950">
+        <div className="px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">
+              Founding Access Programm · Erste 100 Unternehmen
+            </p>
+            <p className="font-display font-semibold text-titanium-100 text-sm mb-1">
+              Founding Access Programm
+            </p>
+            <p className="text-[11px] text-titanium-500 max-w-xl leading-relaxed">
+              Die ersten 100 Unternehmen können RealSyncDynamicsAI aktiv mitgestalten.
+              Melden Sie Fehler, senden Sie Screenshots und schlagen Sie Funktionen vor.
+              Ihre Rückmeldungen fließen direkt in die Weiterentwicklung der Plattform ein.
+            </p>
+          </div>
+          <button
+            onClick={onAuthOpen}
+            className="shrink-0 inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-400 px-4 py-2 text-xs font-semibold transition-colors"
+          >
+            Anmelden
+          </button>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
+          <NavCard to="/app/websites" icon={Globe} title="Websites" body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
+          <NavCard to="/app/ai-systems" icon={Bot} title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift." />
+          <NavCard to="/app/evidence" icon={FileCheck2} title="Evidence" body="Nachweise, Reports, Audit-Trail, Exporte." />
+          <NavCard to="/app/compliance" icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
+          <NavCard to="/app/monitoring" icon={Activity} title="Monitoring" body="Live-Scans, Drift, Alerts." />
+          <NavCard to="/app/risks" icon={Search} title="Risiken" body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AuthPanel({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const sb = getSupabase();
+      const { error: err } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/app` },
+      });
+      if (err) throw err;
+      setSent(true);
+    } catch (e) {
+      setError((e as Error)?.message ?? 'Fehler beim Anmelden');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/70">
+      <div className="bg-obsidian-900 border border-titanium-800 w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-titanium-50 text-lg">Anmelden</h2>
+          <button onClick={onClose} className="text-titanium-400 hover:text-titanium-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {sent ? (
+          <div className="space-y-3">
+            <p className="text-sm text-titanium-300">Überprüfe deine E-Mail auf einen Anmeldelink.</p>
+            <button
+              onClick={onClose}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 text-sm font-semibold"
+            >
+              Schließen
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-titanium-300 mb-2">E-Mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2 bg-obsidian-800 border border-titanium-700 text-titanium-100 text-sm outline-none"
+                placeholder="you@example.com"
+              />
+            </div>
+            {error && <p className="text-xs text-rose-300">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 disabled:opacity-50 text-sm font-semibold"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {loading ? 'Wird gesendet...' : 'Anmeldelink senden'}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

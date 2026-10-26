@@ -503,7 +503,8 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
-      <Route path="/" element={<LandingV6 />} />
+      <Route path="/" element={<Navigate to="/app" replace />} />
+      <Route path="/marketing" element={<LandingV6 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
@@ -527,7 +528,7 @@ function RoutesWithTracking() {
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
-      <Route path="/landing" element={<Navigate to="/" replace />} />
+      <Route path="/landing" element={<Navigate to="/marketing" replace />} />
       <Route path="/landingpages" element={<Navigate to="/" replace />} />
       <Route path="/landing-uebersicht" element={<Navigate to="/" replace />} />
       <Route path="/realsync-landing" element={<Navigate to="/" replace />} />

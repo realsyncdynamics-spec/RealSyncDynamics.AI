@@ -407,6 +407,7 @@ const AdminSettingsPage = lazy(() => import('./features/admin/pages/AdminSetting
 const AdminBillingPage = lazy(() => import('./features/admin/pages/AdminBillingPage').then((m) => ({ default: m.AdminBillingPage })));
 const AdminAPIKeysPage = lazy(() => import('./features/admin/pages/AdminAPIKeysPage').then((m) => ({ default: m.AdminAPIKeysPage })));
 const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
+const BetaFeedbackView = lazy(() => import('./features/admin/BetaFeedbackView').then((m) => ({ default: m.BetaFeedbackView })));
 // ── Platform Super-Admin (Phase 2) ──
 const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashboard').then((m) => ({ default: m.SuperAdminDashboard })));
 // ── SEO-Marketing-SaaS-Dashboard (auth-gated)
@@ -945,6 +946,7 @@ function RoutesWithTracking() {
       <Route path="/app/admin/billing" element={<AppGate><GovernanceBrowserShell><AdminBillingPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/api-keys" element={<AppGate><GovernanceBrowserShell><AdminAPIKeysPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/audit" element={<AppGate><GovernanceBrowserShell><AdminAuditPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/admin/beta-feedback" element={<AppGate><BetaFeedbackView /></AppGate>} />
       <Route path="/app/agents" element={<AppGate><GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/documents" element={<AppGate><GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/audit" element={<AppGate><GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell></AppGate>} />

@@ -396,7 +396,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'billing',
     description:
-      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Aus WP-4 umgesetzt: Startansicht mit geführter Einrichtung und Beispielansicht /app/beispiel (#1990). Offen (WP-4): Feedback direkt im Dashboard (bisher Link auf /kontakt?topic=beta-feedback) und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
+      'WP-4 vollständig: beta-enroll (WP-3, #1874) gibt Growth-Umfang bis 31.01.2027; Beispielansicht /app/beispiel (#1990); Feedback direkt im Dashboard via BetaFeedbackButton (Inline-Modal → Tabelle beta_feedback, RLS, Admin-Ansicht /app/admin/beta-feedback). Automatischer Erst-Scan für leere Mandanten nutzt vorhandene Domain-Einrichtungs-UI.',
     route: '/welcome',
     evidence: [
       'supabase/functions/beta-enroll/index.ts',
@@ -406,6 +406,9 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/config/production-edge-functions.ts#beta-enroll',
       'test/edge/beta-enroll.test.ts',
       'docs/claude/BETA_V5_WORKPLAN.md#WP-4',
+      'supabase/migrations/20261026200000_beta_feedback.sql',
+      'src/components/governance-os/BetaFeedbackButton.tsx',
+      'src/features/admin/BetaFeedbackView.tsx',
       'PR #1874',
     ],
     showOnRoadmap: false,

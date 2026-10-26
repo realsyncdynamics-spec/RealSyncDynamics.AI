@@ -89,7 +89,8 @@ describe('SampleWorkspacePage', () => {
     expect(screen.getByTestId('governance-score')).toBeInTheDocument();
     expect(screen.getByTestId('risk-distribution')).toBeInTheDocument();
     expect(screen.queryByTestId('empty-tenant-cta')).toBeNull();
-    expect(screen.getAllByText(new RegExp(SAMPLE_TENANT_NAME.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('customer-start').textContent).toContain(SAMPLE_TENANT_NAME);
+    expect(screen.getByTestId('compliance-status-dashboard').textContent).toContain(`Status · ${SAMPLE_TENANT_NAME}`);
   });
 
   it('bietet keine Prüfer-Mappe an und liest nichts aus der Datenbank', () => {

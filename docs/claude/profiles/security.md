@@ -28,11 +28,12 @@ Kennzeichnung: Titel `fix(security)`/`feat(security)` oder Label `security`.
 | Audit/Evidence | Jede Entscheidung im Prüfpfad, an derselben ID? |
 | Fail-closed | Jeder Fehlerpfad lehnt ab? |
 
-## Prüfmuster aus SEC-01 und SEC-05 (PRs #1975–#1977)
+## Prüfmuster aus SEC-01 und SEC-05 (zusammengeführt in PR #1994)
 
 - Rechte nie aus dem Request-Body oder einer festen Agent-ID ableiten (SEC-01).
 - Zustand (Zähler, Kill-Switch, Einwilligung) nur serverseitig (SEC-05).
 - Nur vorher angemeldete Calls entscheiden; Anmeldung einmalig verbrauchen (Replay).
+- Entscheidung an Request-ID und kanonische Argumente des angemeldeten Calls binden.
 - Zwischen letzter Prüfung und Executor kein Await; schreibende Aktionen gesperrt, solange
   die Prüfung nicht in derselben Transaktion liegt.
 - Sperren strukturell absichern (AST-Guard statt Regex), mit Negativnachweis.

@@ -1,6 +1,6 @@
 # Deployment-Governance — Inventar, Zielkonzept, Entscheidungspakete
 
-Stand: 24.10.2026, `origin/main` = `b4f8a2f`. **Entwurf. Nichts davon ist umgesetzt.**
+Stand: 24.10.2026 (Inventar auf `b4f8a2f`, am 26.10. gegen `7e72886` geprüft: keine Workflow-Änderung dazwischen). **Entwurf. Nichts davon ist umgesetzt.**
 Grundlage: Entscheidungen B (Produktion nur mit gesonderter menschlicher Freigabe, auch Pages)
 und D (Workflows jetzt nur planen) von Dominik. Jedes Paket in §6 braucht eine Einzel-Freigabe.
 
@@ -18,7 +18,7 @@ Status: **BESTÄTIGT** = im Repo nachgelesen · **TEILWEISE** = Indiz, nicht vol
 | K5 | Agenten und Freigabeverantwortlicher nutzen denselben GitHub-Account (`realsyncdynamics-spec`, Owner und Admin des persönlichen Repos). PRs und Commits der Agenten laufen unter diesem Account. Eine Environment-Freigabe durch denselben Account trennt nicht. | BESTÄTIGT (PR- und Commit-Autoren) |
 | K6 | Reine Dispatch-Workflows mit Produktionswirkung haben kein Environment (u. a. `migration-reconciliation`: `db push` + Functions, `delete-edge-function`, `cloudflare-domain-cutover`). Jede Identität mit Write-Recht kann sie starten, auch Agenten über die GitHub-API. | BESTÄTIGT |
 | K7 | `auto-merge.yml` sperrt nur `supabase/migrations/**`. Ein PR unter `apps/agent-runtime/**`, `workers/**` oder `src/**` mit Label `automerge` wird gemergt und sofort deployt. | BESTÄTIGT |
-| K8 | Cloudflare Pages ist zusätzlich per Git-Integration verbunden (Check-Run „Cloudflare Pages“ mit Dashboard-Link auf PR #1977). Ob sie `main` automatisch in Produktion deployt, ist offen. Das wäre ein Deploy-Pfad an GitHub Actions vorbei. | TEILWEISE |
+| K8 | Cloudflare Pages ist zusätzlich per Git-Integration verbunden: Sie baut und veröffentlicht für jeden Branch-Push ein Preview, unabhängig von den Pfadfiltern der Actions (belegt auf dem reinen Doku-PR #1979). Ob sie `main` automatisch in Produktion deployt, ist offen. Das wäre ein Deploy-Pfad an GitHub Actions vorbei. | Previews BESTÄTIGT, Produktion NICHT GEPRÜFT |
 | K9 | `tracker-db-update.yml` pusht per Zeitplan direkt auf `main` (`public/tracker-db-version.json`). Pushes mit `GITHUB_TOKEN` lösen keine Folge-Workflows aus. | BESTÄTIGT, Ruleset-Bypass NICHT GEPRÜFT |
 | K10 | Lokale Skripte mit Produktionswirkung: `release-merge-deploy.sh` (Direkt-Push + wrangler), `deploy-phase4.sh`, `deploy-to-staging.sh`, `scripts/ops/supabase-functions-deploy.sh`, `scripts/ci/revert-orphan-migration-ledger.sh`, `stripe:sync` (`--apply`), `release:publish`. In dieser Cloud-Session gab es keine Supabase-/Cloudflare-/VPS-Zugangsdaten (nur Variablennamen geprüft). | TEILWEISE |
 | K11 | Ruleset, Required Checks, Default-Rechte von `GITHUB_TOKEN` und Schutzregeln des bestehenden Environments `production` sind über die verfügbaren Werkzeuge nicht lesbar. | NICHT GEPRÜFT |

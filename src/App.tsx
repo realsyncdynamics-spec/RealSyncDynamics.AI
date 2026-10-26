@@ -29,6 +29,7 @@ const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default:
 const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
+const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -497,7 +498,12 @@ function RoutesWithTracking() {
       {/* 13.10.2026 (Owner): Landing v6 (Claude-Design „The Governance OS für DSGVO und
           EU AI Act", Inhalte an Pricing-SSoT/Beta/Implementierungsstatus angepasst) ist
           Startseite. v5 bleibt unverändert als Referenz/Rückfall unter /design/landing-v5. */}
-      <Route path="/" element={<LandingV6 />} />
+      {/* 26.10.2026 (Owner): Landing v7 (Artefakt „AI Compliance Operations OS for Europe",
+          Titan/Nacht, Inhalte aus SSoT/Registry) ist Startseite. v6 bleibt als Referenz/Rückfall
+          unter /design/landing-v6; /design/landing-v7 bleibt für bereits geteilte Vorschau-Links. */}
+      <Route path="/" element={<LandingV7 />} />
+      <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />

@@ -58,15 +58,14 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing at Landing v6; earth hero only on /design/landing-v4', () => {
+  it('points public landing at Landing v7; earth hero only on /design/landing-v4', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
     expect(landing.route).toBe('/');
-    expect(landing.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
-    expect(landing.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV7View'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('landing-v7-content'))).toBe(true);
     expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('heroEarthScene'))).toBe(false);
-    expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
     expect(landing.description).not.toMatch(/three\.js/i);
     for (const e of landing.evidence) {
       const path = e.split('#')[0];
@@ -84,26 +83,28 @@ describe('implementation-status registry', () => {
     expect(earth.description).toContain('Nicht mehr auf `/`');
   });
 
-  it('keeps H1 and CTAs of the registry in sync with Landing v6', () => {
-    const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
-    const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
+  it('keeps H1 and CTAs of the registry in sync with Landing v7', () => {
+    const view = readFileSync(resolve('src/components/landing/v7/LandingV7View.tsx'), 'utf8');
+    const content = readFileSync(resolve('src/components/landing/v7/landing-v7-content.ts'), 'utf8');
     const landing = getImplementation('public-landing')!;
-    expect(view).toContain('The Governance OS </span>');
-    expect(view).toContain('für DSGVO und EU AI Act.</span>');
-    expect(landing.description).toContain('The Governance OS für DSGVO und EU AI Act.');
-    expect(landing.description).toContain('/audit?source=landing-v6');
+    expect(view).toContain('>AI Compliance</span>');
+    expect(view).toContain('>Operations OS </span>');
+    expect(view).toContain('>for Europe</span>');
+    expect(landing.description).toContain('AI Compliance Operations OS for Europe');
+    expect(landing.description).toContain('/audit?source=landing-v7');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
-    expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
-    expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;');
-    expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
+    expect(content).toContain("export const SOURCE = 'landing-v7';");
+    expect(content).toContain('audit: `/audit?source=${SOURCE}`');
+    expect(content).toContain('enterprise: `/contact-sales?tier=enterprise&source=${SOURCE}`');
 
     const cta = getImplementation('free-audit')!.ctaLabel!;
     expect(cta).toBe('Kostenlosen Website-Check starten');
-    expect(view).toContain(`>${cta}<`);
+    expect(landing.description).toContain(cta);
+    expect(content).toContain("getImplementation('free-audit')?.ctaLabel");
 
     for (const id of ['pricing-monthly', 'enterprise-inquiry'] as const) {
       const item = getImplementation(id)!;
-      expect(item.evidence.some((e) => e.includes('landing/v6/')), id).toBe(true);
+      expect(item.evidence.some((e) => e.includes('landing/v7/')), id).toBe(true);
       expect(item.evidence.some((e) => e.includes('landing/v4/')), id).toBe(false);
     }
   });

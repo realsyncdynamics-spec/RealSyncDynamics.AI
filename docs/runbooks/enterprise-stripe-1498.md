@@ -42,9 +42,14 @@ product         == <verifizierte prod_…>
 
 ## Code nach Verifikation
 
-1. `supabase/migrations/20261025120000_enterprise_stripe_price_1498.sql`
+1. Vorlage `docs/runbooks/enterprise-stripe-1498.migration.sql.template`
+   nach `supabase/migrations/<Timestamp>_enterprise_stripe_price_1498.sql`
+   kopieren, Timestamp nach der letzten Migration auf `main`
    - `price_REPLACE_ME` durch echte Live-Price-ID ersetzen
    - `DO`-Block muss genau einen Enterprise-Default mit neuer ID + Name sehen
+   - Die Vorlage liegt bewusst nicht unter `supabase/migrations/`: Mit dem
+     Platzhalter bricht sie ab, und `Migration validation` spielt jede Datei
+     dort ein.
 2. `supabase/functions/stripe-checkout/price-match.ts`
    - `PLAN_STRIPE_EXPECTATIONS.enterprise.productId.live` = verifizierte Product-ID
    - optional `.test` setzen, sonst bleibt Test-Checkout gesperrt

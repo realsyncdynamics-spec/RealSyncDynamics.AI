@@ -1,5 +1,6 @@
 -- Enterprise Self-Service: Live Stripe Price 1.498 €/Monat netto
 --
+-- Vorlage, keine Migration. Siehe docs/runbooks/enterprise-stripe-1498.md.
 -- Abhängig von #1982 (SSoT purchaseMode=checkout, endliche Quotas).
 -- Alte Catalog-Price (1.249 €): price_1TxLdLREjTWueUcGRaXie8Vs
 -- Neuer Price muss in Stripe existieren BEVOR diese Migration deployed wird:
@@ -15,7 +16,7 @@ BEGIN
      OR 'price_REPLACE_ME' = 'price_REPLACE_ME' THEN
     RAISE EXCEPTION
       'Enterprise Stripe Price nicht verdrahtet: price_REPLACE_ME in '
-      '20261025120000_enterprise_stripe_price_1498.sql durch die verifizierte '
+      'der Enterprise-Stripe-Migration durch die verifizierte '
       'Live-Price-ID (149800 Cent, exclusive) ersetzen. Siehe '
       'docs/runbooks/enterprise-stripe-1498.md.'
       USING ERRCODE = 'P0001';

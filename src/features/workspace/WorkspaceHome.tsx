@@ -81,7 +81,7 @@ export function WorkspaceHome() {
   return (
     <WorkspaceShell title="Übersicht" onGate={() => setAuthOpen(true)}>
       <DemoInner onAuthOpen={() => setAuthOpen(true)} />
-      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
+      {/*{authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}*/}
     </WorkspaceShell>
   );
 }

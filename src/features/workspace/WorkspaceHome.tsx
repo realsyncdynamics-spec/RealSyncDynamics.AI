@@ -69,7 +69,7 @@ export function WorkspaceHome() {
   if (isAuth) {
     return (
       <AuthGate>
-        {() => (
+        {(_session) => (
           <WorkspaceShell title="Übersicht">
             <Inner />
           </WorkspaceShell>

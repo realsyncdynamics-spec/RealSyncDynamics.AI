@@ -415,6 +415,18 @@ export const PUBLIC_ROADMAP_COPY: Record<
         'Planned: keep monitoring a domain after the scan — public entry follows.',
     },
   },
+  'enterprise-sso': {
+    de: {
+      name: 'Enterprise Single Sign-On (SSO)',
+      description:
+        'Geplant: Anmeldung über Unternehmens-Identitätsanbieter (OIDC und SAML 2.0) — heute klar als Coming Soon markiert, nicht als live.',
+    },
+    en: {
+      name: 'Enterprise Single Sign-On (SSO)',
+      description:
+        'Planned: sign-in via enterprise identity providers (OIDC and SAML 2.0) — clearly marked as coming soon today, not live.',
+    },
+  },
   'framework-tisax-dora': {
     de: {
       name: 'TISAX- und DORA-Rahmenwerke',

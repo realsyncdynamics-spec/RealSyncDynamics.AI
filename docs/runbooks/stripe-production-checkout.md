@@ -192,11 +192,19 @@ FROM public.subscriptions
 WHERE created_at > NOW() - INTERVAL '7 days'
 ORDER BY created_at DESC;
 
--- Recent webhook deliveries
-SELECT source, event_type, status, created_at
+-- Recent webhook deliveries (Stripe event id, event type, receive time)
+SELECT id, type, processed_at
 FROM public.webhook_events
-WHERE source = 'stripe' AND created_at > NOW() - INTERVAL '24 hours'
-ORDER BY created_at DESC LIMIT 20;
+WHERE processed_at > NOW() - INTERVAL '24 hours'
+ORDER BY processed_at DESC LIMIT 20;
+
+-- Last delivery overall (an empty 24 h window is normal without traffic)
+SELECT max(processed_at) AS last_event, count(*) AS total
+FROM public.webhook_events;
 ```
 
-All three queries are read-only and tenant-scoped via RLS.
+All three queries are read-only. `public.webhook_events` has only the
+columns `id` (Stripe event id), `type`, `payload` and `processed_at`; there is
+no `source`/`status`/`created_at`. It is deny-by-default under RLS (service
+role and super-admin read only), so run these in the SQL editor or with a
+super-admin session, not as a normal tenant user.

@@ -1,6 +1,27 @@
-import { Fragment, type CSSProperties } from 'react';
+import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { LandingV6Values } from './useLandingV6';
+
+/** Arrow keys select and focus one option; Tab enters the group only once. */
+function onRadioKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  const group = event.currentTarget;
+  const radios = Array.from(group.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+  const index = radios.indexOf(event.target as HTMLButtonElement);
+  if (index < 0) return;
+  let next: number;
+  switch (event.key) {
+    case 'ArrowRight':
+    case 'ArrowDown': next = (index + 1) % radios.length; break;
+    case 'ArrowLeft':
+    case 'ArrowUp': next = (index - 1 + radios.length) % radios.length; break;
+    case 'Home': next = 0; break;
+    case 'End': next = radios.length - 1; break;
+    default: return;
+  }
+  event.preventDefault();
+  radios[next].focus();
+  radios[next].click();
+}
 
 /**
  * Landing v6 — Markup aus dem Claude-Design-Handoff (13.10.2026),
@@ -321,8 +342,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               {v.checkQs.map((q, qI) => (<Fragment key={qI}>
                 <li style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "14px 24px", padding: "18px 0", borderBottom: "1px solid var(--rs-line)" }}>
                   <div style={{ display: "flex", gap: "16px", flex: "1 1 280px", minWidth: "0" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)", paddingTop: "3px" }}>{q.n}</span><span style={{ fontSize: "var(--fs-body)", lineHeight: "1.5" }}>{q.q}</span></div>
-                  <div role="radiogroup" aria-label={q.q} style={{ display: "flex", gap: "6px" }}>
-                    {q.opts.map((o, oI) => (<Fragment key={oI}><button type="button" role="radio" aria-checked={o.on} onClick={o.pick} style={o.style}>{o.l}</button></Fragment>))}
+                  <div role="radiogroup" onKeyDown={onRadioKeyDown} aria-label={q.q} style={{ display: "flex", gap: "6px" }}>
+                    {q.opts.map((o, oI) => (<Fragment key={oI}><button type="button" role="radio" tabIndex={o.on || (!q.opts.some((option) => option.on) && oI === 0) ? 0 : -1} aria-checked={o.on} onClick={o.pick} style={o.style}>{o.l}</button></Fragment>))}
                   </div>
                 </li>
               </Fragment>))}
@@ -390,9 +411,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>PREISE</p>
               <h2 style={{ margin: "0", maxWidth: "18ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Pläne für die <span style={{ color: "var(--rs-acc)" }}>Governance Runtime.</span></h2>
             </div>
-            {v.yearlyEnabled ? (<div role="radiogroup" aria-label="Abrechnungszeitraum" style={{ display: "flex", padding: "4px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)" }}>
-              <button type="button" role="radio" aria-checked={!v.isYearly} onClick={v.setMonthly} style={v.cycleMonthlyStyle}>Monatlich</button>
-              <button type="button" role="radio" aria-checked={v.isYearly} onClick={v.setYearly} style={v.cycleYearlyStyle}>Jährlich · 2 Monate gratis</button>
+            {v.yearlyEnabled ? (<div role="radiogroup" onKeyDown={onRadioKeyDown} aria-label="Abrechnungszeitraum" style={{ display: "flex", padding: "4px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)" }}>
+              <button type="button" role="radio" tabIndex={!v.isYearly ? 0 : -1} aria-checked={!v.isYearly} onClick={v.setMonthly} style={v.cycleMonthlyStyle}>Monatlich</button>
+              <button type="button" role="radio" tabIndex={v.isYearly ? 0 : -1} aria-checked={v.isYearly} onClick={v.setYearly} style={v.cycleYearlyStyle}>Jährlich · 2 Monate gratis</button>
             </div>) : (<p data-testid="pricing-yearly-disabled" style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Monatlich · Jährlich demnächst</p>)}
           </div>
           <div style={{ marginTop: "clamp(48px,4.5vw,120px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,250px),1fr))", gap: "16px", alignItems: "stretch" }}>

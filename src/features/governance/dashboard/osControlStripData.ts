@@ -183,3 +183,129 @@ export function evidenceTileFrom(
 export function highRiskAssetsCountable(data: CockpitData | null): boolean {
   return sourcesOk(data, HIGH_RISK_ASSET_SOURCES);
 }
+
+// ── WP11: Compliance-Ampel (drei echte Zähler aus vorhandenen Quellen) ──────
+
+export type ComplianceAmpelStatus =
+  | 'loading'
+  | 'insufficient_data'
+  | 'empty'
+  | 'amber'
+  | 'green';
+
+export interface ComplianceAmpelModel {
+  status: ComplianceAmpelStatus;
+  label: string;
+  aiSystemsCaptured: TileState<number>;
+  aiSystemsClassified: TileState<number>;
+  evidencePresent: TileState<number>;
+}
+
+/**
+ * Anzahl klassifizierter KI-Systeme (`governance_assets` mit `asset_type = 'ai_system'`
+ * und `ai_act_class !== 'unknown'`) aus den bereits geladenen Cockpit-Daten.
+ * Fehlt der Asset-Teillader, ist das Ergebnis ein Fehlerzustand — niemals `0`.
+ */
+export function classifiedTileFrom(
+  data: CockpitData | null,
+  loading: boolean,
+  error: string | null,
+): TileState<number> {
+  if (error) return { kind: 'error', message: error };
+  if (loading || !data) return { kind: 'loading' };
+  if (!sourcesOk(data, HIGH_RISK_ASSET_SOURCES) || data.classifiedAiSystems === null) {
+    return { kind: 'error', message: 'Klassifizierungs-Quellen nicht vollständig geladen' };
+  }
+  const count =
+    typeof data.classifiedAiSystems === 'number'
+      ? data.classifiedAiSystems
+      : (data.riskIndex?.highRiskAssets ?? 0);
+  return { kind: 'value', value: count };
+}
+
+/**
+ * Verdichtet die drei echten Zähler für den Block „Compliance-Ampel" im
+ * Command Center (WP11):
+ *   1. KI-Systeme erfasst (`ai_systems` / `governance_assets`)
+ *   2. Klassifiziert (`governance_assets.ai_act_class !== 'unknown'`)
+ *   3. Nachweise vorhanden (`governance_evidence` aus `evidenceHealth.totalCount`)
+ *
+ * Fehlt eine Quelle (Lade-/RLS-Fehler), bleibt die Ampel auf `insufficient_data`
+ * und der betroffene Zähler zeigt den Fehlerzustand statt einer erfundenen `0`.
+ */
+export function complianceAmpelFrom(
+  sources: OsControlStripData,
+  data: CockpitData | null,
+  loading: boolean,
+  error: string | null,
+): ComplianceAmpelModel {
+  const aiSystemsCaptured: TileState<number> =
+    sources.aiSystems.kind === 'value'
+      ? {
+          kind: 'value',
+          value: Math.max(
+            sources.aiSystems.value,
+            sourcesOk(data, HIGH_RISK_ASSET_SOURCES) ? (data?.scoreBasis?.aiSystems ?? 0) : 0,
+          ),
+        }
+      : sources.aiSystems;
+
+  const aiSystemsClassified = classifiedTileFrom(data, loading, error);
+  const evidenceTile = evidenceTileFrom(data, loading, error);
+  const evidencePresent: TileState<number> =
+    evidenceTile.kind === 'value'
+      ? { kind: 'value', value: evidenceTile.value.totalCount }
+      : evidenceTile;
+
+  const states = [aiSystemsCaptured, aiSystemsClassified, evidencePresent];
+  if (states.some((s) => s.kind === 'loading')) {
+    return {
+      status: 'loading',
+      label: 'Wird geprüft …',
+      aiSystemsCaptured,
+      aiSystemsClassified,
+      evidencePresent,
+    };
+  }
+  if (states.some((s) => s.kind === 'error')) {
+    return {
+      status: 'insufficient_data',
+      label: 'Quelle nicht lesbar — keine Ampel-Aussage',
+      aiSystemsCaptured,
+      aiSystemsClassified,
+      evidencePresent,
+    };
+  }
+
+  const captured = (aiSystemsCaptured as { kind: 'value'; value: number }).value;
+  const classified = (aiSystemsClassified as { kind: 'value'; value: number }).value;
+  const evidence = (evidencePresent as { kind: 'value'; value: number }).value;
+
+  if (captured === 0 && classified === 0 && evidence === 0) {
+    return {
+      status: 'empty',
+      label: 'Noch keine Daten erfasst',
+      aiSystemsCaptured,
+      aiSystemsClassified,
+      evidencePresent,
+    };
+  }
+
+  if (captured > 0 && classified >= captured && evidence > 0) {
+    return {
+      status: 'green',
+      label: 'Erfasst, klassifiziert und mit Nachweisen belegt',
+      aiSystemsCaptured,
+      aiSystemsClassified,
+      evidencePresent,
+    };
+  }
+
+  return {
+    status: 'amber',
+    label: 'Teilweise eingerichtet — Klassifizierung oder Nachweise offen',
+    aiSystemsCaptured,
+    aiSystemsClassified,
+    evidencePresent,
+  };
+}

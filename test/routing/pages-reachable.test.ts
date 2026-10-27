@@ -71,6 +71,8 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Abgelöst durch Landing v4: /landingpages und /landing-uebersicht leiten auf /.',
   'src/pages/GovernanceRuntimeLayerPage.tsx':
     'Abgelöst durch Landing v4: /governance-runtime-layer leitet auf /.',
+  'src/pages/EnterpriseAiOsDashboard.tsx':
+    'Abgelöst durch WP11: /dashboard/enterprise-ai-os leitet auf /app/dashboard.',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

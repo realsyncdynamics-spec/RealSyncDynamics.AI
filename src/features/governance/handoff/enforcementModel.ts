@@ -223,8 +223,21 @@ const ACTION_TO_VERDICT: Readonly<Record<GovernancePolicyAction, Verdict>> = {
   require_approval: 'require_approval',
 };
 
+const VERDICT_TO_ACTION: Readonly<Record<Verdict, GovernancePolicyAction>> = {
+  allow: 'allow',
+  log_only: 'log',
+  warn: 'warn',
+  block: 'block',
+  require_approval: 'require_approval',
+  react: 'warn',
+};
+
 export function verdictOfAction(action: GovernancePolicyAction): Verdict {
   return ACTION_TO_VERDICT[action] ?? 'log_only';
+}
+
+export function actionOfVerdict(verdict: Verdict): GovernancePolicyAction {
+  return VERDICT_TO_ACTION[verdict] ?? 'log';
 }
 
 export interface PolicyClassification {

@@ -111,8 +111,6 @@ Deno.serve(async (req) => {
   // falscher Bearer → 401. RPCs bleiben service_role-only auf der DB-Seite.
   const CRON_KEY = Deno.env.get('CRON_MEMORY_DECAY_KEY') ?? '';
   if (!CRON_KEY) {
-    const durationMs = Date.now() - startedAtForLogging;
-    await logCronExecution('memory-decay-worker', 'failure', 500, 'CRON_KEY_MISSING', 'CRON_MEMORY_DECAY_KEY not configured', durationMs);
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_MEMORY_DECAY_KEY not configured', corsHeaders);
   }
   const authHeader = req.headers.get('Authorization') ?? '';

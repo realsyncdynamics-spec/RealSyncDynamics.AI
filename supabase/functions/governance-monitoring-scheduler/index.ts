@@ -225,9 +225,6 @@ Deno.serve(async (req) => {
   // CRON_KEY_MISSING (Fehlkonfiguration, kein Lauf), falscher Bearer → 401.
   const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_MONITORING_KEY') ?? '';
   if (!CRON_KEY) {
-    const durationMs = Date.now() - startedAt;
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
-    await logCronExecution(sb, 'governance-monitoring-scheduler', 'failure', 500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_MONITORING_KEY not configured', durationMs);
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_MONITORING_KEY not configured');
   }
   const authHeader = req.headers.get('Authorization') ?? '';

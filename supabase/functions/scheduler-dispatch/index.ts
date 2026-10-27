@@ -112,8 +112,6 @@ Deno.serve(async (req) => {
   // 500 statt 401, damit Betrieb „Secret fehlt" von „Secret falsch" trennen
   // kann (gleicher Vertrag wie email-auth-rescan). Weiterhin fail-closed.
   if (!CRON_KEY) {
-    const durationMs = Date.now() - startMs;
-    await logCronExecution(admin, 'scheduler-dispatch', 'failure', 500, 'CRON_KEY_MISSING', 'CRON_SCHEDULER_DISPATCH_KEY not configured', durationMs);
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_SCHEDULER_DISPATCH_KEY not configured');
   }
   const authHeader = req.headers.get('Authorization') ?? '';

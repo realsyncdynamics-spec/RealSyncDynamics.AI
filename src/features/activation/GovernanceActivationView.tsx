@@ -1,17 +1,22 @@
 /**
- * Governance Activation — first production vertical.
+ * Governance Activation — first production vertical & canonical post-signup
+ * onboarding target (WP10 / Masterplan M1).
  *
- * Product module (NOT onboarding / NOT a setup wizard). Spec:
- * `docs/product/governance-activation.md`
- *
+ * Spec: `docs/product/governance-activation.md`
  * Route: `/app/activation` inside GovernanceBrowserShell + AppGate.
- * Organization + Governance Scope + AI-OS-Setup (WP3, `organization.aiSetup`)
- * persist to `governance_activations`.
- * Blueprint / Migration extraction / Expert Review stay Preview.
- * No live tenant KPIs — placeholder numbers labeled Preview / Coming Soon.
+ *
+ * Canonical 4-step Activation flow ("Schritt x von 4"):
+ *   1. Organization (inkl. Organisationstyp, Mitarbeiterzahl, KI-Betriebsmodus
+ *      aus SetupAssistant)
+ *   2. Scope (Governance Frameworks)
+ *   3. AI Setup (KI-Systeme, Bots/Agenten, Datenklassen, Freigaben)
+ *   4. Go-Live (Zusammenfassung → /app/dashboard)
+ *
+ * Blueprint / Migration extraction / Expert Review stay Coming Soon per
+ * `src/product/implementation-status.ts`.
  */
 import { useEffect, useState, type DragEvent, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
   Building2,
@@ -30,11 +35,23 @@ import {
   OS_FOCUS_BORDER,
 } from '../../components/governance-os/osChrome';
 import { useTenant } from '../../core/access/TenantProvider';
+import { claimPendingAudit } from '../../core/onboarding/claimAudit';
+import { safeInternalPath } from '../../lib/safeInternalPath';
+import { recordTimeToFirstEvidence } from '../../lib/marketingAnalytics';
+import {
+  getImplementation,
+  STATUS_LABEL,
+  type ImplementationStatus,
+} from '../../product/implementation-status';
+import { loadCompanyProfile, saveCompanyProfile } from '../company/companyProfileLocal';
+import { clearScanProfile, loadScanProfile, type ScanProfile } from '../onboarding/scanProfile';
 import {
   EMPTY_ORGANIZATION,
   loadGovernanceActivation,
   saveGovernanceActivation,
   type ActivationOrganization,
+  type ActivationResidencyPolicy,
+  type ActivationTenantType,
 } from './activationApi';
 import { AiSetupStep } from './AiSetupStep';
 import {
@@ -45,7 +62,7 @@ import {
   type AiSetup,
 } from './aiSetupCatalog';
 
-type WizardStep =
+export type WizardStep =
   | 'organization'
   | 'scope'
   | 'ai-inventory'
@@ -54,14 +71,26 @@ type WizardStep =
   | 'review'
   | 'status';
 
-const STEPS: readonly { id: WizardStep; label: string; index: string }[] = [
-  { id: 'organization', label: 'Organization', index: '01' },
-  { id: 'scope', label: 'Scope', index: '02' },
-  { id: 'ai-inventory', label: 'AI Setup', index: '03' },
-  { id: 'blueprint', label: 'Blueprint', index: '04' },
-  { id: 'documents', label: 'Migration', index: '05' },
-  { id: 'review', label: 'Expert Review', index: '06' },
-  { id: 'status', label: 'Go-Live', index: '07' },
+export const ACTIVATION_CORE_STEPS: readonly {
+  id: WizardStep;
+  label: string;
+  index: string;
+  stepNumber: 1 | 2 | 3 | 4;
+}[] = [
+  { id: 'organization', label: 'Organization', index: '01', stepNumber: 1 },
+  { id: 'scope', label: 'Scope', index: '02', stepNumber: 2 },
+  { id: 'ai-inventory', label: 'AI Setup', index: '03', stepNumber: 3 },
+  { id: 'status', label: 'Go-Live', index: '04', stepNumber: 4 },
+];
+
+export const COMING_SOON_STEPS: readonly {
+  id: WizardStep;
+  label: string;
+  implementationId: string;
+}[] = [
+  { id: 'blueprint', label: 'Blueprint', implementationId: 'activation-blueprint' },
+  { id: 'documents', label: 'Migration', implementationId: 'activation-doc-extract' },
+  { id: 'review', label: 'Expert Review', implementationId: 'activation-expert-review' },
 ];
 
 /** Schritte, die beim Weiter/Speichern in `governance_activations` persistieren. */
@@ -93,6 +122,57 @@ const SCOPE_OPTIONS = [
 const DEFAULT_SCOPES: readonly string[] = ['dsgvo', 'eu-ai-act', 'ai-governance'];
 
 const ACCEPTED_TYPES = 'XLSX · CSV · DOCX · PDF · JSON · VVT · DSFA · TOM · Policies · Risiko-Register';
+
+const TENANT_TYPE_OPTIONS: readonly { id: ActivationTenantType; label: string }[] = [
+  { id: 'freelancer', label: 'Einzelner / Freelancer' },
+  { id: 'sme', label: 'KMU / Handwerk (< 50 MA)' },
+  { id: 'agency', label: 'Agentur / Kanzlei' },
+  { id: 'enterprise', label: 'Großunternehmen' },
+];
+
+const EMPLOYEE_SIZE_OPTIONS: readonly { value: number; label: string }[] = [
+  { value: 1, label: '1–5' },
+  { value: 10, label: '6–25' },
+  { value: 50, label: '26–100' },
+  { value: 250, label: '101–500' },
+  { value: 1000, label: '500+' },
+];
+
+const RESIDENCY_OPTIONS: readonly { id: ActivationResidencyPolicy; label: string }[] = [
+  { id: 'enforce_eu_local', label: 'Lokal (EU / On-Prem)' },
+  { id: 'enforce_cloud', label: 'Cloud-Anbieter' },
+  { id: 'user_choice', label: 'Hybrid (pro Anwendungsfall)' },
+];
+
+const SCAN_ROLE_TO_TENANT_TYPE: Record<NonNullable<ScanProfile['role']>, ActivationTenantType> = {
+  self: 'freelancer',
+  team: 'sme',
+  agency: 'agency',
+  enterprise: 'enterprise',
+};
+
+const SCAN_RESIDENCY_TO_POLICY: Record<NonNullable<ScanProfile['residency']>, ActivationResidencyPolicy> = {
+  local: 'enforce_eu_local',
+  eu_cloud: 'user_choice',
+  hybrid: 'user_choice',
+};
+
+function prefillOrgFromScan(scan: ScanProfile | null, domainParam: string | null): ActivationOrganization {
+  const company = scan?.company?.trim() || domainParam?.trim() || '';
+  const tenantType = scan?.role ? SCAN_ROLE_TO_TENANT_TYPE[scan.role] : undefined;
+  const residencyPolicy = scan?.residency ? SCAN_RESIDENCY_TO_POLICY[scan.residency] : undefined;
+  return {
+    ...EMPTY_ORGANIZATION,
+    company,
+    ...(tenantType ? { tenantType } : {}),
+    ...(residencyPolicy ? { residencyPolicy } : {}),
+  };
+}
+
+function implementationStatusLabel(featureId: string, fallback: ImplementationStatus = 'coming-soon'): string {
+  const status = getImplementation(featureId)?.status ?? fallback;
+  return STATUS_LABEL[status];
+}
 
 function PreviewChip({ children }: { children: string }) {
   return (
@@ -169,10 +249,21 @@ function aiSetupSummary(
   ];
 }
 
+export function stepNumberForWizardStep(step: WizardStep): 1 | 2 | 3 | 4 {
+  const core = ACTIVATION_CORE_STEPS.find((s) => s.id === step);
+  if (core) return core.stepNumber;
+  return 3;
+}
+
 export function GovernanceActivationView() {
   const { activeTenantId, loading: tenantLoading } = useTenant();
+  const [searchParams] = useSearchParams();
+  const finishTarget = safeInternalPath(searchParams.get('next')) ?? '/app/dashboard';
+  const domainParam = searchParams.get('domain');
   const [step, setStep] = useState<WizardStep>('organization');
-  const [org, setOrg] = useState<ActivationOrganization>(EMPTY_ORGANIZATION);
+  const [org, setOrg] = useState<ActivationOrganization>(() =>
+    prefillOrgFromScan(loadScanProfile(), domainParam),
+  );
   const [scopes, setScopes] = useState<string[]>([...DEFAULT_SCOPES]);
   const [dropActive, setDropActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<string[]>([]);
@@ -192,14 +283,28 @@ export function GovernanceActivationView() {
   const isLoadingActivation =
     tenantLoading || loadState === 'loading' || loadedTenantId !== (activeTenantId ?? '');
 
-  const stepMeta = STEPS.find((s) => s.id === step) ?? STEPS[0];
-  const stepIdx = STEPS.findIndex((s) => s.id === step);
+  const currentStepNumber = stepNumberForWizardStep(step);
+  const coreStepMeta = ACTIVATION_CORE_STEPS.find((s) => s.id === step);
+  const comingSoonMeta = COMING_SOON_STEPS.find((s) => s.id === step);
+  const activeHeaderIndex = coreStepMeta?.index ?? 'VORSCHAU';
+  const activeHeaderLabel = coreStepMeta?.label ?? comingSoonMeta?.label ?? 'Organization';
+  const coreIdx = ACTIVATION_CORE_STEPS.findIndex((s) => s.id === step);
+
+  useEffect(() => {
+    recordTimeToFirstEvidence('activation_started', 1);
+  }, []);
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    void claimPendingAudit().catch(() => null);
+  }, [activeTenantId]);
 
   useEffect(() => {
     if (tenantLoading) return;
+    const scanPrefill = prefillOrgFromScan(loadScanProfile(), domainParam);
     // Workspace-Wechsel: Formularzustand des vorherigen Tenants verwerfen, bevor
     // geladen wird — sonst landen fremde Angaben im neuen Tenant.
-    setOrg(EMPTY_ORGANIZATION);
+    setOrg(scanPrefill);
     setScopes([...DEFAULT_SCOPES]);
     setAiSetup(createEmptyAiSetup());
     setSavedAiSetup(null);
@@ -219,7 +324,11 @@ export function GovernanceActivationView() {
         if (cancelled) return;
         if (record) {
           const { aiSetup: storedAiSetup, ...orgFields } = record.organization;
-          setOrg(orgFields);
+          setOrg({
+            ...scanPrefill,
+            ...orgFields,
+            company: orgFields.company || scanPrefill.company,
+          });
           if (storedAiSetup) {
             setAiSetup(storedAiSetup);
             setSavedAiSetup(storedAiSetup);
@@ -239,7 +348,7 @@ export function GovernanceActivationView() {
     return () => {
       cancelled = true;
     };
-  }, [activeTenantId, tenantLoading]);
+  }, [activeTenantId, tenantLoading, domainParam]);
 
   function toggleScope(id: string) {
     setScopes((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -269,7 +378,21 @@ export function GovernanceActivationView() {
         organization: savingAiSetup ? { ...org, aiSetup } : org,
         scopes,
       });
-      if (savingAiSetup) setSavedAiSetup(aiSetup);
+      if (savingAiSetup) {
+        setSavedAiSetup(aiSetup);
+        const profile = loadCompanyProfile(activeTenantId);
+        const selectedSystems = aiSetup.aiSystems.filter((id) => id !== NONE_OPTION_ID);
+        saveCompanyProfile(activeTenantId, {
+          ...profile,
+          aiSystems: Array.from(new Set([...profile.aiSystems, ...selectedSystems])),
+        });
+        clearScanProfile();
+        recordTimeToFirstEvidence('first_evidence_ready', 3);
+      } else if (step === 'organization') {
+        recordTimeToFirstEvidence('organization_saved', 1);
+      } else if (step === 'scope') {
+        recordTimeToFirstEvidence('scope_saved', 2);
+      }
       setLastSavedPart(savingAiSetup ? 'ai-setup' : 'org-scope');
       setSaveState('saved');
       setLastSavedAt(new Date().toISOString());
@@ -286,13 +409,19 @@ export function GovernanceActivationView() {
       const ok = await persistActivation();
       if (!ok) return;
     }
-    const next = STEPS[stepIdx + 1];
-    if (next) setStep(next.id);
+    if (coreIdx >= 0 && coreIdx < ACTIVATION_CORE_STEPS.length - 1) {
+      setStep(ACTIVATION_CORE_STEPS[coreIdx + 1].id);
+      return;
+    }
+    setStep('status');
   }
 
   function goBack() {
-    const prev = STEPS[stepIdx - 1];
-    if (prev) setStep(prev.id);
+    if (coreIdx > 0) {
+      setStep(ACTIVATION_CORE_STEPS[coreIdx - 1].id);
+      return;
+    }
+    setStep('ai-inventory');
   }
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
@@ -324,12 +453,18 @@ export function GovernanceActivationView() {
                   Governance Activation
                 </h1>
                 <ModuleStatusBadge status="beta" />
+                <span
+                  data-testid="activation-step-progress"
+                  className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border border-[#00B8D4]/50 bg-obsidian-900 text-[#00B8D4]"
+                >
+                  Schritt {currentStepNumber} von 4
+                </span>
                 {isPersistedStep && lastSavedAt ? (
                   <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-emerald-800 bg-emerald-950 text-emerald-300">
                     Persisted
                   </span>
                 ) : (
-                  <PreviewChip>Preview</PreviewChip>
+                  <PreviewChip>{implementationStatusLabel('governance-activation', 'live')}</PreviewChip>
                 )}
               </div>
               <p className="text-sm text-titanium-400">
@@ -343,7 +478,7 @@ export function GovernanceActivationView() {
             </div>
           </div>
           <Link
-            to="/app/dashboard"
+            to={finishTarget}
             className={`text-[11px] font-mono uppercase tracking-wider text-titanium-500 hover:text-[#00B8D4] transition-colors shrink-0`}
           >
             ← Compliance Dashboard
@@ -379,23 +514,23 @@ export function GovernanceActivationView() {
           </p>
         )}
 
-        <nav aria-label="Activation steps" className="flex flex-wrap gap-px bg-titanium-900 border border-titanium-900">
-          {STEPS.map((s) => {
+        <nav aria-label="Activation steps" className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+          {ACTIVATION_CORE_STEPS.map((s) => {
             const active = s.id === step;
-            const done = STEPS.findIndex((x) => x.id === s.id) < stepIdx;
+            const done = s.stepNumber < currentStepNumber;
             return (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => setStep(s.id)}
-                className={`flex-1 min-w-[7.5rem] px-3 py-2.5 text-left transition-colors ${
+                className={`px-3 py-2.5 text-left transition-colors ${
                   active
                     ? 'bg-obsidian-800 text-titanium-50 border-b-2 border-[#00B8D4]'
                     : 'bg-obsidian-950 text-titanium-500 hover:bg-obsidian-900 hover:text-titanium-200'
                 }`}
               >
                 <div className={`font-mono text-[9px] tracking-widest ${active || done ? 'text-[#00B8D4]/90' : 'text-titanium-600'}`}>
-                  {s.index}
+                  {s.index} · SCHRITT {s.stepNumber}/4
                   {done ? ' · DONE' : active ? ' · ACTIVE' : ''}
                 </div>
                 <div className="text-xs font-medium mt-0.5">{s.label}</div>
@@ -404,13 +539,41 @@ export function GovernanceActivationView() {
           })}
         </nav>
 
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+            Geplante Erweiterungen:
+          </span>
+          {COMING_SOON_STEPS.map((cs) => {
+            const active = cs.id === step;
+            return (
+              <button
+                key={cs.id}
+                type="button"
+                onClick={() => setStep(cs.id)}
+                className={`px-2.5 py-1 border font-mono text-[10px] uppercase tracking-wider transition-colors ${
+                  active
+                    ? 'border-[#00B8D4] bg-obsidian-800 text-titanium-50'
+                    : 'border-titanium-900 bg-obsidian-950 text-titanium-500 hover:text-titanium-300'
+                }`}
+              >
+                {cs.label} · {implementationStatusLabel(cs.implementationId)}
+              </button>
+            );
+          })}
+        </div>
+
         <section className="border border-titanium-900 bg-obsidian-900 p-5 sm:p-6 space-y-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display font-semibold text-titanium-50 text-base">
-              <span className={`font-mono ${OS_ACCENT_TEXT} mr-2`}>{stepMeta.index}</span>
-              {stepMeta.label}
+              <span className={`font-mono ${OS_ACCENT_TEXT} mr-2`}>{activeHeaderIndex}</span>
+              {activeHeaderLabel}
             </h2>
-            {!isPersistedStep && step !== 'status' && <PreviewChip>Coming Soon</PreviewChip>}
+            <span className="font-mono text-[11px] text-titanium-400">
+              Schritt {currentStepNumber} von 4
+            </span>
+            {comingSoonMeta && (
+              <PreviewChip>{implementationStatusLabel(comingSoonMeta.implementationId)}</PreviewChip>
+            )}
           </div>
 
           {step === 'organization' && (
@@ -424,6 +587,81 @@ export function GovernanceActivationView() {
                 }}
                 placeholder="z. B. Muster GmbH"
               />
+              <label className="block space-y-1.5">
+                <span className="text-[11px] uppercase tracking-wider text-titanium-400 font-mono">
+                  Organisationstyp
+                </span>
+                <select
+                  aria-label="Organisationstyp"
+                  value={org.tenantType ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value as ActivationTenantType | '';
+                    setOrg({
+                      ...org,
+                      tenantType: val ? val : undefined,
+                    });
+                    setSaveState('idle');
+                  }}
+                  className={`w-full bg-obsidian-950 border border-titanium-800 text-sm text-titanium-100 px-3 py-2 outline-none ${OS_FOCUS_BORDER}`}
+                >
+                  <option value="">Bitte wählen (optional)…</option>
+                  {TENANT_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[11px] uppercase tracking-wider text-titanium-400 font-mono">
+                  Anzahl Mitarbeiter (optional)
+                </span>
+                <select
+                  aria-label="Anzahl Mitarbeiter"
+                  value={org.orgSizeEmployees ?? ''}
+                  onChange={(e) => {
+                    const parsed = e.target.value ? Number(e.target.value) : undefined;
+                    setOrg({
+                      ...org,
+                      orgSizeEmployees: parsed,
+                    });
+                    setSaveState('idle');
+                  }}
+                  className={`w-full bg-obsidian-950 border border-titanium-800 text-sm text-titanium-100 px-3 py-2 outline-none ${OS_FOCUS_BORDER}`}
+                >
+                  <option value="">Bitte wählen…</option>
+                  {EMPLOYEE_SIZE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[11px] uppercase tracking-wider text-titanium-400 font-mono">
+                  KI-Betriebsmodus (optional)
+                </span>
+                <select
+                  aria-label="KI-Betriebsmodus"
+                  value={org.residencyPolicy ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value as ActivationResidencyPolicy | '';
+                    setOrg({
+                      ...org,
+                      residencyPolicy: val ? val : undefined,
+                    });
+                    setSaveState('idle');
+                  }}
+                  className={`w-full bg-obsidian-950 border border-titanium-800 text-sm text-titanium-100 px-3 py-2 outline-none ${OS_FOCUS_BORDER}`}
+                >
+                  <option value="">Bitte wählen…</option>
+                  {RESIDENCY_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Field
                 label="Gesellschaften"
                 value={org.entities}
@@ -452,6 +690,15 @@ export function GovernanceActivationView() {
                 placeholder="Sales, Engineering, Legal, …"
               />
               <Field
+                label="Rollen"
+                value={org.roles}
+                onChange={(v) => {
+                  setOrg({ ...org, roles: v });
+                  setSaveState('idle');
+                }}
+                placeholder="Admin, Reviewer, Auditor, Owner"
+              />
+              <Field
                 label="Mitarbeiter- / Teamstruktur"
                 value={org.teamStructure}
                 onChange={(v) => {
@@ -471,17 +718,6 @@ export function GovernanceActivationView() {
                 placeholder="DSB, AI Officer, Risk Owner, …"
                 rows={3}
               />
-              <div className="sm:col-span-2">
-                <Field
-                  label="Rollen"
-                  value={org.roles}
-                  onChange={(v) => {
-                    setOrg({ ...org, roles: v });
-                    setSaveState('idle');
-                  }}
-                  placeholder="Admin, Reviewer, Auditor, Owner"
-                />
-              </div>
             </div>
           )}
 
@@ -537,7 +773,7 @@ export function GovernanceActivationView() {
                 <div className="flex items-center gap-2">
                   <Layers className={`h-4 w-4 ${OS_ACCENT_TEXT}`} />
                   <span className="text-sm font-semibold text-titanium-100">Governance Blueprint</span>
-                  <PreviewChip>Coming Soon</PreviewChip>
+                  <PreviewChip>{implementationStatusLabel('activation-blueprint')}</PreviewChip>
                 </div>
                 <p className="text-xs text-titanium-500 leading-relaxed">
                   Spec-Beispiel (nicht live): „Ihr Unternehmen nutzt Microsoft 365, Salesforce und
@@ -557,7 +793,7 @@ export function GovernanceActivationView() {
                       </div>
                       <div className="mt-1 text-lg text-titanium-300 font-mono">{value}</div>
                       <div className="mt-1">
-                        <PreviewChip>Coming Soon</PreviewChip>
+                        <PreviewChip>{implementationStatusLabel('activation-blueprint')}</PreviewChip>
                       </div>
                     </div>
                   ))}
@@ -570,7 +806,7 @@ export function GovernanceActivationView() {
             <div className="space-y-4">
               <p className="text-sm text-titanium-400">
                 Evidence & Migration Engine — Ablegen erzeugt lokal eine Warteschlange. Parsing,
-                Extraction und Mapping sind <span className="font-mono text-amber-300">Coming Soon</span>.
+                Extraction und Mapping sind <span className="font-mono text-amber-300">{implementationStatusLabel('activation-doc-extract')}</span>.
               </p>
               <div
                 onDragOver={(e) => {
@@ -598,12 +834,12 @@ export function GovernanceActivationView() {
                 <div className="border border-titanium-900 bg-obsidian-950 p-4 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-titanium-200">Warteschlange</span>
-                    <PreviewChip>Preview</PreviewChip>
+                    <PreviewChip>{STATUS_LABEL.preview}</PreviewChip>
                   </div>
                   <ul className="space-y-1">
                     {queuedFiles.map((name) => (
                       <li key={name} className="font-mono text-[11px] text-titanium-400 truncate">
-                        {name} · mapping table Coming Soon
+                        {name} · mapping table {implementationStatusLabel('activation-doc-extract')}
                       </li>
                     ))}
                   </ul>
@@ -624,7 +860,7 @@ export function GovernanceActivationView() {
                   <h3 className="text-sm font-semibold text-titanium-100">
                     Entscheidungen, die Aufmerksamkeit brauchen
                   </h3>
-                  <PreviewChip>Coming Soon</PreviewChip>
+                  <PreviewChip>{implementationStatusLabel('activation-expert-review')}</PreviewChip>
                 </div>
                 <p className="text-sm text-titanium-400">
                   Experten sehen nicht alles — nur offene Entscheidungen. Aktuell keine offenen
@@ -713,9 +949,9 @@ export function GovernanceActivationView() {
               </div>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
-                  ['Organization', org.company.trim() ? 'saved' : '—', org.company.trim() ? 'Persisted' : 'Preview'],
-                  ['Scopes', String(scopes.length), scopes.length > 0 ? 'Persisted' : 'Preview'],
-                  ['Blueprint', '—', 'Coming Soon'],
+                  ['Organization', org.company.trim() ? 'saved' : '—', org.company.trim() ? 'Persisted' : STATUS_LABEL.preview],
+                  ['Scopes', String(scopes.length), scopes.length > 0 ? 'Persisted' : STATUS_LABEL.preview],
+                  ['Blueprint', '—', implementationStatusLabel('activation-blueprint')],
                 ].map(([label, value, badge]) => (
                   <div key={label} className="border border-titanium-900 bg-obsidian-950 p-4">
                     <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-500">
@@ -736,7 +972,7 @@ export function GovernanceActivationView() {
           <button
             type="button"
             onClick={goBack}
-            disabled={stepIdx === 0 || saveState === 'saving'}
+            disabled={step === 'organization' || saveState === 'saving'}
             className="px-4 py-2 text-sm border border-titanium-800 text-titanium-300 hover:border-titanium-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Zurück
@@ -772,7 +1008,7 @@ export function GovernanceActivationView() {
                   )}
                 </button>
               )}
-              {stepIdx < STEPS.length - 1 ? (
+              {step !== 'status' ? (
                 <button
                   type="button"
                   onClick={() => void goNext()}
@@ -788,7 +1024,7 @@ export function GovernanceActivationView() {
                 </button>
               ) : (
                 <Link
-                  to="/app/dashboard"
+                  to={finishTarget}
                   className={`inline-flex items-center gap-2 px-4 py-2 ${OS_CREAM_BTN} text-sm font-semibold transition`}
                 >
                   Zum Governance Command Center <ArrowRight className="h-4 w-4" />

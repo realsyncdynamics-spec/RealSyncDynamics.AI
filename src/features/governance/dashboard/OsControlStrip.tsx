@@ -1,10 +1,12 @@
 /**
- * OS-Kachelreihe auf `/app/dashboard` (WP4).
+ * OS-Kachelreihe und Compliance-Ampel auf `/app/dashboard` (WP4, WP11).
  *
  * Macht die Kontrollschicht an fünf Stellen sichtbar: KI-Inventar,
  * Bots/Agenten des Mandanten, Residualrisiko, wartende Freigaben,
- * Evidence-Status. Kein zweites Dashboard — die Reihe sitzt zwischen
- * Übersicht und Browser-Runtime auf derselben Fläche.
+ * Evidence-Status — ergänzt um den Block „Compliance-Ampel" (WP11) mit den
+ * drei echten Zählern (KI-Systeme erfasst, klassifiziert, Nachweise vorhanden).
+ * Kein zweites Dashboard — die Reihe sitzt zwischen Übersicht und
+ * Browser-Runtime auf derselben Fläche.
  *
  * Regeln, die hier sichtbar bleiben müssen:
  *   - Jede Zahl trägt ihre Quelle als Fusszeile. Fehlt die Quelle, steht da
@@ -22,11 +24,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowRight, Bot, Boxes, FileCheck2, Gauge, Loader2, Stamp,
+  AlertTriangle, ArrowRight, Bot, Boxes, FileCheck2, Gauge, Loader2, ShieldCheck, Stamp,
 } from 'lucide-react';
 import {
-  evidenceTileFrom, highRiskAssetsCountable, loadOsControlStripData, riskTileFrom,
-  TILE_LOADING, type OsControlStripData, type TileState,
+  complianceAmpelFrom, evidenceTileFrom, highRiskAssetsCountable,
+  loadOsControlStripData, riskTileFrom, TILE_LOADING,
+  type ComplianceAmpelModel, type ComplianceAmpelStatus, type OsControlStripData, type TileState,
 } from './osControlStripData';
 import type { CockpitData } from '../cockpit/cockpitData';
 
@@ -52,6 +55,96 @@ const EMPTY_SOURCES: OsControlStripData = {
   tenantAgents: TILE_LOADING,
   pendingApprovals: TILE_LOADING,
 };
+
+const AMPEL_DOT_CLASS: Record<ComplianceAmpelStatus, string> = {
+  loading: 'bg-titanium-500 animate-pulse',
+  insufficient_data: 'bg-amber-400',
+  empty: 'bg-titanium-500',
+  amber: 'bg-amber-400',
+  green: 'bg-emerald-400',
+};
+
+/**
+ * WP11: Block „Compliance-Ampel“ mit drei echten Zählern aus vorhandenen
+ * Quellen (`osControlStripData.ts`):
+ *   - KI-Systeme erfasst
+ *   - Klassifiziert
+ *   - Nachweise vorhanden
+ * Fehlt eine Quelle, erscheint ein ehrlicher Empty- bzw. Fehler-State.
+ */
+export function ComplianceAmpel({ model }: { model: ComplianceAmpelModel }) {
+  return (
+    <div
+      data-testid="compliance-ampel"
+      data-ampel-status={model.status}
+      className="mb-4 border border-titanium-900 bg-obsidian-900 px-4 py-3"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-titanium-900">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--brand-champ)] flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+          Compliance-Ampel
+        </p>
+        <span
+          data-testid="compliance-ampel-status"
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] text-titanium-300"
+        >
+          <span className={`h-2 w-2 rounded-full ${AMPEL_DOT_CLASS[model.status]}`} aria-hidden />
+          {model.label}
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Tile
+          icon={<Boxes className="h-3 w-3" aria-hidden />}
+          label="KI-Systeme erfasst"
+          source="ai_systems / governance_assets (RLS)"
+          testId="ampel-counter-captured"
+        >
+          {tileBody(model.aiSystemsCaptured, (count) => count === 0
+            ? <Empty text="Noch kein KI-System erfasst" to="/app/onboarding" cta="KI-System erfassen" />
+            : (
+              <>
+                <Figure value={count} unit={count === 1 ? 'System erfasst' : 'Systeme erfasst'} />
+                <TileLink to="/app/ai-systems" label="Inventar öffnen" />
+              </>
+            ))}
+        </Tile>
+
+        <Tile
+          icon={<ShieldCheck className="h-3 w-3" aria-hidden />}
+          label="Klassifiziert"
+          source="governance_assets.ai_act_class"
+          testId="ampel-counter-classified"
+        >
+          {tileBody(model.aiSystemsClassified, (count) => count === 0
+            ? <Empty text="Noch kein KI-System klassifiziert" to="/app/ai-systems" cta="Klassifizierung öffnen" />
+            : (
+              <>
+                <Figure value={count} unit="klassifiziert" />
+                <TileLink to="/app/ai-systems" label="Einstufungen prüfen" />
+              </>
+            ))}
+        </Tile>
+
+        <Tile
+          icon={<FileCheck2 className="h-3 w-3" aria-hidden />}
+          label="Nachweise vorhanden"
+          source="governance_evidence (cockpitData.evidenceHealth)"
+          testId="ampel-counter-evidence"
+        >
+          {tileBody(model.evidencePresent, (count) => count === 0
+            ? <Empty text="Noch keine Nachweise vorhanden" to="/app/activation" cta="Setup öffnen" />
+            : (
+              <>
+                <Figure value={count} unit={count === 1 ? 'Nachweis vorhanden' : 'Nachweise vorhanden'} />
+                <TileLink to="/app/evidence" label="Nachweise öffnen" />
+              </>
+            ))}
+        </Tile>
+      </div>
+    </div>
+  );
+}
 
 /** Die Kachelreihe. Lädt ihre drei eigenen Quellen, Risiko und Evidence kommen als Prop. */
 export function OsControlStrip(
@@ -79,6 +172,7 @@ export function OsControlStrip(
 
   const risk = riskTileFrom(data, loading, error);
   const evidence = evidenceTileFrom(data, loading, error);
+  const ampel = complianceAmpelFrom(sources, data, loading, error);
 
   return (
     <section
@@ -86,6 +180,7 @@ export function OsControlStrip(
       aria-label="Kontrollschicht"
       className="max-w-7xl mx-auto px-4 sm:px-6 pb-6"
     >
+      <ComplianceAmpel model={ampel} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
         <Tile
           icon={<Boxes className="h-3 w-3" aria-hidden />}

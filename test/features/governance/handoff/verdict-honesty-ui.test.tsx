@@ -1,6 +1,7 @@
 /**
  * Enforcement (Handoff v2 §9) — die Oberfläche verspricht kein Verdikt, das
- * die Durchsetzbarkeits-Klasse technisch nicht hergibt.
+ * die Durchsetzbarkeits-Klasse technisch nicht hergibt, und speichert
+ * einlösbare Verdikte persistent über `update_policy`.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -27,13 +28,26 @@ function policy(id: string, name: string, action: string, condition: Record<stri
   };
 }
 
+const mocks = vi.hoisted(() => ({
+  fetchTenantPolicies: vi.fn(),
+  updatePolicy: vi.fn(),
+  createPolicy: vi.fn(),
+  listActivations: vi.fn(),
+  setPackActive: vi.fn(),
+}));
+
 vi.mock('@/src/features/governance/governanceApi', () => ({
-  fetchTenantPolicies: vi.fn(async () => [
-    policy('p-a', 'Gateway-Policy', 'warn', { system_type: 'ai_gateway' }),
-    policy('p-c', 'M365-Policy', 'warn', { system_type: 'microsoft365' }),
-    policy('p-d', 'Browser-Policy', 'block', { system_type: 'browser_direct' }),
-    policy('p-x', 'Ohne Systemtyp', 'log', {}),
-  ]),
+  fetchTenantPolicies: mocks.fetchTenantPolicies,
+}));
+
+vi.mock('@/src/features/governance/resourcesApi', () => ({
+  updatePolicy: mocks.updatePolicy,
+  createPolicy: mocks.createPolicy,
+}));
+
+vi.mock('@/src/features/policy-packs/policyPacksApi', () => ({
+  listActivations: mocks.listActivations,
+  setPackActive: mocks.setPackActive,
 }));
 
 import { EnforcementPanel } from '@/src/features/governance/handoff/EnforcementPanel';
@@ -49,10 +63,21 @@ function verdictButton(row: HTMLElement, verdict: string): HTMLElement {
   return within(row).getByRole('button', { name: verdict });
 }
 
-describe('EnforcementPanel — Verdikt-Ehrlichkeit', () => {
+describe('EnforcementPanel — Verdikt-Ehrlichkeit & persistentes Speichern', () => {
   beforeEach(() => {
     window.localStorage.clear();
     resetLangForTests();
+    vi.clearAllMocks();
+    mocks.fetchTenantPolicies.mockResolvedValue([
+      policy('p-a', 'Gateway-Policy', 'warn', { system_type: 'ai_gateway' }),
+      policy('p-c', 'M365-Policy', 'warn', { system_type: 'microsoft365' }),
+      policy('p-d', 'Browser-Policy', 'block', { system_type: 'browser_direct' }),
+      policy('p-x', 'Ohne Systemtyp', 'log', {}),
+    ]);
+    mocks.updatePolicy.mockResolvedValue({ ok: true });
+    mocks.createPolicy.mockResolvedValue({ ok: true });
+    mocks.listActivations.mockResolvedValue(new Set(['dsgvo-essentials']));
+    mocks.setPackActive.mockResolvedValue({ kind: 'ok', data: { ok: true } });
   });
 
   async function renderPanel() {
@@ -83,22 +108,28 @@ describe('EnforcementPanel — Verdikt-Ehrlichkeit', () => {
     }
   });
 
-  it('lehnt block für Klasse C ab: Toast, keine Änderung, kein Entwurf', async () => {
+  it('lehnt block für Klasse C ab: Toast, kein Speichern', async () => {
     await renderPanel();
     const row = rowOf('M365-Policy');
     fireEvent.click(verdictButton(row, 'block'));
     expect(screen.getByRole('alert')).toHaveTextContent('„block" ist für Klasse C nicht einlösbar');
     expect(verdictButton(row, 'block')).toHaveAttribute('aria-pressed', 'false');
     expect(verdictButton(row, 'warn')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByTestId('draft-unsaved')).not.toBeInTheDocument();
+    expect(mocks.updatePolicy).not.toHaveBeenCalled();
   });
 
-  it('übernimmt ein einlösbares Verdikt nur lokal und sagt das', async () => {
+  it('speichert ein einlösbares Verdikt persistent über updatePolicy ohne Draft-Hinweis', async () => {
     await renderPanel();
     const row = rowOf('Gateway-Policy');
     fireEvent.click(verdictButton(row, 'block'));
+    await waitFor(() =>
+      expect(mocks.updatePolicy).toHaveBeenCalledWith({
+        policy_id: 'p-a',
+        action: 'block',
+      }),
+    );
     expect(verdictButton(row, 'block')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('draft-unsaved')).toHaveTextContent('Entwurf · nicht gespeichert');
+    expect(screen.queryByTestId('draft-unsaved')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -114,5 +145,24 @@ describe('EnforcementPanel — Verdikt-Ehrlichkeit', () => {
   it('weist ein gespeichertes, nicht einlösbares Verdikt aus (D + block)', async () => {
     await renderPanel();
     expect(rowOf('Browser-Policy')).toHaveTextContent('Gespeichertes Verdikt „block" ist für Klasse D nicht einlösbar');
+  });
+
+  it('bietet bei leerem Zustand den Synchronisieren-Button zum Anlegen der Pack-Policies an', async () => {
+    mocks.fetchTenantPolicies.mockResolvedValue([]);
+    render(
+      <MemoryRouter>
+        <EnforcementPanel />
+      </MemoryRouter>,
+    );
+    const syncBtn = await screen.findByTestId('sync-pack-policies-btn');
+    expect(syncBtn).toHaveTextContent('Pack-Policies synchronisieren');
+    fireEvent.click(syncBtn);
+    await waitFor(() =>
+      expect(mocks.setPackActive).toHaveBeenCalledWith({
+        tenant_id: 'tenant-1',
+        pack_id: 'dsgvo-essentials',
+        active: true,
+      }),
+    );
   });
 });

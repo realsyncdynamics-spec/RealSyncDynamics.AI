@@ -10,6 +10,7 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
+import { SuperAdminRoute } from './features/admin/SuperAdminRoute';
 import { LegacySiteOsBuilderRedirect } from './features/build-studio/legacyBuilderRedirect';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
@@ -83,7 +84,6 @@ const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/Front
 const KontaktPage = lazy(() => import('./pages/KontaktPage').then((m) => ({ default: m.KontaktPage })));
 const EnterpriseAiOs = lazy(() => import('./pages/EnterpriseAiOs').then((m) => ({ default: m.EnterpriseAiOs })));
 const EnterpriseAiOsFoundingAccess = lazy(() => import('./pages/EnterpriseAiOsFoundingAccess').then((m) => ({ default: m.EnterpriseAiOsFoundingAccess })));
-const EnterpriseAiOsDashboard = lazy(() => import('./pages/EnterpriseAiOsDashboard').then((m) => ({ default: m.EnterpriseAiOsDashboard })));
 const AiCommandCenterShowcase = lazy(() => import('./pages/AiCommandCenterShowcase').then((m) => ({ default: m.AiCommandCenterShowcase })));
 const EnterpriseAiOsDiscovery = lazy(() => import('./pages/EnterpriseAiOsDiscovery').then((m) => ({ default: m.EnterpriseAiOsDiscovery })));
 const EnterpriseLanding = lazy(() => import('./pages/EnterpriseLanding').then((m) => ({ default: m.EnterpriseLanding })));
@@ -202,9 +202,6 @@ const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter')
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
 // Standard aus). GovernanceAiRoute zeigt dann nur einen Hinweis und lädt den Workspace nicht.
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
-// ── SMB Experience Layer: vereinfachte Business-Ansicht für Einzelunternehmer.
-//    Konsumiert nur bestehende Services (siehe src/features/smb/README.md).
-const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
 const GovernanceActivationView = lazy(() =>
@@ -319,7 +316,6 @@ const GovernanceAssetDetailView = lazy(() => import('./features/governance/Asset
 const GovernanceApprovalsView = lazy(() => import('./features/governance/ApprovalsView').then((m) => ({ default: m.ApprovalsView })));
 const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
 const GovernanceApprovalGatesView = lazy(() => import('./features/governance/ApprovalGatesView').then((m) => ({ default: m.ApprovalGatesView })));
-const GovernanceHomeView = lazy(() => import('./features/governance/GovernanceHomeView').then((m) => ({ default: m.GovernanceHomeView })));
 const GovernanceEvidenceIntegrityView = lazy(() => import('./features/governance/EvidenceIntegrityView').then((m) => ({ default: m.EvidenceIntegrityView })));
 const GovernanceConnectorRegistryView = lazy(() => import('./features/governance/ConnectorRegistryView').then((m) => ({ default: m.ConnectorRegistryView })));
 const GovernanceShadowReadinessView = lazy(() => import('./features/governance/ShadowReadinessView').then((m) => ({ default: m.ShadowReadinessView })));
@@ -383,7 +379,6 @@ const RateLimitingAnalytics = lazy(() => import('./features/api/RateLimitingAnal
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
-const CeoCockpitView = lazy(() => import('./features/governance/cockpit/CeoCockpitView').then((m) => ({ default: m.CeoCockpitView })));
 const CeoBriefPrintView = lazy(() => import('./features/governance/cockpit/CeoBriefPrintView').then((m) => ({ default: m.CeoBriefPrintView })));
 const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
@@ -434,7 +429,6 @@ const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgent
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
-const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((m) => ({ default: m.DashboardView })));
 // ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
 const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
 const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
@@ -663,13 +657,13 @@ function RoutesWithTracking() {
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
-      <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
+      <Route path="/dashboard/enterprise-ai-os" element={<Navigate to="/app/dashboard" replace />} />
       {/* AI Command Center — Aliase der Workspace-Fläche, nicht mehr eine
           eigene Chat-Seite. /assistant und /dashboard sind dieselbe Fläche. */}
       <Route path="/command-center" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/ai-command-center" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/command-center/showcase" element={<AiCommandCenterShowcase />} />
-      <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
+      <Route path="/dashboard/enterprise-ai-os/discovery" element={<SuperAdminRoute><EnterpriseAiOsDiscovery /></SuperAdminRoute>} />
       {/* Onboarding nach Stripe-Checkout */}
       <Route path="/checkout/success" element={<CheckoutSuccess />} />
       <Route path="/welcome" element={<Welcome />} />
@@ -819,9 +813,9 @@ function RoutesWithTracking() {
       {/* SMB Experience Layer — vereinfachte Ansicht für Einzelunternehmer/kleine
           Unternehmen. Zusätzliche Sicht auf dieselben Services; die
           Enterprise-Ansicht (/app/dashboard) bleibt unverändert. */}
-      <Route path="/app/mein-geschaeft" element={<AppGate><GovernanceBrowserShell><SmbDashboardView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/simple" element={<Navigate to="/app/mein-geschaeft" replace />} />
-      <Route path="/app/intelligence" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><DashboardView /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/mein-geschaeft" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app/simple" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app/intelligence" element={<Navigate to="/app/dashboard" replace />} />
       {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
       <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
@@ -831,7 +825,7 @@ function RoutesWithTracking() {
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/cockpit" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/cockpit" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       {/* Marketplace: zubuchbare Dienste mit ihrem tatsaechlichen Zustand.
@@ -949,8 +943,8 @@ function RoutesWithTracking() {
       <Route path="/app/approvals" element={<AppGate><GovernanceBrowserShell><GovernanceApprovalsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin-log" element={<AppGate><GovernanceBrowserShell><GovernanceAdminLogView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/gates" element={<AppGate><GovernanceBrowserShell><GovernanceApprovalGatesView /></GovernanceBrowserShell></AppGate>} />
-      <Route path="/app/governance" element={<Navigate to="/app/governance/start" replace />} />
-      <Route path="/app/governance/start" element={<AppGate><GovernanceBrowserShell><GovernanceHomeView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/governance" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app/governance/start" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/governance/evidence" element={<AppGate><GovernanceBrowserShell><GovernanceEvidenceIntegrityView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/connectors" element={<AppGate><GovernanceBrowserShell><GovernanceConnectorRegistryView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/governance/microsoft365" element={<AppGate><GovernanceBrowserShell><GovernanceMicrosoft365View /></GovernanceBrowserShell></AppGate>} />
@@ -1002,10 +996,10 @@ function RoutesWithTracking() {
           trägt AppGate; die Aliase selbst brauchen keinen zweiten Guard. */}
       <Route path="/assistant" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
-      <Route path="/dashboard/business" element={<BusinessDashboard />} />
-      <Route path="/dashboard/audit" element={<AuditDashboardView />} />
-      <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
-      <Route path="/business" element={<BusinessDashboard />} />
+      <Route path="/dashboard/business" element={<SuperAdminRoute><BusinessDashboard /></SuperAdminRoute>} />
+      <Route path="/dashboard/audit" element={<SuperAdminRoute><AuditDashboardView /></SuperAdminRoute>} />
+      <Route path="/dashboard/agents" element={<SuperAdminRoute><AgentOsAdminPage /></SuperAdminRoute>} />
+      <Route path="/business" element={<SuperAdminRoute><BusinessDashboard /></SuperAdminRoute>} />
       {/* `/kodee` führt denselben Gateway-Aufruf wie der frühere Assistent
           (`processAIGatewayRequest`) und braucht deshalb denselben Schutz:
           ohne Gate könnte jeder Besucher Modellaufrufe auslösen.
@@ -1102,20 +1096,20 @@ function RoutesWithTracking() {
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />
       {/* Admin */}
-      <Route path="/admin" element={<SuperAdminDashboard />} />
-      <Route path="/admin/analytics" element={<AnalyticsView />} />
-      <Route path="/admin/leads" element={<LeadsView />} />
-      <Route path="/admin/beta-feedback" element={<BetaFeedbackView />} />
+      <Route path="/admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+      <Route path="/admin/analytics" element={<SuperAdminRoute><AnalyticsView /></SuperAdminRoute>} />
+      <Route path="/admin/leads" element={<SuperAdminRoute><LeadsView /></SuperAdminRoute>} />
+      <Route path="/admin/beta-feedback" element={<SuperAdminRoute><BetaFeedbackView /></SuperAdminRoute>} />
       {/* Lead-Verwaltung im System-Bereich. Zugriff prüft die Datenbank
           (admin_funnel_leads → is_platform_operator), nicht der Router. */}
       <Route path="/app/leads" element={<LeadsView />} />
-      <Route path="/admin/system" element={<SystemHealthView />} />
-      <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
-      <Route path="/admin/customers" element={<CustomersView />} />
-      <Route path="/admin/billing" element={<ConversionBillingView />} />
-      <Route path="/admin/compliance" element={<ComplianceGovernanceView />} />
-      <Route path="/admin/onboarding" element={<OnboardingView />} />
-      <Route path="/admin/rebuilds" element={<RebuildsView />} />
+      <Route path="/admin/system" element={<SuperAdminRoute><SystemHealthView /></SuperAdminRoute>} />
+      <Route path="/admin/social" element={<SuperAdminRoute><AdminSocialPreviewPage /></SuperAdminRoute>} />
+      <Route path="/admin/customers" element={<SuperAdminRoute><CustomersView /></SuperAdminRoute>} />
+      <Route path="/admin/billing" element={<SuperAdminRoute><ConversionBillingView /></SuperAdminRoute>} />
+      <Route path="/admin/compliance" element={<SuperAdminRoute><ComplianceGovernanceView /></SuperAdminRoute>} />
+      <Route path="/admin/onboarding" element={<SuperAdminRoute><OnboardingView /></SuperAdminRoute>} />
+      <Route path="/admin/rebuilds" element={<SuperAdminRoute><RebuildsView /></SuperAdminRoute>} />
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />

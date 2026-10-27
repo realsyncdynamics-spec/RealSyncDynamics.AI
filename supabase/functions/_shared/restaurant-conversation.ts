@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { runAiTool } from './ai.ts';
+import type { AiBudgetGuard } from './bot-budget.ts';
 import { gateFeature, EntitlementError } from './entitlements.ts';
 import {
   buildBotPrompt,
@@ -47,6 +48,8 @@ export interface RestaurantConversationTurnResult {
 export interface RestaurantConversationTurnInput {
   channel: 'chat' | 'voice' | 'whatsapp';
   contact?: string | null;
+  /** Bot-Budget (bot-budget.ts) — wird an runAiTool durchgereicht. */
+  aiBudget?: AiBudgetGuard;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -382,6 +385,7 @@ export async function runRestaurantConversationTurn(
       channel: input.channel,
       restaurant_structured_turn: true,
     },
+    budget: input.aiBudget,
   });
 
   const proposal = parseRestaurantTurnProposal(bot.config, ai.output);

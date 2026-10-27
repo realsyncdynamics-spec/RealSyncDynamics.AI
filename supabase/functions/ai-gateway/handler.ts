@@ -63,9 +63,14 @@ import {
   parseAnonAuditBody,
   type AnonAuditLog,
 } from '../_shared/aiGateway/anonAuditCopilot.ts';
+import {
+  buildAiCallEvidenceRow,
+  type AiEvidenceEventInsert,
+} from '../_shared/aiGateway/callEvidence.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+export type { AiEvidenceEventInsert };
 export const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed', 'stream']);
@@ -124,6 +129,7 @@ export function usageTokens(usage: AiGatewayUsage | undefined | null): number {
 export interface PdpVerdict {
   decision: string;
   reasons: Array<{ text_de: string }>;
+  primary_policy_id?: string | null;
 }
 
 export interface GatewayHandlerDeps {
@@ -151,6 +157,13 @@ export interface GatewayHandlerDeps {
    * Abhängigkeit, wird nicht gebucht.
    */
   recordUsage?: (booking: UsageBooking) => Promise<void>;
+  /**
+   * Schreibt für jeden erfolgreichen oder durch den PDP blockierten
+   * angemeldeten KI-Aufruf genau einen Evidence-Eintrag (ai_evidence_events).
+   * Fehler brechen die Antwort nicht (fail-open), werden aber mit
+   * scope 'ai-gateway-evidence' geloggt.
+   */
+  recordEvidence?: (entry: AiEvidenceEventInsert) => Promise<void>;
   /** Rate-Limit-Speicher; Default: modulweite Maps (pro Isolate). */
   minuteWindows?: Map<string, WindowState>;
   hourWindows?: Map<string, WindowState>;
@@ -292,6 +305,64 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       await deps.recordUsage(booking);
     } catch (e) {
       log({ scope: 'ai-gateway-usage', event: 'record_failed', tenant_id: p.tenantId, feature, error: String((e as Error)?.message ?? e).slice(0, 200) });
+    }
+  }
+
+  // ── Evidence pro angemeldetem KI-Call (WP9 / M3) ───────────────────
+
+  interface EvidenceOutcome {
+    blocked?: boolean;
+    verdict?: string | null;
+    reasons?: string[];
+    policyId?: string | null;
+    provider?: string | null;
+    model?: string | null;
+    usage?: AiGatewayUsage | null;
+    requestId: string;
+    latencyMs: number;
+  }
+
+  async function bookEvidence(
+    p: Principal,
+    route: string,
+    op: string,
+    request: AiGatewayRequest,
+    outcome: EvidenceOutcome,
+  ): Promise<void> {
+    if (!deps.recordEvidence || !p.tenantId) return;
+    try {
+      const row = await buildAiCallEvidenceRow({
+        tenantId: p.tenantId,
+        path: p.kind,
+        userId: p.kind === 'user' ? p.userId : null,
+        internalCaller: p.kind === 'service' ? p.caller : null,
+        feature: request.feature,
+        route,
+        op,
+        provider: outcome.provider ?? null,
+        model: outcome.model ?? request.model_profile,
+        modelProfile: request.model_profile,
+        providerRegion: 'EU',
+        residency: 'eu_local',
+        usage: outcome.usage,
+        verdict: outcome.verdict,
+        blocked: outcome.blocked,
+        reasons: outcome.reasons,
+        policyId: outcome.policyId ?? null,
+        requestId: outcome.requestId,
+        latencyMs: outcome.latencyMs,
+        input: request.input,
+      });
+      await deps.recordEvidence(row);
+    } catch (e) {
+      log({
+        scope: 'ai-gateway-evidence',
+        event: 'record_failed',
+        tenant_id: p.tenantId,
+        feature: request.feature,
+        route,
+        error: String((e as Error)?.message ?? e).slice(0, 200),
+      });
     }
   }
 
@@ -471,8 +542,19 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
 
     logAccess(principal, '/', request);
 
+    const startedAt = now();
+    const requestId = request.trace_id ?? newId();
+
     const verdict = await deps.pdpCheck(request.feature, request.model_profile);
-    if (verdict instanceof Response) return verdict;
+    if (verdict instanceof Response) {
+      await bookEvidence(principal, '/', op, request, {
+        blocked: true,
+        verdict: 'block',
+        requestId,
+        latencyMs: Math.max(0, now() - startedAt),
+      });
+      return verdict;
+    }
     const governance = verdict && verdict.decision === 'warn'
       ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
       : undefined;
@@ -487,11 +569,36 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       : null;
     if (call) {
       const result = await call.call(gateway, request);
-      await bookUsage(principal, '/', request.feature, result.usage as AiGatewayUsage | undefined);
+      const usage = result.usage as AiGatewayUsage | undefined;
+      await bookUsage(principal, '/', request.feature, usage);
+      await bookEvidence(principal, '/', op, request, {
+        blocked: false,
+        verdict: verdict?.decision ?? 'allow',
+        reasons: verdict?.reasons?.map((r) => r.text_de),
+        policyId: verdict?.primary_policy_id ?? null,
+        provider: typeof result.provider === 'string' ? result.provider : null,
+        model: typeof result.model === 'string' ? result.model : request.model_profile,
+        usage,
+        requestId: typeof result.trace_id === 'string' ? result.trace_id : requestId,
+        latencyMs: typeof result.latency_ms === 'number' ? result.latency_ms : Math.max(0, now() - startedAt),
+      });
       return jsonResponse({ ok: true, ...result, ...extra }, 200, corsHeaders);
     }
     if (op === 'stream') {
-      return streamNdjson(gateway, request, governance, (usage) => bookUsage(principal, '/', request.feature, usage));
+      return streamNdjson(gateway, request, governance, async (usage, doneChunk) => {
+        await bookUsage(principal, '/', request.feature, usage);
+        await bookEvidence(principal, '/', 'stream', request, {
+          blocked: false,
+          verdict: verdict?.decision ?? 'allow',
+          reasons: verdict?.reasons?.map((r) => r.text_de),
+          policyId: verdict?.primary_policy_id ?? null,
+          provider: doneChunk?.provider ?? null,
+          model: doneChunk?.model ?? request.model_profile,
+          usage,
+          requestId: doneChunk?.trace_id ?? requestId,
+          latencyMs: typeof doneChunk?.latency_ms === 'number' ? doneChunk.latency_ms : Math.max(0, now() - startedAt),
+        });
+      });
     }
     return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`, corsHeaders);
   }
@@ -524,18 +631,54 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
 
     logAccess(principal, '/v1/chat/completions', request);
 
+    const startedAt = now();
+    const requestId = request.trace_id ?? newId();
+
     const verdict = await deps.pdpCheck(request.feature, request.model_profile);
-    if (verdict instanceof Response) return verdict;
+    if (verdict instanceof Response) {
+      await bookEvidence(principal, '/v1/chat/completions', 'chat.completions', request, {
+        blocked: true,
+        verdict: 'block',
+        requestId,
+        latencyMs: Math.max(0, now() - startedAt),
+      });
+      return verdict;
+    }
 
     const gateway = await deps.buildGateway();
     if (gateway instanceof Response) return gateway;
 
     try {
       if (body.stream === true) {
-        return streamOpenAiCompat(gateway, request, (usage) => bookUsage(principal, '/v1/chat/completions', request.feature, usage));
+        return streamOpenAiCompat(gateway, request, async (usage, doneChunk) => {
+          await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
+          await bookEvidence(principal, '/v1/chat/completions', 'chat.completions.stream', request, {
+            blocked: false,
+            verdict: verdict?.decision ?? 'allow',
+            reasons: verdict?.reasons?.map((r) => r.text_de),
+            policyId: verdict?.primary_policy_id ?? null,
+            provider: doneChunk?.provider ?? null,
+            model: doneChunk?.model ?? request.model_profile,
+            usage,
+            requestId: doneChunk?.trace_id ?? requestId,
+            latencyMs: typeof doneChunk?.latency_ms === 'number' ? doneChunk.latency_ms : Math.max(0, now() - startedAt),
+          });
+        });
       }
       const response = parsed.wantsJson ? await gateway.extractJson(request) : await gateway.generate(request);
-      await bookUsage(principal, '/v1/chat/completions', request.feature, response.usage as AiGatewayUsage | undefined);
+      const usage = response.usage as AiGatewayUsage | undefined;
+      await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
+      await bookEvidence(principal, '/v1/chat/completions', 'chat.completions', request, {
+        blocked: false,
+        verdict: verdict?.decision ?? 'allow',
+        reasons: verdict?.reasons?.map((r) => r.text_de),
+        policyId: verdict?.primary_policy_id ?? null,
+        provider: typeof response.provider === 'string' ? response.provider : null,
+        model: typeof response.model === 'string' ? response.model : request.model_profile,
+        usage,
+        requestId: typeof response.trace_id === 'string' ? response.trace_id : requestId,
+        latencyMs: typeof response.latency_ms === 'number' ? response.latency_ms : Math.max(0, now() - startedAt),
+      });
       // deno-lint-ignore no-explicit-any
       return jsonResponse(formatChatResponse(response as any, request.model_profile), 200, corsHeaders);
     } catch (error) {
@@ -575,7 +718,7 @@ function streamNdjson(
   gateway: GatewayLike,
   request: AiGatewayRequest,
   governance: { decision: string; reasons: string[] } | undefined,
-  onDone?: (usage: AiGatewayUsage | undefined) => Promise<void>,
+  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -584,7 +727,7 @@ function streamNdjson(
       try {
         for await (const chunk of gateway.generateStream(request)) {
           send({ ok: true, ...chunk, ...(governance && chunk.event === 'done' ? { governance } : {}) });
-          if (chunk.event === 'done' && onDone) await onDone(chunk.usage);
+          if (chunk.event === 'done' && onDone) await onDone(chunk.usage, chunk);
         }
       } catch (error) {
         const mapped = mapGatewayError(error);
@@ -603,7 +746,7 @@ function streamNdjson(
 function streamOpenAiCompat(
   gateway: GatewayLike,
   request: AiGatewayRequest,
-  onDone?: (usage: AiGatewayUsage | undefined) => Promise<void>,
+  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const id = `chatcmpl-${request.trace_id ?? crypto.randomUUID()}`;
@@ -617,7 +760,7 @@ function streamOpenAiCompat(
           }
           if (chunk.event === 'done') {
             send({ id, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
-            if (onDone) await onDone(chunk.usage);
+            if (onDone) await onDone(chunk.usage, chunk);
           }
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));

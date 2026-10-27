@@ -40,6 +40,10 @@ import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { EntitlementError, gateFeature } from '../_shared/entitlements.ts';
 import { completeAnonAudit, reserveAnonAudit } from '../_shared/anonAudit.ts';
 import type { AnonAuditLog } from '../_shared/aiGateway/anonAuditCopilot.ts';
+import {
+  recordAiCallEvidence,
+  type AiEvidenceEventInsert,
+} from '../_shared/aiGateway/callEvidence.ts';
 import { recordUsage } from '../_shared/usage.ts';
 import { createAiGatewayHandler, type GatewayLike, type UsageBooking } from './handler.ts';
 
@@ -187,6 +191,14 @@ async function recordGatewayUsage(b: UsageBooking): Promise<void> {
   if (b.tokens > 0) await recordUsage(admin, b.tenantId, 'limit.ai_tokens_monthly', b.tokens, meta);
 }
 
+// Evidence pro angemeldetem KI-Call (WP9 / M3): schreibt einen append-only
+// Eintrag in ai_evidence_events (mit DB-Hash-Kette).
+async function recordGatewayEvidence(entry: AiEvidenceEventInsert): Promise<void> {
+  const admin = await getPdpAdmin();
+  if (!admin) throw new Error('evidence admin client not configured');
+  await recordAiCallEvidence(admin, entry);
+}
+
 Deno.serve(createAiGatewayHandler({
   env: (name) => Deno.env.get(name),
   requireAuthAndTenant,
@@ -195,6 +207,7 @@ Deno.serve(createAiGatewayHandler({
   pdpCheck,
   anonAuditLog,
   recordUsage: recordGatewayUsage,
+  recordEvidence: recordGatewayEvidence,
   minuteWindows: MINUTE_WINDOWS,
   hourWindows: HOUR_WINDOWS,
 }));

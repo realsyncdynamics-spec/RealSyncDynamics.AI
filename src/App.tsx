@@ -29,6 +29,7 @@ const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default:
 const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
+const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -393,6 +394,7 @@ const OutreachView = lazy(() => import('./features/outreach/OutreachView').then(
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
 const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
+const BetaFeedbackView = lazy(() => import('./features/admin/BetaFeedbackView').then((m) => ({ default: m.BetaFeedbackView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const ConversionBillingView = lazy(() => import('./features/admin/billing/ConversionBillingView').then((m) => ({ default: m.ConversionBillingView })));
@@ -497,7 +499,13 @@ function RoutesWithTracking() {
       {/* 13.10.2026 (Owner): Landing v6 (Claude-Design „The Governance OS für DSGVO und
           EU AI Act", Inhalte an Pricing-SSoT/Beta/Implementierungsstatus angepasst) ist
           Startseite. v5 bleibt unverändert als Referenz/Rückfall unter /design/landing-v5. */}
+      {/* 26.10.2026 (Owner): Landing v6 (Claude-Design „The Governance OS für DSGVO und
+          EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
+          angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
+          /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
       <Route path="/" element={<LandingV6 />} />
+      <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
@@ -1063,6 +1071,7 @@ function RoutesWithTracking() {
       <Route path="/admin" element={<SuperAdminDashboard />} />
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
+      <Route path="/admin/beta-feedback" element={<BetaFeedbackView />} />
       {/* Lead-Verwaltung im System-Bereich. Zugriff prüft die Datenbank
           (admin_funnel_leads → is_platform_operator), nicht der Router. */}
       <Route path="/app/leads" element={<LeadsView />} />

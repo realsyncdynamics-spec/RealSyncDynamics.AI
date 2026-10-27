@@ -88,9 +88,9 @@ describe('implementation-status registry', () => {
     const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
     const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
     const landing = getImplementation('public-landing')!;
-    expect(view).toContain('The Governance OS </span>');
-    expect(view).toContain('für DSGVO und EU AI Act.</span>');
-    expect(landing.description).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(view).toContain('DSGVO und EU AI Act – </span>');
+    expect(view).toContain('machbar für Ihr Unternehmen.</span>');
+    expect(landing.description).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
     expect(landing.description).toContain('/audit?source=landing-v6');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
@@ -252,7 +252,7 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
     expect(docs).toContain('Landing v6');
-    expect(docs).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(docs).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
     expect(docs).not.toContain('AI Compliance Operations OS for Europe');
     expect(docs).toContain('2026-10-18');
     expect(docs).toContain('/ai-act-klassifikator');

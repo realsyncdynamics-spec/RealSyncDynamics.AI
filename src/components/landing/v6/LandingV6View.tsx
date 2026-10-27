@@ -87,9 +87,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
         <div style={{ position: "relative", zIndex: "1", flex: "1 0 auto", display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", boxSizing: "border-box", maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(40px,5vw,160px) var(--px)" }}>
           <div style={{ maxWidth: "min(100%,clamp(320px,58vw,2000px))" }}>
-            <p style={{ margin: "0 0 clamp(20px,1.8vw,52px)", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".18em", color: "var(--rs-acc)" }}>AI GOVERNANCE FÜR EUROPÄISCHE UNTERNEHMEN</p>
+            <p style={{ margin: "0 0 clamp(20px,1.8vw,52px)", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".18em", color: "var(--rs-acc)" }}>DSGVO & EU AI ACT FÜR KMU</p>
             <h1 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
-              <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>The Governance OS </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>für DSGVO und EU AI Act.</span>
+              <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>DSGVO und EU AI Act – </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>machbar für Ihr Unternehmen.</span>
             </h1>
             <ol aria-label="Ablauf" style={{ listStyle: "none", margin: "clamp(24px,2.2vw,64px) 0 0", padding: "0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", fontFamily: "'JetBrains Mono',monospace", fontSize: "clamp(12px,.85vw,26px)", fontWeight: "600", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rs-fg2)" }}>
               {["Prüfen", "Verstehen", "Handeln", "Nachweisen"].map((step, i) => (

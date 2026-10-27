@@ -4,6 +4,8 @@
 // reservierte Dauer abzüglich Vorlauf erreicht ist — unabhängig davon, ob
 // noch ein Gesprächsschritt eintrifft (Gate 1, PR #2044). Logik in
 // _shared/bot-voice-enforcement.ts (ohne Deno-Imports, Vitest-geprüft).
+// Danach (gleicher Lauf) Abschlussansage für Anrufe kurz vor dem Limit —
+// _shared/voice-call-closing.ts. Die Ansage verlängert das Limit nie.
 //
 // Budget: rechnet weder ab noch gibt frei. Abrechnung über den Twilio-
 // Status-Callback (gemessen) oder den Aufräumjob (geschätzt zum Höchstbetrag).
@@ -20,7 +22,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { timingSafeEqual } from '../_shared/timingSafeEqual.ts';
-import { enforceOverdueCalls } from '../_shared/bot-voice-enforcement.ts';
+import { runVoiceEnforcementTick } from '../_shared/voice-call-closing.ts';
 import type { RpcAdmin } from '../_shared/bot-budget.ts';
 
 Deno.serve(async (req) => {
@@ -50,14 +52,19 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const summary = await enforceOverdueCalls({
+    // Erst harter Abbruch (Status=completed), dann Abschlussansagen.
+    const tick = await runVoiceEnforcementTick({
       rpc: admin as unknown as RpcAdmin,
       authToken: TWILIO_AUTH_TOKEN,
     });
-    if (summary.checked > 0) {
-      console.log(JSON.stringify({ level: 'info', scope: 'bot_voice_enforcer', ...summary }));
+    const summary = tick.hard;
+    if (summary.checked > 0 || (tick.closing?.checked ?? 0) > 0 || tick.closingError) {
+      console.log(JSON.stringify({
+        level: 'info', scope: 'bot_voice_enforcer', ...summary,
+        closing: tick.closing, closing_error: tick.closingError ?? null,
+      }));
     }
-    return jsonResponse({ ok: true, ...summary });
+    return jsonResponse({ ok: true, ...summary, closing: tick.closing, closing_failed: Boolean(tick.closingError) });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'bot_voice_enforcer', error: (e as Error).message }));
     return jsonError(500, 'INTERNAL', 'enforcement run failed');

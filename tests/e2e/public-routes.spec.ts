@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 
 const publicRoutes = [
-  { id: 'FE-001', path: '/', label: 'Startseite', heading: /The Governance OS.*für DSGVO und EU AI Act/i },
+  { id: 'FE-001', path: '/', label: 'Startseite', heading: /DSGVO und EU AI Act.*machbar für Ihr Unternehmen/i },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Ihr KI-Bestand in vier Fragen/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /EU-AI-Act-Compliance ohne Beratungsprojekt/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },

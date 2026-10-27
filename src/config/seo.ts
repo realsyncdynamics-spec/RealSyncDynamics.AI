@@ -274,6 +274,8 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
+  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
+  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
     title: 'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
     description:

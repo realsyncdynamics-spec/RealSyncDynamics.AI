@@ -70,12 +70,13 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
-  it('hält die Homepage-SEO auf der KMU-Positionierung', () => {
+  it('hält die Homepage-SEO auf der KMU-Positionierung (Landing v6)', () => {
     expect(SEO_CONFIG['/'].title).toBe(
       'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
     );
     // SEO-Sprint KW 40: DE-Seite komplett deutsch, Marke einheitlich.
     expect(SEO_CONFIG['/'].description).toContain('DSGVO und EU AI Act für KMU');
+    expect(SEO_CONFIG['/'].description).toContain('kostenloser Website-Check');
     expect(SEO_CONFIG['/'].ogTitle).toBe('DSGVO & EU AI Act – machbar für Ihr Unternehmen');
     expect(SEO_CONFIG['/'].canonical).toBe('https://realsyncdynamicsai.de/');
     // Design-Referenz ist Duplikat der Startseite: noindex + Canonical auf /.

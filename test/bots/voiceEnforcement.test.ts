@@ -12,6 +12,9 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
+import { timingSafeEqual } from '../../supabase/functions/_shared/timingSafeEqual';
 import {
   applyProviderTimeLimit, enforceOverdueCalls, remainingCallSeconds,
 } from '../../supabase/functions/_shared/bot-voice-enforcement';
@@ -230,8 +233,67 @@ describe('Verdrahtung', () => {
 
   it('Enforcer: fail-closed ohne Secret, konstantzeitiger Vergleich, kein Service-Role-Vergleich', () => {
     expect(enforcer).toContain("jsonError(500, 'CRON_KEY_MISSING'");
-    expect(enforcer).toContain('timingSafeEqual(token, CRON_KEY)');
+    expect(enforcer).toContain('timingSafeEqual(authHeader, `Bearer ${CRON_KEY}`)');
+    expect(enforcer).not.toMatch(/startsWith\(\s*['"]Bearer /);
     expect(enforcer).not.toMatch(/timingSafeEqual\([^)]*SERVICE_ROLE/);
     expect(config).toMatch(/\[functions\.bot-voice-enforcer\]\s*\nverify_jwt = false/);
+  });
+});
+
+
+describe('Budget-Fallback: eine Quelle auch während der ersten Migration', () => {
+  const first = readFileSync('supabase/migrations/20261027120000_bot_usage_budget_hardening.sql', 'utf8');
+  const next = readFileSync('supabase/migrations/20261027140000_bot_usage_channel_limits_voice_enforcement.sql', 'utf8');
+  it('definiert den Fallback vor Tabelle und Reservierungsfunktionen genau einmal', () => {
+    expect(first.indexOf('FUNCTION public.bot_usage_fallback(')).toBeGreaterThan(0);
+    expect(first.indexOf('FUNCTION public.bot_usage_fallback(')).toBeLessThan(first.indexOf('CREATE TABLE'));
+    expect((first + next).match(/CREATE OR REPLACE FUNCTION public\.bot_usage_fallback\(/g)).toHaveLength(1);
+  });
+  it('liest alle vier Defaults und beide Reservierungs-Fallbacks aus der Funktion', () => {
+    for (const key of ['ai_usd_daily', 'ai_usd_monthly', 'voice_max_concurrent_calls', 'voice_max_call_seconds']) {
+      expect(first).toContain(`DEFAULT public.bot_usage_fallback('${key}')`);
+    }
+    expect(first).not.toMatch(/v_(?:daily|monthly|max_call|concurrent)\s+(?:numeric|integer)\s*:=\s*\d/);
+    expect(first).not.toMatch(/v_(?:daily|monthly|max_call|concurrent)\s*:=\s*\d/);
+    for (const [key, value] of Object.entries({ ai_usd_daily: 5, ai_usd_monthly: 50, voice_max_concurrent_calls: 2, voice_max_call_seconds: 600 })) {
+      expect(first).toMatch(new RegExp(`WHEN '${key}'\\s+THEN ${value}::numeric`));
+    }
+    expect(first).toContain('ELSE 0::numeric');
+  });
+});
+
+
+describe('F04: echter Enforcer-Handler authentifiziert vor privilegierten Zugriffen', () => {
+  async function request(header: string | null, key = 'cron-test-key') {
+    let handler!: (req: Request) => Promise<Response>;
+    const createClient = vi.fn(() => ({}));
+    const enforce = vi.fn(async () => ({ checked: 0 }));
+    const source = readFileSync('supabase/functions/bot-voice-enforcer/index.ts', 'utf8')
+      .replace(/^import .*;$/gm, '');
+    runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, {
+      Deno: { serve: (fn: typeof handler) => { handler = fn; }, env: { get: (name: string) => name === 'CRON_BOT_VOICE_ENFORCER_KEY' ? key : 'test-only' } },
+      handleOptions: () => null,
+      jsonError: (status: number, code: string) => new Response(code, { status }),
+      jsonResponse: (value: unknown) => Response.json(value),
+      timingSafeEqual, createClient, enforceOverdueCalls: enforce, console,
+    });
+    const response = await handler(new Request('https://example.test', { method: 'POST', headers: header === null ? {} : { Authorization: header } }));
+    return { response, createClient, enforce };
+  }
+  it.each([null, 'Bearer', 'Bearer wrong', 'Bearer cron-test', 'Basic cron-test-key', 'Bearer cron-test-key-extra', 'bearer cron-test-key'])('lehnt %s vor DB/Anbieter ab', async (header) => {
+    const result = await request(header);
+    expect(result.response.status).toBe(401);
+    expect(result.createClient).not.toHaveBeenCalled();
+    expect(result.enforce).not.toHaveBeenCalled();
+  });
+  it('akzeptiert ausschließlich den vollständigen Header mit dem Cron-Key', async () => {
+    const result = await request('Bearer cron-test-key');
+    expect(result.response.status).toBe(200);
+    expect(result.enforce).toHaveBeenCalledOnce();
+  });
+  it('fehlender Cron-Key bleibt fail-closed', async () => {
+    const result = await request('Bearer cron-test-key', '');
+    expect(result.response.status).toBe(500);
+    expect(result.createClient).not.toHaveBeenCalled();
   });
 });

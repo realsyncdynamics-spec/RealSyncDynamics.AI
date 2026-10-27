@@ -33,8 +33,7 @@ Deno.serve(async (req) => {
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_BOT_VOICE_ENFORCER_KEY not configured');
   }
   const authHeader = req.headers.get('Authorization') ?? '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-  if (!token || !timingSafeEqual(token, CRON_KEY)) {
+  if (!timingSafeEqual(authHeader, `Bearer ${CRON_KEY}`)) {
     return jsonError(401, 'UNAUTHORIZED', 'cron only');
   }
 

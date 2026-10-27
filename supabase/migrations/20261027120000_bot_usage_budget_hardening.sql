@@ -32,6 +32,27 @@
 
 BEGIN;
 
+-- Einzige Quelle: vorläufige Sicherheitsobergrenzen, UNBESCHLOSSEN.
+CREATE OR REPLACE FUNCTION public.bot_usage_fallback(p_key text)
+RETURNS numeric
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public
+AS $$
+  -- VORLÄUFIGE SICHERHEITSOBERGRENZE – UNBESCHLOSSEN (Merge-Blocker PR #2044).
+  -- Unbekannter Schlüssel → 0: lieber nichts erlauben als unbegrenzt.
+  SELECT CASE p_key
+    WHEN 'ai_usd_daily'               THEN 5::numeric
+    WHEN 'ai_usd_monthly'             THEN 50::numeric
+    WHEN 'voice_max_concurrent_calls' THEN 2::numeric
+    WHEN 'voice_max_call_seconds'     THEN 600::numeric
+    ELSE 0::numeric
+  END;
+$$;
+
+COMMENT ON FUNCTION public.bot_usage_fallback(text) IS
+  'Einzige Quelle der vorläufigen Sicherheitsobergrenzen für Bot-Kanäle bei fehlender Mandantenkonfiguration. UNBESCHLOSSEN – kein Preis, kein Kontingent, kein Kundenversprechen. Merge-Blocker PR #2044.';
+
 -- ============================================================
 -- 1. Schutzwerte je Mandant
 -- ============================================================
@@ -39,10 +60,10 @@ BEGIN;
 -- und keine Entitlements. Änderung je Mandant nur per service_role.
 CREATE TABLE IF NOT EXISTS public.bot_usage_limits (
   tenant_id                   uuid PRIMARY KEY REFERENCES public.tenants(id) ON DELETE CASCADE,
-  ai_usd_daily                numeric(12,6) NOT NULL DEFAULT 5     CHECK (ai_usd_daily >= 0),
-  ai_usd_monthly              numeric(12,6) NOT NULL DEFAULT 50    CHECK (ai_usd_monthly >= 0),
-  voice_max_concurrent_calls  integer       NOT NULL DEFAULT 2     CHECK (voice_max_concurrent_calls >= 0),
-  voice_max_call_seconds      integer       NOT NULL DEFAULT 600   CHECK (voice_max_call_seconds > 0),
+  ai_usd_daily                numeric(12,6) NOT NULL DEFAULT public.bot_usage_fallback('ai_usd_daily')     CHECK (ai_usd_daily >= 0),
+  ai_usd_monthly              numeric(12,6) NOT NULL DEFAULT public.bot_usage_fallback('ai_usd_monthly')    CHECK (ai_usd_monthly >= 0),
+  voice_max_concurrent_calls  integer       NOT NULL DEFAULT public.bot_usage_fallback('voice_max_concurrent_calls')::integer     CHECK (voice_max_concurrent_calls >= 0),
+  voice_max_call_seconds      integer       NOT NULL DEFAULT public.bot_usage_fallback('voice_max_call_seconds')::integer   CHECK (voice_max_call_seconds > 0),
   updated_at                  timestamptz   NOT NULL DEFAULT now()
 );
 
@@ -320,14 +341,15 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_daily   numeric := 5;
-  v_monthly numeric := 50;
+  v_daily   numeric := public.bot_usage_fallback('ai_usd_daily');
+  v_monthly numeric := public.bot_usage_fallback('ai_usd_monthly');
 BEGIN
   PERFORM public.bot_usage_assert_internal();
   SELECT l.ai_usd_daily, l.ai_usd_monthly INTO v_daily, v_monthly
     FROM public.bot_usage_limits l WHERE l.tenant_id = p_tenant_id;
   IF NOT FOUND THEN
-    v_daily := 5; v_monthly := 50;
+    v_daily := public.bot_usage_fallback('ai_usd_daily');
+    v_monthly := public.bot_usage_fallback('ai_usd_monthly');
   END IF;
   -- TTL 10 Minuten: deutlich über jeder Provider-Laufzeit. Danach rechnet
   -- der Sweep die Reservierung als 'estimated' ab.
@@ -360,8 +382,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_max_call   integer := 600;
-  v_concurrent integer := 2;
+  v_max_call   integer := public.bot_usage_fallback('voice_max_call_seconds')::integer;
+  v_concurrent integer := public.bot_usage_fallback('voice_max_concurrent_calls')::integer;
   v_amount     numeric;
   v_remaining  numeric;
   v_existing   public.bot_usage_reservations%ROWTYPE;
@@ -386,7 +408,8 @@ BEGIN
   SELECT l.voice_max_call_seconds, l.voice_max_concurrent_calls INTO v_max_call, v_concurrent
     FROM public.bot_usage_limits l WHERE l.tenant_id = p_tenant_id;
   IF NOT FOUND THEN
-    v_max_call := 600; v_concurrent := 2;
+    v_max_call := public.bot_usage_fallback('voice_max_call_seconds')::integer;
+    v_concurrent := public.bot_usage_fallback('voice_max_concurrent_calls')::integer;
   END IF;
 
   v_amount := v_max_call;
@@ -726,6 +749,7 @@ DO $$
 DECLARE f text;
 BEGIN
   FOREACH f IN ARRAY ARRAY[
+    'public.bot_usage_fallback(text)',
     'public.bot_usage_assert_internal()',
     'public.bot_usage_used(uuid,text,timestamptz)',
     'public.bot_usage_reserve(uuid,uuid,text,text,text,numeric,integer,numeric,numeric,integer,jsonb)',

@@ -12,7 +12,7 @@
 -- ⚠️ BUDGETWERTE UNBESCHLOSSEN — MERGE-BLOCKER
 -- bot_usage_fallback() liefert die vorläufigen Sicherheitsobergrenzen
 -- (5 USD/Tag, 50 USD/Monat, 2 parallele Anrufe, 600 s je Anruf). Sie sind
--- kein Preis, kein Kontingent und kein Kundenversprechen. Sie stehen hier an
+-- kein Preis, kein Kontingent und kein Kundenversprechen. Sie stehen in der Vorgängermigration an
 -- GENAU EINER Stelle; Tabellen-Defaults und Reservierungsfunktionen lesen
 -- sie von dort. Die Werte bleiben bis zur Entscheidung des Owners
 -- unverändert (Option A: ohne Konfiguration keine kostenpflichtige Nutzung;
@@ -39,31 +39,7 @@ BEGIN;
 -- ============================================================
 -- 1. Zentraler Fallback (vorläufig, unbeschlossen)
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.bot_usage_fallback(p_key text)
-RETURNS numeric
-LANGUAGE sql
-IMMUTABLE
-SET search_path = public
-AS $$
-  -- VORLÄUFIGE SICHERHEITSOBERGRENZE – UNBESCHLOSSEN (Merge-Blocker PR #2044).
-  -- Unbekannter Schlüssel → 0: lieber nichts erlauben als unbegrenzt.
-  SELECT CASE p_key
-    WHEN 'ai_usd_daily'               THEN 5::numeric
-    WHEN 'ai_usd_monthly'             THEN 50::numeric
-    WHEN 'voice_max_concurrent_calls' THEN 2::numeric
-    WHEN 'voice_max_call_seconds'     THEN 600::numeric
-    ELSE 0::numeric
-  END;
-$$;
-
-COMMENT ON FUNCTION public.bot_usage_fallback(text) IS
-  'Einzige Quelle der vorläufigen Sicherheitsobergrenzen für Bot-Kanäle bei fehlender Mandantenkonfiguration. UNBESCHLOSSEN – kein Preis, kein Kontingent, kein Kundenversprechen. Merge-Blocker PR #2044.';
-
-ALTER TABLE public.bot_usage_limits
-  ALTER COLUMN ai_usd_daily               SET DEFAULT public.bot_usage_fallback('ai_usd_daily'),
-  ALTER COLUMN ai_usd_monthly             SET DEFAULT public.bot_usage_fallback('ai_usd_monthly'),
-  ALTER COLUMN voice_max_concurrent_calls SET DEFAULT public.bot_usage_fallback('voice_max_concurrent_calls')::integer,
-  ALTER COLUMN voice_max_call_seconds     SET DEFAULT public.bot_usage_fallback('voice_max_call_seconds')::integer;
+-- Bereits in 20261027120000 definiert; alle Defaults lesen dort.
 
 -- ============================================================
 -- 2. Kanalgrenzen und geschützte Reserven

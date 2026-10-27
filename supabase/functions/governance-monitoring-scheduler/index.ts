@@ -229,9 +229,6 @@ Deno.serve(async (req) => {
   }
   const authHeader = req.headers.get('Authorization') ?? '';
   if (authHeader !== `Bearer ${CRON_KEY}`) {
-    const durationMs = Date.now() - startedAt;
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
-    await logCronExecution(sb, 'governance-monitoring-scheduler', 'failure', 401, 'UNAUTHORIZED', 'Invalid cron key', durationMs);
     return jsonResponse({ error: 'cron only' }, 401);
   }
 

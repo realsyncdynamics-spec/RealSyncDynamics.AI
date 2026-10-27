@@ -115,8 +115,6 @@ Deno.serve(async (req) => {
   }
   const authHeader = req.headers.get('Authorization') ?? '';
   if (authHeader !== `Bearer ${CRON_KEY}`) {
-    const durationMs = Date.now() - startedAtForLogging;
-    await logCronExecution('memory-decay-worker', 'failure', 401, 'UNAUTHORIZED', 'Invalid cron key', durationMs);
     return jsonResponse({ error: 'cron only' }, 401, corsHeaders);
   }
 

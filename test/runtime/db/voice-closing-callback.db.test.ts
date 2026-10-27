@@ -221,6 +221,34 @@ d('C4–C6 Ansagefenster und Beanspruchung', () => {
     expect(await closing()).toEqual([]);
   });
 
+  // ── Gegenprobe: Fenster übersprungen ───────────────────────────────────
+  // Diese Tests halten eine BEKANNTE GRENZE fest, keine Zusage: Wird das
+  // Ansagefenster [Ende−120, Ende−60) von keinem Enforcer-Lauf getroffen
+  // (verspäteter/ausgefallener Cron-Lauf, Fehler im Lauf), ist der nächste
+  // Lauf schon im harten Bereich. Dann wird der Anruf ohne Ansage per
+  // Status=completed beendet. Das Limit bleibt geschützt, die
+  // Verabschiedung ist NICHT garantiert.
+  const overdue = () => asServer(ctx, async () => (await ctx.client.query<{ call_ref: string; tenant_id: string }>(
+    `SELECT * FROM public.bot_voice_overdue_calls(60, 5, 100)`,
+  )).rows.filter((r) => r.tenant_id === tenant).map((r) => r.call_ref));
+
+  it('Gegenprobe: Fenster übersprungen → nur noch harter Abbruch, keine Ansage (stumm)', async () => {
+    const ref = callSid();
+    const id = await call(ref, 600 - 55); // 55 s Rest: Fenster vorbei, nie angesagt
+    expect(await closing()).toEqual([]);
+    expect(await overdue()).toEqual([ref]);
+    const meta = (await ctx.client.query(`SELECT metadata FROM public.bot_usage_reservations WHERE id = $1`, [id])).rows[0].metadata;
+    expect(meta.closing_claimed).toBeUndefined();
+  });
+
+  it('Gegenprobe: Reservierung ≤ 60 s → Fenster leer, sofort harter Abbruch ohne Ansage (stumm)', async () => {
+    await ctx.client.query(`UPDATE public.bot_usage_limits SET voice_max_call_seconds = 50 WHERE tenant_id = $1`, [tenant]);
+    const ref = callSid();
+    await call(ref, 1);
+    expect(await closing()).toEqual([]);
+    expect(await overdue()).toEqual([ref]);
+  });
+
   it('Argumente: Abschlussvorlauf muss größer als harter Vorlauf sein', async () => {
     expect(await sqlState(asServer(ctx, () => ctx.client.query(`SELECT * FROM public.bot_voice_closing_calls(60, 60, 10)`)))).toBe('22023');
     expect(await sqlState(asServer(ctx, () => ctx.client.query(`SELECT * FROM public.bot_voice_closing_calls(120, -1, 10)`)))).toBe('22023');

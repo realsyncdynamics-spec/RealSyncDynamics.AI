@@ -96,6 +96,28 @@ describe('V2 — Ansage-TwiML kann das Limit nicht verlängern', () => {
   it('Ansagefenster liegt vor dem harten Abbruch (genau ein Cron-Lauf passt hinein)', () => {
     expect(VOICE_CLOSING_LEAD_SECONDS - VOICE_ENFORCER_LEAD_SECONDS).toBeGreaterThanOrEqual(60);
   });
+
+  // Gegenprobe Cron-Takt (BEKANNTE GRENZE, keine Zusage): Fenster
+  // [Ende−120, Ende−60) relativ zum Anrufbeginn, Läufe im 60-s-Raster.
+  const windowHit = (startOffset: number, reserved: number, ticks: number[]) => ticks.some((t) => {
+    const age = t - startOffset;
+    return age >= Math.max(reserved - VOICE_CLOSING_LEAD_SECONDS, 0) && age < Math.max(reserved - VOICE_ENFORCER_LEAD_SECONDS, 0);
+  });
+  const grid = (n: number, delay: Record<number, number> = {}) => Array.from({ length: n }, (_, i) => i * 60 + (delay[i] ?? 0));
+
+  it('Gegenprobe: pünktliche Minutenläufe treffen das Fenster bei jedem Anrufbeginn', () => {
+    for (let start = 0; start < 60; start++) expect(windowHit(start, 600, grid(20))).toBe(true);
+  });
+
+  it('Gegenprobe: ein verspäteter Lauf kann das Fenster überspringen → Abbruch ohne Ansage', () => {
+    // Anruf beginnt bei t=0, Fenster [480, 540). Lauf 8 (t=480) um 61 s verspätet.
+    expect(windowHit(0, 600, grid(20, { 8: 61 }))).toBe(false);
+  });
+
+  it('Gegenprobe: Reservierung ≤ 60 s hat kein Fenster → nie Ansage über den Enforcer', () => {
+    expect(windowHit(0, 60, grid(5))).toBe(false);
+    expect(windowHit(0, 45, grid(5))).toBe(false);
+  });
 });
 
 describe('V2 — Entscheidung je Gesprächsschritt', () => {
@@ -399,7 +421,7 @@ describe('Webhook — V2/V3: laufender Anruf wird nicht stumm aufgelegt', () => 
     expect(r.body).not.toContain('erfasst');
   });
 
-  it('Restzeit zu kurz → nur <Hangup/> (Ansage würde das Limit überschreiten)', async () => {
+  it('BEKANNTE GRENZE: Restzeit < 15 s → stummes <Hangup/> (Ansage würde das Limit überschreiten)', async () => {
     const r = await runWebhook({ reservation: existing, clockAgeSeconds: 600 - 5, speech: 'x' });
     expect(r.body).toMatch(/<Response><Hangup\/><\/Response>$/);
     expect(r.events).not.toContain('rpc:bot_voice_mark_callback');

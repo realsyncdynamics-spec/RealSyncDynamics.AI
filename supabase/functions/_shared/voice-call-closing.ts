@@ -16,6 +16,17 @@
 //   * Umleitung an einen Menschen: nicht umgesetzt (zusätzlicher
 //     Ausgangsanruf = offene Kostenentscheidung).
 //
+// BEKANNTE GRENZEN — stummes Auflegen bleibt in diesen Fällen möglich:
+//   1. Gesprächsschritt mit Restzeit < VOICE_CLOSING_MIN_SECONDS → <Hangup/>.
+//   2. Harter Abbruch (Status=completed), wenn vorher keine Ansage lief:
+//      Fenster von keinem Enforcer-Lauf getroffen (verspäteter/ausgefallener
+//      Lauf), Ansage beim Anbieter gescheitert, AccountSid fehlt, oder
+//      Reservierung ≤ VOICE_ENFORCER_LEAD_SECONDS (Fenster leer).
+//   3. Ablauf des beim Anbieter gesetzten TimeLimit (Ebene 1).
+//   4. Reservierung nicht lesbar oder bereits geschlossen.
+// Das Limit ist in allen Fällen geschützt; die Verabschiedung nicht.
+// Gegenproben: test/bots/voiceClosing.test.ts, voice-closing-callback.db.test.ts.
+//
 // Budget: rechnet weder ab noch gibt frei.
 // Ohne Deno-/jsr-Imports, damit Vitest das Modul laden kann.
 

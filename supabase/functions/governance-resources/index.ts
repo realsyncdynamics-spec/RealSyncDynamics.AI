@@ -11,6 +11,7 @@
 //   { op: 'archive_asset',    asset_id }
 //   { op: 'create_policy',    tenant_id, name, policy_type, severity, action, condition, ... }
 //   { op: 'toggle_policy',    policy_id, enabled }
+//   { op: 'update_policy',    policy_id, action?, enabled? }
 //   { op: 'upsert_mapping',   asset_id, control_id, status, notes?, evidence_id? }
 //   { op: 'delete_mapping',   mapping_id }
 //   { op: 'auto_map',         asset_id }
@@ -23,8 +24,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
 import { parseClassificationFields, parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
+import { validatePolicyUpdate } from './policyUpdate.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -116,6 +119,7 @@ Deno.serve(async (req) => {
       case 'archive_asset':   return await archiveAsset(admin, userId, userEmail, body);
       case 'create_policy':   return await createPolicy(admin, userId, userEmail, body);
       case 'toggle_policy':   return await togglePolicy(admin, userId, userEmail, body);
+      case 'update_policy':   return await updatePolicy(admin, userId, userEmail, body);
       case 'upsert_mapping':  return await upsertMapping(admin, userId, userEmail, body);
       case 'delete_mapping':  return await deleteMapping(admin, userId, userEmail, body);
       case 'auto_map':        return await autoMap(admin, userId, userEmail, body);
@@ -263,6 +267,13 @@ async function createPolicy(admin: SupabaseAdminClient, userId: string, userEmai
   if (!ACTIONS.includes(action))           return jsonError(400, 'BAD_REQUEST', `action must be one of ${ACTIONS.join('|')}`);
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
 
+  try {
+    await gateFeature(admin as unknown as Parameters<typeof gateFeature>[0], tenant_id, 'policy.packs');
+  } catch (e) {
+    if (e instanceof EntitlementError) return jsonError(402, 'PAYMENT_REQUIRED', 'Policy Packs sind im aktuellen Plan nicht enthalten (policy.packs).');
+    throw e;
+  }
+
   const { data, error } = await admin.from('governance_policies').insert({
     tenant_id,
     name: name.slice(0, 200),
@@ -289,10 +300,76 @@ async function togglePolicy(admin: SupabaseAdminClient, userId: string, userEmai
   if (!row) return jsonError(404, 'NOT_FOUND', 'policy not found');
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
 
+  try {
+    await gateFeature(admin as unknown as Parameters<typeof gateFeature>[0], row.tenant_id, 'policy.packs');
+  } catch (e) {
+    if (e instanceof EntitlementError) return jsonError(402, 'PAYMENT_REQUIRED', 'Policy Packs sind im aktuellen Plan nicht enthalten (policy.packs).');
+    throw e;
+  }
+
   const { error } = await admin.from('governance_policies').update({ enabled }).eq('id', policy_id);
   if (error) throw error;
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: enabled ? 'policy.enable' : 'policy.disable', target_type: 'governance_policy', target_id: policy_id, payload: { enabled } });
   return jsonResponse({ ok: true, enabled });
+}
+
+
+async function updatePolicy(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+  const policy_id = typeof b.policy_id === 'string' ? b.policy_id.trim() : '';
+  if (!policy_id) return jsonError(400, 'BAD_REQUEST', 'policy_id required');
+
+  const { data } = await admin.from('governance_policies')
+    .select('id, tenant_id, name, action, enabled, condition, enforce_action, mode')
+    .eq('id', policy_id)
+    .maybeSingle();
+  const row = data as {
+    id: string;
+    tenant_id: string;
+    name: string;
+    action: string;
+    enabled: boolean;
+    condition: Record<string, unknown> | null;
+  } | null;
+  if (!row) return jsonError(404, 'NOT_FOUND', 'policy not found');
+  if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+
+  try {
+    await gateFeature(admin as unknown as Parameters<typeof gateFeature>[0], row.tenant_id, 'policy.packs');
+  } catch (e) {
+    if (e instanceof EntitlementError) return jsonError(402, 'PAYMENT_REQUIRED', 'Policy Packs sind im aktuellen Plan nicht enthalten (policy.packs).');
+    throw e;
+  }
+
+  const validated = validatePolicyUpdate(
+    { action: b.action ?? b.verdict, enabled: b.enabled },
+    row.condition ?? null,
+  );
+  if (!validated.ok) {
+    return jsonError(validated.status, validated.code, validated.message);
+  }
+
+  const { error } = await admin.from('governance_policies').update(validated.patch).eq('id', policy_id);
+  if (error) throw error;
+
+  const { data: updated } = await admin.from('governance_policies').select('*').eq('id', policy_id).maybeSingle();
+  await audit(admin, {
+    tenant_id: row.tenant_id,
+    actor_user_id: userId,
+    actor_email: userEmail,
+    action: 'policy.update',
+    target_type: 'governance_policy',
+    target_id: policy_id,
+    payload: {
+      name: row.name,
+      before: { action: row.action, enabled: row.enabled },
+      after: {
+        action: (updated as { action?: string } | null)?.action ?? validated.patch.action ?? row.action,
+        enabled: (updated as { enabled?: boolean } | null)?.enabled ?? validated.patch.enabled ?? row.enabled,
+      },
+      enforcement_class: validated.klasse,
+    },
+  });
+  return jsonResponse({ ok: true, policy: updated });
 }
 
 
@@ -411,7 +488,7 @@ async function deleteMapping(admin: SupabaseAdminClient, userId: string, userEma
 
   const { error } = await admin.from('asset_control_mappings').delete().eq('id', mapping_id);
   if (error) throw error;
-  await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.delete', target_type: 'asset_control_mapping', target_id: mapping_id, payload: {} });
+  await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.delete', target_type: 'governance_asset', target_id: mapping_id, payload: {} });
   return jsonResponse({ ok: true });
 }
 
@@ -427,4 +504,3 @@ function clampInt(v: unknown, fallback: number, min: number, max: number): numbe
   if (!Number.isFinite(n)) return fallback;
   return Math.min(Math.max(Math.trunc(n), min), max);
 }
-

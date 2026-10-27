@@ -56,7 +56,7 @@ async function setLimits(ctx: DbCtx, tenantId: string, l: {
 
 async function reserveAi(ctx: DbCtx, tenantId: string, ref: string, usd: number): Promise<ReserveRow> {
   return asServer(ctx, async () => (await ctx.client.query<ReserveRow>(
-    `SELECT * FROM public.bot_ai_budget_reserve($1, NULL, $2, $3)`, [tenantId, ref, usd],
+    `SELECT * FROM public.bot_ai_budget_reserve($1, NULL, $2, $3, '{"channel":"chat"}')`, [tenantId, ref, usd],
   )).rows[0]!);
 }
 
@@ -404,7 +404,7 @@ d('bot_usage — parallele Anfragen am Budgetrand (K7, K1)', () => {
         workers.push(c);
       }
       const ai = await Promise.all(workers.map((c, i) => c.query<{ decision: string }>(
-        `SELECT decision FROM public.bot_ai_budget_reserve($1, NULL, $2, 0.10)`, [tid, `par-${i}`],
+        `SELECT decision FROM public.bot_ai_budget_reserve($1, NULL, $2, 0.10, '{"channel":"chat"}')`, [tid, `par-${i}`],
       ).then((r) => r.rows[0]!.decision)));
       expect(ai.filter((x) => x === 'allow')).toHaveLength(10);
       const sum = await admin.query<{ s: string }>(

@@ -15,8 +15,13 @@
 //         Anrufe. Ablehnung → <Reject reason="busy"/> als erstes Verb: Der
 //         Anruf wird nicht angenommen, Twilio berechnet ihn nicht, keine Ansage,
 //         kein KI-Aufruf.
-//       * Jeder Folge-Hit prüft serverseitig die Zeitgrenze der Reservierung.
-//         Ist sie erreicht → <Hangup/> ohne KI-Aufruf.
+//       * Hartes Zeitlimit in drei Ebenen (Gate 1, _shared/bot-voice-enforcement.ts):
+//           1. Nach Annahme setzt der erste Hit TimeLimit beim Anbieter auf
+//              die Restzeit der Reservierung (Hintergrund, waitUntil).
+//           2. bot-voice-enforcer (pg_cron, jede Minute) beendet überfällige
+//              Anrufe per Status=completed — auch ohne weiteren Webhook.
+//           3. Jeder Folge-Hit prüft serverseitig die Zeitgrenze der
+//              Reservierung. Ist sie erreicht → <Hangup/> ohne KI-Aufruf.
 //       * Status-Callback mit Endzustand (completed, busy, failed, no-answer,
 //         canceled) rechnet die gemeldete Dauer ab — idempotent über
 //         Call-ID + Ereignis (Unique-Index). Fehlt der Callback, rechnet der
@@ -55,6 +60,7 @@ import {
   TWILIO_TERMINAL_STATUSES, createBotAiBudgetGuard, planSecondsFromEntitlement,
   reserveVoiceCall, settleVoiceCall, voiceTurnAllowed, type RpcAdmin,
 } from '../_shared/bot-budget.ts';
+import { applyProviderTimeLimit } from '../_shared/bot-voice-enforcement.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
@@ -324,8 +330,11 @@ Deno.serve(async (req) => {
         return rejectCall();
       }
       // Kontingent: erster Hit reserviert, Folge-Hits erhalten 'existing'.
+      // AccountSid stammt aus dem signaturgeprüften Request; der Enforcer
+      // braucht sie, um den Anruf beim Anbieter zu beenden (Gate 1).
+      const accountSid = params.get('AccountSid');
       const reservation = await reserveVoiceCall(admin as unknown as RpcAdmin, {
-        tenantId, botId: bot.id, provider: 'twilio', callRef: callSid, planSeconds,
+        tenantId, botId: bot.id, provider: 'twilio', callRef: callSid, planSeconds, accountSid,
       });
       if (!reservation.ok) {
         console.error(JSON.stringify({
@@ -341,6 +350,22 @@ Deno.serve(async (req) => {
           // Zeitgrenze erreicht oder Reservierung abgeschlossen → auflegen,
           // kein KI-Aufruf, keine Ansage.
           return hangup();
+        }
+      } else {
+        // Erster Hit: Höchstdauer beim Anbieter setzen (Ebene 1 von 3), nach
+        // der Antwort im Hintergrund, damit der Anruf bereits angenommen ist.
+        // Fehlschlag bricht den Anruf nicht ab: bot-voice-enforcer (Ebene 2)
+        // und die Zeitprüfung je Gesprächsschritt (Ebene 3) greifen weiter.
+        const limitTask = applyProviderTimeLimit(
+          { authToken: TWILIO_AUTH_TOKEN ?? '' },
+          { accountSid, callSid, createdAt: new Date(), reservedSeconds: reservation.reservedSeconds },
+        ).catch((e) => console.error(JSON.stringify({
+          level: 'warn', scope: 'bot_voice_timelimit', error: (e as Error).message,
+        })));
+        // @ts-ignore — EdgeRuntime stellt die Supabase Edge Runtime bereit
+        if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+          // @ts-ignore — siehe oben
+          EdgeRuntime.waitUntil(limitTask);
         }
       }
 

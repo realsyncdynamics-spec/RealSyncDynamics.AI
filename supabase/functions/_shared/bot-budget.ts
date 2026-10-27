@@ -33,7 +33,11 @@ export interface AiBudgetGuard {
   release(reservationId: string, reason: string): Promise<void>;
 }
 
-export type BudgetDenyReason = 'daily_budget' | 'monthly_budget' | 'concurrency' | 'invalid';
+// Gründe aus bot_ai_budget_reserve / bot_voice_call_reserve
+// (Migrationen 20261027120000 und 20261027140000).
+export type BudgetDenyReason =
+  | 'daily_budget' | 'monthly_budget' | 'concurrency' | 'invalid'
+  | 'channel_daily_budget' | 'channel_monthly_budget' | 'protected_reserve' | 'invalid_config';
 
 export class BotBudgetError extends Error {
   code = 'BOT_BUDGET_EXCEEDED' as const;
@@ -172,7 +176,11 @@ export function planSecondsFromEntitlement(minutes: number | null | undefined): 
 
 export async function reserveVoiceCall(
   admin: RpcAdmin,
-  args: { tenantId: string; botId: string; provider: 'twilio' | 'test'; callRef: string; planSeconds: number | null },
+  args: {
+    tenantId: string; botId: string; provider: 'twilio' | 'test'; callRef: string; planSeconds: number | null;
+    /** Twilio-AccountSid aus dem signaturgeprüften Webhook; nötig, um den Anruf beim Anbieter zu beenden. */
+    accountSid?: string | null;
+  },
 ): Promise<VoiceReservation> {
   if (args.planSeconds === 0) return { ok: false, reason: 'no_plan_minutes' };
   const { data, error } = await admin.rpc('bot_voice_call_reserve', {
@@ -181,7 +189,7 @@ export async function reserveVoiceCall(
     p_provider: args.provider,
     p_call_ref: args.callRef,
     p_plan_seconds_monthly: args.planSeconds,
-    p_metadata: {},
+    p_metadata: args.accountSid ? { account_sid: args.accountSid } : {},
   });
   if (error) {
     logWarn('bot_voice_reserve_failed', { tenant_id: args.tenantId, error: error.message });

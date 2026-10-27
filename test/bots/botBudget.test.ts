@@ -44,7 +44,17 @@ import {
   type AiBudgetGuard,
 } from '../../supabase/functions/_shared/bot-budget';
 import { verifyMetaSignature } from '../../supabase/functions/_shared/meta-signature';
-import { runAiTool } from '../../supabase/functions/_shared/ai';
+// ai.ts und providers.ts importieren jsr:/npm:-Specifier. Ein statischer
+// Import zöge sie in das tsc-Programm (`npm run lint` im gates-Job) — Hausregel
+// aus _shared/timingSafeEqual.ts: was ein Test statisch importiert, bleibt
+// Deno-frei. Deshalb Laufzeit-Import über eine Pfad-Variable; getestet wird
+// weiterhin derselbe Code wie in Produktion (vi.mock greift auch hier).
+const AI_MODULE = '../../supabase/functions/_shared/ai.ts';
+const PROVIDERS_MODULE = '../../supabase/functions/_shared/providers.ts';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RunAiTool = (...args: any[]) => Promise<any>;
+const runAiTool: RunAiTool = async (...args) =>
+  ((await import(/* @vite-ignore */ AI_MODULE)) as { runAiTool: RunAiTool }).runAiTool(...args);
 
 type RpcCall = { fn: string; args: Record<string, unknown> };
 
@@ -316,7 +326,7 @@ describe('runAiTool mit Bot-Budget (K6)', () => {
   });
 
   it('Timeout/HTTP-Fehler → unklar → Höchstbetrag als estimated', async () => {
-    const { ProviderError } = await import('../../supabase/functions/_shared/providers.ts') as unknown as {
+    const { ProviderError } = await import(/* @vite-ignore */ PROVIDERS_MODULE) as unknown as {
       ProviderError: new (m: string, c?: string) => Error;
     };
     const g = guard();
@@ -328,7 +338,7 @@ describe('runAiTool mit Bot-Budget (K6)', () => {
   });
 
   it('nachweislich nicht gesendet (Anbieter nicht konfiguriert) → Freigabe', async () => {
-    const { ProviderError } = await import('../../supabase/functions/_shared/providers.ts') as unknown as {
+    const { ProviderError } = await import(/* @vite-ignore */ PROVIDERS_MODULE) as unknown as {
       ProviderError: new (m: string, c?: string) => Error;
     };
     const g = guard();

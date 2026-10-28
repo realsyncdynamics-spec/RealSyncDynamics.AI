@@ -161,7 +161,12 @@ describe('implementation-status registry', () => {
     expect(beta.description).toContain('31.01.2027');
     expect(beta.description).toMatch(/WP-4/);
     expect(beta.description).toMatch(/noch nicht vollständig/);
+    expect(beta.description).toContain('BetaFeedback');
+    expect(beta.description).toContain('/admin/beta-feedback');
+    expect(beta.description).not.toContain('bisher Link auf /kontakt?topic=beta-feedback');
     expect(beta.evidence).toContain('PR #1874');
+    expect(beta.evidence).toContain('PR #1989');
+    expect(beta.evidence).toContain('PR #1990');
     // Owner-Entscheidung 21.10.2026: Beta-Angebot bleibt öffentlich, Listenpreise unverändert.
     const monthly = getImplementation('pricing-monthly')!;
     expect(monthly.description).toContain('BETA.publicOffer = true');

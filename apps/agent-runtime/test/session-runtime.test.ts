@@ -10,16 +10,19 @@ import {
 } from '../src/providers/grok-provider.js';
 import {
   VoiceSessionRuntime,
+  canonicalToolArgs,
   createMemoryVoiceStore,
   createVoiceToolClient,
   createVoiceToolGateway,
   sanitizeToolArgs,
+  type VoiceConsentVerifier,
   type VoiceSessionStartRequest,
   type VoiceToolClient,
   type VoiceToolHttpOutcome,
   type VoiceToolHttpRequest,
 } from '../src/voice/session-runtime.js';
-import type { VoiceProviderEvent, VoiceToolDefinition } from '../src/voice-provider-types.js';
+import type { ToolGatewayInput } from '../src/voice/tool-gateway.js';
+import type { VoiceProviderEvent, VoiceToolDefinition, VoiceToolResult } from '../src/voice-provider-types.js';
 import type { VoicePolicyDecision } from '../src/voice-types.js';
 
 const PLACEHOLDER_KEY = 'test-placeholder-not-a-real-key';
@@ -42,16 +45,21 @@ function policyDecision(
   };
 }
 
+/** Entscheidung gebunden an genau diesen Request (wie das echte /voice-tool). */
 function allowOutcome(
-  tenantId: string,
-  sessionId: string,
+  req: Pick<VoiceToolHttpRequest, 'tenantId' | 'sessionId' | 'requestId'>,
   verdict: VoicePolicyDecision['verdict'] = 'ALLOW',
 ): VoiceToolHttpOutcome {
   return {
     ok: true,
     verdict,
     status: verdict === 'REQUIRE_CONFIRMATION' ? 'confirmation_required' : 'accepted',
-    decision: policyDecision({ verdict, tenantId, sessionId }),
+    decision: policyDecision({
+      verdict,
+      tenantId: req.tenantId,
+      sessionId: req.sessionId,
+      requestId: req.requestId,
+    }),
   };
 }
 
@@ -154,6 +162,10 @@ interface Harness {
   voiceToolImpl: (req: VoiceToolHttpRequest) => Promise<VoiceToolHttpOutcome>;
   events: VoiceProviderEvent[];
   factoryHeaders: Array<Record<string, string>>;
+  /** Alle Ergebnisse, die die Runtime an den Provider zurückgibt (auch nach Close). */
+  results: VoiceToolResult[];
+  /** Provider-Event direkt an die Runtime — umgeht den Duplikat-Schutz des Providers. */
+  emit: (event: VoiceProviderEvent) => void;
 }
 
 function harness(
@@ -164,6 +176,7 @@ function harness(
     injectMemoryStore?: boolean;
     /** Optional: komplett eigenes Gateway (z. B. werfendes Stub). */
     toolGateway?: ReturnType<typeof createVoiceToolGateway>;
+    verifyConsent?: VoiceConsentVerifier;
   } = {},
 ): Harness {
   const h: Harness = {
@@ -172,9 +185,13 @@ function harness(
     voiceToolCalls: [],
     voiceToolImpl:
       overrides.voiceToolImpl ??
-      (async (req) => allowOutcome(req.tenantId, req.sessionId, 'ALLOW')),
+      (async (req) => allowOutcome(req, 'ALLOW')),
     events: [],
     factoryHeaders: [],
+    results: [],
+    emit: () => {
+      throw new Error('harness: keine Session gestartet');
+    },
   };
 
   const client: VoiceToolClient = {
@@ -184,7 +201,7 @@ function harness(
     },
   };
 
-  const provider = new GrokProvider({
+  const baseProvider = new GrokProvider({
     socketFactory: (url, init) => {
       h.factoryHeaders.push({ ...init.headers });
       const s = new MockSocket(url, init);
@@ -194,6 +211,23 @@ function harness(
     getApiKey: overrides.getApiKey ?? (() => PLACEHOLDER_KEY),
     connectTimeoutMs: 200,
     closeTimeoutMs: 50,
+  });
+  const provider = new Proxy(baseProvider, {
+    get(target, prop, receiver) {
+      if (prop === 'createSession') {
+        return async (...args: Parameters<GrokProvider['createSession']>) => {
+          h.emit = args[1];
+          return target.createSession(...args);
+        };
+      }
+      if (prop === 'submitToolResult') {
+        return async (sessionId: string, result: VoiceToolResult) => {
+          h.results.push(result);
+          return target.submitToolResult(sessionId, result);
+        };
+      }
+      return Reflect.get(target, prop, receiver);
+    },
   });
 
   const injectMemory = overrides.injectMemoryStore !== false;
@@ -209,6 +243,7 @@ function harness(
     // Legacy-Tests: kein Persistenz-Store (unabhängig von Env-Credentials).
     store: null,
     onEvent: (e) => h.events.push(e),
+    verifyConsent: overrides.verifyConsent,
   });
   return h;
 }
@@ -377,7 +412,7 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
   it('REQUIRE_CONFIRMATION von /voice-tool → awaiting_confirmation', async () => {
     const h = harness({
       voiceToolImpl: async (req) =>
-        allowOutcome(req.tenantId, req.sessionId, 'REQUIRE_CONFIRMATION'),
+        allowOutcome(req, 'REQUIRE_CONFIRMATION'),
     });
     const { socket } = await openRuntime(h);
     socket.server(
@@ -471,15 +506,19 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
 
   it('reserviert toolCount vor dem Await und erhöht turnCount bei finalem Nutzer-Turn', async () => {
     const seen: number[] = [];
+    const turns: number[] = [];
     let release!: () => void;
     const gate = new Promise<void>((r) => {
       release = r;
     });
     const h = harness({
       voiceToolImpl: async (req) => {
-        seen.push(req.session.toolCount);
+        // Wie das Gateway: Zähler kommen serverseitig aus der Session (SEC-05).
+        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        seen.push(ctx!.session.toolCount);
+        turns.push(ctx!.session.turnCount);
         await gate;
-        return allowOutcome(req.tenantId, req.sessionId, 'ALLOW');
+        return allowOutcome(req, 'ALLOW');
       },
     });
     const { socket } = await openRuntime(
@@ -502,10 +541,361 @@ describe('VoiceSessionRuntime — Tenant und /voice-tool', () => {
     socket.server(functionCall('call_b', 'lookup_kb', { query: 'b' }));
     await wait(30);
     assert.deepEqual(seen, [0, 1], 'parallele Calls bekommen unterschiedliche toolCounts');
-    assert.equal(h.voiceToolCalls[0]!.session.turnCount, 1);
-    assert.equal(h.voiceToolCalls[1]!.session.turnCount, 1);
+    assert.deepEqual(turns, [1, 1]);
     release();
     await wait(30);
+  });
+});
+
+describe('VoiceSessionRuntime — Policy-Kontext nur serverseitig (SEC-05)', () => {
+  it('/voice-tool-Body trägt weder Session-Zustand noch Einwilligung', async () => {
+    const h = harness();
+    const { socket } = await openRuntime(h);
+    socket.server(functionCall('call_body', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 1);
+    const req = h.voiceToolCalls[0]! as unknown as Record<string, unknown>;
+    assert.equal('session' in req, false);
+    assert.equal('consent' in req, false);
+  });
+
+  it('Kontext nur für den gerade angemeldeten Call; danach, fremd oder mit anderem Tool → undefined', async () => {
+    type Ctx = Awaited<ReturnType<VoiceSessionRuntime['resolveToolPolicyContext']>>;
+    let inFlight: Ctx;
+    let otherTool: Ctx;
+    let otherRequest: Ctx;
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        inFlight = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        otherTool = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, 'create_ticket', req.args);
+        otherRequest = await h.runtime.resolveToolPolicyContext(req.sessionId, 'vt_forged', req.tool, req.args);
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    const { socket } = await openRuntime(h);
+    socket.server(functionCall('call_p', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(inFlight?.session.tenantId, 'tenant_mueller_sanitaer');
+    assert.equal(otherTool, undefined);
+    assert.equal(otherRequest, undefined);
+    assert.equal(await h.runtime.resolveToolPolicyContext('sess_rt_1', 'vt_call_p', 'lookup_kb', { query: 'x' }), undefined);
+    assert.equal(await h.runtime.resolveToolPolicyContext('sess_unknown', 'vt_call_p', 'lookup_kb', { query: 'x' }), undefined);
+  });
+
+  it('behauptete Einwilligung zählt ohne Nachweis nicht; mit Verifier schon', async () => {
+    const read = async (verifyConsent?: VoiceConsentVerifier) => {
+      let consent: unknown = 'unset';
+      const h = harness({
+        verifyConsent,
+        voiceToolImpl: async (req) => {
+          const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+          consent = ctx?.consent;
+          return { ok: false, reason: 'test_stop' };
+        },
+      });
+      const { socket } = await openRuntime(h);
+      socket.server(functionCall('call_c', 'lookup_kb', { query: 'x' }));
+      await wait(20);
+      return consent;
+    };
+
+    assert.equal(await read(), null, 'Default: nicht verifiziert');
+    assert.equal(
+      await read(() => {
+        throw new Error('consent_store_down');
+      }),
+      null,
+      'Verifier-Fehler → nicht verifiziert',
+    );
+    assert.deepEqual(await read(({ claimed }) => claimed), {
+      purposes: ['execute_tools', 'store_evidence'],
+      withdrawnAt: null,
+    });
+  });
+
+  it('Kill-Switch aus dem Start bleibt wirksam, Legacy ohne Store', async () => {
+    let killSwitch: boolean | undefined;
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        const ctx = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        killSwitch = ctx?.session.killSwitch;
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    const { socket } = await openRuntime(
+      h,
+      startRequest({
+        session: { killSwitch: true, turnCount: 0, toolCount: 0, rateLimit: { maxTurns: 20, maxTools: 8 } },
+      }),
+    );
+    socket.server(functionCall('call_k', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(killSwitch, true);
+  });
+});
+
+describe('VoiceSessionRuntime — Abbruch, Replay, Bindung (SEC-05 Härtung)', () => {
+  const recordingGateway = (handled: ToolGatewayInput[]) => ({
+    handle: async (input: ToolGatewayInput): Promise<VoiceToolResult> => {
+      handled.push(input);
+      return { callId: input.callId, outcome: 'denied', verified: false, output: { reason: 'recorded' } };
+    },
+  });
+  const toolCall = (callId: string, name = 'lookup_kb', args: unknown = { query: 'x' }): VoiceProviderEvent => ({
+    type: 'tool.call',
+    sessionId: 'sess_rt_1',
+    call: { callId, name, arguments: args },
+  });
+
+  it('Abbruch während /voice-tool → session_closed, kein Kontext, Gateway wird nie aufgerufen', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    let afterClose: unknown = 'unset';
+    const handled: ToolGatewayInput[] = [];
+    const h = harness({
+      toolGateway: recordingGateway(handled),
+      voiceToolImpl: async (req) => {
+        await gate;
+        afterClose = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        return allowOutcome(req);
+      },
+    });
+    const { socket } = await openRuntime(h);
+    socket.server(functionCall('call_abort', 'lookup_kb', { query: 'x' }));
+    await wait(10);
+    assert.equal(h.voiceToolCalls.length, 1);
+
+    const closing = h.runtime.closeSession('sess_rt_1');
+    release();
+    await closing;
+    await wait(20);
+    assert.equal(afterClose, undefined, 'nach Beginn des Abbruchs keine Entscheidung mehr');
+    assert.equal(handled.length, 0);
+    assert.equal(h.results.at(-1)?.output.reason, 'session_closed');
+  });
+
+  it('nach Beginn des Abbruchs wird kein neuer Call mehr angemeldet', async () => {
+    const h = harness();
+    await openRuntime(h);
+    const closing = h.runtime.closeSession('sess_rt_1');
+    h.emit(toolCall('call_late'));
+    await closing;
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 0);
+    assert.equal(h.results.at(-1)?.output.reason, 'session_closed');
+  });
+
+  it('Abbruch zwischen Entscheidung und Executor → session_inactive, kein Termin; ohne Abbruch executed', async () => {
+    const run = async (abortBeforeExecutor: boolean) => {
+      const store = createMemoryVoiceStore();
+      let appointments = 0;
+      const insertAppointment = store.insertAppointment.bind(store);
+      store.insertAppointment = async (row) => {
+        appointments += 1;
+        return insertAppointment(row);
+      };
+      const h = harness({ toolGateway: createVoiceToolGateway({ store, allowWriteTools: true }) });
+      if (abortBeforeExecutor) {
+        // Konkurrierender Abbruch, während das Gateway die Ausführung vorbereitet
+        // (nach der Policy-Entscheidung, vor dem Executor).
+        const insertExecution = store.insertExecution.bind(store);
+        store.insertExecution = async (row) => {
+          void h.runtime.closeSession('sess_rt_1');
+          return insertExecution(row);
+        };
+      }
+      await openRuntime(h);
+      h.emit(toolCall('call_appt', 'schedule_appointment', { customer_name: 'Max', when: '2026-10-10T09:00:00.000Z' }));
+      await wait(80);
+      return { result: h.results.at(-1), appointments };
+    };
+
+    const aborted = await run(true);
+    assert.equal(aborted.result?.outcome, 'denied');
+    assert.equal(aborted.result?.output.reason, 'session_inactive');
+    assert.equal(aborted.appointments, 0);
+
+    const normal = await run(false);
+    assert.equal(normal.result?.outcome, 'executed');
+    assert.equal(normal.result?.verified, true);
+    assert.equal(normal.appointments, 1);
+  });
+
+  it('Policy-Kontext höchstens einmal je Anmeldung: parallel und wiederholt', async () => {
+    const got: unknown[] = [];
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        const resolve = () => h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        got.push(...(await Promise.all([resolve(), resolve()])));
+        got.push(await resolve());
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    const { socket } = await openRuntime(h);
+    socket.server(functionCall('call_once', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(got.length, 3);
+    assert.equal(got.filter((c) => c !== undefined).length, 1, 'genau eine Entscheidung');
+    assert.equal(got[2], undefined, 'Replay nach dem ersten Abruf');
+  });
+
+  it('Entscheidung zu einer anderen requestId → request_mismatch, keine Ausführung; passende → Gateway', async () => {
+    const handled: ToolGatewayInput[] = [];
+    const h = harness({
+      toolGateway: recordingGateway(handled),
+      voiceToolImpl: async (req) =>
+        allowOutcome(req.requestId === 'vt_call_foreign' ? { ...req, requestId: 'vt_call_other' } : req),
+    });
+    await openRuntime(h);
+    h.emit(toolCall('call_foreign'));
+    await wait(20);
+    assert.equal(handled.length, 0);
+    assert.equal(h.results.at(-1)?.output.reason, 'request_mismatch');
+
+    h.emit(toolCall('call_own'));
+    await wait(20);
+    assert.equal(handled.length, 1);
+    assert.equal(handled[0]!.decision.requestId, 'vt_call_own');
+    assert.ok(handled[0]!.executionGuard, 'Gateway bekommt den Guard der Session');
+  });
+
+  it('wiederverwendete callId: parallel und nach Abschluss → duplicate_call_id, neue callId geht durch', async () => {
+    const h = harness();
+    await openRuntime(h);
+    h.emit(toolCall('call_dup'));
+    h.emit(toolCall('call_dup'));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 1);
+    assert.ok(h.results.some((r) => r.output.reason === 'duplicate_call_id'));
+
+    h.emit(toolCall('call_dup'));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 1, 'auch nach Abschluss kein zweiter Aufruf');
+    assert.equal(h.results.at(-1)?.output.reason, 'duplicate_call_id');
+
+    h.emit(toolCall('call_new'));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 2);
+    assert.equal(h.voiceToolCalls[1]!.requestId, 'vt_call_new');
+  });
+
+  it('abweichende Args → kein Kontext und Anmeldung nicht verbraucht; gleiche Args in anderer Key-Reihenfolge → Kontext', async () => {
+    const args = { query: 'Öffnungszeiten', filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } } };
+    const forged: Array<Record<string, unknown>> = [
+      { ...args, priority: 'high' },
+      { query: 'Öffnungszeiten' },
+      { ...args, query: 'Max Mustermann, IBAN DE89370400440532013000' },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['b', 'a'] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'branch', tags: ['a', 'b'] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'], extra: true } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 2] } } },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } }, tenantId: 'tenant_x' },
+    ];
+    const reordered = { filter: { scope: { tags: ['a', 'b'], site: 'hq' }, lang: 'de' }, query: 'Öffnungszeiten' };
+    const got: { forged: unknown[]; legit?: unknown; replay?: unknown } = { forged: [] };
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        for (const other of forged) {
+          got.forged.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, other));
+        }
+        got.legit = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, reordered);
+        got.replay = await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args);
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    await openRuntime(h);
+    h.emit(toolCall('call_args', 'lookup_kb', args));
+    await wait(20);
+    assert.equal(got.forged.length, forged.length);
+    assert.ok(got.forged.every((c) => c === undefined), 'keine Entscheidung zu abweichenden Args');
+    assert.ok(got.legit, 'Anmeldung nach den Fehlversuchen noch offen');
+    assert.equal(got.replay, undefined, 'danach verbraucht');
+  });
+
+  it('parallel: abweichende Args verbrauchen die Anmeldung nicht, passende bekommt genau einen Kontext', async () => {
+    let results: unknown[] = [];
+    const h = harness({
+      voiceToolImpl: async (req) => {
+        const resolve = (args: Record<string, unknown>) =>
+          h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, args);
+        results = await Promise.all([
+          resolve({ ...req.args, priority: 'high' }),
+          resolve(req.args),
+          resolve({ query: 'anders' }),
+          resolve(req.args),
+        ]);
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    await openRuntime(h);
+    h.emit(toolCall('call_par', 'lookup_kb', { query: 'x' }));
+    await wait(20);
+    assert.equal(results[0], undefined);
+    assert.ok(results[1], 'erster passender Abruf');
+    assert.equal(results[2], undefined);
+    assert.equal(results[3], undefined, 'zweiter passender Abruf: verbraucht');
+  });
+
+  it('nicht serialisierbare Args → invalid_arguments, keine Anmeldung', async () => {
+    const h = harness();
+    await openRuntime(h);
+    const cyclic: Record<string, unknown> = { query: 'x' };
+    cyclic.self = cyclic;
+    h.emit(toolCall('call_cyclic', 'lookup_kb', cyclic));
+    h.emit(toolCall('call_bigint', 'lookup_kb', { query: 'x', n: 1n }));
+    await wait(20);
+    assert.equal(h.voiceToolCalls.length, 0);
+    assert.deepEqual(
+      h.results.map((r) => r.output.reason),
+      ['invalid_arguments', 'invalid_arguments'],
+    );
+  });
+});
+
+describe('canonicalToolArgs — kanonische Normalisierung (SEC-05)', () => {
+  it('Key-Reihenfolge egal auf jeder Ebene, auch in Objekten in Arrays', () => {
+    const a = { b: 1, a: { d: [{ y: 2, x: 1 }, 'z'], c: null } };
+    const b = { a: { c: null, d: [{ x: 1, y: 2 }, 'z'] }, b: 1 };
+    assert.equal(canonicalToolArgs(a), canonicalToolArgs(b));
+    assert.equal(canonicalToolArgs(a), '{"a":{"c":null,"d":[{"x":1,"y":2},"z"]},"b":1}');
+  });
+
+  it('Werte, Typen, Array-Reihenfolge und zusätzliche Keys zählen, auch verschachtelt', () => {
+    const base = canonicalToolArgs({ q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: true } } });
+    for (const other of [
+      { q: 'x', f: { n: '1', l: ['a', 'b'], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: ['b', 'a'], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: 'true' } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: { k: true, m: null } } },
+      { q: 'x', f: { n: 1, l: ['a', 'b'], o: {} } },
+      { q: 'x', f: { n: 1, l: ['a', 'b', null], o: { k: true } } },
+      { q: 'x', f: { n: 1, l: { 0: 'a', 1: 'b' }, o: { k: true } } },
+      { q: 'x ', f: { n: 1, l: ['a', 'b'], o: { k: true } } },
+    ]) {
+      assert.notEqual(canonicalToolArgs(other), base, JSON.stringify(other));
+    }
+  });
+
+  it('identisch nach dem JSON-Transport zu /voice-tool', () => {
+    const args = {
+      when: new Date('2026-10-10T09:00:00.000Z'),
+      skip: undefined,
+      list: [undefined, Number.NaN, -0, 1e21],
+      nested: { z: 'ü\u2028"', a: { '10': 1, '9': 2, b: 3 } },
+    };
+    const wire = JSON.parse(JSON.stringify(args)) as Record<string, unknown>;
+    assert.equal(canonicalToolArgs(wire), canonicalToolArgs(args));
+    assert.equal(canonicalToolArgs({ a: 1, skip: undefined }), canonicalToolArgs({ a: 1 }));
+  });
+
+  it('nicht serialisierbar → null', () => {
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    assert.equal(canonicalToolArgs(cyclic), null);
+    assert.equal(canonicalToolArgs({ n: 1n }), null);
+    assert.equal(canonicalToolArgs(undefined), null);
   });
 });
 
@@ -553,13 +943,14 @@ describe('createVoiceToolClient — HTTP fail-closed', () => {
       requestId: 'r1',
       tool: 'lookup_kb',
       args: { query: 'x' },
-      session: { killSwitch: false, turnCount: 0, toolCount: 0, rateLimit: { maxTurns: 10, maxTools: 5 } },
-      consent: null,
     });
     assert.equal(outcome.ok, false);
     if (!outcome.ok) assert.equal(outcome.reason, 'timeout');
     assert.equal(calls.length, 1);
     assert.equal(calls[0]!.url, 'http://voice-tool.test/voice-tool');
+    const sentBody = JSON.parse(String(calls[0]!.init.body)) as Record<string, unknown>;
+    assert.equal('session' in sentBody, false);
+    assert.equal('consent' in sentBody, false);
     assert.equal((calls[0]!.init.headers as Record<string, string>).Authorization, `Bearer ${PLACEHOLDER_TOKEN}`);
 
     const noToken = createVoiceToolClient({
@@ -573,8 +964,6 @@ describe('createVoiceToolClient — HTTP fail-closed', () => {
       requestId: 'r1',
       tool: 'lookup_kb',
       args: {},
-      session: { killSwitch: false, turnCount: 0, toolCount: 0, rateLimit: { maxTurns: 10, maxTools: 5 } },
-      consent: null,
     });
     assert.equal(denied.ok, false);
     if (!denied.ok) assert.equal(denied.reason, 'missing_token');

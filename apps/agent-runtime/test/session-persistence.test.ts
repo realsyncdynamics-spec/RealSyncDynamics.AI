@@ -20,6 +20,7 @@ import {
   type VoiceToolHttpRequest,
 } from '../src/voice/session-runtime.js';
 import type { VoiceDbClient } from '../src/voice/supabase-voice-store.js';
+import { VOICE_TOOL_EXECUTORS } from '../src/voice/tool-executors.js';
 import type { VoiceToolDefinition } from '../src/voice-provider-types.js';
 import type { VoicePolicyDecision } from '../src/voice-types.js';
 
@@ -164,6 +165,9 @@ function persistHarness(
   overrides: {
     store?: ReturnType<typeof createMemoryVoiceStore>;
     voiceToolImpl?: (req: VoiceToolHttpRequest) => Promise<VoiceToolHttpOutcome>;
+    allowWriteTools?: boolean;
+    /** Kein toolGateway injizieren — die Runtime baut ihr Gateway wie in Produktion selbst. */
+    defaultGateway?: boolean;
   } = {},
 ): PersistHarness {
   const store = overrides.store ?? createMemoryVoiceStore();
@@ -187,6 +191,7 @@ function persistHarness(
           verdict: 'ALLOW',
           tenantId: req.tenantId,
           sessionId: req.sessionId,
+          requestId: req.requestId,
         }),
       };
     },
@@ -219,7 +224,9 @@ function persistHarness(
     provider,
     voiceToolClient: client,
     store,
-    toolGateway: createVoiceToolGateway({ store }),
+    ...(overrides.defaultGateway
+      ? {}
+      : { toolGateway: createVoiceToolGateway({ store, allowWriteTools: overrides.allowWriteTools }) }),
     getApiKey: () => PLACEHOLDER_KEY,
   });
   return h;
@@ -504,5 +511,220 @@ describe('SupabaseVoiceStore — Session-Mapping (Mock-Client)', () => {
     assert.ok(ctx);
     assert.equal(ctx!.numberBindingId, bindingId);
     assert.equal(ctx!.tenantId, TENANT);
+  });
+});
+
+describe('resolveToolPolicyContext — Kill-Switch aus dem Store (SEC-05)', () => {
+  /** Liest während des /voice-tool-Aufrufs den Policy-Kontext wie das Gateway. */
+  function capturingHarness(store = createMemoryVoiceStore()) {
+    const contexts: Array<Awaited<ReturnType<VoiceSessionRuntime['resolveToolPolicyContext']>>> = [];
+    const h = persistHarness({
+      store,
+      voiceToolImpl: async (req) => {
+        contexts.push(await h.runtime.resolveToolPolicyContext(req.sessionId, req.requestId, req.tool, req.args));
+        return { ok: false, reason: 'test_stop' };
+      },
+    });
+    return { h, contexts };
+  }
+
+  it('Kill-Switch, der nach dem Start in voice_sessions gesetzt wird, greift beim nächsten Call', async () => {
+    const c = capturingHarness();
+    seedActiveConfig(c.h.store);
+    const { session, socket } = await openPersisted(c.h);
+
+    socket.server(functionCall('call_1', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    assert.equal(c.contexts[0]?.session.killSwitch, false);
+
+    await c.h.store.updateSessionStatus(TENANT, session.sessionId, { killSwitch: true });
+    socket.server(functionCall('call_2', 'lookup_kb', { query: 'b' }));
+    await wait(20);
+    assert.equal(c.contexts[1]?.session.killSwitch, true);
+  });
+
+  it('Lesefehler oder fehlende Zeile → Kill-Switch gilt als aktiv (fail-closed)', async () => {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    const c = capturingHarness(store);
+    const { socket } = await openPersisted(c.h);
+
+    store.getSession = async () => {
+      throw new Error('http_503');
+    };
+    socket.server(functionCall('call_err', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    assert.equal(c.contexts[0]?.session.killSwitch, true);
+
+    store.getSession = async () => null;
+    socket.server(functionCall('call_gone', 'lookup_kb', { query: 'b' }));
+    await wait(20);
+    assert.equal(c.contexts[1]?.session.killSwitch, true);
+  });
+
+  it('Mandant, Zähler und Limits kommen aus der Session, nicht vom Caller', async () => {
+    const c = capturingHarness();
+    seedActiveConfig(c.h.store);
+    const { session, socket } = await openPersisted(c.h);
+    socket.server(functionCall('call_1', 'lookup_kb', { query: 'a' }));
+    await wait(20);
+    const ctx = c.contexts[0]!;
+    assert.equal(ctx.session.sessionId, session.sessionId);
+    assert.equal(ctx.session.tenantId, TENANT);
+    assert.equal(ctx.session.toolCount, 0);
+    assert.deepEqual(ctx.session.rateLimit, { maxTurns: 20, maxTools: 8 });
+    assert.equal(ctx.session.grant?.botId, BOT);
+  });
+});
+
+describe('Kill-Switch zwischen Entscheidung und Executor (SEC-05 Härtung)', () => {
+  type Mode = 'none' | 'kill_before_executor' | 'read_error' | 'write_tools_off';
+
+  async function run(mode: Mode) {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    let appointments = 0;
+    const insertAppointment = store.insertAppointment.bind(store);
+    store.insertAppointment = async (row) => {
+      appointments += 1;
+      return insertAppointment(row);
+    };
+    const h = persistHarness({ store, allowWriteTools: mode !== 'write_tools_off' });
+    const { session, socket } = await openPersisted(h);
+
+    if (mode === 'kill_before_executor') {
+      // Kill-Switch aus einem anderen Prozess, nachdem /voice-tool ALLOW
+      // entschieden hat und während das Gateway die Ausführung vorbereitet.
+      const insertExecution = store.insertExecution.bind(store);
+      store.insertExecution = async (row) => {
+        await store.updateSessionStatus(TENANT, session.sessionId, { killSwitch: true });
+        return insertExecution(row);
+      };
+    }
+    if (mode === 'read_error') {
+      store.getSession = async () => {
+        throw new Error('http_503');
+      };
+    }
+
+    socket.server(
+      functionCall('call_appt', 'schedule_appointment', {
+        customer_name: 'Max',
+        when: '2026-10-10T09:00:00.000Z',
+      }),
+    );
+    await wait(50);
+    const evidence = await store.listEvidence(TENANT, session.sessionId);
+    return { appointments, result: evidence.filter((e) => e.kind === 'tool.result').at(-1)?.payload };
+  }
+
+  it('Kill-Switch nach der Entscheidung → keine Ausführung, Evidence blocked', async () => {
+    const { appointments, result } = await run('kill_before_executor');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'session_inactive' });
+  });
+
+  it('Lesefehler beim zweiten Check → keine Ausführung (fail-closed)', async () => {
+    const { appointments, result } = await run('read_error');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'session_inactive' });
+  });
+
+  it('ohne Kill-Switch wird ausgeführt und verifiziert', async () => {
+    const { appointments, result } = await run('none');
+    assert.equal(appointments, 1);
+    assert.equal(result?.status, 'succeeded');
+  });
+
+  it('schreibende Tools sind ohne allowWriteTools gesperrt (Default)', async () => {
+    const { appointments, result } = await run('write_tools_off');
+    assert.equal(appointments, 0);
+    assert.deepEqual(result, { status: 'blocked', reason: 'write_tool_disabled' });
+  });
+});
+
+describe('Produktionspfad ohne injiziertes Gateway (SEC-05 Regression)', () => {
+  // Wie gateway.ts → new VoiceSessionRuntime(): Die Runtime baut ihr Gateway
+  // selbst (createVoiceToolGateway({ store })). Bricht, sobald eine
+  // Produktionsinitialisierung schreibende Tools freischaltet.
+  async function runDefault(callId: string, tool: string, args: Record<string, unknown>) {
+    const store = createMemoryVoiceStore();
+    seedActiveConfig(store);
+    const writes = { appointments: 0, executions: 0, executorCalls: 0 };
+    const insertAppointment = store.insertAppointment.bind(store);
+    store.insertAppointment = async (row) => {
+      writes.appointments += 1;
+      return insertAppointment(row);
+    };
+    const insertExecution = store.insertExecution.bind(store);
+    store.insertExecution = async (row) => {
+      writes.executions += 1;
+      return insertExecution(row);
+    };
+    const original = VOICE_TOOL_EXECUTORS.schedule_appointment;
+    VOICE_TOOL_EXECUTORS.schedule_appointment = async (ctx) => {
+      writes.executorCalls += 1;
+      return original(ctx);
+    };
+    try {
+      const h = persistHarness({ store, defaultGateway: true });
+      const { session, socket } = await openPersisted(h);
+      socket.server(functionCall(callId, tool, args));
+      await wait(50);
+      const evidence = await store.listEvidence(TENANT, session.sessionId);
+      const sent = socket.sent.find(
+        (m) => (m.item as { call_id?: string } | undefined)?.call_id === callId,
+      );
+      const output = JSON.parse((sent?.item as { output: string }).output) as {
+        outcome: string;
+        verified: boolean;
+        output: Record<string, unknown>;
+      };
+      return { h, writes, evidence, output };
+    } finally {
+      VOICE_TOOL_EXECUTORS.schedule_appointment = original;
+    }
+  }
+
+  it('schedule_appointment → write_tool_disabled: kein Termin, kein Executor, Grund in der Evidence', async () => {
+    const { h, writes, evidence, output } = await runDefault('call_prod_write', 'schedule_appointment', {
+      customer_name: 'Max',
+      when: '2026-10-10T09:00:00.000Z',
+    });
+
+    // Die Policy hat ALLOW entschieden — gesperrt hat das Gateway, nicht die Policy.
+    assert.equal(h.voiceToolCalls.length, 1);
+    assert.equal(writes.appointments, 0, 'kein Datensatz in bot_appointments');
+    assert.equal(writes.executorCalls, 0, 'kein Aufruf des schreibenden Executors');
+    assert.equal(writes.executions, 0, 'keine voice_executions-Zeile');
+
+    assert.deepEqual(output, {
+      outcome: 'denied',
+      verified: false,
+      output: { reason: 'write_tool_disabled', verdict: 'ALLOW' },
+    });
+
+    // Nachvollziehbar: Anfrage, Entscheidung und Sperrgrund an derselben toolRequestId.
+    const request = evidence.find((e) => e.kind === 'tool.request');
+    const decision = evidence.find((e) => e.kind === 'policy.decision');
+    const result = evidence.find((e) => e.kind === 'tool.result');
+    assert.equal(request?.payload.provider_call_id, 'call_prod_write');
+    assert.equal(request?.payload.tool, 'schedule_appointment');
+    assert.equal(decision?.payload.verdict, 'ALLOW');
+    assert.deepEqual(result?.payload, { status: 'blocked', reason: 'write_tool_disabled' });
+    assert.ok(request?.toolRequestId);
+    assert.equal(decision?.toolRequestId, request?.toolRequestId);
+    assert.equal(result?.toolRequestId, request?.toolRequestId);
+  });
+
+  it('Gegenprobe: lesendes Tool passiert die Schreibsperre im selben Aufbau', async () => {
+    const { writes, evidence, output } = await runDefault('call_prod_read', 'lookup_kb', { query: 'x' });
+    assert.equal(writes.executions, 1, 'Executor-Pfad erreicht (Guard der Session vorhanden)');
+    assert.equal(writes.appointments, 0);
+    assert.equal(output.output.reason, 'not_configured');
+    assert.notEqual(
+      evidence.find((e) => e.kind === 'tool.result')?.payload.reason,
+      'write_tool_disabled',
+    );
   });
 });

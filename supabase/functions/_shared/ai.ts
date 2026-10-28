@@ -358,10 +358,46 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      // PR A2 — fail-closed: Ein technischer Reservierungsfehler (DB-Fehler,
+      // Timeout, leeres RPC-Ergebnis) heißt "Budget nicht geprüft". Ohne
+      // Prüfung kein Anbieteraufruf.
+      // Ausnahme: Der Aufruf ist bereits über bot_usage_* (opts.budget)
+      // reserviert — dann deckt diese Reservierung den Aufruf, der Altpfad
+      // blockiert nicht zusätzlich, wird aber protokolliert.
+      const reason = (e as Error).message;
+      if (opts.budget && botBudgetReservation) {
+        console.error(JSON.stringify({
+          level: 'warn', scope: 'cost_cap_reserve_failed_bot_budget_covers',
+          tool_key: tool.key, tenant_id: tenantId, message: reason,
+        }));
+      } else {
+        console.error(JSON.stringify({
+          level: 'error', scope: 'cost_cap_reserve_failed_blocked',
+          tool_key: tool.key, tenant_id: tenantId, message: reason,
+        }));
+        await insertErrorRun(admin, {
+          tenant_id: tenantId,
+          tool_id: tool.id,
+          tool_key: tool.key,
+          user_id: userId,
+          duration_ms: 0,
+          status: 'error',
+          error_code: 'BUDGET_RESERVATION_FAILED',
+          error_message: 'cost-cap reservation failed before provider call',
+          metadata: {
+            ...(opts.metadata ?? {}),
+            residency,
+            provider: effectiveProvider,
+            model_id: effectiveModelId,
+          },
+        }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
+        throw new AiInvokeError(
+          'budget check unavailable, request not sent',
+          'BUDGET_RESERVATION_FAILED',
+          503,
+          { retryable: true },
+        );
+      }
     }
   }
 

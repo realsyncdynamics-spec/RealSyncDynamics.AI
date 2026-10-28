@@ -185,7 +185,8 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
     expect(helper).toMatch(/\} catch \(e\) \{/);
     expect(helper).toContain("scope: 'ai_tool_runs_insert_failed'");
     expect(helper).not.toMatch(/\bthrow\b/);
-    expect(ai.match(/await insertErrorRun\(admin, \{/g) ?? []).toHaveLength(2);
+    // MODEL_PRICE_MISSING, BUDGET_RESERVATION_FAILED (PR A2) und Providerfehler.
+    expect(ai.match(/await insertErrorRun\(admin, \{/g) ?? []).toHaveLength(3);
     // Helfer + Erfolgszeile — ein weiterer direkter Insert gehört hier entschieden.
     expect(ai.split(".from('ai_tool_runs').insert(").length - 1).toBe(2);
   });

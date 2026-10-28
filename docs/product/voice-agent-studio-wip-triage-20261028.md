@@ -153,3 +153,61 @@ Nach Abbau der WIP-Sperre den kleinsten unabhängigen Feature-PR **P1: Branchen-
 ### Nachweisgrenze
 
 Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es wurden in dieser Triage keine DB-Änderungen, Secrets, Provider-Verbindungen, Zahlungen oder Anrufe ausgeführt.
+
+## 10. Folgeprüfung 2026-10-28 — Reihenfolge 1 → 2 → 3 → 4
+
+**Neue Repository-Beobachtung:** `main@151b6afa57ddacd56a1a4a2b6dc2b7c19509b960`; REST-Liste meldete weiterhin **29 offene PRs** einschließlich dieses Docs-PRs. Der ursprüngliche Bezug `main@fd2b6c0` in der Bestandsaufnahme bleibt als geprüfter Erstellungsstand bestehen.
+
+### Schritt 1: Sicherheit und Budget — technische Empfehlung, keine Owner-Freigabe
+
+- **#1994**: Voice Session Auth/Args-Bindung, Consent fail-closed, Schreibsperre; der Head `781c364` hat „Backend Services CI“ erfolgreich, allgemeines `CI` übersprungen. `main` enthält diese PR-Änderungen nicht nachgewiesen. Kein Runtime-Deploy freigegeben.
+- **#2044**: Budget-Reservierungen/Rate-Limits und Voice-Enforcer sind auf Branch `d517647`; spezifische Guards/E2E/CodeQL grün, allgemeine `CI` übersprungen. **Empfehlung Option A** (bei fehlenden Limits keine kostenpflichtige Nutzung) **nur** mit geprüftem, atomarem Bestandsmandanten-Seed und kontrolliertem Ablehnungsverhalten. Andernfalls würden bestehende Agenten durch 0-Fallback stoppen. 5 USD/Tag, 50 USD/Monat, 2 Calls und 600 s bleiben ausdrücklich unbeschlossene vorläufige Werte.
+- **#2046**: auf #2044 gestapelt; nur Teil-Guards im Actions-Lauf. Abschlussansage im Enforcer-Fenster ist nicht garantiert, z. B. bei übersprungenem Fenster, Anrufen <=60 s, Providerfehler und TimeLimit-Abbruch. Daher **keine** Zusage „nie stummes Auflegen“; Twilio-E2E fehlt.
+- **#1998**: automatische ElevenLabs-Bereitstellung mit Grant-/Reconcile-Gates als Draft, allgemeines `CI` übersprungen. Bei wiederholtem Provider-Fehler kann ein zahlender Agent dauerhaft `failed` bleiben; Betriebsalarm, Supportweg und Wiederherstellung sind Teil des Produktgates.
+- **Vertriebsblockade**: Keine Voice-Produktaktivierung, solange Budgetoption, USD-Telefonkosten, Vendor-/Provider-Fallback, Call-Ende und vollständige Test-/Deployment-Prüfung nicht geklärt sind.
+
+### Schritt 2: PR-Triage — Prüfmatrix zur Einzel-Freigabe
+
+**Legende:** `prüfen` heißt keine Handlung erfolgt; `nach #X` bedeutet zuerst den Vorgänger reviewen/integrieren; `parallel vermeiden` ist kein Schließvorschlag. Ein Nein bei „Hotspot“ wird erst nach tagesaktueller Dateirevision endgültig. Alle 29 PRs sind offen; dieses Inventar ersetzt die verbindliche tagesaktuelle Triage vor einem Merge nicht.
+
+| PR | Bereich/Sicherheit | Vorgeschlagener Weg | Begründung |
+|---|---|---|---|
+| #1869 | Security | einzeln prüfen | Audit-Claim-/Berichtsberechtigung; P0, Live-Risiko |
+| #1908 | Security/Migration | einzeln prüfen | Append-only Evidence; Abhängigkeit für Provisionierung |
+| #1961 | Security, gestapelt | nach #1988-Abhängigkeitsabgleich auf main neu bewerten | Residency fail-closed, Bot-PEP, überschneidet #2044 in `_shared/ai.ts` und `bot-chat` |
+| #1978 | Security, gestapelt | nach #1994-Übernahme als redundant zur Schließfreigabe vorlegen | **Nachweis:** alle sieben geänderten Pfade auf Head `d69d7b4` haben denselben Git-Blob-SHA wie auf #1994 `781c364`; Inhalt ist aber **nicht** automatisch schon in `main` |
+| #1979 | Governance-Doku | Konflikt/Regelhierarchie prüfen | Regeln/Imports können aktuelle Governance-Vorgaben überlagern |
+| #1859 | Fix/Approvals | vor Browser-Feature prüfen | Abgelaufene Approvals dürfen nicht entscheiden |
+| #1988 | Internes AI-OS, Sicherheit/Migration | blockiert, einzeln prüfen | 62 Dateien, eigener Auth-/Runtime-Scope; kein Voice-Core |
+| #1992 | Security/Migration | einzeln prüfen | SECURITY-DEFINER-RPC-Callerbindung |
+| #1993 | Security/Migration | einzeln prüfen | Explizite Tenantbindung beim Audit-Claim |
+| #1994 | Security | vor Voice-Feature prüfen | Voice Session Rechte/Schreibsperre; Runtime-Deploy-Effekt |
+| #1995 | Legal/Pricing/Migration | Einzel-Freigabe notwendig | Enterprise 1.498 € kollidiert mit dokumentierten anderen Preisentscheidungen |
+| #1996 | Rechtstext/Produktclaim | Einzel-Freigabe notwendig | KI-VO-Darstellung, aktuelle Gesetzeslage verifizieren |
+| #1998 | Voice-Feature/Migration | nach Sicherheitsgates | Tenant-Agenten-Provisionierung, Provider-Failover offen |
+| #1999 | Legal/Pricing, auf #1995 gestapelt | nach #1995; keinen Doppel-Merge | Enthält laut PR auch #1995-Stand und 138 Dateidiffs |
+| #2014 | Legal/Pricing-Doku | Preisentscheid separat prüfen | Entwurf zur 1.498-€-Ausrollung, keine implizite Freigabe |
+| #2018 | CI/Fix | gezielt prüfen | Fehlender Alarm-Ursachentext, nicht Voice-spezifisch |
+| #2019 | Security/Migration | einzeln prüfen | Last-owner-RLS, Tenant-Sicherheit |
+| #2024 | Browser-Feature/Migration | nach Security-Priorität | Neue Sessions und Approval-RPC; kein Browser-Self-Service-Bypass |
+| #2025 | Monitoring/Migration | separat prüfen | Cron-Execution-Logs; nicht mit anderen Migrationen parallel |
+| #2027 | Landing/Preisclaim | einzeln freigeben | Beta Banner/Credits und Pricing-UI |
+| #2028 | Governance-Doku | prüfen | Neuer Evidence-Spec-Stand; kein Ersatz für Live-Tests |
+| #2030 | UI-Feature | nach WIP-Sperre | Agenten-Register/Navigation, kein Voice-Verkaufsflow |
+| #2031 | Landing/Claim-Fix | gezielt prüfen | Verbotene Gratis-Claims entfernen; overlap Beta-Texte mit #2027 |
+| #2033 | CI/Claim-Fix | nach #2031-Abgleich | Claim-Gate in CI, keine neuen Produktversprechen |
+| #2041 | Landing-Doku | gezielt prüfen | Evidence-Registry/CSS-Fundstellen; mögliche Hotspots |
+| #2043 | Projektkontext-Doku | prüfen | Unvollständige Projektkontext-Vorlagen |
+| #2044 | Security/Migration | eigene Owner-Freigabe erst nach Budgetentscheidung | Atomare Budgets, WhatsApp-Signaturen, Voice-Limits |
+| #2045 | Produktpositionierung | gezielt prüfen, kein stiller Policy-Wechsel | Ändert `CLAUDE.md`/`AGENTS.md` und Produktprioritäten |
+| #2046 | Voice-Safety/Migration, gestapelt | erst nach #2044 und E2E | Abschlussansage und Rückrufstatus, bekannte stumme Pfade |
+| #2047 | Docs/Triage | dieser PR, Draft | Nur Plan und Review-Nachweise, kein Feature-Code |
+
+**WIP-Reduktion:** Von 29 auf höchstens 20 sind mindestens **9 geprüfte Merge-/Schließvorgänge** nötig. Der einzige bereits dateigenau bewiesene Doppelungsfall ist #1978 gegenüber #1994; das ist **keine** neunfach belegte Bereinigung. Alle übrigen Kandidaten brauchen Diff-/Main-/CI- und ggf. Rechts-/Preisprüfung. Kein PR wurde im Zuge dieser Prüfung geschlossen, gemergt oder rebased.
+
+### Schritte 3 und 4 — erst nach Freigabe des Vorlaufs
+
+3. Implementierungsstart (kleinster Scope): `BotVertical`-Vorlagenvertrag und Handwerk-Template, serverseitige Capability-Allowlist und Tests, dann Wizard-Wiederaufnahme. Keine parallele Bot-Laufzeit oder neue Auth.
+4. Verkauf/Aktivierung: Stripe-SSoT, telefonische Provider-Provisionierung, verifizierter Status `active`, Kostenlimits, Routing- und E2E-Gates. Keine Live-Angebotsbehauptung oder Test-Zahlung vor diesen Freigaben.
+
+**Aktueller Ausführungsstatus:** Sicherheits-/CI-Metadaten und Branch-Dateien geprüft; Dublettenbeweis über sieben Blob-SHAs. Keine echte DB-/Twilio-/Stripe-Prüfung in dieser Session. Kein Security-Merge, kein Produktiv-Deploy.

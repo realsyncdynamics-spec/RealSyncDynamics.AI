@@ -113,6 +113,14 @@ export function createSupabaseVoiceStore(options: SupabaseVoiceStoreOptions): Vo
       return mapSessionRow(inserted);
     },
 
+    async getSession(tenantId, sessionId) {
+      const row = await db.selectOne('voice_sessions', '*', {
+        id: sessionId,
+        tenant_id: tenantId,
+      });
+      return row ? mapSessionRow(row) : null;
+    },
+
     async updateSessionStatus(tenantId, sessionId, patch: VoiceSessionStatusPatch) {
       const body: Record<string, unknown> = {};
       if (patch.status !== undefined) body.status = patch.status;

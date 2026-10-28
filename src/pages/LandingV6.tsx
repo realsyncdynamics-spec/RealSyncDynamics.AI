@@ -4,6 +4,7 @@ import { SEOHead } from '../components/SEOHead';
 import { LandingV6View } from '../components/landing/v6/LandingV6View';
 import { useLandingV6 } from '../components/landing/v6/useLandingV6';
 import '../styles/landing-v6.css';
+import '../styles/landing-v6-components.css';
 
 /**
  * Landing v6 — Startseite `/` (Owner-Freigabe 13.10.2026, am 26.10.2026 nach

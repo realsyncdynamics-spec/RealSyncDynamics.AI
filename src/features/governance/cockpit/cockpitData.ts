@@ -174,6 +174,8 @@ export interface CockpitData {
   scoreStatus: GovernanceScoreStatus;
   /** Datenbasis des Scores; `null` = Zähler nicht ladbar. */
   scoreBasis: { aiSystems: number | null; controlMappings: number | null };
+  /** Klassifizierte KI-Systeme (ai_act_class !== 'unknown'); `null` = Assets nicht ladbar. */
+  classifiedAiSystems?: number | null;
   readiness: number | null;
   readinessTrend: { direction: 'up' | 'down' | 'flat'; percent: number } | null;
   actions: PriorityAction[];
@@ -358,10 +360,14 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     incidentsCount, dpiasCount, dsrCount, approvalsCount, vendorsCount,
   ].every((result) => result.status === 'fulfilled');
 
+  const aiAssetsList = assets.status === 'fulfilled' ? assets.value.filter(isAiSystemAsset) : null;
   const scoreBasis = {
-    aiSystems: assets.status === 'fulfilled' ? assets.value.filter(isAiSystemAsset).length : null,
+    aiSystems: aiAssetsList ? aiAssetsList.length : null,
     controlMappings: mappingsCount.status === 'fulfilled' ? mappingsCount.value : null,
   };
+  const classifiedAiSystems = aiAssetsList
+    ? aiAssetsList.filter((a) => Boolean(a.ai_act_class && a.ai_act_class !== 'unknown')).length
+    : null;
   const scoreResult = computeGovernanceScoreIfReliable(
     countsReliable, counts, posture, scoreBasis, latestKpi.status === 'fulfilled',
   );
@@ -383,6 +389,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     score: scoreResult.score,
     scoreStatus: scoreResult.status,
     scoreBasis,
+    classifiedAiSystems,
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
     lastUpdated: posture ? snap?.captured_date ?? null : null,

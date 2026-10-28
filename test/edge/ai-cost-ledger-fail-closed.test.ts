@@ -53,16 +53,19 @@ const tool = {
   system_prompt: 'sys', max_tokens: 500, temperature: 0, required_entitlement_key: null, enabled: true,
 };
 
+const tables: string[] = [];
+const inserts: Array<Record<string, unknown>> = [];
+
 function admin() {
   const chain = {
     select: () => chain, eq: () => chain,
     maybeSingle: async () => ({ data: tool, error: null }),
     single: async () => ({ data: { id: 'run1' }, error: null }),
-    insert: () => chain,
+    insert: (row: Record<string, unknown>) => { inserts.push(row); return chain; },
     then: (r: (v: unknown) => unknown) => r({ data: null, error: null }),
   };
   return {
-    from: () => chain,
+    from: (t: string) => { tables.push(t); return chain; },
     rpc: async (fn: string) => {
       if (fn === 'tenant_entitlements') return { data: [], error: null };
       if (fn === 'resolve_ai_residency') return { data: 'cloud', error: null };
@@ -88,6 +91,8 @@ describe('PR A2 — runAiTool fail-closed (Altledger)', () => {
   beforeEach(() => {
     callProvider.mockReset();
     reserveLlmBudget.mockReset();
+    tables.length = 0;
+    inserts.length = 0;
     errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
@@ -99,6 +104,9 @@ describe('PR A2 — runAiTool fail-closed (Altledger)', () => {
       .rejects.toMatchObject({ code: 'BUDGET_RESERVATION_FAILED', status: 503 });
     expect(callProvider).toHaveBeenCalledTimes(0);
     expect(errSpy.mock.calls.some((c: unknown[]) => String(c[0]).includes('cost_cap_reserve_failed_blocked'))).toBe(true);
+    // Nachvollziehbar: Fehlerlauf in ai_tool_runs.
+    expect(tables).toContain('ai_tool_runs');
+    expect(inserts.some((r) => r.error_code === 'BUDGET_RESERVATION_FAILED')).toBe(true);
   });
 
   it('Timeout/leeres RPC-Ergebnis → ebenfalls kein Anbieteraufruf', async () => {

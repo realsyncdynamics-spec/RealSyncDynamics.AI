@@ -379,6 +379,22 @@ export async function runAiTool(
           tenant_id: tenantId,
           message: (e as Error).message,
         }));
+        await insertErrorRun(admin, {
+          tenant_id: tenantId,
+          tool_id: tool.id,
+          tool_key: tool.key,
+          user_id: userId,
+          duration_ms: 0,
+          status: 'error',
+          error_code: 'BUDGET_RESERVATION_FAILED',
+          error_message: 'budget reservation failed; provider not called',
+          metadata: {
+            ...(opts.metadata ?? {}),
+            residency,
+            provider: effectiveProvider,
+            model_id: effectiveModelId,
+          },
+        }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
         throw new AiInvokeError(
           'budget reservation failed — provider not called',
           'BUDGET_RESERVATION_FAILED',

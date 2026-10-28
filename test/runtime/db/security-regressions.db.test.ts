@@ -187,7 +187,7 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
   const UNBEDENKLICH = [
     'is_tenant_member', 'is_tenant_admin', 'is_tenant_owner_or_admin', 'has_tenant_membership',
     'audit_share_get', 'get_rebuild_status_by_token',
-    'asset_lifecycle_state', 'onboarding_tenant_policy_packs',
+    'asset_lifecycle_state',
   ];
 
   /**
@@ -332,6 +332,28 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
     expect(rows[0]).toEqual({ anon: false, auth: false, svc: true });
   });
 
+  it('onboarding_tenant_policy_packs und report_unknown_tracker sind nur fuer service_role ausfuehrbar', async () => {
+    // 20261026090000: Die erste vertraute einem clientgelieferten p_user_id,
+    // die zweite liess anon die Review-Liste unknown_trackers fluten. Beide
+    // ruft nur Server-Code mit service_role auf.
+    const { rows } = await ctx!.client.query<{ f: string; anon: boolean; auth: boolean; svc: boolean }>(`
+      SELECT f::text AS f,
+             has_function_privilege('anon', f, 'EXECUTE') AS anon,
+             has_function_privilege('authenticated', f, 'EXECUTE') AS auth,
+             has_function_privilege('service_role', f, 'EXECUTE') AS svc
+      FROM unnest(ARRAY[
+        'public.onboarding_tenant_policy_packs(uuid,uuid)'::regprocedure,
+        'public.report_unknown_tracker(text,text,text)'::regprocedure
+      ]) AS f
+      ORDER BY 1
+    `);
+
+    expect(rows.map(({ anon, auth, svc }) => ({ anon, auth, svc }))).toEqual([
+      { anon: false, auth: false, svc: true },
+      { anon: false, auth: false, svc: true },
+    ]);
+  });
+
   it('die sechs Client-RPCs behalten authenticated — sonst waere es der 23.08. erneut', async () => {
     // Diese sechs stehen auch in REQUIRED_AUTHENTICATED von
     // scripts/check-function-acl-drift.mjs. Wer sie mitentzieht, wiederholt
@@ -375,6 +397,114 @@ d('Schema-weite Invarianten fuer SECURITY DEFINER', () => {
         WHERE n.nspname='public' AND p.proname='get_compliance_timeline'`,
     );
     expect(rows[0]!.cfg?.some((c) => c.startsWith('search_path='))).toBe(true);
+  });
+});
+
+d('Aufruferbindung — onboarding_tenant_policy_packs und claim_gdpr_audit', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  /**
+   * Ruft als Superuser mit gesetzten JWT-Claims auf, OHNE Rollenwechsel.
+   * Prueft damit die zweite Schicht im Funktionskoerper — die Grants (erste
+   * Schicht) belegt der ACL-Test weiter oben. Faellt ein Grant je durch einen
+   * pauschalen Re-Grant weg, muss der Koerper trotzdem halten.
+   */
+  async function asClaims<T>(claims: { sub?: string; role: string }, fn: () => Promise<T>): Promise<T> {
+    const sp = `sp_${Math.random().toString(36).slice(2, 10)}`;
+    await ctx!.client.query(`SAVEPOINT ${sp}`);
+    await ctx!.client.query(`SELECT set_config('request.jwt.claims', $1, true)`, [
+      JSON.stringify({ sub: claims.sub ?? null, role: claims.role }),
+    ]);
+    try {
+      const out = await fn();
+      await ctx!.client.query(`RELEASE SAVEPOINT ${sp}`);
+      return out;
+    } catch (err) {
+      await ctx!.client.query(`ROLLBACK TO SAVEPOINT ${sp}`);
+      throw err;
+    }
+  }
+
+  const packs = (tenantId: string, userId: string) =>
+    ctx!.client.query(`SELECT public.onboarding_tenant_policy_packs($1, $2) AS r`, [tenantId, userId]);
+
+  it('ein fremder Nutzer kann kein Mitglied eines anderen Mandanten vorschieben', async () => {
+    // Der eigentliche Befund: p_user_id kam ungeprueft vom Aufrufer.
+    const A = await createTenantWithMember(ctx!);
+    const B = await createTenantWithMember(ctx!);
+
+    await expect(
+      asClaims({ sub: B.userId, role: 'authenticated' }, () => packs(A.tenantId, A.userId)),
+    ).rejects.toThrow(/FORBIDDEN/);
+  });
+
+  it('ohne Session wird abgewiesen, auch mit gueltigem Paar aus Mandant und Mitglied', async () => {
+    const A = await createTenantWithMember(ctx!);
+
+    await expect(
+      asClaims({ role: 'anon' }, () => packs(A.tenantId, A.userId)),
+    ).rejects.toThrow(/FORBIDDEN/);
+  });
+
+  it('service_role darf fuer ein Mitglied aktivieren', async () => {
+    const A = await createTenantWithMember(ctx!);
+
+    const { rows } = await asClaims({ role: 'service_role' }, () => packs(A.tenantId, A.userId));
+    expect(rows[0]!.r).toEqual(expect.arrayContaining(['dsgvo-essentials']));
+  });
+
+  it('service_role bleibt an die Mitgliedschaft gebunden', async () => {
+    const A = await createTenantWithMember(ctx!);
+    const B = await createTenantWithMember(ctx!);
+
+    await expect(
+      asClaims({ role: 'service_role' }, () => packs(A.tenantId, B.userId)),
+    ).rejects.toThrow(/FORBIDDEN/);
+  });
+
+  async function seedAudit(email: string): Promise<string> {
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.gdpr_audits (url, domain, email, score, severity, issues, ip_hash)
+       VALUES ('https://kunde.example', 'kunde.example', $1, 70, 'medium', '[]'::jsonb, 'iphash')
+       RETURNING id`,
+      [email],
+    );
+    return rows[0]!.id;
+  }
+
+  it('claim_gdpr_audit: unbestaetigte E-Mail reicht nicht als Nachweis', async () => {
+    // Die Audit-E-Mail ist der Berechtigungsnachweis. Eine nur eingetragene,
+    // nie bestaetigte Adresse darf kein fremdes Audit uebernehmen.
+    const email = `claim_${Date.now()}@example.com`;
+    const A = await createTenantWithMember(ctx!, { userEmail: email });
+    const auditId = await seedAudit(email);
+
+    await expect(
+      ctx!.withClaims({ sub: A.userId }, () =>
+        ctx!.client.query(`SELECT public.claim_gdpr_audit($1)`, [auditId])),
+    ).rejects.toThrow(/email unverified/);
+  });
+
+  it('claim_gdpr_audit: bestaetigte E-Mail uebernimmt das Audit', async () => {
+    const email = `claim_ok_${Date.now()}@example.com`;
+    const A = await createTenantWithMember(ctx!, { userEmail: email });
+    await ctx!.client.query(`UPDATE auth.users SET email_confirmed_at = now() WHERE id = $1`, [A.userId]);
+    // Der Signup-Trigger on_auth_user_created hat dem Nutzer schon einen
+    // eigenen Mandanten als owner angelegt. Mit zwei owner-Mitgliedschaften
+    // waehlt claim_gdpr_audit eine davon beliebig. Der Test braucht genau eine.
+    await ctx!.client.query(
+      `DELETE FROM public.memberships WHERE user_id = $1 AND tenant_id <> $2`,
+      [A.userId, A.tenantId],
+    );
+    const auditId = await seedAudit(email);
+
+    const { rows } = await ctx!.withClaims({ sub: A.userId }, () =>
+      ctx!.client.query<{ r: { ok: boolean; tenant_id: string } }>(
+        `SELECT public.claim_gdpr_audit($1) AS r`, [auditId]));
+    expect(rows[0]!.r.ok).toBe(true);
+    expect(rows[0]!.r.tenant_id).toBe(A.tenantId);
   });
 });
 

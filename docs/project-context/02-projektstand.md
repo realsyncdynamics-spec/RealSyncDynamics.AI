@@ -185,7 +185,7 @@ Statuslegende: **Live** = erreichbar und backend-gestützt · **Beta** = live, a
 | Enterprise | `/contact-sales` | Nur Anfrage (1.249 € in SSoT, Preis offen) | `shared/pricing.ts`; Masterplan §5 |
 | Partner 1.999 € | – | Legacy, kein Neukundenangebot | `shared/pricing.ts` (`availability: legacy`) |
 | Jahresabrechnung | – | Geplant (Stripe nicht verdrahtet) | Registry `pricing-yearly` |
-| Offene Beta: Growth-Umfang bis 31.01.2027 | `/welcome?beta=1` | Live (`beta-enroll` serverseitig); Enddatum nur Text, keine Ablaufautomatik | `src/config/beta.ts`; Registry `beta-phase` |
+| Offene Beta: Growth-Umfang bis 31.01.2027 | `/welcome?beta=1` | Live (`beta-enroll` serverseitig). Ablauf automatisch: `beta-enroll` speichert `BETA_ENDS_AT` als `trial_end`/`trial_ends_at`, `tenant_entitlements_resolve()` wertet abgelaufene Trials nicht mehr (Migration `20260928160000_wp2a_trial_end_expiry.sql`). Nur das Frontend-Label in `src/config/beta.ts` ist reiner Anzeigetext | `supabase/functions/beta-enroll/logic.ts`; `src/config/beta.ts`; Registry `beta-phase` |
 | Usage-Ansicht | `/billing/usage` | Live | `src/App.tsx` |
 | Enterprise-SSO (SAML/OIDC) | – | Geplant (0 Provider, ADR 0007) | Registry `enterprise-sso` |
 

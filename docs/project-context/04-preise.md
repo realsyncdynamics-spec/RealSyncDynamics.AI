@@ -52,7 +52,7 @@
 
 - **`VITE_BETA_PHASE=off`:** Überall erscheinen wieder die Listenpreise. Starter und Growth zeigen „14 Tage kostenlos testen · monatlich kündbar“, Agency „monatlich kündbar“. Der Checkout geht wieder an Stripe.
 - **`publicOffer = false` (bei aktiver Beta):** Die Listenpreise erscheinen, die Checkout-Umleitung und bestehende Beta-Zugänge bleiben aber erhalten.
-- **Claims vs. Runtime:** Dass Beta-Mandanten serverseitig wirklich Growth-Funktionen bekommen, regelt der Entitlement-Pfad (WP-3). Bis dahin verspricht die UI nur „kostenlos testen“.
+- **Claims vs. Runtime:** Beta-Mandanten bekommen den Growth-Umfang serverseitig über `beta-enroll` (Abo-Status `trialing` mit `trial_end` = 31.01.2027). Der Ablauf ist automatisch: Seit Migration `20260928160000_wp2a_trial_end_expiry.sql` wertet `tenant_entitlements_resolve()` abgelaufene Trials nicht mehr. Das Enddatum in `src/config/beta.ts` ist nur das Anzeige-Label dazu.
 - Enterprise ist von der Beta nicht betroffen und bleibt „Auf Anfrage“.
 
 ### A.4 Add-ons (monatlich, netto; SSoT `ADDONS`, Doku `docs/product/addon-booking.md`)

@@ -156,7 +156,7 @@ Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es w
 
 ## 10. Folgeprüfung 2026-10-28 — Reihenfolge 1 → 2 → 3 → 4
 
-**Neue Repository-Beobachtung:** `main@151b6afa57ddacd56a1a4a2b6dc2b7c19509b960`; REST-Liste meldete weiterhin **29 offene PRs** einschließlich dieses Docs-PRs. Der ursprüngliche Bezug `main@fd2b6c0` in der Bestandsaufnahme bleibt als geprüfter Erstellungsstand bestehen.
+**Neue Repository-Beobachtung:** `main@151b6afa57ddacd56a1a4a2b6dc2b7c19509b960`; REST-Liste meldete weiterhin **29 offene PRs** einschließlich dieses Docs-PRs. **#1992 wurde am 28.10.2026 um 09:39:45 UTC bereits auf main gemergt** (Merge-Commit identisch mit diesem main-SHA) und gehört deshalb **nicht** in die Liste offener PRs. Der ursprüngliche Bezug `main@fd2b6c0` in der Bestandsaufnahme bleibt als geprüfter Erstellungsstand bestehen.
 
 ### Schritt 1: Sicherheit und Budget — technische Empfehlung, keine Owner-Freigabe
 
@@ -168,7 +168,7 @@ Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es w
 
 ### Schritt 2: PR-Triage — Prüfmatrix zur Einzel-Freigabe
 
-**Legende:** `prüfen` heißt keine Handlung erfolgt; `nach #X` bedeutet zuerst den Vorgänger reviewen/integrieren; `parallel vermeiden` ist kein Schließvorschlag. Ein Nein bei „Hotspot“ wird erst nach tagesaktueller Dateirevision endgültig. Alle 29 PRs sind offen; dieses Inventar ersetzt die verbindliche tagesaktuelle Triage vor einem Merge nicht.
+**Legende:** `prüfen` heißt keine Handlung erfolgt; `nach #X` bedeutet zuerst den Vorgänger reviewen/integrieren; `parallel vermeiden` ist kein Schließvorschlag. Ein Nein bei „Hotspot“ wird erst nach tagesaktueller Dateirevision endgültig. Die 29 in dieser Matrix genannten PRs sind offen; dieses Inventar ersetzt die verbindliche tagesaktuelle Triage vor einem Merge nicht.
 
 | PR | Bereich/Sicherheit | Vorgeschlagener Weg | Begründung |
 |---|---|---|---|
@@ -179,7 +179,6 @@ Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es w
 | #1979 | Governance-Doku | Konflikt/Regelhierarchie prüfen | Regeln/Imports können aktuelle Governance-Vorgaben überlagern |
 | #1859 | Fix/Approvals | vor Browser-Feature prüfen | Abgelaufene Approvals dürfen nicht entscheiden |
 | #1988 | Internes AI-OS, Sicherheit/Migration | blockiert, einzeln prüfen | 62 Dateien, eigener Auth-/Runtime-Scope; kein Voice-Core |
-| #1992 | Security/Migration | einzeln prüfen | SECURITY-DEFINER-RPC-Callerbindung |
 | #1993 | Security/Migration | einzeln prüfen | Explizite Tenantbindung beim Audit-Claim |
 | #1994 | Security | vor Voice-Feature prüfen | Voice Session Rechte/Schreibsperre; Runtime-Deploy-Effekt |
 | #1995 | Legal/Pricing/Migration | Einzel-Freigabe notwendig | Enterprise 1.498 € kollidiert mit dokumentierten anderen Preisentscheidungen |

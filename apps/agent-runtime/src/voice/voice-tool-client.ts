@@ -3,10 +3,13 @@
  *
  * Die Session-Runtime ruft nur die Policy-Kante auf — keine Tool-Ausführung.
  * Bearer-Token und Base-URL kommen aus der Umgebung (injizierbar für Tests).
+ * Session-Zustand und Einwilligung gehen nicht mit: /voice-tool liest sie
+ * serverseitig aus der laufenden Session (SEC-05).
  */
 
-import { VOICE_AGENT_ID, type VoiceConsent, type VoicePolicyDecision, type VoiceVerdict } from '../voice-types.js';
+import { VOICE_AGENT_ID, type VoicePolicyDecision, type VoiceVerdict } from '../voice-types.js';
 
+/** Startwerte einer Session (Kill-Switch, Zähler, Limits) — nur für startSession. */
 export interface VoiceToolSessionSnapshot {
   killSwitch: boolean;
   turnCount: number;
@@ -20,8 +23,6 @@ export interface VoiceToolHttpRequest {
   requestId: string;
   tool: string;
   args: Record<string, unknown>;
-  session: VoiceToolSessionSnapshot;
-  consent: VoiceConsent | null;
 }
 
 export type VoiceToolHttpOutcome =
@@ -53,6 +54,34 @@ export function sanitizeToolArgs(args: Record<string, unknown>): Record<string, 
   return Object.fromEntries(entries.filter(([key]) => !RESERVED_ARG_KEYS.has(key)));
 }
 
+/**
+ * Kanonische Form der Args für die Bindung an einen angemeldeten Call (SEC-05).
+ * Erst JSON-Roundtrip (toJSON, undefined, NaN wie auf dem Draht zu /voice-tool),
+ * dann Keys auf jeder Ebene sortiert; Array-Reihenfolge zählt. Nicht
+ * serialisierbar (Zyklus, BigInt, zu tief) → null.
+ */
+export function canonicalToolArgs(args: unknown): string | null {
+  try {
+    const json = JSON.stringify(args);
+    if (json === undefined) return null;
+    return canonicalJson(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`);
+    return `{${entries.join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
 export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToolClient {
   const timeoutMs = options.timeoutMs ?? 5_000;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -81,8 +110,6 @@ export function createVoiceToolClient(options: VoiceToolClientOptions): VoiceToo
             requestId: request.requestId,
             tool: request.tool,
             args: request.args,
-            session: request.session,
-            consent: request.consent,
           }),
           signal: controller.signal,
         });

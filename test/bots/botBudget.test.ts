@@ -231,6 +231,29 @@ describe('createBotAiBudgetGuard (K6)', () => {
     expect(await createBotAiBudgetGuard(admin, { tenantId: 't', botId: null, channel: 'chat' }).reserve(0)).toBeNull();
     expect(admin.calls).toHaveLength(0);
   });
+
+  it('call_ref landet an der Reservierung (Kosten je Gespräch); channel ist nicht überschreibbar', async () => {
+    const admin = rpcAdmin(() => ({ data: [{ decision: 'allow', reservation_id: 'r1' }], error: null }));
+    const g = createBotAiBudgetGuard(admin, {
+      tenantId: 't', botId: 'b', channel: 'voice', metadata: { call_ref: 'CA1', channel: 'chat' },
+    });
+    await g.reserve(0.01);
+    expect(admin.calls[0].args.p_metadata).toEqual({ call_ref: 'CA1', channel: 'voice' });
+  });
+
+  it('Eurodeckel: cost_budget → BotBudgetError (Abschlussansage im Telefon)', async () => {
+    const g = createBotAiBudgetGuard(
+      rpcAdmin(() => ({ data: [{ decision: 'deny', reservation_id: null, reason: 'cost_budget' }], error: null })),
+      { tenantId: 't', botId: 'b', channel: 'voice' },
+    );
+    await expect(g.reserve(0.01)).rejects.toMatchObject({ code: 'BOT_BUDGET_EXCEEDED', reason: 'cost_budget' });
+  });
+
+  it('Telefon-Webhook gibt die CallSid als call_ref an die KI-Reservierung', () => {
+    const src = readFileSync('supabase/functions/bot-voice-webhook/index.ts', 'utf8');
+    expect(src).toContain('metadata: callRef ? { call_ref: callRef } : undefined');
+    expect(src).toContain('replyForVoice(admin, bot, conversationId, speech, from || null, callSid)');
+  });
 });
 
 // ── Telefon-RPC (K1, K2) ──────────────────────────────────────────────

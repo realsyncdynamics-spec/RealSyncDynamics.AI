@@ -23,6 +23,10 @@
 //           3. Jeder Folge-Hit prüft serverseitig die Zeitgrenze der
 //              Reservierung (voiceTurnDecision). Abschlussphase → kurze
 //              Ansage + <Hangup/> ohne KI-Aufruf; Restzeit zu kurz → <Hangup/>.
+//       * Eurodeckel (Migration 20261028100000): Die reservierte Dauer ist
+//         zusätzlich durch den Restdeckel zum Satz Telefonie + KI-Schätzung
+//         begrenzt. KI-Schritte prüfen denselben Deckel; Ablehnung
+//         'cost_budget' mitten im Gespräch → Abschlussansage (Grund 'budget').
 //       * Kein stummes Auflegen bei Zeit- oder Budgetende (Merge-Blocker):
 //         Abschlussansage, Rückrufwunsch zuerst idempotent speichern, erst
 //         danach als „erfasst“ ansagen (_shared/voice-call-closing.ts). Neue
@@ -186,11 +190,14 @@ async function replyForVoice(
   conversationId: string,
   userText: string,
   contact: string | null = null,
+  callRef: string | null = null,
 ): Promise<string> {
   // Der lokale Client-Typ (ReturnType<typeof createClient>) ist generisch
-  // verengt; strukturell ist er ein RpcAdmin.
+  // verengt; strukturell ist er ein RpcAdmin. call_ref ordnet die KI-Kosten
+  // dem Gespräch zu (bot_voice_call_costs, Migration 20261028100000).
   const aiBudget = createBotAiBudgetGuard(admin as unknown as RpcAdmin, {
     tenantId: bot.tenant_id, botId: bot.id, channel: 'voice',
+    metadata: callRef ? { call_ref: callRef } : undefined,
   });
   await insertMessage(admin, bot, conversationId, 'user', userText, { metadata: { channel: 'voice' } });
   const history = await loadRecentHistory(admin, conversationId, 12);
@@ -419,7 +426,7 @@ Deno.serve(async (req) => {
       // SpeechResult vorhanden → Antwort generieren + erneut sammeln.
       let reply: string;
       try {
-        reply = await replyForVoice(admin, bot, conversationId, speech, from || null);
+        reply = await replyForVoice(admin, bot, conversationId, speech, from || null, callSid);
       } catch (e) {
         // KI-Budget erschöpft → Abschlussansage statt stummen Auflegens,
         // sofern die Restzeit für die Ansage reicht.
@@ -472,7 +479,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, conversation_id: conversationId, reply: greeting, greeting: true });
     }
 
-    const reply = await replyForVoice(admin, bot, conversationId, message, body.from ? String(body.from) : null);
+    const reply = await replyForVoice(
+      admin, bot, conversationId, message, body.from ? String(body.from) : null, conversationRef,
+    );
     return jsonResponse({ ok: true, conversation_id: conversationId, reply });
   } catch (e) {
     if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);

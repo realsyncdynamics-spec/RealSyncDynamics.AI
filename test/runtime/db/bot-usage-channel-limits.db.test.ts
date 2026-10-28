@@ -45,7 +45,7 @@ async function sqlState(p: Promise<unknown>): Promise<string> {
 
 async function tenantLimits(ctx: DbCtx, tenantId: string, daily: number, monthly: number): Promise<void> {
   await ctx.client.query(
-    `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly) VALUES ($1,$2,$3)
+    `INSERT INTO public.bot_usage_limits (cost_eur_monthly, voice_seconds_monthly, tenant_id, ai_usd_daily, ai_usd_monthly) VALUES (100000, 100000, $1,$2,$3)
      ON CONFLICT (tenant_id) DO UPDATE SET ai_usd_daily = EXCLUDED.ai_usd_daily, ai_usd_monthly = EXCLUDED.ai_usd_monthly`,
     [tenantId, daily, monthly],
   );
@@ -129,8 +129,8 @@ d('Gate 4 — Fallback und Kanalpflicht', () => {
 
   it('G4-1: Plan „unbegrenzt“ (Enterprise, -1 → NULL) gilt nur bis zum Mandantenkontingent', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
-       VALUES ($1, 600, 5, 900)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
+       VALUES (100000, $1, 600, 5, 900)`, [tenant],
     );
     const first = await voice('CAent-1', null);
     expect(first.decision).toBe('allow');
@@ -146,8 +146,8 @@ d('Gate 4 — Fallback und Kanalpflicht', () => {
 
   it('G4-1: Kontingent = kleinerer Wert aus Plan und Mandant', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
-       VALUES ($1, 600, 5, 120)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
+       VALUES (100000, $1, 600, 5, 120)`, [tenant],
     );
     // Plan erlaubt 6000 s, Mandant 120 s → 120 s.
     const r = await voice('CAmin-1', 6000);
@@ -362,7 +362,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: Anruf über (reservierte Dauer − Vorlauf) wird gefunden, jüngerer nicht', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly) VALUES ($1, 300, 5, 100000)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly) VALUES (100000, $1, 300, 5, 100000)`, [tenant],
     );
     const old = await call('CAold', 250);   // 300 − 60 = 240 ≤ 250 → überfällig
     await call('CAyoung', 100);
@@ -376,7 +376,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: Protokollierung ändert weder Status, Betrag noch Ledger; erledigt → nicht mehr gelistet', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES ($1, 120, 100000)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES (100000, $1, 120, 100000)`, [tenant],
     );
     const id = await call('CAx', 500);
     const before = (await ctx.client.query(`SELECT status, reserved_amount FROM public.bot_usage_reservations WHERE id = $1`, [id])).rows[0];
@@ -395,7 +395,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: nach max. Versuchen nicht mehr gelistet; Budget bleibt reserviert (Sweep rechnet später ab)', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES ($1, 120, 100000)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES (100000, $1, 120, 100000)`, [tenant],
     );
     const id = await call('CAy', 500);
     for (let i = 0; i < 3; i++) {
@@ -456,7 +456,7 @@ d('Gate 4 — parallele Last gegen die Telefonreserve (G4-7)', () => {
       // Periode großzügig, damit nur die geprüfte greift.
       const [daily, monthly] = period === 'day' ? [1, 100] : [100, 1];
       await admin.query(
-        `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly) VALUES ($1,$2,$3)`, [tid, daily, monthly],
+        `INSERT INTO public.bot_usage_limits (cost_eur_monthly, voice_seconds_monthly, tenant_id, ai_usd_daily, ai_usd_monthly) VALUES (100000, 100000, $1,$2,$3)`, [tid, daily, monthly],
       );
       await admin.query(
         `INSERT INTO public.bot_usage_channel_limits (tenant_id, channel, reserved_usd_daily, reserved_usd_monthly)

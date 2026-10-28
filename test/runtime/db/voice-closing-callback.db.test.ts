@@ -164,7 +164,7 @@ d('C4–C6 Ansagefenster und Beanspruchung', () => {
     ctx = await openDb();
     tenant = (await createTenantWithMember(ctx)).tenantId;
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls) VALUES ($1, 600, 10)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (cost_eur_monthly, voice_seconds_monthly, tenant_id, voice_max_call_seconds, voice_max_concurrent_calls) VALUES (100000, 100000, $1, 600, 10)`, [tenant],
     );
   });
   afterEach(async () => { await closeDb(ctx); });
@@ -242,7 +242,9 @@ d('C4–C6 Ansagefenster und Beanspruchung', () => {
   });
 
   it('Gegenprobe: Reservierung ≤ 60 s → Fenster leer, sofort harter Abbruch ohne Ansage (stumm)', async () => {
-    await ctx.client.query(`UPDATE public.bot_usage_limits SET voice_max_call_seconds = 50 WHERE tenant_id = $1`, [tenant]);
+    // Seit Option A (#2044) beginnt kein Anruf mit weniger als 60 s; 60 s ist
+    // damit die kürzeste mögliche Reservierung und ihr Ansagefenster leer.
+    await ctx.client.query(`UPDATE public.bot_usage_limits SET voice_max_call_seconds = 60 WHERE tenant_id = $1`, [tenant]);
     const ref = callSid();
     await call(ref, 1);
     expect(await closing()).toEqual([]);
@@ -266,7 +268,7 @@ d('C5 parallel: 20 Worker beanspruchen dieselbe Ansage', () => {
     )).rows[0]!.id;
     const workers: Client[] = [];
     try {
-      await admin.query(`INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds) VALUES ($1, 600)`, [tid]);
+      await admin.query(`INSERT INTO public.bot_usage_limits (cost_eur_monthly, voice_seconds_monthly, tenant_id, voice_max_call_seconds) VALUES (100000, 100000, $1, 600)`, [tid]);
       const id = (await admin.query<{ reservation_id: string }>(
         `SELECT reservation_id FROM public.bot_voice_call_reserve($1, NULL, 'twilio', $2, NULL, $3::jsonb)`,
         [tid, callSid(), JSON.stringify({ account_sid: ACCOUNT })],

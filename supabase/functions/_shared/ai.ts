@@ -358,10 +358,37 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      // Fail-closed: Ohne bestätigte Reservierung kein Anbieteraufruf.
+      // Ein gestörtes Ledger (RPC-Fehler, leere Antwort, Netzwerk) darf den
+      // Monatsdeckel nicht aushebeln — sonst laufen kostenpflichtige
+      // Aufrufe ungedeckelt, genau dann, wenn niemand mitzählt.
+      const message = (e as Error)?.message ?? String(e);
+      console.error(JSON.stringify({
+        level: 'error', scope: 'cost_cap_reserve_unavailable',
+        tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId, message,
+      }));
+      await releaseBotBudget('cost_cap_unavailable_before_call');
+      await insertErrorRun(admin, {
+        tenant_id: tenantId,
+        tool_id: tool.id,
+        tool_key: tool.key,
+        user_id: userId,
+        duration_ms: 0,
+        status: 'error',
+        error_code: 'COST_CAP_UNAVAILABLE',
+        error_message: 'cost cap reservation unavailable; provider not called',
+        metadata: {
+          ...(opts.metadata ?? {}),
+          residency,
+          provider: effectiveProvider,
+          model_id: effectiveModelId,
+        },
+      }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
+      throw new AiInvokeError(
+        'cost cap temporarily unavailable',
+        'COST_CAP_UNAVAILABLE',
+        503,
+      );
     }
   }
 

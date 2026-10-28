@@ -34,10 +34,12 @@ export interface AiBudgetGuard {
 }
 
 // Gründe aus bot_ai_budget_reserve / bot_voice_call_reserve
-// (Migrationen 20261027120000 und 20261027140000).
+// (Migrationen 20261027120000, 20261027140000 und 20261028100000).
+//   cost_budget  Eurodeckel (KI + Telefonie + Fixkosten) des Monats erreicht
 export type BudgetDenyReason =
   | 'daily_budget' | 'monthly_budget' | 'concurrency' | 'invalid'
-  | 'channel_daily_budget' | 'channel_monthly_budget' | 'protected_reserve' | 'invalid_config';
+  | 'channel_daily_budget' | 'channel_monthly_budget' | 'protected_reserve' | 'invalid_config'
+  | 'cost_budget';
 
 export class BotBudgetError extends Error {
   code = 'BOT_BUDGET_EXCEEDED' as const;
@@ -99,7 +101,15 @@ export function aiFailureWasNotSent(code: string | null | undefined): boolean {
 
 export function createBotAiBudgetGuard(
   admin: RpcAdmin,
-  ctx: { tenantId: string; botId: string | null; channel: string; requestRef?: string },
+  ctx: {
+    tenantId: string; botId: string | null; channel: string; requestRef?: string;
+    /**
+     * Zusatzangaben an der Reservierung, z. B. { call_ref } im Telefon:
+     * Grundlage der Kostensicht je Gespräch (bot_voice_call_costs).
+     * `channel` wird immer aus ctx gesetzt und lässt sich hier nicht ändern.
+     */
+    metadata?: Record<string, string>;
+  },
 ): AiBudgetGuard {
   return {
     async reserve(maxUsd: number): Promise<string | null> {
@@ -110,7 +120,7 @@ export function createBotAiBudgetGuard(
         p_bot_id: ctx.botId,
         p_request_ref: `${ctx.channel}:${ref}`,
         p_max_usd: Number(maxUsd.toFixed(6)),
-        p_metadata: { channel: ctx.channel },
+        p_metadata: { ...(ctx.metadata ?? {}), channel: ctx.channel },
       });
       // Fail-closed: Ohne Budgetprüfung kein KI-Aufruf.
       if (error) {

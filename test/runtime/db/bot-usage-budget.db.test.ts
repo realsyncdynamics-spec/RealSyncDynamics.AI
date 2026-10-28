@@ -49,8 +49,8 @@ async function setLimits(ctx: DbCtx, tenantId: string, l: {
 }): Promise<void> {
   await ctx.client.query(
     `INSERT INTO public.bot_usage_limits
-       (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
-     VALUES ($1,$2,$3,$4,$5,$6)
+       (cost_eur_monthly, tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
+     VALUES (100000, $1,$2,$3,$4,$5,$6)
      ON CONFLICT (tenant_id) DO UPDATE SET ai_usd_daily = EXCLUDED.ai_usd_daily,
        ai_usd_monthly = EXCLUDED.ai_usd_monthly,
        voice_max_concurrent_calls = EXCLUDED.voice_max_concurrent_calls,
@@ -402,8 +402,8 @@ d('bot_usage — parallele Anfragen am Budgetrand (K7, K1)', () => {
     const workers: Client[] = [];
     try {
       await admin.query(
-        `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
-         VALUES ($1, 1.00, 1.00, 3, 120, 100000)`, [tid],
+        `INSERT INTO public.bot_usage_limits (cost_eur_monthly, tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
+         VALUES (100000, $1, 1.00, 1.00, 3, 120, 100000)`, [tid],
       );
       for (let i = 0; i < 40; i++) {
         const c = new Client({ connectionString: url });

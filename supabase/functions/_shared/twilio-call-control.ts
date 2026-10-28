@@ -115,6 +115,33 @@ export async function endTwilioCall(
   return (await request(creds, callSid, { method: 'POST', form: { Status: 'completed' } }, opts)).result;
 }
 
+/**
+ * Ersetzt die laufenden Anweisungen eines Anrufs (Parameter `Twiml`, Twilio-Doku
+ * „Modify Calls In Progress“). Für die Abschlussansage. Ob ein zuvor gesetztes
+ * TimeLimit dabei erhalten bleibt, ist nicht dokumentiert — deshalb darf die
+ * übergebene TwiML nur endlich sein (kein <Gather>, <Dial>, <Redirect>,
+ * <Pause>, <Enqueue>, <Record>, <Connect>) und muss mit <Hangup/> enden. Der
+ * harte Abbruch (Status=completed) bleibt davon unabhängig.
+ */
+export async function replaceTwilioCallTwiml(
+  creds: TwilioCreds,
+  callSid: string,
+  twimlDocument: string,
+  opts: TwilioCallOptions = {},
+): Promise<TwilioCallResult> {
+  if (!isFiniteClosingTwiml(twimlDocument)) return { ok: false, kind: 'invalid_input' };
+  return (await request(creds, callSid, { method: 'POST', form: { Twiml: twimlDocument } }, opts)).result;
+}
+
+const OPEN_ENDED_VERBS = /<\s*(Gather|Dial|Redirect|Pause|Enqueue|Record|Connect|Play)\b/i;
+
+/** Nur <Say> und genau ein abschließendes <Hangup/> — kann das Limit nicht verlängern. */
+export function isFiniteClosingTwiml(doc: string): boolean {
+  if (typeof doc !== 'string' || doc.length === 0 || doc.length > 4000) return false;
+  if (OPEN_ENDED_VERBS.test(doc)) return false;
+  return /<Hangup\/>\s*<\/Response>\s*$/.test(doc) && (doc.match(/<Hangup\/>/g) ?? []).length === 1;
+}
+
 /** Twilio-Endzustände eines Anrufs. */
 const TERMINAL = new Set(['completed', 'busy', 'failed', 'no-answer', 'canceled']);
 

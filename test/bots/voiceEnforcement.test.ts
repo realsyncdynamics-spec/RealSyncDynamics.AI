@@ -279,7 +279,9 @@ describe('F04: echter Enforcer-Handler authentifiziert vor privilegierten Zugrif
   async function request(header: string | null, key = 'cron-test-key') {
     let handler!: (req: Request) => Promise<Response>;
     const createClient = vi.fn(() => ({}));
-    const enforce = vi.fn(async () => ({ checked: 0 }));
+    // Handler ruft seit dem Abschluss-PR runVoiceEnforcementTick (harter
+    // Abbruch + Ansage); geprüft wird unverändert: Auth vor jedem Zugriff.
+    const enforce = vi.fn(async () => ({ hard: { checked: 0 }, closing: null }));
     const source = readFileSync('supabase/functions/bot-voice-enforcer/index.ts', 'utf8')
       .replace(/^import .*;$/gm, '');
     runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, {
@@ -287,7 +289,7 @@ describe('F04: echter Enforcer-Handler authentifiziert vor privilegierten Zugrif
       handleOptions: () => null,
       jsonError: (status: number, code: string) => new Response(code, { status }),
       jsonResponse: (value: unknown) => Response.json(value),
-      timingSafeEqual, createClient, enforceOverdueCalls: enforce, console,
+      timingSafeEqual, createClient, runVoiceEnforcementTick: enforce, console,
     });
     const response = await handler(new Request('https://example.test', { method: 'POST', headers: header === null ? {} : { Authorization: header } }));
     return { response, createClient, enforce };

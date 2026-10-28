@@ -21,7 +21,12 @@
 //           2. bot-voice-enforcer (pg_cron, jede Minute) beendet überfällige
 //              Anrufe per Status=completed — auch ohne weiteren Webhook.
 //           3. Jeder Folge-Hit prüft serverseitig die Zeitgrenze der
-//              Reservierung. Ist sie erreicht → <Hangup/> ohne KI-Aufruf.
+//              Reservierung (voiceTurnDecision). Abschlussphase → kurze
+//              Ansage + <Hangup/> ohne KI-Aufruf; Restzeit zu kurz → <Hangup/>.
+//       * Kein stummes Auflegen bei Zeit- oder Budgetende (Merge-Blocker):
+//         Abschlussansage, Rückrufwunsch zuerst idempotent speichern, erst
+//         danach als „erfasst“ ansagen (_shared/voice-call-closing.ts). Neue
+//         Anrufe bei erschöpftem Budget bleiben <Reject reason="busy"/>.
 //       * Status-Callback mit Endzustand (completed, busy, failed, no-answer,
 //         canceled) rechnet die gemeldete Dauer ab — idempotent über
 //         Call-ID + Ereignis (Unique-Index). Fehlt der Callback, rechnet der
@@ -58,9 +63,12 @@ import { resolveVoiceNumberBinding } from '../_shared/voice-number-binding.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   TWILIO_TERMINAL_STATUSES, createBotAiBudgetGuard, planSecondsFromEntitlement,
-  reserveVoiceCall, settleVoiceCall, voiceTurnAllowed, type RpcAdmin,
+  reserveVoiceCall, settleVoiceCall, type RpcAdmin,
 } from '../_shared/bot-budget.ts';
 import { applyProviderTimeLimit } from '../_shared/bot-voice-enforcement.ts';
+import {
+  closingTwimlBody, markCallbackRequested, voiceTurnDecision, type ClosingReason,
+} from '../_shared/voice-call-closing.ts';
 import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
@@ -114,9 +122,28 @@ function rejectCall(): Response {
   return twiml('<Reject reason="busy"/>');
 }
 
-/** Beendet einen laufenden Anruf sofort, ohne Ansage (Standard). */
+/**
+ * Beendet einen laufenden Anruf sofort, ohne Ansage. Nur noch, wenn die
+ * Restzeit für eine Ansage nicht reicht oder die Reservierung bereits
+ * geschlossen ist (Anruf faktisch vorbei).
+ */
 function hangup(): Response {
   return twiml('<Hangup/>');
+}
+
+/**
+ * Abschluss eines laufenden Anrufs bei Zeit- oder Budgetende: Rückrufwunsch
+ * zuerst idempotent speichern, dann ansagen — „erfasst“ nur nach
+ * erfolgreicher Speicherung. Nur <Say> + <Hangup/>, verlängert nichts.
+ */
+async function closingResponse(
+  admin: RpcAdmin,
+  tenantId: string,
+  callSid: string,
+  reason: ClosingReason,
+): Promise<Response> {
+  const outcome = await markCallbackRequested(admin, { tenantId, callRef: callSid, reason });
+  return twiml(closingTwimlBody(outcome, reason));
 }
 
 async function voicePlanSeconds(
@@ -333,6 +360,7 @@ Deno.serve(async (req) => {
       // AccountSid stammt aus dem signaturgeprüften Request; der Enforcer
       // braucht sie, um den Anruf beim Anbieter zu beenden (Gate 1).
       const accountSid = params.get('AccountSid');
+      let clock: Awaited<ReturnType<typeof loadReservationClock>> = null;
       const reservation = await reserveVoiceCall(admin as unknown as RpcAdmin, {
         tenantId, botId: bot.id, provider: 'twilio', callRef: callSid, planSeconds, accountSid,
       });
@@ -340,16 +368,22 @@ Deno.serve(async (req) => {
         console.error(JSON.stringify({
           level: 'warn', scope: 'bot_voice_quota', tenant_id: tenantId, reason: reservation.reason,
         }));
-        // Erster Hit → ablehnen ohne Annahme. Ein Folge-Hit (Anruf läuft
-        // bereits, erkennbar an SpeechResult) wird aufgelegt, nicht abgelehnt.
-        return speech ? hangup() : rejectCall();
+        // Erster Hit → ablehnen ohne Annahme (<Reject>, keine Kosten, keine
+        // Ansage — eine Ansage wäre eine offene Kostenentscheidung). Ein
+        // Folge-Hit (Anruf läuft bereits, erkennbar an SpeechResult) bekommt
+        // die Abschlussansage statt stummen Auflegens.
+        return speech
+          ? await closingResponse(admin as unknown as RpcAdmin, tenantId, callSid, 'budget')
+          : rejectCall();
       }
       if (reservation.existing) {
-        const clock = await loadReservationClock(admin as unknown as ReservationReader, reservation.reservationId);
-        if (!clock || !voiceTurnAllowed(clock, new Date())) {
-          // Zeitgrenze erreicht oder Reservierung abgeschlossen → auflegen,
-          // kein KI-Aufruf, keine Ansage.
-          return hangup();
+        clock = await loadReservationClock(admin as unknown as ReservationReader, reservation.reservationId);
+        // Ohne lesbare Reservierung ist die Restzeit unbekannt → sicher auflegen.
+        const decision = clock ? voiceTurnDecision(clock, new Date()) : 'hangup';
+        if (decision === 'hangup') return hangup();
+        if (decision === 'closing') {
+          // Abschlussphase: kein KI-Aufruf, Ansage + Rückrufwunsch.
+          return closingResponse(admin as unknown as RpcAdmin, tenantId, callSid, 'zeitlimit');
         }
       } else {
         // Erster Hit: Höchstdauer beim Anbieter setzen (Ebene 1 von 3), nach
@@ -387,8 +421,12 @@ Deno.serve(async (req) => {
       try {
         reply = await replyForVoice(admin, bot, conversationId, speech, from || null);
       } catch (e) {
-        // KI-Budget erschöpft → auflegen statt JSON-Fehler an Twilio.
-        if (e instanceof AiInvokeError && e.code === 'BOT_BUDGET_EXCEEDED') return hangup();
+        // KI-Budget erschöpft → Abschlussansage statt stummen Auflegens,
+        // sofern die Restzeit für die Ansage reicht.
+        if (e instanceof AiInvokeError && e.code === 'BOT_BUDGET_EXCEEDED') {
+          if (clock && voiceTurnDecision(clock, new Date()) === 'hangup') return hangup();
+          return closingResponse(admin as unknown as RpcAdmin, tenantId, callSid, 'budget');
+        }
         throw e;
       }
       return speakAndGather(actionUrl, reply);

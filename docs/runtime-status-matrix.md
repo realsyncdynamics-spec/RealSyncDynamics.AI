@@ -126,8 +126,9 @@ Wenn ein 🟢-Modul mit einem offenen Finding verbunden ist, **muss** der Caveat
 | Multi-Tenancy (RLS auf `tenant_id`) | 🟢 | produktiv | RLS-Policies | bestehend |
 | Auth / RBAC | 🟢 | produktiv | – | Supabase Auth, Owner/Admin/Editor/Viewer |
 | EU-Hosting (Supabase eu-central) | 🟢 | produktiv | – | Primärregion EU |
-| EU-lokale AI-Inferenz (opt-in) | 🟢 | produktiv | residency routing | Ollama gemma3:4b auf Hostinger DE — **Caveat:** opt-in pro Tenant/User, Cloud-Pfad bleibt Standard |
-| Security Headers (HSTS, X-Frame, CSP) | 🟡 | beta | partial | Code geschlossen: `infra/nginx/security-headers.conf` (HSTS, X-Frame, Permissions-Policy, Referrer-Policy) und CSP-CI-Guard `test/compliance/no-raw-tracker-scripts.test.ts`. **Caveat:** Deployment auf Hostinger ausstehend → bis Header live + per `curl -I` verifiziert sind, bleibt 🟡. CSP-Nonce-Umstellung weiterhin als Folge-PR offen. |
+| EU-lokale AI-Inferenz (opt-in) | 🟢 | produktiv | residency routing | Ollama auf Hostinger DE; laut `ai_tools` (2026-10-28) `gemma3:4b` und `qwen2.5:7b-instruct` — **Caveat:** opt-in pro Tenant/User, Cloud-Pfad (Anthropic, USA mit SCCs) bleibt Standard; Tools ohne lokales Modell brechen im EU-lokal-Modus ab (fail-closed) |
+| Security Headers (HSTS, X-Frame, CSP) | 🟢 | produktiv | `curl -I` | Live verifiziert am 2026-10-28 per `curl -I https://realsyncdynamicsai.de`: HSTS (inkl. `preload`-Direktive), CSP, X-Frame-Options, X-Content-Type-Options, Permissions-Policy, Referrer-Policy. Ausgeliefert über Cloudflare Pages (`public/_headers`), nicht mehr über nginx/Hostinger. **Caveat:** CSP `script-src` erlaubt weiterhin Tracker-Origins (Meta, Google, TikTok, LinkedIn); CSP-Nonce-Umstellung bleibt Folge-PR. |
+| Edge-Function-Region | 🟡 | beta | `x-sb-edge-region` | Edge Functions laufen global verteilt in der Region nächst zum Aufrufer (Probe 2026-10-28 aus den USA: `us-east-1`). Nur die Datenbank ist fest in eu-central-1. **Caveat:** nicht als „Edge Functions in Frankfurt“ kommunizieren, solange keine Region-Pinnung (`x-region` / `forceFunctionRegion`) umgesetzt ist. |
 | Externe Sicherheits-Auditierung | 🔴 | roadmap | – | noch keine externe Pentest-/Compliance-Auditierung |
 | SOC 2 / ISO 27001 | 🔴 | roadmap | – | – |
 | AI-Act Konformitätsbewertung (extern) | 🔴 | roadmap | – | – |
@@ -185,7 +186,7 @@ Diese Liste ist nicht abschließend. Im Zweifel gilt: **unterstützt** statt **g
 
 ## Offene Folgearbeiten aus dieser Validierung
 
-1. **Security-Header-Deployment auf Hostinger** (`infra/nginx/security-headers.conf`) — Snippet in `/etc/nginx/snippets/` einbauen, `nginx -t`, `systemctl reload nginx`, mit `curl -I https://realsyncdynamicsai.de` verifizieren. Solange dieser Schritt fehlt, bleibt Security Headers 🟡.
+1. ~~**Security-Header-Deployment auf Hostinger**~~ — erledigt: Die Website läuft über Cloudflare Pages, Header kommen aus `public/_headers` und sind am 2026-10-28 per `curl -I` live verifiziert.
 2. **CSP-Nonce-Umstellung** (Folge-PR zu Befund #2) — Build-time-Plugin oder SSR, damit Tracker-Origins aus `script-src` entfernt werden können.
 3. **Browser-Extension-Konsolidierung** auf eine kanonische Variante (`extension/` vs `extension-governance/` vs `extension-ai-monitor/`).
 4. **Governance Spec v1.0** anlegen (ESS / ACS / RCS / Evidence-Hash-Chain / Replay / Human Review / Retention / Redaction / Remediation Lifecycle).

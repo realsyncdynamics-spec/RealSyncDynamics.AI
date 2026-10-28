@@ -58,10 +58,10 @@ const TECH_STACK: TechItem[] = [
   },
   {
     icon: MapPin,
-    label: 'EU-Hosting Made in Germany',
+    label: 'EU-Datenhaltung',
     detail:
-      'Keine Drittlanduebermittlung. Scanner laeuft in Frankfurt (Hostinger), Postgres in eu-central-1 (Supabase). Sub-Prozessoren-Liste oeffentlich, AVV nach Art. 28 DSGVO inklusive.',
-    tag: 'Frankfurt · BSI C5-Track · ISO 27001',
+      'Scan-Ergebnisse und Berichte liegen in Postgres in eu-central-1 (Supabase, Frankfurt). Der Deep-Scan-Browser laeuft auf unserem VPS in Deutschland (Hostinger). Sub-Prozessoren-Liste oeffentlich, inklusive Drittland-Angaben und AVV nach Art. 28 DSGVO.',
+    tag: 'Frankfurt · eu-central-1 · AVV',
   },
 ];
 

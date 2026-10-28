@@ -716,18 +716,20 @@ Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflich
     body:
 `Teil 9/12 – Art. 26 Abs. 8 AI Act.
 
-Öffentliche Stellen, die Hochrisiko-KI einsetzen, haben eine zusätzliche Pflicht: Das System muss in der EU-Datenbank registriert sein (Art. 49).
+Öffentliche Stellen, die Hochrisiko-KI einsetzen, haben eine doppelte Registrierungspflicht (Art. 49 Abs. 3):
+· Der Anbieter muss das System in der EU-Datenbank registriert haben.
+· Die Behörde registriert sich selbst und trägt ihre Nutzung des Systems ein. Vor dem Einsatz.
 
-Ist es das nicht, darf die Behörde es nicht verwenden. Sie muss dann den Anbieter oder Händler informieren.
+Ist das System nicht registriert, darf die Behörde es nicht verwenden. Sie muss dann den Anbieter oder Händler informieren.
 
 Für Kommunen, Landes- und Bundesbehörden heißt das konkret:
-· Registrierungsstatus vor jeder Beschaffung prüfen
-· den Nachweis in die Vergabeunterlagen aufnehmen
+· Registrierungsstatus des Systems vor jeder Beschaffung prüfen
+· eigene Registrierung und Nutzung vor dem Go-live eintragen
 · Bestandssysteme bis zum Stichtag nachziehen
 
 Dazu kommt für öffentliche Stellen eine Grundrechte-Folgenabschätzung nach Art. 27.
 
-Prüffrage: Steht der Registrierungsnachweis schon in Ihren Vergabeunterlagen für KI?
+Prüffrage: Ist geklärt, wer in Ihrer Behörde die Registrierung der eigenen KI-Nutzung übernimmt?
 
 Kostenlosen Selbstcheck starten → realsyncdynamicsai.de/ai-act-betreiberpflichten/selbstcheck`,
     hashtags: ['#AIAct', '#PublicSector', '#Vergabe'],

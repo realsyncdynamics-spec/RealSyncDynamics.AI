@@ -130,11 +130,11 @@ export const BETREIBER_PFLICHTEN: BetreiberPflicht[] = [
     norm: 'Art. 26 Abs. 8',
     titel: 'Registrierung (öffentliche Stellen)',
     pflicht:
-      'Behörden und Einrichtungen der Union, die als Betreiber auftreten, erfüllen die Registrierungspflichten nach Art. 49. Ist das System nicht in der EU-Datenbank registriert, setzen sie es nicht ein und informieren Anbieter oder Händler.',
+      'Behörden und Einrichtungen der Union, die als Betreiber auftreten, erfüllen die Registrierungspflichten nach Art. 49: Vor der Nutzung eines Hochrisiko-Systems nach Anhang III (außer Nr. 2) registrieren sie sich selbst, wählen das System aus und registrieren ihre Nutzung in der EU-Datenbank. Ist das System selbst nicht registriert, setzen sie es nicht ein und informieren Anbieter oder Händler.',
     frage:
-      'Nur für öffentliche Stellen: Ist jedes eingesetzte Hochrisiko-System vor der Nutzung in der EU-Datenbank registriert?',
+      'Nur für öffentliche Stellen: Haben Sie sich vor der Nutzung selbst in der EU-Datenbank registriert und Ihre Nutzung jedes Hochrisiko-Systems dort eingetragen, und ist jedes dieser Systeme vom Anbieter registriert?',
     massnahme:
-      'Registrierungsstatus je System prüfen, in Vergabeunterlagen festschreiben und Systeme ohne Eintrag bis zur Klärung nicht einsetzen.',
+      'Vor Inbetriebnahme die eigene Registrierung als Betreiber und die Registrierung jeder Nutzung vornehmen (Art. 49 Abs. 3), den Registrierungsstatus des Systems prüfen und in Vergabeunterlagen festschreiben. Systeme ohne Eintrag bis zur Klärung nicht einsetzen.',
     nurOeffentlich: true,
   },
   {

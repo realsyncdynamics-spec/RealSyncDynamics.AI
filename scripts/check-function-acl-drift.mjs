@@ -53,7 +53,6 @@ const REQUIRED_ANON = [
   'is_tenant_admin',
   'has_tenant_membership',
   'audit_share_get',
-  'report_unknown_tracker',
   'affiliate_validate',
   'platform_stats',
   'health_ping',
@@ -132,6 +131,12 @@ const FORBIDDEN_CLIENT = [
   // PR A (#1806): marketing-consent BEFORE INSERT/UPDATE triggers — never client-callable.
   'marketing_consent_before_insert',
   'marketing_consent_before_update',
+  // 20261026090000: Einziger Aufrufer ist cookie-scan mit service_role. Der
+  // anon-Grant liess jeden die Review-Liste unknown_trackers fluten.
+  'report_unknown_tracker',
+  // 20261026090000: vertraute einem clientgelieferten p_user_id und
+  // aktivierte damit Packs in fremden Mandanten. Kein Client-Aufrufer.
+  'onboarding_tenant_policy_packs',
 ];
 
 // ── Ausfuehrung ──────────────────────────────────────────────────────────────

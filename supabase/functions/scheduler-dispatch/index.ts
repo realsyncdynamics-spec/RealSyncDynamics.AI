@@ -74,10 +74,38 @@ async function notifyWebhook(admin: ReturnType<typeof createClient>, sched: Sche
   }
 }
 
+async function logCronExecution(
+  admin: ReturnType<typeof createClient>,
+  functionName: string,
+  status: 'success' | 'failure',
+  httpStatus: number,
+  errorCode?: string,
+  errorMessage?: string,
+  durationMs?: number
+) {
+  await admin.from('cron_execution_logs').insert({
+    function_name: functionName,
+    status,
+    http_status: httpStatus,
+    error_code: errorCode || null,
+    error_message: errorMessage ? errorMessage.slice(0, 500) : null,
+    execution_duration_ms: durationMs || null,
+  }).then().catch((e) => {
+    console.error(JSON.stringify({ level: 'error', scope: 'cron_logging_failed', function: functionName, error: String(e) }));
+  });
+}
+
 Deno.serve(async (req) => {
+  const startMs = Date.now();
   const preflight = handleOptions(req);
   if (preflight) return preflight;
-  if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
+  if (req.method !== 'POST') {
+    return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
+  }
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const CRON_KEY = Deno.env.get('CRON_SCHEDULER_DISPATCH_KEY') ?? '';
   // Fehlendes Function Secret ist Fehlkonfiguration, kein fremder Aufrufer:
@@ -91,15 +119,15 @@ Deno.serve(async (req) => {
     return jsonError(401, 'UNAUTHORIZED', 'cron only');
   }
 
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
   const { data: due, error } = await admin.rpc('scan_schedules_due', { p_limit: 100 });
-  if (error) return jsonError(500, 'INTERNAL', 'could not load due schedules');
+  if (error) {
+    const durationMs = Date.now() - startMs;
+    await logCronExecution(admin, 'scheduler-dispatch', 'failure', 500, 'INTERNAL', 'could not load due schedules', durationMs);
+    return jsonError(500, 'INTERNAL', 'could not load due schedules');
+  }
   const schedules = (due ?? []) as Schedule[];
 
   let dispatched = 0;
@@ -126,6 +154,9 @@ Deno.serve(async (req) => {
       console.error(JSON.stringify({ level: 'error', scope: 'scheduler_dispatch_item', schedule_id: sched.id, error: (e as Error)?.message ?? String(e) }));
     }
   }
+
+  const durationMs = Date.now() - startMs;
+  await logCronExecution(admin, 'scheduler-dispatch', 'success', 200, undefined, undefined, durationMs);
 
   return jsonResponse({ ok: true, dispatched, considered: schedules.length });
 });

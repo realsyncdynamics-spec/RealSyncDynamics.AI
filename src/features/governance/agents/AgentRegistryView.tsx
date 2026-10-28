@@ -7,9 +7,11 @@ import { AuthGate } from '../../kodee/connections/AuthGate';
 import { STATUS_LABEL, type ImplementationStatus } from '../../../product/implementation-status';
 
 /**
- * /app/ai-systems/agents — Agent-/Bot-Register.
+ * /app/ai-systems/agents — Einzige Agent-/Bot-Register-Oberfläche (WP12).
  *
  * Auth-gated: das Register ist eine Workspace-Sicht, keine öffentliche Seite.
+ * `/app/agents` (Ausführungen) und `/app/bots` (Bots) werden hier als Tabs
+ * verlinkt und nicht dupliziert.
  *
  * Quelle ist der Katalog `AGENT_CATALOG` (agentCatalog.ts). Er beschreibt,
  * welche Agenten- und Bot-Typen das Governance OS als kontrollierte Objekte
@@ -20,6 +22,12 @@ export function AgentRegistryView() {
   return <AuthGate>{() => <AgentRegistryInner />}</AuthGate>;
 }
 
+export const AGENT_SURFACE_TABS = [
+  { id: 'register', label: 'Register', to: '/app/ai-systems/agents', active: true },
+  { id: 'runs', label: 'Ausführungen', to: '/app/agents', active: false },
+  { id: 'bots', label: 'Bots', to: '/app/bots', active: false },
+] as const;
+
 type Filter = ImplementationStatus | 'all';
 
 const FILTERS: readonly { id: Filter; label: string }[] = [
@@ -29,7 +37,7 @@ const FILTERS: readonly { id: Filter; label: string }[] = [
   { id: 'coming-soon', label: STATUS_LABEL['coming-soon'] },
 ];
 
-function AgentRegistryInner() {
+export function AgentRegistryInner() {
   const [filter, setFilter] = useState<Filter>('all');
 
   const agents = AGENT_CATALOG;
@@ -55,12 +63,36 @@ function AgentRegistryInner() {
                 Agenten- &amp; Bot-Register
               </h1>
               <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                Kontrollierte OS-Objekte · Policy · Freigabe · Evidence
+                Erfassen · Klassifizieren (AI Act) · Freigeben · Ausführen · Nachweisen
               </p>
             </div>
           </div>
         </div>
       </header>
+
+      <nav
+        aria-label="Agenten-Bereiche"
+        className="border-b border-titanium-900 bg-obsidian-900/60 px-4"
+      >
+        <div className="mx-auto flex max-w-6xl items-center gap-1" role="tablist">
+          {AGENT_SURFACE_TABS.map((tab) => (
+            <Link
+              key={tab.id}
+              to={tab.to}
+              role="tab"
+              aria-selected={tab.active}
+              aria-current={tab.active ? 'page' : undefined}
+              className={`border-b-2 px-4 py-2.5 font-mono text-xs uppercase tracking-wider transition-colors ${
+                tab.active
+                  ? 'border-ai-cyan-500 text-ai-cyan-100'
+                  : 'border-transparent text-titanium-400 hover:border-titanium-700 hover:text-titanium-100'
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
 
       <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
         <div className="border border-amber-500/40 bg-amber-500/10 p-4">
@@ -68,12 +100,12 @@ function AgentRegistryInner() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
             <div>
               <p className="text-sm text-titanium-50">
-                Katalog der Agenten und Bots, die das Governance OS führt: was sie dürfen, was sie nie
+                Einzige Register-Oberfläche für Agenten und Bots im Governance OS: was sie dürfen, was sie nie
                 dürfen, wann ein Mensch freigibt und welche Nachweise entstehen.
               </p>
               <p className="mt-1 text-[12px] text-titanium-300">
                 Das ist kein Bestand Ihres Mandanten. Der Reifegrad je Eintrag stammt aus dem belegten
-                Implementierungsstatus. Ausführbar ist derzeit nur, was als Preview-Lauf markiert ist.
+                Implementierungsstatus. Ausführungen und Konversations-Bots sind oben als Tabs verlinkt.
               </p>
             </div>
           </div>

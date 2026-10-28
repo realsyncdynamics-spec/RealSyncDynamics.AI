@@ -92,7 +92,7 @@
 export const EDGE_FUNCTIONS_OBSERVED_MAX = 197;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-28T15:55Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-28T15:53Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff

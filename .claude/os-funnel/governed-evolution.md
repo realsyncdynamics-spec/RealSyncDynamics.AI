@@ -1,6 +1,6 @@
 # Governed Evolution — Zielbild-Spec
 
-**Stand:** 2026-10-26 (Nachprüfung gegen `main@a0ad27b`; WP6-Prüfung 2026-10-15 gegen `main@a7ffc94`; Erstfassung 2026-09-27) · **Status:** COMING SOON · nur Doku, keine Implementierung
+**Stand:** 2026-10-28 (Nachprüfung gegen `main@d08abd6`; WP6-Prüfung 2026-10-15 gegen `main@a7ffc94`; Erstfassung 2026-09-27) · **Status:** COMING SOON · nur Doku, keine Implementierung
 **Einordnung:** Umsetzung **frühestens nach AP-3** (`governance_policies` als Tenant-SSoT). Zielbild für Agent OS Premium.
 
 > Agenten dürfen handeln — aber nur innerhalb der Governance-Runtime.
@@ -101,7 +101,7 @@ prüfen.*
 
 | Baustein | Status | Beleg (Migration · Code) | Befund |
 |---|---|---|---|
-| Freigaben | vorhanden, mit Lücken | `supabase/migrations/20260513200000_governance_approvals.sql` · `supabase/functions/governance-approvals/index.ts` | `status` ∈ `pending/approved/rejected/expired`; auflösen nur `owner`/`admin` über `memberships`. Hängt an `event_id` (NOT NULL, UNIQUE) → ein Vorschlag braucht ein `governance_events`-Ereignis. Kein Ablaufjob für `expires_at` (PLAN §4, WP4-Folgepunkte). Keine Spalte für den Antragsteller, also keine Sperre gegen Selbstfreigabe. |
+| Freigaben | vorhanden, mit Lücken | `supabase/migrations/20260513200000_governance_approvals.sql` · `supabase/functions/governance-approvals/index.ts` | `status` ∈ `pending/approved/rejected/expired`; auflösen nur `owner`/`admin` über `memberships`. Hängt an `event_id` (NOT NULL, UNIQUE) → ein Vorschlag braucht ein `governance_events`-Ereignis. Kein Ablaufjob für `expires_at` (PLAN §4, WP4-Folgepunkte). **Seit #2024 (`c2e245e`, Schritt 1/4 aus #1724, nur Schema):** `20261028095440_browser_runtime_governed_sessions.sql` ergänzt `requested_by`, `browser_session_id` und Status `cancelled`; `decide_governance_approval` (nur `service_role`) setzt Entscheidung und verkettete Evidence in einer Transaktion und markiert abgelaufene Einträge erst beim Entscheiden als `expired` (Datenbankuhr). Keine Prüfung `decided_by ≠ requested_by` in der Funktion gefunden; noch kein Aufrufer in `supabase/functions/` (nur `test/runtime/db/browser-runtime-sessions.db.test.ts`). |
 | Rollen-Gates | vorhanden (in der Erstfassung nicht genannt) | `supabase/migrations/20260824120000_org_subject_model_approval_gates.sql` · `governance-approvals` (`gate_approve`/`gate_reject`) | `pdp_approval_gates` mit `approver_role` (Rolle aus `role_bindings`), `requested_by`/`resolved_by`, setzt `expired` beim Auflösen, schreibt Evidence in `ai_evidence_events`. Naheliegender Träger für Schritt 5 und E-GE2. |
 | Shadow-Beobachtung | vorhanden — **Erstfassung korrigiert** | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` · `20260904120000_pdp_shadow_log_channels.sql` (erweitert `source`) | `pdp_shadow_log` hat **keine** Spalte `observation_kind`; die zitierte „Entscheidung 2026-09-21“ ist im Repo nicht auffindbar. Tatsächlich: `source` (Ingest-Kanäle), `legacy_status`, `v2_status`, `diverged`, `snapshot_version`, `detail`. Zweck: Live-Vergleich Alt-Engine ↔ PDP v2, **kein** Replay historischer Entscheidungen. Schreiben nur `service_role`, Mandant liest. |
 | Policy-Snapshots | vorhanden (in der Erstfassung nicht genannt) | `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` | `policy_snapshots`: `UNIQUE (tenant_id, version)`, `compiled` jsonb, entsteht nur serverseitig (`governance-decide`). Einzige versionierte Policy-Grundlage — Basis für Schritt 4 und 6. |
@@ -136,8 +136,8 @@ Nicht Teil von WP6 (kein Code), je eigener PR mit eigener Freigabe:
 
 - ~~**O1**~~ ✅ Erledigt mit #2015 (`a0ad27b`): Freigabe-Evidence aus `governance-approvals` läuft über `append_governance_evidence`.
 - **O1b** `governance-ingest` schreibt `policy_snapshot`-Evidence weiter unverkettet (`content_hash`/`previous_hash` = `null`). Für Schritt 4/7 relevant, weil Policy-Entscheidungen die Simulationsbasis sind.
-- **O2** `governance_approvals` ohne Antragsteller-Spalte → keine Selbstfreigabe-Sperre (betrifft E-GE2; braucht Migration). Unverändert; das SiteOS-Muster aus #2006 ist eine Vorlage, deckt diese Tabelle aber nicht ab.
-- **O3** Kein Ablaufjob für `governance_approvals.expires_at`.
+- **O2** Selbstfreigabe-Sperre für `governance_approvals` (betrifft E-GE2). **Teilweise:** seit #2024 gibt es `requested_by`, aber `decide_governance_approval` vergleicht es nicht mit `decided_by`, und die Funktion hat noch keinen Aufrufer. Vorlage für die Sperre: SiteOS-Trigger aus #2006.
+- **O3** Kein Ablaufjob für `governance_approvals.expires_at`. **Teilweise:** `decide_governance_approval` (#2024) setzt `expired` beim Entscheidungsversuch nach Datenbankuhr; offene, nie entschiedene Einträge bleiben `pending`.
 - **O4** Versionierung der Mandanten-Policies (AP-3): `governance_policy_versions` um Anlage-Eintrag und Versionsnummer ergänzen oder durch eine SSoT-Version ersetzen; bisher liest kein Code die Historie.
 - **O5** Replay-Simulation gegen historische Entscheidungen fehlt (Schritt 4).
 - **O6** AP-3 hat im Repo keinen Auftragstext.

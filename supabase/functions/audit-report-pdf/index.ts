@@ -1,10 +1,15 @@
 // audit-report-pdf — DSGVO-Audit-Nachweis-Report Edge Function
 // POST /functions/v1/audit-report-pdf  { audit_id: uuid }
-// Auth: Bearer JWT (eigener Audit) oder ohne (Super-Admin via SRK)
-// Output: HTML-Report in Storage + 24h Signed-URL
+// Auth: Bearer-JWT (bestätigte Audit-E-Mail, Mitglied des übernehmenden
+//       Mandanten oder Super-Admin) oder Service-Role-Key (plattform-intern).
+//       Ohne beides: 401 — siehe `_shared/audit-report-access.ts`.
+// Output: druckoptimierter HTML-Report in Storage + 24h Signed-URL.
+//         Trotz des Namens **kein PDF** (`format: 'html'`).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { timingSafeEqual } from '../_shared/timingSafeEqual.ts';
+import { decideReportAccess, type ReportCaller } from '../_shared/audit-report-access.ts';
 
 // Owner-Daten (email/company/domain des Audit-Anforderers) bleiben Klartext.
 // Geschwaerzt werden NUR die issues[].title/detail/paragraph_ref — dort
@@ -93,21 +98,39 @@ Deno.serve(async (req) => {
   const auditId = (body.audit_id ?? '').trim();
   if (!UUID_RE.test(auditId)) return jsonError(400, 'INVALID_AUDIT_ID', 'valid uuid required');
   const admin = createClient(SUPA, SRK, { auth: { persistSession: false } });
-  const jwt = req.headers.get('authorization')?.replace('Bearer ', '').trim() ?? '';
-  let callerEmail: string | null = null;
-  if (jwt) {
-    const uc = createClient(SUPA, ANON, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${jwt}` } } });
+
+  // Erst die Identität, dann das Audit: Ohne Token oder Plattform-Schlüssel
+  // wird nichts gelesen (`_shared/audit-report-access.ts`).
+  const authHeader = req.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const internal = Boolean(SRK) && token !== '' && timingSafeEqual(token, SRK);
+  let caller: ReportCaller | null = null;
+  if (token && !internal) {
+    const uc = createClient(SUPA, ANON, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
     const { data: { user } } = await uc.auth.getUser();
-    callerEmail = user?.email ?? null;
+    if (user) {
+      const [{ data: profile }, { data: memberships }] = await Promise.all([
+        admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle(),
+        admin.from('memberships').select('tenant_id').eq('user_id', user.id),
+      ]);
+      caller = {
+        userId: user.id,
+        email: user.email ?? null,
+        emailConfirmed: Boolean(user.email_confirmed_at),
+        isSuperAdmin: profile?.is_super_admin === true,
+        tenantIds: (memberships ?? []).map((m: { tenant_id: string }) => m.tenant_id),
+      };
+    }
   }
+  if (!internal && !caller) return jsonError(401, 'UNAUTHENTICATED', 'Bitte melden Sie sich an, um den Bericht abzurufen.');
+
   const { data: audit, error: auditErr } = await admin.from('gdpr_audits')
-    .select('id,url,domain,email,company,score,severity,issues,fetched_status,fetched_at,created_at')
-    .eq('id', auditId).single();
+    .select('id,url,domain,email,company,score,severity,issues,fetched_status,fetched_at,created_at,tenant_id')
+    .eq('id', auditId).maybeSingle();
   if (auditErr || !audit) return jsonError(404, 'NOT_FOUND', 'audit not found');
-  if (callerEmail && callerEmail.toLowerCase() !== audit.email.toLowerCase()) {
-    const { data: profile } = await admin.from('profiles').select('is_super_admin')
-      .eq('id', (await admin.auth.admin.getUserByEmail(callerEmail)).data.user?.id ?? '').single();
-    if (!profile?.is_super_admin) return jsonError(403, 'FORBIDDEN', 'not your audit');
+  const access = decideReportAccess(internal, caller, { email: audit.email, tenant_id: audit.tenant_id });
+  if (!access.allowed) {
+    return jsonError(403, 'FORBIDDEN', 'Dieser Bericht gehört nicht zu Ihrem Konto oder Arbeitsbereich.');
   }
   // PII-Redaction nur auf den issues-Teilbaum. Owner-Felder (email, company,
   // domain) bleiben Klartext — der Bericht ist fuer den Owner selbst.

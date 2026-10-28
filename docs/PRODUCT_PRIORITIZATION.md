@@ -91,7 +91,11 @@ verworfene** Option.
 **Entscheid:** Bei **79 €** bleiben. `pricing.ts` bleibt Single Source of
 Truth und unverändert. Keine Code-Änderung nötig — bestätigt den Status quo.
 
-### K2 — Zielgruppe „Handwerker" vs. reguliertes KMU  · ✅ ENTSCHIEDEN: up-market
+### K2 — Zielgruppe „Handwerker" vs. reguliertes KMU  · ⛔ AUFGEHOBEN am 2026-10-27 durch K4
+> Historischer Entscheid, unverändert dokumentiert. Gilt nicht mehr — siehe
+> „Neupositionierung — Founder-Entscheid vom 2026-10-27" weiter unten.
+
+**Ursprünglich entschieden: up-market**
 Das dokumentierte ICP (`marketing/icp-und-sales-navigator.md`) zielt auf
 **regulierte KMU, 5–500 MA** (Kanzlei, Arztpraxis, FinTech, Verwaltung) und
 **disqualifiziert Solo-Freelancer / reine Privatpraxen explizit**. Der
@@ -112,6 +116,57 @@ Compliance existenziell und der Evidence-Trail zahlungswirksam. ICP unverändert
 **Entscheid:** **Eine Landingpage** mit Segment-Sektionen statt zwei separat
 gepflegter Seiten. Dies ist die einzige der drei Entscheidungen mit konkreter
 Bau-Aufgabe → nachgezogen als offener Punkt unten.
+
+---
+
+## Neupositionierung — Founder-Entscheid vom 2026-10-27
+
+### K4 — KI-Mitarbeiter mit eingebauter Governance  · ✅ ENTSCHIEDEN
+RealSync wird als **Plattform für KI-Mitarbeiter mit eingebauter Governance**
+positioniert. Kunden kaufen mehr erreichbare Anfragen, qualifizierte Leads,
+einfachere Terminbuchung und weniger Routinearbeit. Datenschutz, Nachweise und
+Kontrollmöglichkeiten sind Infrastruktur und Bindungsgrund, nicht die
+Hero-Botschaft.
+
+**Hebt auf:** K2 („up-market statt Handwerker") und den Kern-Entscheid oben,
+soweit er Scan + Monitoring + Evidence als einziges Produkt setzt. Die Mechanik
+bleibt: kostenloser Check als Einstieg, ein Produkt, eine Codebase, ein Billing.
+
+**Produktebenen**
+
+| Ebene | Inhalt |
+|---|---|
+| 1 Einstieg | Kostenlose Checks (Website, WhatsApp, Telefon, AI Act) |
+| 2 Builder | Landingpage, Telefon-, WhatsApp- und Serviceassistent |
+| 3 Geschäftsbetrieb | Wissensbasis, Leads/Anfragen, Dialoge, Terminbuchung |
+| 4 Governance | Berechtigungen, Freigaben, Nachweise, Monitoring — mitgeliefert |
+
+**Erster Kundenablauf:** AI Receptionist für Handwerksbetriebe — Anfrage
+entgegennehmen, Anliegen und Kontaktdaten erfassen, Terminwunsch aufnehmen und
+an einen Menschen übergeben. Erst wenn dieser Ablauf durchgängig funktioniert
+und verkauft wird, folgen weitere Branchen und Assistenten.
+
+**Reihenfolge der Umsetzung (vereinbart 2026-10-27)**
+1. PR A — Sicherheit/Kosten der Bot-Kanäle (WhatsApp-Signatur fail-closed,
+   Budget-Reservierung für `bot-chat`, harte Telefonminuten-Limits)
+2. PR B — diese Doku-Anpassung
+3. PR C — Anfragen-Posteingang mit Übergabe an Menschen
+
+**Leitplanken**
+- Nur belegbare Funktionen zeigen; Demos und geplante Angebote kennzeichnen.
+  Keine erfundenen Referenzen, Kundenstimmen, Kennzahlen oder Zertifizierungen.
+- Versprechen wie „in 15 Minuten", „EU-Hosting" oder Rechtskonformität nur mit
+  überprüfbarer Grundlage.
+- Termine erst nach erfolgreicher Buchung bestätigen; bei Unsicherheit an einen
+  Menschen übergeben.
+- Sicherheit und Datenschutz haben Vorrang vor zusätzlichen Wachstumsfunktionen.
+
+**Ausdrücklich unverändert durch K4**
+- Preise, Stripe-Produkte, Verträge, Entitlements (K1 bleibt bis zu einer
+  gesonderten Preisfreigabe). Neue Paketideen gelten als Hypothesen.
+- Landing v6 und weitere Doku (`ROADMAP.md`, `PRODUCT_FOCUS.md`,
+  `marketing/icp-und-sales-navigator.md`, `.github/PR_TRIAGE_POLICY.md`) werden
+  in eigenen PRs angeglichen.
 
 ---
 
@@ -137,4 +192,4 @@ Bau-Aufgabe → nachgezogen als offener Punkt unten.
 
 ---
 
-*Erstellt: 2026-06-20 · Gabelungen entschieden: 2026-06-20 · ergänzt `ROADMAP.md` + `docs/PRODUCT_FOCUS.md`*
+*Erstellt: 2026-06-20 · Gabelungen entschieden: 2026-06-20 · Neupositionierung (K4): 2026-10-27 · ergänzt `ROADMAP.md` + `docs/PRODUCT_FOCUS.md`*

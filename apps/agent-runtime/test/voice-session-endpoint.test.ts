@@ -17,7 +17,15 @@ import {
   type RealtimeSocketInit,
   type RealtimeSocketLike,
 } from '../src/providers/grok-provider.js';
-import { VoiceSessionRuntime, createMemoryVoiceStore, createVoiceToolGateway } from '../src/voice/session-runtime.js';
+import {
+  VoiceSessionRuntime,
+  createMemoryVoiceStore,
+  createVoiceToolClient,
+  createVoiceToolGateway,
+  type VoiceConsentVerifier,
+  type VoiceToolHttpOutcome,
+  type VoiceToolHttpRequest,
+} from '../src/voice/session-runtime.js';
 import type { VoiceSessionConfig, VoiceProviderSession } from '../src/voice-provider-types.js';
 
 const TOKEN = 'test-voice-session-token';
@@ -89,6 +97,8 @@ interface Harness {
   baseUrl: string;
   server: http.Server;
   runtime: VoiceSessionRuntime;
+  /** Antworten von /voice-tool an die Runtime (nur mit loopback). */
+  outcomes: VoiceToolHttpOutcome[];
 }
 
 async function startHarness(overrides: {
@@ -96,6 +106,11 @@ async function startHarness(overrides: {
   insertSessionThrows?: boolean;
   apiToken?: string | null;
   storeNull?: boolean;
+  /** Runtime ruft /voice-tool dieses Servers echt per HTTP auf. */
+  loopback?: boolean;
+  verifyConsent?: VoiceConsentVerifier;
+  /** Läuft nach der Anmeldung des Calls, vor dem echten /voice-tool-Request (nur mit loopback). */
+  beforeVoiceTool?: (req: VoiceToolHttpRequest) => Promise<void>;
 } = {}): Promise<Harness> {
   resetProcessVoiceRuntimeForTests();
   const store = createMemoryVoiceStore();
@@ -156,6 +171,8 @@ async function startHarness(overrides: {
     },
   });
 
+  const outcomes: VoiceToolHttpOutcome[] = [];
+  let baseUrl = '';
   const runtime = new VoiceSessionRuntime({
     provider,
     store: overrides.storeNull ? null : store,
@@ -163,8 +180,15 @@ async function startHarness(overrides: {
       ? createVoiceToolGateway({ env: {} })
       : createVoiceToolGateway({ store }),
     voiceToolClient: {
-      evaluate: async () => ({ ok: false, reason: 'unused' }),
+      evaluate: async (req) => {
+        if (!overrides.loopback) return { ok: false, reason: 'unused' };
+        await overrides.beforeVoiceTool?.(req);
+        const outcome = await createVoiceToolClient({ baseUrl, getApiToken: () => TOKEN }).evaluate(req);
+        outcomes.push(outcome);
+        return outcome;
+      },
     },
+    verifyConsent: overrides.verifyConsent,
   });
 
   const app = createGatewayApp({
@@ -176,13 +200,15 @@ async function startHarness(overrides: {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
   const addr = server.address() as AddressInfo;
+  baseUrl = `http://127.0.0.1:${addr.port}`;
   return {
     store,
     createSessionCalls,
     sockets,
-    baseUrl: `http://127.0.0.1:${addr.port}`,
+    baseUrl,
     server,
     runtime,
+    outcomes,
   };
 }
 
@@ -409,5 +435,231 @@ describe('mapVoiceStartError', () => {
       status: 502,
       reason: 'provider_error',
     });
+  });
+});
+
+describe('POST /voice-tool — Rechte und Zustand nur aus der Session (SEC-01, SEC-05)', () => {
+  const TENANT_B = '33333333-3333-3333-3333-333333333333';
+  const BOT_B = '44444444-4444-4444-4444-444444444444';
+  const auth = { Authorization: `Bearer ${TOKEN}` };
+  const consent = {
+    purposes: ['execute_tools', 'store_evidence'],
+    withdrawn_at: null,
+  };
+  /** Testweise: behauptete Einwilligung gilt als nachgewiesen. */
+  const trustClaimed: VoiceConsentVerifier = ({ claimed }) => claimed;
+
+  type Trace = Array<{ check: string; result: string; detail: string }>;
+
+  async function startSession(h: Harness, botId: string): Promise<{ sessionId: string; socket: MockSocket }> {
+    const res = await postJson(h.baseUrl, '/voice-sessions', { bot_id: botId, consent }, auth);
+    assert.equal(res.status, 201);
+    return { sessionId: String(res.json.session_id), socket: h.sockets.at(-1)! };
+  }
+
+  async function callTool(
+    h: Harness,
+    socket: MockSocket,
+    callId: string,
+    tool: string,
+    args: Record<string, unknown> = { query: 'x' },
+  ) {
+    const before = h.outcomes.length;
+    socket.server({
+      type: 'response.function_call_arguments.done',
+      call_id: callId,
+      name: tool,
+      arguments: JSON.stringify(args),
+    });
+    for (let i = 0; i < 100 && h.outcomes.length === before; i += 1) {
+      await new Promise<void>((r) => setTimeout(r, 5));
+    }
+    await tick();
+    return h.outcomes[before];
+  }
+
+  function trace(outcome: VoiceToolHttpOutcome | undefined): Trace {
+    return (outcome?.decision?.trace ?? []) as Trace;
+  }
+
+  function forgedBody(sessionId: string, tenantId: string, tool: string) {
+    return {
+      tenantId,
+      agentId: 'agent_voice_nora_v01',
+      sessionId,
+      requestId: `req_${tool}`,
+      tool,
+      args: {},
+      session: { killSwitch: false, turnCount: 0, toolCount: 0, rateLimit: { maxTurns: 99, maxTools: 99 } },
+      consent: { purposes: ['execute_tools', 'store_evidence'], withdrawnAt: null },
+    };
+  }
+
+  it('angemeldeter Call eines angebotenen Tools → ALLOW mit Mandant und Bot aus der Session', async () => {
+    const h = await startHarness({ loopback: true, verifyConsent: trustClaimed });
+    try {
+      const { sessionId, socket } = await startSession(h, BOT);
+      const outcome = await callTool(h, socket, 'call_ok', 'lookup_kb');
+      assert.equal(outcome?.ok, true);
+      assert.equal(outcome?.decision?.verdict, 'ALLOW');
+      assert.equal(outcome?.decision?.tenantId, TENANT);
+      assert.equal(outcome?.decision?.sessionId, sessionId);
+      assert.match(trace(outcome).find((s) => s.check === 'permission')?.detail ?? '', new RegExp(BOT));
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('nicht angebotenes Tool erreicht /voice-tool nie', async () => {
+    const h = await startHarness({ loopback: true, verifyConsent: trustClaimed });
+    try {
+      const { socket } = await startSession(h, BOT);
+      socket.server({
+        type: 'response.function_call_arguments.done',
+        call_id: 'call_ticket',
+        name: 'create_ticket',
+        arguments: '{}',
+      });
+      await new Promise<void>((r) => setTimeout(r, 30));
+      assert.equal(h.outcomes.length, 0);
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('gefälschte Anfrage mit Body-Zustand → 403 voice_session_unknown, auch für eine echte Session', async () => {
+    const h = await startHarness({ loopback: true, verifyConsent: trustClaimed });
+    try {
+      const { sessionId } = await startSession(h, BOT);
+      for (const body of [
+        forgedBody(sessionId, TENANT, 'lookup_kb'),
+        forgedBody(sessionId, TENANT_B, 'lookup_kb'),
+        forgedBody('55555555-5555-5555-5555-555555555555', TENANT, 'lookup_kb'),
+      ]) {
+        const res = await postJson(h.baseUrl, '/voice-tool', body, auth);
+        assert.equal(res.status, 403);
+        assert.equal(res.json.reason, 'voice_session_unknown');
+        assert.equal(res.json.decision, undefined);
+      }
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('Bot B bekommt nur seine eigenen Tools, Mandant B aus seiner Session', async () => {
+    const h = await startHarness({ loopback: true, verifyConsent: trustClaimed });
+    h.store.seedBotConfig({
+      tenantId: TENANT_B,
+      botId: BOT_B,
+      provider: 'grok',
+      model: 'grok-voice-think-fast-2.0',
+      disclosureText: DISCLOSURE,
+      policyRef: POLICY,
+      offeredTools: ['lookup_kb'],
+      status: 'active',
+    });
+    try {
+      await startSession(h, BOT);
+      const { socket: socketB } = await startSession(h, BOT_B);
+      const ownB = await callTool(h, socketB, 'call_b', 'lookup_kb');
+      assert.equal(ownB?.decision?.verdict, 'ALLOW');
+      assert.equal(ownB?.decision?.tenantId, TENANT_B);
+
+      const before = h.outcomes.length;
+      socketB.server({
+        type: 'response.function_call_arguments.done',
+        call_id: 'call_b_sched',
+        name: 'schedule_appointment',
+        arguments: '{}',
+      });
+      await new Promise<void>((r) => setTimeout(r, 30));
+      assert.equal(h.outcomes.length, before, 'schedule_appointment ist für Bot B nicht angeboten');
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('Kill-Switch in voice_sessions greift für die laufende Session', async () => {
+    const h = await startHarness({ loopback: true, verifyConsent: trustClaimed });
+    try {
+      const { sessionId, socket } = await startSession(h, BOT);
+      const first = await callTool(h, socket, 'call_1', 'lookup_kb');
+      assert.equal(first?.decision?.verdict, 'ALLOW');
+
+      await h.store.updateSessionStatus(TENANT, sessionId, { killSwitch: true });
+      const second = await callTool(h, socket, 'call_2', 'lookup_kb');
+      assert.equal(second?.ok, false);
+      assert.equal(second?.decision?.verdict, 'DENY');
+      assert.equal(trace(second).find((s) => s.check === 'kill_switch')?.result, 'fail');
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('Manipulation mit gleicher sessionId, requestId und Tool, aber anderen Args → 403 ohne Entscheidung; echter Call → ALLOW', async () => {
+    const args = { query: 'Öffnungszeiten', filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b'] } } };
+    const forgedArgs: Array<Record<string, unknown>> = [
+      // REQUIRE_CONFIRMATION/PII-Pfad wäre bei Entscheidung erreichbar
+      { ...args, priority: 'high' },
+      { ...args, query: 'Max Mustermann, IBAN DE89370400440532013000' },
+      { ...args, filter: { lang: 'de', scope: { site: 'hq', tags: ['a', 'b', 'c'] } } },
+      { ...args, filter: { lang: 'en', scope: { site: 'hq', tags: ['a', 'b'] } } },
+      {},
+    ];
+    const forged: Array<{ status: number; json: Record<string, unknown> }> = [];
+    let outcomesBefore = -1;
+    const h = await startHarness({
+      loopback: true,
+      verifyConsent: trustClaimed,
+      beforeVoiceTool: async (req) => {
+        for (const other of forgedArgs) {
+          const body = {
+            tenantId: req.tenantId,
+            agentId: 'agent_voice_nora_v01',
+            sessionId: req.sessionId,
+            requestId: req.requestId,
+            tool: req.tool,
+            args: other,
+          };
+          forged.push(await postJson(h.baseUrl, '/voice-tool', body, auth));
+        }
+        outcomesBefore = h.outcomes.length;
+      },
+    });
+    try {
+      const { sessionId, socket } = await startSession(h, BOT);
+      const outcome = await callTool(h, socket, 'call_bound', 'lookup_kb', args);
+
+      assert.equal(forged.length, forgedArgs.length);
+      for (const res of forged) {
+        assert.equal(res.status, 403);
+        assert.equal(res.json.reason, 'voice_session_unknown');
+        assert.equal(res.json.decision, undefined, 'keine Policy-Entscheidung');
+        assert.equal(res.json.verdict, undefined);
+        assert.equal((res.json.auditEvent as { status?: string } | undefined)?.status, 'denied');
+      }
+      assert.equal(outcomesBefore, 0, 'Fehlversuche laufen vor dem echten Request');
+
+      // Anmeldung nicht verbraucht: der echte Call bekommt seine Entscheidung.
+      assert.equal(outcome?.ok, true);
+      assert.equal(outcome?.decision?.verdict, 'ALLOW');
+      assert.equal(outcome?.decision?.requestId, 'vt_call_bound');
+      assert.equal(outcome?.decision?.sessionId, sessionId);
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
+  });
+
+  it('ohne Einwilligungsnachweis wird abgelehnt, obwohl der Start eine Einwilligung behauptet', async () => {
+    const h = await startHarness({ loopback: true });
+    try {
+      const { socket } = await startSession(h, BOT);
+      const outcome = await callTool(h, socket, 'call_c', 'lookup_kb');
+      assert.equal(outcome?.ok, false);
+      assert.equal(outcome?.decision?.verdict, 'DENY');
+      assert.equal(trace(outcome).find((s) => s.check === 'consent')?.result, 'fail');
+    } finally {
+      await new Promise<void>((r) => h.server.close(() => r()));
+    }
   });
 });

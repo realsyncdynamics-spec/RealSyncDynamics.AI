@@ -822,6 +822,7 @@ describe('Anbindung an den /voice-tool-Prüfpfad (evaluateVoiceToolRequest)', ()
         turnCount: 1,
         toolCount: 0,
         rateLimit: { maxTurns: 20, maxTools: 8 },
+        grant: { agentId: VOICE_AGENT_ID, botId: ctx.botId, tools: TOOL_DEFS.map((t) => t.name) },
       },
       request: normalized.request,
       consent: { purposes: ['execute_tools', 'store_evidence'], withdrawnAt: null },

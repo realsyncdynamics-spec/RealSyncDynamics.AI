@@ -166,6 +166,8 @@ export interface VoiceNumberBindingSeed {
 export interface VoiceStore {
   resolveSessionContext(query: ResolveSessionContextQuery): Promise<VoiceSessionContext | null>;
   insertSession(row: VoiceSessionInsert): Promise<VoiceSessionRow>;
+  /** Re-Read einer Session (u. a. Kill-Switch vor jeder Tool-Entscheidung, SEC-05). */
+  getSession(tenantId: string, sessionId: string): Promise<VoiceSessionRow | null>;
   updateSessionStatus(
     tenantId: string,
     sessionId: string,
@@ -300,6 +302,11 @@ export function createMemoryVoiceStore(): MemoryVoiceStore {
       };
       sessions.set(scopedKey(full.tenantId, id), full);
       return full;
+    },
+
+    async getSession(tenantId, sessionId) {
+      const row = sessions.get(scopedKey(tenantId, sessionId));
+      return row && row.tenantId === tenantId ? row : null;
     },
 
     async updateSessionStatus(tenantId, sessionId, patch) {

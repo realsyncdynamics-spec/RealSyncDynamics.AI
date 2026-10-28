@@ -64,6 +64,8 @@ vi.mock('../../src/lib/supabase', () => ({
 }));
 
 import {
+  classifiedTileFrom,
+  complianceAmpelFrom,
   countAiSystems,
   evidenceTileFrom,
   highRiskAssetsCountable,
@@ -446,5 +448,31 @@ describe('Mandantenwechsel zeigt keine Zahlen des vorigen Mandanten', () => {
     // Und vor jedem neuen Laden sowie ohne Mandanten geleert: zwei Stellen.
     const cleared = dashboard.match(/setDataTenantId\(null\);/g) ?? [];
     expect(cleared.length).toBe(2);
+  });
+});
+
+describe("WP11 — Compliance-Ampel (drei echte Zähler aus vorhandenen Quellen)", () => {
+  it("classifiedTileFrom liefert Fehler bei fehlendem Asset-Lader statt 0", () => {
+    expect(classifiedTileFrom(cockpit({ partialFailures: ["assets: timeout"] }), false, null)).toEqual({
+      kind: "error",
+      message: "Klassifizierungs-Quellen nicht vollständig geladen",
+    });
+  });
+
+  it("complianceAmpelFrom verdichtet KI-Systeme erfasst, klassifiziert und Nachweise vorhanden", () => {
+    const ampel = complianceAmpelFrom(
+      {
+        aiSystems: { kind: "value", value: 4 },
+        tenantAgents: { kind: "value", value: { configured: true, count: 1, declaredNone: false } },
+        pendingApprovals: { kind: "value", value: 0 },
+      },
+      { ...cockpit({ evidenceTotal: 12, evidenceHashed: 12 }), classifiedAiSystems: 4 },
+      false,
+      null,
+    );
+    expect(ampel.status).toBe("green");
+    expect(ampel.aiSystemsCaptured).toEqual({ kind: "value", value: 4 });
+    expect(ampel.aiSystemsClassified).toEqual({ kind: "value", value: 4 });
+    expect(ampel.evidencePresent).toEqual({ kind: "value", value: 12 });
   });
 });

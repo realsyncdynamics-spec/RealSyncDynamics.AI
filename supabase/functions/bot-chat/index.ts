@@ -10,11 +10,16 @@
 // }
 //
 // Ablauf:
+//   0. Rate-Limit je IP-Hash (DB-Zähler, vor jedem Bot-Lookup)
 //   1. Bot auflösen (tenant + enabled)            resolveBot
+//      Origin-Prüfung (nur Zusatzhürde, falls config.allowed_origins gesetzt)
+//      Rate-Limit je IP+Bot und je Bot
 //   2. Feature-Gate                               bots.enabled
 //   3. Bestehenden Verlauf lesend laden, Bot-PEP pruefen (ohne Speichern)
 //   4. Nur bei erlaubter Nachricht: Monats-Quota pruefen + zaehlen
-//   5. Konversation/Nachricht speichern, KI aufrufen
+//   5. Konversation/Nachricht speichern, KI aufrufen — vorher wird der
+//      Höchstbetrag atomar gegen das Tages-/Monatsbudget des Mandanten
+//      reserviert (bot-budget.ts). Ablehnung → 429, kein KI-Aufruf.
 //   6. Antwort persistieren + zurueckgeben
 //
 // verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
@@ -30,11 +35,26 @@ import {
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
+import {
+  checkBotRateLimit, checkIpRateLimit, clientIpFromHeaders, createBotAiBudgetGuard,
+  hashClientIp, originAllowed,
+} from '../_shared/bot-budget.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const MAX_MESSAGE_CHARS = 4000;
+// Schlüssel für den IP-Hash. Eigenes Secret bevorzugt; sonst serverseitig
+// aus dem Service-Role-Key abgeleitet (verlässt die Function nie).
+const RATE_LIMIT_SECRET = Deno.env.get('BOT_RATE_LIMIT_SALT') || SERVICE_ROLE;
+
+function rateLimited(scope: string): Response {
+  const status = scope === 'unavailable' ? 503 : 429;
+  const code = scope === 'unavailable' ? 'RATE_LIMIT_UNAVAILABLE' : 'RATE_LIMITED';
+  const res = jsonError(status, code, 'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.');
+  if (status === 429) res.headers.set('Retry-After', '60');
+  return res;
+}
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -61,8 +81,20 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
+  // Rate-Limit vor jedem weiteren DB-Zugriff. Fail-closed: Ist der Zähler
+  // nicht erreichbar, wird die Anfrage abgelehnt.
+  const ipHash = await hashClientIp(clientIpFromHeaders(req.headers), RATE_LIMIT_SECRET, new Date());
+  const ipDecision = await checkIpRateLimit(admin, ipHash);
+  if (!ipDecision.allowed) return rateLimited(ipDecision.scope);
+
   try {
     const bot = await resolveBot(admin, tenantId, botId);
+
+    if (!originAllowed(req.headers.get('origin'), bot.config)) {
+      return jsonError(403, 'ORIGIN_NOT_ALLOWED', 'origin not allowed for this bot');
+    }
+    const botDecision = await checkBotRateLimit(admin, ipHash, bot.id);
+    if (!botDecision.allowed) return rateLimited(botDecision.scope);
 
     // Feature-Gate: Tenant-Plan muss Bots freigeschaltet haben.
     try {
@@ -119,13 +151,15 @@ Deno.serve(async (req) => {
     });
     await insertMessage(admin, bot, conversationId, 'user', message.trim());
 
+    const aiBudget = createBotAiBudgetGuard(admin, { tenantId, botId: bot.id, channel: 'chat' });
+
     const restaurantTurn = await runRestaurantConversationTurn(
       admin,
       bot,
       conversationId,
       message,
       priorHistory,
-      { channel: 'chat', contact: contactLabel },
+      { channel: 'chat', contact: contactLabel, aiBudget },
     );
     if (restaurantTurn) {
       await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
@@ -148,6 +182,7 @@ Deno.serve(async (req) => {
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {
       metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'chat' },
+      budget: aiBudget,
     });
 
     await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
@@ -166,7 +201,13 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);
-    if (e instanceof AiInvokeError) return jsonError(e.status, e.code, e.message, undefined, e.details);
+    if (e instanceof AiInvokeError) {
+      // Budget erschöpft: neutrale Meldung, keine internen Zahlen an Besucher.
+      if (e.code === 'BOT_BUDGET_EXCEEDED') {
+        return jsonError(429, e.code, 'Der Assistent ist gerade nicht verfügbar. Bitte später erneut versuchen.');
+      }
+      return jsonError(e.status, e.code, e.message, undefined, e.details);
+    }
     if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
     return jsonError(500, 'INTERNAL', (e as Error).message);
   }

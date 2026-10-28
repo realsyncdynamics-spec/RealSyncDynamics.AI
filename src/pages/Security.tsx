@@ -42,7 +42,7 @@ export function Security() {
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">DSGVO Art. 15/17 Selfservice</strong> — Datenexport + Account-Löschung im Dashboard.</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">IP-Hash-Anonymisierung</strong> für Lead-Capture und Audit-Logs (kein IP-Cleartext-Storage).</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Rate-Limits</strong> auf öffentlichen Endpunkten (`audit`, `sales-lead`, `newsletter-subscribe`).</span></li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">EU-Hosting</strong> in Frankfurt — keine US-Cloud-Default-Pfade, keine Drittland-Übermittlung außer auf expliziten Opt-In.</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">EU-Datenhaltung</strong> in Frankfurt — Datenbank und Nachweise in eu-central-1. KI-Cloud-Anbieter (Standard: Anthropic, USA) nur mit DPA + SCCs; EU-lokaler Modus ohne Drittland-Übermittlung per Opt-in.</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Sentry-Stub DSGVO-konform</strong> — `sendDefaultPii=false`, keine User-Kontext-Felder, EU-Region falls aktiviert.</span></li>
             </ul>
           </Section>
@@ -72,13 +72,17 @@ export function Security() {
 
           <Section title="EU-Hosting · Sub-Processors" icon={<Server className="h-5 w-5 text-security-400" />}>
             <p>
-              Alle produktiven Workloads laufen auf EU-Infrastruktur (Hostinger Frankfurt für Compute, Supabase EU-Frankfurt für Postgres + Edge Functions).
+              Datenbank, Auth und Evidence liegen in der EU (Supabase Postgres, Frankfurt eu-central-1). Die Website wird über Cloudflare Pages
+              (globales Edge-Netz) ausgeliefert, Edge Functions laufen global verteilt auf Supabase-Infrastruktur; der optionale EU-lokale
+              KI-Stack läuft auf einem Hostinger-VPS in Deutschland.
               Eine vollständige Liste der Sub-Processors mit Standort, Funktion und AVV-Status findest du unter
               {' '}<Link to="/legal/sub-processors" className="text-security-400 hover:text-security-300">/legal/sub-processors</Link>.
             </p>
             <p>
-              KI-Modelle: Default sind EU-region-pinned API-Calls (Anthropic EU, OpenAI EU-Tenant, Google Vertex eu-central).
-              Für höchste Souveränität ist Ollama-EU-local als Fallback verfügbar (Llama / Mistral, vollständig im eigenen Stack).
+              KI-Modelle: Standard ist Anthropic Claude über die Anthropic-API; OpenAI und Google Gemini API sind optional angebunden.
+              Diese Anbieter verarbeiten in den USA, abgesichert über EU-DPA und Standardvertragsklauseln (Art. 46 DSGVO).
+              Für höchste Souveränität ist der EU-lokale Modus per Opt-in verfügbar (Ollama mit Open-Weight-Modellen wie gemma3 und qwen2.5) —
+              dann leitet das AI-Gateway keinen Aufruf an die Cloud-Anbieter weiter; Werkzeuge ohne lokales Modell sind in diesem Modus nicht verfügbar.
             </p>
           </Section>
 

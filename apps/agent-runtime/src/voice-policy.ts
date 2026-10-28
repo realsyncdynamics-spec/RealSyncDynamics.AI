@@ -4,7 +4,6 @@ import type { PolicyDecision } from './types.js';
 import { scanVoicePii } from './voice-pii.js';
 import { VOICE_TOOLS } from './voice-tools.js';
 import {
-  VOICE_AGENT_ID,
   VOICE_AGENT_NAME,
   VOICE_AGENT_TOOLS,
   type VoiceConsent,
@@ -96,22 +95,37 @@ export function evaluateVoiceToolRequest(input: {
     }
   }
 
+  // SEC-01: Recht kommt aus dem serverseitigen Grant der Session, gedeckelt
+  // durch den Contract-Katalog. Eine Agent-ID im Request allein reicht nie.
   if (verdict !== 'DENY') {
-    const allowed =
-      Boolean(spec) &&
-      input.request.agentId === VOICE_AGENT_ID &&
-      VOICE_AGENT_TOOLS.includes(input.request.tool);
-    if (!spec || !allowed) {
+    const grant = input.session.grant;
+    if (!grant) {
       fail(
         'permission',
-        `Tool ${input.request.tool} nicht im Agent-Set.`,
+        'Keine serverseitige Tool-Freigabe für diese Session.',
+        'Permission — Session ohne Tool-Freigabe.',
+      );
+    } else if (input.request.agentId !== grant.agentId) {
+      fail(
+        'permission',
+        `Agent ${input.request.agentId} ≠ Session-Agent ${grant.agentId}`,
+        'Permission — Agent nicht an diese Session gebunden.',
+      );
+    } else if (
+      !spec ||
+      !VOICE_AGENT_TOOLS.includes(input.request.tool) ||
+      !grant.tools.includes(input.request.tool)
+    ) {
+      fail(
+        'permission',
+        `Tool ${input.request.tool} nicht für Bot ${grant.botId} freigegeben.`,
         'Permission — Tool nicht freigegeben.',
       );
     } else {
       trace.push({
         check: 'permission',
         result: 'pass',
-        detail: `${spec.label} liegt im Agent-Set von ${VOICE_AGENT_NAME}.`,
+        detail: `${spec.label} ist für Bot ${grant.botId} (${VOICE_AGENT_NAME}) freigegeben.`,
       });
     }
   }

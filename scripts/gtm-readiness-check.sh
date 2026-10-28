@@ -134,14 +134,18 @@ else
   AUDIT_ID=""
 fi
 
-# ── Gate 6: audit-report-pdf NOT broken ────────────────────────────
-section "▸ Gate 6 — audit-report-pdf (Demo-Endpoint) works (PR #348 merged?)"
+# ── Gate 6: audit-report-pdf refuses anonymous callers ─────────────
+# Seit 2026-10-13 liefert der Bericht nur noch an angemeldete Besitzer,
+# Mandanten-Mitglieder oder plattform-intern. Ein anonymer Abruf mit
+# blosser audit_id muss abgelehnt werden — vorher gab er E-Mail, Firma und
+# eine Signed-URL heraus.
+section "▸ Gate 6 — audit-report-pdf lehnt anonymen Abruf ab"
 if [[ -n "${AUDIT_ID:-}" ]]; then
   PDF=$(http_post_json "$SUPA/audit-report-pdf" "{\"audit_id\":\"$AUDIT_ID\"}")
   if echo "$PDF" | grep -q '"ok":true'; then
-    gate_pass "audit-report-pdf returns signed URL"
-  elif echo "$PDF" | grep -q "Bucket not found"; then
-    gate_fail "audit-report-pdf: 'Bucket not found'. PR #348 (documents storage bucket) not merged. PDF-Download im Demo bricht."
+    gate_fail "audit-report-pdf liefert einen Bericht ohne Anmeldung — Zugriffsprüfung nicht deployt."
+  elif echo "$PDF" | grep -q 'UNAUTHENTICATED'; then
+    gate_pass "audit-report-pdf verlangt Anmeldung"
   else
     gate_warn "audit-report-pdf returned unexpected: $(echo "$PDF" | head -c 200)"
   fi

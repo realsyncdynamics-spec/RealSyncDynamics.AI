@@ -24,6 +24,7 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `memory-decay-hourly` | `memory-decay-worker` | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 | `audit-monitor-daily` | `audit-monitor-cron` | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
+| `bot-voice-enforcer` (jede Minute) | `bot-voice-enforcer` | `cron_bot_voice_enforcer_key` | `CRON_BOT_VOICE_ENFORCER_KEY` |
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
@@ -79,6 +80,7 @@ Dieselben Werte als Function Secrets setzen (Namen only):
 | `cron_memory_decay_key` | `CRON_MEMORY_DECAY_KEY` |
 | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
+| `cron_bot_voice_enforcer_key` | `CRON_BOT_VOICE_ENFORCER_KEY` |
 
 `dispatch_cron_function` liest den Vault-Namen zur Laufzeit über
 `public.get_app_secret(...)`. Die Edge Function liest das Function Secret.

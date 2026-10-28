@@ -287,20 +287,36 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
+  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
+  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    title: 'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'DSGVO und EU AI Act für KMU: kostenloser Website-Check, KI-Inventar und prüffähige Nachweise – verständlich erklärt, gehostet in Frankfurt.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'DSGVO & EU AI Act – machbar für Ihr Unternehmen',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'Für KMU: Website- und KI-Risiken erkennen, konkrete Maßnahmen umsetzen und prüffähig nachweisen – ohne eigene Compliance-Abteilung, betrieben in der EU.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
     title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
     description:
       'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/landing-v7': {
+    title: 'RealSync Dynamics AI – Landing v7 (Vorschau)',
+    description:
+      'Design-Vorschau „AI Compliance Operations OS for Europe“ (Titan/Nacht). Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/landing-v6': {
+    title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
+    description:
+      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

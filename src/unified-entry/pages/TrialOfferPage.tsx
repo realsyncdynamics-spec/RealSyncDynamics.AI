@@ -18,7 +18,7 @@ export function TrialOfferPage() {
     'Domain-Scan mit Governance Score 0–100',
     'Top-Risiken mit Paragraphenbezug (DSGVO, EU AI Act)',
     'Audit Center mit einsehbarem Prüfpfad',
-    'Kompakter PDF-Bericht',
+    'Druckfertiger Bericht (HTML / Druck-PDF)',
     'Governance-Dashboard zum Kennenlernen',
     `Upgrade jederzeit — ${growthTrialOfferLabel()}, ohne Karte`,
   ];

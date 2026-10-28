@@ -22,6 +22,12 @@ export default defineConfig(({mode}) => {
                   rollupOptions: {
                           output: {
                                   manualChunks(id) {
+                                          // Vite's __vitePreload helper (virtual id `\0vite/preload-helper.js`)
+                                          // otherwise lands in vendor-viz. index.js imports it statically, so
+                                          // every page fetched and evaluated three + recharts (~400 KiB gzip).
+                                          if (id.includes('vite/preload-helper')) {
+                                                  return 'vite-preload-helper';
+                                          }
                                           // Keep React family in ONE chunk. Splitting them (or circular
                                           // vendor chunks that race with React init) causes:
                                           // Cannot set properties of undefined (setting 'Activity')

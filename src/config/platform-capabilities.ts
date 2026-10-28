@@ -41,6 +41,8 @@
 export type CapabilityStatus =
   /** Backend in Produktion deployt und über die Oberfläche erreichbar. */
   | 'live'
+  /** Oberfläche und Teile erreichbar, produktive Laufzeit noch Vorschau. */
+  | 'preview'
   /** Code vorhanden, Backend nicht in Produktion. Nicht als verfügbar zeigen. */
   | 'building';
 
@@ -77,7 +79,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     learnMorePath: '/audit',
     name: 'DSGVO- & Tracking-Audit',
     description:
-      'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit Bericht als PDF.',
+      'Website-Scan auf Cookies, Tracker, Drittanbieter und Einwilligungspflicht — mit druckfertigem Bericht (HTML/Druck-PDF).',
     status: 'live',
     backedBy: ['gdpr-audit', 'cookie-scan', 'cookie-scan-deep', 'audit-report-pdf', 'audit-monitor-cron'],
   },
@@ -86,7 +88,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     learnMorePath: '/ai-act-governance',
     name: 'EU-AI-Act-Klassifizierung',
     description:
-      'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.',
+      'KI-Systeme nach Risikoklasse einordnen und Anforderungen ableiten — im öffentlichen Klassifikator; Übernahme ins Tenant-Inventar ist Preview.',
     status: 'live',
     // `ai-act-auto-classify` gehört bewusst nicht dazu — die Klassifizierung
     // arbeitet ohne sie, die Automatik ist der Aufsatz. (Seit der Messung
@@ -117,19 +119,15 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'bots',
-    // Nicht „WhatsApp- & Telefonbot": `bot-chat` bedient auch den Website-Chat.
-    // Der frühere Name legte nahe, der Website-Bot sei davon nicht betroffen.
+    // Registry-Äquivalent in implementation-status.ts: `channel-bots` (preview);
+    // Telefonie ist dort als `voice-telephony` (coming-soon) getrennt geführt.
     learnMorePath: '/chatbot/start',
-    name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
+    name: 'Bot-Laufzeit — Chat, WhatsApp, Telegram',
     description:
-      'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.',
-    // Messung 2026-08-23 (Management-API): alle vier Functions deployt.
-    // Damit ist der Zustand vom 2026-08-17 („Anlegen ja, Antworten nein")
-    // behoben — der Hinweis auf den Start-Seiten verschwindet dadurch von
-    // selbst, genau wie im Kommentar der CapabilityAvailabilityNotice
-    // vorgesehen.
-    status: 'live',
-    backedBy: ['bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake'],
+      'Start-Routen und Builder-UI für Chat-, WhatsApp- und Telegram-Bots erreichbar; volle Provider-Laufzeit noch Preview. Telefonie ist separat geplant (Coming Soon).',
+    status: 'preview',
+    note: 'Start-Routen und Builder-UI sind erreichbar; die volle produktive Provider-Laufzeit befindet sich noch in der Vorschau (Preview). Telefonie (Voice Agent) ist geplant (Coming Soon).',
+    backedBy: ['bot-chat', 'whatsapp-webhook', 'appointment-book', 'order-intake'],
   },
   {
     id: 'ai-gateway',
@@ -172,5 +170,8 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
 /** Module, die öffentlich als verfügbar dargestellt werden dürfen. */
 export const LIVE_CAPABILITIES = PLATFORM_CAPABILITIES.filter((c) => c.status === 'live');
 
-/** Module in Arbeit — als solche kennzeichnen, nicht verschweigen. */
-export const BUILDING_CAPABILITIES = PLATFORM_CAPABILITIES.filter((c) => c.status === 'building');
+/** Module in Vorschau — nicht als fertige Produktions-Laufzeit darstellen. */
+export const PREVIEW_CAPABILITIES = PLATFORM_CAPABILITIES.filter((c) => c.status === 'preview');
+
+/** Module in Arbeit oder Vorschau — als solche kennzeichnen, nicht verschweigen. */
+export const BUILDING_CAPABILITIES = PLATFORM_CAPABILITIES.filter((c) => c.status !== 'live');

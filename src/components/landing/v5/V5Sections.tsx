@@ -17,7 +17,7 @@ export function BetaRibbon({ source = 'ribbon' }: { source?: string }) {
       <span className="v5-ribbon__dot" aria-hidden="true" />
       <span>
         <b>{BETA.badge}</b>
-        <span className="v5-ribbon__long"> · Offene Testphase bis {BETA.endsLabel} — alle Funktionen kostenlos, keine Kreditkarte.</span>
+        <span className="v5-ribbon__long"> · Offene Testphase bis {BETA.endsLabel} — kostenlos testen, keine Kreditkarte.</span>
       </span>
       <Link to={betaSignupHref(BETA.testPlan, source)}>Jetzt kostenlos testen →</Link>
     </div>

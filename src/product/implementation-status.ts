@@ -832,4 +832,6 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   'unveränderliches Archiv',
   'Evidence Vault Advanced: unveränderliche Snapshots',
   'Evidence Vault Advanced: immutable snapshots',
+  // Beta: bis WP-3 die Freischaltung serverseitig absichert, nur „kostenlos testen”.
+  'alle Funktionen kostenlos',
 ] as const;

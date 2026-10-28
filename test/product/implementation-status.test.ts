@@ -88,9 +88,9 @@ describe('implementation-status registry', () => {
     const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
     const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
     const landing = getImplementation('public-landing')!;
-    expect(view).toContain('The Governance OS </span>');
-    expect(view).toContain('für DSGVO und EU AI Act.</span>');
-    expect(landing.description).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(view).toContain('DSGVO und EU AI Act – </span>');
+    expect(view).toContain('machbar für Ihr Unternehmen.</span>');
+    expect(landing.description).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
     expect(landing.description).toContain('/audit?source=landing-v6');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
@@ -106,6 +106,29 @@ describe('implementation-status registry', () => {
       expect(item.evidence.some((e) => e.includes('landing/v6/')), id).toBe(true);
       expect(item.evidence.some((e) => e.includes('landing/v4/')), id).toBe(false);
     }
+  });
+
+  it('registers enterprise-sso as coming-soon (ADR 0007) and updates stripe-checkout-e2e migration evidence', () => {
+    const sso = getImplementation('enterprise-sso')!;
+    expect(sso).toBeDefined();
+    expect(sso.status).toBe('coming-soon');
+    expect(isImplementationLive('enterprise-sso')).toBe(false);
+    expect(sso.description).toContain('ADR 0007');
+    expect(sso.description).toContain('0 aktive Provider');
+    expect(sso.description).toContain('signInWithSSO');
+    expect(sso.description).toContain('sso-provision');
+    expect(sso.description).toContain('tenant_sso_domains');
+    expect(ROADMAP_COMING_SOON_ITEMS.some((i) => i.id === 'enterprise-sso')).toBe(true);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].de.description).toMatch(/Geplant:/);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].en.description).toMatch(/Planned:/);
+
+    const stripeE2e = getImplementation('stripe-checkout-e2e')!;
+    expect(stripeE2e.evidence).toContain(
+      'supabase/migrations/20261020130000_stripe_live_net_exclusive_price_ids.sql',
+    );
+    expect(stripeE2e.evidence).not.toContain(
+      'supabase/migrations/20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql',
+    );
   });
 
   it('splits voice/telephony off channel-bots as coming soon', () => {
@@ -229,7 +252,7 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
     expect(docs).toContain('Landing v6');
-    expect(docs).toContain('The Governance OS für DSGVO und EU AI Act.');
+    expect(docs).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
     expect(docs).not.toContain('AI Compliance Operations OS for Europe');
     expect(docs).toContain('2026-10-18');
     expect(docs).toContain('/ai-act-klassifikator');

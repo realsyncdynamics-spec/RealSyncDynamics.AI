@@ -334,7 +334,7 @@ export interface PlanPermissions {
   evidenceVault: boolean;
   /** Nachweispakete exportieren */
   auditExport: boolean;
-  /** Single Sign-On */
+  /** Single Sign-On (Registry `enterprise-sso`: coming-soon, ADR 0007) */
   sso: boolean;
   /** Massenläufe */
   bulkOperations: boolean;
@@ -947,6 +947,10 @@ export const PLANS: Plan[] = [
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
         'Zentrale Benutzerverwaltung mit Rollen und Rechten',
+        // Registry `enterprise-sso` = coming-soon (ADR 0007). Literal bleibt unverändert,
+        // damit `20261010090000_canonical_plan_catalog.sql` (`generate-plan-catalog-sql.ts`)
+        // keine neue DB-Migration erzwingt; `src/config/pricing.ts` und Landing v7
+        // kennzeichnen den Punkt öffentlich als „Single Sign-On (Coming Soon)“.
         'Single Sign-On',
         'White-Label mit Branding, Logo und Farben',
       ],

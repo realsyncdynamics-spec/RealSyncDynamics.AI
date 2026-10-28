@@ -133,9 +133,9 @@ const DECISIONS: { t: string; agent: string; action: string; r: Decision }[] = [
   { t: '09:39:02', agent: 'chat-assistant', action: 'model.invoke · eu-local', r: 'log_only' },
 ];
 const DEC_C: Record<Decision, string> = {
-  allow: '#10B981',
-  warn: '#F5A524',
-  block: '#E5484D',
+  allow: 'var(--rs-status-allow)',
+  warn: 'var(--rs-status-warn)',
+  block: 'var(--rs-status-block)',
   require_approval: 'var(--rs-acc)',
   log_only: 'var(--rs-fg3)',
 };
@@ -275,7 +275,7 @@ export function useLandingV6() {
   // ---- Styles aus dem Design (dynamisch, daher hier statt CSS)
   const pill = (active: boolean): CSSProperties =>
     active
-      ? { display: 'flex', padding: '6px', borderRadius: '9999px', background: 'var(--rs-acc)', color: '#FFFDF6', transition: 'all 200ms' }
+      ? { display: 'flex', padding: '6px', borderRadius: '9999px', background: 'var(--rs-acc)', color: 'var(--rs-on-accent)', transition: 'all 200ms' }
       : { display: 'flex', padding: '6px', borderRadius: '9999px', opacity: 0.6, transition: 'all 200ms' };
   const seg = (active: boolean): CSSProperties => ({
     padding: '8px 16px',
@@ -284,7 +284,7 @@ export function useLandingV6() {
     cursor: 'pointer',
     fontSize: 'var(--fs-small)',
     background: active ? 'var(--rs-acc)' : 'transparent',
-    color: active ? '#FFFDF6' : 'var(--rs-fg2)',
+    color: active ? 'var(--rs-on-accent)' : 'var(--rs-fg2)',
     transition: 'all 200ms cubic-bezier(.2,.8,.2,1)',
     whiteSpace: 'nowrap',
   });
@@ -313,7 +313,7 @@ export function useLandingV6() {
     justifyContent: 'center',
     border: active ? '1px solid var(--rs-acc)' : '1px solid var(--rs-chip-b)',
     background: active ? 'var(--rs-acc)' : 'transparent',
-    color: active ? '#FFFDF6' : 'transparent',
+    color: active ? 'var(--rs-on-accent)' : 'transparent',
   });
   const badge = (r: RiskId): CSSProperties => ({
     flex: 'none',
@@ -351,7 +351,6 @@ export function useLandingV6() {
     color: 'var(--rs-fg)',
     fontFamily: 'inherit',
     fontSize: '16px',
-    outline: 'none',
   };
   const label: CSSProperties = {
     display: 'flex',
@@ -558,7 +557,7 @@ export function useLandingV6() {
       fontSize: '11px',
       fontWeight: 600,
       background: i <= auditStep ? 'var(--rs-acc)' : 'var(--rs-chip)',
-      color: i <= auditStep ? '#FFFDF6' : 'var(--rs-fg3)',
+      color: i <= auditStep ? 'var(--rs-on-accent)' : 'var(--rs-fg3)',
     } as CSSProperties,
   }));
   const panelStyle: CSSProperties = mobile
@@ -603,7 +602,7 @@ export function useLandingV6() {
         on,
         pick: () => setCheck((s) => ({ ...s, [i]: value })),
         style: on
-          ? { ...pillBase, border: '1px solid var(--rs-acc)', background: 'var(--rs-acc)', color: '#FFFDF6' }
+          ? { ...pillBase, border: '1px solid var(--rs-acc)', background: 'var(--rs-acc)', color: 'var(--rs-on-accent)' }
           : { ...pillBase, border: '1px solid var(--rs-chip-b)', background: 'var(--rs-chip)', color: 'var(--rs-fg)' },
       };
     }),
@@ -654,7 +653,7 @@ export function useLandingV6() {
     crKpis: KPIS.map((k) => ({
       ...k,
       style: {
-        fontFamily: "'Source Serif 4',Georgia,serif",
+        fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif",
         fontSize: 'clamp(36px,2.6vw,80px)',
         lineHeight: 1,
         color: k.c || 'var(--rs-fg)',

@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT mit 14 Tagen Test für Starter und Growth, FAQ. v5/v4/v2 bleiben unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: Eyebrow „DSGVO & EU AI Act für KMU“, H1 „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
@@ -139,15 +139,23 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'CommandCenterDashboard unter /app/dashboard — HandoffOverview, BrowserRuntimePanel, ComplianceStatusView (Mandant/Lage/Jetzt), Bootstrap-Nächste-Schritte, Execute-Strip → /app/agents. Kein AgentOsPanel auf dieser Route.',
+      'CommandCenterDashboard unter /app/dashboard — oben die Kunden-Startansicht (CustomerStartPanel: nächster Schritt, Einrichtungsfortschritt, Testphase), darunter die Detailansicht mit HandoffOverview, OS-Kachelreihe (KI-Inventar, Bots/Agenten, Residualrisiko-Index, wartende Freigaben, Evidence — echte Mandantenquellen oder ehrlicher Leerzustand), BrowserRuntimePanel, ComplianceStatusView (Mandant/Lage/Jetzt) und Execute-Strip → /app/agents. Während der Einrichtung verlinkt sie die Beispielansicht /app/beispiel (fiktiver Mandant, feste Daten, kein Datenbankzugriff). Kein AgentOsPanel auf dieser Route.',
     route: '/app/dashboard',
     evidence: [
       'src/features/governance/dashboard/DashboardRouter.tsx',
       'src/features/governance/dashboard/CommandCenterDashboard.tsx',
+      'src/features/governance/dashboard/CustomerStartPanel.tsx',
+      'src/features/governance/dashboard/OsControlStrip.tsx',
+      'src/features/governance/dashboard/osControlStripData.ts',
+      'src/features/governance/dashboard/SampleWorkspacePage.tsx',
       'src/features/governance/dashboard/ComplianceStatusDashboard.tsx#ComplianceStatusView',
       'src/features/governance/dashboard/workspaceBootstrapSteps.ts',
       'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
       'test/features/governance/dashboard/dashboard-router-source.test.ts',
+      'test/features/governance/dashboard/startPanelModel.test.ts',
+      'test/features/governance/dashboard/sampleWorkspace.test.tsx',
+      'test/governance/os-control-strip.test.ts',
+      'PR #1990',
     ],
     showOnPlatform: true,
   },
@@ -388,7 +396,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'billing',
     description:
-      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Offen (WP-4): Feedback im Dashboard und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
+      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Aus WP-4 umgesetzt: Startansicht mit geführter Einrichtung und Beispielansicht /app/beispiel (#1990). Offen (WP-4): Feedback direkt im Dashboard (bisher Link auf /kontakt?topic=beta-feedback) und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
     route: '/welcome',
     evidence: [
       'supabase/functions/beta-enroll/index.ts',
@@ -514,7 +522,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'supabase/functions/stripe-checkout',
       'supabase/functions/stripe-webhook',
       'supabase/functions/stripe-portal',
-      'supabase/migrations/20260913000000_stripe_live_catalog_tax_inclusive_price_ids.sql',
+      'supabase/migrations/20261020130000_stripe_live_net_exclusive_price_ids.sql',
       'test/billing/checkoutPage.test.tsx',
       'PR #1327',
     ],
@@ -574,7 +582,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'runtime',
     description:
-      'Dark/Gold/Cream Chrome für /app + /build, ehrliche StatusBar, CommandCenterDashboard mit ComplianceStatusView und BrowserRuntimePanel — erreichbar; Agent-OS-Mesh nicht auf /app/dashboard gemountet.',
+      'Dark/Gold/Cream Chrome für /app + /build, ehrliche StatusBar, CommandCenterDashboard mit Startansicht, OS-Kachelreihe, ComplianceStatusView und BrowserRuntimePanel — erreichbar; Agent-OS-Mesh nicht auf /app/dashboard gemountet.',
     route: '/app/dashboard',
     evidence: [
       'src/components/governance-os/osChrome.ts',
@@ -652,6 +660,22 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/pages/content/AgentGovernancePage.tsx',
       'src/components/landing/LandingOsSpine.tsx',
       'PR #1331',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'enterprise-sso',
+    name: 'Enterprise Single Sign-On (SSO)',
+    status: 'coming-soon',
+    group: 'runtime',
+    description:
+      'SSO-/SAML-/OIDC-Provider-Anbindung (Entra ID, Google Workspace, Okta) ist geplant (ADR 0007): 0 aktive Provider, noch kein signInWithSSO, kein sso-provision und keine tenant_sso_domains-Tabelle.',
+    evidence: [
+      'docs/adr/0007-sso-strategy.md',
+      'docs/adr/0004-enterprise-identity.md',
+      'src/features/tenants/TenantAdminConsole.tsx',
+      'src/components/landing/v7/landing-v7-content.ts',
+      'src/pages/Integrations.tsx',
     ],
     showOnRoadmap: true,
   },

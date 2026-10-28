@@ -1,3 +1,5 @@
+import type { GovernanceAgentId } from './governanceAgents';
+
 /**
  * Öffnet den Assistenten der App-Shell mit vorbefülltem Text.
  *
@@ -11,4 +13,6 @@ export const ASSISTANT_PROMPT_EVENT = 'realsync:assistant-prompt';
 
 export interface AssistantPromptDetail {
   prompt?: string;
+  /** Optional vorgewählter Agent (ID aus GOVERNANCE_AGENTS). */
+  agent?: GovernanceAgentId;
 }

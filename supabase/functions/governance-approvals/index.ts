@@ -13,8 +13,10 @@
 //   { op: 'gate_reject',  gate_id, reason }
 //
 // Owner / admin gated against memberships. Each resolved approval
-// drops an evidence row of type 'approval' on the parent event so
-// the audit trail captures who decided, when, and why.
+// appends a hash-chained evidence row of type 'approval' via
+// `append_governance_evidence` (O1 / P0-4) and records the decision
+// in `ai_evidence_events` so the audit trail captures who decided,
+// when, and why.
 //
 // Gates zusaetzlich: die Rolle aus gate.approver_role (role_bindings,
 // Bindung an Tenant oder Teilbaum) darf ebenfalls freigeben — der CEO
@@ -23,28 +25,17 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import {
+  appendApprovalEvidence,
+  buildApprovalAiEvidenceEvent,
+  type ApprovalChainStore,
+  type ApprovalEvidenceInput,
+} from './evidence.ts';
 
 const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired'];
 
-interface SupabaseAdminClient {
-  from(table: string): {
-    select(columns: string): {
-      eq(col: string, val: unknown): {
-        eq(col2: string, val2: unknown): {
-          order(col: string, options?: Record<string, unknown>): {
-            limit(n: number): Promise<{ data: unknown; error: unknown }>;
-          };
-          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
-        };
-        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
-      };
-    };
-    update(row: Record<string, unknown>): {
-      eq(col: string, val: unknown): Promise<{ error: unknown }>;
-    };
-    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
-  };
-}
+// deno-lint-ignore no-explicit-any
+type SupabaseAdminClient = any;
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -126,7 +117,7 @@ async function handleResolve(
   }
 
   const { data: row } = await admin.from('governance_approvals')
-    .select('id, tenant_id, event_id, asset_id, status')
+    .select('id, tenant_id, event_id, policy_id, asset_id, status')
     .eq('id', approval_id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'approval not found');
   if (row.status !== 'pending') {
@@ -144,31 +135,62 @@ async function handleResolve(
       resolved_at: resolvedAt,
       resolution_reason: reason,
     })
-    .eq('id', approval_id);
+    .eq('id', approval_id)
+    .eq('status', 'pending');
   if (updErr) throw updErr;
 
-  // Drop an evidence row on the parent event so the audit trail
-  // captures the decision permanently.
-  await admin.from('governance_evidence').insert({
-    tenant_id: row.tenant_id,
-    event_id: row.event_id,
-    asset_id: row.asset_id,
-    evidence_type: 'approval',
-    title: target === 'approved' ? 'Approval granted' : 'Approval denied',
-    storage_path: null,
-    content_hash: null,
-    previous_hash: null,
-    metadata: {
-      approval_id,
-      status: target,
-      resolved_by_user_id: userId,
-      resolved_by_email: userEmail,
-      resolved_at: resolvedAt,
-      reason,
+  // O1 (P0-4): Hash-verketteter Nachweis über append_governance_evidence
+  // (gleiche Kette und Reihenfolge wie governance-ingest / tenant-audit).
+  const chain: ApprovalChainStore = {
+    async latestHead(tenantId) {
+      const { data, error } = await admin.from('governance_evidence')
+        .select('content_hash')
+        .eq('tenant_id', tenantId)
+        .not('content_hash', 'is', null)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(1);
+      if (error) throw new Error(`governance_evidence head: ${error.message}`);
+      return (data?.[0]?.content_hash as string | undefined) ?? null;
     },
-  });
+    async append(evidenceRow, expectedPreviousHash) {
+      const { data, error } = await admin.rpc('append_governance_evidence', {
+        p_row: evidenceRow,
+        p_expected_previous_hash: expectedPreviousHash,
+      });
+      if (error) throw new Error(`append_governance_evidence: ${error.message}`);
+      return data ? { id: data as string } : 'conflict';
+    },
+  };
 
-  return jsonResponse({ ok: true, status: target, resolved_at: resolvedAt });
+  const evidenceInput: ApprovalEvidenceInput = {
+    evidenceId: crypto.randomUUID(),
+    tenantId: row.tenant_id,
+    approvalId: approval_id,
+    eventId: row.event_id,
+    assetId: row.asset_id ?? null,
+    policyId: row.policy_id ?? null,
+    status: target,
+    resolvedByUserId: userId,
+    resolvedByEmail: userEmail,
+    resolvedAt,
+    reason,
+  };
+
+  const appended = await appendApprovalEvidence(chain, evidenceInput);
+
+  // Zusätzlich in ai_evidence_events protokollieren (Trigger-Hash-Kette des
+  // AI-Evidence-Vaults, konsistent mit handleGateResolve).
+  await admin.from('ai_evidence_events').insert(
+    buildApprovalAiEvidenceEvent(evidenceInput, appended),
+  );
+
+  return jsonResponse({
+    ok: true,
+    status: target,
+    resolved_at: resolvedAt,
+    evidence_id: appended.id,
+  });
 }
 
 async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {

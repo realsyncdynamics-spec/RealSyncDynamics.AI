@@ -1,30 +1,29 @@
-// Übernahme eines anonymen DSGVO-Audits in einen Mandanten.
+// Übernahme eines anonymen DSGVO-Audits in einen Mandanten — HTTP-Zugang
+// zum einen Schreiber, der RPC `claim_gdpr_audit`.
 //
 // POST /functions/v1/audit-claim   (verify_jwt = true — Default, kein
 //                                   config.toml-Eintrag noetig)
 // Body: { audit_id: uuid, tenant_id?: uuid }
 //
-// Schliesst die Lücke zwischen Bericht und Konto: `gdpr_audits` trägt
-// `user_id`, `tenant_id` und `claimed_at`, und die Lese-Policy
-// `gdpr_audits tenant_read` macht ein Audit erst sichtbar, wenn `tenant_id`
-// gesetzt ist — aber nichts hat diese Spalten je geschrieben (0 von 159
-// Zeilen, gemessen 2026-08-30). Der Lesepfad wartete auf einen Schreiber.
+// Bis 2026-10-13 schrieb diese Function `gdpr_audits` selbst, mit der
+// Service-Role, und autorisierte allein über die Kenntnis der `audit_id`.
+// Die steht im teilbaren Ergebnis-Link — jedes frisch registrierte Konto
+// konnte damit ein fremdes Audit dauerhaft in den eigenen Mandanten ziehen.
 //
-// Es gibt **keine** INSERT-/UPDATE-Policy auf `gdpr_audits`; geschrieben
-// werden kann ausschliesslich mit der Service-Role, also nur hier.
-//
-// Muster unveraendert aus `siteos/handlers/anonymous.ts` uebernommen
-// (`canonical-funnel-decision.md`: kein zweites Claim-Modell).
+// Jetzt: Die RPC läuft mit dem Token des Nutzers. Sie prüft E-Mail-Bindung,
+// Mitgliedschaft und Erstübernahme im selben Statement
+// (`_shared/audit-claim.ts`). Die Service-Role schreibt hier nur noch den
+// Prüfpfad, nie das Audit.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
 import {
-  decideClaim,
-  resolveTenant,
+  claimErrorInfo,
+  claimRpcArgs,
+  classifyClaimError,
   isUuid,
-  emailMismatch,
-  type AuditClaimRow,
+  parseClaimRpcResult,
 } from '../_shared/audit-claim.ts';
 
 Deno.serve(async (req) => {
@@ -34,7 +33,7 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return jsonError(401, 'UNAUTHORIZED', 'Authorization header required');
+    return jsonError(401, 'UNAUTHENTICATED', claimErrorInfo('UNAUTHENTICATED').message);
   }
 
   let body: { audit_id?: unknown; tenant_id?: unknown };
@@ -51,99 +50,44 @@ Deno.serve(async (req) => {
   const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
   const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  // Identität über den Nutzer-Token, nicht über den Request-Body: Wer
-  // uebernimmt, wird bewiesen, nicht behauptet.
+  // Identität und Berechtigung über den Nutzer-Token: `auth.uid()` in der
+  // RPC ist dieser Nutzer, nicht die Service-Role.
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
-  const userId = userResp.user.id;
-  const userEmail = userResp.user.email ?? null;
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-
-  try {
-    const { data: memberships, error: memErr } = await admin
-      .from('memberships').select('tenant_id').eq('user_id', userId);
-    if (memErr) throw memErr;
-
-    const resolved = resolveTenant(memberships ?? [], requestedTenant);
-    if (!resolved.ok) {
-      const message = resolved.code === 'TENANT_AMBIGUOUS'
-        ? 'Mehrere Arbeitsbereiche — tenant_id angeben.'
-        : resolved.code === 'TENANT_NOT_FOUND'
-          ? 'Kein Arbeitsbereich für diesen Zugang gefunden.'
-          : 'Kein Mitglied dieses Arbeitsbereichs.';
-      return jsonError(resolved.code === 'FORBIDDEN' ? 403 : 400, resolved.code, message);
-    }
-    const tenantId = resolved.tenantId;
-
-    const { data: row, error: rowErr } = await admin
-      .from('gdpr_audits')
-      .select('id, tenant_id, user_id, claimed_at, email, domain, score, severity')
-      .eq('id', auditId).maybeSingle();
-    if (rowErr) throw rowErr;
-    if (!row) return jsonError(404, 'NOT_FOUND', 'Audit nicht gefunden.');
-
-    const decision = decideClaim(row as AuditClaimRow, tenantId);
-
-    if (decision.status === 'taken') {
-      return jsonError(409, 'ALREADY_CLAIMED', 'Dieses Audit gehört bereits zu einem anderen Arbeitsbereich.');
-    }
-    if (decision.status === 'already_mine') {
-      // Dieselbe Antwort wie beim ersten Mal — ein erneuter Aufruf ist kein
-      // Fehler, sondern ein Reload.
-      return jsonResponse({
-        ok: true, already_claimed: true,
-        audit_id: row.id, tenant_id: row.tenant_id, domain: row.domain,
-        score: row.score, severity: row.severity,
-      });
-    }
-
-    const nowIso = new Date().toISOString();
-
-    // Atomar: `.is('claimed_at', null)` entscheidet das Rennen in der
-    // Datenbank. Zwei gleichzeitige Übernahmen — derselbe Link in zwei
-    // Tabs — koennen so nicht beide gewinnen.
-    const { data: claimed, error: updErr } = await admin
-      .from('gdpr_audits')
-      .update({ tenant_id: tenantId, user_id: userId, claimed_at: nowIso })
-      .eq('id', auditId).is('claimed_at', null)
-      .select('id, tenant_id, domain, score, severity').maybeSingle();
-    if (updErr) throw updErr;
-
-    if (!claimed) {
-      // Verloren: zwischen Lesen und Schreiben hat jemand anders uebernommen.
-      const { data: winner } = await admin
-        .from('gdpr_audits').select('tenant_id').eq('id', auditId).maybeSingle();
-      if (winner?.tenant_id === tenantId) {
-        return jsonResponse({ ok: true, already_claimed: true, audit_id: auditId, tenant_id: tenantId });
-      }
-      return jsonError(409, 'ALREADY_CLAIMED', 'Dieses Audit gehört bereits zu einem anderen Arbeitsbereich.');
-    }
-
-    const mismatch = emailMismatch(row.email ?? null, userEmail);
-
-    await audit(admin, {
-      tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail,
-      action: 'audit.claim', target_type: 'gdpr_audit', target_id: auditId,
-      payload: {
-        domain: row.domain,
-        // Beobachtet, nicht blockiert: Scan-Adresse und Konto-Adresse
-        // duerfen abweichen (Optimizer-Scan erhebt gar keine).
-        email_mismatch: mismatch,
-      },
-    });
-
-    return jsonResponse({
-      ok: true, already_claimed: false,
-      audit_id: claimed.id, tenant_id: claimed.tenant_id,
-      domain: claimed.domain, score: claimed.score, severity: claimed.severity,
-    });
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'audit_claim_failed', error: (e as Error)?.message }));
-    return jsonError(500, 'INTERNAL', 'claim failed');
+  if (userErr || !userResp.user) {
+    return jsonError(401, 'UNAUTHENTICATED', claimErrorInfo('UNAUTHENTICATED').message);
   }
+
+  const { data, error } = await userClient.rpc('claim_gdpr_audit', claimRpcArgs(auditId, requestedTenant));
+  if (error) {
+    const info = claimErrorInfo(classifyClaimError(error));
+    if (info.code === 'INTERNAL') {
+      console.error(JSON.stringify({ level: 'error', scope: 'audit_claim_failed', error: error.message }));
+    }
+    return jsonError(info.httpStatus, info.code, info.message, corsHeaders, { retryable: info.retryable });
+  }
+
+  const result = parseClaimRpcResult(data);
+  if (!result) {
+    console.error(JSON.stringify({ level: 'error', scope: 'audit_claim_unexpected_result' }));
+    const info = claimErrorInfo('INTERNAL');
+    return jsonError(info.httpStatus, info.code, info.message, corsHeaders, { retryable: info.retryable });
+  }
+
+  if (!result.already_claimed) {
+    // Prüfpfad nach der Übernahme. Schlägt er fehl, bleibt die Übernahme
+    // bestehen — `audit()` meldet das selbst und wirft nicht.
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+    await audit(admin, {
+      tenant_id: result.tenant_id, actor_user_id: userResp.user.id,
+      actor_email: userResp.user.email ?? null,
+      action: 'audit.claim', target_type: 'gdpr_audit', target_id: result.audit_id,
+      payload: { domain: result.domain, tenant_selected_explicitly: requestedTenant !== null },
+    });
+  }
+
+  return jsonResponse(result);
 });

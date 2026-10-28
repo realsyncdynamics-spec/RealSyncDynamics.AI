@@ -42,6 +42,17 @@ export interface VoiceConsent {
   withdrawnAt: string | null;
 }
 
+/**
+ * Tool-Rechte einer laufenden Session (SEC-01). Serverseitig aus dem
+ * Bot-Snapshot (voice_bot_configs.offered_tools ∩ Contract) aufgelöst,
+ * nie aus dem Request-Body. null → jede Tool-Anfrage wird abgelehnt.
+ */
+export interface VoiceToolGrant {
+  agentId: string;
+  botId: string;
+  tools: readonly VoiceToolName[];
+}
+
 export interface VoiceSessionState {
   sessionId: string;
   tenantId: string;
@@ -49,6 +60,7 @@ export interface VoiceSessionState {
   turnCount: number;
   toolCount: number;
   rateLimit: { maxTurns: number; maxTools: number };
+  grant: VoiceToolGrant | null;
 }
 
 export interface VoiceToolRequest {

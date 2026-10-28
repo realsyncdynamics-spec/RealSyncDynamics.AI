@@ -139,6 +139,57 @@ weiter (Bearer `AGENT_RUNTIME_API_TOKEN`, Base-URL
 - Unbekannte Tools, kaputte Args, Timeout/Fehler von `/voice-tool` →
   fail-closed `denied` an das Modell.
 - Kein `voice_channels` / `bot_agents`.
+- **Policy-Zustand nur serverseitig (SEC-05).** Der `/voice-tool`-Body trägt
+  nur `tenantId`, `agentId`, `sessionId`, `requestId`, `tool`, `args`
+  (`session`/`consent` älterer Clients werden verworfen). Die Runtime meldet
+  jeden Call vor dem Aufruf an; `/voice-tool` entscheidet nur über so einen
+  angemeldeten Call und liest Zähler, Rate-Limit und Tool-Rechte aus der
+  laufenden Session, den Kill-Switch vor jeder Entscheidung frisch aus
+  `voice_sessions.kill_switch` (Lesefehler → aktiv). Alles andere →
+  `403 voice_session_unknown`.
+- **Einwilligung gilt als nicht nachgewiesen**, bis es einen echten
+  Einwilligungsnachweis gibt: Die beim Start behauptete Einwilligung zählt
+  nicht, Tool-Calls scheitern an der Consent-Prüfung (`verifyConsent` in den
+  Runtime-Optionen, Default lehnt ab).
+- **Einzelinstanz (SEC-06).** Runtime und `/voice-tool` müssen im selben
+  Prozess laufen; mehrere Instanzen oder ein Neustart führen zu
+  `voice_session_unknown` (fail-closed, keine Offenlegung).
+- **Eine Anmeldung, eine Entscheidung (SEC-05 Härtung).** Der erste Abruf
+  des Policy-Kontexts verbraucht die Anmeldung; jeder weitere Request mit
+  derselben `requestId` (Replay, paralleler Doppel-Request) →
+  `voice_session_unknown`. Jede `callId` gilt einmal pro Session, auch nach
+  Abschluss (`duplicate_call_id`). Die Entscheidung muss genau die
+  `requestId` des Calls tragen (`request_mismatch`).
+- **Args gebunden.** Die Anmeldung speichert die Args in kanonischer Form
+  (JSON-Roundtrip, Keys auf jeder Ebene sortiert, Array-Reihenfolge zählt).
+  `/voice-tool` vergleicht die Body-Args damit *vor* dem Verbrauch: andere
+  Args bei gleicher `sessionId`/`requestId`/`tool` → `voice_session_unknown`,
+  keine Policy-Entscheidung, die Anmeldung bleibt für den echten Call offen.
+  Nicht serialisierbare Args → `invalid_arguments` ohne Anmeldung.
+- **Abbruch.** `closeSession` / `session.closed` markieren die Session
+  synchron vor dem ersten Await. Danach: keine Anmeldung, kein Kontext,
+  kein Gateway-Aufruf (`session_closed`).
+- **Zweite Prüfung vor dem Executor.** Das Tool-Gateway liest den
+  Kill-Switch unmittelbar vor dem Executor erneut (`voice_sessions`:
+  `kill_switch`, `status` killed/ended/failed; Lesefehler → blockiert) und
+  prüft danach synchron, ob die Session noch läuft. Zwischen dieser Prüfung
+  und dem Executor-Start liegt kein Await. Blockiert → `session_inactive`,
+  `voice_executions` failed, Evidence `tool.result` `blocked`. Ohne Guard
+  führt das Gateway nicht aus (`execution_guard_missing`).
+- **Restrisiko, schreibende Tools gesperrt.** Atomar ist das nur gegenüber
+  einem Abbruch in diesem Prozess. Ein Kill-Switch, den ein anderer Prozess
+  (z. B. Staff-UI) *nach* dem Re-Read setzt, kann eine bereits startende
+  Ausführung nicht mehr verhindern (Fenster ≈ ein Store-Roundtrip). Ein
+  atomarer Schutz bräuchte eine Prüfung in derselben DB-Transaktion wie der
+  Schreibzugriff (RPC/Trigger → Migration, nicht Teil dieses PRs). Bis das
+  geklärt ist, sind schreibende Tools (`VOICE_WRITE_TOOLS`:
+  `schedule_appointment`) im Gateway gesperrt (`write_tool_disabled`).
+  `allowWriteTools` gibt es nur als Code-Option für Tests, bewusst ohne
+  Env-Schalter. Abgesichert durch `test/write-tools-guard.test.ts`
+  (AST-Prüfung über `src/`: keine Freigabe außerhalb von `tool-gateway.ts`,
+  `createVoiceToolGateway` nur mit `store`/`env`, kein Executor-Aufruf am
+  Gateway vorbei) und den Regressionstest „Produktionspfad ohne injiziertes
+  Gateway“ in `test/session-persistence.test.ts`.
 
 ### Tool-Gateway (PR 4)
 
@@ -154,7 +205,8 @@ Ausführung, Verifikation und Evidenz-Hash-Kette (`voice_evidence` /
 - `verified: true` nur nach Re-Read des Datensatzes (`id` + `tenant_id`,
   `external_ref` = diese ID); sonst `mismatch` / `failed`.
 - Echter Executor: `schedule_appointment` → `bot_appointments` (via Store).
-  Fehlt `customer_name` → `invalid_arguments`, keine Ausführung.
+  Fehlt `customer_name` → `invalid_arguments`, keine Ausführung. Derzeit
+  gesperrt (`write_tool_disabled`, siehe Restrisiko SEC-05 oben).
 - Bewusst `not_configured`: `lookup_kb`, `create_ticket`, `handoff_human`,
   `export_transcript` (kein Backend im Repo).
 - Keine neuen Tool-Namen `read_availability` / `book_appointment` (kein
@@ -326,7 +378,9 @@ curl -X POST http://localhost:8787/run-agent \
     "requestId":"req_xyz"
   }'
 
-# Voice: lookup_kb → ALLOW
+# Voice: direkter Aufruf ohne von der Runtime angemeldeten Call
+# → 403 voice_session_unknown (SEC-05). Entscheidungen gibt es nur für
+# tool.calls aus einer laufenden Session dieses Prozesses.
 curl -X POST http://localhost:8787/voice-tool \
   -H "Authorization: Bearer $AGENT_RUNTIME_API_TOKEN" \
   -H "Content-Type: application/json" \
@@ -336,9 +390,7 @@ curl -X POST http://localhost:8787/voice-tool \
     "sessionId":"sess_1",
     "requestId":"req_voice_1",
     "tool":"lookup_kb",
-    "args":{"query":"öffnungszeiten"},
-    "session":{"killSwitch":false,"turnCount":1,"toolCount":0,"rateLimit":{"maxTurns":20,"maxTools":8}},
-    "consent":{"purposes":["execute_tools","store_evidence"],"withdrawnAt":null}
+    "args":{"query":"öffnungszeiten"}
   }'
 ```
 
@@ -349,8 +401,9 @@ curl -X POST http://localhost:8787/voice-tool \
 | `ALLOW` | 200 | `{ ok: true, reviewRequired: false }` |
 | `REQUIRE_CONFIRMATION` | 200 | `{ ok: true, reviewRequired: true }` |
 | `DENY` | 403 | `{ ok: false, reason: denied_by_channel_policy }` |
+| — (kein angemeldeter Call) | 403 | `{ ok: false, reason: voice_session_unknown }` |
 
-`denied_by_channel_policy` ist additiv in `DenyReason`. `evaluate()`
+`denied_by_channel_policy` und `voice_session_unknown` sind additiv in `DenyReason`. `evaluate()`
 erzeugt ihn nicht.
 
 ## Sicherheit

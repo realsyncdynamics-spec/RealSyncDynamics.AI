@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
-import { claimPendingAudit } from '../../features/audit/pendingAudit';
+import { claimPendingAuditWithStatus, type ClaimOutcome } from '../../features/audit/pendingAudit';
 import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
@@ -55,10 +55,25 @@ export function PostRegisterOnboardingPage() {
   //
   // Schreibpfad: RPC `claim_gdpr_audit` (SECURITY DEFINER) — derselbe wie
   // auf /welcome. Es gibt keine INSERT-/UPDATE-Policy auf `gdpr_audits`.
+  //
+  // Der Ausgang wird angezeigt: Eine gescheiterte Übernahme wird erklärt und,
+  // wo ein späterer Versuch gelingen kann, wiederholbar gemacht — statt den
+  // Nutzer im Glauben zu lassen, sein Bericht liege schon im Arbeitsbereich.
+  const [claimOutcome, setClaimOutcome] = useState<ClaimOutcome | null>(null);
+  const [claimBusy, setClaimBusy] = useState(false);
+  const runClaim = useCallback(async () => {
+    setClaimBusy(true);
+    try {
+      setClaimOutcome(await claimPendingAuditWithStatus(activeTenantId));
+    } finally {
+      setClaimBusy(false);
+    }
+  }, [activeTenantId]);
+
   useEffect(() => {
     if (!user) return;
-    void claimPendingAudit(activeTenantId);
-  }, [user, activeTenantId]);
+    void runClaim();
+  }, [user, runClaim]);
 
   if (!user) {
     navigate('/unified-entry/register');
@@ -147,6 +162,7 @@ export function PostRegisterOnboardingPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
+      <AuditClaimNotice outcome={claimOutcome} busy={claimBusy} onRetry={() => void runClaim()} />
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-titanium-50">{step === 'sector' ? 'Wählen Sie Ihre Branche' : 'Ein paar Fragen'}</h1>
         <p className="text-titanium-300">{step === 'sector' ? 'Damit wir die Plattform optimal an Ihre Bedürfnisse anpassen.' : 'Damit wir die bestmöglichen Empfehlungen machen können.'}</p>
@@ -178,6 +194,47 @@ export function PostRegisterOnboardingPage() {
             <button onClick={handleSubmit} disabled={loading} className="flex-1 px-6 py-2 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 text-white font-medium rounded-lg">{loading ? 'Wird gespeichert...' : 'Kostenloses Konto einrichten'}</button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Ausgang der Berichtsübernahme. Nichts zu übernehmen → nichts anzeigen.
+ * Erfolg nur, wenn die RPC Audit und Arbeitsbereich zurückgegeben hat.
+ */
+export function AuditClaimNotice({
+  outcome,
+  busy,
+  onRetry,
+}: {
+  outcome: ClaimOutcome | null;
+  busy: boolean;
+  onRetry: () => void;
+}) {
+  if (!outcome || outcome.status === 'none') return null;
+
+  if (outcome.status === 'claimed') {
+    const domain = outcome.result.domain;
+    return (
+      <div role="status" className="px-4 py-3 bg-petrol-900/20 border border-petrol-700 rounded-lg text-titanium-200 text-sm">
+        {domain ? `Ihr Bericht für ${domain}` : 'Ihr Bericht'} liegt jetzt in Ihrem Arbeitsbereich.
+      </div>
+    );
+  }
+
+  return (
+    <div role="alert" className="px-4 py-3 bg-red-900/20 border border-red-700 rounded-lg text-red-300 text-sm space-y-2">
+      <p>{outcome.message}</p>
+      {outcome.retryable && (
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={busy}
+          className="px-3 py-1 bg-obsidian-700 hover:bg-obsidian-600 disabled:opacity-50 border border-titanium-600 text-titanium-200 rounded-md"
+        >
+          {busy ? 'Wird übernommen …' : 'Bericht erneut übernehmen'}
+        </button>
       )}
     </div>
   );

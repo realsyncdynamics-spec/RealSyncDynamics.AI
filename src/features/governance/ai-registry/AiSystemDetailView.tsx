@@ -15,7 +15,7 @@
  * Zweck, Verantwortung, Status, Nachweise, Ampel) sind über
  * governance-resources `update_asset` speicherbar (owner/admin).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, FileDown, Lock, Pencil, Save } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -168,7 +168,13 @@ function ClassificationDetail({
   // null = nicht erfasst; bleibt null, bis der Schalter bedient wird (kein stilles „nein“).
   const [art50, setArt50] = useState<boolean | null>(storedArt50);
 
+  // Nur bei echter Änderung des gespeicherten Stands nachziehen (z. B. nach Speichern/Neuladen).
+  // Der Mount-Lauf setzte sonst dieselben Werte erneut und konnte einen frühen Klick überschreiben.
+  const lastStored = useRef({ storedTier, storedAnnex, storedArt50 });
   useEffect(() => {
+    const prev = lastStored.current;
+    if (prev.storedTier === storedTier && prev.storedAnnex === storedAnnex && prev.storedArt50 === storedArt50) return;
+    lastStored.current = { storedTier, storedAnnex, storedArt50 };
     setTier(storedTier);
     setAnnex(storedAnnex);
     setArt50(storedArt50);

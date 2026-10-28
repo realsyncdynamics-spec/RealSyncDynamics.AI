@@ -290,3 +290,57 @@ describe('PR A2 / Migration ist additiv (statisch)', () => {
     expect(sql).not.toMatch(/FUNCTION\s+public\.count_ai_tokens_by_tenant/i);
   });
 });
+
+d('PR A2 / Ergänzung 28.10.: offene Reservierungen und Einmal-Storno (DB)', () => {
+  let ctx: DbCtx | null = null;
+  beforeEach(async () => { ctx = await openDb(); });
+  afterEach(async () => { await closeDb(ctx); ctx = null; });
+
+  it('offene Reservierungen belasten den LLM-Deckel (parallele Aufrufe umgehen ihn nicht)', async () => {
+    const { tenantId } = await createTenantWithMember(ctx!);
+    await setCaps(ctx!, tenantId, 1);
+    const a = await reserve(ctx!, tenantId, 0.6);           // offen, nicht abgerechnet
+    expect(a.decision).toBe('allow');
+    const b = await reserve(ctx!, tenantId, 0.6);           // 0.6 offen + 0.6 > 1
+    expect(b.decision).toBe('throttle');
+    expect(b.reservation_id).toBeNull();
+
+    // Gemessene Abrechnung der offenen Reservierung senkt die Belastung auf den Ist-Wert.
+    await settle(ctx!, a.reservation_id!, 1000, 0.00002);   // 0.02 USD
+    const c = await reserve(ctx!, tenantId, 0.6);
+    expect(c.decision).toBe('allow');
+  });
+
+  it('abgerechnete und geschätzte Zeilen werden nicht doppelt mit der Reservierung gezählt', async () => {
+    const { tenantId } = await createTenantWithMember(ctx!);
+    await setCaps(ctx!, tenantId, 1);
+    const rid = await expiredReservation(ctx!, tenantId, 0.5);
+    await sweep(ctx!);                                      // 0.5 geschätzt, nicht mehr offen
+    const r = await reserve(ctx!, tenantId, 0.4);           // 0.5 + 0.4 ≤ 1
+    expect(r.decision).toBe('allow');
+    await settle(ctx!, rid, 1000, 0.00002);                 // Schätzung → 0.02 gemessen
+    const s = await ctx!.client.query<{ s: string }>(
+      `SELECT sum(amount_usd) s FROM public.tenant_cost_ledger
+        WHERE tenant_id = $1 AND reservation_id = $2`, [tenantId, rid],
+    );
+    expect(Number(s.rows[0]!.s)).toBeCloseTo(0.02, 6);
+  });
+
+  it('eindeutiger Teilindex: ein zweiter Storno derselben Schätzung wird abgelehnt', async () => {
+    const { tenantId } = await createTenantWithMember(ctx!);
+    const rid = await expiredReservation(ctx!, tenantId, 0.5);
+    await sweep(ctx!);
+    await settle(ctx!, rid, 100, 0.000001);
+    const est = await ctx!.client.query<{ id: string }>(
+      `SELECT id::text FROM public.tenant_cost_ledger
+        WHERE reservation_id = $1 AND value_basis = 'geschaetzt'`, [rid],
+    );
+    await expect(ctx!.client.query(
+      `INSERT INTO public.tenant_cost_ledger
+         (tenant_id, cost_kind, units, unit_price_usd, agent_ref, reservation_id,
+          settled, value_basis, corrects_id)
+       VALUES ($1, 'llm_estimate', -1, 0.5, 'a2-test', $2, true, 'korrigiert', $3::bigint)`,
+      [tenantId, rid, est.rows[0]!.id],
+    )).rejects.toThrow(/tenant_cost_ledger_one_reversal_idx/);
+  });
+});

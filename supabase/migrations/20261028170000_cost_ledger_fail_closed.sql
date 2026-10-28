@@ -23,9 +23,17 @@
 --    Summe = gemessener Wert, keine Doppelzählung. Ein zweiter Settle
 --    auf dieselbe Reservierung schlägt weiterhin fehl.
 --
+-- 6. (Ergänzung 28.10., Owner-Entscheid) cost_check_and_reserve zählt auch
+--    noch OFFENE Reservierungen (cost_kind='reservation', settled=false) gegen
+--    den LLM-Deckel. Vorher belasteten sie ihn nicht — parallele Aufrufe
+--    konnten den Deckel umgehen. Unklarer Verbrauch belastet das Budget, bis
+--    er geklärt ist. Budgetwerte bleiben unverändert.
+-- 7. (Ergänzung 28.10.) Höchstens ein Storno je geschätzter Zeile, durch
+--    eindeutigen Teilindex — auch bei parallelem Settle.
+--
 -- Nicht enthalten: Scheduler für den Sweep (es existiert keiner; Einplanung
--- ist eine eigene Entscheidung), Zählung offener Reservierungen im Deckel
--- (A3 zieht die Budgetprüfung auf bot_usage_* um), Stripe, Preise, Entitlements.
+-- ist eine eigene Entscheidung), atomare Sperre im Altledger (A3 zieht die
+-- Budgetprüfung auf bot_usage_* um), Stripe, Preise, Entitlements.
 
 ALTER TABLE public.tenant_cost_ledger
     ADD COLUMN IF NOT EXISTS value_basis TEXT,
@@ -48,6 +56,11 @@ COMMENT ON COLUMN public.tenant_cost_ledger.corrects_id IS
 
 CREATE INDEX IF NOT EXISTS tenant_cost_ledger_corrects_idx
     ON public.tenant_cost_ledger (corrects_id) WHERE corrects_id IS NOT NULL;
+
+-- Höchstens ein Storno je geschätzter Zeile (Pkt. 7).
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_cost_ledger_one_reversal_idx
+    ON public.tenant_cost_ledger (corrects_id)
+    WHERE corrects_id IS NOT NULL AND cost_kind = 'llm_estimate';
 
 -- cost_kind-Whitelist additiv erweitern (Muster 20260608100000).
 ALTER TABLE public.tenant_cost_ledger
@@ -110,13 +123,18 @@ BEGIN
         WHEN 'storage_gb_hour'   THEN v_caps.storage_gb_hours
         ELSE 1e12 END;
 
+    -- Offene Reservierungen zählen für den LLM-Deckel mit (Pkt. 6 oben).
     SELECT COALESCE(SUM(amount_usd), 0) INTO v_used
       FROM public.tenant_cost_ledger
      WHERE tenant_id = p_tenant_id
-       AND cost_kind = ANY(CASE
+       AND (
+            cost_kind = ANY(CASE
               WHEN p_cost_kind IN ('llm_input','llm_output')
                   THEN ARRAY['llm_input','llm_output','llm_estimate']
               ELSE ARRAY[p_cost_kind] END)
+         OR (p_cost_kind IN ('llm_input','llm_output')
+             AND cost_kind = 'reservation' AND settled = false)
+       )
        AND is_simulated = false
        AND occurred_at >= DATE_TRUNC('month', now());
 
@@ -244,14 +262,19 @@ BEGIN
             USING ERRCODE = 'no_data_found';
     END IF;
 
-    -- a) Storno der Schätzung
-    INSERT INTO public.tenant_cost_ledger
-        (tenant_id, cost_kind, units, unit_price_usd,
-         agent_ref, flow_ref, trace_id, causation_event,
-         reservation_id, settled, settled_at, value_basis, corrects_id)
-    VALUES (v_est.tenant_id, 'llm_estimate', -v_est.units, v_est.unit_price_usd,
-            v_est.agent_ref, v_est.flow_ref, v_est.trace_id, v_est.causation_event,
-            p_reservation_id, true, now(), 'korrigiert', v_est.id);
+    -- a) Storno der Schätzung (eindeutiger Teilindex: höchstens einer)
+    BEGIN
+        INSERT INTO public.tenant_cost_ledger
+            (tenant_id, cost_kind, units, unit_price_usd,
+             agent_ref, flow_ref, trace_id, causation_event,
+             reservation_id, settled, settled_at, value_basis, corrects_id)
+        VALUES (v_est.tenant_id, 'llm_estimate', -v_est.units, v_est.unit_price_usd,
+                v_est.agent_ref, v_est.flow_ref, v_est.trace_id, v_est.causation_event,
+                p_reservation_id, true, now(), 'korrigiert', v_est.id);
+    EXCEPTION WHEN unique_violation THEN
+        RAISE EXCEPTION 'reservation % not found or already settled', p_reservation_id
+            USING ERRCODE = 'no_data_found';
+    END;
 
     -- b) gemessener Verbrauch
     INSERT INTO public.tenant_cost_ledger

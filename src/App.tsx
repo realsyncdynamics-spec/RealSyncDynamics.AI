@@ -34,6 +34,7 @@ const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default:
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
+const VoiceAgentStudioPage = lazy(() => import('./pages/voice-agents/VoiceAgentStudioPage').then((m) => ({ default: m.VoiceAgentStudioPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
@@ -553,6 +554,7 @@ function RoutesWithTracking() {
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
+      <Route path="/voice-agents/*" element={<VoiceAgentStudioPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Navigate to="/" replace />} />

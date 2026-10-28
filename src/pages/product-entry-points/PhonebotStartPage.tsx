@@ -34,7 +34,7 @@ export function PhonebotStartPage() {
             </h1>
 
             <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
-              Sprachanrufe annehmen, verstehen und bearbeiten — mit einer intelligenten KI, die Ihre Policies einhält. EU-gehostet, vollständig dokumentiert, DSGVO- und AI-Act-konform.
+              Der geplante Telefon-Assistent soll Kundenanfragen aufnehmen und innerhalb freigegebener Aufgaben bearbeiten. Der vorhandene Bot-Builder ist ein erster Einstieg; die produktive Telefonie ist noch nicht freigeschaltet.
             </p>
 
             <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
@@ -78,13 +78,18 @@ export function PhonebotStartPage() {
               to="/app/bots"
               className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg"
             >
-              Telefon-Assistent einrichten
+              Bestehenden Bot-Builder öffnen
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           <p className="text-center text-xs sm:text-sm text-white/50 font-mono">
-            Kostenlos · EU-gehostet · DSGVO & EU AI Act konform
+            Telefonie in Vorbereitung · Datenschutz und Betrieb vor Aktivierung prüfen
+          </p>
+          <p className="mt-6 text-center text-sm text-white/70">
+            <Link to="/voice-agents" className="underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">
+              Voice Agent Studio kennenlernen · in Entwicklung
+            </Link>
           </p>
         </div>
       </section>

@@ -36,6 +36,7 @@ import {
   type FeatureGroupId,
   type PlanFeatureMatrix,
 } from '@/shared/pricing';
+import { isImplementationLive } from '../product/implementation-status';
 
 // Alles aus der SSoT bleibt über diese Datei erreichbar, damit Oberflächen
 // nicht zwischen zwei Import-Pfaden wählen müssen.
@@ -171,10 +172,23 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     // nicht wiederkehrend. Abo-Oberflächen unterscheiden hierüber, ob ein
     // Tier ein laufendes Abo darstellt.
     recurring: plan.price.monthlyEur > 0,
-    tagline: plan.outcomeHeadline,
+    tagline: isImplementationLive('enterprise-sso')
+      ? plan.outcomeHeadline
+      : plan.outcomeHeadline.replace(/SSO\.$/, 'SSO (Coming Soon).'),
     subline: plan.technicalSubheadline,
-    bullets: flattenFeatures(plan.features),
-    featureGroups: plan.features,
+    bullets: flattenFeatures(plan.features).map((b) =>
+      !isImplementationLive('enterprise-sso') && b === 'Single Sign-On'
+        ? 'Single Sign-On (Coming Soon)'
+        : b,
+    ),
+    featureGroups: {
+      ...plan.features,
+      multi_tenant_reseller: plan.features.multi_tenant_reseller.map((b) =>
+        !isImplementationLive('enterprise-sso') && b === 'Single Sign-On'
+          ? 'Single Sign-On (Coming Soon)'
+          : b,
+      ),
+    },
     badges: isYearly ? [...plan.badges, 'Zwei Monate sparen'] : [...plan.badges],
     highlight: plan.highlight,
     cta: {

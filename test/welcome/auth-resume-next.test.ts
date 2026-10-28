@@ -37,13 +37,14 @@ describe('Welcome — ?next= resume', () => {
     expect(WELCOME).toMatch(/SIGNED_IN[\s\S]*resumeAfterAuth/);
   });
 
-  it('never forces setup-assistant when next is present', () => {
-    expect(WELCOME).toContain("navigate('/setup-assistant'");
-    // setup-assistant navigation must be gated after nextParam early-return
-    const setupIdx = WELCOME.indexOf("navigate('/setup-assistant'");
-    const nextGuardIdx = WELCOME.lastIndexOf('if (nextParam)', setupIdx);
+  it('never forces activation when next is present (WP10 canonical /app/activation)', () => {
+    expect(WELCOME).toContain("navigate('/app/activation'");
+    expect(WELCOME).not.toContain("navigate('/setup-assistant'");
+    // /app/activation navigation must be gated after nextParam early-return
+    const activationIdx = WELCOME.indexOf("navigate('/app/activation'");
+    const nextGuardIdx = WELCOME.lastIndexOf('if (nextParam)', activationIdx);
     expect(nextGuardIdx).toBeGreaterThan(-1);
-    expect(nextGuardIdx).toBeLessThan(setupIdx);
+    expect(nextGuardIdx).toBeLessThan(activationIdx);
   });
 
   it('keeps post-checkout wizard only when session= is set', () => {

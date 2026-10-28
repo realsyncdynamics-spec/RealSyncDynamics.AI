@@ -56,3 +56,17 @@ it('preloads that font file in the document head', () => {
   expect(link?.getAttribute('type')).toBe('font/woff2');
   expect(link?.hasAttribute('crossorigin')).toBe(true);
 });
+
+it('gives Source Serif 4 a metric-adjusted local fallback', () => {
+  const face = css.match(/@font-face\s*\{[^}]*font-family:\s*'Source Serif 4 Fallback'[^}]*\}/)?.[0] ?? '';
+  expect(face).toContain("local('Times New Roman')");
+  expect(face).toMatch(/size-adjust:\s*\d/);
+  expect(face).toMatch(/ascent-override:\s*\d/);
+  expect(face).not.toContain('url(');
+});
+
+it('sets the H1 with that fallback directly after Source Serif 4', () => {
+  mount();
+  const h1 = screen.getByRole('heading', { level: 1 });
+  expect(h1.style.fontFamily).toMatch(/^['"]?Source Serif 4['"]?,\s*['"]?Source Serif 4 Fallback['"]?,/);
+});

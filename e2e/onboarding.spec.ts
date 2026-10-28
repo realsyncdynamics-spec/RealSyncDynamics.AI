@@ -1,19 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für /welcome — der Post-Checkout-Onboarding-Wizard.
+ * E2E für den kanonischen Onboarding-Pfad (WP10 / Masterplan M1):
+ *   Scan (`/audit`) → Registrierung (`/welcome`) → Activation (`/app/activation`) → Dashboard (`/app/dashboard`)
  *
- * Volle Welcome-Flow-Coverage (Email → Magic-Link → API-Key → SDK)
- * braucht einen echten Supabase-Test-Tenant; das ist out of scope für
- * diese Smoke-Spec. Hier prüfen wir das stabile UI-Kontrakt:
- *
- *   - Ohne session-Query-Param: Headline „Willkommen zurück." + Step 1
- *     mit Email-Input für Magic-Link
- *   - Mit session-Query-Param: Headline „Willkommen. Drei Klicks bis zum
- *     Setup." + Drei-Schritte-Indikator (1/2/3) + Step 1 mit Email-Input
- *
- * Catches Regressions wenn der Wizard auf einer Route ohne session-Guard
- * gemounted oder die Step-Komponente entfernt wird.
+ * Prüft außerdem das stabile UI-Kontrakt von `/welcome` (ohne/mit `session=`)
+ * sowie die Umleitung überzähliger Einstiege unter Erhalt der Query-Parameter.
  */
 
 test.describe('/welcome', () => {
@@ -50,5 +42,43 @@ test.describe('/welcome', () => {
     await expect(
       page.locator('input[type="email"]').first(),
     ).toBeVisible();
+  });
+});
+
+test.describe('WP10 — Kanonischer Onboarding-Pfad: Scan → Registrierung → Activation → Dashboard', () => {
+  test('leitet überzählige Einstiege unter Erhalt der Query-Parameter auf den kanonischen Pfad um', async ({
+    page,
+  }) => {
+    await page.goto('/unified-entry/scan?domain=example.de');
+    await expect(page).toHaveURL(/\/audit\?domain=example\.de$/);
+
+    await page.goto('/flow/start-scan?utm_source=e2e');
+    await expect(page).toHaveURL(/\/audit\?utm_source=e2e$/);
+
+    await page.goto('/unified-entry/register?plan=starter');
+    await expect(page).toHaveURL(/\/welcome\?plan=starter$/);
+  });
+
+  test('Scan (/audit) → Registrierung (/welcome) → Activation (/app/activation) → Dashboard (/app/dashboard)', async ({
+    page,
+  }) => {
+    // 1. Scan-Einstieg (/audit)
+    await page.goto('/audit?domain=example.de');
+    await expect(page).toHaveURL(/\/audit\?domain=example\.de$/);
+
+    // 2. Registrierung (/welcome mit ?next=/app/activation)
+    await page.goto('/welcome?next=%2Fapp%2Factivation');
+    await expect(
+      page.getByRole('heading', { name: /Willkommen zurück\./i }),
+    ).toBeVisible();
+    await expect(page.locator('input[type="email"]').first()).toBeVisible();
+
+    // 3. Activation (/app/activation) und Dashboard (/app/dashboard) führen ohne Session
+    //    über AppGate deterministisch über /welcome?next=... zurück auf den Zielpfad.
+    await page.goto('/setup-assistant?domain=example.de');
+    await expect(page).toHaveURL(/\/welcome\?next=%2Fapp%2Factivation%3Fdomain%3Dexample\.de$/);
+
+    await page.goto('/app/dashboard');
+    await expect(page).toHaveURL(/\/welcome\?next=%2Fapp%2Fdashboard$/);
   });
 });

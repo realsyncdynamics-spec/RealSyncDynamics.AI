@@ -165,8 +165,12 @@ export type VoiceReservation =
   | { ok: false; reason: BudgetDenyReason | 'no_plan_minutes' | 'unavailable' };
 
 /**
- * Planlimit in Sekunden aus tenant_entitlements: -1 → null (unbegrenzt laut
- * Plan), fehlend → 0 (kein Kontingent, fail-closed).
+ * Planlimit in Sekunden aus tenant_entitlements: -1 → null (laut Plan ohne
+ * eigene Obergrenze), fehlend → 0 (kein Kontingent, fail-closed).
+ *
+ * null heißt NICHT unbegrenzt: bot_voice_call_reserve rechnet dann allein mit
+ * bot_usage_limits.voice_seconds_monthly und lehnt ohne Mandantenwert mit
+ * 'invalid_config' ab (Option A, Owner-Entscheidung 28.10.2026).
  */
 export function planSecondsFromEntitlement(minutes: number | null | undefined): number | null {
   if (minutes === -1) return null;

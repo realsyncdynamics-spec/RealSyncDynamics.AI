@@ -39,18 +39,24 @@ async function asServer<T>(ctx: DbCtx, fn: () => Promise<T>): Promise<T> {
   return ctx.withClaims(SERVER, fn);
 }
 
+// Großes Mandantenkontingent: In diesen Tests begrenzt das Planlimit
+// (p_plan_seconds_monthly). Wo das Mandantenkontingent selbst geprüft wird,
+// setzt der Test voiceMonthly ausdrücklich.
+const LARGE_VOICE_SECONDS = 10_000_000;
+
 async function setLimits(ctx: DbCtx, tenantId: string, l: {
-  aiDaily: number; aiMonthly: number; concurrent: number; maxCall: number;
+  aiDaily: number; aiMonthly: number; concurrent: number; maxCall: number; voiceMonthly?: number;
 }): Promise<void> {
   await ctx.client.query(
     `INSERT INTO public.bot_usage_limits
-       (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds)
-     VALUES ($1,$2,$3,$4,$5)
+       (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
+     VALUES ($1,$2,$3,$4,$5,$6)
      ON CONFLICT (tenant_id) DO UPDATE SET ai_usd_daily = EXCLUDED.ai_usd_daily,
        ai_usd_monthly = EXCLUDED.ai_usd_monthly,
        voice_max_concurrent_calls = EXCLUDED.voice_max_concurrent_calls,
-       voice_max_call_seconds = EXCLUDED.voice_max_call_seconds`,
-    [tenantId, l.aiDaily, l.aiMonthly, l.concurrent, l.maxCall],
+       voice_max_call_seconds = EXCLUDED.voice_max_call_seconds,
+       voice_seconds_monthly = EXCLUDED.voice_seconds_monthly`,
+    [tenantId, l.aiDaily, l.aiMonthly, l.concurrent, l.maxCall, l.voiceMonthly ?? LARGE_VOICE_SECONDS],
   );
 }
 
@@ -86,6 +92,7 @@ d('bot_usage — KI-Budget (K6, K11)', () => {
     tenantA = (await createTenantWithMember(ctx)).tenantId;
     tenantB = (await createTenantWithMember(ctx)).tenantId;
     await setLimits(ctx, tenantA, { aiDaily: 1, aiMonthly: 2, concurrent: 2, maxCall: 300 });
+    await setLimits(ctx, tenantB, { aiDaily: 5, aiMonthly: 50, concurrent: 2, maxCall: 600 });
   });
   afterEach(async () => { await closeDb(ctx); });
 
@@ -107,7 +114,7 @@ d('bot_usage — KI-Budget (K6, K11)', () => {
     const denied = await reserveAi(ctx, tenantA, 'c', 0.01);
     expect(denied.decision).toBe('deny');
     expect(denied.reason).toBe('daily_budget');
-    // Mandant B ohne Limits-Zeile → Defaults (5 USD/Tag).
+    // Mandant B mit eigener Konfiguration ist vom Stopp bei A nicht betroffen.
     expect((await reserveAi(ctx, tenantB, 'c', 0.5)).decision).toBe('allow');
   });
 
@@ -329,6 +336,7 @@ d('bot_usage — Rechte und Mandantentrennung (K10)', () => {
     a = await createTenantWithMember(ctx);
     b = await createTenantWithMember(ctx);
     for (const t of [a.tenantId, b.tenantId]) {
+      await setLimits(ctx, t, { aiDaily: 1, aiMonthly: 2, concurrent: 2, maxCall: 300 });
       const r = await reserveAi(ctx, t, `iso-${t}`, 0.1);
       await asServer(ctx, () => ctx.client.query(
         `SELECT * FROM public.bot_usage_settle($1, 'measured', 0.1, NULL, '{}')`, [r.reservation_id],
@@ -394,8 +402,8 @@ d('bot_usage — parallele Anfragen am Budgetrand (K7, K1)', () => {
     const workers: Client[] = [];
     try {
       await admin.query(
-        `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds)
-         VALUES ($1, 1.00, 1.00, 3, 120)`, [tid],
+        `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly, voice_max_concurrent_calls, voice_max_call_seconds, voice_seconds_monthly)
+         VALUES ($1, 1.00, 1.00, 3, 120, 100000)`, [tid],
       );
       for (let i = 0; i < 40; i++) {
         const c = new Client({ connectionString: url });

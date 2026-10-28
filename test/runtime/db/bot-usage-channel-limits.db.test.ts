@@ -6,7 +6,9 @@
  * auf 20261027120000_bot_usage_budget_hardening.sql.
  *
  * Geprüft
- *   G4-1  Fehlende Konfiguration → keine unbegrenzte Nutzung (Fallback zentral)
+ *   G4-1  Fehlende Konfiguration → keine kostenpflichtige Nutzung (Option A,
+ *         Owner-Entscheidung 28.10.2026); Telefon-Kontingent = min(Plan,
+ *         Mandant), Plan „unbegrenzt“ nie unbegrenzt
  *   G4-2  Fehlender/unbekannter Kanal → Ablehnung
  *   G4-3  Kanalgrenze erreicht → nur dieser Kanal blockiert (Tag und Monat)
  *   G4-4  Mandantengrenze erreicht → alle Kanäle blockiert
@@ -83,30 +85,86 @@ d('Gate 4 — Fallback und Kanalpflicht', () => {
   beforeEach(async () => { ctx = await openDb(); tenant = (await createTenantWithMember(ctx)).tenantId; });
   afterEach(async () => { await closeDb(ctx); });
 
-  it('G4-1: ohne Limits-Zeile gilt die zentrale vorläufige Obergrenze — nie unbegrenzt', async () => {
-    const fb = (await ctx.client.query<{ d: string; m: string }>(
-      `SELECT public.bot_usage_fallback('ai_usd_daily') AS d, public.bot_usage_fallback('ai_usd_monthly') AS m`,
-    )).rows[0]!;
-    const daily = Number(fb.d);
-    expect(daily).toBeGreaterThan(0);
-    expect((await reserve(ctx, tenant, 'fb-1', daily - 0.01, 'chat')).decision).toBe('allow');
-    const denied = await reserve(ctx, tenant, 'fb-2', 0.02, 'chat');
-    expect(denied.decision).toBe('deny');
-    expect(denied.reason).toBe('daily_budget');
+  async function voice(ref: string, planSeconds: number | null): Promise<ReserveRow & { reserved_amount: string | null }> {
+    return asServer(ctx, async () => (await ctx.client.query(
+      `SELECT decision, reservation_id, reserved_amount, reason FROM public.bot_voice_call_reserve($1, NULL, 'twilio', $2, $3)`,
+      [tenant, ref, planSeconds],
+    )).rows[0]!);
+  }
+
+  it('G4-1: ohne Limits-Zeile keine kostenpflichtige Nutzung (Option A) — KI und Telefon, auch bei Plan „unbegrenzt“', async () => {
+    const ai = await reserve(ctx, tenant, 'fb-1', 0.01, 'chat');
+    expect(ai.decision).toBe('deny');
+    expect(ai.reason).toBe('invalid_config');
+    for (const [ref, plan] of [['CAfb-unl', null], ['CAfb-plan', 6000]] as const) {
+      const v = await voice(ref, plan);
+      expect(v.decision, ref).toBe('deny');
+      expect(v.reason, ref).toBe('invalid_config');
+    }
+    const n = await ctx.client.query(`SELECT count(*)::int AS n FROM public.bot_usage_reservations WHERE tenant_id = $1`, [tenant]);
+    expect(n.rows[0].n).toBe(0);
   });
 
-  it('G4-1: Tabellen-Defaults lesen dieselbe zentrale Quelle; unbekannter Schlüssel → 0', async () => {
+  it('G4-1: Tabellen-Defaults lesen dieselbe zentrale Quelle; Kostenbudgets und Kontingent = 0; unbekannter Schlüssel → 0', async () => {
     await ctx.client.query(`INSERT INTO public.bot_usage_limits (tenant_id) VALUES ($1)`, [tenant]);
-    const row = (await ctx.client.query<{ ok: boolean; unknown: string }>(
+    const row = (await ctx.client.query<{ ok: boolean; zero: boolean; unknown: string }>(
       `SELECT (l.ai_usd_daily = public.bot_usage_fallback('ai_usd_daily')
            AND l.ai_usd_monthly = public.bot_usage_fallback('ai_usd_monthly')
+           AND l.voice_seconds_monthly = public.bot_usage_fallback('voice_seconds_monthly')
            AND l.voice_max_concurrent_calls = public.bot_usage_fallback('voice_max_concurrent_calls')
            AND l.voice_max_call_seconds = public.bot_usage_fallback('voice_max_call_seconds')) AS ok,
+              (l.ai_usd_daily = 0 AND l.ai_usd_monthly = 0 AND l.voice_seconds_monthly = 0) AS zero,
               public.bot_usage_fallback('does_not_exist') AS unknown
          FROM public.bot_usage_limits l WHERE l.tenant_id = $1`, [tenant],
     )).rows[0]!;
     expect(row.ok).toBe(true);
+    expect(row.zero).toBe(true);
     expect(Number(row.unknown)).toBe(0);
+    // Zeile nur mit Vorgabewerten erlaubt ebenfalls nichts.
+    expect((await reserve(ctx, tenant, 'fb-def', 0.01, 'chat')).decision).toBe('deny');
+    const v = await voice('CAfb-def', null);
+    expect(v.decision).toBe('deny');
+    expect(v.reason).toBe('invalid_config');
+  });
+
+  it('G4-1: Plan „unbegrenzt“ (Enterprise, -1 → NULL) gilt nur bis zum Mandantenkontingent', async () => {
+    await ctx.client.query(
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
+       VALUES ($1, 600, 5, 900)`, [tenant],
+    );
+    const first = await voice('CAent-1', null);
+    expect(first.decision).toBe('allow');
+    expect(Number(first.reserved_amount)).toBe(600);
+    // Rest 300 s: nur noch bis zum Mandantenkontingent reserviert.
+    const second = await voice('CAent-2', null);
+    expect(second.decision).toBe('allow');
+    expect(Number(second.reserved_amount)).toBe(300);
+    const third = await voice('CAent-3', null);
+    expect(third.decision).toBe('deny');
+    expect(third.reason).toBe('monthly_budget');
+  });
+
+  it('G4-1: Kontingent = kleinerer Wert aus Plan und Mandant', async () => {
+    await ctx.client.query(
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly)
+       VALUES ($1, 600, 5, 120)`, [tenant],
+    );
+    // Plan erlaubt 6000 s, Mandant 120 s → 120 s.
+    const r = await voice('CAmin-1', 6000);
+    expect(r.decision).toBe('allow');
+    expect(Number(r.reserved_amount)).toBe(120);
+    expect((await voice('CAmin-2', 6000)).reason).toBe('monthly_budget');
+    // Plan kleiner als Mandant → Plan gilt.
+    await ctx.client.query(`UPDATE public.bot_usage_limits SET voice_seconds_monthly = 100000 WHERE tenant_id = $1`, [tenant]);
+    const p = await voice('CAmin-3', 180);
+    expect(p.decision).toBe('allow');
+    expect(Number(p.reserved_amount)).toBe(60);
+  });
+
+  it('G4-1: negatives Mandantenkontingent wird abgewiesen', async () => {
+    expect(await sqlState(ctx.client.query(
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_seconds_monthly) VALUES ($1, -1)`, [tenant],
+    ))).toBe('23514');
   });
 
   it('G4-2: fehlender oder unbekannter Kanal wird abgelehnt', async () => {
@@ -304,7 +362,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: Anruf über (reservierte Dauer − Vorlauf) wird gefunden, jüngerer nicht', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls) VALUES ($1, 300, 5)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_max_concurrent_calls, voice_seconds_monthly) VALUES ($1, 300, 5, 100000)`, [tenant],
     );
     const old = await call('CAold', 250);   // 300 − 60 = 240 ≤ 250 → überfällig
     await call('CAyoung', 100);
@@ -318,7 +376,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: Protokollierung ändert weder Status, Betrag noch Ledger; erledigt → nicht mehr gelistet', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds) VALUES ($1, 120)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES ($1, 120, 100000)`, [tenant],
     );
     const id = await call('CAx', 500);
     const before = (await ctx.client.query(`SELECT status, reserved_amount FROM public.bot_usage_reservations WHERE id = $1`, [id])).rows[0];
@@ -337,7 +395,7 @@ d('Gate 1 — überfällige Anrufe ohne weiteren Gesprächsschritt', () => {
 
   it('G1: nach max. Versuchen nicht mehr gelistet; Budget bleibt reserviert (Sweep rechnet später ab)', async () => {
     await ctx.client.query(
-      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds) VALUES ($1, 120)`, [tenant],
+      `INSERT INTO public.bot_usage_limits (tenant_id, voice_max_call_seconds, voice_seconds_monthly) VALUES ($1, 120, 100000)`, [tenant],
     );
     const id = await call('CAy', 500);
     for (let i = 0; i < 3; i++) {

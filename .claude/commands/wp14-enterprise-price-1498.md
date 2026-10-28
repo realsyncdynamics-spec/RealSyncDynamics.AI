@@ -4,7 +4,8 @@ description: WP14 Enterprise 1.498 €/Monat netto — SSoT, Stripe, Checkout, E
 
 # WP14 — Enterprise-Preis 1.498 €/Monat netto abgleichen
 
-**Status:** Arbeitsauftrag, noch nicht gestartet. Erstellt am 26.10.2026 auf `main@5c3e718`.
+**Status:** Arbeitsauftrag, noch nicht gestartet. Erstellt am 26.10.2026, Befunde am 28.10.2026 gegen
+`main@d08abd6` nachgeprüft.
 **Voraussetzung:** Owner-Entscheidung E-P1 ist schriftlich bestätigt
 (`docs/strategy/E-P1_ENTERPRISE_PREIS_NACHTRAG.md`, Abschnitt „Zu bestätigen“).
 **Branches:** keine neuen. Gearbeitet wird auf den Heads von #1995
@@ -19,10 +20,10 @@ auf dem Branch von #1995.
 
 **Keine Doppelarbeit.** Die Umsetzung von 1.498 € existiert bereits:
 
-| PR | Inhalt | Stand 26.10.2026 |
+| PR | Inhalt | Stand 28.10.2026 |
 |---|---|---|
-| #1995 | SSoT 1.498 €, Self-Service-Checkout mit Preisprüfung (`price-match.ts`), endliche Kontingente (3 Migrationen), Anzeige, Runbook und SQL-Vorlage für die Stripe-Price-ID | Ready for review. CI auf `c0c7ae8` grün. Konflikt mit `main` in `src/i18n/pricingCopy.ts`. 6 Commits hinter `main`. |
-| #1999 | Gestapelt auf #1995: Beta nur für Starter/Growth/Agency, restliche „Enterprise auf Anfrage“-Texte, 404-Middleware | Draft. Pflicht-CI übersprungen. Konflikte in `src/i18n/pricingCopy.ts` und `src/product/implementation-status.ts`. |
+| #1995 | SSoT 1.498 €, Self-Service-Checkout mit Preisprüfung (`price-match.ts`), endliche Kontingente (3 Migrationen), Anzeige, Runbook und SQL-Vorlage für die Stripe-Price-ID | Ready for review. CI auf `c0c7ae8` grün. Konflikt mit `main` in `src/i18n/pricingCopy.ts`. |
+| #1999 | Gestapelt auf #1995: Beta nur für Starter/Growth/Agency, restliche „Enterprise auf Anfrage“-Texte, 404-Middleware | Ready for review. `main` (`a0ad27b`) ist in `4ddadff` eingebracht. Gegen den aktuellen `main` gibt es keinen Konflikt. |
 
 WP14 setzt nichts neu um. Es bringt diese zwei PRs auf einen geprüften, widerspruchsfreien Stand
 und belegt den Abgleich. Ein dritter Implementierungs-PR für denselben Preis wird nicht angelegt.
@@ -36,12 +37,13 @@ Verboten ohne separates GO:
 
 ## Auftrag
 
-### 1. Stand einholen (nur lesen)
-- `origin/main` in beide Branches mergen und Konflikte lösen. Beim Stand vom 26.10. betrifft das
-  `src/i18n/pricingCopy.ts` und `src/product/implementation-status.ts`.
-- Seit der Basis der PRs auf `main` neu: #2003 (Enterprise-SSO als Coming Soon, `shared/pricing.ts`),
-  #2004 (Landing v6 ist wieder Startseite, `useLandingV6.ts`), #2005. Die SSO-Kennzeichnung aus #2003 muss
-  im Ergebnis erhalten bleiben.
+### 1. Stand einholen und `main` einbringen
+- `origin/main` in beide Branches mergen und Konflikte lösen. Beim Stand vom 28.10. betrifft das nur
+  `src/i18n/pricingCopy.ts` in #1995.
+- Seit der Basis von #1995 auf `main` neu, unter anderem: #2003 (Enterprise-SSO als Coming Soon,
+  `shared/pricing.ts`), #2004/#2008/#2042 (Landing v6 als Startseite, `useLandingV6.ts`), #2044/#2049
+  (KI-Budget, Eurodeckel, Tarifprofile) und #2048 (Parität zwischen Claims und Registry). Die
+  SSO-Kennzeichnung aus #2003 und die Budgetlogik aus #2044/#2049 müssen im Ergebnis erhalten bleiben.
 - Generierte Dateien werden nur über Skripte neu erzeugt: `npm run sync:pricing` und
   `npm run sync:spa-routes`. Nicht von Hand bearbeiten.
 
@@ -57,12 +59,13 @@ Für jede Zeile wird der Ist-Wert mit Fundstelle belegt. Erfüllt ist eine Zeile
 | Katalog-DB | Genau eine `products`-Zeile für Enterprise (`default_for_plan_key = 'enterprise'`) mit der neuen Price-ID. Die `id` bleibt in place erhalten, damit die `product_entitlements` erhalten bleiben. | Vorlage `docs/runbooks/enterprise-stripe-1498.migration.sql.template` (aus der Vorlage wird erst mit verifizierter ID und neuem Timestamp eine Migration) |
 | Checkout | Enterprise ist nicht mehr durch `ENTERPRISE_SELF_SERVICE_BLOCKED` gesperrt. Jede Abweichung zwischen Stripe und SSoT führt zu `PRICE_MISMATCH` bzw. `PRODUCT_NOT_CONFIGURED`. Keine Testphase. Kein Jahres-Checkout. | `supabase/functions/stripe-checkout/index.ts`, `test/stripe-checkout-price-match.test.ts`, `test/contracts/stripe-price-guard.test.ts` |
 | Entitlements | Endliche Kontingente statt `-1`, darunter KI-Kosten 250 €/Monat. Laut #1995 gibt es live 0 Enterprise-Abos; das wird vor dem Merge erneut gezählt. | Migrationen `20261024090000`, `20261024090100`, `20261025001345`, `PLAN_ENTITLEMENTS`, `npm run check:limits` |
+| Bot-Kostenbremse | Ein Enterprise-Mandant, der selbst bucht, hat nutzbare und endliche Werte für Minuten und Euro. **Befund seit #2049:** Enterprise hat bewusst kein Tarifprofil („nur ausdrücklich konfigurierte Werte“). `bot_usage_seed_missing_limits` legt dafür eine Nullzeile an, und `bot_usage_apply_plan_profile` bricht für Enterprise ab. Ohne einen festgelegten Schritt bleiben die Bot-Kanäle für einen Self-Service-Kunden gesperrt. Wer die Werte wann setzt, ist Owner-Frage E-P1h. Bis zur Antwort nichts ändern. | Migration `20261028100000_bot_usage_plan_caps.sql`. Die KI-Kosten von 250 € aus #1995 sind ein Entitlement und kein Eurodeckel nach #2049. Beide Werte nebeneinander belegen. |
 | Öffentliche Anzeige | Überall „1.498 €/Monat netto“. Kein „Preis auf Anfrage“ und kein „1.249“ mehr. „Enterprise anfragen“ bleibt als Kontaktweg. | `index.html` (JSON-LD), `public/llms.txt`, `src/config/seo.ts`, `src/i18n/pricingCopy.ts`, `src/i18n/handoff.ts`, `useLandingV6.ts`, `PricingPage.tsx`, `/contact-sales`, `/enterprise`, FAQ. Ratsche: `npm run check:offer-prices` |
-| Steuerhinweis | Neben „netto“ steht der Regelbesteuerungs-Hinweis. `PRICING_TAX_MODE` ist auf `main` bereits `'EU_STANDARD'`. | `shared/pricing.ts` (`pricingTaxNote`). **Befund auf `main`:** `src/i18n/handoff.ts` `pricingFoot` nennt noch § 19 UStG (Kleinunternehmer). #1999 fasst `pricingFoot` an. Prüfen, ob dort auch der Steuertext korrigiert wird. Sonst als Restpunkt melden. |
+| Steuerhinweis | Neben „netto“ steht der Regelbesteuerungs-Hinweis. `PRICING_TAX_MODE` ist auf `main` bereits `'EU_STANDARD'`. | `shared/pricing.ts` (`pricingTaxNote`). `/pricing` und Landing v6 nutzen ihn bereits. Nicht sichtbar, aber veraltet: `src/i18n/handoff.ts` `pricingFoot` (DE/EN) nennt § 19 UStG und „Enterprise auf Anfrage“. Der Text erscheint nur bei `taxMode === 'EXEMPT'` (`PricingPage.tsx`). #1999 fasst `pricingFoot` an. Prüfen, ob dort auch der Steuertext korrigiert wird, sonst als Restpunkt melden. |
 
 ### 3. Migrations-Timestamps prüfen
 Die drei Migrationen aus #1995 tragen Zeitstempel vom 24./25.10. Auf `main` ist die letzte
-`20261026081109`. Gilt die Regel aus der Merge-Checkliste („Timestamp nach der letzten Datei auf `main`“),
+`20261028100000` (Stand 28.10.). Gilt die Regel aus der Merge-Checkliste („Timestamp nach der letzten Datei auf `main`“),
 werden sie mit `npm run migrate:rename` angehoben, ohne den Inhalt zu ändern. Danach
 `check:migration-collisions` ausführen. `check-migration-drift` meldet Migrationen, die 7 Tage nach dem Merge
 noch nicht auf Prod angewendet sind. Deshalb wird das Anwenden zusammen mit dem Merge geplant.
@@ -89,8 +92,9 @@ läuft. Übersprungene Prüfungen gelten nicht als bestanden.
 4. #1999 auf den neuen `main` bringen → CI grün → Merge-GO → Deploy-GO.
 5. Erst danach in einem eigenen Docs-PR mit Owner-Freigabe: Den festen Preis in
    `.github/PR_TRIAGE_POLICY.md` (heute „1.249 € ist die höchste Stufe“, § 19-UStG-Hinweis), in `AGENTS.md`
-   (Zeile 47) und in `docs/claude/BETA_V5_WORKPLAN.md` (Zeile 76) angleichen, außerdem den CI-Kommentar in
-   `.github/workflows/ci.yml` (Zeile 79). WP14 ändert diese Dateien nicht.
+   (Absatz zur Triage-Policy) und in `docs/claude/BETA_V5_WORKPLAN.md` (`/pricing`-Zeile) angleichen,
+   außerdem den Kommentar zur Angebots-Sicherheit in `.github/workflows/ci.yml` und die Abschnitte
+   §5/§8 in `docs/strategy/MASTERPLAN_2026-2027.md`. WP14 ändert diese Dateien nicht.
 
 ## Abnahme
 - Die Abgleichmatrix ist vollständig. Jede Zeile hat eine Fundstelle und keine offene Abweichung.

@@ -358,10 +358,34 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      // PR A2 — fail-closed: Ein technischer Reservierungsfehler (DB-Fehler,
+      // Timeout, leeres RPC-Ergebnis) führt zu keinem Anbieteraufruf.
+      // Ausnahme (Auftrag 0b Pkt. 2): Der Aufruf ist bereits über bot_usage_*
+      // reserviert (Bot-/Workspace-Kanal). Dann blockiert der Altpfad nicht
+      // zusätzlich, protokolliert aber.
+      if (opts.budget && botBudgetReservation) {
+        console.warn(JSON.stringify({
+          level: 'warn',
+          scope: 'cost_cap_reserve_failed_bot_budget_held',
+          tool_key: tool.key,
+          tenant_id: tenantId,
+          message: (e as Error).message,
+        }));
+      } else {
+        console.error(JSON.stringify({
+          level: 'error',
+          scope: 'cost_cap_reserve_failed_blocked',
+          tool_key: tool.key,
+          tenant_id: tenantId,
+          message: (e as Error).message,
+        }));
+        throw new AiInvokeError(
+          'budget reservation failed — provider not called',
+          'BUDGET_RESERVATION_FAILED',
+          503,
+          { tool_key: tool.key },
+        );
+      }
     }
   }
 

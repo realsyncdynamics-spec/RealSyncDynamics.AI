@@ -34,7 +34,7 @@ export function PhonebotStartPage() {
             </h1>
 
             <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
-              Sprachanrufe annehmen, verstehen und bearbeiten — mit einer intelligenten KI, die Ihre Policies einhält. EU-gehostet, vollständig dokumentiert, DSGVO- und AI-Act-konform.
+              Sprachanrufe annehmen, verstehen und bearbeiten — mit einer KI, die Ihre Policies unterstützt (Geplant / Coming Soon). EU-gehostet, mit dokumentiertem Prüfpfad für DSGVO- und AI-Act-Kontrollen.
             </p>
 
             <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
@@ -84,7 +84,7 @@ export function PhonebotStartPage() {
           </div>
 
           <p className="text-center text-xs sm:text-sm text-white/50 font-mono">
-            Kostenlos · EU-gehostet · DSGVO & EU AI Act konform
+            Geplant (Coming Soon) · EU-gehostet · unterstützt DSGVO- & EU-AI-Act-Kontrollen
           </p>
         </div>
       </section>

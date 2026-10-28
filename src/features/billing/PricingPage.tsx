@@ -244,11 +244,11 @@ export function PricingPage() {
             {[
               {
                 q: 'Brauche ich einen Account um zu starten?',
-                a: 'Für Free Audit nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für alle kostenpflichtigen Tiers legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
+                a: 'Für Free Audit nicht — Sie geben Domain und E-Mail für den Bericht ein und bekommen sofort den Risk-Score. Für alle kostenpflichtigen Tiers legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
               },
               {
                 q: 'Was ist Consent-Timing-Analyse?',
-                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Pre-Consent-Tracking ist die häufigste Schwachstelle im DSGVO-Setup und der Anker, an dem unsere Runtime-Drift-Detection täglich aufsetzt.',
+                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Pre-Consent-Tracking ist die häufigste Schwachstelle im DSGVO-Setup und der Anker, an dem das geplante tägliche Drift-Monitoring (Coming Soon) aufsetzt.',
               },
               {
                 q: 'Was ist "Auto-Remediation" genau?',
@@ -256,7 +256,7 @@ export function PricingPage() {
               },
               {
                 q: 'Was unterscheidet Agency von Growth?',
-                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit täglichem Monitoring und Risk Register. Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO und vertraglichem SLA läuft über Enterprise (/contact-sales).',
+                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit Risk Register und geplantem täglichem Monitoring (Coming Soon). Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO (Coming Soon) und vertraglichem SLA läuft über Enterprise (/contact-sales).',
               },
               {
                 q: 'Was bedeutet "Priority Support" im Agency-Paket?',
@@ -264,7 +264,7 @@ export function PricingPage() {
               },
               {
                 q: 'Wie viele Kundenseiten kann ich im Agency-Paket verwalten?',
-                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt.',
+                a: '10 Kundenseiten (Domains) sind enthalten; weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Governance-Dashboard (dauerhafte Domain-Überwachung: Coming Soon), White-Label-Report und API-Endpunkt.',
               },
               {
                 q: 'Gibt es einen AVV (Auftragsverarbeitungsvertrag)?',
@@ -276,7 +276,7 @@ export function PricingPage() {
               },
               {
                 q: 'Was ist der Enterprise Evidence Vault?',
-                a: 'Ein unveränderliches Archiv aller Scans, Findings, Fix-Bestätigungen und Dokumente — mit kryptografischen Zeitstempeln. Wenn Sie einer Aufsichtsbehörde nachweisen müssen, dass Sie zu einem bestimmten Datum compliant waren, liefert der Vault den Beweis.',
+                a: 'Ein manipulationserkennbares Archiv (SHA-256-Hash-Kette) aller Scans, Findings, Fix-Bestätigungen und Dokumente — mit Zeitstempeln und Integritätsprüfung. Wenn Sie einer Aufsichtsbehörde nachweisen müssen, was zu einem bestimmten Datum geprüft und dokumentiert wurde, liefert der Vault den Prüfpfad.',
               },
             ].map((item) => (
               <details

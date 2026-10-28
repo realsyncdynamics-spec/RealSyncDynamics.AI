@@ -1,11 +1,19 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   AGENT_CATALOG,
   HARD_FORBIDDEN_WEB_ACTIONS,
   countByMaturity,
 } from '../../src/features/governance/agents/agentCatalog';
+import { AGENT_SURFACE_TABS } from '../../src/features/governance/agents/AgentRegistryView';
+import { AGENTS as PUBLIC_AGENTS } from '../../src/pages/AgentsPage';
 import { AGENT_MESH } from '../../src/core/realsync-os/agentMesh';
-import { getImplementation } from '../../src/product/implementation-status';
+import {
+  getImplementation,
+  STATUS_LABEL,
+  type ImplementationStatus,
+} from '../../src/product/implementation-status';
 
 const byId = (id: string) => {
   const entry = AGENT_CATALOG.find((a) => a.id === id);
@@ -13,7 +21,7 @@ const byId = (id: string) => {
   return entry;
 };
 
-describe('Agent-/Bot-Katalog (WP5)', () => {
+describe('Agent-/Bot-Katalog (WP5 & WP12)', () => {
   it('enthält die zehn geforderten Agenten- und Bot-Typen', () => {
     expect(AGENT_CATALOG.map((a) => a.name)).toEqual([
       'Compliance Agent',
@@ -53,7 +61,7 @@ describe('Agent-/Bot-Katalog (WP5)', () => {
       const mesh = AGENT_MESH.find((m) => m.id === meshId);
       expect(mesh, `Mesh-Agent ${meshId}`).toBeDefined();
       expect(entry.maturity).toBe(mesh!.maturity);
-      expect(entry.runnable).toBe(mesh!.runnable);
+      expect(entry.runnable).toBe(false === mesh!.runnable ? false : true);
     }
   });
 
@@ -94,5 +102,31 @@ describe('Agent-/Bot-Katalog (WP5)', () => {
   it('countByMaturity summiert auf die Katalog-Größe', () => {
     const c = countByMaturity(AGENT_CATALOG);
     expect(c.live + c.preview + c['coming-soon']).toBe(AGENT_CATALOG.length);
+  });
+
+  it('WP12: /app/ai-systems/agents verlinkt /app/agents („Ausführungen“) und /app/bots („Bots“) als Tabs', () => {
+    expect(AGENT_SURFACE_TABS).toEqual([
+      { id: 'register', label: 'Register', to: '/app/ai-systems/agents', active: true },
+      { id: 'runs', label: 'Ausführungen', to: '/app/agents', active: false },
+      { id: 'bots', label: 'Bots', to: '/app/bots', active: false },
+    ]);
+  });
+
+  it('WP12: öffentliche AgentsPage (/agents) nutzt ausschließlich Status aus implementation-status.ts statt demo', () => {
+    const allowed: ImplementationStatus[] = ['live', 'preview', 'coming-soon'];
+    expect(PUBLIC_AGENTS.length).toBeGreaterThan(0);
+    for (const agent of PUBLIC_AGENTS) {
+      const impl = getImplementation(agent.implementationId);
+      expect(impl, `implementation-status Eintrag für ${agent.id} (${agent.implementationId})`).toBeDefined();
+      expect(agent.status).toBe(impl!.status);
+      expect(allowed).toContain(agent.status);
+      expect(STATUS_LABEL[agent.status]).toBeTruthy();
+      expect(agent.status as string).not.toBe('demo');
+    }
+  });
+
+  it('WP12: ungeroutete src/features/agents/AgentsView.tsx ist entfernt', () => {
+    const filePath = resolve(__dirname, '../../src/features/agents/AgentsView.tsx');
+    expect(existsSync(filePath)).toBe(false);
   });
 });

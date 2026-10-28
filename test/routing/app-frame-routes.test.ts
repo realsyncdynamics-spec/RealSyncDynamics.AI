@@ -15,8 +15,6 @@ const element = (path: string) => {
 
 const FRAMED: Record<string, string> = {
   '/app/settings/integrations/telegram': '<AppGate><GovernanceBrowserShell><TelegramIntegrationPage /></GovernanceBrowserShell></AppGate>',
-  '/app/mein-geschaeft': '<AppGate><GovernanceBrowserShell><SmbDashboardView /></GovernanceBrowserShell></AppGate>',
-  '/app/intelligence': '<AppGate><GovernanceBrowserShell><ProtectedRoute><DashboardView /></ProtectedRoute></GovernanceBrowserShell></AppGate>',
   '/app/risk': '<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>',
   '/app/assistant': '<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>',
   '/app/governance/frameworks': '<AppGate><GovernanceBrowserShell><ComplianceFrameworkSelector /></GovernanceBrowserShell></AppGate>',

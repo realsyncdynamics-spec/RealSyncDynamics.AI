@@ -6,7 +6,6 @@ export { RegisterPage } from './pages/RegisterPage';
 export { PostRegisterOnboardingPage } from './pages/PostRegisterOnboardingPage';
 export { SuccessPage } from './pages/SuccessPage';
 export { TrialTimer } from './components/TrialTimer';
-export { MOCK_DASHBOARD_DATA } from './mock-data';
 export { PathChoicePage } from './pages/PathChoicePage';
 export {
   TRACK_PARAM,

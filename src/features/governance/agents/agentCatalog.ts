@@ -220,3 +220,8 @@ export function countByMaturity(
   for (const e of entries) counts[e.maturity] += 1;
   return counts;
 }
+
+/** Anker der Register-Karte (`/app/ai-systems/agents#agent-<id>`), z. B. für die Seitenleiste. */
+export function agentAnchor(id: string): string {
+  return `agent-${id}`;
+}

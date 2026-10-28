@@ -66,7 +66,7 @@ const LAYERS: Layer[] = [
     id: 'edge',
     label: 'Supabase Edge Functions',
     sub: 'Deno · Bearer-JWT-Auth · Tenant-Scope',
-    region: 'eu-central-1 (Frankfurt)',
+    region: 'Global verteilt (Ausführung nahe dem Aufrufer)',
     controls: [
       'JWT wird auf jeder Function-Call validiert',
       'Tenant-ID aus Token gecheckt gegen Memberships-Table',
@@ -106,12 +106,12 @@ const LAYERS: Layer[] = [
   {
     id: 'ai-cloud',
     label: 'KI-Cloud-Pfad (Default)',
-    sub: 'EU-region-pinned APIs · DPA + SCCs',
-    region: 'EU (Anbieter-spezifisch)',
+    sub: 'Anbieter-APIs · DPA + SCCs',
+    region: 'USA (mit EU-DPA + SCCs)',
     controls: [
-      'Anthropic EU-Tenant — Claude-Modelle',
-      'OpenAI EU-Tenant — GPT-Modelle',
-      'Google Vertex eu-central — Gemini',
+      'Anthropic API — Claude-Modelle (Standard)',
+      'OpenAI API — GPT-Modelle (optional)',
+      'Google Gemini API — Gemini (optional)',
       'Drittland-Übermittlung: SCCs nach Art. 46 DSGVO + DPA',
       'User kann via Toggle auf EU-local-Modus umschalten',
     ],
@@ -120,11 +120,11 @@ const LAYERS: Layer[] = [
   {
     id: 'ai-local',
     label: 'KI-EU-local-Pfad (Opt-In)',
-    sub: 'Ollama auf VPS · Llama / Mistral · keine Drittland-Berührung',
+    sub: 'Ollama auf VPS · gemma3 / qwen2.5 · keine Drittland-Berührung',
     region: 'Frankfurt (DE) Hostinger-VPS',
     controls: [
-      'Llama 3.x / Mistral lokal auf Frankfurt-VPS gehostet',
-      'Kein API-Call zu Anthropic/OpenAI/Google in diesem Modus',
+      'Open-Weight-Modelle (gemma3, qwen2.5) lokal auf Frankfurt-VPS gehostet',
+      'Kein API-Call zu Anthropic/OpenAI/Google in diesem Modus — ohne lokales Modell bricht der Aufruf ab',
       'Tenant-Override: Workspace-Owner kann für alle Mitglieder erzwingen',
       'Performance: 2–8 Sek pro Inferenz vs. 0.5–2 Sek Cloud',
     ],

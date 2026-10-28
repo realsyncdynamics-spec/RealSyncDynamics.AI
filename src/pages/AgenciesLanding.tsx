@@ -192,7 +192,7 @@ function Onboarding() {
 
 function TrustBlock() {
   const items = [
-    { value: 'EU-only', label: 'Hostinger Frankfurt + Supabase EU' },
+    { value: 'EU-DB',   label: 'Datenbank in Frankfurt (Supabase)' },
     { value: 'Audit',   label: 'Jeder AI-Call dokumentiert' },
     { value: 'Open',    label: 'Sub-Prozessoren-Liste public' },
     { value: 'GDPR',    label: 'Art. 15 + 17 als Selfservice' },

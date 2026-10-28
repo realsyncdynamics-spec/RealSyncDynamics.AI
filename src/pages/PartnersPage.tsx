@@ -132,7 +132,7 @@ export function PartnersPage() {
             <Feature
               icon={<MapPin className="h-5 w-5 text-emerald-300" />}
               title="EU-Hosting Frankfurt"
-              body="Postgres + Auth + Edge Functions in Supabase eu-central-1. Optional Hostinger-VPS mit Ollama für strict-EU-lokal."
+              body="Postgres + Auth in Supabase eu-central-1. Optional Hostinger-VPS in Deutschland mit Ollama für strict-EU-lokal."
             />
             <Feature
               icon={<ShieldCheck className="h-5 w-5 text-emerald-300" />}

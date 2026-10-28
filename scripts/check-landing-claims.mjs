@@ -45,6 +45,12 @@ const NON_LIVE = extractNonLiveItems(registrySrc);
 const SCOPE_DIRS = [
   join(root, 'src/pages'),
   join(root, 'src/components/landing'),
+  join(root, 'src/config'),
+  join(root, 'src/i18n'),
+];
+
+const EXTRA_FILES = [
+  join(root, 'src/features/billing/PricingPage.tsx'),
 ];
 
 function walk(dir) {
@@ -58,13 +64,16 @@ function walk(dir) {
   return out;
 }
 
-const files = SCOPE_DIRS.flatMap((d) => {
-  try {
-    return walk(d);
-  } catch {
-    return [];
-  }
-});
+const files = [
+  ...SCOPE_DIRS.flatMap((d) => {
+    try {
+      return walk(d);
+    } catch {
+      return [];
+    }
+  }),
+  ...EXTRA_FILES,
+];
 
 let failed = false;
 

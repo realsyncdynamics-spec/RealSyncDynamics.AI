@@ -122,7 +122,7 @@ jobs:
   #
   # Bei Drafts bleibt er uebersprungen, wie bisher der ganze `build`-Job.
   build:
-    needs: [gates, unit, spa]
+    needs: [gates, unit, spa, landing-v5]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     steps:
@@ -131,17 +131,35 @@ jobs:
           GATES: ${{ needs.gates.result }}
           UNIT: ${{ needs.unit.result }}
           SPA: ${{ needs.spa.result }}
+          LANDING_V5: ${{ needs.landing-v5.result }}
         run: |
           set -euo pipefail
-          echo "gates=$GATES unit=$UNIT spa=$SPA"
+          echo "gates=$GATES unit=$UNIT spa=$SPA landing-v5=$LANDING_V5"
           rot=0
-          for teil in "gates=$GATES" "unit=$UNIT" "spa=$SPA"; do
+          for teil in "gates=$GATES" "unit=$UNIT" "spa=$SPA" "landing-v5=$LANDING_V5"; do
             case "$teil" in
               *=success) ;;
               *) echo "::error::Teil-Job nicht erfolgreich: $teil"; rot=1 ;;
             esac
           done
           exit "$rot"
+
+  landing-v5:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Landing v5/v6 tests
+        run: npx vitest run test/landing --reporter=default
+      - name: Landing claims validation
+        run: npm run check:landing-claims
+      - name: Typecheck (for completeness)
+        run: npm run lint
 
   db:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
@@ -308,7 +326,7 @@ jobs:
           ALTER DEFAULT PRIVILEGES IN SCHEMA public
             GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated, service_role;
           CREATE SCHEMA IF NOT EXISTS auth;
-          CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
+          CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE, email_confirmed_at TIMESTAMPTZ, raw_user_meta_data JSONB, created_at TIMESTAMPTZ DEFAULT now());
           -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht konstant
           -- antworten. Der vorherige Stub lieferte hart NULL::uuid. Damit waere
           -- is_tenant_member() immer false, jede RLS-Policy haette immer

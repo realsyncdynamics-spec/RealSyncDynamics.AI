@@ -19,7 +19,7 @@ import { FREE_ACCOUNT_HEADLINE, growthTrialOfferLabel, starterFromPriceLabel } f
 const FREE_SCOPE = [
   'Domain-Scan mit Governance Score 0–100',
   'Top-Risiken mit Paragraphenbezug',
-  'Audit Center und kompakter PDF-Bericht',
+  'Audit Center und druckfertiger Bericht (HTML / Druck-PDF)',
 ];
 
 export function FreePlanPanel() {

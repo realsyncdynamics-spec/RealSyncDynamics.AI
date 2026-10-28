@@ -39,10 +39,12 @@ const FILTERS: readonly { id: Filter; label: string }[] = [
 
 export function AgentRegistryInner() {
   const [filter, setFilter] = useState<Filter>('all');
-  const { hash } = useLocation();
+  const { hash, key: navigationKey } = useLocation();
 
   // Sprung aus der Seitenleiste (#agent-<id>): Filter zurücksetzen, damit die
   // Karte sichtbar ist, und dorthin scrollen. Der Router scrollt nicht selbst.
+  // `navigationKey` statt nur `hash`: Ein erneuter Klick auf denselben Eintrag
+  // (gleicher Anker, inzwischen weggefiltert) muss die Karte wieder zeigen.
   useEffect(() => {
     if (!hash.startsWith('#agent-')) return;
     setFilter('all');
@@ -50,7 +52,7 @@ export function AgentRegistryInner() {
       document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [hash]);
+  }, [hash, navigationKey]);
 
   const agents = AGENT_CATALOG;
   const filtered = useMemo(

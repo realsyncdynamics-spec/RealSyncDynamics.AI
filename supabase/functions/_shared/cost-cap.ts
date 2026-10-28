@@ -15,8 +15,11 @@
 //       the reservation was already settled or swept.
 //
 // Cancellation of an unreached reservation is intentionally NOT a hot
-// path here — cost_sweep_expired_reservations clears them after 5min,
-// which is well within the latency budget of any single LLM call.
+// path here. Offene Reservierungen zählen gegen den Deckel; nach Ablauf
+// verbucht cost_sweep_expired_reservations sie zum reservierten Höchstbetrag
+// als 'geschaetzt' (Kostenart llm_estimated, nie Stripe-Metering). Ein späteres
+// Settle ersetzt die Schätzung durch Korrektureinträge (PR A2,
+// 20261028170000_cost_ledger_fail_closed.sql).
 
 type AdminClient = {
   rpc(

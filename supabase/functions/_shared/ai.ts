@@ -358,10 +358,47 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      // PR A2 — fail-closed: Scheitert die Reservierung technisch (DB-Fehler,
+      // Timeout, leeres Ergebnis), ist der Kostendeckel nicht geprüft. Dann
+      // wird kein Anbieter aufgerufen.
+      //
+      // Ausnahme: Der Aufruf ist bereits über bot_usage_* reserviert
+      // (Bot-/Workspace-Kanal, opts.budget mit Reservierung). Dort deckelt
+      // das Bot-Budget atomar; der Altpfad blockiert nicht zusätzlich,
+      // protokolliert aber.
+      const reason = (e as Error)?.message ?? String(e);
+      if (opts.budget && botBudgetReservation) {
+        console.warn(JSON.stringify({
+          level: 'warn', scope: 'cost_cap_reserve_failed_bot_budget_covers',
+          tool_key: tool.key, tenant_id: tenantId, message: reason,
+        }));
+      } else {
+        console.error(JSON.stringify({
+          level: 'error', scope: 'cost_cap_reserve_failed_blocked',
+          tool_key: tool.key, tenant_id: tenantId, message: reason,
+        }));
+        await insertErrorRun(admin, {
+          tenant_id: tenantId,
+          tool_id: tool.id,
+          tool_key: tool.key,
+          user_id: userId,
+          duration_ms: 0,
+          status: 'error',
+          error_code: 'BUDGET_RESERVATION_FAILED',
+          error_message: 'cost-cap reservation failed before provider call',
+          metadata: {
+            ...(opts.metadata ?? {}),
+            residency,
+            provider: effectiveProvider,
+            model_id: effectiveModelId,
+          },
+        }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
+        throw new AiInvokeError(
+          'AI budget could not be reserved; request not sent. Please retry later.',
+          'BUDGET_RESERVATION_FAILED',
+          503,
+        );
+      }
     }
   }
 
@@ -445,8 +482,10 @@ export async function runAiTool(
           unitPriceUsd: costUsd / totalTokens,
         });
       } catch (e) {
-        // Settlement failure leaves the reservation to expire after
-        // 5min via cost_sweep_expired_reservations. Log and proceed.
+        // Settlement failure leaves the reservation open. Offen zählt sie
+        // weiter gegen den Kostendeckel; cost_sweep_expired_reservations
+        // verbucht sie nach Ablauf zum Höchstbetrag als 'geschaetzt' (PR A2).
+        // Log and proceed.
         console.error('cost-cap settle failed', (e as Error).message);
       }
     }

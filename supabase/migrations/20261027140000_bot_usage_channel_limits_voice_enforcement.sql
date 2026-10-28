@@ -9,15 +9,19 @@
 --   * ein pg_cron-Job (bot-voice-enforcer, jede Minute)
 -- Keine Preis-, Stripe- oder Entitlement-Zeile wird verändert.
 --
--- ⚠️ BUDGETWERTE UNBESCHLOSSEN — MERGE-BLOCKER
--- bot_usage_fallback() liefert die vorläufigen Sicherheitsobergrenzen
--- (5 USD/Tag, 50 USD/Monat, 2 parallele Anrufe, 600 s je Anruf). Sie sind
--- kein Preis, kein Kontingent und kein Kundenversprechen. Sie stehen in der Vorgängermigration an
--- GENAU EINER Stelle; Tabellen-Defaults und Reservierungsfunktionen lesen
--- sie von dort. Die Werte bleiben bis zur Entscheidung des Owners
--- unverändert (Option A: ohne Konfiguration keine kostenpflichtige Nutzung;
--- Option B: vorläufige Sicherheitsobergrenze). Fehlende oder ungültige
--- Konfiguration führt nie zu unbegrenzter Nutzung.
+-- BUDGETWERTE: Owner-Entscheidung vom 28.10.2026 (Blocker 1) — Option A.
+-- Ohne Mandantenzeile in bot_usage_limits gibt es keine kostenpflichtige
+-- Nutzung: KI-Reservierung und Telefon werden mit 'invalid_config'
+-- abgelehnt. bot_usage_fallback() (Vorgängermigration, GENAU EINE Stelle)
+-- liefert für Kostenbudgets und Telefonkontingent 0; nur die technischen
+-- Schutzwerte je Anruf (2 parallele Anrufe, 600 s) bleiben positiv.
+-- Fehlende oder ungültige Konfiguration führt nie zu Nutzung, schon gar
+-- nicht zu unbegrenzter.
+--
+-- Telefonkontingent je Monat = kleinerer Wert aus Plan-Entitlement und
+-- bot_usage_limits.voice_seconds_monthly. Plan „unbegrenzt“ (-1, z. B.
+-- Enterprise) bedeutet damit nie unbegrenzt: Es gilt allein der
+-- ausdrücklich konfigurierte Mandantenwert.
 --
 -- Kanalregeln (KI-Budget, Ressource ai_usd)
 --   * Jede Reservierung trägt einen Kanal: chat | whatsapp | voice | workspace.
@@ -37,7 +41,7 @@
 BEGIN;
 
 -- ============================================================
--- 1. Zentraler Fallback (vorläufig, unbeschlossen)
+-- 1. Zentraler Fallback (Option A, fail-closed)
 -- ============================================================
 -- Bereits in 20261027120000 definiert; alle Defaults lesen dort.
 
@@ -67,7 +71,7 @@ CREATE POLICY "bot_usage_channel_limits tenant-read" ON public.bot_usage_channel
   FOR SELECT USING (public.is_tenant_member(tenant_id));
 
 COMMENT ON TABLE public.bot_usage_channel_limits IS
-  'Kanalgrenzen und geschützte Reserven für das KI-Budget der Bot-Kanäle. Werte unbeschlossen; keine Preise, keine Entitlements. Änderung nur per service_role.';
+  'Kanalgrenzen und geschützte Reserven für das KI-Budget der Bot-Kanäle. Werte je Mandant per service_role; keine Preise, keine Entitlements. Änderung nur per service_role.';
 
 -- Summe der Reserven darf die Mandantengrenze nicht übersteigen.
 CREATE OR REPLACE FUNCTION public.bot_usage_config_valid(p_tenant_id uuid)
@@ -261,8 +265,9 @@ BEGIN
   SELECT l.ai_usd_daily, l.ai_usd_monthly INTO v_daily, v_monthly
     FROM public.bot_usage_limits l WHERE l.tenant_id = p_tenant_id;
   IF NOT FOUND THEN
-    v_daily   := public.bot_usage_fallback('ai_usd_daily');
-    v_monthly := public.bot_usage_fallback('ai_usd_monthly');
+    -- Option A: ohne ausdrückliche Konfiguration keine kostenpflichtige Nutzung.
+    RETURN QUERY SELECT 'deny'::text, NULL::uuid, NULL::numeric, 'invalid_config'::text, NULL::numeric, NULL::numeric;
+    RETURN;
   END IF;
 
   IF NOT public.bot_usage_config_valid(p_tenant_id) THEN
@@ -325,7 +330,8 @@ END;
 $$;
 
 -- ============================================================
--- 6. Telefon-Reservierung: Fallback zentral (ersetzt PR-A-Fassung)
+-- 6. Telefon-Reservierung: fail-closed, Kontingent = min(Plan, Mandant)
+--    (ersetzt PR-A-Fassung)
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.bot_voice_call_reserve(
   p_tenant_id             uuid,
@@ -349,6 +355,8 @@ AS $$
 DECLARE
   v_max_call   integer;
   v_concurrent integer;
+  v_tenant_cap integer;
+  v_cap        numeric;
   v_amount     numeric;
   v_remaining  numeric;
   v_existing   public.bot_usage_reservations%ROWTYPE;
@@ -367,27 +375,32 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT l.voice_max_call_seconds, l.voice_max_concurrent_calls INTO v_max_call, v_concurrent
+  SELECT l.voice_max_call_seconds, l.voice_max_concurrent_calls, l.voice_seconds_monthly
+    INTO v_max_call, v_concurrent, v_tenant_cap
     FROM public.bot_usage_limits l WHERE l.tenant_id = p_tenant_id;
-  IF NOT FOUND THEN
-    v_max_call   := public.bot_usage_fallback('voice_max_call_seconds')::integer;
-    v_concurrent := public.bot_usage_fallback('voice_max_concurrent_calls')::integer;
+  -- Option A: ohne Mandantenzeile oder ohne Kontingent kein Anruf. Das gilt
+  -- auch bei Plan „unbegrenzt“ (p_plan_seconds_monthly IS NULL).
+  IF NOT FOUND OR v_tenant_cap IS NULL OR v_tenant_cap <= 0 THEN
+    RETURN QUERY SELECT 'deny'::text, NULL::uuid, NULL::numeric, 'invalid_config'::text, NULL::numeric, NULL::numeric;
+    RETURN;
   END IF;
 
-  v_amount := v_max_call;
-  IF p_plan_seconds_monthly IS NOT NULL THEN
-    v_remaining := p_plan_seconds_monthly
-                 - public.bot_usage_used(p_tenant_id, 'voice_seconds', date_trunc('month', now()));
-    v_amount := least(v_amount, floor(v_remaining));
-    IF v_amount < 60 THEN
-      RETURN QUERY SELECT 'deny'::text, NULL::uuid, NULL::numeric, 'monthly_budget'::text, NULL::numeric, NULL::numeric;
-      RETURN;
-    END IF;
+  -- Es gilt der kleinere Wert aus Plan und Mandantenkonfiguration.
+  v_cap := CASE WHEN p_plan_seconds_monthly IS NULL THEN v_tenant_cap
+                ELSE least(p_plan_seconds_monthly, v_tenant_cap) END;
+
+  -- Vorab-Schätzung; die verbindliche Prüfung läuft unter Lock in
+  -- bot_usage_reserve. Ein Rest unter 60 Sekunden wird nicht angebrochen.
+  v_remaining := v_cap - public.bot_usage_used(p_tenant_id, 'voice_seconds', date_trunc('month', now()));
+  v_amount := least(v_max_call, floor(v_remaining));
+  IF v_amount < 60 THEN
+    RETURN QUERY SELECT 'deny'::text, NULL::uuid, NULL::numeric, 'monthly_budget'::text, NULL::numeric, NULL::numeric;
+    RETURN;
   END IF;
 
   RETURN QUERY SELECT * FROM public.bot_usage_reserve(
     p_tenant_id, p_bot_id, 'voice_seconds', p_provider, p_call_ref, v_amount,
-    v_amount::integer + 900, NULL, p_plan_seconds_monthly, v_concurrent,
+    v_amount::integer + 900, NULL, v_cap, v_concurrent,
     coalesce(p_metadata, '{}'::jsonb) || jsonb_build_object('channel', 'voice'));
 END;
 $$;

@@ -32,18 +32,24 @@
 
 BEGIN;
 
--- Einzige Quelle: vorläufige Sicherheitsobergrenzen, UNBESCHLOSSEN.
+-- Einzige Quelle der Vorgabewerte. Owner-Entscheidung vom 28.10.2026
+-- (Blocker 1, Option A): Ohne ausdrückliche Mandantenkonfiguration gibt es
+-- KEINE kostenpflichtige Nutzung. Kostenbudgets und Telefonkontingent fallen
+-- deshalb auf 0, nicht auf eine vorläufige Obergrenze.
 CREATE OR REPLACE FUNCTION public.bot_usage_fallback(p_key text)
 RETURNS numeric
 LANGUAGE sql
 IMMUTABLE
 SET search_path = public
 AS $$
-  -- VORLÄUFIGE SICHERHEITSOBERGRENZE – UNBESCHLOSSEN (Merge-Blocker PR #2044).
   -- Unbekannter Schlüssel → 0: lieber nichts erlauben als unbegrenzt.
   SELECT CASE p_key
-    WHEN 'ai_usd_daily'               THEN 5::numeric
-    WHEN 'ai_usd_monthly'             THEN 50::numeric
+    -- Kostenbudgets: fail-closed (Option A). Werte nur per Mandantenzeile.
+    WHEN 'ai_usd_daily'               THEN 0::numeric
+    WHEN 'ai_usd_monthly'             THEN 0::numeric
+    WHEN 'voice_seconds_monthly'      THEN 0::numeric
+    -- Technische Schutzwerte je Anruf. Sie erlauben allein keine Nutzung,
+    -- weil ohne Kontingent (voice_seconds_monthly) jeder Anruf abgelehnt wird.
     WHEN 'voice_max_concurrent_calls' THEN 2::numeric
     WHEN 'voice_max_call_seconds'     THEN 600::numeric
     ELSE 0::numeric
@@ -51,7 +57,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION public.bot_usage_fallback(text) IS
-  'Einzige Quelle der vorläufigen Sicherheitsobergrenzen für Bot-Kanäle bei fehlender Mandantenkonfiguration. UNBESCHLOSSEN – kein Preis, kein Kontingent, kein Kundenversprechen. Merge-Blocker PR #2044.';
+  'Einzige Quelle der Vorgabewerte für Bot-Kanäle. Option A (Owner, 28.10.2026): Kostenbudgets und Telefonkontingent ohne Mandantenzeile = 0, also keine kostenpflichtige Nutzung. Kein Preis, kein Kontingent, kein Kundenversprechen.';
 
 -- ============================================================
 -- 1. Schutzwerte je Mandant
@@ -64,7 +70,12 @@ CREATE TABLE IF NOT EXISTS public.bot_usage_limits (
   ai_usd_monthly              numeric(12,6) NOT NULL DEFAULT public.bot_usage_fallback('ai_usd_monthly')    CHECK (ai_usd_monthly >= 0),
   voice_max_concurrent_calls  integer       NOT NULL DEFAULT public.bot_usage_fallback('voice_max_concurrent_calls')::integer     CHECK (voice_max_concurrent_calls >= 0),
   voice_max_call_seconds      integer       NOT NULL DEFAULT public.bot_usage_fallback('voice_max_call_seconds')::integer   CHECK (voice_max_call_seconds > 0),
-  updated_at                  timestamptz   NOT NULL DEFAULT now()
+  -- Monatliches Telefonkontingent des Mandanten in Sekunden. Gilt zusätzlich
+  -- zum Plan-Entitlement (es zählt der kleinere Wert) und ist bei
+  -- „unbegrenzt laut Plan“ (Enterprise, -1) die einzige Obergrenze. 0 = keine
+  -- Telefonnutzung.
+  voice_seconds_monthly       integer       NOT NULL DEFAULT public.bot_usage_fallback('voice_seconds_monthly')::integer    CHECK (voice_seconds_monthly >= 0),
+  updated_at                 timestamptz   NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.bot_usage_limits ENABLE ROW LEVEL SECURITY;

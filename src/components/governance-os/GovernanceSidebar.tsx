@@ -23,6 +23,7 @@ import { SHELL_NAV, SHELL_NAV_ROUTES, activeShellNav, type ShellNavId } from './
 import { useShellCounts, type ShellCounts } from './useShellCounts';
 import { groupShellNav, type ShellNavGroupId } from './shellNavGroups';
 import { tenantDisplayName } from '../../features/governance/dashboard/dashboardSignals';
+import { AGENT_REGISTER_COUNT, GovernanceAgentsNav, isAgentRegisterTarget } from './GovernanceAgentsNav';
 import '../../styles/governance-os-app.css';
 
 /**
@@ -33,7 +34,8 @@ import '../../styles/governance-os-app.css';
  * aus `TAB_MODULES` — dieselbe Registry wie die mobile Tab-Leiste — stehen in
  * einklappbaren Unterkategorien (shellNavGroups.ts): Start, Erfassen,
  * Bewerten, Durchsetzen, Belegen, Agenten, Verwaltung. Zugeklappte Gruppen
- * bleiben im DOM (`hidden`), kein Modul entfällt.
+ * bleiben im DOM (`hidden`), kein Modul entfällt. Die Gruppe „Agenten" führt
+ * zusätzlich jeden Eintrag des Agenten-Registers (`GovernanceAgentsNav`).
  *
  * Schlösser: aus `tenant_entitlements` (`useNavLock` → navAccess.ts), nicht
  * mehr aus `plan.modules`. Schloss ⇔ Routensperre (RouteEntitlementGate)
@@ -110,7 +112,7 @@ function MoreItem({ module, active, lock }: { module: GovernanceModule; active: 
 }
 
 export function GovernanceSidebar() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { plan, loading: planLoading } = useActivePlan();
   const lockFor = useNavLock();
   const { tenants, activeTenantId } = useTenant();
@@ -124,11 +126,15 @@ export function GovernanceSidebar() {
   // Offen: „Start" und die Gruppe der aktuellen Seite. Wechselt die Seite in
   // eine zugeklappte Gruppe, klappt diese auf; andere bleiben, wie der Nutzer
   // sie gesetzt hat.
-  const activeGroup = groups.find(
-    ({ shell, modules }) =>
-      shell.some((item) => item.id === active) ||
-      modules.some((m) => isActiveRoute(m.route, pathname)),
-  )?.group.id;
+  // Ein Sprung auf eine Register-Karte (#agent-<id>) gehört zu „Agenten",
+  // nicht zu „Erfassen" (die Route liegt unter /app/ai-systems).
+  const activeGroup: ShellNavGroupId | undefined = isAgentRegisterTarget(pathname, hash)
+    ? 'agents'
+    : groups.find(
+        ({ shell, modules }) =>
+          shell.some((item) => item.id === active) ||
+          modules.some((m) => isActiveRoute(m.route, pathname)),
+      )?.group.id;
   const [openGroups, setOpenGroups] = useState<ReadonlySet<ShellNavGroupId>>(
     () => new Set<ShellNavGroupId>(activeGroup ? ['start', activeGroup] : ['start']),
   );
@@ -159,6 +165,8 @@ export function GovernanceSidebar() {
       {groups.map(({ group, shell, modules }) => {
         const isOpen = openGroups.has(group.id);
         const listId = `side-group-${group.id}`;
+        const withRegister = group.id === 'agents';
+        const count = shell.length + modules.length + (withRegister ? AGENT_REGISTER_COUNT : 0);
         return (
           <div key={group.id} className="rs-side__section" data-testid={`side-group-${group.id}`}>
             <button
@@ -169,7 +177,7 @@ export function GovernanceSidebar() {
               onClick={() => toggleGroup(group.id)}
             >
               <span className="rs-side__head-text">{t(group.labelKey)}</span>
-              <span className="rs-side__head-count">{shell.length + modules.length}</span>
+              <span className="rs-side__head-count">{count}</span>
               <ChevronDown className="rs-side__chev" aria-hidden="true" />
             </button>
             <div id={listId} className="rs-side__group" hidden={!isOpen}>
@@ -210,6 +218,7 @@ export function GovernanceSidebar() {
                   lock={lockFor({ route: module.route, module })}
                 />
               ))}
+              {withRegister && <GovernanceAgentsNav />}
             </div>
           </div>
         );

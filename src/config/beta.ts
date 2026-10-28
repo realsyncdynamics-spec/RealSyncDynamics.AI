@@ -32,7 +32,7 @@ export const BETA = {
   /** Planstufe, deren Umfang Beta-Tester testen dürfen. */
   testPlan: 'growth' as const,
   badge: 'BETA',
-  headline: 'Offene Beta: alle Funktionen kostenlos testen',
+  headline: 'Offene Beta: kostenlos testen',
   sub: 'Bis zum Ende der Beta zahlen Sie nichts — keine Kreditkarte, keine automatische Verlängerung. Ihr Feedback entscheidet, was wir als Nächstes bauen.',
   promises: [
     'Kostenlos bis zum Ende der Beta',

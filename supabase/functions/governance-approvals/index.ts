@@ -25,6 +25,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { expiredApprovalsOrFilter, isApprovalExpired } from '../_shared/approvalExpiry.ts';
 import {
   appendApprovalEvidence,
   buildApprovalAiEvidenceEvent,
@@ -89,7 +90,10 @@ async function handleList(admin: SupabaseAdminClient, userId: string, body: Reco
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
 
-  const { data, error } = await admin.from('governance_approvals')
+  // Ablauf (expires_at) gilt auch ohne Statuswechsel: abgelaufene 'pending'
+  // gehören nicht mehr zu „offen“, sondern zu „Abgelaufen“.
+  const nowIso = new Date().toISOString();
+  let query = admin.from('governance_approvals')
     .select(`
       id, tenant_id, event_id, policy_id, asset_id, status, requested_action,
       resolved_by, resolved_at, resolution_reason, expires_at, created_at,
@@ -97,8 +101,15 @@ async function handleList(admin: SupabaseAdminClient, userId: string, body: Reco
       policy:governance_policies(id,name,severity,policy_type),
       asset:governance_assets(id,name,asset_type,ai_act_class)
     `)
-    .eq('tenant_id', tenant_id)
-    .eq('status', status)
+    .eq('tenant_id', tenant_id);
+  if (status === 'pending') {
+    query = query.eq('status', 'pending').gt('expires_at', nowIso);
+  } else if (status === 'expired') {
+    query = query.or(expiredApprovalsOrFilter(nowIso));
+  } else {
+    query = query.eq('status', status);
+  }
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(200);
   if (error) throw error;
@@ -117,7 +128,7 @@ async function handleResolve(
   }
 
   const { data: row } = await admin.from('governance_approvals')
-    .select('id, tenant_id, event_id, policy_id, asset_id, status')
+    .select('id, tenant_id, event_id, policy_id, asset_id, status, expires_at')
     .eq('id', approval_id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'approval not found');
   if (row.status !== 'pending') {
@@ -125,6 +136,17 @@ async function handleResolve(
   }
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+  // Abgelaufene Freigaben werden nicht mehr entschieden (wie bei den
+  // PDP-Gates): Status nachziehen und ablehnen. Nach der Rollenprüfung,
+  // damit Nicht-Berechtigte keinen Statuswechsel auslösen.
+  if (isApprovalExpired(row.expires_at)) {
+    const { error: expErr } = await admin.from('governance_approvals')
+      .update({ status: 'expired' })
+      .eq('id', approval_id)
+      .eq('status', 'pending');
+    if (expErr) throw expErr;
+    return jsonError(409, 'ALREADY_RESOLVED', 'approval is expired');
   }
 
   const resolvedAt = new Date().toISOString();

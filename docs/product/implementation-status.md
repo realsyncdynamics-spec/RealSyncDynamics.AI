@@ -17,7 +17,7 @@ Registry drives landing/roadmap/CI. Flip `status` → UI. No live claims for pre
 5. `/app` → `CommandCenterDashboard`/`ComplianceStatusView` (not `AgentOsPanel`); `/login`+`/welcome`; shell wraps `AppGate`.
 6. Agent OS™ preview — not on `/app/dashboard`.
 7. Stripe Checkout E2E live (yearly coming-soon; enterprise inquiry).
-8. Beta `beta-phase`: `beta-enroll` live (WP-3, #1874, Growth bis 31.01.2027); WP-4 open → preview. Voice/Telefonie = `voice-telephony` coming-soon; `channel-bots` without phone. Enterprise SSO = `enterprise-sso` coming-soon (ADR 0007, 0 providers, no `signInWithSSO`/`sso-provision`/`tenant_sso_domains`).
+8. Beta `beta-phase`: `beta-enroll` live (WP-3, #1874, Growth bis 31.01.2027); WP-4: StartPanel + `/app/beispiel` (#1990) and in-app `BetaFeedback` (`beta_feedback` + `/admin/beta-feedback`, #1989) live, auto first-scan open → preview. Voice/Telefonie = `voice-telephony` coming-soon; `channel-bots` without phone. Enterprise SSO = `enterprise-sso` coming-soon (ADR 0007, 0 providers, no `signInWithSSO`/`sso-provision`/`tenant_sso_domains`).
 9. `ai-act-classify` live = `/ai-act-klassifikator` + Edge `ai-act-classify`. Inventory = preview `ai-act-inventory-persist` (no plan unlocks; persist incomplete, #1743) — only classifier → `/app/risk-inventory`. `ai-system-registry` live = `/app/ai-systems` (list/create, `update_asset`, `classify_asset`). `kodee` preview = chat all plans, SSH `ai.tool.vps_status` (Agency+).
 
 `#roadmap` ← `ROADMAP_*_ITEMS`. `npm run check:landing-claims`. Related: `scan-funnel.md`, `public-scan-funnel.md`.

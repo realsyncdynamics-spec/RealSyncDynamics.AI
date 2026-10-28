@@ -63,12 +63,15 @@ describe('public nav ecosystem IA', () => {
     ]);
   });
 
-  it('marks Agent Governance as Preview', () => {
-    const agent = PUBLIC_NAV_GROUPS.find((g) => g.id === 'produkt')?.sections?.find(
-      (s) => s.label === 'Agent Governance',
-    );
+  it('marks Agent Governance and AI Inventory (/app/risk-inventory) as Preview', () => {
+    const sections = PUBLIC_NAV_GROUPS.find((g) => g.id === 'produkt')?.sections ?? [];
+    const agent = sections.find((s) => s.label === 'Agent Governance');
     expect(agent?.badge).toBe('preview');
     expect(agent?.to).toBe('/agent-governance');
+    const aiGov = sections.find((s) => s.label === 'AI Governance');
+    const aiInventory = aiGov?.children.find((c) => c.label === 'AI Inventory');
+    expect(aiInventory?.to).toBe('/welcome?next=/app/risk-inventory');
+    expect(aiInventory?.badge).toBe('preview');
   });
 });
 

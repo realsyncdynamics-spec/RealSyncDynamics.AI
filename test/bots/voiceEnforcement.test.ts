@@ -249,16 +249,28 @@ describe('Budget-Fallback: eine Quelle auch während der ersten Migration', () =
     expect(first.indexOf('FUNCTION public.bot_usage_fallback(')).toBeLessThan(first.indexOf('CREATE TABLE'));
     expect((first + next).match(/CREATE OR REPLACE FUNCTION public\.bot_usage_fallback\(/g)).toHaveLength(1);
   });
-  it('liest alle vier Defaults und beide Reservierungs-Fallbacks aus der Funktion', () => {
-    for (const key of ['ai_usd_daily', 'ai_usd_monthly', 'voice_max_concurrent_calls', 'voice_max_call_seconds']) {
+  it('liest alle fünf Defaults und beide Reservierungs-Fallbacks aus der Funktion', () => {
+    for (const key of ['ai_usd_daily', 'ai_usd_monthly', 'voice_max_concurrent_calls', 'voice_max_call_seconds', 'voice_seconds_monthly']) {
       expect(first).toContain(`DEFAULT public.bot_usage_fallback('${key}')`);
     }
     expect(first).not.toMatch(/v_(?:daily|monthly|max_call|concurrent)\s+(?:numeric|integer)\s*:=\s*\d/);
     expect(first).not.toMatch(/v_(?:daily|monthly|max_call|concurrent)\s*:=\s*\d/);
-    for (const [key, value] of Object.entries({ ai_usd_daily: 5, ai_usd_monthly: 50, voice_max_concurrent_calls: 2, voice_max_call_seconds: 600 })) {
+    // Option A (Owner-Entscheidung 28.10.2026): Kostenbudgets und Telefonkontingent
+    // ohne Mandantenkonfiguration = 0. Nur die technischen Schutzwerte je Anruf bleiben positiv.
+    for (const [key, value] of Object.entries({
+      ai_usd_daily: 0, ai_usd_monthly: 0, voice_seconds_monthly: 0,
+      voice_max_concurrent_calls: 2, voice_max_call_seconds: 600,
+    })) {
       expect(first).toMatch(new RegExp(`WHEN '${key}'\\s+THEN ${value}::numeric`));
     }
     expect(first).toContain('ELSE 0::numeric');
+  });
+  it('lehnt ohne Mandantenzeile ab, statt auf positive Obergrenzen zurückzufallen (Option A)', () => {
+    const ai = next.slice(next.indexOf('FUNCTION public.bot_ai_budget_reserve('));
+    const aiNotFound = ai.slice(ai.indexOf('IF NOT FOUND THEN'), ai.indexOf('END IF;', ai.indexOf('IF NOT FOUND THEN')));
+    expect(aiNotFound).toContain("'invalid_config'");
+    const voice = next.slice(next.indexOf('FUNCTION public.bot_voice_call_reserve('));
+    expect(voice).toMatch(/IF NOT FOUND OR v_tenant_cap IS NULL OR v_tenant_cap <= 0 THEN\s+RETURN QUERY SELECT 'deny'::text, NULL::uuid, NULL::numeric, 'invalid_config'/);
   });
 });
 

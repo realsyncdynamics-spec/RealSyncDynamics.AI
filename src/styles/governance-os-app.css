@@ -192,8 +192,10 @@
 }
 .rs-side__item:hover { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
 .rs-side__item:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: -2px; }
-.rs-side__item[aria-current='page'] { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
-.rs-side__item[aria-current='page'] .rs-side__icon { color: var(--color-rs-cyan); }
+.rs-side__item[aria-current='page'],
+.rs-side__item[aria-current='location'] { background: var(--color-rs-bg-2); color: var(--color-rs-fg-0); }
+.rs-side__item[aria-current='page'] .rs-side__icon,
+.rs-side__item[aria-current='location'] .rs-side__icon { color: var(--color-rs-cyan); }
 .rs-side__item--locked { color: var(--color-rs-fg-3); }
 .rs-side__item--small { height: 32px; font-size: 12px; }
 .rs-side__icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--color-rs-fg-3); }
@@ -208,6 +210,20 @@
   text-align: center;
   color: var(--color-rs-fg-1);
 }
+/* Agenten-Register in der Gruppe „Agenten": Unterüberschrift, Reifegrad als
+   Punkt (Text für Screenreader im Markup). */
+.rs-side__sublabel {
+  margin: 8px 10px 2px;
+  font-family: var(--font-rs-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-rs-fg-3);
+}
+.rs-side__dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 9999px; }
+.rs-side__dot--live { background: var(--color-rs-success); }
+.rs-side__dot--preview { background: var(--color-rs-warning); }
+.rs-side__dot--soon { background: transparent; box-shadow: inset 0 0 0 1px var(--color-rs-fg-3); }
 .rs-plan {
   margin-top: auto;
   flex-shrink: 0;

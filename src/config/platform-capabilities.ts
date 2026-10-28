@@ -70,8 +70,15 @@ export interface PlatformCapability {
   learnMorePath?: string;
 }
 
-/** Datum der letzten Messung gegen Produktion. Bei Statuswechsel mitziehen. */
-export const CAPABILITIES_MEASURED_AT = '2026-08-23';
+/**
+ * Datum der letzten Messung gegen Produktion. Bei Statuswechsel mitziehen.
+ *
+ * Messung 2026-10-28 (Supabase-Management-API, `RealSyncDynamicsLive`):
+ * 196 Functions ACTIVE, jede Function unter `backedBy` ist deployt. Kein
+ * Statuswechsel — `bots` bleibt 'preview', weil Deployment allein noch keine
+ * produktive Provider-Laufzeit belegt.
+ */
+export const CAPABILITIES_MEASURED_AT = '2026-10-28';
 
 export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   {

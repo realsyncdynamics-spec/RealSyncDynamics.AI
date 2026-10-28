@@ -66,8 +66,8 @@ export function PublicSectorLanding() {
           <li className="flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-titanium-50">EU-souveräner Stack</strong>: Frankfurt-Hosted Ollama
-              (Llama / Mistral) — keine US-Cloud, keine Drittland-Berührung
+              <strong className="text-titanium-50">EU-lokaler KI-Modus</strong> (Opt-in): Ollama auf unserem VPS
+              in Deutschland (gemma3, qwen2.5) — in diesem Modus keine US-Cloud, keine Drittland-Berührung
             </span>
           </li>
           <li className="flex items-start gap-2">

@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: H1 „The Governance OS für DSGVO und EU AI Act.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: Eyebrow „DSGVO & EU AI Act für KMU“, H1 „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
@@ -397,7 +397,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'billing',
     description:
-      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Aus WP-4 umgesetzt: Startansicht mit geführter Einrichtung und Beispielansicht /app/beispiel (#1990). Offen (WP-4): Feedback direkt im Dashboard (bisher Link auf /kontakt?topic=beta-feedback) und automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
+      'Kernpfad live: beta-enroll (WP-3, #1874) ist in Produktion und gibt dem Mandanten serverseitig Growth-Umfang bis 31.01.2027 (subscriptions trialing, trial_end; nur owner/admin, nie über Stripe-Abos); Aufruf in der App-Shell über useBetaEnrollment. Aus WP-4 umgesetzt: Startansicht mit geführter Einrichtung und Beispielansicht /app/beispiel (#1990) sowie In-App-Feedback BetaFeedback direkt im Dashboard (Tabelle beta_feedback + /admin/beta-feedback, #1989). Offen (WP-4): automatischer Erst-Scan für leere Mandanten — daher noch nicht vollständig.',
     route: '/welcome',
     evidence: [
       'supabase/functions/beta-enroll/index.ts',
@@ -405,9 +405,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/features/billing/useBetaEnrollment.ts',
       'src/config/beta.ts',
       'src/config/production-edge-functions.ts#beta-enroll',
+      'src/components/governance-os/BetaFeedback.tsx',
+      'src/features/beta/betaFeedback.ts',
+      'src/features/admin/BetaFeedbackView.tsx',
+      'supabase/migrations/20261026153000_beta_feedback.sql',
       'test/edge/beta-enroll.test.ts',
       'docs/claude/BETA_V5_WORKPLAN.md#WP-4',
       'PR #1874',
+      'PR #1989',
+      'PR #1990',
     ],
     showOnRoadmap: false,
   },
@@ -818,4 +824,12 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   'Complete Runtime',
   'vollständig verfügbar',
   'vollständig produktionsbereit',
+  'RFC 3161',
+  'RFC-3161',
+  'monitort kontinuierlich',
+  'ohne externe AI-Aufrufe',
+  'ohne externe API-Aufrufe',
+  'unveränderliches Archiv',
+  'Evidence Vault Advanced: unveränderliche Snapshots',
+  'Evidence Vault Advanced: immutable snapshots',
 ] as const;

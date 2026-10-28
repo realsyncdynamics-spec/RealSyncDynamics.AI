@@ -39,7 +39,9 @@ export function CapabilityAvailabilityNotice({
   /** Zusätzliche Layout-Klassen der einbettenden Seite. */
   className?: string;
 }) {
-  const capability = PLATFORM_CAPABILITIES.find((c) => c.id === capabilityId);
+  const capability = PLATFORM_CAPABILITIES.find(
+    (c) => c.id === capabilityId || (capabilityId === 'channel-bots' && c.id === 'bots'),
+  );
   if (!capability || capability.status === 'live') return null;
 
   return (

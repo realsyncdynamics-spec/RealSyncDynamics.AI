@@ -11,13 +11,14 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
 import { clearLeadContext, readLeadContext } from '../features/audit/leadContext';
 import { safeInternalPath } from '../lib/safeInternalPath';
+import { markTimeToFirstEvidenceStart } from '../lib/marketingAnalytics';
 
 /**
  * /welcome — Canonical auth gate (OTP + OAuth) and post-checkout setup wizard.
  *
  * Modes:
  * - Login/register (no `session=`): after sign-in, honor `?next=` or resume
- *   SetupAssistant /app/dashboard — do NOT force the API-key wizard.
+ *   /app/activation / /app/dashboard — do NOT force the API-key wizard.
  * - Post-checkout (`session=cs_…`): Step 2–3 wizard (API key + domain/snippet).
  *
  * Step 1 — Email OTP / OAuth. auto_tenant_on_signup creates tenant + owner.
@@ -83,6 +84,7 @@ export function Welcome() {
       // Angemeldet gilt die Konto-Adresse, nicht die Vorbelegung aus dem Scan.
       setEmail((prev) => userEmail || prev || '');
       void claimPendingAudit().catch(() => null);
+      markTimeToFirstEvidenceStart();
       // Angemeldet: Die Vorbelegung hat ihren Zweck erfüllt.
       clearLeadContext();
 
@@ -95,7 +97,7 @@ export function Welcome() {
       }
 
       // Post-checkout: enter API-key wizard. Plain login: resolve tenant then
-      // SetupAssistant or /app/dashboard — do not force the wizard.
+      // /app/activation or /app/dashboard — do not force the wizard.
       if (sessionId) {
         setStep((prev) => (prev === 1 ? 2 : prev));
         return;
@@ -268,8 +270,8 @@ export function Welcome() {
   const isCookieSdk = product.includes('Cookie-SDK');
 
   // After tenant resolve: resume ?next=, run post-checkout wizard, or send
-  // returning users to SetupAssistant / dashboard. Never steal a checkout
-  // resume into setup-assistant without preserving next.
+  // returning users to /app/activation / dashboard. Never steal a checkout
+  // resume into activation without preserving next.
   useEffect(() => {
     if (!isSupabaseConfigured() || step < 2 || !tenantId) return;
     const sb = getSupabase();
@@ -299,7 +301,7 @@ export function Welcome() {
         }
 
         if (tenant && !tenant.onboarded_at) {
-          navigate('/setup-assistant', { replace: true });
+          navigate('/app/activation', { replace: true });
           return;
         }
         navigate('/app/dashboard', { replace: true });

@@ -33,7 +33,7 @@ import { AgentActivityPanel } from './AgentActivityPanel';
 import { AgentRunOutput } from './AgentRunOutput';
 import { AgentRunForm } from './AgentRunForm';
 import { FeedbackReportsInput } from './FeedbackReportsInput';
-import { AGENT_INPUT_SCHEMAS, hasInputSchema } from './agentInputSchemas';
+import { AGENT_INPUT_SCHEMAS } from './agentInputSchemas';
 
 const FEEDBACK_AGENT_ID = 'feedback-intelligence-agent';
 
@@ -217,11 +217,9 @@ export function AgentsCenterView() {
 
   const handlers: CardHandlers = {
     busyId,
-    // Agenten mit Eingabe-Schema öffnen zuerst ein Formular; alle anderen
-    // starten direkt (leeres payload — z. B. Infrastructure, Feedback).
+    // Jeder Start läuft über das Run-Modal (Freigabe-Gate via approvalsApi.ts).
     onRun: (agent) => {
-      if (hasInputSchema(agent.id) || agent.id === FEEDBACK_AGENT_ID) setRunForm(agent);
-      else void executeRun(agent);
+      setRunForm(agent);
     },
     onHistory: async (agent) => {
       setHistory({ agent, rows: null });
@@ -325,6 +323,8 @@ export function AgentsCenterView() {
             <AgentRunForm
               fields={AGENT_INPUT_SCHEMAS[runForm.id] ?? []}
               busy={busyId === runForm.id}
+              tenantId={activeTenantId}
+              agentId={runForm.id}
               onSubmit={(payload) => void executeRun(runForm, payload)}
             />
           )}

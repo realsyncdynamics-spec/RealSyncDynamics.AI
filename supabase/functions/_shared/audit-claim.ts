@@ -1,104 +1,33 @@
 /**
- * Übernahme eines anonymen Audits in einen Mandanten — die Entscheidungslogik.
+ * Übernahme eines anonymen Audits in einen Mandanten — Fehlerbild und
+ * Eingabeprüfung.
  *
- * ## Warum es das braucht
+ * ## Ein Schreiber
  *
- * `gdpr_audits` trägt seit jeher `user_id`, `tenant_id` und `claimed_at`, und
- * die Lese-Policy ist bereits darauf geschrieben:
+ * Geschrieben wird ausschließlich durch die RPC `claim_gdpr_audit`
+ * (SECURITY DEFINER, `supabase/migrations/20260830091500_claim_gdpr_audit.sql`,
+ * gehärtet durch #1865/#1867). Sie prüft im selben Statement:
  *
- * ```sql
- * "gdpr_audits tenant_read": (tenant_id IS NOT NULL) AND is_tenant_member(tenant_id)
- * ```
+ * - angemeldeter Nutzer (`auth.uid()`),
+ * - E-Mail des Audits = E-Mail des Kontos,
+ * - Mitgliedschaft im Ziel-Mandanten,
+ * - noch nicht übernommen (`claimed_at IS NULL`, Zeilensperre).
  *
- * Ein Audit wird für einen Mandanten also **erst sichtbar, wenn es übernommen
- * ist**. Gemessen am 2026-08-30: 0 von 159 Zeilen haben `claimed_at`, und
- * nichts im Repository schreibt die Spalte. Der Lesepfad war fertig und hat
- * auf einen Schreiber gewartet, den es nie gab — der Trichter endete am
- * Bericht (`docs/product/canonical-funnel-decision.md` §1).
+ * Bis 2026-10-13 gab es daneben einen zweiten Schreiber: Die Edge Function
+ * `audit-claim` übernahm mit der Service-Role, und ihr Vertrauensmodell war
+ * „wer die `audit_id` kennt, darf sie einmal übernehmen". Die Kennung steht
+ * im teilbaren Ergebnis-Link `/audit/result/:id`. Jedes selbst registrierte
+ * Konto konnte damit ein fremdes Audit in den eigenen Mandanten ziehen — und
+ * der eigentliche Inhaber hätte es danach nie mehr übernehmen können. Die
+ * Function ruft jetzt dieselbe RPC mit dem Token des Nutzers auf; die
+ * Service-Role schreibt `gdpr_audits` nicht mehr.
  *
- * ## Kein zweites Claim-Modell
+ * ## Was diese Datei tut
  *
- * Das Muster stammt unverändert aus `siteos/handlers/anonymous.ts`:
- * Bearer-Token → Nutzer → Mitgliedschaft im Mandanten prüfen → atomar
- * übernehmen, wenn noch frei. Der Entscheid in
- * `canonical-funnel-decision.md` verbietet ausdrücklich ein zweites Modell;
- * hier wird deshalb dasselbe nachgezogen, nicht ein neues erfunden.
- *
- * ## Vertrauensmodell — ausdrücklich benannt
- *
- * Wer die `audit_id` kennt, darf sie **einmal** übernehmen. Die Kennung ist
- * eine UUIDv4, serverseitig vergeben und nicht ratbar; sie erreicht nur, wem
- * der Ergebnis-Link gegeben wurde. Das ist dieselbe Fähigkeits-Logik wie bei
- * `siteos_anonymous_builds` und beim Teilen über `audit_share_get`.
- *
- * Bewusst **nicht** verlangt wird, dass die E-Mail des Audits zur E-Mail des
- * Kontos passt: Der Scan über den Optimizer-Pfad erhebt gar keine E-Mail
- * (`gdpr-audit/index.ts`, `isOptimizerScan`), und wer mit einer Arbeitsadresse
- * scannt und sich privat registriert, wäre sonst ausgesperrt. Eine
- * Abweichung wird stattdessen im Prüfpfad festgehalten — beobachtbar statt
- * blockierend.
- *
- * Pure Funktionen ohne Netzwerk — direkt unter Vitest prüfbar.
+ * Sie übersetzt die Ausnahmen der RPC in stabile Codes, HTTP-Status und
+ * verständliche Meldungen — gleich für Edge Function und Browser. Pure
+ * Funktionen ohne Netzwerk und ohne Deno-APIs, direkt unter Vitest prüfbar.
  */
-
-export interface AuditClaimRow {
-  id: string;
-  tenant_id: string | null;
-  user_id: string | null;
-  claimed_at: string | null;
-  email: string | null;
-}
-
-export type ClaimDecision =
-  /** Frei — die Übernahme darf versucht werden. */
-  | { status: 'claimable' }
-  /** Schon von genau diesem Mandanten übernommen. Kein Fehler. */
-  | { status: 'already_mine' }
-  /** Von einem anderen Mandanten übernommen. */
-  | { status: 'taken'; conflictTenantId: string };
-
-/**
- * Darf dieser Mandant das Audit übernehmen?
- *
- * Die zweite Übernahme durch denselben Mandanten ist **kein Fehler**: Ein
- * Nutzer, der den Link erneut öffnet oder die Seite neu lädt, soll dieselbe
- * Antwort bekommen wie beim ersten Mal. Nur eine fremde Übernahme ist ein
- * Konflikt.
- */
-export function decideClaim(row: AuditClaimRow, tenantId: string): ClaimDecision {
-  // `claimed_at` ist die führende Spalte. `tenant_id` allein genügt nicht:
-  // Ein Audit koennte theoretisch einem Mandanten zugeordnet sein, ohne dass
-  // je eine Uebernahme stattfand — dann ist der Zeitstempel die Wahrheit.
-  if (row.claimed_at === null) return { status: 'claimable' };
-  if (row.tenant_id === tenantId) return { status: 'already_mine' };
-  return { status: 'taken', conflictTenantId: row.tenant_id ?? 'unknown' };
-}
-
-/**
- * Welchen Mandanten übernimmt der Nutzer?
- *
- * Ohne Angabe wird abgeleitet — aber nur, wenn es genau einen gibt. Bei
- * mehreren zu raten hiesse, ein fremdes Audit im falschen Arbeitsbereich
- * abzulegen; das ist über die Oberfläche nicht mehr zu korrigieren, weil die
- * Lese-Policy es dem richtigen Mandanten dann dauerhaft verbirgt.
- */
-export type TenantResolution =
-  | { ok: true; tenantId: string }
-  | { ok: false; code: 'TENANT_NOT_FOUND' | 'TENANT_AMBIGUOUS' | 'FORBIDDEN' };
-
-export function resolveTenant(
-  memberships: readonly { tenant_id: string }[],
-  requested: string | null,
-): TenantResolution {
-  if (requested) {
-    return memberships.some((m) => m.tenant_id === requested)
-      ? { ok: true, tenantId: requested }
-      : { ok: false, code: 'FORBIDDEN' };
-  }
-  if (memberships.length === 0) return { ok: false, code: 'TENANT_NOT_FOUND' };
-  if (memberships.length > 1) return { ok: false, code: 'TENANT_AMBIGUOUS' };
-  return { ok: true, tenantId: memberships[0].tenant_id };
-}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -107,13 +36,154 @@ export function isUuid(value: unknown): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
+export type ClaimErrorCode =
+  | 'UNAUTHENTICATED'
+  | 'EMAIL_UNVERIFIED'
+  | 'TENANT_NOT_FOUND'
+  | 'TENANT_SELECTION_REQUIRED'
+  | 'TENANT_FORBIDDEN'
+  | 'TENANT_SELECTION_UNAVAILABLE'
+  | 'NOT_FOUND'
+  | 'OWNERSHIP_NOT_VERIFIED'
+  | 'OWNERSHIP_INCONSISTENT'
+  | 'ALREADY_CLAIMED'
+  | 'CONFLICT_RETRY'
+  | 'INTERNAL';
+
+export interface ClaimErrorInfo {
+  code: ClaimErrorCode;
+  httpStatus: number;
+  /**
+   * Ein späterer Versuch kann gelingen, ohne dass sich am Audit etwas
+   * ändert — etwa nach der E-Mail-Bestätigung oder der Auswahl eines
+   * Arbeitsbereichs. Der Browser behält dann die gemerkte Kennung.
+   */
+  retryable: boolean;
+  message: string;
+}
+
+const INFO: Record<ClaimErrorCode, Omit<ClaimErrorInfo, 'code'>> = {
+  UNAUTHENTICATED: {
+    httpStatus: 401, retryable: true,
+    message: 'Bitte melden Sie sich an, um den Bericht zu übernehmen.',
+  },
+  EMAIL_UNVERIFIED: {
+    httpStatus: 403, retryable: true,
+    message: 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Danach wird der Bericht übernommen.',
+  },
+  TENANT_NOT_FOUND: {
+    httpStatus: 403, retryable: true,
+    message: 'Für Ihren Zugang gibt es noch keinen Arbeitsbereich.',
+  },
+  TENANT_SELECTION_REQUIRED: {
+    httpStatus: 409, retryable: true,
+    message: 'Sie gehören zu mehreren Arbeitsbereichen. Bitte wählen Sie den Arbeitsbereich, in den der Bericht gehört.',
+  },
+  TENANT_FORBIDDEN: {
+    httpStatus: 403, retryable: true,
+    message: 'In diesem Arbeitsbereich dürfen nur Inhaber oder Admins Berichte übernehmen.',
+  },
+  TENANT_SELECTION_UNAVAILABLE: {
+    httpStatus: 503, retryable: true,
+    message: 'Die Auswahl des Arbeitsbereichs ist auf dem Server noch nicht verfügbar. Es wurde nichts übernommen.',
+  },
+  NOT_FOUND: {
+    httpStatus: 404, retryable: false,
+    message: 'Dieser Bericht existiert nicht mehr.',
+  },
+  OWNERSHIP_NOT_VERIFIED: {
+    httpStatus: 403, retryable: false,
+    message: 'Der Bericht wurde mit einer anderen E-Mail-Adresse angefordert. Bitte melden Sie sich mit dieser Adresse an oder führen Sie den Scan erneut aus.',
+  },
+  OWNERSHIP_INCONSISTENT: {
+    httpStatus: 409, retryable: false,
+    message: 'Die Zuordnung dieses Berichts ist widersprüchlich. Bitte wenden Sie sich an den Support.',
+  },
+  ALREADY_CLAIMED: {
+    httpStatus: 409, retryable: false,
+    message: 'Dieser Bericht gehört bereits zu einem anderen Arbeitsbereich.',
+  },
+  CONFLICT_RETRY: {
+    httpStatus: 409, retryable: true,
+    message: 'Der Bericht wurde gerade gleichzeitig übernommen. Bitte versuchen Sie es erneut.',
+  },
+  INTERNAL: {
+    httpStatus: 500, retryable: true,
+    message: 'Der Bericht konnte gerade nicht übernommen werden. Bitte versuchen Sie es später erneut.',
+  },
+};
+
+export function claimErrorInfo(code: ClaimErrorCode): ClaimErrorInfo {
+  return { code, ...INFO[code] };
+}
+
 /**
- * Weicht die E-Mail des Audits von der des Kontos ab?
+ * Ordnet eine Ausnahme der RPC (oder von PostgREST) einem Code zu.
  *
- * Blockiert nicht (siehe Vertrauensmodell oben), landet aber im Prüfpfad.
- * Ein Audit ohne E-Mail (Optimizer-Pfad) gilt nicht als Abweichung.
+ * Grundlage sind die `RAISE EXCEPTION`-Texte beider RPC-Fassungen — der
+ * ursprünglichen und der gehärteten aus #1867 —, damit die Zuordnung
+ * unabhängig davon stimmt, welche gerade in der Datenbank liegt. Was nicht
+ * erkannt wird, ist `INTERNAL`: ein Wiederholungsfall, keine Freigabe.
  */
-export function emailMismatch(auditEmail: string | null, accountEmail: string | null): boolean {
-  if (!auditEmail || !accountEmail) return false;
-  return auditEmail.trim().toLowerCase() !== accountEmail.trim().toLowerCase();
+export function classifyClaimError(error: { message?: unknown; code?: unknown } | null | undefined): ClaimErrorCode {
+  const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+  const code = typeof error?.code === 'string' ? error.code : '';
+
+  // PostgREST findet keine Überladung mit `p_tenant_id`: Die Datenbank
+  // trägt noch die RPC ohne Mandantenauswahl.
+  if (code === 'PGRST202' || message.includes('could not find the function')) {
+    return 'TENANT_SELECTION_UNAVAILABLE';
+  }
+  if (message.includes('unauthenticated')) return 'UNAUTHENTICATED';
+  if (message.includes('verified account email required') || message.includes('email unverified')) {
+    return 'EMAIL_UNVERIFIED';
+  }
+  if (message.includes('explicit tenant selection required')) return 'TENANT_SELECTION_REQUIRED';
+  if (message.includes('tenant claim not authorized')) return 'TENANT_FORBIDDEN';
+  if (message.includes('no tenant')) return 'TENANT_NOT_FOUND';
+  if (message.includes('audit not found')) return 'NOT_FOUND';
+  if (message.includes('audit ownership not verified') || message.includes('email mismatch')) {
+    return 'OWNERSHIP_NOT_VERIFIED';
+  }
+  if (message.includes('audit ownership inconsistent')) return 'OWNERSHIP_INCONSISTENT';
+  if (message.includes('already claimed')) return 'ALREADY_CLAIMED';
+  if (message.includes('claim raced')) return 'CONFLICT_RETRY';
+  return 'INTERNAL';
+}
+
+/**
+ * Parameter für die RPC. Ohne Mandant die einstellige Fassung — sie
+ * existiert in beiden RPC-Ständen. Mit Mandant die zweistellige aus #1867;
+ * fehlt sie, antwortet PostgREST mit PGRST202 und es wird **nichts**
+ * übernommen (`TENANT_SELECTION_UNAVAILABLE`), statt auf einen geratenen
+ * Mandanten auszuweichen.
+ */
+export function claimRpcArgs(auditId: string, tenantId: string | null): Record<string, string> {
+  return tenantId ? { p_audit_id: auditId, p_tenant_id: tenantId } : { p_audit_id: auditId };
+}
+
+export interface ClaimRpcResult {
+  ok: boolean;
+  already_claimed: boolean;
+  audit_id: string;
+  tenant_id: string;
+  domain: string | null;
+}
+
+/**
+ * Liest die Antwort der RPC. Eine Antwort ohne `audit_id` oder `tenant_id`
+ * ist kein Erfolg — sonst meldete die Oberfläche eine Übernahme, die nicht
+ * belegt ist.
+ */
+export function parseClaimRpcResult(data: unknown): ClaimRpcResult | null {
+  if (!data || typeof data !== 'object') return null;
+  const row = data as Record<string, unknown>;
+  if (row.ok !== true || !isUuid(row.audit_id) || !isUuid(row.tenant_id)) return null;
+  return {
+    ok: true,
+    already_claimed: row.already_claimed === true,
+    audit_id: row.audit_id,
+    tenant_id: row.tenant_id,
+    domain: typeof row.domain === 'string' && row.domain ? row.domain : null,
+  };
 }

@@ -49,7 +49,7 @@
 
 .lv6 .section-heading {
   margin: 0;
-  font-family: 'Source Serif 4', Georgia, serif;
+  font-family: 'Source Serif 4', 'Source Serif 4 Fallback', Georgia, serif;
   font-weight: 400;
   font-size: var(--fs-h2);
   line-height: 1.08;
@@ -157,7 +157,7 @@
 }
 
 .lv6 .card-title {
-  font-family: 'Source Serif 4', Georgia, serif;
+  font-family: 'Source Serif 4', 'Source Serif 4 Fallback', Georgia, serif;
   font-size: var(--fs-h3);
 }
 

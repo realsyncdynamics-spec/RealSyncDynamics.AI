@@ -2,31 +2,40 @@ import { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { usePageMeta } from '../lib/usePageMeta';
 import { Activity, Cpu, ShieldCheck, ScrollText, Bot } from 'lucide-react';
+import {
+  getImplementation,
+  STATUS_LABEL,
+  type ImplementationStatus,
+} from '../product/implementation-status';
 
-// AgentsPage — Agent-Kontrollebene (Public-Demo).
-// Jeder Agent mit Status, Demo-Metriken, jüngsten Aktionen und Scope.
-// Visualisiert als Control-Plane-Tiles, nicht als Chat-Surface.
+// AgentsPage — Agent-Kontrollebene (öffentliche Übersicht).
+// Status jedes Agenten stammt ausschließlich aus src/product/implementation-status.ts
+// (live · preview · coming-soon). Keine hartkodierten Demo-Stati.
 
-interface AgentDef {
+export interface AgentDef {
   id: string;
   name: string;
   role: string;
+  implementationId: string;
   icon: React.ReactNode;
-  /** 'demo' = simulierte Werte; 'live' bleibt reserviert für echte
-   *  Tenant-Telemetrie. */
-  status: 'demo' | 'live' | 'idle';
+  status: ImplementationStatus;
   blurb: string;
   metrics: { label: string; value: string; tone: 'cyan' | 'amber' | 'violet' | 'emerald' }[];
   recent: { ts: string; text: string }[];
 }
 
-const AGENTS: readonly AgentDef[] = [
+function resolveAgentStatus(implementationId: string): ImplementationStatus {
+  return getImplementation(implementationId)?.status ?? 'coming-soon';
+}
+
+export const AGENTS: readonly AgentDef[] = [
   {
     id: 'drift',
     name: 'drift-agent',
     role: 'erkennen · monitoring',
+    implementationId: 'continuous-domain-monitoring',
     icon: <Activity className="h-4 w-4 text-cyan-300" />,
-    status: 'demo',
+    status: resolveAgentStatus('continuous-domain-monitoring'),
     blurb: 'Beobachtet jede Website auf neue Tracker, Header-Regressionen und Banner-Dark-Pattern-Verschiebungen. Öffnet Vorfälle mit strukturiertem Diff.',
     metrics: [
       { label: 'Läufe / h',     value: '4.2', tone: 'cyan' },
@@ -44,8 +53,9 @@ const AGENTS: readonly AgentDef[] = [
     id: 'ai-risk',
     name: 'ai-risk-agent',
     role: 'governance',
+    implementationId: 'agent-os-mesh-compliance',
     icon: <Cpu className="h-4 w-4 text-violet-300" />,
-    status: 'demo',
+    status: resolveAgentStatus('agent-os-mesh-compliance'),
     blurb: 'Klassifiziert entdeckte KI-Endpunkte gegen AI Act Annex III. Erstellt ein Risiko-Profil und schreibt den Eintrag in das Use-Case-Register.',
     metrics: [
       { label: 'Klassifiziert', value: '17', tone: 'violet' },
@@ -63,8 +73,9 @@ const AGENTS: readonly AgentDef[] = [
     id: 'evidence',
     name: 'evidence-agent',
     role: 'automatisieren',
+    implementationId: 'agent-os-mesh-specialists',
     icon: <ShieldCheck className="h-4 w-4 text-emerald-300" />,
-    status: 'demo',
+    status: resolveAgentStatus('agent-os-mesh-specialists'),
     blurb: 'Hashed jeden Befund (SHA-256) und verankert ihn in der Evidence-Chain. Erstellt Audit-Bundles bei Bedarf und prüft die Chain-Integrität.',
     metrics: [
       { label: 'Gehasht',       value: '4.128', tone: 'emerald' },
@@ -82,8 +93,9 @@ const AGENTS: readonly AgentDef[] = [
     id: 'policy',
     name: 'policy-agent',
     role: 'governance · automatisieren',
+    implementationId: 'agent-governance',
     icon: <ScrollText className="h-4 w-4 text-amber-300" />,
-    status: 'demo',
+    status: resolveAgentStatus('agent-governance'),
     blurb: 'Entwirft §13-Updates, AVV-Deltas und Policy-Snippets je Befund. Leitet Diffs an die Verantwortlichen via Slack, E-Mail oder Webhook.',
     metrics: [
       { label: 'Entwürfe / W', value: '21',   tone: 'cyan' },
@@ -103,12 +115,18 @@ const TONE_TEXT: Record<'cyan' | 'amber' | 'violet' | 'emerald', string> = {
   cyan: 'text-cyan-300', amber: 'text-amber-300', violet: 'text-violet-300', emerald: 'text-emerald-300',
 };
 
+const STATUS_BADGE_TONE: Record<ImplementationStatus, { text: string; dot: string }> = {
+  live: { text: 'text-emerald-300', dot: 'bg-emerald-400' },
+  preview: { text: 'text-amber-300', dot: 'bg-amber-400' },
+  'coming-soon': { text: 'text-titanium-400', dot: 'bg-titanium-500' },
+};
+
 export function AgentsPage() {
   usePageMeta({
     title: 'Agents — Governance-Kontrollebene | RealSync Dynamics AI',
     description:
       'Vier autonome Agenten in der Governance-Runtime: Drift, KI-Risiko, Evidence, ' +
-      'Policy. Demo-Surface mit simulierten Werten — keine Kundendaten.',
+      'Policy. Vorschau mit Beispielwerten — keine Kundendaten.',
     url: 'https://RealSyncDynamicsAI.de/agents',
   });
 
@@ -122,11 +140,11 @@ export function AgentsPage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
-        {/* Demo-Strip. */}
+        {/* Status-Strip. */}
         <div className="border-b border-titanium-900 bg-obsidian-900/80">
           <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
             <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
-              Demo-Runtime · simulierte Werte · keine Kundendaten
+              {STATUS_LABEL.preview}-Oberfläche · Beispielwerte · keine Kundendaten
             </span>
           </div>
         </div>
@@ -149,53 +167,59 @@ export function AgentsPage() {
 
         <section className="px-4 sm:px-6 py-20">
           <div className="max-w-7xl mx-auto grid grid-cols-1 gap-px bg-titanium-900">
-            {AGENTS.map((a, i) => (
-              <article key={a.id} className="bg-obsidian-950 p-6 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
-                <div className="flex flex-col gap-3">
-                  <header className="flex items-center gap-3 justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="inline-flex w-9 h-9 items-center justify-center bg-obsidian-900 border border-titanium-800 shrink-0">
-                        {a.icon}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-mono text-base text-titanium-50">{a.name}</div>
-                        <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">{a.role}</div>
+            {AGENTS.map((a, i) => {
+              const badgeTone = STATUS_BADGE_TONE[a.status];
+              return (
+                <article key={a.id} className="bg-obsidian-950 p-6 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
+                  <div className="flex flex-col gap-3">
+                    <header className="flex items-center gap-3 justify-between">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="inline-flex w-9 h-9 items-center justify-center bg-obsidian-900 border border-titanium-800 shrink-0">
+                          {a.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-mono text-base text-titanium-50">{a.name}</div>
+                          <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">{a.role}</div>
+                        </div>
                       </div>
+                      <span
+                        data-testid={`agent-status-${a.id}`}
+                        className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider ${badgeTone.text}`}
+                      >
+                        <span className="relative inline-flex h-1.5 w-1.5">
+                          <span className={`absolute inset-0 rounded-full ${badgeTone.dot} opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`} />
+                          <span className={`relative inline-block h-1.5 w-1.5 rounded-full ${badgeTone.dot}`} />
+                        </span>
+                        {STATUS_LABEL[a.status]}
+                      </span>
+                    </header>
+
+                    <p className="text-sm text-titanium-300 leading-relaxed">{a.blurb}</p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900/60">
+                      {a.metrics.map((m) => (
+                        <div key={m.label} className="bg-obsidian-950 p-3">
+                          <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1">{m.label}</div>
+                          <div className={`font-display font-semibold text-lg tabular-nums ${TONE_TEXT[m.tone]}`}>{m.value}</div>
+                        </div>
+                      ))}
                     </div>
-                    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-300">
-                      <span className="relative inline-flex h-1.5 w-1.5">
-                        <span className={`absolute inset-0 rounded-full bg-amber-400 opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`} />
-                        <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      </span>
-                      demo
-                    </span>
-                  </header>
-
-                  <p className="text-sm text-titanium-300 leading-relaxed">{a.blurb}</p>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900/60">
-                    {a.metrics.map((m) => (
-                      <div key={m.label} className="bg-obsidian-950 p-3">
-                        <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1">{m.label}</div>
-                        <div className={`font-display font-semibold text-lg tabular-nums ${TONE_TEXT[m.tone]}`}>{m.value}</div>
-                      </div>
-                    ))}
                   </div>
-                </div>
 
-                <div className="flex flex-col gap-2">
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Jüngste Aktionen</div>
-                  <div className="bg-obsidian-900 border border-titanium-900 font-mono text-[11px] p-3 space-y-1">
-                    {a.recent.map((r, j) => (
-                      <div key={j} className="flex items-start gap-2 py-0.5 border-b border-titanium-900/40 last:border-b-0">
-                        <span className="text-titanium-600 shrink-0 tabular-nums w-12">{r.ts}</span>
-                        <span className="text-titanium-200 min-w-0 flex-1">{r.text}</span>
-                      </div>
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Jüngste Aktionen (Beispiel)</div>
+                    <div className="bg-obsidian-900 border border-titanium-900 font-mono text-[11px] p-3 space-y-1">
+                      {a.recent.map((r, j) => (
+                        <div key={j} className="flex items-start gap-2 py-0.5 border-b border-titanium-900/40 last:border-b-0">
+                          <span className="text-titanium-600 shrink-0 tabular-nums w-12">{r.ts}</span>
+                          <span className="text-titanium-200 min-w-0 flex-1">{r.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           <div className="mt-6 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-cyan-300">

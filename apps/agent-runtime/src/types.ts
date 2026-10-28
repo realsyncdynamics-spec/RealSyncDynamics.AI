@@ -54,7 +54,9 @@ export type DenyReason =
   | 'approval_required'
   /** PDP nicht erreichbar und Ausfallverhalten ist fail closed. */
   | 'policy_engine_unavailable'
-  | 'denied_by_channel_policy';
+  | 'denied_by_channel_policy'
+  /** /voice-tool: kein von der Runtime angemeldeter Call zu Session/Request (SEC-05). */
+  | 'voice_session_unknown';
 
 export interface PolicyAcceptedDecision {
   ok: true;

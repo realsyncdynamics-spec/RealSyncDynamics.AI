@@ -371,6 +371,30 @@ describe('runAiTool mit Bot-Budget (K6)', () => {
     expect(g.settleUnknown).not.toHaveBeenCalled();
   });
 
+  it('Monatsdeckel-Reservierung gestört → fail-closed: kein Anbieteraufruf, Bot-Budget freigegeben', async () => {
+    const { reserveLlmBudget } = await import('../../supabase/functions/_shared/cost-cap.ts') as unknown as {
+      reserveLlmBudget: ReturnType<typeof vi.fn>;
+    };
+    reserveLlmBudget.mockRejectedValueOnce(new Error('cost-cap reserve failed: connection refused'));
+    const g = guard();
+    await expect(runAiTool(admin() as never, 't', null, 'bot_reply', 'hi', { budget: g }))
+      .rejects.toMatchObject({ code: 'COST_CAP_UNAVAILABLE', status: 503 });
+    expect(callProvider).not.toHaveBeenCalled();
+    expect(g.release).toHaveBeenCalledWith('res1', 'cost_cap_unavailable_before_call');
+    expect(g.settleMeasured).not.toHaveBeenCalled();
+    expect(g.settleUnknown).not.toHaveBeenCalled();
+  });
+
+  it('Monatsdeckel-Reservierung gestört ohne Bot-Budget (ai-invoke, kodee-*) → ebenfalls fail-closed', async () => {
+    const { reserveLlmBudget } = await import('../../supabase/functions/_shared/cost-cap.ts') as unknown as {
+      reserveLlmBudget: ReturnType<typeof vi.fn>;
+    };
+    reserveLlmBudget.mockRejectedValueOnce(new Error('cost-cap reserve: empty RPC result'));
+    await expect(runAiTool(admin() as never, 't', null, 'bot_reply', 'hi'))
+      .rejects.toMatchObject({ code: 'COST_CAP_UNAVAILABLE', status: 503 });
+    expect(callProvider).not.toHaveBeenCalled();
+  });
+
   it('ohne Budget-Option unverändertes Verhalten (andere Aufrufer)', async () => {
     callProvider.mockResolvedValue({ text: 'ok', inputTokens: 1, outputTokens: 1, cachedTokens: 0, pricedUsage: { input: 1, output: 1 } });
     const r = await runAiTool(admin() as never, 't', null, 'bot_reply', 'hi');

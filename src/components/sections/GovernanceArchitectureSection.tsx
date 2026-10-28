@@ -35,7 +35,7 @@ const LOOP = [
   { step: 'MONITOR', body: 'Telemetrie-Stream + TSDB sehen Runtime-Realität' },
   { step: 'DETECT', body: 'Drift · Anomalien · Regulatorische Änderungen' },
   { step: 'REMEDIATE', body: 'Workflow-Engine + Connectors öffnen Jira/GitHub/Slack' },
-  { step: 'EVIDENCE', body: 'Hash-chained · Ed25519 signiert · RFC-3161 timestamped' },
+  { step: 'EVIDENCE', body: 'Hash-chained · Ed25519 signiert · manipulationserkennbar' },
 ];
 
 export function GovernanceArchitectureSection() {

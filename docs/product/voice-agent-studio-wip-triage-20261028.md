@@ -210,3 +210,40 @@ Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es w
 4. Verkauf/Aktivierung: Stripe-SSoT, telefonische Provider-Provisionierung, verifizierter Status `active`, Kostenlimits, Routing- und E2E-Gates. Keine Live-Angebotsbehauptung oder Test-Zahlung vor diesen Freigaben.
 
 **Aktueller Ausführungsstatus:** Sicherheits-/CI-Metadaten und Branch-Dateien geprüft; Dublettenbeweis über sieben Blob-SHAs. Keine echte DB-/Twilio-/Stripe-Prüfung in dieser Session. Kein Security-Merge, kein Produktiv-Deploy.
+
+## 11. Produktions-Gegenprobe 2026-10-28 (ausschließlich lesend)
+
+**Quelle:** verbundenes Supabase-Projekt `RealSyncDynamicsLive`, Region `eu-central-1`. Abfragen erfolgten direkt gegen den tatsächlichen Datenbank- und Edge-Function-Bestand; **keine** Migration/Schreibabfrage, kein Anruf, kein Stripe-Test und keine Secret-Ausgabe.
+
+| Prüfung | Verifizierter Live-Befund |
+|---|---|
+| Mandanten | **8** Datensätze in `public.tenants` |
+| Bot-Inventar | **2**, davon **0 enabled**; ein Chatbot und ein Voicebot jeweils deaktiviert |
+| Bot-Konversationen 30 Tage | **0** in `bot_conversations` |
+| Governed Voice-Sessions 30 Tage | **0** in `voice_sessions` |
+| Voice-Numbers | **0** in `voice_number_bindings` |
+| Voice-Channels | **0** in `voice_channels`, davon 0 aktiv |
+| Bestehende Tenant-Kostencaps | **0** Zeilen in `tenant_cost_caps` |
+| Echte Cost-Ledger-Events 30 Tage | **0**, Summe **0 USD** |
+| `bot_usage_limits`, `bot_usage_reservations` | **nicht vorhanden** (`to_regclass` NULL) |
+| `tenant_voice_agents` (#1998) | **nicht vorhanden** |
+| Edge Functions | 196 bereitgestellt; `bot-chat` ACTIVE v21, `bot-voice-webhook` ACTIVE v23, `appointment-book` ACTIVE v15, `order-intake` ACTIVE v15, `whatsapp-webhook` ACTIVE v21 |
+| Stripe-Grundfunktionen | `stripe-checkout` ACTIVE v107, `stripe-webhook` ACTIVE v105, `stripe-portal` ACTIVE v80 |
+| Noch nicht bereitgestellte Draft-Funktionen | `bot-voice-enforcer` und `provision-voice-agent` nicht in der Live-Edge-Liste |
+
+**Interpretation:** Die kritische Budgetoption **A** (ohne konfigurierte Grenze keine kostenpflichtige Nutzung) lässt sich mit überschaubarem Seed-Umfang für acht Mandanten vorbereiten; es gibt in den erfassten Daten keine aktiven Bot-Kanäle, laufenden Voice-Sessions oder Voice-Nummern, die unmittelbar umgestellt werden müssten. Das ist **kein** Beweis, dass externe Provider keine unabhängigen Kanäle betreiben. Vor dem Live-Merge deshalb Provider-Konto, Router-Konfiguration und Webhook-/Cron-Pfade prüfen.
+
+### Option-A-Plan als eigenständig freizugebende Security-/DB-Änderung
+
+1. Beim Migrationsreview von #2044 nicht den Standard-Fallback `5/50` als endgültige Produktspezifikation übernehmen. Ziel: `bot_usage_fallback()` liefert für **fehlende Konfiguration 0** und führt zu einem klaren Ablehnungsgrund.
+2. Für alle bestehenden acht Mandanten zuvor **explizite, gültige** Limits in einer idempotenten Seed-Migration oder im einmaligen, auditierbaren Migrationslauf setzen; Werte **nicht** aus dem provisorischen Fallback als verbindliche Tarife interpretieren. Höhe und kanalbezogene Reserven stehen noch aus.
+3. Aktivierung und Weiterbetrieb müssen bei abgelaufenen/ungültigen Limits **fail-closed** sein; kein unlimitiertes LLM-/Call-Budget. Für den Live-Test dokumentieren: `0` / fehlend / abgelaufen / gleichzeitig gestartete Anrufe / Provider-Crash.
+4. Prüfen, ob Provider- und Telefoniekosten dem bestehenden USD-Budget überhaupt belastbar zugerechnet werden können; anderenfalls ausdrücklich getrennte Obergrenzen veröffentlichen.
+5. #2046 schließt den stillen-Abbruch-Befund noch nicht vollständig. Eine sichere, getestete Abschlussansage und Fallback-/Rückrufroute erst danach als verfügbar bezeichnen.
+6. Vor jeder produktiven Migration: nachgewiesener CI-Lauf (PG15+/PG17 passend zur Umgebung), Canary/Smoke mit autorisiertem Testmandanten, Rollback-/Stop-Plan und ausdrückliche PR-Einzelfreigabe.
+
+**Nicht geschehen:** Option A ist noch nicht in Datenbank oder Code aktiviert; es wurden weder Mandantenlimits geschrieben noch PRs gemergt.
+
+### Aktueller Triage-Status
+
+Beim erneuten GitHub-Abgleich: `main@f03347d324b772599af7d2d998cf7a9f74be20eb`, **28 offene PRs**. Die Liste ist seit §10 fortgeschritten. Aus 28 müssen mindestens **8** individuell geprüfte PRs gemergt/geschlossen werden, bevor ein neuer Feature-PR zulässig ist. Bestehender Review-Kandidat #1978 ist nachweislich vollständig in #1994 enthalten, aber **erst nach erfolgreicher Integration von #1994** schließbar. Keine Schließung in diesem Prüflauf.

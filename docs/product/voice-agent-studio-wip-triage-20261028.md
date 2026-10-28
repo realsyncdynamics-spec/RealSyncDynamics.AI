@@ -247,3 +247,27 @@ Die Bewertung ist ein **Code- und PR-Inventar**, keine Live-Zertifizierung. Es w
 ### Aktueller Triage-Status
 
 Beim erneuten GitHub-Abgleich: `main@f03347d324b772599af7d2d998cf7a9f74be20eb`, **28 offene PRs**. Die Liste ist seit §10 fortgeschritten. Aus 28 müssen mindestens **8** individuell geprüfte PRs gemergt/geschlossen werden, bevor ein neuer Feature-PR zulässig ist. Bestehender Review-Kandidat #1978 ist nachweislich vollständig in #1994 enthalten, aber **erst nach erfolgreicher Integration von #1994** schließbar. Keine Schließung in diesem Prüflauf.
+
+## 12. Einzelfreigabeliste für die nächste PR-Welle — Stand 28.10.2026
+
+**Keine der nachfolgenden Zeilen ist bereits freigegeben.** Diese Liste erfüllt erst die Nachweis-/Vorlageseite der Policy. Ein pauschales „Go“ für das Gesamtprojekt ersetzt nicht die Einzel-Freigabe von Security-PRs, Migrationen, PR-Schließungen, Preis-/Legal-Claims oder Rebases. `H` = Hotspot-Datei laut fixer Regel `src/App.tsx`, Landing-/Hero-Komponenten oder Review-Kollisionsprüfung. „Unklar“ darf **nicht** stillschweigend in „Nein“ umgedeutet werden.
+
+| PR | Konflikt | Hotspot | Security | Weg und konkrete Begründung |
+|---|---|---|---|---|
+| #1869 | CI-/Base-Stand nachziehen | unklar | **Ja** | **Einzeln prüfen**, weil Audit-Claim-/Berichts-ID ein Berechtigungsproblem betreffen; kein nichtgeprüfter Merge |
+| #1908 | mit Evidence-Verbrauchern abgleichen | unklar | **Ja** | **Einzeln prüfen**: append-only Trigger und bestehende Append-RPC/Provider-Abhängigkeiten; Migration nicht parallel |
+| #1994 | #1978 gleiche 7 Dateien; Base hinter `main` | Nein nach eingesehenen Pfaden | **Ja** | **Behalten, volle CI am aktuellen HEAD + Deploy-Auswirkung prüfen**; anschließend separater Mergeentscheid |
+| #2044 | #1961 `bot-chat` und `_shared/ai.ts`, #1998 `config.toml`; Base hinter `main` | Migrationen/einzelne gemeinsame Dateien, Hotspot-Kontrolle | **Ja** | **Draft behalten, Budgetoption A vorbereiten**, Seed-Werte/E2E/fail-closed offen; Migration ausdrücklich einzeln freigeben |
+| #2046 | auf #2044 gestapelt; vollständige CI am Zielbranch fehlt | Nein nach geänderten Pfaden | **Ja** | **Nach #2044**; stilles Auflegen in mehreren Timing-Pfaden und fehlender echter Twilio-Test blockieren |
+| #1978 | vollständige Überlappung #1994 | Nein nach 7 Pfaden | **Ja** | **Schließkandidat NACH #1994**: alle sieben Head-Blobs byte-identisch zu #1994, aber nicht zu `main` bestätigt |
+| #1998 | `stripe-webhook`/`config.toml` überlappen, Base hinter main | unklar | **Ja** (RLS/Migration) | **Nach Security-Basis prüfen**, bestehende Provisionierung wiederverwenden, Provider-Failover und Migrationen separat entscheiden |
+| #2033 | Dateiüberlappung #2041 in `ci.yml`, `beta-feedback.yml` | `ci.yml` mehrfach geändert | Nein (vorbehaltlich diff) | **Inhalt vor Merge gegen #2041 vergleichen**, Doppeländerung vermeiden |
+| #2041 | enthält zwei Dateien aus #2033 plus Registry/Tests | `ci.yml` | Nein (vorbehaltlich diff) | **Nach #2033 prüfen**, kein stiller Doppel-Merge; Draft-Diff ist nicht auf eine Registry-Zeile beschränkt |
+| #2031 | Beta-Text überlappt #2027 | V5-Landing-Komponente | Nein (vorbehaltlich diff) | **Landing-Claim-Einzelfreigabe**, dann kleines Claim-Gate separat |
+| #2027 | `src/config/beta.ts` überlappt #2031 | Pricing-Landing | Nein (vorbehaltlich diff) | **Preis-/Claim-Freigabe** vor Merge; keine unbestätigten Beta-Credits verkaufen |
+| #1995 | Preis-/Stripe-/Migrationen, Konflikt gemeldet | Pricing-Hotspots | **Ja** (Migration/Entitlements) | **Price-SSoT-Einzelfreigabe**, 1.498 EUR steht im Widerspruch zu vorliegenden Policytexten |
+| #1999 | enthält laut PR-Beschreibung Bestand aus #1995 | Landing-/Pricing-Hotspots | **Ja** (durch gestapelten Diff) | **Nicht separat vorher mergen**; erst #1995 und Inhalt gegen `main` bereinigen |
+
+**Status für Umsetzungsreihenfolge 1 → 2 → 3 → 4:** Sicherheitsabnahme (1) vorbereitet und gegen Produktion verifiziert, aber nicht freigegeben. Triage (2) priorisiert, aber WIP-Stopp gilt weiterhin (**28 offene PRs**, Ziel maximal 20). Feature-PR (3) und Voice-Verkauf (4) werden **nicht** unter Umgehung der Policy eröffnet oder deployt.
+
+**Beabsichtigter nächster autorisierter Schritt:** #1994 für verpflichtende CI und Runtime-Sicherheitsprüfung **individuell** freigeben, danach #2044 für Option-A-Ausarbeitung mit getesteter Seed-Migration und #2046 für eine robuste Abschlussstrategie. Nur danach Triage-/Feature-PRs seriell fortführen.

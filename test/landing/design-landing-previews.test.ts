@@ -1,7 +1,7 @@
 /**
  * Design landing routing contract.
  *
- * Landing v6 is the public front (v5/v4/v2 stay as references); older visual concepts redirect to `/`.
+ * Landing v6 is the public front (v7/v5/v4/v2 stay as references); older visual concepts redirect to `/`.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -10,9 +10,10 @@ import { describe, expect, it } from 'vitest';
 const root = resolve(__dirname, '../..');
 
 describe('design landing previews', () => {
-  it('serves Landing v6 on /, keeps v5/v4/v2 as references and redirects older design references to /', () => {
+  it('serves Landing v6 on /, keeps v7/v5/v4/v2 as references and redirects older design references to /', () => {
     const app = readFileSync(resolve(root, 'src/App.tsx'), 'utf8');
     expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
+    expect(app).toContain('path="/design/landing-v7"');
     expect(app).toContain('path="/design/landing-v5"');
     expect(app).toContain('path="/design/landing-v4"');
     expect(app).toContain('path="/design/landing-v2"');

@@ -1,5 +1,7 @@
 // Command Center entry for /app/dashboard.
-// Uses ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
+// Start view (CustomerStartPanel) first; the detail view below holds
+// HandoffOverview, OsControlStrip, BrowserRuntimePanel and
+// ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
 // the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 
@@ -33,6 +35,7 @@ import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
+import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
 import './sample-workspace.css';
 
@@ -169,6 +172,9 @@ export function CommandCenterDashboard() {
 
   return (
     <>
+      {/* Agent zuerst: eine Frage, `@` wählt den Agenten; übergeben wird an
+          den Assistenten der Shell (rechts oben ausklappbar). */}
+      <AgentComposer />
       {/* Kunden-Startansicht: eine Botschaft, ein nächster Schritt, Fortschritt,
           drei Kernbereiche, Ergebnisse, weitere Module. Testphase/Zahlung
           stehen dort als eine Zeile im Fortschritt (statt TrialBanner). */}

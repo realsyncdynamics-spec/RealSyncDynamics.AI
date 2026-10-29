@@ -1,5 +1,5 @@
 /**
- * Tenant-Spaltenschutz (20261029110000_tenants_owner_update_column_scope.sql).
+ * Tenant-Spaltenschutz (20261029120000_tenants_owner_update_column_scope.sql).
  *
  *   - authenticated/anon haben kein Tabellen-UPDATE mehr auf public.tenants
  *   - Server-only-Spalten (Trial, Partner, Billing, Domain, Branding, Zähler)

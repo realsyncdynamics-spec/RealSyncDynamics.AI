@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { brandButtonClass } from '../../../components/brand';
 import { Link } from 'react-router-dom';
 import {
@@ -25,6 +25,7 @@ import {
   type BrowserPlanStep,
 } from '../browser/browserExecutorClient';
 import { consumedApprovalMessage } from '../browser/consumedApproval';
+import { browserFrameFromResult, type BrowserFrame } from '../browser/browserFrame';
 
 type AgentMode = 'assist' | 'copilot' | 'autonomous';
 type RunOutcome = 'ok' | 'approval' | 'error';
@@ -131,6 +132,9 @@ function resultSummary(result: unknown): string {
 export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string | null }) {
   const sessionId = useBrowserSession();
   const { tenants } = useTenant();
+  // Old async requests must never render a screenshot after switching tenant/session.
+  const browserIdentity = useRef({ tenantId: activeTenantId, sessionId });
+  browserIdentity.current = { tenantId: activeTenantId, sessionId };
   // Aktiver Mandant stammt aus der RLS-gescopten memberships-Liste (TenantProvider).
   const tenantBound = activeTenantId !== null && (tenants ?? []).some((t) => t.tenantId === activeTenantId);
   const [mode, setMode] = useState<AgentMode>('assist');
@@ -151,6 +155,12 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
   const [stepStatus, setStepStatus] = useState<StepStatus[]>([]);
   const [runningPlan, setRunningPlan] = useState(false);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
+  const [browserFrame, setBrowserFrame] = useState<BrowserFrame | null>(null);
+
+  // A frame is only a temporary view of one particular executor session.
+  useEffect(() => {
+    setBrowserFrame(null);
+  }, [activeTenantId, sessionId]);
   /** Plan-Schritt, dessen Freigabe gerade aussteht (für den Status nach „Freigegeben ausführen“). */
   const [pendingStepIndex, setPendingStepIndex] = useState<number | null>(null);
 
@@ -297,8 +307,11 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
 
   async function runAction(action: BrowserExecutorAction, approvalId?: string): Promise<RunOutcome> {
     if (!activeTenantId || !sessionId || !executorConnected) return 'error';
+    const requestTenantId = activeTenantId;
+    const requestSessionId = sessionId;
     setExecuting(true);
     setActionResult(null);
+    setBrowserFrame(null);
     try {
       const response = await executeBrowserActions({
         tenantId: activeTenantId,
@@ -309,6 +322,12 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
       setPendingApprovalId(null);
       setPendingAction(null);
       if (action.type === 'navigate') setLastUrl(action.url);
+      if (action.type === 'screenshot' &&
+          browserIdentity.current.tenantId === requestTenantId &&
+          browserIdentity.current.sessionId === requestSessionId) {
+        // Only an explicit screenshot action may display the remote worker frame.
+        setBrowserFrame(browserFrameFromResult(response.result));
+      }
       setActionResult(resultSummary(response.result));
       return 'ok';
     } catch (error) {
@@ -672,6 +691,41 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
         </div>
 
         <aside className="p-5">
+          <div className="mb-5 border border-titanium-800 bg-obsidian-900 p-3" data-testid="agent-browser-snapshot">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-titanium-200">
+                Agent Browser · Worker-Momentaufnahme
+              </span>
+              <button
+                type="button"
+                onClick={() => void runAction({ type: 'screenshot' })}
+                disabled={!tenantBound || !executorConnected || executing || !sessionId}
+                className="border border-[var(--brand-line-dark-strong)] px-2.5 py-2 text-[11px] font-medium text-[var(--brand-champ-hi)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {executing ? 'Aktion läuft…' : 'Momentaufnahme abrufen'}
+              </button>
+            </div>
+            {browserFrame ? (
+              <figure className="mt-3" data-testid="agent-browser-frame">
+                <img
+                  src={browserFrame.src}
+                  alt="Momentaufnahme der serverseitigen Browser-Agent-Session"
+                  className="w-full border border-titanium-800 object-contain"
+                />
+                <figcaption className="mt-2 break-all font-mono text-[10px] text-titanium-500">
+                  {browserFrame.title || 'Chromium'}{browserFrame.url ? ` · ${browserFrame.url}` : ''}
+                </figcaption>
+              </figure>
+            ) : (
+              <p className="mt-3 text-[11px] leading-5 text-titanium-500">
+                Noch keine Worker-Momentaufnahme. Diese Ansicht ist nicht die eingebettete iframe-Vorschau.
+              </p>
+            )}
+            <p className="mt-2 text-[10px] leading-4 text-titanium-600">
+              Kein Live-Stream. Das Bild stammt nach expliziter Aktion aus der governed Executor-Session
+              und bleibt nur im Speicher dieser Ansicht; kein automatischer Upload in Evidence.
+            </p>
+          </div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-titanium-400">
             <Bot className="h-4 w-4 text-[var(--brand-champ)]" aria-hidden="true" />
             Governance Control

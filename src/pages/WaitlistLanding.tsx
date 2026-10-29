@@ -57,13 +57,13 @@ const BENEFITS = [
 const MODULES = [
   {
     icon: Gauge,
-    name: 'Governance Runtime',
-    text: 'Kontinuierliche Überwachung Ihrer KI-Systeme: Sentinel-Loop, SLO-Tracking und automatische Zuordnung von Assets zu Control-Status.',
+    name: 'Laufendes Monitoring (Beta)',
+    text: 'Tägliche Wiederholungsprüfung Ihrer Domains mit Drift-Hinweisen — in der Beta, Freigabe in Wellen. Die Governance Runtime selbst ist bereits verfügbar.',
   },
   {
     icon: FileLock2,
-    name: 'Evidence Vault',
-    text: 'Auditierbare Nachweise mit Hash-Kette, Export als PDF/JSON und Compliance-Hold für laufende Prüfungen.',
+    name: 'Begleitetes Onboarding',
+    text: 'Gemeinsames Setup von KI-Inventar, Policy Packs, erster Risikoklassifikation und Evidence Vault (verfügbar) für Ihren Workspace.',
   },
   {
     icon: ShieldCheck,
@@ -119,25 +119,27 @@ export function WaitlistLanding() {
               <span className="mb-7 inline-flex items-center gap-2 rounded-chip border border-petrol-200 bg-petrol-50 px-3 py-1">
                 <MailCheck className="h-3.5 w-3.5 text-petrol-700" />
                 <span className="font-mono text-[11px] uppercase tracking-widest text-petrol-700">
-                  Warteliste · Früher Zugang
+                  Beta-Zugang · Begleitetes Onboarding
                 </span>
               </span>
 
               <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-                Sichern Sie sich Ihren Platz für die AI Governance Runtime
+                Sichern Sie sich Ihren Platz für begleitetes Onboarding und Beta-Module
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
-                Wir geben neue Module in Wellen frei, damit jedes Onboarding begleitet
-                stattfinden kann. Tragen Sie sich ein — Sie bekommen sofort Ihre Position
-                und die Einladung, sobald ein Platz frei wird.
+                Die Governance Runtime mit Policy Engine und Evidence Vault ist verfügbar —
+                Sie können sofort mit dem kostenlosen Governance Scan starten. Über diese Liste
+                vergeben wir Plätze für begleitetes Onboarding und für Module in Beta/Preview
+                (z. B. laufendes Monitoring, Agent Governance, Bots). Sie bekommen sofort Ihre
+                Position und die Einladung, sobald ein Platz frei wird.
               </p>
 
               <ul className="mt-8 space-y-3">
                 {[
                   'Kostenlos und unverbindlich — kein Vertrag, keine Zahlungsdaten',
                   'Position wird sofort angezeigt, Einladung in Reihenfolge der Anmeldung',
-                  'Der DSGVO-Website-Scan bleibt ohne Warteliste nutzbar',
+                  'Der kostenlose Governance Scan ist ohne Warteliste sofort nutzbar',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-petrol-600" strokeWidth={1.75} />

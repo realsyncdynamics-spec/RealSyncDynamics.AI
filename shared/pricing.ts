@@ -548,7 +548,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: [],
-    ctaLabel: 'Kostenlosen Audit starten',
+    ctaLabel: 'Kostenlosen Governance Scan starten',
     limits: {
       bots: 0,
       answersPerMonth: 0,

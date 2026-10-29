@@ -236,7 +236,7 @@ export const pricingPlans: PricingPlan[] = [
       'Ideal zum Testen',
     ],
     cta: {
-      label: 'Kostenlosen Audit starten',
+      label: 'Kostenlosen Governance Scan starten',
       href: '/checkout/free-audit',
     },
     checkoutPath: '/checkout/free-audit',

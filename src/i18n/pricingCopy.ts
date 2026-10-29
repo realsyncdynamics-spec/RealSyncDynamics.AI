@@ -18,7 +18,7 @@ export type PricingPlanCopy = {
 const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
   free: {
     tagline: 'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
-    ctaLabel: 'Kostenlosen Audit starten',
+    ctaLabel: 'Kostenlosen Governance Scan starten',
     bullets: [
       'Runtime-Scan einer Domain mit Governance Score 0–100',
       'Top-3-Risiken mit Paragraphenbezug',

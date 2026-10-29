@@ -293,6 +293,10 @@ export const HANDOFF_EXTRA = {
   de: {
     brandName: 'RealSync Dynamics',
     navLogin: 'Login',
+    navGovOs: 'Governance OS',
+    navRuntime: 'Runtime',
+    navScan: 'Governance Scan',
+    navDocs: 'API & Docs',
     langSwitch: 'Sprache wechseln',
     menuOpen: 'Navigation öffnen',
     menuClose: 'Navigation schließen',
@@ -427,6 +431,10 @@ export const HANDOFF_EXTRA = {
   en: {
     brandName: 'RealSync Dynamics',
     navLogin: 'Login',
+    navGovOs: 'Governance OS',
+    navRuntime: 'Runtime',
+    navScan: 'Governance Scan',
+    navDocs: 'API & Docs',
     langSwitch: 'Switch language',
     menuOpen: 'Open navigation',
     menuClose: 'Close navigation',

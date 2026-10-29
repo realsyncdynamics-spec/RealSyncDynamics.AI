@@ -48,9 +48,9 @@ it('keeps the free scan as primary hero CTA and adds the beta offer below it', (
 it('routes the self-check into the domain scan with its own source', () => {
   const view = mount();
   const check = within(view.container.querySelector('#check') as HTMLElement);
-  expect(check.getByText(/den kostenlosen Website-Check starten/)).toBeInTheDocument();
+  expect(check.getByText(/den kostenlosen Governance Scan starten/)).toBeInTheDocument();
   fireEvent.click(check.getAllByRole('radio')[0]);
-  expect(check.getByText(/Ihre Einschätzung mit dem kostenlosen Website-Check Ihrer Domain belegen/)).toBeInTheDocument();
+  expect(check.getByText(/Ihre Einschätzung mit dem kostenlosen Governance Scan Ihrer Domain belegen/)).toBeInTheDocument();
   expect(check.getByTestId('check-audit-cta')).toHaveAttribute('href', '/audit?source=landing-v6-check');
 });
 

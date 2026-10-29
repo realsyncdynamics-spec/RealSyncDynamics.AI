@@ -7,7 +7,7 @@ const AGENTUREN_CONFIG: NicheConfig = {
   eyebrow: 'Für Agenturen + Web-Studios',
   headline: 'DSGVO + AI-Act Compliance für 50 Kundenseiten — ohne 50 Consent-Tools.',
   subline:
-    'Sie betreuen Marketing-Sites, Lead-Funnels und KI-Kampagnen für viele Mandanten parallel — und ein einmaliger Audit verfällt mit dem nächsten Theme-Update. Wir liefern Scans pro Domain plus ein Multi-Tenant-Dashboard für Ihre Projektleiter und Account-Manager; Continuous Monitoring mit Drift-Alerts ist Coming Soon.',
+    'Sie betreuen Marketing-Sites, Lead-Funnels und KI-Kampagnen für viele Mandanten parallel — und ein einmaliger Audit verfällt mit dem nächsten Theme-Update. Wir liefern Scans und Befund-Reports pro Domain; eine Mandanten-Übersicht für mehrere Kundenseiten ist Coming Soon. Continuous Monitoring mit Drift-Alerts ist Coming Soon.',
   primaryCtaHref: '/audit?source=fuer-agenturen',
   painCards: [
     {
@@ -38,17 +38,17 @@ const AGENTUREN_CONFIG: NicheConfig = {
     },
     {
       title: 'White-Label-Reports + Wiedervorlage',
-      body: 'Strukturierter Befund-PDF mit Ihrem Logo (Enterprise), Wiedervorlage-Cadence (monatlich / quartalsweise), Mandanten-Kommunikations-Template.',
+      body: 'Strukturierter Befund-PDF pro Mandant mit Wiedervorlage-Cadence (monatlich / quartalsweise) und Mandanten-Kommunikations-Template. Reports mit Ihrem Logo (White-Label) sind auf der Roadmap.',
     },
   ],
   faqs: [
     {
       q: 'Können wir das Tool unter unserem Logo verkaufen?',
-      a: 'Ja — White-Label-Reports und White-Label-Dashboards sind in Enterprise enthalten.',
+      a: 'Noch nicht. White-Label-Reports sind auf der Roadmap (Enterprise, nach Vertrag); ein White-Label-Dashboard bieten wir derzeit nicht an. Befund-PDFs können Sie heute schon an Ihre Mandanten weitergeben.',
     },
     {
       q: 'Wie sieht das Pricing für Agenturen aus?',
-      a: 'Starter 79 €/Monat, Growth 249 €/Monat, Enterprise nach Vertrag. Die jeweils gültigen Preise und Kontingente stehen auf /pricing.',
+      a: 'Starter 79 €/Monat, Growth 249 €/Monat, Agency 699 €/Monat (jeweils netto zzgl. USt), Enterprise nach Vertrag. Die jeweils gültigen Preise und Kontingente stehen auf /pricing.',
     },
     {
       q: 'Wer haftet, wenn ein Mandant trotzdem abgemahnt wird?',

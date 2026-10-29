@@ -91,7 +91,7 @@ export const featureDetails: Feature[] = [
   {
     slug: 'monitoring',
     title: 'Monitoring',
-    subtitle: 'Regelmäßige Überwachung auf Änderungen',
+    subtitle: 'Regelmäßige Überwachung auf Änderungen (Beta)',
     whatItDoes: 'Monitoring prüft regelmäßig, ob sich auf einer Website etwas verändert hat.',
     whyItMatters: 'Websites ändern sich ständig: neue Plugins, neue Skripte, neue Tracking-Dienste, neue Formulare oder externe Einbindungen.',
     customerBenefit: 'Der Kunde erkennt Änderungen frühzeitig, statt Risiken erst Monate später zu bemerken.',
@@ -109,7 +109,7 @@ export const featureDetails: Feature[] = [
   {
     slug: 'auto-remediation',
     title: 'Auto-Remediation',
-    subtitle: 'Konkrete Lösungsvorschläge und Code-Snippets',
+    subtitle: 'Konkrete Lösungsvorschläge und Code-Snippets (Beta, mit Review-Pflicht)',
     whatItDoes: 'Auto-Remediation liefert konkrete Lösungsvorschläge und Copy-Paste-Code für typische Probleme.',
     whyItMatters: 'Viele Tools zeigen nur ein Problem. RealSyncDynamics.AI zeigt dem Kunden auch, wie es gelöst werden kann.',
     customerBenefit: 'Der Kunde kann technische Korrektionen schneller umsetzen oder an Entwickler weitergeben.',
@@ -317,7 +317,7 @@ export const pricingPlans: PricingPlan[] = [
       'Alle Starter-Features plus:',
       'KI-Governance',
       'AI Risk Register',
-      'Täglich aktualisiertes Risiko-Dashboard',
+      'Risiko-Dashboard (tägliche Aktualisierung: Beta)',
       'Copy-Paste-Lösungen und Code-Snippets',
       'Chatbots für Chat, Telegram und WhatsApp',
       'Bis zu 2.000 Bot-Antworten pro Monat',

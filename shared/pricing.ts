@@ -2954,7 +2954,8 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
  * die Price-ID in PLAN_STRIPE_EXPECTATIONS verdrahtet hat. Bis dahin führt jeder
  * Enterprise-CTA zu /contact-sales.
  */
-export const ENTERPRISE_CHECKOUT_PRICE_WIRED = false as boolean;
+// Verdrahtet 2026-10-29: price_1UVxUrREjTWueUcGuSjqctMH (prod_UxG9V9clbqV7qw).
+export const ENTERPRISE_CHECKOUT_PRICE_WIRED = true as boolean;
 
 export function checkoutHrefForPlan(
   plan: Plan | PlanId,

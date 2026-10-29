@@ -118,7 +118,7 @@ it('keeps one filled CTA in the hero and ties the plan row to it with its own so
   }
   // Enterprise steht in der Preiszeile; fail-closed → /contact-sales bis Price-ID verdrahtet.
   const enterprise = screen.getByTestId('hero-secondary-cta');
-  expect(enterprise).toHaveAttribute('href', '/contact-sales?plan=enterprise&source=landing-v6-hero');
+  expect(enterprise).toHaveAttribute('href', '/checkout/enterprise?source=landing-v6-hero');
   expect(enterprise).toHaveTextContent('1.498 € / Monat netto');
   expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
 });

@@ -460,9 +460,9 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     expect(enterprise.trialDays).toBe(0);
 
     const href = checkoutHrefForPlan(enterprise, { interval: 'month' });
-    // Fail-closed: ohne verdrahtete Live-Price-ID führt Enterprise zu /contact-sales.
-    expect(ENTERPRISE_CHECKOUT_PRICE_WIRED).toBe(false);
-    expect(href).toContain('/contact-sales?plan=enterprise');
+    // Live-Price-ID price_1UVxUrREjTWueUcGuSjqctMH verdrahtet → Self-Service-Checkout.
+    expect(ENTERPRISE_CHECKOUT_PRICE_WIRED).toBe(true);
+    expect(href).toContain('/checkout/enterprise');
     expect(href).not.toContain('pilot=true');
 
     // Die Jahresvariante hat keinen Stripe-Preis und bleibt gesperrt.

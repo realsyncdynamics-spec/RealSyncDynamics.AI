@@ -55,9 +55,9 @@ export interface PlanStripeExpectation {
 export const PLAN_STRIPE_EXPECTATIONS: Readonly<Record<string, PlanStripeExpectation>> = {
   enterprise: {
     taxBehavior: 'exclusive',
-    // Nach Stripe-Verifikation setzen (Runbook, PR #1995), z. B.
-    // productId: { live: 'prod_UxG9V9clbqV7qw', test: null },
-    productId: { live: null, test: null },
+    // Live verifiziert 2026-10-29 (Dominik Go #1999): Price
+    // price_1UVxUrREjTWueUcGuSjqctMH (149800, eur, month, exclusive, livemode).
+    productId: { live: 'prod_UxG9V9clbqV7qw', test: null },
   },
 };
 

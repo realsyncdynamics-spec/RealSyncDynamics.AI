@@ -235,6 +235,7 @@ const AiSystemDetailView = lazy(() => import('./features/governance/ai-registry/
 const EnforcementPanel = lazy(() => import('./features/governance/handoff/EnforcementPanel').then((m) => ({ default: m.EnforcementPanel })));
 const EvidenceChainPanel = lazy(() => import('./features/governance/handoff/EvidenceChainPanel').then((m) => ({ default: m.EvidenceChainPanel })));
 const ReportsGrid = lazy(() => import('./features/governance/handoff/ReportsGrid').then((m) => ({ default: m.ReportsGrid })));
+const CommandCenterView = lazy(() => import('./features/command-center/CommandCenterView').then((m) => ({ default: m.CommandCenterView })));
 const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agents/AgentsCenterView').then((m) => ({ default: m.AgentsCenterView })));
 const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
 const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
@@ -979,6 +980,7 @@ function RoutesWithTracking() {
       <Route path="/app/admin/billing" element={<AppGate><GovernanceBrowserShell><AdminBillingPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/api-keys" element={<AppGate><GovernanceBrowserShell><AdminAPIKeysPage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/audit" element={<AppGate><GovernanceBrowserShell><AdminAuditPage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/command-center" element={<AppGate><CommandCenterView /></AppGate>} />
       <Route path="/app/agents" element={<AppGate><GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/documents" element={<AppGate><GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/audit" element={<AppGate><GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell></AppGate>} />

@@ -126,12 +126,19 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Enterprise',
+      price: '1498',
       priceCurrency: 'EUR',
-      url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      // Kein Festpreis in schema.org-Offer: Enterprise wird vertraglich
-      // vereinbart und manuell fakturiert. Ein `price` hier waere ein
-      // maschinenlesbares Angebot, das der Checkout nicht erfuellt.
-      description: 'Preis auf Anfrage — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      url: `${SITE_URL}/checkout/enterprise`,
+      // Seit 2026-10-24 (Dominik) per Self-Service-Checkout, netto, ohne
+      // Testphase. Betrag muss shared/pricing.ts entsprechen.
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '1498',
+        priceCurrency: 'EUR',
+        billingDuration: 'P1M',
+        valueAddedTaxIncluded: false,
+      },
+      description: '1.498 €/Monat netto, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -345,7 +352,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Enterprise (auf Anfrage). Runtime-native Governance: Website-Scans, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
+      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat netto, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

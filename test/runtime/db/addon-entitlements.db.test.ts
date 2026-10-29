@@ -152,16 +152,17 @@ WHERE NOT EXISTS (SELECT 1 FROM public.products p WHERE p.stripe_price_id = v.pr
 --
 -- ON CONFLICT DO NOTHING heisst hier: Der Katalogwert gewinnt. Das ist Absicht — die
 -- Zahlen unten sind aus dem Katalog abgeschrieben (Growth 2.000, Response
--- Pack 5.000, Voice 500, Enterprise -1, Governance Launch 1.000), gemessen
--- am 2026-09-06. Weichen sie eines Tages ab, schlägt der Test fehl statt
--- still eine andere Rechnung zu prüfen.
+-- Pack 5.000, Voice 500, Enterprise 50.000, Governance Launch 1.000), zuletzt
+-- abgeglichen am 2026-10-25 (Enterprise war bis 20261024090100 -1). Weichen
+-- sie eines Tages ab, schlägt der Test fehl statt still eine andere Rechnung
+-- zu prüfen.
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
 SELECT p.id, e.id, v.val FROM (VALUES
   ('plan', 'growth','bots.enabled',1),
   ('plan', 'growth','limit.bot_messages_monthly',2000),
   ('plan', 'growth','policy.packs',1),
   ('plan', 'enterprise','bots.enabled',1),
-  ('plan', 'enterprise','limit.bot_messages_monthly',-1),
+  ('plan', 'enterprise','limit.bot_messages_monthly',50000),
   ('plan', 'free_audit','policy.packs',0),
   ('addon','internal_addon_response_pack','limit.bot_messages_monthly',5000),
   ('addon','internal_addon_voice','bots.voice',1),
@@ -300,7 +301,24 @@ d('tenant_entitlements — Add-on-Grants', () => {
     expect(ent.get('limit.bot_messages_monthly')).toBe(2000);
   });
 
+  it('addiert ein Add-on auch auf das Enterprise-Kontingent', async () => {
+    await ctx.client.query(`UPDATE public.subscriptions SET plan_key = 'enterprise' WHERE tenant_id = $1`, [MANDANT]);
+    await addonGrant(ctx, 'internal_addon_response_pack');
+    const ent = await entitlements(ctx, MANDANT);
+    expect(ent.get('limit.bot_messages_monthly'), '50.000 aus Enterprise + 5.000 aus dem Pack').toBe(55000);
+  });
+
   it('lässt -1 alles schlagen — auch einen Add-on-Zuschlag', async () => {
+    // Seit 20261024090100 führt kein Plan mehr -1 für Antworten. Die Regel
+    // des Auflösers gilt trotzdem; der Test setzt den Wert deshalb in der
+    // Transaktion (ROLLBACK in closeDb) auf dem Enterprise-Plan.
+    await ctx.client.query(
+      `UPDATE public.product_entitlements pe SET value = -1
+         FROM public.products p, public.entitlements e
+        WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
+          AND p.default_for_plan_key = 'enterprise'
+          AND e.key = 'limit.bot_messages_monthly'`,
+    );
     await ctx.client.query(`UPDATE public.subscriptions SET plan_key = 'enterprise' WHERE tenant_id = $1`, [MANDANT]);
     await addonGrant(ctx, 'internal_addon_response_pack');
     const ent = await entitlements(ctx, MANDANT);

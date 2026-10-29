@@ -189,7 +189,8 @@ describe('State Effects', () => {
 
     const enterpriseStep = getFlowStepById('pricing.checkoutEnterprise');
     expect(enterpriseStep?.stateEffect?.selectedPlan).toBe('enterprise');
-    expect(enterpriseStep?.primary?.to).toContain('/contact-sales');
+    // Seit 2026-10-24 per Checkout buchbar.
+    expect(enterpriseStep?.primary?.to).toBe('/checkout/enterprise');
   });
 
   it('should mark checkout status transitions', () => {

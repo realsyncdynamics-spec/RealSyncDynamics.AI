@@ -110,12 +110,13 @@ test.describe('Checkout Flow', () => {
     // können wir echte Stripe Price-IDs testen
   });
 
-  test('Enterprise Checkout leitet zu Contact-Sales um', async ({ page }) => {
-    // Enterprise hat keinen self-serve Checkout
+  test('Enterprise Checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
+    // Seit 24.10.2026 wird Enterprise per Self-Service-Checkout verkauft
+    // (`purchaseMode: 'checkout'`, ohne Testphase).
     await page.goto('http://localhost:3000/checkout/enterprise');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Sollte zu /contact-sales umleiten
-    await page.waitForURL('**/contact-sales*');
-    expect(page.url()).toContain('/contact-sales');
+    expect(page.url()).toContain('/checkout/enterprise');
+    expect(page.url()).not.toContain('/contact-sales');
   });
 });

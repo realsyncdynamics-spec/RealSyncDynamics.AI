@@ -47,9 +47,9 @@ describe('SiteOS Builder — Pricing SSoT', () => {
     }
   });
 
-  it('Enterprise contract: sites display 25, entitlement unlimited (-1)', () => {
+  it('Enterprise self-service (seit 2026-10-24): sites display 25 = entitlement 25', () => {
     expect(limitOf(planById('enterprise'), 'sites')).toBe(25);
-    expect(planEntitlementValue('enterprise', 'limit.sites')).toBe(-1);
+    expect(planEntitlementValue('enterprise', 'limit.sites')).toBe(25);
     expect(planGrants('enterprise', 'siteos.builder')).toBe(true);
   });
 

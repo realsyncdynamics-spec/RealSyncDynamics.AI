@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Globe, Users, TrendingUp, Lock } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, planById } from '@/shared/pricing';
+
+const ENTERPRISE = planById('enterprise');
 
 export function AgenciesSolution() {
   return (
@@ -203,18 +206,18 @@ export function AgenciesSolution() {
             {/*
               COMMERCIAL-SSOT: temporary production hotfix.
               Canonical source migration tracked in Phase 2.
-              Kein Festpreis: Enterprise wird vertraglich vereinbart und
-              manuell fakturiert (`priceOnRequest`), der Self-Service-Checkout
-              kann 1.249 € nicht einloesen. Agency stand hier bis AP2 und ist
-              stillgelegt — ersetzt wird der Plan nicht durch einen Betrag,
-              sondern durch den Vertriebsweg.
+              Betrag und Checkout-Ziel aus shared/pricing.ts — Enterprise ist
+              seit 2026-10-24 per Self-Service-Checkout buchbar.
             */}
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">Auf Anfrage</div>
-            <p className="text-silver-400 mb-6">Enterprise — White-Label, Sites nach Vertrag, API + Webhooks</p>
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">
+              {formatPriceEur(ENTERPRISE.price.monthlyEur)}
+              <span className="text-base font-normal text-silver-400"> {monthlyPriceSuffix(ENTERPRISE)}</span>
+            </div>
+            <p className="text-silver-400 mb-6">Enterprise — White-Label, bis zu {ENTERPRISE.limits.sites} Sites, API + Webhooks</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'White-Label (dein Logo, deine Domain)',
-                'Kunden-Domains nach Vertrag',
+                `Bis zu ${ENTERPRISE.limits.domains} Kunden-Domains`,
                 'DSGVO + AI-Act Monitoring',
                 'Evidence Vault',
                 'Team-Zugang (5 Nutzer)',
@@ -227,7 +230,7 @@ export function AgenciesSolution() {
                 </li>
               ))}
             </ul>
-            <Link to="/contact-sales?tier=enterprise&source=solutions" className="surface-mono inline-block px-8 py-3 font-bold">Enterprise anfragen</Link>
+            <Link to={checkoutHrefForPlan(ENTERPRISE, { source: 'solutions' })} className="surface-mono inline-block px-8 py-3 font-bold">{ENTERPRISE.ctaLabel}</Link>
           </div>
 
           <p className="text-silver-400 text-sm">

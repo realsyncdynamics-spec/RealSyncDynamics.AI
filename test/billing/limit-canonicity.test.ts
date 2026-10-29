@@ -164,18 +164,42 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
     }
   });
 
-  it('weist Enterprise als unaufgelösten Vertragsfall aus', () => {
-    // Acht Felder, in denen die Berechtigung `unbegrenzt` sagt und die
-    // Preisseite eine Zahl. Unter der verfeinerten Regel ist hier **keine**
-    // der beiden Spalten die Wahrheit — der Vertrag ist es, und der liegt
-    // dem System nicht vor. Deshalb darf auf diesen acht Feldern kein Gate
-    // entstehen, solange die Quelle nicht aufgelöst ist.
-    const ent = grundlinie.filter((e) => e.plan === 'enterprise');
-    expect(ent).toHaveLength(9);
-    for (const e of ent) {
-      expect(e.berechtigung).toBe(-1);
-      expect(e.kanonische_quelle).toBe('vertrag');
+  /**
+   * Bis 2026-10-24 war Enterprise der einzige Vertragsplan: neun Felder, in
+   * denen die Berechtigung `-1` sagte und die Preisseite eine Zahl. Seit der
+   * Umstellung auf Self-Service-Checkout (Dominik 2026-10-24) gibt es keinen
+   * Vertrag mehr, der die Grenze zieht — die Preisseite ist kanonisch, und
+   * die Berechtigung muss ihr folgen.
+   */
+  it('führt Enterprise als Self-Service-Plan ohne Divergenz', () => {
+    const enterprise = ORDERED_PLANS.find((p) => p.id === 'enterprise')!;
+    expect(enterprise.availability).toBe('self_service');
+    expect(grundlinie.filter((e) => e.plan === 'enterprise')).toEqual([]);
+    expect(gemessen().filter((e) => e.plan === 'enterprise')).toEqual([]);
+  });
+
+  /**
+   * Der eigentliche Schutz der Umstellung: Ohne Vertrag dürfen die
+   * kostentreibenden Kontingente nicht unbegrenzt sein — sonst kauft ein
+   * Checkout für 1.498 € unbegrenzte KI-Nutzung auf Kosten des Betreibers.
+   */
+  it('deckelt die Kosten-Kontingente von Enterprise endlich', () => {
+    const ent = PLAN_ENTITLEMENTS.enterprise as Record<string, number>;
+    for (const key of [
+      'limit.ai_cost_monthly_cents',
+      'limit.ai_calls_monthly',
+      'limit.ai_tokens_monthly',
+      'limit.bot_messages_monthly',
+      'limit.bot_voice_minutes_monthly',
+      'limit.whatsapp_conversations_monthly',
+      'limit.api_calls_monthly',
+      'limit.automation_runs_monthly',
+      'limit.workflow_runs_monthly',
+    ]) {
+      expect(typeof ent[key], `${key} fehlt`).toBe('number');
+      expect(ent[key], `${key} ist unbegrenzt`).toBeGreaterThan(0);
     }
+    expect(ent['limit.ai_cost_monthly_cents']).toBe(25000);
   });
 
   it('leitet die kanonische Quelle aus der Planart ab, nicht aus dem Feld', () => {
@@ -218,8 +242,10 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
      * weiterhin kein Gate. Option A hat die Quelle benannt, nicht in die
      * Datenbank geholt.
      */
+    // Seit 2026-10-24 gibt es keinen Vertragsplan mehr (Enterprise ist
+    // Self-Service). Die Regel bleibt für den nächsten stehen.
     const vertragsplaene = ORDERED_PLANS.filter((p) => p.availability === 'contract');
-    expect(vertragsplaene.map((p) => p.id)).toEqual(['enterprise']);
+    expect(vertragsplaene.map((p) => p.id)).toEqual([]);
 
     for (const plan of vertragsplaene) {
       const zeilen = grundlinie.filter((e) => e.plan === plan.id);
@@ -235,9 +261,9 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
   it('hält fest, dass nur Vertragspläne eine unaufgelöste Quelle haben', () => {
     // Die Zahl ist die Arbeitsmenge für Schritt 1 aus §7: acht Felder, deren
     // Wert erst bestimmbar ist, wenn es einen Ort für Vertragswerte gibt.
+    // Seit 2026-10-24 null: Enterprise ist Self-Service, kein Vertragsplan.
     const unaufgeloest = grundlinie.filter((e) => e.kanonische_quelle === 'vertrag');
-    expect(unaufgeloest).toHaveLength(9);
-    expect(new Set(unaufgeloest.map((e) => e.plan))).toEqual(new Set(['enterprise']));
+    expect(unaufgeloest).toEqual([]);
   });
 
   /**
@@ -259,8 +285,9 @@ describe('Kontingente — plan.limits gegen PLAN_ENTITLEMENTS', () => {
    * Partner und Governance Launch führen überwiegend endliche Werte.
    */
   it('Vertragspläne tragen ausschliesslich `-1` als Kontingent', () => {
+    // Seit 2026-10-24 leer — die Regel bleibt für den nächsten Vertragsplan.
     const vertragsplaene = ORDERED_PLANS.filter((p) => p.availability === 'contract');
-    expect(vertragsplaene.map((p) => p.id)).toEqual(['enterprise']);
+    expect(vertragsplaene.map((p) => p.id)).toEqual([]);
 
     for (const plan of vertragsplaene) {
       const satz = PLAN_ENTITLEMENTS[plan.planKey] ?? {};

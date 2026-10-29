@@ -55,28 +55,27 @@ describe('public/llms.txt', () => {
       ['starter', 'Starter'],
       ['growth', 'Growth'],
       ['agency', 'Agency'],
+      // Enterprise seit 2026-10-24 per Checkout buchbar (kein priceOnRequest mehr).
+      ['enterprise', 'Enterprise'],
     ] as const) {
       const plan = byId.get(id);
       expect(plan, `Plan ${id} fehlt in PLANS`).toBeDefined();
       expect(plan!.priceOnRequest).not.toBe(true);
-      expect(llms).toContain(`${label}: ${plan!.price.monthlyEur} €/Monat`);
+      // Nettopreis-Pläne (Enterprise) stehen als „1.498 €/Monat netto“.
+      const amount = plan!.netPriceLabel
+        ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat netto`
+        : `${plan!.price.monthlyEur} €/Monat`;
+      expect(llms).toContain(`${label}: ${amount}`);
     }
+    expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);
+    expect(llms).not.toMatch(/\bab 1[.]?498/);
     const free = byId.get('free');
     expect(free?.price.monthlyEur).toBe(0);
     expect(llms).toContain('Free Audit: 0 €');
 
-    // Enterprise: solange die SSoT `priceOnRequest` traegt, darf hier keine
-    // Zahl stehen. Faellt das Feld (siehe #1487), muss dieser Test zusammen
-    // mit der Datei nachgezogen werden — bewusst kein stilles Umschalten.
-    const enterprise = byId.get('enterprise');
-    expect(enterprise).toBeDefined();
-    if (enterprise!.priceOnRequest) {
-      expect(llms).toMatch(/Enterprise: Preis auf Anfrage/);
-      expect(llms).not.toContain(String(enterprise!.price.monthlyEur));
-      expect(llms).not.toContain('1.249');
-    } else {
-      expect(llms).toContain(`Enterprise: ab ${enterprise!.price.monthlyEur} €/Monat`);
-    }
+    // Der alte Enterprise-Listenpreis darf nirgends mehr auftauchen.
+    expect(llms).not.toContain('1249');
+    expect(llms).not.toContain('1.249');
   });
 
   it('behauptet keine Vollstaendigkeit und keine Zertifizierung', () => {

@@ -492,7 +492,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
     ? (lang === 'en' ? 'custom offer' : tier.priceSuffix)
     : showYearly
       ? t('perYear')
-      : t('perMonth');
+      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;

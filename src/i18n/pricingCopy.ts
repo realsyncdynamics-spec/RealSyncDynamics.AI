@@ -62,7 +62,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
   },
   enterprise: {
     tagline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO (Coming Soon).',
-    ctaLabel: 'Enterprise anfragen',
+    ctaLabel: 'Enterprise starten',
     bullets: [
       'Alles aus Agency',
       'Audit Center Pro mit 200 Berichten pro Monat',
@@ -120,7 +120,7 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
   },
   enterprise: {
     tagline: 'Enterprise-wide governance via live policy packs plus framework roadmap — with SLA and SSO (Coming Soon).',
-    ctaLabel: 'Enterprise inquiry',
+    ctaLabel: 'Start Enterprise',
     bullets: [
       'Everything in Agency',
       'Audit Center Pro with 200 reports per month',

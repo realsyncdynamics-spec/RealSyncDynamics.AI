@@ -9,6 +9,7 @@ import {
   ALL_PLAN_SLUGS,
   ALL_FEATURE_SLUGS,
 } from '../../src/content/pricingContent';
+import { planById } from '../../shared/pricing';
 
 describe('pricingContent', () => {
   describe('Content Structure', () => {
@@ -89,11 +90,10 @@ describe('pricingContent', () => {
     });
 
     // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
-    // /checkout/<slug>, sondern auf /contact-sales. Enterprise wird
-    // vertraglich vereinbart (`inquiry`); Partner und Agency-Jahresvariante
-    // sind nicht self-service-checkoutfähig. Agency monatlich ist wieder
-    // verkaufbar.
-    const INQUIRY_ONLY_SLUGS = ['enterprise', 'partner', 'partner_yearly'];
+    // /checkout/<slug>, sondern auf /contact-sales. Partner ist nicht
+    // self-service-checkoutfähig. Agency monatlich ist wieder verkaufbar,
+    // Enterprise seit 2026-10-24 ebenfalls (Self-Service-Checkout).
+    const INQUIRY_ONLY_SLUGS = ['partner', 'partner_yearly'];
 
     // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
     // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
@@ -341,16 +341,16 @@ describe('pricingContent', () => {
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
     // Ein Plan weist nur dann einen Betrag aus, wenn er auch abschliessbar
-    // ist. Enterprise wird vertraglich vereinbart, Agency und Partner sind
-    // seit AP2 stillgelegt — fuer beide waere ein Festpreis ein Angebot,
-    // das `stripe-checkout` nicht einloest.
+    // ist. Partner ist seit AP2 stillgelegt — ein Festpreis waere ein
+    // Angebot, das `stripe-checkout` nicht einloest. Enterprise ist seit
+    // 2026-10-24 per Checkout buchbar und weist seinen Betrag aus.
     // Dazu kommen Jahresvarianten ohne verdrahteten Stripe-Preis: fuer
     // `starter_yearly` und `growth_yearly` steht in `public.products` nur ein
     // Platzhalter, `stripe-checkout` weist sie mit PRICE_NOT_CONFIGURED ab.
     // Ihre MONATS-Plaene sind davon unberuehrt und weisen weiter einen
     // Betrag aus.
     const NO_PUBLIC_PRICE = [
-      'free-audit', 'enterprise',
+      'free-audit',
       'agency_yearly', 'partner', 'partner_yearly',
       'starter_yearly', 'growth_yearly',
     ];
@@ -386,14 +386,14 @@ describe('pricingContent', () => {
 
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
-    // Enterprise darf keinen oeffentlichen Festpreis mehr ausweisen: der
-    // Self-Service-Checkout kann ihn nicht erfuellen (manuelle Faktura,
-    // Sentinel statt echter Stripe-Price).
-    it('enterprise weist keinen oeffentlichen Festpreis aus', () => {
+    // Enterprise ist seit 2026-10-24 per Checkout buchbar; der Betrag muss
+    // der Pricing-SSoT entsprechen.
+    it('enterprise weist den Checkout-Preis aus der SSoT aus', () => {
       const enterprise = getPlanBySlug('enterprise');
-      expect(enterprise?.priceString).toBe('Individuelles Angebot');
-      expect(enterprise?.priceString).not.toMatch(/\d/);
-      expect(enterprise?.price).toBe(0);
+      expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
+      expect(enterprise?.priceString).toBe('1.498 €');
+      expect(enterprise?.interval).toBe('/ Monat netto');
+      expect(enterprise?.cta.href).toBe('/checkout/enterprise');
     });
 
     it('prices should be in ascending order for paid plans', () => {

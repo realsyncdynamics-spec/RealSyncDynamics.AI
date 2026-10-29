@@ -143,7 +143,7 @@ describe('Wissensnotizen', () => {
       return statSync(join(root, p)).isDirectory() ? walk(p) : p.endsWith('.md') ? [p] : [];
     });
     const notes = walk('docs/ai-os').map((p) => ({ path: p, content: readFileSync(join(root, p), 'utf8') }));
-    expect(notes.length).toBeGreaterThanOrEqual(6);
+    expect(notes.length).toBeGreaterThanOrEqual(5);
     expect(checkKnowledgeNotes(notes, NOW)).toEqual([]);
   });
 });

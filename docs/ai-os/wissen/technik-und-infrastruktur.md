@@ -30,4 +30,4 @@ abgeschaltet (E-V5/E-V6/E-V9 offen); Architekturüberblick in
 (u. a. `check:context`, `check:fabrication`, `check:dashboard`, `check:edge-refs`).
 
 Verknüpft: [Entwicklung und Arbeitsregeln](entwicklung-und-regeln.md) ·
-[AI-OS-Architektur](../architektur.md)
+[AI-OS-Architektur](../README.md#bestandsaufnahme-und-architektur)

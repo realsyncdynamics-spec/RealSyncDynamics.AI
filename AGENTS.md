@@ -1,57 +1,48 @@
-# RealSync Lead Architect Persona
+# AGENTS.md — Globale Agentenregeln (Ebene 1)
 
-## Rolle
-Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung von EU-nativen AI-SaaS-Lösungen mit Fokus auf digitaler Souveränität, C2PA-Herkunftsnachweisen und Enterprise-Sicherheit.
+Gilt für jeden Agenten (Claude Code, Codex, Copilot, Subagenten); `CLAUDE.md` importiert sie.
+Profile und Policies dürfen verschärfen, nie lockern.
 
-## Design-DNA (Hard-Edge Industrial UI)
-- **Farben:** Obsidian-Schwarz (#0A0A0B), Titanium-Silber (#E2E2E2), Security-Blue (#0052FF).
-- **Layout:** „Sovereign Grid“ (40px Raster).
-- **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
-- **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
+**Produkt (K4, 27.10.2026, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für **KI-Mitarbeiter
+mit eingebauter Governance** für KMU mit Kundenkontakt, zuerst Handwerk. Erster Ablauf:
+AI Receptionist (Anfrage, Kontakt, Terminwunsch, Übergabe an Menschen). DSGVO/EU AI Act,
+Freigaben und Nachweise sind Infrastruktur, nicht Hero-Botschaft.
 
-### Public Landing und Frontend — gezielt weiterentwickeln
+## Regelhierarchie
 
-Stand 10.10.2026: `/` rendert `src/pages/LandingV4.tsx`.
-Die tatsächliche Routenzuordnung in `src/App.tsx` ist maßgeblich.
+1. Diese Datei · 2. `CLAUDE.md` · 3. genau ein Profil aus `docs/claude/CONTEXT_POLICY.md`
+→ „Aufgabenprofile“ (website, voice-runtime, security, database, devops, qa) ·
+4. `.github/PR_TRIAGE_POLICY.md` · 5. Nachweise nach `.github/pull_request_template.md`
 
-- **Aktive Komponenten:** `src/components/landing/v4/`.
-- **Aktive Gestaltung:** `src/styles/landing-v4-classical.css`, gekapselt unter `.gv4`.
-- **Referenzen:** `/design/landing-v2` bleibt als Vorschau erreichbar.
-  `/design/governance-ai` und `/design/titan` leiten auf `/` um.
-- **Inhalte/Preise:** Planpreise und Checkout-Ziele aus `shared/pricing.ts`.
-- **Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026):**
-  Frontend und Landingpage gezielt verbessern. V4 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
-- **Metadaten:** Monospace für technische Daten beibehalten.
-  Risk-/Statusfarben bleiben semantisch von Brand-/VIP-Akzenten getrennt.
+Sicherheitsregeln und Einzel-Freigaben gehen vor. Technische Wahrheit ist der Code
+(Startseite = `<Route path="/">` in `src/App.tsx`). Widerspruch Doku/Code: melden, nicht befolgen.
 
-**Alte Landing-Dateien sind kein Löschbeleg.** Vor Cleanup weiterhin
-Importgraph, Tests, Registries und Vorschau-Routen prüfen. `npm run check:dead`
-liefert nur Kandidaten, keine automatische Löschfreigabe.
+## Sicherheit — ausnahmslos
 
-## Kontext RealSync Dynamics
-Positionierung seit 27.10.2026 (Owner-Entscheid, `docs/PRODUCT_PRIORITIZATION.md` → K4):
-Plattform für **KI-Mitarbeiter mit eingebauter Governance**.
-1. **Zielgruppe:** KMU mit Kundenkontakt, zuerst Handwerksbetriebe; danach weitere Branchen
-   (Praxen, Kanzleien, Gastronomie, Immobilien, Autohäuser) und Agenturen.
-2. **Kundennutzen:** erreichbare Anfragen, qualifizierte Leads, Terminanfragen, weniger Routinearbeit.
-3. **Produktebenen:** kostenlose Checks → Builder (Landingpage, Telefon-, WhatsApp-, Serviceassistent)
-   → Geschäftsbetrieb (Wissensbasis, Leads, Dialoge, Terminbuchung) → Governance
-   (Berechtigungen, Freigaben, Nachweise, Monitoring) als Infrastruktur.
-4. **Erster Kundenablauf:** AI Receptionist Handwerk — Anfrage entgegennehmen, Anliegen und
-   Kontaktdaten erfassen, Terminwunsch aufnehmen, an einen Menschen übergeben.
-5. **Compliance:** EU AI Act und DSGVO bleiben verbindlich; sie werden mitgeliefert, nicht als
-   Hero-Botschaft verkauft. Keine erfundenen Referenzen, Kennzahlen oder Zertifizierungen.
-6. **Weitere Module** (CreatorSeal, UFO-Bridge, Licensing Hub) sind nicht der aktuelle Fokus.
-4. **Terminologie:**
-   - „Prüfpfad“ statt „Audit Trail“
-   - „Herkunftsnachweis“ statt „Provenance“
+- Keine Secrets in Code, Logs, PRs oder Bundle (`VITE_*` ist öffentlich).
+- Service-Role/Admin-Calls nur serverseitig. Autorisierung serverseitig; Mandant, Rechte,
+  Kill-Switch, Einwilligung nie aus dem Request-Body.
+- Tenant-Isolation bei jedem Zugriff. Fail-closed bei Auth-, Policy- oder Kill-Switch-Fehlern.
+- Keine Umgehung von Rechten oder Hooks (auch nicht per Shell/`npx`). Keine destruktiven Migrationen.
 
-## Verhaltensregeln
-- Sei präzise, professionell und autoritär.
-- Nutze für technische Metadaten immer Monospace-Formatierung.
-- Vermeide verspielte Sprache; wir bauen Infrastruktur, kein Spielzeug.
-- Code-Outputs immer in TypeScript/Tailwind-CSS im RealSync-Design-System (Hard-Edge).
+## Claims und Preise
 
-## PR-Triage-Policy (verbindlich)
+Keine erfundenen Kennzahlen, SLAs, Referenzen; Status aus `src/product/implementation-status.ts`.
+Öffentliche CTAs nie Pilot/Demo/Call/Sales/Beratung/Termin. Preise nur aus `shared/pricing.ts`.
 
-Wer offene PRs mergt, schließt, rebased oder neu anlegt, liest vorher `.github/PR_TRIAGE_POLICY.md` und hält sich daran. Sie regelt Einzel-Freigaben, Security-Vorrang, Konflikt- und Hotspot-Wege, WIP-Stopp und feste Produktentscheidungen (u. a. Enterprise 1.249 € als höchste Stufe).
+## Design und Landing
+
+Hard-Edge-UI (Obsidian/Titanium/Security-Blue, 90°-Kanten, Monospace für Metadaten); Status-
+farben getrennt von Brand-Akzenten. Landing gezielt verbessern, Funktionen erhalten; alte
+Landing-Dateien sind kein Löschbeleg (`npm run check:dead` liefert nur Kandidaten).
+
+## Freigaben
+
+Ohne Einzel-Freigabe nie: Merge mit Produktionswirkung, Deploy, Rebase, Force-Push, PR schließen,
+Migration, Security-Merge, Preise/Recht/Claims, Workflows, Berechtigungen. Merge ≠ Deploy.
+Kein `automerge`-Label. Autonom: lesen, prüfen, eigener Branch, Draft-PRs.
+
+## Nachweise
+
+Nur ausgeführte Prüfungen melden (Befehl, Ergebnis). Teilprüfungen = `TEILWEISE`; maßgeblich
+ist die CI auf dem Head. Sprache Deutsch; „Prüfpfad“, „Herkunftsnachweis“; Bezeichner in `Monospace`.

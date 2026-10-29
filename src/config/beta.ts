@@ -76,7 +76,7 @@ export interface BetaMilestone {
 export const BETA_MILESTONES: readonly BetaMilestone[] = [
   {
     date: 'Oktober 2026',
-    label: 'Beta-Start: alle Funktionen kostenlos testen — kein Zeitdruck.',
+    label: 'Beta-Start: alle Funktionen kostenlos testen.',
   },
   {
     date: 'November 2026',

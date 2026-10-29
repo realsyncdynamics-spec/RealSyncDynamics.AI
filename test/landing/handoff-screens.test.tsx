@@ -60,7 +60,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
     expect(growth).toHaveAttribute('data-lang', 'en');
-    expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
+    expect(within(growth).getByText(/AI governance with risk register and policy engine/i)).toBeInTheDocument();
     expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Try for free');
     expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('On request')).toBeNull();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('/ month excl. VAT')).toBeInTheDocument();

@@ -49,7 +49,7 @@ export interface PlanStripeExpectation {
  *
  * Live-Produkt-Kandidat aus Migration 20260912055500: `prod_UxG9V9clbqV7qw`.
  * Noch **nicht** gesetzt — muss zusammen mit der neuen Price-ID (149800 Cent)
- * in Stripe verifiziert werden. Siehe docs/runbooks/enterprise-stripe-1498.md
+ * in Stripe verifiziert werden. Siehe docs/runbooks/stripe-production-checkout.md (Abschnitt „Enterprise 1.498 €“)
  * und PR #1995. Bis dahin: PRODUCT_NOT_CONFIGURED.
  */
 export const PLAN_STRIPE_EXPECTATIONS: Readonly<Record<string, PlanStripeExpectation>> = {

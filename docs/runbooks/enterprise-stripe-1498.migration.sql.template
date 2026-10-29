@@ -1,5 +1,5 @@
 -- VORLAGE, KEINE MIGRATION (PR #1995). Erst nach Stripe-Verifikation (siehe
--- enterprise-stripe-1498.md) als neue Datei unter supabase/migrations/
+-- stripe-production-checkout.md) als neue Datei unter supabase/migrations/
 -- anlegen: Zeitstempel nach der letzten Migration auf main und ohne
 -- Kollision mit offenen PRs (`npm run check:migration-collisions`).
 --

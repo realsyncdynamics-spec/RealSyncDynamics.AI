@@ -2,6 +2,17 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule } from '../governance-os/governanceModules';
+import { moduleById, type ModuleId } from '@/shared/pricing';
+
+/** UX-004: Honesty-Status je Modul (Monitoring/Alerts Beta, Drift Detection Roadmap). */
+const STATUS_ALIAS: Record<string, ModuleId> = { monitoring: 'monitoring', alerts: 'alerts', drift: 'drift_detection', 'drift-detection': 'drift_detection', drift_detection: 'drift_detection' };
+export function matrixStatusSuffix(moduleId: string): '(Beta)' | '(Roadmap)' | null {
+  const id = STATUS_ALIAS[moduleId];
+  const availability = id ? moduleById(id)?.availability : undefined;
+  if (availability === 'preview') return '(Beta)';
+  if (availability === 'coming-soon') return '(Roadmap)';
+  return null;
+}
 import { SALES_PLANS } from '@/shared/pricing';
 
 // Spalten und Häkchen stammen beide aus der Pricing-SSoT — die Matrix kann
@@ -73,10 +84,11 @@ export function GovernanceModuleMatrix() {
                   </td>
                   {MATRIX_PLANS.map((t) => {
                     const ok = canAccessModule(mod, t.id);
+                    const suffix = matrixStatusSuffix(mod.id);
                     return (
                       <td key={t.id} className="text-center py-2.5 px-3">
                         {ok
-                          ? <span className="text-emerald-400 text-base leading-none">✓</span>
+                          ? <span className={suffix ? 'text-amber-300 text-xs leading-none whitespace-nowrap' : 'text-emerald-400 text-base leading-none'}>{suffix ? `✓ ${suffix}` : '✓'}</span>
                           : <span className="text-titanium-800 text-base leading-none">—</span>
                         }
                       </td>

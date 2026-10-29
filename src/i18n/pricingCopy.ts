@@ -39,7 +39,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   growth: {
-    tagline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
+    tagline: 'KI-Governance mit Risk Register und Policy Engine — tägliche Selbstüberwachung folgt (Beta).',
     ctaLabel: 'Kostenlos testen',
     bullets: [
       'Alles aus Starter',
@@ -97,7 +97,7 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   growth: {
-    tagline: 'AI governance that monitors itself — instead of being reviewed once a year.',
+    tagline: 'AI governance with risk register and policy engine — daily self-monitoring follows (beta).',
     ctaLabel: 'Try for free',
     bullets: [
       'Everything in Starter',

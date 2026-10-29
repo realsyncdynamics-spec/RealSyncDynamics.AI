@@ -14,3 +14,4 @@ export * from './project-store';
 export * from './system-prompt';
 export * from './context-pack';
 export * from './runtime-capability';
+export * from './change-history';

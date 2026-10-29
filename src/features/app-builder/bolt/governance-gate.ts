@@ -17,7 +17,7 @@ import type {
   GovernanceContext,
   RiskClass,
 } from './types';
-import { findSecretLeak, isProductionShell, normalizeProjectPath } from './path-guard';
+import { findSecretLeak, isProductionShell, normalizeProjectPath, validateProjectFile } from './path-guard';
 
 const HIGH_RISK = [
   /biometric/i,
@@ -117,6 +117,16 @@ export function evaluateAction(
         reason: `Geheimnis-Muster «${leak}» im Dateiinhalt.`,
         riskClass: promptRisk,
         control: 'secret.scan',
+        actionId,
+      };
+    }
+    const invalid = validateProjectFile(path, action.content);
+    if (invalid) {
+      return {
+        decision: 'block',
+        reason: `Datei abgewiesen (${invalid}): ${path}. Nichts gespeichert.`,
+        riskClass: promptRisk,
+        control: 'file.validate',
         actionId,
       };
     }

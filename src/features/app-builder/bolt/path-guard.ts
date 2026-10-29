@@ -59,3 +59,83 @@ const PRODUCTION_SHELL = [
 export function isProductionShell(command: string): boolean {
   return PRODUCTION_SHELL.some((re) => re.test(command));
 }
+
+/*
+ * Project file validation — adapted from bolt.diy
+ * `app/lib/runtime/projectFileValidation.ts` (MIT, stackblitz-labs/bolt.diy).
+ * Upstream parses JS/TS with prettier before saving and rejects generated code
+ * whose real line breaks were collapsed. RealSync keeps the same intent without
+ * adding prettier to the bundle: cheap, synchronous, fail-closed checks that run
+ * inside the governance gate *after* path normalisation and secret scan.
+ */
+
+export const MAX_FILE_BYTES = 512 * 1024;
+const CODE_FILE = /\.(?:[cm]?[jt]s|[jt]sx|css|html?|json|md|svg)$/i;
+const SCRIPT_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
+
+export type FileValidationIssue =
+  | 'too-large'
+  | 'binary-content'
+  | 'collapsed-line-breaks'
+  | 'invalid-json'
+  | 'unbalanced-brackets';
+
+export function validateProjectFile(filePath: string, content: string): FileValidationIssue | null {
+  if (content === '') return null;
+  if (new TextEncoder().encode(content).length > MAX_FILE_BYTES) return 'too-large';
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u0008\u000E-\u001F]/.test(content)) return 'binary-content';
+  if (CODE_FILE.test(filePath)) {
+    const lines = content.split('\n');
+    const longest = Math.max(...lines.map((l) => l.length));
+    // Upstream: "preserve real line breaks". Model emitted literal \n instead of newlines.
+    if (lines.length <= 2 && longest > 400 && /\\n/.test(content)) return 'collapsed-line-breaks';
+  }
+  if (/\.json$/i.test(filePath)) {
+    try {
+      JSON.parse(content);
+    } catch {
+      return 'invalid-json';
+    }
+  }
+  if (SCRIPT_FILE.test(filePath) && !bracketsBalanced(content)) return 'unbalanced-brackets';
+  return null;
+}
+
+/** Bracket balance ignoring strings, template literals and comments. Truncated model output fails here. */
+export function bracketsBalanced(src: string): boolean {
+  const stack: string[] = [];
+  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    const n = src[i + 1];
+    if (c === '/' && n === '/') {
+      const e = src.indexOf('\n', i);
+      i = e === -1 ? src.length : e;
+      continue;
+    }
+    if (c === '/' && n === '*') {
+      const e = src.indexOf('*/', i + 2);
+      if (e === -1) return false;
+      i = e + 2;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      i++;
+      while (i < src.length && src[i] !== c) {
+        if (src[i] === '\\') i++;
+        else if (c !== '`' && src[i] === '\n') break;
+        i++;
+      }
+      i++;
+      continue;
+    }
+    if (c === '(' || c === '[' || c === '{') stack.push(c);
+    else if (c === ')' || c === ']' || c === '}') {
+      if (stack.pop() !== pairs[c]) return false;
+    }
+    i++;
+  }
+  return stack.length === 0;
+}

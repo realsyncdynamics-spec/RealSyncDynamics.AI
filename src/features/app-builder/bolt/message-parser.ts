@@ -142,6 +142,12 @@ export class StreamingMessageParser {
         break;
       }
 
+      // Upstream parity: hold back a trailing partial `<boltArtifact` prefix until
+      // the next chunk arrives instead of emitting it as text.
+      if (input[i] === '<' && input.length - i < ARTIFACT_OPEN.length && ARTIFACT_OPEN.startsWith(input.slice(i))) {
+        break;
+      }
+
       if (input.startsWith(ARTIFACT_OPEN, i)) {
         const next = input[i + ARTIFACT_OPEN.length];
         if (next && next !== '>' && next !== ' ') {

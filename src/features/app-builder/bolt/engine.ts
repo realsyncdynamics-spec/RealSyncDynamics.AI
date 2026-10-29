@@ -134,4 +134,35 @@ export class BoltEngine {
       blocked: false,
     };
   }
+
+  /**
+   * Restore a previous file tree (undo). Every write/delete passes the
+   * governance gate and is audited; blocked paths stay as they are.
+   */
+  async restore(target: Record<string, string>, label: string, promptRisk: RiskClass = 'minimal'): Promise<EngineRunResult> {
+    const runner = new ActionRunner(this.store, this.ctx);
+    const turnRuns: EngineRunResult['runs'] = [];
+    let blocked = false;
+    const current = new Map(this.store.list().map((f) => [f.path, f.content] as const));
+    for (const [path, content] of Object.entries(target)) {
+      if (current.get(path) === content) continue;
+      const action: FileAction = { type: 'file', filePath: path, content };
+      const { result, audit } = await runner.run(`undo-${path}`, action, promptRisk);
+      turnRuns.push(result);
+      this.runs.push(result);
+      this.audit.push(audit);
+      if (result.gate.decision !== 'allow') blocked = true;
+    }
+    for (const path of current.keys()) {
+      if (Object.prototype.hasOwnProperty.call(target, path)) continue;
+      const del = await this.deleteFile(path, promptRisk);
+      turnRuns.push(...del.runs);
+      if (del.blocked) blocked = true;
+    }
+    const snapshot = await this.store.snapshot();
+    this.audit.push(
+      recordEvent(this.ctx, 'builder.change.undone', label.slice(0, 200), promptRisk, snapshot.merkle),
+    );
+    return { messageId: `undo-${Date.now()}`, events: [], runs: turnRuns, audit: this.audit.slice(), snapshot, blocked };
+  }
 }

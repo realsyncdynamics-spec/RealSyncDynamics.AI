@@ -11,6 +11,7 @@ import { diagnoseFiles, type Diagnostic } from './bolt/diagnostics';
 import { repairPrompt } from './bolt/error-recovery';
 import { generateViaRealSyncGatewayStream } from './gateway';
 import { LANDING_TEMPLATES, type LandingTemplateId } from './bolt/landing-templates';
+import { canUndo, makeChangeEntry, markUndone, pushHistory, type ChangeEntry, type FileMap } from './bolt/change-history';
 import {
   deleteBuilderProject,
   listBuilderProjects,
@@ -28,7 +29,7 @@ import {
 } from './bolt/project-store';
 import type { AuditRecord, EngineRunResult, FileRecord, GovernanceContext } from './bolt/types';
 
-type Pane = 'preview' | 'code' | 'audit';
+type Pane = 'preview' | 'code' | 'changes' | 'audit';
 
 const DEFAULT_CODE_PROMPT = 'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.';
 
@@ -110,6 +111,8 @@ export function BoltWorkbench({
   const [previewKey, setPreviewKey] = useState(0);
   const [serverPersist, setServerPersist] = useState<'idle' | 'ok' | 'blocked'>('idle');
   const [lastChange, setLastChange] = useState<string | undefined>();
+  const [history, setHistory] = useState<ChangeEntry[]>([]);
+  const [openChange, setOpenChange] = useState<string | null>(null);
 
   // A new /build handoff pre-fills the editor; it never starts an AI call automatically.
   useEffect(() => {
@@ -131,6 +134,7 @@ export function BoltWorkbench({
 
   useEffect(() => {
     engineRef.current = new BoltEngine(ctx);
+    setHistory([]);
     void (async () => {
       const remote = await listBuilderProjects(ctx.tenantId);
       let listed: ProjectMeta[] = listProjects(ctx.tenantId);
@@ -314,9 +318,25 @@ export function BoltWorkbench({
         return;
       }
       setStream(gen.text);
-      const res = await engineRef.current.ingest(`m-${Date.now()}`, gen.text, nextPrompt);
+      const beforeSnap = await engineRef.current.store.snapshot();
+      const before = snapFileMap(beforeSnap.files);
+      const messageId = `m-${Date.now()}`;
+      const res = await engineRef.current.ingest(messageId, gen.text, nextPrompt);
       if (ac.signal.aborted) return;
       setLastChange(nextPrompt.slice(0, 200));
+      setHistory((h) =>
+        pushHistory(
+          h,
+          makeChangeEntry({
+            id: messageId,
+            label: nextPrompt,
+            before,
+            after: snapFileMap(res.snapshot.files),
+            merkleBefore: beforeSnap.merkle,
+            merkleAfter: res.snapshot.merkle,
+          }),
+        ),
+      );
       await applyEngine(res, gen.text);
     } catch (err) {
       if (ac.signal.aborted) {
@@ -381,6 +401,7 @@ export function BoltWorkbench({
   function createNew() {
     const p = newProject(ctx.tenantId, projectSlug, projectSlug);
     engineRef.current = new BoltEngine(ctx);
+    setHistory([]);
     setProject(p);
     setResult(null);
     setActivePath(null);
@@ -395,6 +416,7 @@ export function BoltWorkbench({
       const loaded = remote.kind === 'ok' ? toLocal(remote.data) : loadProject(ctx.tenantId, id);
       if (!loaded) return;
       engineRef.current = new BoltEngine(ctx);
+      setHistory([]);
       await engineRef.current.hydrate(loaded.files);
       const snap = await engineRef.current.store.snapshot();
       setProject(loaded);
@@ -421,6 +443,29 @@ export function BoltWorkbench({
   }
 
   const risk = classifyPrompt(prompt);
+  const undoable = canUndo(history, snapFileMap(result?.snapshot.files ?? {}));
+
+  async function undoChange(entry: ChangeEntry) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      engineRef.current.setCtx(ctx);
+      // Goes through governance gate + audit + new Merkle snapshot. Never a silent rewrite.
+      const res = await engineRef.current.restore(entry.before, `Rückgängig: ${entry.label}`);
+      if (res.blocked) {
+        setError('Rückgängig teilweise vom Governance-Gate blockiert. Siehe Prüfpfad.');
+      } else {
+        setHistory((h) => markUndone(h, entry.id));
+      }
+      await applyEngine(res);
+      if (!res.blocked) setPane('changes');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="grid min-h-[calc(100dvh-52px)] grid-rows-[auto_minmax(0,1fr)] bg-[#0A0A0B] text-[#E2E2E2]" data-testid="bolt-workbench">
@@ -434,6 +479,16 @@ export function BoltWorkbench({
                 ? `Browser-Cache · Server nicht ausgerollt · ${(project.merkle || '—').slice(0, 8)}`
                 : `Gespeichert · ${(project.merkle || '—').slice(0, 8)}`}
         </span>
+        <a
+          href="https://github.com/stackblitz-labs/bolt.diy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] text-white/45 underline-offset-2 hover:underline"
+          data-testid="bolt-attribution"
+          title="Artifact-Protokoll und Builder-Mechanik nach bolt.diy, MIT-Lizenz. Copyright (c) 2024 StackBlitz, Inc. and bolt.diy contributors. Siehe docs/builder/BOLT_DIY_LICENSE.txt"
+        >
+          Engine basiert auf bolt.diy · MIT · © 2024 StackBlitz, Inc. & bolt.diy contributors
+        </a>
         <span className="font-mono text-[10px] text-white/45" data-testid="gate-tally">
           ALLOW {tally.allow} · HOLD {tally.hold} · BLOCK {tally.block}
         </span>
@@ -580,8 +635,8 @@ export function BoltWorkbench({
         </section>
 
         <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
-          <div className="grid grid-cols-3 border-b border-white/10">
-            {(['preview', 'code', 'audit'] as Pane[]).map((id) => (
+          <div className="grid grid-cols-4 border-b border-white/10">
+            {(['preview', 'code', 'changes', 'audit'] as Pane[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -590,7 +645,7 @@ export function BoltWorkbench({
                   pane === id ? 'bg-[#0052FF] text-[#E2E2E2]' : 'bg-[#101114] text-white/55'
                 }`}
               >
-                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : 'Prüfpfad'}
+                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : id === 'changes' ? `Änderungen${history.length ? ` (${history.length})` : ''}` : 'Prüfpfad'}
               </button>
             ))}
           </div>
@@ -676,6 +731,57 @@ export function BoltWorkbench({
             </div>
           )}
 
+          {pane === 'changes' && (
+            <div className="min-h-0 overflow-auto" data-testid="change-history">
+              {history.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-white/45">Noch keine KI-Änderung in dieser Sitzung.</p>
+              ) : (
+                <ol>
+                  {[...history].reverse().map((e) => (
+                    <li key={e.id} className="border-b border-white/10 px-3 py-3 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => setOpenChange(openChange === e.id ? null : e.id)}>
+                          <span className={e.undone ? 'line-through text-white/45' : ''}>{e.label || 'KI-Änderung'}</span>
+                        </button>
+                        <span className="font-mono text-[10px] text-white/45">
+                          {e.changes.length} Dateien · {e.merkleBefore.slice(0, 8) || '—'}→{e.merkleAfter.slice(0, 8)}
+                        </span>
+                        {undoable?.id === e.id ? (
+                          <button type="button" disabled={busy} onClick={() => void undoChange(e)} className="min-h-9 border border-white/15 px-2 text-xs disabled:opacity-40" data-testid="undo-change">
+                            Rückgängig
+                          </button>
+                        ) : null}
+                      </div>
+                      {openChange === e.id ? (
+                        <div className="mt-2 grid gap-2">
+                          {e.changes.map((c) => (
+                            <div key={c.path} className="border border-white/10">
+                              <div className="flex justify-between bg-[#101114] px-2 py-1 font-mono text-[10px]">
+                                <span>{c.kind} · {c.path}</span>
+                                <span><span className="text-[#3DDC97]">+{c.added}</span> <span className="text-[#E24A4A]">-{c.removed}</span></span>
+                              </div>
+                              {c.ops.length ? (
+                                <pre className="max-h-64 overflow-auto p-2 font-mono text-[10px] leading-4">
+                                  {c.ops.filter((o) => o.op !== 'eq').slice(0, 400).map((o, i) => (
+                                    <div key={i} className={o.op === 'add' ? 'text-[#3DDC97]' : 'text-[#E24A4A]'}>
+                                      {o.op === 'add' ? '+ ' : '- '}{o.line}
+                                    </div>
+                                  ))}
+                                </pre>
+                              ) : (
+                                <p className="p-2 text-[10px] text-white/45">Datei zu groß für Inline-Diff.</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+
           {pane === 'audit' && (
             <div className="min-h-0 overflow-auto">
               {diagnostics.length > 0 ? (
@@ -726,3 +832,9 @@ export function BoltWorkbench({
 }
 
 export default BoltWorkbench;
+
+function snapFileMap(files: Record<string, FileRecord>): FileMap {
+  const out: FileMap = {};
+  for (const [p, r] of Object.entries(files)) out[p] = r.content;
+  return out;
+}

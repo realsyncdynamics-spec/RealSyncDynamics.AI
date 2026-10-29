@@ -7,7 +7,7 @@ const AGENTUREN_CONFIG: NicheConfig = {
   eyebrow: 'Für Agenturen + Web-Studios',
   headline: 'DSGVO + AI-Act Compliance für 50 Kundenseiten — ohne 50 Consent-Tools.',
   subline:
-    'Sie betreuen Marketing-Sites, Lead-Funnels und KI-Kampagnen für viele Mandanten parallel — und ein einmaliger Audit verfällt mit dem nächsten Theme-Update. Wir liefern Scans und Befund-Reports pro Domain; eine Mandanten-Übersicht für mehrere Kundenseiten ist in Agency als Beta verfügbar. Continuous Monitoring mit Drift-Alerts ist Coming Soon.',
+    'Sie betreuen Marketing-Sites, Lead-Funnels und KI-Kampagnen für viele Mandanten parallel — und ein einmaliger Audit verfällt mit dem nächsten Theme-Update. Wir liefern Scans und Befund-Reports pro Domain; eine Mandanten-Übersicht für mehrere Kundenseiten ist Coming Soon. Continuous Monitoring mit Drift-Alerts ist Coming Soon.',
   primaryCtaHref: '/audit?source=fuer-agenturen',
   painCards: [
     {

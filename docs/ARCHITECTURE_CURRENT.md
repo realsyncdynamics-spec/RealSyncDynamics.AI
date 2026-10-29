@@ -15,7 +15,8 @@ Stand: 29.10.2026, gegen `main` (Shallow-Clone). Keine Runtime-, Migrations- ode
 
 - Routen gescannt: 157 (davon Redirects: 27, nicht aufgelöst: 1)
 - UI-Aktionen (onClick/onSubmit) gezählt: 660
-- PASS: 101 · FAIL: 28
+- PASS: 104 · FAIL: 24 · GESPERRT (ehrlich nicht verfügbar): 1
+- Korrektur 29.10.2026: 4 Fehlalarme des Scans manuell geprüft und umklassifiziert (frameworks, iso-42001-hub, ai-systems/agents → PASS; bulk-operations → GESPERRT), siehe #2059.
 
 ### Browser-Writes auf geschützte Tabellen (Bezug #2019/#2056)
 
@@ -40,7 +41,7 @@ Keine Browser-Writes auf `subscriptions`, `tenant_entitlements`/`entitlements`, 
 | `/app/admin-log` | GovernanceAdminLogView | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/admin/api-keys` | AdminAPIKeysPage | AppGate | 2 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/agents/automation` | AutomationAgentPage | AppGate | 4 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
-| `/app/ai-systems/agents` | AgentRegistryView | AppGate | 3 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
+| `/app/ai-systems/agents` | AgentRegistryView | AppGate | 3 |  | 0 | 0 | nein | PASS | korrigiert (#2059): nur Filter-Buttons, kein Backend nötig |
 | `/app/api/docs` | ApiDocumentation | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/api/email-templates` | EmailTemplateManager | AppGate | 5 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/api/monitoring-advanced` | AdvancedMonitoringDashboard | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
@@ -50,13 +51,13 @@ Keine Browser-Writes auf `subscriptions`, `tenant_entitlements`/`entitlements`, 
 | `/app/costs` | GovernanceCostTrackingView | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/dashboard` | DashboardRouter | AppGate | 14 | websites.insert×1, governance_activations.upsert×1, tenants.update×1 | 4 | 2 | ja | FAIL | Browser-Write geschützt: tenants.update |
 | `/app/governance/audit-trail` | AuditTrailView | AppGate | 2 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
-| `/app/governance/bulk-operations` | BulkOperationsView | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
+| `/app/governance/bulk-operations` | BulkOperationsView | AppGate | 1 |  | 0 | 0 | nein | GESPERRT | korrigiert (#2059): ehrlich als „Noch nicht verfügbar“ markiert, Link auf /app/bulk |
 | `/app/governance/compliance-analytics` | ComplianceAnalyticsView | AppGate | 2 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/governance/compliance-calendar` | ComplianceCalendarView | AppGate | 6 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/governance/compliance-roadmap` | ComplianceRoadmapView | AppGate | 5 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/governance/custom-frameworks` | CustomFrameworkView | AppGate | 8 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
-| `/app/governance/frameworks` | ComplianceFrameworkSelector | AppGate | 1 |  | 0 | 0 | ja | FAIL | Aktionen ohne Backend-Aufruf |
-| `/app/governance/iso-42001-hub` | Iso42001ComplianceHub | AppGate | 2 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
+| `/app/governance/frameworks` | ComplianceFrameworkSelector | AppGate | 1 |  | 0 | 0 | ja | PASS | korrigiert (#2059): Navigation mit Entitlement-Check |
+| `/app/governance/iso-42001-hub` | Iso42001ComplianceHub | AppGate | 2 |  | 0 | 0 | nein | PASS | korrigiert (#2059): nur Navigation |
 | `/app/governance/iso-control-library` | IsoControlLibraryView | AppGate | 5 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/governance/team-collaboration` | GovernanceTeamView | AppGate | 5 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
 | `/app/monitoring/dashboard` | ComplianceMonitoringDashboard | AppGate | 1 |  | 0 | 0 | nein | FAIL | Aktionen ohne Backend-Aufruf |
@@ -198,7 +199,7 @@ Keine Browser-Writes auf `subscriptions`, `tenant_entitlements`/`entitlements`, 
 
 1. **Security: tenants-Spaltenschutz** — `tenants owner-update` auf unkritische Profilspalten begrenzen (Column-GRANT oder BEFORE-UPDATE-Guard), `trial_expires_at`/`partner_id`/Billing-Felder nur service_role. Separater Security-PR, Freigabe Dominik.
 2. **API-Key-Erzeugung serverseitig** — Edge Function statt Browser-Insert (Welcome, ApiSetupWizard, ApiKeysSettings, /app/admin/api-keys).
-3. **Governance-Module ohne Backend** — frameworks, iso-42001-hub, iso-control-library, compliance-roadmap/-calendar/-analytics, custom-frameworks, bulk-operations, audit-trail, team-collaboration: je Aktion Handler anbinden oder als nicht verfügbar gaten.
+3. **Governance-Module ohne Backend** — iso-control-library, compliance-roadmap/-calendar/-analytics, custom-frameworks, audit-trail, team-collaboration: je Aktion Handler anbinden oder als nicht verfügbar gaten. Ehrliche Kennzeichnung erledigt in #2059; Backend-Anbindung offen.
 4. **Voice/Costs/Admin-Log/Monitoring-Dashboards** — Datenquelle verifizieren, Mock-Daten entfernen.
 5. **/app/vvt** — TODO/Fake-Marker auflösen.
 

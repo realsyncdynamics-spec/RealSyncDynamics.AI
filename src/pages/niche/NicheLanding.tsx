@@ -71,7 +71,7 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-amber-800 bg-amber-950/40 text-amber-300 text-[10px] font-mono uppercase tracking-wider">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              Pilotphase — wir starten gerade in diesem Segment
+              Beta bis 31.01.2027 — wir starten gerade in diesem Segment
             </div>
           </div>
 

@@ -13,8 +13,9 @@
 
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
+import { COMPANY } from '@/src/config/company';
 import {
-  type Plan, formatPriceEur, TIER_ACCENT, type PlanId,
+  type Plan, formatPriceEur, formatNetVatGrossEur, TIER_ACCENT, type PlanId,
 } from '../../../config/pricing';
 
 export type UnifiedPlanCardVariant = 'compact' | 'full' | 'hero';
@@ -53,6 +54,7 @@ export function UnifiedPlanCard({
   const accentClasses = TIER_ACCENT[plan.id as PlanId];
   const priceFormatted = formatPriceEur(plan.price.monthlyEur);
   const isFreePlan = plan.price.monthlyEur === 0;
+  const vatLine = formatNetVatGrossEur(plan.price.monthlyEur, COMPANY.taxMode);
 
   const commonCardClasses = `
     relative rounded-lg border transition-all duration-200
@@ -92,6 +94,9 @@ export function UnifiedPlanCard({
             <span className="ml-2 text-sm text-titanium-400">/ Monat</span>
           )}
         </div>
+        {!isFreePlan && COMPANY.taxMode === 'EU_STANDARD' && (
+          <p className="mb-2 text-xs text-titanium-400" data-testid="plan-vat-line">{vatLine}</p>
+        )}
 
         {/* Outcome Headline */}
         <p className="text-xs font-mono uppercase tracking-wider text-titanium-400 mb-3">
@@ -173,6 +178,9 @@ export function UnifiedPlanCard({
             <span className="ml-2 text-base text-titanium-400">/ Monat</span>
           )}
         </div>
+        {!isFreePlan && COMPANY.taxMode === 'EU_STANDARD' && (
+          <p className="mb-2 text-xs text-titanium-400" data-testid="plan-vat-line">{vatLine}</p>
+        )}
 
         {/* Outcome Headline */}
         <p className="text-lg font-semibold text-titanium-100 leading-relaxed mb-3">

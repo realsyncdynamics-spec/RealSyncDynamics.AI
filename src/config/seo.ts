@@ -313,6 +313,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  '/design/landing-schlicht': {
+    title: 'RealSync Dynamics AI – Landing „Schlicht“ (Vorschau)',
+    description:
+      'Schlichte Design-Vorschau: eine Fläche mit dem öffentlichen KI-Assistenten zu DSGVO und EU AI Act. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/landing-v6': {
     title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
     description:

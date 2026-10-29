@@ -91,6 +91,21 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: false,
   },
   {
+    id: 'design-landing-schlicht',
+    name: 'Landing „Schlicht“ (Design-Vorschau)',
+    status: 'preview',
+    group: 'visual',
+    description:
+      'Vorschau unter /design/landing-schlicht: eine Fläche im Grok-Stil, deren Eingabefeld der echte öffentliche Assistent ist (useAnonChat, governance-agent op:chat_anon, rate-limitiert) inkl. KI-Hinweis nach Art. 50. Nicht die Startseite; `/` bleibt Landing v6.',
+    route: '/design/landing-schlicht',
+    evidence: [
+      'src/pages/LandingSchlicht.tsx',
+      'src/App.tsx#/design/landing-schlicht',
+      'public/brand/rsd-gold-mark-256.webp',
+    ],
+    showOnRoadmap: false,
+  },
+  {
     id: 'welcome',
     name: 'Welcome / Login',
     status: 'live',

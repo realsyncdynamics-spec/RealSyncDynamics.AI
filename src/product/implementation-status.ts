@@ -714,6 +714,27 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    // Bewusst preview, nicht live (#2071 / M1-a): Migration 20261029140000_agent_registry_v.sql
+    // ist nicht auf Prod angewendet; kein RLS-Integrationstest gegen echtes Postgres,
+    // kein Playwright-E2E, keine a11y-/Responsive-Prüfung.
+    id: 'agent-registry-command-center',
+    name: 'Agentenregister / Agentenübersicht',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Route /app/command-center hinter AppGate (#2071): aktiv sind nur „Übersicht“ und „Alle Agenten“; Decision Inbox ist Platzhalter, Grok-Bots erscheinen als UNBEKANNT. Preview, weil die View agent_registry_v (Migration 20261029140000) noch nicht in Produktion angewendet ist und RLS-Integrationstest, E2E sowie a11y-/Responsive-Prüfung fehlen.',
+    route: '/app/command-center',
+    evidence: [
+      'src/App.tsx#/app/command-center',
+      'src/features/command-center/CommandCenterView.tsx',
+      'src/features/command-center/agentRegistry.ts',
+      'supabase/migrations/20261029140000_agent_registry_v.sql',
+      'PR #2071',
+    ],
+    // Interne App-Fläche, keine öffentliche Roadmap-Karte.
+    showOnRoadmap: false,
+  },
+  {
     id: 'agent-os-mesh-compliance',
     name: 'Agent OS — Compliance Specialist',
     status: 'preview',

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * Testet den kompletten Betreiber-Onboarding-Fluss:
  * 1. Landing-Page (/landing oder /) besuchen
  * 2. "Kostenlos starten" / CTA klicken → zu Sign-up navigieren
- * 3. Neue Email: steinerdominik1982@gmail.com mit Password registrieren
+ * 3. Neue Email: owner-b@example.invalid mit Password registrieren
  * 4. Nach Anmeldung: Pricing-Page oder Checkout ansteuern
  * 5. Plan wählen (z.B. Starter)
  * 6. Stripe-Checkout-Flow initialisieren

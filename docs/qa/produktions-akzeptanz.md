@@ -736,8 +736,8 @@ einen zähen Zustellweg. Nach außen sieht alles grün aus: Die Oberfläche sagt
 
 | Konto | Provider | letzter Login |
 |---|---|---|
-| `steinerdominik1982@gmail.com` | `google` | 2026-05-29 |
-| `realsyncdynamics@gmail.com` | `google` | 2026-05-28 |
+| `owner-b@example.invalid` | `google` | 2026-05-29 |
+| `owner-a@example.invalid` | `google` | 2026-05-28 |
 | `support+e2e@realsyncdynamicsai.de` | `email` | 2026-08-30 — programmatisch angelegt, eine Minute später angemeldet |
 
 **Kein einziger menschlicher Login lief je über den E-Mail-Magic-Link.** Wer

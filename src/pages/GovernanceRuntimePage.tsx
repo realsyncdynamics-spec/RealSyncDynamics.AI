@@ -3,6 +3,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { GovernanceRuntimeDashboard } from "../features/governance/GovernanceRuntimeDashboard";
 import { LandingHeader, SCAN_CTA } from "../components/landing/LandingShell";
 import { usePageMeta } from "../lib/usePageMeta";
+import { CTA } from '../content/runtimeVocab';
 
 /**
  * /governance-runtime — öffentliche Produktseite der Governance Runtime.

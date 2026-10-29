@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Code2, Key, FileText, AlertTriangle } from 'lucide-react';
 import { isEdgeFunctionInProduction } from '../config/production-edge-functions';
+import { TRY_FREE } from '../config/beta';
 
 type Endpoint = {
   method: 'GET' | 'POST' | 'DELETE';
@@ -197,7 +198,7 @@ export function ApiDocs() {
           <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">API-Key generieren</h2>
             <p className="text-titanium-300 text-sm mb-4">
-              Ab Growth-Tier inklusive. 14 Tage testen, keine Kreditkarte.
+              Ab Growth-Tier inklusive. {TRY_FREE.badge}, keine Kreditkarte.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/pricing?source=api-docs" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, Clock, ExternalLink, FileText,
 } from 'lucide-react';
+import { CTA } from '../content/runtimeVocab';
 
 /**
  * 72h-Datenpanne-Meldepflicht-Timer (DSGVO Art. 33).
@@ -207,7 +208,7 @@ export function MeldepflichtTimer() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/contact-sales?source=meldepflicht-timer" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Founding Access starten
+                {CTA.enterprise}
               </Link>
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Kostenloser DSGVO-Scan

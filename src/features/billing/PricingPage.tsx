@@ -14,6 +14,7 @@ import {
 } from '../../config/pricing';
 import { checkoutHrefForPlan } from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
+import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '../../config/beta';
 
 // COMMERCIAL-SSOT: temporary production hotfix.
 // Canonical source migration tracked in Phase 2.
@@ -30,6 +31,22 @@ function trialPlanList(lang: 'de' | 'en'): string {
   const conj = lang === 'en' ? 'and' : 'und';
   return `${TRIAL_PLAN_NAMES.slice(0, -1).join(', ')} ${conj} ${TRIAL_PLAN_NAMES.at(-1)}`;
 }
+
+// Offene Beta: dieselben Tarife wie auf der Landing (`isBetaPlan`), solange
+// `BETA_PUBLIC_OFFER` an ist. Dann gilt 0 € bis Beta-Ende, der Listenpreis
+// erscheint nur durchgestrichen als „danach“, der CTA führt in die Anmeldung
+// statt in den Checkout. Die Trial-Texte oben greifen erst nach der Beta.
+const BETA_TIER_NAMES: string[] = BETA_PUBLIC_OFFER
+  ? SELLABLE_PRICING_TIERS.filter((tier) => !tier.priceOnRequest && isBetaPlan(tier.plan.id)).map((tier) => tier.name)
+  : [];
+function betaPlanList(lang: 'de' | 'en'): string {
+  if (BETA_TIER_NAMES.length <= 1) return BETA_TIER_NAMES[0] ?? '';
+  const conj = lang === 'en' ? 'and' : 'und';
+  return `${BETA_TIER_NAMES.slice(0, -1).join(', ')} ${conj} ${BETA_TIER_NAMES.at(-1)}`;
+}
+function betaEndsLabel(lang: 'de' | 'en'): string {
+  return lang === 'en' ? BETA.endsLabelEn : BETA.endsLabel;
+}
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
@@ -37,7 +54,6 @@ import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
 import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
-import { BETA, isBetaPlan } from '../../config/beta';
 import { RUNTIME_CREDIT_PACK_STUBS } from '@/shared/pricing';
 
 /**
@@ -139,13 +155,19 @@ export function PricingPage() {
               ))}
             </div>
             <div className="rs-pricing__foot" data-testid="pricing-foot">
-              <p data-testid="pricing-trust-note">{t('pricingTrustNote')}</p>
+              <p data-testid="pricing-trust-note">
+                {BETA_PUBLIC_OFFER
+                  ? t('pricingTrustNoteBeta', { until: betaEndsLabel(lang) })
+                  : t('pricingTrustNote', { days: TRIAL_DAYS })}
+              </p>
               <p data-testid="pricing-trial-foot">
-                {t('pricingTrialFoot', {
-                  plans: trialPlanList(lang),
-                  days: TRIAL_DAYS,
-                  until: TRIAL_DAYS + 1,
-                })}
+                {BETA_PUBLIC_OFFER
+                  ? t('pricingTrialFootBeta', { plans: betaPlanList(lang), until: betaEndsLabel(lang) })
+                  : t('pricingTrialFoot', {
+                      plans: trialPlanList(lang),
+                      days: TRIAL_DAYS,
+                      until: TRIAL_DAYS + 1,
+                    })}
               </p>
               {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
               <p data-testid="pricing-tax-note">
@@ -479,30 +501,29 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
     tier.plan.yearlyCheckoutUnavailable !== true;
   // Angezeigter Betrag und Checkout-Intervall gehören zusammen: Jahrespreis
   // führt in den Jahres-Checkout, nie in den Monats-Checkout.
-  const checkoutHref = showYearly
-    ? checkoutHrefForPlan(tier.plan, { interval: 'year', source: 'pricing' })
-    : tier.cta.href;
+  const beta = BETA_PUBLIC_OFFER && !tier.priceOnRequest && isBetaPlan(tier.plan.id);
+  const checkoutHref = beta
+    ? betaSignupHref(tier.plan.id, 'pricing')
+    : showYearly
+      ? checkoutHrefForPlan(tier.plan, { interval: 'year', source: 'pricing' })
+      : tier.cta.href;
   const ctaHref = checkoutHref.startsWith('http')
     ? checkoutHref
     : withAuditContext(checkoutHref, auditContext);
-  const priceDisplay = tier.priceOnRequest
-    ? t('onRequest')
-    : formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
+  const listPrice = formatPriceEur(showYearly && yearlyEur !== null ? yearlyEur : tier.priceEur);
+  const priceDisplay = tier.priceOnRequest ? t('onRequest') : beta ? formatPriceEur(0) : listPrice;
   const suffix = tier.priceOnRequest
     ? (lang === 'en' ? 'custom offer' : tier.priceSuffix)
-    : showYearly
+    : beta
+      ? t('pricingBetaPriceNote', { until: betaEndsLabel(lang) })
+      : showYearly
       ? t('perYear')
-      : t('perMonth');
+      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;
   const bullets = copy?.bullets ?? tier.bullets.slice(0, 5);
-  // Eine Linie während der offenen Beta: Kein „14 Tage testen" neben
-  // „kostenlos bis …" — Beta-Pläne führen in denselben Beta-Einstieg.
-  const betaPlan = BETA.active && BETA.publicOffer && isBetaPlan(tier.id);
-  const ctaLabel = betaPlan
-    ? (lang === 'en' ? 'Start free during beta' : 'In der Beta kostenlos starten')
-    : (copy?.ctaLabel ?? tier.cta.label);
+  const ctaLabel = beta ? t('pricingBetaCta') : (copy?.ctaLabel ?? tier.cta.label);
   const go = () => {
     if (ctaHref.startsWith('http')) window.open(ctaHref, '_blank', 'noopener');
     else window.location.href = ctaHref;
@@ -529,6 +550,11 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
         <span className={`rs-price-card__amount${tier.priceOnRequest ? ' rs-price-card__amount--text' : ''}`}>{priceDisplay}</span>
         <span className="rs-price-card__suffix">{suffix}</span>
       </div>
+      {beta ? (
+        <p className="rs-price-card__suffix" data-testid={`pricing-list-price-${tier.id}`}>
+          {t('pricingBetaListPrice')} <s>{listPrice}</s> {showYearly ? t('perYear') : t('perMonth')}
+        </p>
+      ) : null}
 
       <p className="rs-price-card__tagline">{tagline}</p>
       <FeatureList items={[...bullets]} />

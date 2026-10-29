@@ -96,10 +96,19 @@ describe('Migration 20260920130000 — Auflöser geteilt, nicht verdoppelt', () 
     expect(gate).not.toContain("FROM public.entitlements WHERE key = 'bots.chat'");
   });
 
-  it('die drei Gate-Werte sind exakt die der Quelle (PLAN_ENTITLEMENTS.enterprise)', () => {
+  it('die drei Gate-Werte sind exakt die der Paritäts-Migration, auf die das Gate zeigt', () => {
+    // Das Gate prüft beim Einspielen den Stand von 20260920120000 (#1491).
+    // Seit 2026-10-24 (Dominik) hat Enterprise endliche Kontingente
+    // (limit.bots 20); das ändert das angewandte Gate nicht, weil die späteren
+    // Migrationen erst nach 20260920130000 laufen.
+    const PARITAET = readFileSync(root('supabase/migrations/20260920120000_entitlement_catalog_ssot_parity.sql'), 'utf8');
+    expect(PARITAET).toContain("('enterprise', 'bots.enabled', 1)");
+    expect(PARITAET).toContain("('enterprise', 'limit.bots', -1)");
+    expect(PARITAET).toContain("('enterprise', 'bots.chat', 1)");
+    // Die Quelle behält die Bot-Freigaben; das Kontingent ist endlich.
     expect(PLAN_ENTITLEMENTS.enterprise?.['bots.enabled']).toBe(1);
-    expect(PLAN_ENTITLEMENTS.enterprise?.['limit.bots']).toBe(-1);
     expect(PLAN_ENTITLEMENTS.enterprise?.['bots.chat']).toBe(1);
+    expect(PLAN_ENTITLEMENTS.enterprise?.['limit.bots']).toBe(20);
   });
 });
 

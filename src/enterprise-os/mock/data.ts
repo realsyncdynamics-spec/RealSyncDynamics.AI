@@ -331,7 +331,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Bulk-Audit für Domain-Portfolios',
       'Priority-Support',
     ],
-    cta: '14 Tage Agency testen',
+    cta: 'Agency starten',
   },
   {
     id: 'enterprise',

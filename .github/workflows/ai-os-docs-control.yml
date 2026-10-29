@@ -1,0 +1,40 @@
+# AI-OS-Routine — registriert in packages/ai-os-core/src/routines.ts.
+# Deterministisch (kein Modellaufruf, keine API-Kosten), nur Leserechte.
+# Pausieren: im Command Center (/admin/ai-os/routinen) oder in GitHub
+# "Disable workflow". Grenzen: timeout-minutes, API-Budget im Skript.
+name: "AI-OS · Regelmäßige Dokumentationskontrolle"
+
+on:
+  schedule:
+    - cron: '30 6 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-os-docs-control
+  cancel-in-progress: false
+
+jobs:
+  routine:
+    name: Regelmäßige Dokumentationskontrolle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Routine ausführen
+        run: node scripts/ai-os/routine.mjs docs-control
+      - name: Bericht sichern
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ai-os-report
+          path: ai-os-report/ai-os-report.json
+          if-no-files-found: ignore
+          retention-days: 14

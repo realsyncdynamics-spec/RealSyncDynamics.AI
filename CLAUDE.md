@@ -62,6 +62,12 @@ Nach UI-Arbeit: nur betroffene Dateien ändern, kleinen PR, keine Repo-weiten Re
 
 Kein Direkt-Push auf `main`. Squash-only, Branch per `npm run sync:main` auf `origin/main` rebasen. Konflikte lokal lösen, nicht im GitHub-Web-Editor. Playbook: `docs/MERGE_CONFLICT_CONCEPT.md`. Hygiene: `npm run merge:hygiene`.
 
+## Internes AI-OS (Betrieb, nicht Kundenplattform)
+
+Einstieg `docs/ai-os/README.md`. Register (Agenten, Skills, Tool-Aktionen, Routinen): `packages/ai-os-core/src/`.
+Skills: `/aios-*` (`.claude/skills/`). Routinen: `.github/workflows/ai-os-*.yml`. Command Center: `/admin/ai-os`
+(Gateway `supabase/functions/ai-os-control`). Kritische Aktionen (Merge, Deploy, Migration, Stripe, Versand) nie über Agenten.
+
 ## MCP
 
 Website-Sessions: `.mcp.json` bleibt leer (keine Hostinger-/Perplexity-Schemas im Kontext).

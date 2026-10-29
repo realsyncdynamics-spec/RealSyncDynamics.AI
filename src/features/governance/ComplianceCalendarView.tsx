@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface CalendarDeadline {
   id: string;
@@ -175,6 +176,7 @@ function Inner() {
           </button>
         </div>
       </header>
+      <PreviewDataNotice what="Der Compliance-Kalender" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {view === 'month' && (

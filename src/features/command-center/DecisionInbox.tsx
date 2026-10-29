@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Inbox } from 'lucide-react';
 import { EVENT_LABEL, groupOpenQuestions, PRIORITY_LABEL, type Priority, type QuestionEventRow } from './decisionInbox';
 import { useDecisionInbox } from './useDecisionInbox';
+import { APPROVAL_LABEL, requiredApprovalLevel, type Reversibility } from '../../../supabase/functions/_shared/decision-proposal';
 
 const PRIO_CLASS: Record<Priority, string> = {
   P0: 'bg-red-500/15 text-red-300',
@@ -11,7 +12,7 @@ const PRIO_CLASS: Record<Priority, string> = {
 };
 
 export function DecisionInbox() {
-  const { questions, events, loading, sourceError } = useDecisionInbox();
+  const { questions, events, decisions, loading, sourceError } = useDecisionInbox();
   const groups = useMemo(() => groupOpenQuestions(questions), [questions]);
   const eventsByQ = useMemo(() => {
     const m = new Map<string, QuestionEventRow[]>();
@@ -50,6 +51,26 @@ export function DecisionInbox() {
               Von: {g.agents.join(', ')}{g.primary.project ? ` · ${g.primary.project}` : ''}{g.primary.task_ref ? ` · Aufgabe ${g.primary.task_ref}` : ''}
             </p>
             {g.primary.context && <p className="mt-1 text-xs text-zinc-400">{g.primary.context}</p>}
+            {(() => {
+              const d = g.primary.decision_id ? decisions[g.primary.decision_id] : undefined;
+              if (!d) return <p className="mt-2 text-xs text-zinc-500">Noch kein Antwortvorschlag.</p>;
+              const level = requiredApprovalLevel(`${g.primary.question} ${g.primary.context ?? ''}`, d.reversibility as Reversibility);
+              return (
+                <div data-testid="inbox-proposal" className="mt-2 rounded-md border border-zinc-800 p-2">
+                  <p className="text-xs font-medium text-zinc-300">KI-Antwortvorschlag · {d.proposed_by}</p>
+                  <ol className="mt-1 space-y-1">
+                    {d.options.slice(0, 3).map((o, i) => (
+                      <li key={i} data-testid="proposal-option" className="text-xs text-zinc-300">
+                        <span className="font-medium">{String.fromCharCode(65 + i)}{o.recommended ? ' · Empfohlen' : ''}:</span> {o.label}
+                        <span className="block text-zinc-400">{o.rationale}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p data-testid="proposal-level" className="mt-1 text-xs text-amber-200">Erforderlich: {APPROVAL_LABEL[level]}</p>
+                  <p className="text-xs text-zinc-400">Empfehlung ≠ Freigabe. Status: {d.status}.</p>
+                </div>
+              );
+            })()}
             <details className="mt-2 text-xs text-zinc-400">
               <summary className="cursor-pointer">Historie</summary>
               <ul className="mt-1 space-y-0.5">

@@ -67,3 +67,36 @@ describe('DecisionInbox', () => {
     expect(res.violations.map((v) => v.id)).toEqual([]);
   });
 });
+
+describe('DecisionInbox — Antwortvorschläge (M3)', () => {
+  it('zeigt max. 3 Optionen, Empfehlung, Freigabestufe und Hinweis Empfehlung ≠ Freigabe', async () => {
+    tables.agent_questions = { data: [row('m', { question: 'Soll PR 9 gemergt werden?', priority: 'P1', decision_id: 'd1' })], error: null };
+    tables.agent_decisions = {
+      data: [{
+        id: 'd1', recommendation: 'CI prüfen', reason: 'r', risk_level: 'high', reversibility: 'reversible',
+        status: 'proposed', proposed_by: 'grok:github-bot',
+        options: [
+          { label: 'CI prüfen', rationale: 'Checks fehlen', recommended: true },
+          { label: 'Merge nach Prüfung', rationale: 'separat freigeben' },
+          { label: 'Zurückstellen', rationale: 'offene Punkte' },
+          { label: 'Vierte (darf nicht erscheinen)', rationale: 'x' },
+        ],
+      }],
+      error: null,
+    };
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    const opts = screen.getAllByTestId('proposal-option');
+    expect(opts).toHaveLength(3);
+    expect(opts[0]!.textContent).toMatch(/A · Empfohlen/);
+    expect(screen.getByTestId('proposal-level').textContent).toMatch(/L4/);
+    expect(screen.getByText(/Empfehlung ≠ Freigabe/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /freigeben|approve/i })).toBeNull();
+  });
+
+  it('ohne decision_id: "Noch kein Antwortvorschlag"', async () => {
+    tables.agent_questions = { data: [row('n', {})], error: null };
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByText('Noch kein Antwortvorschlag.')).toBeTruthy());
+  });
+});

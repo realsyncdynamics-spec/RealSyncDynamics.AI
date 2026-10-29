@@ -143,7 +143,7 @@ describe('builderEntitlements — siteos.* keys', () => {
     expect(builderUpgradeTarget('free', 'sites_exhausted').id).toBe('starter');
     // Enterprise ist seit 2026-10-24 per Checkout buchbar (vorher /contact-sales).
     expect(builderUpgradeTarget('agency', 'sites_exhausted').id).toBe('enterprise');
-    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/contact-sales?plan=enterprise'); // fail-closed bis Price-ID
+    expect(builderUpgradeHref('agency', 'sites_exhausted')).toContain('/checkout/enterprise'); // ENTERPRISE_CHECKOUT_PRICE_WIRED=true (price_1UVxUrREjTWueUcGuSjqctMH)
     expect(builderUpgradeTarget('free', 'publish_locked').id).toBe('starter');
 
     // Besitzt der aktuelle Plan das fehlende Recht laut SSoT bereits,

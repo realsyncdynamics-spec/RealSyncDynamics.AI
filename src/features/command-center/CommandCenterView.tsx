@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Bot, Inbox, Search } from 'lucide-react';
+import { AlertTriangle, Bot, Inbox, Menu, Search, X } from 'lucide-react';
 import {
-  distinct, EMPTY_FILTER, filterAgents, STATUS_LABEL,
+  distinct, EMPTY_FILTER, UNSET, filterAgents, STATUS_LABEL,
   type AgentFilter, type AgentStatus, type RegistryAgent,
 } from './agentRegistry';
 import { useAgentRegistry } from './useAgentRegistry';
@@ -12,6 +12,22 @@ const NAV = [
   'Kosten & Monitoring', 'Einstellungen',
 ] as const;
 const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten']);
+
+function NavList() {
+  return (
+    <ul className="space-y-0.5 text-sm">
+      {NAV.map((n) => (
+        <li key={n}>
+          <span aria-disabled={!NAV_ENABLED.has(n)}
+            className={`block rounded px-2 py-1.5 ${NAV_ENABLED.has(n) ? 'text-zinc-100' : 'cursor-not-allowed text-zinc-500'}`}
+            title={NAV_ENABLED.has(n) ? undefined : 'Folgt in späterem Meilenstein'}>
+            {n}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 const STATUS_CLASS: Record<AgentStatus, string> = {
   active: 'bg-emerald-500/15 text-emerald-300',
@@ -26,6 +42,7 @@ const STATUS_CLASS: Record<AgentStatus, string> = {
 const SOURCE_LABEL: Record<RegistryAgent['source'], string> = {
   autonomous_agents: 'Supabase · autonomous_agents',
   agent_profiles: 'Supabase · agent_profiles (Katalog)',
+  runtime_static: 'Code · apps/agent-runtime (statisch)',
   grok_soll: 'Soll-Konfiguration · kein Live-Status',
 };
 
@@ -35,7 +52,7 @@ function AgentCard({ a }: { a: RegistryAgent }) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-zinc-400" aria-hidden />
-          <h3 className="font-semibold text-zinc-100">{a.name}</h3>
+          <h2 className="font-semibold text-zinc-100">{a.name}</h2>
         </div>
         <span data-testid="agent-status" className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[a.status]}`}>
           {STATUS_LABEL[a.status]}
@@ -55,13 +72,14 @@ function AgentCard({ a }: { a: RegistryAgent }) {
   );
 }
 
-function Select({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+function Select({ label, value, options, onChange, allowUnset }: { label: string; value: string; options: string[]; onChange: (v: string) => void; allowUnset?: boolean }) {
   return (
     <label className="flex flex-col text-xs text-zinc-400">
       {label}
       <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
         className="mt-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100">
         <option value="all">Alle</option>
+        {allowUnset && <option value={UNSET}>Nicht gesetzt</option>}
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </label>
@@ -71,6 +89,7 @@ function Select({ label, value, options, onChange }: { label: string; value: str
 export function CommandCenterView() {
   const { agents, loading, sourceError } = useAgentRegistry();
   const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
   const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -78,25 +97,29 @@ export function CommandCenterView() {
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
       <nav aria-label="Command Center" className="hidden w-56 shrink-0 border-r border-zinc-800 p-3 md:block">
         <p className="mb-3 px-2 text-sm font-semibold">Agent Command Center</p>
-        <ul className="space-y-0.5 text-sm">
-          {NAV.map((n) => (
-            <li key={n}>
-              <span aria-disabled={!NAV_ENABLED.has(n)}
-                className={`block rounded px-2 py-1.5 ${NAV_ENABLED.has(n) ? 'text-zinc-100' : 'cursor-not-allowed text-zinc-600'}`}
-                title={NAV_ENABLED.has(n) ? undefined : 'Folgt in späterem Meilenstein'}>
-                {n}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <NavList />
       </nav>
 
+      <div className="flex min-w-0 flex-1 flex-col lg:flex-row">
       <main className="min-w-0 flex-1 p-4 md:p-6">
+        <div className="mb-3 md:hidden">
+          <button type="button" aria-expanded={mobileNavOpen} aria-controls="cc-mobile-nav"
+            onClick={() => setMobileNavOpen((v) => !v)}
+            className="flex items-center gap-2 rounded-md border border-zinc-700 px-3 py-1.5 text-sm">
+            {mobileNavOpen ? <X className="h-4 w-4" aria-hidden /> : <Menu className="h-4 w-4" aria-hidden />}
+            Navigation
+          </button>
+          {mobileNavOpen && (
+            <nav id="cc-mobile-nav" aria-label="Command Center (mobil)" className="mt-2 rounded-md border border-zinc-800 p-2">
+              <NavList />
+            </nav>
+          )}
+        </div>
         <h1 className="text-xl font-semibold">Agentenübersicht</h1>
         <p className="mt-1 text-sm text-zinc-400">Status nur aus belegten Quellen. Nicht belegte Zustände werden als UNBEKANNT angezeigt.</p>
         {sourceError && (
           <p role="status" className="mt-3 rounded-md border border-amber-700/50 bg-amber-900/20 p-2 text-sm text-amber-200">
-            Datenquelle eingeschränkt: {sourceError}. Angezeigt wird nur die Soll-Konfiguration.
+            Datenquelle eingeschränkt: {sourceError}. Angezeigt werden nur Code- und Soll-Quellen.
           </p>
         )}
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -109,8 +132,8 @@ export function CommandCenterView() {
             </span>
           </label>
           <Select label="Typ" value={f.type} options={distinct(agents, 'agentType')} onChange={(v) => set({ type: v })} />
-          <Select label="Projekt" value={f.project} options={distinct(agents, 'project')} onChange={(v) => set({ project: v })} />
-          <Select label="Priorität" value={f.priority} options={distinct(agents, 'priority')} onChange={(v) => set({ priority: v })} />
+          <Select label="Projekt" value={f.project} options={distinct(agents, 'project')} onChange={(v) => set({ project: v })} allowUnset />
+          <Select label="Priorität" value={f.priority} options={distinct(agents, 'priority')} onChange={(v) => set({ priority: v })} allowUnset />
           <label className="flex flex-col text-xs text-zinc-400">
             Betriebsstatus
             <select aria-label="Betriebsstatus" value={f.status} onChange={(e) => set({ status: e.target.value as AgentFilter['status'] })}
@@ -130,12 +153,13 @@ export function CommandCenterView() {
         </div>
       </main>
 
-      <aside aria-label="Decision Inbox" className="hidden w-80 shrink-0 border-l border-zinc-800 p-4 lg:block">
+      <aside aria-label="Decision Inbox" className="w-full shrink-0 border-t border-zinc-800 p-4 lg:w-80 lg:border-l lg:border-t-0">
         <h2 className="flex items-center gap-2 font-semibold"><Inbox className="h-4 w-4" aria-hidden />Offene Entscheidungen</h2>
         <p className="mt-3 rounded-md border border-dashed border-zinc-700 p-3 text-sm text-zinc-500">
           Platzhalter. Die Decision Inbox wird in M2–M4 angebunden. Hier werden aktuell keine Fragen angezeigt.
         </p>
       </aside>
+      </div>
     </div>
   );
 }

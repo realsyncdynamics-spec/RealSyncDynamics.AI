@@ -98,21 +98,21 @@ describe('PR A2 — runAiTool fail-closed (Altledger)', () => {
   });
   afterEach(() => { errSpy.mockRestore(); warnSpy.mockRestore(); });
 
-  it('DB-Fehler bei der Reservierung → BUDGET_RESERVATION_FAILED, kein Anbieteraufruf', async () => {
+  it('DB-Fehler bei der Reservierung → COST_CAP_UNAVAILABLE, kein Anbieteraufruf', async () => {
     reserveLlmBudget.mockRejectedValue(new Error('cost-cap reserve failed: connection reset'));
     await expect(runAiTool(admin() as never, 't1', 'u1', 'vps_status', 'hi'))
-      .rejects.toMatchObject({ code: 'BUDGET_RESERVATION_FAILED', status: 503 });
+      .rejects.toMatchObject({ code: 'COST_CAP_UNAVAILABLE', status: 503 });
     expect(callProvider).toHaveBeenCalledTimes(0);
-    expect(errSpy.mock.calls.some((c: unknown[]) => String(c[0]).includes('cost_cap_reserve_failed_blocked'))).toBe(true);
+    expect(errSpy.mock.calls.some((c: unknown[]) => String(c[0]).includes('cost_cap_reserve_unavailable'))).toBe(true);
     // Nachvollziehbar: Fehlerlauf in ai_tool_runs.
     expect(tables).toContain('ai_tool_runs');
-    expect(inserts.some((r) => r.error_code === 'BUDGET_RESERVATION_FAILED')).toBe(true);
+    expect(inserts.some((r) => r.error_code === 'COST_CAP_UNAVAILABLE')).toBe(true);
   });
 
   it('Timeout/leeres RPC-Ergebnis → ebenfalls kein Anbieteraufruf', async () => {
     reserveLlmBudget.mockRejectedValue(new Error('cost-cap reserve: empty RPC result'));
     await expect(runAiTool(admin() as never, 't1', 'u1', 'vps_status', 'hi'))
-      .rejects.toMatchObject({ code: 'BUDGET_RESERVATION_FAILED' });
+      .rejects.toMatchObject({ code: 'COST_CAP_UNAVAILABLE' });
     expect(callProvider).toHaveBeenCalledTimes(0);
   });
 
@@ -125,15 +125,15 @@ describe('PR A2 — runAiTool fail-closed (Altledger)', () => {
     expect(logged).not.toContain('sys');
   });
 
-  it('bot_usage_*-Reservierung vorhanden → Anbieteraufruf erfolgt, Warnung protokolliert', async () => {
+  it('bot_usage_*-Reservierung vorhanden → kein Anbieteraufruf, Bot-Reservierung freigegeben (#2051)', async () => {
     reserveLlmBudget.mockRejectedValue(new Error('cost-cap reserve failed: connection reset'));
     callProvider.mockResolvedValue(okProvider);
     const g = botGuard();
-    const r = await runAiTool(admin() as never, 't1', null, 'vps_status', 'hi', { budget: g });
-    expect(r.output).toBe('ok');
-    expect(callProvider).toHaveBeenCalledTimes(1);
-    expect(g.settleMeasured).toHaveBeenCalledTimes(1);
-    expect(warnSpy.mock.calls.some((c: unknown[]) => String(c[0]).includes('cost_cap_reserve_failed_bot_budget_held'))).toBe(true);
+    await expect(runAiTool(admin() as never, 't1', null, 'vps_status', 'hi', { budget: g }))
+      .rejects.toMatchObject({ code: 'COST_CAP_UNAVAILABLE', status: 503 });
+    expect(callProvider).toHaveBeenCalledTimes(0);
+    expect(g.release).toHaveBeenCalledTimes(1);
+    expect(g.settleMeasured).toHaveBeenCalledTimes(0);
   });
 
   it('fachliche Deckel-Ablehnung bleibt COST_LIMIT_EXCEEDED (unverändert)', async () => {

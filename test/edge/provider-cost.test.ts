@@ -177,8 +177,8 @@ describe('ein Entscheidungskern, zwei Aufrufer', () => {
 
   it('ein abgelehnter Fehler-Insert ersetzt nie den ursprünglichen Fehler', () => {
     // Supabase wirft bei abgelehntem Insert nicht, bei Netzwerkfehlern schon.
-    // Beides darf MODEL_PRICE_MISSING, BUDGET_RESERVATION_FAILED (PR A2) bzw.
-    // den Providerfehler nicht zu einem generischen 500 machen — deshalb laufen
+    // Beides darf MODEL_PRICE_MISSING, COST_CAP_UNAVAILABLE bzw. den
+    // Providerfehler nicht zu einem generischen 500 machen — deshalb laufen
     // alle drei Fehlerzeilen über einen Helfer, der prüft, fängt und loggt.
     const helper = ai.slice(ai.indexOf('async function insertErrorRun('), ai.indexOf('function toolCostUsd('));
     expect(helper).toContain("const { error } = await admin.from('ai_tool_runs').insert(row)");

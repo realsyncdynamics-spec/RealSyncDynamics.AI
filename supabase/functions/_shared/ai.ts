@@ -358,50 +358,37 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // PR A2 — fail-closed: Ein technischer Reservierungsfehler (DB-Fehler,
-      // Timeout, leeres RPC-Ergebnis) führt zu keinem Anbieteraufruf.
-      // Ausnahme (Auftrag 0b Pkt. 2): Der Aufruf ist bereits über bot_usage_*
-      // reserviert (Bot-/Workspace-Kanal). Dann blockiert der Altpfad nicht
-      // zusätzlich, protokolliert aber.
-      if (opts.budget && botBudgetReservation) {
-        console.warn(JSON.stringify({
-          level: 'warn',
-          scope: 'cost_cap_reserve_failed_bot_budget_held',
-          tool_key: tool.key,
-          tenant_id: tenantId,
-          message: (e as Error).message,
-        }));
-      } else {
-        console.error(JSON.stringify({
-          level: 'error',
-          scope: 'cost_cap_reserve_failed_blocked',
-          tool_key: tool.key,
-          tenant_id: tenantId,
-          message: (e as Error).message,
-        }));
-        await insertErrorRun(admin, {
-          tenant_id: tenantId,
-          tool_id: tool.id,
-          tool_key: tool.key,
-          user_id: userId,
-          duration_ms: 0,
-          status: 'error',
-          error_code: 'BUDGET_RESERVATION_FAILED',
-          error_message: 'budget reservation failed; provider not called',
-          metadata: {
-            ...(opts.metadata ?? {}),
-            residency,
-            provider: effectiveProvider,
-            model_id: effectiveModelId,
-          },
-        }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
-        throw new AiInvokeError(
-          'budget reservation failed — provider not called',
-          'BUDGET_RESERVATION_FAILED',
-          503,
-          { tool_key: tool.key },
-        );
-      }
+      // Fail-closed: Ohne bestätigte Reservierung kein Anbieteraufruf.
+      // Ein gestörtes Ledger (RPC-Fehler, leere Antwort, Netzwerk) darf den
+      // Monatsdeckel nicht aushebeln — sonst laufen kostenpflichtige
+      // Aufrufe ungedeckelt, genau dann, wenn niemand mitzählt.
+      const message = (e as Error)?.message ?? String(e);
+      console.error(JSON.stringify({
+        level: 'error', scope: 'cost_cap_reserve_unavailable',
+        tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId, message,
+      }));
+      await releaseBotBudget('cost_cap_unavailable_before_call');
+      await insertErrorRun(admin, {
+        tenant_id: tenantId,
+        tool_id: tool.id,
+        tool_key: tool.key,
+        user_id: userId,
+        duration_ms: 0,
+        status: 'error',
+        error_code: 'COST_CAP_UNAVAILABLE',
+        error_message: 'cost cap reservation unavailable; provider not called',
+        metadata: {
+          ...(opts.metadata ?? {}),
+          residency,
+          provider: effectiveProvider,
+          model_id: effectiveModelId,
+        },
+      }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
+      throw new AiInvokeError(
+        'cost cap temporarily unavailable',
+        'COST_CAP_UNAVAILABLE',
+        503,
+      );
     }
   }
 

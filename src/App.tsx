@@ -173,6 +173,8 @@ const PartnersPage = lazy(() => import('./pages/PartnersPage').then((m) => ({ de
 const BaitCompliance = lazy(() => import('./pages/seo/BaitCompliance').then((m) => ({ default: m.BaitCompliance })));
 const MariskAudit = lazy(() => import('./pages/seo/MariskAudit').then((m) => ({ default: m.MariskAudit })));
 const EuAiActCheck = lazy(() => import('./pages/seo/EuAiActCheck').then((m) => ({ default: m.EuAiActCheck })));
+const AiActBetreiberpflichten = lazy(() => import('./pages/seo/AiActBetreiberpflichten').then((m) => ({ default: m.AiActBetreiberpflichten })));
+const AiActBetreiberSelbstcheck = lazy(() => import('./pages/seo/AiActBetreiberSelbstcheck').then((m) => ({ default: m.AiActBetreiberSelbstcheck })));
 const CookieCompliance = lazy(() => import('./pages/seo/CookieCompliance').then((m) => ({ default: m.CookieCompliance })));
 const PricingPage = lazy(() => import('./features/billing/PricingPage').then((m) => ({ default: m.PricingPage })));
 const WhatsAppPricingPage = lazy(() => import('./pages/WhatsAppPricingPage').then((m) => ({ default: m.WhatsAppPricingPage })));
@@ -768,6 +770,8 @@ function RoutesWithTracking() {
       <Route path="/bait-compliance" element={<BaitCompliance />} />
       <Route path="/marisk-audit" element={<MariskAudit />} />
       <Route path="/eu-ai-act-check" element={<EuAiActCheck />} />
+      <Route path="/ai-act-betreiberpflichten" element={<AiActBetreiberpflichten />} />
+      <Route path="/ai-act-betreiberpflichten/selbstcheck" element={<AiActBetreiberSelbstcheck />} />
       <Route path="/cookie-compliance" element={<CookieCompliance />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />

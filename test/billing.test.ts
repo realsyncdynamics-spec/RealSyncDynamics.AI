@@ -253,8 +253,9 @@ describe('Billing Workflows', () => {
     // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat direkt ueber
     // Checkout verkauft und ist ab Tag 1 kostenpflichtig.
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/checkout/enterprise');
-    expect(enterprise.cta.href).not.toContain('/contact-sales');
+    // Fail-closed bis die Stripe-Price-ID verdrahtet ist (ENTERPRISE_CHECKOUT_PRICE_WIRED).
+    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).not.toContain('/checkout/enterprise');
     expect(enterprise.plan.trialDays).toBe(0);
     expect(enterprise.priceOnRequest).toBe(false);
     expect(enterprise.cta.href).not.toContain('pilot=true');

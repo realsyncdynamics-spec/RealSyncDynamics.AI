@@ -879,7 +879,9 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
-    ctaLabel: 'Enterprise starten',
+    // Fail-closed bis die Live-Price-ID (prod_UxG9V9clbqV7qw, 149800, exclusive)
+    // verdrahtet ist — siehe ENTERPRISE_CHECKOUT_PRICE_WIRED.
+    ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -2946,6 +2948,14 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
  * URLs gebildet werden — verhindert abweichende Links zwischen Landing,
  * Pricing und Dashboard.
  */
+/**
+ * Enterprise-Checkout fail-closed: erst auf `true`, wenn Stripe die Live-Price
+ * (prod_UxG9V9clbqV7qw, unit_amount 149800, tax_behavior exclusive) angelegt und
+ * die Price-ID in PLAN_STRIPE_EXPECTATIONS verdrahtet hat. Bis dahin führt jeder
+ * Enterprise-CTA zu /contact-sales.
+ */
+export const ENTERPRISE_CHECKOUT_PRICE_WIRED = false as boolean;
+
 export function checkoutHrefForPlan(
   plan: Plan | PlanId,
   options: { interval?: 'month' | 'year'; source?: string } = {},
@@ -2957,7 +2967,7 @@ export function checkoutHrefForPlan(
   if (resolved.purchaseMode === 'free') {
     return `/audit?source=${encodeURIComponent(source)}`;
   }
-  if (resolved.purchaseMode === 'inquiry') {
+  if (resolved.purchaseMode === 'inquiry' || (resolved.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED)) {
     return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
   }
   // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.

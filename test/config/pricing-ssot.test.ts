@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
+import { ENTERPRISE_CHECKOUT_PRICE_WIRED,
   ADDONS,
   ALL_MODULES,
   ALL_PLANS_ORDERED,
@@ -257,7 +257,8 @@ describe('Pricing SSoT — Checkout-Ziele', () => {
       expect(href.startsWith('/'), `${plan.id}: ${href}`).toBe(true);
       if (plan.purchaseMode === 'free') expect(href).toContain('/audit');
       if (plan.purchaseMode === 'inquiry') expect(href).toContain('/contact-sales');
-      if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
+      if (plan.purchaseMode === 'checkout' && plan.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED) expect(href).toContain('/contact-sales');
+      else if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
       // Einmalprodukte nutzen denselben Checkout-Einstieg wie Abos; der
       // Kaufmodus wird serverseitig aus der SSoT abgeleitet, nicht aus der URL.
       if (plan.purchaseMode === 'one_time') expect(href).toContain(`/checkout/${plan.planKey}`);
@@ -459,7 +460,9 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     expect(enterprise.trialDays).toBe(0);
 
     const href = checkoutHrefForPlan(enterprise, { interval: 'month' });
-    expect(href).toContain('/checkout/enterprise?');
+    // Fail-closed: ohne verdrahtete Live-Price-ID führt Enterprise zu /contact-sales.
+    expect(ENTERPRISE_CHECKOUT_PRICE_WIRED).toBe(false);
+    expect(href).toContain('/contact-sales?plan=enterprise');
     expect(href).not.toContain('pilot=true');
 
     // Die Jahresvariante hat keinen Stripe-Preis und bleibt gesperrt.

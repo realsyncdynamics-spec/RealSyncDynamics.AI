@@ -111,6 +111,8 @@ describe('pricingContent', () => {
       pricingPlans
         .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
         .filter((plan) => !(plan.slug in UNWIRED_YEARLY))
+        // Enterprise: fail-closed → /contact-sales, bis die Stripe-Price-ID verdrahtet ist.
+        .filter((plan) => plan.slug !== 'enterprise')
         .forEach((plan) => {
           expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
           expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
@@ -393,7 +395,7 @@ describe('pricingContent', () => {
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
       expect(enterprise?.priceString).toBe('1.498 €');
       expect(enterprise?.interval).toBe('/ Monat netto');
-      expect(enterprise?.cta.href).toBe('/checkout/enterprise');
+      expect(enterprise?.cta.href).toBe('/contact-sales?plan=enterprise&source=pricing');
     });
 
     it('prices should be in ascending order for paid plans', () => {

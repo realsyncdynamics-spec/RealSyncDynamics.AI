@@ -54,7 +54,6 @@ import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
 import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
-import { BETA } from '../../config/beta';
 import { RUNTIME_CREDIT_PACK_STUBS } from '@/shared/pricing';
 
 /**

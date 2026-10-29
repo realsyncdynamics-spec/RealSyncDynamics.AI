@@ -9,6 +9,7 @@
  * Alle ausführlichen Texte, Feature-Listen und Paketi-Beschreibungen
  * leben hier — nicht in den Komponenten duplizieren.
  */
+import { ENTERPRISE_CHECKOUT_PRICE_WIRED, ENTERPRISE_CTA_LABEL } from '@/shared/pricing';
 
 export interface Feature {
   slug: string;
@@ -502,8 +503,8 @@ export const pricingPlans: PricingPlan[] = [
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?plan=enterprise&source=pricing',
+      label: ENTERPRISE_CTA_LABEL,
+      href: ENTERPRISE_CHECKOUT_PRICE_WIRED ? '/checkout/enterprise' : '/contact-sales?plan=enterprise&source=pricing',
     },
     checkoutPath: '/checkout/enterprise',
     problemsSolved: [

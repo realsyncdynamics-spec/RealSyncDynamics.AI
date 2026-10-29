@@ -32,7 +32,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(within(enterprise).getByText(formatPriceEur(planById('enterprise').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
     expect(within(enterprise).getByText('/ Monat netto')).toBeInTheDocument();
     expect(within(enterprise).queryByText('Auf Anfrage')).toBeNull();
-    expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
+    expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise starten');
     expect(document.body.textContent).not.toContain('Gespräch anfragen');
   });
 
@@ -48,9 +48,9 @@ describe('/pricing (Handoff v2)', () => {
     expect(listPrice).toHaveTextContent(/^danach/);
     expect(listPrice.querySelector('s')).toHaveTextContent(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '));
     expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Kostenlos testen');
-    // Enterprise ist nicht Teil der Beta: Festpreis, Anfrage bis Stripe-Price-ID verdrahtet.
+    // Enterprise ist nicht Teil der Beta: Festpreis, Checkout (Live-Price verdrahtet).
     expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('Auf Anfrage')).toBeNull();
-    expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise starten');
   });
 
   it('keeps nav and plan copy in the same language after toggle', () => {
@@ -65,7 +65,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('On request')).toBeNull();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('/ month excl. VAT')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
-      'Enterprise inquiry',
+      'Start Enterprise',
     );
   });
 

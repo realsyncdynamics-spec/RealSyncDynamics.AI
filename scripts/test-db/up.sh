@@ -20,6 +20,7 @@ MIGRATIONS=(
     "$ROOT/supabase/migrations/20260603000000_subject_ref_lifecycle.sql"
     "$ROOT/supabase/migrations/20260604000000_economic_intelligence.sql"
     "$ROOT/supabase/migrations/20260605000000_economic_intelligence_mvs.sql"
+    "$ROOT/supabase/migrations/20261028170000_cost_ledger_fail_closed.sql"
 )
 
 DB_NAME="${TEST_DB_NAME:-rsd_test_$(date +%s)}"

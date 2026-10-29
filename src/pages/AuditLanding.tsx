@@ -90,7 +90,7 @@ interface Report {
 
 export function AuditLanding() {
   usePageMeta({
-    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
+    title: 'Kostenloser Governance Scan — Tracking, Consent und KI-Bestand (DSGVO & EU AI Act)',
     description:
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',

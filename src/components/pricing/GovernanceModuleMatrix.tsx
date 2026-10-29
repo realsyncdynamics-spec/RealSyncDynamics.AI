@@ -115,7 +115,7 @@ export function GovernanceModuleMatrix() {
             to="/audit?source=pricing-matrix"
             className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
-            Kostenlosen Audit starten
+            Kostenlosen Governance Scan starten
           </Link>
         </div>
       </div>

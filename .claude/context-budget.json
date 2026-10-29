@@ -3,6 +3,7 @@
   "bytesPerToken": 3.5,
   "maxTokens": {
     "CLAUDE.md": 2000,
+    "AGENTS.md": 1100,
     "gesamt": 2800
   },
   "mcpServerHinweisAb": 1,

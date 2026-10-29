@@ -202,7 +202,9 @@ d('RFC-004 / reservation expiry sweeper (DB)', () => {
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
 
-  it('sweeper deletes expired unsettled reservations + emits event', async () => {
+  // PR A2: Der Sweep löscht nicht mehr, sondern verbucht zum reservierten
+  // Höchstbetrag als geschätzt (cost-ledger-fail-closed.db.test.ts).
+  it('sweeper books expired unsettled reservations as estimate + emits event', async () => {
     const { tenantId } = await createTenantWithMember(ctx!);
 
     // Plant an already-expired reservation directly
@@ -223,12 +225,15 @@ d('RFC-004 / reservation expiry sweeper (DB)', () => {
     });
     expect(swept.rows[0]!.n).toBeGreaterThanOrEqual(1);
 
-    const left = await ctx!.client.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM public.tenant_cost_ledger
+    const left = await ctx!.client.query<{ n: number; cost_kind: string; value_basis: string }>(
+      `SELECT count(*) OVER ()::int AS n, cost_kind, value_basis
+         FROM public.tenant_cost_ledger
         WHERE reservation_id = $1`,
       [rid],
     );
-    expect(left.rows[0]!.n).toBe(0);
+    expect(left.rows[0]!.n).toBe(1);
+    expect(left.rows[0]!.cost_kind).toBe('llm_estimate');
+    expect(left.rows[0]!.value_basis).toBe('geschaetzt');
 
     const ev = await ctx!.client.query<{ severity: string }>(
       `SELECT severity FROM public.runtime_events

@@ -652,12 +652,12 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             <Activity className="h-5 w-5 text-cyan-300" />
           </div>
           <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Continuous Runtime</div>
-            <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Drift verhindern statt einmalig aufräumen.</h3>
+            <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Continuous Runtime · Coming Soon</div>
+            <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Drift verhindern statt einmalig aufräumen (Geplant).</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
               Der Free-Scan zeigt einen Snapshot. Ein neuer Tracker, ein Tag-Manager-Push oder ein vergessenes Plugin
-              kann den Score in einer Woche wieder kippen. Die RealSync Runtime monitort kontinuierlich, alertet bei
-              Drift und schreibt jeden Befund in die Evidence-Chain.
+              kann den Score in einer Woche wieder kippen. Dauerhafte Domain-Überwachung mit automatischer Drift-Erkennung
+              und Einträgen in der Evidence-Chain ist geplant (Coming Soon).
             </p>
             <Link
               to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit-followup`}

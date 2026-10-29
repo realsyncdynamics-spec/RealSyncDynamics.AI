@@ -60,7 +60,7 @@ export const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [
             label: 'AI Inventory',
             to: '/welcome?next=/app/risk-inventory',
             description: 'KI-Systeme ohne Excel-Schatten',
-            badge: 'live',
+            badge: 'preview',
           },
           {
             label: 'AI Act',

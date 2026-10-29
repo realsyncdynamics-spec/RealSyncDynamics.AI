@@ -198,10 +198,10 @@ const PILLARS = [
   },
   {
     icon: Archive,
-    title: 'Immutable Evidence',
-    spec: 'Hash-Chain · Ed25519 · RFC 3161',
+    title: 'Tamper-Evident Evidence',
+    spec: 'Hash-Chain · Ed25519 · Snapshot-Anker',
     body:
-      'Jeder Evidence-Record verlinkt mit SHA-256-Hash zum Vorgänger und ist mit dem Tenant-Schlüssel signiert. High-Stakes-Records bekommen zusätzlich einen RFC-3161-Timestamp von zwei unabhängigen EU-TSAs.',
+      'Jeder Evidence-Record verlinkt mit SHA-256-Hash zum Vorgänger und ist mit dem Tenant-Schlüssel signiert — jede nachträgliche Änderung wird über die Hash-Kette erkennbar.',
   },
   {
     icon: UserCheck,

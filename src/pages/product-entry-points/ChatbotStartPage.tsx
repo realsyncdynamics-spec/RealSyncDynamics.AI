@@ -34,7 +34,7 @@ export function ChatbotStartPage() {
             </h1>
 
             <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
-              Ein intelligenter Chatbot für Ihre Website — trainiert auf Ihre Dokumentation, Ihre Daten und Ihre Policies. EU-gehostet, DSGVO-konform, ohne externe AI-Aufrufe.
+              Ein intelligenter Chatbot für Ihre Website — für Ihre Dokumentation, Ihre Daten und Ihre Policies. EU-gehostet, mit lokaler Modell-Option (eu_local) auf Anfrage.
             </p>
 
             <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
@@ -84,7 +84,7 @@ export function ChatbotStartPage() {
           </div>
 
           <p className="text-center text-xs sm:text-sm text-white/50 font-mono">
-            Kostenlos · EU-gehostet · ohne externe API-Aufrufe
+            Vorschau (Preview) · EU-gehostet · lokale Modell-Option (eu_local)
           </p>
         </div>
       </section>

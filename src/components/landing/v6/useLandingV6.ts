@@ -650,7 +650,7 @@ export function useLandingV6() {
     crKpis: KPIS.map((k) => ({
       ...k,
       style: {
-        fontFamily: "'Source Serif 4',Georgia,serif",
+        fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif",
         fontSize: 'clamp(36px,2.6vw,80px)',
         lineHeight: 1,
         color: k.c || 'var(--rs-fg)',

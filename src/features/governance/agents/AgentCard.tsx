@@ -6,6 +6,7 @@ import type {
   GovernedAgentType,
 } from './types';
 import { AgentMaturityBadge, AgentRiskBadge } from './AgentStatusBadge';
+import { agentAnchor } from './agentCatalog';
 
 const TYPE_LABEL: Record<GovernedAgentType, string> = {
   compliance:   'Compliance',
@@ -34,12 +35,19 @@ const EVIDENCE_LABEL: Record<AgentEvidenceRequirement, string> = {
 
 interface Props {
   agent: GovernedAgentEntry;
+  /** Aus der Seitenleiste angesprungen (#agent-<id>) — Rahmen hervorheben. */
+  highlighted?: boolean;
 }
 
-export function AgentCard({ agent }: Props) {
+export function AgentCard({ agent, highlighted = false }: Props) {
   const Icon = agent.kind === 'bot' ? MessageSquare : Bot;
   return (
-    <article className="border border-titanium-800 bg-obsidian-900" data-agent-id={agent.id}>
+    <article
+      id={agentAnchor(agent.id)}
+      className={`scroll-mt-4 border bg-obsidian-900 ${highlighted ? 'border-titanium-400' : 'border-titanium-800'}`}
+      data-agent-id={agent.id}
+      data-highlighted={highlighted ? 'true' : undefined}
+    >
       <header className="flex items-start justify-between gap-3 border-b border-titanium-800 p-4">
         <div className="flex items-start gap-3 min-w-0">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { priceForPlanKey } from '@/shared/pricing';
-import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Users, CreditCard, Zap, CheckCircle, ShieldCheck, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -267,6 +267,18 @@ function Inner({ session }: { session: Session }) {
               </Card>
             </Link>
 
+            <Link to="/admin/beta-feedback">
+              <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Beta-Feedback
+                  </CardTitle>
+                  <CardDescription>Rückmeldungen aus der App mit Seite und Workspace</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
             <Link to="/admin/system">
               <Card variant="default" className="hover:border-security-blue/50 transition-colors cursor-pointer h-full">
                 <CardHeader>
@@ -303,6 +315,15 @@ function Inner({ session }: { session: Session }) {
                 <CardContent className="py-4">
                   <p className="font-semibold text-titanium-100">Rebuilds</p>
                   <p className="text-xs text-titanium-400 mt-1">Deploy-History und Job-Verwaltung</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/admin/ai-os">
+              <Card variant="default" className="hover:border-titanium/50 transition-colors cursor-pointer">
+                <CardContent className="py-4">
+                  <p className="font-semibold text-titanium-100">AI Command Center</p>
+                  <p className="text-xs text-titanium-400 mt-1">Agenten, Skills, Routinen, Wissen, CI, Kosten, Prüfpfad</p>
                 </CardContent>
               </Card>
             </Link>

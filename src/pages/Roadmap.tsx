@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Compass, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Compass, ArrowRight, CalendarDays } from 'lucide-react';
 import { usePageMeta } from '../lib/usePageMeta';
 import {
   COMING_SOON_IMPLEMENTATION,
@@ -20,6 +20,7 @@ import {
   LANDING_TEXT,
 } from '../components/landing/landing-theme';
 import { PublicDarkHeader } from '../components/landing/PublicDarkHeader';
+import { BETA, BETA_MILESTONES } from '../config/beta';
 
 /**
  * /roadmap — public status board from implementation-status.ts SSOT.
@@ -84,6 +85,40 @@ export function Roadmap() {
           Quelle: <span className="font-mono text-[12px]">src/product/implementation-status.ts</span>.
           Keine erfundenen Ship-Dates. Preview = UI/API erreichbar, Backend unvollständig.
         </p>
+
+        {/* Beta-Meilensteine — aus src/config/beta.ts, eine Quelle */}
+        {BETA.active && (
+          <section className="mt-12" aria-label="Beta-Phase">
+            <p
+              className="mb-4 text-[11px] tracking-[.2em]"
+              style={{ fontFamily: LANDING_MONO, color: LANDING_ACCENT }}
+            >
+              BETA · OFFENE TESTPHASE
+            </p>
+            <ol className="space-y-0 border-l-2" style={{ borderColor: `${LANDING_ACCENT}47` }}>
+              {BETA_MILESTONES.map((m) => (
+                <li
+                  key={m.date}
+                  className="relative flex gap-4 pb-6 pl-6 last:pb-0"
+                >
+                  <CalendarDays
+                    className="absolute left-[-9px] top-0.5 h-4 w-4 shrink-0 rounded-sm"
+                    style={{ color: LANDING_ACCENT, background: LANDING_BG }}
+                    aria-hidden
+                  />
+                  <div>
+                    <p className="font-mono text-[10px] tracking-[.15em]" style={{ color: LANDING_ACCENT }}>
+                      {m.date}
+                    </p>
+                    <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: LANDING_MUTED }}>
+                      {m.label}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         <div className="mt-12 space-y-10">
           {SECTIONS.map(({ status, items }) => {

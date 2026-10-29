@@ -36,6 +36,16 @@ Hard-Edge-UI (Obsidian/Titanium/Security-Blue, 90°-Kanten, Monospace für Metad
 farben getrennt von Brand-Akzenten. Landing gezielt verbessern, Funktionen erhalten; alte
 Landing-Dateien sind kein Löschbeleg (`npm run check:dead` liefert nur Kandidaten).
 
+## Zwei Geschäftsbereiche (Entscheidung C, 29.10.2026)
+
+SaaS = RealSyncDynamics.AI (dieses Produkt). Creative Web Studio = Kunden-Websites, 3D, KI-Medien;
+nutzt Bausteine technisch mit, hat eigene Angebote, Workflows, Designs, Kalkulation.
+- Hard-Edge und Landing-Regeln gelten für SaaS. **Ausnahme:** Studio-Kundenseiten dürfen ein
+  eigenes Design-System haben.
+- Studio-Preise nie in `shared/pricing.ts` oder Stripe ohne ausdrückliches Go.
+- Kundenprojekte in eigene (private) Repos, nie hierher. Studio-Bausteine hier (`studio/*`,
+  `packages/studio-kit`) nur nach Freigabe. Ledger: `.ai/decisions/`.
+
 ## Freigaben
 
 Ohne Einzel-Freigabe nie: Merge mit Produktionswirkung, Deploy, Rebase, Force-Push, PR schließen,

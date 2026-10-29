@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Bot, Inbox, Menu, Search, X } from 'lucide-react';
+import { AlertTriangle, Bot, Menu, Search, X } from 'lucide-react';
 import {
   distinct, EMPTY_FILTER, UNSET, filterAgents, STATUS_LABEL,
   type AgentFilter, type AgentStatus, type RegistryAgent,
 } from './agentRegistry';
 import { useAgentRegistry } from './useAgentRegistry';
+import { DecisionInbox } from './DecisionInbox';
 
 const NAV = [
   'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
@@ -153,12 +154,7 @@ export function CommandCenterView() {
         </div>
       </main>
 
-      <aside aria-label="Decision Inbox" className="w-full shrink-0 border-t border-zinc-800 p-4 lg:w-80 lg:border-l lg:border-t-0">
-        <h2 className="flex items-center gap-2 font-semibold"><Inbox className="h-4 w-4" aria-hidden />Offene Entscheidungen</h2>
-        <p className="mt-3 rounded-md border border-dashed border-zinc-700 p-3 text-sm text-zinc-500">
-          Platzhalter. Die Decision Inbox wird in M2–M4 angebunden. Hier werden aktuell keine Fragen angezeigt.
-        </p>
-      </aside>
+      <DecisionInbox />
       </div>
     </div>
   );

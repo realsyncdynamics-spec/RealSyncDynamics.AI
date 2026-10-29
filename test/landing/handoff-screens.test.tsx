@@ -40,7 +40,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
     expect(within(growth).getByText(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('14 Tage kostenlos testen');
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('In der Beta kostenlos starten');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('/pricing (Handoff v2)', () => {
     const growth = screen.getByTestId('pricing-card-growth');
     expect(growth).toHaveAttribute('data-lang', 'en');
     expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start free during beta');
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('On request')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
       'Enterprise inquiry',

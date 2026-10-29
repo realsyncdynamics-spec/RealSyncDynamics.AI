@@ -290,13 +290,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
   // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
-    title: 'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
+    title: 'Governance OS für DSGVO & EU AI Act – AI Governance Runtime | RealSync Dynamics AI',
     description:
-      'DSGVO und EU AI Act für KMU: kostenloser Website-Check, KI-Inventar und prüffähige Nachweise – verständlich erklärt, gehostet in Frankfurt.',
+      'Das Governance OS für DSGVO & EU AI Act: KI-Systeme und Websites erfassen, Risiken bewerten, Policies anwenden und prüffähige Nachweise ablegen. Einstieg mit dem kostenlosen Governance Scan – Datenhaltung in Frankfurt.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'DSGVO & EU AI Act – machbar für Ihr Unternehmen',
+    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
     ogDescription:
-      'Für KMU: Website- und KI-Risiken erkennen, konkrete Maßnahmen umsetzen und prüffähig nachweisen – ohne eigene Compliance-Abteilung, betrieben in der EU.',
+      'Eine Runtime für Risiken, Richtlinien und prüffähige Nachweise: Discover → Assess → Govern → Enforce → Evidence → Audit. Betrieben in der EU.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
@@ -376,7 +376,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/audit': {
-    title: 'Kostenloser DSGVO-Audit — URL-Scan in 60 Sekunden | RealSync Dynamics AI',
+    title: 'Kostenloser Governance Scan — DSGVO & EU AI Act | RealSync Dynamics AI',
     description:
       'Sofortiger Compliance-Score (0-100) für jede URL. Top-Risiken sichtbar, Mini-PDF-Report, kein Account. Echter Playwright-Browser misst Pre-Consent-Tracker.',
     canonical: `${SITE_URL}/audit`,
@@ -441,11 +441,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // eigenen Eintrag: es wird per 301 (public/_redirects) auf diese URL
   // umgeleitet und rendert nie selbst.
   '/warteliste': {
-    title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSync Dynamics AI',
+    title: 'Beta-Zugang — Begleitetes Onboarding zur AI Governance Runtime | RealSync Dynamics AI',
     description:
-      'Sichern Sie sich Ihren Platz für Governance Runtime, Evidence Vault, Policy Packs und Herkunftsnachweis. Kostenlos, unverbindlich, Position sofort sichtbar — EU-gehostet in Frankfurt.',
+      'Platz für begleitetes Onboarding und Beta-Module (z. B. laufendes Monitoring) sichern. Die Governance Runtime ist verfügbar; kostenlos, unverbindlich — EU-gehostet in Frankfurt.',
     canonical: `${SITE_URL}/warteliste`,
-    ogTitle: 'Warteliste — Früher Zugang zur AI Governance Runtime',
+    ogTitle: 'Beta-Zugang — Begleitetes Onboarding zur AI Governance Runtime',
     ogDescription:
       'Module werden in Wellen freigegeben. Tragen Sie sich ein und erhalten Sie die Einladung, sobald ein Platz frei wird.',
     jsonLd: [

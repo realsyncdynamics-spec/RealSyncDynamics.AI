@@ -37,7 +37,7 @@ import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
 import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
-import { BETA } from '../../config/beta';
+import { BETA, isBetaPlan } from '../../config/beta';
 import { RUNTIME_CREDIT_PACK_STUBS } from '@/shared/pricing';
 
 /**
@@ -497,7 +497,12 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;
   const bullets = copy?.bullets ?? tier.bullets.slice(0, 5);
-  const ctaLabel = copy?.ctaLabel ?? tier.cta.label;
+  // Eine Linie während der offenen Beta: Kein „14 Tage testen" neben
+  // „kostenlos bis …" — Beta-Pläne führen in denselben Beta-Einstieg.
+  const betaPlan = BETA.active && BETA.publicOffer && isBetaPlan(tier.id);
+  const ctaLabel = betaPlan
+    ? (lang === 'en' ? 'Start free during beta' : 'In der Beta kostenlos starten')
+    : (copy?.ctaLabel ?? tier.cta.label);
   const go = () => {
     if (ctaHref.startsWith('http')) window.open(ctaHref, '_blank', 'noopener');
     else window.location.href = ctaHref;

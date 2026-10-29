@@ -6,6 +6,21 @@
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { asAiSetup, type AiSetup } from './aiSetupCatalog';
 
+export type ActivationTenantType = 'freelancer' | 'sme' | 'agency' | 'enterprise';
+export type ActivationResidencyPolicy = 'enforce_eu_local' | 'enforce_cloud' | 'user_choice';
+
+const VALID_TENANT_TYPES: readonly ActivationTenantType[] = [
+  'freelancer',
+  'sme',
+  'agency',
+  'enterprise',
+];
+const VALID_RESIDENCY_POLICIES: readonly ActivationResidencyPolicy[] = [
+  'enforce_eu_local',
+  'enforce_cloud',
+  'user_choice',
+];
+
 export interface ActivationOrganization {
   company: string;
   entities: string;
@@ -14,6 +29,10 @@ export interface ActivationOrganization {
   teamStructure: string;
   responsibilities: string;
   roles: string;
+  /** Aus SetupAssistant übernommen (WP10): Organisationstyp, Mitarbeiterzahl, Betriebsmodus. */
+  tenantType?: ActivationTenantType;
+  orgSizeEmployees?: number;
+  residencyPolicy?: ActivationResidencyPolicy;
   /** Undefined = noch nie gespeichert. Beim Speichern ohne aiSetup bleibt der Bestand erhalten. */
   aiSetup?: AiSetup;
 }
@@ -36,10 +55,29 @@ export const EMPTY_ORGANIZATION: ActivationOrganization = {
   roles: '',
 };
 
+function asTenantType(raw: unknown): ActivationTenantType | undefined {
+  return typeof raw === 'string' && (VALID_TENANT_TYPES as readonly string[]).includes(raw)
+    ? (raw as ActivationTenantType)
+    : undefined;
+}
+
+function asResidencyPolicy(raw: unknown): ActivationResidencyPolicy | undefined {
+  return typeof raw === 'string' && (VALID_RESIDENCY_POLICIES as readonly string[]).includes(raw)
+    ? (raw as ActivationResidencyPolicy)
+    : undefined;
+}
+
+function asOrgSizeEmployees(raw: unknown): number | undefined {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : undefined;
+}
+
 function asOrganization(raw: unknown): ActivationOrganization {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY_ORGANIZATION };
   const o = raw as Record<string, unknown>;
   const aiSetup = asAiSetup(o.aiSetup);
+  const tenantType = asTenantType(o.tenantType);
+  const orgSizeEmployees = asOrgSizeEmployees(o.orgSizeEmployees);
+  const residencyPolicy = asResidencyPolicy(o.residencyPolicy);
   return {
     company: typeof o.company === 'string' ? o.company : '',
     entities: typeof o.entities === 'string' ? o.entities : '',
@@ -48,6 +86,9 @@ function asOrganization(raw: unknown): ActivationOrganization {
     teamStructure: typeof o.teamStructure === 'string' ? o.teamStructure : '',
     responsibilities: typeof o.responsibilities === 'string' ? o.responsibilities : '',
     roles: typeof o.roles === 'string' ? o.roles : '',
+    ...(tenantType ? { tenantType } : {}),
+    ...(orgSizeEmployees !== undefined ? { orgSizeEmployees } : {}),
+    ...(residencyPolicy ? { residencyPolicy } : {}),
     ...(aiSetup ? { aiSetup } : {}),
   };
 }
@@ -109,11 +150,13 @@ export async function saveGovernanceActivation(input: {
   }
   const status =
     input.status ??
-    (input.scopes.length > 0 && input.organization.company.trim()
-      ? 'org_saved'
-      : input.scopes.length > 0
-        ? 'scope_set'
-        : 'draft');
+    (input.organization.aiSetup
+      ? 'activated'
+      : input.scopes.length > 0 && input.organization.company.trim()
+        ? 'org_saved'
+        : input.scopes.length > 0
+          ? 'scope_set'
+          : 'draft');
 
   const { data: existing, error: readError } = await getSupabase()
     .from('governance_activations')
@@ -123,6 +166,7 @@ export async function saveGovernanceActivation(input: {
   // Ohne gelesenen Bestand nicht schreiben — sonst droht stilles Überschreiben von aiSetup.
   if (readError) throw new Error(readError.message);
 
+  const nowIso = new Date().toISOString();
   const { error } = await getSupabase().from('governance_activations').upsert(
     {
       tenant_id: input.tenantId,
@@ -132,18 +176,35 @@ export async function saveGovernanceActivation(input: {
       ),
       scopes: input.scopes,
       status,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
     },
     { onConflict: 'tenant_id' },
   );
   if (error) throw new Error(error.message);
 
-  // Mirror company name onto tenants when present (same pattern as onboarding-orchestrator).
+  // Mirror company name + SetupAssistant fields onto tenants when present.
   const company = input.organization.company.trim();
+  const tenantUpdate: Record<string, unknown> = {};
   if (company) {
+    tenantUpdate.company_name = company;
+    tenantUpdate.org_name = company;
+  }
+  if (input.organization.tenantType) {
+    tenantUpdate.tenant_type = input.organization.tenantType;
+  }
+  if (typeof input.organization.orgSizeEmployees === 'number' && input.organization.orgSizeEmployees > 0) {
+    tenantUpdate.org_size_employees = input.organization.orgSizeEmployees;
+  }
+  if (input.organization.residencyPolicy) {
+    tenantUpdate.ai_data_residency_policy = input.organization.residencyPolicy;
+  }
+  if (status === 'activated') {
+    tenantUpdate.onboarded_at = nowIso;
+  }
+  if (Object.keys(tenantUpdate).length > 0) {
     await getSupabase()
       .from('tenants')
-      .update({ company_name: company, org_name: company })
+      .update(tenantUpdate)
       .eq('id', input.tenantId);
   }
 }

@@ -152,12 +152,12 @@ export const TOOLS = [
   ['AUTOMATION · WHATSAPP', 'WhatsApp Bot', 'WhatsApp-Kundenkommunikation über den echten Bot-Builder — mit Persona, Wissensbasis, Termin- und Anfrageprozessen sowie Governance und Evidence.'],
   ['VOICE · GOVERNANCE', 'Telefonbot', 'KI-Telefonassistenz über den bestehenden Bot-Builder — mit Voice-Kanal, Human Handoff, Terminannahme, Policy Enforcement und auditierbaren Gesprächen.'],
   ['AI · WEBSITE', 'DSGVO Web App Builder', 'Website zuerst prüfen, DSGVO- und Governance-Befund erfassen und anschließend in den bestehenden Web-App-Transformation-Flow übergeben.'],
-  ['ENGINEERING · GOVERNANCE', 'Claude Code Optimizer', 'Repository auf DSGVO- und EU-AI-Act-Risiken prüfen, konkrete Fixes erzeugen und Prüfungen als Evidence in den Entwicklungsworkflow integrieren.'],
+  ['ENGINEERING · GOVERNANCE', 'Claude Code Optimizer', 'Website-Check für Entwickler: Website auf DSGVO- und EU-AI-Act-Risiken prüfen und konkrete Fix-Hinweise für den Entwicklungsworkflow ableiten.'],
 ] as const;
 
 // ---- 03 Plattform (platform-capabilities.ts, Messung 2026-08-17) ----
 const LIVE_CAPS_RAW = [
-  ['DSGVO- & Tracking-Audit', 'Cookies, Tracker und Drittanbieter prüfen, Einwilligungspflichten erkennen — mit PDF-Bericht.', ''],
+  ['DSGVO- & Tracking-Audit', 'Cookies, Tracker und Drittanbieter prüfen, Einwilligungspflichten erkennen — mit druckfertigem Bericht (HTML/Druck-PDF).', ''],
   ['EU-AI-Act-Klassifizierung', 'Risikoklasse nach Annex III einordnen, Anforderungen ableiten — im öffentlichen Klassifikator, ohne Speichern ins Inventar.', '/ai-act-klassifikator'],
   ['Governance Runtime', 'Risikobewertung, Vorfälle, Betroffenenanfragen, DSFA, Dienstleister und Freigaben in einer laufenden Kontrollschicht.', ''],
   ['Nachweis-Export', 'Prüfungen, Entscheidungen und Änderungen exportieren — für interne Kontrollen und externe Prüfer.', ''],
@@ -173,14 +173,14 @@ export const LIVE_CAPS = LIVE_CAPS_RAW.map(([name, desc, more]) => ({
 }));
 
 export const BUILDING_CAPS = [
-  ['Bot-Laufzeit — Chat, WhatsApp, Telefon', 'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist noch nicht in Produktion.'],
+  ['Bot-Laufzeit — Chat, WhatsApp, Telegram', 'Kundenkommunikation über Chat-, WhatsApp- und Telegram-Bots auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.', 'Bots lassen sich anlegen und speichern; die produktive Provider-Laufzeit, die Nachrichten beantwortet, ist noch nicht in Produktion (Preview). Telefonie ist geplant (Coming Soon).'],
 ] as const;
 export const GOV_STEPS = [
   ['01', 'PRÜFEN', 'Website, Cookies, Tracker und KI-Einbindung erfassen.'],
   ['02', 'EINORDNEN', 'Risiken mit Paragraphenbezug klar benennen.'],
   ['03', 'HANDELN', 'Konkrete Schritte, was Sie ändern müssen.'],
   ['04', 'NACHWEISEN', 'Alles dokumentieren, damit Sie es vorlegen können.'],
-  ['05', 'BEOBACHTEN', 'Laufend prüfen, wenn sich etwas ändert.'],
+  ['05', 'BEOBACHTEN · COMING SOON', 'Geplant: Domain nach dem Scan fortlaufend auf Änderungen prüfen.'],
   ['06', 'AUSWERTEN', 'Klare Übersicht für Sie, den Datenschutzbeauftragten oder den Prüfer.'],
 ] as const;
 

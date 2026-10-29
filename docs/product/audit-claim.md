@@ -5,6 +5,16 @@
 · `src/features/audit/pendingAudit.ts`
 **Tests**: `test/edge/audit-claim.test.ts`
 
+> **Überholt am 2026-10-13 — Abschnitt 3 gilt nicht mehr.** Das Vertrauensmodell
+> „wer die `audit_id` kennt, darf sie einmal übernehmen" war eine Lücke: Die
+> Kennung steht im teilbaren Ergebnis-Link, und jedes frisch registrierte Konto
+> konnte ein fremdes Audit dauerhaft in den eigenen Mandanten ziehen. Der
+> einzige Schreiber ist jetzt die RPC `claim_gdpr_audit` (E-Mail-Bindung,
+> Mitgliedschaft, Erstübernahme; Mandantenauswahl über #1867). Die Edge
+> Function `audit-claim` ruft diese RPC nur noch mit dem Nutzer-Token auf.
+> Fehlercodes: `_shared/audit-claim.ts`; Tests zusätzlich
+> `test/onboarding/claim-audit-flow.test.ts`.
+
 ---
 
 ## 1. Die Lücke

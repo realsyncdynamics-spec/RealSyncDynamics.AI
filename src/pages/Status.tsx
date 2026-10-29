@@ -33,7 +33,7 @@ export function Status() {
         <div className="max-w-3xl mx-auto space-y-10">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-700 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <CheckCircle2 className="h-3 w-3" /> Alle Systeme operational
+              <CheckCircle2 className="h-3 w-3" /> Manuell gepflegt · Stand 28.10.2026
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               Service-Status
@@ -46,12 +46,12 @@ export function Status() {
 
           <Section title="Komponenten">
             <ul className="space-y-2">
-              <Component name="Frontend (RealSyncDynamicsAI.de)" status="operational" detail="Static SPA, served from Hostinger DE VPS" />
-              <Component name="API / Edge Functions" status="operational" detail="Supabase Edge (eu-central-1)" />
+              <Component name="Frontend (RealSyncDynamicsAI.de)" status="operational" detail="Statische SPA, ausgeliefert über Cloudflare Pages (globales Edge-Netz)" />
+              <Component name="API / Edge Functions" status="operational" detail="Supabase Edge Functions, global verteilt (Ausführung nahe dem Aufrufer)" />
               <Component name="Datenbank (Postgres + RLS)" status="operational" detail="Supabase Managed Postgres (eu-central-1)" />
               <Component name="Auth (Magic-Link)" status="operational" detail="Supabase Auth via Email-OTP" />
-              <Component name="AI-Provider (Cloud)" status="operational" detail="Anthropic EU + Google Vertex eu-central + OpenAI EU" />
-              <Component name="AI-Provider (EU-local Fallback)" status="operational" detail="Ollama auf VPS (Llama 3.1, Mistral)" />
+              <Component name="AI-Provider (Cloud)" status="operational" detail="Anthropic (Standard), OpenAI, Google Gemini API — USA, mit EU-DPA + SCCs" />
+              <Component name="AI-Provider (EU-lokal, opt-in)" status="operational" detail="Ollama auf Hostinger-VPS in Deutschland (gemma3, qwen2.5)" />
               <Component name="Audit-Engine" status="operational" detail="Versioned rule-engine 2026.05.0" />
               <Component name="Stripe Webhook" status="operational" detail="Idempotent via webhook_events table" />
             </ul>
@@ -67,12 +67,13 @@ export function Status() {
               .
             </p>
             <ul className="space-y-2">
-              <Component name="Supabase (Postgres + Edge)" status="operational" detail="DE — Frankfurt eu-central-1" />
-              <Component name="Hostinger (VPS-Hosting)" status="operational" detail="DE — Frankfurt" />
-              <Component name="Stripe (Payments)" status="operational" detail="EU-Tenant + AVV" />
-              <Component name="Anthropic Claude (AI)" status="operational" detail="EU-Endpoint" />
-              <Component name="Google Vertex (AI)" status="operational" detail="eu-central · BYOK optional" />
-              <Component name="OpenAI (AI, Fallback)" status="operational" detail="EU-Tenant" />
+              <Component name="Cloudflare (Website-Auslieferung)" status="operational" detail="Global Anycast-Edge · USA, mit EU-DPA + SCCs" />
+              <Component name="Supabase (Postgres + Auth)" status="operational" detail="DE — Frankfurt eu-central-1" />
+              <Component name="Hostinger (VPS, EU-lokal-Stack + Deep-Scan)" status="operational" detail="DE — Frankfurt" />
+              <Component name="Stripe (Payments)" status="operational" detail="Irland (EU) + AVV" />
+              <Component name="Anthropic Claude (AI, Standard)" status="operational" detail="USA · EU-DPA + SCCs" />
+              <Component name="Google Gemini API (AI)" status="operational" detail="USA · EU-DPA + SCCs" />
+              <Component name="OpenAI (AI)" status="operational" detail="USA · EU-DPA + SCCs" />
             </ul>
           </Section>
 
@@ -135,7 +136,7 @@ export function Status() {
 
       <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
+          <div>© 2026 RealSync Dynamics · Made in Germany · Datenhaltung in der EU</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/security" className="hover:text-titanium-300">Security</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Processors</Link>

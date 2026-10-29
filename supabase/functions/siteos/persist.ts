@@ -150,6 +150,9 @@ export async function persistBlueprintVersion(input: PersistVersionInput): Promi
       finding_codes: task.findingCodes,
       severity_max: task.severityMax,
       requires_approval: task.requiresApproval,
+      // Auslöser: darf diesen Lauf nicht selbst freigeben (Vier-Augen,
+      // Migration 20261025100000).
+      requested_by: input.userId,
       // Beschriftung nach §8: unter welchem Skill der Lauf steht und aus
       // welchem Anlass. Der Anlass kommt vom Aufrufer — der Builder erzeugt
       // eine neue Fassung (Website Transformation), der Editor eine

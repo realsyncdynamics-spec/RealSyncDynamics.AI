@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
@@ -6,7 +7,7 @@ import {
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
   Share2, Sparkles, Scale, Shield, BadgeCheck, FileSearch, GitBranch,
-  ListChecks, MessageSquare, Store, Terminal, Mic,
+  ListChecks, MessageSquare, Store, Terminal, Mic, ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES } from './governanceModules';
@@ -20,16 +21,21 @@ import { OS_ACCENT_TEXT } from './osChrome';
 import { APP_SIDEBAR_WIDTH } from './app-theme';
 import { SHELL_NAV, SHELL_NAV_ROUTES, activeShellNav, type ShellNavId } from './shellNav';
 import { useShellCounts, type ShellCounts } from './useShellCounts';
+import { groupShellNav, type ShellNavGroupId } from './shellNavGroups';
 import { tenantDisplayName } from '../../features/governance/dashboard/dashboardSignals';
+import { AGENT_REGISTER_COUNT, GovernanceAgentsNav, isAgentRegisterTarget } from './GovernanceAgentsNav';
 import '../../styles/governance-os-app.css';
 
 /**
  * Seitenleiste der App — Handoff v2 §5.
  *
- * Oben die Hauptbereiche des Entwurfs (Übersicht, KI-Systeme,
- * Klassifizierung, Enforcement, Evidence, Voice, Berichte, Abrechnung) mit
- * Lucide-Icons. Darunter „Weitere Module" aus `TAB_MODULES` — dieselbe
- * Registry wie die mobile Tab-Leiste, mit Status-Filter.
+ * Hauptbereiche des Entwurfs (Übersicht, KI-Systeme, Klassifizierung,
+ * Enforcement, Evidence, Voice, Berichte, Abrechnung) und alle übrigen Module
+ * aus `TAB_MODULES` — dieselbe Registry wie die mobile Tab-Leiste — stehen in
+ * einklappbaren Unterkategorien (shellNavGroups.ts): Start, Erfassen,
+ * Bewerten, Durchsetzen, Belegen, Agenten, Verwaltung. Zugeklappte Gruppen
+ * bleiben im DOM (`hidden`), kein Modul entfällt. Die Gruppe „Agenten" führt
+ * zusätzlich jeden Eintrag des Agenten-Registers (`GovernanceAgentsNav`).
  *
  * Schlösser: aus `tenant_entitlements` (`useNavLock` → navAccess.ts), nicht
  * mehr aus `plan.modules`. Schloss ⇔ Routensperre (RouteEntitlementGate)
@@ -106,7 +112,7 @@ function MoreItem({ module, active, lock }: { module: GovernanceModule; active: 
 }
 
 export function GovernanceSidebar() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { plan, loading: planLoading } = useActivePlan();
   const lockFor = useNavLock();
   const { tenants, activeTenantId } = useTenant();
@@ -116,6 +122,33 @@ export function GovernanceSidebar() {
   const rawTenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
   const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
   const moreModules = TAB_MODULES.filter((m) => !SHELL_NAV_ROUTES.has(m.route));
+  const groups = groupShellNav(SHELL_NAV, moreModules);
+  // Offen: „Start" und die Gruppe der aktuellen Seite. Wechselt die Seite in
+  // eine zugeklappte Gruppe, klappt diese auf; andere bleiben, wie der Nutzer
+  // sie gesetzt hat.
+  // Ein Sprung auf eine Register-Karte (#agent-<id>) gehört zu „Agenten",
+  // nicht zu „Erfassen" (die Route liegt unter /app/ai-systems).
+  const activeGroup: ShellNavGroupId | undefined = isAgentRegisterTarget(pathname, hash)
+    ? 'agents'
+    : groups.find(
+        ({ shell, modules }) =>
+          shell.some((item) => item.id === active) ||
+          modules.some((m) => isActiveRoute(m.route, pathname)),
+      )?.group.id;
+  const [openGroups, setOpenGroups] = useState<ReadonlySet<ShellNavGroupId>>(
+    () => new Set<ShellNavGroupId>(activeGroup ? ['start', activeGroup] : ['start']),
+  );
+  useEffect(() => {
+    if (!activeGroup) return;
+    setOpenGroups((prev) => (prev.has(activeGroup) ? prev : new Set(prev).add(activeGroup)));
+  }, [activeGroup]);
+  const toggleGroup = (id: ShellNavGroupId) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   return (
     <nav aria-label={t('shellNavLabel')} className="rs-side" style={{ width: APP_SIDEBAR_WIDTH }}>
@@ -129,53 +162,67 @@ export function GovernanceSidebar() {
         </span>
       </Link>
 
-      <div className="rs-side__group">
-        {SHELL_NAV.map((item) => {
-          const Icon = NAV_ICONS[item.id];
-          const lock = lockFor({ route: item.route, keys: item.entitlementKeys });
-          const locked = lock.locked;
-          const label = t(item.labelKey);
-          const badge = badgeFor(item.id, counts);
-          const to = item.id === 'classify' && counts.firstSystemId
-            ? `/app/ai-systems/${counts.firstSystemId}`
-            : item.route;
-          return (
-            <Link
-              key={item.id}
-              to={to}
-              aria-current={active === item.id ? 'page' : undefined}
-              className={`rs-side__item${locked ? ' rs-side__item--locked' : ''}`}
-              data-testid={`side-nav-${item.id}`}
-              data-locked={locked ? 'true' : 'false'}
-              title={locked ? navLockTitle(label, lock) : undefined}
+      {groups.map(({ group, shell, modules }) => {
+        const isOpen = openGroups.has(group.id);
+        const listId = `side-group-${group.id}`;
+        const withRegister = group.id === 'agents';
+        const count = shell.length + modules.length + (withRegister ? AGENT_REGISTER_COUNT : 0);
+        return (
+          <div key={group.id} className="rs-side__section" data-testid={`side-group-${group.id}`}>
+            <button
+              type="button"
+              className="rs-side__head"
+              aria-expanded={isOpen}
+              aria-controls={listId}
+              onClick={() => toggleGroup(group.id)}
             >
-              <Icon className="rs-side__icon" aria-hidden="true" />
-              <span className="rs-side__text">{label}</span>
-              {locked ? (
-                <Lock className="h-3 w-3 shrink-0" aria-label={navLockTitle(label, lock)} data-testid={`side-lock-${item.id}`} />
-              ) : badge !== null ? (
-                <span className="rs-side__badge" data-testid={`side-badge-${item.id}`}>{badge}</span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </div>
-
-      {moreModules.length > 0 && (
-        <>
-          <p className="rs-side__label">{t('shellMoreModules')}</p>
-          <div className="rs-side__group">
-            {moreModules.map((module) => (
-              <MoreItem
-                key={module.id}
-                module={module}
-                active={isActiveRoute(module.route, pathname)}
-                lock={lockFor({ route: module.route, module })}
-              />
-            ))}
+              <span className="rs-side__head-text">{t(group.labelKey)}</span>
+              <span className="rs-side__head-count">{count}</span>
+              <ChevronDown className="rs-side__chev" aria-hidden="true" />
+            </button>
+            <div id={listId} className="rs-side__group" hidden={!isOpen}>
+              {shell.map((item) => {
+                const Icon = NAV_ICONS[item.id];
+                const lock = lockFor({ route: item.route, keys: item.entitlementKeys });
+                const locked = lock.locked;
+                const label = t(item.labelKey);
+                const badge = badgeFor(item.id, counts);
+                const to = item.id === 'classify' && counts.firstSystemId
+                  ? `/app/ai-systems/${counts.firstSystemId}`
+                  : item.route;
+                return (
+                  <Link
+                    key={item.id}
+                    to={to}
+                    aria-current={active === item.id ? 'page' : undefined}
+                    className={`rs-side__item${locked ? ' rs-side__item--locked' : ''}`}
+                    data-testid={`side-nav-${item.id}`}
+                    data-locked={locked ? 'true' : 'false'}
+                    title={locked ? navLockTitle(label, lock) : undefined}
+                  >
+                    <Icon className="rs-side__icon" aria-hidden="true" />
+                    <span className="rs-side__text">{label}</span>
+                    {locked ? (
+                      <Lock className="h-3 w-3 shrink-0" aria-label={navLockTitle(label, lock)} data-testid={`side-lock-${item.id}`} />
+                    ) : badge !== null ? (
+                      <span className="rs-side__badge" data-testid={`side-badge-${item.id}`}>{badge}</span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+              {modules.map((module) => (
+                <MoreItem
+                  key={module.id}
+                  module={module}
+                  active={isActiveRoute(module.route, pathname)}
+                  lock={lockFor({ route: module.route, module })}
+                />
+              ))}
+              {withRegister && <GovernanceAgentsNav />}
+            </div>
           </div>
-        </>
-      )}
+        );
+      })}
 
       <div className="rs-plan">
         <p className="rs-plan__label">{t('shellPlan')}</p>

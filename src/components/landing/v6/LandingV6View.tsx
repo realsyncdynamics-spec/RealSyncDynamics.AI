@@ -86,20 +86,20 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </header>
 
         <div style={{ position: "relative", zIndex: "1", flex: "1 0 auto", display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", boxSizing: "border-box", maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(40px,5vw,160px) var(--px)" }}>
-          <div style={{ maxWidth: "min(100%,clamp(320px,58vw,2000px))" }}>
-            <p style={{ margin: "0 0 clamp(20px,1.8vw,52px)", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".18em", color: "var(--rs-acc)" }}>AI GOVERNANCE FÜR EUROPÄISCHE UNTERNEHMEN</p>
-            <h1 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
-              <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>The Governance OS </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>für DSGVO und EU AI Act.</span>
+          <div style={{ maxWidth: "min(100%,clamp(420px,58vw,2000px))" }}>
+            <p style={{ margin: "0 0 clamp(20px,1.8vw,52px)", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".18em", color: "var(--rs-acc)" }}>DSGVO & EU AI ACT FÜR KMU</p>
+            <h1 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
+              <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>DSGVO und EU AI Act – </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>machbar für Ihr Unternehmen.</span>
             </h1>
             <ol aria-label="Ablauf" style={{ listStyle: "none", margin: "clamp(24px,2.2vw,64px) 0 0", padding: "0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", fontFamily: "'JetBrains Mono',monospace", fontSize: "clamp(12px,.85vw,26px)", fontWeight: "600", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rs-fg2)" }}>
               {["Prüfen", "Verstehen", "Handeln", "Nachweisen"].map((step, i) => (
-                <li key={step} style={{ display: "flex", alignItems: "center", gap: "14px", color: i === 3 ? "var(--rs-acc)" : undefined }}>{i > 0 ? (<span aria-hidden="true" style={{ color: "var(--rs-fg3)" }}>→</span>) : null}{step}</li>
+                <li key={step} style={{ display: "flex", alignItems: "center", gap: "14px", color: i === 3 ? "var(--rs-acc)" : undefined }}>{step}{i < 3 ? (<span aria-hidden="true" style={{ color: "var(--rs-fg3)" }}>→</span>) : null}</li>
               ))}
             </ol>
-            <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Website- und KI-Risiken erkennen. Prüffähig nachweisen.</p>
-            <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>Jeder Befund mit Paragraphenbezug und konkreter Maßnahme – vorlegbar bei Datenschutzbeauftragten und Prüfern.</p>
+            <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>KI im Unternehmen einsetzen, ohne die Kontrolle zu verlieren.</p>
+            <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>Vollautomatisch, ohne Beratungsprojekt: jeder Befund mit Paragraphenbezug und konkreter Maßnahme – vorlegbar bei Datenschutzbeauftragten und Prüfern.</p>
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
-              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(22px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>
@@ -123,9 +123,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
 
         <div style={{ position: "relative", zIndex: "1", borderTop: "1px solid var(--rs-line)", background: "var(--rs-nav)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
           <dl style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "0 var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))" }}>
-            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>Art.-Bezug</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>DSGVO, TDDDG und EU AI Act je Befund</dd></div>
-            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>SHA-256</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>verkettete Nachweise im Evidence Vault</dd></div>
-            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>EU</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Datenhaltung in Frankfurt</dd></div>
+            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>Art.-Bezug</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>DSGVO, TDDDG und EU AI Act je Befund</dd></div>
+            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>SHA-256</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>verkettete Nachweise im Evidence Vault</dd></div>
+            <div style={{ padding: "clamp(18px,1.4vw,40px) 24px clamp(18px,1.4vw,40px) 0", display: "flex", flexDirection: "column", gap: "6px" }}><dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(24px,1.7vw,56px)", lineHeight: "1" }}>EU</dt><dd style={{ margin: "0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Datenhaltung in Frankfurt</dd></div>
           </dl>
         </div>
       </section>
@@ -133,7 +133,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       <section aria-label="Unterstützte Regelwerke" style={{ borderTop: "1px solid var(--rs-line)", borderBottom: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(24px,1.6vw,48px) var(--px)", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px 40px" }}>
           <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>4 POLICY PACKS LIVE · EIN PRÜFPFAD</span>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px clamp(24px,2.4vw,72px)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(18px,1.4vw,40px)", color: "var(--rs-fg2)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px clamp(24px,2.4vw,72px)", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(18px,1.4vw,40px)", color: "var(--rs-fg2)" }}>
             <span>DSGVO</span><span>EU AI Act</span><span>ISO 27001</span><span>NIS2</span><span style={{ color: "var(--rs-fg3)" }}>TISAX · Coming Soon</span><span style={{ color: "var(--rs-fg3)" }}>DORA · Coming Soon</span>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "40px 80px", alignItems: "end" }}>
             <div>
               <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>DER RAHMEN</p>
-              <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Der EU AI Act ist in Kraft. Nachweise sind jetzt Betriebsaufgabe.</h2>
+              <h2 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Der EU AI Act ist in Kraft. Nachweise sind jetzt Betriebsaufgabe.</h2>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" }}>
               <p style={{ margin: "0", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Anbieter und Betreiber von KI-Systemen müssen Risiken bewerten, Kontrollen umsetzen und Konformität dokumentieren – fortlaufend, nicht einmalig. Verstöße gegen verbotene Praktiken können mit bis zu 35 Mio. € oder 7 % des weltweiten Jahresumsatzes geahndet werden.</p>
@@ -154,22 +154,22 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <ol style={{ listStyle: "none", margin: "clamp(48px,4.5vw,120px) 0 0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", borderTop: "1px solid var(--rs-line)" }}>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>01.08.2024</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Inkrafttreten</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Inkrafttreten</span>
               <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Verordnung (EU) 2024/1689 im Amtsblatt veröffentlicht.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.02.2025</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Verbote & AI Literacy</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Verbote & AI Literacy</span>
               <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Unzulässige Praktiken untersagt, KI-Kompetenzpflicht gilt.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.08.2025</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>General-Purpose AI</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>General-Purpose AI</span>
               <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Pflichten für GPAI-Anbieter, Governance-Struktur, Sanktionen.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2026</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
               <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.</span>
             </li>
           </ol>
@@ -179,13 +179,13 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       <section id="produkt" style={{ borderTop: "1px solid var(--rs-line)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
           <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>DIE PLATTFORM</p>
-          <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Eine Runtime. <span style={{ color: "var(--rs-acc)" }}>Kontrollierte KI-Governance.</span></h2>
+          <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Eine Runtime. <span style={{ color: "var(--rs-acc)" }}>Kontrollierte KI-Governance.</span></h2>
           <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Risiken erkennen. Richtlinien prüfen und durchsetzen – Beobachtungsmodus als Standard. Nachweise bereitstellen — in einem durchgängigen Kontrollprozess.</p>
           <div style={{ marginTop: "clamp(48px,4.5vw,120px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,320px),1fr))", gap: "1px", background: "var(--rs-line)", border: "1px solid var(--rs-line)", borderRadius: "16px", overflow: "hidden" }}>
             {v.stages.map((st, stI) => (<Fragment key={stI}>
               <article style={{ background: "var(--rs-bg)", padding: "var(--card-p)", display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{st.n} — {st.k}</span>{st.preview ? (<><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></>) : null}</div>
-                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{st.t}</h3>
+                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{st.t}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{st.d}</p>
               </article>
             </Fragment>))}
@@ -198,58 +198,90 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       </section>
 
 
-      <section id="control-room" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
+      <section id="control-room" className="section-alt">
+        <div className="section-content">
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: "28px" }}>
             <div>
-              <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>IHR WORKSPACE</p>
-              <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
-              <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Nach der Anmeldung läuft Ihre Governance im Command Center weiter: Rahmenwerk-Reifegrade, offene Befunde, Evidence-Chain und Agent-Entscheidungen auf einer Fläche.</p>
+              <p className="section-kicker">IHR WORKSPACE</p>
+              <h2 className="section-heading" style={{ maxWidth: "22ch" }}>Das bekommen Sie: <span style={{ color: "var(--rs-acc)" }}>Ihr Governance-Dashboard.</span></h2>
+              <p className="section-lead">Nach der Anmeldung läuft Ihre Governance im Command Center weiter: Rahmenwerk-Reifegrade, offene Befunde, Evidence-Chain und Agent-Entscheidungen auf einer Fläche.</p>
             </div>
-            <Link to={v.href.dashboard} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Zum Command Center<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} className="btn-primary">Zum Command Center
+              {' '}
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </Link>
           </div>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", overflow: "hidden" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", padding: "18px var(--card-p)", borderBottom: "1px solid var(--rs-line)" }}><span style={{ fontSize: "var(--fs-body)" }}>Governance Control Room · Workspace „Demo“</span><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Beispielumgebung · Demo-Daten</span></div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,180px),1fr))", gap: "1px", background: "var(--rs-line)", borderBottom: "1px solid var(--rs-line)" }}>
-              {v.crKpis.map((kpi, kpiI) => (<Fragment key={kpiI}>
-                <div style={{ background: "var(--rs-bg)", padding: "var(--card-p)", display: "flex", flexDirection: "column", gap: "10px" }}><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{kpi.l}</span><span style={kpi.style}>{kpi.v}</span></div>
-              </Fragment>))}
+            <div className="flex-between" style={{ gap: "12px", padding: "18px var(--card-p)", borderBottom: "1px solid var(--rs-line)" }}>
+              <span style={{ fontSize: "var(--fs-body)" }}>Governance Control Room · Workspace „Demo"</span>
+              <span className="mono text-tertiary">Beispielumgebung · Demo-Daten</span>
+            </div>
+            <div className="grid-fit">
+              {v.crKpis.map((kpi, kpiI) => (
+                <Fragment key={kpiI}>
+                  <div>
+                    <span className="card-label">{kpi.l}</span>
+                    <span style={kpi.style}>{kpi.v}</span>
+                  </div>
+                </Fragment>
+              ))}
             </div>
             <div style={{ padding: "8px var(--card-p) 12px" }}>
               <div style={{ padding: "14px 0", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>LETZTE POLICY-ENTSCHEIDUNGEN</div>
-              {v.decisions.map((d, dI) => (<Fragment key={dI}>
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(80px,auto) minmax(0,1fr) auto", gap: "16px", alignItems: "center", padding: "14px 0", borderTop: "1px solid var(--rs-line)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
-                  <span style={{ color: "var(--rs-fg3)" }}>{d.t}</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ color: "var(--rs-fg)" }}>{d.agent}</span><span style={{ color: "var(--rs-fg3)" }}> · {d.action}</span></span>
-                  <span style={d.style}>{d.r}</span>
-                </div>
-              </Fragment>))}
+              {v.decisions.map((d, dI) => (
+                <Fragment key={dI}>
+                  <div className="mono" style={{ display: "grid", gridTemplateColumns: "minmax(80px,auto) minmax(0,1fr) auto", gap: "16px", alignItems: "center", padding: "14px 0", borderTop: "1px solid var(--rs-line)" }}>
+                    <span className="text-tertiary">{d.t}</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ color: "var(--rs-fg)" }}>{d.agent}</span>
+                      <span className="text-tertiary"> · {d.action}</span>
+                    </span>
+                    <span style={d.style}>{d.r}</span>
+                  </div>
+                </Fragment>
+              ))}
             </div>
           </div>
-          <p style={{ margin: "16px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Beispielwerte zur Veranschaulichung, keine Kundendaten. Ihr eigener Control Room entsteht nach dem Login aus Ihren Systemen.</p>
+          <p className="text-tertiary" style={{ margin: "16px 0 0", fontSize: "var(--fs-small)" }}>Beispielwerte zur Veranschaulichung, keine Kundendaten. Ihr eigener Control Room entsteht nach dem Login aus Ihren Systemen.</p>
         </div>
       </section>
 
-      <section id="evidence" style={{ borderTop: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+      <section id="evidence" className="section-alt">
+        <div className="section-content" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
           <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>EVIDENCE & TRUST</p>
-            <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Compliance, die sich <span style={{ color: "var(--rs-acc)" }}>beweisen lässt.</span></h2>
-            <p style={{ margin: "28px 0 0", maxWidth: "36em", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Technische Dokumentation</span><span style={{ color: "var(--rs-fg3)" }}>Anhang IV</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Automatische Protokollierung</span><span style={{ color: "var(--rs-fg3)" }}>Art. 12</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Menschliche Aufsicht</span><span style={{ color: "var(--rs-fg3)" }}>Art. 14</span></li>
-              <li style={{ display: "flex", justifyContent: "space-between", gap: "20px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><span>Verzeichnis von Verarbeitungstätigkeiten</span><span style={{ color: "var(--rs-fg3)" }}>Art. 30 DSGVO</span></li>
+            <p className="section-kicker">EVIDENCE & TRUST</p>
+            <h2 className="section-heading">Compliance, die sich <span style={{ color: "var(--rs-acc)" }}>beweisen lässt.</span></h2>
+            <p className="section-lead" style={{ marginTop: "28px", maxWidth: "36em" }}>PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p>
+            <ul className="list-basic" style={{ marginTop: "36px" }}>
+              <li className="list-item">
+                <span>Technische Dokumentation</span>
+                <span className="text-tertiary">Anhang IV</span>
+              </li>
+              <li className="list-item">
+                <span>Automatische Protokollierung</span>
+                <span className="text-tertiary">Art. 12</span>
+              </li>
+              <li className="list-item">
+                <span>Menschliche Aufsicht</span>
+                <span className="text-tertiary">Art. 14</span>
+              </li>
+              <li className="list-item">
+                <span>Verzeichnis von Verarbeitungstätigkeiten</span>
+                <span className="text-tertiary">Art. 30 DSGVO</span>
+              </li>
             </ul>
-            <Link to={v.href.dashboard} style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "10px", padding: "0", background: "none", border: "0", color: "var(--rs-acc)", fontSize: "var(--fs-body)", fontWeight: "600", cursor: "pointer" }}>Im Dashboard ansehen<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+            <Link to={v.href.dashboard} className="btn-secondary" style={{ marginTop: "28px" }}>
+              Im Dashboard ansehen
+              {' '}
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+            </Link>
           </div>
           <div role="group" aria-label="Beispiel Hash-Chain" style={{ display: "flex", flexDirection: "column", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>
             {v.chain.map((b, bI) => (<Fragment key={bI}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
                 <div style={b.cardStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", color: "var(--rs-fg3)" }}><span>BLOCK #{b.n}</span><span>{b.time}</span></div>
-                  <div style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(18px,1.2vw,34px)", color: "var(--rs-fg)" }}>{b.event}</div>
+                  <div style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(18px,1.2vw,34px)", color: "var(--rs-fg)" }}>{b.event}</div>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", color: "var(--rs-fg2)" }}><span style={{ color: "var(--rs-fg3)" }}>hash</span><span>{b.hash}</span></div>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", color: "var(--rs-fg2)" }}><span style={{ color: "var(--rs-fg3)" }}>prev</span><span>{b.prev}</span></div>
                 </div>
@@ -260,27 +292,32 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </section>
 
-      <section id="agenten" style={{ borderTop: "1px solid var(--rs-line)", backgroundImage: "linear-gradient(var(--rs-grid) 1px,transparent 1px),linear-gradient(90deg,var(--rs-grid) 1px,transparent 1px)", backgroundSize: "32px 32px" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
+      <section id="agenten" className="section-grid">
+        <div className="section-content" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))", gap: "56px clamp(56px,5vw,160px)", alignItems: "center" }}>
           <div>
-            <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>AGENT GOVERNANCE</p>
-            <h2 style={{ margin: "0", maxWidth: "22ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
-            <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
-            <ul style={{ listStyle: "none", margin: "36px 0 0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
-              {v.agentNo.map((a, aI) => (<Fragment key={aI}>
-                <li style={{ display: "flex", alignItems: "center", gap: "14px", padding: "16px 0", borderBottom: "1px solid var(--rs-line)", fontSize: "var(--fs-body)" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}><path d="M18 6 6 18M6 6l12 12"></path></svg><span><span style={{ color: "var(--rs-fg3)" }}>Ein Agent kann nicht </span>{a}</span></li>
-              </Fragment>))}
+            <p className="section-kicker">AGENT GOVERNANCE</p>
+            <h2 className="section-heading" style={{ maxWidth: "22ch" }}>Agenten können ausführen. Sich selbst autorisieren nicht.</h2>
+            <p className="section-lead">Agenten planen, analysieren und handeln. Über ihre Berechtigung entscheidet die Governance-Schicht – serverseitig, nicht der Agent und nicht der Provider.</p>
+            <ul className="list-basic" style={{ marginTop: "36px" }}>
+              {v.agentNo.map((a, aI) => (
+                <Fragment key={aI}>
+                  <li className="list-item-secondary">
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5484D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="list-icon"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    <span><span className="text-tertiary">Ein Agent kann nicht </span>{a}</span>
+                  </li>
+                </Fragment>
+              ))}
             </ul>
           </div>
           <div role="group" aria-label="Architektur Agent Governance" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>REQUEST</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>AI Agent</span>
             </div>
             <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
             <div style={{ padding: "var(--card-p)", border: "2px solid var(--rs-acc)", borderRadius: "16px", background: "var(--rs-bg)", boxShadow: "0 0 28px var(--rs-glow)", display: "flex", flexDirection: "column", gap: "18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}><span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>POLICY AUTHORITY</span><span style={{ padding: "3px 10px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span></div>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>RealSync Governance Layer</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {v.gateChecks.map((g, gI) => (<Fragment key={gI}><span style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)" }}>{g}</span></Fragment>))}
               </div>
@@ -288,44 +325,44 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div style={{ width: "1px", height: "32px", marginLeft: "40px", background: "var(--rs-acc)" }}></div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-bg)", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-fg3)" }}>EXECUTION · KEINE POLICY AUTHORITY</span>
-              <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Execution Provider</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="architektur" style={{ borderTop: "1px solid var(--rs-line)" }}>
-        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "40px 80px", alignItems: "end" }}>
+      <section id="architektur" className="section">
+        <div className="section-content">
+          <div className="grid-2col" style={{ alignItems: "end" }}>
             <div>
-              <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>EU-NATIVE BY DESIGN</p>
-              <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Datenhaltung in Europa. Nachvollziehbar dokumentiert.</h2>
+              <p className="section-kicker">EU-NATIVE BY DESIGN</p>
+              <h2 className="section-heading">Datenhaltung in Europa. Nachvollziehbar dokumentiert.</h2>
             </div>
-            <p style={{ margin: "0", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Datenbank und Evidence Vault liegen in der EU – Supabase in Frankfurt am Main. Welche KI-Anbieter Daten erhalten, legen Sie per Policy fest; alle Sub-Prozessoren sind offen gelistet, mit Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.</p>
+            <p className="section-lead" style={{ margin: "0" }}>Datenbank und Evidence Vault liegen in der EU – Supabase in Frankfurt am Main. Welche KI-Anbieter Daten erhalten, legen Sie per Policy fest; alle Sub-Prozessoren sind offen gelistet, mit Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.</p>
           </div>
-          <dl style={{ margin: "clamp(48px,4.5vw,120px) 0 0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "16px" }}>
-            <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>EU-Datenhaltung</dt>
+          <dl className="grid-cards" style={{ marginTop: "clamp(48px,4.5vw,120px)" }}>
+            <div className="card">
+              <dt className="card-title">EU-Datenhaltung</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Policy-Entscheidungen, Prüfpfade und Nachweise werden in der EU gespeichert.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Supabase Frankfurt</dt>
+              <dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Supabase Frankfurt</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Postgres in eu-central-1, verschlüsselt at rest und in transit.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Multi-Tenant RLS</dt>
+              <dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Multi-Tenant RLS</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Mandantentrennung auf Datenbankebene per Row-Level Security.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Lokale Modelle · optional</dt>
+              <dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Lokale Modelle · optional</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Klassifizierung mit selbst betriebenen Open-Weight-Modellen (Ollama) – auf Anfrage.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>n8n · Preview</dt>
+              <dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>n8n · Preview</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Webhook-Anbindung für Freigaben und Eskalationen – noch keine produktive Ausführung.</dd>
             </div>
             <div style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "16px", background: "var(--rs-surface)", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <dt style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Stripe Billing</dt>
+              <dt style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Stripe Billing</dt>
               <dd style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Abrechnung in Euro per Karte oder SEPA-Lastschrift – während der Beta ohne Zahlung.</dd>
             </div>
           </dl>
@@ -335,7 +372,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       <section id="check" style={{ borderTop: "1px solid var(--rs-line)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
           <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>GOVERNANCE-CHECK · ACHT FRAGEN</p>
-          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Wo steht Ihre KI-Governance? Eine ehrliche Selbsteinschätzung.</h2>
+          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Wo steht Ihre KI-Governance? Eine ehrliche Selbsteinschätzung.</h2>
           <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Kein automatischer Scan: Das Ergebnis beruht ausschließlich auf Ihren Antworten. Nichts wird gespeichert oder übertragen.</p>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "32px clamp(40px,4vw,120px)", alignItems: "start" }}>
             <ol style={{ listStyle: "none", margin: "0", padding: "0", display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
@@ -354,9 +391,9 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Beantworten Sie die Fragen – das Ergebnis erscheint hier.</p>
               </>) : null}
               {v.checkHas ? (<>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}><span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(56px,4vw,120px)", lineHeight: "1", color: "var(--rs-acc)" }}>{v.checkScore}</span><span style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>/ 8 geregelt · {v.checkAnswered} von 8 beantwortet</span></div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}><span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(56px,4vw,120px)", lineHeight: "1", color: "var(--rs-acc)" }}>{v.checkScore}</span><span style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>/ 8 geregelt · {v.checkAnswered} von 8 beantwortet</span></div>
                 <div style={{ height: "6px", borderRadius: "9999px", background: "var(--rs-line)", overflow: "hidden" }}><div style={v.checkBar}></div></div>
-                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{v.checkLevel}</h3>
+                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{v.checkLevel}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.checkText}</p>
               </>) : null}
               <p style={{ margin: "0", fontSize: "var(--fs-small)", lineHeight: "1.55", color: "var(--rs-fg3)" }}>{v.checkHas ? "Nächster Schritt: Ihre Einschätzung mit dem kostenlosen Website-Check Ihrer Domain belegen – ohne Konto." : "Nächster Schritt: den kostenlosen Website-Check starten oder offene Punkte für Ihr Unternehmen klären."}</p>
@@ -372,13 +409,13 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       <section id="websites" data-testid="landing-websites" style={{ borderTop: "1px solid var(--rs-line)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
           <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>WEBSITES & DASHBOARDS FÜR KMU</p>
-          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Ihre Website: <span style={{ color: "var(--rs-acc)" }}>automatisch erstellt oder persönlich gestaltet.</span></h2>
+          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Ihre Website: <span style={{ color: "var(--rs-acc)" }}>automatisch erstellt oder persönlich gestaltet.</span></h2>
           <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Zwei Wege, ein Anspruch: datenschutzbewusst gebaut und in der EU betrieben. Wählen Sie, wie viel Sie selbst machen möchten.</p>
           <div style={{ marginTop: "clamp(40px,4vw,96px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: "24px" }}>
             {v.websitePaths.map((w) => (<Fragment key={w.id}>
               <article data-website-path={w.id} style={{ padding: "var(--card-p)", border: "1px solid var(--rs-line)", borderRadius: "0", background: "var(--rs-bg2)", display: "flex", flexDirection: "column", gap: "18px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{w.k}</span>{w.preview ? (<span style={{ padding: "3px 10px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>PREVIEW</span>) : null}</div>
-                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{w.t}</h3>
+                <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{w.t}</h3>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{w.d}</p>
                 <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "flex", flexDirection: "column", gap: "10px" }}>
                   {w.points.map((pt) => (<li key={pt} style={{ display: "flex", gap: "10px", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>✓</span><span>{pt}</span></li>))}
@@ -393,7 +430,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <div data-testid="landing-websites-extension" style={{ marginTop: "24px", padding: "var(--card-p)", border: "1px dashed var(--rs-chip-b)", borderRadius: "0", display: "flex", flexDirection: "column", gap: "18px" }}>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{v.websiteExtension.k}</span>
-            <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{v.websiteExtension.t}</h3>
+            <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{v.websiteExtension.t}</h3>
             <p style={{ margin: "0", maxWidth: "70ch", fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{v.websiteExtension.d}</p>
             <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", gap: "12px" }}>
               {v.websiteExtension.examples.map((ex) => (<li key={ex.k} style={{ padding: "14px 16px", borderRadius: "0", background: "var(--rs-bg2)", fontSize: "var(--fs-body)", lineHeight: "1.5" }}><strong style={{ display: "block", fontWeight: "600" }}>{ex.k}</strong><span style={{ color: "var(--rs-fg2)" }}>{ex.d}</span></li>))}
@@ -409,7 +446,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "28px" }}>
             <div>
               <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>PREISE</p>
-              <h2 style={{ margin: "0", maxWidth: "18ch", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Pläne für die <span style={{ color: "var(--rs-acc)" }}>Governance Runtime.</span></h2>
+              <h2 style={{ margin: "0", maxWidth: "18ch", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Pläne für die <span style={{ color: "var(--rs-acc)" }}>Governance Runtime.</span></h2>
             </div>
             {v.yearlyEnabled ? (<div role="radiogroup" onKeyDown={onRadioKeyDown} aria-label="Abrechnungszeitraum" style={{ display: "flex", padding: "4px", borderRadius: "9999px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)" }}>
               <button type="button" role="radio" tabIndex={!v.isYearly ? 0 : -1} aria-checked={!v.isYearly} onClick={v.setMonthly} style={v.cycleMonthlyStyle}>Monatlich</button>
@@ -420,10 +457,10 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             {v.plans.map((p, pI) => (<Fragment key={pI}>
               <article style={p.cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                  <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{p.name}</h3>
+                  <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)" }}>{p.name}</h3>
                   {p.featured ? (<><span style={{ padding: "4px 10px", borderRadius: "9999px", background: "var(--rs-acc-soft)", color: "var(--rs-acc)", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em" }}>EMPFOHLEN</span></>) : null}
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap" }}>{p.listPrice ? (<s style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>{p.listPrice}</s>) : null}<span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "clamp(40px,2.6vw,80px)", lineHeight: "1" }}>{p.priceLabel}</span><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{p.unit}</span></div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap" }}>{p.listPrice ? (<s style={{ fontSize: "var(--fs-body)", color: "var(--rs-fg3)" }}>{p.listPrice}</s>) : null}<span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(40px,2.6vw,80px)", lineHeight: "1" }}>{p.priceLabel}</span><span style={{ fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>{p.unit}</span></div>
                 <p style={{ margin: "-8px 0 0", minHeight: "1.4em", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>{p.billingNote}</p>
                 <p style={{ margin: "0", fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>{p.desc}</p>
                 <ul style={{ listStyle: "none", margin: "0", padding: "16px 0 0", borderTop: "1px solid var(--rs-line)", display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)", flex: "1" }}>
@@ -441,23 +478,23 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,380px),1fr))", gap: "40px 80px" }}>
           <div>
             <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>HÄUFIGE FRAGEN</p>
-            <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em" }}>Governance-Fragen, klar beantwortet.</h2>
+            <h2 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em" }}>Governance-Fragen, klar beantwortet.</h2>
           </div>
           <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Wo werden unsere Daten verarbeitet?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
-              <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Datenbank und Nachweise liegen in der EU (Supabase, Frankfurt am Main). Welche KI-Anbieter eingebunden werden, legen Sie per Policy fest – alle Sub-Prozessoren sind unter <Link to="/legal/sub-processors" style={{ color: "var(--rs-acc)" }}>Sub-Prozessoren</Link> gelistet.</p>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Wo werden unsere Daten verarbeitet?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Datenbank und Nachweise liegen in der EU (Supabase, Frankfurt am Main). Die Website wird über Cloudflare ausgeliefert. KI-Aufrufe gehen standardmäßig an Cloud-Anbieter wie Anthropic (USA, abgesichert über Standardvertragsklauseln); optional lässt sich ein EU-lokaler Modus mit selbst betriebenen Modellen in Deutschland aktivieren. Alle Sub-Prozessoren sind unter <Link to="/legal/sub-processors" style={{ color: "var(--rs-acc)" }}>Sub-Prozessoren</Link> gelistet.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Welche Regelwerke deckt die Plattform ab?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Welche Regelwerke deckt die Plattform ab?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>DSGVO, EU AI Act, ISO 27001 und NIS2 als Policy Packs. TISAX und DORA stehen auf der Roadmap.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst der kostenlose Website-Check?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Was umfasst der kostenlose Website-Check?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>Wir rufen Ihre Startseite sowie Impressum und Datenschutzseite ab und suchen typische Fehler: fehlendes HTTPS, Tracker oder Cookies vor der Einwilligung, fehlendes Impressum, Chatbot ohne KI-Hinweis. Sie erhalten eine Punktzahl von 0 bis 100, die wichtigsten Risiken mit Paragraf (DSGVO, TDDDG, EU AI Act) und eine Tarif-Empfehlung passend zu Ihren Angaben – per E-Mail und als Link. Ihre KI-Systeme ordnen Sie mit der KI-Act-Einordnung oben auf dieser Seite ein. Der Check zeigt technische Hinweise auf Risiken. Er ersetzt keine Rechtsberatung und keine Zertifizierung.</p>
             </details>
             <details style={{ borderBottom: "1px solid var(--rs-line)", padding: "22px 0" }}>
-              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "var(--fs-h3)" }}>Kann ich monatlich kündigen?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
+              <summary style={{ listStyle: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", gap: "20px", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Kann ich monatlich kündigen?<span aria-hidden="true" style={{ color: "var(--rs-acc)" }}>+</span></summary>
               <p style={{ margin: "14px 0 0", fontSize: "var(--fs-body)", lineHeight: "1.65", color: "var(--rs-fg2)" }}>{v.faqCancel}</p>
             </details>
           </div>
@@ -467,7 +504,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
       <section id="audit" style={{ position: "relative", overflow: "hidden", borderTop: "1px solid var(--rs-line)", backgroundImage: "radial-gradient(ellipse 40% 80% at 50% 0%,var(--rs-acc-soft) 0%,transparent 100%)" }}>
         <div style={{ maxWidth: "min(100%,clamp(900px,56vw,1800px))", margin: "0 auto", padding: "var(--sec-y) var(--px)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "28px" }}>
           <p style={{ margin: "0", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>ONE GOVERNANCE PLANE</p>
-          <h2 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "clamp(38px,4.6vw,150px)", lineHeight: "1.05", letterSpacing: "-.02em", textWrap: "balance" }}><span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Governance statt </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Checkliste.</span></h2>
+          <h2 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "clamp(38px,4.6vw,150px)", lineHeight: "1.05", letterSpacing: "-.02em", textWrap: "balance" }}><span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Governance statt </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Checkliste.</span></h2>
           <p style={{ margin: "0", maxWidth: "34em", fontSize: "var(--fs-lead)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>Starten Sie mit einem kostenlosen Website-Check: Punktzahl und wichtigste Risiken auf einen Blick.</p>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px" }}>
             <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", gap: "12px", minHeight: "clamp(52px,3.2vw,88px)", padding: "0 clamp(24px,1.6vw,48px)", borderRadius: "9999px", border: "0", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-lead)", boxShadow: "0 0 22px var(--rs-glow),inset 0 1px 0 rgba(255,255,255,.35)" }}>Kostenlosen Website-Check starten<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
@@ -509,14 +546,14 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <span style={{ fontSize: "20px", fontWeight: "500" }}>RealSyncDynamics.AI</span>
             <button type="button" onClick={v.toggleMenu} aria-label="Menü schließen" style={{ width: "44px", height: "44px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
-          <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px" }}>
+          <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkt</a>
             <a href="#websites" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Websites</a>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
             <a href="#check" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance-Check</a>
             <a href="#preise" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Preise</a>
-            <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>
+            <Link to={v.href.login} style={{ textAlign: "left", padding: "14px 0", border: "0", borderBottom: "1px solid var(--rs-line)", background: "none", color: "var(--rs-fg)", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "34px", cursor: "pointer" }}>Login</Link>
           </nav>
           <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
             <Link to={v.href.audit} style={{ minHeight: "56px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", fontSize: "17px", cursor: "pointer" }}>Kostenlosen Website-Check starten</Link>
@@ -531,7 +568,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "18px 24px", borderBottom: "1px solid var(--rs-line)" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                 <span style={{ fontSize: "11px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-acc)" }}>{v.modalKicker}</span>
-                <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "24px" }}>{v.modalTitle}</span>
+                <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "24px" }}>{v.modalTitle}</span>
               </div>
               <button type="button" onClick={v.closeModal} aria-label="Schließen" style={{ flex: "none", width: "40px", height: "40px", borderRadius: "8px", border: "1px solid var(--rs-line)", background: "transparent", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
@@ -583,13 +620,13 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               {v.isAudit2 ? (<>
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                   <div>
-                    <h3 style={{ margin: "0", fontFamily: "'Source Serif 4',Georgia,serif", fontWeight: "400", fontSize: "30px", lineHeight: "1.2" }}>Vorläufige Einordnung für {v.auditCompany}</h3>
+                    <h3 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "30px", lineHeight: "1.2" }}>Vorläufige Einordnung für {v.auditCompany}</h3>
                     <p style={{ margin: "8px 0 0", fontSize: "14px", color: "var(--rs-fg3)" }}>Rolle: {v.auditRoleLabel} · {v.auditCountLabel} KI-Systeme</p>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: "1px", background: "var(--rs-line)", border: "1px solid var(--rs-line)", borderRadius: "8px", overflow: "hidden" }}>
-                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "36px", color: "#E5484D" }}>{v.riskCounts.high}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Hochrisiko</span></div>
-                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "36px", color: "#F5A524" }}>{v.riskCounts.trans}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Transparenzpflicht</span></div>
-                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "36px", color: "#10B981" }}>{v.riskCounts.min}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Minimal</span></div>
+                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "36px", color: "#E5484D" }}>{v.riskCounts.high}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Hochrisiko</span></div>
+                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "36px", color: "#F5A524" }}>{v.riskCounts.trans}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Transparenzpflicht</span></div>
+                    <div style={{ background: "var(--rs-bg)", padding: "16px", display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "36px", color: "#10B981" }}>{v.riskCounts.min}</span><span style={{ fontSize: "13px", color: "var(--rs-fg2)" }}>Minimal</span></div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--rs-line)" }}>
                     {v.auditRows.map((r, rI) => (<Fragment key={rI}>
@@ -608,7 +645,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                   <div style={{ padding: "20px", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-acc-soft)", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       <span style={{ fontSize: "11px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-acc)" }}>EMPFEHLUNG</span>
-                      <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: "24px" }}>{v.rec.name} · {v.rec.price}</span>
+                      <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "24px" }}>{v.rec.name} · {v.rec.price}</span>
                       <span style={{ fontSize: "14px", color: "var(--rs-fg2)" }}>{v.rec.reason}</span>
                     </div>
                     <Link to={v.rec.href} style={v.ui.primary}>{v.rec.cta}</Link>

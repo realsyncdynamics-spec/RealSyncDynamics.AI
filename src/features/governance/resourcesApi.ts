@@ -61,6 +61,12 @@ export interface ClassifyAssetInput {
   art50?: boolean;
 }
 
+export interface UpdatePolicyInput {
+  policy_id: string;
+  action?: GovernancePolicyAction;
+  enabled?: boolean;
+}
+
 export interface CreatePolicyInput {
   tenant_id: string;
   name: string;
@@ -121,6 +127,8 @@ export const archiveAsset = (asset_id: string)         => call<BareResult>({ op:
 export const createPolicy = (input: CreatePolicyInput) => call<PolicyResult>({ op: 'create_policy', ...input });
 export const togglePolicy = (policy_id: string, enabled: boolean) =>
   call<BareResult>({ op: 'toggle_policy', policy_id, enabled });
+export const updatePolicy = (input: UpdatePolicyInput) =>
+  call<PolicyResult>({ op: 'update_policy', ...input });
 
 export interface MappingResult {
   ok: boolean;

@@ -1,108 +1,127 @@
 /**
- * Entscheidungslogik der Audit-Übernahme.
+ * Audit-Übernahme: ein Schreiber, stabile Fehlercodes.
  *
- * Der Lesepfad war fertig und wartete auf einen Schreiber: Die Policy
- * `gdpr_audits tenant_read` verlangt `tenant_id IS NOT NULL`, und gemessen am
- * 2026-08-30 hatte **0 von 159** Zeilen ein `claimed_at`. Diese Datei nagelt
- * die Regeln fest, nach denen jetzt geschrieben wird.
- *
- * Warum das mehr Sorgfalt verdient als eine Zuweisung: Eine falsche Übernahme
- * ist über die Oberfläche **nicht korrigierbar**. Landet ein Audit im falschen
- * Mandanten, verbirgt dieselbe Lese-Policy es dem richtigen dauerhaft.
+ * Bis 2026-10-13 übernahm die Edge Function `audit-claim` mit der
+ * Service-Role und prüfte nur, ob der Aufrufer die `audit_id` kannte. Die
+ * steht im teilbaren Ergebnis-Link — ein frisch registriertes Konto konnte
+ * damit ein fremdes Audit dauerhaft in den eigenen Mandanten ziehen. Jetzt
+ * ruft die Function die RPC `claim_gdpr_audit` mit dem Nutzer-Token auf.
+ * Diese Datei hält beides fest: die Fehlerzuordnung und dass der zweite
+ * Schreibweg nicht zurückkommt.
  */
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
-  decideClaim,
-  resolveTenant,
+  claimErrorInfo,
+  claimRpcArgs,
+  classifyClaimError,
   isUuid,
-  emailMismatch,
-  type AuditClaimRow,
+  parseClaimRpcResult,
+  type ClaimErrorCode,
 } from '../../supabase/functions/_shared/audit-claim';
 
 const T1 = '11111111-1111-4111-8111-111111111111';
-const T2 = '22222222-2222-4222-8222-222222222222';
+const A1 = '33333333-3333-4333-8333-333333333333';
 
-const row = (over: Partial<AuditClaimRow> = {}): AuditClaimRow => ({
-  id: '33333333-3333-4333-8333-333333333333',
-  tenant_id: null, user_id: null, claimed_at: null, email: null,
-  ...over,
+describe('classifyClaimError — beide RPC-Fassungen', () => {
+  it.each<[string, ClaimErrorCode]>([
+    // Fassung 20260830091500
+    ['unauthenticated', 'UNAUTHENTICATED'],
+    ['email unverified', 'EMAIL_UNVERIFIED'],
+    ['no tenant', 'TENANT_NOT_FOUND'],
+    ['audit not found', 'NOT_FOUND'],
+    ['email mismatch', 'OWNERSHIP_NOT_VERIFIED'],
+    ['already claimed', 'ALREADY_CLAIMED'],
+    ['claim raced', 'CONFLICT_RETRY'],
+    // Gehärtete Fassung aus #1867
+    ['verified account email required', 'EMAIL_UNVERIFIED'],
+    ['no tenant membership', 'TENANT_NOT_FOUND'],
+    ['explicit tenant selection required', 'TENANT_SELECTION_REQUIRED'],
+    ['tenant claim not authorized', 'TENANT_FORBIDDEN'],
+    ['audit ownership not verified', 'OWNERSHIP_NOT_VERIFIED'],
+    ['audit ownership inconsistent', 'OWNERSHIP_INCONSISTENT'],
+  ])('%s → %s', (message, code) => {
+    expect(classifyClaimError({ message })).toBe(code);
+  });
+
+  it('erkennt die fehlende Überladung mit Mandantenauswahl (PGRST202)', () => {
+    expect(classifyClaimError({ code: 'PGRST202', message: 'Could not find the function public.claim_gdpr_audit(p_audit_id, p_tenant_id)' }))
+      .toBe('TENANT_SELECTION_UNAVAILABLE');
+  });
+
+  it('macht aus Unbekanntem einen Wiederholungsfall, keine Freigabe', () => {
+    expect(classifyClaimError({ message: 'connection reset' })).toBe('INTERNAL');
+    expect(classifyClaimError(null)).toBe('INTERNAL');
+    expect(classifyClaimError({ message: 42 })).toBe('INTERNAL');
+  });
 });
 
-describe('decideClaim', () => {
-  it('gibt ein unuebernommenes Audit frei', () => {
-    expect(decideClaim(row(), T1)).toEqual({ status: 'claimable' });
+describe('claimErrorInfo', () => {
+  it('beendet nur Fälle, die mit diesem Konto nie gelingen', () => {
+    const terminal = (['NOT_FOUND', 'ALREADY_CLAIMED', 'OWNERSHIP_NOT_VERIFIED', 'OWNERSHIP_INCONSISTENT'] as const)
+      .map((c) => claimErrorInfo(c).retryable);
+    expect(terminal).toEqual([false, false, false, false]);
+    for (const c of ['EMAIL_UNVERIFIED', 'TENANT_SELECTION_REQUIRED', 'CONFLICT_RETRY', 'INTERNAL'] as const) {
+      expect(claimErrorInfo(c).retryable, c).toBe(true);
+    }
   });
 
-  it('behandelt die zweite Uebernahme durch denselben Mandanten nicht als Fehler', () => {
-    // Ein Reload oder ein zweiter Tab darf nicht in einem Konflikt enden.
-    const r = row({ tenant_id: T1, claimed_at: '2026-08-30T10:00:00Z' });
-    expect(decideClaim(r, T1)).toEqual({ status: 'already_mine' });
-  });
-
-  it('weist die Uebernahme durch einen fremden Mandanten ab', () => {
-    const r = row({ tenant_id: T2, claimed_at: '2026-08-30T10:00:00Z' });
-    expect(decideClaim(r, T1)).toEqual({ status: 'taken', conflictTenantId: T2 });
-  });
-
-  it('richtet sich nach claimed_at, nicht nach tenant_id allein', () => {
-    // Eine tenant_id ohne Zeitstempel ist keine stattgefundene Uebernahme.
-    const r = row({ tenant_id: T2, claimed_at: null });
-    expect(decideClaim(r, T1)).toEqual({ status: 'claimable' });
+  it('liefert passende HTTP-Status', () => {
+    expect(claimErrorInfo('UNAUTHENTICATED').httpStatus).toBe(401);
+    expect(claimErrorInfo('OWNERSHIP_NOT_VERIFIED').httpStatus).toBe(403);
+    expect(claimErrorInfo('NOT_FOUND').httpStatus).toBe(404);
+    expect(claimErrorInfo('ALREADY_CLAIMED').httpStatus).toBe(409);
   });
 });
 
-describe('resolveTenant', () => {
-  it('leitet den Mandanten ab, wenn es genau einen gibt', () => {
-    expect(resolveTenant([{ tenant_id: T1 }], null)).toEqual({ ok: true, tenantId: T1 });
+describe('claimRpcArgs', () => {
+  it('ohne Mandant die einstellige Fassung — in beiden RPC-Ständen vorhanden', () => {
+    expect(claimRpcArgs(A1, null)).toEqual({ p_audit_id: A1 });
+  });
+  it('mit Mandant die zweistellige Fassung', () => {
+    expect(claimRpcArgs(A1, T1)).toEqual({ p_audit_id: A1, p_tenant_id: T1 });
+  });
+});
+
+describe('parseClaimRpcResult', () => {
+  it('nimmt eine vollständige Antwort an', () => {
+    expect(parseClaimRpcResult({ ok: true, already_claimed: false, audit_id: A1, tenant_id: T1, domain: 'firma.de' }))
+      .toEqual({ ok: true, already_claimed: false, audit_id: A1, tenant_id: T1, domain: 'firma.de' });
   });
 
-  it('raet nicht, wenn es mehrere gibt', () => {
-    // Raten hiesse, ein Audit unwiederbringlich im falschen Arbeitsbereich
-    // abzulegen.
-    expect(resolveTenant([{ tenant_id: T1 }, { tenant_id: T2 }], null))
-      .toEqual({ ok: false, code: 'TENANT_AMBIGUOUS' });
-  });
-
-  it('meldet, wenn der Zugang zu keinem Mandanten gehoert', () => {
-    expect(resolveTenant([], null)).toEqual({ ok: false, code: 'TENANT_NOT_FOUND' });
-  });
-
-  it('akzeptiert einen angeforderten Mandanten nur bei Mitgliedschaft', () => {
-    expect(resolveTenant([{ tenant_id: T1 }], T1)).toEqual({ ok: true, tenantId: T1 });
-    expect(resolveTenant([{ tenant_id: T1 }], T2)).toEqual({ ok: false, code: 'FORBIDDEN' });
-  });
-
-  it('verlaesst sich bei angefordertem Mandanten nicht auf die Anzahl', () => {
-    // Auch mit genau einer Mitgliedschaft darf ein fremder Wunsch nicht
-    // stillschweigend auf den eigenen Mandanten umgebogen werden.
-    expect(resolveTenant([{ tenant_id: T1 }], T2)).toEqual({ ok: false, code: 'FORBIDDEN' });
+  it('meldet keinen Erfolg ohne belegte Kennungen', () => {
+    expect(parseClaimRpcResult(null)).toBeNull();
+    expect(parseClaimRpcResult({ ok: true, audit_id: A1 })).toBeNull();
+    expect(parseClaimRpcResult({ ok: false, audit_id: A1, tenant_id: T1 })).toBeNull();
+    expect(parseClaimRpcResult({ ok: true, audit_id: 'x', tenant_id: T1 })).toBeNull();
   });
 });
 
 describe('isUuid', () => {
-  it('nimmt echte UUIDs an', () => {
+  it('weist alles außer UUIDs ab, bevor es in eine Abfrage geht', () => {
     expect(isUuid(T1)).toBe(true);
-  });
-
-  it('weist alles andere ab, bevor es in eine Abfrage geht', () => {
     for (const bad of ['', 'abc', 12, null, undefined, {}, `${T1} or 1=1`, `${T1}\n`]) {
       expect(isUuid(bad), String(bad)).toBe(false);
     }
   });
 });
 
-describe('emailMismatch', () => {
-  it('meldet eine Abweichung', () => {
-    expect(emailMismatch('a@firma.de', 'b@privat.de')).toBe(true);
+describe('Edge Function audit-claim (Quelltext)', () => {
+  const code = readFileSync('supabase/functions/audit-claim/index.ts', 'utf8');
+
+  it('übernimmt über die RPC mit dem Nutzer-Token', () => {
+    expect(code).toMatch(/userClient\.rpc\('claim_gdpr_audit', claimRpcArgs\(/);
   });
 
-  it('ignoriert Gross-/Kleinschreibung und Leerraum', () => {
-    expect(emailMismatch(' A@Firma.de ', 'a@firma.de')).toBe(false);
+  it('schreibt gdpr_audits nicht selbst — kein zweiter Schreibweg', () => {
+    expect(code).not.toMatch(/from\('gdpr_audits'\)/);
+    expect(code).not.toMatch(/\.update\(/);
   });
 
-  it('wertet ein Audit ohne E-Mail nicht als Abweichung', () => {
-    // Der Optimizer-Pfad erhebt gar keine Adresse.
-    expect(emailMismatch(null, 'a@firma.de')).toBe(false);
-    expect(emailMismatch('a@firma.de', null)).toBe(false);
+  it('nutzt die Service-Role nur für den Prüfpfad nach erfolgreicher Übernahme', () => {
+    const adminIdx = code.indexOf('createClient(SUPABASE_URL, SERVICE_ROLE');
+    const rpcIdx = code.indexOf("userClient.rpc('claim_gdpr_audit'");
+    expect(adminIdx).toBeGreaterThan(rpcIdx);
+    expect(code).toMatch(/action: 'audit\.claim'/);
   });
 });

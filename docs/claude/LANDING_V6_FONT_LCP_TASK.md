@@ -1,6 +1,19 @@
 # Auftrag: Schriftladen und LCP auf Landing v6
 
-Folgeauftrag aus PR #1986 (Tastatur, Fokus, Kontraste). Noch nicht begonnen.
+Folgeauftrag aus PR #1986 (Tastatur, Fokus, Kontraste).
+
+**Stand 26.10.2026:** #1984 wurde ohne Merge geschlossen; es gilt der Schriftstand
+auf `main`. Schritt 2 (Ersatzschrift für Source Serif 4) ist umgesetzt. Offen und
+außerhalb dieses Auftrags (eigener Auftrag, betrifft `src/main.tsx` bzw.
+`vite.config.ts`):
+
+- `createRoot` ersetzt das vorgerenderte HTML erst nach dem vollständigen JS
+  (~7,5 s mobil gedrosselt). `hydrateRoot` würde die Knoten behalten, setzt aber
+  hydrationsfreies Markup auf allen vorgerenderten Seiten voraus.
+- Vites Preload-Helfer (`__vitePreload`) liegt im manuellen Chunk `vendor-viz`
+  (three/recharts, ~395 KiB übertragen, 1,45 MB entpackt). `index.js` importiert
+  ihn statisch, daher lädt jede Seite `vendor-viz` vorab. Ein eigener Chunk für
+  `vite/preload-helper` in `manualChunks` würde das lösen.
 
 ## Voraussetzung
 
@@ -50,7 +63,9 @@ Folgeauftrag aus PR #1986 (Tastatur, Fokus, Kontraste). Noch nicht begonnen.
 ## Umfang
 
 - Erlaubt: `src/styles/landing-v6.css`, `src/index.css` (nur `@font-face`),
-  `src/pages/LandingV6.tsx` (nur Preload).
+  `src/pages/LandingV6.tsx` (nur Preload). Weil v6 die Schriftstapel inline
+  setzt, zusätzlich die Stapel-Literale in `LandingV6View.tsx`/`useLandingV6.ts`
+  und der Vertragstest `test/landing/landing-v6-font-stability.test.tsx`.
 - Unverändert: Texte, Preise, Claims, Schriftfamilien, CTA-Ziele.
 
 ## Ablauf

@@ -142,10 +142,10 @@ Rotate every 6 months or on personnel change. Stripe restricted keys cannot be p
 7. Confirm DB write:
 
    ```sql
-   SELECT id, status, stripe_event_id, created_at
-   FROM webhook_events
-   WHERE source = 'stripe' AND created_at > NOW() - INTERVAL '5 minutes'
-   ORDER BY created_at DESC LIMIT 5;
+   SELECT id, type, processed_at
+   FROM public.webhook_events
+   WHERE processed_at > NOW() - INTERVAL '5 minutes'
+   ORDER BY processed_at DESC LIMIT 5;
    ```
 
    Expect at least one row.

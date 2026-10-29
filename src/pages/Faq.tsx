@@ -15,8 +15,8 @@ const ITEMS: Item[] = [
           Ja, mit zwei Schichten Wahlmöglichkeit:
         </p>
         <ul className="list-disc pl-5 space-y-1.5 mt-2">
-          <li><strong className="text-titanium-50">Default (Cloud-Pfad)</strong>: API-Calls über EU-region-pinned Endpoints (Anthropic EU, OpenAI EU-Tenant, Google Vertex eu-central) mit DPAs + SCCs nach Art. 46 DSGVO.</li>
-          <li><strong className="text-titanium-50">EU-lokal-Modus</strong> (per Toggle in Account-Settings): Alle KI-Calls laufen ausschließlich über unseren Frankfurt-VPS mit Ollama (Llama / Mistral). Keine Drittland-Übermittlung.</li>
+          <li><strong className="text-titanium-50">Default (Cloud-Pfad)</strong>: API-Calls an Anthropic (Standard), optional OpenAI oder Google Gemini API. Die Anbieter verarbeiten in den USA, abgesichert über DPAs + SCCs nach Art. 46 DSGVO.</li>
+          <li><strong className="text-titanium-50">EU-lokal-Modus</strong> (per Toggle in Account-Settings): KI-Calls über das AI-Gateway laufen ausschließlich über unseren VPS in Deutschland mit Ollama (gemma3, qwen2.5). Werkzeuge ohne lokales Modell sind in diesem Modus nicht verfügbar. Keine Drittland-Übermittlung.</li>
         </ul>
         <p className="mt-2">
           Volle Sub-Processor-Liste mit AVV-Links: <Link to="/legal/sub-processors" className="text-security-400">/legal/sub-processors</Link>
@@ -92,10 +92,11 @@ const ITEMS: Item[] = [
     q: 'Wo werden meine Daten gehostet?',
     a: (
       <p>
-        Postgres-DB + Auth + Edge Functions: Supabase Frankfurt (eu-central-1).
-        KI-Cloud-Pfad: EU-region-pinned APIs der Anbieter. KI-Lokal-Pfad (Toggle):
-        Hostinger Frankfurt VPS mit Ollama. Frontend: GitHub-Pages-CDN (Edge,
-        keine PII-Persistenz).
+        Postgres-DB + Auth: Supabase Frankfurt (eu-central-1). Edge Functions:
+        Supabase, global verteilt. KI-Cloud-Pfad (Standard): Anthropic, optional
+        OpenAI / Google Gemini — USA, mit EU-DPA + Standardvertragsklauseln.
+        KI-Lokal-Pfad (Toggle): Hostinger-VPS in Deutschland mit Ollama.
+        Frontend: Cloudflare Pages (globales Edge-Netz, keine PII-Persistenz).
       </p>
     ),
   },

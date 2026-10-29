@@ -254,7 +254,7 @@ export function V4Hero() {
             Audit starten <Arrow size={14} />
           </button>
         </form>
-        <p className="scanform-note">URL genügt · kein Account vor dem Einstieg · Befunde nachvollziehbar dokumentiert</p>
+        <p className="scanform-note">Domain &amp; E-Mail für den Bericht · kein Account vor dem Einstieg · Befunde nachvollziehbar dokumentiert</p>
         <div className="proof">
           {HERO_PROOF.map((p) => (
             <span key={p} className="chip">

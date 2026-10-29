@@ -89,6 +89,8 @@ on:
 permissions:
   contents: read
   issues: write
+  # Nur fuer den Cron Health Guard: Befundzeilen aus seinem Job-Protokoll lesen.
+  actions: read
 
 jobs:
   alert:
@@ -107,6 +109,13 @@ jobs:
       (github.event.workflow_run.conclusion == 'failure' ||
        github.event.workflow_run.conclusion == 'success')
     steps:
+      # Default-Branch, nicht der Stand des beobachteten Laufs: Gebraucht wird
+      # nur `scripts/cron-befund.mjs`, und `workflow_run` laeuft hier ohnehin
+      # nur fuer Laeufe auf main (siehe `if` oben).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          sparse-checkout: scripts/cron-befund.mjs
+          sparse-checkout-cone-mode: false
       - name: Issue anlegen, kommentieren oder schließen
         # SHA-gepinnt, weil das Repository genau das erzwingt: Mit `@v7` bricht
         # der Lauf schon in „Set up job" ab — noch bevor ein Schritt startet:
@@ -150,6 +159,43 @@ jobs:
             const link = `[Lauf #${run.run_number}](${run.html_url})`;
             const when = run.updated_at;
 
+            // Der Cron-Health-Guard meldet keinen Repo-Prod-Drift, sondern
+            // Jobs, die nicht durchlaufen. Derselbe Zustellweg, anderer Befund
+            // — ein Issue mit dem falschen Text schickt den Leser in die
+            // falsche Richtung.
+            const cron = guard === 'Cron Health Guard';
+
+            // Beim roten Cron-Guard die Befundzeilen aus seinem Protokoll
+            // holen. Ohne sie stand in #1521 vom 22.09. bis 26.10. 35-mal nur
+            // „Weiterhin rot" — ohne Ursache, und der Wechsel von 401 auf 500
+            // sah aus wie der Vortag (scripts/cron-befund.mjs). Scheitert das
+            // Lesen, bleibt es beim bisherigen Text; die Zustellung selbst
+            // darf daran nicht haengen.
+            let befund = null;
+            const cronZeilen = [];
+            if (cron && failed) {
+              try {
+                befund = await import(`${process.env.GITHUB_WORKSPACE}/scripts/cron-befund.mjs`);
+                const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id,
+                  per_page: 100,
+                });
+                for (const job of jobs.filter((j) => j.conclusion === 'failure')) {
+                  const { data } = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    job_id: job.id,
+                  });
+                  const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
+                  cronZeilen.push(...befund.befundAusLog(text));
+                }
+              } catch (e) {
+                core.warning(`Befundzeilen des Cron-Guards nicht lesbar: ${e.message}`);
+              }
+            }
+
             if (!failed) {
               if (existing) {
                 await github.rest.issues.createComment({
@@ -190,11 +236,26 @@ jobs:
             }
 
             if (existing) {
+              let body = `❌ Weiterhin rot — ${link} (${when}).\n\nDer Befund besteht seit dem Öffnen dieses Issues fort.`;
+              if (befund) {
+                // Juengster Stand mit Befundliste: Issue-Text oder Kommentar.
+                const kommentare = await github.paginate(github.rest.issues.listComments, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  per_page: 100,
+                });
+                const vorher = [existing.body, ...kommentare.map((k) => k.body)]
+                  .map((b) => befund.leseMarker(b))
+                  .filter(Boolean)
+                  .pop() ?? null;
+                body = befund.folgeKommentar({ zeilen: cronZeilen, vorher, link, when });
+              }
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existing.number,
-                body: `❌ Weiterhin rot — ${link} (${when}).\n\nDer Befund besteht seit dem Öffnen dieses Issues fort.`,
+                body,
               });
               // Der rote Status gehört dem Guard, nicht dem Zusteller. Sobald das
               // Issue gepflegt ist, hat dieser Workflow seine Aufgabe erfüllt.
@@ -228,11 +289,6 @@ jobs:
               'Dieses Issue schließt sich selbst, sobald der Lint auf main wieder grün läuft.',
             ].join('\n');
 
-            // Der Cron-Health-Guard meldet keinen Repo-Prod-Drift, sondern
-            // Jobs, die nicht durchlaufen. Derselbe Zustellweg, anderer Befund
-            // — ein Issue mit dem falschen Text schickt den Leser in die
-            // falsche Richtung.
-            const cron = guard === 'Cron Health Guard';
             const entitlement = guard === 'Entitlement Drift Guard';
 
             const cronBody = [
@@ -261,6 +317,18 @@ jobs:
               '   `docs/runbooks/cron-vault-secrets.md`',
               '3. Ist es ein Fehler der aufgerufenen Edge Function, gehört er dorthin',
               '',
+              // Befund gleich mitliefern; der Marker ist der Vergleichsstand
+              // fuer den naechsten roten Lauf.
+              ...(befund && cronZeilen.length > 0
+                ? [
+                    '### Befund dieses Laufs',
+                    '',
+                    befund.befundMarkdown(cronZeilen),
+                    '',
+                    befund.marker(befund.fingerabdruck(cronZeilen), when),
+                    '',
+                  ]
+                : []),
               'Dieses Issue schließt sich selbst, sobald der Guard wieder grün läuft.',
             ].join('\n');
 

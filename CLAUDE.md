@@ -11,8 +11,12 @@ Budget nicht anheben.
 
 ## Produkt
 
-EU-souveräne AI-Governance-Runtime (DSGVO, EU AI Act). Live: https://realsyncdynamicsai.de
-Kein Chatbot. Governance-Schicht zwischen Mensch, Firma, Agenten, Daten.
+Plattform für **KI-Mitarbeiter mit eingebauter Governance** (Owner-Entscheid 27.10.2026,
+Details: `docs/PRODUCT_PRIORITIZATION.md` → K4). Live: https://realsyncdynamicsai.de
+Kunden kaufen erreichbare Anfragen, qualifizierte Leads, Terminanfragen, weniger Routine.
+DSGVO/EU-AI-Act-Nachweise, Berechtigungen, Freigaben sind Infrastruktur, nicht Hero-Botschaft.
+Erster Kundenablauf: **AI Receptionist für Handwerksbetriebe** (Anfrage → Anliegen/Kontakt/
+Terminwunsch → Übergabe an Menschen). Nur belegbare Funktionen zeigen; Demos/Geplantes kennzeichnen.
 
 ## Stack (Ist)
 
@@ -34,7 +38,7 @@ Default für Landing-/Marketing-Arbeit. **Nur diese Pfade lesen/schreiben:**
 
 **Nicht anfassen und nicht globben:** `supabase/`, `platform/`, `services/`, `apps/`, `docs/` (außer explizit genannt), Root-`*.sql.bak`, `.archive/` (dort liegen u. a. die alten Root-Status-/Phase-Dokumente unter `root-docs/` — nur gezielt greppen, nie einlesen).
 
-Startseite `/` = **Landing v6** (`src/pages/LandingV6.tsx`: Claude-Design „The Governance OS für DSGVO und EU AI Act“; Markup `src/components/landing/v6/LandingV6View.tsx`, Logik/Preise/CTA-Ziele `useLandingV6.ts`, Tokens `src/styles/landing-v6.css`). v5 bleibt unter `/design/landing-v5`. Beta-Schalter `src/config/beta.ts` (`VITE_BETA_PHASE=off` beendet die Testphase). Arbeitsplan: `docs/claude/BETA_V5_WORKPLAN.md` (nur den jeweiligen WP-Abschnitt lesen). v4 bleibt unter `/design/landing-v4`, v2 unter `/design/landing-v2`. Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026): Frontend und Landingpage gezielt verbessern. V6 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
+Startseite `/` = **Landing v6** (Owner 26.10.2026 wiederhergestellt; `src/pages/LandingV6.tsx`: Claude-Design „The Governance OS für DSGVO und EU AI Act“ — Botschaft entspricht noch der alten Positionierung, Umstellung als eigener PR; Markup `src/components/landing/v6/LandingV6View.tsx`, Logik/Preise/CTA-Ziele `useLandingV6.ts`, Tokens `src/styles/landing-v6.css`). v7 (Titan/Nacht) bleibt unter `/design/landing-v7`, v5 unter `/design/landing-v5`. Beta-Schalter `src/config/beta.ts` (`VITE_BETA_PHASE=off` beendet die Testphase). Arbeitsplan: `docs/claude/BETA_V5_WORKPLAN.md` (nur den jeweiligen WP-Abschnitt lesen). v4 bleibt unter `/design/landing-v4`, v2 unter `/design/landing-v2`. Weiterentwicklung (Dominiks Entscheidung vom 10.10.2026): Frontend und Landingpage gezielt verbessern. V6 ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe.
 
 ## Harte Verbote
 

@@ -22,7 +22,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
     bullets: [
       'Runtime-Scan einer Domain mit Governance Score 0–100',
       'Top-3-Risiken mit Paragraphenbezug',
-      'Kompakter PDF-Bericht',
+      'Druckfertiger Bericht (HTML / Druck-PDF)',
       'Prüfpfad einsehbar (kein Export)',
       'DSGVO-Basisprüfung',
     ],
@@ -54,14 +54,14 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ctaLabel: 'Agency starten',
     bullets: [
       'Alles aus Growth',
-      'Evidence Vault Advanced: unveränderliche Snapshots, Retention, Legal Hold',
+      'Evidence Vault Advanced: manipulationserkennbare Snapshots (Hash-Kette), Retention, Legal Hold',
       'Herkunftsnachweis mit Ed25519-Signatur und Chain-of-Custody',
       'White-Label-Berichte mit eigenem Logo',
       'Policy Packs: DSGVO, EU AI Act, ISO 27001, NIS2 (live); TISAX Roadmap',
     ],
   },
   enterprise: {
-    tagline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
+    tagline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO (Coming Soon).',
     ctaLabel: 'Enterprise anfragen',
     bullets: [
       'Alles aus Agency',
@@ -80,7 +80,7 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
     bullets: [
       'Runtime scan of one domain with Governance Score 0–100',
       'Top-3 risks with legal references',
-      'Compact PDF report',
+      'Print-ready report (HTML / print to PDF)',
       'Audit trail visible (no export)',
       'GDPR baseline check',
     ],
@@ -112,14 +112,14 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ctaLabel: 'Start Agency',
     bullets: [
       'Everything in Growth',
-      'Evidence Vault Advanced: immutable snapshots, retention, legal hold',
+      'Evidence Vault Advanced: tamper-evident snapshots (hash chain), retention, legal hold',
       'Proof of origin with Ed25519 signature and chain of custody',
       'White-label reports with your logo',
       'Policy packs: GDPR, EU AI Act, ISO 27001, NIS2 (live); TISAX roadmap',
     ],
   },
   enterprise: {
-    tagline: 'Enterprise-wide governance via live policy packs plus framework roadmap — with SLA and SSO.',
+    tagline: 'Enterprise-wide governance via live policy packs plus framework roadmap — with SLA and SSO (Coming Soon).',
     ctaLabel: 'Enterprise inquiry',
     bullets: [
       'Everything in Agency',

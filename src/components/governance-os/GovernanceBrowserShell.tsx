@@ -17,6 +17,7 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { BrowserAgentDrawer } from './BrowserAgentDrawer';
 import { PaymentGraceBanner } from './PaymentGraceBanner';
 import { BetaAppBanner } from './BetaAppBanner';
 import { CommandCenter } from './CommandCenter';
@@ -45,12 +46,16 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const navigate = useNavigate();
   const location = useLocation();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // Browser-Agent rechts; schließt den Assistenten und umgekehrt.
+  const [browserAgentOpen, setBrowserAgentOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
   // Vorbefüllter Text für den Assistenten; `id` erzwingt das Übernehmen auch
   // bei gleichem Text.
-  const [assistantPrompt, setAssistantPrompt] = useState<{ id: number; text: string } | null>(null);
+  const [assistantPrompt, setAssistantPrompt] = useState<
+    { id: number; text: string; agent?: AssistantPromptDetail['agent'] } | null
+  >(null);
 
   const commandItems = useMemo(() => buildCommandCatalog(), []);
 
@@ -75,9 +80,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   }, []);
   useEffect(() => {
     const onPrompt = (event: Event) => {
-      const text = (event as CustomEvent<AssistantPromptDetail>).detail?.prompt?.trim();
+      const detail = (event as CustomEvent<AssistantPromptDetail>).detail;
+      const text = detail?.prompt?.trim();
       if (!text) return;
-      setAssistantPrompt({ id: Date.now(), text });
+      setAssistantPrompt({ id: Date.now(), text, agent: detail?.agent });
+      setBrowserAgentOpen(false);
       setAssistantOpen(true);
     };
     window.addEventListener(ASSISTANT_PROMPT_EVENT, onPrompt);
@@ -94,6 +101,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     (item: CommandDefinition) => {
       if (!isCommandRunnable(item)) return;
       if (item.actionId === 'open-assistant') {
+        setBrowserAgentOpen(false);
         setAssistantOpen(true);
         return;
       }
@@ -133,7 +141,16 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
-          onOpenAssistant={() => setAssistantOpen((v) => !v)}
+          onOpenAssistant={() => {
+            setBrowserAgentOpen(false);
+            setAssistantOpen((v) => !v);
+          }}
+          assistantOpen={assistantOpen}
+          browserAgentOpen={browserAgentOpen}
+          onToggleBrowserAgent={() => {
+            setAssistantOpen(false);
+            setBrowserAgentOpen((v) => !v);
+          }}
           onOpenCommandCenter={() => setCommandCenterOpen(true)}
           onLoadUrl={handleLoadUrl}
           activeEmbedUrl={embeddedUrl ?? undefined}
@@ -191,6 +208,8 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
               <RouteEntitlementGate>{children}</RouteEntitlementGate>
             </GovernanceCanvas>
           )}
+
+          <BrowserAgentDrawer open={browserAgentOpen} onClose={() => setBrowserAgentOpen(false)} />
 
           {/* Claude.ai-style Agent Sidebar: 380px open, 32px collapsed strip */}
           <GovernanceChatSidebar

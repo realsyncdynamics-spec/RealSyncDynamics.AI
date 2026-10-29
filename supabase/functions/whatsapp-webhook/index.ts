@@ -9,7 +9,9 @@
 //
 //  POST /functions/v1/whatsapp-webhook
 //       Eingehende Nachrichten. Signaturprüfung über X-Hub-Signature-256
-//       (HMAC-SHA256 mit WHATSAPP_APP_SECRET über den Roh-Body). Ablauf je
+//       (HMAC-SHA256 mit WHATSAPP_APP_SECRET über den Roh-Body), fail-closed:
+//       fehlt das Secret → 503, ungültige/fehlende Signatur → 401, jeweils
+//       ohne jede Verarbeitung (kein DB-Zugriff, kein KI-Aufruf). Ablauf je
 //       Textnachricht:
 //         1. whatsapp_channels: phone_number_id → (tenant_id, bot_id)
 //         2. resolveBot (Tenant-Zugehörigkeit + enabled)
@@ -19,8 +21,9 @@
 //            neue Konversation → limit.whatsapp_conversations_monthly buchen
 //         6. Antwort via runAiTool('bot_reply'), Versand über die Graph API
 //
-// WICHTIG: Auf POST immer 200 OK zurückgeben — sonst wiederholt Meta die
-// Zustellung. Secrets dürfen NICHT in Logs erscheinen. verify_jwt = false
+// WICHTIG: Signierte POSTs bekommen immer 200 OK — sonst wiederholt Meta die
+// Zustellung. Unsignierte/falsch signierte POSTs stammen nicht von Meta und
+// werden abgewiesen. Secrets dürfen NICHT in Logs erscheinen. verify_jwt = false
 // (config.toml): Meta ruft ohne Supabase-JWT auf; die Zugriffskontrolle
 // läuft über Signatur + phone_number_id-Mapping.
 //
@@ -32,7 +35,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, recordUsage, UsageError } from '../_shared/usage.ts';
-import { runAiTool } from '../_shared/ai.ts';
+import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import { audit } from '../_shared/auditLog.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
@@ -41,6 +44,8 @@ import {
   buildBotPrompt, type BotRow,
 } from '../_shared/bots.ts';
 import { extractInboundTextMessages, buildGraphTextMessage } from '../_shared/whatsapp.ts';
+import { verifyMetaSignature } from '../_shared/meta-signature.ts';
+import { createBotAiBudgetGuard, type RpcAdmin } from '../_shared/bot-budget.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -50,33 +55,12 @@ const ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
 const GRAPH_BASE = Deno.env.get('WHATSAPP_GRAPH_BASE') ?? 'https://graph.facebook.com/v20.0';
 
 if (!APP_SECRET) {
-  // Ohne App-Secret ist der Webhook spoofbar — beim Start laut warnen.
+  // Fail-closed: Ohne App-Secret wird jeder POST abgewiesen (503).
   console.error(JSON.stringify({
-    level: 'warn',
+    level: 'error',
     scope: 'whatsapp_webhook_startup',
-    msg: 'WHATSAPP_APP_SECRET not set — webhook signature is not verified. Configure the Meta app secret.',
+    msg: 'WHATSAPP_APP_SECRET not set — all webhook POSTs are rejected (fail-closed). Configure the Meta app secret.',
   }));
-}
-
-// --- Signaturprüfung (X-Hub-Signature-256) --------------------------------
-
-async function verifySignature(rawBody: string, header: string | null): Promise<boolean> {
-  if (!APP_SECRET) return true; // nicht konfiguriert → Warnung beim Start, kein Blockieren
-  if (!header || !header.startsWith('sha256=')) return false;
-  const expectedHex = header.slice('sha256='.length).toLowerCase();
-
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(APP_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
-  const actualHex = Array.from(new Uint8Array(mac)).map((b) => b.toString(16).padStart(2, '0')).join('');
-
-  // Konstante Vergleichszeit — kein frühes Abbrechen auf ungleichen Bytes.
-  if (actualHex.length !== expectedHex.length) return false;
-  let diff = 0;
-  for (let i = 0; i < actualHex.length; i++) diff |= actualHex.charCodeAt(i) ^ expectedHex.charCodeAt(i);
-  return diff === 0;
 }
 
 // --- Graph API ------------------------------------------------------------
@@ -137,6 +121,9 @@ async function resolveChannel(
 }
 
 // --- Nachrichtenverarbeitung ----------------------------------------------
+
+const BUDGET_REPLY =
+  'Dieser Assistent ist gerade nicht verfügbar. Ihre Nachricht ist angekommen; bitte versuchen Sie es später erneut.';
 
 async function handleInbound(
   admin: ReturnType<typeof createClient>,
@@ -239,14 +226,28 @@ async function handleInbound(
     return;
   }
 
-  const restaurantTurn = await runRestaurantConversationTurn(
-    admin,
-    bot,
-    conversationId,
-    msg.text,
-    prior,
-    { channel: 'whatsapp', contact: msg.from },
-  );
+  // Der lokale Client-Typ ist generisch verengt; strukturell ein RpcAdmin.
+  const aiBudget = createBotAiBudgetGuard(admin as unknown as RpcAdmin, {
+    tenantId: bot.tenant_id, botId: bot.id, channel: 'whatsapp',
+  });
+
+  let restaurantTurn;
+  try {
+    restaurantTurn = await runRestaurantConversationTurn(
+      admin,
+      bot,
+      conversationId,
+      msg.text,
+      prior,
+      { channel: 'whatsapp', contact: msg.from, aiBudget },
+    );
+  } catch (e) {
+    if (e instanceof AiInvokeError && e.code === 'BOT_BUDGET_EXCEEDED') {
+      await sendWhatsAppText(channel.phone_number_id, msg.from, BUDGET_REPLY);
+      return;
+    }
+    throw e;
+  }
   if (restaurantTurn) {
     await insertMessage(admin, bot, conversationId, 'assistant', restaurantTurn.reply, {
       runId: restaurantTurn.runId,
@@ -278,9 +279,19 @@ async function handleInbound(
 
   const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: prior, userMessage: msg.text });
 
-  const ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
-    metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'whatsapp' },
-  });
+  let ai;
+  try {
+    ai = await runAiTool(admin, bot.tenant_id, null, 'bot_reply', prompt, {
+      metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'whatsapp' },
+      budget: aiBudget,
+    });
+  } catch (e) {
+    if (e instanceof AiInvokeError && e.code === 'BOT_BUDGET_EXCEEDED') {
+      await sendWhatsAppText(channel.phone_number_id, msg.from, BUDGET_REPLY);
+      return;
+    }
+    throw e;
+  }
 
   await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
     runId: ai.runId, inputTokens: ai.inputTokens, outputTokens: ai.outputTokens, costUsd: ai.costUsd,
@@ -318,15 +329,21 @@ Deno.serve(async (req) => {
 
   if (req.method !== 'POST') return new Response('OK', { status: 200 });
 
-  // Auf POST immer 200 zurückgeben — Meta darf nicht retrien.
+  // Fail-closed vor jeder Verarbeitung.
+  if (!APP_SECRET) {
+    return new Response('Service Unavailable', { status: 503 });
+  }
+
+  // Signierte POSTs bekommen immer 200 — Meta darf nicht retrien.
   try {
     const rawBody = await req.text();
 
-    const validSignature = await verifySignature(rawBody, req.headers.get('x-hub-signature-256'));
+    const validSignature = await verifyMetaSignature(APP_SECRET, rawBody, req.headers.get('x-hub-signature-256'));
     if (!validSignature) {
-      // Stille Ablehnung — kein Detail nach außen; 200 verhindert Meta-Retries.
+      // Kein Detail nach außen. Meta signiert immer; ein unsignierter oder
+      // falsch signierter POST kommt nicht von Meta.
       console.error(JSON.stringify({ level: 'warn', scope: 'whatsapp_webhook', msg: 'invalid signature' }));
-      return new Response('OK', { status: 200 });
+      return new Response('Unauthorized', { status: 401 });
     }
 
     let payload: unknown;

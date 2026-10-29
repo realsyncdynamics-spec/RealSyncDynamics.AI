@@ -28,6 +28,23 @@
 }
 
 /*
+ * Ersatzschrift für Source Serif 4 mit angeglichenen Maßen, bis die Webschrift da ist.
+ * Times New Roman (Windows/macOS) bzw. das maßgleiche Liberation Serif (Linux),
+ * gemessen gegen die H1 der Startseite. Ohne Angleichung war die vorgerenderte H1
+ * kleiner; React ersetzt sie nach dem App-Start (~7,5 s mobil gedrosselt), und die
+ * größere Fläche mit Source Serif 4 zählte als neuer LCP. Mit 105 % ist sie mobil
+ * (412 px) etwa gleich groß; auf breiten Zeilen ist der Ersatz rund 10 % breiter.
+ */
+@font-face {
+  font-family: 'Source Serif 4 Fallback';
+  src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif'), local('LiberationSerif');
+  size-adjust: 105%;
+  ascent-override: 99.05%;
+  descent-override: 32.38%;
+  line-gap-override: 0%;
+}
+
+/*
  * Obere Leiste (Mono) ohne Schriftwechsel nach dem ersten Rendern.
  * Bei 1350 px Breite ist die Zeile bis auf ~1 px gefüllt: Die Ersatzschrift
  * (z. B. DejaVu Sans Mono, 0,3 % breiter) bricht sie in zwei Zeilen um, der

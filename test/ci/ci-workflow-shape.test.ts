@@ -61,8 +61,8 @@ describe('ci.yml: Concurrency', () => {
 describe('ci.yml: build in drei Teil-Jobs plus Sammelknoten', () => {
   const DRAFT_RULE = "if: github.event_name != 'pull_request' || !github.event.pull_request.draft";
 
-  it('hat gates, unit, spa mit derselben Draft-Regel wie bisher', () => {
-    for (const id of ['gates', 'unit', 'spa']) {
+  it('hat gates, unit, spa, landing-v5 mit derselben Draft-Regel wie bisher', () => {
+    for (const id of ['gates', 'unit', 'spa', 'landing-v5']) {
       expect(code(job(ci, id)), id).toContain(DRAFT_RULE);
     }
   });
@@ -91,7 +91,7 @@ describe('ci.yml: build in drei Teil-Jobs plus Sammelknoten', () => {
 
   it('behaelt den Check-Namen build: Job-ID build, kein abweichender name', () => {
     const b = code(job(ci, 'build'));
-    expect(b).toMatch(/^    needs: \[gates, unit, spa\]$/m);
+    expect(b).toMatch(/^    needs: \[gates, unit, spa, landing-v5\]$/m);
     expect(b).not.toMatch(/^    name:/m);
   });
 

@@ -5,8 +5,8 @@ export function EvidenceVaultPage() {
     <ContentPageLayout
       eyebrow="Evidence Vault"
       title="Belege, die einer Re-Berechnung standhalten."
-      description="Hash-gechainte, Ed25519-signierte, RFC-3161-getimestampte Evidence-Records — die Grundlage für regulator-fähige Audit-Pakete."
-      intro="Eine PDF mit einem Stempel ist kein Audit-Beweis. Audit-fähige Evidence muss drei Eigenschaften haben: sie muss unveränderlich sein, sie muss sich auf einen bestimmten Zeitpunkt festnageln lassen, und sie muss von einem zurechenbaren Akteur signiert sein. Der Evidence Vault in RealSyncDynamics.AI implementiert alle drei — nicht als Marketing-Begriff, sondern als technische Konstruktion."
+      description="Hash-gechainte, Ed25519-signierte, manipulationserkennbare Evidence-Records — die Grundlage für regulator-fähige Audit-Pakete."
+      intro="Eine PDF mit einem Stempel ist kein Audit-Beweis. Audit-fähige Evidence muss drei Eigenschaften haben: sie muss manipulationserkennbar (Hash-Kette) sein, sie muss mit einem prüfbaren Zeitstempel versehen sein, und sie muss von einem zurechenbaren Akteur signiert sein. Der Evidence Vault in RealSyncDynamics.AI implementiert diese Nachweiskette als technische Konstruktion."
       related={[
         { to: '/policy-engine', label: 'Policy Engine →' },
         { to: '/ai-act-governance', label: 'AI Act Governance →' },
@@ -44,14 +44,13 @@ export function EvidenceVaultPage() {
         verifizieren — die Plattform muss dafür nicht angerufen werden.
       </P>
 
-      <H2>RFC-3161-Timestamps</H2>
+      <H2>Zeitstempel &amp; Ankerung</H2>
       <P>
-        Für Records mit hoher Stake (Annex-IV-Sections, signierte DPIA, Incident-Report,
-        Regulator-Export) wird der Artefakt-SHA-256 zusätzlich an zwei unabhängige
-        EU-RFC-3161-TSAs (Bundesdruckerei, Swiss Post) gesendet. Der Doppel-Timestamp + die
-        beiden TSA-Signaturen landen in <code>metadata.tsa</code>. Kosten pro Record: ~€0.01 —
-        wir wenden es selektiv auf alle <code>kind IN
-        (annex_iv_section, dpia_signed, incident_report, regulator_export)</code> an.
+        Jeder Evidence-Record erhält beim Versiegeln einen serverseitigen Zeitstempel
+        (<code>sealed_at</code>) und wird über seinen SHA-256-Hash in die mandantenbezogene
+        Hash-Kette sowie in periodische Snapshot-Anker (<code>evidence_snapshots</code>)
+        aufgenommen. Externe Zeitstempel-Autoritäten sind als künftige Erweiterung geplant,
+        nicht Teil der aktuellen Laufzeit.
       </P>
 
       <H2>Audit-Rekonstruktion</H2>

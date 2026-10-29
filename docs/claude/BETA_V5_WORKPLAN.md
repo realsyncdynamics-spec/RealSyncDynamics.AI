@@ -53,6 +53,11 @@ Dateien: `/app/dashboard` → `DashboardRouter` (per grep lokalisieren), `script
 - Jede Kachel: echter Wert oder ehrlicher Leerzustand mit Aktion. Keine statischen Mock-Werte im App-Bereich.
 - Feedback-Button (statt `/kontakt?topic=beta-feedback`): Tabelle `beta_feedback` (tenant_id, user_id, route, text, created_at, RLS), Admin-Ansicht.
 
+**Umsetzung (PR „Dashboard echt: Beta-Feedback“), Stand gegen den Plan:**
+- Geführter Erststart und ehrliche Kacheln: bereits durch #1894 (`CustomerStartPanel`, `startPanelModel.ts`). Kachel-Prüfung ohne Befund: keine statischen Werte im Dashboard.
+- Feedback: Migration `20261026153000_beta_feedback.sql` (additiv, Einzel-Freigabe). Schreiben nur Mitglieder als sie selbst, Lesen eigene Einträge, alle nur `is_platform_operator()`. Formular `BetaFeedback` in der Startansicht und im Beta-Hinweis; Route ohne Query/Hash. Admin-Ansicht `/admin/beta-feedback`.
+- Beispieldaten: erledigt durch #1990 als feste Beispielansicht unter `/app/beispiel` (liest und schreibt nichts in der Datenbank). Bewusst weder Daten im Kundenmandanten noch ein zweiter Mandant pro Nutzer.
+
 ## WP-5 — Agent-Credits (Abrechnung agentischer Aktionen)
 
 Basis vorhanden: `token_tracking`, `tenant_cost_ledger`, `agent_runs_metering`, `stripe_meter_sync` (Migrationen 2026-05…07). Nichts neu erfinden, darauf aufbauen.

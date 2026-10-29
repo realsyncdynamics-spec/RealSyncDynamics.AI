@@ -153,4 +153,11 @@ describe('pricing config (Single Source of Truth)', () => {
       expect(prices[i], `Plan ${ORDERED_PLANS[i].id}`).toBeGreaterThan(prices[i - 1]);
     }
   });
+  it('kennzeichnet Enterprise Single Sign-On in den Tier-Projektionen als Coming Soon', () => {
+    const enterprise = tierById('enterprise')!;
+    expect(enterprise.tagline).toContain('SSO (Coming Soon).');
+    expect(enterprise.bullets).toContain('Single Sign-On (Coming Soon)');
+    expect(enterprise.bullets).not.toContain('Single Sign-On');
+    expect(enterprise.featureGroups.multi_tenant_reseller).toContain('Single Sign-On (Coming Soon)');
+  });
 });

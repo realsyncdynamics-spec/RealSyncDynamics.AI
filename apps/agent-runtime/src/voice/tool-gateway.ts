@@ -6,6 +6,10 @@
  *   REQUIRE_CONFIRMATION    → ohne Bestätigung keine Ausführung
  *   ALLOW / confirmed       → Executor → voice_executions → Evidenz-Hash-Kette
  *
+ * Vor dem Executor: executionGuard (Abbruch/Kill-Switch, SEC-05). Fehlt er,
+ * wird nicht ausgeführt. Schreibende Tools (VOICE_WRITE_TOOLS) sind gesperrt,
+ * solange allowWriteTools nicht gesetzt ist.
+ *
  * PolicyDecision.decidedBy ist immer 'policy-engine'.
  * evaluate() in policy-engine.ts bleibt unberührt.
  * Kein voice_channels / bot_agents.
@@ -39,7 +43,26 @@ export interface ToolGatewayInput {
   confirmed?: boolean;
   confirmedBy?: 'caller' | 'staff';
   policyRef?: string;
+  /** Zweite Prüfung unmittelbar vor dem Executor (SEC-05). Fehlt → keine Ausführung. */
+  executionGuard?: VoiceExecutionGuard;
 }
+
+/**
+ * Prüfung zwischen Policy-Entscheidung und Executor-Start (SEC-05).
+ * recheck: asynchron (z. B. Kill-Switch frisch aus dem Store).
+ * isLive: synchron, wird im selben Tick wie der Executor-Start ausgewertet.
+ */
+export interface VoiceExecutionGuard {
+  recheck(): Promise<boolean>;
+  isLive(): boolean;
+}
+
+/**
+ * Tools mit echtem Schreibzugriff. Gesperrt, bis das Restrisiko aus SEC-05
+ * geklärt ist: Ein Kill-Switch, den ein anderer Prozess nach dem Re-Read
+ * setzt, kann die Ausführung nicht mehr atomar verhindern.
+ */
+export const VOICE_WRITE_TOOLS: ReadonlySet<VoiceToolName> = new Set<VoiceToolName>(['schedule_appointment']);
 
 export interface VoiceToolGateway {
   handle(input: ToolGatewayInput): Promise<VoiceToolResult>;
@@ -53,6 +76,11 @@ export interface VoiceToolGatewayOptions {
   store?: VoiceStore;
   /** Env für Supabase-Auflösung (Tests). Default: process.env. */
   env?: NodeJS.Dict<string | undefined>;
+  /**
+   * Nur Tests. Default false: VOICE_WRITE_TOOLS → denied write_tool_disabled.
+   * Bewusst ohne Env-Schalter (SEC-05 Restrisiko).
+   */
+  allowWriteTools?: boolean;
 }
 
 export function createVoiceToolGateway(options: VoiceToolGatewayOptions = {}): VoiceToolGateway {
@@ -64,7 +92,7 @@ export function createVoiceToolGateway(options: VoiceToolGatewayOptions = {}): V
     return createNotConfiguredGateway();
   }
 
-  return createConfiguredGateway(store);
+  return createConfiguredGateway(store, options.allowWriteTools === true);
 }
 
 /** Jedes Tool fail-closed — keine Ausführung, verified false. */
@@ -92,7 +120,7 @@ function storeErrorResult(callId: string): VoiceToolResult {
   };
 }
 
-function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
+function createConfiguredGateway(store: VoiceStore, allowWriteTools: boolean): VoiceToolGateway {
   return {
     async handle(input: ToolGatewayInput): Promise<VoiceToolResult> {
       const callId = input.callId.trim();
@@ -215,6 +243,22 @@ function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
           });
         }
 
+        if (VOICE_WRITE_TOOLS.has(tool) && !allowWriteTools) {
+          await store.appendEvidence({
+            tenantId: input.tenantId,
+            sessionId: input.sessionId,
+            kind: 'tool.result',
+            toolRequestId: active.id,
+            payload: { status: 'blocked', reason: 'write_tool_disabled' },
+          });
+          return {
+            callId,
+            outcome: 'denied',
+            verified: false,
+            output: { reason: 'write_tool_disabled', verdict: active.verdict },
+          };
+        }
+
         return await executeAndVerify({
           store,
           tenantId: input.tenantId,
@@ -225,6 +269,7 @@ function createConfiguredGateway(store: VoiceStore): VoiceToolGateway {
           args: clean,
           toolRequestId: active.id,
           verdict: active.verdict,
+          guard: input.executionGuard,
         });
       } catch {
         return storeErrorResult(callId);
@@ -243,6 +288,7 @@ async function executeAndVerify(input: {
   args: Record<string, unknown>;
   toolRequestId: string;
   verdict: VoiceVerdict;
+  guard: VoiceExecutionGuard | undefined;
 }): Promise<VoiceToolResult> {
   const startedAt = new Date().toISOString();
   let execution;
@@ -264,6 +310,42 @@ async function executeAndVerify(input: {
       outcome: 'denied',
       verified: false,
       output: { reason: 'execution_gate_rejected', verdict: input.verdict },
+    };
+  }
+
+  // SEC-05: zweite Prüfung zwischen Entscheidung und Ausführung. Zwischen
+  // isLive() und dem Executor-Start liegt kein Await — ein Abbruch in diesem
+  // Prozess kann nicht mehr dazwischenkommen.
+  let guardPassed = false;
+  if (input.guard) {
+    let rechecked = false;
+    try {
+      rechecked = await input.guard.recheck();
+    } catch {
+      rechecked = false;
+    }
+    guardPassed = rechecked && input.guard.isLive();
+  }
+  if (!guardPassed) {
+    const reason = input.guard ? 'session_inactive' : 'execution_guard_missing';
+    await input.store.updateExecution(input.tenantId, execution.id, {
+      status: 'failed',
+      errorCode: reason,
+      verificationStatus: 'failed',
+      finishedAt: new Date().toISOString(),
+    });
+    await input.store.appendEvidence({
+      tenantId: input.tenantId,
+      sessionId: input.sessionId,
+      kind: 'tool.result',
+      toolRequestId: input.toolRequestId,
+      payload: { status: 'blocked', reason },
+    });
+    return {
+      callId: input.callId,
+      outcome: 'denied',
+      verified: false,
+      output: { reason, verdict: input.verdict },
     };
   }
 

@@ -79,7 +79,30 @@ async function emitEvent(args: {
   }
 }
 
+async function logCronExecution(
+  functionName: string,
+  status: 'success' | 'failure',
+  httpStatus: number,
+  errorCode?: string,
+  errorMessage?: string,
+  durationMs?: number
+) {
+  try {
+    await admin.from('cron_execution_logs').insert({
+      function_name: functionName,
+      status,
+      http_status: httpStatus,
+      error_code: errorCode || null,
+      error_message: errorMessage ? errorMessage.slice(0, 500) : null,
+      execution_duration_ms: durationMs || null,
+    });
+  } catch (e) {
+    console.error('[memory-decay-worker] cron logging failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
+  const startedAtForLogging = Date.now();
   const preflight = handleOptions(req, corsHeaders);
   if (preflight) return preflight;
 
@@ -155,9 +178,13 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - startedAt,
     };
     console.log('[memory-decay-worker] tick complete', summary);
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'success', 200, undefined, undefined, durationMs);
     return jsonResponse({ success: true, ...summary }, 200, corsHeaders);
   } catch (err) {
     console.error('[memory-decay-worker] tick failed:', err);
+    const durationMs = Date.now() - startedAtForLogging;
+    await logCronExecution('memory-decay-worker', 'failure', 500, 'INTERNAL', (err as Error).message, durationMs);
     return jsonResponse({ error: (err as Error).message, run_id: runId }, 500, corsHeaders);
   }
 });

@@ -252,8 +252,10 @@ describe('onboarding_tenant_policy_packs: SQL liest dasselbe Branchen-Vokabular'
    * nis2-cybersecurity wurden nie aktiviert, obwohl beide im Katalog stehen.
    * Genau deshalb dieser Test — er prüft die Seite, die niemand ansieht.
    */
+  // Die juengste Definition zaehlt: 20261026090000 hat den Rumpf um die
+  // Aufruferbindung ergaenzt und die Branchenlogik wortgleich uebernommen.
   const SQL = readFileSync(
-    root('supabase/migrations/20260902000011_onboarding_policy_packs_industry_vocabulary.sql'),
+    root('supabase/migrations/20261026090000_harden_security_definer_rpcs.sql'),
     'utf8',
   );
 

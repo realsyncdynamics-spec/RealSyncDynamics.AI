@@ -1,168 +1,103 @@
 
 
-## Deployment-Governance — Inventar, Zielkonzept, Entscheidungspakete
+## W0 – AI Workspace: Bestandsaufnahme und Architekturentscheidung
 
-Stand: 24.10.2026 (Inventar auf `b4f8a2f`, am 26.10. gegen `7e72886` geprüft: keine Workflow-Änderung dazwischen). **Entwurf. Nichts davon ist umgesetzt.**
-Grundlage: Entscheidungen B (Produktion nur mit gesonderter menschlicher Freigabe, auch Pages)
-und D (Workflows jetzt nur planen) von Dominik. Jedes Paket in §6 braucht eine Einzel-Freigabe.
+Stand: 2026-10-28. **Nur Repository-Bestandsaufnahme; keine Implementierung, Migration oder Produktivverifikation.**
 
-Status: **BESTÄTIGT** = im Repo nachgelesen · **TEILWEISE** = Indiz, nicht vollständig belegt ·
-**NICHT GEPRÜFT** = außerhalb des Repos (GitHub-/Cloudflare-/Supabase-Einstellungen).
+### Ziel und Freigaberegeln
 
-### 1. Kritische Befunde
+W0 dokumentiert wiederverwendbare Strukturen. W1–W4 dürfen erst beginnen, wenn **PR A und PR C nachweislich gemergt** sind. `go` umfasst **keinen Merge, kein Deployment, keine Veröffentlichung, keinen Force-Push**. Eigenständige neue Posteingangs-, Budget- und Freigabe-Subsysteme sind nicht zulässig. Externe Inhalte sind Daten, keine Anweisungen.
 
-| ID | Befund | Status |
-|---|---|---|
-| K1 | Push auf `main` deployt ohne Environment und ohne Freigabe: Supabase-Migrationen (`deploy.yml`: `supabase db push --include-all`, vorher `migration repair`), Edge Functions, VPS-Runtime, drei Workers, Pages. | BESTÄTIGT |
-| K2 | Kein Deploy-Workflow hat einen Test-Job als `needs`. Pages baut nur (`build:full`), VPS, Workers und Supabase deployen ohne jede Prüfung. | BESTÄTIGT |
-| K3 | `deploy.yml` hat keine `concurrency`: zwei Merges kurz nacheinander können `db push` parallel ausführen. | BESTÄTIGT |
-| K4 | Produktions-Secrets liegen als Repo-Secrets vor (keine Environment-Secrets). PR-Workflows führen den Code des PR-Branches mit `SUPABASE_ACCESS_TOKEN` aus (`edge-function-drift`, `function-acl-drift`, `entitlement-drift`, `cron-health`), `migration-drift` zusätzlich mit `SUPABASE_DB_PASSWORD`. Wer auf einen Branch pushen darf, erreicht damit Produktionszugänge ohne Merge. Fork-PRs bekommen keine Secrets. | BESTÄTIGT (Workflows), Secret-Ablage NICHT GEPRÜFT |
-| K5 | Agenten und Freigabeverantwortlicher nutzen denselben GitHub-Account (`realsyncdynamics-spec`, Owner und Admin des persönlichen Repos). PRs und Commits der Agenten laufen unter diesem Account. Eine Environment-Freigabe durch denselben Account trennt nicht. | BESTÄTIGT (PR- und Commit-Autoren) |
-| K6 | Reine Dispatch-Workflows mit Produktionswirkung haben kein Environment (u. a. `migration-reconciliation`: `db push` + Functions, `delete-edge-function`, `cloudflare-domain-cutover`). Jede Identität mit Write-Recht kann sie starten, auch Agenten über die GitHub-API. | BESTÄTIGT |
-| K7 | `auto-merge.yml` sperrt nur `supabase/migrations/**`. Ein PR unter `apps/agent-runtime/**`, `workers/**` oder `src/**` mit Label `automerge` wird gemergt und sofort deployt. | BESTÄTIGT |
-| K8 | Cloudflare Pages ist zusätzlich per Git-Integration verbunden: Sie baut und veröffentlicht für jeden Branch-Push ein Preview, unabhängig von den Pfadfiltern der Actions (belegt auf dem reinen Doku-PR #1979). Ob sie `main` automatisch in Produktion deployt, ist offen. Das wäre ein Deploy-Pfad an GitHub Actions vorbei. | Previews BESTÄTIGT, Produktion NICHT GEPRÜFT |
-| K9 | `tracker-db-update.yml` pusht per Zeitplan direkt auf `main` (`public/tracker-db-version.json`). Pushes mit `GITHUB_TOKEN` lösen keine Folge-Workflows aus. | BESTÄTIGT, Ruleset-Bypass NICHT GEPRÜFT |
-| K10 | Lokale Skripte mit Produktionswirkung: `release-merge-deploy.sh` (Direkt-Push + wrangler), `deploy-phase4.sh`, `deploy-to-staging.sh`, `scripts/ops/supabase-functions-deploy.sh`, `scripts/ci/revert-orphan-migration-ledger.sh`, `stripe:sync` (`--apply`), `release:publish`. In dieser Cloud-Session gab es keine Supabase-/Cloudflare-/VPS-Zugangsdaten (nur Variablennamen geprüft). | TEILWEISE |
-| K11 | Ruleset, Required Checks, Default-Rechte von `GITHUB_TOKEN` und Schutzregeln des bestehenden Environments `production` sind über die verfügbaren Werkzeuge nicht lesbar. | NICHT GEPRÜFT |
+### Inventar (Status bezeichnet Nachweisgrad)
 
-### 2. Inventar
+| Domäne | Repository-Nachweis | Status | Befund / Grenze |
+|---|---|---|---|
+| Agenten | `apps/agent-runtime/src/types.ts` | geprüft | Agent-/Tool-/Risk-/Policy-/Audit-Contracts existieren. Produktions-Einsatz und Mandantenbindung der Runtime nicht im Rahmen W0 verifiziert. |
+| Agenten-Dokumentation | `docs/architecture/agent-os.md`, `docs/product/realsync-agent-os.md` | teilweise | Im Code-Index vorhanden, Inhalt hier nicht vollständig geprüft. |
+| KI-Budget | `supabase/functions/_shared/bot-budget.ts` | geprüft | `createBotAiBudgetGuard`, reserve/settleMeasured/settleUnknown/release. Keine eigene Workspace-Budgetlogik bauen. |
+| KI-Budget-Datenmodell | `supabase/migrations/20261027120000_bot_usage_budget_hardening.sql` | geprüft | `bot_usage_limits`, `bot_usage_reservations`, `bot_usage_ledger`, atomare Reservierung und idempotente Abrechnung; fehlende Mandantenkonfiguration erlaubt keine kostenpflichtige Nutzung. Migrations-/RPC-Produktivstatus nicht direkt geprüft. |
+| Posteingang | `src/features/bots/BotInboxView.tsx` | geprüft | UI mit Konversationen, Terminen, Bestellungen ist vorhanden. Kein Nachweis eines vollständigen Anfragen-/Human-Handoff-Workflows aus PR C. |
+| Bot-Datenmodell | `docs/product/bots.md` | teilweise | Beschreibt `bots`, `bot_conversations`, `bot_messages`, `bot_appointments`, `bot_orders`; Dokumentation kann gegenüber Code veraltet sein. |
+| Freigaben | `src/features/governance/approvalsApi.ts` und `supabase/functions/governance-approvals/index.ts` | geprüft | Tenant-spezifische Approval-Liste, approve/reject, Gate-Entscheidungen und Evidence-Pfade vorhanden. Nicht ungeprüft für Workspace-Publishing verwenden. |
+| Workspace-UI | `src/features/workspace/WorkspaceHome.tsx`, `src/features/workspace/WorkspaceShell.tsx` | teilweise | Bestehende Governance-Übersicht mit tenantbezogenen Counts; kein Beleg für vollständigen AI-Task-Workspace. |
+| Aufgaben/Jobs | `platform/builder_orchestrator/app/services/task_graph.py`, `supabase/migrations/20260926230000_browser_task_planner_tool.sql` | nicht verifiziert | Fundstellen im Index, Lifecycle, Persistenz, Idempotenz und Runtime-Trennung vor W2 prüfen. |
+| Wissensquellen | `src/core/runtime/memory.ts`, `supabase/migrations/20260527000000_hermes_agent.sql` | nicht verifiziert | Keine belastbare Festlegung für verbindliche Quellen, Herkunft/Version/Status/RLS; vor W1 prüfen. |
+| Landingpage-Skill | bestehende SiteOS-Module, u. a. `src/features/siteos/workspace/AppBuilderWorkspacePage.tsx` | teilweise | UI-Fundstelle; Skill-Registry, Tool-Allowlist, Preview/Publish-Gate noch nachzuweisen. |
+| Tagesübersicht | `src/features/workspace/WorkspaceHome.tsx` | teilweise | Governance-Kennzahlen existieren, manuell startbare KI-Zusammenfassung als Skill nicht nachgewiesen. |
 
-#### 2.1 Workflows mit Produktionswirkung
+### Architekturrichtung – verbindlich für weitere Prüfung, kein Implementierungsbeschluss
 
-| Workflow | Trigger | Ziel | Zugang | Tests davor | Approval | Risiko | Änderung | Rollback |
-|---|---|---|---|---|---|---|---|---|
-| `deploy.yml` | push `main` (`supabase/migrations/**`, `functions/**`, `config.toml`), dispatch | Prod-DB, Prod-Functions | Supabase-Token, DB-Passwort | keine | keine | sehr hoch | Env `production-db` / `production-functions`, `concurrency`, `needs` auf CI-Erfolg des SHA | DB: nur Vorwärts-Migration; Functions: Redeploy alter SHA (Dispatch mit `ref`, fehlt) |
-| `deploy-agent-runtime-vps.yml` | push `main` (`apps/agent-runtime/**`, `deploy/agent-runtime-vps/**`), dispatch | VPS-Runtime | SSH, Service-Role, xAI-Key, Runtime-Token | keine | keine | hoch | Env `production-runtime`, Test-Job `typecheck && test` als `needs` | Automatisch bei unhealthy auf `:previous` (BESTÄTIGT); manueller Rollback fehlt |
-| `deploy-backend-cloudflare.yml` | push `main` (`services/realsync-runtime-core/**`), dispatch | Worker | Cloudflare-Token | keine | keine | mittel | Env `production-edge`, `concurrency` | `wrangler rollback` (nicht im Repo hinterlegt) |
-| `deploy-govard-gateway.yml` | push `main` (`workers/govard-gateway/**`), dispatch | Worker | Cloudflare-Token | keine | keine | mittel | wie oben | wie oben |
-| `deploy-siteos-preview.yml` | push `main` (`workers/siteos-preview/**`, `src/lib/preview-sandbox.ts`), dispatch | Produktions-Worker der Vorschau-Sandbox | Cloudflare-Token | keine | keine | mittel | wie oben | wie oben |
-| `deploy-cloudflare-pages.yml` | push `main` (`src/**`, `scripts/**`, `public/**`, `package.json` u. a.), PR (nur Build), dispatch | Pages Produktion (`--branch=main`) | Cloudflare-Token, `VITE_*` | Build, danach Smoke | keine | hoch (Entscheidung B) | Env `production-pages` am Job `deploy`; Build-Job bleibt ohne Env | Cloudflare „Rollback to deployment“; Redeploy per Dispatch mit `ref` (fehlt) |
-| Cloudflare Git-Integration | Push (außerhalb GitHub) | Pages | Cloudflare | – | – | unbekannt | Automatische Produktions-Deploys im Dashboard abschalten, Previews behalten | Cloudflare-Dashboard |
-| `deploy-playwright-scanner.yml` | push `main` (`deploy/playwright-scanner/**`), dispatch | VPS-Scanner | SSH, Supabase-Token | keine | Env `production`, Regeln NICHT GEPRÜFT | mittel | Reviewer prüfen, `needs` Build | nicht hinterlegt |
-| `docker-deploy.yml` | dispatch | VPS (Docker-Stack) | SSH, JWT-/n8n-Secrets | `build-and-test` | Env `production`, Regeln NICHT GEPRÜFT | mittel | Reviewer prüfen | nicht hinterlegt |
-| `deploy-frontend-vps-production.yml` | dispatch (`production`/`staging`) | VPS-Frontend | SSH | keine | Env aus Eingabe; `staging` würde ohne Regeln angelegt | mittel | festes Env statt Eingabe, oder stilllegen | nicht hinterlegt |
-| `deploy-frontend-production.yml`, `deploy-frontend-vps.yml` | dispatch | VPS-Frontend (laut Kopf stillgelegt) | SSH | teils | keine | niedrig | stilllegen bzw. Env | – |
-| `migration-reconciliation.yml` | dispatch | Prod-DB + Functions | Supabase-Token, DB-Passwort | keine | keine | sehr hoch | Env `production-db` | Vorwärts-Migration |
-| `delete-edge-function.yml` | dispatch | Prod-Functions (löschen) | Supabase-Token | keine | keine | hoch | Env `production-functions` | Redeploy aus Repo |
-| `enable-leaked-password-protection.yml` | dispatch | Supabase-Auth-Konfiguration | Supabase-Token | keine | keine | mittel | Env `production-functions` | Einstellung zurücksetzen |
-| `cloudflare-domain-cutover.yml`, `provision-govard-gateway.yml` | dispatch | DNS, Pages-Domain, Worker-Ressourcen | Cloudflare-Token | keine | keine | hoch | Env `production-edge` | DNS-Records manuell |
-| `siteos-production-e2e.yml` | dispatch mit Bestätigung | Produktions-Publish über SiteOS | Test-User | Eingabebestätigung | keine | mittel | Env `production-pages` | – |
-| `tracker-db-update.yml` | Zeitplan, dispatch | `main` (Direkt-Push) | `GITHUB_TOKEN` (contents: write) | – | keine | niedrig | in PR umwandeln oder Bypass dokumentieren | Revert |
-| `auto-merge.yml` | PR-Label | Merge (→ Deploys oben) | App-Token | Required Checks | Label | hoch | Ausschlüsse nach §4.5 | – |
+1. **Agenten:** vorhandene `apps/agent-runtime`-Policy-/Tool-Schnittstellen als Kandidat weiterverwenden; vor Verwendung tenantbezogene Authentisierung, Laufzeitisolation, erlaubte Werkzeuge und Audit belegen.
+2. **Wissen:** zunächst Tabellen und RLS bestehender Memory-/Knowledge-Strukturen inventarisieren. Eine verbindliche Quelle muss Herkunft, Version, Arbeitsbereich und Status (Entwurf, extrahiert, bestätigt) nachvollziehbar tragen; Änderungen bestätigter Angaben ausschließlich als Vorschläge.
+3. **Jobs:** bestehende Task-/Browser-/Scheduler-Strukturen auf dauerhafte Task-Zustände, idempotente Schritte und revisionsfähige Aktionshistorie untersuchen. Kundenruntime darf nicht über Claude Code, Codex oder Shell-Executor laufen.
+4. **Budget:** ausschließlich atomare Budget-RPCs aus PR A als Basis. Reservierung vor kostenpflichtigem Tool-Aufruf, unbekannter Verbrauch als intern geschätzter Höchstbetrag, Korrekturen append-only ohne Doppelzählung. Keine Claude-/Codex-Abokontingente ohne belastbare Quelle anzeigen.
+5. **Freigaben:** vorhandene Governance-Approval-Gates als Kandidat, aber vor Anbindung an Veröffentlichung semantische Passung und Berechtigungen prüfen. Produktions-Publishing nur mit expliziter Einzelfreigabe.
+6. **Posteingang:** kein zweites Inbox-Modell. Erst PR C und dessen kanonischen Übergabeprozess verifizieren, dann W3-Formulare dort anschließen.
 
-#### 2.2 Workflows mit Produktionszugang ohne Deploy
+### Abhängigkeiten / nachzuprüfende Gates
 
-| Workflow | Trigger | Zugang | Risiko | Änderung |
+- PR A: [#2044](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2044) und ergänzend [#2049](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2049) laut GitHub am 28.10.2026 **gemergt**; keine separate Live-Verifikation.
+- PR C: konkrete PR-Nummer, Merge-Status, kanonisches Anfrage-Datenmodell und Human-Handoff-Abnahmetests **noch nicht verifiziert**. W1–W4 bleiben blockiert.
+- [#2053](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2053) ist zum Prüfzeitpunkt **geschlossen und nicht gemergt**. Kein Eingriff durch W0.
+- W1: Tenant-RLS, fremdtenantbezogene Zugriffsversuche und Quelle-zu-Quelle-Prompt-Injection testen.
+- W2: atomare parallele Budgetreservierung, Wiederholungs-/Timeout-Verhalten und idempotente Aufgabenschritte testen.
+- W3: Tool-Allowlist, untrusted input, Draft-Vorschau ohne Produktions-Publish, Inbox-Integration und Freigabegrenze testen.
+- W4: manueller Start, deterministische Quellreferenzen und keine Scheduler-Aktivierung.
+
+### Prüfstatus und Abschluss
+
+- **Geprüft:** die im Inventar explizit als geprüft markierten Repository-Dateien und PR-Metadaten.
+- **Teilweise/nicht verifiziert:** entsprechend Inventar, insbesondere PR C, RLS und Live-Produktionsstatus.
+- **Implementiert:** nur dieses Dokument (kein Runtime-Code).
+- **Getestet:** keine Unit-/E2E-Tests ausgeführt; W0 ist dokumentarisch.
+- **Gemergt / produktiv verifiziert:** W0 nein / nein.
+- **Nächster Schritt:** PR C identifizieren, bestehende Data Contracts und RLS im Detail prüfen, Architekturentscheidung ergänzen; anschließend erst mit eigenständiger Freigabe W1 beginnen.
+
+---
+
+### Ergänzung 2026-10-29 – vertiefte Bestandsaufnahme (nur Repository, `origin/main` @ `edf74c9`)
+
+Methode: `grep` über `supabase/migrations/*.sql` (402 Dateien), `supabase/functions/**`, `src/**`, `apps/**`; GitHub-PR-Metadaten via `gh`. Kein Zugriff auf die Live-Datenbank – alle DB-Befunde gelten nur für den Migrationsstand im Repository.
+
+#### Budget / Kosten – bestehende Mechanismen
+
+| Struktur | Datei | Aufrufer im Code | Status | Bewertung |
 |---|---|---|---|---|
-| `edge-function-drift`, `function-acl-drift`, `entitlement-drift`, `cron-health` | Zeitplan, dispatch, **PR (Pfadfilter)** | Supabase-Token | Code des PR-Branches läuft mit Token (K4) | PR-Lauf ohne Secrets (Offline-Teil); Prod-Abgleich nur Zeitplan/`main` oder Env mit Reviewer |
-| `migration-drift.yml` | Zeitplan, dispatch, **PR** | Supabase-Token, DB-Passwort | wie oben, zusätzlich DB-Passwort | wie oben |
-| `list-edge-functions.yml` | dispatch | Supabase-Token | Lesen | Env `production-readonly` optional |
-| `vps-backup.yml`, `ssh-setup.yml` | Zeitplan/dispatch | SSH | Zugriff auf VPS | Env `production-runtime` |
-| `e2e.yml` | push, PR `main` | Test-User | Test-Zugang | unverändert |
-| `drift-alert.yml` | `workflow_run` | `issues: write` | keiner | unverändert |
+| `cost_check_and_reserve` (RPC, nur `service_role`) | `supabase/migrations/20260604000000_economic_intelligence.sql` (Z. 162, 308–311) | `supabase/functions/_shared/cost-cap.ts` (`reserveLlmBudget`/`settleLlmBudget`) → `_shared/ai.ts` `runAiTool` (Z. 202, 344) | geprüft | **Kanonischer Mandanten-Kostendeckel für KI-Tools.** Fail-closed seit #2051; Altledger-Härtung in #2054 (offen). |
+| `bot_usage_limits/_reservations/_ledger`, `bot_ai_budget_reserve`, `bot_usage_*` | `supabase/migrations/20261027120000_bot_usage_budget_hardening.sql` | `_shared/bot-budget.ts` `createBotAiBudgetGuard` → `bot-chat`, `whatsapp-webhook`, `bot-voice-webhook` | geprüft | Kanalbudget der Bots (PR A). Ledger append-only (`bot_usage_ledger_block_mutation`). |
+| `browser_executions`, `reserve_browser_execution` | `supabase/migrations/20260930190000_browser_execution_reservations.sql` | Browser-Executor | teilweise | Ausführungs-Kontingent, kein Geldbudget. |
+| `mcp_quota_counters`, `mcp_quota_state` | `supabase/migrations/20260903120100_mcp_quota.sql` | MCP-API | teilweise | Request-Quota, kein Geldbudget. |
+| `usage_events/usage_totals/usage_limits_config` | `supabase/migrations/20260430220000_usage_tracking.sql` | `usage-increment`, `src/core/access/usage.ts` | teilweise | Plan-/Entitlement-Zähler. |
+| `agent_configuration`, `agent_token_usage`, `check_budget`, `record_token_usage` | `supabase/migrations/20260706011047_agent_token_budget.sql` | **keine Aufrufer** in `src/`, `supabase/functions/`, `apps/` | geprüft | **Altbestand, nicht verwenden.** Wäre eine zweite Budgetlogik. |
+| `token_usage` | `supabase/migrations/20260515700000_token_tracking.sql` | nicht verifiziert | nicht verifiziert | Nur Telemetrie, kein Deckel. |
 
-Wiederverwendbare Workflows (`uses: ./.github/workflows/…`): keine gefunden (BESTÄTIGT).
+**Entscheidung Budget (keine zweite Budgetlogik):** Workspace-Skills (W2–W4) rufen KI ausschließlich über `runAiTool` → `cost_check_and_reserve` auf. Bot-Kanäle bleiben bei `bot-budget.ts`. Es wird **keine** neue Budget-Tabelle, kein neuer Reserve-RPC und kein Rückgriff auf `agent_token_budget` angelegt. Offene Frage für W2: ob Bot- und Mandantendeckel zu einer gemeinsamen Euro-Sicht zusammengeführt werden – nur lesend, nicht als dritte Logik. Status: geplant.
 
-### 3. Rollen- und Identitätsmodell
+#### Anfragen / Posteingang – bestehende Mechanismen
 
-| Rolle | Identität | Rechte | Darf nicht |
+| Struktur | Datei | Status | Bewertung |
 |---|---|---|---|
-| Agent | eigene Identität, getrennt vom Owner | Write: Branches, Draft-PRs, Kommentare | Admin, Environment-Freigaben, Settings, Merge geschützter PRs |
-| Entwickler/Reviewer | Dominik (Arbeitsaccount) | Review, Merge-Freigabe | – |
-| Release-Approver | separater menschlicher Account, nur Browser, Passkey/2FA, kein PAT, keine OAuth-Apps, nie mit Agenten verbunden | Required Reviewer der `production-*`-Environments | Code pushen |
-| Owner (Break-Glass) | Owner-Account mit Hardware-Key | Admin, Notfall | Alltagsarbeit, Agentenverbindung |
+| `bot_conversations`, `bot_messages`, `appointments`, `orders` | `supabase/migrations/20260628193744_bots_foundation.sql`; `src/features/bots/api.ts`, `src/features/bots/BotInboxView.tsx`, `_shared/bots.ts` | geprüft | Mandanten-Posteingang der Bots – Basis für PR C. |
+| `sales_leads`, `capture_funnel_lead`, `admin_funnel_leads` | `supabase/migrations/20260505100000_sales_leads.sql`, `20261015120000_funnel_lead_capture.sql`; `src/features/admin/LeadsView.tsx`, `FunnelLeadsPanel.tsx` | geprüft | **Interner** Vertriebs-Posteingang (Plattformbetreiber), kein Mandanten-Inbox. Nicht für Workspace-Anfragen verwenden. |
+| `hermes_agent_handoffs` | `supabase/migrations/20260527000000_hermes_agent.sql` | nicht verifiziert | Agent-zu-Agent-Handoff, kein Mensch-Handoff. |
 
-Optionen zur Umsetzung:
+**Entscheidung Posteingang (kein zweiter Anfragen-Posteingang):** W3-Formulare/Anfragen landen ausschließlich im Bot-Posteingang (`bot_conversations` + PR-C-Erweiterung). Kein neues `workspace_requests`/`inbox`-Modell. Status: geplant, blockiert durch PR C.
 
-- **A — minimal:** Release-Approver-Account als Collaborator anlegen und als einzigen Reviewer der Environments setzen, mit „Prevent self-review“ an und Admin-Bypass aus. Restrisiko: Agenten laufen weiter unter dem Owner-Account und könnten Environment-Regeln per Admin-API ändern. Einschätzung: **unzureichend**, nur als Übergang.
-- **B — empfohlen:** Agenten bekommen eine eigene Identität (eigener GitHub-Account für die Claude-/Codex-Verbindung) mit Rolle Write. Der Owner-Account wird von keinem Agenten mehr genutzt. Environments wie in A. Bei einem persönlichen Repo haben Collaborators nur Write, das passt. Aufwand: claude.ai-GitHub-Verbindung und Codex auf den Agent-Account umstellen, Claude-GitHub-App-Zugriff prüfen.
-- **C — langfristig:** Repo in eine GitHub-Organisation überführen (feinere Rollen, Teams als Reviewer). Integrationen (Cloudflare, Supabase, Apps) und URLs prüfen. Aufwand hoch.
+#### Agenten, Jobs/Tasks, Wissen, Freigaben – weitere Fundstellen
 
-Das Repo ist öffentlich: Environments mit Required Reviewers stehen damit auf allen GitHub-Plänen zur Verfügung.
-
-### 4. Zielkonzept
-
-#### 4.1 Environments
-
-| Environment | Jobs | Branch-Regel | Secrets (umziehen) |
+| Domäne | Struktur / Datei | Status | Bewertung |
 |---|---|---|---|
-| `production-db` | `deploy.yml/db-push`, `migration-reconciliation` | nur `main` | `SUPABASE_DB_PASSWORD`, Supabase-Token |
-| `production-functions` | `deploy.yml/functions-deploy`, `delete-edge-function`, `enable-leaked-password-protection` | nur `main` | Supabase-Token |
-| `production-runtime` | `deploy-agent-runtime-vps`, `vps-backup`, `ssh-setup` | nur `main` | `VPS_SSH_*`, `SUPABASE_SERVICE_ROLE_KEY`, `XAI_API_KEY`, `AGENT_RUNTIME_API_TOKEN` |
-| `production-edge` | drei Worker-Deploys, `cloudflare-domain-cutover`, `provision-govard-gateway` | nur `main` | Cloudflare-Token (Workers-Scope) |
-| `production-pages` | `deploy-cloudflare-pages/deploy`, `siteos-production-e2e` | nur `main` | Cloudflare-Token (Pages-Scope) |
-| `production` (besteht) | `deploy-playwright-scanner`, `docker-deploy` | nur `main` | vorhandene |
-| `ci-readonly` (optional) | Prod-Abgleich der Drift-Checks | nur `main` | Supabase-Token |
+| Agenten | `agent_tasks`, `agent_memory`, `agent_events`, `agent_decisions` … – `supabase/migrations/20260526000000_agent_os_substrate.sql` | teilweise | Agent-OS-Substrat mit RLS; Mandantenbindung der Policies nicht einzeln geprüft. |
+| Agenten | `autonomous_agents`, `autonomous_agent_runs/_tasks/_events` – `20260705180000_autonomous_agents_core.sql` | teilweise | Paralleles Agentenmodell → Konsolidierungsrisiko; für W1 nur eines wählen. |
+| Agenten | `bot_agents` – `20260628193744_bots_foundation.sql` | geprüft | Mandanten-Assistenten der Bots. Kandidat für Workspace-Agenten. |
+| Agenten | Edge Functions `agent-os-runner`, `agent-scheduler`, `enterprise-ai-os-agents-*`, `governance-agent` | nicht verifiziert | Produktionsstatus siehe `src/config/production-edge-functions.ts`. |
+| Jobs | `audit_jobs` + `audit_jobs_claim_next/complete` – `20260507110000_audit_jobs_queue.sql` | geprüft | Einziges belegtes Claim-/Queue-Muster; Vorlage für W2-Tasks. |
+| Wissen | `agent_knowledge_base` – `20260624000000_agent_operations_layer_schema.sql`; `hermes_knowledge_items`; `governance_memory` + `memory_retention_policies` – `20260803000000_rfc003_memory_governance.sql` | teilweise | Drei Wissensmodelle; `governance_memory` hat Retention-Logik. Herkunft/Version/Status-Felder nicht verifiziert. |
+| Freigaben | `governance_approvals` – `20260513200000_governance_approvals.sql`; `pdp_approval_gates`, `role_bindings`, `principals` – `20260824120000_org_subject_model_approval_gates.sql` | geprüft | Kanonische Freigabe-Gates; Workspace-Publishing hier anschließen, kein neues Freigabemodell. |
+| Sicherheit | RLS aktiviert in allen o. g. Migrationen (`ENABLE ROW LEVEL SECURITY`); Reserve-RPCs nur `service_role` | teilweise | Policy-Inhalte (tenant-Bedingung) nicht pro Tabelle geprüft → W1-Pflichttest. |
+| Neu erforderlich | Herkunft/Version/Status für verbindliche Wissensquellen; Workspace-Task-Zustandsmodell auf Basis `audit_jobs`-Muster | neu erforderlich | Erst nach PR C und eigener Freigabe (W1/W2). |
 
-Je Environment: Required Reviewer = Release-Approver, „Prevent self-review“ an, „Allow administrators to bypass“ aus.
-Secrets erst ins Environment kopieren, dann als Repo-Secret löschen.
-**Reihenfolge wichtig:** Environments erst anlegen und schützen, dann im Workflow referenzieren. Ein im Workflow genanntes, nicht vorhandenes Environment legt GitHub ohne Schutzregeln an.
+#### PR-A/PR-C-Abhängigkeiten (Quelle: `docs/PRODUCT_PRIORITIZATION.md`, Abschnitt „Reihenfolge der Umsetzung“)
 
-#### 4.2 Gates vor dem Deploy
-
-- Deploy-Jobs hängen per `needs` an Test-Jobs im selben Workflow (VPS: `npm ci && npm run typecheck && npm test`; Workers: Build/Typecheck; Supabase: `check:edge-syntax`, `check:edge-refs`, Migration-Validierung).
-- Alternative für Pages: `workflow_run` auf erfolgreiche CI desselben SHA.
-- Ein grüner Preview ist kein Gate.
-
-#### 4.3 Synchronisierung
-
-`concurrency: { group: production-<system>, cancel-in-progress: false }` je Environment, damit es keine parallelen Deploys gibt.
-Wartende Läufe nach mehreren Merges: nur den neuesten freigeben, ältere verwerfen. Bei Migrationen jeden Lauf einzeln prüfen, weil `--include-all` alle offenen Migrationen anwendet.
-
-#### 4.4 PR-Workflows mit Secrets
-
-Auf `pull_request` keine Produktions-Secrets. Drift-Checks im PR nur offline gegen das Repo. Den Abgleich mit Produktion nur per Zeitplan oder auf `main`, oder im Environment `ci-readonly` mit Reviewer.
-
-#### 4.5 Auto-Merge-Sperre
-
-Kein Auto-Merge, wenn eines zutrifft:
-
-- Label `security` oder Titel `(security)`
-- Pfade `supabase/**`, `apps/agent-runtime/**`, `deploy/**`, `workers/**`, `services/realsync-runtime-core/**`, `.github/workflows/**`, `.github/CODEOWNERS`
-- Auth- und Policy-Pfade, z. B. `src/features/auth/**`, `apps/agent-runtime/src/voice/**`, `supabase/functions/_shared/**`
-
-Bis die Environments greifen, gilt wegen Entscheidung B zusätzlich jeder Pfad aus dem Pages-Deploy.
-Ergänzend: CODEOWNERS für diese Pfade (Review durch den Owner).
-
-#### 4.6 Auditierbarkeit
-
-- GitHub protokolliert je Deployment Approver, Zeitpunkt und Kommentar. Pflichtkommentar: PR-Nummer und Triage-Zeile.
-- Nach dem Deploy: Smoke-Ergebnis im Job-Summary. Bei Migrationen das `db push`-Log als Artefakt.
-
-#### 4.7 Rollback
-
-| System | Weg | Status |
-|---|---|---|
-| Pages | Cloudflare-Rollback auf früheres Deployment; Dispatch mit `ref` ergänzen | Dashboard-Weg NICHT GEPRÜFT |
-| VPS-Runtime | automatisch auf `:previous` bei unhealthy; manueller Dispatch-Rollback ergänzen | Automatik BESTÄTIGT |
-| Workers | `wrangler rollback` als Dispatch-Job ergänzen | fehlt |
-| Edge Functions | Redeploy eines früheren SHA per Dispatch mit `ref` | fehlt |
-| Datenbank | nur Vorwärts-Korrektur-Migration; PITR/Backup-Stand klären | NICHT GEPRÜFT |
-
-#### 4.8 Notfallverfahren
-
-Break-Glass nur über den Owner-Account und nur bei einem Produktionsvorfall. Danach innerhalb von 24 h eine Notiz mit Grund, Aktion und SHA im PR oder Issue.
-`release:merge` und lokale Deploy-Skripte gelten als Break-Glass.
-
-### 5. Abhängigkeiten
-
-P1 (Identität) → P2 (Environments anlegen) → P3–P8 (Workflows). P6 braucht zusätzlich das Cloudflare-Dashboard.
-P9–P11 sind unabhängig, brauchen aber jeweils eine eigene Freigabe. P11 ändert `scripts/**` und löst damit heute einen Pages-Deploy aus.
-
-### 6. Entscheidungspakete
-
-| Paket | Dateien / Ort | Änderung | Sicherheitswirkung | Unterbrechung | Test | Rollback | Freigabe | Aufwand |
-|---|---|---|---|---|---|---|---|---|
-| P1 Identität | GitHub-Accounts, claude.ai-/Codex-Verbindung | Option B aus §3 | Agent kann Produktion nicht freigeben | Agentensitzungen kurz neu verbinden | Test-PR vom Agent-Account; Freigabeversuch muss scheitern | Verbindung zurückstellen | Dominik | M |
-| P2 Environments | GitHub Settings | §4.1 anlegen, Reviewer, Branch-Regel, Secrets umziehen | Secrets nur noch für freigegebene `main`-Jobs | Deploys warten auf Freigabe | Dispatch eines harmlosen Jobs mit Env | Regeln entfernen | Dominik | M |
-| P3 Supabase | `deploy.yml`, `migration-reconciliation.yml`, `delete-edge-function.yml`, `enable-leaked-password-protection.yml` | `environment`, `concurrency`, Gate-Job | Keine ungeprüfte Prod-Migration | keine, solange freigegeben wird | Dry-Run-Branch: Job muss auf Freigabe warten | Revert-PR | Einzel | S |
-| P4 VPS | `deploy-agent-runtime-vps.yml`, `vps-backup.yml`, `ssh-setup.yml` | `environment`, Test-Job, Rollback-Dispatch | Runtime nur getestet und freigegeben | keine | wie oben | Revert-PR | Einzel | S |
-| P5 Workers | drei Worker-Deploys, `cloudflare-domain-cutover.yml`, `provision-govard-gateway.yml` | `environment`, `concurrency`, `wrangler rollback`-Job | wie oben | keine | wie oben | Revert-PR | Einzel | S |
-| P6 Pages | `deploy-cloudflare-pages.yml`, `siteos-production-e2e.yml`, Cloudflare-Dashboard | `environment` am Job `deploy`; Git-Integration ohne automatische Produktion | Entscheidung B technisch umgesetzt | Frontend-Release wartet auf Freigabe | Merge eines Doku-PRs mit `src/`-Änderung: Deploy muss warten | Revert-PR, Dashboard zurück | Einzel | S |
-| P7 sonstige Deploys | `deploy-playwright-scanner.yml`, `docker-deploy.yml`, `deploy-frontend-*.yml` | Reviewer prüfen, festes Env, Stilllegungen | keine ungeschützten Dispatch-Pfade | keine | Dispatch muss warten | Revert-PR | Einzel | S |
-| P8 PR-Secrets | vier Drift-Workflows, `cron-health.yml` | §4.4 | PR-Code erreicht keine Prod-Zugänge | Drift-Befund im PR nur offline | PR mit geändertem Check-Skript: kein Secret im Lauf | Revert-PR | Einzel | M |
-| P9 Auto-Merge | `auto-merge.yml`, `.github/CODEOWNERS` | §4.5 | Label löst keine geschützte Änderung aus | keine | Test-PR mit Label auf Sperrpfad: Auto-Merge aus | Revert-PR | Einzel | S |
-| P10 CI-Abdeckung | `ci.yml`, `codeql.yml`, `merge-hygiene.yml`, neuer Secret-Scan | Läufe auch für gestapelte PRs, gitleaks | Security-PRs vor Merge vollständig geprüft | mehr CI-Minuten | gestapelter Test-PR bekommt alle Checks | Revert-PR | Einzel | S |
-| P11 Skripte und Hotspots | `scripts/sync-with-main.mjs`, `scripts/lib/merge-playbook.mjs`, `scripts/release-merge-deploy.sh`, `package.json` | `sync:main` per Merge, Hotspots V6, Notfallskript mit Freigabe-Flag | Kein versehentlicher Rebase oder Direkt-Push | Pages-Deploy beim Merge | Unit-Tests der Skripte | Revert-PR | Einzel (+ Deploy) | S |
-| P12 Direkt-Push | `tracker-db-update.yml` | PR statt Push, oder dokumentierter Bypass | `main` nur über PR | keine | Zeitplanlauf erzeugt PR | Revert-PR | Einzel | S |
-| P13 Rule-Gates | neue Skripte `check:rules`, `check:deploy-gates`, `check:browser-secrets` + Tests | strukturelle Prüfungen, zuerst nur Warnung | Regeldrift und neue ungeschützte Deploys fallen auf | keine | Fixtures für positive und negative Fälle | Revert-PR | Phase | M |
+- **PR A** = „Sicherheit/Kosten der Bot-Kanäle“ → #2044 gemergt 2026-10-28 16:09 MEZ (`721aa89`), Folge-PR #2049 gemergt 16:30 MEZ (`d08abd6`). Ergänzung A2 #2054 (Altledger fail-closed) **offen**. Status: gemergt (#2044/#2049), nicht produktiv verifiziert.
+- **PR C** = „Anfragen-Posteingang mit Übergabe an Menschen“ → **kein PR auf GitHub gefunden** (Suche nach „PR C“, „Posteingang“, „Übergabe“, „handoff“). Annahme: noch nicht angelegt. Status: geplant. W3 (Formulare/Anfragen) hängt hart daran; W1–W4 bleiben gesperrt.

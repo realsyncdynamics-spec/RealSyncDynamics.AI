@@ -1,8 +1,7 @@
 /**
  * Last-Owner RLS Hardening (20261029100000_last_owner_rls_hardening.sql).
  *
- *   - tenants: nur Owner koennen ihren Mandanten loeschen (tenants owner-delete)
- *   - subscriptions: nur Owner koennen Abos direkt aendern/loeschen (subscriptions owner-write)
+ *   - tenants/subscriptions: keine Schreib-Policy fuer authenticated (20261029101000)
  *   - memberships: der letzte Owner eines Mandanten kann nicht unter 'owner'
  *     herabgestuft werden (memberships prevent-last-owner-downgrade); existiert
  *     ein zweiter Owner, bleibt die Herabstufung erlaubt
@@ -88,18 +87,15 @@ d('Last-Owner RLS Hardening', () => {
     expect(await attempt(owner1, setRole, [tenantId, owner2, 'admin'])).toBe('allow');
   });
 
-  it('erlaubt Tenant-Löschung und Subscription-Schreibzugriff nur für Owner', async () => {
-    const { tenantId, owner1, admin, editor } = await seed();
-
-    expect(await attempt(admin, `DELETE FROM public.tenants WHERE id = $1`, [tenantId])).toBe('deny');
-    expect(await attempt(editor, `DELETE FROM public.tenants WHERE id = $1`, [tenantId])).toBe('deny');
-    expect(await attempt(owner1, `DELETE FROM public.tenants WHERE id = $1`, [tenantId])).toBe('allow');
-
-    expect(
-      await attempt(admin, `UPDATE public.subscriptions SET status = 'canceled' WHERE tenant_id = $1`, [tenantId]),
-    ).toBe('deny');
-    expect(
-      await attempt(owner1, `UPDATE public.subscriptions SET status = 'canceled' WHERE tenant_id = $1`, [tenantId]),
-    ).toBe('allow');
+  it('öffnet keine Schreib-Policy auf subscriptions oder DELETE auf tenants (20261029101000)', async () => {
+    const { rows } = await ctx!.client.query<{ tablename: string; policyname: string; cmd: string }>(
+      `SELECT tablename, policyname, cmd FROM pg_policies
+        WHERE schemaname = 'public'
+          AND permissive = 'PERMISSIVE'
+          AND roles && ARRAY['authenticated', 'anon', 'public']::name[]
+          AND ((tablename = 'subscriptions' AND cmd <> 'SELECT')
+            OR (tablename = 'tenants' AND cmd IN ('DELETE', 'ALL')))`,
+    );
+    expect(rows).toEqual([]);
   });
 });

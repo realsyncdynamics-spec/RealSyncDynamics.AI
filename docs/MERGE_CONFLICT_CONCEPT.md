@@ -2,25 +2,27 @@
 
 Verbindliche Betriebsregel für `main` auf GitHub. Ziel: Konflikte früh sichtbar machen, linear mergen, Hot-Files serialisieren. Nicht: Konflikte im Browser „wegklicken“.
 
+Freigaben (Rebase, Force-Push, Merge, Deploy) regelt `.github/PR_TRIAGE_POLICY.md`; bei Widerspruch gilt sie.
+
 ## 1. Entscheidung
 
 | Regel | Wert | Warum |
 |---|---|---|
-| Geschichte | linear, **Squash-only** | Ein Commit pro PR, Rebase bleibt trivial |
+| Geschichte | linear, **Squash-only** | Ein Commit pro PR auf `main`; Merge-Commits im Feature-Branch verschwinden beim Squash |
 | Integration | Feature-Branch → PR → `main` | Kein Direkt-Push auf `main` |
-| Aktualisieren | **Rebase auf `origin/main`** | Keine Merge-Commits im Feature-Branch |
+| Aktualisieren | **`origin/main` in den Branch mergen** („Update branch“ per Merge) | Keine History-Umschreibung, gestapelte PRs und fremde Checkouts bleiben gültig. Rebase/Force-Push nur mit Einzel-Freigabe |
 | Race | **Merge Queue** für `main` | Zwei grüne PRs können sich nicht gegenseitig schmutzig mergen |
 | Lockfiles | nie textuell mergen | `npm install` erzeugt die Wahrheit |
 | Migrationen | append-only, eindeutiger Timestamp | Prod-DB ist ein Log, kein Diff |
 
-`scripts/release-merge-deploy.sh` bleibt Notfall-Lokalpfad (`--no-ff`). Der Standardweg ist GitHub Squash + Queue.
+`scripts/release-merge-deploy.sh` bleibt Notfall-Lokalpfad (`--no-ff`, pusht direkt auf `main` und deployt per wrangler) und braucht eine Einzel-Freigabe. Der Standardweg ist GitHub Squash + Queue.
 
 ## 2. Verhindern, bevor es kracht
 
-1. Branch Lebensdauer kurz. Liegt ein PR >2 Tage hinter `main`, ist Rebase Pflicht, nicht optional.
+1. Branch Lebensdauer kurz. Liegt ein PR >2 Tage hinter `main`, ist das Aktualisieren (Merge von `origin/main`) Pflicht, nicht optional.
 2. Ein PR = ein Zweck. Keine „nebenbei CLAUDE.md + App.tsx + Pricing + Migration“.
 3. **Hot-Files** nicht parallel anfassen. Wer `src/App.tsx`, `shared/pricing.ts` oder eine Migration braucht, prüft offene PRs zuerst (`hot-file`-Label).
-4. Täglich: `npm run sync:main` auf dem eigenen Branch.
+4. Täglich: `git fetch origin main && git merge origin/main` auf dem eigenen Branch.
 5. Draft-PR sofort nach dem ersten pushbaren Stand — CI und Hygiene laufen, solange der Branch noch weich ist.
 
 ### Hot-Files
@@ -33,7 +35,7 @@ Diese Dateien erzeugen historisch die Konflikte (siehe `IMPLEMENTATION_SPEC.md`)
 - `supabase/migrations/*.sql`
 - `package-lock.json` / `package.json`
 - `CLAUDE.md`
-- `src/index.css`, `src/pages/MainLanding.tsx` (Design-Lock)
+- `src/index.css`, die Landing auf `/` (laut `src/App.tsx`, Stand 24.10.2026 `src/pages/LandingV6.tsx`) und `src/components/landing/**` (Design-Lock)
 - `src/features/governance/dashboard/FreeTierDashboard.tsx`
 
 Neue öffentliche Route: bestehenden Import-/Route-Block **additiv** erweitern, keine Umsortierung „zur Ordnung“.
@@ -76,7 +78,7 @@ feat/<slug> anlegen
         ↓
 arbeiten, klein committen
         ↓
-npm run sync:main          # rebase auf origin/main
+git merge origin/main      # aktualisieren, kein Rebase
         ↓
 npm run lint && npm test
         ↓
@@ -86,34 +88,39 @@ Draft-PR → Review → Ready
         ↓
 auto-merge + Queue
         ↓
+Merge-Freigabe (+ Deploy-Freigabe, solange Merge automatisch deployt)
+        ↓
 squash auf main → Deploy
 ```
 
-Nach jedem Merge eines **anderen** PRs, der ein Hot-File teilt: sofort `npm run sync:main -- --push`.
+Nach jedem Merge eines **anderen** PRs, der ein Hot-File teilt: sofort `origin/main` mergen und normal pushen.
 
 ## 5. Konflikt lösen — festes Playbook
 
-Nicht im GitHub-Web-Editor. Nicht `git merge origin/main` in den Feature-Branch.
+Nicht im GitHub-Web-Editor.
 
 ```bash
-npm run sync:main
+git fetch origin main
+git merge origin/main
 # bei Konflikten: Datei nach Tabelle unten lösen
 git add <datei>
-git rebase --continue
+git commit                           # Merge-Commit abschließen
 npm run lint && npm test
-npm run sync:main -- --push          # --force-with-lease, sonst nichts
+git push                             # normaler Push, kein Force
 ```
 
-Abbruch: `npm run sync:main -- --abort`
+Abbruch: `git merge --abort`
+
+Nur mit Einzel-Freigabe: `npm run sync:main` (Rebase), `npm run sync:main -- --push` (force-with-lease), Abbruch `npm run sync:main -- --abort`.
 
 | Dateityp | Auflösung |
 |---|---|
 | `supabase/migrations/*.sql` | Inhalt der **neuen** Datei behalten. Timestamp kollidiert → `npm run migrate:rename -- <datei>`. Datei, die schon auf `main` liegt, nicht editieren. |
-| `package-lock.json` | Konflikt verwerfen, `npm install`, Lockfile neu adden. |
+| `package-lock.json` | Konflikt verwerfen, `npm install`, Lockfile neu adden. Agenten (dort ist `npm install` gesperrt): Konflikt melden, nie textuell auflösen. |
 | `package.json` | Beide Dependency-Änderungen bewusst vereinen, dann Lockfile neu. |
 | `src/App.tsx` | Beide neuen Routes/Imports behalten. Keine öffentliche Route umbiegen. |
 | `shared/pricing.ts` | Nur diese Datei ist Quelle. Danach `npm run sync:pricing && npm run check:pricing`. |
-| `MainLanding.tsx` / `src/index.css` | Design-Lock. Nur eigene Inhalts-Hunks. Optik nur mit Freigabe (CLAUDE.md §10). |
+| Landing auf `/` / `src/index.css` | Design-Lock. Nur eigene Inhalts-Hunks. Optik und Claims nur mit Freigabe (`.github/PR_TRIAGE_POLICY.md`). |
 | `CLAUDE.md` | Ist-Zustand **nach** dem Merge beschreiben, keine zwei Zwischenstände kleben. |
 
 Zwei gleichzeitige Migrationen mit gleichem Timestamp: der **neuere** PR benennt um. Der ältere behält den Namen.
@@ -122,21 +129,21 @@ Zwei gleichzeitige Migrationen mit gleichem Timestamp: der **neuere** PR benennt
 
 | Baustein | Aufgabe |
 |---|---|
-| `.github/workflows/merge-hygiene.yml` | Label `conflicts` / `needs-rebase` / `hot-file`, Kommentar, harter Fail bei Migrations-Kollision |
+| `.github/workflows/merge-hygiene.yml` | Label `conflicts` / `needs-rebase` (heißt: per Merge aktualisieren) / `hot-file`, Kommentar, harter Fail bei Migrations-Kollision |
 | `npm run merge:hygiene` | dieselben Checks lokal |
-| `npm run sync:main` | Rebase + optionales `--push` |
+| `npm run sync:main` | Rebase + optionales `--push` (force-with-lease) — nur mit Einzel-Freigabe |
 | `npm run migrate:rename` | Timestamp anheben |
 | `.gitattributes` | Lockfile nicht textuell auto-mergen |
 | `.github/CODEOWNERS` | Review auf Hot-Files |
 | `.github/pull_request_template.md` | Merge-Checkliste am PR |
 
-`conflicts` auf einem PR ist ein Blocker, kein Hinweis. Der Autor rebased, nicht der Reviewer.
+`conflicts` auf einem PR ist ein Blocker, kein Hinweis. Der Autor aktualisiert (Merge von `origin/main`), nicht der Reviewer.
 
 ## 7. Merge-Reihenfolge bei mehreren offenen PRs
 
 1. Blocker/Hotfix zuerst (`[hotfix]` nur für nie angewendete Migrationen).
 2. PRs ohne Hot-Files.
-3. PRs mit geteiltem Hot-File **serial** — einer durch die Queue, die anderen rebasen.
+3. PRs mit geteiltem Hot-File **serial** — einer durch die Queue, die anderen danach `origin/main` mergen.
 4. Große Umbauten (`platform/`, Routing-Schnitt) zuletzt.
 5. Nach jeder Stufe: `npm run lint && npm test` auf `main` muss grün sein, bevor die nächste Stufe startet.
 
@@ -153,5 +160,5 @@ Das ist dieselbe Logik wie in `IMPLEMENTATION_SPEC.md` §4, nur dauerhaft statt 
 - Branch = `origin/main` + PR-Diff, Test-Merge konfliktfrei
 - Hygiene-Job grün (keine Timestamp-Kollision, keine editierte Main-Migration)
 - `build` + `Migration validation` grün
-- Hot-File-Kollision entweder weg oder bewusst nach dem anderen PR gerebased
+- Hot-File-Kollision entweder weg oder bewusst nach dem anderen PR aktualisiert (Merge von `origin/main`)
 - Squash über die Merge Queue, nicht per Direkt-Push

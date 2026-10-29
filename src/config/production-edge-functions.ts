@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-10-29T10:29Z, Drift-Guard (Lauf 40857313382) gegen RealSyncDynamicsLive:
+ * **199 ACTIVE**, neu `ai-os-control` und `provision-voice-agent` als STALE_PROD_LIST — Liste nachgezogen.
+ *
  * 2026-10-10T12:49Z, Drift-Guard (PR #1830) gegen RealSyncDynamicsLive:
  * **194 ACTIVE**, neu `agent-change-evidence-webhook` (#1769) als STALE_PROD_LIST — Liste hier nachgezogen.
  *
@@ -89,10 +92,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 197;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 199;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-28T15:30Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-29T10:29Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -108,6 +111,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'ai-act-risk-inventory',
   'ai-gateway',
   'ai-invoke',
+  'ai-os-control',
   'api-audit',
   'api-gateway',
   'api-webhook-deliver',
@@ -241,6 +245,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'policy-packs',
   'provenance',
   'provision-tenant',
+  'provision-voice-agent',
   'rebuild-website',
   'remediation-agent',
   'remediation-workflow',
@@ -332,7 +337,6 @@ export interface UnbackedCaller {
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // Internes AI-OS: im Repo; Deploy nach Freigabe (Migration ai_os_action_log + Secret AI_OS_GITHUB_TOKEN).
-  { slug: 'ai-os-control', surface: '/admin/ai-os — AI Command Center (nur Plattform-Operatoren)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

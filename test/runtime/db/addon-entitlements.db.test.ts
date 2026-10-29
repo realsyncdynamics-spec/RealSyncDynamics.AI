@@ -153,7 +153,7 @@ WHERE NOT EXISTS (SELECT 1 FROM public.products p WHERE p.stripe_price_id = v.pr
 -- ON CONFLICT DO NOTHING heisst hier: Der Katalogwert gewinnt. Das ist Absicht — die
 -- Zahlen unten sind aus dem Katalog abgeschrieben (Growth 2.000, Response
 -- Pack 5.000, Voice 500, Enterprise 50.000, Governance Launch 1.000), zuletzt
--- abgeglichen am 2026-10-25 (Enterprise war bis 20261029120100 -1). Weichen
+-- abgeglichen am 2026-10-25 (Enterprise war bis 20261029150100 -1). Weichen
 -- sie eines Tages ab, schlägt der Test fehl statt still eine andere Rechnung
 -- zu prüfen.
 INSERT INTO public.product_entitlements (product_id, entitlement_id, value)
@@ -309,7 +309,7 @@ d('tenant_entitlements — Add-on-Grants', () => {
   });
 
   it('lässt -1 alles schlagen — auch einen Add-on-Zuschlag', async () => {
-    // Seit 20261029120100 führt kein Plan mehr -1 für Antworten. Die Regel
+    // Seit 20261029150100 führt kein Plan mehr -1 für Antworten. Die Regel
     // des Auflösers gilt trotzdem; der Test setzt den Wert deshalb in der
     // Transaktion (ROLLBACK in closeDb) auf dem Enterprise-Plan.
     await ctx.client.query(

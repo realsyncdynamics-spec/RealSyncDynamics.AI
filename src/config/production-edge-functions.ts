@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-10-29T10:29Z, Drift-Guard (Lauf 40857313382) gegen RealSyncDynamicsLive:
+ * **199 ACTIVE**, neu `ai-os-control` und `provision-voice-agent` als STALE_PROD_LIST — Liste nachgezogen.
+ *
  * 2026-10-10T12:49Z, Drift-Guard (PR #1830) gegen RealSyncDynamicsLive:
  * **194 ACTIVE**, neu `agent-change-evidence-webhook` (#1769) als STALE_PROD_LIST — Liste hier nachgezogen.
  *
@@ -92,7 +95,7 @@
 export const EDGE_FUNCTIONS_OBSERVED_MAX = 199;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-29T10:21Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-29T10:29Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -332,7 +335,9 @@ export interface UnbackedCaller {
   publicPath: boolean;
 }
 
-export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [];
+export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
+  // Internes AI-OS: im Repo; Deploy nach Freigabe (Migration ai_os_action_log + Secret AI_OS_GITHUB_TOKEN).
+];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));
 

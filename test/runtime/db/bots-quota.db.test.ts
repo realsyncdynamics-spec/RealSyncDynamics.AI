@@ -310,7 +310,7 @@ d('Release-Gate der Migration 20260920130000 — Endzustand von #1491', () => {
 
   it('läuft auf dem Katalog im Stand von #1491 durch', async () => {
     // Seit 2026-10-24 (Dominik) trägt Enterprise limit.bots = 20
-    // (20261029120100, Spiegel 20261029120200). Beim Einspielen trifft das
+    // (20261029150100, Spiegel 20261029150200). Beim Einspielen trifft das
     // Gate auf den Stand von 20260920120000 — hier in der Transaktion
     // nachgestellt, damit der Fall weiter prüft, was er prüfen soll.
     const { rowCount } = await ctx.client.query(

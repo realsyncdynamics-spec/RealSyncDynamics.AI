@@ -1,0 +1,141 @@
+import { useMemo, useState } from 'react';
+import { AlertTriangle, Bot, Inbox, Search } from 'lucide-react';
+import {
+  distinct, EMPTY_FILTER, filterAgents, STATUS_LABEL,
+  type AgentFilter, type AgentStatus, type RegistryAgent,
+} from './agentRegistry';
+import { useAgentRegistry } from './useAgentRegistry';
+
+const NAV = [
+  'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
+  'Details Manager', 'Bibliothek Manager', 'Computer Manager', 'Routinen', 'Gedächtnis',
+  'Kosten & Monitoring', 'Einstellungen',
+] as const;
+const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten']);
+
+const STATUS_CLASS: Record<AgentStatus, string> = {
+  active: 'bg-emerald-500/15 text-emerald-300',
+  working: 'bg-sky-500/15 text-sky-300',
+  waiting: 'bg-amber-500/15 text-amber-300',
+  blocked: 'bg-orange-500/15 text-orange-300',
+  error: 'bg-red-500/15 text-red-300',
+  offline: 'bg-zinc-500/15 text-zinc-300',
+  unknown: 'bg-zinc-700/40 text-zinc-400',
+};
+
+const SOURCE_LABEL: Record<RegistryAgent['source'], string> = {
+  autonomous_agents: 'Supabase · autonomous_agents',
+  agent_profiles: 'Supabase · agent_profiles (Katalog)',
+  grok_soll: 'Soll-Konfiguration · kein Live-Status',
+};
+
+function AgentCard({ a }: { a: RegistryAgent }) {
+  return (
+    <article data-testid="agent-card" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-zinc-400" aria-hidden />
+          <h3 className="font-semibold text-zinc-100">{a.name}</h3>
+        </div>
+        <span data-testid="agent-status" className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[a.status]}`}>
+          {STATUS_LABEL[a.status]}
+        </span>
+      </div>
+      <p className="mt-1 text-sm text-zinc-400">{a.description ?? 'Zuständigkeit nicht hinterlegt'}</p>
+      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-zinc-400">
+        <dt>Letzte Aktivität</dt><dd className="text-zinc-300">{a.lastActivityAt ? new Date(a.lastActivityAt).toLocaleString('de-DE') : 'UNBEKANNT'}</dd>
+        <dt>Laufender Auftrag</dt><dd className="text-zinc-300">{a.currentTask ?? 'UNBEKANNT'}</dd>
+        <dt>Offene Fragen</dt><dd className="text-zinc-300">{a.openDecisions ?? 'UNBEKANNT (ab M2)'}</dd>
+        <dt>Quelle</dt><dd className="text-zinc-300">{SOURCE_LABEL[a.source]}</dd>
+      </dl>
+      {a.lastError && (
+        <p className="mt-2 flex items-center gap-1 text-xs text-red-300"><AlertTriangle className="h-3 w-3" aria-hidden />{a.lastError}</p>
+      )}
+    </article>
+  );
+}
+
+function Select({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+  return (
+    <label className="flex flex-col text-xs text-zinc-400">
+      {label}
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
+        className="mt-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100">
+        <option value="all">Alle</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+}
+
+export function CommandCenterView() {
+  const { agents, loading, sourceError } = useAgentRegistry();
+  const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
+  const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
+  const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
+
+  return (
+    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+      <nav aria-label="Command Center" className="hidden w-56 shrink-0 border-r border-zinc-800 p-3 md:block">
+        <p className="mb-3 px-2 text-sm font-semibold">Agent Command Center</p>
+        <ul className="space-y-0.5 text-sm">
+          {NAV.map((n) => (
+            <li key={n}>
+              <span aria-disabled={!NAV_ENABLED.has(n)}
+                className={`block rounded px-2 py-1.5 ${NAV_ENABLED.has(n) ? 'text-zinc-100' : 'cursor-not-allowed text-zinc-600'}`}
+                title={NAV_ENABLED.has(n) ? undefined : 'Folgt in späterem Meilenstein'}>
+                {n}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <main className="min-w-0 flex-1 p-4 md:p-6">
+        <h1 className="text-xl font-semibold">Agentenübersicht</h1>
+        <p className="mt-1 text-sm text-zinc-400">Status nur aus belegten Quellen. Nicht belegte Zustände werden als UNBEKANNT angezeigt.</p>
+        {sourceError && (
+          <p role="status" className="mt-3 rounded-md border border-amber-700/50 bg-amber-900/20 p-2 text-sm text-amber-200">
+            Datenquelle eingeschränkt: {sourceError}. Angezeigt wird nur die Soll-Konfiguration.
+          </p>
+        )}
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="flex flex-1 flex-col text-xs text-zinc-400">
+            Suche
+            <span className="relative mt-1">
+              <Search className="absolute left-2 top-2 h-4 w-4 text-zinc-500" aria-hidden />
+              <input aria-label="Agenten suchen" value={f.query} onChange={(e) => set({ query: e.target.value })}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-900 py-1 pl-8 pr-2 text-sm text-zinc-100" />
+            </span>
+          </label>
+          <Select label="Typ" value={f.type} options={distinct(agents, 'agentType')} onChange={(v) => set({ type: v })} />
+          <Select label="Projekt" value={f.project} options={distinct(agents, 'project')} onChange={(v) => set({ project: v })} />
+          <Select label="Priorität" value={f.priority} options={distinct(agents, 'priority')} onChange={(v) => set({ priority: v })} />
+          <label className="flex flex-col text-xs text-zinc-400">
+            Betriebsstatus
+            <select aria-label="Betriebsstatus" value={f.status} onChange={(e) => set({ status: e.target.value as AgentFilter['status'] })}
+              className="mt-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100">
+              <option value="all">Alle</option>
+              {(Object.keys(STATUS_LABEL) as AgentStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-zinc-400">
+            <input type="checkbox" checked={f.onlyOpenDecisions} onChange={(e) => set({ onlyOpenDecisions: e.target.checked })} />
+            Nur mit offenen Entscheidungen
+          </label>
+        </div>
+        <p className="mt-3 text-xs text-zinc-500">{loading ? 'Lade …' : `${shown.length} von ${agents.length} Agenten`}</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {shown.map((a) => <AgentCard key={a.registryId} a={a} />)}
+        </div>
+      </main>
+
+      <aside aria-label="Decision Inbox" className="hidden w-80 shrink-0 border-l border-zinc-800 p-4 lg:block">
+        <h2 className="flex items-center gap-2 font-semibold"><Inbox className="h-4 w-4" aria-hidden />Offene Entscheidungen</h2>
+        <p className="mt-3 rounded-md border border-dashed border-zinc-700 p-3 text-sm text-zinc-500">
+          Platzhalter. Die Decision Inbox wird in M2–M4 angebunden. Hier werden aktuell keine Fragen angezeigt.
+        </p>
+      </aside>
+    </div>
+  );
+}

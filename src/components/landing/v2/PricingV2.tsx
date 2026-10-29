@@ -7,6 +7,7 @@ import { tierById, type PricingTier } from '../../../config/pricing';
 import {
   checkoutHrefForPlan,
   formatPriceEur,
+  formatNetVatGrossEur,
   pricingTaxNote,
   PLANS,
 } from '@/shared/pricing';
@@ -104,6 +105,14 @@ export function PricingV2() {
                 <p className="lv2-plan__price" data-text={tier.priceOnRequest ? 'true' : undefined}>
                   <span>{price}</span> <small>{suffix}</small>
                 </p>
+                {!tier.priceOnRequest && plan.price.monthlyEur > 0 && COMPANY.taxMode === 'EU_STANDARD' && (
+                  <p className="lv2-plan__note" data-testid="plan-vat-line">
+                    {formatNetVatGrossEur(
+                      yearly && plan.price.yearlyEur !== null ? plan.price.yearlyEur : plan.price.monthlyEur,
+                      COMPANY.taxMode,
+                    )}
+                  </p>
+                )}
                 <p className="lv2-plan__note">
                   {tier.priceOnRequest ? 'SLA & dedizierter Tenant' : 'monatlich kündbar'}
                 </p>

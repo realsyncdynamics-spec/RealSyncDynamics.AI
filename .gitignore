@@ -6,6 +6,7 @@ node_modules
 build/
 dist/
 coverage/
+ai-os-report/
 .DS_Store
 *.log
 .env*
@@ -17,9 +18,12 @@ playwright-report/
 playwright/.cache/
 
 # Agent-Skills (installiert via `npx skills add ...`) — pro-Maschine,
-# nicht Teil des Produktcodes.
+# nicht Teil des Produktcodes. Ausnahme: die eigenen AI-OS-Skills
+# (`aios-*`, Register packages/ai-os-core) sind versioniert — fremde Skills
+# bleiben ignoriert und werden so nie unkontrolliert eingecheckt.
 .agents/
-.claude/skills/
+.claude/skills/*
+!.claude/skills/aios-*/
 .claude/worktrees/
 skills-lock.json
 

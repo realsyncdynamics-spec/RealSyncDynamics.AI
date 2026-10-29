@@ -206,6 +206,13 @@ verify_jwt = true
 [functions.ai-gateway]
 verify_jwt = true
 
+# ai-os-control — internes AI-OS (/admin/ai-os). Nur Plattform-Operatoren
+# (is_platform_operator() mit dem Nutzer-JWT); Schreibaktionen zusätzlich AAL2
+# + Bestätigung + Eintrag in ai_os_action_log (fail-closed). GitHub-Zugriff
+# über das Function-Secret AI_OS_GITHUB_TOKEN.
+[functions.ai-os-control]
+verify_jwt = true
+
 [functions.audit-report-pdf]
 verify_jwt = false
 
@@ -451,6 +458,11 @@ verify_jwt = false
 # Auth: Bearer == CRON_BOT_VOICE_ENFORCER_KEY (fail-closed, 500 ohne Secret,
 # 401 bei falschem Bearer). Beendet überfällige Anrufe beim Anbieter.
 [functions.bot-voice-enforcer]
+verify_jwt = false
+
+# Intern: stripe-webhook und pg_cron rufen mit Bearer VOICE_PROVISION_KEY
+# (eigene Prüfung in der Function, fail-closed). Kein User-JWT.
+[functions.provision-voice-agent]
 verify_jwt = false
 
 # whatsapp-webhook wird von Metas Servern (WhatsApp Business Cloud API) ohne

@@ -141,7 +141,7 @@ export const GOVERN_MODULES: ModuleDefinition[] = [
   { id: 'evidence_vault', area: 'govern', name: 'Evidence Vault', description: 'Revisionssicherer Speicher für Nachweise wie Logs, Freigaben und Prüfprotokolle, damit Audits nachvollziehbar bleiben. Im Produkt: manipulationssicher mit Hash-Chain, Retention und Legal Hold.', icon: 'Archive' },
   { id: 'audit_center', area: 'govern', name: 'Audit Center', description: 'Zentraler Ort, um Prüfungen vorzubereiten, durchzuführen und zu dokumentieren. Im Produkt: Prüfpfad, Audit-Läufe und exportfähige Nachweispakete für Prüfer.', icon: 'ClipboardCheck' },
   { id: 'risk_register', area: 'govern', name: 'Risk Register', description: 'Zentrale Liste erkannter Risiken mit Eintrittswahrscheinlichkeit, Auswirkung und Status. Im Produkt: Bewertung, Eigentümer und Maßnahmenverfolgung.', icon: 'AlertTriangle' },
-  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Laufende Überwachung, damit Abweichungen früh sichtbar werden statt erst im Audit. Im Produkt: Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity' },
+  { id: 'monitoring', area: 'govern', name: 'Monitoring', description: 'Laufende Überwachung, damit Abweichungen früh sichtbar werden statt erst im Audit. Im Produkt: Runtime-Überwachung von Assets, Kontrollen und SLOs — dauerhafte Domain-Überwachung Coming Soon.', icon: 'Activity', availability: 'preview' },
   { id: 'compliance_reports', area: 'govern', name: 'Compliance Reports', description: 'Berichte über den Erfüllungsstand: offene Risiken, Kontrollen, Maßnahmen, Nachweise. Im Produkt: je Rahmenwerk als PDF/JSON, revisionssicher signiert.', icon: 'FileText' },
 ];
 
@@ -152,8 +152,8 @@ export const AUTOMATE_MODULES: ModuleDefinition[] = [
   { id: 'kodee', area: 'automate', name: 'Kodee', description: 'Produktname, kein Fachbegriff: der eingebaute Assistent für den Serverbetrieb. Preview: Chat in allen Plänen, SSH-Server-Aktionen ab Agency.', icon: 'Terminal', availability: 'preview' },
   { id: 'bulk_jobs', area: 'automate', name: 'Bulk Jobs', description: 'Massenverarbeitung: viele Datensätze oder Prüfungen in einem Durchgang. Im Produkt: Massenläufe über viele Domains — CSV-Import, Queue, Retry.', icon: 'Layers' },
   { id: 'automation_engine', area: 'automate', name: 'Automation Engine', description: 'Ausführungslogik hinter Automationen: startet Trigger, wertet Bedingungen aus, protokolliert Ergebnisse. Im Produkt: führt Governance-Skills mit Kontingent und Protokollierung aus.', icon: 'Cpu' },
-  { id: 'alerts', area: 'automate', name: 'Alerts', description: 'Warnmeldungen bei Ereignissen oder Regelverstößen. Im Produkt: Benachrichtigungen bei neuen Findings — E-Mail, Slack, Teams, Webhook.', icon: 'Bell' },
-  { id: 'drift_detection', area: 'automate', name: 'Drift Detection', description: 'Erkennung schleichender Abweichungen vom freigegebenen Soll-Zustand. Im Produkt: Vergleich zwischen zwei Läufen.', icon: 'TrendingUp' },
+  { id: 'alerts', area: 'automate', name: 'Alerts', description: 'Warnmeldungen bei Ereignissen oder Regelverstößen. Im Produkt: Benachrichtigungen bei neuen Findings — E-Mail, Slack, Teams, Webhook.', icon: 'Bell', availability: 'preview' },
+  { id: 'drift_detection', area: 'automate', name: 'Drift Detection', description: 'Erkennung schleichender Abweichungen vom freigegebenen Soll-Zustand. Im Produkt: Vergleich zwischen zwei Läufen; tägliches Drift-Monitoring Coming Soon.', icon: 'TrendingUp', availability: 'coming-soon' },
   { id: 'remediation', area: 'automate', name: 'Remediation', description: 'Behebung festgestellter Schwachstellen oder Abweichungen — Maßnahme, Verantwortliche, Frist, Nachweis. Im Produkt: vorbereitete Maßnahmen mit Code-Snippets und Review-Pflicht.', icon: 'Wrench' },
   { id: 'background_jobs', area: 'automate', name: 'Background Jobs', description: 'Aufgaben, die im Hintergrund statt innerhalb einer Nutzeranfrage laufen, etwa Berichte oder Scans. Im Produkt: mit Fortschritt und Wiederaufnahme.', icon: 'Cog' },
 ];
@@ -668,7 +668,7 @@ export const PLANS: Plan[] = [
     planKey: 'growth',
     yearlyPlanKey: 'growth_yearly',
     name: 'Growth',
-    outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
+    outcomeHeadline: 'KI-Governance mit Risk Register und Policy Engine — tägliche Selbstüberwachung folgt (Beta).',
     technicalSubheadline: 'Runtime-Läufe mit Risk Register und Policy Engine über drei Rahmenwerke. Tägliches Drift-Monitoring: Coming Soon.',
     price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     // Jahres-Preis in Stripe nicht verdrahtet — siehe `yearlyCheckoutUnavailable`.
@@ -3025,3 +3025,40 @@ export function pricingTaxNote(mode: PricingTaxMode): string {
  * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
  */
 export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);
+
+// ── Netto / USt / Brutto (UX-003) ─────────────────────────────────────────
+
+/** Gesetzlicher Regelsteuersatz (DE) für die Brutto-Anzeige. */
+export const VAT_RATE_DE = 0.19;
+
+/** Brutto aus Netto, kaufmännisch auf Cent gerundet (Integer-Arithmetik, kein Float-Drift). */
+export function grossFromNetEur(netEur: number, vatRate: number = VAT_RATE_DE): number {
+  const netCents = Math.round(netEur * 100);
+  const vatBasisPoints = Math.round(vatRate * 10000);
+  return Math.round((netCents * (10000 + vatBasisPoints)) / 10000) / 100;
+}
+
+/** Betrag mit Cent (de-DE), z. B. „94,01 €". */
+export function formatPriceEurCents(value: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+/**
+ * Netto/USt/Brutto-Zeile für Plan-Karten, z. B.
+ * „79 € netto zzgl. 19 % USt (94,01 € brutto)". Im Modus `EXEMPT`
+ * (§ 19 UStG) wird nur der Betrag ohne USt-Ausweis geliefert.
+ */
+export function formatNetVatGrossEur(
+  netEur: number,
+  mode: PricingTaxMode = PRICING_TAX_MODE,
+  vatRate: number = VAT_RATE_DE,
+): string {
+  if (mode === 'EXEMPT') return formatPriceEur(netEur);
+  const pct = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(vatRate * 100);
+  return `${formatPriceEur(netEur)} netto zzgl. ${pct} % USt (${formatPriceEurCents(grossFromNetEur(netEur, vatRate))} brutto)`;
+}

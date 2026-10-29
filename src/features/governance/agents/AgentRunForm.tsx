@@ -1,7 +1,10 @@
-// AgentRunForm — rendert das Eingabeformular eines Agenten aus seinem Schema
-// und baut daraus das `payload` für runAgent. Rein lokal, keine Netzwerkaufrufe.
-import React, { useState } from 'react';
-import { Play, Loader2 } from 'lucide-react';
+// AgentRunForm — rendert das Eingabeformular eines Agenten aus seinem Schema,
+// prüft vor dem Start, ob ein genehmigter Eintrag in governance_approvals
+// existiert (über approvalsApi.ts), und baut daraus das `payload` für runAgent.
+import React, { useEffect, useState } from 'react';
+import { Play, Loader2, ShieldAlert } from 'lucide-react';
+import { listApprovals, type Approval } from '../approvalsApi';
+import { useOptionalTenant } from '../../../core/access/TenantProvider';
 import type { AgentInputField } from './agentInputSchemas';
 
 type FieldValue = string | boolean | string[];
@@ -48,13 +51,71 @@ export function buildPayload(
   return payload;
 }
 
+/**
+ * Prüft, ob in `governance_approvals` mindestens ein genehmigter Eintrag
+ * (`status === 'approved'`) für den Agenten bzw. Mandanten vorliegt.
+ */
+export function hasApprovedAgentEntry(
+  approvals: readonly Approval[] | undefined,
+  agentId?: string,
+): boolean {
+  if (!approvals || approvals.length === 0) return false;
+  return approvals.some((a) => {
+    if (a.status !== 'approved') return false;
+    if (!agentId) return true;
+    if (!a.asset_id) return true;
+    return (
+      a.asset_id === agentId ||
+      a.asset?.id === agentId ||
+      a.asset?.name === agentId ||
+      a.requested_action.includes(agentId)
+    );
+  });
+}
+
 interface Props {
   fields: AgentInputField[];
   busy: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
+  tenantId?: string | null;
+  agentId?: string;
+  onRequestApproval?: () => void;
 }
 
-export function AgentRunForm({ fields, busy, onSubmit }: Props) {
+export function AgentRunForm({
+  fields,
+  busy,
+  onSubmit,
+  tenantId,
+  agentId,
+  onRequestApproval,
+}: Props) {
+  const tenantCtx = useOptionalTenant();
+  const effectiveTenantId = tenantId !== undefined ? tenantId : (tenantCtx?.activeTenantId ?? '');
+  const [approvalState, setApprovalState] = useState<'checking' | 'approved' | 'missing'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    setApprovalState('checking');
+    Promise.resolve(listApprovals(effectiveTenantId ?? '', 'approved'))
+      .then((res) => {
+        if (cancelled) return;
+        if (res?.ok && hasApprovedAgentEntry(res.approvals, agentId)) {
+          setApprovalState('approved');
+        } else {
+          setApprovalState('missing');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApprovalState('missing');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveTenantId, agentId]);
+
+  const isApproved = approvalState === 'approved';
+
   const [values, setValues] = useState<Record<string, FieldValue>>(() => {
     const init: Record<string, FieldValue> = {};
     for (const f of fields) init[f.key] = initialValue(f);
@@ -69,6 +130,7 @@ export function AgentRunForm({ fields, busy, onSubmit }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy || !isApproved) return;
     onSubmit(buildPayload(fields, values));
   }
 
@@ -148,10 +210,38 @@ export function AgentRunForm({ fields, busy, onSubmit }: Props) {
         </div>
       ))}
 
+      {!isApproved && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+        >
+          <span className="flex items-center gap-1.5">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+            Ohne genehmigten Eintrag in <code className="font-mono">governance_approvals</code> ist der Start gesperrt.
+          </span>
+          {onRequestApproval ? (
+            <button
+              type="button"
+              onClick={onRequestApproval}
+              className="shrink-0 border border-amber-400/60 bg-amber-500/20 px-2.5 py-1 font-mono text-[11px] text-amber-100 hover:bg-amber-500/30"
+            >
+              Freigabe anfordern
+            </button>
+          ) : (
+            <a
+              href="/governance/approvals"
+              className="shrink-0 border border-amber-400/60 bg-amber-500/20 px-2.5 py-1 font-mono text-[11px] text-amber-100 hover:bg-amber-500/30"
+            >
+              Freigabe anfordern
+            </a>
+          )}
+        </div>
+      )}
+
       <div className="pt-1">
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || !isApproved}
           className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-mono text-white bg-teal-600 hover:bg-teal-500 transition-colors disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}

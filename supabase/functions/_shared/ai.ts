@@ -15,6 +15,9 @@ import { callProvider, ProviderError } from './providers.ts';
 import { requireVerifiedAiResidency } from './residencyGuard.ts';
 import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
 import { NO_USAGE, providerCostUsd, type TokenUsage } from './providerCost.ts';
+import {
+  BotBudgetError, aiFailureWasNotSent, inputTokenUpperBound, type AiBudgetGuard,
+} from './bot-budget.ts';
 import type { ExecutionZone, RuntimeClass } from './pricing.generated.ts';
 
 export interface RunAiToolOptions {
@@ -33,6 +36,13 @@ export interface RunAiToolOptions {
   retryCount?: number;
   /** Independent verifier runs attached to this invocation. */
   verifierRuns?: number;
+  /**
+   * Budget der öffentlichen Bot-Kanäle (bot-budget.ts). Gesetzt → vor dem
+   * Anbieteraufruf wird der Höchstbetrag (Eingabe-Obergrenze + max_tokens
+   * des Tools als Ausgabelimit) atomar reserviert; danach gemessen
+   * abgerechnet, bei unklarem Ausgang zum Höchstbetrag geschätzt.
+   */
+  budget?: AiBudgetGuard;
 }
 
 export interface RunAiToolResult {
@@ -306,6 +316,28 @@ export async function runAiTool(
     }
     throw e;
   }
+  // Bot-Budget (PR A): Höchstbetrag mit konservativer Eingabe-Obergrenze.
+  // Dasselbe max_tokens geht unten als Ausgabelimit an den Anbieter.
+  let botBudgetReservation: string | null = null;
+  if (opts.budget) {
+    const maxUsd = toolCostUsd(
+      effectiveProvider,
+      effectiveModelId,
+      { ...NO_USAGE, input: inputTokenUpperBound(tool.system_prompt, input), output: tool.max_tokens },
+    );
+    try {
+      botBudgetReservation = await opts.budget.reserve(maxUsd);
+    } catch (e) {
+      if (e instanceof BotBudgetError) {
+        throw new AiInvokeError(e.message, e.code, e.status, { reason: e.reason });
+      }
+      throw e;
+    }
+  }
+  const releaseBotBudget = async (reason: string) => {
+    if (opts.budget && botBudgetReservation) await opts.budget.release(botBudgetReservation, reason);
+  };
+
   let reservationId: string | null = null;
   if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
     try {
@@ -317,6 +349,8 @@ export async function runAiTool(
       reservationId = r.reservationId;
     } catch (e) {
       if (e instanceof CostCapError) {
+        // Der Anbieter wurde nicht aufgerufen → Bot-Reservierung freigeben.
+        await releaseBotBudget('cost_cap_blocked_before_call');
         throw new AiInvokeError(
           'monthly LLM USD cap reached',
           'COST_LIMIT_EXCEEDED',
@@ -324,15 +358,45 @@ export async function runAiTool(
           { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
         );
       }
-      // Reservation infrastructure errors should not block calls in
-      // the absence of a clear deny — log and fall through so a
-      // degraded ledger doesn't take down the runtime.
-      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+      // Fail-closed: Ohne bestätigte Reservierung kein Anbieteraufruf.
+      // Ein gestörtes Ledger (RPC-Fehler, leere Antwort, Netzwerk) darf den
+      // Monatsdeckel nicht aushebeln — sonst laufen kostenpflichtige
+      // Aufrufe ungedeckelt, genau dann, wenn niemand mitzählt.
+      const message = (e as Error)?.message ?? String(e);
+      console.error(JSON.stringify({
+        level: 'error', scope: 'cost_cap_reserve_unavailable',
+        tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId, message,
+      }));
+      await releaseBotBudget('cost_cap_unavailable_before_call');
+      await insertErrorRun(admin, {
+        tenant_id: tenantId,
+        tool_id: tool.id,
+        tool_key: tool.key,
+        user_id: userId,
+        duration_ms: 0,
+        status: 'error',
+        error_code: 'COST_CAP_UNAVAILABLE',
+        error_message: 'cost cap reservation unavailable; provider not called',
+        metadata: {
+          ...(opts.metadata ?? {}),
+          residency,
+          provider: effectiveProvider,
+          model_id: effectiveModelId,
+        },
+      }, { tool_key: tool.key, provider: effectiveProvider, model_id: effectiveModelId });
+      throw new AiInvokeError(
+        'cost cap temporarily unavailable',
+        'COST_CAP_UNAVAILABLE',
+        503,
+      );
     }
   }
 
   // Call provider
   const start = performance.now();
+  // Gesetzt, sobald der Anbieter geantwortet hat: Ab dann ist der Verbrauch
+  // gemessen bekannt, auch wenn danach noch etwas scheitert.
+  let measuredUsd: number | null = null;
   try {
     const result = await callProvider({
       provider: effectiveProvider,
@@ -347,6 +411,7 @@ export async function runAiTool(
     // Derselbe Anbieter und dasselbe Modell wie bei der Schätzung — der Preis
     // ist also vorhanden. Abgerechnet wird der tatsächliche Verbrauch.
     const costUsd = toolCostUsd(effectiveProvider, effectiveModelId, result.pricedUsage);
+    measuredUsd = costUsd;
 
     const shadowRating = buildShadowRatingTelemetry({
       runtimeClass,
@@ -413,6 +478,16 @@ export async function runAiTool(
       }
     }
 
+    if (opts.budget && botBudgetReservation) {
+      await opts.budget.settleMeasured(botBudgetReservation, costUsd, {
+        run_id: run?.id ?? null,
+        input_tokens: result.inputTokens,
+        output_tokens: result.outputTokens,
+        provider: effectiveProvider,
+        model_id: effectiveModelId,
+      });
+    }
+
     return {
       ok: true,
       runId: run?.id ?? null,
@@ -430,6 +505,18 @@ export async function runAiTool(
                 : e instanceof AiInvokeError ? e.code
                 : 'INTERNAL';
     const message = (e as Error).message ?? String(e);
+
+    // Bot-Budget abschließen: gemessen, freigegeben (nachweislich nicht
+    // gesendet) oder zum Höchstbetrag geschätzt (alles Unklare).
+    if (opts.budget && botBudgetReservation) {
+      if (measuredUsd !== null) {
+        await opts.budget.settleMeasured(botBudgetReservation, measuredUsd, { error_code: code, after_provider: true });
+      } else if (aiFailureWasNotSent(code)) {
+        await opts.budget.release(botBudgetReservation, `not_sent:${code}`);
+      } else {
+        await opts.budget.settleUnknown(botBudgetReservation, { error_code: code, duration_ms: durationMs });
+      }
+    }
 
     const shadowRating = buildShadowRatingTelemetry({
       runtimeClass,

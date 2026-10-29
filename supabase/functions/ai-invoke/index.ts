@@ -6,6 +6,10 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
+import {
+  buildAiCallEvidenceRow,
+  recordAiCallEvidence,
+} from '../_shared/aiGateway/callEvidence.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { recordUsage } from '../_shared/usage.ts';
 
@@ -68,6 +72,35 @@ Deno.serve(async (req) => {
         // Log but don't fail the request — token tracking is best-effort
         console.warn('Failed to record token usage:', usageErr);
       }
+    }
+
+    // WP9 (M3): Evidence-Nachweis für jeden angemeldeten KI-Aufruf (fail-open + Alarm-Log).
+    try {
+      const evidenceRow = await buildAiCallEvidenceRow({
+        tenantId: body.tenant_id,
+        path: 'user',
+        userId,
+        feature: body.tool_key,
+        route: '/functions/v1/ai-invoke',
+        op: 'ai_invoke',
+        model: body.tool_key,
+        inputTokens: r.inputTokens,
+        outputTokens: r.outputTokens,
+        totalTokens,
+        verdict: 'allow',
+        requestId: r.runId,
+        latencyMs: r.durationMs,
+        input: body.input,
+      });
+      await recordAiCallEvidence(admin, evidenceRow);
+    } catch (evidenceErr) {
+      console.error(JSON.stringify({
+        scope: 'ai-invoke-evidence',
+        event: 'record_failed',
+        tenant_id: body.tenant_id,
+        feature: body.tool_key,
+        error: String((evidenceErr as Error)?.message ?? evidenceErr).slice(0, 200),
+      }));
     }
 
     return jsonResponse({

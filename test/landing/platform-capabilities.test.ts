@@ -23,6 +23,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PLATFORM_CAPABILITIES,
   LIVE_CAPABILITIES,
+  PREVIEW_CAPABILITIES,
   BUILDING_CAPABILITIES,
   CAPABILITIES_MEASURED_AT,
 } from '@/src/config/platform-capabilities';
@@ -179,6 +180,15 @@ describe('Kaufwege für Module ohne Laufzeit tragen einen Hinweis', () => {
   ];
 
   const botsCapability = PLATFORM_CAPABILITIES.find((c) => c.id === 'bots');
+
+  it('führt Bot-Laufzeit im Einklang mit dem Registry als Preview ohne Telefon-Claim', () => {
+    expect(botsCapability?.status).toBe('preview');
+    expect(botsCapability?.name).toBe('Bot-Laufzeit — Chat, WhatsApp, Telegram');
+    expect(botsCapability?.name).not.toMatch(/Telefon/i);
+    expect(PREVIEW_CAPABILITIES.some((c) => c.id === 'bots')).toBe(true);
+    const gdpr = PLATFORM_CAPABILITIES.find((c) => c.id === 'gdpr-audit');
+    expect(gdpr?.description).toContain('HTML/Druck-PDF');
+  });
 
   it.each(PURCHASE_PATHS)('%s weist den Zustand der Bot-Laufzeit aus', (rel) => {
     if (botsCapability?.status === 'live') return;

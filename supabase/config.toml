@@ -454,6 +454,12 @@ verify_jwt = false
 [functions.bot-voice-webhook]
 verify_jwt = false
 
+# bot-voice-enforcer: nur pg_cron (jede Minute) über dispatch_cron_function.
+# Auth: Bearer == CRON_BOT_VOICE_ENFORCER_KEY (fail-closed, 500 ohne Secret,
+# 401 bei falschem Bearer). Beendet überfällige Anrufe beim Anbieter.
+[functions.bot-voice-enforcer]
+verify_jwt = false
+
 # whatsapp-webhook wird von Metas Servern (WhatsApp Business Cloud API) ohne
 # JWT aufgerufen. Authentizität über X-Hub-Signature-256 (WHATSAPP_APP_SECRET)
 # + phone_number_id-Mapping in whatsapp_channels; Feature-Gate bots.whatsapp.

@@ -328,7 +328,7 @@ async function auditLog(ctx: OpContext): Promise<OpResult> {
     body: {
       log: log.error ? null : log.data,
       logAvailable: !log.error,
-      logError: log.error ? 'ai_os_action_log nicht lesbar — Migration 20261025120000 angewendet?' : null,
+      logError: log.error ? 'ai_os_action_log nicht lesbar — Migration 20261029092000 angewendet?' : null,
       activeOperators: operators.error ? null : operators.count,
     },
   };

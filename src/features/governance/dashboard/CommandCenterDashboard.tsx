@@ -1,9 +1,12 @@
 // Command Center entry for /app/dashboard.
-// Uses ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
+// Start view (CustomerStartPanel) first; the detail view below holds
+// HandoffOverview, OsControlStrip, BrowserRuntimePanel and
+// ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
 // the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useTenantDataVersion } from '../tenantDataEvents';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
@@ -32,7 +35,9 @@ import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
+import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
+import './sample-workspace.css';
 
 interface WorkspaceFacts {
   /** Mandant, zu dem die Fakten gehören — Schutz gegen den Wechsel-Frame. */
@@ -167,6 +172,9 @@ export function CommandCenterDashboard() {
 
   return (
     <>
+      {/* Agent zuerst: eine Frage, `@` wählt den Agenten; übergeben wird an
+          den Assistenten der Shell (rechts oben ausklappbar). */}
+      <AgentComposer />
       {/* Kunden-Startansicht: eine Botschaft, ein nächster Schritt, Fortschritt,
           drei Kernbereiche, Ergebnisse, weitere Module. Testphase/Zahlung
           stehen dort als eine Zeile im Fortschritt (statt TrialBanner). */}
@@ -179,6 +187,15 @@ export function CommandCenterDashboard() {
           trial={trial}
           data={tenantData}
         />
+      )}
+      {/* WP-4: Während der Einrichtung zeigt die Beispielansicht, wie das
+          Dashboard mit Daten aussieht — ohne Beispieldaten im Mandanten.
+          Erst bei einem nachweislich offenen Schritt, sonst blitzte der
+          Hinweis bei eingerichteten Workspaces während des Ladens auf. */}
+      {activeTenantId && startModel.steps.some((step) => step.state === 'open') && (
+        <p className="rs-sample-entry" data-testid="sample-entry">
+          So sieht es eingerichtet aus: <Link to="/app/beispiel">Dashboard mit erfundenen Beispieldaten ansehen</Link>
+        </p>
       )}
       {/* Detailansicht: das bestehende Cockpit bleibt vollständig erhalten,
           ist aber nachgelagert. Während der Einrichtung zugeklappt — sonst

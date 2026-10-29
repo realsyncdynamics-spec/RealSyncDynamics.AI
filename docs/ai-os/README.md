@@ -70,6 +70,6 @@ eine Anmeldung mit zweitem Faktor (AAL2, `/settings/security`).
 | Register, Gateway-Logik, Skills | Preview | Merge |
 | Routinen (6 Workflows) | Preview | Merge auf main (dann laufen Zeitpläne) |
 | Command Center `/admin/ai-os` | Preview | Merge + Deploy, `AI_OS_GITHUB_TOKEN` |
-| Prüfpfad `ai_os_action_log` | Preview | Migration `20261025120000` mit GO anwenden |
+| Prüfpfad `ai_os_action_log` | Preview | Migration `20261029092000` mit GO anwenden |
 | LLM-Ausführung ohne Sitzung (Claude Code Action in CI) | Geplant | Entscheidung zu #1706, API-Key, Kostenlimit |
 | Business-Kostenquellen (Software-Abos) | Geplant | strukturierte Quelle fehlt |

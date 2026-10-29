@@ -79,7 +79,9 @@ export function NextBestActionCard() {
 
     void (async () => {
       try {
-        await claimPendingAudit().catch(() => null);
+        // Der aktive Arbeitsbereich ist die ausdrückliche Auswahl, falls der
+        // Nutzer zu mehreren gehört; berechtigt wird in der RPC.
+        await claimPendingAudit(activeTenantId).catch(() => null);
         const sb = getSupabase();
         const { data, error: queryError } = await sb
           .from('gdpr_audits')

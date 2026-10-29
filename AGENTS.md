@@ -29,9 +29,19 @@ Importgraph, Tests, Registries und Vorschau-Routen prüfen. `npm run check:dead`
 liefert nur Kandidaten, keine automatische Löschfreigabe.
 
 ## Kontext RealSync Dynamics
-1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.
-2. **Kernmodule:** CreatorSeal (Schutz), UFO-Bridge (Legacy-Automatisierung), Licensing Hub (Rechte).
-3. **Compliance:** Strikte Einhaltung von EU AI Act und DSGVO.
+Positionierung seit 27.10.2026 (Owner-Entscheid, `docs/PRODUCT_PRIORITIZATION.md` → K4):
+Plattform für **KI-Mitarbeiter mit eingebauter Governance**.
+1. **Zielgruppe:** KMU mit Kundenkontakt, zuerst Handwerksbetriebe; danach weitere Branchen
+   (Praxen, Kanzleien, Gastronomie, Immobilien, Autohäuser) und Agenturen.
+2. **Kundennutzen:** erreichbare Anfragen, qualifizierte Leads, Terminanfragen, weniger Routinearbeit.
+3. **Produktebenen:** kostenlose Checks → Builder (Landingpage, Telefon-, WhatsApp-, Serviceassistent)
+   → Geschäftsbetrieb (Wissensbasis, Leads, Dialoge, Terminbuchung) → Governance
+   (Berechtigungen, Freigaben, Nachweise, Monitoring) als Infrastruktur.
+4. **Erster Kundenablauf:** AI Receptionist Handwerk — Anfrage entgegennehmen, Anliegen und
+   Kontaktdaten erfassen, Terminwunsch aufnehmen, an einen Menschen übergeben.
+5. **Compliance:** EU AI Act und DSGVO bleiben verbindlich; sie werden mitgeliefert, nicht als
+   Hero-Botschaft verkauft. Keine erfundenen Referenzen, Kennzahlen oder Zertifizierungen.
+6. **Weitere Module** (CreatorSeal, UFO-Bridge, Licensing Hub) sind nicht der aktuelle Fokus.
 4. **Terminologie:**
    - „Prüfpfad“ statt „Audit Trail“
    - „Herkunftsnachweis“ statt „Provenance“

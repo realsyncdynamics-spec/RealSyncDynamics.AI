@@ -89,10 +89,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 196;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 197;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-16T12:07Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-28T15:30Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -125,6 +125,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'automation-trigger-trial-webhook',
   'beta-enroll',
   'bot-chat',
+  'bot-voice-enforcer',
   'bot-voice-webhook',
   'browser-action-log',
   'browser-execute',

@@ -16,6 +16,7 @@ import {
   type MaturityLevel,
 } from '../../config/iso-control-templates';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface ControlStatus {
   controlId: string;
@@ -42,7 +43,7 @@ function Inner() {
   const [selectedClause, setSelectedClause] = useState<string | null>(null);
   const [minMaturity, setMinMaturity] = useState<MaturityLevel>(0);
   const [expandedControl, setExpandedControl] = useState<string | null>(null);
-  const [controlStatuses, setControlStatuses] = useState<Record<string, ControlStatus>>({});
+  const [controlStatuses] = useState<Record<string, ControlStatus>>({});
 
   const controls = framework === 'iso27001' ? ISO27001_CONTROLS : ISO42001_CONTROLS;
 
@@ -75,19 +76,6 @@ function Inner() {
         )
       : 0;
 
-  const handleMaturityChange = (controlId: string, level: MaturityLevel) => {
-    setControlStatuses((prev) => ({
-      ...prev,
-      [controlId]: {
-        ...prev[controlId],
-        controlId,
-        maturityLevel: level,
-        implementationDate: new Date().toISOString().split('T')[0],
-        evidenceCount: prev[controlId]?.evidenceCount ?? 0,
-      },
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4 justify-between">
@@ -104,6 +92,7 @@ function Inner() {
           <Download className="h-4 w-4" />
         </button>
       </header>
+      <PreviewDataNotice what="Die Reifegrad-Bewertung" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Framework Selector & Stats */}
@@ -239,10 +228,9 @@ function Inner() {
                           {Array.from({ length: 6 }).map((_, i) => (
                             <button
                               key={i}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMaturityChange(control.id, i as MaturityLevel);
-                              }}
+                              disabled
+                              aria-disabled="true"
+                              onClick={(e) => e.stopPropagation()}
                               className={`w-6 h-6 rounded-none text-[10px] font-bold transition-colors ${
                                 i <= maturity
                                   ? `${getMaturityColor(i as MaturityLevel)} text-white`

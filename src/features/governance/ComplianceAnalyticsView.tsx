@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface MetricSnapshot {
   date: string;
@@ -139,6 +140,7 @@ function Inner() {
           </select>
         </div>
       </header>
+      <PreviewDataNotice what="Compliance-Analytics" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Framework Selector */}

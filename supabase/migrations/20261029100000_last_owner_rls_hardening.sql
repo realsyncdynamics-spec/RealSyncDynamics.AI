@@ -15,18 +15,44 @@
 --   - API (service-role calls only for mutations)
 
 -- ──────────────────────────────────────────────────────────────
+-- Helper: ensure at least one owner remains when updating role
+-- ──────────────────────────────────────────────────────────────
+-- SECURITY DEFINER avoids RLS recursion on public.memberships.
+
+CREATE OR REPLACE FUNCTION public.can_set_membership_role(
+  p_tenant_id uuid,
+  p_user_id uuid,
+  p_new_role text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT
+    p_new_role = 'owner'
+    OR EXISTS (
+      SELECT 1 FROM public.memberships m
+      WHERE m.tenant_id = p_tenant_id
+        AND m.user_id <> p_user_id
+        AND m.role = 'owner'
+    );
+$$;
+
+COMMENT ON FUNCTION public.can_set_membership_role(uuid, uuid, text) IS
+  'True when the target membership stays owner or at least one other owner exists in the tenant.';
+
+REVOKE EXECUTE ON FUNCTION public.can_set_membership_role(uuid, uuid, text) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.can_set_membership_role(uuid, uuid, text) TO authenticated, service_role;
+
+-- ──────────────────────────────────────────────────────────────
 -- 1. Tenants: no delete for non-owners
 -- ──────────────────────────────────────────────────────────────
 
 DROP POLICY IF EXISTS "tenants owner-delete" ON public.tenants;
 CREATE POLICY "tenants owner-delete"
-ON public.tenants FOR DELETE
-USING (EXISTS (
-  SELECT 1 FROM public.memberships m
-  WHERE m.tenant_id = tenants.id
-    AND m.user_id = auth.uid()
-    AND m.role = 'owner'
-));
+ON public.tenants FOR DELETE TO authenticated
+USING (public.is_tenant_owner(id));
 
 -- ──────────────────────────────────────────────────────────────
 -- 2. Subscriptions: no insert/update/delete for non-owners
@@ -34,45 +60,21 @@ USING (EXISTS (
 
 DROP POLICY IF EXISTS "subscriptions owner-write" ON public.subscriptions;
 CREATE POLICY "subscriptions owner-write"
-ON public.subscriptions FOR INSERT, UPDATE, DELETE
-USING (EXISTS (
-  SELECT 1 FROM public.memberships m
-  WHERE m.tenant_id = subscriptions.tenant_id
-    AND m.user_id = auth.uid()
-    AND m.role = 'owner'
-))
-WITH CHECK (EXISTS (
-  SELECT 1 FROM public.memberships m
-  WHERE m.tenant_id = subscriptions.tenant_id
-    AND m.user_id = auth.uid()
-    AND m.role = 'owner'
-));
+ON public.subscriptions FOR ALL TO authenticated
+USING (public.is_tenant_owner(tenant_id))
+WITH CHECK (public.is_tenant_owner(tenant_id));
 
 -- ──────────────────────────────────────────────────────────────
 -- 3. Memberships: prevent downgrading last owner
 -- ──────────────────────────────────────────────────────────────
+-- AS RESTRICTIVE so this combines with AND alongside memberships_update
+-- (from 20260927120000_gate0_rls_hardening.sql) instead of OR-bypassing it.
 
 DROP POLICY IF EXISTS "memberships prevent-last-owner-downgrade" ON public.memberships;
 CREATE POLICY "memberships prevent-last-owner-downgrade"
-ON public.memberships FOR UPDATE
-WITH CHECK (
-  -- Allow changes if:
-  --   a) The target user is not the last owner, OR
-  --   b) The target role is still 'owner', OR
-  --   c) There are multiple owners in the tenant
-  (
-    -- Count owners in this tenant
-    (SELECT COUNT(*) FROM public.memberships
-     WHERE tenant_id = NEW.tenant_id AND role = 'owner') > 1
-  )
-  OR (NEW.role = 'owner')
-  OR (OLD.user_id != (
-    -- Check if target is the only owner
-    SELECT user_id FROM public.memberships
-    WHERE tenant_id = NEW.tenant_id AND role = 'owner'
-    LIMIT 1
-  ))
-);
+ON public.memberships AS RESTRICTIVE FOR UPDATE TO authenticated
+USING (true)
+WITH CHECK (public.can_set_membership_role(tenant_id, user_id, role));
 
 -- ──────────────────────────────────────────────────────────────
 -- 4. Service-role overrides (for admin + cron jobs)

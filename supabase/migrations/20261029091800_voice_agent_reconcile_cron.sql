@@ -1,7 +1,7 @@
 -- Reconcile-Lauf für Voice-Agenten einplanen (pg_cron, alle 15 Minuten).
 --
 -- Eigene Migration, damit der Zeitplan getrennt von Tabelle und Function
--- (20261026151700) freigegeben werden kann. Der Lauf holt ab:
+-- (20261029091700) freigegeben werden kann. Der Lauf holt ab:
 --   * pending / failed (< MAX_PROVISION_ATTEMPTS) / hängende provisioning —
 --     z. B. wenn der Anstoß aus stripe-webhook verloren ging
 --   * abgeschlossene Zeilen (active / suspended), rotierend nach

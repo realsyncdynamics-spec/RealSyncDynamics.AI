@@ -3025,3 +3025,40 @@ export function pricingTaxNote(mode: PricingTaxMode): string {
  * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
  */
 export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);
+
+// ── Netto / USt / Brutto (UX-003) ─────────────────────────────────────────
+
+/** Gesetzlicher Regelsteuersatz (DE) für die Brutto-Anzeige. */
+export const VAT_RATE_DE = 0.19;
+
+/** Brutto aus Netto, kaufmännisch auf Cent gerundet (Integer-Arithmetik, kein Float-Drift). */
+export function grossFromNetEur(netEur: number, vatRate: number = VAT_RATE_DE): number {
+  const netCents = Math.round(netEur * 100);
+  const vatBasisPoints = Math.round(vatRate * 10000);
+  return Math.round((netCents * (10000 + vatBasisPoints)) / 10000) / 100;
+}
+
+/** Betrag mit Cent (de-DE), z. B. „94,01 €". */
+export function formatPriceEurCents(value: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+/**
+ * Netto/USt/Brutto-Zeile für Plan-Karten, z. B.
+ * „79 € netto zzgl. 19 % USt (94,01 € brutto)". Im Modus `EXEMPT`
+ * (§ 19 UStG) wird nur der Betrag ohne USt-Ausweis geliefert.
+ */
+export function formatNetVatGrossEur(
+  netEur: number,
+  mode: PricingTaxMode = PRICING_TAX_MODE,
+  vatRate: number = VAT_RATE_DE,
+): string {
+  if (mode === 'EXEMPT') return formatPriceEur(netEur);
+  const pct = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(vatRate * 100);
+  return `${formatPriceEur(netEur)} netto zzgl. ${pct} % USt (${formatPriceEurCents(grossFromNetEur(netEur, vatRate))} brutto)`;
+}

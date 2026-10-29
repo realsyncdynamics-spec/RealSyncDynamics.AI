@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface CustomFramework {
   id: string;
@@ -38,7 +39,7 @@ function Inner() {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedFramework, setSelectedFramework] = useState<CustomFramework | null>(null);
 
-  const [frameworks, setFrameworks] = useState<CustomFramework[]>([
+  const [frameworks] = useState<CustomFramework[]>([
     {
       id: 'cf-001',
       tenantId: activeTenantId || 'demo',
@@ -76,24 +77,6 @@ function Inner() {
     setView('detail');
   };
 
-  const handleDeleteFramework = (frameworkId: string) => {
-    if (confirm('Delete this framework? This cannot be undone.')) {
-      setFrameworks(frameworks.filter((f) => f.id !== frameworkId));
-    }
-  };
-
-  const handleDuplicateFramework = (framework: CustomFramework) => {
-    const newFramework: CustomFramework = {
-      ...framework,
-      id: `cf-${Date.now()}`,
-      name: `${framework.name} (Copy)`,
-      version: '1.0.0',
-      lastUpdated: new Date().toISOString(),
-      createdBy: 'Current User',
-    };
-    setFrameworks([...frameworks, newFramework]);
-  };
-
   const getScoreColor = (score: number): string => {
     if (score >= 80) return 'text-emerald-400';
     if (score >= 60) return 'text-amber-400';
@@ -123,6 +106,7 @@ function Inner() {
             </div>
           </div>
         </header>
+      <PreviewDataNotice what="Eigene Frameworks" />
 
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           {/* Header Stats */}
@@ -231,24 +215,26 @@ function Inner() {
               <Edit2 className="h-4 w-4" />
               Edit Framework
             </Link>
-            <button className="px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2">
+            <button disabled title={UNAVAILABLE_TITLE} className="disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2">
               <Share2 className="h-4 w-4" />
               Share
             </button>
             <button
-              onClick={() => handleDuplicateFramework(selectedFramework)}
-              className="px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2"
+              disabled
+              title={UNAVAILABLE_TITLE}
+              className="disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2"
             >
               <Copy className="h-4 w-4" />
               Duplicate
             </button>
-            <button className="px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2">
+            <button disabled title={UNAVAILABLE_TITLE} className="disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 bg-obsidian-800 border border-titanium-700 hover:border-titanium-600 text-titanium-200 font-semibold rounded-none transition-colors flex items-center gap-2">
               <Download className="h-4 w-4" />
               Export
             </button>
             <button
-              onClick={() => handleDeleteFramework(selectedFramework.id)}
-              className="ml-auto px-4 py-2 border border-red-700/50 hover:border-red-600 text-red-400 font-semibold rounded-none transition-colors flex items-center gap-2"
+              disabled
+              title={UNAVAILABLE_TITLE}
+              className="disabled:opacity-50 disabled:cursor-not-allowed ml-auto px-4 py-2 border border-red-700/50 hover:border-red-600 text-red-400 font-semibold rounded-none transition-colors flex items-center gap-2"
             >
               <Trash2 className="h-4 w-4" />
               Delete
@@ -279,6 +265,7 @@ function Inner() {
           New Framework
         </Link>
       </header>
+      <PreviewDataNotice what="Eigene Frameworks" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {frameworks.length === 0 ? (
@@ -365,15 +352,17 @@ function Inner() {
                         View Details
                       </button>
                       <button
-                        onClick={() => handleDuplicateFramework(framework)}
-                        className="px-3 py-2 border border-titanium-700 hover:border-titanium-600 text-titanium-300 text-xs font-semibold rounded-none transition-colors flex items-center gap-2"
+                        disabled
+              title={UNAVAILABLE_TITLE}
+                        className="disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 border border-titanium-700 hover:border-titanium-600 text-titanium-300 text-xs font-semibold rounded-none transition-colors flex items-center gap-2"
                       >
                         <Copy className="h-3 w-3" />
                         Duplicate
                       </button>
                       <button
-                        onClick={() => handleDeleteFramework(framework.id)}
-                        className="ml-auto px-3 py-2 border border-red-700/50 hover:border-red-600 text-red-400 text-xs font-semibold rounded-none transition-colors flex items-center gap-2"
+                        disabled
+              title={UNAVAILABLE_TITLE}
+                        className="disabled:opacity-50 disabled:cursor-not-allowed ml-auto px-3 py-2 border border-red-700/50 hover:border-red-600 text-red-400 text-xs font-semibold rounded-none transition-colors flex items-center gap-2"
                       >
                         <Trash2 className="h-3 w-3" />
                         Delete

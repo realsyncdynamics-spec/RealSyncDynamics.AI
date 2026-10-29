@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface RoadmapItem {
   id: string;
@@ -216,6 +217,7 @@ function Inner() {
           <Download className="h-4 w-4" />
         </button>
       </header>
+      <PreviewDataNotice what="Die Roadmap" realLink={{ to: '/app/remediation', label: 'Echte Maßnahmenpläne öffnen' }} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Stats Overview */}

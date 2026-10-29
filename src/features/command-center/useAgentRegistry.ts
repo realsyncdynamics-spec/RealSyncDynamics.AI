@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
-import { fromRow, GROK_SOLL_AGENTS, type AgentRegistryRow, type RegistryAgent } from './agentRegistry';
+import { applySoll, fromRow, GROK_SOLL_AGENTS, runtimeStaticAgents, type AgentRegistryRow, type RegistryAgent } from './agentRegistry';
 
 export interface AgentRegistryState {
   agents: RegistryAgent[];
@@ -9,14 +9,18 @@ export interface AgentRegistryState {
   sourceError: string | null;
 }
 
+function baseAgents(): RegistryAgent[] {
+  return [...GROK_SOLL_AGENTS, ...runtimeStaticAgents()].map(applySoll);
+}
+
 export function useAgentRegistry(): AgentRegistryState {
-  const [state, setState] = useState<AgentRegistryState>({ agents: [...GROK_SOLL_AGENTS], loading: true, sourceError: null });
+  const [state, setState] = useState<AgentRegistryState>({ agents: baseAgents(), loading: true, sourceError: null });
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       if (!isSupabaseConfigured()) {
-        setState({ agents: [...GROK_SOLL_AGENTS], loading: false, sourceError: 'Supabase nicht konfiguriert' });
+        setState({ agents: baseAgents(), loading: false, sourceError: 'Supabase nicht konfiguriert' });
         return;
       }
       const { data, error } = await getSupabase()
@@ -25,11 +29,11 @@ export function useAgentRegistry(): AgentRegistryState {
         .order('name');
       if (cancelled) return;
       if (error) {
-        setState({ agents: [...GROK_SOLL_AGENTS], loading: false, sourceError: `Agentenregister nicht lesbar: ${error.message}` });
+        setState({ agents: baseAgents(), loading: false, sourceError: `Agentenregister nicht lesbar: ${error.message}` });
         return;
       }
       const dbAgents = ((data ?? []) as AgentRegistryRow[]).map(fromRow);
-      setState({ agents: [...GROK_SOLL_AGENTS, ...dbAgents], loading: false, sourceError: null });
+      setState({ agents: [...baseAgents(), ...dbAgents.map(applySoll)], loading: false, sourceError: null });
     }
     void load();
     return () => { cancelled = true; };

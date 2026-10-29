@@ -99,6 +99,26 @@ d('governance_evidence ist append-only', () => {
     expect(after.rows[0].asset_id).toBe(assetId);
   });
 
+  it('mit erklärter Aufbewahrungslöschung lassen sich Asset und Event hart löschen', async () => {
+    const { tenantId } = await createTenantWithMember(ctx!);
+    const { rows } = await ctx!.client.query<{ id: string }>(
+      `INSERT INTO public.governance_assets (tenant_id, asset_type, name)
+       VALUES ($1, 'ai_system', 'Support-Assistent') RETURNING id`, [tenantId]);
+    const assetId = rows[0]!.id;
+    const id = await append(ctx!, tenantId, { asset_id: assetId });
+    const before = await ctx!.client.query(`SELECT to_jsonb(e) - 'asset_id' AS j FROM public.governance_evidence e WHERE id = $1`, [id]);
+
+    await ctx!.client.query(`SELECT set_config('app.evidence_retention_purge', 'on', true)`);
+    expect(await pgCode(ctx!, `DELETE FROM public.governance_assets WHERE id = $1`, [assetId])).toBeNull();
+    // Nur asset_id wurde NULL, Hash/Titel/Metadaten unverändert.
+    const after = await ctx!.client.query(`SELECT asset_id, to_jsonb(e) - 'asset_id' AS j FROM public.governance_evidence e WHERE id = $1`, [id]);
+    expect(after.rows[0].asset_id).toBeNull();
+    expect(after.rows[0].j).toEqual(before.rows[0].j);
+    // Auch mit Schalter bleibt jedes andere UPDATE gesperrt.
+    expect(await pgCode(ctx!, `UPDATE public.governance_evidence SET asset_id = NULL, title = 'x' WHERE id = $1`, [id])).toBe('42501');
+    await ctx!.client.query(`SELECT set_config('app.evidence_retention_purge', 'off', true)`);
+  });
+
   it('anon und authenticated haben kein UPDATE- oder DELETE-Recht', async () => {
     const { rows } = await ctx!.client.query<{ role: string; upd: boolean; del: boolean }>(`
       SELECT r AS role,

@@ -20,7 +20,10 @@
 -- governance_events-Eintrags, auf den Evidence zeigt, schlägt damit fehl.
 -- Geprüft am 2026-10-16: Kein Code im Repository löscht diese Tabellen hart
 -- (Assets werden archiviert), keine hat einen Fremdschlüssel auf tenants.
--- Wer sie dennoch löschen muss, setzt den Schalter oben bewusst.
+-- Wer sie dennoch löschen muss, setzt den Schalter oben bewusst
+-- (SET LOCAL app.evidence_retention_purge = 'on'): Dann löscht die Kaskade
+-- von governance_events die zugehörige Evidence, und ON DELETE SET NULL von
+-- governance_assets darf genau asset_id auf NULL setzen — sonst nichts.
 --
 -- Grenze: Gegen jemanden, der service_role hält und den Schalter absichtlich
 -- setzt, schützt das NICHT. Es macht Manipulation nicht unmöglich, sondern
@@ -35,6 +38,15 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+    -- Einzige Ausnahme: ON DELETE SET NULL eines governance_assets-Eintrags
+    -- bei erklärter Aufbewahrungslöschung. Erlaubt ist dann ausschließlich
+    -- asset_id → NULL; jede andere Spalte muss unverändert bleiben.
+    IF current_setting('app.evidence_retention_purge', true) = 'on'
+       AND OLD.asset_id IS NOT NULL
+       AND NEW.asset_id IS NULL
+       AND (to_jsonb(NEW) - 'asset_id') = (to_jsonb(OLD) - 'asset_id') THEN
+        RETURN NEW;
+    END IF;
     RAISE EXCEPTION
         'governance_evidence is append-only — UPDATE rejected'
         USING ERRCODE = '42501',
@@ -43,8 +55,8 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.governance_evidence_block_update() IS
-    'Append-only-Wächter für governance_evidence. UPDATE wird immer abgewiesen (42501), '
-    'auch über ON DELETE SET NULL eines referenzierten governance_assets-Eintrags.';
+    'Append-only-Wächter für governance_evidence. UPDATE wird abgewiesen (42501); einzige Ausnahme: '
+    'asset_id -> NULL (ON DELETE SET NULL) bei app.evidence_retention_purge = on.';
 
 CREATE OR REPLACE FUNCTION public.governance_evidence_block_delete()
 RETURNS TRIGGER

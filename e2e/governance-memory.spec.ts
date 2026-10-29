@@ -33,7 +33,7 @@ test.describe('Memory Governance — Route & Zugriffsschutz', () => {
     // Bewusst eng gefasst: Nur Text, den ausschließlich der AuthGate rendert.
     // Ein breiterer Locator (z. B. /Login|E-Mail/) trifft auch das
     // Cookie-Banner und bliebe grün, selbst wenn die Route ungeschützt wäre.
-    const authGate = page.getByRole('button', { name: /Magic Link senden/i })
+    const authGate = page.getByRole('button', { name: /Magic-Link senden/i })
       .or(page.getByText('Supabase nicht konfiguriert'));
     await expect(authGate.first()).toBeVisible({ timeout: 15_000 });
 

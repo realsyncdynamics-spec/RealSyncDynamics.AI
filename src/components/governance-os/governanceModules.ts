@@ -254,6 +254,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Governance-Agents und ihre Läufe',
   },
   {
+    // M1 Agent Command Center — Agentenregister; Decision Inbox folgt (M2–M4).
+    id: 'agent-command-center',
+    label: 'Agent Command Center',
+    icon: 'Bot',
+    route: '/app/command-center',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Alle Agenten, Status nur aus belegten Quellen',
+  },
+  {
     // Geräte-lokales Setup: Verbindung, Rolle, Governance-Test, Profil. Kein Server-Speicher.
     id: 'local-ai',
     label: 'Local AI',

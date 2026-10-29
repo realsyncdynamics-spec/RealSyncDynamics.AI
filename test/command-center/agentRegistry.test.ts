@@ -59,3 +59,26 @@ describe('filterAgents', () => {
     expect(filterAgents(agents, { ...EMPTY_FILTER, onlyOpenDecisions: true })).toHaveLength(0);
   });
 });
+
+import { applySoll, runtimeStaticAgents, UNSET } from '../../src/features/command-center/agentRegistry';
+
+describe('runtime_static (apps/agent-runtime)', () => {
+  it('liefert alle Code-Agenten, Status immer unknown', () => {
+    const r = runtimeStaticAgents();
+    expect(r.length).toBeGreaterThan(0);
+    for (const a of r) {
+      expect(a.source).toBe('runtime_static');
+      expect(a.status).toBe('unknown');
+    }
+  });
+  it('applySoll setzt Projekt, aber keine erfundene Priorität', () => {
+    const a = applySoll(runtimeStaticAgents()[0]!);
+    expect(a.project).toBe('Governance Runtime');
+    expect(a.priority).toBeNull();
+    expect(a.status).toBe('unknown');
+  });
+  it('UNSET-Filter trifft Agenten ohne Projekt', () => {
+    const dbAgent = fromRow(row({}));
+    expect(filterAgents([dbAgent, applySoll(runtimeStaticAgents()[0]!)], { ...EMPTY_FILTER, project: UNSET })).toEqual([dbAgent]);
+  });
+});

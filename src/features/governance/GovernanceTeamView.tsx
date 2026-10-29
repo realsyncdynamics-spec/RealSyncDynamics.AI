@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface TeamMember {
   id: string;
@@ -168,6 +169,7 @@ function Inner() {
           Invite Member
         </button>
       </header>
+      <PreviewDataNotice what="Die Team-Übersicht" realLink={{ to: '/app/team', label: 'Echte Team-Verwaltung öffnen' }} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* View Tabs */}

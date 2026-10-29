@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { PreviewDataNotice, UNAVAILABLE_TITLE } from './components/PreviewDataNotice';
 
 interface AuditLogEntry {
   id: string;
@@ -175,6 +176,7 @@ function Inner() {
           Export
         </button>
       </header>
+      <PreviewDataNotice what="Dieser Audit-Trail" realLink={{ to: '/app/audit', label: 'Echten Audit-Export öffnen' }} />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Search and Filters */}

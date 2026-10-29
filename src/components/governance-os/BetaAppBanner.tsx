@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { BETA } from '../../config/beta';
 import { useBetaEnrollment, type BetaEnrollState } from '../../features/billing/useBetaEnrollment';
+import { BetaFeedback } from './BetaFeedback';
 
 const KEY = 'rsd-beta-banner-dismissed';
 
 /**
  * Beta-Hinweis im Dashboard (alle /app/*-Flächen). Zeigt Testphase, Ende
- * und den Feedback-Weg. Ausblendbar pro Browser (nur Komfort, kein State
- * mit Bedeutung). Verschwindet mit `VITE_BETA_PHASE=off` überall.
+ * und das Feedback-Formular (`BetaFeedback`, WP-4). Ausblendbar pro Browser
+ * (nur Komfort, kein State mit Bedeutung). Verschwindet mit `VITE_BETA_PHASE=off` überall.
  *
  * Löst außerdem die serverseitige Beta-Anmeldung aus (`useBetaEnrollment`,
  * WP-3) und meldet das Ergebnis — auch wenn der Hinweis ausgeblendet ist.
@@ -53,9 +54,7 @@ export function BetaAppBanner() {
         {notice ??
           `Kostenlose Testphase bis ${BETA.endsLabel}. Einige Module sind als BETA markiert und können sich noch ändern.`}
       </span>
-      <Link to="/kontakt?topic=beta-feedback" className="underline" style={{ color: '#d6ae52' }}>
-        Feedback geben
-      </Link>
+      <BetaFeedback toggleClassName="cursor-pointer border-0 bg-transparent p-0 underline text-[#d6ae52]" />
       <button type="button" onClick={dismiss} className="ml-auto opacity-70 hover:opacity-100" aria-label="Beta-Hinweis ausblenden">
         ✕
       </button>

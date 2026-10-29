@@ -31,6 +31,7 @@ on:
   pull_request:
     paths:
       - 'scripts/check-cron-health.mjs'
+      - 'scripts/cron-befund.mjs'
       - '.github/workflows/cron-health.yml'
 
 jobs:

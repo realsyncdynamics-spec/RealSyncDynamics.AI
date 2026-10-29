@@ -51,6 +51,7 @@ export interface SEOConfig {
 }
 
 import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
+import { BETREIBER_FAQ } from '../content/aiActBetreiberpflichten';
 
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
@@ -250,6 +251,18 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
   };
 }
 
+// Fragen und Antworten kommen aus derselben Quelle, die /ai-act-betreiberpflichten
+// als Akkordeon rendert — Schema und sichtbarer Text bleiben so deckungsgleich.
+const AI_ACT_BETREIBER_FAQ_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: BETREIBER_FAQ.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
+
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
 const LANDING_V2_JSONLD: Record<string, unknown>[] = [
@@ -274,20 +287,36 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
+  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
+  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
-    title: 'AI Compliance Operations OS für Europa – EU AI Act & DSGVO | RealSync Dynamics AI',
+    title: 'DSGVO & EU AI Act für KMU – kostenloser Check | RealSync Dynamics AI',
     description:
-      'Erfassen, einstufen, steuern, nachweisen: KI-Inventar, Risikoklassen nach EU AI Act, Richtlinien zur Laufzeit und prüffähige Evidenz – gehostet in Frankfurt. Kostenloser Audit.',
+      'DSGVO und EU AI Act für KMU: kostenloser Website-Check, KI-Inventar und prüffähige Nachweise – verständlich erklärt, gehostet in Frankfurt.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'KI-Compliance als Betriebsaufgabe – EU AI Act & DSGVO',
+    ogTitle: 'DSGVO & EU AI Act – machbar für Ihr Unternehmen',
     ogDescription:
-      'EU AI Act, DSGVO und ISO/IEC 42001 als Betriebsaufgabe: Inventar, Risikoklassen, Runtime-Policies und prüffähige Evidenz aus einer Plattform.',
+      'Für KMU: Website- und KI-Risiken erkennen, konkrete Maßnahmen umsetzen und prüffähig nachweisen – ohne eigene Compliance-Abteilung, betrieben in der EU.',
     jsonLd: LANDING_V2_JSONLD,
   },
   '/design/landing-v2': {
     title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
     description:
       'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/landing-v7': {
+    title: 'RealSync Dynamics AI – Landing v7 (Vorschau)',
+    description:
+      'Design-Vorschau „AI Compliance Operations OS for Europe“ (Titan/Nacht). Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/landing-v6': {
+    title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
+    description:
+      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
@@ -460,6 +489,46 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       breadcrumbs([
         { name: 'Home', url: '/' },
         { name: 'EU AI Act FAQ', url: '/ai-act-faq' },
+      ]),
+    ],
+  },
+  '/ai-act-betreiberpflichten': {
+    title: 'AI Act Betreiberpflichten (Art. 26) | RealSync Dynamics AI',
+    description:
+      'Alle Betreiberpflichten nach Art. 26 KI-VO als Checkliste: neue Fristen nach dem Digital Omnibus, Art.-25-Rollencheck und kostenloser Selbstcheck.',
+    canonical: `${SITE_URL}/ai-act-betreiberpflichten`,
+    ogType: 'article',
+    ogTitle: 'Art. 26 AI Act: Die zwölf Pflichten für Betreiber von Hochrisiko-KI',
+    jsonLd: [
+      AI_ACT_BETREIBER_FAQ_JSONLD,
+      breadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'AI Act Betreiberpflichten', url: '/ai-act-betreiberpflichten' },
+      ]),
+    ],
+  },
+  '/ai-act-betreiberpflichten/selbstcheck': {
+    title: 'Art.-26-Selbstcheck für KI-Betreiber | RealSync Dynamics AI',
+    description:
+      '12 Fragen zu den Betreiberpflichten nach Art. 26 AI Act, Lückenbericht mit nächsten Schritten in fünf Minuten. Läuft im Browser, ohne Datenübertragung.',
+    canonical: `${SITE_URL}/ai-act-betreiberpflichten/selbstcheck`,
+    ogTitle: 'Art.-26-Selbstcheck: Wo stehen Sie bei den Betreiberpflichten?',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Art.-26-Selbstcheck',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        url: `${SITE_URL}/ai-act-betreiberpflichten/selbstcheck`,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+        description:
+          'Selbstcheck zu den Betreiberpflichten nach Art. 26 und Art. 25 der KI-Verordnung mit Lückenbericht. Läuft vollständig im Browser.',
+      },
+      breadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'AI Act Betreiberpflichten', url: '/ai-act-betreiberpflichten' },
+        { name: 'Selbstcheck', url: '/ai-act-betreiberpflichten/selbstcheck' },
       ]),
     ],
   },

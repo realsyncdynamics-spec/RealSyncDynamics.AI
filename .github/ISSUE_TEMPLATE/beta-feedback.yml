@@ -1,0 +1,51 @@
+name: Beta Feedback
+description: Intern – Triage aus beta_feedback-Tabelle
+title: "[Beta Feedback] "
+labels: [beta, beta-feedback]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dieses Issue wird von der Plattform aus `beta_feedback` erstellt.
+        Nur intern für Team-Triage.
+
+  - type: textarea
+    id: tenant
+    attributes:
+      label: Tenant ID
+      description: Der Mandant, der das Feedback hinterlassen hat.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user
+    attributes:
+      label: Nutzer ID / Email
+      description: Wer hat das Feedback hinterlassen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: route
+    attributes:
+      label: Route
+      description: Wo war der Nutzer, als er das Feedback hinterlassen hat?
+    validations:
+      required: true
+
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback-Text
+      description: Der Feedback-Text aus der Datenbank.
+    validations:
+      required: true
+
+  - type: textarea
+    id: timestamp
+    attributes:
+      label: Erstellt am
+      description: Zeitstempel aus der Datenbank.
+    validations:
+      required: true

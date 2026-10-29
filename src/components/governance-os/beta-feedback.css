@@ -1,0 +1,78 @@
+/* Beta-Feedback (WP-4). Farben nur aus den rs-Tokens: Panel funktioniert
+   im Hell- und Dunkelmodus, in der Startansicht wie im Beta-Hinweis. */
+
+.rs-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
+}
+/* Offenes Formular nimmt im Beta-Hinweis (flex-wrap) die ganze Zeile. */
+.rs-feedback:has(.rs-feedback__panel) { flex-basis: 100%; }
+
+.rs-feedback__toggle,
+.rs-feedback__cancel {
+  font-size: 13px;
+  color: var(--color-rs-fg-1);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.rs-feedback__toggle:hover,
+.rs-feedback__cancel:hover { color: var(--color-rs-fg-0); }
+
+.rs-feedback__status { margin: 0; font-size: 13px; color: var(--color-rs-success); }
+
+.rs-feedback__panel {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 36rem;
+  padding: 12px;
+  border: 1px solid var(--color-rs-border-strong);
+  border-radius: 8px;
+  background: var(--color-rs-bg-1);
+  color: var(--color-rs-fg-0);
+}
+.rs-feedback__label { font-size: 14px; font-weight: 600; }
+.rs-feedback__field {
+  width: 100%;
+  min-height: 6rem;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-rs-fg-0);
+  background: var(--color-rs-bg-0);
+  border: 1px solid var(--color-rs-border-strong);
+  border-radius: 6px;
+  resize: vertical;
+}
+.rs-feedback__hint { margin: 0; font-size: 12px; color: var(--color-rs-fg-2); }
+.rs-feedback__error { margin: 0; font-size: 13px; color: var(--color-rs-danger); }
+.rs-feedback__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.rs-feedback__send {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-rs-primary);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.rs-feedback__send:hover { background: var(--color-rs-primary-hover); }
+.rs-feedback__send:disabled { opacity: 0.6; cursor: progress; }
+
+.rs-feedback__toggle:focus-visible,
+.rs-feedback__cancel:focus-visible,
+.rs-feedback__send:focus-visible,
+.rs-feedback__field:focus-visible {
+  outline: 2px solid var(--color-rs-cyan);
+  outline-offset: 2px;
+}

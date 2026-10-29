@@ -1,58 +1,48 @@
 # AGENTS.md — Globale Agentenregeln (Ebene 1)
 
-Gilt für jeden Agenten in diesem Repo (Claude Code, Codex, Copilot, Subagenten).
-Claude Code lädt diese Datei über den Import in `CLAUDE.md`. Profile und Policies
-dürfen diese Regeln verschärfen, nie lockern.
+Gilt für jeden Agenten (Claude Code, Codex, Copilot, Subagenten); `CLAUDE.md` importiert sie.
+Profile und Policies dürfen verschärfen, nie lockern.
 
-**Produkt:** EU-souveräne AI-Governance-Runtime (DSGVO, EU AI Act). Governance-Schicht
-zwischen Mensch, Firma, Agenten und Daten. Kein Chatbot.
+**Produkt (K4, 27.10.2026, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für **KI-Mitarbeiter
+mit eingebauter Governance** für KMU mit Kundenkontakt, zuerst Handwerk. Erster Ablauf:
+AI Receptionist (Anfrage, Kontakt, Terminwunsch, Übergabe an Menschen). DSGVO/EU AI Act,
+Freigaben und Nachweise sind Infrastruktur, nicht Hero-Botschaft.
 
 ## Regelhierarchie
 
-1. Diese Datei
-2. `CLAUDE.md` — Claude-Arbeitskontext (Stack, Befehle, Kontextregeln)
-3. Genau ein Aufgabenprofil aus `docs/claude/profiles/` (Tabelle unten)
-4. `.github/PR_TRIAGE_POLICY.md` — PRs, Freigaben, Merge, Rebase, Deploy
-5. Nachweise nach `.github/pull_request_template.md`
+1. Diese Datei · 2. `CLAUDE.md` · 3. genau ein Profil aus `docs/claude/CONTEXT_POLICY.md`
+→ „Aufgabenprofile“ (website, voice-runtime, security, database, devops, qa) ·
+4. `.github/PR_TRIAGE_POLICY.md` · 5. Nachweise nach `.github/pull_request_template.md`
 
-Bei Widerspruch gehen Sicherheitsregeln und ausdrückliche Einzel-Freigaben vor.
-Technische Wahrheit ist der Code, kein Dokument (Startseite = Element von
-`<Route path="/">` in `src/App.tsx`). Widerspricht ein Dokument dem Code: melden, nicht befolgen.
-
-| Aufgabe | Profil |
-|---|---|
-| Landing, SEO, UI, Performance | `docs/claude/profiles/website.md` |
-| Voice-Sessions, Tool-Gateway, Provider | `docs/claude/profiles/voice-runtime.md` |
-| Auth, Policy, Tenant-Isolation, Tool-Rechte | `docs/claude/profiles/security.md` |
-| Supabase, RLS, Migrationen, Edge Functions | `docs/claude/profiles/database.md` |
-| CI, Build, Deploy, Monitoring | `docs/claude/profiles/devops.md` |
-| Tests, Regressionen, E2E | `docs/claude/profiles/qa.md` |
+Sicherheitsregeln und Einzel-Freigaben gehen vor. Technische Wahrheit ist der Code
+(Startseite = `<Route path="/">` in `src/App.tsx`). Widerspruch Doku/Code: melden, nicht befolgen.
 
 ## Sicherheit — ausnahmslos
 
-- Keine Secrets in Code, Logs, PR-Texten oder Browser-Bundle (`VITE_*` ist öffentlich).
-- Service-Role und Admin-Calls nur serverseitig (Edge Functions, Runtime), nie im Browser.
-- Autorisierung serverseitig. Mandant, Rechte, Kill-Switch und Einwilligung nie aus dem Request-Body übernehmen.
-- Tenant-Isolation bei jedem Datenzugriff (RLS oder serverseitige Prüfung).
-- Fail-closed bei Fehlern in Auth, Policy, Kill-Switch oder Einwilligung.
-- Keine Datenweitergabe an Dritte oder externe Dienste ohne Auftrag.
-- Keine Umgehung von Zugriffsrechten, Permission-Sperren oder Hooks, auch nicht über Shell, `npx`, Scratchpad oder globale Pakete.
-- Keine destruktiven Migrationen. Jede Migration nur mit Einzel-Freigabe.
+- Keine Secrets in Code, Logs, PRs oder Bundle (`VITE_*` ist öffentlich).
+- Service-Role/Admin-Calls nur serverseitig. Autorisierung serverseitig; Mandant, Rechte,
+  Kill-Switch, Einwilligung nie aus dem Request-Body.
+- Tenant-Isolation bei jedem Zugriff. Fail-closed bei Auth-, Policy- oder Kill-Switch-Fehlern.
+- Keine Umgehung von Rechten oder Hooks (auch nicht per Shell/`npx`). Keine destruktiven Migrationen.
+
+## Claims und Preise
+
+Keine erfundenen Kennzahlen, SLAs, Referenzen; Status aus `src/product/implementation-status.ts`.
+Öffentliche CTAs nie Pilot/Demo/Call/Sales/Beratung/Termin. Preise nur aus `shared/pricing.ts`.
+
+## Design und Landing
+
+Hard-Edge-UI (Obsidian/Titanium/Security-Blue, 90°-Kanten, Monospace für Metadaten); Status-
+farben getrennt von Brand-Akzenten. Landing gezielt verbessern, Funktionen erhalten; alte
+Landing-Dateien sind kein Löschbeleg (`npm run check:dead` liefert nur Kandidaten).
 
 ## Freigaben
 
-- Ohne Einzel-Freigabe nie: Merge mit Produktionswirkung, Produktionsdeploy, Rebase, Force-Push, PR schließen, Migration, Merge eines Security-PRs, Preise/Steuer-/Rechtstexte/Landing-Claims, Änderung an Deploy-Workflows, Berechtigungen oder Sicherheitskontrollen.
-- Merge-Freigabe ist keine Deploy-Freigabe. Ein Push auf `main` kann heute automatisch deployen (`docs/claude/DEPLOYMENT_GOVERNANCE_PLAN.md`).
-- Eine Freigabe gilt nur für die genannte Aktion und den genannten PR.
-- Agenten setzen kein `automerge`-Label. Ein Label ersetzt keine Freigabe.
-
-**Autonom** (im eigenen Arbeitsbranch und Profil): lesen, analysieren, nichtdestruktive lokale Prüfungen, Diff-Reviews, Befunde dokumentieren, Commits und Pushes auf den eigenen Branch, Draft-PRs unter Beachtung des WIP-Stopps.
+Ohne Einzel-Freigabe nie: Merge mit Produktionswirkung, Deploy, Rebase, Force-Push, PR schließen,
+Migration, Security-Merge, Preise/Recht/Claims, Workflows, Berechtigungen. Merge ≠ Deploy.
+Kein `automerge`-Label. Autonom: lesen, prüfen, eigener Branch, Draft-PRs.
 
 ## Nachweise
 
-- Nur ausgeführte Prüfungen melden: Befehl, Umgebung, Ergebnis.
-- Gefilterter Typecheck, Stubs, abweichende oder fehlende Abhängigkeiten → `TEILWEISE`, zählt nicht als grün. Maßgeblich ist die CI auf dem aktuellen Head.
-- Eine Cloudflare-Preview belegt nur den Frontend-Build, nicht Runtime, Edge Functions oder DB.
-- Abschluss: Branch, voller Commit-SHA, Dateien, Prüfungen, Security-Befunde, offene Risiken, nötige Entscheidungen. Kurz, keine Wiederholung früherer Berichte.
-
-Sprache: Deutsch, präzise. „Prüfpfad“ statt „Audit Trail“, „Herkunftsnachweis“ statt „Provenance“, technische Bezeichner in `Monospace`.
+Nur ausgeführte Prüfungen melden (Befehl, Ergebnis). Teilprüfungen = `TEILWEISE`; maßgeblich
+ist die CI auf dem Head. Sprache Deutsch; „Prüfpfad“, „Herkunftsnachweis“; Bezeichner in `Monospace`.

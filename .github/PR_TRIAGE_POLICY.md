@@ -9,7 +9,7 @@ Gilt für jede Session, die offene PRs in diesem Repo mergt, schließt, rebased 
   Als Einzel-Freigabe gilt: Der PR steht als eigene Zeile in der freigegebenen Triage-Liste. Eine pauschale Freigabe für eine ganze Phase reicht dafür nicht.
 - Preise, Steuer- und Rechtstexte, Claims auf der Landing
 - Rebase oder Force-Push („Update branch“ per Merge ist kein Rebase). Dazu zählen auch `npm run sync:main` (rebased, `--push` = force-with-lease) und `git rebase --onto` bei gestapelten PRs.
-- Produktionsdeploy. Die Merge-Freigabe ist keine Deploy-Freigabe. Solange ein Merge automatisch deployt (Pages, Supabase, VPS, Workers; siehe `docs/claude/DEPLOYMENT_GOVERNANCE_PLAN.md`), braucht der Merge eines PRs mit solchen Pfaden zusätzlich die Deploy-Freigabe in seiner Zeile (Spalte `Deploy`).
+- Produktionsdeploy. Die Merge-Freigabe ist keine Deploy-Freigabe. Solange ein Merge automatisch deployt (Pages, Supabase, VPS, Workers; siehe `docs/ARCHITECTURE_CURRENT.md` → „Deployment-Governance“), braucht der Merge eines PRs mit solchen Pfaden zusätzlich die Deploy-Freigabe in seiner Zeile (Spalte `Deploy`).
 - Änderungen an Deploy-Workflows, Environments, Branch-Schutz, Auto-Merge oder Secret-Zugriff sowie jeder Dispatch eines Deploy-, Migrations- oder Lösch-Workflows
 
 Alles andere darf phasenweise gebündelt werden, nachdem die Phasenliste freigegeben ist.
@@ -65,8 +65,8 @@ Vorher gilt keine Merge-Freigabe, weil `ci.yml`, CodeQL und Merge Hygiene erst n
 2. Ausführen erst nach seinem OK
 3. Jeder geschlossene PR bekommt eine Begründung im PR, jeder Ersatz-PR verweist auf den alten.
 
-### Feste Produktentscheidungen (Stand 27.09.2026)
-- **Enterprise-Preis:** 1.249 € ist die höchste Stufe und die einzige Quelle. Eine Stufe „Enterprise Plus“ gibt es nicht. README, Pricing und Landing weichen nicht ab. Im Pricing-Hinweis steht: „Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.“ Die Angleichung von README und Pricing kommt als eigener PR in der Phase Legal/Pricing.
+### Feste Produktentscheidungen (Stand 29.10.2026)
+- **Preise (aktualisiert 29.10.2026):** Seit 15.10.2026 regelbesteuert; alle Planpreise netto zzgl. 19 % USt (Starter 79 €, Growth 249 €, Agency 699 €). Enterprise öffentlich „Auf Anfrage“, bis eine echte Live-Stripe-Price-/Product-ID existiert. Einzige Quelle: `shared/pricing.ts`. Der frühere §-19-Hinweis gilt nicht mehr.
 - **Landing-Basis (aktualisiert 10.10.2026, Dateiangabe 24.10.2026):** Maßgeblich ist das Element von `<Route path="/">` in `src/App.tsx` (Stand 24.10.2026: `src/pages/LandingV6.tsx`; am 10.10. war es `LandingV4.tsx`). Frontend und Landingpage gezielt verbessern. Die jeweils auf `/` gerenderte Fassung ist der aktuelle Ausgangspunkt, kein Selbstzweck: Sie darf angepasst oder ersetzt werden, wenn die Änderung nachvollziehbare Vorteile bei Verständlichkeit, Bedienbarkeit, Barrierefreiheit, Performance oder technischer Wartbarkeit bringt. Bestehende Funktionen erhalten und Änderungen gegen den aktuellen Stand prüfen. Frühere Designfassungen sind keine verbindliche Vorlage. Merge und Deploy benötigen weiterhin eine separate Freigabe. Design-, Hero- und Landing-Änderungen erfolgen als kleine, prüfbare Folge-PRs gegen den aktuellen `main`.
-- **Kein Restaurant- oder branchenfremder Scope im Kernprodukt.** Bots und Agenten gehören nur als abgegrenztes Modul, als Demo oder als separate App auf die Governance-Infrastruktur.
+- **Produktfokus (aktualisiert 27.10.2026, K4):** Plattform für KI-Mitarbeiter mit eingebauter Governance, zuerst KMU mit Kundenkontakt (Handwerk). Bots und Agenten sind Kernprodukt; Governance ist Infrastruktur darunter. Module außerhalb von K4 (`docs/PRODUCT_PRIORITIZATION.md`) nur nach Owner-Entscheid.
 - **WIP-Stopp:** Solange mehr als 20 PRs offen sind, werden keine neuen Feature-PRs angelegt, auch nicht von Agenten oder Copilot. Ausgenommen sind Triage-, Ersatz-, Security- und Docs-PRs zur Umsetzung dieser Policy.

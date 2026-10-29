@@ -176,7 +176,7 @@ function Inner() {
           Export
         </button>
       </header>
-      <PreviewDataNotice what="Dieser Audit-Trail" realLink={{ to: '/app/audit', label: 'Echten Audit-Export öffnen' }} />
+      <PreviewDataNotice what="Dieser Prüfpfad" realLink={{ to: '/app/audit', label: 'Echten Audit-Export öffnen' }} />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Search and Filters */}

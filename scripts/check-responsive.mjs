@@ -59,7 +59,8 @@ async function probe(browser, route, vp) {
   const threejsRequests = [];
   page.on('request', req => {
     const u = req.url();
-    if (u.includes('/three') || u.includes('three.module') || u.endsWith('.glb') || u.endsWith('.gltf')) {
+    // vendor-viz = Vite-Chunk für three/@react-three/postprocessing (Production-Build)
+    if (u.includes('/three') || u.includes('three.module') || u.endsWith('.glb') || u.endsWith('.gltf') || u.includes('vendor-viz')) {
       threejsRequests.push(u.replace(BASE_URL, '').slice(0, 60));
     }
   });
@@ -67,12 +68,12 @@ async function probe(browser, route, vp) {
   let loadOk = false;
   try {
     const resp = await page.goto(BASE_URL + route.path, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'load',
       timeout: TIMEOUT,
     });
     loadOk = (resp?.status() ?? 0) < 400;
-    // Kurz warten, damit Lazy-CSS geladen ist
-    await page.waitForTimeout(400);
+    // Warten auf React-Hydration / Lazy-Komponenten (networkidle mit Fallback)
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   } catch {
     await ctx.close();
     return { loadOk: false, overflow: [], tapTargets: [], smallInputs: [], threejsRequests: [] };

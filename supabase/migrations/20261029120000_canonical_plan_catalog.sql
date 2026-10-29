@@ -1,19 +1,14 @@
 -- ═══════════════════════════════════════════════════════════════════════════
---  Kanonischer Plan-Katalog — Enterprise Self-Service 1.498 € / Monat
+--  Kanonischer Plan-Katalog — Enterprise Self-Service 1.498 € / Monat (#1999)
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- Ersetzt die Katalog-Daten aus 20261010090000_canonical_plan_catalog.sql.
--- Enterprise (Dominik 2026-10-24): price_monthly_eur 1249 → 1498,
--- price_yearly_eur 12490 → 14980, purchase_mode inquiry → checkout,
--- trial_days bleibt 0. Keine anderen Pläne.
---
--- Die Kontingente stehen in 20261024090100_enterprise_self_service_quotas.sql,
--- die Stripe-Price-ID folgt mit einer eigenen Migration, sobald der Preis in
--- Stripe angelegt ist.
---
--- Der Block unten wird von `scripts/generate-plan-catalog-sql.ts` erzeugt und
--- von `test/config/pricing-ssot.test.ts` gegen shared/pricing.ts geprüft.
--- NICHT von Hand bearbeiten — stattdessen `npm run gen:plan-catalog`.
+-- Ersetzt die Katalog-Daten aus 20261029113000_canonical_plan_catalog.sql (UX-004).
+-- Enterprise: price_monthly_eur 1249 → 1498, price_yearly_eur 12490 → 14980,
+-- purchase_mode inquiry → checkout, trial_days 0. Growth-Headline aus UX-004 bleibt.
+-- Vormals 20261024090000 (nie in Prod eingespielt; neu nummeriert hinter main).
+-- Kontingente: 20261029120100_enterprise_self_service_quotas.sql.
+-- Checkout bleibt fail-closed (ENTERPRISE_CHECKOUT_PRICE_WIRED=false) bis Stripe-Price verdrahtet ist.
+
 -- >>> GENERATED PLAN CATALOG (scripts/generate-plan-catalog-sql.ts) >>>
 -- NICHT VON HAND BEARBEITEN. Quelle: shared/pricing.ts
 
@@ -73,7 +68,7 @@ INSERT INTO public.plan_catalog (
     'growth',
     'growth',
     'Growth',
-    'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
+    'KI-Governance mit Risk Register und Policy Engine — tägliche Selbstüberwachung folgt (Beta).',
     'Runtime-Läufe mit Risk Register und Policy Engine über drei Rahmenwerke. Tägliches Drift-Monitoring: Coming Soon.',
     249,
     2490,

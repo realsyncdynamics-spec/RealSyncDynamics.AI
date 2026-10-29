@@ -108,7 +108,7 @@ describe('Routinen', () => {
     const panel = heading.closest('section')!;
     expect(within(panel).getByRole('button', { name: /Jetzt starten/ })).toBeDisabled();
     expect(within(panel).getAllByText(/erfordern 2FA/).length).toBeGreaterThan(0);
-    expect(await screen.findByText('dsr-erasure-sweep')).toBeInTheDocument();
+    expect((await screen.findAllByText('dsr-erasure-sweep')).length).toBeGreaterThan(0);
   });
 
   it('startet eine Routine erst nach Bestätigung und schickt confirmed:true', async () => {

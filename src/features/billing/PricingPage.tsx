@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
-import { Check, Sparkles, Award } from 'lucide-react';
+import { Check, Sparkles, Award, FlaskConical } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import '../../styles/governance-os-handoff.css';
 import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
@@ -37,6 +37,8 @@ import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
 import { PlanComparisonMatrix } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
+import { BETA } from '../../config/beta';
+import { RUNTIME_CREDIT_PACK_STUBS } from '@/shared/pricing';
 
 /**
  * /pricing — öffentliche Preisseite der AI Governance Runtime.
@@ -110,6 +112,25 @@ export function PricingPage() {
                 <span className="rs-pill rs-pill--cyan">{t('yearlyComingSoon')}</span>
                 {t('yearlyNote')}
               </p>
+            )}
+            {/* Beta-Banner — nur wenn BETA.active; verschwindet automatisch bei VITE_BETA_PHASE=off */}
+            {BETA.active && (
+              <div
+                className="mb-6 flex items-start gap-3 border-l-2 border-[#FFB347] bg-[#FFB347]/8 px-5 py-4"
+                data-testid="pricing-beta-banner"
+                role="status"
+              >
+                <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-[#FFB347]" aria-hidden />
+                <div className="text-sm leading-relaxed">
+                  <span className="font-semibold text-[#FFB347]">{BETA.headline} </span>
+                  <span className="text-titanium-300">
+                    {BETA.sub}
+                  </span>
+                  <span className="ml-2 font-mono text-[10px] text-titanium-500">
+                    Bis {BETA.endsLabel}.
+                  </span>
+                </div>
+              </div>
             )}
             <div className="rs-pricing__grid">
               <FreeAuditCard />
@@ -185,6 +206,58 @@ export function PricingPage() {
 
       {/* Governance-Bots Section — Bot-Quotas + Add-ons */}
       <GovernanceBotsSection />
+
+      {/* Runtime-Credits — Quelle: RUNTIME_CREDIT_PACK_STUBS (shared/pricing.ts).
+          Credits sind noch nicht kalibriert (availability='internal', credits=null).
+          Keine Preise, keine Paketgrößen zeigen, solange die Basis fehlt. */}
+      <section
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+        data-testid="pricing-credits-section"
+        aria-labelledby="credits-heading"
+      >
+        <div className="max-w-5xl mx-auto">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-2">
+            Agent-Kapazität
+          </p>
+          <h2
+            id="credits-heading"
+            className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3"
+          >
+            Runtime Credits
+          </h2>
+          <p className="text-sm text-titanium-400 max-w-2xl leading-relaxed mb-8">
+            Runtime Credits sind die normalisierte Einheit für governed AI capacity — unabhängig davon,
+            welchen Anbieter der Agent im Hintergrund nutzt. Ein Credit repräsentiert eine gesteuerte
+            Aktion innerhalb der Governance-Runtime, nicht einen API-Token eines Drittanbieters.
+          </p>
+          {RUNTIME_CREDIT_PACK_STUBS.map((pack) => (
+            <div
+              key={pack.id}
+              className="inline-flex items-center gap-3 border border-titanium-800 bg-obsidian-900 px-5 py-3"
+              data-testid={`credits-pack-${pack.id}`}
+            >
+              <FlaskConical className="h-4 w-4 text-titanium-500" aria-hidden />
+              <div>
+                <p className="font-mono text-[11px] uppercase tracking-[.15em] text-titanium-400">
+                  {pack.label}
+                </p>
+                <p className="mt-0.5 text-xs text-titanium-600">
+                  {pack.credits === null
+                    ? 'Kalibrierung läuft — Paketgröße und Preis werden nach Messung festgelegt.'
+                    : `${pack.credits} Credits`}
+                </p>
+              </div>
+              <span className="ml-auto font-mono text-[9px] uppercase tracking-[.15em] border border-titanium-700 px-2 py-0.5 text-titanium-500">
+                Coming Soon
+              </span>
+            </div>
+          ))}
+          <p className="mt-6 text-[11px] text-titanium-600 leading-relaxed max-w-xl">
+            Die Reihenfolge: tatsächlichen Burn messen → Inklusivkontingent festlegen → Paketgröße → Preis.
+            Bis die Kalibrierung abgeschlossen ist, gibt es keine verkaufbare SKU.
+          </p>
+        </div>
+      </section>
 
       {/* Differenzierer */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">

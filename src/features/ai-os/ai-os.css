@@ -1,0 +1,157 @@
+/* AI Command Center (/admin/ai-os) — gekapselt unter .aios.
+   Dunkel nutzt die bestehenden Governance-OS-Tokens (--color-rs-*) aus
+   src/index.css; Hell ist eine eigene, ruhige Variante derselben Rollen.
+   Keine globalen Tokens werden verändert. Kanten: hart (Sovereign-Grid-DNA). */
+
+.aios {
+  --aios-bg: var(--color-rs-bg-0, #070b14);
+  --aios-panel: var(--color-rs-bg-1, #0d1322);
+  --aios-panel-2: var(--color-rs-bg-2, #14203a);
+  --aios-fg: var(--color-rs-fg-0, #f2f5fa);
+  --aios-fg-2: var(--color-rs-fg-1, #c9d1e0);
+  --aios-muted: var(--color-rs-fg-2, #8a95ac);
+  --aios-border: var(--color-rs-border, #1f2b48);
+  --aios-border-strong: var(--color-rs-border-strong, #2e3c5e);
+  --aios-accent: var(--color-rs-primary-light, #7fa0ff);
+  --aios-accent-solid: var(--color-rs-primary, #1e5aff);
+  --aios-ok: #34d399;
+  --aios-warn: #fbbf24;
+  --aios-fail: #f87171;
+  --aios-info: #7dd3fc;
+  --aios-focus: #7fa0ff;
+  color-scheme: dark;
+  background: var(--aios-bg);
+  color: var(--aios-fg);
+  font-family: var(--font-rs-ui, ui-sans-serif, system-ui, sans-serif);
+  min-height: 100vh;
+}
+
+.aios[data-theme='light'] {
+  --aios-bg: #f5f6f8;
+  --aios-panel: #ffffff;
+  --aios-panel-2: #eef1f6;
+  --aios-fg: #0d1322;
+  --aios-fg-2: #26324a;
+  --aios-muted: #56627a;
+  --aios-border: #d7dce6;
+  --aios-border-strong: #b8c0cf;
+  --aios-accent: #1641c4;
+  --aios-accent-solid: #1e5aff;
+  --aios-ok: #047857;
+  --aios-warn: #a16207;
+  --aios-fail: #b91c1c;
+  --aios-info: #0369a1;
+  --aios-focus: #1641c4;
+  color-scheme: light;
+}
+
+.aios :focus-visible { outline: 2px solid var(--aios-focus); outline-offset: 2px; }
+
+.aios-mono { font-family: var(--font-rs-mono, ui-monospace, monospace); }
+.aios-muted { color: var(--aios-muted); }
+.aios-fg2 { color: var(--aios-fg-2); }
+.aios-link { color: var(--aios-accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.aios-header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px; padding: 8px 16px;
+  background: var(--aios-panel); border-bottom: 1px solid var(--aios-border);
+}
+
+.aios-layout { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 1024px) { .aios-layout { grid-template-columns: 240px minmax(0, 1fr); } }
+
+.aios-nav {
+  display: flex; gap: 4px; overflow-x: auto; padding: 8px 12px;
+  border-bottom: 1px solid var(--aios-border); background: var(--aios-panel);
+  scrollbar-width: thin;
+}
+@media (min-width: 1024px) {
+  .aios-nav {
+    flex-direction: column; overflow: visible; padding: 16px 12px;
+    border-bottom: 0; border-right: 1px solid var(--aios-border);
+    min-height: calc(100vh - 56px); position: sticky; top: 56px; align-self: start;
+  }
+}
+.aios-nav a {
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 8px 10px; font-size: 13px; color: var(--aios-fg-2);
+  border: 1px solid transparent; text-decoration: none;
+}
+.aios-nav a:hover { background: var(--aios-panel-2); }
+.aios-nav a[aria-current='page'] {
+  color: var(--aios-fg); background: var(--aios-panel-2); border-color: var(--aios-border-strong);
+  font-weight: 600;
+}
+
+.aios-main { padding: 16px; min-width: 0; }
+@media (min-width: 768px) { .aios-main { padding: 24px; } }
+.aios-main > * + * { margin-top: 16px; }
+
+.aios-h1 { font-family: var(--font-rs-title, inherit); font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.aios-h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--aios-muted); }
+.aios-lead { font-size: 14px; color: var(--aios-fg-2); max-width: 72ch; line-height: 1.55; }
+
+.aios-panel { background: var(--aios-panel); border: 1px solid var(--aios-border); padding: 16px; }
+.aios-panel > * + * { margin-top: 12px; }
+
+.aios-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.aios-grid-wide { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+.aios-kpi { background: var(--aios-panel); border: 1px solid var(--aios-border); padding: 14px; }
+.aios-kpi-label { font-size: 12px; color: var(--aios-muted); }
+.aios-kpi-value { font-family: var(--font-rs-mono, monospace); font-size: 24px; font-weight: 600; margin-top: 4px; }
+.aios-kpi-sub { font-size: 12px; color: var(--aios-muted); margin-top: 4px; }
+
+.aios-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; border: 1px solid currentColor; white-space: nowrap;
+}
+.aios-pill[data-tone='ok'] { color: var(--aios-ok); }
+.aios-pill[data-tone='warn'] { color: var(--aios-warn); }
+.aios-pill[data-tone='fail'] { color: var(--aios-fail); }
+.aios-pill[data-tone='info'] { color: var(--aios-info); }
+.aios-pill[data-tone='neutral'] { color: var(--aios-muted); }
+
+.aios-table-wrap { overflow-x: auto; border: 1px solid var(--aios-border); }
+.aios-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.aios-table th {
+  text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--aios-muted); background: var(--aios-panel-2); padding: 8px 10px; white-space: nowrap;
+}
+.aios-table td { padding: 8px 10px; border-top: 1px solid var(--aios-border); vertical-align: top; }
+
+.aios-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 6px 12px; font-size: 13px; font-weight: 600;
+  border: 1px solid var(--aios-border-strong); background: var(--aios-panel-2); color: var(--aios-fg);
+  cursor: pointer;
+}
+.aios-btn:hover:not(:disabled) { border-color: var(--aios-accent); }
+.aios-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.aios-btn[data-variant='primary'] { background: var(--aios-accent-solid); border-color: var(--aios-accent-solid); color: #fff; }
+
+.aios-input, .aios-textarea, .aios-select {
+  width: 100%; padding: 8px 10px; font-size: 14px;
+  background: var(--aios-bg); color: var(--aios-fg); border: 1px solid var(--aios-border-strong);
+}
+.aios-textarea { min-height: 320px; font-family: var(--font-rs-mono, monospace); font-size: 13px; line-height: 1.5; }
+
+.aios-note { border-left: 3px solid var(--aios-border-strong); padding: 8px 12px; font-size: 13px; color: var(--aios-fg-2); background: var(--aios-panel-2); }
+.aios-note[data-tone='fail'] { border-left-color: var(--aios-fail); }
+.aios-note[data-tone='warn'] { border-left-color: var(--aios-warn); }
+.aios-note[data-tone='ok'] { border-left-color: var(--aios-ok); }
+
+.aios-dialog-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.aios-dialog { width: 100%; max-width: 480px; background: var(--aios-panel); border: 1px solid var(--aios-border-strong); padding: 20px; }
+.aios-dialog > * + * { margin-top: 12px; }
+
+.aios-md h1, .aios-md h2, .aios-md h3 { font-weight: 700; margin-top: 1em; }
+.aios-md h1 { font-size: 20px; } .aios-md h2 { font-size: 17px; } .aios-md h3 { font-size: 15px; }
+.aios-md p, .aios-md li { font-size: 14px; line-height: 1.6; color: var(--aios-fg-2); }
+.aios-md ul { list-style: disc; padding-left: 20px; }
+.aios-md code { font-family: var(--font-rs-mono, monospace); font-size: 12px; background: var(--aios-panel-2); padding: 1px 4px; }
+.aios-md pre { overflow-x: auto; background: var(--aios-panel-2); padding: 10px; font-size: 12px; }
+.aios-md table { border-collapse: collapse; font-size: 13px; }
+.aios-md td, .aios-md th { border: 1px solid var(--aios-border); padding: 4px 8px; }

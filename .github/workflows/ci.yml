@@ -526,3 +526,26 @@ jobs:
             exit 2
           fi
           echo "✅ migrations are append-only"
+
+  # WP8a — Responsive Viewport-Messung (advisory, nicht blockierend).
+  # Misst: horizontaler Overflow, Tap-Ziele < 24px, Inputs < 16px Schrift,
+  # three.js-Requests. Kein required check — PR-Merge nicht blockiert.
+  # Auf blockierend stellen (continue-on-error entfernen), wenn WP8b–8d die
+  # gemessenen Befunde behoben haben.
+  responsive:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Playwright Chromium installieren
+        run: npx playwright install chromium --with-deps
+      - name: Responsive Viewport-Check (advisory)
+        run: npm run check:responsive
+        env:
+          BASE_URL: https://realsyncdynamics-ai.pages.dev

@@ -83,6 +83,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/app/bulk",
   "/app/cockpit",
   "/app/cockpit/brief",
+  "/app/command-center",
   "/app/company",
   "/app/compliance",
   "/app/connectors",

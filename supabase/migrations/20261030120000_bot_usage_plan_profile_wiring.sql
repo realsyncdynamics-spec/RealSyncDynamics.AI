@@ -25,8 +25,8 @@
 -- Keine Preise, keine Stripe-Produkte, keine Entitlements werden verändert.
 -- Werte (Owner 28.10.2026, verbindlich je Monat):
 --   Starter 60 Min / 8 €, Growth 250 Min / 30 €, Agency 750 Min / 90 €.
--- Trial (reduziert, Vorschlag zur Bestätigung): 15 Min / 2 € (= ¼ Starter),
---   ohne Fixkostenanteil. Keine neue Testphase (E-P1): nur bereits laufende
+-- Trial (reduziert, VERBINDLICH, Owner-GO 30.10.2026): 15 Min / 2 €
+--   (= ¼ Starter), ohne Fixkostenanteil. Keine neue Testphase (E-P1): nur bereits laufende
 --   Trials laufen damit aus.
 --
 -- NICHT automatisch auf Produktion anwenden (Draft-PR).
@@ -46,7 +46,7 @@ INSERT INTO public.bot_usage_plan_profiles
   (plan_key, voice_minutes_monthly, cost_eur_monthly, fixed_cost_usd_monthly, decided_at, decided_by, note)
 VALUES
   ('trial', 15, 2, 0, DATE '2026-10-30', 'owner',
-   'Reduziertes Budget für bereits laufende Testphasen (GO-Fix 30.10.2026); keine neue Testphase')
+   'Verbindlich (Owner-GO 30.10.2026): reduziertes Budget für bereits laufende Testphasen; keine neue Testphase')
 ON CONFLICT (plan_key) DO NOTHING;
 
 -- ============================================================
@@ -335,21 +335,29 @@ END
 $do$;
 
 -- ============================================================
--- 7. Einmalige Nachführung (nur beim Einspielen dieser Migration)
+-- 7. Backfill bestehender Nullzeilen (Owner-GO 30.10.2026)
 -- ============================================================
--- Aktive Tarife mit Profil und laufende Trials, deren Zeile noch die
--- Nullzeile aus dem Seed ist, erhalten ihr Profil. Manuell gesetzte Zeilen
--- (plan_profile/config_source abweichend) bleiben unberührt.
+-- Jede Zeile, die vollständig auf 0 steht und kein Profil trägt (Seed aus
+-- 20261028100000 oder sonstige Nullzeile), wird aus dem aktuellen Abo
+-- abgeleitet: active mit Profil → Tarifwerte, trialing → Trial (15 Min/2 €),
+-- sonst bleibt 0 (canceled/past_due/free) bzw. Alarm (Enterprise ohne Profil).
+-- Zeilen mit irgendeinem Wert > 0 (manuell konfiguriert) bleiben unberührt.
+-- Idempotent: source je Mandant fest ('backfill:20261030120000:<tenant>'),
+-- ein zweiter Lauf liefert 'duplicate'; danach tragen die Zeilen ein Profil.
 DO $do$
 DECLARE r record;
 BEGIN
   FOR r IN
     SELECT l.tenant_id
       FROM public.bot_usage_limits l
-     WHERE l.plan_profile IS NULL AND l.cost_eur_monthly = 0
-       AND l.config_source LIKE 'seed:%'
+     WHERE l.plan_profile IS NULL
+       AND l.cost_eur_monthly = 0
+       AND l.voice_seconds_monthly = 0
+       AND l.ai_usd_monthly = 0
+       AND l.ai_usd_daily = 0
   LOOP
-    PERFORM public.bot_usage_sync_plan_from_subscription(r.tenant_id, 'migration:20261030120000:' || r.tenant_id);
+    PERFORM public.bot_usage_sync_plan_from_subscription(
+      r.tenant_id, 'backfill:20261030120000:' || r.tenant_id::text);
   END LOOP;
 END
 $do$;

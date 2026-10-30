@@ -6,7 +6,8 @@
  *   W3  Mandant ohne Abo → 'no_subscription', keine Zeile erfunden
  *   W4  Enterprise ohne Profil → Alarm, kein stilles 0, Zeile unverändert
  *   W5  Einheitliche EUR→USD-Umrechnung, Tageslimit = Monat / 10
- *   W6  Trial erhält reduziertes Profil
+ *   W6  Trial erhält reduziertes Profil (verbindlich 15 Min / 2 €)
+ *   W8  Backfill-Logik: Nullzeile aktiver/Trial-Abos → Profil, idempotent
  *   W7  Reconcile meldet nur, korrigiert nicht
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -114,5 +115,30 @@ d('bot_usage plan profile wiring', () => {
     const code = await ctx.withClaims({ role: 'authenticated' }, () => ctx.client.query(
       `SELECT public.bot_usage_sync_plan_from_subscription($1, 'x')`, [t])).then(() => 'OK', (e) => e.code);
     expect(code).toBe('42501');
+  });
+
+  it('W6b Trial-Profil verbindlich 15 Min / 2 €', async () => {
+    const p = (await ctx.client.query(
+      `SELECT voice_minutes_monthly, cost_eur_monthly FROM public.bot_usage_plan_profiles WHERE plan_key = 'trial'`)).rows[0];
+    expect([p.voice_minutes_monthly, Number(p.cost_eur_monthly)]).toEqual([15, 2]);
+  });
+
+  it('W8 Backfill: Nullzeile → Profil, idempotent, manuelle Zeile unberührt', async () => {
+    const a = (await createTenantWithMember(ctx)).tenantId;
+    const tr = (await createTenantWithMember(ctx)).tenantId;
+    await setSub(a, 'starter', 'active');
+    await setSub(tr, 'growth', 'trialing');
+    for (const t of [a, tr]) {
+      await ctx.client.query(`DELETE FROM public.bot_usage_limits WHERE tenant_id = $1`, [t]);
+      await ctx.client.query(
+        `INSERT INTO public.bot_usage_limits (tenant_id, ai_usd_daily, ai_usd_monthly, voice_seconds_monthly, cost_eur_monthly, config_source)
+         VALUES ($1, 0, 0, 0, 0, 'seed:20261028100000')`, [t]);
+    }
+    for (const t of [a, tr]) {
+      expect(await sync(t, `backfill:20261030120000:${t}`)).toMatch(/^applied:/);
+      expect(await sync(t, `backfill:20261030120000:${t}`)).toBe('duplicate');
+    }
+    expect([Number((await row(a))!.voice_seconds_monthly), Number((await row(a))!.cost_eur_monthly)]).toEqual([3600, 8]);
+    expect([Number((await row(tr))!.voice_seconds_monthly), Number((await row(tr))!.cost_eur_monthly)]).toEqual([900, 2]);
   });
 });

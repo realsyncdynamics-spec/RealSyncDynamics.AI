@@ -82,3 +82,34 @@ describe('runtime_static (apps/agent-runtime)', () => {
     expect(filterAgents([dbAgent, applySoll(runtimeStaticAgents()[0]!)], { ...EMPTY_FILTER, project: UNSET })).toEqual([dbAgent]);
   });
 });
+
+import { sectionOf, SOLL_CONFIG } from '../../src/features/command-center/agentRegistry';
+
+describe('Soll-Ist-Abgleich 30.10.2026', () => {
+  const byId = (id: string) => GROK_SOLL_AGENTS.find((a) => a.registryId === `grok:${id}`);
+  it('enthält die Paket-Karten mit echten Bot-IDs', () => {
+    expect(byId('infra-manager')?.mappedBotIds).toEqual(['202942d8-e3b8-4c62-abba-6e3766514cbc']);
+    expect(byId('monetization')?.mappedBotIds).toHaveLength(3);
+    expect(byId('marketing-social')?.mappedBotIds?.length).toBeGreaterThanOrEqual(5);
+    for (const id of ['grok-master', 'co-ceo-manager', 'hostinger-manager', 'dsgvo-check', 'vertical-voice', 'rsd-dashboard']) {
+      expect(byId(id)).toBeTruthy();
+    }
+  });
+  it('keine Gruppen und kein Dashboard-Duplikat als Karte', () => {
+    const all = GROK_SOLL_AGENTS.flatMap((a) => a.mappedBotIds ?? []);
+    for (const g of ['adb041be', '2e04fda9', '52d75e55', '273579fb']) {
+      expect(all.some((id) => id.startsWith(g))).toBe(false);
+    }
+  });
+  it('Prioritäten laut Paket', () => {
+    expect(applySoll(byId('infra-manager')!).priority).toBe('P0');
+    expect(applySoll(byId('monetization')!).priority).toBe('P1');
+    expect(applySoll(byId('marketing-social')!).priority).toBe('P2');
+    expect(Object.keys(SOLL_CONFIG).every((k) => GROK_SOLL_AGENTS.some((a) => a.registryId === k))).toBe(true);
+  });
+  it('Abschnitte: Grok-Bots vs. Produkt-Agenten', () => {
+    expect(sectionOf(GROK_SOLL_AGENTS[0]!)).toBe('grok_bots');
+    for (const a of runtimeStaticAgents()) expect(sectionOf(a)).toBe('product_agents');
+    expect(sectionOf({ source: 'agent_profiles' })).toBe('product_agents');
+  });
+});

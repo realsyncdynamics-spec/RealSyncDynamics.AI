@@ -38,6 +38,7 @@ const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
 const EnterpriseKonfigurator = lazy(() => import('./pages/EnterpriseKonfigurator'));
+const PlanKonfigurator = lazy(() => import('./pages/PlanKonfigurator'));
 const PublicWorkspacePreview = lazy(() => import('./pages/PublicWorkspacePreview').then((m) => ({ default: m.PublicWorkspacePreview })));
 const GovernanceBrowserPage = lazy(() => import('./pages/GovernanceBrowserPage').then((m) => ({ default: m.GovernanceBrowserPage })));
 const AgenciesLanding = lazy(() => import('./pages/AgenciesLanding').then((m) => ({ default: m.AgenciesLanding })));
@@ -564,6 +565,7 @@ function RoutesWithTracking() {
       <Route path="/landing-uebersicht" element={<Navigate to="/" replace />} />
       <Route path="/realsync-landing" element={<Navigate to="/" replace />} />
       <Route path="/enterprise-konfigurator" element={<EnterpriseKonfigurator />} />
+       <Route path="/plan-konfigurator" element={<PlanKonfigurator />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

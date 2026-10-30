@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getSupabase } from '../../lib/supabase';
+import { PRECEDENT_NOTICE, precedentsFor, type KnowledgeHit } from './memory';
 import { Inbox } from 'lucide-react';
 import { EVENT_LABEL, groupOpenQuestions, PRIORITY_LABEL, type Priority, type QuestionEventRow } from './decisionInbox';
 import { useDecisionInbox } from './useDecisionInbox';
@@ -17,6 +18,12 @@ export function DecisionInbox() {
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [precedents, setPrecedents] = useState<Record<string, KnowledgeHit[] | string>>({});
+
+  async function loadPrecedents(decisionId: string, text: string) {
+    const { data, error } = await getSupabase().rpc('search_agent_knowledge', { p_query: text, p_kinds: ['decision'], p_limit: 10, p_match_any: true });
+    setPrecedents((p) => ({ ...p, [decisionId]: error ? `nicht verfügbar: ${error.message}` : precedentsFor((data ?? []) as KnowledgeHit[], decisionId) }));
+  }
 
   async function resolve(decisionId: string, action: 'approve' | 'reject' | 'defer', level: string, optionIndex: number | null) {
     setBusy(decisionId);
@@ -89,6 +96,25 @@ export function DecisionInbox() {
                   </ol>
                   <p data-testid="proposal-level" className="mt-1 text-xs text-amber-200">Erforderlich: {APPROVAL_LABEL[level]}</p>
                   <p className="text-xs text-zinc-400">Empfehlung ≠ Freigabe. Status: {d.status}.</p>
+                  <div className="mt-1">
+                    {precedents[d.id] === undefined ? (
+                      <button type="button" onClick={() => void loadPrecedents(d.id, `${g.primary.question} ${d.recommendation}`)}
+                        className="text-xs text-sky-300 underline">Frühere Entscheidungen anzeigen</button>
+                    ) : (
+                      <div data-testid="precedents" className="rounded border border-zinc-800 p-1.5 text-xs">
+                        <p className="text-amber-200">{PRECEDENT_NOTICE}</p>
+                        {typeof precedents[d.id] === 'string' ? <p className="text-zinc-400">Präzedenzfälle {precedents[d.id] as string}</p>
+                          : (precedents[d.id] as KnowledgeHit[]).length === 0 ? <p className="text-zinc-400">Keine früheren Entscheidungen gefunden.</p>
+                          : (
+                            <ul className="mt-0.5 space-y-0.5 text-zinc-300">
+                              {(precedents[d.id] as KnowledgeHit[]).map((h) => (
+                                <li key={h.id}>{h.title} <span className="text-zinc-500">· {h.status} · {new Date(h.created_at).toLocaleDateString('de-DE')}</span></li>
+                              ))}
+                            </ul>
+                          )}
+                      </div>
+                    )}
+                  </div>
                   {d.status === 'proposed' && (
                     <div className="mt-2 space-y-1.5">
                       <label className="flex items-start gap-1.5 text-xs text-zinc-300">

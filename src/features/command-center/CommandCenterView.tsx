@@ -8,13 +8,15 @@ import { useAgentRegistry } from './useAgentRegistry';
 import { DecisionInbox } from './DecisionInbox';
 import { AgentConfigPanel } from './AgentConfigPanel';
 import { TaskBoard } from './TaskBoard';
+import { MemoryView } from './MemoryView';
+import { RoutinesView } from './RoutinesView';
 
 const NAV = [
   'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
   'Details Manager', 'Bibliothek Manager', 'Computer Manager', 'Routinen', 'Gedächtnis',
   'Kosten & Monitoring', 'Einstellungen',
 ] as const;
-const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten', 'Aufgaben']);
+const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten', 'Aufgaben', 'Routinen', 'Gedächtnis']);
 
 function NavList() {
   return (
@@ -97,7 +99,7 @@ export function CommandCenterView() {
   const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [configFor, setConfigFor] = useState<RegistryAgent | null>(null);
-  const [view, setView] = useState<'agents' | 'tasks'>('agents');
+  const [view, setView] = useState<'agents' | 'tasks' | 'memory' | 'routines'>('agents');
   const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
   const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -124,12 +126,12 @@ export function CommandCenterView() {
           )}
         </div>
         <div role="group" aria-label="Bereich" className="mb-3 flex gap-1">
-          {([['agents', 'Agenten'], ['tasks', 'Aufgaben']] as const).map(([k, l]) => (
+          {([['agents', 'Agenten'], ['tasks', 'Aufgaben'], ['memory', 'Gedächtnis'], ['routines', 'Routinen']] as const).map(([k, l]) => (
             <button key={k} type="button" aria-pressed={view === k} onClick={() => setView(k)}
               className={`rounded px-3 py-1 text-sm ${view === k ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400'}`}>{l}</button>
           ))}
         </div>
-        {view === 'tasks' ? <TaskBoard /> : (<>
+        {view === 'tasks' ? <TaskBoard /> : view === 'memory' ? <MemoryView /> : view === 'routines' ? <RoutinesView /> : (<>
         <h1 className="text-xl font-semibold">Agentenübersicht</h1>
         <p className="mt-1 text-sm text-zinc-400">Status nur aus belegten Quellen. Nicht belegte Zustände werden als UNBEKANNT angezeigt.</p>
         {sourceError && (

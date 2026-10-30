@@ -60,7 +60,7 @@ Die Auth-Logs sind eindeutig:
    → 500: Unable to exchange external code            ← falsches Google-OAuth-Client-Secret
 ~22:09–22:12     "reloading api with new configuration" (×N)   ← Auth-Provider neu konfiguriert
 22:14:02 UTC     /callback (referer https://realsyncdynamicsai.de)
-   auth_event login  realsyncdynamics@gmail.com  provider=google  → 302   ✅
+   auth_event login  owner-a@example.invalid  provider=google  → 302   ✅
 22:14:06/07      /user → 200, 200                    ← Session gültig, Login erfolgreich
 ```
 

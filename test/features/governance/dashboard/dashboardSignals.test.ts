@@ -244,9 +244,9 @@ describe('Behebung — realer Payload (email_auth_resolved, manual_owner_approve
       domain: 'realsyncdynamicsai.de',
       previous_state: { dmarc: 'absent', checked_at: '2026-06-28' },
       current_state: {
-        pct: 100, rua: 'mailto:realsyncdynamics@gmail.com', aspf: 's', adkim: 's', dmarc: 'present',
+        pct: 100, rua: 'mailto:owner-a@example.invalid', aspf: 's', adkim: 's', dmarc: 'present',
         policy: 'quarantine',
-        record: 'v=DMARC1; p=quarantine; rua=mailto:realsyncdynamics@gmail.com; pct=100; adkim=s; aspf=s',
+        record: 'v=DMARC1; p=quarantine; rua=mailto:owner-a@example.invalid; pct=100; adkim=s; aspf=s',
       },
       checked_at: '2026-09-25T21:04:48Z',
       evidence_id: '58bca6e1-010f-4a84-807f-41b727c80699',

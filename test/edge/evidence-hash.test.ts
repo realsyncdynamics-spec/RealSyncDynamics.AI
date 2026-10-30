@@ -7,6 +7,10 @@
  * (event 33762763-3d6a-4482-b53d-662f15c0c7d9, resolves e712035d). Its
  * metadata.snapshot, canonicalised with RFC 8785 JCS, is SNAPSHOT_JCS below;
  * content_hash = sha256_hex(utf8(JCS(snapshot))) = EXPECTED_HASH.
+ *
+ * DSGVO: the DMARC rua address in the snapshot is replaced with a placeholder
+ * (owner-a@example.invalid), so EXPECTED_HASH is recomputed over the anonymised
+ * bytes and no longer equals the live row's hash (9ba200a7…).
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -15,10 +19,10 @@ import {
   evidenceContentHash,
 } from '../../supabase/functions/_shared/evidence-hash';
 
-const EXPECTED_HASH = '9ba200a766edf9a6a0f07a7a055c74c0fdd2d1c7d6d3455283d9e605e1e3c8c8';
+const EXPECTED_HASH = '1665d515cbf735b193cbcaafe1c5988623e2514557270c26a95b029cfaaa92df';
 
 // Exact canonical bytes of metadata.snapshot of evidence 58bca6e1 (hash input).
-const SNAPSHOT_JCS = "{\"asset_id\":\"1838591e-7e42-46b6-a371-19341e9f922c\",\"checked_at\":\"2026-09-25T21:04:48Z\",\"domain\":\"realsyncdynamicsai.de\",\"event_id\":\"33762763-3d6a-4482-b53d-662f15c0c7d9\",\"evidence_id\":\"58bca6e1-010f-4a84-807f-41b727c80699\",\"previous_hash\":\"a996052b8c481af6514c9a600e9301a36badc3fb3136a22da742a98a76e8c710\",\"records\":{\"apex_txt\":[\"v=spf1 include:_spf.mail.hostinger.com ~all\"],\"dkim\":{\"default\":null,\"google\":null,\"hostingermail-a\":{\"cname\":\"hostingermail-a.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs+RijpkYCOFcf5HdHXcwSJJdaqCIf9jyybiM8GFNhzhQMYKXmKGefVdmAIaqcKstjtkCMktZRl6uqrd+gnAsslRoEOtfBbWuqtL/1NRovLakhLngQQChKrJQ1EIgbBBtQyJVN3+m/d6Bzq/xSJKqZjyX2LYwJArwZSpp3JoKp0X7JrzYSXCH312/WSv8htE/cHZ+K7PYJYRmu2CzeNUhh/pJr7liC6nrvWmJCfRAov5g8lAJPR9dKH/EvtCBiMk+sC8fv8395CEmQaOHMj54XCH9fYYHx9qxK4IfsbnvN3jYv+Rel6nSgluaapSwEll0Rl+YBY71bieyV0ZY2lrJ2wIDAQAB\"]},\"hostingermail-b\":{\"cname\":\"hostingermail-b.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;p=\"]},\"hostingermail-c\":{\"cname\":\"hostingermail-c.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;p=\"]},\"hostingermail1\":null,\"hostingermail2\":null,\"k1\":null,\"selector1\":null,\"selector2\":null},\"dmarc_txt\":[\"v=DMARC1; p=quarantine; rua=mailto:realsyncdynamics@gmail.com; pct=100; adkim=s; aspf=s\"]},\"resolvers\":[\"dns.google\",\"cloudflare-dns.com\"],\"tenant_id\":\"e6b3c8dd-d91a-42ca-b12f-d77a1bfd59fc\"}";
+const SNAPSHOT_JCS = "{\"asset_id\":\"1838591e-7e42-46b6-a371-19341e9f922c\",\"checked_at\":\"2026-09-25T21:04:48Z\",\"domain\":\"realsyncdynamicsai.de\",\"event_id\":\"33762763-3d6a-4482-b53d-662f15c0c7d9\",\"evidence_id\":\"58bca6e1-010f-4a84-807f-41b727c80699\",\"previous_hash\":\"a996052b8c481af6514c9a600e9301a36badc3fb3136a22da742a98a76e8c710\",\"records\":{\"apex_txt\":[\"v=spf1 include:_spf.mail.hostinger.com ~all\"],\"dkim\":{\"default\":null,\"google\":null,\"hostingermail-a\":{\"cname\":\"hostingermail-a.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs+RijpkYCOFcf5HdHXcwSJJdaqCIf9jyybiM8GFNhzhQMYKXmKGefVdmAIaqcKstjtkCMktZRl6uqrd+gnAsslRoEOtfBbWuqtL/1NRovLakhLngQQChKrJQ1EIgbBBtQyJVN3+m/d6Bzq/xSJKqZjyX2LYwJArwZSpp3JoKp0X7JrzYSXCH312/WSv8htE/cHZ+K7PYJYRmu2CzeNUhh/pJr7liC6nrvWmJCfRAov5g8lAJPR9dKH/EvtCBiMk+sC8fv8395CEmQaOHMj54XCH9fYYHx9qxK4IfsbnvN3jYv+Rel6nSgluaapSwEll0Rl+YBY71bieyV0ZY2lrJ2wIDAQAB\"]},\"hostingermail-b\":{\"cname\":\"hostingermail-b.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;p=\"]},\"hostingermail-c\":{\"cname\":\"hostingermail-c.dkim.mail.hostinger.com.\",\"txt\":[\"v=DKIM1;p=\"]},\"hostingermail1\":null,\"hostingermail2\":null,\"k1\":null,\"selector1\":null,\"selector2\":null},\"dmarc_txt\":[\"v=DMARC1; p=quarantine; rua=mailto:owner-a@example.invalid; pct=100; adkim=s; aspf=s\"]},\"resolvers\":[\"dns.google\",\"cloudflare-dns.com\"],\"tenant_id\":\"e6b3c8dd-d91a-42ca-b12f-d77a1bfd59fc\"}";
 
 // Same snapshot with keys in a different order and pretty-printed, as a
 // jsonb round-trip may return it.
@@ -30,7 +34,7 @@ const SNAPSHOT_REORDERED: Record<string, unknown> = {
   ],
   "records": {
     "dmarc_txt": [
-      "v=DMARC1; p=quarantine; rua=mailto:realsyncdynamics@gmail.com; pct=100; adkim=s; aspf=s"
+      "v=DMARC1; p=quarantine; rua=mailto:owner-a@example.invalid; pct=100; adkim=s; aspf=s"
     ],
     "dkim": {
       "selector2": null,

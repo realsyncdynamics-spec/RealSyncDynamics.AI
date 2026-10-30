@@ -434,7 +434,7 @@ function subscriptionTenantId(sub: Stripe.Subscription): string | null {
   );
 }
 
-// Bot-Kostenbremse an den Tarif koppeln (Migration 20261030120000).
+// Bot-Kostenbremse an den Tarif koppeln (Migration 20261030130000).
 // Fehler werfen → Webhook 500 → Stripe wiederholt (Idempotenz je event.id in
 // bot_usage_plan_applications). Enterprise ohne Profil liefert einen Alarm
 // statt eines stillen Nullbudgets.

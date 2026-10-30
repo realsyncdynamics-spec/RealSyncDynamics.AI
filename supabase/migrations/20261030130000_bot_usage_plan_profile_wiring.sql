@@ -342,7 +342,7 @@ $do$;
 -- abgeleitet: active mit Profil → Tarifwerte, trialing → Trial (15 Min/2 €),
 -- sonst bleibt 0 (canceled/past_due/free) bzw. Alarm (Enterprise ohne Profil).
 -- Zeilen mit irgendeinem Wert > 0 (manuell konfiguriert) bleiben unberührt.
--- Idempotent: source je Mandant fest ('backfill:20261030120000:<tenant>'),
+-- Idempotent: source je Mandant fest ('backfill:20261030130000:<tenant>'),
 -- ein zweiter Lauf liefert 'duplicate'; danach tragen die Zeilen ein Profil.
 DO $do$
 DECLARE r record;
@@ -357,11 +357,11 @@ BEGIN
        AND l.ai_usd_daily = 0
   LOOP
     PERFORM public.bot_usage_sync_plan_from_subscription(
-      r.tenant_id, 'backfill:20261030120000:' || r.tenant_id::text);
+      r.tenant_id, 'backfill:20261030130000:' || r.tenant_id::text);
   END LOOP;
 END
 $do$;
-SELECT public.bot_usage_seed_missing_limits('seed:20261030120000');
+SELECT public.bot_usage_seed_missing_limits('seed:20261030130000');
 
 -- ============================================================
 -- 8. Rechte: nur service_role

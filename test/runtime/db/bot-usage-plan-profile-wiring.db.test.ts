@@ -1,5 +1,5 @@
 /**
- * Migration 20261030120000_bot_usage_plan_profile_wiring.sql (GO-Fix 30.10.2026)
+ * Migration 20261030130000_bot_usage_plan_profile_wiring.sql (GO-Fix 30.10.2026)
  *
  *   W1  Doppeltes Stripe-Ereignis wirkt genau einmal ('duplicate')
  *   W2  Kündigung / past_due → Budget 0
@@ -135,8 +135,8 @@ d('bot_usage plan profile wiring', () => {
          VALUES ($1, 0, 0, 0, 0, 'seed:20261028100000')`, [t]);
     }
     for (const t of [a, tr]) {
-      expect(await sync(t, `backfill:20261030120000:${t}`)).toMatch(/^applied:/);
-      expect(await sync(t, `backfill:20261030120000:${t}`)).toBe('duplicate');
+      expect(await sync(t, `backfill:20261030130000:${t}`)).toMatch(/^applied:/);
+      expect(await sync(t, `backfill:20261030130000:${t}`)).toBe('duplicate');
     }
     expect([Number((await row(a))!.voice_seconds_monthly), Number((await row(a))!.cost_eur_monthly)]).toEqual([3600, 8]);
     expect([Number((await row(tr))!.voice_seconds_monthly), Number((await row(tr))!.cost_eur_monthly)]).toEqual([900, 2]);

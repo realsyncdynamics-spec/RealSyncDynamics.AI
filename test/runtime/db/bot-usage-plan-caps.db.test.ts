@@ -103,7 +103,7 @@ d('P1 — beschlossene Tarifwerte', () => {
     const rows = (await ctx.client.query<{ plan_key: string; voice_minutes_monthly: number; cost_eur_monthly: string }>(
       `SELECT plan_key, voice_minutes_monthly, cost_eur_monthly FROM public.bot_usage_plan_profiles ORDER BY plan_key`,
     )).rows.map((r) => [r.plan_key, r.voice_minutes_monthly, Number(r.cost_eur_monthly)]);
-    // 'trial' (15 Min. / 2 €) seit 20261030120000_bot_usage_plan_profile_wiring.
+    // 'trial' (15 Min. / 2 €) seit 20261030130000_bot_usage_plan_profile_wiring.
     expect(rows).toEqual([['agency', 750, 90], ['growth', 250, 30], ['starter', 60, 8], ['trial', 15, 2]]);
     expect(await sqlState(ctx.client.query(
       `INSERT INTO public.bot_usage_plan_profiles (plan_key, voice_minutes_monthly, cost_eur_monthly, decided_at, decided_by)
@@ -276,7 +276,7 @@ d('P7 — Seed', () => {
     expect(s.config_source).toBe('test-seed:starter:active');
     const a = (await row(ctx, agency))!;
     expect([Number(a.voice_seconds_monthly), Number(a.cost_eur_monthly)]).toEqual([45000, 90]);
-    // Seit 20261030120000: laufende Trials erhalten das reduzierte Trial-Profil.
+    // Seit 20261030130000: laufende Trials erhalten das reduzierte Trial-Profil.
     const tr = (await row(ctx, trial))!;
     expect([Number(tr.voice_seconds_monthly), Number(tr.cost_eur_monthly), tr.plan_profile]).toEqual([900, 2, 'trial']);
     for (const t of [canceled, free, enterprise]) {

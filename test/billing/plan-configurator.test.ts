@@ -6,7 +6,7 @@ import {
   fitsTenantCapacity,
   offeredAddonsForPlan,
   yearlySelectable,
-} from '@/features/billing/planConfiguratorModel';
+} from '../../src/features/billing/planConfiguratorModel';
 
 describe('Plan-Konfigurator: nur Pricing-SSoT', () => {
   it('zeigt nur noch neu wählbare Checkout-Abos, keine Legacy- oder Einmalpläne', () => {

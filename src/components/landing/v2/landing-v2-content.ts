@@ -36,9 +36,10 @@ export interface Lv2TimelineEntry {
 }
 
 /**
- * Fristen der Verordnung (EU) 2024/1689 (Art. 113). Der „Digital Omnibus“
- * kann Fristen für Hochrisiko-Systeme verschieben — der Hinweis unter dem
- * Zeitstrahl bleibt deshalb Teil des Vertrags dieser Sektion.
+ * Fristen der Verordnung (EU) 2024/1689 (Art. 113) in der Fassung der
+ * VO (EU) 2026/1744 („Digital Omnibus“, in Kraft seit 27.07.2026): Hochrisiko
+ * Anhang III ab 02.12.2027, Anhang I ab 02.08.2028. Der Hinweis unter dem
+ * Zeitstrahl bleibt Teil des Vertrags dieser Sektion.
  */
 export const LV2_AI_ACT_TIMELINE: Lv2TimelineEntry[] = [
   {
@@ -63,13 +64,25 @@ export const LV2_AI_ACT_TIMELINE: Lv2TimelineEntry[] = [
     date: '02.08.2026',
     iso: '2026-08-02',
     title: 'Allgemeine Anwendung',
-    text: 'Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.',
+    text: 'Transparenzpflichten nach Art. 50.',
     current: true,
+  },
+  {
+    date: '02.12.2027',
+    iso: '2027-12-02',
+    title: 'Hochrisiko · Anhang III',
+    text: 'Hochrisiko-KI-Systeme nach Anhang III – verschoben durch VO (EU) 2026/1744.',
+  },
+  {
+    date: '02.08.2028',
+    iso: '2028-08-02',
+    title: 'Hochrisiko · Anhang I',
+    text: 'Hochrisiko-KI in regulierten Produkten nach Anhang I – verschoben durch VO (EU) 2026/1744.',
   },
 ];
 
 export const LV2_TIMELINE_NOTE =
-  'Stand: Verordnung (EU) 2024/1689, Art. 113. Fristverschiebungen für Hochrisiko-Systeme (Digital Omnibus) sind im Gesetzgebungsverfahren — die Plattform bildet den jeweils geltenden Stand ab.';
+  'Stand: Verordnung (EU) 2024/1689, Art. 113, in der Fassung der VO (EU) 2026/1744 (Digital Omnibus, in Kraft seit 27.07.2026) — die Plattform bildet den jeweils geltenden Stand ab.';
 
 export interface Lv2LifecycleStep {
   index: string;

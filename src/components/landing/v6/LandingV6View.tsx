@@ -173,7 +173,17 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2026</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten nach Art. 50.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.12.2027</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko · Anhang III</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Hochrisiko-KI-Systeme nach Anhang III – verschoben durch VO (EU) 2026/1744.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.08.2028</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko · Anhang I</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Hochrisiko-KI in regulierten Produkten nach Anhang I – verschoben durch VO (EU) 2026/1744.</span>
             </li>
           </ol>
         </div>

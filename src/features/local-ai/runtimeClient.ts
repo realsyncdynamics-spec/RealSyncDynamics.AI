@@ -22,6 +22,11 @@ export interface RuntimeClientOptions {
   pageOrigin?: string;
   timeoutMs?: number;
   now?: () => number;
+  /**
+   * Permissions-API für den LNA-Check (Tests). Standard: `navigator.permissions`.
+   * `null` deaktiviert den Check.
+   */
+  permissionsImpl?: Pick<Permissions, 'query'> | null;
 }
 
 const PROBE_TIMEOUT_MS = 5_000;
@@ -113,6 +118,57 @@ export function corsHint(pageOrigin: string): string {
   return `Ollama muss diese Seite erlauben: OLLAMA_ORIGINS="${pageOrigin}" ollama serve`;
 }
 
+/** Adressraum gemäß Local Network Access (Chrome) für `targetAddressSpace`. */
+export type TargetAddressSpace = 'loopback' | 'local';
+
+export function addressSpaceFor(host: string): TargetAddressSpace {
+  return isLoopback(host.toLowerCase()) ? 'loopback' : 'local';
+}
+
+export type LnaPermissionState = 'granted' | 'prompt' | 'denied' | 'unsupported';
+
+/**
+ * Fragt die LNA-Berechtigung ab: `loopback-network` (127.0.0.0/8, ::1,
+ * localhost) bzw. `local-network` (LAN), Fallback auf den Legacy-Alias
+ * `local-network-access`. Ohne API (Firefox/Safari) → `unsupported`.
+ */
+export async function checkLocalNetworkPermission(
+  host: string,
+  permissionsImpl?: Pick<Permissions, 'query'> | null,
+): Promise<LnaPermissionState> {
+  const perms =
+    permissionsImpl === undefined
+      ? typeof navigator !== 'undefined' && navigator.permissions && typeof navigator.permissions.query === 'function'
+        ? navigator.permissions
+        : null
+      : permissionsImpl;
+  if (!perms) return 'unsupported';
+  const primary = addressSpaceFor(host) === 'loopback' ? 'loopback-network' : 'local-network';
+  for (const name of [primary, 'local-network-access']) {
+    try {
+      const status = await perms.query({ name } as unknown as PermissionDescriptor);
+      const state = status?.state;
+      if (state === 'granted' || state === 'prompt' || state === 'denied') return state;
+    } catch {
+      // Name unbekannt → nächsten versuchen
+    }
+  }
+  return 'unsupported';
+}
+
+export function permissionDeniedError(host: string): LocalAiError {
+  const loopback = addressSpaceFor(host) === 'loopback';
+  return {
+    code: 'LOCAL_NETWORK_PERMISSION_DENIED',
+    message: loopback
+      ? 'Der Browser blockiert den Zugriff auf Apps auf diesem Gerät (Loopback-Netzwerk).'
+      : 'Der Browser blockiert den Zugriff auf Geräte im lokalen Netzwerk.',
+    hint: `Schloss-Symbol in der Adressleiste → Website-Einstellungen → „${
+      loopback ? 'Apps auf dem Gerät / Loopback-Netzwerk' : 'Lokales Netzwerk'
+    }“ auf Zulassen stellen und die Seite neu laden.`,
+  };
+}
+
 async function fetchWithTimeout(
   fetchImpl: typeof fetch,
   url: string,
@@ -122,7 +178,10 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetchImpl(url, { ...init, signal: controller.signal });
+    const targetAddressSpace = addressSpaceFor(new URL(url).hostname);
+    // `targetAddressSpace` ist (noch) nicht in lib.dom; Browser ohne LNA ignorieren die Option.
+    const lnaInit = { ...init, signal: controller.signal, targetAddressSpace } as RequestInit;
+    return await fetchImpl(url, lnaInit);
   } finally {
     clearTimeout(timer);
   }
@@ -141,7 +200,11 @@ async function classifyNetworkFailure(
   fetchImpl: typeof fetch,
   runtimeUrl: string,
   pageOrigin: string,
+  permissionsImpl?: Pick<Permissions, 'query'> | null,
 ): Promise<LocalAiError> {
+  const host = new URL(runtimeUrl).hostname;
+  const permission = await checkLocalNetworkPermission(host, permissionsImpl);
+  if (permission === 'denied') return permissionDeniedError(host);
   try {
     await fetchWithTimeout(fetchImpl, `${runtimeUrl}/api/version`, { method: 'GET', mode: 'no-cors' }, 2_000);
     return {
@@ -153,7 +216,10 @@ async function classifyNetworkFailure(
     return {
       code: 'RUNTIME_UNREACHABLE',
       message: 'Runtime nicht erreichbar.',
-      hint: 'Läuft Ollama? Starten mit: ollama serve',
+      hint:
+        permission === 'unsupported'
+          ? 'Läuft Ollama? Starten mit: ollama serve. Falls ja: Browser-Freigabe für das lokale Netzwerk prüfen.'
+          : 'Läuft Ollama? Starten mit: ollama serve',
     };
   }
 }
@@ -170,6 +236,10 @@ export async function probeRuntime(
   const mixed = detectMixedContent(runtimeUrl, pageOrigin);
   if (mixed) return { ok: false, error: mixed };
 
+  const host = new URL(runtimeUrl).hostname;
+  if ((await checkLocalNetworkPermission(host, opts.permissionsImpl)) === 'denied') {
+    return { ok: false, error: permissionDeniedError(host) };
+  }
   const fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis);
   const now = opts.now ?? (() => performance.now());
   const started = now();
@@ -178,7 +248,7 @@ export async function probeRuntime(
     res = await fetchWithTimeout(fetchImpl, `${runtimeUrl}/api/tags`, { method: 'GET' }, opts.timeoutMs ?? PROBE_TIMEOUT_MS);
   } catch (err) {
     if (isAbort(err)) return fail('TIMEOUT', 'Die Runtime hat nicht rechtzeitig geantwortet.');
-    return { ok: false, error: await classifyNetworkFailure(fetchImpl, runtimeUrl, pageOrigin) };
+    return { ok: false, error: await classifyNetworkFailure(fetchImpl, runtimeUrl, pageOrigin, opts.permissionsImpl) };
   }
   const latencyMs = Math.max(0, Math.round(now() - started));
   if (!res.ok) return fail('RUNTIME_HTTP_ERROR', `Runtime antwortet mit HTTP ${res.status}.`);
@@ -205,6 +275,7 @@ export function connectionOutcome(result: LocalAiResult<RuntimeProbe>): Connecti
   if (result.ok) return result.data.models.length > 0 ? 'reachable' : 'no_models';
   switch (result.error.code) {
     case 'CORS_BLOCKED':
+    case 'LOCAL_NETWORK_PERMISSION_DENIED':
     case 'MIXED_CONTENT_BLOCKED':
       return 'blocked';
     case 'INVALID_URL':
@@ -237,6 +308,10 @@ export async function chatJson(req: ChatRequest, opts: RuntimeClientOptions = {}
   const mixed = detectMixedContent(runtimeUrl, pageOrigin);
   if (mixed) return { ok: false, error: mixed };
 
+  const host = new URL(runtimeUrl).hostname;
+  if ((await checkLocalNetworkPermission(host, opts.permissionsImpl)) === 'denied') {
+    return { ok: false, error: permissionDeniedError(host) };
+  }
   const fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis);
   const now = opts.now ?? (() => performance.now());
   const started = now();
@@ -263,7 +338,7 @@ export async function chatJson(req: ChatRequest, opts: RuntimeClientOptions = {}
     );
   } catch (err) {
     if (isAbort(err)) return fail('TIMEOUT', 'Das Modell hat nicht rechtzeitig geantwortet.', 'Beim ersten Aufruf lädt Ollama das Modell — erneut versuchen.');
-    return { ok: false, error: await classifyNetworkFailure(fetchImpl, runtimeUrl, pageOrigin) };
+    return { ok: false, error: await classifyNetworkFailure(fetchImpl, runtimeUrl, pageOrigin, opts.permissionsImpl) };
   }
   if (res.status === 404) {
     return fail('MODEL_NOT_INSTALLED', `Modell ${req.model} ist nicht installiert.`, `ollama pull ${req.model}`);

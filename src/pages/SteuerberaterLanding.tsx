@@ -1,5 +1,6 @@
 import { Calculator, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLanding';
+import { CTA } from '../content/runtimeVocab';
 
 export function SteuerberaterLanding() {
   return (
@@ -24,7 +25,7 @@ export function SteuerberaterLanding() {
         cta: {
           heading: 'KI-Effizienz ohne § 203-Risiko',
           buttons: [
-            { to: '/contact-sales?source=steuerberater', label: 'Founding Access starten', variant: 'primary' },
+            { to: '/contact-sales?source=steuerberater', label: CTA.enterprise, variant: 'primary' },
             { to: '/avv-generator?source=steuerberater', label: 'AVV-Vorlage erstellen', variant: 'secondary' },
             { to: '/legal-tech', label: 'Auch für Anwälte?', variant: 'ghost' },
           ],

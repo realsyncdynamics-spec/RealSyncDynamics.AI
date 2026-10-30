@@ -25,6 +25,7 @@ export interface AgentQuestionRow {
   dedupe_key: string;
   is_demo: boolean;
   created_at: string;
+  decision_id?: string | null;
 }
 
 export interface QuestionEventRow {
@@ -81,3 +82,14 @@ export const EVENT_LABEL: Record<QuestionEventRow['event_type'], string> = {
   status_changed: 'Status geändert',
   priority_changed: 'Priorität geändert',
 };
+
+export interface DecisionRow {
+  id: string;
+  options: Array<{ label: string; rationale: string; risks?: string; costs?: string; recommended?: boolean }>;
+  recommendation: string;
+  reason: string;
+  risk_level: string;
+  reversibility: string;
+  status: string;
+  proposed_by: string;
+}

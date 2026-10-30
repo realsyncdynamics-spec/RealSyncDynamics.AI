@@ -17,6 +17,7 @@ import {
   TRIAL_CTA,
   SCAN_CTA,
 } from '../components/landing/LandingShell';
+import { TRY_FREE } from '../config/beta';
 
 /**
  * AiDsgvoBotPage — Produktseite /ai-dsgvo-bot.
@@ -164,7 +165,7 @@ export function AiDsgvoBotPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 sm:pb-24">
           <div className="rounded-panel border border-petrol-200 bg-petrol-50 p-10 sm:p-14 text-center">
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-4">
-              Testen Sie den AI DSGVO Bot 14 Tage kostenlos
+              Testen Sie den AI DSGVO Bot {TRY_FREE.phrase}
             </h2>
             <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed mb-9">
               Scannen Sie eine Website und lassen Sie sich die Ergebnisse vom AI DSGVO Bot

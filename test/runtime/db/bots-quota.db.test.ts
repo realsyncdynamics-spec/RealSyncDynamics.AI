@@ -308,9 +308,32 @@ d('Release-Gate der Migration 20260920130000 — Endzustand von #1491', () => {
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); });
 
-  it('läuft auf dem vollständigen Katalog durch', async () => {
+  it('läuft auf dem Katalog im Stand von #1491 durch', async () => {
+    // Seit 2026-10-24 (Dominik) trägt Enterprise limit.bots = 20
+    // (20261029150100, Spiegel 20261029150200). Beim Einspielen trifft das
+    // Gate auf den Stand von 20260920120000 — hier in der Transaktion
+    // nachgestellt, damit der Fall weiter prüft, was er prüfen soll.
+    const { rowCount } = await ctx.client.query(
+      `UPDATE public.product_entitlements pe SET value = -1
+         FROM public.products p, public.entitlements e
+        WHERE pe.product_id = p.id AND pe.entitlement_id = e.id
+          AND p.default_for_plan_key IN ('enterprise', 'enterprise_yearly') AND e.key = 'limit.bots'`,
+    );
+    expect(rowCount, 'Vorbedingung: Enterprise trägt limit.bots im migrierten Schema').toBeGreaterThan(0);
     expect(gate).toContain('DO $$');
     await expect(ctx.client.query(gate)).resolves.toBeDefined();
+  });
+
+  it('ist ein historisches Gate: auf dem heutigen Katalog (limit.bots = 20) bricht es ab', async () => {
+    const { rows } = await ctx.client.query(
+      `SELECT pe.value FROM public.product_entitlements pe
+         JOIN public.products p ON p.id = pe.product_id
+         JOIN public.entitlements e ON e.id = pe.entitlement_id
+        WHERE p.default_for_plan_key IN ('enterprise', 'enterprise_yearly') AND e.key = 'limit.bots'`,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => Number(r.value) === 20)).toBe(true);
+    await expect(ctx.client.query(gate)).rejects.toThrow(/Release-Gate/);
   });
 
   it('bricht ab, wenn das Enterprise-Produkt die Bot-Zuordnung nicht trägt (Live-Befund)', async () => {

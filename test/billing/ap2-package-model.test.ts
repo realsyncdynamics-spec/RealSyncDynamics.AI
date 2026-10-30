@@ -237,17 +237,17 @@ describe('Partner ist stillgelegt; Agency ist wieder verkaufbar', () => {
     expect(isPlanSelectable('partner')).toBe(false);
   });
 
-  it('lässt Enterprise sichtbar, aber nur über den Vertrieb', () => {
+  it('führt Enterprise seit 2026-10-24 im Self-Service-Checkout', () => {
     const enterprise = planById('enterprise');
-    expect(enterprise.availability).toBe('contract');
-    expect(enterprise.purchaseMode).toBe('inquiry');
+    expect(enterprise.availability).toBe('self_service');
+    expect(enterprise.purchaseMode).toBe('checkout');
     expect(SALES_PLANS.map((p) => p.id)).toContain('enterprise');
-    expect(SELF_SERVICE_PLANS.map((p) => p.id)).not.toContain('enterprise');
+    expect(SELF_SERVICE_PLANS.map((p) => p.id)).toContain('enterprise');
   });
 
-  it('führt Agency wieder im Self-Service (neben free/starter/growth)', () => {
+  it('führt Agency und Enterprise im Self-Service (neben free/starter/growth)', () => {
     expect(SELF_SERVICE_PLANS.map((p) => p.id)).toEqual([
-      'free', 'starter', 'growth', 'agency',
+      'free', 'starter', 'growth', 'agency', 'enterprise',
     ]);
   });
 

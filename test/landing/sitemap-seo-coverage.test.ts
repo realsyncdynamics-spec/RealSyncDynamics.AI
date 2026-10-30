@@ -20,7 +20,7 @@
  *
  * ## Zwei Schweregrade, gemessen
  *
- * Die 38 zerfallen in zwei Gruppen, und der Unterschied ist erheblich:
+ * Die 38 zerfielen in zwei Gruppen (Stand 2026-10-23: die erste ist leer):
  *
  * - **22 ohne jeden Mechanismus** — diese Seiten liefern tatsächlich den
  *   generischen Title und die generische Description aus `DEFAULT_SEO`. Für
@@ -49,30 +49,11 @@ const sitemapPaths = [
 
 /**
  * Liefern den generischen Text aus `DEFAULT_SEO` aus: echte Dubletten.
- * Diese Liste abzuarbeiten ist redaktionelle Arbeit, ein Pfad nach dem anderen.
+ * Seit 2026-10-23 leer — die letzten 20 Pfade (Tools, Branchen-Guides, API,
+ * Changelog, Status) haben eigene Einträge. Die Liste bleibt als Ratsche:
+ * Sie darf nicht wieder wachsen, ein neuer Pfad braucht einen Eintrag.
  */
-const OHNE_EIGENE_META = [
-  '/ai-act-klassifikator',
-  '/ai-act-workflows',
-  '/api',
-  '/api-docs',
-  '/avv-generator',
-  '/bait-compliance',
-  '/branchen',
-  '/changelog',
-  '/cookie-compliance',
-  '/cookie-consent-sdk',
-  '/datenpanne-meldung',
-  '/datenschutz-generator',
-  '/dokumente-bundle',
-  '/enterprise-konfigurator',
-  '/eu-ai-act-check',
-  '/marisk-audit',
-  '/release-notes',
-  '/status',
-  '/tom-generator',
-  '/vvt-wizard',
-];
+const OHNE_EIGENE_META: string[] = [];
 
 /**
  * Setzen Title und Description über `usePageMeta` selbst. Der ausgelieferte
@@ -95,6 +76,14 @@ const NUR_HOOK_META = [
   '/policy-engine',
   '/pre-consent-tracking',
   '/trust',
+];
+
+/** Die 2026-10-23 nachgezogenen Pfade — vorher DEFAULT_SEO, jetzt mit eigenem Eintrag. */
+const NACHGEZOGEN = [
+  '/ai-act-klassifikator', '/ai-act-workflows', '/api', '/api-docs', '/avv-generator',
+  '/bait-compliance', '/branchen', '/changelog', '/cookie-compliance', '/cookie-consent-sdk',
+  '/datenpanne-meldung', '/datenschutz-generator', '/dokumente-bundle', '/enterprise-konfigurator',
+  '/eu-ai-act-check', '/marisk-audit', '/release-notes', '/status', '/tom-generator', '/vvt-wizard',
 ];
 
 /** Der Stand, auf den die Ratsche heute einrastet. */
@@ -135,6 +124,37 @@ describe('Sitemap-SEO-Abdeckung — die Lücke darf nur kleiner werden', () => {
   it('führt keinen Pfad in beiden Schweregrad-Listen', () => {
     const doppelt = OHNE_EIGENE_META.filter((path) => NUR_HOOK_META.includes(path));
     expect(doppelt).toEqual([]);
+  });
+
+  it('liefert keinen Sitemap-Pfad mehr mit dem generischen DEFAULT_SEO-Text', () => {
+    expect(OHNE_EIGENE_META).toEqual([]);
+  });
+
+  it('gibt jeder selbst-kanonischen Sitemap-Seite einen eigenen <title>', () => {
+    // Aliasse (canonical zeigt auf eine andere URL) dürfen den Titel ihrer
+    // Hauptseite tragen — Suchmaschinen konsolidieren sie ohnehin.
+    const selbstKanonisch = (path: string) => {
+      const canonical = getSeoForPath(path).canonical;
+      return !canonical || new URL(canonical, 'https://realsyncdynamicsai.de').pathname === path;
+    };
+    const titel = new Map<string, string[]>();
+    for (const path of sitemapPaths.filter((p) => getSeoForPath(p) !== DEFAULT_SEO && selbstKanonisch(p))) {
+      const { title } = getSeoForPath(path);
+      titel.set(title, [...(titel.get(title) ?? []), path]);
+    }
+    const doppelt = [...titel.entries()].filter(([, pfade]) => pfade.length > 1);
+    expect(doppelt, 'Mehrere Sitemap-Seiten teilen sich denselben <title>').toEqual([]);
+  });
+
+  it('gibt den 20 nachgezogenen Seiten Titel ≤ 60 und Beschreibungen mit 140–160 Zeichen', () => {
+    for (const path of NACHGEZOGEN) {
+      const seo = getSeoForPath(path);
+      expect(seo, path).not.toBe(DEFAULT_SEO);
+      expect(seo.title.endsWith(' | RealSync Dynamics AI'), `${path}: Marke am Ende`).toBe(true);
+      expect(seo.title.length, `${path}: ${seo.title}`).toBeLessThanOrEqual(60);
+      expect(seo.description.length, `${path}: Beschreibung`).toBeGreaterThanOrEqual(140);
+      expect(seo.description.length, `${path}: Beschreibung`).toBeLessThanOrEqual(160);
+    }
   });
 
   it('nimmt den fail-closed abgedeckten /flow-Namespace nicht in die Lücke auf', () => {

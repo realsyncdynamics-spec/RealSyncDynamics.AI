@@ -544,6 +544,18 @@ function permissions(overrides: Partial<PlanPermissions>): PlanPermissions {
 //  Der Plan-Katalog
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * Enterprise-Checkout fail-closed: erst auf `true`, wenn Stripe die Live-Price
+ * (prod_UxG9V9clbqV7qw, unit_amount 149800, tax_behavior exclusive) angelegt und
+ * die Price-ID in PLAN_STRIPE_EXPECTATIONS verdrahtet hat. Bis dahin führt jeder
+ * Enterprise-CTA zu /contact-sales. Steht vor PLANS, weil `ctaLabel` daraus abgeleitet wird.
+ */
+// Verdrahtet 2026-10-29: price_1UVxUrREjTWueUcGuSjqctMH (prod_UxG9V9clbqV7qw).
+export const ENTERPRISE_CHECKOUT_PRICE_WIRED = true as boolean;
+
+/** Enterprise-CTA folgt dem Checkout-Schalter: Kauf-Label nur, wenn die Live-Price verdrahtet ist. */
+export const ENTERPRISE_CTA_LABEL = ENTERPRISE_CHECKOUT_PRICE_WIRED ? 'Enterprise starten' : 'Enterprise anfragen';
+
 export const PLANS: Plan[] = [
   // ── Free Audit — 0 € ────────────────────────────────────────────────────
   {
@@ -890,9 +902,9 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
-    // Fail-closed bis die Live-Price-ID (prod_UxG9V9clbqV7qw, 149800, exclusive)
-    // verdrahtet ist — siehe ENTERPRISE_CHECKOUT_PRICE_WIRED.
-    ctaLabel: 'Enterprise anfragen',
+    // Folgt ENTERPRISE_CHECKOUT_PRICE_WIRED: „Enterprise starten“ → Checkout,
+    // sonst „Enterprise anfragen“ → /contact-sales (fail-closed).
+    ctaLabel: ENTERPRISE_CTA_LABEL,
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
@@ -2959,14 +2971,6 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
  * URLs gebildet werden — verhindert abweichende Links zwischen Landing,
  * Pricing und Dashboard.
  */
-/**
- * Enterprise-Checkout fail-closed: erst auf `true`, wenn Stripe die Live-Price
- * (prod_UxG9V9clbqV7qw, unit_amount 149800, tax_behavior exclusive) angelegt und
- * die Price-ID in PLAN_STRIPE_EXPECTATIONS verdrahtet hat. Bis dahin führt jeder
- * Enterprise-CTA zu /contact-sales.
- */
-// Verdrahtet 2026-10-29: price_1UVxUrREjTWueUcGuSjqctMH (prod_UxG9V9clbqV7qw).
-export const ENTERPRISE_CHECKOUT_PRICE_WIRED = true as boolean;
 
 export function checkoutHrefForPlan(
   plan: Plan | PlanId,

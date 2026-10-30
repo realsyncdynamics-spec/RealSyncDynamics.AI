@@ -395,7 +395,7 @@ describe('pricingContent', () => {
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
       expect(enterprise?.priceString).toBe('1.498 €');
       expect(enterprise?.interval).toBe('/ Monat netto');
-      expect(enterprise?.cta.href).toBe('/contact-sales?plan=enterprise&source=pricing');
+      expect(enterprise?.cta.href).toBe('/checkout/enterprise'); // ENTERPRISE_CHECKOUT_PRICE_WIRED = true
     });
 
     it('prices should be in ascending order for paid plans', () => {

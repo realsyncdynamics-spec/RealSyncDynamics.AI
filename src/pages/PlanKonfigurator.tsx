@@ -10,18 +10,18 @@ import {
   type AddOnId,
   type PlanId,
 } from '@/shared/pricing';
-import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '@/config/beta';
-import { PRICING_TAX_NOTE_STANDARD } from '@/config/pricing';
-import { COMPANY } from '@/config/company';
-import { SEOHead } from '@/components/SEOHead';
-import { HandoffTopBar } from '@/components/handoff/HandoffTopBar';
+import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '../config/beta';
+import { PRICING_TAX_NOTE_STANDARD } from '../config/pricing';
+import { COMPANY } from '../config/company';
+import { SEOHead } from '../components/SEOHead';
+import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import {
   CONFIGURABLE_PLANS,
   estimateMonthlyQuote,
   fitsTenantCapacity,
   offeredAddonsForPlan,
   yearlySelectable,
-} from '@/features/billing/planConfiguratorModel';
+} from '../features/billing/planConfiguratorModel';
 
 /**
  * Öffentlicher Plan-Konfigurator — bewusst ein Read-only-Preisrechner:

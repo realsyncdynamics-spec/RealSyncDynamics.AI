@@ -154,6 +154,11 @@ export function PricingPage() {
                 <TierCard key={tier.id} tier={tier} billing={effectiveBilling} selected={tier.id === selectedPlan} />
               ))}
             </div>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link to="/plan-konfigurator" className="rs-btn rs-btn--outline rs-btn--h40" data-testid="pricing-configurator-link">
+                Individuellen Plan konfigurieren
+              </Link>
+            </div>
             <div className="rs-pricing__foot" data-testid="pricing-foot">
               <p data-testid="pricing-trust-note">
                 {BETA_PUBLIC_OFFER

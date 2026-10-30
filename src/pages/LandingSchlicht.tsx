@@ -73,7 +73,7 @@ export function LandingSchlicht() {
             e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
           }}
           onKeyDown={onKey}
-          placeholder="Frage zu DSGVO oder EU AI Act stellen …"
+          placeholder="Frage stellen …"
           className="max-h-[200px] min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[15px] text-[#ededee] placeholder:text-[#71717a] focus:outline-none"
           disabled={chat.isLoading}
         />
@@ -206,7 +206,7 @@ export function LandingSchlicht() {
               className="mt-8 text-[13px] underline-offset-4 hover:underline"
               style={{ color: GOLD, fontFamily: FONT_MONO }}
             >
-              {BETA.headline} → Kostenlos testen
+              Offene Beta · Kostenlos testen →
             </Link>
           )}
         </main>

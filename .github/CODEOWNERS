@@ -2,7 +2,8 @@
 # „Require review from Code Owners“ aktiv ist.
 # Default-Owner: Repo-Account. Teams ersetzen die Zeilen, sobald sie existieren.
 
-* @realsyncdynamics-spec
+# Zweiter Owner (nur Default-Regel): CONFIRM WITH DOMINIK — Kandidat aus Repo-Collaborators (write).
+* @realsyncdynamics-spec @steinerdominik1982-bot
 
 # Hot-Files — serialisieren, nicht parallel umbauen
 /src/App.tsx @realsyncdynamics-spec

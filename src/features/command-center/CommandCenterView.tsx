@@ -6,6 +6,7 @@ import {
 } from './agentRegistry';
 import { useAgentRegistry } from './useAgentRegistry';
 import { DecisionInbox } from './DecisionInbox';
+import { AgentConfigPanel } from './AgentConfigPanel';
 
 const NAV = [
   'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
@@ -47,7 +48,7 @@ const SOURCE_LABEL: Record<RegistryAgent['source'], string> = {
   grok_soll: 'Soll-Konfiguration · kein Live-Status',
 };
 
-function AgentCard({ a }: { a: RegistryAgent }) {
+function AgentCard({ a, onConfig }: { a: RegistryAgent; onConfig: () => void }) {
   return (
     <article data-testid="agent-card" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
       <div className="flex items-start justify-between gap-2">
@@ -69,6 +70,9 @@ function AgentCard({ a }: { a: RegistryAgent }) {
       {a.lastError && (
         <p className="mt-2 flex items-center gap-1 text-xs text-red-300"><AlertTriangle className="h-3 w-3" aria-hidden />{a.lastError}</p>
       )}
+      <button type="button" onClick={onConfig} className="mt-3 text-xs text-sky-300 underline">
+        Details · Bibliothek · Computer
+      </button>
     </article>
   );
 }
@@ -91,6 +95,7 @@ export function CommandCenterView() {
   const { agents, loading, sourceError } = useAgentRegistry();
   const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [configFor, setConfigFor] = useState<RegistryAgent | null>(null);
   const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
   const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -150,8 +155,11 @@ export function CommandCenterView() {
         </div>
         <p className="mt-3 text-xs text-zinc-500">{loading ? 'Lade …' : `${shown.length} von ${agents.length} Agenten`}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((a) => <AgentCard key={a.registryId} a={a} />)}
+          {shown.map((a) => <AgentCard key={a.registryId} a={a} onConfig={() => setConfigFor(a)} />)}
         </div>
+        {configFor && (
+          <AgentConfigPanel key={configFor.registryId} agentRef={configFor.registryId} agentName={configFor.name} onClose={() => setConfigFor(null)} />
+        )}
       </main>
 
       <DecisionInbox />

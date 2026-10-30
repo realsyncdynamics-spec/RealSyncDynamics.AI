@@ -76,6 +76,17 @@ describe('LocalAiOnboardingView', () => {
     expect(stepStatus('Verbindung prüfen')).toBe('failed');
   });
 
+  it('shows LOCAL_NETWORK_PERMISSION_DENIED with a settings hint when the browser blocks loopback access', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('navigator', { ...window.navigator, permissions: { query: vi.fn().mockResolvedValue({ state: 'denied' }) } });
+    render(<LocalAiOnboardingView />);
+    fireEvent.click(screen.getByRole('button', { name: /Verbindung testen/ }));
+    expect(await screen.findByText('LOCAL_NETWORK_PERMISSION_DENIED')).toBeInTheDocument();
+    expect(screen.getByText(/Website-Einstellungen/)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('runs the full flow: connect → role → governance test → activate', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.endsWith('/api/tags')) return json({ models: [{ name: 'granite4.2:8b' }] });

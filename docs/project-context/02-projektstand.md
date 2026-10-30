@@ -87,7 +87,7 @@ Reihenfolge des modularen Umbaus (Plan, keine Termine):
 
 ### 3.4 Offene Owner-Entscheidungen (Masterplan §8)
 
- Enterprise-Preis (1.249 € in SSoT, nur Anfrage, vs. 1.498 € in offenen PRs #1995/#1999), verfügbare Kapazität, Zielwerte, rechtliche Prüfung, Cron-Secrets, Partner-Reaktivierung, `/audit` als kanonischer Einstieg, Stilllegung von Routen (erst nach Bestandsliste).
+ ~~Enterprise-Preis~~ (entschieden: 1.498 € netto, Self-Service-Checkout, Owner 24.10./30.10.2026; offen bleibt E-P1h Bot-Kostenbremse), verfügbare Kapazität, Zielwerte, rechtliche Prüfung, Cron-Secrets, Partner-Reaktivierung, `/audit` als kanonischer Einstieg, Stilllegung von Routen (erst nach Bestandsliste).
 
 ---
 
@@ -182,7 +182,7 @@ Statuslegende: **Live** = erreichbar und backend-gestützt · **Beta** = live, a
 |---|---|---|---|
 | Stripe-Checkout monatlich Starter 79 € / Growth 249 € / Agency 699 € | `/checkout/:planKey`, `/pricing` | Live (Self-Service); auf `/` aktuell überlagert durch Beta-Angebot | `shared/pricing.ts`; Registry `stripe-checkout-e2e` |
 | Governance Launch 349 € | Checkout | Live laut SSoT (`self_service`) | `shared/pricing.ts` |
-| Enterprise | `/contact-sales` | Nur Anfrage (1.249 € in SSoT, Preis offen) | `shared/pricing.ts`; Masterplan §5 |
+| Enterprise 1.498 € netto | `/checkout/enterprise` (über `checkoutHrefForPlan`); `/contact-sales` bleibt Kontaktweg | Self-Service laut SSoT seit 29.10.2026, ohne Testphase; produktiv nicht verifiziert | `shared/pricing.ts` (`ENTERPRISE_CHECKOUT_PRICE_WIRED`); Migration `20261029150300_enterprise_live_price_1498.sql` |
 | Partner 1.999 € | – | Legacy, kein Neukundenangebot | `shared/pricing.ts` (`availability: legacy`) |
 | Jahresabrechnung | – | Geplant (Stripe nicht verdrahtet) | Registry `pricing-yearly` |
 | Offene Beta: Growth-Umfang bis 31.01.2027 | `/welcome?beta=1` | Live (`beta-enroll` serverseitig). Ablauf automatisch: `beta-enroll` speichert `BETA_ENDS_AT` als `trial_end`/`trial_ends_at`, `tenant_entitlements_resolve()` wertet abgelaufene Trials nicht mehr (Migration `20260928160000_wp2a_trial_end_expiry.sql`). Nur das Frontend-Label in `src/config/beta.ts` ist reiner Anzeigetext | `supabase/functions/beta-enroll/logic.ts`; `src/config/beta.ts`; Registry `beta-phase` |
@@ -221,7 +221,7 @@ Statuslegende: **Live** = erreichbar und backend-gestützt · **Beta** = live, a
 6. **AI-Act-Klassifikation** ist regelbasiert und **keine** rechtsverbindliche Einstufung; Speichern ins Inventar ist für keinen Plan freigeschaltet.
 7. **Mock-Dashboard öffentlich erreichbar** (`/dashboard/enterprise-ai-os`): inzwischen als „Beispieldaten“ gekennzeichnet (nur „Recent Agent Runs“ echt), wirkt aber neben dem echten `/app/dashboard` wie ein zweites Produkt (Masterplan M8: kennzeichnen oder umstellen).
 8. **Keine externe Validierung:** kein Pentest, kein SOC 2/ISO 27001, keine externe AI-Act-Konformitätsbewertung; Security-Header-Deploy war 05/2026 offen. Verbotene Formulierungen: „garantiert DSGVO-Compliance“, „AI-Act-zertifiziert“, „ersetzt den DSB“, „autonome Compliance“.
-9. **Preisquellen-Drift:** Enterprise 1.249 € (SSoT) vs. 1.498 € (Owner-Vorgabe in offenen PRs); Voice/WhatsApp mit zwei Preisen (Add-on vs. Modul); Modulpreise `provisional`.
+9. **Preisquellen-Drift:** ~~Enterprise 1.249 € vs. 1.498 €~~ aufgelöst am 30.10.2026 (SSoT 1.498 €); offen: Voice/WhatsApp mit zwei Preisen (Add-on vs. Modul); Modulpreise `provisional`.
 10. **Betriebsrisiko:** Supabase-Plan laut 08/2026 ohne Backup/PITR/SLA – kritisch für ein Produkt, das Hash-Ketten als Nachweis verkauft (aktueller Stand unbelegt).
 
 ---

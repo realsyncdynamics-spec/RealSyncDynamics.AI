@@ -78,7 +78,7 @@ Basis vorhanden: `token_tracking`, `tenant_cost_ledger`, `agent_runs_metering`, 
 ## WP-7 — Roadmap-Seite & Pricing-Seite auf Beta
 
 - `/roadmap`: Beta-Meilensteine (Start, Feedback-Runden, Ende 31.01.2027, Preise ab Feb. 2027) aus einer Konstante in `src/config/beta.ts`.
-- `/pricing`: Enterprise mit Preis sichtbar (SSoT `shared/pricing.ts`, 1.249 €), Beta-Hinweis über allen Self-Service-Plänen, Credits-Tabelle (nach WP-5).
+- `/pricing`: Enterprise mit Preis sichtbar (SSoT `shared/pricing.ts`, 1.498 € netto, Stand 30.10.2026; zuvor 1.249 €), Beta-Hinweis über allen Self-Service-Plänen, Credits-Tabelle (nach WP-5).
 
 ## Reihenfolge
 

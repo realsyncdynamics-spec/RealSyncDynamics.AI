@@ -67,4 +67,15 @@ describe('CommandCenterView', () => {
     const res = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(res.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
   });
+
+  it('M6: Umschalten auf Aufgaben zeigt Kanban; M5: Konfig-Panel öffnet aus Agentenkarte', async () => {
+    await renderView();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Details · Bibliothek · Computer' })[0]!);
+    expect(screen.getByTestId('agent-config-panel')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Aufgaben' }));
+    expect(screen.getByTestId('task-board')).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByRole('status').some((n) => /Supabase nicht konfiguriert/.test(n.textContent ?? ''))).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Agenten' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Agentenübersicht' })).toBeTruthy();
+  });
 });

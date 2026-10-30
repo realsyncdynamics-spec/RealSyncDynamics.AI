@@ -141,3 +141,26 @@ describe('DecisionInbox — Freigabe-Gate (M4)', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Owner\/Admin/));
   });
 });
+
+describe('DecisionInbox — Präzedenzfälle (M7)', () => {
+  it('zeigt frühere Entscheidungen nur als Hinweis; Freigabe bleibt gesperrt', async () => {
+    tables.agent_questions = { data: [row('p', { question: 'Webhook Retry erhöhen?', decision_id: 'd9' })], error: null };
+    tables.agent_decisions = { data: [{ id: 'd9', recommendation: 'A', reason: 'r', risk_level: 'low', reversibility: 'reversible',
+      status: 'proposed', proposed_by: 'grok:x', options: [{ label: 'A', rationale: 'a', recommended: true }] }], error: null };
+    rpcMock.mockClear();
+    rpcMock.mockResolvedValueOnce({ data: [
+      { kind: 'decision', id: 'd9', title: 'selbst', status: 'proposed', created_at: '2026-10-30T00:00:00Z' },
+      { kind: 'decision', id: 'old', title: 'Webhook Retry 2025', status: 'approved', created_at: '2026-01-01T00:00:00Z' },
+    ] as unknown as object, error: null });
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Frühere Entscheidungen anzeigen' }));
+    await waitFor(() => expect(screen.getByTestId('precedents')).toBeTruthy());
+    const p = screen.getByTestId('precedents');
+    expect(p.textContent).toMatch(/nicht als Freigabe/);
+    expect(p.textContent).toMatch(/Webhook Retry 2025/);
+    expect(p.textContent).not.toMatch(/selbst/);
+    expect(rpcMock.mock.calls[0]![0]).toBe('search_agent_knowledge');
+    expect((screen.getByRole('button', { name: 'Vorschlag übernehmen' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});

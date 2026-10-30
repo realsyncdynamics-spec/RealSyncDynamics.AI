@@ -1,3 +1,4 @@
+import { SOLL_CONFIG } from '../../src/features/command-center/agentRegistry';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
@@ -47,10 +48,10 @@ describe('CommandCenterView', () => {
     expect(screen.getAllByTestId('agent-card')).toHaveLength(GROK_SOLL_AGENTS.length);
   });
 
-  it('Priorität „Nicht gesetzt“ trifft alle (keine erfundenen Prioritäten)', async () => {
+  it('Priorität „Nicht gesetzt“ trifft nur Agenten ohne Paket-Priorität', async () => {
     await renderView();
     fireEvent.change(screen.getByLabelText('Priorität'), { target: { value: '__unset__' } });
-    expect(screen.getAllByTestId('agent-card')).toHaveLength(total);
+    expect(screen.getAllByTestId('agent-card')).toHaveLength(total - Object.keys(SOLL_CONFIG).length);
   });
 
   it('mobile Navigation lässt sich öffnen (aria-expanded)', async () => {

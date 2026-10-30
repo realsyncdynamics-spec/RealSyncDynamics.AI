@@ -3,6 +3,7 @@ import { AlertTriangle, Bot, Menu, Search, X } from 'lucide-react';
 import {
   distinct, EMPTY_FILTER, UNSET, filterAgents, STATUS_LABEL,
   type AgentFilter, type AgentStatus, type RegistryAgent,
+  SECTION_LABEL, sectionOf, type AgentSection,
 } from './agentRegistry';
 import { useAgentRegistry } from './useAgentRegistry';
 import { DecisionInbox } from './DecisionInbox';
@@ -66,6 +67,9 @@ function AgentCard({ a, onConfig }: { a: RegistryAgent; onConfig: () => void }) 
         <dt>Laufender Auftrag</dt><dd className="text-zinc-300">{a.currentTask ?? 'UNBEKANNT'}</dd>
         <dt>Offene Fragen</dt><dd className="text-zinc-300">{a.openDecisions ?? 'UNBEKANNT (ab M2)'}</dd>
         <dt>Quelle</dt><dd className="text-zinc-300">{SOURCE_LABEL[a.source]}</dd>
+        {a.mappedBotIds && a.mappedBotIds.length > 1 && (
+          <><dt>Zugeordnete Bots</dt><dd className="text-zinc-300">{a.mappedBotIds.length} (Sammelkarte)</dd></>
+        )}
       </dl>
       {a.lastError && (
         <p className="mt-2 flex items-center gap-1 text-xs text-red-300"><AlertTriangle className="h-3 w-3" aria-hidden />{a.lastError}</p>
@@ -154,9 +158,18 @@ export function CommandCenterView() {
           </label>
         </div>
         <p className="mt-3 text-xs text-zinc-500">{loading ? 'Lade …' : `${shown.length} von ${agents.length} Agenten`}</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((a) => <AgentCard key={a.registryId} a={a} onConfig={() => setConfigFor(a)} />)}
-        </div>
+        {(Object.keys(SECTION_LABEL) as AgentSection[]).map((sec) => {
+          const list = shown.filter((a) => sectionOf(a) === sec);
+          if (list.length === 0) return null;
+          return (
+            <section key={sec} aria-label={SECTION_LABEL[sec]} className="mt-4">
+              <h2 className="text-sm font-semibold text-zinc-300">{SECTION_LABEL[sec]} ({list.length})</h2>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {list.map((a) => <AgentCard key={a.registryId} a={a} onConfig={() => setConfigFor(a)} />)}
+              </div>
+            </section>
+          );
+        })}
         {configFor && (
           <AgentConfigPanel key={configFor.registryId} agentRef={configFor.registryId} agentName={configFor.name} onClose={() => setConfigFor(null)} />
         )}

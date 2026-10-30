@@ -133,6 +133,9 @@ Deno.serve(async (req) => {
         // Nach Plan- und Add-on-Sync, damit tenant_entitlements() den neuen
         // Stand sieht (bots.voice kommt aus Plan oder Add-on „Voice“).
         if (applied) await enqueueVoiceAgent(admin, sub, event.id);
+        // Bot-Budget aus Tarifprofil (active/trialing) bzw. 0 (canceled,
+        // past_due, …). Idempotent je Stripe-Ereignis.
+        if (applied) await applyBotUsagePlan(admin as unknown as SupabaseClient, subscriptionTenantId(sub), event.id);
         if (event.type === 'customer.subscription.created') {
           await recordTrialEventIfApplicable(admin, event, 'trial_started');
         }
@@ -189,6 +192,15 @@ Deno.serve(async (req) => {
         // `customer.subscription.created` mit dem echten Subscription-Objekt.
         if (session.mode === 'payment') {
           await recordOneTimePurchase(admin, stripe, session);
+        }
+        // Abo-Checkout: Profil anwenden, falls die Subscription-Zeile schon
+        // synchronisiert ist (sonst übernimmt customer.subscription.created).
+        if (session.mode === 'subscription') {
+          await applyBotUsagePlan(
+            admin as unknown as SupabaseClient,
+            session.metadata?.tenant_id ?? session.client_reference_id ?? null,
+            event.id,
+          );
         }
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
@@ -410,6 +422,35 @@ async function enqueueVoiceAgent(admin: SupabaseClient, sub: Stripe.Subscription
 
 function isMissingRelation(err: { code?: string; message?: string }): boolean {
   return err.code === '42P01' || err.code === 'PGRST205' || /does not exist|schema cache/i.test(err.message ?? '');
+}
+
+function subscriptionTenantId(sub: Stripe.Subscription): string | null {
+  return (
+    sub.metadata?.tenant_id ||
+    (typeof sub.customer === 'object' && sub.customer && 'metadata' in sub.customer
+      ? (sub.customer.metadata?.tenant_id ?? null)
+      : null) ||
+    null
+  );
+}
+
+// Bot-Kostenbremse an den Tarif koppeln (Migration 20261030130000).
+// Fehler werfen → Webhook 500 → Stripe wiederholt (Idempotenz je event.id in
+// bot_usage_plan_applications). Enterprise ohne Profil liefert einen Alarm
+// statt eines stillen Nullbudgets.
+async function applyBotUsagePlan(admin: SupabaseClient, tenantId: string | null, eventId: string): Promise<void> {
+  if (!tenantId) {
+    console.error(`[stripe-webhook] bot usage plan: no tenant for ${eventId}`);
+    return;
+  }
+  const { data, error } = await admin.rpc('bot_usage_sync_plan_from_subscription', {
+    p_tenant_id: tenantId,
+    p_source: `stripe:${eventId}`,
+  });
+  if (error) throw new Error(`bot_usage_sync_plan_from_subscription: ${error.message}`);
+  if (typeof data === 'string' && data.startsWith('alert:')) {
+    console.error(`[stripe-webhook] ALERT bot usage ${tenantId}: ${data} (manuell konfigurieren)`);
+  }
 }
 
 // deno-lint-ignore no-explicit-any

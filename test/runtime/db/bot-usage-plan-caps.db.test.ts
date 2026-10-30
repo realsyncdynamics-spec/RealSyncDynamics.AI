@@ -275,7 +275,10 @@ d('P7 — Seed', () => {
     expect(s.config_source).toBe('test-seed:starter:active');
     const a = (await row(ctx, agency))!;
     expect([Number(a.voice_seconds_monthly), Number(a.cost_eur_monthly)]).toEqual([45000, 90]);
-    for (const t of [trial, canceled, free, enterprise]) {
+    // Seit 20261030120000: Trials erhalten 25 % des bezahlten Profils.
+    const tr = (await row(ctx, trial))!;
+    expect([Number(tr.voice_seconds_monthly), Number(tr.cost_eur_monthly), tr.plan_profile]).toEqual([3750, 7.5, 'growth']);
+    for (const t of [canceled, free, enterprise]) {
       const z = (await row(ctx, t))!;
       expect([Number(z.voice_seconds_monthly), Number(z.cost_eur_monthly), Number(z.ai_usd_monthly)], t).toEqual([0, 0, 0]);
     }

@@ -133,6 +133,9 @@ Deno.serve(async (req) => {
         // Nach Plan- und Add-on-Sync, damit tenant_entitlements() den neuen
         // Stand sieht (bots.voice kommt aus Plan oder Add-on „Voice“).
         if (applied) await enqueueVoiceAgent(admin, sub, event.id);
+        // Bot-Kostenbremsen aus dem gespeicherten Abo ableiten (auch wenn das
+        // Event abgelöst war: die Funktion liest den DB-Stand → idempotent).
+        await syncBotUsageLimits(admin, subscriptionTenantId(sub), event.id);
         if (event.type === 'customer.subscription.created') {
           await recordTrialEventIfApplicable(admin, event, 'trial_started');
         }
@@ -194,6 +197,9 @@ Deno.serve(async (req) => {
         await triggerWebsiteRebuildIfApplicable(admin, session);
         await reportPurchaseToAdPlatforms(session, req);
         await flagCheckoutTaxReview(admin, session);
+        if (session.mode === 'subscription') {
+          await syncBotUsageLimits(admin, session.metadata?.tenant_id ?? null, event.id);
+        }
         break;
       }
       // Add more handlers as the billing surface grows; ignore unknown types.
@@ -413,6 +419,37 @@ function isMissingRelation(err: { code?: string; message?: string }): boolean {
 }
 
 // deno-lint-ignore no-explicit-any
+function subscriptionTenantId(sub: Stripe.Subscription): string | null {
+  const customer = sub.customer;
+  return (
+    (sub.metadata && sub.metadata.tenant_id) ||
+    (typeof customer === 'object' && customer && 'metadata' in customer ? customer.metadata?.tenant_id : undefined) ||
+    null
+  );
+}
+
+// Bot-Kostenbremsen (bot_usage_limits) an den Abo-Stand koppeln.
+// Migration 20261030120000: active → Profil, trialing → 25 %, past_due/
+// canceled/… → 0, Enterprise ohne Profil → Alarm (bot_usage_limit_alarms).
+// Ein DB-Fehler wirft → Webhook antwortet 500 → Stripe wiederholt.
+async function syncBotUsageLimits(
+  admin: SupabaseAdminClient,
+  tenantId: string | null,
+  eventId: string,
+): Promise<void> {
+  if (!tenantId) return;
+  const { data, error } = await admin.rpc('bot_usage_sync_from_subscription', {
+    p_tenant_id: tenantId,
+    p_source: `stripe:${eventId}`,
+  });
+  if (error) throw new Error(`bot_usage_sync_from_subscription failed: ${error.message}`);
+  if (data === 'alarm_missing_profile') {
+    console.error(
+      `[ALARM bot_usage] tenant ${tenantId}: plan without bot usage profile (enterprise?) — manual limits required (event ${eventId})`,
+    );
+  }
+}
+
 async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscription): Promise<boolean> {
   // Add-on-Prices sind keine Plan-Prices: Der Plan ist die Position, die
   // keinem Add-on gehört (pickPlanItem). Ein Add-on-Price als Plan gelesen

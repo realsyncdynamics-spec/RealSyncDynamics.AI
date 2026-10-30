@@ -10,6 +10,9 @@
  *
  * ## Stand der Messung
  *
+ * 2026-10-30T08:25Z, Supabase list_edge_functions gegen RealSyncDynamicsLive:
+ * **200 ACTIVE**, neu `agent-questions` (#2082) als STALE_PROD_LIST (Drift-Lauf 40979551418) — Liste nachgezogen.
+ *
  * 2026-10-29T10:29Z, Drift-Guard (Lauf 40857313382) gegen RealSyncDynamicsLive:
  * **199 ACTIVE**, neu `ai-os-control` und `provision-voice-agent` als STALE_PROD_LIST — Liste nachgezogen.
  *
@@ -92,10 +95,10 @@
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 199;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 200;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-29T10:29Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-30T08:25Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -105,6 +108,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'add-auditor',
   'agent-change-evidence-webhook',
   'agent-os-runner',
+  'agent-questions',
   'agent-scheduler',
   'ai-act-auto-classify',
   'ai-act-classify',

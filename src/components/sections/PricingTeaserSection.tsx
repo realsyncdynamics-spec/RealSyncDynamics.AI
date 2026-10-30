@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { SELLABLE_PRICING_TIERS, PRICING_TRUST_NOTE, TIER_ACCENT } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, TIER_ACCENT } from '../../config/pricing';
+import { TRY_FREE } from '../../config/beta';
 
 /**
  * PricingTeaserSection — wiederverwendbarer Preis-Teaser für Long-Form-
@@ -90,7 +91,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
         </div>
 
         <p className="mt-4 text-center text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-          {PRICING_TRUST_NOTE}
+          {TRY_FREE.trustNote}
         </p>
       </div>
     </section>

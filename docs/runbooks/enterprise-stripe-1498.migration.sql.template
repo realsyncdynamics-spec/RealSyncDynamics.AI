@@ -1,0 +1,61 @@
+-- VORLAGE, KEINE MIGRATION (PR #1995). Erst nach Stripe-Verifikation (siehe
+-- stripe-production-checkout.md) als neue Datei unter supabase/migrations/
+-- anlegen: Zeitstempel nach der letzten Migration auf main und ohne
+-- Kollision mit offenen PRs (`npm run check:migration-collisions`).
+--
+-- Enterprise Self-Service: Live-Stripe-Price 1.498 €/Monat netto.
+--
+-- Umstellung in place wie 20261020130000: Die products-Zeile behält ihre id
+-- und damit alle product_entitlements (inkl. der Kontingente aus
+-- 20261024090100 / 20261025001345); nur stripe_price_id und name wechseln.
+-- Eine NEUE Zeile wäre ohne product_entitlements — Enterprise-Kunden hätten
+-- dann keine Rechte.
+--
+-- Alte Price (1.249 €, exclusive, seit 20261020130000):
+--   price_1USabSREjTWueUcGzUEzTaie
+-- Neue Price muss in Stripe existieren, BEVOR die Migration deployt wird:
+--   unit_amount=149800, currency=eur, interval=month, interval_count=1,
+--   tax_behavior=exclusive, active=true, livemode=true, product=<verifiziert>.
+--
+-- Idempotent: Ein zweiter Lauf findet die alte ID nicht mehr und prüft nur
+-- den Zielzustand. Jede Abweichung bricht ab.
+
+DO $$
+DECLARE
+  v_old  CONSTANT text := 'price_1USabSREjTWueUcGzUEzTaie';
+  v_new  CONSTANT text := 'price_REPLACE_ME';  -- verifizierte Live-Price-ID
+  v_name CONSTANT text := 'Enterprise (Self-Service-Checkout · 1.498 € / Monat netto)';
+  v_rows int;
+BEGIN
+  -- Platzhalter-Erkennung ohne das Wort selbst: übersteht Suchen/Ersetzen.
+  IF v_new !~ '^price_[A-Za-z0-9]+$' OR strpos(v_new, 'REPLACE' || '_ME') > 0 THEN
+    RAISE EXCEPTION 'Vorlage nicht ausgefüllt: v_new ist keine verifizierte Price-ID (%)', v_new;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.products WHERE stripe_price_id = v_old) THEN
+    UPDATE public.products
+       SET stripe_price_id = v_new, name = v_name
+     WHERE stripe_price_id = v_old
+       AND default_for_plan_key = 'enterprise';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows <> 1 THEN
+      RAISE EXCEPTION 'Enterprise-Preiswechsel: % Zeilen statt genau 1 aktualisiert', v_rows;
+    END IF;
+  END IF;
+
+  -- Zielzustand, nach dem Update und bei jeder Wiederholung.
+  IF EXISTS (SELECT 1 FROM public.products WHERE stripe_price_id = v_old) THEN
+    RAISE EXCEPTION 'Alte Enterprise-Price-ID % ist noch vorhanden', v_old;
+  END IF;
+  SELECT count(*) INTO v_rows FROM public.products
+   WHERE default_for_plan_key = 'enterprise';
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'Erwartet genau 1 Enterprise-Datensatz, gefunden %', v_rows;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.products
+                  WHERE default_for_plan_key = 'enterprise'
+                    AND stripe_price_id = v_new
+                    AND name = v_name) THEN
+    RAISE EXCEPTION 'Enterprise-Datensatz hat nicht Price-ID % und Name %', v_new, v_name;
+  END IF;
+END $$;

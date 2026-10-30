@@ -26,6 +26,7 @@ import {
 import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
 import { saveFunnelContext } from '../core/onboarding/funnelContext';
 import { clearPendingAudit, readPendingAudit } from '../core/onboarding/claimAudit';
+import { TRY_FREE } from '../config/beta';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -90,7 +91,7 @@ interface Report {
 
 export function AuditLanding() {
   usePageMeta({
-    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
+    title: 'Kostenloser Governance Scan — Tracking, Consent und KI-Bestand (DSGVO & EU AI Act)',
     description:
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
@@ -296,7 +297,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
     // Kanonischer Weg: immer über die eine Paket-Auswahl (/pricing).
-    // CTA-Beschriftung lautet „Starter 14 Tage kostenlos aktivieren" —
+    // CTA-Beschriftung lautet „Starter … aktivieren" (`TRY_FREE.short`) —
     // daher Starter-Plan vorwählen (nicht Growth).
     navigate(
       `/pricing?plan=starter&audit_id=${report.audit_id}&source=trial_cta`
@@ -313,10 +314,10 @@ function TrialCtaBlock({ report }: { report: Report }) {
         <ShieldCheck className="h-6 w-6 text-cyan-400 shrink-0 mt-0.5" />
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500 mb-1">
-            14 Tage kostenlos · Starter Trial
+            {TRY_FREE.badge} · Starter
           </p>
           <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
-            Diesen Befund 14 Tage kostenlos im Dashboard bearbeiten
+            Diesen Befund {TRY_FREE.phrase} im Dashboard bearbeiten
           </h2>
         </div>
       </div>
@@ -356,7 +357,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
           onClick={handleActivate}
           className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
         >
-          Starter 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
+          Starter {TRY_FREE.short} aktivieren <ArrowRight className="h-4 w-4" />
         </button>
         <button
           onClick={handleActivate}
@@ -367,7 +368,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
       </div>
 
       <p className="mt-3 font-mono text-[10px] text-titanium-600">
-        Keine Demo. Kein Verkaufsgespräch. Direkt starten. · Keine Kreditkarte für 14 Tage.
+        Keine Demo. Kein Verkaufsgespräch. Direkt starten. · Keine Kreditkarte · {TRY_FREE.badge}.
       </p>
     </div>
   );
@@ -628,7 +629,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_report`}
             className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
-            14 Tage gratis testen <ArrowRight className="h-4 w-4" />
+            {TRY_FREE.cta} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/pricing"

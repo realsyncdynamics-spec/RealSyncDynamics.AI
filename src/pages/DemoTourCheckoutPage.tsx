@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useDemoTour } from '../core/demo/DemoTourContext';
+import { TRY_FREE } from '../config/beta';
 
 export function DemoTourCheckoutPage() {
   const navigate = useNavigate();
@@ -119,7 +120,7 @@ export function DemoTourCheckoutPage() {
                 </div>
 
                 <p className="text-xs text-slate-500 mt-4">
-                  14 Tage kostenlos testen. Kein Risiko, jederzeit kündbar.
+                  {TRY_FREE.note}
                 </p>
               </div>
             </div>

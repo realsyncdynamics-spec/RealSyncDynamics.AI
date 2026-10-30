@@ -5,6 +5,8 @@
 // module exists so the next refactor pass can grep the codebase for
 // drift mechanically.
 
+import { TRY_FREE } from '../config/beta';
+
 export const PRODUCT_NAME = 'RealSync Runtime';
 export const BRAND_NAME = 'RealSyncDynamics.AI';
 
@@ -121,12 +123,13 @@ export const CTA = {
   startPlan:          'Tarif starten',
   enterprise:         'Enterprise anfragen',
   webdesign:          'Individuelles Webdesign anfragen',
-  foundingAccess:     'Founding Access sichern',
+  // Ehemals der CTA des Founding-Programms (endete 02.08.2026); Kontakt läuft wie `enterprise`.
+  foundingAccess:     'Enterprise anfragen',
   startFreeAudit:     'Kostenlosen Audit starten',
   viewAutomationSkills: 'Automation Skills ansehen',
   applyForBeta:       'Für Beta bewerben',
   // Governance-OS-Positionierung — Self-Serve, kein Demo-/Sales-Zwang.
-  startTrial:         '14 Tage gratis starten',
+  startTrial:         TRY_FREE.cta,
   startGovernanceAudit: 'Governance Audit starten',
 } as const;
 

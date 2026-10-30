@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: Eyebrow „DSGVO & EU AI Act für KMU“, H1 „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“, Primär-CTA „Kostenlosen Website-Check starten“ (/audit?source=landing-v6), Sekundär-CTA „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v6 auf `/`: Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV6.tsx',
@@ -127,11 +127,11 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Governance Scan',
     status: 'live',
     group: 'compliance',
-    description: 'Kostenloser öffentlicher Website-Scan auf DSGVO-/Governance-Aspekte.',
+    description: 'Kostenloser Governance Scan (öffentlicher Website-Scan auf DSGVO-/Governance-Aspekte) als Einstieg ins Governance OS.',
     route: '/audit',
     evidence: ['src/pages/AuditLanding.tsx', 'test/landing/canonical-scan-entry.test.tsx'],
     showOnPlatform: true,
-    ctaLabel: 'Kostenlosen Website-Check starten',
+    ctaLabel: 'Kostenlosen Governance Scan starten',
   },
   {
     id: 'app-shell',
@@ -727,6 +727,30 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'test/features/governance/dashboard/dashboard-command-center-surface.test.ts',
     ],
     showOnRoadmap: true,
+  },
+  {
+    // Bewusst preview, nicht live (#2071 / M1-a): Migration 20261029140000_agent_registry_v.sql
+    // ist nicht auf Prod angewendet; kein RLS-Integrationstest gegen echtes Postgres,
+    // kein Playwright-E2E, keine a11y-/Responsive-Prüfung.
+    id: 'agent-registry-command-center',
+    name: 'Agentenregister / Agentenübersicht',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Route /app/command-center hinter AppGate (#2071), Nav-Eintrag „Agent Command Center“ (beta, #2073): aktiv sind nur „Übersicht“ und „Alle Agenten“; Decision Inbox ist Platzhalter, Grok-Bots erscheinen als UNBEKANNT. Dritte Quelle seit #2073: Code-Registry aus apps/agent-runtime (7 Agenten, immer UNBEKANNT). Geprüft (#2073): RLS-DB-Test für agent_registry_v, E2E ohne Login, axe-Komponententests, mobile Navigation. Noch offen: E2E mit Login, axe-Kontrastprüfung im echten Browser, visuelle Responsive-Prüfung im eingeloggten Zustand. Preview, weil die View agent_registry_v (Migration 20261029140000) noch nicht in Produktion angewendet ist.',
+    route: '/app/command-center',
+    evidence: [
+      'src/App.tsx#/app/command-center',
+      'src/features/command-center/CommandCenterView.tsx',
+      'src/features/command-center/agentRegistry.ts',
+      'supabase/migrations/20261029140000_agent_registry_v.sql',
+      'test/runtime/db/agent-registry-v.db.test.ts',
+      'e2e/command-center.spec.ts',
+      'PR #2071',
+      'PR #2073',
+    ],
+    // Interne App-Fläche, keine öffentliche Roadmap-Karte.
+    showOnRoadmap: false,
   },
   {
     id: 'agent-os-mesh-compliance',

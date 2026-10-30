@@ -1,7 +1,7 @@
 /**
  * Governance OS Handoff v2 — Login, Preise, Audit-Stepper.
  * Sichert die Zusagen, die vom Prototyp abweichen müssen (echter Score,
- * Jahresabrechnung Coming Soon, Enterprise „Auf Anfrage").
+ * Jahresabrechnung Coming Soon, Enterprise seit 2026-10-24 per Checkout).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -24,12 +24,14 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('/pricing (Handoff v2)', () => {
   const mount = () => render(<MemoryRouter initialEntries={['/pricing']}><PricingPage /></MemoryRouter>);
 
-  it('renders Free Audit + four sellable cards, enterprise on request', () => {
+  it('renders Free Audit + four sellable cards, enterprise via checkout', () => {
     mount();
     expect(screen.getByTestId('pricing-free-audit')).toBeInTheDocument();
     expect(document.querySelectorAll('[data-testid^="pricing-card-"]')).toHaveLength(4);
     const enterprise = screen.getByTestId('pricing-card-enterprise');
-    expect(within(enterprise).getByText('Auf Anfrage')).toBeInTheDocument();
+    expect(within(enterprise).getByText(formatPriceEur(planById('enterprise').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(enterprise).getByText('/ Monat netto')).toBeInTheDocument();
+    expect(within(enterprise).queryByText('Auf Anfrage')).toBeNull();
     expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
     expect(document.body.textContent).not.toContain('Gespräch anfragen');
   });
@@ -39,9 +41,16 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.queryByTestId('pricing-billing-yearly')).not.toBeInTheDocument();
     expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
-    expect(within(growth).getByText(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('14 Tage kostenlos testen');
-    expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('Auf Anfrage')).toBeInTheDocument();
+    // Offene Beta: 0 € bis Beta-Ende, Listenpreis nur durchgestrichen als „danach“.
+    expect(within(growth).getByText(formatPriceEur(0).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(growth).getByText('kostenlos bis 31. Januar 2027')).toBeInTheDocument();
+    const listPrice = within(growth).getByTestId('pricing-list-price-growth');
+    expect(listPrice).toHaveTextContent(/^danach/);
+    expect(listPrice.querySelector('s')).toHaveTextContent(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '));
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Kostenlos testen');
+    // Enterprise ist nicht Teil der Beta: Festpreis, Anfrage bis Stripe-Price-ID verdrahtet.
+    expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('Auf Anfrage')).toBeNull();
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
   });
 
   it('keeps nav and plan copy in the same language after toggle', () => {
@@ -51,9 +60,10 @@ describe('/pricing (Handoff v2)', () => {
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
     const growth = screen.getByTestId('pricing-card-growth');
     expect(growth).toHaveAttribute('data-lang', 'en');
-    expect(within(growth).getByText(/AI governance that monitors itself/i)).toBeInTheDocument();
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Start 14-day free trial');
-    expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('On request')).toBeInTheDocument();
+    expect(within(growth).getByText(/AI governance with risk register and policy engine/i)).toBeInTheDocument();
+    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Try for free');
+    expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('On request')).toBeNull();
+    expect(within(screen.getByTestId('pricing-card-enterprise')).getByText('/ month excl. VAT')).toBeInTheDocument();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent(
       'Enterprise inquiry',
     );

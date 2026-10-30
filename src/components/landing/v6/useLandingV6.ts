@@ -4,7 +4,7 @@ import { BETA, betaSignupHref, isBetaPlan } from '../../../config/beta';
 import { COMPANY } from '../../../config/company';
 import { tierById, type PricingTier } from '../../../config/pricing';
 import { CTA } from '../../../content/runtimeVocab';
-import { checkoutHrefForPlan, formatPriceEur, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
+import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
 import { readStored, useLandingMode, type LandingMode } from '../landing-mode';
 
 /**
@@ -41,13 +41,13 @@ const RISK: Record<RiskId, [string, string]> = {
 };
 
 const STAGES = [
-  { n: '01', k: 'PRÜFEN', t: 'Scan', d: 'Website, Cookies, Tracker und KI-Einbindung erfassen.', preview: false },
-  { n: '02', k: 'EINORDNEN', t: 'Einordnen', d: 'Risiken mit Paragraphenbezug klar benennen.', preview: false },
-  { n: '03', k: 'HANDELN', t: 'Beheben', d: 'Konkrete Schritte, was Sie ändern müssen.', preview: false },
-  { n: '04', k: 'NACHWEISEN', t: 'Dokumentieren', d: 'Alles dokumentieren, damit Sie es vorlegen können.', preview: false },
-  // SSoT: dauerhafte Domain-Überwachung ist „Coming Soon" → als Preview kennzeichnen.
-  { n: '05', k: 'BEOBACHTEN', t: 'Monitoring', d: 'Laufend prüfen, wenn sich etwas ändert.', preview: true },
-  { n: '06', k: 'AUSWERTEN', t: 'Berichten', d: 'Klare Übersicht für Sie, den Datenschutzbeauftragten oder den Prüfer.', preview: false },
+  { n: '01', k: 'DISCOVER', t: 'Erfassen', d: 'Websites, Cookies, Tracker und KI-Systeme in einem Inventar erfassen.', preview: false },
+  { n: '02', k: 'ASSESS', t: 'Bewerten', d: 'Risiken nach DSGVO und EU AI Act mit Paragraphenbezug einordnen.', preview: false },
+  { n: '03', k: 'GOVERN', t: 'Richtlinien', d: 'Policy Packs und eigene Richtlinien auf Systeme und Ereignisse anwenden.', preview: false },
+  // SSoT: dauerhafte Domain-Überwachung ist „Coming Soon" → als Beta kennzeichnen.
+  { n: '04', k: 'ENFORCE', t: 'Durchsetzen & beobachten', d: 'Policy-Entscheidungen im Beobachtungsmodus; laufendes Monitoring in der Beta.', preview: true },
+  { n: '05', k: 'EVIDENCE', t: 'Nachweisen', d: 'Jede Prüfung und Entscheidung als SHA-256-verketteter Nachweis im Evidence Vault.', preview: false },
+  { n: '06', k: 'AUDIT', t: 'Berichten', d: 'Prüffähige Berichte für Sie, den Datenschutzbeauftragten oder den Prüfer.', preview: false },
 ];
 
 /**
@@ -413,7 +413,7 @@ export function useLandingV6() {
         featured,
         priceLabel,
         listPrice: beta && !tier.priceOnRequest ? formatPriceEur(listEur) : null,
-        unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : '/ Monat',
+        unit: tier.priceOnRequest ? tier.priceSuffix : useYearly ? '/ Jahr' : monthlyPriceSuffix(plan),
         billingNote: tier.priceOnRequest
           ? 'SLA nach Vereinbarung · bis zu 5 Organisationen'
           : beta
@@ -426,14 +426,11 @@ export function useLandingV6() {
         desc: plan.outcomeHeadline,
         features: bullets(tier),
         // Hero-Preiszeile: immer Monatspreis, eigene Quelle für die Trichter-Messung.
-        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} / Monat`,
+        heroPrice: tier.priceOnRequest ? 'Auf Anfrage' : beta ? formatPriceEur(0) : `${formatPriceEur(plan.price.monthlyEur)} ${monthlyPriceSuffix(plan)}`,
         heroListPrice: beta && !tier.priceOnRequest ? formatPriceEur(plan.price.monthlyEur) : null,
-        heroHref:
-          plan.id === 'enterprise'
-            ? ENTERPRISE_HREF
-            : inquiry
-              ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })
-              : planHref(plan, 'month', `${SOURCE}-hero`),
+        heroHref: inquiry
+          ? checkoutHrefForPlan(plan, { source: `${SOURCE}-hero` })
+          : planHref(plan, 'month', `${SOURCE}-hero`),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
         href: inquiry
           ? checkoutHrefForPlan(plan, { source: SOURCE })

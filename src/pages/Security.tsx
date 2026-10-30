@@ -50,7 +50,7 @@ export function Security() {
           <Section title="Offene Lücken (ehrlich)" icon={<AlertOctagon className="h-5 w-5 text-amber-400" />}>
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Kein Penetration-Test bisher.</strong> Erster externer Pentest geplant nach Erreichen 50 zahlende Kunden — Berichtsausschnitt wird auf dieser Seite veröffentlicht.</span></li>
-              <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine SOC 2 / ISO 27001 Zertifizierung.</strong> SOC 2 Type 1 in Vorbereitung für 2026 Q4. ISO 27001 Audit-Vorbereitung läuft, Termin abhängig von Vorlauf-Audit.</span></li>
+              <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine SOC 2 / ISO 27001 Zertifizierung.</strong> Controls sind an den SOC 2 Trust Services Criteria ausgerichtet; ein Termin für das SOC 2 Type 1 Audit steht noch nicht fest. ISO 27001 Audit-Vorbereitung läuft, Termin abhängig von Vorlauf-Audit.</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine HSTS-Preload-Submission.</strong> HSTS aktiv, Preload-List-Submission geplant nach Apex-Domain-Stabilisierung.</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine 2FA-Pflicht für User.</strong> Optional verfügbar (Supabase-MFA). Pflicht-Toggle pro Tenant geplant.</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine WAF.</strong> Cloudflare-WAF-Layer als Hardening geplant für 2026 Q3.</span></li>
@@ -64,8 +64,10 @@ export function Security() {
           <Section title="Roadmap" icon={<FileCheck className="h-5 w-5 text-security-400" />}>
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-start gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">✓ 2026 Q2</span><span className="text-titanium-300">RLS-Hardening · SECURITY DEFINER search_path · Vault-Storage · Audit-Trail</span></li>
-              <li className="flex items-start gap-2"><span className="text-amber-400 font-mono text-xs mt-0.5">→ 2026 Q3</span><span className="text-titanium-300">Cloudflare WAF · HSTS Preload · 2FA-Pflicht-Toggle pro Tenant · Erster externer Pentest</span></li>
-              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2026 Q4</span><span className="text-titanium-400">SOC 2 Type 1 Audit · ISO 27001 Vorbereitung intensiv · Bug-Bounty-Programm öffentlich</span></li>
+              <li className="flex items-start gap-2"><span className="text-amber-400 font-mono text-xs mt-0.5">→ 2026 Q3</span><span className="text-titanium-300">Cloudflare WAF · HSTS Preload · 2FA-Pflicht-Toggle pro Tenant</span></li>
+              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2026 Q4</span><span className="text-titanium-400">ISO 27001 Vorbereitung intensiv · Bug-Bounty-Programm öffentlich</span></li>
+              {/* TODO(Dominik): Termine für Pentest und SOC 2 Type 1 freigeben — bis dahin bewusst ohne Quartal (Stand 2026-10-23: kein Pentest, kein Audit-Termin). */}
+              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  Termin offen</span><span className="text-titanium-400">Erster externer Pentest (nach 50 zahlenden Kunden) · SOC 2 Type 1 Audit</span></li>
               <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2027 Q1-Q2</span><span className="text-titanium-400">SOC 2 Type 2 · ISO 27001 Zertifizierung · TÜV-Süd-Auditpfad für Behörden</span></li>
             </ul>
           </Section>
@@ -101,7 +103,7 @@ export function Security() {
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Data Retention (P3.1):</strong> Klare Aufbewahrungsfristen pro Datenkategorie in <Link to="/legal/privacy" className="text-security-400 hover:text-security-300">Datenschutzerklärung</Link>; DSGVO Art. 17 Selfservice.</span></li>
             </ul>
             <p className="text-xs text-titanium-500 mt-3">
-              SOC 2 Type 1 Audit geplant 2026 Q4. Bis dahin: detaillierte Controls-Mapping-Tabelle
+              Für das SOC 2 Type 1 Audit steht noch kein Termin fest. Bis dahin: detaillierte Controls-Mapping-Tabelle
               (TSC ↔ Implementierung) auf Anfrage für Enterprise-Procurement.
             </p>
           </Section>

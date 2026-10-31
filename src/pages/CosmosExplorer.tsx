@@ -254,6 +254,25 @@ export function CosmosExplorer() {
     });
   };
 
+  const adjustSizeScale = (value: number) => {
+    const nextScale = clampPlanetScale(value);
+    setSizeScale(nextScale);
+    // Prevent the camera clipping a scaled-up selected planet.
+    if (selected === 'sun') {
+      setFocus({ center: [0, 0, 0], distance: Math.max(7, 2.25 * nextScale * 3.1) });
+      setFlying(true);
+    } else if (selected) {
+      const body = CELESTIAL_BODIES.find((item) => item.id === selected);
+      if (body) {
+        setFocus({
+          center: orbitPosition(body.orbit, body.phase, body.speed, elapsed.current),
+          distance: Math.max(2.35, scaledRadius(body.radius, nextScale) * 3.9),
+        });
+        setFlying(true);
+      }
+    }
+  };
+
   const resetSimulation = () => {
     elapsed.current = 0;
     setSpeed(1);
@@ -331,7 +350,7 @@ export function CosmosExplorer() {
         </label>
         <input id="cosmos-size" aria-label="Planetengröße skalieren" type="range"
           min="0.6" max="1.8" step="0.05" value={sizeScale}
-          onChange={(event) => setSizeScale(clampPlanetScale(Number(event.target.value)))}
+          onChange={(event) => adjustSizeScale(Number(event.target.value))}
           style={{ width: '100%', accentColor: '#72d9ff', marginBottom: 15 }} />
         <label style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
           <input type="checkbox" checked={originalsEnabled}

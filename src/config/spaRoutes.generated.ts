@@ -250,6 +250,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/cookie-consent-sdk",
   "/cookie-scanner",
   "/cookiebot-alternative",
+  "/cosmos",
   "/dashboard",
   "/dashboard/agents",
   "/dashboard/audit",

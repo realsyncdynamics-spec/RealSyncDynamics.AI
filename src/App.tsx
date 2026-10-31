@@ -31,6 +31,7 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+const CosmosExplorer = lazy(() => import('./pages/CosmosExplorer').then((m) => ({ default: m.CosmosExplorer })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -537,6 +538,7 @@ function RoutesWithTracking() {
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
       <Route path="/" element={<LandingV6 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/cosmos" element={<CosmosExplorer />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />

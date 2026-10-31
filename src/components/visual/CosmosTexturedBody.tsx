@@ -14,9 +14,10 @@ type SurfaceProps = {
 };
 
 /**
- * Loads the authentic equirectangular map only on explicit user opt-in.
- * Images are cross-origin and require valid CORS response; on error we keep
- * a clearly documented color fallback, never an "original" claim.
+ * Loads an authentic, locally hosted equirectangular planet map.
+ * Rendering can be disabled on low-end devices. Texture resources are
+ * disposed on toggle/unmount; on load failure the sphere remains visible
+ * with its schematic fallback color.
  */
 export function CosmosTexturedBody({
   id, radius, fallbackColor, originalsEnabled, isSun = false,
@@ -29,7 +30,6 @@ export function CosmosTexturedBody({
     let active = true;
     const owned: { texture: THREE.Texture | null } = { texture: null };
     const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
     loader.load(
       originalTextureUrl(id),
       (loaded) => {

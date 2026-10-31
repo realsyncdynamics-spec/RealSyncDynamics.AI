@@ -236,8 +236,8 @@ export function CosmosExplorer() {
   const [walkMode, setWalkMode] = useState(false);
   const [quality, setQuality] = useState<'eco' | 'standard' | 'high'>('standard');
   const [sizeScale, setSizeScale] = useState(1);
-  // Disabled until an explicit click; CDN images would send the visitor IP.
-  const [originalsEnabled, setOriginalsEnabled] = useState(false);
+  // Safe to enable by default: authentic textures are self-hosted on this origin.
+  const [originalsEnabled, setOriginalsEnabled] = useState(true);
 
   const selectBody = (id: PlanetId | 'sun') => {
     setRunning(false); // Freeze orbits so a selected body stays under OrbitControls.
@@ -355,10 +355,10 @@ export function CosmosExplorer() {
         <label style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
           <input type="checkbox" checked={originalsEnabled}
             onChange={(event) => setOriginalsEnabled(event.target.checked)} />
-          {' '}Original-Planetentexturen laden (externer CDN)
+          {' '}Original-Planetentexturen anzeigen
           <span style={{ display: 'block', fontSize: 11, color: '#a5bed0', lineHeight: 1.4, marginTop: 5 }}>
-            Erst nach deiner Auswahl: 2K-Bilddateien von jsDelivr, mit Übermittlung
-            der IP-Adresse an den Anbieter. Energiesparmodus verwendet Farbflächen.
+            Die Originalkarten werden lokal von dieser Website geladen.
+            Im Energiesparmodus erscheinen einfache Farbflächen.
           </span>
         </label>
         <label htmlFor="cosmos-quality" style={{ fontSize: 12 }}>
@@ -401,7 +401,8 @@ export function CosmosExplorer() {
             target="_blank" rel="noreferrer" style={{ color: '#89dcfc' }}>
             Solar System Scope
           </a>.
-          Skalierung ist bewusst schematisch und nicht astronomisch exakt.
+          Mondkarte: Three.js-Beispieltextur. Größen und Abstände sind
+          schematisch und nicht astronomisch maßstabsgetreu.
           Erdoberfläche © Solar System Scope (CC BY 4.0), siehe
           <a href="/textures/README.md" style={{ color: '#89dcfc' }}> Lizenzhinweise</a>.
           Reale Geländehöhen und Gebäude werden ausschließlich aus lokal importierten Daten erzeugt.

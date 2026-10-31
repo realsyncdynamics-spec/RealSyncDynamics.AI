@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { CosmosGeographicGlobe } from '../components/visual/CosmosGeographicGlobe';
+import { CosmosWalkableWorld } from '../components/visual/CosmosWalkableWorld';
 import {
   CELESTIAL_BODIES,
   clampSimulationSpeed,
@@ -211,6 +212,7 @@ export function CosmosExplorer() {
   const [focus, setFocus] = useState<Focus>(OVERVIEW);
   const [flying, setFlying] = useState(false);
   const [geoMode, setGeoMode] = useState(false);
+  const [walkMode, setWalkMode] = useState(false);
 
   const selectBody = (id: PlanetId | 'sun') => {
     setRunning(false); // Freeze orbits so a selected body stays under OrbitControls.
@@ -234,6 +236,9 @@ export function CosmosExplorer() {
     setFocus({ ...OVERVIEW, center: [...OVERVIEW.center] });
   };
 
+  if (walkMode) {
+    return <CosmosWalkableWorld onBack={() => setWalkMode(false)} />;
+  }
   if (geoMode) {
     return <CosmosGeographicGlobe onBack={() => setGeoMode(false)} />;
   }
@@ -266,6 +271,7 @@ export function CosmosExplorer() {
         overflowY: 'auto', pointerEvents: 'auto' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <button style={action} onClick={overview}>Gesamtansicht</button>
+          <button style={action} onClick={() => setWalkMode(true)}>3D-Landschaft (Simulation)</button>
           <button style={action} onClick={() => {
             setRunning(false);
             setGeoMode(true);

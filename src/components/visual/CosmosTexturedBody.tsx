@@ -27,7 +27,7 @@ export function CosmosTexturedBody({
     if (!originalsEnabled) return;
 
     let active = true;
-    let owned: THREE.Texture | null = null;
+    const owned: { texture: THREE.Texture | null } = { texture: null };
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     loader.load(
@@ -36,7 +36,7 @@ export function CosmosTexturedBody({
         if (!active) { loaded.dispose(); return; }
         loaded.colorSpace = THREE.SRGBColorSpace;
         loaded.anisotropy = 2;
-        owned = loaded;
+        owned.texture = loaded;
         setMap(loaded);
       },
       undefined,
@@ -46,7 +46,7 @@ export function CosmosTexturedBody({
     );
     return () => {
       active = false;
-      owned?.dispose();
+      owned.texture?.dispose();
     };
   }, [id, originalsEnabled]);
 

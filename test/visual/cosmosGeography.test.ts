@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  GEO_DESTINATIONS, globePoint, validCoordinates,
+  GEO_DESTINATIONS, globePoint, validCoordinates, formatCoordinates,
 } from '../../src/components/visual/cosmosGeography';
 
 describe('COSMOS geographic globe', () => {
@@ -24,6 +24,13 @@ describe('COSMOS geographic globe', () => {
     expect(east[2]).toBeCloseTo(-2, 9);
     const north = globePoint({ latitude: 90, longitude: 0 });
     expect(north[1]).toBeCloseTo(1, 9);
+  });
+
+  it('formats hemispheres without ambiguous signs', () => {
+    expect(formatCoordinates({ latitude: 52.52, longitude: 13.405 }))
+      .toBe('52.5200° N · 13.4050° E');
+    expect(formatCoordinates({ latitude: -33.9, longitude: -70.6 }))
+      .toBe('33.9000° S · 70.6000° W');
   });
 
   it('rejects invalid or non-finite coordinates', () => {

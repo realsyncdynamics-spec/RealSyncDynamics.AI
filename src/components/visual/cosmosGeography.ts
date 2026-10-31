@@ -35,3 +35,14 @@ export function globePoint(point: Coordinates, radius = 1): [number, number, num
     -radius * Math.cos(lat) * Math.sin(lon),
   ];
 }
+
+/** Show compass directions instead of ambiguous signed N/S and E/W labels. */
+export function formatCoordinates({ latitude, longitude }: Coordinates): string {
+  if (!validCoordinates({ latitude, longitude })) {
+    throw new RangeError('Invalid WGS84 coordinates');
+  }
+  const latHemisphere = latitude < 0 ? 'S' : 'N';
+  const lonHemisphere = longitude < 0 ? 'W' : 'E';
+  return String(Math.abs(latitude).toFixed(4)) + '° ' + latHemisphere
+    + ' · ' + String(Math.abs(longitude).toFixed(4)) + '° ' + lonHemisphere;
+}

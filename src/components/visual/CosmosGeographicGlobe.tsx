@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { CosmosDemInspector } from './CosmosDemInspector';
+import { CosmosBuildingInspector } from './CosmosBuildingInspector';
 import {
   GEO_DESTINATIONS, globePoint, validCoordinates, formatCoordinates, type Coordinates,
 } from './cosmosGeography';
@@ -198,6 +199,7 @@ export function CosmosGeographicGlobe({ onBack }: { onBack: () => void }) {
   const [longitude, setLongitude] = useState(String(GEO_DESTINATIONS[0].longitude));
   const [error, setError] = useState('');
   const [demMode, setDemMode] = useState(false);
+  const [buildingsMode, setBuildingsMode] = useState(false);
 
   const select = (targetName: string, coords: Coordinates) => {
     setLocation({ latitude: coords.latitude, longitude: coords.longitude });
@@ -208,6 +210,7 @@ export function CosmosGeographicGlobe({ onBack }: { onBack: () => void }) {
     setFlying(true);
   };
 
+  if (buildingsMode) return <CosmosBuildingInspector onBack={() => setBuildingsMode(false)} />;
   if (demMode) return <CosmosDemInspector onBack={() => setDemMode(false)} />;
 
   return (
@@ -237,6 +240,8 @@ export function CosmosGeographicGlobe({ onBack }: { onBack: () => void }) {
         <button style={buttonStyle} onClick={onBack}>← Sonnensystem</button>
         <button style={{ ...buttonStyle, marginLeft: 8 }}
           onClick={() => setDemMode(true)}>Lokales 3D-Höhenmodell (DEM)</button>
+        <button style={{ ...buttonStyle, marginLeft: 8, marginTop: 8 }}
+          onClick={() => setBuildingsMode(true)}>3D-Gebäude aus GeoJSON</button>
       </header>
       <aside style={{ ...panelStyle, position: 'absolute', bottom: 12, left: 12,
         width: 'min(410px, calc(100% - 24px))', maxHeight: '53dvh', overflowY: 'auto',

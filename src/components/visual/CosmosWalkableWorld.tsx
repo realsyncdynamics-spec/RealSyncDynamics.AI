@@ -155,7 +155,7 @@ function WalkController({ motion }: { motion: Motion }) {
     };
   }, []);
   useFrame((state, dt) => {
-    const ctrl = state.controls as { target: THREE.Vector3; update: () => void } | undefined;
+    const ctrl = state.controls as unknown as { target: THREE.Vector3; update: () => void } | null;
     if (!ctrl) return;
     const keys = pressed.current;
     const ahead = keys.has('w') || keys.has('arrowup') || motion === 'forward';

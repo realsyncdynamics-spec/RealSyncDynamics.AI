@@ -1,38 +1,33 @@
 import type { PlanetId } from './cosmosData';
 
 /**
- * Source-of-record images: Solar System Scope, CC BY 4.0.
- * Mirrored 2K assets by Sanghel/solar-system-3d, pinned to a known commit.
+ * COSMOS runs only same-origin texture requests.
  *
- * IMPORTANT: These URLs transfer the viewer's IP to jsDelivr.
- * Do not load them until a visitor explicitly opts in. Self-host before GO.
+ * All 360-degree maps except Earth are committed as source-original JPEG in
+ * public/textures/cosmos/. Solar System Scope is CC BY 4.0;
+ * the 1024px Moon is from the Three.js texture examples.
+ * Provenance and exact blob IDs: COSMOS-ORIGINAL-TEXTURES-README.md.
  */
-const MIRROR_SHA = '47c8bbc6b63f4c6c2310911238c2c4b6bff6d20b';
-const SOURCE_BASE =
-  'https://cdn.jsdelivr.net/gh/Sanghel/solar-system-3d@' +
-  MIRROR_SHA + '/public/textures/';
-
 export type TexturedBodyId = PlanetId | 'sun' | 'moon';
 
 const ORIGINAL_TEXTURE_FILES: Record<TexturedBodyId, string> = {
-  sun: 'sun.jpg',
-  mercury: 'mercury.jpg',
-  venus: 'venus.jpg',
-  earth: 'earth.jpg',
-  moon: 'satellites/moon.jpg',
-  mars: 'mars.jpg',
-  jupiter: 'jupiter.jpg',
-  saturn: 'saturn.jpg',
-  uranus: 'uranus.jpg',
-  neptune: 'neptune.jpg',
+  sun: '/textures/cosmos/sun.jpg',
+  mercury: '/textures/cosmos/mercury.jpg',
+  venus: '/textures/cosmos/venus.jpg',
+  earth: '/textures/earth-day-2k.webp',
+  moon: '/textures/cosmos/moon.jpg',
+  mars: '/textures/cosmos/mars.jpg',
+  jupiter: '/textures/cosmos/jupiter.jpg',
+  saturn: '/textures/cosmos/saturn.jpg',
+  uranus: '/textures/cosmos/uranus.jpg',
+  neptune: '/textures/cosmos/neptune.jpg',
 };
 
-/** The COSMOS Earth uses its already self-hosted 2K texture by default. */
 export function originalTextureUrl(body: TexturedBodyId): string {
   if (!Object.prototype.hasOwnProperty.call(ORIGINAL_TEXTURE_FILES, body)) {
     throw new RangeError('Unbekannter Himmelskörper');
   }
-  return SOURCE_BASE + ORIGINAL_TEXTURE_FILES[body];
+  return ORIGINAL_TEXTURE_FILES[body];
 }
 
 export function clampPlanetScale(input: number): number {
@@ -51,7 +46,6 @@ export const ORIGINAL_TEXTURE_ATTRIBUTION = {
   title: 'Solar System Scope — Solar Textures',
   source: 'https://www.solarsystemscope.com/textures/',
   license: 'https://creativecommons.org/licenses/by/4.0/',
-  mirror: 'https://github.com/Sanghel/solar-system-3d/tree/' +
-    MIRROR_SHA + '/public/textures',
-  processor: 'Originalkarten als 2K-JPEG, keine generierten Planetentexturen',
+  moonSource: 'https://github.com/mrdoob/three.js/blob/dev/examples/textures/planets/moon_1024.jpg',
+  assetPath: '/textures/cosmos/',
 } as const;

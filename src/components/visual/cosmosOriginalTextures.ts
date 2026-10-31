@@ -29,7 +29,7 @@ const ORIGINAL_TEXTURE_FILES: Record<TexturedBodyId, string> = {
 
 /** The COSMOS Earth uses its already self-hosted 2K texture by default. */
 export function originalTextureUrl(body: TexturedBodyId): string {
-  if (!(body in ORIGINAL_TEXTURE_FILES)) {
+  if (!Object.prototype.hasOwnProperty.call(ORIGINAL_TEXTURE_FILES, body)) {
     throw new RangeError('Unbekannter Himmelskörper');
   }
   return SOURCE_BASE + ORIGINAL_TEXTURE_FILES[body];

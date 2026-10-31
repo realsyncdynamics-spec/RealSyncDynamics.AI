@@ -4,6 +4,10 @@ import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { CosmosGeographicGlobe } from '../components/visual/CosmosGeographicGlobe';
 import { CosmosWalkableWorld } from '../components/visual/CosmosWalkableWorld';
+import { CosmosTexturedBody } from '../components/visual/CosmosTexturedBody';
+import {
+  clampPlanetScale, scaledRadius, ORIGINAL_TEXTURE_ATTRIBUTION,
+} from '../components/visual/cosmosOriginalTextures';
 import {
   CELESTIAL_BODIES,
   clampSimulationSpeed,
@@ -81,24 +85,30 @@ function EarthSurface({ radius }: { radius: number }) {
   );
 }
 
-function Moon({ elapsed }: { elapsed: MutableRefObject<number> }) {
+function Moon({ elapsed, sizeScale, originalsEnabled }: {
+  elapsed: MutableRefObject<number>;
+  sizeScale: number;
+  originalsEnabled: boolean;
+}) {
   const orbit = useRef<THREE.Group>(null);
   useFrame(() => { if (orbit.current) orbit.current.rotation.y = elapsed.current * 0.8; });
   return (
     <group ref={orbit}>
-      <mesh position={[0.97, 0, 0]}>
-        <sphereGeometry args={[0.14, 20, 16]} />
-        <meshStandardMaterial color="#b4b7bb" roughness={1} />
-      </mesh>
+      <group position={[Math.max(0.97 * sizeScale, 0.55 * sizeScale + 0.3), 0, 0]}>
+        <CosmosTexturedBody id="moon" radius={scaledRadius(0.14, sizeScale)}
+          fallbackColor="#b4b7bb" originalsEnabled={originalsEnabled} />
+      </group>
     </group>
   );
 }
 
-function PlanetMesh({ planet, elapsed, onSelect }: {
+function PlanetMesh({ planet, elapsed, onSelect, sizeScale, originalsEnabled }: {
   planet: Planet; elapsed: MutableRefObject<number>; onSelect: (id: PlanetId) => void;
+  sizeScale: number; originalsEnabled: boolean;
 }) {
   const group = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
+  const radius = scaledRadius(planet.radius, sizeScale);
   useFrame((_, delta) => {
     if (group.current) {
       group.current.position.set(...orbitPosition(
@@ -111,20 +121,18 @@ function PlanetMesh({ planet, elapsed, onSelect }: {
     <group ref={group} onClick={(event) => { event.stopPropagation(); onSelect(planet.id); }}>
       <group ref={spin}>
         {planet.id === 'earth'
-          ? <EarthSurface radius={planet.radius} />
-          : <mesh>
-              <sphereGeometry args={[planet.radius, 36, 28]} />
-              <meshStandardMaterial color={planet.color} roughness={0.85} />
-            </mesh>}
+          ? <EarthSurface radius={radius} />
+          : <CosmosTexturedBody id={planet.id} radius={radius}
+              fallbackColor={planet.color} originalsEnabled={originalsEnabled} />}
         {planet.id === 'saturn' && (
           <mesh rotation={[-Math.PI / 2.7, 0, 0]}>
-            <ringGeometry args={[planet.radius * 1.35, planet.radius * 2.06, 96]} />
+            <ringGeometry args={[radius * 1.35, radius * 2.06, 96]} />
             <meshBasicMaterial color="#d9c7a2" side={THREE.DoubleSide}
               transparent opacity={0.69} depthWrite={false} />
           </mesh>
         )}
       </group>
-      {planet.id === 'earth' && <Moon elapsed={elapsed} />}
+      {planet.id === 'earth' && <Moon elapsed={elapsed} sizeScale={sizeScale} originalsEnabled={originalsEnabled} />}
     </group>
   );
 }
@@ -161,30 +169,32 @@ function CameraFlight({ focus, onArrived }: { focus: Focus; onArrived: () => voi
   return null;
 }
 
-function SolarScene({ elapsed, running, speed, focus, flying, onArrived, onSelect }: {
+function SolarScene({ elapsed, running, speed, focus, flying, onArrived, onSelect, sizeScale, originalsEnabled, quality }: {
   elapsed: MutableRefObject<number>; running: boolean; speed: number;
   focus: Focus; flying: boolean; onArrived: () => void; onSelect: (id: PlanetId) => void;
+  sizeScale: number; originalsEnabled: boolean; quality: 'eco' | 'standard' | 'high';
 }) {
   return (
     <>
       <color attach="background" args={['#040914']} />
       <ambientLight intensity={0.18} />
       <pointLight position={[0, 0, 0]} intensity={210} distance={150} decay={2} color="#fff0c7" />
-      <Stars radius={92} depth={35} count={2300} factor={3} saturation={0} fade speed={0.2} />
+      <Stars radius={92} depth={35}
+        count={quality === 'eco' ? 700 : quality === 'high' ? 3200 : 1500}
+        factor={3} saturation={0} fade speed={0.2} />
       <SimulationClock elapsed={elapsed} running={running} speed={speed} />
+      <CosmosTexturedBody id="sun" radius={scaledRadius(2.25, sizeScale)}
+        fallbackColor="#ffca5f" isSun originalsEnabled={originalsEnabled} />
       <mesh>
-        <sphereGeometry args={[2.25, 48, 36]} />
-        <meshBasicMaterial color="#ffca5f" />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[2.39, 40, 28]} />
+        <sphereGeometry args={[scaledRadius(2.39, sizeScale), 40, 28]} />
         <meshBasicMaterial color="#ffaa3c" transparent opacity={0.11}
           side={THREE.BackSide} depthWrite={false} />
       </mesh>
       {CELESTIAL_BODIES.map((planet) => (
         <group key={planet.id}>
           <OrbitTrack radius={planet.orbit} />
-          <PlanetMesh planet={planet} elapsed={elapsed} onSelect={onSelect} />
+          <PlanetMesh planet={planet} elapsed={elapsed} onSelect={onSelect}
+            sizeScale={sizeScale} originalsEnabled={originalsEnabled} />
         </group>
       ))}
       <CameraFlight focus={focus} onArrived={onArrived} />
@@ -225,6 +235,9 @@ export function CosmosExplorer() {
   const [geoMode, setGeoMode] = useState(false);
   const [walkMode, setWalkMode] = useState(false);
   const [quality, setQuality] = useState<'eco' | 'standard' | 'high'>('standard');
+  const [sizeScale, setSizeScale] = useState(1);
+  // Disabled until an explicit click; CDN images would send the visitor IP.
+  const [originalsEnabled, setOriginalsEnabled] = useState(false);
 
   const selectBody = (id: PlanetId | 'sun') => {
     setRunning(false); // Freeze orbits so a selected body stays under OrbitControls.
@@ -237,13 +250,14 @@ export function CosmosExplorer() {
     const body = CELESTIAL_BODIES.find((p) => p.id === id)!;
     setFocus({
       center: orbitPosition(body.orbit, body.phase, body.speed, elapsed.current),
-      distance: Math.max(2.35, body.radius * 3.9),
+      distance: Math.max(2.35, scaledRadius(body.radius, sizeScale) * 3.9),
     });
   };
 
   const resetSimulation = () => {
     elapsed.current = 0;
     setSpeed(1);
+    setSizeScale(1);
     setSelected(null);
     setRunning(true);
     setFlying(true);
@@ -274,7 +288,8 @@ export function CosmosExplorer() {
           <Suspense fallback={null}>
             <SolarScene elapsed={elapsed} running={running} speed={speed}
               focus={focus} flying={flying} onArrived={() => setFlying(false)}
-              onSelect={selectBody} />
+              onSelect={selectBody} sizeScale={sizeScale}
+              originalsEnabled={originalsEnabled && quality !== 'eco'} quality={quality} />
           </Suspense>
         </Canvas>
       </div>
@@ -311,6 +326,22 @@ export function CosmosExplorer() {
           value={speed} onChange={(event) =>
             setSpeed(clampSimulationSpeed(Number(event.target.value)))}
           style={{ width: '100%', accentColor: '#72d9ff', margin: '8px 0 14px' }} />
+        <label htmlFor="cosmos-size" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+          Visuelle Planetengröße: {Math.round(sizeScale * 100)} %
+        </label>
+        <input id="cosmos-size" aria-label="Planetengröße skalieren" type="range"
+          min="0.6" max="1.8" step="0.05" value={sizeScale}
+          onChange={(event) => setSizeScale(clampPlanetScale(Number(event.target.value)))}
+          style={{ width: '100%', accentColor: '#72d9ff', marginBottom: 15 }} />
+        <label style={{ display: 'block', fontSize: 12, marginBottom: 14 }}>
+          <input type="checkbox" checked={originalsEnabled}
+            onChange={(event) => setOriginalsEnabled(event.target.checked)} />
+          {' '}Original-Planetentexturen laden (externer CDN)
+          <span style={{ display: 'block', fontSize: 11, color: '#a5bed0', lineHeight: 1.4, marginTop: 5 }}>
+            Erst nach deiner Auswahl: 2K-Bilddateien von jsDelivr, mit Übermittlung
+            der IP-Adresse an den Anbieter. Energiesparmodus verwendet Farbflächen.
+          </span>
+        </label>
         <label htmlFor="cosmos-quality" style={{ fontSize: 12 }}>
           Darstellungsqualität
           <select id="cosmos-quality" value={quality}
@@ -346,6 +377,12 @@ export function CosmosExplorer() {
         <p style={{ fontSize: 11, lineHeight: 1.55, color: '#a5bed0', marginBottom: 0 }}>
           Mit Finger oder Maus drehen, mit zwei Fingern oder Mausrad zoomen.
           Auswahl hält die Umlaufbewegung für den Kameraflug an.
+          Planeten-Originalkarten © Solar System Scope (CC BY 4.0),
+          Quelle: <a href={ORIGINAL_TEXTURE_ATTRIBUTION.source}
+            target="_blank" rel="noreferrer" style={{ color: '#89dcfc' }}>
+            Solar System Scope
+          </a>.
+          Skalierung ist bewusst schematisch und nicht astronomisch exakt.
           Erdoberfläche © Solar System Scope (CC BY 4.0), siehe
           <a href="/textures/README.md" style={{ color: '#89dcfc' }}> Lizenzhinweise</a>.
           Reale Geländehöhen und Gebäude werden ausschließlich aus lokal importierten Daten erzeugt.

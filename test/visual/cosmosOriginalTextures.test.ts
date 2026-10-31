@@ -4,19 +4,21 @@ import {
 } from '../../src/components/visual/cosmosOriginalTextures';
 import { CELESTIAL_BODIES } from '../../src/components/visual/cosmosData';
 
-describe('COSMOS original planet textures and visual scaling', () => {
-  it('provides a version-pinned, predictable original texture for all eight planets plus Sun and Moon', () => {
-    for (const body of [
-      'sun', 'moon', ...CELESTIAL_BODIES.map(x => x.id),
-    ] as const) {
-      const uri = originalTextureUrl(body);
-      expect(uri).toMatch(/^https:\/\/cdn\.jsdelivr\.net\/gh\/Sanghel\/solar-system-3d@[a-f0-9]{40}\/public\/textures\//);
-      expect(uri).toMatch(/\.jpg$/);
-      expect(uri).not.toContain('..');
+describe('COSMOS same-origin original planet maps and size scaling', () => {
+  it('resolves all eight planets, Sun and Moon to local image assets', () => {
+    for (const body of ['sun', 'moon', ...CELESTIAL_BODIES.map(x => x.id)] as const) {
+      const url = originalTextureUrl(body);
+      expect(url).toMatch(/^\/textures\//);
+      expect(url).not.toContain('://');
+      expect(url).not.toContain('..');
+      expect(url).toMatch(/\.(webp|jpg)$/);
     }
+    expect(originalTextureUrl('earth')).toBe('/textures/earth-day-2k.webp');
+    expect(originalTextureUrl('moon')).toBe('/textures/cosmos/moon.jpg');
     expect(ORIGINAL_TEXTURE_ATTRIBUTION.license)
       .toContain('creativecommons.org/licenses/by/4.0');
     expect(() => originalTextureUrl('pluto' as 'mercury')).toThrow(RangeError);
+    expect(() => originalTextureUrl('__proto__' as 'sun')).toThrow(RangeError);
   });
 
   it('clamps the schematic 3D scale to a safe visual range', () => {

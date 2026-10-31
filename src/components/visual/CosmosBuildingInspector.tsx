@@ -163,9 +163,12 @@ export function CosmosBuildingInspector({ onBack }: { onBack: () => void }) {
             </p>}
         <p style={{ color: '#a8ccdf', fontSize: 11, lineHeight: 1.5 }}>
           Unterstützt Polygon und MultiPolygon, maximal 150 Gebäude,
-          12.000 Punkte, 2 MB und 1,6 km Ausdehnung. Für aus OpenStreetMap
-          entnommene Daten gelten die ODbL-Bedingungen und
-          die vorgeschriebene Attribution © OpenStreetMap contributors.
+          12.000 Punkte, 2 MB und 1,6 km Ausdehnung. Für aus OpenStreetMap entnommene Daten gelten die ODbL-Bedingungen
+          und die vorgeschriebene Attribution{' '}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank"
+            rel="noreferrer" style={{ color: '#82dfff' }}>
+            © OpenStreetMap contributors (ODbL)
+          </a>.
         </p>
       </header>
     </section>

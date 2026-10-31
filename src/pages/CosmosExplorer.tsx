@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { CosmosGeographicGlobe } from '../components/visual/CosmosGeographicGlobe';
+import { CosmosWalkableWorld } from '../components/visual/CosmosWalkableWorld';
 import {
   CELESTIAL_BODIES,
   clampSimulationSpeed,
@@ -13,6 +14,17 @@ import {
 type Focus = { center: [number, number, number]; distance: number };
 type Planet = (typeof CELESTIAL_BODIES)[number];
 const OVERVIEW: Focus = { center: [0, 0, 0], distance: 52 };
+const PLANET_FACTS: Record<PlanetId | 'sun', string> = {
+  sun: 'Die Sonne ist der Stern im Zentrum unseres Sonnensystems.',
+  mercury: 'Merkur ist der kleinste und sonnennächste Planet.',
+  venus: 'Venus besitzt eine dichte Atmosphäre und eine heiße Oberfläche.',
+  earth: 'Die Erde besitzt Ozeane und erlaubt im geografischen Modus Ortsanflüge.',
+  mars: 'Der rote Planet besitzt Vulkane und Polkappen.',
+  jupiter: 'Jupiter ist der größte Planet unseres Sonnensystems.',
+  saturn: 'Saturn besitzt ein weit ausgedehntes Ringsystem.',
+  uranus: 'Uranus ist ein Eisriese mit stark geneigter Rotationsachse.',
+  neptune: 'Neptun ist ein ferner Eisriese mit dynamischen Wettersystemen.',
+};
 
 function SimulationClock({ elapsed, running, speed }: {
   elapsed: MutableRefObject<number>; running: boolean; speed: number;
@@ -211,6 +223,8 @@ export function CosmosExplorer() {
   const [focus, setFocus] = useState<Focus>(OVERVIEW);
   const [flying, setFlying] = useState(false);
   const [geoMode, setGeoMode] = useState(false);
+  const [walkMode, setWalkMode] = useState(false);
+  const [quality, setQuality] = useState<'eco' | 'standard' | 'high'>('standard');
 
   const selectBody = (id: PlanetId | 'sun') => {
     setRunning(false); // Freeze orbits so a selected body stays under OrbitControls.
@@ -227,6 +241,15 @@ export function CosmosExplorer() {
     });
   };
 
+  const resetSimulation = () => {
+    elapsed.current = 0;
+    setSpeed(1);
+    setSelected(null);
+    setRunning(true);
+    setFlying(true);
+    setFocus({ ...OVERVIEW, center: [...OVERVIEW.center] });
+  };
+
   const overview = () => {
     setSelected(null);
     setRunning(true);
@@ -234,6 +257,9 @@ export function CosmosExplorer() {
     setFocus({ ...OVERVIEW, center: [...OVERVIEW.center] });
   };
 
+  if (walkMode) {
+    return <CosmosWalkableWorld onBack={() => setWalkMode(false)} />;
+  }
   if (geoMode) {
     return <CosmosGeographicGlobe onBack={() => setGeoMode(false)} />;
   }
@@ -242,7 +268,8 @@ export function CosmosExplorer() {
     <main style={shell}>
       <div aria-label="Interaktives 3D-Sonnensystem" style={{ position: 'absolute', inset: 0 }}>
         <Canvas camera={{ position: [0, 17, 52], fov: 45, near: 0.1, far: 240 }}
-          dpr={[1, 1.7]} gl={{ antialias: true, alpha: false }}
+          dpr={quality === 'eco' ? 1 : quality === 'high' ? [1, 2] : [1, 1.5]}
+          gl={{ antialias: quality !== 'eco', alpha: false }}
           fallback={<p role="alert">WebGL wird von diesem Gerät nicht unterstützt.</p>}>
           <Suspense fallback={null}>
             <SolarScene elapsed={elapsed} running={running} speed={speed}
@@ -266,6 +293,8 @@ export function CosmosExplorer() {
         overflowY: 'auto', pointerEvents: 'auto' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <button style={action} onClick={overview}>Gesamtansicht</button>
+          <button style={action} onClick={resetSimulation}>Zurücksetzen</button>
+          <button style={action} onClick={() => setWalkMode(true)}>3D-Landschaft (Simulation)</button>
           <button style={action} onClick={() => {
             setRunning(false);
             setGeoMode(true);
@@ -282,6 +311,16 @@ export function CosmosExplorer() {
           value={speed} onChange={(event) =>
             setSpeed(clampSimulationSpeed(Number(event.target.value)))}
           style={{ width: '100%', accentColor: '#72d9ff', margin: '8px 0 14px' }} />
+        <label htmlFor="cosmos-quality" style={{ fontSize: 12 }}>
+          Darstellungsqualität
+          <select id="cosmos-quality" value={quality}
+            onChange={(event) => setQuality(event.target.value as typeof quality)}
+            style={{ ...action, display: 'block', margin: '6px 0 14px', width: '100%' }}>
+            <option value="eco">Energiesparen</option>
+            <option value="standard">Standard</option>
+            <option value="high">Hoch</option>
+          </select>
+        </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
           <button style={action} aria-pressed={selected === 'sun'}
             onClick={() => selectBody('sun')}>Sonne</button>
@@ -292,12 +331,24 @@ export function CosmosExplorer() {
               onClick={() => selectBody(body.id)}>{body.name}</button>
           ))}
         </div>
+        {selected && (
+          <div aria-live="polite" style={{ borderTop: '1px solid #35516b', marginTop: 12, paddingTop: 12 }}>
+            <strong>{selected === 'sun' ? 'Sonne' :
+              CELESTIAL_BODIES.find(body => body.id === selected)?.name}</strong>
+            <p style={{ fontSize: 12, lineHeight: 1.45 }}>{PLANET_FACTS[selected]}</p>
+            {selected === 'earth' && (
+              <button style={action} onClick={() => setGeoMode(true)}>
+                Zur Erdoberfläche und zu realen Koordinaten
+              </button>
+            )}
+          </div>
+        )}
         <p style={{ fontSize: 11, lineHeight: 1.55, color: '#a5bed0', marginBottom: 0 }}>
           Mit Finger oder Maus drehen, mit zwei Fingern oder Mausrad zoomen.
           Auswahl hält die Umlaufbewegung für den Kameraflug an.
           Erdoberfläche © Solar System Scope (CC BY 4.0), siehe
           <a href="/textures/README.md" style={{ color: '#89dcfc' }}> Lizenzhinweise</a>.
-          Reale Geländedaten und der Flug zu Städten sind für die nächste Phase vorgesehen.
+          Reale Geländehöhen und Gebäude werden ausschließlich aus lokal importierten Daten erzeugt.
         </p>
       </aside>
     </main>

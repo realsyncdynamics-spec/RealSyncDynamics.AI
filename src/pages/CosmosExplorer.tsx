@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject, type CSSProperties } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -14,7 +14,7 @@ type Planet = (typeof CELESTIAL_BODIES)[number];
 const OVERVIEW: Focus = { center: [0, 0, 0], distance: 52 };
 
 function SimulationClock({ elapsed, running, speed }: {
-  elapsed: React.MutableRefObject<number>; running: boolean; speed: number;
+  elapsed: MutableRefObject<number>; running: boolean; speed: number;
 }) {
   useFrame((_, delta) => {
     if (running) elapsed.current += Math.min(delta, 0.1) * speed;
@@ -68,7 +68,7 @@ function EarthSurface({ radius }: { radius: number }) {
   );
 }
 
-function Moon({ elapsed }: { elapsed: React.MutableRefObject<number> }) {
+function Moon({ elapsed }: { elapsed: MutableRefObject<number> }) {
   const orbit = useRef<THREE.Group>(null);
   useFrame(() => { if (orbit.current) orbit.current.rotation.y = elapsed.current * 0.8; });
   return (
@@ -82,7 +82,7 @@ function Moon({ elapsed }: { elapsed: React.MutableRefObject<number> }) {
 }
 
 function PlanetMesh({ planet, elapsed, onSelect }: {
-  planet: Planet; elapsed: React.MutableRefObject<number>; onSelect: (id: PlanetId) => void;
+  planet: Planet; elapsed: MutableRefObject<number>; onSelect: (id: PlanetId) => void;
 }) {
   const group = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
@@ -149,7 +149,7 @@ function CameraFlight({ focus, onArrived }: { focus: Focus; onArrived: () => voi
 }
 
 function SolarScene({ elapsed, running, speed, focus, flying, onArrived, onSelect }: {
-  elapsed: React.MutableRefObject<number>; running: boolean; speed: number;
+  elapsed: MutableRefObject<number>; running: boolean; speed: number;
   focus: Focus; flying: boolean; onArrived: () => void; onSelect: (id: PlanetId) => void;
 }) {
   return (
@@ -187,16 +187,16 @@ function SolarScene({ elapsed, running, speed, focus, flying, onArrived, onSelec
   );
 }
 
-const shell: React.CSSProperties = {
+const shell: CSSProperties = {
   minHeight: '100dvh', height: '100dvh', background: '#040914',
   color: '#e8f4ff', position: 'relative', overflow: 'hidden',
   fontFamily: 'Inter, system-ui, sans-serif',
 };
-const action: React.CSSProperties = {
+const action: CSSProperties = {
   color: '#e8f4ff', background: '#101d2c', border: '1px solid #405770',
   borderRadius: 0, padding: '9px 12px', cursor: 'pointer',
 };
-const panel: React.CSSProperties = {
+const panel: CSSProperties = {
   background: 'rgba(5, 12, 24, .87)', border: '1px solid #35516b',
   padding: 16, backdropFilter: 'blur(10px)',
 };

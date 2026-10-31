@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import {
-  GEO_DESTINATIONS, globePoint, validCoordinates, type Coordinates,
+  GEO_DESTINATIONS, globePoint, validCoordinates, formatCoordinates, type Coordinates,
 } from './cosmosGeography';
 
 type BorderPayload = { v: number; s: number; d: number[] };
@@ -237,7 +237,7 @@ export function CosmosGeographicGlobe({ onBack }: { onBack: () => void }) {
         pointerEvents: 'auto' }} aria-label="Geografische Navigation">
         <div style={{ fontWeight: 700, marginBottom: 8 }}>{name}</div>
         <div style={{ fontSize: 12, color: '#c3d4df', marginBottom: 12 }}>
-          {location.latitude.toFixed(4)}° N/S · {location.longitude.toFixed(4)}° E/W
+          {formatCoordinates(location)}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
           {GEO_DESTINATIONS.map((dest) => (

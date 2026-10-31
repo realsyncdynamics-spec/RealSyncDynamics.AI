@@ -35,6 +35,7 @@ export function CosmosTexturedBody({
       (loaded) => {
         if (!active) { loaded.dispose(); return; }
         loaded.colorSpace = THREE.SRGBColorSpace;
+        loaded.needsUpdate = true;
         loaded.anisotropy = 2;
         owned.texture = loaded;
         setMap(loaded);
@@ -54,9 +55,11 @@ export function CosmosTexturedBody({
     <mesh>
       <sphereGeometry args={[radius, 48, 32]} />
       {isSun
-        ? <meshBasicMaterial map={map} color={map ? '#ffffff' : fallbackColor} />
-        : <meshStandardMaterial map={map} color={map ? '#ffffff' : fallbackColor}
-          roughness={0.94} metalness={0} />}
+        ? <meshBasicMaterial key={map ? 'original' : 'fallback'}
+            map={map} color={map ? '#ffffff' : fallbackColor} />
+        : <meshStandardMaterial key={map ? 'original' : 'fallback'}
+            map={map} color={map ? '#ffffff' : fallbackColor}
+            roughness={0.94} metalness={0} />}
     </mesh>
   );
 }

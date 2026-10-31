@@ -17,6 +17,7 @@ import {
   syncSubscriptionFromStripe,
 } from '../_shared/stripe-subscription-sync.ts';
 import { invoiceSubscriptionId, type InvoiceSubscriptionShape } from '../_shared/stripe-invoice.ts';
+import { routeCheckoutProductLine, type ProductLineRoute } from '../_shared/stripe-product-line-routing.ts';
 import {
   planEnqueue,
   readVoiceEntitlements,
@@ -72,6 +73,55 @@ async function getSecret(envVar: string, vaultName: string): Promise<string | nu
   return Deno.env.get(envVar) ?? null;
 }
 
+
+// MOON must never reach SaaS onboarding, entitlements or provision-voice-agent.
+// Fetch the authoritative session + ALL positions. Metadata alone is not proof.
+// Existing legacy SaaS Sessions may lack product_line; only catalog prices pass.
+async function verifiedCheckoutRoute(
+  admin: SupabaseClient,
+  stripe: Stripe,
+  candidate: Stripe.Checkout.Session,
+  eventLivemode: boolean,
+): Promise<ProductLineRoute> {
+  const current = await stripe.checkout.sessions.retrieve(candidate.id);
+  if (
+    current.id !== candidate.id ||
+    current.livemode !== eventLivemode ||
+    current.mode !== candidate.mode ||
+    (current.metadata?.product_line ?? null) !== (candidate.metadata?.product_line ?? null)
+  ) return 'quarantine';
+
+  const items = await stripe.checkout.sessions.listLineItems(current.id, { limit: 100 });
+  // MOON must be rejected even if its price is absent from RealSync's DB.
+  const immediate = routeCheckoutProductLine(current, items.data, items.has_more, new Set());
+  if (immediate === 'hardware_ignore') return immediate;
+  if (items.has_more || items.data.length === 0) return 'quarantine';
+
+  const priceIds = Array.from(new Set(items.data.map((row) => row.price?.id).filter((id): id is string => !!id)));
+  if (priceIds.length === 0) return 'quarantine';
+  const { data: catalog, error: catalogError } = await admin
+    .from('products').select('stripe_price_id,default_for_plan_key').in('stripe_price_id', priceIds);
+  if (catalogError) throw new Error('SaaS price catalog unavailable');
+  const approved = new Set<string>();
+  for (const row of catalog ?? []) {
+    const plan = planByKey(normalizePlanKey(row.default_for_plan_key));
+    if (row.stripe_price_id && plan && plan.purchaseMode !== 'free' && plan.purchaseMode !== 'inquiry') {
+      approved.add(row.stripe_price_id);
+    }
+  }
+  // Add-ons are only valid alongside a known plan in subscription mode.
+  if (current.mode === 'subscription') {
+    if (approved.size === 0) return 'quarantine';
+    const { data: addons, error: addonError } = await admin
+      .from('plan_addons').select('stripe_price_id').in('stripe_price_id', priceIds);
+    if (addonError) throw new Error('SaaS add-on catalog unavailable');
+    for (const row of addons ?? []) {
+      if (row.stripe_price_id) approved.add(row.stripe_price_id);
+    }
+  }
+  return routeCheckoutProductLine(current, items.data, items.has_more, approved);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('POST only', { status: 405 });
@@ -98,6 +148,30 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
+
+  // Product-line boundary precedes EVERY SaaS business side effect, including
+  // the webhook_events INSERT. This endpoint never fulfills a MOON order.
+  if (event.type === 'checkout.session.completed') {
+    let route: ProductLineRoute;
+    try {
+      route = await verifiedCheckoutRoute(
+        admin, stripe, event.data.object as Stripe.Checkout.Session, event.livemode,
+      );
+    } catch (e) {
+      console.error('[stripe-webhook] checkout product-line lookup failed:', (e as Error).message);
+      return new Response('product-line verification unavailable', { status: 503 });
+    }
+    if (route === 'hardware_ignore') {
+      return new Response(JSON.stringify({ received: true, ignored: 'hardware_mobility' }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (route !== 'saas') {
+      console.warn('[stripe-webhook] unrecognized or mixed checkout quarantined');
+      // Non-2xx preserves Stripe retry/ops visibility, never provisions tenants.
+      return new Response('checkout quarantined: unmatched product line', { status: 503 });
+    }
+  }
 
   // 1. Idempotency check — insert with ON CONFLICT DO NOTHING and treat the
   //    "already exists" branch as a no-op success.

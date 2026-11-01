@@ -467,12 +467,9 @@ async function handleChat(
       const resp = await client.messages.create({
         model: effectiveModel,
         max_tokens: maxTokens,
-        // Anthropic prompt caching (cache_control: ephemeral) — the
-        // system prompt + tool catalogue are identical across every
-        // iteration of a tool-loop and across every chat turn within
-        // a 5-minute window. Marking them cacheable cuts the input-
-        // token cost for these blocks by ~90% on cache hits, which
-        // is the dominant input cost driver for tool-heavy chats.
+        // When the server-side rollout flag is enabled, the stable
+        // system prompt and tool catalogue use ephemeral caching.
+        // Anthropic reports actual hits and writes in response.usage.
         system: systemBlocks,
         tools: AGENT_TOOLS.map((t, i) =>
           // Mark only the LAST tool with cache_control — Anthropic
@@ -845,10 +842,9 @@ async function runAnonViaAnthropic(
   const resp = await client.messages.create({
     model: ANON_LLM_MODEL,
     max_tokens: ANON_MAX_TOKENS,
-    // System-prompt caching on the anon path too. The anon system
-    // prompt is 224 tokens; with a free-tier cap of 10 calls/IP/mo
-    // and many IPs sharing the same prompt, the cache hit rate is
-    // high at the 5-minute window granularity.
+    // Gate the stable anon system prompt too. Its short length alone
+    // may fall below Anthropic's per-model caching threshold; no
+    // cache-hit or cost reduction is assumed without usage evidence.
     system: [{ type: 'text', text: ANON_SYSTEM_PROMPT, ...(PROMPT_CACHE_ENABLED ? { cache_control: { type: 'ephemeral' as const } } : {}) }],
     messages: transcript.map((m) => ({ role: m.role, content: m.content })),
   });

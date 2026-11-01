@@ -117,6 +117,32 @@ approval for a production deployment. Roll back by unsetting the flag
 and redeploying the affected Edge Functions. Do not put this flag in
 a `VITE_*` browser variable.
 
+
+### Synthetic Anthropic API cache-hit probe (isolated from RSD)
+
+`node scripts/probe-anthropic-cache.mjs --dry-run` performs a local,
+network-free payload check. To execute the **two billed** API calls,
+provide an Anthropic test-workspace key through the local process
+environment (do not commit, paste or log it), set
+`RSD_CACHE_PROBE_CONFIRM=YES`, then run
+`node scripts/probe-anthropic-cache.mjs`. Optional:
+`ANTHROPIC_PROBE_MODEL=claude-sonnet-5` (default).
+
+The script sends only synthetic non-tenant content. It uses an identical
+`cache_control: ephemeral` system prefix on two **sequential** requests,
+with distinct user messages. Accept only when first
+`cache_creation_input_tokens > 0` and second
+`cache_read_input_tokens > 0`. The randomly seeded prefix guarantees
+that this probe measures a new write instead of reusing an unrelated
+earlier cache entry. The script never prints the key or prompt text.
+
+**Scope:** This checks the Anthropic API cache mechanism, not RealSync's
+deployed Edge Functions, tenant quotas, or cost ledger. Full end-to-end
+approval still requires a separate staging Edge deployment with
+`ANTHROPIC_PROMPT_CACHE_ENABLED=true` and real metering checks.
+Supabase preview branches can incur compute charges; do not provision
+one automatically for this probe.
+
 ## Tool registry
 
 Add or change tools by `INSERT … ON CONFLICT (key) DO UPDATE SET …` on

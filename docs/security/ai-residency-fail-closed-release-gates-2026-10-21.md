@@ -38,3 +38,99 @@ Die externe Bot-API kann beim abgelehnten erstmaligen Chat `conversation_id: nul
 - PDP `shadow` im `ai-gateway` und `governance-router` ersetzt kein verpflichtendes providerbezogenes Enforcement.
 - `resolve_ai_residency` liefert bei API-Key-/anonymen Calls ohne Nutzer unter `user_choice` derzeit `cloud`; die künftige Semantik ist vor der Freigabe als Produktpolicy festzulegen.
 - WhatsApp- und Voice-Kanäle haben noch eigene Persistenz vor PEP; in diesem PR wurde nur `bot-chat` umgestellt. Diese Kanäle gesondert vor Release prüfen.
+
+
+## Durable Objects — verbindliche Architekturgrenze (ADR, 01.11.2026)
+
+**Durable Object = tenantgebundene Koordination nach Autorisierung. Nie Quelle der Tenant-Identität, nie Policy Authority, nie Secret Store, nie Evidence Vault.**
+
+Ein Durable Object ist hier nur ein Koordinations-Primitive zwischen stateless Worker und autoritativen Speichern. Es schafft keine zweite Sicherheitsgrenze.
+
+### Cloudflare-Semantik, die für RealSync gilt
+
+- **Concurrency:** Eine ID ist single-threaded, aber nicht request-weit serialisiert. Über `await fetch()`, R2 oder anderes Nicht-Storage-I/O können Requests derselben ID interleaven. `blockConcurrencyWhile()` ist für Init/Migration, nicht als allgemeiner Request-Mutex.
+- **SQLite/Data Studio:** Worker-Editoren können SQLite-backed DO-Daten lesen und schreiben; es gibt kein separates DO-IAM. Deshalb keine Secrets und keinen Policy-Klartext dort speichern.
+- **Location:** `locationHint: "eeur"` ist nur Best-Effort. `jurisdiction("eu")` begrenzt Compute und persistente DO-Daten auf die EU, macht den DO aber nicht zu RealSync `eu_private`. IDs können weiterhin in Billing-/Debug-Metadaten außerhalb dieser Grenze auftauchen.
+- **Konfiguration:** `new_sqlite_classes` ist Legacy. Neue Klassen nutzen deklarative `[exports.ClassName]` mit `type = "durable-object"` und `storage = "sqlite"`. Beide Modelle dürfen nicht gemischt werden. Jede erstmalige Provisionierung ist ein Worker-Deploy und bleibt während des Freeze verboten.
+- **Kosten/Lifecycle:** Eine heiße ID kann aktiv bleiben. Hibernation erzeugt im Idle keine Duration-Kosten; Storage bleibt. Beim WebSocket-Wake ist In-Memory-State weg und der Constructor läuft erneut.
+
+### Erlaubte Autoritätskette
+
+`verifyJwt -> resolveMembership(auth.uid) -> membership.tenantId -> optional TenantRateLimit -> policy/execution/evidence`
+
+Die DO-ID darf ausschließlich aus `membership.tenantId` kommen. Verboten sind URL-/Path-Tenant, JWT-Custom-Claim, `body.tenant_id`, Tenant-Header oder andere nutzerkontrollierte Schlüssel. Das Limit kommt serverseitig aus Plan/Entitlement, nie aus dem Request.
+
+Konzeptionelle Call-Site — **nicht verdrahten, solange der Freeze gilt**:
+
+```ts
+const auth = await verifyJwt(request);
+const membership = await resolveMembership(auth.userId);
+if (!membership) return new Response("Forbidden", { status: 403 });
+
+const tenantId = membership.tenantId;
+const entitlement = await resolveEntitlement(tenantId);
+
+// Hypothetisches Binding; nicht in wrangler-workers.toml eintragen.
+const limiter = env.RATE.getByName(tenantId);
+const result = await limiter.consume({
+  limit: entitlement.requestsPerMinute,
+  windowMs: 60_000,
+});
+
+if (!result.allowed) {
+  return new Response("Too Many Requests", {
+    status: 429,
+    headers: { "Retry-After": String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))) },
+  });
+}
+```
+
+Der DO speichert nur Zähler, keine Dokumente:
+
+```ts
+import { DurableObject } from "cloudflare:workers";
+
+export class TenantRateLimit extends DurableObject {
+  constructor(ctx: DurableObjectState, env: unknown) {
+    super(ctx, env);
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS rate_buckets (
+        window_start INTEGER PRIMARY KEY,
+        count INTEGER NOT NULL
+      )
+    `);
+  }
+
+  consume(input: { limit: number; windowMs: number }) {
+    const limit = Math.trunc(input.limit);
+    const windowMs = Math.trunc(input.windowMs);
+    if (limit < 1 || windowMs < 1_000) throw new Error("invalid rate limit");
+
+    const now = Date.now();
+    const windowStart = Math.floor(now / windowMs) * windowMs;
+    const resetAt = windowStart + windowMs;
+    const rows = this.ctx.storage.sql.exec(
+      `INSERT INTO rate_buckets (window_start, count)
+       VALUES (?, 1)
+       ON CONFLICT(window_start) DO UPDATE SET count = count + 1
+       RETURNING count`,
+      windowStart,
+    ).toArray();
+
+    const count = Number(rows[0]?.count ?? 1);
+    return { allowed: count <= limit, remaining: Math.max(0, limit - count), resetAt };
+  }
+}
+```
+
+### Freeze / Scope
+
+Diese Entscheidung ist Dokumentation, kein Unfreeze:
+
+- kein Durable-Object-Binding in `wrangler-workers.toml`
+- kein `[exports.*]`, keine DO-Migration
+- kein Call-Site-/Import-Wiring in `src/workers`
+- kein Policy-, Session- oder Evidence-DO
+- kein Produktions-Deploy
+
+Jede spätere Implementierung braucht eine separate Unfreeze-Entscheidung und muss die membership-abgeleitete Tenant-Autorität beibehalten.

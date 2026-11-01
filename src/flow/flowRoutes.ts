@@ -249,7 +249,7 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
     extraActions: [
       { label: 'Growth wählen', to: flow('checkout/growth') },
       { label: 'Agency wählen', to: flow('checkout/agency') },
-      { label: 'Enterprise anfragen', to: flow('checkout/enterprise') },
+      { label: 'Enterprise wählen', to: flow('checkout/enterprise') },
     ],
   },
 
@@ -324,17 +324,18 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
   'pricing.checkoutEnterprise': {
     id: 'pricing.checkoutEnterprise',
     slug: 'checkout/enterprise',
-    label: 'Enterprise anfragen',
+    label: 'Enterprise buchen',
     fromPage: 'Paket auswählen',
     title: 'Paket „Enterprise“',
     clicked: 'Du hast das Paket „Enterprise“ ausgewählt.',
     explanation:
       'Enterprise ist für Organisationen mit mehreren Mandanten: Multi-Tenant-Verwaltung, ' +
-      'SSO und erweiterte Nachweise. Umfang, Kapazität und Preis werden vertraglich ' +
-      'vereinbart — deshalb führt der Button unten nicht in einen Checkout, sondern zum Vertrieb.',
+      'SSO und erweiterte Nachweise. Über den Button unten startest du den sicheren ' +
+      'Stripe-Checkout — ohne Testphase, ab dem ersten Tag kostenpflichtig. Fragen zum ' +
+      'Umfang klärst du vorab über „Enterprise anfragen“.',
     stage: 'checkout',
     stateEffect: { selectedPlan: 'enterprise', checkoutStatus: 'started' },
-    primary: { label: 'Enterprise anfragen', to: '/contact-sales?intent=enterprise', external: true, hint: 'Öffnet das Kontaktformular des Vertriebs.' },
+    primary: { label: 'Checkout starten (Enterprise)', to: '/checkout/enterprise', external: true, hint: 'Öffnet den echten Stripe-Checkout.' },
     secondary: { label: 'Zurück zur Paketwahl', to: flow('choose-plan') },
     extraActions: [
       { label: 'Zahlung erfolgreich?', to: flow('checkout-success') },

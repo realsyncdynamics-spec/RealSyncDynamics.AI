@@ -25,12 +25,12 @@ import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../../lib/fn-pro
 export const WAITLIST_ENDPOINT = '/functions/v1/sales-lead';
 
 export const WAITLIST_INTERESTS = [
-  { value: 'runtime', label: 'Governance Runtime' },
+  { value: 'runtime', label: 'Governance Runtime (begleitetes Onboarding)' },
   { value: 'siteos', label: 'SiteOS / Website-Ebene' },
-  { value: 'evidence', label: 'Evidence Vault' },
+  { value: 'evidence', label: 'Evidence Vault (begleitetes Onboarding)' },
   { value: 'bots', label: 'WhatsApp- & Telefonbot' },
   { value: 'provenance', label: 'Herkunftsnachweis (C2PA)' },
-  { value: 'audit', label: 'DSGVO-Audit' },
+  { value: 'audit', label: 'Governance Scan' },
   { value: 'other', label: 'Etwas anderes' },
 ] as const;
 

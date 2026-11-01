@@ -43,11 +43,12 @@ export function SmartLink({
 // Vereinfachte Produkt-Navigation — bildet den Funnel ab statt einer
 // Marketing-Linksammlung.
 export const LANDING_NAV = [
-  { label: 'Startseite', to: '/' },
-  { label: 'Runtime SaaS', to: '/runtime' },
-  { label: 'AI Act & Governance', to: '/ai-act' },
-  { label: 'DSGVO Website Audit', to: '/audit' },
-  { label: 'AI DSGVO Bot', to: '/ai-dsgvo-bot' },
+  // Gleiche Hierarchie wie Landing v6: Governance OS → Runtime → Evidence → Preise.
+  // Operative Module (Bots, SiteOS, Tools) bewusst nicht in der Hauptnavigation.
+  { label: 'Governance OS', to: '/' },
+  { label: 'Runtime', to: '/governance-runtime' },
+  { label: 'AI Act', to: '/ai-act' },
+  { label: 'API & Docs', to: '/docs/governance' },
   { label: 'Preise', to: '/pricing' },
   { label: 'Ressourcen', to: '/ressourcen' },
 ];
@@ -87,10 +88,10 @@ export function LandingHeader() {
             Login
           </SmartLink>
           <SmartLink
-            to={TRIAL_CTA}
+            to={SCAN_CTA}
             className="group inline-flex items-center gap-1.5 bg-[var(--brand-champ)] text-[var(--brand-bg-0)] hover:bg-[var(--brand-champ-hi)] rounded-[var(--brand-radius-md)] px-4 py-2 text-sm font-semibold tracking-tight transition-colors"
           >
-            14 Tage testen
+            Kostenlosen Governance Scan starten
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
           </SmartLink>
         </div>
@@ -123,10 +124,10 @@ export function LandingHeader() {
               Login
             </SmartLink>
             <SmartLink
-              to={TRIAL_CTA}
+              to={SCAN_CTA}
               className="flex items-center justify-between px-3 py-3 mt-2 text-base font-semibold rounded-[var(--brand-radius-md)] bg-[var(--brand-champ)] text-[var(--brand-bg-0)]"
             >
-              14 Tage kostenlos testen <ArrowRight className="h-4 w-4" />
+              Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
             </SmartLink>
           </div>
         </div>

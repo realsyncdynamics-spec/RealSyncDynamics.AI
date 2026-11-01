@@ -8,6 +8,7 @@ import { Badge } from '../components/Badge';
 import { Card } from '../components/Card';
 import { RiskCard } from '../components/RiskCard';
 import { RISKS } from '../mock/data';
+import { TRY_FREE } from '../../config/beta';
 
 const STEPS = [
   {
@@ -133,7 +134,7 @@ export function AuditLandingPage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
+                {TRY_FREE.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/os/app">

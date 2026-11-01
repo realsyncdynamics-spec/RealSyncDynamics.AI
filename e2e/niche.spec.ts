@@ -70,7 +70,7 @@ for (const n of NICHES) {
     await expect(page.getByText(n.firstFaq, { exact: false })).toBeVisible();
 
     // Primary-CTA in Hero hat source-Parameter
-    const heroCta = page.getByRole('link', { name: /Jetzt kostenlosen Compliance-Check starten/i }).first();
+    const heroCta = page.getByRole('link', { name: /Kostenlosen Governance Scan starten/i }).first();
     await expect(heroCta).toBeVisible();
     await expect(heroCta).toHaveAttribute('href', new RegExp(n.auditSourceParam));
 

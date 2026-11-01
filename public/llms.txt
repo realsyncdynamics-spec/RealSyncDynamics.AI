@@ -5,7 +5,7 @@
 > KI-Agenten und Daten — KI-Systeme erfassen, klassifizieren, Regeln durchsetzen,
 > Nachweise laufend erzeugen.
 
-Sprache der Website: Deutsch. Betreiber: RealSync Dynamics.AI, Deutschland.
+Sprache der Website: Deutsch. Betreiber: RealSync Dynamics AI (Inh. Dominik Steiner), Deutschland.
 Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 
 ## Einstieg
@@ -20,9 +20,10 @@ Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 ## Preise
 
 - [Preisübersicht](https://realsyncdynamicsai.de/pricing)
-- Free Audit: 0 €. Starter: 79 €/Monat. Growth: 249 €/Monat. Agency: 699 €/Monat.
-- Enterprise: Preis auf Anfrage über den Vertrieb.
-- Monatlich kündbar. Verbindlich ist die Preisseite.
+- Free Audit: 0 €.
+- Offene Beta bis 31.01.2027: Starter, Growth und Agency kostenlos testen, keine Kreditkarte, kein Abo. Danach gilt der Listenpreis: Starter: 79 €/Monat. Growth: 249 €/Monat. Agency: 699 €/Monat.
+- Enterprise: 1.498 €/Monat netto, ohne Testphase, nicht Teil der Beta.
+- Alle Preise zzgl. 19 % USt, Angebot nur für Unternehmer. Monatlich kündbar. Verbindlich ist die Preisseite.
 
 ## Rechtliches
 

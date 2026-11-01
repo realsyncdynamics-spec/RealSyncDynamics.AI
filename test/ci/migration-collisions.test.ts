@@ -179,6 +179,17 @@ describe('collide — gegen Basis und gegen fremde PRs', () => {
     expect(f).toEqual([]);
   });
 
+  it('#1983/#1985: gestapelter PR bringt dieselbe Datei wie sein Vorgaenger mit — kein Befund', () => {
+    // Beide PRs zielen auf main und tragen die Migrationen aus #1982. Das ist
+    // dieselbe Datei, keine zweite Vergabe der Version.
+    const f = collide(
+      [mig('20261024090000_canonical_plan_catalog.sql')],
+      idx({ '20261024090000': '#1983: 20261024090000_canonical_plan_catalog.sql' }),
+      'ein anderer offener PR',
+    );
+    expect(f).toEqual([]);
+  });
+
   it('schweigt, wenn nichts kollidiert', () => {
     expect(collide(
       [mig('20260907000000_neu.sql', ['ganz_neue_tabelle'])],

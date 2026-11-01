@@ -82,7 +82,6 @@ export function SeoPageShell({
             <Link to="/audit" className="hover:text-[var(--brand-champ)]">Audit</Link>
             <Link to="/pricing" className="hover:text-[var(--brand-champ)]">Preise</Link>
             <Link to="/resources" className="hover:text-[var(--brand-champ)]">Ressourcen</Link>
-            <Link to="/blog" className="hover:text-[var(--brand-champ)]">Blog</Link>
             <Link to="/legal/methodology" className="hover:text-[var(--brand-champ)]">Methodik</Link>
             <Link to="/legal/privacy" className="hover:text-[var(--brand-champ)]">Datenschutz</Link>
           </div>

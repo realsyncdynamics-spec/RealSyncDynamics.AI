@@ -9,6 +9,7 @@ import {
 import { enterpriseAgents } from '../lib/enterprise-ai-os/agents/registry';
 import { EnterpriseFeedbackWidget } from '../components/enterprise-ai-os/FeedbackWidget';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
+import { CTA } from '../content/runtimeVocab';
 
 interface AgentRunRow {
   id: string;
@@ -103,10 +104,10 @@ export function EnterpriseAiOsDashboard() {
           </div>
 
           <Link
-            to="/enterprise-ai-os/founding-access"
+            to="/contact-sales?source=founding"
             className="rounded-2xl bg-[#d4af37] px-5 py-3 text-center font-semibold text-black"
           >
-            Founding Access aktivieren
+            {CTA.enterprise}
           </Link>
         </div>
 

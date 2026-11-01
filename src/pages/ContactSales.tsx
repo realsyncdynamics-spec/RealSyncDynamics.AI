@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
 } from 'lucide-react';
-import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { monthlyPriceText, normalizePlanKey, planById, planByKey, type PlanKey } from '@/shared/pricing';
 import { ensureCsrfCookie } from '../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy';
+import { BETA } from '../config/beta';
+
+const ENTERPRISE = planById('enterprise');
+/** Enterprise ist seit 24.10.2026 per Checkout buchbar, nicht Teil der Beta. */
+const ENTERPRISE_CHECKOUT_PATH = '/checkout/enterprise';
 
 interface FormState {
   name: string;
@@ -30,6 +35,10 @@ function looksLikeEnterprisePartnerIntent(...parts: Array<string | null | undefi
   return /\b(enterprise|partner|scale)\b/.test(hay);
 }
 
+/**
+ * Alt-Links mit `?source=founding…` (früheres Founding-Programm,
+ * endete 02.08.2026) landen heute in derselben Enterprise-Ansicht.
+ */
 function isFoundingIntent(source: string, intent: string | null): boolean {
   const hay = `${source} ${intent ?? ''}`.toLowerCase();
   return /\bfounding\b/.test(hay);
@@ -37,7 +46,7 @@ function isFoundingIntent(source: string, intent: string | null): boolean {
 
 /**
  * Individuelles Webdesign (Landingpages, Websites, maßgeschneiderte Dashboards)
- * — eigenständige Dienstleistung, kein Enterprise-/Founding-Funnel
+ * — eigenständige Dienstleistung, kein Enterprise-Funnel
  * (Entscheidung Owner 18.10.2026, `CTA.webdesign`).
  */
 function isWebdesignIntent(intent: string | null): boolean {
@@ -134,7 +143,7 @@ export function ContactSales() {
   const inquiryPlan = isInquiryPlanKey(planKey);
   const isInquiry = inquirySignal || inquiryPlan;
   const isWebdesign = !isInquiry && isWebdesignIntent(intent);
-  const showFoundingCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
+  const showEnterpriseCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
   const showPlanBadge = isInquiry && planKey !== null;
 
   function handleChange(field: keyof FormState) {
@@ -244,30 +253,30 @@ export function ContactSales() {
 
   const headerTitle = isWebdesign
     ? 'Individuelle Dienstleistung'
-    : showFoundingCopy
-      ? 'Founding Access / Kontakt'
+    : showEnterpriseCopy
+      ? 'Enterprise / Kontakt'
       : 'Enterprise / Partner Anfrage';
   const headerSub = isWebdesign
     ? 'Persönlich mit Dominik Steiner'
-    : showFoundingCopy
+    : showEnterpriseCopy
       ? 'AI Agent antwortet sofort'
       : 'Vertrieb prüft die Anfrage';
 
   const headline = isWebdesign
     ? 'Individuelles Webdesign anfragen'
-    : showFoundingCopy
+    : showEnterpriseCopy
     ? (planKey
-      ? `${planBadgeLabel(planKey)} — Founding Access`
-      : 'Founding Access anfragen')
+      ? `${planBadgeLabel(planKey)} — Enterprise`
+      : 'Enterprise anfragen')
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
   const intro = isWebdesign
     ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
-    : showFoundingCopy
-    ? '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und schaltet den Zugang automatisiert frei.'
+    : showEnterpriseCopy
+    ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase und direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter, Growth und Agency sind in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = showFoundingCopy ? 'Founding Access anfragen' : 'Anfrage senden';
+  const submitLabel = showEnterpriseCopy ? 'Enterprise anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">
@@ -310,6 +319,15 @@ export function ContactSales() {
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
           {intro}
         </p>
+        {showEnterpriseCopy && (
+          <Link
+            to={ENTERPRISE_CHECKOUT_PATH}
+            data-testid="contact-sales-enterprise-checkout"
+            className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-security-400 hover:underline"
+          >
+            → Enterprise direkt buchen
+          </Link>
+        )}
 
         {error && (
           <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">

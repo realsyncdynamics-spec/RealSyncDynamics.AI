@@ -5,6 +5,9 @@ import {
 import { Navbar } from '../components/Navbar';
 import { usePageMeta } from '../lib/usePageMeta';
 import { CTA } from '../content/runtimeVocab';
+import { checkoutHrefForPlan, monthlyPriceText, planById } from '@/shared/pricing';
+
+const ENTERPRISE = planById('enterprise');
 
 /**
  * /enterprise — Enterprise-Landing mit Case Studies & Testimonials.
@@ -279,7 +282,7 @@ export function EnterpriseLanding() {
               'Nutzer- und API-Schlüssel-Kontingente nach Vereinbarung',
               'Custom Dashboards & Reports',
               'AI Model Selection (Claude, GPT, Gemma)',
-              'Individuelle Konditionen nach Volumen',
+              'Mandanten-Kapazität über das Paket hinaus nach Vereinbarung',
               'Dedicated Account Manager',
             ].map((feature) => (
               <div key={feature} className="flex items-start gap-3 p-4 border border-titanium-800 rounded-none">
@@ -298,28 +301,34 @@ export function EnterpriseLanding() {
             Pricing
           </div>
           <h2 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight mb-6">
-            Custom Enterprise Plans
+            Enterprise zum Festpreis
           </h2>
           <p className="text-lg text-silver-300 leading-relaxed mb-10">
-            Abhängig von Anzahl der Domains, Benutzer, API-Calls, und SLA-Anforderungen.
+            <strong>{monthlyPriceText(ENTERPRISE)}</strong> · direkt buchbar, ohne Testphase.
             <br />
-            <strong>Preis auf Anfrage</strong> · individuell nach Umfang und SLA.
+            Fragen zu Domains, Benutzern, API-Calls oder SLA klären wir gern vorab.
           </p>
 
-          <Link
-            to="/contact-sales?intent=enterprise"
-            className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
-          >
-            Angebot anfordern <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to={checkoutHrefForPlan(ENTERPRISE, { source: 'enterprise-landing' })}
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              {ENTERPRISE.ctaLabel} <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/contact-sales?intent=enterprise"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none border border-titanium-700 text-titanium-100 hover:border-gold-400"
+            >
+              {CTA.enterprise}
+            </Link>
+          </div>
 
           <div className="mt-10 p-6 bg-obsidian-900/60 border border-silver-700/30 rounded-none text-sm text-silver-300">
             <p>
-              <strong className="text-titanium-50">Flexible Terms:</strong> Jährliche oder monatliche Abrechnung.
+              <strong className="text-titanium-50">Abrechnung:</strong> monatlich über Stripe, per Karte oder SEPA-Lastschrift.
               <br />
               <strong className="text-titanium-50">Customization:</strong> Wir passen Features, Integrations und Workflows an.
-              <br />
-              <strong className="text-titanium-50">Garantie:</strong> 30 Tage Risk-Free Trial mit Daten-Zugang.
             </p>
           </div>
         </div>

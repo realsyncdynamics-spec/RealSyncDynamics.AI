@@ -1,5 +1,6 @@
 import { Building2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLanding';
+import { CTA } from '../content/runtimeVocab';
 
 export function PublicSectorLanding() {
   return (
@@ -25,7 +26,7 @@ export function PublicSectorLanding() {
         cta: {
           heading: 'EU-Datensouveränität ist Default. Nicht Premium-Feature.',
           buttons: [
-            { to: '/contact-sales?source=public-sector', label: 'Founding Access starten', variant: 'primary' },
+            { to: '/contact-sales?source=public-sector', label: CTA.enterprise, variant: 'primary' },
             { to: '/legal/compliance-matrix', label: 'Provider-Vergleich', variant: 'secondary' },
           ],
         },

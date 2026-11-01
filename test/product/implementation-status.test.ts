@@ -88,9 +88,9 @@ describe('implementation-status registry', () => {
     const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
     const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
     const landing = getImplementation('public-landing')!;
-    expect(view).toContain('DSGVO und EU AI Act – </span>');
-    expect(view).toContain('machbar für Ihr Unternehmen.</span>');
-    expect(landing.description).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
+    expect(view).toContain('>Das Governance OS für </span>');
+    expect(view).toContain('>DSGVO & EU AI Act.</span>');
+    expect(landing.description).toContain('Das Governance OS für DSGVO & EU AI Act.');
     expect(landing.description).toContain('/audit?source=landing-v6');
     expect(landing.description).toContain('/contact-sales?tier=enterprise');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
@@ -98,7 +98,7 @@ describe('implementation-status registry', () => {
     expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
 
     const cta = getImplementation('free-audit')!.ctaLabel!;
-    expect(cta).toBe('Kostenlosen Website-Check starten');
+    expect(cta).toBe('Kostenlosen Governance Scan starten');
     expect(view).toContain(`>${cta}<`);
 
     for (const id of ['pricing-monthly', 'enterprise-inquiry'] as const) {
@@ -257,7 +257,7 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
     expect(docs).toContain('Landing v6');
-    expect(docs).toContain('DSGVO und EU AI Act – machbar für Ihr Unternehmen.');
+    expect(docs).toContain('Das Governance OS für DSGVO & EU AI Act.');
     expect(docs).not.toContain('AI Compliance Operations OS for Europe');
     expect(docs).toContain('2026-10-18');
     expect(docs).toContain('/ai-act-klassifikator');

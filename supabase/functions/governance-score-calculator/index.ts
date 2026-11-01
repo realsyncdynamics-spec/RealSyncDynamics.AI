@@ -12,7 +12,7 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requireServiceRole } from '../_shared/auth.ts';
+import { requireCronKey } from '../_shared/cronKey.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -32,8 +32,10 @@ Deno.serve(async (req: Request) => {
   // Cron-Endpunkt: rechnet die Compliance-Scores ALLER Tenants neu. Die
   // Praefix-Pruefung liess jeden Aufrufer durch, der das Plattform-Gate
   // passiert hatte — also jeden eingeloggten Nutzer (Befund F-04,
-  // AUDIT/18_FINDINGS.md). Jetzt nur noch der Plattform-Aufrufer selbst.
-  const denied = requireServiceRole(req);
+  // AUDIT/18_FINDINGS.md). Jetzt nur noch der Cron-Aufrufer selbst:
+  // dedizierter Cron-Key statt service_role-Bearer (seit 2026-11-01,
+  // verify_jwt = false; pg_cron sendet Vault `cron_governance_score_key`).
+  const denied = await requireCronKey(req, 'CRON_GOVERNANCE_SCORE_KEY', 'cron_governance_score_key');
   if (denied) return denied;
 
   try {

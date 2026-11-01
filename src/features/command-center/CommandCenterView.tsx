@@ -6,13 +6,18 @@ import {
 } from './agentRegistry';
 import { useAgentRegistry } from './useAgentRegistry';
 import { DecisionInbox } from './DecisionInbox';
+import { AgentConfigPanel } from './AgentConfigPanel';
+import { TaskBoard } from './TaskBoard';
+import { MemoryView } from './MemoryView';
+import { RoutinesView } from './RoutinesView';
+import { MonitoringView } from './MonitoringView';
 
 const NAV = [
   'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
   'Details Manager', 'Bibliothek Manager', 'Computer Manager', 'Routinen', 'Gedächtnis',
   'Kosten & Monitoring', 'Einstellungen',
 ] as const;
-const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten']);
+const NAV_ENABLED = new Set<string>(['Übersicht', 'Alle Agenten', 'Aufgaben', 'Routinen', 'Gedächtnis', 'Kosten & Monitoring']);
 
 function NavList() {
   return (
@@ -47,7 +52,7 @@ const SOURCE_LABEL: Record<RegistryAgent['source'], string> = {
   grok_soll: 'Soll-Konfiguration · kein Live-Status',
 };
 
-function AgentCard({ a }: { a: RegistryAgent }) {
+function AgentCard({ a, onConfig }: { a: RegistryAgent; onConfig: () => void }) {
   return (
     <article data-testid="agent-card" className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
       <div className="flex items-start justify-between gap-2">
@@ -69,6 +74,9 @@ function AgentCard({ a }: { a: RegistryAgent }) {
       {a.lastError && (
         <p className="mt-2 flex items-center gap-1 text-xs text-red-300"><AlertTriangle className="h-3 w-3" aria-hidden />{a.lastError}</p>
       )}
+      <button type="button" onClick={onConfig} className="mt-3 text-xs text-sky-300 underline">
+        Details · Bibliothek · Computer
+      </button>
     </article>
   );
 }
@@ -91,6 +99,8 @@ export function CommandCenterView() {
   const { agents, loading, sourceError } = useAgentRegistry();
   const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [configFor, setConfigFor] = useState<RegistryAgent | null>(null);
+  const [view, setView] = useState<'agents' | 'tasks' | 'memory' | 'routines' | 'monitoring'>('agents');
   const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
   const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -116,6 +126,13 @@ export function CommandCenterView() {
             </nav>
           )}
         </div>
+        <div role="group" aria-label="Bereich" className="mb-3 flex gap-1">
+          {([['agents', 'Agenten'], ['tasks', 'Aufgaben'], ['memory', 'Gedächtnis'], ['routines', 'Routinen'], ['monitoring', 'Kosten & Monitoring']] as const).map(([k, l]) => (
+            <button key={k} type="button" aria-pressed={view === k} onClick={() => setView(k)}
+              className={`rounded px-3 py-1 text-sm ${view === k ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400'}`}>{l}</button>
+          ))}
+        </div>
+        {view === 'tasks' ? <TaskBoard /> : view === 'memory' ? <MemoryView /> : view === 'routines' ? <RoutinesView /> : view === 'monitoring' ? <MonitoringView /> : (<>
         <h1 className="text-xl font-semibold">Agentenübersicht</h1>
         <p className="mt-1 text-sm text-zinc-400">Status nur aus belegten Quellen. Nicht belegte Zustände werden als UNBEKANNT angezeigt.</p>
         {sourceError && (
@@ -150,8 +167,12 @@ export function CommandCenterView() {
         </div>
         <p className="mt-3 text-xs text-zinc-500">{loading ? 'Lade …' : `${shown.length} von ${agents.length} Agenten`}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((a) => <AgentCard key={a.registryId} a={a} />)}
+          {shown.map((a) => <AgentCard key={a.registryId} a={a} onConfig={() => setConfigFor(a)} />)}
         </div>
+        {configFor && (
+          <AgentConfigPanel key={configFor.registryId} agentRef={configFor.registryId} agentName={configFor.name} onClose={() => setConfigFor(null)} />
+        )}
+        </>)}
       </main>
 
       <DecisionInbox />

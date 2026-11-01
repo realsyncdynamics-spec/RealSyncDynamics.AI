@@ -9,10 +9,12 @@ export interface DecisionInboxState {
   loading: boolean;
   /** Ehrliche Meldung, wenn die Quelle nicht lesbar ist (z. B. Migration noch nicht live). */
   sourceError: string | null;
+  reload: () => void;
 }
 
 export function useDecisionInbox(): DecisionInboxState {
-  const [state, setState] = useState<DecisionInboxState>({ questions: [], events: [], decisions: {}, loading: true, sourceError: null });
+  const [tick, setTick] = useState(0);
+  const [state, setState] = useState<Omit<DecisionInboxState, 'reload'>>({ questions: [], events: [], decisions: {}, loading: true, sourceError: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +60,7 @@ export function useDecisionInbox(): DecisionInboxState {
     }
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [tick]);
 
-  return state;
+  return { ...state, reload: () => setTick((t) => t + 1) };
 }

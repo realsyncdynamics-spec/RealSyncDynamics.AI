@@ -34,12 +34,12 @@ export function FinalCta() {
           Compliance, die sich beweisen lässt.
         </h2>
         <p className="lv2__lead">
-          Starten Sie mit einem kostenlosen Audit Ihrer KI-Systeme – Governance Score, Top-Risiken
-          und Planempfehlung in 90 Sekunden.
+          Starten Sie mit einer kostenlosen Selbsteinschätzung: acht Fragen zu Ihrer KI-Governance,
+          Ergebnis sofort im Browser. Nichts wird gespeichert, keines Ihrer Systeme wird gescannt.
         </p>
         <div className="lv2-cta-row">
-          <Link to="/audit?source=landing-v2-final" className="lv2-btn lv2-btn--gold">
-            Free Audit starten
+          <Link to="/#check" className="lv2-btn lv2-btn--gold">
+            Selbsteinschätzung starten
           </Link>
           <Link to="/contact-sales?tier=enterprise&source=landing-v2-final" className="lv2-btn lv2-btn--glass">
             Enterprise anfragen

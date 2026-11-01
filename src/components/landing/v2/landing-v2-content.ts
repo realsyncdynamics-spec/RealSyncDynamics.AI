@@ -211,8 +211,8 @@ export const LV2_FAQ: Lv2Faq[] = [
     a: 'EU AI Act, DSGVO und ISO/IEC 42001. Controls lassen sich zusätzlich auf NIS2 und interne Richtlinien mappen.',
   },
   {
-    q: 'Was umfasst das Free Audit?',
-    a: 'Eine Bestandsaufnahme Ihrer KI-Systeme, eine vorläufige Risikoklassifizierung nach EU AI Act und einen priorisierten Maßnahmenplan – ohne Account und ohne Kreditkarte.',
+    q: 'Was umfasst die kostenlose Selbsteinschätzung?',
+    a: 'Acht Fragen zu Ihrer KI-Governance, beantwortet direkt im Browser. Sie erhalten eine vorläufige Einordnung mit den größten Lücken – ohne Account, ohne Kreditkarte. Es wird nichts gespeichert und keines Ihrer Systeme gescannt.',
   },
   {
     q: 'Kann ich monatlich kündigen?',

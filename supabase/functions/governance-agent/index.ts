@@ -56,6 +56,9 @@ import {
   type AnthropicUsage,
   type TokenUsage,
 } from '../_shared/providerCost.ts';
+import { isAnthropicPromptCacheEnabled } from '../_shared/anthropicPromptCache.ts';
+
+const PROMPT_CACHE_ENABLED = isAnthropicPromptCacheEnabled(Deno.env.get('ANTHROPIC_PROMPT_CACHE_ENABLED'));
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -442,7 +445,7 @@ async function handleChat(
   // Agenten gleich bleibt. Unbekannte IDs ⇒ kein Zusatz.
   const focusPrompt = agentFocusPrompt(body.agent);
   const systemBlocks: Anthropic.TextBlockParam[] = [
-    { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: SYSTEM_PROMPT, ...(PROMPT_CACHE_ENABLED ? { cache_control: { type: 'ephemeral' as const } } : {}) },
     ...(focusPrompt ? [{ type: 'text' as const, text: focusPrompt }] : []),
   ];
 
@@ -476,7 +479,7 @@ async function handleChat(
           // caches everything up to and including that marker, so
           // tagging the final tool effectively caches the full
           // tools array as one block.
-          i === AGENT_TOOLS.length - 1
+          PROMPT_CACHE_ENABLED && i === AGENT_TOOLS.length - 1
             ? { ...t, cache_control: { type: 'ephemeral' as const } }
             : t,
         ),
@@ -846,7 +849,7 @@ async function runAnonViaAnthropic(
     // prompt is 224 tokens; with a free-tier cap of 10 calls/IP/mo
     // and many IPs sharing the same prompt, the cache hit rate is
     // high at the 5-minute window granularity.
-    system: [{ type: 'text', text: ANON_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system: [{ type: 'text', text: ANON_SYSTEM_PROMPT, ...(PROMPT_CACHE_ENABLED ? { cache_control: { type: 'ephemeral' as const } } : {}) }],
     messages: transcript.map((m) => ({ role: m.role, content: m.content })),
   });
   const text = resp.content

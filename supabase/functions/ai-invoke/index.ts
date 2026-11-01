@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     });
 
     // Record token usage for metering
-    // Total tokens = input + output (cached tokens don't count toward billing)
+    // Total tokens include cache reads and writes; cache tokens are billed at discounted rates.
     const totalTokens = r.inputTokens + r.outputTokens;
     if (totalTokens > 0) {
       try {

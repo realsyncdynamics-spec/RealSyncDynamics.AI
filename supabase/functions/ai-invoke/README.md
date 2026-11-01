@@ -126,7 +126,7 @@ provide an Anthropic test-workspace key through the local process
 environment (do not commit, paste or log it), set
 `RSD_CACHE_PROBE_CONFIRM=YES`, then run
 `node scripts/probe-anthropic-cache.mjs`. Optional:
-`ANTHROPIC_PROBE_MODEL=claude-sonnet-5` (default).
+`ANTHROPIC_PROBE_MODEL=claude-sonnet-5-5` (default; check model access in the test workspace).
 
 The script sends only synthetic non-tenant content. It uses an identical
 `cache_control: ephemeral` system prefix on two **sequential** requests,

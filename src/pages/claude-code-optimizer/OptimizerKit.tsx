@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bot, Info, MousePointerClick, Check } from 'lucide-react';
-import { tierById, tierPriceLabel, type TierId } from '../../config/pricing';
+import { monthlyPriceText, tierById, tierPriceLabel, type TierId } from '../../config/pricing';
 
 /**
  * Gemeinsames Kit für den Claude-Code-Optimizer-Flow.
@@ -305,6 +305,7 @@ function canonicalPrice(planKey: TierId): string {
   // Vertragspläne (`priceOnRequest`) behandelt `tierPriceLabel` — hier nur
   // zu prüfen, ob `priceEur === 0` ist, druckte für Enterprise `1.249 €/Mo.`.
   if (tier.priceEur === 0 && !tier.priceOnRequest) return planKey === 'free' ? '0 €' : 'individuell';
+  if (!tier.priceOnRequest && tier.plan.netPriceLabel) return monthlyPriceText(tier.plan);
   return tierPriceLabel(tier, ' €/Mo.');
 }
 

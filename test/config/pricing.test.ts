@@ -26,13 +26,13 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(planById('starter').price.monthlyEur).toBe(79);
     expect(planById('growth').price.monthlyEur).toBe(249);
     expect(planById('agency').price.monthlyEur).toBe(699);
-    expect(planById('enterprise').price.monthlyEur).toBe(1249);
+    expect(planById('enterprise').price.monthlyEur).toBe(1498);
     expect(planById('partner').price.monthlyEur).toBe(1999);
   });
 
   it('hat die korrekten Jahrespreise in der SSoT, ohne Yearly-Tiers', () => {
     expect(planById('agency').price.yearlyEur).toBe(6900);
-    expect(planById('enterprise').price.yearlyEur).toBe(12490);
+    expect(planById('enterprise').price.yearlyEur).toBe(14980);
     expect(planById('partner').price.yearlyEur).toBe(19000);
     expect(tierById('agency_yearly')).toBeUndefined();
     expect(tierById('enterprise_yearly')).toBeUndefined();

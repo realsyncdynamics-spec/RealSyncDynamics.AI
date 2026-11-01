@@ -7,6 +7,7 @@ import { tierById, type PricingTier } from '../../../config/pricing';
 import {
   checkoutHrefForPlan,
   formatPriceEur,
+  monthlyPriceSuffix,
   formatNetVatGrossEur,
   pricingTaxNote,
   PLANS,
@@ -89,7 +90,7 @@ export function PricingV2() {
               ? tier.priceSuffix
               : yearly
                 ? '/ Jahr'
-                : '/ Monat';
+                : monthlyPriceSuffix(plan);
             const href = checkoutHrefForPlan(plan, {
               interval: yearly ? 'year' : 'month',
               source: SOURCE,

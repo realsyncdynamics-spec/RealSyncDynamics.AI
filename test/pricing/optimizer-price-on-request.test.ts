@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 
 import { OPTIMIZER_PACKAGES } from '../../src/pages/claude-code-optimizer/OptimizerKit';
 import { tierById } from '../../src/config/pricing';
+import { monthlyPriceText } from '../../shared/pricing';
 
 describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
   it('jedes Paket verweist auf einen Plan der SSoT', () => {
@@ -35,9 +36,9 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
     const onRequest = OPTIMIZER_PACKAGES.filter(
       (pkg) => tierById(pkg.key)?.priceOnRequest === true,
     );
-    // Die Liste darf nicht leer sein — sonst prüft der Test nichts mehr,
-    // etwa weil Enterprise aus den Paketen entfernt wurde.
-    expect(onRequest.length).toBeGreaterThan(0);
+    // Seit 2026-10-24 ist Enterprise per Checkout buchbar und kein
+    // Auf-Anfrage-Plan mehr; heute führt kein Paket einen solchen Plan. Die
+    // Regel bleibt für den Fall stehen, dass wieder einer dazukommt.
 
     for (const pkg of onRequest) {
       expect(pkg.price, `Paket "${pkg.name}"`).toBe('Auf Anfrage');
@@ -55,11 +56,18 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
       return tier !== undefined && !tier.priceOnRequest && tier.priceEur > 0;
     });
     expect(fixed.length).toBeGreaterThan(0);
+    // Enterprise nennt seit 2026-10-24 seinen Festpreis.
+    expect(fixed.map((pkg) => pkg.key)).toContain('enterprise');
 
     // Genau der Betrag aus der SSoT — eine bloße Ziffernprüfung ließe einen
-    // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch.
+    // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch. Pläne mit
+    // `netPriceLabel` (Enterprise) tragen den Netto-Hinweis aus der SSoT.
     for (const pkg of fixed) {
-      expect(pkg.price, `Paket "${pkg.name}"`).toBe(`${tierById(pkg.key)!.priceString} €/Mo.`);
+      const tier = tierById(pkg.key)!;
+      const expected = tier.plan.netPriceLabel
+        ? monthlyPriceText(tier.plan)
+        : `${tier.priceString} €/Mo.`;
+      expect(pkg.price, `Paket "${pkg.name}"`).toBe(expected);
     }
   });
 });

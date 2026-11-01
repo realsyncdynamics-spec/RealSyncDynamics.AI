@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
 // Die Karten, die auf /pricing stehen. Agency ist wieder self_service;
-// Partner bleibt stillgelegt. Enterprise bleibt als contract sichtbar.
+// Partner bleibt stillgelegt. Enterprise ist seit 24.10.2026 self_service.
 const CARD_IDS = [
   'starter',
   'growth',
@@ -31,17 +31,19 @@ const DETAIL_SLUGS = [
 // eigens geprüft statt hier ignoriert.
 // Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist wieder
 // dabei (Dominik-Landing 2026-09). Jahres-Keys ohne verdrahteten Stripe-Preis
-// leiten auf den Monats-Checkout um.
+// leiten auf den Monats-Checkout um. Enterprise ist seit 24.10.2026 dabei.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
+  'enterprise',
 ];
 
 const UNWIRED_YEARLY_REDIRECTS: Array<[string, string]> = [
   ['starter_yearly', 'starter'],
   ['growth_yearly', 'growth'],
   ['agency_yearly', 'agency'],
+  ['enterprise_yearly', 'enterprise'],
 ];
 
 test.describe('Pricing Flow', () => {
@@ -149,15 +151,15 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
-      // Seit AP2 (2026-08-24) ist Enterprise ein Vertrag, kein
-      // Self-Service-Checkout: `purchaseMode: 'inquiry'`. Er darf damit auch
-      // keinen Self-Service-Trial oeffnen. Bestehende Enterprise-Abos rechnen
-      // unverändert weiter ab — betroffen ist allein der Neuabschluss.
+    test('enterprise checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
+      // Seit 24.10.2026 wird Enterprise per Self-Service-Checkout verkauft
+      // (`purchaseMode: 'checkout'`, ohne Testphase). Enterprise ist kein
+      // Beta-Plan (src/config/beta.ts), braucht also kein `?purchase=1`.
+      // Die Anfrage läuft weiter über /contact-sales?intent=enterprise.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForURL(/\/contact-sales/);
-      await expect(page).toHaveURL(/plan=enterprise/);
-      await expect(page).not.toHaveURL(/pilot=true/);
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(/\/checkout\/enterprise/);
+      await expect(page).not.toHaveURL(/contact-sales/);
     });
 
     // Partner bleibt legacy + inquiry: die Umleitung auf /contact-sales

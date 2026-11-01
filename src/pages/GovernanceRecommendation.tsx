@@ -24,6 +24,7 @@ import {
   PRODUCT_AREAS,
   moduleAvailabilityLabel,
 } from '@/shared/pricing';
+import { TRY_FREE } from '../config/beta';
 
 interface LocationState {
   profile?: GovernanceProfile;
@@ -357,7 +358,7 @@ function RecommendationBody({
               </div>
               <div className="flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>14 Tage kostenlos</span>
+                <span>{TRY_FREE.badge}</span>
               </div>
               <div className="flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />

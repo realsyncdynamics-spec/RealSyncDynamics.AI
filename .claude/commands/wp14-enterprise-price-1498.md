@@ -15,7 +15,7 @@ description: WP14 Enterprise 1.498 €/Monat netto — SSoT, Stripe, Checkout, E
 
 Repository: realsyncdynamics-spec/RealSyncDynamics.AI
 Lies zuerst: CLAUDE.md, `.github/PR_TRIAGE_POLICY.md`, den E-P1-Nachtrag sowie die Beschreibungen
-und Kommentare von #1995 und #1999. Das Runbook `docs/runbooks/enterprise-stripe-1498.md` liegt nur
+und Kommentare von #1995 und #1999. Das Runbook `docs/runbooks/stripe-production-checkout.md (Abschnitt „Enterprise 1.498 €“)` liegt nur
 auf dem Branch von #1995.
 
 **Keine Doppelarbeit.** Die Umsetzung von 1.498 € existiert bereits:

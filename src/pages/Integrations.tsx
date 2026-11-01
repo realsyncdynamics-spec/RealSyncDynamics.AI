@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Plug, ExternalLink } from 'lucide-react';
+import { TRY_FREE } from '../config/beta';
 
 type Integration = {
   name: string;
@@ -122,7 +123,7 @@ export function Integrations() {
           <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">Integration einrichten</h2>
             <p className="text-titanium-300 text-sm mb-4">
-              Webhooks und API-Keys ab Growth-Tier. 14 Tage testen, keine Kreditkarte.
+              Webhooks und API-Keys ab Growth-Tier. {TRY_FREE.badge}, keine Kreditkarte.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/pricing?source=integrations" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

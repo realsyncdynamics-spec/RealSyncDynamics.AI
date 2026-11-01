@@ -43,7 +43,8 @@ test.describe('Marketing-Landing (/landing)', () => {
     ).toBeVisible();
 
     // Primär-CTAs: Self-Serve, kein Demo-Zwang.
-    await expect(page.getByRole('link', { name: /14 Tage gratis starten/i })).toBeVisible();
+    // `CTA.startTrial` folgt `TRY_FREE.cta`: in der offenen Beta „Kostenlos testen“.
+    await expect(page.getByRole('link', { name: /kostenlos testen/i }).first()).toBeVisible();
     await expect(
       page.getByRole('link', { name: /Governance Audit starten/i }).first(),
     ).toBeVisible();

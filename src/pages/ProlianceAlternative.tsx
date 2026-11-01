@@ -6,6 +6,7 @@ import {
   ComparisonTable,
   WarningCallout,
 } from './alternative/AlternativeLanding';
+import { TRY_FREE } from '../config/beta';
 
 export function ProlianceAlternative() {
   return (
@@ -60,7 +61,7 @@ export function ProlianceAlternative() {
       <ComparisonTable
         competitor="Proliance"
         rows={[
-          { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '79–249 €/M (Self-Service) · Enterprise auf Anfrage' },
+          { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '79–249 €/M (Self-Service) · Enterprise 1.498 €/M netto' },
           { f: 'Externer DSB stellen', o: 'yes', r: 'no' },
           { f: 'Beratung im Preis enthalten', o: 'yes', r: 'no' },
           { f: 'AVV-Generator (Self-Service)', o: 'partial', r: 'yes' },
@@ -146,7 +147,7 @@ export function ProlianceAlternative() {
 
       <Section title="Migration / Erstkonfiguration">
         <ol className="list-decimal list-inside space-y-2 text-sm">
-          <li>14 Tage Pilot bei uns starten — alle Tools kostenfrei, keine Kreditkarte.</li>
+          <li>Pilot bei uns starten ({TRY_FREE.phrase}) — alle Tools kostenfrei, keine Kreditkarte.</li>
           <li>
             Bestehende VVT-Einträge aus Proliance-Excel oder PDF in unseren{' '}
             <Link to="/vvt-wizard" className="text-security-400 hover:text-security-300">

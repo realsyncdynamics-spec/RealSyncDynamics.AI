@@ -533,7 +533,7 @@ export function AuditStepper({
                         {recommended.name} ·{' '}
                         {recommended.priceOnRequest
                           ? t('onRequest')
-                          : `${formatPriceEur(recommended.priceEur)} ${t('perMonth')}`}
+                          : `${formatPriceEur(recommended.priceEur)} ${t(recommended.plan.netPriceLabel ? 'perMonthNet' : 'perMonth')}`}
                       </p>
                       <p className="rs-audit__hint" style={{ fontSize: 13, marginTop: 4 }}>{t('recWhy')}</p>
                       <div style={{ display: 'flex', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>

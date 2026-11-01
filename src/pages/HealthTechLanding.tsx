@@ -1,5 +1,7 @@
 import { Stethoscope, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLanding';
+import { TRY_FREE } from '../config/beta';
+import { CTA } from '../content/runtimeVocab';
 
 export function HealthTechLanding() {
   return (
@@ -24,9 +26,9 @@ export function HealthTechLanding() {
         ),
         cta: {
           heading: 'In 14 Tagen AI-Act-konform — bevor August 2026 kommt.',
-          sub: '87 Tage bis High-Risk-Pflicht. 14 Tage Pilot. Du hast noch Zeit — aber nur knapp.',
+          sub: `87 Tage bis High-Risk-Pflicht. Pilot ${TRY_FREE.phrase}. Du hast noch Zeit — aber nur knapp.`,
           buttons: [
-            { to: '/contact-sales?source=healthtech', label: 'Founding Access starten', variant: 'primary' },
+            { to: '/contact-sales?source=healthtech', label: CTA.enterprise, variant: 'primary' },
             { to: '/audit', label: 'Kostenloser DSGVO-Scan', variant: 'secondary' },
             { to: '/ai-act-faq', label: 'AI-Act-FAQ', variant: 'ghost' },
           ],
@@ -132,7 +134,7 @@ export function HealthTechLanding() {
         <ul className="space-y-1.5 text-sm">
           <li className="flex items-start gap-2">
             <Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-            <strong className="text-titanium-50">14 Tage Pilot kostenlos</strong>
+            <strong className="text-titanium-50">Pilot {TRY_FREE.phrase}</strong>
           </li>
           <li className="flex items-start gap-2">
             <Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />

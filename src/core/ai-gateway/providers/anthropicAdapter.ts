@@ -200,6 +200,9 @@ export class AnthropicAdapter implements AiProviderAdapter {
         if (ev.usage) usage = { ...usage, ...ev.usage };
         if (ev.text) yield { event: 'delta', text: ev.text, provider: 'anthropic', model };
       }
+      // SSE message_delta updates output tokens after message_start; recompute
+      // the total without losing cache-read/cache-write token buckets.
+      if (usage) usage.total_tokens = (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
       yield {
         event: 'done',
         provider: 'anthropic',

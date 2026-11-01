@@ -17,13 +17,15 @@ export interface HandoffNavItem {
   prominent?: boolean;
 }
 
+// Öffentliche Seiten (/pricing, /audit) nutzen dieselbe Hierarchie wie die
+// Startseite: Governance OS → Runtime → Scan → Docs → Preise. Die App-Ziele
+// (Übersicht, KI-Systeme, Evidence …) gehören in die App-Shell, nicht in die
+// Marketing-Navigation.
 export const HANDOFF_NAV: readonly HandoffNavItem[] = [
-  { key: 'navLogin', to: '/login' },
-  { key: 'navOverview', to: '/app/dashboard', prominent: true },
-  { key: 'navSystems', to: '/app/ai-systems' },
-  { key: 'navClassify', to: '/app/ai-systems' },
-  { key: 'navEnforce', to: '/app/policy-packs' },
-  { key: 'navEvidence', to: '/app/evidence' },
-  { key: 'navReports', to: '/app/reports' },
+  { key: 'navGovOs', to: '/', prominent: true },
+  { key: 'navRuntime', to: '/governance-runtime' },
+  { key: 'navScan', to: '/audit' },
+  { key: 'navDocs', to: '/docs/governance' },
   { key: 'navPricing', to: '/pricing', prominent: true },
+  { key: 'navLogin', to: '/login' },
 ] as const;

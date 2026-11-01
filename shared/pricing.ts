@@ -471,6 +471,14 @@ export interface Plan {
    * rot, solange nur eine der beiden Seiten stimmt.
    */
   yearlyCheckoutUnavailable?: boolean;
+  /**
+   * `true` = der Monatspreis erscheint auf jeder Oberfläche ausdrücklich als
+   * Nettopreis („1.498 €/Monat netto“), nicht nur über den Steuerhinweis im
+   * Fußtext. Enterprise (Dominik 2026-10-24): ab Tag 1 kostenpflichtig, ohne
+   * Testphase und nicht Teil der Beta. Anzeige über `monthlyPriceSuffix()` und
+   * `monthlyPriceText()`.
+   */
+  netPriceLabel?: boolean;
   currency: 'EUR';
   purchaseMode: PurchaseMode;
   /** Vertriebszustand — siehe `PlanAvailability`. */
@@ -540,7 +548,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: [],
-    ctaLabel: 'Kostenlosen Audit starten',
+    ctaLabel: 'Kostenlosen Governance Scan starten',
     limits: {
       bots: 0,
       answersPerMonth: 0,
@@ -598,7 +606,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: [],
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     limits: {
       bots: 1,
       answersPerMonth: 500,
@@ -678,7 +686,7 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: true,
     badges: ['Empfohlen'],
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     limits: {
       bots: 2,
       answersPerMonth: 2_000,
@@ -849,10 +857,12 @@ export const PLANS: Plan[] = [
     trialDays: 0,
   },
 
-  // ── Enterprise — Preis auf Anfrage ──────────────────────────────────────
-  // Live Stripe Price exists in public.products (UEm catalog, #1362) — but only
-  // for Katalog / Bestand / manueller Rechnungslauf. Self-Service-Checkout
-  // bleibt gesperrt: inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED.
+  // ── Enterprise — Self-Service-Checkout ──────────────────────────────────
+  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat (netto) direkt über
+  // Checkout verkauft, ohne Testphase. Bis dahin war der Plan ein Vertragsplan
+  // (inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED) mit `-1` auf
+  // allen Kontingenten. Ohne Vertrag braucht er endliche Kontingente — siehe
+  // PLAN_ENTITLEMENTS.enterprise.
   {
     id: 'enterprise',
     planKey: 'enterprise',
@@ -860,21 +870,22 @@ export const PLANS: Plan[] = [
     name: 'Enterprise',
     outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
-    price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
-    priceOnRequest: true,
+    price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
+    netPriceLabel: true,
     currency: 'EUR',
-    purchaseMode: 'inquiry',
-    availability: 'contract',
+    purchaseMode: 'checkout',
+    availability: 'self_service',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
+    // Fail-closed bis die Live-Price-ID (prod_UxG9V9clbqV7qw, 149800, exclusive)
+    // verdrahtet ist — siehe ENTERPRISE_CHECKOUT_PRICE_WIRED.
     ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,
       domains: 25,
-      // Anzeige auf der Preisseite; autorisiert ist -1 (Vertrag) in PLAN_ENTITLEMENTS.
       sites: 25,
       automationRunsPerMonth: 2_000,
       seats: 50,
@@ -944,7 +955,7 @@ export const PLANS: Plan[] = [
         'White-Label mit Branding, Logo und Farben',
       ],
     },
-    // Enterprise-Trial ist gesperrt: kein Self-Service-Pilot ohne Vertrag.
+    // Kein Trial: Enterprise ist ab Tag 1 kostenpflichtig (Dominik 2026-10-24).
     trialDays: 0,
   },
 
@@ -1934,7 +1945,8 @@ export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
  *
  * ── `-1` auf Vertragsplänen — entschieden am 2026-08-31 ──────────────────
  *
- * Auf Plänen mit `availability: 'contract'` (heute nur Enterprise) bedeutet
+ * Auf Plänen mit `availability: 'contract'` (heute keiner — Enterprise ist
+ * seit 2026-10-24 Self-Service mit endlichen Kontingenten) bedeutet
  * `-1` bei einem `limit.*`-Key nicht bloß „unbegrenzt", sondern:
  *
  *     Das System begrenzt hier nicht. Der Vertrag tut es.
@@ -2156,22 +2168,22 @@ export const PLAN_ENTITLEMENTS: Readonly<
     'governance.dsgvo_directory': 1,
     'governance.risk_register': 1,
     'limit.agent_runs_monthly': -1,
-    'limit.ai_calls_monthly': -1,
-    'limit.ai_cost_monthly_cents': -1,
-    'limit.ai_tokens_monthly': -1,
-    'limit.api_calls_monthly': -1,
-    'limit.automation_runs_monthly': -1,
-    'limit.bot_messages_monthly': -1,
-    'limit.bot_voice_minutes_monthly': -1,
-    'limit.bots': -1,
-    'limit.bulk_jobs_monthly': -1,
-    'limit.compliance_exports_monthly': -1,
-    'limit.domains': -1,
+    'limit.ai_calls_monthly': 25000,
+    'limit.ai_cost_monthly_cents': 25000,
+    'limit.ai_tokens_monthly': 25000000,
+    'limit.api_calls_monthly': 250000,
+    'limit.automation_runs_monthly': 2000,
+    'limit.bot_messages_monthly': 50000,
+    'limit.bot_voice_minutes_monthly': 1250,
+    'limit.bots': 20,
+    'limit.bulk_jobs_monthly': 500,
+    'limit.compliance_exports_monthly': 200,
+    'limit.domains': 25,
     'limit.llm_queries_monthly': -1,
-    'limit.sites': -1,
-    'limit.team_seats': -1,
-    'limit.whatsapp_conversations_monthly': -1,
-    'limit.workflow_runs_monthly': -1,
+    'limit.sites': 25,
+    'limit.team_seats': 50,
+    'limit.whatsapp_conversations_monthly': 6250,
+    'limit.workflow_runs_monthly': 2500,
     'monitoring.daily': 1,
     'monitoring.drift': 1,
     'monitoring.monthly': 1,
@@ -2936,6 +2948,15 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
  * URLs gebildet werden — verhindert abweichende Links zwischen Landing,
  * Pricing und Dashboard.
  */
+/**
+ * Enterprise-Checkout fail-closed: erst auf `true`, wenn Stripe die Live-Price
+ * (prod_UxG9V9clbqV7qw, unit_amount 149800, tax_behavior exclusive) angelegt und
+ * die Price-ID in PLAN_STRIPE_EXPECTATIONS verdrahtet hat. Bis dahin führt jeder
+ * Enterprise-CTA zu /contact-sales.
+ */
+// Verdrahtet 2026-10-29: price_1UVxUrREjTWueUcGuSjqctMH (prod_UxG9V9clbqV7qw).
+export const ENTERPRISE_CHECKOUT_PRICE_WIRED = true as boolean;
+
 export function checkoutHrefForPlan(
   plan: Plan | PlanId,
   options: { interval?: 'month' | 'year'; source?: string } = {},
@@ -2947,7 +2968,7 @@ export function checkoutHrefForPlan(
   if (resolved.purchaseMode === 'free') {
     return `/audit?source=${encodeURIComponent(source)}`;
   }
-  if (resolved.purchaseMode === 'inquiry') {
+  if (resolved.purchaseMode === 'inquiry' || (resolved.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED)) {
     return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
   }
   // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.
@@ -2973,6 +2994,16 @@ export function formatPriceEur(value: number): string {
   }).format(value);
 }
 
+/** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
+export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
+  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+}
+
+/** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
+export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+}
+
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
 export function formatLimit(value: number): string {
   if (value === -1) return 'unbegrenzt';
@@ -2992,7 +3023,7 @@ export const PRODUCT_POSITIONING = 'AI Governance Runtime';
 
 /** Vertrauenshinweis unter Pricing-Karten. */
 export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+  'Free Audit kostenlos · Kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
 
 /**
  * Steuerhinweis — Regelbesteuerung. Nur anzeigen, wenn `COMPANY.taxMode === 'EU_STANDARD'`.

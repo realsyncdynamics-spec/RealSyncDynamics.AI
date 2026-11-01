@@ -24,7 +24,7 @@ export const STATUS_LABEL: Record<AgentStatus, string> = {
   unknown: 'UNBEKANNT',
 };
 
-export type AgentSource = 'autonomous_agents' | 'agent_profiles' | 'grok_soll';
+export type AgentSource = 'autonomous_agents' | 'agent_profiles' | 'runtime_static' | 'grok_soll';
 
 export interface RegistryAgent {
   registryId: string;
@@ -57,6 +57,55 @@ export interface AgentRegistryRow {
   current_run_id: string | null;
   current_run_status: string | null;
   last_error: string | null;
+}
+
+import { listAgents } from '../../../apps/agent-runtime/src/agent-registry';
+
+/** Filterwert für „Feld nicht gesetzt“ (Projekt/Priorität ohne Soll-Wert). */
+export const UNSET = '__unset__';
+
+/**
+ * Soll-Konfiguration für Projekt und Priorität (manuell gepflegt, keine
+ * Live-Daten). Priorität ist bewusst leer, bis Dominik sie festlegt —
+ * nichts wird erfunden. Schlüssel = registryId.
+ */
+export const SOLL_CONFIG: Readonly<Record<string, { project?: string; priority?: RegistryAgent['priority'] }>> = {};
+
+const DEFAULT_PROJECT_BY_SOURCE: Partial<Record<AgentSource, string>> = {
+  grok_soll: 'RealSyncDynamics.AI',
+  runtime_static: 'Governance Runtime',
+};
+
+/** Wendet Soll-Projekt/-Priorität an; überschreibt niemals Status oder Laufzeitdaten. */
+export function applySoll(a: RegistryAgent): RegistryAgent {
+  const soll = SOLL_CONFIG[a.registryId];
+  return {
+    ...a,
+    project: soll?.project ?? a.project ?? DEFAULT_PROJECT_BY_SOURCE[a.source] ?? null,
+    priority: soll?.priority ?? a.priority ?? null,
+  };
+}
+
+/**
+ * Statische Agenten aus apps/agent-runtime (Code-Registry). Keine Laufzeit-
+ * Telemetrie an dieser Stelle → Status immer 'unknown'.
+ */
+export function runtimeStaticAgents(): RegistryAgent[] {
+  return listAgents().map((a) => ({
+    registryId: `runtime:${a.id}`,
+    source: 'runtime_static' as const,
+    name: a.name,
+    agentType: a.type,
+    description: `Risiko ${a.riskLevel}${a.requiresHumanReview ? ' · Human Review' : ''} · Tools: ${a.tools.join(', ')}`,
+    project: null,
+    priority: null,
+    status: 'unknown' as const,
+    statusSource: 'none',
+    lastActivityAt: null,
+    currentTask: null,
+    lastError: null,
+    openDecisions: null,
+  }));
 }
 
 const KNOWN: ReadonlySet<string> = new Set(Object.keys(STATUS_LABEL));
@@ -136,8 +185,8 @@ export function filterAgents(agents: ReadonlyArray<RegistryAgent>, f: AgentFilte
   return agents.filter((a) => {
     if (q && !`${a.name} ${a.description ?? ''} ${a.agentType}`.toLowerCase().includes(q)) return false;
     if (f.type !== 'all' && a.agentType !== f.type) return false;
-    if (f.project !== 'all' && a.project !== f.project) return false;
-    if (f.priority !== 'all' && a.priority !== f.priority) return false;
+    if (f.project !== 'all' && (f.project === UNSET ? a.project !== null : a.project !== f.project)) return false;
+    if (f.priority !== 'all' && (f.priority === UNSET ? a.priority !== null : a.priority !== f.priority)) return false;
     if (f.status !== 'all' && a.status !== f.status) return false;
     // Unbekannte Anzahl (null) zählt NICHT als "hat offene Entscheidungen".
     if (f.onlyOpenDecisions && !(a.openDecisions && a.openDecisions > 0)) return false;

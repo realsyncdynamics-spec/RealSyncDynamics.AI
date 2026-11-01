@@ -11,7 +11,8 @@
 // explicitly requested the Starter offer also receive the three-month-free
 // offer by email via the existing Resend configuration.
 //
-// Inquiry plans (purchaseMode === 'inquiry', e.g. enterprise / partner):
+// Inquiry plans (purchaseMode === 'inquiry', e.g. partner; plus enterprise,
+// which is also sold via checkout since 2026-10-24):
 //   - plan_key is required (or tier that normalizes to a known inquiry key)
 //   - source is normalized to `contact-sales`
 // Non-inquiry callers (upgrade clicks, waitlist, starter offer) stay unchanged.
@@ -308,6 +309,10 @@ Deno.serve(async (req: Request) => {
 
   const plan = planKey ? planByKey(planKey) : null;
   const isInquiryPlan = plan?.purchaseMode === 'inquiry';
+  // Enterprise ist seit 2026-10-24 per Checkout buchbar, bleibt aber über
+  // „Enterprise anfragen" (/contact-sales?intent=enterprise) erreichbar. Eine
+  // Vertriebsanfrage darf deshalb auch `enterprise` tragen.
+  const acceptsSalesInquiry = isInquiryPlan || plan?.id === 'enterprise';
 
   const sourceRaw = cap(body.source, 200);
   const contactSalesInquiry =
@@ -321,7 +326,7 @@ Deno.serve(async (req: Request) => {
     if (!planKey) {
       return jsonError(400, 'PLAN_KEY_REQUIRED', 'plan_key required for inquiry leads', cors);
     }
-    if (!isInquiryPlan) {
+    if (!acceptsSalesInquiry) {
       return jsonError(
         400,
         'INVALID_PLAN_KEY',

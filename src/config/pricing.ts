@@ -25,6 +25,7 @@ import {
   checkoutHrefForPlan,
   formatPriceEur,
   formatLimit,
+  monthlyPriceSuffix,
   addonsFor,
   ADDONS,
   type Plan,
@@ -157,7 +158,7 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     ? 'einmalig'
     : plan.price.monthlyEur === 0
       ? 'einmalig · kein Account'
-      : isYearly ? '/ Jahr' : '/ Monat';
+      : isYearly ? '/ Jahr' : monthlyPriceSuffix(plan);
 
   return {
     id,
@@ -318,8 +319,8 @@ export const ON_REQUEST_LABEL = 'Auf Anfrage';
  * Der öffentliche Preis eines Tiers — die EINZIGE Stelle, an der aus
  * `priceString` eine Preisangabe für eine Oberfläche wird.
  *
- * `priceString` bleibt bewusst der formatierte Listenbetrag (auch „1.249"
- * für Enterprise; `test/contracts/audit-contract.test.ts` hält das fest).
+ * `priceString` bleibt bewusst der formatierte Listenbetrag, auch für Pläne
+ * mit `priceOnRequest` (`test/contracts/audit-contract.test.ts` hält das fest).
  * Ausgegeben werden darf er aber nur, wo ein Kaufpfad ihn einlöst. Bis zum
  * 2026-09-27 prüfte das jede Oberfläche selbst — und sechs taten es nicht:
  * Optimizer, Governance Score, Upgrade-Dialog, Plan-Auswahl, Billing und die

@@ -23,6 +23,7 @@ import { DEMO_CONTROL_SIGNALS } from '../governance/dsgvo-control-pack/dsgvoCont
 import { TrialBanner } from './TrialBanner';
 import { FreePlanPanel } from './FreePlanPanel';
 import { getSupabase } from '../../lib/supabase';
+import { BETA } from '../../config/beta';
 
 interface Counts {
   incidents: number;
@@ -321,18 +322,18 @@ function Inner() {
         </div>
       </section>
 
-      {/* Founding Access — optional, sekundär */}
+      {/* Beta-Feedback — optional, sekundär */}
       <section className="mb-8 border border-titanium-900 bg-obsidian-950">
         <div className="px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
           <div>
             <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">
-              Founding Access Programm · Erste 100 Unternehmen
+              {`Offene Beta · bis ${BETA.endsLabel}`}
             </p>
             <p className="font-display font-semibold text-titanium-100 text-sm mb-1">
-              Founding Access Programm
+              Beta mitgestalten
             </p>
             <p className="text-[11px] text-titanium-500 max-w-xl leading-relaxed">
-              Die ersten 100 Unternehmen können RealSyncDynamicsAI aktiv mitgestalten.
+              Während der offenen Beta können Sie RealSyncDynamicsAI aktiv mitgestalten.
               Melden Sie Fehler, senden Sie Screenshots und schlagen Sie Funktionen vor.
               Ihre Rückmeldungen fließen direkt in die Weiterentwicklung der Plattform ein.
             </p>
@@ -341,7 +342,7 @@ function Inner() {
             to="/welcome?source=workspace_founding&intent=founding"
             className="shrink-0 inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-400 px-4 py-2 text-xs font-semibold transition-colors"
           >
-            Founding Access aktivieren
+            Beta mitgestalten
           </Link>
         </div>
       </section>

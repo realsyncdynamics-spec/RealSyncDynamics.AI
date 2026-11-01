@@ -172,6 +172,42 @@ async function renderRoute(page, route) {
   return await page.content();
 }
 
+/**
+ * Titel-Waechter: `<SEOHead />` faellt ohne Eintrag in `src/config/seo.ts`
+ * still auf DEFAULT_SEO zurueck — derselbe Titel wie die SPA-Shell in
+ * index.html. So lieferten 2026-10 zwanzig Sitemap-Seiten (/status,
+ * /api-docs, …) „KI-Governance & Kontrollschicht“ aus. Der Lauf meldet jede
+ * Route, deren gerenderter Titel dem Shell-Titel gleicht; strikt ein Fehler.
+ */
+function titleOf(html) {
+  // index.html traegt `&` roh, page.content() serialisiert `&amp;` — entitaetsfrei vergleichen.
+  const raw = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '';
+  return raw
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
+/**
+ * dist/__not-found.html: die NotFoundPage, gerendert für einen Pfad ohne Route.
+ * `functions/_middleware.ts` liefert sie mit HTTP 404 für unbekannte Pfade
+ * aus (src/lib/spaNotFound.ts). Canonical und og:url zeigten sonst auf den
+ * Hilfspfad; eine 404-Seite hat keine kanonische URL.
+ *
+ * NICHT `404.html`: Liegt die im Root, liefert Cloudflare Pages sie für jeden
+ * Pfad ohne Datei mit 404 aus und ignoriert `/* /index.html 200` — auch für
+ * echte SPA-Routen (/app/dashboard, gemessen an der Preview von PR #1969).
+ */
+export const NOT_FOUND_FILE = '__not-found.html';
+const NOT_FOUND_PROBE = '/__rsd-404';
+async function writeNotFoundPage(page) {
+  const html = (await renderRoute(page, NOT_FOUND_PROBE))
+    .replace(/<link rel="canonical"[^>]*>/gi, '')
+    .replace(/<meta property="og:url"[^>]*>/gi, '');
+  await writeFile(join(DIST, NOT_FOUND_FILE), html, 'utf8');
+  console.log(`[prerender] ✓ ${NOT_FOUND_FILE} (${titleOf(html)})`);
+}
+
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === '' ? join(DIST, 'index.html') : join(DIST, `${cleanRoute}.html`);
@@ -250,6 +286,10 @@ async function main() {
     process.exit(2);
   }
 
+  // Vor dem ersten Schreiben lesen: `/` ueberschreibt dist/index.html.
+  const shellTitle = titleOf(await readFile(join(DIST, 'index.html'), 'utf8'));
+  const fallbackTitleRoutes = [];
+
   await ensurePlaywrightBrowsers();
   const routes = await loadRoutes();
   console.log(`[prerender] ${routes.length} routes (priority >= ${PRIORITY_MIN})`);
@@ -271,12 +311,26 @@ async function main() {
       try {
         await attachPageGuards(page);
         const html = await renderRoute(page, item.route);
+        if (item.route !== '/' && shellTitle && titleOf(html) === shellTitle) {
+          fallbackTitleRoutes.push(item.route);
+          console.warn(`[prerender] ! ${item.route}: Shell-Titel „${shellTitle}“ — Eintrag in src/config/seo.ts fehlt`);
+        }
         await writeRoute(item.route, html);
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       } finally {
         await page.close();
       }
     }, CONCURRENCY);
+    const page = await context.newPage();
+    try {
+      await attachPageGuards(page);
+      await writeNotFoundPage(page);
+    } catch (e) {
+      stats.failed++;
+      console.error(`[prerender] FAIL ${NOT_FOUND_FILE}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      await page.close();
+    }
   } finally {
     await context.close().catch(() => {});
     await browser.close().catch(() => {});
@@ -285,15 +339,19 @@ async function main() {
   }
 
   console.log(`[prerender] done: ${stats.done} rendered, ${stats.failed} failed, ${stats.skipped} skipped`);
+  if (fallbackTitleRoutes.length > 0) {
+    console.error(`[prerender] ${fallbackTitleRoutes.length} Route(n) mit Shell-Titel: ${fallbackTitleRoutes.sort().join(', ')}`);
+  }
   await writeStatus({
-    ok: stats.failed === 0,
+    ok: stats.failed === 0 && fallbackTitleRoutes.length === 0,
+    fallbackTitleRoutes,
     rendered: stats.done,
     failed: stats.failed,
     skipped: stats.skipped,
     timeouts: { gotoMs: GOTO_MS, hydrateMs: HYDRATE_MS, previewMs: PREVIEW_MS, maxMs: MAX_MS, concurrency: CONCURRENCY },
     headless: { sharedContext: true, blockedHosts: true, args: LAUNCH_ARGS.length },
   });
-  if (stats.failed > 0 && process.env.PRERENDER_STRICT === '1') process.exit(1);
+  if ((stats.failed > 0 || fallbackTitleRoutes.length > 0) && process.env.PRERENDER_STRICT === '1') process.exit(1);
 }
 
 const watchdog = setTimeout(() => {

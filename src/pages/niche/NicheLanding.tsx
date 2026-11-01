@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, AlertTriangle, type LucideIcon } from 'lucide-react';
+import { ArrowRight, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { LandingHeader } from '../../components/landing/LandingShell';
 import { PricingTeaserSection } from '../../components/sections/PricingTeaserSection';
 
 /**
@@ -41,23 +42,13 @@ export interface NicheConfig {
 }
 
 export function NicheLanding({ config }: { config: NicheConfig }) {
-  const primaryLabel = config.primaryCtaLabel ?? 'Jetzt kostenlosen Compliance-Check starten';
+  const primaryLabel = config.primaryCtaLabel ?? 'Kostenlosen Governance Scan starten';
   const faqTitle = config.faqTitle ?? 'Häufige Fragen';
 
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
-          <ArrowLeft className="h-3.5 w-3.5" /> Zurück
-        </Link>
-        <Link
-          to={config.primaryCtaHref}
-          className="surface-gold inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
-        >
-          Audit starten <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+      <LandingHeader />
 
       {/* Hero */}
       <section className="px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

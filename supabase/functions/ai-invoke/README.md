@@ -1,6 +1,6 @@
 # AI Invoke
 
-Calls a registered AI tool with prompt-cached system prompts, hard-quota
+Calls a registered AI tool with optionally cached system prompts, hard-quota
 gating against `limit.ai_*_monthly`, and per-call audit + cost logging.
 
 ## Setup

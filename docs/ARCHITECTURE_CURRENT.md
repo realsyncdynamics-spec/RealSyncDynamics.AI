@@ -4,6 +4,8 @@
 
 Stand: 2026-10-28. **Nur Repository-Bestandsaufnahme; keine Implementierung, Migration oder Produktivverifikation.**
 
+> Fortschreibung 01.11.2026: [`architecture/ki-arbeitsplatz-w0-1-bestandsabgleich.md`](./architecture/ki-arbeitsplatz-w0-1-bestandsabgleich.md) (Live-Zeilenzahlen, Command Center als Grundgerüst, Korrektur `bot_agents` → `bots`) und [`architecture/ki-arbeitsplatz-auftrag-v2.md`](./architecture/ki-arbeitsplatz-auftrag-v2.md). Abweichungen zu diesem Abschnitt (Freigaben, Posteingang, Budget) sind dort als offene Entscheidungen E7–E9 geführt; bis zur Entscheidung gilt dieser Abschnitt unverändert.
+
 ### Ziel und Freigaberegeln
 
 W0 dokumentiert wiederverwendbare Strukturen. W1–W4 dürfen erst beginnen, wenn **PR A und PR C nachweislich gemergt** sind. `go` umfasst **keinen Merge, kein Deployment, keine Veröffentlichung, keinen Force-Push**. Eigenständige neue Posteingangs-, Budget- und Freigabe-Subsysteme sind nicht zulässig. Externe Inhalte sind Daten, keine Anweisungen.

@@ -85,6 +85,12 @@ export const CACHE_READ_MULTIPLIER  = 0.10;
  * Bedrock und Vertex rechnen abweichend ab — deshalb ist `provider` Teil des
  * Schlüssels und nicht nur `modelId`.
  *
+ * Bewusst NICHT enthalten ist `claude-haiku-5-5`: zwei Preisstufen (bis/über
+ * 100.000 Prompt-Tokens), die `ModelPrice` nicht abbilden kann. Ohne Zeile gibt
+ * `priceFor` null zurück — ein Lauf damit startet also nicht, statt falsch zu
+ * buchen. 1-Stunden-Cache-Writes (2,0 × Input) bildet die Tabelle ebenfalls
+ * noch nicht ab; `cacheWritePerMillionUsd` gilt nur für den 5-Minuten-Cache.
+ *
  * Bewusst NICHT enthalten sind ältere Modelle (etwa `claude-opus-4-1-20250805`
  * oder `claude-3-5-sonnet-20241022`), die an einzelnen Stellen im Repo noch
  * als Modell-ID auftauchen. Für sie liegt keine belegte aktuelle Rate vor, und
@@ -119,9 +125,20 @@ export const MODEL_PRICES: ModelPrice[] = [
     inputPerMillionUsd: 10.00,
     outputPerMillionUsd: 50.00,
     cacheWritePerMillionUsd: null,
-    // Ob Mythos 5.1 die $0,25 von Fable 5.1 teilt, ist nicht belegt — deshalb Default.
-    cacheReadPerMillionUsd: null,
-    source: 'anthropic-pricing-2026-06-24',
+    // Wie Fable 5.1: Cache-Read 0,025 × Input, ausdrücklich ausgewiesen.
+    cacheReadPerMillionUsd: 0.25,
+    source: 'anthropic-prompt-caching-doc-2026-11-01',
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-opus-5-5',
+    inputPerMillionUsd: 4.00,
+    outputPerMillionUsd: 20.00,
+    // 5-Minuten-Write = 1,25 × Input = 5,00 → Default-Multiplikator trifft.
+    cacheWritePerMillionUsd: null,
+    // 0,05 × Input, ausdrücklich ausgewiesen; der 0,10-Default ergäbe 0,40.
+    cacheReadPerMillionUsd: 0.20,
+    source: 'anthropic-prompt-caching-doc-2026-11-01',
   },
   {
     provider: 'anthropic',
@@ -158,6 +175,17 @@ export const MODEL_PRICES: ModelPrice[] = [
     cacheWritePerMillionUsd: null,
     cacheReadPerMillionUsd: null,
     source: 'anthropic-pricing-2026-06-24',
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-sonnet-5-5',
+    inputPerMillionUsd: 2.00,
+    outputPerMillionUsd: 10.00,
+    // 5-Minuten-Write = 1,25 × Input = 2,50 → Default-Multiplikator trifft.
+    cacheWritePerMillionUsd: null,
+    // 0,05 × Input, ausdrücklich ausgewiesen; der 0,10-Default ergäbe 0,20.
+    cacheReadPerMillionUsd: 0.10,
+    source: 'anthropic-prompt-caching-doc-2026-11-01',
   },
   {
     provider: 'anthropic',

@@ -23,6 +23,7 @@ import {
   type TokenUsage,
 } from './providerCost.ts';
 import { supportsSamplingParams } from './aiGateway/anthropicAdapter.ts';
+import { isAnthropicPromptCacheEnabled } from './anthropicPromptCache.ts';
 
 // Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
 // Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
@@ -147,10 +148,15 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 
   const client = new Anthropic({ apiKey });
 
-  // Cache the system prompt so repeated tool invocations get the prompt-cache discount.
-  // The user prompt is per-request and intentionally NOT cached.
+  // Default-OFF rollout. Only the stable system prefix is cacheable; never
+  // include request-specific user input in the cached prefix.
+  const promptCacheEnabled = isAnthropicPromptCacheEnabled(Deno.env.get('ANTHROPIC_PROMPT_CACHE_ENABLED'));
   const systemBlocks = req.systemPrompt
-    ? [{ type: 'text' as const, text: req.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
+    ? [{
+        type: 'text' as const,
+        text: req.systemPrompt,
+        ...(promptCacheEnabled ? { cache_control: { type: 'ephemeral' as const } } : {}),
+      }]
     : undefined;
 
   // Sampling params are version-gated: Anthropic removed them with the 4.7
@@ -180,7 +186,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
   const u: AnthropicUsage = resp.usage;
   return {
     text,
-    inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
+    inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
     outputTokens: u.output_tokens ?? 0,
     cachedTokens: u.cache_read_input_tokens ?? 0,
     pricedUsage: fromAnthropicUsage(u),

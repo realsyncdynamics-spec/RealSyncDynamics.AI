@@ -6,6 +6,7 @@
  *
  *   GET                         → offene Fragen (RLS-gefiltert)
  *   GET ?question_id=…          → Rückmeldung: Status, Entscheidung, Audit (M4)
+ *   GET ?precedents=…           → frühere Entscheidungen als Hinweis, keine Freigabe (M7)
  *   POST { action: 'ask', … }   → Frage anlegen (Status immer 'open')
  *   POST { action: 'propose', question_id, proposal }
  *                               → max. 3 begründete Optionen als agent_decisions
@@ -35,6 +36,16 @@ Deno.serve(async (req) => {
 
   if (req.method === 'GET') {
     // Rückmeldung an Agenten (M4): Status einer eigenen Frage inkl. Entscheidung und Audit.
+    // Präzedenzfälle (M7): frühere Entscheidungen als Hinweis — ausdrücklich keine Freigabe.
+    const precedentsQ = new URL(req.url).searchParams.get('precedents');
+    if (precedentsQ !== null) {
+      if (precedentsQ.trim().length < 3 || precedentsQ.length > 500) return jsonError(400, 'BAD_REQUEST', 'precedents: 3–500 Zeichen');
+      const { data, error } = await db.rpc('search_agent_knowledge', {
+        p_query: precedentsQ, p_kinds: ['decision'], p_limit: 10, p_match_any: true,
+      });
+      if (error) return jsonError(500, 'SEARCH_FAILED', 'Präzedenzsuche fehlgeschlagen');
+      return jsonResponse({ precedents: data ?? [], precedent_only: true, not_an_approval: true });
+    }
     const questionId = new URL(req.url).searchParams.get('question_id');
     if (questionId) {
       const { data: q, error: qe } = await db.from('agent_questions')

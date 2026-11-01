@@ -164,7 +164,7 @@ describe('AnthropicAdapter.generateStream cache accounting', () => {
       'event: message_delta',
       'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 6 } }),
       '',
-    ].join('\\n') + '\\n';
+    ].join('\n') + '\n';
     const f = vi.fn(async () => ({
       ok: true,
       status: 200,

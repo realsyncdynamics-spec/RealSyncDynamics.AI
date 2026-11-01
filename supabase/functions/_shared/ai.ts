@@ -441,6 +441,13 @@ export async function runAiTool(
         residency,
         provider: effectiveProvider,
         cost_source: effectiveProvider === 'ollama' ? 'local' : 'ssot',
+        // Four priced token buckets are measured by providerCost.ts and used
+        // to settle the existing cost reservation (no new ledger table).
+        cache_metrics: {
+          cache_read_input_tokens: result.pricedUsage.cacheRead,
+          cache_creation_input_tokens: result.pricedUsage.cacheWrite,
+          cache_hit: result.pricedUsage.cacheRead > 0,
+        },
         ...shadowRating,
       },
     }).select('id').single();

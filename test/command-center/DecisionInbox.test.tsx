@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { DecisionInbox } from '../../src/features/command-center/DecisionInbox';
 
+const rpcMock = vi.fn(async (..._a: unknown[]) => ({ data: {}, error: null as null | { message: string } }));
 const tables: Record<string, { data: unknown[]; error: { message: string } | null }> = {};
 
 function chain(table: string) {
@@ -16,7 +17,7 @@ function chain(table: string) {
 
 vi.mock('../../src/lib/supabase', () => ({
   isSupabaseConfigured: () => true,
-  getSupabase: () => ({ from: (t: string) => chain(t) }),
+  getSupabase: () => ({ from: (t: string) => chain(t), rpc: (...a: unknown[]) => rpcMock(...a) }),
 }));
 
 const row = (id: string, p: Record<string, unknown>) => ({
@@ -91,12 +92,75 @@ describe('DecisionInbox — Antwortvorschläge (M3)', () => {
     expect(opts[0]!.textContent).toMatch(/A · Empfohlen/);
     expect(screen.getByTestId('proposal-level').textContent).toMatch(/L4/);
     expect(screen.getByText(/Empfehlung ≠ Freigabe/)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /freigeben|approve/i })).toBeNull();
+    const take = screen.getByRole('button', { name: 'Vorschlag übernehmen' }) as HTMLButtonElement;
+    expect(take.disabled).toBe(true); // ohne ausdrückliche Bestätigung keine Freigabe
   });
 
   it('ohne decision_id: "Noch kein Antwortvorschlag"', async () => {
     tables.agent_questions = { data: [row('n', {})], error: null };
     render(<DecisionInbox />);
     await waitFor(() => expect(screen.getByText('Noch kein Antwortvorschlag.')).toBeTruthy());
+  });
+});
+
+describe('DecisionInbox — Freigabe-Gate (M4)', () => {
+  const setup = () => {
+    tables.agent_questions = { data: [row('m', { question: 'Soll PR 9 gemergt werden?', decision_id: 'd1' })], error: null };
+    tables.agent_decisions = { data: [{ id: 'd1', recommendation: 'A', reason: 'r', risk_level: 'high', reversibility: 'reversible',
+      status: 'proposed', proposed_by: 'grok:github-bot',
+      options: [{ label: 'A', rationale: 'a', recommended: true }, { label: 'B', rationale: 'b' }] }], error: null };
+  };
+
+  it('Freigabe erst nach Bestätigung; ruft resolve_agent_decision mit p_confirm=true und L4', async () => {
+    setup(); rpcMock.mockClear();
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    fireEvent.click(screen.getByRole('checkbox', { name: /ausdrücklich frei \(L4\)/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Alternative B wählen' }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+    expect(rpcMock.mock.calls[0]).toEqual(['resolve_agent_decision', {
+      p_decision_id: 'd1', p_action: 'approve', p_option_index: 1, p_approval_level: 'L4', p_confirm: true, p_note: null,
+    }]);
+  });
+
+  it('Zurückstellen ohne Bestätigung möglich, sendet p_confirm=false', async () => {
+    setup(); rpcMock.mockClear();
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Zurückstellen' }));
+    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+    expect((rpcMock.mock.calls[0]![1] as { p_action: string; p_confirm: boolean })).toMatchObject({ p_action: 'defer', p_confirm: false });
+  });
+
+  it('Serverseitige Ablehnung wird angezeigt', async () => {
+    setup(); rpcMock.mockClear();
+    rpcMock.mockResolvedValueOnce({ data: {}, error: { message: 'nur Owner/Admin des Mandanten' } });
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Ablehnen' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Owner\/Admin/));
+  });
+});
+
+describe('DecisionInbox — Präzedenzfälle (M7)', () => {
+  it('zeigt frühere Entscheidungen nur als Hinweis; Freigabe bleibt gesperrt', async () => {
+    tables.agent_questions = { data: [row('p', { question: 'Webhook Retry erhöhen?', decision_id: 'd9' })], error: null };
+    tables.agent_decisions = { data: [{ id: 'd9', recommendation: 'A', reason: 'r', risk_level: 'low', reversibility: 'reversible',
+      status: 'proposed', proposed_by: 'grok:x', options: [{ label: 'A', rationale: 'a', recommended: true }] }], error: null };
+    rpcMock.mockClear();
+    rpcMock.mockResolvedValueOnce({ data: [
+      { kind: 'decision', id: 'd9', title: 'selbst', status: 'proposed', created_at: '2026-10-30T00:00:00Z' },
+      { kind: 'decision', id: 'old', title: 'Webhook Retry 2025', status: 'approved', created_at: '2026-01-01T00:00:00Z' },
+    ] as unknown as object, error: null });
+    render(<DecisionInbox />);
+    await waitFor(() => expect(screen.getByTestId('inbox-proposal')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Frühere Entscheidungen anzeigen' }));
+    await waitFor(() => expect(screen.getByTestId('precedents')).toBeTruthy());
+    const p = screen.getByTestId('precedents');
+    expect(p.textContent).toMatch(/nicht als Freigabe/);
+    expect(p.textContent).toMatch(/Webhook Retry 2025/);
+    expect(p.textContent).not.toMatch(/selbst/);
+    expect(rpcMock.mock.calls[0]![0]).toBe('search_agent_knowledge');
+    expect((screen.getByRole('button', { name: 'Vorschlag übernehmen' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

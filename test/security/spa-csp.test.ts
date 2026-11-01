@@ -55,6 +55,17 @@ describe('SPA CSP (Pages + meta)', () => {
     expect(connect).not.toMatch(/\*\.supabase\.in/);
   });
 
+  it('allows the local Ollama runtime (Local AI) only on loopback port 11434', () => {
+    for (const policy of [header, meta]) {
+      const connect = directive(policy, 'connect-src');
+      expect(connect).toContain('http://127.0.0.1:11434');
+      expect(connect).toContain('http://localhost:11434');
+      // kein pauschales http: oder http://* im connect-src
+      expect(connect).not.toMatch(/(^|\s)http:(\s|$)/);
+      expect(connect).not.toMatch(/http:\/\/\*/);
+    }
+  });
+
   it('drops unsafe-inline from script-src (static Pages cannot mint nonces)', () => {
     expect(directive(header, 'script-src')).not.toMatch(/unsafe-inline/);
     expect(directive(header, 'script-src')).not.toMatch(/unsafe-eval/);

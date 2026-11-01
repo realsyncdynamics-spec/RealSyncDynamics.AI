@@ -146,6 +146,54 @@ describe('AnthropicAdapter.generate', () => {
   });
 });
 
+describe('AnthropicAdapter.generateStream cache accounting', () => {
+  it('preserves cache usage from message_start through message_delta', async () => {
+    const events = [
+      'event: message_start',
+      'data: ' + JSON.stringify({
+        type: 'message_start',
+        message: {
+          model: 'claude-sonnet-5',
+          usage: {
+            input_tokens: 15, output_tokens: 0,
+            cache_creation_input_tokens: 30, cache_read_input_tokens: 300,
+          },
+        },
+      }),
+      '',
+      'event: message_delta',
+      'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 6 } }),
+      '',
+    ].join('\\n') + '\\n';
+    const f = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      body: new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(events));
+          controller.close();
+        },
+      }),
+    } as unknown as Response)) as unknown as typeof fetch;
+    const a = new AnthropicAdapter({
+      apiKey: 'k', model: 'claude-sonnet-5', fetchImpl: f, promptCacheEnabled: true,
+    });
+    const chunks = [];
+    for await (const chunk of a.generateStream(req({ system_prompt: 'Stable system prompt' }))) {
+      chunks.push(chunk);
+    }
+    const done = chunks.at(-1);
+    expect(done?.event).toBe('done');
+    expect(done?.usage).toEqual({
+      input_tokens: 345,
+      output_tokens: 6,
+      cache_creation_input_tokens: 30,
+      cache_read_input_tokens: 300,
+      total_tokens: 351,
+    });
+  });
+});
+
 describe('AnthropicAdapter.extractJson', () => {
   it('returns parsed JSON when the model emits valid JSON', async () => {
     const a = new AnthropicAdapter({

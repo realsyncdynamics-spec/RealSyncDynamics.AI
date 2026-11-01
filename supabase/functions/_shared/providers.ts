@@ -5,8 +5,8 @@
 // pricedUsage is the basis for cost (providerCost.ts); the token fields keep
 // their display/quota meaning.
 //
-// Anthropic:  prompt-caching enabled on the system prompt so repeated tool
-//             invocations only pay full input price for the user prompt.
+// Anthropic:  prompt-caching gated by ANTHROPIC_PROMPT_CACHE_ENABLED.
+//             Cached reads and writes are counted and priced separately.
 // Google:     uses @google/genai (already in the repo, mirrors gateway.ts).
 // OpenAI:     uses openai SDK (Chat Completions). Token counts come back from
 //             response.usage so cost tracking works the same way as the other

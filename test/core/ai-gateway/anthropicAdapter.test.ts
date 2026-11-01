@@ -106,14 +106,43 @@ describe('AnthropicAdapter.generate', () => {
     await expect(a.generate(req())).rejects.toThrow(/invalid x-api-key/);
   });
 
-  it('attaches system_prompt with cache_control: ephemeral', async () => {
+  it('leaves prompt caching OFF without an explicit flag', async () => {
     const f = fakeFetch();
     const a = new AnthropicAdapter({ apiKey: 'k', model: 'claude-haiku-4-5', fetchImpl: f });
-    await a.generate(req({ system_prompt: 'You are the RealSync compliance assistant.' }));
-    const body = JSON.parse(((f as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit).body as string);
-    expect(body.system).toEqual([
-      { type: 'text', text: 'You are the RealSync compliance assistant.', cache_control: { type: 'ephemeral' } },
+    await a.generate(req({ system_prompt: 'Stable system prompt' }));
+    expect(bodyOf(f).system).toEqual([{ type: 'text', text: 'Stable system prompt' }]);
+    expect(bodyOf(f)).not.toHaveProperty('cache_control');
+  });
+
+  it('caches only the stable system prefix when explicitly enabled', async () => {
+    const f = fakeFetch();
+    const a = new AnthropicAdapter({
+      apiKey: 'k', model: 'claude-haiku-4-5', fetchImpl: f, promptCacheEnabled: true,
+    });
+    await a.generate(req({ system_prompt: 'Stable system prompt', input: 'Tenant-specific user input' }));
+    expect(bodyOf(f).system).toEqual([
+      { type: 'text', text: 'Stable system prompt', cache_control: { type: 'ephemeral' } },
     ]);
+    expect(bodyOf(f).messages).toEqual([{ role: 'user', content: 'Tenant-specific user input' }]);
+  });
+
+  it('includes cache reads and writes in input totals and exposes raw cache buckets', async () => {
+    const a = new AnthropicAdapter({
+      apiKey: 'k', model: 'claude-haiku-4-5',
+      fetchImpl: fakeFetch({ body: {
+        model: 'claude-haiku-4-5',
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 12, output_tokens: 8, cache_creation_input_tokens: 4, cache_read_input_tokens: 120 },
+      }}),
+    });
+    const out = await a.generate(req());
+    expect(out.usage).toMatchObject({
+      input_tokens: 136,
+      output_tokens: 8,
+      total_tokens: 144,
+      cache_creation_input_tokens: 4,
+      cache_read_input_tokens: 120,
+    });
   });
 });
 

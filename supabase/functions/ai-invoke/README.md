@@ -80,15 +80,42 @@ JWT
 money; we'd rather over-record than silently lose accounting. Quota state is
 re-evaluated on the next request.
 
-## Prompt caching
+## Prompt caching (guarded rollout)
 
-Anthropic system prompts are sent with `cache_control: ephemeral`. Repeated
-invocations with the same `system_prompt` (i.e. the same `ai_tools.key`)
-get the prompt-cache discount: ~10× cheaper input tokens for cached
-content, see Anthropic docs.
+**Default OFF:** The server-side flag `ANTHROPIC_PROMPT_CACHE_ENABLED`
+(corresponds to `anthropic_prompt_cache_enabled`) must be explicitly
+set to `true` or `1` in the Supabase Edge Function environment.
+Unset, `false`, or malformed values leave Anthropic requests without
+`cache_control`. This is intentionally a change from the previously
+unconditional cache markings; measure the cost impact before deploying.
 
-The `tokens.cached` field exposes the cached portion so you can verify in
-the audit log that caching is actually hitting.
+The flag controls the stable system prompt in `_shared/providers.ts`,
+the Anthropic AI-Gateway adapter (through `serverFromEnv.ts`),
+and the Governance Agent's stable system prompt/tool catalogue.
+Dynamic user messages and tenant data must **not** be included in a
+shared cache prefix. There is no cache prewarming, and no 1-hour TTL:
+the gated path uses only Anthropic's standard 5-minute ephemeral TTL.
+
+Caching requires a sufficiently long identical prefix for the model
+(e.g. at least 512 tokens for supported 5.5 models). A `cache_control`
+marker on a short prompt does not guarantee a write or a hit. A live
+API test is necessary to confirm effectiveness.
+
+Usage monitoring: `ai_tool_runs.cached_tokens` records read tokens;
+`ai_tool_runs.metadata.cache_metrics` separates
+`cache_read_input_tokens`, `cache_creation_input_tokens` and
+`cache_hit`. The existing cost calculation
+(`providerCostUsd` / `result.pricedUsage`) accounts for input, output,
+cache writes and reads when settling the cost cap / ledger. Gateway
+responses also expose both cache counters in `usage`, including SSE
+streams, but the gateway's usage quota is **not** a standalone billing ledger.
+
+Rollout: check CI and model price coverage; explicitly enable only in
+a controlled nonproduction Edge environment; compare cost and
+`cache_hit` across repeated identical prompts, then obtain separate
+approval for a production deployment. Roll back by unsetting the flag
+and redeploying the affected Edge Functions. Do not put this flag in
+a `VITE_*` browser variable.
 
 ## Tool registry
 

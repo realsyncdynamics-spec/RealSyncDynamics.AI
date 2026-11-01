@@ -5,6 +5,8 @@ import {
   probeRuntime,
   connectionOutcome,
   chatJson,
+  addressSpaceFor,
+  checkLocalNetworkPermission,
 } from '@/src/features/local-ai/runtimeClient';
 
 const HTTP_PAGE = { pageOrigin: 'http://localhost:3000' };
@@ -134,5 +136,123 @@ describe('chatJson', () => {
       { ...HTTP_PAGE, fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ message: { content: '  ' } })) },
     );
     expect(!empty.ok && empty.error.code).toBe('EMPTY_RESPONSE');
+  });
+});
+
+function perms(states: Record<string, PermissionState | Error>) {
+  return {
+    query: vi.fn(async ({ name }: { name: string }) => {
+      const st = states[name];
+      if (st === undefined || st instanceof Error) throw st ?? new TypeError(`unknown permission ${name}`);
+      return { state: st } as PermissionStatus;
+    }),
+  };
+}
+
+describe('Local Network Access (LNA)', () => {
+  const HTTPS_PAGE = { pageOrigin: 'https://realsyncdynamicsai.de' };
+
+  it('maps hosts to the target address space', () => {
+    expect(addressSpaceFor('127.0.0.1')).toBe('loopback');
+    expect(addressSpaceFor('localhost')).toBe('loopback');
+    expect(addressSpaceFor('[::1]')).toBe('loopback');
+    expect(addressSpaceFor('192.168.1.20')).toBe('local');
+    expect(addressSpaceFor('gpu-box.local')).toBe('local');
+  });
+
+  it('sets targetAddressSpace loopback on the probe and the no-cors retry', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await probeRuntime('http://localhost:11434', { ...HTTP_PAGE, fetchImpl, permissionsImpl: null });
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ targetAddressSpace: 'loopback' });
+    expect(fetchImpl.mock.calls[1][1]).toMatchObject({ targetAddressSpace: 'loopback', mode: 'no-cors' });
+  });
+
+  it('sets targetAddressSpace local for LAN runtimes', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ models: [] }));
+    await probeRuntime('http://192.168.1.20:11434', { ...HTTP_PAGE, fetchImpl, permissionsImpl: null });
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ targetAddressSpace: 'local' });
+  });
+
+  it('returns LOCAL_NETWORK_PERMISSION_DENIED without fetching when loopback-network is denied', async () => {
+    const fetchImpl = vi.fn();
+    const p = perms({ 'loopback-network': 'denied' });
+    const r = await probeRuntime('http://127.0.0.1:11434', { ...HTTPS_PAGE, fetchImpl, permissionsImpl: p });
+    expect(!r.ok && r.error.code).toBe('LOCAL_NETWORK_PERMISSION_DENIED');
+    expect(!r.ok && r.error.hint).toContain('Website-Einstellungen');
+    expect(connectionOutcome(r)).toBe('blocked');
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(p.query).toHaveBeenCalledWith({ name: 'loopback-network' });
+  });
+
+  it('queries local-network for LAN hosts', async () => {
+    const p = perms({ 'local-network': 'denied' });
+    const r = await probeRuntime('http://192.168.1.20:11434', { ...HTTP_PAGE, fetchImpl: vi.fn(), permissionsImpl: p });
+    expect(!r.ok && r.error.code).toBe('LOCAL_NETWORK_PERMISSION_DENIED');
+    expect(p.query).toHaveBeenCalledWith({ name: 'local-network' });
+  });
+
+  it('detects a denial after the prompt (permission re-checked after fetch failure)', async () => {
+    let state: PermissionState = 'prompt';
+    const p = { query: vi.fn(async () => ({ state }) as PermissionStatus) };
+    const fetchImpl = vi.fn().mockImplementation(async () => {
+      state = 'denied';
+      throw new TypeError('Failed to fetch');
+    });
+    const r = await probeRuntime('http://127.0.0.1:11434', { ...HTTPS_PAGE, fetchImpl, permissionsImpl: p });
+    expect(!r.ok && r.error.code).toBe('LOCAL_NETWORK_PERMISSION_DENIED');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps CORS_BLOCKED when permission is granted and the no-cors retry reaches the host', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    const r = await probeRuntime('http://127.0.0.1:11434', {
+      ...HTTPS_PAGE,
+      fetchImpl,
+      permissionsImpl: perms({ 'loopback-network': 'granted' }),
+    });
+    expect(!r.ok && r.error.code).toBe('CORS_BLOCKED');
+  });
+
+  it('reports RUNTIME_UNREACHABLE when permission is granted but the host is down', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const r = await probeRuntime('http://127.0.0.1:11434', {
+      ...HTTPS_PAGE,
+      fetchImpl,
+      permissionsImpl: perms({ 'loopback-network': 'granted' }),
+    });
+    expect(!r.ok && r.error.code).toBe('RUNTIME_UNREACHABLE');
+    expect(!r.ok && r.error.hint).not.toContain('Browser-Freigabe');
+  });
+
+  it('falls back to the legacy local-network-access alias', async () => {
+    const p = perms({ 'local-network-access': 'denied' });
+    expect(await checkLocalNetworkPermission('127.0.0.1', p)).toBe('denied');
+    expect(p.query).toHaveBeenNthCalledWith(1, { name: 'loopback-network' });
+    expect(p.query).toHaveBeenNthCalledWith(2, { name: 'local-network-access' });
+  });
+
+  it('is unsupported (old behaviour) when the Permissions API is missing or throws', async () => {
+    expect(await checkLocalNetworkPermission('127.0.0.1', null)).toBe('unsupported');
+    expect(await checkLocalNetworkPermission('127.0.0.1', perms({}))).toBe('unsupported');
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const r = await probeRuntime('http://127.0.0.1:11434', { ...HTTP_PAGE, fetchImpl, permissionsImpl: perms({}) });
+    expect(!r.ok && r.error.code).toBe('RUNTIME_UNREACHABLE');
+    expect(!r.ok && r.error.hint).toContain('Browser-Freigabe');
+  });
+
+  it('applies the same classification to chatJson', async () => {
+    const fetchImpl = vi.fn();
+    const r = await chatJson(
+      { runtimeUrl: 'http://127.0.0.1:11434', model: 'm', system: 's', prompt: 'p' },
+      { ...HTTPS_PAGE, fetchImpl, permissionsImpl: perms({ 'loopback-network': 'denied' }) },
+    );
+    expect(!r.ok && r.error.code).toBe('LOCAL_NETWORK_PERMISSION_DENIED');
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

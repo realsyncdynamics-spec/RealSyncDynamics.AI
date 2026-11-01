@@ -341,7 +341,7 @@ export function EnterpriseLanding() {
             Bereit für Enterprise-Grade Governance?
           </h2>
           <p className="text-lg text-silver-300 mb-8 leading-relaxed">
-            SSO, On-Premise, Custom-DPA und Behördenverträge klären wir direkt — alles andere
+            Single Sign-On (Preview), Custom-DPA und Behördenverträge klären wir auf Anfrage — alles andere
             läuft self-serve über den Free Audit.
           </p>
           <Link

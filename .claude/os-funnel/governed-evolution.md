@@ -115,16 +115,41 @@ prüfen.*
 
 - Keine selbstständige Änderung von Policies, Workflows oder Agent-Konfigurationen.
 - Keine Übernahme ohne menschliche Freigabe, auch nicht „in scope".
+- Kein mandantenübergreifendes Lernen, Training oder Wiederverwenden von Vorschlägen, Signalen, Entscheidungen, Konfigurationen oder Evidence (E-GE5).
 - Keine Landing-Aussage über Governed Evolution außer „Roadmap / Coming Soon".
 
 ## 6. Offene Entscheidungen
 
 - **E-GE1:** Granularität des Änderungsraums (je Policy · je Agent · je Mandant)
-- **E-GE2:** Wer darf freigeben (Rolle aus `memberships` bzw. `approver_role` der
-  `pdp_approval_gates`, Vier-Augen ab Risiko hoch?). Muster im Bestand seit
-  #2006: `20261025100000_siteos_four_eyes_approval.sql` erzwingt für SiteOS per
-  Trigger owner/admin/dpo, nie den Auslöser (`requested_by`), mit dokumentierter
-  Selbstfreigabe nur für Solo-Mandanten — gilt **nicht** für `governance_approvals`.
+- **E-GE2 — entschieden 2026-11-01: Vier-Augen, Solo-Ausnahme nach 72 h.**
+  Freigaben für Governed Evolution erfolgen **ausschließlich durch Menschen** mit
+  geprüfter Mandanten- und Rollenberechtigung. Regulär darf der Anfragende
+  (`requested_by`) nicht zugleich freigeben (`resolved_by`/`decided_by`);
+  diese Trennung muss der serverseitige Entscheidungspfad erzwingen, nicht nur
+  die UI. Für einen Solo-Mandanten mit **genau einem** freigabeberechtigten
+  Mitglied ist Selbstfreigabe **frühestens 72 Stunden nach Antragstellung**
+  als ausdrücklich gekennzeichnete Ausnahme möglich: nur nach erneuter
+  Rollen-/Mitgliedschaftsprüfung, mit dokumentierter Begründung und Evidence;
+  keine automatische Freigabe nach Fristablauf. Ist die Identität, Frist,
+  Berechtigung oder Evidence nicht belegbar, bleibt der Vorschlag gesperrt
+  (**fail closed**). Die bestehende SiteOS-Regel aus #2006 ist ein Muster,
+  aber keine Implementierung für `governance_approvals`; insbesondere fehlt
+  dort bislang die entsprechende Vier-Augen-Prüfung im Entscheidungspfad.
+- **E-GE5 — entschieden 2026-11-01: kein mandantenübergreifendes Lernen.**
+  Signale, Vorschläge, historische Entscheidungen, Simulationsergebnisse,
+  Policy- und Agent-Konfigurationen sowie daraus abgeleitete Artefakte bleiben
+  an den jeweiligen Mandanten gebunden. Keine Nutzung der Inhalte eines
+  Mandanten zur Verbesserung anderer Mandanten oder zum gemeinsamen Training.
+  Eine spätere Architektur muss diese Grenze auch bei Hintergrundjobs,
+  Auswertungen, Caches und Exports technisch nachweisen.
+- **E-GE6 — entschieden 2026-11-01: Offline-Replay statt Live-Shadow als Simulation.**
+  Schritt 4 (§2) spielt historische, mandantengebundene Entscheidungen
+  **read-only und ohne produktive Nebenwirkungen** gegen einen festgelegten
+  Policy-/Konfigurationsstand erneut ab. Eingabestand, Versionen, Verdikt-
+  Differenz und Nachweis werden für den Governance-Gate reproduzierbar
+  dokumentiert. `pdp_shadow_log` bleibt die vorhandene Live-Gegenüberstellung
+  Legacy ↔ PDP v2; das ist **kein** historisches Replay und kein Beleg
+  für eine bereits implementierte Simulation (siehe §4 und O5).
 - **E-GE3:** Aufbewahrung von abgelehnten Vorschlägen (Evidence ja/nein, Frist)
 - **E-GE4:** Wer ist im Produkt „Anbieter“ eines gesteuerten KI-Systems
   (RealSyncDynamics für eigene Runtime-Funktionen, der Mandant, dessen

@@ -22,6 +22,8 @@ export interface AnthropicConfig {
   apiVersion?: string;
   /** Injectable fetch for tests. */
   fetchImpl?: typeof fetch;
+  /** Explicit, server-controlled rollout flag; OFF when absent. */
+  promptCacheEnabled?: boolean;
 }
 
 interface AnthropicMessagesResponse {
@@ -137,14 +139,17 @@ export class AnthropicAdapter implements AiProviderAdapter {
         output:    text,
         raw_text:  text,
         usage: {
-          input_tokens:
-            (json.usage?.input_tokens ?? 0) +
-            (json.usage?.cache_creation_input_tokens ?? 0),
+          // Anthropic excludes both cache buckets from input_tokens.
+          input_tokens: (json.usage?.input_tokens ?? 0)
+            + (json.usage?.cache_creation_input_tokens ?? 0)
+            + (json.usage?.cache_read_input_tokens ?? 0),
           output_tokens: json.usage?.output_tokens,
-          total_tokens:
-            ((json.usage?.input_tokens ?? 0) +
-             (json.usage?.cache_creation_input_tokens ?? 0)) +
-            (json.usage?.output_tokens ?? 0),
+          cache_creation_input_tokens: json.usage?.cache_creation_input_tokens ?? 0,
+          cache_read_input_tokens: json.usage?.cache_read_input_tokens ?? 0,
+          total_tokens: (json.usage?.input_tokens ?? 0)
+            + (json.usage?.cache_creation_input_tokens ?? 0)
+            + (json.usage?.cache_read_input_tokens ?? 0)
+            + (json.usage?.output_tokens ?? 0),
         },
         trace_id:   request.trace_id ?? crypto.randomUUID(),
         latency_ms: Date.now() - started,
@@ -239,7 +244,7 @@ export class AnthropicAdapter implements AiProviderAdapter {
         {
           type: 'text',
           text: request.system_prompt,
-          cache_control: { type: 'ephemeral' },
+          ...(this.config.promptCacheEnabled ? { cache_control: { type: 'ephemeral' } } : {}),
         },
       ];
     }

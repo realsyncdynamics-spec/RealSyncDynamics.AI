@@ -54,6 +54,7 @@ if (!apiKey) {
 }
 
 async function send(message) {
+  const sentAt = new Date().toISOString();
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -64,13 +65,21 @@ async function send(message) {
     body: JSON.stringify(makeBody(message)),
     signal: AbortSignal.timeout(30_000),
   });
+  // Evidence fields: Anthropic request id (safe to log, no secret) and timestamps.
+  const requestId = resp.headers.get('request-id') || null;
   if (!resp.ok) {
-    console.error(`Anthropic request failed: HTTP ${resp.status}. No prompt or API key logged.`);
+    // Only the documented error type is logged; never the message body, prompt or key.
+    const errType = await resp.json().then((j) => j?.error?.type ?? null).catch(() => null);
+    console.error(`Anthropic request failed: HTTP ${resp.status}, error_type=${errType}, request_id=${requestId}. No prompt or API key logged.`);
     process.exit(1);
   }
   const json = await resp.json();
   const usage = json?.usage || {};
   return {
+    request_id: requestId,
+    response_model: json?.model ?? null,
+    sent_at: sentAt,
+    received_at: new Date().toISOString(),
     input_tokens: usage.input_tokens ?? 0,
     output_tokens: usage.output_tokens ?? 0,
     cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
@@ -83,6 +92,7 @@ try {
   const first = await send('Reply with just the word READY.');
   const second = await send('Reply with just the word CONFIRMED.');
   console.log(JSON.stringify({
+    probe_version: 2,
     model,
     first,
     second,

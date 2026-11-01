@@ -30,6 +30,7 @@ import {
   HERO_OPERATING_LOOP,
   HERO_SCAN_CTA_LABEL,
 } from '../../components/governance-frontend/hero-content';
+import { TRY_FREE } from '../../config/beta';
 
 const MODULES = [
   {
@@ -276,12 +277,12 @@ export function LandingPage() {
             Starten Sie noch heute mit Ihrem Governance OS
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-titanium-400">
-            Self-Service-Setup in wenigen Minuten. Keine Kreditkarte für die ersten 14 Tage erforderlich.
+            Self-Service-Setup in wenigen Minuten. {TRY_FREE.note}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/os/pricing">
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
+                {TRY_FREE.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/os/audit">

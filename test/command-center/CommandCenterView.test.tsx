@@ -24,13 +24,14 @@ describe('CommandCenterView', () => {
     const statuses = screen.getAllByTestId('agent-status').map((n) => n.textContent);
     expect(statuses).toHaveLength(total);
     expect(new Set(statuses)).toEqual(new Set(['UNBEKANNT']));
-    expect(screen.getByRole('status').textContent).toMatch(/Supabase nicht konfiguriert/);
+    expect(screen.getAllByRole('status')[0]!.textContent).toMatch(/Supabase nicht konfiguriert/);
   });
 
-  it('Decision Inbox ist ein klarer Platzhalter ohne Fragen', async () => {
+  it('Decision Inbox zeigt ehrlich, dass die Quelle nicht verfügbar ist (keine erfundenen Fragen)', async () => {
     await renderView();
     const inbox = screen.getByRole('complementary', { name: 'Decision Inbox' });
-    expect(within(inbox).getByText(/Platzhalter/)).toBeTruthy();
+    await waitFor(() => expect(within(inbox).getByText(/Datenquelle nicht verfügbar/)).toBeTruthy());
+    expect(within(inbox).queryAllByTestId('inbox-item')).toHaveLength(0);
     expect(within(inbox).queryAllByTestId('agent-card')).toHaveLength(0);
   });
 
@@ -65,5 +66,16 @@ describe('CommandCenterView', () => {
     const { container } = await renderView();
     const res = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(res.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  });
+
+  it('M6: Umschalten auf Aufgaben zeigt Kanban; M5: Konfig-Panel öffnet aus Agentenkarte', async () => {
+    await renderView();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Details · Bibliothek · Computer' })[0]!);
+    expect(screen.getByTestId('agent-config-panel')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Aufgaben' }));
+    expect(screen.getByTestId('task-board')).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByRole('status').some((n) => /Supabase nicht konfiguriert/.test(n.textContent ?? ''))).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Agenten' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Agentenübersicht' })).toBeTruthy();
   });
 });

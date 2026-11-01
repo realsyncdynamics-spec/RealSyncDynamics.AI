@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build:base": "vite build && npm run generate:legal-pages",
+    "build:base": "npm run sync:spa-routes && vite build && npm run generate:legal-pages",
     "build": "npm run build:base && npm run prerender:safe",
     "build:full": "npm run build:base && npm run prerender",
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
@@ -15,6 +15,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "sync:pricing": "node scripts/sync-shared-pricing.mjs",
+    "sync:spa-routes": "node scripts/sync-spa-routes.mjs",
+    "check:spa-routes": "node scripts/sync-spa-routes.mjs --check",
     "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check",
     "sync:model-prices": "node scripts/sync-model-prices.mjs",
     "check:model-prices": "node scripts/sync-model-prices.mjs --check",

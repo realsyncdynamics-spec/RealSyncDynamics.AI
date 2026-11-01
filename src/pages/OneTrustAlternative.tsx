@@ -4,6 +4,7 @@ import { ConsentLimitsSection } from '../components/sections/ConsentLimitsSectio
 import { ONETRUST_COMPARISON } from '../config/competitor-comparisons';
 import { COMPETITOR_PRICING } from '../config/competitor-pricing';
 import { AlternativeLanding, Section, ComparisonTable } from './alternative/AlternativeLanding';
+import { TRY_FREE } from '../config/beta';
 
 export function OneTrustAlternative() {
   const oneTrustPricing = COMPETITOR_PRICING.OneTrust.pricing;
@@ -20,7 +21,7 @@ export function OneTrustAlternative() {
         iconGradient: 'bg-gradient-to-br from-emerald-500 to-teal-700',
         badgeIcon: Euro,
         badgeClass: 'border-emerald-900 bg-emerald-950/30 text-emerald-300',
-        badgeText: `${savingsLabel} · EU-Hosted · 14 Tage Pilot`,
+        badgeText: `${savingsLabel} · EU-Hosted · ${TRY_FREE.badge}`,
         headline: (<>OneTrust-Alternative aus <span className="text-security-400">Deutschland</span></>),
         subline: (<>OneTrust kostet {oneTrustPricing}, ist US-gehostet und hat kein integriertes Audit-Log über AI-Calls. Wir liefern die KI-spezifische Compliance-Schicht ab 79 €/M (Starter).</>),
         cta: {
@@ -56,7 +57,7 @@ export function OneTrustAlternative() {
           { f: 'EU-Local-LLM (Ollama, kein Drittlandtransfer)', o: 'no', r: 'yes' },
           { f: 'BAIT/MaRisk-Doku-Export', o: 'no', r: 'yes' },
           { f: '72h-Meldepflicht-Timer (Art. 33)', o: 'partial', r: 'yes' },
-          { f: 'Setup-Zeit', o: '6+ Wochen Sales-Cycle', r: '14 Tage Pilot' },
+          { f: 'Setup-Zeit', o: '6+ Wochen Sales-Cycle', r: `Self-Service · ${TRY_FREE.badge}` },
           { f: 'Kostenlose Self-Service-Tools', o: 'no', r: 'yes (8 Stück)' },
           { f: 'API-Keys per Tenant (programmatic)', o: 'partial', r: 'yes' },
           { f: 'Made-in-Germany / EU-Founded', o: 'no', r: 'yes' },

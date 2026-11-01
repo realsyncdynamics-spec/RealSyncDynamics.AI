@@ -21,12 +21,12 @@ import { describe, expect, it } from 'vitest';
 import { ON_REQUEST_LABEL, PRICING_TIERS, tierPriceLabel } from '../../src/config/pricing';
 
 describe('tierPriceLabel', () => {
-  it('es gibt mindestens einen Anfrage-Plan — sonst prüft der Test nichts', () => {
-    expect(PRICING_TIERS.some((t) => t.priceOnRequest)).toBe(true);
-  });
-
   it('ein Anfrage-Plan zeigt das Label und keine Ziffer, gleich mit welchem Suffix', () => {
-    for (const tier of PRICING_TIERS.filter((t) => t.priceOnRequest)) {
+    // Seit 2026-10-24 führt die SSoT keinen Anfrage-Plan mehr (Enterprise ist
+    // per Checkout buchbar). Damit der Test weiter etwas prüft, läuft er
+    // zusätzlich gegen einen künstlichen Anfrage-Tier mit Listenbetrag.
+    const synthetic = { id: 'synthetic_on_request', priceOnRequest: true, priceString: '1.498' };
+    for (const tier of [...PRICING_TIERS.filter((t) => t.priceOnRequest), synthetic]) {
       for (const suffix of [' €', '€', ' €/Mo.', '']) {
         const label = tierPriceLabel(tier, suffix);
         expect(label, `${tier.id} mit Suffix "${suffix}"`).toBe(ON_REQUEST_LABEL);

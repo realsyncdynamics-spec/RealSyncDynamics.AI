@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
+import { ENTERPRISE_CHECKOUT_PRICE_WIRED,
   ADDONS,
   ALL_MODULES,
   ALL_PLANS_ORDERED,
@@ -53,7 +53,7 @@ describe('Pricing SSoT — Struktur', () => {
       ['starter', 79],
       ['growth', 249],
       ['agency', 699],
-      ['enterprise', 1249],
+      ['enterprise', 1498],
       ['partner', 1999],
     ]);
   });
@@ -257,7 +257,8 @@ describe('Pricing SSoT — Checkout-Ziele', () => {
       expect(href.startsWith('/'), `${plan.id}: ${href}`).toBe(true);
       if (plan.purchaseMode === 'free') expect(href).toContain('/audit');
       if (plan.purchaseMode === 'inquiry') expect(href).toContain('/contact-sales');
-      if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
+      if (plan.purchaseMode === 'checkout' && plan.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED) expect(href).toContain('/contact-sales');
+      else if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
       // Einmalprodukte nutzen denselben Checkout-Einstieg wie Abos; der
       // Kaufmodus wird serverseitig aus der SSoT abgeleitet, nicht aus der URL.
       if (plan.purchaseMode === 'one_time') expect(href).toContain(`/checkout/${plan.planKey}`);
@@ -450,25 +451,29 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     }
   });
 
-  it('Enterprise ist anfragepflichtig, ohne Festpreis und ohne Trial', () => {
+  it('Enterprise ist monatlich per Checkout kaufbar, ohne Trial (Dominik 2026-10-24)', () => {
     const enterprise = planById('enterprise');
-    expect(enterprise.purchaseMode).toBe('inquiry');
-    expect(enterprise.priceOnRequest).toBe(true);
+    expect(enterprise.purchaseMode).toBe('checkout');
+    expect(enterprise.availability).toBe('self_service');
+    expect(enterprise.priceOnRequest ?? false).toBe(false);
+    expect(enterprise.price.monthlyEur).toBe(1498);
     expect(enterprise.trialDays).toBe(0);
 
-    // Auch die Jahresvariante darf keinen Kaufpfad öffnen.
-    for (const interval of ['month', 'year'] as const) {
-      const href = checkoutHrefForPlan(enterprise, { interval });
-      expect(href).not.toContain('/checkout/');
-      expect(href).not.toContain('pilot=true');
-    }
+    const href = checkoutHrefForPlan(enterprise, { interval: 'month' });
+    // Live-Price-ID price_1UVxUrREjTWueUcGuSjqctMH verdrahtet → Self-Service-Checkout.
+    expect(ENTERPRISE_CHECKOUT_PRICE_WIRED).toBe(true);
+    expect(href).toContain('/checkout/enterprise');
+    expect(href).not.toContain('pilot=true');
+
+    // Die Jahresvariante hat keinen Stripe-Preis und bleibt gesperrt.
+    expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
   });
 
   it('ein Trial-Versprechen setzt einen einlösbaren Kaufpfad voraus', () => {
     // Verhindert die Rückkehr des Enterprise-Falls über einen anderen Plan:
     // Trial-Tage ohne Einlöseweg sind ein Versprechen ohne Deckung. Zwei
     // Wege führen dahin, und beide sind hier gesperrt — kein
-    // Self-Service-Checkout (Enterprise), oder stillgelegt, sodass
+    // Self-Service-Checkout (Enterprise bis 2026-10-24), oder stillgelegt, sodass
     // `stripe-checkout` den Neuabschluss mit PLAN_RETIRED abweist (Agency).
     for (const plan of PLANS.filter((p) => p.trialDays > 0)) {
       expect(plan.purchaseMode).toBe('checkout');

@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, ArrowRight, Building2, Stethoscope, Scale, Briefcase, AlertTriangle,
 } from 'lucide-react';
+import { TRY_FREE } from '../config/beta';
+import { CTA } from '../content/runtimeVocab';
 
 interface CaseStudy {
   slug: string;
@@ -122,13 +124,13 @@ export function CaseStudies() {
                   Werde unsere nächste Case-Study.
                 </h2>
                 <p className="text-sm text-titanium-300 leading-relaxed">
-                  Pilot-Tier 14 Tage kostenlos. Wenn's passt, danach Growth 249 €/M (oder Starter 79 €/M). Bei Erfolg veröffentlichen wir Deinen Case (anonym oder named — Deine Wahl).
+                  Pilot-Tier {TRY_FREE.phrase}. Wenn's passt, danach Growth 249 €/M (oder Starter 79 €/M). Bei Erfolg veröffentlichen wir Deinen Case (anonym oder named — Deine Wahl).
                 </p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/contact-sales?source=case-studies" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Founding Access starten <ArrowRight className="h-4 w-4" />
+                {CTA.enterprise} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Kostenloser DSGVO-Scan

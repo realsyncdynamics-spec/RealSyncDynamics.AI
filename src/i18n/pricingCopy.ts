@@ -29,7 +29,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
   },
   starter: {
     tagline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     bullets: [
       'Vollständiger DSGVO-Scan mit Paragraphenbezug',
       'Evidence Vault mit Hash-Chain-Verifizierung',
@@ -40,7 +40,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
   },
   growth: {
     tagline: 'KI-Governance mit Risk Register und Policy Engine — tägliche Selbstüberwachung folgt (Beta).',
-    ctaLabel: '14 Tage kostenlos testen',
+    ctaLabel: 'Kostenlos testen',
     bullets: [
       'Alles aus Starter',
       'Evidence Vault mit Versionierung',
@@ -87,7 +87,7 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
   },
   starter: {
     tagline: 'A verifiable governance foundation that stands up to any review.',
-    ctaLabel: 'Start 14-day free trial',
+    ctaLabel: 'Try for free',
     bullets: [
       'Full GDPR scan with legal references',
       'Evidence Vault with hash-chain verification',
@@ -97,8 +97,8 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   growth: {
-    tagline: 'AI governance that monitors itself — instead of being reviewed once a year.',
-    ctaLabel: 'Start 14-day free trial',
+    tagline: 'AI governance with risk register and policy engine — daily self-monitoring follows (beta).',
+    ctaLabel: 'Try for free',
     bullets: [
       'Everything in Starter',
       'Evidence Vault with versioning',

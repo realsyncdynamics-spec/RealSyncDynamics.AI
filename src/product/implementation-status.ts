@@ -722,14 +722,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'runtime',
     description:
-      'Route /app/command-center hinter AppGate (#2071): aktiv sind nur „Übersicht“ und „Alle Agenten“; Decision Inbox ist Platzhalter, Grok-Bots erscheinen als UNBEKANNT. Preview, weil die View agent_registry_v (Migration 20261029140000) noch nicht in Produktion angewendet ist und RLS-Integrationstest, E2E sowie a11y-/Responsive-Prüfung fehlen.',
+      'Route /app/command-center hinter AppGate (#2071), Nav-Eintrag „Agent Command Center“ (beta, #2073): aktiv sind nur „Übersicht“ und „Alle Agenten“; Decision Inbox ist Platzhalter, Grok-Bots erscheinen als UNBEKANNT. Dritte Quelle seit #2073: Code-Registry aus apps/agent-runtime (7 Agenten, immer UNBEKANNT). Geprüft (#2073): RLS-DB-Test für agent_registry_v, E2E ohne Login, axe-Komponententests, mobile Navigation. Noch offen: E2E mit Login, axe-Kontrastprüfung im echten Browser, visuelle Responsive-Prüfung im eingeloggten Zustand. Preview, weil die View agent_registry_v (Migration 20261029140000) noch nicht in Produktion angewendet ist.',
     route: '/app/command-center',
     evidence: [
       'src/App.tsx#/app/command-center',
       'src/features/command-center/CommandCenterView.tsx',
       'src/features/command-center/agentRegistry.ts',
       'supabase/migrations/20261029140000_agent_registry_v.sql',
+      'test/runtime/db/agent-registry-v.db.test.ts',
+      'e2e/command-center.spec.ts',
       'PR #2071',
+      'PR #2073',
     ],
     // Interne App-Fläche, keine öffentliche Roadmap-Karte.
     showOnRoadmap: false,

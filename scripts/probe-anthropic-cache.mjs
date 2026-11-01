@@ -12,7 +12,7 @@
 import { randomUUID } from 'node:crypto';
 
 const dryRun = process.argv.includes('--dry-run');
-const model = process.env.ANTHROPIC_PROBE_MODEL || 'claude-sonnet-5';
+const model = process.env.ANTHROPIC_PROBE_MODEL || 'claude-sonnet-5-5';
 const maxTokens = 24;
 const prefix = `RSD synthetic prompt-cache acceptance probe ${randomUUID()}.\n` +
   Array.from({ length: 100 }, (_, n) =>

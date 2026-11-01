@@ -4,7 +4,7 @@ description: WP7a SSoT-Bereinigung — SCIM/On-Prem streichen (E-V7), SSO als Pr
 
 # WP7a — SSoT-Bereinigung (E-V7, E-V8, E-V9)
 
-> **Stand:** 2026-11-01 · Repo-Messung 01.11. 18:3x: `main@dbbd8a4` unverändert, 34 offene PRs (WIP-Stopp aktiv) · Basis: E-V7, E-V8, E-V9 (entschieden 2026-11-01, Dominik Steiner), Fundstellen gemessen gegen `main@dbbd8a4`.
+> **Stand:** 2026-11-01 · Repo-Messung 01.11.: `main@dbbd8a4` unverändert, 7 offene PRs (nachgemessen 01.11. abends; WIP-Stopp aktiv) · Basis: E-V7, E-V8, E-V9 (entschieden 2026-11-01, Dominik Steiner), Fundstellen gemessen gegen `main@dbbd8a4`.
 > Ersetzt den Auftrag aus dem geschlossenen #1752. **Nicht** aus #1752 übernehmen, sondern diese Fassung nutzen.
 
 Du arbeitest an **WP7a SSoT-Bereinigung** aus `.claude/os-funnel/PLAN.md` (§3 Nachtrag 2026-10-04, §4).

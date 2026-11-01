@@ -1,5 +1,6 @@
 import { ServerAiGateway } from './router.ts';
 import { OllamaAdapter } from './ollamaAdapter.ts';
+import { isAnthropicPromptCacheEnabled } from '../anthropicPromptCache.ts';
 
 /**
  * Gemeinsamer Gateway-Bau für `ai-gateway` und `governance-router`.
@@ -124,7 +125,7 @@ export async function createServerGatewayFromEnv(opts: {
       lmStudioBaseUrl: localBaseUrl ?? 'http://127.0.0.1:1',
       lmStudioApiKey: Deno.env.get('LM_STUDIO_API_KEY') ?? 'lm-studio',
       anthropicConfig: anthropicKey
-        ? { apiKey: anthropicKey, model: ANTHROPIC_FALLBACK_MODEL }
+        ? { apiKey: anthropicKey, model: ANTHROPIC_FALLBACK_MODEL, promptCacheEnabled: isAnthropicPromptCacheEnabled(Deno.env.get('ANTHROPIC_PROMPT_CACHE_ENABLED')) }
         : undefined,
       openaiConfig: openaiKey
         ? {

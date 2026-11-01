@@ -10,6 +10,8 @@ export interface ParsedDelta {
     input_tokens?: number;
     output_tokens?: number;
     total_tokens?: number;
+    cache_read_input_tokens?: number;
+    cache_creation_input_tokens?: number;
   };
 }
 
@@ -75,7 +77,7 @@ export async function* parseAnthropicSse(body: ReadableStream<Uint8Array>): Asyn
       let json: {
         type?: string;
         delta?: { type?: string; text?: string };
-        message?: { model?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+        message?: { model?: string; usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number } };
         usage?: { input_tokens?: number; output_tokens?: number };
       };
       try {
@@ -91,17 +93,22 @@ export async function* parseAnthropicSse(body: ReadableStream<Uint8Array>): Asyn
         yield {
           model: json.message.model,
           usage: u
-            ? { input_tokens: u.input_tokens, output_tokens: u.output_tokens, total_tokens: (u.input_tokens ?? 0) + (u.output_tokens ?? 0) }
+            ? {
+                input_tokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
+                output_tokens: u.output_tokens,
+                cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+                cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+                total_tokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0)
+                  + (u.cache_read_input_tokens ?? 0) + (u.output_tokens ?? 0),
+              }
             : undefined,
         };
       }
       if (json.type === 'message_delta' && json.usage) {
         yield {
-          usage: {
-            output_tokens: json.usage.output_tokens,
-            input_tokens: json.usage.input_tokens,
-            total_tokens: (json.usage.input_tokens ?? 0) + (json.usage.output_tokens ?? 0),
-          },
+          // message_delta normally reports only output_tokens; retain the
+          // cached input counts from message_start in the stream accumulator.
+          usage: { output_tokens: json.usage.output_tokens },
         };
       }
     }

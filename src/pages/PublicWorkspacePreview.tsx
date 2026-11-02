@@ -96,7 +96,6 @@ const TRUST_ITEMS = [
   { icon: Server,      label: 'Gehostet in Frankfurt · 🇩🇪' },
   { icon: ShieldCheck, label: 'EU-souveräne Runtime' },
   { icon: Lock,        label: 'Verschlüsselter Evidence Vault' },
-  { icon: Brain,       label: 'On-Premise verfügbar' },
 ] as const;
 
 // Plattform-Kennzahlen — bewusst KEINE erfundenen Nutzungs-/Kundenzahlen,

@@ -175,18 +175,18 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     recurring: plan.price.monthlyEur > 0,
     tagline: isImplementationLive('enterprise-sso')
       ? plan.outcomeHeadline
-      : plan.outcomeHeadline.replace(/SSO\.$/, 'SSO (Coming Soon).'),
+      : plan.outcomeHeadline.replace(/SSO\.$/, 'SSO (Preview, auf Anfrage).'),
     subline: plan.technicalSubheadline,
     bullets: flattenFeatures(plan.features).map((b) =>
       !isImplementationLive('enterprise-sso') && b === 'Single Sign-On'
-        ? 'Single Sign-On (Coming Soon)'
+        ? 'Single Sign-On (Preview, auf Anfrage)'
         : b,
     ),
     featureGroups: {
       ...plan.features,
       multi_tenant_reseller: plan.features.multi_tenant_reseller.map((b) =>
         !isImplementationLive('enterprise-sso') && b === 'Single Sign-On'
-          ? 'Single Sign-On (Coming Soon)'
+          ? 'Single Sign-On (Preview, auf Anfrage)'
           : b,
       ),
     },

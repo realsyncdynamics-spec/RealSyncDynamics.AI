@@ -38,6 +38,8 @@ describe('deriveStepStatuses', () => {
     expect([noModels.install, noModels.connection]).toEqual(['success', 'warning']);
     const cors = deriveStepStatuses({ ...INITIAL_FLOW_STATE, probe: { ok: false, error: { code: 'CORS_BLOCKED', message: '' } } });
     expect([cors.install, cors.connection]).toEqual(['warning', 'failed']);
+    const denied = deriveStepStatuses({ ...INITIAL_FLOW_STATE, probe: { ok: false, error: { code: 'LOCAL_NETWORK_PERMISSION_DENIED', message: '' } } });
+    expect([denied.install, denied.connection]).toEqual(['warning', 'failed']);
     const down = deriveStepStatuses({ ...INITIAL_FLOW_STATE, probe: { ok: false, error: { code: 'RUNTIME_UNREACHABLE', message: '' } } });
     expect([down.install, down.connection]).toEqual(['failed', 'failed']);
   });

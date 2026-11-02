@@ -128,7 +128,7 @@ export function About() {
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-start gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">✓ 2026 Q2</span><span className="text-titanium-300">Plattform-Launch · 8 Free-Tools · Cookie-SDK · Industry-Doorways</span></li>
               <li className="flex items-start gap-2"><span className="text-amber-400 font-mono text-xs mt-0.5">→ 2026 Q3</span><span className="text-titanium-300">ISO 27001 Audit-Vorbereitung · TÜV-Süd-Zertifizierungspfad · 100 zahlende Kunden</span></li>
-              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2026 Q4</span><span className="text-titanium-400">SOC 2 Type 1 · On-Premise-Variante für Behörden · n8n-Integration GA</span></li>
+              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2026 Q4</span><span className="text-titanium-400">SOC 2 Type 1 · n8n-Integration GA</span></li>
               <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2027 Q1-Q2</span><span className="text-titanium-400">DACH-Vertrieb skalieren · 500 Kunden · Series-A-optional</span></li>
               <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2027 Q4</span><span className="text-titanium-400">100k €/Monat MRR-Ziel · Standard-Compliance-Plattform für DACH-Mittelstand</span></li>
             </ul>
@@ -170,7 +170,7 @@ export function About() {
                 Wenn Self-Service nicht reicht
               </h3>
               <p className="text-titanium-400 text-sm mb-3">
-                SSO, On-Premise, Behördenverträge, Custom-DPA — dafür gibt es einen Menschen.
+                Single Sign-On (Preview), Behördenverträge, Custom-DPA — dafür gibt es einen Menschen.
                 Presse, Media-Kit und Investor-Anfragen laufen über denselben Kanal.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">

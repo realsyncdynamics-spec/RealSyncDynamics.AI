@@ -143,8 +143,8 @@ export function SteuerberaterLanding() {
       <Section title="Berufsrechts­konforme Pricing-Struktur">
         <p>
           Für Steuerkanzleien bieten wir einen <strong className="text-titanium-50">Kanzlei-Tier</strong>{' '}
-          mit individuellem AVV-Anhang (BStBK/§-203-konform), Mandanten-Trennungs-Workspace,
-          Audit-Trail-Export und optionalem On-Premise-Modus. Pricing nach Anzahl
+          mit individuellem AVV-Anhang (BStBK/§-203-konform), Mandanten-Trennungs-Workspace
+          und Audit-Trail-Export. Pricing nach Anzahl
           Mandate-buchhaltungen — Anfrage über den Kanzlei-Kontakt.
         </p>
       </Section>

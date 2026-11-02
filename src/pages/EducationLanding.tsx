@@ -76,7 +76,7 @@ export function EducationLanding() {
           <Section title="Beschaffung">
             <p>
               Pricing nach EVB-IT- oder vergleichbarem Bildungs-Vertrag möglich. Enterprise-Tier
-              auf Anfrage mit SLA, On-Premise (Docker-Compose), Lehrer:innen-Schulungen, gemeinsamer DSFA-Workshop.
+              auf Anfrage mit SLA, Lehrer:innen-Schulungen, gemeinsamer DSFA-Workshop.
             </p>
           </Section>
 

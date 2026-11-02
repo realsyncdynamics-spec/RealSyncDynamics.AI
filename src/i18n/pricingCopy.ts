@@ -61,7 +61,7 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   enterprise: {
-    tagline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO (Coming Soon).',
+    tagline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO (Preview, auf Anfrage).',
     ctaLabel: 'Enterprise anfragen',
     bullets: [
       'Alles aus Agency',
@@ -119,7 +119,7 @@ const EN: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   enterprise: {
-    tagline: 'Enterprise-wide governance via live policy packs plus framework roadmap — with SLA and SSO (Coming Soon).',
+    tagline: 'Enterprise-wide governance via live policy packs plus framework roadmap — with SLA and SSO (preview, on request).',
     ctaLabel: 'Enterprise inquiry',
     bullets: [
       'Everything in Agency',

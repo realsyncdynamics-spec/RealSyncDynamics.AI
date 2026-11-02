@@ -52,48 +52,12 @@ export const LAYERS = [
 
 export type LayerId = (typeof LAYERS)[number]['id'];
 
-/** 4 plans only — no historic Starter/Growth/Agency/Enterprise mix. */
-export const PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    tagline: 'One scan',
-    headline: '€0',
-    bullets: ['1× Free Audit', 'Score + Top-3 Findings', 'Keine Karte nötig'],
-    cta: { label: 'Run scan', to: '/audit?source=pricing-free', kind: 'primary' as const },
-  },
-  {
-    id: 'monitoring',
-    name: 'Monitoring',
-    tagline: 'Continuous runtime · Coming Soon',
-    headline: '€49',
-    bullets: ['1 Domain · Drift (Coming Soon)', 'Email + Slack Alerts (geplant)', 'Weekly Re-Scan (Coming Soon)', 'Evidence-Chain'],
-    cta: { label: 'Enable monitoring', to: '/audit?plan=monitoring', kind: 'primary' as const },
-  },
-  {
-    id: 'governance',
-    name: 'Governance',
-    tagline: 'AI Act layer',
-    headline: '€199',
-    bullets: ['AI-Usecase-Registry', 'AI-Act-Klassifikation', 'Policies · DPIA-Templates', 'Audit-Trail · §13 Drafts'],
-    cta: { label: 'Enable governance', to: '/audit?plan=governance', kind: 'primary' as const },
-  },
-  {
-    id: 'partner',
-    name: 'Partner',
-    tagline: 'Multi-tenant',
-    headline: 'Custom',
-    bullets: ['Unlimited Domains', 'Agent-Customisation', 'SSO · SCIM', 'Dedicated Runtime'],
-    cta: { label: 'Talk to runtime', to: '/contact-sales?intent=partner', kind: 'secondary' as const },
-  },
-] as const;
-
 /**
  * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf
  * öffentlichen CTAs erlaubt sind. RealSyncDynamics.AI ist ein vollständig
  * automatisiertes Self-Service-SaaS — jede CTA muss eine Aktion sein, die
  * der Nutzer ohne Mensch ausführen kann. Ausnahmen (kontaktbasiert):
- *   - Enterprise (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
+ *   - Enterprise (`enterprise` → SSO-Preview / Behördenvertrag / Custom-DPA / PO).
  *   - Individuelle Dienstleistung (`webdesign` → Landingpages, Websites und
  *     maßgeschneiderte Dashboards nach Projektumfang, persönliches
  *     Festangebot). Entscheidung Owner 18.10.2026: eigenständiges Angebot,

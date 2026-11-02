@@ -548,6 +548,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
 
+  // 02.11.2026: Unternehmens-Landing v5 — Gerüst bis Design-Handoff, bewusst noindex
+  // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/unternehmen': {
+    title: 'Unternehmen – KI-Mitarbeiter mit eingebauter Governance',
+    description:
+      'RealSync Dynamics AI: KI-Mitarbeiter mit eingebauter Governance für KMU mit Kundenkontakt. Produkte mit ehrlichem Status und Kontakt.',
+    canonical: `${SITE_URL}/unternehmen`,
+    noIndex: true,
+  },
+
   '/frontend-builder': {
     title: 'Frontend Builder für SaaS, AI und B2B-Websites',
     description:

@@ -351,7 +351,7 @@ export function PricingPage() {
               },
               {
                 q: 'Was unterscheidet Agency von Growth?',
-                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit Risk Register und geplantem täglichem Monitoring (Coming Soon). Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO (Coming Soon) und vertraglichem SLA läuft über Enterprise (/contact-sales).',
+                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit Risk Register und geplantem täglichem Monitoring (Coming Soon). Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO (Preview, auf Anfrage) und vertraglichem SLA läuft über Enterprise (/contact-sales).',
               },
               {
                 q: 'Was bedeutet "Priority Support" im Agency-Paket?',

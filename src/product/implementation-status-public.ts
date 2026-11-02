@@ -419,12 +419,12 @@ export const PUBLIC_ROADMAP_COPY: Record<
     de: {
       name: 'Enterprise Single Sign-On (SSO)',
       description:
-        'Geplant: Anmeldung über Unternehmens-Identitätsanbieter (OIDC und SAML 2.0) — heute klar als Coming Soon markiert, nicht als live.',
+        'Preview auf Anfrage: Anmeldung über Unternehmens-Identitätsanbieter (OIDC und SAML 2.0) — kein Self-Service, nicht live.',
     },
     en: {
       name: 'Enterprise Single Sign-On (SSO)',
       description:
-        'Planned: sign-in via enterprise identity providers (OIDC and SAML 2.0) — clearly marked as coming soon today, not live.',
+        'Preview on request: sign-in via enterprise identity providers (OIDC and SAML 2.0) — no self-service, not live.',
     },
   },
   'framework-tisax-dora': {
@@ -461,16 +461,6 @@ export const PUBLIC_ROADMAP_COPY: Record<
       name: 'Agent OS — browser side panel',
       description:
         'Planned: analyse a page for GDPR, AI Act, and evidence — spec only, no fake extension.',
-    },
-  },
-  'agent-os-hostinger-workers': {
-    de: {
-      name: 'Agent OS — Worker-Runtime',
-      description: 'Geplant: Zusätzliche Worker-Runtime für Agenten-Aufgaben.',
-    },
-    en: {
-      name: 'Agent OS — worker runtime',
-      description: 'Planned: additional worker runtime for agent tasks.',
     },
   },
 };

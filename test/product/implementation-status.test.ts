@@ -108,19 +108,21 @@ describe('implementation-status registry', () => {
     }
   });
 
-  it('registers enterprise-sso as coming-soon (ADR 0007) and updates stripe-checkout-e2e migration evidence', () => {
+  it('registers enterprise-sso as preview on request (E-V8, ADR 0007) and updates stripe-checkout-e2e migration evidence', () => {
     const sso = getImplementation('enterprise-sso')!;
     expect(sso).toBeDefined();
-    expect(sso.status).toBe('coming-soon');
+    expect(sso.status).toBe('preview');
     expect(isImplementationLive('enterprise-sso')).toBe(false);
     expect(sso.description).toContain('ADR 0007');
+    expect(sso.description).toContain('nur auf Anfrage');
     expect(sso.description).toContain('0 aktive Provider');
     expect(sso.description).toContain('signInWithSSO');
     expect(sso.description).toContain('sso-provision');
     expect(sso.description).toContain('tenant_sso_domains');
-    expect(ROADMAP_COMING_SOON_ITEMS.some((i) => i.id === 'enterprise-sso')).toBe(true);
-    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].de.description).toMatch(/Geplant:/);
-    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].en.description).toMatch(/Planned:/);
+    expect(ROADMAP_PREVIEW_ITEMS.some((i) => i.id === 'enterprise-sso')).toBe(true);
+    expect(ROADMAP_COMING_SOON_ITEMS.some((i) => i.id === 'enterprise-sso')).toBe(false);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].de.description).toMatch(/Preview auf Anfrage:/);
+    expect(PUBLIC_ROADMAP_COPY['enterprise-sso'].en.description).toMatch(/Preview on request:/);
 
     const stripeE2e = getImplementation('stripe-checkout-e2e')!;
     expect(stripeE2e.evidence).toContain(

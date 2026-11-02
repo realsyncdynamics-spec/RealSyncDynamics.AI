@@ -127,8 +127,9 @@ test('P1: redact GitHub issue/PR/check/workflow strings, emails, secrets and mal
     assert.ok(!serialized.includes(mail), `unmasked email: ${mail}`);
   assert.ok(serialized.includes('[TOKEN REDACTED]'));
   assert.ok(serialized.includes('[EMAIL REDACTED]'));
-  assert.ok(!serialized.includes('https://bad.example/secret'));
-  assert.ok(report.github.checks[0].check_runs[0].url.startsWith('https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/404/checks'));
+  // Foreign check-run hosts must not survive; the URL falls back to the exact PR checks page.
+  assert.doesNotMatch(serialized, /bad\.example/);
+  assert.equal(report.github.checks[0].check_runs[0].url,'https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/404/checks');
 });
 
 test('P1: a token in a long title is redacted before truncation',()=>{

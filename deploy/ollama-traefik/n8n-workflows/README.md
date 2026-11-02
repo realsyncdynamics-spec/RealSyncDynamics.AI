@@ -71,3 +71,39 @@ Versand bleibt ein **separater, manuell freizugebender** Schritt.
 
 > **STOP:** Workflow 03 niemals so erweitern, dass er ohne menschliche
 > Freigabe echte E-Mails versendet. Echtversand erst nach Rechts-Review.
+
+## Schutzfunktionen für Berichts-Workflows (`lib/report-guards.js`)
+
+Für Berichte aus GitHub-Daten und Uptime-Kuma-`/metrics`. Die Funktionen sind
+abhängigkeitsfrei und werden ohne `export` in den jeweiligen Code-Node kopiert.
+Tests: `test/deploy/n8n-report-guards.test.ts`.
+
+| Funktion | Zweck |
+|---|---|
+| `redact` / `redactDeep` | maskiert GitHub-Tokens, Bearer/Basic, AWS-Keys, `*_TOKEN=`/`*password:`, Zugangsdaten in URLs und E-Mail-Adressen; auf **jeden** Text aus GitHub anwenden (Titel, Commit-Messages, Fehler) |
+| `resolveKumaMetricsUrl` | leere/ungültige `UPTIME_KUMA_BASE_URL` oder gesperrter `$env`-Zugriff → „Nicht verfügbar“ statt Abbruch |
+| `parseKumaMetricsResponse` | erkennt Fehlerobjekt (401/404/Timeout bei `continueRegularOutput`), HTML-Login-Seiten und leere Antworten; zählt `monitor_status` |
+| `renderKumaSection` | Markdown-Abschnitt, bei Fehlern „Nicht verfügbar – Grund“ |
+
+Code-Node vor dem HTTP-Request (Modus „Run Once for All Items“):
+
+```javascript
+const res = resolveKumaMetricsUrl(() => $env.UPTIME_KUMA_BASE_URL);
+return [{ json: res.ok ? { metricsUrl: res.url } : res.item }];
+```
+
+Der HTTP-Request-Node läuft nur bei vorhandener `metricsUrl` (IF-Node), mit
+Response Format „Text“, Ausgabefeld `data`, Basic Auth (leerer Benutzer,
+API-Key als Passwort) als n8n-Credential und „On Error: Continue (regular output)“.
+Parser-Code-Node danach:
+
+```javascript
+const result = parseKumaMetricsResponse($input.first().json);
+return [{ json: { ...result, section: renderKumaSection(result) } }];
+```
+
+Read-only-Prüfung auf dem VPS, ohne den Key in die Shell-History zu schreiben:
+
+```bash
+read -rs KUMA_API_KEY && curl -sS -u ":$KUMA_API_KEY" https://<kuma-host>/metrics | head -20; unset KUMA_API_KEY
+```

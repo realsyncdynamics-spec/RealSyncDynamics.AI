@@ -1,126 +1,127 @@
+# /ap3-policy-ssot — Session-Auftrag
+
+> **Stand:** 2026-11-02 · gemessen gegen `main@abdef53` (Klon, nur gelesen) · **Status: freigegeben.**
+> **E-AP0–E-AP4 entschieden am 2026-11-02 (Dominik Steiner): alle wie empfohlen** (§3).
+> Schließt O6 aus `.claude/os-funnel/governed-evolution.md`. Voraussetzung für Governed Evolution (E-GE7) und für O4.
+> Ersetzt den rekonstruierten Entwurf vom 2026-11-01 (#2127, erster Commit). Maßgeblich ist diese Fassung.
+
+Du arbeitest an **AP-3: `governance_policies` als Tenant-SSoT mit adressierbaren Versionen.**
+Pro Teilpaket genau ein Branch, ein PR. Argument: `3a` | `3b` | `3c` | `3d`. Ohne Argument: stopp und nachfragen.
+
 ---
-description: AP-3 Policy-SSoT — vier getrennte Phasen, Entscheidungen E-AP0 bis E-AP4, sichere Versionierung und Evidence
+
+## 1. Ziel
+
+Jede Mandanten-Policy hat eine **Versionsnummer**. Jede Änderung, auch die Anlage, erzeugt eine **unveränderliche Revision** mit Auslöser und Quelle. Der Policy-Satz eines Mandanten ist zu jedem Änderungszeitpunkt als **Snapshot** adressierbar. Damit kann ein Vorschlag später als Diff gegen eine Version formuliert, simuliert (E-GE6) und belegt werden.
+
+**Nicht Ziel:** Evolution-Signale, Vorschläge (`kind = 'policy_change'`, E-GE8), Replay, UI, neue Policy-Typen, Änderungen an Policy-Packs-Inhalten, Preise oder Claims.
+
 ---
 
-# AP-3 — Tenant Policy Single Source of Truth (SSoT)
+## 2. Ist-Befund (`main@abdef53`)
 
-> **Stand:** 2026-11-01 · **Basis:** `main@abdef5314dad3a7fdbd6b9c048565aef9a98d510` (read-only-Recherche).
-> **Status:** dokumentierter, rekonstruierter **Entwurf**. Der ursprünglich erwähnte lokale Projekttext `claude/ap3-policy-ssot.md` war in dieser Session nicht zugänglich und wurde **nicht** als unverändert übernommene Quelle ausgegeben.
-> **Owner-Freigabe:** E-AP0 bis E-AP4 am 2026-11-01 durch „Go“ für die **Planung und diesen Dokumentations-PR** bestätigt. **Kein GO für Produktionsabfragen, Migrationen, produktive Schreibpfade, Deploy oder Merge.**
-> **Abgrenzung:** Dieser Auftrag ist **kein** Nachweis einer implementierten Policy-SSoT, nicht „live“ und kein Freibrief für autonome Policy-Änderungen.
+| # | Befund | Beleg | Konsequenz |
+|---|---|---|---|
+| **F1** | AP-1a, AP-1b, AP-1c, AP-1d und AP-2 sind **nirgends definiert**. Sie stehen nur als Namen in `PLAN.md` §4 (Z. 205 f.). Kein Auftrag, kein Branch, kein Dokument. | `grep -rn "AP-1a\|AP-2"` → nur `PLAN.md` | Entschieden über **E-AP0** |
+| **F2** | Die PDP kompiliert aus **zwei** Quellen: `ai_policies` (Mandant **und** global, `tenant_id IS NULL`) und `governance_policies` (nur Mandant). | `supabase/functions/_shared/pdp/decide.ts` Z. 68–86 | Entschieden über **E-AP1** |
+| **F3** | `ai_policies` hat im Code **keinen Schreiber**. Zeilen entstehen nur per Seed in `20260510_ai_governance_core.sql`. Ob es Mandantenzeilen in Produktion gibt, ist **nicht gemessen**. | `grep` auf `from('ai_policies')`: nur Lesezugriffe | In 3a: eine lesende Abfrage (Anzahl je `tenant_id IS NULL`) mit GO |
+| **F4** | Vier Schreibwege für `governance_policies`, keiner vergibt eine Version, keiner schreibt Evidence: `governance-resources` (anlegen, ein/aus, ändern; nur `audit()`), `provision-tenant` (Klon aus Vorlage), `policy-packs` (Einfügen, `condition` ändern; `audit()`), Migrations-Seeds. | `governance-resources/index.ts` Z. 277/310/351, `provision-tenant/index.ts` Z. 224, `policy-packs/index.ts` Z. 84/95 | Ein gemeinsamer Schreibpfad (3c) und ein DB-Trigger als Rückhalt (3b) |
+| **F5** | `governance_policy_versions` sichert den **alten** Stand nach UPDATE/DELETE, nicht bei INSERT, ohne Versionsnummer, ohne Auslöser. Der Trigger deckt auch `governance_assets` ab. **Kein Code liest die Tabelle.** | `20260620000004_governance_policy_versions.sql` Z. 36 f.; `grep` in `src/`, `shared/`, `supabase/functions/`, `test/` leer | Entschieden über **E-AP2** |
+| **F6** | `policy_snapshots.version` ist ein FNV-1a-Inhaltshash über die kompilierten Policies (`core.ts` Z. 293 ff.) und wird **nur beim Entscheiden** persistiert (`decide.ts` Z. 99 ff.). Eine Änderung ohne nachfolgende Entscheidung hat keinen Snapshot. | `_shared/pdp/core.ts`, `_shared/pdp/decide.ts` | Entschieden über **E-AP3** |
+| **F7** | Zwei Auswerter lesen dieselbe Tabelle: die Alt-Engine (`governance-ingest` → `_shared/policyEngine.ts`) und die PDP v2 (Shadow-Vergleich). | `governance-ingest/index.ts` Z. 212, `pdp_shadow_log` | AP-3 ändert **keine** Auswertung, nur Speicherung und Versionierung |
+| **F8** | ADR 0010 und `docs/specs/governed-self-evolution/*` verlangen `policy_version` in `GovernanceDecision` (`DOMAIN_CONTRACTS.md` Z. ~151). `.claude/os-funnel/governed-evolution.md` verweist auf **keines** der beiden. | `docs/adr/0010-native-evolution-governance.md`, `docs/specs/governed-self-evolution/` | Entschieden über **E-AP4** |
+| **F9** | `docs/` ist budgetiert (`.claude/context-budget.json`). | B10 im PLAN | Kein neues Dokument unter `docs/`; Auftrag und Notizen unter `.claude/` |
+| **F10** | `GOVERNANCE_BOUNDARY_SPEC.md` erlaubt mandantenübergreifendes Lernen, wenn es „explizit klassifiziert und autorisiert“ ist (Z. 203; ähnlich `EVIDENCE_AND_AUDIT_REQUIREMENTS.md` Z. 56). E-GE5 (2026-11-01, in #2126) **schließt es aus**, auch anonymisiert. Nach E-AP4 führen die Specs die Verträge — hier widersprechen sie einer Owner-Entscheidung. | `docs/specs/governed-self-evolution/GOVERNANCE_BOUNDARY_SPEC.md` Z. 203 | In 3a nach Merge von #2126: Spec-Satz auf E-GE5 einengen (ändern, nicht vergrößern; Budget prüfen) |
+| **F11** | `persistSnapshot` ist **Best-effort** (Fehler werden nur geloggt) und der Snapshot kommt aus einem Instanz-Cache mit 30 s TTL (`PDP_CACHE_TTL_MS`). Für Snapshot-beim-Schreiben reicht das nicht: ein Cache-Treffer kann den Stand **vor** der Änderung liefern, ein stiller Fehler hinterlässt eine Revision ohne Snapshot. | `_shared/pdp/decide.ts` Z. 33, 63 ff., 99 ff. | Regeln für 3d (§4) |
 
-## 0. Verbindliche Entscheidungen
+---
 
-| ID | Entscheidung | Sicherheitsgrenze |
-|---|---|---|
-| **E-AP0** | AP-3 als eigenständiges Paket planbar; AP-1a bis AP-2 im PLAN als **nicht beauftragt / nicht nachgewiesen** führen | Unverzichtbare technische Voraussetzungen trotzdem einzeln nachweisen; keine fiktiven abgeschlossenen Vorgänger |
-| **E-AP1** | `governance_policies` ist die kanonische Quelle für mandantenspezifische Regeln; `ai_policies` bleibt die **globale Plattform-Basis** | Keine mandantenbezogenen `ai_policies` abschalten, löschen oder still ignorieren, bevor Produktionsbestand nach gesondertem GO geprüft und ein verlustfreier Migrationspfad akzeptiert ist |
-| **E-AP2** | Neue append-only Tabelle `governance_policy_revisions` statt Änderung der vorhandenen `governance_policy_versions` | Alte Tabelle, Trigger und historische Datensätze unverändert erhalten; nachvollziehbarer, idempotenter Backfill |
-| **E-AP3** | Wirksamer Snapshot bei jedem Policy-Write | Versions-/Snapshot-/Evidence-Konsistenz in einer überprüfbaren atomaren Grenze; Fehler führen zum Abbruch der wirksamen Änderung |
-| **E-AP4** | ADR 0010 und `docs/specs/governed-self-evolution/` führen die übergeordneten Governance-Verträge; diese AP-3-Datei und die OS-Funnel-Spec dokumentieren Ist-/Plan-Abgleich | Querverweise in beiden Spec-Familien nachziehen und Widerspruch zu E-GE5 vor Implementierung auflösen |
+## 3. Owner-Entscheidungen
 
-E-GE5 aus PR #2126 untersagt mandantenübergreifendes Lernen, einschließlich anonymisierter gemeinsamer Lernnutzung. `docs/specs/governed-self-evolution/GOVERNANCE_BOUNDARY_SPEC.md` §11 lässt derzeit explizit autorisierte Cross-Tenant-Aggregation/Lernen zu: **Vertragskonflikt**, keine implizite Ausnahme. Bis zur harmonisierten Owner-Freigabe das strengere Verbot als Zielarchitektur ansetzen, nicht autonom umdeuten. PR #2126 ist **offen**, also nicht als gemergten Ist-Stand behandeln.
+**Entschieden am 2026-11-02 (Dominik Steiner): alle wie empfohlen.**
 
-**Wichtig:** AP-3 ist die administrative, überprüfbare **Policy-Speicher- und Schreibarchitektur**. Das autonome Governed-Evolution-Gate darf weder Governance-Policies noch seine eigenen Trust-Boundaries selbst verändern. Siehe `docs/adr/0010-native-evolution-governance.md`, `docs/specs/governed-self-evolution/GOVERNANCE_BOUNDARY_SPEC.md` und `DOMAIN_CONTRACTS.md` (`GovernanceDecision.policy_version`).
+| ID | Frage | Entscheidung | Begründung |
+|---|---|---|---|
+| **E-AP0** | Gilt die Reihenfolge AP-1a → … → AP-3 noch? | ✅ **AP-3 eigenständig freigegeben.** AP-1a bis AP-2 werden im PLAN als „nicht beauftragt“ geführt. | Eine Abhängigkeit von Paketen ohne Inhalt blockiert nur. AP-3 ändert keine Auswertung (F7). |
+| **E-AP1** | Rolle von `ai_policies` | ✅ **Global = Plattform-Basis, nur lesend. Mandanten-Regeln nur in `governance_policies`.** Gibt es Mandantenzeilen in `ai_policies` (F3), folgt ein eigenes Paket zur Übernahme, nicht in AP-3. | Hält AP-3 klein. Ein Mandant ändert nie globale Regeln. |
+| **E-AP2** | `governance_policy_versions` erweitern oder ablösen? | ✅ **Neue Tabelle `governance_policy_revisions`** (nur Policies, Nachher-Stand, append-only). Die alte Tabelle bleibt unverändert für Assets. | Die alte Tabelle mischt Assets und Policies, speichert den Vorher-Stand und hat keinen Leser. Umbau wäre riskanter als Neuanlage. |
+| **E-AP3** | Snapshot beim Schreiben? | ✅ **Ja:** nach jeder Revision den kompilierten Policy-Satz des Mandanten nach `policy_snapshots` schreiben (gleiche `snapshotVersion`, `UNIQUE (tenant_id, version)` dedupliziert) und die Snapshot-Version an der Revision speichern. | Ohne das gibt es für Replay (E-GE6) keine Basis zum Änderungszeitpunkt. |
+| **E-AP4** | Welche Governed-Evolution-Spec führt? | ✅ **ADR 0010 + `docs/specs/…` führen die Verträge**, `.claude/os-funnel/governed-evolution.md` den Plan- und Bestandsabgleich. Beide verweisen aufeinander (Einzeiler je Datei). Owner-Entscheidungen (E-GE*) gehen vor; widerspricht eine Spec, wird die Spec angepasst (F10). | Keine Doppelpflege von Feldlisten. |
 
-## 1. Nachgewiesener Bestand (Referenz: main@abdef531)
+---
 
-| Pfad | Befund / AP-3-Folge |
-|---|---|
-| `supabase/functions/_shared/pdp/decide.ts` | `loadSnapshot` liest aktivierte `ai_policies` für Tenant **oder global** und `governance_policies` nur für den Tenant. Pro-Instanz-Cache mit `PDP_CACHE_TTL_MS = 30_000`. `persistSnapshot` ist aktuell **best-effort**; ein Persistenzfehler bricht Entscheidungen nicht ab. |
-| `supabase/functions/_shared/pdp/core.ts` | Der bestehende `snapshot.version`-Wert ist ein aus kompilierten Policies abgeleiteter FNV-1a-Fingerprint, **keine** monotone per-Policy-Revisionsnummer. Die Begriffe nicht verwechseln. |
-| `supabase/migrations/20260512000000_governance_events.sql` | `governance_policies` hat derzeit keine adressierbare eigene Versionsnummer; `governance_events` und `governance_evidence` existieren. |
-| `supabase/migrations/20260620000004_governance_policy_versions.sql` | Alte Historientabelle sichert `OLD` bei `UPDATE/DELETE` auch für Assets; kein vollständiger Create-/Versions-Contract. Diese Migration **nicht** umschreiben. |
-| `supabase/migrations/20260824090000_pdp_snapshots_shadow.sql` | `policy_snapshots` ist mandantenbezogen mit `UNIQUE(tenant_id, version)` und `compiled`-Payload. `pdp_shadow_log` ist Live-Vergleich, kein Offline-Replay. |
-| `supabase/functions/governance-resources/index.ts` | Erstellt/ändert/deaktiviert `governance_policies`; direkter Schreibpfad. |
-| `supabase/functions/policy-packs/index.ts` | Erstellt/aktualisiert Regeln bei Pack-Aktivierung; direkter Schreibpfad. |
-| `supabase/functions/provision-tenant/index.ts` | Erstellt Policy-Zeilen aus Templates beim Tenant-Boot; direkter Schreibpfad. |
-| `supabase/functions/governance-ingest/index.ts` | Policy-Lese-/Auswertungspfad; der automatische `policy_snapshot`-Evidence-Eintrag ist in einem Teilpfad noch **ungekettet** (bekanntes O1b). Kein vierter Policy-Schreibpfad. |
-| `docs/specs/governed-self-evolution/DOMAIN_CONTRACTS.md` | `GovernanceDecision` verlangt ein `policy_version`-Feld. Seine Referenzierung muss nach AP-3 eindeutig und reproduzierbar sein. |
-| `.claude/os-funnel/PLAN.md` §4 | AP-1a → AP-1b → AP-1c → AP-1d → AP-2 → AP-3 bisher als Reihenfolge, nicht als nachgewiesene Aufträge. |
+## 4. Teilpakete
 
-**Nicht gemessen:** reale Produktionszeilen in `ai_policies` und `governance_policies`, Deployment-/Migrationsstatus, Ausmaß historischer Drift und tatsächliche Schreibberechtigungen in Prod. Keine Annahme „0 Tenant-Zeilen“ und keine Behauptung einer produktiv aktiven AP-3-Implementierung.
+```
+E-AP0–E-AP4 entschieden (2026-11-02)
+      │
+      ├─► 3a  Plan + Lesemessung + Spec-Abgleich (nur Doku, kein Code)
+      ├─► 3b  Migration: Version + Revisionen (separates GO, Test zuerst)
+      ├─► 3c  Ein Schreibpfad + Evidence (Edge Functions)
+      └─► 3d  Snapshot beim Schreiben (E-AP3)
+```
 
-## 2. Arbeitsdisziplin und Gates (gilt für alle Phasen)
+Reihenfolge: 3a → 3b → 3c → 3d. Jedes Paket setzt das vorige auf `main` voraus.
 
-1. **Ein Teilpaket = ein Branch = ein PR**; nur sein eigener Umfang. Vor jeder Session `main` und offene PRs neu prüfen. **Bei >20 offenen PRs stoppen** (WIP-Regel).
-2. Vor Änderungen betroffene Pfade per `rg`/GitHub belegen, vorhandene Funktionen/Trigger/RLS/Tests inventarisieren; neue Migrationen nur **additiv**, mit einzigartigem Timestamp und eigener Freigabe. Bereits angewandte Migrationen nie ändern.
-3. Tenant-Autorität serverseitig aus `JWT user → memberships → tenant_id → Rolle/Policy` bzw. vertrauenswürdigem Boot-Kontext; **nie** aus unvalidiertem Body, URL oder `localStorage`. Keine Service-Role im Browser.
-4. Keine stille Überschreibung, keine Cross-Tenant-Reads/-Writes, kein Umgehen von RLS oder Gate, keine automatische Promotion, keine synthetische Evidence, keine Ersetzung eines fehlenden Checks durch Erfolgsbehauptungen.
-5. **No-Go ohne separates ausdrückliches Owner-GO:** jede Produktionsabfrage (auch SELECT), SQL-Migration/Backfill/DDL in jeglicher verbundenen DB, Produktiv-Secret, Deploy, Merge, Live-Checkout oder produktiver Policy-Write. Das heutige „Go“ gilt ausschließlich für Entscheidungen und die **Dokumentationsarbeit**.
-6. Ein offener PR ist keine deployte Wahrheit. Insbesondere #2126 (E-GE2/5–8) und #2122 (WP7a) vor jeder Abhängigkeit erneut prüfen; keine konkurrierenden Textabschnitte parallel überschreiben.
-7. Bei unerfüllter Atomizität, unklarer Migration, offenen Tenant-Daten oder unklarer Versionsbindung **fail closed** und konkreten Blocker im PR dokumentieren.
+### 3a — Plan, Messung, Spec-Abgleich (risikolos)
 
-## 3. AP-3a — Planung und Bestandsaufnahme (jetzt als Dokumentation erlaubt)
+- `PLAN.md` §4: AP-Zeilen nach E-AP0 nachziehen (AP-1a–AP-2 „nicht beauftragt“), AP-3 mit Teilpaketen eintragen.
+- `governed-evolution.md`: O6 auf „Auftrag liegt vor“ setzen, Verweis auf ADR 0010 (E-AP4). **Erst nach Merge von #2126**, sonst Konflikt in §7.
+- ADR 0010: Einzeiler-Verweis auf `.claude/os-funnel/governed-evolution.md`. `GOVERNANCE_BOUNDARY_SPEC.md` Z. 203 und `EVIDENCE_AND_AUDIT_REQUIREMENTS.md` Z. 56 auf E-GE5 einengen (F10). Nur ändern, nicht vergrößern; `npm run check:context`.
+- Lesende Abfrage nur mit GO, Ergebnis nur als Aggregat in den PR-Text:
+  ```sql
+  select (tenant_id is null) as global, count(*) from public.ai_policies group by 1;
+  select count(*) as policies, count(distinct tenant_id) as tenants from public.governance_policies;
+  ```
 
-**Ziel:** `PLAN.md` nachführen, Vorbedingungen aus AP-1a bis AP-2 präzise benennen, aktuelle Producer-/Consumer-Matrix mit Datei und Zeilen erstellen, Alt- und Zielzustand unterscheiden. Die Namen von AP-1a bis AP-2 bleiben **nicht beauftragt / nicht nachgewiesen** und dürfen nur bei echten Belegen auf DONE wechseln. Die Governance-Sicherheitsvorbedingungen (Tenant-Isolation, Autorisierung, Evidence, Rollback) bleiben trotzdem Gates.
+### 3b — Migration (Risiko hoch, separates GO)
 
-**Zwei und nur zwei vorgeschlagene Produktions-Zählabfragen:** erst nach **einem separaten ausdrücklichen GO für read-only Prod-SELECT**; aggregiert, ohne tenant_id, E-Mails oder Policy-Inhalte auszugeben. Vor Ausführung Zielprojekt, Rolle und Abfrageumfang protokollieren.
+**Test zuerst** (`test/runtime/db/policy-revisions.db.test.ts`), dann Migration `supabase/migrations/<ts>_ap3_policy_revisions.sql`:
 
-~~~sql
--- Q1: globale vs. mandantengebundene ai_policies (keine IDs)
-SELECT (tenant_id IS NULL) AS is_global, count(*) AS policy_count
-FROM public.ai_policies
-GROUP BY (tenant_id IS NULL)
-ORDER BY is_global DESC;
+1. `governance_policies.version int not null default 1`.
+2. `BEFORE UPDATE`-Trigger: `version := old.version + 1`, **nur** wenn sich ein fachliches Feld ändert (`condition`, `action`, `enforce_action`, `mode`, `enabled`, `severity`, `policy_type`, `name`, `description`, `environment`). Reine `updated_at`-Änderungen erhöhen nicht. Feldliste vor dem Schreiben gegen das aktuelle Schema prüfen.
+3. Neue Tabelle `governance_policy_revisions`:
+   `id`, `tenant_id NOT NULL`, `policy_id`, `version`, `op` (`insert`/`update`/`delete`), `row` jsonb (Nachher-Stand, bei `delete` der letzte Stand), `changed_by uuid NULL`, `change_source text` (`ui`/`policy_pack`/`provision`/`migration`/`unknown`), `snapshot_version text NULL`, `created_at`. `UNIQUE (policy_id, version, op)`.
+4. `AFTER INSERT/UPDATE/DELETE`-Trigger (SECURITY DEFINER, `search_path` fest) schreibt die Revision. `changed_by`/`change_source` aus `current_setting('app.change_actor', true)` bzw. `app.change_source`, sonst `NULL`/`unknown`.
+5. Append-only: UPDATE und DELETE auf `governance_policy_revisions` per Trigger sperren (Muster aus `20260901090000_evidence_append_only_anchors.sql`). **Ausnahme:** das einmalige Setzen von `snapshot_version` von `NULL` auf einen Wert (für 3d); alle anderen Spalten bleiben gesperrt.
+6. RLS: Mitglieder lesen ihren Mandanten (über `memberships`, Muster aus `20260723000001_rls_recursion_fix_security_definer.sql`), keine Client-Schreibrechte.
+7. Backfill: für jede bestehende Policy eine Revision `op='insert'`, `version=1`, `change_source='migration'`.
 
--- Q2: Zahl von Tenant-Policies und betroffenen Mandanten (keine IDs)
-SELECT count(*) AS policy_count,
-       count(DISTINCT tenant_id) AS tenant_count
-FROM public.governance_policies;
-~~~
+Testfälle: Anlage → Revision v1 · fachliche Änderung → v2 + Revision · nur `updated_at` → keine neue Version · Löschen → Revision `delete` · UPDATE/DELETE auf Revisionen schlägt fehl (außer `snapshot_version` NULL → Wert, genau einmal) · fremder Mandant liest nichts · Client kann nicht schreiben · Backfill vollständig.
 
-Wenn Q1 Mandantenzeilen ergibt: keinen automatischen Wechsel auf „global only“ durchführen. Vorher Klassifikation, Besitz, fachliche Semantik, Priorität, Konfliktfälle und migrationsfähiges Mapping klären; hierfür separate Datenschutz-/Datenfreigabe bei Detailabfragen. Keine „Zählung = Null“-Annahme.
+### 3c — Ein Schreibpfad und Evidence
 
-**3a-Deliverables:** PLAN-Nachtrag E-AP0–E-AP4, Matrix aller drei Writes und aller Reads, RLS/Service-Role-Autorität, Konfliktliste `ai_policies` vs. `governance_policies`, Migrationsentwurf mit Rollback-/Backout-Plan, Freigabeanforderungen und das offene E-GE5-Spec-Divergenzticket. Kein Produktiv-SELECT als Bestandteil dieses Doku-PRs.
+- Neues Modul `supabase/functions/_shared/policyStore.ts` mit `createPolicy`, `updatePolicy`, `setPolicyEnabled`, `insertFromTemplate`. Jede Funktion setzt `app.change_actor`/`app.change_source` (per RPC in derselben Transaktion oder als Spalte; Weg in der Session festlegen und begründen).
+- Umstellen: `governance-resources`, `provision-tenant`, `policy-packs`. Bestehende `audit()`-Aufrufe bleiben.
+- Je Änderung ein Evidence-Eintrag über `append_governance_evidence` (verkettet, wie `governance-approvals/evidence.ts`): Policy-ID, Version, Quelle, Auslöser.
+- Rolle unverändert: `owner`/`admin` über `memberships`, Mandant aus der Zeile, nie aus dem Body.
+- Tests: `test/edge/` je umgestellte Function, inkl. Fehlerfall (Evidence-Schreiben scheitert → Antwort meldet Fehler, keine stille Änderung).
 
-## 4. AP-3b — Versioniertes Policy-Register (NEUES, separates GO nötig)
+### 3d — Snapshot beim Schreiben (E-AP3)
 
-**Test-first.** Erst DB-Tests und Erwartungsverhalten festlegen; danach neue, additive Migrationsdatei planen. Modell mindestens:
+- Nach jeder Revision den Snapshot **ohne Cache** laden (eigene Funktion oder Parameter, nicht `loadSnapshot` mit Cache-Treffer, F11), persistieren, `snapshot_version` an die Revision schreiben.
+- **Nicht best-effort:** Scheitert Laden oder Persistieren, bleibt `snapshot_version` `NULL` und die Antwort meldet den Fehler. Kein stiller Erfolg. Fehlende Snapshots sind per Abfrage auffindbar (Revisionen mit `snapshot_version IS NULL`).
+- Cache in `decide.ts` für den Mandanten invalidieren.
+- O1b gleich mitnehmen? **Nein**, eigener PR (`governance-ingest`).
 
-- `governance_policies.version` als pro Policy **monoton steigende Ganzzahl**; Startwert und Update-Regeln dokumentieren. Nicht mit `policy_snapshots.version` (Content-Fingerprint) gleichsetzen.
-- Neue `governance_policy_revisions`: eindeutiger Revisionsschlüssel (z. B. `policy_id + version`), `tenant_id`, Operation (create/update/deactivate; delete nur nach gesonderter Designprüfung), unveränderliches vollständiges Policy-Snapshot, Actor/Origin, Zeit, Vergleichsversion/Correlation-ID und referenzierbare Evidence. Tenant-Scope und Fremdschlüssel-/Tombstone-Verhalten explizit prüfen.
-- Backfill bestehender Policies **idempotent** mit eindeutiger Ursprungsklassifikation („Bestandsaufnahme“, **nicht** fiktiv rekonstruierte Historie). Die vorhandene `governance_policy_versions` einschließlich Trigger für Policies/Assets unangetastet lassen.
-- Schreibwege gegen Lost Updates absichern: Expected-Version/CAS oder vergleichbare DB-seitige Transaktionssperre. Zwei konkurrierende Writes dürfen nie dieselbe neue Version erzeugen. Idempotency-Key für retried Requests.
-- DB-RLS: Tenant-Rollen erhalten nur berechtigte Reads; Revisionen dürfen nicht von normalen Clients geschrieben, geändert oder gelöscht werden. Für privilegierte/SECURITY-DEFINER-Pfade explizite Checks, Tests gegen fremde Tenant-IDs, geprüfter `search_path`.
-- Evidence und unveränderliche Revision **konsistent** zum Policy-Zustand erzeugen. **Mehrere aufeinanderfolgende Supabase-Aufrufe aus einer Edge Function sind keine gemeinsame DB-Transaktion.** Transaktionale DB-RPC oder gleichwertiges Design vor Implementierung entscheiden; bei Evidence-Fehler keine wirksame neue Version.
+---
 
-**Negative Tests:** parallele Updates, falsche erwartete Version, Duplicate/Retry, RLS Tenant A→B, fehlender Actor, abgebrochener Backfill, Trigger-Doppelung, Delete-Semantik, fehlende Evidence, Rollback-Wiederholung. Keine Umsetzung oder Ausführung ohne neues GO.
+## 5. Ausdrücklich nicht in AP-3
 
-## 5. AP-3c — Ein kanonischer Schreibvertrag (NEUES, separates GO nötig)
+- `evolution_*`-Tabellen, Vorschläge, Approvals-`kind` (E-GE8), Replay (O5)
+- Änderungen an der Auswertung (`policyEngine.ts`, `core.ts`-Kompilierung, PEP-Modus)
+- Übernahme von `ai_policies`-Mandantenzeilen (E-AP1, Folgepaket)
+- UI, Landing, Claims, Preise
+- `governance_policy_versions` umbauen oder löschen
 
-Ein gemeinsamer serverseitiger Einstiegspunkt unter `supabase/functions/_shared/policyStore.ts` für genau die im aktuellen Repo belegten Policy-Writer:
+## 6. Leitplanken (PLAN §5)
 
-1. `governance-resources/index.ts` — Create, Enable/Disable, Update;
-2. `policy-packs/index.ts` — Create/Update bei Pack-Aktivierung;
-3. `provision-tenant/index.ts` — Template-/Boot-Create.
+Kein Deploy, kein Merge, kein Push auf `main`. **Keine Supabase-Migration auf Produktion ohne separates GO** (betrifft 3b und die Abfrage in 3a). Tenant nur über `JWT → memberships → tenant_id`. Keine Service-Role im Browser. Status-Vokabular `live`/`preview`/`coming-soon`. Bei > 20 offenen PRs: stopp.
 
-**API-Vertrag:** authentifizierter/vertrauenswürdiger Kontext mit abgeleiteter `tenant_id`, Actor/Origin, gewünschter Operation, Expected-Version, Idempotency-Key; die eigentliche atomare Persistenz gehört unter einen DB-Transaktionsanker. Gemeinsame Validierung und konsistente Fehlermodelle; unzulässige/nicht eindeutig gebundene Schreibversuche blockieren.
+## 7. Prüfung
 
-**Evidence-Vertrag:** die bestehende `append_governance_evidence`-Kette respektieren; Event/Revision/Policy/Snapshot eindeutig verlinken. Eine getrennt nachgelagerte Evidence-Anhängung **reicht nicht** zur behaupteten Atomizität. Bestehende `governance_events`- und `governance_approvals`-Fremdschlüssel beachten (`event_id`: NOT NULL/UNIQUE); kein neues Approval-Feature und keine `kind = 'policy_change'`-Migration in AP-3.
+`npm run lint` · `npm test` (betroffene Suites, DB-Tests aus 3b) · `npm run check:fabrication` · `npm run check:context` · `npm run build`. Für 3b zusätzlich: Migration lokal gegen eine frische DB und gegen einen Stand mit Bestandsdaten (Backfill).
 
-Tests pro Writer plus Integration: alter erfolgreicher Ablauf erhält dieselbe Bedeutung, Fehler führt zu **keinem** teilweise wirksamen Write, Retry erzeugt keine Duplikate, keine Tenant-Grenzüberschreitung, korrektes Rollen-/Entitlement-Gate. `governance-ingest` bleibt separat als **Leser** zu prüfen, nicht blind an den Store anschließen.
+## 8. PR-Text (Definition of Done)
 
-## 6. AP-3d — Snapshot-on-Write und Replay-Basis (NEUES, separates GO nötig)
-
-- Bei jedem **wirksamen** Tenant-Policy-Write muss die genaue **auswertbare** Policy-Menge einschließlich der gültigen globalen `ai_policies`-Basis reproduzierbar an eine Version gebunden werden. Policy-Revisionsnummer, tenantweiter Snapshot-Fingerprint, globale Baseline und eventuelle Gate-Version sind **verschiedene** Identifikatoren.
-- Snapshot muss **atomar mit dem wirksamen Write** vorliegen oder der Write bleibt nicht wirksam. Da Kompilierung derzeit in TypeScript statt im SQL-Trigger liegt, ist das Transaktionsdesign vor Codefreigabe ausdrücklich zu entscheiden (z. B. prävalidierter kanonischer Payload plus DB-RPC, serverseitige Nachvalidierung, sichere Aktivierung erst nach Persistenz). Keine verdeckte Best-Effort-Stufe.
-- Cache-Invalidierung über alle Instanzen berücksichtigen: aktuelle 30-s-Instanz-Caches dürfen nach Commit keine alten Policies als neue Version ausgeben. Falls sofortige Invalidierung nicht garantiert werden kann, kontrollierte Aktivierung/versioniertes Lesen bis zur Synchronisation; keine falsche „instant“-Behauptung.
-- `policy_snapshots` als unveränderliche Replay-Eingabe; Offline-Replay nach E-GE6 **read-only**, keine Side Effects, keine Umstellung des `pdp_shadow_log`-Schemas. Input, Tenant, Regel-/Gate-Version, erwartete und simulierte Entscheidung sowie Evidence referenzierbar halten.
-- Bei fehlendem Snapshot, Drift zwischen Quellen, nicht verfügbarem Evidence-Gate oder unbekannter Version **fail closed**. Den bestehenden ungeketteten `governance-ingest`-Snapshot-Evidence-Pfad O1b separat prüfen, nicht still als gelöst markieren.
-- Tests: Write→Revision→Snapshot→Decision→Evidence-Korrelation, Global-Baseline-Änderung, Parallelität, Cache-Staleness, Rollback, Replay ohne Write/Provider/Netzwerk, Tenant-Isolation, deterministische Wiederholung.
-
-## 7. Dokumentationshierarchie und Konfliktliste
-
-- **Normative Governance-Grenzen:** `docs/adr/0010-native-evolution-governance.md` und `docs/specs/governed-self-evolution/` (insbesondere `GOVERNANCE_BOUNDARY_SPEC.md`, `DOMAIN_CONTRACTS.md`).
-- **AP-3-Implementierungsauftrag:** diese Datei; **Funnel-/Ist-Abgleich:** `.claude/os-funnel/PLAN.md` und `.claude/os-funnel/governed-evolution.md`.
-- In AP-3a die **beidseitigen Querverweise** zwischen diesen Spec-Familien herstellen, ohne bereits angenommene Architekturregeln zu überschreiben. Den Cross-Tenant-Widerspruch ausdrücklich beheben; Änderungen an ADR 0010/Governance Boundary nur in eigenem prüfbaren Dokumentationsschritt mit Owner-Review.
-- E-GE2 (Vier-Augen/Solo 72 h) und E-GE7/E-GE8 (Proposal-Typ/Approval-Gate) gehören zur späteren Governed-Evolution-Implementierung **nach** AP-3. Sie sind keine heimlichen AP-3-Migrationsbestandteile.
-
-## 8. Definition of Done / Abschlussbericht
-
-Für jeden **separat freigegebenen** Phasen-PR berichten: aktuelle `main`-SHA, Scope, Dateien/Zeilen, Schema-Diff, Rollen und Tenant-Bindung, Transaktions-/CAS-Garantie, Evidence-Kette, Policy-Version vs. Snapshot-Fingerprint, Backfill-/Rollback-Konzept, Kompatibilitätsprüfung, tatsächlich ausgeführte Tests mit Ergebnissen, weiterhin offene Risiken und ausdrücklich ausstehende Owner-GOs.
-
-**AP-3a DONE:** Dokumentationsmatrix und Entscheidungen nachvollziehbar, nur lesende Repo-Recherche durchgeführt; Produktions-SQL entweder gesondert freigegeben/ausgeführt oder ausdrücklich offen. **AP-3b/c/d sind durch diesen Auftrag nicht begonnen und nicht freigegeben.**
-
-Kein „live“, „revisionssicher“, „production-ready“ oder „atomar“ ohne Test und Laufzeitnachweis. **Kein Merge / kein Deploy / keine Migration allein wegen dieses Auftrags.**
+Teilpaket · Bezug auf E-AP0–E-AP4 · gemessener `main`-Hash · geänderte Dateien · neue Tabellen/Trigger mit RLS-Beschreibung · Testfälle mit Ergebnis · was ist **live** (nichts Kundensichtbares) / **preview** / **coming soon** (Governed Evolution bleibt Coming Soon) · welche Checks liefen und welche nicht.

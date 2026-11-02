@@ -135,8 +135,8 @@ export function ImpressumPage() {
         },
         {
           heading: 'Umsatzsteuer',
-          // TODO(Dominik): USt-IdNr. ergänzen, sobald vergeben.
-          body: ['Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.'],
+          // Kleinunternehmer nach § 19 UStG (Stand 2026-11-02); Wortlaut = PRICING_TAX_NOTE_EXEMPT.
+          body: ['Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'],
         },
         {
           heading: 'Hinweis',

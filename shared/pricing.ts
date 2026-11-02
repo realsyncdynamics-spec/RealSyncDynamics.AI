@@ -472,11 +472,10 @@ export interface Plan {
    */
   yearlyCheckoutUnavailable?: boolean;
   /**
-   * `true` = der Monatspreis erscheint auf jeder Oberfläche ausdrücklich als
-   * Nettopreis („1.498 €/Monat netto“), nicht nur über den Steuerhinweis im
-   * Fußtext. Enterprise (Dominik 2026-10-24): ab Tag 1 kostenpflichtig, ohne
-   * Testphase und nicht Teil der Beta. Anzeige über `monthlyPriceSuffix()` und
-   * `monthlyPriceText()`.
+   * `true` = der Monatspreis erscheint ausdrücklich als Nettopreis, aber nur
+   * bei Regelbesteuerung (`PRICING_TAX_MODE = 'EU_STANDARD'`). Unter § 19 UStG
+   * (`EXEMPT`, seit 2026-11-02) setzt kein Plan das Feld. Anzeige über
+   * `monthlyPriceSuffix()` und `monthlyPriceText()`.
    */
   netPriceLabel?: boolean;
   currency: 'EUR';
@@ -858,7 +857,7 @@ export const PLANS: Plan[] = [
   },
 
   // ── Enterprise — Self-Service-Checkout ──────────────────────────────────
-  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat (netto) direkt über
+  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat direkt über
   // Checkout verkauft, ohne Testphase. Bis dahin war der Plan ein Vertragsplan
   // (inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED) mit `-1` auf
   // allen Kontingenten. Ohne Vertrag braucht er endliche Kontingente — siehe
@@ -873,7 +872,6 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
-    netPriceLabel: true,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -2994,14 +2992,22 @@ export function formatPriceEur(value: number): string {
   }).format(value);
 }
 
-/** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
-export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
-  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+/**
+ * „netto“ nur bei Regelbesteuerung. Im Modus `EXEMPT` (§ 19 UStG) gibt es
+ * keine Umsatzsteuer und damit keinen Nettopreis — dort nie „netto“.
+ */
+function showsNetLabel(plan: Pick<Plan, 'netPriceLabel'>): boolean {
+  return Boolean(plan.netPriceLabel) && PRICING_TAX_MODE === 'EU_STANDARD';
 }
 
-/** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
+/** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel` unter Regelbesteuerung, sonst „/ Monat“. */
+export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
+  return showsNetLabel(plan) ? '/ Monat netto' : '/ Monat';
+}
+
+/** Monatspreis als Fließtext, z. B. „1.498 €/Monat“ (ohne „ab“). */
 export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
-  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${showsNetLabel(plan) ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
@@ -3034,17 +3040,18 @@ export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) –
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
-  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+  'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**
  * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
+ * Stand 2026-11-02 (Dominik Steiner): Kleinunternehmer nach § 19 UStG.
  * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

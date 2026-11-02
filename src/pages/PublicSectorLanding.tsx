@@ -33,7 +33,7 @@ export function PublicSectorLanding() {
         jsonLd: {
           headline: 'KI in der öffentlichen Verwaltung — EU-souverän + AI Act konform',
           description:
-            'Behörden-KI ist High-Risk und braucht durchgehende EU-Datenresidenz. Audit-Trail, DSFA, On-Premise-Option.',
+            'Behörden-KI ist High-Risk und braucht durchgehende EU-Datenresidenz. Audit-Trail, DSFA.',
           datePublished: '2026-05-06',
         },
       }}
@@ -95,13 +95,6 @@ export function PublicSectorLanding() {
           <li className="flex items-start gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-titanium-50">On-Premise-Variante</strong> (Docker-Compose +
-              Lizenz) für Behörden mit reiner Inhouse-Anforderung
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-            <span>
               <strong className="text-titanium-50">BFSG/BITV-konforme UI</strong> — barrierefrei, html
               lang attr, screenreader-tested
             </span>
@@ -125,7 +118,7 @@ export function PublicSectorLanding() {
       <Section title="Beschaffungs-tauglich">
         <p>
           Pricing nach EVB-IT- oder vergleichbarem Behörden-Vertrag möglich. Enterprise-Tier auf
-          Anfrage mit SLA, On-Premise, Custom-Onboarding, Schulungen.{' '}
+          Anfrage mit SLA, Custom-Onboarding, Schulungen.{' '}
           <strong className="text-titanium-50">ISO 27001 / SOC 2 Type 1 in Vorbereitung</strong> für
           2027.
         </p>

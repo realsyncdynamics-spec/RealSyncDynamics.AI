@@ -695,7 +695,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/oeffentliche-verwaltung': {
     title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSync Dynamics AI',
     description:
-      'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault, On-Premise-Option.',
+      'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault.',
     canonical: `${SITE_URL}/oeffentliche-verwaltung`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -706,7 +706,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/behoerden': {
     title: 'Behörden-KI — IT-Grundschutz, DSGVO + AI-Act | RealSync Dynamics AI',
     description:
-      'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault, On-Premise-Option.',
+      'Für Bundes-, Landes- und Kommunalverwaltung: IT-Grundschutz, BSI C5, DSGVO + AI-Act-Hochrisiko-Klassifikation, Evidence Vault.',
     canonical: `${SITE_URL}/oeffentliche-verwaltung`,
   },
   '/online-shops': {
@@ -757,13 +757,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/bildung': {
     title: 'Bildungs-Compliance — DSGVO + AI Act für EduTech | RealSync Dynamics AI',
     description:
-      'Für EduTech und Hochschulen: DSGVO-konforme Lernplattformen, AI-Act-Klassifikation für adaptive Tests + Proctoring, KMK-Konformität, On-Premise-Option.',
+      'Für EduTech und Hochschulen: DSGVO-konforme Lernplattformen, AI-Act-Klassifikation für adaptive Tests + Proctoring, KMK-Konformität.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/education': {
     title: 'Education Compliance — GDPR + EU AI Act for EdTech | RealSync Dynamics AI',
     description:
-      'For EdTech, schools, and universities: GDPR-compliant learning platforms, EU AI Act classification for adaptive testing + proctoring, on-premise option.',
+      'For EdTech, schools, and universities: GDPR-compliant learning platforms, EU AI Act classification for adaptive testing + proctoring.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/saas-anbieter': {

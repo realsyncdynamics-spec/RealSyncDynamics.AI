@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const workflow=JSON.parse(fs.readFileSync(path.join(root,'deploy/ollama-traefik/n8n-workflows/06-operations-report-0800.json'),'utf8'));
+const workflow=JSON.parse(fs.readFileSync(path.join(root,'06-operations-report-0800.json'),'utf8'));
 const node=(name)=>workflow.nodes.find(n=>n.name===name);
 function run(name,{input=[],nodes={},strictMissing=false}={}){
   const context={$input:{first:()=>({json:input[0]||{}}),all:()=>input.map(json=>({json}))},

@@ -27,6 +27,7 @@ Schedule Trigger ─► HTTP Request ─► Supabase Edge Function ─► Supaba
 | `03-outreach-draft-1400.json` | täglich 14:00 | *(nur Entwurf)*        | DSGVO-geprüfte Outreach-**Entwürfe** |
 | `04-mrr-report-1700.json`     | täglich 17:00 | `business-metrics-cron`| MRR/Pipeline-Report |
 | `05-healthcheck-hourly.json`  | stündlich     | `health`               | Infrastruktur-Healthcheck |
+| `operations-copilot/06-operations-report-0800.json` | täglich 08:00 | GitHub-API (GET), `health`, Uptime Kuma `/metrics` | Read-only Operations-Report (Entwurf, keine Schreibaktionen) |
 
 Zeiten in `Europe/Berlin` (Container-`TZ` ist bereits gesetzt).
 
@@ -71,3 +72,19 @@ Versand bleibt ein **separater, manuell freizugebender** Schritt.
 
 > **STOP:** Workflow 03 niemals so erweitern, dass er ohne menschliche
 > Freigabe echte E-Mails versendet. Echtversand erst nach Rechts-Review.
+
+## Operations Copilot (Workflow 06)
+
+`operations-copilot/` enthält den Workflow-Export und die Quelltexte der drei
+Code-Nodes (`prepare_checks_code.js`, `collect_checks_code.js`,
+`build_report_code.js`). Die Quelltexte müssen byte-identisch zum `jsCode` im
+Export sein; das prüft der Regressionstest:
+
+```bash
+node --test deploy/ollama-traefik/n8n-workflows/operations-copilot/test/operations-copilot-workflow.test.cjs
+```
+
+Benötigte Credentials in n8n (nicht im Repo): GitHub Bearer Token (nur lesend:
+Pull requests, Checks, Actions, Issues) und Uptime Kuma Basic Auth. Env-Variablen:
+`REALSYNC_HEALTH_URL`, optional `UPTIME_KUMA_BASE_URL` (fehlt sie, wird der
+Abruf übersprungen und als Lücke gemeldet). Der Workflow bleibt `active: false`.

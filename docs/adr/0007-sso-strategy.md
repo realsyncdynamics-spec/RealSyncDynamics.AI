@@ -1,11 +1,11 @@
 # ADR 0007 — SSO-Strategie (OIDC zuerst, SAML danach)
 
-> **Status:** Accepted · 2026-05-30
+> **Status:** Accepted · 2026-05-30 · Katalog: Preview, nur auf Anfrage, kein Self-Service (E-V8, 01.11.2026)
 > **Related:** ADR 0004, ADR 0005 (Rollen-Mapping), ADR 0009 (Public Sector)
 
 ## Kontext
 
-SSO ist Supabase-nativ (`signInWithSSO`, SAML 2.0 + OIDC). IST: 0 Provider. SSO ist im Enterprise-Vertrieb häufig **der** Dealbreaker. SAML-SSO erfordert Supabase-Pro/Team + SSO-Add-on (Kosten, vor Umsetzung zu klären).
+SSO ist Supabase-nativ (`signInWithSSO`, SAML 2.0 + OIDC). IST: 0 Provider. SAML-SSO erfordert Supabase-Pro/Team + SSO-Add-on (Kosten klären).
 
 ## Entscheidung
 

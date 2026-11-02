@@ -25,7 +25,7 @@ import { POLICY_PACKS, POLICY_PACKS_NEXT } from '../policy-packs';
  *  - Enterprise „Auf Anfrage“ über `tierPriceLabel` — das Artefakt nannte
  *    den internen Listenpreis für einen Plan, der nur per Vertrag zu haben ist.
  *  - TISAX/DORA als Coming Soon (`policy-packs.ts`), nicht als aktive Packs.
- *  - Enterprise Single Sign-On als Coming Soon (`enterprise-sso` in `implementation-status.ts`, ADR 0007).
+ *  - Enterprise Single Sign-On als Preview, nur auf Anfrage (`enterprise-sso` in `implementation-status.ts`, E-V8, ADR 0007).
  *  - Plattform-, Tool- und Roadmap-Status aus `implementation-status.ts`;
  *    die Listen im Artefakt waren ein älterer Stand des Registers.
  *  - Interne Links statt absoluter URLs auf die Live-Domain.
@@ -192,7 +192,7 @@ export function enterpriseContent() {
   const { plan } = tier;
   const ssoLive = statusOf('enterprise-sso') === 'live';
   return {
-    tagline: ssoLive ? tier.tagline : tier.tagline.replace(/SSO\.$/, 'SSO (Coming Soon).'),
+    tagline: ssoLive ? tier.tagline : tier.tagline.replace(/SSO\.$/, 'SSO (Preview, auf Anfrage).'),
     subline: tier.subline,
     price: tierPriceLabel(tier),
     suffix: tier.priceOnRequest ? '' : tier.priceSuffix,
@@ -212,14 +212,14 @@ export function enterpriseContent() {
         d: `${LIVE_PACKS.join(', ')}. ${NEXT_PACKS.join(' und ')}: Coming Soon.`,
       },
       {
-        t: ssoLive ? 'Single Sign-On' : 'Single Sign-On · Coming Soon',
+        t: ssoLive ? 'Single Sign-On' : 'Single Sign-On · Preview, auf Anfrage',
         d: ssoLive
           ? `Zentrale Rechteverwaltung, ${plan.limits.evidenceStorageGb} GB Nachweisspeicher.`
-          : `Zentrale Rechteverwaltung, ${plan.limits.evidenceStorageGb} GB Nachweisspeicher. Single Sign-On (SAML/OIDC): Coming Soon (Geplant).`,
+          : `Zentrale Rechteverwaltung, ${plan.limits.evidenceStorageGb} GB Nachweisspeicher. Single Sign-On (SAML/OIDC): Preview, nur auf Anfrage.`,
       },
     ],
     included: plan.features.multi_tenant_reseller.map((item) =>
-      !ssoLive && item === 'Single Sign-On' ? 'Single Sign-On (Coming Soon)' : item,
+      !ssoLive && item === 'Single Sign-On' ? 'Single Sign-On (Preview, auf Anfrage)' : item,
     ),
   };
 }

@@ -673,10 +673,10 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'enterprise-sso',
     name: 'Enterprise Single Sign-On (SSO)',
-    status: 'coming-soon',
+    status: 'preview',
     group: 'runtime',
     description:
-      'SSO-/SAML-/OIDC-Provider-Anbindung (Entra ID, Google Workspace, Okta) ist geplant (ADR 0007): 0 aktive Provider, noch kein signInWithSSO, kein sso-provision und keine tenant_sso_domains-Tabelle.',
+      'Preview, nur auf Anfrage (E-V8, 01.11.2026; ADR 0007): kein Self-Service-Build. SSO-/SAML-/OIDC-Anbindung (Entra ID, Google Workspace, Okta) wird je Enterprise-Anfrage geprüft. Stand: 0 aktive Provider, noch kein signInWithSSO, kein sso-provision und keine tenant_sso_domains-Tabelle.',
     evidence: [
       'docs/adr/0007-sso-strategy.md',
       'docs/adr/0004-enterprise-identity.md',
@@ -767,15 +767,6 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'coming-soon',
     group: 'runtime',
     description: 'Analyze Page / GDPR / AI Act / Evidence — Spec only, keine Fake-Extension.',
-    evidence: ['docs/product/realsync-agent-os.md'],
-    showOnRoadmap: true,
-  },
-  {
-    id: 'agent-os-hostinger-workers',
-    name: 'Agent OS — Hostinger Worker Runtime',
-    status: 'coming-soon',
-    group: 'runtime',
-    description: 'Zukünftige Worker-Runtime; Cloudflare Edge bleibt Deploy-Pfad.',
     evidence: ['docs/product/realsync-agent-os.md'],
     showOnRoadmap: true,
   },

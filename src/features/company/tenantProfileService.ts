@@ -18,9 +18,11 @@ export async function syncTenantProfile(tenantId: string): Promise<{ success: bo
     if (profile.industry) {
       updates.industry = profile.industry;
     }
-    if (profile.companySize) {
-      updates.company_size = profile.companySize;
-    }
+    // companySize (Bucket wie '10-49') bleibt bewusst lokal: public.tenants hat
+    // keine Spalte company_size (Prod-Befund 29.10.2026). Der Schreibversuch ließ
+    // das gesamte UPDATE scheitern — auch industry wurde nie gespeichert.
+    // Die numerische Mitarbeiterzahl lebt in org_size_employees (SetupAssistant,
+    // activationApi); ein Bucket wird nicht in eine erfundene Zahl übersetzt.
 
     if (Object.keys(updates).length === 0) {
       return { success: true }; // Nothing to sync

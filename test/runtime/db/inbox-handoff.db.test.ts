@@ -21,9 +21,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Client } from 'pg';
-import { closeDb, createTenantWithMember, getDbUrl, openDb, type DbCtx } from './db-helpers';
+import { closeDb, createTenantWithMember, getDbUrl, openDb, requireDbOrFail, type DbCtx } from './db-helpers';
 
-const skip = !getDbUrl();
+const skip = !requireDbOrFail('inbox handoff');
 const d = skip ? describe.skip : describe;
 
 interface PgError extends Error { code?: string }

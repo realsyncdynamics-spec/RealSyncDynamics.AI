@@ -22,7 +22,7 @@ test.describe('Unternehmensseite – öffentliche Interaktionen', () => {
     const link = page.locator('#tpl-go');
     await expect(link).toHaveAttribute('href', '/frontend-builder?vorlage=handwerk#builder');
     await link.click();
-    await expect(page).toHaveURL(/\\/frontend-builder\\?vorlage=handwerk#builder$/);
+    await expect(page).toHaveURL(/\/frontend-builder\?vorlage=handwerk#builder$/);
     await expect(page.getByText('Vorlagenauswahl aus der Unternehmensseite übernommen')).toBeVisible();
   });
 

@@ -14,6 +14,9 @@ Sie ist kein Teil der SPA: Cloudflare Pages liefert `public/unternehmen/index.ht
 - **Status und Preise:** Produktstatus nur nach `src/product/implementation-status.ts`
   (Voice = `coming-soon` → „geplant“, Builder = `preview`). Beträge nur aus `shared/pricing.ts`.
   Die CI-Claim-Prüfungen scannen `src/`, nicht diese Datei — bei Textänderungen selbst gegenprüfen.
+- **EU-Aussagen:** Belegt ist „Datenbank und Nachweise in der EU (Supabase, Frankfurt am Main)“.
+  Nicht „Hosting/Daten in Europa“ pauschal: Auslieferung über Cloudflare (global), KI-Aufrufe
+  auch an US-Anbieter, siehe `/legal/sub-processors`. Wortlaut wie auf der Startseite.
 - **Demos** sind Browser-Simulationen und als solche gekennzeichnet; sie erzeugen keine Hashes
   oder Kennzahlen, die wie Messwerte aussehen.
 - **Kontaktformular:** `POST` an die Edge Function `sales-lead` mit `source: 'company-landing'`.

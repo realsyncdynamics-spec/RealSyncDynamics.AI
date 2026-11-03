@@ -189,7 +189,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Wann gilt der AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.',
+        text: 'Stufenweise: (1) Verbotene Praktiken und KI-Kompetenz: 2. Februar 2025. (2) GPAI-Pflichten und Governance: 2. August 2025. (3) Allgemeine Anwendung, u. a. die meisten Transparenzpflichten nach Art. 50: 2. August 2026. (4) Hochrisiko-Systeme nach Anhang III: 2. Dezember 2027. (5) Hochrisiko-KI in regulierten Produkten nach Anhang I: 2. August 2028. Die Hochrisiko-Fristen hat die Verordnung (EU) 2026/1744 (Digital Omnibus) verschoben.',
       },
     },
     {

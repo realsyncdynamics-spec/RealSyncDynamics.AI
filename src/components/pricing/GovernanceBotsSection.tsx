@@ -1,6 +1,10 @@
 import { Check, MessageCircle, Zap, MessageSquare, Globe, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SELLABLE_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
+import { STATUS_LABEL, isImplementationLive } from '../../product/implementation-status';
+
+/** Telefonie ist ein eigener Registry-Eintrag; solange er nicht live ist, wird Voice gekennzeichnet. */
+const VOICE_LABEL = isImplementationLive('voice-telephony') ? 'Voice' : 'Voice (Coming Soon)';
 
 /**
  * Governance-Bots Section — zeigt Bot-Quotas pro Tier + Add-on-Karten
@@ -106,7 +110,7 @@ export function GovernanceBotsSection() {
                                   slack: 'Slack',
                                   teams: 'Teams',
                                   email: 'E-Mail',
-                                  voice: 'Voice'
+                                  voice: VOICE_LABEL
                                 };
                                 return names[c] || c;
                               }).join(', ')
@@ -190,7 +194,7 @@ export function GovernanceBotsSection() {
         {BOT_ADDONS.length > 0 && (
           <div>
             <h3 className="font-display font-bold text-xl text-titanium-50 mb-8">
-              Bot Add-ons (zusätzlich buchbar)
+              Bot Add-ons
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {BOT_ADDONS.map((addon) => (
@@ -199,7 +203,14 @@ export function GovernanceBotsSection() {
                   className="p-6 bg-obsidian-900/80 border border-silver-700/40 rounded-none flex flex-col"
                 >
                   <div className="mb-4">
-                    <div className="font-bold text-titanium-50 text-base mb-1">{addon.name}</div>
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <div className="font-bold text-titanium-50 text-base">{addon.name}</div>
+                      {addon.availability !== 'live' && (
+                        <span className="px-2 py-0.5 border border-amber-500/50 text-amber-300 text-[10px] font-mono uppercase tracking-wider rounded-none">
+                          {STATUS_LABEL[addon.availability]}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[12px] text-silver-400">{addon.description}</p>
                   </div>
 
@@ -221,9 +232,17 @@ export function GovernanceBotsSection() {
                         {addon.priceSuffix}
                       </div>
                     </div>
-                    <div className="text-[10px] text-silver-500 italic">
-                      Für Growth, Agency, Enterprise und Partner
-                    </div>
+                    {addon.availability === 'live' ? (
+                      <div className="text-[10px] text-silver-500 italic">
+                        {addon.availableForNames.length > 0
+                          ? `Zubuchbar für ${addon.availableForNames.join(', ')}`
+                          : 'Derzeit für keinen Plan zubuchbar'}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-amber-300/90">
+                        Geplanter Listenpreis. Derzeit nicht buchbar — die Leistung ist noch nicht produktiv verfügbar.
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

@@ -161,3 +161,29 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(enterprise.featureGroups.multi_tenant_reseller).toContain('Single Sign-On (Preview, auf Anfrage)');
   });
 });
+
+describe('Bot-Add-ons — Status aus der Implementierungs-Registry', () => {
+  it('führt Voice nicht als live, solange Telefonie nicht live ist', async () => {
+    const { BOT_ADDONS, addonAvailability } = await import('../../src/config/pricing');
+    const { getImplementation } = await import('../../src/product/implementation-status');
+    const telephony = getImplementation('voice-telephony');
+    expect(telephony).toBeDefined();
+    const voice = BOT_ADDONS.find((addon) => addon.id === 'voice');
+    expect(voice).toBeDefined();
+    expect(voice?.availability).toBe(telephony?.status);
+    if (telephony?.status !== 'live') {
+      expect(addonAvailability('voice')).not.toBe('live');
+    }
+  });
+
+  it('nennt nur Pläne, für die das Add-on laut SSoT angeboten wird', async () => {
+    const { BOT_ADDONS } = await import('../../src/config/pricing');
+    const { ADDONS } = await import('../../shared/pricing');
+    for (const addon of BOT_ADDONS) {
+      const source = ADDONS.find((a) => a.id === addon.id);
+      expect(addon.availableForNames).toEqual(
+        (source?.availableFor ?? []).map((id) => planById(id)?.name),
+      );
+    }
+  });
+});

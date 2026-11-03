@@ -27,8 +27,8 @@ const faqs: FaqEntry[] = [
   { category: 'pflichten', q: 'Was muss in der Technischen Dokumentation stehen?', a: 'Anhang IV gibt 9 Punkte vor: System-Beschreibung, Entwicklungsmethodik, Trainingsdaten-Quellen + Bias-Mitigation, Performance-Metriken, Test-Verfahren, Risiko-Management-Maßnahmen, Cybersecurity, Konformitätsbewertung, EU-Konformitätserklärung.', ref: 'AI Act Art. 11 + Anhang IV' },
 
   // Fristen
-  { category: 'fristen', q: 'Wann gilt der AI Act?', a: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.', ref: 'AI Act Art. 113' },
-  { category: 'fristen', q: 'Was muss bis 2. August 2026 passieren?', a: 'Wer als Anbieter oder Betreiber eines High-Risk-KI-Systems im Markt ist, muss spätestens dann compliance-ready sein: Conformity Assessment, CE-Kennzeichnung, Risk-Management, Doku, Logging, Human Oversight. Wer es nicht ist, riskiert Marktrückzug + Bußgeld.', ref: 'AI Act Art. 113 lit. b' },
+  { category: 'fristen', q: 'Wann gilt der AI Act?', a: 'Stufenweise: (1) Verbotene Praktiken und KI-Kompetenz: 2. Februar 2025. (2) GPAI-Pflichten und Governance: 2. August 2025. (3) Allgemeine Anwendung, u. a. die meisten Transparenzpflichten nach Art. 50: 2. August 2026. (4) Hochrisiko-Systeme nach Anhang III: 2. Dezember 2027. (5) Hochrisiko-KI in regulierten Produkten nach Anhang I: 2. August 2028. Die Hochrisiko-Fristen hat die Verordnung (EU) 2026/1744 (Digital Omnibus) verschoben.', ref: 'AI Act Art. 113 i. d. F. VO (EU) 2026/1744' },
+  { category: 'fristen', q: 'Was muss bis 2. Dezember 2027 passieren?', a: 'Wer als Anbieter oder Betreiber ein Hochrisiko-KI-System nach Anhang III im Markt hat, muss spätestens dann die zentralen Pflichten erfüllen: Konformitätsbewertung, CE-Kennzeichnung, Risikomanagement, Dokumentation, Logging, Human Oversight. Für KI in regulierten Produkten nach Anhang I gilt der 2. August 2028. KI-Kompetenz (Art. 4) und die meisten Transparenzpflichten (Art. 50) gelten bereits heute.', ref: 'AI Act Art. 113 i. d. F. VO (EU) 2026/1744' },
   { category: 'fristen', q: 'Was passiert mit GPAI-Modellen ab 2. August 2025?', a: 'Anbieter von General-Purpose AI Models (OpenAI, Anthropic, Mistral, Meta) müssen Trainingsdaten-Zusammenfassungen veröffentlichen, Copyright respektieren, technische Doku liefern. Bei „systemic risk"-Modellen (FLOPS > 10²⁵) zusätzlich Stresstest + Cyber-Risk-Mitigation.', ref: 'AI Act Art. 53 + Art. 55' },
 
   // Sanktionen
@@ -64,7 +64,7 @@ export function AiActFaq() {
           <article>
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                <Clock className="h-3 w-3" /> Stand: Mai 2026 · Anwendung ab 2. August 2026
+                <Clock className="h-3 w-3" /> Stand: November 2026 · Hochrisiko (Anhang III) ab 2. Dezember 2027
               </div>
               <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
                 EU AI Act — <span className="text-security-400">{faqs.length} Fragen</span> für Entscheider
@@ -101,11 +101,11 @@ export function AiActFaq() {
                 <AlertTriangle className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
                 <div>
                   <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-                    Die 87 Tage bis zum 2. August 2026 reichen nicht für Eigenbau.
+                    Bis zum 2. Dezember 2027 brauchen Hochrisiko-Systeme belastbare Nachweise.
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
-                    RealSync Dynamics liefert Audit-Log + Human-Oversight-Workflow + Risk-Klassifikation als SaaS.
-                    EU-Datenresidenz, EU-Hosting in Frankfurt, optional self-hosted für sensible Cases.
+                    RealSync Dynamics AI liefert Audit-Log, Human-Oversight-Workflow und Risiko-Klassifikation als SaaS,
+                    mit EU-Datenresidenz und Hosting in Frankfurt.
                   </p>
                 </div>
               </div>

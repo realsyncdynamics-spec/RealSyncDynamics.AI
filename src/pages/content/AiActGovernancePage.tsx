@@ -6,7 +6,7 @@ export function AiActGovernancePage() {
       eyebrow="AI Act Governance"
       title="EU AI Act Governance ohne Excel."
       description="Technische Umsetzung der EU-AI-Act-Pflichten: Risikoklassifizierung nach Annex III, Obligation-Engine, Annex-IV-Generator, Post-Market-Monitoring."
-      intro="Der EU AI Act tritt schrittweise ab August 2026 in Kraft. Für Anbieter und Betreiber von Hochrisiko-KI-Systemen entstehen konkrete technische Pflichten — Risikomanagement (Art. 9), Datenqualität (Art. 10), technische Dokumentation (Art. 11), Logging (Art. 12), Transparenz (Art. 13), Human Oversight (Art. 14), Robustheit (Art. 15). Dieser Hub beschreibt, wie RealSyncDynamics.AI diese Pflichten als laufende Governance-Runtime abbildet — nicht als jährlichen Word-Export."
+      intro="Der EU AI Act ist seit dem 1. August 2024 in Kraft und gilt gestaffelt: Verbote und KI-Kompetenzpflicht seit Februar 2025, GPAI-Pflichten seit August 2025, die übrigen Vorschriften seit dem 2. August 2026. Die zentralen Hochrisiko-Pflichten gelten nach der Verschiebung durch Verordnung (EU) 2026/1744 ab dem 2. Dezember 2027 (Anhang III) bzw. 2. August 2028 (Anhang I). Für Anbieter und Betreiber von Hochrisiko-KI-Systemen entstehen konkrete technische Pflichten — Risikomanagement (Art. 9), Datenqualität (Art. 10), technische Dokumentation (Art. 11), Logging (Art. 12), Transparenz (Art. 13), Human Oversight (Art. 14), Robustheit (Art. 15). Dieser Hub beschreibt, wie RealSyncDynamics.AI diese Pflichten als laufende Governance-Runtime abbildet — nicht als jährlichen Word-Export."
       related={[
         { to: '/agent-governance', label: 'Agent Governance →' },
         { to: '/evidence-vault', label: 'Evidence Vault →' },
@@ -17,11 +17,15 @@ export function AiActGovernancePage() {
       <H2>Klassifizierung statt Vermutung</H2>
       <P>
         Der Kern der AI-Act-Compliance ist nicht der Output — es ist die Frage: <em>welche Risikoklasse hat
-        dieser Usecase?</em> Annex III listet acht Bereiche, die automatisch als Hochrisiko gelten:
-        Biometrik, kritische Infrastruktur, Bildung, Beschäftigung, essentielle private und
-        öffentliche Dienste, Strafverfolgung, Migration und Justizverwaltung. Wer ein Recruiting-Tool
-        mit Auto-Screening betreibt, ist nach §4(a) automatisch in Annex III. Wer ein Modell für
-        Krisen-Triage in der Telemedizin laufen lässt, ist in §5.
+        dieser Usecase?</em> Annex III listet acht Bereiche: Biometrik, kritische Infrastruktur,
+        Bildung, Beschäftigung, essentielle private und öffentliche Dienste, Strafverfolgung,
+        Migration und Justizverwaltung. Ein System aus diesen Bereichen gilt grundsätzlich als
+        hochriskant, aber nicht automatisch: Nach Art. 6 Abs. 3 ist es keines, wenn es kein
+        erhebliches Risiko für Gesundheit, Sicherheit oder Grundrechte birgt, etwa weil es nur eine
+        eng begrenzte Verfahrensaufgabe erfüllt oder eine menschliche Entscheidung lediglich
+        vorbereitet. Diese Ausnahme greift nie bei Profiling natürlicher Personen und muss vom
+        Anbieter dokumentiert werden (Art. 6 Abs. 4). Ein Recruiting-Tool mit automatischem
+        Screening fällt typischerweise unter Annex III Nr. 4 lit. a.
       </P>
       <P>
         Der AI-Risk-Classifier in RealSyncDynamics.AI ist deterministisch: Annex I und III sind als
@@ -62,9 +66,17 @@ export function AiActGovernancePage() {
         <li><strong>Performance-Regression-Detector</strong> — vergleicht die aktuelle Accuracy auf Canary-Inputs gegen die Release-Zeit-Accuracy.</li>
       </UL>
       <P>
-        Beide Detektoren öffnen bei Hochrisiko-Usecases automatisch einen AI-Act-Art.-62-Incident.
-        Der Incident-Workflow hat einen 72-Stunden-Timer für die Meldung an die zuständige
-        Behörde (kombiniert mit GDPR Art. 33, wenn personenbezogene Daten betroffen sind).
+        Status: Die beiden Detektoren und ein automatischer Vorfall-Workflow sind derzeit nicht als
+        Live-Funktion im Statuskatalog geführt. Diese Seite beschreibt das Zielbild, keine
+        zugesicherte Leistung.
+      </P>
+      <P>
+        Rechtlich gilt: Schwerwiegende Vorfälle mit Hochrisiko-KI meldet der Anbieter nach
+        Art. 73 an die Marktüberwachungsbehörde, unverzüglich und spätestens 15 Tage nach
+        Kenntnis. Bei weitverbreiteten Verstößen oder schweren Störungen kritischer Infrastruktur
+        gilt eine Frist von 2 Tagen, bei Todesfällen von 10 Tagen. Betreiber informieren den
+        Anbieter (Art. 26 Abs. 5). Sind personenbezogene Daten betroffen, läuft daneben die
+        72-Stunden-Frist nach Art. 33 DSGVO.
       </P>
 
       <H2>Annex IV als Live-Dokument</H2>

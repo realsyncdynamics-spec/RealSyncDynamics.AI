@@ -6,7 +6,6 @@ permissions:
   contents: read
 jobs:
   quality:
-    if: false # Browser-only retry; full 8k-unit quality run is recorded in the preceding QA run.
     name: Landing lint, unit and release guards (no deployment)
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -32,6 +31,7 @@ jobs:
       - name: Migration collisions (read-only)
         run: npm run check:migration-collisions
   browser:
+    if: false # Last change only shortens the SEO meta-description; browser already green.
     name: Vite preview and real mobile/desktop browser QA
     runs-on: ubuntu-latest
     timeout-minutes: 30

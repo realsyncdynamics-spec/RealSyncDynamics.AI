@@ -6,11 +6,48 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import {
   listConversations, listMessages, listAppointments, listOrders,
-  setAppointmentStatus, setOrderStatus,
+  setAppointmentStatus, setOrderStatus, getConversationIntake,
+  takeOverConversation, resolveConversation,
 } from './api';
-import type { BotConversation, BotMessage, BotAppointment, BotOrder } from './types';
+import type {
+  BotConversation, BotConversationIntake, BotConversationStatus, BotMessage, BotAppointment, BotOrder, InboxRpcResult,
+} from './types';
 
 type Tab = 'conversations' | 'appointments' | 'orders';
+
+/** Filter im Posteingang. „Neu" ist der DB-Status `open` (E10 — kein Wert `neu`). */
+type InboxFilter = 'open' | 'in_bearbeitung' | 'erledigt' | 'all';
+
+const INBOX_FILTERS: ReadonlyArray<{ key: InboxFilter; label: string }> = [
+  { key: 'open', label: 'Neu' },
+  { key: 'in_bearbeitung', label: 'In Bearbeitung' },
+  { key: 'erledigt', label: 'Erledigt' },
+  { key: 'all', label: 'Alle' },
+];
+
+const STATUS_LABEL: Record<BotConversationStatus, string> = {
+  open: 'Neu',
+  in_bearbeitung: 'In Bearbeitung',
+  erledigt: 'Erledigt',
+  closed: 'Geschlossen',
+};
+
+const CHANNEL_LABEL: Record<string, string> = {
+  form: 'Formular',
+  chat: 'Web-Chat',
+  voice: 'Telefon',
+  whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
+};
+
+export function channelLabel(channel: string): string {
+  return CHANNEL_LABEL[channel] ?? channel;
+}
+
+const RPC_HINT: Record<Exclude<InboxRpcResult, 'ok'>, string> = {
+  conflict: 'Der Status hat sich inzwischen geändert – vermutlich hat jemand anderes übernommen. Liste wurde aktualisiert.',
+  not_found: 'Konversation nicht gefunden oder keine Berechtigung.',
+};
 
 /** /app/bots/inbox — Posteingang: Konversationen, Termine, Bestellungen. */
 export function BotInboxView() {
@@ -44,7 +81,7 @@ function BotInboxInner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="flex h-14 items-center justify-between border-b border-titanium-900 bg-obsidian-900 px-4">
         <div className="flex items-center gap-3">
-          <Link to="/app/bots" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
+          <Link to="/app/bots" aria-label="Zurück zu den KI-Mitarbeitern" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -106,35 +143,187 @@ function useAsync<T>(loader: () => Promise<T>, deps: unknown[]): { data: T | nul
 }
 
 function ConversationsPane({ tenantId }: { tenantId: string }) {
-  const { data: convos, loading, error } = useAsync<BotConversation[]>(() => listConversations(tenantId), [tenantId]);
+  const [filter, setFilter] = useState<InboxFilter>('open');
+  const { data: convos, loading, error, reload } = useAsync<BotConversation[]>(
+    () => listConversations(tenantId, 100, filter === 'all' ? undefined : filter), [tenantId, filter]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [hint, setHint] = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
 
-  if (loading) return <p className="font-mono text-xs text-titanium-500">Lade…</p>;
-  if (error) return <ErrorBox msg={error} />;
-  if (!convos || convos.length === 0) return <EmptyBox msg="Noch keine Konversationen." />;
+  const current = convos?.find((c) => c.id === selected) ?? null;
+
+  async function act(kind: 'take_over' | 'resolve', id: string) {
+    setHint(null);
+    try {
+      const result = kind === 'take_over' ? await takeOverConversation(id) : await resolveConversation(id);
+      if (result === 'ok') {
+        setHint({ msg: kind === 'take_over' ? 'Übernommen.' : 'Als erledigt markiert.', tone: 'ok' });
+      } else {
+        setHint({ msg: RPC_HINT[result], tone: 'error' });
+      }
+    } catch (e) {
+      setHint({ msg: (e as Error).message, tone: 'error' });
+    }
+    reload();
+  }
 
   return (
-    <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
-      <div className="space-y-1">
-        {convos.map((c) => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Status-Filter">
+        {INBOX_FILTERS.map((f) => (
           <button
-            key={c.id}
-            onClick={() => setSelected(c.id)}
-            className={`w-full border px-3 py-2 text-left transition-colors ${
-              selected === c.id ? 'border-security-500 bg-obsidian-800' : 'border-titanium-800 hover:border-titanium-600'
+            key={f.key}
+            role="tab"
+            aria-selected={filter === f.key}
+            onClick={() => { setFilter(f.key); setSelected(null); }}
+            className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              filter === f.key ? 'border-security-500 bg-obsidian-800 text-titanium-50' : 'border-titanium-800 text-titanium-500 hover:text-titanium-300'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="truncate text-xs text-titanium-200">{c.contact_label || c.external_ref || 'Anonym'}</span>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">{c.channel}</span>
-            </div>
-            <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at)}</span>
+            {f.label}
           </button>
         ))}
       </div>
-      <div>{selected ? <MessageThread tenantId={tenantId} conversationId={selected} /> : <EmptyBox msg="Konversation auswählen." />}</div>
+
+      {hint && (
+        <div
+          role="status"
+          className={`border px-3 py-2 text-xs ${hint.tone === 'ok' ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400'}`}
+        >
+          {hint.msg}
+        </div>
+      )}
+
+      {loading && !convos ? (
+        <p className="font-mono text-xs text-titanium-500">Lade…</p>
+      ) : error ? (
+        <ErrorBox msg={error} />
+      ) : !convos || convos.length === 0 ? (
+        <EmptyBox msg={filter === 'open' ? 'Keine neuen Anfragen.' : 'Keine Konversationen in diesem Filter.'} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
+          {/* Mobil: Liste ODER Detail, Desktop: beides. */}
+          <div className={`space-y-1 ${selected ? 'hidden md:block' : ''}`}>
+            {convos.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelected(c.id)}
+                className={`w-full border px-3 py-2 text-left transition-colors ${
+                  selected === c.id ? 'border-security-500 bg-obsidian-800' : 'border-titanium-800 hover:border-titanium-600'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs text-titanium-200">{c.contact_label || c.external_ref || 'Anonym'}</span>
+                  <InboxStatusChip status={c.status} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at)}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">{channelLabel(c.channel)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className={selected ? '' : 'hidden md:block'}>
+            {current ? (
+              <ConversationDetail
+                tenantId={tenantId}
+                conversation={current}
+                onBack={() => setSelected(null)}
+                onTakeOver={() => act('take_over', current.id)}
+                onResolve={() => act('resolve', current.id)}
+              />
+            ) : (
+              <EmptyBox msg="Konversation auswählen." />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function ConversationDetail({ tenantId, conversation, onBack, onTakeOver, onResolve }: {
+  tenantId: string;
+  conversation: BotConversation;
+  onBack: () => void;
+  onTakeOver: () => void;
+  onResolve: () => void;
+}) {
+  const c = conversation;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border border-titanium-800 bg-obsidian-900 px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <button onClick={onBack} className="p-1 text-titanium-400 hover:text-titanium-200 md:hidden" aria-label="Zurück zur Liste">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-sm text-titanium-100">{c.contact_label || c.external_ref || 'Anonym'}</p>
+            <p className="font-mono text-[10px] text-titanium-500">
+              {channelLabel(c.channel)} · {fmt(c.last_message_at ?? c.created_at)}
+              {c.handed_off_at ? ` · übernommen ${fmt(c.handed_off_at)}` : ''}
+              {c.resolved_at ? ` · erledigt ${fmt(c.resolved_at)}` : ''}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <InboxStatusChip status={c.status} />
+          {c.status === 'open' && (
+            <Button size="sm" variant="secondary" onClick={onTakeOver}>Übernehmen</Button>
+          )}
+          {c.status === 'in_bearbeitung' && (
+            <Button size="sm" variant="secondary" onClick={onResolve}>Erledigt</Button>
+          )}
+        </div>
+      </div>
+      <IntakeCard tenantId={tenantId} conversationId={c.id} />
+      <MessageThread tenantId={tenantId} conversationId={c.id} />
+    </div>
+  );
+}
+
+function IntakeCard({ tenantId, conversationId }: { tenantId: string; conversationId: string }) {
+  const { data, loading, error } = useAsync<BotConversationIntake | null>(
+    () => getConversationIntake(tenantId, conversationId), [tenantId, conversationId]);
+  if (loading || error || !data) return null;
+  const i = data;
+  const contact = [i.kontakt_name, i.kontakt_telefon, i.kontakt_email].filter(Boolean).join(' · ');
+  return (
+    <div className="grid gap-3 border border-titanium-800 px-4 py-3 text-xs sm:grid-cols-2">
+      {i.anliegen && (
+        <div className="sm:col-span-2">
+          <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Anliegen</p>
+          <p className="whitespace-pre-wrap text-titanium-100">{i.anliegen}</p>
+        </div>
+      )}
+      <div>
+        <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Kontakt</p>
+        <p className="text-titanium-200">{contact || '—'}</p>
+      </div>
+      <div>
+        <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Terminwunsch</p>
+        <p className="text-titanium-200">
+          {i.terminwunsch ?? (i.terminwunsch_zeit ? fmt(i.terminwunsch_zeit) : '—')}
+        </p>
+        {(i.terminwunsch || i.terminwunsch_zeit) && (
+          <p className="mt-0.5 text-[10px] text-amber-400">Wunsch der anfragenden Person – kein bestätigter Termin.</p>
+        )}
+      </div>
+      {i.einwilligung_at && (
+        <p className="font-mono text-[10px] text-titanium-600 sm:col-span-2">Einwilligung {fmt(i.einwilligung_at)}</p>
+      )}
+    </div>
+  );
+}
+
+function InboxStatusChip({ status }: { status: BotConversationStatus }) {
+  const cls = status === 'open'
+    ? 'text-amber-400 border-amber-500/40'
+    : status === 'in_bearbeitung'
+      ? 'text-security-400 border-security-500/40'
+      : status === 'erledigt'
+        ? 'text-emerald-400 border-emerald-500/40'
+        : 'text-titanium-600 border-titanium-800';
+  return <span className={`shrink-0 border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${cls}`}>{STATUS_LABEL[status] ?? status}</span>;
 }
 
 function MessageThread({ tenantId, conversationId }: { tenantId: string; conversationId: string }) {

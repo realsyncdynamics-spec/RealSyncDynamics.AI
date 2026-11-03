@@ -16,6 +16,7 @@ import type { FindingSeverity } from '../../../types/governance/finding';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import { getSupabase } from '../../../lib/supabase';
 import { TenantCustomDomainPanel } from '../../website-operations/TenantCustomDomainPanel';
+import { SiteInboxBindingPanel } from '../../website-operations/SiteInboxBindingPanel';
 import { WEBSITE_AUDIT_CTA_LABEL } from '../dashboard/dashboardSignals';
 
 interface WebsiteRow {
@@ -465,7 +466,10 @@ function _WebsiteGovernanceView() {
         )}
 
         {!signedOut && activeTenantId && (
-          <TenantCustomDomainPanel tenantId={activeTenantId} />
+          <>
+            <SiteInboxBindingPanel tenantId={activeTenantId} role={role} />
+            <TenantCustomDomainPanel tenantId={activeTenantId} />
+          </>
         )}
       </main>
 

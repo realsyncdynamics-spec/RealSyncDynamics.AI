@@ -1,7 +1,15 @@
 // Typen für das Bots-Feature (Frontend).
 // Spiegelt die Tabellen aus 20260628120000_bots_foundation.sql.
 
-export type BotChannel = 'chat' | 'voice' | 'telegram' | 'whatsapp';
+export type BotChannel = 'chat' | 'voice' | 'telegram' | 'whatsapp' | 'form';
+
+/**
+ * Posteingang (PR C, 20261103000000_inbox_handoff.sql):
+ *   open (UI „Neu") → in_bearbeitung → erledigt; closed = Bestand.
+ * Übergänge nur über die RPCs inbox_take_over / inbox_resolve.
+ */
+export type BotConversationStatus = 'open' | 'closed' | 'in_bearbeitung' | 'erledigt';
+export type InboxRpcResult = 'ok' | 'conflict' | 'not_found';
 export type BotVertical = 'general' | 'restaurant';
 
 export interface RestaurantMenuItem {
@@ -54,11 +62,44 @@ export interface BotConversation {
   channel: BotChannel;
   external_ref: string | null;
   contact_label: string | null;
-  status: 'open' | 'closed';
+  status: BotConversationStatus;
   metadata: Record<string, unknown>;
   last_message_at: string | null;
+  assigned_to: string | null;
+  handed_off_at: string | null;
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** 1:1 zur Konversation. Terminwunsch ist ein Wunsch, nie ein bestätigter Termin. */
+export interface BotConversationIntake {
+  conversation_id: string;
+  tenant_id: string;
+  anliegen: string | null;
+  kontakt_name: string | null;
+  kontakt_telefon: string | null;
+  kontakt_email: string | null;
+  terminwunsch: string | null;
+  terminwunsch_zeit: string | null;
+  einwilligung_at: string | null;
+  quelle: BotChannel;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Seite ↔ Empfangsassistent (20261102220000_site_inbox_bindings.sql). */
+export interface SiteInboxBinding {
+  id: string;
+  tenant_id: string;
+  website_project_id: string;
+  bot_id: string;
+  site_ref: string;
+  enabled: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  disabled_at: string | null;
 }
 
 export interface BotMessage {

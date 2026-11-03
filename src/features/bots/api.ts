@@ -7,8 +7,8 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type {
-  Bot, BotConversation, BotMessage, BotAppointment, BotOrder,
-  CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs,
+  Bot, BotConversation, BotConversationIntake, BotConversationStatus, BotMessage, BotAppointment, BotOrder,
+  CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs, InboxRpcResult, SiteInboxBinding,
 } from './types';
 
 export async function listBots(tenant_id: string): Promise<Bot[]> {
@@ -63,15 +63,90 @@ export async function deleteBot(tenant_id: string, bot_id: string): Promise<void
   if (error) throw new Error(`deleteBot: ${error.message}`);
 }
 
-export async function listConversations(tenant_id: string, limit = 100): Promise<BotConversation[]> {
+export async function listConversations(
+  tenant_id: string, limit = 100, status?: BotConversationStatus,
+): Promise<BotConversation[]> {
   const sb = getSupabase();
-  const { data, error } = await sb
+  let q = sb
     .from('bot_conversations').select('*')
-    .eq('tenant_id', tenant_id)
+    .eq('tenant_id', tenant_id);
+  if (status) q = q.eq('status', status);
+  const { data, error } = await q
     .order('last_message_at', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(`listConversations: ${error.message}`);
   return (data ?? []) as BotConversation[];
+}
+
+// ── Posteingang (PR C) ─────────────────────────────────────────────────────
+// Statuswechsel laufen ausschliesslich über die RPCs (Compare-and-Set, Prüfpfad);
+// ein direktes UPDATE der Inbox-Felder sperrt der DB-Guard auch für Owner/Admin.
+
+export async function getConversationIntake(
+  tenant_id: string, conversation_id: string,
+): Promise<BotConversationIntake | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('bot_conversation_intake').select('*')
+    .eq('tenant_id', tenant_id).eq('conversation_id', conversation_id)
+    .maybeSingle();
+  if (error) throw new Error(`getConversationIntake: ${error.message}`);
+  return (data ?? null) as BotConversationIntake | null;
+}
+
+async function inboxRpc(fn: 'inbox_take_over' | 'inbox_resolve', conversation_id: string): Promise<InboxRpcResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc(fn, { p_conversation_id: conversation_id });
+  if (error) throw new Error(`${fn}: ${error.message}`);
+  return data === 'ok' || data === 'conflict' ? data : 'not_found';
+}
+
+/** open → in_bearbeitung; Zuständigkeit = angemeldete Person. */
+export const takeOverConversation = (conversation_id: string) => inboxRpc('inbox_take_over', conversation_id);
+/** in_bearbeitung → erledigt. */
+export const resolveConversation = (conversation_id: string) => inboxRpc('inbox_resolve', conversation_id);
+
+// ── Seite ↔ Empfangsassistent (site_inbox_bindings) ────────────────────────
+// Lesen jedes Mitglied; Anlegen/Ändern nur Owner/Admin (RLS + Guard). Kein
+// DELETE — Abschalten über enabled = false. site_ref entsteht nur in der DB.
+
+export async function listSiteInboxBindings(tenant_id: string): Promise<SiteInboxBinding[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('site_inbox_bindings').select('*')
+    .eq('tenant_id', tenant_id)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`listSiteInboxBindings: ${error.message}`);
+  return (data ?? []) as SiteInboxBinding[];
+}
+
+export async function createSiteInboxBinding(args: {
+  tenant_id: string; website_project_id: string; bot_id: string; enabled?: boolean;
+}): Promise<SiteInboxBinding> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('site_inbox_bindings')
+    .insert({
+      tenant_id: args.tenant_id,
+      website_project_id: args.website_project_id,
+      bot_id: args.bot_id,
+      enabled: args.enabled ?? false,
+    })
+    .select('*').single();
+  if (error) throw new Error(`createSiteInboxBinding: ${error.message}`);
+  return data as SiteInboxBinding;
+}
+
+export async function updateSiteInboxBinding(
+  tenant_id: string, binding_id: string, patch: { bot_id?: string; enabled?: boolean },
+): Promise<SiteInboxBinding> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('site_inbox_bindings').update(patch)
+    .eq('tenant_id', tenant_id).eq('id', binding_id)
+    .select('*').single();
+  if (error) throw new Error(`updateSiteInboxBinding: ${error.message}`);
+  return data as SiteInboxBinding;
 }
 
 export async function listMessages(tenant_id: string, conversation_id: string): Promise<BotMessage[]> {

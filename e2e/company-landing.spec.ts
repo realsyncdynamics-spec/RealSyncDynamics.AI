@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
  * gelten für Playwright nie als „stabil“ — so ist der Ablauf deterministisch
  * und der Reduced-Motion-Pfad gleich mitgeprüft.
  */
-test.use({ reducedMotion: 'reduce' });
+test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 test.describe('/unternehmen', () => {
   test('lädt, öffnet den Produkt-Dialog per Klick und schließt mit Esc', async ({ page }) => {

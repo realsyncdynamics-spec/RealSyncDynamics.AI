@@ -1,66 +1,84 @@
 # Nachtrag E-P1: Enterprise-Preis 1.498 €/Monat netto
 
-Stand: 26.10.2026, nachgeprüft am 28.10.2026 · Code-Basis `main@d08abd6`
+Stand: 03.11.2026 · Code-Basis `main@54105e4` · ersetzt die Fassung vom 26./28.10.2026 (#2014)
 
-**Status: Entscheidungsvorlage und Arbeitsauftrag.** Dieser Nachtrag ändert keine Preise und keine
-Produktfunktionen. Er gibt keinen Merge, keinen Deploy und keine Stripe-Änderung frei.
+**Status: Entscheidungsvorlage.** Dieser Nachtrag ändert keine Preise und keine Produktfunktionen.
+Er gibt keinen Merge, keinen Deploy, keine Migration und keine Stripe-Änderung frei.
 
-Bezug: `docs/strategy/MASTERPLAN_2026-2027.md`, §5 und §8 (E-P1), seit #2011 auf `main`. Der Nachtrag
-steht in einer eigenen Datei und ändert den Masterplan nicht.
-Umsetzung: `.claude/commands/wp14-enterprise-price-1498.md` (WP14).
+Bezug: `docs/strategy/MASTERPLAN_2026-2027.md` §5/§8 (E-P1). Umsetzung und Abgleich:
+`.claude/commands/wp14-enterprise-price-1498.md` (WP14).
 
 ---
 
 ## 1. Zielwert
 
-Vorgabe des Owners: **Enterprise 1.498 €/Monat netto** (zzgl. USt). Laut #1995 per Self-Service-Checkout
-buchbar, ohne Testphase, nicht Teil der Beta, ohne öffentlichen Jahrespreis.
+**Enterprise 1.498 €/Monat netto**, Self-Service-Checkout, ohne Testphase, nicht Teil der Beta,
+kein öffentlicher Jahrespreis, kein Jahres-Checkout. „Enterprise anfragen“ bleibt als Kontaktweg.
 
-## 2. Ist-Stand (belegt)
+## 2. Was sich seit der Fassung vom 28.10. geändert hat
 
-| Quelle | Wert | Beleg |
+| PR | Ergebnis | Folge für E-P1 |
 |---|---|---|
-| SSoT auf `main` | `monthlyEur: 1_249`, `priceOnRequest: true`, `purchaseMode: 'inquiry'`, `availability: 'contract'` | `shared/pricing.ts` (Enterprise-Block) |
-| Checkout auf `main` | Enterprise gesperrt (`ENTERPRISE_SELF_SERVICE_BLOCKED` → `ENTERPRISE_CONTRACT_ONLY`) | `supabase/functions/stripe-checkout/index.ts` |
-| Öffentliche Anzeige auf `main` | „Preis auf Anfrage“ | `index.html` (JSON-LD), `public/llms.txt`, `src/config/seo.ts` |
-| Feste Produktentscheidung (Policy) | „1.249 € ist die höchste Stufe und die einzige Quelle“, dazu ein Hinweis nach § 19 UStG | `.github/PR_TRIAGE_POLICY.md` (Stand 27.09.2026), `AGENTS.md` (Absatz zur Triage-Policy) |
-| Steuermodus auf `main` | `PRICING_TAX_MODE = 'EU_STANDARD'`, die Stripe-Preise sind seit 20.10. `tax_behavior = exclusive` | `shared/pricing.ts`, Migration `20261020130000` |
-| Umsetzung 1.498 € | nur in offenen PRs: #1995 (SSoT, Checkout, Kontingente, Anzeige), #1999 (restliche Texte, Beta-Abgrenzung) | siehe WP14 |
+| #1999 | **Gemergt am 29.10.2026.** Enthält die Umsetzung von 1.498 € inkl. Live-Price | Der Preis steht auf `main`. Die alte Annahme „nur in offenen PRs“ gilt nicht mehr. |
+| #1995 | **Geschlossen ohne Merge am 01.11.2026** | Kein Arbeitsbranch mehr. Inhalte sind über #1999 auf `main` gelangt. |
+| #2128 | **Offen (Draft), Freigabe Owner 02.11.2026:** Steuermodus `EXEMPT` (§ 19 UStG), „netto“ und „zzgl. USt“ entfernen | Steht im Widerspruch zum Wort „netto“ im Zielwert, siehe §4. |
 
-**Nicht selbst geprüft:** Stripe-Live-Objekte und die Prod-Tabelle `public.products`. Die Angaben dazu
-(aktuelle Enterprise-Price `price_1USabS…`, Kandidat `prod_UxG9V9clbqV7qw`, 0 Enterprise-Abos) stammen
-aus #1995 bzw. dem Masterplan §5 und werden in WP14 erneut verifiziert.
+## 3. Ist-Stand (belegt im Code, `main@54105e4`)
 
-## 3. Widersprüche, die E-P1 auflöst
-
-1. **Policy und Vorgabe.** Die Triage-Policy schreibt 1.249 € als feste Entscheidung fest, die Vorgabe lautet
-   1.498 €. Solange die Policy nicht angepasst ist, verstößt ein Merge von #1995 formal gegen sie.
-2. **Anfrage und Self-Service.** Auf `main` ist Enterprise Vertragsware, #1995 macht es selbst buchbar.
-3. **Steuerhinweis.** Die Policy schreibt weiterhin den Hinweis nach § 19 UStG vor. Code und Stripe arbeiten
-   bereits mit Netto-Preisen zzgl. USt (`PRICING_TAX_MODE = 'EU_STANDARD'`), und `/pricing` sowie Landing v6
-   zeigen den Regelbesteuerungs-Hinweis. Der alte Text in `src/i18n/handoff.ts` (`pricingFoot`) erscheint nur
-   bei `EXEMPT` und ist derzeit nicht sichtbar. „Netto“ und „keine Umsatzsteuer“ dürfen nicht
-   nebeneinander stehen. Die steuerliche Einordnung selbst ist eine Owner- bzw. Beraterfrage und nicht Teil
-   dieses Nachtrags.
-
-## 4. Zu bestätigen (Owner)
-
-| Nr. | Frage | Vorschlag laut Vorgabe |
+| Ebene | Wert | Beleg |
 |---|---|---|
-| E-P1a | Enterprise-Monatspreis | 1.498 € netto zzgl. USt |
-| E-P1b | Kaufweg | Self-Service-Checkout plus „Enterprise anfragen“ als Kontaktweg |
-| E-P1c | Testphase / Beta | keine Testphase, nicht Teil der Beta |
-| E-P1d | Jahrespreis | kein öffentlicher Jahrespreis, kein Jahres-Checkout |
-| E-P1e | Stripe-IDs | Owner liefert Live-Price-ID (149800 Cent, EUR, monatlich, `exclusive`) und Product-ID |
-| E-P1f | Bestandskunden | Vor dem Merge erneut zählen. Gibt es Verträge zu 1.249 €, gesondert entscheiden. |
-| E-P1g | Policy-Text | `.github/PR_TRIAGE_POLICY.md` und `AGENTS.md` nach dem Merge in einem eigenen Docs-PR auf 1.498 € und den geltenden Steuerhinweis angleichen |
-| E-P1h | Bot-Kostenbremse bei Self-Service | Seit #2049 hat Enterprise kein Tarifprofil, Werte werden nur ausdrücklich gesetzt. Festlegen, wer die Werte für Minuten und Euro bei einem Self-Service-Kauf setzt und wann. Sonst sind die Bot-Kanäle nach dem Kauf gesperrt. |
+| SSoT | `monthlyEur: 1_498`, `purchaseMode: 'checkout'`, `availability: 'self_service'`, `yearlyCheckoutUnavailable: true`, `netPriceLabel: true`, kein `priceOnRequest` | `shared/pricing.ts` (Enterprise-Block) |
+| Checkout-Schalter | `ENTERPRISE_CHECKOUT_PRICE_WIRED = true`; gesperrt ist nur noch `enterprise_yearly` | `shared/pricing.ts`, `supabase/functions/stripe-checkout/index.ts` |
+| Stripe-Erwartung | `taxBehavior: 'exclusive'`, `productId.live: 'prod_UxG9V9clbqV7qw'` | `supabase/functions/stripe-checkout/price-match.ts` |
+| Katalog-Migrationen | `20261029150000` (Katalog 1.498), `…150100` (Kontingente), `…150200` (Spiegel), `…150300` (Live-Price `price_1UVxUrREjTWueUcGuSjqctMH`) | `supabase/migrations/` |
+| Steuermodus | `PRICING_TAX_MODE = 'EU_STANDARD'` | `shared/pricing.ts` |
+| Öffentliche Anzeige | 1.498 €/Monat netto in JSON-LD, `llms.txt`, `seo.ts` | `index.html`, `public/llms.txt`, `src/config/seo.ts` |
 
-## 5. Was daraus folgt
+**Live gelesen am 03.11.2026** (nur `GET`): `https://realsyncdynamicsai.de/llms.txt` und JSON-LD der
+Startseite zeigen Enterprise mit 1.498 €.
 
-- Bis E-P1 bestätigt ist: Keine Arbeit an #1995/#1999 über Konfliktlösung hinaus. Der Masterplan nennt
-  weiterhin keinen Enterprise-Betrag (§5).
-- Nach der Bestätigung: WP14 ausführen. Merge, Prod-Migration und Deploy erhalten jeweils ein eigenes GO.
-- Entscheidungsdatum und Name werden hier nachgetragen, sobald die Bestätigung vorliegt:
+**Nicht selbst geprüft:** Stripe-Live-Objekte, ob die vier Migrationen auf Prod angewendet sind,
+die Prod-Tabellen `products`/`product_entitlements`/`subscriptions` und ob eine Enterprise-Checkout-Session
+tatsächlich erzeugt wird. Die Angabe „Price live verifiziert 2026-10-29“ stammt aus Code-Kommentaren
+und dem Commit von #1999.
+
+## 4. Offene Widersprüche
+
+1. **Steuer: „netto“ gegen § 19 UStG.** `main` rechnet mit `EU_STANDARD`, die Stripe-Price ist
+   `exclusive`. #2128 stellt auf `EXEMPT` um und entfernt „netto“. Ohne `automatic_tax` zahlt der Kunde dann
+   1.498 € ohne USt-Ausweis. Der Betrag bleibt gleich, die Bezeichnung „netto“ entfällt. Die steuerliche
+   Einordnung ist eine Owner- bzw. Beraterfrage. Erst danach steht fest, ob der Zielwert „1.498 € netto“
+   oder „1.498 € (keine USt nach § 19 UStG)“ heißt.
+2. **Triage-Policy veraltet.** `.github/PR_TRIAGE_POLICY.md` (Z. 69, Stand 29.10.) sagt „Enterprise
+   öffentlich ‚Auf Anfrage‘, bis eine echte Live-Stripe-Price-/Product-ID existiert“. Laut Code existieren
+   beide IDs, die Anzeige nennt 1.498 €.
+3. **Self-Service und Anfrage gleichzeitig.** `src/config/seo.ts:543` sagt „Buchung derzeit auf Anfrage über
+   den Vertrieb“, die SSoT sagt `self_service`. `ctaLabel` lautet „Enterprise anfragen“.
+4. **Bot-Kostenbremse.** Enterprise hat bewusst kein Tarifprofil (`20261028100000`, `20261030130000`).
+   Ein Self-Service-Kauf erzeugt einen Alarm in `bot_usage_plan_alerts` und keine nutzbaren Werte, bis
+   jemand sie setzt. Ohne festgelegten Schritt bleiben die Bot-Kanäle eines Käufers gesperrt.
+5. **Veraltete Dokumente.** Masterplan §5/§8 (1.249 €), `docs/claude/BETA_V5_WORKPLAN.md` Z. 81 (1.249 €),
+   Kommentar in `.github/workflows/ci.yml` Z. 79 (1.249 €).
+
+## 5. Zu bestätigen (Owner)
+
+| Nr. | Frage | Vorschlag |
+|---|---|---|
+| E-P1a | Enterprise-Monatspreis | 1.498 € (Betrag unverändert) |
+| E-P1b | Kaufweg | Self-Service-Checkout, „Enterprise anfragen“ als zusätzlicher Kontaktweg |
+| E-P1c | Testphase / Beta | keine Testphase, nicht Teil der Beta (so auf `main`) |
+| E-P1d | Jahrespreis | kein öffentlicher Jahrespreis, kein Jahres-Checkout (so auf `main`) |
+| E-P1e | Stripe-IDs | `price_1UVxUrREjTWueUcGuSjqctMH` / `prod_UxG9V9clbqV7qw` lesend gegenprüfen (149800, EUR, Monat, `exclusive`, aktiv) |
+| E-P1f | Bestandskunden | Enterprise-Abos zum alten Preis lesend zählen. Falls vorhanden, gesondert entscheiden. |
+| E-P1g | Policy-Text | `.github/PR_TRIAGE_POLICY.md` Z. 69 und die Dokumente aus §4.5 in einem eigenen Docs-PR angleichen |
+| E-P1h | Bot-Kostenbremse | Festlegen, wer Minuten- und Euro-Werte bei einem Self-Service-Kauf setzt und bis wann |
+| **E-P1i** | **Steuerbezeichnung** | **Vor allem anderen entscheiden:** `EU_STANDARD` („netto zzgl. USt“) oder `EXEMPT` (#2128). Davon hängt jeder Anzeigetext ab. |
+
+## 6. Was daraus folgt
+
+- WP14 ist kein Umsetzungsauftrag mehr, sondern ein **Nachabgleich** des gemergten Stands (siehe WP14).
+- Bis E-P1i entschieden ist, wird kein Anzeigetext mit „netto“ geändert oder neu eingeführt.
+- Merge, Prod-Migration, Deploy und Stripe-Änderungen erhalten jeweils ein eigenes GO.
+- Bestätigung:
   - Bestätigt am: _offen_
   - Bestätigt durch: _offen_

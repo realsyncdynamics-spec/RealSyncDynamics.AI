@@ -165,7 +165,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Was ist der EU AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist die weltweit erste umfassende Regulierung von KI-Systemen. Er trat im August 2024 in Kraft und gilt EU-weit unmittelbar — wie die DSGVO. Anders als die DSGVO regelt er nicht primär Daten, sondern KI-Systeme als Produkt.',
+        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist seit dem 1. August 2024 in Kraft. Er wird stufenweise angewandt und regelt Pflichten für unterschiedliche Akteure und KI-Systeme. Die DSGVO bleibt bei der Verarbeitung personenbezogener Daten daneben anwendbar.',
       },
     },
     {
@@ -189,7 +189,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Wann gilt der AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.',
+        text: 'Stufenweise: (1) Verbote bestimmter Praktiken und KI-Kompetenzpflichten seit 2. Februar 2025. (2) Pflichten für Anbieter von GPAI-Modellen seit 2. August 2025. (3) Allgemeines Anwendungsdatum und wichtige Transparenzpflichten seit 2. August 2026. (4) Zentrale Hochrisiko-Pflichten nach Anhang III ab 2. Dezember 2027, nach Anhang I ab 2. August 2028 (Verordnung (EU) 2026/1744).',
       },
     },
     {

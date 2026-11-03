@@ -884,7 +884,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
-    netPriceLabel: true,
+    netPriceLabel: false,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -3055,7 +3055,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

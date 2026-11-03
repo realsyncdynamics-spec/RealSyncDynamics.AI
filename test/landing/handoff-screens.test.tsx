@@ -30,7 +30,7 @@ describe('/pricing (Handoff v2)', () => {
     expect(document.querySelectorAll('[data-testid^="pricing-card-"]')).toHaveLength(4);
     const enterprise = screen.getByTestId('pricing-card-enterprise');
     expect(within(enterprise).getByText(formatPriceEur(planById('enterprise').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(enterprise).getByText('/ Monat netto')).toBeInTheDocument();
+    expect(within(enterprise).getByText('/ Monat')).toBeInTheDocument();
     expect(within(enterprise).queryByText('Auf Anfrage')).toBeNull();
     expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
     expect(document.body.textContent).not.toContain('Gespräch anfragen');

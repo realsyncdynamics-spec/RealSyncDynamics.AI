@@ -77,7 +77,7 @@ export const HANDOFF_COPY = {
     start: "Audit starten",
     toDash: "Dashboard öffnen",
     pricingTitle: "Vom kostenlosen Audit bis zur Agentur-Suite.",
-    pricingSub: "Monatlich kündbar. Preise netto. Alle Daten in der EU verarbeitet und gespeichert.",
+    pricingSub: "Monatlich kündbar. Keine Umsatzsteuer gemäß § 19 UStG. Alle Daten in der EU verarbeitet und gespeichert.",
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",

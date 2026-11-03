@@ -98,7 +98,7 @@ it('shows four plan cards with SSoT prices, and the statutory VAT note', () => {
   expect(within(cards[2] as HTMLElement).getByText(eur(699))).toBeInTheDocument();
   // Enterprise seit 2026-10-24: Festpreis per Checkout, netto ausgewiesen.
   expect(within(cards[3] as HTMLElement).getByText(eur(1498))).toBeInTheDocument();
-  expect(within(cards[3] as HTMLElement).getByText('/ Monat netto')).toBeInTheDocument();
+  expect(within(cards[3] as HTMLElement).getByText('/ Monat')).toBeInTheDocument();
   expect(view.container.querySelector('[data-plan-cta="enterprise"]')).toHaveAttribute(
     'href',
     checkoutHrefForPlan('enterprise', { source: 'landing-v2-pricing' }),

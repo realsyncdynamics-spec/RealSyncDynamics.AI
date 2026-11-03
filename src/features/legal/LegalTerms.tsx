@@ -171,8 +171,7 @@ export function LegalTerms() {
             angegeben, in Euro.
           </p>
           <p>
-            (2) Alle Preise verstehen sich zzgl. der gesetzlichen
-            Umsatzsteuer.
+            (2) Kleinunternehmer gemäß § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.
           </p>
           <p>
             (3) Die Abrechnung erfolgt über den Zahlungsdienstleister

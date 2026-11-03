@@ -70,7 +70,7 @@ describe('renderer inbox form', () => {
     const script = rendered.find((p) => formPaths.has(p.path))!.html;
     for (const needle of [
       'kontakt_name:val(f,"name")', 'kontakt_email:val(f,"email")', 'kontakt_telefon:val(f,"phone")',
-      'anliegen:val(f,"message")', 'terminwunsch:val(f,"slot")', 'einwilligung:consent?!!consent.checked:true',
+      'anliegen:val(f,"message")', 'terminwunsch:val(f,"slot")', 'einwilligung:!!(consent&&consent.checked)',
       'crypto.randomUUID', 'ev.preventDefault()', `body["${INBOX_HONEYPOT_FIELD}"]`,
     ]) {
       expect(script, needle).toContain(needle);
@@ -89,4 +89,15 @@ describe('renderer inbox form', () => {
     expect(html).toContain('data-site-ref="&quot;&gt;&lt;script&gt;');
     expect(html).not.toContain('"onmouseover="');
   });
+  it('R5: ohne Datenschutzhinweis/Einwilligung niemals ein öffentliches Formular verbinden', async () => {
+    const bp = await blueprint();
+    const page = formPages(bp)[0]!;
+    const form = page.blocks.find((b) => b.kind === 'contact-form' || b.kind === 'booking')!;
+    (form.content as Record<string, unknown>).consentText = '';
+    const html = renderPage(bp, page, { presentation: 'showcase', inbox: INBOX });
+    expect(html).not.toContain('data-inbox-endpoint');
+    expect(html).toContain('type="submit" disabled');
+    expect(html).toContain('Formular-Annahme nicht freigeschaltet');
+  });
+
 });

@@ -80,8 +80,10 @@ export function SiteInboxBindingsPanel({ tenantId, role }: { tenantId: string; r
   const botById = (id: string) => bots.find((b) => b.id === id);
 
   return (
-    <div className="space-y-4">
-      <div className="border border-titanium-800 bg-obsidian-900 px-4 py-3 text-xs text-titanium-400">
+    <div className="space-y-4" data-testid="inbox-sites-panel">
+      <div className="rs-inbox-card rs-inbox-intro p-5 text-sm leading-relaxed text-[#b9b9b6] sm:p-6">
+        <p className="rs-inbox-kicker mb-2">SITEOS / FORMULAR-ZUORDNUNG</p>
+        <h2 className="rs-inbox-section-heading mb-3">Eine zentrale Verbindung für jede Seite.</h2>
         <p>
           Verbinde eine Seite mit einem Assistenten. Das Kontaktformular der veröffentlichten Seite legt
           Anfragen dann hier unter <span className="text-titanium-200">Anfragen</span> an — mit Anliegen,
@@ -91,7 +93,7 @@ export function SiteInboxBindingsPanel({ tenantId, role }: { tenantId: string; r
           Anfragen kommen nur an, wenn die Annahme eingeschaltet ist, die Seite veröffentlicht ist und der
           Assistent aktiv ist. Neue Verbindungen starten ausgeschaltet.
         </p>
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-amber-400">
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-[#d6ae52]">
           Vorschau · Formular-Annahme noch nicht produktiv freigeschaltet
         </p>
       </div>
@@ -122,7 +124,7 @@ export function SiteInboxBindingsPanel({ tenantId, role }: { tenantId: string; r
             if (!binding) {
               const chosen = draftBot[p.id] ?? '';
               return (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 border border-titanium-800 px-4 py-3">
+                <li key={p.id} className="rs-inbox-card flex flex-wrap items-center justify-between gap-3 px-4 py-4">
                   <ProjectHeading project={p} />
                   {canManage ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -156,7 +158,7 @@ export function SiteInboxBindingsPanel({ tenantId, role }: { tenantId: string; r
             const blockers = bindingBlockers(binding, p, bot);
             const receiving = blockers.length === 0;
             return (
-              <li key={p.id} className="border border-titanium-800 px-4 py-3">
+              <li key={p.id} className="rs-inbox-card px-4 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <ProjectHeading project={p} />
                   <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${

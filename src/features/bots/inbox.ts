@@ -1,3 +1,10 @@
+/** Ein URL-Tab wird nur aus bekannten Werten übernommen (Deep Links von /app/websites). */
+export type InboxWorkspaceTab = 'conversations' | 'appointments' | 'orders' | 'sites';
+export function parseInboxWorkspaceTab(value: string | null): InboxWorkspaceTab {
+  if (value === 'appointments' || value === 'orders' || value === 'sites') return value;
+  return 'conversations';
+}
+
 // Reine Logik des Posteingangs (PR C, Schritt 4) — ohne Supabase-Import,
 // damit test/bots/inbox.test.ts sie direkt prüfen kann.
 //

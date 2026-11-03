@@ -10,8 +10,18 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_LABEL, INBOX_FILTERS, availableAction, bindingBlockers, canHandoff, canManageBindings,
   channelLabel, conversationTitle, isMissingSchemaError, rpcFeedback, statusLabel,
-  statusTone, statusesForFilter,
+  statusTone, statusesForFilter, parseInboxWorkspaceTab,
 } from '../../src/features/bots/inbox';
+
+describe('Zentraler Posteingang und Website-Deep-Link', () => {
+  it('führt Websites und Posteingang auf die gemeinsame Formularansicht', () => {
+    expect(parseInboxWorkspaceTab('sites')).toBe('sites');
+    expect(parseInboxWorkspaceTab('appointments')).toBe('appointments');
+    expect(parseInboxWorkspaceTab('orders')).toBe('orders');
+    expect(parseInboxWorkspaceTab('garbage')).toBe('conversations');
+    expect(parseInboxWorkspaceTab(null)).toBe('conversations');
+  });
+});
 
 describe('Status und Filter', () => {
   it('„Neu“ ist der Bestandswert open (E10), kein eigener Wert', () => {

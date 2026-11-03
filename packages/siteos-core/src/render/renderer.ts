@@ -325,7 +325,7 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
 
     case 'contact-form':
     case 'booking':
-      if (state.inbox) state.inboxFormRendered = true;
+      if (state.inbox && hasInboxDisclosure(content)) state.inboxFormRendered = true;
       return renderForm(id, content, headingTag(state), state.inbox);
 
     case 'map':
@@ -383,19 +383,27 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
   }
 }
 
+/** Kein öffentlich angebundenes Formular ohne sichtbaren Datenschutzhinweis und Checkbox. */
+function hasInboxDisclosure(content: Record<string, unknown>): boolean {
+  return typeof content.consentText === 'string' && content.consentText.trim().length > 0
+    && typeof content.legalBasis === 'string' && content.legalBasis.trim().length > 0
+    && Boolean(safeUrl(content.privacyHref));
+}
+
 function renderForm(id: string, content: Record<string, unknown>, heading: string, inbox?: InboxFormOptions): string {
   const fields = Array.isArray(content.fields) ? content.fields : [];
   const privacyHref = safeUrl(content.privacyHref);
+  const connectedInbox = inbox && hasInboxDisclosure(content) ? inbox : undefined;
   // Angebundenes Formular: Endpunkt und Kennung als data-Attribute, dazu ein
   // Honeypot-Feld (ausserhalb des sichtbaren Bereichs, für Hilfstechnik
   // verborgen) und eine Statuszeile für die Rückmeldung des Skripts.
-  const inboxAttrs = inbox
-    ? `${attr('data-inbox-endpoint', inbox.endpoint)}${attr('data-site-ref', inbox.siteRef)}`
+  const inboxAttrs = connectedInbox
+    ? `${attr('data-inbox-endpoint', connectedInbox.endpoint)}${attr('data-site-ref', connectedInbox.siteRef)}`
     : '';
-  const honeypot = inbox
+  const honeypot = connectedInbox
     ? `<div class="inbox-hp" aria-hidden="true"><label for="${id}--hp">Firmenwebsite</label><input id="${id}--hp" name="${INBOX_HONEYPOT_FIELD}" type="text" tabindex="-1" autocomplete="off"></div>`
     : '';
-  const status = inbox ? `<p class="inbox-status" data-inbox-status aria-live="polite"></p>` : '';
+  const status = connectedInbox ? `<p class="inbox-status" data-inbox-status aria-live="polite"></p>` : '';
 
   return [
     `<section id="${id}">`,
@@ -420,7 +428,8 @@ function renderForm(id: string, content: Record<string, unknown>, heading: strin
       : '',
     privacyHref ? `<p><a href="${privacyHref}">Datenschutzerklärung</a></p>` : '',
     status,
-    '<button type="submit">Absenden</button>',
+    inbox && !connectedInbox ? '<p role="alert">Formular-Annahme nicht freigeschaltet: Datenschutzhinweis oder Einwilligung fehlt.</p>' : '',
+    inbox && !connectedInbox ? '<button type="submit" disabled>Absenden</button>' : '<button type="submit">Absenden</button>',
     '</form>',
     '</section>',
   ].filter((l) => l !== '').join('\n');
@@ -454,11 +463,12 @@ function renderInboxScript(): string {
     'ev.preventDefault();',
     'var st=f.querySelector("[data-inbox-status]");var btn=f.querySelector("button[type=submit]");',
     'var consent=f.elements.namedItem("consent");',
+    'if(!consent||!consent.checked){if(st){st.textContent="Bitte bestätigen Sie vor dem Senden die Einwilligung.";}return;}',
     'var body={site_ref:f.getAttribute("data-site-ref"),nonce:nonce(),',
     'anliegen:val(f,"message")||val(f,"anliegen")||val(f,"nachricht"),',
     'kontakt_name:val(f,"name")||null,kontakt_email:val(f,"email")||null,kontakt_telefon:val(f,"phone")||null,',
     'terminwunsch:val(f,"slot")||val(f,"terminwunsch")||null,',
-    'einwilligung:consent?!!consent.checked:true};',
+    'einwilligung:!!(consent&&consent.checked)};',
     'body["' + INBOX_HONEYPOT_FIELD + '"]=val(f,"' + INBOX_HONEYPOT_FIELD + '");',
     'if(!body.anliegen){body.anliegen=[body.kontakt_name,body.terminwunsch].filter(Boolean).join(" – ")||"Kontaktanfrage";}',
     'if(btn){btn.disabled=true;}if(st){st.textContent="Wird gesendet …";}',

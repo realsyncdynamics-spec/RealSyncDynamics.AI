@@ -19,14 +19,14 @@ export function HealthTechLanding() {
         ),
         subline: (
           <>
-            Diagnose-Unterstützung, Triage-AI, Befund-Klassifikation. Ab August 2026 alles
-            <strong className="text-titanium-50"> AI-Act-High-Risk</strong>. Wir liefern den
-            Compliance-Layer.
+            Diagnose-Unterstützung, Triage-AI, Befund-Klassifikation. Vieles davon wird
+            <strong className="text-titanium-50"> AI-Act-Hochrisiko</strong> ab Dezember 2027 bzw. August 2028.
+            Wir liefern den Compliance-Layer.
           </>
         ),
         cta: {
-          heading: 'In 14 Tagen AI-Act-konform — bevor August 2026 kommt.',
-          sub: `87 Tage bis High-Risk-Pflicht. Pilot ${TRY_FREE.phrase}. Du hast noch Zeit — aber nur knapp.`,
+          heading: 'AI-Act-Nachweise aufbauen, bevor die Hochrisiko-Fristen greifen.',
+          sub: `Anhang III ab 02.12.2027, Medizinprodukte (Anhang I) ab 02.08.2028. Start ${TRY_FREE.phrase}.`,
           buttons: [
             { to: '/contact-sales?source=healthtech', label: CTA.enterprise, variant: 'primary' },
             { to: '/audit', label: 'Kostenloser DSGVO-Scan', variant: 'secondary' },
@@ -36,7 +36,7 @@ export function HealthTechLanding() {
         jsonLd: {
           headline: 'KI-Compliance für HealthTech-Startups — DSGVO + AI Act',
           description:
-            'AI-Act-High-Risk ab August 2026. Wie HealthTechs Patientendaten + KI compliant verarbeiten.',
+            'AI-Act-Hochrisiko ab Dezember 2027 (Anhang III) bzw. August 2028 (Medizinprodukte). Wie HealthTechs Patientendaten + KI compliant verarbeiten.',
           datePublished: '2026-05-06',
         },
       }}
@@ -45,8 +45,8 @@ export function HealthTechLanding() {
         <p>
           Du nutzt KI für Diagnose, Triage oder Befund-Sortierung. Datenkategorie:
           <strong className="text-titanium-50"> besonders schutzwürdige Gesundheitsdaten</strong> nach
-          Art. 9 DSGVO. Plus AI Act Annex III: Healthcare-Diagnose-AI ist kategorisch
-          <strong className="text-titanium-50"> High-Risk</strong> ab August 2026.
+          Art. 9 DSGVO. Plus AI Act: Diagnose-KI als Medizinprodukt ist über Anhang I (MDR)
+          <strong className="text-titanium-50"> Hochrisiko</strong> ab 2. August 2028, Notfall-Triage nach Anhang III Nr. 5 ab 2. Dezember 2027.
         </p>
         <p>Was die Marktrealität verlangt:</p>
         <ul className="space-y-1.5 mt-3 text-sm">

@@ -62,9 +62,11 @@ const ITEMS: Item[] = [
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li>Februar 2025: Verbotene KI-Praktiken (Social Scoring, Emotion-Recognition am Arbeitsplatz, …)</li>
           <li>August 2025: General-Purpose-AI (GPAI) — Transparenz für Foundation Models</li>
-          <li>August 2026: High-Risk-Systeme — voll wirksam</li>
-          <li>August 2027: High-Risk-Systeme die in Sicherheitsbauteile eingebettet sind</li>
+          <li>August 2026: allgemeine Anwendung, u. a. die meisten Transparenzpflichten (Art. 50)</li>
+          <li>Dezember 2027: Hochrisiko-Systeme nach Anhang III (z. B. Personalauswahl, Bildung, Kreditprüfung)</li>
+          <li>August 2028: Hochrisiko-KI in regulierten Produkten nach Anhang I</li>
         </ul>
+        <p className="mt-2">Die Hochrisiko-Fristen wurden durch die Verordnung (EU) 2026/1744 (Digital Omnibus) verschoben.</p>
       </>
     ),
   },

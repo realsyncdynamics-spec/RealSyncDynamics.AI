@@ -171,9 +171,19 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Pflichten für GPAI-Anbieter, Governance-Struktur, Sanktionen.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2026</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.08.2026</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Übrige Vorschriften gelten, darunter die meisten Transparenzpflichten nach Art. 50.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.12.2027</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko nach Anhang III</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Zentrale Pflichten für Hochrisiko-KI, etwa in Personalauswahl, Bildung oder Kreditprüfung.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.08.2028</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko nach Anhang I</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>KI in regulierten Produkten. Verschiebung durch Verordnung (EU) 2026/1744.</span>
             </li>
           </ol>
         </div>

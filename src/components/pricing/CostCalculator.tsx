@@ -1,10 +1,20 @@
 import { useState, useMemo } from 'react';
 import { Calculator, Info, ArrowRight, TrendingDown } from 'lucide-react';
-import { CALCULABLE_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { CALCULABLE_PRICING_TIERS } from '../../config/pricing';
+import {
+  AUTOMATION_SHARE_DEFAULT,
+  AUTOMATION_SHARE_MAX,
+  HOURS_PER_WEBSITE_PER_REVIEW,
+  clampAutomationShare,
+  comparePlan,
+  computeManualEffort,
+  formatDe,
+  type ReviewFrequency,
+} from './costCalculatorModel';
 
 interface CalculatorParams {
   websites: number;
-  reviewFrequency: 'monthly' | 'quarterly' | 'annual';
+  reviewFrequency: ReviewFrequency;
   hourlyRate: number;
 }
 
@@ -14,6 +24,8 @@ export function CostCalculator() {
     reviewFrequency: 'quarterly',
     hourlyRate: 85,
   });
+  const [automationShare, setAutomationShare] = useState(AUTOMATION_SHARE_DEFAULT);
+  const automationPercent = Math.round(automationShare * 100);
 
   const handleWebsitesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setParams({ ...params, websites: Math.max(1, parseInt(e.target.value, 10) || 1) });
@@ -23,21 +35,10 @@ export function CostCalculator() {
     setParams({ ...params, hourlyRate: Math.max(40, parseInt(e.target.value, 10) || 40) });
   };
 
-  const calculations = useMemo(() => {
-    const reviewsPerYear = {
-      monthly: 12,
-      quarterly: 4,
-      annual: 1,
-    };
-
-    const hoursPerWebsitePerReview = 3;
-    const totalManualHoursPerYear =
-      params.websites * hoursPerWebsitePerReview * reviewsPerYear[params.reviewFrequency];
-    const totalManualCostPerYear = totalManualHoursPerYear * params.hourlyRate;
-    const totalManualCostPerMonth = totalManualCostPerYear / 12;
-
-    return { totalManualHoursPerYear, totalManualCostPerYear, totalManualCostPerMonth };
-  }, [params.websites, params.reviewFrequency, params.hourlyRate]);
+  const calculations = useMemo(
+    () => computeManualEffort(params),
+    [params],
+  );
 
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
@@ -148,12 +149,35 @@ export function CostCalculator() {
               <p className="text-xs text-silver-400 mt-1">40–300 €/h</p>
             </div>
 
+            {/* Automatisierungsanteil — sichtbare Annahme, kein Messwert */}
+            <div>
+              <label htmlFor="automation-share" className="block text-sm font-semibold text-titanium-50 mb-2">
+                Annahme: Anteil, den Automatisierung übernimmt
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  id="automation-share"
+                  type="range"
+                  min="0"
+                  max={Math.round(AUTOMATION_SHARE_MAX * 100)}
+                  step="5"
+                  value={automationPercent}
+                  onChange={(e) => setAutomationShare(clampAutomationShare(parseInt(e.target.value, 10) / 100))}
+                  className="flex-1 h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
+                />
+                <span className="w-14 text-right text-sm font-mono text-titanium-50">{automationPercent} %</span>
+              </div>
+              <p className="text-xs text-silver-400 mt-1">
+                Ihre Schätzung, kein gemessener Wert. Gilt für alle Pläne gleich.
+              </p>
+            </div>
+
             {/* Info Box */}
             <div className="mt-6 p-4 bg-obsidian-950 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
                 <p className="text-xs text-silver-400 leading-relaxed">
-                  Annahme: je Website ~3 Stunden Prüfaufwand pro Review. RealSync kann diesen Aufwand
+                  Annahme: je Website ~{HOURS_PER_WEBSITE_PER_REVIEW} Stunden Prüfaufwand pro Review. RealSync kann diesen Aufwand
                   durch automatisierte Scans und priorisierte Befunde reduzieren (dauerhafte Überwachung: Coming Soon).
                 </p>
               </div>
@@ -173,14 +197,14 @@ export function CostCalculator() {
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Stunden pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {calculations.totalManualHoursPerYear.toLocaleString()}
+                      {formatDe(calculations.hoursPerYear)}
                       <span className="text-sm text-silver-400"> h</span>
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Kosten pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {calculations.totalManualCostPerYear.toLocaleString()}
+                      {formatDe(calculations.costPerYear)}
                       <span className="text-sm text-silver-400"> €</span>
                     </p>
                   </div>
@@ -188,7 +212,7 @@ export function CostCalculator() {
                 <div className="pt-3 border-t border-silver-700/30">
                   <p className="text-xs text-silver-400 mb-1">Monatlich (ohne RealSync)</p>
                   <p className="font-display font-bold text-xl text-titanium-100 tabular-nums">
-                    {Math.round(calculations.totalManualCostPerMonth).toLocaleString()}
+                    {formatDe(calculations.costPerMonth)}
                     <span className="text-sm text-silver-400"> €/Mo</span>
                   </p>
                 </div>
@@ -215,34 +239,15 @@ export function CostCalculator() {
                 {CALCULABLE_PRICING_TIERS.filter(
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
-                  // Aufwand-Skalierung pro Tier: höhere Tiers adressieren komplexere Setups
-                  // Starter: 5 Websites (Klein), Growth: 20 Websites (Mittel), Agency: 40 (Groß), etc.
-                  const websiteMultiplier: Record<string, number> = {
-                    starter: 0.5,     // 5 Websites statt 10 (kleine Unternehmen)
-                    growth: 2.0,      // 20 Websites (mittlere Unternehmen)
-                    agency: 4.0,      // 40 Websites (Agenturen)
-                    enterprise: 5.0,  // 50 Websites (Großunternehmen)
-                    partner: 10.0,    // 100 Websites (Reseller mit Mandanten)
-                  };
-                  const multiplier = websiteMultiplier[tier.id] || 1.0;
-                  const scaledManualCost = calculations.totalManualCostPerYear * multiplier;
-
-                  // Effizienzfaktoren pro Plan: höhere Tiers = bessere Automatisierung
-                  const efficiencyMap: Record<string, number> = {
-                    starter: 0.45,    // 45% Automation
-                    growth: 0.62,     // 62% Automation
-                    agency: 0.75,     // 75% Automation (Governance Agents)
-                    enterprise: 0.82, // 82% Automation (erweiterte Features)
-                    partner: 0.88,    // 88% Automation (Multi-Tenant max)
-                  };
-                  const efficiency = efficiencyMap[tier.id] || 0.45;
-                  const automatedCostPerYear = scaledManualCost * (1 - efficiency);
-                  const yearlyCost = (tier.priceEur || 0) * 12;
-                  const savings = scaledManualCost - automatedCostPerYear - yearlyCost;
-                  const savingsPercent = scaledManualCost > 0
-                    ? Math.round((savings / scaledManualCost) * 100)
-                    : 0;
-                  const isSavings = savings > 0;
+                  // Alle Pläne rechnen mit denselben Eingaben und demselben,
+                  // vom Nutzer gesetzten Automatisierungsanteil — keine
+                  // geschätzten Effizienzwerte je Plan.
+                  const result = comparePlan(
+                    calculations.costPerYear,
+                    automationShare,
+                    tier.priceEur || 0,
+                  );
+                  const isSavings = result.netSavingsPerYear > 0;
 
                   return (
                     <div
@@ -260,14 +265,16 @@ export function CostCalculator() {
                           <span className="text-xs text-silver-400"> €/Mo</span>
                         </div>
                       </div>
-                      {isSavings && (
+                      <div className="text-[11px] font-mono text-silver-400">
+                        {formatDe(result.avoidedCostPerYear)} € entfallen − {formatDe(result.planCostPerYear)} € Plan
+                      </div>
+                      {isSavings ? (
                         <div className="text-xs text-emerald-300">
-                          💰 Einsparungen: {savings.toLocaleString()} €/Jahr ({savingsPercent}%)
+                          Rechnerische Ersparnis: {formatDe(result.netSavingsPerYear)} €/Jahr ({result.netSavingsPercent} % der bisherigen Kosten)
                         </div>
-                      )}
-                      {!isSavings && (
+                      ) : (
                         <div className="text-xs text-silver-400">
-                          Zusätzliche Kosten: {Math.abs(savings).toLocaleString()} €/Jahr
+                          Rechnerische Mehrkosten: {formatDe(Math.abs(result.netSavingsPerYear))} €/Jahr
                         </div>
                       )}
                     </div>
@@ -279,8 +286,9 @@ export function CostCalculator() {
             {/* CTA */}
             <div className="bg-gradient-to-r from-cyan-400/10 to-cyan-400/5 border border-cyan-400/30 rounded-none p-5">
               <p className="text-xs text-silver-300 mb-3 leading-relaxed">
-                Diese Rechnung ist illustrativ. Konkrete Einsparungen hängen von Audit-Tiefe,
-                Automatisierungspotenzial und vorhandenen Prozessen ab.
+                Diese Rechnung ist illustrativ und beruht auf Ihren Eingaben und Annahmen.
+                Konkrete Einsparungen hängen von Audit-Tiefe, Automatisierungspotenzial und
+                vorhandenen Prozessen ab. Die Ersparnis kann Ihre bisherigen Kosten nie übersteigen.
               </p>
               <a
                 href="#pricing-tiers"

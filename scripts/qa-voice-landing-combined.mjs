@@ -37,7 +37,22 @@ try {
     assert.deepEqual(errors, [], label + ' page errors');
     const route = await page.goto(host + '/unternehmen', { waitUntil: 'domcontentloaded' });
     assert.equal(route?.status(), 200, label + ' /unternehmen HTTP');
-    assert.ok((await page.content()).includes('Sechs Schritte der Voice-Agent-Einrichtung'), label + ' /unternehmen route divergence');
+    // Vite serves the React SPA at /unternehmen, while /unternehmen/ resolves
+    // to public/unternehmen/index.html. Both entry points must lead to the
+    // same canonical six-step voice service; they need not share their DOM.
+    const reactTile = page.getByTestId('product-tile-voice');
+    if (await reactTile.count()) {
+      await reactTile.click();
+      const dialog = page.getByRole('dialog', { name: 'Produkte im Detail' });
+      await dialog.getByRole('tab', { name: 'Einrichten' }).click();
+      const preview = dialog.getByTestId('voice-onboarding-entry');
+      assert.equal(await preview.locator('ol li').count(), 6, 'React six-step preview');
+      const reactLink = preview.getByRole('link', { name: 'Zum vollständigen 6-Schritte-Onboarding' });
+      assert.equal(await reactLink.getAttribute('href'), 'https://voice.realsyncdynamicsai.de/onboarding.html');
+      await page.screenshot({ path: 'screenshots/react-company-' + label + '.png', fullPage: true });
+    } else {
+      assert.ok((await page.content()).includes('Sechs Schritte der Voice-Agent-Einrichtung'), label + ' unexpected /unternehmen route');
+    }
     await page.close();
   }
 } finally {

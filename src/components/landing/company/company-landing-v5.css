@@ -452,3 +452,47 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
  * Die Referenz setzt `outline: 0` und färbt nur den Rahmen golden, das ist
  * per Tastatur kaum zu erkennen (WCAG 2.4.7). */
 .rsl5 .field input:focus-visible, .rsl5 .field select:focus-visible, .rsl5 .field textarea:focus-visible { outline: 2px solid var(--gold-lite); outline-offset: 2px; border-color: var(--gold-lite); }
+
+/* Voice dialog: one six-step product entry; no duplicate wizard.
+   Scoped to /unternehmen and aligned with existing classical gold/black theme. */
+.rsl5 .voice-entry { width: 100%; max-width: 740px; }
+.rsl5 .voice-entry-lead {
+  color: var(--color-neutral-200);
+  text-align: left;
+  font-size: clamp(14px, 1.35vw, 16px);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.rsl5 .voice-entry-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 16px;
+}
+.rsl5 .voice-entry-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid rgba(243,242,242,.17);
+  background: rgba(243,242,242,.035);
+  color: var(--color-neutral-100);
+  border-radius: var(--radius-md);
+}
+.rsl5 .voice-entry-steps b {
+  flex: 0 0 auto;
+  font: 600 11px var(--mono);
+  letter-spacing: .07em;
+  color: var(--gold-lite);
+}
+.rsl5 .voice-entry-steps span { font-size: clamp(13px, 1.2vw, 15px); }
+.rsl5 .voice-entry .note { max-width: 65ch; line-height: 1.65; text-align: left; }
+.rsl5 .voice-entry .onb-foot { justify-content: center; }
+@media (max-width: 520px) {
+  .rsl5 .voice-entry-steps { grid-template-columns: 1fr; }
+  .rsl5 .voice-entry-steps li { min-height: 46px; }
+}

@@ -176,13 +176,16 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     expect(within(dialog).queryByText(/SHA-256 [0-9a-f]+/)).toBeNull();
   });
 
-  it('Voice-Onboarding endet im Link auf die Subdomain (neuer Tab)', () => {
+  it('Voice zeigt genau einen sechs Schritte umfassenden Einstieg statt eines Mini-Konfigurators', () => {
     mount();
     fireEvent.click(screen.getByTestId('product-tile-voice'));
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
-    fireEvent.click(within(dialog).getByRole('tab', { name: /Freigabe/ }));
-    const link = within(dialog).getByRole('link', { name: 'Onboarding fortsetzen' });
+    const preview = within(dialog).getByTestId('voice-onboarding-entry');
+    expect(within(preview).getByRole('list', { name: 'Sechs Schritte der Voice-Agent-Einrichtung' }).querySelectorAll('li')).toHaveLength(6);
+    expect(preview.querySelector('input, select, textarea')).toBeNull();
+    expect(preview).toHaveTextContent('Telefonie, Live-Anrufannahme und Checkout werden dadurch nicht aktiviert');
+    const link = within(preview).getByRole('link', { name: 'Zum vollständigen 6-Schritte-Onboarding' });
     expect(link).toHaveAttribute('href', COMPANY_LINKS.voiceOnboarding);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));

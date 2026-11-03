@@ -231,7 +231,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Einrichten',
         body: (
           <>
-            <h3>Ihr Agent in vier Schritten</h3>
+            <h3>Ein Einstieg. Sechs Schritte.</h3>
             <VoiceOnboarding />
           </>
         ),

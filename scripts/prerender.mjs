@@ -9,6 +9,7 @@
 // Timeouts: siehe PRERENDER_* Env (GOTO / HYDRATE / PREVIEW / MAX / CONCURRENCY).
 
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -93,6 +94,13 @@ async function loadRoutes() {
     const prio = parseFloat(/<priority>(.*?)<\/priority>/.exec(block[1])?.[1] ?? '0.5');
     if (!loc) continue;
     const route = new URL(loc).pathname;
+    // Statische Seite aus public/<name>/index.html (STATIC_HTML_PAGES in
+    // src/lib/spaNotFound.ts): Vite hat sie schon nach dist/ kopiert. Ein
+    // Prerender schriebe die SPA-404 als dist/<name>.html daneben.
+    if (route !== '/' && existsSync(join(DIST, route.replace(/\/$/, ''), 'index.html'))) {
+      console.log(`[prerender] ${route}: statische Seite, kein Prerender`);
+      continue;
+    }
     if (prio >= PRIORITY_MIN) entries.push({ route, prio });
   }
   entries.sort((a, b) => b.prio - a.prio);

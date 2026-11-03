@@ -389,8 +389,8 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
       }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const target = e.target as HTMLElement | null;
-      // Eingabefelder und das Voice-Onboarding (eigene Schritt-Navigation mit
-      // Formular) behalten die Pfeiltasten; dort wird nicht geblättert.
+      // Eingabefelder sowie die Voice-Übersicht und ihr Link behalten
+      // ihre Pfeiltasten; dort wird der Produktdialog nicht umgeblättert.
       if (target?.closest?.('input, textarea, select, .onb')) return;
       const dir = e.key === 'ArrowRight' ? 1 : -1;
       e.preventDefault();

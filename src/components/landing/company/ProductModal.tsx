@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from './companyProducts';
+import { suppressAssistant } from '../../assistantSuppression';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, COMPANY_TAX_NOTE, VOICE_TELEPHONY_NOTE } from './companyProducts';
 import { BuilderPreview, GovernanceCheckDemo, TemplatePicker, VoiceCallDemo, VoiceOnboarding } from './CompanyDemos';
 
 /**
  * Produkt-Demo-Dialog der Unternehmens-Landing v5 (Referenz `#pm`):
  * 3 Produkt-Tabs, je Produkt Seiten mit Seiten-Navigation und Pager.
  * Tastatur: Esc schließt; ←/→ wechselt in der Produkt-Tab-Leiste das Produkt,
- * sonst die Seite (nicht in Eingabefeldern). Fokus bleibt im Dialog und
+ * sonst die Seite (nicht in Eingabefeldern und nicht im Voice-Onboarding).
+ * Fokus bleibt im Dialog und
  * kehrt nach dem Schließen zum Auslöser zurück (Aufrufer).
  */
 
@@ -149,13 +151,13 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Überblick',
         body: (
           <>
-            <h3>Kein Anruf geht verloren.</h3>
+            <h3>Damit kein Anruf verloren geht.</h3>
             <p>
-              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent geht ans Telefon, versteht das Anliegen und
-              gibt es an Sie weiter – auch nach Feierabend.
+              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent soll ans Telefon gehen, das Anliegen verstehen
+              und es an Sie weitergeben – auch nach Feierabend. Heute legen Sie im Onboarding Branche, Stimme und Freigaben fest.
             </p>
             <F3 items={[['Annehmen', 'auch außerhalb der Öffnungszeiten'], ['Notieren', 'Anliegen, Termine, Rückrufe'], ['Übergeben', 'Notfälle sofort an Menschen']]} />
-            <p className="note">Preview · Telefonie ist in Vorbereitung</p>
+            <p className="note">{VOICE_TELEPHONY_NOTE ? `Preview · ${VOICE_TELEPHONY_NOTE}` : 'Preview'}</p>
           </>
         ),
       },
@@ -181,6 +183,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
                 Steuerberatung
               </li>
             </ul>
+            {VOICE_TELEPHONY_NOTE && <p className="note">{VOICE_TELEPHONY_NOTE}</p>}
           </>
         ),
       },
@@ -203,7 +206,10 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
                 <em>Erhöhter Datenschutz</em>
               </div>
             </div>
-            <p className="note">Aktuelle Preise und Leistungen im Onboarding · Telefonie ist in Vorbereitung</p>
+            <p className="note">Leistungen im Onboarding{VOICE_TELEPHONY_NOTE ? ` · ${VOICE_TELEPHONY_NOTE}` : ''}</p>
+            <p className="note" data-testid="voice-tax-note">
+              {COMPANY_TAX_NOTE}
+            </p>
             <div className="pm-cta">
               <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
                 Pakete im Onboarding ansehen
@@ -322,13 +328,16 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     if (focus) tabRefs.current[n]?.focus();
   }, []);
 
-  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren.
+  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren,
+  // seitenweiten Assistenten-Chip ausblenden (läge sonst über dem Dialog).
   useEffect(() => {
     tabRefs.current[initialTab]?.focus();
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const releaseAssistant = suppressAssistant();
     return () => {
       document.body.style.overflow = prev;
+      releaseAssistant();
     };
   }, [initialTab]);
 
@@ -343,7 +352,9 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
       }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('input, textarea, select')) return;
+      // Eingabefelder und das Voice-Onboarding (eigene Schritt-Navigation mit
+      // Formular) behalten die Pfeiltasten; dort wird nicht geblättert.
+      if (target?.closest?.('input, textarea, select, .onb')) return;
       const dir = e.key === 'ArrowRight' ? 1 : -1;
       e.preventDefault();
       if (target?.closest?.('.pm-tabs')) selectTab(tab + dir, true);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { COMPANY_LINKS } from './companyProducts';
+import { COMPANY_LINKS, VOICE_TELEPHONY_NOTE } from './companyProducts';
 
 /**
  * Interaktive Demos im Produkt-Dialog der Unternehmens-Landing v5.
@@ -183,7 +183,7 @@ export function VoiceCallDemo() {
           ))}
         </div>
       </div>
-      <p className="note">Beispielgespräch · Betriebsnamen sind fiktiv</p>
+      <p className="note">Beispielgespräch · Betriebsnamen sind fiktiv{VOICE_TELEPHONY_NOTE ? ` · ${VOICE_TELEPHONY_NOTE}` : ''}</p>
       <div className="pm-cta">
         <button className="btn" type="button" onClick={run}>
           Anruf starten

@@ -12,7 +12,9 @@ import {
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
-import { checkoutHrefForPlan } from '@/shared/pricing';
+import {
+  checkoutHrefForPlan, showsNetPriceLabel, PRICING_TAX_NOTE_EXEMPT_DISPLAY, TAX_NOTICE_EN,
+} from '@/shared/pricing';
 import { pricingPlanCopy } from '../../i18n/pricingCopy';
 import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '../../config/beta';
 
@@ -171,7 +173,9 @@ export function PricingPage() {
               </p>
               {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
               <p data-testid="pricing-tax-note">
-                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
+                {COMPANY.taxMode === 'EXEMPT'
+                  ? t('pricingFoot', { tax: lang === 'en' ? TAX_NOTICE_EN : PRICING_TAX_NOTE_EXEMPT_DISPLAY })
+                  : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
               </p>
             </div>
           </div>
@@ -518,7 +522,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       ? t('pricingBetaPriceNote', { until: betaEndsLabel(lang) })
       : showYearly
       ? t('perYear')
-      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
+      : showsNetPriceLabel(tier.plan) ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;

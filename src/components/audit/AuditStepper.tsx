@@ -26,6 +26,7 @@ import { useLang } from '../../i18n/useLang';
 import type { HandoffKey } from '../../i18n/handoff';
 import { enforcementClassOf } from '../../../shared/enforcement-classes';
 import { formatPriceEur, tierById, type TierId } from '../../config/pricing';
+import { showsNetPriceLabel } from '@/shared/pricing';
 import { saveScanProfile, type ScanResidency, type ScanRole } from '../../features/onboarding/scanProfile';
 import { isValidLeadEmail, normalizeDomainInput } from '../../features/audit/leadContext';
 
@@ -533,7 +534,7 @@ export function AuditStepper({
                         {recommended.name} ·{' '}
                         {recommended.priceOnRequest
                           ? t('onRequest')
-                          : `${formatPriceEur(recommended.priceEur)} ${t(recommended.plan.netPriceLabel ? 'perMonthNet' : 'perMonth')}`}
+                          : `${formatPriceEur(recommended.priceEur)} ${t(showsNetPriceLabel(recommended.plan) ? 'perMonthNet' : 'perMonth')}`}
                       </p>
                       <p className="rs-audit__hint" style={{ fontSize: 13, marginTop: 4 }}>{t('recWhy')}</p>
                       <div style={{ display: 'flex', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>

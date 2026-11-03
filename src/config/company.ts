@@ -1,4 +1,4 @@
-import { PRICING_TAX_MODE } from '@/shared/pricing';
+import { PRICE_DISPLAY_TAX_MODE } from '@/shared/pricing';
 
 /**
  * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
@@ -106,9 +106,10 @@ export const COMPANY: CompanyConfig = {
   stripeAccountMode: 'test', // Switch to 'live' for production
   stripePublishableKey: (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) || '',
 
-  // Aus der Pricing-SSoT (shared/pricing.ts), damit Frontend und Edge Functions
-  // denselben Steuerhinweis zeigen.
-  taxMode: PRICING_TAX_MODE,
+  // Aus der Pricing-SSoT (shared/pricing.ts): Anzeige-Steuermodus der Website.
+  // Kleinunternehmer nach § 19 UStG seit 2026-11-01. Stripe/Billing folgt
+  // `PRICING_TAX_MODE` (eigene Freigabe, siehe dort).
+  taxMode: PRICE_DISPLAY_TAX_MODE,
   complianceDisclaimer:
     'RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ' +
     'Die Ergebnisse dienen der technischen und organisatorischen Compliance-Unterstützung.',

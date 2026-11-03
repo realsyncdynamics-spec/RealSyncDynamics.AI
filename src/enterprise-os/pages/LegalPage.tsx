@@ -2,6 +2,7 @@ import React from 'react';
 import { PublicNav } from '../layout/PublicNav';
 import { PublicFooter } from '../layout/PublicFooter';
 import { COMPANY } from '../../config/company';
+import { TAX_NOTICE } from '@/shared/pricing';
 
 interface LegalSection {
   heading: string;
@@ -136,7 +137,7 @@ export function ImpressumPage() {
         {
           heading: 'Umsatzsteuer',
           // TODO(Dominik): USt-IdNr. ergänzen, sobald vergeben.
-          body: ['Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.'],
+          body: [TAX_NOTICE],
         },
         {
           heading: 'Hinweis',

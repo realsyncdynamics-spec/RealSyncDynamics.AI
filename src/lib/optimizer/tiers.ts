@@ -81,7 +81,7 @@ export function realPriceEur(tier: OptimizerTier): number {
   return tierById(tier.planKey)?.priceEur ?? 0;
 }
 
-/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat" / "1.498 €/Monat netto". */
+/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat" / "1.498 €/Monat". */
 export function formatTierPrice(tier: OptimizerTier): string {
   if (tier.planKey === 'free') return 'Kostenlos';
   const real = tierById(tier.planKey);
@@ -91,6 +91,7 @@ export function formatTierPrice(tier: OptimizerTier): string {
   }
   const price = real?.priceEur ?? 0;
   if (price === 0) return 'Individuell';
-  // Nettopreis-Pläne (Enterprise) überall als „1.498 €/Monat netto“.
+  // `netPriceLabel`-Pläne (Enterprise) über `monthlyPriceText()`: „1.498 €/Monat“
+  // (Kleinunternehmer, § 19 UStG — „netto“ nur bei Regelbesteuerung).
   return real?.plan.netPriceLabel ? monthlyPriceText(real.plan) : `€${price} / Monat`;
 }

@@ -83,7 +83,6 @@
     const open = (n, from) => { last = from || document.activeElement; show(n); pm.classList.add('open'); document.body.style.overflow = 'hidden'; pm.querySelector('.pm-x').focus(); };
     const close = () => { clr(); pm.classList.remove('open'); document.body.style.overflow = ''; if (last && last.focus) last.focus(); };
     document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-open]'); if (a) { e.preventDefault(); open(+a.dataset.open, a); } });
-    document.querySelectorAll('.prod .btn[href="#voice"]').forEach((a) => a.addEventListener('click', () => {}));
     tabs.forEach((t, i) => t.onclick = () => show(i)); pm.querySelector('.pm-x').onclick = close; pm.addEventListener('click', (e) => { if (e.target === pm || e.target.closest('[data-close]')) close(); });
     addEventListener('keydown', (e) => { if (!pm.classList.contains('open')) return; if (e.key === 'Escape') close(); const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'); if (e.target.closest && e.target.closest('input,textarea,select')) return; if (e.key === 'ArrowRight') pgSet(i, PG[i].i + 1); if (e.key === 'ArrowLeft') pgSet(i, PG[i].i - 1); });
     const pick = (id, cb) => { const g = document.getElementById(id); g.querySelectorAll('button').forEach((b, i) => b.addEventListener('click', () => { g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); cb(i); })); return () => [...g.querySelectorAll('button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'); };

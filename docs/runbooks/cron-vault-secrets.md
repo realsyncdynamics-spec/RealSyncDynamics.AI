@@ -25,6 +25,17 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 | `audit-monitor-daily` | `audit-monitor-cron` | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 | `bot-voice-enforcer` (jede Minute) | `bot-voice-enforcer` | `cron_bot_voice_enforcer_key` | `CRON_BOT_VOICE_ENFORCER_KEY` |
+| Job mit `governance-deadline-monitor` (Name live, Migration `20261103120000` stellt per Kommando um) | `governance-deadline-monitor` | `cron_governance_deadline_key` | `CRON_GOVERNANCE_DEADLINE_KEY` |
+| Job mit `governance-score-calculator` (dto.) | `governance-score-calculator` | `cron_governance_score_key` | `CRON_GOVERNANCE_SCORE_KEY` |
+| DB-Trigger `trigger_trial_webhook()` auf `stripe_trial_events` | `automation-trigger-trial-webhook` | `cron_trial_webhook_key` | `CRON_TRIAL_WEBHOOK_KEY` |
+
+Die letzten drei Zeilen (Phase 2) prüfen über den gemeinsamen Helfer
+`requireCronKey` (`_shared/auth.ts` → `_shared/cronKey.ts`, konstantzeitig).
+Reihenfolge beim Ausrollen: Vault-Eintrag und Function Secret mit demselben
+Wert anlegen → Functions deployen → Migration `20261103120000` anwenden →
+einen Lauf je Job und einen Test-Insert in `stripe_trial_events` (Staging)
+prüfen. Ohne Secret antworten die Functions mit 500 `CRON_KEY_MISSING`, der
+Trial-Trigger überspringt den Aufruf mit Warning.
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.

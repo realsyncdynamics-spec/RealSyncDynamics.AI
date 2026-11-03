@@ -11,7 +11,7 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requireServiceRole } from '../_shared/auth.ts';
+import { requireCronKey } from '../_shared/auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -31,8 +31,10 @@ interface DeadlineAlert {
 Deno.serve(async (req: Request) => {
   // Verify this is a scheduled job (from Supabase cron)
   // Cron-Endpunkt: liest Fristen ueber alle Tenants und loest Alarme aus.
-  // Zuvor genuegte ein beliebiges Bearer-Praefix (Befund F-04).
-  const denied = requireServiceRole(req);
+  // Zuvor genuegte ein beliebiges Bearer-Praefix (Befund F-04), danach der
+  // Service-Role-Key. Jetzt der eigene Cron-Key: Vault
+  // cron_governance_deadline_key → Function Secret CRON_GOVERNANCE_DEADLINE_KEY.
+  const denied = requireCronKey(req, 'CRON_GOVERNANCE_DEADLINE_KEY');
   if (denied) return denied;
 
   try {

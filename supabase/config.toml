@@ -293,6 +293,23 @@ verify_jwt = false
 [functions.email-auth-rescan]
 verify_jwt = false
 
+# Phase 2 der Key-Sanierung: drei Maschinen-Endpunkte mit eigenem Cron-Key
+# statt Service-Role-Bearer. verify_jwt = false, Auth im Code ueber
+# requireCronKey (_shared/auth.ts, fail-closed, konstantzeitig):
+#   governance-deadline-monitor      Vault cron_governance_deadline_key → CRON_GOVERNANCE_DEADLINE_KEY
+#   governance-score-calculator      Vault cron_governance_score_key    → CRON_GOVERNANCE_SCORE_KEY
+#   automation-trigger-trial-webhook Vault cron_trial_webhook_key       → CRON_TRIAL_WEBHOOK_KEY
+# Aufrufer: pg_cron ueber dispatch_cron_function bzw. der DB-Trigger
+# trigger_trial_webhook (Migration 20261103120000).
+[functions.governance-deadline-monitor]
+verify_jwt = false
+
+[functions.governance-score-calculator]
+verify_jwt = false
+
+[functions.automation-trigger-trial-webhook]
+verify_jwt = false
+
 # governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
 # validates a Vault bearer token (governance_erasure_sweeper_token) itself.
 [functions.governance-erasure-sweeper]

@@ -1,0 +1,77 @@
+/*
+ * RealSync Inbox Workspace — landing-v6 design system, dark/gold presentation.
+ * Scoped to the inbox only: no changes to the public landing or other modules.
+ */
+@font-face {
+  font-family: 'Source Serif 4 Inbox';
+  src: url('/fonts/source-serif-4-latin-var.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}
+.rs-inbox-workspace {
+  background: #121212;
+  color: #f4f4f2;
+  font-family: 'Inter', system-ui, sans-serif;
+  --rs-inbox-accent: #d6ae52;
+  --rs-inbox-line: rgba(255,255,255,.1);
+}
+.rs-inbox-masthead {
+  border-color: var(--rs-inbox-line);
+  background:
+    radial-gradient(ellipse 52% 125% at 90% 10%, rgba(214,174,82,.09), transparent 68%),
+    linear-gradient(180deg,#171717,#121212);
+}
+.rs-inbox-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--rs-inbox-accent);
+  font-size: .67rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  line-height: 1.5;
+}
+.rs-inbox-heading,
+.rs-inbox-section-heading {
+  font-family: 'Source Serif 4 Inbox', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -.025em;
+  line-height: 1.12;
+}
+.rs-inbox-heading { font-size: clamp(2.15rem,4.6vw,3.75rem); }
+.rs-inbox-heading span { color: var(--rs-inbox-accent); }
+.rs-inbox-section-heading { font-size: clamp(1.45rem,2.5vw,2rem); color: #f4f4f2; }
+.rs-inbox-nav {
+  border-color: var(--rs-inbox-line);
+  background: rgba(23,23,23,.95);
+}
+.rs-inbox-subtle-link { color: #b9b9b6; text-decoration: none; }
+.rs-inbox-subtle-link:hover { color: var(--rs-inbox-accent); }
+.rs-inbox-preview-tag {
+  border: 1px solid rgba(214,174,82,.4);
+  background: rgba(214,174,82,.08);
+  color: #e9c66f;
+  padding: .45rem .7rem;
+  font: 500 .65rem 'JetBrains Mono',monospace;
+  letter-spacing: .07em;
+}
+.rs-inbox-card {
+  border: 1px solid var(--rs-inbox-line);
+  border-radius: 12px;
+  background: #171717;
+  transition: border-color .18s ease;
+}
+.rs-inbox-card:hover { border-color: rgba(214,174,82,.3); }
+.rs-inbox-intro {
+  background:
+    linear-gradient(110deg,rgba(214,174,82,.065),transparent 55%),
+    #171717;
+}
+.rs-inbox-workspace button:focus-visible,
+.rs-inbox-workspace select:focus-visible,
+.rs-inbox-workspace a:focus-visible {
+  outline: 2px solid var(--rs-inbox-accent);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rs-inbox-card { transition: none; }
+}

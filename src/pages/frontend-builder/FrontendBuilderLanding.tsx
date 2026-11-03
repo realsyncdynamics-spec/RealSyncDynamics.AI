@@ -309,7 +309,22 @@ function ProcessSection() {
 function BuilderSection() {
   const [stepId, setStepId] = useState<BuilderStepId>('projektart');
   const [answers, setAnswers] = useState<BuilderAnswers>({});
-  const [form, setForm] = useState<KontaktForm>(EMPTY_KONTAKT);
+  const [form, setForm] = useState<KontaktForm>(() => {
+    // Public company page passes a template ID. Preserve it as editable inquiry text,
+    // rather than pretending this qualification flow creates or publishes a website.
+    const template = new URLSearchParams(window.location.search).get('vorlage');
+    const labels: Record<string, string> = {
+      gastro: 'Gastronomie',
+      handwerk: 'Handwerk',
+      praxis: 'Praxis & Kanzlei',
+    };
+    const selected = template && Object.prototype.hasOwnProperty.call(labels, template)
+      ? labels[template]
+      : null;
+    return selected
+      ? { ...EMPTY_KONTAKT, message: 'Ich interessiere mich für die Landingpage-Vorlage „' + selected + '“.' }
+      : { ...EMPTY_KONTAKT };
+  });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -434,6 +449,9 @@ function BuilderSection() {
         </h2>
         <p className="mb-8 text-sm" style={{ color: LANDING_MUTED }}>
           Schritt {index + 1} von {TOTAL_STEP_COUNT} — {step.title}
+          {form.message.startsWith('Ich interessiere mich für die Landingpage-Vorlage „')
+            ? ' · Vorlagenauswahl aus der Unternehmensseite übernommen'
+            : ''}
         </p>
 
         <div

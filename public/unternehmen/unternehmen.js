@@ -62,7 +62,14 @@
   // Vorlagen wählen
   (() => { const g = document.getElementById('tpls'), note = document.getElementById('tpl-note'), go = document.getElementById('tpl-go'), msg = document.getElementById('c-msg'); if (!g) return;
     g.addEventListener('click', (e) => { const b = e.target.closest('.tpl'); if (!b) return; const on = b.getAttribute('aria-pressed') !== 'true'; g.querySelectorAll('.tpl').forEach((x) => x.setAttribute('aria-pressed', x === b && on));
-      const n = on ? b.querySelector('b').textContent : ''; note.textContent = on ? 'Gewählt: Vorlage „' + n + '“.' : 'Noch keine Vorlage gewählt.'; go.textContent = on ? 'Vorlage „' + n + '“ im Builder öffnen' : 'Im Builder öffnen';
+      const n = on ? b.querySelector('b').textContent : '';
+      const key = on ? b.dataset.tpl : '';
+      // The existing /frontend-builder is a project-inquiry flow, not a website editor.
+      // Carry only the known template identifier across the navigation boundary.
+      const allowed = ['gastro', 'handwerk', 'praxis'];
+      go.href = '/frontend-builder' + (allowed.includes(key) ? '?vorlage=' + encodeURIComponent(key) : '') + '#builder';
+      note.textContent = on ? 'Gewählt: Vorlage „' + n + '“. Im nächsten Schritt können Sie Ihr Projekt anfragen.' : 'Noch keine Vorlage gewählt. Der nächste Schritt ist eine Projektanfrage, kein fertiger Editor.';
+      go.textContent = on ? 'Projekt mit „' + n + '“ anfragen' : 'Projektanfrage starten';
       if (msg && (!msg.value || msg.dataset.auto)) { msg.value = on ? 'Ich interessiere mich für die Landingpage-Vorlage „' + n + '“.' : ''; msg.dataset.auto = on ? '1' : ''; } }); })();
   // Produkt-Demo
   (() => { const pm = document.getElementById('pm'), tabs = [...pm.querySelectorAll('.pm-tabs button')], panes = [...pm.querySelectorAll('.pm-pane')]; let last = null, timers = [];
@@ -76,7 +83,6 @@
     const open = (n, from) => { last = from || document.activeElement; show(n); pm.classList.add('open'); document.body.style.overflow = 'hidden'; pm.querySelector('.pm-x').focus(); };
     const close = () => { clr(); pm.classList.remove('open'); document.body.style.overflow = ''; if (last && last.focus) last.focus(); };
     document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-open]'); if (a) { e.preventDefault(); open(+a.dataset.open, a); } });
-    document.querySelectorAll('.prod .btn[href="#voice"]').forEach((a) => a.addEventListener('click', () => {}));
     tabs.forEach((t, i) => t.onclick = () => show(i)); pm.querySelector('.pm-x').onclick = close; pm.addEventListener('click', (e) => { if (e.target === pm || e.target.closest('[data-close]')) close(); });
     addEventListener('keydown', (e) => { if (!pm.classList.contains('open')) return; if (e.key === 'Escape') close(); const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'); if (e.target.closest && e.target.closest('input,textarea,select')) return; if (e.key === 'ArrowRight') pgSet(i, PG[i].i + 1); if (e.key === 'ArrowLeft') pgSet(i, PG[i].i - 1); });
     const pick = (id, cb) => { const g = document.getElementById(id); g.querySelectorAll('button').forEach((b, i) => b.addEventListener('click', () => { g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); cb(i); })); return () => [...g.querySelectorAll('button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'); };

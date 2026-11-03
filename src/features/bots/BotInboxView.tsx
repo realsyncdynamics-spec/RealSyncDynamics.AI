@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import './inbox-workspace.css';
 import { ArrowLeft, Inbox, CalendarClock, ShoppingCart, MessageSquare, Link2 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -12,15 +13,15 @@ import {
 } from './api';
 import {
   ACTION_LABEL, INBOX_FILTERS, availableAction, canHandoff, channelLabel, conversationTitle,
-  isMissingSchemaError, rpcFeedback, statusLabel, statusTone, statusesForFilter,
-  type InboxFilter,
+  isMissingSchemaError, rpcFeedback, statusLabel, statusTone, statusesForFilter, parseInboxWorkspaceTab,
+  type InboxFilter, type InboxWorkspaceTab,
 } from './inbox';
 import { SiteInboxBindingsPanel } from './SiteInboxBindingsPanel';
 import type {
   BotConversation, BotConversationEvent, BotConversationIntake, BotMessage, BotAppointment, BotOrder,
 } from './types';
 
-type Tab = 'conversations' | 'appointments' | 'orders' | 'sites';
+type Tab = InboxWorkspaceTab;
 
 /**
  * /app/bots/inbox — Posteingang: Anfragen mit Übergabe an Menschen
@@ -53,26 +54,43 @@ function money(value: number, currency: string): string {
 function BotInboxInner() {
   const { activeTenantId, tenants } = useTenant();
   const activeRole = tenants.find((t) => t.tenantId === activeTenantId)?.role ?? null;
-  const [tab, setTab] = useState<Tab>('conversations');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = parseInboxWorkspaceTab(searchParams.get('tab'));
+  const setTab = (next: Tab) => setSearchParams((previous) => {
+    const params = new URLSearchParams(previous);
+    if (next === 'conversations') params.delete('tab');
+    else params.set('tab', next);
+    return params;
+  }, { replace: true });
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <header className="flex h-14 items-center justify-between border-b border-titanium-900 bg-obsidian-900 px-4">
-        <div className="flex items-center gap-3">
-          <Link to="/app/bots" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center bg-gradient-to-br from-security-500 to-blue-700">
-              <Inbox className="h-4 w-4 text-white" />
+    <div className="rs-inbox-workspace min-h-screen text-titanium-100">
+      <header className="rs-inbox-masthead border-b">
+        <div className="mx-auto max-w-6xl px-4 pb-6 pt-5 sm:px-6 sm:pb-8 sm:pt-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="rs-inbox-kicker">REALSYNC DYNAMICS.AI / OPERATIONS</span>
+            <div className="flex flex-wrap items-center gap-4 font-mono text-[11px]">
+              <Link to="/app/websites" className="rs-inbox-subtle-link">Websites</Link>
+              <Link to="/app/bots" className="rs-inbox-subtle-link inline-flex items-center gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" /> KI-Mitarbeiter
+              </Link>
             </div>
-            <h1 className="font-display text-sm font-semibold tracking-tight text-titanium-50">Bot-Posteingang</h1>
+          </div>
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="rs-inbox-kicker mb-2">GOVERNANCE WORKSPACE · HUMAN HANDOFF</p>
+              <h1 className="rs-inbox-heading">Anfragen <span>&amp;</span> Seiten-Formulare</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#b9b9b6]">
+                Ein gemeinsamer Arbeitsbereich für eingehende Anfragen, Team-Übergaben und die Zuordnung Ihrer SiteOS-Seiten.
+              </p>
+            </div>
+            <span className="rs-inbox-preview-tag">Vorschau · keine Live-Freigabe</span>
           </div>
         </div>
       </header>
 
-      <div className="border-b border-titanium-900 bg-obsidian-900 px-4">
-        <nav className="flex gap-1 overflow-x-auto">
+      <div className="rs-inbox-nav border-b">
+        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Posteingang Navigation">
           <TabButton active={tab === 'conversations'} onClick={() => setTab('conversations')} icon={<MessageSquare className="h-3.5 w-3.5" />} label="Anfragen" />
           <TabButton active={tab === 'appointments'} onClick={() => setTab('appointments')} icon={<CalendarClock className="h-3.5 w-3.5" />} label="Termine" />
           <TabButton active={tab === 'orders'} onClick={() => setTab('orders')} icon={<ShoppingCart className="h-3.5 w-3.5" />} label="Bestellungen" />
@@ -80,7 +98,7 @@ function BotInboxInner() {
         </nav>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {!activeTenantId ? (
           <p className="font-mono text-xs text-titanium-500">Kein Tenant ausgewählt.</p>
         ) : tab === 'conversations' ? (
@@ -92,7 +110,7 @@ function BotInboxInner() {
         ) : (
           <SiteInboxBindingsPanel tenantId={activeTenantId} role={activeRole} />
         )}
-      </div>
+      </main>
     </div>
   );
 }
@@ -104,7 +122,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
       onClick={onClick}
       aria-pressed={active}
       className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
-        active ? 'border-security-500 text-titanium-50' : 'border-transparent text-titanium-500 hover:text-titanium-300'
+        active ? 'border-[#d6ae52] text-[#f4f4f2]' : 'border-transparent text-[#8a8a88] hover:text-[#f4f4f2]'
       }`}
     >
       {icon} {label}

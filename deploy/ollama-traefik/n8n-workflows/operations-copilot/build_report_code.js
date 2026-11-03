@@ -18,7 +18,8 @@ function redact(value) {
 const safe = (s, max = 140) => redact(s).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/[`<>|]/g, '').trim().slice(0, max);
 const cleanGitHubRef = (candidate, fallback) => {
   const s = String(candidate ?? '');
-  const exact = /^https:\/\/github\.com\/realsyncdynamics-spec\/RealSyncDynamics\.AI\/(?:actions\/runs\/\d+(?:\/job\/\d+)?|pull\/\d+\/checks)\/?$/;
+  // `runs/<id>` is the html_url GitHub returns for a check run.
+  const exact = /^https:\/\/github\.com\/realsyncdynamics-spec\/RealSyncDynamics\.AI\/(?:runs\/\d+|actions\/runs\/\d+(?:\/job\/\d+)?|pull\/\d+\/checks)\/?$/;
   return exact.test(s) ? s : fallback;
 };
 const read = (name) => {
@@ -78,17 +79,21 @@ const checksValid = Array.isArray(checkResults.checks);
 const checksAvailable = checks.some(c=>c.available);
 sources.push({system:'github_checks',state:checksValid && checksAvailable ? 'partial' : 'unavailable',http_status:null,checked_at:generatedAt,detail:'maximal fünf PR-HEADs; keine vollständige CI-Freigabe'});
 const checksByPr = new Map(checks.filter(c=>c.pr_number).map(c=>[Number(c.pr_number),c]));
+// Without open PRs, `main` is checked as fallback; its red checks are findings too.
 for(const c of checks) {
-  if(!c.pr_number) continue;
+  if(!c.pr_number && !c.main_fallback) continue;
+  const label = c.pr_number ? `PR #${c.pr_number}` : 'main';
+  const page = c.pr_number ? `${ROOT}/pull/${c.pr_number}` : `${ROOT}/commits/main`;
+  const checksPage = c.pr_number ? `${ROOT}/pull/${c.pr_number}/checks` : `${ROOT}/actions`;
   if(!c.available) {
-    add('github','warn',`PR #${c.pr_number}: Check-Runs nicht abrufbar`,`${ROOT}/pull/${c.pr_number}`,'Checks:read / Auth und API-Antwort prüfen');
+    add('github','warn',`${label}: Check-Runs nicht abrufbar`,page,'Checks:read / Auth und API-Antwort prüfen');
     continue;
   }
   for(const k of (c.check_runs || []).slice(0,100)) {
     if(k.status === 'completed' && ['failure','timed_out','action_required','cancelled'].includes(k.conclusion))
-      add('github','high',`PR #${c.pr_number}: Check ${safe(k.name,80)} = ${safe(k.conclusion,30)}`, k.url || `${ROOT}/pull/${c.pr_number}/checks`, 'CI-Log prüfen, kein Merge');
+      add('github','high',`${label}: Check ${safe(k.name,80)} = ${safe(k.conclusion,30)}`, k.url || checksPage, 'CI-Log prüfen, kein Merge');
     else if(k.status !== 'completed')
-      add('github','observe',`PR #${c.pr_number}: Check ${safe(k.name,80)} läuft/steht aus`,k.url || `${ROOT}/pull/${c.pr_number}/checks`,'CI-Ergebnis abwarten');
+      add('github','observe',`${label}: Check ${safe(k.name,80)} läuft/steht aus`,k.url || checksPage,'CI-Ergebnis abwarten');
   }
 }
 // GitHub Actions workflow-runs feed: not a substitute for complete PR checks.

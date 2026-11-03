@@ -121,6 +121,10 @@ function envSecrets(env) {
   return [env.SUPABASE_DB_PASSWORD, env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_SERVICE_ROLE_KEY];
 }
 
+/**
+ * @param {Record<string, string | undefined>} [env]
+ * @param {{ log: (msg: string) => unknown, error: (msg: string) => unknown }} [log]
+ */
 export function runVerify(env = process.env, log = console) {
   const result = verifyDbTarget({
     environment: env.DEPLOY_ENVIRONMENT,

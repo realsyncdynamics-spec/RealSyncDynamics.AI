@@ -17,12 +17,13 @@
 --       open           → in_bearbeitung   (assigned_to = Aufrufer)
 --       in_bearbeitung → erledigt
 --     Konkurrierende Übernahme: genau einer gewinnt, der zweite erhält
---     'conflict'. Fremder Mandant / unbekannt → 'not_found' (keine Leckage).
+--     'conflict'. Fremder Mandant / fehlende Owner/Admin-Berechtigung /
+--     unbekannt → 'not_found' (keine Leckage).
 --
 -- Zugriffsrechte
 --   * Die bestehenden Policies auf bot_conversations bleiben unverändert.
---   * Mitglieder (is_tenant_member) dürfen übernehmen und erledigen — NUR über
---     die RPCs. Ein Guard-Trigger sperrt direkte Client-Updates der neuen
+--   * Ausschließlich Owner/Admin (is_tenant_owner_or_admin) dürfen übernehmen
+--     und erledigen — NUR über die RPCs. Editor/DPO/Viewer-Auditor bleiben read-only. Ein Guard-Trigger sperrt direkte Client-Updates der neuen
 --     Inbox-Felder (auch für Owner/Admin), damit Statusmaschine, Zuständigkeit
 --     und Prüfpfad nicht umgangen werden. open ↔ closed bleibt wie bisher.
 --   * Intake und Events: Lesen für Mitglieder, Schreiben nur Server (RPC /
@@ -202,7 +203,7 @@ GRANT SELECT, INSERT, DELETE ON public.bot_conversation_events TO service_role;
 
 -- 6. RPCs mit Compare-and-Set -------------------------------------------------
 -- Rückgabe: 'ok' | 'conflict' (Status passt nicht mehr, z. B. schon übernommen)
---           | 'not_found' (unbekannt oder nicht Mitglied — nicht unterscheidbar)
+--           | 'not_found' (unbekannt, fremd oder nicht Owner/Admin — nicht unterscheidbar)
 
 CREATE OR REPLACE FUNCTION public.inbox_take_over(p_conversation_id UUID)
 RETURNS TEXT
@@ -222,7 +223,7 @@ BEGIN
        SET status = 'in_bearbeitung', assigned_to = v_uid, handed_off_at = now()
      WHERE c.id = p_conversation_id
        AND c.status = 'open'
-       AND public.is_tenant_member(c.tenant_id)
+       AND public.is_tenant_owner_or_admin(c.tenant_id)
     RETURNING c.tenant_id INTO v_tenant;
 
     IF v_tenant IS NOT NULL THEN
@@ -232,7 +233,7 @@ BEGIN
     END IF;
 
     SELECT c.tenant_id INTO v_tenant FROM public.bot_conversations c
-     WHERE c.id = p_conversation_id AND public.is_tenant_member(c.tenant_id);
+     WHERE c.id = p_conversation_id AND public.is_tenant_owner_or_admin(c.tenant_id);
     RETURN CASE WHEN v_tenant IS NULL THEN 'not_found' ELSE 'conflict' END;
 END;
 $$;
@@ -255,7 +256,7 @@ BEGIN
        SET status = 'erledigt', resolved_at = now()
      WHERE c.id = p_conversation_id
        AND c.status = 'in_bearbeitung'
-       AND public.is_tenant_member(c.tenant_id)
+       AND public.is_tenant_owner_or_admin(c.tenant_id)
     RETURNING c.tenant_id INTO v_tenant;
 
     IF v_tenant IS NOT NULL THEN
@@ -265,7 +266,7 @@ BEGIN
     END IF;
 
     SELECT c.tenant_id INTO v_tenant FROM public.bot_conversations c
-     WHERE c.id = p_conversation_id AND public.is_tenant_member(c.tenant_id);
+     WHERE c.id = p_conversation_id AND public.is_tenant_owner_or_admin(c.tenant_id);
     RETURN CASE WHEN v_tenant IS NULL THEN 'not_found' ELSE 'conflict' END;
 END;
 $$;

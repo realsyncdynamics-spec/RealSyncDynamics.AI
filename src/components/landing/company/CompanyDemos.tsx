@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { COMPANY_LINKS } from './companyProducts';
 
 /**
@@ -193,147 +193,44 @@ export function VoiceCallDemo() {
   );
 }
 
-// ── Voice: Onboarding in vier Schritten ──────────────────────────────────────
-
-const BRANCHEN = ['Handwerk', 'Metzgerei', 'KFZ-Werkstatt', 'Gastronomie & Bäckerei', 'Hausverwaltung', 'Kanzlei', 'Arztpraxis', 'Steuerberatung'] as const;
-/** Paketnamen der Onboarding-Seite; Preise nur dort (nicht in shared/pricing.ts). */
-const PAKETE = ['Starter', 'Professional', 'Kanzlei'] as const;
-const KANAELE = ['Web', 'Telefonie + Web'] as const;
-const STIMMEN = ['Eve', 'Castor', 'Atlas', 'Celeste', 'Ursa', 'Rigel'] as const;
-const ONB_STEPS = ['Branche', 'Betrieb', 'Stimme', 'Freigabe'] as const;
-const WAVE = [
-  ['18px', '0s'],
-  ['34px', '-.2s'],
-  ['26px', '-.5s'],
-  ['40px', '-.1s'],
-  ['22px', '-.7s'],
-  ['36px', '-.3s'],
-  ['16px', '-.9s'],
-  ['30px', '-.4s'],
-  ['24px', '-.6s'],
+// ── Voice: eine Produktvorschau, kein zweiter Onboarding-Konfigurator ─────────
+//
+// Der kanonische Konfigurator mit sechs Schritten liegt im separaten VVA-Repo
+// unter voice.realsyncdynamicsai.de/onboarding.html. Hier ausschließlich
+// Orientierung/Weiterleitung: keine zweite Konfiguration, kein Pseudo-Checkout.
+const VOICE_SETUP_STEPS = [
+  'Branche auswählen',
+  'Betrieb, Paket & Stimme',
+  'Öffnungszeiten & Kalender',
+  'Sicherheit & Freigaben',
+  'Konfiguration prüfen',
+  'Konfiguration exportieren',
 ] as const;
 
 export function VoiceOnboarding() {
-  const [step, setStep] = useState(0);
-  const [branche, setBranche] = useState(0);
-  const [paket, setPaket] = useState(1);
-  const [kanal, setKanal] = useState(1);
-  const [stimme, setStimme] = useState(0);
-  const go = (n: number) => setStep(Math.max(0, Math.min(3, n)));
-
   return (
-    <div className="onb">
-      <div className="onb-steps" role="tablist" aria-label="Einrichtung">
-        {ONB_STEPS.map((s, i) => (
-          <button
-            key={s}
-            type="button"
-            role="tab"
-            id={`onb-tab-${i}`}
-            aria-selected={i === step}
-            aria-controls={`onb-panel-${i}`}
-            className={i < step ? 'done' : undefined}
-            onClick={() => go(i)}
-          >
+    <div className="onb voice-entry" data-testid="voice-onboarding-entry">
+      <p className="voice-entry-lead">
+        Ein einziger Einrichtungsprozess. Die Branchenvorlage, Betriebsdaten, Stimme,
+        Öffnungszeiten und Freigaben werden im vollständigen sechs­stufigen Voice-Onboarding erfasst.
+      </p>
+      <ol className="voice-entry-steps" aria-label="Sechs Schritte der Voice-Agent-Einrichtung">
+        {VOICE_SETUP_STEPS.map((label, i) => (
+          <li key={label}>
             <b>{String(i + 1).padStart(2, '0')}</b>
-            <span>{s}</span>
-          </button>
+            <span>{label}</span>
+          </li>
         ))}
+      </ol>
+      <p className="note">
+        Aktuell Vorschau: Die lokale Prüfung erstellt einen Konfigurationsentwurf.
+        Telefonie, Live-Anrufannahme und Checkout werden dadurch nicht aktiviert.
+      </p>
+      <div className="onb-foot">
+        <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
+          Zum vollständigen 6-Schritte-Onboarding
+        </a>
       </div>
-      {step === 0 && (
-        <div className="onb-body on" role="tabpanel" id="onb-panel-0" aria-labelledby="onb-tab-0">
-          <h3>Welche Branche?</h3>
-          <p>Die Vorlage bestimmt, was der Agent darf – und wann er sofort an einen Menschen übergibt.</p>
-          <Segs label="Branche" options={BRANCHEN} value={branche} onChange={setBranche} />
-          <span className="seal">
-            <i />
-            Kanzlei · Praxis · Steuerberatung: erhöhte Stufe, Datenschutzprüfung Pflicht
-          </span>
-          <div className="onb-foot">
-            <button className="btn" type="button" onClick={() => go(1)}>
-              Weiter
-            </button>
-          </div>
-        </div>
-      )}
-      {step === 1 && (
-        <div className="onb-body on" role="tabpanel" id="onb-panel-1" aria-labelledby="onb-tab-1">
-          <h3>Betrieb &amp; Paket</h3>
-          <div className="field">
-            <label htmlFor="onb-name">Betriebsname</label>
-            <input id="onb-name" type="text" placeholder="SHK Meisterbetrieb Rennsteig" autoComplete="organization" />
-          </div>
-          <div className="field">
-            <label htmlFor="onb-num">Übergabe-Kontakt (Mensch)</label>
-            <input id="onb-num" type="tel" placeholder="Bereitschaftsdienst +49 3679 ···" autoComplete="tel" />
-          </div>
-          <Segs label="Paket" options={PAKETE} value={paket} onChange={setPaket} />
-          <Segs label="Kanal" options={KANAELE} value={kanal} onChange={setKanal} />
-          <div className="onb-foot">
-            <button className="btn quiet" type="button" onClick={() => go(0)}>
-              Zurück
-            </button>
-            <button className="btn" type="button" onClick={() => go(2)}>
-              Weiter
-            </button>
-          </div>
-        </div>
-      )}
-      {step === 2 && (
-        <div className="onb-body on" role="tabpanel" id="onb-panel-2" aria-labelledby="onb-tab-2">
-          <h3>Wie soll der Agent klingen?</h3>
-          <div className="wave" aria-hidden="true">
-            {WAVE.map(([h, d], i) => (
-              <i key={i} style={{ ['--h' as string]: h, animationDelay: d } as CSSProperties} />
-            ))}
-          </div>
-          <Segs label="Stimme" options={STIMMEN} value={stimme} onChange={setStimme} />
-          <p>Sechs empfohlene von 28 Grok-Stimmen – alle sprechen Deutsch.</p>
-          <div className="onb-foot">
-            <button className="btn quiet" type="button" onClick={() => go(1)}>
-              Zurück
-            </button>
-            <button className="btn" type="button" onClick={() => go(3)}>
-              Weiter
-            </button>
-          </div>
-        </div>
-      )}
-      {step === 3 && (
-        <div className="onb-body on" role="tabpanel" id="onb-panel-3" aria-labelledby="onb-tab-3">
-          <h3>Freigaben &amp; Start</h3>
-          <div className="summary">
-            <div>
-              <b>Branche</b>
-              <span>{BRANCHEN[branche]}</span>
-            </div>
-            <div>
-              <b>Paket</b>
-              <span>{PAKETE[paket]}</span>
-            </div>
-            <div>
-              <b>Stimme</b>
-              <span>{STIMMEN[stimme]}</span>
-            </div>
-            <div>
-              <b>Kanal</b>
-              <span>{KANAELE[kanal]}</span>
-            </div>
-          </div>
-          <span className="seal">
-            <i />
-            KI-Offenlegung in der Begrüßung · Aufzeichnung standardmäßig aus · Fail-Closed
-          </span>
-          <div className="onb-foot">
-            <button className="btn quiet" type="button" onClick={() => go(2)}>
-              Zurück
-            </button>
-            <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
-              Onboarding fortsetzen
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

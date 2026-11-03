@@ -363,7 +363,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/claude-code-optimizer': {
     title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. Offene Beta: kostenlos bis 31.01.2027.',
+      'Der Claude Code Optimizer scannt Ihre Website auf DSGVO-, Tracking- und AI-Act-Risiken, priorisiert jeden Befund und liefert Fix-Vorschläge als Code-Snippet — mit Prüfpflicht vor der Übernahme. Offene Beta: kostenlos bis 31.01.2027.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

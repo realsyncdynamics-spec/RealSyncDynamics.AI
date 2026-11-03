@@ -106,7 +106,7 @@ export const EVIDENCE = [
   { t: 'DSGVO', d: 'Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess.' },
   { t: 'EU AI Act', d: 'Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme.' },
   { t: 'Nachweis-Export', d: 'Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer.' },
-  { t: 'Code Compliance', d: 'Claude Code prüft und unterstützt konkrete technische Remediation.' },
+  { t: 'Code Compliance', d: 'Fix-Vorschläge als Code-Snippet zu konkreten Befunden — mit Prüfpflicht vor der Übernahme.' },
 ] as const;
 
 export const STEPS = [

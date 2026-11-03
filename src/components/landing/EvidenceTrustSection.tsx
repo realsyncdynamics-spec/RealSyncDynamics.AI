@@ -36,7 +36,7 @@ const ITEMS = [
   {
     Icon: Code2,
     title: 'Code Compliance',
-    text: 'Claude Code prüft und unterstützt konkrete technische Remediation.',
+    text: 'Fix-Vorschläge als Code-Snippet zu konkreten Befunden — mit Prüfpflicht vor der Übernahme.',
   },
 ] as const;
 

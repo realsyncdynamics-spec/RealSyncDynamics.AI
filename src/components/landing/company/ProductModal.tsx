@@ -332,20 +332,29 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     };
   }, [initialTab]);
 
-  // Esc auf Dokumentebene (auch wenn der Fokus außerhalb gelandet ist).
+  // Esc und ←/→ auf Dokumentebene wie in der Referenz: Ein Klick auf Text im
+  // Dialog setzt den Fokus auf <body>, die Tasten sollen trotzdem greifen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+        return;
       }
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.('input, textarea, select')) return;
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      e.preventDefault();
+      if (target?.closest?.('.pm-tabs')) selectTab(tab + dir, true);
+      else setPage(cur + dir);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, selectTab, setPage, tab, cur]);
 
+  // Fokusfalle: Tab/Shift+Tab bleiben im Dialog.
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
     if (e.key === 'Tab' && boxRef.current) {
       const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       if (f.length === 0) return;
@@ -358,14 +367,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
         e.preventDefault();
         first.focus();
       }
-      return;
     }
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    if (target.closest('input, textarea, select')) return;
-    const dir = e.key === 'ArrowRight' ? 1 : -1;
-    e.preventDefault();
-    if (target.closest('.pm-tabs')) selectTab(tab + dir, true);
-    else setPage(cur + dir);
   };
 
   return (

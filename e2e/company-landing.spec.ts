@@ -5,7 +5,12 @@ import { test, expect } from '@playwright/test';
  * Dialog öffnet per Klick auf eine Tafel, Esc schließt, Fokus kehrt zurück;
  * Governance-Tafel scrollt zum Abschnitt; Rechtslinks zeigen auf echte Routen.
  * Die 3D-Szene mountet unter navigator.webdriver nicht (wie Landing v4).
+ * Reduced Motion: Die Hero-Tafeln schweben sonst dauerhaft (Referenz) und
+ * gelten für Playwright nie als „stabil“ — so ist der Ablauf deterministisch
+ * und der Reduced-Motion-Pfad gleich mitgeprüft.
  */
+test.use({ reducedMotion: 'reduce' });
+
 test.describe('/unternehmen', () => {
   test('lädt, öffnet den Produkt-Dialog per Klick und schließt mit Esc', async ({ page }) => {
     const errors: string[] = [];

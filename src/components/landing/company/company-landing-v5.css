@@ -400,7 +400,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 footer .legal i { color: rgba(243,242,242,.25); font-style: normal; }
 .rsl5 footer .copy { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--color-neutral-500); padding-top: 24px; border-top: 1px solid rgba(243,242,242,.1); width: 100%; }
 .rsl5 .rv { opacity: 0; transform: translate3d(0, 22px, 0); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
-.rsl5 .rv.in { opacity: 1; transform: none; }
+.rsl5 .rv.shown { opacity: 1; transform: none; }
 .rsl5 .htile, .rsl5 .gref { transition-property: transform, background, border-color, box-shadow; }
 .rsl5 .onb-body.on { animation: rsl5-swap 380ms var(--ease) both; }
 @keyframes rsl5-swap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

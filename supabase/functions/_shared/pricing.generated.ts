@@ -483,9 +483,10 @@ export interface Plan {
    */
   yearlyCheckoutUnavailable?: boolean;
   /**
-   * `true` = der Monatspreis erscheint auf jeder Oberfläche ausdrücklich als
-   * Nettopreis („1.498 €/Monat netto“), nicht nur über den Steuerhinweis im
-   * Fußtext. Enterprise (Dominik 2026-10-24): ab Tag 1 kostenpflichtig, ohne
+   * `true` = bei Regelbesteuerung erscheint der Monatspreis auf jeder
+   * Oberfläche ausdrücklich als Nettopreis („1.498 €/Monat netto“). Im Modus
+   * `EXEMPT` (§ 19 UStG, aktuell) ohne Wirkung: Anzeige „1.498 €/Monat“.
+   * Enterprise (Dominik 2026-10-24): ab Tag 1 kostenpflichtig, ohne
    * Testphase und nicht Teil der Beta. Anzeige über `monthlyPriceSuffix()` und
    * `monthlyPriceText()`.
    */
@@ -869,7 +870,7 @@ export const PLANS: Plan[] = [
   },
 
   // ── Enterprise — Self-Service-Checkout ──────────────────────────────────
-  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat (netto) direkt über
+  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat direkt über
   // Checkout verkauft, ohne Testphase. Bis dahin war der Plan ein Vertragsplan
   // (inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED) mit `-1` auf
   // allen Kontingenten. Ohne Vertrag braucht er endliche Kontingente — siehe
@@ -3005,14 +3006,23 @@ export function formatPriceEur(value: number): string {
   }).format(value);
 }
 
-/** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
-export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
-  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+/**
+ * „netto“ neben dem Betrag nur bei Regelbesteuerung. Als Kleinunternehmer
+ * (§ 19 UStG, `PRICE_DISPLAY_TAX_MODE = 'EXEMPT'`) gibt es keinen Netto-/
+ * Brutto-Unterschied — „netto“ entfällt dann auch bei `netPriceLabel`.
+ */
+export function showsNetPriceLabel(plan: Pick<Plan, 'netPriceLabel'>): boolean {
+  return Boolean(plan.netPriceLabel) && PRICE_DISPLAY_TAX_MODE === 'EU_STANDARD';
 }
 
-/** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
+/** Monats-Suffix neben dem Betrag: „/ Monat“ (bei Regelbesteuerung und `netPriceLabel` „/ Monat netto“). */
+export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
+  return showsNetPriceLabel(plan) ? '/ Monat netto' : '/ Monat';
+}
+
+/** Monatspreis als Fließtext, z. B. „1.498 €/Monat“ (ohne „ab“). */
 export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
-  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${showsNetPriceLabel(plan) ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
@@ -3043,30 +3053,57 @@ export const PRICING_TRUST_NOTE =
  */
 export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.';
 
-/** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
+/**
+ * Rechnungs-Fußzeile für Stripe im Modus `EXEMPT` (§ 34a Nr. 5 UStDV).
+ * Wird von `supabase/functions/_shared/checkout-tax.ts` genutzt — Billing-Code,
+ * Wortlaut nur mit Billing-Freigabe ändern.
+ */
 export const PRICING_TAX_NOTE_EXEMPT =
   'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+
+/**
+ * § 19-Hinweis für Preisangaben auf der Website — die eine Stelle für den
+ * Wortlaut (Entscheidung Dominik 2026-11-01: Kleinunternehmer nach § 19 UStG).
+ */
+export const TAX_NOTICE = 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
+
+/** Englische Fassung von `TAX_NOTICE`. */
+export const TAX_NOTICE_EN = 'VAT exempt under § 19 UStG (German small business regulation).';
+
+/** Steuerhinweis neben Preisen im Modus `EXEMPT`: B2B-Satz bleibt, USt-Teil ist der § 19-Hinweis. */
+export const PRICING_TAX_NOTE_EXEMPT_DISPLAY = `Angebot nur für Unternehmer (B2B) – ${TAX_NOTICE}`;
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**
- * Steuermodus der Firma — die eine Stelle, an der er gesetzt wird.
- * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Impressum, AGB § 4). Beim Wechsel
- * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
- * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
+ * Steuermodus für Stripe-Checkout und Rechnungen (Edge Functions über
+ * `pricing.generated.ts`: `automatic_tax`, Rechnungs-Fußzeile, Steuer-Prüfung).
+ *
+ * BLOCKER (2026-11-03): steht noch auf `EU_STANDARD` → Stripe Tax schlägt 19 %
+ * USt auf, obwohl Dominik seit 2026-11-01 Kleinunternehmer (§ 19 UStG) ist.
+ * Umstellung auf `EXEMPT` ändert Live-Billing und braucht eine eigene Freigabe
+ * (danach `npm run sync:pricing`, Edge Functions deployen, Stripe-Konto prüfen).
+ * Bis dahin folgt die Website-Anzeige `PRICE_DISPLAY_TAX_MODE`.
  */
 export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
 
-/** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
+/**
+ * Steuermodus der Preisanzeige auf der Website (`COMPANY.taxMode`).
+ * `EXEMPT` = Kleinunternehmer nach § 19 UStG (Entscheidung 2026-11-01).
+ * Soll nach der Billing-Freigabe wieder mit `PRICING_TAX_MODE` übereinstimmen.
+ */
+export const PRICE_DISPLAY_TAX_MODE: PricingTaxMode = 'EXEMPT';
+
+/** Steuerhinweis für Preisangaben im jeweiligen Steuermodus (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {
-  return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT : PRICING_TAX_NOTE_STANDARD;
+  return mode === 'EXEMPT' ? PRICING_TAX_NOTE_EXEMPT_DISPLAY : PRICING_TAX_NOTE_STANDARD;
 }
 
 /**
- * Gültiger Steuerhinweis, abgeleitet aus `PRICING_TAX_MODE`. Für Konsumenten
- * ohne Zugriff auf `COMPANY` (Edge Functions über `pricing.generated.ts`).
+ * Gültiger Steuerhinweis für Preisangaben, abgeleitet aus
+ * `PRICE_DISPLAY_TAX_MODE`. Für Konsumenten ohne Zugriff auf `COMPANY`.
  */
-export const PRICING_TAX_NOTE = pricingTaxNote(PRICING_TAX_MODE);
+export const PRICING_TAX_NOTE = pricingTaxNote(PRICE_DISPLAY_TAX_MODE);
 
 // ── Netto / USt / Brutto (UX-003) ─────────────────────────────────────────
 
@@ -3097,7 +3134,7 @@ export function formatPriceEurCents(value: number): string {
  */
 export function formatNetVatGrossEur(
   netEur: number,
-  mode: PricingTaxMode = PRICING_TAX_MODE,
+  mode: PricingTaxMode = PRICE_DISPLAY_TAX_MODE,
   vatRate: number = VAT_RATE_DE,
 ): string {
   if (mode === 'EXEMPT') return formatPriceEur(netEur);

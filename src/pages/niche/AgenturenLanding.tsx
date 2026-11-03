@@ -1,6 +1,6 @@
 import { Building2, Workflow, FileBarChart } from 'lucide-react';
 import { NicheLanding, type NicheConfig } from './NicheLanding';
-import { monthlyPriceText, planById } from '@/shared/pricing';
+import { monthlyPriceText, planById, TAX_NOTICE } from '@/shared/pricing';
 
 const AGENTUREN_CONFIG: NicheConfig = {
   segment: 'Agentur',
@@ -49,7 +49,7 @@ const AGENTUREN_CONFIG: NicheConfig = {
     },
     {
       q: 'Wie sieht das Pricing für Agenturen aus?',
-      a: `Starter ${monthlyPriceText(planById('starter'))}, Growth ${monthlyPriceText(planById('growth'))}, Agency ${monthlyPriceText(planById('agency'))}, Enterprise ${monthlyPriceText(planById('enterprise'))} (Preise zzgl. USt). Die jeweils gültigen Preise und Kontingente stehen auf /pricing.`,
+      a: `Starter ${monthlyPriceText(planById('starter'))}, Growth ${monthlyPriceText(planById('growth'))}, Agency ${monthlyPriceText(planById('agency'))}, Enterprise ${monthlyPriceText(planById('enterprise'))} (${TAX_NOTICE}) Die jeweils gültigen Preise und Kontingente stehen auf /pricing.`,
     },
     {
       q: 'Wer haftet, wenn ein Mandant trotzdem abgemahnt wird?',

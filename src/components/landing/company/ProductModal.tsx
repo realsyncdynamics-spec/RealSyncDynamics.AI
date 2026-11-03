@@ -353,10 +353,13 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose, selectTab, setPage, tab, cur]);
 
-  // Fokusfalle: Tab/Shift+Tab bleiben im Dialog.
+  // Fokusfalle: Tab/Shift+Tab bleiben im Dialog. Nur per Tab erreichbare
+  // Elemente zählen: Inaktive Tabs (Roving Tabindex, tabIndex=-1) passen auf
+  // `button:not([disabled])`, wären sonst „erstes“ Element und Shift+Tab vom
+  // tatsächlich ersten Element liefe aus dem Dialog.
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Tab' && boxRef.current) {
-      const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.tabIndex >= 0);
       if (f.length === 0) return;
       const first = f[0];
       const last = f[f.length - 1];

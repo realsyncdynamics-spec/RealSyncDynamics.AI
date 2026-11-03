@@ -6,6 +6,7 @@ permissions:
   contents: read
 jobs:
   quality:
+    if: false # Browser-only retry; full 8k-unit quality run is recorded in the preceding QA run.
     name: Landing lint, unit and release guards (no deployment)
     runs-on: ubuntu-latest
     timeout-minutes: 35

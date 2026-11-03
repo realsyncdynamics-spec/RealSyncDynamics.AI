@@ -41,7 +41,10 @@ try {
     // to public/unternehmen/index.html. Both entry points must lead to the
     // same canonical six-step voice service; they need not share their DOM.
     const reactTile = page.getByTestId('product-tile-voice');
-    if (await reactTile.count()) {
+    if (!(await page.content()).includes('Sechs Schritte der Voice-Agent-Einrichtung')) {
+      // React hydrates after DOMContentLoaded. Wait for its interactive tile,
+      // rather than assuming an unloaded SPA is the wrong route.
+      await reactTile.waitFor({ state: 'visible', timeout: 20000 });
       await reactTile.click();
       const dialog = page.getByRole('dialog', { name: 'Produkte im Detail' });
       await dialog.getByRole('tab', { name: 'Einrichten' }).click();

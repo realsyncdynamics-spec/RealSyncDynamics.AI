@@ -53,7 +53,7 @@
 - **`VITE_BETA_PHASE=off`:** Überall erscheinen wieder die Listenpreise. Starter und Growth zeigen „14 Tage kostenlos testen · monatlich kündbar“, Agency „monatlich kündbar“. Der Checkout geht wieder an Stripe.
 - **`publicOffer = false` (bei aktiver Beta):** Die Listenpreise erscheinen, die Checkout-Umleitung und bestehende Beta-Zugänge bleiben aber erhalten.
 - **Claims vs. Runtime:** Beta-Mandanten bekommen den Growth-Umfang serverseitig über `beta-enroll` (Abo-Status `trialing` mit `trial_end` = 31.01.2027). Der Ablauf ist automatisch: Seit Migration `20260928160000_wp2a_trial_end_expiry.sql` wertet `tenant_entitlements_resolve()` abgelaufene Trials nicht mehr. Das Enddatum in `src/config/beta.ts` ist nur das Anzeige-Label dazu.
-- Enterprise ist von der Beta nicht betroffen und bleibt „Auf Anfrage“.
+- Enterprise ist von der Beta nicht betroffen: Die Preis-SSoT nennt 1.498 €/Monat und `purchaseMode: 'checkout'`; der CTA lautet weiterhin „Enterprise anfragen“. Ein erfolgreicher Live-Checkout ist mangels verifizierter Stripe-Zuordnung und Deployment nicht bestätigt.
 
 ### A.4 Add-ons (monatlich, im Modus EXEMPT ohne USt-Berechnung; SSoT `ADDONS`, Doku `docs/product/addon-booking.md`)
 

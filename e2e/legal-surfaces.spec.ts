@@ -26,6 +26,8 @@ const EXPECTED_SUB_PROCESSORS = [
   'Hostinger International, Ltd.',
   'Resend Inc.',
   'GitHub, Inc. (Microsoft Corporation)',
+  // Geplant ab Start Voice (status 'planned'), heute ohne Verarbeitung.
+  'SpaceXAI LLC (xAI, Grok)',
 ] as const;
 
 const EXPECTED_DPA_URLS = [
@@ -38,6 +40,7 @@ const EXPECTED_DPA_URLS = [
   'https://www.hostinger.com/legal/data-processing-agreement',
   'https://resend.com/legal/dpa',
   'https://github.com/customer-terms/github-data-protection-agreement',
+  'https://x.ai/legal/data-processing-addendum',
 ] as const;
 
 test.describe('/legal/sub-processors', () => {

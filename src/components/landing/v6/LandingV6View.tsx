@@ -535,7 +535,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </nav>
           <nav aria-label="Rechtliches" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>RECHTLICHES</span>
-            <Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link><Link to="/legal/widerruf">Widerruf</Link><Link to="/kontakt">Kontakt</Link>
+            <Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link><Link to="/legal/widerruf">Widerruf</Link><Link to="/kontakt">Kontakt</Link>{/* Statische Seite außerhalb der SPA (public/unternehmen/): <a>, kein Router-Link. */}<a href="/unternehmen/">Unternehmen</a>
           </nav>
         </div>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "20px var(--px) 32px", borderTop: "1px solid var(--rs-line)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>

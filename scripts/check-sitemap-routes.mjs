@@ -18,7 +18,7 @@
  * Der umgekehrte Fall (Route ohne Sitemap-Eintrag) ist KEIN Fehler: Viele
  * Routen sind auth-gated, Weiterleitungen oder bewusst nicht indexiert.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const app = readFileSync('src/App.tsx', 'utf8');
 const routes = [...app.matchAll(/path="([^"]+)"/g)].map((m) => m[1]);
@@ -41,7 +41,13 @@ const hasRoute = (pathname) => matchers.some((re) => re.test(pathname));
 const xml = readFileSync('public/sitemap.xml', 'utf8');
 const urls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
 
-const orphans = urls.filter((p) => !hasRoute(p));
+/**
+ * Statische Seiten aus `public/<name>/index.html` (Liste: `STATIC_HTML_PAGES` in
+ * `src/lib/spaNotFound.ts`) haben keine App.tsx-Route, aber eine echte Datei.
+ * `scripts/prerender.mjs` überspringt sie, also entsteht kein Soft-404.
+ */
+const isStaticPage = (p) => p !== '/' && existsSync(`public${p.replace(/\/$/, '')}/index.html`);
+const orphans = urls.filter((p) => !hasRoute(p) && !isStaticPage(p));
 
 if (orphans.length > 0) {
   console.error(`✗ ${orphans.length} Sitemap-URL(s) ohne Route in src/App.tsx:\n`);

@@ -1,0 +1,69 @@
+name: Voice company combined isolated QA
+on:
+  push:
+    branches: [qa/voice-landing-combined-20261103]
+permissions:
+  contents: read
+jobs:
+  quality:
+    name: Landing lint, unit and release guards (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npm run lint
+      - name: Full unit suite
+        run: npm test
+      - name: Landing claims
+        run: npm run check:landing-claims
+      - name: SPA route sync
+        run: npm run check:spa-routes
+      - name: Sitemap and static route coverage
+        run: npm run check:sitemap
+      - name: Tax and pricing sync (current main unchanged)
+        run: npm run check:pricing
+      - name: Migration collisions (read-only)
+        run: npm run check:migration-collisions
+  browser:
+    name: Vite preview and real mobile/desktop browser QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser
+        run: npx playwright install chromium --with-deps
+      - name: Build assets only — never deploy
+        run: npm run build:base
+      - name: Start local Vite preview
+        run: |
+          (npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > /tmp/voice-company-preview.log 2>&1 &)
+          for n in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:4173/unternehmen/ > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/voice-company-preview.log
+          exit 1
+      - name: Test real effective route /unternehmen and /unternehmen/
+        run: node scripts/qa-voice-landing-combined.mjs
+      - name: Existing landing Playwright regression
+        run: npx playwright test e2e/company-landing.spec.ts --project=chromium
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: voice-company-combined-qa
+          path: |
+            screenshots/
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore

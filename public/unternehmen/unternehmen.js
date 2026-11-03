@@ -62,7 +62,14 @@
   // Vorlagen wählen
   (() => { const g = document.getElementById('tpls'), note = document.getElementById('tpl-note'), go = document.getElementById('tpl-go'), msg = document.getElementById('c-msg'); if (!g) return;
     g.addEventListener('click', (e) => { const b = e.target.closest('.tpl'); if (!b) return; const on = b.getAttribute('aria-pressed') !== 'true'; g.querySelectorAll('.tpl').forEach((x) => x.setAttribute('aria-pressed', x === b && on));
-      const n = on ? b.querySelector('b').textContent : ''; note.textContent = on ? 'Gewählt: Vorlage „' + n + '“.' : 'Noch keine Vorlage gewählt.'; go.textContent = on ? 'Vorlage „' + n + '“ im Builder öffnen' : 'Im Builder öffnen';
+      const n = on ? b.querySelector('b').textContent : '';
+      const key = on ? b.dataset.tpl : '';
+      // The existing /frontend-builder is a project-inquiry flow, not a website editor.
+      // Carry only the known template identifier across the navigation boundary.
+      const allowed = ['gastro', 'handwerk', 'praxis'];
+      go.href = '/frontend-builder' + (allowed.includes(key) ? '?vorlage=' + encodeURIComponent(key) : '') + '#builder';
+      note.textContent = on ? 'Gewählt: Vorlage „' + n + '“. Im nächsten Schritt können Sie Ihr Projekt anfragen.' : 'Noch keine Vorlage gewählt. Der nächste Schritt ist eine Projektanfrage, kein fertiger Editor.';
+      go.textContent = on ? 'Projekt mit „' + n + '“ anfragen' : 'Projektanfrage starten';
       if (msg && (!msg.value || msg.dataset.auto)) { msg.value = on ? 'Ich interessiere mich für die Landingpage-Vorlage „' + n + '“.' : ''; msg.dataset.auto = on ? '1' : ''; } }); })();
   // Produkt-Demo
   (() => { const pm = document.getElementById('pm'), tabs = [...pm.querySelectorAll('.pm-tabs button')], panes = [...pm.querySelectorAll('.pm-pane')]; let last = null, timers = [];

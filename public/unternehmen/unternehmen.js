@@ -101,12 +101,6 @@
     tog.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const i = +b.dataset.i; state[i] = state[i] ? 0 : 1; draw(); });
     pick('b-pick', (i) => { bi = i; draw(); }); draw();
   })();
-  // Onboarding
-  const onb = document.getElementById('onb'), tabs = [...onb.querySelectorAll('[role=tab]')], panels = [...onb.querySelectorAll('.onb-body')]; let step = 0;
-  const go = (n) => { step = Math.max(0, Math.min(3, n)); tabs.forEach((t, i) => { t.setAttribute('aria-selected', i === step); t.classList.toggle('done', i < step); }); panels.forEach((p, i) => p.classList.toggle('on', i === step));
-    const v = (k) => { const b = onb.querySelector('[data-pick="' + k + '"] [aria-pressed="true"]'); return b ? b.textContent : ''; };
-    document.getElementById('s-branche').textContent = v('branche'); document.getElementById('s-voice').textContent = v('voice'); document.getElementById('s-kanal').textContent = v('kanal'); };
-  tabs.forEach((t, i) => t.onclick = () => go(i));
-  onb.querySelectorAll('[data-next]').forEach((b) => b.onclick = () => go(step + 1)); onb.querySelectorAll('[data-prev]').forEach((b) => b.onclick = () => go(step - 1));
-  onb.querySelectorAll('.segs').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b))));
+  // Voice onboarding is the canonical external six-step workflow.
+  // No duplicate local wizard handlers are installed.
 })();

@@ -17,9 +17,9 @@ describe('Unternehmensseite – keine unverbundenen Einstiege', () => {
   });
 
   it('verknüpft alle internen Anker mit einem Abschnitt, einem Modal oder einer dokumentierten Route', () => {
-    const ids = new Set([...html.matchAll(/\\bid="([^"]+)"/g)].map((m) => m[1]));
+    const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
     const routes = new Set(['governance-os', 'audit', 'builder', 'login', 'r-impressum', 'datenschutz', 'agb', 'widerruf', 'avv', 'subproc']);
-    for (const match of html.matchAll(/<a\\b[^>]*href="#([^"]+)"[^>]*>/g)) {
+    for (const match of html.matchAll(/<a\b[^>]*href="#([^"]+)"[^>]*>/g)) {
       const key = match[1]!;
       const element = match[0];
       expect(ids.has(key) || routes.has(key) || element.includes('data-open=')).toBe(true);

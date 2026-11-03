@@ -225,6 +225,11 @@ verify_jwt = false
 [functions.track-pageview]
 verify_jwt = false
 
+# PR C, Schritt 3: öffentliches Kontaktformular veröffentlichter SiteOS-Seiten.
+# Ohne INBOX_FORM_SUBMIT_ENABLED=true antwortet die Function 503 (nicht produktiv).
+[functions.inbox-form-submit]
+verify_jwt = false
+
 [functions.marketing-event]
 verify_jwt = false
 

@@ -37,6 +37,17 @@ describe('Static company Voice setup uses the canonical six-step onboarding', ()
     expect(html).toContain('@media (max-width:560px)');
   });
 
+  it('links every footer legal item to an existing route instead of dead fragments', () => {
+    const urls = [
+      '/impressum', '/datenschutz', '/agb', '/widerruf',
+      '/legal/avv', '/legal/sub-processors',
+    ];
+    for (const href of urls) expect(html).toContain(`href="${href}"`);
+    for (const dead of ['r-impressum', 'datenschutz', 'agb', 'widerruf', 'avv', 'subproc']) {
+      expect(html).not.toContain(`href="#${dead}"`);
+    }
+  });
+
   it('compiles its existing browser JavaScript', () => {
     expect(() => new vm.Script(js, { filename: 'unternehmen.js' })).not.toThrow();
   });

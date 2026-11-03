@@ -13,7 +13,7 @@ mkdirSync('screenshots', { recursive: true });
 const browser = await chromium.launch({ headless: true });
 try {
   for (const [label, width, height] of [['mobile', 390, 844], ['desktop', 1280, 900]]) {
-    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     const response = await page.goto(host + '/unternehmen/', { waitUntil: 'domcontentloaded', timeout: 30000 });

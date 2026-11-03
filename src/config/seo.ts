@@ -89,7 +89,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     priceCurrency: 'EUR',
     priceValidUntil: BETA.endsIso,
     url,
-    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat, monatlich kündbar. Keine Umsatzsteuer gemäß § 19 UStG.`,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat, monatlich kündbar. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.`,
     priceSpecification: [
       { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
       { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },

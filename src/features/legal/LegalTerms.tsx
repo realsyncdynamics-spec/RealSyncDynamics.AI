@@ -171,7 +171,7 @@ export function LegalTerms() {
             angegeben, in Euro.
           </p>
           <p>
-            (2) Kleinunternehmer gemäß § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.
+            (2) Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
           </p>
           <p>
             (3) Die Abrechnung erfolgt über den Zahlungsdienstleister

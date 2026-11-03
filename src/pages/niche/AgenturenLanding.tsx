@@ -49,7 +49,7 @@ const AGENTUREN_CONFIG: NicheConfig = {
     },
     {
       q: 'Wie sieht das Pricing für Agenturen aus?',
-      a: `Starter ${monthlyPriceText(planById('starter'))}, Growth ${monthlyPriceText(planById('growth'))}, Agency ${monthlyPriceText(planById('agency'))}, Enterprise ${monthlyPriceText(planById('enterprise'))} (Kleinunternehmer gemäß § 19 UStG). Die jeweils gültigen Preise und Kontingente stehen auf /pricing.`,
+      a: `Starter ${monthlyPriceText(planById('starter'))}, Growth ${monthlyPriceText(planById('growth'))}, Agency ${monthlyPriceText(planById('agency'))}, Enterprise ${monthlyPriceText(planById('enterprise'))} – Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Die jeweils gültigen Preise und Kontingente stehen auf /pricing.`,
     },
     {
       q: 'Wer haftet, wenn ein Mandant trotzdem abgemahnt wird?',

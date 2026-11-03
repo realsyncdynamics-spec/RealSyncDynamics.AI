@@ -3006,13 +3006,17 @@ export function formatPriceEur(value: number): string {
 }
 
 /** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
+export function showsNetPriceLabel(plan: Pick<Plan, 'netPriceLabel'>, mode: PricingTaxMode = PRICING_TAX_MODE): boolean {
+  return mode === 'EU_STANDARD' && plan.netPriceLabel === true;
+}
+
 export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
-  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+  return showsNetPriceLabel(plan) ? '/ Monat netto' : '/ Monat';
 }
 
 /** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
 export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
-  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${showsNetPriceLabel(plan) ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
@@ -3045,7 +3049,7 @@ export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) –
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
-  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+  'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 

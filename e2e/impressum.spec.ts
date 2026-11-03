@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { PRICING_TAX_MODE, PRICING_TAX_NOTE_EXEMPT, PRICING_TAX_NOTE_STANDARD } from '../shared/pricing';
 
 /**
  * E2E-Smoke fuer /legal/impressum.
@@ -13,8 +14,8 @@ import { test, expect } from '@playwright/test';
  *      gegen scripts/production-readiness-check.mjs Check `impressum-vat`
  *      versto&szlig;en. Solange VITE_BUSINESS_VAT_ID leer ist, steht in der
  *      Umsatzsteuer-Sektion stattdessen sachlich „noch nicht vergeben“
- *      (Regelbesteuerung seit 20.10.2026) — nicht als Alarm und ohne
- *      § 19 UStG.
+ *      — nicht als Alarm. Die Preisseite muss den aktuellen Steuermodus
+ *      der Preis-SSoT abbilden (§ 19 UStG bei `EXEMPT`).
  *
  *   DEV-Hinweis-Banner ist absichtlich nur in `npm run dev` sichtbar, nicht
  *   im Playwright-Lauf (der gegen den PROD-Build laeuft).
@@ -52,14 +53,23 @@ test.describe('/legal/impressum', () => {
     expect(body).not.toContain('USt-IdNr. fehlt');
   });
 
-  test('USt-Sektion zeigt sachlichen USt-Hinweis statt Alarm, kein § 19', async ({ page }) => {
+  test('USt-Sektion ist vorhanden ohne alarmierende Fehlermeldung', async ({ page }) => {
     await page.goto('/legal/impressum');
-    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, sagt die
-    // Umsatzsteuer-Sektion sachlich, dass noch keine USt-IdNr. vergeben ist.
-    // Ein § 19-Hinweis wäre seit 20.10.2026 falsch.
-    await expect(
-      page.getByText(/Umsatzsteuer-Identifikationsnummer ist noch nicht vergeben/i).first(),
-    ).toBeVisible();
-    await expect(page.getByText(/Kleinunternehmer/i)).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Umsatzsteuer-Identifikationsnummer/i })).toBeVisible();
+    await expect(page.getByText(/USt-IdNr\. fehlt/i)).toHaveCount(0);
+    // Kein pauschales Verbot von § 19 UStG im EXEMPT-Modus.
+  });
+
+  test('Preisseite zeigt den Steuerhinweis passend zur Preis-SSoT', async ({ page }) => {
+    await page.goto('/pricing');
+    const note = page.getByTestId('pricing-tax-note');
+    await expect(note).toBeVisible();
+    if (PRICING_TAX_MODE === 'EXEMPT') {
+      await expect(note).toContainText(PRICING_TAX_NOTE_EXEMPT);
+      await expect(note).not.toContainText(/zzgl\. gesetzlicher Umsatzsteuer/i);
+    } else {
+      await expect(note).toContainText(PRICING_TAX_NOTE_STANDARD);
+      await expect(note).not.toContainText(/§\s*19\s*UStG/i);
+    }
   });
 });

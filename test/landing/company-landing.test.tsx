@@ -14,6 +14,7 @@ import {
   VOICE_TELEPHONY_STATUS,
 } from '../../src/components/landing/company/companyProducts';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
+import { DEMO_EVIDENCE_NOTE } from '../../src/components/landing/company/CompanyDemos';
 import { ASSISTANT_SUPPRESS_ATTR } from '../../src/components/assistantSuppression';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 import { PRICING_TAX_MODE, pricingTaxNote } from '../../shared/pricing';
@@ -159,19 +160,20 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     await waitFor(() => expect(document.activeElement).toBe(tile));
   });
 
-  it('„Prüfung live testen“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
+  it('„Prüfung ausprobieren“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
     vi.useFakeTimers();
     mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Prüfung live testen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Prüfung ausprobieren' }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'Prüfung live erleben' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Prüfung ausprobieren' })).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kundendaten exportieren' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Prüfung starten' }));
     act(() => {
       vi.advanceTimersByTime(3400);
     });
     expect(within(dialog).getByRole('status')).toHaveTextContent('Blockiert – keine Einwilligung für Export.');
-    expect(within(dialog).getByText(/^EVIDENCE · SHA-256 [0-9a-f]{16}…$/)).toBeInTheDocument();
+    expect(within(dialog).getByText(DEMO_EVIDENCE_NOTE)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/SHA-256 [0-9a-f]+/)).toBeNull();
   });
 
   it('Voice-Onboarding endet im Link auf die Subdomain (neuer Tab)', () => {

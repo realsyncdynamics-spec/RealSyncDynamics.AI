@@ -396,6 +396,21 @@
     .statusbar span:nth-child(n+2) { display: none; }
   }
   @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } .wave i, .scrollcue, .seal i { animation: none; } }
+
+/* Kanonischer Voice-Einstieg, abgestimmt auf das bestehende Gold-/Graphit-Design.
+   Die vollständige Einrichtung befindet sich ausschließlich auf der Voice-Subdomain. */
+.voice-entry { width:100%; max-width:720px; }
+.voice-entry-lead { font-size:clamp(14px,1.4vw,16px); line-height:1.65; color:#d0c8bd; margin:0 0 16px; }
+.voice-entry-steps { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; list-style:none; margin:14px 0 18px; padding:0; }
+.voice-entry-steps li { display:flex; gap:12px; align-items:center; min-height:60px; padding:12px 14px; border:1px solid rgba(229,199,151,.28); background:rgba(231,190,110,.06); }
+.voice-entry-steps li b { color:#e4be79; font:600 12px/1.4 ui-monospace,monospace; }
+.voice-entry-steps li span { color:#f3ebdc; font-size:clamp(13px,1.2vw,15px); line-height:1.4; }
+.voice-entry .onb-foot { justify-content:center; }
+.voice-entry .onb-foot a { text-align:center; max-width:100%; }
+@media (max-width:560px) {
+  .voice-entry-steps { grid-template-columns:minmax(0,1fr); }
+  .voice-entry-steps li { min-height:48px; }
+}
 </style>
 </head>
 <body>
@@ -495,45 +510,20 @@
           <section class="pg" data-t="Leistungen"><h3>Was der Agent kann – und was nicht</h3><ul class="plist"><li>Gibt sich zu Beginn als <strong>KI</strong> zu erkennen</li><li>Nimmt Anliegen, Terminwünsche und Rückrufe auf</li><li>Macht <strong>keine Zusagen</strong> – Ihr Team bestätigt</li><li><strong>Keine Aufzeichnung</strong> des Gesprächs</li><li>Bei Gefahr: sofortige Übergabe an einen Menschen</li><li>Acht Branchenvorlagen: Handwerk, Metzgerei, KFZ-Werkstatt, Gastronomie &amp; Bäckerei, Hausverwaltung, Kanzlei, Arztpraxis, Steuerberatung</li></ul></section>
           <section class="pg" data-t="Stand"><h3>Wo der Voice Agent steht</h3><p>Telefonie ist in Vorbereitung und noch nicht buchbar. Preise und Pakete veröffentlichen wir, sobald sie feststehen – verbindlich ist nur die Preisseite.</p><p class="note">Telefonie: geplant · Web-Chat, WhatsApp, Telegram: Preview</p></section>
           <section class="pg" data-t="Anruf testen"><h3>Ein Anruf, wie ihn der Agent führen soll</h3><p class="note">Beispiel-Simulation im Browser – kein echter Anruf</p><div class="segs" id="v-pick"><button aria-pressed="true">Heizungsbau</button><button aria-pressed="false">Arztpraxis</button><button aria-pressed="false">Restaurant</button></div><div class="pm-stage" style="align-items:stretch;justify-content:flex-start"><div class="chat" id="v-chat"></div></div><div class="pm-cta"><button class="btn" id="v-run">Anruf starten</button></div></section>
-          <section class="pg" data-t="Einrichten"><h3>Ihr Agent in vier Schritten</h3><div class="onb" id="onb">
-        <div class="onb-steps" role="tablist">
-          <button role="tab" aria-selected="true" data-step="0"><b>01</b><span>Branche</span></button>
-          <button role="tab" aria-selected="false" data-step="1"><b>02</b><span>Betrieb</span></button>
-          <button role="tab" aria-selected="false" data-step="2"><b>03</b><span>Stimme</span></button>
-          <button role="tab" aria-selected="false" data-step="3"><b>04</b><span>Freigabe</span></button>
-        </div>
-        <div class="onb-body on" data-panel="0">
-          <h3>Welche Branche?</h3>
-          <p>Die Vorlage bestimmt, was der Agent darf – und wann er sofort an einen Menschen übergibt.</p>
-          <div class="segs" data-pick="branche"><button aria-pressed="true">Handwerk</button><button aria-pressed="false">Metzgerei</button><button aria-pressed="false">KFZ-Werkstatt</button><button aria-pressed="false">Gastronomie &amp; Bäckerei</button><button aria-pressed="false">Hausverwaltung</button><button aria-pressed="false">Kanzlei</button><button aria-pressed="false">Arztpraxis</button><button aria-pressed="false">Steuerberatung</button></div>
-          <span class="seal"><i></i>Kanzlei · Praxis · Steuerberatung: erhöhte Stufe, Datenschutzprüfung Pflicht</span>
-          <div class="onb-foot"><button class="btn" data-next>Weiter</button></div>
-        </div>
-        <div class="onb-body" data-panel="1">
-          <h3>Betrieb &amp; Kanal</h3>
-          <div class="field"><label for="onb-name">Betriebsname</label><input id="onb-name" type="text" placeholder="SHK Meisterbetrieb Rennsteig"></div>
-          <div class="field"><label for="onb-num">Übergabe-Kontakt (Mensch)</label><input id="onb-num" type="tel" placeholder="Bereitschaftsdienst +49 3679 ···"></div>
-                    <div class="segs" data-pick="kanal"><button aria-pressed="false">Web</button><button aria-pressed="true">Telefonie + Web (geplant)</button></div>
-          <div class="onb-foot"><button class="btn quiet" data-prev>Zurück</button><button class="btn" data-next>Weiter</button></div>
-        </div>
-        <div class="onb-body" data-panel="2">
-          <h3>Wie soll der Agent klingen?</h3>
-          <div class="wave" aria-hidden="true"><i style="--h:18px"></i><i style="--h:34px;animation-delay:-.2s"></i><i style="--h:26px;animation-delay:-.5s"></i><i style="--h:40px;animation-delay:-.1s"></i><i style="--h:22px;animation-delay:-.7s"></i><i style="--h:36px;animation-delay:-.3s"></i><i style="--h:16px;animation-delay:-.9s"></i><i style="--h:30px;animation-delay:-.4s"></i><i style="--h:24px;animation-delay:-.6s"></i></div>
-          <div class="segs" data-pick="voice"><button aria-pressed="true">Eve</button><button aria-pressed="false">Castor</button><button aria-pressed="false">Atlas</button><button aria-pressed="false">Celeste</button><button aria-pressed="false">Ursa</button><button aria-pressed="false">Rigel</button></div>
-          <p>Beispielstimmen. Auswahl und Sprachanbieter stehen vor dem Start fest.</p>
-          <div class="onb-foot"><button class="btn quiet" data-prev>Zurück</button><button class="btn" data-next>Weiter</button></div>
-        </div>
-        <div class="onb-body" data-panel="3">
-          <h3>Freigaben &amp; Start</h3>
-          <div class="summary">
-            <div><b>Branche</b><span id="s-branche">Handwerk</span></div>
-                        <div><b>Stimme</b><span id="s-voice">Eve</span></div>
-            <div><b>Kanal</b><span id="s-kanal">Telefonie + Web (geplant)</span></div>
-          </div>
-          <span class="seal"><i></i>KI-Offenlegung in der Begrüßung · Aufzeichnung aus · Fail-Closed</span>
-          <div class="onb-foot"><button class="btn quiet" data-prev>Zurück</button><a class="btn" href="#kontakt" data-close>Interesse vormerken</a></div>
-        </div>
-      </div></section>
+          <section class="pg" data-t="Einrichten"><h3>Ein Einstieg. Sechs Schritte.</h3>
+          <div class="onb voice-entry" id="voice-entry-canonical">
+            <p class="voice-entry-lead">Konfigurieren Sie Ihren Voice Agent in einem einzigen Ablauf: von Branche und Betriebsdaten über Stimme und Öffnungszeiten bis zu Datenschutz und Export.</p>
+            <ol class="voice-entry-steps" aria-label="Sechs Schritte der Voice-Agent-Einrichtung">
+              <li><b>01</b><span>Branche auswählen</span></li>
+              <li><b>02</b><span>Betrieb, Paket &amp; Stimme</span></li>
+              <li><b>03</b><span>Öffnungszeiten &amp; Kalender</span></li>
+              <li><b>04</b><span>Sicherheit &amp; Freigaben</span></li>
+              <li><b>05</b><span>Konfiguration prüfen</span></li>
+              <li><b>06</b><span>Konfiguration exportieren</span></li>
+            </ol>
+            <p class="note">Vorschau – keine Live-Freischaltung. Die lokale Prüfung erstellt ausschließlich einen Entwurf; Telefonie, Anrufannahme und Checkout werden dadurch nicht aktiviert.</p>
+            <div class="onb-foot"><a class="btn" href="https://voice.realsyncdynamicsai.de/onboarding.html" target="_blank" rel="noopener noreferrer">Zum vollständigen 6-Schritte-Onboarding</a></div>
+          </div></section>
         </div>
       </div>
       <div class="pm-pane">

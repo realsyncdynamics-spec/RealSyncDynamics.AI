@@ -303,11 +303,15 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'coming-soon',
     group: 'channels',
     description:
-      'Kontaktformular einer veröffentlichten SiteOS-Seite legt eine Anfrage im Posteingang an (Kanal form, Status „Neu“ = open, Intake mit Anliegen, Kontakt und Terminwunsch — Terminwunsch ist kein bestätigter Termin). Edge Function inbox-form-submit mit Nonce gegen Doppelabsendung, Rate-Limit und Honeypot, ohne KI-Aufruf. Nicht produktiv: Function antwortet ohne INBOX_FORM_SUBMIT_ENABLED=true mit 503, Migrationen (PR C, Schritte 1–2) nicht angewendet, kein UI (Schritt 4).',
+      'Kontaktformular einer veröffentlichten SiteOS-Seite legt eine Anfrage im Posteingang an (Kanal form, Status „Neu“ = open, Intake mit Anliegen, Kontakt und Terminwunsch — Terminwunsch ist kein bestätigter Termin). Edge Function inbox-form-submit mit Nonce gegen Doppelabsendung, Rate-Limit und Honeypot, ohne KI-Aufruf. Posteingang /app/bots/inbox (Schritt 4): Statusfilter Neu/In Bearbeitung/Erledigt, Übernehmen und Erledigen nur über die RPCs inbox_take_over/inbox_resolve, Intake- und Prüfpfad-Anzeige, Tab „Seiten-Formulare“ zum Verbinden einer Seite mit einem Assistenten (Owner/Admin, startet ausgeschaltet). Nicht produktiv: Function antwortet ohne INBOX_FORM_SUBMIT_ENABLED=true mit 503, Migrationen (PR C, Schritte 1–2) nicht angewendet — bis dahin zeigt die UI einen Hinweis statt der Übergabe-Funktionen.',
     evidence: [
       'supabase/functions/inbox-form-submit/index.ts',
       'supabase/functions/inbox-form-submit/logic.ts',
       'test/edge/inbox-form-submit.test.ts',
+      'src/features/bots/BotInboxView.tsx',
+      'src/features/bots/SiteInboxBindingsPanel.tsx',
+      'src/features/bots/inbox.ts',
+      'test/bots/inbox.test.ts',
       'supabase/migrations/20261102220000_site_inbox_bindings.sql',
       'supabase/migrations/20261103000000_inbox_handoff.sql',
       'PR #2130',

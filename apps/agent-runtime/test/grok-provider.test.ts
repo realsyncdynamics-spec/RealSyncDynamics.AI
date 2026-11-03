@@ -194,6 +194,44 @@ const ofType = <T extends VoiceProviderEvent['type']>(events: VoiceProviderEvent
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
 describe('GrokProvider — Session-Aufbau', () => {
+  // xAI 2026-10-14: v3 uses the same Realtime WS endpoint and events as v2.
+  // Compatibility fixture only; no xAI request, phone connection or live activation.
+  it('grok-voice-3.0: version pin, de-DE session setup and policy-bound tool handoff', async () => {
+    const h = harness();
+    const sessionId = 'sess_grok_v3_compat';
+    const { session, socket } = await openSession(
+      h,
+      config({ sessionId, model: 'grok-voice-3.0' }),
+    );
+    assert.equal(socket.url, `${GROK_REALTIME_URL}?model=grok-voice-3.0`);
+    assert.equal(socket.init.headers.Authorization, `Bearer ${PLACEHOLDER_KEY}`);
+    assert.equal(session.model, 'grok-voice-3.0');
+    assert.equal(session.status, 'open');
+
+    const [update] = socket.sentOfType('session.update');
+    assert.ok(update);
+    const s = update.session as Record<string, unknown>;
+    assert.equal(s.voice, 'eve');
+    assert.deepEqual(s.turn_detection, { type: 'server_vad' });
+    assert.deepEqual(s.audio, {
+      input: { format: { type: 'audio/pcm', rate: 24000 }, transcription: { language_hint: 'de' } },
+      output: { format: { type: 'audio/pcmu' } },
+    });
+    assert.deepEqual((s.tools as Array<{ name: string }>).map((tool) => tool.name),
+      ['lookup_kb', 'schedule_appointment']);
+
+    const sentBefore = socket.sent.length;
+    socket.server(functionCall('v3_lookup_1', 'lookup_kb', { query: 'Öffnungszeiten' }));
+    assert.deepEqual(ofType(h.events, 'tool.call'), [{
+      type: 'tool.call',
+      sessionId,
+      call: { callId: 'v3_lookup_1', name: 'lookup_kb', arguments: { query: 'Öffnungszeiten' } },
+    }]);
+    assert.equal(socket.sent.length, sentBefore,
+      'Provider darf Tool-Calls nicht autonom ausführen oder positiv bestätigen');
+    await h.provider.closeSession(sessionId);
+  });
+
   it('verbindet mit wss://api.x.ai/v1/realtime, Bearer-Header aus dem Getter, session.opened', async () => {
     const h = harness();
     const { session, socket } = await openSession(h);

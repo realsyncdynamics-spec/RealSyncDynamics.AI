@@ -1,50 +1,78 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ensureCsrfCookie } from '../../../lib/csrf';
 import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../../../lib/fn-proxy';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_MESSAGE = 4000;
+const FALLBACK_MAIL = 'info@realsyncdynamicsai.de';
 
-interface FormState {
+export interface CompanyContactValues {
   name: string;
   email: string;
   company: string;
   message: string;
 }
 
-type Errors = Partial<Record<keyof FormState, string>>;
+type Errors = Partial<Record<keyof CompanyContactValues, string>>;
 
-export function validateCompanyContact(form: FormState): Errors {
+/** Referenz: nur die E-Mail ist Pflicht; Nachricht max. 4000 Zeichen. */
+export function validateCompanyContact(form: CompanyContactValues): Errors {
   const errors: Errors = {};
   if (!EMAIL_RE.test(form.email.trim())) errors.email = 'Bitte eine gültige E-Mail-Adresse angeben.';
-  if (form.message.trim().length < 10) errors.message = 'Bitte mindestens 10 Zeichen schreiben.';
-  if (form.message.length > 2000) errors.message = 'Maximal 2000 Zeichen.';
+  if (form.message.length > MAX_MESSAGE) errors.message = `Maximal ${MAX_MESSAGE} Zeichen.`;
   return errors;
 }
 
-/**
- * Kontaktformular der Unternehmens-Landing.
- * Gleiches Muster wie ContactSales.tsx: same-origin `/api/fn/sales-lead` + CSRF
- * in Produktion, lokal direkt `functions/v1/sales-lead` (Schlüssel nur über
- * `src/lib/fn-proxy`, nie hartkodiert). Kein plan_key → generischer Kontakt-Lead.
- */
-export function CompanyContactForm() {
-  const [form, setForm] = useState<FormState>({ name: '', email: '', company: '', message: '' });
-  const [errors, setErrors] = useState<Errors>({});
-  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
-  const [serverError, setServerError] = useState<string | null>(null);
+export interface CompanyContactPrefill {
+  text: string;
+  /** Erhöht sich bei jeder neuen Übernahme, damit gleiche Texte erneut greifen. */
+  nonce: number;
+}
 
-  function update<K extends keyof FormState>(key: K, value: string) {
+const EMPTY: CompanyContactValues = { name: '', email: '', company: '', message: '' };
+
+/**
+ * Kontaktformular der Unternehmens-Landing v5 (Referenz `#cform`).
+ * Versand wie ContactSales.tsx: same-origin `/api/fn/sales-lead` + CSRF in
+ * Produktion, lokal direkt `functions/v1/sales-lead`; der Schlüssel kommt nur
+ * aus `src/lib/fn-proxy` (die Referenz hatte ihn hartkodiert — hier nicht).
+ * Kein plan_key → generischer Kontakt-Lead mit `source: company-landing`.
+ */
+export function CompanyContactForm({ prefill }: { prefill?: CompanyContactPrefill | null }) {
+  const [form, setForm] = useState<CompanyContactValues>(EMPTY);
+  const [errors, setErrors] = useState<Errors>({});
+  const [sending, setSending] = useState(false);
+  const [note, setNote] = useState('');
+  const [hp, setHp] = useState('');
+  const autoMessage = useRef(false);
+
+  // Vorlage aus dem Dialog übernehmen, solange die Nachricht leer oder selbst vorbelegt ist.
+  useEffect(() => {
+    if (!prefill) return;
+    setForm((f) => {
+      if (f.message && !autoMessage.current) return f;
+      autoMessage.current = Boolean(prefill.text);
+      return { ...f, message: prefill.text };
+    });
+  }, [prefill]);
+
+  function update<K extends keyof CompanyContactValues>(key: K, value: string) {
+    if (key === 'message') autoMessage.current = false;
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (hp) return; // Honeypot: Bots füllen das versteckte Feld.
     const found = validateCompanyContact(form);
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
-    setStatus('sending');
-    setServerError(null);
+    if (Object.keys(found).length > 0) {
+      setNote(found.email ?? found.message ?? '');
+      return;
+    }
+    setSending(true);
+    setNote('Wird gesendet …');
     try {
       if (shouldUseFnProxy()) await ensureCsrfCookie();
       const url = edgeFunctionUrl('sales-lead');
@@ -57,92 +85,92 @@ export function CompanyContactForm() {
             name: form.name.trim() || undefined,
             email: form.email.trim(),
             company: form.company.trim() || undefined,
-            message: form.message.trim(),
-            source: 'unternehmen',
+            message: form.message.trim().slice(0, MAX_MESSAGE) || undefined,
+            source: 'company-landing',
+            use_case: 'kontakt',
             path: '/unternehmen',
           }),
         }),
       );
-      const body = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        throw new Error(body.error?.message ?? `HTTP ${resp.status}`);
+      const body = (await resp.json().catch(() => ({}))) as { ok?: boolean };
+      if (resp.ok && body.ok !== false) {
+        setNote('Danke – Ihre Nachricht ist angekommen. Wir melden uns per E-Mail.');
+        setForm(EMPTY);
+        autoMessage.current = false;
+      } else if (resp.status === 429) {
+        setNote('Zu viele Anfragen. Bitte später erneut versuchen.');
+      } else {
+        setNote(`Senden fehlgeschlagen. Schreiben Sie uns direkt an ${FALLBACK_MAIL}.`);
       }
-      setStatus('done');
-    } catch (err) {
-      setServerError((err as Error).message);
-      setStatus('error');
+    } catch {
+      setNote(`Keine Verbindung. Schreiben Sie uns direkt an ${FALLBACK_MAIL}.`);
+    } finally {
+      setSending(false);
     }
   }
 
-  if (status === 'done') {
-    return (
-      <div role="status" className="rounded-none border border-emerald-900 bg-obsidian-900 p-6">
-        <p className="font-display text-lg font-semibold text-titanium-50">Danke – Ihre Nachricht ist angekommen.</p>
-        <p className="mt-2 text-sm text-titanium-300">Wir antworten per E-Mail.</p>
-      </div>
-    );
-  }
-
-  const field =
-    'mt-1 w-full rounded-none border border-obsidian-600 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400';
-
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4" aria-describedby="kontakt-dsgvo">
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm text-titanium-200">
-          Name (optional)
-          <input className={field} name="name" autoComplete="name" value={form.name} onChange={(e) => update('name', e.target.value)} />
-        </label>
-        <label className="text-sm text-titanium-200">
-          Unternehmen (optional)
-          <input className={field} name="company" autoComplete="organization" value={form.company} onChange={(e) => update('company', e.target.value)} />
-        </label>
+    <form className="cform rv" onSubmit={onSubmit} noValidate aria-describedby="c-privacy">
+      <div className="row2">
+        <div className="field">
+          <label htmlFor="c-name">Name</label>
+          <input id="c-name" name="name" type="text" autoComplete="name" value={form.name} onChange={(e) => update('name', e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="c-mail">E-Mail</label>
+          <input
+            id="c-mail"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? 'c-mail-err' : undefined}
+            value={form.email}
+            onChange={(e) => update('email', e.target.value)}
+          />
+          {errors.email && (
+            <span id="c-mail-err" className="err">
+              {errors.email}
+            </span>
+          )}
+        </div>
       </div>
-      <label className="text-sm text-titanium-200">
-        E-Mail
-        <input
-          className={field}
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? 'kontakt-email-err' : undefined}
-          value={form.email}
-          onChange={(e) => update('email', e.target.value)}
-        />
-        {errors.email && <span id="kontakt-email-err" className="mt-1 block text-xs text-red-400">{errors.email}</span>}
-      </label>
-      <label className="text-sm text-titanium-200">
-        Nachricht
+      <div className="field">
+        <label htmlFor="c-co">Unternehmen</label>
+        <input id="c-co" name="company" type="text" autoComplete="organization" value={form.company} onChange={(e) => update('company', e.target.value)} />
+      </div>
+      <input
+        type="text"
+        name="company_website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={hp}
+        onChange={(e) => setHp(e.target.value)}
+        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+      />
+      <div className="field">
+        <label htmlFor="c-msg">Nachricht</label>
         <textarea
-          className={`${field} min-h-[8rem]`}
+          id="c-msg"
           name="message"
-          required
-          maxLength={2000}
-          aria-invalid={Boolean(errors.message)}
-          aria-describedby={errors.message ? 'kontakt-message-err' : undefined}
+          maxLength={MAX_MESSAGE}
+          aria-invalid={errors.message ? true : undefined}
           value={form.message}
           onChange={(e) => update('message', e.target.value)}
         />
-        {errors.message && <span id="kontakt-message-err" className="mt-1 block text-xs text-red-400">{errors.message}</span>}
-      </label>
-      <p id="kontakt-dsgvo" className="text-xs leading-relaxed text-titanium-400">
-        Wir verwenden Ihre Angaben ausschließlich zur Bearbeitung dieser Anfrage. Details in der{' '}
-        <Link to="/datenschutz" className="text-security-400 underline">Datenschutzerklärung</Link>.
-      </p>
-      {status === 'error' && (
-        <p role="alert" className="text-sm text-red-400">
-          Senden fehlgeschlagen{serverError ? ` (${serverError})` : ''}. Bitte später erneut versuchen.
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={status === 'sending'}
-        className="justify-self-start rounded-none border border-security-400 bg-security-400/10 px-5 py-2 text-sm font-semibold text-titanium-50 hover:bg-security-400/20 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400"
-      >
-        {status === 'sending' ? 'Wird gesendet …' : 'Nachricht senden'}
+      </div>
+      <button className="btn" type="submit" disabled={sending}>
+        Nachricht senden
       </button>
+      <small role="status" aria-live="polite" data-testid="contact-note">
+        {note}
+      </small>
+      <small id="c-privacy">
+        Wir verwenden Ihre Angaben ausschließlich zur Bearbeitung dieser Anfrage – kein Newsletter, keine Weitergabe. Details in der{' '}
+        <Link to="/datenschutz">Datenschutzerklärung</Link>.
+      </small>
     </form>
   );
 }

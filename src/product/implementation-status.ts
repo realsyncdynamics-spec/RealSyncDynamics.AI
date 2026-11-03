@@ -298,6 +298,20 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'voice-agent-onboarding',
+    name: 'Voice Agent Onboarding',
+    status: 'preview',
+    group: 'channels',
+    description:
+      'Branchen-Onboarding des Voice Agents unter voice.realsyncdynamicsai.de/onboarding.html erreichbar (am 03.11.2026 HTTP 200): Branche, Betrieb, Paket, Kanal, Stimme und Freigaben auswählen; die Seite erzeugt einen Konfigurationsdatensatz. Kein Checkout auf der Seite; die Telefonie selbst bleibt voice-telephony (Coming Soon). Verlinkt von /unternehmen (Owner-Freigabe 03.11.2026).',
+    evidence: [
+      'https://voice.realsyncdynamicsai.de/onboarding.html',
+      'src/components/landing/company/companyProducts.ts',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: false,
+  },
+  {
     id: 'ai-gateway',
     name: 'AI Gateway',
     status: 'live',

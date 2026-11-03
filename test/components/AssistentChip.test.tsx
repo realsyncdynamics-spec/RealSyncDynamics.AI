@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AssistentChip } from '../../src/components/AssistentChip';
+import { ASSISTANT_SUPPRESS_ATTR, suppressAssistant } from '../../src/components/assistantSuppression';
 
 // IntersectionObserver isn't in jsdom; the chip uses it to detect when
 // [data-hero-cta] is on-screen. The same rule applies on `/`: the assistant
@@ -223,6 +224,24 @@ describe('<AssistentChip>', () => {
       getByLabelText('Schliessen').click();
     });
     expect(dialog).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('weicht einem Seiten-Dialog, solange <body> das Unterdrückungs-Signal trägt', async () => {
+    const { queryByLabelText } = renderChip({ withHero: false });
+    expect(queryByLabelText('Assistent öffnen')).not.toBeNull();
+
+    let release: () => void = () => undefined;
+    act(() => {
+      release = suppressAssistant();
+    });
+    expect(document.body.hasAttribute(ASSISTANT_SUPPRESS_ATTR)).toBe(true);
+    await waitFor(() => expect(queryByLabelText('Assistent öffnen')).toBeNull());
+
+    act(() => {
+      release();
+    });
+    expect(document.body.hasAttribute(ASSISTANT_SUPPRESS_ATTR)).toBe(false);
+    await waitFor(() => expect(queryByLabelText('Assistent öffnen')).not.toBeNull());
   });
 
   it('unmounts the Grok Bot chip while the panel is open (kein Doppel-FAB)', () => {

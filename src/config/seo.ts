@@ -548,6 +548,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
 
+  // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
+  // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/unternehmen': {
+    title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
+    description:
+      'Governance OS prüft jede KI-Aktion, der Builder setzt Ihre Webseite. Voice Agent: Telefonannahme in Vorbereitung. Für KMU, made in Thüringen, Hosting in Europa.',
+    canonical: `${SITE_URL}/unternehmen`,
+    noIndex: true,
+  },
+
   '/frontend-builder': {
     title: 'Frontend Builder für SaaS, AI und B2B-Websites',
     description:

@@ -4,7 +4,7 @@ import { SEOHead } from '../components/SEOHead';
 import { HeroTiles, type HeroFx } from '../components/landing/company/HeroTiles';
 import { ProductModal } from '../components/landing/company/ProductModal';
 import { CompanyContactForm, type CompanyContactPrefill } from '../components/landing/company/CompanyContactForm';
-import { COMPANY_LINKS, companyProduct } from '../components/landing/company/companyProducts';
+import { COMPANY_LINKS, companyProduct, VOICE_TELEPHONY_NOTE } from '../components/landing/company/companyProducts';
 import { loadBusinessIdentity } from '../config/business-identity';
 import '../components/landing/company/company-landing-v5.css';
 
@@ -316,7 +316,7 @@ export function CompanyLanding() {
             <i />
             <b>GOVERNANCE OS {governance.statusLabel}</b>
           </span>
-          <span>VOICE AGENT · {voice.statusLabel}</span>
+          <span>VOICE AGENT · {VOICE_TELEPHONY_NOTE ? VOICE_TELEPHONY_NOTE.toUpperCase() : voice.statusLabel}</span>
           <span>HOSTING IN DER EU · DSGVO · EU AI ACT</span>
         </div>
         <header id="top" ref={headerRef}>
@@ -421,7 +421,7 @@ export function CompanyLanding() {
                 Free Audit starten
               </Link>
               <button className="btn quiet" type="button" aria-haspopup="dialog" onClick={(e) => openModal(0, e.currentTarget, 3)}>
-                Prüfung live testen
+                Prüfung ausprobieren
               </button>
               <Link className="btn quiet" to={COMPANY_LINKS.platform}>
                 Zur Plattform

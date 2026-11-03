@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
+import { ASSISTANT_SUPPRESS_ATTR } from './assistantSuppression';
 
 // AssistentChip — persistent floating entry to the AI Runtime.
 //
@@ -22,6 +23,10 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting, the
 //     chip fades out. On `/` this keeps the premium hero conversion zone
 //     clear; the Grok Bot returns as soon as the visitor leaves the hero.
+//   - Modal-Coexistence: while a page sets `data-assistant-suppressed` on
+//     <body> (e.g. the product dialog on /unternehmen), the chip is not
+//     rendered — it would otherwise float above the dialog, outside its
+//     focus trap.
 
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
@@ -37,7 +42,21 @@ export function AssistentChip() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [suppressed, setSuppressed] = useState(
+    () => typeof document !== 'undefined' && !!document.body?.hasAttribute(ASSISTANT_SUPPRESS_ATTR),
+  );
   const isLanding = pathname === '/';
+
+  // Ein offener Seiten-Dialog unterdrückt den Chip (Signal auf <body>).
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) return;
+    const body = document.body;
+    const sync = () => setSuppressed(body.hasAttribute(ASSISTANT_SUPPRESS_ATTR));
+    sync();
+    const mutation = new MutationObserver(sync);
+    mutation.observe(body, { attributes: true, attributeFilter: [ASSISTANT_SUPPRESS_ATTR] });
+    return () => mutation.disconnect();
+  }, []);
 
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
@@ -102,7 +121,7 @@ export function AssistentChip() {
   // Ein Einstieg: Chip nur wenn Panel zu. Sonst Doppel-FAB über Landing-Text.
   return (
     <>
-      {!open && (
+      {!open && !suppressed && (
       <button
         type="button"
         onClick={() => setOpen(true)}

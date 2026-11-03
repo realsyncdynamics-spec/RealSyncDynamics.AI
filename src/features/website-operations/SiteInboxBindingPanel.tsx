@@ -164,7 +164,7 @@ export function SiteInboxBindingPanel({ tenantId, role }: Props) {
                           size="sm"
                           variant="secondary"
                           disabled={!canEdit || busy !== null || !selectedBot}
-                          onClick={() => run(p.id, () => createSiteInboxBinding({ tenant_id: tenantId, website_project_id: p.id, bot_id: selectedBot }))}
+                          onClick={() => run(p.id, () => createSiteInboxBinding(tenantId, p.id, selectedBot))}
                         >
                           Verbinden
                         </Button>

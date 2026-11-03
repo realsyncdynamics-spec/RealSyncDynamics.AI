@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const root = new URL('../../', import.meta.url);
-const source = (path: string) => readFileSync(new URL(path, root), 'utf8');
+// Vitest/Vite can rewrite import.meta.url to an HTTP module URL in CI.
+// npm test runs from the repository root, so resolve checked-in source paths from cwd.
+const source = (path: string) => readFileSync(path, 'utf8');
 
 describe('Public AI Act and pricing claims (EU 2026/1744)', () => {
   it('separates general AI Act application from Annex III / Annex I high-risk deadlines', () => {

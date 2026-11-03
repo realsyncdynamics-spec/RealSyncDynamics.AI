@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { PLANS } from '../../shared/pricing';
+import { PLANS, PRICING_TAX_NOTE_EXEMPT } from '../../shared/pricing';
 
 const ROOT = resolve(__dirname, '../..');
 const llms = readFileSync(resolve(ROOT, 'public/llms.txt'), 'utf8');
@@ -61,13 +61,13 @@ describe('public/llms.txt', () => {
       const plan = byId.get(id);
       expect(plan, `Plan ${id} fehlt in PLANS`).toBeDefined();
       expect(plan!.priceOnRequest).not.toBe(true);
-      // Nettopreis-Pläne (Enterprise) stehen als „1.498 €/Monat netto“.
-      const amount = plan!.netPriceLabel
-        ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat netto`
-        : `${plan!.price.monthlyEur} €/Monat`;
+      // Kleinunternehmer (§ 19 UStG, seit 2026-11-02): kein „netto“, Betrag de-DE.
+      const amount = `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat`;
       expect(llms).toContain(`${label}: ${amount}`);
     }
     expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);
+    expect(llms).toContain(PRICING_TAX_NOTE_EXEMPT);
+    expect(llms).not.toMatch(/zzgl\.|netto|19 ?% USt/);
     expect(llms).not.toMatch(/\bab 1[.]?498/);
     expect(llms).not.toMatch(/14 Tage|Tag 15/);
     const free = byId.get('free');

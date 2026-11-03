@@ -16,8 +16,8 @@
  *   auditFoot  `gdpr-audit` speichert Domain und E-Mail für Bericht und
  *              Report-Mail (Tabelle `gdpr_audits`). „Keine Speicherung ohne
  *              Einwilligung" wäre falsch.
- *   pricingSub „Preise netto" passt nicht zur Kleinunternehmer-Regel
- *              (§ 19 UStG, `COMPANY.taxMode`), „alle Daten in der EU" ist
+ *   pricingSub „Preise netto" entfällt: Kleinunternehmer nach § 19 UStG
+ *              (`COMPANY.taxMode = EXEMPT`), „alle Daten in der EU" ist
  *              breiter als belegt; übrig bleibt, was stimmt.
  *   pricingFoot  wird nur angezeigt, wenn `COMPANY.taxMode === 'EXEMPT'`.
  *   heroA–C, sub1, sub2  Positionierung nach Entscheidung E-F3 (2026-09-27):
@@ -77,11 +77,11 @@ export const HANDOFF_COPY = {
     start: "Audit starten",
     toDash: "Dashboard öffnen",
     pricingTitle: "Vom kostenlosen Audit bis zur Agentur-Suite.",
-    pricingSub: "Monatlich kündbar. Preise netto. Alle Daten in der EU verarbeitet und gespeichert.",
+    pricingSub: "Monatlich kündbar. Alle Daten in der EU verarbeitet und gespeichert.",
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",
-    pricingFoot: "Hinweis: Rechnungsstellung ohne Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmer). Enterprise direkt buchbar, ohne Testphase.",
+    pricingFoot: "Hinweis: Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Enterprise direkt buchbar, ohne Testphase.",
     navOverview: "Übersicht",
     navSystems: "KI-Systeme",
     navClassify: "Klassifizierung",
@@ -184,11 +184,11 @@ export const HANDOFF_COPY = {
     start: "Run audit",
     toDash: "Open dashboard",
     pricingTitle: "From free audit to agency suite.",
-    pricingSub: "Cancel monthly. Prices net. All data processed and stored in the EU.",
+    pricingSub: "Cancel monthly. All data processed and stored in the EU.",
     monthly: "Monthly",
     yearly: "Yearly",
     popular: "Popular",
-    pricingFoot: "Note: invoices issued without VAT under § 19 UStG (small business). Enterprise can be booked directly, no trial.",
+    pricingFoot: "Note: No VAT is charged under § 19 UStG (German small-business rule). Enterprise can be booked directly, no trial.",
     navOverview: "Overview",
     navSystems: "AI systems",
     navClassify: "Classification",
@@ -368,7 +368,7 @@ export const HANDOFF_EXTRA = {
     yearlyNote: 'Jahresabrechnung ist noch nicht buchbar — Buchung aktuell monatlich.',
     bookMonthly: 'Monatlich buchen',
     perMonth: '/ Monat',
-    perMonthNet: '/ Monat netto',
+    perMonthNet: '/ Monat',
     perYear: '/ Jahr',
     onRequest: 'Auf Anfrage',
     once: 'einmalig · kein Account',
@@ -503,7 +503,7 @@ export const HANDOFF_EXTRA = {
     yearlyNote: 'Yearly billing cannot be booked yet — checkout is monthly for now.',
     bookMonthly: 'Book monthly',
     perMonth: '/ month',
-    perMonthNet: '/ month excl. VAT',
+    perMonthNet: '/ month',
     perYear: '/ year',
     onRequest: 'On request',
     once: 'one-off · no account',

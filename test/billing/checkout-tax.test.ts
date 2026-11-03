@@ -2,9 +2,11 @@
  * Umsatzsteuer im Checkout — abgeleitet aus PRICING_TAX_MODE, nicht je
  * Checkout-Weg fest verdrahtet.
  *
- * Stand 20.10.2026 (Entscheidung Dominik): umsatzsteuerpflichtig, Preise
- * netto zzgl. USt, Angebot nur für Unternehmer (§ 14 BGB). Die Live-Preise
- * sind dafür `tax_behavior: exclusive`; Stripe Tax schlägt die USt auf.
+ * Stand 2026-11-02 (Entscheidung Dominik Steiner): Kleinunternehmer nach
+ * § 19 UStG (`PRICING_TAX_MODE = 'EXEMPT'`). Stripe berechnet keine Steuer,
+ * jede Rechnung trägt den § 19-Hinweis. Die Live-Preise bleiben
+ * `tax_behavior: exclusive`; ohne `automatic_tax` hat das keine Wirkung.
+ * Der Modus `EU_STANDARD` (Regelbesteuerung) bleibt getestet, falls er wieder gilt.
  *
  * Vorher berechnete nur `stripe-checkout` (Abos) Steuer. Die Einmalkäufe
  * (Governance Launch über `checkout-website-rebuild` / `checkout-siteos-project`)
@@ -32,7 +34,31 @@ import {
   reviewCheckoutTax,
   reviewInvoiceTax,
 } from '../../supabase/functions/_shared/checkout-tax';
-import { PRICING_TAX_NOTE_EXEMPT, PRICING_TAX_NOTE_STANDARD } from '../../shared/pricing';
+import { PRICING_TAX_MODE, PRICING_TAX_NOTE_EXEMPT, PRICING_TAX_NOTE_STANDARD } from '../../shared/pricing';
+
+describe('Steuermodus der SSoT: Kleinunternehmer nach § 19 UStG (seit 2026-11-02)', () => {
+  it('PRICING_TAX_MODE steht auf EXEMPT, Hinweis im einheitlichen Wortlaut', () => {
+    expect(PRICING_TAX_MODE).toBe('EXEMPT');
+    expect(PRICING_TAX_NOTE_EXEMPT).toBe('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+  });
+
+  it('Abo-Checkout ohne expliziten Modus: automatic_tax aus, kein B2B-Netto-Hinweis', () => {
+    const p = checkoutTaxParams({ sessionMode: 'subscription', existingCustomer: true });
+    expect(p.automatic_tax).toEqual({ enabled: false });
+    expect(p.custom_text.submit.message).toContain(PRICING_TAX_NOTE_EXEMPT);
+    expect(p.custom_text.submit.message).not.toMatch(/zzgl/);
+  });
+
+  it('Einmalkauf ohne expliziten Modus: automatic_tax aus, Rechnung mit § 19-Fußzeile', () => {
+    const p = checkoutTaxParams({ sessionMode: 'payment', existingCustomer: false });
+    expect(p.automatic_tax).toEqual({ enabled: false });
+    expect(p.invoice_creation).toEqual({ enabled: true, invoice_data: { footer: PRICING_TAX_NOTE_EXEMPT } });
+  });
+
+  it('Abo-Rechnungen: Customer-Fußzeile aus dem Standardmodus ist der § 19-Hinweis', () => {
+    expect(invoiceFooter()).toBe(PRICING_TAX_NOTE_EXEMPT);
+  });
+});
 
 describe('checkoutTaxParams: Steuerberechnung folgt dem Steuermodus', () => {
   it('EU_STANDARD: Stripe Tax berechnet die Umsatzsteuer', () => {

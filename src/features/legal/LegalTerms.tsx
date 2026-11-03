@@ -5,7 +5,7 @@ import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
  * Allgemeine Geschäftsbedingungen (AGB) — RealSyncDynamics.AI
  *
  * Konservative B2B-SaaS-Standard-AGB für die RealSync Dynamics
- * (Einzelunternehmen Dominik Steiner, umsatzsteuerpflichtig, Regelbesteuerung).
+ * (Einzelunternehmen Dominik Steiner, Kleinunternehmer nach § 19 UStG, Stand 2026-11-02).
  *
  * Geltungsbereich: Nutzung der unter `realsyncdynamicsai.de`
  * angebotenen SaaS-Plattform für KI- und DSGVO-Governance.
@@ -171,8 +171,7 @@ export function LegalTerms() {
             angegeben, in Euro.
           </p>
           <p>
-            (2) Alle Preise verstehen sich zzgl. der gesetzlichen
-            Umsatzsteuer.
+            (2) Gemäß §&nbsp;19 UStG wird keine Umsatzsteuer berechnet.
           </p>
           <p>
             (3) Die Abrechnung erfolgt über den Zahlungsdienstleister

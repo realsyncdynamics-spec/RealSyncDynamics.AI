@@ -3,7 +3,7 @@
  * Migration 20261103000000_inbox_handoff.sql.
  *
  * Geprüft
- *   H1  Mitglied (editor) übernimmt open → in_bearbeitung und erledigt
+ *   H1  Owner/Admin übernehmen open → in_bearbeitung und erledigen
  *       in_bearbeitung → erledigt; Zuständigkeit, Zeitstempel, Prüfpfad
  *   H2  Ungültige Übergänge → 'conflict'; fremder Mandant / unbekannt →
  *       'not_found' (nicht unterscheidbar); anon ohne EXECUTE
@@ -14,6 +14,8 @@
  *       Events append-only (auch service_role: kein UPDATE/TRUNCATE)
  *   H6  20 parallele Übernahmen über echte Verbindungen → genau ein 'ok'
  *   H7  Regression: chat/voice/whatsapp-Konversationen wie bisher anlegbar
+ *   H8  Editor/DPO/Viewer-Auditor haben nur Lesezugriff; direkte RPC-Aufrufe
+ *       bleiben fail-closed ohne Zustandsänderung oder Existenz-Leckage
  *
  * Ohne TEST_DB_URL wird übersprungen (Muster der übrigen *.db.test.ts).
  */
@@ -35,14 +37,26 @@ const asUser = <T>(ctx: DbCtx, sub: string, fn: () => Promise<T>) =>
   ctx.withClaims({ sub, role: 'authenticated' }, fn);
 const asServer = <T>(ctx: DbCtx, fn: () => Promise<T>) => ctx.withClaims(SERVER, fn);
 
-async function setupTenant(ctx: DbCtx): Promise<{ tenantId: string; ownerId: string; editorId: string; bot: string }> {
+async function setupTenant(ctx: DbCtx): Promise<{
+  tenantId: string; ownerId: string; adminId: string; editorId: string;
+  auditorId: string; dpoId: string; bot: string;
+}> {
   const { tenantId, userId: ownerId } = await createTenantWithMember(ctx);
-  const editorId = (await ctx.client.query<{ id: string }>(
-    `INSERT INTO auth.users(email) VALUES ($1) RETURNING id`,
-    [`ed_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@example.com`],
-  )).rows[0]!.id;
-  await ctx.client.query(
-    `INSERT INTO public.memberships(tenant_id, user_id, role) VALUES ($1, $2, 'editor')`, [tenantId, editorId]);
+  const addMember = async (role: 'admin' | 'editor' | 'viewer_auditor' | 'dpo'): Promise<string> => {
+    const id = (await ctx.client.query<{ id: string }>(
+      `INSERT INTO auth.users(email) VALUES ($1) RETURNING id`,
+      [`${role}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@example.com`],
+    )).rows[0]!.id;
+    await ctx.client.query(
+      `INSERT INTO public.memberships(tenant_id, user_id, role) VALUES ($1, $2, $3)`,
+      [tenantId, id, role],
+    );
+    return id;
+  };
+  const adminId = await addMember('admin');
+  const editorId = await addMember('editor');
+  const auditorId = await addMember('viewer_auditor');
+  const dpoId = await addMember('dpo');
   const bot = await asServer(ctx, async () => {
     await ctx.client.query(
       `INSERT INTO public.subscriptions (tenant_id, plan_key, status) VALUES ($1, 'growth', 'active')
@@ -51,7 +65,7 @@ async function setupTenant(ctx: DbCtx): Promise<{ tenantId: string; ownerId: str
     return (await ctx.client.query<{ id: string }>(
       `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Empfang') RETURNING id`, [tenantId])).rows[0]!.id;
   });
-  return { tenantId, ownerId, editorId, bot };
+  return { tenantId, ownerId, adminId, editorId, auditorId, dpoId, bot };
 }
 
 function conversation(ctx: DbCtx, tenantId: string, bot: string, channel = 'form'): Promise<string> {
@@ -76,34 +90,34 @@ d('inbox handoff', () => {
   });
   afterEach(async () => { await closeDb(ctx); });
 
-  it('H1: Mitglied übernimmt und erledigt, Prüfpfad vollständig', async () => {
+  it('H1: Admin übernimmt und erledigt, Prüfpfad vollständig', async () => {
     const id = await conversation(ctx, a.tenantId, a.bot);
-    expect(await rpc(ctx, a.editorId, 'inbox_take_over', id)).toBe('ok');
-    expect(await rpc(ctx, a.editorId, 'inbox_resolve', id)).toBe('ok');
+    expect(await rpc(ctx, a.adminId, 'inbox_take_over', id)).toBe('ok');
+    expect(await rpc(ctx, a.adminId, 'inbox_resolve', id)).toBe('ok');
     const row = (await ctx.client.query(
       `SELECT status, assigned_to, handed_off_at, resolved_at FROM public.bot_conversations WHERE id = $1`, [id])).rows[0];
     expect(row.status).toBe('erledigt');
-    expect(row.assigned_to).toBe(a.editorId);
+    expect(row.assigned_to).toBe(a.adminId);
     expect(row.handed_off_at).not.toBeNull();
     expect(row.resolved_at).not.toBeNull();
-    const events = await asUser(ctx, a.editorId, async () => (await ctx.client.query(
+    const events = await asUser(ctx, a.adminId, async () => (await ctx.client.query(
       `SELECT event, actor_id, from_status, to_status FROM public.bot_conversation_events
        WHERE conversation_id = $1 ORDER BY created_at, event DESC`, [id])).rows);
     expect(events).toEqual([
-      { event: 'taken_over', actor_id: a.editorId, from_status: 'open', to_status: 'in_bearbeitung' },
-      { event: 'resolved', actor_id: a.editorId, from_status: 'in_bearbeitung', to_status: 'erledigt' },
+      { event: 'taken_over', actor_id: a.adminId, from_status: 'open', to_status: 'in_bearbeitung' },
+      { event: 'resolved', actor_id: a.adminId, from_status: 'in_bearbeitung', to_status: 'erledigt' },
     ]);
   });
 
   it('H2: ungültige Übergänge conflict, fremd/unbekannt not_found, anon gesperrt', async () => {
     const id = await conversation(ctx, a.tenantId, a.bot);
-    expect(await rpc(ctx, a.editorId, 'inbox_resolve', id)).toBe('conflict');
-    expect(await rpc(ctx, a.editorId, 'inbox_take_over', id)).toBe('ok');
+    expect(await rpc(ctx, a.adminId, 'inbox_resolve', id)).toBe('conflict');
+    expect(await rpc(ctx, a.adminId, 'inbox_take_over', id)).toBe('ok');
     expect(await rpc(ctx, a.ownerId, 'inbox_take_over', id)).toBe('conflict');
-    expect(await rpc(ctx, a.editorId, 'inbox_resolve', id)).toBe('ok');
-    expect(await rpc(ctx, a.editorId, 'inbox_take_over', id)).toBe('conflict');
+    expect(await rpc(ctx, a.adminId, 'inbox_resolve', id)).toBe('ok');
+    expect(await rpc(ctx, a.adminId, 'inbox_take_over', id)).toBe('conflict');
     expect(await rpc(ctx, b.ownerId, 'inbox_take_over', id)).toBe('not_found');
-    expect(await rpc(ctx, a.editorId, 'inbox_take_over', '00000000-0000-0000-0000-000000000000')).toBe('not_found');
+    expect(await rpc(ctx, a.adminId, 'inbox_take_over', '00000000-0000-0000-0000-000000000000')).toBe('not_found');
     expect(await sqlState(ctx.withClaims({ role: 'anon' }, () => ctx.client.query(
       `SET LOCAL ROLE anon; SELECT public.inbox_take_over('${id}')`)))).toBe('42501');
   });
@@ -115,7 +129,7 @@ d('inbox handoff', () => {
       `INSERT INTO public.bot_conversation_intake (conversation_id, tenant_id, anliegen, quelle)
        VALUES ($1, $2, 'A', 'form'), ($3, $4, 'B', 'form')`, [idA, a.tenantId, idB, b.tenantId]));
     expect(await rpc(ctx, b.ownerId, 'inbox_take_over', idB)).toBe('ok');
-    const seen = await asUser(ctx, a.editorId, async () => ({
+    const seen = await asUser(ctx, a.auditorId, async () => ({
       conv: (await ctx.client.query(`SELECT id FROM public.bot_conversations`)).rows.map((r) => r.id),
       intake: (await ctx.client.query(`SELECT anliegen FROM public.bot_conversation_intake`)).rows.map((r) => r.anliegen),
       events: (await ctx.client.query(`SELECT id FROM public.bot_conversation_events`)).rowCount,
@@ -151,7 +165,7 @@ d('inbox handoff', () => {
     expect(await sqlState(asServer(ctx, () => ctx.client.query(
       `INSERT INTO public.bot_conversation_intake (conversation_id, tenant_id, quelle) VALUES ($1, $2, 'form')`,
       [id, b.tenantId])))).toBe('42501');
-    expect(await rpc(ctx, a.editorId, 'inbox_take_over', id)).toBe('ok');
+    expect(await rpc(ctx, a.ownerId, 'inbox_take_over', id)).toBe('ok');
     expect(await sqlState(asUser(ctx, a.ownerId, () => ctx.client.query(
       `INSERT INTO public.bot_conversation_events (tenant_id, conversation_id, event, from_status, to_status)
        VALUES ($1, $2, 'resolved', 'a', 'b')`, [a.tenantId, id])))).toBe('42501');
@@ -159,6 +173,39 @@ d('inbox handoff', () => {
       `UPDATE public.bot_conversation_events SET to_status = 'x'`)))).toBe('42501');
     expect(await sqlState(asServer(ctx, () => ctx.client.query(
       `TRUNCATE public.bot_conversation_events`)))).toBe('42501');
+  });
+
+  it('H8: Editor/DPO/Auditor können RPCs nicht ausführen; keine Existenz-Leckage', async () => {
+    const id = await conversation(ctx, a.tenantId, a.bot);
+    const missing = '00000000-0000-0000-0000-000000000000';
+    const readonly = [a.editorId, a.dpoId, a.auditorId];
+    for (const uid of readonly) {
+      // Gleiches Resultat für existierende, fremde und unbekannte Konversation.
+      expect(await rpc(ctx, uid, 'inbox_take_over', id)).toBe('not_found');
+      expect(await rpc(ctx, uid, 'inbox_resolve', id)).toBe('not_found');
+      expect(await rpc(ctx, uid, 'inbox_take_over', missing)).toBe('not_found');
+      expect(await rpc(ctx, uid, 'inbox_resolve', missing)).toBe('not_found');
+    }
+    expect(await rpc(ctx, b.ownerId, 'inbox_take_over', id)).toBe('not_found');
+    const original = (await ctx.client.query(
+      `SELECT status, assigned_to, handed_off_at, resolved_at
+         FROM public.bot_conversations WHERE id = $1`, [id])).rows[0];
+    expect(original).toEqual({
+      status: 'open', assigned_to: null, handed_off_at: null, resolved_at: null,
+    });
+    expect((await ctx.client.query(
+      `SELECT id FROM public.bot_conversation_events WHERE conversation_id = $1`, [id])).rowCount).toBe(0);
+
+    // Der Owner kann übernehmen; nur Admin/Owner können anschließend erledigen.
+    expect(await rpc(ctx, a.ownerId, 'inbox_take_over', id)).toBe('ok');
+    for (const uid of readonly) {
+      expect(await rpc(ctx, uid, 'inbox_resolve', id)).toBe('not_found');
+      expect(await rpc(ctx, uid, 'inbox_take_over', id)).toBe('not_found');
+    }
+    expect(await rpc(ctx, a.adminId, 'inbox_resolve', id)).toBe('ok');
+    const events = (await ctx.client.query<{ event: string }>(
+      `SELECT event FROM public.bot_conversation_events WHERE conversation_id = $1 ORDER BY created_at`, [id])).rows;
+    expect(events.map((e) => e.event)).toEqual(['taken_over', 'resolved']);
   });
 
   it('H7: Bestandskanäle unverändert anlegbar (Regression)', async () => {
@@ -188,7 +235,7 @@ d('H6 parallel: 20 gleichzeitige Übernahmen, genau ein ok', () => {
         const uid = (await admin.query<{ id: string }>(
           `INSERT INTO auth.users(email) VALUES ($1) RETURNING id`, [`par_${tag}_${i}@example.com`])).rows[0]!.id;
         userIds.push(uid);
-        await admin.query(`INSERT INTO public.memberships(tenant_id, user_id, role) VALUES ($1, $2, 'editor')`, [tenantId, uid]);
+        await admin.query(`INSERT INTO public.memberships(tenant_id, user_id, role) VALUES ($1, $2, 'admin')`, [tenantId, uid]);
       }
       await admin.query(`SET ROLE service_role`);
       const bot = (await admin.query<{ id: string }>(

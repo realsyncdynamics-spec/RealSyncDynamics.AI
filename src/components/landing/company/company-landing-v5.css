@@ -448,3 +448,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .cform .field input[aria-invalid="true"], .rsl5 .cform .field textarea[aria-invalid="true"] { border-color: #e0786a; }
 .rsl5 .cform small a { color: var(--gold-lite); }
 .rsl5 #space3d { position: absolute; inset: 0; }
+/* Sichtbarer Fokusrahmen in Formularfeldern (Kontakt, Voice-Onboarding):
+ * Die Referenz setzt `outline: 0` und färbt nur den Rahmen golden, das ist
+ * per Tastatur kaum zu erkennen (WCAG 2.4.7). */
+.rsl5 .field input:focus-visible, .rsl5 .field select:focus-visible, .rsl5 .field textarea:focus-visible { outline: 2px solid var(--gold-lite); outline-offset: 2px; border-color: var(--gold-lite); }

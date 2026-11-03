@@ -1,7 +1,7 @@
 /**
  * Landing v2 (`/design/landing-v2`) — Vertrag des Claude-Design-Handoffs:
  * H1, Pipeline, Tier-Buttons aus der Pricing-SSoT, Sektionsreihenfolge,
- * Preise zzgl. gesetzlicher USt (EU_STANDARD), Hell/Dunkel-Umschaltung.
+ * Steuerbefreite Preise (EXEMPT), Hell/Dunkel-Umschaltung.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -111,8 +111,8 @@ it('shows four plan cards with SSoT prices, and the statutory VAT note', () => {
   );
 
   const foot = view.container.querySelector('.lv2-pricing__foot')!;
-  expect(foot.textContent).toContain('Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.');
-  expect(view.container.textContent).not.toMatch(/§ ?19 UStG|Kleinunternehmer/);
+  expect(foot.textContent).toContain('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+  expect(view.container.textContent).not.toMatch(/zzgl\..*(?:USt|Umsatzsteuer)/);
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 
   // Jahres-Toggle bleibt aus, solange Stripe-Jahrespreise fehlen.

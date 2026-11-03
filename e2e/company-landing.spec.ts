@@ -25,6 +25,16 @@ test.describe('/unternehmen', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('tablist', { name: 'Produkte' }).getByRole('tab')).toHaveCount(3);
 
+    // Fokusfalle in beide Richtungen: Die Voice-Tafel öffnet nicht den ersten
+    // Produkt-Tab, davor liegen also Tabs mit tabIndex=-1 (Regression).
+    const box = dialog.locator('.pm-box');
+    for (const key of ['Shift+Tab', 'Tab'] as const) {
+      for (let i = 0; i < 6; i++) {
+        await page.keyboard.press(key);
+        expect(await box.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+      }
+    }
+
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(tile).toBeFocused();

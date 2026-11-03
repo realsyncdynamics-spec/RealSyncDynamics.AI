@@ -610,7 +610,7 @@ export const RealSyncDynamicsLanding = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Umsatzsteuer</h3>
-                <p>Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.</p>
+                <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Aufsichtsbehörde Datenschutz</h3>

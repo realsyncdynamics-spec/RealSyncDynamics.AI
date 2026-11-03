@@ -68,8 +68,8 @@ export const DEFAULT_SEO: SEOConfig = {
  * Monats-Abo als schema.org-Offer. Während der offenen Beta
  * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
  * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
- * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise netto
- * (`PRICING_TAX_MODE = EU_STANDARD`, zzgl. USt, nur B2B).
+ * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise ohne Umsatzsteuerausweis
+ * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B).
  */
 function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
   const list = {
@@ -77,7 +77,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     price: String(listEur),
     priceCurrency: 'EUR',
     billingDuration: 'P1M',
-    valueAddedTaxIncluded: false,
+    valueAddedTaxIncluded: true,
   };
   if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
   const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
@@ -89,7 +89,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     priceCurrency: 'EUR',
     priceValidUntil: BETA.endsIso,
     url,
-    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat zzgl. USt, monatlich kündbar.`,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat, monatlich kündbar. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.`,
     priceSpecification: [
       { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
       { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },
@@ -134,9 +134,9 @@ const PRICING_PRODUCT_JSONLD = {
         price: '1498',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
-        valueAddedTaxIncluded: false,
+        valueAddedTaxIncluded: true,
       },
-      description: '1.498 €/Monat netto, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      description: '1.498 €/Monat, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -350,7 +350,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat netto, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
+      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -540,7 +540,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/contact-sales': {
     title: 'Enterprise anfragen – SLA, Multi-Org | RealSync Dynamics AI',
     description:
-      'Enterprise: 1.498 €/Monat netto, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
+      'Enterprise: 1.498 €/Monat, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1418,7 +1418,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/enterprise-konfigurator': {
     title: 'Enterprise konfigurieren – Bausteine | RealSync Dynamics AI',
     description:
-      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat netto.',
+      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat.',
     canonical: `${SITE_URL}/enterprise-konfigurator`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

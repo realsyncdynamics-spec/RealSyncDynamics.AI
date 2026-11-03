@@ -548,12 +548,12 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
 
-  // 02.11.2026: Unternehmens-Landing v5 — Gerüst bis Design-Handoff, bewusst noindex
+  // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/unternehmen': {
-    title: 'Unternehmen – KI-Mitarbeiter mit eingebauter Governance',
+    title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
     description:
-      'RealSync Dynamics AI: KI-Mitarbeiter mit eingebauter Governance für KMU mit Kundenkontakt. Produkte mit ehrlichem Status und Kontakt.',
+      'Das Governance OS prüft jede KI-Aktion, der Voice Agent nimmt Anrufe an, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen, Hosting in Europa.',
     canonical: `${SITE_URL}/unternehmen`,
     noIndex: true,
   },

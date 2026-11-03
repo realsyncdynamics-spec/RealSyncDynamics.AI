@@ -121,7 +121,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Ausprobieren',
         body: (
           <>
-            <h3>Prüfung live erleben</h3>
+            <h3>Prüfung ausprobieren</h3>
             <p>Wählen Sie eine KI-Aktion und starten Sie die Prüfung.</p>
             <GovernanceCheckDemo />
           </>
@@ -231,7 +231,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Einrichten',
         body: (
           <>
-            <h3>Ihr Agent in vier Schritten</h3>
+            <h3>Ein Einstieg. Sechs Schritte.</h3>
             <VoiceOnboarding />
           </>
         ),
@@ -389,8 +389,8 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
       }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const target = e.target as HTMLElement | null;
-      // Eingabefelder und das Voice-Onboarding (eigene Schritt-Navigation mit
-      // Formular) behalten die Pfeiltasten; dort wird nicht geblättert.
+      // Eingabefelder sowie die Voice-Übersicht und ihr Link behalten
+      // ihre Pfeiltasten; dort wird der Produktdialog nicht umgeblättert.
       if (target?.closest?.('input, textarea, select, .onb')) return;
       const dir = e.key === 'ArrowRight' ? 1 : -1;
       e.preventDefault();

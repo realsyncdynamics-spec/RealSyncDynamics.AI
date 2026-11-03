@@ -14,6 +14,7 @@ import {
   VOICE_TELEPHONY_STATUS,
 } from '../../src/components/landing/company/companyProducts';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
+import { DEMO_EVIDENCE_NOTE } from '../../src/components/landing/company/CompanyDemos';
 import { ASSISTANT_SUPPRESS_ATTR } from '../../src/components/assistantSuppression';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 import { PRICING_TAX_MODE, pricingTaxNote } from '../../shared/pricing';
@@ -159,28 +160,32 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     await waitFor(() => expect(document.activeElement).toBe(tile));
   });
 
-  it('„Prüfung live testen“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
+  it('„Prüfung ausprobieren“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
     vi.useFakeTimers();
     mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Prüfung live testen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Prüfung ausprobieren' }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'Prüfung live erleben' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Prüfung ausprobieren' })).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kundendaten exportieren' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Prüfung starten' }));
     act(() => {
       vi.advanceTimersByTime(3400);
     });
     expect(within(dialog).getByRole('status')).toHaveTextContent('Blockiert – keine Einwilligung für Export.');
-    expect(within(dialog).getByText(/^EVIDENCE · SHA-256 [0-9a-f]{16}…$/)).toBeInTheDocument();
+    expect(within(dialog).getByText(DEMO_EVIDENCE_NOTE)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/SHA-256 [0-9a-f]+/)).toBeNull();
   });
 
-  it('Voice-Onboarding endet im Link auf die Subdomain (neuer Tab)', () => {
+  it('Voice zeigt genau einen sechs Schritte umfassenden Einstieg statt eines Mini-Konfigurators', () => {
     mount();
     fireEvent.click(screen.getByTestId('product-tile-voice'));
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
-    fireEvent.click(within(dialog).getByRole('tab', { name: /Freigabe/ }));
-    const link = within(dialog).getByRole('link', { name: 'Onboarding fortsetzen' });
+    const preview = within(dialog).getByTestId('voice-onboarding-entry');
+    expect(within(preview).getByRole('list', { name: 'Sechs Schritte der Voice-Agent-Einrichtung' }).querySelectorAll('li')).toHaveLength(6);
+    expect(preview.querySelector('input, select, textarea')).toBeNull();
+    expect(preview).toHaveTextContent('Telefonie, Live-Anrufannahme und Checkout werden dadurch nicht aktiviert');
+    const link = within(preview).getByRole('link', { name: 'Zum vollständigen 6-Schritte-Onboarding' });
     expect(link).toHaveAttribute('href', COMPANY_LINKS.voiceOnboarding);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -202,9 +207,9 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
     expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
-    const branche = within(dialog).getByRole('button', { name: 'Metzgerei' });
-    fireEvent.keyDown(branche, { key: 'ArrowLeft' });
-    fireEvent.keyDown(within(dialog).getByRole('tab', { name: /Branche/ }), { key: 'ArrowLeft' });
+    const preview = within(dialog).getByTestId('voice-onboarding-entry');
+    fireEvent.keyDown(within(preview).getByText('Branche auswählen'), { key: 'ArrowLeft' });
+    fireEvent.keyDown(within(preview).getByRole('link', { name: 'Zum vollständigen 6-Schritte-Onboarding' }), { key: 'ArrowLeft' });
     expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
     // Außerhalb des Onboardings blättern die Pfeile weiter.
     fireEvent.keyDown(screen.getByTestId('pm-page').querySelector('h3')!, { key: 'ArrowLeft' });

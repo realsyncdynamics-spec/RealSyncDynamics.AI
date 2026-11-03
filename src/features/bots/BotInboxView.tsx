@@ -49,6 +49,9 @@ const RPC_HINT: Record<Exclude<InboxRpcResult, 'ok'>, string> = {
   not_found: 'Konversation nicht gefunden oder keine Berechtigung.',
 };
 
+/** Spiegelt die RPCs inbox_take_over/inbox_resolve: nur Owner/Admin (is_tenant_owner_or_admin). */
+export const INBOX_ACTION_ROLES: ReadonlySet<string> = new Set(['owner', 'admin']);
+
 /** /app/bots/inbox — Posteingang: Konversationen, Termine, Bestellungen. */
 export function BotInboxView() {
   return <AuthGate>{() => <BotInboxInner />}</AuthGate>;
@@ -74,7 +77,9 @@ function money(value: number, currency: string): string {
 }
 
 function BotInboxInner() {
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, tenants } = useTenant();
+  const role = tenants.find((t) => t.tenantId === activeTenantId)?.role as string | undefined;
+  const canAct = role !== undefined && INBOX_ACTION_ROLES.has(role);
   const [tab, setTab] = useState<Tab>('conversations');
 
   return (
@@ -105,7 +110,7 @@ function BotInboxInner() {
         {!activeTenantId ? (
           <p className="font-mono text-xs text-titanium-500">Kein Tenant ausgewählt.</p>
         ) : tab === 'conversations' ? (
-          <ConversationsPane tenantId={activeTenantId} />
+          <ConversationsPane tenantId={activeTenantId} canAct={canAct} />
         ) : tab === 'appointments' ? (
           <AppointmentsPane tenantId={activeTenantId} />
         ) : (
@@ -142,7 +147,7 @@ function useAsync<T>(loader: () => Promise<T>, deps: unknown[]): { data: T | nul
   return { data, loading, error, reload: run };
 }
 
-function ConversationsPane({ tenantId }: { tenantId: string }) {
+function ConversationsPane({ tenantId, canAct }: { tenantId: string; canAct: boolean }) {
   const [filter, setFilter] = useState<InboxFilter>('open');
   const { data: convos, loading, error, reload } = useAsync<BotConversation[]>(
     () => listConversations(tenantId, 100, filter === 'all' ? undefined : filter), [tenantId, filter]);
@@ -227,6 +232,7 @@ function ConversationsPane({ tenantId }: { tenantId: string }) {
               <ConversationDetail
                 tenantId={tenantId}
                 conversation={current}
+                canAct={canAct}
                 onBack={() => setSelected(null)}
                 onTakeOver={() => act('take_over', current.id)}
                 onResolve={() => act('resolve', current.id)}
@@ -241,9 +247,10 @@ function ConversationsPane({ tenantId }: { tenantId: string }) {
   );
 }
 
-function ConversationDetail({ tenantId, conversation, onBack, onTakeOver, onResolve }: {
+function ConversationDetail({ tenantId, conversation, canAct, onBack, onTakeOver, onResolve }: {
   tenantId: string;
   conversation: BotConversation;
+  canAct: boolean;
   onBack: () => void;
   onTakeOver: () => void;
   onResolve: () => void;
@@ -267,14 +274,17 @@ function ConversationDetail({ tenantId, conversation, onBack, onTakeOver, onReso
         </div>
         <div className="flex items-center gap-2">
           <InboxStatusChip status={c.status} />
-          {c.status === 'open' && (
+          {canAct && c.status === 'open' && (
             <Button size="sm" variant="secondary" onClick={onTakeOver}>Übernehmen</Button>
           )}
-          {c.status === 'in_bearbeitung' && (
+          {canAct && c.status === 'in_bearbeitung' && (
             <Button size="sm" variant="secondary" onClick={onResolve}>Erledigt</Button>
           )}
         </div>
       </div>
+      {!canAct && (c.status === 'open' || c.status === 'in_bearbeitung') && (
+        <p className="font-mono text-[10px] text-titanium-500">Übernehmen und Erledigen können nur Owner und Admins.</p>
+      )}
       <IntakeCard tenantId={tenantId} conversationId={c.id} />
       <MessageThread tenantId={tenantId} conversationId={c.id} />
     </div>

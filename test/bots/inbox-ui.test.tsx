@@ -5,7 +5,7 @@
  *   U1  Filter „Neu" lädt status=open; Liste zeigt Status- und Kanal-Label (Formular)
  *   U2  Detail zeigt Intake (Anliegen, Kontakt, Terminwunsch als Wunsch) und Nachricht
  *   U3  „Übernehmen" ruft RPC inbox_take_over; 'conflict' → Hinweis, Liste neu geladen
- *   U4  „Erledigt" nur bei in_bearbeitung → RPC inbox_resolve
+ *   U4  „Erledigt" nur bei in_bearbeitung → RPC inbox_resolve; Editor ohne Aktionen
  *   U5  Panel: Projekt ohne Binding → „Verbinden" legt Binding an (ohne site_ref vom Client);
  *       Binding vorhanden → Ein/Aus; Editor sieht deaktivierte Bedienelemente
  *   U6  Barrierefreiheit (axe) ohne Verstöße; Filter mobil erreichbar (role=tab)
@@ -66,8 +66,12 @@ vi.mock('../../src/lib/supabase', () => ({
 vi.mock('../../src/features/kodee/connections/AuthGate', () => ({
   AuthGate: ({ children }: { children: (s: unknown) => React.ReactNode }) => <>{children({ user: { id: 'u1', email: 'op@example.test' } })}</>,
 }));
+let tenantRole = 'owner';
 vi.mock('../../src/core/access/TenantProvider', () => ({
-  useTenant: () => ({ activeTenantId: 'tenant-1', loading: false, tenants: [], hasFeature: () => true }),
+  useTenant: () => ({
+    activeTenantId: 'tenant-1', loading: false, hasFeature: () => true,
+    tenants: [{ tenantId: 'tenant-1', name: 'Test', role: tenantRole }],
+  }),
 }));
 
 const T = 'tenant-1';
@@ -82,6 +86,7 @@ beforeEach(() => {
   filters.length = 0; inserts.length = 0; updates.length = 0;
   rpcMock.mockReset();
   rpcMock.mockResolvedValue({ data: 'ok', error: null });
+  tenantRole = 'owner';
 });
 
 const renderInbox = () => render(<MemoryRouter><BotInboxView /></MemoryRouter>);
@@ -137,6 +142,16 @@ describe('BotInboxView – Posteingang', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Erledigt' }));
     await waitFor(() => expect(rpcMock).toHaveBeenCalledWith('inbox_resolve', { p_conversation_id: 'a' }));
     await waitFor(() => expect(screen.getByRole('status').textContent).toMatch(/erledigt/i));
+  });
+
+  it('U4b: Editor sieht Anfragen, aber keine Aktionen (RPCs nur Owner/Admin)', async () => {
+    tenantRole = 'editor';
+    tables.bot_conversations = [conv('a')];
+    renderInbox();
+    fireEvent.click(await screen.findByText('Kunde a'));
+    await screen.findByText(/nur Owner und Admins/);
+    expect(screen.queryByRole('button', { name: 'Übernehmen' })).toBeNull();
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it('U6: axe ohne Verstöße', async () => {

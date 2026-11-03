@@ -338,11 +338,11 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     key: 'growth',
     name: 'Growth',
     price: canonicalPrice('growth'),
-    tagline: 'Fehler automatisch beheben lassen',
+    tagline: 'Fix-Vorschläge als Code erhalten',
     does: [
-      'Automatische Fix-Vorschläge als Code (Claude Code)',
+      'Fix-Vorschläge als Code-Snippet je Befund (vor Übernahme prüfen)',
       'Kontinuierliche Optimierung & Drift-Alerts (Coming Soon)',
-      'Evidence-Chain für jeden Fix',
+      'Prüfpfad je Fix-Vorschlag',
       'Alles aus Starter',
     ],
   },
@@ -350,7 +350,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     key: 'enterprise',
     name: 'Enterprise',
     price: canonicalPrice('enterprise'),
-    tagline: 'Vollautomatisiert & auditfähig',
+    tagline: 'Eigene Regeln, Integration & Support',
     does: [
       'Eigene Regelwerke & Policy-Packs',
       'SLA, dediziertes Onboarding & Support',

@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
@@ -518,7 +519,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       ? t('pricingBetaPriceNote', { until: betaEndsLabel(lang) })
       : showYearly
       ? t('perYear')
-      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
+      : showsNetPriceLabel(tier.plan) ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;

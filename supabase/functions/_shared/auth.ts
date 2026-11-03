@@ -13,6 +13,7 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { jsonError } from './gateway.ts';
 import { timingSafeEqual } from './timingSafeEqual.ts';
+import { checkCronKey } from './cronKey.ts';
 
 export interface AuthUser {
   id: string;
@@ -169,4 +170,22 @@ export function requireServiceRole(req: Request): Response | null {
   }
 
   return null;
+}
+
+/**
+ * Inbound-Auth für Maschinen-Endpunkte mit eigenem Cron-Key (Phase 2 der
+ * Key-Sanierung). Statt des Service-Role-Keys, der nicht mehr als
+ * Inbound-Credential gilt, prüft die Function einen dedizierten Key aus ihrem
+ * Function Secret `envName`. pg_cron schickt denselben Wert aus dem Vault
+ * (dispatch_cron_function), ein DB-Trigger über get_app_secret.
+ *
+ * Fail-closed: leeres Secret → 500 CRON_KEY_MISSING, falscher oder fehlender
+ * Bearer → 401 "cron only". Vergleich konstantzeitig (checkCronKey).
+ *
+ * Returns null when the caller presented the cron key, or a 401/500 Response.
+ */
+export function requireCronKey(req: Request, envName: string): Response | null {
+  const result = checkCronKey(Deno.env.get(envName), req.headers.get('Authorization'), envName);
+  if (result.ok) return null;
+  return jsonError(result.status, result.code, result.message);
 }

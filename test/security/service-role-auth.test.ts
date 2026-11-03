@@ -71,6 +71,7 @@ function validatesIdentity(src: string): boolean {
     /requireAuthAndTenant\s*\(/,
     /requireTenantMembership\s*\(/,
     /requireServiceRole\s*\(/,
+    /requireCronKey\s*\(/,               // eigener Cron-Key (Phase 2)
     /auth\.getUser\s*\(/,                // manuell, kanonisches Muster
     /get_app_secret/,                    // Vault-Token (Cron)
     /constructEventAsync|constructEvent/, // Stripe-HMAC
@@ -123,13 +124,15 @@ describe('F-04 — die vier remediierten Endpunkte behalten ihre Pruefung', () =
     readFileSync(join(FUNCTIONS_DIR, slug, 'index.ts'), 'utf-8');
 
   // Maschinen-Endpunkte: Cron bzw. DB-Trigger, kein menschlicher Aufrufer.
-  for (const slug of [
-    'governance-score-calculator',
-    'governance-deadline-monitor',
-    'automation-trigger-trial-webhook',
-  ]) {
-    it(`${slug} verlangt den Service-Role-Aufrufer`, () => {
-      expect(src(slug)).toMatch(/requireServiceRole\s*\(\s*req\s*\)/);
+  // Phase 2: eigener Cron-Key statt Service-Role-Key als Inbound-Credential.
+  for (const [slug, env] of [
+    ['governance-score-calculator', 'CRON_GOVERNANCE_SCORE_KEY'],
+    ['governance-deadline-monitor', 'CRON_GOVERNANCE_DEADLINE_KEY'],
+    ['automation-trigger-trial-webhook', 'CRON_TRIAL_WEBHOOK_KEY'],
+  ] as const) {
+    it(`${slug} verlangt den eigenen Cron-Key ${env}`, () => {
+      expect(src(slug)).toMatch(new RegExp(`requireCronKey\\s*\\(\\s*req\\s*,\\s*'${env}'\\s*\\)`));
+      expect(src(slug)).not.toMatch(/requireServiceRole\s*\(/);
     });
   }
 

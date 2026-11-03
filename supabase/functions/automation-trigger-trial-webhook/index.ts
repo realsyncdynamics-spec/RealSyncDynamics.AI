@@ -1,12 +1,12 @@
 // Forward Stripe trial events to n8n webhooks.
 //
 // POST /functions/v1/automation-trigger-trial-webhook
-// Authorization: Bearer <service role key>
+// Authorization: Bearer <CRON_TRIAL_WEBHOOK_KEY> (Vault cron_trial_webhook_key)
 // Body: { stripe_event_id, kind, tenant_id, subscription_id, customer_id, trial_end, occurred_at }
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { requireServiceRole } from '../_shared/auth.ts';
+import { requireCronKey } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -16,12 +16,13 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  // Aufrufer ist ausschliesslich der DB-Trigger trigger_trial_webhook, der
-  // `Bearer <service_role_key>` schickt (Migration 20260719000000). Die
-  // fruehere Praefix-Pruefung liess jeden eingeloggten Nutzer Trial-/Abo-
+  // Aufrufer ist der DB-Trigger trigger_trial_webhook. Er schickt den eigenen
+  // Key aus Vault cron_trial_webhook_key (Migration 20261103120000), die
+  // Function vergleicht gegen das Function Secret CRON_TRIAL_WEBHOOK_KEY.
+  // Die fruehere Praefix-Pruefung liess jeden eingeloggten Nutzer Trial-/Abo-
   // Ereignisse fuer eine frei waehlbare tenant_id einschleusen — direkt
   // billing-relevant (Befund F-04, AUDIT/18_FINDINGS.md).
-  const denied = requireServiceRole(req);
+  const denied = requireCronKey(req, 'CRON_TRIAL_WEBHOOK_KEY');
   if (denied) return denied;
 
   let body: {

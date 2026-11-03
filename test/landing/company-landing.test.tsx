@@ -17,6 +17,7 @@ import { validateCompanyContact } from '../../src/components/landing/company/Com
 import { ASSISTANT_SUPPRESS_ATTR } from '../../src/components/assistantSuppression';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 import { PRICING_TAX_MODE, pricingTaxNote } from '../../shared/pricing';
+import { getSeoForPath } from '../../src/config/seo';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/company/spaceSceneV5', () => ({ mountSpaceScene: () => () => {} }));
@@ -91,6 +92,13 @@ describe('Unternehmens-Landing v5 – Seite', () => {
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('Preview · Telefonannahme in Vorbereitung');
     expect(dialog).not.toHaveTextContent('Der Voice Agent geht ans Telefon');
+  });
+
+  it('Metadaten (auch og:/twitter:description) sagen keine Telefonannahme zu (P1-3)', () => {
+    const { description } = getSeoForPath('/unternehmen');
+    expect(description).toContain(VOICE_TELEPHONY_NOTE);
+    expect(description).not.toMatch(/nimmt Anrufe an/i);
+    expect(description.length).toBeLessThanOrEqual(160);
   });
 
   it('verlinkt interne Ziele relativ und das Voice-Onboarding im neuen Tab', () => {
@@ -201,6 +209,28 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     // Außerhalb des Onboardings blättern die Pfeile weiter.
     fireEvent.keyDown(screen.getByTestId('pm-page').querySelector('h3')!, { key: 'ArrowLeft' });
     expect(within(dialog).getByText('4 / 5')).toBeInTheDocument();
+  });
+
+  it('Fokus bleibt im Dialog, wenn „Weiter“ auf der letzten Seite deaktiviert wird', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-builder'));
+    const dialog = screen.getByRole('dialog');
+    const weiter = within(dialog).getByRole('button', { name: 'Weiter →' });
+    const total = Number(within(dialog).getByText(/^1 \/ \d+$/).textContent!.split('/')[1]);
+    weiter.focus();
+    for (let i = 1; i < total; i++) fireEvent.click(weiter);
+    expect(weiter).toBeDisabled();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '← Zurück' }));
+
+    // Fokus auf <body> (z. B. nach Klick auf Text): Tab holt ihn in den Dialog zurück.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document.body, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
   it('Paket-Seite: keine Beträge, Steuerhinweis aus der SSoT (P1-4)', () => {

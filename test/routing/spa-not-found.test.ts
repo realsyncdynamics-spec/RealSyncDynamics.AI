@@ -5,11 +5,11 @@
  * `/* /index.html 200`-Fallback für jeden Pfad HTTP 200 samt Startseiten-HTML
  * (gemessen 2026-10-23: `/gibtsnicht123` → 200, Titel der Startseite).
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { extractSpaRoutes, renderModule } from '../../scripts/sync-spa-routes.mjs';
-import { isKnownSpaPath, spaRouteRegExp, withSpaNotFoundStatus } from '../../src/lib/spaNotFound';
+import { isKnownSpaPath, spaRouteRegExp, STATIC_HTML_PAGES, withSpaNotFoundStatus } from '../../src/lib/spaNotFound';
 
 const root = resolve(__dirname, '../..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
@@ -87,6 +87,28 @@ describe('withSpaNotFoundStatus', () => {
 
     const post = html();
     expect(await withSpaNotFoundStatus(get('/gibtsnicht123', 'POST'), post, notFoundPage)).toBe(post);
+  });
+});
+
+describe('Statische HTML-Seiten aus public/', () => {
+  it('lässt /unternehmen/ (Datei public/unternehmen/index.html) mit 200 durch', async () => {
+    for (const path of ['/unternehmen/', '/unternehmen']) {
+      const page = html('<html>unternehmen</html>');
+      expect(await withSpaNotFoundStatus(get(path), page, notFoundPage)).toBe(page);
+    }
+  });
+
+  it('macht Unterpfade und andere Schreibweisen weiter zu 404', async () => {
+    expect((await withSpaNotFoundStatus(get('/unternehmen/gibtsnicht'), html(), notFoundPage)).status).toBe(404);
+    expect((await withSpaNotFoundStatus(get('/UNTERNEHMEN/'), html(), notFoundPage)).status).toBe(404);
+  });
+
+  it('die Liste deckt sich mit den Verzeichnissen public/*/index.html', () => {
+    const dirs = readdirSync(resolve(root, 'public'), { withFileTypes: true })
+      .filter((d) => d.isDirectory() && existsSync(resolve(root, 'public', d.name, 'index.html')))
+      .map((d) => `/${d.name}`)
+      .sort();
+    expect([...STATIC_HTML_PAGES].sort()).toEqual(dirs);
   });
 });
 

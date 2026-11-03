@@ -10,7 +10,7 @@ const builder = read('src/pages/frontend-builder/FrontendBuilderLanding.tsx');
 
 describe('Unternehmensseite – keine unverbundenen Einstiege', () => {
   it('hat keine pauschalen EU-Hosting-Aussagen mehr', () => {
-    for (const claim of ['Hosting in Europa', 'Betrieb und Daten in Europa', 'DATEN IN DER EU', '<span>Daten in Europa</span>']) {
+    for (const claim of ['Hosting in Europa', 'Betrieb und Daten in Europa', 'DATEN IN DER EU', '<span>Daten in Europa</span>', 'gehostet in Europa']) {
       expect(html).not.toContain(claim);
     }
     expect(html).toContain('Datenverarbeitung und eingesetzte KI-Anbieter richten sich nach dem jeweiligen Dienst');
@@ -37,6 +37,13 @@ describe('Unternehmensseite – keine unverbundenen Einstiege', () => {
       expect(builder).toContain(key + ':');
     }
     expect(builder).toContain('message:');
+  });
+
+  it('verspricht keinen fertigen Website-Editor auf der Projektanfrage-Route', () => {
+    expect(html).not.toContain('Veröffentlichen ab Starter-Plan.');
+    expect(html).not.toContain('Seite selbst im Builder bauen');
+    expect(html).toContain('keine automatische Veröffentlichung');
+    expect(html).toContain('eigenständiger Website-Editor ist hier noch nicht verfügbar');
   });
 
   it('kennzeichnet nicht vorhandene Vorschauen ehrlich und hat keinen leeren Click-Handler', () => {

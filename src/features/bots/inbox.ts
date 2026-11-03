@@ -131,6 +131,16 @@ export function isMissingSchemaError(message: string): boolean {
   return /PGRST20[25]|42P01|42883|does not exist|Could not find the (table|function)|schema cache/i.test(message);
 }
 
+/**
+ * Rollen, die Anfragen übernehmen und erledigen dürfen (Entscheidung B,
+ * 03.11.2026): nur Owner/Admin. `viewer_auditor` und sonstige Mitglieder
+ * lesen nur. Die UI blendet aus; durchgesetzt wird es serverseitig in
+ * `inbox_take_over` / `inbox_resolve` (#2130).
+ */
+export function canHandoff(role: string | null | undefined): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
 // ── Binding-Panel ──────────────────────────────────────────────────────────
 
 /** Rollen, die Bindings anlegen und ändern dürfen (= RLS-Policy). */

@@ -11,7 +11,7 @@ import {
   setAppointmentStatus, setOrderStatus,
 } from './api';
 import {
-  ACTION_LABEL, INBOX_FILTERS, availableAction, channelLabel, conversationTitle,
+  ACTION_LABEL, INBOX_FILTERS, availableAction, canHandoff, channelLabel, conversationTitle,
   isMissingSchemaError, rpcFeedback, statusLabel, statusTone, statusesForFilter,
   type InboxFilter,
 } from './inbox';
@@ -84,7 +84,7 @@ function BotInboxInner() {
         {!activeTenantId ? (
           <p className="font-mono text-xs text-titanium-500">Kein Tenant ausgewählt.</p>
         ) : tab === 'conversations' ? (
-          <ConversationsPane tenantId={activeTenantId} />
+          <ConversationsPane tenantId={activeTenantId} role={activeRole} />
         ) : tab === 'appointments' ? (
           <AppointmentsPane tenantId={activeTenantId} />
         ) : tab === 'orders' ? (
@@ -145,8 +145,9 @@ async function loadInbox(tenantId: string, filter: InboxFilter): Promise<InboxDa
   }
 }
 
-function ConversationsPane({ tenantId }: { tenantId: string }) {
+function ConversationsPane({ tenantId, role }: { tenantId: string; role: string | null }) {
   const { user } = useAuth();
+  const mayHandoff = canHandoff(role);
   const [filter, setFilter] = useState<InboxFilter>('aktiv');
   const { data, loading, error, reload } = useAsync<InboxData>(() => loadInbox(tenantId, filter), [tenantId, filter]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -158,7 +159,7 @@ function ConversationsPane({ tenantId }: { tenantId: string }) {
 
   async function runAction(c: BotConversation) {
     const action = availableAction(c.status);
-    if (!action || busy) return;
+    if (!action || busy || !mayHandoff) return;
     setBusy(true); setFeedback(null);
     try {
       const result = action === 'take_over' ? await inboxTakeOver(c.id) : await inboxResolve(c.id);
@@ -238,6 +239,7 @@ function ConversationsPane({ tenantId }: { tenantId: string }) {
                 conversation={current}
                 intake={data?.intakes.get(current.id) ?? null}
                 handoffAvailable={data?.handoffAvailable ?? false}
+                mayHandoff={mayHandoff}
                 currentUserId={user?.id ?? null}
                 busy={busy}
                 onAction={() => runAction(current)}
@@ -253,17 +255,19 @@ function ConversationsPane({ tenantId }: { tenantId: string }) {
 }
 
 function ConversationDetail({
-  tenantId, conversation: c, intake, handoffAvailable, currentUserId, busy, onAction,
+  tenantId, conversation: c, intake, handoffAvailable, mayHandoff, currentUserId, busy, onAction,
 }: {
   tenantId: string;
   conversation: BotConversation;
   intake: BotConversationIntake | null;
   handoffAvailable: boolean;
+  mayHandoff: boolean;
   currentUserId: string | null;
   busy: boolean;
   onAction: () => void;
 }) {
-  const action = handoffAvailable ? availableAction(c.status) : null;
+  const nextAction = handoffAvailable ? availableAction(c.status) : null;
+  const action = mayHandoff ? nextAction : null;
   const assignee = c.assigned_to
     ? (c.assigned_to === currentUserId ? 'Du' : 'Ein anderes Teammitglied')
     : null;
@@ -285,6 +289,11 @@ function ConversationDetail({
             <Button size="sm" variant={action === 'take_over' ? 'secondary' : 'ghost'} onClick={onAction} disabled={busy}>
               {busy ? 'Speichere…' : ACTION_LABEL[action]}
             </Button>
+          )}
+          {nextAction && !mayHandoff && (
+            <span className="font-mono text-[10px] text-titanium-500" title="Übernehmen und Erledigen nur für Owner/Admin">
+              nur lesend
+            </span>
           )}
         </div>
       </div>

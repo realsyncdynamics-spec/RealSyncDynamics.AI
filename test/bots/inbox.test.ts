@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  ACTION_LABEL, INBOX_FILTERS, availableAction, bindingBlockers, canManageBindings,
+  ACTION_LABEL, INBOX_FILTERS, availableAction, bindingBlockers, canHandoff, canManageBindings,
   channelLabel, conversationTitle, isMissingSchemaError, rpcFeedback, statusLabel,
   statusTone, statusesForFilter,
 } from '../../src/features/bots/inbox';
@@ -105,6 +105,22 @@ describe('Fehlende Migration wird erkannt, echte Fehler nicht', () => {
   it('Rechte- und Netzwerkfehler bleiben Fehler', () => {
     expect(isMissingSchemaError('new row violates row-level security policy for table "site_inbox_bindings"')).toBe(false);
     expect(isMissingSchemaError('Failed to fetch')).toBe(false);
+  });
+});
+
+describe('Übergabe-Rechte (Entscheidung B)', () => {
+  it('nur Owner/Admin dürfen übernehmen und erledigen', () => {
+    expect(canHandoff('owner')).toBe(true);
+    expect(canHandoff('admin')).toBe(true);
+  });
+
+  it('viewer_auditor, sonstige Mitglieder und ohne Rolle nur lesend', () => {
+    expect(canHandoff('viewer_auditor')).toBe(false);
+    expect(canHandoff('member')).toBe(false);
+    expect(canHandoff('editor')).toBe(false);
+    expect(canHandoff('')).toBe(false);
+    expect(canHandoff(null)).toBe(false);
+    expect(canHandoff(undefined)).toBe(false);
   });
 });
 

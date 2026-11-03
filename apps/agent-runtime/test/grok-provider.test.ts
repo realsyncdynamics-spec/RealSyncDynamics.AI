@@ -232,6 +232,41 @@ describe('GrokProvider — Session-Aufbau', () => {
     await h.provider.closeSession(sessionId);
   });
 
+  it('grok-voice-3.0: unbekanntes Tool darf nicht als ausführbarer Call durchgereicht werden', async () => {
+    const h = harness();
+    const { socket } = await openSession(h, config({ model: 'grok-voice-3.0' }));
+    socket.server(functionCall('v3_forbidden_1', 'transfer_money', { amount: 1000 }));
+    assert.equal(ofType(h.events, 'tool.call').length, 0);
+    assert.equal(ofType(h.events, 'error')[0]?.code, 'tool_call_rejected.unknown_tool');
+    await h.provider.closeSession('sess_grok_1');
+  });
+
+  it('grok-voice-3.0: Policy-Ablehnung kommt als unverified Tool-Result zurück', async () => {
+    const h = harness();
+    const { socket } = await openSession(h, config({ model: 'grok-voice-3.0' }));
+    socket.server(functionCall('v3_denied_1', 'lookup_kb', { query: 'intern' }));
+    socket.server({ type: 'response.done', response: { id: 'resp_1', status: 'completed' } });
+
+    await h.provider.submitToolResult('sess_grok_1', {
+      callId: 'v3_denied_1',
+      outcome: 'denied',
+      verified: false,
+      output: { reason: 'policy_denied' },
+    });
+
+    const results = socket.sentOfType('conversation.item.create')
+      .filter((item) => (item.item as { type?: string }).type === 'function_call_output');
+    assert.deepEqual(results.at(-1)?.item, {
+      type: 'function_call_output',
+      call_id: 'v3_denied_1',
+      output: JSON.stringify({ outcome: 'denied', verified: false, output: { reason: 'policy_denied' } }),
+    });
+    await assert.rejects(h.provider.submitToolResult('sess_grok_1', {
+      callId: 'v3_denied_1', outcome: 'denied', verified: false, output: {},
+    }), /bereits beantwortet/);
+    await h.provider.closeSession('sess_grok_1');
+  });
+
   it('verbindet mit wss://api.x.ai/v1/realtime, Bearer-Header aus dem Getter, session.opened', async () => {
     const h = harness();
     const { session, socket } = await openSession(h);

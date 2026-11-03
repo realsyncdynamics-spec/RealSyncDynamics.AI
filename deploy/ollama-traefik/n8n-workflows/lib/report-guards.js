@@ -31,10 +31,11 @@ export function redact(text) {
       .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{10,}/gi, '$1 [REDACTED]')
       // AWS-/R2-artige Access Keys
       .replace(/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED_KEY]')
-      // key=value / key: value, auch mit Präfix (GITHUB_TOKEN, access_token, db_password)
+      // key=value / key: value, auch mit Präfix (GITHUB_TOKEN, access_token, db_password),
+      // zitierten Schlüsseln (JSON) und vollständig zitierten Werten inkl. Leerzeichen
       .replace(
-        /\b([A-Za-z0-9_-]*(?:api[_-]?key|token|secret|password|passwd))(\s*[:=]\s*)(?!\[REDACTED)\S+/gi,
-        '$1$2[REDACTED]',
+        /(["']?)\b([A-Za-z0-9_-]*(?:api[_-]?key|token|secret|password|passwd))\1(\s*[:=]\s*)(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|(?!\[REDACTED)[^\s,;}]+)/gi,
+        '$1$2$1$3[REDACTED]',
       )
       // E-Mail-Adressen
       .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[REDACTED_EMAIL]')
@@ -121,7 +122,8 @@ export function parseKumaMetricsResponse(json, dataField = 'data') {
   }
 
   const monitors = [];
-  const lineRe = /^monitor_status\{([^}]*)\}\s+(-?\d+(?:\.\d+)?)\s*$/;
+  // Labelblock zitat-bewusst lesen: `}` innerhalb eines Labelwerts beendet ihn nicht.
+  const lineRe = /^monitor_status\{((?:[^}"]|"(?:[^"\\]|\\.)*")*)\}\s+(-?\d+(?:\.\d+)?)\s*$/;
   for (const line of body.split('\n')) {
     const m = line.trim().match(lineRe);
     if (!m) continue;

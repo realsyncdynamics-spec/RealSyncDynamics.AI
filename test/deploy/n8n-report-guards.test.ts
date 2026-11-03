@@ -35,6 +35,14 @@ describe('redact', () => {
     expect(out).toBe('GITHUB_TOKEN=[REDACTED] access_token: [REDACTED] db_password=[REDACTED]');
   });
 
+  it('maskiert Zugangsdaten mit zitierten Schlüsseln und Werten vollständig', () => {
+    expect(redact('{"password":"synthetic-secret-123"}')).toBe('{"password":[REDACTED]}');
+    expect(redact("{'api_key': 'synthetic value'}")).toBe("{'api_key': [REDACTED]}");
+    const out = String(redact('db_password="synthetic secret phrase" weiter'));
+    expect(out).toBe('db_password=[REDACTED] weiter');
+    expect(out).not.toContain('secret phrase');
+  });
+
   it('maskiert Zugangsdaten in URLs', () => {
     expect(redact('https://admin:s3cret@kuma.example.de/metrics')).toBe(
       'https://[REDACTED]@kuma.example.de/metrics',
@@ -130,6 +138,20 @@ describe('parseKumaMetricsResponse', () => {
     expect(section).toContain('Up: 1 · Down: 1');
     expect(section).toContain('- Supabase: down');
     expect(section).not.toContain('- Website');
+  });
+
+  it('verliert keinen Monitor mit } im Labelwert', () => {
+    const body = [
+      'monitor_status{monitor_name="Web",monitor_type="http"} 1',
+      'monitor_status{monitor_name="DB {production}",monitor_type="port"} 0',
+      'monitor_status{monitor_name="Quote \\"x\\" }",monitor_type="http"} 2',
+    ].join('\n');
+    const res = parseKumaMetricsResponse({ data: body });
+    expect(res.status).toBe('ok');
+    if (res.status === 'ok') {
+      expect(res.counts).toMatchObject({ up: 1, down: 1, pending: 1 });
+    }
+    expect(renderKumaSection(res)).toContain('- DB {production}: down');
   });
 
   it('meldet fehlende monitor_status-Werte', () => {

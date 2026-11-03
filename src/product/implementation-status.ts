@@ -298,6 +298,24 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'inbox-form-intake',
+    name: 'Formular-Eingang veröffentlichter Seiten',
+    status: 'coming-soon',
+    group: 'channels',
+    description:
+      'Kontaktformular einer veröffentlichten SiteOS-Seite legt eine Anfrage im Posteingang an (Kanal form, Status „Neu“ = open, Intake mit Anliegen, Kontakt und Terminwunsch — Terminwunsch ist kein bestätigter Termin). Edge Function inbox-form-submit mit Nonce gegen Doppelabsendung, Rate-Limit und Honeypot, ohne KI-Aufruf. Nicht produktiv: Function antwortet ohne INBOX_FORM_SUBMIT_ENABLED=true mit 503, Migrationen (PR C, Schritte 1–2) nicht angewendet, kein UI (Schritt 4).',
+    evidence: [
+      'supabase/functions/inbox-form-submit/index.ts',
+      'supabase/functions/inbox-form-submit/logic.ts',
+      'test/edge/inbox-form-submit.test.ts',
+      'supabase/migrations/20261102220000_site_inbox_bindings.sql',
+      'supabase/migrations/20261103000000_inbox_handoff.sql',
+      'PR #2130',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: false,
+  },
+  {
     id: 'ai-gateway',
     name: 'AI Gateway',
     status: 'live',

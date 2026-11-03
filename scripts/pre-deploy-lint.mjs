@@ -154,6 +154,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'sales-lead',
   'newsletter-subscribe',
   'track-pageview',
+  'inbox-form-submit',
   'marketing-event',
   'telemetry-ai-event',
   'welcome-email',

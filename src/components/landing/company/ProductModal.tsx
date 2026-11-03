@@ -1,77 +1,356 @@
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { CompanyProduct } from './companyProducts';
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-export interface ProductModalProps {
-  product: CompanyProduct;
-  onClose: () => void;
-}
+import { COMPANY_LINKS, COMPANY_PRODUCTS } from './companyProducts';
+import { BuilderPreview, GovernanceCheckDemo, TemplatePicker, VoiceCallDemo, VoiceOnboarding } from './CompanyDemos';
 
 /**
- * Produkt-Modal: 3 Tabs, Seiten-Pager.
- * Tastatur: Esc schließt · ←/→ in der Tab-Leiste wechselt den Tab, sonst die Seite.
- * Fokus-Trap im Dialog; beim Schließen springt der Fokus zum Auslöser zurück
- * (der Aufrufer merkt sich den Auslöser, siehe ProductTiles).
+ * Produkt-Demo-Dialog der Unternehmens-Landing v5 (Referenz `#pm`):
+ * 3 Produkt-Tabs, je Produkt Seiten mit Seiten-Navigation und Pager.
+ * Tastatur: Esc schließt; ←/→ wechselt in der Produkt-Tab-Leiste das Produkt,
+ * sonst die Seite (nicht in Eingabefeldern). Fokus bleibt im Dialog und
+ * kehrt nach dem Schließen zum Auslöser zurück (Aufrufer).
  */
-export function ProductModal({ product, onClose }: ProductModalProps) {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [pageIndex, setPageIndex] = useState(0);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const titleId = useId();
-  const panelId = useId();
 
-  const tab = product.tabs[tabIndex];
-  const pageCount = tab.pages.length;
-  const page = tab.pages[Math.min(pageIndex, pageCount - 1)];
+export interface ProductModalProps {
+  tab: number;
+  page?: number;
+  /** Schließen; `to` = Sprungziel auf der Seite statt Fokus-Rückgabe. */
+  onClose: (to?: 'kontakt') => void;
+  /** Vorlage aus dem Builder-Tab für das Kontaktformular übernehmen. */
+  onTemplateRequest: (templateName: string | null) => void;
+}
 
-  const selectTab = useCallback(
-    (next: number, focus = false) => {
-      const count = product.tabs.length;
-      const idx = (next + count) % count;
-      setTabIndex(idx);
-      setPageIndex(0);
-      if (focus) tabRefs.current[idx]?.focus();
+interface Page {
+  title: string;
+  body: ReactNode;
+}
+
+function F3({ items }: { items: readonly (readonly [string, string])[] }) {
+  return (
+    <div className="f3">
+      {items.map(([b, s]) => (
+        <div key={b}>
+          <b>{b}</b>
+          <span>{s}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Steps({ items }: { items: readonly (readonly [string, string])[] }) {
+  return (
+    <ol className="steps">
+      {items.map(([b, s]) => (
+        <li key={b}>
+          <b>{b}</b>
+          <span>{s}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function buildPages(onContact: () => void, onTemplateRequest: (n: string | null) => void): Page[][] {
+  const contactLink = (label: string, primary = false) => (
+    <a
+      className={primary ? 'btn' : 'btn quiet'}
+      href="#kontakt"
+      onClick={(e) => {
+        e.preventDefault();
+        onContact();
+      }}
+    >
+      {label}
+    </a>
+  );
+  return [
+    [
+      {
+        title: 'Überblick',
+        body: (
+          <>
+            <h3>Jede KI-Aktion wird geprüft – bevor sie wirkt.</h3>
+            <p>
+              Auch kleine Betriebe müssen DSGVO und EU AI Act erfüllen – ohne eigene Rechtsabteilung. Das Governance OS prüft für Sie
+              jede KI-Aktion und hält das Ergebnis als Nachweis fest.
+            </p>
+            <F3 items={[['Vorher', 'geprüft, nicht erst im Audit'], ['Beweisbar', 'versiegeltes Protokoll'], ['Europa', 'DSGVO · EU AI Act']]} />
+          </>
+        ),
+      },
+      {
+        title: 'Leistungen',
+        body: (
+          <>
+            <h3>Was Sie bekommen</h3>
+            <ul className="plist">
+              <li>
+                Prüfung jeder Aktion nach <strong>Mandant, Berechtigung, Einwilligung und Risiko</strong>
+              </li>
+              <li>
+                Im Zweifel gilt: <strong>nein</strong> – nichts läuft ungeprüft durch
+              </li>
+              <li>Versiegeltes Protokoll als Nachweis, verkettet per Hash (Evidence-Kette)</li>
+              <li>
+                Regeln für <strong>DSGVO</strong> und <strong>EU AI Act</strong> eingebaut
+              </li>
+              <li>Hosting und Nachweise in der EU</li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        title: 'Ablauf',
+        body: (
+          <>
+            <h3>In drei Schritten live</h3>
+            <Steps
+              items={[
+                ['Free Audit', 'Wir prüfen, wo bei Ihnen KI im Einsatz ist – kostenlos.'],
+                ['Regeln festlegen', 'Sie bestimmen, was erlaubt, geprüft oder gesperrt ist.'],
+                ['Live im Betrieb', 'Jede Aktion wird geprüft und protokolliert.'],
+              ]}
+            />
+          </>
+        ),
+      },
+      {
+        title: 'Ausprobieren',
+        body: (
+          <>
+            <h3>Prüfung live erleben</h3>
+            <p>Wählen Sie eine KI-Aktion und starten Sie die Prüfung.</p>
+            <GovernanceCheckDemo />
+          </>
+        ),
+      },
+      {
+        title: 'Start',
+        body: (
+          <>
+            <h3>Der Einstieg ist kostenlos.</h3>
+            <p>Starten Sie mit dem Free Audit – Sie sehen sofort, wo Ihre KI-Nutzung Lücken hat.</p>
+            <div className="pm-cta">
+              <Link className="btn" to={COMPANY_LINKS.audit}>
+                Free Audit starten
+              </Link>
+              <Link className="btn quiet" to={COMPANY_LINKS.platform}>
+                Zur Plattform
+              </Link>
+              {contactLink('Fragen? Kontakt')}
+            </div>
+          </>
+        ),
+      },
+    ],
+    [
+      {
+        title: 'Überblick',
+        body: (
+          <>
+            <h3>Kein Anruf geht verloren.</h3>
+            <p>
+              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent geht ans Telefon, versteht das Anliegen und
+              gibt es an Sie weiter – auch nach Feierabend.
+            </p>
+            <F3 items={[['Annehmen', 'auch außerhalb der Öffnungszeiten'], ['Notieren', 'Anliegen, Termine, Rückrufe'], ['Übergeben', 'Notfälle sofort an Menschen']]} />
+            <p className="note">Preview · Telefonie ist in Vorbereitung</p>
+          </>
+        ),
+      },
+      {
+        title: 'Leistungen',
+        body: (
+          <>
+            <h3>Was der Agent kann – und was nicht</h3>
+            <ul className="plist">
+              <li>
+                Gibt sich zu Beginn als <strong>KI</strong> zu erkennen
+              </li>
+              <li>Nimmt Anliegen, Terminwünsche und Rückrufe auf</li>
+              <li>
+                Macht <strong>keine Zusagen</strong> – Ihr Team bestätigt
+              </li>
+              <li>
+                <strong>Aufzeichnung</strong> standardmäßig aus
+              </li>
+              <li>Bei Gefahr: sofortige Übergabe an einen Menschen</li>
+              <li>
+                Acht Branchenvorlagen: Handwerk, Metzgerei, KFZ-Werkstatt, Gastronomie &amp; Bäckerei, Hausverwaltung, Kanzlei, Arztpraxis,
+                Steuerberatung
+              </li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        title: 'Pakete',
+        body: (
+          <>
+            <h3>Drei Pakete für Ihren Betrieb</h3>
+            <div className="pricegrid">
+              <div>
+                <b>Starter</b>
+                <em>Web-Agent</em>
+              </div>
+              <div className="hot">
+                <b>Professional</b>
+                <em>Web + Telefonie</em>
+              </div>
+              <div>
+                <b>Kanzlei</b>
+                <em>Erhöhter Datenschutz</em>
+              </div>
+            </div>
+            <p className="note">Aktuelle Preise und Leistungen im Onboarding · Telefonie ist in Vorbereitung</p>
+            <div className="pm-cta">
+              <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
+                Pakete im Onboarding ansehen
+              </a>
+            </div>
+          </>
+        ),
+      },
+      {
+        title: 'Anruf testen',
+        body: (
+          <>
+            <h3>Ein Anruf, wie ihn der Agent führt</h3>
+            <VoiceCallDemo />
+          </>
+        ),
+      },
+      {
+        title: 'Einrichten',
+        body: (
+          <>
+            <h3>Ihr Agent in vier Schritten</h3>
+            <VoiceOnboarding />
+          </>
+        ),
+      },
+    ],
+    [
+      {
+        title: 'Überblick',
+        body: (
+          <>
+            <h3>Ihre Webseite, fertig.</h3>
+            <p>
+              Keine Agentur, kein Monate-Projekt: Sie wählen eine Vorlage für Ihre Branche, wir passen sie an Ihren Betrieb an – oder Sie
+              bauen selbst im Builder.
+            </p>
+            <F3 items={[['Fertig', 'mit Impressum und Datenschutz'], ['Zwei Wege', 'von uns gesetzt oder selbst gebaut'], ['Mit Bot', 'Telefon oder WhatsApp, auf Wunsch']]} />
+          </>
+        ),
+      },
+      {
+        title: 'Vorlagen',
+        body: (
+          <>
+            <h3>Suchen Sie sich Ihre Vorlage aus</h3>
+            <TemplatePicker onRequest={onTemplateRequest} />
+          </>
+        ),
+      },
+      {
+        title: 'Vorschau',
+        body: (
+          <>
+            <h3>So entsteht der Rahmen</h3>
+            <BuilderPreview />
+          </>
+        ),
+      },
+      {
+        title: 'Ablauf',
+        body: (
+          <>
+            <h3>Vom Wunsch zur Seite</h3>
+            <Steps
+              items={[
+                ['Vorlage wählen', 'Branche aussuchen, Bausteine festlegen.'],
+                ['Wenige Fragen', 'Projektart, Umfang und Timing in wenigen Klicks.'],
+                ['Festangebot', 'Sie erhalten Preis und Zeitplan – dann setzen wir um.'],
+              ]}
+            />
+            <div className="pm-cta">
+              <Link className="btn" to={COMPANY_LINKS.builder}>
+                Zum Builder
+              </Link>
+              {contactLink('Seite anfragen')}
+            </div>
+          </>
+        ),
+      },
+    ],
+  ];
+}
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, onTemplateRequest }: ProductModalProps) {
+  const [tab, setTab] = useState(initialTab);
+  const [pages, setPages] = useState<number[]>(() => COMPANY_PRODUCTS.map((_, i) => (i === initialTab ? initialPage : 0)));
+  const boxRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const content = buildPages(
+    () => onClose('kontakt'),
+    (name) => {
+      onTemplateRequest(name);
+      onClose('kontakt');
     },
-    [product.tabs.length],
+  );
+  const cur = pages[tab];
+  const list = content[tab];
+  const count = list.length;
+
+  const setPage = useCallback(
+    (n: number) => {
+      setPages((ps) => ps.map((p, i) => (i === tab ? Math.max(0, Math.min(count - 1, n)) : p)));
+      if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    },
+    [tab, count],
   );
 
-  const goPage = useCallback(
-    (delta: number) => setPageIndex((p) => Math.max(0, Math.min(pageCount - 1, p + delta))),
-    [pageCount],
-  );
-
-  // Initialer Fokus + Scroll-Sperre
-  useEffect(() => {
-    tabRefs.current[0]?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
+  const selectTab = useCallback((i: number, focus = false) => {
+    const n = (i + COMPANY_PRODUCTS.length) % COMPANY_PRODUCTS.length;
+    setTab(n);
+    if (focus) tabRefs.current[n]?.focus();
   }, []);
 
-  // Esc auf Dokument-Ebene: schließt auch, falls der Fokus den Dialog verlassen hat.
+  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren.
   useEffect(() => {
-    function onDocKey(e: globalThis.KeyboardEvent) {
+    tabRefs.current[initialTab]?.focus();
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [initialTab]);
+
+  // Esc auf Dokumentebene (auch wenn der Fokus außerhalb gelandet ist).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
       }
-    }
-    document.addEventListener('keydown', onDocKey);
-    return () => document.removeEventListener('keydown', onDocKey);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Tab') {
-      const nodes = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-      if (!nodes || nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (e.key === 'Tab' && boxRef.current) {
+      const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (f.length === 0) return;
+      const first = f[0];
+      const last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
@@ -81,110 +360,82 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
       }
       return;
     }
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    const target = e.target as HTMLElement;
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     if (target.closest('input, textarea, select')) return;
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
     e.preventDefault();
-    const delta = e.key === 'ArrowRight' ? 1 : -1;
-    if (target.getAttribute('role') === 'tab') selectTab(tabIndex + delta, true);
-    else goPage(delta);
-  }
+    if (target.closest('.pm-tabs')) selectTab(tab + dir, true);
+    else setPage(cur + dir);
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/80 px-4" onMouseDown={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onKeyDown={onKeyDown}
-        className="w-full max-w-2xl rounded-none border border-obsidian-600 bg-obsidian-900 text-titanium-100"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-obsidian-600 px-6 py-4">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-titanium-400">
-              Status · {product.statusLabel}
-            </p>
-            <h2 id={titleId} className="mt-1 font-display text-xl font-bold text-titanium-50">
-              {product.name}
-            </h2>
+    <div
+      className="pm open"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Produkte im Detail"
+      onKeyDown={onKeyDown}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="pm-box" ref={boxRef}>
+        <div className="pm-top">
+          <div className="pm-tabs" role="tablist" aria-label="Produkte">
+            {COMPANY_PRODUCTS.map((p, i) => (
+              <button
+                key={p.id}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`pm-tab-${i}`}
+                aria-selected={i === tab}
+                aria-controls={`pm-panel-${i}`}
+                tabIndex={i === tab ? 0 : -1}
+                onClick={() => selectTab(i)}
+              >
+                {p.tabName}
+              </button>
+            ))}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Dialog schließen"
-            className="rounded-none border border-obsidian-600 px-3 py-1 font-mono text-xs text-titanium-200 hover:border-security-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400"
-          >
-            ESC
+          <button className="pm-x" type="button" aria-label="Schließen" onClick={() => onClose()}>
+            ×
           </button>
         </div>
-
-        <div role="tablist" aria-label={`${product.name} – Bereiche`} className="flex border-b border-obsidian-600">
-          {product.tabs.map((t, i) => (
-            <button
-              key={t.id}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`${panelId}-tab-${t.id}`}
-              aria-selected={i === tabIndex}
-              aria-controls={panelId}
-              tabIndex={i === tabIndex ? 0 : -1}
-              onClick={() => selectTab(i)}
-              className={`flex-1 rounded-none px-4 py-3 font-mono text-xs uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400 ${
-                i === tabIndex ? 'border-b-2 border-security-400 text-titanium-50' : 'text-titanium-400 hover:text-titanium-100'
-              }`}
-            >
-              {t.label}
+        <div className="pm-pane on" role="tabpanel" id={`pm-panel-${tab}`} aria-labelledby={`pm-tab-${tab}`}>
+          <div className="pgnav" role="tablist" aria-label={`${COMPANY_PRODUCTS[tab].tabName}: Seiten`}>
+            {list.map((pg, k) => (
+              <button
+                key={pg.title}
+                type="button"
+                role="tab"
+                id={`pm-pg-${tab}-${k}`}
+                aria-selected={k === cur}
+                aria-controls={`pm-pgpanel-${tab}`}
+                onClick={() => setPage(k)}
+              >
+                {pg.title}
+              </button>
+            ))}
+          </div>
+          <div className="pgbody" ref={bodyRef}>
+            <section key={`${tab}-${cur}`} className="pg on" id={`pm-pgpanel-${tab}`} aria-labelledby={`pm-pg-${tab}-${cur}`} data-testid="pm-page">
+              {list[cur].body}
+            </section>
+          </div>
+          <div className="pager">
+            <button className="btn quiet" type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
+              ← Zurück
             </button>
-          ))}
-        </div>
-
-        <div
-          id={panelId}
-          role="tabpanel"
-          aria-labelledby={`${panelId}-tab-${tab.id}`}
-          tabIndex={0}
-          className="min-h-[10rem] px-6 py-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400"
-        >
-          <h3 className="font-display text-lg font-semibold text-titanium-50">{page.title}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-titanium-300">{page.body}</p>
-          {tab.id === 'zugang' && product.route && (
-            <Link
-              to={product.route}
-              className="mt-4 inline-block rounded-none border border-security-400 px-4 py-2 text-sm font-semibold text-titanium-50 hover:bg-security-400/10"
-            >
-              {product.ctaLabel}
-            </Link>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-obsidian-600 px-6 py-3">
-          <button
-            type="button"
-            onClick={() => goPage(-1)}
-            aria-disabled={pageIndex === 0}
-            aria-label="Vorherige Seite"
-            className="rounded-none px-3 py-1 font-mono text-xs text-titanium-200 aria-disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400"
-          >
-            ←
-          </button>
-          <span className="font-mono text-xs text-titanium-400" aria-live="polite">
-            Seite {Math.min(pageIndex, pageCount - 1) + 1} / {pageCount}
-          </span>
-          <button
-            type="button"
-            onClick={() => goPage(1)}
-            aria-disabled={pageIndex >= pageCount - 1}
-            aria-label="Nächste Seite"
-            className="rounded-none px-3 py-1 font-mono text-xs text-titanium-200 aria-disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-security-400"
-          >
-            →
-          </button>
+            <span className="pgct" aria-live="polite">
+              {cur + 1} / {list.length}
+            </span>
+            <button className="btn" type="button" disabled={cur === list.length - 1} onClick={() => setPage(cur + 1)}>
+              Weiter →
+            </button>
+          </div>
         </div>
       </div>
     </div>

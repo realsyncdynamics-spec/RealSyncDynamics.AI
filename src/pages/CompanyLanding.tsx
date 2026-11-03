@@ -226,12 +226,14 @@ export function CompanyLanding() {
   }, []);
 
   // Einblenden beim Scrollen (Schwelle 0,08, gestaffelt 90 ms je Geschwister).
+  // Klasse `shown` statt `in` wie in der Referenz: `.in` ist dort zugleich der
+  // Inhaltscontainer (flex-direction: column) und stapelte CTA-Zeile und Fakten.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const els = Array.from(root.querySelectorAll<HTMLElement>('.rv'));
     if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      els.forEach((e) => e.classList.add('in'));
+      els.forEach((e) => e.classList.add('shown'));
       return;
     }
     const io = new IntersectionObserver(
@@ -239,7 +241,7 @@ export function CompanyLanding() {
         es.forEach((e) => {
           if (!e.isIntersecting) return;
           const el = e.target as HTMLElement;
-          el.classList.add('in');
+          el.classList.add('shown');
           el.addEventListener('transitionend', () => (el.style.willChange = 'auto'), { once: true });
           io.unobserve(el);
         }),

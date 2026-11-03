@@ -16,7 +16,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../../_shared/auditLog.ts';
 import { handleOptions, jsonError, jsonResponse, methodNotAllowed } from '../../_shared/gateway.ts';
-import { loadInboxOptions } from '../inbox-binding.ts';
 import {
   buildDeploymentArtifact,
   type SiteBlueprint,
@@ -210,7 +209,6 @@ export async function handle(req: Request): Promise<Response> {
   const preflightArtifact = await buildDeploymentArtifact(blueprintRow.blueprint, {
     baseUrl,
     presentation: 'showcase',
-    inbox: await loadInboxOptions(admin, tenantId, blueprintRow.project_id),
   });
   if (preflightArtifact.artifactSha256 !== lastPreview.artifact_sha256) {
     return jsonError(

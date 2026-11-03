@@ -17,7 +17,7 @@ export function BotsView() {
 }
 
 const CHANNEL_LABEL: Record<BotChannel, string> = {
-  chat: 'Chat', voice: 'Telefonie', telegram: 'Telegram', whatsapp: 'WhatsApp', form: 'Formular',
+  chat: 'Chat', voice: 'Telefonie', telegram: 'Telegram', whatsapp: 'WhatsApp',
 };
 
 function BotsInner() {

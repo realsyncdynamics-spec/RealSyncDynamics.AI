@@ -43,28 +43,7 @@ export interface RenderOptions {
    * anfordert, darf sie nicht ungefragt in seinem Hash wiederfinden.
    */
   presentation?: PresentationLevel;
-  /**
-   * Posteingang-Anbindung des Kontaktformulars (PR C). Nur gesetzt, wenn die
-   * Seite ein `site_inbox_bindings`-Binding hat. Dann bekommt jedes
-   * Formular (`contact-form`, `booking`) Endpunkt, Kennung, Honeypot und ein
-   * kleines Skript, das die Eingaben als JSON an `inbox-form-submit` sendet.
-   *
-   * Ohne diese Option ist die Ausgabe byte-identisch zum bisherigen Stand —
-   * bestehende Artefakt-Hashes bleiben gültig. `siteRef` ist der öffentliche,
-   * serverseitig erzeugte Schlüssel; `tenant_id`/`bot_id` stehen nie im Markup.
-   */
-  inbox?: InboxFormOptions;
 }
-
-export interface InboxFormOptions {
-  /** Öffentliche Formular-Kennung aus `site_inbox_bindings.site_ref` (24 Zeichen base64url). */
-  siteRef: string;
-  /** Absolute URL der Edge Function `inbox-form-submit`. */
-  endpoint: string;
-}
-
-/** Honeypot-Feldname — identisch zu `inbox-form-submit/logic.ts`. */
-export const INBOX_HONEYPOT_FIELD = 'company_website';
 
 export interface RenderedPage {
   path: string;
@@ -88,7 +67,7 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
   // Genau eine H1 je Seite: der erste Block, der eine Überschrift führen
   // darf, bekommt sie — alle weiteren rendern H2. Ohne diese Buchführung
   // erzeugt eine Seite mit Hero UND Services zwei H1.
-  const state: RenderState = { h1Used: false, inbox: options.inbox, inboxFormRendered: false };
+  const state: RenderState = { h1Used: false };
 
   const body = renderBlocksWithState(blueprint, page.blocks, state).map((b) => b.html).join('\n');
 
@@ -118,9 +97,6 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
     // Sprungmarke zum Inhalt (WCAG 2.2 — 2.4.1).
     '<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>',
     body,
-    // Das Skript steht nur auf Seiten, die tatsächlich ein angebundenes
-    // Formular enthalten — sonst bleibt der Rumpf unverändert.
-    state.inboxFormRendered ? renderInboxScript() : '',
     '</body>',
     '</html>',
   ].filter((line) => line !== '').join('\n');
@@ -128,10 +104,6 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
 
 interface RenderState {
   h1Used: boolean;
-  /** Posteingang-Anbindung; undefined = Formular ohne Ziel (Bestand). */
-  inbox?: InboxFormOptions;
-  /** Wird gesetzt, sobald ein angebundenes Formular gerendert wurde. */
-  inboxFormRendered?: boolean;
 }
 
 /** Ein gerenderter Block, wie er im Seitenrumpf steht. */
@@ -325,8 +297,7 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
 
     case 'contact-form':
     case 'booking':
-      if (state.inbox) state.inboxFormRendered = true;
-      return renderForm(id, content, headingTag(state), state.inbox);
+      return renderForm(id, content, headingTag(state));
 
     case 'map':
       return renderConsentGate(id, block, content);
@@ -383,25 +354,14 @@ function renderBlock(blueprint: SiteBlueprint, block: SiteBlock, state: RenderSt
   }
 }
 
-function renderForm(id: string, content: Record<string, unknown>, heading: string, inbox?: InboxFormOptions): string {
+function renderForm(id: string, content: Record<string, unknown>, heading: string): string {
   const fields = Array.isArray(content.fields) ? content.fields : [];
   const privacyHref = safeUrl(content.privacyHref);
-  // Angebundenes Formular: Endpunkt und Kennung als data-Attribute, dazu ein
-  // Honeypot-Feld (ausserhalb des sichtbaren Bereichs, für Hilfstechnik
-  // verborgen) und eine Statuszeile für die Rückmeldung des Skripts.
-  const inboxAttrs = inbox
-    ? `${attr('data-inbox-endpoint', inbox.endpoint)}${attr('data-site-ref', inbox.siteRef)}`
-    : '';
-  const honeypot = inbox
-    ? `<div class="inbox-hp" aria-hidden="true"><label for="${id}--hp">Firmenwebsite</label><input id="${id}--hp" name="${INBOX_HONEYPOT_FIELD}" type="text" tabindex="-1" autocomplete="off"></div>`
-    : '';
-  const status = inbox ? `<p class="inbox-status" data-inbox-status aria-live="polite"></p>` : '';
 
   return [
     `<section id="${id}">`,
     `<${heading}>${escapeHtml(content.heading ?? 'Kontakt')}</${heading}>`,
-    `<form method="post"${attr('data-legal-basis', content.legalBasis)}${inboxAttrs}>`,
-    honeypot,
+    `<form method="post"${attr('data-legal-basis', content.legalBasis)}>`,
     ...fields.map((field) => {
       const name = escapeHtml(field);
       const fieldId = `${id}--${name}`;
@@ -419,61 +379,10 @@ function renderForm(id: string, content: Record<string, unknown>, heading: strin
         ].join('\n')
       : '',
     privacyHref ? `<p><a href="${privacyHref}">Datenschutzerklärung</a></p>` : '',
-    status,
     '<button type="submit">Absenden</button>',
     '</form>',
     '</section>',
   ].filter((l) => l !== '').join('\n');
-}
-
-/**
- * Skript für angebundene Formulare. Kein Fremd-Host, keine Bibliothek, keine
- * Cookies. Es liest Endpunkt und Kennung aus dem Formular, bildet den
- * Request-Body für `inbox-form-submit` und zeigt die Rückmeldung an.
- *
- *   name/email/phone/message/slot (Blueprint-Felder)
- *     → kontakt_name / kontakt_email / kontakt_telefon / anliegen / terminwunsch
- *   consent (Pflicht-Checkbox) → einwilligung: true
- *   nonce: je Absendeversuch neu (crypto.randomUUID), macht Doppelklicks und
- *   Wiederholungen serverseitig idempotent.
- *
- * Ohne JavaScript bleibt das Formular ein gewöhnliches POST ohne Ziel — wie
- * bisher. Der Terminwunsch ist ein Wunsch; eine Bestätigung verspricht das
- * Skript nicht.
- */
-function renderInboxScript(): string {
-  return [
-    '<style>.inbox-hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}.inbox-status:empty{display:none}</style>',
-    '<script>',
-    '(function(){',
-    'var forms=document.querySelectorAll("form[data-inbox-endpoint]");',
-    'function nonce(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2,14);}',
-    'function val(f,n){var el=f.elements.namedItem(n);return el&&typeof el.value==="string"?el.value.trim():"";}',
-    'Array.prototype.forEach.call(forms,function(f){',
-    'f.addEventListener("submit",function(ev){',
-    'ev.preventDefault();',
-    'var st=f.querySelector("[data-inbox-status]");var btn=f.querySelector("button[type=submit]");',
-    'var consent=f.elements.namedItem("consent");',
-    'var body={site_ref:f.getAttribute("data-site-ref"),nonce:nonce(),',
-    'anliegen:val(f,"message")||val(f,"anliegen")||val(f,"nachricht"),',
-    'kontakt_name:val(f,"name")||null,kontakt_email:val(f,"email")||null,kontakt_telefon:val(f,"phone")||null,',
-    'terminwunsch:val(f,"slot")||val(f,"terminwunsch")||null,',
-    'einwilligung:consent?!!consent.checked:true};',
-    'body["' + INBOX_HONEYPOT_FIELD + '"]=val(f,"' + INBOX_HONEYPOT_FIELD + '");',
-    'if(!body.anliegen){body.anliegen=[body.kontakt_name,body.terminwunsch].filter(Boolean).join(" – ")||"Kontaktanfrage";}',
-    'if(btn){btn.disabled=true;}if(st){st.textContent="Wird gesendet …";}',
-    'fetch(f.getAttribute("data-inbox-endpoint"),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)})',
-    '.then(function(r){return r.json().catch(function(){return {};}).then(function(j){return {ok:r.ok,status:r.status,json:j};});})',
-    '.then(function(res){',
-    'if(res.ok){f.reset();if(st){st.textContent="Vielen Dank – Ihre Anfrage ist eingegangen. Wir melden uns.";}return;}',
-    'var code=res.json&&res.json.error&&res.json.error.code;',
-    'var msg=code==="RATE_LIMITED"?"Zu viele Anfragen – bitte später erneut versuchen.":code==="VALIDATION"?"Bitte Anliegen und E-Mail oder Telefon angeben und der Verarbeitung zustimmen.":"Senden derzeit nicht möglich – bitte rufen Sie uns an.";',
-    'if(st){st.textContent=msg;}if(btn){btn.disabled=false;}',
-    '}).catch(function(){if(st){st.textContent="Senden derzeit nicht möglich – bitte rufen Sie uns an.";}if(btn){btn.disabled=false;}});',
-    '});});',
-    '})();',
-    '</script>',
-  ].join('\n');
 }
 
 /**

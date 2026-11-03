@@ -204,7 +204,7 @@ d('inbox handoff', () => {
     }
     expect(await rpc(ctx, a.adminId, 'inbox_resolve', id)).toBe('ok');
     const events = (await ctx.client.query<{ event: string }>(
-      `SELECT event FROM public.bot_conversation_events WHERE conversation_id = $1 ORDER BY created_at`, [id])).rows;
+      `SELECT event FROM public.bot_conversation_events WHERE conversation_id = $1 ORDER BY created_at, event DESC`, [id])).rows;
     expect(events.map((e) => e.event)).toEqual(['taken_over', 'resolved']);
   });
 

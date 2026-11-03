@@ -207,9 +207,9 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
     expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
-    const branche = within(dialog).getByRole('button', { name: 'Metzgerei' });
-    fireEvent.keyDown(branche, { key: 'ArrowLeft' });
-    fireEvent.keyDown(within(dialog).getByRole('tab', { name: /Branche/ }), { key: 'ArrowLeft' });
+    const preview = within(dialog).getByTestId('voice-onboarding-entry');
+    fireEvent.keyDown(within(preview).getByText('Branche auswählen'), { key: 'ArrowLeft' });
+    fireEvent.keyDown(within(preview).getByRole('link', { name: 'Zum vollständigen 6-Schritte-Onboarding' }), { key: 'ArrowLeft' });
     expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
     // Außerhalb des Onboardings blättern die Pfeile weiter.
     fireEvent.keyDown(screen.getByTestId('pm-page').querySelector('h3')!, { key: 'ArrowLeft' });

@@ -11,8 +11,9 @@
  * - Tiefer Raum: 3 Nebel, Spiralgalaxie, Asteroidengürtel (260 Instanzen),
  *   Sternschnuppen alle 5–14 s
  * - Scroll-Kamerafahrt in drei Stufen: 0–13 % Zoom Erde, 28–50 % Mond, 66–92 % Mars
- * - Ein fixer Canvas hinter der ganzen Seite: gerendert wird immer, außer bei
- *   verstecktem Tab.
+ * - Ein fixer Canvas hinter der ganzen Seite: gerendert wird nur, solange der
+ *   Canvas im Viewport liegt (IntersectionObserver) und der Tab sichtbar ist;
+ *   sonst läuft auch keine requestAnimationFrame-Schleife.
  *
  * Abweichungen zur Referenz, ohne sichtbare Änderung:
  * - Texturen self-hosted unter /textures/hero-v4/ (byte-gleich zu den
@@ -20,12 +21,21 @@
  * - `scene.backgroundRotation` wird nicht gesetzt (Referenz lief auf r160, wo es
  *   die Eigenschaft noch nicht gab) — wie in der v4-Szene.
  * - Mausposition kommt über `pointer` statt `window.__mx/__my`.
+ * - Skybox 2048×1024 statt 4096×2048 (siehe `SKY_W`).
  * - Reduced Motion: statisches Bild in Ausgangsstellung (die Referenz rendert
  *   dort ein unbewegtes Bild ohne Sonne).
  */
 import * as THREE from 'three';
 
 const TEX = '/textures/hero-v4/';
+/**
+ * Skybox-Größe: 2048×1024 statt 4096×2048 der Referenz. Ein Viertel der Pixel
+ * (≈ 8 statt 32 MB RGBA, plus Mipmaps), schnelleres Zeichnen beim Start; bei
+ * `backgroundIntensity` 0,28 ist der Schärfeverlust kaum sichtbar.
+ */
+const SKY_W = 2048;
+const SKY_H = 1024;
+const SKY_K = SKY_W / 4096;
 const PASS = 42; // ISS-Überflug alle 42 s …
 const PASS_LEN = 16; // … sichtbar 16 s
 // Die Referenz deklariert mouseX/mouseY für den Sonnenstand, setzt sie aber nie.
@@ -115,13 +125,18 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       return;
     }
 
-    // ── Milchstraße: prozedurale Skybox (Equirect 4096×2048) ──
+    // ── Milchstraße: prozedurale Skybox (Equirect SKY_W×SKY_H) ──
+    // Gezeichnet wird im Koordinatensystem der Referenz (4096×2048), skaliert
+    // auf SKY_K. Sterne behalten mindestens einen halben Zielpixel Radius,
+    // damit die feinsten nicht durch das Verkleinern verblassen.
     const sky = document.createElement('canvas');
-    sky.width = 4096;
-    sky.height = 2048;
+    sky.width = SKY_W;
+    sky.height = SKY_H;
     const sk = sky.getContext('2d')!;
+    sk.scale(SKY_K, SKY_K);
     sk.fillStyle = '#000';
     sk.fillRect(0, 0, 4096, 2048);
+    const starR = (r: number) => Math.max(r, 0.5 / SKY_K);
     const R = seeded(97);
     // Band (leicht geneigt) — Nebel
     sk.save();
@@ -151,7 +166,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       const r = R() < 0.02 ? 1.4 + R() * 1.2 : 0.3 + R() * 0.8, al = 0.35 + R() * 0.65;
       sk.fillStyle = R() < 0.15 ? 'rgba(255,225,190,' + al + ')' : 'rgba(235,240,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     sk.restore();
@@ -160,7 +175,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       const x = R() * 4096, y = R() * 2048, r = R() < 0.03 ? 1.4 + R() * 1.4 : 0.3 + R() * 0.9, al = 0.3 + R() * 0.7;
       sk.fillStyle = R() < 0.2 ? 'rgba(255,225,190,' + al + ')' : R() < 0.3 ? 'rgba(190,205,255,' + al + ')' : 'rgba(240,244,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     // Spiralgalaxie oben rechts
@@ -792,17 +807,39 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
     } else {
       on('resize', fit);
       let last = performance.now();
+      let running = false;
+      let inView = true;
+      const active = () => !disposed && inView && !document.hidden;
       const loop = (t: number) => {
-        if (disposed) return;
+        if (!active()) {
+          // Pause: keine weitere Frame-Anforderung, bis Sichtbarkeit zurückkehrt.
+          running = false;
+          return;
+        }
         const dt = Math.min(0.05, (t - last) / 1000);
         last = t;
-        if (!document.hidden) {
-          step(t / 1000, dt);
-          renderer.render(scene, cam);
-        }
+        step(t / 1000, dt);
+        renderer.render(scene, cam);
         raf = requestAnimationFrame(loop);
       };
-      raf = requestAnimationFrame(loop);
+      const resume = () => {
+        if (running || !active()) return;
+        running = true;
+        last = performance.now();
+        raf = requestAnimationFrame(loop);
+      };
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          inView = entries[entries.length - 1]?.isIntersecting ?? true;
+          resume();
+        });
+        io.observe(canvas);
+        cleanups.push(() => io.disconnect());
+      }
+      const onVisibility = () => resume();
+      document.addEventListener('visibilitychange', onVisibility);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
+      resume();
     }
   })();
 

@@ -1,3 +1,4 @@
+import { PRICING_TAX_MODE, pricingTaxNote } from '@/shared/pricing';
 import {
   getImplementation,
   STATUS_LABEL,
@@ -15,7 +16,9 @@ import {
  * - Landingpage Builder → `public-frontend-builder`
  *
  * Preise erscheinen hier bewusst nicht: Die Voice-Pakete der Onboarding-Seite
- * stehen nicht in `shared/pricing.ts` (AGENTS.md: Preise nur aus der SSoT).
+ * stehen nicht in `shared/pricing.ts` (AGENTS.md: Preise nur aus der SSoT), und
+ * der Voice-Bot-Modulpreis dort ist vorläufig (`MODULE_PRICING_STATUS`).
+ * Owner-Entscheidung 03.11.2026: keine Beträge, nur der Steuerhinweis der SSoT.
  */
 
 export type CompanyProductId = 'governance' | 'voice' | 'builder';
@@ -62,6 +65,21 @@ function statusOf(ssotId: string): ImplementationStatus {
   return item?.status ?? 'coming-soon';
 }
 
+/**
+ * Telefonannahme des Voice Agents: Status aus `voice-telephony`. Solange sie
+ * nicht live ist, tragen Statusleiste, Tafel und Dialog diesen Hinweis, und
+ * die Texte beschreiben das Annehmen von Anrufen als Ziel, nicht als Ist.
+ */
+export const VOICE_TELEPHONY_STATUS: ImplementationStatus = statusOf('voice-telephony');
+export const VOICE_TELEPHONY_NOTE: string | null = VOICE_TELEPHONY_STATUS === 'live' ? null : 'Telefonannahme in Vorbereitung';
+
+/**
+ * Steuerhinweis zu den Paketen, abgeleitet aus dem Steuermodus der SSoT
+ * (`PRICING_TAX_MODE`): heute Regelbesteuerung, bei `EXEMPT` automatisch der
+ * § 19-UStG-Wortlaut. Keine USt-Beträge auf dieser Seite.
+ */
+export const COMPANY_TAX_NOTE: string = pricingTaxNote(PRICING_TAX_MODE);
+
 function product(p: Omit<CompanyProduct, 'status' | 'statusLabel'>): CompanyProduct {
   const status = statusOf(p.ssotId);
   return { ...p, status, statusLabel: STATUS_LABEL[status] };
@@ -81,8 +99,8 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     ssotId: 'voice-agent-onboarding',
     name: 'Voice Agent',
     tabName: 'Voice Agent',
-    headline: 'Kein Anruf geht verloren.',
-    description: 'Nimmt Anrufe an, notiert Termine, übergibt Notfälle an Sie.',
+    headline: 'Damit kein Anruf verloren geht.',
+    description: 'Anliegen aufnehmen, Terminwünsche notieren, Notfälle an Sie übergeben. Telefonannahme in Vorbereitung.',
   }),
   product({
     id: 'builder',

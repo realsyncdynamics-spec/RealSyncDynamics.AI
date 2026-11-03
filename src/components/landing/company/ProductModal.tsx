@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from './companyProducts';
+import { suppressAssistant } from '../../assistantSuppression';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, COMPANY_TAX_NOTE, VOICE_TELEPHONY_NOTE } from './companyProducts';
 import { BuilderPreview, GovernanceCheckDemo, TemplatePicker, VoiceCallDemo, VoiceOnboarding } from './CompanyDemos';
 
 /**
  * Produkt-Demo-Dialog der Unternehmens-Landing v5 (Referenz `#pm`):
  * 3 Produkt-Tabs, je Produkt Seiten mit Seiten-Navigation und Pager.
  * Tastatur: Esc schließt; ←/→ wechselt in der Produkt-Tab-Leiste das Produkt,
- * sonst die Seite (nicht in Eingabefeldern). Fokus bleibt im Dialog und
+ * sonst die Seite (nicht in Eingabefeldern und nicht im Voice-Onboarding).
+ * Fokus bleibt im Dialog und
  * kehrt nach dem Schließen zum Auslöser zurück (Aufrufer).
  */
 
@@ -149,13 +151,13 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Überblick',
         body: (
           <>
-            <h3>Kein Anruf geht verloren.</h3>
+            <h3>Damit kein Anruf verloren geht.</h3>
             <p>
-              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent geht ans Telefon, versteht das Anliegen und
-              gibt es an Sie weiter – auch nach Feierabend.
+              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent soll ans Telefon gehen, das Anliegen verstehen
+              und es an Sie weitergeben – auch nach Feierabend. Heute legen Sie im Onboarding Branche, Stimme und Freigaben fest.
             </p>
             <F3 items={[['Annehmen', 'auch außerhalb der Öffnungszeiten'], ['Notieren', 'Anliegen, Termine, Rückrufe'], ['Übergeben', 'Notfälle sofort an Menschen']]} />
-            <p className="note">Preview · Telefonie ist in Vorbereitung</p>
+            <p className="note">{VOICE_TELEPHONY_NOTE ? `Preview · ${VOICE_TELEPHONY_NOTE}` : 'Preview'}</p>
           </>
         ),
       },
@@ -181,6 +183,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
                 Steuerberatung
               </li>
             </ul>
+            {VOICE_TELEPHONY_NOTE && <p className="note">{VOICE_TELEPHONY_NOTE}</p>}
           </>
         ),
       },
@@ -203,7 +206,10 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
                 <em>Erhöhter Datenschutz</em>
               </div>
             </div>
-            <p className="note">Aktuelle Preise und Leistungen im Onboarding · Telefonie ist in Vorbereitung</p>
+            <p className="note">Leistungen im Onboarding{VOICE_TELEPHONY_NOTE ? ` · ${VOICE_TELEPHONY_NOTE}` : ''}</p>
+            <p className="note" data-testid="voice-tax-note">
+              {COMPANY_TAX_NOTE}
+            </p>
             <div className="pm-cta">
               <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
                 Pakete im Onboarding ansehen
@@ -296,6 +302,8 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
   const boxRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
 
   const content = buildPages(
     () => onClose('kontakt'),
@@ -322,20 +330,58 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     if (focus) tabRefs.current[n]?.focus();
   }, []);
 
-  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren.
+  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren,
+  // seitenweiten Assistenten-Chip ausblenden (läge sonst über dem Dialog).
   useEffect(() => {
     tabRefs.current[initialTab]?.focus();
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const releaseAssistant = suppressAssistant();
     return () => {
       document.body.style.overflow = prev;
+      releaseAssistant();
     };
   }, [initialTab]);
+
+  // Nur per Tab erreichbare Elemente im Dialog. Inaktive Tabs (Roving Tabindex,
+  // tabIndex=-1) passen auf `button:not([disabled])`, zählen aber nicht.
+  const tabbables = useCallback(
+    () => (boxRef.current ? Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.tabIndex >= 0) : []),
+    [],
+  );
+
+  // Fokus nicht verlieren: Wird der fokussierte Pager-Button deaktiviert
+  // (erste/letzte Seite), wandert der Fokus sonst auf <body> und der nächste
+  // Tab verließe den modalen Dialog. Dann auf den anderen Pager-Button setzen.
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const a = document.activeElement as HTMLElement | null;
+    const onBody = !a || a === document.body;
+    const disabledInside = !!a && box.contains(a) && (a as HTMLButtonElement).disabled === true;
+    if (!onBody && !disabledInside) return;
+    const target = [nextRef.current, prevRef.current].find((b) => b && !b.disabled) ?? tabRefs.current[tab];
+    target?.focus();
+  }, [tab, cur]);
 
   // Esc und ←/→ auf Dokumentebene wie in der Referenz: Ein Klick auf Text im
   // Dialog setzt den Fokus auf <body>, die Tasten sollen trotzdem greifen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Tab bei Fokus außerhalb des Dialogs (z. B. <body> nach Klick auf Text)
+      // oder auf einem deaktivierten Element: in den Dialog zurückholen.
+      if (e.key === 'Tab' && boxRef.current) {
+        const a = document.activeElement as HTMLElement | null;
+        const outside = !a || !boxRef.current.contains(a) || (a as HTMLButtonElement).disabled === true;
+        if (outside) {
+          const f = tabbables();
+          if (f.length > 0) {
+            e.preventDefault();
+            (e.shiftKey ? f[f.length - 1] : f[0]).focus();
+          }
+        }
+        return;
+      }
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -343,7 +389,9 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
       }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('input, textarea, select')) return;
+      // Eingabefelder und das Voice-Onboarding (eigene Schritt-Navigation mit
+      // Formular) behalten die Pfeiltasten; dort wird nicht geblättert.
+      if (target?.closest?.('input, textarea, select, .onb')) return;
       const dir = e.key === 'ArrowRight' ? 1 : -1;
       e.preventDefault();
       if (target?.closest?.('.pm-tabs')) selectTab(tab + dir, true);
@@ -351,7 +399,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, selectTab, setPage, tab, cur]);
+  }, [onClose, selectTab, setPage, tab, cur, tabbables]);
 
   // Fokusfalle: Tab/Shift+Tab bleiben im Dialog. Nur per Tab erreichbare
   // Elemente zählen: Inaktive Tabs (Roving Tabindex, tabIndex=-1) passen auf
@@ -359,7 +407,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
   // tatsächlich ersten Element liefe aus dem Dialog.
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Tab' && boxRef.current) {
-      const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.tabIndex >= 0);
+      const f = tabbables();
       if (f.length === 0) return;
       const first = f[0];
       const last = f[f.length - 1];
@@ -431,13 +479,13 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
             </section>
           </div>
           <div className="pager">
-            <button className="btn quiet" type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
+            <button ref={prevRef} className="btn quiet" type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
               ← Zurück
             </button>
             <span className="pgct" aria-live="polite">
               {cur + 1} / {list.length}
             </span>
-            <button className="btn" type="button" disabled={cur === list.length - 1} onClick={() => setPage(cur + 1)}>
+            <button ref={nextRef} className="btn" type="button" disabled={cur === list.length - 1} onClick={() => setPage(cur + 1)}>
               Weiter →
             </button>
           </div>

@@ -6,9 +6,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompanyLanding } from '../../src/pages/CompanyLanding';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from '../../src/components/landing/company/companyProducts';
+import {
+  COMPANY_LINKS,
+  COMPANY_PRODUCTS,
+  COMPANY_TAX_NOTE,
+  VOICE_TELEPHONY_NOTE,
+  VOICE_TELEPHONY_STATUS,
+} from '../../src/components/landing/company/companyProducts';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
+import { ASSISTANT_SUPPRESS_ATTR } from '../../src/components/assistantSuppression';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
+import { PRICING_TAX_MODE, pricingTaxNote } from '../../shared/pricing';
+import { getSeoForPath } from '../../src/config/seo';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
 vi.mock('../../src/components/landing/company/spaceSceneV5', () => ({ mountSpaceScene: () => () => {} }));
@@ -69,7 +78,27 @@ describe('Unternehmens-Landing v5 – Seite', () => {
       expect(tile).toHaveTextContent(p.name);
       expect(tile).toHaveTextContent(p.statusLabel);
     }
-    expect(screen.getByLabelText('Status')).toHaveTextContent(`VOICE AGENT · ${STATUS_LABEL.preview}`);
+    expect(screen.getByLabelText('Status')).toHaveTextContent('VOICE AGENT · TELEFONANNAHME IN VORBEREITUNG');
+  });
+
+  it('Voice-Texte folgen dem Status coming-soon der Telefonie (P1-3)', () => {
+    expect(VOICE_TELEPHONY_STATUS).toBe(getImplementation('voice-telephony')!.status);
+    expect(VOICE_TELEPHONY_NOTE).toBe('Telefonannahme in Vorbereitung');
+    mount();
+    const tile = screen.getByTestId('product-tile-voice');
+    expect(tile).toHaveTextContent('Telefonannahme in Vorbereitung');
+    expect(tile).not.toHaveTextContent('Nimmt Anrufe an');
+    fireEvent.click(tile);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Preview · Telefonannahme in Vorbereitung');
+    expect(dialog).not.toHaveTextContent('Der Voice Agent geht ans Telefon');
+  });
+
+  it('Metadaten (auch og:/twitter:description) sagen keine Telefonannahme zu (P1-3)', () => {
+    const { description } = getSeoForPath('/unternehmen');
+    expect(description).toContain(VOICE_TELEPHONY_NOTE);
+    expect(description).not.toMatch(/nimmt Anrufe an/i);
+    expect(description.length).toBeLessThanOrEqual(160);
   });
 
   it('verlinkt interne Ziele relativ und das Voice-Onboarding im neuen Tab', () => {
@@ -155,6 +184,65 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     expect(link).toHaveAttribute('href', COMPANY_LINKS.voiceOnboarding);
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('blendet den seitenweiten Assistenten-Chip aus, solange der Dialog offen ist (P1-1)', () => {
+    mount();
+    expect(document.body.hasAttribute(ASSISTANT_SUPPRESS_ATTR)).toBe(false);
+    fireEvent.click(screen.getByTestId('product-tile-builder'));
+    expect(document.body.hasAttribute(ASSISTANT_SUPPRESS_ATTR)).toBe(true);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body.hasAttribute(ASSISTANT_SUPPRESS_ATTR)).toBe(false);
+  });
+
+  it('Pfeiltasten im Voice-Onboarding blättern die Dialogseite nicht (P2)', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-voice'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
+    expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
+    const branche = within(dialog).getByRole('button', { name: 'Metzgerei' });
+    fireEvent.keyDown(branche, { key: 'ArrowLeft' });
+    fireEvent.keyDown(within(dialog).getByRole('tab', { name: /Branche/ }), { key: 'ArrowLeft' });
+    expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
+    // Außerhalb des Onboardings blättern die Pfeile weiter.
+    fireEvent.keyDown(screen.getByTestId('pm-page').querySelector('h3')!, { key: 'ArrowLeft' });
+    expect(within(dialog).getByText('4 / 5')).toBeInTheDocument();
+  });
+
+  it('Fokus bleibt im Dialog, wenn „Weiter“ auf der letzten Seite deaktiviert wird', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-builder'));
+    const dialog = screen.getByRole('dialog');
+    const weiter = within(dialog).getByRole('button', { name: 'Weiter →' });
+    const total = Number(within(dialog).getByText(/^1 \/ \d+$/).textContent!.split('/')[1]);
+    weiter.focus();
+    for (let i = 1; i < total; i++) fireEvent.click(weiter);
+    expect(weiter).toBeDisabled();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '← Zurück' }));
+
+    // Fokus auf <body> (z. B. nach Klick auf Text): Tab holt ihn in den Dialog zurück.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document.body, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Paket-Seite: keine Beträge, Steuerhinweis aus der SSoT (P1-4)', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-voice'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Pakete' }));
+    const page = screen.getByTestId('pm-page');
+    expect(within(page).getByTestId('voice-tax-note')).toHaveTextContent(pricingTaxNote(PRICING_TAX_MODE));
+    expect(COMPANY_TAX_NOTE).toBe(pricingTaxNote(PRICING_TAX_MODE));
+    expect(page.textContent).not.toMatch(/\d\s?€/);
+    expect(page.textContent).not.toMatch(/brutto|\d+\s?% USt/i);
   });
 
   it('Vorlage anfragen schließt den Dialog und belegt die Nachricht vor', () => {

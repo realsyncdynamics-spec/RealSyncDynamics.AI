@@ -451,6 +451,12 @@ verify_jwt = false
 [functions.order-intake]
 verify_jwt = false
 
+# inbox-form-submit (PR C): öffentliches Kontaktformular einer veröffentlichten
+# SiteOS-Seite. Einziger Schlüssel ist die serverseitige site_ref; Auflösung
+# fail-closed über resolve_site_inbox. Ohne INBOX_FORM_HASH_SALT → 503.
+[functions.inbox-form-submit]
+verify_jwt = false
+
 [functions.bot-voice-webhook]
 verify_jwt = false
 

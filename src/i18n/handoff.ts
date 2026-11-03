@@ -35,6 +35,7 @@
  * (Navigation, Badge, Loop, Formularlabels) — ebenfalls DE/EN.
  */
 
+import { TAX_NOTICE, TAX_NOTICE_EN } from '../../shared/pricing';
 import { HANDOFF_APP, type HandoffAppKey } from './handoffApp';
 
 export type Lang = 'de' | 'en';
@@ -77,11 +78,11 @@ export const HANDOFF_COPY = {
     start: "Audit starten",
     toDash: "Dashboard öffnen",
     pricingTitle: "Vom kostenlosen Audit bis zur Agentur-Suite.",
-    pricingSub: "Monatlich kündbar. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Alle Daten in der EU verarbeitet und gespeichert.",
+    pricingSub: `Monatlich kündbar. ${TAX_NOTICE} Alle Daten in der EU verarbeitet und gespeichert.`,
     monthly: "Monatlich",
     yearly: "Jährlich",
     popular: "Beliebt",
-    pricingFoot: "Hinweis: Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Enterprise direkt buchbar, ohne Testphase.",
+    pricingFoot: `Hinweis: ${TAX_NOTICE} Enterprise direkt buchbar, ohne Testphase.`,
     navOverview: "Übersicht",
     navSystems: "KI-Systeme",
     navClassify: "Klassifizierung",
@@ -184,11 +185,11 @@ export const HANDOFF_COPY = {
     start: "Run audit",
     toDash: "Open dashboard",
     pricingTitle: "From free audit to agency suite.",
-    pricingSub: "Cancel monthly. Prices net. All data processed and stored in the EU.",
+    pricingSub: `Cancel monthly. ${TAX_NOTICE_EN} All data processed and stored in the EU.`,
     monthly: "Monthly",
     yearly: "Yearly",
     popular: "Popular",
-    pricingFoot: "Note: invoices issued without VAT under § 19 UStG (small business). Enterprise can be booked directly, no trial.",
+    pricingFoot: `Note: ${TAX_NOTICE_EN} Enterprise can be booked directly, no trial.`,
     navOverview: "Overview",
     navSystems: "AI systems",
     navClassify: "Classification",
@@ -266,7 +267,7 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     loginNote: 'Auth über Supabase EU (Frankfurt).',
     auditFoot:
       'Ergebnis ohne Account. Domain und E-Mail werden für den Bericht gespeichert — Details in der Datenschutzerklärung.',
-    pricingSub: 'Monatlich kündbar. Datenhaltung in der EU (Supabase Frankfurt).',
+    pricingSub: `Monatlich kündbar. ${TAX_NOTICE} Datenhaltung in der EU (Supabase Frankfurt).`,
     cta: 'Governance-Scan starten',
     heroA: 'Die Kontrollschicht',
     heroB: 'für KI im',
@@ -279,7 +280,7 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
     loginNote: 'Auth via Supabase EU (Frankfurt).',
     auditFoot:
       'Result without an account. Domain and e-mail are stored for the report — see the privacy policy.',
-    pricingSub: 'Cancel monthly. Data stored in the EU (Supabase Frankfurt).',
+    pricingSub: `Cancel monthly. ${TAX_NOTICE_EN} Data stored in the EU (Supabase Frankfurt).`,
     cta: 'Start governance scan',
     heroA: 'The control layer',
     heroB: 'for AI in the',

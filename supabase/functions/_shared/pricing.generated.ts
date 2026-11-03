@@ -3051,6 +3051,13 @@ export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) –
 export const PRICING_TAX_NOTE_EXEMPT =
   'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
 
+/** Kanonischer deutscher §-19-Hinweis für Preisflächen. */
+export const TAX_NOTICE = PRICING_TAX_NOTE_EXEMPT;
+
+/** Kanonische englische Fassung des §-19-Hinweises. */
+export const TAX_NOTICE_EN =
+  'No VAT is charged under § 19 UStG (German small-business regulation).';
+
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
 /**

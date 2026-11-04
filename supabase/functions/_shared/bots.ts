@@ -1,4 +1,5 @@
 import { getRestaurantMenu } from './restaurant.ts';
+import { buildHandoffPromptSection } from './bot-handoff.ts';
 
 // Gemeinsame Helfer für die Bot-Edge-Functions (bot-chat, appointment-book,
 // order-intake, bot-voice-webhook).
@@ -193,6 +194,11 @@ export interface BuildBotPromptInput {
   config?: Record<string, unknown> | null;
   history?: Array<{ role: string; content: string }>;
   userMessage: string;
+  /**
+   * Übergabe an Menschen (bot-handoff.ts). Nur setzen, wenn der Kanal den
+   * Marker vor Speichern/Versand entfernt (bot-chat, whatsapp-webhook).
+   */
+  handoff?: { alreadyRequested: boolean };
 }
 
 function recordValue(value: unknown): Record<string, unknown> | null {
@@ -273,6 +279,10 @@ export function buildBotPrompt(input: BuildBotPromptInput): string {
       return `${who}: ${m.content.trim()}`;
     });
     parts.push(`[Bisheriger Gesprächsverlauf]\n${lines.join('\n')}`);
+  }
+
+  if (input.handoff) {
+    parts.push(`[Übergabe an Menschen]\n${buildHandoffPromptSection(input.handoff.alreadyRequested)}`);
   }
 
   parts.push(`[Neue Nachricht]\nNutzer: ${input.userMessage.trim()}`);

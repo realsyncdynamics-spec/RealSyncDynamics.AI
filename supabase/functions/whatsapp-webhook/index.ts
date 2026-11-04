@@ -43,6 +43,9 @@ import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, type BotRow,
 } from '../_shared/bots.ts';
+import {
+  detectHandoffRequest, extractHandoffMarker, markHandoffRequested, type HandoffAdmin,
+} from '../_shared/bot-handoff.ts';
 import { extractInboundTextMessages, buildGraphTextMessage } from '../_shared/whatsapp.ts';
 import { verifyMetaSignature } from '../_shared/meta-signature.ts';
 import { createBotAiBudgetGuard, type RpcAdmin } from '../_shared/bot-budget.ts';
@@ -226,6 +229,15 @@ async function handleInbound(
     return;
   }
 
+  // Übergabe an Menschen (K4): ausdrückliche Bitte des Kunden, erst nach
+  // PEP-Freigabe. Fehler beim Vermerken blockieren die Antwort nicht.
+  const handoffAdmin = admin as unknown as HandoffAdmin;
+  const handoffScope = { tenantId: bot.tenant_id, botId: bot.id, conversationId };
+  const customerAskedHuman = detectHandoffRequest(msg.text);
+  if (customerAskedHuman) {
+    await markHandoffRequested(handoffAdmin, handoffScope, 'customer_request');
+  }
+
   // Der lokale Client-Typ ist generisch verengt; strukturell ein RpcAdmin.
   const aiBudget = createBotAiBudgetGuard(admin as unknown as RpcAdmin, {
     tenantId: bot.tenant_id, botId: bot.id, channel: 'whatsapp',
@@ -277,7 +289,10 @@ async function handleInbound(
     return;
   }
 
-  const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: prior, userMessage: msg.text });
+  const prompt = buildBotPrompt({
+    persona: bot.persona, config: bot.config, history: prior, userMessage: msg.text,
+    handoff: { alreadyRequested: customerAskedHuman },
+  });
 
   let ai;
   try {
@@ -293,12 +308,24 @@ async function handleInbound(
     throw e;
   }
 
-  await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
+  // Marker vor Speichern und Versand entfernen — eine versendete
+  // WhatsApp-Nachricht ist nicht zurückholbar.
+  const { reply, flagged: assistantFlagged } = extractHandoffMarker(ai.output);
+  if (assistantFlagged && !customerAskedHuman) {
+    await markHandoffRequested(handoffAdmin, handoffScope, 'assistant_uncertain');
+  }
+
+  await insertMessage(admin, bot, conversationId, 'assistant', reply, {
     runId: ai.runId, inputTokens: ai.inputTokens, outputTokens: ai.outputTokens, costUsd: ai.costUsd,
-    metadata: { channel: 'whatsapp', duration_ms: ai.durationMs },
+    metadata: {
+      channel: 'whatsapp', duration_ms: ai.durationMs,
+      ...(customerAskedHuman || assistantFlagged
+        ? { handoff_trigger: customerAskedHuman ? 'customer_request' : 'assistant_uncertain' }
+        : {}),
+    },
   });
 
-  await sendWhatsAppText(channel.phone_number_id, msg.from, ai.output);
+  await sendWhatsAppText(channel.phone_number_id, msg.from, reply);
 
   await audit(admin, {
     tenant_id: bot.tenant_id,

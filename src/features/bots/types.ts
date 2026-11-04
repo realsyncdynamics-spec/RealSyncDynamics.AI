@@ -59,7 +59,20 @@ export interface BotConversation {
   last_message_at: string | null;
   created_at: string;
   updated_at: string;
+  // Übergabe an Menschen (20261104120000_bot_conversation_handoff.sql).
+  // Optional, solange die Migration nicht überall angewendet ist.
+  handoff_status?: BotHandoffStatus;
+  handoff_reason?: BotHandoffReason | null;
+  handoff_requested_at?: string | null;
+  handoff_accepted_at?: string | null;
+  handoff_accepted_by?: string | null;
+  handoff_resolved_at?: string | null;
+  handoff_resolved_by?: string | null;
 }
+
+export type BotHandoffStatus = 'none' | 'requested' | 'accepted' | 'resolved';
+export type BotHandoffReason = 'customer_request' | 'assistant_uncertain' | 'manual';
+export type BotHandoffAction = 'request' | 'accept' | 'resolve';
 
 export interface BotMessage {
   id: string;

@@ -7,7 +7,7 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type {
-  Bot, BotConversation, BotMessage, BotAppointment, BotOrder,
+  Bot, BotConversation, BotMessage, BotAppointment, BotOrder, BotHandoffAction,
   CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs,
 } from './types';
 
@@ -72,6 +72,23 @@ export async function listConversations(tenant_id: string, limit = 100): Promise
     .limit(limit);
   if (error) throw new Error(`listConversations: ${error.message}`);
   return (data ?? []) as BotConversation[];
+}
+
+/**
+ * Übergabe an Menschen: anfordern, übernehmen, abschließen. Läuft über die
+ * RPC `bot_conversation_handoff` (SECURITY DEFINER); Mandant und handelnde
+ * Person bestimmt die Datenbank aus der Zeile bzw. auth.uid().
+ */
+export async function setConversationHandoff(
+  conversation_id: string, action: BotHandoffAction,
+): Promise<BotConversation> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc('bot_conversation_handoff', {
+    p_conversation_id: conversation_id,
+    p_action: action,
+  });
+  if (error) throw new Error(`setConversationHandoff: ${error.message}`);
+  return data as BotConversation;
 }
 
 export async function listMessages(tenant_id: string, conversation_id: string): Promise<BotMessage[]> {

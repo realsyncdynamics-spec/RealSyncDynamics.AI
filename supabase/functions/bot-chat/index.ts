@@ -20,7 +20,8 @@
 //   5. Konversation/Nachricht speichern, KI aufrufen — vorher wird der
 //      Höchstbetrag atomar gegen das Tages-/Monatsbudget des Mandanten
 //      reserviert (bot-budget.ts). Ablehnung → 429, kein KI-Aufruf.
-//   6. Antwort persistieren + zurueckgeben
+//   6. Übergabe an Menschen vermerken (Kundenwunsch oder Marker des
+//      Assistenten, bot-handoff.ts), Antwort persistieren + zurueckgeben
 //
 // verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
 
@@ -34,6 +35,7 @@ import {
   buildBotPrompt, BotError,
 } from '../_shared/bots.ts';
 import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
+import { detectHandoffRequest, extractHandoffMarker, markHandoffRequested } from '../_shared/bot-handoff.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   checkBotRateLimit, checkIpRateLimit, clientIpFromHeaders, createBotAiBudgetGuard,
@@ -151,6 +153,14 @@ Deno.serve(async (req) => {
     });
     await insertMessage(admin, bot, conversationId, 'user', message.trim());
 
+    // Übergabe an Menschen (K4): ausdrückliche Bitte des Kunden. Erst nach
+    // PEP-Freigabe und Speicherung, damit abgelehnte Texte nichts auslösen.
+    const handoffScope = { tenantId: bot.tenant_id, botId: bot.id, conversationId };
+    const customerAskedHuman = detectHandoffRequest(message);
+    let handoff = customerAskedHuman
+      ? await markHandoffRequested(admin, handoffScope, 'customer_request')
+      : false;
+
     const aiBudget = createBotAiBudgetGuard(admin, { tenantId, botId: bot.id, channel: 'chat' });
 
     const restaurantTurn = await runRestaurantConversationTurn(
@@ -175,29 +185,45 @@ Deno.serve(async (req) => {
         reply: restaurantTurn.reply,
         run_id: restaurantTurn.runId,
         ...(restaurantTurn.orderId ? { order_id: restaurantTurn.orderId } : {}),
+        ...(handoff ? { handoff: true } : {}),
       });
     }
 
-    const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: priorHistory, userMessage: message });
+    const prompt = buildBotPrompt({
+      persona: bot.persona, config: bot.config, history: priorHistory, userMessage: message,
+      handoff: { alreadyRequested: customerAskedHuman },
+    });
 
     const ai = await runAiTool(admin, tenantId, null, 'bot_reply', prompt, {
       metadata: { bot_id: bot.id, conversation_id: conversationId, channel: 'chat' },
       budget: aiBudget,
     });
 
-    await insertMessage(admin, bot, conversationId, 'assistant', ai.output, {
+    // Marker des Assistenten entfernen; er erreicht weder Kunde noch Verlauf.
+    const { reply, flagged: assistantFlagged } = extractHandoffMarker(ai.output);
+    if (assistantFlagged && !handoff) {
+      handoff = await markHandoffRequested(admin, handoffScope, 'assistant_uncertain');
+    }
+
+    await insertMessage(admin, bot, conversationId, 'assistant', reply, {
       runId: ai.runId,
       inputTokens: ai.inputTokens,
       outputTokens: ai.outputTokens,
       costUsd: ai.costUsd,
-      metadata: { duration_ms: ai.durationMs },
+      metadata: {
+        duration_ms: ai.durationMs,
+        ...(customerAskedHuman || assistantFlagged
+          ? { handoff_trigger: customerAskedHuman ? 'customer_request' : 'assistant_uncertain' }
+          : {}),
+      },
     });
 
     return jsonResponse({
       ok: true,
       conversation_id: conversationId,
-      reply: ai.output,
+      reply,
       run_id: ai.runId,
+      ...(handoff ? { handoff: true } : {}),
     });
   } catch (e) {
     if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);

@@ -53,7 +53,7 @@ export function Security() {
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine SOC 2 / ISO 27001 Zertifizierung.</strong> Controls sind an den SOC 2 Trust Services Criteria ausgerichtet; ein Termin für das SOC 2 Type 1 Audit steht noch nicht fest. ISO 27001 Audit-Vorbereitung läuft, Termin abhängig von Vorlauf-Audit.</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine HSTS-Preload-Submission.</strong> HSTS aktiv, Preload-List-Submission geplant nach Apex-Domain-Stabilisierung.</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine 2FA-Pflicht für User.</strong> Optional verfügbar (Supabase-MFA). Pflicht-Toggle pro Tenant geplant.</span></li>
-              <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Keine WAF.</strong> Cloudflare-WAF-Layer als Hardening geplant für 2026 Q3.</span></li>
+              <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">WAF-Konfiguration nicht öffentlich verifiziert.</strong> Hardening und belastbarer Nachweis zum produktiven Schutzstatus stehen noch aus.</span></li>
             </ul>
             <p className="text-xs text-titanium-500 mt-3">
               Wir publizieren Lücken offen, weil Compliance-Käufer unangenehme Wahrheit erkennen.
@@ -64,11 +64,11 @@ export function Security() {
           <Section title="Roadmap" icon={<FileCheck className="h-5 w-5 text-security-400" />}>
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-start gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">✓ 2026 Q2</span><span className="text-titanium-300">RLS-Hardening · SECURITY DEFINER search_path · Vault-Storage · Audit-Trail</span></li>
-              <li className="flex items-start gap-2"><span className="text-amber-400 font-mono text-xs mt-0.5">→ 2026 Q3</span><span className="text-titanium-300">Cloudflare WAF · HSTS Preload · 2FA-Pflicht-Toggle pro Tenant</span></li>
-              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2026 Q4</span><span className="text-titanium-400">ISO 27001 Vorbereitung intensiv · Bug-Bounty-Programm öffentlich</span></li>
+              <li className="flex items-start gap-2"><span className="text-amber-400 font-mono text-xs mt-0.5">Status offen</span><span className="text-titanium-300">Cloudflare WAF · HSTS Preload · 2FA-Pflicht-Toggle pro Tenant — keine Fertigstellung bestätigt</span></li>
+              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">Termin offen</span><span className="text-titanium-400">ISO 27001 Audit-Vorbereitung · mögliches Bug-Bounty-Programm — nicht als umgesetzt bestätigt</span></li>
               {/* TODO(Dominik): Termine für Pentest und SOC 2 Type 1 freigeben — bis dahin bewusst ohne Quartal (Stand 2026-10-23: kein Pentest, kein Audit-Termin). */}
               <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  Termin offen</span><span className="text-titanium-400">Erster externer Pentest (nach 50 zahlenden Kunden) · SOC 2 Type 1 Audit</span></li>
-              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">  2027 Q1-Q2</span><span className="text-titanium-400">SOC 2 Type 2 · ISO 27001 Zertifizierung · TÜV-Süd-Auditpfad für Behörden</span></li>
+              <li className="flex items-start gap-2"><span className="text-titanium-500 font-mono text-xs mt-0.5">Zielbild</span><span className="text-titanium-400">SOC 2 Type 2 · ISO 27001 Zertifizierung · externer Auditpfad — keine feste Zusage oder Zertifizierung</span></li>
             </ul>
           </Section>
 

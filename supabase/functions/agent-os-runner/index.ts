@@ -24,11 +24,17 @@ import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts'
 import { runDeadlineSentinelForTenant } from '../_shared/agents/deadlineSentinelRunner.ts';
 import { runMonitoringSloForTenant } from '../_shared/agents/monitoringSloRunner.ts';
 import { generateGovernanceBriefForTenant } from '../_shared/agents/governanceBriefRunner.ts';
+import {
+  publishAgentStarted, publishAgentIteration, publishAgentCompleted, publishAgentFailed,
+  generateTraceId, generateSpanId,
+} from '../_shared/ess-event-publisher.ts';
 
 interface RequestBody {
   cadence?:    'hourly' | 'daily';
   tenant_ids?: string[];
 }
+
+const SCHEDULER_AGENT_ID = 'agent-os-runner';
 
 function jsonError(status: number, code: string, detail: string): Response {
   return jsonResponse({ error: { code, detail } }, status);
@@ -77,12 +83,37 @@ Deno.serve(async (req: Request) => {
   const t0 = Date.now();
   const now = new Date();
 
+  const schedulerTraceId = generateTraceId();
+  const schedulerSpan = generateSpanId();
+
+  await publishAgentStarted(admin, {
+    agentId: SCHEDULER_AGENT_ID,
+    tenantId: 'system',
+    traceId: schedulerTraceId,
+    spanId: schedulerSpan,
+    sourceFunction: 'agent-os-runner',
+    userId: null,
+  });
+
   // PHASE B · Schritt 1 — Deadline-Sentinel (deterministisch, kein LLM):
   // flaggt überfällige/fristnahe Pflichten pro Tenant ins Agent-OS-Substrat
   // (agent_observations + agent_events) und macht schwere Funde als
   // governance_alerts sichtbar. Hermes-/Monitoring-Agenten folgen als
   // eigene Schritte (heute bewusst 0/false).
-  const tenants = await Promise.all(tenant_ids.map(async (tenant_id) => {
+  const tenants = await Promise.all(tenant_ids.map(async (tenant_id, tenant_idx) => {
+    const tenantSpan = generateSpanId();
+    const tenantStartTime = Date.now();
+
+    await publishAgentIteration(admin, {
+      agentId: SCHEDULER_AGENT_ID,
+      tenantId: tenant_id,
+      traceId: schedulerTraceId,
+      spanId: tenantSpan,
+      userId: null,
+      iteration: tenant_idx,
+      message: `Running ${cadence} agents for tenant ${tenant_id}`,
+    });
+
     try {
       const sentinel = await runDeadlineSentinelForTenant(admin, tenant_id, now);
 
@@ -115,6 +146,16 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      const tenantDurationMs = Date.now() - tenantStartTime;
+      await publishAgentCompleted(admin, {
+        agentId: SCHEDULER_AGENT_ID,
+        tenantId: tenant_id,
+        traceId: schedulerTraceId,
+        spanId: tenantSpan,
+        userId: null,
+        durationMs: tenantDurationMs,
+      });
+
       return {
         tenant_id,
         hermes_brief_created,
@@ -126,6 +167,19 @@ Deno.serve(async (req: Request) => {
         errors:                    sentinel.errors,
       };
     } catch (e) {
+      const tenantDurationMs = Date.now() - tenantStartTime;
+      const errorMsg = (e as Error)?.message ?? String(e);
+
+      await publishAgentFailed(admin, {
+        agentId: SCHEDULER_AGENT_ID,
+        tenantId: tenant_id,
+        traceId: schedulerTraceId,
+        spanId: tenantSpan,
+        userId: null,
+        error: errorMsg,
+        durationMs: tenantDurationMs,
+      });
+
       return {
         tenant_id,
         hermes_brief_created:      false,
@@ -134,7 +188,7 @@ Deno.serve(async (req: Request) => {
         monitoring_slos_breached:  0,
         decision_overdue_flagged:  0,
         alerts_created:            0,
-        errors:                    [`sentinel_failed: ${(e as Error)?.message ?? String(e)}`],
+        errors:                    [`sentinel_failed: ${errorMsg}`],
       };
     }
   }));
@@ -148,6 +202,16 @@ Deno.serve(async (req: Request) => {
     total_errors:  tenants.reduce((n, t) => n + t.errors.length, 0),
     phase:         'B_RUNTIME',
   };
+
+  const schedulerDurationMs = Date.now() - t0;
+  await publishAgentCompleted(admin, {
+    agentId: SCHEDULER_AGENT_ID,
+    tenantId: 'system',
+    traceId: schedulerTraceId,
+    spanId: schedulerSpan,
+    userId: null,
+    durationMs: schedulerDurationMs,
+  });
 
   return jsonResponse(report);
 });

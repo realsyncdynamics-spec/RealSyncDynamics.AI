@@ -88,7 +88,8 @@ describe('Unternehmens-Landing v5 – Seite', () => {
     expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/login');
     const gos = view.container.querySelector('#p-os')!;
     expect(within(gos as HTMLElement).getByRole('link', { name: 'Free Audit starten' })).toHaveAttribute('href', '/audit');
-    expect(within(gos as HTMLElement).getByRole('link', { name: 'Zur Plattform' })).toHaveAttribute('href', '/demo-tour/dashboard');
+    expect(within(gos as HTMLElement).getByRole('link', { name: 'Zur Plattform' })).toHaveAttribute('href', '/app');
+    expect(within(gos as HTMLElement).getByRole('heading', { level: 2 })).toHaveTextContent('KI einsetzen – mit Kontrolle');
   });
 
   it('Governance-Tafel ist ein Anker auf #p-os, die anderen öffnen den Dialog', () => {

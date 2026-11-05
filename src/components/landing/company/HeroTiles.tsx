@@ -1,5 +1,5 @@
 import { useEffect, useRef, type MouseEvent as ReactMouseEvent, type ReactElement } from 'react';
-import { COMPANY_PRODUCTS, STATUS_TAG_CLASS, type CompanyProductId } from './companyProducts';
+import { COMPANY_PRODUCTS, STATUS_DOT_CLASS, STATUS_TAG_CLASS, type CompanyProductId } from './companyProducts';
 import type { ScenePointer } from './spaceSceneV5';
 
 /** Gemeinsamer Zustand Seite ↔ Tafeln (Referenz: window.__mx/__my/__sy). */
@@ -163,21 +163,34 @@ export function HeroTiles({ fx, onGo, onOpen }: HeroTilesProps) {
             <b>{p.name}</b>
             <span className="hl">{p.headline}</span>
             <span className="pd">{p.description}</span>
-            <span className={STATUS_TAG_CLASS[p.status]}>{p.statusLabel}</span>
+            <span className={STATUS_TAG_CLASS[p.status]}>
+              <i className={STATUS_DOT_CLASS[p.status]} aria-hidden="true" />
+              {p.statusLabel}
+            </span>
             <em className="try">{p.id === 'governance' ? 'Mehr erfahren →' : 'Ausprobieren →'}</em>
           </>
         );
         if (p.id === 'governance')
           return (
-            <a key={p.id} className="htile" href="#p-os" data-testid={`product-tile-${p.id}`} onClick={(e) => onGo(e, 'p-os')}>
+            <a
+              key={p.id}
+              className="htile"
+              href={`#${p.anchor}`}
+              data-product={p.id}
+              data-testid={`product-tile-${p.id}`}
+              onClick={(e) => onGo(e, p.anchor)}
+            >
               {inner}
             </a>
           );
         return (
           <button
             key={p.id}
+            // Anker für Deep-Links (#voice-agent, #sites); der Dialog öffnet über den Hash.
+            id={p.anchor}
             type="button"
             className="htile"
+            data-product={p.id}
             aria-haspopup="dialog"
             data-testid={`product-tile-${p.id}`}
             onClick={(e) => onOpen(i, e.currentTarget)}

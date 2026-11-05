@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 /**
  * Smoke für /unternehmen (Unternehmens-Landing v5): Seite lädt (noindex),
  * Dialog öffnet per Klick auf eine Tafel, Esc schließt, Fokus kehrt zurück;
- * Governance-Tafel scrollt zum Abschnitt; Rechtslinks zeigen auf echte Routen.
+ * Governance-Tafel scrollt zum Abschnitt; Rechtslinks zeigen auf echte Routen;
+ * Produkte-Menü und Deep-Links (#voice-agent, #sites) samt Zurück/Vorwärts.
  * Die 3D-Szene mountet unter navigator.webdriver nicht (wie Landing v4).
  * Reduced Motion: Die Hero-Tafeln schweben sonst dauerhaft (Referenz) und
  * gelten für Playwright nie als „stabil“ — so ist der Ablauf deterministisch
@@ -45,6 +46,38 @@ test.describe('/unternehmen', () => {
     await page.goto('/unternehmen');
     await page.getByTestId('product-tile-governance').click();
     await expect(page.getByRole('heading', { level: 2, name: /KI einsetzen/ })).toBeInViewport();
+  });
+
+  test('Produkte-Menü: Hash öffnet den Dialog, Zurück schließt, Vorwärts öffnet wieder', async ({ page }) => {
+    await page.goto('/unternehmen');
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+    const btn = nav.getByRole('button', { name: /Produkte/ });
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('#nav-produkte-menu').getByRole('link', { name: /Voice Agent/ }).click();
+    await expect(page).toHaveURL(/\/unternehmen#voice-agent$/);
+    const dialog = page.getByRole('dialog', { name: 'Produkte im Detail' });
+    await expect(dialog.getByRole('tab', { name: 'Voice Agent' })).toHaveAttribute('aria-selected', 'true');
+
+    await page.goBack();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/unternehmen$/);
+    await page.goForward();
+    await expect(dialog.getByRole('tab', { name: 'Voice Agent' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('Direktaufruf #sites öffnet den Builder-Tab; keine doppelten IDs', async ({ page }) => {
+    await page.goto('/unternehmen#sites');
+    const dialog = page.getByRole('dialog', { name: 'Produkte im Detail' });
+    await expect(dialog.getByRole('tab', { name: 'Landingpage Builder' })).toHaveAttribute('aria-selected', 'true');
+    const dupes = await page.evaluate(() => {
+      const ids = Array.from(document.querySelectorAll('[id]')).map((e) => e.id);
+      return ids.filter((id, i) => ids.indexOf(id) !== i);
+    });
+    expect(dupes).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/unternehmen$/);
   });
 
   test('Rechtslinks im Footer zeigen auf die bestehenden Routen', async ({ page }) => {

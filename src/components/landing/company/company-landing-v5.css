@@ -7,6 +7,9 @@
  * Entfernt: in der Referenz ungenutzte Regeln (.pbtn, .prod*, .band.light,
  * .hero .ctas/.meta, .three*). Owner-Freigabe 03.11.2026: Gold als einziger
  * Akzent nur auf dieser Seite (Ausnahme zu AGENTS.md „Security-Blue“).
+ * G2-Freigabe 05.11.2026 (aufgehoben für Produktmarkierungen): Produktfarben
+ * Gold/Blau/Pink als Tokens (--product-*), Status neutral mit Punkt/Ring/Strich,
+ * Info-Bereiche ohne Produktfarbe – Abschnitt „Produktfarben“ am Dateiende.
  * Schriften: Cormorant Garamond, Lora (src/styles/brand-v4-tokens.css) und
  * JetBrains Mono (src/index.css) sind self-hosted; kein Google-Fonts-Request.
  */
@@ -202,7 +205,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .tv.seal i:nth-child(3) { animation-delay: 1s; }
 .rsl5 .tv.seal i:nth-child(4) { animation-delay: 1.5s; }
 .rsl5 .tv.seal i:nth-child(5) { animation-delay: 2s; }
-@keyframes rsl5-chain { 0%, 55%, 100% { background: color-mix(in srgb, var(--color-accent-300) 18%, transparent); } 20%, 35% { background: var(--gold-lite); box-shadow: 0 0 12px var(--gold-lite); } }
+@keyframes rsl5-chain { 0%, 55%, 100% { background: color-mix(in srgb, var(--pc, var(--color-accent-300)) 18%, transparent); } 20%, 35% { background: var(--pc, var(--gold-lite)); box-shadow: 0 0 12px var(--pc, var(--gold-lite)); } }
 .rsl5 .tv.wv i { width: 3px; height: 8px; border-radius: 2px; background: var(--gold-lite); animation: rsl5-wv 1.3s ease-in-out infinite; opacity: .9; }
 .rsl5 .tv.wv i:nth-child(odd) { --h: 26px; animation-delay: -.4s; }
 .rsl5 .tv.wv i:nth-child(even) { --h: 16px; animation-delay: -.8s; }
@@ -212,7 +215,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .tv.wf i:nth-child(1) { grid-column: 1 / 4; }
 .rsl5 .tv.wf i:nth-child(3) { animation-delay: .6s; }
 .rsl5 .tv.wf i:nth-child(4) { animation-delay: 1.2s; }
-@keyframes rsl5-bld { 0%, 15% { background: transparent; opacity: .4; } 40%, 80% { background: color-mix(in srgb, var(--color-accent-300) 30%, transparent); opacity: 1; } 100% { background: transparent; opacity: .4; } }
+@keyframes rsl5-bld { 0%, 15% { background: transparent; opacity: .4; } 40%, 80% { background: color-mix(in srgb, var(--pc, var(--color-accent-300)) 30%, transparent); opacity: 1; } 100% { background: transparent; opacity: .4; } }
 @media (prefers-reduced-motion: reduce) {
   .rsl5 .tv i { animation: none !important; }
 }
@@ -448,3 +451,81 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .cform .field input[aria-invalid="true"], .rsl5 .cform .field textarea[aria-invalid="true"] { border-color: #e0786a; }
 .rsl5 .cform small a { color: var(--gold-lite); }
 .rsl5 #space3d { position: absolute; inset: 0; }
+
+/* ── Produktfarben (G2-Freigabe 05.11.2026) ──
+ * Jedes Produkt trägt eine feste Akzentfarbe; Elemente mit [data-product]
+ * erhalten sie als --pc. Status (Live/Preview/Coming Soon) bleibt davon
+ * getrennt: neutrales Badge, Form (Punkt/Ring/Strich) + Text – Farbe nie allein.
+ * Info-Bereiche (Hero-Texte, Fokus-KMU, Kontakt, Footer) ohne Produktfarbe. */
+.rsl5 {
+  --product-governance: #ffb347;
+  --product-voice: #5b8dff;
+  --product-sites: #ff4f81;
+  --status-live: #22c55e;
+  --status-preview: #f59e0b;
+  --status-soon: var(--color-neutral-500);
+}
+.rsl5 [data-product="governance"] { --pc: var(--product-governance); }
+.rsl5 [data-product="voice"] { --pc: var(--product-voice); }
+.rsl5 [data-product="builder"] { --pc: var(--product-sites); }
+
+/* Status-Symbol: Live = gefüllter Punkt · Preview = Ring · Coming Soon = Strich */
+.rsl5 .sdot { display: inline-block; flex: none; margin-right: 8px; vertical-align: 1px; }
+.rsl5 .sdot.st-live { width: 7px; height: 7px; border: 0; border-radius: 50%; background: var(--status-live); box-shadow: 0 0 8px color-mix(in srgb, var(--status-live) 60%, transparent); }
+.rsl5 .sdot.st-preview { width: 8px; height: 8px; border: 1.5px solid var(--status-preview); border-radius: 50%; background: transparent; box-shadow: none; animation: none; }
+.rsl5 .sdot.st-coming-soon { width: 9px; height: 2px; border: 0; border-radius: 0; background: var(--status-soon); box-shadow: none; animation: none; vertical-align: 3px; }
+.rsl5 .htile span.tag { display: inline-flex; align-items: center; min-height: 0; font-style: normal; border: 1px solid rgba(243,242,242,.3); color: var(--color-neutral-200); }
+
+/* Produktkacheln: Top-Border, Icon, Link, Visual und Hover in Produktfarbe */
+.rsl5 .htile[data-product] { border-color: color-mix(in srgb, var(--pc) 30%, transparent); border-top: 3px solid var(--pc); }
+.rsl5 .htile[data-product]:hover, .rsl5 .htile[data-product]:focus-visible { border-color: var(--pc); box-shadow: 0 50px 90px rgba(0,0,0,.7), 0 0 56px color-mix(in srgb, var(--pc) 34%, transparent); }
+.rsl5 .htile[data-product]::before { background: radial-gradient(280px circle at var(--glx, 50%) var(--gly, 0%), color-mix(in srgb, var(--pc) 24%, transparent), transparent 62%); }
+.rsl5 .htile[data-product]::after { background: radial-gradient(60% 60% at 50% 100%, color-mix(in srgb, var(--pc) 24%, transparent), transparent 70%); }
+.rsl5 .htile[data-product] .ic { border-color: color-mix(in srgb, var(--pc) 70%, transparent); color: var(--pc); }
+.rsl5 .htile[data-product]:hover .ic { background: color-mix(in srgb, var(--pc) 18%, transparent); }
+.rsl5 .htile[data-product] .try { color: var(--pc); opacity: 1; }
+.rsl5 .htile[data-product] .tv.seal i { background: color-mix(in srgb, var(--pc) 20%, transparent); border-color: color-mix(in srgb, var(--pc) 60%, transparent); }
+.rsl5 .htile[data-product] .tv.wv i { background: var(--pc); }
+.rsl5 .htile[data-product] .tv.wf i { border-color: color-mix(in srgb, var(--pc) 65%, transparent); }
+
+/* Produktzone im Hero (#produkte) mit Legende */
+.rsl5 .prodzone { margin-top: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
+.rsl5 .prodzone .htiles { margin-top: 0; padding-top: 18px; }
+.rsl5 .plegend { margin-top: 26px; max-width: 72ch; font-family: var(--mono); font-size: 11px; line-height: 1.9; letter-spacing: .14em; text-transform: uppercase; color: var(--color-neutral-200); text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+.rsl5 .plegend-t { display: block; color: var(--color-neutral-300); }
+.rsl5 .plegend-i { white-space: nowrap; color: var(--paper); }
+.rsl5 .pdot { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px color-mix(in srgb, var(--pc) 55%, transparent); margin-right: 8px; vertical-align: 0; }
+@media (max-height: 820px) and (min-width: 721px) {
+  .rsl5 .plegend { margin-top: 10px; font-size: 10px; line-height: 1.7; }
+  .rsl5 .prodzone .htiles { padding-top: 12px; }
+}
+
+/* Info-Bereiche neutral: Kicker grau; nur der Governance-Abschnitt trägt Gold */
+.rsl5 .hero .kick, .rsl5 .pick, .rsl5 #unternehmen .kick, .rsl5 #kontakt .kick, .rsl5 footer .imp b { color: var(--color-neutral-300); }
+.rsl5 #p-os .kick { color: var(--product-governance); }
+
+/* Hauptnavigation: Unterstrich statt Goldton; Produktfarbe beim aktiven Produkt */
+.rsl5 header .navlink { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 2px; text-underline-offset: 9px; transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease); }
+.rsl5 header .navlink:hover { color: var(--paper); text-decoration-color: rgba(243,242,242,.35); }
+.rsl5 header .navlink.on { color: var(--paper); text-decoration-color: var(--paper); }
+.rsl5 header .navdd[data-product] .navlink.on { text-decoration-color: var(--pc); }
+
+/* „Produkte“-Menü (Disclosure) */
+.rsl5 .navdd { position: relative; display: inline-flex; }
+.rsl5 header .navdd-btn { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.rsl5 .navdd-btn .caret { font-size: 11px; line-height: 1; transition: transform 200ms var(--ease); }
+.rsl5 .navdd-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+.rsl5 .navdd-menu { position: absolute; top: calc(100% + 12px); right: 0; z-index: 8; min-width: 280px; margin: 0; padding: 8px; list-style: none; text-align: left; background: color-mix(in srgb, var(--night) 97%, transparent); border: 1px solid rgba(243,242,242,.16); border-radius: var(--radius-md); box-shadow: 0 24px 60px rgba(0,0,0,.65); }
+.rsl5 .navdd-menu[hidden] { display: none; }
+.rsl5 .navdd-menu a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-left: 3px solid transparent; font-family: var(--font-heading); font-size: 18px; font-weight: 500; color: var(--paper); }
+.rsl5 .navdd-menu a:hover, .rsl5 .navdd-menu a:focus-visible { color: var(--paper); background: color-mix(in srgb, var(--pc) 12%, transparent); border-left-color: var(--pc); }
+.rsl5 .navdd-menu a[aria-current] { border-left-color: var(--pc); }
+.rsl5 .navdd-menu .pdot { margin-right: 0; }
+.rsl5 .navdd-menu small { margin-left: auto; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-neutral-300); }
+@media (max-width: 1100px) {
+  .rsl5 .navdd-menu { right: auto; left: 0; }
+}
+
+/* Produkt-Dialog: aktiver Tab und Seiten-Navigation in der Produktfarbe */
+.rsl5 .pm-tabs button[data-product][aria-selected="true"] { color: var(--pc); background: color-mix(in srgb, var(--pc) 12%, transparent); box-shadow: inset 0 -3px 0 var(--pc); }
+.rsl5 .pm-box[data-product] .pgnav button[aria-selected="true"] { color: var(--pc); border-color: var(--pc); }

@@ -504,7 +504,10 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 }
 
 /* Info-Bereiche neutral: Kicker grau; nur der Governance-Abschnitt trägt Gold */
-.rsl5 .hero .kick, .rsl5 .pick, .rsl5 #unternehmen .kick, .rsl5 #kontakt .kick, .rsl5 footer .imp b { color: var(--color-neutral-300); }
+/* „Gebaut für …“ liegt über dem Sonnenkern: helleres Grau + dieselbe Unterlage wie die Legende. */
+.rsl5 .pick { padding: 6px 16px; border-radius: var(--radius-md); background: rgba(0,0,0,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.rsl5 .pick { color: var(--color-neutral-100); }
+.rsl5 .hero .kick, .rsl5 #unternehmen .kick, .rsl5 #kontakt .kick, .rsl5 footer .imp b { color: var(--color-neutral-300); }
 .rsl5 #p-os .kick { color: var(--product-governance); }
 
 /* Hauptnavigation: Unterstrich statt Goldton; Produktfarbe beim aktiven Produkt */

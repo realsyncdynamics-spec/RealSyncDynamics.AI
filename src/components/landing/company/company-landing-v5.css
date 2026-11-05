@@ -514,7 +514,12 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 header .navlink { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 2px; text-underline-offset: 9px; transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease); }
 .rsl5 header .navlink:hover { color: var(--paper); text-decoration-color: rgba(243,242,242,.35); }
 .rsl5 header .navlink.on { color: var(--paper); text-decoration-color: var(--paper); }
-.rsl5 header .navdd[data-product] .navlink.on { text-decoration-color: var(--pc); }
+/* Menü-Button ist ein Flex-Container: Unterstrich nur am Label, nicht unter dem ▾. */
+.rsl5 header .navdd-btn, .rsl5 header .navdd-btn:hover, .rsl5 header .navdd-btn.on { text-decoration: none; }
+.rsl5 header .navdd-lbl { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 2px; text-underline-offset: 9px; transition: text-decoration-color 200ms var(--ease); }
+.rsl5 header .navdd-btn:hover .navdd-lbl { text-decoration-color: rgba(243,242,242,.35); }
+.rsl5 header .navdd-btn.on .navdd-lbl { text-decoration-color: var(--paper); }
+.rsl5 header .navdd[data-product] .navdd-btn.on .navdd-lbl { text-decoration-color: var(--pc); }
 
 /* „Produkte“-Menü (Disclosure) */
 .rsl5 .navdd { position: relative; display: inline-flex; }

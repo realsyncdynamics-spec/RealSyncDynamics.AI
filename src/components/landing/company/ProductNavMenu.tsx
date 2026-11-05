@@ -17,7 +17,8 @@ export interface ProductNavMenuProps {
  * Voice/Builder navigieren per Router auf den Hash; CompanyLanding öffnet daraus
  * den Dialog – so funktionieren Direktaufruf und Browser-Zurück/Vorwärts gleich.
  * Esc schließt und gibt den Fokus an den Button zurück; Klick außerhalb und
- * Tab aus dem Menü heraus schließen ebenfalls.
+ * Tab aus dem Menü heraus schließen ebenfalls. Der Unterstrich sitzt am Label
+ * (`.navdd-lbl`), damit er im Flex-Button nicht unter das ▾ läuft.
  */
 export const ProductNavMenu = forwardRef<HTMLButtonElement, ProductNavMenuProps>(function ProductNavMenu(
   { active, activeProduct, onGo },
@@ -68,7 +69,7 @@ export const ProductNavMenu = forwardRef<HTMLButtonElement, ProductNavMenuProps>
         aria-controls="nav-produkte-menu"
         onClick={() => setOpen((o) => !o)}
       >
-        Produkte
+        <span className="navdd-lbl">Produkte</span>
         <span className="caret" aria-hidden="true">
           ▾
         </span>

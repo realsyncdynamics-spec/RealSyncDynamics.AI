@@ -373,7 +373,7 @@ export function CompanyLanding() {
           <div className="in">
             <p className="kick rv">The Governance OS · {governance.statusLabel}</p>
             <h2 className="rv" id="p-os-title">
-              KI einsetzen – <em>ohne Risiko</em>
+              KI einsetzen – <em>mit Kontrolle</em>
             </h2>
             <p className="sub rv">
               Auch kleine Betriebe müssen DSGVO und EU AI Act erfüllen, ohne eigene Rechtsabteilung. Das Governance OS sitzt zwischen Ihrer KI

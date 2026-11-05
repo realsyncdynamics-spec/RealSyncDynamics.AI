@@ -1,12 +1,15 @@
 /**
  * Unternehmens-Landing v5 (/unternehmen) — Vertrag: SSoT-Status, Hero-Tafeln,
- * Produkt-Dialog (Tabs, Seiten, Tastatur, Fokus), Demos, Kontaktformular.
+ * Produkt-Dialog (Tabs, Seiten, Tastatur, Fokus), Demos, Kontaktformular,
+ * Produktfarben/Legende/Produkte-Menü und Deep-Links (#voice-agent, #sites).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { CompanyLanding } from '../../src/pages/CompanyLanding';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from '../../src/components/landing/company/companyProducts';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, dialogTabForHash } from '../../src/components/landing/company/companyProducts';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 
@@ -186,3 +189,167 @@ describe('Unternehmens-Landing v5 – Kontaktformular', () => {
     expect(screen.getByLabelText('E-Mail')).toHaveAttribute('aria-invalid', 'true');
   });
 });
+
+/** Zeigt Pfad+Hash und navigiert im Verlauf (Zurück/Vorwärts wie im Browser). */
+function HistoryProbe() {
+  const loc = useLocation();
+  const nav = useNavigate();
+  return (
+    <>
+      <output data-testid="loc">{loc.pathname + loc.hash}</output>
+      <button type="button" data-testid="go-back" onClick={() => nav(-1)}>
+        zurück
+      </button>
+      <button type="button" data-testid="go-forward" onClick={() => nav(1)}>
+        vor
+      </button>
+    </>
+  );
+}
+
+const mountAt = (entry: string) =>
+  render(
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route
+          path="/unternehmen"
+          element={
+            <>
+              <CompanyLanding />
+              <HistoryProbe />
+            </>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+const productTabs = () =>
+  within(within(screen.getByRole('dialog', { name: 'Produkte im Detail' })).getByRole('tablist', { name: 'Produkte' })).getAllByRole('tab');
+
+describe('Unternehmens-Landing v5 – Produktfarben', () => {
+  it('legt die Produktfarben als Tokens an (Gold, Blau, Pink) und trennt Status davon', () => {
+    const css = readFileSync(join(__dirname, '../../src/components/landing/company/company-landing-v5.css'), 'utf8');
+    expect(css).toMatch(/--product-governance:\s*#ffb347/i);
+    expect(css).toMatch(/--product-voice:\s*#5b8dff/i);
+    expect(css).toMatch(/--product-sites:\s*#ff4f81/i);
+    expect(css).toMatch(/--status-live:/);
+    expect(css).toMatch(/--status-preview:/);
+    expect(COMPANY_PRODUCTS.map((p) => [p.id, p.accentVar, p.colorName])).toEqual([
+      ['governance', '--product-governance', 'Gold'],
+      ['voice', '--product-voice', 'Blau'],
+      ['builder', '--product-sites', 'Pink'],
+    ]);
+  });
+
+  it('Kacheln tragen Produkt, Anker und ein Status-Symbol passend zur SSoT', () => {
+    mount();
+    for (const p of COMPANY_PRODUCTS) {
+      const tile = screen.getByTestId(`product-tile-${p.id}`);
+      expect(tile).toHaveAttribute('data-product', p.id);
+      const tag = tile.querySelector('.tag')!;
+      expect(tag).toHaveClass(`st-${p.status}`);
+      expect(tag.querySelector(`.sdot.st-${p.status}`)).not.toBeNull();
+      expect(tag).toHaveTextContent(p.statusLabel);
+    }
+    expect(screen.getByTestId('product-tile-voice')).toHaveAttribute('id', 'voice-agent');
+    expect(screen.getByTestId('product-tile-builder')).toHaveAttribute('id', 'sites');
+  });
+
+  it('zeigt die Legende über den Kacheln im Bereich #produkte', () => {
+    const view = mount();
+    const zone = view.container.querySelector('#produkte')!;
+    const legend = within(zone as HTMLElement).getByTestId('product-legend');
+    expect(legend).toHaveTextContent(
+      'Unsere drei Produkte – farblich gekennzeichnet: Gold = Governance OS · Blau = Voice Agent · Pink = Landingpage Builder',
+    );
+    expect(legend.compareDocumentPosition(screen.getByTestId('product-tile-governance')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('vergibt keine ID doppelt – auch nicht mit offenem Dialog', () => {
+    mountAt('/unternehmen#sites');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    const ids = Array.from(document.querySelectorAll('[id]')).map((e) => e.id);
+    expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
+  });
+});
+
+describe('Unternehmens-Landing v5 – Produkte-Menü', () => {
+  it('klappt drei verlinkbare Produkte auf; Esc schließt und fokussiert den Button', () => {
+    mountAt('/unternehmen');
+    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    const btn = within(nav).getByRole('button', { name: /Produkte/ });
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
+    // Kein separater Nav-Eintrag „Governance OS“ mehr (E4) – nur im Menü.
+    expect(within(nav).queryByRole('link', { name: /Governance OS/ })).toBeNull();
+
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-expanded', 'true');
+    const menu = document.getElementById('nav-produkte-menu')!;
+    const links = within(menu).getAllByRole('link');
+    expect(links.map((l) => l.textContent)).toEqual(['Governance OSGold', 'Voice AgentBlau', 'Landingpage BuilderPink']);
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['#p-os', '/unternehmen#voice-agent', '/unternehmen#sites']);
+    expect(links.map((l) => l.closest('[data-product]')?.getAttribute('data-product'))).toEqual(['governance', 'voice', 'builder']);
+
+    fireEvent.keyDown(links[1], { key: 'Escape' });
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
+    expect(document.activeElement).toBe(btn);
+  });
+
+  it('Menüeintrag öffnet den Dialog über den Hash; Zurück schließt, Vorwärts öffnet wieder', () => {
+    mountAt('/unternehmen');
+    fireEvent.click(screen.getByRole('button', { name: /Produkte/ }));
+    fireEvent.click(within(document.getElementById('nav-produkte-menu')!).getByRole('link', { name: /Voice Agent/ }));
+    expect(screen.getByTestId('loc')).toHaveTextContent('/unternehmen#voice-agent');
+    expect(productTabs()[1]).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.click(screen.getByTestId('go-back'));
+    expect(screen.getByTestId('loc')).toHaveTextContent(/^\/unternehmen$/);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('go-forward'));
+    expect(screen.getByTestId('loc')).toHaveTextContent('/unternehmen#voice-agent');
+    expect(productTabs()[1]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Esc nach Menü-Aufruf geht im Verlauf zurück (kein Hash bleibt stehen)', () => {
+    mountAt('/unternehmen');
+    fireEvent.click(screen.getByRole('button', { name: /Produkte/ }));
+    fireEvent.click(within(document.getElementById('nav-produkte-menu')!).getByRole('link', { name: /Landingpage Builder/ }));
+    expect(productTabs()[2]).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('loc')).toHaveTextContent(/^\/unternehmen$/);
+  });
+});
+
+describe('Unternehmens-Landing v5 – Deep-Links', () => {
+  it('ordnet nur Voice und Builder einem Dialog-Tab zu', () => {
+    expect(dialogTabForHash('#voice-agent')).toBe(1);
+    expect(dialogTabForHash('#sites')).toBe(2);
+    expect(dialogTabForHash('#p-os')).toBe(-1);
+    expect(dialogTabForHash('')).toBe(-1);
+    expect(dialogTabForHash('#kontakt')).toBe(-1);
+  });
+
+  it.each([
+    ['#voice-agent', 1],
+    ['#sites', 2],
+  ] as const)('Direktaufruf %s öffnet den Dialog auf Tab %i', (hash, tab) => {
+    mountAt(`/unternehmen${hash}`);
+    expect(productTabs()[tab]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Schließen nach Direktaufruf entfernt den Hash per replace (Neuladen öffnet nicht erneut)', () => {
+    mountAt('/unternehmen#voice-agent');
+    fireEvent.click(screen.getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('loc')).toHaveTextContent(/^\/unternehmen$/);
+  });
+
+  it('#p-os öffnet keinen Dialog', () => {
+    mountAt('/unternehmen#p-os');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+

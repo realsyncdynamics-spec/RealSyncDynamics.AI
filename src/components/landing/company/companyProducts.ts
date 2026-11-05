@@ -31,13 +31,29 @@ export interface CompanyProduct {
   description: string;
   status: ImplementationStatus;
   statusLabel: string;
+  /** Design-Token der Produktfarbe (company-landing-v5.css, `.rsl5`). */
+  accentVar: '--product-governance' | '--product-voice' | '--product-sites';
+  /** Farbname für Legende und Screenreader – Farbe nie allein (WCAG 1.4.1). */
+  colorName: string;
+  /** Anker-ID ohne `#`: Abschnitt (Governance) bzw. Deep-Link auf den Dialog. */
+  anchor: string;
 }
 
-/** Tag-Stil wie im Handoff: Live gold · Preview gestrichelt · Coming Soon grau. */
+/**
+ * Statusform unabhängig von der Produktfarbe (G2-Freigabe 05.11.2026, E3):
+ * Live = gefüllter Punkt · Preview = Ring · Coming Soon = Strich, immer mit Text.
+ */
 export const STATUS_TAG_CLASS: Record<ImplementationStatus, string> = {
-  live: 'tag',
-  preview: 'tag dash',
-  'coming-soon': 'tag gray',
+  live: 'tag st-live',
+  preview: 'tag st-preview',
+  'coming-soon': 'tag st-coming-soon',
+};
+
+/** Klasse des Status-Symbols (Punkt/Ring/Strich) für Badges und Statusleiste. */
+export const STATUS_DOT_CLASS: Record<ImplementationStatus, string> = {
+  live: 'sdot st-live',
+  preview: 'sdot st-preview',
+  'coming-soon': 'sdot st-coming-soon',
 };
 
 /** Ziele der Referenz (`MAP`), relativ auf der Hauptdomain. */
@@ -75,6 +91,9 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     tabName: 'The Governance OS',
     headline: 'KI sicher einsetzen.',
     description: 'Jede KI-Aktion wird geprüft und protokolliert – nach DSGVO und EU AI Act.',
+    accentVar: '--product-governance',
+    colorName: 'Gold',
+    anchor: 'p-os',
   }),
   product({
     id: 'voice',
@@ -83,6 +102,9 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     tabName: 'Voice Agent',
     headline: 'Kein Anruf geht verloren.',
     description: 'Nimmt Anrufe an, notiert Termine, übergibt Notfälle an Sie.',
+    accentVar: '--product-voice',
+    colorName: 'Blau',
+    anchor: 'voice-agent',
   }),
   product({
     id: 'builder',
@@ -91,9 +113,23 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     tabName: 'Landingpage Builder',
     headline: 'Ihre Webseite, fertig.',
     description: 'Mit Impressum und Datenschutz – von uns gebaut oder selbst im Builder.',
+    accentVar: '--product-sites',
+    colorName: 'Pink',
+    anchor: 'sites',
   }),
 ];
 
 export function companyProduct(id: CompanyProductId): CompanyProduct {
   return COMPANY_PRODUCTS.find((p) => p.id === id)!;
+}
+
+/**
+ * Deep-Links auf den Produkt-Dialog: `#voice-agent` → Tab 1, `#sites` → Tab 2.
+ * Governance (`#p-os`) ist ein Abschnitt der Seite und öffnet keinen Dialog.
+ * Liefert den Tab-Index oder `-1`.
+ */
+export function dialogTabForHash(hash: string): number {
+  const id = hash.replace(/^#/, '');
+  if (!id) return -1;
+  return COMPANY_PRODUCTS.findIndex((p) => p.id !== 'governance' && p.anchor === id);
 }

@@ -51,7 +51,8 @@ permissions:
 jobs:
   build:
     name: Build SPA
-    runs-on: ubuntu-latest
+    # Pin fuer die installierte Playwright-Version: ubuntu-latest liefert Ubuntu 26.04.
+    runs-on: ubuntu-24.04
     # Build inklusive Prerender braucht regulaer rund fuenf Minuten. Ohne diese Grenze gilt der GitHub-Standard von 360 Minuten —
     # ein haengender Schritt blockiert dann sechs Stunden lang die
     # Warteschlange, statt schnell und lesbar zu scheitern.

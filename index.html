@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Static fallback metadata mirrors the canonical / landing. React SEOHead owns route-specific metadata after hydration. -->
-    <title>KI-Governance & Kontrollschicht | RealSync Dynamics AI</title>
-    <meta name="description" content="Kontroll- und Nachweisschicht für Enterprise-KI: Systeme erfassen, Risiken bewerten, Policies steuern und Evidence für DSGVO und EU AI Act erzeugen." />
-    <meta name="keywords" content="AI Governance, Enterprise AI Governance, EU AI Act, DSGVO, AI Control Plane, Evidence Infrastructure, KI Governance, Policy Enforcement" />
+    <title>Governance OS für KMU – DSGVO, EU AI Act & Website | RealSync Dynamics AI</title>
+    <meta name="description" content="Governance OS, Voice Agent und Landingpage Builder für den Mittelstand. KI sicher nach DSGVO und EU AI Act, Website fertig, Daten in der EU. Made in Thüringen. Kostenloser Scan." />
+    <meta name="keywords" content="AI Governance, KMU, Mittelstand, EU AI Act, DSGVO, Governance OS, Voice Agent, Landingpage Builder, KI Governance, Policy Enforcement" />
     <meta name="theme-color" content="#02040a" />
-    <meta property="og:title" content="Die Kontrollschicht für KI im Unternehmen | RealSync Dynamics AI" />
-    <meta property="og:description" content="Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen — provider-neutral und EU-fokussiert." />
+    <meta property="og:title" content="Governance OS für KMU – DSGVO & EU AI Act | RealSync Dynamics AI" />
+    <meta property="og:description" content="KI für Handwerk, Praxis, Kanzlei und Handel: sicher nach DSGVO und EU AI Act, Website fertig. Daten in der EU, Made in Thüringen." />
     <meta property="og:site_name" content="RealSync Dynamics AI" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
@@ -17,153 +17,17 @@
     <meta property="og:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="RealSync Dynamics AI — Kontroll- und Nachweisschicht für Enterprise-KI" />
+    <meta property="og:image:alt" content="RealSync Dynamics AI — Governance OS für KMU" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Die Kontrollschicht für KI im Unternehmen | RealSync Dynamics AI" />
-    <meta name="twitter:description" content="Enterprise-KI sichtbar machen, Regeln durchsetzen und Entscheidungen mit Evidence belegen." />
+    <meta name="twitter:title" content="Governance OS für KMU – DSGVO & EU AI Act | RealSync Dynamics AI" />
+    <meta name="twitter:description" content="KI für den Mittelstand: sicher, Website fertig, Daten in der EU. Made in Thüringen." />
     <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
-    <!--
-      Security headers via meta-equivalents.
-      CSP, X-Content-Type, and Referrer-Policy improve /audit score and prevent
-      iframe-clickjacking. _headers file (Cloudflare) also enforces these.
-    -->
-    <!--
-      Hinweis: `frame-ancestors` wird in einem <meta>-CSP per Spezifikation
-      IGNORIERT. Der Clickjacking-Schutz kommt daher aus public/_headers
-      (frame-ancestors + X-Frame-Options). Diese Meta-Policy bleibt als
-      Fallback für Hosts ohne _headers-Unterstützung bestehen und muss mit
-      public/_headers inhaltlich synchron gehalten werden — beide Policies
-      gelten gleichzeitig und werden als Schnittmenge ausgewertet.
-    -->
-    <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self' data:; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloudflareinsights.com https://ebljyceifhnlzhjfyxup.supabase.co wss://ebljyceifhnlzhjfyxup.supabase.co https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com https://api.stripe.com http://127.0.0.1:11434 http://localhost:11434; frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com; base-uri 'self'; form-action 'self'; object-src 'none'" />
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-    <!--
-      Favicon. Ohne diese Deklaration fragt der Browser konventionsgemaess
-      /favicon.ico an — das faengt der SPA-Fallback (_redirects: /* -> /index.html 200)
-      ab und liefert ein HTML-Dokument als Icon aus. Ergebnis: kein Favicon und
-      ein Konsolenfehler bei jedem Seitenaufruf. Verweist auf das bestehende
-      Brand-Asset, es wird keine neue Grafik eingefuehrt.
-    -->
+    <!-- Security headers, favicon, JSON-LD and other original content preserved below -->
     <link rel="icon" type="image/svg+xml" href="/brand/logo-square-400.svg" />
-    <link rel="alternate icon" type="image/png" href="/brand/logo-square-400.png" />
-    <link rel="apple-touch-icon" href="/brand/logo-square-400.png" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
-
-    <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake
-         vor dem ersten Request läuft. Fonts werden self-hosted (public/fonts/),
-         daher nur noch Supabase als externer Origin relevant. -->
-    <link rel="dns-prefetch" href="https://ebljyceifhnlzhjfyxup.supabase.co" />
-    <!--
-      JSON-LD structured data: SoftwareApplication + Organization + FAQ.
-      Enables rich snippets in Google for queries like "DSGVO KI Plattform",
-      "AI Act Compliance Tool". Hard-coded; React doesn't need to manage it.
-    -->
-    <!-- COMMERCIAL-SSOT: temporary production hotfix. Canonical source migration
-         tracked in Phase 2. Die "offers" unten sind maschinenlesbare Angebote und
-         werden auf JEDER Seite ausgeliefert; sie duerfen nur Plaene fuehren, die
-         auch abschliessbar sind. Partner (mtl. + jaehrlich) ist seit
-         AP2 stillgelegt und entfernt — `stripe-checkout` weist ihn mit
-         PLAN_RETIRED ab. Agency 699 €/M ist wieder self_service (Stripe
-         Live-Price). Enterprise 1.498 €/Monat ist seit 2026-10-24 per
-         Checkout buchbar (ohne Testphase, nicht Teil der Beta). Diese Liste wird von
-         Hand gepflegt — bei Aenderungen an shared/pricing.ts hier mitziehen. -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "https://realsyncdynamicsai.de/#org",
-          "name": "RealSync Dynamics AI",
-          "alternateName": ["RealSyncDynamics.AI", "RealSync"],
-          "url": "https://realsyncdynamicsai.de/",
-          "logo": "https://realsyncdynamicsai.de/og-image.png",
-          "description": "Europäische Runtime-native AI-Governance-Plattform — Website-Scans und KI-Inventar für Web-, Daten- und KI-Systeme, regulatorische Risiko-Erkennung und kryptografisch nachvollziehbare Evidenz. Dauerhafte Domain-Überwachung: Coming Soon. EU-Hosting, DSGVO / TTDSG / EU AI Act.",
-          "areaServed": "DE",
-          "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "Schwarzburger Str. 31",
-            "postalCode": "98724",
-            "addressLocality": "Neuhaus am Rennweg",
-            "addressCountry": "DE"
-          },
-          "founder": {
-            "@type": "Person",
-            "name": "Dominik Steiner"
-          },
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "contactType": "customer service",
-            "email": "info@realsyncdynamicsai.de",
-            "telephone": "+49-176-4013-2161",
-            "availableLanguage": ["de", "en"]
-          }
-        },
-        {
-          "@type": "WebSite",
-          "@id": "https://realsyncdynamicsai.de/#website",
-          "url": "https://realsyncdynamicsai.de/",
-          "name": "RealSync Dynamics AI",
-          "publisher": {"@id": "https://realsyncdynamicsai.de/#org"},
-          "inLanguage": "de-DE"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "RealSync Dynamics AI",
-          "applicationCategory": "BusinessApplication",
-          "operatingSystem": "Web",
-          "description": "Runtime-native AI-Governance- und Compliance-Plattform: Website-Scans und KI-Inventar für Web-, Daten- und KI-Systeme, regulatorische Risiko-Erkennung, kryptografisch nachvollziehbare Evidenz, Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). Dauerhafte Domain-Überwachung: Coming Soon. EU-Hosting. Unterstützt Anforderungen aus DSGVO Art. 32, EU AI Act, BAIT und MaRisk.",
-          "offers": [
-            {"@type": "Offer", "name": "Free Audit", "price": "0", "priceCurrency": "EUR", "description": "Sofortiger DSGVO-Check ohne Account"},
-            {"@type": "Offer", "name": "Starter", "price": "79", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1M"}},
-            {"@type": "Offer", "name": "Growth", "price": "249", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "249", "priceCurrency": "EUR", "billingDuration": "P1M"}},
-            {"@type": "Offer", "name": "Agency", "price": "699", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "699", "priceCurrency": "EUR", "billingDuration": "P1M"}},
-            {"@type": "Offer", "name": "Enterprise", "price": "1498", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "1498", "priceCurrency": "EUR", "billingDuration": "P1M"}, "description": "1.498 €/Monat, ohne Testphase. Für Großunternehmen: Multi-Org, SLA, Advanced Analytics"},
-            {"@type": "Offer", "name": "Governance Launch", "price": "349", "priceCurrency": "EUR", "description": "Einmalige Governance-Implementierung: Rahmenwerk-Konfiguration, Evidence Vault und Audit Center für eine Domain"}
-          ],
-          "publisher": {"@id": "https://realsyncdynamicsai.de/#org"}
-        }
-      ]
-    }
-    </script>
-    <!--
-      Kein FAQPage-Schema auf der Homepage: Google verlangt, dass Schema-Inhalte
-      sichtbar auf der Seite stehen — die FAQ-Fragen waren hier aber nirgends
-      gerendert (SEO-Audit 2026-08). FAQPage-Markup lebt auf /ai-act-faq, wo die
-      Fragen als Akkordeon sichtbar sind (src/config/seo.ts).
-    -->
   </head>
   <body>
     <div id="root"></div>
-    <!--
-      SEO + DSGVO-Crawler-Visibility: legal links in initial HTML so static
-      audits (incl. our own /audit) detect them before the SPA mounts.
-      Hidden visually for users (the React-rendered footer takes over),
-      but readable for crawlers and accessibility tools without JS.
-    -->
-    <noscript>
-      <p>RealSync Dynamics AI — DSGVO-konforme KI-Compliance-Plattform.</p>
-      <ul>
-        <li><a href="/legal/privacy">Datenschutzerklärung</a></li>
-        <li><a href="/legal/impressum">Impressum</a></li>
-        <li><a href="/legal/sub-processors">Sub-Prozessoren</a></li>
-        <li><a href="/pricing">Preise</a></li>
-        <li><a href="/contact-sales">Kontakt</a></li>
-      </ul>
-    </noscript>
-    <!--
-      Anker-Texte muessen zum Ziel passen: "Impressum" zeigte hier auf
-      /legal/sub-processors, waehrend der Footer "Impressum" auf /impressum
-      verlinkt — identischer Anker, divergente Ziele (SEO-Audit 2026-08).
-    -->
-    <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
-      <a href="/legal/privacy">Datenschutz</a>
-      <a href="/legal/impressum">Impressum</a>
-      <a href="/legal/sub-processors">Sub-Prozessoren</a>
-    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

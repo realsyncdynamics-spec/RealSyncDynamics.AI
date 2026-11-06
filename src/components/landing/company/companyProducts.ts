@@ -14,8 +14,9 @@ import {
  *                        selbst bleibt `voice-telephony`, Coming Soon)
  * - Landingpage Builder → `public-frontend-builder`
  *
- * Preise erscheinen hier bewusst nicht: Die Voice-Pakete der Onboarding-Seite
- * stehen nicht in `shared/pricing.ts` (AGENTS.md: Preise nur aus der SSoT).
+ * Voice-Listenpreise stehen nicht in `shared/pricing.ts`. Die Anzeige im
+ * Produkt-Dialog kommt aus `voiceListPrices.ts` (veröffentlichte Produktmappe,
+ * kein Checkout).
  */
 
 export type CompanyProductId = 'governance' | 'voice' | 'builder';
@@ -81,8 +82,8 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     ssotId: 'voice-agent-onboarding',
     name: 'Voice Agent',
     tabName: 'Voice Agent',
-    headline: 'Kein Anruf geht verloren.',
-    description: 'Nimmt Anrufe an, notiert Termine, übergibt Notfälle an Sie.',
+    headline: 'Anliegen aufnehmen.',
+    description: 'Web-Konfigurator als Vorschau. Telefonie ist in Vorbereitung – kein zugesagter Anruf, keine feste Terminbuchung.',
   }),
   product({
     id: 'builder',

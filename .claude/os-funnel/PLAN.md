@@ -202,8 +202,21 @@ WP8 läuft neben AP-x und G-x und mischt sich nicht mit ihnen.
   `governance-approvals` nur für `pdp_approval_gates`, die Browser-Reservierung prüft
   `expires_at` nur beim Einlösen.
 
-Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
-AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.
+Dieser Plan läuft **neben** der Enforcement-Reihenfolge. **AP-1a, AP-1b, AP-1c, AP-1d
+und AP-2 sind nicht beauftragt** — es gibt dafür keinen Auftragstext, keinen Branch und
+kein Dokument im Repo (gemessen 2026-11-02 gegen `main@abdef53`; Entscheidung **E-AP0**,
+2026-11-02). Beauftragt und freigegeben ist **AP-3** (`governance_policies` als
+Tenant-SSoT mit adressierbaren Versionen; Auftragstext liegt **nicht** im Repo, sondern
+in der Claude-Projekt-Doku `claude/ap3-policy-ssot.md`, Stand 2026-11-02), in vier
+Teilpaketen:
+
+- **3a** Plan, Lesemessung, Spec-Abgleich (nur Doku, kein Code) — *in Arbeit*
+- **3b** Migration: Version + Revisionstabelle `governance_policy_revisions` (separates GO, Test zuerst)
+- **3c** Ein gemeinsamer Schreibpfad + Evidence (Edge Functions)
+- **3d** Snapshot beim Schreiben (E-AP3)
+
+Reihenfolge 3a → 3b → 3c → 3d, jedes Paket setzt das vorige auf `main` voraus.
+Keine Session mischt WP-x mit AP-x.
 
 ---
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { COMPANY_LINKS, COMPANY_PRODUCTS } from './companyProducts';
+import { VOICE_LIST_PACKAGES, VOICE_PRICE_BINDING_NOTE } from './voiceListPrices';
 import { BuilderPreview, GovernanceCheckDemo, TemplatePicker, VoiceCallDemo, VoiceOnboarding } from './CompanyDemos';
 
 /**
@@ -149,13 +150,19 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Überblick',
         body: (
           <>
-            <h3>Kein Anruf geht verloren.</h3>
+            <h3>Anliegen aufnehmen – ohne Erreichbarkeitsgarantie.</h3>
             <p>
-              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent geht ans Telefon, versteht das Anliegen und
-              gibt es an Sie weiter – auch nach Feierabend.
+              Der Web-Konfigurator ist eine Vorschau. Telefonie ist in Vorbereitung und nimmt heute keine Anrufe an. Es gibt keine Zusage,
+              dass ein Anruf angenommen oder ein Termin fest gebucht wird.
             </p>
-            <F3 items={[['Annehmen', 'auch außerhalb der Öffnungszeiten'], ['Notieren', 'Anliegen, Termine, Rückrufe'], ['Übergeben', 'Notfälle sofort an Menschen']]} />
-            <p className="note">Preview · Telefonie ist in Vorbereitung</p>
+            <F3
+              items={[
+                ['Web', 'Konfigurator, lokale Vorschau'],
+                ['Telefon', 'in Vorbereitung, nur nach Freigabe'],
+                ['Termine', 'Wunsch notieren, nicht fest buchen'],
+              ]}
+            />
+            <p className="note">Preview · Telefonie ist in Vorbereitung · Demo schaltet nichts scharf</p>
           </>
         ),
       },
@@ -168,9 +175,9 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
               <li>
                 Gibt sich zu Beginn als <strong>KI</strong> zu erkennen
               </li>
-              <li>Nimmt Anliegen, Terminwünsche und Rückrufe auf</li>
+              <li>Nimmt in der Vorschau Anliegen und Terminwünsche auf – ohne feste Buchung und ohne Zusage, dass jeder Anruf ankommt</li>
               <li>
-                Macht <strong>keine Zusagen</strong> – Ihr Team bestätigt
+                Macht <strong>keine Zusagen</strong> – ein Mensch bestätigt
               </li>
               <li>
                 <strong>Aufzeichnung</strong> standardmäßig aus
@@ -188,22 +195,21 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Pakete',
         body: (
           <>
-            <h3>Drei Pakete für Ihren Betrieb</h3>
+            <h3>Drei Pakete, netto und mit Minuten</h3>
             <div className="pricegrid">
-              <div>
-                <b>Starter</b>
-                <em>Web-Agent</em>
-              </div>
-              <div className="hot">
-                <b>Professional</b>
-                <em>Web + Telefonie</em>
-              </div>
-              <div>
-                <b>Kanzlei</b>
-                <em>Erhöhter Datenschutz</em>
-              </div>
+              {VOICE_LIST_PACKAGES.map((plan) => (
+                <div key={plan.id} className={plan.id === 'professional' ? 'hot' : undefined}>
+                  <b>{plan.name}</b>
+                  <span className="pr">{plan.netEur} €</span>
+                  <span className="meta">netto / Monat · zzgl. 19 % MwSt. ({plan.grossLabel})</span>
+                  <span className="meta">
+                    {plan.includedMinutes.toLocaleString('de-DE')} Min. inklusive · weitere Minute {plan.overageNetLabel} netto
+                  </span>
+                  <span className="meta">{plan.channel}</span>
+                </div>
+              ))}
             </div>
-            <p className="note">Aktuelle Preise und Leistungen im Onboarding · Telefonie ist in Vorbereitung</p>
+            <p className="note">{VOICE_PRICE_BINDING_NOTE}</p>
             <div className="pm-cta">
               <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
                 Pakete im Onboarding ansehen
@@ -236,12 +242,19 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Überblick',
         body: (
           <>
-            <h3>Ihre Webseite, fertig.</h3>
+            <h3>Ihre Webseite anfragen.</h3>
             <p>
-              Keine Agentur, kein Monate-Projekt: Sie wählen eine Vorlage für Ihre Branche, wir passen sie an Ihren Betrieb an – oder Sie
-              bauen selbst im Builder.
+              Die Vorschau in diesem Dialog ist eine Simulation. Sie erzeugt keine Seite und veröffentlicht nichts. Ein Festangebot gibt es
+              nach der Anfrage, nicht aus dieser Demo.
             </p>
-            <F3 items={[['Fertig', 'mit Impressum und Datenschutz'], ['Zwei Wege', 'von uns gesetzt oder selbst gebaut'], ['Mit Bot', 'Telefon oder WhatsApp, auf Wunsch']]} />
+            <F3
+              items={[
+                ['Demo', 'simuliert, ohne Generierung'],
+                ['Anfrage', 'Festangebot nach Prüfung'],
+                ['Rechtstexte', 'eigene Seiten, nicht aus der Vorschau'],
+              ]}
+            />
+            <p className="note">Demo · simuliert</p>
           </>
         ),
       },
@@ -272,7 +285,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
               items={[
                 ['Vorlage wählen', 'Branche aussuchen, Bausteine festlegen.'],
                 ['Wenige Fragen', 'Projektart, Umfang und Timing in wenigen Klicks.'],
-                ['Festangebot', 'Sie erhalten Preis und Zeitplan – dann setzen wir um.'],
+                ['Festangebot', 'Preis und Zeitplan nach der Anfrage – die Vorschau veröffentlicht nichts.'],
               ]}
             />
             <div className="pm-cta">

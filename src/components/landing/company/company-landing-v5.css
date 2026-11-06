@@ -147,6 +147,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .pricegrid b { font-family: var(--font-heading); font-weight: 500; font-size: 22px; }
 .rsl5 .pricegrid .pr { font-family: var(--font-heading); font-size: 46px; font-weight: 300; color: var(--gold-lite); line-height: 1; font-feature-settings: "tnum"; }
 .rsl5 .pricegrid em { font-style: normal; font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--color-neutral-300); }
+.rsl5 .pricegrid .meta { font-family: var(--mono); font-size: 11px; letter-spacing: .02em; line-height: 1.45; color: var(--color-neutral-300); }
 .rsl5 .pager { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid rgba(243,242,242,.12); }
 .rsl5 .pgct { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--color-neutral-300); }
 .rsl5 .pager .btn[disabled] { opacity: .3; pointer-events: none; }
@@ -172,7 +173,7 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .htile:nth-child(3) { animation-delay: .45s; }
 @keyframes rsl5-fly { from { opacity: 0; transform: perspective(1000px) translate3d(0, 60px, -620px) rotateX(24deg) scale(.82); filter: blur(6px); } to { opacity: 1; transform: perspective(1000px) none; filter: none; } }
 .rsl5 .htile:hover, .rsl5 .htile:focus-visible { z-index: 2; transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(110px) scale(1.06); background: color-mix(in srgb, var(--night) 90%, transparent); box-shadow: 0 50px 90px rgba(0,0,0,.7), 0 0 56px color-mix(in srgb, var(--color-accent) 38%, transparent); }
-.rsl5 .htile > * { flex-shrink: 0; }
+.rsl5 .htile > * { flex-shrink: 0; pointer-events: none; }
 .rsl5 .htile { cursor: pointer; }
 .rsl5 .htile .ic { transform: translateZ(36px); }
 .rsl5 .htile b { transform: translateZ(24px); }

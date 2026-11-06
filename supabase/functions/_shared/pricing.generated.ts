@@ -334,7 +334,7 @@ export interface PlanPermissions {
   evidenceVault: boolean;
   /** Nachweispakete exportieren */
   auditExport: boolean;
-  /** Single Sign-On (Registry `enterprise-sso`: coming-soon, ADR 0007) */
+  /** Single Sign-On (Registry `enterprise-sso`: preview, nur auf Anfrage — E-V8, ADR 0007) */
   sso: boolean;
   /** Massenläufe */
   bulkOperations: boolean;
@@ -884,7 +884,7 @@ export const PLANS: Plan[] = [
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
-    netPriceLabel: true,
+    netPriceLabel: false,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -958,10 +958,10 @@ export const PLANS: Plan[] = [
       multi_tenant_reseller: [
         'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
         'Zentrale Benutzerverwaltung mit Rollen und Rechten',
-        // Registry `enterprise-sso` = coming-soon (ADR 0007). Literal bleibt unverändert,
+        // Registry `enterprise-sso` = preview, nur auf Anfrage (E-V8, ADR 0007). Literal bleibt unverändert,
         // damit `20261010090000_canonical_plan_catalog.sql` (`generate-plan-catalog-sql.ts`)
         // keine neue DB-Migration erzwingt; `src/config/pricing.ts` und Landing v7
-        // kennzeichnen den Punkt öffentlich als „Single Sign-On (Coming Soon)“.
+        // kennzeichnen den Punkt öffentlich als „Single Sign-On (Preview, auf Anfrage)“.
         'Single Sign-On',
         'White-Label mit Branding, Logo und Farben',
       ],
@@ -3006,13 +3006,17 @@ export function formatPriceEur(value: number): string {
 }
 
 /** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
+export function showsNetPriceLabel(plan: Pick<Plan, 'netPriceLabel'>, mode: PricingTaxMode = PRICING_TAX_MODE): boolean {
+  return mode === 'EU_STANDARD' && plan.netPriceLabel === true;
+}
+
 export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
-  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+  return showsNetPriceLabel(plan) ? '/ Monat netto' : '/ Monat';
 }
 
 /** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
 export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
-  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${showsNetPriceLabel(plan) ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
@@ -3045,7 +3049,14 @@ export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) –
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
-  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+  'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
+
+/** Kanonischer deutscher §-19-Hinweis für Preisflächen. */
+export const TAX_NOTICE = PRICING_TAX_NOTE_EXEMPT;
+
+/** Kanonische englische Fassung des §-19-Hinweises. */
+export const TAX_NOTICE_EN =
+  'No VAT is charged under § 19 UStG (German small-business regulation).';
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
@@ -3055,7 +3066,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {

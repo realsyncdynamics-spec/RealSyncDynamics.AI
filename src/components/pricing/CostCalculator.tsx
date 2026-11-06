@@ -6,6 +6,7 @@ interface CalculatorParams {
   websites: number;
   reviewFrequency: 'monthly' | 'quarterly' | 'annual';
   hourlyRate: number;
+  assumedTimeSavingsPercent: number;
 }
 
 export function CostCalculator() {
@@ -13,6 +14,7 @@ export function CostCalculator() {
     websites: 10,
     reviewFrequency: 'quarterly',
     hourlyRate: 85,
+    assumedTimeSavingsPercent: 0,
   });
 
   const handleWebsitesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,7 +22,7 @@ export function CostCalculator() {
   };
 
   const handleHourlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setParams({ ...params, hourlyRate: Math.max(40, parseInt(e.target.value, 10) || 40) });
+    setParams({ ...params, hourlyRate: Math.max(40, Math.min(300, parseInt(e.target.value, 10) || 40)) });
   };
 
   const calculations = useMemo(() => {
@@ -50,8 +52,8 @@ export function CostCalculator() {
             Welchen Plan brauche ich?
           </h2>
           <p className="text-sm sm:text-base text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Schätzen Sie Ihren aktuellen manuellen Governance-Aufwand — dann zeigen wir,
-            wie unsere Automatisierung ihn reduziert.
+            Schätzen Sie Ihren manuellen Governance-Aufwand und wählen Sie selbst eine hypothetische
+            Zeitersparnis. Es handelt sich um eine Szenariorechnung, nicht um eine Wirksamkeitszusage.
           </p>
         </div>
 
@@ -148,13 +150,34 @@ export function CostCalculator() {
               <p className="text-xs text-silver-400 mt-1">40–300 €/h</p>
             </div>
 
+            {/* Freie Szenarioquote statt behaupteter Produkt-Effizienz */}
+            <div>
+              <label htmlFor="time-savings-scenario" className="block text-sm font-semibold text-titanium-50 mb-2">
+                Angenommene Zeitersparnis (Szenario): {params.assumedTimeSavingsPercent} %
+              </label>
+              <input
+                id="time-savings-scenario"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={params.assumedTimeSavingsPercent}
+                onChange={(e) => setParams({ ...params, assumedTimeSavingsPercent: Number(e.target.value) })}
+                className="w-full h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
+              />
+              <p className="text-xs text-silver-400 mt-1">
+                Startwert 0 %. Die Quote ist frei gewählt und keine gemessene RealSync-Leistung.
+              </p>
+            </div>
+
             {/* Info Box */}
             <div className="mt-6 p-4 bg-obsidian-950 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
                 <p className="text-xs text-silver-400 leading-relaxed">
-                  Annahme: je Website ~3 Stunden Prüfaufwand pro Review. RealSync kann diesen Aufwand
-                  durch automatisierte Scans und priorisierte Befunde reduzieren (dauerhafte Überwachung: Coming Soon).
+                  Rechenbasis: Anzahl Websites × 3 Stunden je Prüfung × Prüfungen pro Jahr × Stundensatz.
+                  Der hypothetische Zeitgewinn wird davon abgezogen; anschließend folgen 12 × monatlicher Listenpreis.
+                  Die offene Beta kann zeitweise 0 € kosten. Laufendes Monitoring: Coming Soon.
                 </p>
               </div>
             </div>
@@ -199,7 +222,7 @@ export function CostCalculator() {
             <div className="bg-obsidian-900/60 border border-silver-700/30 rounded-none p-6 sm:p-7">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingDown className="h-4 w-4 text-emerald-400" />
-                <h3 className="font-display font-bold text-titanium-50">Mit RealSync</h3>
+                <h3 className="font-display font-bold text-titanium-50">Szenariorechnung je Plan</h3>
               </div>
               <div className="space-y-2">
                 {/*
@@ -215,32 +238,13 @@ export function CostCalculator() {
                 {CALCULABLE_PRICING_TIERS.filter(
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
-                  // Aufwand-Skalierung pro Tier: höhere Tiers adressieren komplexere Setups
-                  // Starter: 5 Websites (Klein), Growth: 20 Websites (Mittel), Agency: 40 (Groß), etc.
-                  const websiteMultiplier: Record<string, number> = {
-                    starter: 0.5,     // 5 Websites statt 10 (kleine Unternehmen)
-                    growth: 2.0,      // 20 Websites (mittlere Unternehmen)
-                    agency: 4.0,      // 40 Websites (Agenturen)
-                    enterprise: 5.0,  // 50 Websites (Großunternehmen)
-                    partner: 10.0,    // 100 Websites (Reseller mit Mandanten)
-                  };
-                  const multiplier = websiteMultiplier[tier.id] || 1.0;
-                  const scaledManualCost = calculations.totalManualCostPerYear * multiplier;
-
-                  // Effizienzfaktoren pro Plan: höhere Tiers = bessere Automatisierung
-                  const efficiencyMap: Record<string, number> = {
-                    starter: 0.45,    // 45% Automation
-                    growth: 0.62,     // 62% Automation
-                    agency: 0.75,     // 75% Automation (Governance Agents)
-                    enterprise: 0.82, // 82% Automation (erweiterte Features)
-                    partner: 0.88,    // 88% Automation (Multi-Tenant max)
-                  };
-                  const efficiency = efficiencyMap[tier.id] || 0.45;
-                  const automatedCostPerYear = scaledManualCost * (1 - efficiency);
-                  const yearlyCost = (tier.priceEur || 0) * 12;
-                  const savings = scaledManualCost - automatedCostPerYear - yearlyCost;
-                  const savingsPercent = scaledManualCost > 0
-                    ? Math.round((savings / scaledManualCost) * 100)
+                  // Gleicher Ist-Aufwand für alle Tarife; keine Tarif-Multiplikatoren.
+                  const yearlyCost = tier.priceEur * 12;
+                  const hypotheticalTimeSavings =
+                    calculations.totalManualCostPerYear * params.assumedTimeSavingsPercent / 100;
+                  const savings = hypotheticalTimeSavings - yearlyCost;
+                  const savingsPercent = calculations.totalManualCostPerYear > 0
+                    ? Math.round((savings / calculations.totalManualCostPerYear) * 100)
                     : 0;
                   const isSavings = savings > 0;
 
@@ -262,12 +266,12 @@ export function CostCalculator() {
                       </div>
                       {isSavings && (
                         <div className="text-xs text-emerald-300">
-                          💰 Einsparungen: {savings.toLocaleString()} €/Jahr ({savingsPercent}%)
+                          Hypothetische Netto-Differenz: {Math.round(savings).toLocaleString('de-DE')} €/Jahr ({savingsPercent} % vom Ist-Aufwand)
                         </div>
                       )}
                       {!isSavings && (
                         <div className="text-xs text-silver-400">
-                          Zusätzliche Kosten: {Math.abs(savings).toLocaleString()} €/Jahr
+                          Rechnerische Mehrkosten: {Math.round(Math.abs(savings)).toLocaleString('de-DE')} €/Jahr
                         </div>
                       )}
                     </div>
@@ -279,8 +283,9 @@ export function CostCalculator() {
             {/* CTA */}
             <div className="bg-gradient-to-r from-cyan-400/10 to-cyan-400/5 border border-cyan-400/30 rounded-none p-5">
               <p className="text-xs text-silver-300 mb-3 leading-relaxed">
-                Diese Rechnung ist illustrativ. Konkrete Einsparungen hängen von Audit-Tiefe,
-                Automatisierungspotenzial und vorhandenen Prozessen ab.
+                Formel: (manueller Jahresaufwand × selbst gewählte Zeitersparnis in %) − (12 × monatlicher Listenpreis).
+                Alle Tarife werden gegen denselben Ist-Aufwand verglichen. Nutzungs-, Einrichtungs- und variable Gebühren
+                sind nicht berücksichtigt. Kein empirisch belegter Produktivitätswert und keine Einsparzusage.
               </p>
               <a
                 href="#pricing-tiers"

@@ -15,7 +15,7 @@
     "src/config/public-nav.ts": 1,
     "src/config/seo.ts": 11,
     "src/config/workflows.ts": 2,
-    "src/content/runtimeVocab.ts": 3,
+    "src/content/runtimeVocab.ts": 2,
     "src/core/audit/useAuditTrail.ts": 3,
     "src/core/billing/FeatureGate.tsx": 1,
     "src/core/billing/SubscriptionLimitModal.tsx": 2,

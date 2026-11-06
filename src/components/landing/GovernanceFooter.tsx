@@ -80,7 +80,7 @@ export function GovernanceFooter() {
           >
             KONTAKT
           </b>
-          Enterprise per Anfrage — SSO, On-Prem, Custom-DPA, Behördenvertrag.
+          Enterprise per Anfrage — Single Sign-On (Preview), Custom-DPA, Behördenvertrag.
           <br />
           <Link
             to="/contact-sales?intent=enterprise"

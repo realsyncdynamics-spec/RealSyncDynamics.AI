@@ -82,7 +82,7 @@ describe('auth callback contracts', () => {
 
   it('always sends Magic Link to an exact /welcome callback, without query', () => {
     expect(page).toMatch(/emailRedirectTo:\s*`\$\{window\.location\.origin\}\/welcome`/);
-    expect(page).not.toContain('emailRedirectTo: `\$\{window.location.origin\}\$\{welcomePath\}`');
+    expect(page).not.toMatch(/emailRedirectTo:\s*`\$\{window\.location\.origin\}\$\{welcomePath\}`/);
     expect(page).toContain('rememberLoginReturn(safeNext)');
   });
 
@@ -102,7 +102,8 @@ describe('auth callback contracts', () => {
     expect(checkoutIdx).toBeGreaterThan(nextIdx);
     expect(storedIdx).toBeGreaterThan(checkoutIdx);
     expect(resume).toContain('clearLoginReturn()');
-    expect(resume).toContain('let'); // effect keeps a one-shot guard against duplicate events
+    expect(welcome).toContain('let resumed = false;');
+    expect(resume).toContain('if (cancelled || resumed) return;');
   });
 
   it('preserves the existing tenant activation and dashboard fallback', () => {

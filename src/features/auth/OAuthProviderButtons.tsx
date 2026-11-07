@@ -157,11 +157,14 @@ export interface OAuthProviderButtonsProps {
   redirectAfterAuthTo?: string;
   /** Optional: Variant fuer Container — 'compact' fuer Modals, 'full' fuer Pages. */
   variant?: 'compact' | 'full';
+  /** Called before redirecting to the provider (used for /login return-path state). */
+  onBeforeRedirect?: () => void;
 }
 
 export function OAuthProviderButtons({
   redirectAfterAuthTo,
   variant = 'full',
+  onBeforeRedirect,
 }: OAuthProviderButtonsProps) {
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +185,7 @@ export function OAuthProviderButtons({
           ? `${window.location.origin}${redirectAfterAuthTo}`
           : window.location.href;
 
+      onBeforeRedirect?.();
       const { error: oauthErr } = await sb.auth.signInWithOAuth({
         provider,
         options: {

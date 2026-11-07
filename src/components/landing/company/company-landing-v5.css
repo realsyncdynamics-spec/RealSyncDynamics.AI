@@ -361,6 +361,10 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .segs button { font-family: var(--font-heading); font-size: 16px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius-md); border: 1px solid rgba(243,242,242,.25); background: transparent; color: var(--color-neutral-200); cursor: pointer; transition: all 200ms var(--ease); }
 .rsl5 .segs button:hover { border-color: var(--gold); color: var(--gold-lite); }
 .rsl5 .segs button[aria-pressed="true"] { border-color: var(--gold-lite); color: var(--gold-lite); background: color-mix(in srgb, var(--color-accent-300) 14%, transparent); }
+.rsl5 .voice-preview { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rsl5 .voice-preview label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--gold-lite); text-transform: uppercase; }
+.rsl5 .voice-preview audio { display: block; width: 100%; height: 40px; }
+.rsl5 .voice-preview__missing { color: var(--color-neutral-300); font-size: 13px; text-align: center; }
 .rsl5 .wave { display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 44px; }
 .rsl5 .wave i { width: 3px; border-radius: 2px; background: var(--gold-lite); height: 8px; animation: rsl5-wv 1.4s ease-in-out infinite; opacity: .85; }
 @keyframes rsl5-wv { 0%,100% { height: 6px; } 50% { height: var(--h, 30px); } }

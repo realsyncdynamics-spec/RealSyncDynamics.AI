@@ -11,9 +11,11 @@ import {
   type UsageBooking,
   type VerifiedAuth,
 } from '../../supabase/functions/ai-gateway/handler.ts';
+import { mintTenantAssertion, TENANT_ASSERTION_HEADER } from '../../supabase/functions/_shared/aiGateway/serviceTenant.ts';
 
 const USER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.user-u1.sig';
 const INTERNAL_KEY = 'k'.repeat(48);
+const TENANT_SIGNING_KEY = 's'.repeat(48);
 const T1 = '11111111-1111-4111-8111-111111111111';
 const T2 = '22222222-2222-4222-8222-222222222222';
 const URL_OP = 'https://x.supabase.co/functions/v1/ai-gateway';
@@ -47,7 +49,9 @@ function harness(opts: { failRecord?: boolean; withRecorder?: boolean } = {}) {
     },
   };
   const deps: GatewayHandlerDeps = {
-    env: (n) => (n === 'AI_GATEWAY_INTERNAL_KEY' ? INTERNAL_KEY : undefined),
+    env: (n) => (n === 'AI_GATEWAY_INTERNAL_KEY' ? INTERNAL_KEY : n === 'AI_GATEWAY_TENANT_SIGNING_KEY' ? TENANT_SIGNING_KEY : undefined),
+    // MP-0: ohne Evidence-Abhängigkeit kein Provider-Aufruf; hier nur Senke.
+    recordEvidence: async () => {},
     requireAuthAndTenant: fakeAuth,
     gateBuilder: async () => null,
     buildGateway: async () => gateway,
@@ -101,7 +105,8 @@ describe('ai-gateway — Verbrauch je Mandant (#1646)', () => {
 
   it('Service-Pfad mit Mandant: bucht mit internem Aufrufer', async () => {
     const h = harness();
-    const res = await h.handler(opReq({ ...base, op: 'extract_json', model_profile: 'strict-json' }, internal));
+    const assertion = await mintTenantAssertion({ caller: 'governance-agent', tenantId: T1, signingKey: TENANT_SIGNING_KEY });
+    const res = await h.handler(opReq({ ...base, op: 'extract_json', model_profile: 'strict-json' }, { ...internal, [TENANT_ASSERTION_HEADER]: assertion }));
     expect(res.status).toBe(200);
     expect(h.bookings[0]).toMatchObject({ tenantId: T1, path: 'service', userId: null, internalCaller: 'governance-agent' });
   });

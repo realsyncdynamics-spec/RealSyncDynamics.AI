@@ -17,11 +17,25 @@ import { sha256Hex } from '../hash.ts';
 import type { AiGatewayUsage } from './types.ts';
 import type { InternalCaller } from './access.ts';
 
-export type AiCallEvidenceEventType = 'ai:call' | 'ai:call_blocked';
+// MP-0: Prüfpfad in zwei Schritten (append-only, kein UPDATE möglich):
+//   ai:call_started  — reserviert VOR dem Provider-Aufruf (fail-closed)
+//   ai:call          — Abschluss nach Erfolg
+//   ai:call_failed   — Abschluss nach Provider-Fehler
+//   ai:call_blocked  — PDP hat blockiert oder war nicht verfügbar
+// Verknüpft über evidence.request_id.
+export type AiCallEvidenceEventType = 'ai:call_started' | 'ai:call' | 'ai:call_failed' | 'ai:call_blocked';
+
+export type AiCallEvidenceStage = 'started' | 'completed' | 'failed' | 'blocked';
 
 export type AiCallEvidenceRiskLevel = 'info' | 'low' | 'medium' | 'high' | 'critical';
 
-export type AiCallResidency = 'eu_local' | 'cloud';
+/** `unverified`: Standort des Endpunkts ist nicht belegt (MP-0, kein EU-Default). */
+export type AiCallResidency = 'eu_local' | 'cloud' | 'unverified';
+
+/** Externe Cloud-Anbieter (Daten verlassen die eigene Infrastruktur). */
+export const CLOUD_PROVIDERS: ReadonlySet<string> = new Set(['openai', 'anthropic', 'google', 'xai', 'mistral']);
+/** Selbst betriebene Endpunkte — Region nur so belastbar wie ihre Konfiguration. */
+export const LOCAL_PROVIDERS: ReadonlySet<string> = new Set(['lm_studio', 'ollama']);
 
 export type AiCallVerdict = 'allow' | 'warn' | 'log_only' | 'block' | 'require_approval';
 
@@ -32,7 +46,9 @@ export interface AiCallEvidenceTokens {
 }
 
 export interface AiCallEvidencePayload {
-  tenant_id: string;
+  tenant_id: string | null;
+  stage: AiCallEvidenceStage;
+  error_code: string | null;
   path: 'user' | 'service';
   user_id: string | null;
   internal_caller: InternalCaller | string | null;
@@ -59,7 +75,7 @@ export interface AiCallEvidencePayload {
 }
 
 export interface AiEvidenceEventInsert {
-  tenant_id: string;
+  tenant_id: string | null;
   ai_system_id: string | null;
   policy_id: string | null;
   event_type: AiCallEvidenceEventType;
@@ -69,7 +85,12 @@ export interface AiEvidenceEventInsert {
 }
 
 export interface BuildAiCallEvidenceArgs {
-  tenantId: string;
+  tenantId: string | null;
+  /** Default: blocked → 'blocked', sonst 'completed'. */
+  stage?: AiCallEvidenceStage;
+  errorCode?: string | null;
+  /** Konfigurierte Region selbst betriebener Endpunkte ('eu' | …); fehlt → unverified. */
+  localRegion?: string | null;
   path: 'user' | 'service';
   userId?: string | null;
   internalCaller?: InternalCaller | string | null;
@@ -151,16 +172,28 @@ export function riskLevelForVerdict(verdict: AiCallVerdict): AiCallEvidenceRiskL
   }
 }
 
-/** Bestimmt Residency und Provider-Region aus Provider-Kennung bzw. Vorgabe. */
+/**
+ * Bestimmt Residency und Provider-Region aus dem TATSÄCHLICH genutzten
+ * Provider (MP-0). Kein EU-Default mehr:
+ *   Cloud-Anbieter                       → cloud / 'cloud'
+ *   lm_studio/ollama + localRegion 'eu'  → eu_local / 'EU'
+ *   lm_studio/ollama ohne Region         → unverified / 'unverified'
+ *   unbekannter oder fehlender Provider  → unverified / 'unverified'
+ * Explizite Vorgaben (residency/providerRegion) gehen vor.
+ */
 export function resolveResidencyAndRegion(
   provider: string | null | undefined,
   residency?: AiCallResidency,
   providerRegion?: string,
+  localRegion?: string | null,
 ): { residency: AiCallResidency; providerRegion: string } {
-  const p = (provider ?? '').toLowerCase();
-  const isCloudProvider = p === 'openai' || p === 'anthropic' || p === 'google';
-  const resolvedResidency: AiCallResidency = residency ?? (isCloudProvider ? 'cloud' : 'eu_local');
-  const resolvedRegion = providerRegion ?? (resolvedResidency === 'eu_local' ? 'EU' : 'cloud');
+  const p = (provider ?? '').trim().toLowerCase();
+  let derived: AiCallResidency = 'unverified';
+  if (CLOUD_PROVIDERS.has(p)) derived = 'cloud';
+  else if (LOCAL_PROVIDERS.has(p) && (localRegion ?? '').trim().toLowerCase() === 'eu') derived = 'eu_local';
+  const resolvedResidency: AiCallResidency = residency ?? derived;
+  const resolvedRegion = providerRegion
+    ?? (resolvedResidency === 'eu_local' ? 'EU' : resolvedResidency === 'cloud' ? 'cloud' : 'unverified');
   return { residency: resolvedResidency, providerRegion: resolvedRegion };
 }
 
@@ -175,8 +208,15 @@ export async function buildAiCallEvidenceRow(
     args.blocked || args.verdict === 'block' || args.verdict === 'require_approval',
   );
   const verdict = normalizeVerdict(args.verdict, isBlocked);
-  const eventType: AiCallEvidenceEventType = isBlocked ? 'ai:call_blocked' : 'ai:call';
-  const riskLevel = riskLevelForVerdict(verdict);
+  const stage: AiCallEvidenceStage = args.stage ?? (isBlocked ? 'blocked' : 'completed');
+  const eventType: AiCallEvidenceEventType =
+    stage === 'blocked' ? 'ai:call_blocked'
+      : stage === 'started' ? 'ai:call_started'
+      : stage === 'failed' ? 'ai:call_failed'
+      : 'ai:call';
+  const riskLevel = stage === 'failed' && riskLevelForVerdict(verdict) === 'info'
+    ? 'low'
+    : riskLevelForVerdict(verdict);
 
   const inputTokens = nonNegativeInt(args.usage?.input_tokens ?? args.inputTokens);
   const outputTokens = nonNegativeInt(args.usage?.output_tokens ?? args.outputTokens);
@@ -189,6 +229,7 @@ export async function buildAiCallEvidenceRow(
     args.provider,
     args.residency,
     args.providerRegion,
+    args.localRegion,
   );
 
   let inputLength = nonNegativeInt(args.inputLength);
@@ -203,9 +244,11 @@ export async function buildAiCallEvidenceRow(
   const modelProfile = args.modelProfile ?? null;
   const subject = provider ? `${provider}/${model ?? 'unknown'}` : (model ?? 'unknown');
 
-  const eventSummary = isBlocked
-    ? `KI-Aufruf blockiert (${args.feature}): ${subject} [${verdict}]`
-    : `KI-Aufruf (${args.feature}): ${subject} [${verdict}]`;
+  const eventSummary =
+    stage === 'blocked' ? `KI-Aufruf blockiert (${args.feature}): ${subject} [${verdict}]`
+      : stage === 'started' ? `KI-Aufruf gestartet (${args.feature}): ${subject} [${verdict}]`
+      : stage === 'failed' ? `KI-Aufruf fehlgeschlagen (${args.feature}): ${subject} [${args.errorCode ?? 'error'}]`
+      : `KI-Aufruf (${args.feature}): ${subject} [${verdict}]`;
 
   return {
     tenant_id: args.tenantId,
@@ -216,6 +259,8 @@ export async function buildAiCallEvidenceRow(
     risk_level: riskLevel,
     evidence: {
       tenant_id: args.tenantId,
+      stage,
+      error_code: args.errorCode ?? null,
       path: args.path,
       user_id: args.userId ?? null,
       internal_caller: args.internalCaller ?? null,

@@ -13,7 +13,7 @@
 import type { EdgeClientConfig } from './edgeClient.ts';
 
 export type InternalGatewayConfig =
-  | { ok: true; config: Pick<EdgeClientConfig, 'supabaseUrl' | 'apiKey' | 'internalKey' | 'internalCaller'> }
+  | { ok: true; config: Pick<EdgeClientConfig, 'supabaseUrl' | 'apiKey' | 'internalKey' | 'internalCaller' | 'tenantSigningKey'> }
   | { ok: false; missing: string[] };
 
 export function internalGatewayConfig(
@@ -29,8 +29,17 @@ export function internalGatewayConfig(
     !internalKey ? 'AI_GATEWAY_INTERNAL_KEY' : null,
   ].filter((x): x is string => x !== null);
   if (missing.length > 0) return { ok: false, missing };
+  // MP-0: optional. Ohne Signing-Key bleiben nur mandantenlose Service-Aufrufe
+  // möglich; mandantengebundene lehnt der Gateway mit 403 ab (fail-closed).
+  const tenantSigningKey = env('AI_GATEWAY_TENANT_SIGNING_KEY') || undefined;
   return {
     ok: true,
-    config: { supabaseUrl: supabaseUrl!, apiKey: apiKey!, internalKey: internalKey!, internalCaller: caller },
+    config: {
+      supabaseUrl: supabaseUrl!,
+      apiKey: apiKey!,
+      internalKey: internalKey!,
+      internalCaller: caller,
+      ...(tenantSigningKey ? { tenantSigningKey } : {}),
+    },
   };
 }

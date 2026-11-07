@@ -49,12 +49,15 @@ import {
 import { gatewayHeaders } from '../../supabase/functions/_shared/aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../../supabase/functions/_shared/aiGateway/internalClient.ts';
 import type { AiGatewayRequest } from '../../supabase/functions/_shared/aiGateway/types.ts';
+import type { AiEvidenceEventInsert } from '../../supabase/functions/_shared/aiGateway/callEvidence.ts';
+import { mintTenantAssertion, TENANT_ASSERTION_HEADER } from '../../supabase/functions/_shared/aiGateway/serviceTenant.ts';
 
 const ANON_KEY = 'sb_publishable_test_anon_key';
 const SERVICE_ROLE = 'eyJhbGciOiJIUzI1NiJ9.service-role-test.sig';
 const USER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.user-u1.sig';
 const USER2_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.user-u2.sig';
 const INTERNAL_KEY = 'k'.repeat(48);
+const TENANT_SIGNING_KEY = 's'.repeat(48);
 const T1 = '11111111-1111-4111-8111-111111111111';
 const T2 = '22222222-2222-4222-8222-222222222222';
 const URL_OP = 'https://x.supabase.co/functions/v1/ai-gateway';
@@ -112,6 +115,8 @@ interface Harness {
   anonCompletes: Array<{ requestId: string; patch: AnonLogComplete }>;
   /** Siteverify-Aufrufe (URL + JSON-Body). */
   turnstileCalls: Array<{ url: string; body: Record<string, string> }>;
+  /** MP-0: geschriebene Evidence-Einträge (Reservierung + Abschluss). */
+  evidence: AiEvidenceEventInsert[];
 }
 
 type TurnstileMock = (url: string, init: RequestInit) => Promise<Response>;
@@ -120,18 +125,19 @@ const turnstileOk = (extra: Record<string, unknown> = {}): TurnstileMock => asyn
 
 type AnonLogMode = 'ok' | 'reserve_fails' | 'complete_fails' | 'missing';
 
-function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode; failWith?: Error; turnstile?: TurnstileMock } = {}): Harness {
+function makeHarness(opts: { env?: Record<string, string | undefined>; builderEntitled?: boolean; anonLog?: AnonLogMode; failWith?: Error; turnstile?: TurnstileMock; autoAssertTenant?: boolean } = {}): Harness {
   const h: Harness = {
     handler: async () => new Response(),
     calls: [],
     logs: [],
     authCalls: 0,
-    env: { AI_GATEWAY_INTERNAL_KEY: INTERNAL_KEY, TURNSTILE_SECRET_KEY: TURNSTILE_SECRET, ...(opts.env ?? {}) },
+    env: { AI_GATEWAY_INTERNAL_KEY: INTERNAL_KEY, AI_GATEWAY_TENANT_SIGNING_KEY: TENANT_SIGNING_KEY, TURNSTILE_SECRET_KEY: TURNSTILE_SECRET, ...(opts.env ?? {}) },
     builderEntitled: opts.builderEntitled ?? false,
     gatewayBuilds: 0,
     anonReserves: [],
     anonCompletes: [],
     turnstileCalls: [],
+    evidence: [],
   };
   const tsMock = opts.turnstile ?? turnstileOk();
   const anonMode: AnonLogMode = opts.anonLog ?? 'ok';
@@ -184,8 +190,24 @@ function makeHarness(opts: { env?: Record<string, string | undefined>; builderEn
     newId: () => 'req-0001',
     now: () => (t += 10),
     log: (line) => h.logs.push(line),
+    recordEvidence: async (e) => { h.evidence.push(e); },
   };
-  h.handler = createAiGatewayHandler(deps);
+  const inner = createAiGatewayHandler(deps);
+  // MP-0: Ein korrekt konfigurierter interner Aufrufer signiert den von IHM
+  // geprüften Mandanten (hier T1). Diese Tests prüfen Auth/Politik/Limits;
+  // die Tenant-Bindung selbst prüft test/edge/ai-gateway-mp0.test.ts
+  // (dort autoAssertTenant: false).
+  h.handler = async (req: Request) => {
+    if ((opts.autoAssertTenant ?? true) && req.headers.get('x-internal-key') !== null && !req.headers.has(TENANT_ASSERTION_HEADER)) {
+      const caller = (req.headers.get('x-internal-caller') ?? '').trim().toLowerCase();
+      if (/^[a-z0-9-]{1,64}$/.test(caller)) {
+        const headers = new Headers(req.headers);
+        headers.set(TENANT_ASSERTION_HEADER, await mintTenantAssertion({ caller, tenantId: T1, signingKey: TENANT_SIGNING_KEY }));
+        req = new Request(req.url, { method: req.method, headers, body: req.method === 'GET' ? undefined : await req.text() });
+      }
+    }
+    return inner(req);
+  };
   return h;
 }
 

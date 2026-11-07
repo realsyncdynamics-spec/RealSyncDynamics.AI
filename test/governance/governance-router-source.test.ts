@@ -31,9 +31,21 @@ describe('governance-router — Auth- und Datengrenzen', () => {
     expect(SRC).not.toMatch(/tenant_id:\s*null/);
   });
 
-  it('Fail-open bei PDP-Fehler bleibt dokumentiert', () => {
-    expect(SRC).toContain('fail open');
+  it('MP-0: PDP ist fail-closed (guardedDecide), Provider ist Policy-Ziel, Evidence vor dem Provider', () => {
+    expect(SRC).not.toContain('fail open');
+    expect(SRC).toContain('guardedDecide');
     expect(SRC).toContain('AI_GATEWAY_ENFORCEMENT');
+    expect(SRC).toContain('target: { model: modelProfile, vendor: provider }');
+    expect(SRC).toContain("'EVIDENCE_UNAVAILABLE'");
+    const reserve = SRC.indexOf("stage: 'started'");
+    const providerCall = SRC.indexOf('built.gateway.generate(parsed.request)');
+    expect(reserve).toBeGreaterThan(0);
+    expect(providerCall).toBeGreaterThan(reserve);
+  });
+
+  it('MP-0: Provider-Fallback nur per ausdrücklicher Tenant-Policy', () => {
+    expect(SRC).toContain('allowedFallbackIds: fallbackIds');
+    expect(SRC).toContain('explicitlyAllowed(g.result)');
   });
 
   it('Residency-RPC ist fail closed, auch bei Ausfall und unerwarteten Werten', () => {

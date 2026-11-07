@@ -15,6 +15,12 @@
 //      `event_summary` — nur `input_length` und `input_sha256`.
 //   7. Anonymer Pfad (`mode: 'audit_anon'`), unauthentifizierte Aufrufe (401/403)
 //      und `health` bleiben unverändert und schreiben kein `ai_evidence_events`.
+//
+// MP-0 (fail-closed): Jeder Provider-Aufruf hat jetzt ZWEI Einträge —
+// `ai:call_started` (Reservierung davor) und `ai:call` bzw. `ai:call_failed`
+// (Abschluss), verknüpft über evidence.request_id. Scheitert die Reservierung,
+// gibt es keinen Provider-Aufruf (503). Residency wird aus dem Provider plus
+// AI_GATEWAY_LOCAL_REGION abgeleitet, kein EU-Default.
 
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -35,12 +41,14 @@ import {
   resolveResidencyAndRegion,
 } from '../../supabase/functions/_shared/aiGateway/callEvidence.ts';
 import { sha256Hex } from '../../supabase/functions/_shared/hash.ts';
+import { mintTenantAssertion, TENANT_ASSERTION_HEADER } from '../../supabase/functions/_shared/aiGateway/serviceTenant.ts';
 
 const repoFile = (p: string) => resolve(__dirname, '../..', p);
 
 const ANON_KEY = 'sb_publishable_test_anon_key';
 const USER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.user-u1.sig';
 const INTERNAL_KEY = 'k'.repeat(48);
+const TENANT_SIGNING_KEY = 's'.repeat(48);
 const TURNSTILE_SECRET = 'ts-secret-DO-NOT-LOG-0123456789';
 const T1 = '11111111-1111-4111-8111-111111111111';
 const T2 = '22222222-2222-4222-8222-222222222222';
@@ -68,6 +76,9 @@ const USAGE = { input_tokens: 24, output_tokens: 16, total_tokens: 40 };
 
 interface EvidenceHarnessOpts {
   failEvidence?: boolean;
+  /** Nur der n-te Schreibvorgang (1-basiert) scheitert. */
+  failEvidenceAt?: number;
+  localRegion?: string | null;
   withEvidenceRecorder?: boolean;
   pdpResult?: Response | PdpVerdict | null;
 }
@@ -76,6 +87,7 @@ function makeEvidenceHarness(opts: EvidenceHarnessOpts = {}) {
   const evidenceRows: AiEvidenceEventInsert[] = [];
   const logs: Array<Record<string, unknown>> = [];
   let providerCalls = 0;
+  let writes = 0;
 
   const reply = async () => {
     providerCalls += 1;
@@ -114,6 +126,8 @@ function makeEvidenceHarness(opts: EvidenceHarnessOpts = {}) {
     env: (n) => {
       if (n === 'AI_GATEWAY_INTERNAL_KEY') return INTERNAL_KEY;
       if (n === 'TURNSTILE_SECRET_KEY') return TURNSTILE_SECRET;
+      if (n === 'AI_GATEWAY_TENANT_SIGNING_KEY') return TENANT_SIGNING_KEY;
+      if (n === 'AI_GATEWAY_LOCAL_REGION') return opts.localRegion === undefined ? 'eu' : (opts.localRegion ?? undefined);
       return undefined;
     },
     requireAuthAndTenant: fakeAuth,
@@ -136,7 +150,8 @@ function makeEvidenceHarness(opts: EvidenceHarnessOpts = {}) {
       ? {}
       : {
           recordEvidence: async (entry) => {
-            if (opts.failEvidence) throw new Error('ai_evidence_events insert failed: connection reset');
+            writes += 1;
+            if (opts.failEvidence || opts.failEvidenceAt === writes) throw new Error('ai_evidence_events insert failed: connection reset');
             evidenceRows.push(entry);
           },
         }),
@@ -189,11 +204,19 @@ describe('callEvidence Helper — reine Funktionen & DB-Wrapper', () => {
     expect(riskLevelForVerdict(normalizeVerdict('allow', true))).toBe('high');
   });
 
-  it('leitet Residency und Region aus Provider ab', () => {
-    expect(resolveResidencyAndRegion('lm_studio')).toEqual({ residency: 'eu_local', providerRegion: 'EU' });
-    expect(resolveResidencyAndRegion('ollama')).toEqual({ residency: 'eu_local', providerRegion: 'EU' });
+  it('leitet Residency und Region aus Provider ab — kein EU-Default (MP-0)', () => {
+    // Selbst betriebene Endpunkte: EU nur, wenn die Region konfiguriert ist.
+    expect(resolveResidencyAndRegion('lm_studio', undefined, undefined, 'eu')).toEqual({ residency: 'eu_local', providerRegion: 'EU' });
+    expect(resolveResidencyAndRegion('ollama', undefined, undefined, 'EU')).toEqual({ residency: 'eu_local', providerRegion: 'EU' });
+    expect(resolveResidencyAndRegion('lm_studio')).toEqual({ residency: 'unverified', providerRegion: 'unverified' });
+    expect(resolveResidencyAndRegion('ollama', undefined, undefined, 'us')).toEqual({ residency: 'unverified', providerRegion: 'unverified' });
+    // Cloud-Anbieter, inkl. xAI.
     expect(resolveResidencyAndRegion('anthropic')).toEqual({ residency: 'cloud', providerRegion: 'cloud' });
     expect(resolveResidencyAndRegion('openai')).toEqual({ residency: 'cloud', providerRegion: 'cloud' });
+    expect(resolveResidencyAndRegion('xai', undefined, undefined, 'eu')).toEqual({ residency: 'cloud', providerRegion: 'cloud' });
+    // Unbekannt oder fehlend → unverified (vorher fälschlich eu_local/EU).
+    expect(resolveResidencyAndRegion(null)).toEqual({ residency: 'unverified', providerRegion: 'unverified' });
+    expect(resolveResidencyAndRegion('mock', undefined, undefined, 'eu')).toEqual({ residency: 'unverified', providerRegion: 'unverified' });
   });
 
   it('recordAiCallEvidence schreibt in ai_evidence_events und wirft bei DB-Fehler', async () => {
@@ -255,9 +278,11 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     const h = makeEvidenceHarness();
     const res = await h.handler(opReq({ ...baseBody, user_id: 'spoofed-user' }, userHeaders));
     expect(res.status).toBe(200);
-    expect(h.evidenceRows).toHaveLength(1);
+    expect(res.headers.get('x-evidence-status')).toBeNull();
+    expect(h.evidenceRows.map((r) => r.event_type)).toEqual(['ai:call_started', 'ai:call']);
+    expect(h.evidenceRows[0].evidence).toMatchObject({ stage: 'started', request_id: 'req-wp9-001', tenant_id: T1 });
 
-    const row = h.evidenceRows[0];
+    const row = h.evidenceRows[1];
     expect(row.tenant_id).toBe(T1);
     expect(row.event_type).toBe('ai:call');
     expect(row.risk_level).toBe('info');
@@ -281,7 +306,8 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
       total_tokens: 40,
       verdict: 'allow',
       pdp_decision: 'allow',
-      request_id: 'trace-99',
+      stage: 'completed',
+      request_id: 'req-wp9-001',
       latency_ms: 37,
       input_length: baseBody.input.length,
       input_sha256: await sha256Hex(baseBody.input),
@@ -297,18 +323,20 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
       opReq({ ...baseBody, input: secretPrompt, system_prompt: secretSystem }, userHeaders),
     );
     expect(res.status).toBe(200);
-    expect(h.evidenceRows).toHaveLength(1);
+    expect(h.evidenceRows).toHaveLength(2);
 
-    const serialized = JSON.stringify(h.evidenceRows[0]);
+    const serialized = JSON.stringify(h.evidenceRows);
     expect(serialized).not.toContain(secretPrompt);
     expect(serialized).not.toContain('MAX_MUSTERMANN');
     expect(serialized).not.toContain(secretSystem);
     expect(serialized).not.toContain('STRrengGeheimeAntwortVomModell42');
-    expect(h.evidenceRows[0].evidence.input_length).toBe(secretPrompt.length);
-    expect(h.evidenceRows[0].evidence.input_sha256).toBe(await sha256Hex(secretPrompt));
-    expect('input' in h.evidenceRows[0].evidence).toBe(false);
-    expect('output' in h.evidenceRows[0].evidence).toBe(false);
-    expect('system_prompt' in h.evidenceRows[0].evidence).toBe(false);
+    for (const r of h.evidenceRows) {
+      expect(r.evidence.input_length).toBe(secretPrompt.length);
+      expect(r.evidence.input_sha256).toBe(await sha256Hex(secretPrompt));
+      expect('input' in r.evidence).toBe(false);
+      expect('output' in r.evidence).toBe(false);
+      expect('system_prompt' in r.evidence).toBe(false);
+    }
   });
 
   it('PDP-Warnung (warn): Antwort 200 mit governance-Hinweis + Evidence-Eintrag mit risk_level low', async () => {
@@ -324,8 +352,8 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     const body = (await res.json()) as { governance?: { decision: string; reasons: string[] } };
     expect(body.governance?.decision).toBe('warn');
 
-    expect(h.evidenceRows).toHaveLength(1);
-    const row = h.evidenceRows[0];
+    expect(h.evidenceRows).toHaveLength(2);
+    const row = h.evidenceRows[1];
     expect(row.event_type).toBe('ai:call');
     expect(row.risk_level).toBe('low');
     expect(row.policy_id).toBe(POLICY_ID);
@@ -374,9 +402,10 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).toContain('"event":"done"');
+    expect(text).not.toContain('evidence_status');
 
-    expect(h.evidenceRows).toHaveLength(1);
-    const row = h.evidenceRows[0];
+    expect(h.evidenceRows.map((r) => r.event_type)).toEqual(['ai:call_started', 'ai:call']);
+    const row = h.evidenceRows[1];
     expect(row.event_type).toBe('ai:call');
     expect(row.risk_level).toBe('info');
     expect(row.evidence).toMatchObject({
@@ -386,7 +415,7 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
       provider: 'lm_studio',
       model: 'qwen2.5-7b-instruct',
       tokens: { input: 11, output: 5, total: 16 },
-      request_id: 'stream-trace-1',
+      request_id: 'req-wp9-001',
       latency_ms: 52,
     });
     expect(JSON.stringify(row)).not.toContain('GeheimerStreamText');
@@ -398,8 +427,8 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
       chatReq({ model: 'fast-local', messages: [{ role: 'user', content: 'Hallo' }], tenant_id: T1 }, userHeaders),
     );
     expect(resSync.status).toBe(200);
-    expect(h.evidenceRows).toHaveLength(1);
-    expect(h.evidenceRows[0].evidence).toMatchObject({
+    expect(h.evidenceRows).toHaveLength(2);
+    expect(h.evidenceRows[1].evidence).toMatchObject({
       tenant_id: T1,
       route: '/v1/chat/completions',
       op: 'chat.completions',
@@ -414,8 +443,8 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     );
     expect(resStream.status).toBe(200);
     await resStream.text();
-    expect(h.evidenceRows).toHaveLength(2);
-    expect(h.evidenceRows[1].evidence).toMatchObject({
+    expect(h.evidenceRows).toHaveLength(4);
+    expect(h.evidenceRows[3].evidence).toMatchObject({
       tenant_id: T1,
       route: '/v1/chat/completions',
       op: 'chat.completions.stream',
@@ -424,14 +453,15 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     });
   });
 
-  it('Service-Pfad: mit tenant_id wird Evidence mit internal_caller gebucht, ohne tenant_id nicht', async () => {
+  it('Service-Pfad: mit signiertem Mandanten wird Evidence mit internal_caller gebucht, ohne Mandanten in der globalen Kette (tenant_id null)', async () => {
     const h = makeEvidenceHarness();
+    const assertion = await mintTenantAssertion({ caller: 'governance-agent', tenantId: T1, signingKey: TENANT_SIGNING_KEY });
     const resWithTenant = await h.handler(
-      opReq({ ...baseBody, op: 'extract_json', model_profile: 'strict-json' }, internalHeaders),
+      opReq({ ...baseBody, op: 'extract_json', model_profile: 'strict-json' }, { ...internalHeaders, [TENANT_ASSERTION_HEADER]: assertion }),
     );
     expect(resWithTenant.status).toBe(200);
-    expect(h.evidenceRows).toHaveLength(1);
-    expect(h.evidenceRows[0].evidence).toMatchObject({
+    expect(h.evidenceRows).toHaveLength(2);
+    expect(h.evidenceRows[1].evidence).toMatchObject({
       tenant_id: T1,
       path: 'service',
       user_id: null,
@@ -443,29 +473,61 @@ describe('ai-gateway — WP9 Evidence pro angemeldetem KI-Call', () => {
     delete withoutTenant.tenant_id;
     const resNoTenant = await h.handler(opReq(withoutTenant, internalHeaders));
     expect(resNoTenant.status).toBe(200);
-    expect(h.evidenceRows).toHaveLength(1);
+    // MP-0: auch mandantenlose Service-Aufrufe hinterlassen einen Prüfpfad.
+    expect(h.evidenceRows).toHaveLength(4);
+    expect(h.evidenceRows[2].tenant_id).toBeNull();
+    expect(h.evidenceRows[3].tenant_id).toBeNull();
   });
 
-  it('Fehlerverhalten (fail-open + Alarm-Log): Evidence-Schreibfehler bricht weder 200- noch 403-Antwort', async () => {
+  it('Fehlerverhalten (MP-0, fail-closed): Reservierung scheitert → 503 EVIDENCE_UNAVAILABLE, KEIN Provider-Aufruf', async () => {
     const hOk = makeEvidenceHarness({ failEvidence: true });
     const resOk = await hOk.handler(opReq(baseBody, userHeaders));
-    expect(resOk.status).toBe(200);
-    const errLog = hOk.logs.find((l) => l.scope === 'ai-gateway-evidence');
-    expect(errLog).toMatchObject({
+    expect(resOk.status).toBe(503);
+    expect(((await resOk.json()) as { error: { code: string } }).error.code).toBe('EVIDENCE_UNAVAILABLE');
+    expect(hOk.getProviderCalls()).toBe(0);
+    expect(hOk.logs.find((l) => l.scope === 'ai-gateway-evidence')).toMatchObject({
       scope: 'ai-gateway-evidence',
-      event: 'record_failed',
+      event: 'reserve_failed',
+      severity: 'critical',
       tenant_id: T1,
       feature: 'governance_ai_workspace',
       route: '/',
     });
 
+    // Block bleibt Block, auch wenn der Block-Eintrag nicht geschrieben werden kann (Alarm).
     const hBlocked = makeEvidenceHarness({
       failEvidence: true,
       pdpResult: jsonErr(403, 'POLICY_BLOCKED', 'Blockiert.'),
     });
     const resBlocked = await hBlocked.handler(opReq(baseBody, userHeaders));
     expect(resBlocked.status).toBe(403);
-    expect(hBlocked.logs.some((l) => l.scope === 'ai-gateway-evidence' && l.event === 'record_failed')).toBe(true);
+    expect(hBlocked.logs.some((l) => l.scope === 'ai-gateway-evidence' && l.event === 'complete_failed' && l.alert === true)).toBe(true);
+  });
+
+  it('Fehlerverhalten (MP-0): Abschluss scheitert → Antwort markiert (x-evidence-status: incomplete) + Alarm-Log', async () => {
+    const h = makeEvidenceHarness({ failEvidenceAt: 2 });
+    const res = await h.handler(opReq(baseBody, userHeaders));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-evidence-status')).toBe('incomplete');
+    expect(h.evidenceRows.map((r) => r.event_type)).toEqual(['ai:call_started']);
+    expect(h.logs.find((l) => l.event === 'complete_failed')).toMatchObject({ severity: 'critical', alert: true, stage: 'completed', request_id: 'req-wp9-001' });
+
+    const hs = makeEvidenceHarness({ failEvidenceAt: 2 });
+    const text = await (await hs.handler(opReq({ ...baseBody, op: 'stream' }, userHeaders))).text();
+    expect(text).toContain('"evidence_status":"incomplete"');
+  });
+
+  it('ohne recordEvidence-Abhängigkeit: kein Provider-Aufruf (503), statt still ohne Prüfpfad', async () => {
+    const h = makeEvidenceHarness({ withEvidenceRecorder: false });
+    const res = await h.handler(opReq(baseBody, userHeaders));
+    expect(res.status).toBe(503);
+    expect(h.getProviderCalls()).toBe(0);
+  });
+
+  it('Region unbelegt (AI_GATEWAY_LOCAL_REGION fehlt) → Evidence sagt unverified, nicht EU', async () => {
+    const h = makeEvidenceHarness({ localRegion: null });
+    await h.handler(opReq(baseBody, userHeaders));
+    expect(h.evidenceRows[1].evidence).toMatchObject({ provider: 'lm_studio', residency: 'unverified', provider_region: 'unverified' });
   });
 
   it('Anonymer Pfad (mode: audit_anon), unauthentifizierte Calls und health erzeugen keinen ai_evidence_events-Eintrag', async () => {

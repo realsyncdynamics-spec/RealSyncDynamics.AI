@@ -9,6 +9,7 @@
 import type {
   AiGatewayRequest, AiGatewayResponse, AiStreamChunk, ModelProfile,
 } from './types.ts';
+import { mintTenantAssertion, TENANT_ASSERTION_HEADER } from './serviceTenant.ts';
 
 export interface EdgeClientConfig {
   supabaseUrl: string;
@@ -24,6 +25,13 @@ export interface EdgeClientConfig {
   internalKey?: string;
   /** Kennung des internen Aufrufers → Header `x-internal-caller` (wird geloggt). */
   internalCaller?: string;
+  /**
+   * Wert von AI_GATEWAY_TENANT_SIGNING_KEY (MP-0). Nur im Service-Pfad: der
+   * Client signiert damit den `tenant_id` der Anfrage. Der Aufrufer muss den
+   * Mandanten VORHER selbst geprüft haben. Fehlt der Key, geht keine
+   * Bestätigung mit und der Gateway lehnt mandantengebundene Aufrufe ab (403).
+   */
+  tenantSigningKey?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 }
@@ -42,6 +50,28 @@ export function gatewayHeaders(config: Pick<EdgeClientConfig, 'apiKey' | 'authTo
   if (config.internalKey) {
     headers['x-internal-key'] = config.internalKey;
     if (config.internalCaller) headers['x-internal-caller'] = config.internalCaller;
+  }
+  return headers;
+}
+
+/**
+ * Header für einen Service-Aufruf mit Mandant (MP-0): gatewayHeaders plus
+ * signierte Tenant-Bestätigung, sofern internalKey, internalCaller,
+ * tenantSigningKey und tenantId vorliegen. Sonst identisch zu gatewayHeaders.
+ */
+export async function serviceGatewayHeaders(
+  config: Pick<EdgeClientConfig, 'apiKey' | 'authToken' | 'internalKey' | 'internalCaller' | 'tenantSigningKey'>,
+  tenantId: string | null | undefined,
+  now?: number,
+): Promise<Record<string, string>> {
+  const headers = gatewayHeaders(config);
+  if (config.internalKey && config.internalCaller && config.tenantSigningKey && tenantId) {
+    headers[TENANT_ASSERTION_HEADER] = await mintTenantAssertion({
+      caller: config.internalCaller,
+      tenantId,
+      signingKey: config.tenantSigningKey,
+      now,
+    });
   }
   return headers;
 }
@@ -111,7 +141,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: gatewayHeaders(this.config),
+        headers: await serviceGatewayHeaders(this.config, request.tenant_id),
         body: JSON.stringify({ op: 'stream', ...request } satisfies EdgeRequestBody),
       });
       if (!res.body) {
@@ -167,7 +197,7 @@ export class AiGatewayEdgeClient {
       const res = await this.fetchImpl(this.endpoint, {
         method: 'POST',
         signal: controller.signal,
-        headers: gatewayHeaders(this.config),
+        headers: await serviceGatewayHeaders(this.config, request.tenant_id),
         body: JSON.stringify({ op, ...request } satisfies EdgeRequestBody),
       });
 

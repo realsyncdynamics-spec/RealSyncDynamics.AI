@@ -11,6 +11,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
 import { clearLeadContext, readLeadContext } from '../features/audit/leadContext';
 import { safeInternalPath } from '../lib/safeInternalPath';
+import { clearLoginReturn, consumeLoginReturn } from '../lib/loginReturn';
 import { markTimeToFirstEvidenceStart } from '../lib/marketingAnalytics';
 
 /**
@@ -79,8 +80,12 @@ export function Welcome() {
     if (!isSupabaseConfigured()) return;
     const sb = getSupabase();
     let cancelled = false;
+    // getSession and SIGNED_IN can both fire for the same return.
+    let resumed = false;
 
     const resumeAfterAuth = (userEmail: string | undefined) => {
+      if (cancelled || resumed) return;
+      resumed = true;
       // Angemeldet gilt die Konto-Adresse, nicht die Vorbelegung aus dem Scan.
       setEmail((prev) => userEmail || prev || '');
       void claimPendingAudit().catch(() => null);
@@ -92,16 +97,27 @@ export function Welcome() {
         new URLSearchParams(window.location.search).get('next'),
       );
       if (nextParam) {
+        clearLoginReturn();
         navigate(nextParam, { replace: true });
         return;
       }
 
-      // Post-checkout: enter API-key wizard. Plain login: resolve tenant then
-      // /app/activation or /app/dashboard — do not force the wizard.
+      // A Stripe checkout return must never be hijacked by a previous /login.
       if (sessionId) {
+        clearLoginReturn();
         setStep((prev) => (prev === 1 ? 2 : prev));
         return;
       }
+
+      // /login?next= uses an exact /welcome callback; resume its short-lived
+      // target here, after Supabase has confirmed the authenticated session.
+      const pendingNext = consumeLoginReturn();
+      if (pendingNext) {
+        navigate(pendingNext, { replace: true });
+        return;
+      }
+
+      // Normal login: tenant-aware activation/dashboard fallback.
       setResolvingReturn(true);
       setStep((prev) => (prev === 1 ? 2 : prev));
     };

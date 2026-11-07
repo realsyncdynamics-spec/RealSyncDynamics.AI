@@ -16,6 +16,7 @@ import { LangToggle } from '../components/handoff/LangToggle';
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { safeInternalPath } from '../lib/safeInternalPath';
+import { rememberLoginReturn } from '../lib/loginReturn';
 import { useLang } from '../i18n/useLang';
 
 function authErrorMessage(err: unknown, fallback: string): string {
@@ -85,9 +86,11 @@ export default function LoginPage() {
     try {
       const { error: otpErr } = await getSupabase().auth.signInWithOtp({
         email: address,
-        options: { emailRedirectTo: `${window.location.origin}${welcomePath}` },
+        // Supabase allowlist contains exactly /welcome (without query parameters).
+        options: { emailRedirectTo: `${window.location.origin}/welcome` },
       });
       if (otpErr) throw otpErr;
+      rememberLoginReturn(safeNext);
       setSent(true);
     } catch (err) {
       setError(authErrorMessage(err, t('sendFailed')));
@@ -189,7 +192,10 @@ export default function LoginPage() {
             <div className="rs-login__divider">
               <span className="rs-overline">{t('orOauth')}</span>
             </div>
-            <OAuthProviderButtons redirectAfterAuthTo={welcomePath} />
+            <OAuthProviderButtons
+              redirectAfterAuthTo="/welcome"
+              onBeforeRedirect={() => rememberLoginReturn(safeNext)}
+            />
             <p className="rs-login__note">{t('loginNote')}</p>
           </div>
         </div>

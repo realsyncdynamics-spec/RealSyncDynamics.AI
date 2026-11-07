@@ -89,14 +89,16 @@ export function Welcome() {
       // Angemeldet: Die Vorbelegung hat ihren Zweck erfüllt.
       clearLeadContext();
 
+      // Das auf /login gemerkte Ziel wird nach jeder Anmeldung genau einmal
+      // gelesen und gelöscht — unabhängig von URL-Parametern.
+      const storedNext = consumeAuthResumeTarget();
       // `?next=` in der URL hat Vorrang (Checkout-Fortsetzungen unverändert).
-      // Sonst das auf /login gemerkte Ziel — aber nie im Post-Checkout-Wizard,
-      // damit ein alter Eintrag den Wizard nicht überspringt.
+      // Das gemerkte Ziel gilt nie im Post-Checkout-Wizard, damit ein alter
+      // Eintrag den Wizard nicht überspringt.
       const urlNext = safeInternalPath(
         new URLSearchParams(window.location.search).get('next'),
       );
-      const nextParam = urlNext ?? (sessionId ? null : consumeAuthResumeTarget());
-      if (urlNext) consumeAuthResumeTarget(); // gemerktes Ziel ist damit erledigt
+      const nextParam = urlNext ?? (sessionId ? null : storedNext);
       if (nextParam) {
         navigate(nextParam, { replace: true });
         return;

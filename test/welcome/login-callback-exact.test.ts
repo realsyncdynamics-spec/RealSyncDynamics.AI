@@ -105,8 +105,11 @@ describe('LoginPage — Callback ohne Query', () => {
 });
 
 describe('Welcome — gemerktes Ziel', () => {
-  it('URL-next hat Vorrang, gemerktes Ziel nur ohne Post-Checkout-Session', () => {
-    expect(WELCOME).toContain('urlNext ?? (sessionId ? null : consumeAuthResumeTarget())');
+  it('gemerktes Ziel wird immer verbraucht; URL-next hat Vorrang, nie im Post-Checkout', () => {
+    expect(WELCOME).toContain('const storedNext = consumeAuthResumeTarget();');
+    expect(WELCOME).toContain('urlNext ?? (sessionId ? null : storedNext)');
+    // Löschen des Eintrags darf nicht von URL-Parametern abhängen (CodeQL).
+    expect(WELCOME).not.toMatch(/if \(urlNext\) consumeAuthResumeTarget/);
   });
 
   it('Checkout- und Aktivierungspfade bleiben unverändert', () => {

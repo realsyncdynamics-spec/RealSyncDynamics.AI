@@ -1,0 +1,6 @@
+# Rechtliche Seiten: Die Landingpage enthält nur einen kurzen Footer-Abschnitt
+# (#impressum) bzw. einen Datenschutz-Hinweis. Die vollständigen, eigenständigen
+# Seiten liegen in der App (Cloudflare-Pages-Projekt realsyncdynamics-ai).
+# 302 statt 301, solange die Abnahme läuft (keine dauerhafte Browser-Zwischenspeicherung).
+/impressum    https://realsyncdynamics-ai.pages.dev/impressum    302
+/datenschutz  https://realsyncdynamics-ai.pages.dev/datenschutz  302

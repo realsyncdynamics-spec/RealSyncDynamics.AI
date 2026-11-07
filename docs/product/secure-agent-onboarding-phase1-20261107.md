@@ -23,7 +23,7 @@ liegt deshalb nur auf einem Docs-Branch, ohne PR.
 | W1 | Primärer CTA „Governance-Onboarding anfragen“ (§9) | `AGENTS.md`: öffentliche CTAs nie Pilot/Demo/Call/Sales/Beratung/Termin | CTA in dieser Form unzulässig. Owner-Entscheid nötig |
 | W2 | Governance-OS-Produktseite als Hauptbotschaft | K4 (`AGENTS.md`, 27.10.2026): Governance ist Infrastruktur, nicht Hero | Paket C als Eigenschaft des KI-Mitarbeiters rahmen („sicher eingeführt“), nicht als eigenes Governance-Produkt |
 | W3 | Vier Servicepakete als Dienstleistung | `PRODUCT_FOCUS.md`: Monetarisierung als Reihenfolge, nicht parallel. Preise nur aus `shared/pricing.ts` | Pakete A, B und D vorerst nicht als buchbare Leistung. Paket C nur als Teil des bestehenden Bot-/Voice-Pfads |
-| W4 | Steuerstatus | `PR_TRIAGE_POLICY.md` (29.10.2026): „Seit 15.10.2026 regelbesteuert … §-19-Hinweis gilt nicht mehr“ | Muss vom Owner bestätigt oder korrigiert werden, bevor irgendein Paketpreis entsteht |
+| W4 | Steuerstatus | `PR_TRIAGE_POLICY.md` (29.10.2026) nennt „regelbesteuert“; Code auf `main` (#2157) ist `PRICING_TAX_MODE = 'EXEMPT'` (§ 19 UStG) | Code ist maßgeblich. Policy-Zeile per eigenem Docs-PR korrigieren (siehe `pr-triage-20261107.md`) |
 
 ## 2. Wiederverwendbare Komponenten
 

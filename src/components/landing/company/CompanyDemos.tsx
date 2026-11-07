@@ -200,6 +200,14 @@ const BRANCHEN = ['Handwerk', 'Metzgerei', 'KFZ-Werkstatt', 'Gastronomie & Bäck
 const PAKETE = ['Starter', 'Professional', 'Kanzlei'] as const;
 const KANAELE = ['Web', 'Telefonie + Web'] as const;
 const STIMMEN = ['Eve', 'Castor', 'Atlas', 'Celeste', 'Ursa', 'Rigel'] as const;
+// Vorgefertigte Grok-TTS-Beispiele aus dem bestehenden Voice-Onboarding.
+// Für Eve und Celeste liegt derzeit noch keine passende Beispielaufnahme vor.
+const VOICE_SAMPLE_AUDIO: Partial<Record<(typeof STIMMEN)[number], string>> = {
+  Castor: 'https://voice.realsyncdynamicsai.de/audio/handwerk.mp3?v=grok1',
+  Atlas: 'https://voice.realsyncdynamicsai.de/audio/kfz.mp3?v=grok1',
+  Ursa: 'https://voice.realsyncdynamicsai.de/audio/gastronomie.mp3?v=grok1',
+  Rigel: 'https://voice.realsyncdynamicsai.de/audio/hausverwaltung.mp3?v=grok1',
+};
 const ONB_STEPS = ['Branche', 'Betrieb', 'Stimme', 'Freigabe'] as const;
 const WAVE = [
   ['18px', '0s'],
@@ -220,6 +228,7 @@ export function VoiceOnboarding() {
   const [kanal, setKanal] = useState(1);
   const [stimme, setStimme] = useState(0);
   const go = (n: number) => setStep(Math.max(0, Math.min(3, n)));
+  const voiceSample = VOICE_SAMPLE_AUDIO[STIMMEN[stimme]];
 
   return (
     <div className="onb">
@@ -288,6 +297,25 @@ export function VoiceOnboarding() {
             ))}
           </div>
           <Segs label="Stimme" options={STIMMEN} value={stimme} onChange={setStimme} />
+          <div className="voice-preview">
+            {voiceSample ? (
+              <>
+                <label htmlFor="voice-sample-audio">Stimmprobe · {STIMMEN[stimme]}</label>
+                <audio
+                  key={STIMMEN[stimme]}
+                  id="voice-sample-audio"
+                  controls
+                  preload="none"
+                  src={voiceSample}
+                  aria-label={`Grok-Stimmprobe für ${STIMMEN[stimme]}`}
+                />
+              </>
+            ) : (
+              <p className="voice-preview__missing">
+                Für {STIMMEN[stimme]} liegt derzeit keine passende Grok-Stimmprobe vor.
+              </p>
+            )}
+          </div>
           <p>Sechs empfohlene von 28 Grok-Stimmen – alle sprechen Deutsch.</p>
           <div className="onb-foot">
             <button className="btn quiet" type="button" onClick={() => go(1)}>

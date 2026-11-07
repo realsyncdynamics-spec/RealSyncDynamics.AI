@@ -70,12 +70,10 @@ describe('SEO: /flow-Namespace ist noindex', () => {
     expect(shadowed).toEqual([]);
   });
 
-  it('hält die Homepage-SEO auf der Governance-OS-Positionierung (Landing v6)', () => {
-    expect(SEO_CONFIG['/'].title).toBe(
-      'Governance OS für DSGVO & EU AI Act – AI Governance Runtime | RealSync Dynamics AI',
-    );
-    expect(SEO_CONFIG['/'].description).toContain('Governance OS für DSGVO & EU AI Act');
-    expect(SEO_CONFIG['/'].description).toContain('kostenlosen Governance Scan');
+  it('hält die Homepage-SEO auf der Produktportal-Positionierung (Build · Automate · Govern)', () => {
+    expect(SEO_CONFIG['/'].title).toBe('Build. Automate. Govern. | RealSync Dynamics AI');
+    expect(SEO_CONFIG['/'].description).toContain('DSGVO und EU AI Act');
+    expect(SEO_CONFIG['/'].description).toContain('KI-Assistenten');
   });
 
   it('prüft den Namespace vor dem Map-Lookup (Reihenfolge im Quelltext)', () => {

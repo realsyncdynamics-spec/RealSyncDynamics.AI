@@ -49,8 +49,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
-    route: '/',
+      'Landing v6 (bis zum Produktportal vom 07.11.2026 auf `/`, seitdem unverändert unter /design/landing-v6): Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+    route: '/design/landing-v6',
     evidence: [
       'src/pages/LandingV6.tsx',
       'src/components/landing/v6/LandingV6View.tsx',
@@ -61,6 +61,25 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/App.tsx#/',
       'test/landing/landing-v6-funnel.test.tsx',
       'test/landing/landing-v6-a11y.test.tsx',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'product-portal',
+    name: 'Produktportal (Startseite)',
+    status: 'live',
+    group: 'surface',
+    description:
+      'Startseite `/` „BUILD. AUTOMATE. GOVERN.“ mit drei Produkt-Einstiegen (Build Studio → /build, Agent Studio → /chatbot/start, Governance OS → /audit?source=portal-govern) und Produktseiten /produkte/build-studio, /produkte/agent-studio, /produkte/governance-os. Status je Funktion aus src/product/productSuite.ts (liest diese Registry, fail-closed); Freischaltungen aus PLAN_ENTITLEMENTS, Beträge nur auf /pricing. Die Seite selbst ist erreichbar; die meisten Build- und Agent-Funktionen bleiben Preview oder gesperrt.',
+    route: '/',
+    evidence: [
+      'src/pages/ProductPortal.tsx',
+      'src/pages/products/ProductPage.tsx',
+      'src/product/productSuite.ts',
+      'src/components/portal/PortalChrome.tsx',
+      'src/styles/product-portal.css',
+      'test/landing/product-portal.test.tsx',
+      'test/product/product-suite.test.ts',
     ],
     showOnRoadmap: false,
   },

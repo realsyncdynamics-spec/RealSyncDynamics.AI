@@ -58,10 +58,13 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing at Landing v6; earth hero only on /design/landing-v4', () => {
+  it('points `/` at the product portal, keeps Landing v6 under /design/landing-v6; earth hero only on /design/landing-v4', () => {
+    const portal = getImplementation('product-portal')!;
+    expect(portal.status).toBe('live');
+    expect(portal.route).toBe('/');
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
-    expect(landing.route).toBe('/');
+    expect(landing.route).toBe('/design/landing-v6');
     expect(landing.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
     expect(landing.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
     expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);

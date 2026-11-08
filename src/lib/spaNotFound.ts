@@ -32,20 +32,6 @@ export function spaRouteRegExp(pattern: string): RegExp | null {
 
 const MATCHERS = SPA_ROUTE_PATTERNS.map(spaRouteRegExp).filter((re): re is RegExp => re !== null);
 
-/**
- * Statische HTML-Seiten aus `public/<name>/index.html`. Pages liefert sie als
- * echte Datei vor dem SPA-Fallback aus, App.tsx kennt sie aber nicht — ohne
- * diese Liste ersetzte die Middleware sie durch die 404-Seite. Exakter Pfad,
- * Groß/Klein wie die Datei (eine andere Schreibweise trifft nur die Shell).
- */
-export const STATIC_HTML_PAGES: readonly string[] = ['/unternehmen'];
-
-/** Ist der Pfad eine statische Seite aus `STATIC_HTML_PAGES` (mit oder ohne `/` am Ende)? */
-export function isStaticHtmlPage(pathname: string): boolean {
-  const path = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
-  return STATIC_HTML_PAGES.includes(path);
-}
-
 /** Kennt eine Route aus App.tsx diesen Pfad? */
 export function isKnownSpaPath(pathname: string): boolean {
   let path = pathname;
@@ -65,8 +51,7 @@ export async function withSpaNotFoundStatus(
   if (request.method !== 'GET' && request.method !== 'HEAD') return response;
   if (response.status !== 200) return response;
   if (!(response.headers.get('content-type') ?? '').includes('text/html')) return response;
-  const { pathname } = new URL(request.url);
-  if (isKnownSpaPath(pathname) || isStaticHtmlPage(pathname)) return response;
+  if (isKnownSpaPath(new URL(request.url).pathname)) return response;
 
   const headers = new Headers(response.headers);
   headers.set('x-robots-tag', 'noindex');

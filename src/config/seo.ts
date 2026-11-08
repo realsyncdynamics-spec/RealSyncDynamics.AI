@@ -68,8 +68,8 @@ export const DEFAULT_SEO: SEOConfig = {
  * Monats-Abo als schema.org-Offer. Während der offenen Beta
  * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
  * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
- * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise netto
- * (`PRICING_TAX_MODE = EU_STANDARD`, zzgl. USt, nur B2B).
+ * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise ohne Umsatzsteuerausweis
+ * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B).
  */
 function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
   const list = {
@@ -77,7 +77,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     price: String(listEur),
     priceCurrency: 'EUR',
     billingDuration: 'P1M',
-    valueAddedTaxIncluded: false,
+    valueAddedTaxIncluded: true,
   };
   if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
   const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
@@ -89,7 +89,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     priceCurrency: 'EUR',
     priceValidUntil: BETA.endsIso,
     url,
-    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat zzgl. USt, monatlich kündbar.`,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat, monatlich kündbar. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.`,
     priceSpecification: [
       { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
       { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },
@@ -134,9 +134,9 @@ const PRICING_PRODUCT_JSONLD = {
         price: '1498',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
-        valueAddedTaxIncluded: false,
+        valueAddedTaxIncluded: true,
       },
-      description: '1.498 €/Monat netto, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      description: '1.498 €/Monat, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -165,7 +165,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Was ist der EU AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist die weltweit erste umfassende Regulierung von KI-Systemen. Er trat im August 2024 in Kraft und gilt EU-weit unmittelbar — wie die DSGVO. Anders als die DSGVO regelt er nicht primär Daten, sondern KI-Systeme als Produkt.',
+        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist seit dem 1. August 2024 in Kraft. Er wird stufenweise angewandt und regelt Pflichten für unterschiedliche Akteure und KI-Systeme. Die DSGVO bleibt bei der Verarbeitung personenbezogener Daten daneben anwendbar.',
       },
     },
     {
@@ -189,7 +189,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Wann gilt der AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.',
+        text: 'Stufenweise: (1) Verbote bestimmter Praktiken und KI-Kompetenzpflichten seit 2. Februar 2025. (2) Pflichten für Anbieter von GPAI-Modellen seit 2. August 2025. (3) Allgemeines Anwendungsdatum und wichtige Transparenzpflichten seit 2. August 2026. (4) Zentrale Hochrisiko-Pflichten nach Anhang III ab 2. Dezember 2027, nach Anhang I ab 2. August 2028 (Verordnung (EU) 2026/1744).',
       },
     },
     {
@@ -350,7 +350,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat netto, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
+      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -540,12 +540,22 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/contact-sales': {
     title: 'Enterprise anfragen – SLA, Multi-Org | RealSync Dynamics AI',
     description:
-      'Enterprise: 1.498 €/Monat netto, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
+      'Enterprise: 1.498 €/Monat, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Enterprise anfragen', url: '/contact-sales' },
     ]),
+  },
+
+  // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
+  // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/unternehmen': {
+    title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
+    description:
+      'Das Governance OS prüft jede KI-Aktion, der Voice Agent nimmt Anrufe an, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen, Hosting in Europa.',
+    canonical: `${SITE_URL}/unternehmen`,
+    noIndex: true,
   },
 
   '/frontend-builder': {
@@ -1408,7 +1418,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/enterprise-konfigurator': {
     title: 'Enterprise konfigurieren – Bausteine | RealSync Dynamics AI',
     description:
-      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat netto.',
+      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat.',
     canonical: `${SITE_URL}/enterprise-konfigurator`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

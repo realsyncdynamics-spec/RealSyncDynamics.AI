@@ -82,6 +82,7 @@ const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then(
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
 const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
 const KontaktPage = lazy(() => import('./pages/KontaktPage').then((m) => ({ default: m.KontaktPage })));
+const CompanyLanding = lazy(() => import('./pages/CompanyLanding').then((m) => ({ default: m.CompanyLanding })));
 const EnterpriseAiOs = lazy(() => import('./pages/EnterpriseAiOs').then((m) => ({ default: m.EnterpriseAiOs })));
 const EnterpriseAiOsFoundingAccess = lazy(() => import('./pages/EnterpriseAiOsFoundingAccess').then((m) => ({ default: m.EnterpriseAiOsFoundingAccess })));
 const AiCommandCenterShowcase = lazy(() => import('./pages/AiCommandCenterShowcase').then((m) => ({ default: m.AiCommandCenterShowcase })));
@@ -656,6 +657,8 @@ function RoutesWithTracking() {
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />
       <Route path="/kontakt" element={<KontaktPage />} />
+      {/* 02.11.2026: Unternehmens-Landing v5 — Gerüst (noindex) bis Design-Handoff vorliegt; `/` bleibt LandingV6. */}
+      <Route path="/unternehmen" element={<CompanyLanding />} />
       <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Landing, Altadresse des Founding-Programms (→ Enterprise-Checkout) + Dashboard */}

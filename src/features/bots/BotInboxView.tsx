@@ -6,13 +6,9 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import {
   listConversations, listMessages, listAppointments, listOrders,
-  setAppointmentStatus, setOrderStatus, setConversationHandoff,
+  setAppointmentStatus, setOrderStatus,
 } from './api';
-import type { BotConversation, BotMessage, BotAppointment, BotOrder, BotHandoffAction } from './types';
-import {
-  HANDOFF_ACTION_LABEL, HANDOFF_REASON_LABEL, HANDOFF_STATUS_LABEL,
-  handoffActions, handoffStatusOf, isOpenHandoff, sortForInbox,
-} from './handoff';
+import type { BotConversation, BotMessage, BotAppointment, BotOrder } from './types';
 
 type Tab = 'conversations' | 'appointments' | 'orders';
 
@@ -110,130 +106,33 @@ function useAsync<T>(loader: () => Promise<T>, deps: unknown[]): { data: T | nul
 }
 
 function ConversationsPane({ tenantId }: { tenantId: string }) {
-  const { data: convos, loading, error, reload } = useAsync<BotConversation[]>(() => listConversations(tenantId), [tenantId]);
+  const { data: convos, loading, error } = useAsync<BotConversation[]>(() => listConversations(tenantId), [tenantId]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [onlyHandoffs, setOnlyHandoffs] = useState(false);
 
-  if (loading && !convos) return <p className="font-mono text-xs text-titanium-500">Lade…</p>;
+  if (loading) return <p className="font-mono text-xs text-titanium-500">Lade…</p>;
   if (error) return <ErrorBox msg={error} />;
   if (!convos || convos.length === 0) return <EmptyBox msg="Noch keine Konversationen." />;
 
-  const openCount = convos.filter(isOpenHandoff).length;
-  const visible = sortForInbox(onlyHandoffs ? convos.filter(isOpenHandoff) : convos);
-  const current = convos.find((c) => c.id === selected) ?? null;
-
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterButton active={!onlyHandoffs} onClick={() => setOnlyHandoffs(false)} label={`Alle (${convos.length})`} />
-        <FilterButton active={onlyHandoffs} onClick={() => setOnlyHandoffs(true)} label={`Übergaben offen (${openCount})`} />
-      </div>
-      <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
-        <div className="space-y-1">
-          {visible.length === 0 && <EmptyBox msg="Keine offenen Übergaben." />}
-          {visible.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelected(c.id)}
-              className={`w-full border px-3 py-2 text-left transition-colors ${
-                selected === c.id ? 'border-security-500 bg-obsidian-800' : 'border-titanium-800 hover:border-titanium-600'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-xs text-titanium-200">{c.contact_label || c.external_ref || 'Anonym'}</span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">{c.channel}</span>
-              </div>
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at)}</span>
-                {handoffStatusOf(c) !== 'none' && <HandoffChip conversation={c} />}
-              </div>
-            </button>
-          ))}
-        </div>
-        <div className="space-y-3">
-          {current && <HandoffPanel conversation={current} onChanged={reload} />}
-          {current ? <MessageThread tenantId={tenantId} conversationId={current.id} /> : <EmptyBox msg="Konversation auswählen." />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FilterButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
-        active ? 'border-security-500 text-titanium-50' : 'border-titanium-800 text-titanium-500 hover:text-titanium-300'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function HandoffChip({ conversation }: { conversation: BotConversation }) {
-  const status = handoffStatusOf(conversation);
-  const cls = status === 'requested'
-    ? 'text-amber-400 border-amber-500/40'
-    : status === 'accepted'
-      ? 'text-emerald-400 border-emerald-500/40'
-      : 'text-titanium-600 border-titanium-800';
-  return (
-    <span className={`border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${cls}`}>
-      {HANDOFF_STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-/** Übergabe an Menschen: Status, Anlass und erlaubte Aktionen der Konversation. */
-function HandoffPanel({ conversation, onChanged }: { conversation: BotConversation; onChanged: () => void }) {
-  const [busy, setBusy] = useState<BotHandoffAction | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const status = handoffStatusOf(conversation);
-
-  async function run(action: BotHandoffAction) {
-    setBusy(action); setErr(null);
-    try {
-      await setConversationHandoff(conversation.id, action);
-      onChanged();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border border-titanium-800 bg-obsidian-900 px-4 py-3">
+    <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
       <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <HandoffChip conversation={conversation} />
-          {conversation.handoff_reason && (
-            <span className="text-xs text-titanium-400">{HANDOFF_REASON_LABEL[conversation.handoff_reason]}</span>
-          )}
-        </div>
-        <p className="font-mono text-[10px] text-titanium-600">
-          {status === 'none' && 'Der Bot führt das Gespräch.'}
-          {status === 'requested' && `Angefordert: ${fmt(conversation.handoff_requested_at ?? null)}`}
-          {status === 'accepted' && `Übernommen: ${fmt(conversation.handoff_accepted_at ?? null)}`}
-          {status === 'resolved' && `Erledigt: ${fmt(conversation.handoff_resolved_at ?? null)}`}
-        </p>
-        {err && <p className="text-xs text-risk-critical">{err}</p>}
-      </div>
-      <div className="flex items-center gap-2">
-        {handoffActions(status).map((action) => (
-          <Button
-            key={action}
-            size="sm"
-            variant={action === 'resolve' ? 'ghost' : 'secondary'}
-            disabled={busy !== null}
-            onClick={() => run(action)}
+        {convos.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setSelected(c.id)}
+            className={`w-full border px-3 py-2 text-left transition-colors ${
+              selected === c.id ? 'border-security-500 bg-obsidian-800' : 'border-titanium-800 hover:border-titanium-600'
+            }`}
           >
-            {busy === action ? '…' : HANDOFF_ACTION_LABEL[action]}
-          </Button>
+            <div className="flex items-center justify-between">
+              <span className="truncate text-xs text-titanium-200">{c.contact_label || c.external_ref || 'Anonym'}</span>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">{c.channel}</span>
+            </div>
+            <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at)}</span>
+          </button>
         ))}
       </div>
+      <div>{selected ? <MessageThread tenantId={tenantId} conversationId={selected} /> : <EmptyBox msg="Konversation auswählen." />}</div>
     </div>
   );
 }

@@ -5,8 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  HANDOFF_MARKER, detectHandoffRequest, extractHandoffMarker, markHandoffRequested,
-  type HandoffAdmin,
+  HANDOFF_MARKER, detectHandoffRequest, extractHandoffMarker, hasHandoffRequest,
+  markHandoffRequested, type HandoffAdmin,
 } from '../../supabase/functions/_shared/bot-handoff';
 import { buildBotPrompt } from '../../supabase/functions/_shared/bots';
 
@@ -56,19 +56,41 @@ describe('extractHandoffMarker', () => {
   });
 });
 
-function fakeAdmin(result: { error?: unknown } | Error) {
-  const calls: { table?: string; patch?: Record<string, unknown>; eq: Array<[string, unknown]>; in: Array<[string, unknown[]]> } = { eq: [], in: [] };
-  const settled = result instanceof Error ? Promise.reject(result) : Promise.resolve(result);
-  settled.catch(() => undefined); // keine unbehandelte Ablehnung vor dem await
-  const chain: Record<string, unknown> = {
-    eq(col: string, val: unknown) { calls.eq.push([col, val]); return chain; },
-    in(col: string, vals: unknown[]) { calls.in.push([col, vals]); return chain; },
-    then: settled.then.bind(settled),
-  };
+type Row = { metadata: unknown } | null;
+
+function fakeAdmin(opts: { row?: Row; selectError?: unknown; updateError?: unknown; throws?: boolean } = {}) {
+  const calls: {
+    selectEq: Array<[string, unknown]>;
+    updateEq: Array<[string, unknown]>;
+    patch?: Record<string, unknown>;
+    updates: number;
+  } = { selectEq: [], updateEq: [], updates: 0 };
+  const row = opts.row === undefined ? { metadata: {} } : opts.row;
   const admin = {
     from(table: string) {
-      calls.table = table;
-      return { update(patch: Record<string, unknown>) { calls.patch = patch; return chain; } };
+      if (table !== 'bot_conversations') throw new Error(`unexpected table ${table}`);
+      return {
+        select() {
+          const chain = {
+            eq(col: string, val: unknown) { calls.selectEq.push([col, val]); return chain; },
+            maybeSingle() {
+              if (opts.throws) return Promise.reject(new Error('network'));
+              return Promise.resolve({ data: row, error: opts.selectError ?? null });
+            },
+          };
+          return chain;
+        },
+        update(patch: Record<string, unknown>) {
+          calls.patch = patch;
+          calls.updates += 1;
+          const settled = Promise.resolve({ error: opts.updateError ?? null });
+          const chain: Record<string, unknown> = {
+            eq(col: string, val: unknown) { calls.updateEq.push([col, val]); return chain; },
+            then: settled.then.bind(settled),
+          };
+          return chain;
+        },
+      };
     },
   } as unknown as HandoffAdmin;
   return { admin, calls };
@@ -76,23 +98,52 @@ function fakeAdmin(result: { error?: unknown } | Error) {
 
 describe('markHandoffRequested', () => {
   const scope = { tenantId: 't-1', botId: 'b-1', conversationId: 'c-1' };
+  const now = new Date('2026-11-08T10:00:00.000Z');
+  const scoped = [['id', 'c-1'], ['tenant_id', 't-1'], ['bot_id', 'b-1']];
 
-  it('schreibt nur in die eigene Konversation (Mandant + Bot) und nur ohne offene Übergabe', async () => {
-    const { admin, calls } = fakeAdmin({ error: null });
-    await expect(markHandoffRequested(admin, scope, 'customer_request')).resolves.toBe(true);
-    expect(calls.table).toBe('bot_conversations');
-    expect(calls.patch).toMatchObject({ handoff_status: 'requested', handoff_reason: 'customer_request' });
-    expect(calls.eq).toEqual(expect.arrayContaining([
-      ['id', 'c-1'], ['tenant_id', 't-1'], ['bot_id', 'b-1'],
-    ]));
-    expect(calls.in).toEqual([['handoff_status', ['none', 'resolved']]]);
+  it('liest und schreibt nur die eigene Konversation (id + Mandant + Bot)', async () => {
+    const { admin, calls } = fakeAdmin({ row: { metadata: { source: 'widget' } } });
+    await expect(markHandoffRequested(admin, scope, 'customer_request', now)).resolves.toBe(true);
+    expect(calls.selectEq).toEqual(scoped);
+    expect(calls.updateEq).toEqual(scoped);
   });
 
-  it('meldet Schreibfehler mit false statt zu werfen', async () => {
-    const { admin } = fakeAdmin({ error: { message: 'column does not exist' } });
-    await expect(markHandoffRequested(admin, scope, 'assistant_uncertain')).resolves.toBe(false);
-    const { admin: throwing } = fakeAdmin(new Error('network'));
-    await expect(markHandoffRequested(throwing, scope, 'assistant_uncertain')).resolves.toBe(false);
+  it('setzt den Vermerk und erhält vorhandene Metadaten', async () => {
+    const { admin, calls } = fakeAdmin({ row: { metadata: { source: 'widget' } } });
+    await markHandoffRequested(admin, scope, 'assistant_uncertain', now);
+    expect(calls.patch).toEqual({
+      metadata: {
+        source: 'widget',
+        handoff: { requested: true, reason: 'assistant_uncertain', requested_at: '2026-11-08T10:00:00.000Z' },
+      },
+    });
+  });
+
+  it('überschreibt einen bestehenden Vermerk nicht', async () => {
+    const existing = { handoff: { requested: true, reason: 'customer_request', requested_at: '2026-11-01T00:00:00.000Z' } };
+    const { admin, calls } = fakeAdmin({ row: { metadata: existing } });
+    await expect(markHandoffRequested(admin, scope, 'assistant_uncertain', now)).resolves.toBe(true);
+    expect(calls.updates).toBe(0);
+  });
+
+  it('schreibt keine Inbox-Felder aus PR C (status, assigned_to, …)', async () => {
+    const { admin, calls } = fakeAdmin();
+    await markHandoffRequested(admin, scope, 'customer_request', now);
+    expect(Object.keys(calls.patch ?? {})).toEqual(['metadata']);
+  });
+
+  it('meldet Fehler und fehlende Zeilen mit false statt zu werfen', async () => {
+    await expect(markHandoffRequested(fakeAdmin({ selectError: { message: 'x' } }).admin, scope, 'customer_request')).resolves.toBe(false);
+    await expect(markHandoffRequested(fakeAdmin({ row: null }).admin, scope, 'customer_request')).resolves.toBe(false);
+    await expect(markHandoffRequested(fakeAdmin({ updateError: { message: 'x' } }).admin, scope, 'customer_request')).resolves.toBe(false);
+    await expect(markHandoffRequested(fakeAdmin({ throws: true }).admin, scope, 'customer_request')).resolves.toBe(false);
+  });
+
+  it('hasHandoffRequest erkennt nur einen gesetzten Vermerk', () => {
+    expect(hasHandoffRequest({ handoff: { requested: true } })).toBe(true);
+    expect(hasHandoffRequest({ handoff: { requested: false } })).toBe(false);
+    expect(hasHandoffRequest({})).toBe(false);
+    expect(hasHandoffRequest(null)).toBe(false);
   });
 });
 
@@ -139,32 +190,5 @@ describe('Verdrahtung in bot-chat und whatsapp-webhook', () => {
     const pep = wa.indexOf('const verdict = await enforceBotMessage(');
     const detect = wa.indexOf('detectHandoffRequest(msg.text)');
     expect(detect).toBeGreaterThan(pep);
-  });
-});
-
-describe('Migration 20261104120000_bot_conversation_handoff', () => {
-  const sql = readFileSync('supabase/migrations/20261104120000_bot_conversation_handoff.sql', 'utf8');
-
-  it('ist rein additiv', () => {
-    expect(sql).not.toMatch(/\bDROP\s+(TABLE|COLUMN)\b/i);
-    expect(sql).not.toMatch(/\bDELETE\s+FROM\b/i);
-    expect(sql).not.toMatch(/\bTRUNCATE\b/i);
-    expect(sql).toContain('ADD COLUMN IF NOT EXISTS handoff_status');
-  });
-
-  it('RPC: SECURITY DEFINER mit festem search_path, fail-closed, Mandant aus der Zeile', () => {
-    expect(sql).toContain('SECURITY DEFINER');
-    expect(sql).toContain('SET search_path = public');
-    expect(sql).toMatch(/IF v_uid IS NULL THEN\s+RAISE EXCEPTION/);
-    expect(sql).toContain('NOT public.is_tenant_member(v_row.tenant_id)');
-    expect(sql).toContain('FOR UPDATE');
-    expect(sql).toContain('handoff_accepted_by = v_uid');
-    expect(sql).not.toMatch(/p_tenant_id|p_user_id/);
-  });
-
-  it('nur angemeldete Nutzer dürfen die RPC aufrufen', () => {
-    expect(sql).toContain('REVOKE ALL ON FUNCTION public.bot_conversation_handoff(UUID, TEXT) FROM PUBLIC;');
-    expect(sql).toContain('REVOKE ALL ON FUNCTION public.bot_conversation_handoff(UUID, TEXT) FROM anon;');
-    expect(sql).toContain('GRANT EXECUTE ON FUNCTION public.bot_conversation_handoff(UUID, TEXT) TO authenticated;');
   });
 });

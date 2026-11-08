@@ -7,8 +7,10 @@
 //                            Ende seiner Antwort; der Marker wird vor dem
 //                            Speichern und Versenden entfernt.
 //
-// Die Datenbank-Spalten kommen aus 20261104120000_bot_conversation_handoff.sql.
-// Mitarbeitende übernehmen/schließen über die RPC bot_conversation_handoff.
+// Vermerk ohne eigene Migration in `bot_conversations.metadata.handoff`
+// ({ requested, reason, requested_at }). Der Bearbeitungsstatus (Übernehmen/
+// Erledigen) bleibt Sache des Posteingangs aus PR C (#2130: `inbox_take_over`/
+// `inbox_resolve`, nur Owner/Admin); dieses Modul schreibt keine Inbox-Felder.
 //
 // Reine Funktionen + minimaler struktureller Client-Typ, damit das Modul in
 // Vitest importierbar bleibt (gleiche Technik wie _shared/bots.ts).
@@ -66,48 +68,77 @@ export function buildHandoffPromptSection(alreadyRequested: boolean): string {
 
 // ── Persistenz ──────────────────────────────────────────────────────────────
 
+export interface HandoffMetadata {
+  requested: true;
+  reason: HandoffReason;
+  requested_at: string;
+}
+
+interface HandoffSelectChain {
+  eq(col: string, val: unknown): HandoffSelectChain;
+  maybeSingle(): PromiseLike<{ data: unknown; error: unknown }>;
+}
+
 interface HandoffUpdateChain extends PromiseLike<{ error?: unknown }> {
   eq(col: string, val: unknown): HandoffUpdateChain;
-  in(col: string, vals: unknown[]): HandoffUpdateChain;
 }
 
 export interface HandoffAdmin {
   from(table: string): {
+    select(cols: string): HandoffSelectChain;
     update(obj: Record<string, unknown>): HandoffUpdateChain;
   };
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** true, wenn die Konversation bereits einen Übergabe-Vermerk trägt. */
+export function hasHandoffRequest(metadata: unknown): boolean {
+  return isRecord(metadata) && isRecord(metadata.handoff) && metadata.handoff.requested === true;
+}
+
 /**
- * Markiert eine Konversation als „Übergabe angefordert“. Wirkt nur, wenn
- * keine offene Übergabe läuft (none/resolved) — eine bereits angenommene
- * Übergabe wird nicht zurückgesetzt. Scope immer über tenant_id + bot_id.
+ * Vermerkt „Kunde/Assistent wünscht Übergabe an einen Menschen“ in
+ * `bot_conversations.metadata.handoff`. Scope immer über id + tenant_id +
+ * bot_id; ein bestehender Vermerk wird nicht überschrieben, andere
+ * Metadaten bleiben erhalten.
  *
- * Wirft nicht: Ein Fehler hier darf die bereits erzeugte Antwort an den
- * Kunden nicht verhindern. Rückgabe true = Übergabe ist vermerkt (neu oder
- * bereits offen), false = Schreibfehler (geloggt).
+ * Wirft nicht: Ein Fehler hier darf die Antwort an den Kunden nicht
+ * verhindern. Rückgabe true = Vermerk vorhanden (neu oder bereits gesetzt),
+ * false = Lese-/Schreibfehler oder Konversation nicht gefunden (geloggt).
  */
 export async function markHandoffRequested(
   admin: HandoffAdmin,
   scope: { tenantId: string; botId: string; conversationId: string },
   reason: HandoffReason,
+  now: Date = new Date(),
 ): Promise<boolean> {
   try {
-    const { error } = await admin.from('bot_conversations')
-      .update({
-        handoff_status: 'requested',
-        handoff_reason: reason,
-        handoff_requested_at: new Date().toISOString(),
-        handoff_accepted_at: null,
-        handoff_accepted_by: null,
-        handoff_resolved_at: null,
-        handoff_resolved_by: null,
-      })
+    const { data, error } = await admin.from('bot_conversations')
+      .select('metadata')
       .eq('id', scope.conversationId)
       .eq('tenant_id', scope.tenantId)
       .eq('bot_id', scope.botId)
-      .in('handoff_status', ['none', 'resolved']);
-    if (error) {
-      console.error('[bot-handoff] mark failed', (error as { message?: string }).message ?? error);
+      .maybeSingle();
+    if (error || !data) {
+      console.error('[bot-handoff] lookup failed', (error as { message?: string } | null)?.message ?? 'not found');
+      return false;
+    }
+    const metadata = isRecord((data as { metadata?: unknown }).metadata)
+      ? (data as { metadata: Record<string, unknown> }).metadata
+      : {};
+    if (hasHandoffRequest(metadata)) return true;
+
+    const handoff: HandoffMetadata = { requested: true, reason, requested_at: now.toISOString() };
+    const { error: updateError } = await admin.from('bot_conversations')
+      .update({ metadata: { ...metadata, handoff } })
+      .eq('id', scope.conversationId)
+      .eq('tenant_id', scope.tenantId)
+      .eq('bot_id', scope.botId);
+    if (updateError) {
+      console.error('[bot-handoff] mark failed', (updateError as { message?: string }).message ?? updateError);
       return false;
     }
     return true;

@@ -5,6 +5,7 @@
 >
 > Grundwahrheit „in Produktion": `src/config/production-edge-functions.ts` (Messung 2026-10-30T11:46Z, vom Drift-Guard gehuetet).
 > Erreichbarkeit: Referenz-Scan ueber `src/`, `supabase/config.toml`, `supabase/migrations/` und Function-zu-Function-Calls.
+> **Scope:** statischer Repo-Scan, kein Laufzeit-Healthcheck. Produktiv verwaltete Runtime-Crons koennen ausserhalb der Migrationen liegen; aktueller Snapshot: [Runtime-Beobachtungen](./EDGE_FUNCTIONS_RUNTIME_OBSERVATIONS.md).
 
 ## Statusuebersicht
 

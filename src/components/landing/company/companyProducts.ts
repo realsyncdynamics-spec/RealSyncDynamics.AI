@@ -3,6 +3,8 @@ import {
   STATUS_LABEL,
   type ImplementationStatus,
 } from '../../../product/implementation-status';
+import { COMPANY } from '../../../config/company';
+import { ADDONS, formatNetVatGrossEur, PLANS, pricingTaxNote, type PricingTaxMode } from '@/shared/pricing';
 
 /**
  * Produkte der Unternehmens-Landing v5 (/unternehmen).
@@ -14,8 +16,9 @@ import {
  *                        selbst bleibt `voice-telephony`, Coming Soon)
  * - Landingpage Builder → `public-frontend-builder`
  *
- * Preise erscheinen hier bewusst nicht: Die Voice-Pakete der Onboarding-Seite
- * stehen nicht in `shared/pricing.ts` (AGENTS.md: Preise nur aus der SSoT).
+ * Preise: nur das Voice-Add-on aus `shared/pricing.ts` (`voiceAddonOffer`).
+ * Die Voice-Pakete der Onboarding-Seite (Starter/Professional/Kanzlei) stehen
+ * nicht in der SSoT und erscheinen hier ohne Preis (AGENTS.md).
  */
 
 export type CompanyProductId = 'governance' | 'voice' | 'builder';
@@ -81,8 +84,10 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     ssotId: 'voice-agent-onboarding',
     name: 'Voice Agent',
     tabName: 'Voice Agent',
-    headline: 'Kein Anruf geht verloren.',
-    description: 'Nimmt Anrufe an, notiert Termine, übergibt Notfälle an Sie.',
+    // Telefonie ist `voice-telephony` (Coming Soon): Texte versprechen keine
+    // laufende Telefonannahme. Live/Preview ist nur das Onboarding.
+    headline: 'Telefonannahme in Vorbereitung.',
+    description: 'Anrufe annehmen, Termine notieren, Notfälle übergeben – Branche und Stimme legen Sie schon im Onboarding fest.',
   }),
   product({
     id: 'builder',
@@ -96,4 +101,31 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
 
 export function companyProduct(id: CompanyProductId): CompanyProduct {
   return COMPANY_PRODUCTS.find((p) => p.id === id)!;
+}
+
+export interface VoiceAddonOffer {
+  /** z. B. „150 € netto zzgl. 19 % USt (178,50 € brutto)“ – folgt dem Steuermodus. */
+  price: string;
+  /** Zusatz aus der SSoT, z. B. „/ Monat zzgl. 0,25 € pro Minute“. */
+  priceNote: string;
+  /** Pläne, zu denen das Add-on angeboten wird (Namen aus `PLANS`). */
+  planNames: string[];
+  /** Steuerhinweis für `COMPANY.taxMode` (bei EXEMPT der § 19-Hinweis). */
+  taxNote: string;
+}
+
+/**
+ * Preis des Voice-Add-ons ausschließlich aus `shared/pricing.ts`.
+ * Netto/USt/Brutto bzw. § 19 UStG folgen `PRICING_TAX_MODE` – hier wird
+ * kein Steuertext hart codiert. Fehlt das Add-on, gibt es keinen Preis.
+ */
+export function voiceAddonOffer(mode: PricingTaxMode = COMPANY.taxMode): VoiceAddonOffer | null {
+  const addon = ADDONS.find((a) => a.id === 'voice');
+  if (!addon) return null;
+  return {
+    price: formatNetVatGrossEur(addon.priceEur, mode),
+    priceNote: addon.priceNote,
+    planNames: addon.availableFor.map((id) => PLANS.find((p) => p.id === id)?.name ?? id),
+    taxNote: pricingTaxNote(mode),
+  };
 }

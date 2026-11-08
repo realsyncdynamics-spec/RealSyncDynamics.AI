@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AssistentChip } from '../../src/components/AssistentChip';
+import { PAGE_DIALOG_ATTR } from '../../src/config/pageDialog';
 
 // IntersectionObserver isn't in jsdom; the chip uses it to detect when
 // [data-hero-cta] is on-screen. The same rule applies on `/`: the assistant
@@ -235,5 +236,20 @@ describe('<AssistentChip>', () => {
 
     expect(getByRole('dialog', { hidden: true })).toHaveAttribute('aria-hidden', 'false');
     expect(queryByLabelText('Assistent öffnen')).toBeNull();
+  });
+
+  it('blendet sich aus, solange ein Seitendialog offen ist (z. B. /unternehmen)', async () => {
+    const { queryByLabelText } = renderChip({ path: '/unternehmen' });
+    expect(queryByLabelText('Assistent öffnen')).not.toBeNull();
+
+    act(() => {
+      document.body.setAttribute(PAGE_DIALOG_ATTR, '');
+    });
+    await waitFor(() => expect(queryByLabelText('Assistent öffnen')).toBeNull());
+
+    act(() => {
+      document.body.removeAttribute(PAGE_DIALOG_ATTR);
+    });
+    await waitFor(() => expect(queryByLabelText('Assistent öffnen')).not.toBeNull());
   });
 });

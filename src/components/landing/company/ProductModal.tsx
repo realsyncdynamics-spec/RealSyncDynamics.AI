@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from './companyProducts';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, voiceAddonOffer } from './companyProducts';
 import { BuilderPreview, GovernanceCheckDemo, TemplatePicker, VoiceCallDemo, VoiceOnboarding } from './CompanyDemos';
+import { PAGE_DIALOG_ATTR } from '../../../config/pageDialog';
 
 /**
  * Produkt-Demo-Dialog der Unternehmens-Landing v5 (Referenz `#pm`):
@@ -52,6 +53,7 @@ function Steps({ items }: { items: readonly (readonly [string, string])[] }) {
 }
 
 function buildPages(onContact: () => void, onTemplateRequest: (n: string | null) => void): Page[][] {
+  const voiceAddon = voiceAddonOffer();
   const contactLink = (label: string, primary = false) => (
     <a
       className={primary ? 'btn' : 'btn quiet'}
@@ -149,13 +151,14 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Überblick',
         body: (
           <>
-            <h3>Kein Anruf geht verloren.</h3>
+            <h3>Telefonannahme in Vorbereitung.</h3>
             <p>
-              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent geht ans Telefon, versteht das Anliegen und
-              gibt es an Sie weiter – auch nach Feierabend.
+              Sie stehen auf der Baustelle, in der Behandlung oder am Herd? Der Voice Agent soll ans Telefon gehen, das Anliegen verstehen
+              und es an Sie weitergeben – auch nach Feierabend. Die Telefonannahme ist noch nicht in Betrieb; Branche, Stimme und Freigaben
+              legen Sie schon jetzt im Onboarding fest.
             </p>
             <F3 items={[['Annehmen', 'auch außerhalb der Öffnungszeiten'], ['Notieren', 'Anliegen, Termine, Rückrufe'], ['Übergeben', 'Notfälle sofort an Menschen']]} />
-            <p className="note">Preview · Telefonie ist in Vorbereitung</p>
+            <p className="note">Telefonannahme in Vorbereitung · Onboarding als Preview</p>
           </>
         ),
       },
@@ -163,7 +166,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Leistungen',
         body: (
           <>
-            <h3>Was der Agent kann – und was nicht</h3>
+            <h3>Was der Agent übernehmen soll – und was nicht</h3>
             <ul className="plist">
               <li>
                 Gibt sich zu Beginn als <strong>KI</strong> zu erkennen
@@ -203,7 +206,18 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
                 <em>Erhöhter Datenschutz</em>
               </div>
             </div>
-            <p className="note">Aktuelle Preise und Leistungen im Onboarding · Telefonie ist in Vorbereitung</p>
+            {voiceAddon && (
+              <p className="price-line" data-testid="voice-addon-price">
+                Voice-Add-on: <strong>{voiceAddon.price}</strong> {voiceAddon.priceNote}
+                {voiceAddon.planNames.length > 0 && <> · zum Plan {voiceAddon.planNames.join(', ')}</>}
+              </p>
+            )}
+            {voiceAddon && (
+              <p className="note" data-testid="voice-addon-tax">
+                {voiceAddon.taxNote}
+              </p>
+            )}
+            <p className="note">Paketumfang im Onboarding · Telefonannahme in Vorbereitung</p>
             <div className="pm-cta">
               <a className="btn" href={COMPANY_LINKS.voiceOnboarding} target="_blank" rel="noopener noreferrer">
                 Pakete im Onboarding ansehen
@@ -322,13 +336,17 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     if (focus) tabRefs.current[n]?.focus();
   }, []);
 
-  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren.
+  // Beim Öffnen: aktiven Produkt-Tab fokussieren, Scrollen der Seite sperren
+  // und seitenweite Schwebe-Elemente (Assistent-Chip) über das Body-Attribut
+  // `PAGE_DIALOG_ATTR` ausblenden, solange der Dialog offen ist.
   useEffect(() => {
     tabRefs.current[initialTab]?.focus();
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.body.setAttribute(PAGE_DIALOG_ATTR, '');
     return () => {
       document.body.style.overflow = prev;
+      document.body.removeAttribute(PAGE_DIALOG_ATTR);
     };
   }, [initialTab]);
 
@@ -343,7 +361,9 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
       }
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('input, textarea, select')) return;
+      // Eingabefelder und Bereiche mit eigener Pfeiltasten-Bedienung
+      // (Voice-Onboarding) blättern nicht die Dialogseite.
+      if (target?.closest?.('input, textarea, select, [data-local-arrows]')) return;
       const dir = e.key === 'ArrowRight' ? 1 : -1;
       e.preventDefault();
       if (target?.closest?.('.pm-tabs')) selectTab(tab + dir, true);

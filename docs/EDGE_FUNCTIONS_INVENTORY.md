@@ -11,8 +11,8 @@
 
 | Status | Anzahl | Bedeutung |
 |---|---:|---|
-| AKTIV | 153 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
-| DEPLOYT-OHNE-CALLER | 47 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
+| AKTIV | 155 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
+| DEPLOYT-OHNE-CALLER | 45 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
 | REPO-ONLY (nicht deployt) | 0 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
 | DRIFT: deployt ohne Quelle | 0 | In Prod-Liste, aber kein Verzeichnis (sollte 0 sein — sonst Drift-Guard) |
 | **Summe** | **200** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (200) |
@@ -21,14 +21,14 @@
 
 - **Repo und Produktion sind deckungsgleich** (200 Verzeichnisse = 200 deployte Slugs). Es gibt derzeit **keine** „tot per Deployment"-Function: kein Verzeichnis ohne Deploy, kein Deploy ohne Quelle. Der Drift-Guard (`npm run check:edge-functions`) haelt das auf null.
 - **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.
-- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (47): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
+- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (45): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
 - Alle oeffentlichen Functions (`verify_jwt=false`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger `public/webhook` und zaehlen damit als AKTIV, auch ohne internen Caller.
 
-## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (47)
+## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (45)
 
 > **Kein Loeschbefund.** „Kein Caller" heisst: im Repo (`src/`, `config.toml`, Migrationen, Function-zu-Function) ruft nichts diese Function auf. Extern erreichbare APIs (z. B. `api-audit`, OAuth-Endpunkte) und Out-of-band-/Admin-Tools (z. B. `mfa-admin-reset`) sind legitim ohne internen Caller. Pro Function verifizieren, bevor an Deprecation (#16) gedacht wird.
 
-**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 43 · nur Tests/e2e: 2 · in config.toml deklariert: 2
+**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 41 · nur Tests/e2e: 2 · in config.toml deklariert: 2
 
 | Function | Cluster | Einzige Spur |
 |---|---|---|
@@ -47,11 +47,9 @@
 | `evidence-r2` | Evidence | kein interner Caller/Trigger |
 | `governance-agents-list` | Governance-OS | in config.toml deklariert |
 | `governance-audit-report-gen` | Governance-OS | kein interner Caller/Trigger |
-| `governance-deadline-monitor` | Governance-OS | kein interner Caller/Trigger |
 | `governance-evidence-handler` | Governance-OS | kein interner Caller/Trigger |
 | `governance-gap-analyzer` | Governance-OS | kein interner Caller/Trigger |
 | `governance-risk-escalate` | Governance-OS | in config.toml deklariert |
-| `governance-score-calculator` | Governance-OS | kein interner Caller/Trigger |
 | `governance-workflow-intake` | Governance-OS | kein interner Caller/Trigger |
 | `api-gateway` | Health/Ops | kein interner Caller/Trigger |
 | `mcp-api-key-manager` | Integrationen | kein interner Caller/Trigger |
@@ -202,7 +200,7 @@
 | `governance-approvals` | AKTIV | frontend-invoke, public/webhook |
 | `governance-audit-report-gen` | DEPLOYT-OHNE-CALLER | — |
 | `governance-connectors` | AKTIV | frontend-invoke, public/webhook |
-| `governance-deadline-monitor` | DEPLOYT-OHNE-CALLER | — |
+| `governance-deadline-monitor` | AKTIV | cron, public/webhook |
 | `governance-decide` | AKTIV | public/webhook |
 | `governance-dpias` | AKTIV | frontend-invoke, public/webhook |
 | `governance-dsr` | AKTIV | frontend-invoke, public/webhook |
@@ -219,7 +217,7 @@
 | `governance-risk-escalate` | DEPLOYT-OHNE-CALLER | — |
 | `governance-risk-score` | AKTIV | frontend-invoke, function-call |
 | `governance-router` | AKTIV | frontend-fetch, public/webhook |
-| `governance-score-calculator` | DEPLOYT-OHNE-CALLER | — |
+| `governance-score-calculator` | AKTIV | cron, public/webhook |
 | `governance-vendors` | AKTIV | frontend-invoke, public/webhook |
 | `governance-webhooks` | AKTIV | frontend-invoke, frontend-fetch, public/webhook |
 | `governance-workflow-intake` | DEPLOYT-OHNE-CALLER | — |
@@ -416,4 +414,4 @@
 
 ---
 
-_Erzeugt am 2026-11-08 · 200 Functions · 153 AKTIV · 47 ohne Caller._
+_Erzeugt am 2026-11-08 · 200 Functions · 155 AKTIV · 45 ohne Caller._

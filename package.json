@@ -32,6 +32,7 @@
     "smoke:production": "node scripts/smoke-production-routing.mjs",
     "diagnose:domain": "node scripts/diagnose-domain-routing.mjs",
     "check:edge-functions": "node scripts/check-edge-function-drift.mjs",
+    "check:edge-inventory": "node scripts/generate-edge-function-inventory.mjs --check",
     "check:sitemap": "node scripts/check-sitemap-routes.mjs",
     "check:function-acls": "node scripts/check-function-acl-drift.mjs",
     "check:cron-health": "node scripts/check-cron-health.mjs",

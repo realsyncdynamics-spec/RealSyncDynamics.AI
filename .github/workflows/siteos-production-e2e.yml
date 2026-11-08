@@ -15,7 +15,7 @@ concurrency:
 jobs:
   publish:
     name: Governed SiteOS preview to production
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       TEST_BASE_URL: https://realsyncdynamicsai.de

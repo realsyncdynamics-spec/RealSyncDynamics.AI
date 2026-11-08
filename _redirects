@@ -4,6 +4,10 @@
 # 302 statt 301, solange die Abnahme läuft (keine dauerhafte Browser-Zwischenspeicherung).
 /impressum    https://realsyncdynamics-ai.pages.dev/impressum    302
 /datenschutz  https://realsyncdynamics-ai.pages.dev/datenschutz  302
+/agb          https://realsyncdynamics-ai.pages.dev/agb          302
+/widerruf     https://realsyncdynamics-ai.pages.dev/legal/widerruf 302
+/legal/avv    https://realsyncdynamics-ai.pages.dev/legal/avv    302
+/legal/sub-processors https://realsyncdynamics-ai.pages.dev/legal/sub-processors 302
 
 # Login der App. Freigegeben nach erfolgreichem Test von Google-OAuth und Magic Link
 # (08.11.2026) mit Supabase-Callback https://realsyncdynamics-ai.pages.dev/welcome.

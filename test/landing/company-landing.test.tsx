@@ -71,6 +71,11 @@ describe('Unternehmens-Landing v5 – Status aus der SSoT', () => {
     expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(addon.priceNote);
     expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent(pricingTaxNote(COMPANY.taxMode));
     expect(dialog.textContent).not.toMatch(/\b(89|199|349)\s?€/);
+    if (COMPANY.taxMode === 'EXEMPT') {
+      // Kleinunternehmer: keine USt-Ausweisung, kanonischer § 19-Hinweis.
+      expect(within(dialog).getByTestId('voice-addon-price').textContent).not.toMatch(/USt|netto|brutto/);
+      expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+    }
   });
 
   it('bei § 19 UStG (EXEMPT) wird keine USt ausgewiesen', () => {

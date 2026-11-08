@@ -117,7 +117,7 @@ function main() {
   const allSlugs = [...new Set([...dirs, ...prod])].sort();
 
   const rows = allSlugs.map((slug) => {
-    const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\    const esc = slug.replace(/[-]/g, '\\-');');
+    const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const invokeRe = new RegExp(`functions\\.invoke\\(\\s*['"\`]${esc}['"\`]`);
     const v1Re = new RegExp(`functions/v1/${esc}${B}`);
     const configBlockRe = new RegExp(`\\[functions\\.${esc}\\]`);

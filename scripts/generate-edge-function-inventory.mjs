@@ -218,7 +218,8 @@ function main() {
   md += `> **Automatisch erzeugt** von \`scripts/generate-edge-function-inventory.mjs\` — nicht von Hand editieren.\n`;
   md += `> Neu erzeugen: \`node scripts/generate-edge-function-inventory.mjs\`. Grundlage: PLAN_100 #15/#16.\n>\n`;
   md += `> Grundwahrheit „in Produktion": \`src/config/production-edge-functions.ts\` (Messung ${measured}, vom Drift-Guard gehuetet).\n`;
-  md += `> Erreichbarkeit: Referenz-Scan ueber \`src/\`, \`supabase/config.toml\`, \`supabase/migrations/\` und Function-zu-Function-Calls.\n\n`;
+  md += `> Erreichbarkeit: Referenz-Scan ueber \`src/\`, \`supabase/config.toml\`, \`supabase/migrations/\` und Function-zu-Function-Calls.\n`;
+  md += `> **Scope:** statischer Repo-Scan, kein Laufzeit-Healthcheck. Produktiv verwaltete Runtime-Crons koennen ausserhalb der Migrationen liegen; aktueller Snapshot: [Runtime-Beobachtungen](./EDGE_FUNCTIONS_RUNTIME_OBSERVATIONS.md).\n\n`;
 
   md += '## Statusuebersicht\n\n';
   md += '| Status | Anzahl | Bedeutung |\n|---|---:|---|\n';

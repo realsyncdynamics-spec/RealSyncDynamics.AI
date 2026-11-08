@@ -90,7 +90,7 @@ test.describe('AVV → Sub-Prozessoren Navigation', () => {
 
     await page.getByRole('link', { name: '/legal/sub-processors' }).click();
 
-    await expect(page).toHaveURL(/\\/legal\\/sub-processors$/);
+    await expect(page).toHaveURL(/\/legal\/sub-processors$/);
     await expect(
       page.getByRole('heading', { name: 'Sub-Prozessoren' }),
     ).toBeVisible();

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Users, CreditCard, Key, AlertCircle, Loader2 } from 'lucide-react';
 import { SovereignButton } from '../../../components/ui/SovereignButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { getSupabase } from '../../../lib/supabase';
+import { listMembers } from '../../tenants/membersApi';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { ComplianceKpiRow } from '../compliance/ComplianceKpiRow';
 import { EMPTY_COMPLIANCE_KPI, type ComplianceKpiSnapshot } from '../compliance/complianceTypes';
@@ -17,6 +19,7 @@ export function AdminDashboard() {
   );
   const [compliance, setCompliance] = useState<ComplianceKpiSnapshot>(EMPTY_COMPLIANCE_KPI);
   const [complianceLoading, setComplianceLoading] = useState(false);
+  const [memberCount, setMemberCount] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +37,23 @@ export function AdminDashboard() {
       })
       .finally(() => {
         if (!cancelled) setComplianceLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeTenantId) {
+      setMemberCount(null);
+      return;
+    }
+    setMemberCount(null);
+    listMembers(activeTenantId)
+      .then((r) => {
+        if (!cancelled) setMemberCount(r.ok ? r.members.length : null);
+      })
+      .catch(() => {
+        if (!cancelled) setMemberCount(null);
       });
     return () => { cancelled = true; };
   }, [activeTenantId]);
@@ -94,7 +114,9 @@ export function AdminDashboard() {
             <CardContent>
               <div className="flex items-center gap-3">
                 <Users className="h-8 w-8 text-security-blue" />
-                <p className="font-display font-bold text-2xl text-titanium-50">—</p>
+                <p className="font-display font-bold text-2xl text-titanium-50 tabular-nums">
+                  {memberCount === null ? '—' : memberCount}
+                </p>
               </div>
               <p className="text-xs text-titanium-400 mt-2">Mitglieder im Workspace</p>
             </CardContent>
@@ -137,9 +159,11 @@ export function AdminDashboard() {
                 <CardDescription>Mitglieder einladen, entfernen und Rollen ändern</CardDescription>
               </CardHeader>
               <CardContent>
-                <SovereignButton variant="secondary" size="sm" isFullWidth>
-                  Zum Team
-                </SovereignButton>
+                <Link to="/app/admin/members" className="block">
+                  <SovereignButton variant="secondary" size="sm" isFullWidth>
+                    Zum Team
+                  </SovereignButton>
+                </Link>
               </CardContent>
             </Card>
 
@@ -149,9 +173,11 @@ export function AdminDashboard() {
                 <CardDescription>Workspace-Name, Domains und Compliance-Optionen</CardDescription>
               </CardHeader>
               <CardContent>
-                <SovereignButton variant="secondary" size="sm" isFullWidth>
-                  Konfigurieren
-                </SovereignButton>
+                <Link to="/app/admin/settings" className="block">
+                  <SovereignButton variant="secondary" size="sm" isFullWidth>
+                    Konfigurieren
+                  </SovereignButton>
+                </Link>
               </CardContent>
             </Card>
 
@@ -161,9 +187,11 @@ export function AdminDashboard() {
                 <CardDescription>Plan, Verbrauch und Rechnungen einsehen</CardDescription>
               </CardHeader>
               <CardContent>
-                <SovereignButton variant="secondary" size="sm" isFullWidth>
-                  Zur Abrechnung
-                </SovereignButton>
+                <Link to="/app/admin/billing" className="block">
+                  <SovereignButton variant="secondary" size="sm" isFullWidth>
+                    Zur Abrechnung
+                  </SovereignButton>
+                </Link>
               </CardContent>
             </Card>
 
@@ -173,9 +201,11 @@ export function AdminDashboard() {
                 <CardDescription>Alle Änderungen und Admin-Aktivitäten einsehen</CardDescription>
               </CardHeader>
               <CardContent>
-                <SovereignButton variant="secondary" size="sm" isFullWidth>
-                  Ansehen
-                </SovereignButton>
+                <Link to="/app/admin/audit" className="block">
+                  <SovereignButton variant="secondary" size="sm" isFullWidth>
+                    Ansehen
+                  </SovereignButton>
+                </Link>
               </CardContent>
             </Card>
           </div>

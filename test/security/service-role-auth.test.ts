@@ -123,9 +123,13 @@ describe('F-04 — die vier remediierten Endpunkte behalten ihre Pruefung', () =
   const src = (slug: string) =>
     readFileSync(join(FUNCTIONS_DIR, slug, 'index.ts'), 'utf-8');
 
-  // Maschinen-Endpunkt per DB-Trigger, kein menschlicher Aufrufer.
-  it('automation-trigger-trial-webhook verlangt den Service-Role-Aufrufer', () => {
-    expect(src('automation-trigger-trial-webhook')).toMatch(/requireServiceRole\s*\(\s*req\s*\)/);
+  // Maschinen-Endpunkt per DB-Trigger, kein menschlicher Aufrufer. Seit
+  // 2026-11-08 eigener Key cron_trial_webhook_key statt service_role-Bearer
+  // (der DB-Trigger las bis dahin Vault service_role_key, der fehlt).
+  it('automation-trigger-trial-webhook verlangt den Trigger-Aufrufer (requireCronKey)', () => {
+    const s = src('automation-trigger-trial-webhook');
+    expect(s).toMatch(/requireCronKey\s*\(\s*req\s*,\s*'CRON_TRIAL_WEBHOOK_KEY'\s*,\s*'cron_trial_webhook_key'/);
+    expect(s).not.toMatch(/requireServiceRole\s*\(/);
   });
 
   // Cron-Endpunkte: seit 2026-11-01 dedizierter Cron-Key statt service_role-

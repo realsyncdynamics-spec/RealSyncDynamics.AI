@@ -117,7 +117,7 @@ function main() {
   const allSlugs = [...new Set([...dirs, ...prod])].sort();
 
   const rows = allSlugs.map((slug) => {
-    const esc = slug.replace(/[-]/g, '\\-');
+    const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\    const esc = slug.replace(/[-]/g, '\\-');');
     const invokeRe = new RegExp(`functions\\.invoke\\(\\s*['"\`]${esc}['"\`]`);
     const v1Re = new RegExp(`functions/v1/${esc}${B}`);
     const configBlockRe = new RegExp(`\\[functions\\.${esc}\\]`);
@@ -189,7 +189,7 @@ function main() {
     ['Compliance/NIS2', /^compliance-|^nis2-|^security-signal-/],
     ['SEO/Analytics', /seo|^sync-ga-metrics$|^dashboard-|^share-dashboard$|forecast|^sync-stripe-metrics$/],
     ['Memory', /^memory-/],
-    ['Bot/Voice', /^bot-|voice/],
+    ['Bot/Voice', /^(?:bot-|.*voice)/],
     ['Social', /^social-/],
     ['Scheduler/Jobs', /^schedule|^scheduler/],
     ['Webhook-Zustellung', /webhook|-deliver$|-dispatcher$/],

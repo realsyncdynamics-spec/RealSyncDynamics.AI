@@ -38,6 +38,11 @@ export interface InboxRepo {
   resolveSiteInbox(siteRef: string): Promise<ResolvedInbox | null>;
   /** Konversationen desselben Mandanten mit diesem ip_hash seit `sinceIso`. */
   countRecentByIpHash(tenantId: string, ipHash: string, sinceIso: string): Promise<number>;
+  /**
+   * Alle Formular-Konversationen dieses Bindings seit `sinceIso` — IP-unabhängig.
+   * Zweite Bremse gegen Flooding mit wechselnden Absenderadressen.
+   */
+  countRecentByBinding(tenantId: string, bindingId: string, sinceIso: string): Promise<number>;
   /** INSERT; bei 23505 auf (bot_id, external_ref) die vorhandene Zeile. */
   insertConversation(c: NewConversation): Promise<InsertConversationResult>;
   insertIntake(i: NewIntake): Promise<{ ok: true } | { ok: false; message: string }>;
@@ -73,6 +78,18 @@ export function createSupabaseRepo(admin: AdminClient): InboxRepo {
         .eq('tenant_id', tenantId)
         .eq('channel', 'form')
         .contains('metadata', { ip_hash: ipHash })
+        .gte('created_at', sinceIso);
+      if (error) throw new Error(`count: ${error.message}`);
+      return count ?? 0;
+    },
+
+    async countRecentByBinding(tenantId, bindingId, sinceIso) {
+      const { count, error } = await admin
+        .from('bot_conversations')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('channel', 'form')
+        .contains('metadata', { binding_id: bindingId })
         .gte('created_at', sinceIso);
       if (error) throw new Error(`count: ${error.message}`);
       return count ?? 0;

@@ -31,11 +31,33 @@
 
 -- 1. Erweiterung der Checks (Obermenge der bisherigen Werte) -----------------
 
-ALTER TABLE public.bot_conversations DROP CONSTRAINT IF EXISTS bot_conversations_channel_check;
+-- Die bisherigen CHECKs stammen aus Inline-Definitionen (20260628121531) und
+-- tragen Postgres-Autonamen. Damit die Migration nicht von einem Namen abhängt
+-- (Security-Review 08.11.2026: sonst bliebe in Prod der alte CHECK bestehen und
+-- channel = 'form' scheiterte mit 23514), werden alle CHECK-Constraints der
+-- Tabelle entfernt, die ausschliesslich die Spalte channel bzw. status prüfen.
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT c.conname
+        FROM pg_constraint c
+        WHERE c.conrelid = 'public.bot_conversations'::regclass
+          AND c.contype = 'c'
+          AND (
+               (pg_get_constraintdef(c.oid) ~* '\mchannel\M' AND pg_get_constraintdef(c.oid) !~* '\mstatus\M')
+            OR (pg_get_constraintdef(c.oid) ~* '\mstatus\M'  AND pg_get_constraintdef(c.oid) !~* '\mchannel\M'
+                AND pg_get_constraintdef(c.oid) !~* 'callback')
+          )
+    LOOP
+        EXECUTE format('ALTER TABLE public.bot_conversations DROP CONSTRAINT %I', r.conname);
+    END LOOP;
+END $$;
+
 ALTER TABLE public.bot_conversations ADD CONSTRAINT bot_conversations_channel_check
     CHECK (channel IN ('chat', 'voice', 'telegram', 'whatsapp', 'form'));
 
-ALTER TABLE public.bot_conversations DROP CONSTRAINT IF EXISTS bot_conversations_status_check;
 ALTER TABLE public.bot_conversations ADD CONSTRAINT bot_conversations_status_check
     CHECK (status IN ('open', 'closed', 'in_bearbeitung', 'erledigt'));
 

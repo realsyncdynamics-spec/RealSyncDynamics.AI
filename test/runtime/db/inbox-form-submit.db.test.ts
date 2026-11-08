@@ -77,8 +77,11 @@ d('inbox-form-submit schema', () => {
       `SELECT * FROM public.resolve_site_inbox($1)`, [a.siteRef])).rows);
     expect(none).toHaveLength(0);
 
-    expect(await sqlState(ctx.withClaims({ role: 'anon' }, () =>
-      ctx.client.query(`SELECT * FROM public.resolve_site_inbox($1)`, [a.siteRef])))).toBe('42501');
+    // Echte anon-Rolle (nicht nur Claim): withClaims setzt sonst authenticated.
+    expect(await sqlState(ctx.withClaims({ role: 'anon' }, async () => {
+      await ctx.client.query(`SET LOCAL ROLE anon`);
+      return ctx.client.query(`SELECT * FROM public.resolve_site_inbox($1)`, [a.siteRef]);
+    }))).toBe('42501');
     expect(await sqlState(asUser(ctx, a.userId, () =>
       ctx.client.query(`SELECT * FROM public.resolve_site_inbox($1)`, [a.siteRef])))).toBe('42501');
   });

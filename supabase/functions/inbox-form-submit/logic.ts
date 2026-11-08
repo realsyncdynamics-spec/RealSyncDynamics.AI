@@ -108,14 +108,33 @@ export function contactLabel(i: SubmitInput): string {
   return i.kontakt_name ?? i.kontakt_email ?? i.kontakt_telefon ?? 'Formular';
 }
 
-/** Client-IP aus Proxy-Headern; nur für den Hash, nie gespeichert. */
+/**
+ * Client-IP aus Proxy-Headern; nur für den Hash, nie gespeichert.
+ *
+ * Vertrauensmodell: Der Client kann `x-forwarded-for` selbst mitsenden; der
+ * vertrauenswürdige Proxy (Supabase-Gateway bzw. Cloudflare) hängt die echte
+ * Verbindungs-IP **rechts** an. Deshalb zählt der **letzte** Eintrag, nie der
+ * erste — sonst wäre jedes IP-basierte Limit per Header frei wählbar
+ * (Security-Review 08.11.2026, Befund Mittel). `cf-connecting-ip` wird vom
+ * Edge-Proxy gesetzt und hat Vorrang, wenn vorhanden.
+ */
 export function clientIp(headers: Headers): string {
+  const cf = headers.get('cf-connecting-ip')?.trim();
+  if (cf && isPlausibleIp(cf)) return cf;
   const xff = headers.get('x-forwarded-for');
   if (xff) {
-    const first = xff.split(',')[0]?.trim();
-    if (first) return first;
+    const parts = xff.split(',').map((p) => p.trim()).filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (last && isPlausibleIp(last)) return last;
   }
-  return headers.get('cf-connecting-ip')?.trim() || 'unknown';
+  return 'unknown';
+}
+
+const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV6_RE = /^[0-9a-f:]+$/i;
+
+function isPlausibleIp(v: string): boolean {
+  return v.length <= 45 && (IPV4_RE.test(v) || (v.includes(':') && IPV6_RE.test(v)));
 }
 
 const enc = new TextEncoder();

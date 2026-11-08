@@ -5,18 +5,19 @@
 // 20260604000000_economic_intelligence.sql:
 //
 //   cost_check_and_reserve(tenant_id, cost_kind, units, unit_price, attribution)
-//     → atomically: pre-checks the monthly cap, and (if allowed) inserts
-//       a reservation row in tenant_cost_ledger that locks the budget
-//       for 5 minutes. Race-safe under concurrent calls.
+//     → per-tenant pg_advisory_xact_lock before reading monthly usage,
+//       then inserts a reservation in the same transaction when allowed.
+//       Race-safe for concurrent LLM reservations after A3 migration
+//       (20261030001500_cost_ledger_atomic_reserve.sql).
 //
 //   cost_writer_settle(reservation_id, cost_kind, units_actual, unit_price)
-//     → updates the reservation row in-place with the actual consumed
-//       units and flips it to settled=true. Idempotent-safe: throws if
-//       the reservation was already settled or swept.
+//     → settles the open reservation to measured cost, or writes a
+//       reversal + measured correction after an A2 estimated sweep.
+//       A second settle for the same reservation is rejected.
 //
-// Cancellation of an unreached reservation is intentionally NOT a hot
-// path here — cost_sweep_expired_reservations clears them after 5min,
-// which is well within the latency budget of any single LLM call.
+// Expired reservations remain charged at the reserved estimate when
+// cost_sweep_expired_reservations is invoked. A2 does not schedule that
+// sweeper automatically; its operational cadence requires a separate decision.
 
 type AdminClient = {
   rpc(

@@ -80,8 +80,7 @@ export function InsuranceLanding() {
           <Section title="Beschaffung &amp; Audit-Bereitschaft">
             <p>
               Enterprise-Verträge mit individueller AVV. ISO 27001 / SOC 2 Type 1 in Vorbereitung
-              für 2026 Q4. On-Premise-Variante (Docker-Compose + Lizenz) für Versicherer mit reiner
-              Inhouse-Anforderung verfügbar.
+              für 2026 Q4.
             </p>
           </Section>
 

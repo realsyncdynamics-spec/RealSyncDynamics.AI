@@ -89,7 +89,6 @@ describe('implementation-status — Agent OS entries', () => {
       'agent-os-mesh-compliance',
       'agent-os-mesh-specialists',
       'agent-os-chrome-side-panel',
-      'agent-os-hostinger-workers',
       'agent-os-product-evolution',
     ];
     for (const id of ids) {
@@ -97,5 +96,9 @@ describe('implementation-status — Agent OS entries', () => {
       expect(entry, id).toBeTruthy();
       expect(entry!.status).not.toBe('live');
     }
+  });
+
+  it('führt keinen Hostinger-Worker-Eintrag mehr (E-V9)', () => {
+    expect(getImplementation('agent-os-hostinger-workers')).toBeUndefined();
   });
 });

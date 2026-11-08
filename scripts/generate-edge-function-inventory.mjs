@@ -15,7 +15,10 @@
 //   Grundwahrheit „in Produktion"   src/config/production-edge-functions.ts
 //   Erreichbarkeit frontend          functions.invoke('<slug>') / functions/v1/<slug> in src/
 //   Erreichbarkeit public/webhook    [functions.<slug>] verify_jwt=false in supabase/config.toml
-//   Erreichbarkeit cron              functions/v1/<slug> in supabase/migrations/
+//   Erreichbarkeit frontend-wrapper  postEdgeFunction/postFunction/edgeFunctionUrl/invoke('<slug>')
+//                                    oder ueber eine Konstante in derselben Datei
+//   Erreichbarkeit cron              functions/v1/<slug> oder dispatch_cron_function('<slug>') in
+//                                    supabase/migrations/
 //   Erreichbarkeit function-call     functions/v1/<slug> in supabase/functions/<anderer-slug>/
 //
 // Es loescht und deprecatet nichts. Es markiert nur „deployt, aber kein
@@ -90,13 +93,23 @@ function concatFiles(files) {
 // Slugs sein (z. B. `audit` in `api-audit`).
 const B = '(?![a-z0-9-])';
 
+// Aufruf-Wrapper um functions.invoke / functions/v1, die einen Slug als erstes
+// Argument nehmen; optional mit Typ-Argument (`postEdgeFunction<T>(`).
+// `invoke` nur als freistehender Bezeichner, damit `functions.invoke` getrennt
+// (frontend-invoke) gezaehlt wird.
+const WRAPPER_CALL = '(?:\\bpostEdgeFunction|\\bpostFunction|\\bedgeFunctionUrl|(?<![.\\w])invoke)(?:<[^>()]*>)?';
+
 function main() {
   const { prod, measured } = readProdList();
   const dirs = readFunctionDirs();
   const dirSet = new Set(dirs);
 
   // Referenz-Korpora einmal einlesen.
-  const srcBlob = concatFiles(walk(SRC_DIR, ['.ts', '.tsx', '.js', '.jsx', '.mjs']));
+  const srcFiles = walk(SRC_DIR, ['.ts', '.tsx', '.js', '.jsx', '.mjs']);
+  const srcBlob = concatFiles(srcFiles);
+  // Je Datei getrennt: Konstanten-Aufloesung (`const X = '<slug>'` → `invoke(X)`)
+  // darf nicht ueber Dateigrenzen hinweg gleichnamige Bezeichner verbinden.
+  const srcTexts = srcFiles.map((f) => { try { return readFileSync(f, 'utf8'); } catch { return ''; } });
   const migBlob = concatFiles(walk(MIGRATIONS_DIR, ['.sql']));
   const config = existsSync(CONFIG_TOML) ? readFileSync(CONFIG_TOML, 'utf8') : '';
 
@@ -118,14 +131,36 @@ function main() {
 
   const rows = allSlugs.map((slug) => {
     const esc = slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const invokeRe = new RegExp(`functions\\.invoke\\(\\s*['"\`]${esc}['"\`]`);
+    // Auch Unterpfade (`'siteos/builder'`) und Query-Strings (`'<slug>?tenantId=…'`).
+    const invokeRe = new RegExp(`functions\\.invoke\\(\\s*['"\`]${esc}['"\`?/]`);
     const v1Re = new RegExp(`functions/v1/${esc}${B}`);
     const configBlockRe = new RegExp(`\\[functions\\.${esc}\\]`);
     const publicRe = new RegExp(`\\[functions\\.${esc}\\][^\\[]*verify_jwt\\s*=\\s*false`);
 
+    // Wrapper-Aufrufe (src/lib/edgeFunction.ts u. a.): postEdgeFunction<T>('<slug>', …),
+    // postFunction('<slug>'), edgeFunctionUrl('<slug>'), invoke('<slug>');
+    // erlaubt Typ-Argumente und Pfade mit Query-String (`'<slug>?tenantId=…'`).
+    const wrapperRe = new RegExp(`${WRAPPER_CALL}\\(\\s*['"\`]${esc}(?:['"\`?/])`);
+    // Konstante mit Slug-Literal (auch im Ternary), die in derselben Datei an
+    // einen Wrapper, functions.invoke oder einen functions/v1/\${…}-Pfad geht.
+    const constRe = new RegExp(`(?:const|let)\\s+(\\w+)\\s*(?::[^=\\n]+)?=[^;\\n]*['"\`]${esc}['"\`]`, 'g');
+    const wrapperViaConst = srcTexts.some((text) => {
+      for (const m of text.matchAll(constRe)) {
+        const id = m[1];
+        const useRe = new RegExp(
+          `(?:${WRAPPER_CALL}|functions\\.invoke)\\(\\s*${id}\\b|functions/v1/\\$\\{\\s*${id}\\s*\\}`,
+        );
+        if (useRe.test(text)) return true;
+      }
+      return false;
+    });
+    // Cron ueber den Dispatcher (`dispatch_cron_function('<slug>', '<vault-key>')`).
+    const dispatchRe = new RegExp(`dispatch_cron_function\\(\\s*'${esc}'`);
+
     const frontendInvoke = invokeRe.test(srcBlob);
     const frontendFetch = v1Re.test(srcBlob);
-    const cron = v1Re.test(migBlob);
+    const frontendWrapper = wrapperRe.test(srcBlob) || wrapperViaConst;
+    const cron = v1Re.test(migBlob) || dispatchRe.test(migBlob);
     const declared = configBlockRe.test(config);
     const isPublic = publicRe.test(config);
 
@@ -139,6 +174,7 @@ function main() {
     const triggers = [];
     if (frontendInvoke) triggers.push('frontend-invoke');
     if (frontendFetch) triggers.push('frontend-fetch');
+    if (frontendWrapper) triggers.push('frontend-wrapper');
     if (cron) triggers.push('cron');
     if (functionCall) triggers.push('function-call');
     if (isPublic) triggers.push('public/webhook');
@@ -235,6 +271,7 @@ function main() {
   } else {
     md += `- ⚠️ Repo und Produktion weichen ab (${repoOnly.length} nur im Repo, ${drift.length} nur deployt) — siehe die jeweiligen Listen unten.\n`;
   }
+  md += '- **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.\n';
   md += `- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (${noCaller.length}): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.\n`;
   if (publicNoCaller.length === 0) {
     md += `- Alle oeffentlichen Functions (\`verify_jwt=false\`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger \`public/webhook\` und zaehlen damit als AKTIV, auch ohne internen Caller.\n`;

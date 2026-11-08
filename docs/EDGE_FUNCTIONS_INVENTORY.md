@@ -10,8 +10,8 @@
 
 | Status | Anzahl | Bedeutung |
 |---|---:|---|
-| AKTIV | 144 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
-| DEPLOYT-OHNE-CALLER | 56 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
+| AKTIV | 153 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
+| DEPLOYT-OHNE-CALLER | 47 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
 | REPO-ONLY (nicht deployt) | 0 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
 | DRIFT: deployt ohne Quelle | 0 | In Prod-Liste, aber kein Verzeichnis (sollte 0 sein — sonst Drift-Guard) |
 | **Summe** | **200** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (200) |
@@ -19,22 +19,21 @@
 ### Einordnung
 
 - **Repo und Produktion sind deckungsgleich** (200 Verzeichnisse = 200 deployte Slugs). Es gibt derzeit **keine** „tot per Deployment"-Function: kein Verzeichnis ohne Deploy, kein Deploy ohne Quelle. Der Drift-Guard (`npm run check:edge-functions`) haelt das auf null.
-- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (56): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
+- **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.
+- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (47): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
 - Alle oeffentlichen Functions (`verify_jwt=false`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger `public/webhook` und zaehlen damit als AKTIV, auch ohne internen Caller.
 
-## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (56)
+## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (47)
 
 > **Kein Loeschbefund.** „Kein Caller" heisst: im Repo (`src/`, `config.toml`, Migrationen, Function-zu-Function) ruft nichts diese Function auf. Extern erreichbare APIs (z. B. `api-audit`, OAuth-Endpunkte) und Out-of-band-/Admin-Tools (z. B. `mfa-admin-reset`) sind legitim ohne internen Caller. Pro Function verifizieren, bevor an Deprecation (#16) gedacht wird.
 
-**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 51 · in config.toml deklariert: 3 · nur Tests/e2e: 2
+**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 43 · nur Tests/e2e: 2 · in config.toml deklariert: 2
 
 | Function | Cluster | Einzige Spur |
 |---|---|---|
 | `agent-questions` | Agent/Runtime | kein interner Caller/Trigger |
 | `agent-scheduler` | Agent/Runtime | kein interner Caller/Trigger |
-| `enterprise-ai-os-discovery-pending` | Agent/Runtime | in config.toml deklariert |
 | `ai-act-auto-classify` | AI-Act | nur Tests/e2e |
-| `local-ai-runtime` | AI-Gateway/Invoke | kein interner Caller/Trigger |
 | `mfa-admin-reset` | Auth/MFA/Tenant | kein interner Caller/Trigger |
 | `provision-tenant` | Auth/MFA/Tenant | kein interner Caller/Trigger |
 | `tenant-branding-get` | Auth/MFA/Tenant | kein interner Caller/Trigger |
@@ -65,20 +64,13 @@
 | `audit-claim` | Scanner/Audit | kein interner Caller/Trigger |
 | `audit-determinism-verify` | Scanner/Audit | kein interner Caller/Trigger |
 | `schedule-data-syncs` | Scheduler/Jobs | kein interner Caller/Trigger |
-| `dashboard-digest-generate` | SEO/Analytics | kein interner Caller/Trigger |
-| `dashboard-intelligence` | SEO/Analytics | kein interner Caller/Trigger |
-| `sync-ga-metrics` | SEO/Analytics | kein interner Caller/Trigger |
 | `social-publisher-worker` | Social | kein interner Caller/Trigger |
-| `beta-enroll` | Sonstige | kein interner Caller/Trigger |
-| `create-trial-subscription` | Sonstige | kein interner Caller/Trigger |
 | `email-notify-send` | Sonstige | kein interner Caller/Trigger |
 | `notify-terminal-event` | Sonstige | kein interner Caller/Trigger |
 | `onboarding-orchestrator` | Sonstige | kein interner Caller/Trigger |
 | `partner-provision-tenant` | Sonstige | kein interner Caller/Trigger |
 | `plans` | Sonstige | kein interner Caller/Trigger |
 | `report-generator` | Sonstige | kein interner Caller/Trigger |
-| `save-company-profile` | Sonstige | kein interner Caller/Trigger |
-| `siteos` | Sonstige | kein interner Caller/Trigger |
 | `skills` | Sonstige | kein interner Caller/Trigger |
 | `api-webhook-deliver` | Webhook-Zustellung | kein interner Caller/Trigger |
 | `webhook-deliver` | Webhook-Zustellung | kein interner Caller/Trigger |
@@ -103,7 +95,7 @@
 | `enterprise-ai-os-agents-list` | AKTIV | public/webhook |
 | `enterprise-ai-os-agents-run` | AKTIV | frontend-invoke, frontend-fetch |
 | `enterprise-ai-os-discovery-intake` | AKTIV | frontend-invoke, public/webhook |
-| `enterprise-ai-os-discovery-pending` | DEPLOYT-OHNE-CALLER | — |
+| `enterprise-ai-os-discovery-pending` | AKTIV | frontend-invoke |
 | `enterprise-ai-os-evaluate` | AKTIV | public/webhook |
 | `enterprise-ai-os-feedback` | AKTIV | frontend-fetch, public/webhook |
 | `enterprise-ai-os-founding-access` | AKTIV | public/webhook |
@@ -127,11 +119,11 @@
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
-| `ai-gateway` | AKTIV | frontend-fetch, function-call |
+| `ai-gateway` | AKTIV | frontend-fetch, frontend-wrapper, function-call |
 | `ai-invoke` | AKTIV | frontend-invoke, frontend-fetch |
 | `ai-os-control` | AKTIV | frontend-invoke |
 | `classify-document` | AKTIV | frontend-invoke |
-| `local-ai-runtime` | DEPLOYT-OHNE-CALLER | — |
+| `local-ai-runtime` | AKTIV | frontend-wrapper |
 
 ### Auth/MFA/Tenant (10)
 
@@ -142,7 +134,7 @@
 | `mfa-admin-reset` | DEPLOYT-OHNE-CALLER | — |
 | `mfa-recovery-redeem` | AKTIV | frontend-invoke |
 | `provision-tenant` | DEPLOYT-OHNE-CALLER | — |
-| `provision-voice-agent` | AKTIV | function-call, public/webhook |
+| `provision-voice-agent` | AKTIV | cron, function-call, public/webhook |
 | `tenant-branding-get` | DEPLOYT-OHNE-CALLER | — |
 | `tenant-branding-update` | AKTIV | frontend-invoke |
 | `tenant-invite` | AKTIV | frontend-invoke |
@@ -169,7 +161,7 @@
 | Function | Status | Erreichbarkeit |
 |---|---|---|
 | `bot-chat` | AKTIV | public/webhook |
-| `bot-voice-enforcer` | AKTIV | public/webhook |
+| `bot-voice-enforcer` | AKTIV | cron, public/webhook |
 
 ### Compliance/NIS2 (4)
 
@@ -194,7 +186,7 @@
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
-| `gdpr-audit` | AKTIV | frontend-invoke, frontend-fetch, function-call, public/webhook |
+| `gdpr-audit` | AKTIV | frontend-invoke, frontend-fetch, frontend-wrapper, function-call, public/webhook |
 | `gdpr-delete` | AKTIV | frontend-fetch |
 | `gdpr-export` | AKTIV | frontend-fetch |
 
@@ -280,7 +272,7 @@
 | `marketing-event` | AKTIV | frontend-fetch, public/webhook |
 | `newsletter-confirm` | AKTIV | frontend-fetch, public/webhook |
 | `newsletter-subscribe` | AKTIV | frontend-fetch, public/webhook |
-| `sales-lead` | AKTIV | frontend-fetch, public/webhook |
+| `sales-lead` | AKTIV | frontend-fetch, frontend-wrapper, public/webhook |
 | `telemetry-ai-event` | AKTIV | public/webhook |
 | `track-pageview` | AKTIV | frontend-fetch, public/webhook |
 | `welcome-email` | AKTIV | public/webhook |
@@ -330,9 +322,9 @@
 | `audit-report-email` | AKTIV | frontend-fetch, public/webhook |
 | `audit-report-pdf` | AKTIV | public/webhook |
 | `bulk-scan` | AKTIV | frontend-invoke |
-| `cookie-scan` | AKTIV | frontend-invoke, frontend-fetch, function-call, public/webhook |
+| `cookie-scan` | AKTIV | frontend-invoke, frontend-fetch, frontend-wrapper, function-call, public/webhook |
 | `cookie-scan-deep` | AKTIV | frontend-fetch, public/webhook |
-| `email-auth-rescan` | AKTIV | public/webhook |
+| `email-auth-rescan` | AKTIV | cron, public/webhook |
 | `export-audit` | AKTIV | frontend-invoke |
 | `shopify-scan` | AKTIV | frontend-fetch |
 | `tenant-audit` | AKTIV | frontend-fetch |
@@ -350,12 +342,12 @@
 | Function | Status | Erreichbarkeit |
 |---|---|---|
 | `calculate-seo-metrics` | AKTIV | frontend-fetch |
-| `dashboard-digest-generate` | DEPLOYT-OHNE-CALLER | — |
-| `dashboard-intelligence` | DEPLOYT-OHNE-CALLER | — |
+| `dashboard-digest-generate` | AKTIV | frontend-wrapper |
+| `dashboard-intelligence` | AKTIV | frontend-wrapper |
 | `seo-dashboard-data` | AKTIV | frontend-fetch |
 | `share-dashboard` | AKTIV | frontend-fetch |
-| `sync-ga-metrics` | DEPLOYT-OHNE-CALLER | — |
-| `sync-stripe-metrics` | AKTIV | function-call |
+| `sync-ga-metrics` | AKTIV | frontend-wrapper |
+| `sync-stripe-metrics` | AKTIV | frontend-wrapper, function-call |
 | `train-forecast-models` | AKTIV | frontend-fetch |
 
 ### Shopify (3)
@@ -379,10 +371,10 @@
 |---|---|---|
 | `appointment-book` | AKTIV | public/webhook |
 | `auditor-engagement` | AKTIV | frontend-fetch |
-| `beta-enroll` | DEPLOYT-OHNE-CALLER | — |
+| `beta-enroll` | AKTIV | frontend-wrapper |
 | `browser-action-log` | AKTIV | public/webhook |
 | `browser-execute` | AKTIV | frontend-fetch, public/webhook |
-| `create-trial-subscription` | DEPLOYT-OHNE-CALLER | — |
+| `create-trial-subscription` | AKTIV | frontend-wrapper |
 | `email-notify-send` | DEPLOYT-OHNE-CALLER | — |
 | `log-tool-run` | AKTIV | frontend-fetch |
 | `notify-terminal-event` | DEPLOYT-OHNE-CALLER | — |
@@ -393,8 +385,8 @@
 | `partner-provision-tenant` | DEPLOYT-OHNE-CALLER | — |
 | `plans` | DEPLOYT-OHNE-CALLER | — |
 | `report-generator` | DEPLOYT-OHNE-CALLER | — |
-| `save-company-profile` | DEPLOYT-OHNE-CALLER | — |
-| `siteos` | DEPLOYT-OHNE-CALLER | — |
+| `save-company-profile` | AKTIV | frontend-wrapper |
+| `siteos` | AKTIV | frontend-invoke, frontend-wrapper |
 | `skills` | DEPLOYT-OHNE-CALLER | — |
 | `sub-processor-notify` | AKTIV | cron, public/webhook |
 | `update-member-role` | AKTIV | frontend-invoke |
@@ -423,4 +415,4 @@
 
 ---
 
-_Erzeugt am 2026-11-08 · 200 Functions · 144 AKTIV · 56 ohne Caller._
+_Erzeugt am 2026-11-08 · 200 Functions · 153 AKTIV · 47 ohne Caller._

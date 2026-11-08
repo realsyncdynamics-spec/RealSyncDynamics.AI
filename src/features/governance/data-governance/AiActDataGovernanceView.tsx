@@ -4,7 +4,16 @@
  *
  * AI-Act Daten-Governance (Art. 10) — /app/datasets
  * Listet Trainings-/Validierungs-/Testdatensätze pro KI-System mit
- * Art-10-Vollständigkeits-Anzeige. Ohne Tenant: Demo-Daten.
+ * Art-10-Vollständigkeits-Anzeige.
+ *
+ * Datenquelle (`source`):
+ * - `demo`   — kein aktiver Mandant: Beispieldaten MIT sichtbarem Vorschau-Hinweis.
+ * - `tenant` — Mandantendaten aus `ai_act_datasets`; leere Liste = Leerzustand.
+ * - `error`  — Laden fehlgeschlagen: sichtbarer Fehler, keine Ersatzdaten.
+ *
+ * Früher fiel die Ansicht auch bei leerer Mandantenliste und bei Ladefehlern
+ * still auf die Demo-Datensätze zurück. Ein Mandant sah dann zwei erfundene
+ * Datensätze und „2 dokumentiert“ als wären es seine — das ist entfernt.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -22,6 +31,10 @@ import {
 } from '../aiActDataGovernanceApi';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+import { PreviewDataNotice } from '../components/PreviewDataNotice';
+
+/** Herkunft der angezeigten Datensätze. */
+export type DatasetSource = 'demo' | 'loading' | 'tenant' | 'error';
 
 // ── Demo-Daten (ohne Tenant) ──────────────────────────────────────────────────
 
@@ -80,19 +93,31 @@ const DEMO_DATASETS: Dataset[] = [
 
 export function AiActDataGovernanceView() {
   const { activeTenantId } = useTenant();
-  const [datasets, setDatasets] = useState<Dataset[]>(DEMO_DATASETS);
+  const [datasets, setDatasets] = useState<Dataset[]>(activeTenantId ? [] : DEMO_DATASETS);
+  const [source, setSource] = useState<DatasetSource>(activeTenantId ? 'loading' : 'demo');
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeTenantId) {
       setDatasets(DEMO_DATASETS);
+      setSource('demo');
       return;
     }
     let cancelled = false;
+    setDatasets([]);
+    setSource('loading');
     listDatasets(activeTenantId)
-      .then((rows) => { if (!cancelled && rows.length > 0) setDatasets(rows); })
-      .catch(() => {/* Demo-Fallback bleibt */});
+      .then((rows) => {
+        if (cancelled) return;
+        setDatasets(rows);
+        setSource('tenant');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDatasets([]);
+        setSource('error');
+      });
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
@@ -166,20 +191,52 @@ export function AiActDataGovernanceView() {
         </button>
       </header>
 
+      {source === 'demo' && <PreviewDataNotice what="Die Daten-Governance" />}
+
       <main className="mx-auto max-w-5xl space-y-5 p-4 md:p-6">
-        {/* Metriken */}
+        {source === 'error' && (
+          <div
+            role="alert"
+            data-testid="datasets-load-error"
+            className="flex items-start gap-3 border border-red-800 bg-red-950/30 px-4 py-3 text-sm text-red-200"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <strong>Datensätze konnten nicht geladen werden.</strong> Es werden keine Ersatzdaten
+              angezeigt. Bitte Seite neu laden; bleibt der Fehler, Support kontaktieren.
+            </div>
+          </div>
+        )}
+
+        {/* Metriken — ohne geladene Daten keine Zahl, sondern „—“ */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <MetricCard label="Datensätze dokumentiert" value={metrics.total.toString()} />
-          <MetricCard label="Mit Personenbezug" value={metrics.withPii.toString()} tone="amber" />
-          <MetricCard label="Art-10-vollständig" value={`${metrics.complete}/${metrics.total}`} tone="teal" />
+          <MetricCard
+            label="Datensätze dokumentiert"
+            value={source === 'loading' || source === 'error' ? '—' : metrics.total.toString()}
+          />
+          <MetricCard
+            label="Mit Personenbezug"
+            value={source === 'loading' || source === 'error' ? '—' : metrics.withPii.toString()}
+            tone="amber"
+          />
+          <MetricCard
+            label="Art-10-vollständig"
+            value={source === 'loading' || source === 'error' ? '—' : `${metrics.complete}/${metrics.total}`}
+            tone="teal"
+          />
         </div>
 
         {/* Datensatz-Karten */}
-        <div className="space-y-3">
+        <div className="space-y-3" aria-busy={source === 'loading'}>
+          {source === 'loading' && (
+            <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
+              <p className="font-mono text-[11px] text-titanium-500">Datensätze werden geladen …</p>
+            </div>
+          )}
           {datasets.map((d) => (
             <DatasetCard key={d.id} dataset={d} />
           ))}
-          {datasets.length === 0 && (
+          {(source === 'tenant' || source === 'demo') && datasets.length === 0 && (
             <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
               <p className="text-sm text-titanium-400">Noch keine Datensätze dokumentiert.</p>
             </div>

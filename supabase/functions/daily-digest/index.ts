@@ -11,7 +11,7 @@
 //
 // pg_cron-Setup:
 //   SELECT cron.schedule('daily-digest', '0 8 * * *',
-//     $$ SELECT public.dispatch_cron_function('daily-digest', 'service_role_key') $$);
+//     $$ SELECT public.dispatch_cron_function('daily-digest', 'cron_daily_digest_key') $$);
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -42,11 +42,19 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  // Inbound-Credential ist der dedizierte Cron-Key (Vault `cron_daily_digest_key` via
+  // dispatch_cron_function), nie SUPABASE_SERVICE_ROLE_KEY. Fail-closed:
+  // leerer Key → 500 CRON_KEY_MISSING (kein Lauf), falscher Bearer → 401.
+  const CRON_KEY = Deno.env.get('CRON_DAILY_DIGEST_KEY') ?? '';
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_DAILY_DIGEST_KEY not configured', corsHeaders);
+  }
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
   }
+  // service_role nur nach erfolgreicher Auth, für PostgREST/Admin-Calls.
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
   const supa = createClient(SUPABASE_URL, SRK);
 

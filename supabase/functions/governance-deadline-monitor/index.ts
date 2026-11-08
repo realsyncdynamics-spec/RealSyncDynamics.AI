@@ -7,11 +7,11 @@
  * 3. Monitor remediation plan milestones
  * 4. Trigger escalations for overdue items
  *
- * Scheduled via: supabase/functions/schedule.yaml
+ * Scheduled via: pg_cron → dispatch_cron_function('governance-deadline-monitor', 'cron_governance_deadline_key')
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requireServiceRole } from '../_shared/auth.ts';
+import { jsonError, jsonResponse } from '../_shared/gateway.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -32,8 +32,18 @@ Deno.serve(async (req: Request) => {
   // Verify this is a scheduled job (from Supabase cron)
   // Cron-Endpunkt: liest Fristen ueber alle Tenants und loest Alarme aus.
   // Zuvor genuegte ein beliebiges Bearer-Praefix (Befund F-04).
-  const denied = requireServiceRole(req);
-  if (denied) return denied;
+  // Cron-Endpunkt (pg_cron → dispatch_cron_function, Vault `cron_governance_deadline_key`).
+  // Dedizierter Cron-Key statt service_role (Vorfall 2026-09: der
+  // service_role-JWT gilt als kompromittiert und liegt nicht im Vault).
+  // Fail-closed: leerer Key → 500 CRON_KEY_MISSING, falscher Bearer → 401.
+  const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_DEADLINE_KEY') ?? '';
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_DEADLINE_KEY not configured');
+  }
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401);
+  }
 
   try {
     console.log('Starting governance deadline monitoring...');

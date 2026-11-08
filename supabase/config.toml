@@ -252,6 +252,13 @@ verify_jwt = false
 [functions.daily-digest]
 verify_jwt = false
 
+# Cron-Empfänger mit dediziertem CRON_*-Key (eigener Bearer-Check, fail-closed).
+[functions.governance-deadline-monitor]
+verify_jwt = false
+
+[functions.governance-score-calculator]
+verify_jwt = false
+
 [functions.audit-drip-cron]
 verify_jwt = false
 

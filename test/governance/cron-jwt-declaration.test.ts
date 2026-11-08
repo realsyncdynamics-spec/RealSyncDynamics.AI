@@ -38,6 +38,8 @@ const CRON_SLUGS = [
   'sub-processor-notify',
   'website-maintenance-daily-cron',
   'email-auth-rescan',
+  'governance-deadline-monitor',
+  'governance-score-calculator',
 ] as const;
 
 describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', () => {

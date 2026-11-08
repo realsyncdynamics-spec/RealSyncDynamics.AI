@@ -12,7 +12,7 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { requireServiceRole } from '../_shared/auth.ts';
+import { jsonError, jsonResponse } from '../_shared/gateway.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -33,8 +33,18 @@ Deno.serve(async (req: Request) => {
   // Praefix-Pruefung liess jeden Aufrufer durch, der das Plattform-Gate
   // passiert hatte — also jeden eingeloggten Nutzer (Befund F-04,
   // AUDIT/18_FINDINGS.md). Jetzt nur noch der Plattform-Aufrufer selbst.
-  const denied = requireServiceRole(req);
-  if (denied) return denied;
+  // Cron-Endpunkt (pg_cron → dispatch_cron_function, Vault `cron_governance_score_key`).
+  // Dedizierter Cron-Key statt service_role (Vorfall 2026-09: der
+  // service_role-JWT gilt als kompromittiert und liegt nicht im Vault).
+  // Fail-closed: leerer Key → 500 CRON_KEY_MISSING, falscher Bearer → 401.
+  const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_SCORE_KEY') ?? '';
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_SCORE_KEY not configured');
+  }
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
+    return jsonResponse({ ok: false, error: 'cron only' }, 401);
+  }
 
   try {
     console.log('Starting compliance score calculation...');

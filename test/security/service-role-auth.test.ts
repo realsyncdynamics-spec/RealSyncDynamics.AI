@@ -123,9 +123,10 @@ describe('F-04 — die vier remediierten Endpunkte behalten ihre Pruefung', () =
     readFileSync(join(FUNCTIONS_DIR, slug, 'index.ts'), 'utf-8');
 
   // Maschinen-Endpunkte: Cron bzw. DB-Trigger, kein menschlicher Aufrufer.
+  // governance-score-calculator und governance-deadline-monitor prüfen seit
+  // 2026-11-08 einen dedizierten CRON_* Key statt service_role (fail-closed);
+  // ihr Vertrag steht in test/governance/cron-dedicated-keys-remaining.test.ts.
   for (const slug of [
-    'governance-score-calculator',
-    'governance-deadline-monitor',
     'automation-trigger-trial-webhook',
   ]) {
     it(`${slug} verlangt den Service-Role-Aufrufer`, () => {

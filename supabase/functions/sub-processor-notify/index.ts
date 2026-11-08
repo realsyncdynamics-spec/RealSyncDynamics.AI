@@ -1,6 +1,6 @@
 // Sub-Processor-Change-Notify — täglich 08:00 UTC vom pg_cron-Job aufgerufen.
 //
-// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der alte Job
+// Auth: Bearer == CRON_SUB_PROCESSOR_NOTIFY_KEY (verify_jwt = false). Der alte Job
 // schickte den Anon-Key (Migration 20260507140000, Variable v_anon_key);
 // der Anon-Key ist ein gültiges JWT, deshalb reicht Gateway-JWT nicht.
 //
@@ -11,7 +11,7 @@
 // Pflicht nach Art. 28 Abs. 2 DSGVO + Audit-Trail-fähig.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface Change {
   id: string;
@@ -33,11 +33,19 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  // Inbound-Credential ist der dedizierte Cron-Key (Vault `cron_sub_processor_notify_key` via
+  // dispatch_cron_function), nie SUPABASE_SERVICE_ROLE_KEY. Fail-closed:
+  // leerer Key → 500 CRON_KEY_MISSING (kein Lauf), falscher Bearer → 401.
+  const CRON_KEY = Deno.env.get('CRON_SUB_PROCESSOR_NOTIFY_KEY') ?? '';
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_SUB_PROCESSOR_NOTIFY_KEY not configured');
+  }
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401);
   }
+  // service_role nur nach erfolgreicher Auth, für PostgREST/Admin-Calls.
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

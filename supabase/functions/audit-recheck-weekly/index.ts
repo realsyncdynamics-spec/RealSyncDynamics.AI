@@ -8,7 +8,7 @@
 // Continuous-Compliance-MVP — Real-Time-Monitoring per Daily-Recheck.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
@@ -39,11 +39,19 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  // Inbound-Credential ist der dedizierte Cron-Key (Vault `cron_audit_recheck_key` via
+  // dispatch_cron_function), nie SUPABASE_SERVICE_ROLE_KEY. Fail-closed:
+  // leerer Key → 500 CRON_KEY_MISSING (kein Lauf), falscher Bearer → 401.
+  const CRON_KEY = Deno.env.get('CRON_AUDIT_RECHECK_KEY') ?? '';
+  if (!CRON_KEY) {
+    return jsonError(500, 'CRON_KEY_MISSING', 'CRON_AUDIT_RECHECK_KEY not configured', corsHeaders);
+  }
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
+  if (authHeader !== `Bearer ${CRON_KEY}`) {
     return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
   }
+  // service_role nur nach erfolgreicher Auth, für PostgREST/Admin-Calls.
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

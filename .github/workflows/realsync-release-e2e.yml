@@ -54,7 +54,8 @@ permissions:
 jobs:
   realsync-release-e2e:
     name: RealSync Release E2E
-    runs-on: ubuntu-latest
+    # Fest auf 24.04 wie e2e.yml (#2170): ubuntu-latest ist 26.04, das Playwright 1.59 nicht unterstützt.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     env:

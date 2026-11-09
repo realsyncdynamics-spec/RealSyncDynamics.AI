@@ -331,6 +331,9 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .tpl-cta p { width: 100%; font-family: var(--font-heading); font-style: italic; font-size: 20px; color: var(--color-neutral-200); }
 .rsl5 .gref.soon { border-style: dashed; color: var(--mute); }
 .rsl5 .gplate { display: block; width: 100%; aspect-ratio: 16 / 10; }
+.rsl5 .gplate img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+.rsl5 .gref .gsrc { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.rsl5 .pg .gref .gsrc { color: var(--color-neutral-300); }
 .rsl5 .gph { display: grid; place-items: center; width: 100%; height: 100%; font-family: var(--font-heading); font-style: italic; font-size: 20px; color: var(--mute); background: var(--color-surface); }
 .rsl5 .gref b { font-family: var(--font-heading); font-weight: 500; font-size: 26px; margin-top: 8px; }
 .rsl5 .gref > span:not(.plate) { font-size: 15px; line-height: 1.6; color: var(--mute); max-width: 32ch; }

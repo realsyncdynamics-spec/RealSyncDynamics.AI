@@ -355,8 +355,16 @@ export function TemplatePicker({ onRequest }: { onRequest: (templateName: string
         {TEMPLATES.map((t, i) => (
           <button key={t.id} className="gref tpl" type="button" aria-pressed={sel === i} onClick={() => setSel(sel === i ? null : i)}>
             <span className="plate gplate">
-              <span className="gph">Vorschau folgt</span>
+              <img
+                src={`/landing-company/templates/${t.id}.webp`}
+                alt={`Beispiel aus dem SiteOS-Builder: Startseite ${t.name}`}
+                width={640}
+                height={400}
+                loading="lazy"
+                decoding="async"
+              />
             </span>
+            <small className="gsrc">Beispiel aus dem Builder</small>
             <b>{t.name}</b>
             <span>{t.text}</span>
             <em>{t.tags}</em>

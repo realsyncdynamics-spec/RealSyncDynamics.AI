@@ -137,9 +137,19 @@ export function renderPresentationCss(theme: Partial<SiteTheme> | undefined): st
     'background:var(--accent);color:var(--surface);text-decoration:none;font-weight:600;',
     'padding:.85rem 1.6rem;border-radius:var(--radius);box-shadow:var(--shadow);}',
     '[id*="--hero--"]>a:hover{filter:brightness(1.08);}',
+    // Abstrakte Komposition aus den Theme-Farben statt einer leeren Fläche:
+    // Lichtfleck im Akzent, feines Raster, zwei „Karten“-Andeutungen. Bewusst
+    // kein Bildmotiv — es bleibt erkennbar ein Platz für das echte Foto.
     '[id*="--hero--"]>[data-placeholder]{margin-top:2.5rem;width:100%;',
-    'background:linear-gradient(135deg,var(--tint-strong),var(--accent-soft));',
-    'border:1px solid var(--line);box-shadow:var(--shadow);}',
+    'border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);',
+    'background:',
+    'linear-gradient(var(--surface),var(--surface)) 12% 70%/38% 22% no-repeat,',
+    'linear-gradient(var(--accent),var(--accent)) 12% 64%/14% 3% no-repeat,',
+    'linear-gradient(color-mix(in srgb,var(--surface) 88%,var(--accent)),color-mix(in srgb,var(--surface) 88%,var(--accent))) 88% 30%/34% 34% no-repeat,',
+    'radial-gradient(60% 70% at 78% 18%,color-mix(in srgb,var(--accent) 38%,transparent),transparent 70%),',
+    'repeating-linear-gradient(0deg,var(--line) 0 1px,transparent 1px 44px),',
+    'repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 44px),',
+    'linear-gradient(135deg,var(--tint-strong),var(--accent-soft));}',
     // Höhe des Heroes, vom Blueprint gesteuert (`content.emphasis`).
     '[id*="--hero--"][data-emphasis="tall"]{padding-block:clamp(5rem,13vw,9.5rem)!important;}',
     '[id*="--hero--"][data-emphasis="compact"]{padding-block:clamp(2.25rem,5vw,3.5rem)!important;}',

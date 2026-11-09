@@ -280,7 +280,7 @@ export const INDUSTRY_THEMES: Readonly<Partial<Record<IndustryKey, Partial<SiteT
   },
   gastronomie: {
     mode: 'light',
-    accent: '#A63A1E',
+    accent: '#8A2342',
     surface: '#FBF5EC',
     foreground: '#2A1A12',
     fontDisplay: 'Georgia, Cambria, Times New Roman, serif',

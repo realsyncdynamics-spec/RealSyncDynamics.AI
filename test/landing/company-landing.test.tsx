@@ -11,6 +11,7 @@ import { PAGE_DIALOG_ATTR } from '../../src/config/pageDialog';
 import { COMPANY } from '../../src/config/company';
 import { ADDONS, formatNetVatGrossEur, pricingTaxNote } from '../../shared/pricing';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
+import { DEMO_EVIDENCE_NOTE } from '../../src/components/landing/company/CompanyDemos';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
@@ -184,19 +185,20 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     expect(within(dialog).getByRole('heading', { name: 'Welche Branche?' })).toBeInTheDocument();
   });
 
-  it('„Prüfung live testen“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
+  it('„Prüfung ausprobieren“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {
     vi.useFakeTimers();
     mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Prüfung live testen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Prüfung ausprobieren' }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('heading', { name: 'Prüfung live erleben' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Prüfung ausprobieren' })).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kundendaten exportieren' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Prüfung starten' }));
     act(() => {
       vi.advanceTimersByTime(3400);
     });
     expect(within(dialog).getByRole('status')).toHaveTextContent('Blockiert – keine Einwilligung für Export.');
-    expect(within(dialog).getByText(/^EVIDENCE · SHA-256 [0-9a-f]{16}…$/)).toBeInTheDocument();
+    expect(within(dialog).getByText(DEMO_EVIDENCE_NOTE)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/SHA-256 [0-9a-f]+/)).toBeNull();
   });
 
   it('Voice-Onboarding endet im Link auf die Subdomain (neuer Tab)', () => {

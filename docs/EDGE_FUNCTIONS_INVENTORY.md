@@ -289,7 +289,7 @@
 |---|---|---|
 | `automation-callback` | AKTIV | function-call, public/webhook |
 | `automation-trigger` | AKTIV | frontend-fetch |
-| `automation-trigger-trial-webhook` | AKTIV | cron |
+| `automation-trigger-trial-webhook` | AKTIV | cron, public/webhook |
 | `bot-voice-webhook` | AKTIV | public/webhook |
 | `email-delivery-webhook` | DEPLOYT-OHNE-CALLER | — |
 | `telegram-channels` | AKTIV | frontend-fetch |

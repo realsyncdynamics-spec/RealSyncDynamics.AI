@@ -33,7 +33,7 @@ Wirkung auf `realsyncdynamicsai.de`.
 | Bereich | Datei / Route | Befund |
 |---|---|---|
 | Startseite (vor diesem PR) | `src/App.tsx` `<Route path="/">` → `src/pages/LandingV6.tsx` | Governance-OS-Positionierung, CSS `src/styles/landing-v6*.css` |
-| Startseite (dieser PR) | `src/pages/ProductPortal.tsx` | Produktportal BUILD · AUTOMATE · GOVERN; v6 bleibt unter `/design/landing-v6` |
+| Produktportal (dieser PR) | `/produkte` → `src/pages/ProductPortal.tsx` | BUILD · AUTOMATE · GOVERN; `/` bleibt unverändert (Owner-Entscheidung 09.11.2026: Landing v9, #2191) |
 | Drei-Produkt-Gerüst (bestehend) | `/unternehmen` → `CompanyLanding`, `src/components/landing/company/companyProducts.ts` | noindex-Gerüst mit Governance OS, Voice Agent, Landingpage Builder — inhaltlich verwandt mit dem Netlify-Export |
 | Builder-Einstieg | `/build` (`src/unified-entry/pages/BuildStudioPage.tsx`), Aliase `/builder`, `/app/bauen`, `/unified-entry*` | öffentlich, Login beim Speichern |
 | Builder-Workspace | `/builder/:slug` (Puck), `/builder/:slug/code` (Code-Workbench) | getrennte Oberflächen, ein Projekt |
@@ -150,13 +150,13 @@ und serverseitigen Prüfungen.
 | Datei | Änderung |
 |---|---|
 | `src/product/productSuite.ts` | neu: drei Produkte, Fähigkeiten mit Status (aus Registry), Ablauf, Deep-Links |
-| `src/pages/ProductPortal.tsx` | neu: Startseite „BUILD. AUTOMATE. GOVERN.“ |
+| `src/pages/ProductPortal.tsx` | neu: Produktportal `/produkte` „BUILD. AUTOMATE. GOVERN.“ |
 | `src/pages/products/ProductPage.tsx` | neu: `/produkte/build-studio`, `/produkte/agent-studio`, `/produkte/governance-os` |
 | `src/components/portal/PortalChrome.tsx`, `src/styles/product-portal.css` | neu: gemeinsame Navigation, Footer, Status-Chips, Hard-Edge-Design |
-| `src/App.tsx` | `/` → `ProductPortal`; neue Produktrouten; Kurzpfade `/build-studio`, `/agent-studio`, `/governance-os`, `/produkte` als Weiterleitung. Keine Route entfernt. |
-| `src/config/seo.ts`, `public/sitemap.xml`, `src/config/spaRoutes.generated.ts` | Meta-Daten und Sitemap für `/` und Produktseiten; Routenliste regeneriert |
-| `src/product/implementation-status.ts` | neuer Eintrag `product-portal`; `public-landing` zeigt auf `/design/landing-v6` |
-| Tests | neu `test/product/product-suite.test.ts`, `test/landing/product-portal.test.tsx`; angepasst `test/product/implementation-status.test.ts`, `test/seo/flow-namespace-noindex.test.ts` |
+| `src/App.tsx` | `/produkte` → `ProductPortal`, drei Produktrouten, Kurzpfade `/build-studio`, `/agent-studio`, `/governance-os` als Weiterleitung. `/` unverändert, keine Route entfernt. |
+| `src/config/seo.ts`, `public/sitemap.xml`, `src/config/spaRoutes.generated.ts` | Meta-Daten und Sitemap für `/produkte` und Produktseiten; Routenliste regeneriert |
+| `src/product/implementation-status.ts` | neuer Eintrag `product-portal` (`/produkte`) |
+| Tests | neu `test/product/product-suite.test.ts`, `test/landing/product-portal.test.tsx` |
 
 Nicht geändert: Backend, Supabase, Edge Functions, Stripe, Preise, Beta-Konditionen, Auth, Builder-/Bot-/Governance-Oberflächen.
 
@@ -181,7 +181,7 @@ Nicht geändert: Backend, Supabase, Edge Functions, Stripe, Preise, Beta-Konditi
 **NO-GO für eine Produktionsfreigabe heute.** Begründung:
 
 1. Die Hauptdomain zeigt nicht auf das Repository (§0). Erst DNS/Hosting klären, sonst ist jeder Merge wirkungslos bzw. die Wirkung unbekannt.
-2. Positionierung: Der Auftrag (drei gleichrangige Produkte, Hero „BUILD. AUTOMATE. GOVERN.“) weicht von **K4** (`docs/PRODUCT_PRIORITIZATION.md`, 27.10.2026: KI-Mitarbeiter als Hero, Governance als Infrastruktur, erster Ablauf AI Receptionist Handwerk) ab. Das Portal nimmt das Handwerk-Beispiel auf, die Gewichtung bleibt eine **Owner-Entscheidung**.
+2. Positionierung: Seit 09.11.2026 ist Landing v9 als Startseite entschieden (#2191); das Portal liegt deshalb unter `/produkte`. Der Auftrag (drei gleichrangige Produkte als Startseite) weicht zudem von **K4** (`docs/PRODUCT_PRIORITIZATION.md`, 27.10.2026: KI-Mitarbeiter als Hero, Governance als Infrastruktur, erster Ablauf AI Receptionist Handwerk) ab. Das Portal nimmt das Handwerk-Beispiel auf, die Gewichtung bleibt eine **Owner-Entscheidung**.
 3. Zwei von drei Produkten sind überwiegend PREVIEW/BLOCKED; das Portal weist das offen aus, verkauft aber noch keinen durchgängigen Ablauf.
 4. CI (Unit-, Build-, E2E-Tests) muss auf dem Head grün sein; lokal nicht ausführbar.
 

@@ -540,11 +540,10 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
+      <Route path="/" element={<LandingV6 />} />
       {/* 07.11.2026: Produktportal „BUILD. AUTOMATE. GOVERN.“ (Build Studio · Agent Studio ·
-          Governance OS) als Startseite — Draft, Produktionswirkung erst nach Owner-GO.
-          Landing v6 bleibt unverändert unter /design/landing-v6. */}
-      <Route path="/" element={<ProductPortal />} />
-      <Route path="/produkte" element={<Navigate to="/#produkte" replace />} />
+          Governance OS) unter /produkte. `/` bleibt unverändert (Owner-Entscheidung 09.11.2026: v9, #2191). */}
+      <Route path="/produkte" element={<ProductPortal />} />
       <Route path="/produkte/build-studio" element={<BuildStudioProductPage />} />
       <Route path="/produkte/agent-studio" element={<AgentStudioProductPage />} />
       <Route path="/produkte/governance-os" element={<GovernanceOsProductPage />} />

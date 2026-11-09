@@ -1,5 +1,5 @@
 /**
- * Produktportal `/` und Produktseiten `/produkte/*`.
+ * Produktportal `/produkte` und Produktseiten `/produkte/*`.
  *
  * Vertrag: Hero „BUILD. AUTOMATE. GOVERN.“, drei Produkt-Einstiege mit den
  * vereinbarten CTAs, Statuskennzeichnung je Funktion, Preise nur als Link auf
@@ -20,7 +20,7 @@ function renderAt(path: string, ui: ReactElement) {
 
 describe('ProductPortal', () => {
   it('zeigt Hero und drei Produkte mit den vereinbarten CTAs', () => {
-    renderAt('/', <ProductPortal />);
+    renderAt('/produkte', <ProductPortal />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/BUILD\.\s*AUTOMATE\.\s*GOVERN\./);
     for (const name of ['RealSync Build Studio', 'RealSync Agent Studio', 'RealSync Governance OS']) {
       expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
@@ -35,7 +35,7 @@ describe('ProductPortal', () => {
   });
 
   it('kennzeichnet Funktionen mit Status und nennt keine Euro-Beträge', () => {
-    const { container } = renderAt('/', <ProductPortal />);
+    const { container } = renderAt('/produkte', <ProductPortal />);
     expect(container.querySelectorAll('[data-status]').length).toBeGreaterThan(0);
     expect(container.textContent).not.toMatch(/\d\s?€/);
   });

@@ -292,18 +292,32 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
-  // Startseite = Produktportal „BUILD. AUTOMATE. GOVERN.“ (src/pages/ProductPortal.tsx).
-  // JSON-LD nur Organization: Die Seite zeigt weder FAQ noch Preise, also auch
-  // kein FAQPage-/Offer-Markup (Rich-Result-Richtlinie).
+  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
+  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
   '/': {
-    title: 'Build. Automate. Govern. | RealSync Dynamics AI',
+    title: 'Governance OS für DSGVO & EU AI Act – AI Governance Runtime | RealSync Dynamics AI',
+    description:
+      'Das Governance OS für DSGVO & EU AI Act: KI-Systeme und Websites erfassen, Risiken bewerten, Policies anwenden und prüffähige Nachweise ablegen. Einstieg mit dem kostenlosen Governance Scan.',
+    canonical: `${SITE_URL}/`,
+    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
+    ogDescription:
+      'Eine Runtime für Risiken, Richtlinien und prüffähige Nachweise: Discover → Assess → Govern → Enforce → Evidence → Audit. Betrieben in der EU.',
+    jsonLd: LANDING_V2_JSONLD,
+  },
+  // Produktportal „BUILD. AUTOMATE. GOVERN.“ (src/pages/ProductPortal.tsx). JSON-LD nur
+  // Breadcrumbs: Die Seite zeigt weder FAQ noch Preise.
+  '/produkte': {
+    title: 'Produkte: Build, Automate, Govern | RealSync Dynamics AI',
     description:
       'Websites und Web-Apps bauen, Kundenanfragen mit KI-Assistenten automatisieren und KI-Risiken nach DSGVO und EU AI Act kontrollieren – mit einem Konto.',
-    canonical: `${SITE_URL}/`,
+    canonical: `${SITE_URL}/produkte`,
     ogTitle: 'RealSync Dynamics AI – BUILD. AUTOMATE. GOVERN.',
     ogDescription:
       'Drei Produkte, eine Plattform: Websites erstellen, Kundenkommunikation mit KI-Agenten automatisieren, KI-Systeme kontrollieren und Nachweise führen.',
-    jsonLd: [LANDING_V2_JSONLD[0]],
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Produkte', url: '/produkte' },
+    ]),
   },
   '/produkte/build-studio': {
     title: 'Build Studio – KI-Website-Builder | RealSync Dynamics AI',
@@ -352,7 +366,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/design/landing-v6': {
     title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
     description:
-      'Frühere Startseite „Das Governance OS für DSGVO & EU AI Act“ (Landing v6), unverändert als Referenz. Kanonisch ist /.',
+      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

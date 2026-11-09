@@ -5,7 +5,7 @@ import { PLATFORM_FLOW, PRODUCTS } from '../product/productSuite';
 import { TRY_FREE } from '../config/beta';
 
 /**
- * Startseite als Produktportal: drei Produkte, eine Plattform.
+ * Produktportal unter /produkte: drei Produkte, eine Plattform.
  *
  * BUILD (Build Studio) · AUTOMATE (Agent Studio) · GOVERN (Governance OS).
  * Inhalte und Status kommen aus `src/product/productSuite.ts`, das seinerseits
@@ -13,8 +13,8 @@ import { TRY_FREE } from '../config/beta';
  * Fähigkeiten mit Status, damit Besucher in Sekunden sehen, was es gibt und
  * was heute schon funktioniert.
  *
- * Die bisherige Startseite (Landing v6) bleibt unverändert unter
- * /design/landing-v6 erreichbar.
+ * Die Startseite `/` bleibt unverändert (Owner-Entscheidung 09.11.2026, #2191);
+ * ob das Portal später `/` wird, entscheidet der Owner gesondert.
  */
 export function ProductPortal() {
   return (

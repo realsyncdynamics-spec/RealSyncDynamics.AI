@@ -7,7 +7,7 @@
  * - Öffentliche CTAs führen auf existierende Routen und verwenden keine
  *   Pilot-/Demo-/Call-/Sales-/Beratungs-/Termin-Formulierungen (AGENTS.md).
  * - Freischaltungs-Keys existieren in `ENTITLEMENT_KEYS`.
- * - Die Startseite `/` rendert das Produktportal; Landing v6 bleibt erreichbar.
+ * - `/produkte` rendert das Produktportal; die Startseite `/` bleibt unberührt.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -89,10 +89,10 @@ describe('Produkt-Suite', () => {
   });
 });
 
-describe('Routing der Startseite', () => {
-  it('`/` rendert das Produktportal, Landing v6 bleibt unter /design/landing-v6', () => {
-    expect(APP).toContain('<Route path="/" element={<ProductPortal />} />');
-    expect(APP).toContain('<Route path="/design/landing-v6" element={<LandingV6 />} />');
+describe('Routing des Produktportals', () => {
+  it('/produkte rendert das Produktportal; `/` bleibt außerhalb dieses Moduls', () => {
+    expect(APP).toContain('<Route path="/produkte" element={<ProductPortal />} />');
+    expect(APP).not.toContain('<Route path="/" element={<ProductPortal />} />');
   });
 
   it('Kurzpfade leiten auf die Produktseiten', () => {

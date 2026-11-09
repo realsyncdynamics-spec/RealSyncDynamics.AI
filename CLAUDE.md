@@ -10,8 +10,8 @@ Kurz halten. Ledger und Audit-Kästen gehören nach `docs/`. Budget: `npm run ch
 - Supabase EU (Postgres, RLS, Edge Functions). Deploy **Cloudflare Pages**, kein Vercel.
 - AI: Anthropic/Google/OpenAI oder Ollama (eu_local), jeder Call geloggt.
 - SiteOS: `/builder/:slug`. Voice-Runtime: `apps/agent-runtime`. Live: https://realsyncdynamicsai.de
-- Startseite: `src/pages/ProductPortal.tsx` (Build · Automate · Govern, 07.11.; Status aus
-  `src/product/productSuite.ts`). Landing v6 unter `/design/landing-v6`. Beta-Schalter `src/config/beta.ts`.
+- Startseite: `src/pages/LandingV6.tsx` (Stand 26.10.; Umstellung auf K4 als eigener PR).
+  Beta-Schalter `src/config/beta.ts`.
 
 ## Kontext sparen
 

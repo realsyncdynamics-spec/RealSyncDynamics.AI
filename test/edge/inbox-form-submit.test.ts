@@ -13,7 +13,8 @@
  *   F5  Gefälschte tenant_id / bot_id im Body werden ignoriert
  *   F6  Validierung: site_ref-Format, nonce, Anliegen, Kontakt, Einwilligung
  *   F7  Body > 16 KB → 413; ungültiges JSON → 400; GET → 405; OPTIONS → CORS
- *   F8  Rate-Limit: Isolate-Zähler → 429 vor resolve; DB-Zähler → 429 nach resolve
+ *   F8  Rate-Limit: Isolate-Zähler → 429 vor resolve; DB-Zähler je ip_hash → 429 nach resolve;
+ *       Kontingent je Seite IP-unabhängig; clientIp nimmt den letzten XFF-Eintrag
  *   F9  Fehlendes Salt → 503, nichts geschrieben; IP nie im Klartext
  *   F10 Scheitert Intake nach dem Anlegen → Konversation entfernt, 500
  *   F11 Längenkappung auf die Intake-CHECKs
@@ -21,9 +22,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { handleInboxFormSubmit, RATE_LIMIT_PER_HOUR, type HandlerDeps } from '../../supabase/functions/inbox-form-submit/handler';
+import { handleInboxFormSubmit, RATE_LIMIT_PER_HOUR, RATE_LIMIT_PER_SITE_PER_HOUR, type HandlerDeps } from '../../supabase/functions/inbox-form-submit/handler';
 import type { InboxRepo, NewConversation, NewIntake, ResolvedInbox } from '../../supabase/functions/inbox-form-submit/repo';
-import { LIMITS, hashIp } from '../../supabase/functions/inbox-form-submit/logic';
+import { LIMITS, clientIp, hashIp } from '../../supabase/functions/inbox-form-submit/logic';
 
 const SITE_REF = 'AbCdEfGhIjKlMnOpQrStUvWx'; // 24 Zeichen base64url
 const OTHER_REF = 'ZyXwVuTsRqPoNmLkJiHgFeDc';
@@ -56,6 +57,11 @@ function memRepo(s: Store): InboxRepo {
       s.calls.push('count');
       return s.conversations.filter((c) =>
         c.tenant_id === tenantId && c.metadata.ip_hash === ipHash && c.now >= sinceIso).length;
+    },
+    async countRecentByBinding(tenantId, bindingId, sinceIso) {
+      s.calls.push('count');
+      return s.conversations.filter((c) =>
+        c.tenant_id === tenantId && c.metadata.binding_id === bindingId && c.now >= sinceIso).length;
     },
     async insertConversation(c) {
       s.calls.push('insert');
@@ -139,7 +145,7 @@ describe('inbox-form-submit', () => {
     expect(i.einwilligung_at).toBe('2026-11-03T12:00:00.000Z');
 
     expect(s.messages).toEqual([{ tenant_id: TENANT, conversation_id: c.id, bot_id: BOT, content: 'Heizung tropft, bitte Rückruf.' }]);
-    expect(s.calls).toEqual(['resolve', 'count', 'insert', 'intake', 'message']);
+    expect(s.calls).toEqual(['resolve', 'count', 'count', 'insert', 'intake', 'message']);
   });
 
   it('F2: Doppel-Submit mit gleicher site_ref + nonce → 200 duplicate, eine Konversation', async () => {
@@ -264,6 +270,38 @@ describe('inbox-form-submit', () => {
     expect(other.status).toBe(201);
   });
 
+  it('F8c: wechselnde X-Forwarded-For umgehen das Limit nicht (Kontingent je Seite, IP-unabhängig)', async () => {
+    const s = newStore();
+    for (let i = 0; i < RATE_LIMIT_PER_SITE_PER_HOUR; i++) {
+      const res = await handleInboxFormSubmit(
+        post(validBody({ nonce: `nonce-site-${String(i).padStart(10, '0')}` }), { 'x-forwarded-for': `10.0.${Math.floor(i / 250)}.${i % 250}` }),
+        deps(s));
+      expect(res.status, `#${i}`).toBe(201);
+    }
+    const res = await handleInboxFormSubmit(
+      post(validBody({ nonce: 'nonce-site-overflow0000' }), { 'x-forwarded-for': '192.0.2.1' }), deps(s));
+    expect(res.status).toBe(429);
+    expect(s.conversations).toHaveLength(RATE_LIMIT_PER_SITE_PER_HOUR);
+    // Anderes Binding (andere Seite) hat ein eigenes Kontingent.
+    s.bindings.set(OTHER_REF, { binding_id: '55555555-5555-4555-8555-555555555555', tenant_id: TENANT, bot_id: BOT, website_project_id: PROJECT });
+    const other = await handleInboxFormSubmit(
+      post(validBody({ site_ref: OTHER_REF, nonce: 'nonce-other-site-000000' }), { 'x-forwarded-for': '192.0.2.1' }), deps(s));
+    expect(other.status).toBe(201);
+  });
+
+  it('F8d: clientIp nimmt den vertrauenswürdigen (letzten) XFF-Eintrag, nie den vom Client gesetzten ersten', () => {
+    const h = (o: Record<string, string>) => new Headers(o);
+    expect(clientIp(h({ 'x-forwarded-for': '1.2.3.4, 203.0.113.7' }))).toBe('203.0.113.7');
+    expect(clientIp(h({ 'x-forwarded-for': 'evil, 2001:db8::1' }))).toBe('2001:db8::1');
+    expect(clientIp(h({ 'x-forwarded-for': 'not-an-ip' }))).toBe('unknown');
+    expect(clientIp(h({ 'cf-connecting-ip': '198.51.100.9', 'x-forwarded-for': '1.2.3.4, 203.0.113.7' }))).toBe('198.51.100.9');
+    expect(clientIp(h({}))).toBe('unknown');
+    // Zwei Requests mit verschiedenem Client-Prefix, gleicher echter IP → gleicher Hash.
+    const a = clientIp(h({ 'x-forwarded-for': 'a.a.a.a, 203.0.113.7' }));
+    const b = clientIp(h({ 'x-forwarded-for': 'b.b.b.b, 203.0.113.7' }));
+    expect(a).toBe(b);
+  });
+
   it('F9: fehlendes Salt → 503 ohne Schreiben; IP nur als HMAC-Hash gespeichert', async () => {
     const s = newStore();
     const res = await handleInboxFormSubmit(post(validBody()), deps(s, { hashSalt: '' }));
@@ -284,7 +322,7 @@ describe('inbox-form-submit', () => {
     const res = await handleInboxFormSubmit(post(validBody()), deps(s));
     expect(res.status).toBe(500);
     expect(s.conversations).toHaveLength(0);
-    expect(s.calls).toEqual(['resolve', 'count', 'insert', 'intake', 'delete']);
+    expect(s.calls).toEqual(['resolve', 'count', 'count', 'insert', 'intake', 'delete']);
   });
 
   it('F11: Längenkappung auf die Intake-CHECKs', async () => {

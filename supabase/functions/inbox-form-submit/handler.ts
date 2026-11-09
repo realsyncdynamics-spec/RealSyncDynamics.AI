@@ -6,7 +6,8 @@
 //   Body ≤ 16 KB, JSON · Honeypot → 400 ohne Schreiben
 //   Validierung (site_ref, nonce, Anliegen, Kontakt, Einwilligung)
 //   IP-Hash (HMAC) · Isolate-Rate-Limit · resolve_site_inbox → sonst 404
-//   DB-Rate-Limit je ip_hash/Mandant (1 h) · INSERT Konversation
+//   DB-Rate-Limit je ip_hash/Mandant (10/h) UND je Binding (60/h, IP-unabhängig)
+//   · INSERT Konversation
 //   (Idempotenz: bot_id + external_ref 'form:<site_ref>:<nonce>')
 //   → Intake → Nachricht. Scheitert Intake/Nachricht: Konversation löschen.
 //
@@ -28,6 +29,12 @@ import {
 
 export const RATE_LIMIT_PER_MINUTE = 5;
 export const RATE_LIMIT_PER_HOUR = 10;
+/**
+ * IP-unabhängiges Kontingent je Seite (Binding) und Stunde. Greift auch, wenn
+ * ein Angreifer die Absenderadresse wechselt. Für einen Handwerksbetrieb sind
+ * 60 echte Formularanfragen pro Stunde weit jenseits des Normalbetriebs.
+ */
+export const RATE_LIMIT_PER_SITE_PER_HOUR = 60;
 const HOUR_MS = 60 * 60 * 1000;
 
 export interface HandlerDeps {
@@ -87,8 +94,11 @@ export async function handleInboxFormSubmit(req: Request, deps: HandlerDeps): Pr
   if (!inbox) return jsonError(404, 'NOT_FOUND', 'unknown site', cors);
 
   const since = new Date(now.getTime() - HOUR_MS).toISOString();
-  const recent = await deps.repo.countRecentByIpHash(inbox.tenant_id, ipHash, since);
-  if (recent >= RATE_LIMIT_PER_HOUR) {
+  const [recentByIp, recentBySite] = await Promise.all([
+    deps.repo.countRecentByIpHash(inbox.tenant_id, ipHash, since),
+    deps.repo.countRecentByBinding(inbox.tenant_id, inbox.binding_id, since),
+  ]);
+  if (recentByIp >= RATE_LIMIT_PER_HOUR || recentBySite >= RATE_LIMIT_PER_SITE_PER_HOUR) {
     return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later', { ...cors, 'Retry-After': '3600' });
   }
 

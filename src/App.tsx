@@ -31,6 +31,7 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+const LandingV8 = lazy(() => import('./pages/LandingV8').then((m) => ({ default: m.LandingV8 })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -537,6 +538,8 @@ function RoutesWithTracking() {
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
       <Route path="/" element={<LandingV6 />} />
+      {/* 09.11.2026: Landing v8 (Obsidian/Titan, 3D-Logo, Texte aus v5) als Vorschau; `/` bleibt v6. */}
+      <Route path="/design/landing-v8" element={<LandingV8 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />

@@ -47,6 +47,14 @@ export function V5Loop() {
   );
 }
 
+/** Ablauf der Beta — eine Textquelle für v5 und v8. */
+export const V5_BETA_STEPS = [
+  ['Registrieren', 'E-Mail-Code oder Google — in unter einer Minute.'],
+  ['Website verbinden', 'Domain eintragen, erster Scan startet automatisch.'],
+  ['Im Dashboard arbeiten', 'Befunde, Maßnahmen, KI-Register und Nachweise an einem Ort.'],
+  ['Feedback geben', 'Direkt im Dashboard — jede Rückmeldung landet bei uns im Backlog.'],
+] as const;
+
 /** Beta-Programm: Was Tester bekommen, was wir zurück wollen. */
 export function V5BetaProgram() {
   if (!BETA.active) return null;
@@ -74,22 +82,14 @@ export function V5BetaProgram() {
           </div>
         </div>
         <ol className="v5-steps" aria-label="Ablauf der Beta">
-          <li>
-            <b>1 · Registrieren</b>
-            <span>E-Mail-Code oder Google — in unter einer Minute.</span>
-          </li>
-          <li>
-            <b>2 · Website verbinden</b>
-            <span>Domain eintragen, erster Scan startet automatisch.</span>
-          </li>
-          <li>
-            <b>3 · Im Dashboard arbeiten</b>
-            <span>Befunde, Maßnahmen, KI-Register und Nachweise an einem Ort.</span>
-          </li>
-          <li>
-            <b>4 · Feedback geben</b>
-            <span>Direkt im Dashboard — jede Rückmeldung landet bei uns im Backlog.</span>
-          </li>
+          {V5_BETA_STEPS.map(([title, text], i) => (
+            <li key={title}>
+              <b>
+                {i + 1} · {title}
+              </b>
+              <span>{text}</span>
+            </li>
+          ))}
         </ol>
       </div>
     </section>

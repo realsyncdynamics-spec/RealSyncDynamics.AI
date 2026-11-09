@@ -18,7 +18,10 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
-          version: latest
+          # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
+          # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
+          # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
+          version: 2.122.1
 
       - name: Delete function
         run: |

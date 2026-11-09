@@ -1,7 +1,8 @@
 // Command Center entry for /app/dashboard.
 // Start view (CustomerStartPanel) first; the detail view below holds
-// HandoffOverview, OsControlStrip, BrowserRuntimePanel and
-// ComplianceStatusView (Mandant / Lage / Jetzt). Does not mount
+// HandoffOverview, OsControlStrip, BrowserRuntimePanel,
+// ComplianceStatusView (Mandant / Lage / Jetzt) and GovernanceWorkbench
+// (Assets, Policies, Ereignisse). Does not mount
 // the agent preview mesh or the build control plane — those live under /app/agents
 // and /app/modules.
 
@@ -36,6 +37,7 @@ import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { AgentComposer } from './AgentComposer';
+import { GovernanceWorkbench } from './GovernanceWorkbench';
 import { computeStartPanel } from './startPanelModel';
 import './sample-workspace.css';
 
@@ -254,6 +256,9 @@ export function CommandCenterDashboard() {
           onRetry={retry}
           packsLockTitle={packsLockTitle}
         />
+        {/* Arbeitslisten des früheren Governance-Dashboards (Assets, Policies,
+            Ereignisse, Inspector) — jetzt Teil des einen Kunden-Dashboards. */}
+        <GovernanceWorkbench />
         {activeTenantId && <DashboardExecuteStrip />}
       </details>
     </>

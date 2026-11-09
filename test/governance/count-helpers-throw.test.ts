@@ -31,15 +31,16 @@ describe('Pflicht-Zähler dürfen RLS-/Netzfehler nicht als 0 schlucken', () => 
 
   it('caller dashboards do not let a badge-count throw blank the page', () => {
     const home = readFileSync('src/features/workspace/WorkspaceHome.tsx', 'utf8');
-    const dash = readFileSync('src/features/governance/GovernanceDashboardView.tsx', 'utf8');
+    // Arbeitslisten des früheren GovernanceDashboardView, jetzt im Command
+    // Center. Die Badge-Zähler entfielen mit der eigenen Kopfzeile (Navigation
+    // liefert das OS-Gehäuse); die Regel bleibt: ein Fehler leert die Seite nicht.
+    const dash = readFileSync('src/features/governance/dashboard/GovernanceWorkbench.tsx', 'utf8');
     const entry = readFileSync('src/features/governance/GovernanceHomeView.tsx', 'utf8');
     expect(home).toContain('Promise.allSettled');
     expect(home).toContain('countsLoading');
     expect(dash).toContain('Promise.allSettled');
-    expect(dash).toContain('setPendingApprovals(0)');
-    expect(dash).toContain('coreFailed');
+    expect(dash).toContain("e.status === 'fulfilled' ? e.value : []");
     expect(dash).toContain('if (gen !== loadGen.current) return');
-    expect(dash).toContain('if (pa.status === \'fulfilled\') setPendingApprovals(pa.value)');
     expect(entry).toContain('Promise.allSettled');
     expect(entry).toContain('r.status === \'fulfilled\' ? r.value : []');
   });

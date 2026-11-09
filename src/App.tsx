@@ -268,7 +268,6 @@ const SiteOsClaimView = lazy(() => import('./features/siteos/SiteOsClaimView').t
 const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernizeWizard').then((m) => ({ default: m.FmtModernizeWizard })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
-const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 // Cloud Code Optimizer — öffentlicher Page-by-Page-Flow (Phase 1), lazy geladen.
 const OptimizerLanding = lazy(() => import('./pages/optimizer/OptimizerLanding').then((m) => ({ default: m.OptimizerLanding })));
 const OptimizerScan = lazy(() => import('./pages/optimizer/OptimizerScan').then((m) => ({ default: m.OptimizerScan })));

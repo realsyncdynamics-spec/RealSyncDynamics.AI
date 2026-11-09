@@ -73,8 +73,8 @@ export const COMPANY_PRODUCTS: readonly CompanyProduct[] = [
     ssotId: 'app-shell',
     name: 'Governance OS',
     tabName: 'The Governance OS',
-    headline: 'KI sicher einsetzen.',
-    description: 'Jede KI-Aktion wird geprüft und protokolliert – nach DSGVO und EU AI Act.',
+    headline: 'KI kontrolliert einsetzen.',
+    description: 'Jede KI-Aktion wird geprüft und protokolliert – mit Regeln für DSGVO und EU AI Act.',
   }),
   product({
     id: 'voice',

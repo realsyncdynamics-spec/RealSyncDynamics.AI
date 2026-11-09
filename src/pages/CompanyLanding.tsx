@@ -96,8 +96,8 @@ const GOS_FEATURES = [
     ),
   },
   {
-    t: 'Hosting in Europa',
-    p: 'Datenbank und Nachweise liegen in der EU.',
+    t: 'Datenschutz berücksichtigt',
+    p: 'Wir berücksichtigen europäische Datenschutzanforderungen bei der Auswahl und Konfiguration unserer Infrastruktur. Datenverarbeitung und eingesetzte KI-Anbieter richten sich nach dem jeweiligen Dienst, den dokumentierten Verarbeitungsbedingungen und den verfügbaren Konfigurationen.',
     i: svg(
       <>
         <circle cx="12" cy="12" r="10" />
@@ -355,12 +355,12 @@ export function CompanyLanding() {
 
         <div className="heroWrap dark">
           <main className="hero">
-            <p className="kick">Für den Mittelstand · Made in Thüringen · Hosting in Europa</p>
+            <p className="kick">Für den Mittelstand · Made in Thüringen</p>
             <h1>
               RealSync Dynamics <em>&amp; AI</em>
             </h1>
             <p className="lede">
-              KI für kleine und mittlere Unternehmen: Wir machen sie sicher, Ihr Telefon erreichbar und Ihre Webseite fertig – ohne
+              KI für kleine und mittlere Unternehmen: Wir machen sie kontrollierbar, Ihr Telefon erreichbar und Ihre Webseite fertig – ohne
               Konzern-Aufwand, mit einem Ansprechpartner.
             </p>
             <p className="pick">Gebaut für Handwerk · Praxis · Kanzlei · Gastronomie · Handel – Produkt anklicken und ausprobieren</p>
@@ -438,7 +438,7 @@ export function CompanyLanding() {
             </h2>
             <p className="sub rv">
               Die Schreinerei, die Praxis, das Restaurant, die Kanzlei: Sie haben keine IT-Abteilung und keine Zeit für Projekte. Wir bauen KI,
-              die sofort funktioniert, sicher ist und bezahlbar bleibt – mit einem festen Ansprechpartner aus Thüringen.
+              die sofort funktioniert, kontrolliert arbeitet und bezahlbar bleibt – mit einem festen Ansprechpartner aus Thüringen.
             </p>
             <div className="rule rv" />
             <div className="facts rv">
@@ -455,8 +455,8 @@ export function CompanyLanding() {
                 <span>Governance Scan zum Einstieg</span>
               </div>
               <div>
-                <b>EU</b>
-                <span>Hosting in Europa</span>
+                <b>DSGVO</b>
+                <span>Anforderungen berücksichtigt</span>
               </div>
             </div>
           </div>

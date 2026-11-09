@@ -310,6 +310,8 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
   const boxRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
 
   const content = buildPages(
     () => onClose('kontakt'),
@@ -350,10 +352,46 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     };
   }, [initialTab]);
 
+  // Nur per Tab erreichbare Elemente im Dialog. Inaktive Tabs (Roving Tabindex,
+  // tabIndex=-1) passen auf `button:not([disabled])`, zählen aber nicht.
+  const tabbables = useCallback(
+    () => (boxRef.current ? Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.tabIndex >= 0) : []),
+    [],
+  );
+
+  // Fokus nicht verlieren: Wird der fokussierte Pager-Button deaktiviert
+  // (erste/letzte Seite), fiele der Fokus auf <body> und der nächste Tab
+  // verließe den modalen Dialog. Dann auf den anderen Pager-Button setzen.
+  // (Übernommen aus #2140.)
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const a = document.activeElement as HTMLElement | null;
+    const onBody = !a || a === document.body;
+    const disabledInside = !!a && box.contains(a) && (a as HTMLButtonElement).disabled === true;
+    if (!onBody && !disabledInside) return;
+    const target = [nextRef.current, prevRef.current].find((b) => b && !b.disabled) ?? tabRefs.current[tab];
+    target?.focus();
+  }, [tab, cur]);
+
   // Esc und ←/→ auf Dokumentebene wie in der Referenz: Ein Klick auf Text im
   // Dialog setzt den Fokus auf <body>, die Tasten sollen trotzdem greifen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Tab bei Fokus außerhalb des Dialogs (z. B. <body> nach Klick auf Text)
+      // oder auf einem deaktivierten Element: in den Dialog zurückholen.
+      if (e.key === 'Tab' && boxRef.current) {
+        const a = document.activeElement as HTMLElement | null;
+        const outside = !a || !boxRef.current.contains(a) || (a as HTMLButtonElement).disabled === true;
+        if (outside) {
+          const f = tabbables();
+          if (f.length > 0) {
+            e.preventDefault();
+            (e.shiftKey ? f[f.length - 1] : f[0]).focus();
+          }
+        }
+        return;
+      }
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -371,7 +409,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, selectTab, setPage, tab, cur]);
+  }, [onClose, selectTab, setPage, tab, cur, tabbables]);
 
   // Fokusfalle: Tab/Shift+Tab bleiben im Dialog. Nur per Tab erreichbare
   // Elemente zählen: Inaktive Tabs (Roving Tabindex, tabIndex=-1) passen auf
@@ -379,7 +417,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
   // tatsächlich ersten Element liefe aus dem Dialog.
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Tab' && boxRef.current) {
-      const f = Array.from(boxRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.tabIndex >= 0);
+      const f = tabbables();
       if (f.length === 0) return;
       const first = f[0];
       const last = f[f.length - 1];
@@ -451,13 +489,13 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
             </section>
           </div>
           <div className="pager">
-            <button className="btn quiet" type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
+            <button ref={prevRef} className="btn quiet" type="button" disabled={cur === 0} onClick={() => setPage(cur - 1)}>
               ← Zurück
             </button>
             <span className="pgct" aria-live="polite">
               {cur + 1} / {list.length}
             </span>
-            <button className="btn" type="button" disabled={cur === list.length - 1} onClick={() => setPage(cur + 1)}>
+            <button ref={nextRef} className="btn" type="button" disabled={cur === list.length - 1} onClick={() => setPage(cur + 1)}>
               Weiter →
             </button>
           </div>

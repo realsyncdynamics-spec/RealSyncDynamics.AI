@@ -8,6 +8,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompanyLanding } from '../../src/pages/CompanyLanding';
 import { COMPANY_LINKS, COMPANY_PRODUCTS, voiceAddonOffer } from '../../src/components/landing/company/companyProducts';
 import { PAGE_DIALOG_ATTR } from '../../src/config/pageDialog';
+import { getSeoForPath } from '../../src/config/seo';
 import { COMPANY } from '../../src/config/company';
 import { ADDONS, formatNetVatGrossEur, pricingTaxNote } from '../../shared/pricing';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
@@ -103,6 +104,13 @@ describe('Unternehmens-Landing v5 – Seite', () => {
     expect(view.container.textContent).not.toMatch(/Kein Anruf geht verloren|nimmt Anrufe an|Telefon erreichbar/);
   });
 
+  it('Metadaten (auch og:/twitter:description) sagen keine Telefonannahme zu (P1-3)', () => {
+    const { description } = getSeoForPath('/unternehmen');
+    expect(description).toMatch(/Telefonannahme per Voice Agent ist in Vorbereitung/);
+    expect(description).not.toMatch(/nimmt Anrufe an/i);
+    expect(description.length).toBeLessThanOrEqual(160);
+  });
+
   it('verlinkt interne Ziele relativ und das Voice-Onboarding im neuen Tab', () => {
     const view = mount();
     const legal = screen.getByRole('navigation', { name: 'Rechtliches' });
@@ -162,6 +170,28 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     expect(document.body.style.overflow).toBe('');
     expect(document.body.hasAttribute(PAGE_DIALOG_ATTR)).toBe(false);
     await waitFor(() => expect(document.activeElement).toBe(tile));
+  });
+
+  it('Fokus bleibt im Dialog, wenn „Weiter“ auf der letzten Seite deaktiviert wird', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-builder'));
+    const dialog = screen.getByRole('dialog');
+    const weiter = within(dialog).getByRole('button', { name: 'Weiter →' });
+    const total = Number(within(dialog).getByText(/^1 \/ \d+$/).textContent!.split('/')[1]);
+    weiter.focus();
+    for (let i = 1; i < total; i++) fireEvent.click(weiter);
+    expect(weiter).toBeDisabled();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '← Zurück' }));
+
+    // Fokus auf <body> (z. B. nach Klick auf Text): Tab holt ihn in den Dialog zurück.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document.body, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
   it('Pfeiltasten im Voice-Onboarding wechseln den Schritt, nicht die Dialogseite', () => {

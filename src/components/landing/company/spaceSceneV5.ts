@@ -147,7 +147,11 @@ export function mountSpaceScene({ canvas, cssTarget, pointer, paused }: SpaceSce
     sky.width = SKY_TEXTURE_WIDTH;
     sky.height = SKY_TEXTURE_WIDTH / 2;
     const sk = sky.getContext('2d')!;
-    sk.scale(SKY_TEXTURE_WIDTH / 4096, SKY_TEXTURE_WIDTH / 4096);
+    const skyK = SKY_TEXTURE_WIDTH / 4096;
+    sk.scale(skyK, skyK);
+    // Sterne behalten mindestens einen halben Zielpixel Radius, damit die
+    // feinsten durch das Verkleinern nicht verblassen.
+    const starR = (r: number) => Math.max(r, 0.5 / skyK);
     sk.fillStyle = '#000';
     sk.fillRect(0, 0, 4096, 2048);
     const R = seeded(97);
@@ -179,7 +183,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer, paused }: SpaceSce
       const r = R() < 0.02 ? 1.4 + R() * 1.2 : 0.3 + R() * 0.8, al = 0.35 + R() * 0.65;
       sk.fillStyle = R() < 0.15 ? 'rgba(255,225,190,' + al + ')' : 'rgba(235,240,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     sk.restore();
@@ -188,7 +192,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer, paused }: SpaceSce
       const x = R() * 4096, y = R() * 2048, r = R() < 0.03 ? 1.4 + R() * 1.4 : 0.3 + R() * 0.9, al = 0.3 + R() * 0.7;
       sk.fillStyle = R() < 0.2 ? 'rgba(255,225,190,' + al + ')' : R() < 0.3 ? 'rgba(190,205,255,' + al + ')' : 'rgba(240,244,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     // Spiralgalaxie oben rechts
@@ -823,21 +827,25 @@ export function mountSpaceScene({ canvas, cssTarget, pointer, paused }: SpaceSce
       const loop = (t: number) => {
         raf = 0;
         if (disposed) return;
-        // Außerhalb des Viewports: Schleife beenden, `resume` startet neu.
-        if (!inView) return;
+        // Außerhalb des Viewports oder Tab versteckt: Schleife beenden,
+        // `resume` startet neu (IntersectionObserver bzw. visibilitychange).
+        if (!inView || document.hidden) return;
         const dt = Math.min(0.05, (t - last) / 1000);
         last = t;
-        if (!document.hidden && !paused?.()) {
+        if (!paused?.()) {
           step(t / 1000, dt);
           renderer.render(scene, cam);
         }
         raf = requestAnimationFrame(loop);
       };
       resume = () => {
-        if (disposed || raf) return;
+        if (disposed || raf || !inView || document.hidden) return;
         last = performance.now();
         raf = requestAnimationFrame(loop);
       };
+      const onVisibility = () => resume?.();
+      document.addEventListener('visibilitychange', onVisibility);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
       resume();
     }
   })();

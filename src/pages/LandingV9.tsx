@@ -1,9 +1,9 @@
 import { SEOHead } from '../components/SEOHead';
-import { LandingV8View } from '../components/landing/v8/LandingV8View';
-import '../styles/landing-v8.css';
+import { LandingV9View } from '../components/landing/v9/LandingV9View';
+import '../styles/landing-v9.css';
 
 /**
- * Landing v8 — Vorschau unter /design/landing-v8 (noindex, 09.11.2026).
+ * Landing v9 — Vorschau unter /design/landing-v9 (noindex, 09.11.2026).
  *
  * Optik: High-End-Entwurf Obsidian/Titan mit 3D-Logo (zwei verkettete
  * Titanringe, three.js lazy, `logoRings3D.ts`). Texte: Landing v5 — Hero aus
@@ -13,11 +13,11 @@ import '../styles/landing-v8.css';
  *
  * Die Startseite `/` bleibt Landing v6, bis der Owner umstellt.
  */
-export function LandingV8() {
+export function LandingV9() {
   return (
     <>
       <SEOHead />
-      <LandingV8View />
+      <LandingV9View />
     </>
   );
 }

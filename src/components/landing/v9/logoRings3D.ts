@@ -1,5 +1,5 @@
 /**
- * Landing v8 — 3D-Logo „RealSync Dynamics & AI“ (three.js, eigener Chunk, lazy).
+ * Landing v9 — 3D-Logo „RealSync Dynamics & AI“ (three.js, eigener Chunk, lazy).
  *
  * Zwei ineinandergreifende Ringe aus gebürstetem Titan („Real“ + „Sync“).
  * Reflexe aus einer kleinen Studio-Umgebung (PMREM aus Leuchtflächen),

@@ -1,5 +1,5 @@
 /**
- * Landing v8 (/design/landing-v8, Vorschau) — Obsidian/Titan mit 3D-Logo.
+ * Landing v9 (/design/landing-v9, Vorschau) — Obsidian/Titan mit 3D-Logo.
  * Texte aus Landing v5 (i18n `v4Hero*`, LOOP_NODES, Beta-Schalter),
  * Preise aus der Pricing-SSoT, Roadmap aus implementation-status.ts.
  */
@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LandingV8 } from '../../src/pages/LandingV8';
+import { LandingV9 } from '../../src/pages/LandingV9';
 import { BETA, BETA_PUBLIC_OFFER } from '../../src/config/beta';
 import { LOOP_NODES } from '../../src/components/landing/v4/landing-v4-content';
 import { formatPriceEur, planById } from '@/shared/pricing';
@@ -30,17 +30,17 @@ afterEach(() => {
 
 const mount = () =>
   render(
-    <MemoryRouter initialEntries={['/design/landing-v8']}>
-      <LandingV8 />
+    <MemoryRouter initialEntries={['/design/landing-v9']}>
+      <LandingV9 />
     </MemoryRouter>,
   );
 
 it('is a preview route; v6 stays on /', () => {
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
   expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
-  expect(app).toMatch(/path="\/design\/landing-v8" element=\{<LandingV8 \/>\}/);
+  expect(app).toMatch(/path="\/design\/landing-v9" element=\{<LandingV9 \/>\}/);
   const seo = readFileSync(resolve(__dirname, '../../src/config/seo.ts'), 'utf8');
-  expect(seo).toMatch(/'\/design\/landing-v8': \{[\s\S]*?noIndex: true/);
+  expect(seo).toMatch(/'\/design\/landing-v9': \{[\s\S]*?noIndex: true/);
 });
 
 it('uses the v5 hero texts with exactly one H1', () => {
@@ -53,7 +53,7 @@ it('uses the v5 hero texts with exactly one H1', () => {
 
 it('falls back to the flat logo without WebGL', async () => {
   const { container } = mount();
-  const stage = container.querySelector('.lv8-stage') as HTMLElement;
+  const stage = container.querySelector('.lv9-stage') as HTMLElement;
   await vi.waitFor(() => expect(stage.dataset.gl).toBe('off'));
   expect(stage.querySelector('svg')).not.toBeNull();
 });

@@ -311,8 +311,8 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
-  '/design/landing-v8': {
-    title: 'RealSync Dynamics AI – Landing v8 (Vorschau)',
+  '/design/landing-v9': {
+    title: 'RealSync Dynamics AI – Landing v9 (Vorschau)',
     description:
       'Design-Vorschau Obsidian/Titan mit 3D-Logo und den Texten aus Landing v5. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,

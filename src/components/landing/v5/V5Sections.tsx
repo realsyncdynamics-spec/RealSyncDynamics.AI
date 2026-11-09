@@ -47,7 +47,7 @@ export function V5Loop() {
   );
 }
 
-/** Ablauf der Beta — eine Textquelle für v5 und v8. */
+/** Ablauf der Beta — eine Textquelle für v5 und v9. */
 export const V5_BETA_STEPS = [
   ['Registrieren', 'E-Mail-Code oder Google — in unter einer Minute.'],
   ['Website verbinden', 'Domain eintragen, erster Scan startet automatisch.'],

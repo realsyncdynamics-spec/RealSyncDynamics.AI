@@ -1,5 +1,5 @@
 /**
- * Schreibrechte auf public.bots (Migration 20261108100000) — Vertrag am Quelltext.
+ * Schreibrechte auf public.bots (Migration 20261109113141) — Vertrag am Quelltext.
  *
  * Die Durchsetzung prüft test/runtime/db/bots-write-owner-admin.db.test.ts
  * gegen echtes Postgres. Hier stehen die Eigenschaften, die ein späterer
@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = (p: string) => resolve(__dirname, '../..', p);
-const MIG = readFileSync(root('supabase/migrations/20261108100000_bots_write_owner_admin.sql'), 'utf8');
+const MIG = readFileSync(root('supabase/migrations/20261109113141_bots_write_owner_admin.sql'), 'utf8');
 const ALT = readFileSync(root('supabase/migrations/20260920130000_bots_quota_enforcement.sql'), 'utf8');
 
 const norm = (t: string) => t.replace(/--[^\n]*/g, '').replace(/\s+/g, ' ').trim();
@@ -32,7 +32,7 @@ function rumpf(sql: string, name: string): string {
   return norm(sql.slice(a, b));
 }
 
-describe('Migration 20261108100000 — bots-Schreibrechte', () => {
+describe('Migration 20261109113141 — bots-Schreibrechte', () => {
   it('entfernt jede schreibende Policy auf public.bots, auch unbekannte', () => {
     expect(SQL).toContain("WHERE schemaname = 'public' AND tablename = 'bots' AND cmd IN ('INSERT', 'UPDATE', 'DELETE', 'ALL')");
     expect(SQL).toContain("EXECUTE format('DROP POLICY %I ON public.bots', p.policyname)");

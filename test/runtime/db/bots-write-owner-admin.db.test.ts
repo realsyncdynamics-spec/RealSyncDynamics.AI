@@ -1,5 +1,5 @@
 /**
- * Schreibrechte auf public.bots — nur Owner/Admin (Migration 20261108100000).
+ * Schreibrechte auf public.bots — nur Owner/Admin (Migration 20261109113141).
  *
  * ## Matrix
  *

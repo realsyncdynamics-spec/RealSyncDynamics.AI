@@ -75,7 +75,10 @@ describe('governance-score-calculator: Score-Logik ohne Ersatzwerte', () => {
 });
 
 describe('governance-score-calculator: Schema-Bezug', () => {
-  const src = readFileSync('supabase/functions/governance-score-calculator/index.ts', 'utf8');
+  // Nur Code prüfen: Der Kopfkommentar nennt die alten Fehler bewusst beim Namen.
+  const src = readFileSync('supabase/functions/governance-score-calculator/index.ts', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
 
   it('nutzt keine nicht existierenden Spalten/Tabellen mehr', () => {
     expect(src).not.toMatch(/is_active/);

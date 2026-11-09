@@ -31,6 +31,7 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `sub-processor-notify-daily` | `sub-processor-notify` | `cron_sub_processor_notify_key` | `CRON_SUB_PROCESSOR_NOTIFY_KEY` |
 | `governance-deadline-monitor-daily` | `governance-deadline-monitor` | `cron_governance_deadline_key` | `CRON_GOVERNANCE_DEADLINE_KEY` |
 | `governance-score-calculator-hourly` | `governance-score-calculator` | `cron_governance_score_key` | `CRON_GOVERNANCE_SCORE_KEY` |
+| DB-Trigger `trigger_trial_webhook()` auf `stripe_trial_events` | `automation-trigger-trial-webhook` | `cron_trial_webhook_key` | `CRON_TRIAL_WEBHOOK_KEY` (optional, Vault-Fallback) |
 
 Function Secret optional: `_shared/cronKey.ts` (`resolveCronKey`/`requireCronKey`)
 liest zuerst das Function Secret und fällt sonst auf denselben Vault-Eintrag

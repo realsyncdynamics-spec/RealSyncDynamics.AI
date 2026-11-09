@@ -28,7 +28,7 @@ enabled = true
 [studio]
 enabled = false
 
-[inbucket]
+[local_smtp]
 enabled = false
 
 [storage]
@@ -305,6 +305,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.governance-score-calculator]
+verify_jwt = false
+
+# DB-Trigger trigger_trial_webhook → eigener Key cron_trial_webhook_key (requireCronKey).
+[functions.automation-trigger-trial-webhook]
 verify_jwt = false
 
 # email-auth-rescan: pg_cron 'website-rescan-daily' (03:30 UTC), taeglicher

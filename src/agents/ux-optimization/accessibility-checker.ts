@@ -170,7 +170,7 @@ export function checkColorOnlyIndicators(
   elements: Array<{ type: 'status' | 'indicator'; hasShape?: boolean; hasLabel?: boolean; location: string }>
 ): ColorIndicatorCheck[] {
   return elements.map((el) => {
-    const passes = el.hasShape || el.hasLabel
+    const passes = (el.hasShape === true) || (el.hasLabel === true)
 
     return {
       location: el.location,

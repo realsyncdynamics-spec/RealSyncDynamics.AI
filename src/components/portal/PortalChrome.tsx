@@ -75,7 +75,8 @@ export function PortalChrome({ children }: { children: ReactNode }) {
       <footer className="rsp-footer">
         <div className="rsp-wrap">
           <p>
-            RealSync Dynamics AI · Datenhaltung in der EU (Supabase Frankfurt). Scans und Prüfungen sind
+            RealSync Dynamics AI · Datenbank in Frankfurt (Supabase, eu-central-1); Auslieferung und
+            KI-Anbieter siehe Unterauftragsverarbeiter. Scans und Prüfungen sind
             technische Hilfsmittel und keine Rechtsberatung oder Zertifizierung.
           </p>
           <nav aria-label="Rechtliches">

@@ -125,7 +125,7 @@ async function loadTenantInput(tenantId: string): Promise<TenantScoreInput> {
     supabase.from('iso42001_implementations').select('status').eq('tenant_id', tenantId),
     supabase.from('ai_act_assessments').select('approval_status').eq('tenant_id', tenantId),
     supabase.from('dpias').select('status').eq('tenant_id', tenantId),
-    supabase.from('nis2_incident_deadlines').select('is_compliant_with_deadline').eq('tenant_id', tenantId),
+    supabase.from('nis2_incident_deadlines').select('is_compliant_with_deadline, compliance_checked_at').eq('tenant_id', tenantId),
   ]);
 
   for (const [name, res] of [

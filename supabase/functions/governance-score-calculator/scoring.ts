@@ -16,8 +16,10 @@
  * - DSGVO: `dpias.status`
  *   Anteil `approved` an allen DSFAs.
  * - NIS2: `nis2_incident_deadlines.is_compliant_with_deadline`
- *   Anteil `true` an allen bereits geprüften Fristen (`null` = ungeprüft,
- *   zählt nicht).
+ *   Anteil `true` an allen bereits geprüften Fristen. „Geprüft“ heißt
+ *   `compliance_checked_at` gesetzt (durch `check_nis2_deadline_compliance`);
+ *   `is_compliant_with_deadline` hat DEFAULT false und taugt allein nicht
+ *   als Prüfmerkmal.
  */
 
 export type FrameworkKey = 'iso27001' | 'iso42001' | 'ai_act' | 'dsgvo' | 'nis2';
@@ -50,7 +52,7 @@ export interface TenantScoreInput {
   iso42001: Array<{ status: string | null }>;
   aiAct: Array<{ approval_status: string | null }>;
   dpias: Array<{ status: string | null }>;
-  nis2: Array<{ is_compliant_with_deadline: boolean | null }>;
+  nis2: Array<{ is_compliant_with_deadline: boolean | null; compliance_checked_at: string | null }>;
 }
 
 export interface TenantScores {
@@ -68,7 +70,7 @@ function share<T>(rows: T[], hit: (row: T) => boolean): FrameworkScore {
 const IMPLEMENTED = new Set(['implemented', 'optimized']);
 
 export function calculateScores(input: TenantScoreInput): TenantScores {
-  const checkedNis2 = input.nis2.filter((r) => r.is_compliant_with_deadline !== null);
+  const checkedNis2 = input.nis2.filter((r) => r.compliance_checked_at !== null);
 
   const frameworks: Record<FrameworkKey, FrameworkScore> = {
     iso27001: share(input.iso27001, (r) => IMPLEMENTED.has(r.status ?? '')),

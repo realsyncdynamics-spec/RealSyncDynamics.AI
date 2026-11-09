@@ -51,12 +51,21 @@ describe('governance-score-calculator: Score-Logik ohne Ersatzwerte', () => {
     expect(s.frameworks.dsgvo).toEqual({ score: 33, basis: 3 });
   });
 
-  it('NIS2: ungeprüfte Fristen zählen nicht', () => {
-    const only = calculateScores({ ...empty, nis2: [{ is_compliant_with_deadline: null }] });
-    expect(only.frameworks.nis2.score).toBeNull();
+  it('NIS2: nur Fristen mit compliance_checked_at zählen (DEFAULT false ist keine Prüfung)', () => {
+    const T = '2026-11-09T00:00:00Z';
+    const unchecked = calculateScores({
+      ...empty,
+      nis2: [{ is_compliant_with_deadline: false, compliance_checked_at: null }],
+    });
+    expect(unchecked.frameworks.nis2.score).toBeNull();
+    expect(unchecked.overall).toBeNull();
     const mixed = calculateScores({
       ...empty,
-      nis2: [{ is_compliant_with_deadline: true }, { is_compliant_with_deadline: false }, { is_compliant_with_deadline: null }],
+      nis2: [
+        { is_compliant_with_deadline: true, compliance_checked_at: T },
+        { is_compliant_with_deadline: false, compliance_checked_at: T },
+        { is_compliant_with_deadline: false, compliance_checked_at: null },
+      ],
     });
     expect(mixed.frameworks.nis2).toEqual({ score: 50, basis: 2 });
   });

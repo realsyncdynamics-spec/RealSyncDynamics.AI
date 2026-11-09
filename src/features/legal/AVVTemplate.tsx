@@ -115,7 +115,7 @@ export function AVVTemplate() {
           <Section title="§ 5 — Sub-Auftragsverarbeiter">
             <Para>
               <strong>(1)</strong> Der Kunde stimmt zu, dass RealSync die in der öffentlichen Sub-Prozessoren-Liste (
-              <Link to="/legal/sub-processors" className="text-security-400 print:text-[#1f6feb]">/legal/sub-processors</Link>
+              <Link to="/legal/sub-processors" reloadDocument className="text-security-400 print:text-[#1f6feb]">/legal/sub-processors</Link>
               ) genannten Unterauftragsverarbeiter einsetzen darf.
             </Para>
             <Para>
@@ -350,7 +350,7 @@ export function AVVTemplate() {
           <div>© 2026 RealSync Dynamics</div>
           <div className="flex flex-wrap gap-4">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-            <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
+            <Link to="/legal/sub-processors" reloadDocument className="hover:text-titanium-300">Sub-Prozessoren</Link>
             <Link to="/legal/compliance-matrix" className="hover:text-titanium-300">Compliance-Matrix</Link>
           </div>
         </div>

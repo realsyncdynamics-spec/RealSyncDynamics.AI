@@ -5,7 +5,7 @@
 // Sprachmodell füllt anschließend nur noch Copy. Diese Trennung ist
 // Absicht — das Compliance-Gerüst darf nicht vom Modell abhängen.
 
-import type { BlockKind, ComplianceProfile, IndustryKey, Locale } from '../types.ts';
+import type { BlockKind, ComplianceProfile, IndustryKey, Locale, SiteTheme } from '../types.ts';
 
 export interface IndustryPreset {
   key: IndustryKey;
@@ -216,6 +216,109 @@ export const INDUSTRY_PRESETS: Readonly<Record<IndustryKey, IndustryPreset>> = O
     compliance: PROFESSIONAL_COMPLIANCE,
   },
 });
+
+/**
+ * Erscheinungsbild je Branche — Startwert einer neuen Site, kein Zwang.
+ *
+ * Bisher bekam jede Branche dasselbe Plattform-Theme (Obsidian, Blau,
+ * eckig); Zahnarzt, Restaurant und Dachdecker sahen gleich aus. Diese
+ * Tabelle gibt jeder Branche eine eigene Ausgangslage. Alles Weitere bleibt
+ * wie gehabt: `options.theme`, Vorlagen und die Verfeinerung („mach es
+ * dunkel") überschreiben die Werte.
+ *
+ * Regeln:
+ * - Nur Systemschrift-Stapel: generierte Sites laden keine Fremd-Fonts.
+ * - Jedes Farbpaar (Text/Fläche, Akzent/Fläche) besteht WCAG AA; der Test
+ *   `siteos/industry-themes.test.ts` hält das für alle Branchen fest.
+ * - `sonstiges` bleibt beim Plattform-Default.
+ */
+export const INDUSTRY_THEMES: Readonly<Partial<Record<IndustryKey, Partial<SiteTheme>>>> = Object.freeze({
+  zahnarzt: {
+    mode: 'light',
+    accent: '#0F766E',
+    surface: '#F4F9F9',
+    foreground: '#0E2A2F',
+    fontDisplay: 'Avenir Next, Segoe UI, Helvetica Neue, sans-serif',
+    fontBody: 'Segoe UI, Helvetica Neue, Arial, sans-serif',
+    radiusPx: 16,
+  },
+  arztpraxis: {
+    mode: 'light',
+    accent: '#1D4ED8',
+    surface: '#F5F8FC',
+    foreground: '#0F1E33',
+    fontDisplay: 'Avenir Next, Segoe UI, Helvetica Neue, sans-serif',
+    fontBody: 'Segoe UI, Helvetica Neue, Arial, sans-serif',
+    radiusPx: 14,
+  },
+  rechtsanwalt: {
+    mode: 'dark',
+    accent: '#D4B26A',
+    surface: '#0D1420',
+    foreground: '#E9EDF3',
+    fontDisplay: 'Georgia, Times New Roman, serif',
+    fontBody: 'Segoe UI, Helvetica Neue, Arial, sans-serif',
+    radiusPx: 2,
+  },
+  steuerberatung: {
+    mode: 'light',
+    accent: '#1E5A46',
+    surface: '#F7F7F4',
+    foreground: '#1A2230',
+    fontDisplay: 'Georgia, Times New Roman, serif',
+    fontBody: 'Segoe UI, Helvetica Neue, Arial, sans-serif',
+    radiusPx: 6,
+  },
+  handwerk: {
+    mode: 'light',
+    accent: '#9A3412',
+    surface: '#F5F3EE',
+    foreground: '#1C1917',
+    fontDisplay: 'Arial Black, Helvetica Neue, Arial, sans-serif',
+    fontBody: 'Helvetica Neue, Arial, sans-serif',
+    radiusPx: 4,
+  },
+  gastronomie: {
+    mode: 'light',
+    accent: '#A63A1E',
+    surface: '#FBF5EC',
+    foreground: '#2A1A12',
+    fontDisplay: 'Georgia, Cambria, Times New Roman, serif',
+    fontBody: 'Helvetica Neue, Arial, sans-serif',
+    radiusPx: 20,
+  },
+  immobilien: {
+    mode: 'dark',
+    accent: '#9CC5B2',
+    surface: '#101418',
+    foreground: '#EEF0F2',
+    fontDisplay: 'Helvetica Neue, Arial, sans-serif',
+    fontBody: 'Helvetica Neue, Arial, sans-serif',
+    radiusPx: 10,
+  },
+  agentur: {
+    mode: 'dark',
+    accent: '#B49CFB',
+    surface: '#0B0B0F',
+    foreground: '#F4F4F5',
+    fontDisplay: 'Helvetica Neue, Arial, sans-serif',
+    fontBody: 'Helvetica Neue, Arial, sans-serif',
+    radiusPx: 18,
+  },
+  ecommerce: {
+    mode: 'light',
+    accent: '#B5164F',
+    surface: '#FFFFFF',
+    foreground: '#111111',
+    fontDisplay: 'Helvetica Neue, Arial, sans-serif',
+    fontBody: 'Helvetica Neue, Arial, sans-serif',
+    radiusPx: 12,
+  },
+});
+
+export function getIndustryTheme(key: IndustryKey): Partial<SiteTheme> {
+  return INDUSTRY_THEMES[key] ?? {};
+}
 
 export function getIndustryPreset(key: IndustryKey): IndustryPreset {
   return INDUSTRY_PRESETS[key] ?? INDUSTRY_PRESETS.sonstiges;

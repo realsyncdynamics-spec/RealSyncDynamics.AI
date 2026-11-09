@@ -65,7 +65,8 @@ it('prices plans from the SSoT and respects the beta offer', () => {
     const plan = planById(id);
     const card = within(container.querySelector(`[data-plan="${id}"]`) as HTMLElement);
     expect(card.getByText(plan.name)).toBeInTheDocument();
-    expect(card.getByText(formatPriceEur(plan.price.monthlyEur))).toBeInTheDocument();
+    // Intl setzt ein geschütztes Leerzeichen; Testing Library normalisiert nur den DOM-Text.
+    expect(card.getByText(formatPriceEur(plan.price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
     const href = card.getByRole('link').getAttribute('href') ?? '';
     expect(href).toContain(BETA_PUBLIC_OFFER ? '/welcome?' : '/checkout/');
   }

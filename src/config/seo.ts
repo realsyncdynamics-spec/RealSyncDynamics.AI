@@ -1277,7 +1277,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/api': {
     title: 'API – programmatischer Zugriff | RealSync Dynamics AI',
     description:
-      'REST-API der Governance-Runtime: tenant-scoped API-Keys, Rate-Limits und ein Audit-Log pro Aufruf. Im Growth-Tarif enthalten.',
+      'REST-API der Governance-Runtime: tenant-scoped API-Keys, Rate-Limits und ein Audit-Log pro Aufruf. Im Growth-Tarif enthalten, Endpunkte in der API-Doku.',
     canonical: `${SITE_URL}/api-docs`,
   },
   '/api-docs': {
@@ -1429,7 +1429,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/status': {
     title: 'Systemstatus – Komponenten & Vorfälle | RealSync Dynamics AI',
     description:
-      'Betriebsstatus der Plattform: API und Edge Functions, Datenbank (eu-central-1), dazu ein offenes Incident-Log mit Ausfällen und Wartungen.',
+      'Betriebsstatus der Plattform: API und Edge Functions, Datenbank in Frankfurt (eu-central-1), dazu ein offenes Incident-Log mit Ausfällen und Wartungen.',
     canonical: `${SITE_URL}/status`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

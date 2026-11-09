@@ -23,6 +23,8 @@ export interface OrbitSceneOptions {
   container: HTMLElement;
 }
 
+const CAM_Z = 40;
+
 const seeded = (seed: number) => {
   let s = seed;
   return () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -109,8 +111,9 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 200);
-  cam.position.set(0, 0, 20);
+  const cam = new THREE.PerspectiveCamera(15, 1, 0.1, 400);
+  // Tele-Perspektive: flache Ellipsen ohne verzerrte Vorderkante (wie im Entwurf).
+  cam.position.set(0, 0, CAM_Z);
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const disposables: Array<{ dispose: () => void }> = [];
@@ -132,11 +135,11 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
 
   // weite Außenbahn, leicht verdreht (läuft links unten nach rechts oben)
   const outer = new THREE.Group();
-  outer.rotation.z = 0.12;
+  outer.rotation.z = 0.1;
   const outerPlane = new THREE.Group();
-  outerPlane.rotation.x = Math.PI / 2 - 0.2;
-  outerPlane.add(softRing(11.6, 0.2, 0.05, 3));
-  outerPlane.add(softRing(10.4, 0.08, 0.05, 2));
+  outerPlane.rotation.x = Math.PI / 2 - 0.17;
+  outerPlane.add(softRing(11.6, 0.1, 0.05, 3));
+  outerPlane.add(softRing(10.6, 0.04, 0.05, 2));
   outer.add(outerPlane);
   system.add(outer);
 
@@ -194,14 +197,14 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
     );
 
   const core = sprite(coreTex, 1);
-  core.scale.set(2.3, 2.3, 1);
+  core.scale.set(3.1, 3.1, 1);
   const halo = sprite(haloTex, 0.9);
   halo.scale.set(8, 8, 1);
   const streakTex = track(streakTexture());
   const streakH = sprite(streakTex, 0.85);
-  streakH.scale.set(9.5, 0.22, 1);
-  const streakH2 = sprite(streakTex, 0.35);
-  streakH2.scale.set(16, 0.5, 1);
+  streakH.scale.set(7.5, 0.18, 1);
+  const streakH2 = sprite(streakTex, 0.18);
+  streakH2.scale.set(11, 0.4, 1);
   const streakV = sprite(streakTex, 0.35);
   streakV.scale.set(3.2, 0.12, 1);
   streakV.material.rotation = Math.PI / 2;
@@ -233,7 +236,7 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
   addMover(plane, 3.2, -0.07, 2.6, 0.22, 0.8);
   addMover(plane, 2.35, 0.16, 4.4, 0.16, 0.7);
   addMover(steepPlane, 2.25, 0.13, 1.2, 0.24, 0.85);
-  addMover(outerPlane, 11.6, 0.018, 3.6, 0.3, 0.7);
+  addMover(outerPlane, 11.6, 0.018, 3.6, 0.26, 0.6);
 
   // ── Sternfeld ────────────────────────────────────────────────────────────
   const rnd = seeded(1109);
@@ -270,8 +273,8 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
     renderer.setSize(w, h, false);
     cam.aspect = w / h;
     // schmale Viewports: weiter zurück, damit die Hauptbahn ins Bild passt
-    const fit = Math.max(1, 8.6 / (2 * 20 * Math.tan((15 * Math.PI) / 180) * cam.aspect));
-    cam.position.z = 20 * fit;
+    const fit = Math.max(1, 8.6 / (2 * CAM_Z * Math.tan((7.5 * Math.PI) / 180) * cam.aspect));
+    cam.position.z = CAM_Z * fit;
     cam.updateProjectionMatrix();
   };
   resize();
@@ -291,8 +294,8 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
     const t = (now - t0) / 1000;
     pointer.x += (pointer.tx - pointer.x) * 0.04;
     pointer.y += (pointer.ty - pointer.y) * 0.04;
-    cam.position.x = pointer.x * 1.1;
-    cam.position.y = -pointer.y * 0.7;
+    cam.position.x = pointer.x * 2.2;
+    cam.position.y = -pointer.y * 1.4;
     cam.lookAt(0, 0, 0);
 
     system.rotation.z = Math.sin(t * 0.12) * 0.03;
@@ -304,7 +307,7 @@ export function mountOrbitScene({ canvas, container }: OrbitSceneOptions): () =>
     }
     const pulse = 1 + Math.sin(t * 1.3) * 0.04;
     halo.scale.set(8 * pulse, 8 * pulse, 1);
-    core.scale.set(2.3 * (1 + Math.sin(t * 2.1) * 0.015), 2.3 * (1 + Math.sin(t * 2.1) * 0.015), 1);
+    core.scale.set(3.1 * (1 + Math.sin(t * 2.1) * 0.015), 3.1 * (1 + Math.sin(t * 2.1) * 0.015), 1);
     stars.rotation.z = t * 0.004;
     renderer.render(scene, cam);
   };

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { COMPANY_PRODUCTS, type CompanyProductId } from '../components/landing/company/companyProducts';
@@ -49,6 +49,15 @@ export function routeIntent(text: string): string | null {
   return `/kontakt?source=landing-home&nachricht=${encodeURIComponent(text.trim().slice(0, 500))}`;
 }
 
+/** „PREVIEW" → „Preview" (Schreibweise des Entwurfs, Wert aus der SSoT). */
+export function titleCase(label: string): string {
+  return label
+    .toLowerCase()
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 function LogoMark({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 84 56" aria-hidden="true" focusable="false">
@@ -60,7 +69,7 @@ function LogoMark({ className }: { className?: string }) {
   );
 }
 
-const ICONS: Record<CompanyProductId, (p: { className?: string }) => JSX.Element> = {
+const ICONS: Record<CompanyProductId, (p: { className?: string }) => ReactElement> = {
   governance: ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M12 2.8 4.5 5.6v5.8c0 4.6 3.1 8.4 7.5 9.8 4.4-1.4 7.5-5.2 7.5-9.8V5.6L12 2.8Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -213,7 +222,7 @@ export function LandingV8() {
                   <Link to={LINKS[p.id]} className="lv8-chip" data-status={p.status} data-testid={`lv8-chip-${p.id}`}>
                     <ChipIcon id={p.id} />
                     <span>
-                      {CHIP_NAMES[p.id]} · {p.statusLabel}
+                      {CHIP_NAMES[p.id]} · {titleCase(p.statusLabel)}
                     </span>
                   </Link>
                 </li>

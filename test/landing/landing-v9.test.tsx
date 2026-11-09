@@ -1,5 +1,5 @@
 /**
- * Landing v9 (/design/landing-v9, Vorschau) — Obsidian/Titan mit 3D-Logo.
+ * Landing v9 (Startseite `/`, zusätzlich /design/landing-v9) — Obsidian/Titan mit 3D-Logo.
  * Texte aus Landing v5 (i18n `v4Hero*`, LOOP_NODES, Beta-Schalter),
  * Preise aus der Pricing-SSoT, Roadmap aus implementation-status.ts.
  */
@@ -35,10 +35,11 @@ const mount = () =>
     </MemoryRouter>,
   );
 
-it('is a preview route; v6 stays on /', () => {
+it('is the start page; /design/landing-v9 stays noindex, v6 stays as reference', () => {
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
-  expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
+  expect(app).toMatch(/path="\/"\s+element=\{<LandingV9 \/>\}/);
   expect(app).toMatch(/path="\/design\/landing-v9" element=\{<LandingV9 \/>\}/);
+  expect(app).toMatch(/path="\/design\/landing-v6" element=\{<LandingV6 \/>\}/);
   const seo = readFileSync(resolve(__dirname, '../../src/config/seo.ts'), 'utf8');
   expect(seo).toMatch(/'\/design\/landing-v9': \{[\s\S]*?noIndex: true/);
 });

@@ -537,8 +537,9 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
-      <Route path="/" element={<LandingV6 />} />
-      {/* 09.11.2026: Landing v9 (Obsidian/Titan, 3D-Logo, Texte aus v5) als Vorschau; `/` bleibt v6. */}
+      {/* 09.11.2026 (Owner): Landing v9 (Obsidian/Titan, 3D-Logo, Texte aus v5) ist Startseite.
+          v6 bleibt unverändert unter /design/landing-v6; /design/landing-v9 bleibt für geteilte Links. */}
+      <Route path="/" element={<LandingV9 />} />
       <Route path="/design/landing-v9" element={<LandingV9 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />

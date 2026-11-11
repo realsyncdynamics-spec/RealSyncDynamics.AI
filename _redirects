@@ -12,3 +12,8 @@
 # Login der App. Freigegeben nach erfolgreichem Test von Google-OAuth und Magic Link
 # (08.11.2026) mit Supabase-Callback https://realsyncdynamics-ai.pages.dev/welcome.
 /login        https://realsyncdynamics-ai.pages.dev/login        302
+
+# Ziele aus der Unternehmens-Demo. Die Seiten liegen in der App.
+/kontakt      https://realsyncdynamics-ai.pages.dev/kontakt      302
+/preise       https://realsyncdynamics-ai.pages.dev/pricing      302
+/contact-sales https://realsyncdynamics-ai.pages.dev/contact-sales 302

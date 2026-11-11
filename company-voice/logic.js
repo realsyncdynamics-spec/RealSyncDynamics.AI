@@ -69,7 +69,9 @@ export function curatedFacts() {
 const GAP = 'Dazu liegt in den freigegebenen Unternehmensinfos nichts vor.';
 
 export function normalizeQuestion(input) {
-  return String(input ?? '')
+  // „1.498“ ist 1498, nicht 1 und 498. Der Punkt fällt sonst vor der Prüfung weg.
+  const withAmounts = String(input ?? '').replace(/\d{1,3}(?:\.\d{3})+/g, (match) => match.replaceAll('.', ''));
+  return withAmounts
     .toLowerCase()
     .replaceAll('ä', 'ae')
     .replaceAll('ö', 'oe')

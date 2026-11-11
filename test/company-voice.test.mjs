@@ -18,6 +18,12 @@ test('nennt den Inhaber und keinen erfundenen Preis', () => {
   assert.equal(price.text.includes('4013'), false);
 });
 
+test('akzeptiert den deutschen Tausenderpunkt eines Listenpreises', () => {
+  const price = answer('Kostet Enterprise 1.498 € im Monat?');
+  assert.match(price.text, /1\.498/);
+  assert.equal(price.text.includes('nicht in der Preisliste'), false);
+});
+
 test('sagt bei einer offenen Frage ehrlich ab', () => {
   const missing = answer('Wie wird das Wetter in Tokio?');
   assert.equal(missing.covered, false);

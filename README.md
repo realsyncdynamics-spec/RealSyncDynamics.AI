@@ -6,3 +6,7 @@ abgerufen am 07.11.2026. Entfernt wurden nur der Netlify-Hinweiskommentar und da
 
 Ausgeliefert über ein eigenes Cloudflare-Pages-Projekt (Produktions-Branch `landing-live`, kein Build).
 Dieser Branch hat keine gemeinsame Historie mit `main` und wird nie nach `main` gemergt.
+
+Die Unternehmens-Demo (`company-voice/`) hängt an der statischen Seite. Es gibt kein `package.json`. `npm run build` scheitert deshalb mit ENOENT. Das ist der Build dieses Branches nicht: Pages veröffentlicht das Verzeichnis selbst (`index.html`, `_redirects`, `_headers`, `company-voice/`).
+
+Prüfen: `node --test`.

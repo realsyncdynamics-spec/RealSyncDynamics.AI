@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script type="module" src="/company-voice/widget.js"></script>
   <meta charset="utf-8">
   <title>RealSync Dynamics &amp; AI — Governance OS, Voice Agent, Landingpage Builder</title>
   <style>
@@ -358,6 +359,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
     }
+    if (typeof window.__mountCompanyVoice === 'function') window.__mountCompanyVoice();
   } catch (err) {
     setStatus('Error unpacking: ' + err.message);
     console.error('Bundle unpack error:', err);

@@ -1,0 +1,5 @@
+/*
+  # microphone=(self): die Demo nutzt die Web Speech API erst nach einem Klick.
+  # Kamera und Standort bleiben zu. Keine CSP hier — die statische Seite
+  # entpackt Skripte und Blob-URLs, eine CSP aus dem App-Projekt würde sie sperren.
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()

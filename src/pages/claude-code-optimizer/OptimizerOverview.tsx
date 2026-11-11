@@ -121,6 +121,27 @@ export function OptimizerOverview() {
         </p>
       </section>
 
+      {/* Real shell execution is intentionally unavailable until an isolated runtime is approved. */}
+      <section className="mb-10 border border-titanium-800 bg-obsidian-900 p-5" aria-labelledby="optimizer-terminal-title">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="optimizer-terminal-title" className="font-display text-lg font-bold text-titanium-50">
+            Entwicklungs-Terminal
+          </h2>
+          <span className="border border-amber-700/50 px-3 py-1 text-xs text-amber-300">
+            In Vorbereitung
+          </span>
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-titanium-400">
+          Geplant: Claude Code mit Git-Repositories, Befehlen wie git und npm sowie
+          nachvollziehbaren Änderungen in einer isolierten Arbeitsumgebung.
+          Es besteht derzeit keine Shell-Verbindung. Es werden hier keine Befehle ausgeführt.
+        </p>
+        <p className="mt-2 text-xs text-titanium-500">
+          Vor Aktivierung erforderlich: Anmeldung, Workspace-Berechtigung, Sandbox,
+          begrenzte Laufzeit, sichere Secrets und Freigaben für schreibende Aktionen.
+        </p>
+      </section>
+
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3">
         <PrimaryButton onClick={() => navigate(scanPath)}>

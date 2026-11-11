@@ -7,6 +7,7 @@ import { curatedFacts } from '../../../lib/company-voice/facts';
 import {
   createRecognition,
   elevenLabsFlagFromEnv,
+  microphoneAllowed,
   selectVoiceOutput,
   speakGerman,
   stopSpeaking,
@@ -53,6 +54,7 @@ export function CompanyVoiceWidget() {
   const [interim, setInterim] = useState('');
   const [listening, setListening] = useState(false);
   const [speechInput, setSpeechInput] = useState(false);
+  const [micBlocked, setMicBlocked] = useState(false);
   const [facts, setFacts] = useState<PublicFact[]>(() => curatedFacts());
   const [source, setSource] = useState<FactsSource>('curated');
   const [turns, setTurns] = useState<Turn[]>([{ role: 'assistant', text: INTRO }]);
@@ -61,7 +63,8 @@ export function CompanyVoiceWidget() {
   });
 
   useEffect(() => {
-    setSpeechInput(createRecognition() !== null);
+    setSpeechInput(createRecognition() !== null && microphoneAllowed());
+    setMicBlocked(!microphoneAllowed());
   }, []);
 
   useEffect(() => {
@@ -169,9 +172,10 @@ export function CompanyVoiceWidget() {
       if (live) setInterim(live);
       if (finalText.trim()) submit(finalText);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       setListening(false);
       setInterim('');
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') setMicBlocked(true);
     };
     recognition.onend = () => setListening(false);
     try {
@@ -273,7 +277,7 @@ export function CompanyVoiceWidget() {
               onChange={(event) => setInput(event.target.value)}
             />
             <button type="submit">Antwort anzeigen</button>
-            {speechInput ? (
+            {speechInput && !micBlocked ? (
               <button
                 type="button"
                 onClick={listening ? stopMic : startMic}
@@ -283,7 +287,7 @@ export function CompanyVoiceWidget() {
                 {listening ? 'Zuhören beenden' : 'Sprechen'}
               </button>
             ) : (
-              <p className="lv6-voice-status">Dieser Browser hat keine Spracheingabe. Bitte tippen.</p>
+              <p className="lv6-voice-status">{micBlocked ? 'Spracheingabe ist auf dieser Seite gesperrt. Bitte tippen.' : 'Dieser Browser hat keine Spracheingabe. Bitte tippen.'}</p>
             )}
             <button type="button" onClick={() => stopSpeaking(window.speechSynthesis)}>
               Vorlesen stoppen

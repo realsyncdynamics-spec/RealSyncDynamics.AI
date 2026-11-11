@@ -56,6 +56,19 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
 };
 
+export function microphoneAllowed(doc: Document = document): boolean {
+  const policy = (doc as Document & {
+    permissionsPolicy?: { allowsFeature?: (name: string) => boolean };
+    featurePolicy?: { allowsFeature?: (name: string) => boolean };
+  }).permissionsPolicy ?? (doc as Document & { featurePolicy?: { allowsFeature?: (name: string) => boolean } }).featurePolicy;
+  if (!policy?.allowsFeature) return true;
+  try {
+    return policy.allowsFeature('microphone');
+  } catch {
+    return true;
+  }
+}
+
 export function createRecognition(target: SpeechWindow = window): BrowserSpeechRecognition | null {
   const Ctor = target.SpeechRecognition ?? target.webkitSpeechRecognition;
   if (!Ctor) return null;

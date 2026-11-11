@@ -157,7 +157,7 @@ export function LandingChannelTools() {
                   ))}
                 </div>
                 <Link
-                  to={live ? href : '/warteliste'}
+                  to={href}
                   className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
                   style={
                     live

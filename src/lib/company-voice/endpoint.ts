@@ -61,5 +61,7 @@ export async function handleCompanyVoiceRequest(
     return json(429, { ok: false, error: { code: 'RATE_LIMIT', message: 'too many requests' } });
   }
   const payload = await loadCompanyFacts(env, { fetchImpl: deps?.fetchImpl, timeoutMs: deps?.timeoutMs });
-  return json(200, payload);
+  // Kein Import aus grok-relay (Zyklus): gleiche Bedingung wie `resolveGrokLive`, ohne den Key zu lesen.
+  const live = env.COMPANY_VOICE_GROK_ENABLED === 'true' && Boolean(env.XAI_API_KEY?.trim());
+  return json(200, live ? { ...payload, ai: 'grok-realtime' } : payload);
 }

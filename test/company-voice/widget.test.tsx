@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV6 } from '../../src/pages/LandingV6';
 import { CompanyVoiceWidget } from '../../src/components/landing/v6/CompanyVoiceWidget';
 import { COMPANY } from '../../src/config/company';
+import type { StartLiveVoice } from '../../src/lib/company-voice/live-client';
 import { monthlyPriceText, planByKey } from '../../shared/pricing';
 
 const starter = planByKey('starter');
@@ -93,4 +94,63 @@ it('zeigt den Demo-Einstieg auf der Startseite', () => {
   expect(screen.getByTestId('landing-v6')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Demo/ })).toBeInTheDocument();
   expect(document.body.textContent).not.toContain(COMPANY.supportPhoneOptional);
+});
+
+it('nutzt die Live-Stimme nur nach eigenem Hinweis und fällt bei Ausfall zurück', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, source: 'curated', ai: 'grok-realtime', facts: [] }), { status: 200 })),
+  );
+  const captured: { handlers?: Parameters<StartLiveVoice>[0] } = {};
+  const stop = vi.fn();
+  const startLive = vi.fn<StartLiveVoice>((given) => {
+    captured.handlers = given;
+    return { stop };
+  });
+  render(
+    <MemoryRouter>
+      <div className="lv6">
+        <CompanyVoiceWidget startLive={startLive} />
+      </div>
+    </MemoryRouter>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: /Demo/ }));
+  await waitFor(() => expect(screen.getByText(/Grok von xAI/)).toBeInTheDocument());
+  expect(screen.getByText(/KI-generiert/)).toBeInTheDocument();
+
+  const live = screen.getByTestId('company-voice-live');
+  expect(live).toBeDisabled();
+  fireEvent.click(live);
+  expect(startLive).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Hinweis gelesen, Mikrofon freigeben' }));
+  fireEvent.click(screen.getByTestId('company-voice-live'));
+  expect(startLive).toHaveBeenCalledTimes(1);
+
+  act(() => {
+    captured.handlers?.onReady({ maxSeconds: 180, greeting: 'Hallo, ich bin ein KI-Sprachassistent.' });
+    captured.handlers?.onUser('Wer ist der Inhaber?', true);
+    captured.handlers?.onAssistantDelta('Dominik');
+  });
+  expect(screen.getByRole('button', { name: 'Gespräch beenden' })).toBeInTheDocument();
+  expect(screen.getByText('Wer ist der Inhaber?')).toBeInTheDocument();
+  expect(screen.getByText('Dominik')).toBeInTheDocument();
+  act(() => captured.handlers?.onAssistantDone('Dominik Steiner.'));
+  expect(screen.getByText('Dominik Steiner.')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Gespräch beenden' }));
+  expect(stop).toHaveBeenCalledTimes(1);
+
+  act(() => captured.handlers?.onEnd('unavailable'));
+  expect(screen.getByRole('status')).toHaveTextContent(/nicht erreichbar/);
+  expect(screen.queryByText(/Grok von xAI/)).toBeNull();
+  expect(screen.getByRole('button', { name: 'Hinweis gelesen, Mikrofon freigeben' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Sprechen' })).toBeDisabled();
+});
+
+it('öffnet die Demo über /#voice', () => {
+  window.location.hash = '#voice';
+  mountWidget();
+  expect(screen.getByRole('dialog', { name: 'Fragen zum Unternehmen' })).toBeInTheDocument();
+  window.location.hash = '';
 });

@@ -34,8 +34,11 @@ export type FactsSource = 'curated' | 'second-brain-staging';
 export interface CompanyVoicePayload {
   ok: true;
   source: FactsSource;
-  /** Generative KI ist in diesem Stand immer aus. */
-  ai: 'disabled';
+  /**
+   * `grok-realtime` nur, wenn die Live-Stimme serverseitig eingeschaltet ist
+   * (`resolveGrokLive`). Textantworten bleiben immer deterministisch.
+   */
+  ai: 'disabled' | 'grok-realtime';
   facts: PublicFact[];
   disclaimer: string;
 }
@@ -58,6 +61,12 @@ export interface CompanyVoiceEnv {
   SECOND_BRAIN_READ_ENABLED?: string;
   /** Vorbereitet, schaltet in diesem Stand keinen Modellaufruf frei. */
   SECOND_BRAIN_AI_ENABLED?: string;
+  /** Live-Stimme (xAI Grok Realtime). Nur `true` schaltet ein. */
+  COMPANY_VOICE_GROK_ENABLED?: string;
+  /** Nur serverseitig (Pages-Secret). Nie loggen, nie an den Browser. */
+  XAI_API_KEY?: string;
+  COMPANY_VOICE_GROK_MODEL?: string;
+  COMPANY_VOICE_GROK_VOICE?: string;
 }
 
 export const COMPANY_VOICE_DISCLAIMER =

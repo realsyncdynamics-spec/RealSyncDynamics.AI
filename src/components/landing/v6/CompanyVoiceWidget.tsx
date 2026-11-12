@@ -5,6 +5,13 @@ import { acceptClientFacts } from '../../../lib/company-voice/allowlist';
 import { answerCompanyQuestion } from '../../../lib/company-voice/answer';
 import { curatedFacts } from '../../../lib/company-voice/facts';
 import {
+  liveVoiceSupported,
+  startLiveVoice,
+  type LiveEndReason,
+  type LiveVoiceSession,
+  type StartLiveVoice,
+} from '../../../lib/company-voice/live-client';
+import {
   createRecognition,
   elevenLabsFlagFromEnv,
   microphoneAllowed,
@@ -29,6 +36,18 @@ const INTRO =
 const NOTICE =
   'Das Mikrofon startet erst nach diesem Hinweis. Die Spracheingabe nutzt die Web-Speech-Schnittstelle des Browsers. Der Browserhersteller kann die Aufnahme verarbeiten. Diese Seite speichert kein Audio, kein Transkript und setzt dafür kein Tracking. Sie können stattdessen tippen.';
 
+const LIVE_NOTICE =
+  'Das Mikrofon startet erst nach diesem Hinweis. Die Live-Stimme ist ein KI-Sprachmodell (Grok von xAI). Ihre Spracheingabe wird dafür an xAI übertragen und dort verarbeitet, auch außerhalb der EU. xAI kann die Aufnahme nach eigenen Bedingungen verarbeiten. Diese Seite speichert kein Audio, kein Transkript und setzt dafür kein Tracking. Ein Gespräch endet nach höchstens drei Minuten. Sie können stattdessen tippen.';
+
+const LIVE_END_TEXT: Record<LiveEndReason, string> = {
+  stopped: 'Gespräch beendet.',
+  ended: 'Gespräch beendet.',
+  time_limit: 'Gespräch nach drei Minuten beendet.',
+  unavailable: 'Live-Stimme nicht erreichbar. Spracheingabe läuft jetzt über den Browser.',
+  unsupported: 'Dieser Browser unterstützt die Live-Stimme nicht. Spracheingabe läuft jetzt über den Browser.',
+  mic_denied: 'Mikrofon nicht freigegeben. Bitte tippen.',
+};
+
 interface Turn {
   role: 'user' | 'assistant';
   text: string;
@@ -42,13 +61,19 @@ function betaContext(): AnswerContext {
   };
 }
 
-export function CompanyVoiceWidget() {
+export function CompanyVoiceWidget({ startLive }: { startLive?: StartLiveVoice } = {}) {
   const titleId = useId();
   const launcherRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLOListElement>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const liveRef = useRef<LiveVoiceSession | null>(null);
   const [open, setOpen] = useState(false);
+  const [liveOffered, setLiveOffered] = useState(false);
+  const [liveSupported, setLiveSupported] = useState(false);
+  const [liveState, setLiveState] = useState<'idle' | 'connecting' | 'active'>('idle');
+  const [liveCaption, setLiveCaption] = useState('');
+  const [liveStatus, setLiveStatus] = useState('');
   const [noticeAccepted, setNoticeAccepted] = useState(false);
   const [input, setInput] = useState('');
   const [interim, setInterim] = useState('');
@@ -65,6 +90,17 @@ export function CompanyVoiceWidget() {
   useEffect(() => {
     setSpeechInput(createRecognition() !== null && microphoneAllowed());
     setMicBlocked(!microphoneAllowed());
+    setLiveSupported(startLive ? true : liveVoiceSupported());
+  }, [startLive]);
+
+  // `/#voice` öffnet die Demo direkt.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === '#voice') setOpen(true);
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+    return () => window.removeEventListener('hashchange', openFromHash);
   }, []);
 
   useEffect(() => {
@@ -104,6 +140,8 @@ export function CompanyVoiceWidget() {
       recognitionRef.current?.abort();
       recognitionRef.current = null;
       setListening(false);
+      liveRef.current?.stop();
+      liveRef.current = null;
       stopSpeaking(window.speechSynthesis);
       trigger?.focus();
     };
@@ -117,7 +155,8 @@ export function CompanyVoiceWidget() {
         const response = await fetch('/api/company-voice', { headers: { accept: 'application/json' } });
         if (!response.ok) throw new Error('status');
         const body: unknown = await response.json();
-        const record = body && typeof body === 'object' ? (body as { facts?: unknown; source?: unknown }) : null;
+        const record = body && typeof body === 'object' ? (body as { facts?: unknown; source?: unknown; ai?: unknown }) : null;
+        if (!cancelled) setLiveOffered(record?.ai === 'grok-realtime');
         const accepted = acceptClientFacts(record?.facts);
         if (!accepted || cancelled) return;
         setFacts(accepted);
@@ -136,7 +175,7 @@ export function CompanyVoiceWidget() {
   }, [open]);
 
   const speak = (text: string) => {
-    if (voice.engine !== 'web-speech') return;
+    if (voice.engine !== 'web-speech' || liveRef.current) return;
     speakGerman(text, typeof window !== 'undefined' ? window.speechSynthesis : null);
   };
 
@@ -186,6 +225,54 @@ export function CompanyVoiceWidget() {
     }
   };
 
+  const live = liveOffered && liveSupported;
+
+  const startLiveSession = () => {
+    if (!noticeAccepted || liveRef.current) return;
+    stopSpeaking(window.speechSynthesis);
+    setLiveStatus('');
+    setLiveCaption('');
+    setLiveState('connecting');
+    liveRef.current = (startLive ?? startLiveVoice)({
+      onReady: ({ greeting }) => {
+        setLiveState('active');
+        if (greeting) setTurns((prev) => [...prev, { role: 'assistant', text: greeting }]);
+      },
+      onUser: (text, final) => {
+        if (!final) {
+          setInterim(text);
+          return;
+        }
+        setInterim('');
+        const said = text.trim().slice(0, 500);
+        if (said) setTurns((prev) => [...prev, { role: 'user', text: said }]);
+      },
+      onAssistantDelta: (text) => setLiveCaption((prev) => prev + text),
+      onAssistantDone: (text) => {
+        setLiveCaption('');
+        const said = text.trim();
+        if (said) setTurns((prev) => [...prev, { role: 'assistant', text: said }]);
+      },
+      onEnd: (reason) => {
+        liveRef.current = null;
+        setLiveState('idle');
+        setLiveCaption('');
+        setInterim('');
+        setLiveStatus(LIVE_END_TEXT[reason]);
+        if (reason === 'unavailable' || reason === 'unsupported') {
+          // Rückfall auf die Browser-Spracheingabe: dafür gilt ein anderer Hinweis.
+          setLiveOffered(false);
+          setNoticeAccepted(false);
+        }
+        if (reason === 'mic_denied') setMicBlocked(true);
+      },
+    });
+  };
+
+  const stopLiveSession = () => {
+    liveRef.current?.stop();
+  };
+
   const stopMic = () => {
     recognitionRef.current?.abort();
     recognitionRef.current = null;
@@ -225,6 +312,7 @@ export function CompanyVoiceWidget() {
               <span className="lv6-voice-badge">Demo</span>
               <h2 id={titleId} className="lv6-voice-title">Fragen zum Unternehmen</h2>
               <p className="lv6-voice-meta">Quelle: {sourceLabel}</p>
+              {live ? <p className="lv6-voice-meta">Live-Stimme: KI-generiert (Grok, xAI)</p> : null}
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Demo schließen">
               Schließen
@@ -254,14 +342,21 @@ export function CompanyVoiceWidget() {
                 {interim}
               </li>
             ) : null}
+            {liveCaption ? (
+              <li className="lv6-voice-turn">
+                <span>Untertitel, live</span>
+                {liveCaption}
+              </li>
+            ) : null}
           </ol>
           <div className="lv6-voice-note">
             {noticeAccepted ? (
               <p>Mikrofon nur für diese Sitzung. Kein Audio wird gespeichert.</p>
             ) : (
-              <p>{NOTICE}</p>
+              <p>{live ? LIVE_NOTICE : NOTICE}</p>
             )}
-            {voice.elevenLabs === 'not-bundled' ? (
+            {liveStatus ? <p className="lv6-voice-status" role="status">{liveStatus}</p> : null}
+            {!live && voice.elevenLabs === 'not-bundled' ? (
               <p className="lv6-voice-status">Stimme bleibt die Web Speech API. ElevenLabs ist nicht eingebunden.</p>
             ) : null}
             <button type="button" onClick={() => setNoticeAccepted(true)} disabled={noticeAccepted}>
@@ -277,7 +372,17 @@ export function CompanyVoiceWidget() {
               onChange={(event) => setInput(event.target.value)}
             />
             <button type="submit">Antwort anzeigen</button>
-            {speechInput && !micBlocked ? (
+            {live && !micBlocked ? (
+              <button
+                type="button"
+                data-testid="company-voice-live"
+                onClick={liveState === 'idle' ? startLiveSession : stopLiveSession}
+                disabled={!noticeAccepted && liveState === 'idle'}
+                aria-pressed={liveState !== 'idle'}
+              >
+                {liveState === 'idle' ? 'Sprechen' : liveState === 'connecting' ? 'Verbinde … abbrechen' : 'Gespräch beenden'}
+              </button>
+            ) : speechInput && !micBlocked ? (
               <button
                 type="button"
                 onClick={listening ? stopMic : startMic}

@@ -147,6 +147,61 @@ export interface BlueprintOrigin {
 }
 
 /**
+ * Branchen der Theme-Generator-Taxonomie aus #2216.
+ * SiteOS-Branchen werden nur im Adapter darauf abgebildet.
+ */
+export type SiteDnaGeneratorIndustry =
+  | 'handwerk-regional'
+  | 'b2b-saas'
+  | 'kanzlei-beratung'
+  | 'gesundheit';
+
+export type SiteDnaStatus = 'ready' | 'warn' | 'needs-editor';
+
+/** Achsen, die nicht in den 114 semantischen Namen liegen. */
+export interface SiteDnaAxes {
+  'header-type': string;
+  'card-style': string;
+  'sidebar-form': string;
+}
+
+/**
+ * Eine DNA-Fassung als JSON im Blueprint. Keine eigene Tabelle.
+ * `overlay` enthält nur semantische Pfade auf konkrete CSS-Werte.
+ */
+export interface SiteDnaVersion {
+  schemaVersion: 1;
+  /** Hash aus `publishTheme` / `generateTheme`. Wird hier nicht neu gerechnet. */
+  hash: string;
+  status: SiteDnaStatus;
+  overlay: Record<string, string>;
+  axes: SiteDnaAxes;
+  industry: IndustryKey;
+  generatorIndustry: SiteDnaGeneratorIndustry;
+  createdAt: string;
+  /** Bindungen, die das Overlay nicht geliefert hat. Keine Ersatzwerte. */
+  missingTokens: string[];
+  /** Verworfene Pfade (unbekannt oder unsicher). */
+  rejectedTokens: string[];
+  generatorInput: {
+    tone: string;
+    primaryColor: string;
+    brandFonts: { display: string; body: string } | null;
+    locks?: { dimensions?: string[]; axes?: string[] };
+  };
+}
+
+/**
+ * Verlauf im Blueprint-JSON. `activeHash` leer heißt: Fassung liegt vor,
+ * der Renderer bleibt beim bisherigen Theme.
+ */
+export interface SiteDnaRecord {
+  schemaVersion: 1;
+  activeHash: string;
+  versions: SiteDnaVersion[];
+}
+
+/**
  * Der SiteBlueprint ist die einzige Wahrheit über eine Site. Alles andere
  * (Rendering, Deployment, Scans, Nachweise) leitet sich daraus ab. Der
  * Blueprint wird kanonisiert gehasht — der Hash ist der Anker im
@@ -163,6 +218,11 @@ export interface SiteBlueprint {
   seo: SiteSeo;
   compliance: ComplianceProfile;
   origin: BlueprintOrigin;
+  /**
+   * Optionale Design-DNA. Fehlt das Feld, bleibt der kanonische Hash und
+   * das gerenderte Gerüst unverändert.
+   */
+  dna?: SiteDnaRecord;
 }
 
 // ─────────────────────────────────────────────────────────────────────

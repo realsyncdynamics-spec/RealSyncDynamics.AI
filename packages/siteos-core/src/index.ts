@@ -14,6 +14,7 @@ export * from './blueprint/synthesize.ts';
 export * from './blueprint/refine.ts';
 export * from './blueprint/edit.ts';
 export * from './blueprint/pages.ts';
+export * from './blueprint/dna.ts';
 
 export * from './analysis/blueprint.ts';
 export * from './analysis/observation.ts';
@@ -22,6 +23,13 @@ export * from './scoring/scores.ts';
 
 export * from './render/escape.ts';
 export * from './render/theme.ts';
+export {
+  DOCUMENTED_TOKEN_GAPS,
+  bindDnaOverlay,
+  renderDnaOverlayCss,
+  renderDnaPresentationCss,
+} from './render/dna-adapter.ts';
+export { SEMANTIC_TOKEN_NAMES } from './render/semantic-token-names.ts';
 export * from './render/renderer.ts';
 export * from './render/presentation.ts';
 export * from './render/templates.ts';

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { RegistrationCta } from './V8Ctas';
 import '../../../styles/landing-v8/landing-v8.css';
 
 const LINKS = [
@@ -30,9 +31,7 @@ export function LandingV8Shell({ children }: { children: ReactNode }) {
               {link.label}
             </NavLink>
           ))}
-          <Link className="v8-btn v8-btn-primary" to="/v8/starten" onClick={close}>
-            Registrierung
-          </Link>
+          <RegistrationCta className="v8-btn v8-btn-primary" onClick={close} />
         </nav>
         <button
           type="button"

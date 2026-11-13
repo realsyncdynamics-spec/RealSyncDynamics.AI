@@ -29,6 +29,17 @@ interface ImportMetaEnv {
   readonly VITE_LINKEDIN_CONVERSION_LEAD?: string;
   readonly VITE_LINKEDIN_CONVERSION_TRIAL?: string;
   readonly VITE_LINKEDIN_CONVERSION_PURCHASE?: string;
+  /**
+   * Origin der App für die Registrierung der Landing v8.
+   * Leer = aktueller Origin. Cutover: https://app.realsyncdynamicsai.de
+   * Siehe src/marketing/landing-v8/public-config.ts
+   */
+  readonly VITE_APP_ORIGIN?: string;
+  /**
+   * `1` zeigt den Grok/xAI-Platzhalter auf der Landing v8. Standard: aus.
+   * Erst nach Anpassung der Datenschutzerklärung setzen.
+   */
+  readonly VITE_V8_GROK_NOTICE?: string;
 }
 
 interface ImportMeta {

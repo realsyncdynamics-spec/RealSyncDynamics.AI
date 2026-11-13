@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
 import type { MarketingFeature } from '../../../marketing/products/types';
+import { grokNoticeEnabled } from '../../../marketing/landing-v8/public-config';
+import { GrokNotice } from './GrokNotice';
 import { StatusBadge } from './StatusBadge';
 import '../../../styles/landing-v6.css';
 
@@ -63,11 +65,14 @@ export function ShowcaseSlot({
             <div className="v8-live-frame bg-obsidian-950">
               <GovernanceRuntimeDashboard />
             </div>
-          ) : (
+          ) : grokNoticeEnabled() ? (
             <div className="lv6 v8-voice-host" data-rs-theme="light" data-rs-accent="cyan">
+              <GrokNotice />
               <p className="v8-micro">Demo. Die Schaltfläche unten links öffnet die Sprachdemo.</p>
               <CompanyVoiceWidget />
             </div>
+          ) : (
+            <p className="v8-micro">Demo. Sprachdemo ohne Anbieterhinweis.</p>
           )}
         </Suspense>
       ) : null}

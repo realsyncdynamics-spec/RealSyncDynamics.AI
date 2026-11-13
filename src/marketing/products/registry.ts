@@ -130,7 +130,7 @@ export const PRODUCT_AREAS: readonly ProductArea[] = [
         id: 'browser-voice',
         name: 'Sprachdemo',
         summary:
-          'Bestehende Demo-Komponente. Textantworten nur aus freigegebenen Infos. Die Mikrofon-Verbindung hängt von der Server-Konfiguration ab. Die Datenschutzerklärung nennt xAI nicht.',
+          'Bestehende Demo-Komponente. Textantworten nur aus freigegebenen Infos. Die Mikrofon-Verbindung hängt von der Server-Konfiguration ab.',
         status: 'vorschau',
         demo: true,
         showcase: { kind: 'live', component: 'company-voice' },

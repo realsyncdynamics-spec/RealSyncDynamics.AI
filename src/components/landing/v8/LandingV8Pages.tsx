@@ -10,6 +10,7 @@ import { V8_PRICE_SUFFIX, V8_VOICE_PLACEHOLDER, v8PlanCards, v8PriceLine } from 
 import type { ProductArea } from '../../../marketing/products/types';
 import { ShowcaseSlot } from './ShowcaseSlot';
 import { StatusBadge } from './StatusBadge';
+import { ProductsCta, RegistrationCta } from './V8Ctas';
 
 const CARD_TITLE: Record<string, string> = {
   governance: 'Governance & Compliance',
@@ -86,12 +87,8 @@ export function LandingV8Home() {
             setzen Sie verbindliche Policies durch und halten Sie jede relevante Entscheidung nachvollziehbar fest.
           </p>
           <div className="v8-actions">
-            <Link className="v8-btn v8-btn-primary" to="/v8/starten">
-              Registrierung
-            </Link>
-            <Link className="v8-btn v8-btn-secondary" to="/v8/produkte">
-              Produkte entdecken
-            </Link>
+            <RegistrationCta className="v8-btn v8-btn-primary" />
+            <ProductsCta className="v8-btn v8-btn-secondary" />
           </div>
           <div className="v8-trust">
             <span>EU-fokussierte Infrastruktur</span>
@@ -173,11 +170,12 @@ export function LandingV8Home() {
             <div>
               <div className="v8-kicker">Der nächste Schritt</div>
               <h2>Machen Sie KI in Ihrem Unternehmen kontrollierbar.</h2>
-              <p>Weiter zur Registrierung. Das Konto entsteht auf der bestehenden Willkommensseite.</p>
+              <p>Weiter zur Registrierung auf der Anwendung. Diese Vorschau legt kein Konto an.</p>
             </div>
-            <Link className="v8-btn v8-btn-inverse" to="/v8/starten">
-              Registrierung
-            </Link>
+            <div className="v8-actions">
+              <RegistrationCta className="v8-btn v8-btn-inverse" />
+              <ProductsCta className="v8-btn v8-btn-secondary" />
+            </div>
           </div>
         </div>
       </section>
@@ -247,9 +245,10 @@ export function LandingV8Product({ slug }: { slug: string }) {
             </div>
           ))}
         </div>
-        <Link className="v8-btn v8-btn-primary" to="/v8/starten">
-          Registrierung
-        </Link>
+        <div className="v8-actions">
+          <RegistrationCta className="v8-btn v8-btn-primary" />
+          <ProductsCta className="v8-btn v8-btn-secondary" />
+        </div>
       </div>
     </section>
   );
@@ -353,15 +352,14 @@ export function LandingV8Start() {
     <section className="v8-section">
       <div className="v8-wrap">
         <div className="v8-kicker">Registrierung</div>
-        <h2 className="v8-statement">Weiter zur bestehenden Willkommensseite.</h2>
+        <h2 className="v8-statement">Weiter zur Registrierung der Anwendung.</h2>
         <p className="v8-lead">
-          Diese Vorschau legt kein Konto an und sammelt keine Zugangsdaten. Der Einstieg bleibt die vorhandene Route.
+          Diese Vorschau legt kein Konto an und sammelt keine Zugangsdaten. Das Ziel hängt an der konfigurierten App-Origin.
         </p>
         <div className="v8-actions">
-          <Link className="v8-btn v8-btn-primary" to="/welcome">
-            Konto anlegen
-          </Link>
-          <Link className="v8-btn v8-btn-secondary" to="/login">
+          <RegistrationCta className="v8-btn v8-btn-primary" />
+          <ProductsCta className="v8-btn v8-btn-secondary" />
+          <Link className="v8-textlink" to="/login">
             Anmelden
           </Link>
         </div>

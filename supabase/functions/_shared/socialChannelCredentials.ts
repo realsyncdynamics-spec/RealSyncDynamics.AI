@@ -28,21 +28,18 @@ export const SOCIAL_CONNECTION_STATUSES = [
   'revoked',
 ] as const;
 
-/** Spalten, die authenticated sehen darf. credentials_enc fehlt bewusst. */
+/**
+ * Spalten, die authenticated und die Antwort der Edge Function sehen.
+ * scopes, last_error, created_by, credentials_enc und registry_id nicht.
+ */
 export const SOCIAL_CONNECTION_PUBLIC_COLUMNS = [
   'id',
   'tenant_id',
   'channel',
   'account_external_id',
   'account_name',
-  'account_kind',
   'status',
   'token_expires_at',
-  'scopes',
-  'last_error',
-  'connected_at',
-  'created_by',
-  'created_at',
   'updated_at',
 ] as const;
 
@@ -62,6 +59,28 @@ const QUEUE_CHANNEL_PROVIDER: Record<string, SocialProvider> = {
 
 /** Einschaltbarer Uebergang. Jeder andere Wert, auch leer, ist aus. */
 export const LEGACY_ENV_TOKEN_FLAG = 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN';
+
+/**
+ * Der LinkedIn-Pfad ruft noch die abgelöste API mit Platzhalter-URNs.
+ * Default aus: ohne exakt "on" kein HTTP-Call.
+ */
+export const LINKEDIN_PUBLISH_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED';
+
+export const LINKEDIN_PUBLISH_DISABLED_MESSAGE =
+  'LinkedIn publishing disabled; job not executed';
+
+/** Scopes, die der Client an der Verbindung setzen darf. Keine Publish-Scopes. */
+export const CLIENT_CONNECTION_SCOPES = ['openid', 'profile'] as const;
+
+const CLIENT_SECRET_KEYS = [
+  'credentials',
+  'access_token',
+  'refresh_token',
+  'client_secret',
+  'id_token',
+  'token',
+  'authorization_code',
+] as const;
 
 const SECRET_KEYS = ['access_token', 'refresh_token', 'token_type'] as const;
 
@@ -161,6 +180,59 @@ export function parseOptionalLabel(
   const trimmed = value.trim();
   if (trimmed.length > max) return { ok: false, error: 'text too long' };
   return { ok: true, value: trimmed.length === 0 ? null : trimmed };
+}
+
+export function linkedinPublishingEnabled(flag: string | undefined): boolean {
+  return flag === 'on';
+}
+
+/** True, sobald der Client irgendein Zugangsdatum mitschickt — auch leer. */
+export function clientSuppliedCredentials(body: Record<string, unknown>): boolean {
+  return CLIENT_SECRET_KEYS.some((key) => Object.prototype.hasOwnProperty.call(body, key));
+}
+
+export function parseClientScopes(
+  value: unknown,
+): { ok: true; scopes: string[] } | { ok: false; error: string } {
+  const parsed = parseOptionalScopes(value);
+  if (!parsed.ok) return parsed;
+  const scopes = parsed.scopes ?? [...CLIENT_CONNECTION_SCOPES];
+  if (scopes.length === 0) {
+    return { ok: false, error: 'scopes are limited to openid and profile' };
+  }
+  const allowed = new Set<string>(CLIENT_CONNECTION_SCOPES);
+  if (scopes.some((scope) => !allowed.has(scope))) {
+    return { ok: false, error: 'scopes are limited to openid and profile' };
+  }
+  return { ok: true, scopes: [...new Set(scopes)] };
+}
+
+/**
+ * Schreibt, protokolliert, und nimmt die Schreibe zurück, wenn das Audit
+ * fehlschlägt. Ohne Audit keine erfolgreiche Antwort.
+ */
+export async function commitWithAudit<T>(args: {
+  write: () => Promise<{ ok: true; value: T } | { ok: false }>;
+  revert: () => Promise<void>;
+  record: (value: T) => Promise<{ ok: boolean }>;
+}): Promise<{ ok: true; value: T } | { ok: false; code: 'write_failed' | 'audit_failed' }> {
+  const written = await args.write();
+  if (!written.ok) return { ok: false, code: 'write_failed' };
+  let audited = false;
+  try {
+    audited = (await args.record(written.value)).ok;
+  } catch {
+    audited = false;
+  }
+  if (!audited) {
+    try {
+      await args.revert();
+    } catch {
+      /* Fail-closed bleibt auch dann, wenn das Zurücknehmen scheitert. */
+    }
+    return { ok: false, code: 'audit_failed' };
+  }
+  return written;
 }
 
 export function parseOptionalScopes(

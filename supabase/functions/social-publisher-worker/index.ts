@@ -14,7 +14,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import {
+  LINKEDIN_PUBLISH_DISABLED_MESSAGE,
+  LINKEDIN_PUBLISH_FLAG,
   accountExternalIdFromPostData,
+  linkedinPublishingEnabled,
   resolveSocialAccessToken,
 } from '../_shared/socialChannelCredentials.ts';
 
@@ -116,7 +119,8 @@ async function publishViaChannel(
 // ── LinkedIn Publisher ─────────────────────────────────────────────
 //
 // Token je Mandant und Kanal aus social_channel_connections.
-// Der HTTP-Vertrag (POST /v2/ugcPosts, Platzhalter-URNs) bleibt bis PR2.
+// Der HTTP-Vertrag (POST /v2/ugcPosts, Platzhalter-URNs) ist bis PR2
+// abgeschaltet, ausser SOCIAL_PUBLISHER_LINKEDIN_ENABLED=on.
 
 async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
   const direct = accountExternalIdFromPostData(job.post_data);
@@ -132,6 +136,10 @@ async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
 }
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
+  if (!linkedinPublishingEnabled(Deno.env.get(LINKEDIN_PUBLISH_FLAG))) {
+    return { ok: false, error: LINKEDIN_PUBLISH_DISABLED_MESSAGE };
+  }
+
   const accountExternalId = await linkedinAccountHint(job);
   const resolved = await resolveSocialAccessToken(supabase, {
     tenantId: job.tenant_id,

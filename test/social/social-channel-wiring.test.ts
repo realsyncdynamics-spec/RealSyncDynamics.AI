@@ -24,8 +24,12 @@ describe('social_channel_connections Grants und RLS', () => {
     const grant = migration.slice(migration.indexOf('GRANT SELECT ('));
     const columns = grant.slice(0, grant.indexOf(') ON public.social_channel_connections TO authenticated'));
     expect(columns).not.toContain('credentials_enc');
+    expect(columns).not.toContain('scopes');
+    expect(columns).not.toContain('last_error');
+    expect(columns).not.toContain('created_by');
     expect(columns).toContain('account_name');
     expect(columns).toContain('token_expires_at');
+    expect(columns).toContain('updated_at');
     expect(migration).toContain('ENABLE ROW LEVEL SECURITY');
     expect(migration).toContain('public.is_tenant_member(tenant_id)');
     expect(migration).toContain('UNIQUE (tenant_id, channel, account_external_id)');
@@ -48,36 +52,50 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
     expect(connect).toContain('requireAuthAndTenant');
   });
 
-  it('schreibt das Siegel und antwortet nur mit den Metadaten-Spalten', () => {
-    expect(connect).toContain('credentials_enc: sealed.sealed');
-    expect(connect).toContain('SOCIAL_CONNECTION_PUBLIC_SELECT');
-    expect(connect).toContain('NOT_CONFIGURED');
-    expect(connect).toContain('503');
+  it('nimmt keine Client-Credentials an und siegelt sie nicht', () => {
+    expect(connect).toContain('clientSuppliedCredentials');
+    expect(connect).toContain('CREDENTIALS_NOT_ACCEPTED');
+    expect(connect).toContain('parseClientScopes');
+    const code = codeWithoutComments(connect);
+    expect(code).not.toContain('sealSocialCredentials');
+    expect(code).not.toContain('loadIntegrationSealKey');
+    expect(connect).toContain("system_type: 'social_channel'");
+    expect(connect).toContain('registry_id');
     for (const line of connect.split('\n')) {
       if (!line.includes('credentials_enc') && !line.includes('access_token')) continue;
       expect(line).not.toContain('jsonResponse');
     }
   });
 
-  it('auditiert Feldnamen, nicht Werte', () => {
+  it('bricht ab, wenn das Audit fehlschlägt, und nimmt die Schreibe zurück', () => {
+    expect(connect).toContain('commitWithAudit');
+    expect(connect).toContain('AUDIT_FAILED');
+    expect(connect).toContain('credentials_accepted: false');
     const payloads = connect.split('\n').filter((line) => line.includes('payload:'));
     expect(payloads.length).toBeGreaterThan(0);
     for (const line of payloads) {
       expect(line).not.toContain('access_token');
       expect(line).not.toContain('sealed');
     }
-    expect(connect).toContain('credential_fields: sealed.fieldNames');
   });
 });
 
 describe('Worker liest den Token je Mandant', () => {
-  it('oeffnet das Siegel und laesst den LinkedIn-HTTP-Vertrag unveraendert', () => {
+  it('ruft LinkedIn nur, wenn das Flag an ist', () => {
     expect(worker).toContain('resolveSocialAccessToken');
     expect(worker).toContain('https://api.linkedin.com/v2/ugcPosts');
     expect(worker).toContain('urn:li:person:ABC123');
     expect(worker).toContain('urn:li:person:XYZ789');
     expect(worker).not.toContain('LINKEDIN_ACCESS_TOKEN');
     expect(worker).not.toContain('config.linkedinToken');
+    const fn = worker.slice(worker.indexOf('async function publishLinkedIn'));
+    const gate = fn.indexOf('linkedinPublishingEnabled');
+    const call = fn.indexOf('https://api.linkedin.com/v2/ugcPosts');
+    expect(gate).toBeGreaterThan(-1);
+    expect(call).toBeGreaterThan(gate);
+    expect(fn).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
+    expect(worker).toContain('LINKEDIN_PUBLISH_FLAG');
+    expect(helper).toContain("SOCIAL_PUBLISHER_LINKEDIN_ENABLED");
   });
 
   it('loggt den Legacy-Fallback ohne Tokenwert', () => {

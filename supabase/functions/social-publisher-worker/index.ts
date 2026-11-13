@@ -13,6 +13,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import {
+  accountExternalIdFromPostData,
+  resolveSocialAccessToken,
+} from '../_shared/socialChannelCredentials.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -20,9 +24,10 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 // ── Publisher registry ────────────────────────────────────────────
+// LinkedIn-Tokens kommen nicht mehr aus diesem Objekt. Sie werden je
+// Mandant aus social_channel_connections geoeffnet (siehe publishLinkedIn).
 
 interface PublishConfig {
-  linkedinToken?: string;
   wordpressUrl?: string;
   wordpressToken?: string;
   ghostUrl?: string;
@@ -33,7 +38,6 @@ interface PublishConfig {
 }
 
 const config: PublishConfig = {
-  linkedinToken: Deno.env.get('LINKEDIN_ACCESS_TOKEN'),
   wordpressUrl: Deno.env.get('WORDPRESS_URL'),
   wordpressToken: Deno.env.get('WORDPRESS_API_TOKEN'),
   ghostUrl: Deno.env.get('GHOST_URL'),
@@ -51,7 +55,8 @@ interface QueueJob {
   channel: string;
   body: string;
   hashtags: string[];
-  post_data: Record<string, unknown>;
+  /** claim_next liefert post_data heute nicht. Der Worker liest es nach. */
+  post_data?: Record<string, unknown>;
 }
 
 /**
@@ -109,10 +114,44 @@ async function publishViaChannel(
 }
 
 // ── LinkedIn Publisher ─────────────────────────────────────────────
+//
+// Token je Mandant und Kanal aus social_channel_connections.
+// Der HTTP-Vertrag (POST /v2/ugcPosts, Platzhalter-URNs) bleibt bis PR2.
+
+async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
+  const direct = accountExternalIdFromPostData(job.post_data);
+  if (direct) return direct;
+  const { data, error } = await supabase
+    .from('distribution_queue_entries')
+    .select('post_data')
+    .eq('id', job.id)
+    .eq('tenant_id', job.tenant_id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return accountExternalIdFromPostData(data.post_data);
+}
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
-  if (!config.linkedinToken) {
-    return { ok: false, error: 'LinkedIn token not configured' };
+  const accountExternalId = await linkedinAccountHint(job);
+  const resolved = await resolveSocialAccessToken(supabase, {
+    tenantId: job.tenant_id,
+    queueChannel: job.channel,
+    accountExternalId,
+    readEnv: (name) => Deno.env.get(name) ?? undefined,
+  });
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.message };
+  }
+  if (resolved.source === 'legacy_env') {
+    // Uebergang: nur wenn SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN=on und keine
+    // Verbindungszeile existiert. Der Tokenwert wird nicht geloggt.
+    console.warn(JSON.stringify({
+      level: 'warn',
+      scope: 'social_publisher_legacy_env_token',
+      tenant_id: job.tenant_id,
+      channel: job.channel,
+      flag: 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN',
+    }));
   }
 
   const personUrn = job.channel === 'linkedin.legal'
@@ -123,7 +162,7 @@ async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.linkedinToken}`,
+        'Authorization': `Bearer ${resolved.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

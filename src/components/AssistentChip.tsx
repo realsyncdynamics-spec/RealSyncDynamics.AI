@@ -40,10 +40,14 @@ export function AssistentChip() {
   const isLanding = pathname === '/';
 
   useEffect(() => {
-    function openAssistant() { setOpen(true); }
+    function openAssistant(event: Event) {
+      if (shouldHide(pathname)) return;
+      event.preventDefault();
+      setOpen(true);
+    }
     window.addEventListener('realsync:open-public-assistant', openAssistant);
     return () => window.removeEventListener('realsync:open-public-assistant', openAssistant);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => setOpen(false), [pathname]);
 

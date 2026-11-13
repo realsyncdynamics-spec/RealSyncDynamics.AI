@@ -477,6 +477,9 @@ verify_jwt = false
 [functions.order-intake]
 verify_jwt = false
 
+[functions.bot-widget-token]
+verify_jwt = true
+
 [functions.bot-voice-webhook]
 verify_jwt = false
 

@@ -24,6 +24,8 @@ export interface RestaurantBotConfig {
 export interface BotConfig {
   vertical?: BotVertical;
   restaurant?: RestaurantBotConfig;
+  /** Pflicht-Liste der Widget-Origins. Leer = keine öffentlichen Browser-Aufrufe. */
+  allowed_origins?: string[];
   [key: string]: unknown;
 }
 

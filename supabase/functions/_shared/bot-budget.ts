@@ -340,13 +340,14 @@ export async function checkBotRateLimit(admin: RpcAdmin, ipHash: string, botId: 
 }
 
 /**
- * Origin-Prüfung als Zusatzhürde, ausdrücklich kein Zugriffsschutz (der
- * Header ist außerhalb von Browsern frei setzbar). Greift nur, wenn der Bot
- * eine Liste `config.allowed_origins` trägt.
+ * Origin-Prüfung, fail-closed. Eine leere oder fehlende Liste
+ * `config.allowed_origins` lässt keine Anfrage mehr durch. Der Header allein
+ * ist kein Zugriffsschutz (außerhalb von Browsern frei setzbar); er ist die
+ * Pflicht-Bindung des Widget-Tokens an die erlaubte Einbettungs-Origin.
  */
 export function originAllowed(origin: string | null, config: Record<string, unknown> | null | undefined): boolean {
   const list = config?.allowed_origins;
-  if (!Array.isArray(list) || list.length === 0) return true;
+  if (!Array.isArray(list) || list.length === 0) return false;
   if (!origin) return false;
   const normalized = origin.trim().toLowerCase().replace(/\/+$/, '');
   return list.some((o) => typeof o === 'string' && o.trim().toLowerCase().replace(/\/+$/, '') === normalized);

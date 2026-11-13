@@ -70,6 +70,21 @@ function BotBuilderInner() {
     } : prev);
   }
 
+
+  function patchAllowedOrigins(text: string) {
+    const allowed_origins = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    setBot((prev) => prev ? {
+      ...prev,
+      config: {
+        ...prev.config,
+        allowed_origins,
+      },
+    } : prev);
+  }
+
   function optionalNumber(value: string): number | undefined {
     if (!value.trim()) return undefined;
     const parsed = Number(value);
@@ -402,9 +417,27 @@ function BotBuilderInner() {
             </Card>
 
             <Card>
-              <CardHeader title="Integration" eyebrow="Endpoints" subtitle="Identifiziere den Bot über tenant_id + bot_id." />
+              <CardHeader title="Integration" eyebrow="Endpoints" subtitle="Öffentliche Bot-Endpunkte verlangen ein Widget-Token und eine erlaubte Origin." />
               <CardBody className="space-y-3">
+                <p className="text-xs text-titanium-500">
+                  Tokens stellt nur ein angemeldetes Mandantenmitglied über
+                  <code> POST /functions/v1/bot-widget-token </code>
+                  aus. Zusätzlich muss <code>config.allowed_origins</code> die Einbettungs-Origin enthalten.
+                  Ein Aufruf allein mit tenant_id und bot_id wird abgelehnt.
+                </p>
+                <label className="block space-y-1">
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500">Erlaubte Origins (eine pro Zeile)</span>
+                  <textarea
+                    className="w-full border border-titanium-800 bg-obsidian-900 px-3 py-2 font-mono text-[11px] text-titanium-300"
+                    rows={3}
+                    placeholder="https://kunde.example"
+                    value={(bot.config.allowed_origins ?? []).join('\n')}
+                    onChange={(e) => patchAllowedOrigins(e.target.value)}
+                  />
+                </label>
                 <CodeBlock label="Chat-Endpoint" value={`POST ${FUNCTIONS_BASE}/bot-chat`} />
+
+                <CodeBlock label="Token ausstellen" value={`POST ${FUNCTIONS_BASE}/bot-widget-token`} />
                 <CodeBlock label="tenant_id" value={bot.tenant_id} />
                 <CodeBlock label="bot_id" value={bot.id} />
                 {bot.channel === 'voice' && (
@@ -418,7 +451,16 @@ function BotBuilderInner() {
                 )}
                 <CodeBlock
                   label="Beispiel-Request"
-                  value={`curl -X POST ${FUNCTIONS_BASE}/bot-chat \\\n  -H 'content-type: application/json' \\\n  -d '{"tenant_id":"${bot.tenant_id}","bot_id":"${bot.id}","message":"Hallo"}'`}
+                  value={`curl -X POST ${FUNCTIONS_BASE}/bot-widget-token \\
+  -H 'authorization: Bearer $USER_JWT' \\
+  -H 'content-type: application/json' \\
+  -d '{"tenant_id":"${bot.tenant_id}","bot_id":"${bot.id}","origin":"https://kunde.example"}'
+
+curl -X POST ${FUNCTIONS_BASE}/bot-chat \\
+  -H 'content-type: application/json' \\
+  -H 'origin: https://kunde.example' \\
+  -H 'x-rsd-bot-widget-token: $WIDGET_TOKEN' \\
+  -d '{"tenant_id":"${bot.tenant_id}","bot_id":"${bot.id}","message":"Hallo"}'`}
                 />
               </CardBody>
             </Card>

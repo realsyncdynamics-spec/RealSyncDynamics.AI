@@ -10,7 +10,8 @@ import {
 } from '../../supabase/functions/_shared/linkedinPosts';
 import {
   LEGACY_ENV_TOKEN_FLAG,
-  LINKEDIN_PUBLISHING_FLAG,
+  LINKEDIN_PUBLISH_DISABLED_MESSAGE,
+  LINKEDIN_PUBLISH_FLAG,
   sealSocialCredentials,
   type SocialChannelAdmin,
   type SocialConnectionRow,
@@ -86,7 +87,7 @@ function enableLinkedIn(
   readEnv?: (name: string) => string | undefined,
 ): (name: string) => string | undefined {
   return (name) => {
-    if (name === LINKEDIN_PUBLISHING_FLAG) return 'on';
+    if (name === LINKEDIN_PUBLISH_FLAG) return 'on';
     return readEnv?.(name);
   };
 }
@@ -133,7 +134,7 @@ describe('LinkedIn Posts API', () => {
         fetchImpl,
         readEnv: () => flag,
       });
-      expect(result).toEqual({ ok: false, error: 'linkedin publishing is disabled' });
+      expect(result).toEqual({ ok: false, error: LINKEDIN_PUBLISH_DISABLED_MESSAGE });
     }
     expect(calls).toHaveLength(0);
     expect(JSON.stringify({ calls })).not.toContain(TOKEN);

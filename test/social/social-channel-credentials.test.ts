@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { importSecretKey, open } from '../../supabase/functions/_shared/secretBox';
 import {
   LEGACY_ENV_TOKEN_FLAG,
+  LINKEDIN_PUBLISH_DISABLED_MESSAGE,
   accountExternalIdFromPostData,
   chooseSocialConnection,
+  clientSuppliedCredentials,
+  commitWithAudit,
   connectionExpired,
-  LINKEDIN_PUBLISHING_FLAG,
   legacyEnvTokenEnabled,
-  linkedInPublishingEnabled,
+  linkedinPublishingEnabled,
+  parseClientScopes,
   parseSocialCredentials,
   isSocialProviderInDevelopment,
   providerForQueueChannel,
@@ -87,16 +90,6 @@ describe('Social-Kanal-Tokens', () => {
     expect(isSocialProviderInDevelopment('facebook')).toBe(true);
     expect(isSocialProviderInDevelopment('linkedin')).toBe(false);
     expect(isSocialProviderInDevelopment('instagram')).toBe(false);
-  });
-
-  it('schaltet LinkedIn-Versand nur bei exakt "on" ein', () => {
-    expect(LINKEDIN_PUBLISHING_FLAG).toBe('SOCIAL_PUBLISHER_LINKEDIN_ENABLED');
-    expect(linkedInPublishingEnabled('on')).toBe(true);
-    expect(linkedInPublishingEnabled(undefined)).toBe(false);
-    expect(linkedInPublishingEnabled('')).toBe(false);
-    expect(linkedInPublishingEnabled('off')).toBe(false);
-    expect(linkedInPublishingEnabled('ON')).toBe(false);
-    expect(linkedInPublishingEnabled('true')).toBe(false);
   });
 
   it('schaltet den Legacy-Env-Token nur bei exakt "on" ein', () => {
@@ -286,6 +279,69 @@ describe('Social-Kanal-Tokens', () => {
     });
     expect(ambiguousResult).toMatchObject({ ok: false, code: 'ambiguous_connection' });
     expect(JSON.stringify(ambiguousResult)).not.toContain(FIXTURE_TOKEN);
+  });
+
+  it('lehnt Client-Credentials ab und begrenzt Scopes auf openid und profile', () => {
+    expect(clientSuppliedCredentials({ credentials: { access_token: FIXTURE_TOKEN } })).toBe(true);
+    expect(clientSuppliedCredentials({ access_token: '' })).toBe(true);
+    expect(clientSuppliedCredentials({ refresh_token: null })).toBe(true);
+    expect(clientSuppliedCredentials({ channel: 'linkedin', account_external_id: 'urn:li:organization:1' })).toBe(false);
+    expect(JSON.stringify(clientSuppliedCredentials({ access_token: FIXTURE_TOKEN }))).not.toContain(FIXTURE_TOKEN);
+
+    expect(parseClientScopes(undefined)).toEqual({ ok: true, scopes: ['openid', 'profile'] });
+    expect(parseClientScopes(['openid'])).toEqual({ ok: true, scopes: ['openid'] });
+    const broad = parseClientScopes(['openid', 'w_member_social']);
+    expect(broad.ok).toBe(false);
+    if (!broad.ok) expect(broad.error).not.toContain('w_member_social');
+  });
+
+  it('schaltet den LinkedIn-Aufruf nur bei exakt on ein', () => {
+    expect(linkedinPublishingEnabled(undefined)).toBe(false);
+    expect(linkedinPublishingEnabled('off')).toBe(false);
+    expect(linkedinPublishingEnabled('true')).toBe(false);
+    expect(linkedinPublishingEnabled('on')).toBe(true);
+    expect(LINKEDIN_PUBLISH_DISABLED_MESSAGE).toMatch(/not executed/);
+  });
+
+  it('nimmt die Schreibe zurück, wenn das Audit fehlschlägt', async () => {
+    const events: string[] = [];
+    const failed = await commitWithAudit({
+      write: async () => {
+        events.push('write');
+        return { ok: true as const, value: 'row-1' };
+      },
+      record: async () => {
+        events.push('audit');
+        return { ok: false };
+      },
+      revert: async () => {
+        events.push('revert');
+      },
+    });
+    expect(failed).toEqual({ ok: false, code: 'audit_failed' });
+    expect(events).toEqual(['write', 'audit', 'revert']);
+
+    const thrown = await commitWithAudit({
+      write: async () => ({ ok: true as const, value: 'row-2' }),
+      record: async () => {
+        throw new Error('audit down');
+      },
+      revert: async () => {
+        events.push('revert-throw');
+      },
+    });
+    expect(thrown).toEqual({ ok: false, code: 'audit_failed' });
+    expect(events).toContain('revert-throw');
+
+    const ok = await commitWithAudit({
+      write: async () => ({ ok: true as const, value: 'row-3' }),
+      record: async () => ({ ok: true }),
+      revert: async () => {
+        events.push('revert-ok');
+      },
+    });
+    expect(ok).toEqual({ ok: true, value: 'row-3' });
+    expect(events).not.toContain('revert-ok');
   });
 
   it('speichert ohne Siegel-Schluessel nichts', async () => {

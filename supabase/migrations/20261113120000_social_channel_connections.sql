@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS public.social_channel_connections (
     last_error            text,
     connected_at          timestamptz,
     created_by            uuid,
+    -- Zeiger auf die Registratur, analog m365_connections.registry_id.
+    -- Die Klasse steht dort, abgeleitet aus system_type, nicht hier.
+    registry_id           uuid REFERENCES public.connector_registry(id) ON DELETE SET NULL,
     created_at            timestamptz NOT NULL DEFAULT now(),
     updated_at            timestamptz NOT NULL DEFAULT now(),
 
@@ -64,7 +67,15 @@ COMMENT ON COLUMN public.social_channel_connections.channel IS
 
 COMMENT ON COLUMN public.social_channel_connections.credentials_enc IS
     'AES-256-GCM-Siegel der OAuth-Tokens (Format v1:<iv>:<ciphertext>). '
-    'Nicht an anon/authenticated vergeben; nur service_role liest und entsiegelt.';
+    'Nicht an anon/authenticated vergeben; nur service_role liest und entsiegelt. '
+    'Der Client schreibt dieses Siegel nicht; das tut ein spaeterer '
+    'serverseitiger OAuth-Tausch.';
+
+COMMENT ON COLUMN public.social_channel_connections.last_error IS
+    'Letzter Betriebsfehler. Nur service_role. Nicht an authenticated vergeben.';
+
+COMMENT ON COLUMN public.social_channel_connections.registry_id IS
+    'Zeiger auf connector_registry. Klasse C, system_type social_channel.';
 
 COMMENT ON COLUMN public.social_channel_connections.account_external_id IS
     'Stabile Plattform-ID aus OAuth, z. B. LinkedIn-Member- oder Org-URN. '
@@ -95,20 +106,18 @@ CREATE POLICY social_channel_connections_tenant_select
 REVOKE ALL ON public.social_channel_connections FROM anon;
 REVOKE ALL ON public.social_channel_connections FROM authenticated;
 
+-- Nur was eine Verbindungs-UI braucht. scopes, last_error, created_by,
+-- credentials_enc, registry_id und die übrigen Betriebsfelder bleiben
+-- bei service_role. Spaltenrechte, nicht eine View: RLS kann eine Spalte
+-- nicht verbergen (dieselbe Begründung wie 20260824110000).
 GRANT SELECT (
     id,
     tenant_id,
     channel,
     account_external_id,
     account_name,
-    account_kind,
     status,
     token_expires_at,
-    scopes,
-    last_error,
-    connected_at,
-    created_by,
-    created_at,
     updated_at
 ) ON public.social_channel_connections TO authenticated;
 
@@ -117,5 +126,41 @@ GRANT SELECT (
 -- der Defaults haengt. authenticated ist oben bereits ohne diese Spalte.
 GRANT SELECT, INSERT, UPDATE, DELETE
     ON public.social_channel_connections TO service_role;
+
+-- Klasse C: der Aufruf geht an die API des Anbieters. Wir können ihn
+-- unterlassen, aber nichts abfangen, was dort schon geschehen ist.
+-- Vollständige CASE-Liste, damit dieser Ersatz keine bestehende
+-- Zuordnung verliert. Zwilling: shared/enforcement-classes.ts.
+CREATE OR REPLACE FUNCTION public.connector_enforcement_class(p_system_type TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public, pg_temp
+AS $$
+    SELECT CASE p_system_type
+        WHEN 'ai_gateway'     THEN 'A'
+        WHEN 'agent_runtime'  THEN 'A'
+        WHEN 'sdk_preflight'  THEN 'A'
+        WHEN 'chatbot'        THEN 'A'
+        WHEN 'whatsapp'       THEN 'A'
+        WHEN 'voice'          THEN 'A'
+        WHEN 'siteos_publish' THEN 'B'
+        WHEN 'cicd_gate'      THEN 'B'
+        WHEN 'microsoft365'   THEN 'C'
+        WHEN 'social_channel' THEN 'C'
+        WHEN 'crm'            THEN 'C'
+        WHEN 'erp'            THEN 'C'
+        WHEN 'warenwirtschaft' THEN 'C'
+        WHEN 'logistik'       THEN 'C'
+        WHEN 'ticketing'      THEN 'C'
+        WHEN 'messaging'      THEN 'C'
+        WHEN 'custom_api'     THEN 'C'
+        WHEN 'browser_direct' THEN 'D'
+        ELSE 'C'
+    END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.connector_enforcement_class(TEXT)
+    TO authenticated, service_role;
 
 COMMIT;

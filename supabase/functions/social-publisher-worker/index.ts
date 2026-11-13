@@ -15,9 +15,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { publishLinkedInQueueJob } from '../_shared/linkedinPosts.ts';
 import {
+  LINKEDIN_PUBLISH_DISABLED_MESSAGE,
+  LINKEDIN_PUBLISH_FLAG,
   accountExternalIdFromPostData,
-  LINKEDIN_PUBLISHING_FLAG,
-  linkedInPublishingEnabled,
+  linkedinPublishingEnabled,
 } from '../_shared/socialChannelCredentials.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -119,7 +120,7 @@ async function publishViaChannel(
 //
 // Token und Autor-URN je Mandant aus social_channel_connections.
 // HTTP: POST https://api.linkedin.com/rest/posts (linkedinPosts.ts).
-// SOCIAL_PUBLISHER_LINKEDIN_ENABLED default aus: kein Siegel, kein HTTP.
+// SOCIAL_PUBLISHER_LINKEDIN_ENABLED default aus: kein Claim, kein Siegel, kein HTTP.
 // Kein globaler LINKEDIN_ACCESS_TOKEN.
 
 function workerEnv(name: string): string | undefined {
@@ -140,8 +141,8 @@ async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
 }
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
-  if (!linkedInPublishingEnabled(workerEnv(LINKEDIN_PUBLISHING_FLAG))) {
-    return { ok: false, error: 'linkedin publishing is disabled' };
+  if (!linkedinPublishingEnabled(workerEnv(LINKEDIN_PUBLISH_FLAG))) {
+    return { ok: false, error: LINKEDIN_PUBLISH_DISABLED_MESSAGE };
   }
   const accountExternalId = await linkedinAccountHint(job);
   return publishLinkedInQueueJob(supabase, {
@@ -399,7 +400,7 @@ async function processJob(channel: string): Promise<boolean> {
  * Process all channels (one job per channel per invocation).
  */
 async function processAllChannels(): Promise<void> {
-  const linkedInOn = linkedInPublishingEnabled(workerEnv(LINKEDIN_PUBLISHING_FLAG));
+  const linkedInOn = linkedinPublishingEnabled(workerEnv(LINKEDIN_PUBLISH_FLAG));
   const channels = [
     'linkedin.enterprise',
     'linkedin.legal',
@@ -414,7 +415,7 @@ async function processAllChannels(): Promise<void> {
     console.log(JSON.stringify({
       level: 'info',
       scope: 'social_publisher_linkedin_disabled',
-      flag: LINKEDIN_PUBLISHING_FLAG,
+      flag: LINKEDIN_PUBLISH_FLAG,
     }));
   }
 

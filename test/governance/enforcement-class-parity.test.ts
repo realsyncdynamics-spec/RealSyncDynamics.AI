@@ -15,7 +15,7 @@
  * demselben Grund: Doppelte Wahrheit ist nur zulässig, wenn sie erzwungen
  * gleich bleibt.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -34,13 +34,23 @@ const MIGRATION = join(
   'supabase/migrations/20260904100000_connector_registry.sql',
 );
 
-/** Liest die WHEN-Zweige aus `connector_enforcement_class()`. */
+/**
+ * Liest die WHEN-Zweige aus der letzten Fassung von
+ * `connector_enforcement_class()`. Ein späteres CREATE OR REPLACE ersetzt
+ * die erste Migration; die Parität gilt für das, was in der Datenbank steht.
+ */
 function sqlMapping(): Map<string, string> {
-  const sql = readFileSync(MIGRATION, 'utf8');
-  const start = sql.indexOf('CREATE OR REPLACE FUNCTION public.connector_enforcement_class');
-  expect(start, 'connector_enforcement_class() nicht in der Migration gefunden').toBeGreaterThan(-1);
-  const end = sql.indexOf('$$;', start);
-  const body = sql.slice(start, end);
+  const dir = join(process.cwd(), 'supabase/migrations');
+  const files = readdirSync(dir).filter((name) => name.endsWith('.sql')).sort();
+  let body = '';
+  for (const file of files) {
+    const sql = readFileSync(join(dir, file), 'utf8');
+    const start = sql.indexOf('CREATE OR REPLACE FUNCTION public.connector_enforcement_class');
+    if (start === -1) continue;
+    const end = sql.indexOf('$$;', start);
+    body = sql.slice(start, end);
+  }
+  expect(body.length, 'connector_enforcement_class() nicht in den Migrationen gefunden').toBeGreaterThan(0);
 
   const map = new Map<string, string>();
   for (const m of body.matchAll(/WHEN\s+'([a-z0-9_]+)'\s+THEN\s+'([ABCD])'/gi)) {

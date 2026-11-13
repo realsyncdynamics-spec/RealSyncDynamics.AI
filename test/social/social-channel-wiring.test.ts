@@ -24,8 +24,12 @@ describe('social_channel_connections Grants und RLS', () => {
     const grant = migration.slice(migration.indexOf('GRANT SELECT ('));
     const columns = grant.slice(0, grant.indexOf(') ON public.social_channel_connections TO authenticated'));
     expect(columns).not.toContain('credentials_enc');
+    expect(columns).not.toContain('scopes');
+    expect(columns).not.toContain('last_error');
+    expect(columns).not.toContain('created_by');
     expect(columns).toContain('account_name');
     expect(columns).toContain('token_expires_at');
+    expect(columns).toContain('updated_at');
     expect(migration).toContain('ENABLE ROW LEVEL SECURITY');
     expect(migration).toContain('public.is_tenant_member(tenant_id)');
     expect(migration).toContain('UNIQUE (tenant_id, channel, account_external_id)');
@@ -45,15 +49,15 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
   it('lehnt facebook ab, weil der Kanal in Entwicklung ist', () => {
     const configure = connect.slice(connect.indexOf('async function configure'));
     const guard = configure.indexOf('isSocialProviderInDevelopment');
-    const seal = configure.indexOf('loadIntegrationSealKey');
+    const write = configure.indexOf('commitWithAudit');
     expect(guard).toBeGreaterThan(-1);
-    expect(seal).toBeGreaterThan(guard);
+    expect(write).toBeGreaterThan(guard);
     expect(configure).toContain('NOT_AVAILABLE');
     expect(configure).toContain('in development and has no queue channel');
     const rotate = connect.slice(connect.indexOf('async function rotate'));
     const rotateGuard = rotate.indexOf('isSocialProviderInDevelopment');
     expect(rotateGuard).toBeGreaterThan(-1);
-    expect(rotateGuard).toBeLessThan(rotate.indexOf('loadIntegrationSealKey'));
+    expect(rotateGuard).toBeLessThan(rotate.indexOf('commitWithAudit'));
     expect(migration).toContain('facebook ist in Entwicklung');
   });
 
@@ -63,30 +67,36 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
     expect(connect).toContain('requireAuthAndTenant');
   });
 
-  it('schreibt das Siegel und antwortet nur mit den Metadaten-Spalten', () => {
-    expect(connect).toContain('credentials_enc: sealed.sealed');
-    expect(connect).toContain('SOCIAL_CONNECTION_PUBLIC_SELECT');
-    expect(connect).toContain('NOT_CONFIGURED');
-    expect(connect).toContain('503');
+  it('nimmt keine Client-Credentials an und siegelt sie nicht', () => {
+    expect(connect).toContain('clientSuppliedCredentials');
+    expect(connect).toContain('CREDENTIALS_NOT_ACCEPTED');
+    expect(connect).toContain('parseClientScopes');
+    const code = codeWithoutComments(connect);
+    expect(code).not.toContain('sealSocialCredentials');
+    expect(code).not.toContain('loadIntegrationSealKey');
+    expect(connect).toContain("system_type: 'social_channel'");
+    expect(connect).toContain('registry_id');
     for (const line of connect.split('\n')) {
       if (!line.includes('credentials_enc') && !line.includes('access_token')) continue;
       expect(line).not.toContain('jsonResponse');
     }
   });
 
-  it('auditiert Feldnamen, nicht Werte', () => {
+  it('bricht ab, wenn das Audit fehlschlägt, und nimmt die Schreibe zurück', () => {
+    expect(connect).toContain('commitWithAudit');
+    expect(connect).toContain('AUDIT_FAILED');
+    expect(connect).toContain('credentials_accepted: false');
     const payloads = connect.split('\n').filter((line) => line.includes('payload:'));
     expect(payloads.length).toBeGreaterThan(0);
     for (const line of payloads) {
       expect(line).not.toContain('access_token');
       expect(line).not.toContain('sealed');
     }
-    expect(connect).toContain('credential_fields: sealed.fieldNames');
   });
 });
 
 describe('Worker liest den Token je Mandant', () => {
-  it('sendet ueber die Posts API und nicht ueber ugcPosts oder Platzhalter-URNs', () => {
+  it('sendet ueber die Posts API nur, wenn das Flag an ist', () => {
     const workerCode = codeWithoutComments(worker);
     expect(workerCode).toContain('publishLinkedInQueueJob');
     expect(workerCode).not.toContain('ugcPosts');
@@ -95,14 +105,21 @@ describe('Worker liest den Token je Mandant', () => {
     expect(workerCode).not.toContain('LINKEDIN_ACCESS_TOKEN');
     expect(workerCode).not.toContain('config.linkedinToken');
     expect(workerCode).not.toContain('legacy_env');
+    expect(workerCode).toContain('LINKEDIN_PUBLISH_FLAG');
+    expect(workerCode).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
+    const fn = workerCode.slice(workerCode.indexOf('async function publishLinkedIn'));
+    const gate = fn.indexOf('linkedinPublishingEnabled');
+    const call = fn.indexOf('publishLinkedInQueueJob');
+    expect(gate).toBeGreaterThan(-1);
+    expect(call).toBeGreaterThan(gate);
     const posts = readFileSync('supabase/functions/_shared/linkedinPosts.ts', 'utf8');
     expect(posts).toContain('https://api.linkedin.com/rest/posts');
     expect(posts).toContain("'LinkedIn-Version': LINKEDIN_API_VERSION");
     expect(posts).toContain("'X-Restli-Protocol-Version': LINKEDIN_RESTLI_PROTOCOL");
     expect(posts).toContain('allowLegacyEnv: false');
-    expect(posts).toContain('linkedInPublishingEnabled');
-    expect(workerCode).toContain('linkedInPublishingEnabled');
-    expect(helper).toContain("export const LINKEDIN_PUBLISHING_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED'");
+    expect(posts).toContain('linkedinPublishingEnabled');
+    expect(posts).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
+    expect(helper).toContain("export const LINKEDIN_PUBLISH_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED'");
     expect(helper).toContain("return flag === 'on'");
     expect(posts).toContain("response.headers.get('x-restli-id')");
     expect(codeWithoutComments(posts)).not.toContain('ugcPosts');

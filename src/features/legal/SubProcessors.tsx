@@ -46,6 +46,17 @@ const SUB_PROCESSORS: SubProcessor[] = [
     status: 'available',
   },
   {
+    name: 'SpaceX Super Intelligence LLC (xAI / Grok Voice)',
+    purpose:
+      'Echtzeit-Sprachverarbeitung und Inferenz (geplant / in Prüfung). SpaceX Super Intelligence LLC (xAI / Grok Voice), Zweck: Echtzeit-Sprachverarbeitung und Inferenz. Region: außerhalb der EU, Ort nicht fest zugesagt (kein Voice-Endpunkt mit Residenzgarantie). Transfergrundlage: Art. 46 Abs. 2 lit. c DSGVO (SCC), nicht DPF. AVV: https://x.ai/legal/data-processing-addendum (nur verbindlich, soweit für unseren Account einbezogen). Personenbezogene Daten werden ausschließlich über die Zero-Data-Retention-Schnittstelle übermittelt. Status: [freigegeben erst nach dokumentierter Einbeziehung und aktivem ZDR].',
+    data_categories: [
+      'Sprachdaten und erforderliche technische Verbindungsdaten (nur soweit der Einsatz freigegeben ist)',
+    ],
+    region: 'außerhalb der EU, Ort nicht fest zugesagt (kein Voice-Endpunkt mit Residenzgarantie)',
+    dpa_url: 'https://x.ai/legal/data-processing-addendum',
+    status: 'pending',
+  },
+  {
     name: 'Stripe Payments Europe, Limited',
     purpose: 'Zahlungsabwicklung (Subscriptions, Invoicing)',
     data_categories: ['Email', 'Name', 'Zahlungsdaten (von Stripe selbst gehostet)'],
@@ -127,7 +138,7 @@ export function SubProcessors() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-          Sub-Prozessoren: Supabase · Cloudflare · Anthropic · Google · OpenAI · Stripe · Hostinger · Resend · Sentry · GitHub
+          Sub-Prozessoren: Supabase · Cloudflare · Anthropic · Google · OpenAI · xAI (geplant / in Prüfung) · Stripe · Hostinger · Resend · Sentry · GitHub
         </div>
         <div className="prose prose-invert max-w-none text-titanium-300 text-sm leading-relaxed">
           <p>
@@ -142,6 +153,11 @@ export function SubProcessors() {
             aktivierst, werden AI-Anfragen ausschließlich auf unserem Hostinger-VPS in
             Deutschland verarbeitet — Anthropic / Google / OpenAI werden dann <strong>
             nicht</strong> kontaktiert.
+            Der geplante Einsatz von SpaceXSI / xAI (Grok Voice, in Prüfung) ist von diesem
+            Schalter nicht erfasst und derzeit nicht freigegeben.
+          </p>
+          <p>
+            <strong>Geplant / in Prüfung — SpaceXSI / xAI:</strong> SpaceX Super Intelligence LLC (xAI / Grok Voice), Zweck: Echtzeit-Sprachverarbeitung und Inferenz. Region: außerhalb der EU, Ort nicht fest zugesagt (kein Voice-Endpunkt mit Residenzgarantie). Transfergrundlage: Art. 46 Abs. 2 lit. c DSGVO (SCC), nicht DPF. AVV: <a className="text-security-400" href="https://x.ai/legal/data-processing-addendum">https://x.ai/legal/data-processing-addendum</a> (nur verbindlich, soweit für unseren Account einbezogen). Personenbezogene Daten werden ausschließlich über die Zero-Data-Retention-Schnittstelle übermittelt. Status: [freigegeben erst nach dokumentierter Einbeziehung und aktivem ZDR].
           </p>
           <p className="text-[11px] text-titanium-500">
             Stand: {new Date().toISOString().slice(0, 10)} · Änderungen werden hier

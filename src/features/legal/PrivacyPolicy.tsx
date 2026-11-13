@@ -101,6 +101,14 @@ export function PrivacyPolicy() {
             OpenAI (USA, mit EU-DPA + SCCs nach Art. 46 DSGVO), Stripe (Irland),
             Hostinger (Deutschland).
           </p>
+          <p>
+            SpaceX Super Intelligence LLC (SpaceXSI / xAI, Grok Voice) ist als Empfänger{' '}
+            <strong>geplant und in Prüfung</strong>. Ein Einsatz erfolgt erst, wenn ein
+            Auftragsverarbeitungsvertrag einschließlich der EU-Standardvertragsklauseln
+            geschlossen und die Zero-Data-Retention-Funktion des Anbieters für unseren
+            Zugang aktiv und von Dominik Steiner bestätigt ist. Einzelheiten stehen in
+            Abschnitt 6b.
+          </p>
         </Section>
 
         <Section title="6. Datenresidenz / EU-lokal-Modus">
@@ -111,6 +119,9 @@ export function PrivacyPolicy() {
             kannst Du erzwingen, dass <strong>alle</strong> AI-Anfragen Deines
             Accounts ausschließlich auf unserem deutschen VPS verarbeitet werden.
             In diesem Modus verlassen Daten die EU nicht.
+            Der geplante Einsatz von SpaceXSI / xAI (Grok Voice, Abschnitt 6b, in Prüfung)
+            ist von diesem Schalter nicht erfasst; eine solche Verarbeitung fände außerhalb
+            der EU statt und ist derzeit nicht freigegeben.
           </p>
           <p>
             Workspace-Owner können die Wahl per <em>tenant.ai_data_residency_policy</em>
@@ -157,6 +168,21 @@ export function PrivacyPolicy() {
             Art. 6 Abs. 1 lit. f DSGVO (Sicherheit und Missbrauchsprävention). Im
             Modus „EU-lokal“ (Abschnitt 6) entstehen solche Protokolle bei Dritten
             nicht, da die Verarbeitung unseren VPS nicht verlässt.
+          </p>
+        </Section>
+
+        <Section title="6b. xAI / Grok Voice (geplant / in Prüfung)">
+          <p>
+            <strong>Status: geplant / in Prüfung.</strong> Dieser Abschnitt beschreibt eine
+            vorgesehene Verarbeitung und ist nicht freigegeben. Ein Produktiv- oder Demo-Einsatz
+            unterbleibt, bis der Auftragsverarbeitungsvertrag (Enterprise Terms einschließlich DPA)
+            und Zero-Data-Retention für unser Konto bestätigt sind.
+          </p>
+          <p>
+            Für die optionale Sprachfunktion (Grok Voice / Grok TTS) setzen wir die SpaceX Super Intelligence LLC (SpaceXSI), USA, handelnd unter der Marke xAI, als Auftragsverarbeiter ein (Art. 28 DSGVO). Übermittelt werden die von Ihnen bzw. Ihren Anruferinnen und Anrufern gesprochenen oder eingegebenen Sprachdaten sowie erforderliche technische Verbindungsdaten; eine Speicherung von Audio oder Transkript durch uns erfolgt nur, soweit dies in Ihrem Mandantenkonto ausdrücklich aktiviert und befristet ist. SpaceXSI verarbeitet diese Daten, um die Sprach- und Inferenzleistung zu erbringen. Rechtsgrundlage der Verarbeitung durch uns ist [Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) / Art. 6 Abs. 1 lit. a DSGVO (Einwilligung in die freiwillige Demo)]. Der Einsatz erfolgt erst, wenn ein Auftragsverarbeitungsvertrag einschließlich der EU-Standardvertragsklauseln geschlossen und die Zero-Data-Retention-Funktion des Anbieters für unseren Zugang aktiv ist.
+          </p>
+          <p>
+            Die Sprachverarbeitung durch SpaceXSI / xAI findet außerhalb der Europäischen Union statt. Der vom Anbieter dokumentierte globale Endpunkt (<code>api.x.ai</code>) sagt keinen bestimmten Verarbeitungsort zu; der Anbieter kann Anfragen zwischen Regionen verteilen. Der dokumentierte US-Endpunkt (<code>https://us.api.x.ai/v1</code>) gilt nach der Anbieterdokumentation nicht für Voice-APIs. Eine Verarbeitung unter anderem in den Vereinigten Staaten und gegebenenfalls in weiteren Drittstaaten ist daher möglich; eine ausschließliche EU-Verarbeitung oder eine feste Region wird nicht zugesagt. Quelle: Regions-Dokumentation von xAI, <a className="text-security-400" href="https://docs.x.ai/developers/advanced-api-usage/regions">https://docs.x.ai/developers/advanced-api-usage/regions</a>. Für SpaceXSI besteht nach der offiziellen Teilnehmerliste des EU-US Data Privacy Framework (Abruf 13. November 2026) keine aktive Zertifizierung; eine Übermittlung stützt sich daher nicht auf Art. 45 DSGVO. Geeignete Garantien sind die EU-Standardvertragsklauseln (Durchführungsbeschluss (EU) 2021/914, Module 2 bzw. 3) im Auftragsverarbeitungsvertrag mit SpaceXSI (<a className="text-security-400" href="https://x.ai/legal/data-processing-addendum">https://x.ai/legal/data-processing-addendum</a>). Eine Kopie dieser Klauseln erhalten Sie auf Anfrage unter <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a>.
           </p>
         </Section>
 
@@ -210,6 +236,10 @@ export function PrivacyPolicy() {
             den Transfer auf EU-Standardvertragsklauseln (SCCs, Art. 46 Abs. 2 lit. c
             DSGVO) sowie auf die Angemessenheitsentscheidung im Rahmen des
             EU-US Data Privacy Framework, soweit der Anbieter zertifiziert ist.
+            Diese DPF-Angabe gilt nicht für SpaceX Super Intelligence LLC (xAI / Grok Voice).
+            Für SpaceXSI besteht keine aktive Zertifizierung im EU-US Data Privacy Framework;
+            eine Übermittlung stützt sich nicht auf Art. 45 DSGVO, sondern — nach wirksamem AVV —
+            auf die EU-Standardvertragsklauseln nach Abschnitt 6b.
           </p>
           <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-hidden">
             <table className="w-full text-xs">

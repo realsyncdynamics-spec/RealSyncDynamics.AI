@@ -5,9 +5,9 @@
  * (Blueprint H17). Gmail Restricted Scopes dürfen bis dahin nicht beworben
  * oder automatisch eingebunden werden.
  */
-export const WIDGET_FEATURE_FLAGS = {
+export const WIDGET_FEATURE_FLAGS: { readonly gmail_restricted_scopes: boolean } = {
   gmail_restricted_scopes: false,
-} as const;
+};
 
 export type WidgetFeatureFlagName = keyof typeof WIDGET_FEATURE_FLAGS;
 

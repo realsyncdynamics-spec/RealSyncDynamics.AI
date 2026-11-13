@@ -77,19 +77,13 @@ describe('Kein Weg ohne Runtime — die eigentliche Regel', () => {
     }
   });
 
-  it('bietet „Frontend für bestehendes Backend" nicht an, solange Publish fehlt', () => {
-    // siteos/handlers/ enthält discover, builder, runtime-scan, agents —
-    // aber keinen Publish-Handler. Ohne Veröffentlichung gibt es keine
-    // Präsentationsschicht, die ein fremdes Backend bedienen könnte.
-    let hasPublishHandler = true;
-    try {
-      readFileSync(join(ROOT, 'supabase', 'functions', 'siteos', 'handlers', 'publish.ts'), 'utf-8');
-    } catch {
-      hasPublishHandler = false;
-    }
-    if (!hasPublishHandler) {
-      expect(frontendEntryModeById('frontend_for_existing_backend')?.available).toBe(false);
-    }
+  it('bietet „Frontend für bestehendes Backend" nicht an, solange die fremde API fehlt', () => {
+    // `handlers/publish.ts` gibt es nicht. `publish-preview.ts` und
+    // `publish-production.ts` existieren. Der Modus bleibt aus, weil die
+    // Anbindung fremder APIs fehlt — nicht, weil ein zweiter Publish-Stack
+    // gebaut werden müsste.
+    expect(frontendEntryModeById('frontend_for_existing_backend')?.available).toBe(false);
+    expect(frontendEntryModeById('frontend_for_existing_backend')?.requires).toMatch(/API/);
   });
 
   it('hält mindestens einen Weg offen — sonst wäre Option B eine leere Karte', () => {

@@ -480,10 +480,15 @@ entschieden hat und nicht das System.
 
 ### Noch nicht angeschlossen
 
-Es gibt keinen Publish-Knopf. Das Gate ist absichtlich vor dem Pfad gebaut,
-den es absichert — anders herum ließe es sich nachträglich umgehen. Der
-nächste Schritt ist der Deploy von `cloudflare-deployer` und die Bindung des
-Deployments an genau eine `evaluation_id` (G5).
+Korrektur 13.11.2026 (RSD-033-A, `docs/product/rsd-033-builder-integration.md`):
+Der Satz „Es gibt keinen Publish-Knopf“ beschreibt diesen Code nicht mehr.
+`publish-preview.ts` und `publish-production.ts` liegen neben dem Gate,
+der Transport in `cloudflare-pages.ts`. Ohne Cloudflare-Konfiguration bleibt
+die Antwort `503` / `CLOUDFLARE_NOT_CONFIGURED`. Ob die Secrets in der
+betriebenen Function gesetzt sind, ist nicht geprüft. Domain und DNS sind
+in diesen Handlern nicht enthalten. Der historische nächste Schritt, der
+Deploy von `cloudflare-deployer` und die Bindung an eine `evaluation_id`
+(G5), ist damit nur noch die Betriebslücke, nicht ein fehlender Handler.
 
 ---
 
@@ -578,6 +583,11 @@ hierher weiter — ein Builder, nicht zwei.
 
 **Was der Workspace tut und woher es kommt**
 
+Korrektur 13.11.2026 (RSD-033-A): Veröffentlichen und die Seitenoperationen
+standen hier als PLANNED. Der Code hängt beides an. Der Betrieb der
+Veröffentlichung (Secrets, nachweisbarer Lauf) bleibt offen. Details:
+`docs/product/rsd-033-builder-integration.md`.
+
 | Fläche | Quelle | Stand |
 |---|---|---|
 | Laden | `siteos_blueprints` per Client, RLS (`is_tenant_member`) | LIVE — `test/runtime/db/siteos-rls.db.test.ts` |
@@ -586,12 +596,12 @@ hierher weiter — ein Builder, nicht zwei.
 | Vorschau | derselbe Renderer (`renderSite`, `showcase`), sandboxed iframe | LIVE |
 | Probleme | `analyzeBlueprint` der lokalen Fassung + Blocker/Hinweise der letzten Gate-Bewertung | LIVE — keine erfundenen Befunde |
 | Prüfen | `siteos/publish-gate` für die **gespeicherte** Version; gesperrt bei ungespeicherten Änderungen | LIVE (Code) |
-| Veröffentlichen | — | PLANNED: kein Pfad vom Artefakt zu einer Adresse; Knopf gesperrt mit Begründung |
+| Veröffentlichen | `siteos/publish-preview`, `siteos/publish-production`; der Workspace ruft sie auf | Code vorhanden. Secrets und ein belegter Lauf sind nicht geprüft. Kein DNS in diesen Handlern. |
 | Verlauf | `listBlueprintChain` | LIVE |
 | Governance | Version, Hash, Vorgänger, Herkunft, KI-Anteil, Custody (`provenance_*`, RLS), Bewertungen, Agentenläufe; Status-Chip in der Kopfzeile aus der jüngsten Bewertung der gespeicherten Version | LIVE (lesend) — `governanceStatus()` in `panels.tsx`, `test/siteos/workspace.test.tsx` |
 | Eigenschaften | Puck-Felder des gewählten Bausteins (`renderRight` des Editors), im Vorschau-Modus benannt statt leer | LIVE (Code) |
 | Assistent | Eingabe + Vorschläge → vorhandener KI-Neubau über den Erstbau (`?instruction=`), **kein LLM** | PARTIAL: ersetzt die Fassung, wendet nichts an — Actions folgen in Schritt C |
-| Seiten anlegen/umbenennen/löschen | — | PLANNED (Schritt B) |
+| Seiten anlegen/umbenennen/löschen | `PagesPanel`, `persist(ops)` → `siteos/edit` | Code angeschlossen. In dieser Tabelle früher als PLANNED (Schritt B) geführt. |
 | Medien · Daten · Integrationen · Code | — | PLANNED, als Platzhalter benannt |
 
 **Die Sicherheitsbasis aus §5c bleibt**: Der Browser schickt weiterhin nur
@@ -614,13 +624,14 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 **Noch nicht umgesetzt** — bewusst außerhalb dieser Phase:
 
-- **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5), aber es
-  wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
-  veröffentlicht. **Der Publish Gate steht bereits** (§5b) — er wurde
-  bewusst vor dem Pfad gebaut, den er absichert. `cloudflare-deployer` und
-  `website-domain-manager` sind **deployt** (`PRODUCTION_SET`, am 2026-09-04
-  nachgemessen); diese Stelle behauptete bis dahin das Gegenteil. Was fehlt,
-  sind allein die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
+- **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5).
+  **Der Publish Gate steht bereits** (§5b). Korrektur 13.11.2026 (RSD-033-A):
+  Der Upload-Code liegt im Repo (`cloudflare-pages.ts`, `publish-preview.ts`,
+  `publish-production.ts`). Ein nachweisbarer Lauf gegen die betriebene
+  Function und eine Domain-Anbindung sind daraus nicht belegt.
+  `cloudflare-deployer` und `website-domain-manager` sind **deployt**
+  (`PRODUCTION_SET`, am 2026-09-04 nachgemessen); diese Stelle behauptete bis
+  dahin das Gegenteil. Was offen bleibt, sind die Cloudflare-Zugangsdaten. Das ist die verbliebene Hälfte der ursprünglich größten
   Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
   Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
   Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das

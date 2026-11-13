@@ -8,16 +8,38 @@
 //   - customer confirmation ist vor dem Insert verpflichtend.
 //   - erst der erfolgreiche DB-Insert bestätigt die Annahme in RealSync.
 //
-// verify_jwt = false; Bot/Tenant-Zuordnung wird über resolveBot geprüft.
+// verify_jwt = false. Zugriff über Widget-Token plus Pflicht-Origin
+// in config.allowed_origins; resolveBot bleibt die Bot-Zuordnung.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed, buildCorsHeaders } from '../_shared/gateway.ts';
 import { resolveBot, upsertConversation, BotError } from '../_shared/bots.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { resolveRestaurantOrder, RestaurantOrderError } from '../_shared/restaurant.ts';
+import {
+  checkBotRateLimit, checkIpRateLimit, clientIpFromHeaders, hashClientIp,
+} from '../_shared/bot-budget.ts';
+import {
+  assertBotBrowserAccess, BOT_WIDGET_CORS_EXTRA_HEADERS,
+} from '../_shared/bot-channel-auth.ts';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const RATE_LIMIT_SECRET = Deno.env.get('BOT_RATE_LIMIT_SALT') || SERVICE_ROLE;
+const cors = buildCorsHeaders('POST, OPTIONS', BOT_WIDGET_CORS_EXTRA_HEADERS);
+
+async function widgetSigningKey(): Promise<string> {
+  return (await resolveCronKey('BOT_WIDGET_SIGNING_KEY', 'bot_widget_signing_key')).trim();
+}
+
+function rateLimited(scope: string): Response {
+  const status = scope === 'unavailable' ? 503 : 429;
+  const code = scope === 'unavailable' ? 'RATE_LIMIT_UNAVAILABLE' : 'RATE_LIMITED';
+  const res = jsonError(status, code, 'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.', cors);
+  if (status === 429) res.headers.set('Retry-After', '60');
+  return res;
+}
 
 interface LegacyOrderItem { name: string; qty?: number; price?: number }
 
@@ -59,38 +81,56 @@ function restaurantRequestContainsClientPricing(body: Record<string, unknown>, r
 }
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
+  const preflight = handleOptions(req, cors);
   if (preflight) return preflight;
-  if (req.method !== 'POST') return methodNotAllowed();
+  if (req.method !== 'POST') return methodNotAllowed(cors);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return jsonError(400, 'BAD_REQUEST', 'invalid json body');
+    return jsonError(400, 'BAD_REQUEST', 'invalid json body', cors);
   }
 
   const tenantId = String(body.tenant_id ?? '');
   const botId = String(body.bot_id ?? '');
   const customerName = typeof body.customer_name === 'string' ? body.customer_name.trim() : '';
-  if (!customerName) return jsonError(400, 'BAD_REQUEST', 'customer_name required');
+  if (!customerName) return jsonError(400, 'BAD_REQUEST', 'customer_name required', cors);
 
   const rawItems = Array.isArray(body.items) ? body.items : [];
-  if (rawItems.length === 0) return jsonError(400, 'BAD_REQUEST', 'at least one item required');
+  if (rawItems.length === 0) return jsonError(400, 'BAD_REQUEST', 'at least one item required', cors);
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
+  const ipHash = await hashClientIp(clientIpFromHeaders(req.headers), RATE_LIMIT_SECRET, new Date());
+  const ipDecision = await checkIpRateLimit(admin, ipHash);
+  if (!ipDecision.allowed) return rateLimited(ipDecision.scope);
+
   try {
     const bot = await resolveBot(admin, tenantId, botId);
+
+    const access = await assertBotBrowserAccess({
+      secret: await widgetSigningKey(),
+      req,
+      body,
+      tenantId,
+      botId,
+      botConfig: bot.config,
+    });
+    if (!access.ok) return jsonError(access.status, access.code, access.message, cors);
+
+    const botDecision = await checkBotRateLimit(admin, ipHash, bot.id);
+    if (!botDecision.allowed) return rateLimited(botDecision.scope);
+
     if (!bot.capabilities?.orders) {
-      return jsonError(403, 'CAPABILITY_DISABLED', 'this bot cannot take orders');
+      return jsonError(403, 'CAPABILITY_DISABLED', 'this bot cannot take orders', cors);
     }
 
     try {
       await gateFeature(admin, bot.tenant_id, 'bots.orders');
     } catch (e) {
       if (e instanceof EntitlementError) {
-        return jsonError(403, 'ENTITLEMENT_MISSING', 'Bestellannahme ist im Plan dieses Arbeitsbereichs nicht enthalten (bots.orders).');
+        return jsonError(403, 'ENTITLEMENT_MISSING', 'Bestellannahme ist im Plan dieses Arbeitsbereichs nicht enthalten (bots.orders).', cors);
       }
       throw e;
     }
@@ -104,7 +144,7 @@ Deno.serve(async (req) => {
 
     if (isRestaurant) {
       if (body.confirmed !== true) {
-        return jsonError(409, 'CUSTOMER_CONFIRMATION_REQUIRED', 'restaurant order requires explicit customer confirmation');
+        return jsonError(409, 'CUSTOMER_CONFIRMATION_REQUIRED', 'restaurant order requires explicit customer confirmation', cors);
       }
 
       if (restaurantRequestContainsClientPricing(body, rawItems)) {
@@ -112,6 +152,7 @@ Deno.serve(async (req) => {
           400,
           'CLIENT_PRICING_NOT_ALLOWED',
           'restaurant order prices, currency and totals are resolved by the server',
+          cors,
         );
       }
 
@@ -121,7 +162,7 @@ Deno.serve(async (req) => {
         : '';
 
       if (resolved.fulfillment === 'delivery' && !deliveryAddress) {
-        return jsonError(400, 'DELIVERY_ADDRESS_REQUIRED', 'delivery_address required for delivery');
+        return jsonError(400, 'DELIVERY_ADDRESS_REQUIRED', 'delivery_address required for delivery', cors);
       }
 
       items = resolved.items;
@@ -141,7 +182,7 @@ Deno.serve(async (req) => {
       };
     } else {
       const legacyItems = parseLegacyItems(rawItems);
-      if (legacyItems.length === 0) return jsonError(400, 'BAD_REQUEST', 'at least one valid item required');
+      if (legacyItems.length === 0) return jsonError(400, 'BAD_REQUEST', 'at least one valid item required', cors);
       items = legacyItems;
       totalAmount = typeof body.total_amount === 'number' ? body.total_amount : computeLegacyTotal(legacyItems);
       currency = body.currency ? String(body.currency).slice(0, 3).toUpperCase() : 'EUR';
@@ -165,7 +206,7 @@ Deno.serve(async (req) => {
       metadata: orderMetadata,
     }).select('id, status, total_amount, currency').single();
 
-    if (error) return jsonError(500, 'INTERNAL', error.message);
+    if (error) return jsonError(500, 'INTERNAL', error.message, cors);
 
     return jsonResponse({
       ok: true,
@@ -178,10 +219,10 @@ Deno.serve(async (req) => {
         pricing_authority: orderMetadata.pricing_authority,
         persisted: true,
       } : {}),
-    });
+    }, 200, cors);
   } catch (e) {
-    if (e instanceof RestaurantOrderError) return jsonError(e.status, e.code, e.message);
-    if (e instanceof BotError) return jsonError(e.status, e.code, e.message);
-    return jsonError(500, 'INTERNAL', (e as Error).message);
+    if (e instanceof RestaurantOrderError) return jsonError(e.status, e.code, e.message, cors);
+    if (e instanceof BotError) return jsonError(e.status, e.code, e.message, cors);
+    return jsonError(500, 'INTERNAL', (e as Error).message, cors);
   }
 });

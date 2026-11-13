@@ -12,7 +12,7 @@
 // Ablauf:
 //   0. Rate-Limit je IP-Hash (DB-Zähler, vor jedem Bot-Lookup)
 //   1. Bot auflösen (tenant + enabled)            resolveBot
-//      Origin-Prüfung (nur Zusatzhürde, falls config.allowed_origins gesetzt)
+//      Pflicht: Widget-Token + Origin in config.allowed_origins (fail-closed)
 //      Rate-Limit je IP+Bot und je Bot
 //   2. Feature-Gate                               bots.enabled
 //   3. Bestehenden Verlauf lesend laden, Bot-PEP pruefen (ohne Speichern)
@@ -22,10 +22,12 @@
 //      reserviert (bot-budget.ts). Ablehnung → 429, kein KI-Aufruf.
 //   6. Antwort persistieren + zurueckgeben
 //
-// verify_jwt = false (config.toml). Zugriff über (tenant_id, bot_id).
+// verify_jwt = false (config.toml). Zugriff über Widget-Token
+// (X-RSD-Bot-Widget-Token oder body.widget_token), gebunden an tenant_id,
+// bot_id und Origin; Origin muss in config.allowed_origins stehen.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed, buildCorsHeaders } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
@@ -37,8 +39,12 @@ import { enforceBotMessage } from '../_shared/pdp/botmessage.ts';
 import { runRestaurantConversationTurn } from '../_shared/restaurant-conversation.ts';
 import {
   checkBotRateLimit, checkIpRateLimit, clientIpFromHeaders, createBotAiBudgetGuard,
-  hashClientIp, originAllowed,
+  hashClientIp,
 } from '../_shared/bot-budget.ts';
+import {
+  assertBotBrowserAccess, BOT_WIDGET_CORS_EXTRA_HEADERS,
+} from '../_shared/bot-channel-auth.ts';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -47,25 +53,30 @@ const MAX_MESSAGE_CHARS = 4000;
 // Schlüssel für den IP-Hash. Eigenes Secret bevorzugt; sonst serverseitig
 // aus dem Service-Role-Key abgeleitet (verlässt die Function nie).
 const RATE_LIMIT_SECRET = Deno.env.get('BOT_RATE_LIMIT_SALT') || SERVICE_ROLE;
+const cors = buildCorsHeaders('POST, OPTIONS', BOT_WIDGET_CORS_EXTRA_HEADERS);
+
+async function widgetSigningKey(): Promise<string> {
+  return (await resolveCronKey('BOT_WIDGET_SIGNING_KEY', 'bot_widget_signing_key')).trim();
+}
 
 function rateLimited(scope: string): Response {
   const status = scope === 'unavailable' ? 503 : 429;
   const code = scope === 'unavailable' ? 'RATE_LIMIT_UNAVAILABLE' : 'RATE_LIMITED';
-  const res = jsonError(status, code, 'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.');
+  const res = jsonError(status, code, 'Zu viele Anfragen. Bitte kurz warten und erneut versuchen.', cors);
   if (status === 429) res.headers.set('Retry-After', '60');
   return res;
 }
 
 Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
+  const preflight = handleOptions(req, cors);
   if (preflight) return preflight;
-  if (req.method !== 'POST') return methodNotAllowed();
+  if (req.method !== 'POST') return methodNotAllowed(cors);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return jsonError(400, 'BAD_REQUEST', 'invalid json body');
+    return jsonError(400, 'BAD_REQUEST', 'invalid json body', cors);
   }
 
   const tenantId = String(body.tenant_id ?? '');
@@ -74,9 +85,9 @@ Deno.serve(async (req) => {
   const conversationRef = body.conversation_ref ? String(body.conversation_ref) : null;
   const contactLabel = body.contact_label ? String(body.contact_label) : null;
 
-  if (!message.trim()) return jsonError(400, 'BAD_REQUEST', 'message required');
+  if (!message.trim()) return jsonError(400, 'BAD_REQUEST', 'message required', cors);
   if (message.length > MAX_MESSAGE_CHARS) {
-    return jsonError(400, 'BAD_REQUEST', `message too long (>${MAX_MESSAGE_CHARS} chars)`);
+    return jsonError(400, 'BAD_REQUEST', `message too long (>${MAX_MESSAGE_CHARS} chars)`, cors);
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -90,9 +101,15 @@ Deno.serve(async (req) => {
   try {
     const bot = await resolveBot(admin, tenantId, botId);
 
-    if (!originAllowed(req.headers.get('origin'), bot.config)) {
-      return jsonError(403, 'ORIGIN_NOT_ALLOWED', 'origin not allowed for this bot');
-    }
+    const access = await assertBotBrowserAccess({
+      secret: await widgetSigningKey(),
+      req,
+      body,
+      tenantId,
+      botId,
+      botConfig: bot.config,
+    });
+    if (!access.ok) return jsonError(access.status, access.code, access.message, cors);
     const botDecision = await checkBotRateLimit(admin, ipHash, bot.id);
     if (!botDecision.allowed) return rateLimited(botDecision.scope);
 
@@ -100,7 +117,7 @@ Deno.serve(async (req) => {
     try {
       await gateFeature(admin, tenantId, 'bots.enabled');
     } catch (e) {
-      if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
+      if (e instanceof EntitlementError) return jsonError(403, e.code, e.message, cors);
       throw e;
     }
 
@@ -133,7 +150,7 @@ Deno.serve(async (req) => {
         reply: verdict.safe_reply,
         run_id: null,
         policy_blocked: true,
-      });
+      }, 200, cors);
     }
 
     // Billable quota and storage only after the content is permitted.
@@ -141,7 +158,7 @@ Deno.serve(async (req) => {
       await consumeUsage(admin, tenantId, 'limit.bot_messages_monthly', 1, { bot_id: bot.id });
     } catch (e) {
       if (e instanceof UsageError) {
-        return jsonError(e.code === 'QUOTA_EXCEEDED' ? 402 : 500, e.code, e.message, undefined, e.details);
+        return jsonError(e.code === 'QUOTA_EXCEEDED' ? 402 : 500, e.code, e.message, cors, e.details);
       }
       throw e;
     }
@@ -175,7 +192,7 @@ Deno.serve(async (req) => {
         reply: restaurantTurn.reply,
         run_id: restaurantTurn.runId,
         ...(restaurantTurn.orderId ? { order_id: restaurantTurn.orderId } : {}),
-      });
+      }, 200, cors);
     }
 
     const prompt = buildBotPrompt({ persona: bot.persona, config: bot.config, history: priorHistory, userMessage: message });
@@ -198,17 +215,17 @@ Deno.serve(async (req) => {
       conversation_id: conversationId,
       reply: ai.output,
       run_id: ai.runId,
-    });
+    }, 200, cors);
   } catch (e) {
-    if (e instanceof BotError)      return jsonError(e.status, e.code, e.message);
+    if (e instanceof BotError)      return jsonError(e.status, e.code, e.message, cors);
     if (e instanceof AiInvokeError) {
       // Budget erschöpft: neutrale Meldung, keine internen Zahlen an Besucher.
       if (e.code === 'BOT_BUDGET_EXCEEDED') {
-        return jsonError(429, e.code, 'Der Assistent ist gerade nicht verfügbar. Bitte später erneut versuchen.');
+        return jsonError(429, e.code, 'Der Assistent ist gerade nicht verfügbar. Bitte später erneut versuchen.', cors);
       }
-      return jsonError(e.status, e.code, e.message, undefined, e.details);
+      return jsonError(e.status, e.code, e.message, cors, e.details);
     }
-    if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
-    return jsonError(500, 'INTERNAL', (e as Error).message);
+    if (e instanceof EntitlementError) return jsonError(403, e.code, e.message, cors);
+    return jsonError(500, 'INTERNAL', (e as Error).message, cors);
   }
 });

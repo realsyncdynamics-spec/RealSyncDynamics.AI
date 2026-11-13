@@ -125,6 +125,21 @@ export const HUB_SECTIONS: HubSection[] = [
     ],
   },
   {
+    id: 'creative',
+    label: 'Creative',
+    entries: [
+      {
+        id: 'creative-studio',
+        label: 'Creative Studio',
+        icon: 'Palette',
+        route: '/app/creative-studio',
+        description: 'Social-Design-Editor mit Formaten, Ebenen und Brand-Kit. KI, Publishing und Kalender sind Platzhalter.',
+        requires: [],
+        openLabel: 'Öffnen',
+      },
+    ],
+  },
+  {
     id: 'governance',
     label: 'Governance',
     entries: [

@@ -61,6 +61,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Capability-Übersicht: aktivieren, öffnen, upgraden',
   },
   {
+    id: 'creative-studio',
+    label: 'Creative Studio',
+    icon: 'Palette',
+    route: '/app/creative-studio',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'Social-Design-Editor: Formate, Ebenen, Brand-Kit, PNG. KI und Publishing sind Platzhalter.',
+  },
+  {
     // Spec: docs/product/governance-activation.md. Org+Scope persist; Blueprint/Extraction Preview.
     id: 'activation',
     label: 'Activation',

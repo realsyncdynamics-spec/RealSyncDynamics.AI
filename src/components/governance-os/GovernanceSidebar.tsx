@@ -7,7 +7,7 @@ import {
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
   Share2, Sparkles, Scale, Shield, BadgeCheck, FileSearch, GitBranch,
-  ListChecks, MessageSquare, Store, Terminal, Mic, ChevronDown,
+  ListChecks, MessageSquare, Store, Terminal, Mic, Palette, ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES } from './governanceModules';
@@ -56,7 +56,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, ShieldCheck, MessagesSquare, Zap, Server, Layers,
   CalendarClock, Archive, Library, Share2, Sparkles, Scale, BadgeCheck,
-  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal, Mic,
+  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal, Mic, Palette,
 };
 
 const NAV_ICONS: Record<ShellNavId, LucideIcon> = {

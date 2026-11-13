@@ -207,6 +207,7 @@ const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter')
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
+const SocialDesignEditor = lazy(() => import('./features/creative-studio/SocialDesignEditor').then((m) => ({ default: m.SocialDesignEditor })));
 const GovernanceActivationView = lazy(() =>
   import('./features/activation/GovernanceActivationView').then((m) => ({ default: m.GovernanceActivationView })),
 );
@@ -842,6 +843,7 @@ function RoutesWithTracking() {
       <Route path="/app/marketplace" element={<AppGate><GovernanceBrowserShell><MarketplaceView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/creative-studio" element={<AppGate><GovernanceBrowserShell><SocialDesignEditor /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai/onboarding" element={<AppGate><GovernanceBrowserShell><LocalAiOnboardingView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai" element={<Navigate to="/app/local-ai/onboarding" replace />} />
       <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />

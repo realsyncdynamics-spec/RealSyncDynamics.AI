@@ -13,13 +13,13 @@
 |---|---:|---|
 | AKTIV | 155 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
 | DEPLOYT-OHNE-CALLER | 45 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
-| REPO-ONLY (nicht deployt) | 1 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
+| REPO-ONLY (nicht deployt) | 2 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
 | DRIFT: deployt ohne Quelle | 0 | In Prod-Liste, aber kein Verzeichnis (sollte 0 sein — sonst Drift-Guard) |
-| **Summe** | **201** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (201) |
+| **Summe** | **202** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (202) |
 
 ### Einordnung
 
-- ⚠️ Repo und Produktion weichen ab (1 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
+- ⚠️ Repo und Produktion weichen ab (2 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
 - **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.
 - Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (45): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
 - Alle oeffentlichen Functions (`verify_jwt=false`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger `public/webhook` und zaehlen damit als AKTIV, auch ohne internen Caller.
@@ -78,10 +78,11 @@
 | `cloudflare-deployer` | Website/Betrieb | kein interner Caller/Trigger |
 | `hostinger-agent-brief` | Website/Betrieb | kein interner Caller/Trigger |
 
-## REPO-ONLY — im Repo, nicht in der Prod-Liste (1)
+## REPO-ONLY — im Repo, nicht in der Prod-Liste (2)
 
 | Function | Cluster | Erreichbarkeit |
 |---|---|---|
+| `linkedin-oauth` | Social | frontend-invoke, public/webhook |
 | `social-channel-connect` | Social | — |
 
 ## Vollinventar nach Cluster
@@ -363,10 +364,11 @@
 | `shopify-install` | AKTIV | frontend-fetch, function-call, public/webhook |
 | `shopify-webhooks` | AKTIV | function-call, public/webhook |
 
-### Social (3)
+### Social (4)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
+| `linkedin-oauth` | REPO-ONLY (nicht deployt) | frontend-invoke, public/webhook |
 | `social-channel-connect` | REPO-ONLY (nicht deployt) | — |
 | `social-orchestrator-persistence` | AKTIV | frontend-invoke |
 | `social-publisher-worker` | DEPLOYT-OHNE-CALLER | — |
@@ -421,4 +423,4 @@
 
 ---
 
-_Erzeugt am 2026-11-13 · 201 Functions · 155 AKTIV · 45 ohne Caller._
+_Erzeugt am 2026-11-13 · 202 Functions · 155 AKTIV · 45 ohne Caller._

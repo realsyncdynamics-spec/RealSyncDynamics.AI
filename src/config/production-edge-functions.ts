@@ -340,7 +340,11 @@ export interface UnbackedCaller {
 }
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
-  // Internes AI-OS: im Repo; Deploy nach Freigabe (Migration ai_os_action_log + Secret AI_OS_GITHUB_TOKEN).
+  {
+    slug: 'linkedin-oauth',
+    surface: 'Social Studio, Helfer startLinkedInOAuth (Panel #2214 bindet ihn später)',
+    publicPath: false,
+  },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

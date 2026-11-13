@@ -226,7 +226,7 @@ function main() {
     ['SEO/Analytics', /seo|^sync-ga-metrics$|^dashboard-|^share-dashboard$|forecast|^sync-stripe-metrics$/],
     ['Memory', /^memory-/],
     ['Bot/Voice', /^(?:bot-|.*voice)/],
-    ['Social', /^social-/],
+    ['Social', /^social-|^linkedin-oauth$/],
     ['Scheduler/Jobs', /^schedule|^scheduler/],
     ['Webhook-Zustellung', /webhook|-deliver$|-dispatcher$/],
   ];

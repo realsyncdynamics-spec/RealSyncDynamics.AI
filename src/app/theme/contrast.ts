@@ -39,7 +39,7 @@ export function contrastGaps(vars: Record<string, string>, pairs: readonly Contr
   });
 }
 
-/** Paare, die die Hülle als Text benutzt. Die müssen AA halten. */
+/** Paare, die AA halten müssen: Fließtext 4.5:1, Rahmen 3:1. */
 export const REQUIRED_TEXT_PAIRS: readonly ContrastPair[] = [
   { name: 'text-primary/default', foreground: '--color-text-primary', background: '--color-surface-default', minimum: 4.5 },
   { name: 'text-primary/raised', foreground: '--color-text-primary', background: '--color-surface-raised', minimum: 4.5 },
@@ -47,6 +47,16 @@ export const REQUIRED_TEXT_PAIRS: readonly ContrastPair[] = [
   { name: 'text-secondary/default', foreground: '--color-text-secondary', background: '--color-surface-default', minimum: 4.5 },
   { name: 'text-secondary/raised', foreground: '--color-text-secondary', background: '--color-surface-raised', minimum: 4.5 },
   { name: 'text-inverse/inverse', foreground: '--color-text-inverse', background: '--color-surface-inverse', minimum: 4.5 },
+  { name: 'text-muted/default', foreground: '--color-text-muted', background: '--color-surface-default', minimum: 4.5 },
+  { name: 'text-micro/default', foreground: '--color-text-micro', background: '--color-surface-default', minimum: 4.5 },
+];
+
+/** Kontroll-Rahmen. Dekorative Linien (`border-divider`) sind von 1.4.11 ausgenommen. */
+export const REQUIRED_UI_PAIRS: readonly ContrastPair[] = [
+  { name: 'border-control/default', foreground: '--color-border-control', background: '--color-surface-default', minimum: 3 },
+  { name: 'border-control/raised', foreground: '--color-border-control', background: '--color-surface-raised', minimum: 3 },
+  { name: 'border-focus/default', foreground: '--color-border-focus', background: '--color-surface-default', minimum: 3 },
+  { name: 'border-focus/raised', foreground: '--color-border-focus', background: '--color-surface-raised', minimum: 3 },
 ];
 
 /**

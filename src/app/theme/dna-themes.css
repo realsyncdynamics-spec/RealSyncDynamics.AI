@@ -1,10 +1,12 @@
 /* RealSync AI Website & Business Builder — Design-DNA
  * Generated from /workspace/realsync-builder/dna-tokens.json
- * Base: /workspace/rsd-light/tokens.json and tokens.css
+ * Base: /workspace/rsd-light/tokens.json and tokens.css (111 semantic names, read-only)
  * Use [data-theme="beispiel-handwerk" | "beispiel-b2b-saas" | "beispiel-kanzlei"]
  * These blocks override Light Experience semantic custom properties only.
  * Load tokens.css first, then this file. Unspecified properties inherit the active base theme (default light-cream).
  * On the Figma Starter plan a collection has only 1 mode; these themes become real Figma Modes on the Professional plan.
+ * WCAG 2.2 AA is a hard floor: every intended text/surface pair including micro/caption ≥ 4.5:1,
+ * borders and UI elements ≥ 3:1. Overlay colors were corrected on 2026-11-13 (Europe/Berlin) to meet this floor.
  * Example content only — no live customer brands.
  */
 
@@ -20,21 +22,24 @@
   --color-text-primary: #2A2118;
   --color-text-secondary: #5C4A3A;
   --color-text-muted: #5A4E42;
-  --color-text-micro: #7A6A58;
+  --color-text-micro: #695B4C;
   --color-text-inverse: #FFF8F0;
   --color-text-inverse-muted: #E8D5BB;
   --color-text-accent: #8F3A14;
-  --color-text-brand-muted: #7A6A58;
+  --color-text-brand-muted: #695B4C;
   --color-accent-primary: #A3471C;
   --color-accent-primary-strong: #8F3A14;
   --color-accent-kicker-on-inverse: #E8B89A;
-  --color-border-default: #E0C9A8;
-  --color-border-subtle: #E8D5BB;
-  --color-border-strong: #D4C0A8;
-  --color-border-panel: #E0D0B8;
-  --color-border-accent: #D4A07A;
+  --color-border-default: #9A7137;
+  --color-border-subtle: #9C7035;
+  --color-border-strong: #957249;
+  --color-border-panel: #947341;
+  --color-border-accent: #AB6837;
+  --color-status-success: #116A4A;
+  --color-status-preview: #7C5617;
+  --color-status-demo: #7C5617;
   --color-icon-default: #2A2118;
-  --color-icon-accent: #A3471C;
+  --color-icon-accent: #9A431B;
   --color-icon-inverse: #FFF8F0;
   --color-overlay-orb-mid: #F6E4D0;
   --color-overlay-orb-outer: #E8D5BB;
@@ -58,6 +63,8 @@
   --type-letter-spacing-display: -0.03em;
   --type-letter-spacing-heading: -0.025em;
   --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --type-family-body: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --motion-duration-fast: 200ms;
   --motion-duration-base: 480ms;
   --motion-duration-slow: 700ms;
@@ -86,19 +93,22 @@
   --color-text-primary: #E8EEF6;
   --color-text-secondary: #9AA8BC;
   --color-text-muted: #8A98AB;
-  --color-text-micro: #7A8799;
+  --color-text-micro: #7C899B;
   --color-text-inverse: #0B0F14;
   --color-text-inverse-muted: #5A6A7A;
   --color-text-accent: #8FB0FF;
   --color-text-brand-muted: #8A98AB;
   --color-accent-primary: #3D7BFF;
   --color-accent-primary-strong: #1E56D0;
-  --color-accent-kicker-on-inverse: #8FB0FF;
-  --color-border-default: #2A3545;
-  --color-border-subtle: #1C2430;
-  --color-border-strong: #3A4658;
-  --color-border-panel: #2A3545;
+  --color-accent-kicker-on-inverse: #155AFF;
+  --color-border-default: #566D8E;
+  --color-border-subtle: #556D91;
+  --color-border-strong: #5A6D88;
+  --color-border-panel: #566D8E;
   --color-border-accent: #3D7BFF;
+  --color-status-success: #199B6C;
+  --color-status-preview: #B47D21;
+  --color-status-demo: #B47D21;
   --color-icon-default: #E8EEF6;
   --color-icon-accent: #8FB0FF;
   --color-icon-inverse: #0B0F14;
@@ -123,7 +133,9 @@
   --type-line-height-body: 1.5;
   --type-letter-spacing-display: -0.05em;
   --type-letter-spacing-heading: -0.04em;
-  --type-family-sans: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+  --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+  --type-family-body: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
   --motion-duration-fast: 80ms;
   --motion-duration-base: 160ms;
   --motion-duration-slow: 240ms;
@@ -152,7 +164,7 @@
   --color-text-primary: #111111;
   --color-text-secondary: #5A5A56;
   --color-text-muted: #5A5A56;
-  --color-text-micro: #8A8A84;
+  --color-text-micro: #6D6D68;
   --color-text-inverse: #FBFBFA;
   --color-text-inverse-muted: #C8D0D4;
   --color-text-accent: #1B3A4B;
@@ -160,11 +172,14 @@
   --color-accent-primary: #1B3A4B;
   --color-accent-primary-strong: #122832;
   --color-accent-kicker-on-inverse: #9DB6C4;
-  --color-border-default: #E2E2DC;
-  --color-border-subtle: #EDEDE8;
-  --color-border-strong: #D4D4CC;
-  --color-border-panel: #E4E4DE;
+  --color-border-default: #8B8B73;
+  --color-border-subtle: #8B8B6D;
+  --color-border-strong: #8B8B76;
+  --color-border-panel: #8B8B72;
   --color-border-accent: #1B3A4B;
+  --color-status-success: #147A55;
+  --color-status-preview: #90641A;
+  --color-status-demo: #90641A;
   --color-icon-default: #111111;
   --color-icon-accent: #1B3A4B;
   --color-icon-inverse: #FBFBFA;
@@ -189,7 +204,9 @@
   --type-line-height-body: 1.7;
   --type-letter-spacing-display: -0.02em;
   --type-letter-spacing-heading: -0.02em;
-  --type-family-sans: Newsreader, "Source Serif 4", Georgia, "Times New Roman", serif;
+  --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: Newsreader, "Source Serif 4", Georgia, "Times New Roman", serif;
+  --type-family-body: Newsreader, "Source Serif 4", Georgia, "Times New Roman", serif;
   --motion-duration-fast: 240ms;
   --motion-duration-base: 700ms;
   --motion-duration-slow: 900ms;
@@ -207,16 +224,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-theme="beispiel-handwerk"] {
-    --motion-duration-fast: 0ms;
-    --motion-duration-base: 0ms;
-    --motion-duration-slow: 0ms;
-  }
-  [data-theme="beispiel-b2b-saas"] {
-    --motion-duration-fast: 0ms;
-    --motion-duration-base: 0ms;
-    --motion-duration-slow: 0ms;
-  }
+  [data-theme="beispiel-handwerk"],
+  [data-theme="beispiel-b2b-saas"],
   [data-theme="beispiel-kanzlei"] {
     --motion-duration-fast: 0ms;
     --motion-duration-base: 0ms;

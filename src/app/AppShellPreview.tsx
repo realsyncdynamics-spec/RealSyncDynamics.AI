@@ -70,7 +70,10 @@ export function AppShellPreview({ enforceGuards = false }: { enforceGuards?: boo
               <li key={`${event.title}-${event.time}-${index}`} data-state={event.state}>
                 <span>{event.title}</span>
                 <span className="app-shell__meta">{event.target}</span>
-                <span className="app-shell__pill">{event.state === 'ok' ? 'OK' : 'Offen'}</span>
+                <span className="app-shell__pill">
+                  <span className="app-shell__dot" aria-hidden="true" />
+                  {event.state === 'ok' ? 'OK' : 'Offen'}
+                </span>
                 <time>{event.time}</time>
               </li>
             ))}

@@ -1,6 +1,6 @@
 /**
  * Design-DNA-Overlay. Nur semantische Overrides, Modi unter com.rsd.modes.
- * Ungesetzte der 109 Namen erben das Basis-Theme (light-cream).
+ * Ungesetzte Namen erben das Basis-Theme (light-cream).
  *
  * Die Generator-Spezifikation (Distanz, OKLCH, Achsen-Hamming) wird hier
  * nicht gerechnet. `axes_not_in_semantic_109` bleibt Metadatum.
@@ -96,6 +96,6 @@ export function assertDnaWithinBase(base: DesignTokenDocument = designTokens()):
       .map((leaf) => leaf.path.join('/')),
   );
   for (const leaf of designDna()) {
-    if (!names.has(leaf.path)) throw new TokenSchemaError(`DNA-Name außerhalb der 109: ${leaf.path}`);
+    if (!names.has(leaf.path)) throw new TokenSchemaError(`DNA-Name außerhalb der Basis: ${leaf.path}`);
   }
 }

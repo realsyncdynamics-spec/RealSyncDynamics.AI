@@ -10,8 +10,8 @@
   --color-text-inverse: #FFFFFF;
   --color-border-default: #E6E9EE;
   --color-border-subtle: #EDF0F5;
-  --color-status-success: #147A55;
-  --color-status-preview: #93661B;
+  --color-status-success: #077550;
+  --color-status-preview: #8A5D0D;
   --color-accent-primary: #2457E6;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -270,18 +270,25 @@
 
 .app-shell__pill {
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: var(--type-size-label);
   letter-spacing: 0.06em;
+  color: var(--color-text-primary);
 }
 
-.app-shell__events li[data-state="ok"] .app-shell__pill {
-  color: var(--color-status-success);
+.app-shell__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-success-emphasis);
 }
 
-.app-shell__events li[data-state="open"] .app-shell__pill {
-  color: var(--color-status-preview);
+.app-shell__events li[data-state="open"] .app-shell__dot {
+  background: var(--color-status-preview-emphasis);
 }
 
 .app-shell__panel {

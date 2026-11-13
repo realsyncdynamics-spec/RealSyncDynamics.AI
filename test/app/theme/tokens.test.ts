@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PRIMARY_BUTTON } from '../../../src/app/theme/buttonVariants';
-import { contrastGaps, contrastRatio, REPORTED_PAIRS, REQUIRED_TEXT_PAIRS } from '../../../src/app/theme/contrast';
+import { contrastGaps, contrastRatio, REQUIRED_TEXT_PAIRS, REQUIRED_UI_PAIRS } from '../../../src/app/theme/contrast';
 import { assertDnaWithinBase, designDna, dnaOverlayStyle, parseDnaOverlay } from '../../../src/app/theme/dna';
 import { resolveTheme } from '../../../src/app/theme/resolve';
 import { semanticCssName, TokenSchemaError } from '../../../src/app/theme/schema';
@@ -33,10 +33,10 @@ describe('Token-Schema und DNA-Overlay', () => {
     expect(() => semanticCssName('primitives.color.white')).toThrow(TokenSchemaError);
     assertDnaWithinBase();
     const leaves = designDna();
-    expect(leaves).toHaveLength(63);
+    expect(leaves).toHaveLength(68);
     const handwerk = dnaOverlayStyle('beispiel-handwerk') as Record<string, string>;
     expect(handwerk['--color-surface-default']).toBe('#F3E6D4');
-    expect(handwerk['--color-status-success']).toBeUndefined();
+    expect(handwerk['--type-family-display']).toBeTruthy();
     expect(shellSource.indexOf('tokens.shell.css')).toBeLessThan(shellSource.indexOf('dna-themes.shell.css'));
   });
 
@@ -52,24 +52,20 @@ describe('Token-Schema und DNA-Overlay', () => {
     }
   });
 
-  it('meldet Textpaare unter AA, ohne die Designer-Werte umzufärben', () => {
+  it('hält AA für Text inklusive Micro und Muted', () => {
     const names = (mode: 'light-cream' | 'pure-white-silver' | 'warm-graphite') =>
-      contrastGaps(resolveTheme(mode), REPORTED_PAIRS).map((gap) => gap.name);
-    expect(names('light-cream')).toEqual([
-      'text-muted/default',
-      'text-micro/default',
-      'kpi-label/metric',
-      'footer/default',
-      'hero-lead/default',
-      'border/default',
-      'sidebar-border',
-    ]);
+      contrastGaps(resolveTheme(mode), REQUIRED_TEXT_PAIRS).map((gap) => gap.name);
+    expect(names('light-cream')).toEqual([]);
+    expect(names('pure-white-silver')).toEqual([]);
+    expect(names('warm-graphite')).toEqual([]);
     const base = resolveTheme('light-cream');
-    const overlayNames = (mode: 'beispiel-handwerk' | 'beispiel-b2b-saas' | 'beispiel-kanzlei') =>
-      contrastGaps({ ...base, ...(dnaOverlayStyle(mode) as Record<string, string>) }, REPORTED_PAIRS).map((gap) => gap.name);
-    expect(overlayNames('beispiel-handwerk')).toContain('text-micro/default');
-    expect(overlayNames('beispiel-kanzlei')).toContain('text-micro/default');
-    expect(overlayNames('beispiel-b2b-saas')).not.toContain('text-micro/default');
+    for (const mode of ['beispiel-handwerk', 'beispiel-b2b-saas', 'beispiel-kanzlei'] as const) {
+      const merged = { ...base, ...(dnaOverlayStyle(mode) as Record<string, string>) };
+      expect(contrastGaps(merged, REQUIRED_TEXT_PAIRS), mode).toEqual([]);
+    }
+    for (const mode of ['light-cream', 'pure-white-silver', 'warm-graphite'] as const) {
+      expect(contrastGaps(resolveTheme(mode), REQUIRED_UI_PAIRS), mode).toEqual([]);
+    }
   });
 
   it('lässt Display- und Body-Schrift als semantisches Overlay zu', () => {

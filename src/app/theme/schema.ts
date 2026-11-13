@@ -99,14 +99,17 @@ export function parseDesignTokenDocument(input: unknown): DesignTokenDocument {
     if (leaf.collection === 'semantic') {
       const modes = leaf.leaf.$extensions?.['com.rsd.modes'];
       if (!modes) throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} braucht Modi.`);
+      const allowed = (ref: string | undefined) => {
+        const name = ref ? aliasTarget(ref) : null;
+        return !!name && (name.startsWith('primitives.') || name.startsWith('semantic.'));
+      };
       for (const mode of THEME_MODES) {
-        const ref = modes[mode];
-        if (!ref || aliasTarget(ref)?.startsWith('primitives.') !== true) {
-          throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} zeigt in ${mode} nicht auf primitives.`);
+        if (!allowed(modes[mode])) {
+          throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} zeigt in ${mode} nicht auf primitives oder semantic.`);
         }
       }
-      if (!target?.startsWith('primitives.')) {
-        throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} muss auf primitives zeigen.`);
+      if (!allowed(value)) {
+        throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} muss auf primitives oder semantic zeigen.`);
       }
       if (!leaf.leaf.$extensions?.['com.rsd.css']?.startsWith('--')) {
         throw new TokenSchemaError(`Semantik ${leaf.path.join('/')} braucht einen CSS-Namen.`);

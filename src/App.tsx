@@ -632,6 +632,8 @@ function RoutesWithTracking() {
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
       {/* Guided post-scan onboarding flow — Phase 2 (WP10: kanonisch /app/activation) */}
+      {/* Nacktes /onboarding hat keine Seite. /onboarding/:scanId bleibt. */}
+      <Route path="/onboarding" element={<Navigate to="/welcome" replace />} />
       <Route path="/onboarding/:scanId" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/recommendation/:scanId" element={<GovernanceRecommendation />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
@@ -1034,6 +1036,8 @@ function RoutesWithTracking() {
           zweite Registrierung (features/billing/CheckoutSuccessPage) war
           unerreichbar und wurde am 2026-09-01 samt Datei entfernt. */}
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
+      {/* Nacktes /checkout hat keine Seite. /checkout/:planKey bleibt. */}
+      <Route path="/checkout" element={<Navigate to="/pricing" replace />} />
       <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}

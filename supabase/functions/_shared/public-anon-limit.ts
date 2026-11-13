@@ -1,4 +1,4 @@
-// Rate-Limit für öffentliche Ersatz-Endpunkte (platform_stats, audit_share_get).
+// Rate-Limit für öffentliche Ersatz-Endpunkte (platform_stats, audit_share_get, tenant-branding-get).
 // Nutzt die bereits vorhandene RPC public.bot_rate_hit und denselben
 // IP-Hash (hashClientIp) wie bot-chat. Eigene Bucket-Präfixe, damit die
 // Zähler nicht mit dem Chat-Limit kollidieren.
@@ -9,6 +9,7 @@ import { clientIpFromHeaders, hashClientIp, type RateDecision } from './bot-budg
 
 export const PUBLIC_STATS_RATE = { windowSeconds: 60, max: 20 } as const;
 export const PUBLIC_SHARE_RATE = { windowSeconds: 60, max: 20 } as const;
+export const PUBLIC_BRANDING_RATE = { windowSeconds: 60, max: 20 } as const;
 
 type RpcAdmin = {
   rpc(

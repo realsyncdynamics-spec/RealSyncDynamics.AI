@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { importSecretKey, open } from '../../supabase/functions/_shared/secretBox';
 import {
   LEGACY_ENV_TOKEN_FLAG,
@@ -342,6 +342,22 @@ describe('Social-Kanal-Tokens', () => {
     });
     expect(ok).toEqual({ ok: true, value: 'row-3' });
     expect(events).not.toContain('revert-ok');
+  });
+
+  it('meldet REVERT_FAILED, wenn das Zurücknehmen selbst scheitert', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await commitWithAudit({
+      write: async () => ({ ok: true as const, value: 'row' }),
+      record: async () => ({ ok: false }),
+      revert: async () => {
+        throw new Error(FIXTURE_TOKEN);
+      },
+    });
+    expect(result).toEqual({ ok: false, code: 'revert_failed' });
+    const logged = spy.mock.calls.map((call) => String(call[0])).join('\n');
+    expect(logged).toContain('REVERT_FAILED');
+    expect(logged).not.toContain(FIXTURE_TOKEN);
+    spy.mockRestore();
   });
 
   it('speichert ohne Siegel-Schluessel nichts', async () => {

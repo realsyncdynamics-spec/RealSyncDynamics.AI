@@ -49,7 +49,7 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
   it('lehnt facebook ab, weil der Kanal in Entwicklung ist', () => {
     const configure = connect.slice(connect.indexOf('async function configure'));
     const guard = configure.indexOf('isSocialProviderInDevelopment');
-    const write = configure.indexOf('commitWithAudit');
+    const write = configure.indexOf('await apply(');
     expect(guard).toBeGreaterThan(-1);
     expect(write).toBeGreaterThan(guard);
     expect(configure).toContain('NOT_AVAILABLE');
@@ -57,7 +57,7 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
     const rotate = connect.slice(connect.indexOf('async function rotate'));
     const rotateGuard = rotate.indexOf('isSocialProviderInDevelopment');
     expect(rotateGuard).toBeGreaterThan(-1);
-    expect(rotateGuard).toBeLessThan(rotate.indexOf('commitWithAudit'));
+    expect(rotateGuard).toBeLessThan(rotate.indexOf('await apply('));
     expect(migration).toContain('facebook ist in Entwicklung');
   });
 
@@ -74,24 +74,29 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
     const code = codeWithoutComments(connect);
     expect(code).not.toContain('sealSocialCredentials');
     expect(code).not.toContain('loadIntegrationSealKey');
-    expect(connect).toContain("system_type: 'social_channel'");
-    expect(connect).toContain('registry_id');
+    expect(migration).toContain("'social_channel'");
+    expect(migration).toContain('registry_id');
     for (const line of connect.split('\n')) {
       if (!line.includes('credentials_enc') && !line.includes('access_token')) continue;
       expect(line).not.toContain('jsonResponse');
     }
   });
 
-  it('bricht ab, wenn das Audit fehlschlägt, und nimmt die Schreibe zurück', () => {
-    expect(connect).toContain('commitWithAudit');
-    expect(connect).toContain('AUDIT_FAILED');
-    expect(connect).toContain('credentials_accepted: false');
-    const payloads = connect.split('\n').filter((line) => line.includes('payload:'));
-    expect(payloads.length).toBeGreaterThan(0);
-    for (const line of payloads) {
-      expect(line).not.toContain('access_token');
-      expect(line).not.toContain('sealed');
-    }
+  it('schreibt Verbindung, Registratur und Audit in einer Transaktion', () => {
+    expect(connect).toContain('social_channel_connection_apply');
+    expect(connect).not.toContain("from('connector_registry')");
+    expect(connect).not.toContain('upsertRegistry');
+    const fn = migration.slice(migration.indexOf('FUNCTION public.social_channel_connection_apply'));
+    const connectionInsert = fn.indexOf('INSERT INTO public.social_channel_connections');
+    const registryInsert = fn.indexOf('INSERT INTO public.connector_registry');
+    const auditInsert = fn.indexOf('INSERT INTO public.governance_admin_log');
+    expect(connectionInsert).toBeGreaterThan(-1);
+    expect(registryInsert).toBeGreaterThan(connectionInsert);
+    expect(auditInsert).toBeGreaterThan(registryInsert);
+    expect(migration).toContain('SECURITY DEFINER');
+    expect(migration).toContain('SET search_path = public, pg_catalog');
+    expect(migration).toContain('FROM anon, authenticated');
+    expect(migration).toContain('credentials_accepted');
   });
 });
 

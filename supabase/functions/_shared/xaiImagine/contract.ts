@@ -78,7 +78,7 @@ export function parseVideoRequest(value: unknown): VideoRequest {
   const aspect_ratio = allowed(raw.aspect_ratio, VIDEO_ASPECTS, '16:9');
   const resolution = allowed(raw.resolution, VIDEO_RESOLUTIONS, '480p');
   const duration = raw.duration === undefined ? 5 : raw.duration;
-  if (!Number.isInteger(duration) || typeof duration !== 'number' || duration < 1 || duration > 8) {
+  if (typeof duration !== 'number' || !Number.isInteger(duration) || duration < 1 || duration > 8) {
     throw new ImagineValidationError('video duration must be an integer from 1 to 8 seconds');
   }
   return { model, prompt: prompt(raw.prompt), duration, aspect_ratio, resolution };

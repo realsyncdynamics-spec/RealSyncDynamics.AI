@@ -4,7 +4,7 @@
   min-height: 100vh;
   background: var(--color-surface-default);
   color: var(--color-text-primary);
-  font-family: var(--type-family-sans);
+  font-family: var(--type-family-body);
   font-size: var(--type-size-body);
   line-height: var(--type-line-height-body);
   -webkit-font-smoothing: antialiased;
@@ -145,6 +145,15 @@
   width: 23px;
   height: 1px;
   background: var(--color-accent-blue);
+}
+
+.v8-hero h1,
+.v8-section h2,
+.v8-section h3,
+.v8-statement,
+.v8-card h3,
+.v8-price h3 {
+  font-family: var(--type-family-display);
 }
 
 .v8-hero h1,

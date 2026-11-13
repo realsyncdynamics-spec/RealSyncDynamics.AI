@@ -1,6 +1,7 @@
 import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { LandingV6Values } from './useLandingV6';
+import { PlatformArchitecture } from '../../platform/PlatformArchitecture';
 import { CompanyVoiceWidget } from './CompanyVoiceWidget';
 
 /** Arrow keys select and focus one option; Tab enters the group only once. */
@@ -133,6 +134,8 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </dl>
         </div>
       </section>
+
+      <PlatformArchitecture />
 
       <section aria-label="Unterstützte Regelwerke" style={{ borderTop: "1px solid var(--rs-line)", borderBottom: "1px solid var(--rs-line)", background: "var(--rs-bg2)" }}>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(24px,1.6vw,48px) var(--px)", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px 40px" }}>

@@ -7,6 +7,7 @@ import { useContext, type ReactNode } from 'react';
 import { useTenant } from '../core/access/TenantProvider';
 import { SupabaseAuthContext } from '../features/supabase/SupabaseAuthContext';
 import { areaById, type AppAreaId } from './areas';
+import { badgeLabel, moduleBadge, PLATFORM_MODULES } from '../components/platform/platformArchitecture';
 import { navigationModel } from './registry';
 import { useTenantTheme } from './theme/ThemeProvider';
 import { PRIMARY_BUTTON } from './theme/buttonVariants';
@@ -39,6 +40,26 @@ export function AppShell({
           <img src="/brand/logo-square-400.svg" alt="" width={34} height={34} />
           <span>RSD &amp; AI</span>
         </div>
+        <nav aria-label="Plattform">
+          <ul className="app-shell__nav app-shell__platform">
+            {PLATFORM_MODULES.map((module) => {
+              const badge = moduleBadge(module);
+              return (
+                <li key={module.id}>
+                  <button
+                    type="button"
+                    data-module={module.id}
+                    aria-current={module.areaId === areaId ? 'page' : undefined}
+                    onClick={() => onArea(module.areaId)}
+                  >
+                    <span>{module.title}</span>
+                    <span className="app-shell__badge" data-kind={badge}>{badgeLabel(badge)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
         <nav aria-label="Bereiche">
           <ul className="app-shell__nav">
             {nav.map((item) => (

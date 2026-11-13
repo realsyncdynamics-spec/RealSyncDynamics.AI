@@ -226,10 +226,10 @@ const EMPTY_AUDIT: AuditState = { company: '', industry: '', size: '', role: '',
 export function useLandingV6() {
   const navigate = useNavigate();
   const { setMode } = useLandingMode();
-  // Wie v5: dunkel/Gold als Start, erst eine gespeicherte Wahl ändert das
-  // (eigener State, weil `mode` ohne Speicherwert dem OS folgt).
+  // RealSync Light ist die Vorgabe. Gold und Cyan bleiben über den Schalter
+  // erreichbar; ohne gespeicherte Wahl startet die Seite hell.
   const [stored, setStored] = useState<LandingMode | null>(() => (typeof window === 'undefined' ? null : readStored()));
-  const theme: 'dark' | 'light' = stored === 'light' ? 'light' : 'dark';
+  const theme: 'dark' | 'light' = stored === 'gold' || stored === 'cyan' ? 'dark' : 'light';
   const accent: 'gold' | 'cyan' = stored === 'cyan' ? 'cyan' : 'gold';
 
   const [vw, setVw] = useState<number>(() => (typeof window === 'undefined' ? 1400 : window.innerWidth));

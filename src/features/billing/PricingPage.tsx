@@ -4,7 +4,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
 import { Check, Sparkles, Award, FlaskConical } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
+import '../../app/theme/tokens.css';
 import '../../styles/governance-os-handoff.css';
+import '../../styles/realsync-light-public.css';
 import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
 import { useLang } from '../../i18n/useLang';
 import { COMPANY } from '../../config/company';
@@ -101,7 +103,7 @@ export function PricingPage() {
   return (
     <>
       <SEOHead />
-      <div className="rs-paper rs-ui rs-page">
+      <div className="rs-paper rsd-light rs-ui rs-page">
         <HandoffTopBar active="navPricing" />
         <section className="rs-pricing" aria-labelledby="pricing-heading">
           <div className="mx-auto max-w-[1400px]">
@@ -178,7 +180,7 @@ export function PricingPage() {
           </div>
         </section>
       </div>
-      <div className="bg-hero-only flex flex-col text-titanium-50">
+      <div className="rs-paper rsd-light bg-hero-only flex flex-col text-titanium-50">
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           {/* Disclaimer */}

@@ -47,7 +47,11 @@ supabase functions deploy social-publisher-worker --env-file .env.local
 ## Environment Variables
 
 ### LinkedIn
-- `LINKEDIN_ACCESS_TOKEN` — OAuth 2.0 access token
+Tokens come from `social_channel_connections` (sealed with `secretBox`, one row per tenant and account). The worker opens the seal for `job.tenant_id` and the queue channel (`linkedin.enterprise` / `linkedin.legal` → provider `linkedin`).
+
+`LINKEDIN_ACCESS_TOKEN` is a **legacy fallback**, off unless `SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN=on`. It is used only when that flag is exactly `on` and the tenant has no connection row. It is not a tenant-aware token. Do not log the value.
+
+The publish call is still `POST /v2/ugcPosts` with placeholder author URNs. Replacing that endpoint is a separate change.
 
 ### WordPress
 - `WORDPRESS_URL` — Site URL (e.g., https://example.com)

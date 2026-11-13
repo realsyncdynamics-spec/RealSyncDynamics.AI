@@ -8,7 +8,12 @@ function AskAiLink({ onClick }: { onClick?: () => void }) {
   return (
     <Link
       to="/audit?source=ki-fragen"
-      onClick={onClick}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const handled = !window.dispatchEvent(new Event('realsync:open-public-assistant', { cancelable: true }));
+        if (handled) event.preventDefault();
+        onClick?.();
+      }}
       style={{
         alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '8px',
         minHeight: '44px', padding: '0 14px', borderRadius: '9999px', whiteSpace: 'nowrap',

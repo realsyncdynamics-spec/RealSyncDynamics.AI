@@ -11,6 +11,7 @@ import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
 import { SuperAdminRoute } from './features/admin/SuperAdminRoute';
+import { OperatorRoute } from './features/admin/OperatorRoute';
 import { LegacySiteOsBuilderRedirect } from './features/build-studio/legacyBuilderRedirect';
 import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Claude-Design Governance AI surface on / — eager for LCP
@@ -1108,11 +1109,11 @@ function RoutesWithTracking() {
       {/* Admin */}
       <Route path="/admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
       <Route path="/admin/analytics" element={<SuperAdminRoute><AnalyticsView /></SuperAdminRoute>} />
-      <Route path="/admin/leads" element={<SuperAdminRoute><LeadsView /></SuperAdminRoute>} />
+      <Route path="/admin/leads" element={<OperatorRoute><LeadsView /></OperatorRoute>} />
       <Route path="/admin/beta-feedback" element={<SuperAdminRoute><BetaFeedbackView /></SuperAdminRoute>} />
-      {/* Lead-Verwaltung im System-Bereich. Zugriff prüft die Datenbank
-          (admin_funnel_leads → is_platform_operator), nicht der Router. */}
-      <Route path="/app/leads" element={<LeadsView />} />
+      {/* Lead-Verwaltung: Router-Guard OperatorRoute (Sitzung +
+          is_platform_operator()). Eigentliche Sperre bleiben die Admin-RPCs. */}
+      <Route path="/app/leads" element={<OperatorRoute><LeadsView /></OperatorRoute>} />
       <Route path="/admin/system" element={<SuperAdminRoute><SystemHealthView /></SuperAdminRoute>} />
       {/* Internes AI-OS — nur Plattform-Operatoren, Prüfung zusätzlich serverseitig in ai-os-control. */}
       <Route path="/admin/ai-os" element={<SuperAdminRoute><AiOsCommandCenter /></SuperAdminRoute>} />

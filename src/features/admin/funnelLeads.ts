@@ -1,10 +1,11 @@
 /**
  * Lead-Trichter für die interne Lead-Verwaltung (`/app/leads`, `/admin/leads`).
  *
+ * Beide Routen stehen hinter OperatorRoute (Sitzung + is_platform_operator()).
  * Gelesen wird ausschliesslich über die RPCs `admin_funnel_leads` und
  * `admin_funnel_kpis` (Migration 20261015120000). Beide prüfen die
- * Plattform-Rolle in der Datenbank (`is_platform_operator()`); die Prüfung
- * im Browser ist nur Anzeige-Logik, keine Sicherung.
+ * Plattform-Rolle in der Datenbank (`is_platform_operator()`). Die RPC-Prüfung
+ * bleibt die eigentliche Sperre; der Router-Guard verhindert nur das Rendern.
  */
 import { getSupabase } from '../../lib/supabase';
 

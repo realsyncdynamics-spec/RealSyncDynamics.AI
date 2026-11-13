@@ -18,7 +18,7 @@ import {
 } from '../../supabase/functions/_shared/xaiImagine/guarded';
 
 function mockFetch(body: unknown, status = 200) {
-  return vi.fn(async () => new Response(JSON.stringify(body), {
+  return vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify(body), {
     status, headers: { 'content-type': 'application/json' },
   }));
 }

@@ -155,9 +155,9 @@ describe('Hilfsfunktionen', () => {
     await expect(hashClientIp('1.2.3.4', '', d1)).rejects.toThrow();
   });
 
-  it('K8: Origin-Prüfung nur als Zusatzhürde, wenn konfiguriert', () => {
-    expect(originAllowed(null, {})).toBe(true);
-    expect(originAllowed('https://x.de', { allowed_origins: [] })).toBe(true);
+  it('K8: Origin-Prüfung fail-closed, auch ohne Liste', () => {
+    expect(originAllowed(null, {})).toBe(false);
+    expect(originAllowed('https://x.de', { allowed_origins: [] })).toBe(false);
     expect(originAllowed('https://kunde.de', { allowed_origins: ['https://kunde.de/'] })).toBe(true);
     expect(originAllowed('https://evil.de', { allowed_origins: ['https://kunde.de'] })).toBe(false);
     expect(originAllowed(null, { allowed_origins: ['https://kunde.de'] })).toBe(false);

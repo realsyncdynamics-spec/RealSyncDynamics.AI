@@ -4,8 +4,6 @@ import {
   ArrowLeft, Mail, Filter, RefreshCw, AlertTriangle, Loader2, ExternalLink,
   Building2, FileSearch, Users, Target,
 } from 'lucide-react';
-import type { Session } from '@supabase/supabase-js';
-import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
 import { EmptyStateGraphic } from '../../components/visual/EmptyStateGraphic';
 import { FunnelLeadsPanel } from './FunnelLeadsPanel';
@@ -37,11 +35,6 @@ interface AuditRow {
 type Tab = 'funnel' | 'leads' | 'audits';
 
 export function LeadsView() {
-  return <AuthGate>{(session) => <Inner session={session} />}</AuthGate>;
-}
-
-function Inner({ session }: { session: Session }) {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>('funnel');
   const [leads, setLeads] = useState<SalesLead[]>([]);
   const [audits, setAudits] = useState<AuditRow[]>([]);
@@ -50,29 +43,17 @@ function Inner({ session }: { session: Session }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const sb = getSupabase();
-    (async () => {
-      const { data: prof } = await sb.from('profiles')
-        .select('is_super_admin').eq('id', session.user.id).maybeSingle();
-      const isAdmin = !!prof?.is_super_admin;
-      setAllowed(isAdmin);
-      if (isAdmin) await loadAll();
-      else setLoading(false);
-    })();
+    void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.user.id]);
+  }, []);
 
   async function loadAll() {
     setLoading(true); setError(null);
     try {
       const sb = getSupabase();
       const [leadsRes, auditsRes] = await Promise.all([
-        sb.from('sales_leads')
-          .select('id, name, email, company, use_case, message, source, path, created_at')
-          .order('created_at', { ascending: false }).limit(500),
-        sb.from('gdpr_audits')
-          .select('id, url, domain, email, company, score, severity, fetched_status, created_at')
-          .order('created_at', { ascending: false }).limit(500),
+        sb.rpc('admin_sales_leads', { p_limit: 500 }),
+        sb.rpc('admin_gdpr_audits', { p_limit: 500 }),
       ]);
       if (leadsRes.error) throw leadsRes.error;
       if (auditsRes.error) throw auditsRes.error;
@@ -94,22 +75,6 @@ function Inner({ session }: { session: Session }) {
     leads.filter((l) => sourceFilter === 'all' || (l.source ?? '(direct)') === sourceFilter),
     [leads, sourceFilter]
   );
-
-  if (allowed === null) {
-    return <div className="min-h-screen bg-obsidian-950 flex items-center justify-center text-titanium-500 text-sm">Lade…</div>;
-  }
-  if (!allowed) {
-    return (
-      <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-obsidian-900 border border-titanium-900 p-8 text-center rounded-none">
-          <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-          <h1 className="font-display text-xl font-bold text-titanium-50 mb-2">Kein Zugriff</h1>
-          <p className="text-sm text-titanium-400 mb-5">Super-Admin only.</p>
-          <Link to="/dashboard" className="text-sm text-security-400 hover:underline">→ Dashboard</Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">

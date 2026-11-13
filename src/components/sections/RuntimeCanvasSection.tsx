@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const steps = [
@@ -9,6 +10,16 @@ const steps = [
 
 export function RuntimeCanvasSection() {
   const reduceMotion = useReducedMotion();
+  const [visible, setVisible] = useState(false);
+  const [played, setPlayed] = useState(1);
+
+  useEffect(() => {
+    if (!visible || reduceMotion || played >= steps.length) return;
+    const timer = window.setTimeout(() => setPlayed(played + 1), 650);
+    return () => window.clearTimeout(timer);
+  }, [played, reduceMotion, visible]);
+
+  const count = reduceMotion ? steps.length : played;
 
   return (
     <motion.section
@@ -16,6 +27,7 @@ export function RuntimeCanvasSection() {
       aria-labelledby="runtime-canvas-title"
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
+      onViewportEnter={() => setVisible(true)}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: reduceMotion ? 0 : 0.35 }}
       style={{ padding: 'clamp(36px,5vw,100px) var(--px)', borderTop: '1px solid var(--rs-line)' }}
@@ -26,11 +38,12 @@ export function RuntimeCanvasSection() {
         <svg viewBox="0 0 360 48" width="360" height="48" aria-hidden="true" style={{ maxWidth: '100%' }}>
           <path d="M20 24h320" stroke="var(--rs-line)" strokeWidth="2" />
           {steps.map(({ label }, index) => (
-            <circle key={label} cx={20 + index * (320 / 3)} cy="24" r="7" fill="var(--rs-acc)" />
+            <circle key={label} cx={20 + index * (320 / 3)} cy="24" r="7" fill={index < count ? "var(--rs-acc)" : "var(--rs-line)"} />
           ))}
         </svg>
-        <ol style={{ display: 'grid', gap: '8px', maxWidth: '42rem', paddingInlineStart: '1.5rem' }}>
-          {steps.map(({ label, event }) => (
+        <p>{count} von {steps.length} simulierten Ereignissen</p>
+        <ol aria-label="Simuliertes Ereignisprotokoll" style={{ display: 'grid', gap: '8px', maxWidth: '42rem', paddingInlineStart: '1.5rem' }}>
+          {steps.slice(0, count).map(({ label, event }) => (
             <li key={label}><strong>{label}</strong> · {event}</li>
           ))}
         </ol>

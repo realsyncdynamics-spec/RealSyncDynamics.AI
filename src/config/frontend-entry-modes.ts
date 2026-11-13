@@ -21,9 +21,13 @@
  *    `prompt`, `locale`, `enrichment`, `model`, `project_id` entgegen —
  *    **keine Bilder, kein Logo, keinen Screenshot**.
  *  - `siteos/handlers/` enthält `discover`, `builder`, `runtime-scan`,
- *    `agents` und seit dem 2026-08-22 `publish-gate` — aber weiterhin
- *    **keinen Publish-Handler**. Der Gate entscheidet, *ob* veröffentlicht
- *    werden darf; er veröffentlicht nicht.
+ *    `agents`, seit dem 2026-08-22 `publish-gate`, und inzwischen
+ *    `publish-preview` sowie `publish-production` (`cloudflare-pages.ts`).
+ *    Der Gate entscheidet, *ob* veröffentlicht werden darf. Der Transport
+ *    antwortet ohne Cloudflare-Konfiguration mit 503. Ob die Secrets in der
+ *    betriebenen Function gesetzt sind, ist nicht geprüft — deshalb verspricht
+ *    die Oberfläche unten weiterhin keine Selbst-Veröffentlichung.
+ *    Eine Datei `handlers/publish.ts` gibt es nicht; sie ist kein zweiter Stack.
  *  - Es gibt keine Vision-Analyse und keinen Storage-Bucket für
  *    Design-Assets im gesamten Repository.
  */
@@ -132,11 +136,13 @@ export const FRONTEND_INDIVIDUALITY_NOTE =
   'Keine starren Templates: Ihr Frontend wird individuell aus Ihren Anforderungen, Inhalten und Designvorgaben zusammengestellt.';
 
 /**
- * Der Stand, an dem der Frontend-Weg heute endet.
+ * Der Stand, an dem der Frontend-Weg für den Kunden heute endet.
  *
- * Steht hier, damit keine Oberfläche eine Veröffentlichung zusagt, die die
- * Runtime nicht leisten kann: SiteOS hat Discovery, Builder, Runtime-Scan
- * und Agenten — aber keinen Publish-Handler.
+ * Steht hier, damit keine Oberfläche eine Veröffentlichung zusagt, die ein
+ * belegter Lauf nicht trägt. Discovery, Builder, Runtime-Scan, Agenten,
+ * Publish-Gate und die Handler `publish-preview` / `publish-production`
+ * liegen im Repo. Die Zugangsdaten und ein nachweisbarer Lauf sind nicht
+ * belegt. Der Satz bleibt bei der Vorschau, bis das belegt ist.
  */
 export const FRONTEND_DELIVERY_LIMIT_NOTE =
   'Der Entwurf endet derzeit bei der Vorschau; die Veröffentlichung erfolgt im Anschluss durch das Team.';

@@ -1,10 +1,11 @@
 /**
  * Lesen und Trennen von Social-Kanalkonten.
  *
- * Liste: nur UI-Spalten. Nicht `scopes`, `last_error`, `created_by`,
- * `credentials_enc` oder Token-Felder. #2211 engt `authenticated` darauf
- * ein (Tabelle oder View); diese Abfrage bleibt in dem Rahmen.
- * Schreiben: nur `op: 'remove'`. Kein Client-Helfer für configure/rotate.
+ * Liste: genau die Spalten, die `authenticated` sehen darf
+ * (`SOCIAL_CONNECTION_PUBLIC_COLUMNS`). Nicht `scopes`, `last_error`,
+ * `created_by`, `credentials_enc` oder Token-Felder.
+ * Schreiben: nur `op: 'remove'`. Kein Client-Helfer für configure/rotate,
+ * damit der Browser keine Zugangsdaten schickt.
  */
 import { getSupabase } from '../../../lib/supabase';
 
@@ -15,19 +16,25 @@ export interface SocialChannelConnectionMeta {
   account_external_id: string;
   status: string;
   token_expires_at: string | null;
+  updated_at: string | null;
 }
 
-/** Relation, bis #2211 eine engere UI-View ausliefert. Die Spalten bleiben dieselben. */
+/** Dieselbe Tabelle. Die UI-Rechte stehen auf diesen Spalten, nicht auf einer View. */
 export const SOCIAL_CHANNEL_UI_RELATION = 'social_channel_connections';
 
-/** Spalten, die die Fläche anzeigen darf. */
+/**
+ * Grant für `authenticated` aus 20261113120000, Stand #2211 (`22c0ed40`).
+ * Reihenfolge wie `SOCIAL_CONNECTION_PUBLIC_COLUMNS`.
+ */
 export const SOCIAL_CHANNEL_UI_COLUMNS = [
   'id',
+  'tenant_id',
   'channel',
-  'account_name',
   'account_external_id',
+  'account_name',
   'status',
   'token_expires_at',
+  'updated_at',
 ] as const;
 
 /** Explizite Spaltenliste. Niemals Siegel, Token oder interne Audit-Felder. */
@@ -56,7 +63,49 @@ export function toSocialChannelConnectionMeta(row: unknown): SocialChannelConnec
     account_external_id: record.account_external_id,
     status: record.status,
     token_expires_at: typeof record.token_expires_at === 'string' ? record.token_expires_at : null,
+    updated_at: typeof record.updated_at === 'string' ? record.updated_at : null,
   };
+}
+
+const ACTION_MESSAGES: Readonly<Record<string, string>> = {
+  CREDENTIALS_NOT_ACCEPTED:
+    'Zugangsdaten werden hier nicht angenommen. Verbinden und Rotieren warten auf den serverseitigen LinkedIn-OAuth.',
+  AUDIT_FAILED: 'Die Änderung wurde nicht protokolliert und zurückgenommen.',
+};
+
+export class SocialChannelActionError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = 'SocialChannelActionError';
+    this.code = code;
+  }
+}
+
+export function socialChannelActionMessage(code: string | null): string {
+  if (code && ACTION_MESSAGES[code]) return ACTION_MESSAGES[code];
+  return 'Trennen ist fehlgeschlagen.';
+}
+
+function codeFromBody(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+  const error = (body as { error?: { code?: unknown } }).error;
+  return typeof error?.code === 'string' ? error.code : null;
+}
+
+async function readActionCode(error: unknown, data: unknown): Promise<string | null> {
+  const fromData = codeFromBody(data);
+  if (fromData) return fromData;
+  const ctx = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      return codeFromBody(await ctx.json());
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 export async function listSocialChannelConnections(tenantId: string): Promise<SocialChannelConnectionMeta[]> {
@@ -83,6 +132,7 @@ export async function removeSocialChannelConnection(tenantId: string, connection
     },
   });
   if (error || !data || (data as { ok?: unknown }).ok !== true) {
-    throw new Error('Trennen ist fehlgeschlagen.');
+    const code = await readActionCode(error, data);
+    throw new SocialChannelActionError(code ?? 'FAILED', socialChannelActionMessage(code));
   }
 }

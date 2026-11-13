@@ -12,6 +12,8 @@ import {
   SOCIAL_CHANNEL_UI_COLUMNS,
   SOCIAL_CHANNEL_UI_RELATION,
   listSocialChannelConnections,
+  removeSocialChannelConnection,
+  socialChannelActionMessage,
   toSocialChannelConnectionMeta,
 } from '../../../src/features/dashboard/widget-registry/socialChannelConnectApi';
 import {
@@ -33,9 +35,15 @@ const harness = vi.hoisted(() => {
     listError: null as { message: string } | null,
     hang: false,
     selects: [] as string[],
-    invoke: vi.fn(async (_name: string, _options: { body: Record<string, unknown> }) => ({
+    invoke: vi.fn(async (
+      _name: string,
+      _options: { body: Record<string, unknown> },
+    ): Promise<{
+      data: { ok?: boolean; error?: { code?: string; message?: string } } | null;
+      error: { message: string; context?: { json?: () => Promise<unknown> } } | null;
+    }> => ({
       data: { ok: true },
-      error: null as { message: string } | null,
+      error: null,
     })),
   };
   return { state };
@@ -115,11 +123,13 @@ describe('social channel meta', () => {
   it('fragt keine Token-Spalten ab und verwirft mitgelieferte Siegel', () => {
     expect([...SOCIAL_CHANNEL_UI_COLUMNS]).toEqual([
       'id',
+      'tenant_id',
       'channel',
-      'account_name',
       'account_external_id',
+      'account_name',
       'status',
       'token_expires_at',
+      'updated_at',
     ]);
     for (const hidden of SOCIAL_CHANNEL_HIDDEN_COLUMNS) {
       expect(SOCIAL_CHANNEL_UI_COLUMNS).not.toContain(hidden);
@@ -132,6 +142,7 @@ describe('social channel meta', () => {
       account_external_id: 'urn:li:organization:1',
       status: 'connected',
       token_expires_at: '2026-12-01T00:00:00.000Z',
+      updated_at: null,
     });
     expect(JSON.stringify(meta)).not.toContain('should-not-render');
     expect(JSON.stringify(meta)).not.toContain('w_member_social');
@@ -140,6 +151,13 @@ describe('social channel meta', () => {
     expect(socialStatusLabel('nope')).toBe('unbekannt');
     expect(socialExpiryLabel(null)).toBe('kein Ablaufdatum');
     expect(socialExpiryLabel('kein-datum')).toBe('kein Ablaufdatum');
+  });
+
+  it('übersetzt CREDENTIALS_NOT_ACCEPTED und AUDIT_FAILED', () => {
+    expect(socialChannelActionMessage('CREDENTIALS_NOT_ACCEPTED')).toContain('nicht angenommen');
+    expect(socialChannelActionMessage('AUDIT_FAILED')).toContain('zurückgenommen');
+    expect(socialChannelActionMessage('CREDENTIALS_NOT_ACCEPTED')).not.toContain('access_token');
+    expect(socialChannelActionMessage(null)).toBe('Trennen ist fehlgeschlagen.');
   });
 
   it('gibt Lade-Fehler ohne Servertext weiter', async () => {
@@ -309,6 +327,51 @@ describe('SocialChannelConnectPanel', () => {
     harness.state.socialFlag = false;
     renderPanel();
     await expectAbsentWithoutFetch();
+  });
+
+  it('zeigt AUDIT_FAILED und CREDENTIALS_NOT_ACCEPTED ohne Rohtext', async () => {
+    harness.state.rows = [linkedinRow()];
+    harness.state.invoke.mockResolvedValue({
+      data: { ok: false, error: { code: 'AUDIT_FAILED', message: 'sql detail should-not-render' } },
+      error: null,
+    });
+    const audit = renderPanel();
+    await screen.findByTestId(`social-connection-${LINKEDIN_ID}`);
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-${LINKEDIN_ID}`));
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-confirm-${LINKEDIN_ID}`));
+    const alert = await screen.findByTestId('social-channel-action-error');
+    expect(alert.textContent).toContain('nicht protokolliert');
+    expect(alert.textContent).toContain('zurückgenommen');
+    expect(alert.textContent).not.toContain('should-not-render');
+    audit.unmount();
+
+    harness.state.invoke.mockResolvedValue({
+      data: null,
+      error: {
+        message: 'access_token leaked',
+        context: {
+          json: async () => ({ ok: false, error: { code: 'CREDENTIALS_NOT_ACCEPTED', message: 'access_token leaked' } }),
+        },
+      },
+    });
+    renderPanel();
+    await screen.findByTestId(`social-connection-${LINKEDIN_ID}`);
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-${LINKEDIN_ID}`));
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-confirm-${LINKEDIN_ID}`));
+    const rejected = await screen.findByTestId('social-channel-action-error');
+    expect(rejected.textContent).toContain('nicht angenommen');
+    expect(rejected.textContent).not.toContain('access_token');
+    expect(screen.getByTestId(`social-connection-${LINKEDIN_ID}`)).toBeTruthy();
+  });
+
+  it('gibt den Fehlercode aus der Function an removeSocialChannelConnection weiter', async () => {
+    harness.state.invoke.mockResolvedValue({
+      data: { ok: false, error: { code: 'AUDIT_FAILED', message: 'intern' } },
+      error: null,
+    });
+    await expect(removeSocialChannelConnection('tenant-1', LINKEDIN_ID)).rejects.toThrow(
+      'zurückgenommen',
+    );
   });
 
   it('meldet fehlgeschlagenes Trennen, ohne die Liste zu leeren', async () => {

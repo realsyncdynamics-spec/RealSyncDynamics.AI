@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useTenantLoad } from '../../governance/handoff/useTenantLoad';
-import { listSocialChannelConnections, removeSocialChannelConnection, type SocialChannelConnectionMeta } from './socialChannelConnectApi';
+import {
+  SocialChannelActionError,
+  listSocialChannelConnections,
+  removeSocialChannelConnection,
+  type SocialChannelConnectionMeta,
+} from './socialChannelConnectApi';
 import {
   SOCIAL_CHANNEL_OFFERS,
   canManageSocialChannels,
@@ -60,8 +65,8 @@ export function SocialChannelConnectPanel({
       setPendingId(null);
       setPlaceholder(null);
       reload();
-    } catch {
-      setActionError('Trennen ist fehlgeschlagen.');
+    } catch (err) {
+      setActionError(err instanceof SocialChannelActionError ? err.message : 'Trennen ist fehlgeschlagen.');
     } finally {
       setBusy(false);
     }

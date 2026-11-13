@@ -150,6 +150,9 @@ export const EXISTING_ROUTINES: readonly ExistingRoutine[] = [
   { id: 'pg-stripe-meter', name: 'Stripe-Meter-Sync', agent: 'business-ops', runtime: 'pg_cron', source: 'stripe-meter-sync-hourly', schedule: '5 * * * *' },
   { id: 'pg-business-metrics', name: 'Business-Metrics', agent: 'business-ops', runtime: 'pg_cron', source: 'business-metrics-cron-15min', schedule: '*/15 * * * *' },
   { id: 'cf-govard-seal', name: 'Govard: Tagessiegel und Freigabe-Ablauf', agent: 'infrastructure', runtime: 'cloudflare-cron', source: 'workers/govard-gateway/wrangler.jsonc', schedule: '30 3 * * *' },
+  // Externe ChatGPT-Automatisierung (aktiv per 2026-11-13 geprüft). Kein GitHub-
+  // Workflow, keine App-API und keine automatische Ergebnis-Synchronisation.
+  { id: 'external-xai-api-watch', name: 'xAI API wöchentlich überwachen', agent: 'development', runtime: 'chatgpt-automation', source: 'ChatGPT Automatisierungen (externe, lesende Prüfung)', schedule: 'Mo 11:09 Europe/Berlin' },
 ];
 
 export function getRoutine(id: string): RoutineDefinition | undefined {

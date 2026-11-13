@@ -197,6 +197,7 @@ function palette(draft: Draft): SemanticOverride {
     'color/text/muted': secondary,
     'color/text/micro': secondary,
     'color/text/inverse': text.inverseText,
+    // Akzent ist Markenfläche, keine Text- oder Linkfarbe. Auf der Preview-Fläche liegt der Kontrast deutlich unter 4,5:1.
     'color/accent/primary': accent,
     'color/border/default': mixHex(surface, text.primary, 0.12),
     'color/border/control': border,
@@ -293,6 +294,26 @@ function axisAway(current: string, occupied: readonly string[], options: readonl
   return better[0] ?? null;
 }
 
+function roundtrip(draft: Draft): { accent: Oklch; surfaceL: number; wcagOk: boolean } {
+  const overlay = palette(draft);
+  return {
+    accent: hexToOklch(overlay['color/accent/primary']!),
+    surfaceL: hexToOklch(overlay['color/surface/default']!).l,
+    wcagOk: wcagOf(overlay).ok,
+  };
+}
+
+function hueClears(accent: Oklch, failing: readonly ThemeFingerprint[]): boolean {
+  return failing.every((theme) => deltaEOklch(accent, theme.accent) >= MIN_ACCENT_DELTA_E);
+}
+
+function lightClears(surfaceL: number, accent: Oklch, failing: readonly ThemeFingerprint[]): boolean {
+  return failing.every((theme) => (
+    deltaEOklch(accent, theme.accent) >= MIN_ACCENT_DELTA_E
+    || Math.abs(surfaceL - theme.surfaceL) >= MIN_SURFACE_DELTA_L
+  ));
+}
+
 function separateSurface(surfaceL: number, accent: Oklch, failing: readonly ThemeFingerprint[]): number {
   let next = surfaceL;
   const pending = failing.filter((theme) => deltaEOklch(accent, theme.accent) < MIN_ACCENT_DELTA_E);
@@ -327,8 +348,21 @@ function adjust(
     return theme ? [theme] : [];
   });
   if (!locked(input, 'color') && colorFailing.length > 0) {
-    next.accent = rotateAccent(origin, hueOffsetDegrees(iteration));
-    next.surfaceL = separateSurface(draft.surfaceL, next.accent, colorFailing);
+    for (let step = 0; step < MAX_ADJUST_ITERATIONS; step += 1) {
+      const candidate = { ...next, accent: rotateAccent(origin, hueOffsetDegrees(step)), surfaceL: draft.surfaceL };
+      const seen = roundtrip(candidate);
+      if (seen.wcagOk && hueClears(seen.accent, colorFailing)) return candidate;
+    }
+    let surfaceL = draft.surfaceL;
+    for (let step = 0; step < 4; step += 1) {
+      const candidate = { ...next, surfaceL };
+      const seen = roundtrip(candidate);
+      if (seen.wcagOk && lightClears(seen.surfaceL, seen.accent, colorFailing)) return candidate;
+      const pending = colorFailing.filter((theme) => deltaEOklch(seen.accent, theme.accent) < MIN_ACCENT_DELTA_E);
+      const nudged = separateSurface(surfaceL, next.accent, pending.length > 0 ? pending : colorFailing);
+      if (Math.abs(nudged - surfaceL) < 0.1) break;
+      surfaceL = nudged;
+    }
     return next;
   }
   const axisFailing = pairs.filter((pair) => pair.distinctAxes < MIN_DISTINCT_AXES).flatMap((pair) => {

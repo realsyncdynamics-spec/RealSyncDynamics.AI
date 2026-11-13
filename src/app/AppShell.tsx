@@ -33,6 +33,7 @@ export function AppShell({
 
   return (
     <div className="app-shell" data-theme={theme.mode} style={theme.style} data-testid="app-shell">
+      {theme.motionCss ? <style>{theme.motionCss}</style> : null}
       <aside className="app-shell__sidebar">
         <div className="app-shell__brand">
           <img src="/brand/logo-square-400.svg" alt="" width={34} height={34} />

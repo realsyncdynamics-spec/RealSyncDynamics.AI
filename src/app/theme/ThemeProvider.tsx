@@ -6,6 +6,7 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { dnaOverlayStyle, isDnaMode } from './dna';
+import { splitMotionStyle } from './motionStyle';
 import { semanticOverrideStyle, type SemanticOverride } from './overrides';
 import { DEFAULT_THEME_MODE, isThemeMode } from './schema';
 
@@ -15,16 +16,15 @@ const ThemeOverrideContext = createContext<SemanticOverride | undefined>(undefin
  * Liefert Modus und gesetzte Overrides. Die Hülle selbst trägt
  * `.app-shell` und `data-theme` genau einmal.
  */
-export function useTenantTheme(overrides?: SemanticOverride): { mode: string; style?: CSSProperties } {
+export function useTenantTheme(overrides?: SemanticOverride): { mode: string; style?: CSSProperties; motionCss: string } {
   const { themeId } = useTenant();
   const fromContext = useContext(ThemeOverrideContext);
   const merged = { ...fromContext, ...overrides };
   const extra = Object.keys(merged).length > 0 ? semanticOverrideStyle(merged) : undefined;
-  if (isDnaMode(themeId)) {
-    return { mode: themeId, style: { ...dnaOverlayStyle(themeId), ...extra } };
-  }
-  const mode = isThemeMode(themeId) ? themeId : DEFAULT_THEME_MODE;
-  return { mode, style: extra };
+  const mode = isDnaMode(themeId) || isThemeMode(themeId) ? themeId : DEFAULT_THEME_MODE;
+  const raw = isDnaMode(themeId) ? { ...dnaOverlayStyle(themeId), ...extra } : extra;
+  const split = splitMotionStyle(raw, mode);
+  return { mode, style: split.style, motionCss: split.motionCss };
 }
 
 export function ThemeProvider({

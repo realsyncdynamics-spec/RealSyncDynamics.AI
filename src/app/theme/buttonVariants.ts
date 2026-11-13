@@ -1,7 +1,7 @@
 /**
  * Primary-Button der Light Experience.
  * Fläche ist color/text/primary, Label ist color/text/inverse.
- * color/accent/primary ist keine Button-Fläche.
+ * color/accent/primary ist keine Button-Fläche und keine Text- oder Linkfarbe.
  * Die Component-Aliase in tokens.json zeigen auf dieselben semantischen Namen.
  */
 export const PRIMARY_BUTTON = {

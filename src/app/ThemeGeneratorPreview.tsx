@@ -4,6 +4,7 @@
  */
 import { useMemo, useState, type CSSProperties } from 'react';
 import { semanticOverrideStyle } from './theme/overrides';
+import { splitMotionStyle } from './theme/motionStyle';
 import { fixtureThemeCatalog } from './theme/generator/catalog';
 import {
   generateTheme,
@@ -18,21 +19,9 @@ import {
 import './shell.css';
 import './theme/tokens.shell.css';
 
-const MOTION_VARS = ['--motion-duration-fast', '--motion-duration-base', '--motion-duration-slow'] as const;
-
 /** Motion-Dauern bleiben außerhalb des Inline-Styles, sonst schlägt er die Reduce-Media-Query. */
-export function previewStyle(overlay: GeneratorResult['overlay']): { style: CSSProperties; motionCss: string } {
-  const full = semanticOverrideStyle(overlay) as Record<string, string>;
-  const style = Object.fromEntries(Object.entries(full).filter(([key]) => !MOTION_VARS.includes(key as typeof MOTION_VARS[number])));
-  const duration = (name: typeof MOTION_VARS[number]) => (/^\d+ms$/.test(full[name] ?? '') ? full[name] : '0ms');
-  const motionCss = `@media (prefers-reduced-motion: no-preference) {
-  .app-shell[data-theme="generated"] {
-    --motion-duration-fast: ${duration('--motion-duration-fast')};
-    --motion-duration-base: ${duration('--motion-duration-base')};
-    --motion-duration-slow: ${duration('--motion-duration-slow')};
-  }
-}`;
-  return { style: style as CSSProperties, motionCss };
+export function previewStyle(overlay: GeneratorResult['overlay']): { style?: CSSProperties; motionCss: string } {
+  return splitMotionStyle(semanticOverrideStyle(overlay), 'generated');
 }
 
 export function ThemeGeneratorPreview() {

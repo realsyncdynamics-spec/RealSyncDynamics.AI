@@ -1,11 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { CSSProperties } from 'react';
 import { previewStyle } from '../../../src/app/ThemeGeneratorPreview';
+import { contrastRatio } from '../../../src/app/theme/contrast';
 import { fixtureThemeCatalog, fingerprintFromVars } from '../../../src/app/theme/generator/catalog';
 import { distanceVerdict, pairDistance, type ThemeAxes, type ThemeFingerprint } from '../../../src/app/theme/generator/distance';
 import { generateTheme, hueOffsetDegrees, publishTheme, remixTheme, validateInput } from '../../../src/app/theme/generator/generate';
 import { canonicalJson, sha256Hex } from '../../../src/app/theme/generator/hash';
 import { deltaEOklch, hexToOklch } from '../../../src/app/theme/generator/oklch';
+import { splitMotionStyle } from '../../../src/app/theme/motionStyle';
 import { DIMENSION_WEIGHTS, DISTANCE_BLEND, MIN_ACCENT_DELTA_E, MIN_SURFACE_DELTA_L, PUBLISH_MIN_DISTANCE, SOFT_WARN_DISTANCE } from '../../../src/app/theme/generator/weights';
 
 const input = {
@@ -203,7 +206,17 @@ describe('Theme-Generator', () => {
         expect(again?.d, pair.id).toBeCloseTo(pair.d, 2);
       }
       if (item.name === 'preview' || item.name === 'kanzlei') {
-        expect(result.overlay['color/accent/primary'], item.name).not.toBe(item.primaryColor);
+        const fixtureId = item.name === 'preview' ? 'beispiel-handwerk' : 'beispiel-kanzlei';
+        const fixture = catalog.list().find((theme) => theme.id === fixtureId);
+        const accent = hexToOklch(result.overlay['color/accent/primary']!);
+        const surfaceL = hexToOklch(result.overlay['color/surface/default']!).l;
+        const deltaE = deltaEOklch(accent, fixture!.accent);
+        const deltaL = Math.abs(surfaceL - fixture!.surfaceL);
+        if (item.name === 'preview') {
+          expect(result.overlay['color/accent/primary']).not.toBe(item.primaryColor);
+          expect(deltaE, 'Hue vor |ΔL|').toBeGreaterThanOrEqual(12);
+        }
+        if (deltaE < 12) expect(deltaL, `${item.name} Hex-Roundtrip |ΔL|`).toBeGreaterThanOrEqual(18);
       }
       if (item.name === 'preview') {
         const meta = (result.document.$extensions as {
@@ -246,5 +259,30 @@ describe('Theme-Generator', () => {
     expect(painted.motionCss).toContain('--motion-duration-base');
     const shell = readFileSync('src/app/shell.css', 'utf8');
     expect(shell).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation-duration:\s*0\.01ms/);
+    const inline = splitMotionStyle({
+      '--color-surface-default': '#F7F3EB',
+      '--motion-duration-base': '240ms',
+    } as CSSProperties, 'beispiel-handwerk');
+    expect(inline.style).not.toHaveProperty('--motion-duration-base');
+    expect(inline.motionCss).toContain('prefers-reduced-motion: no-preference');
+    expect(inline.motionCss).toContain('--motion-duration-base: 240ms;');
+    expect(readFileSync('src/app/AppShell.tsx', 'utf8')).toContain('theme.motionCss');
+  });
+
+  it('nutzt den Akzent nicht als Text- oder Linkfarbe', () => {
+    const catalog = fixtureThemeCatalog();
+    const preview = generateTheme({
+      industry: 'handwerk-regional',
+      tone: 'warm-nahbar',
+      primaryColor: '#C45C26',
+    }, catalog);
+    const accent = preview.overlay['color/accent/primary']!;
+    const surface = preview.overlay['color/surface/default']!;
+    expect(contrastRatio(accent, surface)).toBeLessThan(4.5);
+    const files = ['src/app/shell.css', 'src/app/theme/tokens.shell.css', 'src/app/theme/dna-themes.shell.css'];
+    for (const file of files) {
+      const withoutProps = readFileSync(file, 'utf8').replace(/--[\w-]+\s*:\s*[^;]+;/g, '');
+      expect(withoutProps, file).not.toMatch(/color:\s*var\(--color-accent-primary\)/);
+    }
   });
 });

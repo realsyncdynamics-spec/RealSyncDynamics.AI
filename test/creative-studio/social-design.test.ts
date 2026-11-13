@@ -137,7 +137,7 @@ describe('Vorlagen', () => {
 });
 
 describe('Migration social_designs', () => {
-  const sql = readFileSync('supabase/migrations/20261113120000_social_designs.sql', 'utf8');
+  const sql = readFileSync('supabase/migrations/20261113150000_social_designs.sql', 'utf8');
 
   it('isoliert Zeilen über die Mitgliedschaft und sperrt viewer beim Schreiben', () => {
     expect(sql).toContain('ENABLE ROW LEVEL SECURITY');

@@ -39,7 +39,8 @@
 .lv9 *,
 .lv9 *::before,
 .lv9 *::after { box-sizing: border-box; }
-.lv9 a { color: inherit; text-decoration: none; }
+/* :where() hält den Link-Reset auf Klassen-Spezifität, damit `.lv9-btn*` die Textfarbe setzt. */
+.lv9 :where(a) { color: inherit; text-decoration: none; }
 .lv9 :focus-visible { outline: 1px solid var(--lv9-signal); outline-offset: 3px; }
 .lv9 h1, .lv9 h2, .lv9 h3, .lv9 p, .lv9 ol, .lv9 ul { margin: 0; }
 .lv9-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

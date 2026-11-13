@@ -194,8 +194,9 @@ export function LandingV9View() {
                 <input
                   ref={scanInput}
                   id="lv9-scan-url"
-                  type="url"
+                  type="text"
                   inputMode="url"
+                  autoCapitalize="none"
                   autoComplete="off"
                   spellCheck={false}
                   placeholder="ihre-website.de"

@@ -129,8 +129,10 @@ export const ROUTINES: readonly RoutineDefinition[] = [
 
 /**
  * Bestehende Automationen — registriert, nicht ersetzt. Quelle: Workflow-
- * Dateien und pg_cron-Migrationen (Stand 2026-10-15). Der Live-Zustand der
- * pg_cron-Jobs kommt zur Laufzeit aus `admin_system_health().cron_jobs`.
+ * Dateien, pg_cron-Migrationen und explizit bestätigte externe Tasks.
+ * Der Live-Zustand der pg_cron-Jobs kommt zur Laufzeit aus
+ * `admin_system_health().cron_jobs`. Externe ChatGPT-Tasks werden nur statisch
+ * inventarisiert: kein Live-Status, kein Dispatch und kein Ergebnisimport.
  */
 export const EXISTING_ROUTINES: readonly ExistingRoutine[] = [
   { id: 'gh-ci', name: 'CI (Gates, Unit, Build, DB)', agent: 'development', runtime: 'github-actions', source: '.github/workflows/ci.yml', schedule: 'PR, merge_group, push main' },

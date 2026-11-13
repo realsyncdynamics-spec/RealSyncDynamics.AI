@@ -9,7 +9,9 @@ Plattform verbindet: **DSGVO**, **AI Act**, **NIS2**, **ISO 27001**, **ISO 42001
 ## 1. Status Quo (Bestehende Funktionen)
 
 ### Frontend: Governance Dashboard
-Bereits vorhanden in `src/features/governance/GovernanceDashboardView.tsx`:
+Ursprünglich `src/features/governance/GovernanceDashboardView.tsx`. Seit 09.11.2026 leben die Arbeitslisten
+(Assets, Policies, Ereignisse, Inspector) als `GovernanceWorkbench` im Command Center `/app/dashboard`
+(`src/features/governance/dashboard/GovernanceWorkbench.tsx`); die Modul-Navigation liefert das OS-Gehäuse:
 - **Header-Navigation** mit Links zu 15+ Governance-Modulen
 - **Vier Kernmodule aktiv**:
   1. `GovernanceDashboardView` (Assets, Policies, Events, Controls)
@@ -48,7 +50,7 @@ Bestehend in `supabase/functions/stripe-checkout/index.ts`:
 
 ### Routing
 Existierende öffentliche & geschützte Seiten in `src/App.tsx`:
-- `/app/governance` → GovernanceDashboardView
+- `/app/governance` → leitet auf `/app/dashboard` um (WP11, ein Kunden-Dashboard; dort `GovernanceWorkbench`)
 - `/app/keys` → KeysView
 - `/app/dpia` → DpiasView
 - `/app/dsr` → DsrTrackerView

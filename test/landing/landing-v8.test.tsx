@@ -1,5 +1,5 @@
 /**
- * Landing v8 (/) — Vertrag: Owner-Entwurf 09.11.2026, Status aus der SSoT,
+ * Landing v8 (/design/landing-v8, Vorschau) — Vertrag: Owner-Entwurf 09.11.2026, Status aus der SSoT,
  * Stichwort-Weiterleitung, Pflichtlinks, keine Preise, keine externen Ressourcen.
  */
 import { readFileSync } from 'node:fs';
@@ -41,10 +41,11 @@ const mount = () =>
   );
 
 describe('Landing v8 – Routing und Inhalt', () => {
-  it('ist die Startseite; v6 bleibt unter /design/landing-v6', () => {
+  it('ist als Vorschau gespeichert; `/` bleibt Landing v6', () => {
     const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
-    expect(app).toMatch(/path="\/"\s+element=\{<LandingV8 \/>\}/);
-    expect(app).toMatch(/path="\/design\/landing-v6" element=\{<LandingV6 \/>\}/);
+    expect(app).toMatch(/path="\/"\s+element=\{<LandingV6 \/>\}/);
+    expect(app).toMatch(/path="\/design\/landing-v8" element=\{<LandingV8 \/>\}/);
+    expect(readFileSync(resolve(__dirname, '../../src/pages/LandingV8.tsx'), 'utf8')).toContain('<SEOHead noIndex />');
   });
 
   it('rendert genau eine H1 mit dem Claim des Entwurfs', () => {

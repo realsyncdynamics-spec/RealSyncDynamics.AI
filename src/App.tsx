@@ -537,10 +537,9 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
+      <Route path="/" element={<LandingV6 />} />
       {/* 09.11.2026 (Owner): Landing v8 (Entwurf „Ein System. Alles im Einklang.", monochrom,
-          3D-Orbit) ist Startseite und hebt den Gold/Cream-Design-Lock für `/` auf. v6 bleibt
-          unverändert unter /design/landing-v6. */}
-      <Route path="/" element={<LandingV8 />} />
+          3D-Orbit) wird gespeichert, aber nicht Startseite — Vorschau, noindex. */}
       <Route path="/design/landing-v8" element={<LandingV8 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />

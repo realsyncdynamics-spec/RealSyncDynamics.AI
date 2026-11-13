@@ -5,16 +5,15 @@ import { COMPANY_PRODUCTS, type CompanyProductId } from '../components/landing/c
 import '../styles/landing-v8.css';
 
 /**
- * Landing v8 — Startseite `/` nach dem Owner-Entwurf vom 09.11.2026
- * („Ein System. Alles im Einklang.", monochrom, 3D-Orbit). Owner-Entscheid:
- * ersetzt v6 auf `/` und hebt dafür den Gold/Cream-Design-Lock für `/` auf;
- * v6 bleibt unter /design/landing-v6.
+ * Landing v8 — Vorschau unter /design/landing-v8 (noindex), nach dem
+ * Owner-Entwurf vom 09.11.2026 („Ein System. Alles im Einklang.", monochrom,
+ * 3D-Orbit). Owner-Entscheid 09.11.2026: `/` bleibt Landing v6; v8 wird nur
+ * gespeichert. Der Gold/Cream-Design-Lock auf `/` bleibt unberührt.
  *
  * Abweichungen vom Entwurf, beide aus der Wahrheitsschicht:
  * - Status der drei Chips kommt aus `implementation-status.ts` (über
  *   `COMPANY_PRODUCTS`, dieselbe Quelle wie /unternehmen), nicht aus dem Bild.
- * - Impressum/Datenschutz/AGB/Widerruf als schmale Zeile unter der Fußzeile
- *   (Pflichtangaben müssen von jeder Seite erreichbar sein).
+ * - Impressum/Datenschutz/AGB/Widerruf als schmale Zeile unter der Fußzeile.
  */
 
 const LINKS: Record<CompanyProductId, string> = {
@@ -167,7 +166,7 @@ export function LandingV8() {
 
   return (
     <>
-      <SEOHead />
+      <SEOHead noIndex />
       <div className="lv8">
         <header className="lv8-head">
           <Link to="/" className="lv8-brand" aria-label="RealSync Dynamics – Startseite">

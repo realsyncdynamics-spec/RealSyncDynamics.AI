@@ -31,7 +31,8 @@ describe('enqueueCheckoutProvision', () => {
     });
     expect(result).toEqual({ ok: true, status: 200, conflict: false });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const [url, init] = call;
     expect(url).toBe('https://example.supabase.co/functions/v1/provision-tenant');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer service-role-test');
     expect(JSON.parse(String(init.body))).toEqual({

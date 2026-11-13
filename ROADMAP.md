@@ -1,3 +1,5 @@
+> Maßgeblich ist K4 vom 27.10.2026, siehe docs/strategy/K4-produktstrategie-2026-10-27.md; die folgenden Inhalte vom Mai 2026 sind historisch.
+
 # RealSyncDynamics.AI — Produkt-Roadmap
 
 > **Positionierung:** Automated Digital Compliance Infrastructure — nicht "KI baut Websites", sondern strukturierte Datenschutz-, Consent- und Website-Compliance-Infrastruktur fuer Unternehmen und Agenturen.

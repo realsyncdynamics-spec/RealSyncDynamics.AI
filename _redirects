@@ -26,6 +26,6 @@
 /pricing      https://realsyncdynamics-ai.pages.dev/pricing      302
 /audit        https://realsyncdynamics-ai.pages.dev/audit        302
 /welcome      https://realsyncdynamics-ai.pages.dev/welcome      302
-/checkout     https://realsyncdynamics-ai.pages.dev/checkout     302
+/checkout     https://realsyncdynamics-ai.pages.dev/pricing      302
 /checkout/*   https://realsyncdynamics-ai.pages.dev/checkout/:splat 302
 /app/*        https://realsyncdynamics-ai.pages.dev/app/:splat   302

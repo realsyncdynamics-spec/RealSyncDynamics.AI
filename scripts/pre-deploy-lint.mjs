@@ -165,6 +165,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   // Öffentliche P0-Ersatzwege nach REVOKE von platform_stats / audit_share_get.
   'public-platform-stats',
   'audit-share-get',
+  'tenant-branding-get',
 
   // AI gateway — steht mit verify_jwt = true in config.toml (Vorfilter);
   // Auth macht die Function selbst (Nutzer-JWT + tenant_id, x-internal-key,

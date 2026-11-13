@@ -512,3 +512,9 @@ verify_jwt = false
 
 [functions.audit-share-get]
 verify_jwt = false
+
+# Öffentlicher White-Label-Lese-Endpunkt (Nachfolger der RPC
+# get_tenant_branding_by_domain). Kein JWT; Schutz über Rate-Limit,
+# nur ?domain= und minimierte Felder. Intern service_role.
+[functions.tenant-branding-get]
+verify_jwt = false

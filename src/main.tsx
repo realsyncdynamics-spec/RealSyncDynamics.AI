@@ -11,6 +11,7 @@ import { initSentry } from './lib/sentry.ts';
 import { captureAffiliateRef } from './lib/affiliate.ts';
 import { initPerformanceMonitoring } from './lib/performance/index.ts';
 import { ensureCsrfCookie } from './lib/csrf.ts';
+import { PublicBrandingApplier } from './components/PublicBrandingApplier';
 
 // Initialize Sentry (no-op if VITE_SENTRY_DSN missing).
 initSentry();
@@ -31,6 +32,7 @@ validateGeminiConfig();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
+      <PublicBrandingApplier />
       <App />
     </ErrorBoundary>
   </StrictMode>,

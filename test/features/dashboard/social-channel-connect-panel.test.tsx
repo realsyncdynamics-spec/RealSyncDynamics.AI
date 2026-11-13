@@ -4,10 +4,13 @@
  */
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { CockpitConnectorsStrip } from '../../../src/features/dashboard/widget-registry/CockpitConnectorsStrip';
 import {
+  SOCIAL_CHANNEL_HIDDEN_COLUMNS,
   SOCIAL_CHANNEL_META_COLUMNS,
+  SOCIAL_CHANNEL_UI_COLUMNS,
+  SOCIAL_CHANNEL_UI_RELATION,
   listSocialChannelConnections,
   toSocialChannelConnectionMeta,
 } from '../../../src/features/dashboard/widget-registry/socialChannelConnectApi';
@@ -21,6 +24,11 @@ const harness = vi.hoisted(() => {
   const state = {
     role: 'owner' as string,
     tenantId: 'tenant-1' as string | null,
+    tenantLoading: false,
+    socialFlag: false,
+    entitlements: { byKey: { 'dashboard.access': { value: 1 } } } as {
+      byKey: Record<string, { value: number }>;
+    } | null,
     rows: [] as Array<Record<string, unknown>>,
     listError: null as { message: string } | null,
     hang: false,
@@ -33,9 +41,19 @@ const harness = vi.hoisted(() => {
   return { state };
 });
 
+vi.mock('../../../src/features/dashboard/widget-registry/flags', () => ({
+  WIDGET_FEATURE_FLAGS: {
+    gmail_restricted_scopes: false,
+    social_channel_connect: false,
+  },
+  isWidgetFeatureEnabled: (flag: string) => flag === 'social_channel_connect' && harness.state.socialFlag,
+}));
+
 vi.mock('../../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({
     activeTenantId: harness.state.tenantId,
+    loading: harness.state.tenantLoading,
+    entitlements: harness.state.entitlements,
     tenants: harness.state.tenantId
       ? [{ tenantId: harness.state.tenantId, role: harness.state.role, name: 'Acme' }]
       : [],
@@ -45,7 +63,7 @@ vi.mock('../../../src/core/access/TenantProvider', () => ({
 vi.mock('../../../src/lib/supabase', () => ({
   getSupabase: () => ({
     from: (table: string) => {
-      if (table !== 'social_channel_connections') throw new Error(`unerwartete Tabelle ${table}`);
+      if (table !== SOCIAL_CHANNEL_UI_RELATION) throw new Error(`unerwartete Tabelle ${table}`);
       const api = {
         select: (columns: string) => {
           harness.state.selects.push(columns);
@@ -82,6 +100,9 @@ function linkedinRow(overrides: Record<string, unknown> = {}) {
     token_expires_at: '2026-12-01T00:00:00.000Z',
     credentials_enc: 'v1:should-not-render',
     access_token: 'should-not-render-token',
+    scopes: ['w_member_social'],
+    last_error: 'should-not-render-error',
+    created_by: 'should-not-render-actor',
     ...overrides,
   };
 }
@@ -92,7 +113,7 @@ function renderPanel(props: Partial<Parameters<typeof SocialChannelConnectPanel>
 
 describe('social channel meta', () => {
   it('fragt keine Token-Spalten ab und verwirft mitgelieferte Siegel', () => {
-    expect(SOCIAL_CHANNEL_META_COLUMNS.split(',').map((part) => part.trim())).toEqual([
+    expect([...SOCIAL_CHANNEL_UI_COLUMNS]).toEqual([
       'id',
       'channel',
       'account_name',
@@ -100,6 +121,9 @@ describe('social channel meta', () => {
       'status',
       'token_expires_at',
     ]);
+    for (const hidden of SOCIAL_CHANNEL_HIDDEN_COLUMNS) {
+      expect(SOCIAL_CHANNEL_UI_COLUMNS).not.toContain(hidden);
+    }
     const meta = toSocialChannelConnectionMeta(linkedinRow());
     expect(meta).toEqual({
       id: LINKEDIN_ID,
@@ -110,6 +134,7 @@ describe('social channel meta', () => {
       token_expires_at: '2026-12-01T00:00:00.000Z',
     });
     expect(JSON.stringify(meta)).not.toContain('should-not-render');
+    expect(JSON.stringify(meta)).not.toContain('w_member_social');
     expect(socialDisplayName(null)).toBe('Ohne Anzeigename');
     expect(socialStatusLabel('connected')).toBe('verbunden');
     expect(socialStatusLabel('nope')).toBe('unbekannt');
@@ -130,6 +155,9 @@ describe('SocialChannelConnectPanel', () => {
   beforeEach(() => {
     harness.state.role = 'owner';
     harness.state.tenantId = 'tenant-1';
+    harness.state.tenantLoading = false;
+    harness.state.socialFlag = true;
+    harness.state.entitlements = { byKey: { 'dashboard.access': { value: 1 } } };
     harness.state.rows = [];
     harness.state.listError = null;
     harness.state.hang = false;
@@ -248,6 +276,41 @@ describe('SocialChannelConnectPanel', () => {
     expect(screen.queryByTestId('social-channel-connect-empty')).toBeNull();
   });
 
+  async function expectAbsentWithoutFetch() {
+    expect(screen.queryByTestId('social-channel-connect')).toBeNull();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(harness.state.selects).toEqual([]);
+    expect(screen.queryByTestId('social-channel-connect')).toBeNull();
+  }
+
+  it('rendert und fetcht nicht, solange Entitlements laden', async () => {
+    harness.state.rows = [linkedinRow()];
+    harness.state.tenantLoading = true;
+    harness.state.entitlements = null;
+    const loading = renderPanel();
+    await expectAbsentWithoutFetch();
+    loading.unmount();
+    harness.state.tenantLoading = false;
+    renderPanel();
+    await expectAbsentWithoutFetch();
+  });
+
+  it('verschwindet nach dem Laden ohne dashboard.access', async () => {
+    harness.state.rows = [linkedinRow()];
+    harness.state.entitlements = { byKey: { 'dashboard.access': { value: 0 } } };
+    renderPanel();
+    await expectAbsentWithoutFetch();
+  });
+
+  it('verschwindet bei ausgeschaltetem Flag', async () => {
+    harness.state.rows = [linkedinRow()];
+    harness.state.socialFlag = false;
+    renderPanel();
+    await expectAbsentWithoutFetch();
+  });
+
   it('meldet fehlgeschlagenes Trennen, ohne die Liste zu leeren', async () => {
     harness.state.rows = [linkedinRow()];
     harness.state.invoke.mockResolvedValue({ data: { ok: false }, error: null });
@@ -263,15 +326,22 @@ describe('SocialChannelConnectPanel', () => {
 });
 
 describe('Platzierung und Quellgrenzen', () => {
-  it('nimmt Social aus der deklarativen Checkliste', () => {
+  it('lässt Social in der Checkliste, solange das Flag aus ist', () => {
+    harness.state.socialFlag = false;
     render(<CockpitConnectorsStrip />);
     expect(screen.getByTestId('cockpit-connectors-strip').textContent).toContain('Konten verbinden');
-    expect(document.querySelector('[data-connector-id="connector_social"]')).toBeNull();
+    expect(document.querySelector('[data-connector-id="connector_social"]')).not.toBeNull();
     expect(document.querySelector('[data-connector-id="connector_google_calendar"]')).not.toBeNull();
     expect(document.querySelector('[data-connector-id="connector_gmail"]')).toBeNull();
   });
 
-  it('hängt das Panel unter der Checkliste und schickt keine Tokens aus der Fläche', () => {
+  it('nimmt Social aus der Checkliste, wenn die Fläche freigeschaltet ist', () => {
+    harness.state.socialFlag = true;
+    render(<CockpitConnectorsStrip />);
+    expect(document.querySelector('[data-connector-id="connector_social"]')).toBeNull();
+  });
+
+  it('hängt das Panel an das eigene Gate und schickt keine Tokens aus der Fläche', () => {
     const command = readFileSync('src/features/governance/dashboard/CommandCenterDashboard.tsx', 'utf8');
     const panel = readFileSync(
       'src/features/dashboard/widget-registry/SocialChannelConnectPanel.tsx',
@@ -281,10 +351,14 @@ describe('Platzierung und Quellgrenzen', () => {
       'src/features/dashboard/widget-registry/socialChannelConnectApi.ts',
       'utf8',
     );
-    expect(command.indexOf('<CockpitConnectorsStrip')).toBeLessThan(command.indexOf('<SocialChannelConnectPanel'));
-    expect(command.indexOf('<SocialChannelConnectPanel')).toBeLessThan(command.indexOf('<HandoffOverview'));
+    const beforePanel = command.slice(0, command.indexOf('<SocialChannelConnectPanel'));
+    const gate = beforePanel.slice(beforePanel.lastIndexOf('{'));
+    expect(gate).toContain('socialChannelConnectAllowed(entitlements, tenantLoading)');
+    expect(gate).not.toContain("showWidget('customer_start')");
     expect(command).toContain('reloadKey={reloadKey}');
     expect(command).toContain('onRetry={retry}');
+    expect(panel).toContain('rs-btn rs-btn--outline');
+    expect(panel).not.toContain('className="border');
     expect(panel).not.toContain('access_token');
     expect(panel).not.toContain('credentials_enc');
     expect(panel).not.toContain('oauth/v2');

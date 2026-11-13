@@ -46,7 +46,9 @@ describe('widget-registry catalog', () => {
     const social = WIDGET_CATALOG_BY_ID.get('connector_social');
     expect(social?.status).toBe('proposed');
     expect(social?.requiredEntitlements).toEqual(['dashboard.access']);
+    expect(social?.featureFlag).toBe('social_channel_connect');
     expect(social?.startConnector).toBe(true);
+    expect(WIDGET_FEATURE_FLAGS.social_channel_connect).toBe(false);
     const selected = selectWidgetsForEntitlements(
       { 'dashboard.access': 1 },
       ['connector_social'],
@@ -121,6 +123,7 @@ describe('selectWidgetsForEntitlements', () => {
 
   it('listet das Start-Set ohne Gmail', () => {
     expect(WIDGET_FEATURE_FLAGS.gmail_restricted_scopes).toBe(false);
+    expect(WIDGET_FEATURE_FLAGS.social_channel_connect).toBe(false);
     expect(START_CONNECTOR_IDS).toEqual([
       'connector_google_calendar',
       'connector_microsoft_calendar',

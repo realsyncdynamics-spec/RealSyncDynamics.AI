@@ -1,10 +1,13 @@
 /**
  * Anzeige-Modell für Social-Konten im Command Center.
  *
- * LinkedIn ist der einzige Kanal, den `social-channel-connect` heute
- * anschließen kann. Ein OAuth-Code-Tausch fehlt: die Edge Function nimmt
- * fertige Credentials entgegen und versiegelt sie. Dieses Modell startet
- * deshalb keinen Authorize-Redirect und nennt keine Token-Felder.
+ * Die Fläche ist fail-closed: ohne geladene Entitlements, ohne
+ * `dashboard.access` oder bei ausgeschaltetem Flag `social_channel_connect`
+ * wird nichts gerendert und nichts abgefragt. `connector_social` bleibt
+ * proposed; diese Funktion lockert `selectWidgetsForEntitlements` nicht.
+ *
+ * Verbinden und Rotieren bleiben Platzhalter, bis der serverseitige
+ * LinkedIn-OAuth steht. Der Browser schickt keine Credentials.
  *
  * Ein späterer Flow darf nur die dokumentierten LinkedIn-Endpunkte nutzen
  * (Authorization Code, OpenID Connect) und nur die minimalen Scopes
@@ -15,6 +18,9 @@
  * Token: https://www.linkedin.com/oauth/v2/accessToken
  * Posting-Scopes gehören nicht in den Verbindungs-Platzhalter.
  */
+
+import { isWidgetFeatureEnabled } from './flags';
+import { entitlementIsOn, entitlementsToValueMap } from './selectWidgets';
 
 export type SocialChannelAvailability = 'placeholder' | 'in_development';
 
@@ -41,6 +47,20 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
   disabled: 'deaktiviert',
   revoked: 'getrennt',
 };
+
+/**
+ * Eigenes Gate, nicht `showWidget` und nicht `selectWidgetsForEntitlements`.
+ * `entitlements == null` oder `tenantLoading` ist noch nicht entschieden:
+ * nichts anzeigen. Fehlendes oder ausgeschaltetes `dashboard.access` ebenso.
+ */
+export function socialChannelConnectAllowed(
+  entitlements: { byKey: Readonly<Record<string, { value: number }>> } | null | undefined,
+  tenantLoading: boolean,
+): boolean {
+  if (tenantLoading || entitlements == null) return false;
+  if (!isWidgetFeatureEnabled('social_channel_connect')) return false;
+  return entitlementIsOn(entitlementsToValueMap(entitlements), 'dashboard.access');
+}
 
 /** Spiegelt social-channel-connect (owner/admin). Maßgeblich bleibt der Server. */
 export function canManageSocialChannels(role: string | null | undefined): boolean {

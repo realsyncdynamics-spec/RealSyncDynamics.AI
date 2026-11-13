@@ -43,6 +43,7 @@ import {
 } from '../../dashboard/widget-registry';
 import { CockpitConnectorsStrip } from '../../dashboard/widget-registry/CockpitConnectorsStrip';
 import { SocialChannelConnectPanel } from '../../dashboard/widget-registry/SocialChannelConnectPanel';
+import { socialChannelConnectAllowed } from '../../dashboard/widget-registry/socialChannelConnectModel';
 import './sample-workspace.css';
 
 interface WorkspaceFacts {
@@ -206,11 +207,10 @@ export function CommandCenterDashboard() {
         />
       )}
       {activeTenantId && showWidget('customer_start') && <CockpitConnectorsStrip />}
-      {/* connector_social ersetzt die Checklisten-Zeile. Der Katalogeintrag
-          bleibt proposed, solange LinkedIn-OAuth fehlt. showWidget('connector_social')
-          wäre nach dem Laden der Entitlements falsch: proposed kommt nie ins
-          Auto-Layout. Die Fläche hängt deshalb am Abschnitt „Konten verbinden“. */}
-      {activeTenantId && showWidget('customer_start') && (
+      {/* Eigenes Gate: dashboard.access und Flag social_channel_connect.
+          proposed bleibt außerhalb von selectWidgets. Während die
+          Entitlements laden, rendert die Fläche nicht. */}
+      {activeTenantId && socialChannelConnectAllowed(entitlements, tenantLoading) && (
         <SocialChannelConnectPanel reloadKey={reloadKey} onRetry={retry} />
       )}
       {/* WP-4: Während der Einrichtung zeigt die Beispielansicht, wie das

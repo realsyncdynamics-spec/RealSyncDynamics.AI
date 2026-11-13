@@ -51,7 +51,7 @@ export interface WidgetDefinition {
 }
 
 /** Siehe WIDGET_FEATURE_FLAGS in flags.ts. */
-export type WidgetFeatureFlag = 'gmail_restricted_scopes';
+export type WidgetFeatureFlag = 'gmail_restricted_scopes' | 'social_channel_connect';
 
 
 /** Kanonische Auswertung: 0 = aus, sonst an (1, Kontingent oder -1). */

@@ -5,6 +5,7 @@ import { listSocialChannelConnections, removeSocialChannelConnection, type Socia
 import {
   SOCIAL_CHANNEL_OFFERS,
   canManageSocialChannels,
+  socialChannelConnectAllowed,
   socialDisplayName,
   socialExpiryLabel,
   socialStatusLabel,
@@ -28,16 +29,21 @@ export function SocialChannelConnectPanel({
   reloadKey?: number;
   onRetry?: () => void;
 }) {
-  const { activeTenantId, tenants } = useTenant();
+  const { activeTenantId, tenants, entitlements, loading: tenantLoading } = useTenant();
+  const allowed = socialChannelConnectAllowed(entitlements, tenantLoading);
   const role = tenants.find((tenant) => tenant.tenantId === activeTenantId)?.role ?? null;
   const canManage = canManageSocialChannels(role);
-  const [state, reload] = useTenantLoad(activeTenantId, listSocialChannelConnections, [reloadKey]);
+  const [state, reload] = useTenantLoad(
+    allowed ? activeTenantId : null,
+    listSocialChannelConnections,
+    [reloadKey],
+  );
   const [placeholder, setPlaceholder] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!activeTenantId) return null;
+  if (!allowed || !activeTenantId) return null;
   const tenantId = activeTenantId;
 
   const retry = () => {
@@ -94,7 +100,7 @@ export function SocialChannelConnectPanel({
             {offer.availability === 'placeholder' && canManage && (
               <button
                 type="button"
-                className="border px-3 py-1.5 text-xs font-semibold"
+                className="rs-btn rs-btn--outline"
                 data-testid="social-linkedin-connect"
                 onClick={() => setPlaceholder(PLACEHOLDER_CONNECT)}
               >
@@ -114,7 +120,7 @@ export function SocialChannelConnectPanel({
           <p className="rs-note">Social-Konten konnten nicht geladen werden.</p>
           <button
             type="button"
-            className="mt-1 inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-semibold"
+            className="rs-btn rs-btn--outline"
             data-testid="social-channel-connect-retry"
             onClick={retry}
           >
@@ -191,7 +197,7 @@ function ConnectionRow({
       {canManage && row.channel === 'linkedin' && !disconnected && (
         <button
           type="button"
-          className="border px-3 py-1.5 text-xs font-semibold"
+          className="rs-btn rs-btn--outline"
           data-testid={`social-connection-rotate-${row.id}`}
           onClick={onRotate}
         >
@@ -201,7 +207,7 @@ function ConnectionRow({
       {canManage && !disconnected && !pending && (
         <button
           type="button"
-          className="border px-3 py-1.5 text-xs font-semibold"
+          className="rs-btn rs-btn--outline"
           data-testid={`social-connection-disconnect-${row.id}`}
           onClick={onAskRemove}
         >
@@ -212,7 +218,7 @@ function ConnectionRow({
         <>
           <button
             type="button"
-            className="border px-3 py-1.5 text-xs font-semibold"
+            className="rs-btn rs-btn--outline"
             data-testid={`social-connection-disconnect-confirm-${row.id}`}
             disabled={busy}
             onClick={onConfirmRemove}
@@ -221,7 +227,7 @@ function ConnectionRow({
           </button>
           <button
             type="button"
-            className="border px-3 py-1.5 text-xs font-semibold"
+            className="rs-btn rs-btn--outline"
             data-testid={`social-connection-disconnect-cancel-${row.id}`}
             disabled={busy}
             onClick={onCancelRemove}

@@ -1,11 +1,10 @@
 /**
  * Lesen und Trennen von Social-Kanalkonten.
  *
- * Liste: Metadaten-Spalten, die `authenticated` sehen darf. `credentials_enc`
- * wird nicht abgefragt. Schreiben: nur `op: 'remove'` an
- * `social-channel-connect`. Verbinden und Rotieren schicken Credentials im
- * Body; ohne serverseitigen OAuth-Code-Tausch gibt es dafür keinen
- * Client-Helfer, damit der Browser kein Token sammelt.
+ * Liste: nur UI-Spalten. Nicht `scopes`, `last_error`, `created_by`,
+ * `credentials_enc` oder Token-Felder. #2211 engt `authenticated` darauf
+ * ein (Tabelle oder View); diese Abfrage bleibt in dem Rahmen.
+ * Schreiben: nur `op: 'remove'`. Kein Client-Helfer für configure/rotate.
  */
 import { getSupabase } from '../../../lib/supabase';
 
@@ -18,9 +17,30 @@ export interface SocialChannelConnectionMeta {
   token_expires_at: string | null;
 }
 
-/** Explizite Spaltenliste. Niemals `credentials_enc` oder Token-Felder. */
-export const SOCIAL_CHANNEL_META_COLUMNS =
-  'id, channel, account_name, account_external_id, status, token_expires_at';
+/** Relation, bis #2211 eine engere UI-View ausliefert. Die Spalten bleiben dieselben. */
+export const SOCIAL_CHANNEL_UI_RELATION = 'social_channel_connections';
+
+/** Spalten, die die Fläche anzeigen darf. */
+export const SOCIAL_CHANNEL_UI_COLUMNS = [
+  'id',
+  'channel',
+  'account_name',
+  'account_external_id',
+  'status',
+  'token_expires_at',
+] as const;
+
+/** Explizite Spaltenliste. Niemals Siegel, Token oder interne Audit-Felder. */
+export const SOCIAL_CHANNEL_META_COLUMNS = SOCIAL_CHANNEL_UI_COLUMNS.join(', ');
+
+export const SOCIAL_CHANNEL_HIDDEN_COLUMNS = [
+  'scopes',
+  'last_error',
+  'created_by',
+  'credentials_enc',
+  'access_token',
+  'refresh_token',
+] as const;
 
 export function toSocialChannelConnectionMeta(row: unknown): SocialChannelConnectionMeta | null {
   if (!row || typeof row !== 'object') return null;
@@ -41,7 +61,7 @@ export function toSocialChannelConnectionMeta(row: unknown): SocialChannelConnec
 
 export async function listSocialChannelConnections(tenantId: string): Promise<SocialChannelConnectionMeta[]> {
   const { data, error } = await getSupabase()
-    .from('social_channel_connections')
+    .from(SOCIAL_CHANNEL_UI_RELATION)
     .select(SOCIAL_CHANNEL_META_COLUMNS)
     .eq('tenant_id', tenantId)
     .order('channel', { ascending: true });

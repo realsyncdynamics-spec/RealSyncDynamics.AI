@@ -231,12 +231,13 @@ export const WIDGET_CATALOG: readonly WidgetDefinition[] = [
   {
     id: 'connector_social',
     title: 'Social-Konten',
-    description: 'Social-Konten im Abschnitt „Konten verbinden“: Metadaten lesen, Trennen über social-channel-connect. LinkedIn-OAuth (Code-Tausch) fehlt — Verbinden und Rotieren sind Platzhalter. Deshalb proposed und nicht im Auto-Layout.',
+    description: 'Social-Konten im Abschnitt „Konten verbinden“: Metadaten lesen, Trennen über social-channel-connect. LinkedIn-OAuth fehlt — Verbinden und Rotieren sind Platzhalter. Status proposed, zusätzlich feature-flagged (social_channel_connect, Default aus). Nicht im Auto-Layout.',
     componentPath: 'src/features/dashboard/widget-registry/SocialChannelConnectPanel.tsx',
     requiredEntitlements: ['dashboard.access'],
     origin: 'command-center',
     status: 'proposed',
     defaultOn: false,
+    featureFlag: 'social_channel_connect',
     startConnector: true,
   },
   {

@@ -752,13 +752,20 @@ async function callbackLinkedInOAuth(req: Request, deps: LinkedInOAuthDeps): Pro
   });
 
   if (!outcome.ok) {
-    deps.log?.({ step: outcome.code === 'audit_failed' ? 'audit' : 'store' });
-    return finish(returnUrl, 'error', outcome.code === 'audit_failed' ? 'audit' : 'store');
+    // commitWithAudit: audit_failed = Zurücknahme gelungen.
+    // write_failed und revert_failed sind Speicherfehler, kein Erfolg.
+    const step = outcome.code === 'audit_failed' ? 'audit' : 'store';
+    deps.log?.({ step });
+    return finish(returnUrl, 'error', step);
   }
 
   const active = await deps.activate(outcome.value.id, consumed.row.tenantId, exchanged.token.scopes);
   if (!active) {
-    await deps.restore(outcome.value.id, consumed.row.tenantId, outcome.value.previous, outcome.value.createdRegistryId);
+    try {
+      await deps.restore(outcome.value.id, consumed.row.tenantId, outcome.value.previous, outcome.value.createdRegistryId);
+    } catch {
+      /* Zurücknahme nach fehlender Aktivierung: Antwort bleibt ein Fehler. */
+    }
     deps.log?.({ step: 'store' });
     return finish(returnUrl, 'error', 'store');
   }

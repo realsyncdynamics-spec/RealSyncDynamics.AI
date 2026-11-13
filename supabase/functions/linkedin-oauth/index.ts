@@ -7,7 +7,10 @@
 // start prueft das JWT selbst. callback vertraut nur dem einmaligen State.
 // redirect_uri nur aus LINKEDIN_OAUTH_REDIRECT_URI.
 // Tokens nur versiegelt (secretBox). Audit-Fehler: commitWithAudit
-// nimmt die Schreibe zurueck, Status bleibt nicht connected.
+// nimmt die Schreibe zurueck. revert_failed ist kein Erfolg.
+// Die Verbindung entsteht vor der Registratur, wie
+// social_channel_connection_apply. Das Siegel schreibt diese RPC
+// nicht; der OAuth-Pfad bleibt bei commitWithAudit.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { requireAuthAndTenant, requireTenantMembership } from '../_shared/auth.ts';
@@ -185,6 +188,30 @@ async function ensureRegistry(
   return { id: data.id as string, created: true };
 }
 
+async function undoConnection(
+  admin: Admin,
+  id: string,
+  tenantId: string,
+  previous: ConnectionSnapshot | null,
+): Promise<void> {
+  if (previous) {
+    await admin.from('social_channel_connections').update({
+      credentials_enc: previous.credentialsEnc,
+      status: previous.status,
+      token_expires_at: previous.tokenExpiresAt,
+      scopes: previous.scopes,
+      account_name: previous.accountName,
+      account_kind: previous.accountKind,
+      connected_at: previous.connectedAt,
+      registry_id: previous.registryId,
+      last_error: previous.lastError,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).eq('tenant_id', tenantId);
+    return;
+  }
+  await admin.from('social_channel_connections').delete().eq('id', id).eq('tenant_id', tenantId);
+}
+
 function connectionDeps(admin: Admin): Pick<LinkedInOAuthDeps, 'savePending' | 'restore' | 'activate' | 'audit' | 'isOwnerOrAdmin'> {
   return {
     async isOwnerOrAdmin(tenantId, userId) {
@@ -205,14 +232,11 @@ function connectionDeps(admin: Admin): Pick<LinkedInOAuthDeps, 'savePending' | '
       let previous = snapshot(existing);
       if (existing && !previous) return { ok: false };
       const displayName = input.accountName?.trim() || 'LinkedIn';
-      const registry = await ensureRegistry(admin, {
-        tenantId: input.tenantId,
-        registryId: previous?.registryId ?? null,
-        displayName,
-        scopes: input.scopes,
-      });
-      if (!registry) return { ok: false };
 
+      // Zuerst die Verbindung, die Registratur erst danach — dieselbe
+      // Reihenfolge wie social_channel_connection_apply. Das Siegel kann
+      // diese RPC nicht schreiben (kein Credential-Parameter); deshalb
+      // bleibt der OAuth-Pfad bei commitWithAudit.
       const now = new Date().toISOString();
       const patch: Record<string, unknown> = {
         credentials_enc: input.sealed,
@@ -223,7 +247,7 @@ function connectionDeps(admin: Admin): Pick<LinkedInOAuthDeps, 'savePending' | '
         scopes: input.scopes,
         account_name: input.accountName,
         account_kind: 'member',
-        registry_id: registry.id,
+        registry_id: previous?.registryId ?? null,
         updated_at: now,
       };
       const write = existing?.id
@@ -250,12 +274,10 @@ function connectionDeps(admin: Admin): Pick<LinkedInOAuthDeps, 'savePending' | '
         const racedSnap = snapshot(raced);
         if (raceErr || !raced?.id || !racedSnap) {
           console.error('[linkedin-oauth] conflict reread failed', dbCode(raceErr));
-          if (registry.created) {
-            await admin.from('connector_registry').delete().eq('id', registry.id).eq('tenant_id', input.tenantId);
-          }
           return { ok: false };
         }
         previous = racedSnap;
+        patch.registry_id = racedSnap.registryId;
         const retried = await admin
           .from('social_channel_connections')
           .update(patch)
@@ -268,17 +290,58 @@ function connectionDeps(admin: Admin): Pick<LinkedInOAuthDeps, 'savePending' | '
       }
       if (error || !row?.id) {
         console.error('[linkedin-oauth] write failed', dbCode(error));
-        if (registry.created) {
-          await admin.from('connector_registry').delete().eq('id', registry.id).eq('tenant_id', input.tenantId);
-        }
         return { ok: false };
       }
+
+      const connectionId = row.id as string;
+      let createdRegistryId: string | null = null;
+      if (!previous?.registryId) {
+        const registry = await ensureRegistry(admin, {
+          tenantId: input.tenantId,
+          registryId: null,
+          displayName,
+          scopes: input.scopes,
+        });
+        if (!registry) {
+          await undoConnection(admin, connectionId, input.tenantId, previous);
+          return { ok: false };
+        }
+        const { error: linkErr } = await admin
+          .from('social_channel_connections')
+          .update({ registry_id: registry.id, updated_at: new Date().toISOString() })
+          .eq('id', connectionId)
+          .eq('tenant_id', input.tenantId);
+        if (linkErr) {
+          console.error('[linkedin-oauth] registry link failed', dbCode(linkErr));
+          await admin.from('connector_registry').delete().eq('id', registry.id).eq('tenant_id', input.tenantId);
+          await undoConnection(admin, connectionId, input.tenantId, previous);
+          return { ok: false };
+        }
+        createdRegistryId = registry.id;
+      } else {
+        const { error: labelErr } = await admin
+          .from('connector_registry')
+          .update({
+            display_name: displayName,
+            auth_kind: 'oauth2',
+            scope: registryScopeLabel(input.scopes),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', previous.registryId)
+          .eq('tenant_id', input.tenantId);
+        if (labelErr) {
+          console.error('[linkedin-oauth] registry label failed', dbCode(labelErr));
+          await undoConnection(admin, connectionId, input.tenantId, previous);
+          return { ok: false };
+        }
+      }
+
       return {
         ok: true,
         value: {
-          id: row.id as string,
+          id: connectionId,
           previous,
-          createdRegistryId: registry.created ? registry.id : null,
+          createdRegistryId,
         },
       };
     },

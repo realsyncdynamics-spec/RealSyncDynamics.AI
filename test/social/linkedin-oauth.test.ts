@@ -334,6 +334,25 @@ describe('LinkedIn-OAuth, Ablauf', () => {
     expect(mismatch.headers.get('location')).not.toContain(CODE);
   });
 
+  it('gibt keinen Erfolg, wenn das Zurücknehmen selbst scheitert', async () => {
+    const key = await fixtureKey();
+    const logs: string[] = [];
+    const harness = createHarness(key, {
+      auditOk: false,
+      revertThrows: ACCESS,
+      log: (event) => logs.push(JSON.stringify(event)),
+    });
+    const started = await handleLinkedInOAuth(jsonRequest({ op: 'start', tenant_id: TENANT }), harness.deps);
+    const state = new URL((await started.json()).authorization_url).searchParams.get('state') ?? '';
+    const done = await handleLinkedInOAuth(callbackRequest(state, { code: CODE }), harness.deps);
+    expect(new URL(done.headers.get('location') ?? RETURN).searchParams.get('reason')).toBe('store');
+    expect(done.headers.get('location')).not.toContain('linkedin=connected');
+    expect(done.headers.get('location')).not.toContain(ACCESS);
+    expect(logs.join('')).not.toContain(ACCESS);
+    expect(harness.calls).toEqual(['write', 'audit', 'revert']);
+    expect(harness.row?.status).not.toBe('connected');
+  });
+
   it('lehnt mitgeschickte Zugangsdaten ab', async () => {
     const key = await fixtureKey();
     const harness = createHarness(key);
@@ -391,6 +410,7 @@ function callbackRequest(state: string, query: Record<string, string>): Request 
 
 function createHarness(key: CryptoKey, options?: {
   auditOk?: boolean;
+  revertThrows?: string;
   log?: (event: { step: string; status?: number }) => void;
 }): {
   deps: LinkedInOAuthDeps;
@@ -470,6 +490,7 @@ function createHarness(key: CryptoKey, options?: {
     },
     async restore() {
       calls.push('revert');
+      if (options?.revertThrows) throw new Error(options.revertThrows);
       if (row) {
         row = { ...row, status: 'connected', sealed: previousSeal };
       }

@@ -75,6 +75,17 @@ const QUEUE_CHANNEL_PROVIDER: Record<string, SocialProvider> = {
 /** Einschaltbarer Uebergang. Jeder andere Wert, auch leer, ist aus. */
 export const LEGACY_ENV_TOKEN_FLAG = 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN';
 
+/**
+ * LinkedIn-Versand. Default aus: kein Siegel oeffnen, kein HTTP.
+ * Nur exakt "on" schaltet frei. Bleibt aus, bis OAuth und echte
+ * Autor-URNs stehen.
+ */
+export const LINKEDIN_PUBLISHING_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED';
+
+export function linkedInPublishingEnabled(flag: string | undefined): boolean {
+  return flag === 'on';
+}
+
 const SECRET_KEYS = ['access_token', 'refresh_token', 'token_type'] as const;
 
 export interface SocialChannelSecrets {

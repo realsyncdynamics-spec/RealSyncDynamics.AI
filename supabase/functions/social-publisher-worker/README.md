@@ -51,6 +51,8 @@ Tokens come from `social_channel_connections` (sealed with `secretBox`, one row 
 
 The worker does **not** fall back to `LINKEDIN_ACCESS_TOKEN`. A platform token has no author URN.
 
+`SOCIAL_PUBLISHER_LINKEDIN_ENABLED` defaults to off. Any value other than exactly `on` skips the LinkedIn channels: the worker does not claim those jobs, does not open a seal, and does not call LinkedIn. Turn it on only after OAuth and a real author URN are in place.
+
 Publish call: `POST https://api.linkedin.com/rest/posts` with `LinkedIn-Version: 202610` and `X-Restli-Protocol-Version: 2.0.0`. `202610` is the latest version named on the LinkedIn versioning page as of 2026-11-13; a November 2026 release was not listed there. The post id is the `x-restli-id` response header.
 
 The queue job has no image bytes. The Images API is not called. `facebook` is in development and is not a queue channel.

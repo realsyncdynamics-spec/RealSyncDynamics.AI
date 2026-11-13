@@ -14,7 +14,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { publishLinkedInQueueJob } from '../_shared/linkedinPosts.ts';
-import { accountExternalIdFromPostData } from '../_shared/socialChannelCredentials.ts';
+import {
+  accountExternalIdFromPostData,
+  LINKEDIN_PUBLISHING_FLAG,
+  linkedInPublishingEnabled,
+} from '../_shared/socialChannelCredentials.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -115,7 +119,12 @@ async function publishViaChannel(
 //
 // Token und Autor-URN je Mandant aus social_channel_connections.
 // HTTP: POST https://api.linkedin.com/rest/posts (linkedinPosts.ts).
+// SOCIAL_PUBLISHER_LINKEDIN_ENABLED default aus: kein Siegel, kein HTTP.
 // Kein globaler LINKEDIN_ACCESS_TOKEN.
+
+function workerEnv(name: string): string | undefined {
+  return Deno.env.get(name) ?? undefined;
+}
 
 async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
   const direct = accountExternalIdFromPostData(job.post_data);
@@ -131,13 +140,16 @@ async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
 }
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
+  if (!linkedInPublishingEnabled(workerEnv(LINKEDIN_PUBLISHING_FLAG))) {
+    return { ok: false, error: 'linkedin publishing is disabled' };
+  }
   const accountExternalId = await linkedinAccountHint(job);
   return publishLinkedInQueueJob(supabase, {
     tenantId: job.tenant_id,
     queueChannel: job.channel,
     body: job.body,
     accountExternalId,
-    readEnv: (name) => Deno.env.get(name) ?? undefined,
+    readEnv: workerEnv,
   });
 }
 
@@ -387,6 +399,7 @@ async function processJob(channel: string): Promise<boolean> {
  * Process all channels (one job per channel per invocation).
  */
 async function processAllChannels(): Promise<void> {
+  const linkedInOn = linkedInPublishingEnabled(workerEnv(LINKEDIN_PUBLISHING_FLAG));
   const channels = [
     'linkedin.enterprise',
     'linkedin.legal',
@@ -395,7 +408,15 @@ async function processAllChannels(): Promise<void> {
     'webhook.custom',
     'email.newsletter',
     // TODO: instagram.reel, tiktok.fast, x.alert
-  ];
+  ].filter((channel) => linkedInOn || (channel !== 'linkedin.enterprise' && channel !== 'linkedin.legal'));
+
+  if (!linkedInOn) {
+    console.log(JSON.stringify({
+      level: 'info',
+      scope: 'social_publisher_linkedin_disabled',
+      flag: LINKEDIN_PUBLISHING_FLAG,
+    }));
+  }
 
   const results = await Promise.allSettled(
     channels.map(channel => processJob(channel))

@@ -5,7 +5,9 @@ import {
   accountExternalIdFromPostData,
   chooseSocialConnection,
   connectionExpired,
+  LINKEDIN_PUBLISHING_FLAG,
   legacyEnvTokenEnabled,
+  linkedInPublishingEnabled,
   parseSocialCredentials,
   isSocialProviderInDevelopment,
   providerForQueueChannel,
@@ -85,6 +87,16 @@ describe('Social-Kanal-Tokens', () => {
     expect(isSocialProviderInDevelopment('facebook')).toBe(true);
     expect(isSocialProviderInDevelopment('linkedin')).toBe(false);
     expect(isSocialProviderInDevelopment('instagram')).toBe(false);
+  });
+
+  it('schaltet LinkedIn-Versand nur bei exakt "on" ein', () => {
+    expect(LINKEDIN_PUBLISHING_FLAG).toBe('SOCIAL_PUBLISHER_LINKEDIN_ENABLED');
+    expect(linkedInPublishingEnabled('on')).toBe(true);
+    expect(linkedInPublishingEnabled(undefined)).toBe(false);
+    expect(linkedInPublishingEnabled('')).toBe(false);
+    expect(linkedInPublishingEnabled('off')).toBe(false);
+    expect(linkedInPublishingEnabled('ON')).toBe(false);
+    expect(linkedInPublishingEnabled('true')).toBe(false);
   });
 
   it('schaltet den Legacy-Env-Token nur bei exakt "on" ein', () => {

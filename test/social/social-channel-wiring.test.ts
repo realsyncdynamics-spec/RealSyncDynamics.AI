@@ -100,6 +100,10 @@ describe('Worker liest den Token je Mandant', () => {
     expect(posts).toContain("'LinkedIn-Version': LINKEDIN_API_VERSION");
     expect(posts).toContain("'X-Restli-Protocol-Version': LINKEDIN_RESTLI_PROTOCOL");
     expect(posts).toContain('allowLegacyEnv: false');
+    expect(posts).toContain('linkedInPublishingEnabled');
+    expect(workerCode).toContain('linkedInPublishingEnabled');
+    expect(helper).toContain("export const LINKEDIN_PUBLISHING_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED'");
+    expect(helper).toContain("return flag === 'on'");
     expect(posts).toContain("response.headers.get('x-restli-id')");
     expect(codeWithoutComments(posts)).not.toContain('ugcPosts');
     expect(codeWithoutComments(posts)).not.toContain('/rest/images');

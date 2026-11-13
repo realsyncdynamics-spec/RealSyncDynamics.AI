@@ -29,6 +29,8 @@
  */
 
 import {
+  LINKEDIN_PUBLISHING_FLAG,
+  linkedInPublishingEnabled,
   resolveSocialAccessToken,
   type SocialChannelAdmin,
 } from './socialChannelCredentials.ts';
@@ -139,6 +141,9 @@ export async function publishLinkedInQueueJob(
     fetchImpl?: typeof fetch;
   },
 ): Promise<{ ok: boolean; externalId?: string; error?: string }> {
+  if (!linkedInPublishingEnabled(input.readEnv?.(LINKEDIN_PUBLISHING_FLAG))) {
+    return { ok: false, error: 'linkedin publishing is disabled' };
+  }
   const resolved = await resolveSocialAccessToken(admin, {
     tenantId: input.tenantId,
     queueChannel: input.queueChannel,

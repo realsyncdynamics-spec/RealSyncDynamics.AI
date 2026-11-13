@@ -10,6 +10,7 @@ import {
 } from '../../supabase/functions/_shared/linkedinPosts';
 import {
   LEGACY_ENV_TOKEN_FLAG,
+  LINKEDIN_PUBLISHING_FLAG,
   sealSocialCredentials,
   type SocialChannelAdmin,
   type SocialConnectionRow,
@@ -81,6 +82,15 @@ interface SeenRequest {
   body: Record<string, unknown> | null;
 }
 
+function enableLinkedIn(
+  readEnv?: (name: string) => string | undefined,
+): (name: string) => string | undefined {
+  return (name) => {
+    if (name === LINKEDIN_PUBLISHING_FLAG) return 'on';
+    return readEnv?.(name);
+  };
+}
+
 function mockFetch(status: number, headerId: string | null, body = ''): {
   fetchImpl: typeof fetch;
   calls: SeenRequest[];
@@ -104,6 +114,31 @@ function mockFetch(status: number, headerId: string | null, body = ''): {
 }
 
 describe('LinkedIn Posts API', () => {
+  it('bleibt ohne SOCIAL_PUBLISHER_LINKEDIN_ENABLED aus und oeffnet kein Siegel', async () => {
+    const admin = {
+      from() {
+        throw new Error('lookup');
+      },
+      rpc() {
+        throw new Error('rpc');
+      },
+    };
+    const { fetchImpl, calls } = mockFetch(201, 'urn:li:share:1');
+    for (const flag of [undefined, '', 'true', 'ON', 'off']) {
+      const result = await publishLinkedInQueueJob(admin as never, {
+        tenantId: 'tenant-a',
+        queueChannel: 'linkedin.enterprise',
+        body: 'Hinweis',
+        accountExternalId: ORG,
+        fetchImpl,
+        readEnv: () => flag,
+      });
+      expect(result).toEqual({ ok: false, error: 'linkedin publishing is disabled' });
+    }
+    expect(calls).toHaveLength(0);
+    expect(JSON.stringify({ calls })).not.toContain(TOKEN);
+  });
+
   it('escaped little-Text, damit reservierte Zeichen Klartext bleiben', () => {
     expect(escapeLinkedInCommentary('Hinweis (DSGVO) #Gov')).toBe('Hinweis \\(DSGVO\\) \\#Gov');
     expect(escapeLinkedInCommentary('a\\b')).toBe('a\\\\b');
@@ -196,12 +231,12 @@ describe('LinkedIn Posts API', () => {
         body: 'Hinweis',
         accountExternalId: PERSON,
         fetchImpl,
-        readEnv: (name) => {
+        readEnv: enableLinkedIn((name) => {
           if (name === 'INTEGRATION_CREDENTIALS_KEY') return b64;
           if (name === LEGACY_ENV_TOKEN_FLAG) return 'on';
           if (name === 'LINKEDIN_ACCESS_TOKEN') return OTHER;
           return undefined;
-        },
+        }),
       },
     );
     expect(result).toEqual({ ok: true, externalId: 'urn:li:share:99' });
@@ -218,11 +253,11 @@ describe('LinkedIn Posts API', () => {
       body: 'Hinweis',
       accountExternalId: null,
       fetchImpl,
-      readEnv: (name) => {
+      readEnv: enableLinkedIn((name) => {
         if (name === LEGACY_ENV_TOKEN_FLAG) return 'on';
         if (name === 'LINKEDIN_ACCESS_TOKEN') return TOKEN;
         return undefined;
-      },
+      }),
     });
     expect(result.ok).toBe(false);
     expect(calls).toHaveLength(0);
@@ -242,7 +277,7 @@ describe('LinkedIn Posts API', () => {
         body: 'Hinweis',
         accountExternalId: null,
         fetchImpl,
-        readEnv: (name) => (name === 'INTEGRATION_CREDENTIALS_KEY' ? b64 : undefined),
+        readEnv: enableLinkedIn((name) => (name === 'INTEGRATION_CREDENTIALS_KEY' ? b64 : undefined)),
       },
     );
     expect(result).toEqual({ ok: true, externalId: 'urn:li:ugcPost:1' });
@@ -266,7 +301,7 @@ describe('LinkedIn Posts API', () => {
         body: 'Hinweis',
         accountExternalId: null,
         fetchImpl,
-        readEnv: (name) => (name === 'INTEGRATION_CREDENTIALS_KEY' ? b64 : undefined),
+        readEnv: enableLinkedIn((name) => (name === 'INTEGRATION_CREDENTIALS_KEY' ? b64 : undefined)),
       },
     );
     expect(result.ok).toBe(false);

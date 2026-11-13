@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { AGENTS, ROUTINES, SKILLS, TOOL_ACTIONS, validateRegistry } from '../../packages/ai-os-core/src/index';
+import { AGENTS, EXISTING_ROUTINES, ROUTINES, SKILLS, TOOL_ACTIONS, validateRegistry } from '../../packages/ai-os-core/src/index';
 
 const ROOT = join(__dirname, '..', '..');
 const exists = (p: string) => existsSync(join(ROOT, p));
@@ -32,6 +32,20 @@ describe('validateRegistry', () => {
     const errors = validateRegistry(() => false);
     expect(errors.some((e) => e.includes('SKILL.md fehlt'))).toBe(true);
     expect(errors.some((e) => e.includes('Workflow'))).toBe(true);
+  });
+});
+
+describe('Externe Automatisierungen', () => {
+  it('registriert die existierende xAI-Prüfung nur als externen, nicht ausführbaren Inventareintrag', () => {
+    const watch = EXISTING_ROUTINES.find((r) => r.id === 'external-xai-api-watch');
+    expect(watch).toMatchObject({
+      name: 'xAI API wöchentlich überwachen',
+      agent: 'development',
+      runtime: 'chatgpt-automation',
+      schedule: 'Mo 11:09 Europe/Berlin',
+    });
+    expect(watch?.source).toContain('externe');
+    expect(ROUTINES.some((r) => r.id === watch?.id)).toBe(false);
   });
 });
 

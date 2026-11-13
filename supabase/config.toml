@@ -81,6 +81,13 @@ verify_jwt = false
 [functions.shopify-callback]
 verify_jwt = false
 
+# LinkedIn OAuth (Social Studio). LinkedIn leitet den Browser ohne
+# Supabase-JWT auf redirect_uri. verify_jwt bleibt false; start prueft
+# das Nutzer-JWT selbst (owner/admin), callback vertraut nur dem
+# einmaligen State. Siehe supabase/functions/linkedin-oauth/README.md.
+[functions.linkedin-oauth]
+verify_jwt = false
+
 [functions.workflow-callback]
 verify_jwt = false
 

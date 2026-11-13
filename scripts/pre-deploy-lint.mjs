@@ -140,6 +140,9 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'stripe-webhook',
   'shopify-webhooks',
   'shopify-callback',
+  // LinkedIn leitet den Browser ohne JWT auf die Function. start prueft
+  // das Nutzer-JWT selbst; fehlt der Stanza, kommt der Callback nicht an.
+  'linkedin-oauth',
   'workflow-callback',
   'governance-ingest',
   'governance-webhooks',

@@ -7,9 +7,8 @@ import { SEOHead } from '../../components/SEOHead';
 import '../../styles/governance-os-handoff.css';
 import { HandoffTopBar } from '../../components/handoff/HandoffTopBar';
 import { useLang } from '../../i18n/useLang';
-import { COMPANY } from '../../config/company';
 import {
-  SELLABLE_PRICING_TIERS, PRICING_TAX_NOTE_STANDARD,
+  SELLABLE_PRICING_TIERS,
   formatPriceEur, tierById, planById, PLANS,
   type PricingTier,
 } from '../../config/pricing';
@@ -169,10 +168,6 @@ export function PricingPage() {
                       days: TRIAL_DAYS,
                       until: TRIAL_DAYS + 1,
                     })}
-              </p>
-              {/* Steuerhinweis: DE-Wortlaut unverändert lassen (Overlap #1748). */}
-              <p data-testid="pricing-tax-note">
-                {COMPANY.taxMode === 'EXEMPT' ? t('pricingFoot') : `Alle Preise in EUR. ${PRICING_TAX_NOTE_STANDARD}`}
               </p>
             </div>
           </div>

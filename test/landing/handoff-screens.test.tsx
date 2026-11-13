@@ -69,10 +69,11 @@ describe('/pricing (Handoff v2)', () => {
     );
   });
 
-  it('shows the statutory VAT note from the company SSOT', () => {
+  it('does not show a tax statement on the pricing page', () => {
     mount();
-    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
-    expect(screen.getByTestId('pricing-tax-note')).not.toHaveTextContent(/zzgl\..*Umsatzsteuer/);
+    expect(screen.queryByTestId('pricing-tax-note')).not.toBeInTheDocument();
+    expect(screen.getByText(/Monatlich kündbar/)).toBeInTheDocument();
+    expect(screen.getByText(/Monatlich kündbar/).textContent).not.toMatch(/USt|Umsatzsteuer|MwSt|zzgl/);
   });
 });
 

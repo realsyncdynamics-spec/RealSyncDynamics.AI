@@ -5,6 +5,7 @@ import { contrastGaps, contrastRatio, REPORTED_PAIRS, REQUIRED_TEXT_PAIRS } from
 import { assertDnaWithinBase, designDna, dnaOverlayStyle, parseDnaOverlay } from '../../../src/app/theme/dna';
 import { resolveTheme } from '../../../src/app/theme/resolve';
 import { semanticCssName, TokenSchemaError } from '../../../src/app/theme/schema';
+import { semanticOverrideStyle } from '../../../src/app/theme/overrides';
 import tokens from '../../../src/app/theme/tokens.json';
 
 const shellSource = readFileSync('src/app/AppShell.tsx', 'utf8');
@@ -69,5 +70,50 @@ describe('Token-Schema und DNA-Overlay', () => {
     expect(overlayNames('beispiel-handwerk')).toContain('text-micro/default');
     expect(overlayNames('beispiel-kanzlei')).toContain('text-micro/default');
     expect(overlayNames('beispiel-b2b-saas')).not.toContain('text-micro/default');
+  });
+
+  it('lässt Display- und Body-Schrift als semantisches Overlay zu', () => {
+    const cream = resolveTheme('light-cream');
+    expect(cream['--type-family-display']).toBe(cream['--type-family-sans']);
+    expect(cream['--type-family-body']).toBe(cream['--type-family-sans']);
+    const style = semanticOverrideStyle({
+      'type/family/display': 'Newsreader, Georgia, serif',
+      'type/family/body': 'Inter, sans-serif',
+    }) as Record<string, string>;
+    expect(style['--type-family-display']).toBe('Newsreader, Georgia, serif');
+    expect(style['--type-family-body']).toBe('Inter, sans-serif');
+    const leaves = parseDnaOverlay({
+      semantic: {
+        type: {
+          family: {
+            display: {
+              $type: 'fontFamily',
+              $extensions: {
+                'com.rsd.modes': {
+                  'beispiel-handwerk': 'Newsreader, Georgia, serif',
+                  'beispiel-b2b-saas': 'Space Grotesk, Inter, sans-serif',
+                  'beispiel-kanzlei': 'Newsreader, Georgia, serif',
+                },
+                'com.rsd.css': '--type-family-display',
+              },
+            },
+            body: {
+              $type: 'fontFamily',
+              $extensions: {
+                'com.rsd.modes': {
+                  'beispiel-handwerk': 'Inter, sans-serif',
+                  'beispiel-b2b-saas': 'Inter, sans-serif',
+                  'beispiel-kanzlei': 'Newsreader, Georgia, serif',
+                },
+                'com.rsd.css': '--type-family-body',
+              },
+            },
+          },
+        },
+      },
+    });
+    const applied = dnaOverlayStyle('beispiel-b2b-saas', leaves) as Record<string, string>;
+    expect(applied['--type-family-display']).toBe('Space Grotesk, Inter, sans-serif');
+    expect(applied['--type-family-body']).toBe('Inter, sans-serif');
   });
 });

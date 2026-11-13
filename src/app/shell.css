@@ -23,6 +23,8 @@
   --space-400: 24px;
   --space-500: 32px;
   --type-family-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --type-family-display: var(--type-family-sans);
+  --type-family-body: var(--type-family-sans);
   --type-size-label: 11px;
   --type-size-body: 13px;
   --type-size-body-lg: 14px;
@@ -36,7 +38,7 @@
   display: flex;
   background: var(--color-surface-default);
   color: var(--color-text-primary);
-  font-family: var(--type-family-sans);
+  font-family: var(--type-family-body);
   font-size: var(--type-size-body-lg);
 }
 
@@ -104,6 +106,13 @@
   gap: var(--space-300);
   padding: 0 var(--space-500);
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.app-shell h1,
+.app-shell h2,
+.app-shell__brand,
+.app-shell__kpis strong {
+  font-family: var(--type-family-display);
 }
 
 .app-shell__topbar h1 {

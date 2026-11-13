@@ -100,6 +100,8 @@
   --type-weight-bold: 700;
   --type-weight-heavy: 800;
   --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: var(--type-family-sans);
+  --type-family-body: var(--type-family-sans);
   --motion-duration-fast: 120ms;
   --motion-duration-base: 200ms;
   --motion-duration-slow: 400ms;
@@ -273,6 +275,8 @@
   --type-weight-bold: 700;
   --type-weight-heavy: 800;
   --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: var(--type-family-sans);
+  --type-family-body: var(--type-family-sans);
   --motion-duration-fast: 120ms;
   --motion-duration-base: 200ms;
   --motion-duration-slow: 400ms;
@@ -446,6 +450,8 @@
   --type-weight-bold: 700;
   --type-weight-heavy: 800;
   --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --type-family-display: var(--type-family-sans);
+  --type-family-body: var(--type-family-sans);
   --motion-duration-fast: 120ms;
   --motion-duration-base: 200ms;
   --motion-duration-slow: 400ms;

@@ -27,6 +27,7 @@ import {
   type CommandDefinition,
 } from './commandCenterCatalog';
 import { RouteEntitlementGate } from '../../core/access/RouteEntitlementGate';
+import { useOptionalTenant } from '../../core/access/TenantProvider';
 import { AppGate } from '../../features/auth/AppGate';
 import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
@@ -57,7 +58,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     { id: number; text: string; agent?: AssistantPromptDetail['agent'] } | null
   >(null);
 
-  const commandItems = useMemo(() => buildCommandCatalog(), []);
+  const tenant = useOptionalTenant();
+  const commandItems = useMemo(
+    () => buildCommandCatalog({ entitlementsLoading: tenant?.loading ?? true }),
+    [tenant?.loading],
+  );
 
   // An embedded page belongs to the current navigation entry. It must not
   // cover the next module, including a new visit to the same dashboard URL.

@@ -12,6 +12,10 @@ describe('commandCenterCatalog', () => {
 
   it('includes every governance module as a command', () => {
     for (const mod of GOVERNANCE_MODULES) {
+      if (mod.id === 'creative-studio') {
+        expect(catalog.some((c) => c.id === `mod-${mod.id}`)).toBe(false);
+        continue;
+      }
       expect(catalog.some((c) => c.id === `mod-${mod.id}`)).toBe(true);
     }
   });

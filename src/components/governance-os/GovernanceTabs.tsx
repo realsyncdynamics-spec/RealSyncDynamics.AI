@@ -10,6 +10,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES, DOCK_MODULES } from './governanceModules';
+import { useOptionalTenant } from '../../core/access/TenantProvider';
+import { CREATIVE_STUDIO_MODULE_ID, isCreativeStudioVisible } from '../../features/creative-studio/access';
 import { useNavLock } from './useNavLock';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
@@ -66,9 +68,13 @@ export function GovernanceTabs() {
 
   // Primary strip: accessible only. Locked + roadmap live under „Mehr"
   // to keep tab density manageable without changing IA.
-  const accessibleTabs = TAB_MODULES.filter((m) => !lockFor({ route: m.route, module: m }).locked);
-  const lockedTabs = TAB_MODULES.filter((m) => lockFor({ route: m.route, module: m }).locked);
-  const moreCount = lockedTabs.length + DOCK_MODULES.length;
+  const tenant = useOptionalTenant();
+  const studioVisible = isCreativeStudioVisible(tenant?.loading ?? true);
+  const tabModules = TAB_MODULES.filter((m) => m.id !== CREATIVE_STUDIO_MODULE_ID || studioVisible);
+  const dockModules = DOCK_MODULES.filter((m) => m.id !== CREATIVE_STUDIO_MODULE_ID || studioVisible);
+  const accessibleTabs = tabModules.filter((m) => !lockFor({ route: m.route, module: m }).locked);
+  const lockedTabs = tabModules.filter((m) => lockFor({ route: m.route, module: m }).locked);
+  const moreCount = lockedTabs.length + dockModules.length;
 
   return (
     <div className="relative shrink-0 bg-obsidian-900 border-b border-titanium-900">
@@ -125,14 +131,14 @@ export function GovernanceTabs() {
                       })}
                     </>
                   )}
-                  {DOCK_MODULES.length > 0 && (
+                  {dockModules.length > 0 && (
                     <>
                       <div className="px-3 py-2 border-b border-t border-titanium-900">
                         <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">
                           Roadmap Module
                         </span>
                       </div>
-                      {DOCK_MODULES.map((mod) => {
+                      {dockModules.map((mod) => {
                         const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
                         const allowed = !lockFor({ route: mod.route, module: mod }).locked;
                         return (

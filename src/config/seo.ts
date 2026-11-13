@@ -548,6 +548,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
 
+  // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau mit fiktivem Architekturbüro).
+  // Bewusst noindex und nicht in der Sitemap; Freischaltung zur Indexierung als eigener Schritt.
+  '/demo/3d-landingpage': {
+    title: '3D-Landingpage live erleben | RealSync Dynamics AI',
+    description:
+      'Interaktive 3D-Landingpage im Browser: drehen, scrollen, Details öffnen, Farben und Licht anpassen. Vorlage mit fiktivem Beispielunternehmen.',
+    canonical: `${SITE_URL}/demo/3d-landingpage`,
+    noIndex: true,
+  },
+
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/unternehmen': {

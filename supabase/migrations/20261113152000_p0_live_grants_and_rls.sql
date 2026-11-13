@@ -1,16 +1,30 @@
 -- =============================================================================
--- DRAFT v2 — NOT APPLIED, not a migration history entry, not for production
+-- DRAFT v2.1 — NOT APPLIED, not a migration history entry, not for production
 -- until Dominik Steiner gives an explicit live release for exactly this file
 -- on RealSyncDynamicsLive (ebljyceifhnlzhjfyxup).
 --
 -- Stand: 13. November 2026 (Europe/Berlin)
--- Basiert auf realsync-p0-live-migration-DRAFT.sql (v1, unveraendert lassen)
--- plus Must-/Should-Fixes aus realsync-p0-draft-review-2026-11-13.md.
+-- Basiert auf realsync-p0-live-migration-DRAFT-v2.sql (v2 bleibt unveraendert).
+-- Must-fixes aus realsync-p0-v2-review-2026-11-13.md (Abschnitte 2, 5 und 9).
 -- Funktionsliste und ACLs gegen den Live-Katalog (nur SELECT) vom 13.11.2026
 -- abgeglichen.
 --
+-- Changelog gegenueber v2:
+--   1. Must-fix 1: Nach dem REVOKE auf public.audit_share_get(uuid) zwei
+--      defensive GRANTs:
+--        GRANT EXECUTE ON FUNCTION public.platform_stats() TO service_role;
+--        GRANT EXECUTE ON FUNCTION public.audit_share_get(uuid) TO service_role;
+--      Auf Live bereits explizit erfuellt; v2 entzieht sie nicht. Die
+--      Companion-Migration 20261113153000_p0_service_role_grants_for_public_replacements.sql
+--      und ihr Rollback realsync-p0-companion-rollback.sql gehoeren nicht zu
+--      diesem Paket und dürfen nicht mit ausgeliefert bzw. nicht angewendet
+--      werden (Companion-Rollback wuerde service_role nach einem v2/v2.1-
+--      Rollback entziehen).
+--   2. Must-fix 2 betrifft nur den Rollback (creatorseal-Funktionen und
+--      pg_default_acl), nicht diese Migrationsdatei.
+--
 -- Do not run this file against any Supabase project.
--- Begleitender Rollback: realsync-p0-live-rollback-v2.sql
+-- Begleitender Rollback: realsync-p0-live-rollback-v2.1.sql
 -- Voraussetzung bleibt ein schema-identisches Staging/Branch von Live
 -- (PostgREST, GoTrue-Hook, Edge Functions). Der Localtest ersetzt das nicht.
 -- =============================================================================
@@ -36,6 +50,10 @@ REVOKE ALL ON FUNCTION public.platform_stats() FROM PUBLIC, anon, authenticated;
 --   vor Live dennoch Marketing-Landing und bestehende Bundles pruefen.
 
 REVOKE ALL ON FUNCTION public.audit_share_get(uuid) FROM PUBLIC, anon, authenticated;
+-- defensiv, auf Live bereits erfuellt (Must-fix 1, Review v2 Abschnitt 5).
+-- Companion-Migration und Companion-Rollback sind gestrichen.
+GRANT EXECUTE ON FUNCTION public.platform_stats() TO service_role;
+GRANT EXECUTE ON FUNCTION public.audit_share_get(uuid) TO service_role;
 -- Ersatz (nicht in diesem Apply, siehe Bericht Abschnitt 5):
 --   Edge Function z. B. audit-share-get, Bindung an ein eigenes Share-Token
 --   (nicht die interne Audit-UUID), minimierte non-PII-Felder, Rate-Limit.

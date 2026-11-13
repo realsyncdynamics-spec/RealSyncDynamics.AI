@@ -27,12 +27,33 @@ describe('widget-registry catalog', () => {
   it('setzt proposed Widgets ohne Komponentenpfad und available mit Pfad, außer dokumentierte Lücken', () => {
     for (const widget of WIDGET_CATALOG) {
       if (widget.status === 'proposed') {
+        // connector_social hat eine Fläche, bleibt aber proposed: LinkedIn-OAuth fehlt.
+        if (widget.id === 'connector_social') {
+          expect(widget.componentPath).toBe(
+            'src/features/dashboard/widget-registry/SocialChannelConnectPanel.tsx',
+          );
+          continue;
+        }
         expect(widget.componentPath, widget.id).toBeNull();
       }
       if (widget.status === 'available') {
         expect(widget.componentPath, widget.id).toBeTruthy();
       }
     }
+  });
+
+  it('lässt connector_social proposed und außerhalb des Auto-Layouts', () => {
+    const social = WIDGET_CATALOG_BY_ID.get('connector_social');
+    expect(social?.status).toBe('proposed');
+    expect(social?.requiredEntitlements).toEqual(['dashboard.access']);
+    expect(social?.featureFlag).toBe('social_channel_connect');
+    expect(social?.startConnector).toBe(true);
+    expect(WIDGET_FEATURE_FLAGS.social_channel_connect).toBe(false);
+    const selected = selectWidgetsForEntitlements(
+      { 'dashboard.access': 1 },
+      ['connector_social'],
+    );
+    expect(selected.map((w) => w.id)).not.toContain('connector_social');
   });
 
   it('enthält die Legacy-IDs aus dashboard_user_preferences', () => {
@@ -102,6 +123,7 @@ describe('selectWidgetsForEntitlements', () => {
 
   it('listet das Start-Set ohne Gmail', () => {
     expect(WIDGET_FEATURE_FLAGS.gmail_restricted_scopes).toBe(false);
+    expect(WIDGET_FEATURE_FLAGS.social_channel_connect).toBe(false);
     expect(START_CONNECTOR_IDS).toEqual([
       'connector_google_calendar',
       'connector_microsoft_calendar',

@@ -19,10 +19,10 @@
  * des Systems). DSGVO Art. 5 Abs. 2 (Rechenschaftspflicht — eine zugesagte
  * technische Maßnahme muss belegbar sein).
  *
- * ⚠️ REGEL: Diese Tabelle steht doppelt — hier und in der Migrations-SQL
- * (`20260904100000_connector_registry.sql`). Nie einseitig ändern;
- * `test/governance/enforcement-class-parity.test.ts` bricht sonst. Dasselbe
- * Verfahren wie bei RFC-003 (`CLAUDE.md` §5).
+ * ⚠️ REGEL: Diese Tabelle steht doppelt — hier und in
+ * `connector_enforcement_class()`. Die gültige SQL-Fassung ist das letzte
+ * `CREATE OR REPLACE` in `supabase/migrations/`. Nie einseitig ändern;
+ * `test/governance/enforcement-class-parity.test.ts` bricht sonst.
  */
 
 /** A = inline anhaltbar · B = Schranke · C = nur nachgelagert · D = kein Zugriff. */
@@ -161,6 +161,14 @@ export const SYSTEM_CLASSIFICATIONS: readonly SystemClassification[] = [
       'Microsoft Graph liefert Prüfereignisse erst nach der Aktion. Ein echter Block '
       + 'bräuchte Microsoft Purview DLP oder eine Netzwerk-/Geräteebene — beides ist '
       + 'nicht Teil dieses Produkts.',
+  },
+  {
+    systemType: 'social_channel',
+    label: 'Social-Kanal',
+    klasse: 'C',
+    begruendung:
+      'Der Aufruf geht an die API des Anbieters. Wir können ihn unterlassen, '
+      + 'aber nichts abfangen, was dort schon geschehen ist.',
   },
   {
     systemType: 'crm',

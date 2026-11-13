@@ -4,8 +4,9 @@ import type { WidgetDefinition } from './types';
  * Statischer Widget-Katalog (SSOT im Code).
  *
  * Nur bestehende Komponenten und bestehende Entitlement-Keys.
- * Vorgeschlagene Widgets (Mail, Kalender, Social, Start-Connectoren) sind
- * gekennzeichnet (`status: 'proposed'`, `componentPath: null`).
+ * Vorgeschlagene Widgets bleiben `status: 'proposed'` und kommen nicht ins
+ * Auto-Layout. `componentPath` ist null, außer `connector_social`: die Fläche
+ * hängt im Command Center, LinkedIn-OAuth (Code-Tausch) fehlt aber.
  * Gmail Restricted Scopes sind zusätzlich feature-flagged und bleiben aus,
  * bis Google CASA verifiziert ist (H17). Nicht bewerben.
  *
@@ -230,12 +231,13 @@ export const WIDGET_CATALOG: readonly WidgetDefinition[] = [
   {
     id: 'connector_social',
     title: 'Social-Konten',
-    description: 'Start-Set: Anbindung Social Studio / Publishing. Publishing-Tabellen existieren, kein Login-Briefing und keine Command-Center-Kachel.',
-    componentPath: null,
+    description: 'Social-Konten im Abschnitt „Konten verbinden“: Metadaten lesen, Trennen über social-channel-connect. LinkedIn-OAuth fehlt — Verbinden und Rotieren sind Platzhalter. Status proposed, zusätzlich feature-flagged (social_channel_connect, Default aus). Nicht im Auto-Layout.',
+    componentPath: 'src/features/dashboard/widget-registry/SocialChannelConnectPanel.tsx',
     requiredEntitlements: ['dashboard.access'],
-    origin: 'proposed',
+    origin: 'command-center',
     status: 'proposed',
     defaultOn: false,
+    featureFlag: 'social_channel_connect',
     startConnector: true,
   },
   {

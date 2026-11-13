@@ -31,7 +31,8 @@ export interface WidgetDefinition {
   description: string;
   /**
    * Repo-Pfad der bestehenden Komponente, oder `null` wenn proposed.
-   * Keine erfundenen Modulpfade.
+   * Ausnahme: `connector_social` hat eine Fläche und bleibt proposed,
+   * solange der LinkedIn-OAuth-Code-Tausch fehlt. Keine erfundenen Modulpfade.
    */
   componentPath: string | null;
   /** Alle Keys müssen im Tenant-Entitlement-Satz „an“ sein (`value !== 0`). */
@@ -50,7 +51,7 @@ export interface WidgetDefinition {
 }
 
 /** Siehe WIDGET_FEATURE_FLAGS in flags.ts. */
-export type WidgetFeatureFlag = 'gmail_restricted_scopes';
+export type WidgetFeatureFlag = 'gmail_restricted_scopes' | 'social_channel_connect';
 
 
 /** Kanonische Auswertung: 0 = aus, sonst an (1, Kontingent oder -1). */

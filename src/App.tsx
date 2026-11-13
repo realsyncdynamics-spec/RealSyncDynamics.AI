@@ -33,6 +33,7 @@ const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default:
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 const AppShellPreview = lazy(() => import('./app/AppShellPreview').then((m) => ({ default: m.AppShellPreview })));
+const ThemeGeneratorPreview = lazy(() => import('./app/ThemeGeneratorPreview').then((m) => ({ default: m.ThemeGeneratorPreview })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -545,6 +546,7 @@ function RoutesWithTracking() {
       <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
       <Route path="/design/app-shell" element={<AppShellPreview />} />
+      <Route path="/design/theme-generator" element={<ThemeGeneratorPreview />} />
       <Route path="/app/preview" element={<AppGate><AppShellPreview enforceGuards /></AppGate>} />
       <Route path="/design/governance-ai" element={<Navigate to="/" replace />} />
       <Route path="/design/titan" element={<Navigate to="/" replace />} />

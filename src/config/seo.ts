@@ -1500,6 +1500,8 @@ export function getSeoForPath(pathname: string): SEOConfig {
   if (
     path === '/design/app-shell'
     || path.startsWith('/design/app-shell/')
+    || path === '/design/theme-generator'
+    || path.startsWith('/design/theme-generator/')
     || path === '/app/preview'
     || path.startsWith('/app/preview/')
   ) {

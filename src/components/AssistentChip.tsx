@@ -23,7 +23,7 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 //     chip fades out. On `/` this keeps the premium hero conversion zone
 //     clear; the Grok Bot returns as soon as the visitor leaves the hero.
 
-const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
+const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit', '/v8'];
 
 function shouldHide(pathname: string): boolean {
   // Landing `/` shows the chip (Dominik: RealSyncDynamicsai Grok Bot on homepage).

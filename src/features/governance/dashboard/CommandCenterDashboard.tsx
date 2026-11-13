@@ -37,6 +37,11 @@ import { OsControlStrip } from './OsControlStrip';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
+import {
+  entitlementsToValueMap,
+  selectWidgetsForEntitlements,
+} from '../../dashboard/widget-registry';
+import { CockpitConnectorsStrip } from '../../dashboard/widget-registry/CockpitConnectorsStrip';
 import './sample-workspace.css';
 
 interface WorkspaceFacts {
@@ -170,6 +175,17 @@ export function CommandCenterDashboard() {
   );
   const startModel = useMemo(() => computeStartPanel(startFacts), [startFacts]);
 
+  // Auto-Layout: solange Entitlements noch laden, bestehende Command-Center-
+  // Flächen unverändert zeigen. Nach dem Laden nur Widgets mit passendem
+  // Default-Layout (dashboard.access). Legacy-KPI-Widgets bleiben in ihrer
+  // bisherigen (nicht gerouteten) DashboardView; hier werden nur CC-Flächen gefiltert.
+  const entitlementValues = useMemo(() => entitlementsToValueMap(entitlements), [entitlements]);
+  const selectedWidgetIds = useMemo(() => {
+    if (!entitlements) return null;
+    return new Set(selectWidgetsForEntitlements(entitlementValues).map((widget) => widget.id));
+  }, [entitlements, entitlementValues]);
+  const showWidget = (id: string) => selectedWidgetIds === null || selectedWidgetIds.has(id);
+
   return (
     <>
       {/* Agent zuerst: eine Frage, `@` wählt den Agenten; übergeben wird an
@@ -178,7 +194,7 @@ export function CommandCenterDashboard() {
       {/* Kunden-Startansicht: eine Botschaft, ein nächster Schritt, Fortschritt,
           drei Kernbereiche, Ergebnisse, weitere Module. Testphase/Zahlung
           stehen dort als eine Zeile im Fortschritt (statt TrialBanner). */}
-      {activeTenantId && (
+      {activeTenantId && showWidget('customer_start') && (
         <CustomerStartPanel
           tenantName={tenantName}
           facts={startFacts}
@@ -188,6 +204,7 @@ export function CommandCenterDashboard() {
           data={tenantData}
         />
       )}
+      {activeTenantId && showWidget('customer_start') && <CockpitConnectorsStrip />}
       {/* WP-4: Während der Einrichtung zeigt die Beispielansicht, wie das
           Dashboard mit Daten aussieht — ohne Beispieldaten im Mandanten.
           Erst bei einem nachweislich offenen Schritt, sonst blitzte der
@@ -213,6 +230,7 @@ export function CommandCenterDashboard() {
         </summary>
         {/* Handoff v2 §6: Übersicht im Entwurfsraster — dieselben Cockpit-Daten
             (Score, Maßnahmen, Evidenz) plus Inventar/Policies/Connectoren. */}
+        {showWidget('handoff_overview') && (
         <HandoffOverview
           activeTenantId={activeTenantId}
           data={data}
@@ -221,6 +239,7 @@ export function CommandCenterDashboard() {
           onRetry={retry}
           reloadKey={reloadKey}
         />
+        )}
         {/* WP4: Kontrollschicht sichtbar machen — KI-Inventar, Bots/Agenten,
             Residualrisiko, Freigaben, Evidence. Liest Risiko und Evidence aus
             denselben Cockpit-Daten wie die Übersicht (kein zweiter RPC).
@@ -231,6 +250,7 @@ export function CommandCenterDashboard() {
             `data` wird nur durchgegeben, solange es zum aktiven Mandanten
             gehört. Ohne beides zeigte die Reihe in genau einem Frame die Zahlen
             des vorigen Mandanten unter dem neuen. */}
+        {showWidget('os_control_strip') && (
         <OsControlStrip
           key={activeTenantId ?? 'no-tenant'}
           activeTenantId={activeTenantId}
@@ -240,7 +260,11 @@ export function CommandCenterDashboard() {
           reloadKey={reloadKey}
           dataVersion={dataVersion}
         />
+        )}
+        {showWidget('browser_runtime') && (
         <BrowserRuntimePanel activeTenantId={activeTenantId} />
+        )}
+        {showWidget('compliance_status') && (
         <ComplianceStatusView
           tenantName={tenantName}
           activeTenantId={activeTenantId}
@@ -254,7 +278,8 @@ export function CommandCenterDashboard() {
           onRetry={retry}
           packsLockTitle={packsLockTitle}
         />
-        {activeTenantId && <DashboardExecuteStrip />}
+        )}
+        {activeTenantId && showWidget('execute_strip') && <DashboardExecuteStrip />}
       </details>
     </>
   );

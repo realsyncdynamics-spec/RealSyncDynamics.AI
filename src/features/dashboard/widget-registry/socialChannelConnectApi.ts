@@ -71,6 +71,8 @@ const ACTION_MESSAGES: Readonly<Record<string, string>> = {
   CREDENTIALS_NOT_ACCEPTED:
     'Zugangsdaten werden hier nicht angenommen. Verbinden und Rotieren warten auf den serverseitigen LinkedIn-OAuth.',
   AUDIT_FAILED: 'Die Änderung wurde nicht protokolliert und zurückgenommen.',
+  revert_failed: 'Die Änderung wurde nicht protokolliert, und das Zurücknehmen ist fehlgeschlagen.',
+  REVERT_FAILED: 'Die Änderung wurde nicht protokolliert, und das Zurücknehmen ist fehlgeschlagen.',
 };
 
 export class SocialChannelActionError extends Error {

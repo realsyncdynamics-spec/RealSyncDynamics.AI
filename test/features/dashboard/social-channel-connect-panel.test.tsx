@@ -156,6 +156,8 @@ describe('social channel meta', () => {
   it('übersetzt CREDENTIALS_NOT_ACCEPTED und AUDIT_FAILED', () => {
     expect(socialChannelActionMessage('CREDENTIALS_NOT_ACCEPTED')).toContain('nicht angenommen');
     expect(socialChannelActionMessage('AUDIT_FAILED')).toContain('zurückgenommen');
+    expect(socialChannelActionMessage('revert_failed')).toContain('Zurücknehmen ist fehlgeschlagen');
+    expect(socialChannelActionMessage('REVERT_FAILED')).toContain('Zurücknehmen ist fehlgeschlagen');
     expect(socialChannelActionMessage('CREDENTIALS_NOT_ACCEPTED')).not.toContain('access_token');
     expect(socialChannelActionMessage(null)).toBe('Trennen ist fehlgeschlagen.');
   });
@@ -361,6 +363,22 @@ describe('SocialChannelConnectPanel', () => {
     const rejected = await screen.findByTestId('social-channel-action-error');
     expect(rejected.textContent).toContain('nicht angenommen');
     expect(rejected.textContent).not.toContain('access_token');
+    expect(screen.getByTestId(`social-connection-${LINKEDIN_ID}`)).toBeTruthy();
+  });
+
+  it('zeigt revert_failed wie einen fehlgeschlagenen Audit-Abbruch', async () => {
+    harness.state.rows = [linkedinRow()];
+    harness.state.invoke.mockResolvedValue({
+      data: { ok: false, error: { code: 'revert_failed', message: 'row dump should-not-render' } },
+      error: null,
+    });
+    renderPanel();
+    await screen.findByTestId(`social-connection-${LINKEDIN_ID}`);
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-${LINKEDIN_ID}`));
+    fireEvent.click(screen.getByTestId(`social-connection-disconnect-confirm-${LINKEDIN_ID}`));
+    const alert = await screen.findByTestId('social-channel-action-error');
+    expect(alert.textContent).toContain('Zurücknehmen ist fehlgeschlagen');
+    expect(alert.textContent).not.toContain('should-not-render');
     expect(screen.getByTestId(`social-connection-${LINKEDIN_ID}`)).toBeTruthy();
   });
 

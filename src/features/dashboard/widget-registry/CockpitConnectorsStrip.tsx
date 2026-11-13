@@ -9,6 +9,7 @@ import { isWidgetFeatureEnabled } from './flags';
 export function CockpitConnectorsStrip() {
   const connectors = WIDGET_CATALOG.filter((widget) => {
     if (widget.startConnector !== true) return false;
+    if (widget.id === 'connector_social') return false;
     if (widget.featureFlag && !isWidgetFeatureEnabled(widget.featureFlag)) return false;
     return true;
   });
@@ -17,9 +18,10 @@ export function CockpitConnectorsStrip() {
     <section className="rs-panel" data-testid="cockpit-connectors-strip" aria-labelledby="cockpit-connectors-title">
       <h2 id="cockpit-connectors-title" className="rs-h3">Konten verbinden</h2>
       <p className="rs-note">
-        Start-Set: Google Calendar, Microsoft Calendar, Outlook Mail über Microsoft Graph und Social.
-        Die Anbindung selbst folgt in einem späteren PR; hier nur die Checkliste. Gmail (Restricted Scopes)
-        ist bis zur Google-CASA-Verifizierung gesperrt und wird nicht angeboten.
+        Start-Set: Google Calendar, Microsoft Calendar und Outlook Mail über Microsoft Graph.
+        Die Anbindung folgt in einem späteren PR; hier nur die Checkliste. Social-Konten stehen
+        direkt darunter. Gmail (Restricted Scopes) ist bis zur Google-CASA-Verifizierung gesperrt
+        und wird nicht angeboten.
       </p>
       <ul className="rs-start__steps">
         {connectors.map((widget) => (

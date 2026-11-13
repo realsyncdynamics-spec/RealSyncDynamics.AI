@@ -31,7 +31,8 @@ export interface WidgetDefinition {
   description: string;
   /**
    * Repo-Pfad der bestehenden Komponente, oder `null` wenn proposed.
-   * Keine erfundenen Modulpfade.
+   * Ausnahme: `connector_social` hat eine Fläche und bleibt proposed,
+   * solange der LinkedIn-OAuth-Code-Tausch fehlt. Keine erfundenen Modulpfade.
    */
   componentPath: string | null;
   /** Alle Keys müssen im Tenant-Entitlement-Satz „an“ sein (`value !== 0`). */

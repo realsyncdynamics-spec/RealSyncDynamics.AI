@@ -67,6 +67,9 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
       expect(line).not.toContain('sealed');
     }
     expect(connect).toContain('credential_fields: sealed.fieldNames');
+    expect(connect).toContain("action: 'social_channel.configure'");
+    expect(connect).toContain("action: 'social_channel.rotate'");
+    expect(connect).toContain("action: 'social_channel.remove'");
   });
 });
 

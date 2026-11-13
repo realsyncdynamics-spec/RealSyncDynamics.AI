@@ -15,7 +15,7 @@ import { getSupabaseUrl } from '../lib/supabaseUrl';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
 import { readAuditPrefill } from '../features/audit/auditPrefill';
-import { rememberLeadContext } from '../features/audit/leadContext';
+import { isValidLeadEmail, normalizeDomainInput, rememberLeadContext } from '../features/audit/leadContext';
 import { trackMarketingEvent } from '../lib/marketingAnalytics';
 import { HandoffTopBar } from '../components/handoff/HandoffTopBar';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
@@ -103,6 +103,11 @@ export function AuditLanding() {
   // an seiner engsten Stelle bricht. Nur als Startwert — danach gehört das
   // Feld dem Besucher.
   const [url] = useState(() => readAuditPrefill(window.location.search));
+  const [classic, setClassic] = useState(false);
+  const [chatDomain, setChatDomain] = useState(url ?? '');
+  const [confirmedDomain, setConfirmedDomain] = useState<string | null>(null);
+  const [chatEmail, setChatEmail] = useState('');
+  const [chatHoneypot, setChatHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -197,18 +202,78 @@ export function AuditLanding() {
     <div className="rs-paper rs-ui rs-page min-h-screen">
       <HandoffTopBar />
 
-      {/* Governance-OS-Handoff v2: vier Fragen → echter gdpr-audit-Scan →
-          Score aus dem Scan. Der vollständige Bericht folgt darunter. */}
-      <AuditStepper
-        key={stepperGen}
-        initialDomain={url}
-        running={loading}
-        error={error}
-        report={report}
-        onRun={(input) => { void runScan(input); }}
-        onReset={clearResult}
-        onReveal={() => setRevealed(true)}
-      />
+      <div className="mx-auto max-w-3xl px-4 pt-8">
+        <button type="button" className="min-h-11 underline" onClick={() => {
+          clearResult();
+          setClassic(!classic);
+        }}>
+          {classic ? 'Zum Audit-Dialog' : 'Klassisches Formular'}
+        </button>
+      </div>
+
+      {classic ? (
+        <AuditStepper
+          key={stepperGen}
+          initialDomain={url}
+          running={loading}
+          error={error}
+          report={report}
+          onRun={(input) => { void runScan(input); }}
+          onReset={clearResult}
+          onReveal={() => setRevealed(true)}
+        />
+      ) : (
+        <section className="mx-auto max-w-3xl px-4 py-8" aria-labelledby="audit-dialog-title">
+          <h1 id="audit-dialog-title" className="text-3xl font-semibold">Website-Audit</h1>
+          <form className="mt-6 grid gap-4" onSubmit={(event) => {
+            event.preventDefault();
+            if (loading) return;
+            if (!confirmedDomain) {
+              const domain = normalizeDomainInput(chatDomain);
+              if (domain) {
+                setError(null);
+                setConfirmedDomain(domain);
+              } else setError('Bitte gib eine gültige Website-Adresse ein.');
+              return;
+            }
+            if (!isValidLeadEmail(chatEmail)) {
+              setError('Bitte gib eine gültige E-Mail-Adresse ein.');
+              return;
+            }
+            void runScan({ domain: confirmedDomain, email: chatEmail.trim(), company: '', marketingConsent: false, honeypot: chatHoneypot });
+          }}>
+            {confirmedDomain ? (
+              <>
+                <p>Website: {confirmedDomain} <button type="button" className="min-h-11 underline" onClick={() => {
+                  clearResult();
+                  setConfirmedDomain(null);
+                }}>Ändern</button></p>
+                <label htmlFor="audit-chat-email">An welche E-Mail-Adresse soll der Bericht gehen?</label>
+                <input id="audit-chat-email" type="email" autoComplete="email" required className="min-h-11 rounded border px-3" value={chatEmail} onChange={(event) => setChatEmail(event.target.value)} />
+                <input type="text" aria-hidden="true" tabIndex={-1} autoComplete="off" className="hidden" value={chatHoneypot} onChange={(event) => setChatHoneypot(event.target.value)} />
+                <Link to="/legal/privacy" className="underline">Datenschutz</Link>
+              </>
+            ) : (
+              <>
+                <label htmlFor="audit-chat-domain">Welche Website soll ich scannen?</label>
+                <input id="audit-chat-domain" type="text" inputMode="url" required className="min-h-11 rounded border px-3" value={chatDomain} onChange={(event) => setChatDomain(event.target.value)} />
+              </>
+            )}
+            <button type="submit" disabled={loading || !!report} className="min-h-11 rounded border px-4">
+              {loading ? 'Scan läuft …' : confirmedDomain ? 'Scan starten' : 'Weiter'}
+            </button>
+          </form>
+          {loading && <p role="status" className="mt-4">Die Website wird geprüft.</p>}
+          {error && <p role="alert" className="mt-4">{error}</p>}
+          {report && (
+            <div className="mt-6 grid gap-3">
+              <p role="status">Ergebnis: {report.score}/100</p>
+              <Top3RisksPreview issues={report.issues} score={report.score} />
+              <Link className="underline" to={`/audit/result/${encodeURIComponent(report.audit_id)}`}>Vollen Report sehen</Link>
+            </div>
+          )}
+        </section>
+      )}
 
       {report && revealed && (
         <div className="flow-context bg-obsidian-950 text-titanium-100 border-t border-titanium-900">

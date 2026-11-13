@@ -11,18 +11,16 @@
 // sealSocialCredentials in _shared/socialChannelCredentials.ts.
 // Scopes vom Client nur openid und profile.
 //
-// Jede Änderung wird auditiert. Schlägt das Audit fehl, wird die
-// Schreibe zurückgenommen und die Antwort ist kein 200.
+// Verbindung, Registratur und Audit schreibt die RPC
+// social_channel_connection_apply in einer Transaktion. Ein Fehler
+// lässt keine verwaiste Registry-Zeile stehen.
 //
 // owner/admin only. tenant_id wird gegen die Mitgliedschaft geprüft.
 
 import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { audit } from '../_shared/auditLog.ts';
 import {
-  SOCIAL_CONNECTION_PUBLIC_SELECT,
   clientSuppliedCredentials,
-  commitWithAudit,
   isSocialProvider,
   parseAccountExternalId,
   parseClientScopes,
@@ -34,13 +32,6 @@ const corsHeaders = buildCorsHeaders('POST, OPTIONS');
 function isUuid(value: unknown): value is string {
   return typeof value === 'string'
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-}
-
-function dbCode(error: unknown): string {
-  if (error && typeof error === 'object' && 'code' in error && typeof (error as { code: unknown }).code === 'string') {
-    return (error as { code: string }).code;
-  }
-  return 'unknown';
 }
 
 // deno-lint-ignore no-explicit-any
@@ -55,16 +46,37 @@ function credentialsRejected(): Response {
   );
 }
 
-function outcomeError(code: 'write_failed' | 'audit_failed'): Response {
-  if (code === 'audit_failed') {
-    return jsonError(
-      500,
-      'AUDIT_FAILED',
-      'Änderung wurde nicht protokolliert und zurückgenommen',
-      corsHeaders,
-    );
+function applyFailure(error: { message?: string; code?: string } | null): Response {
+  const message = typeof error?.message === 'string' ? error.message : '';
+  const known = ['social_channel_not_found', 'social_channel_scopes', 'social_channel_invalid'];
+  const code = known.find((item) => message.includes(item)) ?? 'unexpected';
+  console.error(JSON.stringify({
+    level: 'error',
+    scope: 'social_channel_apply',
+    code,
+    pg_code: typeof error?.code === 'string' ? error.code : 'unknown',
+  }));
+  if (code === 'social_channel_not_found') {
+    return jsonError(404, 'NOT_FOUND', 'connection not found', corsHeaders);
+  }
+  if (code === 'social_channel_scopes') {
+    return jsonError(400, 'BAD_REQUEST', 'scopes are limited to openid and profile', corsHeaders);
+  }
+  if (code === 'social_channel_invalid') {
+    return jsonError(400, 'BAD_REQUEST', 'channel is invalid', corsHeaders);
   }
   return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
+}
+
+async function apply(
+  admin: Admin,
+  args: Record<string, unknown>,
+): Promise<{ ok: true; connection: Record<string, unknown> } | { ok: false; response: Response }> {
+  const { data, error } = await admin.rpc('social_channel_connection_apply', args);
+  if (error || !data || typeof data !== 'object') {
+    return { ok: false, response: applyFailure(error) };
+  }
+  return { ok: true, connection: data as Record<string, unknown> };
 }
 
 Deno.serve(async (req) => {
@@ -116,96 +128,21 @@ async function configure(
   const scopes = parseClientScopes(body.scopes);
   if (!scopes.ok) return jsonError(400, 'BAD_REQUEST', scopes.error, corsHeaders);
 
-  const { data: existing, error: existingErr } = await admin
-    .from('social_channel_connections')
-    .select('id, registry_id, account_name, account_kind, scopes')
-    .eq('tenant_id', tenantId)
-    .eq('channel', channel)
-    .eq('account_external_id', accountExternalId)
-    .maybeSingle();
-  if (existingErr) {
-    console.error('[social-channel-connect] lookup failed', dbCode(existingErr));
-    return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
-  }
-
-  const displayName = accountName.value || channel;
-  const registryId = await upsertRegistry(admin, {
-    tenantId,
-    registryId: existing?.registry_id ?? null,
-    displayName,
+  const applied = await apply(admin, {
+    p_op: 'configure',
+    p_tenant_id: tenantId,
+    p_actor_user_id: user.id,
+    p_actor_email: user.email ?? null,
+    p_channel: channel,
+    p_account_external_id: accountExternalId,
+    p_connection_id: null,
+    p_account_name: accountName.value ?? null,
+    p_account_kind: accountKind.value ?? null,
+    p_scopes: scopes.scopes,
+    p_display_name: accountName.value || channel,
   });
-  if (!registryId) {
-    return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
-  }
-
-  const now = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    account_name: accountName.value ?? null,
-    account_kind: accountKind.value ?? null,
-    scopes: scopes.scopes,
-    registry_id: registryId,
-    updated_at: now,
-  };
-
-  const createdRegistry = !existing?.registry_id;
-  const outcome = await commitWithAudit({
-    write: async () => {
-      const write = existing?.id
-        ? admin.from('social_channel_connections').update(patch).eq('id', existing.id).eq('tenant_id', tenantId)
-        : admin.from('social_channel_connections').insert({
-          tenant_id: tenantId,
-          channel,
-          account_external_id: accountExternalId,
-          status: 'pending',
-          credentials_enc: null,
-          created_by: user.id,
-          ...patch,
-        });
-      const { data: row, error } = await write.select(SOCIAL_CONNECTION_PUBLIC_SELECT).maybeSingle();
-      if (error || !row) {
-        console.error('[social-channel-connect] write failed', dbCode(error));
-        return { ok: false as const };
-      }
-      return { ok: true as const, value: row };
-    },
-    revert: async () => {
-      if (existing?.id) {
-        await admin.from('social_channel_connections').update({
-          account_name: existing.account_name ?? null,
-          account_kind: existing.account_kind ?? null,
-          scopes: existing.scopes ?? null,
-          registry_id: existing.registry_id ?? null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', existing.id).eq('tenant_id', tenantId);
-      } else {
-        await admin.from('social_channel_connections')
-          .delete()
-          .eq('tenant_id', tenantId)
-          .eq('channel', channel)
-          .eq('account_external_id', accountExternalId);
-      }
-      if (createdRegistry) {
-        await admin.from('connector_registry').delete().eq('id', registryId).eq('tenant_id', tenantId);
-      }
-    },
-    record: (row) => audit(admin, {
-      tenant_id: tenantId,
-      actor_user_id: user.id,
-      actor_email: user.email ?? null,
-      action: 'social_channel.configure',
-      target_type: 'social_channel_connection',
-      target_id: row.id ?? null,
-      payload: {
-        channel,
-        account_external_id: accountExternalId,
-        registry_id: registryId,
-        credentials_accepted: false,
-      },
-    }),
-  });
-
-  if (!outcome.ok) return outcomeError(outcome.code);
-  return jsonResponse({ ok: true, connection: outcome.value }, 200, corsHeaders);
+  if (!applied.ok) return applied.response;
+  return jsonResponse({ ok: true, connection: applied.connection }, 200, corsHeaders);
 }
 
 async function rotate(
@@ -221,56 +158,21 @@ async function rotate(
   const scopes = parseClientScopes(body.scopes);
   if (!scopes.ok) return jsonError(400, 'BAD_REQUEST', scopes.error, corsHeaders);
 
-  const { data: existing, error: existingErr } = await admin
-    .from('social_channel_connections')
-    .select('id, channel, account_external_id, scopes')
-    .eq('id', body.connection_id)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (existingErr) {
-    console.error('[social-channel-connect] lookup failed', dbCode(existingErr));
-    return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
-  }
-  if (!existing) return jsonError(404, 'NOT_FOUND', 'connection not found', corsHeaders);
-
-  const outcome = await commitWithAudit({
-    write: async () => {
-      const { data: row, error } = await admin
-        .from('social_channel_connections')
-        .update({ scopes: scopes.scopes, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .eq('tenant_id', tenantId)
-        .select(SOCIAL_CONNECTION_PUBLIC_SELECT)
-        .maybeSingle();
-      if (error || !row) {
-        console.error('[social-channel-connect] rotate failed', dbCode(error));
-        return { ok: false as const };
-      }
-      return { ok: true as const, value: row };
-    },
-    revert: async () => {
-      await admin.from('social_channel_connections').update({
-        scopes: existing.scopes ?? null,
-        updated_at: new Date().toISOString(),
-      }).eq('id', existing.id).eq('tenant_id', tenantId);
-    },
-    record: () => audit(admin, {
-      tenant_id: tenantId,
-      actor_user_id: user.id,
-      actor_email: user.email ?? null,
-      action: 'social_channel.rotate',
-      target_type: 'social_channel_connection',
-      target_id: existing.id,
-      payload: {
-        channel: existing.channel,
-        account_external_id: existing.account_external_id,
-        credentials_accepted: false,
-      },
-    }),
+  const applied = await apply(admin, {
+    p_op: 'rotate',
+    p_tenant_id: tenantId,
+    p_actor_user_id: user.id,
+    p_actor_email: user.email ?? null,
+    p_channel: null,
+    p_account_external_id: null,
+    p_connection_id: body.connection_id,
+    p_account_name: null,
+    p_account_kind: null,
+    p_scopes: scopes.scopes,
+    p_display_name: null,
   });
-
-  if (!outcome.ok) return outcomeError(outcome.code);
-  return jsonResponse({ ok: true, connection: outcome.value }, 200, corsHeaders);
+  if (!applied.ok) return applied.response;
+  return jsonResponse({ ok: true, connection: applied.connection }, 200, corsHeaders);
 }
 
 async function remove(
@@ -282,101 +184,19 @@ async function remove(
   if (!isUuid(body.connection_id)) {
     return jsonError(400, 'BAD_REQUEST', 'connection_id is required', corsHeaders);
   }
-  const { data: existing, error: existingErr } = await admin
-    .from('social_channel_connections')
-    .select('id, channel, account_external_id, status, credentials_enc, registry_id')
-    .eq('id', body.connection_id)
-    .eq('tenant_id', tenantId)
-    .maybeSingle();
-  if (existingErr) {
-    console.error('[social-channel-connect] lookup failed', dbCode(existingErr));
-    return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
-  }
-  if (!existing) return jsonError(404, 'NOT_FOUND', 'connection not found', corsHeaders);
-
-  const outcome = await commitWithAudit({
-    write: async () => {
-      const { error } = await admin
-        .from('social_channel_connections')
-        .update({
-          status: 'revoked',
-          credentials_enc: null,
-          last_error: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id)
-        .eq('tenant_id', tenantId);
-      if (error) {
-        console.error('[social-channel-connect] remove failed', dbCode(error));
-        return { ok: false as const };
-      }
-      return { ok: true as const, value: existing.id as string };
-    },
-    revert: async () => {
-      await admin.from('social_channel_connections').update({
-        status: existing.status,
-        credentials_enc: existing.credentials_enc,
-        updated_at: new Date().toISOString(),
-      }).eq('id', existing.id).eq('tenant_id', tenantId);
-    },
-    record: () => audit(admin, {
-      tenant_id: tenantId,
-      actor_user_id: user.id,
-      actor_email: user.email ?? null,
-      action: 'social_channel.remove',
-      target_type: 'social_channel_connection',
-      target_id: existing.id,
-      payload: {
-        channel: existing.channel,
-        account_external_id: existing.account_external_id,
-        credentials_cleared: true,
-      },
-    }),
+  const applied = await apply(admin, {
+    p_op: 'remove',
+    p_tenant_id: tenantId,
+    p_actor_user_id: user.id,
+    p_actor_email: user.email ?? null,
+    p_channel: null,
+    p_account_external_id: null,
+    p_connection_id: body.connection_id,
+    p_account_name: null,
+    p_account_kind: null,
+    p_scopes: null,
+    p_display_name: null,
   });
-
-  if (!outcome.ok) return outcomeError(outcome.code);
+  if (!applied.ok) return applied.response;
   return jsonResponse({ ok: true }, 200, corsHeaders);
-}
-
-async function upsertRegistry(
-  admin: Admin,
-  input: { tenantId: string; registryId: string | null; displayName: string },
-): Promise<string | null> {
-  const row = {
-    tenant_id: input.tenantId,
-    system_type: 'social_channel',
-    display_name: input.displayName,
-    auth_kind: 'oauth2',
-    scope: 'OpenID und Profil',
-    status: 'pending',
-  };
-  if (input.registryId) {
-    const patch: Record<string, unknown> = {
-      display_name: input.displayName,
-      auth_kind: 'oauth2',
-      scope: 'OpenID und Profil',
-    };
-    const { data, error } = await admin
-      .from('connector_registry')
-      .update(patch)
-      .eq('id', input.registryId)
-      .eq('tenant_id', input.tenantId)
-      .select('id')
-      .maybeSingle();
-    if (error || !data?.id) {
-      console.error('[social-channel-connect] registry update failed', dbCode(error));
-      return null;
-    }
-    return data.id as string;
-  }
-  const { data, error } = await admin
-    .from('connector_registry')
-    .insert(row)
-    .select('id')
-    .maybeSingle();
-  if (error || !data?.id) {
-    console.error('[social-channel-connect] registry insert failed', dbCode(error));
-    return null;
-  }
-  return data.id as string;
 }

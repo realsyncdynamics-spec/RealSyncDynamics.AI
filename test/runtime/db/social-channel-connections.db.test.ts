@@ -165,4 +165,69 @@ d('social_channel_connections', () => {
     });
     expect(serviceSeen).toBe('v1:fixture:not-a-token');
   });
+
+  it('schreibt Verbindung, Registratur und Audit atomar und lässt bei Fehler keine Registry zurück', async () => {
+    const { tenantId, userId } = await createTenantWithMember(ctx!);
+    const args = [
+      tenantId,
+      userId,
+      'urn:li:organization:77',
+    ];
+
+    await ctx!.withClaims({ role: 'service_role' }, async () => {
+      await ctx!.client.query(
+        `SELECT public.social_channel_connection_apply(
+           'configure', $1, $2, 'owner@example.com', 'linkedin', $3,
+           NULL, 'Seite', NULL, ARRAY['openid','profile']::text[], 'Seite'
+         )`,
+        args,
+      );
+    });
+
+    const counts = await ctx!.client.query<{ connections: string; registries: string; audits: string }>(
+      `SELECT
+         (SELECT count(*) FROM public.social_channel_connections WHERE tenant_id = $1)::text AS connections,
+         (SELECT count(*) FROM public.connector_registry WHERE tenant_id = $1 AND system_type = 'social_channel')::text AS registries,
+         (SELECT count(*) FROM public.governance_admin_log
+           WHERE tenant_id = $1 AND action = 'social_channel.configure')::text AS audits`,
+      [tenantId],
+    );
+    expect(counts.rows[0]).toEqual({ connections: '1', registries: '1', audits: '1' });
+
+    const rejected = await rejects(
+      ctx!,
+      `SELECT public.social_channel_connection_apply(
+         'configure', $1, $2, 'owner@example.com', 'linkedin', 'urn:li:organization:88',
+         NULL, 'Andere', NULL, ARRAY['w_member_social']::text[], 'Andere'
+       )`,
+      [tenantId, userId],
+    );
+    expect(rejected).toMatch(/social_channel_scopes/);
+
+    const after = await ctx!.client.query<{ registries: string }>(
+      `SELECT count(*)::text AS registries
+         FROM public.connector_registry
+        WHERE tenant_id = $1 AND system_type = 'social_channel'`,
+      [tenantId],
+    );
+    expect(after.rows[0]?.registries).toBe('1');
+
+    const denied = await (async () => {
+      try {
+        await ctx!.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+          await ctx!.client.query(
+            `SELECT public.social_channel_connection_apply(
+               'configure', $1, $2, NULL, 'x', 'acct-x',
+               NULL, NULL, NULL, ARRAY['openid']::text[], 'x'
+             )`,
+            [tenantId, userId],
+          );
+        });
+        return '';
+      } catch (error) {
+        return (error as Error).message;
+      }
+    })();
+    expect(denied).toMatch(/permission denied/i);
+  });
 });

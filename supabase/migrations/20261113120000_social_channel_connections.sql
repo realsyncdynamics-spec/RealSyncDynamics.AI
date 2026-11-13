@@ -162,4 +162,224 @@ $$;
 GRANT EXECUTE ON FUNCTION public.connector_enforcement_class(TEXT)
     TO authenticated, service_role;
 
+-- Verbindung, Registratur und Audit in einer Transaktion.
+-- Eine PL/pgSQL-Funktion läuft in der Transaktion des Aufrufers; eine
+-- Exception macht alle drei Schreibe rückgängig. Es gibt keinen
+-- Credential-Parameter: der Client kann hier kein Siegel hinterlegen.
+-- Nur service_role darf die Funktion ausführen. Der Aufrufer hat die
+-- Mitgliedschaft vorher geprüft.
+CREATE OR REPLACE FUNCTION public.social_channel_connection_apply(
+    p_op text,
+    p_tenant_id uuid,
+    p_actor_user_id uuid,
+    p_actor_email text,
+    p_channel text,
+    p_account_external_id text,
+    p_connection_id uuid,
+    p_account_name text,
+    p_account_kind text,
+    p_scopes text[],
+    p_display_name text
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_catalog
+AS $social$
+DECLARE
+    v_id uuid;
+    v_registry_id uuid;
+    v_channel text;
+    v_account text;
+    v_name text;
+    v_status text;
+    v_expires timestamptz;
+    v_updated timestamptz;
+    v_display text;
+BEGIN
+    IF p_op NOT IN ('configure', 'rotate', 'remove')
+       OR p_tenant_id IS NULL
+       OR p_actor_user_id IS NULL THEN
+        RAISE EXCEPTION 'social_channel_invalid';
+    END IF;
+
+    IF p_op IN ('configure', 'rotate') THEN
+        IF p_scopes IS NULL
+           OR cardinality(p_scopes) < 1
+           OR cardinality(p_scopes) > 2
+           OR EXISTS (
+                SELECT 1
+                  FROM unnest(p_scopes) AS scope
+                 WHERE scope IS NULL OR scope NOT IN ('openid', 'profile')
+           ) THEN
+            RAISE EXCEPTION 'social_channel_scopes';
+        END IF;
+    END IF;
+
+    IF p_op = 'configure' THEN
+        IF p_channel IS NULL
+           OR p_channel NOT IN ('linkedin', 'instagram', 'facebook', 'tiktok', 'x')
+           OR p_account_external_id IS NULL
+           OR char_length(btrim(p_account_external_id)) < 1
+           OR char_length(p_account_external_id) > 512
+           OR p_account_external_id ~ '[[:cntrl:]]'
+           OR (p_account_name IS NOT NULL AND char_length(p_account_name) > 200)
+           OR (p_account_kind IS NOT NULL AND char_length(p_account_kind) > 64) THEN
+            RAISE EXCEPTION 'social_channel_invalid';
+        END IF;
+
+        -- Zuerst die Verbindung. Die Registratur entsteht erst danach,
+        -- in derselben Transaktion: schlägt sie fehl, bleibt keine
+        -- verwaiste Registry-Zeile stehen.
+        SELECT id, registry_id
+          INTO v_id, v_registry_id
+          FROM public.social_channel_connections
+         WHERE tenant_id = p_tenant_id
+           AND channel = p_channel
+           AND account_external_id = p_account_external_id;
+
+        IF v_id IS NULL THEN
+            INSERT INTO public.social_channel_connections (
+                tenant_id, channel, account_external_id, account_name, account_kind,
+                status, scopes, credentials_enc, created_by
+            ) VALUES (
+                p_tenant_id, p_channel, p_account_external_id, p_account_name, p_account_kind,
+                'pending', p_scopes, NULL, p_actor_user_id
+            )
+            RETURNING id INTO v_id;
+        ELSE
+            UPDATE public.social_channel_connections
+               SET account_name = p_account_name,
+                   account_kind = p_account_kind,
+                   scopes = p_scopes,
+                   updated_at = now()
+             WHERE id = v_id
+               AND tenant_id = p_tenant_id;
+        END IF;
+
+        v_display := COALESCE(
+            NULLIF(btrim(p_display_name), ''),
+            NULLIF(btrim(p_account_name), ''),
+            p_channel
+        );
+
+        IF v_registry_id IS NULL THEN
+            INSERT INTO public.connector_registry (
+                tenant_id, system_type, display_name, auth_kind, scope, status
+            ) VALUES (
+                p_tenant_id, 'social_channel', v_display, 'oauth2', 'OpenID und Profil', 'pending'
+            )
+            RETURNING id INTO v_registry_id;
+
+            UPDATE public.social_channel_connections
+               SET registry_id = v_registry_id
+             WHERE id = v_id
+               AND tenant_id = p_tenant_id;
+        ELSE
+            UPDATE public.connector_registry
+               SET display_name = v_display,
+                   auth_kind = 'oauth2',
+                   scope = 'OpenID und Profil'
+             WHERE id = v_registry_id
+               AND tenant_id = p_tenant_id;
+            IF NOT FOUND THEN
+                INSERT INTO public.connector_registry (
+                    tenant_id, system_type, display_name, auth_kind, scope, status
+                ) VALUES (
+                    p_tenant_id, 'social_channel', v_display, 'oauth2', 'OpenID und Profil', 'pending'
+                )
+                RETURNING id INTO v_registry_id;
+
+                UPDATE public.social_channel_connections
+                   SET registry_id = v_registry_id
+                 WHERE id = v_id
+                   AND tenant_id = p_tenant_id;
+            END IF;
+        END IF;
+
+    ELSIF p_op = 'rotate' THEN
+        IF p_connection_id IS NULL THEN
+            RAISE EXCEPTION 'social_channel_invalid';
+        END IF;
+        UPDATE public.social_channel_connections
+           SET scopes = p_scopes,
+               updated_at = now()
+         WHERE id = p_connection_id
+           AND tenant_id = p_tenant_id
+        RETURNING id INTO v_id;
+        IF v_id IS NULL THEN
+            RAISE EXCEPTION 'social_channel_not_found';
+        END IF;
+
+    ELSE
+        IF p_connection_id IS NULL THEN
+            RAISE EXCEPTION 'social_channel_invalid';
+        END IF;
+        UPDATE public.social_channel_connections
+           SET status = 'revoked',
+               credentials_enc = NULL,
+               last_error = NULL,
+               updated_at = now()
+         WHERE id = p_connection_id
+           AND tenant_id = p_tenant_id
+        RETURNING id INTO v_id;
+        IF v_id IS NULL THEN
+            RAISE EXCEPTION 'social_channel_not_found';
+        END IF;
+    END IF;
+
+    SELECT channel, account_external_id, account_name, status, token_expires_at, updated_at
+      INTO v_channel, v_account, v_name, v_status, v_expires, v_updated
+      FROM public.social_channel_connections
+     WHERE id = v_id
+       AND tenant_id = p_tenant_id;
+
+    INSERT INTO public.governance_admin_log (
+        tenant_id, actor_user_id, actor_email, action, target_type, target_id, payload
+    ) VALUES (
+        p_tenant_id,
+        p_actor_user_id,
+        p_actor_email,
+        CASE p_op
+            WHEN 'configure' THEN 'social_channel.configure'
+            WHEN 'rotate' THEN 'social_channel.rotate'
+            ELSE 'social_channel.remove'
+        END,
+        'social_channel_connection',
+        v_id::text,
+        jsonb_build_object(
+            'channel', v_channel,
+            'account_external_id', v_account,
+            'credentials_accepted', false
+        )
+    );
+
+    RETURN jsonb_build_object(
+        'id', v_id,
+        'tenant_id', p_tenant_id,
+        'channel', v_channel,
+        'account_external_id', v_account,
+        'account_name', v_name,
+        'status', v_status,
+        'token_expires_at', v_expires,
+        'updated_at', v_updated
+    );
+END;
+$social$;
+
+REVOKE ALL ON FUNCTION public.social_channel_connection_apply(
+    text, uuid, uuid, text, text, text, uuid, text, text, text[], text
+) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.social_channel_connection_apply(
+    text, uuid, uuid, text, text, text, uuid, text, text, text[], text
+) FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.social_channel_connection_apply(
+    text, uuid, uuid, text, text, text, uuid, text, text, text[], text
+) TO service_role;
+
+COMMENT ON FUNCTION public.social_channel_connection_apply(
+    text, uuid, uuid, text, text, text, uuid, text, text, text[], text
+) IS
+    'Social-Verbindung, connector_registry und governance_admin_log in einer Transaktion. '
+    'Kein Credential-Parameter. Nur service_role.';
+
 COMMIT;

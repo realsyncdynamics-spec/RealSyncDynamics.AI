@@ -208,14 +208,22 @@ export function parseClientScopes(
 }
 
 /**
- * Schreibt, protokolliert, und nimmt die Schreibe zurück, wenn das Audit
- * fehlschlägt. Ohne Audit keine erfolgreiche Antwort.
+ * Kompensierendes Audit für Aufrufer ohne gemeinsame DB-Transaktion.
+ *
+ * `social-channel-connect` nutzt das nicht mehr: dort schreibt
+ * `social_channel_connection_apply` Verbindung, Registratur und Audit
+ * in einer Transaktion. Diese Funktion bleibt, weil der OAuth-Flow
+ * (#2221) sie mit genau dieser Signatur aufruft.
+ *
+ * Schlägt das Zurücknehmen fehl, ist der Code `revert_failed` (nicht
+ * `audit_failed`). #2221 behandelt nur `audit_failed` als Audit-Grund
+ * und jeden anderen Fehlcode als Speicherfehler.
  */
 export async function commitWithAudit<T>(args: {
   write: () => Promise<{ ok: true; value: T } | { ok: false }>;
   revert: () => Promise<void>;
   record: (value: T) => Promise<{ ok: boolean }>;
-}): Promise<{ ok: true; value: T } | { ok: false; code: 'write_failed' | 'audit_failed' }> {
+}): Promise<{ ok: true; value: T } | { ok: false; code: 'write_failed' | 'audit_failed' | 'revert_failed' }> {
   const written = await args.write();
   if (!written.ok) return { ok: false, code: 'write_failed' };
   let audited = false;
@@ -228,7 +236,13 @@ export async function commitWithAudit<T>(args: {
     try {
       await args.revert();
     } catch {
-      /* Fail-closed bleibt auch dann, wenn das Zurücknehmen scheitert. */
+      // Kein Exception-Text: der kann Zeileninhalte enthalten.
+      console.error(JSON.stringify({
+        level: 'error',
+        scope: 'commit_with_audit',
+        code: 'REVERT_FAILED',
+      }));
+      return { ok: false, code: 'revert_failed' };
     }
     return { ok: false, code: 'audit_failed' };
   }

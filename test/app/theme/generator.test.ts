@@ -9,7 +9,7 @@ import { generateTheme, hueOffsetDegrees, publishTheme, remixTheme, validateInpu
 import { canonicalJson, sha256Hex } from '../../../src/app/theme/generator/hash';
 import { deltaEOklch, hexToOklch } from '../../../src/app/theme/generator/oklch';
 import { splitMotionStyle } from '../../../src/app/theme/motionStyle';
-import { DIMENSION_WEIGHTS, DISTANCE_BLEND, MIN_ACCENT_DELTA_E, MIN_SURFACE_DELTA_L, PUBLISH_MIN_DISTANCE, SOFT_WARN_DISTANCE } from '../../../src/app/theme/generator/weights';
+import { DIMENSION_WEIGHTS, DISTANCE_BLEND, MIN_ACCENT_DELTA_E, MIN_SURFACE_DELTA_L, PUBLISH_MIN_DISTANCE, SOFT_WARN_DISTANCE, passesBrandGuard } from '../../../src/app/theme/generator/weights';
 
 const input = {
   industry: 'kanzlei-beratung' as const,
@@ -171,6 +171,15 @@ describe('Theme-Generator', () => {
     expect(published.reasons.join(' ')).toMatch(/WCAG/);
   });
 
+  it('grenzt den Brand-Guard bei 24° und ΔE 10', () => {
+    expect(passesBrandGuard(24, 0)).toBe(true);
+    expect(passesBrandGuard(24.1, 0)).toBe(false);
+    expect(passesBrandGuard(0, 10)).toBe(true);
+    expect(passesBrandGuard(0, 10.01)).toBe(false);
+    expect(passesBrandGuard(24, 10)).toBe(true);
+    expect(passesBrandGuard(24, 10.01)).toBe(false);
+  });
+
   it('dreht die Hue relativ zum Original: +12, −12, +24, −24, +36', () => {
     expect(hueOffsetDegrees(0)).toBe(12);
     expect(hueOffsetDegrees(1)).toBe(-12);
@@ -212,10 +221,13 @@ describe('Theme-Generator', () => {
         const surfaceL = hexToOklch(result.overlay['color/surface/default']!).l;
         const deltaE = deltaEOklch(accent, fixture!.accent);
         const deltaL = Math.abs(surfaceL - fixture!.surfaceL);
-        if (item.name === 'preview') {
-          expect(result.overlay['color/accent/primary']).not.toBe(item.primaryColor);
-          expect(deltaE, 'Hue vor |ΔL|').toBeGreaterThanOrEqual(12);
-        }
+        const inputAccent = hexToOklch(item.primaryColor);
+        const shift = Math.abs((((accent.h - inputAccent.h + 540) % 360) - 180));
+        const brandDelta = deltaEOklch(accent, inputAccent);
+        expect(shift, item.name).toBeLessThanOrEqual(24);
+        expect(brandDelta, item.name).toBeLessThanOrEqual(10);
+        if (item.name === 'preview') expect(result.overlay['color/accent/primary']).not.toBe('#9D7A00');
+        if (item.name === 'kanzlei') expect(result.overlay['color/accent/primary']).toBe('#1B3A4B');
         if (deltaE < 12) expect(deltaL, `${item.name} Hex-Roundtrip |ΔL|`).toBeGreaterThanOrEqual(18);
       }
       if (item.name === 'preview') {

@@ -5,7 +5,7 @@ import { extractColor, type ColorSample } from './colorSample';
 import { fixtureThemeCatalog, fingerprintFromVars, type ThemeCatalog } from './catalog';
 import { distanceVerdict, type DistanceVerdict, type ThemeAxes, type ThemeFingerprint } from './distance';
 import { canonicalJson, sha256Hex } from './hash';
-import { deltaEOklch, hexToOklch, oklchToHex, type Oklch } from './oklch';
+import { deltaEOklch, hexToOklch, hueDeltaRadians, oklchToHex, type Oklch } from './oklch';
 import {
   AXIS_IDS,
   MAX_ADJUST_ITERATIONS,
@@ -14,6 +14,7 @@ import {
   MIN_SURFACE_DELTA_L,
   PUBLISH_MIN_DISTANCE,
   SOFT_WARN_DISTANCE,
+  passesBrandGuard,
   type AxisId,
   type DimensionId,
 } from './weights';
@@ -303,6 +304,17 @@ function roundtrip(draft: Draft): { accent: Oklch; surfaceL: number; wcagOk: boo
   };
 }
 
+function hueShiftDegrees(from: number, to: number): number {
+  return Math.abs(hueDeltaRadians(from, to) * (180 / Math.PI));
+}
+
+function brandShift(origin: Oklch, candidate: Oklch): { hue: number; deltaE: number } {
+  return {
+    hue: hueShiftDegrees(origin.h, candidate.h),
+    deltaE: deltaEOklch(origin, candidate),
+  };
+}
+
 function hueClears(accent: Oklch, failing: readonly ThemeFingerprint[]): boolean {
   return failing.every((theme) => deltaEOklch(accent, theme.accent) >= MIN_ACCENT_DELTA_E);
 }
@@ -348,18 +360,28 @@ function adjust(
     return theme ? [theme] : [];
   });
   if (!locked(input, 'color') && colorFailing.length > 0) {
-    for (let step = 0; step < MAX_ADJUST_ITERATIONS; step += 1) {
-      const candidate = { ...next, accent: rotateAccent(origin, hueOffsetDegrees(step)), surfaceL: draft.surfaceL };
+    // Brand-Guard ist Strategie: Hue ≤ 24° und ΔE zum Input ≤ 10. Spec bleibt ΔE ≥ 12 oder |ΔL| ≥ 18.
+    const guarded = (accent: Oklch, surfaceL: number) => {
+      const candidate = { ...next, accent, surfaceL };
       const seen = roundtrip(candidate);
-      if (seen.wcagOk && hueClears(seen.accent, colorFailing)) return candidate;
+      const shift = brandShift(origin, seen.accent);
+      return { candidate, seen, shift, allowed: seen.wcagOk && passesBrandGuard(shift.hue, shift.deltaE) };
+    };
+    let nearest = guarded(origin, draft.surfaceL);
+    for (let step = 0; step < MAX_ADJUST_ITERATIONS; step += 1) {
+      const attempt = guarded(rotateAccent(origin, hueOffsetDegrees(step)), draft.surfaceL);
+      if (!attempt.allowed) continue;
+      if (attempt.shift.hue < nearest.shift.hue) nearest = attempt;
+      if (hueClears(attempt.seen.accent, colorFailing)) return attempt.candidate;
     }
-    let surfaceL = draft.surfaceL;
+    let surfaceL = nearest.candidate.surfaceL;
+    const accent = nearest.candidate.accent;
     for (let step = 0; step < 4; step += 1) {
-      const candidate = { ...next, surfaceL };
+      const candidate = { ...nearest.candidate, accent, surfaceL };
       const seen = roundtrip(candidate);
       if (seen.wcagOk && lightClears(seen.surfaceL, seen.accent, colorFailing)) return candidate;
       const pending = colorFailing.filter((theme) => deltaEOklch(seen.accent, theme.accent) < MIN_ACCENT_DELTA_E);
-      const nudged = separateSurface(surfaceL, next.accent, pending.length > 0 ? pending : colorFailing);
+      const nudged = separateSurface(surfaceL, accent, pending.length > 0 ? pending : colorFailing);
       if (Math.abs(nudged - surfaceL) < 0.1) break;
       surfaceL = nudged;
     }

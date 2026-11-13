@@ -19,6 +19,13 @@ export const PUBLISH_MIN_DISTANCE = 0.34;
 export const SOFT_WARN_DISTANCE = 0.42;
 export const MIN_ACCENT_DELTA_E = 12;
 export const MIN_SURFACE_DELTA_L = 18;
+/** Strategie, keine Spec-Regel: wie weit der Akzent vom Input abrücken darf. */
+export const BRAND_HUE_MAX_DEG = 24;
+export const BRAND_DE_MAX = 10;
+
+export function passesBrandGuard(hueShiftDeg: number, deltaE: number): boolean {
+  return hueShiftDeg <= BRAND_HUE_MAX_DEG && deltaE <= BRAND_DE_MAX;
+}
 export const MIN_DISTINCT_AXES = 2;
 export const MAX_ADJUST_ITERATIONS = 8;
 

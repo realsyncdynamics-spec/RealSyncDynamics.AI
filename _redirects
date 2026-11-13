@@ -29,3 +29,15 @@
 /checkout     https://realsyncdynamics-ai.pages.dev/pricing      302
 /checkout/*   https://realsyncdynamics-ai.pages.dev/checkout/:splat 302
 /app/*        https://realsyncdynamics-ai.pages.dev/app/:splat   302
+
+# P0-Loop 13.11.2026 (Europe/Berlin): weitere Soft-404-Lücken nach #2219.
+# Ziele entsprechen den kanonischen SPA-Regeln in public/_redirects auf main (#2220).
+# 302 wie die übrigen Interim-Regeln. Nichts Bestehendes wird gelöscht oder umgehängt.
+# /app zielt auf /app/dashboard, weil die SPA-Route /app nur dorthin weiterleitet (src/App.tsx:819 auf main).
+# /v8 bleibt ohne Ziel (keine Route auf main; Vorschau nur in #2208, auf der SPA-Produktion 404).
+# /auth/callback bleibt ohne Ziel (keine SPA-Route; dokumentierter Callback ist /welcome).
+/dashboard    https://realsyncdynamics-ai.pages.dev/app/dashboard  302
+/onboarding   https://realsyncdynamics-ai.pages.dev/welcome        302
+/onboarding/  https://realsyncdynamics-ai.pages.dev/welcome        302
+/app          https://realsyncdynamics-ai.pages.dev/app/dashboard  302
+/unternehmen  https://realsyncdynamics-ai.pages.dev/unternehmen    302

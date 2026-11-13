@@ -1,10 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { fingerprintFromVars } from '../../../src/app/theme/generator/catalog';
-import { distanceVerdict, pairDistance, type ThemeFingerprint } from '../../../src/app/theme/generator/distance';
-import { generateTheme, publishTheme } from '../../../src/app/theme/generator/generate';
+import { previewStyle } from '../../../src/app/ThemeGeneratorPreview';
+import { fixtureThemeCatalog, fingerprintFromVars } from '../../../src/app/theme/generator/catalog';
+import { distanceVerdict, pairDistance, type ThemeAxes, type ThemeFingerprint } from '../../../src/app/theme/generator/distance';
+import { generateTheme, hueOffsetDegrees, publishTheme, remixTheme, validateInput } from '../../../src/app/theme/generator/generate';
 import { canonicalJson, sha256Hex } from '../../../src/app/theme/generator/hash';
 import { deltaEOklch, hexToOklch } from '../../../src/app/theme/generator/oklch';
-import { DIMENSION_WEIGHTS, DISTANCE_BLEND } from '../../../src/app/theme/generator/weights';
+import { DIMENSION_WEIGHTS, DISTANCE_BLEND, MIN_ACCENT_DELTA_E, MIN_SURFACE_DELTA_L, PUBLISH_MIN_DISTANCE, SOFT_WARN_DISTANCE } from '../../../src/app/theme/generator/weights';
 
 const input = {
   industry: 'kanzlei-beratung' as const,
@@ -12,10 +14,18 @@ const input = {
   primaryColor: '#1B3A4B',
 };
 
-function finger(id: string, axes: ThemeFingerprint['axes']): ThemeFingerprint {
+function axesApart(count: number): ThemeAxes {
+  return {
+    'header-type': count >= 1 ? 'split' : 'solid',
+    'card-style': count >= 2 ? 'glass' : 'raised',
+    'sidebar-form': count >= 3 ? 'floating' : 'rail',
+  };
+}
+
+function finger(id: string, axes: ThemeFingerprint['axes'], accent = '#111111', surface = '#FFFFFF'): ThemeFingerprint {
   return fingerprintFromVars(id, {
-    '--color-accent-primary': '#111111',
-    '--color-surface-default': '#FFFFFF',
+    '--color-accent-primary': accent,
+    '--color-surface-default': surface,
     '--type-family-display': 'Inter',
     '--type-family-body': 'Inter',
     '--type-size-body': '16px',
@@ -24,6 +34,35 @@ function finger(id: string, axes: ThemeFingerprint['axes']): ThemeFingerprint {
     '--motion-duration-base': '200ms',
     '--depth-2-y': '8px',
   }, axes, [0.5, 0.5, 0.5]);
+}
+
+function verdictNear(
+  target: number,
+  gate: { deltaE: number; deltaL: number; distinctAxes: number },
+): { pair: ReturnType<typeof pairDistance>; result: ReturnType<typeof distanceVerdict> } {
+  const other = {
+    ...finger('bestand', axesApart(0)),
+    accent: { l: 0, c: 0, h: 0 },
+    surfaceL: 40,
+    density: 0,
+  };
+  let lo = 0;
+  let hi = 1;
+  let candidate: ThemeFingerprint = {
+    ...finger('kandidat', axesApart(gate.distinctAxes)),
+    accent: { l: gate.deltaE, c: 0, h: 0 },
+    surfaceL: 40 + gate.deltaL,
+    density: 0,
+  };
+  for (let step = 0; step < 48; step += 1) {
+    const mid = (lo + hi) / 2;
+    candidate = { ...candidate, density: mid };
+    const current = pairDistance(candidate, other);
+    if (current.d < target) lo = mid;
+    else hi = mid;
+  }
+  const pair = pairDistance(candidate, other);
+  return { pair, result: distanceVerdict(candidate, [other]) };
 }
 
 describe('Theme-Generator', () => {
@@ -43,12 +82,53 @@ describe('Theme-Generator', () => {
     expect(pairDistance(left, { ...right, id: 'c', axes: left.axes, accent: hexToOklch('#00FF00') }).distinctAxes).toBe(0);
   });
 
-  it('blockt unter 0,34 und bei weniger als zwei Achsen', () => {
-    const left = finger('a', { 'header-type': 'solid', 'card-style': 'raised', 'sidebar-form': 'rail' });
-    const close = finger('b', { 'header-type': 'solid', 'card-style': 'raised', 'sidebar-form': 'floating' });
-    const verdict = distanceVerdict(left, [close]);
-    expect(verdict.hardPass).toBe(false);
-    expect(verdict.reasons.join(' ')).toMatch(/Achsen|Abstand/);
+  it('blockt nur den Abstand, wenn Farbe und Achsen reichen', () => {
+    const verdict = verdictNear(PUBLISH_MIN_DISTANCE - 0.01, { deltaE: MIN_ACCENT_DELTA_E, deltaL: 0, distinctAxes: 3 });
+    expect(verdict.pair.deltaE).toBeGreaterThanOrEqual(MIN_ACCENT_DELTA_E);
+    expect(verdict.pair.distinctAxes).toBe(3);
+    expect(verdict.pair.d).toBeLessThan(PUBLISH_MIN_DISTANCE);
+    expect(verdict.result.hardPass).toBe(false);
+    expect(verdict.result.reasons).toEqual(['Abstand unter 0,34']);
+  });
+
+  it('lässt Abstand 0,34 durch und warnt unter 0,42', () => {
+    const gate = { deltaE: MIN_ACCENT_DELTA_E, deltaL: 0, distinctAxes: 3 };
+    const at = verdictNear(PUBLISH_MIN_DISTANCE, gate);
+    const under = verdictNear(SOFT_WARN_DISTANCE - 0.01, gate);
+    const on = verdictNear(SOFT_WARN_DISTANCE, gate);
+    const over = verdictNear(SOFT_WARN_DISTANCE + 0.01, gate);
+    expect(at.pair.d).toBeGreaterThanOrEqual(PUBLISH_MIN_DISTANCE);
+    expect(at.pair.d).toBeLessThan(PUBLISH_MIN_DISTANCE + 0.005);
+    expect(at.result.hardPass).toBe(true);
+    expect(at.result.remix).toBe(true);
+    expect(under.result.hardPass).toBe(true);
+    expect(under.result.remix).toBe(true);
+    expect(on.pair.d).toBeGreaterThanOrEqual(SOFT_WARN_DISTANCE);
+    expect(on.result.remix).toBe(false);
+    expect(over.result.hardPass).toBe(true);
+    expect(over.result.remix).toBe(false);
+  });
+
+  it('grenzt ΔE 12 und |ΔL| 18 unabhängig vom Abstand', () => {
+    const passE = verdictNear(0.5, { deltaE: MIN_ACCENT_DELTA_E, deltaL: 0, distinctAxes: 3 });
+    const failE = verdictNear(0.5, { deltaE: MIN_ACCENT_DELTA_E - 0.01, deltaL: 0, distinctAxes: 3 });
+    const passL = verdictNear(0.5, { deltaE: 0, deltaL: MIN_SURFACE_DELTA_L, distinctAxes: 3 });
+    const failL = verdictNear(0.5, { deltaE: 0, deltaL: MIN_SURFACE_DELTA_L - 0.01, distinctAxes: 3 });
+    expect(passE.pair.deltaE).toBeCloseTo(MIN_ACCENT_DELTA_E, 2);
+    expect(passE.result.hardPass).toBe(true);
+    expect(failE.result.hardPass).toBe(false);
+    expect(failE.result.reasons).toContain('Accent und Surface zu nah');
+    expect(passL.pair.deltaL).toBeCloseTo(MIN_SURFACE_DELTA_L, 2);
+    expect(passL.result.hardPass).toBe(true);
+    expect(failL.result.hardPass).toBe(false);
+    expect(failL.result.reasons).toEqual(['Accent und Surface zu nah']);
+  });
+
+  it('blockt nur die Achsen, wenn Abstand und Farbe reichen', () => {
+    const verdict = verdictNear(0.5, { deltaE: 20, deltaL: 20, distinctAxes: 1 });
+    expect(verdict.pair.d).toBeGreaterThanOrEqual(PUBLISH_MIN_DISTANCE);
+    expect(verdict.result.hardPass).toBe(false);
+    expect(verdict.result.reasons).toEqual(['Weniger als zwei Achsen verschieden']);
   });
 
   it('liefert bei gleicher Eingabe denselben Hash und höchstens 8 Iterationen', () => {
@@ -70,7 +150,8 @@ describe('Theme-Generator', () => {
       industry: 'handwerk-regional',
       locks: { axes: ['header-type', 'card-style', 'sidebar-form'] },
     }, catalog);
-    expect(result.iterations).toBe(8);
+    expect(result.iterations).toBeLessThanOrEqual(8);
+    expect(result.iterations).toBeGreaterThan(0);
     expect(result.status).toBe('needs-editor');
   });
 
@@ -85,5 +166,85 @@ describe('Theme-Generator', () => {
     expect(published.wcag.ok).toBe(false);
     expect(published.status).toBe('needs-editor');
     expect(published.reasons.join(' ')).toMatch(/WCAG/);
+  });
+
+  it('dreht die Hue relativ zum Original: +12, −12, +24, −24, +36', () => {
+    expect(hueOffsetDegrees(0)).toBe(12);
+    expect(hueOffsetDegrees(1)).toBe(-12);
+    expect(hueOffsetDegrees(2)).toBe(24);
+    expect(hueOffsetDegrees(3)).toBe(-24);
+    expect(hueOffsetDegrees(4)).toBe(36);
+    expect(hueOffsetDegrees(4)).not.toBe(0);
+  });
+
+  it('lehnt eine Hauptfarbe ab, die kein Hex ist', () => {
+    expect(() => validateInput({ industry: 'kanzlei-beratung', tone: 'sachlich-formal', primaryColor: 'navy' })).toThrow(/Hex/);
+    expect(() => generateTheme({ industry: 'kanzlei-beratung', tone: 'sachlich-formal', primaryColor: '#12345' })).toThrow(/Hex/);
+  });
+
+  it('veröffentlicht den Preview-Default und die vier Branchen gegen den Fixture-Katalog', () => {
+    const catalog = fixtureThemeCatalog();
+    const cases = [
+      { name: 'preview', industry: 'handwerk-regional' as const, tone: 'warm-nahbar' as const, primaryColor: '#C45C26' },
+      { name: 'b2b-saas', industry: 'b2b-saas' as const, tone: 'technisch-praezise' as const, primaryColor: '#2457E6' },
+      { name: 'kanzlei', industry: 'kanzlei-beratung' as const, tone: 'sachlich-formal' as const, primaryColor: '#1B3A4B' },
+      { name: 'gesundheit', industry: 'gesundheit' as const, tone: 'ruhig-vertrauensvoll' as const, primaryColor: '#0E7C66' },
+    ];
+    for (const item of cases) {
+      const result = generateTheme(item, catalog);
+      const published = publishTheme(result, catalog);
+      expect(result.iterations, item.name).toBeLessThanOrEqual(8);
+      expect(result.wcag.ok, item.name).toBe(true);
+      expect(result.status, `${item.name} ${result.reasons.join('; ')}`).not.toBe('needs-editor');
+      expect(published.status, item.name).toBe(result.status);
+      expect(published.wcag.ok, item.name).toBe(true);
+      for (const pair of result.distance.pairs) {
+        const again = published.distance.pairs.find((entry) => entry.id === pair.id);
+        expect(again?.d, pair.id).toBeCloseTo(pair.d, 2);
+      }
+      if (item.name === 'preview' || item.name === 'kanzlei') {
+        expect(result.overlay['color/accent/primary'], item.name).not.toBe(item.primaryColor);
+      }
+      if (item.name === 'preview') {
+        const meta = (result.document.$extensions as {
+          'com.rsd.meta': { axes_not_in_semantic_111: unknown; axes_not_in_semantic_109: unknown };
+        })['com.rsd.meta'];
+        expect(meta.axes_not_in_semantic_111).toEqual(meta.axes_not_in_semantic_109);
+      }
+    }
+  });
+
+  it('hält AA im Remix und übernimmt keinen Kontrastbruch', () => {
+    const catalog = fixtureThemeCatalog();
+    const preview = generateTheme({
+      industry: 'handwerk-regional',
+      tone: 'warm-nahbar',
+      primaryColor: '#C45C26',
+    }, catalog);
+    const remixed = remixTheme(preview, catalog);
+    expect(remixed.wcag.ok).toBe(true);
+    expect(remixed.status).not.toBe('needs-editor');
+    const broken = remixTheme({
+      ...preview,
+      overlay: { ...preview.overlay, 'color/text/primary': preview.overlay['color/surface/default']! },
+    }, catalog);
+    expect(broken.wcag.ok).toBe(false);
+    expect(broken.status).toBe('needs-editor');
+    expect(broken.remixOffer).toBe(false);
+  });
+
+  it('setzt Motion-Dauern nicht inline auf die Hülle', () => {
+    const catalog = fixtureThemeCatalog();
+    const preview = generateTheme({
+      industry: 'handwerk-regional',
+      tone: 'warm-nahbar',
+      primaryColor: '#C45C26',
+    }, catalog);
+    const painted = previewStyle(preview.overlay);
+    expect(painted.style).not.toHaveProperty('--motion-duration-base');
+    expect(painted.motionCss).toContain('prefers-reduced-motion: no-preference');
+    expect(painted.motionCss).toContain('--motion-duration-base');
+    const shell = readFileSync('src/app/shell.css', 'utf8');
+    expect(shell).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation-duration:\s*0\.01ms/);
   });
 });

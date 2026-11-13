@@ -355,5 +355,7 @@
   .app-shell,
   .app-shell * {
     transition: none;
+    animation-duration: 0.01ms;
+    animation-delay: 0.01ms;
   }
 }

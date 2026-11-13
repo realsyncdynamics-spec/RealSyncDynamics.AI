@@ -3,15 +3,21 @@ import { resolveTheme } from '../resolve';
 import { semanticOverrideStyle, type SemanticOverride } from '../overrides';
 import { extractColor, type ColorSample } from './colorSample';
 import { fixtureThemeCatalog, fingerprintFromVars, type ThemeCatalog } from './catalog';
-import { axisCycle, distanceVerdict, type DistanceVerdict, type ThemeAxes, type ThemeFingerprint } from './distance';
+import { distanceVerdict, type DistanceVerdict, type ThemeAxes, type ThemeFingerprint } from './distance';
 import { canonicalJson, sha256Hex } from './hash';
-import { hexToOklch, oklchToHex, type Oklch } from './oklch';
+import { deltaEOklch, hexToOklch, oklchToHex, type Oklch } from './oklch';
 import {
   AXIS_IDS,
   MAX_ADJUST_ITERATIONS,
+  MIN_ACCENT_DELTA_E,
+  MIN_DISTINCT_AXES,
+  MIN_SURFACE_DELTA_L,
+  PUBLISH_MIN_DISTANCE,
+  SOFT_WARN_DISTANCE,
   type AxisId,
   type DimensionId,
 } from './weights';
+import type { PairDistance } from './distance';
 
 export const INDUSTRIES = ['handwerk-regional', 'b2b-saas', 'kanzlei-beratung', 'gesundheit'] as const;
 export type IndustryId = (typeof INDUSTRIES)[number];
@@ -257,19 +263,88 @@ function rotateAccent(accent: Oklch, degrees: number): Oklch {
   return { ...accent, h: (accent.h + degrees + 360) % 360 };
 }
 
-function adjust(draft: Draft, input: GeneratorInput, nearest: ThemeFingerprint | null, iteration: number): Draft {
+/** Hue-Schritt relativ zum Original-Akzent: +12, −12, +24, −24, +36, … */
+export function hueOffsetDegrees(iteration: number): number {
+  const magnitude = 12 * (Math.floor(iteration / 2) + 1);
+  return iteration % 2 === 0 ? magnitude : -magnitude;
+}
+
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+export function isHexColor(value: string): boolean {
+  return HEX_COLOR.test(value);
+}
+
+function colorTooClose(pair: PairDistance): boolean {
+  return pair.deltaE < MIN_ACCENT_DELTA_E && pair.deltaL < MIN_SURFACE_DELTA_L;
+}
+
+function axisOptions(axis: AxisId): readonly string[] {
+  if (axis === 'header-type') return HEADER_OPTIONS;
+  if (axis === 'card-style') return CARD_OPTIONS;
+  return SIDEBAR_OPTIONS;
+}
+
+function axisAway(current: string, occupied: readonly string[], options: readonly string[]): string | null {
+  const conflicts = (option: string) => occupied.filter((value) => value === option).length;
+  const better = options
+    .filter((option) => option !== current && conflicts(option) < conflicts(current))
+    .sort((a, b) => conflicts(a) - conflicts(b));
+  return better[0] ?? null;
+}
+
+function separateSurface(surfaceL: number, accent: Oklch, failing: readonly ThemeFingerprint[]): number {
+  let next = surfaceL;
+  const pending = failing.filter((theme) => deltaEOklch(accent, theme.accent) < MIN_ACCENT_DELTA_E);
+  for (const theme of pending) {
+    if (Math.abs(next - theme.surfaceL) >= MIN_SURFACE_DELTA_L) continue;
+    const up = theme.surfaceL + MIN_SURFACE_DELTA_L + 0.5;
+    const down = theme.surfaceL - (MIN_SURFACE_DELTA_L + 0.5);
+    const choices = [up, down].filter((value) => value >= 8 && value <= 98);
+    if (choices.length === 0) continue;
+    next = choices.reduce((best, value) => {
+      const gap = (candidate: number) => Math.min(
+        ...pending.map((item) => Math.abs(candidate - item.surfaceL)),
+      );
+      return gap(value) > gap(best) ? value : best;
+    });
+  }
+  return clamp(next, 8, 98);
+}
+
+function adjust(
+  draft: Draft,
+  input: GeneratorInput,
+  failing: readonly ThemeFingerprint[],
+  pairs: readonly PairDistance[],
+  iteration: number,
+  origin: Oklch,
+): Draft {
   const next = { ...draft, axes: { ...draft.axes }, fonts: { ...draft.fonts } };
-  if (!locked(input, 'color') && iteration < 4) {
-    const step = [12, -12, 24, -24][iteration] ?? 24;
-    next.accent = rotateAccent(draft.accent, step);
+  const byId = new Map(failing.map((theme) => [theme.id, theme]));
+  const colorFailing = pairs.filter(colorTooClose).flatMap((pair) => {
+    const theme = byId.get(pair.id);
+    return theme ? [theme] : [];
+  });
+  if (!locked(input, 'color') && colorFailing.length > 0) {
+    next.accent = rotateAccent(origin, hueOffsetDegrees(iteration));
+    next.surfaceL = separateSurface(draft.surfaceL, next.accent, colorFailing);
     return next;
   }
-  if (nearest && iteration < 6) {
-    const axis = AXIS_IDS[iteration % AXIS_IDS.length]!;
-    if (!input.locks?.axes?.includes(axis)) {
-      const options = axis === 'header-type' ? HEADER_OPTIONS : axis === 'card-style' ? CARD_OPTIONS : SIDEBAR_OPTIONS;
-      next.axes[axis] = axisCycle(draft.axes[axis], nearest.axes[axis], options);
-      return next;
+  const axisFailing = pairs.filter((pair) => pair.distinctAxes < MIN_DISTINCT_AXES).flatMap((pair) => {
+    const theme = byId.get(pair.id);
+    return theme ? [theme] : [];
+  });
+  if (axisFailing.length > 0) {
+    const start = iteration % AXIS_IDS.length;
+    const order = [...AXIS_IDS.slice(start), ...AXIS_IDS.slice(0, start)];
+    for (const axis of order) {
+      if (input.locks?.axes?.includes(axis)) continue;
+      const picked = axisAway(draft.axes[axis], axisFailing.map((theme) => theme.axes[axis]), axisOptions(axis));
+      if (picked) {
+        next.axes[axis] = picked;
+        return next;
+      }
     }
   }
   if (!locked(input, 'density')) next.density = clamp(draft.density + 0.15, 0, 1);
@@ -284,12 +359,41 @@ function sameDraft(a: Draft, b: Draft): boolean {
 export function validateInput(input: GeneratorInput): void {
   if (!INDUSTRIES.includes(input.industry)) throw new Error('Branche fehlt oder ist nicht in der Taxonomie.');
   if (typeof input.tone === 'string' && !TONE_PRESETS.includes(input.tone)) throw new Error('Tonalität fehlt.');
+  if (input.primaryColor != null && input.primaryColor !== '' && !isHexColor(input.primaryColor)) {
+    throw new Error('Hauptfarbe muss ein Hex-Wert #RGB oder #RRGGBB sein.');
+  }
   if (!input.primaryColor && !input.logo && !input.moodImage) {
     throw new Error('Logo oder Hauptfarbe ist Pflicht.');
   }
 }
 
-export function generateTheme(input: GeneratorInput, catalog: ThemeCatalog = fixtureThemeCatalog()): GeneratorResult {
+interface StoredInput {
+  industry: IndustryId;
+  tone: TonePreset | ToneSliders;
+  primaryColor: string;
+  brandFonts?: { display?: string; body?: string } | null;
+  locks?: GeneratorInput['locks'];
+}
+
+function storedInput(input: GeneratorInput, primaryColor: string): StoredInput {
+  return {
+    industry: input.industry,
+    tone: input.tone,
+    primaryColor,
+    brandFonts: input.brandFonts ?? null,
+    locks: input.locks,
+  };
+}
+
+function imageryFromTone(tone: readonly number[]): readonly [number, number, number] {
+  return [tone[1] ?? 0.5, 1 - (tone[0] ?? 0.5), tone[2] ?? 0.5];
+}
+
+export function generateTheme(
+  input: GeneratorInput,
+  catalog: ThemeCatalog = fixtureThemeCatalog(),
+  floor = PUBLISH_MIN_DISTANCE,
+): GeneratorResult {
   validateInput(input);
   const sample = input.primaryColor
     ? { hex: input.primaryColor.toUpperCase(), method: 'embedded-hex' as const }
@@ -298,17 +402,23 @@ export function generateTheme(input: GeneratorInput, catalog: ThemeCatalog = fix
   if (input.brandFonts?.display || input.brandFonts?.body) {
     input = { ...input, locks: { ...input.locks, dimensions: [...(input.locks?.dimensions ?? []), 'type'] } };
   }
+  const origin = draft.accent;
   let iterations = 0;
   let overlay = palette(draft);
   let wcag = wcagOf(overlay);
   let distance = distanceVerdict(fingerprint('generated', draft, overlay), catalog.list());
-  while (iterations < MAX_ADJUST_ITERATIONS && (!wcag.ok || !distance.hardPass)) {
-    const neighbor = distance.nearest
-      ? catalog.list().find((theme) => theme.id === distance.nearest?.id) ?? null
-      : null;
+  while (
+    iterations < MAX_ADJUST_ITERATIONS
+    && (!wcag.ok || !distance.hardPass || distance.pairs.some((pair) => pair.d < floor))
+  ) {
+    const failing = distance.pairs.flatMap((pair) => {
+      const theme = catalog.list().find((item) => item.id === pair.id);
+      const blocked = pair.d < floor || colorTooClose(pair) || pair.distinctAxes < MIN_DISTINCT_AXES;
+      return theme && blocked ? [theme] : [];
+    });
     const next = !wcag.ok && !locked(input, 'color')
       ? { ...draft, surfaceL: clamp(draft.surfaceL + (draft.surfaceL < 50 ? -6 : 4), 8, 98) }
-      : adjust(draft, input, neighbor, iterations);
+      : adjust(draft, input, failing, distance.pairs, iterations, origin);
     if (sameDraft(next, draft)) break;
     draft = next;
     overlay = palette(draft);
@@ -318,11 +428,16 @@ export function generateTheme(input: GeneratorInput, catalog: ThemeCatalog = fix
   }
   const hash = sha256Hex(canonicalJson({ overlay, axes: draft.axes, modules: draft.modules }));
   const status = !wcag.ok || !distance.hardPass ? 'needs-editor' : distance.remix ? 'warn' : 'ready';
+  const axesMeta = {
+    'axis/header-type': draft.axes['header-type'],
+    'axis/card-style': draft.axes['card-style'],
+    'axis/sidebar-form': draft.axes['sidebar-form'],
+  };
   return {
     status,
     iterations,
     hash,
-    remixOffer: distance.remix,
+    remixOffer: distance.remix && wcag.ok,
     reasons: [...(wcag.ok ? [] : ['WCAG AA unterschritten']), ...distance.reasons],
     wcag,
     distance,
@@ -336,28 +451,42 @@ export function generateTheme(input: GeneratorInput, catalog: ThemeCatalog = fix
       semantic: overlay,
       $extensions: {
         'com.rsd.meta': {
-          axes_not_in_semantic_109: {
-            'axis/header-type': draft.axes['header-type'],
-            'axis/card-style': draft.axes['card-style'],
-            'axis/sidebar-form': draft.axes['sidebar-form'],
-          },
+          axes_not_in_semantic_111: axesMeta,
+          axes_not_in_semantic_109: axesMeta,
           hash,
           modules: draft.modules,
           reduce: { fast: '0ms', base: '0ms', slow: '0ms' },
           tone: draft.tone,
+          imagery: draft.imagery,
+          input: storedInput(input, sample.hex),
         },
       },
     },
   };
 }
 
+interface ResultMeta {
+  tone?: number[];
+  imagery?: number[];
+  input?: StoredInput;
+}
+
+function metaOf(result: GeneratorResult): ResultMeta {
+  return (result.document.$extensions as { 'com.rsd.meta': ResultMeta })['com.rsd.meta'] ?? {};
+}
+
+function triple(value: number[] | undefined, fallback: readonly [number, number, number]): readonly [number, number, number] {
+  return value?.length === 3 ? [value[0]!, value[1]!, value[2]!] : fallback;
+}
+
 export function publishTheme(result: GeneratorResult, catalog: ThemeCatalog = fixtureThemeCatalog()): GeneratorResult {
   const hash = sha256Hex(canonicalJson({ overlay: result.overlay, axes: result.axes, modules: result.modules }));
   const wcag = wcagOf(result.overlay);
-  const meta = (result.document.$extensions as { 'com.rsd.meta': { tone?: number[] } })['com.rsd.meta'];
-  const tone = meta.tone?.length === 3 ? [meta.tone[0]!, meta.tone[1]!, meta.tone[2]!] as const : [0, 0, 0] as const;
+  const meta = metaOf(result);
+  const tone = triple(meta.tone, [0, 0, 0]);
+  const imagery = triple(meta.imagery, imageryFromTone(tone));
   const distance = distanceVerdict(
-    fingerprintFromVars('publish', semanticOverrideStyle(result.overlay) as Record<string, string>, result.axes, tone),
+    fingerprintFromVars('publish', semanticOverrideStyle(result.overlay) as Record<string, string>, result.axes, tone, imagery),
     catalog.list(),
   );
   const hashOk = hash === result.hash;
@@ -366,7 +495,7 @@ export function publishTheme(result: GeneratorResult, catalog: ThemeCatalog = fi
     ...result,
     hash,
     status: hard ? (distance.remix ? 'warn' : 'ready') : 'needs-editor',
-    remixOffer: distance.remix,
+    remixOffer: hard && distance.remix,
     reasons: [
       ...(hashOk ? [] : ['Theme-Hash weicht ab']),
       ...(wcag.ok ? [] : ['WCAG AA unterschritten']),
@@ -375,4 +504,38 @@ export function publishTheme(result: GeneratorResult, catalog: ThemeCatalog = fi
     wcag,
     distance,
   };
+}
+
+/**
+ * Zweiter Lauf mit Schwelle 0,42. AA bleibt ein harter Block:
+ * ein Remix, der den Kontrast verfehlt, wird nicht übernommen.
+ */
+export function remixTheme(result: GeneratorResult, catalog: ThemeCatalog = fixtureThemeCatalog()): GeneratorResult {
+  const checked = publishTheme(result, catalog);
+  if (!checked.wcag.ok) {
+    return { ...checked, status: 'needs-editor', remixOffer: false };
+  }
+  if (!checked.distance.hardPass || (!result.remixOffer && !checked.distance.remix)) return checked;
+  const meta = metaOf(result);
+  if (!meta.input?.primaryColor) return checked;
+  const stricter = generateTheme({
+    industry: meta.input.industry,
+    tone: meta.input.tone,
+    primaryColor: meta.input.primaryColor,
+    brandFonts: meta.input.brandFonts,
+    locks: meta.input.locks,
+  }, catalog, SOFT_WARN_DISTANCE);
+  if (!stricter.wcag.ok) {
+    return {
+      ...checked,
+      status: 'needs-editor',
+      remixOffer: false,
+      reasons: ['WCAG AA unterschritten', ...checked.reasons],
+      wcag: stricter.wcag,
+    };
+  }
+  const nearest = stricter.distance.nearest?.d ?? 1;
+  const current = checked.distance.nearest?.d ?? 1;
+  if (stricter.distance.hardPass && nearest + 1e-9 >= current) return publishTheme(stricter, catalog);
+  return checked;
 }

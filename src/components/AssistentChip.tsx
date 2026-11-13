@@ -39,6 +39,14 @@ export function AssistentChip() {
   const [heroVisible, setHeroVisible] = useState(false);
   const isLanding = pathname === '/';
 
+  useEffect(() => {
+    function openAssistant() { setOpen(true); }
+    window.addEventListener('realsync:open-public-assistant', openAssistant);
+    return () => window.removeEventListener('realsync:open-public-assistant', openAssistant);
+  }, []);
+
+  useEffect(() => setOpen(false), [pathname]);
+
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
   // A MutationObserver keeps this working when route/lazy content inserts
@@ -111,7 +119,7 @@ export function AssistentChip() {
         aria-haspopup="dialog"
         aria-hidden={faded ? true : undefined}
         tabIndex={faded ? -1 : 0}
-        className={`${positionClass} inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
+        className={`${positionClass} inline-flex min-h-11 items-center gap-2 pl-2 pr-4 py-1.5 rounded-full backdrop-blur-md transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100 hover:scale-[1.03] ${
           faded
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'
@@ -135,7 +143,7 @@ export function AssistentChip() {
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
         <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
-          Grok Bot
+          Assistent
         </span>
       </button>
       )}

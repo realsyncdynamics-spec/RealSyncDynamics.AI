@@ -31,6 +31,7 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+const LandingV8App = lazy(() => import('./components/landing/v8/LandingV8App').then((m) => ({ default: m.LandingV8App })));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
@@ -542,6 +543,8 @@ function RoutesWithTracking() {
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
       <Route path="/design/landing-v2" element={<LandingV2 />} />
+      {/* Landing v8: noindex-Vorschau. `/` bleibt LandingV6. */}
+      <Route path="/v8/*" element={<LandingV8App />} />
       <Route path="/design/governance-ai" element={<Navigate to="/" replace />} />
       <Route path="/design/titan" element={<Navigate to="/" replace />} />
       <Route path="/design/ledger" element={<Navigate to="/" replace />} />

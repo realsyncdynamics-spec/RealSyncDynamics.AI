@@ -1472,12 +1472,26 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
  * weiterhin die generische SPA-Shell.
  */
 const FLOW_NAMESPACE = '/flow';
+const V8_NAMESPACE = '/v8';
 
 export function isFlowPath(path: string): boolean {
   return path === FLOW_NAMESPACE || path.startsWith(`${FLOW_NAMESPACE}/`);
 }
 
+export function isLandingV8Path(path: string): boolean {
+  return path === V8_NAMESPACE || path.startsWith(`${V8_NAMESPACE}/`);
+}
+
 export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
+
+/** Vorschau unter /v8. Kanonisch bleibt die heutige Startseite. */
+export const LANDING_V8_SEO: SEOConfig = {
+  title: 'Landing v8 — Vorschau | RealSync Dynamics AI',
+  description:
+    'Nicht indexierte Vorschau: KI-Agenten, Business-Automatisierung und überprüfbare AI Governance. Die Startseite bleibt die bestehende Seite.',
+  canonical: `${SITE_URL}/`,
+  noIndex: true,
+};
 
 /**
  * Liefert SEO-Config für einen Pfad. Normalisiert trailing slash, setzt den
@@ -1489,5 +1503,6 @@ export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   if (isFlowPath(path)) return FLOW_SEO;
+  if (isLandingV8Path(path)) return LANDING_V8_SEO;
   return SEO_CONFIG[path] ?? DEFAULT_SEO;
 }

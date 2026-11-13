@@ -3,7 +3,8 @@
  * Ungesetzte Namen erben das Basis-Theme (light-cream).
  *
  * Die Generator-Spezifikation (Distanz, OKLCH, Achsen-Hamming) wird hier
- * nicht gerechnet. `axes_not_in_semantic_109` bleibt Metadatum.
+ * nicht gerechnet. Achsen liegen in `axes_not_in_semantic_111`;
+ * `axes_not_in_semantic_109` bleibt der Alias.
  */
 import type { CSSProperties } from 'react';
 import dnaJson from './dna-tokens.json';

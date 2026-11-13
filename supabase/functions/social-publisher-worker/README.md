@@ -47,11 +47,13 @@ supabase functions deploy social-publisher-worker --env-file .env.local
 ## Environment Variables
 
 ### LinkedIn
-Tokens come from `social_channel_connections` (sealed with `secretBox`, one row per tenant and account). The worker opens the seal for `job.tenant_id` and the queue channel (`linkedin.enterprise` / `linkedin.legal` → provider `linkedin`).
+Tokens come from `social_channel_connections` (sealed with `secretBox`, one row per tenant and account). The worker opens the seal for `job.tenant_id` and the queue channel (`linkedin.enterprise` / `linkedin.legal` → provider `linkedin`). The author URN is `account_external_id` on that row (`urn:li:person:…` or `urn:li:organization:…`). The orchestrator writes that id into `post_data.account_external_id` when it enqueues the job. If several connected accounts exist and the job names none, publishing fails instead of guessing.
 
-`LINKEDIN_ACCESS_TOKEN` is a **legacy fallback**, off unless `SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN=on`. It is used only when that flag is exactly `on` and the tenant has no connection row. It is not a tenant-aware token. Do not log the value.
+The worker does **not** fall back to `LINKEDIN_ACCESS_TOKEN`. A platform token has no author URN.
 
-The publish call is still `POST /v2/ugcPosts` with placeholder author URNs. Replacing that endpoint is a separate change.
+Publish call: `POST https://api.linkedin.com/rest/posts` with `LinkedIn-Version: 202610` and `X-Restli-Protocol-Version: 2.0.0`. `202610` is the latest version named on the LinkedIn versioning page as of 2026-11-13; a November 2026 release was not listed there. The post id is the `x-restli-id` response header.
+
+The queue job has no image bytes. The Images API is not called. `facebook` is in development and is not a queue channel.
 
 ### WordPress
 - `WORDPRESS_URL` — Site URL (e.g., https://example.com)
@@ -97,8 +99,8 @@ After max_attempts, they move to Dead Letter Queue (distribution_dlq).
 
 | Channel | Adapter | Status |
 |---------|---------|--------|
-| `linkedin.enterprise` | LinkedIn OAuth | ✅ Implemented |
-| `linkedin.legal` | LinkedIn OAuth | ✅ Implemented |
+| `linkedin.enterprise` | LinkedIn Posts API | Adapter (kein nachgewiesener Live-Publish) |
+| `linkedin.legal` | LinkedIn Posts API | Adapter (kein nachgewiesener Live-Publish) |
 | `wordpress.blog` | WordPress REST | ✅ Implemented |
 | `ghost.blog` | Ghost Admin API | ✅ Implemented |
 | `webhook.custom` | HTTP POST | ✅ Implemented |

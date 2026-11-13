@@ -32,6 +32,14 @@ import type {
 } from './types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recordPublishMetric, recordQueueMetric } from './metrics';
+import {
+  ChannelAccountUnresolvedError,
+  isLinkedInQueueChannel,
+  listLinkedInConnections,
+  queuePostData,
+  stampLinkedInAccount,
+  type LinkedInQueueChannel,
+} from './channelAccount';
 
 let queueIdCounter = 0;
 function nextQueueId(): string {
@@ -44,6 +52,11 @@ export interface DistributionQueueOptions {
   supabase?: SupabaseClient;
   /** Tenant ID for multi-tenant isolation. Required if using persistence. */
   tenantId?: string;
+  /**
+   * LinkedIn-Konto je Queue-Kanal, wenn mehrere Verbindungen existieren.
+   * Wird gegen social_channel_connections geprueft, nicht ungeprueft geschrieben.
+   */
+  linkedInAccounts?: Partial<Record<LinkedInQueueChannel, string>>;
 }
 
 /**
@@ -56,10 +69,17 @@ export class DistributionQueue {
   private publishers: Map<SocialChannel, SocialPublisher> = new Map();
   private supabase?: SupabaseClient;
   private tenantId?: string;
+  private linkedInAccounts: Partial<Record<LinkedInQueueChannel, string>>;
 
   constructor(opts?: DistributionQueueOptions) {
     this.supabase = opts?.supabase;
     this.tenantId = opts?.tenantId;
+    this.linkedInAccounts = { ...opts?.linkedInAccounts };
+  }
+
+  /** Konto-Wahl fuer diesen Lauf. Ersetzt die bisherige Zuordnung. */
+  useLinkedInAccounts(accounts: Partial<Record<LinkedInQueueChannel, string>>): void {
+    this.linkedInAccounts = { ...accounts };
   }
 
   // ── Publisher registry ──────────────────────────────────────────
@@ -81,10 +101,11 @@ export class DistributionQueue {
    */
   async enqueue(post: SocialPost): Promise<QueueEntry | null> {
     if (post.approvalStatus === 'BLOCKED') return null;
-    const status: QueueStatus = post.approvalStatus === 'AUTO' ? 'auto' : 'pending';
+    const prepared = await this.attachLinkedInAccount(post);
+    const status: QueueStatus = prepared.approvalStatus === 'AUTO' ? 'auto' : 'pending';
     const entry: QueueEntry = {
       id: nextQueueId(),
-      post,
+      post: prepared,
       status,
       enqueuedAt: new Date().toISOString(),
     };
@@ -400,7 +421,7 @@ export class DistributionQueue {
         hashtags: entry.post.hashtags,
         status: entry.status,
         approval_status: entry.post.approvalStatus,
-        post_data: entry.post,
+        post_data: queuePostData(entry.post),
         enqueued_at: entry.enqueuedAt,
       });
     } catch (err) {
@@ -522,7 +543,8 @@ export class DistributionQueue {
 
       if (data) {
         this.entries = data.map((row: any): QueueEntry => {
-          const post = row.post_data as SocialPost || {
+          const stored = row.post_data as (SocialPost & { account_external_id?: unknown }) | null;
+          const post: SocialPost = stored ?? {
             id: row.post_id,
             channel: row.channel as SocialChannel,
             body: row.body,
@@ -532,6 +554,14 @@ export class DistributionQueue {
             charCount: (row.body || '').length,
             generatedAt: row.created_at,
           };
+          if (
+            post
+            && !post.accountExternalId
+            && stored
+            && typeof stored.account_external_id === 'string'
+          ) {
+            post.accountExternalId = stored.account_external_id;
+          }
           const entry: QueueEntry = {
             id: row.id,
             post,
@@ -589,6 +619,31 @@ export class DistributionQueue {
   }
 
   // ── Private ─────────────────────────────────────────────────────
+
+  /**
+   * Schreibt die LinkedIn-Autor-URN aus social_channel_connections auf
+   * den Post, bevor der Queue-Eintrag entsteht. Ohne Persistenz (Vorschau)
+   * gibt es keine Verbindungstabelle; der Worker sieht diese Eintraege nicht.
+   * Mit Persistenz und ohne eindeutige Verbindung wird nicht eingereiht.
+   */
+  private async attachLinkedInAccount(post: SocialPost): Promise<SocialPost> {
+    if (!isLinkedInQueueChannel(post.channel)) return post;
+    if (!this.supabase || !this.tenantId) return post;
+    let connections;
+    try {
+      connections = await listLinkedInConnections(
+        this.supabase as unknown as Parameters<typeof listLinkedInConnections>[0],
+        this.tenantId,
+      );
+    } catch (err) {
+      if (err instanceof ChannelAccountUnresolvedError) throw err;
+      throw new ChannelAccountUnresolvedError('lookup_failed', 'linkedin connection lookup failed');
+    }
+    const requested = post.accountExternalId ?? this.linkedInAccounts[post.channel] ?? null;
+    const stamp = stampLinkedInAccount(connections, requested, new Date());
+    if (!stamp.ok) throw new ChannelAccountUnresolvedError(stamp.code, stamp.message);
+    return { ...post, accountExternalId: stamp.accountExternalId };
+  }
 
   private requireEntry(id: string): QueueEntry {
     const e = this.get(id);
@@ -686,85 +741,24 @@ abstract class BasePublisher implements SocialPublisher {
 // ── Real publishers (placeholder implementations) ──────────────────────────
 
 /**
- * LinkedIn Publisher (placeholder) — OAuth 2.0 + REST API
- * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
- *
- * ⚠️ This is a placeholder/reference implementation for testing/documentation.
- * The real production implementation is in ./linkedinPublisher.ts which:
- * - Accepts accessToken + authorId as constructor parameters
- * - Caller (Edge Function) loads token from Supabase Vault
- * - Supports per-profile author IDs (linkedin.enterprise, linkedin.legal, etc)
+ * LinkedIn wird nicht aus dem Browser veroeffentlicht.
+ * Der social-publisher-worker sendet Text an die Posts API
+ * (POST https://api.linkedin.com/rest/posts). Diese Klasse bleibt,
+ * damit bestehende Registrierungen nicht still die abgeloeste
+ * ugcPosts-API aufrufen.
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string = '';
-  private profileId: string = '';
 
-  async publish(post: SocialPost): Promise<PublishResult> {
-    this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
-
-    if (!this.accessToken || !this.profileId) {
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'LinkedIn access token or profile ID not configured' },
-      };
-    }
-
-    try {
-      const result = await this.retryWithBackoff(
-        async () => {
-          const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              author: `urn:li:person:${this.profileId}`,
-              lifecycleState: 'PUBLISHED',
-              specificContent: {
-                'com.linkedin.ugc.PublishContent': {
-                  shareCommentary: { text: post.body },
-                  shareMediaCategory: 'ARTICLE',
-                },
-              },
-            }),
-          });
-
-          if (response.status === 429) {
-            throw new Error('LINKEDIN_429_RATE_LIMIT');
-          }
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`LINKEDIN_${response.status}: ${error}`);
-          }
-
-          const data = await response.json();
-          return data;
-        },
-        (attempt, error) => {
-          console.warn(`LinkedIn publish attempt ${attempt} failed:`, error.message);
-        }
-      );
-
-      this.logPublishAttempt(post, 'success', { externalId: result.id });
-      return {
-        ok: true,
-        channel: this.channel,
-        externalId: result.id,
-        postedAt: new Date().toISOString(),
-      };
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      this.logPublishAttempt(post, 'failed', { error: errorMsg });
-
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'LINKEDIN_API_ERROR', message: errorMsg },
-      };
-    }
+  async publish(_post: SocialPost): Promise<PublishResult> {
+    return {
+      ok: false,
+      channel: this.channel,
+      error: {
+        code: 'LINKEDIN_WORKER_ONLY',
+        message: 'LinkedIn publishing runs in social-publisher-worker (Posts API), not in the browser',
+      },
+    };
   }
 }
 

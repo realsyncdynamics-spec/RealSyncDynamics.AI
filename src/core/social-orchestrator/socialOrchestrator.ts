@@ -24,6 +24,7 @@ import { normalize } from './eventNormalizer';
 import { decideForSocialEvent } from './contentPolicy';
 import { generatePostsForChannels } from './postGenerator';
 import { DistributionQueue } from './distributionQueue';
+import type { LinkedInQueueChannel } from './channelAccount';
 
 export interface OrchestratorOptions {
   /** Restrict to a subset of channels. Default: all five. */
@@ -33,6 +34,12 @@ export interface OrchestratorOptions {
    *  for one-shot tests; in production callers SHOULD share a single
    *  queue across calls. */
   queue?: DistributionQueue;
+  /**
+   * Gewaehltes LinkedIn-Konto je Queue-Kanal, wenn der Mandant mehrere
+   * verbundene Konten hat. Der Queue-Eintrag prueft die Kennung gegen
+   * social_channel_connections und schreibt account_external_id.
+   */
+  linkedInAccounts?: Partial<Record<LinkedInQueueChannel, string>>;
 }
 
 export class SocialOrchestrator {
@@ -41,6 +48,7 @@ export class SocialOrchestrator {
 
   constructor(opts: OrchestratorOptions = {}) {
     this.queue = opts.queue ?? new DistributionQueue();
+    if (opts.linkedInAccounts) this.queue.useLinkedInAccounts(opts.linkedInAccounts);
     this.channels = opts.channels ?? [...ALL_CHANNELS];
   }
 

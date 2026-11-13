@@ -13,10 +13,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import {
-  accountExternalIdFromPostData,
-  resolveSocialAccessToken,
-} from '../_shared/socialChannelCredentials.ts';
+import { publishLinkedInQueueJob } from '../_shared/linkedinPosts.ts';
+import { accountExternalIdFromPostData } from '../_shared/socialChannelCredentials.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -115,8 +113,9 @@ async function publishViaChannel(
 
 // ── LinkedIn Publisher ─────────────────────────────────────────────
 //
-// Token je Mandant und Kanal aus social_channel_connections.
-// Der HTTP-Vertrag (POST /v2/ugcPosts, Platzhalter-URNs) bleibt bis PR2.
+// Token und Autor-URN je Mandant aus social_channel_connections.
+// HTTP: POST https://api.linkedin.com/rest/posts (linkedinPosts.ts).
+// Kein globaler LINKEDIN_ACCESS_TOKEN.
 
 async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
   const direct = accountExternalIdFromPostData(job.post_data);
@@ -133,60 +132,13 @@ async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
   const accountExternalId = await linkedinAccountHint(job);
-  const resolved = await resolveSocialAccessToken(supabase, {
+  return publishLinkedInQueueJob(supabase, {
     tenantId: job.tenant_id,
     queueChannel: job.channel,
+    body: job.body,
     accountExternalId,
     readEnv: (name) => Deno.env.get(name) ?? undefined,
   });
-  if (!resolved.ok) {
-    return { ok: false, error: resolved.message };
-  }
-  if (resolved.source === 'legacy_env') {
-    // Uebergang: nur wenn SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN=on und keine
-    // Verbindungszeile existiert. Der Tokenwert wird nicht geloggt.
-    console.warn(JSON.stringify({
-      level: 'warn',
-      scope: 'social_publisher_legacy_env_token',
-      tenant_id: job.tenant_id,
-      channel: job.channel,
-      flag: 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN',
-    }));
-  }
-
-  const personUrn = job.channel === 'linkedin.legal'
-    ? 'urn:li:person:XYZ789'
-    : 'urn:li:person:ABC123';
-
-  try {
-    const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resolved.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        author: personUrn,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.PublishContent': {
-            shareCommentary: { text: job.body },
-            shareMediaCategory: 'ARTICLE',
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      return { ok: false, error: `LinkedIn ${response.status}: ${error}` };
-    }
-
-    const data = await response.json();
-    return { ok: true, externalId: data.id };
-  } catch (err) {
-    return { ok: false, error: String(err) };
-  }
 }
 
 // ── WordPress Publisher ────────────────────────────────────────────

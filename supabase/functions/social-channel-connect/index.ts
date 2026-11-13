@@ -18,6 +18,7 @@ import { audit } from '../_shared/auditLog.ts';
 import {
   SOCIAL_CONNECTION_PUBLIC_SELECT,
   isSocialProvider,
+  isSocialProviderInDevelopment,
   loadIntegrationSealKey,
   parseAccountExternalId,
   parseOptionalLabel,
@@ -87,6 +88,14 @@ async function configure(
   const channel = typeof body.channel === 'string' ? body.channel.trim() : '';
   if (!isSocialProvider(channel)) {
     return jsonError(400, 'BAD_REQUEST', 'channel is invalid', corsHeaders);
+  }
+  if (isSocialProviderInDevelopment(channel)) {
+    return jsonError(
+      400,
+      'NOT_AVAILABLE',
+      `${channel} is in development and has no queue channel`,
+      corsHeaders,
+    );
   }
   const accountExternalId = parseAccountExternalId(body.account_external_id);
   if (!accountExternalId) {
@@ -211,6 +220,14 @@ async function rotate(
     return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
   }
   if (!existing) return jsonError(404, 'NOT_FOUND', 'connection not found', corsHeaders);
+  if (isSocialProviderInDevelopment(existing.channel)) {
+    return jsonError(
+      400,
+      'NOT_AVAILABLE',
+      `${existing.channel} is in development and has no queue channel`,
+      corsHeaders,
+    );
+  }
 
   const key = await loadIntegrationSealKey(admin);
   if (!key) return sealMissing();

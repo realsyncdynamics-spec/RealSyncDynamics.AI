@@ -42,23 +42,22 @@ SocialOrchestrator
 
 **Channels**: `linkedin.enterprise`, `linkedin.legal`
 
-```typescript
-const publisher = new LinkedInPublisher();
-publisher.publish(post); // OAuth 2.0 via LinkedIn API v2
-```
+Der Versand laeuft im `social-publisher-worker`. Die Klasse `LinkedInPublisher` im Browser ruft LinkedIn nicht auf. `facebook` ist in Entwicklung und kein Queue-Kanal.
 
 **Configuration**:
-- Access token in Supabase Vault: `linkedin_access_token`
-- Person URN for author profile (parameterizable per tenant)
-- Character limit: ~1500 (excluding hashtag block)
+- Access token sealed per tenant in `social_channel_connections` (not a global env token)
+- Author URN is `account_external_id` on that row (`urn:li:person` or `urn:li:organization`)
+- The orchestrator writes `post_data.account_external_id` when it enqueues
+- `facebook` is in development and has no queue channel
 
-**API**: `POST https://api.linkedin.com/v2/ugcPosts`
+**API**: `POST https://api.linkedin.com/rest/posts` (worker only; the browser class does not publish)
 
-**Error codes**:
-- `LINKEDIN_401_UNAUTHORIZED`: Token invalid/expired
-- `LINKEDIN_429_RATE_LIMIT`: Rate limit hit
-- `LINKEDIN_403_FORBIDDEN`: Account not authorized
-- `NO_TOKEN`: Token not configured
+**Version header**: `LinkedIn-Version: 202610` (latest version named on the LinkedIn versioning page as of 2026-11-13; `202611` was not listed). `X-Restli-Protocol-Version: 2.0.0`.
+
+**Failure**:
+- No usable connection, an ambiguous account, or an author value that is not `urn:li:person` / `urn:li:organization`: LinkedIn is not called
+- HTTP status other than 201, or a 201 without `x-restli-id`: the job fails
+- The access token is not written into the error text
 
 ### WordPressPublisher
 

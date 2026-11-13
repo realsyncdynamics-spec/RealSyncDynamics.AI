@@ -42,6 +42,21 @@ describe('social_channel_connections Grants und RLS', () => {
 });
 
 describe('social-channel-connect gibt keine Secrets heraus', () => {
+  it('lehnt facebook ab, weil der Kanal in Entwicklung ist', () => {
+    const configure = connect.slice(connect.indexOf('async function configure'));
+    const guard = configure.indexOf('isSocialProviderInDevelopment');
+    const seal = configure.indexOf('loadIntegrationSealKey');
+    expect(guard).toBeGreaterThan(-1);
+    expect(seal).toBeGreaterThan(guard);
+    expect(configure).toContain('NOT_AVAILABLE');
+    expect(configure).toContain('in development and has no queue channel');
+    const rotate = connect.slice(connect.indexOf('async function rotate'));
+    const rotateGuard = rotate.indexOf('isSocialProviderInDevelopment');
+    expect(rotateGuard).toBeGreaterThan(-1);
+    expect(rotateGuard).toBeLessThan(rotate.indexOf('loadIntegrationSealKey'));
+    expect(migration).toContain('facebook ist in Entwicklung');
+  });
+
   it('bleibt hinter dem Plattform-JWT und owner/admin', () => {
     expect(config).not.toContain('[functions.social-channel-connect]');
     expect(connect).toContain("['owner', 'admin']");
@@ -71,19 +86,28 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
 });
 
 describe('Worker liest den Token je Mandant', () => {
-  it('oeffnet das Siegel und laesst den LinkedIn-HTTP-Vertrag unveraendert', () => {
-    expect(worker).toContain('resolveSocialAccessToken');
-    expect(worker).toContain('https://api.linkedin.com/v2/ugcPosts');
-    expect(worker).toContain('urn:li:person:ABC123');
-    expect(worker).toContain('urn:li:person:XYZ789');
-    expect(worker).not.toContain('LINKEDIN_ACCESS_TOKEN');
-    expect(worker).not.toContain('config.linkedinToken');
+  it('sendet ueber die Posts API und nicht ueber ugcPosts oder Platzhalter-URNs', () => {
+    const workerCode = codeWithoutComments(worker);
+    expect(workerCode).toContain('publishLinkedInQueueJob');
+    expect(workerCode).not.toContain('ugcPosts');
+    expect(workerCode).not.toContain('urn:li:person:ABC123');
+    expect(workerCode).not.toContain('urn:li:person:XYZ789');
+    expect(workerCode).not.toContain('LINKEDIN_ACCESS_TOKEN');
+    expect(workerCode).not.toContain('config.linkedinToken');
+    expect(workerCode).not.toContain('legacy_env');
+    const posts = readFileSync('supabase/functions/_shared/linkedinPosts.ts', 'utf8');
+    expect(posts).toContain('https://api.linkedin.com/rest/posts');
+    expect(posts).toContain("'LinkedIn-Version': LINKEDIN_API_VERSION");
+    expect(posts).toContain("'X-Restli-Protocol-Version': LINKEDIN_RESTLI_PROTOCOL");
+    expect(posts).toContain('allowLegacyEnv: false');
+    expect(posts).toContain("response.headers.get('x-restli-id')");
+    expect(codeWithoutComments(posts)).not.toContain('ugcPosts');
+    expect(codeWithoutComments(posts)).not.toContain('/rest/images');
   });
 
-  it('loggt den Legacy-Fallback ohne Tokenwert', () => {
-    expect(worker).toContain('social_publisher_legacy_env_token');
-    expect(worker).toContain("resolved.source === 'legacy_env'");
-    for (const line of worker.split('\n')) {
+  it('loggt keinen Tokenwert', () => {
+    const posts = readFileSync('supabase/functions/_shared/linkedinPosts.ts', 'utf8');
+    for (const line of `${worker}\n${posts}`.split('\n')) {
       if (!/console\.(log|warn|error)/.test(line)) continue;
       expect(line).not.toContain('accessToken');
       expect(line).not.toContain('credentials_enc');

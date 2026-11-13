@@ -3,7 +3,7 @@
  * `/design/app-shell` ist öffentlich und noindex.
  * `/app/preview` liegt hinter AppGate und setzt den Guard-Stapel durch.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTenant } from '../core/access/TenantProvider';
 import { AppShell } from './AppShell';
 import { areaById, type AppAreaId } from './areas';
@@ -29,6 +29,12 @@ const SAMPLE_EVENTS = [
 export function AppShellPreview({ enforceGuards = false }: { enforceGuards?: boolean }) {
   const tenant = useTenant();
   const [areaId, setAreaId] = useState<AppAreaId>('dashboard');
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('fixture');
+    if (requested && tenant.tenants.some((item) => item.tenantId === requested) && requested !== tenant.activeTenantId) {
+      tenant.setActiveTenant(requested);
+    }
+  }, [tenant]);
   const area = areaById(areaId);
   const home = APP_ROUTES.find((route) => route.nav && route.area === areaId);
   const crumbs = breadcrumbs(area.home);

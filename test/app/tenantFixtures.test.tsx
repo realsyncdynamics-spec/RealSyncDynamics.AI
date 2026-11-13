@@ -15,7 +15,7 @@ function Probe() {
       <div data-testid="role">{tenant.role}</div>
       <div data-testid="plan">{tenant.plan}</div>
       <div data-testid="theme">{tenant.themeId}</div>
-      <button type="button" onClick={() => tenant.setActiveTenant('fixture-warmgraphit')}>wechsel</button>
+      <button type="button" onClick={() => tenant.setActiveTenant('fixture-kanzlei')}>wechsel</button>
     </div>
   );
 }
@@ -32,9 +32,9 @@ describe('TenantProvider Fixture-Vorschau', () => {
     const listSpy = vi.spyOn(loadModule, 'listMyTenants').mockResolvedValue([]);
     const entSpy = vi.spyOn(loadModule, 'loadEntitlements').mockResolvedValue({ byKey: {} });
     render(<TenantProvider initialFixturePreview><Probe /></TenantProvider>);
-    await waitFor(() => expect(screen.getByTestId('names')).toHaveTextContent('Fixture · Lichtkante'));
+    await waitFor(() => expect(screen.getByTestId('names')).toHaveTextContent('Beispiel · Handwerk'));
     expect(screen.getByTestId('names').textContent?.split('|')).toHaveLength(3);
-    expect(screen.getByTestId('theme')).toHaveTextContent('light-cream');
+    expect(screen.getByTestId('theme')).toHaveTextContent('beispiel-handwerk');
     expect(screen.getByTestId('role')).toHaveTextContent('owner');
     expect(screen.getByTestId('plan')).toHaveTextContent('starter');
     expect(listSpy).not.toHaveBeenCalled();
@@ -46,9 +46,9 @@ describe('TenantProvider Fixture-Vorschau', () => {
     render(<TenantProvider initialFixturePreview><Probe /></TenantProvider>);
     await screen.findByTestId('theme');
     fireEvent.click(screen.getByRole('button', { name: 'wechsel' }));
-    expect(screen.getByTestId('active')).toHaveTextContent('Fixture · Warmgraphit');
+    expect(screen.getByTestId('active')).toHaveTextContent('Beispiel · Kanzlei');
     expect(screen.getByTestId('role')).toHaveTextContent('viewer_auditor');
     expect(screen.getByTestId('plan')).toHaveTextContent('enterprise');
-    expect(screen.getByTestId('theme')).toHaveTextContent('warm-graphite');
+    expect(screen.getByTestId('theme')).toHaveTextContent('beispiel-kanzlei');
   });
 });

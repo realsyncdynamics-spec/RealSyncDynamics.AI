@@ -1,0 +1,12 @@
+/* Tailwind-Utilities zeigen auf die semantischen Custom Properties.
+   Die Werte setzt tokens.shell.css auf .app-shell, nicht auf :root. */
+@theme inline {
+  --color-tenant-surface: var(--color-surface-default);
+  --color-tenant-paper: var(--color-surface-paper);
+  --color-tenant-subtle: var(--color-surface-subtle);
+  --color-tenant-text: var(--color-text-primary);
+  --color-tenant-text-secondary: var(--color-text-secondary);
+  --color-tenant-border: var(--color-border-default);
+  --color-tenant-accent: var(--color-accent-primary);
+  --font-tenant-sans: var(--type-family-sans);
+}

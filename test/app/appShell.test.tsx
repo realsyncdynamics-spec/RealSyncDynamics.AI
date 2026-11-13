@@ -20,14 +20,15 @@ describe('AppShell', () => {
     renderShell();
     const nav = await screen.findByRole('navigation', { name: 'Bereiche' });
     expect(nav.querySelectorAll('button')).toHaveLength(8);
-    await screen.findByRole('option', { name: 'Fixture · Silberweiß' });
+    await screen.findByRole('option', { name: 'Beispiel · B2B-SaaS' });
     expect(screen.getByTestId('tenant-switcher')).toBeInTheDocument();
     expect(screen.getByLabelText('Suche')).toBeInTheDocument();
     expect(screen.getByText('Keine Sitzung')).toBeInTheDocument();
     expect(screen.getAllByText('UI-Konzept · Beispieldaten').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Primär' })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Mandant wechseln'), { target: { value: 'fixture-silberweiss' } });
-    expect(screen.getByTestId('app-shell')).toHaveAttribute('data-theme', 'pure-white-silver');
+    fireEvent.change(screen.getByLabelText('Mandant wechseln'), { target: { value: 'fixture-b2b-saas' } });
+    expect(screen.getByTestId('app-shell')).toHaveAttribute('data-theme', 'beispiel-b2b-saas');
     expect(screen.getByRole('heading', { name: 'Governance Control Room' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Website Builder' }));

@@ -1,0 +1,890 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "Customer Design-DNA modes for the AI Website & Business Builder. W3C Design Tokens Community Group format, matching /workspace/rsd-light/tokens.json. Contains ONLY semantic-token overrides for three example customer modes. Do not edit Light Experience primitives or component tokens here. Component tokens continue to resolve through semantic aliases. On the Figma Starter plan a collection has only 1 mode; these DNA modes are represented in Figma as parallel collections (or literal values). From the Professional plan they become real modes on the semantic collection, alongside light-cream (default), pure-white-silver and warm-graphite.",
+  "$extensions": {
+    "com.rsd.meta": {
+      "brand": "RSD & AI",
+      "system": "AI Website & Business Builder — Design-DNA",
+      "base_system": "RealSync Light Experience",
+      "base_tokens": "/workspace/rsd-light/tokens.json",
+      "base_css": "/workspace/rsd-light/tokens.css",
+      "semantic_names": "/workspace/rsd-light/semantic-token-names.txt",
+      "light_experience_figma": "https://www.figma.com/design/Vbz7eXznsV9yM2vowczAlC",
+      "collections": [
+        "semantic"
+      ],
+      "modes": {
+        "semantic": [
+          "beispiel-handwerk",
+          "beispiel-b2b-saas",
+          "beispiel-kanzlei"
+        ]
+      },
+      "inherits_modes": [
+        "light-cream",
+        "pure-white-silver",
+        "warm-graphite"
+      ],
+      "default_mode_in_base": "light-cream",
+      "override_count": 63,
+      "semantic_token_count_base": 109,
+      "dna_contract": "Override ONLY semantic tokens via extra modes. Do not change primitives or the Light Experience file. Component tokens resolve through semantic aliases.",
+      "figma_starter_plan": "1 mode per collection, 3 pages max. DNA modes are parallel collections until Professional.",
+      "axes_not_in_semantic_109": {
+        "comment": "Varianten-Achsen sind Teil der DNA, aber keine der 109 semantischen Light-Experience-Tokens. Nicht in diese Override-Liste aufgenommen.",
+        "axis/header-type": {
+          "beispiel-handwerk": "transparent",
+          "beispiel-b2b-saas": "split",
+          "beispiel-kanzlei": "editorial"
+        },
+        "axis/card-style": {
+          "beispiel-handwerk": "organic",
+          "beispiel-b2b-saas": "glass",
+          "beispiel-kanzlei": "outlined"
+        },
+        "axis/sidebar-form": {
+          "beispiel-handwerk": "none",
+          "beispiel-b2b-saas": "floating",
+          "beispiel-kanzlei": "none"
+        }
+      },
+      "unmapped_dna_dimensions": {
+        "Bildsprache": "Kein semantischer Token in den 109 Namen; bleibt DNA-Preset (Foto/Illustration, Beschnitt, Behandlung).",
+        "Tonalität": "Kein semantischer Token in den 109 Namen; steuert Copy, nicht das Token-File.",
+        "type/family/display": "Nicht in den 109 Namen. Headlines in den Figma-Beispielen nutzen Source Serif 4 / Space Grotesk / Newsreader auf Komponentenebene, bis Light Experience ggf. type/family/display ergänzt. type/family/sans wird pro DNA überschrieben."
+      }
+    }
+  },
+  "semantic": {
+    "color": {
+      "surface": {
+        "default": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/default. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#F3E6D4",
+              "beispiel-b2b-saas": "#0B0F14",
+              "beispiel-kanzlei": "#FBFBFA"
+            },
+            "com.rsd.css": "--color-surface-default"
+          }
+        },
+        "paper": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/paper. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#FFF8F0",
+              "beispiel-b2b-saas": "#111822",
+              "beispiel-kanzlei": "#FFFFFF"
+            },
+            "com.rsd.css": "--color-surface-paper"
+          }
+        },
+        "subtle": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/subtle. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E8D5BB",
+              "beispiel-b2b-saas": "#111822",
+              "beispiel-kanzlei": "#F3F3F1"
+            },
+            "com.rsd.css": "--color-surface-subtle"
+          }
+        },
+        "muted": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/muted. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#EFE6D8",
+              "beispiel-b2b-saas": "#161D2A",
+              "beispiel-kanzlei": "#F3F3F1"
+            },
+            "com.rsd.css": "--color-surface-muted"
+          }
+        },
+        "metric": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/metric. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#FFF8F0",
+              "beispiel-b2b-saas": "#161D2A",
+              "beispiel-kanzlei": "#FFFFFF"
+            },
+            "com.rsd.css": "--color-surface-metric"
+          }
+        },
+        "tint": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/tint. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#F6E4D0",
+              "beispiel-b2b-saas": "#152038",
+              "beispiel-kanzlei": "#EEF1F3"
+            },
+            "com.rsd.css": "--color-surface-tint"
+          }
+        },
+        "inverse": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/inverse. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#2A2118",
+              "beispiel-b2b-saas": "#E8EEF6",
+              "beispiel-kanzlei": "#1B3A4B"
+            },
+            "com.rsd.css": "--color-surface-inverse"
+          }
+        },
+        "raised": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/surface/raised. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#FFF8F0",
+              "beispiel-b2b-saas": "#161D2A",
+              "beispiel-kanzlei": "#FFFFFF"
+            },
+            "com.rsd.css": "--color-surface-raised"
+          }
+        }
+      },
+      "text": {
+        "primary": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/primary. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#2A2118",
+              "beispiel-b2b-saas": "#E8EEF6",
+              "beispiel-kanzlei": "#111111"
+            },
+            "com.rsd.css": "--color-text-primary"
+          }
+        },
+        "secondary": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/secondary. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#5C4A3A",
+              "beispiel-b2b-saas": "#9AA8BC",
+              "beispiel-kanzlei": "#5A5A56"
+            },
+            "com.rsd.css": "--color-text-secondary"
+          }
+        },
+        "muted": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/muted. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#5A4E42",
+              "beispiel-b2b-saas": "#8A98AB",
+              "beispiel-kanzlei": "#5A5A56"
+            },
+            "com.rsd.css": "--color-text-muted"
+          }
+        },
+        "micro": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/micro. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#7A6A58",
+              "beispiel-b2b-saas": "#7A8799",
+              "beispiel-kanzlei": "#8A8A84"
+            },
+            "com.rsd.css": "--color-text-micro"
+          }
+        },
+        "inverse": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/inverse. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#FFF8F0",
+              "beispiel-b2b-saas": "#0B0F14",
+              "beispiel-kanzlei": "#FBFBFA"
+            },
+            "com.rsd.css": "--color-text-inverse"
+          }
+        },
+        "inverse-muted": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/inverse-muted. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E8D5BB",
+              "beispiel-b2b-saas": "#5A6A7A",
+              "beispiel-kanzlei": "#C8D0D4"
+            },
+            "com.rsd.css": "--color-text-inverse-muted"
+          }
+        },
+        "accent": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/accent. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#8F3A14",
+              "beispiel-b2b-saas": "#8FB0FF",
+              "beispiel-kanzlei": "#1B3A4B"
+            },
+            "com.rsd.css": "--color-text-accent"
+          }
+        },
+        "brand-muted": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/text/brand-muted. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#7A6A58",
+              "beispiel-b2b-saas": "#8A98AB",
+              "beispiel-kanzlei": "#6A6A66"
+            },
+            "com.rsd.css": "--color-text-brand-muted"
+          }
+        }
+      },
+      "accent": {
+        "primary": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/accent/primary. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#A3471C",
+              "beispiel-b2b-saas": "#3D7BFF",
+              "beispiel-kanzlei": "#1B3A4B"
+            },
+            "com.rsd.css": "--color-accent-primary"
+          }
+        },
+        "primary-strong": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/accent/primary-strong. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#8F3A14",
+              "beispiel-b2b-saas": "#1E56D0",
+              "beispiel-kanzlei": "#122832"
+            },
+            "com.rsd.css": "--color-accent-primary-strong"
+          }
+        },
+        "kicker-on-inverse": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/accent/kicker-on-inverse. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E8B89A",
+              "beispiel-b2b-saas": "#8FB0FF",
+              "beispiel-kanzlei": "#9DB6C4"
+            },
+            "com.rsd.css": "--color-accent-kicker-on-inverse"
+          }
+        }
+      },
+      "border": {
+        "default": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/border/default. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E0C9A8",
+              "beispiel-b2b-saas": "#2A3545",
+              "beispiel-kanzlei": "#E2E2DC"
+            },
+            "com.rsd.css": "--color-border-default"
+          }
+        },
+        "subtle": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/border/subtle. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E8D5BB",
+              "beispiel-b2b-saas": "#1C2430",
+              "beispiel-kanzlei": "#EDEDE8"
+            },
+            "com.rsd.css": "--color-border-subtle"
+          }
+        },
+        "strong": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/border/strong. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#D4C0A8",
+              "beispiel-b2b-saas": "#3A4658",
+              "beispiel-kanzlei": "#D4D4CC"
+            },
+            "com.rsd.css": "--color-border-strong"
+          }
+        },
+        "panel": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/border/panel. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E0D0B8",
+              "beispiel-b2b-saas": "#2A3545",
+              "beispiel-kanzlei": "#E4E4DE"
+            },
+            "com.rsd.css": "--color-border-panel"
+          }
+        },
+        "accent": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/border/accent. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#D4A07A",
+              "beispiel-b2b-saas": "#3D7BFF",
+              "beispiel-kanzlei": "#1B3A4B"
+            },
+            "com.rsd.css": "--color-border-accent"
+          }
+        }
+      },
+      "icon": {
+        "default": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/icon/default. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#2A2118",
+              "beispiel-b2b-saas": "#E8EEF6",
+              "beispiel-kanzlei": "#111111"
+            },
+            "com.rsd.css": "--color-icon-default"
+          }
+        },
+        "accent": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/icon/accent. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#A3471C",
+              "beispiel-b2b-saas": "#8FB0FF",
+              "beispiel-kanzlei": "#1B3A4B"
+            },
+            "com.rsd.css": "--color-icon-accent"
+          }
+        },
+        "inverse": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/icon/inverse. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#FFF8F0",
+              "beispiel-b2b-saas": "#0B0F14",
+              "beispiel-kanzlei": "#FBFBFA"
+            },
+            "com.rsd.css": "--color-icon-inverse"
+          }
+        }
+      },
+      "overlay": {
+        "orb-mid": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/overlay/orb-mid. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#F6E4D0",
+              "beispiel-b2b-saas": "#152038",
+              "beispiel-kanzlei": "#EEF1F3"
+            },
+            "com.rsd.css": "--color-overlay-orb-mid"
+          }
+        },
+        "orb-outer": {
+          "$type": "color",
+          "$description": "Design-DNA override of Light Experience semantic token color/overlay/orb-outer. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "#E8D5BB",
+              "beispiel-b2b-saas": "#1A2740",
+              "beispiel-kanzlei": "#E7EBEE"
+            },
+            "com.rsd.css": "--color-overlay-orb-outer"
+          }
+        }
+      }
+    },
+    "space": {
+      "400": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/400. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "32px",
+            "beispiel-b2b-saas": "20px",
+            "beispiel-kanzlei": "32px"
+          },
+          "com.rsd.css": "--space-400"
+        }
+      },
+      "500": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/500. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "40px",
+            "beispiel-b2b-saas": "28px",
+            "beispiel-kanzlei": "48px"
+          },
+          "com.rsd.css": "--space-500"
+        }
+      },
+      "600": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/600. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "48px",
+            "beispiel-b2b-saas": "32px",
+            "beispiel-kanzlei": "56px"
+          },
+          "com.rsd.css": "--space-600"
+        }
+      },
+      "700": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/700. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "64px",
+            "beispiel-b2b-saas": "40px",
+            "beispiel-kanzlei": "72px"
+          },
+          "com.rsd.css": "--space-700"
+        }
+      },
+      "800": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/800. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "80px",
+            "beispiel-b2b-saas": "56px",
+            "beispiel-kanzlei": "96px"
+          },
+          "com.rsd.css": "--space-800"
+        }
+      },
+      "900": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token space/900. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "104px",
+            "beispiel-b2b-saas": "72px",
+            "beispiel-kanzlei": "120px"
+          },
+          "com.rsd.css": "--space-900"
+        }
+      }
+    },
+    "radius": {
+      "xs": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token radius/xs. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "10px",
+            "beispiel-b2b-saas": "2px",
+            "beispiel-kanzlei": "0px"
+          },
+          "com.rsd.css": "--radius-xs"
+        }
+      },
+      "sm": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token radius/sm. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "14px",
+            "beispiel-b2b-saas": "4px",
+            "beispiel-kanzlei": "2px"
+          },
+          "com.rsd.css": "--radius-sm"
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token radius/md. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "16px",
+            "beispiel-b2b-saas": "6px",
+            "beispiel-kanzlei": "4px"
+          },
+          "com.rsd.css": "--radius-md"
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token radius/lg. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "22px",
+            "beispiel-b2b-saas": "8px",
+            "beispiel-kanzlei": "6px"
+          },
+          "com.rsd.css": "--radius-lg"
+        }
+      },
+      "xl": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token radius/xl. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "28px",
+            "beispiel-b2b-saas": "10px",
+            "beispiel-kanzlei": "8px"
+          },
+          "com.rsd.css": "--radius-xl"
+        }
+      }
+    },
+    "type": {
+      "family": {
+        "sans": {
+          "$type": "fontFamily",
+          "$description": "Design-DNA override of Light Experience semantic token type/family/sans. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "Inter",
+              "beispiel-b2b-saas": "Space Grotesk",
+              "beispiel-kanzlei": "Newsreader"
+            },
+            "com.rsd.css": "--type-family-sans"
+          }
+        }
+      },
+      "size": {
+        "body": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/size/body. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "16px",
+              "beispiel-b2b-saas": "14px",
+              "beispiel-kanzlei": "18px"
+            },
+            "com.rsd.css": "--type-size-body"
+          }
+        },
+        "body-lg": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/size/body-lg. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "18px",
+              "beispiel-b2b-saas": "16px",
+              "beispiel-kanzlei": "20px"
+            },
+            "com.rsd.css": "--type-size-body-lg"
+          }
+        },
+        "h2": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/size/h2. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "40px",
+              "beispiel-b2b-saas": "36px",
+              "beispiel-kanzlei": "48px"
+            },
+            "com.rsd.css": "--type-size-h2"
+          }
+        },
+        "h1": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/size/h1. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "56px",
+              "beispiel-b2b-saas": "52px",
+              "beispiel-kanzlei": "72px"
+            },
+            "com.rsd.css": "--type-size-h1"
+          }
+        },
+        "statement": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/size/statement. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "40px",
+              "beispiel-b2b-saas": "36px",
+              "beispiel-kanzlei": "48px"
+            },
+            "com.rsd.css": "--type-size-statement"
+          }
+        }
+      },
+      "line-height": {
+        "body": {
+          "$type": "number",
+          "$description": "Design-DNA override of Light Experience semantic token type/line-height/body. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": 1.6,
+              "beispiel-b2b-saas": 1.5,
+              "beispiel-kanzlei": 1.7
+            },
+            "com.rsd.css": "--type-line-height-body"
+          }
+        }
+      },
+      "letter-spacing": {
+        "display": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/letter-spacing/display. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "-0.03em",
+              "beispiel-b2b-saas": "-0.05em",
+              "beispiel-kanzlei": "-0.02em"
+            },
+            "com.rsd.css": "--type-letter-spacing-display"
+          }
+        },
+        "heading": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token type/letter-spacing/heading. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "-0.025em",
+              "beispiel-b2b-saas": "-0.04em",
+              "beispiel-kanzlei": "-0.02em"
+            },
+            "com.rsd.css": "--type-letter-spacing-heading"
+          }
+        }
+      }
+    },
+    "motion": {
+      "duration": {
+        "fast": {
+          "$type": "duration",
+          "$description": "Design-DNA override of Light Experience semantic token motion/duration/fast. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "200ms",
+              "beispiel-b2b-saas": "80ms",
+              "beispiel-kanzlei": "240ms"
+            },
+            "com.rsd.css": "--motion-duration-fast"
+          }
+        },
+        "base": {
+          "$type": "duration",
+          "$description": "Design-DNA override of Light Experience semantic token motion/duration/base. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "480ms",
+              "beispiel-b2b-saas": "160ms",
+              "beispiel-kanzlei": "700ms"
+            },
+            "com.rsd.css": "--motion-duration-base"
+          }
+        },
+        "slow": {
+          "$type": "duration",
+          "$description": "Design-DNA override of Light Experience semantic token motion/duration/slow. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "700ms",
+              "beispiel-b2b-saas": "240ms",
+              "beispiel-kanzlei": "900ms"
+            },
+            "com.rsd.css": "--motion-duration-slow"
+          }
+        }
+      },
+      "easing": {
+        "standard": {
+          "$type": "cubicBezier",
+          "$description": "Design-DNA override of Light Experience semantic token motion/easing/standard. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": [
+                0.33,
+                1,
+                0.68,
+                1
+              ],
+              "beispiel-b2b-saas": [
+                0.2,
+                0,
+                0,
+                1
+              ],
+              "beispiel-kanzlei": [
+                0.45,
+                0.05,
+                0.55,
+                0.95
+              ]
+            },
+            "com.rsd.css": "--motion-easing-standard"
+          }
+        },
+        "entrance": {
+          "$type": "cubicBezier",
+          "$description": "Design-DNA override of Light Experience semantic token motion/easing/entrance. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": [
+                0.33,
+                1,
+                0.68,
+                1
+              ],
+              "beispiel-b2b-saas": [
+                0.05,
+                0.7,
+                0.1,
+                1
+              ],
+              "beispiel-kanzlei": [
+                0.45,
+                0.05,
+                0.55,
+                0.95
+              ]
+            },
+            "com.rsd.css": "--motion-easing-entrance"
+          }
+        }
+      }
+    },
+    "depth": {
+      "1": {
+        "y": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/1/y. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "8px",
+              "beispiel-b2b-saas": "10px",
+              "beispiel-kanzlei": "2px"
+            },
+            "com.rsd.css": "--depth-1-y"
+          }
+        },
+        "blur": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/1/blur. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "20px",
+              "beispiel-b2b-saas": "24px",
+              "beispiel-kanzlei": "8px"
+            },
+            "com.rsd.css": "--depth-1-blur"
+          }
+        }
+      },
+      "2": {
+        "y": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/2/y. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "14px",
+              "beispiel-b2b-saas": "16px",
+              "beispiel-kanzlei": "4px"
+            },
+            "com.rsd.css": "--depth-2-y"
+          }
+        },
+        "blur": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/2/blur. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "32px",
+              "beispiel-b2b-saas": "40px",
+              "beispiel-kanzlei": "12px"
+            },
+            "com.rsd.css": "--depth-2-blur"
+          }
+        }
+      },
+      "3": {
+        "y": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/3/y. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "20px",
+              "beispiel-b2b-saas": "24px",
+              "beispiel-kanzlei": "6px"
+            },
+            "com.rsd.css": "--depth-3-y"
+          }
+        },
+        "blur": {
+          "$type": "dimension",
+          "$description": "Design-DNA override of Light Experience semantic token depth/3/blur. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+          "$extensions": {
+            "com.rsd.modes": {
+              "beispiel-handwerk": "48px",
+              "beispiel-b2b-saas": "70px",
+              "beispiel-kanzlei": "16px"
+            },
+            "com.rsd.css": "--depth-3-blur"
+          }
+        }
+      }
+    },
+    "layout": {
+      "page-max": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token layout/page-max. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "1160px",
+            "beispiel-b2b-saas": "1280px",
+            "beispiel-kanzlei": "1040px"
+          },
+          "com.rsd.css": "--layout-page-max"
+        }
+      },
+      "gutter-desktop": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token layout/gutter-desktop. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "32px",
+            "beispiel-b2b-saas": "24px",
+            "beispiel-kanzlei": "40px"
+          },
+          "com.rsd.css": "--layout-gutter-desktop"
+        }
+      },
+      "header-desktop": {
+        "$type": "dimension",
+        "$description": "Design-DNA override of Light Experience semantic token layout/header-desktop. Unlisted system modes (light-cream, pure-white-silver, warm-graphite) inherit the base file. This file does not change primitives or component tokens.",
+        "$extensions": {
+          "com.rsd.modes": {
+            "beispiel-handwerk": "80px",
+            "beispiel-b2b-saas": "64px",
+            "beispiel-kanzlei": "88px"
+          },
+          "com.rsd.css": "--layout-header-desktop"
+        }
+      }
+    }
+  }
+}

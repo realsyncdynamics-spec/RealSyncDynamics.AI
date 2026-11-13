@@ -149,6 +149,16 @@
   white-space: nowrap;
 }
 
+.app-shell__button-primary {
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
 .app-shell__meta {
   font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-size: var(--type-size-label);

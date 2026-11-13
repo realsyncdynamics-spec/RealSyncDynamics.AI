@@ -6,16 +6,21 @@ import type { TenantRole } from '../billing/types';
 import type { PlanKey } from '@/shared/pricing';
 import type { TenantSummary } from './load-entitlements';
 
-/** Modi aus dem Design-Token-Set (semantic). Neutraler Basis-Modus ist light-cream. */
+/** Basis-Modi der Light Experience. Fixture-Vorschau nutzt die DNA-Beispiele. */
 export const THEME_MODES = ['light-cream', 'pure-white-silver', 'warm-graphite'] as const;
 export type ThemeModeId = (typeof THEME_MODES)[number];
 export const DEFAULT_THEME_MODE: ThemeModeId = 'light-cream';
+
+/** Beispiel-Themes, klar als Beispiel gekennzeichnet. Keine Kundenmarken. */
+export const FIXTURE_THEMES = ['beispiel-handwerk', 'beispiel-b2b-saas', 'beispiel-kanzlei'] as const;
+export type FixtureThemeId = (typeof FIXTURE_THEMES)[number];
+export type TenantThemeId = ThemeModeId | FixtureThemeId;
 
 export const FIXTURE_ACTIVE_KEY = 'realsync.fixtureTenantId';
 
 export interface FixtureTenant extends TenantSummary {
   plan: PlanKey;
-  themeId: ThemeModeId;
+  themeId: FixtureThemeId;
   featureFlags: Readonly<Record<string, boolean>>;
 }
 
@@ -31,33 +36,33 @@ const FLAGS_OFF = {
 
 export const FIXTURE_TENANTS: readonly FixtureTenant[] = [
   {
-    tenantId: 'fixture-lichtkante',
-    name: 'Fixture · Lichtkante',
+    tenantId: 'fixture-handwerk',
+    name: 'Beispiel · Handwerk',
     isPublicSector: false,
     industry: 'handwerk',
     role: 'owner' satisfies TenantRole,
     plan: 'starter',
-    themeId: 'light-cream',
+    themeId: 'beispiel-handwerk',
     featureFlags: { ...FLAGS_OFF, 'shell.api-console': true },
   },
   {
-    tenantId: 'fixture-silberweiss',
-    name: 'Fixture · Silberweiß',
+    tenantId: 'fixture-b2b-saas',
+    name: 'Beispiel · B2B-SaaS',
     isPublicSector: false,
-    industry: 'atelier',
+    industry: 'software',
     role: 'admin',
     plan: 'growth',
-    themeId: 'pure-white-silver',
+    themeId: 'beispiel-b2b-saas',
     featureFlags: { ...FLAGS_OFF, 'shell.terminal': true, 'shell.seo': true },
   },
   {
-    tenantId: 'fixture-warmgraphit',
-    name: 'Fixture · Warmgraphit',
+    tenantId: 'fixture-kanzlei',
+    name: 'Beispiel · Kanzlei',
     isPublicSector: false,
-    industry: 'werkstatt',
+    industry: 'kanzlei',
     role: 'viewer_auditor',
     plan: 'enterprise',
-    themeId: 'warm-graphite',
+    themeId: 'beispiel-kanzlei',
     featureFlags: { ...FLAGS_OFF, 'shell.print': true },
   },
 ];

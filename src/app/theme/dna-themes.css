@@ -1,0 +1,225 @@
+/* RealSync AI Website & Business Builder — Design-DNA
+ * Generated from /workspace/realsync-builder/dna-tokens.json
+ * Base: /workspace/rsd-light/tokens.json and tokens.css
+ * Use [data-theme="beispiel-handwerk" | "beispiel-b2b-saas" | "beispiel-kanzlei"]
+ * These blocks override Light Experience semantic custom properties only.
+ * Load tokens.css first, then this file. Unspecified properties inherit the active base theme (default light-cream).
+ * On the Figma Starter plan a collection has only 1 mode; these themes become real Figma Modes on the Professional plan.
+ * Example content only — no live customer brands.
+ */
+
+[data-theme="beispiel-handwerk"] {
+  --color-surface-default: #F3E6D4;
+  --color-surface-paper: #FFF8F0;
+  --color-surface-subtle: #E8D5BB;
+  --color-surface-muted: #EFE6D8;
+  --color-surface-metric: #FFF8F0;
+  --color-surface-tint: #F6E4D0;
+  --color-surface-inverse: #2A2118;
+  --color-surface-raised: #FFF8F0;
+  --color-text-primary: #2A2118;
+  --color-text-secondary: #5C4A3A;
+  --color-text-muted: #5A4E42;
+  --color-text-micro: #7A6A58;
+  --color-text-inverse: #FFF8F0;
+  --color-text-inverse-muted: #E8D5BB;
+  --color-text-accent: #8F3A14;
+  --color-text-brand-muted: #7A6A58;
+  --color-accent-primary: #A3471C;
+  --color-accent-primary-strong: #8F3A14;
+  --color-accent-kicker-on-inverse: #E8B89A;
+  --color-border-default: #E0C9A8;
+  --color-border-subtle: #E8D5BB;
+  --color-border-strong: #D4C0A8;
+  --color-border-panel: #E0D0B8;
+  --color-border-accent: #D4A07A;
+  --color-icon-default: #2A2118;
+  --color-icon-accent: #A3471C;
+  --color-icon-inverse: #FFF8F0;
+  --color-overlay-orb-mid: #F6E4D0;
+  --color-overlay-orb-outer: #E8D5BB;
+  --space-400: 32px;
+  --space-500: 40px;
+  --space-600: 48px;
+  --space-700: 64px;
+  --space-800: 80px;
+  --space-900: 104px;
+  --radius-xs: 10px;
+  --radius-sm: 14px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --type-size-body: 16px;
+  --type-size-body-lg: 18px;
+  --type-size-h2: 40px;
+  --type-size-h1: 56px;
+  --type-size-statement: 40px;
+  --type-line-height-body: 1.6;
+  --type-letter-spacing-display: -0.03em;
+  --type-letter-spacing-heading: -0.025em;
+  --type-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --motion-duration-fast: 200ms;
+  --motion-duration-base: 480ms;
+  --motion-duration-slow: 700ms;
+  --motion-easing-standard: cubic-bezier(0.33, 1, 0.68, 1);
+  --motion-easing-entrance: cubic-bezier(0.33, 1, 0.68, 1);
+  --depth-1-y: 8px;
+  --depth-1-blur: 20px;
+  --depth-2-y: 14px;
+  --depth-2-blur: 32px;
+  --depth-3-y: 20px;
+  --depth-3-blur: 48px;
+  --layout-page-max: 1160px;
+  --layout-gutter-desktop: 32px;
+  --layout-header-desktop: 80px;
+}
+
+[data-theme="beispiel-b2b-saas"] {
+  --color-surface-default: #0B0F14;
+  --color-surface-paper: #111822;
+  --color-surface-subtle: #111822;
+  --color-surface-muted: #161D2A;
+  --color-surface-metric: #161D2A;
+  --color-surface-tint: #152038;
+  --color-surface-inverse: #E8EEF6;
+  --color-surface-raised: #161D2A;
+  --color-text-primary: #E8EEF6;
+  --color-text-secondary: #9AA8BC;
+  --color-text-muted: #8A98AB;
+  --color-text-micro: #7A8799;
+  --color-text-inverse: #0B0F14;
+  --color-text-inverse-muted: #5A6A7A;
+  --color-text-accent: #8FB0FF;
+  --color-text-brand-muted: #8A98AB;
+  --color-accent-primary: #3D7BFF;
+  --color-accent-primary-strong: #1E56D0;
+  --color-accent-kicker-on-inverse: #8FB0FF;
+  --color-border-default: #2A3545;
+  --color-border-subtle: #1C2430;
+  --color-border-strong: #3A4658;
+  --color-border-panel: #2A3545;
+  --color-border-accent: #3D7BFF;
+  --color-icon-default: #E8EEF6;
+  --color-icon-accent: #8FB0FF;
+  --color-icon-inverse: #0B0F14;
+  --color-overlay-orb-mid: #152038;
+  --color-overlay-orb-outer: #1A2740;
+  --space-400: 20px;
+  --space-500: 28px;
+  --space-600: 32px;
+  --space-700: 40px;
+  --space-800: 56px;
+  --space-900: 72px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --type-size-body: 14px;
+  --type-size-body-lg: 16px;
+  --type-size-h2: 36px;
+  --type-size-h1: 52px;
+  --type-size-statement: 36px;
+  --type-line-height-body: 1.5;
+  --type-letter-spacing-display: -0.05em;
+  --type-letter-spacing-heading: -0.04em;
+  --type-family-sans: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+  --motion-duration-fast: 80ms;
+  --motion-duration-base: 160ms;
+  --motion-duration-slow: 240ms;
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-easing-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --depth-1-y: 10px;
+  --depth-1-blur: 24px;
+  --depth-2-y: 16px;
+  --depth-2-blur: 40px;
+  --depth-3-y: 24px;
+  --depth-3-blur: 70px;
+  --layout-page-max: 1280px;
+  --layout-gutter-desktop: 24px;
+  --layout-header-desktop: 64px;
+}
+
+[data-theme="beispiel-kanzlei"] {
+  --color-surface-default: #FBFBFA;
+  --color-surface-paper: #FFFFFF;
+  --color-surface-subtle: #F3F3F1;
+  --color-surface-muted: #F3F3F1;
+  --color-surface-metric: #FFFFFF;
+  --color-surface-tint: #EEF1F3;
+  --color-surface-inverse: #1B3A4B;
+  --color-surface-raised: #FFFFFF;
+  --color-text-primary: #111111;
+  --color-text-secondary: #5A5A56;
+  --color-text-muted: #5A5A56;
+  --color-text-micro: #8A8A84;
+  --color-text-inverse: #FBFBFA;
+  --color-text-inverse-muted: #C8D0D4;
+  --color-text-accent: #1B3A4B;
+  --color-text-brand-muted: #6A6A66;
+  --color-accent-primary: #1B3A4B;
+  --color-accent-primary-strong: #122832;
+  --color-accent-kicker-on-inverse: #9DB6C4;
+  --color-border-default: #E2E2DC;
+  --color-border-subtle: #EDEDE8;
+  --color-border-strong: #D4D4CC;
+  --color-border-panel: #E4E4DE;
+  --color-border-accent: #1B3A4B;
+  --color-icon-default: #111111;
+  --color-icon-accent: #1B3A4B;
+  --color-icon-inverse: #FBFBFA;
+  --color-overlay-orb-mid: #EEF1F3;
+  --color-overlay-orb-outer: #E7EBEE;
+  --space-400: 32px;
+  --space-500: 48px;
+  --space-600: 56px;
+  --space-700: 72px;
+  --space-800: 96px;
+  --space-900: 120px;
+  --radius-xs: 0px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --type-size-body: 18px;
+  --type-size-body-lg: 20px;
+  --type-size-h2: 48px;
+  --type-size-h1: 72px;
+  --type-size-statement: 48px;
+  --type-line-height-body: 1.7;
+  --type-letter-spacing-display: -0.02em;
+  --type-letter-spacing-heading: -0.02em;
+  --type-family-sans: Newsreader, "Source Serif 4", Georgia, "Times New Roman", serif;
+  --motion-duration-fast: 240ms;
+  --motion-duration-base: 700ms;
+  --motion-duration-slow: 900ms;
+  --motion-easing-standard: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --motion-easing-entrance: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --depth-1-y: 2px;
+  --depth-1-blur: 8px;
+  --depth-2-y: 4px;
+  --depth-2-blur: 12px;
+  --depth-3-y: 6px;
+  --depth-3-blur: 16px;
+  --layout-page-max: 1040px;
+  --layout-gutter-desktop: 40px;
+  --layout-header-desktop: 88px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="beispiel-handwerk"] {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+  [data-theme="beispiel-b2b-saas"] {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+  [data-theme="beispiel-kanzlei"] {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+}

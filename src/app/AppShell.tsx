@@ -8,7 +8,11 @@ import { useTenant } from '../core/access/TenantProvider';
 import { SupabaseAuthContext } from '../features/supabase/SupabaseAuthContext';
 import { areaById, type AppAreaId } from './areas';
 import { navigationModel } from './registry';
+import { useTenantTheme } from './theme/ThemeProvider';
+import { PRIMARY_BUTTON } from './theme/buttonVariants';
 import './shell.css';
+import './theme/tokens.shell.css';
+import './theme/dna-themes.shell.css';
 
 export function AppShell({
   areaId,
@@ -20,6 +24,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const tenant = useTenant();
+  const theme = useTenantTheme();
   const auth = useContext(SupabaseAuthContext);
   const nav = navigationModel();
   const area = areaById(areaId);
@@ -27,7 +32,7 @@ export function AppShell({
   const title = areaId === 'dashboard' ? 'Governance Control Room' : area.label;
 
   return (
-    <div className="app-shell" data-theme={tenant.themeId} data-testid="app-shell">
+    <div className="app-shell" data-theme={theme.mode} style={theme.style} data-testid="app-shell">
       <aside className="app-shell__sidebar">
         <div className="app-shell__brand">
           <img src="/brand/logo-square-400.svg" alt="" width={34} height={34} />
@@ -80,6 +85,13 @@ export function AppShell({
             {tenant.fixturePreview && (
               <p className="app-shell__concept" data-testid="concept-mark">UI-Konzept · Beispieldaten</p>
             )}
+            <button
+              type="button"
+              className="app-shell__button-primary"
+              style={{ background: `var(${PRIMARY_BUTTON.backgroundVar})`, color: `var(${PRIMARY_BUTTON.labelVar})` }}
+            >
+              Primär
+            </button>
           </div>
         </header>
         <div className="app-shell__content" data-slot="content">

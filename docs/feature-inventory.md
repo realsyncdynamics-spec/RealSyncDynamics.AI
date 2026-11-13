@@ -126,13 +126,17 @@ sichtbaren Modul `/app/bulk` und bleibt ohne zweiten Menüpunkt.
 | #2173 | Login-Callback `/welcome` | `Welcome.tsx`, `LoginPage.tsx`, `authResumeTarget.ts` |
 | #2191, #2189, #2208, #2204 | Landing v8/v9 und `/` | `src/App.tsx`, Landing-Seiten |
 | #2210 | Widget-Registry (Draft, inkl. Migration) | Command Center, `supabase/migrations/…dashboard_layouts.sql` |
-| #2195 | Governance-Arbeitslisten im Command Center (Draft) | `CommandCenterDashboard.tsx`, `GovernanceDashboardView.tsx`, `src/App.tsx` |
+| #2195 | Governance-Arbeitslisten im Command Center (Draft) | Dashboard-Dateien und `src/App.tsx` unangetastet. Überlapp nur `test/config/terminology-baseline.json` |
+| #2212 | Creative Studio (Draft, Flag, Platzhalter für KI und Publishing) | Modul nicht übernommen. Überlapp: `governanceModules.ts`, `shellNavGroups.ts`, `commandCenterCatalog.test.ts`. Dazu bei #2212: `src/App.tsx` und Migration `social_designs` |
+
+#2212 hängt `creative-studio` an dieselbe Shell-Liste (Gruppe Start). Dieser PR fasst das Modul nicht an. Die Hunks liegen an anderen Stellen der beiden Dateien. Merge-Hygiene will den älteren PR zuerst, danach `npm run sync:main` auf diesem Branch.
 
 #2205 führt ein neues Register ein. Dieser PR hängt die Flächen an die
 bestehende Shell-Liste. Nach einem Merge von #2205 die neuen IDs dort
 nachziehen, nicht eine dritte Liste anlegen.
 
-Empfohlene Reihenfolge, wenn die PRs zusammenkommen: dieser PR (keine
-`App.tsx`-Änderung), dann #2177 und #2173, dann #2198, dann genau eine
-Landing-Fassung, dann #2171, dann #2205, zuletzt #2195 und #2210.
-#2163 vor #2164, weil beide `companyProducts.ts` ändern.
+Empfohlene Reihenfolge, wenn die PRs zusammenkommen: #2212 und #2195
+zuerst (dieselben Dateien, ältere PRs), danach `npm run sync:main` auf
+diesem Branch. Dann #2177 und #2173, #2198, genau eine Landing-Fassung,
+#2163 vor #2164, #2171, #2205, zuletzt #2210. Creative Studio bleibt hinter
+seinem Flag und wird hier nicht sichtbar gemacht.

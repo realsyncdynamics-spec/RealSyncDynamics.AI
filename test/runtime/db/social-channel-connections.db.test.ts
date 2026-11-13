@@ -38,23 +38,35 @@ d('social_channel_connections', () => {
     const priv = await ctx!.client.query<{
       auth_secret: boolean;
       auth_name: boolean;
+      auth_scopes: boolean;
+      auth_error: boolean;
+      auth_actor: boolean;
       auth_insert: boolean;
       anon_select: boolean;
       service_secret: boolean;
+      service_error: boolean;
     }>(
       `SELECT
          has_column_privilege('authenticated', 'public.social_channel_connections', 'credentials_enc', 'SELECT') AS auth_secret,
          has_column_privilege('authenticated', 'public.social_channel_connections', 'account_name', 'SELECT') AS auth_name,
+         has_column_privilege('authenticated', 'public.social_channel_connections', 'scopes', 'SELECT') AS auth_scopes,
+         has_column_privilege('authenticated', 'public.social_channel_connections', 'last_error', 'SELECT') AS auth_error,
+         has_column_privilege('authenticated', 'public.social_channel_connections', 'created_by', 'SELECT') AS auth_actor,
          has_table_privilege('authenticated', 'public.social_channel_connections', 'INSERT') AS auth_insert,
          has_table_privilege('anon', 'public.social_channel_connections', 'SELECT') AS anon_select,
-         has_column_privilege('service_role', 'public.social_channel_connections', 'credentials_enc', 'SELECT') AS service_secret`,
+         has_column_privilege('service_role', 'public.social_channel_connections', 'credentials_enc', 'SELECT') AS service_secret,
+         has_column_privilege('service_role', 'public.social_channel_connections', 'last_error', 'SELECT') AS service_error`,
     );
     expect(priv.rows[0]).toEqual({
       auth_secret: false,
       auth_name: true,
+      auth_scopes: false,
+      auth_error: false,
+      auth_actor: false,
       auth_insert: false,
       anon_select: false,
       service_secret: true,
+      service_error: true,
     });
   });
 

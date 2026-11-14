@@ -499,7 +499,13 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
    */
   async function govern(p: Principal, route: string, op: string, request: AiGatewayRequest): Promise<Governed | Response> {
     const startedAt = now();
+    // Codex P2 (:492): Die erzeugte ID muss auch im Request stehen, VOR der
+    // Evidence-Reservierung. Sonst erzeugen Router bzw. Adapter fuer denselben
+    // Aufruf eine zweite ID, die Antwort traegt diese — und eine vom Nutzer
+    // gemeldete Antwort-ID laesst sich nicht mehr mit ihrem Pruefpfad
+    // verknuepfen. Der governance-router macht es genauso (index.ts: 380/381).
     const requestId = request.trace_id ?? newId();
+    request.trace_id = requestId;
     const target = providerTarget(request.model_profile);
     const planned = resolveResidencyAndRegion(target.provider, undefined, undefined, target.localRegion);
 

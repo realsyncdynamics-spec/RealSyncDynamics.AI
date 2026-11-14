@@ -9,6 +9,7 @@
 // Alle Befund-Codes sind stabil und dürfen nie umbenannt werden — sie sind
 // Fremdschlüssel in `governance_controls` und in Kundenberichten.
 
+import { activeDnaVersion } from '../blueprint/dna.ts';
 import type { RuntimeFinding, SiteBlock, SiteBlueprint } from '../types.ts';
 import { contrastRatio } from '../render/theme.ts';
 
@@ -212,24 +213,94 @@ const MIN_CONTRAST_BODY = 4.5;
  * Deshalb wird hier `contrastRatio()` direkt genutzt und nur gemeldet, wenn
  * ein Wert vorliegt UND er zu niedrig ist.
  */
-function checkContrast(bp: SiteBlueprint): RuntimeFinding[] {
-  const pairs: { fg: string; bg: string; label: string; locator: string }[] = [
-    { fg: bp.theme.foreground, bg: bp.theme.surface, label: 'Fließtext auf Hintergrund', locator: 'theme.foreground/surface' },
-    { fg: bp.theme.accent, bg: bp.theme.surface, label: 'Links und Bedienelemente auf Hintergrund', locator: 'theme.accent/surface' },
-  ];
+interface ContrastPair {
+  fg: string;
+  bg: string;
+  label: string;
+  locator: string;
+  minimum: number;
+  reference: string;
+}
 
+/**
+ * Ohne aktive DNA bleiben die zwei Paare des SiteTheme, inklusive Akzent
+ * als Linkfarbe. Mit aktiver DNA prüft der Analysator die gerenderten
+ * Textpaare. Der Akzent ist dann keine Textfarbe.
+ */
+function contrastPairs(bp: SiteBlueprint): ContrastPair[] {
+  const version = activeDnaVersion(bp.dna);
+  const text = version?.overlay['color/text/primary'];
+  const surface = version?.overlay['color/surface/default'];
+  if (!version || !text || !surface) {
+    return [
+      {
+        fg: bp.theme.foreground,
+        bg: bp.theme.surface,
+        label: 'Fließtext auf Hintergrund',
+        locator: 'theme.foreground/surface',
+        minimum: MIN_CONTRAST_BODY,
+        reference: 'WCAG 2.2 — 1.4.3 (AA)',
+      },
+      {
+        fg: bp.theme.accent,
+        bg: bp.theme.surface,
+        label: 'Links und Bedienelemente auf Hintergrund',
+        locator: 'theme.accent/surface',
+        minimum: MIN_CONTRAST_BODY,
+        reference: 'WCAG 2.2 — 1.4.3 (AA)',
+      },
+    ];
+  }
+
+  const pairs: ContrastPair[] = [
+    {
+      fg: text,
+      bg: surface,
+      label: 'Fließtext auf Fläche',
+      locator: 'dna.color/text/primary/surface',
+      minimum: MIN_CONTRAST_BODY,
+      reference: 'WCAG 2.2 — 1.4.3 (AA)',
+    },
+  ];
+  const inverse = version.overlay['color/text/inverse'];
+  const inverseSurface = version.overlay['color/surface/inverse'];
+  if (inverse && inverseSurface) {
+    pairs.push({
+      fg: inverse,
+      bg: inverseSurface,
+      label: 'Inverse Schrift auf inverser Fläche',
+      locator: 'dna.color/text/inverse/surface',
+      minimum: MIN_CONTRAST_BODY,
+      reference: 'WCAG 2.2 — 1.4.3 (AA)',
+    });
+  }
+  const focus = version.overlay['color/border/focus'];
+  if (focus) {
+    pairs.push({
+      fg: focus,
+      bg: surface,
+      label: 'Fokusrand auf Fläche',
+      locator: 'dna.color/border/focus/surface',
+      minimum: 3,
+      reference: 'WCAG 2.2 — 1.4.11 (AA)',
+    });
+  }
+  return pairs;
+}
+
+function checkContrast(bp: SiteBlueprint): RuntimeFinding[] {
   const findings: RuntimeFinding[] = [];
-  for (const pair of pairs) {
+  for (const pair of contrastPairs(bp)) {
     const ratio = contrastRatio(pair.fg, pair.bg);
-    if (ratio === null || ratio >= MIN_CONTRAST_BODY) continue;
+    if (ratio === null || ratio >= pair.minimum) continue;
 
     findings.push({
       code: 'accessibility.insufficient-contrast',
       dimension: 'accessibility',
       severity: 'high',
       title: `Zu geringer Kontrast: ${pair.label} (${ratio.toFixed(2)}:1)`,
-      reference: 'WCAG 2.2 — 1.4.3 (AA)',
-      remediation: `Farben so anpassen, dass mindestens ${MIN_CONTRAST_BODY}:1 erreicht wird (${pair.fg} auf ${pair.bg}).`,
+      reference: pair.reference,
+      remediation: `Farben so anpassen, dass mindestens ${pair.minimum}:1 erreicht wird (${pair.fg} auf ${pair.bg}).`,
       locator: pair.locator,
     });
   }

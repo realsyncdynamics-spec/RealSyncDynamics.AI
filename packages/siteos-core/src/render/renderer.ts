@@ -25,6 +25,7 @@
 
 import type { SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import { attr, escapeHtml, jsonLdPayload, safeUrl } from './escape.ts';
+import { renderDnaOverlayCss, renderDnaPresentationCss } from './dna-adapter.ts';
 import { renderThemeCss } from './theme.ts';
 import { renderPresentationCss, type PresentationLevel } from './presentation.ts';
 
@@ -85,12 +86,14 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
     // Inline statt externer Datei: das Stylesheet ist klein, und ein
     // eigener Request würde die erste Darstellung verzögern. Die Werte
     // sind in theme.ts geprüft, nicht escaped — CSS kennt kein Escaping.
-    `<style>${renderThemeCss(blueprint.theme)}</style>`,
+    // Ohne `blueprint.dna` sind beide Zusätze leer. Der Style-Block bleibt
+    // dann byte-gleich zum bisherigen Theme-CSS.
+    `<style>${renderThemeCss(blueprint.theme)}${renderDnaOverlayCss(blueprint.dna)}</style>`,
     // Die Layoutschicht folgt dem Kern-Stylesheet und überschreibt dessen
     // Grundregeln — nie umgekehrt. Sonst gewänne die Optik gegen die
     // Lesbarkeits- und Fokusregeln, die geprüft werden.
     options.presentation === 'showcase'
-      ? `<style>${renderPresentationCss(blueprint.theme)}</style>`
+      ? `<style>${renderPresentationCss(blueprint.theme)}${renderDnaPresentationCss(blueprint.dna)}</style>`
       : '',
     '</head>',
     '<body>',

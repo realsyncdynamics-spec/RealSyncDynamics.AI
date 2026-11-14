@@ -220,7 +220,11 @@ async function probeLocalOmniRoute({ port, combo }) {
     method: 'POST',
     redirect: 'error',
     signal: AbortSignal.timeout(10_000),
-    headers: { authorization: 'Bearer '+key, 'content-type': 'application/json' },
+    headers: {
+      authorization: 'Bearer '+key,
+      'content-type': 'application/json',
+      'X-OmniRoute-No-Cache': 'true',
+    },
     body: JSON.stringify({
       model: combo,
       messages: [

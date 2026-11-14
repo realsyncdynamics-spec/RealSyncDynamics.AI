@@ -68,6 +68,9 @@ export function AuditCopilotPanel({ issue, domain, auditId, open, onClose }: Aud
   const [phase, setPhase] = useState<Phase>('idle');
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [history, setHistory] = useState<SimpleMsg[]>([]);
+  const historyKey = auditId && issue.id
+    ? `rsd.audit-copilot:${auditId}:${issue.id}`
+    : null;
   const [input, setInput] = useState('');
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -136,6 +139,13 @@ export function AuditCopilotPanel({ issue, domain, auditId, open, onClose }: Aud
       }
       if (result.kind === 'ok') {
         setHistory(result.data.history);
+        if (historyKey) {
+          try {
+            sessionStorage.setItem(historyKey, JSON.stringify(result.data.history.slice(-12)));
+          } catch {
+            // The chat remains usable without storage.
+          }
+        }
         setBubbles((prev) =>
           prev.filter((b) => b.id !== 'loading').concat({
             id: crypto.randomUUID(),
@@ -162,8 +172,25 @@ export function AuditCopilotPanel({ issue, domain, auditId, open, onClose }: Aud
       );
       setPhase('error');
     },
-    [auditId, history, issue.title, turnstileToken],
+    [auditId, history, historyKey, issue.title, turnstileToken],
   );
+
+  useEffect(() => {
+    if (!open || !historyKey) return;
+    try {
+      const saved: unknown = JSON.parse(sessionStorage.getItem(historyKey) ?? 'null');
+      if (!Array.isArray(saved)) return;
+      const messages = saved.filter((message): message is SimpleMsg =>
+        message != null && (message.role === 'user' || message.role === 'assistant')
+        && typeof message.content === 'string').slice(-12);
+      if (messages.length === 0) return;
+      setHistory(messages);
+      setBubbles(messages.map((message, index) => ({ ...message, id: `saved-${index}` })));
+      setPhase('ready');
+    } catch {
+      // Storage may be unavailable in private browsing.
+    }
+  }, [historyKey, open]);
 
   // Start the explanation only after the first Turnstile token is ready.
   useEffect(() => {

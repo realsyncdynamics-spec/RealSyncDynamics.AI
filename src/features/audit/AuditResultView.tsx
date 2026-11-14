@@ -4,6 +4,7 @@ import {
   ArrowLeft, AlertTriangle, FileText, Loader2, ShieldCheck, ArrowRight,
   Linkedin, Share2, Globe, Clock, Copy, Check, Zap,
 } from 'lucide-react';
+import { AuditCopilotPanel } from '../../components/audit/AuditCopilotPanel';
 import { AgentWidget } from '../governance/AgentWidget/AgentWidget';
 import type { ScanFinding } from '../../core/onboarding/types';
 import {
@@ -167,6 +168,7 @@ export function AuditResultView({
   findings = [], loading = false, error = null,
 }: AuditResultViewProps) {
   const navigate = useNavigate();
+  const [explainIssue, setExplainIssue] = useState<AuditResultFinding | null>(null);
 
   const grouped = useMemo(() => {
     const g: Record<AuditResultFinding['severity'], AuditResultFinding[]> = {
@@ -266,7 +268,7 @@ export function AuditResultView({
               {findings.length === 0 ? (
                 <EmptyFindings hasScore={typeof score === 'number'} />
               ) : (
-                <FindingsBySeverity grouped={grouped} />
+                <FindingsBySeverity grouped={grouped} onExplain={setExplainIssue} />
               )}
 
               {findings.length > 0 && <ActionPlanSection findings={findings} />}
@@ -288,6 +290,10 @@ export function AuditResultView({
           <AgentWidget mode="audit_copilot" auditId={auditId} />
         </aside>
       </main>
+      {domain && explainIssue && explainIssue.severity !== "pass" && (
+        <AuditCopilotPanel key={`${auditId}:${explainIssue.id}`} issue={{ ...explainIssue, severity: explainIssue.severity, detail: explainIssue.detail ?? '' }} domain={domain}
+          auditId={auditId} open onClose={() => setExplainIssue(null)} />
+      )}
     </div>
   );
 }
@@ -416,8 +422,9 @@ function PlainLanguageBlock({ counts }: { counts: Record<AuditResultFinding['sev
 }
 
 function FindingsBySeverity({
-  grouped,
+  grouped, onExplain,
 }: {
+  onExplain: (finding: AuditResultFinding) => void;
   grouped: Record<AuditResultFinding['severity'], AuditResultFinding[]>;
 }) {
   return (
@@ -433,7 +440,7 @@ function FindingsBySeverity({
             </h2>
           </div>
           <ul className="space-y-2">
-            {grouped[sev].map((f) => <BusinessFindingCard key={f.id} finding={f} />)}
+            {grouped[sev].map((f) => <BusinessFindingCard key={f.id} finding={f} onExplain={onExplain} />)}
           </ul>
         </section>
       ))}
@@ -441,11 +448,16 @@ function FindingsBySeverity({
   );
 }
 
-function BusinessFindingCard({ finding }: { finding: AuditResultFinding }) {
+function BusinessFindingCard({ finding, onExplain }: { finding: AuditResultFinding; onExplain: (finding: AuditResultFinding) => void }) {
   const biz = SEVERITY_BUSINESS[finding.severity];
   return (
     <li className="border border-titanium-800 bg-obsidian-900 p-3 sm:p-4">
       <p className="font-display text-sm font-semibold text-titanium-50">{finding.title}</p>
+      {finding.severity !== "pass" && (
+        <button type="button" className="min-h-11 text-sm underline" onClick={() => onExplain(finding)}>
+          Befund erklären lassen
+        </button>
+      )}
 
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
         <BizCell label="Risiko" value={biz.risk} sev={finding.severity} />

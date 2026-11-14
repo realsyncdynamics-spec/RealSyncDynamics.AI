@@ -179,6 +179,9 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'sub-processor-notify',
   'website-maintenance-daily-cron',
   'email-auth-rescan',
+  'governance-deadline-monitor',
+  'governance-score-calculator',
+  'automation-trigger-trial-webhook',
 
   // Enterprise AI OS public surfaces.
   'enterprise-ai-os-discovery-intake',

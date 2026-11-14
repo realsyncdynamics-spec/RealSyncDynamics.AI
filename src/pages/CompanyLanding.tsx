@@ -96,8 +96,8 @@ const GOS_FEATURES = [
     ),
   },
   {
-    t: 'Hosting in Europa',
-    p: 'Datenbank und Nachweise liegen in der EU.',
+    t: 'Datenbank in der EU',
+    p: 'Datenbank und Nachweise liegen in der EU (Supabase, Frankfurt am Main).',
     i: svg(
       <>
         <circle cx="12" cy="12" r="10" />
@@ -317,7 +317,7 @@ export function CompanyLanding() {
             <b>GOVERNANCE OS {governance.statusLabel}</b>
           </span>
           <span>VOICE AGENT · {voice.statusLabel}</span>
-          <span>HOSTING IN DER EU · DSGVO · EU AI ACT</span>
+          <span>DATENBANK IN DER EU · DSGVO · EU AI ACT</span>
         </div>
         <header id="top" ref={headerRef}>
           <div className="hin">
@@ -355,7 +355,7 @@ export function CompanyLanding() {
 
         <div className="heroWrap dark">
           <main className="hero">
-            <p className="kick">Für den Mittelstand · Made in Thüringen · Hosting in Europa</p>
+            <p className="kick">Für den Mittelstand · Made in Thüringen · Datenbank in Frankfurt</p>
             <h1>
               RealSync Dynamics <em>&amp; AI</em>
             </h1>
@@ -456,7 +456,7 @@ export function CompanyLanding() {
               </div>
               <div>
                 <b>EU</b>
-                <span>Hosting in Europa</span>
+                <span>Datenbank in Frankfurt</span>
               </div>
             </div>
           </div>

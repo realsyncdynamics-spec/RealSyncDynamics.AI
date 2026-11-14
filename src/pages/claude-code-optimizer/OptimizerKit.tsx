@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bot, Info, MousePointerClick, Check } from 'lucide-react';
@@ -305,7 +306,7 @@ function canonicalPrice(planKey: TierId): string {
   // Vertragspläne (`priceOnRequest`) behandelt `tierPriceLabel` — hier nur
   // zu prüfen, ob `priceEur === 0` ist, druckte für Enterprise `1.249 €/Mo.`.
   if (tier.priceEur === 0 && !tier.priceOnRequest) return planKey === 'free' ? '0 €' : 'individuell';
-  if (!tier.priceOnRequest && tier.plan.netPriceLabel) return monthlyPriceText(tier.plan);
+  if (!tier.priceOnRequest && showsNetPriceLabel(tier.plan)) return monthlyPriceText(tier.plan);
   return tierPriceLabel(tier, ' €/Mo.');
 }
 

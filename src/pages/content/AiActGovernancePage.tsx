@@ -6,7 +6,7 @@ export function AiActGovernancePage() {
       eyebrow="AI Act Governance"
       title="EU AI Act Governance ohne Excel."
       description="Technische Umsetzung der EU-AI-Act-Pflichten: Risikoklassifizierung nach Annex III, Obligation-Engine, Annex-IV-Generator, Post-Market-Monitoring."
-      intro="Der EU AI Act ist seit dem 1. August 2024 in Kraft und gilt gestaffelt: Verbote und KI-Kompetenzpflicht seit Februar 2025, GPAI-Pflichten seit August 2025, die übrigen Vorschriften seit dem 2. August 2026. Die zentralen Hochrisiko-Pflichten gelten nach der Verschiebung durch Verordnung (EU) 2026/1744 ab dem 2. Dezember 2027 (Anhang III) bzw. 2. August 2028 (Anhang I). Für Anbieter und Betreiber von Hochrisiko-KI-Systemen entstehen konkrete technische Pflichten — Risikomanagement (Art. 9), Datenqualität (Art. 10), technische Dokumentation (Art. 11), Logging (Art. 12), Transparenz (Art. 13), Human Oversight (Art. 14), Robustheit (Art. 15). Dieser Hub beschreibt, wie RealSyncDynamics.AI diese Pflichten als laufende Governance-Runtime abbildet — nicht als jährlichen Word-Export."
+      intro="Der EU AI Act ist seit dem 1. August 2024 in Kraft und seit dem 2. August 2026 allgemein anwendbar. Die zentralen Hochrisiko-Pflichten nach Anhang III gelten ab dem 2. Dezember 2027, nach Anhang I ab dem 2. August 2028 (Art. 113 in der Fassung der Verordnung (EU) 2026/1744). Für Anbieter und Betreiber von Hochrisiko-KI-Systemen entstehen konkrete technische Pflichten — Risikomanagement (Art. 9), Datenqualität (Art. 10), technische Dokumentation (Art. 11), Logging (Art. 12), Transparenz (Art. 13), Human Oversight (Art. 14), Robustheit (Art. 15). Dieser Hub erläutert das technische Governance-Konzept; der tatsächliche Funktionsstatus ist unter /roadmap dokumentiert."
       related={[
         { to: '/agent-governance', label: 'Agent Governance →' },
         { to: '/evidence-vault', label: 'Evidence Vault →' },
@@ -16,19 +16,16 @@ export function AiActGovernancePage() {
     >
       <H2>Klassifizierung statt Vermutung</H2>
       <P>
-        Der Kern der AI-Act-Compliance ist nicht der Output — es ist die Frage: <em>welche Risikoklasse hat
-        dieser Usecase?</em> Annex III listet acht Bereiche: Biometrik, kritische Infrastruktur,
-        Bildung, Beschäftigung, essentielle private und öffentliche Dienste, Strafverfolgung,
-        Migration und Justizverwaltung. Ein System aus diesen Bereichen gilt grundsätzlich als
-        hochriskant, aber nicht automatisch: Nach Art. 6 Abs. 3 ist es keines, wenn es kein
-        erhebliches Risiko für Gesundheit, Sicherheit oder Grundrechte birgt, etwa weil es nur eine
-        eng begrenzte Verfahrensaufgabe erfüllt oder eine menschliche Entscheidung lediglich
-        vorbereitet. Diese Ausnahme greift nie bei Profiling natürlicher Personen und muss vom
-        Anbieter dokumentiert werden (Art. 6 Abs. 4). Ein Recruiting-Tool mit automatischem
-        Screening fällt typischerweise unter Annex III Nr. 4 lit. a.
+        Entscheidend ist die konkrete Zweckbestimmung des KI-Systems. Anhang III nennt acht
+        Anwendungsbereiche, darunter Biometrik, Bildung und Beschäftigung. Die Einstufung als
+        Hochrisiko-KI folgt aus Art. 6 Abs. 2 in Verbindung mit Anhang III; Art. 6 Abs. 3
+        sieht eng begrenzte Ausnahmen vor, die dokumentiert werden müssen. Systeme, die
+        ein Profiling natürlicher Personen durchführen, bleiben im Anhang-III-Kontext
+        stets hochriskant. Auch für KI in regulierten Produkten nach Anhang I gelten
+        gesonderte Voraussetzungen gemäß Art. 6 Abs. 1.
       </P>
       <P>
-        Der AI-Risk-Classifier in RealSyncDynamics.AI ist deterministisch: Annex I und III sind als
+        Das technische Konzept für den AI-Risk-Classifier in RealSyncDynamics.AI ist regelbasiert: Annex I und III sind als
         Entscheidungsbaum kodiert. Ein KI-Usecase wird über sieben Felder beschrieben (Purpose,
         Domain, Model-Kind, Decision-Autonomy, Affected-Subjects, Training-Data-PII, Geo-Scope), und
         die Klasse fällt eindeutig. Bei Edge-Cases (Confidence unter 0.95) wird eine LLM-Review
@@ -59,24 +56,19 @@ export function AiActGovernancePage() {
       <H2>Post-Market-Monitoring</H2>
       <P>
         Der AI Act verlangt nicht nur eine Inbetriebnahme-Konformitäts­erklärung — er verlangt
-        laufendes Monitoring. Zwei Detektoren laufen kontinuierlich gegen den Telemetrie-Stream:
+        laufendes Monitoring. Als technische Bausteine sind folgende Detektoren vorgesehen; ihr Produktivstatus ist der Roadmap zu entnehmen:
       </P>
       <UL>
         <li><strong>Drift-Detector</strong> — vergleicht die rollende 7-Tage-Verteilung von Inputs/Outputs gegen eine Release-Baseline. KS-Test plus Population Stability Index. Bei <code>PSI &gt; 0.25</code> wird <code>model.drift.detected</code> emittiert.</li>
         <li><strong>Performance-Regression-Detector</strong> — vergleicht die aktuelle Accuracy auf Canary-Inputs gegen die Release-Zeit-Accuracy.</li>
       </UL>
       <P>
-        Status: Die beiden Detektoren und ein automatischer Vorfall-Workflow sind derzeit nicht als
-        Live-Funktion im Statuskatalog geführt. Diese Seite beschreibt das Zielbild, keine
-        zugesicherte Leistung.
-      </P>
-      <P>
-        Rechtlich gilt: Schwerwiegende Vorfälle mit Hochrisiko-KI meldet der Anbieter nach
-        Art. 73 an die Marktüberwachungsbehörde, unverzüglich und spätestens 15 Tage nach
-        Kenntnis. Bei weitverbreiteten Verstößen oder schweren Störungen kritischer Infrastruktur
-        gilt eine Frist von 2 Tagen, bei Todesfällen von 10 Tagen. Betreiber informieren den
-        Anbieter (Art. 26 Abs. 5). Sind personenbezogene Daten betroffen, läuft daneben die
-        72-Stunden-Frist nach Art. 33 DSGVO.
+        Auffälligkeiten wie Model-Drift sind nicht automatisch ein meldepflichtiger
+        schwerwiegender Vorfall. Für solche Vorfälle regelt Art. 73 AI Act
+        differenzierte Meldefristen (grundsätzlich spätestens 15 Tage, in bestimmten
+        Fällen 2 bzw. 10 Tage). Die 72-Stunden-Frist nach Art. 33 DSGVO betrifft
+        gesondert meldepflichtige Verletzungen des Schutzes personenbezogener Daten.
+        Eine technische Alarmierung ersetzt die rechtliche Einzelfallprüfung nicht.
       </P>
 
       <H2>Annex IV als Live-Dokument</H2>
@@ -97,9 +89,10 @@ export function AiActGovernancePage() {
 
       <H2>Was diese Page nicht ist</H2>
       <P>
-        Dieser Hub ist keine Rechtsberatung. Wer in Annex III §1 (Biometrik) operiert, braucht eine
-        Konformitätsbewertung durch eine notifizierte Stelle — RealSyncDynamics.AI bereitet die
-        technischen Belege auf, ersetzt aber die juristische Prüfung nicht. Für jede konkrete
+        Dieser Hub ist keine Rechtsberatung. Ob und in welcher Form eine
+        Konformitätsbewertung durch Dritte erforderlich ist, ergibt sich aus der
+        konkreten Einstufung und dem Verfahren nach Art. 43 AI Act. RealSyncDynamics.AI
+        ersetzt die rechtliche Bewertung nicht. Für jede konkrete
         Pflichteinordnung sollte ein Fachanwalt oder zertifizierter DSB konsultiert werden.
       </P>
     </ContentPageLayout>

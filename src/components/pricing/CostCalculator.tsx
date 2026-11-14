@@ -1,21 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Calculator, Info, ArrowRight, TrendingDown } from 'lucide-react';
-import { CALCULABLE_PRICING_TIERS } from '../../config/pricing';
-import {
-  AUTOMATION_SHARE_DEFAULT,
-  AUTOMATION_SHARE_MAX,
-  HOURS_PER_WEBSITE_PER_REVIEW,
-  clampAutomationShare,
-  comparePlan,
-  computeManualEffort,
-  formatDe,
-  type ReviewFrequency,
-} from './costCalculatorModel';
+import { CALCULABLE_PRICING_TIERS, type TierId } from '../../config/pricing';
 
 interface CalculatorParams {
   websites: number;
-  reviewFrequency: ReviewFrequency;
+  reviewFrequency: 'monthly' | 'quarterly' | 'annual';
   hourlyRate: number;
+  assumedTimeSavingsPercent: number;
 }
 
 export function CostCalculator() {
@@ -23,22 +14,32 @@ export function CostCalculator() {
     websites: 10,
     reviewFrequency: 'quarterly',
     hourlyRate: 85,
+    assumedTimeSavingsPercent: 0,
   });
-  const [automationShare, setAutomationShare] = useState(AUTOMATION_SHARE_DEFAULT);
-  const automationPercent = Math.round(automationShare * 100);
 
   const handleWebsitesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setParams({ ...params, websites: Math.max(1, parseInt(e.target.value, 10) || 1) });
   };
 
   const handleHourlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setParams({ ...params, hourlyRate: Math.max(40, parseInt(e.target.value, 10) || 40) });
+    setParams({ ...params, hourlyRate: Math.max(40, Math.min(300, parseInt(e.target.value, 10) || 40)) });
   };
 
-  const calculations = useMemo(
-    () => computeManualEffort(params),
-    [params],
-  );
+  const calculations = useMemo(() => {
+    const reviewsPerYear = {
+      monthly: 12,
+      quarterly: 4,
+      annual: 1,
+    };
+
+    const hoursPerWebsitePerReview = 3;
+    const totalManualHoursPerYear =
+      params.websites * hoursPerWebsitePerReview * reviewsPerYear[params.reviewFrequency];
+    const totalManualCostPerYear = totalManualHoursPerYear * params.hourlyRate;
+    const totalManualCostPerMonth = totalManualCostPerYear / 12;
+
+    return { totalManualHoursPerYear, totalManualCostPerYear, totalManualCostPerMonth };
+  }, [params.websites, params.reviewFrequency, params.hourlyRate]);
 
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
@@ -51,8 +52,8 @@ export function CostCalculator() {
             Welchen Plan brauche ich?
           </h2>
           <p className="text-sm sm:text-base text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Schätzen Sie Ihren aktuellen manuellen Governance-Aufwand — dann zeigen wir,
-            wie unsere Automatisierung ihn reduziert.
+            Schätzen Sie Ihren manuellen Governance-Aufwand und wählen Sie selbst eine hypothetische
+            Zeitersparnis. Es handelt sich um eine Szenariorechnung, nicht um eine Wirksamkeitszusage.
           </p>
         </div>
 
@@ -149,26 +150,23 @@ export function CostCalculator() {
               <p className="text-xs text-silver-400 mt-1">40–300 €/h</p>
             </div>
 
-            {/* Automatisierungsanteil — sichtbare Annahme, kein Messwert */}
+            {/* Freie Szenarioquote statt behaupteter Produkt-Effizienz */}
             <div>
-              <label htmlFor="automation-share" className="block text-sm font-semibold text-titanium-50 mb-2">
-                Annahme: Anteil, den Automatisierung übernimmt
+              <label htmlFor="time-savings-scenario" className="block text-sm font-semibold text-titanium-50 mb-2">
+                Angenommene Zeitersparnis (Szenario): {params.assumedTimeSavingsPercent} %
               </label>
-              <div className="flex items-center gap-4">
-                <input
-                  id="automation-share"
-                  type="range"
-                  min="0"
-                  max={Math.round(AUTOMATION_SHARE_MAX * 100)}
-                  step="5"
-                  value={automationPercent}
-                  onChange={(e) => setAutomationShare(clampAutomationShare(parseInt(e.target.value, 10) / 100))}
-                  className="flex-1 h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
-                />
-                <span className="w-14 text-right text-sm font-mono text-titanium-50">{automationPercent} %</span>
-              </div>
+              <input
+                id="time-savings-scenario"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={params.assumedTimeSavingsPercent}
+                onChange={(e) => setParams({ ...params, assumedTimeSavingsPercent: Number(e.target.value) })}
+                className="w-full h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
+              />
               <p className="text-xs text-silver-400 mt-1">
-                Ihre Schätzung, kein gemessener Wert. Gilt für alle Pläne gleich.
+                Startwert 0 %. Die Quote ist frei gewählt und keine gemessene RealSync-Leistung.
               </p>
             </div>
 
@@ -177,8 +175,9 @@ export function CostCalculator() {
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
                 <p className="text-xs text-silver-400 leading-relaxed">
-                  Annahme: je Website ~{HOURS_PER_WEBSITE_PER_REVIEW} Stunden Prüfaufwand pro Review. RealSync kann diesen Aufwand
-                  durch automatisierte Scans und priorisierte Befunde reduzieren (dauerhafte Überwachung: Coming Soon).
+                  Rechenbasis: Anzahl Websites × 3 Stunden je Prüfung × Prüfungen pro Jahr × Stundensatz.
+                  Der hypothetische Zeitgewinn wird davon abgezogen; anschließend folgen 12 × monatlicher Listenpreis.
+                  Die offene Beta kann zeitweise 0 € kosten. Laufendes Monitoring: Coming Soon.
                 </p>
               </div>
             </div>
@@ -197,14 +196,14 @@ export function CostCalculator() {
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Stunden pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {formatDe(calculations.hoursPerYear)}
+                      {calculations.totalManualHoursPerYear.toLocaleString()}
                       <span className="text-sm text-silver-400"> h</span>
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Kosten pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {formatDe(calculations.costPerYear)}
+                      {calculations.totalManualCostPerYear.toLocaleString()}
                       <span className="text-sm text-silver-400"> €</span>
                     </p>
                   </div>
@@ -212,7 +211,7 @@ export function CostCalculator() {
                 <div className="pt-3 border-t border-silver-700/30">
                   <p className="text-xs text-silver-400 mb-1">Monatlich (ohne RealSync)</p>
                   <p className="font-display font-bold text-xl text-titanium-100 tabular-nums">
-                    {formatDe(calculations.costPerMonth)}
+                    {Math.round(calculations.totalManualCostPerMonth).toLocaleString()}
                     <span className="text-sm text-silver-400"> €/Mo</span>
                   </p>
                 </div>
@@ -223,7 +222,7 @@ export function CostCalculator() {
             <div className="bg-obsidian-900/60 border border-silver-700/30 rounded-none p-6 sm:p-7">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingDown className="h-4 w-4 text-emerald-400" />
-                <h3 className="font-display font-bold text-titanium-50">Mit RealSync</h3>
+                <h3 className="font-display font-bold text-titanium-50">Szenariorechnung je Plan</h3>
               </div>
               <div className="space-y-2">
                 {/*
@@ -239,15 +238,15 @@ export function CostCalculator() {
                 {CALCULABLE_PRICING_TIERS.filter(
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
-                  // Alle Pläne rechnen mit denselben Eingaben und demselben,
-                  // vom Nutzer gesetzten Automatisierungsanteil — keine
-                  // geschätzten Effizienzwerte je Plan.
-                  const result = comparePlan(
-                    calculations.costPerYear,
-                    automationShare,
-                    tier.priceEur || 0,
-                  );
-                  const isSavings = result.netSavingsPerYear > 0;
+                  // Gleicher Ist-Aufwand für alle Tarife; keine Tarif-Multiplikatoren.
+                  const yearlyCost = tier.priceEur * 12;
+                  const hypotheticalTimeSavings =
+                    calculations.totalManualCostPerYear * params.assumedTimeSavingsPercent / 100;
+                  const savings = hypotheticalTimeSavings - yearlyCost;
+                  const savingsPercent = calculations.totalManualCostPerYear > 0
+                    ? Math.round((savings / calculations.totalManualCostPerYear) * 100)
+                    : 0;
+                  const isSavings = savings > 0;
 
                   return (
                     <div
@@ -265,16 +264,14 @@ export function CostCalculator() {
                           <span className="text-xs text-silver-400"> €/Mo</span>
                         </div>
                       </div>
-                      <div className="text-[11px] font-mono text-silver-400">
-                        {formatDe(result.avoidedCostPerYear)} € entfallen − {formatDe(result.planCostPerYear)} € Plan
-                      </div>
-                      {isSavings ? (
+                      {isSavings && (
                         <div className="text-xs text-emerald-300">
-                          Rechnerische Ersparnis: {formatDe(result.netSavingsPerYear)} €/Jahr ({result.netSavingsPercent} % der bisherigen Kosten)
+                          Hypothetische Netto-Differenz: {Math.round(savings).toLocaleString('de-DE')} €/Jahr ({savingsPercent} % vom Ist-Aufwand)
                         </div>
-                      ) : (
+                      )}
+                      {!isSavings && (
                         <div className="text-xs text-silver-400">
-                          Rechnerische Mehrkosten: {formatDe(Math.abs(result.netSavingsPerYear))} €/Jahr
+                          Rechnerische Mehrkosten: {Math.round(Math.abs(savings)).toLocaleString('de-DE')} €/Jahr
                         </div>
                       )}
                     </div>
@@ -286,9 +283,9 @@ export function CostCalculator() {
             {/* CTA */}
             <div className="bg-gradient-to-r from-cyan-400/10 to-cyan-400/5 border border-cyan-400/30 rounded-none p-5">
               <p className="text-xs text-silver-300 mb-3 leading-relaxed">
-                Diese Rechnung ist illustrativ und beruht auf Ihren Eingaben und Annahmen.
-                Konkrete Einsparungen hängen von Audit-Tiefe, Automatisierungspotenzial und
-                vorhandenen Prozessen ab. Die Ersparnis kann Ihre bisherigen Kosten nie übersteigen.
+                Formel: (manueller Jahresaufwand × selbst gewählte Zeitersparnis in %) − (12 × monatlicher Listenpreis).
+                Alle Tarife werden gegen denselben Ist-Aufwand verglichen. Nutzungs-, Einrichtungs- und variable Gebühren
+                sind nicht berücksichtigt. Kein empirisch belegter Produktivitätswert und keine Einsparzusage.
               </p>
               <a
                 href="#pricing-tiers"

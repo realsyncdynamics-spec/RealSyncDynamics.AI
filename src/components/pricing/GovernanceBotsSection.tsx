@@ -1,10 +1,7 @@
 import { Check, MessageCircle, Zap, MessageSquare, Globe, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { SELLABLE_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
-import { STATUS_LABEL, isImplementationLive } from '../../product/implementation-status';
-
-/** Telefonie ist ein eigener Registry-Eintrag; solange er nicht live ist, wird Voice gekennzeichnet. */
-const VOICE_LABEL = isImplementationLive('voice-telephony') ? 'Voice' : 'Voice (Coming Soon)';
+import { SELLABLE_PRICING_TIERS, BOT_ADDONS } from '../../config/pricing';
+import { isImplementationLive } from '../../product/implementation-status';
 
 /**
  * Governance-Bots Section — zeigt Bot-Quotas pro Tier + Add-on-Karten
@@ -83,7 +80,7 @@ export function GovernanceBotsSection() {
                         <div className="text-titanium-100 font-mono">
                           {isUnlimited ? 'Unbegrenzt' : quota.maxBots} Bots
                         </div>
-                        <div className="text-[11px] text-silver-400">produktiv / Monat</div>
+                        <div className="text-[11px] text-silver-400">Paketkontingent (abhängig vom Kanalstatus)</div>
                       </div>
                     </div>
 
@@ -110,13 +107,13 @@ export function GovernanceBotsSection() {
                                   slack: 'Slack',
                                   teams: 'Teams',
                                   email: 'E-Mail',
-                                  voice: VOICE_LABEL
+                                  voice: isImplementationLive('voice-telephony') ? 'Voice' : 'Voice (Coming Soon)'
                                 };
                                 return names[c] || c;
                               }).join(', ')
                             : '—'}
                         </div>
-                        <div className="text-[11px] text-silver-400">verfügbare Kanäle</div>
+                        <div className="text-[11px] text-silver-400">Kanäle im Plan; Status laut Roadmap</div>
                       </div>
                     </div>
                   </div>
@@ -194,7 +191,7 @@ export function GovernanceBotsSection() {
         {BOT_ADDONS.length > 0 && (
           <div>
             <h3 className="font-display font-bold text-xl text-titanium-50 mb-8">
-              Bot Add-ons
+              Bot Add-ons (Status vor Buchung prüfen)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {BOT_ADDONS.map((addon) => (
@@ -203,14 +200,10 @@ export function GovernanceBotsSection() {
                   className="p-6 bg-obsidian-900/80 border border-silver-700/40 rounded-none flex flex-col"
                 >
                   <div className="mb-4">
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <div className="font-bold text-titanium-50 text-base">{addon.name}</div>
-                      {addon.availability !== 'live' && (
-                        <span className="px-2 py-0.5 border border-amber-500/50 text-amber-300 text-[10px] font-mono uppercase tracking-wider rounded-none">
-                          {STATUS_LABEL[addon.availability]}
-                        </span>
-                      )}
-                    </div>
+                    <div className="font-bold text-titanium-50 text-base mb-1">{addon.name}</div>
+                    {addon.id === 'voice' && !isImplementationLive('voice-telephony') && (
+                      <span className="inline-flex border border-amber-700 px-2 py-0.5 text-[11px] font-semibold text-amber-300">Coming Soon · nicht produktiv buchbar</span>
+                    )}
                     <p className="text-[12px] text-silver-400">{addon.description}</p>
                   </div>
 
@@ -229,20 +222,14 @@ export function GovernanceBotsSection() {
                         {addon.priceEur} €
                       </div>
                       <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400">
-                        {addon.priceSuffix}
+                        {addon.priceSuffix}{addon.id === 'voice' && !isImplementationLive('voice-telephony') ? ' · Preisplanung, noch nicht buchbar' : ''}
                       </div>
                     </div>
-                    {addon.availability === 'live' ? (
-                      <div className="text-[10px] text-silver-500 italic">
-                        {addon.availableForNames.length > 0
-                          ? `Zubuchbar für ${addon.availableForNames.join(', ')}`
-                          : 'Derzeit für keinen Plan zubuchbar'}
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-amber-300/90">
-                        Geplanter Listenpreis. Derzeit nicht buchbar — die Leistung ist noch nicht produktiv verfügbar.
-                      </div>
-                    )}
+                    <div className="text-[10px] text-silver-500 italic">
+                      {addon.availableForNames.length > 0
+                        ? `Angeboten für ${addon.availableForNames.join(', ')}`
+                        : 'Derzeit für keinen Plan angeboten'}
+                    </div>
                   </div>
                 </div>
               ))}

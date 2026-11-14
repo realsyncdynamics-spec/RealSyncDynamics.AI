@@ -136,7 +136,7 @@ export function ImpressumPage() {
         {
           heading: 'Umsatzsteuer',
           // TODO(Dominik): USt-IdNr. ergänzen, sobald vergeben.
-          body: ['Alle Preise verstehen sich zzgl. der gesetzlichen Umsatzsteuer.'],
+          body: ['Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'],
         },
         {
           heading: 'Hinweis',

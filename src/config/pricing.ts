@@ -37,7 +37,7 @@ import {
   type FeatureGroupId,
   type PlanFeatureMatrix,
 } from '@/shared/pricing';
-import { getImplementation, isImplementationLive, type ImplementationStatus } from '../product/implementation-status';
+import { isImplementationLive } from '../product/implementation-status';
 
 // Alles aus der SSoT bleibt über diese Datei erreichbar, damit Oberflächen
 // nicht zwischen zwei Import-Pfaden wählen müssen.
@@ -408,31 +408,8 @@ export interface BotAddOn {
   bullets: string[];
   priceEur: number;
   priceSuffix: string;
-  /**
-   * Umsetzungsstand laut `src/product/implementation-status.ts`. Add-ons ohne
-   * Registry-Zuordnung gelten als `live`. Nur `live` darf öffentlich als
-   * buchbar erscheinen.
-   */
-  availability: ImplementationStatus;
   /** Anzeigenamen der Pläne aus `addon.availableFor` (verkaufte Pläne). */
   availableForNames: string[];
-}
-
-/**
- * Add-ons, deren Leistung an einen eigenen Registry-Eintrag gebunden ist.
- * Voice hängt am Telefonie-Kanal (`voice-telephony`, Stand 03.11.2026:
- * coming-soon) — Preis und Entitlements bleiben in der SSoT, die Anzeige
- * darf das Add-on aber nicht als buchbare Leistung führen.
- */
-const ADDON_IMPLEMENTATION_ID: Partial<Record<AddOnId, string>> = {
-  voice: 'voice-telephony',
-};
-
-export function addonAvailability(id: AddOnId): ImplementationStatus {
-  const registryId = ADDON_IMPLEMENTATION_ID[id];
-  if (!registryId) return 'live';
-  // Fail-closed: fehlt der Registry-Eintrag, gilt das Add-on als nicht live.
-  return getImplementation(registryId)?.status ?? 'coming-soon';
 }
 
 function toBotAddOn(addon: AddOn): BotAddOn {
@@ -443,7 +420,6 @@ function toBotAddOn(addon: AddOn): BotAddOn {
     bullets: addon.bullets,
     priceEur: addon.priceEur,
     priceSuffix: addon.priceNote,
-    availability: addonAvailability(addon.id),
     availableForNames: addon.availableFor
       .map((planId) => planById(planId)?.name)
       .filter((name): name is string => Boolean(name)),

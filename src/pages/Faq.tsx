@@ -8,7 +8,7 @@ type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing'
 
 // COMMERCIAL-SSOT: Beträge aus shared/pricing.ts. Entscheidung Dominik
 // 2026-10-24: Starter, Growth und Agency bleiben Beta-Tarife; Enterprise ist
-// nicht Teil der Beta und kostet vom ersten Tag an 1.498 €/Monat netto.
+// nicht Teil der Beta und kostet vom ersten Tag an 1.498 €/Monat.
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 const STARTER = planById('starter');
 const GROWTH = planById('growth');

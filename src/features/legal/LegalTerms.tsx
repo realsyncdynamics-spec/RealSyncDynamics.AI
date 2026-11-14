@@ -393,17 +393,7 @@ export function LegalTerms() {
             Gerichtsstand.
           </p>
           <p>
-            (3) Die Europäische Kommission stellt eine Plattform zur
-            Online-Streitbeilegung (OS) bereit:{' '}
-            <a
-              className="text-security-400"
-              href="https://ec.europa.eu/consumers/odr"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              ec.europa.eu/consumers/odr
-            </a>
-            . Der Anbieter ist nicht verpflichtet und nicht bereit, an
+            (3) Der Anbieter ist nicht verpflichtet und nicht bereit, an
             einem Streitbeilegungsverfahren vor einer
             Verbraucherschlichtungsstelle teilzunehmen.
           </p>

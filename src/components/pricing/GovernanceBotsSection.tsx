@@ -226,7 +226,9 @@ export function GovernanceBotsSection() {
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">
-                      Für Growth, Agency, Enterprise und Partner
+                      {addon.availableForNames.length > 0
+                        ? `Angeboten für ${addon.availableForNames.join(', ')}`
+                        : 'Derzeit für keinen Plan angeboten'}
                     </div>
                   </div>
                 </div>

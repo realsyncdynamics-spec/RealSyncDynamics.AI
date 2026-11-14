@@ -40,8 +40,9 @@ export function EuAiActCheck() {
               {[
                 { d: 'Februar 2025', t: 'Verbotene Praktiken Art. 5', s: 'Wirksam' },
                 { d: 'August 2025', t: 'GPAI / Foundation Models Art. 53', s: 'Wirksam' },
-                { d: 'August 2026', t: 'High-Risk-Systeme Art. 6+', s: 'Voll wirksam' },
-                { d: 'August 2027', t: 'High-Risk in Sicherheitsbauteile', s: 'Voll wirksam' },
+                { d: 'August 2026', t: 'Allgemeine Anwendung, Transparenz Art. 50', s: 'Wirksam' },
+                { d: 'Dezember 2027', t: 'Hochrisiko nach Anhang III', s: 'Ab 02.12.2027' },
+                { d: 'August 2028', t: 'Hochrisiko nach Anhang I (Produkte)', s: 'Ab 02.08.2028' },
               ].map((p) => (
                 <div key={p.d} className="p-3 bg-obsidian-900 border border-titanium-900 rounded-none">
                   <div className="flex items-baseline gap-2 mb-1">

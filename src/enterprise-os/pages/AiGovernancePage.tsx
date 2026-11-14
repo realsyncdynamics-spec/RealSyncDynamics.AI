@@ -120,7 +120,7 @@ export function AiGovernancePage() {
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <ShieldCheck className="mx-auto h-8 w-8 text-security-400" />
           <h2 className="mt-4 font-display text-3xl font-bold text-titanium-50 sm:text-4xl">
-            Bereit für die EU-AI-Act-Pflichten ab August 2026?
+            Bereit für die Hochrisiko-Pflichten des EU AI Act ab Dezember 2027?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-titanium-400">
             Erfassen Sie alle KI-Systeme Ihres Unternehmens zentral — inklusive Risikoklassifizierung,

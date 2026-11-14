@@ -248,6 +248,11 @@ async function resolveApproval(
             policy_source: result.reasons[0]?.policy_source ?? 'governance_policies',
             rule: 'approval_coverage',
             action: 'allow',
+            // Dieser Grund stammt aus der Freigabe-Kette, nicht aus einer
+            // Policy-Bedingung: er ist nicht verbgebunden, und der Mandant
+            // ist der des Requests.
+            policy_tenant_id: result.reasons[0]?.policy_tenant_id ?? request.tenant_id ?? null,
+            verb_scoped: false,
             text_de: `Die Aktion ist durch eine erteilte Freigabe gedeckt (Gate ${approved.id}).`,
           },
           ...result.reasons,

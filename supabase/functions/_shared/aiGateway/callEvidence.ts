@@ -68,6 +68,15 @@ export interface AiCallEvidencePayload {
   pdp_decision: AiCallVerdict;
   reasons: string[];
   policy_id: string | null;
+  /**
+   * Policy-Referenz, wenn die Entscheidung aus `governance_policies` kommt.
+   *
+   * `ai_evidence_events.policy_id` hat einen Fremdschluessel auf
+   * `ai_policies` — eine governance_policies-UUID dort liesse den Insert
+   * scheitern (Codex P1 governance-router:410). Gleiches Muster und gleiche
+   * Feldnamen wie in `governance-approvals/evidence.ts`.
+   */
+  governance_policy_id: string | null;
   request_id: string | null;
   latency_ms: number | null;
   input_length: number;
@@ -110,6 +119,14 @@ export interface BuildAiCallEvidenceArgs {
   blocked?: boolean;
   reasons?: string[];
   policyId?: string | null;
+  /**
+   * Herkunft der Policy hinter `policyId` ('ai_policies' |
+   * 'governance_policies'). Entscheidet, ob die ID in die Spalte
+   * `policy_id` darf (Fremdschluessel auf `ai_policies`) oder als
+   * `governance_policy_id` ins Evidence-JSON gehoert. Fehlt die Angabe,
+   * wird wie bisher `ai_policies` angenommen.
+   */
+  policySource?: string | null;
   aiSystemId?: string | null;
   requestId?: string | null;
   latencyMs?: number | null;
@@ -250,10 +267,21 @@ export async function buildAiCallEvidenceRow(
       : stage === 'failed' ? `KI-Aufruf fehlgeschlagen (${args.feature}): ${subject} [${args.errorCode ?? 'error'}]`
       : `KI-Aufruf (${args.feature}): ${subject} [${verdict}]`;
 
+  // Policy-Quelle trennen (Codex P1 governance-router:410):
+  // `ai_evidence_events.policy_id` zeigt per Fremdschluessel ausschliesslich
+  // auf `ai_policies`. Eine `governance_policies`-UUID dort liesse den Insert
+  // scheitern — und weil die Reservierung seit MP-0 fail-closed ist, haette
+  // jeder Governance-Treffer den Provider-Aufruf verhindert, im Shadow-Modus
+  // inklusive. Muster und Feldname wie in `governance-approvals/evidence.ts`.
+  const policyId = args.policyId ?? null;
+  const fromGovernance = args.policySource === 'governance_policies';
+  const aiPolicyId = fromGovernance ? null : policyId;
+  const governancePolicyId = fromGovernance ? policyId : null;
+
   return {
     tenant_id: args.tenantId,
     ai_system_id: args.aiSystemId ?? null,
-    policy_id: args.policyId ?? null,
+    policy_id: aiPolicyId,
     event_type: eventType,
     event_summary: eventSummary,
     risk_level: riskLevel,
@@ -283,7 +311,8 @@ export async function buildAiCallEvidenceRow(
       verdict,
       pdp_decision: verdict,
       reasons: Array.isArray(args.reasons) ? [...args.reasons] : [],
-      policy_id: args.policyId ?? null,
+      policy_id: aiPolicyId,
+      governance_policy_id: governancePolicyId,
       request_id: args.requestId ?? null,
       latency_ms: typeof args.latencyMs === 'number' && Number.isFinite(args.latencyMs)
         ? Math.max(0, Math.round(args.latencyMs))

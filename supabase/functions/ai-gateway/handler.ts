@@ -44,6 +44,7 @@ import {
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
 import { isTransportLevelFailure } from '../_shared/aiGateway/router.ts';
+import { primaryPolicySource } from '../_shared/aiGateway/pdpGuard.ts';
 import { verifyTurnstile } from '../_shared/aiGateway/turnstile.ts';
 import {
   decideRateLimit,
@@ -139,7 +140,13 @@ export function usageTokens(usage: AiGatewayUsage | undefined | null): number {
 
 export interface PdpVerdict {
   decision: string;
-  reasons: Array<{ text_de: string }>;
+  /**
+   * `policy_id` und `policy_source` je Grund werden gebraucht, um vor dem
+   * Evidence-Insert die Policy-Quelle zu bestimmen (Codex P1
+   * governance-router:410) — `ai_evidence_events.policy_id` zeigt per
+   * Fremdschluessel nur auf `ai_policies`.
+   */
+  reasons: Array<{ text_de: string; policy_id?: string; policy_source?: string }>;
   primary_policy_id?: string | null;
 }
 
@@ -369,6 +376,8 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     verdict?: string | null;
     reasons?: string[];
     policyId?: string | null;
+    /** 'ai_policies' | 'governance_policies' — siehe primaryPolicySource. */
+    policySource?: string | null;
     provider?: string | null;
     model?: string | null;
     usage?: AiGatewayUsage | null;
@@ -405,6 +414,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       blocked: outcome.stage === 'blocked',
       reasons: outcome.reasons,
       policyId: outcome.policyId ?? null,
+      policySource: outcome.policySource ?? null,
       requestId: outcome.requestId,
       latencyMs: outcome.latencyMs,
       input: request.input,
@@ -521,6 +531,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       verdict: verdict?.decision ?? 'allow',
       reasons: verdict?.reasons?.map((r) => r.text_de),
       policyId: verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(verdict),
       provider: target.provider,
       requestId,
       latencyMs: 0,
@@ -540,6 +551,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       verdict: g.verdict?.decision ?? 'allow',
       reasons: g.verdict?.reasons?.map((r) => r.text_de),
       policyId: g.verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(g.verdict),
       provider: typeof r.provider === 'string' ? r.provider : null,
       model: typeof r.model === 'string' ? r.model : request.model_profile,
       usage: (r.usage ?? null) as AiGatewayUsage | null,
@@ -553,6 +565,7 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
       stage: 'failed',
       verdict: g.verdict?.decision ?? 'allow',
       policyId: g.verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(g.verdict),
       provider: g.target.provider,
       errorCode,
       requestId: g.requestId,

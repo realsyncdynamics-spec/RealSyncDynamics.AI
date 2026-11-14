@@ -47,7 +47,7 @@ import {
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
 import { createServerGatewayFromEnv, localInferenceLabel, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
-import { fallbackExplicitlyAllowed, guardedDecide, parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
+import { fallbackExplicitlyAllowed, guardedDecide, parseEnforcementMode, parsePdpTimeoutMs, primaryPolicySource } from '../_shared/aiGateway/pdpGuard.ts';
 import {
   buildAiCallEvidenceRow,
   recordAiCallEvidence,
@@ -229,6 +229,8 @@ async function writeEvidence(
     model?: string | null;
     verdict: string | null;
     policyId?: string | null;
+    /** 'ai_policies' | 'governance_policies' — siehe primaryPolicySource. */
+    policySource?: string | null;
     usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number } | null;
     latencyMs: number;
     errorCode?: string | null;
@@ -252,6 +254,7 @@ async function writeEvidence(
     verdict: e.verdict,
     blocked: e.stage === 'blocked',
     policyId: e.policyId ?? null,
+    policySource: e.policySource ?? null,
     requestId: e.requestId,
     latencyMs: e.latencyMs,
     // Kein Prompt im Prüfpfad: nur die Länge des Request-Bodys.
@@ -395,7 +398,8 @@ async function handleChat(
     try {
       await writeEvidence(admin, tenantId, {
         stage: 'blocked', requestId, profile, provider, verdict: pep.result?.decision ?? 'block',
-        policyId: pep.result?.primary_policy_id ?? null, latencyMs: Date.now() - started, inputLength: raw.length,
+        policyId: pep.result?.primary_policy_id ?? null,
+        policySource: primaryPolicySource(pep.result), latencyMs: Date.now() - started, inputLength: raw.length,
       });
     } catch (e) {
       console.error(JSON.stringify({ scope: 'governance-router-evidence', event: 'blocked_record_failed', severity: 'critical', alert: true, tenant_id: tenantId, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) }));
@@ -407,7 +411,8 @@ async function handleChat(
   try {
     await writeEvidence(admin, tenantId, {
       stage: 'started', requestId, profile, provider, verdict: pep.result?.decision ?? 'allow',
-      policyId: pep.result?.primary_policy_id ?? null, latencyMs: 0, inputLength: raw.length,
+      policyId: pep.result?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(pep.result), latencyMs: 0, inputLength: raw.length,
     });
   } catch (e) {
     console.error(JSON.stringify({ scope: 'governance-router-evidence', event: 'reserve_failed', severity: 'critical', tenant_id: tenantId, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) }));
@@ -420,7 +425,8 @@ async function handleChat(
     try {
       await writeEvidence(admin, tenantId, {
         stage, requestId, profile, provider: f.provider, model: f.model ?? null, verdict: pep.result?.decision ?? 'allow',
-        policyId: pep.result?.primary_policy_id ?? null, usage: f.usage ?? null, latencyMs: Date.now() - started,
+        policyId: pep.result?.primary_policy_id ?? null,
+        policySource: primaryPolicySource(pep.result), usage: f.usage ?? null, latencyMs: Date.now() - started,
         errorCode: f.errorCode ?? null, inputLength: raw.length,
       });
       return true;

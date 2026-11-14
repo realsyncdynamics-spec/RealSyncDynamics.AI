@@ -125,6 +125,22 @@ export async function guardedDecide<D extends GuardedDecision>(args: {
 }
 
 /**
+ * Herkunft der Policy, die die Entscheidung getragen hat
+ * ('ai_policies' | 'governance_policies'), oder null ohne Primaertreffer.
+ *
+ * Der Aufrufer braucht das vor dem Evidence-Insert: `policy_id` in
+ * `ai_evidence_events` zeigt per Fremdschluessel nur auf `ai_policies`
+ * (Codex P1 governance-router:410).
+ */
+export function primaryPolicySource(
+  result: GuardedDecision | null | undefined,
+): string | null {
+  const primaryId = result?.primary_policy_id ?? null;
+  if (!primaryId) return null;
+  return (result?.reasons ?? []).find((r) => r.policy_id === primaryId)?.policy_source ?? null;
+}
+
+/**
  * Erlaubt eine Tenant-Policy einen Provider-Wechsel ausdrücklich?
  *
  * Reicht NICHT: ein beliebiger Treffer mit `allow`. Eine gewöhnliche

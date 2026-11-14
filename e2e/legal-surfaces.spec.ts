@@ -83,3 +83,17 @@ test.describe('/legal/sub-processors', () => {
     expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
   });
 });
+
+test.describe('AVV → Sub-Prozessoren Navigation', () => {
+  test('zeigt nach Klick den Inhalt der Zielseite statt der AVV', async ({ page }) => {
+    await page.goto('/legal/avv');
+
+    await page.getByRole('link', { name: '/legal/sub-processors' }).click();
+
+    await expect(page).toHaveURL(/\/legal\/sub-processors$/);
+    await expect(
+      page.getByRole('heading', { name: 'Sub-Prozessoren' }),
+    ).toBeVisible();
+    await expect(page.getByText('Supabase Inc.', { exact: false }).first()).toBeVisible();
+  });
+});

@@ -1,7 +1,8 @@
 /**
  * governance-monitoring-scheduler — Governance OS Continuous Monitoring
  *
- * Auth: Bearer == CRON_GOVERNANCE_MONITORING_KEY (Function secret).
+ * Auth: Bearer == CRON_GOVERNANCE_MONITORING_KEY (Function secret; Fallback:
+ * Vault `cron_governance_monitoring_key` via _shared/cronKey.ts).
  * pg_cron sends that via Vault `cron_governance_monitoring_key`
  * (dispatch_cron_function). Fail-closed: empty env → 500 CRON_KEY_MISSING
  * (no work), wrong/missing bearer → 401 "cron only". Never compare
@@ -33,6 +34,7 @@
  */
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 import { corsHeaders, handleOptions, jsonError, jsonResponse } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature, type Entitlements } from '../_shared/entitlements.ts';
 import {
@@ -223,7 +225,7 @@ Deno.serve(async (req) => {
   // Drift-Guard: verify_jwt=false, also eigener Bearer-Check. Credential ist
   // der dedizierte Cron-Key (nicht der service_role JWT). Leerer Key → 500
   // CRON_KEY_MISSING (Fehlkonfiguration, kein Lauf), falscher Bearer → 401.
-  const CRON_KEY = Deno.env.get('CRON_GOVERNANCE_MONITORING_KEY') ?? '';
+  const CRON_KEY = await resolveCronKey('CRON_GOVERNANCE_MONITORING_KEY', 'cron_governance_monitoring_key');
   if (!CRON_KEY) {
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_GOVERNANCE_MONITORING_KEY not configured');
   }

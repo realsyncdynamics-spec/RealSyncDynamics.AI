@@ -1,7 +1,26 @@
 import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronRight, Sparkles } from 'lucide-react';
 import type { LandingV6Values } from './useLandingV6';
 import { CompanyVoiceWidget } from './CompanyVoiceWidget';
+
+function AskAiLink({ onClick }: { onClick?: () => void }) {
+  return (
+    <Link
+      to="/audit?source=ki-fragen"
+      onClick={onClick}
+      style={{
+        alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '8px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '9999px', whiteSpace: 'nowrap',
+        border: '1px solid #8b5cf6', color: 'var(--rs-fg)', background: 'var(--rs-chip)',
+        fontFamily: 'inherit', fontSize: '16px',
+      }}
+    >
+      <Sparkles aria-hidden="true" size={18} />
+      KI fragen
+    </Link>
+  );
+}
 
 /** Arrow keys select and focus one option; Tab enters the group only once. */
 function onRadioKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -77,6 +96,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                 <span style={v.moonStyle}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
               </button>
               {v.showLinks ? (<>
+                <AskAiLink />
                 <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "clamp(10px,.7vw,20px) clamp(18px,1.3vw,40px)", borderRadius: "6px", background: "transparent", color: "var(--rs-fg)", border: "1px solid var(--rs-chip-b)", cursor: "pointer", fontSize: "inherit", fontWeight: "500" }}>Kostenlosen Governance Scan starten</Link>
               </>) : null}
               {v.showBurger ? (<>
@@ -89,7 +109,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         <div style={{ position: "relative", zIndex: "1", flex: "1 0 auto", display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", boxSizing: "border-box", maxWidth: "var(--wrap)", margin: "0 auto", padding: "clamp(40px,5vw,160px) var(--px)" }}>
           <div style={{ maxWidth: "min(100%,clamp(420px,58vw,2000px))" }}>
             <p style={{ margin: "0 0 clamp(20px,1.8vw,52px)", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".18em", color: "var(--rs-acc)" }}>AI GOVERNANCE RUNTIME</p>
-            <h1 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
+            <h1 style={{ margin: "0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: v.showBurger ? "clamp(44px,7vw,72px)" : "clamp(40px,5.2vw,176px)", lineHeight: "1.04", letterSpacing: "-.025em", textWrap: "balance" }}>
               <span style={{ background: "var(--rs-h1)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Das Governance OS für </span><span style={{ background: "var(--rs-acc-g)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>DSGVO & EU AI Act.</span>
             </h1>
             <ol aria-label="Governance-Ablauf" data-testid="hero-governance-flow" style={{ listStyle: "none", margin: "clamp(24px,2.2vw,64px) 0 0", padding: "0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", fontFamily: "'JetBrains Mono',monospace", fontSize: "clamp(12px,.85vw,26px)", fontWeight: "600", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--rs-fg2)" }}>
@@ -99,6 +119,22 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             </ol>
             <p style={{ margin: "clamp(14px,1.2vw,36px) 0 0", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(22px,1.9vw,64px)", lineHeight: "1.25", letterSpacing: "-.01em", color: "var(--rs-fg)", textWrap: "balance" }}>Eine Runtime für Risiken, Richtlinien und prüffähige Nachweise.</p>
             <p style={{ margin: "clamp(10px,.8vw,24px) 0 0", maxWidth: "34em", fontSize: "clamp(16px,1.1vw,36px)", lineHeight: "1.55", color: "var(--rs-fg2)", textWrap: "pretty" }}>KI-Systeme und Websites erfassen, Risiken mit Paragraphenbezug einordnen, Richtlinien anwenden und jede Entscheidung als verketteten Nachweis ablegen – vorlegbar bei Datenschutzbeauftragten und Prüfern. Einstieg: der kostenlose Governance Scan.</p>
+            {v.showBurger ? (
+              <div aria-label="Schnelleinstieg" style={{ display: 'grid', gap: '8px', marginTop: '20px' }}>
+                {[
+                  { to: '/audit?source=hero-scan', label: 'Website prüfen' },
+                  { to: '/pricing?source=hero-plans', label: 'Pläne ansehen' },
+                ].map(({ to, label }) => (
+                  <Link key={to} to={to} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    minHeight: '44px', padding: '0 14px', borderRadius: '6px',
+                    border: '1px solid var(--rs-chip-b)', background: 'var(--rs-chip)', color: 'var(--rs-fg)',
+                  }}>
+                    {label}<ChevronRight aria-hidden="true" size={18} />
+                  </Link>
+                ))}
+              </div>
+            ) : null}
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
               <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Governance Scan starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
@@ -561,6 +597,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <button type="button" onClick={v.toggleMenu} aria-label="Menü schließen" style={{ width: "44px", height: "44px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
           <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "34px" }}>
+            <AskAiLink onClick={v.toggleMenu} />
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance OS</a>
             <Link to="/governance-runtime" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Runtime</Link>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>

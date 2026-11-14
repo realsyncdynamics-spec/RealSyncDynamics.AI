@@ -544,7 +544,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Playwright Chromium installieren
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install chromium
       - name: Responsive Viewport-Check (advisory)
         run: npm run check:responsive
         env:

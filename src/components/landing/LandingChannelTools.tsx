@@ -1,4 +1,4 @@
-import { MessageCircle, Phone, ArrowRight, Globe2, Code2 } from 'lucide-react';
+import { MessageCircle, ShieldCheck, ArrowRight, Globe2, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   getImplementation,
@@ -22,41 +22,41 @@ import {
  */
 export const CHANNEL_TOOLS = [
   {
-    eyebrow: 'AUTOMATION · WHATSAPP',
-    title: 'WhatsApp Bot',
+    eyebrow: 'AUTOMATION · CHANNELS',
+    title: 'KI-Bots',
     icon: MessageCircle,
-    text: 'WhatsApp-Kundenkommunikation über den Bot-Builder — Persona, Flows, Governance-Anbindung.',
-    bullets: ['WhatsApp-Kanal', 'Termin- & Anfrageflows', 'Governance-Anbindung'],
+    text: 'Chat-, WhatsApp- und Telefonbot-Einstiege mit Governance-Anbindung. Provider-Laufzeiten sind teilweise Preview.',
+    bullets: ['Chat & WhatsApp', 'Telefonbot', 'Governance-Anbindung'],
     href: '/chatbot/start',
-    cta: 'WhatsApp Bot starten',
-    registryId: 'channel-bots',
-  },
-  {
-    eyebrow: 'VOICE · GOVERNANCE',
-    title: 'Telefonbot',
-    icon: Phone,
-    text: 'KI-Telefonassistent über den Bot-Builder — Voice-Kanal, Handoff, auditierbare Gespräche.',
-    bullets: ['Voice-Kanal', 'Human Handoff', 'Auditierbare Gespräche'],
-    href: '/phonebot/start',
-    cta: 'Telefonbot starten',
+    cta: 'KI-Bots öffnen',
     registryId: 'channel-bots',
   },
   {
     eyebrow: 'AI · WEBSITE',
-    title: 'DSGVO Web App Builder',
+    title: 'App Builder',
     icon: Globe2,
-    text: 'SiteOS-/Website-Flows mit Governance-Hooks — Preview, nicht als vollständige Produktions-Runtime verkauft.',
-    bullets: ['SiteOS Flows', 'Policy Hooks', 'Preview'],
+    text: 'Website- und App-Studio mit Governance-Hooks. Publishing und Deployment bleiben im Preview-Status.',
+    bullets: ['App Studio', 'Policy Hooks', 'Preview'],
     href: '/build',
     cta: 'Builder öffnen',
     registryId: 'web-builder',
   },
   {
+    eyebrow: 'PLATFORM · GOVERNANCE',
+    title: 'Governance OS',
+    icon: ShieldCheck,
+    text: 'Zentraler, zugriffsgeschützter Workspace für Risiken, Kontrollen und Nachweise.',
+    bullets: ['Risiken', 'Kontrollen', 'Evidence'],
+    href: '/app/dashboard',
+    cta: 'Governance OS öffnen',
+    registryId: 'app-shell',
+  },
+  {
     eyebrow: 'ENGINEERING · GOVERNANCE',
-    title: 'Code Optimizer',
+    title: 'Claude Code Optimizer',
     icon: Code2,
-    text: 'Code analysieren und Risiken erkennen — über AI Gateway, Route live.',
-    bullets: ['Code analysieren', 'Risiken erkennen', 'AI Gateway'],
+    text: 'Geführter Code- und Website-Scan. Ein echtes Shell-Terminal für Claude Code ist noch nicht bereitgestellt.',
+    bullets: ['Code analysieren', 'Risiken erkennen', 'Terminal geplant'],
     href: '/claude-code-optimizer',
     cta: 'Optimizer öffnen',
     registryId: 'ai-gateway',
@@ -157,7 +157,7 @@ export function LandingChannelTools() {
                   ))}
                 </div>
                 <Link
-                  to={live ? href : '/warteliste'}
+                  to={href}
                   className="inline-flex w-full items-center justify-center gap-2 border px-5 py-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50"
                   style={
                     live

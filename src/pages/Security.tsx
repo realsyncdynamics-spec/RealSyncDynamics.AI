@@ -72,7 +72,7 @@ export function Security() {
             </ul>
           </Section>
 
-          <Section title="EU-Hosting · Sub-Processors" icon={<Server className="h-5 w-5 text-security-400" />}>
+          <Section title="Hosting-Standorte · Sub-Processors" icon={<Server className="h-5 w-5 text-security-400" />}>
             <p>
               Datenbank, Auth und Evidence liegen in der EU (Supabase Postgres, Frankfurt eu-central-1). Die Website wird über Cloudflare Pages
               (globales Edge-Netz) ausgeliefert, Edge Functions laufen global verteilt auf Supabase-Infrastruktur; der optionale EU-lokale

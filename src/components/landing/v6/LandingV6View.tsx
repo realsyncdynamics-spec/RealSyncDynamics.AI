@@ -1,6 +1,7 @@
 import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { LandingV6Values } from './useLandingV6';
+import { CompanyVoiceWidget } from './CompanyVoiceWidget';
 
 /** Arrow keys select and focus one option; Tab enters the group only once. */
 function onRadioKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -682,6 +683,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </>) : null}
 
+      <CompanyVoiceWidget />
       </div>
   );
 }

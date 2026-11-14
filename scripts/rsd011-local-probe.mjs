@@ -179,7 +179,8 @@ try {
   console.log('RSD-011 lokaler Probe: Migration (2x), Trigger, Consent-Gate, advance, Rollback — ok.');
 } catch (e) {
   console.error('RSD-011 lokaler Probe fehlgeschlagen:', e.message || e);
-  process.exit(1);
+  // exitCode statt exit(): sonst laeuft finally nicht und der Container bleibt stehen.
+  process.exitCode = 1;
 } finally {
   if (started) {
     try { sh(`docker rm -f ${name}`); } catch { /* ignore */ }

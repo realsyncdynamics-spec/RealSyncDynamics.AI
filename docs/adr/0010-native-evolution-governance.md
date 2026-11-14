@@ -4,7 +4,7 @@
 **Date:** 2026-08-25  
 **Author:** Dominik Steiner (Architecture / Agent OS)  
 **Supersedes / amends:** none  
-**Related:** CLAUDE.md (Projektkontext), `docs/architecture/`, `apps/mcp-server/`, `apps/agent-runtime/`, zukünftige Evolution-Tools (Headroom, Claude Code Setup, Task Observer, Claude-Mem)
+**Related:** CLAUDE.md (Projektkontext), `docs/architecture/`, `apps/mcp-server/`, `apps/agent-runtime/`, zukünftige Evolution-Tools (Headroom, Claude Code Setup, Task Observer, Claude-Mem); Plan- und Bestandsabgleich: `.claude/os-funnel/governed-evolution.md` (Owner-Entscheidungen E-GE* gehen vor)
 
 ## Context
 

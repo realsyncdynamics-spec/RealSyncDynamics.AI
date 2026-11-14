@@ -7,7 +7,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompanyLanding } from '../../src/pages/CompanyLanding';
 import { COMPANY_LINKS, COMPANY_PRODUCTS } from '../../src/components/landing/company/companyProducts';
+import { VOICE_LIST_PACKAGES, VOICE_PRICE_BINDING_NOTE } from '../../src/components/landing/company/voiceListPrices';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
+import { isKnownSpaPath } from '../../src/lib/spaNotFound';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 
 // Die 3D-Szene braucht WebGL; im DOM-Test genügt, dass sie nicht mountet.
@@ -53,9 +55,11 @@ describe('Unternehmens-Landing v5 – Status aus der SSoT', () => {
     expect(COMPANY_LINKS.voiceOnboarding).toBe('https://voice.realsyncdynamicsai.de/onboarding.html');
   });
 
-  it('nennt keine Voice-Preise außerhalb von shared/pricing.ts', () => {
-    const view = mount();
-    expect(view.container.textContent).not.toMatch(/\b(89|199|349)\s?€/);
+  it('Voice verspricht keine Anruf- oder Termingarantie', () => {
+    const voice = COMPANY_PRODUCTS.find((p) => p.id === 'voice')!;
+    expect(voice.headline).not.toMatch(/kein Anruf geht verloren/i);
+    expect(voice.description).toMatch(/in Vorbereitung/);
+    expect(voice.description).toMatch(/keine feste Terminbuchung/);
   });
 });
 
@@ -141,8 +145,61 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     act(() => {
       vi.advanceTimersByTime(3400);
     });
-    expect(within(dialog).getByRole('status')).toHaveTextContent('Blockiert – keine Einwilligung für Export.');
-    expect(within(dialog).getByText(/^EVIDENCE · SHA-256 [0-9a-f]{16}…$/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Demo: blockiert – keine Einwilligung für Export. Es wurde nichts ausgeführt.',
+    );
+    expect(within(dialog).getByText(/^BEISPIEL · nicht gespeichert · [0-9a-f]{16}…$/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Demo · simuliert · kein externer Vorgang/)).toBeInTheDocument();
+  });
+
+  it('eine freigegebene Demo-Prüfung behauptet keine ausgeführte Aktion', () => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Prüfung live testen' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Terminbestätigung senden' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Prüfung starten' }));
+    act(() => {
+      vi.advanceTimersByTime(3400);
+    });
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'Demo: die Prüfung wäre freigegeben. Es wurde keine Aktion ausgeführt.',
+    );
+  });
+
+  it('Voice-Pakete nennen Netto, MwSt., Minuten und den Kanal', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-voice'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Pakete' }));
+    for (const plan of VOICE_LIST_PACKAGES) {
+      expect(dialog).toHaveTextContent(`${plan.netEur} €`);
+      expect(dialog).toHaveTextContent(plan.grossLabel);
+      expect(dialog).toHaveTextContent(`${plan.includedMinutes.toLocaleString('de-DE')} Min.`);
+      expect(dialog).toHaveTextContent(plan.overageNetLabel);
+      expect(dialog).toHaveTextContent(plan.channel);
+    }
+    expect(dialog).toHaveTextContent('zzgl. 19 % MwSt.');
+    expect(dialog).toHaveTextContent(VOICE_PRICE_BINDING_NOTE);
+    expect(dialog).toHaveTextContent('Telefonie ist in Vorbereitung');
+    expect(dialog.textContent).not.toMatch(/kein Anruf geht verloren/i);
+  });
+
+  it('interne Ziele sind bekannte SPA-Routen', () => {
+    for (const href of [
+      COMPANY_LINKS.audit,
+      COMPANY_LINKS.platform,
+      COMPANY_LINKS.login,
+      COMPANY_LINKS.impressum,
+      COMPANY_LINKS.datenschutz,
+      COMPANY_LINKS.agb,
+      COMPANY_LINKS.widerruf,
+      COMPANY_LINKS.avv,
+      COMPANY_LINKS.subProcessors,
+      COMPANY_LINKS.builder,
+    ]) {
+      expect(isKnownSpaPath(href), href).toBe(true);
+    }
   });
 
   it('Voice-Onboarding endet im Link auf die Subdomain (neuer Tab)', () => {

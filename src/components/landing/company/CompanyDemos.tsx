@@ -42,7 +42,11 @@ const SCENARIO_RESULTS: readonly (readonly number[])[] = [
   [1, 1, 1, 1],
   [1, 1, 1, 2],
 ];
-const VERDICTS = ['Blockiert – keine Einwilligung für Export.', 'Freigegeben – Aktion ausgeführt.', 'Mensch erforderlich – Vier-Augen-Prinzip.'] as const;
+const VERDICTS = [
+  'Demo: blockiert – keine Einwilligung für Export. Es wurde nichts ausgeführt.',
+  'Demo: die Prüfung wäre freigegeben. Es wurde keine Aktion ausgeführt.',
+  'Demo: Mensch erforderlich – Vier-Augen-Prinzip. Es wurde nichts ausgeführt.',
+] as const;
 
 type CheckState = { cls: '' | 'wait' | 'ok' | 'no'; mark: string };
 const IDLE: CheckState[] = CHECKS.map(() => ({ cls: '', mark: '–' }));
@@ -84,7 +88,7 @@ export function GovernanceCheckDemo() {
     );
     later(() => {
       setVerdict(VERDICTS[s.includes(0) ? 0 : s.includes(2) ? 2 : 1]);
-      setHash('EVIDENCE · SHA-256 ' + randomHex(8) + '…');
+      setHash('BEISPIEL · nicht gespeichert · ' + randomHex(8) + '…');
     }, 3300);
   };
 
@@ -110,7 +114,7 @@ export function GovernanceCheckDemo() {
         </div>
         <div className="hash">{hash}</div>
       </div>
-      <p className="note">Simulation im Browser · es werden keine Daten gesendet</p>
+      <p className="note">Demo · simuliert · kein externer Vorgang, kein gespeicherter Nachweis</p>
       <div className="pm-cta">
         <button className="btn" type="button" onClick={run}>
           Prüfung starten
@@ -183,7 +187,7 @@ export function VoiceCallDemo() {
           ))}
         </div>
       </div>
-      <p className="note">Beispielgespräch · Betriebsnamen sind fiktiv</p>
+      <p className="note">Demo · simuliert · kein Anruf, keine Übergabe, keine Terminbuchung. Betriebsnamen sind fiktiv.</p>
       <div className="pm-cta">
         <button className="btn" type="button" onClick={run}>
           Anruf starten
@@ -198,7 +202,7 @@ export function VoiceCallDemo() {
 const BRANCHEN = ['Handwerk', 'Metzgerei', 'KFZ-Werkstatt', 'Gastronomie & Bäckerei', 'Hausverwaltung', 'Kanzlei', 'Arztpraxis', 'Steuerberatung'] as const;
 /** Paketnamen der Onboarding-Seite; Preise nur dort (nicht in shared/pricing.ts). */
 const PAKETE = ['Starter', 'Professional', 'Kanzlei'] as const;
-const KANAELE = ['Web', 'Telefonie + Web'] as const;
+const KANAELE = ['Web (Vorschau)', 'Telefonie + Web (in Vorbereitung)'] as const;
 const STIMMEN = ['Eve', 'Castor', 'Atlas', 'Celeste', 'Ursa', 'Rigel'] as const;
 const ONB_STEPS = ['Branche', 'Betrieb', 'Stimme', 'Freigabe'] as const;
 const WAVE = [
@@ -269,6 +273,9 @@ export function VoiceOnboarding() {
           </div>
           <Segs label="Paket" options={PAKETE} value={paket} onChange={setPaket} />
           <Segs label="Kanal" options={KANAELE} value={kanal} onChange={setKanal} />
+          {paket === 0 && kanal === 1 ? (
+            <p className="note">Starter enthält nur Web. Telefonie ist in Vorbereitung und wird hier nicht freigeschaltet.</p>
+          ) : null}
           <div className="onb-foot">
             <button className="btn quiet" type="button" onClick={() => go(0)}>
               Zurück
@@ -322,7 +329,7 @@ export function VoiceOnboarding() {
           </div>
           <span className="seal">
             <i />
-            KI-Offenlegung in der Begrüßung · Aufzeichnung standardmäßig aus · Fail-Closed
+            Lokale Vorschau · nichts wird aktiviert · Aufzeichnung standardmäßig aus
           </span>
           <div className="onb-foot">
             <button className="btn quiet" type="button" onClick={() => go(2)}>
@@ -364,6 +371,7 @@ export function TemplatePicker({ onRequest }: { onRequest: (templateName: string
           </button>
         ))}
       </div>
+      <p className="note">Demo · simuliert. Die Wahl belegt nur die Kontaktnachricht vor und baut keine Seite.</p>
       <div className="tpl-cta">
         <p aria-live="polite">{name ? `Gewählt: Vorlage „${name}“.` : 'Noch keine Vorlage gewählt.'}</p>
         <a
@@ -414,6 +422,7 @@ export function BuilderPreview() {
           ))}
         </div>
       </div>
+      <p className="note">Demo · simuliert. Es wird keine Seite erzeugt und nichts veröffentlicht.</p>
       <div className="segs" role="group" aria-label="Bausteine">
         {b.blocks.map((n, i) => (
           <button key={n} type="button" aria-pressed={on[i]} onClick={() => setOn((o) => o.map((v, k) => (k === i ? !v : v)))}>

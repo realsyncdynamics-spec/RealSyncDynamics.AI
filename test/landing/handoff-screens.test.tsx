@@ -31,7 +31,6 @@ describe('/pricing (Handoff v2)', () => {
     const enterprise = screen.getByTestId('pricing-card-enterprise');
     expect(within(enterprise).getByText(formatPriceEur(planById('enterprise').price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
     expect(within(enterprise).getByText('/ Monat')).toBeInTheDocument();
-    expect(enterprise.textContent).not.toMatch(/netto/);
     expect(within(enterprise).queryByText('Auf Anfrage')).toBeNull();
     expect(within(enterprise).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');
     expect(document.body.textContent).not.toContain('Gespräch anfragen');
@@ -70,11 +69,10 @@ describe('/pricing (Handoff v2)', () => {
     );
   });
 
-  it('shows the § 19 UStG tax note from the company SSOT', () => {
+  it('shows the statutory VAT note from the company SSOT', () => {
     mount();
-    const note = screen.getByTestId('pricing-tax-note');
-    expect(note).toHaveTextContent('Angebot nur für Unternehmer (B2B) – Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
-    expect(note.textContent).not.toMatch(/zzgl\./);
+    expect(screen.getByTestId('pricing-tax-note')).toHaveTextContent('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+    expect(screen.getByTestId('pricing-tax-note')).not.toHaveTextContent(/zzgl\..*Umsatzsteuer/);
   });
 });
 

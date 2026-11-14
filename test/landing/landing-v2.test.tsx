@@ -1,7 +1,7 @@
 /**
  * Landing v2 (`/design/landing-v2`) — Vertrag des Claude-Design-Handoffs:
  * H1, Pipeline, Tier-Buttons aus der Pricing-SSoT, Sektionsreihenfolge,
- * § 19-Hinweis (Kleinunternehmer, keine USt), Hell/Dunkel-Umschaltung.
+ * Steuerbefreite Preise (EXEMPT), Hell/Dunkel-Umschaltung.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -89,14 +89,14 @@ it('keeps the handoff section order and resolvable in-page anchors', () => {
   }
 });
 
-it('shows four plan cards with SSoT prices, and the § 19 UStG tax note', () => {
+it('shows four plan cards with SSoT prices, and the statutory VAT note', () => {
   const view = mount();
   const cards = view.container.querySelectorAll('.lv2-plan');
   expect(cards).toHaveLength(4);
   expect(within(cards[0] as HTMLElement).getByText(eur(79))).toBeInTheDocument();
   expect(within(cards[1] as HTMLElement).getByText(eur(249))).toBeInTheDocument();
   expect(within(cards[2] as HTMLElement).getByText(eur(699))).toBeInTheDocument();
-  // Enterprise seit 2026-10-24: Festpreis per Checkout. Kleinunternehmer → kein „netto“.
+  // Enterprise seit 2026-10-24: Festpreis per Checkout, netto ausgewiesen.
   expect(within(cards[3] as HTMLElement).getByText(eur(1498))).toBeInTheDocument();
   expect(within(cards[3] as HTMLElement).getByText('/ Monat')).toBeInTheDocument();
   expect(view.container.querySelector('[data-plan-cta="enterprise"]')).toHaveAttribute(
@@ -111,8 +111,8 @@ it('shows four plan cards with SSoT prices, and the § 19 UStG tax note', () => 
   );
 
   const foot = view.container.querySelector('.lv2-pricing__foot')!;
-  expect(foot.textContent).toContain('Angebot nur für Unternehmer (B2B) – Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
-  expect(view.container.textContent).not.toMatch(/netto|zzgl\.[^.]*Umsatzsteuer|USt \(/);
+  expect(foot.textContent).toContain('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+  expect(view.container.textContent).not.toMatch(/zzgl\..*(?:USt|Umsatzsteuer)/);
   expect(view.container.textContent).not.toMatch(/GmbH|HRB/);
 
   // Jahres-Toggle bleibt aus, solange Stripe-Jahrespreise fehlen.

@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 /**
  * Free Audit — Stepper aus dem Governance-OS-Handoff v2 (§ 3).
  *
@@ -26,7 +27,6 @@ import { useLang } from '../../i18n/useLang';
 import type { HandoffKey } from '../../i18n/handoff';
 import { enforcementClassOf } from '../../../shared/enforcement-classes';
 import { formatPriceEur, tierById, type TierId } from '../../config/pricing';
-import { showsNetPriceLabel } from '@/shared/pricing';
 import { saveScanProfile, type ScanResidency, type ScanRole } from '../../features/onboarding/scanProfile';
 import { isValidLeadEmail, normalizeDomainInput } from '../../features/audit/leadContext';
 

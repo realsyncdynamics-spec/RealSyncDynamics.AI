@@ -61,10 +61,10 @@ describe('public/llms.txt', () => {
       const plan = byId.get(id);
       expect(plan, `Plan ${id} fehlt in PLANS`).toBeDefined();
       expect(plan!.priceOnRequest).not.toBe(true);
-      // Kleinunternehmer (§ 19 UStG): kein „netto“, Enterprise als „1.498 €/Monat“.
+      // Nettopreis-Pläne (Enterprise) stehen als „1.498 €/Monat netto“.
       const amount = plan!.netPriceLabel
-        ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat`
-        : `${plan!.price.monthlyEur} €/Monat`;
+        ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat netto`
+        : `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat`;
       expect(llms).toContain(`${label}: ${amount}`);
     }
     expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);

@@ -61,7 +61,7 @@ describe('Optimizer-Pakete weisen keinen Preis ohne Deckung aus', () => {
 
     // Genau der Betrag aus der SSoT — eine bloße Ziffernprüfung ließe einen
     // falschen Betrag (Jahrespreis, veraltetes Literal) grün durch. Pläne mit
-    // `netPriceLabel` (Enterprise) über `monthlyPriceText()` aus der SSoT.
+    // `netPriceLabel` (Enterprise) tragen den Netto-Hinweis aus der SSoT.
     for (const pkg of fixed) {
       const tier = tierById(pkg.key)!;
       const expected = tier.plan.netPriceLabel

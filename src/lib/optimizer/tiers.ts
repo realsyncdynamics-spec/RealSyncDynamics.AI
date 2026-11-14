@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -81,7 +82,7 @@ export function realPriceEur(tier: OptimizerTier): number {
   return tierById(tier.planKey)?.priceEur ?? 0;
 }
 
-/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat" / "1.498 €/Monat". */
+/** Preis-Anzeige aus der realen Config: "Kostenlos" / "Individuell" / "€79 / Monat" / "€1498 / Monat". */
 export function formatTierPrice(tier: OptimizerTier): string {
   if (tier.planKey === 'free') return 'Kostenlos';
   const real = tierById(tier.planKey);
@@ -91,7 +92,7 @@ export function formatTierPrice(tier: OptimizerTier): string {
   }
   const price = real?.priceEur ?? 0;
   if (price === 0) return 'Individuell';
-  // `netPriceLabel`-Pläne (Enterprise) über `monthlyPriceText()`: „1.498 €/Monat“
-  // (Kleinunternehmer, § 19 UStG — „netto“ nur bei Regelbesteuerung).
-  return real?.plan.netPriceLabel ? monthlyPriceText(real.plan) : `€${price} / Monat`;
+  // „netto“-Anzeige nur bei Regelbesteuerung (`showsNetPriceLabel`); als
+  // Kleinunternehmer (§ 19 UStG) gilt der Fallback ohne Steuerzusatz.
+  return (real && showsNetPriceLabel(real.plan)) ? monthlyPriceText(real.plan) : `€${price} / Monat`;
 }

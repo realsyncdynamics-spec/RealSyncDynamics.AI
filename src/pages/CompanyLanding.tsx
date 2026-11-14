@@ -363,6 +363,15 @@ export function CompanyLanding() {
               KI für kleine und mittlere Unternehmen: Wir machen sie sicher, Ihr Telefon erreichbar und Ihre Webseite fertig – ohne
               Konzern-Aufwand, mit einem Ansprechpartner.
             </p>
+            <div className="hero-cta">
+              <Link
+                className="btn"
+                to="/warteliste?interest=bots&utm_source=company-landing&utm_medium=hero&utm_campaign=voice-agent-preview"
+              >
+                Voice-Agent-Preview vormerken <span aria-hidden="true">→</span>
+              </Link>
+              <span className="hero-cta-note">Unverbindlich · Preview in Vorbereitung</span>
+            </div>
             <p className="pick">Gebaut für Handwerk · Praxis · Kanzlei · Gastronomie · Handel – Produkt anklicken und ausprobieren</p>
             <HeroTiles fx={fxRef.current} onGo={onGo} onOpen={(tab, trigger) => openModal(tab, trigger)} />
           </main>

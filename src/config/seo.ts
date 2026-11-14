@@ -69,7 +69,8 @@ export const DEFAULT_SEO: SEOConfig = {
  * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
  * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
  * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise ohne Umsatzsteuerausweis
- * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B).
+ * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B). Kein `valueAddedTaxIncluded`:
+ * ohne Umsatzsteuer ist weder „inklusive“ noch „exklusive“ zutreffend (wie index.html).
  */
 function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
   const list = {
@@ -77,7 +78,6 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     price: String(listEur),
     priceCurrency: 'EUR',
     billingDuration: 'P1M',
-    valueAddedTaxIncluded: true,
   };
   if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
   const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
@@ -134,7 +134,6 @@ const PRICING_PRODUCT_JSONLD = {
         price: '1498',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
-        valueAddedTaxIncluded: true,
       },
       description: '1.498 €/Monat, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },

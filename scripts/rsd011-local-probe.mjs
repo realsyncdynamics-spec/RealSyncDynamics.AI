@@ -119,8 +119,10 @@ END $$;
 `;
 
 if (!dockerAvailable()) {
-  console.log('RSD-011 Probe uebersprungen: docker ist nicht verfuegbar.');
-  process.exit(0);
+  // Exit 2 statt 0: Ein uebersprungener Lauf darf nicht als bestandene
+  // Datenbankprobe gelten (gruener Prozessstatus ≠ ausgefuehrte Probe).
+  console.error('RSD-011 Probe NICHT ausgefuehrt: docker ist nicht verfuegbar.');
+  process.exit(2);
 }
 
 const name = `rsd011-probe-${Date.now()}`;

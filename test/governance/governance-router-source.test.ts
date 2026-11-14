@@ -45,7 +45,10 @@ describe('governance-router — Auth- und Datengrenzen', () => {
 
   it('MP-0: Provider-Fallback nur per ausdrücklicher Tenant-Policy', () => {
     expect(SRC).toContain('allowedFallbackIds: fallbackIds');
-    expect(SRC).toContain('explicitlyAllowed(g.result)');
+    // Nachtrag zu Codex P1 (:215): Die Freigabe muss den Mandanten kennen und
+    // verbgebunden sein. `explicitlyAllowed(g.result)` genügte nicht — eine
+    // globale model_usage-Regel hätte den Fallback mitfreigeschaltet.
+    expect(SRC).toContain('fallbackExplicitlyAllowed(g.result, tenantId)');
   });
 
   it('Residency-RPC ist fail closed, auch bei Ausfall und unerwarteten Werten', () => {

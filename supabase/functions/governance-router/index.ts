@@ -47,7 +47,7 @@ import {
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
 import { createServerGatewayFromEnv, localInferenceLabel, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
-import { explicitlyAllowed, guardedDecide, parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
+import { fallbackExplicitlyAllowed, guardedDecide, parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
 import {
   buildAiCallEvidenceRow,
   recordAiCallEvidence,
@@ -212,7 +212,7 @@ async function allowedFallbacks(
         context: { feature: TOOL_KEY },
       } satisfies DecisionRequest),
     });
-    if (g.kind === 'ok' && explicitlyAllowed(g.result)) allowed.push(vendor);
+    if (g.kind === 'ok' && fallbackExplicitlyAllowed(g.result, tenantId)) allowed.push(vendor);
   }
   return allowed;
 }

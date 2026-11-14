@@ -102,6 +102,19 @@ export interface DecisionReason {
   policy_source: PolicySource;
   rule: string;
   action: PdpDecision;
+  /**
+   * Mandant der Policy, die diesen Grund liefert. `null` = globale Regel.
+   * Der PEP braucht das, um eine mandantenspezifische Freigabe von einer
+   * globalen zu unterscheiden — eine globale Regel ist keine Zustimmung
+   * eines Mandanten (MP-0 Nachtrag, Codex P1 governance-router:215).
+   */
+  policy_tenant_id: string | null;
+  /**
+   * Hat die Policy das Verb ausdruecklich eingeschraenkt (`verbs` in der
+   * Condition)? Nur dann ist ihr Treffer eine Aussage ueber *diese*
+   * Aktion und nicht ein Nebeneffekt einer allgemeinen Regel.
+   */
+  verb_scoped: boolean;
   /** Menschenlesbare Begruendung, deutsch — entsteht hier, nie im PEP (Plan §2.2). */
   text_de: string;
 }
@@ -163,6 +176,21 @@ export interface CompiledPolicy {
   name?: string;
   action: PdpDecision;                    // normalisiert (log → log_only)
   condition: Record<string, unknown>;
+  /**
+   * Mandant der Regel. `null` = global. `ai_policies` werden fuer einen
+   * Mandanten zusammen mit den globalen geladen (`tenant_id.eq.X,
+   * tenant_id.is.null`), deshalb muss die Herkunft am kompilierten Satz
+   * haengen — sonst kann der PEP eine globale Regel nicht von einer
+   * Mandanten-Freigabe unterscheiden. `governance_policies` sind per
+   * Abfrage immer mandantengebunden.
+   */
+  tenant_id: string | null;
+  /**
+   * `verbs` in der Condition gesetzt? Dann gilt die Regel ausdruecklich
+   * fuer bestimmte Aktionsverben. Regeln ohne `verbs` bleiben
+   * verbunabhaengig und verhalten sich wie vor MP-0.
+   */
+  verb_scoped: boolean;
   /**
    * Verhalten bei PDP-Ausfall. Solange E2 offen ist, gilt der dokumentierte
    * Default: fail open — AUSSER die Policy blockiert selbst, dann fail closed.
@@ -232,6 +260,8 @@ export interface AiPolicyRowInput {
   action: string;
   enabled: boolean;
   condition: Record<string, unknown> | null;
+  /** `null` = globale Regel. Fehlt das Feld, gilt die Regel als global. */
+  tenant_id?: string | null;
 }
 
 const AI_RULE_TYPES = new Set<CompiledRule>([
@@ -252,6 +282,8 @@ export function compileAiPolicies(rows: AiPolicyRowInput[]): CompiledPolicy[] {
       name: r.name,
       action,
       condition,
+      tenant_id: r.tenant_id ?? null,
+      verb_scoped: asArr(condition['verbs']) !== undefined,
       on_engine_unavailable: failModeOf(condition, action),
       approver_role: approverRoleOf(condition),
     });
@@ -267,9 +299,13 @@ export interface GovernancePolicyRowInput {
   action: string;
   enabled: boolean;
   condition: Record<string, unknown> | null;
+  tenant_id?: string | null;
 }
 
-export function compileGovernancePolicies(rows: GovernancePolicyRowInput[]): CompiledPolicy[] {
+export function compileGovernancePolicies(
+  rows: GovernancePolicyRowInput[],
+  tenantId: string | null = null,
+): CompiledPolicy[] {
   const out: CompiledPolicy[] = [];
   for (const r of rows) {
     if (!r.enabled) continue;
@@ -282,6 +318,10 @@ export function compileGovernancePolicies(rows: GovernancePolicyRowInput[]): Com
       name: r.policy_type,
       action,
       condition,
+      // governance_policies werden ausschliesslich per `.eq('tenant_id', …)`
+      // geladen (decide.ts loadSnapshot) — sie sind nie global.
+      tenant_id: r.tenant_id ?? tenantId,
+      verb_scoped: asArr(condition['verbs']) !== undefined,
       on_engine_unavailable: failModeOf(condition, action),
       approver_role: approverRoleOf(condition),
     });
@@ -312,7 +352,10 @@ export function buildSnapshot(
   aiRows: AiPolicyRowInput[],
   govRows: GovernancePolicyRowInput[],
 ): PolicySnapshot {
-  const policies = [...compileAiPolicies(aiRows), ...compileGovernancePolicies(govRows)];
+  const policies = [
+    ...compileAiPolicies(aiRows),
+    ...compileGovernancePolicies(govRows, tenantId),
+  ];
   return { contract: 'v1', tenant_id: tenantId, version: snapshotVersion(policies), policies };
 }
 
@@ -475,7 +518,25 @@ export function policyUsesClassification(p: CompiledPolicy): boolean {
   return false;
 }
 
+/**
+ * Verb-Gate (MP-0 Nachtrag, Codex P1 governance-router:215).
+ *
+ * Schraenkt eine Regel das Aktionsverb per `verbs` ein, matcht sie nur bei
+ * passendem `action.verb`. Regeln OHNE `verbs` bleiben verbunabhaengig —
+ * damit aendert sich am bestehenden Verhalten (auch bei `model_usage`)
+ * nichts. Umgekehrt kann eine allgemeine Modellfreigabe damit nicht mehr
+ * als Zustimmung zu einem Provider-Fallback gelesen werden: dafuer braucht
+ * es eine Regel, die `provider_fallback` ausdruecklich nennt.
+ */
+function verbAllows(req: DecisionRequest, p: CompiledPolicy): boolean {
+  const verbs = asArr(p.condition['verbs']);
+  if (!verbs) return true;
+  const verb = (req.action.verb ?? '').toLowerCase();
+  return verbs.some((v) => String(v).toLowerCase() === verb);
+}
+
 export function matchCompiledPolicy(req: DecisionRequest, p: CompiledPolicy): boolean {
+  if (!verbAllows(req, p)) return false;
   return p.rule === 'generic_condition' ? matchGenericPolicy(req, p) : matchAiPolicy(req, p);
 }
 
@@ -534,6 +595,8 @@ export function evaluateSnapshot(snapshot: PolicySnapshot, req: DecisionRequest)
     policy_source: p.source,
     rule: p.rule,
     action: p.action,
+    policy_tenant_id: p.tenant_id,
+    verb_scoped: p.verb_scoped,
     text_de: reasonTextDe(req, p),
   }));
 
@@ -567,6 +630,8 @@ export function evaluateSnapshot(snapshot: PolicySnapshot, req: DecisionRequest)
       policy_source: winner.source,
       rule: 'classification_uncertain',
       action: 'warn',
+      policy_tenant_id: winner.tenant_id,
+      verb_scoped: winner.verb_scoped,
       text_de:
         'Die Datenklassifikation ist nicht sicher genug für eine Blockierung. '
         + 'Die Aktion wird deshalb nur mit Hinweis versehen und dokumentiert — '

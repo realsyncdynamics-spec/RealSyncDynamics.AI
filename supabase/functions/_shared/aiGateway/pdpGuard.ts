@@ -22,9 +22,19 @@ export const KNOWN_DECISIONS = new Set(['allow', 'warn', 'block', 'require_appro
 
 export const DEFAULT_PDP_TIMEOUT_MS = 2_000;
 
+export interface GuardedDecisionReason {
+  text_de: string;
+  policy_id?: string;
+  policy_source?: string;
+  /** `null` = globale Regel; siehe DecisionReason in _shared/pdp/core.ts. */
+  policy_tenant_id?: string | null;
+  /** Regel nennt das Aktionsverb ausdruecklich (`verbs` in der Condition). */
+  verb_scoped?: boolean;
+}
+
 export interface GuardedDecision {
   decision: string;
-  reasons: Array<{ text_de: string }>;
+  reasons: Array<GuardedDecisionReason>;
   matched_policy_ids?: string[];
   primary_policy_id?: string | null;
   snapshot_version?: string;
@@ -115,9 +125,42 @@ export async function guardedDecide<D extends GuardedDecision>(args: {
 }
 
 /**
- * Erlaubt eine Tenant-Policy einen Provider-Wechsel ausdrücklich? Nur ein
- * tatsächlicher Policy-Treffer mit Aktion `allow` zählt — der PDP-Default
- * „allow ohne Treffer“ ist KEINE Erlaubnis.
+ * Erlaubt eine Tenant-Policy einen Provider-Wechsel ausdrücklich?
+ *
+ * Reicht NICHT: ein beliebiger Treffer mit `allow`. Eine gewöhnliche
+ * `model_usage`-Freigabe für einen Anbieter matchte sonst die
+ * `provider_fallback`-Abfrage und schaltete damit einen automatischen
+ * Wechsel des Datenempfängers frei, ohne dass der Mandant dem je
+ * zugestimmt hätte (Codex P1 governance-router:215).
+ *
+ * Verlangt werden daher beide Eigenschaften der gewinnenden Allow-Regel:
+ *   (a) mandantenspezifisch — `policy_tenant_id` gleich dem Mandanten des
+ *       Principals; eine globale Regel (`null`) genügt nicht;
+ *   (b) ausdrücklich verbgebunden — `verb_scoped`, die Regel nennt das
+ *       Verb `provider_fallback` in ihrer Condition.
+ *
+ * Alles andere bedeutet: kein Fallback (fail-closed). Ohne Mandanten
+ * (`tenantId` null/leer) gibt es keine Mandanten-Zustimmung und damit nie
+ * eine Freigabe.
+ */
+export function fallbackExplicitlyAllowed(
+  result: GuardedDecision | null | undefined,
+  tenantId: string | null | undefined,
+): boolean {
+  if (!result || result.decision !== 'allow') return false;
+  if (!tenantId) return false;
+  const primaryId = result.primary_policy_id ?? null;
+  if (!primaryId) return false;
+  const primary = (result.reasons ?? []).find((r) => r.policy_id === primaryId);
+  if (!primary) return false;
+  if (primary.verb_scoped !== true) return false;
+  return primary.policy_tenant_id === tenantId;
+}
+
+/**
+ * @deprecated Zu schwach für Fallback-Entscheidungen — prüft nur, DASS eine
+ * Regel traf, nicht WELCHE. Für Provider-Wechsel `fallbackExplicitlyAllowed`
+ * verwenden.
  */
 export function explicitlyAllowed(result: GuardedDecision | null | undefined): boolean {
   if (!result || result.decision !== 'allow') return false;

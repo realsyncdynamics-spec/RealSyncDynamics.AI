@@ -1,5 +1,13 @@
 # Befund: Apex serviert weiter den alten GitHub-Pages-Build — 2026-06-25
 
+> **ÜBERHOLT (2026-11-14).** Die Apex liefert weiterhin nicht den deployten
+> Build, aber nicht mehr aus der hier beschriebenen Ursache: der
+> GitHub-Pages/Fastly-Origin ist verschwunden (keine `varnish`-Header, kein
+> `last-modified`). Punkt 1 und 2 des Fixes unten sind damit gegenstandslos,
+> ebenso der Notfall-Rollback auf GitHub Pages. Aktueller Befund und der
+> verbliebene Blocker (Punkt 3, Worker-Route):
+> `apex-serves-frozen-document-2026-11-14.md`
+
 Stand: 2026-06-25 · Messung aus Container-Edge (Colo IAD) · ergänzt
 `REALSYNC_DOMAIN_EDGE_DIAGNOSIS.md` (23.06.) und
 `docs/infra/cloudflare-pages-cutover.md` (22.–23.06.)

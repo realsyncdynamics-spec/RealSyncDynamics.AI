@@ -42,7 +42,7 @@ export const BETA = {
   promises: [
     'Kostenlos bis zum Ende der Beta',
     'Keine Kreditkarte, kein Abo',
-    'EU-Hosting (Supabase Frankfurt)',
+    'Datenbank in der EU (Frankfurt)',
     'Daten jederzeit exportier- und löschbar',
   ],
 } as const;

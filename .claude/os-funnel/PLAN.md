@@ -202,8 +202,10 @@ WP8 läuft neben AP-x und G-x und mischt sich nicht mit ihnen.
   `governance-approvals` nur für `pdp_approval_gates`, die Browser-Reservierung prüft
   `expires_at` nur beim Einlösen.
 
-Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
-AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.
+Dieser Plan läuft **neben** AP-3 (Policy-SSoT mit adressierbaren Versionen, Auftrag
+`.claude/commands/ap3-policy-ssot.md`, Teilpakete 3a → 3b → 3c → 3d). AP-1a bis AP-2
+sind **nicht beauftragt** (E-AP0, 2026-11-02, Dominik Steiner). Keine Session mischt
+WP-x mit AP-x.
 
 ---
 

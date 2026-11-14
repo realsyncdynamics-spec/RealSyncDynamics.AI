@@ -194,12 +194,23 @@ CREATE INDEX IF NOT EXISTS idx_bot_conversation_events_tenant
 
 -- Append-only: kein UPDATE, für niemanden. Löschen nur über Kaskade bzw.
 -- service_role (Aufbewahrung), nicht für Clients.
+--
+-- Einzige Ausnahme (Codex-Review 14.11.2026, P1): die FK-Anonymisierung
+-- `actor_id ON DELETE SET NULL` beim Löschen eines Kontos (Art. 17 DSGVO,
+-- `gdpr-delete`). Sie ändert ausschliesslich actor_id von einem Wert auf NULL;
+-- jede andere Änderung bleibt verboten. Ohne diese Ausnahme scheiterte
+-- `auth.admin.deleteUser`, sobald die Person je übernommen/erledigt hat.
 CREATE OR REPLACE FUNCTION public.bot_conversation_events_append_only()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+    IF OLD.actor_id IS NOT NULL
+       AND NEW.actor_id IS NULL
+       AND (to_jsonb(NEW) - 'actor_id') = (to_jsonb(OLD) - 'actor_id') THEN
+        RETURN NEW;  -- FK-Anonymisierung
+    END IF;
     RAISE EXCEPTION 'bot_conversation_events is append-only' USING ERRCODE = '42501';
 END;
 $$;
@@ -297,3 +308,123 @@ REVOKE ALL ON FUNCTION public.inbox_take_over(UUID) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.inbox_resolve(UUID)   FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.inbox_take_over(UUID) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.inbox_resolve(UUID)   TO authenticated, service_role;
+
+-- 7. Atomare Annahme einer Formularanfrage (Edge Function inbox-form-submit) ---
+-- Codex-Review 14.11.2026 (P2): Zählen → Einfügen in getrennten Requests war
+-- doppelt anfällig — (a) ein zweiter Request mit gleicher nonce sah die
+-- Konversation, bevor Intake und Nachricht existierten, und bekam „duplicate“,
+-- obwohl der erste Request danach kompensierend löschte; (b) parallele
+-- Requests lasen denselben Zählerstand und überschritten das Kontingent.
+--
+-- Deshalb läuft alles in EINER Transaktion unter einem Advisory-Lock je
+-- Binding: Auflösung (fail-closed), Duplikatprüfung, beide Kontingente, die
+-- drei Inserts. Eine Konversation ist damit erst sichtbar, wenn sie
+-- vollständig ist; „duplicate“ heisst immer „vollständig gespeichert“.
+-- Nur service_role. Mandant/Bot stammen ausschliesslich aus dem Binding.
+
+CREATE INDEX IF NOT EXISTS idx_bot_conversations_form_ip_hash
+    ON public.bot_conversations (tenant_id, (metadata->>'ip_hash'), created_at DESC)
+    WHERE channel = 'form';
+CREATE INDEX IF NOT EXISTS idx_bot_conversations_form_binding
+    ON public.bot_conversations (tenant_id, (metadata->>'binding_id'), created_at DESC)
+    WHERE channel = 'form';
+
+CREATE OR REPLACE FUNCTION public.inbox_form_submit_intake(
+    p_site_ref        TEXT,
+    p_nonce           TEXT,
+    p_ip_hash         TEXT,
+    p_anliegen        TEXT,
+    p_kontakt_name    TEXT,
+    p_kontakt_telefon TEXT,
+    p_kontakt_email   TEXT,
+    p_terminwunsch    TEXT,
+    p_contact_label   TEXT,
+    p_ip_limit        INTEGER DEFAULT 10,
+    p_site_limit      INTEGER DEFAULT 60
+)
+RETURNS TABLE (status TEXT, conversation_id UUID)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_binding   RECORD;
+    v_ref       TEXT;
+    v_existing  UUID;
+    v_since     TIMESTAMPTZ := now() - interval '1 hour';
+    v_ip_count  INTEGER;
+    v_site_count INTEGER;
+    v_conv      UUID;
+    v_now       TIMESTAMPTZ := now();
+BEGIN
+    -- Eingabeformate wie in der Function; alles andere ist not_found/ungültig,
+    -- ohne Schreibzugriff.
+    IF p_site_ref !~ '^[A-Za-z0-9_-]{24}$' OR p_nonce !~ '^[A-Za-z0-9_-]{16,64}$'
+       OR p_ip_hash IS NULL OR length(p_ip_hash) <> 64
+       OR p_anliegen IS NULL OR length(p_anliegen) < 3 THEN
+        RETURN QUERY SELECT 'not_found'::TEXT, NULL::UUID;
+        RETURN;
+    END IF;
+
+    SELECT * INTO v_binding FROM public.resolve_site_inbox(p_site_ref);
+    IF v_binding.tenant_id IS NULL THEN
+        RETURN QUERY SELECT 'not_found'::TEXT, NULL::UUID;
+        RETURN;
+    END IF;
+
+    -- Serialisierung je Binding: Zählen und Einfügen sind damit atomar.
+    PERFORM pg_advisory_xact_lock(hashtext('inbox_form:' || v_binding.binding_id::text));
+
+    v_ref := 'form:' || p_site_ref || ':' || p_nonce;
+    SELECT c.id INTO v_existing
+      FROM public.bot_conversations c
+     WHERE c.bot_id = v_binding.bot_id AND c.external_ref = v_ref;
+    IF v_existing IS NOT NULL THEN
+        RETURN QUERY SELECT 'duplicate'::TEXT, v_existing;
+        RETURN;
+    END IF;
+
+    SELECT count(*) INTO v_ip_count
+      FROM public.bot_conversations c
+     WHERE c.tenant_id = v_binding.tenant_id AND c.channel = 'form'
+       AND c.metadata->>'ip_hash' = p_ip_hash AND c.created_at >= v_since;
+    SELECT count(*) INTO v_site_count
+      FROM public.bot_conversations c
+     WHERE c.tenant_id = v_binding.tenant_id AND c.channel = 'form'
+       AND c.metadata->>'binding_id' = v_binding.binding_id::text AND c.created_at >= v_since;
+    IF v_ip_count >= p_ip_limit OR v_site_count >= p_site_limit THEN
+        RETURN QUERY SELECT 'rate_limited'::TEXT, NULL::UUID;
+        RETURN;
+    END IF;
+
+    INSERT INTO public.bot_conversations
+        (tenant_id, bot_id, channel, status, external_ref, contact_label, metadata, last_message_at)
+    VALUES (
+        v_binding.tenant_id, v_binding.bot_id, 'form', 'open', v_ref,
+        coalesce(nullif(p_contact_label, ''), 'Formular'),
+        jsonb_build_object(
+            'source', 'site_form',
+            'site_ref', p_site_ref,
+            'binding_id', v_binding.binding_id,
+            'website_project_id', v_binding.website_project_id,
+            'ip_hash', p_ip_hash
+        ),
+        v_now
+    )
+    RETURNING id INTO v_conv;
+
+    INSERT INTO public.bot_conversation_intake
+        (conversation_id, tenant_id, anliegen, kontakt_name, kontakt_telefon, kontakt_email, terminwunsch, einwilligung_at, quelle)
+    VALUES (v_conv, v_binding.tenant_id, p_anliegen, p_kontakt_name, p_kontakt_telefon, p_kontakt_email, p_terminwunsch, v_now, 'form');
+
+    INSERT INTO public.bot_messages (tenant_id, conversation_id, bot_id, role, content, metadata)
+    VALUES (v_binding.tenant_id, v_conv, v_binding.bot_id, 'user', p_anliegen, '{"source":"site_form"}'::jsonb);
+
+    RETURN QUERY SELECT 'received'::TEXT, v_conv;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.inbox_form_submit_intake(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, INTEGER)
+    FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.inbox_form_submit_intake(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, INTEGER)
+    TO service_role;

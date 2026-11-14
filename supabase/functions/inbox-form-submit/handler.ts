@@ -5,11 +5,11 @@
 //   OPTIONS → CORS · nur POST · Salt vorhanden? sonst 503, nichts geschrieben
 //   Body ≤ 16 KB, JSON · Honeypot → 400 ohne Schreiben
 //   Validierung (site_ref, nonce, Anliegen, Kontakt, Einwilligung)
-//   IP-Hash (HMAC) · Isolate-Rate-Limit · resolve_site_inbox → sonst 404
-//   DB-Rate-Limit je ip_hash/Mandant (10/h) UND je Binding (60/h, IP-unabhängig)
-//   · INSERT Konversation
-//   (Idempotenz: bot_id + external_ref 'form:<site_ref>:<nonce>')
-//   → Intake → Nachricht. Scheitert Intake/Nachricht: Konversation löschen.
+//   IP-Hash (HMAC) · Isolate-Rate-Limit (5/min)
+//   → EINE atomare RPC inbox_form_submit_intake: Auflösung (sonst not_found →
+//     404), Duplikat (bot_id + external_ref 'form:<site_ref>:<nonce>' → 200),
+//     Kontingente je ip_hash (10/h) und je Binding (60/h, IP-unabhängig) →
+//     429, sonst Konversation + Intake + Nachricht in einer Transaktion → 201.
 //
 // Die Antwort enthält nie tenant_id, bot_id oder Binding-Daten.
 
@@ -21,7 +21,6 @@ import {
   BODY_MAX_BYTES,
   clientIp,
   contactLabel,
-  externalRef,
   hashIp,
   isHoneypotTripped,
   parseSubmit,
@@ -35,7 +34,6 @@ export const RATE_LIMIT_PER_HOUR = 10;
  * 60 echte Formularanfragen pro Stunde weit jenseits des Normalbetriebs.
  */
 export const RATE_LIMIT_PER_SITE_PER_HOUR = 60;
-const HOUR_MS = 60 * 60 * 1000;
 
 export interface HandlerDeps {
   repo: InboxRepo;
@@ -79,7 +77,6 @@ export async function handleInboxFormSubmit(req: Request, deps: HandlerDeps): Pr
   if (!parsed.ok) return jsonError(400, parsed.code, parsed.message, cors);
   const input = parsed.input;
 
-  const now = deps.now ? deps.now() : new Date();
   const ipHash = await hashIp(clientIp(req.headers), deps.hashSalt);
 
   const limiter = deps.anonLimit ?? ((h: string) =>
@@ -88,68 +85,37 @@ export async function handleInboxFormSubmit(req: Request, deps: HandlerDeps): Pr
     return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later', { ...cors, 'Retry-After': '60' });
   }
 
-  // Fail-closed: unbekannt, deaktiviert, Seite nicht live oder Bot aus → 404,
-  // nichts wird geschrieben.
-  const inbox = await deps.repo.resolveSiteInbox(input.site_ref);
-  if (!inbox) return jsonError(404, 'NOT_FOUND', 'unknown site', cors);
-
-  const since = new Date(now.getTime() - HOUR_MS).toISOString();
-  const [recentByIp, recentBySite] = await Promise.all([
-    deps.repo.countRecentByIpHash(inbox.tenant_id, ipHash, since),
-    deps.repo.countRecentByBinding(inbox.tenant_id, inbox.binding_id, since),
-  ]);
-  if (recentByIp >= RATE_LIMIT_PER_HOUR || recentBySite >= RATE_LIMIT_PER_SITE_PER_HOUR) {
-    return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later', { ...cors, 'Retry-After': '3600' });
-  }
-
-  const nowIso = now.toISOString();
-  const created = await deps.repo.insertConversation({
-    tenant_id: inbox.tenant_id,
-    bot_id: inbox.bot_id,
-    external_ref: externalRef(input.site_ref, input.nonce),
-    contact_label: contactLabel(input),
-    metadata: {
-      source: 'site_form',
-      site_ref: input.site_ref,
-      binding_id: inbox.binding_id,
-      website_project_id: inbox.website_project_id,
-      ip_hash: ipHash,
-    },
-    now: nowIso,
-  });
-
-  if (!created.ok) {
-    if (created.reason === 'duplicate') {
-      return jsonResponse({ ok: true, status: 'duplicate', reference: created.id.slice(0, 8) }, 200, cors);
-    }
-    return jsonError(500, 'INTERNAL', 'could not store request', cors);
-  }
-
-  const intake = await deps.repo.insertIntake({
-    conversation_id: created.id,
-    tenant_id: inbox.tenant_id,
+  // Alles Weitere atomar in der Datenbank (siehe repo.ts / Migration Abschnitt 7).
+  let result: Awaited<ReturnType<InboxRepo['submit']>>;
+  try {
+    result = await deps.repo.submit({
+    site_ref: input.site_ref,
+    nonce: input.nonce,
+    ip_hash: ipHash,
     anliegen: input.anliegen,
     kontakt_name: input.kontakt_name,
     kontakt_telefon: input.kontakt_telefon,
     kontakt_email: input.kontakt_email,
     terminwunsch: input.terminwunsch,
-    einwilligung_at: nowIso,
-  });
-  if (!intake.ok) {
-    await deps.repo.deleteConversation(created.id);
+    contact_label: contactLabel(input),
+    ip_limit: RATE_LIMIT_PER_HOUR,
+    site_limit: RATE_LIMIT_PER_SITE_PER_HOUR,
+    });
+  } catch {
+    // Technischer Fehler (DB nicht erreichbar, RPC fehlt): keine Details nach
+    // aussen, keine Erfolgsmeldung. Die Transaktion hat nichts hinterlassen.
     return jsonError(500, 'INTERNAL', 'could not store request', cors);
   }
 
-  const msg = await deps.repo.insertUserMessage({
-    tenant_id: inbox.tenant_id,
-    conversation_id: created.id,
-    bot_id: inbox.bot_id,
-    content: input.anliegen,
-  });
-  if (!msg.ok) {
-    await deps.repo.deleteConversation(created.id);
-    return jsonError(500, 'INTERNAL', 'could not store request', cors);
+  switch (result.status) {
+    case 'not_found':
+      // Unbekannt, deaktiviert, Seite nicht live oder Bot aus — nichts geschrieben.
+      return jsonError(404, 'NOT_FOUND', 'unknown site', cors);
+    case 'rate_limited':
+      return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later', { ...cors, 'Retry-After': '3600' });
+    case 'duplicate':
+      return jsonResponse({ ok: true, status: 'duplicate', reference: result.conversation_id.slice(0, 8) }, 200, cors);
+    case 'received':
+      return jsonResponse({ ok: true, status: 'received', reference: result.conversation_id.slice(0, 8) }, 201, cors);
   }
-
-  return jsonResponse({ ok: true, status: 'received', reference: created.id.slice(0, 8) }, 201, cors);
 }

@@ -5,8 +5,8 @@
  * handler.ts läuft gegen ein In-Memory-Repo; kein Deno, kein Netz, keine DB.
  *
  * Geprüft
- *   F1  Gültige Anfrage → 201, Konversation (channel form, open), Intake,
- *       Nachricht; Antwort ohne tenant_id/bot_id
+ *   F1  Gültige Anfrage → 201 über EINE atomare RPC (Konversation + Intake +
+ *       Nachricht); Antwort ohne tenant_id/bot_id
  *   F2  Doppel-Submit (gleiche site_ref + nonce) → 200 duplicate, eine Zeile
  *   F3  Unbekannte / deaktivierte site_ref → 404, nichts geschrieben
  *   F4  Honeypot → 400, nichts geschrieben; nicht einmal resolve
@@ -16,14 +16,14 @@
  *   F8  Rate-Limit: Isolate-Zähler → 429 vor resolve; DB-Zähler je ip_hash → 429 nach resolve;
  *       Kontingent je Seite IP-unabhängig; clientIp nimmt den letzten XFF-Eintrag
  *   F9  Fehlendes Salt → 503, nichts geschrieben; IP nie im Klartext
- *   F10 Scheitert Intake nach dem Anlegen → Konversation entfernt, 500
+ *   F10 Technischer Fehler der RPC → 500, keine Erfolgsmeldung
  *   F11 Längenkappung auf die Intake-CHECKs
  *   F12 handler/logic/repo bleiben vitest-importierbar (kein Deno/jsr)
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { handleInboxFormSubmit, RATE_LIMIT_PER_HOUR, RATE_LIMIT_PER_SITE_PER_HOUR, type HandlerDeps } from '../../supabase/functions/inbox-form-submit/handler';
-import type { InboxRepo, NewConversation, NewIntake, ResolvedInbox } from '../../supabase/functions/inbox-form-submit/repo';
+import type { InboxRepo, SubmitArgs } from '../../supabase/functions/inbox-form-submit/repo';
 import { LIMITS, clientIp, hashIp } from '../../supabase/functions/inbox-form-submit/logic';
 
 const SITE_REF = 'AbCdEfGhIjKlMnOpQrStUvWx'; // 24 Zeichen base64url
@@ -34,53 +34,59 @@ const BOT = '22222222-2222-4222-8222-222222222222';
 const PROJECT = '33333333-3333-4333-8333-333333333333';
 const BINDING = '44444444-4444-4444-8444-444444444444';
 
+interface ResolvedInbox { binding_id: string; tenant_id: string; bot_id: string; website_project_id: string }
+interface StoredConversation {
+  id: string; tenant_id: string; bot_id: string; external_ref: string; contact_label: string;
+  metadata: Record<string, unknown>; created_at: number;
+}
 interface Store {
   bindings: Map<string, ResolvedInbox>;
-  conversations: Array<NewConversation & { id: string }>;
-  intakes: NewIntake[];
+  conversations: StoredConversation[];
+  intakes: Array<SubmitArgs & { conversation_id: string; tenant_id: string }>;
   messages: Array<{ conversation_id: string; content: string }>;
   calls: string[];
-  failIntake?: boolean;
+  failSubmit?: boolean;
+  clock: () => number;
 }
 
 function newStore(): Store {
-  const s: Store = { bindings: new Map(), conversations: [], intakes: [], messages: [], calls: [] };
+  const s: Store = {
+    bindings: new Map(), conversations: [], intakes: [], messages: [], calls: [],
+    clock: () => Date.parse('2026-11-03T12:00:00.000Z'),
+  };
   s.bindings.set(SITE_REF, { binding_id: BINDING, tenant_id: TENANT, bot_id: BOT, website_project_id: PROJECT });
   return s;
 }
 
 let seq = 0;
+/**
+ * Spiegelt die Semantik der RPC inbox_form_submit_intake: Auflösung,
+ * Duplikat, beide Kontingente (1 h), dann alle drei Datensätze in einem Schritt.
+ */
 function memRepo(s: Store): InboxRepo {
   return {
-    async resolveSiteInbox(ref) { s.calls.push('resolve'); return s.bindings.get(ref) ?? null; },
-    async countRecentByIpHash(tenantId, ipHash, sinceIso) {
-      s.calls.push('count');
-      return s.conversations.filter((c) =>
-        c.tenant_id === tenantId && c.metadata.ip_hash === ipHash && c.now >= sinceIso).length;
-    },
-    async countRecentByBinding(tenantId, bindingId, sinceIso) {
-      s.calls.push('count');
-      return s.conversations.filter((c) =>
-        c.tenant_id === tenantId && c.metadata.binding_id === bindingId && c.now >= sinceIso).length;
-    },
-    async insertConversation(c) {
-      s.calls.push('insert');
-      const dup = s.conversations.find((x) => x.bot_id === c.bot_id && x.external_ref === c.external_ref);
-      if (dup) return { ok: false, reason: 'duplicate', id: dup.id };
+    async submit(a) {
+      s.calls.push('submit');
+      if (s.failSubmit) throw new Error('inbox_form_submit_intake: boom');
+      const inbox = s.bindings.get(a.site_ref);
+      if (!inbox) return { status: 'not_found' };
+      const ref = `form:${a.site_ref}:${a.nonce}`;
+      const dup = s.conversations.find((c) => c.bot_id === inbox.bot_id && c.external_ref === ref);
+      if (dup) return { status: 'duplicate', conversation_id: dup.id };
+      const since = s.clock() - 3_600_000;
+      const recent = s.conversations.filter((c) => c.tenant_id === inbox.tenant_id && c.created_at >= since);
+      const byIp = recent.filter((c) => c.metadata.ip_hash === a.ip_hash).length;
+      const bySite = recent.filter((c) => c.metadata.binding_id === inbox.binding_id).length;
+      if (byIp >= a.ip_limit || bySite >= a.site_limit) return { status: 'rate_limited' };
       const id = `aaaaaaaa-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
-      s.conversations.push({ ...c, id });
-      return { ok: true, id };
-    },
-    async insertIntake(i) {
-      s.calls.push('intake');
-      if (s.failIntake) return { ok: false, message: 'boom' };
-      s.intakes.push(i);
-      return { ok: true };
-    },
-    async insertUserMessage(m) { s.calls.push('message'); s.messages.push(m); return { ok: true }; },
-    async deleteConversation(id) {
-      s.calls.push('delete');
-      s.conversations = s.conversations.filter((c) => c.id !== id);
+      s.conversations.push({
+        id, tenant_id: inbox.tenant_id, bot_id: inbox.bot_id, external_ref: ref, contact_label: a.contact_label,
+        metadata: { source: 'site_form', site_ref: a.site_ref, binding_id: inbox.binding_id, website_project_id: inbox.website_project_id, ip_hash: a.ip_hash },
+        created_at: s.clock(),
+      });
+      s.intakes.push({ ...a, conversation_id: id, tenant_id: inbox.tenant_id });
+      s.messages.push({ conversation_id: id, content: a.anliegen });
+      return { status: 'received', conversation_id: id };
     },
   };
 }
@@ -142,10 +148,12 @@ describe('inbox-form-submit', () => {
     expect(i.tenant_id).toBe(TENANT);
     expect(i.anliegen).toBe('Heizung tropft, bitte Rückruf.');
     expect(i.terminwunsch).toBe('Dienstag vormittags');
-    expect(i.einwilligung_at).toBe('2026-11-03T12:00:00.000Z');
+    expect(i.ip_limit).toBe(RATE_LIMIT_PER_HOUR);
+    expect(i.site_limit).toBe(RATE_LIMIT_PER_SITE_PER_HOUR);
 
-    expect(s.messages).toEqual([{ tenant_id: TENANT, conversation_id: c.id, bot_id: BOT, content: 'Heizung tropft, bitte Rückruf.' }]);
-    expect(s.calls).toEqual(['resolve', 'count', 'count', 'insert', 'intake', 'message']);
+    expect(s.messages).toEqual([{ conversation_id: c.id, content: 'Heizung tropft, bitte Rückruf.' }]);
+    // Genau ein Datenbankaufruf — alles atomar.
+    expect(s.calls).toEqual(['submit']);
   });
 
   it('F2: Doppel-Submit mit gleicher site_ref + nonce → 200 duplicate, eine Konversation', async () => {
@@ -173,7 +181,7 @@ describe('inbox-form-submit', () => {
     expect(res.status).toBe(404);
     expect((await res.json()).error.code).toBe('NOT_FOUND');
     expect(s.conversations).toHaveLength(0);
-    expect(s.calls).toEqual(['resolve']);
+    expect(s.calls).toEqual(['submit']);
   });
 
   it('F4: Honeypot → 400 ohne resolve und ohne Schreiben', async () => {
@@ -254,7 +262,7 @@ describe('inbox-form-submit', () => {
     expect(s.calls).toEqual([]);
   });
 
-  it('F8b: DB-Rate-Limit je ip_hash und Mandant → 429 nach resolve, kein Insert', async () => {
+  it('F8b: Kontingent je ip_hash und Mandant → 429 aus der RPC, kein Insert', async () => {
     const s = newStore();
     for (let i = 0; i < RATE_LIMIT_PER_HOUR; i++) {
       const res = await handleInboxFormSubmit(post(validBody({ nonce: `nonce-${String(i).padStart(14, '0')}` })), deps(s));
@@ -316,13 +324,13 @@ describe('inbox-form-submit', () => {
     await expect(hashIp('203.0.113.7', '')).rejects.toThrow();
   });
 
-  it('F10: Intake scheitert nach dem Anlegen → Konversation entfernt, 500', async () => {
+  it('F10: technischer Fehler der RPC → 500, keine Erfolgsmeldung, nichts behauptet', async () => {
     const s = newStore();
-    s.failIntake = true;
+    s.failSubmit = true;
     const res = await handleInboxFormSubmit(post(validBody()), deps(s));
     expect(res.status).toBe(500);
+    expect((await res.json()).error.code).toBe('INTERNAL');
     expect(s.conversations).toHaveLength(0);
-    expect(s.calls).toEqual(['resolve', 'count', 'count', 'insert', 'intake', 'delete']);
   });
 
   it('F11: Längenkappung auf die Intake-CHECKs', async () => {

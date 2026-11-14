@@ -13,6 +13,11 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_GITHUB_ENABLED?: string;
   /** 'true' schaltet Governance AI (/app/assistant) ein. Standard: aus. */
   readonly VITE_GOVERNANCE_AI_ENABLED?: string;
+  /**
+   * Reserviert für einen späteren ElevenLabs-Browser-Adapter.
+   * Dieser Stand lädt kein SDK und keinen Key. Standard: nicht gesetzt.
+   */
+  readonly VITE_ELEVENLABS_BROWSER_ENABLED?: string;
   readonly VITE_META_PIXEL_ID?: string;
   readonly VITE_TIKTOK_PIXEL_ID?: string;
   readonly VITE_GA4_MEASUREMENT_ID?: string;

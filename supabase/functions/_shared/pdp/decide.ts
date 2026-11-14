@@ -67,7 +67,10 @@ export async function loadSnapshot(
 
   let aiQuery = admin
     .from('ai_policies')
-    .select('id, name, rule_type, action, enabled, condition')
+    // `tenant_id` muss mitgelesen werden: die Abfrage mischt globale und
+    // mandantenspezifische Regeln, und der PEP muss beide unterscheiden
+    // koennen (MP-0 Nachtrag, Codex P1 governance-router:215).
+    .select('id, name, rule_type, action, enabled, condition, tenant_id')
     .eq('enabled', true);
   aiQuery = tenantId
     ? aiQuery.or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
@@ -79,7 +82,7 @@ export async function loadSnapshot(
   if (tenantId) {
     const { data, error } = await admin
       .from('governance_policies')
-      .select('id, policy_type, action, enabled, condition')
+      .select('id, policy_type, action, enabled, condition, tenant_id')
       .eq('tenant_id', tenantId)
       .eq('enabled', true);
     if (error) throw new Error(`governance_policies: ${error.message}`);
@@ -245,6 +248,11 @@ async function resolveApproval(
             policy_source: result.reasons[0]?.policy_source ?? 'governance_policies',
             rule: 'approval_coverage',
             action: 'allow',
+            // Dieser Grund stammt aus der Freigabe-Kette, nicht aus einer
+            // Policy-Bedingung: er ist nicht verbgebunden, und der Mandant
+            // ist der des Requests.
+            policy_tenant_id: result.reasons[0]?.policy_tenant_id ?? request.tenant_id ?? null,
+            verb_scoped: false,
             text_de: `Die Aktion ist durch eine erteilte Freigabe gedeckt (Gate ${approved.id}).`,
           },
           ...result.reasons,

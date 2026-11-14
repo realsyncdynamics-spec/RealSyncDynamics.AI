@@ -146,13 +146,33 @@ describe('AiGateway', () => {
     primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information: lmstudio.internal'); });
     const anthropic = anthropicStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, allowedFallbackIds: ['anthropic', 'openai'] });
     const result = await gateway.generate(chatRequest());
 
     expect(result.provider).toBe('anthropic');
     expect(result.output).toBe('anthropic-output');
     expect(primary.generate).toHaveBeenCalledTimes(1);
     expect(anthropic.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('MP-0: ohne allowedFallbackIds kein automatischer Provider-Wechsel — der Transportfehler wird durchgereicht', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information: lmstudio.internal'); });
+    const anthropic = anthropicStub();
+    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/failed to lookup/);
+    expect(anthropic.generate).not.toHaveBeenCalled();
+  });
+
+  it('MP-0: Fallback nur auf ausdrücklich freigegebene Adapter (openai erlaubt, anthropic nicht)', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('connect ECONNREFUSED 127.0.0.1:1234'); });
+    const anthropic = anthropicStub();
+    const openai = openaiStub();
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai, allowedFallbackIds: ['openai'] });
+    const result = await gateway.generate(chatRequest());
+    expect(result.provider).toBe('openai');
+    expect(anthropic.generate).not.toHaveBeenCalled();
   });
 
   it('falls back on connection-refused, timeout, no-model-available, 5xx', async () => {
@@ -166,7 +186,7 @@ describe('AiGateway', () => {
       const primary = stubAdapter();
       primary.generate = vi.fn(async () => { throw new Error(m); });
       const anthropic = anthropicStub();
-      const gateway = new AiGateway({ lmStudio: primary, anthropic });
+      const gateway = new AiGateway({ lmStudio: primary, anthropic, allowedFallbackIds: ['anthropic', 'openai'] });
       const result = await gateway.generate(chatRequest());
       expect(result.provider, `should fall back on: ${m}`).toBe('anthropic');
     }
@@ -177,7 +197,7 @@ describe('AiGateway', () => {
     primary.generate = vi.fn(async () => { throw new Error('LM Studio HTTP 400: invalid request'); });
     const anthropic = anthropicStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, allowedFallbackIds: ['anthropic', 'openai'] });
     await expect(gateway.generate(chatRequest())).rejects.toThrow(/HTTP 400/);
     expect(anthropic.generate).not.toHaveBeenCalled();
   });
@@ -187,7 +207,7 @@ describe('AiGateway', () => {
     primary.extractJson = vi.fn(async () => { throw new Error('failed to lookup address information'); }) as never;
     const anthropic = anthropicStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, allowedFallbackIds: ['anthropic', 'openai'] });
     const result = await gateway.extractJson(chatRequest({ task_type: 'extract_json' }));
 
     expect(result.provider).toBe('anthropic');
@@ -200,7 +220,7 @@ describe('AiGateway', () => {
     primary.embed = vi.fn(async () => { throw new Error('failed to lookup address information'); });
     const anthropic = anthropicStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, allowedFallbackIds: ['anthropic', 'openai'] });
     await expect(gateway.embed(chatRequest({ task_type: 'embed' }))).rejects.toThrow(/lookup address/);
     // Anthropic adapter is NOT consulted at all for embed.
     expect(anthropic.generate).not.toHaveBeenCalled();
@@ -251,7 +271,7 @@ describe('AiGateway', () => {
     const anthropic = anthropicStub();
     const openai = openaiStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai, allowedFallbackIds: ['anthropic', 'openai'] });
     const result = await gateway.generate(chatRequest());
 
     expect(result.provider).toBe('anthropic');
@@ -265,7 +285,7 @@ describe('AiGateway', () => {
     const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
     const openai = openaiStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai, allowedFallbackIds: ['anthropic', 'openai'] });
     const result = await gateway.generate(chatRequest());
 
     expect(result.provider).toBe('openai');
@@ -279,7 +299,7 @@ describe('AiGateway', () => {
     const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
     const openai = openaiStub({ throws: 'OpenAI HTTP 503' });
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai, allowedFallbackIds: ['anthropic', 'openai'] });
     await expect(gateway.generate(chatRequest())).rejects.toThrow(/OpenAI HTTP 503/);
   });
 
@@ -291,7 +311,7 @@ describe('AiGateway', () => {
     const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('invalid x-api-key'); }) });
     const openai = openaiStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai, allowedFallbackIds: ['anthropic', 'openai'] });
     await expect(gateway.generate(chatRequest())).rejects.toThrow(/invalid x-api-key/);
     expect(openai.generate).not.toHaveBeenCalled();
   });
@@ -301,7 +321,7 @@ describe('AiGateway', () => {
     primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
     const openai = openaiStub();
 
-    const gateway = new AiGateway({ lmStudio: primary, openai });
+    const gateway = new AiGateway({ lmStudio: primary, openai, allowedFallbackIds: ['anthropic', 'openai'] });
     expect(gateway.fallbackChainIds()).toEqual(['openai']);
     const result = await gateway.generate(chatRequest());
     expect(result.provider).toBe('openai');

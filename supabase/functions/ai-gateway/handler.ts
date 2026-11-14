@@ -12,7 +12,16 @@
 //   3. Builder: Entitlement siteos.builder (nur feature app_builder_code)
 //   4. Politik: Profil-Allowlist, max_tokens-Clamp, system_prompt-Regeln
 //   5. Rate-Limit pro Principal (ohne feature) + optional Feature-Bucket
-//   6. PDP (PEP), dann Provider
+//   6. PDP (PEP) mit Tenant, Provider, Modell und Region — fail-closed (MP-0)
+//   7. Evidence-Reservierung `ai:call_started` — schlägt sie fehl, KEIN
+//      Provider-Aufruf (503 EVIDENCE_UNAVAILABLE) (MP-0)
+//   8. Provider, danach Abschluss `ai:call` / `ai:call_failed`. Scheitert der
+//      Abschluss, wird das als Alarm geloggt und die Antwort markiert
+//      (`x-evidence-status: incomplete` bzw. `evidence_status` im Stream).
+//
+// Mandant (MP-0): Nutzerpfad aus requireAuthAndTenant, Service-Pfad NUR aus
+// einer signierten Tenant-Bestätigung (_shared/aiGateway/serviceTenant.ts).
+// Ein tenant_id aus Body/x-tenant-id ohne passende Bestätigung → 403.
 //
 // Sonderpfad `mode: 'audit_anon'` (öffentlicher Audit-Copilot, ohne Login):
 //   Cloudflare Turnstile (fail-closed, vor allem anderen), fester Zweck/
@@ -35,6 +44,7 @@ import {
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
 import { isTransportLevelFailure } from '../_shared/aiGateway/router.ts';
+import { primaryPolicySource } from '../_shared/aiGateway/pdpGuard.ts';
 import { verifyTurnstile } from '../_shared/aiGateway/turnstile.ts';
 import {
   decideRateLimit,
@@ -65,8 +75,10 @@ import {
 } from '../_shared/aiGateway/anonAuditCopilot.ts';
 import {
   buildAiCallEvidenceRow,
+  resolveResidencyAndRegion,
   type AiEvidenceEventInsert,
 } from '../_shared/aiGateway/callEvidence.ts';
+import { serviceTenantFrom, verifyTenantAssertion } from '../_shared/aiGateway/serviceTenant.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
@@ -102,8 +114,8 @@ export interface GatewayLike {
 /**
  * Verbrauchsbuchung pro Mandant (#1646). tenantId kommt ausschließlich aus
  * dem aufgelösten Principal: im Nutzerpfad aus requireAuthAndTenant, im
- * Service-Pfad aus dem Body eines per x-internal-key authentifizierten
- * Aufrufers. Ohne Mandant wird nichts gebucht.
+ * Service-Pfad aus der signierten Tenant-Bestätigung (MP-0). Ohne Mandant
+ * wird nichts gebucht.
  */
 export interface UsageBooking {
   tenantId: string;
@@ -128,8 +140,34 @@ export function usageTokens(usage: AiGatewayUsage | undefined | null): number {
 
 export interface PdpVerdict {
   decision: string;
-  reasons: Array<{ text_de: string }>;
+  /**
+   * `policy_id` und `policy_source` je Grund werden gebraucht, um vor dem
+   * Evidence-Insert die Policy-Quelle zu bestimmen (Codex P1
+   * governance-router:410) — `ai_evidence_events.policy_id` zeigt per
+   * Fremdschluessel nur auf `ai_policies`.
+   */
+  reasons: Array<{ text_de: string; policy_id?: string; policy_source?: string }>;
   primary_policy_id?: string | null;
+}
+
+/** Was der PEP VOR dem Provider-Aufruf über das Ziel weiß (MP-0). */
+export interface ProviderTarget {
+  /** Provider, der laut Routing antworten wird (lm_studio | ollama | …), null = unbekannt. */
+  provider: string | null;
+  /** Konfigurierte Region selbst betriebener Endpunkte ('eu'), null = nicht belegt. */
+  localRegion: string | null;
+}
+
+/** Kontext für die Policy-Prüfung (MP-0: mandantenspezifisch, Provider als Ziel). */
+export interface PdpContext {
+  tenantId: string | null;
+  path: 'user' | 'service' | 'anon';
+  userId: string | null;
+  feature: string;
+  modelProfile: string;
+  provider: string | null;
+  providerRegion: string;
+  residency: string;
 }
 
 export interface GatewayHandlerDeps {
@@ -143,7 +181,16 @@ export interface GatewayHandlerDeps {
    * Timeout/5xx endet als Fehler (503) statt still bei einem US-Anbieter.
    */
   buildGateway: () => Promise<GatewayLike | Response>;
-  pdpCheck: (feature: string, modelProfile: string) => Promise<Response | PdpVerdict | null>;
+  /**
+   * PEP (MP-0). Response = abgelehnt (Policy-Block im enforce-Modus ODER
+   * Prüfung nicht verfügbar/Timeout/unklar — fail-closed), Verdikt = weiter,
+   * null = PDP per Betreiber-Einstellung `off`.
+   */
+  pdpCheck: (ctx: PdpContext) => Promise<Response | PdpVerdict | null>;
+  /** Routing-Ziel je Profil. Default: Provider unbekannt, Region aus AI_GATEWAY_LOCAL_REGION. */
+  providerTarget?: (modelProfile: string) => ProviderTarget;
+  /** Uhr für die Tenant-Bestätigung (Echtzeit). Default Date.now. */
+  wallClock?: () => number;
   /** anon_chat_runs-Protokoll (reserve fail-closed). null → anon-Pfad antwortet 503 LOG_UNAVAILABLE. */
   anonAuditLog: () => Promise<AnonAuditLog | null>;
   /** fetch für die Turnstile-Siteverify (Tests injizieren einen Mock). */
@@ -158,10 +205,11 @@ export interface GatewayHandlerDeps {
    */
   recordUsage?: (booking: UsageBooking) => Promise<void>;
   /**
-   * Schreibt für jeden erfolgreichen oder durch den PDP blockierten
-   * angemeldeten KI-Aufruf genau einen Evidence-Eintrag (ai_evidence_events).
-   * Fehler brechen die Antwort nicht (fail-open), werden aber mit
-   * scope 'ai-gateway-evidence' geloggt.
+   * Schreibt Evidence nach ai_evidence_events (MP-0, fail-closed):
+   * `ai:call_started` VOR dem Provider — Fehler oder fehlende Abhängigkeit
+   * → 503 EVIDENCE_UNAVAILABLE ohne Provider-Aufruf. Danach `ai:call` bzw.
+   * `ai:call_failed`; ein Fehler dort wird als Alarm geloggt und markiert.
+   * Gilt auch für mandantenlose Service-Aufrufe (tenant_id null, globale Kette).
    */
   recordEvidence?: (entry: AiEvidenceEventInsert) => Promise<void>;
   /** Rate-Limit-Speicher; Default: modulweite Maps (pro Isolate). */
@@ -195,6 +243,11 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
   const now = deps.now ?? (() => Date.now());
   const log = deps.log ?? ((line: Record<string, unknown>) => console.log(JSON.stringify(line)));
   const newId = deps.newId ?? (() => crypto.randomUUID());
+  const wallClock = deps.wallClock ?? (() => Date.now());
+  const providerTarget = deps.providerTarget ?? ((): ProviderTarget => ({
+    provider: null,
+    localRegion: deps.env('AI_GATEWAY_LOCAL_REGION') ?? null,
+  }));
 
   function reject(r: Rejection): Response {
     return jsonError(r.status, r.code, r.message, corsHeaders);
@@ -210,11 +263,19 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     const service = await resolveServiceCaller(req.headers, deps.env);
     if (service.kind === 'reject') return reject(service.rejection);
     if (service.kind === 'service') {
-      return {
-        kind: 'service',
+      // MP-0: Mandant nur aus signierter Bestätigung, nie aus dem Body.
+      const binding = await verifyTenantAssertion({
+        headers: req.headers,
         caller: service.caller,
-        tenantId: typeof tenantClaim === 'string' && tenantClaim ? tenantClaim : null,
-      };
+        env: deps.env,
+        now: wallClock(),
+      });
+      const tenant = serviceTenantFrom(binding, tenantClaim);
+      if (isRejection(tenant)) {
+        log({ scope: 'ai-gateway-auth', event: 'service_tenant_rejected', internal_caller: service.caller, code: tenant.code });
+        return reject(tenant);
+      }
+      return { kind: 'service', caller: service.caller, tenantId: tenant.tenantId };
     }
 
     // Nutzerpfad: jedes Mitglied des Tenants (keine Rollenbeschränkung) —
@@ -308,62 +369,214 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     }
   }
 
-  // ── Evidence pro angemeldetem KI-Call (WP9 / M3) ───────────────────
+  // ── Evidence pro KI-Call (WP9 / M3, fail-closed seit MP-0) ─────────
 
   interface EvidenceOutcome {
-    blocked?: boolean;
+    stage: 'started' | 'completed' | 'failed' | 'blocked';
     verdict?: string | null;
     reasons?: string[];
     policyId?: string | null;
+    /** 'ai_policies' | 'governance_policies' — siehe primaryPolicySource. */
+    policySource?: string | null;
     provider?: string | null;
     model?: string | null;
     usage?: AiGatewayUsage | null;
+    errorCode?: string | null;
     requestId: string;
     latencyMs: number;
   }
 
-  async function bookEvidence(
+  async function evidenceRow(
     p: Principal,
     route: string,
     op: string,
     request: AiGatewayRequest,
+    target: ProviderTarget,
     outcome: EvidenceOutcome,
-  ): Promise<void> {
-    if (!deps.recordEvidence || !p.tenantId) return;
+  ): Promise<AiEvidenceEventInsert> {
+    return await buildAiCallEvidenceRow({
+      tenantId: p.tenantId,
+      stage: outcome.stage,
+      errorCode: outcome.errorCode ?? null,
+      path: p.kind,
+      userId: p.kind === 'user' ? p.userId : null,
+      internalCaller: p.kind === 'service' ? p.caller : null,
+      feature: request.feature,
+      route,
+      op,
+      provider: outcome.provider ?? null,
+      model: outcome.model ?? request.model_profile,
+      modelProfile: request.model_profile,
+      // MP-0: kein fester EU-Wert mehr — abgeleitet aus dem Provider.
+      localRegion: target.localRegion,
+      usage: outcome.usage,
+      verdict: outcome.verdict,
+      blocked: outcome.stage === 'blocked',
+      reasons: outcome.reasons,
+      policyId: outcome.policyId ?? null,
+      policySource: outcome.policySource ?? null,
+      requestId: outcome.requestId,
+      latencyMs: outcome.latencyMs,
+      input: request.input,
+    });
+  }
+
+  /** Reservierung VOR dem Provider. false = fehlgeschlagen → Aufruf abbrechen. */
+  async function reserveEvidence(
+    p: Principal, route: string, op: string, request: AiGatewayRequest, target: ProviderTarget, outcome: EvidenceOutcome,
+  ): Promise<boolean> {
+    if (!deps.recordEvidence) {
+      log({ scope: 'ai-gateway-evidence', event: 'reserve_unavailable', severity: 'critical', reason: 'not_configured', tenant_id: p.tenantId, feature: request.feature, route });
+      return false;
+    }
     try {
-      const row = await buildAiCallEvidenceRow({
-        tenantId: p.tenantId,
-        path: p.kind,
-        userId: p.kind === 'user' ? p.userId : null,
-        internalCaller: p.kind === 'service' ? p.caller : null,
-        feature: request.feature,
-        route,
-        op,
-        provider: outcome.provider ?? null,
-        model: outcome.model ?? request.model_profile,
-        modelProfile: request.model_profile,
-        providerRegion: 'EU',
-        residency: 'eu_local',
-        usage: outcome.usage,
-        verdict: outcome.verdict,
-        blocked: outcome.blocked,
-        reasons: outcome.reasons,
-        policyId: outcome.policyId ?? null,
-        requestId: outcome.requestId,
-        latencyMs: outcome.latencyMs,
-        input: request.input,
-      });
-      await deps.recordEvidence(row);
+      await deps.recordEvidence(await evidenceRow(p, route, op, request, target, outcome));
+      return true;
+    } catch (e) {
+      log({ scope: 'ai-gateway-evidence', event: 'reserve_failed', severity: 'critical', tenant_id: p.tenantId, feature: request.feature, route, request_id: outcome.requestId, error: String((e as Error)?.message ?? e).slice(0, 200) });
+      return false;
+    }
+  }
+
+  /** Abschluss bzw. Block-Eintrag. false = nicht geschrieben (Alarm geloggt). */
+  async function finalizeEvidence(
+    p: Principal, route: string, op: string, request: AiGatewayRequest, target: ProviderTarget, outcome: EvidenceOutcome,
+  ): Promise<boolean> {
+    if (!deps.recordEvidence) {
+      log({ scope: 'ai-gateway-evidence', event: 'complete_failed', severity: 'critical', alert: true, reason: 'not_configured', stage: outcome.stage, tenant_id: p.tenantId, feature: request.feature, route, request_id: outcome.requestId });
+      return false;
+    }
+    try {
+      await deps.recordEvidence(await evidenceRow(p, route, op, request, target, outcome));
+      return true;
     } catch (e) {
       log({
         scope: 'ai-gateway-evidence',
-        event: 'record_failed',
+        event: 'complete_failed',
+        severity: 'critical',
+        alert: true,
+        stage: outcome.stage,
         tenant_id: p.tenantId,
         feature: request.feature,
         route,
+        request_id: outcome.requestId,
         error: String((e as Error)?.message ?? e).slice(0, 200),
       });
+      return false;
     }
+  }
+
+  function evidenceUnavailable(): Response {
+    return jsonError(503, 'EVIDENCE_UNAVAILABLE', 'Anfrage abgelehnt: Der Prüfpfad (Evidence) ist nicht verfügbar.', corsHeaders);
+  }
+
+  function markIncomplete(res: Response, ok: boolean): Response {
+    if (!ok) res.headers.set('x-evidence-status', 'incomplete');
+    return res;
+  }
+
+  async function errorCodeOf(res: Response): Promise<string | null> {
+    try {
+      const j = await res.clone().json() as { error?: { code?: unknown } };
+      return typeof j?.error?.code === 'string' ? j.error.code : null;
+    } catch {
+      return null;
+    }
+  }
+
+  interface Governed {
+    target: ProviderTarget;
+    verdict: PdpVerdict | null;
+    requestId: string;
+    startedAt: number;
+    governance?: { decision: string; reasons: string[] };
+  }
+
+  /**
+   * Gemeinsame Vorprüfung beider Routen (MP-0): PDP mit Mandant/Provider/
+   * Region (fail-closed), danach Evidence-Reservierung (fail-closed). Liefert
+   * Response, wenn KEIN Provider-Aufruf stattfinden darf.
+   */
+  async function govern(p: Principal, route: string, op: string, request: AiGatewayRequest): Promise<Governed | Response> {
+    const startedAt = now();
+    // Codex P2 (:492): Die erzeugte ID muss auch im Request stehen, VOR der
+    // Evidence-Reservierung. Sonst erzeugen Router bzw. Adapter fuer denselben
+    // Aufruf eine zweite ID, die Antwort traegt diese — und eine vom Nutzer
+    // gemeldete Antwort-ID laesst sich nicht mehr mit ihrem Pruefpfad
+    // verknuepfen. Der governance-router macht es genauso (index.ts: 380/381).
+    const requestId = request.trace_id ?? newId();
+    request.trace_id = requestId;
+    const target = providerTarget(request.model_profile);
+    const planned = resolveResidencyAndRegion(target.provider, undefined, undefined, target.localRegion);
+
+    const verdict = await deps.pdpCheck({
+      tenantId: p.tenantId,
+      path: p.kind,
+      userId: p.kind === 'user' ? p.userId : null,
+      feature: request.feature,
+      modelProfile: request.model_profile,
+      provider: target.provider,
+      providerRegion: planned.providerRegion,
+      residency: planned.residency,
+    });
+    if (verdict instanceof Response) {
+      const code = await errorCodeOf(verdict);
+      await finalizeEvidence(p, route, op, request, target, {
+        stage: 'blocked',
+        verdict: code === 'APPROVAL_REQUIRED' ? 'require_approval' : 'block',
+        reasons: code ? [code] : [],
+        provider: target.provider,
+        requestId,
+        latencyMs: Math.max(0, now() - startedAt),
+      });
+      return verdict;
+    }
+
+    const reserved = await reserveEvidence(p, route, op, request, target, {
+      stage: 'started',
+      verdict: verdict?.decision ?? 'allow',
+      reasons: verdict?.reasons?.map((r) => r.text_de),
+      policyId: verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(verdict),
+      provider: target.provider,
+      requestId,
+      latencyMs: 0,
+    });
+    if (!reserved) return evidenceUnavailable();
+
+    const governance = verdict && verdict.decision === 'warn'
+      ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
+      : undefined;
+    return { target, verdict, requestId, startedAt, governance };
+  }
+
+  function completedOutcome(g: Governed, result: Record<string, unknown> | AiStreamChunk | undefined, request: AiGatewayRequest): EvidenceOutcome {
+    const r = (result ?? {}) as Record<string, unknown>;
+    return {
+      stage: 'completed',
+      verdict: g.verdict?.decision ?? 'allow',
+      reasons: g.verdict?.reasons?.map((r) => r.text_de),
+      policyId: g.verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(g.verdict),
+      provider: typeof r.provider === 'string' ? r.provider : null,
+      model: typeof r.model === 'string' ? r.model : request.model_profile,
+      usage: (r.usage ?? null) as AiGatewayUsage | null,
+      requestId: g.requestId,
+      latencyMs: typeof r.latency_ms === 'number' ? r.latency_ms : Math.max(0, now() - g.startedAt),
+    };
+  }
+
+  function failedOutcome(g: Governed, errorCode: string): EvidenceOutcome {
+    return {
+      stage: 'failed',
+      verdict: g.verdict?.decision ?? 'allow',
+      policyId: g.verdict?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(g.verdict),
+      provider: g.target.provider,
+      errorCode,
+      requestId: g.requestId,
+      latencyMs: Math.max(0, now() - g.startedAt),
+    };
   }
 
   // ── Anonymer Audit-Copilot (mode: 'audit_anon') ───────────────────
@@ -471,9 +684,20 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
     }
 
     const request = buildAnonAuditRequest(parsed, requestId);
-    const verdict = await deps.pdpCheck(request.feature, request.model_profile);
+    const anonTarget = providerTarget(request.model_profile);
+    const anonPlanned = resolveResidencyAndRegion(anonTarget.provider, undefined, undefined, anonTarget.localRegion);
+    const verdict = await deps.pdpCheck({
+      tenantId: null,
+      path: 'anon',
+      userId: null,
+      feature: request.feature,
+      modelProfile: request.model_profile,
+      provider: anonTarget.provider,
+      providerRegion: anonPlanned.providerRegion,
+      residency: anonPlanned.residency,
+    });
     if (verdict instanceof Response) {
-      await finish({ outcome: 'error', error_code: 'POLICY_BLOCKED', duration_ms: now() - startedAt });
+      await finish({ outcome: 'error', error_code: (await errorCodeOf(verdict)) ?? 'POLICY_BLOCKED', duration_ms: now() - startedAt });
       return verdict;
     }
 
@@ -542,62 +766,40 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
 
     logAccess(principal, '/', request);
 
-    const startedAt = now();
-    const requestId = request.trace_id ?? newId();
-
-    const verdict = await deps.pdpCheck(request.feature, request.model_profile);
-    if (verdict instanceof Response) {
-      await bookEvidence(principal, '/', op, request, {
-        blocked: true,
-        verdict: 'block',
-        requestId,
-        latencyMs: Math.max(0, now() - startedAt),
-      });
-      return verdict;
-    }
-    const governance = verdict && verdict.decision === 'warn'
-      ? { decision: verdict.decision, reasons: verdict.reasons.map((r) => r.text_de) }
-      : undefined;
-    const extra = governance ? { governance } : {};
+    const g = await govern(principal, '/', op, request);
+    if (g instanceof Response) return g;
+    const extra = g.governance ? { governance: g.governance } : {};
 
     const gateway = await deps.buildGateway();
-    if (gateway instanceof Response) return gateway;
+    if (gateway instanceof Response) {
+      await finalizeEvidence(principal, '/', op, request, g.target, failedOutcome(g, (await errorCodeOf(gateway)) ?? 'PROVIDER_UNAVAILABLE'));
+      return gateway;
+    }
 
     const call = op === 'generate' ? gateway.generate
       : op === 'extract_json' ? gateway.extractJson
       : op === 'embed' ? gateway.embed
       : null;
     if (call) {
-      const result = await call.call(gateway, request);
+      let result: Record<string, unknown> & { output: unknown };
+      try {
+        result = await call.call(gateway, request);
+      } catch (error) {
+        await finalizeEvidence(principal, '/', op, request, g.target, failedOutcome(g, mapGatewayError(error).code));
+        throw error;
+      }
       const usage = result.usage as AiGatewayUsage | undefined;
       await bookUsage(principal, '/', request.feature, usage);
-      await bookEvidence(principal, '/', op, request, {
-        blocked: false,
-        verdict: verdict?.decision ?? 'allow',
-        reasons: verdict?.reasons?.map((r) => r.text_de),
-        policyId: verdict?.primary_policy_id ?? null,
-        provider: typeof result.provider === 'string' ? result.provider : null,
-        model: typeof result.model === 'string' ? result.model : request.model_profile,
-        usage,
-        requestId: typeof result.trace_id === 'string' ? result.trace_id : requestId,
-        latencyMs: typeof result.latency_ms === 'number' ? result.latency_ms : Math.max(0, now() - startedAt),
-      });
-      return jsonResponse({ ok: true, ...result, ...extra }, 200, corsHeaders);
+      const outcome = completedOutcome(g, result, request);
+      const ok = await finalizeEvidence(principal, '/', op, request, g.target, outcome);
+      return markIncomplete(jsonResponse({ ok: true, ...result, ...extra }, 200, corsHeaders), ok);
     }
     if (op === 'stream') {
-      return streamNdjson(gateway, request, governance, async (usage, doneChunk) => {
+      return streamNdjson(gateway, request, g.governance, async (usage, doneChunk) => {
         await bookUsage(principal, '/', request.feature, usage);
-        await bookEvidence(principal, '/', 'stream', request, {
-          blocked: false,
-          verdict: verdict?.decision ?? 'allow',
-          reasons: verdict?.reasons?.map((r) => r.text_de),
-          policyId: verdict?.primary_policy_id ?? null,
-          provider: doneChunk?.provider ?? null,
-          model: doneChunk?.model ?? request.model_profile,
-          usage,
-          requestId: doneChunk?.trace_id ?? requestId,
-          latencyMs: typeof doneChunk?.latency_ms === 'number' ? doneChunk.latency_ms : Math.max(0, now() - startedAt),
-        });
+        return await finalizeEvidence(principal, '/', 'stream', request, g.target, completedOutcome(g, { ...doneChunk, usage }, request));
+      }, async (code) => {
+        await finalizeEvidence(principal, '/', 'stream', request, g.target, failedOutcome(g, code));
       });
     }
     return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`, corsHeaders);
@@ -631,60 +833,36 @@ export function createAiGatewayHandler(deps: GatewayHandlerDeps): (req: Request)
 
     logAccess(principal, '/v1/chat/completions', request);
 
-    const startedAt = now();
-    const requestId = request.trace_id ?? newId();
-
-    const verdict = await deps.pdpCheck(request.feature, request.model_profile);
-    if (verdict instanceof Response) {
-      await bookEvidence(principal, '/v1/chat/completions', 'chat.completions', request, {
-        blocked: true,
-        verdict: 'block',
-        requestId,
-        latencyMs: Math.max(0, now() - startedAt),
-      });
-      return verdict;
-    }
+    const g = await govern(principal, '/v1/chat/completions', 'chat.completions', request);
+    if (g instanceof Response) return g;
 
     const gateway = await deps.buildGateway();
-    if (gateway instanceof Response) return gateway;
+    if (gateway instanceof Response) {
+      await finalizeEvidence(principal, '/v1/chat/completions', 'chat.completions', request, g.target, failedOutcome(g, (await errorCodeOf(gateway)) ?? 'PROVIDER_UNAVAILABLE'));
+      return gateway;
+    }
 
-    try {
-      if (body.stream === true) {
-        return streamOpenAiCompat(gateway, request, async (usage, doneChunk) => {
-          await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
-          await bookEvidence(principal, '/v1/chat/completions', 'chat.completions.stream', request, {
-            blocked: false,
-            verdict: verdict?.decision ?? 'allow',
-            reasons: verdict?.reasons?.map((r) => r.text_de),
-            policyId: verdict?.primary_policy_id ?? null,
-            provider: doneChunk?.provider ?? null,
-            model: doneChunk?.model ?? request.model_profile,
-            usage,
-            requestId: doneChunk?.trace_id ?? requestId,
-            latencyMs: typeof doneChunk?.latency_ms === 'number' ? doneChunk.latency_ms : Math.max(0, now() - startedAt),
-          });
-        });
-      }
-      const response = parsed.wantsJson ? await gateway.extractJson(request) : await gateway.generate(request);
-      const usage = response.usage as AiGatewayUsage | undefined;
-      await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
-      await bookEvidence(principal, '/v1/chat/completions', 'chat.completions', request, {
-        blocked: false,
-        verdict: verdict?.decision ?? 'allow',
-        reasons: verdict?.reasons?.map((r) => r.text_de),
-        policyId: verdict?.primary_policy_id ?? null,
-        provider: typeof response.provider === 'string' ? response.provider : null,
-        model: typeof response.model === 'string' ? response.model : request.model_profile,
-        usage,
-        requestId: typeof response.trace_id === 'string' ? response.trace_id : requestId,
-        latencyMs: typeof response.latency_ms === 'number' ? response.latency_ms : Math.max(0, now() - startedAt),
+    if (body.stream === true) {
+      return streamOpenAiCompat(gateway, request, async (usage, doneChunk) => {
+        await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
+        return await finalizeEvidence(principal, '/v1/chat/completions', 'chat.completions.stream', request, g.target, completedOutcome(g, { ...doneChunk, usage }, request));
+      }, async (code) => {
+        await finalizeEvidence(principal, '/v1/chat/completions', 'chat.completions.stream', request, g.target, failedOutcome(g, code));
       });
-      // deno-lint-ignore no-explicit-any
-      return jsonResponse(formatChatResponse(response as any, request.model_profile), 200, corsHeaders);
+    }
+    let response: Record<string, unknown> & { output: unknown };
+    try {
+      response = parsed.wantsJson ? await gateway.extractJson(request) : await gateway.generate(request);
     } catch (error) {
       const mapped = mapGatewayError(error);
+      await finalizeEvidence(principal, '/v1/chat/completions', 'chat.completions', request, g.target, failedOutcome(g, mapped.code));
       return jsonError(mapped.status, mapped.code, mapped.message, corsHeaders);
     }
+    const usage = response.usage as AiGatewayUsage | undefined;
+    await bookUsage(principal, '/v1/chat/completions', request.feature, usage);
+    const ok = await finalizeEvidence(principal, '/v1/chat/completions', 'chat.completions', request, g.target, completedOutcome(g, response, request));
+    // deno-lint-ignore no-explicit-any
+    return markIncomplete(jsonResponse(formatChatResponse(response as any, request.model_profile), 200, corsHeaders), ok);
   }
 
   // ── Router ─────────────────────────────────────────────────────────
@@ -718,19 +896,29 @@ function streamNdjson(
   gateway: GatewayLike,
   request: AiGatewayRequest,
   governance: { decision: string; reasons: string[] } | undefined,
-  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<void>,
+  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<boolean>,
+  onFail?: (code: string) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (obj: unknown) => controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+      let done = false;
       try {
         for await (const chunk of gateway.generateStream(request)) {
-          send({ ok: true, ...chunk, ...(governance && chunk.event === 'done' ? { governance } : {}) });
-          if (chunk.event === 'done' && onDone) await onDone(chunk.usage, chunk);
+          if (chunk.event === 'done') {
+            done = true;
+            // Evidence-Abschluss VOR dem done-Chunk, damit ein Fehler markiert werden kann.
+            const ok = onDone ? await onDone(chunk.usage, chunk) : true;
+            send({ ok: true, ...chunk, ...(governance ? { governance } : {}), ...(ok ? {} : { evidence_status: 'incomplete' }) });
+          } else {
+            send({ ok: true, ...chunk });
+          }
         }
+        if (!done && onFail) await onFail('STREAM_INCOMPLETE');
       } catch (error) {
         const mapped = mapGatewayError(error);
+        if (!done && onFail) await onFail(mapped.code);
         send({ ok: false, error: { code: mapped.code, message: mapped.message } });
       } finally {
         controller.close();
@@ -746,26 +934,31 @@ function streamNdjson(
 function streamOpenAiCompat(
   gateway: GatewayLike,
   request: AiGatewayRequest,
-  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<void>,
+  onDone?: (usage: AiGatewayUsage | undefined, doneChunk?: AiStreamChunk) => Promise<boolean>,
+  onFail?: (code: string) => Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const id = `chatcmpl-${request.trace_id ?? crypto.randomUUID()}`;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      let done = false;
       try {
         for await (const chunk of gateway.generateStream(request)) {
           if (chunk.event === 'delta' && chunk.text) {
             send({ id, object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: chunk.text }, finish_reason: null }] });
           }
           if (chunk.event === 'done') {
-            send({ id, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
-            if (onDone) await onDone(chunk.usage, chunk);
+            done = true;
+            const ok = onDone ? await onDone(chunk.usage, chunk) : true;
+            send({ id, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], ...(ok ? {} : { evidence_status: 'incomplete' }) });
           }
         }
+        if (!done && onFail) await onFail('STREAM_INCOMPLETE');
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
       } catch (error) {
         const mapped = mapGatewayError(error);
+        if (!done && onFail) await onFail(mapped.code);
         send({ error: { code: mapped.code, message: mapped.message } });
       } finally {
         controller.close();

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { COMPANY_LINKS } from './companyProducts';
 
 /**
@@ -183,7 +183,7 @@ export function VoiceCallDemo() {
           ))}
         </div>
       </div>
-      <p className="note">Beispielgespräch · Betriebsnamen sind fiktiv</p>
+      <p className="note">Beispielgespräch · Betriebsnamen sind fiktiv · Telefonannahme in Vorbereitung</p>
       <div className="pm-cta">
         <button className="btn" type="button" onClick={run}>
           Anruf starten
@@ -219,14 +219,29 @@ export function VoiceOnboarding() {
   const [paket, setPaket] = useState(1);
   const [kanal, setKanal] = useState(1);
   const [stimme, setStimme] = useState(0);
+  const stepRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const go = (n: number) => setStep(Math.max(0, Math.min(3, n)));
 
+  // ←/→ auf der Schritt-Leiste wechselt den Schritt (Tab-Muster). Das ganze
+  // Onboarding trägt `data-local-arrows`: Der Produkt-Dialog blättert hier
+  // nicht die Seite weiter, sonst gingen Eingaben verloren.
+  const onStepKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const n = Math.max(0, Math.min(ONB_STEPS.length - 1, step + (e.key === 'ArrowRight' ? 1 : -1)));
+    go(n);
+    stepRefs.current[n]?.focus();
+  };
+
   return (
-    <div className="onb">
-      <div className="onb-steps" role="tablist" aria-label="Einrichtung">
+    <div className="onb" data-local-arrows="">
+      <div className="onb-steps" role="tablist" aria-label="Einrichtung" onKeyDown={onStepKey}>
         {ONB_STEPS.map((s, i) => (
           <button
             key={s}
+            ref={(el) => {
+              stepRefs.current[i] = el;
+            }}
             type="button"
             role="tab"
             id={`onb-tab-${i}`}

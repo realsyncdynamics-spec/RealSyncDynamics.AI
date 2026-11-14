@@ -11,8 +11,10 @@
  * - Tiefer Raum: 3 Nebel, Spiralgalaxie, Asteroidengürtel (260 Instanzen),
  *   Sternschnuppen alle 5–14 s
  * - Scroll-Kamerafahrt in drei Stufen: 0–13 % Zoom Erde, 28–50 % Mond, 66–92 % Mars
- * - Ein fixer Canvas hinter der ganzen Seite: gerendert wird immer, außer bei
- *   verstecktem Tab.
+ * - Ein fixer Canvas hinter der ganzen Seite: gerendert wird nur, solange der
+ *   Canvas im Viewport liegt (IntersectionObserver), der Tab sichtbar ist und
+ *   `paused()` nicht greift (Produkt-Dialog offen).
+ * - Milchstraßen-Textur 2048×1024 statt 4096×2048 (`SKY_TEXTURE_WIDTH`).
  *
  * Abweichungen zur Referenz, ohne sichtbare Änderung:
  * - Texturen self-hosted unter /textures/hero-v4/ (byte-gleich zu den
@@ -48,11 +50,22 @@ export interface SpaceSceneOptions {
   /** Element, an dem die Sonnen-CSS-Variablen gesetzt werden. */
   cssTarget: HTMLElement;
   pointer: ScenePointer;
+  /** `true` = Szene anhalten (z. B. solange der Produkt-Dialog die Seite abdeckt). */
+  paused?: () => boolean;
 }
 
-export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOptions): () => void {
+/** Kantenlänge der prozeduralen Milchstraßen-Textur (Equirect 2:1). Vorher 4096. */
+export const SKY_TEXTURE_WIDTH = 2048;
+
+export function mountSpaceScene({ canvas, cssTarget, pointer, paused }: SpaceSceneOptions): () => void {
   let disposed = false;
   let raf = 0;
+  // Nur rendern, solange der Canvas im Viewport liegt. Der Canvas ist fix
+  // hinter der Seite (`#bg`), meldet sich also im Normalfall immer als
+  // sichtbar; der Observer greift, wenn er ausgeblendet oder aus dem Layout
+  // genommen wird (display:none, eingebettete Ansicht, Druck).
+  let inView = true;
+  let resume: (() => void) | null = null;
   const cleanups: Array<() => void> = [];
   const on = <K extends keyof WindowEventMap>(type: K, fn: (e: WindowEventMap[K]) => void) => {
     addEventListener(type, fn, { passive: true });
@@ -80,6 +93,16 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
     const ro = new ResizeObserver(measure);
     ro.observe(document.body);
     cleanups.push(() => ro.disconnect());
+  }
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      const e = entries[entries.length - 1];
+      if (!e) return;
+      inView = e.isIntersecting;
+      if (inView) resume?.();
+    });
+    io.observe(canvas);
+    cleanups.push(() => io.disconnect());
   }
 
   const L = new THREE.TextureLoader();
@@ -115,11 +138,20 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       return;
     }
 
-    // ── Milchstraße: prozedurale Skybox (Equirect 4096×2048) ──
+    // ── Milchstraße: prozedurale Skybox (Equirect, gezeichnet im 4096×2048-
+    // Koordinatenraum der Referenz, gerastert auf SKY_TEXTURE_WIDTH × /2).
+    // 2048 statt 4096: ein Viertel des Speichers (≈ 8 statt 32 MB plus
+    // Mipmaps) und schnelleres Hochladen; bei backgroundIntensity 0,28 kaum
+    // sichtbar.
     const sky = document.createElement('canvas');
-    sky.width = 4096;
-    sky.height = 2048;
+    sky.width = SKY_TEXTURE_WIDTH;
+    sky.height = SKY_TEXTURE_WIDTH / 2;
     const sk = sky.getContext('2d')!;
+    const skyK = SKY_TEXTURE_WIDTH / 4096;
+    sk.scale(skyK, skyK);
+    // Sterne behalten mindestens einen halben Zielpixel Radius, damit die
+    // feinsten durch das Verkleinern nicht verblassen.
+    const starR = (r: number) => Math.max(r, 0.5 / skyK);
     sk.fillStyle = '#000';
     sk.fillRect(0, 0, 4096, 2048);
     const R = seeded(97);
@@ -151,7 +183,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       const r = R() < 0.02 ? 1.4 + R() * 1.2 : 0.3 + R() * 0.8, al = 0.35 + R() * 0.65;
       sk.fillStyle = R() < 0.15 ? 'rgba(255,225,190,' + al + ')' : 'rgba(235,240,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     sk.restore();
@@ -160,7 +192,7 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       const x = R() * 4096, y = R() * 2048, r = R() < 0.03 ? 1.4 + R() * 1.4 : 0.3 + R() * 0.9, al = 0.3 + R() * 0.7;
       sk.fillStyle = R() < 0.2 ? 'rgba(255,225,190,' + al + ')' : R() < 0.3 ? 'rgba(190,205,255,' + al + ')' : 'rgba(240,244,255,' + al + ')';
       sk.beginPath();
-      sk.arc(x, y, r, 0, 6.28);
+      sk.arc(x, y, starR(r), 0, 6.28);
       sk.fill();
     }
     // Spiralgalaxie oben rechts
@@ -793,16 +825,28 @@ export function mountSpaceScene({ canvas, cssTarget, pointer }: SpaceSceneOption
       on('resize', fit);
       let last = performance.now();
       const loop = (t: number) => {
+        raf = 0;
         if (disposed) return;
+        // Außerhalb des Viewports oder Tab versteckt: Schleife beenden,
+        // `resume` startet neu (IntersectionObserver bzw. visibilitychange).
+        if (!inView || document.hidden) return;
         const dt = Math.min(0.05, (t - last) / 1000);
         last = t;
-        if (!document.hidden) {
+        if (!paused?.()) {
           step(t / 1000, dt);
           renderer.render(scene, cam);
         }
         raf = requestAnimationFrame(loop);
       };
-      raf = requestAnimationFrame(loop);
+      resume = () => {
+        if (disposed || raf || !inView || document.hidden) return;
+        last = performance.now();
+        raf = requestAnimationFrame(loop);
+      };
+      const onVisibility = () => resume?.();
+      document.addEventListener('visibilitychange', onVisibility);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
+      resume();
     }
   })();
 

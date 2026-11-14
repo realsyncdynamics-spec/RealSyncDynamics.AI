@@ -143,6 +143,8 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .pricegrid { width: 100%; max-width: 680px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 .rsl5 .pricegrid div { padding: 24px 14px; border: 1px solid rgba(243,242,242,.2); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 6px; transition: border-color 250ms, transform 250ms var(--ease); }
 .rsl5 .pricegrid div:hover { border-color: var(--gold-lite); transform: translateY(-3px); }
+.rsl5 .price-line { max-width: 680px; font-size: 15px; line-height: 1.5; }
+.rsl5 .price-line strong { color: var(--gold-lite); font-weight: 500; }
 .rsl5 .pricegrid .hot { border-color: var(--gold-lite); background: color-mix(in srgb, var(--color-accent-300) 9%, transparent); }
 .rsl5 .pricegrid b { font-family: var(--font-heading); font-weight: 500; font-size: 22px; }
 .rsl5 .pricegrid .pr { font-family: var(--font-heading); font-size: 46px; font-weight: 300; color: var(--gold-lite); line-height: 1; font-feature-settings: "tnum"; }
@@ -355,6 +357,8 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 .field input, .rsl5 .field select, .rsl5 .field textarea { width: 100%; font: inherit; font-size: 15px; text-align: center; padding: 11px 14px; color: var(--paper); background: rgba(0,0,0,.35); border: 1px solid rgba(243,242,242,.22); border-radius: var(--radius-md); outline: 0; caret-color: var(--gold-lite); transition: border-color 200ms var(--ease); }
 .rsl5 .field input::placeholder, .rsl5 .field textarea::placeholder { color: var(--color-neutral-500); }
 .rsl5 .field input:focus, .rsl5 .field select:focus, .rsl5 .field textarea:focus { border-color: var(--gold); }
+/* Sichtbarer Fokusrahmen (WCAG 2.4.7): `outline: 0` oben schlägt die globale :focus-visible-Regel. */
+.rsl5 .field input:focus-visible, .rsl5 .field select:focus-visible, .rsl5 .field textarea:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .rsl5 .field select { appearance: none; text-align-last: center; }
 .rsl5 .field select option { color: var(--ink); }
 .rsl5 .segs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }

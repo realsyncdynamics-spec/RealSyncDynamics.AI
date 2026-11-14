@@ -13,10 +13,14 @@ jobs:
   reconcile-and-deploy:
     name: Repair orphan migration & deploy
     runs-on: ubuntu-latest
+    # E6: gleiches Environment-Gate wie deploy.yml (db-push).
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      DEPLOY_ENVIRONMENT: production
+      SUPABASE_EXPECTED_PROJECT_REF: ${{ vars.SUPABASE_EXPECTED_PROJECT_REF }}
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -31,6 +35,10 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
+      # Vor Repair und db push: Ziel eindeutig verifizieren (fail-closed).
+      - name: Verify target environment
+        run: node scripts/ci/verify-db-target.mjs verify
+
       - name: Repair orphan migration (20260510)
         run: |
           echo "🔧 Marking orphan migration 20260510 as reverted..."
@@ -41,7 +49,7 @@ jobs:
         if: ${{ inputs.dry_run }}
         run: |
           echo "🔍 Running dry-run to validate migrations..."
-          supabase db push --include-all --dry-run | tee /tmp/dry-run.log
+          supabase db push --include-all --dry-run 2>&1 | node scripts/ci/verify-db-target.mjs redact | tee /tmp/dry-run.log
           echo ""
           echo "✓ Dry-run completed. Review above for any unexpected migrations."
           echo ""
@@ -56,7 +64,7 @@ jobs:
         run: |
           echo "📦 Applying all pending migrations..."
           set +e
-          supabase db push --include-all 2>&1 | tee /tmp/db-push.log
+          supabase db push --include-all 2>&1 | node scripts/ci/verify-db-target.mjs redact | tee /tmp/db-push.log
           code=${PIPESTATUS[0]}
           set -e
 

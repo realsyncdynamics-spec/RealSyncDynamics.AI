@@ -21,6 +21,7 @@
 -- Keine Secrets, kein HTTP-Aufruf ueber die net-Extension.
 
 -- 1. Tabelle
+-- collision-check: allow-existing-table audit_email_drip — RSD-011 stellt die laut Produktionsbefund fehlende Tabelle trotz registrierter Ursprungsmigration idempotent wieder her.
 CREATE TABLE IF NOT EXISTS public.audit_email_drip (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   audit_id           uuid REFERENCES public.gdpr_audits(id) ON DELETE CASCADE,

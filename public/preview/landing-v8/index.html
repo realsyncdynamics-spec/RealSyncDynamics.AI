@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <title>RealSync Dynamics.AI — Die Kontrollschicht für KI im Unternehmen</title>
+  <meta name="description" content="KI-Systeme sichtbar machen, Risiken bewerten, Policies durchsetzen und Entscheidungen nachvollziehbar dokumentieren. RealSync Dynamics.AI — AI Governance Runtime für Europa.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://realsyncdynamicsai.de/">
+  <link rel="icon" href="/brand/logo-square-400.svg" type="image/svg+xml">
+  <style>
+    :root{color-scheme:light;--bg:#f7f8fa;--paper:#fff;--ink:#101318;--muted:#68717d;--line:#e6e9ee;--blue:#2457e6;--blue-dark:#1944c2;--soft:#edf2ff;--green:#147a55;--shadow:0 24px 70px rgba(20,31,52,.09);--max:1160px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}.wrap{width:min(var(--max),calc(100% - 48px));margin:auto}.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(20,30,45,.07)}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:750;letter-spacing:-.045em;font-size:17px}.brand img{width:34px;height:34px;object-fit:contain}.brand span{color:#818a96;font-weight:500}
+    nav{display:flex;align-items:center;gap:28px;color:#5d6673;font-size:13px;font-weight:600}nav a:hover,.textlink:hover{color:var(--blue)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border-radius:9px;padding:13px 18px;font-size:13px;font-weight:700;transition:.2s ease;border:1px solid transparent}.btn-primary{background:var(--ink);color:#fff;box-shadow:0 6px 18px rgba(10,16,25,.12)}.btn-primary:hover{background:#303947;transform:translateY(-1px)}.btn-light{background:#fff;border-color:var(--line)}.btn-light:hover{border-color:#b9c5da;transform:translateY(-1px)}
+    .mobile-menu{display:none}
+    .hero{padding:88px 0 80px;display:grid;grid-template-columns:1.02fr .98fr;gap:64px;align-items:center}
+    .eyebrow{display:inline-flex;align-items:center;gap:9px;color:#4b5d7d;font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:800}.eyebrow:before{content:"";width:23px;height:1px;background:var(--blue)}
+    h1{font-size:clamp(42px,5.1vw,68px);letter-spacing:-.065em;line-height:1.03;margin:22px 0 22px;font-weight:760;max-width:680px}h1 em{font-style:normal;color:var(--blue)}
+    .lead{font-size:17px;line-height:1.75;color:var(--muted);max-width:570px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0 22px}.micro{font-size:11px;color:#858d98}
+    .visual{position:relative;min-height:430px;display:flex;align-items:center;justify-content:center}.orb{position:absolute;width:370px;height:370px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff 0,#e9efff 42%,#dce5fb 72%,rgba(220,229,251,0) 73%);filter:blur(.2px)}
+    .panel{position:relative;width:min(100%,490px);background:rgba(255,255,255,.92);border:1px solid #e4e8f0;border-radius:18px;box-shadow:var(--shadow);padding:22px;backdrop-filter:blur(14px);transform:rotate(-1deg)}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:17px;border-bottom:1px solid var(--line)}.panel-title{font-size:13px;font-weight:750}.live-dot{width:7px;height:7px;background:#20a36d;border-radius:50%;display:inline-block;margin-right:7px}.demo-label{font-size:9px;color:#8a93a0;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+    .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:18px 0}.metric{background:#f7f8fb;border:1px solid #edf0f5;border-radius:10px;padding:13px}.metric b{font-size:22px;letter-spacing:-.04em;display:block}.metric small{font-size:9px;color:#798391}
+    .event-list{display:grid;gap:9px}.event{display:flex;align-items:center;gap:10px;font-size:10px;color:#596372}.event-icon{width:25px;height:25px;border-radius:7px;background:var(--soft);color:var(--blue);display:grid;place-items:center;font-weight:800}.event strong{color:#252b35;font-weight:700}.event time{margin-left:auto;color:#a0a7b1;font-size:9px}
+    .trustline{display:flex;gap:24px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--line);color:#68717d;font-size:11px}.trustline span:before{content:"✓";color:var(--green);font-weight:900;margin-right:7px}
+    .section{padding:88px 0}.section-white{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.section-head{display:flex;justify-content:space-between;gap:40px;align-items:end;margin-bottom:36px}.kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:800}.section h2{font-size:clamp(30px,3.5vw,43px);letter-spacing:-.055em;line-height:1.1;margin:12px 0 0;max-width:650px}.section-intro{max-width:390px;color:var(--muted);font-size:14px;line-height:1.75}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;min-height:220px;transition:.2s}.section-white .card{background:#fafbfc}.card:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(20,31,52,.07);border-color:#d6deec}.card-icon{width:38px;height:38px;border-radius:10px;background:var(--soft);color:var(--blue);display:grid;place-items:center;font-size:18px;margin-bottom:25px}.card h3{font-size:17px;letter-spacing:-.03em;margin:0 0 8px}.card p{font-size:12px;color:var(--muted);line-height:1.7;margin:0}.status{display:inline-flex;align-items:center;gap:6px;font-size:9px;text-transform:uppercase;letter-spacing:.09em;font-weight:800;margin-top:17px;color:#68717d}.status:before{content:"";width:6px;height:6px;border-radius:50%;background:#a6afbb}.status.live{color:var(--green)}.status.live:before{background:#20a36d}.status.preview{color:#93661b}.status.preview:before{background:#d49a35}
+    .steps{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:36px}.step{padding:17px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}.step small{font-size:9px;color:#9aa2ad;font-weight:800}.step b{display:block;font-size:12px;margin-top:8px}.step:first-child{border-color:#cbd7fa;background:#f1f4ff}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}.statement{font-size:clamp(28px,3.4vw,42px);line-height:1.15;letter-spacing:-.055em;font-weight:720}.statement span{color:var(--blue)}.bullets{display:grid;gap:15px;margin-top:24px}.bullet{display:flex;gap:12px;font-size:13px;color:#596372}.check{color:var(--green);font-weight:900}
+    .cta{background:#111720;color:white;border-radius:18px;padding:54px;display:flex;justify-content:space-between;align-items:center;gap:28px}.cta h2{font-size:clamp(28px,3vw,40px);letter-spacing:-.05em;line-height:1.12;margin:10px 0}.cta p{color:#aeb8c6;font-size:13px;max-width:490px}.cta .btn{background:white;color:#111720}
+    footer{padding:35px 0;color:#7d8794;font-size:11px}.foot{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}.footlinks{display:flex;gap:20px;flex-wrap:wrap}
+    @media(max-width:900px){nav{gap:15px}.hero{gap:30px;padding:68px 0}.visual{min-height:360px}.orb{width:300px;height:300px}.cards{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:680px){.wrap{width:min(100% - 34px,var(--max))}.topbar{height:65px}nav{display:none}.mobile-menu{display:inline-flex}.hero{grid-template-columns:1fr;padding:55px 0 55px;gap:12px}.visual{min-height:340px}.panel{padding:16px}.orb{width:280px;height:280px}.metric-grid{gap:6px}.metric{padding:10px}.metric b{font-size:19px}.section{padding:64px 0}.section-head,.split{display:block}.section-intro{margin-top:17px}.cards{grid-template-columns:1fr}.card{min-height:0}.steps{grid-template-columns:repeat(2,1fr)}.cta{padding:30px;display:block}.cta .btn{margin-top:16px}.trustline{gap:12px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <header class="wrap topbar">
+    <a class="brand" href="/" aria-label="RealSync Dynamics AI Startseite"><img src="/brand/logo-square-400.svg" alt=""><div>RealSync <span>Dynamics.AI</span></div></a>
+    <nav aria-label="Hauptnavigation">
+      <a href="#plattform">Plattform</a><a href="#ablauf">Kontrollzyklus</a><a href="/pricing">Preise</a><a href="/login">Login</a>
+      <a class="btn btn-primary" href="/audit">Kostenlosen Audit starten <span>↗</span></a>
+    </nav>
+    <a class="btn btn-primary mobile-menu" href="/audit">Audit starten ↗</a>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <div class="eyebrow">AI Governance Runtime · Made for Europe</div>
+        <h1>KI nicht nur einsetzen.<br><em>KI kontrollieren.</em></h1>
+        <p class="lead">Die operative Kontrollschicht für KI-Systeme und digitale Prozesse. Erkennen Sie Risiken, setzen Sie verbindliche Policies durch und halten Sie jede relevante Entscheidung nachvollziehbar fest.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/audit">Kostenlosen Audit starten <span>→</span></a>
+          <a class="btn btn-light" href="/governance-runtime">Plattform entdecken</a>
+        </div>
+        <div class="micro">Für Unternehmen, die KI verantwortungsvoll und kontrolliert skalieren wollen.</div>
+        <div class="trustline"><span>EU-fokussierte Infrastruktur</span><span>Provider-neutraler Ansatz</span><span>Nachvollziehbare Evidence</span></div>
+      </div>
+      <div class="visual" aria-label="Schematische Governance-Oberfläche mit ausdrücklich gekennzeichneten Beispieldaten">
+        <div class="orb"></div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title"><span class="live-dot"></span>Governance Control Room</div><div class="demo-label">UI-Konzept · Beispieldaten</div></div>
+          <div class="metric-grid">
+            <div class="metric"><b>12</b><small>KI-Systeme</small></div><div class="metric"><b>184</b><small>Policy-Events</small></div><div class="metric"><b>03</b><small>Freigaben offen</small></div>
+          </div>
+          <div class="event-list">
+            <div class="event"><span class="event-icon">✓</span><span><strong>Policy geprüft</strong> · support-agent</span><time>09:41</time></div>
+            <div class="event"><span class="event-icon">!</span><span><strong>Freigabe erforderlich</strong> · payment.create</span><time>09:40</time></div>
+            <div class="event"><span class="event-icon">↗</span><span><strong>Evidence gesichert</strong> · audit-event</span><time>09:39</time></div>
+            <div class="event"><span class="event-icon">⊘</span><span><strong>Aktion blockiert</strong> · external-model</span><time>09:38</time></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-white" id="plattform">
+      <div class="wrap">
+        <div class="section-head"><div><div class="kicker">Eine Runtime. Klare Kontrolle.</div><h2>Alle relevanten KI-Prozesse an einem Ort.</h2></div><p class="section-intro">RealSync verbindet Inventar, Richtlinien, operative Kontrollen und prüfbare Nachweise zu einem durchgängigen Governance-Prozess.</p></div>
+        <div class="cards">
+          <article class="card"><div class="card-icon">◎</div><h3>Discover & Assess</h3><p>KI-Systeme und relevante Datenflüsse erfassen, Risiken einordnen und Verantwortlichkeiten sichtbar machen.</p><span class="status live">Verfügbar</span></article>
+          <article class="card"><div class="card-icon">⌘</div><h3>Policy Engine</h3><p>Regeln als operative Kontrolllogik definieren und Richtlinien an relevanten Entscheidungspunkten durchsetzen.</p><span class="status live">Verfügbar</span></article>
+          <article class="card"><div class="card-icon">▤</div><h3>Evidence Vault</h3><p>Prüfungen, Freigaben und Änderungen nachvollziehbar dokumentieren und als Evidence exportieren.</p><span class="status live">Verfügbar</span></article>
+          <article class="card"><div class="card-icon">↻</div><h3>Automation</h3><p>Governance-Aufgaben und wiederkehrende Abläufe über kontrollierte Workflows koordinieren.</p><span class="status live">Verfügbar</span></article>
+          <article class="card"><div class="card-icon">◉</div><h3>AI Gateway</h3><p>Modellaufrufe über eine zentrale Schicht steuern, protokollieren und Kosten transparent erfassen.</p><span class="status live">Verfügbar</span></article>
+          <article class="card"><div class="card-icon">◌</div><h3>Agenten & Voice</h3><p>Chat- und Agentenfunktionen sind in der Vorschau. Telefonie wird separat entwickelt und erst nach Live-Abnahme freigegeben.</p><span class="status preview">Preview · Voice in Entwicklung</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="ablauf">
+      <div class="wrap">
+        <div class="kicker">Der Governance-Kontrollzyklus</div>
+        <h2>Von der Erkennung bis zum belastbaren Nachweis.</h2>
+        <div class="steps"><div class="step"><small>01</small><b>DISCOVER</b></div><div class="step"><small>02</small><b>ASSESS</b></div><div class="step"><small>03</small><b>GOVERN</b></div><div class="step"><small>04</small><b>ENFORCE</b></div><div class="step"><small>05</small><b>EVIDENCE</b></div><div class="step"><small>06</small><b>AUDIT</b></div></div>
+      </div>
+    </section>
+
+    <section class="section section-white">
+      <div class="wrap split">
+        <div><div class="kicker">Built for accountability</div><div class="statement">Nicht noch ein KI-Tool. <span>Eine Kontrollschicht für das gesamte System.</span></div></div>
+        <div><p class="section-intro">Wenn KI-Systeme wachsen, steigen auch die Anforderungen an Transparenz, Zuständigkeit und Kontrolle. RealSync macht diese Zusammenhänge operativ bearbeitbar — statt sie in isolierten Dokumenten zu verteilen.</p><div class="bullets"><div class="bullet"><span class="check">✓</span><span>Einheitliche Governance über unterschiedliche KI-Anbieter hinweg</span></div><div class="bullet"><span class="check">✓</span><span>Nachvollziehbare Entscheidungen und dokumentierte Freigaben</span></div><div class="bullet"><span class="check">✓</span><span>EU-orientierte Architektur und mandantengetrennte Arbeitsbereiche</span></div></div></div>
+      </div>
+    </section>
+
+    <section class="section"><div class="wrap"><div class="cta"><div><div class="kicker" style="color:#9db6ff">Der nächste Schritt</div><h2>Machen Sie KI in Ihrem Unternehmen kontrollierbar.</h2><p>Starten Sie mit einem ersten Audit und entdecken Sie, wo Ihre digitalen Prozesse mehr Transparenz und Governance benötigen.</p></div><a class="btn" href="/audit">Kostenlosen Audit starten →</a></div></div></section>
+  </main>
+
+  <footer><div class="wrap foot"><div>© 2026 RealSync Dynamics.AI · AI Governance Runtime</div><div class="footlinks"><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a><a href="/agb">AGB</a><a href="/pricing">Preise</a><a href="/login">Login</a></div></div></footer>
+</body>
+</html>

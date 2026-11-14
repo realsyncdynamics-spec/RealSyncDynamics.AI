@@ -62,7 +62,29 @@ node --experimental-transform-types test/core/ai-gateway/omniroute-pilot.mjs \
   --probe-local --port 20128 --combo pilot-combo
 ```
 
-Geprüft wurden Syntax, 1.000 simulierte Klassifizierungsaufrufe und vier HTTP-Proben gegen einen lokalen Testserver. Die HTTP-Proben decken gültige Antwort, ungültige Kategorie, verweigerte Weiterleitung und fehlenden Schlüssel ab. Die Probe gegen echtes OmniRoute, die Prüfung von Mandanten- und Policy-Gates sowie Messungen mit Cloud-Anbietern stehen aus.
+Die Syntaxprüfung, die 1.000 simulierten Aufrufe und die vier HTTP-Proben am lokalen Testserver sind dokumentiert. Die HTTP-Probe wurde zusätzlich mit echtem OmniRoute ausgeführt.
+
+## Laufzeitprüfung mit OmniRoute v3.8.53
+
+Verwendet wurde das Linux-amd64-Image `diegosouzapw/omniroute:3.8.53` (Manifest `sha256:86937e53b0d871ead34b97904f9ece0c6f9582a975105bca1fd2164a8d0090d7`). Ein isoliertes Netz mit ausschließlich Loopback und ein lokaler HTTP-Testserver ersetzten die Cloud-Anbieter. Jeder Fehlerfall lief in einer frischen Instanz mit einer `priority`-Combo aus zwei OpenAI-kompatiblen Test-Endpunkten. Konfiguration: maximal zwei Anbieterversuche, keine erneuten Versuche beim selben Ziel, keine Sitzungsbindung, Kompression aus, `OMNIROUTE_ROTATE_ON_400=false`, dedizierter API-Schlüssel mit `noLog`, `X-OmniRoute-No-Cache: true`. Die Abhängigkeiten kamen aus dem veröffentlichten Image.
+
+| Fall | Antwort des Gateways | Beobachtete Anbieterversuche |
+| --- | --- | --- |
+| Fehlender oder ungültiger Client-Schlüssel | HTTP 401, je ein Negativtest in fünf Instanzen | 0 |
+| Reguläre Anfrage | HTTP 200, richtige synthetische Kategorie | Primäranbieter |
+| Primäranbieter liefert HTTP 429 | HTTP 200, richtige synthetische Kategorie | Primäranbieter, dann Zweitanbieter |
+| Primäranbieter liefert HTTP 401 | HTTP 200, verletzte Abnahmeregel | Primäranbieter, dann Zweitanbieter |
+| Primäranbieter liefert HTTP 403 | HTTP 200, verletzte Abnahmeregel | Primäranbieter, dann Zweitanbieter |
+| Beide Anbieter liefern HTTP 503 | HTTP 503 | Primäranbieter, dann Zweitanbieter |
+
+Die API-Probe aus diesem Repository validierte am laufenden Gateway die Testkategorie und erhielt die simulierten Nutzungswerte (40 Eingabe-Tokens, 3 Ausgabe-Tokens). Diese Einzelmessung liefert keine p95-Latenz und keine Cloud-Kosten.
+
+Mit `noLog` und dem Cache-Bypass blieben in den geprüften Fällen die Inhaltsfelder der protokollierten Pilotaufrufe leer. Zwei synthetische Marker für Anfrage und Antwort waren im Laufzeitlog, in Aufrufartefakten und in SQLite inklusive WAL und SHM nicht auffindbar. Nach den Proben war der semantische Cache leer. Zum Start versuchte OmniRoute externe Katalog- und Update-Zugriffe, die das isolierte Netz verhinderte.
+
+Die Call-Logs gruppierten die beiden Anbieterversuche unter einer internen ID. Beim doppelten HTTP 503 gab es zusätzlich einen dritten Logeintrag für das Combo-Ergebnis, obwohl zwei HTTP-Anbieterversuche beobachtet wurden. Weder `X-Request-Id` aus der Anfrage noch `X-OmniRoute-Request-Id` aus erfolgreichen Antworten entsprach in diesen Proben der internen ID der Call-Logs. Bei doppeltem HTTP 503 fehlte der Antwort-Header. Die Zuordnung zum RealSync-Prüfpfad ist offen.
+
+**Entscheidung nach der Laufzeitprüfung:** Der getestete Combo-Pfad bleibt für den Cloud-Pilot gesperrt. Anbieter-HTTP-401 und -403 müssen vor einem möglichen zweiten Versuch zuverlässig stoppen. Jeder Anbieterversuch muss mit der RealSync-Request-ID verknüpft werden können. [#2248](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2248) behandelt den RealSync-Prüfpfad vor dem Provider-Aufruf und den PDP-Ausfall im Modus `enforce`. Die Laufzeitprüfung lief ohne RealSync-Edge-Function und belegt deren Gates nicht.
+
 
 ## Quellen zu OmniRoute
 
@@ -70,4 +92,4 @@ Geprüft wurden Syntax, 1.000 simulierte Klassifizierungsaufrufe und vier HTTP-P
 - [OpenAI-kompatibler Einstieg und Fallback-Konfiguration](https://github.com/cheaper-inference/OmniRoute/blob/release/v3.8.53/docs/guides/SETUP_GUIDE.md)
 - [Request-Logging, Aufbewahrung und `noLog`](https://github.com/cheaper-inference/OmniRoute/blob/release/v3.8.53/docs/security/COMPLIANCE.md)
 
-Prüfstatus: Repository-Code und öffentliche OmniRoute-Dokumentation gelesen. Der lokale Prüfstand wurde ausgeführt. Der Anbieter-Vergleich und die Validierung der vorgesehenen Testumgebung stehen aus.
+Prüfstatus: Repository-Code, Offline-Prüfstand und die dokumentierten HTTP-Proben mit echtem Gateway geprüft. Isolierte RealSync-Gates, reale Modellgüte, p95-Latenz und Cloud-Kosten stehen aus.

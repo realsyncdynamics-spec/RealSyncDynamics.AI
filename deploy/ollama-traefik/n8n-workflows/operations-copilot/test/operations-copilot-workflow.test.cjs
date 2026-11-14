@@ -71,8 +71,64 @@ test('complete mock builds negative evidence, not healthy claim, with 7d/30d una
   assert.ok(report.findings.some(f=>f.title.includes('3500ms')));
   assert.ok(report.findings.some(f=>f.title.includes('3 Tage')));
   assert.ok(report.findings.some(f=>f.title.includes('unknown')));
-  assert.ok(report.report_markdown.includes('kein Nachweis')===false || report.report_markdown.includes('keine vollständige'));
+  // Findings exist: the "no findings" sentence must not appear, the coverage caveat must.
+  assert.ok(!report.report_markdown.includes('Keine Befunde aus den verfügbaren Ausschnitten'));
+  assert.ok(report.report_markdown.includes('keine vollständige Merge-Freigabe'));
+  assert.ok(report.report_markdown.includes('Database: DOWN'));
   assert.equal(report.side_effects.length,0);
+});
+
+test('no findings never reads as a healthy claim',()=>{
+  const sha='a'.repeat(40);
+  const report=run('Compose Internal Report',{nodes:fixtures({
+    'Collect PR Checks':{checks:[{pr_number:101,head_sha:sha,available:true,check_runs:[{name:'unit',status:'completed',conclusion:'success',url:null}]}]},
+    'GitHub Workflow Runs':{statusCode:200,body:{workflow_runs:[{id:3,name:'CI',head_sha:sha,status:'completed',conclusion:'success',created_at:new Date().toISOString()}]}},
+    'GitHub Issues':{statusCode:200,body:[]},
+    'RealSync Health':{statusCode:200,body:{status:'ok',checks:{database:{status:'ok'}}}},
+    'Uptime Kuma Metrics':{statusCode:200,body:{data:'monitor_status{monitor_id="1",monitor_name="Web",monitor_type="http"} 1\nmonitor_response_time{monitor_id="1",monitor_name="Web",monitor_type="http"} 120\n'}}
+  })})[0];
+  assert.equal(report.findings.length,0);
+  assert.ok(report.report_markdown.includes('kein Nachweis eines vollständig fehlerfreien Betriebs'));
+});
+
+test('check-run html_url (/runs/<id>) is kept instead of the fallback link',()=>{
+  const sha='a'.repeat(40);
+  const runUrl='https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/runs/125650378118';
+  const collected=run('Collect PR Checks',{
+    input:[{statusCode:200,body:{total_count:1,check_runs:[{name:'unit',status:'completed',conclusion:'failure',html_url:runUrl}]}}],
+    nodes:{'Select PR Check Targets':[{pr_number:101,sha,main_fallback:false}]}
+  })[0];
+  assert.equal(collected.checks[0].check_runs[0].url,runUrl);
+  const report=run('Compose Internal Report',{nodes:fixtures({'Collect PR Checks':collected})})[0];
+  assert.equal(report.github.checks[0].check_runs[0].url,runUrl);
+  assert.ok(report.findings.some(f=>f.title.includes('PR #101: Check unit = failure')&&f.reference===runUrl));
+  // A check-run URL from another repository still falls back.
+  const foreign='https://github.com/someone/else/runs/1';
+  const other=run('Compose Internal Report',{nodes:fixtures({'Collect PR Checks':{checks:[{pr_number:101,head_sha:sha,available:true,check_runs:[{name:'unit',status:'completed',conclusion:'failure',url:foreign}]}]}})})[0];
+  assert.equal(other.github.checks[0].check_runs[0].url,'https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/101/checks');
+});
+
+test('main fallback: red checks on main are findings, not silently skipped',()=>{
+  const targets=run('Select PR Check Targets',{input:[{statusCode:200,body:[]}]});
+  assert.equal(targets[0].main_fallback,true);
+  const collected=run('Collect PR Checks',{
+    input:[{statusCode:200,body:{total_count:2,check_runs:[
+      {name:'gates',status:'completed',conclusion:'failure',html_url:'https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/runs/9'},
+      {name:'unit',status:'in_progress',conclusion:null,html_url:null}
+    ]}}],
+    nodes:{'Select PR Check Targets':targets}
+  })[0];
+  const report=run('Compose Internal Report',{nodes:fixtures({'GitHub PRs':{statusCode:200,body:[]},'Collect PR Checks':collected})})[0];
+  const red=report.findings.find(f=>f.title==='main: Check gates = failure');
+  assert.ok(red,'red check on main missing from findings');
+  assert.equal(red.severity,'high');
+  assert.equal(red.reference,'https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/runs/9');
+  const pending=report.findings.find(f=>f.title==='main: Check unit läuft/steht aus');
+  assert.ok(pending);
+  assert.equal(pending.reference,'https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions');
+  // Unavailable check-runs on main are reported as a gap as well.
+  const gap=run('Compose Internal Report',{nodes:fixtures({'GitHub PRs':{statusCode:200,body:[]},'Collect PR Checks':{checks:[{pr_number:null,head_sha:null,main_fallback:true,available:false,check_runs:[]}]}})})[0];
+  assert.ok(gap.findings.some(f=>f.title==='main: Check-Runs nicht abrufbar'));
 });
 
 test('metrics HTTP unauthorized is unavailable, not UP',()=>{

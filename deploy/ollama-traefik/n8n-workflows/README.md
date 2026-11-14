@@ -84,6 +84,13 @@ Export sein; das prüft der Regressionstest:
 node --test deploy/ollama-traefik/n8n-workflows/operations-copilot/test/operations-copilot-workflow.test.cjs
 ```
 
+Der Test läuft über `test/deploy/ops-copilot-workflow.test.ts` auch in
+`npm test` und damit in der CI. Nach einer Änderung an einer Quelldatei den
+`jsCode` im Export nachziehen, sonst schlägt der Byte-Vergleich fehl.
+
+Ohne offene PRs prüft der Workflow `main`. Rote oder laufende Checks auf `main`
+erscheinen dann als Befund mit dem Präfix `main:`.
+
 Benötigte Credentials in n8n (nicht im Repo): GitHub Bearer Token (nur lesend:
 Pull requests, Checks, Actions, Issues) und Uptime Kuma Basic Auth. Env-Variablen:
 `REALSYNC_HEALTH_URL`, optional `UPTIME_KUMA_BASE_URL` (fehlt sie, wird der

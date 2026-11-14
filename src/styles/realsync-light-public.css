@@ -1,0 +1,77 @@
+/*
+ * Öffentliche Papier-Seiten sprechen weiter --color-rs-*.
+ * `.rsd-light` legt diese Namen auf die semantischen Token der
+ * RealSync Light Experience. Komponenten-Aliase bleiben in tokens.css.
+ * Nicht `.rs-light`: das ist das Ampel-Badge im Governance-OS.
+ */
+.rs-paper.rsd-light {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  --color-rs-hero: var(--color-surface-default);
+  --color-rs-bg-0: var(--color-surface-default);
+  --color-rs-bg-1: var(--color-surface-paper);
+  --color-rs-bg-2: var(--color-surface-subtle);
+  --color-rs-bg-3: var(--color-surface-muted);
+  --color-rs-fg-0: var(--color-text-primary);
+  --color-rs-fg-1: var(--color-text-secondary);
+  --color-rs-fg-2: var(--color-text-muted);
+  --color-rs-fg-3: var(--color-text-micro);
+  --color-rs-border: var(--color-border-divider);
+  --color-rs-border-strong: var(--color-border-control);
+  --color-rs-primary: var(--color-text-primary);
+  --color-rs-primary-hover: var(--color-surface-inverse);
+  --color-rs-primary-light: var(--color-accent-blue);
+  --color-rs-cyan: var(--color-accent-blue);
+  --color-rs-cyan-light: var(--color-accent-blue);
+  --color-rs-success: var(--color-status-success);
+  --color-obsidian-950: var(--color-surface-default);
+  --color-obsidian-900: var(--color-surface-paper);
+  --color-obsidian-800: var(--color-surface-subtle);
+  --color-titanium-50: var(--color-text-primary);
+  --color-titanium-100: var(--color-text-primary);
+  --color-titanium-200: var(--color-text-secondary);
+  --color-titanium-300: var(--color-text-secondary);
+  --color-titanium-400: var(--color-text-muted);
+  --color-titanium-500: var(--color-text-muted);
+  --color-silver-300: var(--color-text-muted);
+  --color-silver-100: var(--color-text-secondary);
+  font-family: var(--type-family-sans);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+}
+
+.rs-paper.rsd-light :is(.rs-btn, .rs-chip, .rs-card, .rs-price-card, .rs-input) {
+  border-radius: var(--radius-lg);
+}
+
+.rs-paper.rsd-light :is(.rs-btn--primary, .rs-btn--solid, .surface-mono, .surface-gold) {
+  color: var(--color-text-inverse);
+  background: var(--button-bg-primary);
+  border-color: var(--button-bg-primary);
+  box-shadow: none;
+}
+
+.rs-paper.rsd-light :is(.rs-btn--primary, .rs-btn--solid):hover,
+.rs-paper.rsd-light :is(.surface-mono, .surface-gold):hover {
+  background: var(--button-bg-primary-hover);
+}
+
+.rs-paper.rsd-light .rs-price-card--popular,
+.rs-paper.rsd-light .rs-price-card--popular:hover {
+  border-color: var(--pricing-featured-border);
+  background: var(--pricing-bg);
+}
+
+.rs-paper.rsd-light .rs-wordmark__ai,
+.rs-paper.rsd-light .rs-pricing__title {
+  color: var(--color-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-paper.rsd-light,
+  .rs-paper.rsd-light * {
+    transition: none;
+    animation: none;
+  }
+}

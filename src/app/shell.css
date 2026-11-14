@@ -91,6 +91,28 @@
   color: var(--color-text-primary);
 }
 
+.app-shell__platform {
+  margin-bottom: var(--space-400);
+}
+
+.app-shell__platform button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-200);
+}
+
+.app-shell__platform .app-shell__badge[data-kind='live'] {
+  color: var(--color-status-success);
+  background: transparent;
+}
+
+.app-shell__platform .app-shell__badge[data-kind='demo'],
+.app-shell__platform .app-shell__badge[data-kind='geplant'] {
+  color: var(--color-status-demo);
+  background: var(--color-surface-tint);
+}
+
 .app-shell__main {
   flex: 1;
   min-width: 0;

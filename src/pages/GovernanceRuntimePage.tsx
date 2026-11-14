@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { GovernanceRuntimeDashboard } from "../features/governance/GovernanceRuntimeDashboard";
 import { LandingHeader, SCAN_CTA } from "../components/landing/LandingShell";
+import "../app/theme/tokens.css";
+import "../styles/realsync-light-public.css";
 import { usePageMeta } from "../lib/usePageMeta";
 import { CTA } from '../content/runtimeVocab';
 
@@ -31,7 +33,7 @@ export function GovernanceRuntimePage() {
   });
 
   return (
-    <div className="rs-paper bg-hero-only min-h-screen flex flex-col text-titanium-50">
+    <div className="rs-paper rsd-light bg-hero-only min-h-screen flex flex-col text-titanium-50">
       <LandingHeader />
 
       <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-16">
@@ -69,9 +71,9 @@ export function GovernanceRuntimePage() {
       </section>
 
       <section aria-label="Ablauf der Governance Runtime" className="px-4 sm:px-6 lg:px-8 pb-12">
-        <ol className="max-w-5xl mx-auto grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-2 lg:grid-cols-3">
+        <ol className="max-w-5xl mx-auto grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {STEPS.map((s, i) => (
-            <li key={s.k} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex flex-col gap-2">
+            <li key={s.k} className="rounded-[var(--radius-lg,14px)] border border-[var(--color-border-divider,#e6e9ee)] bg-[var(--color-surface-raised,#fff)] p-5 flex flex-col gap-2">
               <span className="font-mono text-[11px] tracking-[0.2em] text-titanium-100">
                 {String(i + 1).padStart(2, "0")} — {s.k}
                 {s.beta ? <span className="ml-2 border border-silver-500 px-1.5 py-0.5 text-[10px] text-silver-300">BETA</span> : null}

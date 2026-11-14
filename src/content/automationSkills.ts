@@ -106,7 +106,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
     ],
     output: ['Protokoll', 'To-dos', 'Compliance-Hinweise'],
     planRequired: 'growth',
-    cta: { label: 'Workflow ansehen', href: '/app/automations?skill=meeting' },
+    cta: { label: 'Workflow ansehen', href: '/app/automations?skill=meeting-compliance' },
   },
   {
     id: 'screenshot-feedback',
@@ -124,7 +124,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
     ],
     output: ['Bug-Ticket', 'Priorität', 'Betroffene Seite', 'Fehlerbeschreibung', 'Weiterleitung an GitHub/n8n'],
     planRequired: 'growth',
-    cta: { label: 'Workflow ansehen', href: '/app/automations?skill=feedback' },
+    cta: { label: 'Workflow ansehen', href: '/app/automations?skill=screenshot-feedback' },
   },
   {
     id: 'lead-risk',

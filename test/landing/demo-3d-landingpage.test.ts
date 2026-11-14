@@ -51,6 +51,9 @@ describe('3D-Landingpage (Template-Vorschau)', () => {
     expect(page).toContain('isWebGLAvailable');
     expect(page).toContain('Ohne 3D anzeigen');
     expect(page).toContain('role="dialog"');
+    // Fokus bleibt im modalen Dialog; Szenenstart übernimmt den aktuellen Konfigurationsstand
+    expect(page).toContain("e.key === 'Tab' && openId");
+    expect(page).toContain('config: latest.current.config');
     expect(read('src/components/visual/demo-3d/archScene.ts')).toContain('forceContextLoss');
   });
 

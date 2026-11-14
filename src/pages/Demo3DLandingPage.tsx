@@ -77,6 +77,12 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
 
   const show3D = webgl && use3D;
 
+  // Aktueller Stand für den asynchronen Szenenstart: Änderungen während des Ladens gehen nicht verloren.
+  const latest = useRef({ config, reducedPref, openId });
+  useEffect(() => {
+    latest.current = { config, reducedPref, openId };
+  });
+
   // Szene lazy laden und sauber aufräumen
   useEffect(() => {
     if (!show3D || !stageRef.current) return;
@@ -87,14 +93,15 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
         if (cancelled || !stageRef.current) return;
         handleRef.current = createArchScene({
           container: stageRef.current,
-          config,
+          config: latest.current.config,
           hotspots: HOTSPOTS,
-          reducedMotion: reducedPref,
+          reducedMotion: latest.current.reducedPref,
           quality,
           lockQuality: forcedQuality !== null,
           onHotspots: setProjected,
           onQualityChange: setQuality,
         });
+        handleRef.current.focusHotspot(latest.current.openId);
         setSceneState('ready');
       })
       .catch(() => !cancelled && setSceneState('error'));
@@ -151,6 +158,21 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
   // Esc schließt Karte bzw. Panel; Fokus in die Karte setzen
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Fokus bleibt im geöffneten Detaildialog (aria-modal)
+      if (e.key === 'Tab' && openId && dialogRef.current) {
+        const items = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'),
+        );
+        const first = items[0] ?? dialogRef.current;
+        const last = items[items.length - 1] ?? dialogRef.current;
+        const cur = document.activeElement;
+        const inside = cur instanceof Node && dialogRef.current.contains(cur);
+        if (e.shiftKey ? !inside || cur === first || cur === dialogRef.current : !inside || cur === last) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+        }
+        return;
+      }
       if (e.key !== 'Escape') return;
       if (openId) closeHotspot();
       else if (panelOpen) setPanelOpen(false);

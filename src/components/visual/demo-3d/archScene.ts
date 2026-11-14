@@ -36,6 +36,8 @@ export interface SceneHandle {
   setScrollProgress(p: number): void;
   setReducedMotion(r: boolean): void;
   focusHotspot(id: string | null): void;
+  /** Modell um einen Winkel (Radiant) weiterdrehen – für Tastatur-/Button-Bedienung. */
+  rotateBy(rad: number): void;
   getQuality(): QualityTier;
   dispose(): void;
 }
@@ -46,20 +48,25 @@ export interface CreateOptions {
   hotspots: HotspotDef[];
   reducedMotion: boolean;
   quality?: QualityTier;
+  /** Qualitätsstufe fest vorgeben (z. B. für Bildschirmaufnahmen); schaltet die automatische Reduktion ab. */
+  lockQuality?: boolean;
   onHotspots?: (list: ProjectedHotspot[]) => void;
   onQualityChange?: (q: QualityTier) => void;
 }
 
-const BG: Record<BackgroundStyle, { bg: number; fog: number; floor: number; grid: number }> = {
-  tiefblau: { bg: 0x050b1a, fog: 0x050b1a, floor: 0x0a1428, grid: 0x1e3a5f },
-  anthrazit: { bg: 0x111317, fog: 0x111317, floor: 0x1a1d22, grid: 0x30353d },
-  hell: { bg: 0xe9eef4, fog: 0xe9eef4, floor: 0xdfe5ec, grid: 0xb9c4d1 },
+const BG: Record<BackgroundStyle, { top: number; horizon: number; floor: number; ring: number; light: boolean }> = {
+  tiefblau: { top: 0x030712, horizon: 0x10264a, floor: 0x081226, ring: 0x2b5a8f, light: false },
+  anthrazit: { top: 0x0b0c0f, horizon: 0x2a2e36, floor: 0x16181c, ring: 0x4a515c, light: false },
+  hell: { top: 0xcfdcea, horizon: 0xf4f7fa, floor: 0xdde4ec, ring: 0xaab7c6, light: true },
 };
 
-const MOOD: Record<LightMood, { key: number; keyI: number; hemiSky: number; hemiGround: number; hemiI: number; accentI: number; exposure: number }> = {
-  tag: { key: 0xffffff, keyI: 2.6, hemiSky: 0xcfe8ff, hemiGround: 0x223344, hemiI: 0.9, accentI: 0.6, exposure: 1.05 },
-  abend: { key: 0xffb47a, keyI: 2.0, hemiSky: 0x7a5c8f, hemiGround: 0x1a1020, hemiI: 0.55, accentI: 1.4, exposure: 1.0 },
-  nacht: { key: 0x8fb4ff, keyI: 0.7, hemiSky: 0x1b2a4a, hemiGround: 0x05070d, hemiI: 0.35, accentI: 3.2, exposure: 1.15 },
+const MOOD: Record<
+  LightMood,
+  { key: number; keyI: number; hemiSky: number; hemiGround: number; hemiI: number; accentI: number; exposure: number; warm: number; tint: number; tintW: number }
+> = {
+  tag: { key: 0xffffff, keyI: 2.6, hemiSky: 0xcfe8ff, hemiGround: 0x223344, hemiI: 0.9, accentI: 0.5, exposure: 1.05, warm: 0.35, tint: 0x3a6ea8, tintW: 0.22 },
+  abend: { key: 0xffb47a, keyI: 1.9, hemiSky: 0x7a5c8f, hemiGround: 0x1a1020, hemiI: 0.5, accentI: 1.2, exposure: 1.0, warm: 1.5, tint: 0x4a3358, tintW: 0.16 },
+  nacht: { key: 0x8fb4ff, keyI: 0.6, hemiSky: 0x1b2a4a, hemiGround: 0x05070d, hemiI: 0.3, accentI: 2.6, exposure: 1.15, warm: 2.6, tint: 0x000000, tintW: 0 },
 };
 
 /** Kamerapfad: Scroll-Fortschritt 0…1 → Position + Blickpunkt */
@@ -134,7 +141,7 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   const roomEnv = new RoomEnvironment();
   const envTex = pmrem.fromScene(roomEnv, 0.04).texture;
   scene.environment = envTex;
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.7;
 
   // Licht
   const hemi = new THREE.HemisphereLight(0xffffff, 0x222222, 1);
@@ -157,152 +164,231 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   const g = <T extends THREE.BufferGeometry>(x: T) => (geos.push(x), x);
   const m = <T extends THREE.Material>(x: T) => (mats.push(x), x);
 
-  // Boden + Raster
-  const floorMat = m(new THREE.MeshStandardMaterial({ color: 0x0a1428, roughness: 0.85, metalness: 0.1 }));
-  const floor = new THREE.Mesh(g(new THREE.CircleGeometry(14, 64)), floorMat);
+  const texs: THREE.Texture[] = [];
+  /** Weicher radialer Verlauf als Textur (Kontaktschatten, Partikel) – prozedural, kein Asset. */
+  function radialTexture(inner: string, outer: string) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const ctx = c.getContext('2d');
+    if (ctx) {
+      const grd = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grd.addColorStop(0, inner);
+      grd.addColorStop(1, outer);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, 128, 128);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    texs.push(t);
+    return t;
+  }
+
+  // Himmel: Verlauf vom Horizont zum Zenit
+  const skyMat = m(
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() } },
+      vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader:
+        'uniform vec3 top; uniform vec3 horizon; varying vec3 vP;\nvoid main(){ float h = clamp(normalize(vP).y, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.32)), 1.0);\n#include <colorspace_fragment>\n}',
+    }),
+  );
+  const sky = new THREE.Mesh(g(new THREE.SphereGeometry(45, 32, 16)), skyMat);
+  scene.add(sky);
+
+  // Boden: leicht spiegelnd, läuft im Nebel in den Horizont aus; Lageplan-Ringe statt Raster
+  const floorMat = m(new THREE.MeshStandardMaterial({ color: 0x081226, roughness: 0.42, metalness: 0.35 }));
+  const floor = new THREE.Mesh(g(new THREE.CircleGeometry(32, 64)), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
-  const grid = new THREE.GridHelper(28, 56, 0x1e3a5f, 0x1e3a5f);
-  (grid.material as THREE.Material).transparent = true;
-  (grid.material as THREE.Material).opacity = 0.35;
-  mats.push(grid.material as THREE.Material);
-  geos.push(grid.geometry);
-  grid.position.y = 0.002;
-  scene.add(grid);
+  const ringMat = m(new THREE.MeshBasicMaterial({ color: 0x2b5a8f, transparent: true, opacity: 0.4, depthWrite: false }));
+  [4.2, 6.4, 9.2].forEach((r) => {
+    const ring = new THREE.Mesh(g(new THREE.RingGeometry(r, r + 0.012, 128)), ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.003;
+    scene.add(ring);
+  });
 
   // Architekturmodell
   const model = new THREE.Group();
   scene.add(model);
+  const unit = g(new THREE.BoxGeometry(1, 1, 1));
+  const box = (mat: THREE.Material, w: number, h: number, d: number, x: number, y: number, z: number, shadow = false) => {
+    const b = new THREE.Mesh(unit, mat);
+    b.scale.set(w, h, d);
+    b.position.set(x, y, z);
+    b.castShadow = shadow;
+    b.receiveShadow = shadow;
+    model.add(b);
+    return b;
+  };
 
-  const concrete = m(new THREE.MeshStandardMaterial({ color: 0xd9dde3, roughness: 0.55, metalness: 0.05 }));
+  const concrete = m(new THREE.MeshStandardMaterial({ color: 0xe4e7eb, roughness: 0.6, metalness: 0.02 }));
+  const coreMat = m(new THREE.MeshStandardMaterial({ color: 0x9aa1ab, roughness: 0.8 }));
+  const stone = m(new THREE.MeshStandardMaterial({ color: 0x2b3038, roughness: 0.7, metalness: 0.1 }));
+  const wood = m(new THREE.MeshStandardMaterial({ color: 0xb48a5c, roughness: 0.65 }));
+  const steel = m(new THREE.MeshStandardMaterial({ color: 0x232a34, roughness: 0.35, metalness: 0.85 }));
   const glass =
     quality === 'high'
-      ? m(
-          new THREE.MeshPhysicalMaterial({
-            color: 0xbfe9ff,
-            roughness: 0.06,
-            metalness: 0,
-            transmission: 0.92,
-            thickness: 0.25,
-            ior: 1.45,
-            transparent: true,
-            opacity: 1,
-          }),
-        )
-      : m(
-          new THREE.MeshStandardMaterial({
-            color: 0x9fd8ff,
-            roughness: 0.08,
-            metalness: 0.6,
-            transparent: true,
-            opacity: 0.38,
-          }),
-        );
-  const accentMat = m(
-    new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x22d3ee, emissiveIntensity: 0.9, roughness: 0.3 }),
-  );
-  const steel = m(new THREE.MeshStandardMaterial({ color: 0x3b4452, roughness: 0.35, metalness: 0.85 }));
+      ? m(new THREE.MeshPhysicalMaterial({ color: 0xd4efff, roughness: 0.04, metalness: 0, transmission: 0.94, thickness: 0.2, ior: 1.45, transparent: true }))
+      : m(new THREE.MeshStandardMaterial({ color: 0x9fd0f0, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.26, depthWrite: false }));
+  const railMat = m(new THREE.MeshStandardMaterial({ color: 0xcfe9f7, roughness: 0.05, metalness: 0.8, transparent: true, opacity: 0.2, depthWrite: false }));
+  const accentMat = m(new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x22d3ee, emissiveIntensity: 0.9, roughness: 0.3 }));
+  const warmMat = m(new THREE.MeshStandardMaterial({ color: 0xfff1d6, emissive: 0xffc98a, emissiveIntensity: 1, roughness: 0.9 }));
+  const water = m(new THREE.MeshStandardMaterial({ color: 0x0b2c3d, roughness: 0.04, metalness: 0.95 }));
+  const pvMat = m(new THREE.MeshStandardMaterial({ color: 0x12305a, roughness: 0.18, metalness: 0.7 }));
+  const grass = m(new THREE.MeshStandardMaterial({ color: 0x55805a, roughness: 0.95 }));
+  const leaf = m(new THREE.MeshStandardMaterial({ color: 0x5f9467, roughness: 0.85 }));
 
-  // Auskragende Geschossplatten (Cantilever)
+  // Kontaktschatten (funktioniert in jeder Qualitätsstufe)
+  const blobMat = m(
+    new THREE.MeshBasicMaterial({ map: radialTexture('rgba(0,0,0,0.6)', 'rgba(0,0,0,0)'), transparent: true, depthWrite: false }),
+  );
+  const blob = new THREE.Mesh(g(new THREE.PlaneGeometry(10, 8)), blobMat);
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = 0.006;
+  model.add(blob);
+
+  // Sockel mit Wasserbecken
+  const occluders: THREE.Object3D[] = [];
+  occluders.push(box(stone, 5.6, 0.1, 3.8, 0, 0.05, 0, true));
+  box(water, 1.0, 0.012, 2.6, 2.15, 0.106, 0.2);
+
+  // Auskragende Geschossplatten: [Breite, Tiefe, x, y, z]
   const slabs: [number, number, number, number, number][] = [
-    // w, d, x, y, z
-    [3.6, 2.6, 0, 0.12, 0],
+    [3.6, 2.6, 0, 0.16, 0],
     [3.0, 2.2, 0.55, 1.25, 0.15],
     [3.4, 2.0, -0.35, 2.35, -0.1],
     [2.4, 1.8, 0.25, 3.4, 0.05],
   ];
-  const slabGeo = g(new THREE.BoxGeometry(1, 1, 1));
-  slabs.forEach(([w, d, x, y, z]) => {
-    const s = new THREE.Mesh(slabGeo, concrete);
-    s.scale.set(w, 0.16, d);
-    s.position.set(x, y, z);
-    s.castShadow = s.receiveShadow = true;
-    model.add(s);
-  });
-  // Glasvolumen zwischen den Platten
-  const glassGeo = g(new THREE.BoxGeometry(1, 1, 1));
-  const volumes: [number, number, number, number, number, number][] = [
-    [3.1, 1.0, 2.2, 0.1, 0.68, 0],
-    [2.6, 0.95, 1.8, 0.5, 1.8, 0.12],
-    [2.9, 0.9, 1.65, -0.3, 2.87, -0.08],
-  ];
-  volumes.forEach(([w, h, d, x, y, z]) => {
-    const v = new THREE.Mesh(glassGeo, glass);
-    v.scale.set(w, h, d);
-    v.position.set(x, y, z);
-    model.add(v);
-  });
-  // Stützen
-  const colGeo = g(new THREE.CylinderGeometry(0.04, 0.04, 1, 12));
-  [
-    [-1.4, -0.9], [1.4, -0.9], [-1.4, 0.9], [1.4, 0.9],
-  ].forEach(([x, z]) => {
-    for (let lvl = 0; lvl < 3; lvl++) {
-      const c = new THREE.Mesh(colGeo, steel);
-      c.scale.y = 1.0;
-      c.position.set(x * (lvl === 2 ? 0.8 : 0.9), 0.7 + lvl * 1.1, z * 0.8);
-      c.castShadow = true;
-      model.add(c);
+  slabs.forEach(([w, d, x, y, z], i) => {
+    occluders.push(box(concrete, w, 0.12, d, x, y, z, true));
+    if (i > 0) {
+      box(wood, w - 0.06, 0.02, d - 0.06, x, y - 0.07, z); // Holzuntersicht
+      // Glasbrüstung rundum
+      const ry = y + 0.06 + 0.11;
+      box(railMat, w, 0.22, 0.012, x, ry, z + d / 2 - 0.02);
+      box(railMat, w, 0.22, 0.012, x, ry, z - d / 2 + 0.02);
+      box(railMat, 0.012, 0.22, d, x + w / 2 - 0.02, ry, z);
+      box(railMat, 0.012, 0.22, d, x - w / 2 + 0.02, ry, z);
     }
   });
+
+  // Erschließungskern durch alle Geschosse
+  occluders.push(box(coreMat, 0.7, 3.15, 0.6, 0.1, 1.79, -0.3, true));
+
+  // Verglaste Geschosse: [Breite, Höhe, Tiefe, x, y, z] – mit Holzboden, Lichtdecke und Fassadenprofilen
+  const volumes: [number, number, number, number, number, number][] = [
+    [3.1, 0.97, 2.2, 0.1, 0.705, 0],
+    [2.6, 0.98, 1.8, 0.5, 1.8, 0.12],
+    [2.9, 0.93, 1.65, -0.3, 2.875, -0.08],
+  ];
+  const finStep = 0.44;
+  const finSlots: [number, number, number, number, boolean][] = []; // x, y, z, Höhe, quer
+  volumes.forEach(([w, h, d, x, y, z]) => {
+    box(wood, w - 0.04, 0.015, d - 0.04, x, y - h / 2 + 0.012, z);
+    box(warmMat, w - 0.5, 0.012, d - 0.5, x, y + h / 2 - 0.012, z);
+    const glassBox = box(glass, w, h, d, x, y, z);
+    glassBox.renderOrder = 2;
+    const nx = Math.round(w / finStep);
+    for (let i = 0; i <= nx; i++) {
+      const fx = x - w / 2 + (w * i) / nx;
+      finSlots.push([fx, y, z + d / 2, h, false], [fx, y, z - d / 2, h, false]);
+    }
+    const nz = Math.round(d / finStep);
+    for (let i = 1; i < nz; i++) {
+      const fz = z - d / 2 + (d * i) / nz;
+      finSlots.push([x + w / 2, y, fz, h, true], [x - w / 2, y, fz, h, true]);
+    }
+  });
+  const fins = new THREE.InstancedMesh(unit, steel, finSlots.length);
+  const finM = new THREE.Matrix4();
+  const finQ = new THREE.Quaternion();
+  finSlots.forEach(([fx, fy, fz, fh, cross], i) => {
+    finM.compose(new THREE.Vector3(fx, fy, fz), finQ, cross ? new THREE.Vector3(0.07, fh, 0.022) : new THREE.Vector3(0.022, fh, 0.07));
+    fins.setMatrixAt(i, finM);
+  });
+  fins.castShadow = true;
+  model.add(fins);
+
+  // Warmes Innenlicht je Geschoss
+  const warmLights: THREE.PointLight[] = [];
+  volumes.slice(0, quality === 'low' ? 1 : 3).forEach(([, , , x, y, z]) => {
+    const l = new THREE.PointLight(0xffc27a, 1, 3.2, 1.8);
+    l.position.set(x + 0.6, y + 0.2, z + 0.3);
+    warmLights.push(l);
+    model.add(l);
+  });
+
   // Leuchtende Akzentkanten (Primärfarbe)
-  const edgeGeo = g(new THREE.BoxGeometry(1, 1, 1));
   const edges: THREE.Mesh[] = [];
   slabs.slice(1).forEach(([w, d, x, y, z]) => {
-    const e = new THREE.Mesh(edgeGeo, accentMat);
-    e.scale.set(w + 0.02, 0.025, 0.025);
-    e.position.set(x, y + 0.09, z + d / 2);
-    edges.push(e);
-    model.add(e);
+    edges.push(box(accentMat, w + 0.01, 0.018, 0.018, x, y - 0.052, z + d / 2 + 0.004));
   });
-  // Dachgarten (stilisiert)
-  const treeGeo = g(new THREE.IcosahedronGeometry(0.22, 1));
-  const leaf = m(new THREE.MeshStandardMaterial({ color: 0x4f7d5b, roughness: 0.9, flatShading: true }));
-  [[-0.6, -0.2], [-0.15, 0.4], [0.5, -0.35], [0.8, 0.3]].forEach(([x, z], i) => {
-    const t = new THREE.Mesh(treeGeo, leaf);
-    t.position.set(x, 3.68 + (i % 2) * 0.05, z);
-    t.scale.setScalar(0.8 + (i % 3) * 0.15);
-    t.castShadow = true;
-    model.add(t);
+
+  // Dachgarten
+  box(grass, 1.9, 0.03, 1.3, 0.25, 3.475, 0.05);
+  const crownGeo = g(new THREE.IcosahedronGeometry(1, 2));
+  const trunkGeo = g(new THREE.CylinderGeometry(0.014, 0.02, 1, 8));
+  (
+    [
+      [-0.35, -0.25, 0.2],
+      [0.1, 0.35, 0.16],
+      [0.75, -0.3, 0.22],
+      [0.95, 0.35, 0.14],
+    ] as [number, number, number][]
+  ).forEach(([x, z, r]) => {
+    const trunk = new THREE.Mesh(trunkGeo, steel);
+    trunk.scale.y = 0.26;
+    trunk.position.set(x, 3.62, z);
+    const crown = new THREE.Mesh(crownGeo, leaf);
+    crown.scale.set(r, r * 1.15, r);
+    crown.position.set(x, 3.74 + r, z);
+    crown.castShadow = true;
+    model.add(trunk, crown);
   });
-  // Energiesystem: Solarfeld neben dem Gebäude
-  const panelGeo = g(new THREE.BoxGeometry(0.5, 0.03, 0.32));
+
+  // Energiesystem: aufgeständertes Solarfeld auf dem Sockel
   for (let i = 0; i < 3; i++)
     for (let j = 0; j < 2; j++) {
-      const p = new THREE.Mesh(panelGeo, steel);
-      p.position.set(-2.3 + i * 0.55, 0.25, 0.3 + j * 0.4);
-      p.rotation.x = -0.35;
-      model.add(p);
+      const p = box(pvMat, 0.42, 0.016, 0.3, -2.42 + i * 0.46, 0.27, 0.35 + j * 0.42);
+      p.rotation.x = -0.42;
+      box(steel, 0.02, 0.16, 0.02, -2.42 + i * 0.46, 0.18, 0.42 + j * 0.42);
     }
 
-  // Schwebende Glaselemente
-  const floatGeo = g(new THREE.BoxGeometry(1, 1, 0.03));
+  // Schwebende Glaselemente: fast unsichtbare Fläche mit leuchtender Kante
+  const floatGeo = g(new THREE.PlaneGeometry(1, 1));
+  const floatEdgeGeo = g(new THREE.EdgesGeometry(floatGeo));
   const floatMat = m(
-    new THREE.MeshStandardMaterial({ color: 0xcfefff, roughness: 0.05, metalness: 0.7, transparent: true, opacity: 0.22 }),
+    new THREE.MeshStandardMaterial({ color: 0xcfefff, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }),
   );
-  const floaters: { mesh: THREE.Mesh; base: number; phase: number }[] = [];
-  const floatCount = quality === 'low' ? 4 : 9;
+  const floatEdgeMat = m(new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.5 }));
+  const floaters: { mesh: THREE.Group; base: number; phase: number }[] = [];
+  const floatCount = quality === 'low' ? 4 : 7;
   for (let i = 0; i < floatCount; i++) {
-    const f = new THREE.Mesh(floatGeo, floatMat);
-    const a = (i / floatCount) * Math.PI * 2;
-    const r = 3.6 + (i % 3) * 0.7;
-    f.position.set(Math.cos(a) * r, 1.2 + (i % 4) * 0.8, Math.sin(a) * r);
-    f.scale.set(0.6 + (i % 3) * 0.3, 0.9 + (i % 2) * 0.5, 1);
+    const f = new THREE.Group();
+    f.add(new THREE.Mesh(floatGeo, floatMat), new THREE.LineSegments(floatEdgeGeo, floatEdgeMat));
+    const a = (i / floatCount) * Math.PI * 2 + 0.5;
+    const r = 4.6 + (i % 3) * 0.9;
+    f.position.set(Math.cos(a) * r, 1.4 + (i % 4) * 0.75, Math.sin(a) * r);
+    f.scale.set(0.7 + (i % 3) * 0.3, 1.0 + (i % 2) * 0.6, 1);
     f.lookAt(0, f.position.y, 0);
     floaters.push({ mesh: f, base: f.position.y, phase: i * 1.3 });
     scene.add(f);
   }
 
-  // Lichtpartikel
-  const pCount = quality === 'high' ? 900 : quality === 'medium' ? 450 : 160;
+  // Lichtpartikel (weiche Punkte)
+  const pCount = quality === 'high' ? 700 : quality === 'medium' ? 380 : 150;
   const pPos = new Float32Array(pCount * 3);
   const rand = seeded(20261113);
   for (let i = 0; i < pCount; i++) {
-    const r = 2 + rand() * 7;
+    const r = 2.5 + rand() * 8;
     const a = rand() * Math.PI * 2;
     pPos[i * 3] = Math.cos(a) * r;
-    pPos[i * 3 + 1] = rand() * 6;
+    pPos[i * 3 + 1] = 0.2 + rand() * 6.5;
     pPos[i * 3 + 2] = Math.sin(a) * r;
   }
   const pGeo = g(new THREE.BufferGeometry());
@@ -310,10 +396,11 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   const pMat = m(
     new THREE.PointsMaterial({
       color: 0x22d3ee,
-      size: 0.035,
+      map: radialTexture('rgba(255,255,255,1)', 'rgba(255,255,255,0)'),
+      size: 0.06,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.6,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     }),
@@ -322,30 +409,38 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   scene.add(particles);
 
   // ---------- Konfiguration anwenden ----------
+  const tmpCol = new THREE.Color();
   function applyConfig() {
     const col = new THREE.Color(cfg.primaryColor);
     accentMat.color.copy(col);
     accentMat.emissive.copy(col);
     pMat.color.copy(col);
     accent.color.copy(col);
+    floatEdgeMat.color.copy(col);
 
     const b = BG[cfg.background];
-    scene.background = new THREE.Color(b.bg);
-    scene.fog = new THREE.Fog(b.fog, 12, 30);
-    floorMat.color.setHex(b.floor);
-    (grid.material as THREE.LineBasicMaterial).color.setHex(b.grid);
-
     const md = MOOD[cfg.lightMood];
+    const horizon = new THREE.Color(b.horizon).lerp(tmpCol.setHex(md.tint), b.light ? md.tintW * 0.25 : md.tintW);
+    (skyMat.uniforms.top.value as THREE.Color).setHex(b.top);
+    (skyMat.uniforms.horizon.value as THREE.Color).copy(horizon);
+    scene.background = horizon;
+    scene.fog = new THREE.Fog(horizon, 11, 30);
+    floorMat.color.setHex(b.floor);
+    ringMat.color.setHex(b.ring);
+    blobMat.opacity = b.light ? 0.45 : 0.9;
+
     key.color.setHex(md.key);
     key.intensity = md.keyI;
     hemi.color.setHex(md.hemiSky);
     hemi.groundColor.setHex(md.hemiGround);
     hemi.intensity = md.hemiI;
     accent.intensity = md.accentI;
-    accentMat.emissiveIntensity = cfg.lightMood === 'nacht' ? 1.6 : cfg.lightMood === 'abend' ? 1.1 : 0.7;
+    accentMat.emissiveIntensity = cfg.lightMood === 'nacht' ? 1.8 : cfg.lightMood === 'abend' ? 1.2 : 0.7;
+    warmMat.emissiveIntensity = md.warm;
+    warmLights.forEach((l) => (l.intensity = md.warm * 0.9));
     renderer.toneMappingExposure = md.exposure;
-    pMat.opacity = cfg.background === 'hell' ? 0.5 : 0.75;
-    pMat.blending = cfg.background === 'hell' ? THREE.NormalBlending : THREE.AdditiveBlending;
+    pMat.opacity = b.light ? 0.5 : 0.6;
+    pMat.blending = b.light ? THREE.NormalBlending : THREE.AdditiveBlending;
     pMat.needsUpdate = true;
   }
   applyConfig();
@@ -359,6 +454,43 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
     pointerY = ((e.clientY - r.top) / r.height) * 2 - 1;
   };
   window.addEventListener('pointermove', onPointer, { passive: true });
+
+  // Ziehen zum Drehen (Maus und Touch). touch-action: pan-y lässt vertikales Scrollen unberührt.
+  let rotY = 0.35;
+  let rotVel = 0;
+  let rotKick = 0;
+  let dragging = false;
+  let dragX = 0;
+  let dragT = 0;
+  container.style.touchAction = 'pan-y';
+  container.style.cursor = 'grab';
+  const onDown = (e: PointerEvent) => {
+    if ((e.target as Element | null)?.closest?.('button')) return;
+    dragging = true;
+    dragX = e.clientX;
+    dragT = performance.now();
+    rotVel = 0;
+    container.style.cursor = 'grabbing';
+  };
+  const onDrag = (e: PointerEvent) => {
+    if (!dragging) return;
+    const now = performance.now();
+    const d = (e.clientX - dragX) * 0.006;
+    rotY += d;
+    rotVel = THREE.MathUtils.clamp(d / Math.max(0.008, (now - dragT) / 1000), -4, 4);
+    dragX = e.clientX;
+    dragT = now;
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    if (performance.now() - dragT > 120) rotVel = 0;
+    container.style.cursor = 'grab';
+  };
+  container.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onDrag, { passive: true });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
 
   let scrollTarget = 0;
   let scrollCurrent = 0;
@@ -398,14 +530,14 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   let fpsT0 = performance.now();
   let lowStreak = 0;
   function downgrade() {
-    if (quality === 'low') return;
+    if (quality === 'low' || opts.lockQuality) return;
     quality = quality === 'high' ? 'medium' : 'low';
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap()));
     renderer.setSize(width, height, false);
     renderer.shadowMap.enabled = false;
     key.castShadow = false;
     if (quality === 'low') {
-      particles.geometry.setDrawRange(0, 160);
+      particles.geometry.setDrawRange(0, 150);
       floaters.forEach((f, i) => (f.mesh.visible = i < 4));
     }
     opts.onQualityChange?.(quality);
@@ -416,9 +548,23 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   const camDir = new THREE.Vector3();
   const toHs = new THREE.Vector3();
   let lastHsKey = '';
-  function projectHotspots() {
+  const ray = new THREE.Raycaster();
+  const hsWorld = new THREE.Vector3();
+  const occluded = new Map<string, boolean>();
+  let hsFrame = 0;
+  function projectHotspots(show: boolean) {
     if (!opts.onHotspots) return;
     camera.getWorldDirection(camDir);
+    // Verdeckung durch Decken, Kern und Sockel nur jedes 6. Bild prüfen
+    if (hsFrame++ % 6 === 0) {
+      opts.hotspots.forEach((h) => {
+        hsWorld.set(...h.position).applyMatrix4(model.matrixWorld);
+        const dist = hsWorld.distanceTo(camera.position);
+        ray.set(camera.position, toHs.copy(hsWorld).sub(camera.position).normalize());
+        ray.far = dist - 0.12;
+        occluded.set(h.id, ray.intersectObjects(occluders, false).length > 0);
+      });
+    }
     const list: ProjectedHotspot[] = opts.hotspots.map((h) => {
       hsVec.set(...h.position).applyMatrix4(model.matrixWorld);
       toHs.copy(hsVec).sub(camera.position).normalize();
@@ -426,7 +572,7 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
       hsVec.project(camera);
       const x = (hsVec.x * 0.5 + 0.5) * width;
       const y = (-hsVec.y * 0.5 + 0.5) * height;
-      const inView = front && x > 8 && x < width - 8 && y > 8 && y < height - 8;
+      const inView = show && front && !occluded.get(h.id) && x > 8 && x < width - 8 && y > 8 && y < height - 8;
       return { id: h.id, x: Math.round(x), y: Math.round(y), visible: inView };
     });
     const k = list.map((l) => `${l.id}${l.x},${l.y},${l.visible}`).join('|');
@@ -446,13 +592,14 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
   let raf = 0;
   let running = false;
   let disposed = false;
-  let rotY = 0.35;
 
   // Startposition setzen
   sampleCam(0, camPos, camLook);
   camera.position.copy(camPos);
   camera.lookAt(camLook);
   let firstFrame = true;
+  const introStart = performance.now();
+  const INTRO_MS = 2600;
 
   function frame() {
     if (disposed) return;
@@ -473,12 +620,17 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
     // Desktop-Hero → Modell nach rechts, damit die Überschrift frei bleibt
     const aspect = width / height;
     const heroWeight = 1 - smooth(THREE.MathUtils.clamp(scrollCurrent / 0.3, 0, 1));
-    const distF = (aspect < 0.8 ? 1.6 : aspect < 1.2 ? 1.25 : 1) * (1 + 0.4 * (1 - heroWeight));
+    // Einflug beim Laden (entfällt bei reduzierter Bewegung)
+    const introT = reduced ? 1 : THREE.MathUtils.clamp((performance.now() - introStart) / INTRO_MS, 0, 1);
+    const intro = 1 - Math.pow(1 - introT, 3);
+    const distF =
+      (aspect < 0.8 ? 1.6 : aspect < 1.2 ? 1.25 : 1.12) * (1 + 0.32 * (1 - heroWeight)) * (1 + 0.9 * (1 - intro));
+    camPos.y += 2.4 * (1 - intro);
     camPos.sub(camLook).multiplyScalar(distF).add(camLook);
     if (aspect < 0.8) camLook.y -= 1.4 * (0.4 + 0.6 * heroWeight);
     else if (aspect >= 1.2) {
       rightVec.subVectors(camLook, camPos).cross(UP).normalize();
-      const shift = 1.9 * heroWeight;
+      const shift = 2.5 * heroWeight;
       camLook.addScaledVector(rightVec, -shift);
       camPos.addScaledVector(rightVec, -shift * 0.35);
     }
@@ -495,15 +647,25 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
     const par = reduced ? 0 : 0.6;
     camPos.x += pointerX * par;
     camPos.y += -pointerY * par * 0.5;
-    const k = reduced || firstFrame ? 1 : 1 - Math.pow(0.02, dt);
+    const k = reduced || firstFrame || introT < 1 ? 1 : 1 - Math.pow(0.02, dt);
     firstFrame = false;
     camera.position.lerp(camPos, k);
     lookCur.lerp(camLook, k);
     camera.lookAt(lookCur);
 
     // Automatische Rotation
-    if (!reduced && !focusId) rotY += dt * 0.12 * cfg.rotationSpeed;
-    model.rotation.y = rotY;
+    if (!reduced && !focusId && !dragging) rotY += dt * 0.12 * cfg.rotationSpeed;
+    if (!dragging && rotVel !== 0) {
+      rotY += rotVel * dt;
+      rotVel *= Math.pow(0.04, dt);
+      if (Math.abs(rotVel) < 0.01) rotVel = 0;
+    }
+    if (rotKick !== 0) {
+      const step = reduced ? rotKick : rotKick * (1 - Math.pow(0.002, dt));
+      rotY += step;
+      rotKick = Math.abs(rotKick - step) < 0.002 ? 0 : rotKick - step;
+    }
+    model.rotation.y = rotY - 1.5 * (1 - intro);
 
     if (!reduced) {
       floaters.forEach((f) => {
@@ -517,7 +679,7 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
     }
 
     renderer.render(scene, camera);
-    projectHotspots();
+    projectHotspots(introT >= 1);
 
     // FPS-Überwachung → automatische Reduktion
     frames++;
@@ -557,6 +719,10 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
     focusHotspot(id) {
       focusId = id;
     },
+    rotateBy(rad) {
+      rotKick += rad;
+      rotVel = 0;
+    },
     getQuality() {
       return quality;
     },
@@ -564,6 +730,14 @@ export function createArchScene(opts: CreateOptions): SceneHandle {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener('pointermove', onPointer);
+      container.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onDrag);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      container.style.cursor = '';
+      container.style.touchAction = '';
+      fins.dispose();
+      texs.forEach((x) => x.dispose());
       document.removeEventListener('visibilitychange', onVis);
       ro.disconnect();
       io.disconnect();

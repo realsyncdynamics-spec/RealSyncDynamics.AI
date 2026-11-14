@@ -54,6 +54,16 @@ describe('3D-Landingpage (Template-Vorschau)', () => {
     expect(read('src/components/visual/demo-3d/archScene.ts')).toContain('forceContextLoss');
   });
 
+  it('lässt das Modell per Ziehen und per Button drehen, ohne das Scrollen zu sperren', () => {
+    const scene = read('src/components/visual/demo-3d/archScene.ts');
+    expect(scene).toContain("container.style.touchAction = 'pan-y'");
+    expect(scene).toContain('rotateBy(rad)');
+    expect(scene).not.toMatch(/preventDefault\(\)/);
+    const page = read('src/pages/Demo3DLandingPage.tsx');
+    expect(page).toContain('aria-label="Modell nach links drehen"');
+    expect(page).toContain("get('qualitaet')");
+  });
+
   it('ist noindex und nicht in der Sitemap', () => {
     const seo = read('src/config/seo.ts');
     const entry = seo.slice(seo.indexOf("'/demo/3d-landingpage'"));

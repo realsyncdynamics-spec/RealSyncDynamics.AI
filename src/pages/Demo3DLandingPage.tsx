@@ -57,7 +57,15 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
   const [projected, setProjected] = useState<ProjectedHotspot[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [quality, setQuality] = useState<QualityTier>(() => (typeof window === 'undefined' ? 'medium' : detectQuality()));
+  // ?qualitaet=hoch|mittel|niedrig legt die Stufe fest (z. B. für Bildschirmaufnahmen) und schaltet die Automatik ab.
+  const [forcedQuality] = useState<QualityTier | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const q = new URLSearchParams(window.location.search).get('qualitaet');
+    return q === 'hoch' ? 'high' : q === 'mittel' ? 'medium' : q === 'niedrig' ? 'low' : null;
+  });
+  const [quality, setQuality] = useState<QualityTier>(() =>
+    typeof window === 'undefined' ? 'medium' : (forcedQuality ?? detectQuality()),
+  );
   const [sceneState, setSceneState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -83,6 +91,7 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
           hotspots: HOTSPOTS,
           reducedMotion: reducedPref,
           quality,
+          lockQuality: forcedQuality !== null,
           onHotspots: setProjected,
           onQualityChange: setQuality,
         });
@@ -223,7 +232,7 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
             {headline || ' '}
           </h1>
           <p className="rsd3d-lead">
-            Bewege die Maus, scrolle und klicke auf die Markierungen. Diese Seite läuft vollständig im Browser.
+            Ziehe das Modell, scrolle und klicke auf die Markierungen. Diese Seite läuft vollständig im Browser.
           </p>
           <div className="rsd3d-cta-row">
             <a className="rsd3d-btn rsd3d-btn--primary" href="#rsd3d-raum">
@@ -288,6 +297,18 @@ export default function Demo3DLandingPage({ builderHref, backHref }: Demo3DLandi
           <p className="rsd3d-small">Darstellung: Qualitätsstufe {quality === 'high' ? 'hoch' : quality === 'medium' ? 'mittel' : 'niedrig'}{reducedPref ? ' · reduzierte Bewegung aktiv' : ''}</p>
         </section>
       </div>
+
+      {/* Drehen per Button (Tastatur- und Touch-Alternative zum Ziehen) */}
+      {show3D && sceneState === 'ready' && (
+        <div className="rsd3d-rotate" role="group" aria-label="Modell drehen">
+          <button type="button" aria-label="Modell nach links drehen" onClick={() => handleRef.current?.rotateBy(-Math.PI / 6)}>
+            <span aria-hidden="true">↺</span>
+          </button>
+          <button type="button" aria-label="Modell nach rechts drehen" onClick={() => handleRef.current?.rotateBy(Math.PI / 6)}>
+            <span aria-hidden="true">↻</span>
+          </button>
+        </div>
+      )}
 
       {/* Konfigurator */}
       <button

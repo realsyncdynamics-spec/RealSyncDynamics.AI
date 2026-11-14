@@ -76,6 +76,12 @@
 .rsd3d-hotspot:hover .rsd3d-hotspot-label, .rsd3d-hotspot:focus-visible .rsd3d-hotspot-label, .rsd3d-hotspot.is-active .rsd3d-hotspot-label { opacity: 1; transform: none; }
 @keyframes rsd3d-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rsd3d-primary) 55%, transparent); } 70% { box-shadow: 0 0 0 14px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
+/* Dreh-Buttons */
+.rsd3d-rotate { position: fixed; right: 156px; bottom: 20px; z-index: 30; display: flex; gap: 6px; }
+.rsd3d-rotate button { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--rsd3d-border); background: var(--rsd3d-card); color: var(--rsd3d-fg); font-size: 20px; line-height: 1; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.rsd3d-rotate button:hover { border-color: var(--rsd3d-primary); }
+@media (min-width: 1024px) { .rsd3d-hero { max-width: min(760px, 50vw); } }
+
 /* Konfigurator */
 .rsd3d-fab { position: fixed; right: 20px; bottom: 20px; z-index: 30; min-height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--rsd3d-border); background: var(--rsd3d-primary); color: #04121c; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 .rsd3d-panel { position: fixed; right: 20px; bottom: 80px; z-index: 30; width: min(340px, calc(100vw - 40px)); max-height: calc(100vh - 120px); overflow: auto; padding: 20px; border-radius: 18px; background: color-mix(in srgb, var(--rsd3d-bg) 86%, transparent); border: 1px solid var(--rsd3d-border); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
@@ -121,6 +127,7 @@
   .rsd3d-fb-slab { transform: translateX(-50%) scale(.75) !important; }
   .rsd3d-panel { right: 12px; left: 12px; width: auto; bottom: 76px; }
   .rsd3d-fab { right: 12px; bottom: 12px; }
+  .rsd3d-rotate { right: 12px; bottom: 72px; flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rsd3d *, .rsd3d *::before, .rsd3d *::after { animation: none !important; transition: none !important; }

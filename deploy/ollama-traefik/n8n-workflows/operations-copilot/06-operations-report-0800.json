@@ -1,0 +1,418 @@
+{
+  "name": "RealSync Operations Copilot v0.3.2 – Daily 08:00 (inactive)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "043daf02-c92d-5aed-8dbc-0ec85846eb38",
+      "name": "Daily 08:00 Berlin",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c38e4b37-b202-5dd2-a4ed-1326da8a520d",
+      "name": "GitHub PRs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        430,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/realsyncdynamics-spec/RealSyncDynamics.AI/pulls?state=open&per_page=100",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "84f7591f-6eab-559b-a948-2d6c5f9eb9ef",
+      "name": "Select PR Check Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Bounded read-only check target selection. Zero PRs => main as fallback,\n// explicitly flagged so the report does not treat it as a PR check.\nconst response = $input.first().json;\nlet body = response.body ?? response;\nif (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = null; } }\nconst prs = response.statusCode === 200 && Array.isArray(body) ? body : [];\nconst targets = prs.filter(x=>typeof x.head?.sha === 'string' && /^[0-9a-f]{40}$/i.test(x.head.sha)).slice(0,5)\n  .map(x=>({pr_number:Number(x.number),sha:x.head.sha,main_fallback:false}));\nif (!targets.length)targets.push({pr_number:null,sha:'main',main_fallback:true});\nreturn targets.map(x=>({json:x}));\n"
+      }
+    },
+    {
+      "id": "5fc6acd7-5b0c-5dc9-bc4a-8f91ae3e2c82",
+      "name": "GitHub PR Checks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        870,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.github.com/repos/realsyncdynamics-spec/RealSyncDynamics.AI/commits/' + $json.sha + '/check-runs?per_page=100' }}",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "d5b1ec48-68b9-57e4-bdc1-4c05f2566c3d",
+      "name": "Collect PR Checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Each fetched response is paired by input index with the selected PR head.\n// Missing or malformed results are unavailable, never \"successful\".\nconst targets = $('Select PR Check Targets').all().map(x=>x.json);\nconst results = $input.all().map(x=>x.json);\nconst checks=targets.map((t,i)=>{\n  const r=results[i]||{};\n  let data=r.body??r;\n  if(typeof data==='string'){try{data=JSON.parse(data);}catch{data=null;}}\n  const available=r.statusCode===200&&Array.isArray(data?.check_runs);\n  return {pr_number:t.pr_number,head_sha:t.sha,main_fallback:t.main_fallback,available,\n    http_status:typeof r.statusCode==='number'?r.statusCode:null,\n    total_count:available?Number(data.total_count)||data.check_runs.length:null,\n    check_runs:available?data.check_runs.slice(0,100).map(c=>({\n      name:String(c.name||'').slice(0,100), status:String(c.status||'').slice(0,30),\n      conclusion:String(c.conclusion||'').slice(0,30),\n      url:typeof c.html_url==='string' && c.html_url.startsWith('https://github.com/')?c.html_url:null\n    })):[]};\n});\nreturn [{json:{checks,scope:'at most 5 PRs; first page of check-runs each'}}];\n"
+      }
+    },
+    {
+      "id": "954be157-9654-5820-939d-d452963f3604",
+      "name": "GitHub Workflow Runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1290,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs?per_page=100",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "0f5084ac-07ea-54da-96aa-d47009fbe7ab",
+      "name": "GitHub Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1510,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/realsyncdynamics-spec/RealSyncDynamics.AI/issues?state=open&per_page=100",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "e2634c34-45fd-5e55-8e76-7ffb5daceab4",
+      "name": "RealSync Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1730,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.REALSYNC_HEALTH_URL }}",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "51b5c0dd-7248-5d6c-9d9d-7f0ba75ec0bf",
+      "name": "Uptime Kuma Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1950,
+        300
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ String($env.UPTIME_KUMA_BASE_URL || '').trim().replace(/\\/$/, '') + '/metrics' }}",
+        "options": {
+          "timeout": 12000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth"
+      },
+      "onError": "continueRegularOutput",
+      "notes": "READ-ONLY. Credentials nach dem Import manuell zuweisen. Niemals Secrets in Workflow-Parametern speichern."
+    },
+    {
+      "id": "2869e442-2161-5d2e-84ac-cd8f4fb8ba79",
+      "name": "Compose Internal Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2170,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// n8n Code node: Run once for all items; no network calls, writes or model invocation.\n// Sources are HTTP Request node results with `fullResponse` and `neverError`.\nconst OWNER = 'realsyncdynamics-spec';\nconst REPO = 'RealSyncDynamics.AI';\nconst ROOT = `https://github.com/${OWNER}/${REPO}`;\nconst generatedAt = new Date().toISOString();\n// Defense in depth: text from GitHub and Uptime Kuma is untrusted report content.\n// Redact before truncation (truncation must not hide a secret prefix from the filter).\nfunction redact(value) {\n  return String(value ?? '')\n    .replace(/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/gi, '[EMAIL REDACTED]')\n    .replace(/\\b(?:github_pat_[A-Za-z0-9_]{12,}|gh[pousr]_[A-Za-z0-9_]{12,}|sk_(?:live|test)_[A-Za-z0-9]{8,}|rk_live_[A-Za-z0-9]{8,}|xox[baprs]-[A-Za-z0-9-]{12,}|uk2_[A-Za-z0-9_-]{12,})\\b/g, '[TOKEN REDACTED]')\n    .replace(/\\b(Bearer\\s+)[A-Za-z0-9._~+\\/=-]{8,}/gi, '$1[TOKEN REDACTED]')\n    .replace(/\\b((?:api[_-]?key|secret|password|passwd|access[_-]?token|auth[_-]?token)\\s*[:=]\\s*)[\\\"']?[^\\s,;\\\"']{6,}/gi, '$1[TOKEN REDACTED]')\n    // Avoid accidentally emitting credentials in URL query strings.\n    .replace(/(https?:\\/\\/[^\\s?#]+)\\?[^\\s#]+/gi, '$1?[QUERY REDACTED]');\n}\nconst safe = (s, max = 140) => redact(s).replace(/[\\u0000-\\u001f\\u007f]/g, ' ').replace(/[`<>|]/g, '').trim().slice(0, max);\nconst cleanGitHubRef = (candidate, fallback) => {\n  const s = String(candidate ?? '');\n  const exact = /^https:\\/\\/github\\.com\\/realsyncdynamics-spec\\/RealSyncDynamics\\.AI\\/(?:actions\\/runs\\/\\d+(?:\\/job\\/\\d+)?|pull\\/\\d+\\/checks)\\/?$/;\n  return exact.test(s) ? s : fallback;\n};\nconst read = (name) => {\n  try { return $(name).first().json || {}; }\n  catch (_) { return { error: 'node_not_available' }; }\n};\nconst unpack = (r) => {\n  if (r && r.body !== undefined) return r.body;\n  if (r && r.data !== undefined) return r.data;\n  return r;\n};\nconst asJson = (v) => {\n  if (typeof v === 'string') { try { return JSON.parse(v); } catch (_) { return null; } }\n  return v && typeof v === 'object' ? v : null;\n};\nconst sources = [];\nconst findings = [];\nfunction src(system, r, dataValid, detail = '') {\n  const status = typeof r.statusCode === 'number' ? r.statusCode : null;\n  const state = status === 200 && dataValid ? 'ok' : 'unavailable';\n  sources.push({system, state, http_status:status, checked_at:generatedAt, detail: safe(detail, 130)});\n  return state === 'ok';\n}\nfunction add(system, severity, title, ref, action) {\n  if (findings.length >= 50) return;\n  findings.push({source:system, severity, title:safe(title,160), reference:safe(ref,220), next_step:safe(action,200)});\n}\n// GitHub PRs: first page only. 100 items are an indication of possible truncation.\nconst prResponse = read('GitHub PRs');\nconst prRaw = asJson(unpack(prResponse));\nconst prsOk = src('github_prs', prResponse, Array.isArray(prRaw), 'per_page=100; nur erste Seite');\nif(!prsOk)add('github','high','GitHub PR-Liste nicht verfügbar',`${ROOT}/pulls`,'Credentials, Pull requests:read, Netzwerk und API-Limit prüfen');\nconst prs = prsOk ? prRaw.slice(0,100).map(p => ({\n  number:Number(p.number), title:safe(p.title), sha:safe(p.head?.sha,40),\n  draft:!!p.draft, updated_at:safe(p.updated_at,40),\n  url:`${ROOT}/pull/${Number(p.number)}`\n})).filter(p=>Number.isInteger(p.number) && p.number > 0) : [];\nif (prsOk && prs.length === 100) add('github','warn','PR-Liste kann paginiert sein (100 Einträge)', `${ROOT}/pulls`, 'GitHub-Pagination ergänzen');\n// Read-only check-runs for max 5 PR heads.\nconst checkResults = read('Collect PR Checks');\nconst checks = Array.isArray(checkResults.checks) ? checkResults.checks.slice(0, 5).map(c => {\n  const n = Number(c.pr_number);\n  const number = Number.isInteger(n) && n > 0 ? n : null;\n  const fallback = number ? `${ROOT}/pull/${number}/checks` : `${ROOT}/actions`;\n  return {\n    pr_number: number, head_sha: /^[0-9a-f]{40}$/i.test(String(c.head_sha||'')) ? String(c.head_sha) : null,\n    main_fallback: c.main_fallback === true, available: c.available === true,\n    http_status: Number.isInteger(c.http_status) ? c.http_status : null,\n    total_count: Number.isInteger(c.total_count) && c.total_count >= 0 ? c.total_count : null,\n    check_runs: Array.isArray(c.check_runs) ? c.check_runs.slice(0,100).map(k => ({\n      name: safe(k.name,100), status: safe(k.status,30), conclusion: safe(k.conclusion,30),\n      url: cleanGitHubRef(k.url, fallback)\n    })) : []\n  };\n}) : [];\nconst checksValid = Array.isArray(checkResults.checks);\nconst checksAvailable = checks.some(c=>c.available);\nsources.push({system:'github_checks',state:checksValid && checksAvailable ? 'partial' : 'unavailable',http_status:null,checked_at:generatedAt,detail:'maximal fünf PR-HEADs; keine vollständige CI-Freigabe'});\nconst checksByPr = new Map(checks.filter(c=>c.pr_number).map(c=>[Number(c.pr_number),c]));\nfor(const c of checks) {\n  if(!c.pr_number) continue;\n  if(!c.available) {\n    add('github','warn',`PR #${c.pr_number}: Check-Runs nicht abrufbar`,`${ROOT}/pull/${c.pr_number}`,'Checks:read / Auth und API-Antwort prüfen');\n    continue;\n  }\n  for(const k of (c.check_runs || []).slice(0,100)) {\n    if(k.status === 'completed' && ['failure','timed_out','action_required','cancelled'].includes(k.conclusion))\n      add('github','high',`PR #${c.pr_number}: Check ${safe(k.name,80)} = ${safe(k.conclusion,30)}`, k.url || `${ROOT}/pull/${c.pr_number}/checks`, 'CI-Log prüfen, kein Merge');\n    else if(k.status !== 'completed')\n      add('github','observe',`PR #${c.pr_number}: Check ${safe(k.name,80)} läuft/steht aus`,k.url || `${ROOT}/pull/${c.pr_number}/checks`,'CI-Ergebnis abwarten');\n  }\n}\n// GitHub Actions workflow-runs feed: not a substitute for complete PR checks.\nconst runsResponse = read('GitHub Workflow Runs');\nconst runsBody = asJson(unpack(runsResponse));\nconst runsOk = src('github_actions',runsResponse,Array.isArray(runsBody?.workflow_runs),'per_page=100; nur erste Seite');\nif(!runsOk)add('github','high','GitHub Actions-Runs nicht verfügbar',`${ROOT}/actions`,'Actions:read, Credential, Rate-Limit und GitHub-API prüfen');\nconst runs = runsOk ? runsBody.workflow_runs.slice(0,100).map(r=>({\n  id:Number(r.id), name:safe(r.name,100), head_sha:safe(r.head_sha,40),\n  status:safe(r.status,30), conclusion:safe(r.conclusion,30),\n  created_at:safe(r.created_at,40), url:`${ROOT}/actions/runs/${Number(r.id)}`\n})).filter(r=>Number.isInteger(r.id)&&r.id>0) : [];\nif(runsOk && runs.length===100)add('github','warn','Actions-Feed kann paginiert sein',`${ROOT}/actions`,'GitHub-Pagination ergänzen');\nconst since=Date.now()-24*60*60*1000;\nfor(const r of runs.filter(r=>Date.parse(r.created_at)>=since)){\n  if(['failure','timed_out','action_required'].includes(r.conclusion))add('github','high',`Workflow ${r.name} fehlgeschlagen (${r.conclusion})`,r.url,'Workflow-Jobs und Logs prüfen');\n  else if(r.status !== 'completed' && r.status) add('github','observe',`Workflow ${r.name} ${r.status}`,r.url,'Status erneut prüfen');\n}\n// GitHub issues (PRs are also returned by the issues REST endpoint; remove them).\nconst issuesResponse=read('GitHub Issues');\nconst issuesBody=asJson(unpack(issuesResponse));\nconst issuesOk=src('github_issues',issuesResponse,Array.isArray(issuesBody),'per_page=100; nur erste Seite');\nif(!issuesOk)add('github','warn','GitHub Issues nicht verfügbar',`${ROOT}/issues`,'Issues:read, Credential und API prüfen');\nconst issues=issuesOk ? issuesBody.filter(x=>!x.pull_request).slice(0,100).map(x=>({\n  number:Number(x.number),title:safe(x.title),url:`${ROOT}/issues/${Number(x.number)}`\n})).filter(x=>Number.isInteger(x.number)&&x.number>0) : [];\nif(issuesOk&&issuesBody.length===100)add('github','warn','Issues-Liste kann paginiert sein',`${ROOT}/issues`,'GitHub-Pagination ergänzen');\n// Health response: 503 with body.status=down is a valid outage finding.\nconst healthResponse=read('RealSync Health');\nconst healthBody=asJson(unpack(healthResponse));\nconst healthHttp=healthResponse.statusCode;\nconst healthValid=(healthHttp===200||healthHttp===503)&&['ok','degraded','down'].includes(healthBody?.status);\nsources.push({system:'realsync_health',state:healthValid?healthBody.status:'unavailable',http_status:typeof healthHttp==='number'?healthHttp:null,checked_at:generatedAt,detail:healthValid?'GET /functions/v1/health':'keine gültige Antwort'});\nif(!healthValid) add('health','high','RealSync Health nicht verifizierbar','GET /functions/v1/health','HTTP-Endpunkt, Netzwerk und Antwortformat prüfen');\nelse {\n  if(healthBody.status!=='ok')add('health',healthBody.status==='down'?'critical':'high',`Health-Gesamtstatus: ${healthBody.status}`,'GET /functions/v1/health','Einzelchecks prüfen');\n  for(const [name,val] of Object.entries(healthBody.checks||{})) {\n    if(['unknown','down','degraded'].includes(val?.status)) add('health',val.status==='down'?'high':'observe',`Health ${safe(name,50)}: ${val.status}`,'GET /functions/v1/health','Messlücke oder Fehlerursache prüfen');\n  }\n}\n// Prometheus text parser; only public status/latency/certificate metric families, no URL labels retained.\nfunction unescapeLabel(s) { return s.replace(/\\\\([\\\\\"n])/g,(_,ch)=>ch==='n'?'\\n':ch); }\nfunction labelsOf(s) {\n  const out={};\n  const re=/(?:^|,)\\s*([A-Za-z_][A-Za-z_0-9]*)=\"((?:\\\\.|[^\"\\\\])*)\"/g;\n  for(const m of s.matchAll(re))out[m[1]]=unescapeLabel(m[2]);\n  return out;\n}\nfunction parsePrometheus(text) {\n  if(typeof text !== 'string'||text.length>1_000_000)throw Error('invalid_or_oversized_metrics');\n  const m=new Map(); let samples=0;\n  for(const line of text.split(/\\r?\\n/).slice(0,12000)) {\n    if(!line||line[0]==='#')continue;\n    const match=/^(monitor_status|monitor_response_time|monitor_cert_days_remaining|monitor_cert_is_valid)\\{([^}]*)\\}\\s+([-+]?\\d+(?:\\.\\d+)?(?:[eE][-+]?\\d+)?)(?:\\s+\\S+)?$/.exec(line.trim());\n    if(!match)continue;\n    const value=Number(match[3]);if(!Number.isFinite(value))continue;\n    const labels=labelsOf(match[2]);\n    const name=safe(labels.monitor_name,100);\n    const id=safe(labels.monitor_id||'',30);\n    if(!name&&!id)continue;\n    const key=id||name+'|'+safe(labels.monitor_type,30);\n    if(!m.has(key)){if(m.size>=500)continue;m.set(key,{id:id||null,name:name||`Monitor ${id}`,type:safe(labels.monitor_type,30)||null,status:null,latency_ms:null,cert_days_remaining:null,cert_is_valid:null,uptime_7d:null,uptime_30d:null});}\n    const row=m.get(key);samples++;\n    if(match[1]==='monitor_status')row.status=value;\n    if(match[1]==='monitor_response_time')row.latency_ms=value;\n    if(match[1]==='monitor_cert_days_remaining')row.cert_days_remaining=value;\n    if(match[1]==='monitor_cert_is_valid')row.cert_is_valid=value;\n  }\n  return {monitors:[...m.values()],samples};\n}\n// The IF guard bypasses HTTP entirely when UPTIME_KUMA_BASE_URL is absent or invalid.\n// On that branch, the synthetic node delivers a clear unavailable reason.\nconst metricsNode = read('Uptime Kuma Metrics');\nconst metricsResponse = metricsNode.error === 'node_not_available'\n  ? read('Uptime Kuma Not Configured') : metricsNode;\nconst metricsHttp=metricsResponse.statusCode;\nlet metricText=unpack(metricsResponse);\nif(metricText&&typeof metricText==='object'&&typeof metricText.data==='string')metricText=metricText.data;\nlet parsed={monitors:[],samples:0};let metricsError=null;\nif(metricsHttp===200){try {parsed=parsePrometheus(metricText);}catch(e){metricsError=String(e.message||e);} }\nconst metricsOK=metricsHttp===200&&parsed.monitors.some(m=>m.status!==null);\nsources.push({system:'uptime_kuma',state:metricsOK?'ok':'unavailable',http_status:typeof metricsHttp==='number'?metricsHttp:null,checked_at:generatedAt,detail:metricsOK?'/metrics; status/latency/cert; 7d/30d nicht verfügbar':\n  (metricsResponse.error === 'UPTIME_KUMA_BASE_URL_MISSING_OR_INVALID' ? 'UPTIME_KUMA_BASE_URL fehlt oder ist ungültig; HTTP-Abruf bewusst übersprungen' : safe(metricsError||'no monitor_status / credentials / endpoint'))});\nif(!metricsOK)add('uptime_kuma','high','Uptime-Kuma-Metriken nicht verifizierbar','/metrics','Version, Netz, API-Key, Credential und Statusmetriken prüfen');\nconst THRESHOLDS_MS={\n  'RealSync Production Frontend':2000,\n  'RealSync API':2500,\n  'Supabase':3000,\n  'n8n':3000\n};\nconst DEFAULT_THRESHOLD_MS=2500; // initial static policy, not a measured 7d baseline\nfor(const m of parsed.monitors) {\n  const ref=`Uptime Kuma monitor_id=${m.id||'(kein ID-Label)'}`;\n  if(m.status===0)add('uptime_kuma','critical',`${m.name}: DOWN`,ref,'Dienst und direkte Probe prüfen');\n  else if(m.status===2)add('uptime_kuma','observe',`${m.name}: PENDING`,ref,'Erst nach bestätigten Probes bewerten');\n  else if(m.status===3)add('uptime_kuma','observe',`${m.name}: MAINTENANCE`,ref,'Wartungsfenster prüfen');\n  else if(m.status!==1)add('uptime_kuma','warn',`${m.name}: unbekannter Status`,ref,'Metrikformat und Version prüfen');\n  if(m.status===1&&Number.isFinite(m.latency_ms)&&m.latency_ms>(THRESHOLDS_MS[m.name]||DEFAULT_THRESHOLD_MS))\n    add('uptime_kuma','warn',`${m.name}: ${m.latency_ms}ms > konfigurierter Grenzwert`,ref,'Latenztrend und Grenzwert prüfen');\n  if(m.cert_is_valid===0)add('uptime_kuma','high',`${m.name}: TLS-Zertifikat ungültig`,ref,'TLS-Kette und Zertifikatsdaten prüfen');\n  if(Number.isFinite(m.cert_days_remaining)&&m.cert_days_remaining<14)\n    add('uptime_kuma',m.cert_days_remaining<7?'high':'warn',`${m.name}: Zertifikat ${m.cert_days_remaining} Tage Restlaufzeit`,ref,'Erneuerung kontrollieren');\n}\nconst RANK={critical:0,high:1,warn:2,observe:3};\nfindings.sort((a,b)=>(RANK[a.severity]??9)-(RANK[b.severity]??9));\nconst allAvailable=['github_prs','github_actions','github_issues','realsync_health','uptime_kuma'].every(n=>sources.some(s=>s.system===n&&s.state!=='unavailable'));\nconst lines=[\n  '# RealSync Operations Report (Entwurf, read-only)',\n  `Erstellt: ${generatedAt} UTC | Zeitzone: Europe/Berlin`,\n  `Datenabdeckung: ${allAvailable?'teilweise/erste Seiten, prüfbar':'unvollständig — mindestens eine Quelle nicht verifiziert'}`,\n  '', '## Quellenstatus',\n  ...sources.map(s=>`- ${s.system}: ${s.state} (HTTP ${s.http_status??'n/v'}) — ${s.detail}`),\n  '', '## Kritische Befunde'\n];\nif(!findings.length)lines.push('Keine Befunde aus den verfügbaren Ausschnitten; **kein Nachweis eines vollständig fehlerfreien Betriebs**.');\nelse for(const f of findings.slice(0,20))lines.push(`- [${f.severity}] ${f.title} | Quelle: ${f.reference} | Nächster Schritt: ${f.next_step}`);\nlines.push('', '## GitHub Überblick',`- Offene PRs (erste Seite): ${prsOk?prs.length:'nicht verfügbar'}`,\n  `- Offene Issues (erste Seite): ${issuesOk?issues.length:'nicht verfügbar'}`,\n  `- Workflow-Runs (erste Seite): ${runsOk?runs.length:'nicht verfügbar'}`,\n  `- Check-Runs: nur bis zu 5 PR-HEADs; keine vollständige Merge-Freigabe`,\n  '', '## Uptime Kuma', `- Gelesene Monitorstatus: ${metricsOK?parsed.monitors.filter(m=>m.status!==null).length:'nicht verfügbar'}`,\n  '- Uptime 7 Tage: Nicht verfügbar über /metrics', '- Uptime 30 Tage: Nicht verfügbar über /metrics',\n  '- Latenzgrenze: 2500ms Standard oder expliziter Servicewert (keine 7d-Medianmessung)',\n  '', '## Freigaben',\n  '- Keine Aktionen ausgeführt. Ein allgemeines \"Go\" ist **keine** Merge-/Deploy-/Secrets-/Infrastruktur-Freigabe.',\n  '- Konkrete Merge-Freigabe und ggf. separate Deploy-Freigabe unter AGENTS.md / PR_TRIAGE_POLICY.md erforderlich.',\n  '', '## Evidence-Hinweis',\n  '- Dieser Workflow schreibt nicht in Supabase oder das Evidence Vault. Nur n8n-Ausführungsdaten können gemäß Instanzkonfiguration gespeichert werden.'\n);\nreturn [{json:{schema:'operations_snapshot_v1',generated_at:generatedAt,timezone:'Europe/Berlin',sources,findings:findings.slice(0,50),github:{prs:prs.slice(0,20),issues:issues.slice(0,20),recent_runs:runs.slice(0,20),checks},uptime_kuma:{monitors:parsed.monitors,uptime_7d:'not_available',uptime_30d:'not_available'},report_markdown:lines.join('\\n'),approval_required:false,side_effects:[]}}];\n"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a3b3c9e5-276d-448d-aa02-d399b89c0c18",
+              "leftValue": "={{ /^https?:\\/\\/[^/?#\\s]+(?:\\/[^?#\\s]*)?\\/?$/i.test(String($env.UPTIME_KUMA_BASE_URL || '').trim()) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "2169e620-0646-4d54-8c61-b09fc2ba2823",
+      "name": "Kuma URL Configured?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2060,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// No HTTP request or credentials used when the Kuma base URL is absent/invalid.\nreturn [{json:{statusCode:null,error:'UPTIME_KUMA_BASE_URL_MISSING_OR_INVALID'}}];"
+      },
+      "id": "5a0f81d2-e2e4-48de-a5c8-c4d8162255a1",
+      "name": "Uptime Kuma Not Configured",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2310,
+        590
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 08:00 Berlin": {
+      "main": [
+        [
+          {
+            "node": "GitHub PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub PRs": {
+      "main": [
+        [
+          {
+            "node": "Select PR Check Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select PR Check Targets": {
+      "main": [
+        [
+          {
+            "node": "GitHub PR Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub PR Checks": {
+      "main": [
+        [
+          {
+            "node": "Collect PR Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect PR Checks": {
+      "main": [
+        [
+          {
+            "node": "GitHub Workflow Runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Workflow Runs": {
+      "main": [
+        [
+          {
+            "node": "GitHub Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Issues": {
+      "main": [
+        [
+          {
+            "node": "RealSync Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RealSync Health": {
+      "main": [
+        [
+          {
+            "node": "Kuma URL Configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uptime Kuma Metrics": {
+      "main": [
+        [
+          {
+            "node": "Compose Internal Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kuma URL Configured?": {
+      "main": [
+        [
+          {
+            "node": "Uptime Kuma Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Uptime Kuma Not Configured",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uptime Kuma Not Configured": {
+      "main": [
+        [
+          {
+            "node": "Compose Internal Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "pinData": {},
+  "tags": []
+}

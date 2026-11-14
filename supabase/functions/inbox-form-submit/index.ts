@@ -1,7 +1,7 @@
 // inbox-form-submit — öffentliches Kontaktformular einer veröffentlichten
 // SiteOS-Seite → Posteingang des zugeordneten Empfangsassistenten (PR C,
-// Schritt 3). Siehe Migrationen 20261102220000_site_inbox_bindings.sql und
-// 20261103000000_inbox_handoff.sql.
+// Schritt 3). Siehe Migrationen 20261114100000_site_inbox_bindings.sql und
+// 20261114100100_inbox_handoff.sql.
 //
 // Auth: keine (verify_jwt = false in supabase/config.toml). Der einzige
 // Schlüssel ist die serverseitig erzeugte `site_ref`; Auflösung fail-closed

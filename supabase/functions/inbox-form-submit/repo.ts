@@ -1,54 +1,36 @@
 // inbox-form-submit — Datenzugriff (service_role). Nur hier wird supabase-js
 // berührt; handler.ts kennt ausschliesslich das Interface `InboxRepo`.
+//
+// Seit dem Codex-Review (14.11.2026, P2) läuft die gesamte Annahme in EINER
+// Datenbanktransaktion: RPC public.inbox_form_submit_intake (Migration
+// 20261114100100_inbox_handoff.sql, Abschnitt 7). Auflösung, Duplikatprüfung,
+// Kontingente und die drei Inserts sind damit atomar; eine Konversation ist
+// erst sichtbar, wenn sie vollständig ist. Kein Zählen-dann-Einfügen und
+// keine Kompensation mehr im Handler.
 
-export interface ResolvedInbox {
-  binding_id: string;
-  tenant_id: string;
-  bot_id: string;
-  website_project_id: string;
-}
+export type SubmitStatus = 'received' | 'duplicate' | 'rate_limited' | 'not_found';
 
-export interface NewConversation {
-  tenant_id: string;
-  bot_id: string;
-  external_ref: string;
-  contact_label: string;
-  metadata: Record<string, unknown>;
-  now: string;
-}
-
-export interface NewIntake {
-  conversation_id: string;
-  tenant_id: string;
+export interface SubmitArgs {
+  site_ref: string;
+  nonce: string;
+  ip_hash: string;
   anliegen: string;
   kontakt_name: string | null;
   kontakt_telefon: string | null;
   kontakt_email: string | null;
   terminwunsch: string | null;
-  einwilligung_at: string;
+  contact_label: string;
+  ip_limit: number;
+  site_limit: number;
 }
 
-export type InsertConversationResult =
-  | { ok: true; id: string }
-  | { ok: false; reason: 'duplicate'; id: string }
-  | { ok: false; reason: 'error'; message: string };
+export type SubmitResult =
+  | { status: 'received' | 'duplicate'; conversation_id: string }
+  | { status: 'rate_limited' | 'not_found' };
 
 export interface InboxRepo {
-  /** public.resolve_site_inbox — fail-closed, null wenn nicht aktiv/live. */
-  resolveSiteInbox(siteRef: string): Promise<ResolvedInbox | null>;
-  /** Konversationen desselben Mandanten mit diesem ip_hash seit `sinceIso`. */
-  countRecentByIpHash(tenantId: string, ipHash: string, sinceIso: string): Promise<number>;
-  /**
-   * Alle Formular-Konversationen dieses Bindings seit `sinceIso` — IP-unabhängig.
-   * Zweite Bremse gegen Flooding mit wechselnden Absenderadressen.
-   */
-  countRecentByBinding(tenantId: string, bindingId: string, sinceIso: string): Promise<number>;
-  /** INSERT; bei 23505 auf (bot_id, external_ref) die vorhandene Zeile. */
-  insertConversation(c: NewConversation): Promise<InsertConversationResult>;
-  insertIntake(i: NewIntake): Promise<{ ok: true } | { ok: false; message: string }>;
-  insertUserMessage(m: { tenant_id: string; conversation_id: string; bot_id: string; content: string }): Promise<{ ok: true } | { ok: false; message: string }>;
-  /** Kompensation, wenn Intake/Nachricht nach dem Anlegen scheitern. */
-  deleteConversation(id: string): Promise<void>;
+  /** Atomare Annahme; wirft nur bei technischem Fehler (→ 500 im Handler). */
+  submit(args: SubmitArgs): Promise<SubmitResult>;
 }
 
 // Minimaler Typ für den Supabase-Client, damit repo.ts ohne jsr-Import bleibt
@@ -58,85 +40,28 @@ export type AdminClient = any;
 
 export function createSupabaseRepo(admin: AdminClient): InboxRepo {
   return {
-    async resolveSiteInbox(siteRef) {
-      const { data, error } = await admin.rpc('resolve_site_inbox', { p_site_ref: siteRef });
-      if (error) throw new Error(`resolve_site_inbox: ${error.message}`);
+    async submit(a) {
+      const { data, error } = await admin.rpc('inbox_form_submit_intake', {
+        p_site_ref: a.site_ref,
+        p_nonce: a.nonce,
+        p_ip_hash: a.ip_hash,
+        p_anliegen: a.anliegen,
+        p_kontakt_name: a.kontakt_name,
+        p_kontakt_telefon: a.kontakt_telefon,
+        p_kontakt_email: a.kontakt_email,
+        p_terminwunsch: a.terminwunsch,
+        p_contact_label: a.contact_label,
+        p_ip_limit: a.ip_limit,
+        p_site_limit: a.site_limit,
+      });
+      if (error) throw new Error(`inbox_form_submit_intake: ${error.message}`);
       const row = Array.isArray(data) ? data[0] : data;
-      if (!row || !row.tenant_id || !row.bot_id) return null;
-      return {
-        binding_id: String(row.binding_id),
-        tenant_id: String(row.tenant_id),
-        bot_id: String(row.bot_id),
-        website_project_id: String(row.website_project_id),
-      };
-    },
-
-    async countRecentByIpHash(tenantId, ipHash, sinceIso) {
-      const { count, error } = await admin
-        .from('bot_conversations')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .eq('channel', 'form')
-        .contains('metadata', { ip_hash: ipHash })
-        .gte('created_at', sinceIso);
-      if (error) throw new Error(`count: ${error.message}`);
-      return count ?? 0;
-    },
-
-    async countRecentByBinding(tenantId, bindingId, sinceIso) {
-      const { count, error } = await admin
-        .from('bot_conversations')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .eq('channel', 'form')
-        .contains('metadata', { binding_id: bindingId })
-        .gte('created_at', sinceIso);
-      if (error) throw new Error(`count: ${error.message}`);
-      return count ?? 0;
-    },
-
-    async insertConversation(c) {
-      const { data, error } = await admin
-        .from('bot_conversations')
-        .insert({
-          tenant_id: c.tenant_id,
-          bot_id: c.bot_id,
-          channel: 'form',
-          status: 'open',
-          external_ref: c.external_ref,
-          contact_label: c.contact_label,
-          metadata: c.metadata,
-          last_message_at: c.now,
-        })
-        .select('id')
-        .single();
-      if (!error && data?.id) return { ok: true, id: String(data.id) };
-      if (error?.code === '23505') {
-        const { data: existing } = await admin
-          .from('bot_conversations')
-          .select('id')
-          .eq('bot_id', c.bot_id)
-          .eq('external_ref', c.external_ref)
-          .maybeSingle();
-        if (existing?.id) return { ok: false, reason: 'duplicate', id: String(existing.id) };
+      const status = row?.status as SubmitStatus | undefined;
+      if ((status === 'received' || status === 'duplicate') && row?.conversation_id) {
+        return { status, conversation_id: String(row.conversation_id) };
       }
-      return { ok: false, reason: 'error', message: error?.message ?? 'insert failed' };
-    },
-
-    async insertIntake(i) {
-      const { error } = await admin.from('bot_conversation_intake').insert({ ...i, quelle: 'form' });
-      return error ? { ok: false, message: error.message } : { ok: true };
-    },
-
-    async insertUserMessage(m) {
-      const { error } = await admin
-        .from('bot_messages')
-        .insert({ ...m, role: 'user', metadata: { source: 'site_form' } });
-      return error ? { ok: false, message: error.message } : { ok: true };
-    },
-
-    async deleteConversation(id) {
-      await admin.from('bot_conversations').delete().eq('id', id);
+      if (status === 'rate_limited' || status === 'not_found') return { status };
+      throw new Error(`inbox_form_submit_intake: unexpected result ${JSON.stringify(row ?? null)}`);
     },
   };
 }

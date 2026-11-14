@@ -1,6 +1,6 @@
 /**
  * PR C, Schritt 2: Posteingang mit Übergabe an Menschen (E8 = B, E10).
- * Migration 20261103000000_inbox_handoff.sql.
+ * Migration 20261114100100_inbox_handoff.sql.
  *
  * Geprüft
  *   H1  Owner/Admin übernehmen open → in_bearbeitung und erledigen

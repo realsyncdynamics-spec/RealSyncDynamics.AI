@@ -94,10 +94,13 @@ BEGIN
             NEW.created_by := auth.uid();
         END IF;
     ELSE
+        -- created_by darf nur auf NULL fallen: FK-Anonymisierung beim Löschen
+        -- des Kontos (ON DELETE SET NULL, Art. 17 DSGVO). Jede andere Änderung
+        -- bleibt verboten (Codex-Review 14.11.2026, P1).
         IF NEW.tenant_id          IS DISTINCT FROM OLD.tenant_id
            OR NEW.website_project_id IS DISTINCT FROM OLD.website_project_id
            OR NEW.site_ref        IS DISTINCT FROM OLD.site_ref
-           OR NEW.created_by      IS DISTINCT FROM OLD.created_by
+           OR (NEW.created_by     IS DISTINCT FROM OLD.created_by AND NEW.created_by IS NOT NULL)
            OR NEW.created_at      IS DISTINCT FROM OLD.created_at THEN
             RAISE EXCEPTION 'site_inbox_bindings: immutable column changed'
                 USING ERRCODE = '42501';

@@ -1,6 +1,6 @@
 /**
  * PR C, Schritt 1: Seite ↔ Posteingang (E9 = A).
- * Migration 20261102220000_site_inbox_bindings.sql.
+ * Migration 20261114100000_site_inbox_bindings.sql.
  *
  * Geprüft
  *   B1  Owner legt Binding an; site_ref serverseitig erzeugt (24 Zeichen

@@ -10,8 +10,8 @@
   --color-text-inverse: #FFFFFF;
   --color-border-default: #E6E9EE;
   --color-border-subtle: #EDF0F5;
-  --color-status-success: #147A55;
-  --color-status-preview: #93661B;
+  --color-status-success: #077550;
+  --color-status-preview: #8A5D0D;
   --color-accent-primary: #2457E6;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -23,6 +23,8 @@
   --space-400: 24px;
   --space-500: 32px;
   --type-family-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --type-family-display: var(--type-family-sans);
+  --type-family-body: var(--type-family-sans);
   --type-size-label: 11px;
   --type-size-body: 13px;
   --type-size-body-lg: 14px;
@@ -36,7 +38,7 @@
   display: flex;
   background: var(--color-surface-default);
   color: var(--color-text-primary);
-  font-family: var(--type-family-sans);
+  font-family: var(--type-family-body);
   font-size: var(--type-size-body-lg);
 }
 
@@ -106,6 +108,13 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
+.app-shell h1,
+.app-shell h2,
+.app-shell__brand,
+.app-shell__kpis strong {
+  font-family: var(--type-family-display);
+}
+
 .app-shell__topbar h1 {
   margin: 0;
   font-size: var(--type-size-title-sm);
@@ -147,6 +156,16 @@
   color: var(--color-text-secondary);
   font-size: var(--type-size-body);
   white-space: nowrap;
+}
+
+.app-shell__button-primary {
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font: inherit;
+  cursor: pointer;
 }
 
 .app-shell__meta {
@@ -251,18 +270,25 @@
 
 .app-shell__pill {
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: var(--type-size-label);
   letter-spacing: 0.06em;
+  color: var(--color-text-primary);
 }
 
-.app-shell__events li[data-state="ok"] .app-shell__pill {
-  color: var(--color-status-success);
+.app-shell__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-success-emphasis);
 }
 
-.app-shell__events li[data-state="open"] .app-shell__pill {
-  color: var(--color-status-preview);
+.app-shell__events li[data-state="open"] .app-shell__dot {
+  background: var(--color-status-preview-emphasis);
 }
 
 .app-shell__panel {

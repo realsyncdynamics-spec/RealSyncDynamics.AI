@@ -12,7 +12,7 @@ import {
   FIXTURE_ACTIVE_KEY,
   FIXTURE_TENANTS,
   pathRequestsFixtures,
-  type ThemeModeId,
+  type TenantThemeId,
 } from './fixtureTenants';
 
 interface TenantState {
@@ -28,7 +28,7 @@ interface TenantState {
   plan: PlanKey | null;
   featureFlags: Readonly<Record<string, boolean>>;
   /** Verweis auf einen semantischen Theme-Modus. Basis ist light-cream. */
-  themeId: ThemeModeId;
+  themeId: TenantThemeId;
   fixturePreview: boolean;
   setActiveTenant: (id: string) => void;
   setFixturePreview: (on: boolean) => void;

@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACTION_LABEL, INBOX_FILTERS, availableAction, bindingBlockers, canHandoff, canManageBindings,
-  channelLabel, conversationTitle, isMissingSchemaError, rpcFeedback, statusLabel,
+  channelLabel, conversationTitle, handoffNotice, isMissingSchemaError, rpcFeedback, statusLabel,
   statusTone, statusesForFilter, parseInboxWorkspaceTab,
 } from '../../src/features/bots/inbox';
 
@@ -102,6 +102,30 @@ describe('Titel einer Anfrage', () => {
     expect(conversationTitle({ ...base, contact_label: 'Kunde A' })).toBe('Kunde A');
     expect(conversationTitle({ ...base, external_ref: '+49 30 1' })).toBe('+49 30 1');
     expect(conversationTitle(base)).toBe('Anonym');
+  });
+});
+
+describe('Übergabewunsch aus Bot-Metadaten (PR #2161)', () => {
+  it('zeigt einen ausdrücklichen Kundenwunsch an', () => {
+    expect(handoffNotice({ source: 'whatsapp', handoff: { requested: true, reason: 'customer_request', requested_at: '2026-11-14T05:00:00Z' } }))
+      .toBe('customer_request');
+  });
+
+  it('zeigt KI-Unsicherheit als menschlichen Prüfbedarf an', () => {
+    expect(handoffNotice({ handoff: { requested: true, reason: 'assistant_uncertain' } }))
+      .toBe('assistant_uncertain');
+  });
+
+  it('kennzeichnet unbekannte Gründe ohne eine Ursache zu erfinden', () => {
+    expect(handoffNotice({ handoff: { requested: true, reason: 'legacy' } })).toBe('unspecified');
+  });
+
+  it('erzeugt keinen Hinweis ohne explizites requested=true', () => {
+    for (const metadata of [null, undefined, {}, [], { handoff: null }, { handoff: [] },
+      { handoff: 'requested' }, { handoff: { requested: 'true' } },
+      { handoff: { requested: false, reason: 'customer_request' } }]) {
+      expect(handoffNotice(metadata)).toBeNull();
+    }
   });
 });
 

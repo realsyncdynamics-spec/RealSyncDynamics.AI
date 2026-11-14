@@ -130,6 +130,22 @@ export function conversationTitle(c: Pick<BotConversation, 'contact_label' | 'ex
 }
 
 /**
+ * Nur ein serverseitig gespeicherter Vermerk mit requested=true ist ein
+ * Übergabewunsch. Andere Metadaten (inklusive fehlerhafter Legacy-Werte)
+ * erzeugen keinen Badge. Status/Übernahme bleibt ausschließlich in den RPCs.
+ * Vertrag: bot_conversations.metadata.handoff aus PR #2161.
+ */
+export function handoffNotice(metadata: unknown): 'customer_request' | 'assistant_uncertain' | 'unspecified' | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const handoff = (metadata as Record<string, unknown>).handoff;
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)) return null;
+  const fields = handoff as Record<string, unknown>;
+  if (fields.requested !== true) return null;
+  if (fields.reason === 'customer_request' || fields.reason === 'assistant_uncertain') return fields.reason;
+  return 'unspecified';
+}
+
+/**
  * Fehler, die nur bedeuten „Migration aus PR C noch nicht angewendet“
  * (Tabelle/Funktion fehlt). Die Oberfläche zeigt dann einen ruhigen Hinweis
  * statt einer roten Fehlermeldung.

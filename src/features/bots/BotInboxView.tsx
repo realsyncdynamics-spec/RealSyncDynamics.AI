@@ -13,7 +13,7 @@ import {
 } from './api';
 import {
   ACTION_LABEL, INBOX_FILTERS, availableAction, canHandoff, channelLabel, conversationTitle,
-  isMissingSchemaError, rpcFeedback, statusLabel, statusTone, statusesForFilter, parseInboxWorkspaceTab,
+  handoffNotice, isMissingSchemaError, rpcFeedback, statusLabel, statusTone, statusesForFilter, parseInboxWorkspaceTab,
   type InboxFilter, type InboxWorkspaceTab,
 } from './inbox';
 import { SiteInboxBindingsPanel } from './SiteInboxBindingsPanel';
@@ -242,6 +242,11 @@ function ConversationsPane({ tenantId, role }: { tenantId: string; role: string 
                     </span>
                     <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-titanium-600">{channelLabel(c.channel)}</span>
                   </div>
+                  {handoffNotice(c.metadata) && (
+                    <span className="mt-1 inline-block border border-amber-700/60 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">
+                      Mensch angefragt
+                    </span>
+                  )}
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at ?? c.created_at)}</span>
                     <InboxStatusChip status={c.status} />
@@ -284,6 +289,7 @@ function ConversationDetail({
   busy: boolean;
   onAction: () => void;
 }) {
+  const handoffReason = handoffNotice(c.metadata);
   const nextAction = handoffAvailable ? availableAction(c.status) : null;
   const action = mayHandoff ? nextAction : null;
   const assignee = c.assigned_to
@@ -315,6 +321,22 @@ function ConversationDetail({
           )}
         </div>
       </div>
+
+      {handoffReason && (
+        <div role="note" className="border border-amber-700/50 bg-amber-900/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-medium">
+            {handoffReason === 'customer_request'
+              ? 'Kunde wünscht einen Menschen oder Rückruf'
+              : handoffReason === 'assistant_uncertain'
+                ? 'Assistent empfiehlt menschliche Prüfung'
+                : 'Menschliche Übergabe angefragt'}
+          </p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            Der Vermerk ist keine Zusage eines Rückrufs und keine bestätigte Terminbuchung.
+            Maßgeblich bleibt der Bearbeitungsstatus der Anfrage.
+          </p>
+        </div>
+      )}
 
       {intake && <IntakeCard intake={intake} />}
 

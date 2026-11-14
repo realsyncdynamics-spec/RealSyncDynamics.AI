@@ -161,8 +161,8 @@ export const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [
           },
           {
             label: 'Prüfpfad',
-            to: '/welcome?next=/app/governance/audit-trail',
-            description: 'Audit Trail',
+            to: '/welcome?next=/app/audit',
+            description: 'Ereignisse und Export aus dem Audit Center',
             badge: 'live',
           },
           {

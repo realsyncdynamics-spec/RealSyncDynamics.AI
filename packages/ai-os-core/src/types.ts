@@ -138,7 +138,7 @@ export interface ExistingRoutine {
   id: string;
   name: string;
   agent: AgentId;
-  runtime: 'github-actions' | 'pg_cron' | 'cloudflare-cron';
+  runtime: 'github-actions' | 'pg_cron' | 'cloudflare-cron' | 'chatgpt-automation';
   source: string;
   schedule: string;
 }

@@ -168,7 +168,7 @@ export function CompanyContactForm({ prefill }: { prefill?: CompanyContactPrefil
         {note}
       </small>
       <small id="c-privacy">
-        Wir verwenden Ihre Angaben ausschließlich zur Bearbeitung dieser Anfrage – kein Newsletter, keine Weitergabe. Details in der{' '}
+        Wir verwenden Ihre Angaben ausschließlich zur Bearbeitung dieser Anfrage – kein Newsletter, keine Weitergabe zu Werbezwecken. Details in der{' '}
         <Link to="/datenschutz">Datenschutzerklärung</Link>.
       </small>
     </form>

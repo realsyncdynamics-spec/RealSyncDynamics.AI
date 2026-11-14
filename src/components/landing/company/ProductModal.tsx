@@ -75,7 +75,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
               Auch kleine Betriebe müssen DSGVO und EU AI Act erfüllen – ohne eigene Rechtsabteilung. Das Governance OS prüft für Sie
               jede KI-Aktion und hält das Ergebnis als Nachweis fest.
             </p>
-            <F3 items={[['Vorher', 'geprüft, nicht erst im Audit'], ['Beweisbar', 'versiegeltes Protokoll'], ['Europa', 'DSGVO · EU AI Act']]} />
+            <F3 items={[['Vorher', 'geprüft, nicht erst im Audit'], ['Beweisbar', 'versiegeltes Protokoll'], ['Regeln', 'für DSGVO · EU AI Act']]} />
           </>
         ),
       },
@@ -95,7 +95,9 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
               <li>
                 Regeln für <strong>DSGVO</strong> und <strong>EU AI Act</strong> eingebaut
               </li>
-              <li>Hosting und Nachweise in der EU</li>
+              <li>
+                Wir berücksichtigen europäische Datenschutzanforderungen bei der Auswahl und Konfiguration unserer Infrastruktur. Datenverarbeitung und eingesetzte KI-Anbieter richten sich nach dem jeweiligen Dienst, den dokumentierten Verarbeitungsbedingungen und den verfügbaren Konfigurationen.
+              </li>
             </ul>
           </>
         ),

@@ -561,9 +561,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/unternehmen': {
-    title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
+    title: 'RealSync Dynamics & AI – KI mit Kontrolle für den Mittelstand',
     description:
-      'Das Governance OS prüft jede KI-Aktion, der Voice Agent nimmt Anrufe an, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen, Hosting in Europa.',
+      'Das Governance OS prüft jede KI-Aktion, der Voice Agent nimmt Anrufe an, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen.',
     canonical: `${SITE_URL}/unternehmen`,
     noIndex: true,
   },

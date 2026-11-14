@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ArrowRight,
   ClipboardCheck,
@@ -104,6 +105,8 @@ const TRUST = [
 ];
 
 export function WaitlistLanding() {
+  const [searchParams] = useSearchParams();
+  const voiceWaitlist = searchParams.get('interest') === 'bots';
   const signupCount = useWaitlistCount();
 
   return (
@@ -119,28 +122,38 @@ export function WaitlistLanding() {
               <span className="mb-7 inline-flex items-center gap-2 rounded-chip border border-petrol-200 bg-petrol-50 px-3 py-1">
                 <MailCheck className="h-3.5 w-3.5 text-petrol-700" />
                 <span className="font-mono text-[11px] uppercase tracking-widest text-petrol-700">
-                  Beta-Zugang · Begleitetes Onboarding
+                  {voiceWaitlist ? 'Voice Agent · Preview' : 'Beta-Zugang · Begleitetes Onboarding'}
                 </span>
               </span>
 
               <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-                Sichern Sie sich Ihren Platz für begleitetes Onboarding und Beta-Module
+                {voiceWaitlist
+                  ? 'Vormerken für den Voice-Agent-Preview'
+                  : 'Sichern Sie sich Ihren Platz für begleitetes Onboarding und Beta-Module'}
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
-                Die Governance Runtime mit Policy Engine und Evidence Vault ist verfügbar —
-                Sie können sofort mit dem kostenlosen Governance Scan starten. Über diese Liste
-                vergeben wir Plätze für begleitetes Onboarding und für Module in Beta/Preview
-                (z. B. laufendes Monitoring, Agent Governance, Bots). Sie bekommen sofort Ihre
-                Position und die Einladung, sobald ein Platz frei wird.
+                {voiceWaitlist
+                  ? 'Der Voice Agent ist noch in Vorbereitung. Tragen Sie sich unverbindlich für den Preview ein; wir erfassen Ihr Interesse am KI-Empfang und informieren Sie, sobald ein passender Zugang verfügbar ist. Die Anmeldung startet keinen produktiven Telefondienst.'
+                  : <>Die Governance Runtime mit Policy Engine und Evidence Vault ist verfügbar —
+                    Sie können sofort mit dem kostenlosen Governance Scan starten. Über diese Liste
+                    vergeben wir Plätze für begleitetes Onboarding und für Module in Beta/Preview
+                    (z. B. laufendes Monitoring, Agent Governance, Bots). Sie bekommen sofort Ihre
+                    Position und die Einladung, sobald ein Platz frei wird.</>}
               </p>
 
               <ul className="mt-8 space-y-3">
-                {[
-                  'Kostenlos und unverbindlich — kein Vertrag, keine Zahlungsdaten',
-                  'Position wird sofort angezeigt, Einladung in Reihenfolge der Anmeldung',
-                  'Der kostenlose Governance Scan ist ohne Warteliste sofort nutzbar',
-                ].map((item) => (
+                {(voiceWaitlist
+                  ? [
+                      'Kostenlos und unverbindlich — kein Vertrag, keine Zahlungsdaten',
+                      'Ihre Position wird nach der Anmeldung sofort angezeigt',
+                      'Kein Newsletter; Anmeldung startet keinen Telefondienst',
+                    ]
+                  : [
+                      'Kostenlos und unverbindlich — kein Vertrag, keine Zahlungsdaten',
+                      'Position wird sofort angezeigt, Einladung in Reihenfolge der Anmeldung',
+                      'Der kostenlose Governance Scan ist ohne Warteliste sofort nutzbar',
+                    ]).map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-petrol-600" strokeWidth={1.75} />
                     <span className="text-base leading-relaxed text-slate-600">{item}</span>
@@ -149,14 +162,16 @@ export function WaitlistLanding() {
               </ul>
 
               {/* Zaehler nur, wenn er real aus der DB kommt. */}
-              {signupCount !== null && signupCount > 0 && (
+              {!voiceWaitlist && signupCount !== null && signupCount > 0 && (
                 <p className="mt-8 font-mono text-[11px] uppercase tracking-widest text-slate-400">
                   {signupCount} {signupCount === 1 ? 'Anmeldung' : 'Anmeldungen'} bisher
                 </p>
               )}
 
               <div className="mt-8 flex flex-wrap gap-2">
-                {TRUST.map((item) => (
+                {(voiceWaitlist
+                  ? ['Kostenlos & unverbindlich', 'Preview in Vorbereitung', 'Kein Newsletter', 'Jederzeit widerrufbar']
+                  : TRUST).map((item) => (
                   <span
                     key={item}
                     className="rounded-chip border border-slate-200 bg-white px-3 py-1.5 font-mono text-[11px] uppercase tracking-widest text-slate-500"
@@ -167,7 +182,10 @@ export function WaitlistLanding() {
               </div>
             </div>
 
-            <WaitlistForm id="warteliste-formular" source="warteliste-hero" />
+            <WaitlistForm
+              id="warteliste-formular"
+              source={voiceWaitlist ? 'voice-agent-waitlist' : 'warteliste-hero'}
+            />
           </div>
         </div>
       </section>
@@ -283,7 +301,10 @@ export function WaitlistLanding() {
               </p>
             </div>
             <div className="mx-auto max-w-xl">
-              <WaitlistForm source="warteliste-footer" compact />
+              <WaitlistForm
+                source={voiceWaitlist ? 'voice-agent-waitlist-footer' : 'warteliste-footer'}
+                compact
+              />
             </div>
             <p className="mt-8 text-center text-sm text-slate-600">
               Sie haben eine feste Frist oder brauchen Enterprise-Konditionen?{' '}

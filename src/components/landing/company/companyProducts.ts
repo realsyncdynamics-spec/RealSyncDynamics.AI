@@ -42,7 +42,12 @@ export const STATUS_TAG_CLASS: Record<ImplementationStatus, string> = {
 
 /** Ziele der Referenz (`MAP`), relativ auf der Hauptdomain. */
 export const COMPANY_LINKS = {
-  platform: '/demo-tour/dashboard',
+  /**
+   * Echtes Produkt (Governance OS, SSoT `app-shell`, Route `/app`) statt
+   * Demo-Tour. `AppGate` leitet nicht angemeldete Besucher fail-closed zum
+   * Login (`?next=`) weiter.
+   */
+  platform: '/app',
   audit: '/audit',
   builder: '/frontend-builder',
   login: '/login',

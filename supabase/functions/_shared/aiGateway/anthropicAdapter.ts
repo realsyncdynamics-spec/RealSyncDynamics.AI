@@ -5,6 +5,7 @@ import type {
   AiProviderHealth,
   AiStreamChunk,
 } from './types.ts';
+import { CloudProviderHttpError } from './cloudProviderHttpError.ts';
 import { parseAnthropicSse } from './streamParse.ts';
 
 // Deno mirror of src/core/ai-gateway/providers/anthropicAdapter.ts.
@@ -119,11 +120,8 @@ export class AnthropicAdapter implements AiProviderAdapter {
         body: JSON.stringify(this.buildBody(request)),
       });
 
+      if (!res.ok) throw await CloudProviderHttpError.fromResponse('Anthropic', res);
       const json = (await res.json()) as AnthropicMessagesResponse;
-
-      if (!res.ok) {
-        throw new Error(json?.error?.message ?? `Anthropic HTTP ${res.status}`);
-      }
 
       const text = (json.content ?? [])
         .filter((b) => b.type === 'text' && typeof b.text === 'string')

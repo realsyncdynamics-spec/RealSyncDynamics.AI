@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 /** Uses existing audit, auth and setup routes. All dashboard values are illustrative. */
-const steps = [
+export const V5_ENTRY_STEPS = [
   { n: '01', title: 'Website prüfen', description: 'Starten Sie kostenlos mit Ihrer Internetadresse. Wir zeigen technische Auffälligkeiten.', to: '/audit', action: 'Check starten' },
   { n: '02', title: 'Ergebnisse verstehen', description: 'Sehen Sie verständlich, was die Hinweise für Ihren Betrieb bedeuten könnten.', to: '/audit', action: 'Audit ansehen' },
   { n: '03', title: 'Sicher anmelden', description: 'Registrieren Sie sich erst, wenn Sie weitermachen möchten. Bestehender Login, kein zweites Konto.', to: '/welcome?next=%2Fsetup-assistant', action: 'Anmelden' },
@@ -16,7 +16,7 @@ export function V5UnifiedEntry() {
         <Link to="/audit" className="rs-v5-entry__primary">Kostenlosen Check starten <span aria-hidden="true">↗</span></Link>
       </div>
       <div className="rs-v5-entry__layout">
-        <ol className="rs-v5-entry__steps">{steps.map(s=><li key={s.n}><span className="rs-v5-entry__number">{s.n}</span><div><h3>{s.title}</h3><p>{s.description}</p><Link to={s.to}>{s.action} →</Link></div></li>)}</ol>
+        <ol className="rs-v5-entry__steps">{V5_ENTRY_STEPS.map(s=><li key={s.n}><span className="rs-v5-entry__number">{s.n}</span><div><h3>{s.title}</h3><p>{s.description}</p><Link to={s.to}>{s.action} →</Link></div></li>)}</ol>
         <div className="rs-v5-entry__app" role="region" aria-label="Beispiel eines RealSync-Command-Centers">
           <div className="rs-v5-entry__chrome"><strong>R<span>ealSync</span> <i>Dynamics.AI</i></strong><span>PRODUKTVORSCHAU · BEISPIELDATEN</span></div>
           <div className="rs-v5-entry__screen">

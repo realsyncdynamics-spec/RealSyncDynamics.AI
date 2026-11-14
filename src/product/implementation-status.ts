@@ -49,8 +49,26 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Landing v9 auf `/` (Owner 09.11.2026, Obsidian/Titan): echtes 3D-Logo aus zwei verketteten Titanringen (three.js lazy in eigenem Chunk, ohne WebGL flaches SVG, bei Reduced Motion Standbild, Pause außerhalb des Viewports), Texte aus Landing v5: H1 aus i18n `v4Hero*` („Risiken auf Ihrer Website und bei KI erkennen und nachweisen.“), Ablauf aus `LOOP_NODES`, URL-Check mit Primär-CTA „Prüfen“ (/audit?source=landing-v9-hero), Einstieg (`V5_ENTRY_STEPS`), Beta-Ablauf (`V5_BETA_STEPS`, `config/beta.ts`), Preise aus der SSoT, Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise), Roadmap aus dieser Registry, Pflichtlinks Impressum/Datenschutz/AGB. v6 bleibt unverändert unter /design/landing-v6.',
     route: '/',
+    evidence: [
+      'src/pages/LandingV9.tsx',
+      'src/components/landing/v9/LandingV9View.tsx',
+      'src/components/landing/v9/logoRings3D.ts',
+      'src/styles/landing-v9.css',
+      'src/App.tsx#/',
+      'test/landing/landing-v9.test.tsx',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'landing-v6',
+    name: 'Landing v6 (Referenz)',
+    status: 'live',
+    group: 'visual',
+    description:
+      'Landing v6 unter /design/landing-v6 (bis 09.11.2026 Startseite `/`): Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+    route: '/design/landing-v6',
     evidence: [
       'src/pages/LandingV6.tsx',
       'src/components/landing/v6/LandingV6View.tsx',
@@ -58,7 +76,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/styles/landing-v6.css',
       'src/styles/landing-v6-components.css',
       'public/landing-v6/europe-network.webp',
-      'src/App.tsx#/',
+      'src/App.tsx#/design/landing-v6',
       'test/landing/landing-v6-funnel.test.tsx',
       'test/landing/landing-v6-a11y.test.tsx',
     ],

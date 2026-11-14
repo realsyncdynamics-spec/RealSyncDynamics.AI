@@ -58,17 +58,24 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing at Landing v6; earth hero only on /design/landing-v4', () => {
+  it('points public landing at Landing v9 and keeps v6 as reference; earth hero only on /design/landing-v4', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
     expect(landing.route).toBe('/');
-    expect(landing.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
-    expect(landing.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV9View'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('logoRings3D'))).toBe(true);
     expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('heroEarthScene'))).toBe(false);
+    expect(landing.description).toContain('Risiken auf Ihrer Website und bei KI erkennen und nachweisen.');
     expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
-    expect(landing.description).not.toMatch(/three\.js/i);
-    for (const e of landing.evidence) {
+
+    const v6 = getImplementation('landing-v6')!;
+    expect(v6.route).toBe('/design/landing-v6');
+    expect(v6.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
+    expect(v6.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
+    expect(v6.description).not.toMatch(/three\.js/i);
+
+    for (const e of [...landing.evidence, ...v6.evidence]) {
       const path = e.split('#')[0];
       if (path.startsWith('src/') || path.startsWith('test/') || path.startsWith('public/')) {
         expect(existsSync(resolve(path)), e).toBe(true);
@@ -87,7 +94,7 @@ describe('implementation-status registry', () => {
   it('keeps H1 and CTAs of the registry in sync with Landing v6', () => {
     const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
     const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
-    const landing = getImplementation('public-landing')!;
+    const landing = getImplementation('landing-v6')!;
     expect(view).toContain('>Das Governance OS für </span>');
     expect(view).toContain('>DSGVO & EU AI Act.</span>');
     expect(landing.description).toContain('Das Governance OS für DSGVO & EU AI Act.');

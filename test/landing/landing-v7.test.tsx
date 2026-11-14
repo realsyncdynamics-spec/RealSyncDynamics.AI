@@ -39,9 +39,9 @@ const mount = (path = '/design/landing-v7') =>
 
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 
-it('stays reachable as preview; v6 is the start page again', () => {
+it('stays reachable as preview; v9 is the start page', () => {
   const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
-  expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
+  expect(app).toMatch(/path="\/"\s+element=\{<LandingV9/);
   expect(app).toMatch(/path="\/design\/landing-v7" element=\{<LandingV7 \/>\}/);
   expect(app).toMatch(/path="\/design\/landing-v6" element=\{<LandingV6 \/>\}/);
 });

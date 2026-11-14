@@ -1,107 +1,99 @@
 ---
-description: WP14 Enterprise 1.498 €/Monat netto — SSoT, Stripe, Checkout, Entitlements und Anzeige abgleichen (Abschluss von #1995/#1999)
+description: WP14 Enterprise 1.498 €/Monat — Nachabgleich nach #1999/#2157 (SSoT, Stripe, Checkout, Entitlements, Anzeige, Steuer)
 ---
 
-# WP14 — Enterprise-Preis 1.498 €/Monat netto abgleichen
+# WP14 — Enterprise-Preis 1.498 €/Monat: Nachabgleich
 
-**Status:** Arbeitsauftrag, noch nicht gestartet. Erstellt am 26.10.2026, Befunde am 28.10.2026 gegen
-`main@d08abd6` nachgeprüft.
-**Voraussetzung:** Owner-Entscheidung E-P1 ist schriftlich bestätigt
-(`docs/strategy/E-P1_ENTERPRISE_PREIS_NACHTRAG.md`, Abschnitt „Zu bestätigen“).
-**Branches:** keine neuen. Gearbeitet wird auf den Heads von #1995
-(`feat/enterprise-stripe-1498`) und #1999 (`claude/blissful-fermat-t1t2pp`).
+**Status:** Arbeitsauftrag, nicht gestartet. Neu gefasst am 14.11.2026 gegen `main@fce3719`.
+Die Fassung vom 26./28.10. (#2014) ist überholt: #1999 und #2157 sind gemergt, #1995 und #2128 ohne
+Merge geschlossen.
+**Bezug:** `docs/strategy/E-P1_ENTERPRISE_PREIS_NACHTRAG.md`.
 
 ## Rahmen
 
-Repository: realsyncdynamics-spec/RealSyncDynamics.AI
-Lies zuerst: CLAUDE.md, `.github/PR_TRIAGE_POLICY.md`, den E-P1-Nachtrag sowie die Beschreibungen
-und Kommentare von #1995 und #1999. Das Runbook `docs/runbooks/stripe-production-checkout.md (Abschnitt „Enterprise 1.498 €“)` liegt nur
-auf dem Branch von #1995.
+Repository: realsyncdynamics-spec/RealSyncDynamics.AI. Lies zuerst `AGENTS.md`, `CLAUDE.md`,
+`.github/PR_TRIAGE_POLICY.md`, den E-P1-Nachtrag sowie die Beschreibungen von #1999 und #2157.
 
-**Keine Doppelarbeit.** Die Umsetzung von 1.498 € existiert bereits:
-
-| PR | Inhalt | Stand 28.10.2026 |
-|---|---|---|
-| #1995 | SSoT 1.498 €, Self-Service-Checkout mit Preisprüfung (`price-match.ts`), endliche Kontingente (3 Migrationen), Anzeige, Runbook und SQL-Vorlage für die Stripe-Price-ID | Ready for review. CI auf `c0c7ae8` grün. Konflikt mit `main` in `src/i18n/pricingCopy.ts`. |
-| #1999 | Gestapelt auf #1995: Beta nur für Starter/Growth/Agency, restliche „Enterprise auf Anfrage“-Texte, 404-Middleware | Ready for review. `main` (`a0ad27b`) ist in `4ddadff` eingebracht. Gegen den aktuellen `main` gibt es keinen Konflikt. |
-
-WP14 setzt nichts neu um. Es bringt diese zwei PRs auf einen geprüften, widerspruchsfreien Stand
-und belegt den Abgleich. Ein dritter Implementierungs-PR für denselben Preis wird nicht angelegt.
+**Keine Doppelarbeit.** Der Preis ist auf `main` umgesetzt (#1999), der Steuerstatus ebenfalls
+(#2157, § 19 UStG). WP14 setzt nichts neu um. Es belegt, ob SSoT, Stripe, Checkout, Entitlements und
+Anzeige übereinstimmen, und listet Abweichungen als Restpunkte. Jeder Restpunkt wird ein eigener,
+kleiner PR mit eigener Freigabe. Kein Sammel-PR, kein neuer Implementierungs-PR für denselben Preis.
 
 Verboten ohne separates GO:
-- Merge, Deploy, Push auf `main`
-- Stripe-Objekte anlegen, ändern oder archivieren
-- `supabase db push` oder eine Migration auf Prod anwenden
-- Rebase, Amend oder Force-Push auf diesen Branches (nur Merge von `origin/main`)
-- Preise, Kontingente oder Funktionen über den Stand von #1995/#1999 hinaus ändern
+- Merge, Deploy, Push auf `main`, Rebase, Force-Push
+- Stripe-Objekte anlegen, ändern oder archivieren; Bestandsabos umstellen (nur lesende Abfragen)
+- Migrationen anlegen oder auf Prod anwenden, `supabase db push`
+- Preise, Kontingente, Steuermodus oder Produktfunktionen ändern
 
 ## Auftrag
 
-### 1. Stand einholen und `main` einbringen
-- `origin/main` in beide Branches mergen und Konflikte lösen. Beim Stand vom 28.10. betrifft das nur
-  `src/i18n/pricingCopy.ts` in #1995.
-- Seit der Basis von #1995 auf `main` neu, unter anderem: #2003 (Enterprise-SSO als Coming Soon,
-  `shared/pricing.ts`), #2004/#2008/#2042 (Landing v6 als Startseite, `useLandingV6.ts`), #2044/#2049
-  (KI-Budget, Eurodeckel, Tarifprofile) und #2048 (Parität zwischen Claims und Registry). Die
-  SSO-Kennzeichnung aus #2003 und die Budgetlogik aus #2044/#2049 müssen im Ergebnis erhalten bleiben.
-- Generierte Dateien werden nur über Skripte neu erzeugt: `npm run sync:pricing` und
-  `npm run sync:spa-routes`. Nicht von Hand bearbeiten.
+### 1. Abgleichmatrix ausfüllen
 
-### 2. Abgleichmatrix ausfüllen
-Für jede Zeile wird der Ist-Wert mit Fundstelle belegt. Erfüllt ist eine Zeile nur, wenn Ist und Soll
-übereinstimmen. Die Matrix gehört in die PR-Beschreibung von #1995.
+Jede Zeile bekommt einen Ist-Wert mit Fundstelle und eine Herkunft: **Code**, **live gelesen** oder
+**nicht geprüft**. Erfüllt ist eine Zeile nur bei belegtem Ist = Soll.
 
-| Ebene | Soll | Fundstelle |
+| Ebene | Soll | Fundstelle / Prüfweg |
 |---|---|---|
-| SSoT | `monthlyEur: 1_498`. Kein `priceOnRequest`. `yearlyCheckoutUnavailable: true`. Kein öffentlicher Jahrespreis. `trialDays` 0 bzw. keine Testphase. | `shared/pricing.ts`, Zwilling `supabase/functions/_shared/pricing.generated.ts` (`sync-shared-pricing --check`) |
-| Stripe (Live) | Preis aktiv, EUR, `unit_amount` 149800, `recurring.interval` month, `interval_count` 1, `tax_behavior` exclusive, richtiges Produkt | Owner liefert Price-ID und Product-ID. Prüfung nur lesend (Stripe-Dashboard oder `GET /v1/prices/{id}`). |
-| Erwartungen im Code | `PLAN_STRIPE_EXPECTATIONS.enterprise.productId` ist gesetzt (heute `null`; Kandidat laut #1995: `prod_UxG9V9clbqV7qw`, unverifiziert) | `supabase/functions/stripe-checkout/price-match.ts` |
-| Katalog-DB | Genau eine `products`-Zeile für Enterprise (`default_for_plan_key = 'enterprise'`) mit der neuen Price-ID. Die `id` bleibt in place erhalten, damit die `product_entitlements` erhalten bleiben. | Vorlage `docs/runbooks/enterprise-stripe-1498.migration.sql.template` (aus der Vorlage wird erst mit verifizierter ID und neuem Timestamp eine Migration) |
-| Checkout | Enterprise ist nicht mehr durch `ENTERPRISE_SELF_SERVICE_BLOCKED` gesperrt. Jede Abweichung zwischen Stripe und SSoT führt zu `PRICE_MISMATCH` bzw. `PRODUCT_NOT_CONFIGURED`. Keine Testphase. Kein Jahres-Checkout. | `supabase/functions/stripe-checkout/index.ts`, `test/stripe-checkout-price-match.test.ts`, `test/contracts/stripe-price-guard.test.ts` |
-| Entitlements | Endliche Kontingente statt `-1`, darunter KI-Kosten 250 €/Monat. Laut #1995 gibt es live 0 Enterprise-Abos; das wird vor dem Merge erneut gezählt. | Migrationen `20261024090000`, `20261024090100`, `20261025001345`, `PLAN_ENTITLEMENTS`, `npm run check:limits` |
-| Bot-Kostenbremse | Ein Enterprise-Mandant, der selbst bucht, hat nutzbare und endliche Werte für Minuten und Euro. **Befund seit #2049:** Enterprise hat bewusst kein Tarifprofil („nur ausdrücklich konfigurierte Werte“). `bot_usage_seed_missing_limits` legt dafür eine Nullzeile an, und `bot_usage_apply_plan_profile` bricht für Enterprise ab. Ohne einen festgelegten Schritt bleiben die Bot-Kanäle für einen Self-Service-Kunden gesperrt. Wer die Werte wann setzt, ist Owner-Frage E-P1h. Bis zur Antwort nichts ändern. | Migration `20261028100000_bot_usage_plan_caps.sql`. Die KI-Kosten von 250 € aus #1995 sind ein Entitlement und kein Eurodeckel nach #2049. Beide Werte nebeneinander belegen. |
-| Öffentliche Anzeige | Überall „1.498 €/Monat netto“. Kein „Preis auf Anfrage“ und kein „1.249“ mehr. „Enterprise anfragen“ bleibt als Kontaktweg. | `index.html` (JSON-LD), `public/llms.txt`, `src/config/seo.ts`, `src/i18n/pricingCopy.ts`, `src/i18n/handoff.ts`, `useLandingV6.ts`, `PricingPage.tsx`, `/contact-sales`, `/enterprise`, FAQ. Ratsche: `npm run check:offer-prices` |
-| Steuerhinweis | Neben „netto“ steht der Regelbesteuerungs-Hinweis. `PRICING_TAX_MODE` ist auf `main` bereits `'EU_STANDARD'`. | `shared/pricing.ts` (`pricingTaxNote`). `/pricing` und Landing v6 nutzen ihn bereits. Nicht sichtbar, aber veraltet: `src/i18n/handoff.ts` `pricingFoot` (DE/EN) nennt § 19 UStG und „Enterprise auf Anfrage“. Der Text erscheint nur bei `taxMode === 'EXEMPT'` (`PricingPage.tsx`). #1999 fasst `pricingFoot` an. Prüfen, ob dort auch der Steuertext korrigiert wird, sonst als Restpunkt melden. |
+| SSoT | `monthlyEur: 1_498`, `purchaseMode: 'checkout'`, `availability: 'self_service'`, kein `priceOnRequest`, `yearlyCheckoutUnavailable: true`, `trialDays: 0`, `netPriceLabel: false` | `shared/pricing.ts`; Zwilling `node scripts/sync-shared-pricing.mjs --check` |
+| Stripe (Live) | `price_1UVxUrREjTWueUcGuSjqctMH`: aktiv, EUR, `unit_amount` 149800, `month`, `interval_count` 1, `tax_behavior` exclusive, Produkt `prod_UxG9V9clbqV7qw` | Nur lesend: Stripe-Dashboard oder `GET /v1/prices/{id}` durch den Owner. Ohne Zugriff: „nicht geprüft“. |
+| Erwartung im Code (live) | `PLAN_STRIPE_EXPECTATIONS.enterprise` = `exclusive` + `productId.live: 'prod_UxG9V9clbqV7qw'` | `supabase/functions/stripe-checkout/price-match.ts` |
+| Erwartung im Code (Testmodus) | `productId.test` ist heute `null`. Klären und belegen: Bricht ein Enterprise-Checkout im Stripe-Testmodus bewusst mit `PRODUCT_NOT_CONFIGURED` ab, oder fehlt ein Testprodukt? Ergebnis bestimmt Schritt 5.5. | `price-match.ts`, `test/stripe-checkout-price-match.test.ts` |
+| Checkout | Enterprise monatlich buchbar; `enterprise_yearly` gesperrt; Abweichung Stripe/SSoT ⇒ `PRICE_MISMATCH` bzw. `PRODUCT_NOT_CONFIGURED`; keine Testphase; im `EXEMPT`-Modus kein `automatic_tax` | `supabase/functions/stripe-checkout/index.ts`, `supabase/functions/_shared/checkout-tax.ts`, `test/billing/checkout-tax.test.ts`, `test/contracts/stripe-price-guard.test.ts` |
+| Katalog-DB | Genau eine aktive `products`-Zeile für Enterprise mit der neuen Price-ID, `id` unverändert | Migrationen `20261029150000`–`20261029150300`. Ob auf Prod angewendet: nur lesend prüfen oder „nicht geprüft“. |
+| Entitlements | Endliche Kontingente laut `20261029150100`; KI-Kosten 25.000 Cent. Bewusst `-1` wie Agency: `limit.llm_queries_monthly`, `limit.agent_runs_monthly`. Zusätzlich prüfen und begründen: `website.scan_monthly_limit: -1`, `limits.industrialOtSystems: -1`. | `PLAN_ENTITLEMENTS.enterprise`, `npm run check:limits` |
+| Bot-Kostenbremse | Ein Self-Service-Käufer hat nach dem Kauf nutzbare, endliche Minuten- und Euro-Werte | `20261028100000`, `20261030130000`: Enterprise ohne Profil, Kauf erzeugt Alarm. **Offen bis E-P1h.** Nichts ändern. |
+| Öffentliche Anzeige | Überall „1.498 €/Monat“ mit § 19-Hinweis, kein „netto“/„zzgl. USt“, keine Reste von „1.249“ oder „Preis auf Anfrage“ als Preisangabe; „Enterprise anfragen“ nur als zusätzlicher Kontaktweg | `index.html`, `public/llms.txt`, `src/config/seo.ts`, `src/i18n/*`, `useLandingV6.ts`, `PricingPage.tsx`, `/contact-sales`, `/enterprise`. Ratsche: `check:offer-prices` |
+| Steuerstatus | Ein Modus überall: `PRICING_TAX_MODE = 'EXEMPT'`, § 19-Hinweis in Anzeige, AGB und Checkout. Stripe-Price `exclusive` ohne Wirkung, solange kein `automatic_tax`. Bestandsabos mit `automatic_tax` lesend zählen. | `shared/pricing.ts`, `src/features/legal/LegalTerms.tsx`, `checkout-tax.ts` |
+| Live-Anzeige | Wie Code, nur lesend | `GET https://realsyncdynamics-ai.pages.dev/llms.txt` und `/pricing`. Hinweis 14.11.: `realsyncdynamicsai.de/` liefert eine andere HTML-Seite, `/pricing` leitet auf `pages.dev` weiter. Befund melden, nicht beheben. |
 
-### 3. Migrations-Timestamps prüfen
-Die drei Migrationen aus #1995 tragen Zeitstempel vom 24./25.10. Auf `main` ist die letzte
-`20261028100000` (Stand 28.10.). Gilt die Regel aus der Merge-Checkliste („Timestamp nach der letzten Datei auf `main`“),
-werden sie mit `npm run migrate:rename` angehoben, ohne den Inhalt zu ändern. Danach
-`check:migration-collisions` ausführen. `check-migration-drift` meldet Migrationen, die 7 Tage nach dem Merge
-noch nicht auf Prod angewendet sind. Deshalb wird das Anwenden zusammen mit dem Merge geplant.
+### 2. Bekannte Restpunkte belegen (Stand 14.11.)
 
-### 4. Ohne IDs kein öffentlicher Preis
-Laut #1995 zeigt die Seite ohne Price-ID und Product-ID 1.498 € an, während der Checkout jeden Kauf
-ablehnt. Das ist ein öffentlicher Preis ohne Kaufpfad. Genau dagegen steht die Ratsche
-`check:offer-prices` (`.github/workflows/ci.yml`). Abnahmebedingung: Merge und Deploy von #1995
-erst, wenn beide IDs verifiziert sind und die Katalog-Migration gemeinsam mit dem Merge angewendet wird.
-Bis dahin bleibt `main` unverändert bei „auf Anfrage“.
+Bestätigen oder widerlegen, jeweils mit Fundstelle. Nicht beheben.
 
-### 5. Prüfen
-`npm run lint` · `npm test` (betroffene Suites) · `npm run build` · `check:offer-prices` ·
-`check:limits` · `check:pricing` · `check:migration-collisions` · `check:landing-claims` ·
-`check:spa-routes` (Skript kommt mit #1999). #1995 und anschließend #1999 auf „Ready for review“ stellen, damit die Pflicht-CI
-läuft. Übersprungene Prüfungen gelten nicht als bestanden.
+1. `.github/PR_TRIAGE_POLICY.md` Z. 69: „regelbesteuert, netto zzgl. 19 % USt“, „Enterprise öffentlich
+   ‚Auf Anfrage‘“, „der frühere §-19-Hinweis gilt nicht mehr“ — alle drei veraltet.
+2. `src/config/seo.ts:543`: „Buchung derzeit auf Anfrage über den Vertrieb“ — widerspricht `self_service`.
+3. `shared/pricing.ts` Kommentar am Enterprise-`ctaLabel` („Fail-closed bis …“) und Kopfkommentar in
+   `price-match.ts` („Noch nicht gesetzt“) — veraltet, ohne Wirkung.
+4. `src/features/billing/PricingPage.tsx` Z. 23–24: Kommentar „Enterprise manuell fakturiert“ — veraltet.
+5. CTA der Enterprise-Karte: `ctaLabel: 'Enterprise anfragen'` bei `purchaseMode: 'checkout'`. Führt der
+   Hauptknopf zum Checkout oder nur zu `/contact-sales`? Gegen E-P1b und die CTA-Regel in `AGENTS.md` prüfen.
+6. 1.249 € in `docs/strategy/MASTERPLAN_2026-2027.md` §5/§8, `docs/claude/BETA_V5_WORKPLAN.md` Z. 81,
+   Kommentar `.github/workflows/ci.yml` Z. 79 (Workflow-Datei nur mit Workflow-Freigabe).
+7. `productId.test: null` (siehe Matrix) — Ergebnis mit Begründung festhalten.
+8. Hauptdomain liefert nicht den Repo-Build aus (siehe Matrix, Live-Anzeige) — nur melden.
 
-### 6. Reihenfolge nach dem WP (jeweils eigenes GO)
-1. Owner bestätigt E-P1 und liefert die Price-ID und die Product-ID.
-2. #1995: IDs eintragen, Migration aus der Vorlage erzeugen, CI grün → Merge-GO → Migration auf Prod → Deploy-GO.
-3. Nach dem Deploy nur lesend prüfen: Anzeige auf `/pricing` und `/`. Die Checkout-Session für
-   Enterprise wird mit `PRICE_MISMATCH = nein` erzeugt (Stripe-Testmodus oder Session ohne Abschluss),
-   **kein echter Kauf**.
-4. #1999 auf den neuen `main` bringen → CI grün → Merge-GO → Deploy-GO.
-5. Erst danach in einem eigenen Docs-PR mit Owner-Freigabe: Den festen Preis in
-   `.github/PR_TRIAGE_POLICY.md` (heute „1.249 € ist die höchste Stufe“, § 19-UStG-Hinweis), in `AGENTS.md`
-   (Absatz zur Triage-Policy) und in `docs/claude/BETA_V5_WORKPLAN.md` (`/pricing`-Zeile) angleichen,
-   außerdem den Kommentar zur Angebots-Sicherheit in `.github/workflows/ci.yml` und die Abschnitte
-   §5/§8 in `docs/strategy/MASTERPLAN_2026-2027.md`. WP14 ändert diese Dateien nicht.
+### 3. Prüfen
+
+`npm run lint` · `npm test` (mindestens die Suites aus Schritt 1) · `npm run build` ·
+`check:offer-prices` · `check:limits` · `check:pricing` · `check:landing-claims` ·
+`sync-shared-pricing --check`. Ohne `node_modules` (kein `npm install` durch Agenten) gelten diese
+Prüfungen als **nicht ausgeführt**; maßgeblich ist dann die CI auf `main`. Übersprungen heißt nicht bestanden.
+
+### 4. Ergebnis
+
+Ein Bericht als Kommentar oder Docs-Datei im Draft-PR dieses WP: ausgefüllte Matrix, Restpunkte mit
+Status (bestätigt/widerlegt/nicht geprüft), Vorschlag für die Reihenfolge der Folge-PRs.
+
+### 5. Reihenfolge danach (jeweils eigenes GO)
+
+1. Owner bestätigt E-P1i formal und entscheidet E-P1h (Bot-Werte für Enterprise).
+2. Owner bestätigt E-P1e lesend in Stripe, klärt das Testmodus-Produkt und lässt den Prod-Stand der vier
+   Migrationen sowie Abos mit `automatic_tax` lesend prüfen.
+3. Text-PR für Restpunkte 2–5 (Claims/Preise ⇒ Einzel-Freigabe).
+4. Docs-PR für Restpunkte 1 und 6 (Policy, Masterplan, Workplan, CI-Kommentar).
+5. Nach Deploy nur lesend: `/pricing`, `/`, `llms.txt`; eine Enterprise-Checkout-Session ohne Abschluss,
+   im Testmodus nur wenn Restpunkt 7 das erlaubt, sonst live mit Abbruch vor der Zahlung.
+   **Kein echter Kauf.**
 
 ## Abnahme
-- Die Abgleichmatrix ist vollständig. Jede Zeile hat eine Fundstelle und keine offene Abweichung.
-- Es gibt nirgends mehr einen Zustand, in dem ein Enterprise-Preis angezeigt wird, der Checkout ihn aber
-  nicht einlösen kann.
-- Es wurden keine Preise, Kontingente oder Funktionen über #1995/#1999 hinaus geändert.
+
+- Matrix vollständig, jede Zeile mit Fundstelle und Herkunft.
+- Kein Zustand, in dem ein Enterprise-Preis angezeigt wird, den der Checkout nicht einlösen kann.
+- Keine Preise, Kontingente, Steuerlogik oder Funktionen durch WP14 geändert.
 
 ## Nicht in diesem WP
-Jahrespreise, Partner 1.999 € (E-F4), Credits, SSO-Umsetzung (ADR 0007), Änderungen an den Beta-Regeln über
-#1999 hinaus und Anpassungen der Policy- oder Agent-Dokumente (siehe Schritt 6.5).
+
+Steuerliche Einordnung selbst (Owner/Berater), Umstellung von Bestandsabos, Jahrespreise,
+Partner 1.999 € (E-F4), Credits, SSO-Umsetzung (ADR 0007), Beta-Regeln, Bot-Profil für Enterprise
+(E-P1h), Stripe-Änderungen, Auslieferung der Hauptdomain.

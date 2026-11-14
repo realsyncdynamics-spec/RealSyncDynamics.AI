@@ -200,7 +200,7 @@ Evidence is part of the authorization record, not merely diagnostic logging.
 
 ## 11. Multi-Tenant Isolation
 
-Evolution artifacts are tenant-scoped by default. Cross-tenant learning or aggregation must be explicitly classified, authorized and designed so that no tenant data, secrets, credentials, policies or protected evidence become implicitly available to another tenant.
+Evolution artifacts are tenant-scoped. Cross-tenant learning or aggregation is excluded, including in anonymised form (owner decision E-GE5, 2026-11-01); reconsideration requires a separate GDPR assessment, a DPA basis and consent. No tenant data, secrets, credentials, policies or protected evidence may become available to another tenant.
 
 A candidate generated for one tenant cannot be promoted into another tenant's runtime without a separate authorization decision appropriate to the target scope.
 

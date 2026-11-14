@@ -25,13 +25,22 @@ describe('commandCenterCatalog', () => {
   });
 
   it('marks roadmap modules as Coming Soon and not runnable', () => {
+    const remediation = catalog.find((c) => c.id === 'mod-remediation');
+    expect(remediation).toBeDefined();
+    expect(remediation!.state).toBe('coming_soon');
+    expect(remediation!.badge).toBe('Coming Soon');
+    expect(isCommandRunnable(remediation!)).toBe(false);
+    expect(resolveCommandPath(remediation!)).toBeNull();
+    expect(remediation!.path).toBeUndefined();
+  });
+
+  it('lists the DSFA as a beta destination once the view loads real records', () => {
     const dpia = catalog.find((c) => c.id === 'mod-dpia');
     expect(dpia).toBeDefined();
-    expect(dpia!.state).toBe('coming_soon');
-    expect(dpia!.badge).toBe('Coming Soon');
-    expect(isCommandRunnable(dpia!)).toBe(false);
-    expect(resolveCommandPath(dpia!)).toBeNull();
-    expect(dpia!.path).toBeUndefined();
+    expect(dpia!.state).toBe('ready');
+    expect(dpia!.badge).toBe('Beta');
+    expect(isCommandRunnable(dpia!)).toBe(true);
+    expect(resolveCommandPath(dpia!)).toBe('/app/dpia');
   });
 
   it('keeps beta modules navigable with Beta badge', () => {

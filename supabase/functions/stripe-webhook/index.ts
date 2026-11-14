@@ -22,6 +22,10 @@ import {
   readVoiceEntitlements,
   type ExistingVoiceAgent,
 } from '../_shared/voice-agent-provisioning.ts';
+import {
+  decideCheckoutProvision,
+  enqueueCheckoutProvision,
+} from '../_shared/checkout-provision.ts';
 
 // Re-export for unit tests that import pickPlanItem from this module.
 export { pickPlanItem };
@@ -70,6 +74,26 @@ async function getSecret(envVar: string, vaultName: string): Promise<string | nu
     if (typeof data === 'string' && data.length > 0) return data;
   } catch { /* RPC missing or vault empty — fall through to env */ }
   return Deno.env.get(envVar) ?? null;
+}
+
+async function maybeProvisionFromCheckout(
+  event: Stripe.Event,
+  tenantId: string | null,
+): Promise<void> {
+  const decision = decideCheckoutProvision({ livemode: event.livemode, tenantId });
+  if (decision === 'skip_live') {
+    console.info(
+      `[stripe-webhook] provision-tenant übersprungen (Live-Event ${event.id}; Anbindung nur im Testmodus)`,
+    );
+    return;
+  }
+  if (decision !== 'enqueue' || !tenantId) return;
+  await enqueueCheckoutProvision({
+    supabaseUrl: SUPABASE_URL,
+    serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+    tenantId,
+    stripeEventId: event.id,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -138,6 +162,7 @@ Deno.serve(async (req) => {
         if (applied) await applyBotUsagePlan(admin as unknown as SupabaseClient, subscriptionTenantId(sub), event.id);
         if (event.type === 'customer.subscription.created') {
           await recordTrialEventIfApplicable(admin, event, 'trial_started');
+          if (applied) await maybeProvisionFromCheckout(event, subscriptionTenantId(sub));
         }
         if (event.type === 'customer.subscription.deleted') {
           await recordTrialEventIfApplicable(admin, event, 'canceled');
@@ -204,6 +229,10 @@ Deno.serve(async (req) => {
         }
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
+        await maybeProvisionFromCheckout(
+          event,
+          session.metadata?.tenant_id ?? session.client_reference_id ?? null,
+        );
         await reportPurchaseToAdPlatforms(session, req);
         await flagCheckoutTaxReview(admin, session);
         break;

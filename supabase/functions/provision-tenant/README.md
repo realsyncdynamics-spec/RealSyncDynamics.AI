@@ -52,12 +52,26 @@ Stand je Tenant in `tenant_provisioning_runs` (lesbar für Mitglieder per RLS).
   ist erst `done`, wenn alle Pflichten erfüllt sind — nicht schon bei irgendeinem
   Kettenkopf.
 
-## Nicht in diesem Release
+## Anbindung an stripe-webhook (Testmodus)
+
+`stripe-webhook` ruft diesen Orchestrator nach `customer.subscription.created`
+und `checkout.session.completed` mit `trigger: checkout` und Service-Role auf,
+**nur wenn `event.livemode === false`**. Live-Events werden übersprungen. Es
+wird kein Stripe-Webhook-Endpunkt angelegt oder umgehängt; der bestehende
+Receiver bleibt unverändert. Ohne `tenant_id` (Subscription-/Session-Metadaten
+bzw. `client_reference_id`) erfolgt kein Aufruf. Ein zweiter Aufruf desselben
+Mandanten bleibt idempotent (`tenant_provisioning_runs`, HTTP 409 = Lauf läuft
+bereits).
+
+Zusätzliche Checkout-Folgeschritte (Default-Cockpit, Starter-Bots, SiteOS-Entwurf,
+Konten-Checkliste) kommen in Folgeschritten desselben Orchestrators, nicht in
+einem zweiten Provisioner. Der Signup-Flow bleibt unverändert.
+
+## Noch offen
 
 - **Produktentscheidung offen:** Starter hat kein `api.access`, der Boot endet
   dort `partial` bei `ingest_key`. Entweder Starter bekommt einen
   Sensor-only-Entitlement oder die Landing verspricht den Sensor erst ab Growth.
-- Aufruf aus `stripe-webhook` (`trigger: checkout`) und aus dem Signup-Flow.
 - Frontend: Boot-Status im Command Center, Worker-Download, Token-Deep-Link.
 - Release 2: SDK-Init, gepackte Extension, GitHub App als weitere Sensoren.
 - Release 3: Agency provisioniert Child-Tenants (`agency_child`) per Domain-Liste.

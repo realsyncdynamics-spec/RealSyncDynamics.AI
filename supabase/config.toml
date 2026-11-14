@@ -504,3 +504,11 @@ verify_jwt = false
 # shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.
+
+# Öffentliche Lese-Ersatzwege nach P0-REVOKE von platform_stats / audit_share_get.
+# Kein JWT; Schutz über Rate-Limit, minimierte Felder und service_role intern.
+[functions.public-platform-stats]
+verify_jwt = false
+
+[functions.audit-share-get]
+verify_jwt = false

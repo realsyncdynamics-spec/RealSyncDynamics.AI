@@ -58,14 +58,14 @@ export function AuditShare() {
     if (!token) { setError('Kein Share-Token in der URL.'); setLoading(false); return; }
     (async () => {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/audit_share_get`, {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/audit-share-get`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ p_id: token }),
+          body: JSON.stringify({ token }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const rows = await resp.json();

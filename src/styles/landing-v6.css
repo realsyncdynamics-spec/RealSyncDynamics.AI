@@ -242,3 +242,166 @@
 .lv6 #lv6-menu > * {
   flex-shrink: 0;
 }
+
+/* Demo: Fragen zum Unternehmen. 90°-Kanten, Tokens der Startseite. */
+.lv6-voice-launcher,
+.lv6-voice-panel button,
+.lv6-voice-panel input {
+  font: inherit;
+  color: inherit;
+}
+
+.lv6-voice-launcher {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 52;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rs-line);
+  background: var(--rs-bg);
+  cursor: pointer;
+}
+
+.lv6-voice-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rs-acc);
+}
+
+.lv6-voice-panel {
+  position: fixed;
+  z-index: 56;
+  left: 16px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(70dvh, 640px);
+  overflow: hidden;
+  border: 1px solid var(--rs-line);
+  background: var(--rs-bg);
+  color: var(--rs-fg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.lv6-voice-head,
+.lv6-voice-form,
+.lv6-voice-note {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rs-line);
+}
+
+.lv6-voice-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lv6-voice-title {
+  margin: 4px 0 0;
+  font-family: 'Source Serif 4', 'Source Serif 4 Fallback', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.lv6-voice-meta,
+.lv6-voice-note,
+.lv6-voice-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--rs-fg3);
+}
+
+.lv6-voice-transcript {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+
+.lv6-voice-turn {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lv6-voice-turn span {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rs-fg3);
+}
+
+.lv6-voice-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 0;
+  border-top: 1px solid var(--rs-line);
+}
+
+.lv6-voice-form input {
+  flex: 1 1 180px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--rs-line);
+  background: transparent;
+}
+
+.lv6-voice-form button,
+.lv6-voice-note button,
+.lv6-voice-head button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--rs-line);
+  background: transparent;
+  cursor: pointer;
+}
+
+.lv6-voice-form button[type='submit'] {
+  border-color: var(--rs-acc);
+  background: var(--rs-btn);
+  color: #fffdf6;
+}
+
+.lv6-voice-form button:disabled,
+.lv6-voice-note button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lv6-voice-launcher:focus-visible,
+.lv6-voice-panel :focus-visible {
+  outline: 2px solid var(--rs-acc);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  .lv6-voice-launcher {
+    bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+  .lv6-voice-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 85dvh;
+  }
+}

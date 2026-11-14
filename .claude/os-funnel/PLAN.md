@@ -159,7 +159,7 @@ WP5, WP2a, WP3, WP4. WP2 lief nicht vor WP3/WP4 und wird von ihnen nicht blockie
 | ~~**WP3**~~ | ✅ **Erledigt** — AI-OS-Setup (KI-Systeme, Bots, Daten, Freigaben). Gemergt in `17a716a` (#1730). | `features/activation/*` — speichert in `governance_activations.organization` (JSONB, ohne Constraint) unter `aiSetup` | mittel | erledigt |
 | ~~**WP4**~~ | ✅ **Erledigt** — Command Center: Inventar · Agenten · Freigaben · Evidence. Gemergt in `299a743` (#1733), Duplikat #1747 geschlossen. Folgepunkte siehe unten. | `features/governance/dashboard/*`, vorhandene APIs | niedrig | erledigt |
 | ~~**WP5**~~ | ✅ **Erledigt** — Ein Agent-Register mit abgeleitetem Reifegrad. Gemergt (#1658, 2026-09-27). | `agentMesh.ts`, `agents/types.ts`, `demoAgents.ts`, `AgentRegistryView.tsx`, `AgentCard.tsx` | niedrig | erledigt |
-| **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. | `.claude/os-funnel/governed-evolution.md` | keins | — |
+| **WP6** | Governed-Evolution-Spec. Die Datei liegt seit #1655 vor; ein eigener WP6-Durchgang (`/wp6-governed-evolution`) ist noch nicht gelaufen. **Nachtrag 2026-11-01:** E-GE2, E-GE5–E-GE8 entschieden (Spec §6); offen E-GE1, E-GE3, E-GE4. | `.claude/os-funnel/governed-evolution.md` | keins | — |
 | **WP7** | Landing v4 auf `/`. ✅ **Erledigt über #1751** (04.10.); der geplante Weg über #1742 ist entfallen. ⏸ **Offen bleibt die Abweichung zu E-V4** (3D-Erde auf jedem Gerät, siehe Nachtrag §3): E-V4 nachziehen (3D nur Desktop, nach Lighthouse-Messung) oder E-V4 anpassen — Entscheidung Dominik Steiner, eigene Freigabe (Design-Freeze); bis dahin zurückgestellt. | `LandingV4.tsx`, `heroEarthScene.ts` | niedrig | Design-Freeze |
 | **WP7a** | SSoT-Bereinigung: Bot-Laufzeit eine Wahrheit, toter `PLANS`-Export, SSO-/SCIM-/On-Prem-Claims, Hostinger-Roadmap. ► **Entsperrt (2026-11-01).** Auftrag `.claude/commands/wp7a-ssot-cleanup.md` (Neufassung, ersetzt #1752). | `platform-capabilities.ts`, `implementation-status.ts`, `runtimeVocab.ts`, `GovernanceFooter.tsx`, `seo.ts`, `EnterpriseKonfigurator.tsx` | mittel | Katalog (E-V8), Claims (E-V7, E-V9) |
 | **WP8a** | **Messung zuerst.** Viewport-Smoke für 360 / 390 / 768 / 1024 / 1440 px auf den Funnel-Routen. Erstmals auch Lighthouse **mobil** für `/` und `/audit` (E-V4 hatte keine dokumentierte Messung). Prüft: kein horizontaler Overflow, Tap-Ziele, Input-Schriftgröße, CLS. **Keine UI-Änderung.** | Test-Datei neu (Ort nach Bestand des Repo-Smoke-Tests), ggf. `package.json`-Script `check:responsive` | keins | — |
@@ -202,8 +202,10 @@ WP8 läuft neben AP-x und G-x und mischt sich nicht mit ihnen.
   `governance-approvals` nur für `pdp_approval_gates`, die Browser-Reservierung prüft
   `expires_at` nur beim Einlösen.
 
-Dieser Plan läuft **neben** der Enforcement-Master-Reihenfolge (AP-1a → AP-1b →
-AP-1c → AP-1d → AP-2 → AP-3). Keine Session mischt WP-x mit AP-x.
+Dieser Plan läuft **neben** AP-3 (Policy-SSoT mit adressierbaren Versionen, Auftrag
+`.claude/commands/ap3-policy-ssot.md`, Teilpakete 3a → 3b → 3c → 3d). AP-1a bis AP-2
+sind **nicht beauftragt** (E-AP0, 2026-11-02, Dominik Steiner). Keine Session mischt
+WP-x mit AP-x.
 
 ---
 

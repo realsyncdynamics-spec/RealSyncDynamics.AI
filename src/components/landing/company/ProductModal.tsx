@@ -384,7 +384,8 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="pm-box" ref={boxRef}>
+      {/* data-product: Produktfarbe (--pc) für Seiten-Navigation des aktiven Produkts. */}
+      <div className="pm-box" ref={boxRef} data-product={COMPANY_PRODUCTS[tab].id}>
         <div className="pm-top">
           <div className="pm-tabs" role="tablist" aria-label="Produkte">
             {COMPANY_PRODUCTS.map((p, i) => (
@@ -396,6 +397,7 @@ export function ProductModal({ tab: initialTab, page: initialPage = 0, onClose, 
                 type="button"
                 role="tab"
                 id={`pm-tab-${i}`}
+                data-product={p.id}
                 aria-selected={i === tab}
                 aria-controls={`pm-panel-${i}`}
                 tabIndex={i === tab ? 0 : -1}

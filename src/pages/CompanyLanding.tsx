@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { HeroTiles, type HeroFx } from '../components/landing/company/HeroTiles';
 import { ProductModal } from '../components/landing/company/ProductModal';
 import { CompanyContactForm, type CompanyContactPrefill } from '../components/landing/company/CompanyContactForm';
-import { COMPANY_LINKS, companyProduct } from '../components/landing/company/companyProducts';
+import { ProductNavMenu } from '../components/landing/company/ProductNavMenu';
+import {
+  COMPANY_LINKS,
+  COMPANY_PRODUCTS,
+  STATUS_DOT_CLASS,
+  companyProduct,
+  dialogTabForHash,
+  type CompanyProductId,
+} from '../components/landing/company/companyProducts';
 import { loadBusinessIdentity } from '../config/business-identity';
 import '../components/landing/company/company-landing-v5.css';
 
@@ -13,19 +21,30 @@ import '../components/landing/company/company-landing-v5.css';
  * `design_handoff_realsync_v5/reference/RealSync Dynamics v5.html`.
  *
  * Owner-Entscheidungen 03.11.2026: Route /unternehmen statt „/" (eigener PR für
- * die Startseite), Gold als einziger Akzent nur auf dieser Seite, Voice-Link auf
- * das Onboarding der Subdomain (Status `voice-agent-onboarding`, Preview).
+ * die Startseite), Voice-Link auf das Onboarding der Subdomain (Status
+ * `voice-agent-onboarding`, Preview). G2-Freigabe 05.11.2026: Produktfarben
+ * (Gold/Blau/Pink) markieren die drei Produkte; Info-Bereiche bleiben neutral;
+ * „Gold als einziger Akzent“ gilt für Produktmarkierungen nicht mehr.
  * Status und Ziele kommen aus `src/product/implementation-status.ts` bzw.
  * `companyProducts.ts`; Preise erscheinen keine (nicht in shared/pricing.ts).
  */
 
+/** Nav-Punkte; Index 0 ist das Produkte-Menü (ProductNavMenu). */
 const NAV = [
-  { id: 'produkte', label: 'Produkte', opens: true },
-  { id: 'p-os', label: 'Governance OS' },
+  { id: 'produkte', label: 'Produkte' },
   { id: 'unternehmen', label: 'Unternehmen' },
   { id: 'kontakt', label: 'Kontakt' },
   { id: 'impressum', label: 'Impressum' },
 ] as const;
+
+/** Scroll-Spy: Abschnitt → Nav-Punkt; `product` färbt den Unterstrich. */
+const SPY: ReadonlyArray<{ id: string; nav: number; product: CompanyProductId | null }> = [
+  { id: 'produkte', nav: 0, product: null },
+  { id: 'p-os', nav: 0, product: 'governance' },
+  { id: 'unternehmen', nav: 1, product: null },
+  { id: 'kontakt', nav: 2, product: null },
+  { id: 'impressum', nav: 3, product: null },
+];
 
 const GOS_STEPS = [
   ['Anfrage', 'Eine KI oder ein Mitarbeiter will etwas tun: Daten lesen, eine E-Mail senden, eine Rechnung freigeben.'],
@@ -112,6 +131,12 @@ interface ModalState {
   tab: number;
   page: number;
   trigger: HTMLElement | null;
+  /** Über den URL-Hash (#voice-agent, #sites) geöffnet. */
+  fromHash?: boolean;
+  /** Hash wurde auf dieser Seite gepusht → Schließen = eine Station zurück. */
+  pushed?: boolean;
+  /** Neu mounten, wenn der Hash den Tab wechselt (Dialog hält den Tab intern). */
+  seq: number;
 }
 
 export function CompanyLanding() {
@@ -120,8 +145,20 @@ export function CompanyLanding() {
   const progressRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const fxRef = useRef<HeroFx>({ pointer: { x: 0, y: 0 }, sy: 0 });
+  const productsBtnRef = useRef<HTMLButtonElement>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
-  const [activeNav, setActiveNav] = useState(-1);
+  // Aktueller Dialog für Verlaufs-Handler (Layout-Effekt läuft vor den Effekten).
+  const modalRef = useRef<ModalState | null>(null);
+  useLayoutEffect(() => {
+    modalRef.current = modal;
+  }, [modal]);
+  const [spy, setSpy] = useState(-1);
+  const activeNav = spy >= 0 ? SPY[spy].nav : -1;
+  const activeProduct = spy >= 0 ? SPY[spy].product : null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navType = useNavigationType();
+  const lastPathRef = useRef<string | null>(null);
   const [prefill, setPrefill] = useState<CompanyContactPrefill | null>(null);
   const identity = loadBusinessIdentity();
   const governance = companyProduct('governance');
@@ -174,7 +211,7 @@ export function CompanyLanding() {
     let lastCur = -2;
     const measure = () => {
       max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-      tops = NAV.map(({ id }) => {
+      tops = SPY.map(({ id }) => {
         const s = document.getElementById(id);
         return s ? s.getBoundingClientRect().top + scrollY : Infinity;
       });
@@ -188,7 +225,7 @@ export function CompanyLanding() {
       for (let i = 0; i < tops.length; i++) if (tops[i] - innerHeight * 0.45 <= y) cur = i;
       if (cur !== lastCur) {
         lastCur = cur;
-        setActiveNav(cur);
+        setSpy(cur);
       }
       fxRef.current.sy = -Math.min(y, innerHeight) * 0.32;
       if (!reduce && y < innerHeight * 1.2) {
@@ -275,13 +312,40 @@ export function CompanyLanding() {
   );
 
   const openModal = useCallback((tab: number, trigger: HTMLElement | null, page = 0) => {
-    setModal({ tab, page, trigger });
+    setModal((m) => ({ tab, page, trigger, seq: (m?.seq ?? 0) + 1 }));
   }, []);
+
+  // Deep-Links: #voice-agent / #sites öffnen den Dialog auf dem passenden Tab –
+  // beim Direktaufruf ebenso wie bei Zurück/Vorwärts. Verlässt der Verlauf den
+  // Hash (Zurück), schließt ein per Hash geöffneter Dialog wieder.
+  useEffect(() => {
+    const tab = dialogTabForHash(location.hash);
+    const samePage = lastPathRef.current === location.pathname;
+    lastPathRef.current = location.pathname;
+    const current = modalRef.current;
+    if (tab >= 0) {
+      if (current?.fromHash && current.tab === tab) return;
+      const pushed = samePage && navType === 'PUSH';
+      const trigger = pushed ? productsBtnRef.current : document.getElementById(COMPANY_PRODUCTS[tab].anchor);
+      setModal((m) => ({ tab, page: 0, trigger, fromHash: true, pushed, seq: (m?.seq ?? 0) + 1 }));
+    } else if (current?.fromHash) {
+      setModal(null);
+      requestAnimationFrame(() => current.trigger?.focus());
+    }
+  }, [location.hash, location.key, location.pathname, navType]);
 
   const closeModal = useCallback(
     (to?: 'kontakt') => {
-      const trigger = modal?.trigger ?? null;
+      const current = modalRef.current;
+      const trigger = current?.trigger ?? null;
       setModal(null);
+      // Hash-Dialog: Verlauf aufräumen, damit Neuladen ihn nicht wieder öffnet.
+      // Selbst gepusht → zurück (nicht beim Sprung zum Kontakt: Die Scroll-
+      // Wiederherstellung des Browsers würde den Sprung überschreiben).
+      if (current?.fromHash && dialogTabForHash(location.hash) >= 0) {
+        if (current.pushed && to !== 'kontakt') navigate(-1);
+        else navigate({ pathname: location.pathname, search: location.search, hash: '' }, { replace: true });
+      }
       requestAnimationFrame(() => {
         if (to === 'kontakt') {
           scrollToId('kontakt');
@@ -291,7 +355,7 @@ export function CompanyLanding() {
         }
       });
     },
-    [modal, scrollToId],
+    [location.hash, location.pathname, location.search, navigate, scrollToId],
   );
 
   const onTemplateRequest = useCallback((name: string | null) => {
@@ -313,10 +377,13 @@ export function CompanyLanding() {
       <div id="page">
         <div className="statusbar" role="note" aria-label="Status">
           <span>
-            <i />
+            <i className={STATUS_DOT_CLASS[governance.status]} aria-hidden="true" />
             <b>GOVERNANCE OS {governance.statusLabel}</b>
           </span>
-          <span>VOICE AGENT · {voice.statusLabel}</span>
+          <span>
+            <i className={STATUS_DOT_CLASS[voice.status]} aria-hidden="true" />
+            VOICE AGENT · {voice.statusLabel}
+          </span>
           <span>HOSTING IN DER EU · DSGVO · EU AI ACT</span>
         </div>
         <header id="top" ref={headerRef}>
@@ -326,19 +393,8 @@ export function CompanyLanding() {
             </a>
             <nav className="sec" aria-label="Hauptnavigation">
               {NAV.map((n, i) =>
-                'opens' in n ? (
-                  <a
-                    key={n.id}
-                    className={`navlink${activeNav === i ? ' on' : ''}`}
-                    href="#produkte"
-                    aria-haspopup="dialog"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openModal(0, e.currentTarget);
-                    }}
-                  >
-                    {n.label}
-                  </a>
+                i === 0 ? (
+                  <ProductNavMenu key={n.id} ref={productsBtnRef} active={activeNav === 0} activeProduct={activeProduct} onGo={onGo} />
                 ) : (
                   <a key={n.id} className={`navlink${activeNav === i ? ' on' : ''}`} href={`#${n.id}`}>
                     {n.label}
@@ -364,7 +420,21 @@ export function CompanyLanding() {
               Konzern-Aufwand, mit einem Ansprechpartner.
             </p>
             <p className="pick">Gebaut für Handwerk · Praxis · Kanzlei · Gastronomie · Handel – Produkt anklicken und ausprobieren</p>
-            <HeroTiles fx={fxRef.current} onGo={onGo} onOpen={(tab, trigger) => openModal(tab, trigger)} />
+            <section className="prodzone" id="produkte" aria-label="Produkte">
+              <p className="plegend" data-testid="product-legend">
+                <span className="plegend-t">Unsere drei Produkte – farblich gekennzeichnet:</span>
+                {COMPANY_PRODUCTS.map((p, i) => (
+                  <Fragment key={p.id}>
+                    {i > 0 ? ' · ' : ' '}
+                    <span className="plegend-i" data-product={p.id}>
+                      <i className="pdot" aria-hidden="true" />
+                      {p.colorName} = {p.name}
+                    </span>
+                  </Fragment>
+                ))}
+              </p>
+              <HeroTiles fx={fxRef.current} onGo={onGo} onOpen={(tab, trigger) => openModal(tab, trigger)} />
+            </section>
           </main>
           <i className="scrollcue" aria-hidden="true" />
         </div>
@@ -477,7 +547,9 @@ export function CompanyLanding() {
           </div>
         </section>
 
-        {modal && <ProductModal tab={modal.tab} page={modal.page} onClose={closeModal} onTemplateRequest={onTemplateRequest} />}
+        {modal && (
+          <ProductModal key={modal.seq} tab={modal.tab} page={modal.page} onClose={closeModal} onTemplateRequest={onTemplateRequest} />
+        )}
 
         <footer id="impressum">
           <div className="fin">

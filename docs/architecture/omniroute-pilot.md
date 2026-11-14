@@ -39,10 +39,35 @@ Beide Pfade erhalten beispielsweise 100 identische synthetische Fälle mit gleic
 
 Der Dokumentationsentwurf definiert den Test. Für eine spätere isolierte Implementierung sind der konkrete Anbieter- und Modellumfang, die Datenflüsse, das Budget und der technische Abschaltweg vorab zu bestätigen. Änderungen an Security-Logik, Deployment oder Infrastruktur durchlaufen die [Repository-Freigaben](../../.github/PR_TRIAGE_POLICY.md). Ein positiver synthetischer Test liefert eine Entscheidungsgrundlage für einen nächsten Schritt mit eigener Freigabe. Er ist keine Einführung in die Kundenruntime.
 
+## Lokaler Prüfstand
+
+Mit Node.js 24 aus dem Repository-Stamm ausführen. Der erste Befehl benötigt weder Zugangsdaten noch einen Dienst.
+
+```sh
+node --experimental-transform-types test/core/ai-gateway/omniroute-pilot.mjs
+```
+
+Der Prüfstand führt 100 synthetische Fälle je Szenario und Pfad aus. Im Referenzpfad läuft der vorhandene `ServerAiGateway` mit simulierten HTTP-Antworten. Der zweite Pfad simuliert die vorgeschlagene Fallback-Regel. Die Test-Doubles liefern die vorgegebenen Kategorien. Die Trefferzahlen belegen dadurch Transportverhalten und Ausgabevalidierung. Die Modellgüte wird erst im echten Vergleich gemessen.
+
+| Fehler am ersten Anbieter | RealSync-Referenz | Simulierte Fallback-Regel |
+| --- | --- | --- |
+| Verbindungsfehler vor der Antwort | Zweiter Anbieter wird versucht | Zweiter Anbieter wird versucht |
+| HTTP 429 | Kein zweiter Versuch | Zweiter Anbieter wird versucht |
+| HTTP 401 | Kein zweiter Versuch | Kein zweiter Versuch |
+
+Die lokale Probe sendet einen synthetischen Fall an eine vorbereitete OmniRoute-Instanz auf `127.0.0.1`. Sie misst die Laufzeit eines Aufrufs, validiert die Kategorie und meldet Nutzungsdaten, soweit sie im API-Ergebnis vorhanden sind. Vor Ausführung muss die Instanz passend zum Pilotabschnitt konfiguriert sein. `OMNIROUTE_PILOT_API_KEY` serverseitig bereitstellen. `pilot-combo` ist durch den Namen der in der Testinstanz angelegten Combo zu ersetzen.
+
+```sh
+node --experimental-transform-types test/core/ai-gateway/omniroute-pilot.mjs \
+  --probe-local --port 20128 --combo pilot-combo
+```
+
+Geprüft wurden Syntax, 1.000 simulierte Klassifizierungsaufrufe und vier HTTP-Proben gegen einen lokalen Testserver. Die HTTP-Proben decken gültige Antwort, ungültige Kategorie, verweigerte Weiterleitung und fehlenden Schlüssel ab. Die Probe gegen echtes OmniRoute, die Prüfung von Mandanten- und Policy-Gates sowie Messungen mit Cloud-Anbietern stehen aus.
+
 ## Quellen zu OmniRoute
 
 - [Projekt und Lizenz](https://github.com/cheaper-inference/OmniRoute/blob/main/LICENSE)
 - [OpenAI-kompatibler Einstieg und Fallback-Konfiguration](https://github.com/cheaper-inference/OmniRoute/blob/release/v3.8.53/docs/guides/SETUP_GUIDE.md)
 - [Request-Logging, Aufbewahrung und `noLog`](https://github.com/cheaper-inference/OmniRoute/blob/release/v3.8.53/docs/security/COMPLIANCE.md)
 
-Prüfstatus dieser Vorlage: Repository-Code und öffentliche OmniRoute-Dokumentation gelesen. Installation, Datenfluss, Laufzeitverhalten und Messwerte stehen aus.
+Prüfstatus: Repository-Code und öffentliche OmniRoute-Dokumentation gelesen. Der lokale Prüfstand wurde ausgeführt. Der Anbieter-Vergleich und die Validierung der vorgesehenen Testumgebung stehen aus.

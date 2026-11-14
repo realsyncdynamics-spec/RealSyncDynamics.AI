@@ -145,8 +145,11 @@ describe('Request-ID wird in den Provider-Request uebertragen', () => {
       'utf8',
     );
     const writeBack = src.indexOf('request.trace_id = requestId');
-    const reserve = src.indexOf("stage: 'started'");
+    // Eindeutiger Anker: `stage: 'started'` kommt auch in der
+    // Typdeklaration von EvidenceOutcome vor und taugt nicht zum Ordnen.
+    const reserve = src.indexOf('const reserved = await reserveEvidence');
     expect(writeBack).toBeGreaterThan(0);
+    expect(reserve).toBeGreaterThan(0);
     expect(reserve).toBeGreaterThan(writeBack);
   });
 });

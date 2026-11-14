@@ -13,10 +13,17 @@
 //   2. Residenz resolve_ai_residency — EU-lokal sperrt Cloud
 //   3. Kontingent (studio → llm_queries, sonst ai_calls)
 //   4. PDP mit tenant_id, AI_GATEWAY_ENFORCEMENT off|shadow|enforce,
-//      Default shadow, Fail-open bei PDP-Fehler (wie ai-gateway)
+//      Default shadow. PDP-Fehler: enforce → 503 POLICY_UNAVAILABLE
+//      (fail closed); shadow → weiter, im Prüfpfad pdp=unavailable.
+//   5. Prüfpfad vorab: ai_tool_runs-Zeile VOR dem Provider-Aufruf. Scheitert
+//      sie, 503 AUDIT_UNAVAILABLE — kein Aufruf ohne Prüfpfad, keine Kosten.
+//      Die Zeile startet pessimistisch als status=error/IN_FLIGHT (die
+//      CHECK-Liste kennt kein 'pending'; eine Migration wäre freigabepflichtig).
 //
-// Nach Erfolg: ai_tool_runs (tool_key governance_router, KEIN Prompt) und
-// recordUsage auf dem Stufen-Kontingent.
+// Danach: recordUsage auf dem Stufen-Kontingent, dann wird die Zeile auf
+// success/error abgeschlossen (KEIN Prompt), inkl. usage_recorded. Scheitert
+// der Abschluss, bleibt IN_FLIGHT sichtbar stehen — die Antwort geht trotzdem
+// raus, weil der Provider-Aufruf bereits nachweisbar protokolliert ist.
 //
 // EU-KI-VO Art. 50 (Kennzeichnung in _governance.disclosure), Art. 12
 // (Prüfpfad ohne Prompt). DSGVO Art. 5/32: Zweckbindung, kein
@@ -139,7 +146,12 @@ async function pdpCheck(
   modelProfile: string,
   stage: ExpansionStage,
   residency: AiResidency,
-): Promise<{ block: Response | null; result: DecisionResult | null; mode: EnforcementMode }> {
+): Promise<{
+  block: Response | null;
+  result: DecisionResult | null;
+  mode: EnforcementMode;
+  unavailable?: boolean;
+}> {
   const mode = enforcementMode();
   if (mode === 'off') return { block: null, result: null, mode };
   try {
@@ -174,8 +186,22 @@ async function pdpCheck(
     }
     return { block: null, result, mode };
   } catch (e) {
-    console.error('[governance-router-pep] pdp unavailable — fail open', e);
-    return { block: null, result: null, mode };
+    // enforce: Ein nicht erreichbarer PDP darf nie mehr erlauben als ein
+    // erreichbarer, der blockt (AGENTS.md: fail-closed bei Policy-Fehlern).
+    if (mode === 'enforce') {
+      console.error('[governance-router-pep] pdp unavailable — fail closed (enforce)', e);
+      return {
+        block: err(503, 'POLICY_UNAVAILABLE',
+          'Die Richtlinienprüfung ist derzeit nicht erreichbar. Die Anfrage wurde nicht ausgeführt.'),
+        result: null,
+        mode,
+      };
+    }
+    // shadow blockt auch bei einer erreichbaren block-Entscheidung nicht;
+    // ein Ausfall darf hier nicht strenger sein. Im Prüfpfad als
+    // pdp=unavailable markiert.
+    console.error('[governance-router-pep] pdp unavailable — fail open (shadow only)', e);
+    return { block: null, result: null, mode, unavailable: true };
   }
 }
 
@@ -319,31 +345,48 @@ async function handleChat(
     localLabel: localInferenceLabel(),
   });
 
+  const pdpLabel = pep.unavailable ? 'unavailable' : (pep.result?.decision ?? pep.mode);
+  const runBase = {
+    profile: parsed.request.model_profile,
+    residency: ctx.residency,
+    stage: ctx.stage,
+    pdp: pdpLabel,
+  };
+
+  // Prüfpfad vor dem Provider: ohne Zeile kein Aufruf (fail closed).
+  const runId = await openRun(admin, tenantId, runBase);
+  if (!runId) {
+    return err(503, 'AUDIT_UNAVAILABLE',
+      'Der Prüfpfad ist derzeit nicht beschreibbar. Die Anfrage wurde nicht ausgeführt.');
+  }
+
   const started = Date.now();
   try {
     const response = parsed.wantsJson
       ? await built.gateway.extractJson(parsed.request)
       : await built.gateway.generate(parsed.request);
 
-    await writeRun(admin, tenantId, {
+    let usageRecorded: boolean | null = null;
+    if (quotaKey) {
+      try {
+        await recordUsage(admin, tenantId, quotaKey, 1, { feature: TOOL_KEY, stage: ctx.stage });
+        usageRecorded = true;
+      } catch (e) {
+        usageRecorded = false;
+        console.error('[governance-router] recordUsage failed', e);
+      }
+    }
+
+    await closeRun(admin, tenantId, runId, {
+      ...runBase,
       status: 'success',
-      profile: parsed.request.model_profile,
       provider: response.provider,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       durationMs: response.latency_ms ?? (Date.now() - started),
-      residency: ctx.residency,
-      stage: ctx.stage,
-      pdp: pep.result?.decision ?? pep.mode,
       traceId: response.trace_id,
+      usageRecorded,
     });
-    if (quotaKey) {
-      try {
-        await recordUsage(admin, tenantId, quotaKey, 1, { feature: TOOL_KEY, stage: ctx.stage });
-      } catch (e) {
-        console.error('[governance-router] recordUsage failed', e);
-      }
-    }
 
     const completion = formatChatResponse(
       response,
@@ -365,63 +408,122 @@ async function handleChat(
     return jsonResponse(completion, 200, corsHeaders);
   } catch (error) {
     const mapped = mapInferenceError(error);
-    await writeRun(admin, tenantId, {
+    await closeRun(admin, tenantId, runId, {
+      ...runBase,
       status: 'error',
-      profile: parsed.request.model_profile,
       provider: null,
       inputTokens: 0,
       outputTokens: 0,
       durationMs: Date.now() - started,
-      residency: ctx.residency,
-      stage: ctx.stage,
-      pdp: pep.result?.decision ?? pep.mode,
       traceId: null,
+      usageRecorded: null,
       errorCode: mapped.code,
     });
     return err(mapped.status, mapped.code, mapped.message);
   }
 }
 
-async function writeRun(
+type RunBase = {
+  profile: string;
+  residency: AiResidency;
+  stage: ExpansionStage;
+  pdp: string;
+};
+
+// Pessimistischer Start: Wird die Zeile nie abgeschlossen, steht sie als
+// error/IN_FLIGHT im Prüfpfad — nie als stiller Erfolg.
+const IN_FLIGHT = 'IN_FLIGHT';
+
+function runMetadata(row: RunBase & {
+  provider: string | null;
+  traceId: string | null;
+  errorCode: string | null;
+  usageRecorded: boolean | null;
+}) {
+  // Kein Prompt, kein Input, keine Messages — nur Betriebsmerkmale.
+  return {
+    feature: TOOL_KEY,
+    profile: row.profile,
+    provider: row.provider,
+    residency: row.residency,
+    stage: row.stage,
+    pdp: row.pdp,
+    trace_id: row.traceId,
+    error_code: row.errorCode,
+    usage_recorded: row.usageRecorded,
+  };
+}
+
+async function openRun(
   admin: SupabaseClient,
   tenantId: string,
-  row: {
+  base: RunBase,
+): Promise<string | null> {
+  try {
+    const { data, error } = await admin.from('ai_tool_runs').insert({
+      tenant_id: tenantId,
+      tool_id: null,
+      tool_key: TOOL_KEY,
+      user_id: null,
+      input_tokens: 0,
+      output_tokens: 0,
+      cached_tokens: 0,
+      cost_usd: 0,
+      duration_ms: null,
+      status: 'error',
+      error_code: IN_FLIGHT,
+      metadata: runMetadata({
+        ...base,
+        provider: null,
+        traceId: null,
+        errorCode: IN_FLIGHT,
+        usageRecorded: null,
+      }),
+    }).select('id').single();
+    if (error || !data?.id) {
+      console.error('[governance-router] ai_tool_runs open failed — fail closed', error?.message);
+      return null;
+    }
+    return data.id as string;
+  } catch (e) {
+    console.error('[governance-router] ai_tool_runs open threw — fail closed', e);
+    return null;
+  }
+}
+
+async function closeRun(
+  admin: SupabaseClient,
+  tenantId: string,
+  runId: string,
+  row: RunBase & {
     status: 'success' | 'error';
-    profile: string;
     provider: string | null;
     inputTokens: number;
     outputTokens: number;
     durationMs: number;
-    residency: AiResidency;
-    stage: ExpansionStage;
-    pdp: string;
     traceId: string | null;
+    usageRecorded: boolean | null;
     errorCode?: string;
   },
 ): Promise<void> {
-  // Kein Prompt, kein Input, keine Messages — nur Betriebsmerkmale.
-  const { error } = await admin.from('ai_tool_runs').insert({
-    tenant_id: tenantId,
-    tool_id: null,
-    tool_key: TOOL_KEY,
-    user_id: null,
-    input_tokens: row.inputTokens,
-    output_tokens: row.outputTokens,
-    cached_tokens: 0,
-    cost_usd: 0,
-    duration_ms: row.durationMs,
-    status: row.status,
-    error_code: row.errorCode ?? null,
-    metadata: {
-      feature: TOOL_KEY,
-      profile: row.profile,
-      provider: row.provider,
-      residency: row.residency,
-      stage: row.stage,
-      pdp: row.pdp,
-      trace_id: row.traceId,
+  try {
+    const { error } = await admin.from('ai_tool_runs').update({
+      input_tokens: row.inputTokens,
+      output_tokens: row.outputTokens,
+      duration_ms: row.durationMs,
+      status: row.status,
       error_code: row.errorCode ?? null,
-    },
-  });
-  if (error) console.error('[governance-router] ai_tool_runs insert failed', error.message);
+      metadata: runMetadata({
+        ...row,
+        errorCode: row.errorCode ?? null,
+      }),
+    })
+      .eq('id', runId)
+      .eq('tenant_id', tenantId);
+    if (error) {
+      console.error('[governance-router] ai_tool_runs close failed — row stays IN_FLIGHT', error.message);
+    }
+  } catch (e) {
+    console.error('[governance-router] ai_tool_runs close threw — row stays IN_FLIGHT', e);
+  }
 }

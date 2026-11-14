@@ -40,8 +40,8 @@ EU-lokale Residenz (`/settings/ai-residency`) sperrt Cloud-Profile **auf jeder S
 
 - Auth: SHA-256 gegen `governance_ingest_keys`. `tenant_id` nur aus dem Key.
 - Residenz: `resolve_ai_residency`. Fällt die RPC aus, gilt `cloud` — dieselbe Fail-open-Regel wie `_shared/ai.ts` / `runAiTool`. Ein EU-lokal-Mandant kann in diesem Ausfall Cloud sehen. Bewusst analog, kein eigener Fail-closed-Schnitt.
-- PDP: `AI_GATEWAY_ENFORCEMENT` `off|shadow|enforce`, Default `shadow`, Fail-open bei Ausfall (wie `ai-gateway`).
-- Prüfpfad: `ai_tool_runs.tool_key = governance_router`. Metadaten: Profil, Provider, Residenz, Stufe, PDP — **kein Prompt**.
+- PDP: `AI_GATEWAY_ENFORCEMENT` `off|shadow|enforce`, Default `shadow`. Bei PDP-Ausfall: `enforce` → `503 POLICY_UNAVAILABLE` (fail closed); `shadow` läuft weiter und markiert `pdp = unavailable` im Prüfpfad.
+- Prüfpfad: `ai_tool_runs.tool_key = governance_router`, angelegt **vor** dem Provider-Aufruf. Ist die Zeile nicht schreibbar → `503 AUDIT_UNAVAILABLE`, kein Aufruf. Die Zeile startet als `status = error`, `error_code = IN_FLIGHT` und wird danach auf `success`/`error` abgeschlossen; bleibt `IN_FLIGHT` stehen, ist der Abschluss gescheitert. Metadaten: Profil, Provider, Residenz, Stufe, PDP, `usage_recorded` — **kein Prompt**.
 - Art. 50: `_governance.disclosure` an der Antwort.
 
 Kein Eintrag in `pdp_shadow_log` in diesem Schnitt: die Quellenliste ist eine geschlossene CHECK-Bedingung und steht doppelt zur SQL-Funktion. Ein neuer Kanal wäre eine eigene Migration.

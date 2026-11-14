@@ -39,18 +39,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SEO, getSeoForPath } from '../../src/config/seo';
-import { isStaticHtmlPage } from '../../src/lib/spaNotFound';
 
 const root = resolve(__dirname, '../..');
 
 /** Alle Pfade aus der Sitemap — die Liste, die Suchmaschinen tatsächlich bekommen. */
 const sitemapPaths = [
   ...readFileSync(resolve(root, 'public/sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g),
-]
-  .map((match) => new URL(match[1]).pathname)
-  // Statische Seiten (public/<name>/index.html) tragen Title, Description und
-  // canonical selbst im HTML; SEO_CONFIG gilt nur für SPA-Routen.
-  .filter((path) => !isStaticHtmlPage(path));
+].map((match) => new URL(match[1]).pathname);
 
 /**
  * Liefern den generischen Text aus `DEFAULT_SEO` aus: echte Dubletten.

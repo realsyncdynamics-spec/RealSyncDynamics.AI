@@ -1,6 +1,7 @@
 import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { LandingV6Values } from './useLandingV6';
+import { CompanyVoiceWidget } from './CompanyVoiceWidget';
 
 /** Arrow keys select and focus one option; Tab enters the group only once. */
 function onRadioKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -158,7 +159,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>01.08.2024</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Inkrafttreten</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Verordnung (EU) 2024/1689 im Amtsblatt veröffentlicht.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Verordnung (EU) 2024/1689 am 12.07.2024 veröffentlicht, seit dem 01.08.2024 in Kraft.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.02.2025</span>
@@ -173,7 +174,17 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2026</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Allgemeines Anwendungsdatum und Transparenzpflichten; Hochrisiko-Pflichten folgen gesondert.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.12.2027</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko-KI · Anhang III</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Zentrale Pflichten nach Art. 6 Abs. 2 und Anhang III gelten ab diesem Datum.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2028</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko-KI · Anhang I</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Zentrale Pflichten für KI in betroffenen regulierten Produkten gelten ab diesem Datum.</span>
             </li>
           </ol>
         </div>
@@ -535,7 +546,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </nav>
           <nav aria-label="Rechtliches" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>RECHTLICHES</span>
-            <Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link><Link to="/legal/widerruf">Widerruf</Link><Link to="/kontakt">Kontakt</Link>{/* Statische Seite außerhalb der SPA (public/unternehmen/): <a>, kein Router-Link. */}<a href="/unternehmen/">Unternehmen</a>
+            <Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link><Link to="/legal/widerruf">Widerruf</Link><Link to="/kontakt">Kontakt</Link>
           </nav>
         </div>
         <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "20px var(--px) 32px", borderTop: "1px solid var(--rs-line)", display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>
@@ -672,6 +683,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </>) : null}
 
+      <CompanyVoiceWidget />
       </div>
   );
 }

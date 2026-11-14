@@ -5,6 +5,7 @@ import type {
   AiProviderHealth,
   AiStreamChunk,
 } from './types.ts';
+import { CloudProviderHttpError } from './cloudProviderHttpError.ts';
 import { parseOpenAiSse } from './streamParse.ts';
 
 // Deno mirror of src/core/ai-gateway/providers/openaiAdapter.ts.
@@ -72,8 +73,8 @@ export class OpenAIAdapter implements AiProviderAdapter {
         body: JSON.stringify(this.buildChatBody(request)),
       });
 
+      if (!res.ok) throw await CloudProviderHttpError.fromResponse('OpenAI', res);
       const json = (await res.json()) as OpenAIChatResponse;
-      if (!res.ok) throw new Error(json?.error?.message ?? `OpenAI HTTP ${res.status}`);
 
       const text = json?.choices?.[0]?.message?.content ?? '';
 
@@ -158,8 +159,8 @@ export class OpenAIAdapter implements AiProviderAdapter {
         signal: controller.signal,
         body: JSON.stringify(body),
       });
+      if (!res.ok) throw await CloudProviderHttpError.fromResponse('OpenAI', res);
       const json = (await res.json()) as OpenAIChatResponse;
-      if (!res.ok) throw new Error(json?.error?.message ?? `OpenAI HTTP ${res.status}`);
 
       const text = json?.choices?.[0]?.message?.content ?? '';
       let parsed: T;

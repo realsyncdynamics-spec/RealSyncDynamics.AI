@@ -46,6 +46,8 @@ import {
   requireQuota,
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
+import { CloudProviderHttpError } from '../_shared/aiGateway/cloudProviderHttpError.ts';
+import { CloudAttemptAuditError, type CloudAttempt } from '../_shared/aiGateway/router.ts';
 import { createServerGatewayFromEnv, localInferenceLabel } from '../_shared/aiGateway/serverFromEnv.ts';
 import { requireVerifiedAiResidency, ResidencyUnavailableError } from '../_shared/residencyGuard.ts';
 import {
@@ -329,6 +331,14 @@ async function handleChat(
   );
   if (pep.block) return pep.block;
 
+  const auditedCloud = ctx.residency === 'cloud' && ctx.allowCloud
+    && parsed.request.model_profile === 'cloud-fallback'
+    && Deno.env.get('GOVERNANCE_ROUTER_AUDITED_CLOUD_FALLBACK_TENANT_ID') === tenantId;
+  if (auditedCloud && (pep.mode !== 'enforce' || !pep.result)) {
+    return err(503, 'POLICY_UNAVAILABLE',
+      'Der Cloud-Anbieterwechsel setzt eine verbindliche Richtlinienentscheidung voraus.');
+  }
+
   const built = await createServerGatewayFromEnv({
     allowCloudFallback: ctx.allowCloud,
     requireLmStudio: !ctx.allowCloud,
@@ -345,12 +355,16 @@ async function handleChat(
     localLabel: localInferenceLabel(),
   });
 
+  const traceId = crypto.randomUUID();
+  parsed.request.trace_id = traceId;
   const pdpLabel = pep.unavailable ? 'unavailable' : (pep.result?.decision ?? pep.mode);
   const runBase = {
     profile: parsed.request.model_profile,
     residency: ctx.residency,
     stage: ctx.stage,
     pdp: pdpLabel,
+    traceId,
+    attempts: [] as CloudAttempt[],
   };
 
   // Prüfpfad vor dem Provider: ohne Zeile kein Aufruf (fail closed).
@@ -360,11 +374,14 @@ async function handleChat(
       'Der Prüfpfad ist derzeit nicht beschreibbar. Die Anfrage wurde nicht ausgeführt.');
   }
 
+  const recordAttempt = auditedCloud
+    ? (attempt: CloudAttempt) => recordRunAttempt(admin, tenantId, runId, runBase, attempt)
+    : undefined;
   const started = Date.now();
   try {
     const response = parsed.wantsJson
-      ? await built.gateway.extractJson(parsed.request)
-      : await built.gateway.generate(parsed.request);
+      ? await built.gateway.extractJson(parsed.request, recordAttempt)
+      : await built.gateway.generate(parsed.request, recordAttempt);
 
     let usageRecorded: boolean | null = null;
     if (quotaKey) {
@@ -384,7 +401,6 @@ async function handleChat(
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       durationMs: response.latency_ms ?? (Date.now() - started),
-      traceId: response.trace_id,
       usageRecorded,
     });
 
@@ -407,7 +423,15 @@ async function handleChat(
     }
     return jsonResponse(completion, 200, corsHeaders);
   } catch (error) {
-    const mapped = mapInferenceError(error);
+    if (error instanceof CloudAttemptAuditError) {
+      return err(503, 'AUDIT_UNAVAILABLE',
+        'Der letzte bestätigte Stand des Prüfpfads wurde gespeichert. Der Aufruf wurde abgebrochen.');
+    }
+    const mapped = auditedCloud && error instanceof CloudProviderHttpError
+      ? error.status === 429
+        ? { status: 429, code: 'UPSTREAM_RATE_LIMIT', message: 'Der KI-Anbieter hat den Aufruf begrenzt.' }
+        : { status: 502, code: 'UPSTREAM_REJECTED', message: 'Der KI-Anbieter hat den Aufruf abgelehnt.' }
+      : mapInferenceError(error);
     await closeRun(admin, tenantId, runId, {
       ...runBase,
       status: 'error',
@@ -415,7 +439,6 @@ async function handleChat(
       inputTokens: 0,
       outputTokens: 0,
       durationMs: Date.now() - started,
-      traceId: null,
       usageRecorded: null,
       errorCode: mapped.code,
     });
@@ -428,6 +451,8 @@ type RunBase = {
   residency: AiResidency;
   stage: ExpansionStage;
   pdp: string;
+  traceId: string;
+  attempts: CloudAttempt[];
 };
 
 // Pessimistischer Start: Wird die Zeile nie abgeschlossen, steht sie als
@@ -436,7 +461,6 @@ const IN_FLIGHT = 'IN_FLIGHT';
 
 function runMetadata(row: RunBase & {
   provider: string | null;
-  traceId: string | null;
   errorCode: string | null;
   usageRecorded: boolean | null;
 }) {
@@ -449,6 +473,7 @@ function runMetadata(row: RunBase & {
     stage: row.stage,
     pdp: row.pdp,
     trace_id: row.traceId,
+    provider_attempts: row.attempts,
     error_code: row.errorCode,
     usage_recorded: row.usageRecorded,
   };
@@ -475,7 +500,6 @@ async function openRun(
       metadata: runMetadata({
         ...base,
         provider: null,
-        traceId: null,
         errorCode: IN_FLIGHT,
         usageRecorded: null,
       }),
@@ -491,6 +515,43 @@ async function openRun(
   }
 }
 
+async function recordRunAttempt(
+  admin: SupabaseClient,
+  tenantId: string,
+  runId: string,
+  run: RunBase,
+  attempt: CloudAttempt,
+): Promise<void> {
+  const attempts = [...run.attempts];
+  if (attempt.outcome === 'started') attempts.push(attempt);
+  else attempts[attempts.length - 1] = attempt;
+
+  try {
+    const { data, error } = await admin.from('ai_tool_runs').update({
+      metadata: runMetadata({
+        ...run,
+        attempts,
+        provider: attempt.provider,
+        errorCode: IN_FLIGHT,
+        usageRecorded: null,
+      }),
+    })
+      .eq('id', runId)
+      .eq('tenant_id', tenantId)
+      .eq('error_code', IN_FLIGHT)
+      .select('id')
+      .single();
+    if (!error && data?.id === runId) {
+      run.attempts = attempts;
+      return;
+    }
+  } catch {
+    // The last acknowledged audit state remains on the open row.
+  }
+  console.error('[governance-router] cloud attempt audit write failed');
+  throw new CloudAttemptAuditError();
+}
+
 async function closeRun(
   admin: SupabaseClient,
   tenantId: string,
@@ -501,7 +562,6 @@ async function closeRun(
     inputTokens: number;
     outputTokens: number;
     durationMs: number;
-    traceId: string | null;
     usageRecorded: boolean | null;
     errorCode?: string;
   },

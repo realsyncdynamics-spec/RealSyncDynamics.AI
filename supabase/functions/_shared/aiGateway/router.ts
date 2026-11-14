@@ -1,4 +1,5 @@
-import type { AiGatewayRequest, AiGatewayResponse, AiProviderAdapter, AiStreamChunk, ModelProfile } from './types.ts';
+import type { AiGatewayRequest, AiGatewayResponse, AiProviderAdapter, AiStreamChunk, ModelProfile, ProviderId } from './types.ts';
+import { CloudProviderHttpError } from './cloudProviderHttpError.ts';
 import { LMStudioAdapter } from './lmStudioAdapter.ts';
 import { AnthropicAdapter, type AnthropicConfig } from './anthropicAdapter.ts';
 import { OpenAIAdapter, type OpenAIConfig } from './openaiAdapter.ts';
@@ -44,6 +45,22 @@ export interface ServerAiGatewayDeps {
   openaiConfig?: OpenAIConfig;
 }
 
+export type CloudAttempt = {
+  provider: ProviderId;
+  outcome: 'started' | 'success' | 'error';
+  http_status?: number;
+  duration_ms?: number;
+};
+
+export type RecordCloudAttempt = (attempt: CloudAttempt) => Promise<void>;
+
+export class CloudAttemptAuditError extends Error {
+  constructor() {
+    super('Cloud provider attempt could not be recorded');
+    this.name = 'CloudAttemptAuditError';
+  }
+}
+
 export class ServerAiGateway {
   private readonly lmStudio: AiProviderAdapter;
   private readonly fallbackChain: readonly AiProviderAdapter[];
@@ -71,12 +88,68 @@ export class ServerAiGateway {
     return { ok: primary.ok || anyFallbackOk, primary, fallback };
   }
 
-  generate(request: AiGatewayRequest): Promise<AiGatewayResponse<string>> {
-    return this.withFallback(request, (adapter) => adapter.generate(this.withDefaults(request)));
+  generate(request: AiGatewayRequest, recordAttempt?: RecordCloudAttempt): Promise<AiGatewayResponse<string>> {
+    return this.runInference(request, (adapter, req) => adapter.generate(req), recordAttempt);
   }
 
-  extractJson<T>(request: AiGatewayRequest): Promise<AiGatewayResponse<T>> {
-    return this.withFallback(request, (adapter) => adapter.extractJson<T>(this.withDefaults(request)));
+  extractJson<T>(request: AiGatewayRequest, recordAttempt?: RecordCloudAttempt): Promise<AiGatewayResponse<T>> {
+    return this.runInference(request, (adapter, req) => adapter.extractJson<T>(req), recordAttempt);
+  }
+
+  private runInference<T>(
+    request: AiGatewayRequest,
+    run: (adapter: AiProviderAdapter, req: AiGatewayRequest) => Promise<AiGatewayResponse<T>>,
+    recordAttempt?: RecordCloudAttempt,
+  ): Promise<AiGatewayResponse<T>> {
+    const req = this.withDefaults(request);
+    if (recordAttempt && req.model_profile === 'cloud-fallback') {
+      return this.runAuditedCloud(req, run, recordAttempt);
+    }
+    return this.withFallback(req, (adapter) => run(adapter, req));
+  }
+
+  private async runAuditedCloud<T>(
+    request: AiGatewayRequest,
+    run: (adapter: AiProviderAdapter, req: AiGatewayRequest) => Promise<AiGatewayResponse<T>>,
+    recordAttempt: RecordCloudAttempt,
+  ): Promise<AiGatewayResponse<T>> {
+    const primary = this.resolveAdapter(request.model_profile);
+    const deadline = Date.now() + (request.timeout_ms ?? DEFAULTS.timeoutMs);
+    try {
+      return await this.runCloudAttempt(primary, request, deadline, run, recordAttempt);
+    } catch (error) {
+      if (!(error instanceof CloudProviderHttpError) || error.status !== 429) throw error;
+      const secondary = this.fallbackChain.find((adapter) => adapter.id === 'openai');
+      if (!secondary || Date.now() >= deadline) throw error;
+      return this.runCloudAttempt(secondary, request, deadline, run, recordAttempt);
+    }
+  }
+
+  private async runCloudAttempt<T>(
+    adapter: AiProviderAdapter,
+    request: AiGatewayRequest,
+    deadline: number,
+    run: (adapter: AiProviderAdapter, req: AiGatewayRequest) => Promise<AiGatewayResponse<T>>,
+    recordAttempt: RecordCloudAttempt,
+  ): Promise<AiGatewayResponse<T>> {
+    await recordAttempt({ provider: adapter.id, outcome: 'started' });
+    const started = Date.now();
+    let response: AiGatewayResponse<T>;
+    try {
+      const timeoutMs = deadline - started;
+      if (timeoutMs <= 0) throw new Error('Cloud provider timeout budget exhausted');
+      response = await run(adapter, { ...request, timeout_ms: timeoutMs });
+    } catch (error) {
+      await recordAttempt({
+        provider: adapter.id,
+        outcome: 'error',
+        http_status: error instanceof CloudProviderHttpError ? error.status : undefined,
+        duration_ms: Date.now() - started,
+      });
+      throw error;
+    }
+    await recordAttempt({ provider: adapter.id, outcome: 'success', duration_ms: Date.now() - started });
+    return response;
   }
 
   embed(request: AiGatewayRequest) {

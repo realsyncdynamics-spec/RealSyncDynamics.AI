@@ -39,18 +39,25 @@ EU-lokale Residenz (`/settings/ai-residency`) sperrt Cloud-Profile **auf jeder S
 ## Was der Router durchsetzt
 
 - Auth: SHA-256 gegen `governance_ingest_keys`. `tenant_id` nur aus dem Key.
-- Residenz: `resolve_ai_residency`. Fällt die RPC aus, gilt `cloud` — dieselbe Fail-open-Regel wie `_shared/ai.ts` / `runAiTool`. Ein EU-lokal-Mandant kann in diesem Ausfall Cloud sehen. Bewusst analog, kein eigener Fail-closed-Schnitt.
+- Residenz: `resolve_ai_residency`. Bei RPC-Fehler oder unverifizierter Residenz antwortet der Router mit `503 RESIDENCY_UNAVAILABLE`.
 - PDP: `AI_GATEWAY_ENFORCEMENT` `off|shadow|enforce`, Default `shadow`. Bei PDP-Ausfall: `enforce` → `503 POLICY_UNAVAILABLE` (fail closed); `shadow` läuft weiter und markiert `pdp = unavailable` im Prüfpfad.
 - Prüfpfad: `ai_tool_runs.tool_key = governance_router`, angelegt **vor** dem Provider-Aufruf. Ist die Zeile nicht schreibbar → `503 AUDIT_UNAVAILABLE`, kein Aufruf. Die Zeile startet als `status = error`, `error_code = IN_FLIGHT` und wird danach auf `success`/`error` abgeschlossen; bleibt `IN_FLIGHT` stehen, ist der Abschluss gescheitert. Metadaten: Profil, Provider, Residenz, Stufe, PDP, `usage_recorded` — **kein Prompt**.
 - Art. 50: `_governance.disclosure` an der Antwort.
 
 Kein Eintrag in `pdp_shadow_log` in diesem Schnitt: die Quellenliste ist eine geschlossene CHECK-Bedingung und steht doppelt zur SQL-Funktion. Ein neuer Kanal wäre eine eigene Migration.
 
+## Cloud-Fallback mit Prüfpfad
+
+`GOVERNANCE_ROUTER_AUDITED_CLOUD_FALLBACK_TENANT_ID` aktiviert den optionalen Pfad für das Profil `cloud-fallback` ausschließlich für den dort eingetragenen Testmandanten. Voraussetzungen sind bestätigte Cloud-Residenz, Tarif und Kontingent sowie eine verbindliche PDP-Entscheidung im Modus `enforce`. Ohne konfigurierte Testmandanten-ID bleibt der Pfad deaktiviert.
+
+Bei einem bestätigten HTTP 429 von Anthropic kann der Router innerhalb des gemeinsamen Zeitbudgets einmal zu konfiguriertem OpenAI wechseln. Andere Fehler beenden diesen Pfad. Die beiden Anbieter werden höchstens einmal je Anfrage angesprochen. Die Monatszählung erfasst weiterhin erfolgreiche logische Anfragen. Anbieterkosten werden dadurch nicht gemessen.
+
+Start und Ergebnis jedes Anbieterversuchs werden in der vorhandenen `ai_tool_runs`-Zeile unter der serverseitigen `trace_id` gespeichert. `provider_attempts` enthält den Anbieter, den Status, eine verfügbare HTTP-Fehlernummer und die Dauer. Bei einem Schreibfehler antwortet der Router mit `503 AUDIT_UNAVAILABLE`. Der letzte bestätigte Stand bleibt zur Prüfung erhalten.
+
 ## Was bewusst nicht skaliert
 
 - Kein automatisches Plan-Upgrade
 - Kein Token-Streaming (Cursor `stream: true` erhält eine Ein-Chunk-SSE-Hülle nach der fertigen Antwort; echte Token-Streams sind ein eigener Schnitt)
-- Residenz-RPC bleibt fail-open auf `cloud` (wie `runAiTool`); Fail-closed wäre ein eigener Schnitt
 - Kein zweiter Provider-Marktplatz
 - `ai-gateway` bleibt JWT-pflichtig
 

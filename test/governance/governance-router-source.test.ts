@@ -19,8 +19,8 @@ describe('governance-router — Auth- und Datengrenzen', () => {
     expect(block).toContain('feature: TOOL_KEY');
     expect(block).not.toMatch(/prompt|input:|messages|content/);
     expect(SRC).toContain('Kein Prompt');
-    // Beide Schreibpfade nutzen denselben Metadaten-Builder.
-    expect(SRC.match(/metadata: runMetadata\(/g)?.length).toBe(2);
+    // Alle Schreibpfade nutzen denselben Metadaten-Builder.
+    expect(SRC.match(/metadata: runMetadata\(/g)?.length).toBe(3);
     expect(SRC).not.toMatch(/metadata: \{/);
   });
 
@@ -57,7 +57,7 @@ describe('governance-router — Auth- und Datengrenzen', () => {
   });
 
   it('offene Zeile startet pessimistisch und wird mandantengebunden abgeschlossen', () => {
-    const open = SRC.slice(SRC.indexOf('async function openRun('), SRC.indexOf('async function closeRun('));
+    const open = SRC.slice(SRC.indexOf('async function openRun('), SRC.indexOf('async function recordRunAttempt('));
     expect(open).toContain("status: 'error'");
     expect(open).toContain('error_code: IN_FLIGHT');
     expect(open).toContain('tenant_id: tenantId');
@@ -65,6 +65,18 @@ describe('governance-router — Auth- und Datengrenzen', () => {
     const close = SRC.slice(SRC.indexOf('async function closeRun('));
     expect(close).toContain(".eq('id', runId)");
     expect(close).toContain(".eq('tenant_id', tenantId)");
+  });
+
+  it('bindet Cloud-Versuche an den offenen Prüfpfad desselben Mandanten', () => {
+    expect(SRC).toContain('parsed.request.trace_id = traceId');
+    expect(SRC).toContain('provider_attempts: row.attempts');
+    const attempt = SRC.slice(SRC.indexOf('async function recordRunAttempt('), SRC.indexOf('async function closeRun('));
+    expect(attempt).toContain(".eq('id', runId)");
+    expect(attempt).toContain(".eq('tenant_id', tenantId)");
+    expect(attempt).toContain(".eq('error_code', IN_FLIGHT)");
+    expect(attempt).toContain('data?.id === runId');
+    expect(SRC).toContain("Deno.env.get('GOVERNANCE_ROUTER_AUDITED_CLOUD_FALLBACK_TENANT_ID') === tenantId");
+    expect(SRC).toContain("pep.mode !== 'enforce' || !pep.result");
   });
 
   it('Kontingent-Buchung wird im Prüfpfad sichtbar', () => {

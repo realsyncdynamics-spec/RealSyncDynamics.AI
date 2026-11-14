@@ -28,7 +28,7 @@ export const WAITLIST_INTERESTS = [
   { value: 'runtime', label: 'Governance Runtime (begleitetes Onboarding)' },
   { value: 'siteos', label: 'SiteOS / Website-Ebene' },
   { value: 'evidence', label: 'Evidence Vault (begleitetes Onboarding)' },
-  { value: 'bots', label: 'WhatsApp- & Telefonbot' },
+  { value: 'bots', label: 'Voice Agent / WhatsApp- & Telefonbot (Preview)' },
   { value: 'provenance', label: 'Herkunftsnachweis (C2PA)' },
   { value: 'audit', label: 'Governance Scan' },
   { value: 'other', label: 'Etwas anderes' },
@@ -47,6 +47,8 @@ interface Props {
 
 export function WaitlistForm({ source = 'warteliste', compact = false, id }: Props) {
   const [params] = useSearchParams();
+  const preselectedInterest =
+    WAITLIST_INTERESTS.find(({ value }) => value === params.get('interest'))?.value ?? 'runtime';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ position: number; already: boolean } | null>(null);
@@ -213,7 +215,7 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
           <select
             id="wl-interest"
             name="interest"
-            defaultValue="runtime"
+            defaultValue={preselectedInterest}
             disabled={loading}
             className="w-full rounded-chip border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-petrol-600 disabled:opacity-60"
           >

@@ -383,7 +383,9 @@ describe('SQL_ANTWORTEN', () => {
     expect(SQL_ANTWORTEN).not.toContain('l.start_time');
     // Juengere Dispatches koennen noch unterwegs sein.
     expect(SQL_ANTWORTEN).toContain("q.dispatched_at < now() - interval '2 minutes'");
-    // Das Fenster muss zur Aufbewahrung von net._http_response passen.
+    // RSD-012: Lookback 24h fuer vorhandene Antworten, Retention 6h fuer
+    // Ohne-Antwort (passend zur typischen Aufbewahrung von net._http_response).
+    expect(SQL_ANTWORTEN).toContain("interval '24 hours'");
     expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
     expect(SQL_ANTWORTEN).toContain("GROUP BY 1, left(coalesce(r.content, ''), 200)");
   });

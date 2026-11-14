@@ -19,6 +19,17 @@ import { importSecretKey, open, seal } from './secretBox.ts';
 export const SOCIAL_PROVIDERS = ['linkedin', 'instagram', 'facebook', 'tiktok', 'x'] as const;
 export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
 
+/**
+ * facebook ist in Entwicklung: kein Queue-Kanal, kein Publisher.
+ * Nicht als verfuegbar darstellen. Die uebrigen Provider haben einen
+ * Queue-Kanal; ihr Versand kann trotzdem noch offen sein.
+ */
+export const SOCIAL_PROVIDERS_IN_DEVELOPMENT = ['facebook'] as const;
+
+export function isSocialProviderInDevelopment(provider: string): boolean {
+  return (SOCIAL_PROVIDERS_IN_DEVELOPMENT as readonly string[]).includes(provider);
+}
+
 export const SOCIAL_CONNECTION_STATUSES = [
   'pending',
   'connected',
@@ -47,7 +58,8 @@ export const SOCIAL_CONNECTION_PUBLIC_SELECT = SOCIAL_CONNECTION_PUBLIC_COLUMNS.
 
 /**
  * Queue-Kanal (distribution_queue_entries.channel) → Provider in
- * social_channel_connections.channel. facebook hat noch keinen Queue-Kanal.
+ * social_channel_connections.channel. facebook ist in Entwicklung und
+ * hat keinen Queue-Kanal. Nicht als verfuegbar darstellen.
  */
 const QUEUE_CHANNEL_PROVIDER: Record<string, SocialProvider> = {
   'linkedin.enterprise': 'linkedin',
@@ -61,8 +73,8 @@ const QUEUE_CHANNEL_PROVIDER: Record<string, SocialProvider> = {
 export const LEGACY_ENV_TOKEN_FLAG = 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN';
 
 /**
- * Der LinkedIn-Pfad ruft noch die abgelöste API mit Platzhalter-URNs.
- * Default aus: ohne exakt "on" kein HTTP-Call.
+ * LinkedIn-Versand. Default aus: ohne exakt "on" kein Siegel und kein HTTP.
+ * Bleibt aus, bis OAuth und eine echte Autor-URN stehen.
  */
 export const LINKEDIN_PUBLISH_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED';
 
@@ -441,6 +453,12 @@ export async function resolveSocialAccessToken(
     accountExternalId?: string | null;
     now?: Date;
     readEnv?: (name: string) => string | undefined;
+    /**
+     * Default true: Legacy-Env nur ohne Zeile und nur mit Flag.
+     * Der LinkedIn-Versand setzt false. Ohne Autor-URN aus der
+     * Verbindung darf kein Plattform-Token verwendet werden.
+     */
+    allowLegacyEnv?: boolean;
   },
 ): Promise<TokenResolution> {
   const provider = providerForQueueChannel(input.queueChannel);
@@ -488,7 +506,8 @@ export async function resolveSocialAccessToken(
   // Abgelaufene oder mehrdeutige Verbindungen fallen nicht auf das
   // Plattform-Token zurueck — das waere der falsche Account.
   if (
-    choice.kind === 'none'
+    input.allowLegacyEnv !== false
+    && choice.kind === 'none'
     && !accountExternalId
     && provider === 'linkedin'
     && legacyEnvTokenEnabled(readEnvOrDeno(input.readEnv, LEGACY_ENV_TOKEN_FLAG))

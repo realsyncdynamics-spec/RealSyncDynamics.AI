@@ -12,6 +12,7 @@ import {
   linkedinPublishingEnabled,
   parseClientScopes,
   parseSocialCredentials,
+  isSocialProviderInDevelopment,
   providerForQueueChannel,
   resolveSocialAccessToken,
   sealSocialCredentials,
@@ -86,6 +87,9 @@ describe('Social-Kanal-Tokens', () => {
     expect(providerForQueueChannel('x.alert')).toBe('x');
     expect(providerForQueueChannel('linkedin')).toBeNull();
     expect(providerForQueueChannel('facebook')).toBeNull();
+    expect(isSocialProviderInDevelopment('facebook')).toBe(true);
+    expect(isSocialProviderInDevelopment('linkedin')).toBe(false);
+    expect(isSocialProviderInDevelopment('instagram')).toBe(false);
   });
 
   it('schaltet den Legacy-Env-Token nur bei exakt "on" ein', () => {
@@ -191,6 +195,26 @@ describe('Social-Kanal-Tokens', () => {
       tenantId: 'tenant-a',
       queueChannel: 'linkedin.legal',
       readEnv: (name) => env.get(name),
+    });
+    expect(resolved).toEqual({
+      ok: false,
+      code: 'no_connection',
+      message: 'no social channel connection for tenant',
+    });
+    expect(JSON.stringify(resolved)).not.toContain(FIXTURE_TOKEN);
+  });
+
+  it('nutzt den Env-Token fuer LinkedIn-Versand nicht, wenn allowLegacyEnv false ist', async () => {
+    const admin = memoryAdmin([]);
+    const resolved = await resolveSocialAccessToken(admin, {
+      tenantId: 'tenant-a',
+      queueChannel: 'linkedin.enterprise',
+      allowLegacyEnv: false,
+      readEnv: (name) => {
+        if (name === LEGACY_ENV_TOKEN_FLAG) return 'on';
+        if (name === 'LINKEDIN_ACCESS_TOKEN') return FIXTURE_TOKEN;
+        return undefined;
+      },
     });
     expect(resolved).toEqual({
       ok: false,

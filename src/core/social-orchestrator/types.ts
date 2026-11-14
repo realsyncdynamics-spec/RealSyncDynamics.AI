@@ -9,6 +9,8 @@
 
 // ── Channels ───────────────────────────────────────────────────────
 
+// facebook ist in Entwicklung und kein Queue-Kanal. Nicht in ALL_CHANNELS
+// und nicht als verfuegbar darstellen.
 export type SocialChannel =
   | 'linkedin.enterprise'   // long-form B2B governance/audit angle
   | 'linkedin.legal'        // narrower DPO/legal-counsel framing
@@ -127,6 +129,12 @@ export interface SocialPost {
   generatedAt: string;
   /** Populated when approvalStatus is REVIEW or BLOCKED. */
   blockReasons?: string[];
+  /**
+   * LinkedIn-Autor aus social_channel_connections. Beim Persistieren
+   * zusaetzlich als account_external_id in post_data, damit der Worker
+   * mehrere Konten zuordnen kann.
+   */
+  accountExternalId?: string;
 }
 
 // ── Approval decision (from contentPolicy) ─────────────────────────

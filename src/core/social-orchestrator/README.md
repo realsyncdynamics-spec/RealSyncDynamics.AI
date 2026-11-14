@@ -106,10 +106,9 @@ class LinkedInEnterprisePublisher implements SocialPublisher {
   channel = 'linkedin.enterprise' as const;
 
   async publish(post) {
-    // 1. Read OAuth token from Supabase Vault (NEVER from env / repo).
-    // 2. POST https://api.linkedin.com/v2/ugcPosts ...
-    // 3. Map 4xx → { ok:false, error:{ code:'LINKEDIN_429_RATE_LIMIT', ... } }
-    // 4. Return { ok:true, channel:this.channel, externalId, postedAt }
+    // LinkedIn-Versand laeuft im social-publisher-worker (Posts API),
+    // nicht in diesem Browser-Modul. Die Autor-URN setzt die Queue
+    // aus social_channel_connections (account_external_id).
   }
 }
 
@@ -123,8 +122,8 @@ The `distributionQueue.ts` file ends with a `// Real publishers — TODO` block 
 
 ## What the orchestrator does NOT do
 
-- Call any external social API. The `SocialPublisher` interface is the boundary; only `MockPublisher` is shipped.
-- Persist anything. The `DistributionQueue` is in-memory; persistence (Postgres, Redis-backed BullMQ) is a follow-up. The class is structured so a `persist()` hook would only need to wrap `enqueue` / `approve` / `reject` / `publish`.
+- Call LinkedIn. The worker publishes via the Posts API. With a Supabase client and `tenantId`, enqueue reads `social_channel_connections` (metadata only, not `credentials_enc`) and writes `account_external_id` onto `post_data`. Several connected accounts need `linkedInAccounts` or `post.accountExternalId`; the queue does not guess. `facebook` is in development and is not a queue channel.
+- Persist when no Supabase client is passed. The admin preview stays in memory. With a client, `enqueue` writes `distribution_queue_entries`.
 - Do scheduling. There's no "post at 09:00 CET" feature here. Add it via a wrapper that calls `queue.publish(id)` from a cron or BullMQ job.
 - Generate images. Templates produce text only. Asset attachment for Instagram / TikTok happens in the publisher adapter.
 - Interact with the runtime spec validator. Runtime events are accepted as a loose superset of ESS — defensive parsing.

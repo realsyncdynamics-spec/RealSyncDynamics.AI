@@ -13,12 +13,12 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { publishLinkedInQueueJob } from '../_shared/linkedinPosts.ts';
 import {
   LINKEDIN_PUBLISH_DISABLED_MESSAGE,
   LINKEDIN_PUBLISH_FLAG,
   accountExternalIdFromPostData,
   linkedinPublishingEnabled,
-  resolveSocialAccessToken,
 } from '../_shared/socialChannelCredentials.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -118,9 +118,14 @@ async function publishViaChannel(
 
 // ── LinkedIn Publisher ─────────────────────────────────────────────
 //
-// Token je Mandant und Kanal aus social_channel_connections.
-// Der HTTP-Vertrag (POST /v2/ugcPosts, Platzhalter-URNs) ist bis PR2
-// abgeschaltet, ausser SOCIAL_PUBLISHER_LINKEDIN_ENABLED=on.
+// Token und Autor-URN je Mandant aus social_channel_connections.
+// HTTP: POST https://api.linkedin.com/rest/posts (linkedinPosts.ts).
+// SOCIAL_PUBLISHER_LINKEDIN_ENABLED default aus: kein Claim, kein Siegel, kein HTTP.
+// Kein globaler LINKEDIN_ACCESS_TOKEN.
+
+function workerEnv(name: string): string | undefined {
+  return Deno.env.get(name) ?? undefined;
+}
 
 async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
   const direct = accountExternalIdFromPostData(job.post_data);
@@ -136,65 +141,17 @@ async function linkedinAccountHint(job: QueueJob): Promise<string | null> {
 }
 
 async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
-  if (!linkedinPublishingEnabled(Deno.env.get(LINKEDIN_PUBLISH_FLAG))) {
+  if (!linkedinPublishingEnabled(workerEnv(LINKEDIN_PUBLISH_FLAG))) {
     return { ok: false, error: LINKEDIN_PUBLISH_DISABLED_MESSAGE };
   }
-
   const accountExternalId = await linkedinAccountHint(job);
-  const resolved = await resolveSocialAccessToken(supabase, {
+  return publishLinkedInQueueJob(supabase, {
     tenantId: job.tenant_id,
     queueChannel: job.channel,
+    body: job.body,
     accountExternalId,
-    readEnv: (name) => Deno.env.get(name) ?? undefined,
+    readEnv: workerEnv,
   });
-  if (!resolved.ok) {
-    return { ok: false, error: resolved.message };
-  }
-  if (resolved.source === 'legacy_env') {
-    // Uebergang: nur wenn SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN=on und keine
-    // Verbindungszeile existiert. Der Tokenwert wird nicht geloggt.
-    console.warn(JSON.stringify({
-      level: 'warn',
-      scope: 'social_publisher_legacy_env_token',
-      tenant_id: job.tenant_id,
-      channel: job.channel,
-      flag: 'SOCIAL_PUBLISHER_LEGACY_ENV_TOKEN',
-    }));
-  }
-
-  const personUrn = job.channel === 'linkedin.legal'
-    ? 'urn:li:person:XYZ789'
-    : 'urn:li:person:ABC123';
-
-  try {
-    const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resolved.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        author: personUrn,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.PublishContent': {
-            shareCommentary: { text: job.body },
-            shareMediaCategory: 'ARTICLE',
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      return { ok: false, error: `LinkedIn ${response.status}: ${error}` };
-    }
-
-    const data = await response.json();
-    return { ok: true, externalId: data.id };
-  } catch (err) {
-    return { ok: false, error: String(err) };
-  }
 }
 
 // ── WordPress Publisher ────────────────────────────────────────────
@@ -443,6 +400,7 @@ async function processJob(channel: string): Promise<boolean> {
  * Process all channels (one job per channel per invocation).
  */
 async function processAllChannels(): Promise<void> {
+  const linkedInOn = linkedinPublishingEnabled(workerEnv(LINKEDIN_PUBLISH_FLAG));
   const channels = [
     'linkedin.enterprise',
     'linkedin.legal',
@@ -451,7 +409,15 @@ async function processAllChannels(): Promise<void> {
     'webhook.custom',
     'email.newsletter',
     // TODO: instagram.reel, tiktok.fast, x.alert
-  ];
+  ].filter((channel) => linkedInOn || (channel !== 'linkedin.enterprise' && channel !== 'linkedin.legal'));
+
+  if (!linkedInOn) {
+    console.log(JSON.stringify({
+      level: 'info',
+      scope: 'social_publisher_linkedin_disabled',
+      flag: LINKEDIN_PUBLISH_FLAG,
+    }));
+  }
 
   const results = await Promise.allSettled(
     channels.map(channel => processJob(channel))

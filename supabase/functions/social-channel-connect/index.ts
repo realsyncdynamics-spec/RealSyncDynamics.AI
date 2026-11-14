@@ -22,6 +22,7 @@ import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_sh
 import {
   clientSuppliedCredentials,
   isSocialProvider,
+  isSocialProviderInDevelopment,
   parseAccountExternalId,
   parseClientScopes,
   parseOptionalLabel,
@@ -117,6 +118,14 @@ async function configure(
   if (!isSocialProvider(channel)) {
     return jsonError(400, 'BAD_REQUEST', 'channel is invalid', corsHeaders);
   }
+  if (isSocialProviderInDevelopment(channel)) {
+    return jsonError(
+      400,
+      'NOT_AVAILABLE',
+      `${channel} is in development and has no queue channel`,
+      corsHeaders,
+    );
+  }
   const accountExternalId = parseAccountExternalId(body.account_external_id);
   if (!accountExternalId) {
     return jsonError(400, 'BAD_REQUEST', 'account_external_id is required', corsHeaders);
@@ -157,6 +166,29 @@ async function rotate(
   }
   const scopes = parseClientScopes(body.scopes);
   if (!scopes.ok) return jsonError(400, 'BAD_REQUEST', scopes.error, corsHeaders);
+
+  const { data: existing, error: existingErr } = await admin
+    .from('social_channel_connections')
+    .select('channel')
+    .eq('id', body.connection_id)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+  if (existingErr) {
+    const pg = existingErr && typeof existingErr === 'object' && 'code' in existingErr
+      ? String((existingErr as { code: unknown }).code)
+      : 'unknown';
+    console.error(JSON.stringify({ level: 'error', scope: 'social_channel_rotate_lookup', pg_code: pg }));
+    return jsonError(500, 'INTERNAL', 'Verbindung konnte nicht gespeichert werden', corsHeaders);
+  }
+  if (!existing) return jsonError(404, 'NOT_FOUND', 'connection not found', corsHeaders);
+  if (isSocialProviderInDevelopment(existing.channel)) {
+    return jsonError(
+      400,
+      'NOT_AVAILABLE',
+      `${existing.channel} is in development and has no queue channel`,
+      corsHeaders,
+    );
+  }
 
   const applied = await apply(admin, {
     p_op: 'rotate',

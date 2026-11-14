@@ -46,6 +46,21 @@ describe('social_channel_connections Grants und RLS', () => {
 });
 
 describe('social-channel-connect gibt keine Secrets heraus', () => {
+  it('lehnt facebook ab, weil der Kanal in Entwicklung ist', () => {
+    const configure = connect.slice(connect.indexOf('async function configure'));
+    const guard = configure.indexOf('isSocialProviderInDevelopment');
+    const write = configure.indexOf('await apply(');
+    expect(guard).toBeGreaterThan(-1);
+    expect(write).toBeGreaterThan(guard);
+    expect(configure).toContain('NOT_AVAILABLE');
+    expect(configure).toContain('in development and has no queue channel');
+    const rotate = connect.slice(connect.indexOf('async function rotate'));
+    const rotateGuard = rotate.indexOf('isSocialProviderInDevelopment');
+    expect(rotateGuard).toBeGreaterThan(-1);
+    expect(rotateGuard).toBeLessThan(rotate.indexOf('await apply('));
+    expect(migration).toContain('facebook ist in Entwicklung');
+  });
+
   it('bleibt hinter dem Plattform-JWT und owner/admin', () => {
     expect(config).not.toContain('[functions.social-channel-connect]');
     expect(connect).toContain("['owner', 'admin']");
@@ -86,27 +101,39 @@ describe('social-channel-connect gibt keine Secrets heraus', () => {
 });
 
 describe('Worker liest den Token je Mandant', () => {
-  it('ruft LinkedIn nur, wenn das Flag an ist', () => {
-    expect(worker).toContain('resolveSocialAccessToken');
-    expect(worker).toContain('https://api.linkedin.com/v2/ugcPosts');
-    expect(worker).toContain('urn:li:person:ABC123');
-    expect(worker).toContain('urn:li:person:XYZ789');
-    expect(worker).not.toContain('LINKEDIN_ACCESS_TOKEN');
-    expect(worker).not.toContain('config.linkedinToken');
-    const fn = worker.slice(worker.indexOf('async function publishLinkedIn'));
+  it('sendet ueber die Posts API nur, wenn das Flag an ist', () => {
+    const workerCode = codeWithoutComments(worker);
+    expect(workerCode).toContain('publishLinkedInQueueJob');
+    expect(workerCode).not.toContain('ugcPosts');
+    expect(workerCode).not.toContain('urn:li:person:ABC123');
+    expect(workerCode).not.toContain('urn:li:person:XYZ789');
+    expect(workerCode).not.toContain('LINKEDIN_ACCESS_TOKEN');
+    expect(workerCode).not.toContain('config.linkedinToken');
+    expect(workerCode).not.toContain('legacy_env');
+    expect(workerCode).toContain('LINKEDIN_PUBLISH_FLAG');
+    expect(workerCode).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
+    const fn = workerCode.slice(workerCode.indexOf('async function publishLinkedIn'));
     const gate = fn.indexOf('linkedinPublishingEnabled');
-    const call = fn.indexOf('https://api.linkedin.com/v2/ugcPosts');
+    const call = fn.indexOf('publishLinkedInQueueJob');
     expect(gate).toBeGreaterThan(-1);
     expect(call).toBeGreaterThan(gate);
-    expect(fn).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
-    expect(worker).toContain('LINKEDIN_PUBLISH_FLAG');
-    expect(helper).toContain("SOCIAL_PUBLISHER_LINKEDIN_ENABLED");
+    const posts = readFileSync('supabase/functions/_shared/linkedinPosts.ts', 'utf8');
+    expect(posts).toContain('https://api.linkedin.com/rest/posts');
+    expect(posts).toContain("'LinkedIn-Version': LINKEDIN_API_VERSION");
+    expect(posts).toContain("'X-Restli-Protocol-Version': LINKEDIN_RESTLI_PROTOCOL");
+    expect(posts).toContain('allowLegacyEnv: false');
+    expect(posts).toContain('linkedinPublishingEnabled');
+    expect(posts).toContain('LINKEDIN_PUBLISH_DISABLED_MESSAGE');
+    expect(helper).toContain("export const LINKEDIN_PUBLISH_FLAG = 'SOCIAL_PUBLISHER_LINKEDIN_ENABLED'");
+    expect(helper).toContain("return flag === 'on'");
+    expect(posts).toContain("response.headers.get('x-restli-id')");
+    expect(codeWithoutComments(posts)).not.toContain('ugcPosts');
+    expect(codeWithoutComments(posts)).not.toContain('/rest/images');
   });
 
-  it('loggt den Legacy-Fallback ohne Tokenwert', () => {
-    expect(worker).toContain('social_publisher_legacy_env_token');
-    expect(worker).toContain("resolved.source === 'legacy_env'");
-    for (const line of worker.split('\n')) {
+  it('loggt keinen Tokenwert', () => {
+    const posts = readFileSync('supabase/functions/_shared/linkedinPosts.ts', 'utf8');
+    for (const line of `${worker}\n${posts}`.split('\n')) {
       if (!/console\.(log|warn|error)/.test(line)) continue;
       expect(line).not.toContain('accessToken');
       expect(line).not.toContain('credentials_enc');

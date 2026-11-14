@@ -61,7 +61,8 @@ COMMENT ON TABLE public.social_channel_connections IS
     'Zugangsdaten nur in credentials_enc (secretBox); Clients sehen Metadaten.';
 
 COMMENT ON COLUMN public.social_channel_connections.channel IS
-    'Provider (linkedin, instagram, facebook, tiktok, x). Nicht der '
+    'Provider (linkedin, instagram, tiktok, x). facebook ist in Entwicklung '
+    'und hat keinen Queue-Kanal; der Versand ist nicht verfuegbar. Nicht der '
     'Queue-Kanal linkedin.enterprise / linkedin.legal.';
 
 COMMENT ON COLUMN public.social_channel_connections.credentials_enc IS

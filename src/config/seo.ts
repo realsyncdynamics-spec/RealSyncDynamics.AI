@@ -1486,8 +1486,24 @@ export const FLOW_SEO: SEOConfig = { ...DEFAULT_SEO, noIndex: true };
  * Die Namespace-Prüfung steht vor dem Lookup, damit kein späterer
  * Einzeleintrag sie still aushebelt.
  */
+const APP_SHELL_PREVIEW_SEO: SEOConfig = {
+  title: 'App-Hülle (Fixture-Vorschau) | RealSync Dynamics AI',
+  description:
+    'Interne Vorschau der App-Hülle mit Fixture-Mandanten. Keine Kundendaten und kein Zugang zu echten Arbeitsbereichen.',
+  canonical: `${SITE_URL}/design/app-shell`,
+  noIndex: true,
+};
+
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   if (isFlowPath(path)) return FLOW_SEO;
+  if (
+    path === '/design/app-shell'
+    || path.startsWith('/design/app-shell/')
+    || path === '/app/preview'
+    || path.startsWith('/app/preview/')
+  ) {
+    return APP_SHELL_PREVIEW_SEO;
+  }
   return SEO_CONFIG[path] ?? DEFAULT_SEO;
 }

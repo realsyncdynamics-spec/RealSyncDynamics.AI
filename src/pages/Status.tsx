@@ -136,7 +136,7 @@ export function Status() {
 
       <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · Datenhaltung in der EU</div>
+          <div>© 2026 RealSync Dynamics · Made in Germany · Datenbank in der EU (Frankfurt)</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/security" className="hover:text-titanium-300">Security</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Processors</Link>

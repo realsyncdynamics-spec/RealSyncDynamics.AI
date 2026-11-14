@@ -439,6 +439,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                   <Link to={w.primary.href} data-website-cta={w.id} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>{w.primary.label}</Link>
                   <Link to={w.secondary.href} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>{w.secondary.label}</Link>
                 </div>
+                {"showcase" in w ? (<Link to={w.showcase.href} data-website-showcase={w.id} style={{ display: "inline-flex", alignItems: "center", gap: "8px", minHeight: "44px", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", letterSpacing: ".04em", color: "var(--rs-acc)", textDecoration: "underline", textUnderlineOffset: "4px" }}>{w.showcase.label} <span aria-hidden="true">→</span></Link>) : null}
               </article>
             </Fragment>))}
           </div>

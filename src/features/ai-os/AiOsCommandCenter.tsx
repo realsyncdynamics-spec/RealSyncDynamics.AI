@@ -8,7 +8,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  Activity, BookOpen, Bot, CalendarClock, Coins, GitPullRequest, LayoutDashboard, Moon, ShieldCheck, Sun, Wrench,
+  Activity, BookOpen, Bot, CalendarClock, Coins, GitPullRequest, Image, LayoutDashboard, Moon, ShieldCheck, Sun, Wrench,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -22,6 +22,7 @@ import { KnowledgeCenterSection } from './sections/KnowledgeCenterSection';
 import { DevOpsSection } from './sections/DevOpsSection';
 import { CostsSection } from './sections/CostsSection';
 import { SecurityAuditSection } from './sections/SecurityAuditSection';
+import { XaiIntegrationSection } from './sections/XaiIntegrationSection';
 import './ai-os.css';
 
 export interface AiOsSession {
@@ -39,6 +40,7 @@ export const AI_OS_SECTIONS = [
   { slug: 'wissen', label: 'Wissen', icon: BookOpen },
   { slug: 'entwicklung', label: 'Entwicklung & CI', icon: GitPullRequest },
   { slug: 'kosten', label: 'KI-Nutzung & Kosten', icon: Coins },
+  { slug: 'xai', label: 'Grok & Imagine', icon: Image },
   { slug: 'sicherheit', label: 'Sicherheit & Prüfpfad', icon: ShieldCheck },
 ] as const;
 
@@ -158,6 +160,7 @@ function Shell({ session }: { session: AiOsSession }) {
         {active === 'wissen' && <KnowledgeCenterSection session={session} />}
         {active === 'entwicklung' && <DevOpsSection />}
         {active === 'kosten' && <CostsSection />}
+        {active === 'xai' && <XaiIntegrationSection />}
         {active === 'sicherheit' && <SecurityAuditSection session={session} />}
       </main>
     </div>

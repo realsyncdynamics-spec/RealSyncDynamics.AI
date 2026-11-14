@@ -25,6 +25,18 @@ für PostgREST/Admin genutzt werden — nie als Inbound-Credential.
 | `website-rescan-daily` | `email-auth-rescan` | `cron_website_rescan_key` | `CRON_WEBSITE_RESCAN_KEY` |
 | `audit-monitor-daily` | `audit-monitor-cron` | `cron_audit_monitor_key` | `CRON_AUDIT_MONITOR_KEY` |
 | `bot-voice-enforcer` (jede Minute) | `bot-voice-enforcer` | `cron_bot_voice_enforcer_key` | `CRON_BOT_VOICE_ENFORCER_KEY` |
+| `daily-digest` | `daily-digest` | `cron_daily_digest_key` | `CRON_DAILY_DIGEST_KEY` |
+| `audit-recheck-daily` | `audit-recheck-weekly` | `cron_audit_recheck_key` | `CRON_AUDIT_RECHECK_KEY` |
+| `audit-email-drip-daily` | `audit-drip-cron` | `cron_audit_drip_key` | `CRON_AUDIT_DRIP_KEY` |
+| `sub-processor-notify-daily` | `sub-processor-notify` | `cron_sub_processor_notify_key` | `CRON_SUB_PROCESSOR_NOTIFY_KEY` |
+| `governance-deadline-monitor-daily` | `governance-deadline-monitor` | `cron_governance_deadline_key` | `CRON_GOVERNANCE_DEADLINE_KEY` |
+| `governance-score-calculator-hourly` | `governance-score-calculator` | `cron_governance_score_key` | `CRON_GOVERNANCE_SCORE_KEY` |
+| DB-Trigger `trigger_trial_webhook()` auf `stripe_trial_events` | `automation-trigger-trial-webhook` | `cron_trial_webhook_key` | `CRON_TRIAL_WEBHOOK_KEY` (optional, Vault-Fallback) |
+
+Function Secret optional: `_shared/cronKey.ts` (`resolveCronKey`/`requireCronKey`)
+liest zuerst das Function Secret und fällt sonst auf denselben Vault-Eintrag
+zurück (`public.get_app_secret`). Ein fehlendes Function Secret ist damit kein
+Ausfall mehr, solange der Vault-Eintrag existiert.
 
 `verify_jwt = false` bleibt (Drift-Guard). Ohne passenden Cron-Bearer bleibt die
 Function nicht öffentlich aufrufbar.
@@ -115,6 +127,19 @@ Fail-closed: Vault fehlt → Lauf `failed` ohne HTTP-Request; Secret fehlt →
 Evidence-Fehler → Antwort `ok:false` (HTTP 500), kein Alert. Drift-Mails nutzen
 das vorhandene `RESEND_API_KEY`; fehlt es, steht `alert: not_configured` im Ergebnis.
 
+### Sechs weitere Jobs weg von `service_role_key` (2026-11-01)
+
+Migration `20261101090000_cron_dedicated_keys_six_jobs.sql`. Reihenfolge:
+Vault-Einträge `cron_governance_deadline_key` und `cron_governance_score_key`
+anlegen (die vier übrigen existieren seit 2026-10-04) → Functions deployen
+(`governance-deadline-monitor`/`-score-calculator` jetzt `verify_jwt = false`)
+→ Migration anwenden → je Function einen Probeaufruf mit Cron-Bearer.
+Zwischen Deploy und Migration antworten die Functions auf den alten
+`service_role_key`-Bearer mit 401 — Fenster kurz halten und nicht in
+07:00–09:00 UTC (Digest/Recheck/Drip/Sub-Processor) legen. Danach nutzt kein Job
+mehr Vault `service_role_key`; ob der Eintrag gelöscht wird, ist eine eigene
+Entscheidung.
+
 ## Prüfen, dass es gewirkt hat
 
 Der nächste Lauf kommt binnen 15 Minuten (`scan-scheduler-dispatch`).
@@ -135,6 +160,16 @@ limit 8;
 Erwartung: `status = 'succeeded'`, `return_message = '1 row'`.
 
 **Nicht an `cron.job` prüfen, sondern an `cron.job_run_details.status`.**
+
+`succeeded` heißt nur: der Request wurde abgeschickt (pg_net ist asynchron).
+Ob die Function geantwortet hat, steht in `net._http_response` (hält ~6 h):
+
+```sql
+select d.function_name, r.status_code, count(*), max(r.created)
+from public.cron_dispatch_requests d
+join net._http_response r on r.id = d.request_id
+group by 1, 2 order by 1, 2;
+```
 
 ## Wer meldet das künftig
 

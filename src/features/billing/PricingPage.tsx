@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
@@ -351,7 +352,7 @@ export function PricingPage() {
               },
               {
                 q: 'Was unterscheidet Agency von Growth?',
-                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit Risk Register und geplantem täglichem Monitoring (Coming Soon). Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO (Coming Soon) und vertraglichem SLA läuft über Enterprise (/contact-sales).',
+                a: 'Agency richtet sich an Agenturen und Dienstleister: bis zu 10 Domains, White-Label-Berichte, Scheduler, Bulk Jobs und REST-API. Growth bleibt der Ein-Mandanten-Plan mit Risk Register und geplantem täglichem Monitoring (Coming Soon). Agency startet self-service über Stripe Checkout (699 €/Monat). Multi-Org mit SSO (Preview, auf Anfrage) und vertraglichem SLA läuft über Enterprise (/contact-sales).',
               },
               {
                 q: 'Was bedeutet "Priority Support" im Agency-Paket?',
@@ -518,7 +519,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       ? t('pricingBetaPriceNote', { until: betaEndsLabel(lang) })
       : showYearly
       ? t('perYear')
-      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
+      : showsNetPriceLabel(tier.plan) ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;

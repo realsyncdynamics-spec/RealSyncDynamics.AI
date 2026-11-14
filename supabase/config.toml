@@ -28,7 +28,7 @@ enabled = true
 [studio]
 enabled = false
 
-[inbucket]
+[local_smtp]
 enabled = false
 
 [storage]
@@ -249,6 +249,14 @@ verify_jwt = false
 verify_jwt = false
 
 # ── Cron-triggered (pg_cron / GitHub Actions) ──
+# Seit 2026-11-01 pruefen daily-digest, audit-drip-cron, audit-recheck-weekly
+# und sub-processor-notify einen dedizierten Cron-Key statt des
+# service_role-Bearers (_shared/cronKey.ts requireCronKey, fail-closed:
+# ohne Key 500 CRON_KEY_MISSING, falscher Bearer 401). Vault -> Function
+# Secret: cron_daily_digest_key -> CRON_DAILY_DIGEST_KEY,
+# cron_audit_drip_key -> CRON_AUDIT_DRIP_KEY,
+# cron_audit_recheck_key -> CRON_AUDIT_RECHECK_KEY,
+# cron_sub_processor_notify_key -> CRON_SUB_PROCESSOR_NOTIFY_KEY.
 [functions.daily-digest]
 verify_jwt = false
 
@@ -283,6 +291,24 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.memory-decay-worker]
+verify_jwt = false
+
+# governance-deadline-monitor (pg_cron 'governance-deadline-monitor-daily',
+# 02:00 UTC) und governance-score-calculator ('governance-score-calculator-
+# hourly', :15). Bis 2026-11-01 JWT-Pflicht am Gateway + requireServiceRole: der
+# Cron-Bearer ist kein JWT, das Gateway antwortete 401
+# UNAUTHORIZED_INVALID_JWT_FORMAT, bevor die Function lief. Jetzt dedizierter
+# Cron-Key (requireCronKey): Vault cron_governance_deadline_key ->
+# CRON_GOVERNANCE_DEADLINE_KEY, cron_governance_score_key ->
+# CRON_GOVERNANCE_SCORE_KEY. service_role JWT ist kein Inbound-Credential.
+[functions.governance-deadline-monitor]
+verify_jwt = false
+
+[functions.governance-score-calculator]
+verify_jwt = false
+
+# DB-Trigger trigger_trial_webhook → eigener Key cron_trial_webhook_key (requireCronKey).
+[functions.automation-trigger-trial-webhook]
 verify_jwt = false
 
 # email-auth-rescan: pg_cron 'website-rescan-daily' (03:30 UTC), taeglicher

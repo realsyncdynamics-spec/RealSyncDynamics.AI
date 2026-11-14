@@ -34,28 +34,28 @@ export const SHELL_NAV_GROUPS: readonly ShellNavGroupDef[] = [
     id: 'discover',
     labelKey: 'shellGroupDiscover',
     shell: ['systems', 'classify'],
-    modules: ['websites', 'ambient-ai', 'vendors', 'vendor-exposure', 'local-ai'],
+    modules: ['websites', 'scans', 'ambient-ai', 'vendors', 'vendor-exposure', 'connectors', 'local-ai'],
   },
   {
     id: 'assess',
     labelKey: 'shellGroupAssess',
     shell: [],
-    modules: ['risks', 'dpia', 'monitoring', 'security-signals', 'alerts'],
+    modules: ['risks', 'risk-inventory', 'incidents', 'dsr', 'dpia', 'analytics', 'monitoring', 'security-signals', 'alerts'],
   },
   {
     id: 'enforce',
     labelKey: 'shellGroupEnforce',
     shell: ['enforce'],
-    modules: ['policy-packs', 'remediation', 'actions', 'workflows', 'automations', 'scheduler', 'bulk', 'governance-router'],
+    modules: ['policy-packs', 'approvals', 'gates', 'mappings', 'remediation', 'actions', 'workflows', 'automations', 'webhooks', 'scheduler', 'bulk', 'governance-router'],
   },
   {
     id: 'prove',
     labelKey: 'shellGroupProve',
     shell: ['evidence', 'reports', 'voice'],
-    modules: ['evidence-vault', 'provenance', 'audit', 'documents'],
+    modules: ['evidence-vault', 'evidence-integrity', 'provenance', 'audit', 'documents'],
   },
   { id: 'agents', labelKey: 'shellGroupAgents', shell: [], modules: ['agents', 'bots', 'kodee', 'marketplace'] },
-  { id: 'admin', labelKey: 'shellGroupAdmin', shell: ['billing'], modules: ['team', 'settings'] },
+  { id: 'admin', labelKey: 'shellGroupAdmin', shell: ['billing'], modules: ['team', 'keys', 'costs', 'settings'] },
 ];
 
 export const OTHER_GROUP: ShellNavGroupDef = { id: 'other', labelKey: 'shellGroupOther', shell: [], modules: [] };

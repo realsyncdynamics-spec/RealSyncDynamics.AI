@@ -73,8 +73,7 @@ const QUESTIONS: Question[] = [
 /** Vertragspunkte: gehen in die Anfrage ein, tragen aber bewusst keinen Preis. */
 const CONTRACT_ITEMS = [
   { id: 'domains', label: 'Mehr als 25 Domains' },
-  { id: 'onprem', label: 'On-Premise- oder eigener EU-VPS-Betrieb' },
-  { id: 'sso', label: 'SSO / SCIM gegen Ihr Verzeichnis' },
+  { id: 'sso', label: 'Single Sign-On (Preview, auf Anfrage)' },
   { id: 'sla', label: 'SLA mit garantierter Reaktionszeit' },
 ];
 

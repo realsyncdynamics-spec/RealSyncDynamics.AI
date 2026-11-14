@@ -19,12 +19,24 @@ import {
   type BriefContext,
   type BriefPayload,
 } from './governanceBrief.ts';
+import {
+  getAgentContract, validateAgentContract,
+} from '../acs-runtime-integration.ts';
+import {
+  publishAgentStarted, publishAgentIteration, publishAgentCompleted, publishAgentFailed,
+  generateTraceId, generateSpanId,
+} from '../ess-event-publisher.ts';
+import {
+  checkExecutionQuota, recordExecutionCost, updateExecutionState, estimateExecutionCost,
+} from '../rcs-execution-manager.ts';
 
 const AGENT = 'hermes';
 const GENERATED_BY = 'hermes-governance-agent';
+const AGENT_ID = 'hermes-governance-brief';
 
 export interface BriefResult {
   id: string;
+  trace_id?: string;
   skipped?: 'exists' | 'quota';
 }
 
@@ -32,8 +44,50 @@ export async function generateGovernanceBriefForTenant(
   admin: SupabaseClient,
   tenantId: string,
   now: Date,
+  parentTraceId?: string,
 ): Promise<BriefResult | null> {
   const briefDate = now.toISOString().slice(0, 10);
+
+  // Load ACS contract
+  const contract = await getAgentContract(admin, AGENT_ID);
+  if (!contract) {
+    console.error(`ACS contract not found for ${AGENT_ID}`);
+    return null;
+  }
+
+  // Initialize trace
+  const traceId = parentTraceId || generateTraceId();
+  const briefSpan = generateSpanId();
+
+  // Create runtime_executions record
+  const { data: execution, error: execErr } = await admin
+    .from('runtime_executions')
+    .insert({
+      agent_id: AGENT_ID,
+      tenant_id: tenantId,
+      status: 'pending',
+      agent_contract_version: contract.version,
+      trace_id: traceId,
+    })
+    .select('id')
+    .single();
+
+  if (execErr) {
+    console.error(`Failed to create execution: ${execErr.message}`);
+    return null;
+  }
+
+  const executionId = (execution as unknown as { id: string }).id;
+
+  // Publish agent.started
+  await publishAgentStarted(admin, {
+    agentId: AGENT_ID,
+    tenantId,
+    traceId,
+    spanId: briefSpan,
+    sourceFunction: 'agent-os-runner',
+    userId: null,
+  });
 
   // 1. Idempotenz: existiert heute bereits ein Brief mit Narrativ? → Skip (kein LLM-Call).
   const existing = await admin
@@ -44,65 +98,132 @@ export async function generateGovernanceBriefForTenant(
     .limit(1);
   const existingRow = existing.data?.[0] as { id: string; narrative_de: string | null } | undefined;
   if (existingRow && existingRow.narrative_de) {
-    return { id: existingRow.id, skipped: 'exists' };
+    return { id: existingRow.id, trace_id: traceId, skipped: 'exists' };
   }
 
   // 2. Quota respektieren (1 LLM-Aufruf/Tag/Tenant).
   const quota = await checkTenantQuota(admin as unknown as AdminLike, tenantId);
   if (!quota.allowed) return null;
 
+  const startedAt = Date.now();
+  let outcome: 'success' | 'error' = 'success';
+  let errorMessage: string | null = null;
+  let briefTokens = { input: 0, output: 0 };
+
   // 3. Kontext sammeln.
   const ctx = await gatherContext(admin, tenantId, briefDate);
 
   // 4. LLM über ai-gateway.
   const { system, user } = buildBriefPrompt(ctx);
-  const { payload, provider, model, usage } = await callGateway(tenantId, system, user);
 
-  // 5. Upsert (idempotent über UNIQUE(tenant_id, brief_date)).
-  const { data: upserted, error: upErr } = await admin
-    .from('hermes_daily_briefs')
-    .upsert(
-      {
-        tenant_id: tenantId,
-        brief_date: briefDate,
-        narrative_de: payload.narrative_de,
-        top_3_risks: payload.top_3_risks,
-        recommended_actions_today: payload.recommended_actions_today,
-        generated_by: GENERATED_BY,
-      },
-      { onConflict: 'tenant_id,brief_date' },
-    )
-    .select('id')
-    .single();
-  if (upErr) throw new Error(`brief upsert: ${upErr.message}`);
-  const briefId = (upserted as { id: string }).id;
-
-  // 6. Substrat-Audit (wie der Sentinel: append-only agent_events).
-  await admin.from('agent_events').insert({
-    tenant_id: tenantId,
-    event_type: 'brief.created',
-    subject_type: 'brief',
-    subject_id: briefId,
-    agent: AGENT,
-    payload: { brief_date: briefDate, provider, model, risks: payload.top_3_risks.length },
+  const turnSpan = generateSpanId();
+  await publishAgentIteration(admin, {
+    agentId: AGENT_ID,
+    tenantId,
+    traceId,
+    spanId: turnSpan,
+    userId: null,
+    iteration: 0,
+    message: 'Generating governance brief',
   });
 
-  // 7. LLM-Verlauf (best-effort; zählt gegen das Monatslimit).
-  await recordChatHistory(admin as unknown as AdminLike, {
-    tenant_id: tenantId,
-    user_id: null,
-    session_id: null,
-    op: 'chat',
-    provider,
-    model,
-    query_text: system.slice(0, 4000),
-    response_summary: payload.narrative_de.slice(0, 280),
-    input_tokens: usage.input_tokens ?? null,
-    output_tokens: usage.output_tokens ?? null,
-    correlation_id: briefId,
-  });
+  try {
+    const { payload, provider, model, usage } = await callGateway(tenantId, system, user);
+    briefTokens.input = usage.input_tokens ?? 0;
+    briefTokens.output = usage.output_tokens ?? 0;
 
-  return { id: briefId };
+    // 5. Upsert (idempotent über UNIQUE(tenant_id, brief_date)).
+    const { data: upserted, error: upErr } = await admin
+      .from('hermes_daily_briefs')
+      .upsert(
+        {
+          tenant_id: tenantId,
+          brief_date: briefDate,
+          narrative_de: payload.narrative_de,
+          top_3_risks: payload.top_3_risks,
+          recommended_actions_today: payload.recommended_actions_today,
+          generated_by: GENERATED_BY,
+        },
+        { onConflict: 'tenant_id,brief_date' },
+      )
+      .select('id')
+      .single();
+    if (upErr) throw new Error(`brief upsert: ${upErr.message}`);
+    const briefId = (upserted as { id: string }).id;
+
+    // 6. Substrat-Audit (wie der Sentinel: append-only agent_events).
+    await admin.from('agent_events').insert({
+      tenant_id: tenantId,
+      event_type: 'brief.created',
+      subject_type: 'brief',
+      subject_id: briefId,
+      agent: AGENT,
+      payload: { brief_date: briefDate, provider, model, risks: payload.top_3_risks.length },
+    });
+
+    // 7. LLM-Verlauf (best-effort; zählt gegen das Monatslimit).
+    await recordChatHistory(admin as unknown as AdminLike, {
+      tenant_id: tenantId,
+      user_id: null,
+      session_id: null,
+      op: 'chat',
+      provider,
+      model,
+      query_text: system.slice(0, 4000),
+      response_summary: payload.narrative_de.slice(0, 280),
+      input_tokens: usage.input_tokens ?? null,
+      output_tokens: usage.output_tokens ?? null,
+      correlation_id: briefId,
+    });
+
+    // Update execution state to completed
+    const totalCost = estimateExecutionCost('claude-sonnet-4-6', briefTokens.input, briefTokens.output);
+    await recordExecutionCost(admin, executionId, tenantId, briefTokens.input, briefTokens.output, totalCost);
+    await updateExecutionState(admin, executionId, 'completed', {
+      tokens_input_tracked: briefTokens.input,
+      tokens_output_tracked: briefTokens.output,
+      estimated_cost_usd: totalCost,
+    });
+
+    // Publish agent.completed
+    await publishAgentCompleted(admin, {
+      agentId: AGENT_ID,
+      tenantId,
+      traceId,
+      spanId: briefSpan,
+      userId: null,
+      tokensInput: briefTokens.input,
+      tokensOutput: briefTokens.output,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return { id: briefId, trace_id: traceId };
+  } catch (e) {
+    outcome = 'error';
+    errorMessage = (e as Error).message;
+
+    // Update execution state to failed
+    const partialCost = estimateExecutionCost('claude-sonnet-4-6', briefTokens.input, briefTokens.output);
+    await recordExecutionCost(admin, executionId, tenantId, briefTokens.input, briefTokens.output, partialCost);
+    await updateExecutionState(admin, executionId, 'failed', {
+      error_message: errorMessage,
+      error_retriable: true,
+      error_retry_count: 0,
+    });
+
+    // Publish agent.failed
+    await publishAgentFailed(admin, {
+      agentId: AGENT_ID,
+      tenantId,
+      traceId,
+      spanId: briefSpan,
+      userId: null,
+      error: errorMessage,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return null;
+  }
 }
 
 async function gatherContext(admin: SupabaseClient, tenantId: string, briefDate: string): Promise<BriefContext> {

@@ -32,3 +32,24 @@ export function isGovernanceAiEnabled(): boolean {
   if (raw === 'false') return false;
   return GOVERNANCE_AI_DEFAULT;
 }
+
+/**
+ * creative_studio_editor — Social-Design-Editor (`/app/creative-studio`).
+ * Standard: AUS. Einschalten nur mit `VITE_CREATIVE_STUDIO_EDITOR_ENABLED=true`.
+ *
+ * In `ENTITLEMENT_KEYS` gibt es keinen Key für diesen Editor. Die Fläche
+ * hängt deshalb nur an diesem Flag. Solange Mandanten-Entitlements laden,
+ * bleibt sie zusätzlich zu (fail-closed), siehe `creativeStudioGate`.
+ */
+export const CREATIVE_STUDIO_EDITOR_FLAG = 'creative_studio_editor' as const;
+
+export const CREATIVE_STUDIO_EDITOR_DEFAULT = false;
+
+export const CREATIVE_STUDIO_PATH = '/app/creative-studio';
+
+export function isCreativeStudioEditorEnabled(): boolean {
+  const raw = import.meta.env?.VITE_CREATIVE_STUDIO_EDITOR_ENABLED;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return CREATIVE_STUDIO_EDITOR_DEFAULT;
+}

@@ -25,6 +25,7 @@ import * as Icons from 'lucide-react';
 import { planByKey, planGrants, type EntitlementKey } from '@/shared/pricing';
 import { cheapestPlanForKeys } from '../market/moduleCatalog';
 import { useEntitlements } from '../../core/billing/useEntitlements';
+import { CREATIVE_STUDIO_MODULE_ID, isCreativeStudioVisible } from '../creative-studio/access';
 
 function icon(name: string): Icons.LucideIcon {
   return (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Circle;
@@ -121,6 +122,21 @@ export const HUB_SECTIONS: HubSection[] = [
         description: 'Domains, Scans und Findings je Website.',
         requires: ['website.scan'],
         openLabel: 'Verwalten',
+      },
+    ],
+  },
+  {
+    id: 'creative',
+    label: 'Creative',
+    entries: [
+      {
+        id: 'creative-studio',
+        label: 'Creative Studio',
+        icon: 'Palette',
+        route: '/app/creative-studio',
+        description: 'Social-Design-Editor mit Formaten, Ebenen und Brand-Kit. KI, Publishing und Kalender sind Platzhalter.',
+        requires: [],
+        openLabel: 'Öffnen',
       },
     ],
   },
@@ -237,6 +253,13 @@ function EntryRow({ entry, planId, loading }: { entry: HubEntry; planId: string;
 export function ModulesHubView() {
   const { tier, loading } = useEntitlements();
   const planName = planByKey(tier)?.name ?? 'Free Audit';
+  const studioVisible = isCreativeStudioVisible(loading);
+  const sections = HUB_SECTIONS
+    .map((section) => ({
+      ...section,
+      entries: section.entries.filter((entry) => entry.id !== CREATIVE_STUDIO_MODULE_ID || studioVisible),
+    }))
+    .filter((section) => section.entries.length > 0);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-6">
@@ -252,7 +275,7 @@ export function ModulesHubView() {
         </span>
       </div>
 
-      {HUB_SECTIONS.map((section) => (
+      {sections.map((section) => (
         <section key={section.id} aria-label={section.label}>
           <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">
             {section.label}

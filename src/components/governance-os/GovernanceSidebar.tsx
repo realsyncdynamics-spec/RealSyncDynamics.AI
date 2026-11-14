@@ -7,10 +7,11 @@ import {
   ClipboardCheck, ClipboardList, LayoutDashboard, ShieldAlert, ShieldCheck,
   MessagesSquare, Zap, Server, Layers, CalendarClock, Archive, Library,
   Share2, Sparkles, Scale, Shield, BadgeCheck, FileSearch, GitBranch,
-  ListChecks, MessageSquare, Store, Terminal, Mic, ChevronDown,
+  ListChecks, MessageSquare, Store, Terminal, Mic, Palette, ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES } from './governanceModules';
+import { CREATIVE_STUDIO_MODULE_ID, isCreativeStudioVisible } from '../../features/creative-studio/access';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import type { NavLock } from './navAccess';
 import { navLockTitle, useNavLock } from './useNavLock';
@@ -56,7 +57,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard,
   ShieldAlert, ShieldCheck, MessagesSquare, Zap, Server, Layers,
   CalendarClock, Archive, Library, Share2, Sparkles, Scale, BadgeCheck,
-  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal, Mic,
+  FileSearch, GitBranch, ListChecks, MessageSquare, Store, Terminal, Mic, Palette,
 };
 
 const NAV_ICONS: Record<ShellNavId, LucideIcon> = {
@@ -115,13 +116,16 @@ export function GovernanceSidebar() {
   const { pathname, hash } = useLocation();
   const { plan, loading: planLoading } = useActivePlan();
   const lockFor = useNavLock();
-  const { tenants, activeTenantId } = useTenant();
+  const { tenants, activeTenantId, loading: entitlementsLoading } = useTenant();
   const { t, lang } = useLang();
   const counts = useShellCounts();
   const active = activeShellNav(pathname);
   const rawTenantName = tenants.find((x) => x.tenantId === activeTenantId)?.name ?? null;
   const tenantName = rawTenantName === null ? null : tenantDisplayName(rawTenantName, lang);
-  const moreModules = TAB_MODULES.filter((m) => !SHELL_NAV_ROUTES.has(m.route));
+  const studioVisible = isCreativeStudioVisible(entitlementsLoading);
+  const moreModules = TAB_MODULES.filter(
+    (m) => !SHELL_NAV_ROUTES.has(m.route) && (m.id !== CREATIVE_STUDIO_MODULE_ID || studioVisible),
+  );
   const groups = groupShellNav(SHELL_NAV, moreModules);
   // Offen: „Start" und die Gruppe der aktuellen Seite. Wechselt die Seite in
   // eine zugeklappte Gruppe, klappt diese auf; andere bleiben, wie der Nutzer

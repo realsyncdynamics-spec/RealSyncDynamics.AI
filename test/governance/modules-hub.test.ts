@@ -39,8 +39,8 @@ describe('Modul-Hub Navigation', () => {
 });
 
 describe('Modul-Hub Struktur', () => {
-  it('hat die drei Gruppen der Capability-Skizze', () => {
-    expect(HUB_SECTIONS.map((s) => s.id)).toEqual(['ai-automation', 'website', 'governance']);
+  it('hat die Gruppen der Capability-Skizze plus Creative Studio', () => {
+    expect(HUB_SECTIONS.map((s) => s.id)).toEqual(['ai-automation', 'website', 'creative', 'governance']);
   });
 
   it('jeder Eintrag hat eine eindeutige ID und eine Route', () => {

@@ -4,7 +4,8 @@
  * Beta modules stay navigable and are labeled Beta.
  */
 import { GOVERNANCE_MODULES } from './governanceModules';
-import { GOVERNANCE_AI_PATH, isGovernanceAiEnabled } from '../../config/featureFlags';
+import { GOVERNANCE_AI_PATH, CREATIVE_STUDIO_PATH, isGovernanceAiEnabled } from '../../config/featureFlags';
+import { isCreativeStudioVisible } from '../../features/creative-studio/access';
 import type { ModuleStatus } from './governanceBrowserTypes';
 
 export type CommandState = 'ready' | 'preview' | 'coming_soon';
@@ -146,12 +147,20 @@ function moduleToCommand(mod: (typeof GOVERNANCE_MODULES)[number]): CommandDefin
   };
 }
 
-/** Stable catalog used by the Command Center UI and unit tests. */
-export function buildCommandCatalog(): CommandDefinition[] {
+/**
+ * Stable catalog used by the Command Center UI and unit tests.
+ * `entitlementsLoading` default true: der Creative-Studio-Eintrag bleibt
+ * zu, bis der Aufrufer sagt, dass die Entitlements geladen sind.
+ */
+export function buildCommandCatalog(options?: { entitlementsLoading?: boolean }): CommandDefinition[] {
   const fromModules = GOVERNANCE_MODULES.map(moduleToCommand);
   const all = [...ACTION_COMMANDS, ...EXTRA_NAV_COMMANDS, ...fromModules];
-  // Governance AI ist vorübergehend verborgen (src/config/featureFlags.ts).
-  return isGovernanceAiEnabled() ? all : all.filter((c) => c.path !== GOVERNANCE_AI_PATH);
+  const studioVisible = isCreativeStudioVisible(options?.entitlementsLoading ?? true);
+  return all.filter((command) => {
+    if (!isGovernanceAiEnabled() && command.path === GOVERNANCE_AI_PATH) return false;
+    if (!studioVisible && (command.path === CREATIVE_STUDIO_PATH || command.id === 'mod-creative-studio')) return false;
+    return true;
+  });
 }
 
 function normalize(s: string): string {

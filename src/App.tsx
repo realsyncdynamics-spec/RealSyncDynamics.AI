@@ -30,6 +30,10 @@ const LandingV2 = lazy(() => import('./pages/LandingV2').then((m) => ({ default:
 const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default: m.LandingV4 })));
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
+const ProductPortal = lazy(() => import('./pages/ProductPortal').then((m) => ({ default: m.ProductPortal })));
+const BuildStudioProductPage = lazy(() => import('./pages/products/ProductPage').then((m) => ({ default: m.BuildStudioProductPage })));
+const AgentStudioProductPage = lazy(() => import('./pages/products/ProductPage').then((m) => ({ default: m.AgentStudioProductPage })));
+const GovernanceOsProductPage = lazy(() => import('./pages/products/ProductPage').then((m) => ({ default: m.GovernanceOsProductPage })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
@@ -539,6 +543,15 @@ function RoutesWithTracking() {
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
       <Route path="/" element={<LandingV6 />} />
+      {/* 07.11.2026: Produktportal „BUILD. AUTOMATE. GOVERN.“ (Build Studio · Agent Studio ·
+          Governance OS) unter /produkte. `/` bleibt unverändert (Owner-Entscheidung 09.11.2026: v9, #2191). */}
+      <Route path="/produkte" element={<ProductPortal />} />
+      <Route path="/produkte/build-studio" element={<BuildStudioProductPage />} />
+      <Route path="/produkte/agent-studio" element={<AgentStudioProductPage />} />
+      <Route path="/produkte/governance-os" element={<GovernanceOsProductPage />} />
+      <Route path="/build-studio" element={<Navigate to="/produkte/build-studio" replace />} />
+      <Route path="/agent-studio" element={<Navigate to="/produkte/agent-studio" replace />} />
+      <Route path="/governance-os" element={<Navigate to="/produkte/governance-os" replace />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />

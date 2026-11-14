@@ -65,6 +65,25 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: false,
   },
   {
+    id: 'product-portal',
+    name: 'Produktportal',
+    status: 'live',
+    group: 'surface',
+    description:
+      'Produktportal /produkte „BUILD. AUTOMATE. GOVERN.“ mit drei Produkt-Einstiegen (Build Studio → /build, Agent Studio → /chatbot/start, Governance OS → /audit?source=portal-govern) und Produktseiten /produkte/build-studio, /produkte/agent-studio, /produkte/governance-os. Status je Funktion aus src/product/productSuite.ts (liest diese Registry, fail-closed); Freischaltungen aus PLAN_ENTITLEMENTS, Beträge nur auf /pricing. Die Startseite `/` bleibt unverändert. Die Seite selbst ist erreichbar; die meisten Build- und Agent-Funktionen bleiben Preview oder gesperrt.',
+    route: '/produkte',
+    evidence: [
+      'src/pages/ProductPortal.tsx',
+      'src/pages/products/ProductPage.tsx',
+      'src/product/productSuite.ts',
+      'src/components/portal/PortalChrome.tsx',
+      'src/styles/product-portal.css',
+      'test/landing/product-portal.test.tsx',
+      'test/product/product-suite.test.ts',
+    ],
+    showOnRoadmap: false,
+  },
+  {
     id: 'design-landing-ledger',
     name: 'Evidence Ledger Landing (Design)',
     status: 'preview',

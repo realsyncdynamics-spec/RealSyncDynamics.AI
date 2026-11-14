@@ -17,7 +17,7 @@ import type {
   SiteTheme,
 } from '../types.ts';
 import type { SiteBrief } from './brief.ts';
-import { getIndustryPreset } from './industries.ts';
+import { getIndustryPreset, getIndustryTheme } from './industries.ts';
 
 const EPOCH_ISO = new Date(0).toISOString();
 
@@ -89,7 +89,9 @@ export function synthesizeBlueprint(brief: SiteBrief, options: SynthesizeOptions
     name: brief.name,
     industry: brief.industry,
     locales: { default: brief.locale, supported: [brief.locale] },
-    theme: { ...DEFAULT_THEME, ...options.theme },
+    // Branchen-Startwert vor expliziten Optionen: Vorlagen und Aufrufer
+    // behalten das letzte Wort (siehe INDUSTRY_THEMES).
+    theme: { ...DEFAULT_THEME, ...getIndustryTheme(brief.industry), ...options.theme },
     pages,
     seo: {
       siteName: brief.name,

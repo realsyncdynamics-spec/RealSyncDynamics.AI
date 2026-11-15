@@ -311,6 +311,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  '/design/startseite-v3': {
+    title: 'RealSync Dynamics AI – Startseite v3 (Vorschau)',
+    description:
+      'Design-Vorschau „Ihre Ideen. In Bewegung.“ (hell, Claude Design). Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/landing-v7': {
     title: 'RealSync Dynamics AI – Landing v7 (Vorschau)',
     description:

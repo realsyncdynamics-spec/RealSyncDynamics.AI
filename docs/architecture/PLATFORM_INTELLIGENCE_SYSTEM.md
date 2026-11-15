@@ -160,7 +160,7 @@ Alle Agenten verwenden zentrale `src/config/agent-policies.ts`:
 - ✅ `.claude/agents/routing-quality-agent.md` — Routing Agent Spec
 - ✅ `.claude/agents/stripe-business-agent.md` — Stripe Agent Spec
 - ✅ `supabase/functions/platform-intelligence-orchestrator/index.ts` — Orchestrator Skeleton
-- ✅ `PLATFORM_INTELLIGENCE_SYSTEM.md` — System Documentation
+- ✅ `docs/architecture/PLATFORM_INTELLIGENCE_SYSTEM.md` — System Documentation
 
 **Commits:** 1 (9 files, 2,133 LOC)
 

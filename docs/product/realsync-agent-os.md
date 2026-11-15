@@ -72,6 +72,8 @@ Specialist Mesh
 - **Hostinger** = future worker runtime — **Spec only** in this PR.
 - **Chrome Side Panel** (Analyze Page, GDPR/AI Act, Evidence) — **Spec only /
   Coming Soon**. Keine Fake-Extension.
+- **Browser Guardian** (Regeln und Prompt-Entwurf für den Browser-Agenten) —
+  Entwurf, siehe `docs/product/browser-guardian.md`.
 
 ---
 

@@ -231,6 +231,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/changelog",
   "/chatbot/start",
   "/chatgpt-dsgvo",
+  "/check",
   "/checkout",
   "/checkout/:planKey",
   "/checkout/cancelled",

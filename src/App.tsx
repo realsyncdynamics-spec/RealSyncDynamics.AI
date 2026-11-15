@@ -35,6 +35,8 @@ const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default:
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
+// 15.11.2026: Bedarfs-Check (drei Fragen → Empfehlung aus Angaben, Speichern für angemeldete Nutzer).
+const NeedsCheckPage = lazy(() => import('./pages/product-entry-points/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
@@ -560,6 +562,7 @@ function RoutesWithTracking() {
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
+      <Route path="/check" element={<NeedsCheckPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />

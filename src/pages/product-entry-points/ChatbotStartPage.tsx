@@ -15,7 +15,7 @@ import { usePageMeta } from '../../lib/usePageMeta';
  */
 const STATIONS: Array<{ k: string; t: string; d: string }> = [
   { k: 'NACHRICHT', t: 'Frage kommt an', d: 'Eine Besucherin schreibt im Chat auf Ihrer Website.' },
-  { k: 'REGELN', t: 'Regelprüfung', d: 'Vor dem Speichern prüft die Plattform die Nachricht gegen Ihre Regeln. Eine Blockade beendet die Antwort.' },
+  { k: 'REGELN', t: 'Regelprüfung', d: 'Vor dem Speichern prüft die Plattform die Nachricht gegen Ihre Regeln. Im Standard läuft die Prüfung im Beobachtungsmodus und protokolliert nur; erst im Durchsetzungsmodus beendet eine Blockade die Antwort.' },
   { k: 'KONTINGENT', t: 'Kontingent', d: 'Jede Antwort zählt gegen das Nachrichten-Kontingent Ihres Pakets. Ein festes KI-Budget je Monat begrenzt die Kosten.' },
   { k: 'ANTWORT', t: 'Antwort', d: 'Der Bot antwortet im Ton und mit den Vorgaben, die Sie für ihn festlegen.' },
   { k: 'PROTOKOLL', t: 'Protokoll', d: 'Frage und Antwort werden in Ihrem Konto gespeichert und sind nachvollziehbar.' },
@@ -52,12 +52,12 @@ export function ChatbotStartPage() {
             02 · Bots · KI-Chat-Assistent
           </div>
           <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.03] max-w-4xl">
-            Antworten für Ihre Kunden. Mit Regeln, die vorher greifen.
+            Antworten für Ihre Kunden. Mit Regeln, die vorher prüfen.
           </h1>
           <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
             Der Chat-Assistent beantwortet Fragen auf Ihrer Website. Jede Nachricht wird gegen
-            Ihre Regeln geprüft, bevor sie gespeichert wird, und jede Antwort zählt gegen ein
-            festes Kontingent.
+            Ihre Regeln geprüft, bevor sie gespeichert wird – im Standard im Beobachtungsmodus –,
+            und jede Antwort zählt gegen ein festes Kontingent.
           </p>
 
           <CapabilityAvailabilityNotice capabilityId="bots" className="mt-8 max-w-3xl" />

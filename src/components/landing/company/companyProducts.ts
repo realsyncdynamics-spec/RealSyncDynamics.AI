@@ -104,7 +104,7 @@ export function companyProduct(id: CompanyProductId): CompanyProduct {
 }
 
 export interface VoiceAddonOffer {
-  /** Folgt dem Steuermodus: EXEMPT „150 €“, EU_STANDARD „150 € netto zzgl. 19 % USt (178,50 € brutto)“. */
+  /** Folgt dem Steuermodus (`formatNetVatGrossEur`): bei EXEMPT nur der Betrag, sonst Netto mit USt-Ausweis. */
   price: string;
   /** Zusatz aus der SSoT, z. B. „/ Monat zzgl. 0,25 € pro Minute“. */
   priceNote: string;

@@ -1535,6 +1535,11 @@ export const MODULE_PRICING_STATUS = 'provisional' as const;
  * Kalkulation, die für Telefonie noch aussteht — Minutenpreise und
  * STT/TTS-Kosten sind nicht gemessen. Wer sie angleicht, ohne gerechnet zu
  * haben, ersetzt eine benannte Abweichung durch eine verdeckte.
+ *
+ * Ein dritter Vorschlag ist bewusst **nicht** übernommen: Voice-Pakete zu
+ * 89 / 199 / 349 € aus dem Entwurf der Unternehmensseite `/unternehmen/`
+ * (Entscheidung des Eigentümers vom 2026-11-03). Er wird erst nach der
+ * Minutenkalkulation zusammen mit 150 € / 99 € entschieden, nicht davor.
  */
 export const MODULE_ADDON_PRICE_DIVERGENCE: BookableModuleId[] = ['voice_bot'];
 

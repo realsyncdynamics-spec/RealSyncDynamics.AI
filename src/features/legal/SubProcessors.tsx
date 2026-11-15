@@ -9,7 +9,11 @@ interface SubProcessor {
   data_categories: string[];
   region: string;
   dpa_url: string;
-  status: 'signed' | 'available' | 'pending';
+  /**
+   * `planned`: noch nicht im Einsatz, verarbeitet heute keine Daten. Steht
+   * vorab hier, damit die Liste vor dem Start vollständig ist (Art. 28 Abs. 2).
+   */
+  status: 'signed' | 'available' | 'pending' | 'planned';
 }
 
 const SUB_PROCESSORS: SubProcessor[] = [
@@ -101,6 +105,18 @@ const SUB_PROCESSORS: SubProcessor[] = [
     dpa_url: 'https://sentry.io/legal/dpa/',
     status: 'available',
   },
+  {
+    // Voice-Runtime (apps/agent-runtime, Grok-Realtime-Adapter). Voice ist
+    // `coming-soon` (implementation-status.ts): heute keine Verarbeitung.
+    // Rechtsträger vor dem Start gegen den Vertragskopf der DPA prüfen —
+    // xAI firmiert seit 2026 als SpaceXAI/SpaceXSI (Tochter von SpaceX).
+    name: 'SpaceXAI LLC (xAI, Grok)',
+    purpose: 'Geplant ab Start des Voice Agent: Sprachverarbeitung im Telefonat (Speech-to-Speech). Heute nicht im Einsatz.',
+    data_categories: ['Gesprächsaudio', 'Transkript', 'Gesprächskontext des Voice Agent'],
+    region: 'USA — Übermittlungsgrundlage (DPA, SCCs) wird vor dem Start geprüft',
+    dpa_url: 'https://x.ai/legal/data-processing-addendum',
+    status: 'planned',
+  },
 ];
 
 export function SubProcessors() {
@@ -127,7 +143,7 @@ export function SubProcessors() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-          Sub-Prozessoren: Supabase · Cloudflare · Anthropic · Google · OpenAI · Stripe · Hostinger · Resend · Sentry · GitHub
+          Sub-Prozessoren: Supabase · Cloudflare · Anthropic · Google · OpenAI · Stripe · Hostinger · Resend · Sentry · GitHub · geplant: xAI
         </div>
         <div className="prose prose-invert max-w-none text-titanium-300 text-sm leading-relaxed">
           <p>
@@ -179,6 +195,8 @@ export function SubProcessors() {
                     <div className="mt-1">
                       {p.status === 'signed'
                         ? <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><CheckCircle2 className="h-3 w-3" /> signed</span>
+                        : p.status === 'planned'
+                        ? <span className="inline-flex items-center gap-1 text-[10px] text-titanium-400"><AlertCircle className="h-3 w-3" /> geplant</span>
                         : <span className="inline-flex items-center gap-1 text-[10px] text-amber-400"><AlertCircle className="h-3 w-3" /> available</span>}
                     </div>
                   </td>

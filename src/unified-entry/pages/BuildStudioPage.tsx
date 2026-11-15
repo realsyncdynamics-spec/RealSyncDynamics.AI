@@ -401,7 +401,7 @@ export default function BuildStudioPage() {
         {previewUntilSsot && <SsotPendingBanner />}
         <div className="mx-auto max-w-3xl px-6 py-12">
           <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#e4cfa2]">
-            App Builder · Intent → Blueprint · {STATUS_LABEL.preview}
+            App Builder · Beschreibung → Seitenplan · {STATUS_LABEL.preview}
           </p>
           <h1
             className="font-display font-semibold text-titanium-50"
@@ -424,10 +424,10 @@ export default function BuildStudioPage() {
             </div>
           )}
           <p className="mt-4 text-sm text-titanium-400 leading-relaxed max-w-2xl">
-            Beschreiben Sie App oder Website auf Deutsch. siteos-core erzeugt
-            Blueprint und Vorschau lokal. Live-Orchestrierung (Planner/Coder)
-            und Veröffentlichung bleiben {STATUS_LABEL.preview} /{' '}
-            {STATUS_LABEL['coming-soon']} — keine Fake-Deploy-URL.
+            Beschreiben Sie Ihre App oder Website auf Deutsch. Daraus entstehen
+            ein Seitenplan und eine Vorschau, die Sie hier prüfen und anpassen.
+            Das Veröffentlichen unter eigener Adresse ist noch in Vorbereitung
+            ({STATUS_LABEL.preview}) — bis dahin gibt es keine öffentliche Adresse.
           </p>
 
           <form onSubmit={submitPrompt} className="mt-8 space-y-4">
@@ -506,7 +506,7 @@ export default function BuildStudioPage() {
               type="submit"
               className={`w-full px-6 py-3.5 text-sm font-semibold uppercase tracking-wider transition-colors ${OS_CREAM_BTN}`}
             >
-              {opensCode ? 'Code-Builder öffnen' : 'Blueprint erzeugen'}
+              {opensCode ? 'Code-Builder öffnen' : 'Entwurf erzeugen'}
             </button>
           </form>
 
@@ -553,7 +553,7 @@ export default function BuildStudioPage() {
           <div className="w-full max-w-md">
             <div className="mb-6 flex items-center gap-3">
               <Loader2 size={20} className="animate-spin text-[#e4cfa2]" />
-              <span className="font-semibold">Blueprint wird aufgebaut</span>
+              <span className="font-semibold">Entwurf wird aufgebaut</span>
             </div>
             <ul className="space-y-3">
               {STAGES.map((label, index) => (
@@ -571,7 +571,7 @@ export default function BuildStudioPage() {
               ))}
             </ul>
             <p className="mt-6 font-mono text-[10px] text-titanium-600">
-              Fortschritt ist UI-Status — keine Fake-Produktmetrik.
+              Die Schritte zeigen den Ablauf, keine gemessene Dauer.
             </p>
           </div>
         </div>
@@ -711,7 +711,7 @@ export default function BuildStudioPage() {
         <section className="min-w-0 p-3 sm:p-5 flex flex-col">
           <div className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-titanium-500">
             <LayoutTemplate size={12} className="text-[#e4cfa2]" />
-            Canvas · Blueprint-Vorschau · kein Live-Deploy
+            Vorschau Ihres Seitenplans · kein Live-Deploy
           </div>
           <div className="flex min-h-[70vh] flex-1 justify-center overflow-auto border border-titanium-800 bg-obsidian-900 p-3 sm:p-5">
             <div
@@ -800,8 +800,8 @@ function SsotPendingBanner() {
       className="border-b border-[#e4cfa2]/25 bg-[#e4cfa2]/5 px-4 py-2 text-center font-mono text-[10px] text-[#e4cfa2]"
       data-testid="builder-ssot-pending-banner"
     >
-      Plan-Freischaltung (siteos.builder / limit.sites) folgt dem Monetisierungs-PR — Studio läuft als{' '}
-      {STATUS_LABEL.preview}, kein bezahltes Entitlement vorgetäuscht.
+      Das Studio läuft als {STATUS_LABEL.preview}. Die Freischaltung über Ihr Paket
+      folgt — bis dahin wird kein bezahlter Zugang vorausgesetzt.
     </div>
   );
 }
@@ -1091,11 +1091,11 @@ function FrontendDesignerPane({
       )}
 
       <p className="mt-6 font-mono text-[10px] leading-4 text-titanium-600">
-        Veröffentlichung und Custom Domain: {STATUS_LABEL.preview}
+        Veröffentlichung und eigene Domain: {STATUS_LABEL.preview}
         {publishOk
-          ? ' — siteos.publish freigeschaltet, öffentliches Deploy bleibt Preview.'
-          : ' — siteos.publish fehlt; kein Fake-Deploy.'}{' '}
-        Kein erfolgreiches Deploy wird simuliert.
+          ? ' — in Ihrem Paket enthalten, das öffentliche Veröffentlichen folgt.'
+          : ' — in Ihrem Paket nicht enthalten.'}{' '}
+        Es wird keine erfolgreiche Veröffentlichung vorgetäuscht.
       </p>
     </div>
   );

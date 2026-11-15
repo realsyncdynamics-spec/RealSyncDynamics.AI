@@ -107,7 +107,7 @@ describe('/build entry by kind', () => {
   it('defaults to the website flow', async () => {
     renderAt('/build');
     expect(await screen.findByRole('button', { name: 'Website', pressed: true })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Blueprint erzeugen' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Entwurf erzeugen' })).toBeTruthy();
     expect(session.resumeBuild).toHaveBeenCalledTimes(1);
   });
 

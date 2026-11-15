@@ -51,10 +51,34 @@ export interface UXAnalysisResult {
   timestamp: string
 }
 
+export interface PageElement {
+  fg?: string
+  bg?: string
+  src?: string
+  alt?: string
+  type?: string
+  text?: string
+  ariaLabel?: string
+  level?: number
+  hasShape?: boolean
+  hasLabel?: boolean
+  tabIndex?: number
+  interactive?: boolean
+  location: string
+  label?: string
+  file?: string
+  line?: number
+}
+
 export interface UXCheckOptions {
   check_contrast?: boolean
   check_labels?: boolean
   check_accessibility?: boolean
   wcag_aa_required?: boolean
   color_contrast_ratio_min?: number
+  colors?: PageElement[]
+  buttons?: PageElement[]
+  images?: PageElement[]
+  headings?: PageElement[]
+  elements?: PageElement[]
 }

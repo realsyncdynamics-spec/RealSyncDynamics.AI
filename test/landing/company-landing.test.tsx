@@ -40,6 +40,9 @@ const mount = () =>
     </MemoryRouter>,
   );
 
+/** jest-dom normalisiert nur den DOM-Text; Intl-Währungen enthalten geschützte Leerzeichen. */
+const normWs = (t: string) => t.replace(/\s+/g, ' ');
+
 describe('Unternehmens-Landing v5 – Status aus der SSoT', () => {
   it('jede Tafel trägt den Status ihres implementation-status-Eintrags', () => {
     for (const p of COMPANY_PRODUCTS) {
@@ -69,9 +72,9 @@ describe('Unternehmens-Landing v5 – Status aus der SSoT', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('tab', { name: 'Pakete' }));
     const addon = ADDONS.find((a) => a.id === 'voice')!;
-    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(formatNetVatGrossEur(addon.priceEur, COMPANY.taxMode));
-    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(addon.priceNote);
-    expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent(pricingTaxNote(COMPANY.taxMode));
+    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(normWs(formatNetVatGrossEur(addon.priceEur, COMPANY.taxMode)));
+    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(normWs(addon.priceNote));
+    expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent(normWs(pricingTaxNote(COMPANY.taxMode)));
     expect(dialog.textContent).not.toMatch(/\b(89|199|349)\s?€/);
     if (COMPANY.taxMode === 'EXEMPT') {
       // Kleinunternehmer: keine USt-Ausweisung, kanonischer § 19-Hinweis.

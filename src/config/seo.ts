@@ -562,7 +562,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/unternehmen': {
     title: 'RealSync Dynamics & AI – KI mit Kontrolle für den Mittelstand',
     description:
-      'Das Governance OS prüft jede KI-Aktion, der Voice Agent ist in Vorbereitung, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen, Datenbank in der EU.',
+      'Das Governance OS prüft jede KI-Aktion, der Builder setzt Ihre Webseite, die Telefonannahme per Voice Agent ist in Vorbereitung. KMU, made in Thüringen.',
     canonical: `${SITE_URL}/unternehmen`,
     noIndex: true,
   },

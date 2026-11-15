@@ -130,7 +130,6 @@ export function CompanyLanding() {
   }, [modal]);
   const identity = loadBusinessIdentity();
   const governance = companyProduct('governance');
-  const voice = companyProduct('voice');
 
   // 3D-Universum: lazy nach dem ersten Paint, nicht unter Automatisierung (CI/E2E).
   useEffect(() => {
@@ -326,7 +325,7 @@ export function CompanyLanding() {
             <i />
             <b>GOVERNANCE OS {governance.statusLabel}</b>
           </span>
-          <span>VOICE AGENT · {voice.statusLabel}</span>
+          <span>VOICE AGENT · TELEFONANNAHME IN VORBEREITUNG</span>
           <span>DATENBANK IN DER EU · DSGVO · EU AI ACT</span>
         </div>
         <header id="top" ref={headerRef}>

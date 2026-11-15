@@ -32,7 +32,7 @@ function Segs({ label, options, value, onChange }: { label: string; options: rea
   );
 }
 
-// ── Governance: Prüfung live erleben ─────────────────────────────────────────
+// ── Governance: Prüfung ausprobieren (Simulation) ─────────────────────────────────────────
 
 const CHECKS = ['Mandant', 'Berechtigung', 'Einwilligung', 'Risiko'] as const;
 const SCENARIOS = ['Kundendaten exportieren', 'Terminbestätigung senden', 'Rechnung über 5.000 € freigeben'] as const;
@@ -47,11 +47,12 @@ const VERDICTS = ['Blockiert – keine Einwilligung für Export.', 'Freigegeben 
 type CheckState = { cls: '' | 'wait' | 'ok' | 'no'; mark: string };
 const IDLE: CheckState[] = CHECKS.map(() => ({ cls: '', mark: '–' }));
 
-function randomHex(bytes: number): string {
-  const a = new Uint8Array(bytes);
-  crypto.getRandomValues(a);
-  return Array.from(a, (x) => x.toString(16).padStart(2, '0')).join('');
-}
+/**
+ * Die Simulation erzeugt keinen Nachweis. Früher stand hier ein zufälliger
+ * Hex-Wert als „SHA-256“ – das sah aus wie ein echter Prüfpfad-Eintrag.
+ * Jetzt nur ein Hinweis, was im Betrieb an dieser Stelle entsteht.
+ */
+export const DEMO_EVIDENCE_NOTE = 'Im Betrieb entsteht hier ein Nachweis im Prüfpfad · Beispiel ohne Hash';
 
 export function GovernanceCheckDemo() {
   const [sel, setSel] = useState(0);
@@ -84,7 +85,7 @@ export function GovernanceCheckDemo() {
     );
     later(() => {
       setVerdict(VERDICTS[s.includes(0) ? 0 : s.includes(2) ? 2 : 1]);
-      setHash('EVIDENCE · SHA-256 ' + randomHex(8) + '…');
+      setHash(DEMO_EVIDENCE_NOTE);
     }, 3300);
   };
 
@@ -303,7 +304,7 @@ export function VoiceOnboarding() {
             ))}
           </div>
           <Segs label="Stimme" options={STIMMEN} value={stimme} onChange={setStimme} />
-          <p>Sechs empfohlene von 28 Grok-Stimmen – alle sprechen Deutsch.</p>
+          <p>Sechs Beispielstimmen, alle auf Deutsch. Der Sprachanbieter steht vor dem Start fest.</p>
           <div className="onb-foot">
             <button className="btn quiet" type="button" onClick={() => go(1)}>
               Zurück

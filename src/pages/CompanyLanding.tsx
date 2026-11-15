@@ -431,7 +431,7 @@ export function CompanyLanding() {
                 Free Audit starten
               </Link>
               <button className="btn quiet" type="button" aria-haspopup="dialog" onClick={(e) => openModal(0, e.currentTarget, 3)}>
-                Prüfung live testen
+                Prüfung ausprobieren
               </button>
               <Link className="btn quiet" to={COMPANY_LINKS.platform}>
                 Zur Plattform

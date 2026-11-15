@@ -121,7 +121,7 @@ function buildPages(onContact: () => void, onTemplateRequest: (n: string | null)
         title: 'Ausprobieren',
         body: (
           <>
-            <h3>Prüfung live erleben</h3>
+            <h3>Prüfung ausprobieren</h3>
             <p>Wählen Sie eine KI-Aktion und starten Sie die Prüfung.</p>
             <GovernanceCheckDemo />
           </>

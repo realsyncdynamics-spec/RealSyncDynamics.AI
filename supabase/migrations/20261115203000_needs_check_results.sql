@@ -14,14 +14,17 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select coalesce(
-    jsonb_typeof(a) = 'object'
-    and (select count(*) from jsonb_object_keys(a)) = 3
-    and (a ->> 'goal') in ('more_inquiries', 'answer_customers', 'new_website', 'ai_rules')
-    and (a ->> 'area') in ('trade', 'practice', 'office', 'retail', 'agency', 'other')
-    and (a ->> 'website') in ('yes', 'no'),
-    false
-  );
+  -- CASE erzwingt die Reihenfolge: jsonb_object_keys wirft bei Nicht-Objekten.
+  select case
+    when a is null or jsonb_typeof(a) <> 'object' then false
+    else coalesce(
+      (select count(*) from jsonb_object_keys(a)) = 3
+      and (a ->> 'goal') in ('more_inquiries', 'answer_customers', 'new_website', 'ai_rules')
+      and (a ->> 'area') in ('trade', 'practice', 'office', 'retail', 'agency', 'other')
+      and (a ->> 'website') in ('yes', 'no'),
+      false
+    )
+  end;
 $$;
 
 create table if not exists public.needs_check_results (

@@ -6,7 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompanyLanding } from '../../src/pages/CompanyLanding';
-import { COMPANY_LINKS, COMPANY_PRODUCTS } from '../../src/components/landing/company/companyProducts';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, voiceAddonOffer } from '../../src/components/landing/company/companyProducts';
+import { PAGE_DIALOG_ATTR } from '../../src/config/pageDialog';
+import { getSeoForPath } from '../../src/config/seo';
+import { COMPANY } from '../../src/config/company';
+import { ADDONS, formatNetVatGrossEur, pricingTaxNote } from '../../shared/pricing';
 import { validateCompanyContact } from '../../src/components/landing/company/CompanyContactForm';
 import { getImplementation, STATUS_LABEL } from '../../src/product/implementation-status';
 
@@ -57,6 +61,31 @@ describe('Unternehmens-Landing v5 – Status aus der SSoT', () => {
     const view = mount();
     expect(view.container.textContent).not.toMatch(/\b(89|199|349)\s?€/);
   });
+
+  it('Pakete-Seite zeigt den Voice-Add-on-Preis und den Steuerhinweis aus der SSoT', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-voice'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Pakete' }));
+    const addon = ADDONS.find((a) => a.id === 'voice')!;
+    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(formatNetVatGrossEur(addon.priceEur, COMPANY.taxMode));
+    expect(within(dialog).getByTestId('voice-addon-price')).toHaveTextContent(addon.priceNote);
+    expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent(pricingTaxNote(COMPANY.taxMode));
+    expect(dialog.textContent).not.toMatch(/\b(89|199|349)\s?€/);
+    if (COMPANY.taxMode === 'EXEMPT') {
+      // Kleinunternehmer: keine USt-Ausweisung, kanonischer § 19-Hinweis.
+      expect(within(dialog).getByTestId('voice-addon-price').textContent).not.toMatch(/USt|netto|brutto/);
+      expect(within(dialog).getByTestId('voice-addon-tax')).toHaveTextContent('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+    }
+  });
+
+  it('bei § 19 UStG (EXEMPT) wird keine USt ausgewiesen', () => {
+    const offer = voiceAddonOffer('EXEMPT')!;
+    expect(offer.price).not.toMatch(/USt|netto|brutto/);
+    expect(offer.taxNote).toMatch(/§ 19 UStG/);
+    const standard = voiceAddonOffer('EU_STANDARD')!;
+    expect(standard.price).toMatch(/zzgl\. 19 % USt/);
+  });
 });
 
 describe('Unternehmens-Landing v5 – Seite', () => {
@@ -69,7 +98,17 @@ describe('Unternehmens-Landing v5 – Seite', () => {
       expect(tile).toHaveTextContent(p.name);
       expect(tile).toHaveTextContent(p.statusLabel);
     }
-    expect(screen.getByLabelText('Status')).toHaveTextContent(`VOICE AGENT · ${STATUS_LABEL.preview}`);
+    // Telefonie ist Coming Soon: Statusleiste und Tafel versprechen keine laufende Telefonannahme.
+    expect(screen.getByLabelText('Status')).toHaveTextContent('VOICE AGENT · TELEFONANNAHME IN VORBEREITUNG');
+    expect(screen.getByTestId('product-tile-voice')).toHaveTextContent('Telefonannahme in Vorbereitung');
+    expect(view.container.textContent).not.toMatch(/Kein Anruf geht verloren|nimmt Anrufe an|Telefon erreichbar/);
+  });
+
+  it('Metadaten (auch og:/twitter:description) sagen keine Telefonannahme zu (P1-3)', () => {
+    const { description } = getSeoForPath('/unternehmen');
+    expect(description).toMatch(/Telefonannahme per Voice Agent ist in Vorbereitung/);
+    expect(description).not.toMatch(/nimmt Anrufe an/i);
+    expect(description.length).toBeLessThanOrEqual(160);
   });
 
   it('verlinkt interne Ziele relativ und das Voice-Onboarding im neuen Tab', () => {
@@ -124,10 +163,55 @@ describe('Unternehmens-Landing v5 – Produkt-Dialog', () => {
     fireEvent.keyDown(screen.getByTestId('pm-page'), { key: 'ArrowRight' });
     expect(within(dialog).getByText('2 / 5')).toBeInTheDocument();
 
+    expect(document.body.hasAttribute(PAGE_DIALOG_ATTR)).toBe(true);
+
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(document.body.style.overflow).toBe('');
+    expect(document.body.hasAttribute(PAGE_DIALOG_ATTR)).toBe(false);
     await waitFor(() => expect(document.activeElement).toBe(tile));
+  });
+
+  it('Fokus bleibt im Dialog, wenn „Weiter“ auf der letzten Seite deaktiviert wird', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-builder'));
+    const dialog = screen.getByRole('dialog');
+    const weiter = within(dialog).getByRole('button', { name: 'Weiter →' });
+    const total = Number(within(dialog).getByText(/^1 \/ \d+$/).textContent!.split('/')[1]);
+    weiter.focus();
+    for (let i = 1; i < total; i++) fireEvent.click(weiter);
+    expect(weiter).toBeDisabled();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: '← Zurück' }));
+
+    // Fokus auf <body> (z. B. nach Klick auf Text): Tab holt ihn in den Dialog zurück.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(document.body, { key: 'Tab', shiftKey: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Pfeiltasten im Voice-Onboarding wechseln den Schritt, nicht die Dialogseite', () => {
+    mount();
+    fireEvent.click(screen.getByTestId('product-tile-voice'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('tab', { name: 'Einrichten' }));
+    expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
+
+    const steps = within(within(dialog).getByRole('tablist', { name: 'Einrichtung' })).getAllByRole('tab');
+    fireEvent.keyDown(steps[0], { key: 'ArrowRight' });
+    expect(steps[1]).toHaveAttribute('aria-selected', 'true');
+    expect(document.activeElement).toBe(steps[1]);
+    fireEvent.keyDown(steps[1], { key: 'ArrowLeft' });
+    expect(steps[0]).toHaveAttribute('aria-selected', 'true');
+
+    // Auch auf Branchen-Knöpfen blättert ← nicht zurück auf „Anruf testen“.
+    fireEvent.keyDown(within(dialog).getByRole('button', { name: 'Metzgerei' }), { key: 'ArrowLeft' });
+    expect(within(dialog).getByText('5 / 5')).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Welche Branche?' })).toBeInTheDocument();
   });
 
   it('„Prüfung live testen“ öffnet direkt die Governance-Demo und liefert ein Ergebnis', () => {

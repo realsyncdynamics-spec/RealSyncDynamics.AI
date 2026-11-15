@@ -19,10 +19,16 @@ test.describe('/unternehmen', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/RealSync Dynamics/);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
+    // Seitenweiter Assistenten-Chip: sichtbar, solange kein Dialog offen ist.
+    const chip = page.getByRole('button', { name: 'Assistent öffnen' });
+    await expect(chip).toBeVisible();
+
     const tile = page.getByTestId('product-tile-voice');
     await tile.click();
     const dialog = page.getByRole('dialog', { name: 'Produkte im Detail' });
     await expect(dialog).toBeVisible();
+    // P1-1: Der Chip weicht dem Dialog (läge sonst darüber, außerhalb der Fokusfalle).
+    await expect(chip).toHaveCount(0);
     await expect(dialog.getByRole('tablist', { name: 'Produkte' }).getByRole('tab')).toHaveCount(3);
 
     // Fokusfalle in beide Richtungen: Die Voice-Tafel öffnet nicht den ersten
@@ -38,6 +44,7 @@ test.describe('/unternehmen', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(tile).toBeFocused();
+    await expect(chip).toBeVisible();
     expect(errors).toEqual([]);
   });
 

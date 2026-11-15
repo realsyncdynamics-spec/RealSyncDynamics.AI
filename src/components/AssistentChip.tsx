@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
+import { PAGE_DIALOG_ATTR, isPageDialogOpen } from '../config/pageDialog';
 
 // AssistentChip — persistent floating entry to the AI Runtime.
 //
@@ -37,7 +38,20 @@ export function AssistentChip() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [pageDialog, setPageDialog] = useState(isPageDialogOpen);
   const isLanding = pathname === '/';
+
+  // Seitenweiter Dialog offen (z. B. Produkt-Dialog auf /unternehmen):
+  // Chip ausblenden, damit er den Dialog nicht überlagert und nicht aus
+  // dessen Fokusfalle heraus per Tab erreichbar ist.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) return;
+    const sync = () => setPageDialog(isPageDialogOpen());
+    sync();
+    const mo = new MutationObserver(sync);
+    mo.observe(document.body, { attributes: true, attributeFilter: [PAGE_DIALOG_ATTR] });
+    return () => mo.disconnect();
+  }, []);
 
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
@@ -102,7 +116,7 @@ export function AssistentChip() {
   // Ein Einstieg: Chip nur wenn Panel zu. Sonst Doppel-FAB über Landing-Text.
   return (
     <>
-      {!open && (
+      {!open && !pageDialog && (
       <button
         type="button"
         onClick={() => setOpen(true)}

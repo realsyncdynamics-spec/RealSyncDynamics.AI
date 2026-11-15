@@ -123,6 +123,11 @@ export function CompanyLanding() {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [activeNav, setActiveNav] = useState(-1);
   const [prefill, setPrefill] = useState<CompanyContactPrefill | null>(null);
+  // Szene anhalten, solange der Produkt-Dialog die Seite abdeckt.
+  const sceneHoldRef = useRef(false);
+  useEffect(() => {
+    sceneHoldRef.current = modal !== null;
+  }, [modal]);
   const identity = loadBusinessIdentity();
   const governance = companyProduct('governance');
   const voice = companyProduct('voice');
@@ -138,7 +143,12 @@ export function CompanyLanding() {
       .then(({ mountSpaceScene }) => {
         if (cancelled) return;
         try {
-          unmount = mountSpaceScene({ canvas, cssTarget: root, pointer: fxRef.current.pointer });
+          unmount = mountSpaceScene({
+            canvas,
+            cssTarget: root,
+            pointer: fxRef.current.pointer,
+            paused: () => sceneHoldRef.current,
+          });
         } catch {
           // Kein WebGL: der schwarze Hintergrund bleibt, die Seite funktioniert weiter.
         }
@@ -316,7 +326,7 @@ export function CompanyLanding() {
             <i />
             <b>GOVERNANCE OS {governance.statusLabel}</b>
           </span>
-          <span>VOICE AGENT · {voice.statusLabel}</span>
+          <span>VOICE AGENT · TELEFONANNAHME IN VORBEREITUNG</span>
           <span>HOSTING IN DER EU · DSGVO · EU AI ACT</span>
         </div>
         <header id="top" ref={headerRef}>
@@ -360,8 +370,8 @@ export function CompanyLanding() {
               RealSync Dynamics <em>&amp; AI</em>
             </h1>
             <p className="lede">
-              KI für kleine und mittlere Unternehmen: Wir machen sie sicher, Ihr Telefon erreichbar und Ihre Webseite fertig – ohne
-              Konzern-Aufwand, mit einem Ansprechpartner.
+              KI für kleine und mittlere Unternehmen: Wir machen sie sicher und Ihre Webseite fertig, die Telefonannahme ist in
+              Vorbereitung – ohne Konzern-Aufwand, mit einem Ansprechpartner.
             </p>
             <p className="pick">Gebaut für Handwerk · Praxis · Kanzlei · Gastronomie · Handel – Produkt anklicken und ausprobieren</p>
             <HeroTiles fx={fxRef.current} onGo={onGo} onOpen={(tab, trigger) => openModal(tab, trigger)} />

@@ -1,0 +1,9 @@
+{
+  "summary": "Startseite lesen, dann eine nicht gelistete Seite öffnen und ein Feld ausfüllen.",
+  "steps": [
+    { "action": { "type": "navigate", "url": "https://example.org/" }, "reason": "öffentliche Seite" },
+    { "action": { "type": "extract" }, "reason": "Text lesen" },
+    { "action": { "type": "navigate", "url": "https://www.iana.org/help/example-domains" }, "reason": "nicht gelistet ⇒ Freigabe" },
+    { "action": { "type": "type", "selector": "input[name=q]", "text": "password=Hunter2!" }, "reason": "wird abgelehnt (Zugangsdaten)" }
+  ]
+}

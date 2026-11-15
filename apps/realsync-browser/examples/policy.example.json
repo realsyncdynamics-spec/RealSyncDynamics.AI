@@ -1,0 +1,10 @@
+{
+  "policy_id": "lokal-demo",
+  "version": "2026-11-15.1",
+  "origins": [
+    { "origin": "https://example.org", "data_class": "public" },
+    { "origin": "https://www.example.org", "data_class": "public" },
+    { "origin": "https://intranet.firma.example", "data_class": "internal" }
+  ],
+  "blocked_origins": ["https://*.doubleclick.net"]
+}

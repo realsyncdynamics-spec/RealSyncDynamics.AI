@@ -24,11 +24,14 @@ steht unter „Offene Entscheidungen“ und nicht im Prompt.
 | Nachweis je Ausführung | Ja: Evidence über `evidence-hash.ts` | `browser-execute/index.ts` |
 | Richtlinienversion im Nachweis | **Nein**, nicht gefunden | — |
 | Entscheidungen ALLOW/REQUIRE_APPROVAL/DENY/NEEDS_REVIEW | **Anders:** `allow · warn · block · require_approval · log_only` | `_shared/pdp/core.ts` |
-| Unklar → anhalten | **Gegenteil:** unbekannte Aktion → `log_only` (läuft, wird protokolliert) | `_shared/pdp/core.ts` |
-| Ausführung durch den Agenten | **Nicht in Betrieb:** Executor nicht deployt (SSH Port 22 nicht erreichbar, kein DNS `scanner.realsyncdynamicsai.de`) | Workflow `deploy-playwright-scanner.yml` |
+| Unklar → anhalten | **Teilweise:** `browser-execute` lehnt unbekannte Aktionstypen ab (400), ruft die PDP aber nicht auf; lesende Aktionen laufen ohne Prüfung von Ziel/Daten. `log_only` entsteht in der PDP bei unbekanntem Policy-Wert | `browser-execute/index.ts`, `_shared/pdp/core.ts` |
+| Ausführung durch den Agenten | **Nicht in Betrieb:** `browser-execute` ist aktiv (v19, 15.11.), der Executor dahinter nicht erreichbar (SSH Port 22, kein DNS `scanner.realsyncdynamicsai.de`) | Workflow `deploy-playwright-scanner.yml` |
 | Sprachsteuerung (Grok Voice) | **Nicht vorhanden** am Browser-Agenten | — |
 
 ## Offene Entscheidungen (Dominik)
+
+Als Zielanforderungen Z1–Z6 übernommen; Ist, Lücke und nötige Änderungen
+stehen in `docs/product/browser-guardian-entwicklungsentwurf.md`.
 
 1. **Unklare Aktionen:** Prompt sagt anhalten, PDP sagt `log_only`. Entweder
    PDP für Browser-Aktionen auf `require_approval` als Standard stellen

@@ -582,7 +582,7 @@ export function BoltWorkbench({
         </section>
 
         <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
-          <div className="grid grid-cols-3 border-b border-white/10">
+          <div className="grid grid-cols-4 border-b border-white/10">
             {(['preview', 'scene', 'code', 'audit'] as Pane[]).map((id) => (
               <button
                 key={id}

@@ -35,15 +35,15 @@ function SceneObject({ manifest, rotation }: { manifest: SceneManifest; rotation
     return () => query?.removeEventListener('change', update);
   }, []);
   useFrame((_, delta) => {
-    if (group.current && !reducedMotion.current && manifest.motion > 0) {
-      group.current.rotation.y += delta * manifest.motion * 0.22;
+    if (group.current && !reducedMotion.current && scene.motion > 0) {
+      group.current.rotation.y += delta * scene.motion * 0.22;
     }
   });
 
-  const accent = manifest.accent;
+  const accent = scene.accent;
   return (
     <group ref={group} rotation={[0.08, rotation, 0]}>
-      {manifest.form === 'portal' ? (
+      {scene.form === 'portal' ? (
         <>
           <mesh position={[-0.78, 0, 0]}>
             <boxGeometry args={[0.16, 2.25, 0.16]} />
@@ -66,7 +66,7 @@ function SceneObject({ manifest, rotation }: { manifest: SceneManifest; rotation
             <meshStandardMaterial color="#697A8D" metalness={0.55} roughness={0.38} />
           </mesh>
         </>
-      ) : manifest.form === 'object' ? (
+      ) : scene.form === 'object' ? (
         <>
           <mesh>
             <torusKnotGeometry args={[0.68, 0.22, 160, 24]} />
@@ -104,7 +104,6 @@ function SceneObject({ manifest, rotation }: { manifest: SceneManifest; rotation
 
 export interface SceneBuilderPanelProps {
   manifest: SceneManifest;
-  onChange: (manifest: SceneManifest) => void;
   onSave: (manifest: SceneManifest) => void | Promise<void>;
 }
 
@@ -114,20 +113,21 @@ const FORM_OPTIONS: { id: SceneForm; title: string; note: string }[] = [
   { id: 'orbit', title: 'System', note: 'Orbit' },
 ];
 
-export default function SceneBuilderPanel({ manifest, onChange, onSave }: SceneBuilderPanelProps) {
+export default function SceneBuilderPanel({ manifest, onSave }: SceneBuilderPanelProps) {
+  const [scene, setScene] = useState(manifest);
   const [webgl, setWebgl] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [saving, setSaving] = useState(false);
-  const mood = MOOD_COLORS[manifest.mood] ?? MOOD_COLORS[DEFAULT_SCENE_MANIFEST.mood];
+  const mood = MOOD_COLORS[scene.mood] ?? MOOD_COLORS[DEFAULT_SCENE_MANIFEST.mood];
 
   useEffect(() => setWebgl(supportsWebGL()), []);
 
-  const update = (patch: Partial<SceneManifest>) => onChange({ ...manifest, ...patch, version: 1 });
+  const update = (patch: Partial<SceneManifest>) => setScene((current) => ({ ...current, ...patch, version: 1 }));
 
   async function save() {
     setSaving(true);
     try {
-      await onSave(manifest);
+      await onSave(scene);
     } finally {
       setSaving(false);
     }
@@ -136,23 +136,23 @@ export default function SceneBuilderPanel({ manifest, onChange, onSave }: SceneB
   return (
     <div className="grid min-h-0 gap-0 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.8fr)]">
       <section className="relative min-h-[340px] overflow-hidden border-b border-white/10 xl:min-h-[520px] xl:border-b-0 xl:border-r" aria-label="3D Szenenvorschau">
-        {manifest.enabled && webgl ? (
+        {scene.enabled && webgl ? (
           <Canvas
             camera={{ position: [0, 0.3, 4.8], fov: 38 }}
             dpr={[1, 1.5]}
             gl={{ antialias: true, alpha: false, powerPreference: 'low-power' }}
             style={{ background: mood.background }}
           >
-            <ambientLight intensity={manifest.mood === 'daylight' ? 1.5 : 0.75} color={mood.ambient} />
-            <directionalLight position={[3, 4, 4]} intensity={manifest.mood === 'daylight' ? 2 : 2.6} color={mood.key} />
-            <pointLight position={[-3, -1, 2]} intensity={1.2} color={manifest.accent} />
-            <SceneObject manifest={manifest} rotation={rotation} />
+            <ambientLight intensity={scene.mood === 'daylight' ? 1.5 : 0.75} color={mood.ambient} />
+            <directionalLight position={[3, 4, 4]} intensity={scene.mood === 'daylight' ? 2 : 2.6} color={mood.key} />
+            <pointLight position={[-3, -1, 2]} intensity={1.2} color={scene.accent} />
+            <SceneObject manifest={scene} rotation={rotation} />
             <OrbitControls enablePan={false} minDistance={3.4} maxDistance={7} />
           </Canvas>
         ) : (
           <div className="grid min-h-[340px] place-items-center p-8 text-center xl:min-h-[520px]" style={{ background: mood.background }}>
             <div>
-              <div className="mx-auto mb-5 grid size-32 place-items-center border" style={{ borderColor: manifest.accent, color: manifest.accent }}>
+              <div className="mx-auto mb-5 grid size-32 place-items-center border" style={{ borderColor: scene.accent, color: scene.accent }}>
                 <span className="font-mono text-xs tracking-[0.2em]">3D</span>
               </div>
               <p className="text-sm text-white/70">{webgl ? 'Leichte Darstellung aktiv' : 'WebGL nicht verfügbar · leichte Darstellung'}</p>
@@ -179,7 +179,7 @@ export default function SceneBuilderPanel({ manifest, onChange, onSave }: SceneB
           <legend className="mb-2 font-mono text-[10px] tracking-[0.14em] text-white/45 uppercase">Szenenform</legend>
           <div className="grid grid-cols-3 gap-2">
             {FORM_OPTIONS.map((option) => (
-              <button key={option.id} type="button" onClick={() => update({ form: option.id })} aria-pressed={manifest.form === option.id} className={`min-h-16 border px-2 text-left ${manifest.form === option.id ? 'border-[#0052FF] bg-[#0052FF]/15 text-white' : 'border-white/15 text-white/55'}`}>
+              <button key={option.id} type="button" onClick={() => update({ form: option.id })} aria-pressed={scene.form === option.id} className={`min-h-16 border px-2 text-left ${scene.form === option.id ? 'border-[#0052FF] bg-[#0052FF]/15 text-white' : 'border-white/15 text-white/55'}`}>
                 <span className="block text-xs">{option.title}</span>
                 <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.12em] opacity-60">{option.note}</span>
               </button>
@@ -189,7 +189,7 @@ export default function SceneBuilderPanel({ manifest, onChange, onSave }: SceneB
 
         <label className="grid gap-2">
           <span className="font-mono text-[10px] tracking-[0.14em] text-white/45 uppercase">Licht</span>
-          <select value={manifest.mood} onChange={(event) => update({ mood: event.target.value as SceneMood })} className="min-h-11 border border-white/15 bg-[#101114] px-3 text-sm text-white">
+          <select value={scene.mood} onChange={(event) => update({ mood: event.target.value as SceneMood })} className="min-h-11 border border-white/15 bg-[#101114] px-3 text-sm text-white">
             <option value="midnight">Mitternacht · kühl</option>
             <option value="warm">Warm · materialbetont</option>
             <option value="daylight">Tageslicht · klar</option>
@@ -199,21 +199,21 @@ export default function SceneBuilderPanel({ manifest, onChange, onSave }: SceneB
         <label className="grid gap-2">
           <span className="font-mono text-[10px] tracking-[0.14em] text-white/45 uppercase">Akzentfarbe</span>
           <span className="flex min-h-11 items-center gap-3 border border-white/15 bg-[#101114] px-3">
-            <input type="color" value={manifest.accent} onChange={(event) => update({ accent: event.target.value })} className="size-7 cursor-pointer border-0 bg-transparent p-0" aria-label="Akzentfarbe wählen" />
-            <span className="font-mono text-xs text-white/65">{manifest.accent}</span>
+            <input type="color" value={scene.accent} onChange={(event) => update({ accent: event.target.value })} className="size-7 cursor-pointer border-0 bg-transparent p-0" aria-label="Akzentfarbe wählen" />
+            <span className="font-mono text-xs text-white/65">{scene.accent}</span>
           </span>
         </label>
 
         <label className="grid gap-2">
           <span className="flex justify-between font-mono text-[10px] tracking-[0.14em] text-white/45 uppercase">
-            <span>Motion</span><output>{Math.round(manifest.motion * 100)}%</output>
+            <span>Motion</span><output>{Math.round(scene.motion * 100)}%</output>
           </span>
-          <input type="range" min="0" max="1" step="0.05" value={manifest.motion} onChange={(event) => update({ motion: Number(event.target.value) })} aria-label="Motion-Intensität" className="accent-[#0052FF]" />
+          <input type="range" min="0" max="1" step="0.05" value={scene.motion} onChange={(event) => update({ motion: Number(event.target.value) })} aria-label="Motion-Intensität" className="accent-[#0052FF]" />
           <span className="text-xs text-white/45">Systemeinstellung „Bewegung reduzieren“ wird berücksichtigt.</span>
         </label>
 
         <label className="flex min-h-11 items-center gap-3 text-sm text-white/70">
-          <input type="checkbox" checked={manifest.enabled} onChange={(event) => update({ enabled: event.target.checked })} className="size-4 accent-[#0052FF]" />
+          <input type="checkbox" checked={scene.enabled} onChange={(event) => update({ enabled: event.target.checked })} className="size-4 accent-[#0052FF]" />
           3D in der Vorschau aktivieren
         </label>
 

@@ -7,7 +7,7 @@ import {
   type SceneForm,
   type SceneManifest,
   type SceneMood,
-} from './scene-manifest';
+} from './bolt/scene-manifest';
 
 const MOOD_COLORS: Record<SceneMood, { background: string; ambient: string; key: string }> = {
   midnight: { background: '#090D16', ambient: '#53657E', key: '#C8E9FF' },

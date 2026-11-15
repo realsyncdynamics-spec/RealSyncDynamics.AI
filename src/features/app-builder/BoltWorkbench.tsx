@@ -659,8 +659,11 @@ export function BoltWorkbench({
               manifest={readSceneManifest(project.files['scene.manifest.json'])}
               onSave={async (manifest: SceneManifest) => {
                 const res = await engineRef.current.writeFile('scene.manifest.json', JSON.stringify(manifest, null, 2));
+                const denied = res.blocked || res.runs.some((run) => run.gate.decision !== 'allow');
                 await applyEngine(res);
+                if (denied) return false;
                 setPane('scene');
+                return true;
               }}
             />
           )}

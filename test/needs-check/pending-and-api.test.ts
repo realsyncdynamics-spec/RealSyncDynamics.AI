@@ -62,6 +62,11 @@ function fakeClient(opts: {
   };
 }
 
+function firstInsert(chain: { insert: { mock: { calls: unknown[] } } }): Record<string, unknown> {
+  const call = chain.insert.mock.calls[0] as unknown as [Record<string, unknown>];
+  return call[0];
+}
+
 describe('api.saveCheck', () => {
   it('meldet „nicht verfügbar“, wenn keine Verbindung eingerichtet ist', async () => {
     const r = await saveCheck(answers, ['build.modernize'], null, { client: null });
@@ -78,7 +83,7 @@ describe('api.saveCheck', () => {
     const { client, chain } = fakeClient({ user: { id: 'u1' }, insert: { data: { id: 'abc' }, error: null } });
     const r = await saveCheck(answers, ['build.modernize', 'govern.website_scan'], null, { client });
     expect(r).toEqual({ ok: true, data: { id: 'abc' } });
-    const row = chain.insert.mock.calls[0][0] as Record<string, unknown>;
+    const row = firstInsert(chain);
     expect(row).not.toHaveProperty('user_id');
     expect(row.result_basis).toBe('answers');
   });
@@ -86,7 +91,7 @@ describe('api.saveCheck', () => {
   it('kennzeichnet ein Ergebnis mit Scan als answers_and_scan', async () => {
     const { client, chain } = fakeClient({ user: { id: 'u1' }, insert: { data: { id: 'abc' }, error: null } });
     await saveCheck(answers, ['build.modernize'], '11111111-1111-1111-1111-111111111111', { client });
-    expect((chain.insert.mock.calls[0][0] as Record<string, unknown>).result_basis).toBe('answers_and_scan');
+    expect(firstInsert(chain).result_basis).toBe('answers_and_scan');
   });
 
   it('übersetzt das Tageslimit und RLS-Fehler', async () => {

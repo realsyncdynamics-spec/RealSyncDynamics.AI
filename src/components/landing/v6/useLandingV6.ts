@@ -74,6 +74,8 @@ const WEBSITE_PATHS = [
     preview: true,
     primary: { label: 'Landingpage-Entwurf starten', href: '/build' },
     secondary: { label: 'Bestehende Website modernisieren', href: `/handwerk-website?source=${SOURCE}-websites` },
+    // Template-Vorschau: echte interaktive 3D-Seite; automatische 3D-Erstellung im Builder ist geplant.
+    showcase: { label: '3D-Landingpage live erleben', href: '/demo/3d-landingpage' },
   },
   {
     id: 'custom',

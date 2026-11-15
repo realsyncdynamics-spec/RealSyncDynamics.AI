@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+// `shared/pricing.ts` ist bewusst ohne Importe und Laufzeitabhängigkeiten
+// (Kopfkommentar dort) und lässt sich daher direkt im Test-Runner laden.
+import { PRICING_TAX_MODE, PRICING_TAX_NOTE_EXEMPT } from '../../shared/pricing';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
@@ -73,6 +76,25 @@ test.describe('Pricing Flow', () => {
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       await expect(growthCard).toBeVisible();
     });
+
+    test('Steuerhinweis folgt PRICING_TAX_MODE', async ({ page }) => {
+      // Issue #2155 / PR #2157: Im Kleinunternehmer-Modus (EXEMPT) steht der
+      // §-19-Hinweis, und kein Preis trägt einen USt- oder Netto-Zusatz.
+      // Wechselt der Modus in shared/pricing.ts, zieht der Test mit.
+      await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
+
+      const note = page.locator('[data-testid="pricing-tax-note"]');
+      await expect(note).toBeVisible({ timeout: 10000 });
+
+      if (PRICING_TAX_MODE === 'EXEMPT') {
+        await expect(note).toContainText(PRICING_TAX_NOTE_EXEMPT);
+        await expect(page.locator('body')).not.toContainText(
+          /Monat netto|zzgl\.\s*(?:der\s+)?(?:gesetzl\w*\s+)?(?:USt|MwSt|Umsatzsteuer)/i,
+        );
+      } else {
+        await expect(note).not.toContainText('§ 19 UStG');
+      }
+    });
   });
 
   test.describe('Plan Detail Pages', () => {
@@ -81,8 +103,9 @@ test.describe('Pricing Flow', () => {
         await page.goto(`${BASE_URL}/pricing/${slug}`);
         await page.waitForLoadState('domcontentloaded');
 
+        // Ohne `.catch()`: Fehlt die Detailseite, soll der Test rot werden.
         const planDetail = page.locator(`[data-testid="plan-detail-${slug}"]`);
-        await expect(planDetail).toBeVisible().catch(() => true);
+        await expect(planDetail, `/pricing/${slug}`).toBeVisible({ timeout: 10000 });
       }
     });
 
@@ -102,15 +125,20 @@ test.describe('Pricing Flow', () => {
   });
 
   test.describe('Checkout Flow', () => {
-    test('should navigate to checkout page from pricing', async ({ page }) => {
+    test('Growth-CTA auf /pricing führt in Checkout oder Beta-Anmeldung', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('domcontentloaded');
 
+      // Früher `if (await bookButton.isVisible())`: isVisible() wartet nicht,
+      // direkt nach domcontentloaded ist React noch nicht gerendert, und der
+      // Test lief ohne Klick grün durch.
       const bookButton = page.locator('[data-testid="pricing-book-growth"]');
-      if (await bookButton.isVisible()) {
-        await bookButton.click();
-        await expect(page).toHaveURL(/\/checkout\/growth/);
-      }
+      await expect(bookButton).toBeVisible({ timeout: 10000 });
+      await bookButton.click();
+
+      // Ziel hängt am Beta-Schalter (src/config/beta.ts, Standard an):
+      // Beta → /welcome?beta=1&plan=growth…, sonst → /checkout/growth.
+      await expect(page).toHaveURL(/\/checkout\/growth|\/welcome\?(?=.*\bbeta=1\b)(?=.*\bplan=growth\b)/);
     });
 
     test('all bookable checkout pages should be accessible', async ({ page }) => {

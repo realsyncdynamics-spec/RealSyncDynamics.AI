@@ -1,6 +1,6 @@
 # Governed Evolution — Zielbild-Spec
 
-**Stand:** 2026-10-28 (Nachprüfung gegen `main@d08abd6`; WP6-Prüfung 2026-10-15 gegen `main@a7ffc94`; Erstfassung 2026-09-27) · **Status:** COMING SOON · nur Doku, keine Implementierung
+**Stand:** 2026-11-01 (Entscheidungen §6; Bestand unverändert gegen `main@dbbd8a4` übernommen) · 2026-10-28 (Nachprüfung gegen `main@d08abd6`; WP6-Prüfung 2026-10-15 gegen `main@a7ffc94`; Erstfassung 2026-09-27) · **Status:** COMING SOON · nur Doku, keine Implementierung
 **Einordnung:** Umsetzung **frühestens nach AP-3** (`governance_policies` als Tenant-SSoT). Zielbild für Agent OS Premium.
 
 > Agenten dürfen handeln — aber nur innerhalb der Governance-Runtime.
@@ -116,19 +116,24 @@ prüfen.*
 - Keine selbstständige Änderung von Policies, Workflows oder Agent-Konfigurationen.
 - Keine Übernahme ohne menschliche Freigabe, auch nicht „in scope".
 - Keine Landing-Aussage über Governed Evolution außer „Roadmap / Coming Soon".
+- Kein mandantenübergreifendes Lernen, auch nicht anonymisiert (E-GE5). Erlaubte Aussage: „Ihre Daten verbessern nur Ihre eigenen Regeln.“
 
-## 6. Offene Entscheidungen
+## 6. Entscheidungen
 
-- **E-GE1:** Granularität des Änderungsraums (je Policy · je Agent · je Mandant)
-- **E-GE2:** Wer darf freigeben (Rolle aus `memberships` bzw. `approver_role` der
-  `pdp_approval_gates`, Vier-Augen ab Risiko hoch?). Muster im Bestand seit
-  #2006: `20261025100000_siteos_four_eyes_approval.sql` erzwingt für SiteOS per
-  Trigger owner/admin/dpo, nie den Auslöser (`requested_by`), mit dokumentierter
-  Selbstfreigabe nur für Solo-Mandanten — gilt **nicht** für `governance_approvals`.
-- **E-GE3:** Aufbewahrung von abgelehnten Vorschlägen (Evidence ja/nein, Frist)
-- **E-GE4:** Wer ist im Produkt „Anbieter“ eines gesteuerten KI-Systems
-  (RealSyncDynamics für eigene Runtime-Funktionen, der Mandant, dessen
-  Lieferant)? Davon hängt ab, wer den Anbieter-Änderungsraum festlegen darf.
+Stand 2026-11-01. Die Spalte „Projekt-ID“ verweist auf die Nummerierung im
+claude.ai-Projekt (Spiegel `claude/governed-evolution.md`), damit beide
+Fassungen auf dieselbe Entscheidung zeigen.
+
+| ID | Frage | Status / Entscheidung | Projekt-ID |
+|---|---|---|---|
+| **E-GE1** | Granularität des Änderungsraums (je Policy · je Agent · je Mandant) | ⏳ offen | — |
+| **E-GE2** | Wer darf freigeben? | ✅ **Entschieden 2026-11-01 (Dominik Steiner).** **Lockern** (Änderung erlaubt mehr als vorher): Vier-Augen-Prinzip im Mandanten — zwei verschiedene Mitglieder mit Freigaberolle (über `memberships` bzw. `approver_role` der `pdp_approval_gates`), nie der Auslöser (`requested_by`). **Solo-Mandant** (nur eine berechtigte Person): eine Freigabe plus **72 Stunden Wartefrist**; wirksam erst nach Fristablauf, Einzelfreigabe und Frist als Evidence. Der Plattform-Betreiber zählt nie als Freigeber. **Erneute Prüfung:** Jede Lockerung wird vor ihrer Wirksamkeit erneut gegen die aktuelle Policy-Version geprüft; hat sich die Policy zwischenzeitlich geändert, muss die Freigabe neu bewertet werden. Die 72-h-Frist beginnt mit der dokumentierten menschlichen Freigabe. Keine automatische Aktivierung durch KI, keine Umgehung zwingender gesetzlicher Anforderungen. **Verschärfen:** eine Freigabe. Die 72 h sind eine Owner-Setzung, keine belegte Branchennorm. Umsetzung setzt O2 (Selbstfreigabe-Sperre) voraus; Vorlage SiteOS-Trigger aus #2006, dort ohne Wartefrist. | E-G3 |
+| **E-GE3** | Aufbewahrung abgelehnter Vorschläge (Evidence ja/nein, Frist) | ⏳ offen | — |
+| **E-GE4** | Wer ist im Produkt „Anbieter“ eines gesteuerten KI-Systems? | ⏳ offen | — |
+| **E-GE5** | Mandantenübergreifende Muster | ✅ **Entschieden 2026-11-01 (Dominik Steiner): ausgeschlossen**, auch anonymisiert. Eine spätere Wiedervorlage setzt eine gesonderte rechtliche Prüfung voraus; eine Einwilligung ist nicht pauschal die richtige oder ausreichende Rechtsgrundlage (Risiko Art. 28 Abs. 10 DSGVO: Auftragsverarbeiter wird für die Eigennutzung selbst Verantwortlicher). | E-G4 |
+| **E-GE6** | Wie wird simuliert (Schritt 4)? | ✅ **Entschieden 2026-11-01 (Dominik Steiner): Offline-Replay** gegen historische Entscheidungen (Basis `policy_snapshots` und Entscheidungs-Evidence), Verdikt-Differenz als Evidence am Vorschlag. `pdp_shadow_log` bleibt Live-Vergleich Alt-Engine ↔ PDP v2, **keine** Schema-Änderung dafür. Legt die Richtung für O5 fest, nicht die Umsetzung. | E-G5 |
+| **E-GE7** | Umsetzung vor oder nach AP-3? | ✅ **Entschieden 2026-10-10 (Dominik Steiner): nach AP-3** (siehe Kopf). | E-G1 |
+| **E-GE8** | Vorschlagsobjekt (Schritt 2) | ✅ **Entschieden 2026-10-10 (Dominik Steiner): keine eigene Tabelle**, sondern ein Typ in `governance_approvals` (`kind = 'policy_change'`); `evolution_proposal` in §2 ist damit ein Datensatz dort. Migration nur mit separatem GO, frühestens mit G2. **Hinweis aus §4:** `governance_approvals` hängt an `event_id` (NOT NULL, UNIQUE) → je Vorschlag ein `governance_events`-Ereignis; vor der Migration gegen `pdp_approval_gates` abwägen. | E-G2 |
 
 ## 7. Offene Punkte aus der WP6-Prüfung
 

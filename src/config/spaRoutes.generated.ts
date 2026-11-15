@@ -269,6 +269,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/demo-tour/checkout",
   "/demo-tour/dashboard",
   "/demo-tour/signup",
+  "/demo/3d-landingpage",
   "/deployment-governance",
   "/design/governance-ai",
   "/design/landing-v2",

@@ -879,7 +879,7 @@ export const PLANS: Plan[] = [
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
-    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
+    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — SLA nach Vereinbarung, SSO als Vorschau auf Anfrage.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.

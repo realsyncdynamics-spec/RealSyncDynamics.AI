@@ -1,12 +1,12 @@
 # RealSync – Preise
 
-**Stand:** 27.10.2026 · **Quelle:** `main` @ `c9a7da6`
-**Zweck:** Projektwissen für claude.ai. Teil A beschreibt, was die Live-Website heute zeigt. Teil B fasst Vorschläge zusammen, die **nicht** live sind.
+**Stand:** 03.11.2026 · **Quelle:** `main` @ `ae1019c` (Code-Snapshot; produktives Deployment nicht verifiziert)
+**Zweck:** Projektwissen für claude.ai. Teil A dokumentiert den Repo-Code; eine produktive Auslieferung ist hiermit nicht bestätigt. Teil B fasst Vorschläge zusammen, die **nicht** freigegeben sind.
 **Regel:** Wenn Code und Doku sich widersprechen, gilt der Code. Die Widersprüche stehen unter A.6.
 
 ---
 
-## TEIL A – Aktuelle Preise (live)
+## TEIL A – Aktuelle Preise laut Code (Deployment ungeprüft)
 
 ### A.1 Wo die Wahrheit steht
 
@@ -17,20 +17,20 @@
 | Startseite `/` (Landing v6) | `src/components/landing/v6/useLandingV6.ts` | zeigt die Karten Starter, Growth, Agency und Enterprise aus der SSoT, plus Beta-Logik |
 | Preisseite `/pricing` | `src/features/billing/PricingPage.tsx` | Free-Audit-Karte plus `SELLABLE_PRICING_TIERS`; `/preise` leitet hierher weiter |
 | Beta-Schalter | `src/config/beta.ts` | blendet „kostenlos bis …“ ein und leitet den Checkout um |
-| Steuerhinweis | `shared/pricing.ts` → `PRICING_TAX_MODE = 'EU_STANDARD'` | Netto-Preise, B2B |
+| Steuerhinweis | `shared/pricing.ts` → `PRICING_TAX_MODE = 'EXEMPT'` | § 19 UStG: keine Umsatzsteuerberechnung; Listenpreis entspricht dem Checkout-Betrag, soweit der Kaufpfad verfügbar ist |
 
 ### A.2 Preistabelle (Listenpreise laut SSoT)
 
-**MwSt.:** Alle Beträge sind **netto**. Bei den Preisen steht wörtlich: *„Angebot nur für Unternehmer (B2B) – alle Preise zzgl. gesetzlicher Umsatzsteuer.“* Bruttobeträge weist die Website nicht aus. Für den Fall des Steuermodus `EXEMPT` gibt es zusätzlich einen Kleinunternehmer-Text nach § 19 UStG, der derzeit **nicht** aktiv ist.
+**Umsatzsteuer:** Im aktuellen Modus `EXEMPT` wird gemäß § 19 UStG keine Umsatzsteuer berechnet oder gesondert ausgewiesen. Die SSoT-Listenpreise sind daher Beträge ohne zusätzlich berechnete USt; die frühere Netto-zzgl.-USt.-Beschreibung ist überholt. Produktive Checkout- und Rechnungsprüfung steht aus.
 
-| Plan | Preis monatlich / jährlich | netto/brutto | Zielgruppe | Kern-Kontingente / Features | Trial/Beta-Hinweis |
+| Plan | Preis monatlich / jährlich | Steuerstatus | Zielgruppe | Kern-Kontingente / Features | Trial/Beta-Hinweis |
 |---|---|---|---|---|---|
 | **Free Audit** | 0 € / – | – | Einstieg ohne Account | 1 Domain, 1 Audit-Bericht/Monat, 0,5 GB Evidence, 1 Sitz, kein Bot. Scan mit Governance Score, Top-3-Risiken, PDF-Kurzbericht. SiteOS nur als Preview. | kostenlos, kein Account nötig |
-| **Starter** | 79 € / 790 € *(Jahrespreis nicht buchbar)* | netto zzgl. USt. | ein Unternehmen, Governance-Fundament | 1 Bot (500 Antworten, Website), 1 Domain, 1 SiteOS-Site, 1 Sitz, 25 Automationsläufe, 2 GB Evidence, 2 Berichte/Monat, kein API-Zugang. Policy Packs DSGVO und EU AI Act, Evidence Vault, Audit-Export (PDF/JSON). Monitoring: *Coming Soon*. | 14 Tage Test · **Beta: 0 €** bis 31.01.2027, Listenpreis durchgestrichen |
-| **Growth** ⭐ *Empfohlen* | 249 € / 2.490 € *(nicht buchbar)* | netto zzgl. USt. | Teams mit einem Mandanten | 2 Bots (2.000 Antworten; Website, WhatsApp, Telegram), 3 Domains, 3 Sites, 5 Sitze, 100 Automationsläufe, 5.000 API-Calls, 3 API-Keys, 10 Bulk-Jobs, 10 GB, 12 Berichte/Monat. Dazu ISO 27001, Risk Register, Policy Engine, API, Webhooks, Scheduler und Provenance. Drift-Monitoring: *Coming Soon*. | 14 Tage Test · **Beta: 0 €** bis 31.01.2027 |
-| **Agency** | 699 € / 6.900 € *(nicht buchbar)* | netto zzgl. USt. | Agenturen mit mehreren Kunden | 10 Bots (10.000 Antworten, alle Kanäle inkl. Voice), 10 Domains, 10 Sites, 15 Sitze, 500 Automationsläufe, 50.000 API-Calls, 10 Keys, 50 GB, 50 Berichte/Monat. Dazu NIS2 (TISAX nur Roadmap), White-Label-Berichte, Bulk-CSV-Scans, n8n und Kodee *(Preview)*. Nur **1** Mandant. | kein Trial, monatlich kündbar · **Beta: 0 €** bis 31.01.2027 |
-| **Enterprise** | **„Auf Anfrage“** *(interner Listenpreis in `shared/pricing.ts`: 1.249 €/Monat, wird öffentlich nicht gezeigt; Owner-Vorgabe 1.498 € liegt nur in offenen PRs #1995/#1999)* | – | Konzerne, bis 5 Organisationen | 20 Bots (50.000 Antworten), 25 Domains, 50 Sitze, 250.000 API-Calls, 200 GB, 200 Berichte/Monat. Multi-Tenant-Dashboard, SSO *(Coming Soon)*, SLA nach Vereinbarung. Laut Vertrag gilt: `-1` heißt, der Vertrag begrenzt. | kein Self-Service-Trial, Kontakt über Sales, nicht Teil der Beta |
-| **Governance Launch** | **349 € einmalig** | netto zzgl. USt. | Ersteinrichtung für einen Anwendungsfall | 1 Domain, 1 Bot (1.000 Antworten), 3 Sitze, 5 GB, 5 Berichte, 10 Automationsläufe. DSGVO-Pack ist eingerichtet. SiteOS-Publish ist nicht enthalten. Steht nicht auf der Abo-Leiter. | kein Trial; liegt nicht im `/pricing`-Raster, steht aber im JSON-LD und im Transformation-Flow |
+| **Starter** | 79 € / 790 € *(Jahrespreis nicht buchbar)* | ohne USt-Berechnung (§ 19 UStG) | ein Unternehmen, Governance-Fundament | 1 Bot (500 Antworten, Website), 1 Domain, 1 SiteOS-Site, 1 Sitz, 25 Automationsläufe, 2 GB Evidence, 2 Berichte/Monat, kein API-Zugang. Policy Packs DSGVO und EU AI Act, Evidence Vault, Audit-Export (PDF/JSON). Monitoring: *Coming Soon*. | 14 Tage Test · **Beta: 0 €** bis 31.01.2027, Listenpreis durchgestrichen |
+| **Growth** ⭐ *Empfohlen* | 249 € / 2.490 € *(nicht buchbar)* | ohne USt-Berechnung (§ 19 UStG) | Teams mit einem Mandanten | 2 Bots (2.000 Antworten; Website, WhatsApp, Telegram), 3 Domains, 3 Sites, 5 Sitze, 100 Automationsläufe, 5.000 API-Calls, 3 API-Keys, 10 Bulk-Jobs, 10 GB, 12 Berichte/Monat. Dazu ISO 27001, Risk Register, Policy Engine, API, Webhooks, Scheduler und Provenance. Drift-Monitoring: *Coming Soon*. | 14 Tage Test · **Beta: 0 €** bis 31.01.2027 |
+| **Agency** | 699 € / 6.900 € *(nicht buchbar)* | ohne USt-Berechnung (§ 19 UStG) | Agenturen mit mehreren Kunden | 10 Bots (10.000 Antworten, alle Kanäle inkl. Voice), 10 Domains, 10 Sites, 15 Sitze, 500 Automationsläufe, 50.000 API-Calls, 10 Keys, 50 GB, 50 Berichte/Monat. Dazu NIS2 (TISAX nur Roadmap), White-Label-Berichte, Bulk-CSV-Scans, n8n und Kodee *(Preview)*. Nur **1** Mandant. | kein Trial, monatlich kündbar · **Beta: 0 €** bis 31.01.2027 |
+| **Enterprise** | **1.498 €/Monat** *(Jahres-Checkout nicht verfügbar; Live-Price-Wiring unbestätigt)* | keine zusätzliche USt (§ 19 UStG) | Unternehmen, bis 5 Organisationen | 20 Bots (50.000 Antworten), 25 Domains, 50 Sitze, 250.000 API-Calls, 200 GB, 200 Berichte/Monat. Multi-Tenant-Dashboard, SSO *(Coming Soon)*, SLA nach Vereinbarung. | kein Trial, nicht Teil der Beta; Self-Service im Code, Kaufpfad bis zur Stripe-Verifizierung fail-closed |
+| **Governance Launch** | **349 € einmalig** | ohne USt-Berechnung (§ 19 UStG) | Ersteinrichtung für einen Anwendungsfall | 1 Domain, 1 Bot (1.000 Antworten), 3 Sitze, 5 GB, 5 Berichte, 10 Automationsläufe. DSGVO-Pack ist eingerichtet. SiteOS-Publish ist nicht enthalten. Steht nicht auf der Abo-Leiter. | kein Trial; liegt nicht im `/pricing`-Raster, steht aber im JSON-LD und im Transformation-Flow |
 | *Partner* (legacy) | *intern 1.999 € / 19.000 €* | – | Reseller (bis 50 Mandanten) | stillgelegt (`availability: 'legacy'`). Bestandsabos laufen weiter, neu buchen kann man ihn nicht. | wird nicht angezeigt |
 
 **Jahresabrechnung:** Für **alle** Pläne gilt `yearlyCheckoutUnavailable: true`. Der Owner hat am 2026-09-01 entschieden, vorerst keine Jahres-Abos zu verkaufen. Die Website blendet deshalb keinen Jahrespreis ein, `/pricing` zeigt *„Jährlich · Coming Soon“*. Die Jahresbeträge oben sind interne Listenpreise nach der Regel „12 zum Preis von 10“.
@@ -53,9 +53,9 @@
 - **`VITE_BETA_PHASE=off`:** Überall erscheinen wieder die Listenpreise. Starter und Growth zeigen „14 Tage kostenlos testen · monatlich kündbar“, Agency „monatlich kündbar“. Der Checkout geht wieder an Stripe.
 - **`publicOffer = false` (bei aktiver Beta):** Die Listenpreise erscheinen, die Checkout-Umleitung und bestehende Beta-Zugänge bleiben aber erhalten.
 - **Claims vs. Runtime:** Beta-Mandanten bekommen den Growth-Umfang serverseitig über `beta-enroll` (Abo-Status `trialing` mit `trial_end` = 31.01.2027). Der Ablauf ist automatisch: Seit Migration `20260928160000_wp2a_trial_end_expiry.sql` wertet `tenant_entitlements_resolve()` abgelaufene Trials nicht mehr. Das Enddatum in `src/config/beta.ts` ist nur das Anzeige-Label dazu.
-- Enterprise ist von der Beta nicht betroffen und bleibt „Auf Anfrage“.
+- Enterprise ist von der Beta nicht betroffen: Die Preis-SSoT nennt 1.498 €/Monat und `purchaseMode: 'checkout'`; der CTA lautet weiterhin „Enterprise anfragen“. Ein erfolgreicher Live-Checkout ist mangels verifizierter Stripe-Zuordnung und Deployment nicht bestätigt.
 
-### A.4 Add-ons (monatlich, netto; SSoT `ADDONS`, Doku `docs/product/addon-booking.md`)
+### A.4 Add-ons (monatlich, im Modus EXEMPT ohne USt-Berechnung; SSoT `ADDONS`, Doku `docs/product/addon-booking.md`)
 
 | Add-on | Preis | Angeboten für (`availableFor`) | Gewährt (additiv zum Plan) |
 |---|---|---|---|

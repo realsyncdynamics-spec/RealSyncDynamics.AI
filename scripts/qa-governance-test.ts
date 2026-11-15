@@ -60,13 +60,13 @@ const probes: Probe[] = [
   // ── Legal pages reachability ──────────────────────────────────────────────
 
   {
-    name: '/legal/impressum reachable (§5 TMG)',
+    name: '/legal/impressum reachable (§5 DDG)',
     run: async () => {
       const p = await getPage('/legal/impressum');
       if (!p.ok) return { ok: false, status: p.status, detail: `HTTP ${p.status}` };
       // Content check disabled for SPA: component text is in JS bundles, not initial HTML.
       // Verify via E2E test instead (browser renders JS).
-      return { ok: true, status: p.status, detail: 'HTTP 200 (content verified via E2E)' };
+      return { ok: true, status: p.status, detail: 'HTTP reachable; SPA tax wording requires browser E2E' };
     },
   },
 
@@ -183,24 +183,9 @@ const probes: Probe[] = [
     },
   },
 
-  // ── Regelbesteuerung (seit 20.10.2026) — kein § 19-Hinweis mehr ──────────
-
-  {
-    name: 'Impressum claims no Kleinunternehmer status (business is USt-pflichtig)',
-    run: async () => {
-      const p = await getPage('/legal/impressum');
-      if (!p.ok) return { ok: false, status: p.status, detail: `HTTP ${p.status}` };
-      if (/Kleinunternehmer|§\s*19\s*UStG/i.test(p.body)) {
-        return {
-          ok: false,
-          status: p.status,
-          detail: '§ 19 UStG / Kleinunternehmer found on Impressum — business is USt-pflichtig (PRICING_TAX_MODE=EU_STANDARD)',
-        };
-      }
-      const vatId = p.body.match(/\bDE\d{9}\b/)?.[0];
-      return { ok: true, status: p.status, detail: vatId ? `USt-IdNr. ${vatId} shown` : 'no § 19 claim; USt-IdNr. pending' };
-    },
-  },
+  // ── Tax notice is client-rendered ────────────────────────────────────────
+  // The hydrated SPA tax copy cannot be verified in the fetch-only HTML.
+  // Route status is checked above; E2E checks /pricing against the pricing SSoT.
 
   // ── EU AI Act disclosure ──────────────────────────────────────────────────
 

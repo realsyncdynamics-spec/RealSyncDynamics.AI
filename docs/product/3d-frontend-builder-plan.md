@@ -1,6 +1,6 @@
 # 3D Frontend Builder — Produkt- und Umsetzungsplan
 
-**Status:** Vorschlag zur Umsetzung  
+**Status:** Umsetzungsvorschlag, technische Bestandsaufnahme ergänzt am 15.11.2026  
 **Produktziel:** 3D- und Motion-gestützte Landingpages sollen auch ohne Design- oder Programmierkenntnisse erstellbar sein.
 
 ## Produktentscheidung
@@ -13,10 +13,11 @@ Erster Anwendungsfall: eine moderne Website für einen Handwerksbetrieb mit klar
 
 - `/demo/3d-landingpage` demonstriert bereits eine interaktive Three.js-Szene mit scrollgesteuerter Kamerafahrt, Tastaturbedienung, Touch-Unterstützung, reduzierter Bewegung und einer Alternative ohne 3D.
 - `/build` und `BoltWorkbench` bilden den vorhandenen Builder-Einstieg.
-- Die aktuelle Vorschau erzeugt HTML/CSS und lokales JavaScript in einer isolierten Sandbox. Sie lädt keine externen CDN-Skripte.
+- Die Anwendung hat bereits `three`, `@react-three/fiber` und `@react-three/drei` als Abhängigkeiten.
+- Die Builder-Vorschau erzeugt HTML/CSS und lokales JavaScript in einem `srcDoc`-Iframe. Die CSP sperrt Netzwerkzugriffe und externe Skripte; interaktives JavaScript läuft in opaker Herkunft ohne `allow-same-origin`.
 - Die 3D-Erzeugung im Builder ist im Produktstand als geplant markiert.
 
-Diese Grenzen sind Teil der Implementierungsentscheidung: Die neue Vorschau darf nicht auf ein beliebiges externes CDN oder auf uneingeschränkte Ausführung in der Builder-Sandbox angewiesen sein.
+Die bestehende Demo beweist, dass eine 3D-Szene im vertrauenswürdigen React-Frontend läuft. Sie beweist noch nicht, dass sie im HTML-Preview-Sandboxpfad läuft.
 
 ## Nutzerablauf
 
@@ -47,9 +48,13 @@ Ein validiertes Manifest beschreibt erlaubte Szenenelemente und Parameter, zum B
 
 ### 4. Vorschau-Laufzeit
 
-Der 3D-Renderer muss in die bestehende CSP- und Sandbox-Strategie passen. Kein Preview-Code soll zur Laufzeit beliebige externe Skripte nachladen. Die technische Umsetzung soll zunächst eine lokal gebündelte, versionierte Three.js-Laufzeit und zugelassene GLB-Assets im vorhandenen Preview-Pfad nachweisen. Falls die jetzige Sandbox das nicht sicher unterstützt, ist ein eng begrenzter Renderer-Endpunkt mit expliziter Asset-Freigabe zu entwerfen, bevor die Funktion als verfügbar angezeigt wird.
+Der 3D-Renderer darf keine externen Skripte nachladen und keinen vom Nutzer oder Modell erzeugten JavaScript-Code mit erweiterten Rechten ausführen.
 
-Motion wird als kleine, geprüfte Menge an Übergängen und Interaktionen modelliert. Für React-basierte Ausgaben kann Motion for React genutzt werden, sofern der tatsächliche Builder-Renderpfad React unterstützt; die aktuelle HTML-Ausgabe darf nicht stillschweigend davon abhängig gemacht werden.
+**Technische Bestandsaufnahme:** Der bestehende `srcDoc`-Preview kann nur HTML/CSS und inline JavaScript darstellen. Seine CSP setzt `default-src 'none'`, sperrt `connect-src` und externe Skripte. Die vorhandene Three.js-Abhängigkeit ist im Vite-Hauptbundle verfügbar, nicht als importierbares Modul im isolierten HTML-Dokument. Deshalb ist ein direktes Einbetten der vorhandenen React-3D-Demo in diesen Iframe nicht möglich, ohne die Isolierung zu lockern oder ein großes Bundle in den Entwurf einzubetten.
+
+**Architekturentscheidung für den Laufzeitnachweis:** 3D bleibt ein vertrauenswürdiger, gebündelter React-Renderer im Hauptfrontend. Der Builder liefert ihm ausschließlich ein schema-validiertes Szenenmanifest und freigegebene Asset-IDs. Er rendert keine KI-generierten Skripte. Das Manifest wird über eine eng definierte Nachrichten-Schnittstelle an den Renderer übergeben; die bestehende HTML-Vorschau bleibt separat und isoliert. Damit bleiben HTML-Entwurf und 3D-Szene editierbare, getrennte Bestandteile.
+
+Motion wird als kleine, geprüfte Menge an Übergängen und Interaktionen modelliert. Motion for React ist für React-basierte Oberflächen verfügbar; die aktuelle HTML/CSS-Ausgabe darf nicht stillschweigend von dieser Laufzeit abhängen.
 
 ### 5. KI und Sicherheit
 
@@ -63,7 +68,9 @@ Motion wird als kleine, geprüfte Menge an Übergängen und Interaktionen modell
 
 ### Phase 0 — Laufzeitnachweis
 
-Ein vorhandenes Demo-Modell über den echten Builder-Projekt- und Preview-Pfad laden. CSP, Sandbox, Mobilgerät, Ladezeit, WebGL-Ausfall und Reduced Motion prüfen. Ergebnis ist eine technische Entscheidung mit gemessenen Grenzen; noch keine öffentliche Produktzusage.
+**Quellcodeprüfung abgeschlossen:** Dependencies, bestehende Demo, Iframe-Sandbox und CSP sind abgeglichen. Die Demo und Three.js laufen im App-Frontend; die existierende HTML-Sandbox kann sie nicht direkt laden. Empfohlener Pfad ist deshalb der gebündelte React-Renderer mit schema-validiertem Manifest als Daten, nicht Code.
+
+Als nächster ausführbarer Schritt ist ein minimaler End-to-End-Prototyp nötig: Builder-Regler ändern ein kleines Szenenmanifest; der getrennte React-Renderer zeigt die Szene in der Builder-Preview; Umschalter „3D / leicht“, Reduced Motion, Tastatur und WebGL-Fallback funktionieren. Erst danach sind echte Geräte-, Performance- und CSP-Messungen möglich. Bis dahin gilt 3D-Generierung weiterhin als geplant.
 
 ### Phase 1 — Geführter 3D-Modus
 
@@ -92,6 +99,6 @@ Nutzungsgrenzen, Asset-Speicher, Generierungskosten, Exportrechte und Tarifzuord
 - Performancebudgets für initiale Seitenlast und 3D-Assetgröße werden vor Produktfreigabe festgelegt und im Preview sichtbar gemacht.
 - Status- und Verfügbarkeitsangaben spiegeln die Implementierung wider; ungebaute Funktionen bleiben als geplant markiert.
 
-## Offene technische Entscheidung
+## Nächster konkreter Umsetzungsschritt
 
-Vor Phase 1 ist im echten Builder zu entscheiden, ob ein lokal gebündelter Three.js-Renderer innerhalb des vorhandenen Preview-Iframes zulässig und praktikabel ist. Falls nicht, muss ein isolierter Renderer mit enger Nachrichten- und Asset-Schnittstelle gebaut werden. Diese Entscheidung darf nicht durch externe CDN-Skripte oder das Abschalten der CSP umgangen werden.
+Im bestehenden PR ist der Architekturpfad festgelegt; die Builder-Funktion selbst ist noch nicht implementiert. Der Prototyp sollte auf einem eigenen Feature-Branch folgen, sobald die Laufzeit-Schnittstelle und der manifestierte Scene-Renderer konkret umgesetzt werden. Keine externe Veröffentlichung und kein Merge ohne Freigabe.

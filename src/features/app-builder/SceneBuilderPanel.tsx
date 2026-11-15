@@ -104,7 +104,7 @@ function SceneObject({ manifest, rotation }: { manifest: SceneManifest; rotation
 
 export interface SceneBuilderPanelProps {
   manifest: SceneManifest;
-  onSave: (manifest: SceneManifest) => void | Promise<void>;
+  onSave: (manifest: SceneManifest) => void | boolean | Promise<void | boolean>;
 }
 
 const FORM_OPTIONS: { id: SceneForm; title: string; note: string }[] = [
@@ -118,6 +118,7 @@ export default function SceneBuilderPanel({ manifest, onSave }: SceneBuilderPane
   const [webgl, setWebgl] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const mood = MOOD_COLORS[scene.mood] ?? MOOD_COLORS[DEFAULT_SCENE_MANIFEST.mood];
 
   useEffect(() => setWebgl(supportsWebGL()), []);
@@ -126,8 +127,12 @@ export default function SceneBuilderPanel({ manifest, onSave }: SceneBuilderPane
 
   async function save() {
     setSaving(true);
+    setSaveError(null);
     try {
-      await onSave(scene);
+      const saved = await onSave(scene);
+      if (saved === false) setSaveError('Speichern wurde durch den Projekt-Gate blockiert. Details stehen im Prüfpfad.');
+    } catch {
+      setSaveError('Szene konnte nicht gespeichert werden. Bitte erneut versuchen.');
     } finally {
       setSaving(false);
     }
@@ -219,6 +224,7 @@ export default function SceneBuilderPanel({ manifest, onSave }: SceneBuilderPane
 
         <div className="border-t border-white/10 pt-4">
           <p className="text-xs leading-5 text-white/45">Dieser Prototyp nutzt geprüfte, prozedurale Formen. Blender-/GLB-Import, KI-Szenengenerierung und Einbettung in den exportierten Seitenquelltext folgen als getrennte Ausbaustufen.</p>
+          {saveError ? <p role="alert" className="mt-3 text-xs leading-5 text-[#E24A4A]">{saveError}</p> : null}
           <button type="button" onClick={() => void save()} disabled={saving} className="mt-4 min-h-11 w-full bg-[#0052FF] px-4 text-sm font-medium text-white disabled:opacity-50">
             {saving ? 'Wird gespeichert …' : 'Szene im Projekt speichern'}
           </button>

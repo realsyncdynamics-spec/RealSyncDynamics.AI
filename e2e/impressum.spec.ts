@@ -30,12 +30,18 @@ test.describe('/legal/impressum', () => {
       /Vertretungsberechtigte/i,
       /Umsatzsteuer/i,
       /Aufsichtsbehörde Datenschutz/i,
-      /EU-Streitschlichtung/i,
+      /Verbraucherstreitbeilegung/i,
     ]) {
       await expect(
         page.getByRole('heading', { name: heading }).first(),
       ).toBeVisible();
     }
+  });
+
+  test('kein Verweis auf die eingestellte EU-OS-Plattform', async ({ page }) => {
+    // Die OS-Plattform wurde zum 20.07.2025 eingestellt (VO (EU) 2024/3228).
+    await page.goto('/legal/impressum');
+    await expect(page.locator('a[href*="ec.europa.eu/consumers/odr"]')).toHaveCount(0);
   });
 
   test('semantisches <h1> Impressum vorhanden', async ({ page }) => {

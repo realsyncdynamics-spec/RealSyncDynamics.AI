@@ -63,13 +63,25 @@ export const LV2_AI_ACT_TIMELINE: Lv2TimelineEntry[] = [
     date: '02.08.2026',
     iso: '2026-08-02',
     title: 'Allgemeine Anwendung',
-    text: 'Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.',
+    text: 'Übrige Vorschriften, darunter die meisten Transparenzpflichten nach Art. 50.',
+  },
+  {
+    date: '02.12.2027',
+    iso: '2027-12-02',
+    title: 'Hochrisiko nach Anhang III',
+    text: 'Zentrale Pflichten für Hochrisiko-KI, etwa in Personalauswahl, Bildung oder Kreditprüfung.',
     current: true,
+  },
+  {
+    date: '02.08.2028',
+    iso: '2028-08-02',
+    title: 'Hochrisiko nach Anhang I',
+    text: 'Zentrale Pflichten für KI in regulierten Produkten.',
   },
 ];
 
 export const LV2_TIMELINE_NOTE =
-  'Stand: Verordnung (EU) 2024/1689, Art. 113. Fristverschiebungen für Hochrisiko-Systeme (Digital Omnibus) sind im Gesetzgebungsverfahren — die Plattform bildet den jeweils geltenden Stand ab.';
+  'Stand: Verordnung (EU) 2024/1689, Art. 113, geändert durch Verordnung (EU) 2026/1744 (Digital Omnibus, in Kraft seit 27.07.2026). Die Hochrisiko-Fristen wurden auf den 02.12.2027 (Anhang III) und den 02.08.2028 (Anhang I) verschoben.';
 
 export interface Lv2LifecycleStep {
   index: string;

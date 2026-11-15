@@ -50,7 +50,7 @@ const CONFIG: NicheConfig = {
     },
     {
       q: 'Wann gilt der EU AI Act für mein Unternehmen?',
-      a: 'Die wichtigsten Pflichten (Verbote inakzeptabler Systeme, Transparenzpflichten für GPAI-Modelle) gelten seit August 2024. Hochrisiko-Systeme (Annex III) gelten ab August 2026. Transparenzpflichten für KI-generierte Inhalte (Art. 50) gelten seit August 2025.',
+      a: 'Der AI Act ist seit 1. August 2024 in Kraft. Verbote unzulässiger Praktiken und die KI-Kompetenzpflicht gelten seit 2. Februar 2025, Pflichten für GPAI-Modelle seit 2. August 2025, die meisten Transparenzpflichten für KI-generierte Inhalte (Art. 50) seit 2. August 2026. Hochrisiko-Systeme nach Annex III folgen am 2. Dezember 2027, KI in regulierten Produkten (Annex I) am 2. August 2028 (verschoben durch Verordnung (EU) 2026/1744).',
     },
     {
       q: 'Was ist, wenn mein KI-Tool personenbezogene Daten verarbeitet?',

@@ -161,3 +161,16 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(enterprise.featureGroups.multi_tenant_reseller).toContain('Single Sign-On (Preview, auf Anfrage)');
   });
 });
+
+describe('Bot-Add-ons — Plan-Zuordnung aus der SSoT', () => {
+  it('nennt nur Pläne, für die das Add-on laut SSoT angeboten wird', async () => {
+    const { BOT_ADDONS } = await import('../../src/config/pricing');
+    const { ADDONS } = await import('../../shared/pricing');
+    for (const addon of BOT_ADDONS) {
+      const source = ADDONS.find((a) => a.id === addon.id);
+      expect(addon.availableForNames).toEqual(
+        (source?.availableFor ?? []).map((id) => planById(id)?.name),
+      );
+    }
+  });
+});

@@ -51,8 +51,8 @@ export function PartnersPage() {
             <span className="text-emerald-300">unsere Infrastruktur.</span>
           </h1>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-            Wenn Sie Datenschutzbeauftragten-Mandate führen und vor August 2026
-            AI-Act-konforme Risk-Assessments für Ihre Mandanten ausliefern müssen:
+            Wenn Sie Datenschutzbeauftragten-Mandate führen und vor den Hochrisiko-Fristen
+            (Dezember 2027 bzw. August 2028) AI-Act-konforme Risk-Assessments für Ihre Mandanten ausliefern müssen:
             unsere Runtime liefert Discovery, Klassifikation, Controls, Evidence-Chain.
             <strong className="text-titanium-50"> Sie behalten den Mandanten — wir sind Zulieferer, kein Konkurrent.</strong>
           </p>

@@ -109,7 +109,7 @@ export function Marktanalyse() {
 
           <Section title="Was das für deutsche Mittelständler bedeutet" icon={<Euro className="h-5 w-5 text-emerald-400" />}>
             <ul className="space-y-1.5 text-sm">
-              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">→</span><span>Wer KI 2026 produktiv einsetzt, braucht <strong className="text-titanium-50">vor August 2026</strong> die Klassifikation, Dokumentation und das Audit-Setup.</span></li>
+              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">→</span><span>Wer KI 2026 produktiv einsetzt, braucht <strong className="text-titanium-50">vor Dezember 2027</strong> (Hochrisiko nach Anhang III) die Klassifikation, Dokumentation und das Audit-Setup.</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">→</span><span>€29 277 Compliance-Kosten pro AI-System sind der Grund, warum Self-Service-Tools (€29–299/M) gegen Beratungs-Pakete (4–15k €/Jahr) gewinnen.</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">→</span><span>EU-Datenresidenz ist nicht-verhandelbar bei Behörden, Healthcare und stark reguliertem FinTech — US-Cloud-Default-Pfade fallen aus.</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">→</span><span>Notified-Bodies-Engpass: wer im Q4 2025 / Q1 2026 mit Klassifikation und Dokumentation startet, vermeidet die Q3-Wartezeit.</span></li>

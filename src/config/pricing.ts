@@ -408,6 +408,8 @@ export interface BotAddOn {
   bullets: string[];
   priceEur: number;
   priceSuffix: string;
+  /** Anzeigenamen der Pläne aus `addon.availableFor` (verkaufte Pläne). */
+  availableForNames: string[];
 }
 
 function toBotAddOn(addon: AddOn): BotAddOn {
@@ -418,6 +420,9 @@ function toBotAddOn(addon: AddOn): BotAddOn {
     bullets: addon.bullets,
     priceEur: addon.priceEur,
     priceSuffix: addon.priceNote,
+    availableForNames: addon.availableFor
+      .map((planId) => planById(planId)?.name)
+      .filter((name): name is string => Boolean(name)),
   };
 }
 

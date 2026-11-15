@@ -11,6 +11,8 @@ import { diagnoseFiles, type Diagnostic } from './bolt/diagnostics';
 import { repairPrompt } from './bolt/error-recovery';
 import { generateViaRealSyncGatewayStream } from './gateway';
 import { LANDING_TEMPLATES, type LandingTemplateId } from './bolt/landing-templates';
+import SceneBuilderPanel from './SceneBuilderPanel';
+import { readSceneManifest, type SceneManifest } from './bolt/scene-manifest';
 import {
   deleteBuilderProject,
   listBuilderProjects,
@@ -28,7 +30,7 @@ import {
 } from './bolt/project-store';
 import type { AuditRecord, EngineRunResult, FileRecord, GovernanceContext } from './bolt/types';
 
-type Pane = 'preview' | 'code' | 'audit';
+type Pane = 'preview' | 'scene' | 'code' | 'audit';
 
 const DEFAULT_CODE_PROMPT = 'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.';
 
@@ -581,7 +583,7 @@ export function BoltWorkbench({
 
         <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
           <div className="grid grid-cols-3 border-b border-white/10">
-            {(['preview', 'code', 'audit'] as Pane[]).map((id) => (
+            {(['preview', 'scene', 'code', 'audit'] as Pane[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -590,7 +592,7 @@ export function BoltWorkbench({
                   pane === id ? 'bg-[#0052FF] text-[#E2E2E2]' : 'bg-[#101114] text-white/55'
                 }`}
               >
-                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : 'Prüfpfad'}
+                {id === 'preview' ? 'Vorschau' : id === 'scene' ? '3D Studio' : id === 'code' ? 'Code' : 'Prüfpfad'}
               </button>
             ))}
           </div>
@@ -649,6 +651,18 @@ export function BoltWorkbench({
                 </div>
               )}
             </div>
+          )}
+
+          {pane === 'scene' && (
+            <SceneBuilderPanel
+              key={`${project.id}:${project.files['scene.manifest.json'] ?? 'new'}`}
+              manifest={readSceneManifest(project.files['scene.manifest.json'])}
+              onSave={async (manifest: SceneManifest) => {
+                const res = await engineRef.current.writeFile('scene.manifest.json', JSON.stringify(manifest, null, 2));
+                await applyEngine(res);
+                setPane('scene');
+              }}
+            />
           )}
 
           {pane === 'code' && (

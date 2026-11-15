@@ -244,8 +244,9 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' }
     })
   } catch (error) {
-    console.error('Orchestrator error:', error)
-    return new Response(JSON.stringify({ status: 'failure', error: String(error) }), {
+    const errorId = crypto.randomUUID()
+    console.error(`Orchestrator error [${errorId}]:`, error)
+    return new Response(JSON.stringify({ status: 'failure', errorId }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     })

@@ -1,6 +1,6 @@
 # 3D Frontend Builder — Produkt- und Umsetzungsplan
 
-**Status:** Umsetzungsvorschlag, technische Bestandsaufnahme ergänzt am 15.11.2026  
+**Status:** Technischer Prototyp im Draft-PR; Bestandsaufnahme und Integration ergänzt am 15.11.2026  
 **Produktziel:** 3D- und Motion-gestützte Landingpages sollen auch ohne Design- oder Programmierkenntnisse erstellbar sein.
 
 ## Produktentscheidung
@@ -66,11 +66,13 @@ Motion wird als kleine, geprüfte Menge an Übergängen und Interaktionen modell
 
 ## Gestufte Umsetzung
 
-### Phase 0 — Laufzeitnachweis
+### Phase 0 — Laufzeitnachweis und erster Prototyp
 
-**Quellcodeprüfung abgeschlossen:** Dependencies, bestehende Demo, Iframe-Sandbox und CSP sind abgeglichen. Die Demo und Three.js laufen im App-Frontend; die existierende HTML-Sandbox kann sie nicht direkt laden. Empfohlener Pfad ist deshalb der gebündelte React-Renderer mit schema-validiertem Manifest als Daten, nicht Code.
+**Quellcodeprüfung abgeschlossen:** Dependencies, bestehende Demo, Iframe-Sandbox und CSP sind abgeglichen. Die Demo und Three.js laufen im App-Frontend; die existierende HTML-Sandbox kann sie nicht direkt laden. Deshalb läuft das 3D Studio als gebündelter React-Renderer im Builder und rendert nur ein validiertes Manifest.
 
-Als nächster ausführbarer Schritt ist ein minimaler End-to-End-Prototyp nötig: Builder-Regler ändern ein kleines Szenenmanifest; der getrennte React-Renderer zeigt die Szene in der Builder-Preview; Umschalter „3D / leicht“, Reduced Motion, Tastatur und WebGL-Fallback funktionieren. Erst danach sind echte Geräte-, Performance- und CSP-Messungen möglich. Bis dahin gilt 3D-Generierung weiterhin als geplant.
+**Im PR prototypisch umgesetzt:** drei prozedurale Szenenformen (Architekturportal, Produktobjekt, Orbit), drei Lichtstimmungen, Akzentfarbe, Motion-Regler, reduzierte Bewegung, Drehknöpfe, WebGL-Fallback sowie Speichern als `scene.manifest.json` durch den vorhandenen Projekt-Gate.
+
+**Noch nicht abgedeckt:** Die 3D-Szene wird nicht in die HTML-Seitenvorschau oder den exportierten Seitenquelltext eingebettet. Es gibt keinen Blender-/GLB-Import, keine KI-gestützte Szenengenerierung und noch keine gemessenen Performancebudgets. Diese Funktionalität bleibt bis zur Umsetzung und Prüfung als geplant markiert.
 
 ### Phase 1 — Geführter 3D-Modus
 
@@ -99,6 +101,11 @@ Nutzungsgrenzen, Asset-Speicher, Generierungskosten, Exportrechte und Tarifzuord
 - Performancebudgets für initiale Seitenlast und 3D-Assetgröße werden vor Produktfreigabe festgelegt und im Preview sichtbar gemacht.
 - Status- und Verfügbarkeitsangaben spiegeln die Implementierung wider; ungebaute Funktionen bleiben als geplant markiert.
 
-## Nächster konkreter Umsetzungsschritt
+## Nächste Umsetzungsschritte
 
-Im bestehenden PR ist der Architekturpfad festgelegt; die Builder-Funktion selbst ist noch nicht implementiert. Der Prototyp sollte auf einem eigenen Feature-Branch folgen, sobald die Laufzeit-Schnittstelle und der manifestierte Scene-Renderer konkret umgesetzt werden. Keine externe Veröffentlichung und kein Merge ohne Freigabe.
+1. Den Renderer als 3D-Abschnitt mit der normalen Landingpage-Vorschau verbinden, ohne Skripte in die Sandbox einzuschleusen.
+2. Blender-/GLB-Import mit Dateiprüfung, Größe, Lizenzherkunft und Tenant-Speicherung ergänzen.
+3. Eine begrenzte KI-Änderungsschnittstelle bauen, die ausschließlich Manifestwerte ändert.
+4. Mobil-, Tastatur-, Reduced-Motion- und WebGL-Fallbacks sowie Ladebudgets im echten Builder prüfen.
+
+Der bestehende PR enthält einen reviewbaren technischen Prototyp. Merge und Veröffentlichung bleiben freigabepflichtig.

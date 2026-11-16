@@ -322,6 +322,36 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnPlatform: true,
   },
   {
+    id: 'cloud-code-optimizer',
+    name: 'Claude Code Optimizer',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Geführter Website-/Code-Prüfablauf unter /claude-code-optimizer. Vorhandener Scanner und Berichtspfad; keine bestätigte produktive Repository-Code-Korrektur. Nicht mit dem LIVE-Status des separaten AI Gateway gleichsetzen.',
+    route: '/claude-code-optimizer',
+    evidence: [
+      'src/pages/claude-code-optimizer/OptimizerKit.tsx',
+      'src/pages/claude-code-optimizer/OptimizerScan.tsx',
+      'docs/qa/landing-to-runtime-parity.md',
+    ],
+    showOnRoadmap: true,
+  },
+  {
+    id: 'creative-studio',
+    name: 'AI Creative Studio — Bild und Video',
+    status: 'preview',
+    group: 'visual',
+    description:
+      'Im Entwurfs-PR #2269 vorbereitet: geschütztes /app/media-studio für xAI-Bild- und Videoaufträge. Neue Edge Function ist OFF-by-default und per User-Allowlist beschränkt. Keine live bestätigte Generierung, ohne atomare Budgets/Quoten und Auditing keine allgemeine Freigabe.',
+    route: '/app/media-studio',
+    evidence: [
+      'src/pages/CreativeStudio.tsx',
+      'supabase/functions/creative-studio/index.ts',
+      'PR #2269',
+    ],
+    showOnRoadmap: true,
+  },
+  {
     id: 'automation-n8n',
     name: 'Automations / n8n Runtime',
     status: 'preview',

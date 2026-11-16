@@ -155,7 +155,9 @@ describe('pricing config (Single Source of Truth)', () => {
   });
   it('kennzeichnet Enterprise Single Sign-On in den Tier-Projektionen als Preview auf Anfrage (E-V8)', () => {
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.tagline).toContain('SSO (Preview, auf Anfrage).');
+    // SSO nie unbedingt zusagen: immer mit Vorschau-/Preview-Hinweis und „auf Anfrage".
+    expect(enterprise.tagline).toMatch(/SSO (\(Preview, auf Anfrage\)|als Vorschau auf Anfrage)/);
+    expect(enterprise.tagline).not.toMatch(/SSO\.$/);
     expect(enterprise.bullets).toContain('Single Sign-On (Preview, auf Anfrage)');
     expect(enterprise.bullets).not.toContain('Single Sign-On');
     expect(enterprise.featureGroups.multi_tenant_reseller).toContain('Single Sign-On (Preview, auf Anfrage)');

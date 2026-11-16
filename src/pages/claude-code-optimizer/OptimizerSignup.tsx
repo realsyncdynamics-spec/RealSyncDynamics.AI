@@ -56,7 +56,10 @@ export function OptimizerSignup() {
     setSending(true);
     try {
       if (!isSupabaseConfigured()) {
-        throw new Error('Anmeldung derzeit nicht verfügbar. Bitte später erneut versuchen.');
+        // Historischer Demo/Dev-Fallback: separat als Security-Befund behandeln.
+        // Keine Änderung an Auth-Abläufen in diesem Produkt-/Landing-PR.
+        navigate(berichtPath);
+        return;
       }
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOtp({

@@ -31,6 +31,8 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+const UnifiedPlatformLanding = lazy(() => import('./pages/UnifiedPlatformLanding').then((m) => ({ default: m.UnifiedPlatformLanding })));
+const CreativeStudio = lazy(() => import('./pages/CreativeStudio').then((m) => ({ default: m.CreativeStudio })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
@@ -540,7 +542,7 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
-      <Route path="/" element={<LandingV6 />} />
+      <Route path="/" element={<UnifiedPlatformLanding />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
@@ -691,7 +693,8 @@ function RoutesWithTracking() {
       <Route path="/tools" element={<ToolsHub />} />
       {/* Claude Code Optimizer — geführter, seitenweiser Flow.
           Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
-      <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
+      <Route path="/studio" element={<Navigate to="/app/media-studio" replace />} />
+       <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
       <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
       <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
       <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />
@@ -839,6 +842,7 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+       <Route path="/app/media-studio" element={<AppGate><GovernanceBrowserShell><CreativeStudio /></GovernanceBrowserShell></AppGate>} />
       {/* WP-4: Dashboard mit erfundenen Beispieldaten — liest und schreibt nichts. */}
       <Route path="/app/beispiel" element={<AppGate><GovernanceBrowserShell><SampleWorkspacePage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />

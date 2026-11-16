@@ -235,6 +235,15 @@ verify_jwt = false
 [functions.workspace-events]
 verify_jwt = false
 
+# Prüfmodus für Workspace-Freigaben: Ingest-Schlüssel plus Pflicht-Signatur (HMAC) statt JWT.
+[functions.workspace-execute]
+verify_jwt = false
+
+# Workspace-Freigaben entscheiden: prüft das User-JWT selbst (getUser) und
+# arbeitet nur mit dem JWT des Aufrufers, ohne Service-Role (wie governance-approvals).
+[functions.workspace-approvals]
+verify_jwt = false
+
 # Signup-/Operator-Mailer. Anon-JWT reicht nicht — eigener Service-Role-Check.
 [functions.welcome-email]
 verify_jwt = false

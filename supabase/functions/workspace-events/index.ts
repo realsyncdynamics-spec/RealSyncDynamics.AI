@@ -3,6 +3,10 @@
 // POST /functions/v1/workspace-events
 // Headers:
 //   x-rsd-tenant-key: rsd_gov_…   (Pflicht; alternativ Authorization: Bearer rsd_gov_…)
+//   x-rsd-timestamp, x-rsd-nonce, x-rsd-signature
+//                    HMAC-Signatur (_shared/workspaceSignature.ts). Pflicht, sobald
+//                    für den Schlüssel ein Signatur-Geheimnis eingerichtet ist
+//                    oder WORKSPACE_EVENTS_REQUIRE_SIGNATURE=true gesetzt ist.
 //   content-type:    application/json
 //
 // Body (Schema 1.0):
@@ -20,6 +24,7 @@
 // eine Freigabeanfrage an; die Einlösung (consume_workspace_approval) ist für
 // einen künftigen, gesondert freizugebenden Ausführer vorgesehen.
 //
+// Signatur fehlt/falsch 401, Nonce wiederverwendet 409, Signatur-Limit 429.
 // Fail closed: fehlender/ungültiger Schlüssel 401, Schlüssel ohne Quelle
 // `google_workspace` 403, verbotene oder unbekannte Aktion 403, zu großer Body
 // 413, Datenbankfehler 503. Inhalte (Mailtexte, Dokumente) gehören nicht in
@@ -38,9 +43,11 @@ import {
   validateWorkspaceEvent,
   workspacePayloadHash,
 } from '../_shared/workspaceEvents.ts';
+import { checkWorkspaceSignature, signatureDepsFromRpc } from '../_shared/workspaceSignature.ts';
 
 const corsHeaders = buildCorsHeaders('POST, OPTIONS');
-corsHeaders['Access-Control-Allow-Headers'] = 'authorization, content-type, x-rsd-tenant-key';
+corsHeaders['Access-Control-Allow-Headers'] =
+  'authorization, content-type, x-rsd-tenant-key, x-rsd-timestamp, x-rsd-nonce, x-rsd-signature';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
@@ -74,6 +81,23 @@ Deno.serve(async (req) => {
 
   const body = await readCappedText(req, WORKSPACE_MAX_BODY_BYTES);
   if (!body.ok) return jsonError(413, 'BODY_TOO_LARGE', `max ${WORKSPACE_MAX_BODY_BYTES} bytes`, corsHeaders);
+
+  // Signatur (HMAC über Zeitstempel, Nonce und den rohen Body). Pflicht, sobald
+  // für den Schlüssel ein Signatur-Geheimnis eingerichtet ist oder
+  // WORKSPACE_EVENTS_REQUIRE_SIGNATURE=true gesetzt ist. Geprüft wird der Body
+  // so, wie er ankam — vor dem Parsen.
+  const sig = await checkWorkspaceSignature(
+    req.headers,
+    body.text,
+    'workspace-events',
+    Deno.env.get('WORKSPACE_EVENTS_REQUIRE_SIGNATURE') === 'true',
+    signatureDepsFromRpc((fn, args) => admin.rpc(fn, args), auth.keyId),
+  );
+  if (!sig.ok) {
+    console.error('[workspace-events] signature rejected', { code: sig.code, tenant: auth.tenantId });
+    return jsonError(sig.status, sig.code, sig.message, corsHeaders);
+  }
+
   let payload: unknown;
   try {
     payload = JSON.parse(body.text);
@@ -121,5 +145,6 @@ Deno.serve(async (req) => {
     approval_id: row.approval_id ?? undefined,
     approval_status: row.approval_status ?? undefined,
     payload_hash: payloadHash,
+    signed: sig.signed,
   }, 202, corsHeaders);
 });

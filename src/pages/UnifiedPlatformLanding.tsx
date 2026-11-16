@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Code2, Film, Image, LockKeyhole, ShieldCheck, Sparkles, Mic2, PanelsTopLeft, Blocks, Clapperboard } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Code2, LockKeyhole, ShieldCheck, Sparkles, Mic2, PanelsTopLeft, Blocks, Clapperboard } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 import { getImplementation, STATUS_LABEL } from '../product/implementation-status';
 
 /**
  * Unified platform landing (light) — 16.11.2026.
- * Status copy is explicit: existing governance/optimizer are available;
- * media generation is a staged integration, not an already-live product.
- */
-/**
+ * Die öffentliche Oberfläche stellt sechs getrennte, verknüpfte Produkte dar.
+ * Der Status kommt aus der Registry, keine Live-Claims für Pilotmodule.
  * Keine zweite Builder- oder Media-Runtime: alle Ziele zeigen auf bestehende
  * Routen bzw. auf den gesicherten Creative-Studio-Entwurf dieses PRs.
  * Der Umsetzungsstatus kommt aus der produktweiten Registry.

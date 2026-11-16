@@ -82,8 +82,16 @@ d('workspace_events · Eingang, RLS, Freigaben', () => {
   });
 
   it('lehnt Schlüssel ohne Quelle google_workspace oder eines anderen Mandanten ab', async () => {
-    await expect(ingest('evt-2', 'draft_reply', 'allow', ids.kSdk)).rejects.toThrow(/workspace_key_invalid/);
-    await expect(ingest('evt-3', 'draft_reply', 'allow', ids.kA, ids.tB)).rejects.toThrow(/workspace_key_invalid/);
+    // Jede erwartete Ausnahme in einem eigenen Savepoint: nach einem Fehler ist die
+    // Transaktion sonst abgebrochen, und die zweite Prüfung sähe nur noch
+    // „current transaction is aborted“ statt des eigentlichen Fehlers.
+    const rejected = async (run: () => Promise<unknown>) => {
+      await q(`SAVEPOINT sp_key`);
+      await expect(run()).rejects.toThrow(/workspace_key_invalid/);
+      await q(`ROLLBACK TO SAVEPOINT sp_key`);
+    };
+    await rejected(() => ingest('evt-2', 'draft_reply', 'allow', ids.kSdk));
+    await rejected(() => ingest('evt-3', 'draft_reply', 'allow', ids.kA, ids.tB));
   });
 
   it('legt für Außenwirkung eine PENDING-Freigabe an, für Internes nicht', async () => {

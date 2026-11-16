@@ -13,13 +13,13 @@
 |---|---:|---|
 | AKTIV | 155 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
 | DEPLOYT-OHNE-CALLER | 45 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
-| REPO-ONLY (nicht deployt) | 2 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
+| REPO-ONLY (nicht deployt) | 4 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
 | DRIFT: deployt ohne Quelle | 0 | In Prod-Liste, aber kein Verzeichnis (sollte 0 sein — sonst Drift-Guard) |
-| **Summe** | **202** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (202) |
+| **Summe** | **204** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (204) |
 
 ### Einordnung
 
-- ⚠️ Repo und Produktion weichen ab (2 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
+- ⚠️ Repo und Produktion weichen ab (4 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
 - **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.
 - Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (45): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
 - Alle oeffentlichen Functions (`verify_jwt=false`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger `public/webhook` und zaehlen damit als AKTIV, auch ohne internen Caller.
@@ -78,12 +78,14 @@
 | `cloudflare-deployer` | Website/Betrieb | kein interner Caller/Trigger |
 | `hostinger-agent-brief` | Website/Betrieb | kein interner Caller/Trigger |
 
-## REPO-ONLY — im Repo, nicht in der Prod-Liste (2)
+## REPO-ONLY — im Repo, nicht in der Prod-Liste (4)
 
 | Function | Cluster | Erreichbarkeit |
 |---|---|---|
 | `platform-intelligence-orchestrator` | Sonstige | — |
+| `workspace-approvals` | Sonstige | public/webhook |
 | `workspace-events` | Sonstige | public/webhook |
+| `workspace-execute` | Sonstige | public/webhook |
 
 ## Vollinventar nach Cluster
 
@@ -371,7 +373,7 @@
 | `social-orchestrator-persistence` | AKTIV | frontend-invoke |
 | `social-publisher-worker` | DEPLOYT-OHNE-CALLER | — |
 
-### Sonstige (23)
+### Sonstige (25)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
@@ -397,7 +399,9 @@
 | `skills` | DEPLOYT-OHNE-CALLER | — |
 | `sub-processor-notify` | AKTIV | cron, public/webhook |
 | `update-member-role` | AKTIV | frontend-invoke |
+| `workspace-approvals` | REPO-ONLY (nicht deployt) | public/webhook |
 | `workspace-events` | REPO-ONLY (nicht deployt) | public/webhook |
+| `workspace-execute` | REPO-ONLY (nicht deployt) | public/webhook |
 
 ### Webhook-Zustellung (4)
 
@@ -423,4 +427,4 @@
 
 ---
 
-_Erzeugt am 2026-11-16 · 202 Functions · 155 AKTIV · 45 ohne Caller._
+_Erzeugt am 2026-11-16 · 204 Functions · 155 AKTIV · 45 ohne Caller._

@@ -20,6 +20,7 @@ import { Welcome } from './pages/Welcome';
 import { FlowProvider } from './flow/FlowContext';
 // ── Phase 1: Public/marketing/SEO/demo/unified-entry pages → lazy
 // Keeps the live Governance-AI landing + auth shell eager for LCP / resume.
+const CreativeStudioPreviewRoute = lazy(() => import('./features/creative/CreativeStudioPreviewRoute'));
 const DemoGovernanceDashboard = lazy(() => import('./pages/DemoGovernanceDashboard').then((m) => ({ default: m.DemoGovernanceDashboard })));
 const DemoLandingPage = lazy(() => import('./pages/DemoLandingPage').then((m) => ({ default: m.DemoLandingPage })));
 const DemoTourStartPage = lazy(() => import('./pages/DemoTourStartPage').then((m) => ({ default: m.DemoTourStartPage })));
@@ -841,6 +842,7 @@ function RoutesWithTracking() {
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       {/* WP-4: Dashboard mit erfundenen Beispieldaten — liest und schreibt nichts. */}
       <Route path="/app/beispiel" element={<AppGate><GovernanceBrowserShell><SampleWorkspacePage /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/creative-studio/preview" element={<AppGate><GovernanceBrowserShell><CreativeStudioPreviewRoute /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />

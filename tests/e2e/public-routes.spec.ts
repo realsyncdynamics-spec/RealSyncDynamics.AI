@@ -45,3 +45,13 @@ test('[FE-009] Startseite verknüpft sechs Produktbereiche', async ({ page }) =>
   await expect(page.getByRole('link', { name: /Bilder erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=image');
   await expect(page.getByRole('link', { name: /Videos erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=video');
 });
+
+test('[FE-010] Die neue Startseite behält den bisherigen Voice-Bot', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const launcher = page.getByTestId('company-voice-launcher');
+  await expect(launcher).toBeVisible();
+  await launcher.click();
+  await expect(page.getByTestId('company-voice-panel')).toBeVisible();
+  await page.getByRole('button', { name: 'Demo schließen' }).click();
+  await expect(page.getByTestId('company-voice-panel')).toHaveCount(0);
+});

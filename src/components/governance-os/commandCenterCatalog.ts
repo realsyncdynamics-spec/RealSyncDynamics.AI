@@ -86,9 +86,10 @@ const EXTRA_NAV_COMMANDS: CommandDefinition[] = [
     label: 'Claude Code Optimizer',
     group: 'Werkzeuge',
     keywords: ['claude', 'code', 'optimizer', 'website', 'fehler', 'scan'],
-    state: 'ready',
+    state: 'preview',
     path: '/claude-code-optimizer',
-    description: 'Bestehenden Code- und Website-Optimizer oeffnen',
+    badge: 'Vorschau',
+    description: 'Website-Audit öffnen; GitHub-Code-Fixes noch nicht verfügbar',
   },
   {
     id: 'nav-app-builder',

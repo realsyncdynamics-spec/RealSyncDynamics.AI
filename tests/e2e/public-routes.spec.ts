@@ -55,3 +55,10 @@ test('[FE-010] Die neue Startseite behält den bisherigen Voice-Bot', async ({ p
   await page.getByRole('button', { name: 'Demo schließen' }).click();
   await expect(page.getByTestId('company-voice-panel')).toHaveCount(0);
 });
+
+test('[FE-011] Optimizer benennt Website-Audit und fehlende Code-Automation klar', async ({ page }) => {
+  await page.goto('/claude-code-optimizer', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('heading', { name: 'Claude Code Optimizer' }).last()).toBeVisible();
+  await expect(page.getByText(/automatische Repository-.*Analyse mit Code-Änderungen/i).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Website scannen/i })).toBeVisible();
+});

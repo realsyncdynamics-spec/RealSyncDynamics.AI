@@ -56,9 +56,7 @@ export function OptimizerSignup() {
     setSending(true);
     try {
       if (!isSupabaseConfigured()) {
-        // Fallback: ohne Supabase-Konfiguration direkt zum Bericht (Demo/Dev).
-        navigate(berichtPath);
-        return;
+        throw new Error('Anmeldung derzeit nicht verfügbar. Bitte später erneut versuchen.');
       }
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOtp({
@@ -93,14 +91,13 @@ export function OptimizerSignup() {
         nextActionLabel="Nach der Anmeldung landest du automatisch auf deinem ausführlichen Bericht — dort wählst du dein Paket."
       >
         <p>
-          Damit wir dir deinen persönlichen Optimierungs-Bericht zeigen und speichern können, meldest
-          du dich einmalig per E-Mail an. Wir schicken dir einen <span className="text-titanium-200">Magic
+          Für die folgenden Tarif- und Berichtsinformationen kannst du dich einmalig per E-Mail anmelden. Wir schicken dir einen <span className="text-titanium-200">Magic
           Link</span> — kein Passwort nötig.
         </p>
         {scan && (
           <p className="text-titanium-400">
-            Dein Scan von <span className="font-mono text-titanium-100">{scan.domain}</span> wird deinem
-            Konto automatisch zugeordnet.
+            Die Ergebnisse für <span className="font-mono text-titanium-100">{scan.domain}</span> werden
+            für diesen Ablauf im aktuellen Browser-Tab zwischengespeichert. Eine automatische Zuordnung zum Konto ist noch nicht bestätigt.
           </p>
         )}
       </IntroBanner>

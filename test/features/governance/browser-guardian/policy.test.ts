@@ -154,6 +154,14 @@ describe('Klassifikation', () => {
     assert.ok(!classifyText('DE00 0000 0000 0000 0000 00').findings.some((f) => f.kind === 'iban'));
   });
 
+  it('läuft linear auf präparierten Seitentexten (50.000 Zeichen, CodeQL)', () => {
+    for (const s of ['%'.repeat(50_000), 'a.'.repeat(25_000), `00${'1'.repeat(49_990)}x`, `0${'12 '.repeat(16_000)}`, `${'a'.repeat(49_000)}@${'b.'.repeat(400)}`]) {
+      const t = performance.now();
+      classifyText(s);
+      assert.ok(performance.now() - t < 1000, `${s.slice(0, 6)}… zu langsam`);
+    }
+  });
+
   it('Inhalt entschärft nie die deklarierte Klasse', () => {
     assert.equal(classifyText('harmlos', 'internal').data_class, 'internal');
   });

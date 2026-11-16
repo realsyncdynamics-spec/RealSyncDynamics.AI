@@ -57,7 +57,7 @@ describe('PlaywrightDriver · Netzwächter', () => {
   it('Weiterleitung auf ein nicht geprüftes Ziel wird geblockt', async () => {
     const r = await driver.run({ type: 'navigate', url: 'https://shop.example.org/weiter' }, onlyShop);
     assert.equal(r.ok, false);
-    assert.ok(!served.includes('https://tracker.example.net/'));
+    assert.ok(!served.some((u) => new URL(u).origin === 'https://tracker.example.net'));
   });
 
   it('Seitenskript navigiert außerhalb einer Aktion ⇒ geblockt', async () => {
@@ -66,7 +66,7 @@ describe('PlaywrightDriver · Netzwächter', () => {
     const r = await driver.run({ type: 'wait', milliseconds: 10 }, onlyShop);
     // Blockierte Navigation ⇒ Fehlerseite (keine Seite) oder alte Seite, nie das fremde Ziel.
     assert.ok(r.url === null || r.url === 'https://shop.example.org/js', String(r.url));
-    assert.ok(!served.includes('https://tracker.example.net/'));
+    assert.ok(!served.some((u) => new URL(u).origin === 'https://tracker.example.net'));
   });
 });
 

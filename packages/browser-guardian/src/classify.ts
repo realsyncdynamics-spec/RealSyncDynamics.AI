@@ -60,9 +60,11 @@ export interface ContentClassification {
   findings: Array<{ kind: FindingKind; count: number }>;
 }
 
-const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-// Telefonnummern: +49…, 0049…, 0… mit mindestens 8 Ziffern insgesamt.
-const PHONE = /(?:\+|00)\d{1,3}[\s/-]?\(?\d{1,5}\)?(?:[\s/-]?\d{2,}){2,}|\b0\d{2,5}[\s/-]?\d{3,}(?:[\s/-]?\d{2,})*/g;
+// Alle Wiederholungen begrenzt: Seitentext ist fremde Eingabe (bis 50.000
+// Zeichen); unbegrenzte, überlappende Muster laufen quadratisch (CodeQL).
+const EMAIL = /[A-Z0-9._%+-]{1,64}@[A-Z0-9-]{1,63}(?:\.[A-Z0-9-]{1,63}){0,8}\.[A-Z]{2,24}/gi;
+// Telefonnummern: +49…, 0049…, 0… mit 8–17 Ziffern; je Schritt genau eine Ziffer.
+const PHONE = /(?:\+|00)\d{1,3}(?:[\s/()-]{0,2}\d){6,14}|\b0\d(?:[\s/-]?\d){6,13}/g;
 const IBAN = /\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){2,7}(?:\s?[A-Z0-9]{1,4})?\b/g;
 const CARD = /\b(?:\d[ -]?){13,19}\b/g;
 const SECRETS: RegExp[] = [

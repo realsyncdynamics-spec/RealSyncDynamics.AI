@@ -157,7 +157,7 @@ Ausgeführte Prüfungen (2026-11-15, Node 22.23, Playwright 1.63 global, ohne `n
 
 | Befehl | Ergebnis | Umfang |
 |---|---|---|
-| `node --test test/features/governance/browser-guardian/*.test.ts` | 35/35 bestanden | Policy, Freigaben, Nachweise mit `SimulatedDriver` — **SIMULATION** |
+| `node --test test/features/governance/browser-guardian/*.test.ts` | 36/36 bestanden | Policy, Freigaben, Nachweise mit `SimulatedDriver`, Laufzeit der Klassifikation — **SIMULATION** |
 | `node --test apps/realsync-browser/test/playwright-driver.test.ts` | 6/6 bestanden | echtes Chromium headless; Antworten über Test-Transport bzw. lokalen Server — **GEPRÜFT ohne Internet** |
 | Nachweis C1 (Skript, Muster aus `executor.ts`) | interner Pfad geladen, Route sah nur 1 Anfrage | **GEPRÜFT** |
 | CLI `--simulate` mit Beispielplan | Schritt 3 wartet auf Freigabe, ohne Terminal abgelehnt; 10 Nachweise, Kette geprüft | **SIMULATION** |

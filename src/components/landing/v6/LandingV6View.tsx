@@ -102,10 +102,10 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
               <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Governance Scan starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to="/check?source=landing-v6-hero" data-hero-cta="needs-check" data-testid="hero-needs-check" style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Bedarfs-Check in 3 Fragen</Link>
               <a href="#produkt" data-hero-cta="governance-os" data-testid="hero-os-cta" style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Governance OS ansehen</a>
               </div>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
-              <Link to="/check?source=landing-v6-hero" data-testid="hero-needs-check" style={{ display: "inline-flex", alignItems: "center", minHeight: "44px", marginTop: "4px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)", textUnderlineOffset: "3px" }}>Unsicher, was passt? Bedarfs-Check in 3 Fragen →</Link>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>
               <p style={{ margin: "0 0 12px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
@@ -206,7 +206,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             </Fragment>))}
           </div>
           <div style={{ marginTop: "32px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Kostenlosen Governance Scan starten</Link>
+            <Link to="/check?source=landing-v6-produkt" data-testid="produkt-needs-check" style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Passenden Baustein finden: Bedarfs-Check</Link>
             <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
           </div>
         </div>

@@ -380,6 +380,21 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Funktionen', url: '/features' },
     ]),
   },
+  // 15.11.2026: Bedarfs-Check (/check) — Fragebogen, wertet nur Angaben aus.
+  // Bewusst noindex und nicht in der Sitemap, bis der Ablauf freigegeben ist.
+  '/check': {
+    title: 'Kostenloser Bedarfs-Check | RealSync Dynamics & AI',
+    description:
+      'Drei kurze Fragen, dann sehen Sie, welche Bausteine aus Build, Automate und Govern zu Ihrem Betrieb passen. Kostenlos, ohne Konto.',
+    canonical: `${SITE_URL}/check`,
+    noIndex: true,
+  },
+  '/check/ergebnisse': {
+    title: 'Gespeicherte Ergebnisse — Bedarfs-Check | RealSync Dynamics & AI',
+    description: 'Ihre gespeicherten Ergebnisse des Bedarfs-Checks.',
+    canonical: `${SITE_URL}/check/ergebnisse`,
+    noIndex: true,
+  },
   '/audit': {
     title: 'Kostenloser Governance Scan — DSGVO & EU AI Act | RealSync Dynamics AI',
     description:

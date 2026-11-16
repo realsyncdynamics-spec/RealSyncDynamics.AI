@@ -231,6 +231,10 @@ verify_jwt = false
 [functions.telemetry-ai-event]
 verify_jwt = false
 
+# Google-Workspace-Studio-Flows: Ingest-Schlüssel (Quelle google_workspace) statt JWT.
+[functions.workspace-events]
+verify_jwt = false
+
 # Signup-/Operator-Mailer. Anon-JWT reicht nicht — eigener Service-Role-Check.
 [functions.welcome-email]
 verify_jwt = false

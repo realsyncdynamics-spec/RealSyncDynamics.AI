@@ -24,7 +24,6 @@ export function CreativeStudio() {
   const [ratio, setRatio] = useState<AspectRatio>('16:9');
   const [duration, setDuration] = useState<VideoDuration>(5);
   const [busy, setBusy] = useState(false);
-  const [polling, setPolling] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -72,9 +71,19 @@ export function CreativeStudio() {
   useEffect(() => {
     if (!job || !activeTenantId) return;
     let cancelled = false;
+    let inFlight = false;
+    let attempts = 0;
+    // Maximal zehn Minuten auf dem Client abfragen. Eine abgebrochene
+    // Statusabfrage ist kein Abbruch des bereits gestarteten Provider-Jobs.
     const timer = window.setInterval(async () => {
-      if (cancelled || polling) return;
-      setPolling(true);
+      if (cancelled || inFlight) return;
+      if (++attempts > 75) {
+        window.clearInterval(timer);
+        setJob(null);
+        setError('Videoauftrag läuft länger als zehn Minuten. Bitte später erneut prüfen.');
+        return;
+      }
+      inFlight = true;
       try {
         const response = await invoke({
           action: 'status', tenant_id: activeTenantId, request_id: job.request_id, proof: job.proof,
@@ -94,11 +103,11 @@ export function CreativeStudio() {
           setError(e instanceof Error ? e.message : 'Videostatus konnte nicht gelesen werden.');
         }
       } finally {
-        if (!cancelled) setPolling(false);
+        inFlight = false;
       }
     }, 8000);
     return () => { cancelled = true; window.clearInterval(timer); };
-    // The active tenant and job identity determine the polling lifecycle.
+    // Die aktive Mandanten- und Auftragsidentität bestimmen den Polling-Lifecycle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.request_id, job?.proof, activeTenantId]);
 

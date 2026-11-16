@@ -44,7 +44,7 @@ export function OptimizerScan() {
   const navigate = useNavigate();
   usePageMeta({
     title: 'Website scannen — Claude Code Optimizer',
-    description: 'URL eingeben, in ~30 Sekunden die Compliance- und Code-Fehler deiner Website erhalten.',
+    description: 'Website-URL prüfen und Befunde zu ausgewählten Compliance- und Tracking-Themen erhalten. Keine Repository-Codeprüfung.'
     url: 'https://RealSyncDynamicsAI.de/claude-code-optimizer/scan',
   });
 
@@ -111,9 +111,9 @@ export function OptimizerScan() {
         nextActionLabel="Nach dem Klick auf »Jetzt scannen« analysieren wir deine Seite und leiten dich automatisch zur Ergebnisseite mit deiner Fehlerliste weiter."
       >
         <p>
-          Gib die URL deiner Website ein. Der Optimizer prüft sie einmalig auf typische Compliance-
-          und Code-Fehler — Tracking ohne Einwilligung, fehlende Pflichtangaben, Cookie-Dark-Patterns
-          und mehr. Es werden keine Inhalte deiner Seite gespeichert.
+          Gib die URL deiner Website ein. Der bestehende Website-Audit prüft ausgewählte
+          Tracking-, Einwilligungs- und Pflichtangaben-Themen. Eine technische Repository-
+          Analyse oder automatische Code-Reparatur findet in diesem Schritt nicht statt.
         </p>
         <p className="text-titanium-400">
           Deine E-Mail brauchen wir, um dir den späteren ausführlichen Bericht zuzustellen.

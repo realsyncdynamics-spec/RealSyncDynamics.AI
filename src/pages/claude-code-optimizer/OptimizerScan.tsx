@@ -44,7 +44,7 @@ export function OptimizerScan() {
   const navigate = useNavigate();
   usePageMeta({
     title: 'Website scannen — Claude Code Optimizer',
-    description: 'Website-URL prüfen und Befunde zu ausgewählten Compliance- und Tracking-Themen erhalten. Keine Repository-Codeprüfung.'
+    description: 'Website-URL prüfen und Befunde zu ausgewählten Compliance- und Tracking-Themen erhalten. Keine Repository-Codeprüfung.',
     url: 'https://RealSyncDynamicsAI.de/claude-code-optimizer/scan',
   });
 

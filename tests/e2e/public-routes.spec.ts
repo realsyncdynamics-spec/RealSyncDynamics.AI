@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 
 const publicRoutes = [
-  { id: 'FE-001', path: '/', label: 'Startseite', heading: /Das Governance OS für.*DSGVO & EU AI Act/i },
+  { id: 'FE-001', path: '/', label: 'Startseite', heading: /KI gestalten.*Kunden erreichen.*Arbeit vereinfachen/i },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Ihr KI-Bestand in vier Fragen/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /EU-AI-Act-Compliance ohne Beratungsprojekt/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },
@@ -30,3 +30,18 @@ for (const route of publicRoutes) {
     ).toBeVisible();
   });
 }
+
+// Das neue Produkt-Hub muss beide angeforderten Studios und die bestehenden
+// Kernprodukte als echte Navigation anbieten, nicht nur als Marketingtext.
+test('[FE-009] Startseite verknüpft sechs Produktbereiche', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  for (const title of [
+    'AI Voice Agent', 'AI App Builder', 'AI Landingpage Designer',
+    'Claude Code Optimizer', 'Governance Dashboard', 'AI Creative Studio',
+  ]) {
+    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole('link', { name: /Landingpage gestalten/i })).toHaveAttribute('href', '/build');
+  await expect(page.getByRole('link', { name: /Bilder erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=image');
+  await expect(page.getByRole('link', { name: /Videos erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=video');
+});

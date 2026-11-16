@@ -5,25 +5,23 @@
  * Do not wire this to a paid provider until atomic budget reservation, tenant
  * authorization, audit persistence and storage policies are reviewed.
  */
-export const IMAGE_MODEL = 'grok-imagine-image-2.0' as const;
+export const IMAGE_MODEL = 'grok-imagine-image-quality' as const;
 export const IMAGE_GENERATION_ENDPOINT = 'https://api.x.ai/v1/images/generations' as const;
 
 export type ImageRatio =
   | 'auto' | '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
-  | '3:2' | '2:3' | '2:1' | '1:2' | '21:9';
+  | '3:2' | '2:3' | '2:1' | '1:2' | '19.5:9' | '9:19.5' | '20:9' | '9:20';
 export type ImageResolution = '1k' | '2k';
-export type ImageQuality = 'low' | 'medium';
 
 export interface ImageCreateInput {
   prompt: string;
   aspect_ratio?: ImageRatio;
   resolution?: ImageResolution;
-  quality?: ImageQuality;
 }
 
 const RATIOS: readonly string[] = [
   'auto', '1:1', '16:9', '9:16', '4:3', '3:4',
-  '3:2', '2:3', '2:1', '1:2', '21:9',
+  '3:2', '2:3', '2:1', '1:2', '19.5:9', '9:19.5', '20:9', '9:20',
 ];
 
 export class CreativeInputError extends Error {
@@ -39,7 +37,7 @@ export function validateImageCreateInput(value: unknown): ImageCreateInput {
     throw new CreativeInputError('invalid image request');
   }
   const obj = value as Record<string, unknown>;
-  const allowed = new Set(['prompt', 'aspect_ratio', 'resolution', 'quality']);
+  const allowed = new Set(['prompt', 'aspect_ratio', 'resolution']);
   if (Object.keys(obj).some((key) => !allowed.has(key))) {
     throw new CreativeInputError('unsupported image parameter');
   }
@@ -55,15 +53,10 @@ export function validateImageCreateInput(value: unknown): ImageCreateInput {
       obj.resolution !== '1k' && obj.resolution !== '2k') {
     throw new CreativeInputError('unsupported resolution');
   }
-  if (obj.quality !== undefined &&
-      obj.quality !== 'low' && obj.quality !== 'medium') {
-    throw new CreativeInputError('unsupported quality');
-  }
   return {
     prompt: obj.prompt.trim(),
     aspect_ratio: (obj.aspect_ratio ?? '1:1') as ImageRatio,
     resolution: (obj.resolution ?? '1k') as ImageResolution,
-    quality: (obj.quality ?? 'low') as ImageQuality,
   };
 }
 
@@ -74,7 +67,6 @@ export function buildImageGenerationPayload(input: ImageCreateInput) {
     prompt: safe.prompt,
     aspect_ratio: safe.aspect_ratio,
     resolution: safe.resolution,
-    quality: safe.quality,
     n: 1 as const,
     response_format: 'b64_json' as const,
   };

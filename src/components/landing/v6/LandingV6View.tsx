@@ -105,6 +105,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <a href="#produkt" data-hero-cta="governance-os" data-testid="hero-os-cta" style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Governance OS ansehen</a>
               </div>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
+              <Link to="/check?source=landing-v6-hero" data-testid="hero-needs-check" style={{ display: "inline-flex", alignItems: "center", minHeight: "44px", marginTop: "4px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)", textUnderlineOffset: "3px" }}>Unsicher, was passt? Bedarfs-Check in 3 Fragen →</Link>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>
               <p style={{ margin: "0 0 12px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>

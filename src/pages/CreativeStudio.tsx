@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Code2, ExternalLink, Film, Image as ImageIcon, LoaderCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Code2, ExternalLink, Film, Image as ImageIcon, LoaderCircle, ShieldCheck, Sparkles, PanelsTopLeft } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { useTenant } from '../core/access/TenantProvider';
 
@@ -122,6 +122,9 @@ export function CreativeStudio() {
             </Link>
             <Link to="/claude-code-optimizer" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-blue-300">
               <Code2 className="mr-1 inline h-4 w-4" /> Code Optimizer
+            </Link>
+            <Link to="/build" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-blue-300">
+              <PanelsTopLeft className="mr-1 inline h-4 w-4" /> Landingpage Designer
             </Link>
           </div>
         </div>

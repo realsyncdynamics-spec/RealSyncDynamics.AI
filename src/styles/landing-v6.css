@@ -405,3 +405,34 @@
     max-height: 85dvh;
   }
 }
+
+/* Bot auf kleinen Bildschirmen: ganze Breite, Höhe begrenzt, Inhalt scrollt,
+   Kopf mit „Schließen“ bleibt sichtbar (15.11.2026). */
+@media (max-width: 480px) {
+  .lv6-voice-launcher {
+    left: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .lv6-voice-panel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 76px - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lv6-voice-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--rs-bg);
+  }
+
+  .lv6-voice-transcript {
+    flex: 0 0 auto;
+    max-height: 40dvh;
+  }
+}

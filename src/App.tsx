@@ -34,6 +34,8 @@ const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default:
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
+const NeedsCheckPage = lazy(() => import('./pages/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
+const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').then((m) => ({ default: m.NeedsCheckSavedPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
 const AetherOSLandingRoute = lazy(() =>
@@ -596,6 +598,9 @@ function RoutesWithTracking() {
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/check" element={<NeedsCheckPage />} />
+      <Route path="/check/ergebnisse" element={<NeedsCheckSavedPage />} />
+      <Route path="/check/ergebnisse/:id" element={<NeedsCheckSavedPage />} />
       {/* Cloud Code Optimizer — Page-by-Page-Flow (Phase 1) */}
       <Route path="/optimizer" element={<OptimizerLanding />} />
       <Route path="/optimizer/scan" element={<OptimizerScan />} />

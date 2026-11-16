@@ -380,6 +380,21 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Funktionen', url: '/features' },
     ]),
   },
+  // 15.11.2026: Bedarfs-Check (/check) — Fragebogen, wertet nur Angaben aus.
+  // Bewusst noindex und nicht in der Sitemap, bis der Ablauf freigegeben ist.
+  '/check': {
+    title: 'Kostenloser Bedarfs-Check | RealSync Dynamics & AI',
+    description:
+      'Drei kurze Fragen, dann sehen Sie, welche Bausteine aus Build, Automate und Govern zu Ihrem Betrieb passen. Kostenlos, ohne Konto.',
+    canonical: `${SITE_URL}/check`,
+    noIndex: true,
+  },
+  '/check/ergebnisse': {
+    title: 'Gespeicherte Ergebnisse — Bedarfs-Check | RealSync Dynamics & AI',
+    description: 'Ihre gespeicherten Ergebnisse des Bedarfs-Checks.',
+    canonical: `${SITE_URL}/check/ergebnisse`,
+    noIndex: true,
+  },
   '/audit': {
     title: 'Kostenloser Governance Scan — DSGVO & EU AI Act | RealSync Dynamics AI',
     description:
@@ -546,6 +561,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Home', url: '/' },
       { name: 'Enterprise anfragen', url: '/contact-sales' },
     ]),
+  },
+
+  // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau mit fiktivem Architekturbüro).
+  // Bewusst noindex und nicht in der Sitemap; Freischaltung zur Indexierung als eigener Schritt.
+  '/demo/3d-landingpage': {
+    title: '3D-Landingpage live erleben | RealSync Dynamics AI',
+    description:
+      'Interaktive 3D-Landingpage im Browser: drehen, scrollen, Details öffnen, Farben und Licht anpassen. Vorlage mit fiktivem Beispielunternehmen.',
+    canonical: `${SITE_URL}/demo/3d-landingpage`,
+    noIndex: true,
   },
 
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Code2, LockKeyhole, ShieldCheck, Sparkles, Mic2, PanelsTopLeft, Blocks, Clapperboard } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
+import { CompanyVoiceWidget } from '../components/landing/v6/CompanyVoiceWidget';
+import '../styles/landing-v6.css';
 import { getImplementation, STATUS_LABEL } from '../product/implementation-status';
 
 /**
@@ -192,6 +194,13 @@ export function UnifiedPlatformLanding() {
             </div>
           </div>
         </footer>
+        {/* Der bestehende öffentliche Voice-Bot muss bei der neuen Landing
+            erhalten bleiben. Der unsichtbare 0-Höhen-Wrapper liefert die
+            unveränderten v6-Farb-Tokens; Launcher/Dialog bleiben fixed.
+            Keine neue Voice-API und kein zusätzliches Voice-Backend. */}
+        <div className="lv6" data-rs-theme="light" data-rs-accent="cyan" style={{ minHeight: 0 }}>
+          <CompanyVoiceWidget />
+        </div>
       </div>
     </>
   );

@@ -8,11 +8,10 @@ import {
 describe('creative image contract', () => {
   it('uses explicit low-cost defaults and one image', () => {
     expect(buildImageGenerationPayload({ prompt: 'A modern product photo' })).toEqual({
-      model: 'grok-imagine-image-2.0',
+      model: 'grok-imagine-image-quality',
       prompt: 'A modern product photo',
       aspect_ratio: '1:1',
       resolution: '1k',
-      quality: 'low',
       n: 1,
       response_format: 'b64_json',
     });
@@ -29,7 +28,7 @@ describe('creative image contract', () => {
   it('rejects invalid prompts and options', () => {
     expect(() => validateImageCreateInput({ prompt: '  ' })).toThrow();
     expect(() => validateImageCreateInput({ prompt: 'Valid prompt', resolution: '8k' })).toThrow();
-    expect(() => validateImageCreateInput({ prompt: 'Valid prompt', quality: 'ultra' })).toThrow();
+    expect(() => validateImageCreateInput({ prompt: 'Valid prompt', quality: 'medium' })).toThrow();
     expect(() => validateImageCreateInput({ prompt: 'Valid prompt', aspect_ratio: '7:3' })).toThrow();
   });
 
@@ -38,12 +37,10 @@ describe('creative image contract', () => {
       prompt: '  Wide cinematic landscape  ',
       aspect_ratio: '16:9',
       resolution: '2k',
-      quality: 'medium',
     })).toMatchObject({
       prompt: 'Wide cinematic landscape',
       aspect_ratio: '16:9',
       resolution: '2k',
-      quality: 'medium',
     });
   });
 });

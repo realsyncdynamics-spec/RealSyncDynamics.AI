@@ -48,7 +48,7 @@ const products = [
   {
     title: 'Claude Code Optimizer',
     kicker: 'Code prüfen',
-    description: 'Geführte Website- und Code-Prüfung mit Berichten. Vollautomatische Repository-Korrekturen sind nicht bestätigt.',
+    description: 'Website-Audit mit Befundübersicht. Automatische GitHub-Repository-Analyse, Codeänderungen und Pull Requests sind noch in Vorbereitung.',
     statusId: 'cloud-code-optimizer',
     links: [{ label: 'Optimizer ansehen', href: '/claude-code-optimizer' }],
     icon: Code2,

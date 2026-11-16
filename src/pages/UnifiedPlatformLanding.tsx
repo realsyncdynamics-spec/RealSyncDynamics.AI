@@ -1,51 +1,78 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Code2, Film, Image, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Code2, Film, Image, LockKeyhole, ShieldCheck, Sparkles, Mic2, PanelsTopLeft, Blocks, Clapperboard } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
+import { getImplementation, STATUS_LABEL } from '../product/implementation-status';
 
 /**
  * Unified platform landing (light) — 16.11.2026.
  * Status copy is explicit: existing governance/optimizer are available;
  * media generation is a staged integration, not an already-live product.
  */
+/**
+ * Keine zweite Builder- oder Media-Runtime: alle Ziele zeigen auf bestehende
+ * Routen bzw. auf den gesicherten Creative-Studio-Entwurf dieses PRs.
+ * Der Umsetzungsstatus kommt aus der produktweiten Registry.
+ */
 const products = [
   {
-    title: 'Governance Dashboard',
-    kicker: 'Kontrollieren',
-    description: 'KI-Systeme, Risiken, Policies, Freigaben und Evidence in einem zentralen Workspace.',
-    href: '/app/dashboard',
-    cta: 'Zum Governance Dashboard',
-    status: 'Bestehender Workspace',
-    icon: ShieldCheck,
-    tone: 'bg-blue-50 text-blue-700',
+    title: 'AI Voice Agent',
+    kicker: 'Kunden erreichen',
+    description: 'Eigenen Sprachassistenten für Anfragen und Telefonie vorbereiten. Die produktive Telefonanbindung ist noch nicht freigegeben.',
+    statusId: 'voice-telephony',
+    links: [{ label: 'Voice Agent entdecken', href: '/phonebot/start' }],
+    icon: Mic2,
+    tone: 'bg-cyan-50 text-cyan-800',
+  },
+  {
+    title: 'AI App Builder',
+    kicker: 'Apps entwickeln',
+    description: 'Web-Apps und interne Anwendungen im bestehenden RealSync SiteOS-Workspace entwerfen und weiterentwickeln.',
+    statusId: 'web-builder',
+    links: [{ label: 'App Builder öffnen', href: '/build' }],
+    icon: Blocks,
+    tone: 'bg-indigo-50 text-indigo-700',
+  },
+  {
+    title: 'AI Landingpage Designer',
+    kicker: 'Websites gestalten',
+    description: 'Landingpages, Produktpräsentationen und Websites im bestehenden Designer erstellen. 3D-Beispiele können bereits erkundet werden.',
+    statusId: 'web-builder',
+    links: [
+      { label: 'Landingpage gestalten', href: '/build' },
+      { label: '3D-Beispiel ansehen', href: '/demo/3d-landingpage' },
+      { label: 'Individuelles Webdesign', href: '/frontend-builder' },
+    ],
+    icon: PanelsTopLeft,
+    tone: 'bg-pink-50 text-pink-700',
   },
   {
     title: 'Claude Code Optimizer',
-    kicker: 'Optimieren',
-    description: 'Website und Code prüfen, Befunde verstehen und konkrete Korrekturen vorbereiten.',
-    href: '/claude-code-optimizer',
-    cta: 'Optimizer öffnen',
-    status: 'Bestehendes Tool',
+    kicker: 'Code prüfen',
+    description: 'Geführte Website- und Code-Prüfung mit Berichten. Vollautomatische Repository-Korrekturen sind nicht bestätigt.',
+    statusId: 'cloud-code-optimizer',
+    links: [{ label: 'Optimizer ansehen', href: '/claude-code-optimizer' }],
     icon: Code2,
     tone: 'bg-violet-50 text-violet-700',
   },
   {
-    title: 'KI Image Studio',
-    kicker: 'Gestalten',
-    description: 'Produktbilder, Werbemotive, Uhren- und Parfümvisuals mit KI vorbereiten.',
-    href: '/app/media-studio?type=image',
-    cta: 'Image Studio ansehen',
-    status: 'Integration in Vorbereitung',
-    icon: Image,
-    tone: 'bg-rose-50 text-rose-700',
+    title: 'Governance Dashboard',
+    kicker: 'Kontrollieren',
+    description: 'KI-Systeme, Risiken, Policies, Freigaben und Nachweise im zentralen, mandantenbezogenen Workspace verwalten.',
+    statusId: 'app-shell',
+    links: [{ label: 'Governance Dashboard öffnen', href: '/app/dashboard' }],
+    icon: ShieldCheck,
+    tone: 'bg-blue-50 text-blue-700',
   },
   {
-    title: 'KI Video Studio',
-    kicker: 'Produzieren',
-    description: 'Werbeclips, Neueröffnungen, Produktvideos und Social-Media-Formate gestalten.',
-    href: '/app/media-studio?type=video',
-    cta: 'Video Studio ansehen',
-    status: 'Integration in Vorbereitung',
-    icon: Film,
+    title: 'AI Creative Studio',
+    kicker: 'Bilder und Videos',
+    description: 'Werbemotive für Uhren und Parfüm sowie Clips für Neueröffnungen und Kampagnen vorbereiten. xAI-Generierung ist vorerst nur ein gesicherter Pilot.',
+    statusId: 'creative-studio',
+    links: [
+      { label: 'Bilder erstellen', href: '/app/media-studio?type=image' },
+      { label: 'Videos erstellen', href: '/app/media-studio?type=video' },
+    ],
+    icon: Clapperboard,
     tone: 'bg-amber-50 text-amber-700',
   },
 ] as const;
@@ -78,16 +105,16 @@ export function UnifiedPlatformLanding() {
           <section className="mx-auto max-w-7xl px-5 pb-20 pt-20 sm:px-8 sm:pt-28 lg:pb-24">
             <div className="max-w-4xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-xs font-bold uppercase tracking-[0.13em] text-blue-700 shadow-sm">
-                <Sparkles className="h-4 w-4" aria-hidden="true" /> Eine Plattform. Drei Arbeitsbereiche.
+                <Sparkles className="h-4 w-4" aria-hidden="true" /> Eine Plattform. Sechs Produktbereiche.
               </span>
               <h1 className="mt-8 max-w-[960px] text-5xl font-semibold leading-[1.07] tracking-[-0.045em] text-slate-950 sm:text-6xl lg:text-[80px]">
-                KI kontrollieren.<br />
-                Code verbessern.<br />
-                <span className="text-blue-700">Ideen gestalten.</span>
+                KI gestalten.<br />
+                Kunden erreichen.<br />
+                <span className="text-blue-700">Arbeit vereinfachen.</span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                RealSync Dynamics & AI verbindet Governance, Claude Code Optimizer und ein KI-Kreativstudio
-                für Bilder und Videos unter einem gemeinsamen Zugang.
+                RealSync Dynamics & AI verbindet Voice Agent, App Builder, Landingpage Designer,
+                Code Optimizer, Governance und Creative Studio in einem Workspace.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-3">
                 <Link to="/app/dashboard" className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-700/15 hover:bg-blue-800">
@@ -112,8 +139,8 @@ export function UnifiedPlatformLanding() {
                   <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Alles unter einem Dach.</h2>
                 </div>
                 <p className="max-w-lg text-sm leading-6 text-slate-500">
-                  Governance und Optimizer sind bereits vorhanden. Bild- und Videoerstellung werden mit Zugriffsschutz,
-                  Budgetlimits und einem echten Provider verbunden.
+                  Vorhandene Builder und Governance-Werkzeuge bleiben erhalten. Die Bild- und Videoerstellung
+                  wird nur nach technischer Freigabe mit einem Provider aktiviert.
                 </p>
               </div>
               <div className="grid gap-5 md:grid-cols-2">
@@ -123,14 +150,18 @@ export function UnifiedPlatformLanding() {
                       <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${product.tone}`}>
                         <product.icon className="h-7 w-7" aria-hidden="true" />
                       </div>
-                      <span className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600">{product.status}</span>
+                      <span className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600">{STATUS_LABEL[getImplementation(product.statusId)?.status ?? 'coming-soon']}</span>
                     </div>
                     <p className="mt-8 text-xs font-bold uppercase tracking-[0.16em] text-blue-700">{product.kicker}</p>
                     <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{product.title}</h3>
                     <p className="mt-3 min-h-12 text-base leading-7 text-slate-600">{product.description}</p>
-                    <Link to={product.href} className="mt-7 inline-flex items-center gap-2 font-semibold text-blue-700 hover:text-blue-900">
-                      {product.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                    </Link>
+                    <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+                      {product.links.map((link) => (
+                        <Link key={link.href} to={link.href} className="inline-flex items-center gap-2 font-semibold text-blue-700 hover:text-blue-900">
+                          {link.label} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
                   </article>
                 ))}
               </div>

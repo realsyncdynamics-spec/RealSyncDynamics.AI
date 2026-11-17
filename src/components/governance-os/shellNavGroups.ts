@@ -29,7 +29,7 @@ export interface ShellNavGroupDef {
 }
 
 export const SHELL_NAV_GROUPS: readonly ShellNavGroupDef[] = [
-  { id: 'start', labelKey: 'shellGroupStart', shell: ['overview'], modules: ['home', 'activation', 'modules'] },
+  { id: 'start', labelKey: 'shellGroupStart', shell: ['overview'], modules: ['start', 'home', 'activation', 'modules'] },
   {
     id: 'discover',
     labelKey: 'shellGroupDiscover',

@@ -76,6 +76,20 @@ describe('P0: bounded Edge Function deployments', () => {
     expect(workflow).toContain('supabase functions list --project-ref');
   });
 
+  it('keeps DB migrations off for workflow-only or Edge-only pushes', () => {
+    const workflow = requireWorkflow();
+    expect(workflow).toContain('id: migrate');
+    expect(workflow).toContain('PUSH_BEFORE: ${{ github.event.before }}');
+    expect(workflow).toContain('MANUAL_MIGRATIONS: ${{ inputs.push_migrations }}');
+    expect(workflow).toContain('git diff --name-status --no-renames "$PUSH_BEFORE" HEAD -- supabase/migrations/');
+    expect(workflow).toContain('echo "apply=false" >> "$GITHUB_OUTPUT"');
+    expect(workflow).toContain("if: steps.migrate.outputs.apply == 'true'");
+    const gated = (workflow.match(/if: steps\.migrate\.outputs\.apply == 'true'/g) ?? []).length;
+    expect(gated).toBe(4); // setup-cli, link, remote-ledger-repair and db-push
+    expect(workflow).toContain("grep -vE '^A[[:space:]]+supabase/migrations/[^[:space:]]+\\.sql$'");
+    expect(workflow).toContain('default: false');
+  });
+
   it('blocks automatic mass redeployment', () => {
     const root = workspace();
     file(root, 'supabase/functions/_shared/auth.ts', 'export const auth = 1;');

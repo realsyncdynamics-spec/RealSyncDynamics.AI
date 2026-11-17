@@ -13,6 +13,9 @@ const migration = readFileSync(
 const rollback = readFileSync(
   resolve(__dirname, '../../supabase/rollback/20261117163800_rsd015_restore_sub_processor_schema.sql'), 'utf8',
 );
+const publicPage = readFileSync(
+  resolve(__dirname, '../../src/features/legal/SubProcessors.tsx'), 'utf8',
+);
 
 describe('RSD-015 additive subprocessor schema', () => {
   it('restores all three original tables, nonduplicate receipts and verified state', () => {
@@ -69,5 +72,22 @@ describe('RSD-015 additive subprocessor schema', () => {
     expect(rollback).toContain('SELECT 1 FROM public.sub_processor_changes');
     expect(rollback).toContain('SELECT 1 FROM public.sub_processor_subscriptions');
     expect(rollback).not.toContain('CASCADE');
+  });
+});
+
+describe('RSD-015 public subscription release gate', () => {
+  it('does not send address data directly via anonymous PostgREST', () => {
+    expect(publicPage).not.toContain('rest/v1/sub_processor_subscriptions');
+    expect(publicPage).not.toContain('getSupabaseAnonKey');
+    expect(publicPage).not.toContain('Authorization: `Bearer ${SUPABASE_ANON_KEY}`');
+  });
+
+  it('does not falsely confirm registration or automatic notifications', () => {
+    expect(publicPage).not.toContain('SubProcessorSubscribeForm');
+    expect(publicPage).not.toContain('Wir senden dir 30 Tage vor jeder');
+    expect(publicPage).not.toContain('Eingetragen.');
+    expect(publicPage).toContain('Der automatische E-Mail-Anmeldeprozess ist derzeit nicht freigegeben.');
+    expect(publicPage).toContain('keine bestätigte Anmeldung');
+    expect(publicPage).toContain('mailto:privacy@realsyncdynamicsai.de');
   });
 });

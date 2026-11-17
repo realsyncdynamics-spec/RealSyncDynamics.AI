@@ -2,9 +2,10 @@
 // Zeigt registrierte Domains + letzte Scan-Ergebnisse; triggert Audits.
 // Kein Demo-Fallback: ohne Login leer, nach Login nur Mandanten-Daten.
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Globe, Plus, RefreshCw, AlertTriangle, CheckCircle2,
-  Clock, XCircle, Search, Shield, Activity, LogIn,
+  Clock, XCircle, Search, Shield, Activity, LogIn, ArrowUpRight,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
@@ -465,7 +466,31 @@ function _WebsiteGovernanceView() {
         )}
 
         {!signedOut && activeTenantId && (
-          <TenantCustomDomainPanel tenantId={activeTenantId} />
+          <>
+            <section className="rounded-xl border border-[#d6ae52]/30 bg-[#171717] p-5 sm:p-6" aria-labelledby="site-inbox-link-title" data-testid="site-inbox-entry">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[.17em] text-[#d6ae52]">
+                SITEOS · ZENTRALER POSTEINGANG
+              </p>
+              <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+                <div className="max-w-2xl">
+                  <h2 id="site-inbox-link-title" className="text-2xl leading-tight text-[#f4f4f2]" style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}>
+                    Seiten-Formulare und Anfragen gemeinsam verwalten
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[#b9b9b6]">
+                    Formular-Zuordnung, eingehende Anfragen und menschliche Übergaben sind jetzt in einem Arbeitsbereich.
+                    Freigaben bleiben serverseitig geregelt; neue Verbindungen starten deaktiviert.
+                  </p>
+                </div>
+                <Link
+                  to="/app/bots/inbox?tab=sites"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-[#d6ae52]/50 bg-[#d6ae52]/10 px-4 py-2 text-sm font-semibold text-[#e9c66f] hover:border-[#d6ae52] hover:bg-[#d6ae52]/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d6ae52]"
+                >
+                  Formulare &amp; Anfragen öffnen <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </section>
+            <TenantCustomDomainPanel tenantId={activeTenantId} />
+          </>
         )}
       </main>
 

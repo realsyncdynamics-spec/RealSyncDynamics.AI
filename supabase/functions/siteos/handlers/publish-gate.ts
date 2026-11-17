@@ -51,6 +51,7 @@ import {
 import type { PolicyEngineState } from '../../../../packages/siteos-core/src/index.ts';
 import { decide, logShadowComparison } from '../../_shared/pdp/decide.ts';
 import { SITE_APPROVER_ROLES, checkApproval } from '../approval-policy.ts';
+import { loadInboxOptions } from '../inbox-binding.ts';
 
 /** Rollen, die eine Freigabe erteilen dürfen (zentral in approval-policy.ts). */
 const APPROVER_ROLES = SITE_APPROVER_ROLES;
@@ -91,6 +92,7 @@ interface Context {
   userEmail: string | null;
   role: string;
 }
+
 
 // ─────────────────────────────────────────────────────────────────────
 // Endpunkte
@@ -360,7 +362,7 @@ export async function handleExport(req: Request): Promise<Response> {
 
   const { data: row } = await ctx.admin
     .from('siteos_blueprints')
-    .select('id, slug, version, blueprint, content_sha256')
+    .select('id, slug, version, blueprint, content_sha256, project_id')
     .eq('id', blueprintId)
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle<{
@@ -369,6 +371,7 @@ export async function handleExport(req: Request): Promise<Response> {
       version: number;
       blueprint: SiteBlueprint;
       content_sha256: string;
+      project_id: string | null;
     }>();
 
   if (!row?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
@@ -376,6 +379,7 @@ export async function handleExport(req: Request): Promise<Response> {
   const artifact = await buildDeploymentArtifact(row.blueprint, {
     baseUrl,
     presentation: 'showcase',
+    inbox: await loadInboxOptions(ctx.admin, ctx.tenantId, row.project_id),
   });
 
   // G6: Ausgeliefert wird nur exakt das Artefakt, das gerade bewertet wurde.
@@ -471,9 +475,9 @@ async function runEvaluation(
 ): Promise<PublishGateEvaluation | Response> {
   const { data: row } = await ctx.admin
     .from('siteos_blueprints')
-    .select('id, slug, blueprint, content_sha256, origin_source')
+    .select('id, slug, blueprint, content_sha256, origin_source, project_id')
     .eq('id', blueprintId).eq('tenant_id', ctx.tenantId)
-    .maybeSingle<{ id: string; slug: string; blueprint: SiteBlueprint; content_sha256: string; origin_source: string | null }>();
+    .maybeSingle<{ id: string; slug: string; blueprint: SiteBlueprint; content_sha256: string; origin_source: string | null; project_id: string | null }>();
 
   if (!row?.blueprint) return jsonError(404, 'NOT_FOUND', 'blueprint not found for this tenant');
 
@@ -481,7 +485,11 @@ async function runEvaluation(
   // Veröffentlicht wird die gestaltete Fassung; sie ist das, was ein
   // Besucher sähe. Der Hash muss über genau dieses Bündel gehen — sonst
   // bewertet das Gate ein anderes Dokument als das ausgelieferte.
-  const artifact = await buildDeploymentArtifact(row.blueprint, { baseUrl, presentation: 'showcase' });
+  const artifact = await buildDeploymentArtifact(row.blueprint, {
+    baseUrl,
+    presentation: 'showcase',
+    inbox: await loadInboxOptions(ctx.admin, ctx.tenantId, row.project_id),
+  });
   const findings = analyzeBlueprint(row.blueprint);
   const scores = computeScores(findings);
 

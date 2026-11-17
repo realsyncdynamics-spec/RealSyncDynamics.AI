@@ -130,3 +130,17 @@ describe('Sub-Processor-Benachrichtigung bleibt fail-closed', () => {
     expect(processorNotify).toContain('legacy failed receipt requires reconciliation');
   });
 });
+
+describe('E-Mail Release-Gates bis Unsubscribe und Zustellung geprueft sind', () => {
+  it('laesst Audit-Drip ohne ausdrueckliche Betreiber-Freigabe nicht senden', () => {
+    expect(cron).toContain("Deno.env.get('AUDIT_DRIP_SEND_ENABLED') !== 'true'");
+    expect(cron).toContain("code: 'AUDIT_DRIP_RELEASE_GATED'");
+    expect(cron).toContain("}, 503)");
+  });
+
+  it('laesst Subprozessor-Mitteilungen ohne Betreiber-Freigabe nicht senden', () => {
+    expect(processorNotify).toContain("Deno.env.get('SUB_PROCESSOR_NOTICES_ENABLED') !== 'true'");
+    expect(processorNotify).toContain("code: 'SUB_PROCESSOR_NOTICES_RELEASE_GATED'");
+    expect(processorNotify).toContain("}, 503)");
+  });
+});

@@ -51,34 +51,24 @@ export interface UXAnalysisResult {
   timestamp: string
 }
 
-export interface PageElement {
-  fg?: string
-  bg?: string
-  src?: string
-  alt?: string
-  type?: string
-  text?: string
-  ariaLabel?: string
-  level?: number
-  hasShape?: boolean
-  hasLabel?: boolean
-  tabIndex?: number
-  interactive?: boolean
-  location: string
-  label?: string
-  file?: string
-  line?: number
-}
-
 export interface UXCheckOptions {
   check_contrast?: boolean
   check_labels?: boolean
   check_accessibility?: boolean
   wcag_aa_required?: boolean
   color_contrast_ratio_min?: number
-  colors?: PageElement[]
-  buttons?: PageElement[]
-  images?: PageElement[]
-  headings?: PageElement[]
-  elements?: PageElement[]
+  colors?: Array<{ fg: string; bg: string; location: string }>
+  buttons?: Array<{ label: string; location: string; file: string; line?: number }>
+  images?: Array<{ src: string; alt?: string; location: string }>
+  headings?: Array<{ level: number; text: string; location: string }>
+  elements?: Array<{
+    type: string
+    location: string
+    text?: string
+    ariaLabel?: string
+    hasShape?: boolean
+    hasLabel?: boolean
+    tabIndex?: number
+    interactive?: boolean
+  }>
 }

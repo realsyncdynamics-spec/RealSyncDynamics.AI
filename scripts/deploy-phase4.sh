@@ -31,6 +31,18 @@ fi
 echo -e "${GREEN}✓${NC} Supabase CLI found"
 
 # Step 2: Push migrations
+# E6: Ziel vor dem Push verifizieren (fail-closed). Erwartet
+# SUPABASE_EXPECTED_PROJECT_REF und SUPABASE_PROJECT_ID für das gewählte
+# Environment; production nur vom Branch main.
+echo ""
+echo "🔒 Verifying target environment..."
+if ! DEPLOY_ENVIRONMENT="$ENVIRONMENT" \
+     GITHUB_REF="${GITHUB_REF:-refs/heads/$(git rev-parse --abbrev-ref HEAD 2>/dev/null)}" \
+     node scripts/ci/verify-db-target.mjs verify; then
+  echo -e "${RED}✗${NC} Target environment not verified — aborting before db push"
+  exit 1
+fi
+
 echo ""
 echo "📦 Deploying database migrations..."
 if supabase db push --linked; then

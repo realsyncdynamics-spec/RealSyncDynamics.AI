@@ -91,7 +91,7 @@ describe('UXOptimizationAgent', () => {
       // checkHeadingHierarchy returns array of results, all headings are checked
       expect(results.length).toBeGreaterThan(0)
       // Find the h3 result and verify it failed
-      const h3Result = results.find((r) => r.element === 'h3')
+      const h3Result = results.find((r) => r.level === 3)
       expect(h3Result?.passes).toBe(false)
       expect(h3Result?.expectedLevel).toBe(2)
     })

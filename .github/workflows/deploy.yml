@@ -70,73 +70,7 @@ jobs:
             echo "No migration file changes; database push skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          if printf '%s\n' "$changes" | grep -vE '^A[[:space:]]+supabase/migrations/[^[:space:]]+\.sql
-        with:
-          # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
-          # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
-          # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
-          version: 2.122.1
-      - name: Link project
-        if: steps.migrate.outputs.apply == 'true'
-        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-      - name: Reconcile known remote migration ledger drift
-        if: steps.migrate.outputs.apply == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          # These migration versions already exist in the production schema.
-          # Mark them as applied in the remote ledger so db push does not replay them.
-          #
-          # `supabase migration repair` verlangt die zugehoerige Datei im Repo und
-          # bricht sonst mit "glob ...: file does not exist" ab. Wegen `set -e` riss
-          # ein einziger fehlender Eintrag den ganzen Schritt mit — und damit auch
-          # das nachgelagerte `db push`, das dann uebersprungen wurde.
-          #
-          # Am 2026-08-16 standen hier 15 Versionen (20260813053820 bis
-          # 20260814014724), die es weder als Datei im Repo noch als Zeile im
-          # Prod-Ledger gab. Sie wurden entfernt: ohne Datei gibt es nichts zu
-          # replayen, und ein "repair" haette nur Phantom-Zeilen ins Ledger
-          # geschrieben — genau die Divergenz, die diese Liste verhindern soll.
-          versions=(
-            20260628121531
-            20260628121551
-            20260628121603
-            20260628193744
-            20260628193759
-            20260628193820
-            20260701121059
-            20260715105402
-            20260720123325
-            20260720123711
-            20260720124405
-            20260802192603
-          )
-          for version in "${versions[@]}"; do
-            # Schutz gegen Wiederholung: fehlt die Datei, ist der Eintrag wirkungslos.
-            # Ueberspringen statt den Deploy zu stoppen.
-            if ! compgen -G "supabase/migrations/${version}_*.sql" > /dev/null; then
-              echo "::warning::$version uebersprungen — keine Migrationsdatei im Repo"
-              continue
-            fi
-            echo "Reconciling migration history: $version => applied"
-            supabase migration repair "$version" --status applied
-          done
-      - name: Push migrations
-        if: steps.migrate.outputs.apply == 'true'
-        run: |
-          set +e
-          supabase db push --include-all 2>&1 | tee /tmp/db-push.log
-          code=${PIPESTATUS[0]}
-          set -e
-          if [ "$code" -ne 0 ]; then
-            echo "::error::supabase db push exited with code $code — Migration nicht sauber durchgelaufen."
-            echo "## db push fehlgeschlagen (exit $code)" >> "$GITHUB_STEP_SUMMARY"
-            tail -n 20 /tmp/db-push.log >> "$GITHUB_STEP_SUMMARY"
-            exit "$code"
-          else
-            echo "db push erfolgreich" >> "$GITHUB_STEP_SUMMARY"
-          fi
-; then
+          if printf '%s\n' "$changes" | grep -vE '^A[[:space:]]+supabase/migrations/[^[:space:]]+\.sql$'; then
             echo "::error::Non-append-only migration change: block automated db push."
             exit 1
           fi
@@ -150,8 +84,10 @@ jobs:
           # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
           version: 2.122.1
       - name: Link project
+        if: steps.migrate.outputs.apply == 'true'
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
       - name: Reconcile known remote migration ledger drift
+        if: steps.migrate.outputs.apply == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -193,6 +129,7 @@ jobs:
             supabase migration repair "$version" --status applied
           done
       - name: Push migrations
+        if: steps.migrate.outputs.apply == 'true'
         run: |
           set +e
           supabase db push --include-all 2>&1 | tee /tmp/db-push.log

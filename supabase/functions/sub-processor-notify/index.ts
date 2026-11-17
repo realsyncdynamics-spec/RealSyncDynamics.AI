@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     for (const sub of subs) {
       const { data: existing, error: lookupError } = await admin
         .from('sub_processor_notifications')
-        .select('id')
+        .select('id, resend_message_id, error_message')
         .eq('change_id', change.id)
         .eq('subscription_id', sub.id)
         .maybeSingle();
@@ -98,7 +98,18 @@ Deno.serve(async (req) => {
         console.error('[sub-processor-notify] notification lookup failed');
         continue;
       }
-      if (existing) continue;
+      if (existing) {
+        // Die alte Function schrieb auch bei fehlendem Provider/Sendefehlern
+        // einen unveraenderlichen Receipt. Solche Legacy-Fehler nicht als
+        // erfolgreich zugestellt zaehlen oder die Aenderung abschliessen.
+        // Manuelle Reconciliation ist wegen UNIQUE + append-only noetig.
+        if (!existing.resend_message_id || existing.error_message) {
+          totalFailed++;
+          changeComplete = false;
+          console.error('[sub-processor-notify] legacy failed receipt requires reconciliation');
+        }
+        continue;
+      }
 
       const subject = `[RealSync Dynamics] Sub-Processor-Aenderung: ${change.processor_name}`;
       const html = renderChangeEmail({

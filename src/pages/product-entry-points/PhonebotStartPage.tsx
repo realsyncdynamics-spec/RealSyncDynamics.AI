@@ -96,9 +96,11 @@ export function PhonebotStartPage() {
             </h2>
             <p className="mt-4 max-w-3xl text-slate-600">
               Diese Angebote sind separat von den Governance-Abonnements geplant.
-              Die monatlichen Katalogpreise sind in Stripe hinterlegt. Leistungsgrenzen,
-              Minutenkontingente und die steuerliche Behandlung werden vor Verkaufsfreigabe
-              verbindlich bestätigt.
+              Die monatlichen Katalogpreise sind in Stripe hinterlegt. Leistungsgrenzen und
+              Minutenkontingente werden vor Verkaufsfreigabe verbindlich bestätigt.
+            </p>
+            <p className="mt-2 max-w-3xl text-sm text-slate-500" data-testid="voice-tax-note">
+              Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
             </p>
             <div className="mt-8 grid gap-5 md:grid-cols-3">
               {VOICE_STANDALONE_OFFERS.map((offer) => (

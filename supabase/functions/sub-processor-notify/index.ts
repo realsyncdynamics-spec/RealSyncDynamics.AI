@@ -40,6 +40,13 @@ Deno.serve(async (req) => {
   // sendet Vault `cron_sub_processor_notify_key`; Function Secret CRON_SUB_PROCESSOR_NOTIFY_KEY oder Vault-Fallback.
   const denied = await requireCronKey(req, 'CRON_SUB_PROCESSOR_NOTIFY_KEY', 'cron_sub_processor_notify_key');
   if (denied) return denied;
+
+  // Release gate: the public one-click unsubscribe route and durable delivery
+  // reconciliation are not yet verified. Never send compliance/marketing mail
+  // solely because a restored DB schema and a Resend key happen to exist.
+  if (Deno.env.get('SUB_PROCESSOR_NOTICES_ENABLED') !== 'true') {
+    return jsonResponse({ ok: false, code: 'SUB_PROCESSOR_NOTICES_RELEASE_GATED', sent: 0 }, 503);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

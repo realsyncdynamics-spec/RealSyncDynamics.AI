@@ -1,44 +1,45 @@
--- Bedarfs-Check (/check): gespeicherte Ergebnisse angemeldeter Nutzer.
+-- Bedarfs-Check (/check): Härtung der bestehenden Tabelle needs_check_results.
 --
--- Ersetzt die nie angewendeten Entwürfe 20261115200000_needs_check_results.sql
--- (PR #2262) und 20261115203000_needs_check_results.sql (PR #2260). Geprüft am
--- 15.11.2026 gegen supabase_migrations im Live-Projekt: keine der beiden ist
--- angewendet, darum ersetzt diese Datei sie, statt auf ihnen aufzubauen.
+-- Folge-Migration zu 20261115200000_needs_check_results.sql (PR #2262, am
+-- 16.11.2026 gemergt und in Produktion angewendet). Jene Datei bleibt
+-- unverändert; diese hier ändert nur, was danach gilt. Stand Produktion vor
+-- dieser Migration (gemessen 17.11.2026): 0 Zeilen in needs_check_results.
 --
--- Additiv. Keine bestehende Tabelle, Policy oder Berechtigung wird geändert.
+-- Nicht destruktiv: keine Tabelle, keine Spalte und keine Zeile wird
+-- gelöscht. audit_id und result_basis bleiben als Spalten bestehen, sind
+-- aber für Nutzer nicht mehr beschreibbar und per CHECK auf „keine Prüfung“
+-- festgelegt. Ersetzt werden Trigger, Funktion, Grants und ein CHECK.
 --
--- Was der Server festlegt, nicht der Client:
---   • user_id        = auth.uid()                  (Trigger, Spalte nicht beschreibbar)
---   • created_at     = now()                       (Trigger, Spalte nicht beschreibbar)
---   • model_version  = aktuelle Modellversion      (Trigger, Spalte nicht beschreibbar)
---   • recommendation_ids = needs_check_recommend() (Trigger + CHECK, Spalte nicht beschreibbar)
--- Der Client darf nur goal, area, has_website und website_url schreiben
--- (Spalten-GRANT). Wer mehr mitschickt, bekommt „permission denied“.
+-- Behobene Schwächen der Erstfassung:
+--   1. created_at und user_id konnte der Client setzen; das Tageslimit zählte
+--      created_at → mit einem alten Zeitstempel beliebig viele Speicherungen.
+--   2. Das Limit zählte gespeicherte Zeilen → Löschen gab Kontingent frei.
+--   3. Parallele Speicherungen konnten die Zählung überholen.
+--   4. recommendation_ids kamen vom Client.
+--   5. audit_id + result_basis = 'answers_and_scan' erfüllten den CHECK mit
+--      einer beliebigen UUID — ohne abgeschlossenen oder eigenen Scan.
+--      Öffentliche Scans (gdpr_audits) haben keine Nutzerzuordnung; der
+--      Server kann die Zugehörigkeit nicht bestätigen. Darum ist „technisch
+--      geprüft“ bis auf Weiteres ausgeschlossen; die Oberfläche verweist auf /audit.
 --
--- Historischer Stand: gespeichert werden Antworten, Modellversion und die
--- vom Server berechneten Empfehlungs-IDs. Die Texte liefert der eingefrorene
--- Katalog der jeweiligen Version (shared/needs-check.ts). Preise und
--- Verfügbarkeit werden nicht gespeichert.
+-- Was danach der Server festlegt, nicht der Client:
+--   user_id = auth.uid(), created_at = now(), model_version = aktuelle Version,
+--   recommendation_ids = needs_check_recommend(), audit_id = NULL, result_basis = 'answers'.
+-- Der Client darf nur goal, area, has_website, website_url schreiben (Spalten-GRANT).
 --
--- Technische Prüfung: nicht Teil dieses Ergebnisses. Öffentliche Scans
--- (gdpr_audits) haben keine Nutzerzuordnung; der Server könnte die
--- Zugehörigkeit eines Scans nicht bestätigen. Es gibt deshalb bewusst keine
--- Spalte audit_id. Die Oberfläche verweist für den Scan auf /audit.
---
--- Kontingent: höchstens 20 erfolgreiche Speicherungen je Nutzer in
--- rollierenden 24 Stunden. Gezählt wird in einem eigenen Protokoll, nicht in
--- den Ergebnissen — Löschen gibt nichts frei. Parallele Speicherungen werden
--- über eine Sperrzeile je Nutzer serialisiert.
---
--- Rechte (Begründung je Funktion unten):
+-- Rechte:
 --   needs_check_recommend                 IMMUTABLE, ohne Tabellenzugriff
---   needs_check_results_10_set_fields     SECURITY INVOKER — braucht keine Zusatzrechte
---   needs_check_results_20_quota          SECURITY DEFINER — schreibt Protokoll und
---                                         Sperrzeile, die der Nutzer weder lesen noch
---                                         schreiben darf. Trigger-Funktion: nicht per
---                                         RPC aufrufbar.
+--   needs_check_results_10_set_fields     SECURITY INVOKER — setzt nur Felder der neuen Zeile
+--   needs_check_results_20_quota          SECURITY DEFINER — schreibt Protokoll und Sperrzeile,
+--                                         auf die Nutzer kein Recht haben. Trigger-Funktion,
+--                                         nicht per RPC aufrufbar.
 
--- ── 1. Empfehlungslogik (Spiegel von recommendIds() in shared/needs-check.ts) ──
+-- ── 1. Alte Kontingent-Logik entfernen (zählte Zeilen und created_at) ────────
+
+drop trigger if exists needs_check_results_rate_limit_trg on public.needs_check_results;
+drop function if exists public.needs_check_results_rate_limit();
+
+-- ── 2. Empfehlungslogik (Spiegel von recommendIds() in shared/needs-check.ts) ──
 
 create or replace function public.needs_check_recommend(
   p_version smallint,
@@ -93,43 +94,48 @@ $$;
 comment on function public.needs_check_recommend(smallint, text, boolean) is
   'Bedarfs-Check: Empfehlungs-IDs je Modellversion. Spiegel von recommendIds() in shared/needs-check.ts; Parität per DB-Test.';
 
--- ── 2. Ergebnisse ───────────────────────────────────────────────────────────
+-- ── 3. Tabelle ergänzen (additiv) ───────────────────────────────────────────
 
-create table if not exists public.needs_check_results (
-  id                 uuid primary key default gen_random_uuid(),
-  user_id            uuid not null references auth.users (id) on delete cascade,
-  model_version      smallint not null,
-  goal               text not null,
-  area               text not null,
-  has_website        boolean not null,
-  website_url        text null,
-  recommendation_ids text[] not null,
-  created_at         timestamptz not null default now(),
+-- Default nur, um die (leere) Tabelle ohne Sonderfall zu erweitern; danach
+-- setzt ausschließlich der Trigger den Wert.
+alter table public.needs_check_results
+  add column if not exists model_version smallint not null default 1;
+alter table public.needs_check_results alter column model_version drop default;
 
-  constraint needs_check_results_version_chk check (model_version in (1)),
-  constraint needs_check_results_goal_chk check (goal in ('website', 'inquiries', 'rules', 'unsure')),
-  constraint needs_check_results_area_chk check (
-    area in ('handwerk', 'praxis', 'kanzlei', 'handel', 'dienstleistung', 'agentur', 'sonstiges')
-  ),
-  -- Muster identisch mit WEBSITE_URL_PATTERN in shared/needs-check.ts.
-  constraint needs_check_results_url_chk check (
+alter table public.needs_check_results
+  drop constraint if exists needs_check_results_version_chk;
+alter table public.needs_check_results
+  add constraint needs_check_results_version_chk check (model_version in (1));
+
+-- Keine Scan-Referenz, bis der Server Abschluss und Zugehörigkeit eines Scans
+-- bestätigen kann (siehe Kopf, Punkt 5).
+alter table public.needs_check_results
+  drop constraint if exists needs_check_results_no_scan_chk;
+alter table public.needs_check_results
+  add constraint needs_check_results_no_scan_chk check (audit_id is null and result_basis = 'answers');
+
+-- Adresse: zusätzlich kein „@“ im Host (keine Zugangsdaten). Muster identisch
+-- mit WEBSITE_URL_PATTERN in shared/needs-check.ts.
+alter table public.needs_check_results drop constraint if exists needs_check_url_chk;
+alter table public.needs_check_results drop constraint if exists needs_check_results_url_chk;
+alter table public.needs_check_results
+  add constraint needs_check_results_url_chk check (
     website_url is null
     or (has_website and char_length(website_url) <= 300 and website_url ~* '^https?://[^\s/@]+\.[^\s]+$')
-  ),
-  -- Zweite Linie hinter dem Trigger: Die gespeicherten IDs MÜSSEN das sein,
-  -- was die Logik der gespeicherten Version aus den Angaben ableitet.
-  constraint needs_check_results_recs_chk check (
-    recommendation_ids = public.needs_check_recommend(model_version, goal, has_website)
-  )
-);
+  );
 
-create index if not exists needs_check_results_user_created_idx
-  on public.needs_check_results (user_id, created_at desc);
+-- Zweite Linie hinter dem Trigger: Die gespeicherten IDs MÜSSEN das sein,
+-- was die Logik der gespeicherten Version aus den Angaben ableitet.
+alter table public.needs_check_results drop constraint if exists needs_check_results_recs_chk;
+alter table public.needs_check_results
+  add constraint needs_check_results_recs_chk check (
+    recommendation_ids = public.needs_check_recommend(model_version, goal, has_website)
+  );
 
 comment on table public.needs_check_results is
-  'Bedarfs-Check (/check): Angaben, Modellversion und serverseitig berechnete Empfehlungs-IDs je Nutzer. RLS: nur eigene Zeilen. Kein UPDATE.';
+  'Bedarfs-Check (/check): Angaben, Modellversion und serverseitig berechnete Empfehlungs-IDs je Nutzer. RLS: nur eigene Zeilen. Kein UPDATE. Keine Scan-Referenz.';
 
--- ── 3. Kontingent: Protokoll und Sperrzeile (für Nutzer unsichtbar) ─────────
+-- ── 4. Kontingent: Protokoll und Sperrzeile (für Nutzer unsichtbar) ─────────
 
 create table if not exists public.needs_check_save_log (
   id       bigint generated always as identity primary key,
@@ -151,7 +157,7 @@ create table if not exists public.needs_check_save_quota (
 comment on table public.needs_check_save_quota is
   'Bedarfs-Check: Sperrzeile je Nutzer. Serialisiert parallele Speicherungen. Kein Zugriff für anon/authenticated.';
 
--- ── 4. Trigger ──────────────────────────────────────────────────────────────
+-- ── 5. Trigger ──────────────────────────────────────────────────────────────
 
 -- SECURITY INVOKER: setzt nur Felder der neuen Zeile, braucht keine Rechte,
 -- die der Aufrufer nicht ohnehin hat.
@@ -171,6 +177,8 @@ begin
   new.user_id := v_uid;
   new.created_at := now();
   new.model_version := 1;
+  new.audit_id := null;
+  new.result_basis := 'answers';
   new.recommendation_ids := public.needs_check_recommend(new.model_version, new.goal, new.has_website);
   return new;
 end;
@@ -238,41 +246,27 @@ revoke all on function public.needs_check_results_20_quota() from public;
 revoke all on function public.needs_check_recommend(smallint, text, boolean) from public;
 grant execute on function public.needs_check_recommend(smallint, text, boolean) to authenticated, service_role;
 
--- ── 5. Rechte und RLS ───────────────────────────────────────────────────────
+-- ── 6. Rechte ───────────────────────────────────────────────────────────────
 
-alter table public.needs_check_results enable row level security;
 alter table public.needs_check_save_log enable row level security;
 alter table public.needs_check_save_quota enable row level security;
 
+-- Ergebnisse: tabellenweites INSERT der Erstfassung zurücknehmen; nur die vier
+-- Angaben bleiben beschreibbar. SELECT/DELETE und die RLS-Policies der
+-- Erstfassung (nur eigene Zeilen, kein UPDATE) bleiben unverändert.
 revoke all on public.needs_check_results from public, anon, authenticated;
-revoke all on public.needs_check_save_log from public, anon, authenticated;
-revoke all on public.needs_check_save_quota from public, anon, authenticated;
-revoke all on sequence public.needs_check_save_log_id_seq from public, anon, authenticated;
-
--- Lesen und Löschen der eigenen Zeilen; Schreiben nur der vier Angaben.
 grant select, delete on public.needs_check_results to authenticated;
 grant insert (goal, area, has_website, website_url) on public.needs_check_results to authenticated;
 
 -- Serverweg (Support, DSR): lesen und löschen. Schreiben läuft nur über den Nutzer.
+revoke all on public.needs_check_results from service_role;
 grant select, delete on public.needs_check_results to service_role;
+
+revoke all on public.needs_check_save_log from public, anon, authenticated;
+revoke all on public.needs_check_save_quota from public, anon, authenticated;
+revoke all on sequence public.needs_check_save_log_id_seq from public, anon, authenticated;
 grant select, delete on public.needs_check_save_log to service_role;
 grant select, delete on public.needs_check_save_quota to service_role;
 
-drop policy if exists needs_check_results_select_own on public.needs_check_results;
-create policy needs_check_results_select_own
-  on public.needs_check_results for select to authenticated
-  using (user_id = (select auth.uid()));
-
-drop policy if exists needs_check_results_insert_own on public.needs_check_results;
-create policy needs_check_results_insert_own
-  on public.needs_check_results for insert to authenticated
-  with check (user_id = (select auth.uid()));
-
-drop policy if exists needs_check_results_delete_own on public.needs_check_results;
-create policy needs_check_results_delete_own
-  on public.needs_check_results for delete to authenticated
-  using (user_id = (select auth.uid()));
-
--- Kein UPDATE: ein gespeichertes Ergebnis bleibt, wie es war.
 -- needs_check_save_log / needs_check_save_quota: RLS an, keine Policy für
 -- anon/authenticated. Zugriff nur über den Trigger (Eigentümer) und service_role.

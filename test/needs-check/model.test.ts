@@ -13,10 +13,11 @@ import {
   normalizeWebsiteUrl, recommend, recommendIds, renderRecommendations, validateAnswers,
 } from '../../shared/needs-check';
 
-const MIGRATION = readFileSync(
-  join(__dirname, '../../supabase/migrations/20261115213000_needs_check_results.sql'),
-  'utf8',
-);
+const readMigration = (f: string) => readFileSync(join(__dirname, '../../supabase/migrations', f), 'utf8');
+/** Erstfassung (#2262, angewendet) — legt Tabelle, erlaubte Werte und RLS-Policies an. */
+const BASE = readMigration('20261115200000_needs_check_results.sql');
+/** Härtung — Grants, Trigger, Kontingent, Empfehlung, Ausschluss der Scan-Referenz. */
+const MIGRATION = readMigration('20261117190000_needs_check_results_hardening.sql');
 
 describe('Eingabeprüfung', () => {
   it('nimmt gültige Angaben an und normalisiert die Adresse', () => {
@@ -101,8 +102,8 @@ describe('Versionierter Katalog', () => {
 
 describe('Abgleich mit der Migration', () => {
   it('erlaubte Werte und Adressmuster stimmen mit den CHECK-Constraints überein', () => {
-    expect(MIGRATION).toContain(`goal in (${GOALS.map((g) => `'${g}'`).join(', ')})`);
-    expect(MIGRATION).toContain(`area in (${AREAS.map((a) => `'${a}'`).join(', ')})`);
+    expect(BASE).toContain(`goal IN (${GOALS.map((g) => `'${g}'`).join(', ')})`);
+    expect(BASE).toContain(`area IN (${AREAS.map((a) => `'${a}'`).join(', ')})`);
     expect(MIGRATION).toContain(`website_url ~* '${WEBSITE_URL_PATTERN}'`);
     expect(MIGRATION).toContain(`model_version in (${NEEDS_CHECK_MODEL_VERSION})`);
   });
@@ -114,8 +115,15 @@ describe('Abgleich mit der Migration', () => {
     expect(MIGRATION).not.toMatch(/grant[^;]*\bupdate\b[^;]*on public\.needs_check_results/i);
   });
 
-  it('keine Scan-Referenz im Ergebnis', () => {
-    expect(MIGRATION).not.toMatch(/^\s*audit_id\s/m);
-    expect(MIGRATION).not.toMatch(/result_basis/);
+  it('keine Scan-Referenz im Ergebnis: Spalten bleiben, sind aber festgelegt und nicht beschreibbar', () => {
+    expect(MIGRATION).toContain("check (audit_id is null and result_basis = 'answers')");
+    expect(MIGRATION).toContain("new.audit_id := null;");
+    expect(MIGRATION).not.toMatch(/grant insert \([^)]*(audit_id|result_basis)/i);
+  });
+
+  it('Härtung ist additiv: keine gelöschte Tabelle oder Spalte, alte Kontingent-Logik ersetzt', () => {
+    expect(MIGRATION).not.toMatch(/drop\s+table|drop\s+column|truncate|delete\s+from\s+public\.needs_check_results/i);
+    expect(MIGRATION).toContain('drop trigger if exists needs_check_results_rate_limit_trg');
+    expect(MIGRATION).toContain('drop function if exists public.needs_check_results_rate_limit()');
   });
 });

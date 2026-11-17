@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Bedarfs-Check — Sicherheitstests gegen echtes Postgres (ohne Node-Abhängigkeiten).
 #
-# Prüft supabase/migrations/20261115213000_needs_check_results.sql:
+# Prüft die Bedarfs-Check-Tabelle nach beiden Migrationen:
+#   supabase/migrations/20261115200000_needs_check_results.sql (Erstfassung, #2262)
+#   supabase/migrations/20261117190000_needs_check_results_hardening.sql (Härtung)
+# Geprüft werden:
 #   gefälschte Felder (user_id, created_at, model_version, Empfehlungen, id,
 #   Scan-Referenz), fremde Ergebnisse, anon, UPDATE, verdeckte Kontingent-
 #   Tabellen, Kontingent 20/24 h (sequenziell, nach Löschen, rollierend, nur
@@ -19,7 +22,10 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-MIGRATION="$ROOT/supabase/migrations/20261115213000_needs_check_results.sql"
+MIGRATIONS=(
+  "$ROOT/supabase/migrations/20261115200000_needs_check_results.sql"
+  "$ROOT/supabase/migrations/20261117190000_needs_check_results_hardening.sql"
+)
 PSQL=(psql -X -q -v ON_ERROR_STOP=1 -tA)
 pass=0
 fail=0
@@ -58,7 +64,9 @@ INS="INSERT INTO public.needs_check_results (goal, area, has_website) VALUES ('r
 # ── Vorbereitung ────────────────────────────────────────────────────────────
 if [ "$(admin "SELECT to_regclass('public.needs_check_results') IS NOT NULL")" != "t" ]; then
   "${PSQL[@]}" -f "$ROOT/scripts/test-db/bootstrap.sql" >/dev/null || exit 2
-  "${PSQL[@]}" -f "$MIGRATION" >/dev/null 2>&1 || { echo "Migration fehlgeschlagen"; exit 2; }
+  for m in "${MIGRATIONS[@]}"; do
+    "${PSQL[@]}" -f "$m" >/dev/null 2>&1 || { echo "Migration fehlgeschlagen: $m"; exit 2; }
+  done
 fi
 
 echo "1. Eigene Zeile und serverseitig gesetzte Felder"
@@ -74,13 +82,14 @@ expect_err "eigener Zeitstempel"   "$(as_user "$A" "INSERT INTO public.needs_che
 expect_err "eigene Empfehlungen"   "$(as_user "$A" "INSERT INTO public.needs_check_results (recommendation_ids, goal, area, has_website) VALUES (ARRAY['govern.runtime'], 'website', 'kanzlei', false)")" "permission denied"
 expect_err "eigene Modellversion"  "$(as_user "$A" "INSERT INTO public.needs_check_results (model_version, goal, area, has_website) VALUES (2, 'rules', 'kanzlei', false)")" "permission denied"
 expect_err "eigene id"             "$(as_user "$A" "INSERT INTO public.needs_check_results (id, goal, area, has_website) VALUES (gen_random_uuid(), 'rules', 'kanzlei', false)")" "permission denied"
-expect_err "Scan-Referenz audit_id" "$(as_user "$A" "INSERT INTO public.needs_check_results (audit_id, goal, area, has_website) VALUES (gen_random_uuid(), 'rules', 'kanzlei', false)")" "column \"audit_id\" .*does not exist"
-expect_err "result_basis 'answers_and_scan'" "$(as_user "$A" "INSERT INTO public.needs_check_results (result_basis, goal, area, has_website) VALUES ('answers_and_scan', 'rules', 'kanzlei', false)")" "column \"result_basis\" .*does not exist"
+expect_err "Scan-Referenz audit_id" "$(as_user "$A" "INSERT INTO public.needs_check_results (audit_id, goal, area, has_website) VALUES (gen_random_uuid(), 'rules', 'kanzlei', false)")" "permission denied"
+expect_err "result_basis 'answers_and_scan'" "$(as_user "$A" "INSERT INTO public.needs_check_results (audit_id, result_basis, goal, area, has_website) VALUES (gen_random_uuid(), 'answers_and_scan', 'rules', 'kanzlei', false)")" "permission denied"
+expect_eq "gespeicherte Zeile: keine Scan-Referenz" "$(admin "SELECT (audit_id IS NULL) || '|' || result_basis FROM public.needs_check_results WHERE user_id = '$A'")" "true|answers"
 expect_err "ohne Identität (authenticated ohne sub)" "$(as_role authenticated "" "$INS")" "needs_check_unauthenticated"
 
 echo "3. Ungültige Angaben scheitern am Server"
-expect_err "unbekanntes Ziel"      "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website) VALUES ('alles', 'kanzlei', false)")" "needs_check_results_goal_chk|violates check"
-expect_err "unbekannter Bereich"   "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website) VALUES ('rules', 'mars', false)")" "needs_check_results_area_chk"
+expect_err "unbekanntes Ziel"      "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website) VALUES ('alles', 'kanzlei', false)")" "needs_check_goal_chk|violates check"
+expect_err "unbekannter Bereich"   "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website) VALUES ('rules', 'mars', false)")" "needs_check_area_chk"
 expect_err "Adresse ohne Website"  "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website, website_url) VALUES ('rules', 'kanzlei', false, 'https://a.de')")" "needs_check_results_url_chk"
 expect_err "Adresse mit Zugangsdaten" "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website, website_url) VALUES ('rules', 'kanzlei', true, 'https://user:pw@a.de')")" "needs_check_results_url_chk"
 expect_err "Adresse zu lang"       "$(as_user "$A" "INSERT INTO public.needs_check_results (goal, area, has_website, website_url) VALUES ('rules', 'kanzlei', true, 'https://a.de/' || repeat('x', 300))")" "needs_check_results_url_chk"
@@ -154,6 +163,17 @@ ROLLBACK;
 SQL
 )
 expect_err "falsche Empfehlungen scheitern auch ohne Trigger" "$out" "needs_check_results_recs_chk"
+out=$("${PSQL[@]}" 2>&1 <<SQL
+BEGIN;
+SELECT set_config('request.jwt.claims', '{"sub":"$B","role":"authenticated"}', true) \\g /dev/null
+ALTER TABLE public.needs_check_results DISABLE TRIGGER needs_check_results_10_set_fields;
+INSERT INTO public.needs_check_results (user_id, model_version, goal, area, has_website, recommendation_ids, audit_id, result_basis)
+VALUES ('$B', 1, 'rules', 'kanzlei', false, public.needs_check_recommend(1::smallint, 'rules', false), gen_random_uuid(), 'answers_and_scan');
+ROLLBACK;
+SQL
+)
+expect_err "Scan-Referenz scheitert auch ohne Trigger" "$out" "needs_check_results_no_scan_chk"
+expect_eq "alte Kontingent-Funktion ist entfernt" "$(admin "SELECT count(*) FROM pg_proc WHERE proname = 'needs_check_results_rate_limit'")" "0"
 expect_err "unbekannte Modellversion: Fehler statt NULL" "$(admin "SELECT public.needs_check_recommend(2::smallint, 'rules', false)")" "needs_check_unknown_model_version"
 
 echo "8. Kontolöschung"

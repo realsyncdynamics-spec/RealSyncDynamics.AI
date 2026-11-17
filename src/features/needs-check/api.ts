@@ -3,7 +3,7 @@
  *
  * Speichern und Lesen laufen über den Supabase-Client des angemeldeten
  * Nutzers. Die Zugriffskontrolle macht die Datenbank, nicht dieser Code
- * (supabase/migrations/20261115213000_needs_check_results.sql):
+ * (supabase/migrations/20261117190000_needs_check_results_hardening.sql):
  *   - Der Client schickt nur die vier Angaben. user_id, Zeitstempel,
  *     Modellversion und Empfehlungen setzt der Server; mitgeschickte Werte
  *     lehnt er ab.

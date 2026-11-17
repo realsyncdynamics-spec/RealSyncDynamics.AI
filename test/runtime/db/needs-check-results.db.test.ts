@@ -1,11 +1,15 @@
 /**
- * Bedarfs-Check: Zugriffsregeln und Kontingent gegen echtes Postgres
- * (supabase/migrations/20261115213000_needs_check_results.sql).
+ * Bedarfs-Check: Zugriffsregeln und Kontingent gegen echtes Postgres nach
+ * 20261115200000_needs_check_results.sql (Erstfassung, #2262) und
+ * 20261117190000_needs_check_results_hardening.sql (Härtung). Ersetzt den
+ * früheren needs-check-rls.db.test.ts, der die Erstfassung prüfte (Client
+ * setzt Empfehlungen, Limit zählt Zeilen) und deren Verhalten jetzt gewollt
+ * abgelehnt wird.
  *
  *   - user_id, created_at, model_version, Empfehlungen und id setzt der Server;
  *     der Client darf nur die vier Angaben schreiben
- *   - keine Scan-Referenz (audit_id / result_basis) — technische Prüfung ist
- *     nicht Teil des Ergebnisses
+ *   - keine Scan-Referenz: audit_id / result_basis nicht beschreibbar, per
+ *     Trigger und CHECK auf „keine Prüfung“ festgelegt
  *   - fremde Ergebnisse: nicht lesbar, nicht löschbar; anon: kein Zugriff; kein UPDATE
  *   - Protokoll und Sperrzeile des Kontingents: für Nutzer unsichtbar
  *   - 20 erfolgreiche Speicherungen in rollierenden 24 h; Löschen gibt nichts frei;
@@ -102,14 +106,23 @@ d('needs_check_results — Rechte und Kontingent', () => {
     if (!res.ok) expect(res.error).toMatch(/permission denied/i);
   });
 
-  it('Scan-Referenzen existieren nicht: audit_id und result_basis werden abgelehnt', async () => {
+  it('Scan-Referenzen: audit_id und result_basis sind nicht beschreibbar und festgelegt', async () => {
     const u = await mkUser();
-    for (const col of ['audit_id', 'result_basis']) {
-      const value = col === 'audit_id' ? 'gen_random_uuid()' : `'answers_and_scan'`;
-      const res = await asUser(u, `INSERT INTO public.needs_check_results (${col}, goal, area, has_website) VALUES (${value}, 'rules', 'kanzlei', false)`);
+    for (const [cols, vals] of [
+      ['audit_id', 'gen_random_uuid()'],
+      ['audit_id, result_basis', `gen_random_uuid(), 'answers_and_scan'`],
+    ]) {
+      const res = await asUser(u, `INSERT INTO public.needs_check_results (${cols}, goal, area, has_website) VALUES (${vals}, 'rules', 'kanzlei', false)`);
       expect(res.ok).toBe(false);
-      if (!res.ok) expect(res.error).toMatch(new RegExp(`column "${col}".*does not exist`));
+      if (!res.ok) expect(res.error).toMatch(/permission denied/i);
     }
+    expect((await asUser(u, INSERT_OWN)).ok).toBe(true);
+    const row = await ctx!.client.query(`SELECT audit_id, result_basis FROM public.needs_check_results WHERE user_id = $1`, [u]);
+    expect(row.rows[0]).toEqual({ audit_id: null, result_basis: 'answers' });
+  });
+
+  it('alte Kontingent-Logik der Erstfassung ist entfernt', async () => {
+    expect(await count(`SELECT count(*) AS n FROM pg_proc WHERE proname = 'needs_check_results_rate_limit'`)).toBe(0);
   });
 
   it('ohne Identität wird nicht gespeichert', async () => {

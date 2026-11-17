@@ -10,7 +10,7 @@
  *
  * Serverseitig gilt dieselbe Logik als SQL-Funktion
  * `public.needs_check_recommend(model_version, goal, has_website)` in
- * supabase/migrations/20261115213000_needs_check_results.sql. Der Server
+ * supabase/migrations/20261117190000_needs_check_results_hardening.sql. Der Server
  * berechnet die gespeicherten Empfehlungen selbst; was der Client schickt,
  * zählt dafür nicht. Ein DB-Test vergleicht beide Seiten für jede
  * Kombination (test/runtime/db/needs-check-results.db.test.ts).

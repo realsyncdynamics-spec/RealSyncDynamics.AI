@@ -62,6 +62,23 @@ test.describe('/legal/sub-processors', () => {
     }
   });
 
+  test('zeigt keine unbestätigte Anmeldung und schreibt nicht anonym in die Datenbank', async ({ page }) => {
+    await page.goto('/legal/sub-processors');
+
+    await expect(
+      page.getByRole('heading', { name: 'Änderungsmitteilungen anfragen' }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Der automatische E-Mail-Anmeldeprozess ist derzeit nicht freigegeben.', { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Datenschutz-Kontakt öffnen' }),
+    ).toHaveAttribute('href', /^mailto:privacy@realsyncdynamicsai[.]de/);
+    await expect(page.getByRole('button', { name: 'Abonnieren' })).toHaveCount(0);
+    await expect(page.locator('input[type="email"]')).toHaveCount(0);
+    await expect(page.getByText('Eingetragen.', { exact: true })).toHaveCount(0);
+  });
+
   test('DPA-URLs sind erreichbar (E2E_EXTERNAL_HTTP=1)', async () => {
     test.skip(
       process.env.E2E_EXTERNAL_HTTP !== '1',

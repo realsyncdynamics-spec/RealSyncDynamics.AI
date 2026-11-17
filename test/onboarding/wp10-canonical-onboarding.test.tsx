@@ -86,6 +86,8 @@ vi.mock('../../src/core/access/TenantProvider', () => ({
 }));
 
 vi.mock('../../src/core/onboarding/claimAudit', () => ({
+  PENDING_AUDIT_ID_KEY: 'rsd.pending_audit_id',
+  clearPendingAudit: vi.fn(),
   readPendingAudit: () => mocks.context.pendingAuditVisible
     ? { audit_id: '33333333-3333-4333-8333-333333333333' }
     : null,

@@ -100,6 +100,14 @@ describe('RSD-011 Mailzustellung bleibt fail-closed', () => {
     expect(cron).toContain("'Idempotency-Key': `audit-drip/${row.id}/step-${stepToSend}`");
   });
 
+  it('erkennt fehlende Provider-ID trotz HTTP 2xx und zaehlt nicht als zugestellt', () => {
+    expect(cron).toContain('const payload: unknown = await resp.json()');
+    expect(cron).toContain("const reason = 'Resend response missing message ID'");
+    expect(cron).toContain("failed.push({ id: row.id, error: reason })");
+    expect(cron).toMatch(/if \(!providerMessageId\)\s*\{/);
+    expect(cron).toContain("p_error: reason");
+  });
+
   it('meldet einen fehlgeschlagenen Batch auch als HTTP-Fehler', () => {
     expect(cron).toContain('failed.length > 0 ? 502 : 200');
     expect(cron).toContain("const { error: advanceError } = await admin.rpc('audit_email_drip_advance'");

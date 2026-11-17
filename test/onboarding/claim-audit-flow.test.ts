@@ -3,6 +3,7 @@
  * nachvollziehbare Fehler, Notiz nur bei endgültigen Ausgängen entfernen.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 const A1 = '33333333-3333-4333-8333-333333333333';
 const T1 = '11111111-1111-4111-8111-111111111111';
@@ -120,6 +121,21 @@ describe('claimPendingAudit', () => {
     localStorage.clear();
     expect(await claimPendingAudit()).toBeNull();
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('Schutz vor impliziter Multi-Tenant-Zuordnung (Code-Vertrag)', () => {
+  it('verlangt Nutzerentscheidung im kanonischen Aktivierungsflow', () => {
+    const activation = readFileSync('src/features/activation/GovernanceActivationView.tsx', 'utf8');
+    expect(activation).toContain('tenants.length !== 1');
+    expect(activation).toContain('claimPendingAuditWithStatus(claimTargetTenant)');
+    expect(activation).toContain('Ziel-Arbeitsbereich für Scanbericht');
+  });
+
+  it('führt im Dashboard bei mehreren Mandanten keinen automatischen Claim durch', () => {
+    const dashboard = readFileSync('src/features/governance/dashboard/NextBestActionCard.tsx', 'utf8');
+    expect(dashboard).toContain('tenants.length === 1');
+    expect(dashboard).not.toContain('claimPendingAudit(activeTenantId)');
   });
 });
 

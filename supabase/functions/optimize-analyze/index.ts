@@ -51,7 +51,7 @@ async function analyzeComplianceTrends(
   const risksText = risks?.map((r) => `${r.recorded_at}: Critical=${r.critical_risks_count}, High=${r.high_risks_count}`).join("\n") || "No data";
 
   const message = await anthropic.messages.create({
-    model: "claude-opus-4-1-20250805",
+    model: "claude-sonnet-4-6",
     max_tokens: 2000,
     messages: [
       {

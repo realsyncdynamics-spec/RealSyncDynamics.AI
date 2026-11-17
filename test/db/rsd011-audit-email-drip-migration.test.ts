@@ -126,5 +126,7 @@ describe('Sub-Processor-Benachrichtigung bleibt fail-closed', () => {
     expect(processorNotify).toContain("if (writeError) throw new Error('notification receipt write failed')");
     expect(processorNotify).toContain('if (changeComplete) {');
     expect(processorNotify).toContain('changes_processed: changesMarked');
+    expect(processorNotify).toContain("if (!existing.resend_message_id || existing.error_message)");
+    expect(processorNotify).toContain('legacy failed receipt requires reconciliation');
   });
 });

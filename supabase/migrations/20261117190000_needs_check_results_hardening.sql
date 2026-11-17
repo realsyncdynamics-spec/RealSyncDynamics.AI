@@ -29,10 +29,16 @@
 --
 -- Rechte:
 --   needs_check_recommend                 IMMUTABLE, ohne Tabellenzugriff
---   needs_check_results_10_set_fields     SECURITY INVOKER — setzt nur Felder der neuen Zeile
---   needs_check_results_20_quota          SECURITY DEFINER — schreibt Protokoll und Sperrzeile,
---                                         auf die Nutzer kein Recht haben. Trigger-Funktion,
---                                         nicht per RPC aufrufbar.
+--   needs_check_results_10_set_fields     SECURITY INVOKER — setzt nur Felder der neuen Zeile,
+--                                         liest keine Identität
+--   needs_check_results_20_quota          SECURITY DEFINER — liest auth.uid(), setzt user_id,
+--                                         schreibt Protokoll und Sperrzeile, auf die Nutzer
+--                                         kein Recht haben. Trigger-Funktion, nicht per RPC
+--                                         aufrufbar.
+-- auth.uid() wird nur im DEFINER-Trigger aufgelöst: Eine INVOKER-Funktion mit
+-- search_path = '' löst den Schemanamen zur Laufzeit mit den Rechten des
+-- Aufrufers auf und bräuchte USAGE auf `auth`. Darauf verlässt sich die
+-- Migration nicht (in der CI-Datenbank fehlt dieses Recht bewusst).
 
 -- ── 1. Alte Kontingent-Logik entfernen (zählte Zeilen und created_at) ────────
 
@@ -160,21 +166,18 @@ comment on table public.needs_check_save_quota is
 -- ── 5. Trigger ──────────────────────────────────────────────────────────────
 
 -- SECURITY INVOKER: setzt nur Felder der neuen Zeile, braucht keine Rechte,
--- die der Aufrufer nicht ohnehin hat.
+-- die der Aufrufer nicht ohnehin hat. user_id setzt der DEFINER-Trigger
+-- needs_check_results_20_quota aus auth.uid(); bis dahin ist sie NULL, damit
+-- ein Wert des Clients nie stehen bleibt.
 create or replace function public.needs_check_results_10_set_fields()
 returns trigger
 language plpgsql
 security invoker
 set search_path = ''
 as $$
-declare
-  v_uid uuid := auth.uid();
 begin
-  if v_uid is null then
-    raise exception 'needs_check_unauthenticated' using errcode = '42501';
-  end if;
   new.id := gen_random_uuid();
-  new.user_id := v_uid;
+  new.user_id := null;
   new.created_at := now();
   new.model_version := 1;
   new.audit_id := null;
@@ -199,9 +202,10 @@ declare
   v_uid   uuid := auth.uid();
   v_count integer;
 begin
-  if v_uid is null or new.user_id is distinct from v_uid then
+  if v_uid is null then
     raise exception 'needs_check_unauthenticated' using errcode = '42501';
   end if;
+  new.user_id := v_uid;
 
   -- Sperrzeile je Nutzer. Eine zweite, parallele Speicherung desselben
   -- Nutzers wartet hier, bis die erste abgeschlossen ist (READ COMMITTED),

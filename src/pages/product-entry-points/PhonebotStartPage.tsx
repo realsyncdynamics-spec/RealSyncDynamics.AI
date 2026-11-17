@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, AudioLines, Bot, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
+import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
 import { formatPriceEur, VOICE_STANDALONE_OFFERS } from '@/shared/pricing';
 import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
 
@@ -54,6 +55,7 @@ export function PhonebotStartPage() {
       <main>
         <section className="border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white px-5 py-20 sm:px-8">
           <div className="mx-auto max-w-6xl">
+            <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
             <p className="mb-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-teal-700">
               <AudioLines className="h-4 w-4" aria-hidden="true" /> RealSync AI Voice Agent
             </p>

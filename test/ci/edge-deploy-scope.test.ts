@@ -69,7 +69,8 @@ describe('P0: bounded Edge Function deployments', () => {
 
   it('deploy workflow delegates to the bounded planner rather than redeploy-all', () => {
     const workflow = requireWorkflow();
-    expect(workflow).toContain('node scripts/ops/plan-edge-deploy.mjs HEAD^ HEAD');
+    expect(workflow).toContain('node scripts/ops/plan-edge-deploy.mjs "$PUSH_BEFORE" HEAD');
+    expect(workflow).not.toContain('plan-edge-deploy.mjs HEAD^ HEAD');
     expect(workflow).not.toContain('deploy_all=true');
     expect(workflow).toContain('REQUESTED_FUNCTIONS');
     expect(workflow).toContain('node scripts/ops/check-live-edge-scope.mjs');

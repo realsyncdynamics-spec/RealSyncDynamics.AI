@@ -3,7 +3,7 @@
 //
 // Seit dem Codex-Review (14.11.2026, P2) läuft die gesamte Annahme in EINER
 // Datenbanktransaktion: RPC public.inbox_form_submit_intake (Migration
-// 20261114100100_inbox_handoff.sql, Abschnitt 7). Auflösung, Duplikatprüfung,
+// 20261117100100_inbox_handoff.sql, Abschnitt 7). Auflösung, Duplikatprüfung,
 // Kontingente und die drei Inserts sind damit atomar; eine Konversation ist
 // erst sichtbar, wenn sie vollständig ist. Kein Zählen-dann-Einfügen und
 // keine Kompensation mehr im Handler.

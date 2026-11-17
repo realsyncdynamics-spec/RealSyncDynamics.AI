@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
   // ändert an der Abrechnung nichts mehr.
   // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
-    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, product_line: 'saas_governance' },
   };
   if (!isOneTime && plan.trialDays > 0 && trialEligible) {
     subscriptionData.trial_period_days = plan.trialDays;
@@ -322,6 +322,7 @@ Deno.serve(async (req) => {
       metadata: {
         tenant_id: body.tenant_id,
         plan_key: body.plan_key,
+        product_line: 'saas_governance',
         pilot: body.pilot ? 'true' : 'false',
         purchase_mode: plan.purchaseMode,
       },
@@ -333,7 +334,7 @@ Deno.serve(async (req) => {
       ...(isOneTime
         ? {
             payment_intent_data: {
-              metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+              metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, product_line: 'saas_governance' },
             },
           }
         : { subscription_data: subscriptionData }),

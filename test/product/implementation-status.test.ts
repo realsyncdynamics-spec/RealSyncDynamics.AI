@@ -32,7 +32,7 @@ describe('implementation-status registry', () => {
   });
 
   it('bumps measured date after Landing v6 re-measure', () => {
-    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-10-18');
+    expect(IMPLEMENTATION_MEASURED_AT).toBe('2026-11-17');
   });
 
   it('keeps yearly billing off live; free audit live', () => {
@@ -261,7 +261,7 @@ describe('implementation-status registry', () => {
     expect(docs).toContain('Landing v6');
     expect(docs).toContain('Das Governance OS für DSGVO & EU AI Act.');
     expect(docs).not.toContain('AI Compliance Operations OS for Europe');
-    expect(docs).toContain('2026-10-18');
+    expect(docs).toContain('2026-11-17');
     expect(docs).toContain('/ai-act-klassifikator');
     expect(docs).toContain('ai-act-inventory-persist');
     expect(docs).not.toMatch(/cyan buttons/);

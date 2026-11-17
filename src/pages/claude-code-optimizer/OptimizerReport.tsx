@@ -53,7 +53,7 @@ export function OptimizerReport() {
         kind="info"
         eyebrow="Schritt 5 von 5"
         title="Dein ausführlicher Bericht"
-        nextActionLabel="Wähle ein Paket — du landest auf der Preis-/Buchungsseite, wo du den Optimizer verbindlich aktivierst."
+        nextActionLabel="Wähle bei Bedarf einen Plattformtarif auf der Preisseite. Automatische Repository-Fixes werden hiermit noch nicht aktiviert."
       >
         <p>
           Willkommen! Du bist angemeldet. Auf Basis deines Scans
@@ -62,7 +62,7 @@ export function OptimizerReport() {
               {' '}von <span className="font-mono text-titanium-100">{scan.domain}</span>
             </>
           ) : null}{' '}
-          zeigen wir dir hier, was der Claude Code Optimizer je Paket für dich behebt und überwacht.
+          zeigen wir dir hier die Website-Befunde und die vorhandenen Plattformtarife. Ein gebuchter Tarif aktiviert in diesem Ablauf keine automatische Repository-Reparatur.
         </p>
       </IntroBanner>
 
@@ -103,8 +103,8 @@ export function OptimizerReport() {
           Paket wählen
         </h2>
         <p className="text-sm text-titanium-400 mb-4 leading-relaxed">
-          Was der Optimizer für dich behebt, hängt vom Paket ab. Klick auf ein Paket, um es zu buchen —
-          du wirst zur Buchungsseite weitergeleitet.
+          Die Tarife beziehen sich auf die RealSync-Plattform, nicht auf einen bereits verfügbaren GitHub-Code-Fix-Service.
+          Bei Auswahl gelangst du auf die Preisseite; dort gelten die jeweils ausgewiesenen Leistungen.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {OPTIMIZER_PACKAGES.filter((p) => p.key !== 'free').map((pkg) => {

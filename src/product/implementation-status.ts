@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-18';
+export const IMPLEMENTATION_MEASURED_AT = '2026-11-17';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -322,6 +322,34 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnPlatform: true,
   },
   {
+    id: 'cloud-code-optimizer',
+    name: 'Claude Code Optimizer',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Geführter Website-/Code-Prüfablauf unter /claude-code-optimizer. Vorhandener Scanner und Berichtspfad; keine bestätigte produktive Repository-Code-Korrektur. Nicht mit dem LIVE-Status des separaten AI Gateway gleichsetzen.',
+    route: '/claude-code-optimizer',
+    evidence: [
+      'src/pages/claude-code-optimizer/OptimizerKit.tsx',
+      'src/pages/claude-code-optimizer/OptimizerScan.tsx',
+      'docs/qa/landing-to-runtime-parity.md',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'creative-studio',
+    name: 'AI Creative Studio — Bild und Video',
+    status: 'coming-soon',
+    group: 'visual',
+    description:
+      'Bild- und Videogenerierung sind nicht im produktiven Edge-Function-Inventar bereitgestellt und nicht für Kunden freigegeben. Pilot und technische Prüfung ausschließlich im separaten Draft-PR #2271; keine öffentliche Route und keine zusätzliche Edge Function (Function-Limit 200).',
+    evidence: [
+      'PR #2271',
+      'Supabase-Function-Inventar 17.11.2026: creative-studio nicht bereitgestellt',
+    ],
+    showOnRoadmap: false,
+  },
+  {
     id: 'automation-n8n',
     name: 'Automations / n8n Runtime',
     status: 'preview',
@@ -533,10 +561,10 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'stripe-checkout-e2e',
     name: 'Stripe Checkout E2E',
-    status: 'live',
+    status: 'preview',
     group: 'billing',
     description:
-      'Checkout/Webhook/Portal verdrahtet; Vault Stripe-Secrets provisioniert; Self-Service monatlich für starter/growth/agency; Jahresabrechnung Coming Soon; Enterprise per Anfrage.',
+      'Stripe-Live-Produkte/Preise und Webhook sind angelegt, Checkout/Webhook/Portal im Code verdrahtet. Ein erfolgreicher vollständiger Live-Neukauf einschließlich Zahlung, Webhook, Mandanten-Provisionierung und Entitlement ist am 17.11.2026 nicht nachgewiesen. Kein pauschaler E2E-Live-Claim; Jahresabrechnung weiterhin offen.',
     route: '/checkout/starter',
     evidence: [
       'src/features/billing/CheckoutPage.tsx',

@@ -4,7 +4,7 @@ import { SEOHead } from '../components/SEOHead';
 import { HeroTiles, type HeroFx } from '../components/landing/company/HeroTiles';
 import { ProductModal } from '../components/landing/company/ProductModal';
 import { CompanyContactForm, type CompanyContactPrefill } from '../components/landing/company/CompanyContactForm';
-import { COMPANY_LINKS, companyProduct } from '../components/landing/company/companyProducts';
+import { COMPANY_LINKS, COMPANY_PRODUCTS, companyProduct } from '../components/landing/company/companyProducts';
 import { loadBusinessIdentity } from '../config/business-identity';
 import '../components/landing/company/company-landing-v5.css';
 
@@ -19,9 +19,15 @@ import '../components/landing/company/company-landing-v5.css';
  * `companyProducts.ts`; Preise erscheinen keine (nicht in shared/pricing.ts).
  */
 
+/**
+ * Hauptnavigation: jedes Produkt hat einen eigenen Eintrag (Owner-Wunsch
+ * 17.11.2026). Wie bei den Hero-Tafeln springt Governance OS zur Sektion
+ * `#p-os`; Voice Agent und Builder öffnen den Produkt-Dialog im passenden Tab.
+ */
 const NAV = [
-  { id: 'produkte', label: 'Produkte', opens: true },
   { id: 'p-os', label: 'Governance OS' },
+  { id: 'p-voice', label: 'Voice Agent', product: 'voice' },
+  { id: 'p-builder', label: 'Builder', product: 'builder' },
   { id: 'unternehmen', label: 'Unternehmen' },
   { id: 'kontakt', label: 'Kontakt' },
   { id: 'impressum', label: 'Impressum' },
@@ -326,15 +332,19 @@ export function CompanyLanding() {
             </a>
             <nav className="sec" aria-label="Hauptnavigation">
               {NAV.map((n, i) =>
-                'opens' in n ? (
+                'product' in n ? (
                   <a
                     key={n.id}
-                    className={`navlink${activeNav === i ? ' on' : ''}`}
-                    href="#produkte"
+                    className="navlink"
+                    href={`#${n.id}`}
                     aria-haspopup="dialog"
+                    data-testid={`nav-product-${n.product}`}
                     onClick={(e) => {
                       e.preventDefault();
-                      openModal(0, e.currentTarget);
+                      openModal(
+                        COMPANY_PRODUCTS.findIndex((p) => p.id === n.product),
+                        e.currentTarget,
+                      );
                     }}
                   >
                     {n.label}

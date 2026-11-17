@@ -99,6 +99,12 @@ export function RoutineCenterSection({ session }: { session: AiOsSession }) {
       </Panel>
 
       <Panel title="Bestehende Automationen (registriert)" source="packages/ai-os-core/src/routines.ts · EXISTING_ROUTINES">
+        <p className="text-xs aios-muted mb-3">
+          Externe ChatGPT-Automatisierungen sind hier ausschließlich inventarisiert. Die Plattform liest
+          weder deren aktuellen Laufstatus noch deren Berichte aus und kann sie nicht starten oder pausieren.
+          Bedienung und Ergebnisse bleiben in ChatGPT. Eine spätere Synchronisation erfordert eine separat
+          freigegebene, serverseitig authentifizierte Schnittstelle.
+        </p>
         <div className="aios-table-wrap">
           <table className="aios-table">
             <thead><tr><th>Name</th><th>Laufzeit</th><th>Zeitplan</th><th>Agent</th><th>Quelle</th></tr></thead>

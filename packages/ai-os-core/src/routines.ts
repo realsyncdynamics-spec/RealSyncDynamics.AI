@@ -129,8 +129,10 @@ export const ROUTINES: readonly RoutineDefinition[] = [
 
 /**
  * Bestehende Automationen — registriert, nicht ersetzt. Quelle: Workflow-
- * Dateien und pg_cron-Migrationen (Stand 2026-10-15). Der Live-Zustand der
- * pg_cron-Jobs kommt zur Laufzeit aus `admin_system_health().cron_jobs`.
+ * Dateien, pg_cron-Migrationen und explizit bestätigte externe Tasks.
+ * Der Live-Zustand der pg_cron-Jobs kommt zur Laufzeit aus
+ * `admin_system_health().cron_jobs`. Externe ChatGPT-Tasks werden nur statisch
+ * inventarisiert: kein Live-Status, kein Dispatch und kein Ergebnisimport.
  */
 export const EXISTING_ROUTINES: readonly ExistingRoutine[] = [
   { id: 'gh-ci', name: 'CI (Gates, Unit, Build, DB)', agent: 'development', runtime: 'github-actions', source: '.github/workflows/ci.yml', schedule: 'PR, merge_group, push main' },
@@ -148,6 +150,9 @@ export const EXISTING_ROUTINES: readonly ExistingRoutine[] = [
   { id: 'pg-stripe-meter', name: 'Stripe-Meter-Sync', agent: 'business-ops', runtime: 'pg_cron', source: 'stripe-meter-sync-hourly', schedule: '5 * * * *' },
   { id: 'pg-business-metrics', name: 'Business-Metrics', agent: 'business-ops', runtime: 'pg_cron', source: 'business-metrics-cron-15min', schedule: '*/15 * * * *' },
   { id: 'cf-govard-seal', name: 'Govard: Tagessiegel und Freigabe-Ablauf', agent: 'infrastructure', runtime: 'cloudflare-cron', source: 'workers/govard-gateway/wrangler.jsonc', schedule: '30 3 * * *' },
+  // Externe ChatGPT-Automatisierung (aktiv per 2026-11-13 geprüft). Kein GitHub-
+  // Workflow, keine App-API und keine automatische Ergebnis-Synchronisation.
+  { id: 'external-xai-api-watch', name: 'xAI API wöchentlich überwachen', agent: 'development', runtime: 'chatgpt-automation', source: 'ChatGPT Automatisierungen (externe, lesende Prüfung)', schedule: 'Mo 11:09 Europe/Berlin' },
 ];
 
 export function getRoutine(id: string): RoutineDefinition | undefined {

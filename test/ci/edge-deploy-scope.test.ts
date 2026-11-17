@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { planEdgeDeploy, parseGitNameStatus } from '../../scripts/ops/plan-edge-deploy.mjs';
 
 const workspaces: string[] = [];
@@ -17,6 +18,7 @@ function file(root: string, path: string, content: string) {
   writeFileSync(target, content);
 }
 const touched = (path: string, status = 'M') => [{ path, status }];
+const requireWorkflow = () => readFileSync(' .github/workflows/deploy.yml'.trim(), 'utf8');
 
 afterEach(() => {
   for (const root of workspaces.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -54,6 +56,22 @@ describe('P0: bounded Edge Function deployments', () => {
     file(root, 'supabase/functions/foo/index.ts', 'export const foo = 1;');
     expect(() => planEdgeDeploy({ root, changes: touched('supabase/functions/_shared/mystery.ts') }))
       .toThrow(/Cannot determine importers/);
+  });
+
+  it('blocks unknown computed imports when a shared helper changes', () => {
+    const root = workspace();
+    file(root, 'supabase/functions/_shared/auth.ts', 'export const auth = 1;');
+    file(root, 'supabase/functions/foo/index.ts', "import '../_shared/auth.ts';");
+    file(root, 'supabase/functions/bar/index.ts', "const name = './other.ts'; await import(name);");
+    expect(() => planEdgeDeploy({ root, changes: touched('supabase/functions/_shared/auth.ts') }))
+      .toThrow(/Dynamic module import/);
+  });
+
+  it('deploy workflow delegates to the bounded planner rather than redeploy-all', () => {
+    const workflow = requireWorkflow();
+    expect(workflow).toContain('node scripts/ops/plan-edge-deploy.mjs HEAD^ HEAD');
+    expect(workflow).not.toContain('deploy_all=true');
+    expect(workflow).toContain('REQUESTED_FUNCTIONS');
   });
 
   it('blocks automatic mass redeployment', () => {

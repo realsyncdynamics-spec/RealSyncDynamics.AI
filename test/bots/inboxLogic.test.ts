@@ -1,0 +1,118 @@
+/**
+ * Posteingang des AI Receptionist (/app/bots/inbox) — reine Hilfslogik.
+ *
+ * Geprüft wird, was der Betrieb sieht: deutsche Status statt Rohwerte,
+ * offene Terminwünsche zuerst, Zähler für „wartet auf Entscheidung“ und dass
+ * ein von RLS still verweigertes Update als Fehler sichtbar wird.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  appointmentStatusLabel, orderStatusLabel, conversationStatusLabel, channelLabel,
+  statusTone, openCounts, sortAppointmentsOpenFirst, appointmentsForConversation,
+  contactLabel, assertUpdated,
+} from '../../src/features/bots/inboxLogic';
+
+describe('Status-Beschriftung', () => {
+  it('zeigt Terminstatus auf Deutsch und verspricht keine Kundenzusage', () => {
+    expect(appointmentStatusLabel('requested')).toBe('Terminwunsch offen');
+    expect(appointmentStatusLabel('confirmed')).toBe('Als bestätigt markiert');
+    expect(appointmentStatusLabel('cancelled')).toBe('Abgelehnt');
+  });
+
+  it('zeigt Bestell- und Konversationsstatus auf Deutsch', () => {
+    expect(orderStatusLabel('new')).toBe('Neu');
+    expect(orderStatusLabel('fulfilled')).toBe('Erfüllt');
+    expect(conversationStatusLabel('open')).toBe('Offen');
+    expect(conversationStatusLabel('closed')).toBe('Abgeschlossen');
+  });
+
+  it('lässt unbekannte Werte sichtbar statt sie zu verschlucken', () => {
+    expect(appointmentStatusLabel('rescheduled')).toBe('rescheduled');
+    expect(orderStatusLabel('')).toBe('');
+  });
+
+  it('benennt Kanäle verständlich', () => {
+    expect(channelLabel('voice')).toBe('Telefon');
+    expect(channelLabel('whatsapp')).toBe('WhatsApp');
+    expect(channelLabel('sms')).toBe('sms');
+  });
+});
+
+describe('statusTone', () => {
+  it('trennt offen, erledigt und geschlossen', () => {
+    expect(statusTone('requested')).toBe('open');
+    expect(statusTone('new')).toBe('open');
+    expect(statusTone('confirmed')).toBe('done');
+    expect(statusTone('fulfilled')).toBe('done');
+    expect(statusTone('cancelled')).toBe('closed');
+    expect(statusTone('closed')).toBe('closed');
+  });
+
+  it('behandelt unbekannte Status als offen (nichts geht still unter)', () => {
+    expect(statusTone('irgendwas')).toBe('open');
+  });
+});
+
+describe('openCounts', () => {
+  it('zählt nur Einträge, die eine menschliche Entscheidung brauchen', () => {
+    expect(openCounts(
+      [{ status: 'requested' }, { status: 'confirmed' }, { status: 'requested' }, { status: 'cancelled' }],
+      [{ status: 'new' }, { status: 'fulfilled' }],
+    )).toEqual({ appointments: 2, orders: 1 });
+  });
+
+  it('kommt mit fehlenden Daten (noch nicht geladen) zurecht', () => {
+    expect(openCounts(null, undefined)).toEqual({ appointments: 0, orders: 0 });
+  });
+});
+
+describe('sortAppointmentsOpenFirst', () => {
+  const rows = [
+    { id: 'a', status: 'confirmed' as const, created_at: '2026-11-17T10:00:00Z' },
+    { id: 'b', status: 'requested' as const, created_at: '2026-11-15T10:00:00Z' },
+    { id: 'c', status: 'requested' as const, created_at: '2026-11-16T10:00:00Z' },
+    { id: 'd', status: 'cancelled' as const, created_at: '2026-11-18T10:00:00Z' },
+  ];
+
+  it('zeigt offene Terminwünsche zuerst, jeweils neueste oben', () => {
+    expect(sortAppointmentsOpenFirst(rows).map((r) => r.id)).toEqual(['c', 'b', 'd', 'a']);
+  });
+
+  it('verändert die Eingabe nicht', () => {
+    const before = rows.map((r) => r.id);
+    sortAppointmentsOpenFirst(rows);
+    expect(rows.map((r) => r.id)).toEqual(before);
+  });
+});
+
+describe('appointmentsForConversation', () => {
+  it('liefert nur Terminwünsche der gewählten Anfrage', () => {
+    const rows = [
+      { id: '1', conversation_id: 'k1' },
+      { id: '2', conversation_id: 'k2' },
+      { id: '3', conversation_id: null },
+      { id: '4', conversation_id: 'k1' },
+    ];
+    expect(appointmentsForConversation(rows, 'k1').map((r) => r.id)).toEqual(['1', '4']);
+    expect(appointmentsForConversation(null, 'k1')).toEqual([]);
+  });
+});
+
+describe('contactLabel', () => {
+  it('nimmt Kontaktnamen, sonst externe Referenz, sonst einen klaren Platzhalter', () => {
+    expect(contactLabel({ contact_label: ' Familie Weber ', external_ref: '+49 170' })).toBe('Familie Weber');
+    expect(contactLabel({ contact_label: '  ', external_ref: '+49 170' })).toBe('+49 170');
+    expect(contactLabel({ contact_label: null, external_ref: null })).toBe('Unbekannter Kontakt');
+  });
+});
+
+describe('assertUpdated', () => {
+  it('akzeptiert ein Update mit getroffener Zeile', () => {
+    expect(() => assertUpdated([{ id: 'x' }], 'setAppointmentStatus')).not.toThrow();
+  });
+
+  it('macht ein von RLS still gefiltertes Update (0 Zeilen) sichtbar', () => {
+    expect(() => assertUpdated([], 'setAppointmentStatus')).toThrow(/Keine Änderung gespeichert/);
+    expect(() => assertUpdated(null, 'setOrderStatus')).toThrow(/setOrderStatus/);
+  });
+});

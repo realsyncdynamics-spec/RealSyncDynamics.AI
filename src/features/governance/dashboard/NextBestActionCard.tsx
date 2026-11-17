@@ -68,7 +68,7 @@ function profileFromAudit(row: ClaimedAuditRow): GovernanceProfile {
 }
 
 export function NextBestActionCard() {
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, tenants, loading: tenantLoading } = useTenant();
   const { tier, loading: entitlementsLoading } = useEntitlements();
   const [offer, setOffer] = useState<NextBestOffer | null>(null);
   const [domain, setDomain] = useState('');
@@ -79,9 +79,14 @@ export function NextBestActionCard() {
 
     void (async () => {
       try {
-        // Der aktive Arbeitsbereich ist die ausdrückliche Auswahl, falls der
-        // Nutzer zu mehreren gehört; berechtigt wird in der RPC.
-        await claimPendingAudit(activeTenantId).catch(() => null);
+        // TenantProvider wählt für die Navigation automatisch den ersten
+        // Workspace. Das ist KEINE Einwilligung, einen anonymen Scan bei
+        // mehreren Mandanten dorthin zu übernehmen. Nur Single-Tenant darf
+        // beim Laden automatisch claimen; Mehrfach-Auswahl erfolgt bewusst
+        // im Aktivierungsflow nach Nutzerbestätigung.
+        if (!tenantLoading && tenants.length === 1) {
+          await claimPendingAudit().catch(() => null);
+        }
         const sb = getSupabase();
         const { data, error: queryError } = await sb
           .from('gdpr_audits')
@@ -114,7 +119,7 @@ export function NextBestActionCard() {
     })();
 
     return () => { cancelled = true; };
-  }, [activeTenantId, tier]);
+  }, [activeTenantId, tier, tenantLoading, tenants.length]);
 
   if (entitlementsLoading || !offer) return null;
 

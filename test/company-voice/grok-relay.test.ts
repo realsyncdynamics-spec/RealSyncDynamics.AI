@@ -12,7 +12,23 @@ import {
   type RelaySocket,
 } from '../../src/lib/company-voice/grok-relay';
 import { floatToPcm16Base64, liveSocketUrl, pcm16Base64ToFloat } from '../../src/lib/company-voice/live-client';
-import type { CompanyVoiceEnv } from '../../src/lib/company-voice/types';
+import type { CompanyVoiceEnv, LiveVoiceKv } from '../../src/lib/company-voice/types';
+
+class FakeKv implements LiveVoiceKv {
+  data = new Map<string, string>();
+  puts: Array<{ key: string; ttl?: number }> = [];
+  failGet = false;
+  failPut = false;
+  async get(key: string): Promise<string | null> {
+    if (this.failGet) throw new Error('kv down');
+    return this.data.get(key) ?? null;
+  }
+  async put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void> {
+    if (this.failPut) throw new Error('kv down');
+    this.data.set(key, value);
+    this.puts.push({ key, ttl: options?.expirationTtl });
+  }
+}
 
 class FakeSocket implements RelaySocket {
   sent: Array<Record<string, unknown>> = [];
@@ -40,7 +56,13 @@ class FakeSocket implements RelaySocket {
   }
 }
 
-const ENABLED: CompanyVoiceEnv = { COMPANY_VOICE_GROK_ENABLED: 'true', XAI_API_KEY: 'xai-test-secret' };
+const enabled = (extra: CompanyVoiceEnv = {}): CompanyVoiceEnv => ({
+  COMPANY_VOICE_GROK_ENABLED: 'true',
+  XAI_API_KEY: 'xai-test-secret',
+  COMPANY_VOICE_LIVE_KV: new FakeKv(),
+  ...extra,
+});
+const ENABLED = enabled();
 
 function relay(overrides?: { maxSessionMs?: number }) {
   const client = new FakeSocket();
@@ -70,6 +92,10 @@ describe('Schalter', () => {
     expect(resolveGrokLive({ COMPANY_VOICE_GROK_ENABLED: 'true' })).toBeNull();
     expect(resolveGrokLive({ COMPANY_VOICE_GROK_ENABLED: 'TRUE', XAI_API_KEY: 'k' })).toBeNull();
     expect(resolveGrokLive({ ...ENABLED, COMPANY_VOICE_GROK_VOICE: 'eve"}, "x' })).toBeNull();
+    // Ohne KV-Binding kein Tageslimit → aus.
+    expect(resolveGrokLive({ COMPANY_VOICE_GROK_ENABLED: 'true', XAI_API_KEY: 'k' })).toBeNull();
+    expect(resolveGrokLive({ ...ENABLED, COMPANY_VOICE_GROK_DAILY_SESSIONS: '0' })).toBeNull();
+    expect(resolveGrokLive({ ...ENABLED, COMPANY_VOICE_GROK_DAILY_SESSIONS: 'viele' })).toBeNull();
     expect(resolveGrokLive(ENABLED)).toEqual({ apiKey: 'xai-test-secret', model: 'grok-voice-latest', voice: 'eve' });
   });
 
@@ -80,6 +106,12 @@ describe('Schalter', () => {
     const body = await on.text();
     expect(JSON.parse(body).ai).toBe('grok-realtime');
     expect(body).not.toContain('xai-test-secret');
+    const noKv = await handleCompanyVoiceRequest(
+      new Request('https://realsyncdynamicsai.de/api/company-voice'),
+      { COMPANY_VOICE_GROK_ENABLED: 'true', XAI_API_KEY: 'xai-test-secret' },
+      { store: new Map() },
+    );
+    expect((await noKv.json()).ai).toBe('disabled');
   });
 });
 

@@ -46,7 +46,8 @@ describe('Startseite v3 — `/`', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     for (const card of planCards()) {
       const el = screen.getByTestId(`v3-plan-${card.id}`);
-      expect(within(el).getByText(card.price)).toBeInTheDocument();
+      // Intl setzt ein geschütztes Leerzeichen („0\u00a0€“); Testing Library normalisiert nur den DOM-Text.
+      expect(within(el).getByText(card.price.replace(/\s+/g, ' '))).toBeInTheDocument();
     }
     expect(screen.getByTestId('v3-tax-note')).toHaveTextContent(pricingTaxNote(COMPANY.taxMode));
   });

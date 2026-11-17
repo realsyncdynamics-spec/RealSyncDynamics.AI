@@ -18,7 +18,7 @@ import '../styles/landing-v3.css';
  *   - Bot „Nora“ mit fest eingetragener Mandanten-/Bot-ID im Browser
  *   - WhatsApp-Link mit privater Nummer
  *   - Browser-Agent (nicht auf main, kein Registry-Eintrag)
- *   - Badges „Mit Backend verbunden“ (keine Registry-Quelle)
+ *   - Badges zur Backend-Anbindung (keine Registry-Quelle)
  *   - fest eingetragene Preise und Checkout-Links
  * Status, Preise, Beta, Steuerhinweis und Firma kommen aus den Quellen in
  * landingV3Data.ts.

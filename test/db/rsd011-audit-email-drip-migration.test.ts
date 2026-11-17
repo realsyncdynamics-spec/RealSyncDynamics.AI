@@ -21,6 +21,10 @@ const cron = readFileSync(
   resolve(__dirname, '../../supabase/functions/audit-drip-cron/index.ts'),
   'utf8',
 );
+const processorNotify = readFileSync(
+  resolve(__dirname, '../../supabase/functions/sub-processor-notify/index.ts'),
+  'utf8',
+);
 
 describe('RSD-011 Migration 20261114104500', () => {
   it('liegt zusammen mit einer Rollback-Datei vor', () => {
@@ -100,5 +104,27 @@ describe('RSD-011 Mailzustellung bleibt fail-closed', () => {
     expect(cron).toContain('failed.length > 0 ? 502 : 200');
     expect(cron).toContain("const { error: advanceError } = await admin.rpc('audit_email_drip_advance'");
     expect(cron).toContain('if (advanceError) throw new Error');
+  });
+});
+
+describe('Sub-Processor-Benachrichtigung bleibt fail-closed', () => {
+  it('zieht keine Schluesse aus unbestaetigten Empfaengern', () => {
+    expect(processorNotify).toContain(".not('verified_at', 'is', null)");
+    expect(processorNotify).toContain("code: 'NO_VERIFIED_RECIPIENTS'");
+    expect(processorNotify).not.toContain('no subscribers, changes marked notified');
+  });
+
+  it('akzeptiert fehlende Versandkonfiguration nicht als Zustellung', () => {
+    expect(processorNotify).toContain("code: 'RESEND_NOT_CONFIGURED'");
+    expect(processorNotify).not.toContain("errorMsg = 'RESEND_API_KEY missing");
+    expect(processorNotify).toContain('totalFailed > 0 ? 502 : 200');
+  });
+
+  it('protokolliert nur echte erfolgreiche Zustellungen und laesst Fehler zur Wiederholung offen', () => {
+    expect(processorNotify).toContain("'Idempotency-Key': `sub-processor/${change.id}/subscriber/${sub.id}`");
+    expect(processorNotify).toContain('if (!messageId) throw new Error');
+    expect(processorNotify).toContain("if (writeError) throw new Error('notification receipt write failed')");
+    expect(processorNotify).toContain('if (changeComplete) {');
+    expect(processorNotify).toContain('changes_processed: changesMarked');
   });
 });

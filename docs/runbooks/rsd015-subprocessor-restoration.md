@@ -72,10 +72,20 @@ service_role INSERT und RPC = true; alle drei Tabellen haben RLS=true.
 
 ## Offene Risiken
 
-**Öffentliches Formular:** Der aktuelle React-Code führt einen direkten anonymen
-REST-INSERT aus und verspricht danach „Eingetragen“. Das bleibt mit Absicht
-gesperrt; ein eigener verifizierter DOI-Enrollment-Pfad und korrigierte
-öffentliche Formulierung sind vor Freigabe nötig.
+**Öffentlicher Anmeldeweg:** Der bisherige anonyme REST-INSERT und
+die falsche Erfolgsanzeige sind im selben Draft-PR #2278 entfernt. Bis
+zur geprüften verifizierten DOI-Anmeldung ist ausschließlich ein
+manueller Kontakt per mailto verfügbar, der keine Registrierung verspricht.
+Die Änderung ist noch nicht auf der produktiven Website deployed.
+
+**Abmeldung:** Die produktiven Mail-Templates verweisen auf
+/api/sp-unsubscribe und /api/drip-unsubscribe; im geprüften Repo wurden
+keine passenden Endpunktimplementierungen gefunden. Vor Versandfreigabe
+sind ein sicherer GET-Bestätigungsweg und ein RFC-8058-One-Click-POST
+mit überprüfbarer DB-Änderung, Rate-Limit und negativem Test nachzuweisen.
+Der korrigierte Handler-PR #2235 enthält deshalb die neuen standardmäßig
+deaktivierten Schalter SUB_PROCESSOR_NOTICES_ENABLED bzw.
+AUDIT_DRIP_SEND_ENABLED. NICHT aktivieren, solange die Tests fehlen.
 
 **Vertragsrecht:** Benachrichtigungen an freiwillige Newsletter-Empfänger
 allein erfüllen noch nicht die Vertragspartner-Information. Owner-/AVV-

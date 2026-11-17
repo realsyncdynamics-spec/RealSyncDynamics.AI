@@ -545,10 +545,13 @@ export function GovernanceActivationView() {
             >
               {claimBusy ? 'Wird übernommen …' : 'Bericht diesem Arbeitsbereich zuordnen'}
             </button>
-            {claimOutcome?.status === 'failed' && (
-              <p role="alert" className="text-sm text-amber-200">{claimOutcome.message}</p>
-            )}
           </section>
+        )}
+        {/* Außerhalb der Auswahl: Endgültige Fehler (z. B. bereits übernommen,
+            andere E-Mail) entfernen die Merknotiz, wodurch die Auswahl
+            verschwindet. Die Meldung muss trotzdem sichtbar bleiben. */}
+        {claimOutcome?.status === 'failed' && (
+          <p role="alert" className="text-sm text-amber-200">{claimOutcome.message}</p>
         )}
         {claimOutcome?.status === 'claimed' && (
           <p role="status" className="text-sm text-emerald-300">

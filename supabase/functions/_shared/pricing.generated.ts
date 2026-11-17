@@ -3115,3 +3115,32 @@ export function formatNetVatGrossEur(
   const pct = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(vatRate * 100);
   return `${formatPriceEur(netEur)} netto zzgl. ${pct} % USt (${formatPriceEurCents(grossFromNetEur(netEur, vatRate))} brutto)`;
 }
+
+/**
+ * Eigenständige Vertical-Voice-Agent-Angebote (nicht das Governance-Add-on
+ * "Voice" und nicht `voice_bot` aus dem modularen Checkout).
+ *
+ * Beträge am 16.11.2026 gegen die aktiven monatlichen Preise im verbundenen
+ * Stripe-Livekonto geprüft: Starter 89 EUR, Professional 199 EUR, Kanzlei /
+ * Praxis 349 EUR. Produkt- und Price-IDs bleiben absichtlich serverseitig;
+ * es gibt noch keinen geprüften Checkout-/Entitlement-/Provisioning-Pfad
+ * für diese drei separat abonnierten Produkte.
+ *
+ * Vor dieser Verknüpfung nur Produktinformation und Konfiguration anbieten,
+ * keinen zahlungsauslösenden CTA. Der Preis-/Steuerabgleich vor Freigabe ist
+ * verpflichtend; ein aktiver Stripe-Preis ist keine Produktfreigabe.
+ */
+export type StandaloneVoiceOfferId = 'starter' | 'professional' | 'kanzlei_praxis';
+
+export interface StandaloneVoiceOffer {
+  id: StandaloneVoiceOfferId;
+  name: string;
+  monthlyEur: number;
+  availability: 'preview';
+}
+
+export const VOICE_STANDALONE_OFFERS: readonly StandaloneVoiceOffer[] = [
+  { id: 'starter', name: 'Starter', monthlyEur: 89, availability: 'preview' },
+  { id: 'professional', name: 'Professional', monthlyEur: 199, availability: 'preview' },
+  { id: 'kanzlei_praxis', name: 'Kanzlei / Praxis', monthlyEur: 349, availability: 'preview' },
+];

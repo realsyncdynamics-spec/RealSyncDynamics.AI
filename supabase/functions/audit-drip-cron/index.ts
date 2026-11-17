@@ -42,6 +42,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, sent: 0, message: 'no due drips' });
   }
 
+  // Fail closed: do not advance a single drip or claim delivery unless a
+  // real mail transport is configured. Earlier code silently marked emails
+  // as sent when RESEND_API_KEY was missing.
+  if (!RESEND_KEY) {
+    return jsonResponse({ ok: false, code: 'RESEND_NOT_CONFIGURED', sent: 0, total_due: rows.length }, 503);
+  }
+
   const sent: string[] = [];
   const failed: { id: string; error: string }[] = [];
 
@@ -54,19 +61,16 @@ Deno.serve(async (req) => {
     }
 
     try {
-      if (!RESEND_KEY) {
-        // No-op falls kein API-Key (Pre-Launch-Phase) — Drip-State trotzdem advancen
-        // damit wir nicht stuck sind. In Production nach Resend-Setup wird real gesendet.
-        await admin.rpc('audit_email_drip_advance', { p_id: row.id });
-        sent.push(row.id);
-        continue;
-      }
-
       const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${RESEND_KEY}`,
           'Content-Type': 'application/json',
+          // Stable per logical email step: protects near-term retries from
+          // sending duplicates when the provider accepted a prior attempt.
+          // Provider-side deduplication lasts 24h; durable reconciliation
+          // is still required for failures beyond that window.
+          'Idempotency-Key': `audit-drip/${row.id}/step-${stepToSend}`,
         },
         body: JSON.stringify({
           from: FROM,
@@ -87,7 +91,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      await admin.rpc('audit_email_drip_advance', { p_id: row.id });
+      const { error: advanceError } = await admin.rpc('audit_email_drip_advance', { p_id: row.id });
+      if (advanceError) throw new Error(`audit_email_drip_advance: ${advanceError.message}`);
       sent.push(row.id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -96,7 +101,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonResponse({ ok: true, sent: sent.length, failed: failed.length, total_due: rows.length });
+  // A partially failed batch must not appear as a successful cron job.
+  return jsonResponse(
+    { ok: failed.length === 0, sent: sent.length, failed: failed.length, total_due: rows.length },
+    failed.length > 0 ? 502 : 200,
+  );
 });
 
 interface TemplateContext {

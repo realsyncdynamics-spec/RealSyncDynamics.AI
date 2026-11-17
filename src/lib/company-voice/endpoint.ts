@@ -2,6 +2,7 @@
  * Lesender Pages-Endpunkt. Fragen bleiben im Browser.
  * Rate-Limit im Isolate, kein Speichern der Anfrage.
  */
+import { isLiveVoiceEnabled } from './live-ledger';
 import { loadCompanyFacts } from './second-brain';
 import type { CompanyVoiceEnv } from './types';
 
@@ -17,6 +18,10 @@ export function takeRateLimit(
   limit = LIMIT,
   windowMs = WINDOW_MS,
 ): boolean {
+  // Abgelaufene Einträge anderer Schlüssel (IPs) verwerfen, damit keine IP länger als das Zeitfenster im Speicher bleibt.
+  for (const [other, stamps] of store) {
+    if (other !== key && stamps.every((stamp) => now - stamp >= windowMs)) store.delete(other);
+  }
   const recent = (store.get(key) ?? []).filter((stamp) => now - stamp < windowMs);
   if (recent.length >= limit) {
     store.set(key, recent);
@@ -61,7 +66,7 @@ export async function handleCompanyVoiceRequest(
     return json(429, { ok: false, error: { code: 'RATE_LIMIT', message: 'too many requests' } });
   }
   const payload = await loadCompanyFacts(env, { fetchImpl: deps?.fetchImpl, timeoutMs: deps?.timeoutMs });
-  // Kein Import aus grok-relay (Zyklus): gleiche Bedingung wie `resolveGrokLive`, ohne den Key zu lesen.
-  const live = env.COMPANY_VOICE_GROK_ENABLED === 'true' && Boolean(env.XAI_API_KEY?.trim());
+  // Gleiche Bedingung wie `resolveGrokLive`, ohne den Key zurückzugeben.
+  const live = isLiveVoiceEnabled(env);
   return json(200, live ? { ...payload, ai: 'grok-realtime' } : payload);
 }

@@ -12,9 +12,13 @@ on:
   workflow_dispatch:
     inputs:
       deploy_functions:
-        description: 'Deploy edge functions?'
+        description: 'Deploy explicitly selected edge functions?'
         type: boolean
         default: false
+      function_names:
+        description: 'Comma-separated existing slugs, maximum 12; required when deploy_functions=true'
+        type: string
+        default: ''
 
 # Nur von main: workflow_dispatch läuft sonst mit dem Stand eines beliebigen
 # Branches und schreibt dessen Migrationen und Functions nach Prod
@@ -113,59 +117,60 @@ jobs:
           # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
           # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
           version: 2.122.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
       - name: Deploy changed edge functions
+        env:
+          REQUESTED_FUNCTIONS: ${{ inputs.function_names }}
+          DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions }}
         shell: bash
         run: |
-          set -uo pipefail
-
+          set -euo pipefail
           ok=0
           failed=""
-          deploy_all=false
           functions=()
 
-          mapfile -t changed_files < <(git diff --name-only HEAD^ HEAD)
-
-          for file in "${changed_files[@]}"; do
-            case "$file" in
-              supabase/config.toml|supabase/functions/_shared/*)
-                deploy_all=true
-                break
-                ;;
-            esac
-          done
-
-          if [ "$deploy_all" = true ]; then
-            while IFS= read -r dir; do
-              name="$(basename "$dir")"
-              case "$name" in _*) continue ;; esac
-              [ -f "$dir/index.ts" ] || continue
-              functions+=("$name")
-            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
-          else
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Dispatch is explicit, bounded and never infers a full redeploy.
+            if [ "$DEPLOY_FUNCTIONS" != "true" ]; then
+              echo "Kein Function-Deploy angefordert." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ -z "$REQUESTED_FUNCTIONS" ]; then
+              echo "::error::Manueller Deploy benötigt explizite function_names; kein Deploy-all."
+              exit 1
+            fi
+            IFS="," read -ra requested <<< "$REQUESTED_FUNCTIONS"
             declare -A seen=()
-            for file in "${changed_files[@]}"; do
-              case "$file" in
-                supabase/functions/*/*)
-                  rest="${file#supabase/functions/}"
-                  name="${rest%%/*}"
-                  case "$name" in _*) continue ;; esac
-                  if [ -f "supabase/functions/$name/index.ts" ] && [ -z "${seen[$name]+x}" ]; then
-                    functions+=("$name")
-                    seen[$name]=1
-                  fi
-                  ;;
-              esac
+            for raw in "${requested[@]}"; do
+              name="${raw//[[:space:]]/}"
+              if [[ ! "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+                echo "::error::Ungültiger Function-Slug: $name"
+                exit 1
+              fi
+              if [ ! -f "supabase/functions/$name/index.ts" ]; then
+                echo "::error::Function $name ist nicht als vorhandener Repo-Entrypoint bestätigt."
+                exit 1
+              fi
+              if [ -z "${seen[$name]+x}" ]; then
+                functions+=("$name")
+                seen[$name]=1
+              fi
             done
-          fi
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.deploy_functions }}" = "true" ] && [ "${#functions[@]}" -eq 0 ]; then
-            deploy_all=true
-            while IFS= read -r dir; do
-              name="$(basename "$dir")"
-              case "$name" in _*) continue ;; esac
-              [ -f "$dir/index.ts" ] || continue
-              functions+=("$name")
-            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
+            if [ "${#functions[@]}" -gt 12 ]; then
+              echo "::error::Mehr als 12 Functions: separaten Batch- und Rollback-Plan prüfen."
+              exit 1
+            fi
+          else
+            # Changed _shared files must never imply redeploy-all. Static
+            # importer closure; uncertain or >12 targets fail closed.
+            plan="/tmp/rsd-edge-deploy-plan"
+            if ! node scripts/ops/plan-edge-deploy.mjs HEAD^ HEAD > "$plan"; then
+              echo "::error::Edge-Deploy-Scope nicht sicher bestimmbar; kein Function-Deploy."
+              exit 1
+            fi
+            mapfile -t functions < "$plan"
           fi
 
           if [ "${#functions[@]}" -eq 0 ]; then

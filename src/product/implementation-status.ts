@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Im Entwurfs-PR #2269 ist / als helle RealSync-Produktübersicht für Voice Agent, App Builder, Landingpage Designer, Code Optimizer, Governance und Creative Studio angelegt. Die bisherigen Landing-v6-Komponenten bleiben unter /design/landing-v6 erhalten. Das ist noch nicht produktiv gemergt oder freigegeben; in der Live-Umgebung bleibt bis dahin Landing v6 maßgeblich.',
+      'Im Entwurfs-PR #2269 ist / als helle Governance-first-Startseite mit genau zwei öffentlichen Produktflächen angelegt: Governance Runtime (Backend bereitgestellt; kein umfassender E2E-Freigabenachweis) und SiteOS Preview (ohne Zusage eines Kunden-Deploys). Voice Agent, Agent OS, Code-Automation sowie Mediengenerierung werden auf der Startseite nicht als buchbare Self-Service-Produkte angeboten. Die bisherige Landing v6 bleibt unter /design/landing-v6; der PR ist nicht produktiv gemergt oder freigegeben.',
     route: '/',
     evidence: [
       'src/pages/UnifiedPlatformLanding.tsx',

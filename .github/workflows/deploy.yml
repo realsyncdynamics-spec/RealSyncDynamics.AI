@@ -103,6 +103,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -174,6 +175,13 @@ jobs:
           fi
 
           echo "Deploy scope: ${#functions[@]} Function(s)"
+
+          # Fail closed on unreviewed new slugs before a partial rollout.
+          # Actual Management API inventory, not the repo snapshot, is authoritative.
+          if ! node scripts/verify-edge-deploy-scope.mjs "${functions[@]}"; then
+            echo "::error::Deploy scope contains new/missing slugs or live inventory could not be verified."
+            exit 1
+          fi
 
           for name in "${functions[@]}"; do
             if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then

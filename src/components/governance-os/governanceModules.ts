@@ -40,15 +40,6 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Zentrale Governance-Übersicht (ComplianceStatusDashboard)',
   },
   {
-    id: 'creative-studio',
-    label: 'Creative Studio',
-    icon: 'Sparkles',
-    route: '/app/media-studio',
-    status: 'beta',
-    gate: { kind: 'all' },
-    description: 'Bilder und Kurzvideos: eingeschraenkter KI-Medienpilot',
-  },
-  {
     id: 'home',
     label: 'Workspace',
     icon: 'LayoutDashboard',

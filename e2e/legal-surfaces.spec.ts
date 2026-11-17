@@ -73,7 +73,7 @@ test.describe('/legal/sub-processors', () => {
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Datenschutz-Kontakt öffnen' }),
-    ).toHaveAttribute('href', /^mailto:privacy@realsyncdynamicsai\\.de/);
+    ).toHaveAttribute('href', /^mailto:privacy@realsyncdynamicsai[.]de/);
     await expect(page.getByRole('button', { name: 'Abonnieren' })).toHaveCount(0);
     await expect(page.locator('input[type="email"]')).toHaveCount(0);
     await expect(page.getByText('Eingetragen.', { exact: true })).toHaveCount(0);

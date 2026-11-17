@@ -35,7 +35,8 @@ import {
   OS_FOCUS_BORDER,
 } from '../../components/governance-os/osChrome';
 import { useTenant } from '../../core/access/TenantProvider';
-import { claimPendingAudit } from '../../core/onboarding/claimAudit';
+import { claimPendingAudit, readPendingAudit } from '../../core/onboarding/claimAudit';
+import { claimPendingAuditWithStatus, type ClaimOutcome } from '../audit/pendingAudit';
 import { safeInternalPath } from '../../lib/safeInternalPath';
 import { recordTimeToFirstEvidence } from '../../lib/marketingAnalytics';
 import {
@@ -256,7 +257,7 @@ export function stepNumberForWizardStep(step: WizardStep): 1 | 2 | 3 | 4 {
 }
 
 export function GovernanceActivationView() {
-  const { activeTenantId, loading: tenantLoading } = useTenant();
+  const { activeTenantId, loading: tenantLoading, tenants, setActiveTenant } = useTenant();
   const [searchParams] = useSearchParams();
   const finishTarget = safeInternalPath(searchParams.get('next')) ?? '/app/dashboard';
   const domainParam = searchParams.get('domain');
@@ -270,6 +271,9 @@ export function GovernanceActivationView() {
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [claimTargetTenant, setClaimTargetTenant] = useState('');
+  const [claimOutcome, setClaimOutcome] = useState<ClaimOutcome | null>(null);
+  const [claimBusy, setClaimBusy] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [aiSetup, setAiSetup] = useState<AiSetup>(createEmptyAiSetup);
   /** Zuletzt gespeicherter Stand — die Ergebnisseite zeigt nur Gespeichertes. */
@@ -295,9 +299,30 @@ export function GovernanceActivationView() {
   }, []);
 
   useEffect(() => {
-    if (!activeTenantId) return;
+    // Nur ein einziger Arbeitsbereich darf ohne separate Entscheidung den
+    // anonymen Bericht übernehmen. TenantProvider setzt sonst automatisch
+    // den ersten Mandanten als Navigationsstandard, nicht als Claim-Freigabe.
+    if (tenantLoading || !activeTenantId || tenants.length !== 1) return;
     void claimPendingAudit().catch(() => null);
-  }, [activeTenantId]);
+  }, [activeTenantId, tenantLoading, tenants.length]);
+
+  const eligibleClaimTenants = tenants.filter((t) => t.role === 'owner' || t.role === 'admin');
+  const pendingClaimNeedsChoice = !tenantLoading && tenants.length > 1 && readPendingAudit() !== null;
+
+  async function claimSelectedTenant(): Promise<void> {
+    if (!eligibleClaimTenants.some((t) => t.tenantId === claimTargetTenant)) return;
+    setClaimBusy(true);
+    try {
+      const result = await claimPendingAuditWithStatus(claimTargetTenant);
+      setClaimOutcome(result);
+      if (result.status === 'claimed') {
+        // Bewusste Auswahl: auch Navigation auf den Zielmandanten stellen.
+        setActiveTenant(result.result.tenant_id);
+      }
+    } finally {
+      setClaimBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (tenantLoading) return;
@@ -484,6 +509,51 @@ export function GovernanceActivationView() {
             ← Compliance Dashboard
           </Link>
         </header>
+
+        {pendingClaimNeedsChoice && (
+          <section aria-label="Scanbericht zuordnen" className="border border-amber-700/50 bg-amber-950/20 p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-amber-200">Wohin soll Ihr Scanbericht?</h2>
+            <p className="text-xs text-titanium-300">
+              Sie gehören zu mehreren Arbeitsbereichen. Der Bericht wird erst nach Ihrer bewussten
+              Auswahl zugeordnet. Die Berechtigung prüft weiterhin der Server.
+            </p>
+            <label className="block space-y-1 text-xs text-titanium-200">
+              <span>Ziel-Arbeitsbereich</span>
+              <select
+                aria-label="Ziel-Arbeitsbereich für Scanbericht"
+                value={claimTargetTenant}
+                onChange={(event) => setClaimTargetTenant(event.target.value)}
+                className="w-full bg-obsidian-950 border border-titanium-700 px-3 py-2 text-sm text-titanium-100"
+              >
+                <option value="">Bitte auswählen</option>
+                {eligibleClaimTenants.map((tenant) => (
+                  <option key={tenant.tenantId} value={tenant.tenantId}>{tenant.name}</option>
+                ))}
+              </select>
+            </label>
+            {eligibleClaimTenants.length === 0 && (
+              <p role="alert" className="text-xs text-amber-200">
+                Sie benötigen Inhaber- oder Administratorrechte, um den Bericht zu übernehmen.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void claimSelectedTenant()}
+              disabled={!claimTargetTenant || claimBusy}
+              className="px-4 py-2 border border-amber-600 bg-obsidian-800 text-sm text-titanium-100 disabled:opacity-50"
+            >
+              {claimBusy ? 'Wird übernommen …' : 'Bericht diesem Arbeitsbereich zuordnen'}
+            </button>
+            {claimOutcome?.status === 'failed' && (
+              <p role="alert" className="text-sm text-amber-200">{claimOutcome.message}</p>
+            )}
+          </section>
+        )}
+        {claimOutcome?.status === 'claimed' && (
+          <p role="status" className="text-sm text-emerald-300">
+            Der Scanbericht wurde im ausgewählten Arbeitsbereich übernommen.
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-1.5">
           {SUBMODULES.map((name) => (

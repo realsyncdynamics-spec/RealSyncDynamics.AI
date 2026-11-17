@@ -82,7 +82,7 @@ BEGIN
 END
 $constraint$;
 
--- Preserve the evidence trail. No SECURITY DEFINER needed.
+-- Preserve the evidence trail. The trigger runs with caller privileges.
 CREATE OR REPLACE FUNCTION public.sp_notif_block_modification()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''

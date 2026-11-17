@@ -29,10 +29,18 @@
 --
 -- Rechte:
 --   needs_check_recommend                 IMMUTABLE, ohne Tabellenzugriff
---   needs_check_results_10_set_fields     SECURITY INVOKER — setzt nur Felder der neuen Zeile
---   needs_check_results_20_quota          SECURITY DEFINER — schreibt Protokoll und Sperrzeile,
---                                         auf die Nutzer kein Recht haben. Trigger-Funktion,
---                                         nicht per RPC aufrufbar.
+--   needs_check_results_10_set_fields     SECURITY INVOKER — setzt nur Felder der neuen Zeile,
+--                                         greift nicht auf das Schema auth zu
+--   needs_check_results_20_quota          SECURITY DEFINER — liest auth.uid(), setzt user_id,
+--                                         schreibt Protokoll und Sperrzeile, auf die Nutzer
+--                                         kein Recht haben. Trigger-Funktion, nicht per RPC
+--                                         aufrufbar.
+--
+-- Warum auth.uid() nur im DEFINER-Trigger steht: PL/pgSQL löst Namen erst zur
+-- Laufzeit auf, mit den Rechten des Aufrufers. In einer INVOKER-Funktion
+-- braucht `authenticated` dafür USAGE auf dem Schema auth. Diese Annahme
+-- macht die Migration nicht (in der CI fehlt das Recht, Policies brauchen es
+-- nicht, weil ihr Ausdruck beim Anlegen aufgelöst wird).
 
 -- ── 1. Alte Kontingent-Logik entfernen (zählte Zeilen und created_at) ────────
 
@@ -160,21 +168,16 @@ comment on table public.needs_check_save_quota is
 -- ── 5. Trigger ──────────────────────────────────────────────────────────────
 
 -- SECURITY INVOKER: setzt nur Felder der neuen Zeile, braucht keine Rechte,
--- die der Aufrufer nicht ohnehin hat.
+-- die der Aufrufer nicht ohnehin hat. user_id setzt needs_check_results_20_quota.
 create or replace function public.needs_check_results_10_set_fields()
 returns trigger
 language plpgsql
 security invoker
 set search_path = ''
 as $$
-declare
-  v_uid uuid := auth.uid();
 begin
-  if v_uid is null then
-    raise exception 'needs_check_unauthenticated' using errcode = '42501';
-  end if;
   new.id := gen_random_uuid();
-  new.user_id := v_uid;
+  new.user_id := null;
   new.created_at := now();
   new.model_version := 1;
   new.audit_id := null;
@@ -184,7 +187,8 @@ begin
 end;
 $$;
 
--- SECURITY DEFINER: schreibt needs_check_save_log und needs_check_save_quota,
+-- SECURITY DEFINER: setzt user_id = auth.uid() (Fehler ohne Anmeldung) und
+-- schreibt needs_check_save_log und needs_check_save_quota,
 -- auf die der Aufrufer bewusst keinerlei Recht hat (sonst könnte er sein
 -- Protokoll lesen, löschen oder fälschen). Liest die Identität ausschließlich
 -- aus auth.uid(), nimmt keine Parameter. Eine Trigger-Funktion kann nicht per
@@ -199,9 +203,10 @@ declare
   v_uid   uuid := auth.uid();
   v_count integer;
 begin
-  if v_uid is null or new.user_id is distinct from v_uid then
+  if v_uid is null then
     raise exception 'needs_check_unauthenticated' using errcode = '42501';
   end if;
+  new.user_id := v_uid;
 
   -- Sperrzeile je Nutzer. Eine zweite, parallele Speicherung desselben
   -- Nutzers wartet hier, bis die erste abgeschlossen ist (READ COMMITTED),

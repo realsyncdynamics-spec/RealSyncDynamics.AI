@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-18';
+export const IMPLEMENTATION_MEASURED_AT = '2026-11-17';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -334,15 +334,13 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'creative-studio',
     name: 'AI Creative Studio — Bild und Video',
-    status: 'preview',
+    status: 'coming-soon',
     group: 'visual',
     description:
-      'Im Entwurfs-PR #2269 vorbereitet: geschütztes /app/media-studio für xAI-Bild- und Videoaufträge. Neue Edge Function ist OFF-by-default und per User-Allowlist beschränkt. Keine live bestätigte Generierung, ohne atomare Budgets/Quoten und Auditing keine allgemeine Freigabe.',
-    route: '/app/media-studio',
+      'Bild- und Videogenerierung sind nicht im produktiven Edge-Function-Inventar bereitgestellt und nicht für Kunden freigegeben. Pilot und technische Prüfung ausschließlich im separaten Draft-PR #2271; in PR #2269 weder Route noch neue Edge Function deployen (Function-Limit 200).',
     evidence: [
-      'src/pages/CreativeStudio.tsx',
-      'supabase/functions/creative-studio/index.ts',
-      'PR #2269',
+      'PR #2271',
+      'Supabase-Function-Inventar 17.11.2026: creative-studio nicht bereitgestellt',
     ],
     showOnRoadmap: true,
   },
@@ -558,10 +556,10 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'stripe-checkout-e2e',
     name: 'Stripe Checkout E2E',
-    status: 'live',
+    status: 'preview',
     group: 'billing',
     description:
-      'Checkout/Webhook/Portal verdrahtet; Vault Stripe-Secrets provisioniert; Self-Service monatlich für starter/growth/agency; Jahresabrechnung Coming Soon; Enterprise per Anfrage.',
+      'Stripe-Live-Produkte/Preise und Webhook sind angelegt, Checkout/Webhook/Portal im Code verdrahtet. Ein erfolgreicher vollständiger Live-Neukauf einschließlich Zahlung, Webhook, Mandanten-Provisionierung und Entitlement ist am 17.11.2026 nicht nachgewiesen. Kein pauschaler E2E-Live-Claim; Jahresabrechnung weiterhin offen.',
     route: '/checkout/starter',
     evidence: [
       'src/features/billing/CheckoutPage.tsx',

@@ -155,7 +155,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
@@ -169,6 +169,7 @@ jobs:
         env:
           REQUESTED_FUNCTIONS: ${{ inputs.function_names }}
           DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions }}
+          PUSH_BEFORE: ${{ github.event.before }}
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +212,11 @@ jobs:
             # Changed _shared files must never imply redeploy-all. Static
             # importer closure; uncertain or >12 targets fail closed.
             plan="/tmp/rsd-edge-deploy-plan"
-            if ! node scripts/ops/plan-edge-deploy.mjs HEAD^ HEAD > "$plan"; then
+            if [ -z "$PUSH_BEFORE" ] || ! git cat-file -e "$PUSH_BEFORE^{commit}"; then
+              echo "::error::GitHub push baseline unavailable; no functions will be deployed."
+              exit 1
+            fi
+            if ! node scripts/ops/plan-edge-deploy.mjs "$PUSH_BEFORE" HEAD > "$plan"; then
               echo "::error::Edge-Deploy-Scope nicht sicher bestimmbar; kein Function-Deploy."
               exit 1
             fi

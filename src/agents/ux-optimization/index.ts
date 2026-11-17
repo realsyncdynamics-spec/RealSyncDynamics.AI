@@ -26,21 +26,19 @@ export class UXOptimizationAgent {
 
     // Check 1: Color Contrast
     if (check_contrast) {
-      const contrastIssues = detectContrastIssues(
-        [
-          {
-            fg: '#333333',
-            bg: '#f5f5f5',
-            location: 'src/components/Button.tsx:42'
-          },
-          {
-            fg: '#666666',
-            bg: '#ffffff',
-            location: 'src/components/Card.tsx:18'
-          }
-        ],
-        color_contrast_ratio_min
-      )
+      const colorElements = options.colors || [
+        {
+          fg: '#333333',
+          bg: '#f5f5f5',
+          location: 'src/components/Button.tsx:42'
+        },
+        {
+          fg: '#666666',
+          bg: '#ffffff',
+          location: 'src/components/Card.tsx:18'
+        }
+      ]
+      const contrastIssues = detectContrastIssues(colorElements, color_contrast_ratio_min)
 
       for (const issue of contrastIssues) {
         findings.push({
@@ -58,12 +56,13 @@ export class UXOptimizationAgent {
 
     // Check 2: Button Labels
     if (check_labels) {
-      const labelIssues = validateButtonLabels([
+      const buttonElements = options.buttons || [
         { label: 'OK', location: 'src/components/Dialog.tsx:18', file: 'src/components/Dialog.tsx', line: 18 },
         { label: 'OK', location: 'src/components/Modal.tsx:25', file: 'src/components/Modal.tsx', line: 25 },
         { label: 'Click Here', location: 'src/pages/Home.tsx:42', file: 'src/pages/Home.tsx', line: 42 },
         { label: 'Save Changes', location: 'src/components/Form.tsx:15', file: 'src/components/Form.tsx', line: 15 }
-      ])
+      ]
+      const labelIssues = validateButtonLabels(buttonElements)
 
       for (const issue of labelIssues) {
         findings.push({
@@ -74,38 +73,44 @@ export class UXOptimizationAgent {
           title: `Button label "${issue.label}" is ${issue.issue}`,
           description: `Found in: ${issue.location}`,
           recommendation: issue.recommendation || '',
-          auto_fixable: true
+          auto_fixable: true,
+          details: { issue_type: issue.issue }
         })
       }
     }
 
     // Check 3: Accessibility
     if (check_accessibility) {
-      const altTextIssues = checkImageAltText([
+      const imageElements = options.images || [
         { src: 'hero.jpg', location: 'src/components/Hero.tsx:18' },
         { src: 'logo.png', alt: '', location: 'src/components/Header.tsx:10' },
         { src: 'icon-check.svg', alt: '', location: 'src/components/Icon.tsx:5' }
-      ])
+      ]
+      const altTextIssues = checkImageAltText(imageElements)
 
-      const ariaIssues = checkAriaLabels([
-        { type: 'button', text: '', ariaLabel: 'Close', location: 'src/components/Modal.tsx:12' },
-        { type: 'button', text: '', location: 'src/components/Menu.tsx:8' }
+      const ariaElements = (options.elements?.filter((e): e is { type: 'button' | 'link' | 'icon'; text?: string; ariaLabel?: string; location: string } => ['button', 'link', 'icon'].includes(e.type)) || [
+        { type: 'button' as const, text: '', ariaLabel: 'Close', location: 'src/components/Modal.tsx:12' },
+        { type: 'button' as const, text: '', location: 'src/components/Menu.tsx:8' }
       ])
+      const ariaIssues = checkAriaLabels(ariaElements)
 
-      const headingIssues = checkHeadingHierarchy([
+      const headingElements = options.headings || [
         { level: 1, text: 'Page Title', location: 'src/pages/About.tsx:5' },
         { level: 3, text: 'Subsection', location: 'src/pages/About.tsx:15' }
-      ])
+      ]
+      const headingIssues = checkHeadingHierarchy(headingElements)
 
-      const colorIssues = checkColorOnlyIndicators([
-        { type: 'status', hasShape: false, hasLabel: false, location: 'src/components/Status.tsx:20' },
-        { type: 'indicator', hasShape: true, hasLabel: true, location: 'src/components/Badge.tsx:10' }
+      const colorElements = (options.elements?.filter((e): e is { type: 'status' | 'indicator'; hasShape?: boolean; hasLabel?: boolean; location: string } => e.type === 'status' || e.type === 'indicator') || [
+        { type: 'status' as const, hasShape: false, hasLabel: false, location: 'src/components/Status.tsx:20' },
+        { type: 'indicator' as const, hasShape: true, hasLabel: true, location: 'src/components/Badge.tsx:10' }
       ])
+      const colorIssues = checkColorOnlyIndicators(colorElements)
 
-      const keyboardIssues = checkKeyboardNavigation([
+      const interactiveElements = (options.elements?.filter((e): e is { interactive: boolean; tabIndex?: number; location: string; type: string } => e.interactive === true) || [
         { interactive: true, type: 'button', location: 'src/components/Button.tsx:5' },
         { interactive: true, type: 'div', tabIndex: -1, location: 'src/components/Custom.tsx:12' }
       ])
+      const keyboardIssues = checkKeyboardNavigation(interactiveElements)
 
       const a11yFindings = convertAccessibilityToFindings(
         altTextIssues,
@@ -118,9 +123,10 @@ export class UXOptimizationAgent {
       findings.push(...a11yFindings)
     }
 
-    // Deduplicate findings
+    // Deduplicate findings: keep all violations but merge exact duplicates
+    // Use file:line:category:title as key to preserve multiple violations on same element
     const deduped = Array.from(
-      new Map(findings.map((f) => [`${f.file}:${f.line}:${f.category}`, f])).values()
+      new Map(findings.map((f) => [`${f.file}:${f.line}:${f.category}:${f.title}`, f])).values()
     )
 
     // Sort by severity

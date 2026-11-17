@@ -57,4 +57,18 @@ export interface UXCheckOptions {
   check_accessibility?: boolean
   wcag_aa_required?: boolean
   color_contrast_ratio_min?: number
+  colors?: Array<{ fg: string; bg: string; location: string }>
+  buttons?: Array<{ label: string; location: string; file: string; line?: number }>
+  images?: Array<{ src: string; alt?: string; location: string }>
+  headings?: Array<{ level: number; text: string; location: string }>
+  elements?: Array<{
+    type: string
+    location: string
+    text?: string
+    ariaLabel?: string
+    hasShape?: boolean
+    hasLabel?: boolean
+    tabIndex?: number
+    interactive?: boolean
+  }>
 }

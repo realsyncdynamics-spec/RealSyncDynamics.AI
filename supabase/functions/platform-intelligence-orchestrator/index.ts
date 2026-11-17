@@ -58,22 +58,78 @@ async function analyzeUX(): Promise<Finding[]> {
 }
 
 async function analyzeJourney(): Promise<Finding[]> {
-  // Placeholder: Customer Journey Agent (Phase 2b)
+  // Phase 2b: Customer Journey Agent
+  // Validates customer interaction flows, drop-off patterns, handoff clarity
+  // Implementation in src/agents/customer-journey/index.ts
+  try {
+    // TODO: Import and instantiate CustomerJourneyAgent
+    // const agent = new CustomerJourneyAgent()
+    // const findings = await agent.analyze()
+    // return findings.map(f => ({
+    //   agent: 'Customer Journey',
+    //   severity: f.severity,
+    //   ...
+    // }))
+  } catch (error) {
+    console.error('Customer Journey Agent error:', error)
+  }
   return []
 }
 
 async function analyzeDashboard(): Promise<Finding[]> {
-  // Placeholder: Dashboard Evolution Agent (Phase 2c)
+  // Phase 2c: Dashboard Evolution Agent
+  // Aggregates metrics, detects anomalies, correlates with UX findings
+  // Implementation in src/agents/dashboard-evolution/index.ts
+  try {
+    // TODO: Import and instantiate DashboardEvolutionAgent
+    // const agent = new DashboardEvolutionAgent()
+    // const findings = await agent.analyze()
+    // return findings.map(f => ({
+    //   agent: 'Dashboard Evolution',
+    //   severity: f.severity,
+    //   ...
+    // }))
+  } catch (error) {
+    console.error('Dashboard Evolution Agent error:', error)
+  }
   return []
 }
 
 async function analyzeRouting(): Promise<Finding[]> {
-  // Placeholder: Routing Quality Agent (Phase 2d)
+  // Phase 2d: Routing Quality Agent
+  // Validates handoff routing, assignment quality, queue balance, skill gaps
+  // Implementation in src/agents/routing-quality/index.ts
+  try {
+    // TODO: Import and instantiate RoutingQualityAgent
+    // const agent = new RoutingQualityAgent()
+    // const findings = await agent.analyze()
+    // return findings.map(f => ({
+    //   agent: 'Routing Quality',
+    //   severity: f.severity,
+    //   ...
+    // }))
+  } catch (error) {
+    console.error('Routing Quality Agent error:', error)
+  }
   return []
 }
 
 async function analyzeStripe(): Promise<Finding[]> {
-  // Placeholder: Stripe Business Agent (Phase 2e)
+  // Phase 2e: Stripe Business Agent
+  // Validates payment flows, pricing logic, refund patterns, compliance
+  // Implementation in src/agents/stripe-business/index.ts
+  try {
+    // TODO: Import and instantiate StripeBusinessAgent
+    // const agent = new StripeBusinessAgent()
+    // const findings = await agent.analyze()
+    // return findings.map(f => ({
+    //   agent: 'Stripe Business',
+    //   severity: f.severity,
+    //   ...
+    // }))
+  } catch (error) {
+    console.error('Stripe Business Agent error:', error)
+  }
   return []
 }
 

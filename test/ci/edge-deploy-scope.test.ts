@@ -1,10 +1,10 @@
 /** P0 regression tests for the production Edge Function deploy planner. */
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { readFileSync } from 'node:fs';
 import { planEdgeDeploy, parseGitNameStatus } from '../../scripts/ops/plan-edge-deploy.mjs';
+import { requireExistingActiveFunctions } from '../../scripts/ops/check-live-edge-scope.mjs';
 
 const workspaces: string[] = [];
 function workspace() {
@@ -18,7 +18,7 @@ function file(root: string, path: string, content: string) {
   writeFileSync(target, content);
 }
 const touched = (path: string, status = 'M') => [{ path, status }];
-const requireWorkflow = () => readFileSync(' .github/workflows/deploy.yml'.trim(), 'utf8');
+const requireWorkflow = () => readFileSync('.github/workflows/deploy.yml', 'utf8');
 
 afterEach(() => {
   for (const root of workspaces.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -72,6 +72,8 @@ describe('P0: bounded Edge Function deployments', () => {
     expect(workflow).toContain('node scripts/ops/plan-edge-deploy.mjs HEAD^ HEAD');
     expect(workflow).not.toContain('deploy_all=true');
     expect(workflow).toContain('REQUESTED_FUNCTIONS');
+    expect(workflow).toContain('node scripts/ops/check-live-edge-scope.mjs');
+    expect(workflow).toContain('supabase functions list --project-ref');
   });
 
   it('blocks automatic mass redeployment', () => {
@@ -82,6 +84,29 @@ describe('P0: bounded Edge Function deployments', () => {
     }
     expect(() => planEdgeDeploy({ root, changes: touched('supabase/functions/_shared/auth.ts') }))
       .toThrow(/Affected scope contains 15 functions, limit 12/);
+  });
+
+  it('preflights a previously deployed ACTIVE function without changing live state', () => {
+    expect(requireExistingActiveFunctions(['foo', 'bar'], [
+      { slug: 'foo', status: 'ACTIVE' },
+      { slug: 'bar', status: 'ACTIVE' },
+      { slug: 'unused', status: 'ACTIVE' },
+    ])).toBe(2);
+  });
+
+  it('blocks a new slot that exists only in GitHub (P0 function.max_count)', () => {
+    expect(() => requireExistingActiveFunctions(['workspace-approvals'], [
+      { slug: 'foo', status: 'ACTIVE' },
+    ])).toThrow(/workspace-approvals is NOT_DEPLOYED/);
+  });
+
+  it('blocks inactive functions and incomplete live inventory', () => {
+    expect(() => requireExistingActiveFunctions(['foo'], [{ slug: 'foo', status: 'FAILED' }]))
+      .toThrow(/foo is FAILED/);
+    expect(() => requireExistingActiveFunctions(['foo'], [{ slug: 'foo' }]))
+      .toThrow(/Incomplete live function inventory/);
+    expect(() => requireExistingActiveFunctions(['foo'], {}))
+      .toThrow(/Invalid Supabase function-list response/);
   });
 
   it('blocks a new production function slot without approval', () => {

@@ -180,6 +180,21 @@ jobs:
 
           echo "Deploy scope: ${#functions[@]} Function(s)"
 
+          # A repo directory is not a production slot. Never attempt an
+          # automatic creation at the live project capacity boundary.
+          # No deploy is attempted when the inventory cannot be retrieved.
+          targets_file="$(mktemp)"
+          live_inventory="$(mktemp)"
+          printf '%s\n' "${functions[@]}" > "$targets_file"
+          if ! supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --output json > "$live_inventory"; then
+            echo "::error::Live Edge Function Inventar nicht lesbar; Deploy gestoppt."
+            exit 1
+          fi
+          if ! node scripts/ops/check-live-edge-scope.mjs "$targets_file" "$live_inventory"; then
+            echo "::error::Function fehlt live oder ist nicht ACTIVE; kein Deployment neuer Slots ohne Einzel-Freigabe."
+            exit 1
+          fi
+
           for name in "${functions[@]}"; do
             if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
               ok=$((ok + 1))

@@ -98,6 +98,26 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Resend HTTP 2xx is not sufficient evidence of acceptance. A provider
+      // message ID is required before the local drip state can advance.
+      // A durable outbox/receipt correlation is still a separate release gate.
+      let providerMessageId: string | null = null;
+      try {
+        const payload: unknown = await resp.json();
+        if (payload && typeof payload === 'object' && 'id' in payload &&
+            typeof payload.id === 'string' && payload.id.trim().length > 0) {
+          providerMessageId = payload.id;
+        }
+      } catch {
+        // Treat unreadable provider responses as failed, never as delivered.
+      }
+      if (!providerMessageId) {
+        const reason = 'Resend response missing message ID';
+        await admin.rpc('audit_email_drip_advance', { p_id: row.id, p_error: reason });
+        failed.push({ id: row.id, error: reason });
+        continue;
+      }
+
       const { error: advanceError } = await admin.rpc('audit_email_drip_advance', { p_id: row.id });
       if (advanceError) throw new Error(`audit_email_drip_advance: ${advanceError.message}`);
       sent.push(row.id);

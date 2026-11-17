@@ -260,6 +260,8 @@ const SiteOsBuilderPage = lazy(() => import('./unified-entry/pages/PreviewSelect
 // wie der Editor: Puck gehört nicht in den kritischen Pfad.
 const AppBuilderWorkspacePage = lazy(() => import('./features/siteos/workspace/AppBuilderWorkspacePage'));
 const BoltCodeBuilderPage = lazy(() => import('./features/app-builder/BoltCodeBuilderPage'));
+// Media Studio: Bild-/Video-Builder mit Regie-Agent (Gates serverseitig in supabase/functions/media-studio).
+const MediaStudioPage = lazy(() => import('./features/media-studio/MediaStudioPage'));
 // Build Studio: Prompt → vollständige Website → Live-Vorschau, ohne Konto.
 //
 // Abweichung von der Regel „Public Pages eager" (CLAUDE.md §7): Diese Seite
@@ -925,6 +927,7 @@ function RoutesWithTracking() {
       {/* Altes Builder-Ziel: Quell-Links → Transformation, sonst /build — Query bleibt (legacyBuilderRedirect.tsx). */}
       <Route path="/app/siteos/builder" element={<AppGate><LegacySiteOsBuilderRedirect /></AppGate>} />
       <Route path="/app/siteos/modernize" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/media-studio" element={<AppGate><MediaStudioPage /></AppGate>} />
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
       <Route path="/app/siteos/claim" element={<AppGate><GovernanceBrowserShell><SiteOsClaimView /></GovernanceBrowserShell></AppGate>} />

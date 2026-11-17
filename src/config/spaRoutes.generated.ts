@@ -152,6 +152,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/app/local-ai/onboarding",
   "/app/mappings",
   "/app/marketplace",
+  "/app/media-studio",
   "/app/mein-geschaeft",
   "/app/modules",
   "/app/monitoring",

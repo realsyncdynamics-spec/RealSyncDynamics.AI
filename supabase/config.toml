@@ -517,3 +517,12 @@ verify_jwt = false
 # shopify-scan, skills, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
 # verify_jwt = true — they require an authenticated user session.
+
+# media-studio — Bild-/Video-Generierung für den Builder (Google Gemini API,
+# Higgsfield API). verify_jwt = true ist nur Vorfilter; die Function prüft
+# selbst Nutzer-JWT + Mandant, Entitlement siteos.builder, Residency = cloud,
+# PII im Prompt, signierte Referenzen, Rate-Limit und schreibt Evidence vor
+# jedem Anbieteraufruf. Default aus: MEDIA_STUDIO_ENABLED muss 'true' sein.
+# Wirkt erst nach `supabase functions deploy media-studio`.
+[functions.media-studio]
+verify_jwt = true

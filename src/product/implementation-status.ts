@@ -481,6 +481,24 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'media-studio',
+    name: 'Media Studio (Bild/Video mit Regie-Agent)',
+    status: 'preview',
+    group: 'channels',
+    description:
+      'MediaStudioPage unter /app/media-studio: Briefing → Agentenplan → Freigabe → Ausführung über Google Gemini API bzw. Higgsfield API. Edge Function media-studio ist Default aus (MEDIA_STUDIO_ENABLED), nicht deployt und nicht gegen die echten Anbieter-APIs verifiziert; nur für Mandanten mit Residency cloud.',
+    route: '/app/media-studio',
+    evidence: [
+      'src/features/media-studio/MediaStudioPage.tsx',
+      'src/features/media-studio/agent/planner.ts',
+      'src/features/media-studio/agent/runner.ts',
+      'supabase/functions/media-studio/handler.ts',
+      'test/edge/media-studio.test.ts',
+      'test/media-studio/agent.test.ts',
+    ],
+    showOnRoadmap: false,
+  },
+  {
     id: 'public-frontend-builder',
     name: 'Frontend Builder Landing',
     status: 'live',

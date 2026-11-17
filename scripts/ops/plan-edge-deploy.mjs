@@ -79,7 +79,8 @@ export function planEdgeDeploy({ root, changes, maxAuto = DEFAULT_MAX }) {
     throw new Error('supabase/config.toml changed: verify_jwt and webhook auth require an individually reviewed deployment plan');
   }
 
-  const consumers = dependencyGraph(listSourceFiles(dir));
+  const files = listSourceFiles(dir);
+  const consumers = dependencyGraph(files);
   for (const change of candidates) {
     const abs = resolve(base, change.path);
     if (!abs.startsWith(dir + sep)) throw new Error('Invalid deploy path: ' + change.path);
@@ -97,6 +98,17 @@ export function planEdgeDeploy({ root, changes, maxAuto = DEFAULT_MAX }) {
       throw new Error('New function ' + slug + ' requires an approved production slot and explicit deployment');
     }
     selected.add(slug);
+  }
+
+  // Computed dynamic imports can hide a dependency on a changed helper.
+  // Never mistake a partial static graph for evidence of a complete rollout.
+  if (shared.length) {
+    for (const sourceFile of files) {
+      if (/\b(?:import|require)\s*\(\s*(?!['"])/.test(readFileSync(sourceFile, 'utf8'))) {
+        throw new Error('Dynamic module import in ' + relative(base, sourceFile) +
+          ': manual impact review required before shared-helper deployment');
+      }
+    }
   }
 
   for (const file of shared) {

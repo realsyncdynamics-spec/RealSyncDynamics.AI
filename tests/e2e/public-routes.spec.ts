@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 
 const publicRoutes = [
-  { id: 'FE-001', path: '/', label: 'Startseite', heading: /KI gestalten.*Kunden erreichen.*Arbeit vereinfachen/i },
+  { id: 'FE-001', path: '/', label: 'Startseite', heading: /Website- und KI-Risiken prüfen.*Nachweise dokumentieren/i },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Ihr KI-Bestand in vier Fragen/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /EU-AI-Act-Compliance ohne Beratungsprojekt/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },
@@ -28,33 +28,27 @@ for (const route of publicRoutes) {
       page.getByRole('heading', { name: route.heading }).first(),
       `Hero-Headline für ${route.path}`,
     ).toBeVisible();
-  });
-}
-
-// Das neue Produkt-Hub muss beide angeforderten Studios und die bestehenden
-// Kernprodukte als echte Navigation anbieten, nicht nur als Marketingtext.
-test('[FE-009] Startseite verknüpft sechs Produktbereiche', async ({ page }) => {
+  });// Öffentliche Landing: ausschließlich Governance und SiteOS-Preview als Produktkarten.
+test('[FE-009] Startseite verlinkt nur überprüfbare Produktflächen', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  for (const title of [
-    'AI Voice Agent', 'AI App Builder', 'AI Landingpage Designer',
-    'Claude Code Optimizer', 'Governance Dashboard', 'AI Creative Studio',
-  ]) {
-    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Governance Runtime', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'SiteOS Preview', exact: true })).toBeVisible();
+  await expect(page.locator('#plattform article')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: /Kostenlosen Scan starten/i })).toHaveAttribute('href', '/audit?source=governance-first-hero');
+  await expect(page.getByRole('link', { name: /SiteOS Preview anfragen/i })).toHaveAttribute('href', '/kontakt?intent=siteos-preview&source=governance-first-hero');
+  await expect(page.getByRole('link', { name: /Entwurfsoberfläche ansehen/i })).toHaveAttribute('href', '/build');
+});
+
+test('[FE-010] Nicht freigegebene Voice- und Creator-Produkte werden nicht angeboten', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('company-voice-launcher')).toHaveCount(0);
+  for (const name of ['AI Voice Agent', 'AI App Builder', 'AI Creative Studio', 'Claude Code Optimizer']) {
+    await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
   }
-  await expect(page.getByRole('link', { name: /Landingpage gestalten/i })).toHaveAttribute('href', '/build');
-  await expect(page.getByRole('link', { name: /Bilder erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=image');
-  await expect(page.getByRole('link', { name: /Videos erstellen/i })).toHaveAttribute('href', '/app/media-studio?type=video');
+  await expect(page.locator('a[href^="/app/media-studio"]')).toHaveCount(0);
 });
 
-test('[FE-010] Die neue Startseite behält den bisherigen Voice-Bot', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  const launcher = page.getByTestId('company-voice-launcher');
-  await expect(launcher).toBeVisible();
-  await launcher.click();
-  await expect(page.getByTestId('company-voice-panel')).toBeVisible();
-  await page.getByRole('button', { name: 'Demo schließen' }).click();
-  await expect(page.getByTestId('company-voice-panel')).toHaveCount(0);
-});
+);
 
 test('[FE-011] Optimizer benennt Website-Audit und fehlende Code-Automation klar', async ({ page }) => {
   await page.goto('/claude-code-optimizer', { waitUntil: 'domcontentloaded' });

@@ -17,6 +17,10 @@ const rollback = resolve(
 );
 const sql = readFileSync(migration, 'utf8');
 const rb = readFileSync(rollback, 'utf8');
+const cron = readFileSync(
+  resolve(__dirname, '../../supabase/functions/audit-drip-cron/index.ts'),
+  'utf8',
+);
 
 describe('RSD-011 Migration 20261114104500', () => {
   it('liegt zusammen mit einer Rollback-Datei vor', () => {
@@ -78,5 +82,23 @@ describe('RSD-011 Rollback', () => {
     expect(rb).toContain('DROP FUNCTION IF EXISTS public.audit_email_drip_create_for_audit()');
     expect(rb).toContain('IF EXISTS (SELECT 1 FROM public.audit_email_drip)');
     expect(rb).toContain('DROP TABLE public.audit_email_drip');
+  });
+});
+
+describe('RSD-011 Mailzustellung bleibt fail-closed', () => {
+  it('markiert ohne Resend-Key keine ausstehende Mail als versendet', () => {
+    expect(cron).toMatch(/if \(!RESEND_KEY\)\s*\{\s*return jsonResponse\(\{ ok: false, code: 'RESEND_NOT_CONFIGURED'/);
+    expect(cron).toContain('total_due: rows.length }, 503)');
+    expect(cron).not.toContain('Drip-State trotzdem advancen');
+  });
+
+  it('verwendet fuer jede Mail-Stufe einen stabilen Idempotenzschluessel', () => {
+    expect(cron).toContain("'Idempotency-Key': `audit-drip/${row.id}/step-${stepToSend}`");
+  });
+
+  it('meldet einen fehlgeschlagenen Batch auch als HTTP-Fehler', () => {
+    expect(cron).toContain('failed.length > 0 ? 502 : 200');
+    expect(cron).toContain("const { error: advanceError } = await admin.rpc('audit_email_drip_advance'");
+    expect(cron).toContain('if (advanceError) throw new Error');
   });
 });

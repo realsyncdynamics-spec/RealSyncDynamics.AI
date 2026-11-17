@@ -307,7 +307,8 @@ export function GovernanceActivationView() {
   }, [activeTenantId, tenantLoading, tenants.length]);
 
   const eligibleClaimTenants = tenants.filter((t) => t.role === 'owner' || t.role === 'admin');
-  const pendingClaimNeedsChoice = !tenantLoading && tenants.length > 1 && readPendingAudit() !== null;
+  const pendingClaimNeedsChoice =
+    !tenantLoading && tenants.length > 1 && claimOutcome?.status !== 'claimed' && readPendingAudit() !== null;
 
   async function claimSelectedTenant(): Promise<void> {
     if (!eligibleClaimTenants.some((t) => t.tenantId === claimTargetTenant)) return;

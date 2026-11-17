@@ -334,7 +334,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/pages/claude-code-optimizer/OptimizerScan.tsx',
       'docs/qa/landing-to-runtime-parity.md',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'creative-studio',
@@ -347,7 +347,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'PR #2271',
       'Supabase-Function-Inventar 17.11.2026: creative-studio nicht bereitgestellt',
     ],
-    showOnRoadmap: true,
+    showOnRoadmap: false,
   },
   {
     id: 'automation-n8n',

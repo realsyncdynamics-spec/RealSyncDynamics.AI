@@ -41,3 +41,21 @@
 /onboarding/  https://realsyncdynamics-ai.pages.dev/welcome        302
 /app          https://realsyncdynamics-ai.pages.dev/app/dashboard  302
 /unternehmen  https://realsyncdynamics-ai.pages.dev/unternehmen    302
+
+# 17.11.2026 (Europe/Berlin): Produkt-Pfade, die bisher als Soft-404 die Landing
+# lieferten (gemessen per curl: /build, /optimizer, /claude-code-optimizer, /avv,
+# /sicherheit, /audit/result/<id> → HTTP 200, Landing-Dokument). Damit erreichen die
+# Buttons für App Builder, Optimizer und der Berichtslink des Website-Checks das Produkt.
+# Ziel ist der gleichnamige Pfad der Vite-SPA (Routen in src/App.tsx auf main @ 0965599).
+# 302 wie die übrigen Interim-Regeln. Nichts Bestehendes wird gelöscht oder umgehängt.
+# Exakter Pfad und Splat stehen beide: der Splat trifft den exakten Pfad nicht.
+/build                    https://realsyncdynamics-ai.pages.dev/build                    302
+/builder                  https://realsyncdynamics-ai.pages.dev/builder                  302
+/builder/*                https://realsyncdynamics-ai.pages.dev/builder/:splat           302
+/optimizer                https://realsyncdynamics-ai.pages.dev/optimizer                302
+/optimizer/*              https://realsyncdynamics-ai.pages.dev/optimizer/:splat         302
+/claude-code-optimizer    https://realsyncdynamics-ai.pages.dev/claude-code-optimizer    302
+/claude-code-optimizer/*  https://realsyncdynamics-ai.pages.dev/claude-code-optimizer/:splat 302
+/audit/*                  https://realsyncdynamics-ai.pages.dev/audit/:splat             302
+/avv                      https://realsyncdynamics-ai.pages.dev/avv                      302
+/sicherheit               https://realsyncdynamics-ai.pages.dev/sicherheit               302

@@ -81,6 +81,7 @@ vi.mock('../../src/core/access/TenantProvider', () => ({
 }));
 
 vi.mock('../../src/core/onboarding/claimAudit', () => ({
+  readPendingAudit: () => null,
   claimPendingAudit: async () => {
     mocks.claimedTenants.push('claimed');
     return { status: 'none' };

@@ -1,5 +1,5 @@
 /**
- * Startseite v3 (Vorschau) — alle Inhalte, die nicht reiner Fließtext sind,
+ * Startseite v3 (`/`) — alle Inhalte, die nicht reiner Fließtext sind,
  * kommen aus den vorhandenen Quellen:
  *   - Produktstatus      → src/product/implementation-status.ts
  *   - Preise, Testphase  → shared/pricing.ts (über config/pricing.ts)
@@ -17,7 +17,7 @@ import { CTA } from '../../../content/runtimeVocab';
 import { IMPLEMENTATION_ITEMS, type ImplementationStatus } from '../../../product/implementation-status';
 import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, pricingTaxNote, type Plan } from '@/shared/pricing';
 
-export const SOURCE = 'design-v3';
+export const SOURCE = 'landing-v3';
 
 // ── Status ──────────────────────────────────────────────────────────────────
 

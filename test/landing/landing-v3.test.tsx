@@ -1,13 +1,13 @@
 /**
- * Startseite v3 (Vorschau, /design/startseite-v3): Inhalte aus den Quellen,
- * keine übernommenen Platzhalter aus dem Design-Export, `/` unverändert.
+ * Startseite v3 auf `/`: Inhalte aus den Quellen, keine übernommenen
+ * Platzhalter aus dem Design-Export; Landing v6 bleibt als Rückfall.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LandingV3Preview } from '../../src/pages/LandingV3Preview';
+import { LandingV3 } from '../../src/pages/LandingV3';
 import { planCards, PRODUCTS, productStatus, STATUS_TEXT } from '../../src/components/landing/v3/landingV3Data';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 import { pricingTaxNote } from '../../shared/pricing';
@@ -18,12 +18,15 @@ const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
 
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} }));
 
-describe('Startseite v3 — Vorschau', () => {
-  it('ist isoliert: eigene Route, `/` bleibt Landing v6, noindex', () => {
+describe('Startseite v3 — `/`', () => {
+  it('ist Startseite: `/` rendert v3, alte Vorschau leitet um, v6 bleibt als Rückfall', () => {
     const app = read('src/App.tsx');
-    expect(app).toMatch(/path="\/"\s+element=\{<LandingV6/);
-    expect(app).toContain('path="/design/startseite-v3" element={<LandingV3Preview />}');
-    expect(read('src/config/seo.ts')).toMatch(/'\/design\/startseite-v3': \{[\s\S]*?noIndex: true/);
+    expect(app).toContain('<Route path="/" element={<LandingV3 />} />');
+    expect(app).toContain('<Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />');
+    expect(app).toContain('<Route path="/design/landing-v6" element={<LandingV6 />} />');
+    const seo = read('src/config/seo.ts');
+    expect(seo).toMatch(/'\/design\/startseite-v3': \{[\s\S]*?noIndex: true/);
+    expect(seo).not.toContain('lv2FaqJsonLd()');
   });
 
   it('Status-Badges nur aus der Registry; ohne Eintrag kein Badge', () => {
@@ -40,7 +43,7 @@ describe('Startseite v3 — Vorschau', () => {
   });
 
   it('Preise und Steuerhinweis aus der SSoT', () => {
-    render(<MemoryRouter><LandingV3Preview /></MemoryRouter>);
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     for (const card of planCards()) {
       const el = screen.getByTestId(`v3-plan-${card.id}`);
       expect(within(el).getByText(card.price)).toBeInTheDocument();
@@ -49,7 +52,7 @@ describe('Startseite v3 — Vorschau', () => {
   });
 
   it('rendert alle vier Produkte, AI Receptionist als „In Vorbereitung“, Rechtslinks erreichbar', () => {
-    render(<MemoryRouter><LandingV3Preview /></MemoryRouter>);
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     expect(screen.getByTestId('v3-hero-heading')).toHaveTextContent('Ihre Ideen.In Bewegung.');
     for (const p of PRODUCTS) expect(screen.getByTestId(`v3-product-${p.key}`)).toHaveAttribute('href', p.href);
     expect(screen.getByTestId('v3-product-receptionist')).toHaveTextContent('In Vorbereitung');
@@ -60,7 +63,7 @@ describe('Startseite v3 — Vorschau', () => {
   });
 
   it('übernimmt keine Platzhalter aus dem Export: keine Bot-IDs, keine WhatsApp-Nummer, kein Projekt-Endpunkt, keine festen Preise', () => {
-    const src = ['src/pages/LandingV3Preview.tsx', 'src/components/landing/v3/landingV3Data.ts', 'src/components/landing/v3/HeroStage.tsx']
+    const src = ['src/pages/LandingV3.tsx', 'src/components/landing/v3/landingV3Data.ts', 'src/components/landing/v3/HeroStage.tsx']
       .map(read)
       .join('\n');
     expect(src).not.toMatch(/4917640132161|wa\.me|be672b50|582308a1|ebljyceifhnlzhjfyxup|functions\/v1/);

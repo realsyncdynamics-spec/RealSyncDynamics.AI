@@ -9,8 +9,9 @@ import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
 
 /**
- * Startseite v3 — isolierte Vorschau unter /design/startseite-v3 (noindex,
- * kanonisch /). `/` bleibt unverändert.
+ * Startseite v3 — öffentliche Startseite unter `/` (seit 17.11.2026).
+ * Die frühere Vorschau-Route /design/startseite-v3 leitet auf `/`;
+ * Landing v6 bleibt als Rückfall unter /design/landing-v6.
  *
  * Gestaltung und Texte aus dem Claude-Design-Export „RealSync Startseite v3“.
  * Nicht übernommen, weil nicht belegt oder nicht freigegeben:
@@ -37,7 +38,7 @@ function StatusPill({ label }: { label: string }) {
   return <span className="lv3-pill">{label}</span>;
 }
 
-export function LandingV3Preview() {
+export function LandingV3() {
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -266,4 +267,4 @@ export function LandingV3Preview() {
   );
 }
 
-export default LandingV3Preview;
+export default LandingV3;

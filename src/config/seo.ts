@@ -50,7 +50,6 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
 import { BETA, BETA_PUBLIC_OFFER } from './beta';
 import { BETREIBER_FAQ } from '../content/aiActBetreiberpflichten';
 
@@ -270,7 +269,9 @@ const AI_ACT_BETREIBER_FAQ_JSONLD = {
 
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
-const LANDING_V2_JSONLD: Record<string, unknown>[] = [
+// Startseite v3: Organisation und Preise. Kein FAQ-Schema aus Landing v2 mehr —
+// deren Fragen stehen nicht auf `/`, Schema und sichtbarer Text müssen deckungsgleich bleiben.
+const HOME_JSONLD: Record<string, unknown>[] = [
   {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -287,22 +288,21 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
     },
   },
   PRICING_PRODUCT_JSONLD,
-  lv2FaqJsonLd(),
 ];
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
-  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
-  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
+  // Titel und Beschreibung folgen der Startseite v3 (H1 „Ihre Ideen. In Bewegung.“,
+  // Websites, KI-Agenten und Automatisierungen mit mitlaufender Kontrollschicht).
   '/': {
-    title: 'Governance OS für DSGVO & EU AI Act – AI Governance Runtime | RealSync Dynamics AI',
+    title: 'Websites, KI-Agenten und Automatisierungen für Ihren Betrieb | RealSync Dynamics AI',
     description:
-      'Das Governance OS für DSGVO & EU AI Act: KI-Systeme und Websites erfassen, Risiken bewerten, Policies anwenden und prüffähige Nachweise ablegen. Einstieg mit dem kostenlosen Governance Scan.',
+      'Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen. Berechtigungen, Regeln und Nachweise laufen mit. Einstieg mit dem kostenlosen Website-Check.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
+    ogTitle: 'Ihre Ideen. In Bewegung. – RealSync Dynamics AI',
     ogDescription:
-      'Eine Runtime für Risiken, Richtlinien und prüffähige Nachweise: Discover → Assess → Govern → Enforce → Evidence → Audit. Betrieben in der EU.',
-    jsonLd: LANDING_V2_JSONLD,
+      'Websites, KI-Agenten und Automatisierungen für Ihren Betrieb – mit Kontrollschicht für Berechtigungen, Regeln und Nachweise. Betrieben in der EU.',
+    jsonLd: HOME_JSONLD,
   },
   '/design/landing-v2': {
     title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
@@ -312,9 +312,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
   '/design/startseite-v3': {
-    title: 'RealSync Dynamics AI – Startseite v3 (Vorschau)',
+    title: 'RealSync Dynamics AI – Startseite v3 (Link auf die Startseite)',
     description:
-      'Design-Vorschau „Ihre Ideen. In Bewegung.“ (hell, Claude Design). Kanonisch ist /.',
+      'Frühere Vorschau-Adresse der Startseite v3; leitet auf /. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
@@ -326,9 +326,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
   '/design/landing-v6': {
-    title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
+    title: 'RealSync Dynamics AI – Landing v6 (frühere Startseite)',
     description:
-      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
+      'Frühere Startseite „Das Governance OS für DSGVO & EU AI Act“, bleibt als Rückfall erreichbar. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },

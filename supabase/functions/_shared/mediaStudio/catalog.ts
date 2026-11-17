@@ -107,8 +107,17 @@ export const MEDIA_MODELS: readonly MediaModel[] = [
 
 export const PROMPT_MAX_CHARS = 2_000;
 export const NEGATIVE_PROMPT_MAX_CHARS = 500;
-/** Referenzbild inline (Base64-Zeichen). ~6 MB Binär. */
-export const REFERENCE_MAX_BASE64_CHARS = 8_000_000;
+/** Höchstgröße eines gespeicherten Mediums (entspricht dem Bucket-Limit). */
+export const MEDIA_MAX_BYTES = 52_428_800;
+/** Gültigkeit signierter Download-Links in Sekunden. */
+export const SIGNED_URL_TTL_S = 3_600;
+/** Gültigkeit eines signierten Referenz-Links für Anbieter (Higgsfield). */
+export const REFERENCE_URL_TTL_S = 900;
+
+/** Kontingent-Einheiten: Bild = 1, Video = 1 je Sekunde (Schutzwert, kein Preis). */
+export function mediaUnits(kind: MediaKind, durationS?: number): number {
+  return kind === 'video' ? Math.max(1, Math.round(durationS ?? 1)) : 1;
+}
 
 export const MEDIA_FEATURE = 'media_studio';
 

@@ -23,26 +23,21 @@ export interface GenerateRequest {
   aspect_ratio: AspectRatio;
   duration_s?: number;
   camera?: string;
-  reference?: { mime_type?: string; data_base64?: string; url?: string; sig: string };
+  /** Verweis auf ein fertiges Ergebnis desselben Mandanten; der Server löst ihn auf. */
+  reference?: { job_id: string; index: number };
+  /** Je Versuch eindeutig; derselbe Schlüssel löst serverseitig nie zwei Aufrufe aus. */
+  idempotency_key: string;
   client_ref?: string;
 }
 
-export interface JobHandle {
-  provider: MediaProviderId;
-  kind: MediaKind;
-  model: string;
-  provider_request_id: string;
-  token: string;
-}
-
 export type GenerateOutcome =
-  | { kind: 'completed'; assets: StudioAsset[]; model: string; requestId: string }
-  | { kind: 'pending'; job: JobHandle; requestId: string }
+  | { kind: 'completed'; assets: StudioAsset[]; jobId: string; requestId: string }
+  | { kind: 'pending'; jobId: string; requestId: string }
   | { kind: 'error'; code: string; message: string; retryable: boolean; retryAfterMs?: number };
 
 export interface StudioTools {
   generate: (req: GenerateRequest) => Promise<GenerateOutcome>;
-  status: (job: JobHandle) => Promise<GenerateOutcome>;
+  status: (jobId: string) => Promise<GenerateOutcome>;
   sleep: (ms: number, signal?: AbortSignal) => Promise<void>;
   now: () => number;
 }
@@ -62,17 +57,23 @@ export interface RunOptions {
   pollIntervalMs?: number;
   maxPolls?: number;
   maxRetries?: number;
+  /** Präfix der Idempotenz-Schlüssel dieses Laufs. */
+  runId?: string;
 }
 
 const NEVER_RETRY = new Set([
   'PII_IN_PROMPT',
   'RESIDENCY_EU_LOCAL',
-  'REFERENCE_NOT_SIGNED',
+  'REFERENCE_NOT_FOUND',
+  'BUDGET_EXCEEDED',
+  'IN_PROGRESS',
+  'ALREADY_FAILED',
+  'STORAGE_FAILED',
   'CONTENT_REJECTED',
   'NOT_ENTITLED',
   'MEDIA_STUDIO_DISABLED',
   'BAD_REQUEST',
-  'JOB_NOT_OWNED',
+  'JOB_NOT_FOUND',
 ]);
 
 export class PlanNotApprovedError extends Error {
@@ -98,7 +99,7 @@ export function executionOrder(steps: PlanStep[]): PlanStep[] {
   return ordered;
 }
 
-export function toRequest(step: PlanStep, reference?: StudioAsset): GenerateRequest {
+export function toRequest(step: PlanStep, idempotencyKey: string, reference?: StudioAsset): GenerateRequest {
   return {
     kind: step.kind,
     provider: step.provider,
@@ -107,11 +108,8 @@ export function toRequest(step: PlanStep, reference?: StudioAsset): GenerateRequ
     aspect_ratio: step.aspect,
     duration_s: step.kind === 'video' ? step.durationS : undefined,
     camera: step.kind === 'video' ? step.camera : undefined,
-    reference: reference
-      ? reference.data_base64
-        ? { mime_type: reference.mime_type, data_base64: reference.data_base64, sig: reference.sig }
-        : { url: reference.url, sig: reference.sig }
-      : undefined,
+    reference: reference ? { job_id: reference.job_id, index: reference.index } : undefined,
+    idempotency_key: idempotencyKey,
     client_ref: step.id,
   };
 }
@@ -127,6 +125,7 @@ export async function runPlan(
   const pollMs = opts.pollIntervalMs ?? 5_000;
   const maxPolls = opts.maxPolls ?? 72;
   const maxRetries = opts.maxRetries ?? 1;
+  const runId = opts.runId ?? `run-${tools.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const results = new Map<string, PlanStep>();
   const emit = (stepId: string, type: AgentEventType, message: string, requestId?: string) =>
     onEvent({ at: tools.now(), stepId, type, message, requestId });
@@ -166,7 +165,7 @@ export async function runPlan(
     let attempt = 0;
     let outcome: GenerateOutcome;
     for (;;) {
-      outcome = await tools.generate(toRequest(step, reference));
+      outcome = await tools.generate(toRequest(step, `${runId}:${step.id}:${attempt}`, reference));
       if (outcome.kind !== 'error' || !outcome.retryable || NEVER_RETRY.has(outcome.code) || attempt >= maxRetries || opts.signal?.aborted) break;
       attempt++;
       const wait = Math.min(outcome.retryAfterMs ?? 3_000, 60_000);
@@ -190,17 +189,17 @@ export async function runPlan(
       }
       await tools.sleep(pollMs, opts.signal);
       polls++;
-      const job: JobHandle = outcome.job;
-      outcome = await tools.status(job);
+      const jobId = outcome.jobId;
+      outcome = await tools.status(jobId);
       if (outcome.kind === 'error' && outcome.retryable) {
         emit(step.id, 'poll', `Statusabfrage gestört (${outcome.message}), versuche weiter.`);
-        outcome = { kind: 'pending', job, requestId: step.requestId ?? '' };
+        outcome = { kind: 'pending', jobId, requestId: step.requestId ?? '' };
       }
     }
 
     if (outcome.kind === 'completed') {
-      update(step, { status: 'done', assets: outcome.assets, model: outcome.model, requestId: outcome.requestId });
-      emit(step.id, 'done', `${outcome.assets.length} Ergebnis(se) von ${outcome.model}.`, outcome.requestId);
+      update(step, { status: 'done', assets: outcome.assets, jobId: outcome.jobId, requestId: outcome.requestId });
+      emit(step.id, 'done', `${outcome.assets.length} Ergebnis(se), Auftrag ${outcome.jobId.slice(0, 8)}.`, outcome.requestId);
     } else if (outcome.kind === 'error') {
       update(step, { status: 'failed', error: outcome.message });
       emit(step.id, outcome.code === 'ABORTED' ? 'abort' : 'error', `${outcome.code}: ${outcome.message}`);

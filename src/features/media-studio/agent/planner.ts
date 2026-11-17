@@ -57,12 +57,13 @@ export interface ModelAvailability {
 
 export type StepStatus = 'planned' | 'running' | 'waiting' | 'done' | 'failed' | 'skipped';
 
+/** Ergebnis im privaten Bucket; `url` ist ein kurzlebiger signierter Link. */
 export interface StudioAsset {
   kind: MediaKind;
   mime_type: string;
-  data_base64?: string;
-  url?: string;
-  sig: string;
+  url: string;
+  job_id: string;
+  index: number;
 }
 
 export interface PlanStep {
@@ -80,7 +81,7 @@ export interface PlanStep {
   status: StepStatus;
   error?: string;
   assets?: StudioAsset[];
-  model?: string;
+  jobId?: string;
   requestId?: string;
 }
 

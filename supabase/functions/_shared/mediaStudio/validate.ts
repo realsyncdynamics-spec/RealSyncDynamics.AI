@@ -12,15 +12,12 @@ import {
   type MediaProviderId,
   NEGATIVE_PROMPT_MAX_CHARS,
   PROMPT_MAX_CHARS,
-  REFERENCE_MAX_BASE64_CHARS,
 } from './catalog.ts';
 
+/** Verweis auf ein früheres Ergebnis desselben Mandanten (serverseitig aufgelöst). */
 export interface ReferenceInput {
-  mime_type?: string;
-  data_base64?: string;
-  url?: string;
-  /** Signatur aus einer früheren Generierung desselben Mandanten. */
-  sig: string;
+  job_id: string;
+  index: number;
 }
 
 export interface GenerateInput {
@@ -33,6 +30,8 @@ export interface GenerateInput {
   resolution?: '720p' | '1080p';
   camera?: string;
   reference?: ReferenceInput;
+  /** Idempotenz je Mandant: derselbe Schlüssel reserviert und generiert nie zweimal. */
+  idempotency_key: string;
   /** Client-Korrelation für den Prüfpfad (z. B. Plan-Schritt). */
   client_ref?: string;
 }
@@ -43,8 +42,8 @@ export type ValidationResult =
 
 const KINDS: readonly MediaKind[] = ['image', 'video'];
 const PROVIDERS: readonly MediaProviderId[] = ['google', 'higgsfield'];
-const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
-const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const IDEMPOTENCY_RE = /^[A-Za-z0-9:_-]{8,120}$/;
 
 function fail(code: string, message: string): ValidationResult {
   return { ok: false, code, message };
@@ -112,28 +111,19 @@ export function validateGenerateInput(raw: unknown): ValidationResult {
   let reference: ReferenceInput | undefined;
   if (raw.reference !== undefined && raw.reference !== null) {
     if (!isRecord(raw.reference)) return fail('BAD_REQUEST', 'reference ist ungültig.');
-    const r = raw.reference;
-    if (typeof r.sig !== 'string' || r.sig.length !== 64) {
-      return fail('REFERENCE_NOT_SIGNED', 'Referenzbilder müssen aus diesem Studio stammen.');
-    }
     if (model.acceptsReference === 'none') {
       return fail('BAD_REQUEST', `${model.label} nimmt kein Referenzbild an.`);
     }
-    if (model.acceptsReference === 'inline') {
-      if (typeof r.data_base64 !== 'string' || typeof r.mime_type !== 'string') {
-        return fail('BAD_REQUEST', `${model.label} braucht das Referenzbild als Daten, nicht als Link.`);
-      }
-      if (!IMAGE_MIMES.includes(r.mime_type)) return fail('BAD_REQUEST', 'Referenz muss PNG, JPEG oder WebP sein.');
-      if (r.data_base64.length > REFERENCE_MAX_BASE64_CHARS || !BASE64_RE.test(r.data_base64)) {
-        return fail('BAD_REQUEST', 'Referenzbild ist zu groß oder kein Base64.');
-      }
-      reference = { mime_type: r.mime_type, data_base64: r.data_base64, sig: r.sig };
-    } else {
-      if (typeof r.url !== 'string' || !/^https:\/\//.test(r.url) || r.url.length > 2_000) {
-        return fail('BAD_REQUEST', `${model.label} braucht das Referenzbild als https-Link.`);
-      }
-      reference = { url: r.url, sig: r.sig };
+    const r = raw.reference;
+    const index = Number(r.index ?? 0);
+    if (typeof r.job_id !== 'string' || !UUID_RE.test(r.job_id) || !Number.isInteger(index) || index < 0 || index > 3) {
+      return fail('BAD_REQUEST', 'Referenz muss auf ein Ergebnis aus diesem Studio zeigen.');
     }
+    reference = { job_id: r.job_id, index };
+  }
+
+  if (typeof raw.idempotency_key !== 'string' || !IDEMPOTENCY_RE.test(raw.idempotency_key)) {
+    return fail('BAD_REQUEST', 'idempotency_key fehlt oder ist ungültig.');
   }
 
   const clientRef = typeof raw.client_ref === 'string' ? raw.client_ref.slice(0, 80) : undefined;
@@ -151,6 +141,7 @@ export function validateGenerateInput(raw: unknown): ValidationResult {
       resolution,
       camera,
       reference,
+      idempotency_key: raw.idempotency_key,
       client_ref: clientRef,
     },
   };

@@ -1,8 +1,12 @@
 # Media Studio — Analyse Higgsfield und Google AI Studio, Umsetzung im Builder
 
 Stand: 17.11.2026. Quellen: Anbieter-Dokumentation (unten), gelesen am selben Tag.
-Status der Umsetzung: implementiert und mit Unit-Tests geprüft; **nicht deployt, nicht gegen
-die echten Anbieter-APIs verifiziert**, serverseitig Default aus.
+Status der Umsetzung: implementiert und mit Unit-Tests geprüft; **nicht deployt, Migration nicht
+angewendet, nicht gegen die echten Anbieter-APIs verifiziert**, serverseitig Default aus.
+
+Zusammengeführt mit PR #2271 (Creative Studio): Kontingent-Reservierung vor jedem bezahlten
+Aufruf, Auftragstabelle mit Lebenszyklus, privater Bucket mit signierten URLs, Typprüfung über
+Magic Bytes. Der xAI-Adapter aus #2271 ist nicht übernommen (eigene Entscheidung, s. u.).
 
 ## Produkt-Einordnung (Widerspruch gemeldet)
 
@@ -46,33 +50,42 @@ fremden Videos (Rechte- und Deepfake-Risiko), Marken/Optik der Vorbilder.
 | Katalog (UI + Server) | `supabase/functions/_shared/mediaStudio/catalog.ts` |
 | Eingabeprüfung | `supabase/functions/_shared/mediaStudio/validate.ts` |
 | Anbieter-Adapter | `supabase/functions/_shared/mediaStudio/providers.ts` |
-| Mandanten-Signaturen | `supabase/functions/_shared/mediaStudio/signing.ts` |
+| Medienprüfung (Magic Bytes, Pfade) | `supabase/functions/_shared/mediaStudio/media.ts` |
+| Migration (nicht angewendet) | `supabase/migrations/20261117180000_media_studio_jobs.sql` |
 | Edge Function | `supabase/functions/media-studio/{handler,index}.ts` |
 | Regie-Agent | `src/features/media-studio/agent/{planner,runner}.ts` |
 | Oberfläche | `src/features/media-studio/MediaStudioPage.tsx`, Route `/app/media-studio` |
 
 Server-Gates in Reihenfolge: Kill-Switch `MEDIA_STUDIO_ENABLED` → Nutzer-JWT + Mitgliedschaft →
-Entitlement `siteos.builder` → Signatur-Secret → Residency `cloud` (eu_local-Mandanten nie an
-Google/Higgsfield) → Eingabe + PII-Sperre → signierte Referenz → Modell konfiguriert →
-Rate-Limit → Evidence **vor** dem Anbieteraufruf (Fehler = keine Generierung).
+Entitlement `siteos.builder` → Residency `cloud` (eu_local-Mandanten nie an Google/Higgsfield) →
+Eingabe + PII-Sperre → Modell konfiguriert → Referenz = fertiges Bild desselben Mandanten (aus der
+DB) → Rate-Limit → **atomare Kontingent-Reservierung** (`media_job_reserve`, idempotent je
+Schlüssel) → Evidence **vor** dem Anbieteraufruf → Ergebnis nur in den privaten Bucket
+`media-studio`, Browser bekommt signierte URLs (1 h).
 
-Ohne neue Tabelle: Asynchrone Aufträge und Referenzbilder sind per HMAC an den Mandanten gebunden.
-Referenzbilder werden nur akzeptiert, wenn das Studio sie selbst für diesen Mandanten erzeugt hat —
-kein Upload fremder Fotos an US-Anbieter.
+Kontingent: Einheiten (Bild = 1, Video = 1 je Sekunde) je Monat, Tabelle `media_studio_limits`.
+**Ohne Zeile = 0 = keine Generierung** (gleiches Prinzip wie Owner-Entscheidung „Option A“ für
+Bot-Kanäle). Anbieter-Timeout und gescheiterte Ablage bleiben angerechnet (Ergebnis unklar);
+Inhaltsfilter und Fehler vor dem Aufruf geben frei.
 
 ## Freigaben, die noch fehlen
 
-1. Secrets setzen: `GEMINI_API_KEY` und/oder `HIGGSFIELD_API_KEY_ID`/`_SECRET`,
-   `MEDIA_STUDIO_SIGNING_SECRET` (≥ 32 Zeichen), dann `MEDIA_STUDIO_ENABLED=true`.
-2. Deploy `supabase functions deploy media-studio` (Deploy-Freigabe).
-3. Datenschutz: Google/Higgsfield als Auftragsverarbeiter (AVV, Drittlandtransfer) prüfen.
-4. Live-Probe je Anbieter mit einem Test-Mandanten (Residency `cloud`).
+1. Migration `20261117180000_media_studio_jobs.sql` (Einzel-Freigabe; Merge auf `main` wendet sie
+   automatisch an).
+2. Kontingent je Pilot-Mandant in `media_studio_limits` setzen (Schutzwert, kein Preis).
+3. Secrets setzen: `GEMINI_API_KEY` und/oder `HIGGSFIELD_API_KEY_ID`/`_SECRET`, dann
+   `MEDIA_STUDIO_ENABLED=true`.
+4. Deploy `supabase functions deploy media-studio` (Deploy-Freigabe).
+5. Datenschutz: Google/Higgsfield als Auftragsverarbeiter (AVV, Drittlandtransfer) prüfen.
+6. Live-Probe je Anbieter mit einem Test-Mandanten (Residency `cloud`).
+7. Entscheidung Berechtigung: weiter `siteos.builder` oder eigener Schlüssel
+   (`creative.image.generate` aus #2271 ist nicht provisioniert; Planänderung = Preis-Freigabe).
+8. Entscheidung xAI Grok Imagine aus #2271 als dritter Anbieter (Adapter existiert dort).
 
 ## Nächste Ausbaustufen
 
-- Asset-Speicher (Storage-Bucket + Tabelle, Migration mit Einzel-Freigabe) → Medien direkt in
-  SiteOS-Blueprints einsetzen statt Download.
-- Persistentes Rate-Limit/Kostendeckel über `_shared/cost-cap.ts`.
+- Medien direkt in SiteOS-Blueprints einsetzen statt Download (Bucket existiert jetzt).
+- Aufräumjob für hängende `reserved`/`submitted`-Aufträge (bleiben bis dahin angerechnet).
 - LLM-Planer über das AI-Gateway (gleiche `Plan`-Struktur, gleiche Freigabe).
 - Bildbearbeitung (Inpainting/Variationen) über Google mit signierter Referenz.
 

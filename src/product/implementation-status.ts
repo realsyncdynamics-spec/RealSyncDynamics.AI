@@ -486,7 +486,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'preview',
     group: 'channels',
     description:
-      'MediaStudioPage unter /app/media-studio: Briefing → Agentenplan → Freigabe → Ausführung über Google Gemini API bzw. Higgsfield API. Edge Function media-studio ist Default aus (MEDIA_STUDIO_ENABLED), nicht deployt und nicht gegen die echten Anbieter-APIs verifiziert; nur für Mandanten mit Residency cloud.',
+      'MediaStudioPage unter /app/media-studio: Briefing → Agentenplan → Freigabe → Ausführung über Google Gemini API bzw. Higgsfield API, mit Kontingent-Reservierung je Auftrag und privater Ablage. Edge Function media-studio ist Default aus (MEDIA_STUDIO_ENABLED), Migration nicht angewendet, nicht deployt, nicht gegen die echten Anbieter-APIs verifiziert; nur für Mandanten mit Residency cloud.',
     route: '/app/media-studio',
     evidence: [
       'src/features/media-studio/MediaStudioPage.tsx',

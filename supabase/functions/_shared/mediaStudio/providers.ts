@@ -30,6 +30,11 @@ export interface GeneratedAsset {
   url?: string;
 }
 
+/** Serverseitig aufgelöste Referenz (aus dem privaten Bucket des Mandanten). */
+export type ResolvedReference =
+  | { mime_type: string; data_base64: string; url?: undefined }
+  | { url: string; mime_type?: undefined; data_base64?: undefined };
+
 export type ProviderFailureCode =
   | 'PROVIDER_ERROR'
   | 'PROVIDER_TIMEOUT'
@@ -105,11 +110,11 @@ function withNegative(prompt: string, negative?: string): string {
 
 // ─── Google Gemini API (Interactions) ──────────────────────────────────────
 
-export function buildGoogleBody(input: GenerateInput, modelId: string): Record<string, unknown> {
+export function buildGoogleBody(input: GenerateInput, modelId: string, ref?: ResolvedReference): Record<string, unknown> {
   const text = withNegative(composeProviderPrompt(input.prompt, input.camera), input.negative_prompt);
   const parts: Record<string, unknown>[] = [];
-  if (input.reference?.data_base64) {
-    parts.push({ type: 'image', data: input.reference.data_base64, mime_type: input.reference.mime_type });
+  if (ref?.data_base64) {
+    parts.push({ type: 'image', data: ref.data_base64, mime_type: ref.mime_type });
   }
   parts.push({ type: 'text', text });
 
@@ -158,7 +163,7 @@ export function extractGoogleAssets(json: unknown, kind: MediaKind): GeneratedAs
   return out;
 }
 
-async function generateGoogle(input: GenerateInput, model: MediaModel, cfg: ProviderConfig, fetchImpl: FetchLike): Promise<ProviderResult> {
+async function generateGoogle(input: GenerateInput, model: MediaModel, cfg: ProviderConfig, fetchImpl: FetchLike, ref?: ResolvedReference): Promise<ProviderResult> {
   const modelId = resolveModelId(model, cfg);
   const res = await timedFetch(
     fetchImpl,
@@ -170,7 +175,7 @@ async function generateGoogle(input: GenerateInput, model: MediaModel, cfg: Prov
         'x-goog-api-key': cfg.googleApiKey ?? '',
         'Api-Revision': GOOGLE_API_REVISION,
       },
-      body: JSON.stringify(buildGoogleBody(input, modelId)),
+      body: JSON.stringify(buildGoogleBody(input, modelId, ref)),
     },
     cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   );
@@ -197,17 +202,17 @@ function higgsfieldAuth(cfg: ProviderConfig): string {
   return `Key ${cfg.higgsfieldKeyId}:${cfg.higgsfieldKeySecret}`;
 }
 
-export function buildHiggsfieldBody(input: GenerateInput): Record<string, unknown> {
+export function buildHiggsfieldBody(input: GenerateInput, ref?: ResolvedReference): Record<string, unknown> {
   const body: Record<string, unknown> = {
     prompt: withNegative(composeProviderPrompt(input.prompt, input.camera), input.negative_prompt),
     aspect_ratio: input.aspect_ratio,
   };
   if (input.kind === 'video') body.duration = input.duration_s;
-  if (input.reference?.url) body.image_url = input.reference.url;
+  if (ref?.url) body.image_url = ref.url;
   return body;
 }
 
-async function submitHiggsfield(input: GenerateInput, model: MediaModel, cfg: ProviderConfig, fetchImpl: FetchLike): Promise<ProviderResult> {
+async function submitHiggsfield(input: GenerateInput, model: MediaModel, cfg: ProviderConfig, fetchImpl: FetchLike, ref?: ResolvedReference): Promise<ProviderResult> {
   const modelPath = resolveModelId(model, cfg);
   if (!modelPath || !MODEL_PATH_RE.test(modelPath)) {
     return failed('PROVIDER_ERROR', 'Higgsfield-Modell ist nicht konfiguriert.', false);
@@ -218,7 +223,7 @@ async function submitHiggsfield(input: GenerateInput, model: MediaModel, cfg: Pr
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: higgsfieldAuth(cfg) },
-      body: JSON.stringify(buildHiggsfieldBody(input)),
+      body: JSON.stringify(buildHiggsfieldBody(input, ref)),
     },
     30_000,
   );
@@ -298,11 +303,12 @@ export async function generateWithProvider(
   model: MediaModel,
   cfg: ProviderConfig,
   fetchImpl: FetchLike,
+  ref?: ResolvedReference,
 ): Promise<ProviderResult> {
   if (!modelAvailable(model, cfg)) {
     return failed('PROVIDER_ERROR', `${model.label} ist nicht konfiguriert.`, false);
   }
   return input.provider === 'google'
-    ? generateGoogle(input, model, cfg, fetchImpl)
-    : submitHiggsfield(input, model, cfg, fetchImpl);
+    ? generateGoogle(input, model, cfg, fetchImpl, ref)
+    : submitHiggsfield(input, model, cfg, fetchImpl, ref);
 }

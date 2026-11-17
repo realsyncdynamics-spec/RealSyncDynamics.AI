@@ -131,9 +131,9 @@ function tools(responses: Record<string, GenerateOutcome[]>, statusResponses: Ge
   return { t, calls, statusCount: () => statusCalls };
 }
 
-const img = (sig = 'a'.repeat(64)): GenerateOutcome => ({
-  kind: 'completed', model: 'm', requestId: 'r1',
-  assets: [{ kind: 'image', mime_type: 'image/png', data_base64: 'QUJD', sig }],
+const img = (jobId = 'job-img'): GenerateOutcome => ({
+  kind: 'completed', jobId, requestId: 'r1',
+  assets: [{ kind: 'image', mime_type: 'image/png', url: `https://storage.example/${jobId}/0.png`, job_id: jobId, index: 0 }],
 });
 
 describe('runPlan', () => {
@@ -142,14 +142,24 @@ describe('runPlan', () => {
     await expect(runPlan(p, tools({ 'img-1': [img()] }).t, () => {}, () => {})).rejects.toBeInstanceOf(PlanNotApprovedError);
   });
 
-  it('übergibt das Keyframe samt Signatur an den Video-Schritt', async () => {
+  it('übergibt das Keyframe als Auftragsverweis (keine Bilddaten) an den Video-Schritt', async () => {
     const p = approvePlan(plan(brief({ withVideo: true }), [g('image'), g('video')]), 1);
-    const vid: GenerateOutcome = { kind: 'completed', model: 'v', requestId: 'r2', assets: [{ kind: 'video', mime_type: 'video/mp4', data_base64: 'AAAA', sig: 'b'.repeat(64) }] };
-    const { t, calls } = tools({ 'img-1': [img('c'.repeat(64))], 'vid-1': [vid] });
-    const steps = await runPlan(p, t, () => {}, () => {});
+    const vid: GenerateOutcome = { kind: 'completed', jobId: 'job-vid', requestId: 'r2', assets: [{ kind: 'video', mime_type: 'video/mp4', url: 'https://storage.example/v.mp4', job_id: 'job-vid', index: 0 }] };
+    const { t, calls } = tools({ 'img-1': [img('job-key')], 'vid-1': [vid] });
+    const steps = await runPlan(p, t, () => {}, () => {}, { runId: 'run-a' });
     expect(steps.map((s) => s.status)).toEqual(['done', 'done']);
-    expect(calls[1].reference).toEqual({ mime_type: 'image/png', data_base64: 'QUJD', sig: 'c'.repeat(64) });
+    expect(calls[1].reference).toEqual({ job_id: 'job-key', index: 0 });
     expect(calls[1].camera).toBe('dolly_in');
+    expect(calls.map((c) => c.idempotency_key)).toEqual(['run-a:img-1:0', 'run-a:vid-1:0']);
+  });
+
+  it('Kontingent erschöpft wird nicht wiederholt', async () => {
+    const p = approvePlan(plan(brief(), [g('image')]), 1);
+    const budget: GenerateOutcome = { kind: 'error', code: 'BUDGET_EXCEEDED', message: 'leer', retryable: true };
+    const { t, calls } = tools({ 'img-1': [budget] });
+    const steps = await runPlan(p, t, () => {}, () => {});
+    expect(calls).toHaveLength(1);
+    expect(steps[0].status).toBe('failed');
   });
 
   it('überspringt das Video, wenn das Keyframe fehlschlägt; PII wird nicht wiederholt', async () => {
@@ -168,15 +178,16 @@ describe('runPlan', () => {
     const p = approvePlan(plan(brief(), [g('image')]), 1);
     const transient: GenerateOutcome = { kind: 'error', code: 'PROVIDER_ERROR', message: '503', retryable: true };
     const { t, calls } = tools({ 'img-1': [transient, transient, img()] });
-    const steps = await runPlan(p, t, () => {}, () => {});
+    const steps = await runPlan(p, t, () => {}, () => {}, { runId: 'run-b' });
     expect(calls).toHaveLength(2);
     expect(steps[0].status).toBe('failed');
+    // Jeder Versuch hat einen eigenen Schlüssel; der Server reserviert neu.
+    expect(calls.map((c) => c.idempotency_key)).toEqual(['run-b:img-1:0', 'run-b:img-1:1']);
   });
 
   it('fragt asynchrone Aufträge ab, bis sie fertig sind, mit Obergrenze', async () => {
     const p = approvePlan(plan(brief(), [g('image', false), h('image')]), 1);
-    const job = { provider: 'higgsfield' as const, kind: 'image' as const, model: 'm', provider_request_id: 'x', token: 't' };
-    const pending: GenerateOutcome = { kind: 'pending', job, requestId: 'r1' };
+    const pending: GenerateOutcome = { kind: 'pending', jobId: 'job-async', requestId: 'r1' };
     const ok = tools({ 'img-1': [pending] }, [pending, pending, img()]);
     const done = await runPlan(p, ok.t, () => {}, () => {});
     expect(done[0].status).toBe('done');

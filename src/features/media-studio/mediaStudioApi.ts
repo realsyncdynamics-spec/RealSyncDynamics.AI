@@ -6,7 +6,7 @@
 import { getSupabase } from '../../lib/supabase';
 import type { CameraPreset } from '../../../supabase/functions/_shared/mediaStudio/catalog';
 import type { ModelAvailability, StudioAsset } from './agent/planner';
-import type { GenerateOutcome, GenerateRequest, JobHandle, StudioTools } from './agent/runner';
+import type { GenerateOutcome, GenerateRequest, StudioTools } from './agent/runner';
 
 export interface Capabilities {
   residency: 'cloud' | 'eu_local';
@@ -66,12 +66,12 @@ async function call(tenantId: string, payload: Record<string, unknown>): Promise
       retryAfterMs: body.error?.details?.retry_after_ms,
     };
   }
-  const d = data as { status: string; request_id: string; model?: string; assets?: unknown[]; job?: JobHandle };
-  if (d.status === 'pending' && d.job) return { kind: 'pending', job: d.job, requestId: d.request_id };
+  const d = data as { status: string; request_id: string; job_id: string; assets?: unknown[] };
+  if (d.status === 'pending') return { kind: 'pending', jobId: d.job_id, requestId: d.request_id };
   return {
     kind: 'completed',
     assets: (d.assets ?? []) as StudioAsset[],
-    model: d.model ?? 'unbekannt',
+    jobId: d.job_id,
     requestId: d.request_id,
   };
 }
@@ -79,7 +79,7 @@ async function call(tenantId: string, payload: Record<string, unknown>): Promise
 export function createStudioTools(tenantId: string): StudioTools {
   return {
     generate: (req: GenerateRequest) => call(tenantId, { op: 'generate', input: req }),
-    status: (job: JobHandle) => call(tenantId, { op: 'status', job }),
+    status: (jobId: string) => call(tenantId, { op: 'status', job_id: jobId }),
     sleep: (ms, signal) =>
       new Promise<void>((resolve) => {
         const t = setTimeout(resolve, ms);
@@ -92,8 +92,7 @@ export function createStudioTools(tenantId: string): StudioTools {
   };
 }
 
-/** Asset als abspielbare/ladbare Quelle (data:-URL oder Anbieter-Link). */
-export function assetSrc(a: { mime_type: string; data_base64?: string; url?: string }): string {
-  if (a.data_base64) return `data:${a.mime_type === 'image/*' ? 'image/png' : a.mime_type};base64,${a.data_base64}`;
-  return a.url ?? '';
+/** Signierter Link aus dem privaten Bucket (zeitlich begrenzt gültig). */
+export function assetSrc(a: { url: string }): string {
+  return a.url;
 }

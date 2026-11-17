@@ -1,23 +1,25 @@
 // media-studio — Bild- und Video-Generierung für den Builder (Deno-frei, vitest-getestet).
 //
+// Zusammengeführt aus PR #2271 (Creative Studio: Reservierung vor jedem bezahlten
+// Aufruf, Job-Lebenszyklus, private Ablage) und PR #2288 (Media Studio).
+//
 // Ops (POST, JSON-Body):
 //   capabilities  → welche Anbieter/Modelle für diesen Mandanten nutzbar sind
-//   generate      → ein Bild oder Video erzeugen (sync) bzw. Auftrag anlegen (async)
-//   status        → asynchronen Auftrag abfragen (nur mit mandantengebundenem Job-Token)
+//   generate      → Auftrag reservieren und ein Bild/Video erzeugen (sync) bzw. einreichen (async)
+//   status        → Auftrag des eigenen Mandanten abfragen (job_id, mandantengebunden aus der DB)
 //
 // Reihenfolge der Gates in `generate` (fail-closed, jeder Fehlerpfad lehnt ab):
 //   1. Kill-Switch MEDIA_STUDIO_ENABLED (frisch gelesen)
 //   2. Nutzer-JWT + Mitgliedschaft im Mandanten (requireAuthAndTenant)
 //   3. Entitlement siteos.builder
-//   4. Signatur-Secret vorhanden
-//   5. Residency des Mandanten = cloud (Google/Higgsfield verarbeiten außerhalb der EU-Region
-//      dieses Projekts; eu_local-Mandanten werden nie an sie geroutet)
-//   6. Eingabe gültig, keine personenbezogenen Daten im Prompt
-//   7. Referenzbild stammt nachweislich aus diesem Studio für diesen Mandanten
-//   8. Modell konfiguriert
-//   9. Rate-Limit je Nutzer/Mandant/Medienart
-//  10. Evidence in ai_evidence_events — VOR dem Anbieteraufruf; scheitert der
-//      Eintrag, wird nicht generiert.
+//   4. Residency des Mandanten = cloud (eu_local-Mandanten nie an Google/Higgsfield)
+//   5. Eingabe gültig, keine personenbezogenen Daten im Prompt
+//   6. Modell konfiguriert
+//   7. Referenz = abgeschlossener Auftrag desselben Mandanten (aus der DB, nie aus dem Body)
+//   8. Rate-Limit je Nutzer/Mandant/Medienart
+//   9. Atomare Kontingent-Reservierung (media_job_reserve), idempotent je Schlüssel
+//  10. Evidence in ai_evidence_events — VOR dem Anbieteraufruf
+//  11. Ergebnis nur in den privaten Bucket; der Browser bekommt signierte URLs.
 
 import { jsonError, jsonResponse, type CorsHeaders } from '../_shared/gateway.ts';
 import { redactString, sumHits } from '../_shared/redact.ts';
@@ -28,10 +30,13 @@ import {
   MEDIA_FEATURE,
   MEDIA_LIMITS,
   MEDIA_MODELS,
+  mediaUnits,
+  REFERENCE_URL_TTL_S,
+  SIGNED_URL_TTL_S,
   type MediaKind,
   type MediaProviderId,
 } from '../_shared/mediaStudio/catalog.ts';
-import { validateGenerateInput } from '../_shared/mediaStudio/validate.ts';
+import { type GenerateInput, validateGenerateInput } from '../_shared/mediaStudio/validate.ts';
 import {
   type FetchLike,
   generateWithProvider,
@@ -42,21 +47,56 @@ import {
   providerConfigured,
   type ProviderResult,
   resolveModelId,
+  type ResolvedReference,
 } from '../_shared/mediaStudio/providers.ts';
-import {
-  assetFingerprint,
-  signAsset,
-  signJob,
-  usableSecret,
-  verifyAsset,
-  verifyJob,
-} from '../_shared/mediaStudio/signing.ts';
 
 export type Residency = 'cloud' | 'eu_local';
+export type JobStatus = 'reserved' | 'submitted' | 'completed' | 'failed' | 'released';
 
 export interface VerifiedPrincipal {
   userId: string;
   tenantId: string;
+}
+
+export interface JobRow {
+  id: string;
+  tenant_id: string;
+  kind: MediaKind;
+  provider: MediaProviderId;
+  model: string;
+  status: JobStatus;
+  provider_request_id: string | null;
+  asset_paths: string[];
+}
+
+export type ReserveResult =
+  | { ok: true; jobId: string; replay: boolean; status: JobStatus }
+  | { ok: false; code: string; used?: number; limit?: number };
+
+/** Persistenz: Supabase (RPCs + privater Bucket) in index.ts, Fake im Test. */
+export interface MediaStore {
+  reserve(args: {
+    tenantId: string;
+    userId: string;
+    kind: MediaKind;
+    provider: MediaProviderId;
+    model: string;
+    units: number;
+    idempotencyKey: string;
+    params: Record<string, unknown>;
+  }): Promise<ReserveResult>;
+  transition(
+    jobId: string,
+    tenantId: string,
+    status: JobStatus,
+    patch?: { providerRequestId?: string; assetPaths?: string[]; errorCode?: string },
+  ): Promise<boolean>;
+  /** Nur Zeilen des angegebenen Mandanten; sonst null. */
+  loadJob(jobId: string, tenantId: string): Promise<JobRow | null>;
+  /** Legt ein Ergebnis im privaten Bucket ab (lädt Anbieter-URLs serverseitig herunter). */
+  putAsset(tenantId: string, jobId: string, index: number, asset: GeneratedAsset): Promise<string>;
+  signedUrl(path: string, ttlSeconds: number): Promise<string>;
+  readAsset(path: string): Promise<{ mime_type: string; data_base64: string }>;
 }
 
 export interface MediaStudioDeps {
@@ -70,9 +110,10 @@ export interface MediaStudioDeps {
   /** Wirft bei nicht verifizierbarer Residency. */
   resolveResidency: (tenantId: string, userId: string) => Promise<Residency>;
   providerConfig: () => ProviderConfig;
-  signingSecret: () => string | undefined;
+  store: MediaStore;
   fetch: FetchLike;
   recordEvidence: (row: AiEvidenceEventInsert) => Promise<void>;
+  sha256: (text: string) => Promise<string>;
   now: () => number;
   requestId: () => string;
   minuteWindows: Map<string, WindowState>;
@@ -80,30 +121,34 @@ export interface MediaStudioDeps {
   log: (entry: Record<string, unknown>) => void;
 }
 
-export interface SignedAsset extends GeneratedAsset {
-  sig: string;
+export interface ClientAsset {
+  kind: MediaKind;
+  mime_type: string;
+  url: string;
+  job_id: string;
+  index: number;
 }
 
 const ROUTE = '/media-studio';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Ausgang ungewiss → Einheiten bleiben angerechnet (siehe media_units_used). */
+const UNCERTAIN_FAILURES = new Set(['PROVIDER_TIMEOUT', 'STORAGE_FAILED']);
+
+function mimeOfPath(path: string, kind: MediaKind): string {
+  if (path.endsWith('.mp4')) return 'video/mp4';
+  if (path.endsWith('.jpg')) return 'image/jpeg';
+  if (path.endsWith('.webp')) return 'image/webp';
+  return kind === 'video' ? 'video/mp4' : 'image/png';
+}
 
 export function createMediaStudioHandler(deps: MediaStudioDeps) {
   const err = (status: number, code: string, message: string, details?: unknown) =>
     jsonError(status, code, message, deps.cors, details);
   const ok = (body: unknown) => jsonResponse({ ok: true, ...(body as object) }, 200, deps.cors);
+  const logErr = (event: string, requestId: string, e: unknown) =>
+    deps.log({ scope: 'media-studio', event, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) });
 
-  async function signAssets(secret: string, tenantId: string, assets: GeneratedAsset[]): Promise<SignedAsset[]> {
-    const out: SignedAsset[] = [];
-    for (const a of assets) out.push({ ...a, sig: await signAsset(secret, tenantId, await assetFingerprint(a)) });
-    return out;
-  }
-
-  async function blockedEvidence(
-    p: VerifiedPrincipal,
-    op: string,
-    provider: string | null,
-    reason: string,
-    requestId: string,
-  ): Promise<void> {
+  async function blockedEvidence(p: VerifiedPrincipal, provider: string | null, reason: string, requestId: string): Promise<void> {
     try {
       await deps.recordEvidence(
         await buildAiCallEvidenceRow({
@@ -112,7 +157,7 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
           userId: p.userId,
           feature: MEDIA_FEATURE,
           route: ROUTE,
-          op,
+          op: 'generate',
           provider,
           residency: 'cloud',
           blocked: true,
@@ -122,11 +167,10 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
         }),
       );
     } catch (e) {
-      deps.log({ scope: 'media-studio', event: 'blocked_evidence_failed', request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) });
+      logErr('blocked_evidence_failed', requestId, e);
     }
   }
 
-  // Gemeinsame Gates 1–3 für alle Ops.
   async function gate(req: Request, body: Record<string, unknown>): Promise<VerifiedPrincipal | Response> {
     if (!deps.enabled()) return err(503, 'MEDIA_STUDIO_DISABLED', 'Media Studio ist serverseitig abgeschaltet.');
     const principal = await deps.authenticate(req, body.tenant_id);
@@ -151,15 +195,27 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
     }
   }
 
+  async function clientAssets(job: Pick<JobRow, 'id' | 'kind'>, paths: string[]): Promise<ClientAsset[]> {
+    const out: ClientAsset[] = [];
+    for (let i = 0; i < paths.length; i++) {
+      out.push({
+        kind: job.kind,
+        mime_type: mimeOfPath(paths[i], job.kind),
+        url: await deps.store.signedUrl(paths[i], SIGNED_URL_TTL_S),
+        job_id: job.id,
+        index: i,
+      });
+    }
+    return out;
+  }
+
   async function capabilities(p: VerifiedPrincipal): Promise<Response> {
     const residency = await residencyOf(p);
     if (residency instanceof Response) return residency;
     const cfg = deps.providerConfig();
-    const signing = usableSecret(deps.signingSecret());
     const models = MEDIA_MODELS.map((m) => {
       let reason: string | null = null;
       if (residency === 'eu_local') reason = 'Ihr Mandant ist auf EU-lokale KI festgelegt. Dieser Anbieter verarbeitet außerhalb.';
-      else if (!signing) reason = 'Serverkonfiguration unvollständig (Signatur-Secret).';
       else if (!providerConfigured(m.provider, cfg)) reason = 'Anbieter-Zugang ist nicht hinterlegt.';
       else if (!modelAvailable(m, cfg)) reason = 'Modell ist nicht konfiguriert.';
       return {
@@ -178,10 +234,71 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
     return ok({ residency, models, camera_presets: CAMERA_PRESETS, limits: MEDIA_LIMITS });
   }
 
-  async function generate(p: VerifiedPrincipal, body: Record<string, unknown>, requestId: string): Promise<Response> {
-    const secret = deps.signingSecret();
-    if (!usableSecret(secret)) return err(503, 'NOT_CONFIGURED', 'Serverkonfiguration unvollständig.');
+  async function resolveReference(p: VerifiedPrincipal, input: GenerateInput, accepts: 'none' | 'inline' | 'url'): Promise<ResolvedReference | Response | undefined> {
+    if (!input.reference) return undefined;
+    const job = await deps.store.loadJob(input.reference.job_id, p.tenantId);
+    const path = job?.status === 'completed' && job.kind === 'image' ? job.asset_paths[input.reference.index] : undefined;
+    if (!job || !path) {
+      return err(403, 'REFERENCE_NOT_FOUND', 'Referenz muss ein fertiges Bild aus diesem Studio und Ihrem Mandanten sein.');
+    }
+    if (accepts === 'inline') return deps.store.readAsset(path);
+    return { url: await deps.store.signedUrl(path, REFERENCE_URL_TTL_S) };
+  }
 
+  /** Speichert Ergebnisse privat und schließt den Auftrag ab. */
+  async function finishCompleted(p: VerifiedPrincipal, job: Pick<JobRow, 'id' | 'kind'>, assets: GeneratedAsset[], requestId: string): Promise<Response> {
+    const paths: string[] = [];
+    try {
+      for (let i = 0; i < assets.length && i < 4; i++) paths.push(await deps.store.putAsset(p.tenantId, job.id, i, assets[i]));
+    } catch (e) {
+      logErr('storage_failed', requestId, e);
+      await safeTransition(job.id, p.tenantId, 'failed', { errorCode: 'STORAGE_FAILED' }, requestId);
+      return err(502, 'STORAGE_FAILED', 'Ergebnis konnte nicht gespeichert werden.', { retryable: false, request_id: requestId });
+    }
+    await safeTransition(job.id, p.tenantId, 'completed', { assetPaths: paths }, requestId);
+    return ok({ status: 'completed', request_id: requestId, job_id: job.id, assets: await clientAssets(job, paths) });
+  }
+
+  async function safeTransition(
+    jobId: string,
+    tenantId: string,
+    status: JobStatus,
+    patch: { providerRequestId?: string; assetPaths?: string[]; errorCode?: string },
+    requestId: string,
+  ): Promise<void> {
+    try {
+      const moved = await deps.store.transition(jobId, tenantId, status, patch);
+      if (!moved) deps.log({ scope: 'media-studio', event: 'transition_rejected', request_id: requestId, job_id: jobId, status });
+    } catch (e) {
+      // Auftrag bleibt im vorherigen Zustand und damit angerechnet (konservativ).
+      logErr('transition_failed', requestId, e);
+    }
+  }
+
+  async function handleProviderResult(
+    p: VerifiedPrincipal,
+    job: Pick<JobRow, 'id' | 'kind'>,
+    result: ProviderResult,
+    requestId: string,
+    clientRef?: string,
+  ): Promise<Response> {
+    if (result.status === 'failed') {
+      await safeTransition(job.id, p.tenantId, 'failed', { errorCode: result.code }, requestId);
+      const status = result.code === 'CONTENT_REJECTED' ? 422 : result.code === 'PROVIDER_RATE_LIMITED' ? 429 : 502;
+      return err(status, result.code, result.message, {
+        retryable: result.retryable,
+        request_id: requestId,
+        units_kept: UNCERTAIN_FAILURES.has(result.code),
+      });
+    }
+    if (result.status === 'pending') {
+      await safeTransition(job.id, p.tenantId, 'submitted', { providerRequestId: result.provider_request_id }, requestId);
+      return ok({ status: 'pending', request_id: requestId, job_id: job.id, client_ref: clientRef ?? null });
+    }
+    return finishCompleted(p, job, result.assets, requestId);
+  }
+
+  async function generate(p: VerifiedPrincipal, body: Record<string, unknown>, requestId: string): Promise<Response> {
     const residency = await residencyOf(p);
     if (residency instanceof Response) return residency;
 
@@ -191,24 +308,31 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
     const model = parsed.model;
 
     if (residency !== 'cloud') {
-      await blockedEvidence(p, 'generate', input.provider, 'residency_eu_local', requestId);
+      await blockedEvidence(p, input.provider, 'residency_eu_local', requestId);
       return err(403, 'RESIDENCY_EU_LOCAL', 'Ihr Mandant ist auf EU-lokale KI festgelegt. Bild-/Video-Anbieter außerhalb sind gesperrt.');
     }
 
     const pii = sumHits(redactString(`${input.prompt}\n${input.negative_prompt ?? ''}`).hits);
     if (pii > 0) {
-      await blockedEvidence(p, 'generate', input.provider, 'pii_in_prompt', requestId);
+      await blockedEvidence(p, input.provider, 'pii_in_prompt', requestId);
       return err(422, 'PII_IN_PROMPT', 'Der Prompt enthält personenbezogene Daten (z. B. E-Mail, Telefon, IBAN). Bitte entfernen.');
-    }
-
-    if (input.reference && !(await verifyAsset(secret, p.tenantId, input.reference, input.reference.sig))) {
-      await blockedEvidence(p, 'generate', input.provider, 'reference_not_signed', requestId);
-      return err(403, 'REFERENCE_NOT_SIGNED', 'Referenzbilder müssen in diesem Studio für Ihren Mandanten erzeugt worden sein.');
     }
 
     const cfg = deps.providerConfig();
     if (!modelAvailable(model, cfg)) {
       return err(503, 'PROVIDER_NOT_CONFIGURED', `${model.label} ist nicht konfiguriert.`);
+    }
+
+    let ref: ResolvedReference | Response | undefined;
+    try {
+      ref = await resolveReference(p, input, model.acceptsReference);
+    } catch (e) {
+      logErr('reference_failed', requestId, e);
+      return err(503, 'REFERENCE_UNAVAILABLE', 'Referenzbild konnte nicht geladen werden.');
+    }
+    if (ref instanceof Response) {
+      await blockedEvidence(p, input.provider, 'reference_not_found', requestId);
+      return ref;
     }
 
     const limit = decideRateLimit({
@@ -223,10 +347,59 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
       return err(429, 'RATE_LIMITED', `Limit für ${input.kind === 'video' ? 'Videos' : 'Bilder'} erreicht.`, {
         scope: limit.scope,
         retry_after_ms: limit.retryAfterMs,
+        retryable: true,
       });
     }
 
     const modelId = resolveModelId(model, cfg);
+    const units = mediaUnits(input.kind, input.duration_s);
+    let reservation: ReserveResult;
+    try {
+      reservation = await deps.store.reserve({
+        tenantId: p.tenantId,
+        userId: p.userId,
+        kind: input.kind,
+        provider: input.provider,
+        model: modelId,
+        units,
+        idempotencyKey: input.idempotency_key,
+        params: {
+          prompt_sha256: await deps.sha256(input.prompt),
+          aspect_ratio: input.aspect_ratio,
+          duration_s: input.duration_s ?? null,
+          camera: input.camera ?? null,
+          reference_job_id: input.reference?.job_id ?? null,
+          request_id: requestId,
+        },
+      });
+    } catch (e) {
+      logErr('reserve_failed', requestId, e);
+      return err(503, 'BUDGET_UNAVAILABLE', 'Kontingent nicht prüfbar; es wurde nichts generiert.');
+    }
+    if (!reservation.ok) {
+      if (reservation.code === 'BUDGET_EXCEEDED') {
+        await blockedEvidence(p, input.provider, 'budget_exceeded', requestId);
+        return err(402, 'BUDGET_EXCEEDED', 'Das Media-Kontingent Ihres Mandanten für diesen Monat ist erschöpft oder nicht eingerichtet.', {
+          used: reservation.used ?? null,
+          limit: reservation.limit ?? null,
+          needed: units,
+        });
+      }
+      return err(400, reservation.code, 'Reservierung abgelehnt.');
+    }
+
+    const job = { id: reservation.jobId, kind: input.kind };
+    if (reservation.replay) {
+      // Wiederholter Aufruf mit demselben Schlüssel: nie ein zweiter Anbieteraufruf.
+      if (reservation.status === 'completed') {
+        const row = await deps.store.loadJob(job.id, p.tenantId);
+        return ok({ status: 'completed', request_id: requestId, job_id: job.id, assets: await clientAssets(job, row?.asset_paths ?? []), replay: true });
+      }
+      if (reservation.status === 'submitted') return ok({ status: 'pending', request_id: requestId, job_id: job.id, replay: true });
+      if (reservation.status === 'reserved') return err(409, 'IN_PROGRESS', 'Dieser Auftrag läuft bereits.');
+      return err(409, 'ALREADY_FAILED', 'Dieser Auftrag ist bereits fehlgeschlagen. Neuer Versuch braucht einen neuen Schlüssel.');
+    }
+
     try {
       await deps.recordEvidence(
         await buildAiCallEvidenceRow({
@@ -240,102 +413,76 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
           model: modelId,
           residency: 'cloud',
           verdict: 'allow',
-          reasons: input.reference ? ['signed_reference'] : [],
+          reasons: [`job:${job.id}`, `units:${units}`, ...(input.reference ? ['studio_reference'] : [])],
           requestId,
           input: input.prompt,
         }),
       );
     } catch (e) {
-      deps.log({ scope: 'media-studio', event: 'evidence_failed', request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) });
+      logErr('evidence_failed', requestId, e);
+      await safeTransition(job.id, p.tenantId, 'released', { errorCode: 'EVIDENCE_UNAVAILABLE' }, requestId);
       return err(503, 'EVIDENCE_UNAVAILABLE', 'Nachweis konnte nicht geschrieben werden; es wurde nichts generiert.');
     }
 
     const started = deps.now();
     let result: ProviderResult;
     try {
-      result = await generateWithProvider(input, model, cfg, deps.fetch);
+      result = await generateWithProvider(input, model, cfg, deps.fetch, ref);
     } catch (e) {
-      deps.log({ scope: 'media-studio', event: 'provider_throw', request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) });
-      result = { status: 'failed', code: 'PROVIDER_ERROR', message: 'Anbieter nicht erreichbar.', retryable: true };
+      logErr('provider_throw', requestId, e);
+      result = { status: 'failed', code: 'PROVIDER_TIMEOUT', message: 'Anbieter nicht erreichbar; Ergebnis unklar.', retryable: true };
     }
     deps.log({
       scope: 'media-studio',
       event: 'generate',
       request_id: requestId,
       tenant_id: p.tenantId,
+      job_id: job.id,
       provider: input.provider,
       model: modelId,
       kind: input.kind,
+      units,
       status: result.status,
       latency_ms: deps.now() - started,
     });
-    return respondWith(result, p, secret, input.provider, input.kind, requestId, input.client_ref);
-  }
-
-  async function respondWith(
-    result: ProviderResult,
-    p: VerifiedPrincipal,
-    secret: string,
-    provider: MediaProviderId,
-    kind: MediaKind,
-    requestId: string,
-    clientRef?: string,
-  ): Promise<Response> {
-    if (result.status === 'failed') {
-      const status = result.code === 'CONTENT_REJECTED' ? 422 : result.code === 'PROVIDER_RATE_LIMITED' ? 429 : 502;
-      return err(status, result.code, result.message, { retryable: result.retryable, request_id: requestId });
-    }
-    if (result.status === 'pending') {
-      return ok({
-        status: 'pending',
-        request_id: requestId,
-        client_ref: clientRef ?? null,
-        job: {
-          provider,
-          kind,
-          model: result.model,
-          provider_request_id: result.provider_request_id,
-          token: await signJob(secret, p.tenantId, provider, result.provider_request_id),
-        },
-      });
-    }
-    return ok({
-      status: 'completed',
-      request_id: requestId,
-      client_ref: clientRef ?? null,
-      provider,
-      model: result.model,
-      assets: await signAssets(secret, p.tenantId, result.assets),
-    });
+    return handleProviderResult(p, job, result, requestId, input.client_ref);
   }
 
   async function status(p: VerifiedPrincipal, body: Record<string, unknown>, requestId: string): Promise<Response> {
-    const secret = deps.signingSecret();
-    if (!usableSecret(secret)) return err(503, 'NOT_CONFIGURED', 'Serverkonfiguration unvollständig.');
-    const job = (body.job ?? null) as Record<string, unknown> | null;
-    const provider = job?.provider;
-    const kind = job?.kind;
-    const reqId = job?.provider_request_id;
-    const token = job?.token;
-    const model = job?.model;
-    if (provider !== 'higgsfield' || (kind !== 'image' && kind !== 'video') || typeof reqId !== 'string' || typeof token !== 'string' || typeof model !== 'string') {
-      return err(400, 'BAD_REQUEST', 'Ungültiger Auftrag.');
+    const jobId = body.job_id;
+    if (typeof jobId !== 'string' || !UUID_RE.test(jobId)) return err(400, 'BAD_REQUEST', 'job_id fehlt oder ist ungültig.');
+    let job: JobRow | null;
+    try {
+      job = await deps.store.loadJob(jobId, p.tenantId);
+    } catch (e) {
+      logErr('load_failed', requestId, e);
+      return err(503, 'JOBS_UNAVAILABLE', 'Auftrag nicht lesbar.');
     }
-    if (!(await verifyJob(secret, p.tenantId, provider, reqId, token))) {
-      return err(403, 'JOB_NOT_OWNED', 'Dieser Auftrag gehört nicht zu Ihrem Mandanten.');
+    // Fremde Aufträge sind für diesen Mandanten nicht existent.
+    if (!job) return err(404, 'JOB_NOT_FOUND', 'Auftrag nicht gefunden.');
+
+    if (job.status === 'completed') {
+      return ok({ status: 'completed', request_id: requestId, job_id: job.id, assets: await clientAssets(job, job.asset_paths) });
     }
+    if (job.status === 'failed' || job.status === 'released') return err(409, 'ALREADY_FAILED', 'Auftrag ist fehlgeschlagen.');
+    if (job.status === 'reserved' || job.provider !== 'higgsfield' || !job.provider_request_id) {
+      return ok({ status: 'pending', request_id: requestId, job_id: job.id });
+    }
+
     const cfg = deps.providerConfig();
     if (!providerConfigured('higgsfield', cfg)) return err(503, 'PROVIDER_NOT_CONFIGURED', 'Higgsfield ist nicht konfiguriert.');
     let result: ProviderResult;
     try {
-      result = await pollHiggsfield(reqId, kind, model, cfg, deps.fetch);
+      result = await pollHiggsfield(job.provider_request_id, job.kind, job.model, cfg, deps.fetch);
     } catch {
       result = { status: 'failed', code: 'PROVIDER_ERROR', message: 'Anbieter nicht erreichbar.', retryable: true };
     }
-    if (result.status === 'pending') {
-      return ok({ status: 'pending', request_id: requestId, job: { provider, kind, model, provider_request_id: reqId, token } });
+    if (result.status === 'failed' && result.retryable) {
+      // Statusabfrage gestört ≠ Auftrag fehlgeschlagen.
+      return err(502, result.code, result.message, { retryable: true, request_id: requestId });
     }
-    return respondWith(result, p, secret, 'higgsfield', kind, requestId);
+    if (result.status === 'pending') return ok({ status: 'pending', request_id: requestId, job_id: job.id });
+    return handleProviderResult(p, job, result, requestId);
   }
 
   return async function handle(req: Request): Promise<Response> {
@@ -365,3 +512,4 @@ export function createMediaStudioHandler(deps: MediaStudioDeps) {
     return status(principal, body, requestId);
   };
 }
+

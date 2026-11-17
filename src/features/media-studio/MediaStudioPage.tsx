@@ -290,7 +290,8 @@ export default function MediaStudioPage(): ReactElement {
                   <div className="mb-1 font-mono uppercase tracking-wider text-rs-fg-2">Freigabe löst aus</div>
                   {summary.images} Bild(er), {summary.videos} Video(s){summary.videos ? ` mit zusammen ${summary.videoSeconds} s` : ''} über{' '}
                   {summary.providers.join(', ')}. Die Verarbeitung erfolgt beim jeweiligen Anbieter außerhalb unserer EU-Infrastruktur;
-                  Kosten entstehen im dort hinterlegten Anbieterkonto. Jeder Aufruf wird im Nachweis-Log Ihres Mandanten protokolliert.
+                  Jeder Auftrag wird vorab vom Media-Kontingent Ihres Mandanten abgezogen (Bild = 1, Video = 1 je Sekunde) und im
+                  Nachweis-Log protokolliert.
                 </div>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -327,7 +328,7 @@ export default function MediaStudioPage(): ReactElement {
                       <img src={assetSrc(a)} alt={s.title} className="block w-full" loading="lazy" />
                     )}
                     <figcaption className="flex flex-wrap items-center justify-between gap-2 p-2">
-                      <span className="font-mono text-[11px] text-rs-fg-2">{s.title} · {s.model}</span>
+                      <span className="font-mono text-[11px] text-rs-fg-2">{s.title} · Auftrag {s.jobId?.slice(0, 8) ?? '—'}</span>
                       <span className="flex gap-2">
                         <a className="border border-rs-border-strong px-2 py-1 text-xs text-rs-fg-1 hover:border-rs-fg-2" href={assetSrc(a)} download={fileName(s, i, a.mime_type)} target="_blank" rel="noreferrer">
                           Herunterladen
@@ -339,8 +340,8 @@ export default function MediaStudioPage(): ReactElement {
               )}
             </div>
             <p className="mt-3 text-xs text-rs-fg-3">
-              Übernahme in den Seiten-Builder: Datei herunterladen und im Editor als Bild einsetzen. Eine direkte Ablage im
-              Projekt folgt mit dem Asset-Speicher. Anbieter-Links (Higgsfield) sind laut Anbieter mindestens 7 Tage abrufbar.
+              Ergebnisse liegen privat im Speicher Ihres Mandanten; die Links hier gelten eine Stunde. Übernahme in den
+              Seiten-Builder: Datei herunterladen und im Editor als Bild einsetzen.
             </p>
           </div>
 

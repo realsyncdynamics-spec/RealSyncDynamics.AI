@@ -35,7 +35,9 @@ settings - Telegram Einstellungen anzeigen
 | `SUPABASE_ANON_KEY` | Ja | Supabase Anon Key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ja | Supabase Service Role Key (nur in Edge Functions) |
 
-**Fail-closed:** Das Setup-Skript registriert ohne gültiges Secret keinen Webhook. Die Edge Function verarbeitet ohne konfiguriertes Secret sowie bei fehlendem oder falschem `X-Telegram-Bot-Api-Secret-Token` keine Updates; sie antwortet dennoch mit 200, um Retry-Loops zu vermeiden. Vor dem Produktionsdeploy ist sicherzustellen, dass Supabase-ENV und Telegram-Webhook **denselben** Secret-Wert verwenden.\n\nSecrets werden in Supabase via **Dashboard → Edge Functions → Secrets** gesetzt,
+**Fail-closed:** Das Setup-Skript registriert ohne gültiges Secret keinen Webhook. Die Edge Function verarbeitet ohne konfiguriertes Secret sowie bei fehlendem oder falschem `X-Telegram-Bot-Api-Secret-Token` keine Updates; sie antwortet dennoch mit 200, um Retry-Loops zu vermeiden. Vor dem Produktionsdeploy ist sicherzustellen, dass Supabase-ENV und Telegram-Webhook **denselben** Secret-Wert verwenden.
+
+Secrets werden in Supabase via **Dashboard → Edge Functions → Secrets** gesetzt,
 niemals direkt im Code.
 
 ## Webhook setzen

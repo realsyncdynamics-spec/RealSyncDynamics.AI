@@ -24,6 +24,11 @@ const mocks = vi.hoisted(() => {
   const upserts: Record<string, unknown>[] = [];
   const tenantUpdates: Record<string, unknown>[] = [];
   const claimedTenants: Array<string | null | undefined> = [];
+  const setActiveTenant = vi.fn();
+  const context = {
+    pendingAuditVisible: false,
+    tenants: [{ tenantId: 'tenant-wp10', name: 'Muster GmbH', role: 'owner' }],
+  };
 
   const supabaseClient = {
     auth: {
@@ -61,7 +66,7 @@ const mocks = vi.hoisted(() => {
     },
   };
 
-  return { upserts, tenantUpdates, claimedTenants, supabaseClient };
+  return { upserts, tenantUpdates, claimedTenants, setActiveTenant, context, supabaseClient };
 });
 
 vi.mock('../../src/lib/supabase', () => ({
@@ -73,18 +78,27 @@ vi.mock('../../src/core/access/TenantProvider', () => ({
   useTenant: () => ({
     activeTenantId: 'tenant-wp10',
     loading: false,
-    tenants: [{ tenantId: 'tenant-wp10', name: 'Muster GmbH', role: 'owner' }],
-    setActiveTenant: vi.fn(),
+    tenants: mocks.context.tenants,
+    setActiveTenant: mocks.setActiveTenant,
     refresh: vi.fn(),
   }),
   TenantProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('../../src/core/onboarding/claimAudit', () => ({
-  readPendingAudit: () => null,
-  claimPendingAudit: async () => {
-    mocks.claimedTenants.push('claimed');
-    return { status: 'none' };
+  readPendingAudit: () => mocks.context.pendingAuditVisible
+    ? { audit_id: '33333333-3333-4333-8333-333333333333' }
+    : null,
+  AuditClaimError: class extends Error {},
+  claimPendingAudit: async (tenantId?: string) => {
+    mocks.claimedTenants.push(tenantId ?? 'claimed');
+    return {
+      ok: true,
+      already_claimed: false,
+      audit_id: '33333333-3333-4333-8333-333333333333',
+      tenant_id: tenantId ?? 'tenant-wp10',
+      domain: 'muster.de',
+    };
   },
 }));
 
@@ -204,6 +218,37 @@ describe('WP10 — GovernanceActivationView („Schritt x von 4" + SetupAssistan
     mocks.upserts.length = 0;
     mocks.tenantUpdates.length = 0;
     mocks.claimedTenants.length = 0;
+    mocks.context.pendingAuditVisible = false;
+    mocks.context.tenants = [{ tenantId: 'tenant-wp10', name: 'Muster GmbH', role: 'owner' }];
+    mocks.setActiveTenant.mockClear();
+  });
+
+  it('bei mehreren Arbeitsbereichen erst nach bewusster Wahl zuordnet', async () => {
+    mocks.context.pendingAuditVisible = true;
+    mocks.context.tenants = [
+      { tenantId: 'tenant-wp10', name: 'Muster GmbH', role: 'owner' },
+      { tenantId: 'tenant-zwei', name: 'Zweiter Betrieb', role: 'admin' },
+    ];
+    render(
+      <MemoryRouter initialEntries={['/app/activation']}>
+        <Routes>
+          <Route path="/app/activation" element={<GovernanceActivationView />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('region', { name: 'Scanbericht zuordnen' })).toBeInTheDocument();
+    expect(mocks.claimedTenants).toHaveLength(0);
+    const button = screen.getByRole('button', { name: 'Bericht diesem Arbeitsbereich zuordnen' });
+    expect(button).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Ziel-Arbeitsbereich für Scanbericht'), {
+      target: { value: 'tenant-zwei' },
+    });
+    fireEvent.click(button);
+    await waitFor(() => expect(mocks.claimedTenants).toContain('tenant-zwei'));
+    expect(mocks.setActiveTenant).toHaveBeenCalledWith('tenant-zwei');
+    expect(screen.getByRole('status')).toHaveTextContent('Der Scanbericht wurde');
   });
 
   it('definiert genau 4 Kernschritte (1..4)', () => {

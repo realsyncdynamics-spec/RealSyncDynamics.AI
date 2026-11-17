@@ -58,4 +58,4 @@
 /claude-code-optimizer/*  https://realsyncdynamics-ai.pages.dev/claude-code-optimizer/:splat 302
 /audit/*                  https://realsyncdynamics-ai.pages.dev/audit/:splat             302
 /avv                      https://realsyncdynamics-ai.pages.dev/avv                      302
-/sicherheit               https://realsyncdynamics-ai.pages.dev/sicherheit               302
+/sicherheit               https://realsyncdynamics-ai.pages.dev/security                 302

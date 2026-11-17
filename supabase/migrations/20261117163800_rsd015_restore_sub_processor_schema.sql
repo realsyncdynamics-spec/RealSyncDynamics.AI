@@ -10,6 +10,7 @@
 -- only service_role access until a separate verified enrollment exists.
 BEGIN;
 
+-- collision-check: allow-existing-table sub_processor_subscriptions — Ursprungsmigration 20260507140000 ist in Produktion registriert, aber die Tabelle fehlt nachweislich (SELECT 17.11.2026). Idempotente Wiederherstellung statt Replay der alten Cron- und Rechte-Aenderungen.
 CREATE TABLE IF NOT EXISTS public.sub_processor_subscriptions (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email           text NOT NULL,
@@ -27,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_sp_sub_verified
   ON public.sub_processor_subscriptions (verified_at)
   WHERE unsubscribed_at IS NULL;
 
+-- collision-check: allow-existing-table sub_processor_changes — Ursprungsmigration 20260507140000 ist in Produktion registriert, aber die Tabelle fehlt nachweislich (SELECT 17.11.2026). Idempotente Wiederherstellung statt Replay der alten Cron- und Rechte-Aenderungen.
 CREATE TABLE IF NOT EXISTS public.sub_processor_changes (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   change_type       text NOT NULL
@@ -47,6 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_sp_changes_notify
 CREATE INDEX IF NOT EXISTS idx_sp_changes_effective
   ON public.sub_processor_changes (effective_from DESC);
 
+-- collision-check: allow-existing-table sub_processor_notifications — Ursprungsmigration 20260507140000 ist in Produktion registriert, aber die Tabelle fehlt nachweislich (SELECT 17.11.2026). Idempotente Wiederherstellung statt Replay der alten Cron- und Rechte-Aenderungen.
 CREATE TABLE IF NOT EXISTS public.sub_processor_notifications (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   change_id         uuid NOT NULL REFERENCES public.sub_processor_changes(id)

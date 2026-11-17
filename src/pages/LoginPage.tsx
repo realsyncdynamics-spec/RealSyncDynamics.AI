@@ -2,9 +2,10 @@
  * `/login` — Magic-Link-Anmeldung, Governance OS Handoff v2 (§ 2).
  *
  * Logik aus Welcome.tsx übernommen (signInWithOtp). Der Link aus der E-Mail
- * und die OAuth-Rückkehr landen auf `/welcome` (gleiche Query, also auch
- * `?next=`) — dort laufen Audit-Claim, Tenant-Auflösung und die Weiterleitung
- * wie bisher. `/welcome` bleibt unverändert erreichbar.
+ * und die OAuth-Rückkehr landen auf exakt `/welcome` ohne Query, damit die URL
+ * zur Supabase-Allowlist passt. Ein gültiges `?next=` wird über
+ * `authResumeTarget` zwischengespeichert und auf `/welcome` wieder aufgenommen.
+ * Dort laufen Audit-Claim, Tenant-Auflösung und die Weiterleitung wie bisher.
  */
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -16,6 +17,7 @@ import { LangToggle } from '../components/handoff/LangToggle';
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { safeInternalPath } from '../lib/safeInternalPath';
+import { authCallbackUrl, storeAuthResumeTarget } from '../lib/authResumeTarget';
 import { useLang } from '../i18n/useLang';
 
 function authErrorMessage(err: unknown, fallback: string): string {
@@ -35,9 +37,15 @@ export default function LoginPage() {
   const { t } = useLang();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const search = params.toString() ? `?${params.toString()}` : '';
   const safeNext = safeInternalPath(params.get('next'));
-  const welcomePath = `/welcome${search}`;
+  // Interne Navigation für bereits Angemeldete: nur `next`, keine Tracking-Parameter.
+  const welcomePath = safeNext ? `/welcome?next=${encodeURIComponent(safeNext)}` : '/welcome';
+
+  // Ziel für die Rückkehr aus Magic Link / OAuth merken. Die Callback-URL selbst
+  // bleibt exakt `/welcome` (Supabase-Allowlist), siehe authResumeTarget.ts.
+  useEffect(() => {
+    storeAuthResumeTarget(safeNext);
+  }, [safeNext]);
 
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -85,7 +93,7 @@ export default function LoginPage() {
     try {
       const { error: otpErr } = await getSupabase().auth.signInWithOtp({
         email: address,
-        options: { emailRedirectTo: `${window.location.origin}${welcomePath}` },
+        options: { emailRedirectTo: authCallbackUrl() },
       });
       if (otpErr) throw otpErr;
       setSent(true);
@@ -189,7 +197,8 @@ export default function LoginPage() {
             <div className="rs-login__divider">
               <span className="rs-overline">{t('orOauth')}</span>
             </div>
-            <OAuthProviderButtons redirectAfterAuthTo={welcomePath} />
+            {/* Rücksprung exakt auf /welcome (ohne Query); `next` liegt in authResumeTarget. */}
+            <OAuthProviderButtons redirectAfterAuthTo="/welcome" />
             <p className="rs-login__note">{t('loginNote')}</p>
           </div>
         </div>

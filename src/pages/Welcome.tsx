@@ -11,6 +11,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { claimPendingAudit } from '../core/onboarding/claimAudit';
 import { clearLeadContext, readLeadContext } from '../features/audit/leadContext';
 import { safeInternalPath } from '../lib/safeInternalPath';
+import { consumeAuthResumeTarget } from '../lib/authResumeTarget';
 import { markTimeToFirstEvidenceStart } from '../lib/marketingAnalytics';
 
 /**
@@ -88,9 +89,16 @@ export function Welcome() {
       // Angemeldet: Die Vorbelegung hat ihren Zweck erfüllt.
       clearLeadContext();
 
-      const nextParam = safeInternalPath(
+      // Das auf /login gemerkte Ziel wird nach jeder Anmeldung genau einmal
+      // gelesen und gelöscht — unabhängig von URL-Parametern.
+      const storedNext = consumeAuthResumeTarget();
+      // `?next=` in der URL hat Vorrang (Checkout-Fortsetzungen unverändert).
+      // Das gemerkte Ziel gilt nie im Post-Checkout-Wizard, damit ein alter
+      // Eintrag den Wizard nicht überspringt.
+      const urlNext = safeInternalPath(
         new URLSearchParams(window.location.search).get('next'),
       );
+      const nextParam = urlNext ?? (sessionId ? null : storedNext);
       if (nextParam) {
         navigate(nextParam, { replace: true });
         return;

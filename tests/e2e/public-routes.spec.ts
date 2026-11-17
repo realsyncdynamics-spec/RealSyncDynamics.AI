@@ -28,7 +28,10 @@ for (const route of publicRoutes) {
       page.getByRole('heading', { name: route.heading }).first(),
       `Hero-Headline für ${route.path}`,
     ).toBeVisible();
-  });// Öffentliche Landing: ausschließlich Governance und SiteOS-Preview als Produktkarten.
+  });
+}
+
+// Öffentliche Landing: ausschließlich Governance und SiteOS-Preview als Produktkarten.
 test('[FE-009] Startseite verlinkt nur überprüfbare Produktflächen', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Governance Runtime', exact: true })).toBeVisible();
@@ -47,8 +50,6 @@ test('[FE-010] Nicht freigegebene Voice- und Creator-Produkte werden nicht angeb
   }
   await expect(page.locator('a[href^="/app/media-studio"]')).toHaveCount(0);
 });
-
-);
 
 test('[FE-011] Optimizer benennt Website-Audit und fehlende Code-Automation klar', async ({ page }) => {
   await page.goto('/claude-code-optimizer', { waitUntil: 'domcontentloaded' });

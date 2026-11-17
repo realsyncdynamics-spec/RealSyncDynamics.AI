@@ -15,6 +15,7 @@ const products = [
     kicker: 'Vorhandenes Kernprodukt',
     description: 'Website-Risiken prüfen, KI-Systeme inventarisieren und Nachweise im Governance Workspace dokumentieren. Dauerüberwachung und einzelne Automationen sind noch nicht durchgängig freigegeben.',
     statusId: 'app-shell',
+    proofLabel: 'Backend bereitgestellt · E2E offen',
     links: [
       { label: 'Kostenlosen Website-Check öffnen', href: '/audit?source=governance-first' },
       { label: 'Governance Dashboard öffnen', href: '/welcome?next=/app/dashboard' },
@@ -27,6 +28,7 @@ const products = [
     kicker: 'Vorschau · Early Access',
     description: 'Ein Website-Entwurf mit Blueprint und responsiver Vorschau. Ein produktiver Kunden-Deploy, eigene Domain und automatisierte Veröffentlichung sind derzeit nicht nachgewiesen.',
     statusId: 'web-builder',
+    proofLabel: 'Preview · kein Kunden-Deploy',
     links: [
       { label: 'Preview anfragen', href: '/kontakt?intent=siteos-preview&source=governance-first' },
       { label: 'Entwurfsoberfläche ansehen', href: '/build' },
@@ -107,7 +109,7 @@ export function UnifiedPlatformLanding() {
                       <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${product.tone}`}>
                         <product.icon className="h-7 w-7" aria-hidden="true" />
                       </div>
-                      <span className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600">{STATUS_LABEL[getImplementation(product.statusId)?.status ?? 'coming-soon']}</span>
+                      <span className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600">{getImplementation(product.statusId) ? product.proofLabel : STATUS_LABEL['coming-soon']}</span>
                     </div>
                     <p className="mt-8 text-xs font-bold uppercase tracking-[0.16em] text-blue-700">{product.kicker}</p>
                     <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{product.title}</h3>

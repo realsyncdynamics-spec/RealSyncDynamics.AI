@@ -230,6 +230,14 @@ html:has(.rsl5), body:has(.rsl5) { margin: 0; background: #000; }
 .rsl5 header .navlink { font-family: var(--font-heading); font-size: 19px; font-weight: 500; letter-spacing: .02em; color: var(--paper); }
 .rsl5 header .navlink:hover, .rsl5 header .navlink.on { color: var(--gold-lite); }
 .rsl5 header .sep { width: 1px; height: 18px; background: rgba(243,242,242,.25); }
+/* Handy: sieben Navigationspunkte in zwei Zeilen statt drei (nach den Basisregeln, damit sie greifen). */
+@media (max-width: 720px) {
+  .rsl5 header { min-height: 0; padding: 8px 12px; }
+  .rsl5 header .hin { gap: 4px 0; }
+  .rsl5 header nav.sec { gap: 0 14px; }
+  .rsl5 header .navlink { font-size: 15px; padding: 6px 0; }
+  .rsl5 header .sep { display: none; }
+}
 .rsl5 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-heading); font-size: 17px; font-weight: 600; letter-spacing: .01em; padding: 10px 22px; border-radius: var(--radius-md); border: 1px solid var(--gold); color: var(--gold-deep); background: transparent; cursor: pointer; white-space: nowrap; transition: background 200ms var(--ease), border-color 200ms var(--ease), color 200ms var(--ease); }
 .rsl5 .btn:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--gold-deep); }
 .rsl5 .btn:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }

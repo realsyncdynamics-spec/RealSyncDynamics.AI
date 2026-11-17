@@ -43,8 +43,8 @@
 // Zugriff: Supabase Management API (POST /v1/projects/{ref}/database/query)
 // mit SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID — dieselben Secrets wie der
 // Migrations- und der ACL-Guard, keine neue Dependency. Ohne Secrets
-// (Fork-PRs) wird sauber uebersprungen (Exit 0). API-/Netz-Fehler failen NICHT
-// hart (≠ Befund) — aber es gibt dann auch keinen gruenen Haken.
+// wird nur im expliziten advisory-Modus uebersprungen. API-/Netz-Fehler
+// sind keine Entwarnung: Betriebslaeufe scheitern ohne vollstaendige Messung.
 
 import { formatBefundZeile } from './cron-befund.mjs';
 
@@ -393,12 +393,12 @@ if (direkt) {
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   const projectId = process.env.SUPABASE_PROJECT_ID;
 
+  const ADVISORY = (process.env.CRON_HEALTH_MODE ?? 'fail') === 'advisory';
+
   if (!token || !projectId) {
     console.log('ℹ️  Cron-Health-Check uebersprungen (keine Supabase-Secrets).');
-    process.exit(0);
+    process.exit(ADVISORY ? 0 : 1);
   }
-
-  const ADVISORY = (process.env.CRON_HEALTH_MODE ?? 'fail') === 'advisory';
 
   async function frage(sql) {
     const resp = await fetch(
@@ -407,6 +407,7 @@ if (direkt) {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: sql }),
+        signal: AbortSignal.timeout(30_000),
       },
     );
     if (!resp.ok) {
@@ -420,7 +421,7 @@ if (direkt) {
     rows = await frage(SQL);
   } catch (e) {
     console.error('⚠️  Cron-Abfrage nicht ausfuehrbar (Infra, kein Befund):', e.message);
-    process.exit(0);
+    process.exit(ADVISORY ? 0 : 1);
   }
 
   // Die Antwort-Ebene darf die Job-Ebene nicht mitreissen: Scheitert nur
@@ -446,9 +447,12 @@ if (direkt) {
 
   const { broken, nie, inaktiv, ok } = evaluate(rows);
   const veraltet = evaluateFrische(rows, Date.now());
-  const antwort = Array.isArray(antwortZeilen)
-    ? evaluateAntworten(antwortZeilen)
-    : null;
+  const antwortFormatOk = Array.isArray(antwortZeilen) &&
+    antwortZeilen.filter((z) => z?.art === 'dispatch').length === 1 &&
+    antwortZeilen.every((z) => z && ['dispatch', 'antwort'].includes(z.art) &&
+      Number.isInteger(z.anzahl) && z.anzahl >= 0 &&
+      (z.art !== 'antwort' || typeof z.status === 'string'));
+  const antwort = antwortFormatOk ? evaluateAntworten(antwortZeilen) : null;
 
   console.log(`\nCron-Jobs: ${rows.length} registriert — ${ok.length} zuletzt gruen, ` +
               `${broken.length} zuletzt rot, ${nie.length} nie gelaufen, ${inaktiv.length} inaktiv.\n`);
@@ -499,6 +503,7 @@ if (direkt) {
 
   // ── C: Antwort war kein 2xx ───────────────────────────────────────────────
   if (!antwort) {
+    befund = true;
     console.error('\n⚠️  Antwort-Ebene nicht auswertbar (unerwartetes Format von net._http_response).');
   } else if (antwort.summeSchlecht > 0 || antwort.ohneAntwort > 0) {
     befund = true;
@@ -523,7 +528,8 @@ if (direkt) {
       'Ablehnung steht nur hier. Anleitung: docs/runbooks/cron-vault-secrets.md\n',
     );
   } else if (antwort.dispatchLaeufe === 0) {
-    console.log('ℹ️  Antwort-Ebene: im 6-Stunden-Fenster lief kein Dispatch-Job.');
+    befund = true;
+    console.error('⚠️  Antwort-Ebene nicht verifizierbar: im 6-Stunden-Fenster lief kein Dispatch-Job. Kein Ausfallnachweis, aber auch keine Entwarnung.');
   } else {
     console.log(`✅ Antwort-Ebene: ${antwort.summeGut} von ${antwort.summeGut} Antworten waren 2xx.`);
   }

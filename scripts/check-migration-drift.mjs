@@ -22,7 +22,8 @@
 // Repo liegt und immer noch fehlt, ist das echter Drift.
 //
 // Ohne SUPABASE_ACCESS_TOKEN/PROJECT_ID (z. B. Fork-PRs) wird sauber
-// uebersprungen (Exit 0). CLI-/Infra-Fehler failen NICHT hart (≠ Drift).
+// nur in expliziten advisory-Laeufen uebersprungen (Exit 0). Betriebslaeufe
+// ohne Messung scheitern; ein Infrastrukturfehler beweist keinen Drift.
 
 import { execSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
@@ -37,9 +38,11 @@ const LEGACY_VERSIONS = new Set(['00001', '20260510']);
 // monatelangen Drift durchgehen zu lassen.
 const MAX_UNAPPLIED_AGE_DAYS = Number(process.env.MAX_UNAPPLIED_AGE_DAYS ?? 7);
 
+const ADVISORY = (process.env.MIGRATION_DRIFT_MODE ?? 'fail') === 'advisory';
+
 if (!process.env.SUPABASE_ACCESS_TOKEN || !process.env.SUPABASE_PROJECT_ID) {
   console.log('ℹ️  Migrations-Drift-Check uebersprungen (keine Supabase-Secrets).');
-  process.exit(0);
+  process.exit(ADVISORY ? 0 : 1);
 }
 
 let out = '';
@@ -47,11 +50,12 @@ try {
   out = execSync('supabase migration list --linked', {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 30_000,
   });
 } catch (e) {
-  // Infra-/CLI-Problem ist kein Drift → nicht hart failen, nur melden.
+  // Keine Messung: keine Entwarnung, auch wenn kein Drift bewiesen ist.
   console.error('⚠️  `supabase migration list` nicht ausfuehrbar:', e.message);
-  process.exit(0);
+  process.exit(ADVISORY ? 0 : 1);
 }
 console.log(out);
 
@@ -146,7 +150,6 @@ for (const file of parserLooksSane ? readdirSync(MIGRATIONS_DIR).sort() : []) {
 // pull_request wuerde daher fremde PRs blockieren, die nichts damit zu tun
 // haben. Deshalb: auf PRs berichten (advisory), auf schedule/main hart failen,
 // damit der Zustand taeglich sichtbar bleibt und nicht wieder verschwindet.
-const ADVISORY = (process.env.MIGRATION_DRIFT_MODE ?? 'fail') === 'advisory';
 
 let failed = false;
 

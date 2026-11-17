@@ -213,10 +213,6 @@
 
 .nc-block { display: flex; flex-direction: column; gap: 10px; padding-top: 20px; border-top: 1px solid var(--nc-line); }
 .nc-block p { margin: 0; }
-.nc-score { font-size: 15px; }
-.nc-score strong { font-size: 32px; font-weight: 600; color: var(--nc-fg-0); margin-right: 6px; }
-.nc-issues { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.nc-issues span { color: var(--nc-fg-2); }
 
 .nc-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--nc-line); }
 .nc-list-item {

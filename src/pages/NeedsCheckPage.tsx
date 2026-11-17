@@ -6,17 +6,21 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import {
   AREA_LABEL, AREAS, GOAL_LABEL, GOALS, SECTION_LABEL, recommend, validateAnswers,
   type Answers, type Area, type Goal, type Recommendation,
-} from '../features/needs-check/model';
-import { errorText, runWebsiteScan, saveCheck, type ApiError, type ScanSummary } from '../features/needs-check/api';
+} from '../../shared/needs-check';
+import { errorText, saveCheck, type ApiError } from '../features/needs-check/api';
+import { currentStatusNote } from '../features/needs-check/currentStatus';
 import { clearPending, readPending, writePending } from '../features/needs-check/pending';
 import '../styles/needs-check.css';
 
 /**
  * /check — Bedarfs-Check: Ziel → Bereich → Website → Ergebnis → nächster Schritt.
  *
- * Das Ergebnis beruht auf den Angaben des Nutzers. Eine technische Prüfung
- * der Website läuft nur, wenn er sie ausdrücklich startet; dann wird das
- * Ergebnis sichtbar als „Angaben + technische Prüfung“ gekennzeichnet.
+ * Das Ergebnis beruht ausschließlich auf den Angaben des Nutzers. Die Website
+ * wird hier nicht abgerufen; für eine technische Prüfung verweist der Check
+ * auf /audit (eigener Ablauf, nicht Teil des gespeicherten Ergebnisses).
+ *
+ * Nach dem Speichern zeigt die Seite die Empfehlungen, die der Server
+ * berechnet und gespeichert hat.
  */
 
 type SaveState =
@@ -25,13 +29,26 @@ type SaveState =
   | { s: 'saved'; id: string }
   | { s: 'error'; error: ApiError };
 
-type ScanState =
-  | { s: 'idle' }
-  | { s: 'running' }
-  | { s: 'done'; data: ScanSummary }
-  | { s: 'error'; error: ApiError };
-
 const STEPS = ['Ziel', 'Bereich', 'Website'] as const;
+
+export function RecommendationList({ recs }: { recs: Recommendation[] }) {
+  return (
+    <ol className="nc-recs">
+      {recs.map((r, i) => {
+        const note = currentStatusNote(r.id);
+        return (
+          <li key={r.id} className="nc-rec">
+            <span className="nc-rec-meta">{String(i + 1).padStart(2, '0')} · {SECTION_LABEL[r.section]}</span>
+            <h2 className="nc-h2">{r.title}</h2>
+            <p>{r.reason}</p>
+            {note ? <p className="nc-status" data-testid={`nc-status-${r.id}`}>{note}</p> : null}
+            <Link to={r.cta.href} className={i === 0 ? 'nc-btn' : 'nc-btn nc-btn--ghost'}>{r.cta.label}</Link>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export function NeedsCheckPage() {
   usePageMeta({
@@ -52,7 +69,6 @@ export function NeedsCheckPage() {
   const [url, setUrl] = useState('');
   const [fieldError, setFieldError] = useState('');
   const [answers, setAnswers] = useState<Answers | null>(null);
-  const [scan, setScan] = useState<ScanState>({ s: 'idle' });
   const [save, setSave] = useState<SaveState>({ s: 'idle' });
   const resumedRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -63,9 +79,9 @@ export function NeedsCheckPage() {
     headingRef.current?.focus();
   }, [step, answers]);
 
-  const doSave = async (a: Answers, auditId: string | null) => {
+  const doSave = async (a: Answers) => {
     setSave({ s: 'saving' });
-    const res = await saveCheck(a, recommend(a).map((r) => r.id), auditId);
+    const res = await saveCheck(a);
     if (res.ok) {
       clearPending();
       setSave({ s: 'saved', id: res.data.id });
@@ -86,7 +102,7 @@ export function NeedsCheckPage() {
     setUrl(p.answers.websiteUrl ?? '');
     setAnswers(p.answers);
     setStep(STEPS.length);
-    if (p.wantsSave && user) void doSave(p.answers, p.auditId);
+    if (p.wantsSave && user) void doSave(p.answers);
   }, [resume, authLoading, user]);
 
   const canNext = step === 0 ? goal !== null : step === 1 ? area !== null : hasWebsite !== null;
@@ -105,36 +121,24 @@ export function NeedsCheckPage() {
       return;
     }
     setAnswers(v.answers);
-    setScan({ s: 'idle' });
     setSave({ s: 'idle' });
     setStep(STEPS.length);
   };
 
   const restart = () => {
     setAnswers(null);
-    setScan({ s: 'idle' });
     setSave({ s: 'idle' });
     setStep(0);
   };
 
-  const startScan = async () => {
-    if (!answers?.websiteUrl) return;
-    setScan({ s: 'running' });
-    const res = await runWebsiteScan(answers.websiteUrl);
-    setScan(res.ok ? { s: 'done', data: res.data } : { s: 'error', error: res.error });
-    setSave({ s: 'idle' });
-  };
-
-  const auditId = scan.s === 'done' ? scan.data.auditId : null;
-
   const saveOrLogin = () => {
     if (!answers) return;
     if (!user) {
-      writePending({ answers, auditId, wantsSave: true });
+      writePending({ answers, wantsSave: true });
       navigate(`/welcome?next=${encodeURIComponent('/check?resume=1')}`);
       return;
     }
-    void doSave(answers, auditId);
+    void doSave(answers);
   };
 
   const recs: Recommendation[] = answers ? recommend(answers) : [];
@@ -202,7 +206,7 @@ export function NeedsCheckPage() {
                 </div>
                 {hasWebsite ? (
                   <label className="nc-label">
-                    Adresse (optional – nur nötig, wenn Sie sie später technisch prüfen lassen möchten)
+                    Adresse (optional – wird nur gespeichert, wenn Sie das Ergebnis speichern; die Website wird nicht abgerufen)
                     <input
                       className="nc-input"
                       type="url"
@@ -234,58 +238,22 @@ export function NeedsCheckPage() {
           <section className="nc-card" aria-labelledby="nc-result-h">
             <div className="nc-result-head">
               <h1 id="nc-result-h" ref={headingRef} tabIndex={-1} className="nc-h1">Das passt zu Ihrem Betrieb</h1>
-              <span className="nc-badge" data-testid="nc-basis">
-                {scan.s === 'done' ? 'Grundlage: Ihre Angaben + technische Prüfung' : 'Grundlage: Ihre Angaben'}
-              </span>
+              <span className="nc-badge" data-testid="nc-basis">Grundlage: Ihre Angaben</span>
             </div>
             <p className="nc-summary">
               Ziel: {GOAL_LABEL[answers.goal]} · Bereich: {AREA_LABEL[answers.area]} · Website: {answers.hasWebsite ? (answers.websiteUrl ?? 'ja') : 'noch keine'}
             </p>
 
-            <ol className="nc-recs">
-              {recs.map((r, i) => (
-                <li key={r.id} className="nc-rec">
-                  <span className="nc-rec-meta">{String(i + 1).padStart(2, '0')} · {SECTION_LABEL[r.section]}</span>
-                  <h2 className="nc-h2">{r.title}</h2>
-                  <p>{r.reason}</p>
-                  {r.status ? <p className="nc-status">{r.status}</p> : null}
-                  <Link to={r.cta.href} className={i === 0 ? 'nc-btn' : 'nc-btn nc-btn--ghost'}>{r.cta.label}</Link>
-                </li>
-              ))}
-            </ol>
+            <RecommendationList recs={recs} />
 
-            {answers.websiteUrl ? (
-              <div className="nc-block" aria-live="polite">
+            {answers.hasWebsite ? (
+              <div className="nc-block" data-testid="nc-audit-hint">
                 <h2 className="nc-h2">Website technisch prüfen</h2>
-                {scan.s === 'idle' ? (
-                  <>
-                    <p>Auf Wunsch ruft der kostenlose Scan {answers.websiteUrl} ab und prüft Sicherheit, Einwilligung, Impressum und Datenschutzerklärung. Höchstens 5 Prüfungen pro Stunde.</p>
-                    <button type="button" className="nc-btn nc-btn--ghost" onClick={startScan} disabled={!configured}>Jetzt prüfen</button>
-                    {!configured ? <p className="nc-note">Die Prüfung ist hier nicht verfügbar: Die Verbindung zur Plattform ist nicht eingerichtet.</p> : null}
-                  </>
-                ) : null}
-                {scan.s === 'running' ? <p role="status">Website wird geprüft …</p> : null}
-                {scan.s === 'error' ? (
-                  <>
-                    <p role="alert" className="nc-error">{errorText(scan.error)}</p>
-                    <button type="button" className="nc-btn nc-btn--ghost" onClick={startScan}>Erneut versuchen</button>
-                  </>
-                ) : null}
-                {scan.s === 'done' ? (
-                  <div data-testid="nc-scan-result">
-                    <p className="nc-score"><strong>{scan.data.score}</strong> von 100 · {scan.data.domain}</p>
-                    {scan.data.issues.length ? (
-                      <ul className="nc-issues">
-                        {scan.data.issues.map((x) => (
-                          <li key={x.title}><strong>{x.title}</strong> <span>{x.severity}{x.ref ? ` · ${x.ref}` : ''}</span></li>
-                        ))}
-                      </ul>
-                    ) : <p>Keine Befunde in den geprüften Punkten.</p>}
-                    {scan.data.coverageNotice ? <p className="nc-note">{scan.data.coverageNotice}</p> : null}
-                    <Link to={`/audit/result/${scan.data.auditId}`} className="nc-link">Vollständigen Bericht öffnen →</Link>
-                    <p className="nc-note">Technische Prüfung des ausgelieferten Codes – keine Rechtsberatung.</p>
-                  </div>
-                ) : null}
+                <p>
+                  Dieses Ergebnis enthält keine technische Prüfung. Der kostenlose Scan läuft separat: Er ruft Ihre Website ab und prüft
+                  Sicherheit, Einwilligung, Impressum und Datenschutzerklärung.
+                </p>
+                <Link to="/audit?source=needs-check" className="nc-link">Zum kostenlosen Scan →</Link>
               </div>
             ) : null}
 

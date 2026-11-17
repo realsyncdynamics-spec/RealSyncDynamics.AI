@@ -26,6 +26,13 @@ Deno.serve(async (req) => {
   // sendet Vault `cron_audit_drip_key`; Function Secret CRON_AUDIT_DRIP_KEY oder Vault-Fallback.
   const denied = await requireCronKey(req, 'CRON_AUDIT_DRIP_KEY', 'cron_audit_drip_key');
   if (denied) return denied;
+
+  // Release gate: the public one-click unsubscribe route and durable delivery
+  // reconciliation are not yet verified. Never send compliance/marketing mail
+  // solely because a restored DB schema and a Resend key happen to exist.
+  if (Deno.env.get('AUDIT_DRIP_SEND_ENABLED') !== 'true') {
+    return jsonResponse({ ok: false, code: 'AUDIT_DRIP_RELEASE_GATED', sent: 0 }, 503);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

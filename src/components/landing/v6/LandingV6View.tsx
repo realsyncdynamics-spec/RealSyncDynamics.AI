@@ -64,6 +64,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <a href="#top" style={{ fontSize: "clamp(19px,1.45vw,44px)", fontWeight: "600", letterSpacing: "-.015em", color: "var(--rs-fg)", whiteSpace: "nowrap" }}>RealSyncDynamics<span style={{ color: "var(--rs-acc)" }}>.AI</span></a>
             <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "clamp(14px,2vw,60px)", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
               {v.showLinks ? (<>
+                <a href="#produkte" style={{ color: "var(--rs-fg2)" }}>Produkte</a>
                 <a href="#produkt" style={{ color: "var(--rs-fg2)" }}>Governance OS</a>
                 <Link to="/governance-runtime" style={{ color: "var(--rs-fg2)" }}>Runtime</Link>
                 <a href="#evidence" style={{ color: "var(--rs-fg2)" }}>Evidence</a>
@@ -141,6 +142,29 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px clamp(24px,2.4vw,72px)", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "clamp(18px,1.4vw,40px)", color: "var(--rs-fg2)" }}>
             <span>DSGVO</span><span>EU AI Act</span><span>ISO 27001</span><span>NIS2</span><span style={{ color: "var(--rs-fg3)" }}>TISAX · Coming Soon</span><span style={{ color: "var(--rs-fg3)" }}>DORA · Coming Soon</span>
           </div>
+        </div>
+      </section>
+
+      <section id="produkte" data-testid="landing-products" style={{ borderBottom: "1px solid var(--rs-line)" }}>
+        <div style={{ maxWidth: "var(--wrap)", margin: "0 auto", padding: "var(--sec-y) var(--px)" }}>
+          <p style={{ margin: "0 0 20px", fontSize: "var(--fs-kicker)", fontWeight: "600", letterSpacing: ".2em", color: "var(--rs-acc)" }}>PRODUKTE</p>
+          <h2 style={{ margin: "0", maxWidth: "24ch", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h2)", lineHeight: "1.08", letterSpacing: "-.02em", textWrap: "balance" }}>Jedes Produkt einzeln starten. <span style={{ color: "var(--rs-acc)" }}>Alles in einer Schaltzentrale.</span></h2>
+          <p style={{ margin: "24px 0 0", maxWidth: "60ch", fontSize: "var(--fs-lead)", lineHeight: "1.65", color: "var(--rs-fg2)", textWrap: "pretty" }}>Wählen Sie den Baustein, den Ihr Betrieb braucht. Nach der Anmeldung laufen alle Produkte in einem Dashboard zusammen, mit einem Konto, Freigaben und Prüfpfad.</p>
+          <ul style={{ listStyle: "none", margin: "clamp(40px,3.5vw,96px) 0 0", padding: "0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "1px", background: "var(--rs-line)", border: "1px solid var(--rs-line)" }}>
+            {v.products.map((pr) => (
+              <li key={pr.id} data-product-id={pr.id} data-product-status={pr.status} style={{ background: "var(--rs-bg)", display: "flex" }}>
+                <Link to={pr.href} data-testid={`product-card-${pr.id}`} style={{ flex: "1", display: "flex", flexDirection: "column", gap: "14px", padding: "var(--card-p)", color: "var(--rs-fg)" }}>
+                  <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", letterSpacing: ".08em", color: "var(--rs-fg3)" }}>{pr.id.toUpperCase()}</span>
+                    <span data-testid={`product-status-${pr.id}`} style={{ padding: "3px 10px", border: `1px solid ${pr.status === "live" ? "var(--rs-status-allow)" : pr.status === "preview" ? "var(--rs-status-warn)" : "var(--rs-chip-b)"}`, fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", fontWeight: "600", letterSpacing: ".08em", textTransform: "uppercase", color: pr.status === "live" ? "var(--rs-status-allow)" : pr.status === "preview" ? "var(--rs-status-warn)" : "var(--rs-fg3)" }}>{pr.statusLabel}</span>
+                  </span>
+                  <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontWeight: "400", fontSize: "var(--fs-h3)", lineHeight: "1.2" }}>{pr.name}</span>
+                  <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.6", color: "var(--rs-fg2)" }}>{pr.promise}</span>
+                  <span style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--fs-small)", fontWeight: "500", color: "var(--rs-acc)" }}>Produkt ansehen<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -540,7 +564,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Produkt" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>PRODUKT</span>
-            <a href="#produkt">Plattform</a><a href="#websites">Websites</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
+            <a href="#produkte">Produkte</a><a href="#produkt">Plattform</a><a href="#websites">Websites</a><a href="#agenten">Agent Governance</a><a href="#control-room">Control Room</a><a href="#check">Governance-Check</a><a href="#evidence">Evidence Vault</a><a href="#preise">Preise</a><Link to="/roadmap">Roadmap</Link>
           </nav>
           <nav aria-label="Governance" style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
             <span style={{ fontSize: "12px", fontWeight: "600", letterSpacing: ".16em", color: "var(--rs-fg3)" }}>GOVERNANCE</span>
@@ -563,6 +587,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <button type="button" onClick={v.toggleMenu} aria-label="Menü schließen" style={{ width: "44px", height: "44px", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-toggle)", color: "var(--rs-fg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
           <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "34px" }}>
+            <a href="#produkte" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Produkte</a>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance OS</a>
             <Link to="/governance-runtime" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Runtime</Link>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>

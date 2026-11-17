@@ -6,6 +6,7 @@ import { tierById, type PricingTier } from '../../../config/pricing';
 import { CTA } from '../../../content/runtimeVocab';
 import { checkoutHrefForPlan, formatPriceEur, monthlyPriceSuffix, pricingTaxNote, PLANS, type Plan } from '@/shared/pricing';
 import { readStored, useLandingMode, type LandingMode } from '../landing-mode';
+import { PRODUCT_CATALOG, productStatus, productStatusLabel } from '../../../product/product-catalog';
 
 /**
  * Zustand + abgeleitete Werte für Landing v6 (Claude-Design-Handoff 13.10.2026).
@@ -645,6 +646,15 @@ export function useLandingV6() {
     },
     goPricing,
     stages: STAGES,
+    // Produkte einzeln erreichbar; Status ausschließlich aus implementation-status.
+    products: PRODUCT_CATALOG.map((p) => ({
+      id: p.id,
+      name: p.name,
+      promise: p.promise,
+      href: p.landingPath,
+      status: productStatus(p),
+      statusLabel: productStatusLabel(p),
+    })),
     websitePaths: WEBSITE_PATHS,
     websiteExtension: WEBSITE_EXTENSION,
     agentNo: AGENT_NO,

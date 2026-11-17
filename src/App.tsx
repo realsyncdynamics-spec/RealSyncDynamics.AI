@@ -31,6 +31,7 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+const ProductLandingPage = lazy(() => import('./pages/ProductLandingPage').then((m) => ({ default: m.ProductLandingPage })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
@@ -542,6 +543,13 @@ function RoutesWithTracking() {
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
       <Route path="/" element={<LandingV6 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
+      {/* 17.11.2026: Produkt-Landings aus dem Design „Startseite v3“; `/` bleibt LandingV6. */}
+      <Route path="/produkte/app-builder" element={<ProductLandingPage slug="app-builder" />} />
+      <Route path="/produkte/ki-bots" element={<ProductLandingPage slug="ki-bots" />} />
+      <Route path="/produkte/optimizer" element={<ProductLandingPage slug="optimizer" />} />
+      <Route path="/produkte/governance-os" element={<ProductLandingPage slug="governance-os" />} />
+      <Route path="/produkte/browser-agent" element={<ProductLandingPage slug="browser-agent" />} />
+      <Route path="/produkte" element={<Navigate to="/produkte/app-builder" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />

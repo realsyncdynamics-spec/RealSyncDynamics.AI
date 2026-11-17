@@ -156,6 +156,16 @@ describe('xAI Imagine: paid-call guard integration', () => {
     expect(budget.settleUnknown).toHaveBeenCalledTimes(1);
   });
 
+  it('never settles a reservation twice when the measured settlement throws', async () => {
+    const budget = fakeBudget();
+    budget.settleMeasured.mockImplementation(async () => { throw new Error('ledger down'); });
+    const image = { url: 'https://imgen.x.ai/a.jpeg', mimeType: 'image/jpeg', costUsd: 0.04 };
+    const client = { generateImage: vi.fn(async () => image) };
+    await expect(generateImageWithBudget({ input: { prompt: 'a' }, quotedMaxUsd: 0.08, budget, transport: client })).rejects.toThrow('ledger down');
+    expect(budget.settleMeasured).toHaveBeenCalledTimes(1);
+    expect(budget.settleUnknown).not.toHaveBeenCalled();
+  });
+
   it('must persist an async video job before returning its request ID', async () => {
     const budget = fakeBudget();
     const stored = vi.fn(async () => undefined);

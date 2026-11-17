@@ -48,15 +48,17 @@ export async function generateImageWithBudget(args: {
   const input = parseImageRequest(args.input);
   const ceiling = validCeiling(args.quotedMaxUsd, estimatedProviderUsd(input));
   const reservationId = await mustReserve(args.budget, ceiling);
+  let image: ImageResult;
   try {
-    const image = await args.transport.generateImage(input);
-    await settle(args.budget, reservationId, image.costUsd, 'image');
-    return image;
+    image = await args.transport.generateImage(input);
   } catch (error) {
     // Unknown upstream state: provider may already have billed this call.
     await args.budget.settleUnknown(reservationId, { provider: 'xai', operation: 'image', outcome: 'unknown' });
     throw error;
   }
+  // Settle outside the try block so a reservation is never settled twice.
+  await settle(args.budget, reservationId, image.costUsd, 'image');
+  return image;
 }
 
 export interface VideoJobReceipt {

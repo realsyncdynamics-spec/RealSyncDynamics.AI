@@ -63,7 +63,7 @@ export function XaiIntegrationSection() {
           </p>
         </Panel>
       </div>
-      <Panel title="Architekturentscheidung" source="docs/ai-os/xai-imagine-gateway-2026-11-13.md">
+      <Panel title="Architekturentscheidung" source="docs/ai-os/README.md · xAI / Grok">
         <p className="text-sm aios-fg2">
           React/Vite (Oberfläche) → vorhandene Supabase Auth, Tenant-Entitlements,
           Governance und atomare Kostenreservierung → separater xAI-Medienadapter

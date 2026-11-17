@@ -158,3 +158,39 @@ Betrieb ist für Live-Zustände nicht sinnvoll.
 **Keine neue Infrastruktur:** Supabase (vorhanden), GitHub Actions (vorhanden),
 Cloudflare Pages (vorhanden). Kosten: wenige Actions-Minuten pro Tag, keine
 Modellkosten.
+
+## xAI / Grok (Imagine, Build, Voice, API-Watch)
+
+Stand der Prüfung: 2026-11-13 (xAI-Primärquellen). Am 2026-11-17 unverändert auf aktuellen
+`main` übernommen; die xAI-Angaben wurden dabei **nicht** neu geprüft. Zusammengeführt aus
+den geparkten Entwürfen #2222 und #2223, damit das Doku-Budget hält.
+
+**Status:** Code- und UI-Preview unter `/admin/ai-os/xai`, **nicht** produktiv geschaltet.
+Kein Endpoint, kein xAI-Key, keine Migration, keine Preis- oder Stripe-Änderung.
+
+| Teil | Im Code | Offen vor Livebetrieb |
+|---|---|---|
+| Imagine Bild | `supabase/functions/_shared/xaiImagine/` – Allowlist (1 Bild, 1K/2K), Server-Transport, nur `imgen.x.ai`-URLs | Endpoint mit `requireAuthAndTenant`, Entitlement, PDP im **enforce**-Modus, Medienablage |
+| Imagine Video | Start + Status (≤ 8 s, ≤ 720p), `persistJob` vor Rückgabe zwingend | tenantgebundene Job-Tabelle mit RLS (eigene Migration mit GO), Backoff, TTL |
+| Budget | `guarded.ts` nutzt den vorhandenen `AiBudgetGuard` (Reserve vor Call, Settle danach, im Zweifel `settleUnknown`) | `quotedMaxUsd` aus serverseitigem, aktuell bestätigtem Preiskatalog; Schätzpreise in `contract.ts` sind keine Obergrenze |
+| Grok Build | nur Hinweis im AI-OS | isolierter ACP-/Headless-Runner, Repo-Allowlist, Änderungen nur als Review-PR; `/build` und `/builder/:slug` bleiben kanonisch |
+| Grok Voice | Relay `src/lib/company-voice/grok-relay.ts`, Provider in `apps/agent-runtime` | Live-Test; Tageslimit/Prüfpfad siehe #2295 |
+| API-Watch | `EXISTING_ROUTINES` → `external-xai-api-watch` (ChatGPT-Automatisierung, Mo 11:09 Europe/Berlin) | nur Inventar: kein Live-Status, kein Dispatch, kein Berichtsimport ohne eigene Freigabe |
+
+**Warum kein stiller Cloud-Pfad:** `ai-gateway` erzwingt `allowCloudFallback=false`, der PDP
+läuft dort im `shadow`-Modus. xAI-Medien brauchen deshalb einen eigenen, fail-closed geprüften
+Egress-Pfad – nicht den Text-Gateway.
+
+**Datenschutz:** Die Verarbeitungsregion ist beim Standard-Endpoint nicht zugesichert; laut
+xAI-Sicherheits-FAQ werden API-Ein-/Ausgaben standardmäßig 30 Tage gespeichert, Zero Data
+Retention gilt teamweit und kann Modelle/Formate einschränken. Vor Livebetrieb: AVV/DPA,
+Drittlandtransfer, Rechtsgrundlage, Hinweis/Einwilligung. Keine DSGVO-/AI-Act-Zusage.
+
+**Reihenfolge bis live:** Auth + Entitlement → Egress-Freigabe → PDP enforce → serverseitiger
+Preiskatalog → Job-Tabelle (Migration mit GO) → Moderation/Abuse-Limits → E2E mit Testkonto
+und Minimalbudget → erst dann Anbindung im Kunden-Builder. Keine „live“-Aussage vorher.
+
+Primärquellen: docs.x.ai – `developers/release-notes`, `developers/model-capabilities/imagine`,
+`developers/model-capabilities/video/generation`, `developers/rest-api-reference/inference/images`,
+`developers/rest-api-reference/inference/videos`, `developers/pricing`, `developers/faq/security`,
+`build/overview`.

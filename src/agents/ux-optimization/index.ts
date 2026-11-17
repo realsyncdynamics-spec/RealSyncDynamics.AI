@@ -88,10 +88,10 @@ export class UXOptimizationAgent {
       ]
       const altTextIssues = checkImageAltText(imageElements)
 
-      const ariaElements = options.elements?.filter(e => e.type === 'button') || [
-        { type: 'button', text: '', ariaLabel: 'Close', location: 'src/components/Modal.tsx:12' },
-        { type: 'button', text: '', location: 'src/components/Menu.tsx:8' }
-      ]
+      const ariaElements = (options.elements?.filter((e): e is { type: 'button' | 'link' | 'icon'; text?: string; ariaLabel?: string; location: string } => ['button', 'link', 'icon'].includes(e.type)) || [
+        { type: 'button' as const, text: '', ariaLabel: 'Close', location: 'src/components/Modal.tsx:12' },
+        { type: 'button' as const, text: '', location: 'src/components/Menu.tsx:8' }
+      ])
       const ariaIssues = checkAriaLabels(ariaElements)
 
       const headingElements = options.headings || [
@@ -100,16 +100,16 @@ export class UXOptimizationAgent {
       ]
       const headingIssues = checkHeadingHierarchy(headingElements)
 
-      const colorElements = options.elements?.filter(e => e.type === 'status' || e.type === 'indicator') || [
-        { type: 'status', hasShape: false, hasLabel: false, location: 'src/components/Status.tsx:20' },
-        { type: 'indicator', hasShape: true, hasLabel: true, location: 'src/components/Badge.tsx:10' }
-      ]
+      const colorElements = (options.elements?.filter((e): e is { type: 'status' | 'indicator'; hasShape?: boolean; hasLabel?: boolean; location: string } => e.type === 'status' || e.type === 'indicator') || [
+        { type: 'status' as const, hasShape: false, hasLabel: false, location: 'src/components/Status.tsx:20' },
+        { type: 'indicator' as const, hasShape: true, hasLabel: true, location: 'src/components/Badge.tsx:10' }
+      ])
       const colorIssues = checkColorOnlyIndicators(colorElements)
 
-      const interactiveElements = options.elements?.filter(e => e.interactive) || [
+      const interactiveElements = (options.elements?.filter((e): e is { interactive: boolean; tabIndex?: number; location: string; type: string } => e.interactive === true) || [
         { interactive: true, type: 'button', location: 'src/components/Button.tsx:5' },
         { interactive: true, type: 'div', tabIndex: -1, location: 'src/components/Custom.tsx:12' }
-      ]
+      ])
       const keyboardIssues = checkKeyboardNavigation(interactiveElements)
 
       const a11yFindings = convertAccessibilityToFindings(

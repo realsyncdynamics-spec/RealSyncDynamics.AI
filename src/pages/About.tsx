@@ -114,7 +114,7 @@ export function About() {
 
           <Section title="Founder">
             <p>
-              RealSync Dynamics wird geführt vom Gründer aus Hessen — mit Background in Software-Engineering,
+              RealSync Dynamics wird geführt vom Gründer aus Thüringen — mit Background in Software-Engineering,
               Compliance-Implementierung in regulierten Industrien (HealthTech, FinTech, Behörden) und einer
               klaren These: <strong className="text-titanium-50">DACH-Compliance braucht DACH-Tools</strong>.
             </p>

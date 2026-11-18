@@ -5,7 +5,7 @@ import { monthlyPriceText, planById } from '@/shared/pricing';
 
 const FACTS = [
   { k: 'Gegründet', v: '2026 · Frankfurt am Main' },
-  { k: 'Sitz', v: 'Hessen · Deutschland' },
+  { k: 'Sitz', v: 'Neuhaus am Rennweg · Thüringen' },
   { k: 'Hosting', v: 'Frankfurt — EU-souverän · keine US-Cloud' },
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
@@ -61,7 +61,7 @@ export function Press() {
             <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
               <p className="text-sm text-titanium-200 leading-relaxed">
                 <strong className="text-titanium-50">RealSync Dynamics</strong> ist eine EU-souveräne KI-Compliance-Plattform
-                für DACH-Mittelstand und Behörden. Sitz: Frankfurt am Main. Hosting: ausschließlich EU.
+                für DACH-Mittelstand und Behörden. Sitz: Neuhaus am Rennweg (Thüringen). Hosting: ausschließlich EU.
                 Produkt: AVV-Generator, VVT-Wizard, DSFA-Wizard, AI-Act-Klassifikator, Cookie-Consent-SDK,
                 72h-Meldepflicht-Timer, Bußgeld-Rechner — auf einer Plattform ab 79 €/Monat (Starter), Free Audit kostenlos.
                 Made in Germany. DSGVO-by-Design. AI Act-ready.
@@ -72,7 +72,7 @@ export function Press() {
           <Section title="Boilerplate (lang)">
             <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none space-y-3 text-sm text-titanium-200 leading-relaxed">
               <p>
-                <strong className="text-titanium-50">RealSync Dynamics</strong> wurde 2026 in Hessen gegründet, um
+                <strong className="text-titanium-50">RealSync Dynamics</strong> wurde 2026 in Thüringen gegründet, um
                 deutsche Mittelständler bei der Umsetzung der DSGVO, des EU AI Acts und branchenspezifischer
                 Anforderungen (BAIT/MaRisk in Banken, § 203 StGB in Kanzleien, BFSG/BITV in Behörden)
                 zu unterstützen — ohne 6-Monats-Implementierung und ohne 50.000 €/Jahr-Enterprise-Verträge.

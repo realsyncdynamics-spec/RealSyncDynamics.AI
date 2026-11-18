@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>RealSync Promo 9:16 – AI Receptionist</title>
+<!--
+  Promo-Video 9:16 (1080x1920), 21 s. Code-gerenderte Motion-Grafik.
+  Rendern: node render.cjs  (setzt alle CSS-Animationen frameweise, ffmpeg kodiert MP4).
+  Claims nur aus der Live-Seite (Stand 18.11.2026): AI Receptionist = "In Vorbereitung",
+  Offene Beta bis 31.01.2027, keine Kreditkarte, Betrieb in der EU, kostenloser Website-Check.
+-->
+<style>
+  :root{
+    --obsidian:#0A0A0B; --obsidian-7:#101013; --obsidian-5:#1f1f23; --line:#2a2a30;
+    --ti-50:#fafafa; --ti-200:#E2E2E2; --ti-400:#97979b; --ti-500:#71717a;
+    --blue:#1E5AFF; --blue-l:#7FA0FF; --ok:#10B981; --warn:#F5A524;
+    --sans:"Inter Display","Inter",system-ui,sans-serif; --mono:"DejaVu Sans Mono",ui-monospace,monospace;
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;border-radius:0}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:var(--obsidian);color:var(--ti-50);font-family:var(--sans)}
+  .stage{position:relative;width:1080px;height:1920px;overflow:hidden}
+
+  /* Hintergrund: Raster + Scanline */
+  .grid{position:absolute;inset:0;background-image:
+      linear-gradient(var(--obsidian-5) 1px,transparent 1px),
+      linear-gradient(90deg,var(--obsidian-5) 1px,transparent 1px);
+    background-size:90px 90px;opacity:.55;animation:gridDrift 21s linear both}
+  @keyframes gridDrift{from{background-position:0 0}to{background-position:0 -270px}}
+  .scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);
+    opacity:.35;animation:scan 7s linear 0s 3 both}
+  @keyframes scan{from{top:-2px}to{top:1920px}}
+
+  /* Rahmen-Chrome */
+  .chrome{position:absolute;left:60px;right:60px;font-family:var(--mono);font-size:24px;letter-spacing:.14em;color:var(--ti-400);
+    display:flex;justify-content:space-between;text-transform:uppercase}
+  .chrome.top{top:64px}.chrome.bot{bottom:64px}
+  .chrome b{color:var(--ti-50);font-weight:400}
+  .dot{display:inline-block;width:12px;height:12px;background:var(--blue);margin-right:14px;vertical-align:middle;
+    animation:blink 1s steps(2) 0s 21 both}
+  @keyframes blink{50%{opacity:0}}
+  .progress{position:absolute;left:60px;right:60px;bottom:120px;height:4px;background:var(--line)}
+  .progress i{display:block;height:100%;background:var(--blue);transform-origin:left;animation:prog 21s linear both}
+  @keyframes prog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+  /* Szenen */
+  .scene{position:absolute;inset:0;padding:0 80px;display:flex;flex-direction:column;justify-content:center;opacity:0;
+    animation:sIn .01s linear var(--in) both, sOut .45s var(--ease) var(--out) both}
+  @keyframes sIn{to{opacity:1}}
+  @keyframes sOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-60px)}}
+  .last{animation:sIn .01s linear var(--in) both}
+
+  .up{opacity:0;animation:up .7s var(--ease) var(--d) both}
+  @keyframes up{from{opacity:0;transform:translateY(70px)}to{opacity:1;transform:none}}
+  .wipe{clip-path:inset(0 100% 0 0);animation:wipe .6s var(--ease) var(--d) both}
+  @keyframes wipe{to{clip-path:inset(0 0 0 0)}}
+  .fade{opacity:0;animation:fade .5s linear var(--d) both}
+  @keyframes fade{to{opacity:1}}
+
+  .tag{font-family:var(--mono);font-size:26px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-l);
+    border:2px solid var(--blue);display:inline-block;padding:12px 20px;align-self:flex-start}
+  .tag.warn{color:var(--warn);border-color:var(--warn)}
+  .h-xl{font-weight:800;font-size:180px;line-height:.92;letter-spacing:-.045em}
+  .h-l{font-weight:800;font-size:124px;line-height:.98;letter-spacing:-.04em}
+  .h-m{font-weight:700;font-size:84px;line-height:1.02;letter-spacing:-.03em}
+  .muted{color:var(--ti-400)}
+  .blue{color:var(--blue-l)}
+  .sp{height:var(--h,40px)}
+
+  /* Chat-Karten */
+  .card{border:2px solid var(--line);background:var(--obsidian-7);padding:36px 40px}
+  .meta{font-family:var(--mono);font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--ti-500);margin-bottom:16px;
+    display:flex;justify-content:space-between}
+  .msg{font-size:44px;line-height:1.3;font-weight:500}
+  .card.ai{border-color:var(--blue);margin-left:90px}
+  .card.ai .meta{color:var(--blue-l)}
+
+  /* Ablauf-Schritte */
+  .steps{display:flex;flex-direction:column;gap:18px}
+  .step{display:grid;grid-template-columns:110px 1fr 70px;align-items:center;border:2px solid var(--line);padding:30px 34px;
+    background:var(--obsidian-7);position:relative;overflow:hidden}
+  .step .n{font-family:var(--mono);font-size:30px;color:var(--ti-500)}
+  .step .t{font-size:48px;font-weight:700;letter-spacing:-.02em}
+  .step .c{width:52px;height:52px;border:2px solid var(--ti-500);justify-self:end;display:grid;place-items:center;
+    font-family:var(--mono);font-size:30px;color:transparent}
+  .step::before{content:"";position:absolute;inset:0;background:var(--blue);transform:scaleX(0);transform-origin:left;opacity:.14;
+    animation:fillX .5s var(--ease) var(--a) both}
+  .step .c{animation:check .3s linear var(--a) both}
+  @keyframes fillX{to{transform:scaleX(1)}}
+  @keyframes check{to{border-color:var(--ok);color:var(--ok);background:rgba(16,185,129,.12)}}
+  .step.human{border-color:var(--ti-50)}
+  .step.human .t{animation:hl .3s linear var(--a) both}
+  @keyframes hl{to{color:var(--blue-l)}}
+
+  /* Kontrollschicht */
+  .rows{display:flex;flex-direction:column;border-top:2px solid var(--line)}
+  .row{display:flex;justify-content:space-between;align-items:baseline;padding:40px 0;border-bottom:2px solid var(--line)}
+  .row .k{font-size:92px;font-weight:800;letter-spacing:-.04em}
+  .row .v{font-family:var(--mono);font-size:24px;letter-spacing:.14em;color:var(--ok);text-transform:uppercase}
+
+  /* CTA */
+  .cta{background:var(--ti-50);color:var(--obsidian);font-weight:800;font-size:62px;letter-spacing:-.02em;padding:46px 50px;
+    display:flex;justify-content:space-between;align-items:center}
+  .url{font-family:var(--mono);font-size:40px;letter-spacing:.04em;color:var(--ti-50)}
+  .fine{font-family:var(--mono);font-size:24px;letter-spacing:.1em;color:var(--ti-400);text-transform:uppercase;line-height:1.7}
+  .bar{height:10px;background:var(--blue);transform-origin:left;transform:scaleX(0);animation:bar .7s var(--ease) var(--d) both;width:260px}
+  @keyframes bar{to{transform:scaleX(1)}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="scan"></div>
+
+  <div class="chrome top"><span><span class="dot"></span><b>RealSync Dynamics AI</b></span><span>Betrieben in der EU</span></div>
+
+  <!-- S1 · 0–3.2 s : Claim -->
+  <section class="scene" style="--in:0s;--out:3.2s">
+    <span class="tag wipe" style="--d:.15s">KI-Mitarbeiter · Für Betriebe</span>
+    <div class="sp" style="--h:60px"></div>
+    <div class="h-xl up" style="--d:.35s">Ihre</div>
+    <div class="h-xl up" style="--d:.55s">Ideen.</div>
+    <div class="h-xl up blue" style="--d:1.05s">In</div>
+    <div class="h-xl up blue" style="--d:1.25s">Bewegung.</div>
+    <div class="sp" style="--h:60px"></div>
+    <div class="bar" style="--d:1.7s"></div>
+  </section>
+
+  <!-- S2 · 3.2–7.4 s : Situation Handwerk -->
+  <section class="scene" style="--in:3.2s;--out:7.4s">
+    <span class="tag wipe" style="--d:3.35s">19:42 Uhr · Neue Anfrage</span>
+    <div class="sp" style="--h:50px"></div>
+    <div class="h-l up" style="--d:3.5s">Sie stehen noch</div>
+    <div class="h-l up muted" style="--d:3.7s">auf der Baustelle.</div>
+    <div class="sp" style="--h:80px"></div>
+    <div class="card up" style="--d:4.5s">
+      <div class="meta"><span>Kunde · Website-Chat</span><span>19:42</span></div>
+      <div class="msg">„Guten Abend, bei uns tropft die Heizung. Können Sie diese Woche vorbeikommen?“</div>
+    </div>
+  </section>
+
+  <!-- S3 · 7.4–13.6 s : AI Receptionist Ablauf -->
+  <section class="scene" style="--in:7.4s;--out:13.6s">
+    <span class="tag warn wipe" style="--d:7.5s">AI Receptionist · In Vorbereitung</span>
+    <div class="sp" style="--h:44px"></div>
+    <div class="h-m up" style="--d:7.65s">Ihr KI-Mitarbeiter<br>am Empfang.</div>
+    <div class="sp" style="--h:44px"></div>
+    <div class="card ai up" style="--d:8.2s">
+      <div class="meta"><span>AI Receptionist</span><span>19:42</span></div>
+      <div class="msg">„Danke! Ich nehme Ihre Anfrage auf. Wie erreichen wir Sie – und wann passt es Ihnen?“</div>
+    </div>
+    <div class="sp" style="--h:44px"></div>
+    <div class="steps">
+      <div class="step up" style="--d:9.0s;--a:9.6s"><span class="n">01</span><span class="t">Anfrage annehmen</span><span class="c">✓</span></div>
+      <div class="step up" style="--d:9.2s;--a:10.4s"><span class="n">02</span><span class="t">Kontakt erfassen</span><span class="c">✓</span></div>
+      <div class="step up" style="--d:9.4s;--a:11.2s"><span class="n">03</span><span class="t">Terminwunsch aufnehmen</span><span class="c">✓</span></div>
+      <div class="step human up" style="--d:9.6s;--a:12.0s"><span class="n">04</span><span class="t">An einen Menschen übergeben</span><span class="c">→</span></div>
+    </div>
+    <div class="sp" style="--h:34px"></div>
+    <div class="fine fade" style="--d:12.3s">Die Entscheidung bleibt bei Ihrem Team.</div>
+  </section>
+
+  <!-- S4 · 13.6–16.8 s : Kontrollschicht -->
+  <section class="scene" style="--in:13.6s;--out:16.8s">
+    <span class="tag wipe" style="--d:13.7s">Im Hintergrund</span>
+    <div class="sp" style="--h:44px"></div>
+    <div class="h-m up" style="--d:13.85s">Die Kontrollschicht<br><span class="muted">läuft mit.</span></div>
+    <div class="sp" style="--h:70px"></div>
+    <div class="rows">
+      <div class="row up" style="--d:14.4s"><span class="k">Berechtigungen</span><span class="v fade" style="--d:14.9s">● aktiv</span></div>
+      <div class="row up" style="--d:14.75s"><span class="k">Regeln</span><span class="v fade" style="--d:15.25s">● aktiv</span></div>
+      <div class="row up" style="--d:15.1s"><span class="k">Nachweise</span><span class="v fade" style="--d:15.6s">● aktiv</span></div>
+    </div>
+  </section>
+
+  <!-- S5 · 16.8–21 s : CTA -->
+  <section class="scene last" style="--in:16.8s">
+    <span class="tag wipe" style="--d:16.9s">Offene Beta · bis 31.01.2027</span>
+    <div class="sp" style="--h:50px"></div>
+    <div class="h-l up" style="--d:17.05s">Wo steht Ihre</div>
+    <div class="h-l up blue" style="--d:17.25s">Website?</div>
+    <div class="sp" style="--h:70px"></div>
+    <div class="cta up" style="--d:17.8s"><span>Kostenlosen Check starten</span><span>→</span></div>
+    <div class="sp" style="--h:44px"></div>
+    <div class="url fade" style="--d:18.3s">realsyncdynamicsai.de</div>
+    <div class="sp" style="--h:28px"></div>
+    <div class="fine fade" style="--d:18.6s">Keine Kreditkarte · Kein Abo<br>Sicherheit · Einwilligung · Impressum · Datenschutz</div>
+  </section>
+
+  <div class="progress"><i></i></div>
+  <div class="chrome bot"><span>Build · Automate · Govern</span><span>Offene Beta</span></div>
+</div>
+</body>
+</html>

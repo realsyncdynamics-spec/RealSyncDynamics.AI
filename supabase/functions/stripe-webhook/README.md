@@ -19,6 +19,11 @@ In the Stripe dashboard, point a webhook endpoint at
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded` — Einmalkauf per SEPA-Lastschrift
+  o. ä.: aktiviert den zunächst als `revoked` angelegten Grant
+- `checkout.session.async_payment_failed` — Zahlung ausgefallen: Grant bleibt
+  bzw. wird `revoked` (`revoked_reason = async_payment_failed`)
 
 ## Tenant linkage (required)
 

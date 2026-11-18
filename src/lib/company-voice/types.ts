@@ -67,6 +67,16 @@ export interface CompanyVoiceEnv {
   XAI_API_KEY?: string;
   COMPANY_VOICE_GROK_MODEL?: string;
   COMPANY_VOICE_GROK_VOICE?: string;
+  /** Gespräche je UTC-Tag über alle Instanzen (Default 30, 1–1000). */
+  COMPANY_VOICE_GROK_DAILY_SESSIONS?: string;
+  /** KV-Binding für Tageslimit und Prüfpfad. Ohne Binding bleibt die Live-Stimme aus. */
+  COMPANY_VOICE_LIVE_KV?: LiveVoiceKv;
+}
+
+/** Ausschnitt der Cloudflare-`KVNamespace`-Schnittstelle, den die Live-Stimme nutzt. */
+export interface LiveVoiceKv {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 export const COMPANY_VOICE_DISCLAIMER =

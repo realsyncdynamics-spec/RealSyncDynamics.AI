@@ -162,6 +162,10 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'market-scanner',
   'ai-act-classify',
 
+  // Öffentliche P0-Ersatzwege nach REVOKE von platform_stats / audit_share_get.
+  'public-platform-stats',
+  'audit-share-get',
+
   // AI gateway — steht mit verify_jwt = true in config.toml (Vorfilter);
   // Auth macht die Function selbst (Nutzer-JWT + tenant_id, x-internal-key,
   // anon-Audit-Pfad). Eintrag bleibt, damit ein gelöschter Stanza auffällt.

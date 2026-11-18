@@ -1,7 +1,7 @@
 /**
  * Ein Audit anhand seiner Kennung laden — derselbe Weg wie der Permalink
- * `/audit/result/:auditId` (RPC `audit_share_get`, non-PII: Domain, Score,
- * Befunde, Datum).
+ * `/audit/result/:auditId` (Edge Function `audit-share-get`, non-PII: Domain, Score,
+ * Befunde, Datum). Ersatz für das anonyme RPC `audit_share_get`.
  *
  * Gebraucht von `/onboarding/:scanId` und `/recommendation/:scanId`: Beide
  * bekamen ihre Befunde bisher ausschließlich über den Router-State, und der
@@ -11,7 +11,8 @@
  * (canonical-funnel-decision.md: `gdpr_audits` ist der kanonische Datensatz).
  */
 import { useEffect, useState } from 'react';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 import type { ScanFinding } from '../../core/onboarding/types';
 import type { AuditResultFinding } from './AuditResultView';
 
@@ -28,8 +29,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function loadSharedAudit(auditId: string): Promise<SharedAudit> {
   if (!UUID_RE.test(auditId)) throw new Error('Ungültige Audit-Kennung.');
   if (!isSupabaseConfigured()) throw new Error('Audit-Daten können aktuell nicht geladen werden.');
-  const { data, error } = await getSupabase().rpc('audit_share_get', { p_id: auditId });
-  if (error) throw new Error(error.message);
+  const resp = await fetch(`${getSupabaseUrl()}/functions/v1/audit-share-get`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: getSupabaseAnonKey(),
+      Authorization: `Bearer ${getSupabaseAnonKey()}`,
+    },
+    body: JSON.stringify({ token: auditId }),
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
   const rows = (Array.isArray(data) ? data : []) as Array<{
     domain?: string; score?: number; created_at?: string; issues?: unknown;
   }>;

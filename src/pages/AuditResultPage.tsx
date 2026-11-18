@@ -11,9 +11,9 @@ import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
 //   1. Warm-Navigation aus dem Audit-Chat: AuditChatHero reicht non-PII
 //      Report-Felder per `navigate(..., { state })` durch (kein email).
 //   2. Cold-Load (Reload, Deep-Link, Bookmark, Share, neuer Tab): die
-//      `audit_share_get(uuid)` RPC liefert non-PII Felder (score, severity,
+//      Edge Function `audit-share-get` liefert non-PII Felder (score, severity,
 //      issues, domain, created_at) fuer jede `is_shareable=true` Audit-Row.
-//   E-Mail kommt weder aus API (gdpr-audit / audit_share_get) noch aus
+//   E-Mail kommt weder aus API (gdpr-audit / audit-share-get) noch aus
 //   router-state — sharebare Views zeigen keine Report-E-Mail.
 //
 // Damit verschwindet die alte "Keine Befunde geladen" Anzeige bei jedem
@@ -68,14 +68,14 @@ export function AuditResultPage() {
     let cancelled = false;
     (async () => {
       try {
-        const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/audit_share_get`, {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/audit-share-get`, {
           method:  'POST',
           headers: {
             'Content-Type':  'application/json',
             apikey:          SUPABASE_ANON_KEY,
             Authorization:   `Bearer ${SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ p_id: auditId }),
+          body: JSON.stringify({ token: auditId }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const rows = await resp.json() as SharedAuditRow[] | unknown;

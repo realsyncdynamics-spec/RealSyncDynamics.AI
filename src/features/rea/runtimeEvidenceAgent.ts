@@ -28,6 +28,12 @@ export type ReaStatus =
   | 'ausstehend'
   /** Eintrag gefunden, aber Prüfsumme oder Kette weicht ab. */
   | 'abweichung'
+  /**
+   * Lauf ist im Mandanten-Protokoll (`agent_runs`) gefunden und die
+   * Prüfsumme stimmt, aber der Eintrag steht in keiner Hash-Kette.
+   * Ehrliche Zwischenstufe: protokolliert ≠ kettengesichert.
+   */
+  | 'protokolliert'
   /** Abfrage nicht möglich (kein Mandant, kein Trace, Datenbankfehler). */
   | 'nicht_verfuegbar';
 
@@ -230,7 +236,93 @@ export async function attestCall(
 
 export const REA_STATUS_LABEL: Readonly<Record<ReaStatus, string>> = {
   belegt: 'Belegt',
+  protokolliert: 'Protokolliert',
   ausstehend: 'Ausstehend',
   abweichung: 'Abweichung',
   nicht_verfuegbar: 'Nicht verfügbar',
 };
+
+// ── Assistent der Shell (`governance-agent`, Tabelle `agent_runs`) ──────────
+
+export interface ReaAgentRunRow {
+  id: string;
+  created_at: string;
+  user_message: string;
+  llm_provider: string | null;
+  llm_model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  outcome: string;
+}
+
+export interface ReaAgentRunSource {
+  /** Neueste Läufe einer Sitzung ab `sinceIso` (RLS: nur Mitglieder). */
+  findAgentRuns(tenantId: string, sessionId: string, sinceIso: string): Promise<ReaQueryResult<ReaAgentRunRow[]>>;
+}
+
+/** `governance-agent` speichert `user_message` auf 4.000 Zeichen gekürzt. */
+export const AGENT_RUN_MESSAGE_LIMIT = 4000;
+
+/**
+ * Belegt einen Assistenten-Lauf gegen `agent_runs`. Höchster erreichbarer
+ * Status ist `protokolliert`: `agent_runs` hat keine Hash-Kette, deshalb
+ * gibt es hier nie `belegt`.
+ */
+export async function attestAgentRun(
+  source: ReaAgentRunSource,
+  args: { tenantId: string | null; sessionId: string | null | undefined; message: string; sentAt: Date },
+  options: ReaOptions = {},
+): Promise<ReaReceipt> {
+  const now = options.now ?? (() => new Date());
+  const sleep = options.sleep ?? defaultSleep;
+  const attempts = Math.max(1, options.attempts ?? 4);
+  const delayMs = options.delayMs ?? 750;
+  const stored = args.message.slice(0, AGENT_RUN_MESSAGE_LIMIT);
+  const localInputSha256 = await sha256HexOf(stored);
+  const done = (status: ReaStatus, reason: string, extra: Partial<ReaReceipt> = {}): ReaReceipt => ({
+    traceId: args.sessionId ?? null,
+    localInputSha256,
+    inputLength: stored.length,
+    status,
+    reason,
+    checkedAt: now().toISOString(),
+    ...extra,
+  });
+
+  if (!args.tenantId) return done('nicht_verfuegbar', 'Kein verifizierter Mandant.');
+  if (!args.sessionId) return done('nicht_verfuegbar', 'Assistent lieferte keine Sitzungs-ID.');
+
+  // Etwas Spielraum für Uhrabweichung zwischen Browser und Datenbank.
+  const sinceIso = new Date(args.sentAt.getTime() - 120_000).toISOString();
+  for (let i = 0; i < attempts; i++) {
+    let res: ReaQueryResult<ReaAgentRunRow[]>;
+    try {
+      res = await source.findAgentRuns(args.tenantId, args.sessionId, sinceIso);
+    } catch {
+      return done('nicht_verfuegbar', 'Protokoll-Abfrage fehlgeschlagen.');
+    }
+    if (res.error) return done('nicht_verfuegbar', 'Protokoll-Abfrage fehlgeschlagen.');
+    const rows = res.data ?? [];
+    for (const row of rows) {
+      const serverSha = await sha256HexOf(row.user_message ?? '');
+      if (serverSha !== localInputSha256) continue;
+      const details: Partial<ReaReceipt> = {
+        eventId: row.id,
+        eventType: 'agent.chat',
+        createdAt: row.created_at,
+        serverInputSha256: serverSha,
+        inputHashMatches: true,
+        provider: row.llm_provider,
+        model: row.llm_model,
+        totalTokens: (row.input_tokens ?? 0) + (row.output_tokens ?? 0),
+      };
+      return done(
+        'protokolliert',
+        'Lauf im Mandanten-Protokoll gefunden, Prüfsumme stimmt. Keine Hash-Kette für Assistenten-Läufe.',
+        details,
+      );
+    }
+    if (i < attempts - 1) await sleep(delayMs);
+  }
+  return done('ausstehend', 'Noch kein passender Lauf im Protokoll sichtbar.');
+}

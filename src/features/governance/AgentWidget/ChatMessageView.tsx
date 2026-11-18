@@ -1,5 +1,6 @@
 import type { ChatMessage } from './useAgentChat';
 import { ToolBadges } from './ToolBadge';
+import { ReaBadge } from '../../rea/ReaBadge';
 
 export function ChatMessageView({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
@@ -36,6 +37,7 @@ export function ChatMessageView({ message }: { message: ChatMessage }) {
       >
         <MessageBody content={message.content} />
         {!isUser && <ToolBadges actions={message.actions} />}
+        {!isUser && <ReaBadge receipt={message.rea} pending={message.reaPending} />}
         <span className={`mt-1 block text-[10px] opacity-40 ${isUser ? 'text-right' : ''}`}>
           {new Date(message.ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
         </span>

@@ -49,6 +49,7 @@ const BUILD_SLUG = 'workspace';
 
 const STATUS_CLASS: Record<ReaStatus, string> = {
   belegt: 'border-emerald-500/60 text-emerald-300',
+  protokolliert: 'border-sky-500/60 text-sky-300',
   ausstehend: 'border-amber-500/60 text-amber-300',
   abweichung: 'border-rose-500/70 text-rose-300',
   nicht_verfuegbar: 'border-titanium-600 text-titanium-400',

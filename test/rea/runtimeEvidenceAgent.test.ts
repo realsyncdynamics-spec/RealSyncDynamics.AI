@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  attestAgentRun,
   attestCall,
   byteaToHex,
   sha256HexOf,
@@ -142,5 +143,60 @@ describe('Hilfsfunktionen', () => {
   it('byteaToHex entfernt das PostgREST-Präfix', () => {
     expect(byteaToHex('\\xab')).toBe('ab');
     expect(byteaToHex(null)).toBeUndefined();
+  });
+});
+
+describe('REA attestAgentRun (Assistent der Shell)', () => {
+  const SESSION = 'sess-1';
+  const sentAt = new Date('2026-11-18T08:00:00Z');
+  const runRow = (user_message: string) => ({
+    id: 'run-1',
+    created_at: '2026-11-18T08:00:02Z',
+    user_message,
+    llm_provider: 'anthropic',
+    llm_model: 'claude',
+    input_tokens: 10,
+    output_tokens: 5,
+    outcome: 'success',
+  });
+  const src = (pages: ReturnType<typeof runRow>[][]) => {
+    let calls = 0;
+    return {
+      get calls() { return calls; },
+      async findAgentRuns(tenantId: string, sessionId: string, sinceIso: string) {
+        expect(tenantId).toBe(TENANT);
+        expect(sessionId).toBe(SESSION);
+        expect(sinceIso).toBe('2026-11-18T07:58:00.000Z');
+        const data = pages[Math.min(calls, pages.length - 1)];
+        calls++;
+        return { data, error: null };
+      },
+    };
+  };
+
+  it('höchstens protokolliert, nie belegt', async () => {
+    const r = await attestAgentRun(src([[runRow(INPUT)]]), { tenantId: TENANT, sessionId: SESSION, message: INPUT, sentAt }, fast);
+    expect(r.status).toBe('protokolliert');
+    expect(r.inputHashMatches).toBe(true);
+    expect(r.totalTokens).toBe(15);
+  });
+
+  it('vergleicht gegen die auf 4.000 Zeichen gekürzte Nachricht', async () => {
+    const long = 'x'.repeat(5000);
+    const r = await attestAgentRun(src([[runRow(long.slice(0, 4000))]]), { tenantId: TENANT, sessionId: SESSION, message: long, sentAt }, fast);
+    expect(r.status).toBe('protokolliert');
+  });
+
+  it('fremde Nachricht in der Sitzung zählt nicht → ausstehend', async () => {
+    const s = src([[runRow('andere Frage')]]);
+    const r = await attestAgentRun(s, { tenantId: TENANT, sessionId: SESSION, message: INPUT, sentAt }, fast);
+    expect(r.status).toBe('ausstehend');
+    expect(s.calls).toBe(3);
+  });
+
+  it('ohne Sitzung oder bei Fehler: nicht_verfuegbar', async () => {
+    expect((await attestAgentRun(src([[]]), { tenantId: TENANT, sessionId: null, message: INPUT, sentAt }, fast)).status).toBe('nicht_verfuegbar');
+    const broken = { findAgentRuns: async () => ({ data: null, error: { message: 'rls' } }) };
+    expect((await attestAgentRun(broken, { tenantId: TENANT, sessionId: SESSION, message: INPUT, sentAt }, fast)).status).toBe('nicht_verfuegbar');
   });
 });

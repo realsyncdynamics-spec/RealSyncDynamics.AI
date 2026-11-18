@@ -4,7 +4,13 @@
  * mit Mitgliedschaftsprüfung) setzen die Mandantengrenze serverseitig durch.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ReaChainRow, ReaDataSource, ReaEvidenceRow } from './runtimeEvidenceAgent';
+import type {
+  ReaAgentRunRow,
+  ReaAgentRunSource,
+  ReaChainRow,
+  ReaDataSource,
+  ReaEvidenceRow,
+} from './runtimeEvidenceAgent';
 
 export function createSupabaseReaSource(sb: SupabaseClient): ReaDataSource {
   return {
@@ -24,6 +30,22 @@ export function createSupabaseReaSource(sb: SupabaseClient): ReaDataSource {
         p_to: to,
       });
       return { data: (data ?? null) as ReaChainRow[] | null, error: error ? { message: error.message } : null };
+    },
+  };
+}
+
+export function createSupabaseAgentRunSource(sb: SupabaseClient): ReaAgentRunSource {
+  return {
+    async findAgentRuns(tenantId, sessionId, sinceIso) {
+      const { data, error } = await sb
+        .from('agent_runs')
+        .select('id, created_at, user_message, llm_provider, llm_model, input_tokens, output_tokens, outcome')
+        .eq('tenant_id', tenantId)
+        .eq('session_id', sessionId)
+        .gte('created_at', sinceIso)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      return { data: (data ?? null) as ReaAgentRunRow[] | null, error: error ? { message: error.message } : null };
     },
   };
 }

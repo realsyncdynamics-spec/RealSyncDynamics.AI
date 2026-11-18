@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendChat, resetSession, sendChatAnon, type SimpleMsg } from './agentApi';
+import { getSupabase } from '../../../lib/supabase';
+import { attestAgentRun, type ReaAgentRunSource, type ReaReceipt } from '../../rea/runtimeEvidenceAgent';
+import { createSupabaseAgentRunSource } from '../../rea/supabaseSource';
 
 export type Role = 'user' | 'assistant';
 
@@ -11,6 +14,23 @@ export interface ChatMessage {
   actions?: string[];
   isLoading?: boolean;
   isError?: boolean;
+  /** REA-Prüfpfad (nur Tenant-Chat): Lauf gegen `agent_runs` belegt. */
+  rea?: ReaReceipt;
+  reaPending?: boolean;
+}
+
+/**
+ * REA: belegt eine erfolgreiche Assistenten-Antwort nachgelagert gegen das
+ * Mandanten-Protokoll. Wirft nie; ohne Supabase-Client → `nicht_verfuegbar`.
+ */
+async function attestTurn(tenantId: string, sessionId: string, message: string, sentAt: Date): Promise<ReaReceipt> {
+  let source: ReaAgentRunSource;
+  try {
+    source = createSupabaseAgentRunSource(getSupabase());
+  } catch {
+    source = { findAgentRuns: async () => ({ data: null, error: { message: 'unavailable' } }) };
+  }
+  return attestAgentRun(source, { tenantId, sessionId, message, sentAt });
 }
 
 const WELCOME: ChatMessage = {
@@ -171,20 +191,28 @@ export function useAgentChat(tenantId: string | null, options: UseAgentChatOptio
       const newSession = result.data.session_id;
       sessionStorage.setItem(STORAGE_KEY(tenantId), newSession);
       setSessionId(newSession);
+      const answerId = crypto.randomUUID();
+      const succeeded = result.data.outcome === 'success';
       setMessages((prev) =>
         prev
           .filter((m) => m.id !== 'loading')
           .concat({
-            id: crypto.randomUUID(),
+            id: answerId,
             role: 'assistant',
             content: result.data.response || '(Keine Antwort generiert.)',
             ts: Date.now(),
             actions: result.data.actions_taken,
-            isError: result.data.outcome !== 'success',
+            isError: !succeeded,
+            reaPending: succeeded || undefined,
           }),
       );
       setIsLoading(false);
       scrollToBottom();
+      if (succeeded) {
+        void attestTurn(tenantId, newSession, message, new Date(userMsg.ts)).then((rea) =>
+          setMessages((prev) => prev.map((m) => (m.id === answerId ? { ...m, rea, reaPending: false } : m))),
+        );
+      }
     },
     [agent, isLoading, scrollToBottom, sessionId, tenantId],
   );

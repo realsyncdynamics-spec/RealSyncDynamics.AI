@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
+import { NeonModeToggle } from '../components/neon/NeonModeToggle';
 import { VoiceBotStage } from '../components/voice-agent/VoiceBotStage';
+import { useNeonMode } from '../hooks/useNeonMode';
 import { COMPANY_LINE, LEGAL_LINKS, STATUS_TEXT, TAX_NOTE, registryStatus } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
+import '../styles/neon-theme.css';
 import '../styles/voice-agent.css';
 
 /**
@@ -18,6 +21,9 @@ import '../styles/voice-agent.css';
  *
  * Die 3D-Figur hat einen Anschluss für eine spätere Stimme (`speaking`); die
  * Seite verbindet keine Sprach-API.
+ *
+ * Gestaltung: Neon-Design wie die Startseite (`.lv3-neon` aus styles/neon-theme.css,
+ * Hell/Dunkel-Schalter mit demselben Speicherschlüssel wie die Startseite).
  */
 
 const SOURCE = 'voice-agent-page';
@@ -55,6 +61,7 @@ export function VoiceAgentPage() {
   const telephony = registryStatus('voice-telephony');
   const chat = registryStatus('channel-bots');
   const telephonyLive = telephony === 'live';
+  const [mode, toggleMode] = useNeonMode('rs-neon-mode-landing', 'light');
 
   const faqs: Array<{ q: string; a: string }> = [
     {
@@ -69,7 +76,7 @@ export function VoiceAgentPage() {
   ];
 
   return (
-    <div className="lv3 va">
+    <div className="lv3 lv3-neon va" data-mode={mode}>
       <a href="#ablauf" className="lv3-skip">Zum Inhalt springen</a>
 
       {BETA.active && BETA.publicOffer ? (
@@ -89,6 +96,7 @@ export function VoiceAgentPage() {
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
+          <NeonModeToggle mode={mode} onToggle={toggleMode} />
           <Link className="lv3-btn lv3-btn--solid" to={WAITLIST('nav')}>Auf die Warteliste</Link>
         </nav>
 
@@ -115,7 +123,7 @@ export function VoiceAgentPage() {
           </div>
 
           <div className="va-hero-visual">
-            <VoiceBotStage />
+            <VoiceBotStage statusLabel={telephony ? `Vorschau · ${STATUS_TEXT[telephony]}` : 'Vorschau'} />
             <div className="va-talk" aria-label="Beispielgespräch einer Bäckerei">
               <span className="lv3-meta">Beispielgespräch · Bäckerei</span>
               <p className="va-msg">Hallo, ich hätte gern für Samstag zwei Bauernbrote und zwölf Brötchen.</p>

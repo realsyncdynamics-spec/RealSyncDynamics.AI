@@ -23,7 +23,9 @@ export const BOT_LINES: readonly string[] = [
 const LINE_MS = 4200;
 const MOVES: readonly BotMove[] = ['dance', 'jump', 'spin'];
 
-export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
+const WAVE_BARS = 14;
+
+export function VoiceBotStage({ speaking = false, statusLabel }: { speaking?: boolean; statusLabel: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<VoiceBotHandle | null>(null);
   const [mode, setMode] = useState<SceneMode>('still');
@@ -77,9 +79,12 @@ export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
         hidden={mode === 'scene'}
       />
       <canvas ref={canvasRef} className="va-stage-canvas" aria-hidden="true" hidden={mode === 'still'} onClick={poke} />
-      <span className="lv3-stage-tag">KI-Assistent · Vorschau</span>
+      <span className="va-tag"><i className="ln-dot" aria-hidden="true" />{statusLabel}</span>
       <p className="va-say" aria-live="polite">
-        {speaking ? 'Ich spreche …' : BOT_LINES[line]}
+        <span className="va-wave" aria-hidden="true">
+          {Array.from({ length: WAVE_BARS }, (_, i) => <i key={i} style={{ animationDelay: `${(i % 7) * 0.11}s` }} />)}
+        </span>
+        <span><b>RealSync AI:</b> {speaking ? 'Ich spreche …' : BOT_LINES[line]}</span>
       </p>
       {mode === 'scene' ? (
         <button type="button" className="lv3-btn va-stage-poke" onClick={poke}>

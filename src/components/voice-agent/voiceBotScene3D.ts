@@ -4,8 +4,10 @@
  * reduzierte Bewegung gewünscht ist (Prüfung `canRun3D`). Sonst bleibt das Standbild.
  *
  * Figur nach dem Standbild der Startseite (`public/landing-v3/hero-still.jpg`):
- * weißer Roboter mit dunklem Visier, hellblauen Augen, Antenne, dünnen Armen mit
- * dunklen Kugelhänden und einem hellblauen Orbit-Ring mit kreisenden Kugeln.
+ * weißer Roboter mit dunklem Visier, Antenne, dünnen Armen mit dunklen
+ * Kugelhänden und einem Orbit-Ring mit kreisenden Kugeln. Farben im
+ * Neon-Design (styles/neon-theme.css): leuchtende Cyan-Augen, Lila/Cyan-Orbit,
+ * Glaswürfel mit Neon-Kanten, Lichtreflexe in Lila und Cyan.
  * Bewegungen: erscheint mit einem Hüpfer, schwebt, folgt dem Zeiger mit dem Kopf,
  * blinzelt, winkt, springt, tanzt und dreht sich. `setSpeaking(true)` bewegt Mund,
  * Brustpunkt und Kopf für eine spätere Sprachausgabe; die Szene spielt keinen Ton ab.
@@ -24,10 +26,13 @@ export interface VoiceBotHandle {
   dispose(): void;
 }
 
+// Neon-Palette wie styles/neon-theme.css (.ln-cube, .ln-orb)
 const WHITE = 0xf4f6fa;
-const NAVY = 0x1b2747;
-const LIGHT_BLUE = 0xbcd4ff;
-const RING_BLUE = 0xa9c6f5;
+const NAVY = 0x10142a;
+const CYAN = 0x67e8f9;
+const CYAN_EDGE = 0xa5f3fc;
+const VIOLET = 0xc084fc;
+const MAGENTA = 0xf0abfc;
 const MOVE_SECONDS: Record<BotMove, number> = { jump: 1.1, dance: 3.2, spin: 1.4 };
 const IDLE_MOVES: readonly BotMove[] = ['jump', 'dance', 'spin', 'jump'];
 const ARM_REST_RIGHT = 2.35; // erhobener Arm wie im Standbild
@@ -43,8 +48,8 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 1.9, 7.6);
-  camera.lookAt(0, 1.45, 0);
+  camera.position.set(0, 2.6, 8.6);
+  camera.lookAt(0, 1.7, 0);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0xd6dde9, 2.6));
   const key = new THREE.DirectionalLight(0xffffff, 1.6);
@@ -53,20 +58,54 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
   key.shadow.mapSize.set(1024, 1024);
   Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 20 });
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xe6eeff, 0.9);
-  fill.position.set(4, 2, 3);
-  scene.add(fill);
+  // Neon-Reflexe: Lila von links, Cyan von rechts
+  const rimViolet = new THREE.PointLight(0xa855f7, 14, 10, 1.6);
+  rimViolet.position.set(-2.6, 2.4, 1.6);
+  scene.add(rimViolet);
+  const rimCyan = new THREE.PointLight(0x22d3ee, 12, 10, 1.6);
+  rimCyan.position.set(2.6, 1.8, 1.4);
+  scene.add(rimCyan);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.08 }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.25 }));
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
+  const grid = new THREE.GridHelper(30, 60, 0x3b2a6b, 0x2a2350);
+  grid.position.y = 0.001;
+  (grid.material as THREE.Material).transparent = true;
+  (grid.material as THREE.Material).opacity = 0.55;
+  scene.add(grid);
+
+  // Glaswürfel mit Neon-Kanten (wie .ln-cube): Kanten Cyan, Innenkante Lila, Flächen kaum sichtbar
+  const cube = new THREE.Group();
+  const CW = 3.3, CH = 3.6, CD = 2.6;
+  const cubeGeo = new THREE.BoxGeometry(CW, CH, CD);
+  const glass = new THREE.Mesh(cubeGeo, new THREE.MeshBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: 0.06, depthWrite: false, side: THREE.DoubleSide }));
+  cube.add(glass);
+  const edgeMat = new THREE.LineBasicMaterial({ color: CYAN_EDGE, transparent: true, opacity: 0.95 });
+  const magenta = new THREE.Color(MAGENTA);
+  cube.add(new THREE.LineSegments(new THREE.EdgesGeometry(cubeGeo), edgeMat));
+  const innerEdge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(CW * 0.96, CH * 0.97, CD * 0.96)),
+    new THREE.LineBasicMaterial({ color: VIOLET, transparent: true, opacity: 0.7 }),
+  );
+  cube.add(innerEdge);
+  const back = new THREE.Mesh(
+    new THREE.PlaneGeometry(CW * 0.62, CH * 0.62),
+    new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.08, depthWrite: false }),
+  );
+  back.position.z = -CD / 2 + 0.02;
+  cube.add(back);
+  cube.position.set(0, CH / 2 + 0.01, 0);
+  cube.rotation.y = 0.32;
+  scene.add(cube);
 
   const white = new THREE.MeshStandardMaterial({ color: WHITE, roughness: 0.28, metalness: 0.02 });
-  const navy = new THREE.MeshStandardMaterial({ color: NAVY, roughness: 0.18, metalness: 0.25 });
-  const light = new THREE.MeshBasicMaterial({ color: LIGHT_BLUE });
+  const navy = new THREE.MeshStandardMaterial({ color: NAVY, roughness: 0.15, metalness: 0.35 });
+  const light = new THREE.MeshBasicMaterial({ color: CYAN });
   const chestMat = light.clone();
-  const ringMat = new THREE.MeshBasicMaterial({ color: RING_BLUE, transparent: true, opacity: 0.9 });
+  const ringMat = new THREE.MeshBasicMaterial({ color: VIOLET, transparent: true, opacity: 0.95 });
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: CYAN, transparent: true, opacity: 0.6 });
   const mesh = (g: THREE.BufferGeometry, m: THREE.Material, p?: [number, number, number], s?: [number, number, number]) => {
     const o = new THREE.Mesh(g, m);
     if (p) o.position.set(...p);
@@ -127,11 +166,13 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
   const orbit = new THREE.Group();
   orbit.position.y = 0.72;
   orbit.rotation.set(1.36, 0, -0.14);
-  orbit.add(new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.012, 8, 160), ringMat));
+  orbit.add(new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.014, 8, 160), ringMat));
+  orbit.add(new THREE.Mesh(new THREE.TorusGeometry(1.36, 0.006, 6, 160), ringMat2));
   const spinner = new THREE.Group();
   orbit.add(spinner);
   [0, 2.1, 4.2].forEach((a) => {
     spinner.add(mesh(new THREE.SphereGeometry(0.15, 24, 16), white, [Math.cos(a) * 1.3, Math.sin(a) * 1.3, 0]));
+    spinner.add(mesh(new THREE.SphereGeometry(0.045, 12, 10), light, [Math.cos(a) * 1.3, Math.sin(a) * 1.3, 0.15]));
   });
   bot.add(orbit);
 
@@ -228,7 +269,9 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
 
     spinner.rotation.z = t * 0.6;
     const pulse = speaking ? 0.6 + 0.4 * Math.abs(Math.sin(t * 11)) : 0.85 + 0.15 * Math.sin(t * 3);
-    chestMat.color.setHex(LIGHT_BLUE).multiplyScalar(pulse);
+    chestMat.color.setHex(CYAN).multiplyScalar(pulse);
+    edgeMat.color.setHex(CYAN_EDGE).lerp(magenta, 0.5 + 0.5 * Math.sin(t * 0.8));
+    cube.rotation.y = 0.32 + Math.sin(t * 0.25) * 0.08;
     tip.scale.setScalar(1 + 0.12 * Math.sin(t * 4));
 
     renderer.render(scene, camera);

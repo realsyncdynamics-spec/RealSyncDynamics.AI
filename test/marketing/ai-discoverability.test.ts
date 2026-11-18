@@ -67,7 +67,8 @@ describe('public/llms.txt', () => {
         : `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat`;
       expect(llms).toContain(`${label}: ${amount}`);
     }
-    expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);
+    expect(llms).toMatch(/Starter kostenlos testen/);
+    expect(llms).not.toMatch(/Growth und Agency kostenlos/);
     expect(llms).not.toMatch(/\bab 1[.]?498/);
     expect(llms).not.toMatch(/14 Tage|Tag 15/);
     const free = byId.get('free');

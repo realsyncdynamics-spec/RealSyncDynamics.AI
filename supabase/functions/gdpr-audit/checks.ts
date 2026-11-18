@@ -313,8 +313,8 @@ export function runChecks(
     });
   }
 
-  // § 5 TMG ist deutsches Recht. Für einen erkennbar nicht-deutschen
-  // Anbieter wäre ein `critical` mit TMG-Bezug schlicht falsch — der
+  // § 5 DDG ist deutsches Recht. Für einen erkennbar nicht-deutschen
+  // Anbieter wäre ein `critical` mit DDG-Bezug schlicht falsch — der
   // Befund bleibt dann informativ. Siehe `jurisdiction.ts`.
   if (!imprintHref) {
     const german = isLikelyGermanJurisdiction(url, html);
@@ -323,8 +323,8 @@ export function runChecks(
         id: 'no_imprint_link',
         severity: 'critical',
         title: 'Kein Impressum-Link gefunden',
-        detail: 'Impressum ist nach § 5 TMG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
-        paragraph_ref: '§ 5 TMG / § 18 MStV',
+        detail: 'Impressum ist nach § 5 DDG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
+        paragraph_ref: '§ 5 DDG / § 18 MStV',
       }
       : {
         id: 'no_imprint_link_non_de',
@@ -332,8 +332,8 @@ export function runChecks(
         title: 'Kein Impressum-Link (DE-spezifisch)',
         detail:
           'Die Site weist keine deutschen Anbieter-Signale auf (TLD, lang-Attribut, Rechtsform). ' +
-          '§ 5 TMG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
-        paragraph_ref: '§ 5 TMG / § 18 MStV',
+          '§ 5 DDG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
+        paragraph_ref: '§ 5 DDG / § 18 MStV',
       });
   }
 

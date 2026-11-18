@@ -44,6 +44,8 @@ interface SupabaseAdminClient {
 const ALLOWED_SOURCES = [
   'website_scanner', 'browser_extension', 'sdk', 'api',
   'github', 'ci_cd', 'manual', 'agent_runtime',
+  // Google-Workspace-Studio-Flows (workspace-events) verlangen diese Quelle ausdrücklich.
+  'google_workspace',
 ] as const;
 
 Deno.serve(async (req) => {

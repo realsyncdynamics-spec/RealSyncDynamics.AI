@@ -1,91 +1,127 @@
 import { Link } from 'react-router-dom';
-import { SEOHead } from '../../components/SEOHead';
-import { Snowflake, ArrowRight, ArrowLeft, MessageCircle } from 'lucide-react';
+import { ArrowRight, MessageCircle } from 'lucide-react';
+import { LandingHeader } from '../../components/landing/LandingShell';
 import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
+import { usePageMeta } from '../../lib/usePageMeta';
 
-const BG = 'rgb(3, 7, 18)';
-const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
+/**
+ * /chatbot/start — Einstieg KI-Chat-Assistent.
+ *
+ * Aufbau angeglichen an die Produkt-Landingpage „KI-Bots“ im Design (15.11.2026):
+ * Stationen einer Antwort, Kanäle, klare Grenzen. Die Stationen folgen
+ * `supabase/functions/bot-chat/index.ts` (Regelprüfung vor dem Speichern,
+ * Kontingent über `consumeUsage`, Budget-Grenze). Der Zustand der Bot-Laufzeit
+ * kommt ausschließlich aus dem Registry über `CapabilityAvailabilityNotice`.
+ */
+const STATIONS: Array<{ k: string; t: string; d: string }> = [
+  { k: 'NACHRICHT', t: 'Frage kommt an', d: 'Eine Besucherin schreibt im Chat auf Ihrer Website.' },
+  { k: 'REGELN', t: 'Regelprüfung', d: 'Vor dem Speichern prüft die Plattform die Nachricht gegen Ihre Regeln. Im Standard läuft die Prüfung im Beobachtungsmodus und protokolliert nur; erst im Durchsetzungsmodus beendet eine Blockade die Antwort.' },
+  { k: 'KONTINGENT', t: 'Kontingent', d: 'Jede Antwort zählt gegen das Nachrichten-Kontingent Ihres Pakets. Ein festes KI-Budget je Monat begrenzt die Kosten.' },
+  { k: 'ANTWORT', t: 'Antwort', d: 'Der Bot antwortet im Ton und mit den Vorgaben, die Sie für ihn festlegen.' },
+  { k: 'PROTOKOLL', t: 'Protokoll', d: 'Frage und Antwort werden in Ihrem Konto gespeichert und sind nachvollziehbar.' },
+];
+
+const CHANNELS: Array<{ n: string; s: string }> = [
+  { n: 'Web-Chat', s: 'Snippet für Ihre Website' },
+  { n: 'WhatsApp', s: 'Vorschau' },
+  { n: 'Telegram', s: 'Vorschau' },
+];
+
+const LIMITS = [
+  'Was der Bot sagen darf, legen Sie in seinen Vorgaben fest. Er ersetzt keine Rechtsberatung.',
+  'Ist das Kontingent erreicht, antwortet der Bot nicht mehr, bis das nächste Kontingent beginnt oder Sie das Paket wechseln.',
+  'Die Übergabe an einen Menschen ist in Vorbereitung.',
+];
 
 export function ChatbotStartPage() {
+  usePageMeta({
+    title: 'KI-Chat-Assistent — Antworten mit Regeln, Kontingent und Protokoll',
+    description:
+      'Der KI-Chat-Assistent von RealSyncDynamics.AI beantwortet Fragen auf Ihrer Website, prüft jede Nachricht gegen Ihre Regeln und hält Kosten über Kontingent und Budget im Rahmen.',
+    url: 'https://realsyncdynamicsai.de/chatbot/start',
+  });
+
   return (
-    <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
-      <SEOHead />
+    <div className="rs-paper bg-hero-only min-h-screen flex flex-col text-titanium-50">
+      <LandingHeader />
 
-      <header className="absolute top-0 left-0 right-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 h-16 sm:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <Snowflake className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
-            <span className="text-lg font-semibold tracking-tight">
-              RealSync <span className="font-normal text-white/90">Dynamics.AI</span>
-            </span>
-          </Link>
-        </div>
-      </header>
-
-      <section className="min-h-screen flex items-center justify-center px-6 lg:px-10 pt-24">
-        <div className="max-w-2xl w-full">
-          <div className="text-center mb-8 sm:mb-10">
-            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-6">
-              <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 text-cyan-400" strokeWidth={1.5} />
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight mb-4 sm:mb-6">
-              KI-Chat-Assistent
-            </h1>
-
-            <p className="text-base sm:text-lg text-white/70 leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
-              Ein intelligenter Chatbot für Ihre Website — für Ihre Dokumentation, Ihre Daten und Ihre Policies. EU-gehostet, mit lokaler Modell-Option (eu_local) auf Anfrage.
-            </p>
-
-            <CapabilityAvailabilityNotice capabilityId="bots" className="mb-8 text-left sm:mb-10" />
-
-            <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 sm:p-8 mb-8 sm:mb-10">
-              <h3 className="text-lg font-semibold mb-4 text-white/90">Was können Sie mit dem Chat-Assistenten tun?</h3>
-              <ul className="space-y-2.5 text-left text-sm sm:text-base text-white/70">
-                <li className="flex items-start gap-3">
-                  <span className="text-cyan-400 font-bold">✓</span>
-                  <span>Eigene Wissensbasis (Docs, Policies, FAQs) hochladen</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-cyan-400 font-bold">✓</span>
-                  <span>Bot trainieren und anpassen (Ton, Verhalten)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-cyan-400 font-bold">✓</span>
-                  <span>Auf Website oder App einbauen (Snippet oder API)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-cyan-400 font-bold">✓</span>
-                  <span>Alle Konversationen in der Evidence Vault loggen</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-cyan-400 font-bold">✓</span>
-                  <span>KI-Entscheidungen dokumentieren und nachweisen</span>
-                </li>
-              </ul>
-            </div>
+      <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-14">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
+            <MessageCircle className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+            02 · Bots · KI-Chat-Assistent
           </div>
+          <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.03] max-w-4xl">
+            Antworten für Ihre Kunden. Mit Regeln, die vorher prüfen.
+          </h1>
+          <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
+            Der Chat-Assistent beantwortet Fragen auf Ihrer Website. Jede Nachricht wird gegen
+            Ihre Regeln geprüft, bevor sie gespeichert wird – im Standard im Beobachtungsmodus –,
+            und jede Antwort zählt gegen ein festes Kontingent.
+          </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8">
-            <Link
-              to="/"
-              className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Zurück
-            </Link>
+          <CapabilityAvailabilityNotice capabilityId="bots" className="mt-8 max-w-3xl" />
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Link
               to="/app/bots"
-              className="inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg"
+              className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
             >
-              Chat-Assistent erstellen
-              <ArrowRight className="w-4 h-4" />
+              Chat-Assistent erstellen <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/pricing?source=chatbot_start"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
+            >
+              Pläne vergleichen
             </Link>
           </div>
+        </div>
+      </section>
 
-          <p className="text-center text-xs sm:text-sm text-white/50 font-mono">
-            Vorschau (Preview) · EU-gehostet · lokale Modell-Option (eu_local)
-          </p>
+      <section aria-label="Stationen einer Antwort" className="px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.25em] text-titanium-100 mb-4">
+            Stationen einer Antwort
+          </h2>
+          <ol className="grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-2 lg:grid-cols-5">
+            {STATIONS.map((s, i) => (
+              <li key={s.k} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex flex-col gap-2">
+                <span className="font-mono text-[11px] tracking-[0.2em] text-titanium-100">
+                  {String(i + 1).padStart(2, '0')} — {s.k}
+                </span>
+                <span className="font-display text-lg text-titanium-50">{s.t}</span>
+                <span className="text-sm text-silver-300 leading-relaxed">{s.d}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section aria-label="Kanäle" className="px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.25em] text-titanium-100 mb-4">Kanäle</h2>
+          <ul className="grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-3">
+            {CHANNELS.map((c) => (
+              <li key={c.n} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex items-baseline justify-between gap-3">
+                <span className="font-display text-lg text-titanium-50">{c.n}</span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-silver-300">{c.s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-label="Grenzen" className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-14">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-5">
+            Klare Grenzen.
+          </h2>
+          <ul className="max-w-3xl space-y-3 border-l border-silver-500 pl-5">
+            {LIMITS.map((l) => (
+              <li key={l} className="text-sm sm:text-base text-silver-300 leading-relaxed">{l}</li>
+            ))}
+          </ul>
         </div>
       </section>
     </div>

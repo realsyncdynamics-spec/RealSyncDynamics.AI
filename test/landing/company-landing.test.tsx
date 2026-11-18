@@ -91,6 +91,25 @@ describe('Unternehmens-Landing v5 – Seite', () => {
     expect(within(gos as HTMLElement).getByRole('link', { name: 'Zur Plattform' })).toHaveAttribute('href', '/demo-tour/dashboard');
   });
 
+  it('Hauptnavigation führt alle drei Produkte; Voice/Builder öffnen den Dialog im passenden Tab', () => {
+    mount();
+    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    const labels = within(nav)
+      .getAllByRole('link')
+      .map((a) => a.textContent);
+    expect(labels).toEqual(['Governance OS', 'Voice Agent', 'Builder', 'Unternehmen', 'Kontakt', 'Impressum', 'Login']);
+    expect(within(nav).getByRole('link', { name: 'Governance OS' })).toHaveAttribute('href', '#p-os');
+
+    for (const [id, idx] of [['voice', 1], ['builder', 2]] as const) {
+      fireEvent.click(screen.getByTestId(`nav-product-${id}`));
+      const dialog = screen.getByRole('dialog', { name: 'Produkte im Detail' });
+      const tabs = within(within(dialog).getByRole('tablist', { name: 'Produkte' })).getAllByRole('tab');
+      expect(tabs[idx]).toHaveAttribute('aria-selected', 'true');
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('dialog', { name: 'Produkte im Detail' })).toBeNull();
+    }
+  });
+
   it('Governance-Tafel ist ein Anker auf #p-os, die anderen öffnen den Dialog', () => {
     mount();
     expect(screen.getByTestId('product-tile-governance')).toHaveAttribute('href', '#p-os');

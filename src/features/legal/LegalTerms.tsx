@@ -70,7 +70,7 @@ export function LegalTerms() {
             „Plattform" oder „Dienst") zwischen
           </p>
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong>
+            <strong className="text-titanium-50">RealSync Dynamics &amp; AI</strong>
             <br />
             Inhaber Dominik Steiner
             <br />

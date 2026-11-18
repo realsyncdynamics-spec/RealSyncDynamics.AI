@@ -31,7 +31,7 @@ export function Welcome() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = params.get('session');
-  const product = params.get('product') ?? 'RealSync Dynamics';
+  const product = params.get('product') ?? 'RealSync Dynamics & AI';
   /** Post-checkout wizard only when Stripe success handed us a session id. */
   const isPostCheckoutWizard = Boolean(sessionId);
   const resumeNext = safeInternalPath(params.get('next'));

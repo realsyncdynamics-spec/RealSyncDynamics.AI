@@ -45,7 +45,7 @@ export function PrivacyPolicy() {
 
         <Section title="1. Verantwortlicher (Art. 4 Nr. 7 DSGVO)">
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            <strong className="text-titanium-50">RealSync Dynamics &amp; AI</strong><br />
             Schwarzburger Str. 31<br />
             98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland

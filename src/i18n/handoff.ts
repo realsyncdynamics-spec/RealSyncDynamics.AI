@@ -292,7 +292,7 @@ export const HANDOFF_OVERRIDES: Record<Lang, Partial<Record<CopyKey, string>>> =
 
 export const HANDOFF_EXTRA = {
   de: {
-    brandName: 'RealSync Dynamics',
+    brandName: 'RealSync Dynamics & AI',
     navLogin: 'Login',
     navGovOs: 'Governance OS',
     navRuntime: 'Runtime',
@@ -430,7 +430,7 @@ export const HANDOFF_EXTRA = {
     v4RoadmapFilterAll: 'Alle',
   },
   en: {
-    brandName: 'RealSync Dynamics',
+    brandName: 'RealSync Dynamics & AI',
     navLogin: 'Login',
     navGovOs: 'Governance OS',
     navRuntime: 'Runtime',

@@ -120,7 +120,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
   // ── Continuous Monitoring & AI-Governance ────────────────────────────────
   {
     name: 'RealSyncDynamics.AI',
-    vendor: 'RealSync Dynamics',
+    vendor: 'RealSync Dynamics & AI',
     url: 'https://RealSyncDynamicsAI.de',
     origin: 'EU',
     transfer: 'eu-intern',

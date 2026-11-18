@@ -184,7 +184,7 @@ export function ComplianceMatrix() {
 
       <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-8 print:hidden">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between gap-3 text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics</div>
+          <div>© 2026 RealSync Dynamics &amp; AI</div>
           <div className="flex flex-wrap gap-4">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>

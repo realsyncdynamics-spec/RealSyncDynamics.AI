@@ -48,7 +48,7 @@ export function Widerrufsbelehrung() {
             Um Ihr Widerrufsrecht auszuüben, müssen Sie uns
           </p>
           <div className="border border-titanium-800 p-3 my-2 text-sm">
-            RealSync Dynamics<br />
+            RealSync Dynamics &amp; AI<br />
             Inhaber: Dominik Steiner<br />
             Schwarzburger Str. 31, 98724 Neuhaus am Rennweg, Thüringen, Deutschland<br />
             Telefon: <a className="text-security-400" href="tel:+4917640132161">+49 176 4013 2161</a><br />

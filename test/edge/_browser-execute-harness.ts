@@ -28,10 +28,10 @@ export function resetDb(): void {
 }
 
 /** Freigabe-Richtlinie für Browser-Origins anlegen (wie in governance_policies). */
-export function allowOrigins(origins: string[], opts: { action?: string; mode?: string; enabled?: boolean } = {}): void {
+export function allowOrigins(origins: string[], opts: { action?: string; mode?: string; enabled?: boolean; environment?: string } = {}): void {
   db.governance_policies.push({
     id: newId(), tenant_id: TENANT, policy_type: 'data_transfer', enabled: opts.enabled ?? true,
-    action: opts.action ?? 'allow', mode: opts.mode ?? 'enforce',
+    action: opts.action ?? 'allow', mode: opts.mode ?? 'enforce', environment: opts.environment ?? 'production',
     condition: { scope: 'browser_origin', origins },
   });
 }
@@ -103,7 +103,11 @@ export async function loadHandler(vi: any): Promise<void> {
     executorCalls.push({ url, body: JSON.parse(init.body) });
     return new Response(JSON.stringify({ ok: true, results: [{ ok: true }] }), { status: 200 });
   }));
-  await import('../../supabase/functions/browser-execute/index.ts');
+  // Pfad bewusst nicht literal: sonst folgt `tsc` (npm run lint) dem Import in die
+  // Deno-Function (jsr:/npm:-Imports, Deno.serve) – supabase/functions ist aus der
+  // Typprüfung ausgeschlossen. vitest löst den Pfad zur Laufzeit normal auf.
+  const handlerModule = '../../supabase/functions/browser-execute/index.ts';
+  await import(/* @vite-ignore */ handlerModule);
 }
 
 export async function call(body: Record<string, unknown>): Promise<{ status: number; json: any }> {

@@ -15,6 +15,7 @@
  *  D11 page_origin mit Pfad ⇒ 400
  *  D12 Sperre wird als governance_event protokolliert (ohne Klartext-Eingaben)
  *  D13 Richtlinie eines anderen Mandanten zählt nicht
+ *  D14 Freigabe für staging gilt nicht in der produktiven Runtime (N3)
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ORIGIN, allowOrigins, call, db, executorCalls, flags, loadHandler, resetDb } from './_browser-execute-harness.ts';
@@ -133,5 +134,12 @@ describe('browser-execute Domain-Freigabe', () => {
   it('D13 Richtlinie eines anderen Mandanten zählt nicht', async () => {
     db.governance_policies.push({ id: 'p-fremd', tenant_id: '00000000-0000-0000-0000-0000000000bb', policy_type: 'data_transfer', enabled: true, action: 'allow', mode: 'enforce', condition: { scope: 'browser_origin', origins: [ORIGIN] } });
     expect((await call({ actions: READ })).status).toBe(403);
+  });
+
+  it('D14 Freigabe für staging gilt nicht in der produktiven Runtime (N3)', async () => {
+    allowOrigins([ORIGIN], { environment: 'staging' });
+    expect((await call({ actions: READ })).status).toBe(403);
+    allowOrigins([ORIGIN]);
+    expect((await call({ actions: READ })).status).toBe(200);
   });
 });

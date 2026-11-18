@@ -24,6 +24,7 @@
 // Keine Deno-Imports: vitest-importierbar.
 
 export const ORIGIN_SCOPE = 'browser_origin';
+export const POLICY_ENVIRONMENT = 'production';
 
 export interface OriginPolicy {
   allow: Set<string>;
@@ -127,7 +128,10 @@ export async function loadOriginPolicy(admin: any, tenantId: string): Promise<Or
     .select('id, action, mode, condition')
     .eq('tenant_id', tenantId)
     .eq('enabled', true)
-    .eq('policy_type', 'data_transfer');
+    .eq('policy_type', 'data_transfer')
+    // N3: Nur Produktionsregeln zählen. Eine Freigabe für staging/development/testing
+    // darf in der produktiven Runtime nichts erlauben (governance_policies.environment).
+    .eq('environment', POLICY_ENVIRONMENT);
   if (error) throw new Error(`governance_policies: ${error.message}`);
   if (!Array.isArray(data)) throw new Error('governance_policies: no result');
   return buildOriginPolicy(data as PolicyRow[]);

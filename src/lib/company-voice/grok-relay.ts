@@ -10,11 +10,23 @@
  *    ausschließlich Audio senden; jeder andere Frame wird verworfen.
  *  - Keine Tools. Tool-Aufrufe des Modells werden nicht weitergereicht.
  *  - Provider-Fehlertexte gehen nicht an den Browser.
- *  - Aus ohne `COMPANY_VOICE_GROK_ENABLED=true` und `XAI_API_KEY` (fail-closed).
+ *  - Aus ohne `COMPANY_VOICE_GROK_ENABLED=true`, `XAI_API_KEY` und das
+ *    KV-Binding `COMPANY_VOICE_LIVE_KV` (fail-closed).
+ *  - Tageslimit über alle Instanzen und Prüfpfad je Gespräch (ohne IP, Audio,
+ *    Transkript): `./live-ledger.ts`.
  *
  * Kein `import.meta`, damit die Pages-Function das Modul laden kann.
  */
 import { takeRateLimit } from './endpoint';
+import {
+  base64PcmSeconds,
+  isLiveVoiceEnabled,
+  logLiveEvent,
+  recordLiveSessionEnd,
+  reserveLiveSession,
+  type LiveEndReason,
+  type LiveLogEvent,
+} from './live-ledger';
 import { loadCompanyFacts } from './second-brain';
 import { CONTACT_PATH, type CompanyVoiceEnv, type PublicFact } from './types';
 
@@ -48,7 +60,7 @@ const SAFE_NAME = /^[A-Za-z0-9._-]{1,64}$/;
 
 /** `null`, solange die Live-Stimme nicht ausdrücklich eingeschaltet und konfiguriert ist. */
 export function resolveGrokLive(env: CompanyVoiceEnv): GrokLiveConfig | null {
-  if (env.COMPANY_VOICE_GROK_ENABLED !== 'true') return null;
+  if (!isLiveVoiceEnabled(env)) return null;
   const apiKey = env.XAI_API_KEY?.trim();
   if (!apiKey) return null;
   const model = env.COMPANY_VOICE_GROK_MODEL?.trim() || DEFAULT_GROK_MODEL;
@@ -92,7 +104,7 @@ export interface RelayOptions {
   maxSessionMs?: number;
   setTimer?: (fn: () => void, ms: number) => unknown;
   clearTimer?: (handle: unknown) => void;
-  onClose?: (reason: LiveCloseReason) => void;
+  onClose?: (reason: LiveCloseReason, stats: { clientAudioSeconds: number }) => void;
 }
 
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -153,7 +165,7 @@ export function startGrokRelay(options: RelayOptions): { close: (reason: LiveClo
     } catch {
       /* bereits zu */
     }
-    options.onClose?.(reason);
+    options.onClose?.(reason, { clientAudioSeconds: base64PcmSeconds(audioChars, LIVE_SAMPLE_RATE) });
   };
 
   const timer = setTimer(() => close('time_limit'), maxSessionMs);
@@ -296,6 +308,10 @@ export interface LiveDeps {
   store?: Map<string, number[]>;
   counter?: { active: number };
   relay?: typeof startGrokRelay;
+  /** Cloudflare `context.waitUntil`, damit der Prüfpfad nach dem Gespräch geschrieben wird. */
+  waitUntil?: (promise: Promise<unknown>) => void;
+  log?: (line: string) => void;
+  newSessionId?: () => string;
 }
 
 const liveHits = new Map<string, number[]>();
@@ -310,7 +326,9 @@ function defaultPair(): [unknown, RelaySocket & { accept(): void }] {
 
 /**
  * GET /api/company-voice/live (WebSocket-Upgrade).
- * Reihenfolge: Schalter → Methode/Upgrade → Origin → Limits → Provider.
+ * Reihenfolge: Schalter → Methode/Upgrade → Origin → Limits (Instanz, IP,
+ * Tag) → Provider. Jede Ablehnung ab den Limits und jedes Gespräch erzeugt
+ * eine Logzeile ohne IP.
  */
 export async function handleCompanyVoiceLiveRequest(
   request: Request,
@@ -323,11 +341,39 @@ export async function handleCompanyVoiceLiveRequest(
   if ((request.headers.get('upgrade') ?? '').toLowerCase() !== 'websocket') return json(426, 'UPGRADE_REQUIRED');
   if (!sameOrigin(request)) return json(403, 'ORIGIN_REJECTED');
 
+  const log = (event: LiveLogEvent) => logLiveEvent(event, deps.log);
+  const reject = (status: number, code: string) => {
+    log({ phase: 'rejected', code });
+    return json(status, code);
+  };
+  const waitUntil = deps.waitUntil ?? ((promise: Promise<unknown>) => void promise);
+  const clock = deps.now ?? (() => Date.now());
+
   const counter = deps.counter ?? liveCounter;
-  if (counter.active >= MAX_CONCURRENT) return json(429, 'BUSY');
+  if (counter.active >= MAX_CONCURRENT) return reject(429, 'BUSY');
   const key = (request.headers.get('cf-connecting-ip') ?? 'local').slice(0, 64);
-  const now = deps.now?.() ?? Date.now();
-  if (!takeRateLimit(key, now, deps.store ?? liveHits, SESSION_LIMIT, SESSION_WINDOW_MS)) return json(429, 'RATE_LIMIT');
+  const now = clock();
+  if (!takeRateLimit(key, now, deps.store ?? liveHits, SESSION_LIMIT, SESSION_WINDOW_MS)) return reject(429, 'RATE_LIMIT');
+
+  // Tageslimit über alle Instanzen. KV-Fehler → keine Sitzung (fail-closed).
+  const reserved = await reserveLiveSession(env, now);
+  if (!reserved.ok) return reserved.code === 'DAILY_LIMIT' ? reject(429, 'DAILY_LIMIT') : reject(503, 'LIMIT_UNAVAILABLE');
+
+  const sessionId = (deps.newSessionId ?? (() => crypto.randomUUID()))();
+  const finish = (reason: LiveEndReason, clientAudioSeconds: number) => {
+    const endedAt = clock();
+    const summary = { sessionId, startedAt: now, endedAt, reason, clientAudioSeconds, model: config.model, voice: config.voice };
+    log({
+      phase: 'ended',
+      sessionId,
+      reason,
+      clientAudioSeconds: Math.round(clientAudioSeconds),
+      durationSeconds: Math.max(0, Math.round((endedAt - now) / 1000)),
+      model: config.model,
+      voice: config.voice,
+    });
+    waitUntil(recordLiveSessionEnd(env, summary));
+  };
 
   const facts = (await loadCompanyFacts(env)).facts;
 
@@ -341,7 +387,10 @@ export async function handleCompanyVoiceLiveRequest(
   } catch {
     upstream = null;
   }
-  if (!upstream) return json(502, 'PROVIDER_UNAVAILABLE');
+  if (!upstream) {
+    finish('provider_unavailable', 0);
+    return json(502, 'PROVIDER_UNAVAILABLE');
+  }
 
   let pair: [unknown, RelaySocket & { accept(): void }];
   try {
@@ -353,6 +402,7 @@ export async function handleCompanyVoiceLiveRequest(
     } catch {
       /* nichts offen */
     }
+    finish('upgrade_failed', 0);
     return json(500, 'UPGRADE_FAILED');
   }
   const [browserSide, serverSide] = pair;
@@ -360,13 +410,15 @@ export async function handleCompanyVoiceLiveRequest(
   serverSide.accept();
 
   counter.active += 1;
+  log({ phase: 'started', sessionId, day: reserved.day, used: reserved.used, limit: reserved.limit, model: config.model, voice: config.voice });
   (deps.relay ?? startGrokRelay)({
     client: serverSide,
     upstream,
     instructions: buildLiveInstructions(facts),
     voice: config.voice,
-    onClose: () => {
+    onClose: (reason, stats) => {
       counter.active = Math.max(0, counter.active - 1);
+      finish(reason, stats?.clientAudioSeconds ?? 0);
     },
   });
 

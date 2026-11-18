@@ -37,6 +37,10 @@ describe('classifyClaimError — beide RPC-Fassungen', () => {
     ['verified account email required', 'EMAIL_UNVERIFIED'],
     ['no tenant membership', 'TENANT_NOT_FOUND'],
     ['explicit tenant selection required', 'TENANT_SELECTION_REQUIRED'],
+    // Tatsächliche Produktiv-RPC vom 17.11.2026
+    ['tenant ambiguous', 'TENANT_SELECTION_REQUIRED'],
+    ['not a member', 'TENANT_FORBIDDEN'],
+    ['insufficient role', 'TENANT_FORBIDDEN'],
     ['tenant claim not authorized', 'TENANT_FORBIDDEN'],
     ['audit ownership not verified', 'OWNERSHIP_NOT_VERIFIED'],
     ['audit ownership inconsistent', 'OWNERSHIP_INCONSISTENT'],

@@ -22,12 +22,12 @@ const WHAT_IT_DOES = [
   {
     icon: Search,
     title: 'Scannen',
-    text: 'Analysiert deine Website auf DSGVO-, TTDSG-, Tracking- und Code-Compliance-Risiken — in unter 30 Sekunden.',
+    text: 'Führt einen Website-Audit zu ausgewählten DSGVO-, Tracking- und Einwilligungsthemen aus. Die Dauer hängt von der Website ab.',
   },
   {
     icon: Wrench,
-    title: 'Beheben',
-    text: 'Priorisiert jeden Fehler, erklärt die Rechtslage und liefert konkrete Fixes — bis hin zu Code-Vorschlägen.',
+    title: 'Auswerten',
+    text: 'Zeigt die erkannten Befunde und ihren Schweregrad. Die automatische Analyse von GitHub-Repositories und Code-Fixes ist noch in Vorbereitung.',
   },
   {
     icon: Activity,
@@ -41,7 +41,7 @@ export function OptimizerOverview() {
   usePageMeta({
     title: 'Claude Code Optimizer — Website scannen, Fehler beheben, überwachen',
     description:
-      'Der Claude Code Optimizer scannt deine Website auf DSGVO-, Tracking- und Code-Compliance-Fehler, erklärt jeden Befund und optimiert Schritt für Schritt.',
+      'Website-Audit mit Befundübersicht. Repository-Analyse, automatische Code-Fixes und Pull Requests sind noch nicht verfügbar.',
     url: 'https://RealSyncDynamicsAI.de/claude-code-optimizer',
   });
 
@@ -56,9 +56,9 @@ export function OptimizerOverview() {
         nextActionLabel="Der Button »Website scannen« führt dich zur Scan-Seite — dort gibst du deine URL ein und erhältst deine Fehlerliste."
       >
         <p>
-          Der Claude Code Optimizer ist dein geführter Weg von „Ich weiß nicht, wo meine Website
-          steht" bis „meine Compliance ist auditfähig". Jeder Schritt ist eine eigene, erklärte Seite
-          — du wirst nie im Unklaren gelassen, was als Nächstes passiert.
+          Der Claude Code Optimizer bietet derzeit einen geführten Website-Audit mit Befundübersicht.
+          Ein Scan ist keine vollständige Code- oder Rechtsprüfung. Die automatische Repository-
+          Analyse mit Code-Änderungen ist als eigenständiger Ausbauschritt geplant.
         </p>
         <p className="text-titanium-400">
           So läuft es ab: <span className="text-titanium-200">Überblick → Website scannen →
@@ -88,8 +88,8 @@ export function OptimizerOverview() {
           Optionen, Kosten &amp; Pakete
         </h2>
         <p className="text-sm text-titanium-400 mb-4 leading-relaxed">
-          Der Scan ist kostenlos und ohne Account. Zum Beheben und Überwachen ist der Optimizer in
-          diesen Paketen enthalten:
+          Der Website-Scan ist kostenlos und ohne Account. Die folgenden Tarife sind Plattformpakete.
+          Ein höherer Tarif schaltet derzeit keine automatische Repository-Reparatur in diesem Ablauf frei:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {OPTIMIZER_PACKAGES.map((pkg) => (
@@ -131,7 +131,7 @@ export function OptimizerOverview() {
         </SecondaryLink>
       </div>
       <p className="mt-3 text-[11px] text-titanium-500">
-        Kostenlos · Kein Account für den Scan · Ergebnis in ~30 Sekunden.
+        Kostenloser Website-Audit ohne Konto · Keine automatische GitHub-Analyse.
       </p>
     </OptimizerShell>
   );

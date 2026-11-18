@@ -138,8 +138,12 @@ export function classifyClaimError(error: { message?: unknown; code?: unknown } 
   if (message.includes('verified account email required') || message.includes('email unverified')) {
     return 'EMAIL_UNVERIFIED';
   }
-  if (message.includes('explicit tenant selection required')) return 'TENANT_SELECTION_REQUIRED';
-  if (message.includes('tenant claim not authorized')) return 'TENANT_FORBIDDEN';
+  if (message.includes('explicit tenant selection required') || message.includes('tenant ambiguous')) {
+    return 'TENANT_SELECTION_REQUIRED';
+  }
+  if (message.includes('tenant claim not authorized') || message.includes('not a member') || message.includes('insufficient role')) {
+    return 'TENANT_FORBIDDEN';
+  }
   if (message.includes('no tenant')) return 'TENANT_NOT_FOUND';
   if (message.includes('audit not found')) return 'NOT_FOUND';
   if (message.includes('audit ownership not verified') || message.includes('email mismatch')) {

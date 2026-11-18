@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { GovernanceRuntimeDashboard } from "../features/governance/GovernanceRuntimeDashboard";
-import { LandingHeader, SCAN_CTA } from "../components/landing/LandingShell";
+import { SCAN_CTA } from "../components/landing/LandingShell";
+import { StudioStarfield } from "../components/landing/studio/StudioStarfield";
 import { usePageMeta } from "../lib/usePageMeta";
-import { CTA } from '../content/runtimeVocab';
+import '../styles/governance-runtime-studio.css';
 
 /**
  * /governance-runtime — öffentliche Produktseite der Governance Runtime.
@@ -12,6 +14,9 @@ import { CTA } from '../content/runtimeVocab';
  * `policy-engine`, `ai-gateway`, `evidence-surfaces` = live; laufendes
  * Domain-Monitoring = Beta. Der eingebettete Dashboard-Ausschnitt nutzt
  * ausschließlich Beispieldaten und ist deshalb sichtbar als Demo gekennzeichnet.
+ *
+ * Gestaltung: Studio-Look wie `/design/landing-studio` (Sternenhimmel, Glas,
+ * Neon), Akzente dezent in Blau — Styles in `governance-runtime-studio.css`.
  */
 const STEPS: Array<{ k: string; t: string; d: string; beta?: boolean }> = [
   { k: "DISCOVER", t: "Erfassen", d: "Websites, KI-Systeme und Agents als Assets im Inventar." },
@@ -29,102 +34,127 @@ export function GovernanceRuntimePage() {
       "Die Governance Runtime von RealSyncDynamics.AI: Runtime-Events aus KI-Systemen, Websites und Agents gegen Policies prüfen; Warnungen, Freigaben und Blockaden als verkettete Nachweise ablegen. DSGVO & EU AI Act, Datenhaltung in Frankfurt.",
     url: "https://realsyncdynamicsai.de/governance-runtime",
   });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
 
   return (
-    <div className="rs-paper bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      <LandingHeader />
+    <div className="grs">
+      <div className="grs-sky" aria-hidden="true" />
+      <StudioStarfield />
+      <a href="#inhalt" className="grs-skip">Zum Inhalt springen</a>
 
-      <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-            AI Governance Runtime · Teil des Governance OS
-          </div>
-
-          <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.03] max-w-4xl">
-            Jede AI-, Web- und Agent-Aktion wird zum Governance Event.
-          </h1>
-
-          <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
-            Die Runtime nimmt Ereignisse aus Website-Scans, KI-Systemen, Agents und
-            SDK entgegen und prüft sie gegen Ihre Policies. Warnungen, Freigaben und
-            Blockaden landen als verketteter Nachweis im Evidence Vault — eine
-            Governance-Ebene für DSGVO und EU AI Act.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <Link
-              to={SCAN_CTA.replace("landing-scan", "governance-runtime")}
-              className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
-            >
-              Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+      <div className="grs-wrap">
+        <header className={menuOpen ? "grs-nav grs-nav--open" : "grs-nav"}>
+          <div className="grs-nav-inner">
+            <Link to="/" className="grs-brand" aria-label="RealSync Dynamics & AI – Startseite">
+              <span className="grs-mark" aria-hidden="true"><span /><span /></span>
+              REALSYNC AI
             </Link>
-            <Link
-              to="/docs/governance"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
-            >
-              API-Referenz ansehen
+            <nav className="grs-links" aria-label="Hauptnavigation">
+              <Link to="/" onClick={closeMenu}>Startseite</Link>
+              <Link to="/governance-runtime" aria-current="page" onClick={closeMenu}>Runtime</Link>
+              <Link to="/docs/governance" onClick={closeMenu}>API &amp; Docs</Link>
+              <Link to="/pricing" onClick={closeMenu}>Preise</Link>
+              <Link to="/welcome" className="grs-links-login" onClick={closeMenu}>Anmelden</Link>
+            </nav>
+            <Link to="/welcome" className="grs-btn grs-btn--primary grs-nav-cta">
+              Login / Register
             </Link>
+            <button
+              type="button"
+              className="grs-burger"
+              aria-label="Menü"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              ☰
+            </button>
           </div>
-        </div>
-      </section>
+        </header>
 
-      <section aria-label="Ablauf der Governance Runtime" className="px-4 sm:px-6 lg:px-8 pb-12">
-        <ol className="max-w-5xl mx-auto grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-2 lg:grid-cols-3">
-          {STEPS.map((s, i) => (
-            <li key={s.k} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex flex-col gap-2">
-              <span className="font-mono text-[11px] tracking-[0.2em] text-titanium-100">
-                {String(i + 1).padStart(2, "0")} — {s.k}
-                {s.beta ? <span className="ml-2 border border-silver-500 px-1.5 py-0.5 text-[10px] text-silver-300">BETA</span> : null}
-              </span>
-              <span className="font-display text-lg text-titanium-50">{s.t}</span>
-              <span className="text-sm text-silver-300 leading-relaxed">{s.d}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+        <main id="inhalt">
+          <section className="grs-hero">
+            <span className="grs-pill">✦ AI Governance Runtime · Teil des Governance OS</span>
+            <h1 className="grs-h1">
+              Jede AI-, Web- und Agent-Aktion wird zum <span className="grs-grad">Governance Event.</span>
+            </h1>
+            <p className="grs-lead">
+              Die Runtime nimmt Ereignisse aus Website-Scans, KI-Systemen, Agents und
+              SDK entgegen und prüft sie gegen Ihre Policies. Warnungen, Freigaben und
+              Blockaden landen als verketteter Nachweis im Evidence Vault — eine
+              Governance-Ebene für DSGVO und EU AI Act.
+            </p>
+            <div className="grs-cta">
+              <Link to={SCAN_CTA.replace("landing-scan", "governance-runtime")} className="grs-btn grs-btn--primary">
+                Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/docs/governance" className="grs-btn grs-btn--ghost">
+                API-Referenz ansehen →
+              </Link>
+            </div>
+          </section>
 
-      <div className="px-4 sm:px-6 lg:px-8">
-        <p
-          role="note"
-          data-testid="runtime-demo-label"
-          className="max-w-5xl mx-auto border border-silver-500/60 px-4 py-3 text-sm text-silver-200"
-        >
-          <strong className="text-titanium-50">Demo · Beispieldaten.</strong>{" "}
-          Der folgende Ausschnitt zeigt erfundene Assets, Events und Policies zur
-          Veranschaulichung — keine Kundendaten, kein Live-Stream. Ihre eigene Runtime
-          entsteht nach dem Login aus Ihren Systemen.
-        </p>
+          <section aria-label="Ablauf der Governance Runtime" className="grs-card grs-panel">
+            <p className="grs-eyebrow">Ablauf</p>
+            <h2 className="grs-h2">Vom Ereignis zum Nachweis</h2>
+            <p className="grs-sub">Sechs Schritte, ein Prüfpfad — vom Inventar bis zum prüffähigen Bericht.</p>
+            <ol className="grs-steps">
+              {STEPS.map((s, i) => (
+                <li key={s.k} className="grs-step">
+                  <span className="grs-num">
+                    {String(i + 1).padStart(2, "0")} — {s.k}
+                    {s.beta ? <span className="grs-status">BETA</span> : null}
+                  </span>
+                  <span className="grs-step-title">{s.t}</span>
+                  <span className="grs-step-body">{s.d}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section aria-label="Runtime-Ausschnitt (Demo)" className="grs-card grs-panel">
+            <p className="grs-eyebrow">Einblick</p>
+            <h2 className="grs-h2">So sieht die Runtime aus</h2>
+            <p role="note" data-testid="runtime-demo-label" className="grs-note">
+              <strong>Demo · Beispieldaten.</strong>{" "}
+              Der folgende Ausschnitt zeigt erfundene Assets, Events und Policies zur
+              Veranschaulichung — keine Kundendaten, kein Live-Stream. Ihre eigene Runtime
+              entsteht nach dem Login aus Ihren Systemen.
+            </p>
+            <div className="grs-demo">
+              <GovernanceRuntimeDashboard />
+            </div>
+          </section>
+
+          <section className="grs-card grs-final">
+            <ShieldCheck className="grs-icon" aria-hidden="true" />
+            <h2 className="grs-h2">
+              Compliance wird Runtime — <span className="grs-grad">nicht Dokument.</span>
+            </h2>
+            <p className="grs-sub">
+              Starten Sie mit dem kostenlosen Governance Scan Ihrer Domain. Pläne ab
+              Starter schalten Evidence Vault, Policy Packs und Prüfpfad frei; für
+              Konzern-Setups gibt es Enterprise auf Anfrage.
+            </p>
+            <div className="grs-cta">
+              <Link to={SCAN_CTA.replace("landing-scan", "governance-runtime-footer")} className="grs-btn grs-btn--primary">
+                Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/pricing" className="grs-btn grs-btn--ghost">
+                Pläne vergleichen
+              </Link>
+            </div>
+          </section>
+        </main>
+
+        <footer className="grs-footer">
+          <span>RealSync Dynamics &amp; AI · Governance OS</span>
+          <nav aria-label="Rechtliches" style={{ display: "flex", gap: 14 }}>
+            <Link to="/impressum">Impressum</Link>
+            <Link to="/datenschutz">Datenschutz</Link>
+          </nav>
+        </footer>
       </div>
-
-      <GovernanceRuntimeDashboard />
-
-      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16">
-        <div className="max-w-4xl mx-auto text-center">
-          <ShieldCheck className="mx-auto h-10 w-10 text-titanium-100 mb-5" />
-          <h2 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight">
-            Compliance wird Runtime — nicht Dokument.
-          </h2>
-          <p className="mt-4 text-silver-300 leading-relaxed">
-            Starten Sie mit dem kostenlosen Governance Scan Ihrer Domain. Pläne ab
-            Starter schalten Evidence Vault, Policy Packs und Prüfpfad frei; für
-            Konzern-Setups gibt es Enterprise auf Anfrage.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to={SCAN_CTA.replace("landing-scan", "governance-runtime-footer")}
-              className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
-            >
-              Kostenlosen Governance Scan starten <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 text-silver-100 text-base font-semibold rounded-none"
-            >
-              Pläne vergleichen
-            </Link>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

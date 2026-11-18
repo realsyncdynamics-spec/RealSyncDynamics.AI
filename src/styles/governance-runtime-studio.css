@@ -1,0 +1,147 @@
+/*
+ * /governance-runtime im Studio-Look (Sternenhimmel, Glasflächen, Neon) —
+ * gleiche Gestaltung wie /design/landing-studio, Akzente dezent in Blau statt Lila.
+ * Alles unter `.grs` und nur über eigene Klassen, damit der eingebettete
+ * Runtime-Ausschnitt (Tailwind) seine Typografie behält.
+ * Hinweis: runde Glasflächen weichen bewusst von der Hard-Edge-DNA ab (Owner-Entscheidung 18.11.).
+ */
+.grs {
+  --grs-bg: #050913;
+  --grs-ink: #eef3fb;
+  --grs-muted: #a3afc4;
+  --grs-line: rgba(255, 255, 255, 0.09);
+  --grs-glass: rgba(10, 16, 32, 0.72);
+  --grs-blue: #3b82f6;
+  --grs-blue-soft: #93c5fd;
+  --grs-cyan: #38bdf8;
+  --grs-cyan-soft: #7dd3fc;
+  --grs-radius: 22px;
+  position: relative;
+  min-height: 100vh;
+  color: var(--grs-ink);
+  background: var(--grs-bg);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.grs-sky {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 8% 18%, rgba(37, 99, 235, 0.34), transparent 70%),
+    radial-gradient(45% 40% at 30% 70%, rgba(59, 130, 246, 0.13), transparent 70%),
+    radial-gradient(50% 45% at 92% 82%, rgba(14, 116, 144, 0.3), transparent 70%),
+    radial-gradient(40% 40% at 70% 10%, rgba(30, 64, 175, 0.24), transparent 70%);
+}
+.grs .lst-stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.grs-wrap { position: relative; z-index: 1; width: min(1180px, 100% - 48px); margin-inline: auto; }
+.grs-skip { position: absolute; left: -999px; top: 8px; z-index: 100; background: #fff; color: #000; padding: 8px 12px; border-radius: 8px; }
+.grs-skip:focus { left: 12px; }
+.grs :focus-visible { outline: 2px solid var(--grs-cyan-soft); outline-offset: 3px; }
+
+/* Navigation (Glas-Pille wie Studio) */
+.grs-nav { position: sticky; top: 18px; z-index: 50; margin-top: 18px; }
+.grs-nav-inner {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 12px 12px 20px; border-radius: 999px;
+  background: linear-gradient(180deg, rgba(22, 32, 56, 0.72), rgba(10, 16, 32, 0.72));
+  border: 1px solid var(--grs-line);
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.grs-brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 0.08em; font-size: 15px; color: inherit; text-decoration: none; }
+.grs-mark { position: relative; width: 34px; height: 26px; }
+.grs-mark span { position: absolute; inset: 0; border-radius: 8px 14px 8px 14px; transform: skewX(-18deg); }
+.grs-mark span:first-child { background: linear-gradient(135deg, #1d4ed8, #60a5fa); left: -2px; }
+.grs-mark span:last-child { background: linear-gradient(135deg, #7dd3fc, #818cf8); opacity: 0.75; left: 8px; top: 2px; }
+.grs-links { display: flex; gap: 4px; }
+.grs-links a { padding: 9px 18px; border-radius: 999px; color: #d3dbea; font-size: 15px; font-weight: 500; text-decoration: none; transition: background 0.2s, color 0.2s; }
+.grs-links a:hover, .grs-links a[aria-current='page'] { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.grs-links-login { display: none; }
+.grs-burger { display: none; background: none; border: 1px solid var(--grs-line); color: #fff; border-radius: 12px; width: 42px; height: 42px; font-size: 18px; cursor: pointer; }
+
+/* Buttons */
+.grs-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 13px 26px; border-radius: 999px; font: inherit; font-weight: 600; font-size: 15px; text-decoration: none;
+  border: 1px solid transparent; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.grs-btn:hover { transform: translateY(-1px); }
+.grs-btn--primary {
+  color: #fff; background: linear-gradient(90deg, #7cc4ff, #3b82f6 60%, #2563eb);
+  box-shadow: 0 8px 28px rgba(59, 130, 246, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.grs-btn--primary:hover { box-shadow: 0 10px 36px rgba(59, 130, 246, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.grs-btn--ghost { color: var(--grs-blue-soft); background: rgba(12, 20, 40, 0.6); border-color: rgba(147, 197, 253, 0.42); }
+.grs-btn--ghost:hover { background: rgba(59, 130, 246, 0.12); }
+
+/* Hero */
+.grs-hero { padding: 72px 0 40px; max-width: 900px; }
+.grs-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; letter-spacing: 0.06em; color: var(--grs-cyan-soft);
+  background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.25);
+}
+.grs-h1 { font-size: clamp(38px, 5.4vw, 62px); line-height: 1.06; letter-spacing: -0.025em; font-weight: 600; margin: 22px 0; }
+.grs-grad { background: linear-gradient(90deg, #bfe3ff, #7cc4ff 55%, #3b82f6); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
+.grs-lead { color: #c4cddd; font-size: 17.5px; max-width: 720px; margin: 0; }
+.grs-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 28px; }
+
+/* Glasflächen */
+.grs-card {
+  background: linear-gradient(180deg, rgba(20, 30, 52, 0.55), rgba(10, 16, 32, 0.55));
+  border: 1px solid var(--grs-line); border-radius: var(--grs-radius);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.grs-panel { padding: 40px 36px; margin-bottom: 22px; }
+.grs-eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grs-cyan); margin: 0 0 10px; }
+.grs-h2 { font-size: clamp(28px, 3.4vw, 36px); line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; margin: 0 0 14px; }
+.grs-sub { color: var(--grs-muted); font-size: 16.5px; max-width: 780px; margin: 0; }
+
+.grs-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 26px 0 0; padding: 0; list-style: none; }
+.grs-step { display: flex; flex-direction: column; gap: 6px; padding: 22px 20px; background: var(--grs-glass); border: 1px solid var(--grs-line); border-radius: 18px; transition: border-color 0.25s, transform 0.25s; }
+.grs-step:hover { border-color: rgba(147, 197, 253, 0.35); transform: translateY(-2px); }
+.grs-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--grs-blue-soft); }
+.grs-step-title { font-size: 17px; font-weight: 600; }
+.grs-step-body { color: var(--grs-muted); font-size: 14.5px; }
+.grs-status {
+  display: inline-flex; margin-left: 8px; padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--grs-cyan-soft); background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.grs-note {
+  margin: 0 0 18px; padding: 14px 18px; border-radius: 14px; font-size: 14px; color: #c8d1e0;
+  background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(147, 197, 253, 0.25);
+}
+.grs-note strong { color: #fff; }
+/* Rahmen für den eingebetteten Demo-Ausschnitt */
+.grs-demo { padding: 8px 0; overflow: hidden; }
+
+.grs-final { text-align: center; padding: 48px 32px; margin: 22px 0; }
+.grs-final .grs-sub { margin-inline: auto; }
+.grs-final .grs-cta { justify-content: center; }
+.grs-icon { width: 40px; height: 40px; margin: 0 auto 18px; color: var(--grs-cyan-soft); filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.5)); }
+
+.grs-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 0 44px; color: var(--grs-muted); font-size: 14px; }
+.grs-footer a { color: inherit; text-decoration: none; }
+.grs-footer a:hover { color: #fff; }
+
+@media (max-width: 980px) {
+  .grs-steps { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .grs-links, .grs-nav-cta { display: none; }
+  .grs-burger { display: block; }
+  .grs-nav--open .grs-links {
+    display: flex; flex-direction: column; position: absolute; top: 70px; left: 0; right: 0; padding: 12px;
+    background: rgba(10, 16, 32, 0.96); border: 1px solid var(--grs-line); border-radius: 22px;
+  }
+  .grs-nav--open .grs-links-login { display: block; }
+  .grs-hero { padding-top: 48px; }
+  .grs-panel, .grs-final { padding: 30px 20px; }
+  .grs-steps { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grs-btn, .grs-step { transition: none; }
+}

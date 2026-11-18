@@ -103,17 +103,20 @@ describe('PostScanChoiceRow destinations', () => {
       findings: [{ id: '1', severity: 'high', title: 't', detail: 'd' }],
     });
     expect(choices).toHaveLength(4);
-    expect(choices[0].id).toBe('activation');
+    expect(choices[0].id).toBe('website-redesign');
     expect(choices.filter((c) => c.primary)).toHaveLength(1);
     expect(choices[0].primary).toBe(true);
     const byId = Object.fromEntries(choices.map((c) => [c.id, c]));
-    expect(byId.monitor.badge).toBe('coming-soon');
+    expect(byId['website-redesign'].badge).toBe('preview');
+    expect(byId['website-redesign'].to).toContain('/handwerk-website?');
+    expect(byId['website-redesign'].to).toContain('source_url=https%3A%2F%2Fexample.com%2F');
+    expect(byId['website-redesign'].to).toContain('audit_id=aud-1');
     expect(byId['fix-plan'].to).toBe('/onboarding/aud-1');
     expect(byId.activation.to).toContain('%2Fapp%2Factivation');
     expect(byId.export.badge).toBe('preview');
   });
 
-  it('leads with the workspace setup as the single primary step, without trial promise', () => {
+  it('leads with a non-production frontend preview and keeps direct governance available', () => {
     const choices = buildPostScanChoices({
       auditId: 'aud-1',
       domain: 'example.com',
@@ -121,9 +124,10 @@ describe('PostScanChoiceRow destinations', () => {
       severity: 'high',
       hasFindings: false,
     });
-    expect(choices[0].id).toBe('activation');
-    expect(choices[0].title).toBe('Governance-Workspace einrichten');
-    expect(choices[0].badge).toBe('live');
+    expect(choices[0].id).toBe('website-redesign');
+    expect(choices[0].title).toBe('Neues Frontend als Vorschau erstellen');
+    expect(choices[0].badge).toBe('preview');
+    expect(choices.find((choice) => choice.id === 'activation')?.badge).toBe('live');
     expect(choices.filter((c) => c.primary)).toHaveLength(1);
     expect(choices[0].primary).toBe(true);
     for (const c of choices) {

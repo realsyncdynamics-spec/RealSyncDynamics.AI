@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { SandboxedPreviewFrame } from '../components/preview/SandboxedPreviewFrame';
 import { ArrowRight, Bot, CalendarDays, Check, Globe2, Loader2, Phone, Search, ShieldCheck, Sparkles, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
+import { governanceHandoffHref, normalizeWebsiteSource, voiceHandoffHref, websiteHandoffHref } from '../features/siteos/scanHandoff';
 import { useTenant } from '../core/access/TenantProvider';
 import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
 import { createSiteOsCheckoutSession } from '../features/billing/checkout';
@@ -56,14 +57,16 @@ const PHASES: Array<{ id: Phase; label: string }> = [
   { id: 'input', label: 'Analyse' },
   { id: 'scan', label: 'Befund' },
   { id: 'preview', label: 'Vorschau' },
-  { id: 'offer', label: 'Transformation' },
+  { id: 'offer', label: 'Angebot & Voice' },
 ];
 
 export function WebsiteTransformationFlow() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const auditId = searchParams.get('audit_id');
   const { activeTenantId } = useTenant();
   const { isAuthenticated } = useSupabaseAuth();
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(() => normalizeWebsiteSource(searchParams.get('source_url') ?? '') ?? '');
   const [phase, setPhase] = useState<Phase>('input');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -71,7 +74,8 @@ export function WebsiteTransformationFlow() {
   const [scan, setScan] = useState<{ scores: any; findings: any[] } | null>(null);
   const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
-  const [features] = useState<string[]>(FEATURES.map(([id]) => id));
+  // Suggested capabilities are not enabled until provisioned and verified.
+  const [features] = useState<string[]>([]);
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
   // `showcase` ist hier nicht optional, sondern der Unterschied zwischen
@@ -91,14 +95,14 @@ export function WebsiteTransformationFlow() {
   const currentPhaseIndex = PHASES.findIndex((item) => item.id === phase);
 
   const startScan = async () => {
-    const clean = url.trim();
-    if (!/^https?:\/\/[^\s]+$/i.test(clean)) { setError('Bitte eine vollständige URL inklusive https:// eingeben.'); return; }
+    const clean = normalizeWebsiteSource(url);
+    if (!clean) { setError('Bitte eine öffentliche Website-Adresse (https://example.de) eingeben.'); return; }
     // Vor dem Login-Redirect, nicht danach — siehe SITEOS_FLOW_FUNCTIONS.
     if (!allEdgeFunctionsAvailable(SITEOS_FLOW_FUNCTIONS)) {
       setError('Die Website-Analyse ist derzeit nicht verfügbar. Bitte legen Sie dafür kein Konto an — wir schalten sie frei, sobald der Dienst läuft.');
       return;
     }
-    if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(`/handwerk-website?source_url=${encodeURIComponent(clean)}`)}`); return; }
+    if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(websiteHandoffHref(clean, auditId))}`); return; }
     if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
     setBusy(true); setError('');
     try {
@@ -157,6 +161,8 @@ export function WebsiteTransformationFlow() {
   };
 
   const declineTransformation = () => navigate(planTier?.cta.href ?? '/pricing');
+  const continueWithVoice = () => navigate(voiceHandoffHref(discovery?.source_url ?? url, auditId));
+  const continueWithoutVoice = () => navigate(governanceHandoffHref(auditId));
 
   const phaseCopy = {
     input: {
@@ -177,7 +183,7 @@ export function WebsiteTransformationFlow() {
     offer: {
       eyebrow: 'TRANSFORMATION · NÄCHSTER SCHRITT',
       title: 'Vom Befund zur fertigen Website.',
-      text: 'Sie entscheiden, ob die geprüfte Website jetzt als moderne, SEO-starke und compliance-bewusste Version umgesetzt wird.',
+      text: 'Sie entscheiden über die Website-Umsetzung und danach optional über Voice. Erst die freigegebene Vorschau und geprüfte Integrationen dürfen live gehen.',
     },
   }[phase];
 
@@ -214,9 +220,27 @@ export function WebsiteTransformationFlow() {
 
           {phase === 'scan' && scan && <section className="pb-14"><div className="grid gap-3 sm:grid-cols-5">{[['Website Health', scan.scores.health], ['DSGVO', scan.scores.compliance], ['Performance', scan.scores.performance], ['AI Risk', scan.scores.aiRisk], ['Risiko', scan.scores.risk]].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-white/[.08] bg-white/[.025] p-5"><div className="text-xs text-white/40">{label}</div><div className="mt-2 text-3xl font-bold tracking-tight">{typeof value === 'number' ? Math.round(value) : '—'}<span className="text-sm font-normal text-white/20">/100</span></div></div>)}</div><div className="mt-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="text-sm font-semibold">{scan.findings.length} relevante Findings</div><div className="mt-1 text-xs text-white/35">Die wichtigsten Punkte aus dem aktuellen Scan.</div></div><span className="font-mono text-[9px] uppercase tracking-[.18em] text-cyan-300">Evidence trail</span></div><div className="mt-5 grid gap-2 md:grid-cols-2">{scan.findings.slice(0, 6).map((finding) => <div key={finding.code} className="rounded-xl border border-white/[.07] bg-black/15 p-4"><span className="font-mono text-[9px] uppercase text-cyan-300">{finding.severity}</span><div className="mt-1 text-xs text-white/70">{finding.title}</div></div>)}</div></div><div className="mt-5 flex justify-end"><button onClick={() => void buildPreview()} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[#050914] hover:bg-cyan-300 disabled:opacity-50">{busy ? <Loader2 className="animate-spin" size={15}/> : <Sparkles size={15}/>} Transformation vorbereiten <ArrowRight size={15}/></button></div></section>}
 
-          {phase === 'preview' && previewBlueprint && <section className="pb-14"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs transition ${template === item.id ? 'border-cyan-400/60 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/45 hover:text-white'}`}>{item.label}</button>)}</div><span className="text-[10px] uppercase tracking-[.15em] text-white/25">Live Blueprint Preview</span></div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black/40"><SandboxedPreviewFrame title="Neue Website Vorschau" html={previewHtml} className="h-[680px] w-full bg-white" /></div><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.025] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span className="text-white/60">{label}</span><Check size={14} className="ml-auto text-emerald-400"/></div>)}</div><div className="mt-6 flex justify-end"><button onClick={() => setPhase('offer')} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[#050914] hover:bg-cyan-300">Umsetzung ansehen <ArrowRight size={15}/></button></div></section>}
+          {phase === 'preview' && previewBlueprint && <section className="pb-14"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs transition ${template === item.id ? 'border-cyan-400/60 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/45 hover:text-white'}`}>{item.label}</button>)}</div><span className="text-[10px] uppercase tracking-[.15em] text-white/25">Live Blueprint Preview</span></div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black/40"><SandboxedPreviewFrame title="Neue Website Vorschau" html={previewHtml} className="h-[680px] w-full bg-white" /></div><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.025] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span className="text-white/60">{label}</span><span className="ml-auto text-[9px] text-amber-300">Optional</span></div>)}</div><div className="mt-6 flex justify-end"><button onClick={() => setPhase('offer')} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[#050914] hover:bg-cyan-300">Umsetzung ansehen <ArrowRight size={15}/></button></div></section>}
 
-          {phase === 'offer' && <section className="mx-auto max-w-3xl pb-14"><div className="grid gap-4 sm:grid-cols-[1.4fr_.8fr]"><div className="rounded-3xl border border-white/[.08] bg-white/[.025] p-7 sm:p-8"><div className="font-mono text-[9px] uppercase tracking-[.2em] text-cyan-300">SiteOS Transformation</div><h2 className="mt-3 text-2xl font-bold tracking-tight">Aus Analyse wird Umsetzung.</h2><p className="mt-3 text-sm leading-6 text-white/45">Ihre bestehende Website wird auf Basis des Befunds neu strukturiert, modernisiert und als SiteOS-Projekt vorbereitet. Die alte Website bleibt dabei unangetastet.</p><div className="mt-7 space-y-3 text-sm text-white/60"><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Modernere Informationsarchitektur</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> SEO- und Performance-Fokus</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> DSGVO- und AI-Act-Workflow</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Nachvollziehbare Evidence-Kette</div></div></div><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.045] p-7 sm:p-8"><div className="text-xs text-white/40">Einmalige Transformation</div><div className="mt-2 text-4xl font-bold tracking-tight">{launchTier ? tierPriceLabel(launchTier) : '—'}</div><div className="mt-1 text-xs text-white/30">{launchTier?.priceSuffix ?? 'Preis aus Pricing-SSoT'}</div><button onClick={() => void chooseTransformation()} disabled={!launchTier || busy} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[#050914] hover:bg-cyan-300 disabled:opacity-40">{busy ? <Loader2 size={16} className="animate-spin"/> : null}{busy ? 'Checkout wird vorbereitet …' : 'Website transformieren'} {!busy && <ArrowRight size={16}/>}</button><button onClick={declineTransformation} disabled={busy || !planTier} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3.5 text-xs font-semibold text-white/55 hover:border-white/20 hover:text-white disabled:opacity-40">Normale Pakete ansehen <ArrowRight size={14}/></button></div></div></section>}
+          {phase === 'offer' && <section className="mx-auto max-w-3xl pb-14"><div className="grid gap-4 sm:grid-cols-[1.4fr_.8fr]"><div className="rounded-3xl border border-white/[.08] bg-white/[.025] p-7 sm:p-8"><div className="font-mono text-[9px] uppercase tracking-[.2em] text-cyan-300">SiteOS Transformation</div><h2 className="mt-3 text-2xl font-bold tracking-tight">Aus Analyse wird Umsetzung.</h2><p className="mt-3 text-sm leading-6 text-white/45">Ihre bestehende Website wird auf Basis des Befunds neu strukturiert, modernisiert und als SiteOS-Projekt vorbereitet. Die alte Website und das vorhandene Backend bleiben dabei unangetastet. APIs, Login, Formulare und Checkout werden nicht automatisch übertragen, sondern vor einem Livegang auf Kompatibilität geprüft.</p><div className="mt-7 space-y-3 text-sm text-white/60"><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Modernere Informationsarchitektur</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> SEO- und Performance-Fokus</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> DSGVO- und AI-Act-Workflow</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Nachvollziehbare Evidence-Kette</div></div></div><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.045] p-7 sm:p-8"><div className="text-xs text-white/40">Einmalige Transformation</div><div className="mt-2 text-4xl font-bold tracking-tight">{launchTier ? tierPriceLabel(launchTier) : '—'}</div><div className="mt-1 text-xs text-white/30">{launchTier?.priceSuffix ?? 'Preis aus Pricing-SSoT'}</div><button onClick={() => void chooseTransformation()} disabled={!launchTier || busy} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[#050914] hover:bg-cyan-300 disabled:opacity-40">{busy ? <Loader2 size={16} className="animate-spin"/> : null}{busy ? 'Checkout wird vorbereitet …' : 'Website transformieren'} {!busy && <ArrowRight size={16}/>}</button><button onClick={declineTransformation} disabled={busy || !planTier} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3.5 text-xs font-semibold text-white/55 hover:border-white/20 hover:text-white disabled:opacity-40">Normale Pakete ansehen <ArrowRight size={14}/></button></div></div>
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[.03] p-6" aria-labelledby="voice-choice">
+              <h3 id="voice-choice" className="text-lg font-semibold">Voice Agent hinzufügen?</h3>
+              <p className="mt-2 text-sm leading-6 text-white/50">
+                Optional nach der Frontend-Vorschau. Ja führt zum bestehenden Voice-Konfigurator
+                (Telefonie und Checkout weiterhin in Prüfung). Nein führt direkt zur Governance-Aktivierung.
+                Beide Wege verändern weder die Kundenseite noch ihr Backend automatisch.
+              </p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <button type="button" onClick={continueWithVoice} className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/60 px-5 py-3 text-sm font-semibold text-cyan-200 hover:bg-cyan-400/10">
+                  Ja · Voice-Konfiguration ansehen <ArrowRight size={15}/>
+                </button>
+                <button type="button" onClick={continueWithoutVoice} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-[#050914] hover:bg-cyan-300">
+                  Nein · direkt zu Governance <ArrowRight size={15}/>
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-amber-200/80">Ein Vorschau-Blueprint ist noch keine veröffentlichte Website. Vor Produktion sind Freigabe, Backend-Regression und Rollback-Nachweis erforderlich.</p>
+            </div>
+          </section>}
 
           {error && <div role="alert" className="mx-auto mb-10 max-w-2xl rounded-xl border border-rose-400/20 bg-rose-400/[.06] px-4 py-3 text-center text-xs text-rose-300">{error}</div>}
         </div>

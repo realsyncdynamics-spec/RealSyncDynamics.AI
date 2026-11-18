@@ -17,7 +17,7 @@ type BrowserAction =
   | { type: 'screenshot' };
 
 interface BrowserExecuteBody {
-  op?: 'execute' | 'health' | 'plan';
+  op?: 'execute' | 'health' | 'plan' | 'reserve' | 'report';
   tenant_id?: string;
   session_id?: string;
   actions?: BrowserAction[];
@@ -36,7 +36,17 @@ interface BrowserExecuteBody {
    * erste Aktion kein navigate ist. Der Executor prüft ihn vor der Ausführung.
    */
   page_origin?: string;
+  /** op: 'report' (lokaler Executor, PR C) */
+  execution_id?: string;
+  outcome?: 'executed' | 'failed';
+  verification?: 'passed' | 'failed' | 'not_applicable';
+  /** sha256 (hex) über das Ergebnis beim Client – das Ergebnis selbst wird nicht übertragen (G4). */
+  result_hash?: string;
+  /** kurzer Fehlercode bei outcome 'failed', z. B. TIMEOUT, ELEMENT_NOT_FOUND, TARGET_CHANGED */
+  failure_code?: string;
 }
+
+const KNOWN_OPS = new Set(['execute', 'health', 'plan', 'reserve', 'report']);
 
 const MUTATING_ACTIONS = new Set<BrowserAction['type']>(['click', 'type', 'select']);
 
@@ -288,6 +298,186 @@ async function createApproval(
   return approval.id as string;
 }
 
+const FAILURE_CODE = /^[A-Z0-9_]{1,64}$/;
+const HEX64 = /^[0-9a-f]{64}$/;
+
+interface Prepared {
+  sessionId: string;
+  actions: BrowserAction[];
+  target: NormalizedTarget | null;
+  pageOrigin: string | null;
+  fingerprint: string;
+  requiresApproval: boolean;
+}
+
+/**
+ * op: 'report' – der lokale Executor meldet das Ergebnis einer reservierten Ausführung.
+ *
+ * - Nur für reservierte verändernde Aktionen (es gibt keine Reservierung ohne Freigabe).
+ * - Der Server rechnet den Fingerprint aus actions/target/session selbst und vergleicht ihn
+ *   mit der Reservierung: Gemeldet werden kann nur, was freigegeben und reserviert wurde.
+ * - Genau einmal: atomarer Anspruch per UPDATE … WHERE status='reserved' AND detail IS NULL.
+ *   Ein zweiter oder paralleler Report schreibt keinen zweiten Nachweis.
+ * - Datensparsam (G4): kein Ergebnisinhalt, nur result_hash, verification, failure_code.
+ * - Kein Report (Absturz, Netz weg): Reservierung bleibt 'reserved', die Freigabe ist
+ *   verbraucht und wird nie erneut ausgeführt (fail-closed, manuelle Prüfung).
+ */
+// deno-lint-ignore no-explicit-any
+async function handleReport(auth: any, body: BrowserExecuteBody, p: Prepared): Promise<Response> {
+  if (!p.requiresApproval) return jsonError(400, 'BAD_REQUEST', 'report is only valid for reserved mutating actions');
+  if (typeof body.execution_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.execution_id)) {
+    return jsonError(400, 'BAD_REQUEST', 'valid execution_id required');
+  }
+  if (body.outcome !== 'executed' && body.outcome !== 'failed') return jsonError(400, 'BAD_REQUEST', 'outcome must be executed or failed');
+  const verification = body.verification ?? 'not_applicable';
+  if (!['passed', 'failed', 'not_applicable'].includes(verification)) return jsonError(400, 'BAD_REQUEST', 'invalid verification');
+  if (body.result_hash !== undefined && (typeof body.result_hash !== 'string' || !HEX64.test(body.result_hash))) {
+    return jsonError(400, 'BAD_REQUEST', 'result_hash must be sha256 hex');
+  }
+  if (body.outcome === 'failed' && (typeof body.failure_code !== 'string' || !FAILURE_CODE.test(body.failure_code))) {
+    return jsonError(400, 'BAD_REQUEST', 'failure_code required for outcome failed');
+  }
+
+  const { data: exec, error: execError } = await auth.admin
+    .from('browser_executions')
+    .select('id, tenant_id, approval_id, fingerprint, status, detail')
+    .eq('id', body.execution_id)
+    .eq('tenant_id', auth.tenantId)
+    .maybeSingle();
+  if (execError) return jsonError(503, 'REPORT_UNAVAILABLE', 'execution could not be loaded; nothing was recorded');
+  if (!exec) return jsonError(404, 'EXECUTION_NOT_FOUND', 'execution not found');
+  if (exec.fingerprint !== p.fingerprint) return jsonError(409, 'REPORT_MISMATCH', 'report does not match the reserved action');
+  if (exec.status !== 'reserved' || exec.detail !== null) {
+    return jsonError(409, 'ALREADY_REPORTED', 'execution has already been reported', undefined, { execution_status: exec.status });
+  }
+
+  // Atomarer Anspruch: nur ein Report gewinnt.
+  const { data: claimed, error: claimError } = await auth.admin
+    .from('browser_executions')
+    .update({ detail: 'report:claimed' })
+    .eq('id', exec.id)
+    .eq('tenant_id', auth.tenantId)
+    .eq('status', 'reserved')
+    .is('detail', null)
+    .select('id');
+  if (claimError) return jsonError(503, 'REPORT_UNAVAILABLE', 'execution could not be claimed; nothing was recorded');
+  if (!Array.isArray(claimed) || claimed.length !== 1) {
+    return jsonError(409, 'ALREADY_REPORTED', 'execution has already been reported');
+  }
+
+  const safeActions = redactActions(p.actions);
+  const tSummary = targetSummary(p.target);
+  const reported = {
+    executor: 'desktop',
+    outcome: body.outcome,
+    verification,
+    result_hash: body.result_hash ?? null,
+    failure_code: body.outcome === 'failed' ? body.failure_code : null,
+  };
+
+  if (body.outcome === 'failed') {
+    try {
+      await auth.admin.from('governance_events').insert({
+        tenant_id: auth.tenantId,
+        event_type: 'browser.action.failed',
+        event_source: 'agent_runtime',
+        title: 'Governed browser action failed (desktop executor)',
+        summary: `failure: ${body.failure_code}`,
+        risk_level: 'medium',
+        actor_email: auth.user.email ?? null,
+        policy_action: 'require_approval',
+        payload: { session_id: p.sessionId, actions: safeActions, target: tSummary, approval_id: exec.approval_id, browser_execution_id: exec.id, ...reported },
+      });
+    } catch {
+      // Ereignis ist best effort; der Status wird unten verbindlich gesetzt.
+    }
+    const ok = await finishExecution(auth.admin, exec.id, 'executor_failed', `desktop:${body.failure_code}`);
+    if (!ok) return jsonError(500, 'REPORT_UNFINALIZED', 'failure could not be finalized; manual review required', undefined, { execution_status: 'reserved' });
+    return jsonResponse({ ok: true, execution_id: exec.id, execution_status: 'executor_failed', approval_consumed: true });
+  }
+
+  const unrecorded = async (detail: string) => {
+    await finishExecution(auth.admin, exec.id, 'executed_unrecorded', detail);
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action was executed, but governance evidence could not be persisted; manual review required', undefined, {
+      execution_status: 'executed_unrecorded',
+      action_executed: true,
+      approval_consumed: true,
+    });
+  };
+
+  const risk = riskFor(p.actions);
+  const { data: event, error: eventError } = await auth.admin
+    .from('governance_events')
+    .insert({
+      tenant_id: auth.tenantId,
+      event_type: 'browser.action.executed',
+      event_source: 'agent_runtime',
+      title: 'Governed browser action executed (desktop executor)',
+      summary: `${p.actions.length} browser action(s) executed`,
+      risk_level: risk,
+      actor_email: auth.user.email ?? null,
+      policy_action: 'require_approval',
+      payload: { session_id: p.sessionId, actions: safeActions, target: tSummary, approval_id: exec.approval_id, browser_execution_id: exec.id, ...reported },
+    })
+    .select('id')
+    .single();
+  if (eventError || !event?.id) return unrecorded('desktop:governance event');
+
+  let evidenceId: string;
+  try {
+    evidenceId = await appendBrowserEvidence(auth.admin, {
+      tenantId: auth.tenantId,
+      eventId: event.id,
+      sessionId: p.sessionId,
+      approvalId: exec.approval_id,
+      executionId: exec.id,
+      actionCount: p.actions.length,
+      risk,
+      target: tSummary,
+      result: reported,
+    });
+  } catch {
+    return unrecorded('desktop:governance evidence');
+  }
+
+  // Auditsicht browser_actions: best effort, der Nachweis oben ist verbindlich.
+  let actionLogged = false;
+  try {
+    const mutating = p.actions.find((a) => MUTATING_ACTIONS.has(a.type))!;
+    const { error } = await auth.admin.from('browser_actions').insert({
+      tenant_id: auth.tenantId,
+      actor_id: auth.user.id ?? null,
+      session_id: p.sessionId,
+      tool_name: 'desktop-executor',
+      browser_action: mutating.type === 'click' && p.target?.method !== 'NONE' ? 'submit' : mutating.type,
+      status: verification === 'failed' ? 'failed' : 'completed',
+      url: p.target?.origin ?? p.pageOrigin,
+      approval_id: exec.approval_id,
+      browser_execution_id: exec.id,
+      governance_event_id: event.id,
+      evidence_id: evidenceId,
+      evidence_hash: body.result_hash ?? null,
+      policy_decision: 'require_approval',
+      risk_level: risk,
+      verification,
+      completed_at: new Date().toISOString(),
+      metadata: { fingerprint_version: 'v2', target: tSummary },
+    });
+    actionLogged = !error;
+  } catch {
+    actionLogged = false;
+  }
+
+  if (!(await finishExecution(auth.admin, exec.id, 'executed', 'desktop'))) {
+    return jsonError(500, 'EVIDENCE_WRITE_FAILED', 'browser action was recorded, but the execution status could not be finalized; manual review required', undefined, {
+      execution_status: 'reserved',
+      action_executed: true,
+      approval_consumed: true,
+    });
+  }
+  return jsonResponse({ ok: true, execution_id: exec.id, execution_status: 'executed', evidence_id: evidenceId, action_logged: actionLogged, verification });
+}
+
 Deno.serve(async (req: Request) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -330,12 +520,18 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  if (body.op !== undefined && !KNOWN_OPS.has(body.op)) {
+    return jsonError(400, 'BAD_REQUEST', 'unknown op');
+  }
+  // reserve/report: lokaler Executor (RealSync Browser OS) – kein Playwright-Dienst nötig.
+  const isLocalExecutor = body.op === 'reserve' || body.op === 'report';
+
   const scannerUrl = Deno.env.get('PLAYWRIGHT_SCANNER_URL');
   const scannerKey = Deno.env.get('PLAYWRIGHT_SCANNER_KEY');
-  if (!scannerUrl || !scannerKey) {
+  if (!isLocalExecutor && (!scannerUrl || !scannerKey)) {
     return jsonError(503, 'EXECUTOR_NOT_CONFIGURED', 'browser executor is not configured');
   }
-  const scannerBase = scannerUrl.replace(/\/$/, '');
+  const scannerBase = (scannerUrl ?? '').replace(/\/$/, '');
 
   if (body.op === 'health') {
     try {
@@ -383,6 +579,14 @@ Deno.serve(async (req: Request) => {
   if (body.page_origin !== undefined && body.page_origin !== null) {
     pageOrigin = bareOrigin(body.page_origin);
     if (!pageOrigin) return jsonError(400, 'BAD_REQUEST', 'page_origin must be a bare http(s) origin');
+  }
+  // report: keine erneute Domain-Prüfung. Die Aktion ist lokal bereits gelaufen und muss
+  // nachweisbar bleiben, auch wenn die Richtlinie inzwischen geändert wurde oder ausfällt.
+  // Gemeldet werden kann ohnehin nur, was mit passendem Fingerprint reserviert wurde –
+  // und reserviert wird nur nach bestandener Domain-Prüfung.
+  if (body.op === 'report') {
+    const fp = await browserFingerprint(sessionId, actions, target);
+    return handleReport(auth, body, { sessionId, actions, target, pageOrigin, fingerprint: fp, requiresApproval });
   }
   let originPolicy: OriginPolicy;
   try {
@@ -444,6 +648,21 @@ Deno.serve(async (req: Request) => {
     if (!executionId) {
       return jsonError(503, 'RESERVATION_UNAVAILABLE', 'approval could not be reserved; nothing was executed');
     }
+  }
+
+  // Lokaler Executor: Freigabe ist eingelöst, ausgeführt wird im Desktop-Browser.
+  // Lese-Aktionen brauchen keine Reservierung (browser_executions.approval_id ist NOT NULL).
+  if (body.op === 'reserve') {
+    return jsonResponse({
+      ok: true,
+      session_id: sessionId,
+      execution_id: executionId,
+      reservation_required: requiresApproval,
+      fingerprint_version: 'v2',
+      allowed_origins: allowedOrigins,
+      expected_page_origin: pageOrigin,
+      expected_target: target ? { origin: target.origin, method: target.method, values: target.values } : null,
+    });
   }
 
   const startedAt = new Date().toISOString();

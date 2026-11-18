@@ -32,6 +32,8 @@ import { auditPathFor } from '../../features/audit/auditPrefill';
 import { MobileShellMenu } from './MobileShellMenu';
 import { ASSISTANT_PROMPT_EVENT, type AssistantPromptDetail } from './assistantPrompt';
 import '../../styles/governance-os-app.css';
+import { useNeonMode } from '../../hooks/useNeonMode';
+import '../../styles/neon-theme.css';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -134,10 +136,16 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  // Neon-Design (18.11.2026): Standard dunkel, Umschalter in der Kopfzeile.
+  const [neonMode, toggleNeonMode] = useNeonMode('rs-neon-mode-app', 'dark');
+
   return (
     <AppGate>
       {/* `rs-app`: Handoff-v2-Palette für alle /app/*-Flächen (governance-os-app.css). */}
-      <div className="os-chrome dashboard-context rs-app h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+      <div
+        data-neon-mode={neonMode}
+        className="os-chrome dashboard-context rs-app rs-neon h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden"
+      >
         <BrowserTopBar
           mobileMenuOpen={mobileMenuOpen}
           onToggleMobile={() => setMobileMenuOpen((v) => !v)}
@@ -154,6 +162,8 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           onOpenCommandCenter={() => setCommandCenterOpen(true)}
           onLoadUrl={handleLoadUrl}
           activeEmbedUrl={embeddedUrl ?? undefined}
+          neonMode={neonMode}
+          onToggleNeonMode={toggleNeonMode}
         />
 
         {/* Zahlungshinweis über den Tabs: Während der Grace Period ändert sich

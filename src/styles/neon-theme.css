@@ -1,0 +1,294 @@
+/* Neon-Design (Owner-Entscheidung 18.11.2026): Glas, Lila/Cyan, Neon-Würfel.
+   Drei Bereiche, alle gescoped — kein globaler Einfluss:
+     1. .rs-neon-toggle            Umschalter Hell/Dunkel
+     2. .lv3.lv3-neon[data-mode]   Startseite (überschreibt die lv3-Tokens)
+     3. .os-chrome.rs-app.rs-neon  App-Shell /app/* (überschreibt die Farbleitern)
+   Statusfarben (Erfolg/Warnung/Fehler) bleiben unverändert und getrennt
+   von den Brand-Akzenten. */
+
+/* ── 1. Umschalter ──────────────────────────────────────────────────── */
+.rs-neon-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 4px 12px 4px 4px;
+  border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06); color: inherit;
+  font: 600 13px/1 var(--font-rs-ui, Inter, system-ui, sans-serif);
+  cursor: pointer;
+}
+.rs-neon-toggle:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+.rs-neon-toggle__knob {
+  position: relative; width: 40px; height: 22px; border-radius: 999px;
+  background: #1e2433; border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.rs-neon-toggle__knob::after {
+  content: "☾"; position: absolute; top: 1px; left: 1px; width: 18px; height: 18px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: #9333ea; color: #fff; font-size: 11px; transition: left 0.2s;
+}
+.rs-neon-toggle[data-mode='light'] { background: #fff; color: #0f172a; border-color: #d6cdee; }
+.rs-neon-toggle[data-mode='light'] .rs-neon-toggle__knob { background: #e2e8f0; border-color: rgba(15, 23, 42, 0.15); }
+.rs-neon-toggle[data-mode='light'] .rs-neon-toggle__knob::after {
+  content: "☀"; left: 19px; background: #fff; color: #b45309; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+}
+
+/* ── 2. Startseite ──────────────────────────────────────────────────── */
+.lv3.lv3-neon {
+  --lv3-radius: 14px;
+  --lv3-radius-lg: 22px;
+  --ln-accent: #9333ea;
+  --ln-accent-2: #6d28d9;
+  --ln-glow: rgba(168, 85, 247, 0.35);
+  --ln-cyan-ink: #0e7490;
+  --ln-grad-a: #c026d3;
+  --ln-grad-b: #7c3aed;
+  --ln-glass: #ffffff;
+  --ln-shadow: 0 14px 40px rgba(76, 29, 149, 0.08);
+  --lv3-bg-0: #ffffff;
+  --lv3-bg-1: #f8f7fd;
+  --lv3-bg-2: #f1edfb;
+  --lv3-fg-0: #0f172a;
+  --lv3-fg-1: #1e293b;
+  --lv3-fg-2: #4b5568;
+  --lv3-line: #e9e4f5;
+  --lv3-line-strong: #d6cdee;
+  --lv3-focus: #7c3aed;
+  background:
+    radial-gradient(560px 560px at -8% -6%, rgba(124, 58, 237, 0.08), transparent 70%),
+    radial-gradient(640px 640px at 108% 22%, rgba(14, 165, 233, 0.07), transparent 70%),
+    var(--lv3-bg-0);
+  transition: background-color 0.3s, color 0.3s;
+}
+.lv3.lv3-neon[data-mode='dark'] {
+  --ln-cyan-ink: #67e8f9;
+  --ln-grad-a: #f5b1ff;
+  --ln-grad-b: #c084fc;
+  --ln-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  --ln-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --lv3-bg-0: #070a11;
+  --lv3-bg-1: #0d1321;
+  --lv3-bg-2: #141a2b;
+  --lv3-fg-0: #f2f5fa;
+  --lv3-fg-1: #dbe1ec;
+  --lv3-fg-2: #a7b0c2;
+  --lv3-line: rgba(255, 255, 255, 0.09);
+  --lv3-line-strong: rgba(255, 255, 255, 0.18);
+  --lv3-focus: #22d3ee;
+  background:
+    radial-gradient(560px 560px at -8% -6%, rgba(124, 58, 237, 0.45), transparent 70%),
+    radial-gradient(640px 640px at 108% 22%, rgba(14, 165, 233, 0.22), transparent 70%),
+    radial-gradient(500px 500px at 40% 100%, rgba(219, 39, 119, 0.14), transparent 70%),
+    var(--lv3-bg-0);
+  color-scheme: dark;
+}
+.lv3-neon .lv3-hero { background: transparent; }
+.lv3-neon .lv3-ribbon { background: var(--lv3-bg-2); }
+
+.lv3-neon .lv3-nav {
+  margin: 16px var(--lv3-pad-x) 0;
+  padding: 8px 10px 8px 22px;
+  border: 1px solid var(--lv3-line-strong);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--lv3-bg-0) 82%, transparent);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--ln-shadow);
+}
+.lv3-neon .lv3-nav a:not(.lv3-btn):not(.lv3-brand) { padding: 0 12px; border-radius: 999px; }
+.lv3-neon .lv3-nav a:not(.lv3-btn):not(.lv3-brand):hover { background: var(--lv3-bg-2); }
+.lv3-neon .lv3-brand { letter-spacing: 0.02em; }
+
+.lv3-neon .lv3-h1-2 {
+  background: linear-gradient(92deg, var(--ln-grad-a), var(--ln-grad-b));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.lv3-neon .lv3-btn { border-radius: 999px; border-color: color-mix(in srgb, var(--ln-accent) 55%, transparent); background: transparent; color: var(--ln-accent-2); }
+.lv3-neon[data-mode='dark'] .lv3-btn { color: #e9b8ff; }
+.lv3-neon .lv3-btn:hover { background: color-mix(in srgb, var(--ln-accent) 12%, transparent); }
+.lv3-neon .lv3-btn--solid,
+.lv3-neon[data-mode='dark'] .lv3-btn--solid {
+  border-color: transparent;
+  background: linear-gradient(135deg, #9333ea, #6d28d9);
+  color: #fff !important;
+  box-shadow: 0 10px 30px var(--ln-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.lv3-neon .lv3-btn--solid:hover { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+
+.lv3-neon .lv3-eyebrow { color: var(--ln-cyan-ink); }
+.lv3-neon .lv3-pill { color: var(--ln-cyan-ink); border-color: color-mix(in srgb, var(--ln-cyan-ink) 40%, transparent); background: color-mix(in srgb, var(--ln-cyan-ink) 8%, transparent); }
+.lv3-neon .lv3-cat-bar > span { background: linear-gradient(90deg, #22d3ee, #d946ef); }
+
+.lv3-neon .lv3-card,
+.lv3-neon .lv3-plan,
+.lv3-neon .lv3-steps { background: var(--ln-glass); border-color: var(--lv3-line-strong); box-shadow: var(--ln-shadow); }
+.lv3-neon a.lv3-card:hover { border-color: var(--ln-accent); }
+.lv3-neon .lv3-plan[data-featured='true'] { border: 2px solid #a855f7; box-shadow: 0 0 0 1px var(--ln-glow), 0 20px 60px var(--ln-glow); }
+.lv3-neon .lv3-section { border-top-color: var(--lv3-line); }
+.lv3-neon .lv3-start,
+.lv3-neon .lv3-footer { background: color-mix(in srgb, var(--lv3-bg-1) 85%, transparent); }
+.lv3-neon .lv3-input { border-radius: 12px; }
+
+/* Neon-Würfel mit Bildschirm (NeonHeroScreen) */
+.ln-stage { display: flex; justify-content: center; align-items: center; perspective: 1400px; min-height: clamp(380px, 52vh, 560px); }
+.ln-cube { width: min(460px, 88%); aspect-ratio: 0.94; position: relative; transform-style: preserve-3d; animation: ln-float 7s ease-in-out infinite; }
+@keyframes ln-float {
+  0%, 100% { transform: translateY(0) rotateX(-10deg) rotateY(14deg); }
+  50% { transform: translateY(-18px) rotateX(-7deg) rotateY(20deg); }
+}
+.ln-f { position: absolute; border: 2px solid rgba(190, 242, 255, 0.9); }
+.ln-f-top { left: 9%; right: 9%; top: -2%; height: 42%; transform: rotateX(64deg) translateZ(78px); background: linear-gradient(100deg, #ff7ad9 0%, #22d3ee 52%, #a5f3fc 72%, #f0abfc 100%); box-shadow: 0 0 30px rgba(34, 211, 238, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.35); }
+.ln-f-side { top: 24%; bottom: 8%; right: -7%; width: 42%; transform: rotateY(64deg) translateZ(60px); background: linear-gradient(180deg, rgba(34, 211, 238, 0.55), rgba(90, 30, 140, 0.78) 60%, rgba(240, 120, 255, 0.55)); }
+.ln-f-back { left: 18%; right: 18%; top: 32%; bottom: 16%; transform: translateZ(40px); background: radial-gradient(circle at 50% 15%, rgba(34, 211, 238, 0.45), rgba(0, 0, 0, 0.9) 70%); border-color: rgba(34, 211, 238, 0.45); }
+.ln-f-front { left: 9%; right: 9%; top: 24%; bottom: 8%; transform: translateZ(155px); background: linear-gradient(135deg, rgba(48, 16, 72, 0.96) 0%, rgba(10, 16, 32, 0.94) 48%, rgba(120, 40, 140, 0.88) 100%); box-shadow: inset 0 0 80px rgba(168, 85, 247, 0.35), 0 0 50px rgba(168, 85, 247, 0.3); }
+.ln-shadow { position: absolute; left: 12%; right: 12%; bottom: -38px; height: 52px; background: radial-gradient(ellipse, rgba(15, 23, 42, 0.3), transparent 70%); }
+
+.ln-screen { position: absolute; inset: 5% 6%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; text-align: center; color: #eafcff; }
+.ln-screen-top { display: inline-flex; align-items: center; gap: 7px; font: 600 11px/1.2 var(--font-mono, monospace); letter-spacing: 0.06em; text-transform: uppercase; color: #a5f3fc; }
+.ln-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+.ln-orb { position: relative; width: 26%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #f5d0fe, #c084fc 35%, #7c3aed 70%, #3b0764); box-shadow: 0 0 40px rgba(192, 132, 252, 0.7); }
+.ln-orb::before, .ln-orb::after { content: ""; position: absolute; inset: -14%; border-radius: 50%; border: 2px solid rgba(34, 211, 238, 0.5); animation: ln-ring 2.4s ease-out infinite; }
+.ln-orb::after { animation-delay: 1.2s; }
+@keyframes ln-ring { from { transform: scale(0.85); opacity: 0.9; } to { transform: scale(1.35); opacity: 0; } }
+.ln-orb span { font: 700 12px/1.1 var(--font-rs-title, Inter, sans-serif); color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4); }
+.ln-bars { display: flex; align-items: center; justify-content: center; gap: 3px; height: 16%; width: 86%; }
+.ln-bars i { flex: 1; max-width: 6px; height: 12%; border-radius: 3px; background: linear-gradient(180deg, #22d3ee, #e879f9); box-shadow: 0 0 8px rgba(34, 211, 238, 0.6); transition: height 0.09s; }
+.ln-cap { margin: 0; min-height: 2.9em; max-width: 95%; font-size: clamp(11px, 1.05vw, 14px); line-height: 1.45; color: #f0fdff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+.ln-cap b { color: #f5b1ff; font-weight: 600; }
+.ln-voice { min-height: 34px; padding: 6px 14px; border: 1px solid rgba(165, 243, 252, 0.6); border-radius: 999px; background: rgba(8, 47, 73, 0.55); color: #e0faff; font: 600 12px var(--font-rs-ui, Inter, sans-serif); cursor: pointer; }
+.ln-voice:hover { background: rgba(34, 211, 238, 0.25); }
+.ln-voice:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ln-cube, .ln-orb::before, .ln-orb::after { animation: none; }
+}
+
+/* ── 3. App-Shell /app/* ────────────────────────────────────────────── */
+/* Spezifität (0,3,0) schlägt `.os-chrome.rs-app` (governance-os-app.css)
+   und `.dashboard-context` (context-themes.css). Tailwind 4 kompiliert
+   bg-obsidian-* / text-titanium-* / bg-rs-* zu var(...) — die Overrides
+   färben jede Fläche um, ohne Komponenten anzufassen. */
+.os-chrome.rs-app.rs-neon {
+  --color-rs-hero: #070a11;
+  --color-rs-bg-0: #0b0f1a;
+  --color-rs-bg-1: #111627;
+  --color-rs-bg-2: #171d33;
+  --color-rs-bg-3: #1f2640;
+  --color-rs-fg-0: #f2f5fa;
+  --color-rs-fg-1: #dbe1ec;
+  --color-rs-fg-2: #b4bcd0;
+  --color-rs-fg-3: #8b93ab;
+  --color-rs-border: #262d48;
+  --color-rs-border-strong: #39416a;
+  --color-rs-primary: #9333ea;
+  --color-rs-primary-hover: #a855f7;
+  --color-rs-primary-light: #d8b4fe;
+  --color-rs-cyan: #22d3ee;
+  --color-rs-cyan-light: #67e8f9;
+  --color-rs-violet: #e67dff;
+  --rs-on-primary: #ffffff;
+
+  --color-obsidian-950: #070a11;
+  --color-obsidian-900: #0b0f1a;
+  --color-obsidian-800: #111627;
+  --color-obsidian-700: #171d33;
+  --color-obsidian-600: #1f2640;
+  --color-obsidian-500: #2a3150;
+  --color-obsidian-400: #3b4366;
+  --color-obsidian-300: #5a6386;
+  --color-obsidian-200: #8d95b5;
+  --color-obsidian-100: #c7cce0;
+  --color-obsidian-50: #eef0f8;
+  --color-titanium-50: #f8f9fd;
+  --color-titanium-100: #eef1f8;
+  --color-titanium-200: #dbe1ec;
+  --color-titanium-300: #c2c9d7;
+  --color-titanium-400: #a7b0c2;
+  --color-titanium-500: #8790a6;
+  --color-titanium-600: #687089;
+  --color-titanium-700: #4b5270;
+  --color-titanium-800: #2e3452;
+  --color-titanium-900: #222842;
+  --color-obsidian: #0b0f1a;
+  --color-titanium: #dbe1ec;
+  --os-bg: #0b0f1a;
+  --os-panel: #111627;
+  --os-text: #f2f5fa;
+  --os-gold: #a855f7;
+  --os-cream: #d8b4fe;
+  --os-focus-ring: rgba(34, 211, 238, 0.5);
+  --context-accent: #a855f7;
+
+  background-image:
+    radial-gradient(600px 420px at 0% 0%, rgba(124, 58, 237, 0.18), transparent 70%),
+    radial-gradient(700px 520px at 100% 30%, rgba(14, 165, 233, 0.1), transparent 70%);
+  color-scheme: dark;
+}
+
+/* Hell (weiß): Leitern gespiegelt — 950 bleibt die Grundfläche, 100 die
+   Hauptschrift; so bleiben die Kontrast-Beziehungen der Module erhalten. */
+.os-chrome.rs-app.rs-neon[data-neon-mode='light'] {
+  --color-rs-hero: #ffffff;
+  --color-rs-bg-0: #ffffff;
+  --color-rs-bg-1: #f8f7fd;
+  --color-rs-bg-2: #f1eefa;
+  --color-rs-bg-3: #e8e3f6;
+  --color-rs-fg-0: #0f172a;
+  --color-rs-fg-1: #1e293b;
+  --color-rs-fg-2: #334155;
+  --color-rs-fg-3: #4b5568;
+  --color-rs-border: #e2e8f0;
+  --color-rs-border-strong: #cbd5e1;
+  --color-rs-primary: #7c3aed;
+  --color-rs-primary-hover: #6d28d9;
+  --color-rs-primary-light: #6d28d9;
+  --color-rs-cyan: #0e7490;
+  --color-rs-cyan-light: #0891b2;
+  --color-rs-violet: #a21caf;
+
+  --color-obsidian-950: #ffffff;
+  --color-obsidian-900: #f8f7fd;
+  --color-obsidian-800: #f1eefa;
+  --color-obsidian-700: #e8e3f6;
+  --color-obsidian-600: #ddd6f0;
+  --color-obsidian-500: #cfc6e8;
+  --color-obsidian-400: #b3a9d1;
+  --color-obsidian-300: #8e86ad;
+  --color-obsidian-200: #5f5a7d;
+  --color-obsidian-100: #3a3655;
+  --color-obsidian-50: #1c1a2e;
+  --color-titanium-50: #0b1020;
+  --color-titanium-100: #0f172a;
+  --color-titanium-200: #1e293b;
+  --color-titanium-300: #334155;
+  --color-titanium-400: #4b5568;
+  --color-titanium-500: #64748b;
+  --color-titanium-600: #94a3b8;
+  --color-titanium-700: #cbd5e1;
+  --color-titanium-800: #e2e8f0;
+  --color-titanium-900: #eef2f7;
+  --color-obsidian: #f8f7fd;
+  --color-titanium: #1e293b;
+  --os-bg: #ffffff;
+  --os-panel: #f8f7fd;
+  --os-text: #0f172a;
+  --os-gold: #7c3aed;
+  --os-cream: #6d28d9;
+  --os-focus-ring: rgba(124, 58, 237, 0.45);
+  --context-accent: #7c3aed;
+
+  background-image:
+    radial-gradient(600px 420px at 0% 0%, rgba(124, 58, 237, 0.06), transparent 70%),
+    radial-gradient(700px 520px at 100% 30%, rgba(14, 165, 233, 0.05), transparent 70%);
+  color-scheme: light;
+}
+
+/* Goldakzente aus osChrome.ts (Brand v4, dort per Test eingefroren) sind
+   als Tailwind-Arbitrary-Klassen fest eingetragen und folgen keiner
+   Variablen. Im Neon-Scope werden genau diese Klassen auf den Neon-Akzent
+   gelegt — osChrome.ts selbst bleibt unverändert. */
+.rs-neon .text-\[\#F2C98A\],
+.rs-neon .text-\[\#FBE7BD\] { color: var(--color-rs-primary-light); }
+.rs-neon .border-\[\#F2C98A\] { border-color: var(--color-rs-primary-hover); }
+.rs-neon .bg-\[\#F2C98A\],
+.rs-neon .bg-\[\#FBE7BD\] { background-color: var(--color-rs-primary); color: var(--rs-on-primary); }
+.rs-neon .bg-\[\#F2C98A\]\/15 { background-color: color-mix(in srgb, var(--color-rs-primary) 15%, transparent); }
+.rs-neon .focus-visible\:ring-\[\#FBE7BD\]\/60:focus-visible { --tw-ring-color: color-mix(in srgb, var(--color-rs-cyan) 60%, transparent); }

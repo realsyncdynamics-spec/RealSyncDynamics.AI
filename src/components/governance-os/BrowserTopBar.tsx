@@ -8,6 +8,8 @@ import { initialsFromEmail } from '../../features/governance/handoff/enforcement
 import { OS_FOCUS_RING } from './osChrome';
 import { APP_HEADER_HEIGHT } from './app-theme';
 import { SHELL_TITLES, activeShellNav } from './shellNav';
+import { NeonModeToggle } from '../neon/NeonModeToggle';
+import type { NeonMode } from '../../hooks/useNeonMode';
 import '../../styles/governance-os-app.css';
 
 interface BrowserTopBarProps {
@@ -21,6 +23,9 @@ interface BrowserTopBarProps {
   onOpenCommandCenter: () => void;
   onLoadUrl: (url: string) => void;
   activeEmbedUrl?: string;
+  /** Neon-Design: Hell/Dunkel (Schalter nur, wenn beides gesetzt ist). */
+  neonMode?: NeonMode;
+  onToggleNeonMode?: () => void;
 }
 
 /**
@@ -43,6 +48,8 @@ export function BrowserTopBar({
   onOpenCommandCenter,
   onLoadUrl,
   activeEmbedUrl,
+  neonMode,
+  onToggleNeonMode,
 }: BrowserTopBarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -128,6 +135,7 @@ export function BrowserTopBar({
         <span className="hidden sm:inline-flex">
           <LangToggle />
         </span>
+        {neonMode && onToggleNeonMode ? <NeonModeToggle mode={neonMode} onToggle={onToggleNeonMode} /> : null}
         <span className="rs-region hidden lg:inline-flex">{t('shellRegion')}</span>
         {/* Rechts oben zum Ausklappen: Assistent und Browser-Agent — immer nur
             eines offen (GovernanceBrowserShell). */}

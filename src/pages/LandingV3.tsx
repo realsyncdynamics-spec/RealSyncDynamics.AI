@@ -1,12 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HeroStage } from '../components/landing/v3/HeroStage';
+import { NeonHeroScreen } from '../components/landing/neon/NeonHeroScreen';
+import { NeonModeToggle } from '../components/neon/NeonModeToggle';
+import { useNeonMode } from '../hooks/useNeonMode';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
+import '../styles/neon-theme.css';
 
 /**
  * Startseite v3 — öffentliche Startseite unter `/` (seit 17.11.2026).
@@ -22,6 +25,12 @@ import '../styles/landing-v3.css';
  *   - fest eingetragene Preise und Checkout-Links
  * Status, Preise, Beta, Steuerhinweis und Firma kommen aus den Quellen in
  * landingV3Data.ts.
+ *
+ * Gestaltung seit 18.11.2026: Neon-Design (Owner-Entscheidung) über
+ * `.lv3-neon` in styles/neon-theme.css, Hell/Dunkel-Schalter (Standard hell).
+ * Der Hero zeigt den Neon-Würfel mit dem geplanten Receptionist-Ablauf als
+ * Bildschirm-Show (NeonHeroScreen) statt der 3D-Bühne (HeroStage bleibt im
+ * Bestand). Inhalte, Testkennungen und Datenquellen unverändert.
  */
 
 const AUTO_ADVANCE_MS = 6000;
@@ -44,6 +53,7 @@ export function LandingV3() {
   const [paused, setPaused] = useState(false);
   const [site, setSite] = useState('');
   const [siteError, setSiteError] = useState('');
+  const [mode, toggleMode] = useNeonMode('rs-neon-mode-landing', 'light');
 
   useEffect(() => {
     if (paused || prefersReducedMotion()) return;
@@ -64,10 +74,9 @@ export function LandingV3() {
 
   const plans = planCards();
   const tryStatus = registryStatus(RECEPTIONIST.tryRegistryId);
-  const current = PRODUCTS[active]!;
 
   return (
-    <div className="lv3">
+    <div className="lv3 lv3-neon" data-mode={mode}>
       <a href="#receptionist" className="lv3-skip">Zum Inhalt springen</a>
 
       {BETA_OFFER ? (
@@ -88,6 +97,7 @@ export function LandingV3() {
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
+          <NeonModeToggle mode={mode} onToggle={toggleMode} />
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>
 
@@ -105,7 +115,11 @@ export function LandingV3() {
               <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
             </div>
           </div>
-          <HeroStage active={active} caption={current.stageCaption} statusLabel="Kontrollschicht · Vorschau" />
+          <NeonHeroScreen
+            heading={RECEPTIONIST.heading}
+            steps={RECEPTIONIST.steps}
+            statusLabel={STATUS_TEXT[RECEPTIONIST.status]}
+          />
         </div>
 
         <div

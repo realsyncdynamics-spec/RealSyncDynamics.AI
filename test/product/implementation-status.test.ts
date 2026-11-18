@@ -68,8 +68,10 @@ describe('implementation-status registry', () => {
     expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('heroEarthScene'))).toBe(false);
     expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
-    // three.js auf `/` nur lazy und mit Standbild-Rückfall (Startseite v3).
-    expect(landing.description).toContain('nur lazy');
+    // Neon-Design seit 18.11.2026: Hero-Bildschirm ohne Sprach-Agent-Verbindung,
+    // three.js wird auf `/` nicht mehr geladen (HeroStage bleibt im Bestand).
+    expect(landing.description).toContain('Neon-Design');
+    expect(landing.description).toContain('keine Verbindung zu einem Sprach-Agenten');
     for (const e of landing.evidence) {
       const path = e.split('#')[0];
       if (path.startsWith('src/') || path.startsWith('test/') || path.startsWith('public/')) {

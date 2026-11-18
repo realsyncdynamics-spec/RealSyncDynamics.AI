@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Startseite v3 auf `/` (seit 17.11.2026, Claude Design): H1 „Ihre Ideen. In Bewegung.“, Lead „Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.“, Primär-CTA „Kostenlosen Check starten“ (#start → /audit?domain=…&source=landing-v3), Sekundär-CTA „AI Receptionist ansehen“ (#receptionist); erster Abschnitt nach dem Hero ist der AI Receptionist (K4, Owner-Entscheidung 18.11.2026): „Ihr KI-Mitarbeiter am Empfang.“, Status „In Vorbereitung“ (Telefonie siehe voice-telephony), nur geplanter Ablauf (Anfrage annehmen → Kontakt erfassen → Terminwunsch aufnehmen → an einen Menschen übergeben), CTAs „Auf die Warteliste“ (/warteliste?interest=bots&source=landing-v3-receptionist) und „Chat-Assistent ausprobieren“ (/chatbot/start, Status aus channel-bots); danach Produktkatalog App Builder, KI-Bots & Voice Agenten, Claude Code Optimizer, Governance OS mit Status nur aus dieser Registry (ohne Eintrag kein Badge); Abschnitt Kontrollschicht (Scan → Report → Build → Automate → Govern), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`), Website-Check, FAQ. 3D-Bühne (three.js) nur lazy auf geeigneten Geräten, sonst Standbild. Landing v6 („Das Governance OS für DSGVO & EU AI Act.“) bleibt als Rückfall unter /design/landing-v6; /design/startseite-v3 leitet auf `/`; v7/v5/v4/v2 unter /design/landing-v7, /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Startseite v3 auf `/` (seit 17.11.2026, Claude Design): H1 „Ihre Ideen. In Bewegung.“, Lead „Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.“, Primär-CTA „Kostenlosen Check starten“ (#start → /audit?domain=…&source=landing-v3), Sekundär-CTA „AI Receptionist ansehen“ (#receptionist); erster Abschnitt nach dem Hero ist der AI Receptionist (K4, Owner-Entscheidung 18.11.2026): „Ihr KI-Mitarbeiter am Empfang.“, Status „In Vorbereitung“ (Telefonie siehe voice-telephony), nur geplanter Ablauf (Anfrage annehmen → Kontakt erfassen → Terminwunsch aufnehmen → an einen Menschen übergeben), CTAs „Auf die Warteliste“ (/warteliste?interest=bots&source=landing-v3-receptionist) und „Chat-Assistent ausprobieren“ (/chatbot/start, Status aus channel-bots); danach Produktkatalog App Builder, KI-Bots & Voice Agenten, Claude Code Optimizer, Governance OS mit Status nur aus dieser Registry (ohne Eintrag kein Badge); Abschnitt Kontrollschicht (Scan → Report → Build → Automate → Govern), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`), Website-Check, FAQ. Gestaltung seit 18.11.2026: Neon-Design (Owner-Entscheidung) mit Hell/Dunkel-Schalter, Standard hell; der Hero zeigt einen Neon-Würfel, dessen Bildschirm den geplanten Receptionist-Ablauf als Untertitel-Show mit „Vorschau · In Vorbereitung“ zeigt und optional per Sprachausgabe des Browsers vorliest — keine Verbindung zu einem Sprach-Agenten. Die frühere 3D-Bühne (HeroStage) bleibt im Bestand, wird auf `/` nicht mehr gerendert. Landing v6 („Das Governance OS für DSGVO & EU AI Act.“) bleibt als Rückfall unter /design/landing-v6; /design/startseite-v3 leitet auf `/`; v7/v5/v4/v2 unter /design/landing-v7, /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV3.tsx',
@@ -57,9 +57,12 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
       'src/components/landing/v3/HeroStage.tsx',
       'src/components/landing/v3/heroScene3D.ts',
       'src/styles/landing-v3.css',
+      'src/styles/neon-theme.css',
+      'src/components/landing/neon/NeonHeroScreen.tsx',
       'public/landing-v3/hero-still.jpg',
       'src/App.tsx#/',
       'test/landing/landing-v3.test.tsx',
+      'test/landing/landing-neon.test.tsx',
     ],
     showOnRoadmap: false,
   },

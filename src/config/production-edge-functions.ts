@@ -101,11 +101,15 @@
  * Bewusst kein „Plan-Limit": Diese Zahl ist eine Beobachtung, keine Schranke.
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
+ *
+ * Achtung (16.11.2026): Bei 200 aktiven Functions lehnte Supabase neue mit
+ * `402 Max number of functions reached` ab (Tarif-Grenze `function.max_count`).
+ * Seit der Bereinigung vom 18.11.2026 entspricht der Wert der Listenlänge.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 200;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 190;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-30T11:46Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-11-18T19:30Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff

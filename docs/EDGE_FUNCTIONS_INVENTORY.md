@@ -3,7 +3,7 @@
 > **Automatisch erzeugt** von `scripts/generate-edge-function-inventory.mjs` — nicht von Hand editieren.
 > Neu erzeugen: `node scripts/generate-edge-function-inventory.mjs`. Grundlage: PLAN_100 #15/#16.
 >
-> Grundwahrheit „in Produktion": `src/config/production-edge-functions.ts` (Messung 2026-10-30T11:46Z, vom Drift-Guard gehuetet).
+> Grundwahrheit „in Produktion": `src/config/production-edge-functions.ts` (Messung 2026-11-18T19:30Z, vom Drift-Guard gehuetet).
 > Erreichbarkeit: Referenz-Scan ueber `src/`, `supabase/config.toml`, `supabase/migrations/` und Function-zu-Function-Calls.
 > **Scope:** statischer Repo-Scan, kein Laufzeit-Healthcheck. Produktiv verwaltete Runtime-Crons koennen ausserhalb der Migrationen liegen; aktueller Snapshot: [Runtime-Beobachtungen](./EDGE_FUNCTIONS_RUNTIME_OBSERVATIONS.md).
 

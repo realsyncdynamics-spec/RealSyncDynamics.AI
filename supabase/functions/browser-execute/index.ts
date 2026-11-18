@@ -4,6 +4,7 @@ import { AiInvokeError, runAiTool } from '../_shared/ai.ts';
 import { MAX_TASK_CHARS, buildPlannerInput, parseBrowserPlan } from '../_shared/browser-plan.ts';
 import { EVIDENCE_HASH_METHOD, evidenceContentHash } from '../_shared/evidence-hash.ts';
 import { browserFingerprint, normalizeTarget, targetSummary, type NormalizedTarget } from '../_shared/browser-fingerprint.ts';
+import { bareOrigin, checkActions, loadOriginPolicy, type OriginPolicy } from '../_shared/browser-origin-policy.ts';
 
 type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -30,6 +31,11 @@ interface BrowserExecuteBody {
    * Empfänger und Inhalt (G2).
    */
   target?: unknown;
+  /**
+   * Origin der Seite, auf der die erste Aktion wirkt (PR B). Pflicht, wenn die
+   * erste Aktion kein navigate ist. Der Executor prüft ihn vor der Ausführung.
+   */
+  page_origin?: string;
 }
 
 const MUTATING_ACTIONS = new Set<BrowserAction['type']>(['click', 'type', 'select']);
@@ -372,6 +378,42 @@ Deno.serve(async (req: Request) => {
     if (!normalized.ok) return jsonError(400, 'TARGET_INVALID', normalized.error);
     target = normalized.target;
   }
+  // Domain-Freigabe (G1): vor Freigabe und Ausführung, fail-closed.
+  let pageOrigin: string | null = null;
+  if (body.page_origin !== undefined && body.page_origin !== null) {
+    pageOrigin = bareOrigin(body.page_origin);
+    if (!pageOrigin) return jsonError(400, 'BAD_REQUEST', 'page_origin must be a bare http(s) origin');
+  }
+  let originPolicy: OriginPolicy;
+  try {
+    originPolicy = await loadOriginPolicy(auth.admin, auth.tenantId);
+  } catch {
+    return jsonError(503, 'POLICY_UNAVAILABLE', 'origin policy could not be loaded; nothing was executed');
+  }
+  const originCheck = checkActions(actions, pageOrigin, target?.origin ?? null, originPolicy);
+  if (!originCheck.ok) {
+    try {
+      await auth.admin.from('governance_events').insert({
+        tenant_id: auth.tenantId,
+        event_type: 'browser.action.blocked',
+        event_source: 'agent_runtime',
+        title: 'Browser action blocked: domain not allowed',
+        summary: originCheck.reason,
+        risk_level: 'medium',
+        actor_email: auth.user.email ?? null,
+        policy_action: 'block',
+        payload: { session_id: sessionId, actions: redactActions(actions), origin: originCheck.origin, action_index: originCheck.actionIndex, policy_ids: originPolicy.policyIds },
+      });
+    } catch {
+      // Protokoll ist best effort; die Sperre gilt unabhängig davon.
+    }
+    return jsonError(403, 'DOMAIN_NOT_ALLOWED', `domain ${originCheck.origin} is not allowed for browser actions`, undefined, {
+      origin: originCheck.origin,
+      action_index: originCheck.actionIndex,
+    });
+  }
+  const allowedOrigins = [...originPolicy.allow].filter((o) => !originPolicy.block.has(o)).sort();
+
   const fingerprint = await browserFingerprint(sessionId, actions, target);
   let executionId: string | null = null;
 
@@ -423,6 +465,10 @@ Deno.serve(async (req: Request) => {
         // dass Ziel-Origin, Methode und Formularwerte so im DOM stehen.
         // Der Playwright-Dienst muss das noch umsetzen (nicht belegt).
         expected_target: target ? { origin: target.origin, method: target.method, values: target.values } : null,
+        // Vertrag PR B: Executor bricht ab, wenn die Seite page_origin nicht entspricht
+        // oder eine Navigation (auch Redirect/Link/Formularziel) allowed_origins verlässt.
+        expected_page_origin: pageOrigin,
+        allowed_origins: allowedOrigins,
       }),
       signal: abort.signal,
     });

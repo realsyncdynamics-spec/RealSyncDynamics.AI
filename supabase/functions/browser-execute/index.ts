@@ -3,6 +3,7 @@ import { requireAuthAndTenant } from '../_shared/auth.ts';
 import { AiInvokeError, runAiTool } from '../_shared/ai.ts';
 import { MAX_TASK_CHARS, buildPlannerInput, parseBrowserPlan } from '../_shared/browser-plan.ts';
 import { EVIDENCE_HASH_METHOD, evidenceContentHash } from '../_shared/evidence-hash.ts';
+import { browserFingerprint, normalizeTarget, targetSummary, type NormalizedTarget } from '../_shared/browser-fingerprint.ts';
 
 type BrowserAction =
   | { type: 'navigate'; url: string }
@@ -23,6 +24,12 @@ interface BrowserExecuteBody {
   /** op: 'plan' — Freitext-Aufgabe und optional die aktuelle Seite. */
   task?: string;
   current_url?: string;
+  /**
+   * Pflicht bei verändernden Aktionen (Fingerprint v2): Ziel, an das die Aktion
+   * wirkt, und Formularinhalt zum Freigabezeitpunkt. Bindet die Freigabe an
+   * Empfänger und Inhalt (G2).
+   */
+  target?: unknown;
 }
 
 const MUTATING_ACTIONS = new Set<BrowserAction['type']>(['click', 'type', 'select']);
@@ -134,6 +141,7 @@ async function appendBrowserEvidence(
     executionId: string | null;
     actionCount: number;
     risk: 'info' | 'low' | 'medium' | 'high';
+    target: Record<string, unknown> | null;
     result: unknown;
   },
 ): Promise<string> {
@@ -152,6 +160,7 @@ async function appendBrowserEvidence(
       browser_execution_consumed: Boolean(input.approvalId),
       action_count: input.actionCount,
       risk: input.risk,
+      target: input.target,
       result: input.result,
       previous_hash: previousHash,
     };
@@ -174,6 +183,7 @@ async function appendBrowserEvidence(
           browser_execution_consumed: Boolean(input.approvalId),
           action_count: input.actionCount,
           risk: input.risk,
+          target: input.target,
           result: input.result,
           snapshot,
           hash_method: EVIDENCE_HASH_METHOD,
@@ -185,11 +195,6 @@ async function appendBrowserEvidence(
     if (typeof data === 'string' && data.length > 0) return data;
   }
   throw new Error('append_governance_evidence: chain head kept moving');
-}
-
-async function stableFingerprint(sessionId: string, actions: BrowserAction[]): Promise<string> {
-  const digest = await sha256Hex(JSON.stringify({ session_id: sessionId, actions }));
-  return `browser:v1:${digest}`;
 }
 
 async function sanitizeExecutorPayload(value: unknown): Promise<unknown> {
@@ -242,8 +247,9 @@ async function createApproval(
   actorEmail: string | undefined,
   sessionId: string,
   actions: BrowserAction[],
+  fingerprint: string,
+  target: NormalizedTarget | null,
 ) {
-  const fingerprint = await stableFingerprint(sessionId, actions);
   const { data: event, error: eventError } = await admin
     .from('governance_events')
     .insert({
@@ -255,7 +261,7 @@ async function createApproval(
       risk_level: 'high',
       actor_email: actorEmail ?? null,
       policy_action: 'require_approval',
-      payload: { session_id: sessionId, actions: redactActions(actions) },
+      payload: { session_id: sessionId, actions: redactActions(actions), target: targetSummary(target), fingerprint_version: 'v2' },
     })
     .select('id')
     .single();
@@ -356,8 +362,17 @@ Deno.serve(async (req: Request) => {
   const validationError = validateActions(actions);
   if (validationError) return jsonError(400, 'BAD_REQUEST', validationError);
 
-  const fingerprint = await stableFingerprint(sessionId, actions);
   const requiresApproval = actions.some((action) => MUTATING_ACTIONS.has(action.type));
+  let target: NormalizedTarget | null = null;
+  if (requiresApproval) {
+    if (body.target === undefined || body.target === null) {
+      return jsonError(400, 'TARGET_REQUIRED', 'mutating browser actions require target {origin, method, values}');
+    }
+    const normalized = await normalizeTarget(body.target);
+    if (!normalized.ok) return jsonError(400, 'TARGET_INVALID', normalized.error);
+    target = normalized.target;
+  }
+  const fingerprint = await browserFingerprint(sessionId, actions, target);
   let executionId: string | null = null;
 
   if (requiresApproval) {
@@ -368,6 +383,8 @@ Deno.serve(async (req: Request) => {
         auth.user.email,
         sessionId,
         actions,
+        fingerprint,
+        target,
       );
       return jsonError(409, 'APPROVAL_REQUIRED', 'mutating browser action requires human approval', undefined, {
         approval_id: approvalId,
@@ -402,6 +419,10 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         session_id: `${auth.tenantId}:${sessionId}`,
         actions,
+        // Vertrag v2: Executor prüft unmittelbar vor der verändernden Aktion,
+        // dass Ziel-Origin, Methode und Formularwerte so im DOM stehen.
+        // Der Playwright-Dienst muss das noch umsetzen (nicht belegt).
+        expected_target: target ? { origin: target.origin, method: target.method, values: target.values } : null,
       }),
       signal: abort.signal,
     });
@@ -449,6 +470,7 @@ Deno.serve(async (req: Request) => {
         actions: safeActions,
         approval_id: body.approval_id ?? null,
         browser_execution_id: executionId,
+        target: targetSummary(target),
         executor_result: safePayload,
         started_at: startedAt,
         completed_at: new Date().toISOString(),
@@ -479,6 +501,7 @@ Deno.serve(async (req: Request) => {
       executionId,
       actionCount: actions.length,
       risk,
+      target: targetSummary(target),
       result: safePayload,
     });
   } catch {

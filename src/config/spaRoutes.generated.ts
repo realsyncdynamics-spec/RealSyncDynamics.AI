@@ -196,6 +196,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/app/webhooks",
   "/app/websites",
   "/app/workflows",
+  "/app/workspace",
   "/arztpraxen",
   "/assistant",
   "/audit",

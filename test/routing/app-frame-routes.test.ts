@@ -17,6 +17,7 @@ const FRAMED: Record<string, string> = {
   '/app/settings/integrations/telegram': '<AppGate><GovernanceBrowserShell><TelegramIntegrationPage /></GovernanceBrowserShell></AppGate>',
   '/app/risk': '<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>',
   '/app/assistant': '<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>',
+  '/app/workspace': '<AppGate><GovernanceBrowserShell><GovernanceWorkspaceRoute /></GovernanceBrowserShell></AppGate>',
   '/app/governance/frameworks': '<AppGate><GovernanceBrowserShell><ComplianceFrameworkSelector /></GovernanceBrowserShell></AppGate>',
   '/app/siteos/claim': '<AppGate><GovernanceBrowserShell><SiteOsClaimView /></GovernanceBrowserShell></AppGate>',
   '/app/legal-rag': '<AppGate><GovernanceBrowserShell><LegalRagView /></GovernanceBrowserShell></AppGate>',

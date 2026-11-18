@@ -27,6 +27,7 @@ import {
   type BrowserPlanStep,
 } from '../browser/browserExecutorClient';
 import { consumedApprovalMessage } from '../browser/consumedApproval';
+import { BrowserOriginsPanel } from '../browser/BrowserOriginsPanel';
 
 type AgentMode = 'assist' | 'copilot' | 'autonomous';
 type RunOutcome = 'ok' | 'approval' | 'error';
@@ -135,6 +136,9 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
   const { tenants } = useTenant();
   // Aktiver Mandant stammt aus der RLS-gescopten memberships-Liste (TenantProvider).
   const tenantBound = activeTenantId !== null && (tenants ?? []).some((t) => t.tenantId === activeTenantId);
+  // Blendet nur Bedienelemente aus; governance-resources prüft owner/admin serverseitig.
+  const activeRole = (tenants ?? []).find((t) => t.tenantId === activeTenantId)?.role;
+  const canEditOrigins = activeRole === 'owner' || activeRole === 'admin';
   const [mode, setMode] = useState<AgentMode>('assist');
   const [task, setTask] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -740,6 +744,11 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
           </div>
         </aside>
       </div>
+      <BrowserOriginsPanel
+        tenantId={tenantBound ? activeTenantId : null}
+        canEdit={canEditOrigins}
+        currentOrigin={originOf(lastUrl)}
+      />
     </section>
   );
 }

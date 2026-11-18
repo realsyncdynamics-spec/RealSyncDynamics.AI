@@ -82,7 +82,7 @@ describe('GlassCube', () => {
     const css = read('src/styles/glass-cube.css');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
     expect(css).toContain(".gc-stage[data-still='true'] .gc-cube");
-    expect(css).toMatch(/\.gc-stage\[data-still='true'\] \.gc-cell \{ --ink: 0\.45; \}/);
+    expect(css).toMatch(/\.gc-stage\[data-still='true'\] \.gc-cell \{\s*--ink: 0\.45;\s*transition: none;/);
   });
 
   it('kommt ohne WebGL/three.js aus und blockiert keine Eingaben außerhalb der Bühne', () => {
@@ -91,6 +91,21 @@ describe('GlassCube', () => {
     const css = read('src/styles/glass-cube.css');
     expect(css).not.toMatch(/position:\s*fixed/);
     expect(css).toMatch(/\.gc-stage \{[\s\S]*?overflow: hidden/);
+  });
+});
+
+describe('GlassCube — gesteuerter Modus', () => {
+  it('übernimmt die Phase als data-phase; ohne Phase läuft die eigene Schleife', () => {
+    stubMotion(false);
+    const { rerender } = render(<GlassCube />);
+    const cube = screen.getByTestId('glass-cube');
+    expect(cube).not.toHaveAttribute('data-phase');
+    rerender(<GlassCube phase="shatter" />);
+    expect(screen.getByTestId('glass-cube')).toHaveAttribute('data-phase', 'shatter');
+    const css = read('src/styles/glass-cube.css');
+    for (const ph of ['lattice', 'solid', 'shatter', 'empty', 'reassemble']) {
+      expect(css, ph).toContain(`.gc-stage[data-phase='${ph}'] .gc-cell`);
+    }
   });
 });
 

@@ -146,6 +146,49 @@
   }
 }
 
+/* ── Gesteuerter Modus (data-phase) ───────────────────────────────────
+   Statt der eigenen Schleife nimmt jede Zelle den Zustand der Phase per
+   Übergang an; --d erzeugt weiter die Welle von einer Ecke aus. */
+.gc-stage[data-phase] .gc-cell {
+  animation: none;
+  transition:
+    transform 1.5s cubic-bezier(0.45, 0, 0.2, 1) var(--d, 0s),
+    opacity 1.1s ease var(--d, 0s),
+    --ink 0.8s ease var(--d, 0s);
+}
+.gc-stage[data-phase='lattice'] .gc-cell,
+.gc-stage[data-phase='solid'] .gc-cell,
+.gc-stage[data-phase='reassemble'] .gc-cell {
+  transform: translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u))) rotateX(0deg) rotateY(0deg) scale(1);
+  opacity: 1;
+}
+.gc-stage[data-phase='lattice'] .gc-cell { --ink: 0; }
+.gc-stage[data-phase='solid'] .gc-cell { --ink: 1; }
+.gc-stage[data-phase='reassemble'] .gc-cell { --ink: 0.35; }
+.gc-stage[data-phase='shatter'] .gc-cell {
+  transform: translate3d(
+    calc(var(--i) * var(--gc-u) + var(--dx) * var(--gc-s)),
+    calc(var(--j) * var(--gc-u) + var(--dy) * var(--gc-s)),
+    calc(var(--k) * var(--gc-u) + var(--dz) * var(--gc-s))
+  ) rotateX(var(--rx)) rotateY(var(--ry)) scale(0.5);
+  opacity: 0; --ink: 1;
+}
+.gc-stage[data-phase='empty'] .gc-cell {
+  transform: translate3d(
+    calc(var(--i) * var(--gc-u) + var(--dx) * var(--gc-s) * 0.8),
+    calc(var(--j) * var(--gc-u) + var(--dy) * var(--gc-s) * 0.8),
+    calc(var(--k) * var(--gc-u) + var(--dz) * var(--gc-s) * 0.8)
+  ) rotateX(calc(var(--rx) * -1)) rotateY(calc(var(--ry) * -1)) scale(0.5);
+  opacity: 0; --ink: 0.8;
+  transition-duration: 0s, 0s, 0s; /* unsichtbar umsetzen, dann fliegen die Teile beim Wiederaufbau zurück */
+}
+.gc-stage[data-phase] .gc-lid {
+  animation: gc-bob 4.5s ease-in-out infinite, gc-hue 8s ease-in-out infinite;
+  transition: opacity 0.9s ease;
+}
+.gc-stage[data-phase='shatter'] .gc-lid,
+.gc-stage[data-phase='empty'] .gc-lid { opacity: 0; }
+
 /* Leuchtdeckel: schwebt über dem geschlossenen Würfel, blendet beim Zerfall aus. */
 .gc-lid {
   position: absolute; inset: 0; border-radius: 4px;
@@ -190,12 +233,17 @@
 .gc-stage[data-still='true'] .gc-stars,
 .gc-stage[data-still='true'] .gc-halo { animation: none; }
 .gc-stage[data-still='true'] .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
-.gc-stage[data-still='true'] .gc-cell { --ink: 0.45; }
+.gc-stage[data-still='true'] .gc-cell {
+  --ink: 0.45;
+  transition: none;
+  opacity: 1;
+  transform: translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u))) rotateX(0deg) rotateY(0deg) scale(1);
+}
 .gc-stage[data-still='true'] .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
 @media (prefers-reduced-motion: reduce) {
   .gc-cube, .gc-cell, .gc-lid, .gc-stars, .gc-halo { animation: none !important; }
   .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
-  .gc-cell { --ink: 0.45; }
+  .gc-cell { --ink: 0.45; transition: none !important; }
   .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
   .gc-tilt { transition: none; }
 }

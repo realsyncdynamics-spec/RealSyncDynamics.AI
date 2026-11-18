@@ -170,7 +170,52 @@
 .ln-voice:hover { background: rgba(34, 211, 238, 0.25); }
 .ln-voice:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
 
+/* Higgsfield-inspirierter Zyklus: fünf sichtbare Zustände, nur Frontend-Demo.
+   Das Front-Display bleibt lesbar, auch während Zerfall und Leerphase. */
+.ln-cube .ln-f { transition: transform 850ms ease, opacity 850ms ease, filter 850ms ease, background-color 850ms ease; }
+.ln-cube[data-phase='lattice'] .ln-f-top,
+.ln-cube[data-phase='lattice'] .ln-f-side {
+  background-color: rgba(34, 211, 238, 0.12);
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 20px, rgba(103, 232, 249, 0.9) 21px 22px),
+    repeating-linear-gradient(90deg, transparent 0 20px, rgba(216, 180, 254, 0.9) 21px 22px);
+  box-shadow: inset 0 0 22px rgba(34, 211, 238, 0.32), 0 0 20px rgba(34, 211, 238, 0.24);
+}
+.ln-cube[data-phase='lattice'] .ln-f-front { border-style: dashed; }
+.ln-cube[data-phase='solid'] .ln-f-top,
+.ln-cube[data-phase='solid'] .ln-f-side { filter: saturate(1.6) brightness(1.18); }
+.ln-cube[data-phase='shatter'] .ln-f-top {
+  transform: rotateX(72deg) translate3d(-68px, -42px, 132px) rotateZ(24deg);
+  opacity: 0.55;
+}
+.ln-cube[data-phase='shatter'] .ln-f-side {
+  transform: rotateY(68deg) translate3d(78px, -36px, 94px) rotateZ(-18deg);
+  opacity: 0.55;
+}
+.ln-cube[data-phase='shatter'] .ln-f-back {
+  transform: translate3d(-62px, 38px, 10px) rotateZ(-13deg);
+  opacity: 0.32;
+}
+.ln-cube[data-phase='empty'] .ln-f-top,
+.ln-cube[data-phase='empty'] .ln-f-side,
+.ln-cube[data-phase='empty'] .ln-f-back {
+  opacity: 0.06;
+  filter: saturate(0.1);
+}
+.ln-cube[data-phase='empty'] .ln-f-front {
+  border-color: rgba(165, 243, 252, 0.36);
+  box-shadow: inset 0 0 28px rgba(34, 211, 238, 0.08);
+}
+.ln-cube[data-phase='reassemble'] .ln-f-top,
+.ln-cube[data-phase='reassemble'] .ln-f-side,
+.ln-cube[data-phase='reassemble'] .ln-f-back {
+  opacity: 1;
+  filter: hue-rotate(-18deg) saturate(1.2);
+}
+.ln-cube[data-phase='reassemble'] .ln-f-front { border-color: #d8b4fe; }
+
 @media (prefers-reduced-motion: reduce) {
+  .ln-cube .ln-f { transition: none; }
   .ln-cube, .ln-orb::before, .ln-orb::after { animation: none; }
 }
 

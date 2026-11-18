@@ -6,9 +6,11 @@ import { GlassPanel } from '../../neon/GlassPanel';
  * Glaswürfel im Hero mit Untertitel-Leiste („Voice-Show“).
  *
  * Seit 18.11.2026 (Owner-Vorlage „3D-Glaswürfel“) ist der Würfel selbst
- * transparent (GlassCube); der Ablauf läuft in einer Glasleiste darunter.
+ * transparent (GlassCube, 3×3×3 Teilwürfel); der Ablauf läuft in einer
+ * Glasleiste darunter.
  *
- * Zeigt den geplanten Ablauf des AI Receptionist als Untertitel-Show und
+ * Führt fünf sichtbare Phasen (Glasgitter → Farbwürfel → Zerfall → leer → Neuordnung)
+ * als reine CSS-Vorschau aus; GlassCube folgt der Phase (`phase`-Prop). Zeigt den geplanten Ablauf als Untertitel-Show und
  * kann ihn mit der Sprachausgabe des Browsers vorlesen. Bewusst KEINE
  * Verbindung zu einem Sprach-Agenten und keine Bot-/Agent-ID im Bundle:
  * Telefonie ist laut Registry (`voice-telephony`) nicht live, darum trägt
@@ -22,6 +24,9 @@ export interface NeonHeroScreenProps {
 }
 
 const BAR_COUNT = 22;
+
+/** Sichtbarer Fünf-Phasen-Zyklus der Designvorschau; keine Backend-Laufzeit. */
+export const CUBE_PHASES = ['lattice', 'solid', 'shatter', 'empty', 'reassemble'] as const;
 
 function reducedMotion(): boolean {
   try {
@@ -37,17 +42,20 @@ export function screenLines(heading: string, steps: readonly string[]): string[]
 
 export function NeonHeroScreen({ heading, steps, statusLabel }: NeonHeroScreenProps) {
   const lines = screenLines(heading, steps);
-  const [idx, setIdx] = useState(0);
+  const [phase, setPhase] = useState(0);
+  const idx = Math.min(phase, lines.length - 1);
+  const speechRunRef = useRef(0);
+  const nextLineTimerRef = useRef<number | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const barsRef = useRef<HTMLDivElement>(null);
-  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
   // Stumme Show: Zeilen nacheinander, solange die Stimme aus ist.
   useEffect(() => {
     if (voiceOn) return;
     if (reducedMotion()) return;
-    const id = window.setInterval(() => setIdx((i) => (i + 1) % lines.length), 3800);
+    const id = window.setInterval(() => setPhase((i) => (i + 1) % CUBE_PHASES.length), 3800);
     return () => window.clearInterval(id);
   }, [voiceOn, lines.length]);
 
@@ -71,34 +79,50 @@ export function NeonHeroScreen({ heading, steps, statusLabel }: NeonHeroScreenPr
   }, [voiceOn, speaking]);
 
   useEffect(() => () => {
+    speechRunRef.current += 1;
+    if (nextLineTimerRef.current !== null) window.clearTimeout(nextLineTimerRef.current);
     if (canSpeak) window.speechSynthesis.cancel();
   }, [canSpeak]);
 
-  function speakFrom(i: number) {
+  function speakFrom(i: number, runId: number) {
+    if (runId !== speechRunRef.current) return;
     if (i >= lines.length) {
+      // Nach der vierten gesprochenen Zeile folgt die sichtbare Neuordnung.
+      setPhase(CUBE_PHASES.length - 1);
       setVoiceOn(false);
       setSpeaking(false);
       return;
     }
-    setIdx(i);
-    const u = new SpeechSynthesisUtterance(lines[i]);
-    u.lang = 'de-DE';
-    const de = window.speechSynthesis.getVoices().find((v) => /^de/i.test(v.lang));
-    if (de) u.voice = de;
-    u.onstart = () => setSpeaking(true);
-    u.onend = () => {
-      setSpeaking(false);
-      window.setTimeout(() => speakFrom(i + 1), 400);
+    setPhase(i);
+    const utterance = new SpeechSynthesisUtterance(lines[i]);
+    utterance.lang = 'de-DE';
+    const germanVoice = window.speechSynthesis.getVoices().find((v) => /^de/i.test(v.lang));
+    if (germanVoice) utterance.voice = germanVoice;
+    utterance.onstart = () => {
+      if (runId === speechRunRef.current) setSpeaking(true);
     };
-    u.onerror = () => {
+    utterance.onend = () => {
+      if (runId !== speechRunRef.current) return;
+      setSpeaking(false);
+      nextLineTimerRef.current = window.setTimeout(() => speakFrom(i + 1, runId), 400);
+    };
+    utterance.onerror = () => {
+      if (runId !== speechRunRef.current) return;
       setVoiceOn(false);
       setSpeaking(false);
     };
-    window.speechSynthesis.speak(u);
+    window.speechSynthesis.speak(utterance);
   }
 
   function toggleVoice() {
     if (!canSpeak) return;
+    // Die Laufnummer verhindert, dass ein verspätetes onend nach „Stoppen“
+    // erneut einen Satz startet. Das betrifft auch den 400-ms-Übergang.
+    speechRunRef.current += 1;
+    if (nextLineTimerRef.current !== null) {
+      window.clearTimeout(nextLineTimerRef.current);
+      nextLineTimerRef.current = null;
+    }
     window.speechSynthesis.cancel();
     if (voiceOn) {
       setVoiceOn(false);
@@ -106,12 +130,16 @@ export function NeonHeroScreen({ heading, steps, statusLabel }: NeonHeroScreenPr
       return;
     }
     setVoiceOn(true);
-    speakFrom(0);
+    speakFrom(0, speechRunRef.current);
   }
 
   return (
     <div className="ln-stage ln-stage--glass" data-testid="neon-hero-screen">
-      <GlassCube className="ln-cube-stage" />
+      {/* Die Phase steuert den Teilwürfel-Würfel: pro Phase ein Zustand, beim
+          Vorlesen synchron zum gesprochenen Satz. */}
+      <div className="ln-cube-phase" data-phase={CUBE_PHASES[phase]} data-testid="neon-cube-phase">
+        <GlassCube className="ln-cube-stage" phase={CUBE_PHASES[phase]} />
+      </div>
       <span className="ln-screen-top ln-glass-tag">
         <span className="ln-dot" aria-hidden="true" />
         Vorschau · {statusLabel}

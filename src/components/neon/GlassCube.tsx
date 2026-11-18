@@ -6,10 +6,10 @@ import '../../styles/glass-cube.css';
  * Glaswürfel — Markenelement nach der Owner-Vorlage „RealSync Studio –
  * 3D-Glaswürfel“ (18.11.2026), erweitert am selben Tag:
  *
- * Der geschlossene Würfel besteht aus 3×3×3 kleinen Glaswürfeln. In einer
- * Endlosschleife (≈14 s) leuchten sie in kräftigen Farben auf, zerfallen in
- * alle Richtungen (Drehung, Verkleinerung, Ausblenden) und setzen sich wieder
- * zum Würfel zusammen.
+ * Der geschlossene Würfel besteht aus 3×3×3 kleinen Glaswürfeln. Sie leuchten
+ * in kräftigen Farben auf, zerfallen in alle Richtungen (Drehung,
+ * Verkleinerung, Ausblenden) und setzen sich wieder zum Würfel zusammen —
+ * entweder als eigene Endlosschleife (≈14 s) oder gesteuert über `phase`.
  *
  * Bewusst reines CSS-3D statt WebGL: kein GPU-Kontext, keine neue
  * Abhängigkeit, keine Ladezeit auf `/`. Verhalten:
@@ -100,12 +100,21 @@ function hasFinePointer(): boolean {
   }
 }
 
+/** Zustände für die gesteuerte Variante (siehe NeonHeroScreen, CUBE_PHASES). */
+export type GlassCubePhase = 'lattice' | 'solid' | 'shatter' | 'empty' | 'reassemble';
+
 export interface GlassCubeProps {
   /** Zusätzliche Klasse für die Bühne (Größe/Platzierung durch den Aufrufer). */
   className?: string;
+  /**
+   * Gesteuerter Modus: Der Würfel nimmt den Zustand der Phase per Übergang an
+   * (gläsern geschlossen · Farben · Zerfall · leer · Wiederaufbau). Ohne
+   * `phase` läuft die eigene Schleife (≈14 s).
+   */
+  phase?: GlassCubePhase;
 }
 
-export function GlassCube({ className }: GlassCubeProps) {
+export function GlassCube({ className, phase }: GlassCubeProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const [still] = useState(() => (typeof window === 'undefined' ? true : wantsStill()));
@@ -151,6 +160,7 @@ export function GlassCube({ className }: GlassCubeProps) {
       className={`rs-glass gc-stage${className ? ` ${className}` : ''}`}
       data-still={still}
       data-paused={!visible}
+      data-phase={phase}
       data-testid="glass-cube"
       aria-hidden="true"
       onPointerMove={tiltable ? onMove : undefined}

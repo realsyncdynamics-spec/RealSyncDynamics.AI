@@ -433,6 +433,9 @@ async function handleChat(
   if (history.length > MAX_HISTORY_TURNS * 2) {
     history = history.slice(-(MAX_HISTORY_TURNS * 2));
   }
+  // Verlauf vor diesem Zug — bei fehlgeschlagener Abschluss-Evidence wird
+  // nur dieser Stand gespeichert (MP-A).
+  const priorHistory = [...history];
   history.push({ role: 'user', content: message });
 
   // Smart model selection: route simple questions to Haiku (5x cheaper, 3x faster)
@@ -601,20 +604,20 @@ async function handleChat(
 
   const durationMs = Date.now() - startedAt;
 
-  // Persist session — nicht bei fehlgeschlagener Abschluss-Evidence: die
-  // zurückgehaltene Antwort darf nicht über den Verlauf wieder auftauchen.
-  if (governed.kind === 'ran') {
-    await admin.from('agent_sessions').upsert({
-      id: sessionId,
-      tenant_id,
-      user_id: userId,
-      history,
-      last_turn_at: new Date().toISOString(),
-    });
-  }
+  // Persist session. Bei fehlgeschlagener Abschluss-Evidence nur den Verlauf
+  // VOR diesem Zug: die zurückgehaltene Antwort darf nicht über den Verlauf
+  // wieder auftauchen. Die Sitzung wird trotzdem angelegt, sonst scheitert der
+  // agent_runs-Insert am Fremdschlüssel auf agent_sessions(id).
+  await admin.from('agent_sessions').upsert({
+    id: sessionId,
+    tenant_id,
+    user_id: userId,
+    history: governed.kind === 'ran' ? history : priorHistory,
+    last_turn_at: new Date().toISOString(),
+  });
 
   // Persist run trace (use effectiveModel, not LLM_MODEL default).
-  await admin.from('agent_runs').insert({
+  const { error: runInsertError } = await admin.from('agent_runs').insert({
     session_id: sessionId,
     tenant_id,
     actor_user_id: userId,
@@ -632,6 +635,9 @@ async function handleChat(
     outcome,
     error_message: errorMessage,
   });
+  if (runInsertError) {
+    console.error(JSON.stringify({ scope: 'governance-agent-run', event: 'insert_failed', severity: 'critical', request_id: requestId, error: String((runInsertError as { message?: string }).message ?? runInsertError).slice(0, 200) }));
+  }
 
   // Audit log per chat turn (skip the full transcript — refer to run_id).
   await audit(admin, {

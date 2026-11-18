@@ -147,8 +147,14 @@ describe('MP-A Quelltext-Wächter governance-agent', () => {
     expect(src).toMatch(/request_id: requestId,\n\s+response: finalText/);
   });
 
-  it('Abschluss-Fehler hält die Antwort zurück und speichert keinen Verlauf', () => {
+  it('Abschluss-Fehler hält die Antwort zurück, speichert nur den Verlauf vor dem Zug', () => {
     expect(src).toContain("jsonError(503, 'EVIDENCE_WRITE_FAILED'");
-    expect(src).toMatch(/if \(governed\.kind === 'ran'\) \{\n\s+await admin\.from\('agent_sessions'\)\.upsert/);
+    expect(src).toContain("history: governed.kind === 'ran' ? history : priorHistory,");
+  });
+
+  it('Sitzung wird auch im Fehlerpfad angelegt und der agent_runs-Insert geprüft', () => {
+    expect(src).not.toMatch(/if \(governed\.kind === 'ran'\) \{\n\s+await admin\.from\('agent_sessions'\)/);
+    expect(src).toContain('const { error: runInsertError } = await admin.from(\'agent_runs\').insert(');
+    expect(src).toContain("event: 'insert_failed'");
   });
 });

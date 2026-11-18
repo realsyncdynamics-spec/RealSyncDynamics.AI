@@ -17,6 +17,15 @@ const EMPTY: GuideState = { focus: 'none', completed_steps: [] };
 const PANEL = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 const BUTTON = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500';
 
+// Supabase liefert PostgrestError-Objekte, nicht zwingend Error-Instanzen.
+function errorMessage(cause: unknown, fallback: string): string {
+  if (cause && typeof cause === 'object' && 'message' in cause) {
+    const message = (cause as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return fallback;
+}
+
 export function WorkspaceGuide() {
   const { activeTenantId, tenants, loading: tenantLoading } = useTenant();
   const tenant = tenants.find((item) => item.tenantId === activeTenantId);
@@ -61,7 +70,7 @@ export function WorkspaceGuide() {
         setUserId(authData.user.id);
         setLoadedTenant(activeTenantId);
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Einrichtung konnte nicht geladen werden.');
+        if (!cancelled) setError(errorMessage(cause, 'Einrichtung konnte nicht geladen werden.'));
       }
     })();
     return () => { cancelled = true; };
@@ -90,7 +99,7 @@ export function WorkspaceGuide() {
       if (activeTenantRef.current === activeTenantId) setRecord(next);
     } catch (cause) {
       if (activeTenantRef.current === activeTenantId) {
-        setError(cause instanceof Error ? cause.message : 'Speichern fehlgeschlagen.');
+        setError(errorMessage(cause, 'Speichern fehlgeschlagen.'));
       }
     } finally {
       setSaving(false);

@@ -92,7 +92,9 @@
   backdrop-filter: blur(20px);
   box-shadow: var(--ln-shadow);
 }
-.lv3-neon .lv3-nav a:not(.lv3-btn):not(.lv3-brand) { padding: 0 12px; border-radius: 999px; }
+.lv3-neon .lv3-nav { gap: 6px 4px; }
+.lv3-neon .lv3-nav a:not(.lv3-btn):not(.lv3-brand) { padding: 0 10px; border-radius: 999px; }
+.lv3-neon .lv3-btn .lv3-pill { align-self: center; margin-left: 8px; }
 .lv3-neon .lv3-nav a:not(.lv3-btn):not(.lv3-brand):hover { background: var(--lv3-bg-2); }
 .lv3-neon .lv3-brand { letter-spacing: 0.02em; }
 

@@ -49,6 +49,15 @@ it('führt den KI-Empfang im Hero zum Voice-Agent-Einstieg, nicht direkt zur War
   expect(document.querySelector('[data-hero-cta="voice-waitlist"]')).toBeNull();
 });
 
+it('führt jeden „Governance OS“-Link zum Governance-Dashboard (#control-room)', () => {
+  mount();
+  expect(screen.getByTestId('hero-os-cta')).toHaveAttribute('href', '#control-room');
+  const osLinks = screen.getAllByRole('link', { name: 'Governance OS' });
+  expect(osLinks.length).toBeGreaterThan(0);
+  for (const a of osLinks) expect(a).toHaveAttribute('href', '#control-room');
+  expect(document.getElementById('control-room')).not.toBeNull();
+});
+
 it('führt nach dem Governance-OS-Abschnitt zum Bedarfs-Check statt erneut zum Scan', () => {
   mount();
   const link = screen.getByTestId('produkt-needs-check');

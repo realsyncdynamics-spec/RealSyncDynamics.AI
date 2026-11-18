@@ -1,15 +1,13 @@
 // @vitest-environment node
 /**
- * Mitgliedschaftsprüfung vor Service-Role-Zugriff — drei Functions (P0.3).
+ * Mitgliedschaftsprüfung vor Service-Role-Zugriff — optimize-execute und share-dashboard (P0.3).
  *
  * ## Befund (Audit main @ 11b5e4cf, 22.10.2026)
  *
  * - optimize-execute: tenantId und userId kamen aus dem Body, keine
  *   Mitgliedschaftsprüfung; jeder eingeloggte Nutzer konnte für einen fremden
  *   Mandanten Policies/Mitigations und Ausführungsprotokolle schreiben.
- * - governance-gap-analyzer: tenant_id aus dem Body, kein Auth-Check im Code;
- *   jeder JWT-Inhaber (auch der öffentliche Anon-Key) konnte compliance_gaps
- *   für beliebige Mandanten anlegen.
+ * - governance-gap-analyzer: (16.11.2026 entfernt — ohne Aufrufer gelöscht.)
  * - share-dashboard: `jwtDecode` ohne Signaturprüfung, Mandant aus
  *   `user_metadata.tenant_id` (vom Nutzer selbst änderbar) → Service-Role-Query
  *   gegen fremde Dashboards.
@@ -48,23 +46,6 @@ describe('optimize-execute — Mandant und Nutzer aus verifiziertem JWT', () => 
     const execIdx = src.indexOf('await executeOptimization(');
     expect(authIdx).toBeGreaterThan(0);
     expect(execIdx).toBeGreaterThan(authIdx);
-  });
-});
-
-describe('governance-gap-analyzer — Service-Role oder owner/admin', () => {
-  const src = fn('governance-gap-analyzer');
-
-  it('verlangt Service-Role-Key oder owner/admin-Mitgliedschaft im tenant_id', () => {
-    expect(src).toContain("from '../_shared/auth.ts'");
-    expect(src).toContain('if (requireServiceRole(req) !== null) {');
-    expect(src).toMatch(/requireAuthAndTenant\(req, body\.tenant_id, \['owner', 'admin'\]\)/);
-    expect(src).toContain('if (auth instanceof Response) return auth;');
-  });
-
-  it('autorisiert, bevor der Service-Role-Client angelegt wird', () => {
-    const authIdx = src.indexOf('await requireAuthAndTenant(');
-    const adminIdx = src.indexOf('createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
-    expect(adminIdx).toBeGreaterThan(authIdx);
   });
 });
 

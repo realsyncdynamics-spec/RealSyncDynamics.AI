@@ -40,6 +40,15 @@ it('zeigt den Bedarfs-Check als zweiten Hero-Button, der Scan bleibt primär', (
   expect(document.querySelectorAll('[data-hero-cta="audit"]').length).toBe(1);
 });
 
+it('führt den KI-Empfang im Hero zum Voice-Agent-Einstieg, nicht direkt zur Warteliste', () => {
+  mount();
+  const link = screen.getByTestId('hero-voice-agent');
+  expect(link.getAttribute('href')).toMatch(/^\/phonebot\/start\?/);
+  expect(link).toHaveTextContent('Voice Agent ansehen');
+  // Die Warteliste bleibt über /phonebot/start erreichbar, der Hero verlinkt sie nicht mehr direkt.
+  expect(document.querySelector('[data-hero-cta="voice-waitlist"]')).toBeNull();
+});
+
 it('führt nach dem Governance-OS-Abschnitt zum Bedarfs-Check statt erneut zum Scan', () => {
   mount();
   const link = screen.getByTestId('produkt-needs-check');

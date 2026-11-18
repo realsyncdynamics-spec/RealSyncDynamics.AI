@@ -110,11 +110,12 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
                 Für den KI-Empfang:{' '}
                 <Link
-                  to="/warteliste?interest=bots&utm_source=landing-v6&utm_medium=hero&utm_campaign=voice-agent-preview"
-                  data-hero-cta="voice-waitlist"
+                  to="/phonebot/start?utm_source=landing-v6&utm_medium=hero&utm_campaign=voice-agent-preview"
+                  data-hero-cta="voice-agent"
+                  data-testid="hero-voice-agent"
                   style={{ color: "var(--rs-acc)", fontWeight: "600", textDecoration: "underline", textUnderlineOffset: "3px" }}
                 >
-                  Voice-Agent-Preview vormerken →
+                  Voice Agent ansehen →
                 </Link>
               </p>
             </div>

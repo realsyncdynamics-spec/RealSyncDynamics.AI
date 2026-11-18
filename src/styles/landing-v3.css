@@ -121,6 +121,9 @@ a.lv3-card:hover { background: var(--lv3-bg-1); border-color: var(--lv3-fg-2); }
 .lv3-steps li { display: flex; gap: 20px; align-items: baseline; padding: 16px 20px; border-bottom: 1px solid var(--lv3-line); font: 600 22px/1.2 var(--font-rs-title, Inter, sans-serif); color: var(--lv3-fg-0); }
 .lv3-steps li:last-child { border-bottom: 0; }
 
+/* AI Receptionist: erster Abschnitt nach dem Hero (K4). */
+.lv3-receptionist > div { display: flex; flex-direction: column; gap: 16px; }
+
 .lv3-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; align-items: stretch; }
 .lv3-plan { display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); background: var(--lv3-bg-0); }
 .lv3-plan[data-featured='true'] { border: 2px solid var(--lv3-fg-1); }

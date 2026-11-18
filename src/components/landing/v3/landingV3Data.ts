@@ -97,11 +97,25 @@ export const PRODUCTS: readonly V3Product[] = [
   },
 ];
 
-/** AI Receptionist: Owner-Vorgabe „In Vorbereitung“ (K4-Erstablauf), kein Link. */
+/**
+ * AI Receptionist: führendes Produkt (AGENTS.md K4, Owner-Entscheidung 18.11.2026),
+ * erster Abschnitt nach dem Hero. Status bleibt Owner-Vorgabe „In Vorbereitung“:
+ * Telefonie ist laut Registry `voice-telephony` nicht live. Darum nur der geplante
+ * Ablauf, kein Leistungsversprechen. Einstiege: Warteliste (Interesse `bots`) und
+ * der erreichbare Chat-Assistent (`channel-bots`, Status aus der Registry).
+ */
 export const RECEPTIONIST = {
   name: 'AI Receptionist',
+  audience: 'Für Betriebe mit Kundenkontakt, zuerst im Handwerk',
+  heading: 'Ihr KI-Mitarbeiter am Empfang.',
   body: 'Nimmt Anfragen an, erfasst Kontakt und Terminwunsch und übergibt an einen Menschen.',
+  steps: ['Anfrage annehmen', 'Kontakt erfassen', 'Terminwunsch aufnehmen', 'An einen Menschen übergeben'],
   status: 'coming-soon' as ImplementationStatus,
+  waitlistHref: `/warteliste?interest=bots&source=${SOURCE}-receptionist`,
+  waitlistCta: 'Auf die Warteliste',
+  tryHref: `/chatbot/start?source=${SOURCE}-receptionist`,
+  tryCta: 'Chat-Assistent ausprobieren',
+  tryRegistryId: 'channel-bots',
 };
 
 export function productStatus(p: V3Product): { status: ImplementationStatus; label: string } | null {

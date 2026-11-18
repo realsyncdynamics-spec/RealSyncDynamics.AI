@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { HeroStage } from '../components/landing/v3/HeroStage';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
-  faqs, planCards, pricingIntro, productNote, productStatus,
+  faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
@@ -63,11 +63,12 @@ export function LandingV3() {
   };
 
   const plans = planCards();
+  const tryStatus = registryStatus(RECEPTIONIST.tryRegistryId);
   const current = PRODUCTS[active]!;
 
   return (
     <div className="lv3">
-      <a href="#module" className="lv3-skip">Zum Inhalt springen</a>
+      <a href="#receptionist" className="lv3-skip">Zum Inhalt springen</a>
 
       {BETA_OFFER ? (
         <p className="lv3-ribbon">
@@ -99,7 +100,7 @@ export function LandingV3() {
             </p>
             <div className="lv3-actions">
               <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start">Kostenlosen Check starten</a>
-              <a className="lv3-btn lv3-btn--lg" href="#module">Produkte entdecken</a>
+              <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
             </div>
           </div>
           <HeroStage active={active} caption={current.stageCaption} statusLabel="Kontrollschicht · Vorschau" />
@@ -139,6 +140,35 @@ export function LandingV3() {
       </header>
 
       <main>
+        <section id="receptionist" className="lv3-section lv3-split lv3-receptionist" aria-labelledby="lv3-receptionist-h" data-testid="v3-product-receptionist">
+          <div>
+            <span className="lv3-eyebrow">
+              {RECEPTIONIST.audience} <StatusPill label={STATUS_TEXT[RECEPTIONIST.status]} />
+            </span>
+            <h2 id="lv3-receptionist-h" className="lv3-h2">{RECEPTIONIST.heading}</h2>
+            <p className="lv3-text">
+              <strong>{RECEPTIONIST.name}:</strong> {RECEPTIONIST.body}
+            </p>
+            <div className="lv3-actions">
+              <Link className="lv3-btn lv3-btn--solid" to={RECEPTIONIST.waitlistHref} data-testid="v3-receptionist-waitlist">
+                {RECEPTIONIST.waitlistCta}
+              </Link>
+              <Link className="lv3-btn" to={RECEPTIONIST.tryHref} data-testid="v3-receptionist-try">
+                {RECEPTIONIST.tryCta}
+                {tryStatus ? <> <StatusPill label={STATUS_TEXT[tryStatus]} /></> : null}
+              </Link>
+            </div>
+          </div>
+          <div>
+            <span className="lv3-eyebrow">Geplanter Ablauf</span>
+            <ol className="lv3-steps" data-testid="v3-receptionist-steps">
+              {RECEPTIONIST.steps.map((s, i) => (
+                <li key={s}><span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span><span>{s}</span></li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
         <section id="module" className="lv3-section" aria-labelledby="lv3-module-h">
           <span className="lv3-eyebrow">Module</span>
           <h2 id="lv3-module-h" className="lv3-h2">Direkt ausprobieren.</h2>
@@ -160,11 +190,6 @@ export function LandingV3() {
                 </Link>
               );
             })}
-            <div className="lv3-card lv3-card--muted" data-testid="v3-product-receptionist">
-              <span className="lv3-meta">AUTOMATE <StatusPill label={STATUS_TEXT[RECEPTIONIST.status]} /></span>
-              <strong className="lv3-card-name">{RECEPTIONIST.name}</strong>
-              <span>{RECEPTIONIST.body}</span>
-            </div>
           </div>
         </section>
 

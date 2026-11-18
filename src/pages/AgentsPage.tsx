@@ -125,8 +125,8 @@ export function AgentsPage() {
   usePageMeta({
     title: 'Agents — Governance-Kontrollebene | RealSync Dynamics AI',
     description:
-      'Vier autonome Agenten in der Governance-Runtime: Drift, KI-Risiko, Evidence, ' +
-      'Policy. Vorschau mit Beispielwerten — keine Kundendaten.',
+      'Vorschau auf vier Governance-Agenten: Drift, KI-Risiko, Evidence und Policy. ' +
+      'Der Stand jedes Agenten steht an seiner Karte. Beispielwerte, keine Kundendaten.',
     url: 'https://RealSyncDynamicsAI.de/agents',
   });
 
@@ -152,15 +152,17 @@ export function AgentsPage() {
         <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              Agenten · autonome Kontrollebene
+              Agenten · Vorschau
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Vier Agenten betreiben die Governance — ohne manuelles Triage-Backlog.
+              Vier Agenten für die Governance — der Stand steht an jeder Karte.
             </h1>
             <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              Die Agenten sind keine Chatbots. Sie sind autonome Prozesse in der Runtime,
-              die erkennen, klassifizieren, entwerfen und verankern — kontinuierlich,
-              parallel, mit vollem Audit-Trail.
+              Hier steht, welche Aufgaben die vier Agenten übernehmen sollen. Ob ein Agent
+              schon arbeitet, zeigt sein Status: {STATUS_LABEL.live} läuft im Betrieb,{' '}
+              {STATUS_LABEL.preview} ist eine Vorschau, {STATUS_LABEL['coming-soon']} ist geplant.
+              Der Status kommt direkt aus unserem Umsetzungsregister. Kennzahlen und Aktionen
+              sind Beispiele, keine Kundendaten.
             </p>
           </div>
         </header>

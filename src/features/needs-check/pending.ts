@@ -1,15 +1,15 @@
 /**
  * Hält einen begonnenen Bedarfs-Check über die Anmeldung hinweg fest.
  * sessionStorage: nur dieser Tab, endet mit dem Tab. Höchstens 60 Minuten alt.
+ * Gespeichert werden nur die Angaben — Empfehlungen berechnet der Server.
  */
-import { validateAnswers, type Answers } from './model';
+import { validateAnswers, type Answers } from '../../../shared/needs-check';
 
-const KEY = 'rsd.needsCheck.pending.v1';
+const KEY = 'rsd.needsCheck.pending.v2';
 const MAX_AGE_MS = 60 * 60 * 1000;
 
 export interface Pending {
   answers: Answers;
-  auditId: string | null;
   /** Der Nutzer hatte „Speichern“ gewählt, bevor er sich anmelden musste. */
   wantsSave: boolean;
 }
@@ -24,7 +24,7 @@ function store(): Storage | null {
 
 export function writePending(p: Pending, now = Date.now()): void {
   try {
-    store()?.setItem(KEY, JSON.stringify({ ...p, at: now }));
+    store()?.setItem(KEY, JSON.stringify({ answers: p.answers, wantsSave: p.wantsSave, at: now }));
   } catch {
     /* Speicher voll oder gesperrt: Ablauf geht ohne Wiederaufnahme weiter. */
   }
@@ -40,11 +40,10 @@ export function readPending(now = Date.now()): Pending | null {
   if (!raw) return null;
   try {
     const p = JSON.parse(raw) as Partial<Pending> & { at?: number };
-    if (typeof p.at !== 'number' || now - p.at > MAX_AGE_MS) return null;
+    if (typeof p.at !== 'number' || now - p.at > MAX_AGE_MS || p.at > now) return null;
     const v = validateAnswers(p.answers ?? {});
     if (!v.ok) return null;
-    const auditId = typeof p.auditId === 'string' ? p.auditId : null;
-    return { answers: v.answers, auditId, wantsSave: p.wantsSave === true };
+    return { answers: v.answers, wantsSave: p.wantsSave === true };
   } catch {
     return null;
   }

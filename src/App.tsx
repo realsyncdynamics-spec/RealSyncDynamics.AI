@@ -823,9 +823,10 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      {/* Onboarding-First-Routing: /app kanonisiert auf das gegatete Dashboard.
+      {/* Einstieg: /app führt auf die RealOS-Startfläche (/app/start, Owner-Freigabe 18.11.2026);
+          das Dashboard bleibt unter /app/dashboard. Früher: /app kanonisiert auf das gegatete Dashboard.
           Kein Onboarding-Zwang (kein Hard-Lockout) — nur Kanonisierung. */}
-      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app" element={<Navigate to="/app/start" replace />} />
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).

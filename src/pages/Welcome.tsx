@@ -304,10 +304,11 @@ export function Welcome() {
           navigate('/app/activation', { replace: true });
           return;
         }
-        navigate('/app/dashboard', { replace: true });
+        // Wiederkehrende, eingerichtete Nutzer landen auf der RealOS-Startfläche.
+        navigate('/app/start', { replace: true });
       } catch {
         if (!cancelled && !sessionId) {
-          navigate('/app/dashboard', { replace: true });
+          navigate('/app/start', { replace: true });
         }
       }
     })();

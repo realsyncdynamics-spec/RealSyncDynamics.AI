@@ -152,6 +152,53 @@ a.lv3-card:hover { background: var(--lv3-bg-1); border-color: var(--lv3-fg-2); }
 .lv3-legal { display: flex; flex-wrap: wrap; gap: 0 24px; }
 .lv3-legal a { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 500; text-decoration: none; }
 
+/* ── Produkt-Einstiege (V3PageShell): gleiche Tokens wie die Startseite ── */
+.lv3 [id] { scroll-margin-top: 80px; }
+.lv3-nav a[aria-current='page'] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.lv3-page-head { background: radial-gradient(70% 120% at 72% 0%, var(--lv3-bg-1) 0%, transparent 70%), var(--lv3-bg-0); }
+
+.lv3-crumbs { padding: 0 var(--lv3-pad-x) 12px; }
+.lv3-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; font: 600 12px/1.4 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lv3-fg-2); }
+.lv3-crumbs li { display: inline-flex; align-items: center; }
+.lv3-crumbs li + li::before { content: '/'; padding: 0 10px; color: var(--lv3-line-strong); }
+.lv3-crumbs a { display: inline-flex; align-items: center; min-height: 32px; color: var(--lv3-fg-2); text-decoration: none; }
+.lv3-crumbs a:hover { color: var(--lv3-fg-0); }
+.lv3-crumbs [aria-current='page'] { color: var(--lv3-fg-0); }
+
+.lv3-subnav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px 24px; padding: 0 var(--lv3-pad-x); border-top: 1px solid var(--lv3-line); border-bottom: 1px solid var(--lv3-line); background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(8px); overflow-x: auto; white-space: nowrap; }
+.lv3-subnav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 0 20px; }
+.lv3-subnav a { display: inline-flex; align-items: center; min-height: 48px; font-size: 14px; font-weight: 500; text-decoration: none; }
+.lv3-subnav a:hover { color: var(--lv3-fg-0); text-decoration: underline; text-underline-offset: 6px; }
+
+.lv3-section--first { border-top: 0; padding-top: clamp(32px, 5vw, 72px); }
+.lv3-page-h1 { margin: 0; font: 600 clamp(38px, 5vw, 92px)/1.02 var(--font-rs-title, Inter, sans-serif); letter-spacing: -0.025em; color: var(--lv3-fg-0); }
+.lv3-stack { display: flex; flex-direction: column; gap: 20px; }
+
+.lv3-facts { margin: 0; border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); background: var(--lv3-bg-1); }
+.lv3-facts > div { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--lv3-line); }
+.lv3-facts > div:last-child { border-bottom: 0; }
+.lv3-facts dt { font: 600 12px/1.5 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lv3-fg-2); }
+.lv3-facts dd { margin: 0; font-size: 15px; color: var(--lv3-fg-0); }
+.lv3-facts-title { padding: 14px 20px; border-bottom: 1px solid var(--lv3-line); }
+
+.lv3-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; counter-reset: none; }
+.lv3-flow li { display: flex; flex-direction: column; gap: 10px; padding: 22px; border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); background: var(--lv3-bg-0); }
+.lv3-flow strong { font: 600 20px/1.2 var(--font-rs-title, Inter, sans-serif); color: var(--lv3-fg-0); }
+.lv3-flow p { margin: 0; font-size: 15px; }
+
+.lv3-cards--compact .lv3-card { min-height: 0; }
+.lv3-card[data-current] { border: 2px solid var(--lv3-fg-1); background: var(--lv3-bg-1); }
+.lv3-card .lv3-price { margin-top: 4px; }
+
+.lv3-list-reset { list-style: none; margin: 0; padding: 0; }
+.lv3-limits { margin: 0; padding: 0 0 0 20px; border-left: 2px solid var(--lv3-line-strong); display: flex; flex-direction: column; gap: 12px; list-style: none; font-size: 16px; }
+
+.lv3-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 64ch; padding: 16px 18px; border: 1px solid #f2c94c; border-radius: var(--lv3-radius); background: #fffaeb; color: #5c3d00; font-size: 14px; }
+.lv3-notice strong { display: block; color: #3d2900; }
+.lv3-notice p { margin: 4px 0 0; }
+.lv3-callout { padding: 16px 18px; border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius); background: var(--lv3-bg-1); max-width: 64ch; }
+.lv3-callout p { margin: 0 0 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   .lv3 * { transition: none !important; animation: none !important; }
 }

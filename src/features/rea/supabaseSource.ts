@@ -19,6 +19,9 @@ export function createSupabaseReaSource(sb: SupabaseClient): ReaDataSource {
         .from('ai_evidence_events')
         .select('id, event_type, created_at, chain_index, event_hash, evidence')
         .eq('tenant_id', tenantId)
+        // Seit MP-0 gibt es je Aufruf `ai:call_started` + Abschluss. Belegt
+        // wird nur der Abschluss; ohne ihn bleibt der Status `ausstehend`.
+        .eq('event_type', 'ai:call')
         .eq('evidence->>request_id', traceId)
         .limit(2);
       return { data: (data ?? null) as ReaEvidenceRow[] | null, error: error ? { message: error.message } : null };

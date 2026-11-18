@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendChat, resetSession, sendChatAnon, type SimpleMsg } from './agentApi';
 import { getSupabase } from '../../../lib/supabase';
-import { attestAgentRun, type ReaAgentRunSource, type ReaReceipt } from '../../rea/runtimeEvidenceAgent';
-import { createSupabaseAgentRunSource } from '../../rea/supabaseSource';
+import { attestAgentRun, attestCall, type ReaAgentRunSource, type ReaReceipt } from '../../rea/runtimeEvidenceAgent';
+import { createSupabaseAgentRunSource, createSupabaseReaSource } from '../../rea/supabaseSource';
 
 export type Role = 'user' | 'assistant';
 
@@ -20,10 +20,33 @@ export interface ChatMessage {
 }
 
 /**
- * REA: belegt eine erfolgreiche Assistenten-Antwort nachgelagert gegen das
- * Mandanten-Protokoll. Wirft nie; ohne Supabase-Client → `nicht_verfuegbar`.
+ * REA: belegt eine erfolgreiche Assistenten-Antwort nachgelagert. Liefert
+ * der Server eine `request_id` (MP-A), wird gegen `ai_evidence_events` und
+ * die Hash-Kette geprüft (bis „Belegt“); sonst gegen `agent_runs` (bis
+ * „Protokolliert“). Wirft nie; ohne Supabase-Client → `nicht_verfuegbar`.
  */
-async function attestTurn(tenantId: string, sessionId: string, message: string, sentAt: Date): Promise<ReaReceipt> {
+async function attestTurn(
+  tenantId: string,
+  sessionId: string,
+  message: string,
+  sentAt: Date,
+  requestId: string | undefined,
+): Promise<ReaReceipt> {
+  if (requestId) {
+    try {
+      const source = createSupabaseReaSource(getSupabase());
+      // Gleiche Kürzung wie der Server (agentEvidenceInput / agent_runs).
+      return await attestCall(source, { tenantId, traceId: requestId, input: message.slice(0, 4000) });
+    } catch {
+      return attestCall(
+        {
+          findEvidenceByTrace: async () => ({ data: null, error: { message: 'unavailable' } }),
+          verifyChain: async () => ({ data: null, error: { message: 'unavailable' } }),
+        },
+        { tenantId, traceId: requestId, input: message.slice(0, 4000) },
+      );
+    }
+  }
   let source: ReaAgentRunSource;
   try {
     source = createSupabaseAgentRunSource(getSupabase());
@@ -209,7 +232,7 @@ export function useAgentChat(tenantId: string | null, options: UseAgentChatOptio
       setIsLoading(false);
       scrollToBottom();
       if (succeeded) {
-        void attestTurn(tenantId, newSession, message, new Date(userMsg.ts)).then((rea) =>
+        void attestTurn(tenantId, newSession, message, new Date(userMsg.ts), result.data.request_id).then((rea) =>
           setMessages((prev) => prev.map((m) => (m.id === answerId ? { ...m, rea, reaPending: false } : m))),
         );
       }

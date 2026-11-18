@@ -21,7 +21,7 @@ describe('Antwortlogik', () => {
   it('nennt Inhaber, Rechtsform, Gewerbe und Sitz aus dem Impressum', () => {
     const impressum = readFileSync(join(process.cwd(), 'src/features/legal/Impressum.tsx'), 'utf8');
     expect(impressum).toContain('Dominik Steiner');
-    expect(impressum).toContain('13.05.2026');
+    expect(impressum).toContain('Gewerbe angemeldet am 09.05.2026');
     expect(impressum).toContain('Neuhaus am Rennweg');
 
     const founder = answer('Wer ist der Inhaber?');
@@ -30,7 +30,7 @@ describe('Antwortlogik', () => {
     expect(founder.text).toContain('Einzelunternehmen');
 
     const trade = answer('Seit wann besteht das Gewerbe?');
-    expect(trade.text).toContain('13.05.2026');
+    expect(trade.text).toContain('09.05.2026');
 
     const seat = answer('Wo sitzt das Unternehmen?');
     expect(seat.text).toContain('Neuhaus am Rennweg');

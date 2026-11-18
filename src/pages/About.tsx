@@ -114,9 +114,9 @@ export function About() {
 
           <Section title="Founder">
             <p>
-              RealSync Dynamics wird geführt vom Gründer aus Thüringen — mit Background in Software-Engineering,
-              Compliance-Implementierung in regulierten Industrien (HealthTech, FinTech, Behörden) und einer
-              klaren These: <strong className="text-titanium-50">DACH-Compliance braucht DACH-Tools</strong>.
+              RealSync Dynamics &amp; AI wird von Gründer Dominik Steiner in Neuhaus am Rennweg (Thüringen)
+              geführt. Er baut Governance-Software, KI-Mitarbeiter für Betriebe mit Kundenkontakt und Webseiten —
+              mit einer klaren These: <strong className="text-titanium-50">DACH-Compliance braucht DACH-Tools</strong>.
             </p>
             <p>
               Kontakt für Presse, Partnerschaften, Investor-Anfragen: <Link to="/contact-sales" className="text-security-400 hover:text-security-300">/contact-sales</Link>

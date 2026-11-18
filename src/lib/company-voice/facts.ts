@@ -59,7 +59,7 @@ export function curatedFacts(): PublicFact[] {
     },
     {
       id: 'company.tradeRegisteredOn',
-      text: 'Gewerbe angemeldet am 13.05.2026.',
+      text: 'Gewerbe angemeldet am 09.05.2026.',
     },
     {
       id: 'company.seat',

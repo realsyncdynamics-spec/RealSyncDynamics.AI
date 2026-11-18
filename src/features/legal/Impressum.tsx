@@ -71,7 +71,7 @@ export function Impressum() {
           </p>
           <p className="text-xs text-titanium-500">
             Handelsname „RealSync Dynamics &amp; AI" bzw. „RealSyncDynamics.AI".
-            Gewerbe angemeldet am 13.05.2026 (Gewerbeamt Neuhaus am Rennweg,
+            Gewerbe angemeldet am 09.05.2026 (Gewerbeamt Neuhaus am Rennweg,
             Landkreis Sonneberg, Gemeindekennzahl 16072013).
           </p>
         </Section>

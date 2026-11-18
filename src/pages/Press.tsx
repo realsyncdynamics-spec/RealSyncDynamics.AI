@@ -61,10 +61,10 @@ export function Press() {
             <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
               <p className="text-sm text-titanium-200 leading-relaxed">
                 <strong className="text-titanium-50">RealSync Dynamics</strong> ist eine EU-souveräne KI-Compliance-Plattform
-                für DACH-Mittelstand und Behörden. Sitz: Neuhaus am Rennweg (Thüringen). Hosting: ausschließlich EU.
+                für DACH-Mittelstand und Behörden. Sitz: Neuhaus am Rennweg (Thüringen).
                 Produkt: AVV-Generator, VVT-Wizard, DSFA-Wizard, AI-Act-Klassifikator, Cookie-Consent-SDK,
                 72h-Meldepflicht-Timer, Bußgeld-Rechner — auf einer Plattform ab 79 €/Monat (Starter), Free Audit kostenlos.
-                Made in Germany. DSGVO-by-Design. AI Act-ready.
+                Made in Germany. DSGVO-by-Design.
               </p>
             </div>
           </Section>

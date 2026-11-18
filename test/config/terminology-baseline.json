@@ -42,7 +42,6 @@
     "src/marketing/landing/seo-keywords.ts": 1,
     "src/pages/About.tsx": 2,
     "src/pages/AgenciesLanding.tsx": 1,
-    "src/pages/AgentsPage.tsx": 1,
     "src/pages/AiActFaq.tsx": 1,
     "src/pages/ApiDocs.tsx": 1,
     "src/pages/CookieConsentSdk.tsx": 1,

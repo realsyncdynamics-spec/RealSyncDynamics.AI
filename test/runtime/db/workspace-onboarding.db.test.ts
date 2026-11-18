@@ -24,7 +24,15 @@ d('Workspace Guide – RLS pro Mandant UND Benutzer', () => {
 
   beforeEach(async () => {
     ctx = await openDb();
-    await applyMigration(ctx, MIGRATIONS_DIR, MIGRATION);
+    // CI spielt sämtliche Migrationen bereits vor den DB-Tests ein.
+    // Nur im minimalen Test-Harnisch fehlt diese Tabelle noch; dort
+    // wenden wir die Migration INNERHALB der Testtransaktion an.
+    const existing = await ctx.client.query<{ name: string | null }>(
+      "select to_regclass('public.workspace_onboarding_state')::text as name",
+    );
+    if (!existing.rows[0]?.name) {
+      await applyMigration(ctx, MIGRATIONS_DIR, MIGRATION);
+    }
     a = await createTenantWithMember(ctx, { tenantName: 'onboarding-a' });
     b = await createTenantWithMember(ctx, { tenantName: 'onboarding-b' });
   });

@@ -4,7 +4,7 @@ import { PRICING_TAX_MODE } from '@/shared/pricing';
  * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
  *
  * Diese Datei ist die Single Source of Truth für alle Unternehmensdaten:
- * - Rechtliche Form (aktuell: Einzelunternehmen; später optional UG/GmbH)
+ * - Rechtliche Form (Einzelunternehmen; keine Umwandlung geplant)
  * - Firmennamen und Kontaktinformationen
  * - Impressum- und Rechnungsdaten
  * - Stripe-Integration
@@ -80,7 +80,7 @@ export interface CompanyConfig {
 export const COMPANY: CompanyConfig = {
   companyName: 'RealSync Dynamics & AI',
   legalForm: 'Einzelunternehmen',
-  futureLegalForm: 'UG',
+  futureLegalForm: 'Einzelunternehmen',
 
   country: 'Germany',
   headquartersAddress: {

@@ -36,7 +36,7 @@ describe('Company Configuration (Impressum SSOT)', () => {
   });
 
   it('should support future GmbH transition', () => {
-    expect(COMPANY.futureLegalForm).toBe('UG');
+    expect(COMPANY.futureLegalForm).toBe('Einzelunternehmen');
   });
 
   it('should be beta-ready if Stripe key exists', () => {

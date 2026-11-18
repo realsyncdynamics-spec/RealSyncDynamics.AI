@@ -58,16 +58,18 @@ describe('implementation-status registry', () => {
     expect(getImplementation('design-landing-tribunal')?.route).toBeUndefined();
   });
 
-  it('points public landing at Landing v6; earth hero only on /design/landing-v4', () => {
+  it('points public landing at Startseite v3; earth hero only on /design/landing-v4', () => {
     const landing = getImplementation('public-landing')!;
     expect(landing.status).toBe('live');
     expect(landing.route).toBe('/');
-    expect(landing.evidence.some((e) => e.includes('LandingV6View'))).toBe(true);
-    expect(landing.evidence.some((e) => e.includes('useLandingV6'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV3.tsx'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('landingV3Data'))).toBe(true);
+    expect(landing.evidence.some((e) => e.includes('LandingV6'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('LandingV4'))).toBe(false);
     expect(landing.evidence.some((e) => e.includes('heroEarthScene'))).toBe(false);
     expect(landing.description).not.toContain('AI Compliance Operations OS for Europe');
-    expect(landing.description).not.toMatch(/three\.js/i);
+    // three.js auf `/` nur lazy und mit Standbild-Rückfall (Startseite v3).
+    expect(landing.description).toContain('nur lazy');
     for (const e of landing.evidence) {
       const path = e.split('#')[0];
       if (path.startsWith('src/') || path.startsWith('test/') || path.startsWith('public/')) {
@@ -84,15 +86,25 @@ describe('implementation-status registry', () => {
     expect(earth.description).toContain('Nicht mehr auf `/`');
   });
 
-  it('keeps H1 and CTAs of the registry in sync with Landing v6', () => {
+  it('keeps H1 and CTAs of the registry in sync with Startseite v3', () => {
+    const v3 = readFileSync(resolve('src/pages/LandingV3.tsx'), 'utf8');
+    const v3Data = readFileSync(resolve('src/components/landing/v3/landingV3Data.ts'), 'utf8');
+    const landing = getImplementation('public-landing')!;
+    expect(v3).toContain('<span>Ihre Ideen.</span>');
+    expect(v3).toContain('<span className="lv3-h1-2">In Bewegung.</span>');
+    expect(v3).toContain('>Kostenlosen Check starten<');
+    expect(v3).toContain('navigate(`/audit?domain=${encodeURIComponent(value)}&source=${SOURCE}`)');
+    expect(v3Data).toContain("export const SOURCE = 'landing-v3';");
+    expect(landing.description).toContain('Ihre Ideen. In Bewegung.');
+    expect(landing.description).toContain('Kostenlosen Check starten');
+    expect(landing.description).toContain('/audit?domain=…&source=landing-v3');
+
+    // Landing v6 bleibt als Rückfall unter /design/landing-v6 unverändert.
     const view = readFileSync(resolve('src/components/landing/v6/LandingV6View.tsx'), 'utf8');
     const hook = readFileSync(resolve('src/components/landing/v6/useLandingV6.ts'), 'utf8');
-    const landing = getImplementation('public-landing')!;
     expect(view).toContain('>Das Governance OS für </span>');
     expect(view).toContain('>DSGVO & EU AI Act.</span>');
-    expect(landing.description).toContain('Das Governance OS für DSGVO & EU AI Act.');
-    expect(landing.description).toContain('/audit?source=landing-v6');
-    expect(landing.description).toContain('/contact-sales?tier=enterprise');
+    expect(landing.description).toContain('/design/landing-v6');
     expect(hook).toContain('audit: `/audit?source=${SOURCE}`');
     expect(hook).toContain('const ENTERPRISE_HREF = `/contact-sales?tier=enterprise&source=${SOURCE}`;');
     expect(hook).toContain('enterprise: ENTERPRISE_HREF,');
@@ -103,7 +115,7 @@ describe('implementation-status registry', () => {
 
     for (const id of ['pricing-monthly', 'enterprise-inquiry'] as const) {
       const item = getImplementation(id)!;
-      expect(item.evidence.some((e) => e.includes('landing/v6/')), id).toBe(true);
+      expect(item.evidence.some((e) => e.includes('landing/v3/')), id).toBe(true);
       expect(item.evidence.some((e) => e.includes('landing/v4/')), id).toBe(false);
     }
   });
@@ -258,8 +270,9 @@ describe('implementation-status registry', () => {
     expect(existsSync(resolve('docs/product/implementation-status.md'))).toBe(true);
     expect(existsSync(resolve('scripts/check-landing-claims.mjs'))).toBe(true);
     const docs = readFileSync(resolve('docs/product/implementation-status.md'), 'utf8');
+    expect(docs).toContain('Startseite v3');
+    expect(docs).toContain('Ihre Ideen. In Bewegung.');
     expect(docs).toContain('Landing v6');
-    expect(docs).toContain('Das Governance OS für DSGVO & EU AI Act.');
     expect(docs).not.toContain('AI Compliance Operations OS for Europe');
     expect(docs).toContain('2026-11-17');
     expect(docs).toContain('/ai-act-klassifikator');

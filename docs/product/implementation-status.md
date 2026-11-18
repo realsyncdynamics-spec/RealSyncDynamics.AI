@@ -13,7 +13,7 @@ Registry drives landing/roadmap/CI. Flip `status` → UI. No live claims for pre
 1. No `vollständig` / `voll funktionsfähig` / `complete runtime` on `/`.
 2. Preview/coming-soon need a badge.
 3. No fake KPIs; no yearly Stripe until prices exist.
-4. `/` = Landing v6; static Europe image (three.js Earth only on `/design/landing-v4`, preview); KMU positioning; H1 **Das Governance OS für DSGVO & EU AI Act.**; CTAs `/audit` (Kostenlosen Governance Scan starten) + `/contact-sales?tier=enterprise`; Sphere off `/`; design `/design/*` → `/` (not roadmap); no ISO 27001/NIS2 live without registry entry.
+4. `/` = Startseite v3 (seit 17.11.2026); H1 **Ihre Ideen. In Bewegung.**; CTA „Kostenlosen Check starten“ → `/audit?domain=…&source=landing-v3`; Produktstatus nur aus der Registry; 3D-Bühne nur lazy mit Standbild-Rückfall (three.js Earth only on `/design/landing-v4`, preview). Landing v6 (H1 **Das Governance OS für DSGVO & EU AI Act.**, CTAs `/audit` + `/contact-sales?tier=enterprise`) bleibt als Rückfall unter `/design/landing-v6`; Sphere off `/`; design `/design/*` → `/` (not roadmap); no ISO 27001/NIS2 live without registry entry.
 5. `/app` → `CommandCenterDashboard`/`ComplianceStatusView` (not `AgentOsPanel`); `/login`+`/welcome`; shell wraps `AppGate`.
 6. Agent OS™ preview — not on `/app/dashboard`.
 7. Stripe Checkout-Anbindung vorhanden; vollständiger produktiver Kunden-E2E (Bezahlung → Webhook → Mandanten-Freischaltung) **nicht nachgewiesen**, daher im Register `preview`. Yearly weiter coming-soon; Enterprise Anfrage.

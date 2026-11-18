@@ -544,6 +544,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/unternehmen",
   "/usercentrics-alternative",
   "/versicherungen",
+  "/voice/checkout/:offerId",
   "/vvt-wizard",
   "/waitlist",
   "/warteliste",

@@ -46,11 +46,20 @@ export interface AiGatewayDeps {
   openai?: AiProviderAdapter;
   /** Construct the default OpenAI adapter with this config. */
   openaiConfig?: OpenAIConfig;
+  /**
+   * MP-0: Automatischer Provider-Wechsel bei Transportfehlern ist AUS, solange
+   * ein Adapter nicht ausdrücklich hier freigegeben ist (z. B. per Tenant-
+   * Policy im governance-router). Default leer → kein Fallback; ein Fehler des
+   * gewählten Providers wird durchgereicht. Explizit gewählte Profile
+   * (`cloud-fallback`) sind davon unberührt.
+   */
+  allowedFallbackIds?: readonly string[];
 }
 
 export class AiGateway {
   private readonly lmStudio: AiProviderAdapter;
   private readonly fallbackChain: readonly AiProviderAdapter[];
+  private readonly allowedFallback: ReadonlySet<string>;
 
   constructor(deps: AiGatewayDeps = {}) {
     const baseUrl = (deps.lmStudioConfig?.baseUrl ?? aiGatewayConfig.providers.lm_studio.baseUrl) as string;
@@ -68,6 +77,7 @@ export class AiGateway {
     const openai = deps.openai ?? (deps.openaiConfig ? new OpenAIAdapter(deps.openaiConfig) : null);
     if (openai) chain.push(openai);
     this.fallbackChain = chain;
+    this.allowedFallback = new Set(deps.allowedFallbackIds ?? []);
   }
 
   health() {
@@ -98,6 +108,7 @@ export class AiGateway {
       let lastErr: unknown = err;
       for (const fb of this.fallbackChain) {
         if (fb === primary) continue;
+        if (!this.allowedFallback.has(fb.id)) continue;  // MP-0: nur ausdrücklich freigegeben
         try {
           yield* this.streamFrom(fb, req);
           return;
@@ -181,6 +192,7 @@ export class AiGateway {
       let lastErr: unknown = err;
       for (const fb of this.fallbackChain) {
         if (fb === primary) continue;  // already tried
+        if (!this.allowedFallback.has(fb.id)) continue;  // MP-0: nur ausdrücklich freigegeben
         try {
           return await run(fb);
         } catch (fbErr) {

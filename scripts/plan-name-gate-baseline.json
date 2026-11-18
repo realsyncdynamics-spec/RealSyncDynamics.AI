@@ -48,6 +48,14 @@
     "seit": "2026-09-28"
   },
   {
+    "datei": "src/lib/company-voice/answer.ts",
+    "plan": "starter",
+    "fundstellen": 1,
+    "art": "ANZEIGE",
+    "grund": "Preisantwort der Demo 'Fragen zum Unternehmen': holt den Starter-Preis aus quotedPlans() (shared/pricing.ts), um ihn vorzulesen. Kein Gate, entscheidet nicht ueber Funktionsumfang. Kanonisch waere ein Merkmal am Plan (z. B. guenstigster Self-Service-Plan) statt des Namens. Kam mit #2201 (2ecabb9) auf main, ohne Grundlinien-Eintrag; dort ebenfalls unit-rot.",
+    "seit": "2026-11-12"
+  },
+  {
     "datei": "src/lib/optimizer/tiers.ts",
     "plan": "free",
     "fundstellen": 1,

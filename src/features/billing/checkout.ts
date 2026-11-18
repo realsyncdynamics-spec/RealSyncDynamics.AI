@@ -73,3 +73,19 @@ export async function createSiteOsCheckoutSession(args: {
   if (error) return readCheckoutError(error);
   return data as CheckoutResult;
 }
+
+/**
+ * Eigenständiges Voice-Agent-Abo (Starter / Professional / Kanzlei-Praxis).
+ * Der Server bestimmt Price, Betrag, Freigabe und Berechtigung; der Browser
+ * schickt nur Mandant und Angebot. Siehe supabase/functions/checkout-voice-agent.
+ */
+export async function createVoiceAgentCheckoutSession(args: {
+  tenantId: string;
+  offerId: string;
+}): Promise<CheckoutResult> {
+  const { data, error } = await getSupabase().functions.invoke('checkout-voice-agent', {
+    body: { tenant_id: args.tenantId, offer_id: args.offerId },
+  });
+  if (error) return readCheckoutError(error);
+  return data as CheckoutResult;
+}

@@ -64,7 +64,7 @@ describe('public/llms.txt', () => {
       // Nettopreis-Pläne (Enterprise) stehen als „1.498 €/Monat netto“.
       const amount = plan!.netPriceLabel
         ? `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat netto`
-        : `${plan!.price.monthlyEur} €/Monat`;
+        : `${plan!.price.monthlyEur.toLocaleString('de-DE')} €/Monat`;
       expect(llms).toContain(`${label}: ${amount}`);
     }
     expect(llms).toMatch(/Starter, Growth und Agency kostenlos/);

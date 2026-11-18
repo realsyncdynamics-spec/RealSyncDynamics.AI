@@ -18,7 +18,7 @@ export function Trust() {
   usePageMeta({
     title: 'Trust Center — RealSync Dynamics AI',
     description:
-      'Sicherheit, EU-Hosting, Encryption, Audit-Logs, RBAC, Retention und Immutable Evidence — die Trust-Grundlagen der Governance-Plattform.',
+      'Sicherheit, Hosting-Standorte, Encryption, Audit-Logs, RBAC, Retention und Immutable Evidence — die Trust-Grundlagen der Governance-Plattform.',
   });
 
   return (
@@ -184,10 +184,10 @@ export function Trust() {
 const PILLARS = [
   {
     icon: Globe2,
-    title: 'EU-Datenresidenz',
-    spec: 'eu-central-1 · Frankfurt',
+    title: 'Datenstandorte',
+    spec: 'Datenbank: eu-central-1 · Frankfurt',
     body:
-      'Datenbank, Object Storage, Telemetrie-Hot- und Cold-Path sowie LLM-Inferenz (Mistral La Plateforme / Azure OpenAI Sweden) liegen in der EU. US-Routing nur auf expliziten Per-Call-Opt-in.',
+      'Datenbank, Auth und Evidence liegen in der EU (Supabase, Frankfurt eu-central-1). Auslieferung über Cloudflare (globales Edge-Netz). KI-Standard: Anthropic, Verarbeitung in den USA (EU-DPA, Standardvertragsklauseln). EU-lokaler KI-Modus per Opt-in.',
   },
   {
     icon: Lock,

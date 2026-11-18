@@ -35,8 +35,9 @@ describe('Cron-Trio: dedizierter CRON_* Key, fail-closed', () => {
   for (const { slug, env, vault } of TRIO) {
     const src = () => source(slug);
 
-    it(`${slug} liest ${env} und vergleicht Bearer dagegen`, () => {
-      expect(src()).toContain(`Deno.env.get('${env}')`);
+    it(`${slug} liest ${env} (Vault-Fallback ${vault}) und vergleicht Bearer dagegen`, () => {
+      // Seit 2026-11-01 über _shared/cronKey.ts: Function Secret, sonst Vault.
+      expect(src()).toContain(`resolveCronKey('${env}', '${vault}')`);
       expect(src()).toMatch(new RegExp(`Bearer \\\$\\{CRON_KEY\\}`));
       expect(src()).toContain(vault);
     });
@@ -163,5 +164,68 @@ describe('email-auth-rescan: dedizierter CRON_WEBSITE_RESCAN_KEY, fail-closed', 
     expect(md).toContain('cron_website_rescan_key');
     expect(md).toContain('CRON_WEBSITE_RESCAN_KEY');
     expect(md).toContain('website-rescan-daily');
+  });
+});
+
+/**
+ * Sechs weitere Cron-Empfänger (2026-11-01): weg vom service_role-Bearer,
+ * hin zu requireCronKey (_shared/cronKey.ts). Verhalten (500/401/null) steht
+ * in test/edge/cron-key.test.ts; hier der Quelltext- und Migrationsvertrag.
+ */
+const SIX = [
+  { slug: 'daily-digest', env: 'CRON_DAILY_DIGEST_KEY', vault: 'cron_daily_digest_key', job: 'daily-digest' },
+  { slug: 'audit-recheck-weekly', env: 'CRON_AUDIT_RECHECK_KEY', vault: 'cron_audit_recheck_key', job: 'audit-recheck-daily' },
+  { slug: 'audit-drip-cron', env: 'CRON_AUDIT_DRIP_KEY', vault: 'cron_audit_drip_key', job: 'audit-email-drip-daily' },
+  { slug: 'sub-processor-notify', env: 'CRON_SUB_PROCESSOR_NOTIFY_KEY', vault: 'cron_sub_processor_notify_key', job: 'sub-processor-notify-daily' },
+  { slug: 'governance-deadline-monitor', env: 'CRON_GOVERNANCE_DEADLINE_KEY', vault: 'cron_governance_deadline_key', job: 'governance-deadline-monitor-daily' },
+  { slug: 'governance-score-calculator', env: 'CRON_GOVERNANCE_SCORE_KEY', vault: 'cron_governance_score_key', job: 'governance-score-calculator-hourly' },
+] as const;
+
+describe('Sechs Cron-Empfänger: requireCronKey statt service_role-Bearer', () => {
+  for (const { slug, env, vault } of SIX) {
+    it(`${slug} prüft ${env} / ${vault} über requireCronKey`, () => {
+      const text = source(slug);
+      expect(text).toMatch(new RegExp(`await requireCronKey\\(req, '${env}', '${vault}'`));
+      expect(text).toMatch(/if \(denied\) return denied;/);
+    });
+
+    it(`${slug}: kein Vergleich mit dem service_role-Key, kein requireServiceRole`, () => {
+      const text = source(slug);
+      expect(text).not.toMatch(/Bearer \$\{(SRK|SERVICE_KEY|SERVICE_ROLE|SUPABASE_SERVICE_ROLE_KEY|supabaseServiceKey)\}`\s*\)?\s*\{?\s*\n?\s*return[^\n]*401/);
+      expect(text).not.toMatch(/authHeader\s*!==\s*`Bearer \$\{SRK\}`/);
+      expect(text).not.toMatch(/requireServiceRole\s*\(/);
+    });
+  }
+
+  it('config.toml: alle sechs auf verify_jwt = false', () => {
+    const toml = readFileSync('supabase/config.toml', 'utf8');
+    for (const { slug } of SIX) {
+      const i = toml.indexOf(`[functions.${slug}]`);
+      expect(i, slug).toBeGreaterThanOrEqual(0);
+      expect(toml.slice(i, i + 80)).toMatch(/verify_jwt\s*=\s*false/);
+    }
+  });
+
+  it('Migration 20261101090000 stellt die sechs Jobs auf Vault cron_* um', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20261101090000_cron_dedicated_keys_six_jobs.sql',
+      'utf8',
+    );
+    for (const { slug, vault, job } of SIX) {
+      expect(sql).toContain(`'${job}'`);
+      expect(sql).toContain(`'${slug}'`);
+      expect(sql).toContain(`'${vault}'`);
+    }
+    expect(sql).toContain('dispatch_cron_function');
+    // Kein Job darf in dieser Migration den service_role-Key senden.
+    expect(sql).not.toMatch(/dispatch_cron_function\([^)]*'service_role_key'/s);
+  });
+
+  it('Runbook führt alle sechs Vault-Namen und Function Secrets', () => {
+    const md = readFileSync('docs/runbooks/cron-vault-secrets.md', 'utf8');
+    for (const { env, vault } of SIX) {
+      expect(md).toContain(vault);
+      expect(md).toContain(env);
+    }
   });
 });

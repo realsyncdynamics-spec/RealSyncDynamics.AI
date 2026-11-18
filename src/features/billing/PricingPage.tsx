@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
@@ -48,7 +49,6 @@ function betaEndsLabel(lang: 'de' | 'en'): string {
   return lang === 'en' ? BETA.endsLabelEn : BETA.endsLabel;
 }
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
-import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
 import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
 import { DeveloperSection } from '../../components/pricing/DeveloperSection';
@@ -226,8 +226,18 @@ export function PricingPage() {
           gekennzeichnet, keine Einsparzusagen. */}
       <PricingRoiExampleSection />
 
-      {/* Governance-Bots Section — Bot-Quotas + Add-ons */}
-      <GovernanceBotsSection />
+      {/* Unbestätigte Bots-/Voice-/WhatsApp-Angebote auf der öffentlichen Preisseite ausblenden.
+          Der interne Preis-/Entitlement-Katalog bleibt unverändert; keine Freigabe für den Verkauf.
+          Erst nach E2E-Nachweis und gesonderter Produktfreigabe wieder aktivieren. */}
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-8" data-testid="pricing-unreleased-modules">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-sm text-titanium-400 leading-relaxed">
+            Voice-Agent, Telefonie, WhatsApp-Bot und Agent OS sind derzeit nicht als
+            öffentlich freigegebene Self-Service-Produkte buchbar.
+            Geplante oder nur teilweise implementierte Module sind keine zugesicherte Tarifleistung.
+          </p>
+        </div>
+      </section>
 
       {/* Runtime-Credits — Quelle: RUNTIME_CREDIT_PACK_STUBS (shared/pricing.ts).
           Credits sind noch nicht kalibriert (availability='internal', credits=null).
@@ -518,7 +528,7 @@ function TierCard({ tier, billing, selected = false }: { tier: PricingTier; bill
       ? t('pricingBetaPriceNote', { until: betaEndsLabel(lang) })
       : showYearly
       ? t('perYear')
-      : tier.plan.netPriceLabel ? t('perMonthNet') : t('perMonth');
+      : showsNetPriceLabel(tier.plan) ? t('perMonthNet') : t('perMonth');
   const filled = tier.highlight || selected;
   const copy = pricingPlanCopy(lang, tier.id);
   const tagline = copy?.tagline ?? tier.tagline;

@@ -8,7 +8,8 @@
 //      last_run_at setzen
 //   4. optional benachrichtigen: governance_webhooks (Slack/Teams/Generic)
 //
-// Auth: Bearer == CRON_SCHEDULER_DISPATCH_KEY (Function secret). pg_cron
+// Auth: Bearer == CRON_SCHEDULER_DISPATCH_KEY (Function secret; Fallback:
+// Vault `cron_scheduler_dispatch_key` via _shared/cronKey.ts). pg_cron
 // sends Vault `cron_scheduler_dispatch_key` via dispatch_cron_function.
 // verify_jwt = false. Fail-closed: empty secret → 500 CRON_KEY_MISSING (no
 // work), wrong/missing bearer → 401 "cron only". Never compare
@@ -16,6 +17,7 @@
 // used after auth for PostgREST/admin).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { detectFormat, formatPayload, type WebhookEnvelope } from '../_shared/webhookFormat.ts';
 
@@ -107,7 +109,7 @@ Deno.serve(async (req) => {
   const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
-  const CRON_KEY = Deno.env.get('CRON_SCHEDULER_DISPATCH_KEY') ?? '';
+  const CRON_KEY = await resolveCronKey('CRON_SCHEDULER_DISPATCH_KEY', 'cron_scheduler_dispatch_key');
   // Fehlendes Function Secret ist Fehlkonfiguration, kein fremder Aufrufer:
   // 500 statt 401, damit Betrieb „Secret fehlt" von „Secret falsch" trennen
   // kann (gleicher Vertrag wie email-auth-rescan). Weiterhin fail-closed.

@@ -11,13 +11,13 @@ interface FaqEntry {
 
 const faqs: FaqEntry[] = [
   // Grundlagen
-  { category: 'grundlagen', q: 'Was ist der EU AI Act?', a: 'Der AI Act (Verordnung (EU) 2024/1689) ist die weltweit erste umfassende Regulierung von KI-Systemen. Er trat im August 2024 in Kraft und gilt EU-weit unmittelbar — wie die DSGVO. Anders als die DSGVO regelt er nicht primär Daten, sondern KI-Systeme als Produkt.', ref: 'VO (EU) 2024/1689' },
+  { category: 'grundlagen', q: 'Was ist der EU AI Act?', a: 'Der AI Act (Verordnung (EU) 2024/1689) ist seit dem 1. August 2024 in Kraft. Er wird stufenweise angewandt und regelt Pflichten für unterschiedliche Akteure und KI-Systeme. Die DSGVO bleibt bei der Verarbeitung personenbezogener Daten daneben anwendbar.', ref: 'VO (EU) 2024/1689' },
   { category: 'grundlagen', q: 'Wer ist betroffen?', a: 'Alle Anbieter, Importeure, Händler und Betreiber von KI-Systemen, die in der EU Wirkung entfalten — auch ohne EU-Sitz (Marktortprinzip). Kanzleien, Krankenhäuser, Banken, HR-Abteilungen und Behörden, die KI einsetzen, sind als „Betreiber" verantwortlich.', ref: 'AI Act Art. 2' },
   { category: 'grundlagen', q: 'Verhältnis zur DSGVO?', a: 'Komplementär — nicht ersetzend. AI Act regelt KI als Produkt (Sicherheit, Transparenz), DSGVO regelt personenbezogene Daten in der KI. Beide gelten parallel. Eine DSFA ist bei High-Risk-KI quasi immer Pflicht.', ref: 'AI Act Erwägungsgrund 9' },
 
   // Risiko-Klassen
   { category: 'risiko', q: 'Welche Risiko-Klassen gibt es?', a: 'Vier Stufen: (1) Unacceptable Risk — verboten (Social Scoring, Realtime-Biometrie im öffentlichen Raum). (2) High-Risk — strenge Auflagen (Medizin, Verkehr, HR, Bonität, Strafverfolgung). (3) Limited Risk — Transparenzpflichten (Chatbots, Deepfakes). (4) Minimal Risk — keine Auflagen (Spam-Filter, Spielhilfen).', ref: 'AI Act Art. 5–6' },
-  { category: 'risiko', q: 'Was zählt als High-Risk?', a: 'Anhang III listet 8 Bereiche: Biometrische Identifikation, kritische Infrastruktur, Bildung, Beschäftigung (HR-Tools, Bewerber-Screening), Zugang zu wesentlichen Dienstleistungen (Bonität, Krankenversicherung), Strafverfolgung, Migration, Justiz und demokratische Prozesse.', ref: 'AI Act Anhang III' },
+  { category: 'risiko', q: 'Was zählt als High-Risk?', a: 'Anhang III enthält acht Anwendungsbereiche, etwa Biometrik, Bildung, Beschäftigung, wesentliche Dienste und Justiz. Die konkrete Einstufung folgt Art. 6; nach Abs. 3 gibt es eng begrenzte, zu dokumentierende Ausnahmen. Bei Profiling natürlicher Personen greift diese Ausnahme nicht.', ref: 'AI Act Anhang III' },
   { category: 'risiko', q: 'Sind ChatGPT/Claude/Gemini High-Risk?', a: 'Als General-Purpose-AI-Models (GPAI) erstmal nicht — sie haben einen eigenen Pflicht-Katalog (Transparenz, Trainingsdaten-Doku, Copyright-Schutz). ABER: Sobald Du sie in einem High-Risk-Kontext einsetzt (z. B. Bewerber-Screening), wird DEIN System High-Risk und Du übernimmst die Anbieter-Pflichten.', ref: 'AI Act Art. 51 + Art. 25' },
 
   // Pflichten
@@ -27,8 +27,8 @@ const faqs: FaqEntry[] = [
   { category: 'pflichten', q: 'Was muss in der Technischen Dokumentation stehen?', a: 'Anhang IV gibt 9 Punkte vor: System-Beschreibung, Entwicklungsmethodik, Trainingsdaten-Quellen + Bias-Mitigation, Performance-Metriken, Test-Verfahren, Risiko-Management-Maßnahmen, Cybersecurity, Konformitätsbewertung, EU-Konformitätserklärung.', ref: 'AI Act Art. 11 + Anhang IV' },
 
   // Fristen
-  { category: 'fristen', q: 'Wann gilt der AI Act?', a: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.', ref: 'AI Act Art. 113' },
-  { category: 'fristen', q: 'Was muss bis 2. August 2026 passieren?', a: 'Wer als Anbieter oder Betreiber eines High-Risk-KI-Systems im Markt ist, muss spätestens dann compliance-ready sein: Conformity Assessment, CE-Kennzeichnung, Risk-Management, Doku, Logging, Human Oversight. Wer es nicht ist, riskiert Marktrückzug + Bußgeld.', ref: 'AI Act Art. 113 lit. b' },
+  { category: 'fristen', q: 'Wann gilt der AI Act?', a: 'Stufenweise: (1) Verbote bestimmter Praktiken und KI-Kompetenzpflichten seit 2. Februar 2025. (2) Pflichten für Anbieter von GPAI-Modellen seit 2. August 2025. (3) Allgemeines Anwendungsdatum und wichtige Transparenzpflichten seit 2. August 2026. (4) Zentrale Hochrisiko-Pflichten nach Anhang III ab 2. Dezember 2027, nach Anhang I ab 2. August 2028 (Verordnung (EU) 2026/1744).', ref: 'AI Act Art. 113 i. d. F. VO (EU) 2026/1744' },
+  { category: 'fristen', q: 'Wann gelten die Hochrisiko-KI-Pflichten?', a: 'Die zentralen Anforderungen des Kapitels III, Abschnitte 1 bis 3, gelten für Hochrisiko-KI nach Art. 6 Abs. 2 und Anhang III ab 2. Dezember 2027 sowie für Systeme nach Art. 6 Abs. 1 und Anhang I ab 2. August 2028. Übergangsbestimmungen und andere bereits anwendbare Pflichten sind gesondert zu prüfen.', ref: 'AI Act Art. 113 i. d. F. VO (EU) 2026/1744' },
   { category: 'fristen', q: 'Was passiert mit GPAI-Modellen ab 2. August 2025?', a: 'Anbieter von General-Purpose AI Models (OpenAI, Anthropic, Mistral, Meta) müssen Trainingsdaten-Zusammenfassungen veröffentlichen, Copyright respektieren, technische Doku liefern. Bei „systemic risk"-Modellen (FLOPS > 10²⁵) zusätzlich Stresstest + Cyber-Risk-Mitigation.', ref: 'AI Act Art. 53 + Art. 55' },
 
   // Sanktionen
@@ -64,13 +64,13 @@ export function AiActFaq() {
           <article>
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                <Clock className="h-3 w-3" /> Stand: Mai 2026 · Anwendung ab 2. August 2026
+                <Clock className="h-3 w-3" /> Stand: November 2026 · allgemeine Anwendung seit 2. August 2026
               </div>
               <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
                 EU AI Act — <span className="text-security-400">{faqs.length} Fragen</span> für Entscheider
               </h1>
               <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
-                Alle 18 Fragen, die Du als Geschäftsführung, Compliance oder DSB jetzt beantworten musst —
+                Antworten auf zentrale Fragen, die Geschäftsführung, Compliance und DSB jetzt prüfen sollten —
                 mit Verweisen auf die konkreten Artikel der Verordnung.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 justify-center">
@@ -101,11 +101,11 @@ export function AiActFaq() {
                 <AlertTriangle className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
                 <div>
                   <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-                    Die 87 Tage bis zum 2. August 2026 reichen nicht für Eigenbau.
+                    Hochrisiko-KI: die Vorbereitung auf 2027 und 2028 beginnt jetzt.
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
-                    RealSync Dynamics liefert Audit-Log + Human-Oversight-Workflow + Risk-Klassifikation als SaaS.
-                    EU-Datenresidenz, EU-Hosting in Frankfurt, optional self-hosted für sensible Cases.
+                    RealSync Dynamics unterstützt die Vorbereitung mit strukturierten Nachweisen und Governance-Workflows.
+                    Welche Funktionen bereits nutzbar sind, ist auf der öffentlichen Roadmap ausgewiesen.
                   </p>
                 </div>
               </div>

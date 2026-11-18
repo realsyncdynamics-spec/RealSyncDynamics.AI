@@ -522,14 +522,16 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
       group.current.position.y = offsetY + Math.sin(t / 7) * 0.05;
     }
 
-    // Die Sonne wandert hinter der Erde entlang: Europa bleibt bei Nacht, der
-    // Terminator glüht oben links.
+    // Die Sonne bleibt überwiegend vor/seitlich der Erde, damit Europa und
+    // Afrika auf der Startseite als Tagseite lesbar bleiben. Die langsame
+    // Bewegung hält den Terminator lebendig, ohne die sichtbare Hemisphäre
+    // minutenlang in Nacht zu legen.
     if (sun.current) {
-      const orbit = t * 0.05;
+      const orbit = t * 0.035;
       sun.current.position.set(
-        -6 + Math.cos(orbit) * 2,
-        4 + Math.sin(orbit * 0.6) * 1.2,
-        -7 + Math.sin(orbit) * 1.5,
+        7.5 + Math.cos(orbit) * 1.2,
+        4.2 + Math.sin(orbit * 0.7) * 0.8,
+        6.5 + Math.sin(orbit) * 1.0,
       );
       atmosphere.uniforms.uSun.value.copy(sun.current.position).normalize();
     }
@@ -539,9 +541,10 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
 
   return (
     <>
-      <ambientLight color={0x2a3a55} intensity={0.16} />
-      <directionalLight ref={sun} color={0xfff4e6} intensity={2.6} position={[-8, 4.5, 5]} />
-      <directionalLight color={0x2f6f9a} intensity={0.35} position={[5, 2, 8]} />
+      <ambientLight color={0x33455f} intensity={0.24} />
+      <hemisphereLight args={[0xb8d9ff, 0x07101d, 0.5]} />
+      <directionalLight ref={sun} color={0xfff1d6} intensity={3.0} position={[8, 4.2, 6.5]} />
+      <directionalLight color={0x78aee8} intensity={0.55} position={[-4, 1.5, 5]} />
 
       <group
         ref={group}
@@ -558,7 +561,7 @@ function Earth({ animate, set }: { animate: boolean; set: EarthTextureSet }) {
             shininess={18}
             emissiveMap={maps.emissiveMap}
             emissive={new THREE.Color(0xffd9a0)}
-            emissiveIntensity={1.9}
+            emissiveIntensity={0.72}
           />
         </mesh>
 

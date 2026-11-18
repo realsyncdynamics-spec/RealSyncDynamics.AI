@@ -1,7 +1,8 @@
 /**
  * memory-decay-worker — RFC-003 Decay-Loop (Cron)
  *
- * Auth: Bearer == CRON_MEMORY_DECAY_KEY (Function secret). pg_cron sends
+ * Auth: Bearer == CRON_MEMORY_DECAY_KEY (Function secret; Fallback: Vault
+ * `cron_memory_decay_key` via _shared/cronKey.ts). pg_cron sends
  * Vault `cron_memory_decay_key` via dispatch_cron_function. Fail-closed:
  * empty env → 500 CRON_KEY_MISSING (no work), wrong/missing bearer → 401
  * "cron only". Never compare inbound Authorization to
@@ -26,6 +27,7 @@
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 import { buildCorsHeaders, handleOptions, jsonError, jsonResponse } from '../_shared/gateway.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -109,7 +111,7 @@ Deno.serve(async (req) => {
   // Drift-Guard: verify_jwt=false, dedizierter Cron-Key (nicht service_role).
   // Leerer Key → 500 CRON_KEY_MISSING (Fehlkonfiguration, kein Lauf),
   // falscher Bearer → 401. RPCs bleiben service_role-only auf der DB-Seite.
-  const CRON_KEY = Deno.env.get('CRON_MEMORY_DECAY_KEY') ?? '';
+  const CRON_KEY = await resolveCronKey('CRON_MEMORY_DECAY_KEY', 'cron_memory_decay_key');
   if (!CRON_KEY) {
     return jsonError(500, 'CRON_KEY_MISSING', 'CRON_MEMORY_DECAY_KEY not configured', corsHeaders);
   }

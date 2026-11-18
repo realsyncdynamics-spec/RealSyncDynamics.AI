@@ -12,7 +12,15 @@ on:
   workflow_dispatch:
     inputs:
       deploy_functions:
-        description: 'Deploy edge functions?'
+        description: 'Deploy explicitly selected edge functions?'
+        type: boolean
+        default: false
+      function_names:
+        description: 'Comma-separated existing slugs, maximum 12; required when deploy_functions=true'
+        type: string
+        default: ''
+      push_migrations:
+        description: 'Explicitly apply database migrations? Requires separate production approval.'
         type: boolean
         default: false
 
@@ -31,12 +39,55 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
-          version: latest
+          fetch-depth: 0
+      - name: Identify migration-only deploy scope (fail closed)
+        id: migrate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          MANUAL_MIGRATIONS: ${{ inputs.push_migrations }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$MANUAL_MIGRATIONS" != "true" ]; then
+              echo "apply=false" >> "$GITHUB_OUTPUT"
+              echo "Manual dispatch did not authorize DB migrations." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "apply=true" >> "$GITHUB_OUTPUT"
+            echo "Explicit migration dispatch requested; review owner approval." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$EVENT_NAME" != "push" ] || [ -z "$PUSH_BEFORE" ] || ! git cat-file -e "$PUSH_BEFORE^{commit}"; then
+            echo "::error::Unknown push base: never run db push on an unverified range."
+            exit 1
+          fi
+          changes="$(git diff --name-status --no-renames "$PUSH_BEFORE" HEAD -- supabase/migrations/)"
+          if [ -z "$changes" ]; then
+            echo "apply=false" >> "$GITHUB_OUTPUT"
+            echo "No migration file changes; database push skipped." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if printf '%s\n' "$changes" | grep -vE '^A[[:space:]]+supabase/migrations/[^[:space:]]+\.sql$'; then
+            echo "::error::Non-append-only migration change: block automated db push."
+            exit 1
+          fi
+          echo "apply=true" >> "$GITHUB_OUTPUT"
+          echo "New append-only migration files identified; running gated db push." >> "$GITHUB_STEP_SUMMARY"
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        if: steps.migrate.outputs.apply == 'true'
+        with:
+          # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
+          # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
+          # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
+          version: 2.122.1
       - name: Link project
+        if: steps.migrate.outputs.apply == 'true'
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
       - name: Reconcile known remote migration ledger drift
+        if: steps.migrate.outputs.apply == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -78,6 +129,7 @@ jobs:
             supabase migration repair "$version" --status applied
           done
       - name: Push migrations
+        if: steps.migrate.outputs.apply == 'true'
         run: |
           set +e
           supabase db push --include-all 2>&1 | tee /tmp/db-push.log
@@ -103,63 +155,72 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
-          version: latest
+          # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
+          # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
+          # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
+          version: 2.122.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
       - name: Deploy changed edge functions
+        env:
+          REQUESTED_FUNCTIONS: ${{ inputs.function_names }}
+          DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions }}
+          PUSH_BEFORE: ${{ github.event.before }}
         shell: bash
         run: |
-          set -uo pipefail
-
+          set -euo pipefail
           ok=0
           failed=""
-          deploy_all=false
           functions=()
 
-          mapfile -t changed_files < <(git diff --name-only HEAD^ HEAD)
-
-          for file in "${changed_files[@]}"; do
-            case "$file" in
-              supabase/config.toml|supabase/functions/_shared/*)
-                deploy_all=true
-                break
-                ;;
-            esac
-          done
-
-          if [ "$deploy_all" = true ]; then
-            while IFS= read -r dir; do
-              name="$(basename "$dir")"
-              case "$name" in _*) continue ;; esac
-              [ -f "$dir/index.ts" ] || continue
-              functions+=("$name")
-            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
-          else
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Dispatch is explicit, bounded and never infers a full redeploy.
+            if [ "$DEPLOY_FUNCTIONS" != "true" ]; then
+              echo "Kein Function-Deploy angefordert." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if [ -z "$REQUESTED_FUNCTIONS" ]; then
+              echo "::error::Manueller Deploy benötigt explizite function_names; kein Deploy-all."
+              exit 1
+            fi
+            IFS="," read -ra requested <<< "$REQUESTED_FUNCTIONS"
             declare -A seen=()
-            for file in "${changed_files[@]}"; do
-              case "$file" in
-                supabase/functions/*/*)
-                  rest="${file#supabase/functions/}"
-                  name="${rest%%/*}"
-                  case "$name" in _*) continue ;; esac
-                  if [ -f "supabase/functions/$name/index.ts" ] && [ -z "${seen[$name]+x}" ]; then
-                    functions+=("$name")
-                    seen[$name]=1
-                  fi
-                  ;;
-              esac
+            for raw in "${requested[@]}"; do
+              name="${raw//[[:space:]]/}"
+              if [[ ! "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+                echo "::error::Ungültiger Function-Slug: $name"
+                exit 1
+              fi
+              if [ ! -f "supabase/functions/$name/index.ts" ]; then
+                echo "::error::Function $name ist nicht als vorhandener Repo-Entrypoint bestätigt."
+                exit 1
+              fi
+              if [ -z "${seen[$name]+x}" ]; then
+                functions+=("$name")
+                seen[$name]=1
+              fi
             done
-          fi
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.deploy_functions }}" = "true" ] && [ "${#functions[@]}" -eq 0 ]; then
-            deploy_all=true
-            while IFS= read -r dir; do
-              name="$(basename "$dir")"
-              case "$name" in _*) continue ;; esac
-              [ -f "$dir/index.ts" ] || continue
-              functions+=("$name")
-            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
+            if [ "${#functions[@]}" -gt 12 ]; then
+              echo "::error::Mehr als 12 Functions: separaten Batch- und Rollback-Plan prüfen."
+              exit 1
+            fi
+          else
+            # Changed _shared files must never imply redeploy-all. Static
+            # importer closure; uncertain or >12 targets fail closed.
+            plan="/tmp/rsd-edge-deploy-plan"
+            if [ -z "$PUSH_BEFORE" ] || ! git cat-file -e "$PUSH_BEFORE^{commit}"; then
+              echo "::error::GitHub push baseline unavailable; no functions will be deployed."
+              exit 1
+            fi
+            if ! node scripts/ops/plan-edge-deploy.mjs "$PUSH_BEFORE" HEAD > "$plan"; then
+              echo "::error::Edge-Deploy-Scope nicht sicher bestimmbar; kein Function-Deploy."
+              exit 1
+            fi
+            mapfile -t functions < "$plan"
           fi
 
           if [ "${#functions[@]}" -eq 0 ]; then
@@ -168,6 +229,21 @@ jobs:
           fi
 
           echo "Deploy scope: ${#functions[@]} Function(s)"
+
+          # A repo directory is not a production slot. Never attempt an
+          # automatic creation at the live project capacity boundary.
+          # No deploy is attempted when the inventory cannot be retrieved.
+          targets_file="$(mktemp)"
+          live_inventory="$(mktemp)"
+          printf '%s\n' "${functions[@]}" > "$targets_file"
+          if ! supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --output json > "$live_inventory"; then
+            echo "::error::Live Edge Function Inventar nicht lesbar; Deploy gestoppt."
+            exit 1
+          fi
+          if ! node scripts/ops/check-live-edge-scope.mjs "$targets_file" "$live_inventory"; then
+            echo "::error::Function fehlt live oder ist nicht ACTIVE; kein Deployment neuer Slots ohne Einzel-Freigabe."
+            exit 1
+          fi
 
           for name in "${functions[@]}"; do
             if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then

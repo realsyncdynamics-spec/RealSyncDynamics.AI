@@ -1,6 +1,7 @@
 import { Fragment, type CSSProperties, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { LandingV6Values } from './useLandingV6';
+import { CompanyVoiceWidget } from './CompanyVoiceWidget';
 
 /** Arrow keys select and focus one option; Tab enters the group only once. */
 function onRadioKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -38,7 +39,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <a href="#top" style={{ fontSize: "clamp(17px,1.1vw,28px)", fontWeight: "500" }}>RealSyncDynamics.AI</a>
             <div style={{ display: "flex", alignItems: "center", gap: "clamp(14px,1.6vw,40px)", fontSize: "var(--fs-body)", whiteSpace: "nowrap" }}>
               {v.showLinks ? (<>
-                <a href="#produkt">Governance OS</a><Link to="/governance-runtime">Runtime</Link><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
+                <a href="#produkt">Governance OS</a><Link to="/phonebot/start">Voice Agent</Link><Link to="/governance-runtime">Runtime</Link><a href="#evidence">Evidence</a><a href="#architektur">Sicherheit</a><a href="#preise">Preise</a>
                 <Link to={v.href.login} style={{ background: "none", border: "0", padding: "0", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Login</Link>
               </>) : null}
               <Link to={v.href.audit} style={{ whiteSpace: "nowrap", padding: "10px 20px", borderRadius: "6px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", fontWeight: "500" }}>Kostenlosen Governance Scan starten</Link>
@@ -64,6 +65,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <nav aria-label="Hauptnavigation" style={{ display: "flex", alignItems: "center", gap: "clamp(14px,2vw,60px)", whiteSpace: "nowrap", fontSize: "clamp(14px,.95vw,28px)" }}>
               {v.showLinks ? (<>
                 <a href="#produkt" style={{ color: "var(--rs-fg2)" }}>Governance OS</a>
+                <Link to="/phonebot/start" style={{ color: "var(--rs-fg2)" }}>Voice Agent</Link>
                 <Link to="/governance-runtime" style={{ color: "var(--rs-fg2)" }}>Runtime</Link>
                 <a href="#evidence" style={{ color: "var(--rs-fg2)" }}>Evidence</a>
                 <a href="#architektur" style={{ color: "var(--rs-fg2)" }}>Sicherheit</a>
@@ -101,9 +103,20 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <div style={{ marginTop: "clamp(28px,2.6vw,80px)" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
               <Link to={v.href.audit} data-hero-cta="audit" data-testid="hero-primary-cta" style={{ width: "fit-content", maxWidth: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "10px", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", background: "var(--rs-btn)", border: "1px solid var(--rs-acc)", color: "#FFFDF6", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500", boxShadow: "0 0 28px var(--rs-glow)" }}>Kostenlosen Governance Scan starten<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></Link>
+              <Link to="/check?source=landing-v6-hero" data-hero-cta="needs-check" data-testid="hero-needs-check" style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Bedarfs-Check in 3 Fragen</Link>
               <a href="#produkt" data-hero-cta="governance-os" data-testid="hero-os-cta" style={{ display: "flex", alignItems: "center", minHeight: "clamp(52px,3.4vw,104px)", padding: "0 clamp(18px,1.7vw,52px)", borderRadius: "6px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", fontSize: "clamp(15px,1.05vw,34px)", fontWeight: "500" }}>Governance OS ansehen</a>
               </div>
               <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>Kostenlos · ohne Konto · keine Kreditkarte</p>
+              <p style={{ margin: "12px 0 0", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
+                Für den KI-Empfang:{' '}
+                <Link
+                  to="/warteliste?interest=bots&utm_source=landing-v6&utm_medium=hero&utm_campaign=voice-agent-preview"
+                  data-hero-cta="voice-waitlist"
+                  style={{ color: "var(--rs-acc)", fontWeight: "600", textDecoration: "underline", textUnderlineOffset: "3px" }}
+                >
+                  Voice-Agent-Preview vormerken →
+                </Link>
+              </p>
             </div>
             <div role="group" aria-label="Pläne und Preise" style={{ marginTop: "clamp(22px,1.9vw,56px)", paddingTop: "clamp(16px,1.3vw,40px)", borderTop: "1px solid var(--rs-line)", maxWidth: "48em" }}>
               <p style={{ margin: "0 0 12px", fontSize: "var(--fs-small)", color: "var(--rs-fg2)" }}>
@@ -158,7 +171,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>01.08.2024</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Inkrafttreten</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Verordnung (EU) 2024/1689 im Amtsblatt veröffentlicht.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Verordnung (EU) 2024/1689 am 12.07.2024 veröffentlicht, seit dem 01.08.2024 in Kraft.</span>
             </li>
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-fg3)" }}>02.02.2025</span>
@@ -173,7 +186,17 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2026</span>
               <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Allgemeine Anwendung</span>
-              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Transparenzpflichten und Hochrisiko-Systeme nach Anhang III.</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Allgemeines Anwendungsdatum und Transparenzpflichten; Hochrisiko-Pflichten folgen gesondert.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.12.2027</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko-KI · Anhang III</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Zentrale Pflichten nach Art. 6 Abs. 2 und Anhang III gelten ab diesem Datum.</span>
+            </li>
+            <li style={{ padding: "28px 28px 0 0", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", color: "var(--rs-acc)" }}>02.08.2028</span>
+              <span style={{ fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "var(--fs-h3)" }}>Hochrisiko-KI · Anhang I</span>
+              <span style={{ fontSize: "var(--fs-body)", lineHeight: "1.55", color: "var(--rs-fg2)" }}>Zentrale Pflichten für KI in betroffenen regulierten Produkten gelten ab diesem Datum.</span>
             </li>
           </ol>
         </div>
@@ -194,7 +217,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
             </Fragment>))}
           </div>
           <div style={{ marginTop: "32px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <Link to={v.href.audit} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Kostenlosen Governance Scan starten</Link>
+            <Link to="/check?source=landing-v6-produkt" data-testid="produkt-needs-check" style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>Passenden Baustein finden: Bedarfs-Check</Link>
             <Link to={v.href.enterprise} style={{ display: "flex", alignItems: "center", minHeight: "clamp(48px,3vw,80px)", padding: "0 clamp(22px,1.6vw,44px)", borderRadius: "8px", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>Enterprise anfragen</Link>
           </div>
         </div>
@@ -428,6 +451,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
                   <Link to={w.primary.href} data-website-cta={w.id} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-acc)", background: "var(--rs-btn)", color: "#FFFDF6", cursor: "pointer", fontSize: "var(--fs-body)", boxShadow: "0 0 18px var(--rs-glow)" }}>{w.primary.label}</Link>
                   <Link to={w.secondary.href} style={{ display: "flex", alignItems: "center", minHeight: "48px", padding: "0 22px", borderRadius: "0", border: "1px solid var(--rs-chip-b)", background: "var(--rs-chip)", color: "var(--rs-fg)", cursor: "pointer", fontSize: "var(--fs-body)" }}>{w.secondary.label}</Link>
                 </div>
+                {"showcase" in w ? (<Link to={w.showcase.href} data-website-showcase={w.id} style={{ display: "inline-flex", alignItems: "center", gap: "8px", minHeight: "44px", fontFamily: "'JetBrains Mono',monospace", fontSize: "var(--fs-small)", letterSpacing: ".04em", color: "var(--rs-acc)", textDecoration: "underline", textUnderlineOffset: "4px" }}>{w.showcase.label} <span aria-hidden="true">→</span></Link>) : null}
               </article>
             </Fragment>))}
           </div>
@@ -551,6 +575,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
           </div>
           <nav aria-label="Mobile Navigation" style={{ marginTop: "40px", display: "flex", flexDirection: "column", fontFamily: "'Source Serif 4','Source Serif 4 Fallback',Georgia,serif", fontSize: "34px" }}>
             <a href="#produkt" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Governance OS</a>
+            <Link to="/phonebot/start" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Voice Agent</Link>
             <Link to="/governance-runtime" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Runtime</Link>
             <a href="#agenten" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Agenten</a>
             <a href="#control-room" onClick={v.toggleMenu} style={{ padding: "14px 0", borderBottom: "1px solid var(--rs-line)" }}>Control Room</a>
@@ -672,6 +697,7 @@ export function LandingV6View({ v }: { v: LandingV6Values }) {
         </div>
       </>) : null}
 
+      <CompanyVoiceWidget />
       </div>
   );
 }

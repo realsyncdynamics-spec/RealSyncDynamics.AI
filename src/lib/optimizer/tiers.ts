@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -92,5 +93,5 @@ export function formatTierPrice(tier: OptimizerTier): string {
   const price = real?.priceEur ?? 0;
   if (price === 0) return 'Individuell';
   // Nettopreis-Pläne (Enterprise) überall als „1.498 €/Monat netto“.
-  return real?.plan.netPriceLabel ? monthlyPriceText(real.plan) : `€${price} / Monat`;
+  return (real && showsNetPriceLabel(real.plan)) ? monthlyPriceText(real.plan) : `€${price} / Monat`;
 }

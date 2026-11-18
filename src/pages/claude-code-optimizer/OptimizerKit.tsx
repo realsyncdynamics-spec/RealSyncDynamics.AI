@@ -1,3 +1,4 @@
+import { showsNetPriceLabel } from '@/shared/pricing';
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bot, Info, MousePointerClick, Check } from 'lucide-react';
@@ -293,7 +294,7 @@ export interface OptimizerPackage {
   name: string;
   price: string;
   tagline: string;
-  /** Was der Optimizer in diesem Paket JETZT konkret tut. */
+  /** Produktumfang transparent; Plattformtarife sind keine Zusage automatischer Code-Fixes. */
   does: string[];
   highlighted?: boolean;
 }
@@ -305,7 +306,7 @@ function canonicalPrice(planKey: TierId): string {
   // Vertragspläne (`priceOnRequest`) behandelt `tierPriceLabel` — hier nur
   // zu prüfen, ob `priceEur === 0` ist, druckte für Enterprise `1.249 €/Mo.`.
   if (tier.priceEur === 0 && !tier.priceOnRequest) return planKey === 'free' ? '0 €' : 'individuell';
-  if (!tier.priceOnRequest && tier.plan.netPriceLabel) return monthlyPriceText(tier.plan);
+  if (!tier.priceOnRequest && showsNetPriceLabel(tier.plan)) return monthlyPriceText(tier.plan);
   return tierPriceLabel(tier, ' €/Mo.');
 }
 
@@ -325,12 +326,11 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     key: 'starter',
     name: 'Starter',
     price: canonicalPrice('starter'),
-    tagline: 'Fehler verstehen & priorisieren',
+    tagline: 'Plattformtarif — Website-Audit als Einstieg',
     does: [
-      'Priorisierter Fix-Plan pro Befund',
-      'Konkrete Handlungsempfehlungen & Aufwandsschätzung',
-      'Wöchentliches Re-Scan-Monitoring (Coming Soon)',
-      'DSGVO-Dokumente aus den Befunden',
+      'Website-Audit und Befundübersicht',
+      'Weiterführende Plattformfunktionen gemäß Preisseite',
+      'Automatische Code-Korrekturen sind noch nicht verfügbar',
     ],
     highlighted: true,
   },
@@ -338,24 +338,22 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
     key: 'growth',
     name: 'Growth',
     price: canonicalPrice('growth'),
-    tagline: 'Fehler automatisch beheben lassen',
+    tagline: 'Growth-Plattformtarif — Code-Fixes in Vorbereitung',
     does: [
-      'Automatische Fix-Vorschläge als Code (Claude Code)',
-      'Kontinuierliche Optimierung & Drift-Alerts (Coming Soon)',
-      'Evidence-Chain für jeden Fix',
-      'Alles aus Starter',
+      'Website-Audit und Befundübersicht',
+      'Zusätzliche Growth-Funktionen gemäß Preisseite',
+      'Repository-Analyse und Pull Requests noch nicht verfügbar',
     ],
   },
   {
     key: 'enterprise',
     name: 'Enterprise',
     price: canonicalPrice('enterprise'),
-    tagline: 'Vollautomatisiert & auditfähig',
+    tagline: 'Enterprise-Plattformtarif — keine automatische Repository-Reparatur',
     does: [
-      'Eigene Regelwerke & Policy-Packs',
-      'SLA, dediziertes Onboarding & Support',
-      'API-Zugriff & CI/CD-Integration',
-      'Alles aus Growth',
+      'Website-Audit und Befundübersicht',
+      'Enterprise-Leistungsumfang gemäß Preisseite',
+      'Automatische Code-Änderungen und CI/CD-Fixes noch nicht verfügbar',
     ],
   },
 ];

@@ -130,7 +130,10 @@ jobs:
 
       - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
-          version: latest
+          # CLI v3 (seit 2026-11-02) zielt ohne --remote auf den lokalen Stack und
+          # bricht hosted-Aenderungen ohne --yes ab ("Nothing was changed"). Bis zur
+          # v3-Migration auf die letzte v2 festgeschrieben, kein `latest`.
+          version: 2.122.1
 
       - name: Configure Edge Function scanner secrets
         env:

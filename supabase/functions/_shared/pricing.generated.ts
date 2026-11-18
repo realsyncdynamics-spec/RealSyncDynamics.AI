@@ -879,12 +879,12 @@ export const PLANS: Plan[] = [
     planKey: 'enterprise',
     yearlyPlanKey: 'enterprise_yearly',
     name: 'Enterprise',
-    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA und SSO.',
+    outcomeHeadline: 'Konzernweite Governance über aktive Policy Packs plus Framework-Roadmap — mit SLA nach Vereinbarung und SSO (Preview, auf Anfrage).',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und individuell dimensionierte Scheduler- und Automation-Kontingente.',
     price: { monthlyEur: 1_498, yearlyEur: 14_980, oneTimeEur: null },
     // Keine Jahres-Prices in Stripe — siehe Dominik Live-Katalog 2026-09-12.
     yearlyCheckoutUnavailable: true,
-    netPriceLabel: true,
+    netPriceLabel: false,
     currency: 'EUR',
     purchaseMode: 'checkout',
     availability: 'self_service',
@@ -3006,13 +3006,17 @@ export function formatPriceEur(value: number): string {
 }
 
 /** Monats-Suffix neben dem Betrag: „/ Monat netto“ bei `netPriceLabel`, sonst „/ Monat“. */
+export function showsNetPriceLabel(plan: Pick<Plan, 'netPriceLabel'>, mode: PricingTaxMode = PRICING_TAX_MODE): boolean {
+  return mode === 'EU_STANDARD' && plan.netPriceLabel === true;
+}
+
 export function monthlyPriceSuffix(plan: Pick<Plan, 'netPriceLabel'>): string {
-  return plan.netPriceLabel ? '/ Monat netto' : '/ Monat';
+  return showsNetPriceLabel(plan) ? '/ Monat netto' : '/ Monat';
 }
 
 /** Monatspreis als Fließtext, z. B. „1.498 €/Monat netto“ (ohne „ab“). */
 export function monthlyPriceText(plan: Pick<Plan, 'price' | 'netPriceLabel'>): string {
-  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${plan.netPriceLabel ? ' netto' : ''}`;
+  return `${formatPriceEur(plan.price.monthlyEur)}/Monat${showsNetPriceLabel(plan) ? ' netto' : ''}`;
 }
 
 /** Limit als Text — `-1` wird zu „unbegrenzt", `0` zu „—". */
@@ -3045,7 +3049,14 @@ export const PRICING_TAX_NOTE_STANDARD = 'Angebot nur für Unternehmer (B2B) –
 
 /** Steuerhinweis — Kleinunternehmer (§ 19 UStG). Wortlaut identisch mit Impressum und AGB. */
 export const PRICING_TAX_NOTE_EXEMPT =
-  'Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.';
+  'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.';
+
+/** Kanonischer deutscher §-19-Hinweis für Preisflächen. */
+export const TAX_NOTICE = PRICING_TAX_NOTE_EXEMPT;
+
+/** Kanonische englische Fassung des §-19-Hinweises. */
+export const TAX_NOTICE_EN =
+  'No VAT is charged under § 19 UStG (German small-business regulation).';
 
 export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
 
@@ -3055,7 +3066,7 @@ export type PricingTaxMode = 'EU_STANDARD' | 'EXEMPT';
  * zur Regelbesteuerung hier auf `EU_STANDARD` stellen: `COMPANY.taxMode`
  * (Frontend) und `pricing.generated.ts` (Edge Functions) folgen daraus.
  */
-export const PRICING_TAX_MODE: PricingTaxMode = 'EU_STANDARD';
+export const PRICING_TAX_MODE: PricingTaxMode = 'EXEMPT';
 
 /** Steuerhinweis für den Steuermodus der Firma (`COMPANY.taxMode`). */
 export function pricingTaxNote(mode: PricingTaxMode): string {
@@ -3103,4 +3114,55 @@ export function formatNetVatGrossEur(
   if (mode === 'EXEMPT') return formatPriceEur(netEur);
   const pct = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(vatRate * 100);
   return `${formatPriceEur(netEur)} netto zzgl. ${pct} % USt (${formatPriceEurCents(grossFromNetEur(netEur, vatRate))} brutto)`;
+}
+
+/**
+ * Eigenständige Vertical-Voice-Agent-Angebote (nicht das Governance-Add-on
+ * "Voice" und nicht `voice_bot` aus dem modularen Checkout).
+ *
+ * Beträge am 16.11.2026 gegen die aktiven monatlichen Preise im verbundenen
+ * Stripe-Livekonto geprüft: Starter 89 EUR, Professional 199 EUR, Kanzlei /
+ * Praxis 349 EUR. Produkt- und Price-IDs bleiben absichtlich serverseitig;
+ * es gibt noch keinen geprüften Checkout-/Entitlement-/Provisioning-Pfad
+ * für diese drei separat abonnierten Produkte.
+ *
+ * Checkout: `supabase/functions/checkout-voice-agent` (eigenes Abo,
+ * Price-ID aus Edge-Secret `STRIPE_PRICE_VOICE_<ID>`, Betrag gegen
+ * `monthlyEur` geprüft). Freischaltung per `entitlement_grants`
+ * (source `voice_subscription`) → `bots.voice` → vorhandene Bereitstellung
+ * über `tenant_voice_agents`. Zwei Schalter, beide standardmäßig aus:
+ * `VOICE_CHECKOUT_ENABLED` (Server) und `VITE_VOICE_CHECKOUT_ENABLED` (Anzeige).
+ * Ein aktiver Stripe-Preis ist keine Produktfreigabe.
+ */
+export type StandaloneVoiceOfferId = 'starter' | 'professional' | 'kanzlei_praxis';
+
+export interface StandaloneVoiceOffer {
+  id: StandaloneVoiceOfferId;
+  name: string;
+  monthlyEur: number;
+  availability: 'preview';
+  /**
+   * Monatliches Minutenkontingent laut Stripe-Produktbeschreibung.
+   * `null` = noch nicht bestätigt. Solange `null`, verweigert
+   * `checkout-voice-agent` den Kauf (OFFER_NOT_RELEASED): ohne Kontingent
+   * setzte die Bereitstellung beim Provider kein Tageslimit.
+   */
+  monthlyMinutes: number | null;
+  /** Leistungsumfang laut Stripe-Produktbeschreibung. Leer = noch nicht bestätigt. */
+  bullets: readonly string[];
+}
+
+export const VOICE_STANDALONE_OFFERS: readonly StandaloneVoiceOffer[] = [
+  { id: 'starter', name: 'Starter', monthlyEur: 89, availability: 'preview', monthlyMinutes: null, bullets: [] },
+  { id: 'professional', name: 'Professional', monthlyEur: 199, availability: 'preview', monthlyMinutes: null, bullets: [] },
+  { id: 'kanzlei_praxis', name: 'Kanzlei / Praxis', monthlyEur: 349, availability: 'preview', monthlyMinutes: null, bullets: [] },
+];
+
+export function standaloneVoiceOfferById(id: string | null | undefined): StandaloneVoiceOffer | undefined {
+  return VOICE_STANDALONE_OFFERS.find((offer) => offer.id === id);
+}
+
+/** Kaufbar erst, wenn Kontingent und Leistungsumfang bestätigt sind. */
+export function isStandaloneVoiceOfferReleased(offer: StandaloneVoiceOffer): boolean {
+  return offer.monthlyMinutes !== null && offer.monthlyMinutes > 0 && offer.bullets.length > 0;
 }

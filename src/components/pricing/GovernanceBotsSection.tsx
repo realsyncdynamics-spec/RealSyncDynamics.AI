@@ -1,6 +1,7 @@
 import { Check, MessageCircle, Zap, MessageSquare, Globe, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { SELLABLE_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
+import { SELLABLE_PRICING_TIERS, BOT_ADDONS } from '../../config/pricing';
+import { isImplementationLive } from '../../product/implementation-status';
 
 /**
  * Governance-Bots Section — zeigt Bot-Quotas pro Tier + Add-on-Karten
@@ -79,7 +80,7 @@ export function GovernanceBotsSection() {
                         <div className="text-titanium-100 font-mono">
                           {isUnlimited ? 'Unbegrenzt' : quota.maxBots} Bots
                         </div>
-                        <div className="text-[11px] text-silver-400">produktiv / Monat</div>
+                        <div className="text-[11px] text-silver-400">Paketkontingent (abhängig vom Kanalstatus)</div>
                       </div>
                     </div>
 
@@ -106,13 +107,13 @@ export function GovernanceBotsSection() {
                                   slack: 'Slack',
                                   teams: 'Teams',
                                   email: 'E-Mail',
-                                  voice: 'Voice'
+                                  voice: isImplementationLive('voice-telephony') ? 'Voice' : 'Voice (Coming Soon)'
                                 };
                                 return names[c] || c;
                               }).join(', ')
                             : '—'}
                         </div>
-                        <div className="text-[11px] text-silver-400">verfügbare Kanäle</div>
+                        <div className="text-[11px] text-silver-400">Kanäle im Plan; Status laut Roadmap</div>
                       </div>
                     </div>
                   </div>
@@ -190,7 +191,7 @@ export function GovernanceBotsSection() {
         {BOT_ADDONS.length > 0 && (
           <div>
             <h3 className="font-display font-bold text-xl text-titanium-50 mb-8">
-              Bot Add-ons (zusätzlich buchbar)
+              Bot Add-ons (Status vor Buchung prüfen)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {BOT_ADDONS.map((addon) => (
@@ -200,6 +201,9 @@ export function GovernanceBotsSection() {
                 >
                   <div className="mb-4">
                     <div className="font-bold text-titanium-50 text-base mb-1">{addon.name}</div>
+                    {addon.id === 'voice' && !isImplementationLive('voice-telephony') && (
+                      <span className="inline-flex border border-amber-700 px-2 py-0.5 text-[11px] font-semibold text-amber-300">Coming Soon · nicht produktiv buchbar</span>
+                    )}
                     <p className="text-[12px] text-silver-400">{addon.description}</p>
                   </div>
 
@@ -218,7 +222,7 @@ export function GovernanceBotsSection() {
                         {addon.priceEur} €
                       </div>
                       <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400">
-                        {addon.priceSuffix}
+                        {addon.priceSuffix}{addon.id === 'voice' && !isImplementationLive('voice-telephony') ? ' · Preisplanung, noch nicht buchbar' : ''}
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">

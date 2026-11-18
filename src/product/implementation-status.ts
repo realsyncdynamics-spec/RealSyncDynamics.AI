@@ -40,7 +40,7 @@ export interface ImplementationItem {
 }
 
 /** Bump when statuses are re-measured. */
-export const IMPLEMENTATION_MEASURED_AT = '2026-10-18';
+export const IMPLEMENTATION_MEASURED_AT = '2026-11-17';
 
 export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
@@ -49,18 +49,17 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Landing v6 auf `/`: Eyebrow „AI GOVERNANCE RUNTIME“, H1 „Das Governance OS für DSGVO & EU AI Act.“, Ablauf Discover → Assess → Govern → Enforce → Evidence → Audit, Primär-CTA „Kostenlosen Governance Scan starten“ (/audit?source=landing-v6), Sekundär-CTA „Governance OS ansehen“ (#produkt); Enterprise über „Enterprise anfragen“ (/contact-sales?tier=enterprise); Hero mit statischem Europa-Bild (WebP/JPEG), darunter Regulierung, Plattform, Control Room (Demo-Daten gekennzeichnet), Evidence, Agent Governance (Preview), EU-native, Governance-Check, Website-Angebot (#websites: automatisch via SiteOS als Preview oder individuelles Webdesign über /contact-sales?intent=webdesign), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`, sonst Testphase laut `trialDays`), FAQ. Am 26.10.2026 nach kurzem Wechsel auf v7 wiederhergestellt (Owner); v7 bleibt als Vorschau unter /design/landing-v7, v5/v4/v2 unter /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Startseite v3 auf `/` (seit 17.11.2026, Claude Design): H1 „Ihre Ideen. In Bewegung.“, Lead „Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.“, Primär-CTA „Kostenlosen Check starten“ (#start → /audit?domain=…&source=landing-v3), Sekundär-CTA „AI Receptionist ansehen“ (#receptionist); erster Abschnitt nach dem Hero ist der AI Receptionist (K4, Owner-Entscheidung 18.11.2026): „Ihr KI-Mitarbeiter am Empfang.“, Status „In Vorbereitung“ (Telefonie siehe voice-telephony), nur geplanter Ablauf (Anfrage annehmen → Kontakt erfassen → Terminwunsch aufnehmen → an einen Menschen übergeben), CTAs „Auf die Warteliste“ (/warteliste?interest=bots&source=landing-v3-receptionist) und „Chat-Assistent ausprobieren“ (/chatbot/start, Status aus channel-bots); danach Produktkatalog App Builder, KI-Bots & Voice Agenten, Claude Code Optimizer, Governance OS mit Status nur aus dieser Registry (ohne Eintrag kein Badge); Abschnitt Kontrollschicht (Scan → Report → Build → Automate → Govern), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`), Website-Check, FAQ. 3D-Bühne (three.js) nur lazy auf geeigneten Geräten, sonst Standbild. Landing v6 („Das Governance OS für DSGVO & EU AI Act.“) bleibt als Rückfall unter /design/landing-v6; /design/startseite-v3 leitet auf `/`; v7/v5/v4/v2 unter /design/landing-v7, /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
-      'src/pages/LandingV6.tsx',
-      'src/components/landing/v6/LandingV6View.tsx',
-      'src/components/landing/v6/useLandingV6.ts',
-      'src/styles/landing-v6.css',
-      'src/styles/landing-v6-components.css',
-      'public/landing-v6/europe-network.webp',
+      'src/pages/LandingV3.tsx',
+      'src/components/landing/v3/landingV3Data.ts',
+      'src/components/landing/v3/HeroStage.tsx',
+      'src/components/landing/v3/heroScene3D.ts',
+      'src/styles/landing-v3.css',
+      'public/landing-v3/hero-still.jpg',
       'src/App.tsx#/',
-      'test/landing/landing-v6-funnel.test.tsx',
-      'test/landing/landing-v6-a11y.test.tsx',
+      'test/landing/landing-v3.test.tsx',
     ],
     showOnRoadmap: false,
   },
@@ -278,6 +277,20 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'voice-agent-onboarding',
+    name: 'Voice Agent Onboarding',
+    status: 'preview',
+    group: 'channels',
+    description:
+      'Branchen-Onboarding des Voice Agents unter voice.realsyncdynamicsai.de/onboarding.html erreichbar (am 03.11.2026 HTTP 200): Branche, Betrieb, Paket, Kanal, Stimme und Freigaben auswählen; die Seite erzeugt einen Konfigurationsdatensatz. Kein Checkout auf der Seite; die Telefonie selbst bleibt voice-telephony (Coming Soon). Verlinkt von /unternehmen (Owner-Freigabe 03.11.2026).',
+    evidence: [
+      'https://voice.realsyncdynamicsai.de/onboarding.html',
+      'src/components/landing/company/companyProducts.ts',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: false,
+  },
+  {
     id: 'voice-telephony',
     name: 'Voice / Telefonie',
     status: 'coming-soon',
@@ -306,6 +319,34 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     route: '/claude-code-optimizer',
     evidence: ['src/config/platform-capabilities.ts#ai-gateway'],
     showOnPlatform: true,
+  },
+  {
+    id: 'cloud-code-optimizer',
+    name: 'Claude Code Optimizer',
+    status: 'preview',
+    group: 'runtime',
+    description:
+      'Geführter Website-/Code-Prüfablauf unter /claude-code-optimizer. Vorhandener Scanner und Berichtspfad; keine bestätigte produktive Repository-Code-Korrektur. Nicht mit dem LIVE-Status des separaten AI Gateway gleichsetzen.',
+    route: '/claude-code-optimizer',
+    evidence: [
+      'src/pages/claude-code-optimizer/OptimizerKit.tsx',
+      'src/pages/claude-code-optimizer/OptimizerScan.tsx',
+      'docs/qa/landing-to-runtime-parity.md',
+    ],
+    showOnRoadmap: false,
+  },
+  {
+    id: 'creative-studio',
+    name: 'AI Creative Studio — Bild und Video',
+    status: 'coming-soon',
+    group: 'visual',
+    description:
+      'Bild- und Videogenerierung sind nicht im produktiven Edge-Function-Inventar bereitgestellt und nicht für Kunden freigegeben. Pilot und technische Prüfung ausschließlich im separaten Draft-PR #2271; keine öffentliche Route und keine zusätzliche Edge Function (Function-Limit 200).',
+    evidence: [
+      'PR #2271',
+      'Supabase-Function-Inventar 17.11.2026: creative-studio nicht bereitgestellt',
+    ],
+    showOnRoadmap: false,
   },
   {
     id: 'automation-n8n',
@@ -367,13 +408,13 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'billing',
     description:
-      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Landing v6, #preise) bleibt das öffentliche Beta-Angebot sichtbar (`BETA.publicOffer = true`, Owner-Entscheidung 21.10.2026); die Listenpreise aus der SSoT sind unverändert.',
+      'Self-service Monatspreise €79 / €249 / €699 — Checkout-Routen vorhanden. Auf `/` (Startseite v3, #preise) bleibt das öffentliche Beta-Angebot sichtbar (`BETA.publicOffer = true`, Owner-Entscheidung 21.10.2026); die Listenpreise aus der SSoT sind unverändert.',
     route: '/#preise',
     evidence: [
       'shared/pricing.ts',
       'src/config/beta.ts',
-      'src/components/landing/v6/useLandingV6.ts#plans',
-      'src/components/landing/v6/LandingV6View.tsx#preise',
+      'src/components/landing/v3/landingV3Data.ts#planCards',
+      'src/pages/LandingV3.tsx#preise',
     ],
     showOnRoadmap: false,
   },
@@ -385,8 +426,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
     route: '/contact-sales',
     evidence: [
-      'src/components/landing/v6/useLandingV6.ts#href.enterprise',
-      'src/components/landing/v6/LandingV6View.tsx#hero-secondary-cta',
+      'src/components/landing/v3/landingV3Data.ts#planCards',
       'src/pages/ContactSales.tsx',
     ],
     showOnRoadmap: false,
@@ -519,10 +559,10 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
   {
     id: 'stripe-checkout-e2e',
     name: 'Stripe Checkout E2E',
-    status: 'live',
+    status: 'preview',
     group: 'billing',
     description:
-      'Checkout/Webhook/Portal verdrahtet; Vault Stripe-Secrets provisioniert; Self-Service monatlich für starter/growth/agency; Jahresabrechnung Coming Soon; Enterprise per Anfrage.',
+      'Stripe-Live-Produkte/Preise und Webhook sind angelegt, Checkout/Webhook/Portal im Code verdrahtet. Ein erfolgreicher vollständiger Live-Neukauf einschließlich Zahlung, Webhook, Mandanten-Provisionierung und Entitlement ist am 17.11.2026 nicht nachgewiesen. Kein pauschaler E2E-Live-Claim; Jahresabrechnung weiterhin offen.',
     route: '/checkout/starter',
     evidence: [
       'src/features/billing/CheckoutPage.tsx',

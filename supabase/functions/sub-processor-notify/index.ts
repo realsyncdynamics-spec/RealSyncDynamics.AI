@@ -1,8 +1,9 @@
 // Sub-Processor-Change-Notify — täglich 08:00 UTC vom pg_cron-Job aufgerufen.
 //
-// Auth: Bearer == SERVICE_ROLE_KEY (verify_jwt = false). Der alte Job
-// schickte den Anon-Key (Migration 20260507140000, Variable v_anon_key);
-// der Anon-Key ist ein gültiges JWT, deshalb reicht Gateway-JWT nicht.
+// Auth: Bearer == CRON_SUB_PROCESSOR_NOTIFY_KEY (verify_jwt = false; Vault
+// `cron_sub_processor_notify_key`, seit 2026-11-01 statt service_role-Bearer).
+// Der alte Job schickte den Anon-Key (Migration 20260507140000); der Anon-Key
+// ist ein gültiges JWT, deshalb reicht Gateway-JWT nicht.
 //
 // Holt pending changes (notify_at <= now, notified_at IS NULL), iteriert
 // über alle aktiven Subscriptions, sendet 30-Tage-Vorab-Notice via Resend,
@@ -11,6 +12,7 @@
 // Pflicht nach Art. 28 Abs. 2 DSGVO + Audit-Trail-fähig.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { requireCronKey } from '../_shared/cronKey.ts';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface Change {
@@ -34,10 +36,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
-    return jsonResponse({ ok: false, error: 'cron only' }, 401);
-  }
+  // Dedizierter Cron-Key statt service_role-Bearer (seit 2026-11-01). pg_cron
+  // sendet Vault `cron_sub_processor_notify_key`; Function Secret CRON_SUB_PROCESSOR_NOTIFY_KEY oder Vault-Fallback.
+  const denied = await requireCronKey(req, 'CRON_SUB_PROCESSOR_NOTIFY_KEY', 'cron_sub_processor_notify_key');
+  if (denied) return denied;
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

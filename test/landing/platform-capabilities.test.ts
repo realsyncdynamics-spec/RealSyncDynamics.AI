@@ -177,6 +177,7 @@ describe('Kaufwege für Module ohne Laufzeit tragen einen Hinweis', () => {
     'src/pages/WhatsAppPricingPage.tsx',
     'src/pages/product-entry-points/ChatbotStartPage.tsx',
     'src/pages/product-entry-points/PhonebotStartPage.tsx',
+    'src/pages/VoiceCheckoutPage.tsx',
   ];
 
   const botsCapability = PLATFORM_CAPABILITIES.find((c) => c.id === 'bots');

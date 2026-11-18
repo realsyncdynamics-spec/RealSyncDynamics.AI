@@ -341,6 +341,10 @@ export interface UnbackedCaller {
 
 export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
   // Internes AI-OS: im Repo; Deploy nach Freigabe (Migration ai_os_action_log + Secret AI_OS_GITHUB_TOKEN).
+  // Voice-Agent-Abo: im Repo; Deploy nach Freigabe (Migration 20261118120000,
+  // Secrets STRIPE_PRICE_VOICE_<ID>, VOICE_CHECKOUT_ENABLED). Die Kaufseite zeigt
+  // ohne Deploy einen Hinweis statt des Knopfs (isEdgeFunctionInProduction).
+  { slug: 'checkout-voice-agent', surface: '/voice/checkout/:offerId (nach Login, hinter VITE_VOICE_CHECKOUT_ENABLED)', publicPath: false },
 ];
 
 const UNBACKED_SET = new Set(UNBACKED_CALLERS.map((c) => c.slug));

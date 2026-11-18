@@ -50,7 +50,6 @@ export interface SEOConfig {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-import { lv2FaqJsonLd } from '../components/landing/v2/landing-v2-content';
 import { BETA, BETA_PUBLIC_OFFER } from './beta';
 import { BETREIBER_FAQ } from '../content/aiActBetreiberpflichten';
 
@@ -68,8 +67,8 @@ export const DEFAULT_SEO: SEOConfig = {
  * Monats-Abo als schema.org-Offer. Während der offenen Beta
  * (`BETA_PUBLIC_OFFER`) ist der sichtbare Preis 0 € bis Beta-Ende; der
  * Listenpreis steht nur als spätere `ListPrice`-Spezifikation ab dem Folgetag
- * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise netto
- * (`PRICING_TAX_MODE = EU_STANDARD`, zzgl. USt, nur B2B).
+ * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise ohne Umsatzsteuerausweis
+ * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B).
  */
 function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
   const list = {
@@ -77,7 +76,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     price: String(listEur),
     priceCurrency: 'EUR',
     billingDuration: 'P1M',
-    valueAddedTaxIncluded: false,
+    valueAddedTaxIncluded: true,
   };
   if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
   const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
@@ -89,7 +88,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     priceCurrency: 'EUR',
     priceValidUntil: BETA.endsIso,
     url,
-    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat zzgl. USt, monatlich kündbar.`,
+    description: `Offene Beta: kostenlos bis ${BETA.endsLabel}, Anmeldung genügt, keine Kreditkarte. Danach ${listEur} € pro Monat, monatlich kündbar. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.`,
     priceSpecification: [
       { '@type': 'UnitPriceSpecification', price: '0', priceCurrency: 'EUR', validThrough: BETA.endsIso },
       { ...list, priceType: 'https://schema.org/ListPrice', validFrom: afterBeta.toISOString().slice(0, 10) },
@@ -134,9 +133,9 @@ const PRICING_PRODUCT_JSONLD = {
         price: '1498',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
-        valueAddedTaxIncluded: false,
+        valueAddedTaxIncluded: true,
       },
-      description: '1.498 €/Monat netto, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      description: '1.498 €/Monat, ohne Testphase — SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -165,7 +164,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Was ist der EU AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist die weltweit erste umfassende Regulierung von KI-Systemen. Er trat im August 2024 in Kraft und gilt EU-weit unmittelbar — wie die DSGVO. Anders als die DSGVO regelt er nicht primär Daten, sondern KI-Systeme als Produkt.',
+        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist seit dem 1. August 2024 in Kraft. Er wird stufenweise angewandt und regelt Pflichten für unterschiedliche Akteure und KI-Systeme. Die DSGVO bleibt bei der Verarbeitung personenbezogener Daten daneben anwendbar.',
       },
     },
     {
@@ -189,7 +188,7 @@ const AI_ACT_FAQ_JSONLD = {
       name: 'Wann gilt der AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.',
+        text: 'Stufenweise: (1) Verbote bestimmter Praktiken und KI-Kompetenzpflichten seit 2. Februar 2025. (2) Pflichten für Anbieter von GPAI-Modellen seit 2. August 2025. (3) Allgemeines Anwendungsdatum und wichtige Transparenzpflichten seit 2. August 2026. (4) Zentrale Hochrisiko-Pflichten nach Anhang III ab 2. Dezember 2027, nach Anhang I ab 2. August 2028 (Verordnung (EU) 2026/1744).',
       },
     },
     {
@@ -270,7 +269,9 @@ const AI_ACT_BETREIBER_FAQ_JSONLD = {
 
 // ─── Route → SEO-Config Map ──────────────────────────────────────────────────
 
-const LANDING_V2_JSONLD: Record<string, unknown>[] = [
+// Startseite v3: Organisation und Preise. Kein FAQ-Schema aus Landing v2 mehr —
+// deren Fragen stehen nicht auf `/`, Schema und sichtbarer Text müssen deckungsgleich bleiben.
+const HOME_JSONLD: Record<string, unknown>[] = [
   {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -287,27 +288,33 @@ const LANDING_V2_JSONLD: Record<string, unknown>[] = [
     },
   },
   PRICING_PRODUCT_JSONLD,
-  lv2FaqJsonLd(),
 ];
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
-  // Titel und Beschreibung folgen der Startseite Landing v6 (H1 „DSGVO und
-  // EU AI Act – machbar für Ihr Unternehmen.“, Ablauf Prüfen · Verstehen · Handeln · Nachweisen).
+  // Titel und Beschreibung folgen der Startseite v3 (H1 „Ihre Ideen. In Bewegung.“,
+  // Websites, KI-Agenten und Automatisierungen mit mitlaufender Kontrollschicht).
   '/': {
-    title: 'Governance OS für DSGVO & EU AI Act – AI Governance Runtime | RealSync Dynamics AI',
+    title: 'Websites, KI-Agenten und Automatisierungen für Ihren Betrieb | RealSync Dynamics AI',
     description:
-      'Das Governance OS für DSGVO & EU AI Act: KI-Systeme und Websites erfassen, Risiken bewerten, Policies anwenden und prüffähige Nachweise ablegen. Einstieg mit dem kostenlosen Governance Scan – Datenhaltung in Frankfurt.',
+      'Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen. Berechtigungen, Regeln und Nachweise laufen mit. Einstieg mit dem kostenlosen Website-Check.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Das Governance OS für DSGVO & EU AI Act',
+    ogTitle: 'Ihre Ideen. In Bewegung. – RealSync Dynamics AI',
     ogDescription:
-      'Eine Runtime für Risiken, Richtlinien und prüffähige Nachweise: Discover → Assess → Govern → Enforce → Evidence → Audit. Betrieben in der EU.',
-    jsonLd: LANDING_V2_JSONLD,
+      'Websites, KI-Agenten und Automatisierungen für Ihren Betrieb – mit Kontrollschicht für Berechtigungen, Regeln und Nachweise. Betrieben in der EU.',
+    jsonLd: HOME_JSONLD,
   },
   '/design/landing-v2': {
     title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
     description:
       'Design-Referenz der Startseite „AI Compliance Operations OS für Europa“. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
+  '/design/startseite-v3': {
+    title: 'RealSync Dynamics AI – Startseite v3 (Link auf die Startseite)',
+    description:
+      'Frühere Vorschau-Adresse der Startseite v3; leitet auf /. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
@@ -319,9 +326,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
   '/design/landing-v6': {
-    title: 'RealSync Dynamics AI – Landing v6 (Link auf die Startseite)',
+    title: 'RealSync Dynamics AI – Landing v6 (frühere Startseite)',
     description:
-      'Gleiche Seite wie die Startseite „DSGVO und EU AI Act – machbar für Ihr Unternehmen.“. Kanonisch ist /.',
+      'Frühere Startseite „Das Governance OS für DSGVO & EU AI Act“, bleibt als Rückfall erreichbar. Kanonisch ist /.',
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
@@ -350,7 +357,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat netto, ohne Testphase. Free Audit 0 €. EU-Hosting, AVV inklusive.',
+      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat, ohne Testphase. Free Audit 0 €. AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -373,12 +380,27 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/features': {
     title: 'Funktionen: Website-Scan, AI-Act-Inventar, Audit-Trail | RealSync Dynamics AI',
     description:
-      'Automatische Cookie-Erkennung, Consent-Timing-Analyse, AVV-Generator, VVT, TOM und AI-Act-Risk-Assessment in einer Plattform. EU-Hosting Frankfurt.',
+      'Automatische Cookie-Erkennung, Consent-Timing-Analyse, AVV-Generator, VVT, TOM und AI-Act-Risk-Assessment in einer Plattform.',
     canonical: `${SITE_URL}/features`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Funktionen', url: '/features' },
     ]),
+  },
+  // 15.11.2026: Bedarfs-Check (/check) — Fragebogen, wertet nur Angaben aus.
+  // Bewusst noindex und nicht in der Sitemap, bis der Ablauf freigegeben ist.
+  '/check': {
+    title: 'Kostenloser Bedarfs-Check | RealSync Dynamics & AI',
+    description:
+      'Drei kurze Fragen, dann sehen Sie, welche Bausteine aus Build, Automate und Govern zu Ihrem Betrieb passen. Kostenlos, ohne Konto.',
+    canonical: `${SITE_URL}/check`,
+    noIndex: true,
+  },
+  '/check/ergebnisse': {
+    title: 'Gespeicherte Ergebnisse — Bedarfs-Check | RealSync Dynamics & AI',
+    description: 'Ihre gespeicherten Ergebnisse des Bedarfs-Checks.',
+    canonical: `${SITE_URL}/check/ergebnisse`,
+    noIndex: true,
   },
   '/audit': {
     title: 'Kostenloser Governance Scan — DSGVO & EU AI Act | RealSync Dynamics AI',
@@ -423,7 +445,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/runtime`,
     ogTitle: 'Governance Runtime — Kontinuierliche Compliance-Überwachung',
     ogDescription:
-      'Kontinuierliche Compliance-Überwachung mit Agenten, Evidence Vault und Policy Enforcement — auditfähig, EU-gehostet.',
+      'Kontinuierliche Compliance-Überwachung mit Agenten, Evidence Vault und Policy Enforcement — auditfähig.',
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Runtime', url: '/runtime' },
@@ -448,7 +470,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/warteliste': {
     title: 'Beta-Zugang — Begleitetes Onboarding zur AI Governance Runtime | RealSync Dynamics AI',
     description:
-      'Platz für begleitetes Onboarding und Beta-Module (z. B. laufendes Monitoring) sichern. Die Governance Runtime ist verfügbar; kostenlos, unverbindlich — EU-gehostet in Frankfurt.',
+      'Platz für begleitetes Onboarding und Beta-Module (z. B. laufendes Monitoring) sichern. Die Governance Runtime ist verfügbar; kostenlos, unverbindlich.',
     canonical: `${SITE_URL}/warteliste`,
     ogTitle: 'Beta-Zugang — Begleitetes Onboarding zur AI Governance Runtime',
     ogDescription:
@@ -478,7 +500,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/digitale-souveraenitaet`,
     ogTitle: 'Digitale Souveränität als Betriebsmodell',
     ogDescription:
-      'Souveräne Compliance-Infrastruktur für DSGVO, EU AI Act und Software-Supply-Chain-Governance — kontinuierlich, auditfähig, EU-gehostet.',
+      'Souveräne Compliance-Infrastruktur für DSGVO, EU AI Act und Software-Supply-Chain-Governance — kontinuierlich, auditfähig.',
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Digitale Souveränität', url: '/digitale-souveraenitaet' },
@@ -540,12 +562,32 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/contact-sales': {
     title: 'Enterprise anfragen – SLA, Multi-Org | RealSync Dynamics AI',
     description:
-      'Enterprise: 1.498 €/Monat netto, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
+      'Enterprise: 1.498 €/Monat, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Enterprise anfragen', url: '/contact-sales' },
     ]),
+  },
+
+  // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau mit fiktivem Architekturbüro).
+  // Bewusst noindex und nicht in der Sitemap; Freischaltung zur Indexierung als eigener Schritt.
+  '/demo/3d-landingpage': {
+    title: '3D-Landingpage live erleben | RealSync Dynamics AI',
+    description:
+      'Interaktive 3D-Landingpage im Browser: drehen, scrollen, Details öffnen, Farben und Licht anpassen. Vorlage mit fiktivem Beispielunternehmen.',
+    canonical: `${SITE_URL}/demo/3d-landingpage`,
+    noIndex: true,
+  },
+
+  // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
+  // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/unternehmen': {
+    title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
+    description:
+      'Das Governance OS prüft jede KI-Aktion, der Voice Agent nimmt Anrufe an, der Builder setzt Ihre Webseite. Für KMU, made in Thüringen, Hosting in Europa.',
+    canonical: `${SITE_URL}/unternehmen`,
+    noIndex: true,
   },
 
   '/frontend-builder': {
@@ -561,9 +603,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Tier 2 — Alternative Pages (high commercial intent) ─────────────────
   '/cookiebot-alternative': {
-    title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSync Dynamics AI',
+    title: 'Cookiebot Alternative mit AI-Act-Inventar | RealSync Dynamics AI',
     description:
-      'RealSync Dynamics AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
+      'RealSync Dynamics AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
     canonical: `${SITE_URL}/cookiebot-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -656,7 +698,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/fintech': {
     title: 'DSGVO & BAIT-Compliance für FinTech | RealSync Dynamics AI',
     description:
-      'Compliance für Finanzdienstleister: DSGVO, BAIT, MaRisk und AI-Act in einem automatisierten Audit. EU-Datenresidenz, Audit-Trail, DSB-Workflows.',
+      'Compliance für Finanzdienstleister: DSGVO, BAIT, MaRisk und AI-Act in einem automatisierten Audit. Audit-Trail, DSB-Workflows.',
     canonical: `${SITE_URL}/fintech`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -667,7 +709,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/insurance': {
     title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSync Dynamics AI',
     description:
-      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
+      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle.',
     canonical: `${SITE_URL}/insurance`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -769,7 +811,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/saas-anbieter': {
     title: 'SaaS-Compliance — Multi-Tenant DSGVO, AVV, Sub-Prozessoren | RealSync Dynamics AI',
     description:
-      'Für SaaS-Anbieter: Multi-Tenant-Architektur, AVV mit Endkunden, Sub-Prozessor-Liste, DSGVO Art. 32, AI-Act-Klassifikation, EU-Datenresidenz Default.',
+      'Für SaaS-Anbieter: Multi-Tenant-Architektur, AVV mit Endkunden, Sub-Prozessor-Liste, DSGVO Art. 32, AI-Act-Klassifikation.',
     canonical: `${SITE_URL}/saas-anbieter`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1020,9 +1062,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // ─── Trust / Methodik / Legal ────────────────────────────────────────────
   '/security': {
-    title: 'Security – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
+    title: 'Security – Controls, Datenverarbeitung & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
+      'Security-Posture ehrlich dokumentiert: Datenbank in Frankfurt (eu-central-1), TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1030,9 +1072,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/sicherheit': {
-    title: 'Sicherheit – EU-Datenresidenz, Controls & Roadmap | RealSync Dynamics AI',
+    title: 'Sicherheit – Controls, Datenverarbeitung & Roadmap | RealSync Dynamics AI',
     description:
-      'Security-Posture ehrlich dokumentiert: EU-Datenresidenz in Frankfurt, TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
+      'Security-Posture ehrlich dokumentiert: Datenbank in Frankfurt (eu-central-1), TLS 1.3, RLS-Mandantentrennung, Prüfpfad, offene Lücken und Roadmap ohne Zertifikat.',
     canonical: `${SITE_URL}/security`,
   },
   '/methodik': {
@@ -1187,7 +1229,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/versicherungen': {
     title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSync Dynamics AI',
     description:
-      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
+      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle.',
     canonical: `${SITE_URL}/insurance`,
   },
   '/presse': {
@@ -1267,7 +1309,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/api': {
     title: 'API – programmatischer Zugriff | RealSync Dynamics AI',
     description:
-      'REST-API der Governance-Runtime: tenant-scoped API-Keys, Rate-Limits und ein Audit-Log pro Aufruf. Im Growth-Tarif enthalten, betrieben in der EU (Frankfurt).',
+      'REST-API der Governance-Runtime: tenant-scoped API-Keys, Rate-Limits und ein Audit-Log pro Aufruf. Im Growth-Tarif enthalten, Endpunkte in der API-Doku.',
     canonical: `${SITE_URL}/api-docs`,
   },
   '/api-docs': {
@@ -1408,7 +1450,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/enterprise-konfigurator': {
     title: 'Enterprise konfigurieren – Bausteine | RealSync Dynamics AI',
     description:
-      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat netto.',
+      'Enterprise-Umfang in vier Fragen zusammenstellen: Organisationen, Domains, White-Label und Prüfpfad. Alle Agency-Funktionen inklusive, 1.498 €/Monat.',
     canonical: `${SITE_URL}/enterprise-konfigurator`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1419,7 +1461,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/status': {
     title: 'Systemstatus – Komponenten & Vorfälle | RealSync Dynamics AI',
     description:
-      'Betriebsstatus der Plattform: API und Edge Functions, Datenbank und Hosting in der EU (eu-central-1), dazu ein offenes Incident-Log mit Ausfällen und Wartungen.',
+      'Betriebsstatus der Plattform: API und Edge Functions, Datenbank in Frankfurt (eu-central-1), dazu ein offenes Incident-Log mit Ausfällen und Wartungen.',
     canonical: `${SITE_URL}/status`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

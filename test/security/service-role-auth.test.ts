@@ -71,6 +71,7 @@ function validatesIdentity(src: string): boolean {
     /requireAuthAndTenant\s*\(/,
     /requireTenantMembership\s*\(/,
     /requireServiceRole\s*\(/,
+    /requireCronKey\s*\(/,              // _shared/cronKey.ts (Cron-Key, fail-closed)
     /auth\.getUser\s*\(/,                // manuell, kanonisches Muster
     /get_app_secret/,                    // Vault-Token (Cron)
     /constructEventAsync|constructEvent/, // Stripe-HMAC
@@ -122,14 +123,21 @@ describe('F-04 — die vier remediierten Endpunkte behalten ihre Pruefung', () =
   const src = (slug: string) =>
     readFileSync(join(FUNCTIONS_DIR, slug, 'index.ts'), 'utf-8');
 
-  // Maschinen-Endpunkte: Cron bzw. DB-Trigger, kein menschlicher Aufrufer.
-  for (const slug of [
-    'governance-score-calculator',
-    'governance-deadline-monitor',
-    'automation-trigger-trial-webhook',
-  ]) {
-    it(`${slug} verlangt den Service-Role-Aufrufer`, () => {
-      expect(src(slug)).toMatch(/requireServiceRole\s*\(\s*req\s*\)/);
+  // Maschinen-Endpunkt per DB-Trigger, kein menschlicher Aufrufer. Seit
+  // 2026-11-08 eigener Key cron_trial_webhook_key statt service_role-Bearer
+  // (der DB-Trigger las bis dahin Vault service_role_key, der fehlt).
+  it('automation-trigger-trial-webhook verlangt den Trigger-Aufrufer (requireCronKey)', () => {
+    const s = src('automation-trigger-trial-webhook');
+    expect(s).toMatch(/requireCronKey\s*\(\s*req\s*,\s*'CRON_TRIAL_WEBHOOK_KEY'\s*,\s*'cron_trial_webhook_key'/);
+    expect(s).not.toMatch(/requireServiceRole\s*\(/);
+  });
+
+  // Cron-Endpunkte: seit 2026-11-01 dedizierter Cron-Key statt service_role-
+  // Bearer (service_role-JWT ist kein Inbound-Credential).
+  for (const slug of ['governance-score-calculator', 'governance-deadline-monitor']) {
+    it(`${slug} verlangt den Cron-Aufrufer (requireCronKey)`, () => {
+      expect(src(slug)).toMatch(/await requireCronKey\s*\(\s*req\s*,/);
+      expect(src(slug)).not.toMatch(/requireServiceRole\s*\(/);
     });
   }
 

@@ -74,6 +74,8 @@ const WEBSITE_PATHS = [
     preview: true,
     primary: { label: 'Landingpage-Entwurf starten', href: '/build' },
     secondary: { label: 'Bestehende Website modernisieren', href: `/handwerk-website?source=${SOURCE}-websites` },
+    // Template-Vorschau: echte interaktive 3D-Seite; automatische 3D-Erstellung im Builder ist geplant.
+    showcase: { label: '3D-Landingpage live erleben', href: '/demo/3d-landingpage' },
   },
   {
     id: 'custom',
@@ -103,11 +105,11 @@ const WEBSITE_EXTENSION = {
   t: 'Individuelle Dashboards für Ihren Betrieb',
   d: 'Auf Wunsch wird aus der Website mehr: ein Dashboard, das zu Ihren Abläufen passt – etwa für Handwerksbetriebe, Arztpraxen oder Kanzleien.',
   examples: [
-    { k: 'Handwerk', d: 'Anfragen, Aufträge und Termine an einem Ort' },
+    { k: 'Handwerk', d: 'Anfragen, Aufträge und Terminwünsche an einem Ort' },
     { k: 'Arztpraxis', d: 'Terminwünsche und Rückfragen strukturiert statt per Telefonzettel' },
     { k: 'Kanzlei', d: 'Mandatsanfragen und Fristen übersichtlich vorsortiert' },
   ],
-  modules: 'Ergänzbar um Bots (Website-Chat, Terminbuchung, WhatsApp, Telefon), KI-Workflows und Integrationen in Ihre bestehenden Systeme.',
+  modules: 'Ergänzbar um Bots für Website-Chat und WhatsApp (Preview), um KI-Workflows und Integrationen. Telefon und Terminbuchung sind in Vorbereitung.',
   note: 'Einige dieser Bausteine sind noch in der Vorschau. Wir bauen nur ein, was für Ihren Anwendungsfall tatsächlich verfügbar ist – das klären wir verbindlich im Festangebot. Nennen Sie den Wunsch einfach in Ihrer Webdesign-Anfrage.',
 } as const;
 const AGENT_NO = [

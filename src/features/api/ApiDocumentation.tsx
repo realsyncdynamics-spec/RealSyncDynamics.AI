@@ -240,10 +240,10 @@ export function ApiDocumentation() {
             <p className="text-sm text-titanium-400">
               <strong className="text-titanium-200">Vollständige API-Referenz:</strong>{' '}
               <a
-                href="/api/docs"
+                href="/api"
                 className="text-security-400 hover:text-security-300 inline-flex items-center gap-1"
               >
-                /api/docs <ExternalLink className="h-3 w-3" />
+                /api <ExternalLink className="h-3 w-3" />
               </a>
             </p>
           </CardBody>

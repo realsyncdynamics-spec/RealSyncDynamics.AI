@@ -32,7 +32,7 @@ import {
   reviewCheckoutTax,
   reviewInvoiceTax,
 } from '../../supabase/functions/_shared/checkout-tax';
-import { PRICING_TAX_NOTE_EXEMPT, PRICING_TAX_NOTE_STANDARD } from '../../shared/pricing';
+import { showsNetPriceLabel, PRICING_TAX_MODE, PRICING_TAX_NOTE, PRICING_TAX_NOTE_EXEMPT, PRICING_TAX_NOTE_STANDARD, planById, monthlyPriceSuffix, monthlyPriceText, formatNetVatGrossEur } from '../../shared/pricing';
 
 describe('checkoutTaxParams: Steuerberechnung folgt dem Steuermodus', () => {
   it('EU_STANDARD: Stripe Tax berechnet die Umsatzsteuer', () => {
@@ -298,5 +298,54 @@ describe('Verdrahtung: kein Checkout setzt automatic_tax am Helper vorbei', () =
     // Rechnungsfelder versionsfest lesen, nie direkt `inv.tax`.
     expect(src).toContain('invoiceTaxFacts(');
     expect(src).not.toMatch(/taxAmountCents:\s*inv\.tax/);
+  });
+});
+
+// #2155: defaults matter — explicit taxMode tests alone missed the regression.
+describe('Kleinunternehmer: produktive Defaults (#2155)', () => {
+  it('verwendet EXEMPT und zeigt keine Netto-/USt-Zuschläge', () => {
+    expect(PRICING_TAX_MODE).toBe('EXEMPT');
+    expect(PRICING_TAX_NOTE).toBe(PRICING_TAX_NOTE_EXEMPT);
+    expect(monthlyPriceSuffix(planById('enterprise'))).toBe('/ Monat');
+    expect(monthlyPriceText(planById('enterprise'))).not.toMatch(/netto/);
+    expect(formatNetVatGrossEur(1498)).not.toMatch(/netto|zzgl|brutto/);
+  });
+  it.each(['payment', 'subscription'] as const)('%s: kein Steueraufschlag ohne expliziten Modus', (sessionMode) => {
+    const params = checkoutTaxParams({ sessionMode, existingCustomer: false });
+    expect(params.automatic_tax.enabled).toBe(false);
+    expect(params.custom_text.submit.message).toContain(PRICING_TAX_NOTE_EXEMPT);
+    expect(params.custom_text.submit.message).not.toContain('zzgl.');
+    expect(invoiceFooter()).toBe(PRICING_TAX_NOTE_EXEMPT);
+    if (sessionMode === 'payment') {
+      expect(params.invoice_creation?.invoice_data?.footer).toBe(PRICING_TAX_NOTE_EXEMPT);
+    }
+  });
+});
+
+
+describe('Netto-Anzeige folgt dem Steuermodus (#2157)', () => {
+  it('unterdrückt selbst gesetzte Netto-Flags im EXEMPT-Default', () => {
+    const plan = { ...planById('enterprise'), netPriceLabel: true };
+    expect(showsNetPriceLabel(plan)).toBe(false);
+    expect(monthlyPriceSuffix(plan)).toBe('/ Monat');
+    expect(monthlyPriceText(plan)).not.toContain('netto');
+  });
+  it.each([
+    ['EXEMPT', true, false], ['EXEMPT', false, false],
+    ['EU_STANDARD', true, true], ['EU_STANDARD', false, false],
+  ] as const)('%s mit Flag %s ergibt %s', (mode, netPriceLabel, expected) => {
+    expect(showsNetPriceLabel({ netPriceLabel }, mode)).toBe(expected);
+  });
+  it('bereinigt das öffentliche Enterprise-Angebot im JSON-LD', () => {
+    const html = readFileSync(resolve('index.html'), 'utf8');
+    const scripts = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+    expect(scripts.length).toBeGreaterThan(0);
+    const offers = scripts.flatMap((match) => {
+      const data = JSON.parse(match[1]);
+      return (data['@graph'] ?? [data]).flatMap((node: { offers?: unknown[] }) => node.offers ?? []);
+    });
+    const enterprise = offers.find((offer: { name?: string }) => offer.name === 'Enterprise');
+    expect(enterprise).toBeDefined();
+    expect(JSON.stringify(enterprise)).not.toMatch(/netto|valueAddedTaxIncluded/);
   });
 });

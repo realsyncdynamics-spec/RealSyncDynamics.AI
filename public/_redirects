@@ -64,6 +64,13 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /domain-checker     /audit  301
 /preise             /pricing  301
 /preise/            /pricing  301
+# Nackte Pfade haben keine Router-Route (nur /checkout/:planKey und
+# /onboarding/:scanId). Exakt, damit /checkout/success, /checkout/:planKey,
+# /onboarding/:scanId und /onboarding-erklaert stehen bleiben.
+/checkout           /pricing  301
+/checkout/          /pricing  301
+/onboarding         /welcome  301
+/onboarding/        /welcome  301
 /produkt            /runtime  301
 /loesungen          /branchen  301
 /demo               /demo-tour  301

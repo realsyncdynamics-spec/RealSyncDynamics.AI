@@ -29,7 +29,7 @@ it('shows the Enterprise fixed price and checkout for plain contact links', () =
   mountAt('?source=landing');
   expect(screen.getByRole('heading', { level: 1, name: 'Enterprise anfragen' })).toBeInTheDocument();
   // Enterprise ist nicht Teil der Beta: Festpreis, ohne Testphase, direkt buchbar.
-  expect(screen.getByText(/Enterprise kostet 1\.498\s€\/Monat netto, ohne Testphase und direkt buchbar/)).toBeInTheDocument();
+  expect(screen.getByText(/Enterprise kostet 1\.498\s€\/Monat, ohne Testphase und direkt buchbar/)).toBeInTheDocument();
   expect(screen.getByTestId('contact-sales-enterprise-checkout')).toHaveAttribute('href', '/checkout/enterprise');
   expect(document.body.textContent).not.toMatch(/Enterprise-Beta|auf Anfrage/);
   // Kein Kontingent: /contact-sales schreibt über sales-lead, ohne Obergrenze.

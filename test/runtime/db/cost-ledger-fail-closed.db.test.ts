@@ -296,7 +296,7 @@ d('PR A2 / Ergänzung 28.10.: offene Reservierungen und Einmal-Storno (DB)', () 
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
 
-  it('offene Reservierungen belasten den LLM-Deckel (parallele Aufrufe umgehen ihn nicht)', async () => {
+  it('offene Reservierungen belasten den LLM-Deckel (sequenzielle Aufrufe)', async () => {
     const { tenantId } = await createTenantWithMember(ctx!);
     await setCaps(ctx!, tenantId, 1);
     const a = await reserve(ctx!, tenantId, 0.6);           // offen, nicht abgerechnet

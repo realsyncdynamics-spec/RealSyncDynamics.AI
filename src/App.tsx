@@ -31,9 +31,16 @@ const LandingV4 = lazy(() => import('./pages/LandingV4').then((m) => ({ default:
 const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default: m.LandingV5 })));
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
+// 17.11.2026: Startseite v3 (Claude Design) ist `/`. Three.js lädt nur hier und nur auf geeigneten Geräten.
+const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
+// 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
+const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
+const NeedsCheckPage = lazy(() => import('./pages/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
+const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').then((m) => ({ default: m.NeedsCheckSavedPage })));
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
+const VoiceCheckoutPage = lazy(() => import('./pages/VoiceCheckoutPage').then((m) => ({ default: m.VoiceCheckoutPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
@@ -82,6 +89,7 @@ const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then(
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
 const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
 const KontaktPage = lazy(() => import('./pages/KontaktPage').then((m) => ({ default: m.KontaktPage })));
+const CompanyLanding = lazy(() => import('./pages/CompanyLanding').then((m) => ({ default: m.CompanyLanding })));
 const EnterpriseAiOs = lazy(() => import('./pages/EnterpriseAiOs').then((m) => ({ default: m.EnterpriseAiOs })));
 const EnterpriseAiOsFoundingAccess = lazy(() => import('./pages/EnterpriseAiOsFoundingAccess').then((m) => ({ default: m.EnterpriseAiOsFoundingAccess })));
 const AiCommandCenterShowcase = lazy(() => import('./pages/AiCommandCenterShowcase').then((m) => ({ default: m.AiCommandCenterShowcase })));
@@ -196,6 +204,7 @@ const Limits = lazy(() => import('./pages/Limits').then((m) => ({ default: m.Lim
 const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
 
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
+const WorkspaceGuide = lazy(() => import('./features/onboarding/WorkspaceGuide').then((m) => ({ default: m.WorkspaceGuide })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
 const SampleWorkspacePage = lazy(() => import('./features/governance/dashboard/SampleWorkspacePage').then((m) => ({ default: m.SampleWorkspacePage })));
@@ -535,8 +544,13 @@ function RoutesWithTracking() {
           EU AI Act", Inhalte an Landing-Spezifikation, Pricing-SSoT, Beta und Implementierungsstatus
           angepasst) ist wieder Startseite. v7 (Titan/Nacht) bleibt als Vorschau unter
           /design/landing-v7; /design/landing-v6 bleibt für bereits geteilte Links. */}
-      <Route path="/" element={<LandingV6 />} />
+      {/* 17.11.2026 (Owner): Startseite v3 (Claude Design „Ihre Ideen. In Bewegung.") ist
+          Startseite. Landing v6 bleibt unverändert als Rückfall unter /design/landing-v6;
+          die frühere Vorschau /design/startseite-v3 leitet auf `/`. */}
+      <Route path="/" element={<LandingV3 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
+      <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
@@ -557,6 +571,7 @@ function RoutesWithTracking() {
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
+      <Route path="/voice/checkout/:offerId" element={<VoiceCheckoutPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Navigate to="/" replace />} />
@@ -592,6 +607,9 @@ function RoutesWithTracking() {
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/check" element={<NeedsCheckPage />} />
+      <Route path="/check/ergebnisse" element={<NeedsCheckSavedPage />} />
+      <Route path="/check/ergebnisse/:id" element={<NeedsCheckSavedPage />} />
       {/* Cloud Code Optimizer — Page-by-Page-Flow (Phase 1) */}
       <Route path="/optimizer" element={<OptimizerLanding />} />
       <Route path="/optimizer/scan" element={<OptimizerScan />} />
@@ -627,6 +645,8 @@ function RoutesWithTracking() {
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
       {/* Guided post-scan onboarding flow — Phase 2 (WP10: kanonisch /app/activation) */}
+      {/* Nacktes /onboarding hat keine Seite. /onboarding/:scanId bleibt. */}
+      <Route path="/onboarding" element={<Navigate to="/welcome" replace />} />
       <Route path="/onboarding/:scanId" element={<Navigate to={withSearch('/app/activation')} replace />} />
       <Route path="/recommendation/:scanId" element={<GovernanceRecommendation />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
@@ -656,6 +676,8 @@ function RoutesWithTracking() {
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />
       <Route path="/kontakt" element={<KontaktPage />} />
+      {/* 02.11.2026: Unternehmens-Landing v5 — Gerüst (noindex) bis Design-Handoff vorliegt; `/` ist Startseite v3. */}
+      <Route path="/unternehmen" element={<CompanyLanding />} />
       <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
       <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Landing, Altadresse des Founding-Programms (→ Enterprise-Checkout) + Dashboard */}
@@ -841,6 +863,7 @@ function RoutesWithTracking() {
       <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai/onboarding" element={<AppGate><GovernanceBrowserShell><LocalAiOnboardingView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai" element={<Navigate to="/app/local-ai/onboarding" replace />} />
+      <Route path="/app/start" element={<AppGate><GovernanceBrowserShell><WorkspaceGuide /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />
@@ -1027,6 +1050,8 @@ function RoutesWithTracking() {
           zweite Registrierung (features/billing/CheckoutSuccessPage) war
           unerreichbar und wurde am 2026-09-01 samt Datei entfernt. */}
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
+      {/* Nacktes /checkout hat keine Seite. /checkout/:planKey bleibt. */}
+      <Route path="/checkout" element={<Navigate to="/pricing" replace />} />
       <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}

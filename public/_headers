@@ -2,7 +2,9 @@
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  # microphone=(self): die Landing-Demo nutzt die Web Speech API erst nach Klick.
+  # Kamera und Standort bleiben zu. Kein Mikrofon für fremde Origins.
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   # Cloudflare Pages injiziert das Web-Analytics-Beacon selbst; ohne

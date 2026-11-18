@@ -394,7 +394,7 @@ describe('pricingContent', () => {
       const enterprise = getPlanBySlug('enterprise');
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
       expect(enterprise?.priceString).toBe('1.498 €');
-      expect(enterprise?.interval).toBe('/ Monat netto');
+      expect(enterprise?.interval).toBe('/ Monat');
       expect(enterprise?.cta.href).toBe('/contact-sales?plan=enterprise&source=pricing');
     });
 

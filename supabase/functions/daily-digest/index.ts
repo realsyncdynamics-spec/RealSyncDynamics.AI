@@ -1,7 +1,7 @@
 // Daily Digest Email an den Founder.
 //
 // GET/POST /functions/v1/daily-digest   (verify_jwt = false, eigener Bearer-Check)
-// Optional ?email=… overrides FOUNDER_EMAIL env var — nur mit Service-Role.
+// Optional ?email=… overrides FOUNDER_EMAIL env var — nur für den Cron-Aufrufer.
 //
 // Sammelt:
 //   - last 24h audits, leads, pageviews
@@ -11,9 +11,10 @@
 //
 // pg_cron-Setup:
 //   SELECT cron.schedule('daily-digest', '0 8 * * *',
-//     $$ SELECT public.dispatch_cron_function('daily-digest', 'service_role_key') $$);
+//     $$ SELECT public.dispatch_cron_function('daily-digest', 'cron_daily_digest_key') $$);
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { requireCronKey } from '../_shared/cronKey.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface DailyStats {
@@ -43,10 +44,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
-    return jsonResponse({ ok: false, error: 'cron only' }, 401, corsHeaders);
-  }
+  // Dedizierter Cron-Key statt service_role-Bearer (seit 2026-11-01). pg_cron
+  // sendet Vault `cron_daily_digest_key`; Function Secret CRON_DAILY_DIGEST_KEY oder Vault-Fallback.
+  const denied = await requireCronKey(req, 'CRON_DAILY_DIGEST_KEY', 'cron_daily_digest_key', corsHeaders);
+  if (denied) return denied;
 
   const supa = createClient(SUPABASE_URL, SRK);
 

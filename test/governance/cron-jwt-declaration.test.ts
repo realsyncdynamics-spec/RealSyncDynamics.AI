@@ -38,6 +38,8 @@ const CRON_SLUGS = [
   'sub-processor-notify',
   'website-maintenance-daily-cron',
   'email-auth-rescan',
+  'governance-deadline-monitor',
+  'governance-score-calculator',
 ] as const;
 
 describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', () => {
@@ -48,10 +50,13 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
 
     it(`${slug} weist fremde Bearer mit 401 ab`, () => {
       const src = source(slug);
+      expect(src).not.toContain('service role required');
+      // Entweder der gemeinsame Helfer (_shared/cronKey.ts: 500/401 fail-closed,
+      // Verhalten in test/edge/cron-key.test.ts) oder ein eigener Check.
+      if (/await requireCronKey\(req, 'CRON_[A-Z_]+_KEY', 'cron_[a-z_]+_key'/.test(src)) return;
       expect(src).toMatch(/Authorization/);
       expect(src).toMatch(/401/);
       expect(src).toMatch(/cron only|UNAUTHORIZED|invalid bearer/);
-      expect(src).not.toContain('service role required');
     });
   }
 
@@ -62,7 +67,7 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
       ['memory-decay-worker', 'CRON_MEMORY_DECAY_KEY'],
     ] as const) {
       const src = source(slug);
-      expect(src).toContain(`Deno.env.get('${env}')`);
+      expect(src).toMatch(new RegExp(`resolveCronKey\\('${env}', 'cron_[a-z_]+_key'\\)`));
       expect(src).toMatch(/if \(!CRON_KEY\) \{\s*return jsonError\(500, 'CRON_KEY_MISSING'/);
       expect(src).toMatch(/authHeader\s*!==\s*`Bearer \$\{CRON_KEY\}`/);
       expect(src).not.toMatch(
@@ -80,6 +85,8 @@ describe('Cron-Functions: verify_jwt=false ist deklariert und selbst geprüft', 
       'sub-processor-notify',
       'website-maintenance-daily-cron',
       'email-auth-rescan',
+      'governance-deadline-monitor',
+      'governance-score-calculator',
     ]) {
       expect(lint).toContain(`'${slug}'`);
     }

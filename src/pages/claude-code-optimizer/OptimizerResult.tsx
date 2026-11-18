@@ -43,7 +43,7 @@ const TIMELINE = [
     icon: Wrench,
     phase: 'Nach der Anmeldung',
     title: 'Was der Optimizer beheben würde',
-    text: 'Zu jedem Befund liefert er einen priorisierten Fix-Plan, konkrete Handlungsschritte und — ab Growth — Fix-Vorschläge als Code.',
+    text: 'Eine manuelle Auswertung der Befunde ist möglich. Automatisch erzeugte Code-Fixes oder Repository-Pull-Requests sind in diesem Ablauf noch nicht verfügbar.',
   },
   {
     icon: Clock,
@@ -104,7 +104,7 @@ export function OptimizerResult() {
         kind="info"
         eyebrow="Schritt 3 von 5"
         title="Das sind deine Fehler"
-        nextActionLabel="Mit »Jetzt optimieren« meldest du dich an und schaltest den ausführlichen Bericht samt Behebung frei."
+        nextActionLabel="Mit »Bericht und Pakete ansehen« gelangst du zur Anmeldung und anschließend zur Übersicht. Es werden dadurch keine Code-Änderungen ausgelöst."
       >
         <p>
           Der Scan von <span className="font-mono text-titanium-100">{result.domain}</span> ist
@@ -133,7 +133,7 @@ export function OptimizerResult() {
             <div>
               <div className="font-display font-bold text-titanium-50 mb-0.5">Keine Fehler erkannt</div>
               <div className="text-sm text-titanium-300">
-                Unsere Standard-Checks haben nichts gefunden. Mit Monitoring bleibt das auch so.
+                Unsere Standard-Checks haben nichts gefunden. Das ist keine Konformitätsgarantie; ein dauerhaftes Monitoring ist hier noch nicht aktiviert.
               </div>
             </div>
           </div>
@@ -187,7 +187,7 @@ export function OptimizerResult() {
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3">
         <PrimaryButton onClick={() => navigate(anmeldung.path, { state: result })}>
-          <Wrench className="h-4 w-4" /> Jetzt optimieren <ArrowRight className="h-4 w-4" />
+          <Wrench className="h-4 w-4" /> Bericht und Pakete ansehen <ArrowRight className="h-4 w-4" />
         </PrimaryButton>
         <SecondaryLink to={stepById('scan').path}>
           <Search className="h-4 w-4" /> Andere URL scannen

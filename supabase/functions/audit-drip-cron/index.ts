@@ -5,6 +5,7 @@
 // Bei Fehler bleibt next_send_at gleich → automatischer Retry am nächsten Tag.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { requireCronKey } from '../_shared/cronKey.ts';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface DueRow {
@@ -21,10 +22,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const authHeader = req.headers.get('Authorization') ?? '';
-  if (authHeader !== `Bearer ${SRK}`) {
-    return jsonResponse({ ok: false, error: 'cron only' }, 401);
-  }
+  // Dedizierter Cron-Key statt service_role-Bearer (seit 2026-11-01). pg_cron
+  // sendet Vault `cron_audit_drip_key`; Function Secret CRON_AUDIT_DRIP_KEY oder Vault-Fallback.
+  const denied = await requireCronKey(req, 'CRON_AUDIT_DRIP_KEY', 'cron_audit_drip_key');
+  if (denied) return denied;
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';

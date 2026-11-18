@@ -37,7 +37,7 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -46,18 +46,18 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
   camera.position.set(0, 1.9, 7.6);
   camera.lookAt(0, 1.45, 0);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xc9d2e3, 2.4));
-  const key = new THREE.DirectionalLight(0xffffff, 2.2);
-  key.position.set(-3, 6, 5);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd6dde9, 2.6));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  key.position.set(-1.5, 7, 6);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 20 });
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xdfe8ff, 0.8);
+  const fill = new THREE.DirectionalLight(0xe6eeff, 0.9);
   fill.position.set(4, 2, 3);
   scene.add(fill);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.1 }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.08 }));
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);

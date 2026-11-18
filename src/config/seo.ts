@@ -325,6 +325,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  '/design/profil': {
+    title: 'Dominik Steiner – Gründerprofil (Vorschau)',
+    description:
+      'Design-Vorschau des Gründerprofils im Bento-Stil mit Produkten und Status aus denselben Quellen wie die Startseite. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/landing-v6': {
     title: 'RealSync Dynamics AI – Landing v6 (frühere Startseite)',
     description:

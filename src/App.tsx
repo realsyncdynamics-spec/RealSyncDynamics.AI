@@ -33,6 +33,7 @@ const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default:
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 // 17.11.2026: Startseite v3 (Claude Design) ist `/`. Three.js lädt nur hier und nur auf geeigneten Geräten.
 const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
+const ProfileBento = lazy(() => import('./pages/ProfileBento').then((m) => ({ default: m.ProfileBento })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
@@ -548,6 +549,7 @@ function RoutesWithTracking() {
           die frühere Vorschau /design/startseite-v3 leitet auf `/`. */}
       <Route path="/" element={<LandingV3 />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
+      <Route path="/design/profil" element={<ProfileBento />} />
       <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />

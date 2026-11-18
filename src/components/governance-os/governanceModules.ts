@@ -30,6 +30,16 @@ import {
  */
 export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
+    // RealOS-Start: Eingabefeld für Fragen/Ziele + Produkt-Kacheln mit Erklärung.
+    id: 'start',
+    label: 'Start',
+    icon: 'Sparkles',
+    route: '/app/start',
+    status: 'beta',
+    gate: { kind: 'all' },
+    description: 'RealOS-Start: fragen, Produkte öffnen, Web-Adressen im Browser laden',
+  },
+  {
     id: 'overview',
     label: 'Übersicht',
     icon: 'Home',

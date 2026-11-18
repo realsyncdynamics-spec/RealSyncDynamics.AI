@@ -152,12 +152,12 @@ export function GovernanceSidebar() {
 
   return (
     <nav aria-label={t('shellNavLabel')} className="rs-side" style={{ width: APP_SIDEBAR_WIDTH }}>
-      <Link to="/app/dashboard" className="rs-side__brand" style={{ textDecoration: 'none' }}>
+      <Link to="/app/start" className="rs-side__brand" style={{ textDecoration: 'none' }}>
         <span className="rs-logo-mark">
           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="rs-side__brand-text">
-          <span className="rs-side__product">Governance OS</span>
+          <span className="rs-side__product">RealOS</span>
           <span className="rs-side__tenant">{tenantName ?? t('shellNoTenant')}</span>
         </span>
       </Link>

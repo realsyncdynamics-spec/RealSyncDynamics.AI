@@ -1,0 +1,129 @@
+/*
+ * RealOS-Startfläche (/app/start) — Hard-Edge-UI im App-Scope `.rs-app`.
+ * Farben nur über `--color-rs-*`; Statusfarben getrennt vom Brand-Akzent:
+ * Live = `--brand-live`, Preview = Warning, In Vorbereitung = gedämpft.
+ * 90°-Kanten (kein border-radius), Monospace für Metadaten.
+ */
+@layer properties, theme, base, components, utilities;
+
+@layer components {
+  .realos {
+    --realos-mono: var(--font-rs-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 16px 32px;
+    color: var(--color-rs-fg-1);
+  }
+
+  .realos__hero { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .realos__mark {
+    display: grid; place-items: center; width: 40px; height: 40px;
+    border: 1px solid var(--color-rs-border-strong); color: var(--color-rs-primary);
+  }
+  .realos__eyebrow {
+    margin-top: 16px; font-family: var(--realos-mono); font-size: 11px;
+    letter-spacing: 0.14em; color: var(--color-rs-fg-3);
+  }
+  .realos__title {
+    margin-top: 8px; font-family: var(--font-rs-title); font-weight: 500;
+    font-size: clamp(24px, 4vw, 34px); line-height: 1.2; color: var(--color-rs-fg-0);
+  }
+
+  .realos__composer {
+    width: 100%; max-width: 760px; margin-top: 28px; text-align: left;
+    border: 1px solid var(--color-rs-border-strong); background: var(--color-rs-bg-1);
+  }
+  .realos__composer:focus-within { border-color: var(--color-rs-primary); }
+  .realos__field {
+    display: block; width: 100%; resize: none; padding: 16px 18px 8px;
+    background: transparent; border: 0; outline: none;
+    font-size: 16px; line-height: 1.5; color: var(--color-rs-fg-0);
+  }
+  .realos__field::placeholder { color: var(--color-rs-fg-3); }
+  .realos__bar { display: flex; align-items: center; gap: 12px; padding: 8px 10px 10px 12px; }
+  .realos__modes { display: inline-flex; border: 1px solid var(--color-rs-border); }
+  .realos__mode {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    font-size: 13px; color: var(--color-rs-fg-2); background: transparent;
+  }
+  .realos__mode + .realos__mode { border-left: 1px solid var(--color-rs-border); }
+  .realos__mode:hover { color: var(--color-rs-fg-0); }
+  .realos__mode[aria-checked='true'] { background: var(--color-rs-bg-3); color: var(--color-rs-fg-0); }
+  .realos__mode:focus-visible,
+  .realos__go:focus-visible,
+  .realos__chip:focus-visible,
+  .realos__cta:focus-visible,
+  .realos__explain-toggle:focus-visible,
+  .realos__match-link:focus-visible { outline: 2px solid var(--color-rs-cyan-light); outline-offset: 1px; }
+  .realos__hint { flex: 1; min-width: 0; font-size: 12px; color: var(--color-rs-fg-3); }
+  .realos__go {
+    display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0;
+    background: var(--color-rs-primary); color: var(--rs-on-primary);
+  }
+  .realos__go:hover:not(:disabled) { background: var(--color-rs-primary-hover); }
+  .realos__go:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .realos__assist { min-height: 28px; margin-top: 10px; }
+  .realos__match {
+    display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 6px 10px; font-size: 13px; color: var(--color-rs-fg-2);
+  }
+  .realos__match strong { color: var(--color-rs-fg-0); font-weight: 600; }
+  .realos__match-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--color-rs-primary); text-decoration: none; background: transparent;
+  }
+  .realos__match-link:hover { color: var(--color-rs-primary-hover); }
+
+  .realos__quick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+  .realos__chip {
+    padding: 8px 14px; font-size: 13px; text-decoration: none;
+    border: 1px solid var(--color-rs-border); color: var(--color-rs-fg-1);
+  }
+  .realos__chip:hover { border-color: var(--color-rs-border-strong); color: var(--color-rs-fg-0); background: var(--color-rs-bg-2); }
+
+  .realos__apps { margin-top: 56px; }
+  .realos__section-title {
+    font-family: var(--realos-mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--color-rs-fg-3);
+  }
+  .realos__grid {
+    display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 12px;
+    border-top: 1px solid var(--color-rs-border); border-left: 1px solid var(--color-rs-border);
+  }
+  @media (min-width: 720px) { .realos__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .realos__card {
+    display: flex; flex-direction: column; gap: 8px; padding: 18px;
+    border-right: 1px solid var(--color-rs-border); border-bottom: 1px solid var(--color-rs-border);
+    background: var(--color-rs-bg-0);
+  }
+  .realos__card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .realos__mono { font-family: var(--realos-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--color-rs-fg-3); }
+  .realos__status {
+    font-family: var(--realos-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 6px; border: 1px solid currentColor;
+  }
+  .realos__status--live { color: var(--brand-live, var(--color-rs-success)); }
+  .realos__status--preview { color: var(--color-rs-warning); }
+  .realos__status--coming-soon { color: var(--color-rs-fg-3); }
+  .realos__card-title { font-family: var(--font-rs-title); font-size: 17px; font-weight: 600; color: var(--color-rs-fg-0); }
+  .realos__card-text { font-size: 14px; line-height: 1.5; color: var(--color-rs-fg-2); }
+  .realos__card-sub { margin-top: -2px; }
+  .realos__card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; padding-top: 6px; }
+  .realos__cta {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px; text-decoration: none;
+    background: var(--color-rs-primary); color: var(--rs-on-primary);
+  }
+  .realos__cta:hover { background: var(--color-rs-primary-hover); }
+  .realos__explain-toggle { font-size: 13px; color: var(--color-rs-fg-2); background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+  .realos__explain-toggle:hover,
+  .realos__explain-toggle[aria-expanded='true'] { color: var(--color-rs-fg-0); }
+  .realos__explain {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 12px;
+    border-top: 1px solid var(--color-rs-border); font-size: 13px; line-height: 1.5; color: var(--color-rs-fg-1);
+  }
+  .realos__explain[hidden] { display: none; }
+  .realos__steps { margin: 0; padding-left: 20px; list-style: decimal; }
+  .realos__steps li + li { margin-top: 4px; }
+  .realos__footnote { margin-top: 16px; font-size: 12px; color: var(--color-rs-fg-3); }
+}

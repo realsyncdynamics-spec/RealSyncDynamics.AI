@@ -359,6 +359,7 @@ const RemediationPlansView      = lazy(() => import('./features/governance/remed
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
+const RealOsStart               = lazy(() => import('./features/realos/RealOsStart').then((m) => ({ default: m.RealOsStart })));
 const BotsView                  = lazy(() => import('./features/bots/BotsView').then((m) => ({ default: m.BotsView })));
 const BotBuilderView            = lazy(() => import('./features/bots/BotBuilderView').then((m) => ({ default: m.BotBuilderView })));
 const BotInboxView              = lazy(() => import('./features/bots/BotInboxView').then((m) => ({ default: m.BotInboxView })));
@@ -831,9 +832,10 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      {/* Onboarding-First-Routing: /app kanonisiert auf das gegatete Dashboard.
+      {/* Einstieg: /app führt auf die RealOS-Startfläche (/app/start, Owner-Freigabe 18.11.2026);
+          das Dashboard bleibt unter /app/dashboard. Früher: /app kanonisiert auf das gegatete Dashboard.
           Kein Onboarding-Zwang (kein Hard-Lockout) — nur Kanonisierung. */}
-      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      <Route path="/app" element={<Navigate to="/app/start" replace />} />
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
@@ -848,6 +850,8 @@ function RoutesWithTracking() {
       <Route path="/app/risk" element={<AppGate><GovernanceBrowserShell><ProtectedRoute><RiskDashboard /></ProtectedRoute></GovernanceBrowserShell></AppGate>} />
       {/* DashboardRouter rendert den live Compliance-Status (kein Chat-Default). */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
+      {/* RealOS-Start: ein Eingabefeld für alles + Produkte mit Erklärung (src/product/realos-products.ts). */}
+      <Route path="/app/start" element={<AppGate><GovernanceBrowserShell><RealOsStart /></GovernanceBrowserShell></AppGate>} />
       {/* WP-4: Dashboard mit erfundenen Beispieldaten — liest und schreibt nichts. */}
       <Route path="/app/beispiel" element={<AppGate><GovernanceBrowserShell><SampleWorkspacePage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />

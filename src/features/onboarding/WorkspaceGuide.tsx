@@ -135,7 +135,7 @@ export function WorkspaceGuide() {
         {error && (
           <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
             <strong>Einrichtung nicht verfügbar:</strong> {error}
-            <p className="mt-1">Die Datenbank-Migration muss bereitstehen. Es wurde kein Fortschritt als gespeichert ausgegeben.</p>
+            <p className="mt-1">Bitte Anmeldung, Berechtigungen und Verbindung prüfen. Es wurde kein Fortschritt als gespeichert ausgegeben.</p>
           </div>
         )}
         {loadedTenant === activeTenantId && (

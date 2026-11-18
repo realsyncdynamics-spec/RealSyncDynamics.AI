@@ -36,6 +36,8 @@ Ein grüner Actions-Haken ohne den Check-Run `Cloudflare Pages` ist kein Deploy.
 ## Was ein Preview nicht ist
 
 - Nicht die Runtime (`apps/agent-runtime`, VPS). Dafür gilt `Backend Services CI`.
-- Nicht die Produktions-Landing. Previews von `realsync-landing` prüfen nur
-  den statischen Export auf `landing-live`, nicht die SPA.
+- Nicht die Produktions-Landing. `realsync-landing` veröffentlicht nur
+  `landing-live`. Preview-Builds sind aus (`preview_deployment_setting: none`,
+  gesetzt 2026-11-13): Pushes auf `main` und andere Branches erzeugen dort
+  keinen Deploy und keinen Check. Rollback: dieselbe Einstellung wieder `all`.
 - Nicht Supabase. Es gibt kein zweites Frontend-Projekt für Staging.

@@ -144,10 +144,15 @@ export async function claimPendingAudit(tenantId?: string | null): Promise<Claim
   const { data: userData } = await sb.auth.getUser();
   if (!userData.user) return null;
 
-  let { data, error } = await sb.rpc('claim_gdpr_audit', claimRpcArgs(pending.audit_id, null));
-  if (error && classifyClaimError(error) === 'TENANT_SELECTION_REQUIRED' && isUuid(tenantId)) {
-    ({ data, error } = await sb.rpc('claim_gdpr_audit', claimRpcArgs(pending.audit_id, tenantId)));
+  // Eine ausdrücklich gewählte Mandanten-ID niemals durch den einstelligen
+  // RPC-Aufruf überschreiben lassen (der bei genau einer Membership
+  // automatisch zuordnet). Eine ungültige ID darf nicht stillschweigend
+  // auf den impliziten Mandanten zurückfallen.
+  if (tenantId != null && !isUuid(tenantId)) {
+    throw new AuditClaimError('TENANT_FORBIDDEN');
   }
+
+  const { data, error } = await sb.rpc('claim_gdpr_audit', claimRpcArgs(pending.audit_id, tenantId ?? null));
 
   if (error) {
     const failure = new AuditClaimError(classifyClaimError(error));

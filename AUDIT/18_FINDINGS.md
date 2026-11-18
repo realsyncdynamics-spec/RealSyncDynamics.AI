@@ -1,3 +1,15 @@
+> [!IMPORTANT]
+> **Historisches Audit — Aktualisierung vom 17.11.2026.** Die darunterstehenden Findings geben den Erhebungszeitpunkt dieses Berichts wieder und dürfen **nicht** ohne erneute Live-/Commit-Prüfung als aktuelle Sicherheits- oder Deploy-Lage übernommen werden.
+>
+> - **F-01/F-02:** Die frühere Momentaufnahme (178 Funktionen, davon laut Audit 95 deployt, sowie behauptete fehlende Tabellen) ist nicht mehr aktuell. RealSyncDynamicsLive listete am 17.11.2026 **200 `ACTIVE` Edge Functions**; `public.audit_jobs` und `public.audit_reports` existieren, beide aktuell mit **0** Zeilen. Daraus folgt weder eine vollständig fehlerfreie Runtime noch, dass alle übrigen damaligen Tabellenbefunde widerlegt wären. **Nicht blind 83 Funktionen deployen oder 118 Migrationen anwenden.** Erst Soll-/Ist-Diff, Auth-/RLS-Audit und Stagingprüfung.
+> - **F-04 (Teilbefund):** `governance-risk-score` ist auf aktuellem `main` und in der deployten Function v56 mit `requireUser()`, `requireTenantMembership()` und `verify_jwt=true` versehen. Der ursprünglich beschriebene reine Bearer-Präfix-Check gilt **für diese Funktion** nicht mehr. Negative E2E-Tests und andere F-04-/F-05-Kandidaten bleiben offen.
+> - **F-20:** Die 13 verwaisten Root-`.sql.bak`-Dateien wurden durch den erfolgreichen Merge von **PR #2272** (`cc7e744`) am 17.11.2026 entfernt. Keine Datenbank-Migration oder Kundendatenlöschung.
+> - **Neue unabhängige Prüfungen:** Supabase Advisor meldete u.a. 30 EXECUTE-Rechte für `anon` und 64 für `authenticated` auf `SECURITY DEFINER`-Funktionen. Diese Befunde erfordern Einzelfallprüfung, nicht pauschale `REVOKE`-Befehle. Tracking: **Issue #2273**.
+>
+> Verbindliche Stichtagsmatrix: [`docs/product/release-evidence-2026-11-17.md`](../docs/product/release-evidence-2026-11-17.md). Historische Nachweise unterhalb dieser Warnung bleiben aus Gründen der Nachvollziehbarkeit unverändert.
+
+---
+
 # 18 — Findings
 
 **Klassifikation**

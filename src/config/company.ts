@@ -78,9 +78,9 @@ export interface CompanyConfig {
  * - registryEntry bleibt null, solange legalForm === 'Einzelunternehmen'
  */
 export const COMPANY: CompanyConfig = {
-  companyName: 'RealSync Dynamics',
+  companyName: 'RealSync Dynamics & AI',
   legalForm: 'Einzelunternehmen',
-  futureLegalForm: 'GmbH',
+  futureLegalForm: 'UG',
 
   country: 'Germany',
   headquartersAddress: {

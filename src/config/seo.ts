@@ -325,6 +325,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
     noIndex: true,
   },
+  '/design/landing-studio': {
+    title: 'RealSync Dynamics AI – Landing „Studio“ (Vorschau)',
+    description:
+      'Design-Vorschau im Glas-/Neon-Stil mit denselben Inhalten, Preisen und Zielen wie die Startseite. Kanonisch ist /.',
+    canonical: `${SITE_URL}/`,
+    noIndex: true,
+  },
   '/design/landing-v6': {
     title: 'RealSync Dynamics AI – Landing v6 (frühere Startseite)',
     description:

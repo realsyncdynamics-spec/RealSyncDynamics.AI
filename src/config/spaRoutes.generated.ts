@@ -275,6 +275,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/demo/3d-landingpage",
   "/deployment-governance",
   "/design/governance-ai",
+  "/design/landing-studio",
   "/design/landing-v2",
   "/design/landing-v4",
   "/design/landing-v5",

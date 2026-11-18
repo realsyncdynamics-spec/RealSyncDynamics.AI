@@ -67,53 +67,96 @@
   animation: gc-float var(--rs-g-dur-float, 9s) ease-in-out infinite;
 }
 
-.gc-face { position: absolute; inset: 0; border-radius: 4px; overflow: hidden; }
-.gc-face::after {
-  content: ""; position: absolute; inset: -40%;
-  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.22) 50%, transparent 60%);
-  animation: gc-sweep 6s ease-in-out infinite;
+/* ── 3×3×3 Teilwürfel ─────────────────────────────────────────────────
+   Jede Zelle trägt per Inline-Style: --i/--j/--k (−1…1, Heimatposition),
+   --dx/--dy/--dz (Flugrichtung in Kantenlängen), --rx/--ry (Drehung beim
+   Zerfall), --c (Farbe aus --rs-g-spectrum-*), --d (Versatz der Welle).
+   --ink (0…1) steuert die Farbkraft; @property macht es animierbar.
+   Zyklus ≈14 s: geschlossen (Glas) → Farbwelle → Zerfall in alle
+   Richtungen → unsichtbar → Wiederaufbau. */
+@property --ink {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
 }
-.gc-back {
-  transform: rotateY(180deg) translateZ(var(--gc-h));
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.06));
-  border: 1.5px solid var(--rs-g-violet);
-  box-shadow: inset 0 0 60px var(--rs-g-glow-violet);
+
+.gc-cell {
+  --gc-u: calc(var(--gc-s) / 3);
+  --ink: 0;
+  position: absolute; left: 50%; top: 50%;
+  width: var(--gc-u); height: var(--gc-u);
+  margin: calc(var(--gc-u) / -2) 0 0 calc(var(--gc-u) / -2);
+  transform-style: preserve-3d;
+  transform:
+    translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u)))
+    rotateX(0deg) rotateY(0deg) scale(1);
+  animation: gc-burst var(--gc-cycle, 14s) cubic-bezier(0.45, 0, 0.2, 1) var(--d, 0s) infinite;
 }
-.gc-left {
-  transform: rotateY(-90deg) translateZ(var(--gc-h));
-  background: linear-gradient(135deg, rgba(232, 121, 249, 0.1), rgba(34, 211, 238, 0.04));
-  border: 1.5px solid var(--rs-g-magenta);
-  box-shadow: inset 0 0 60px var(--rs-g-glow-violet), 0 0 24px var(--rs-g-glow-violet);
+
+.gc-cf {
+  position: absolute; inset: 1px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--c) calc(40% + var(--ink) * 60%), rgba(200, 220, 255, 0.55));
+  background: color-mix(in srgb, var(--c) calc(7% + var(--ink) * 63%), transparent);
+  box-shadow:
+    inset 0 0 calc(6px + var(--ink) * 14px) color-mix(in srgb, var(--c) 45%, transparent),
+    0 0 calc(var(--ink) * 22px) color-mix(in srgb, var(--c) 70%, transparent);
+  backface-visibility: visible;
 }
-.gc-bottom {
-  transform: rotateX(-90deg) translateZ(var(--gc-h));
-  background: rgba(76, 29, 149, 0.18);
-  border: 1.5px solid rgba(200, 220, 255, 0.35);
+.gc-cf-front  { transform: translateZ(calc(var(--gc-u) / 2)); }
+.gc-cf-back   { transform: rotateY(180deg) translateZ(calc(var(--gc-u) / 2)); }
+.gc-cf-right  { transform: rotateY(90deg) translateZ(calc(var(--gc-u) / 2)); }
+.gc-cf-left   { transform: rotateY(-90deg) translateZ(calc(var(--gc-u) / 2)); }
+.gc-cf-top    { transform: rotateX(90deg) translateZ(calc(var(--gc-u) / 2)); }
+.gc-cf-bottom { transform: rotateX(-90deg) translateZ(calc(var(--gc-u) / 2)); }
+
+@keyframes gc-burst {
+  /* geschlossen, gläsern */
+  0%, 20% {
+    transform: translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u))) rotateX(0deg) rotateY(0deg) scale(1);
+    opacity: 1; --ink: 0;
+  }
+  /* kräftige Farben, Würfel noch geschlossen */
+  32%, 42% {
+    transform: translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u))) rotateX(0deg) rotateY(0deg) scale(1);
+    opacity: 1; --ink: 1;
+  }
+  /* Zerfall in alle Richtungen, Teile verblassen */
+  62% {
+    transform: translate3d(
+      calc(var(--i) * var(--gc-u) + var(--dx) * var(--gc-s)),
+      calc(var(--j) * var(--gc-u) + var(--dy) * var(--gc-s)),
+      calc(var(--k) * var(--gc-u) + var(--dz) * var(--gc-s))
+    ) rotateX(var(--rx)) rotateY(var(--ry)) scale(0.5);
+    opacity: 0; --ink: 1;
+  }
+  /* unsichtbar, bereit zur Rückkehr */
+  76% {
+    transform: translate3d(
+      calc(var(--i) * var(--gc-u) + var(--dx) * var(--gc-s) * 0.8),
+      calc(var(--j) * var(--gc-u) + var(--dy) * var(--gc-s) * 0.8),
+      calc(var(--k) * var(--gc-u) + var(--dz) * var(--gc-s) * 0.8)
+    ) rotateX(calc(var(--rx) * -1)) rotateY(calc(var(--ry) * -1)) scale(0.5);
+    opacity: 0; --ink: 0.8;
+  }
+  /* Wiederaufbau, Farbe klingt ab */
+  92%, 100% {
+    transform: translate3d(calc(var(--i) * var(--gc-u)), calc(var(--j) * var(--gc-u)), calc(var(--k) * var(--gc-u))) rotateX(0deg) rotateY(0deg) scale(1);
+    opacity: 1; --ink: 0;
+  }
 }
-.gc-right {
-  transform: rotateY(90deg) translateZ(var(--gc-h));
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.05));
-  border: 1.5px solid var(--rs-g-cyan);
-  box-shadow: inset 0 0 60px var(--rs-g-glow-cyan), 0 0 24px var(--rs-g-glow-cyan);
-}
-.gc-front {
-  transform: translateZ(var(--gc-h));
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.06));
-  border: 1.5px solid var(--rs-g-edge);
-  box-shadow: inset 0 0 60px var(--rs-g-glow-violet), 0 0 28px var(--rs-g-glow-cyan);
-}
-.gc-inner {
-  position: absolute; inset: 14.6%;
-  border: 1px solid var(--rs-g-cyan); opacity: 0.55;
-  background: radial-gradient(circle at 40% 30%, var(--rs-g-glow-cyan), transparent 70%);
-}
+
+/* Leuchtdeckel: schwebt über dem geschlossenen Würfel, blendet beim Zerfall aus. */
 .gc-lid {
   position: absolute; inset: 0; border-radius: 4px;
   background: linear-gradient(110deg, #f0a8ff 0%, #a5f3fc 40%, var(--rs-g-cyan) 60%, #e9b8ff 100%);
   opacity: 0.93;
   box-shadow: 0 0 70px var(--rs-g-glow-cyan), 0 0 130px var(--rs-g-glow-violet);
   transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid)));
-  animation: gc-bob 4.5s ease-in-out infinite, gc-hue 8s ease-in-out infinite;
+  animation:
+    gc-bob 4.5s ease-in-out infinite,
+    gc-hue 8s ease-in-out infinite,
+    gc-lid-cycle var(--gc-cycle, 14s) ease-in-out infinite;
 }
 
 @keyframes gc-float {
@@ -124,8 +167,12 @@
   0%, 100% { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid))); }
   50% { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid-up))); }
 }
+@keyframes gc-lid-cycle {
+  0%, 42% { opacity: 0.93; }
+  56%, 84% { opacity: 0; }
+  96%, 100% { opacity: 0.93; }
+}
 @keyframes gc-hue { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(-28deg); } }
-@keyframes gc-sweep { 0%, 100% { transform: translateX(-60%); } 50% { transform: translateX(60%); } }
 @keyframes gc-twinkle { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.5; } }
 @keyframes gc-pulse {
   0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
@@ -133,20 +180,22 @@
 }
 
 /* Nicht im Bild: alles anhalten (spart Energie). */
-.gc-stage[data-paused='true'] *,
-.gc-stage[data-paused='true'] *::after { animation-play-state: paused; }
+.gc-stage[data-paused='true'] * { animation-play-state: paused; }
 
-/* Statisch: reduzierte Bewegung (per JS erkannt) und per CSS als Absicherung. */
+/* Statisch: reduzierte Bewegung (per JS erkannt) und per CSS als Absicherung.
+   Der Würfel bleibt geschlossen, die Farben sind dezent sichtbar. */
 .gc-stage[data-still='true'] .gc-cube,
+.gc-stage[data-still='true'] .gc-cell,
 .gc-stage[data-still='true'] .gc-lid,
-.gc-stage[data-still='true'] .gc-face::after,
 .gc-stage[data-still='true'] .gc-stars,
 .gc-stage[data-still='true'] .gc-halo { animation: none; }
 .gc-stage[data-still='true'] .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
+.gc-stage[data-still='true'] .gc-cell { --ink: 0.45; }
 .gc-stage[data-still='true'] .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
 @media (prefers-reduced-motion: reduce) {
-  .gc-cube, .gc-lid, .gc-face::after, .gc-stars, .gc-halo { animation: none !important; }
+  .gc-cube, .gc-cell, .gc-lid, .gc-stars, .gc-halo { animation: none !important; }
   .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
+  .gc-cell { --ink: 0.45; }
   .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
   .gc-tilt { transition: none; }
 }

@@ -28,6 +28,15 @@
   --rs-g-blue: #818cf8;          /* Soft Blue */
   --rs-g-fg: #f3f1fa;            /* Soft White */
   --rs-g-fg-2: #a7b0c2;          /* Cool Gray */
+  /* Spektrum für die Teilwürfel des Glaswürfels — rein dekorativ, keine
+     Statusbedeutung (Status nutzt eigene Farben außerhalb dieser Datei). */
+  --rs-g-spectrum-1: #a855f7;
+  --rs-g-spectrum-2: #22d3ee;
+  --rs-g-spectrum-3: #e879f9;
+  --rs-g-spectrum-4: #6366f1;
+  --rs-g-spectrum-5: #f59e0b;
+  --rs-g-spectrum-6: #10b981;
+  --rs-g-spectrum-7: #ec4899;
   --rs-g-glow-violet: rgba(168, 85, 247, 0.3);
   --rs-g-glow-cyan: rgba(34, 211, 238, 0.35);
 

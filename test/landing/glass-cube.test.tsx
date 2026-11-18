@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { GlassCube } from '../../src/components/neon/GlassCube';
+import { buildCells, CUBE_SPECTRUM, GlassCube } from '../../src/components/neon/GlassCube';
 import { GlassPanel } from '../../src/components/neon/GlassPanel';
 
 const root = resolve(__dirname, '../..');
@@ -49,8 +49,30 @@ describe('GlassCube', () => {
     const cube = screen.getByTestId('glass-cube');
     expect(cube).toHaveAttribute('aria-hidden', 'true');
     expect(cube).toHaveAttribute('data-still', 'false');
-    expect(cube.querySelectorAll('.gc-face')).toHaveLength(5);
     expect(cube.querySelector('.gc-lid')).not.toBeNull();
+  });
+
+  it('besteht aus 3×3×3 Teilwürfeln mit je sechs Flächen in kräftigen Farben', () => {
+    stubMotion(false);
+    render(<GlassCube />);
+    const cells = screen.getByTestId('glass-cube').querySelectorAll('.gc-cell');
+    expect(cells).toHaveLength(27);
+    for (const c of cells) expect(c.querySelectorAll('.gc-cf')).toHaveLength(6);
+    const colors = new Set(buildCells().map((c) => String((c.style as Record<string, unknown>)['--c'])));
+    expect(colors.size).toBe(CUBE_SPECTRUM.length);
+    // Farben nur als Token-Verweis, keine festen Hex-Werte in der Komponente.
+    for (const col of colors) expect(col).toMatch(/^var\(--rs-g-spectrum-\d\)$/);
+  });
+
+  it('jeder Teilwürfel fliegt beim Zerfall von seiner Position weg (auch der mittlere)', () => {
+    for (const c of buildCells()) {
+      const st = c.style as Record<string, string | number>;
+      const d = Math.hypot(Number(st['--dx']), Number(st['--dy']), Number(st['--dz']));
+      expect(d, c.key).toBeGreaterThan(1);
+    }
+    const css = read('src/styles/glass-cube.css');
+    expect(css).toContain('@keyframes gc-burst');
+    expect(css).toContain('@property --ink');
   });
 
   it('bleibt bei prefers-reduced-motion statisch', () => {
@@ -60,6 +82,7 @@ describe('GlassCube', () => {
     const css = read('src/styles/glass-cube.css');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
     expect(css).toContain(".gc-stage[data-still='true'] .gc-cube");
+    expect(css).toMatch(/\.gc-stage\[data-still='true'\] \.gc-cell \{ --ink: 0\.45; \}/);
   });
 
   it('kommt ohne WebGL/three.js aus und blockiert keine Eingaben außerhalb der Bühne', () => {

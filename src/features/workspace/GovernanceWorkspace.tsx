@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AiGatewayEdgeClient } from '../../core/ai-gateway/edgeClient';
 import { getSupabaseAnonKey, getSupabaseUrl } from '../../lib/supabaseUrl';
+import { edgeFunctionUrl, fnFetchInit } from '../../lib/fn-proxy';
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import { ASSISTANT_UNAVAILABLE } from '../governance/AgentWidget/useAgentChat';
@@ -59,6 +60,29 @@ function newId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/**
+ * Nutzer-JWT der aktuellen Sitzung. Ohne Sitzung `null` — der Client sendet
+ * dann nichts (401), kein Rückfall auf den Anon-Key.
+ */
+async function currentAccessToken(): Promise<string | null> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function userGatewayClient(): AiGatewayEdgeClient {
+  return new AiGatewayEdgeClient({
+    supabaseUrl: getSupabaseUrl(),
+    apiKey: getSupabaseAnonKey(),
+    authToken: currentAccessToken,
+    endpoint: edgeFunctionUrl('ai-gateway'),
+    fetchImpl: (input, init) => fetch(input, fnFetchInit(String(input), init)),
+  });
+}
+
 function short(hex: string | undefined | null, n = 12): string {
   if (!hex) return '—';
   return hex.length > n ? `${hex.slice(0, n)}…` : hex;
@@ -74,7 +98,9 @@ export function GovernanceWorkspace() {
   const [sending, setSending] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [grounding, setGrounding] = useState<GovernanceAiGrounding | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  /** Laufende Anfrage; nur sie darf den Ladezustand zurücksetzen. */
+  const activeRequestRef = useRef<number | null>(null);
+  const requestSeqRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -125,12 +151,13 @@ export function GovernanceWorkspace() {
       .join('\n\n');
     setTurns((prev) => [...prev, userTurn]);
     setSending(true);
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const requestId = ++requestSeqRef.current;
+    activeRequestRef.current = requestId;
+    const isCurrent = () => activeRequestRef.current === requestId;
     const traceId = newId();
 
     try {
-      const client = new AiGatewayEdgeClient({ supabaseUrl: getSupabaseUrl(), apiKey: getSupabaseAnonKey() });
+      const client = userGatewayClient();
       const res = await client.generate({
         feature: 'governance_ai_workspace',
         task_type: 'chat',
@@ -142,7 +169,9 @@ export function GovernanceWorkspace() {
         tenant_id: activeTenantId,
         trace_id: traceId,
       });
-      if (controller.signal.aborted) return;
+      // Abgebrochen oder überholt: Antwort verwerfen. Der Gateway-Aufruf
+      // selbst läuft serverseitig zu Ende (eigener Timeout im Client).
+      if (!isCurrent()) return;
       const answerId = newId();
       const effectiveTrace = typeof res.trace_id === 'string' && res.trace_id ? res.trace_id : traceId;
       setTurns((prev) => [...prev, {
@@ -161,13 +190,15 @@ export function GovernanceWorkspace() {
         input: history,
       }).then((receipt) => patchTurn(answerId, { receipt, attesting: false }));
     } catch {
-      if (!controller.signal.aborted) {
+      if (isCurrent()) {
         setTurns((prev) => [...prev, { id: newId(), role: 'assistant', content: ASSISTANT_UNAVAILABLE, error: true }]);
       }
     } finally {
-      abortRef.current = null;
-      setSending(false);
-      textareaRef.current?.focus();
+      if (isCurrent()) {
+        activeRequestRef.current = null;
+        setSending(false);
+        textareaRef.current?.focus();
+      }
     }
   };
 
@@ -180,7 +211,8 @@ export function GovernanceWorkspace() {
   };
 
   const stop = () => {
-    abortRef.current?.abort();
+    // Antwort der laufenden Anfrage wird verworfen (s. isCurrent).
+    activeRequestRef.current = null;
     setSending(false);
   };
 

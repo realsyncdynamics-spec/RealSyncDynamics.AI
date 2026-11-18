@@ -27,4 +27,13 @@ describe('/app/workspace', () => {
     expect(workspace).toContain('tenant_id: activeTenantId');
     expect(workspace).toContain('attestCall(');
   });
+
+  it('sendet das Nutzer-JWT an den Gateway, nicht den Anon-Key als Bearer', () => {
+    expect(workspace).toContain('authToken: currentAccessToken');
+    expect(workspace).toContain('const client = userGatewayClient();');
+  });
+
+  it('nur die aktuelle Anfrage setzt den Ladezustand zurück', () => {
+    expect(workspace).toMatch(/finally \{\n\s+if \(isCurrent\(\)\) \{/);
+  });
 });

@@ -224,12 +224,18 @@ export async function attestCall(
   const own = (chainRes.data ?? []).find((c) => c.chain_index === row!.chain_index);
   if (!own) return done('nicht_verfuegbar', 'Kettenprüfung lieferte den Eintrag nicht.', details);
 
+  // Kettenanfang (chain_index 1): kein Vorgänger, link_ok bleibt null.
+  // Sonst muss die Verknüpfung zum Vorgänger ausdrücklich bestätigt sein.
+  const isChainStart = from === row.chain_index;
   const chain: ReaChainCheck = {
     hashOk: own.hash_ok === true,
-    linkOk: from === row.chain_index ? null : own.link_ok,
+    linkOk: isChainStart ? null : own.link_ok,
   };
   if (!chain.hashOk || chain.linkOk === false) {
     return done('abweichung', 'Hash-Kette am Eintrag weicht ab.', { ...details, chain });
+  }
+  if (!isChainStart && chain.linkOk !== true) {
+    return done('nicht_verfuegbar', 'Verknüpfung zum Vorgänger konnte nicht geprüft werden.', { ...details, chain });
   }
   return done('belegt', 'Eintrag gefunden, Prüfsumme stimmt, Kette intakt.', { ...details, chain });
 }

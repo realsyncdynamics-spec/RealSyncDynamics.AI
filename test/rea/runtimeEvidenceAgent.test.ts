@@ -102,6 +102,15 @@ describe('REA attestCall', () => {
     expect(r.status).toBe('abweichung');
   });
 
+  it('ungeprüfte Verknüpfung (link_ok null) außerhalb des Kettenanfangs ist nie belegt', async () => {
+    const r = await attestCall(
+      source([[await row()]], [{ chain_index: 42, event_id: 'ev-1', hash_ok: true, link_ok: null }]),
+      { tenantId: TENANT, traceId: TRACE, input: INPUT },
+      fast,
+    );
+    expect(r.status).toBe('nicht_verfuegbar');
+  });
+
   it('nicht verankerter Eintrag bleibt ausstehend', async () => {
     const r = await attestCall(source([[await row({ chain_index: null, event_hash: null })]], okChain), { tenantId: TENANT, traceId: TRACE, input: INPUT }, fast);
     expect(r.status).toBe('ausstehend');

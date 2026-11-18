@@ -83,8 +83,10 @@ export function LandingV3() {
           <a href="#katalog">Build</a>
           <a href="#katalog">Automate</a>
           <a href="#govern">Govern</a>
+          <Link to="/phonebot/start">Voice Agent</Link>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
+          <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>

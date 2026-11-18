@@ -18,7 +18,9 @@ import { useBrowserSession } from '../../../lib/useBrowserSession';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   BrowserExecutorError,
+  dashboardTarget,
   executeBrowserActions,
+  originOf,
   getBrowserExecutorHealth,
   planBrowserTask,
   type BrowserExecutorAction,
@@ -300,11 +302,16 @@ export function BrowserRuntimePanel({ activeTenantId }: { activeTenantId: string
     setExecuting(true);
     setActionResult(null);
     try {
+      // PR A/B: Seiten-Origin aus der letzten Navigation; verändernde Aktionen
+      // binden die Freigabe an diesen Origin (method NONE, siehe dashboardTarget).
+      const pageOrigin = originOf(lastUrl);
       const response = await executeBrowserActions({
         tenantId: activeTenantId,
         sessionId,
         actions: [action],
         approvalId,
+        pageOrigin,
+        target: dashboardTarget(action, pageOrigin),
       });
       setPendingApprovalId(null);
       setPendingAction(null);

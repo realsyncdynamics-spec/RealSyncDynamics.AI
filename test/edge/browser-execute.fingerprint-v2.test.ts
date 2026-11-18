@@ -92,7 +92,11 @@ beforeAll(async () => {
     executorCalls.push({ url, body: JSON.parse(init.body) });
     return new Response(JSON.stringify({ ok: true, results: [{ type: 'click', ok: true }] }), { status: 200 });
   }));
-  await import('../../supabase/functions/browser-execute/index.ts');
+  // Pfad bewusst nicht literal: sonst folgt `tsc` (npm run lint) dem Import in die
+  // Deno-Function (jsr:/npm:-Imports, Deno.serve) – supabase/functions ist aus der
+  // Typprüfung ausgeschlossen. vitest löst den Pfad zur Laufzeit normal auf.
+  const handlerModule = '../../supabase/functions/browser-execute/index.ts';
+  await import(/* @vite-ignore */ handlerModule);
 });
 
 beforeEach(() => {

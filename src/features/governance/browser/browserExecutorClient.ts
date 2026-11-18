@@ -82,6 +82,10 @@ export async function executeBrowserActions(input: {
   sessionId: string;
   actions: BrowserExecutorAction[];
   approvalId?: string;
+  /** Origin der aktuellen Seite (PR B). Pflicht, wenn die erste Aktion kein navigate ist. */
+  pageOrigin?: string | null;
+  /** Ziel einer verändernden Aktion (Fingerprint v2, PR A). */
+  target?: BrowserExecutorTarget | null;
 }): Promise<BrowserExecutorResponse> {
   return invokeBrowserExecutor({
     op: 'execute',
@@ -89,7 +93,42 @@ export async function executeBrowserActions(input: {
     session_id: input.sessionId,
     actions: input.actions,
     approval_id: input.approvalId,
+    ...(input.pageOrigin ? { page_origin: input.pageOrigin } : {}),
+    ...(input.target ? { target: input.target } : {}),
   }) as Promise<BrowserExecutorResponse>;
+}
+
+export interface BrowserExecutorTarget {
+  origin: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'NONE';
+  values?: Record<string, string>;
+}
+
+const MUTATING_TYPES = new Set(['click', 'type', 'select']);
+
+/** Reiner http(s)-Origin einer URL oder null. */
+export function originOf(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ziel für eine verändernde Aktion aus dem Dashboard.
+ *
+ * Das Dashboard sieht das DOM der entfernten Playwright-Seite nicht und kennt
+ * deshalb weder Formularziel noch Feldwerte. Es bindet die Freigabe nur an den
+ * Seiten-Origin (`method: 'NONE'`). Die Bindung an Empfänger und Inhalt ist in
+ * diesem Pfad schwach; vollständig erst mit dem Desktop-Executor oder wenn der
+ * Playwright-Dienst `expected_target` prüft (Befund N2).
+ */
+export function dashboardTarget(action: BrowserExecutorAction, pageOrigin: string | null): BrowserExecutorTarget | null {
+  if (!MUTATING_TYPES.has(action.type) || !pageOrigin) return null;
+  return { origin: pageOrigin, method: 'NONE' };
 }
 
 export interface BrowserPlanStep {

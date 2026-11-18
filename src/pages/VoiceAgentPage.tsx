@@ -97,7 +97,7 @@ export function VoiceAgentPage() {
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <NeonModeToggle mode={mode} onToggle={toggleMode} />
-          <Link className="lv3-btn lv3-btn--solid" to={WAITLIST('nav')}>Auf die Warteliste</Link>
+          <Link className="lv3-btn lv3-btn--solid" to={WAITLIST('nav')}>Warteliste</Link>
         </nav>
 
         <div className="lv3-hero-grid">

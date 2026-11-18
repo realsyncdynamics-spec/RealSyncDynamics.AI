@@ -48,8 +48,8 @@ export function mountVoiceBot(canvas: HTMLCanvasElement): VoiceBotHandle {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 2.6, 8.6);
-  camera.lookAt(0, 1.7, 0);
+  camera.position.set(0, 2.7, 9.8);
+  camera.lookAt(0, 1.85, 0);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0xd6dde9, 2.6));
   const key = new THREE.DirectionalLight(0xffffff, 1.6);

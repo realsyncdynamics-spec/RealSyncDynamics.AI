@@ -6,7 +6,7 @@
 .va-stage { position: relative; min-height: clamp(300px, 42vh, 460px); border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); overflow: hidden; background: linear-gradient(180deg, var(--lv3-bg-0), var(--lv3-bg-1)); }
 .va-stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; touch-action: pan-y; }
 .va-stage-canvas[hidden] { display: none; }
-.va-say { position: absolute; z-index: 1; left: 16px; top: 14px; max-width: min(60%, 280px); margin: 0; padding: 10px 13px; border: 1px solid var(--lv3-line); border-radius: 12px 12px 12px 4px; background: var(--lv3-bg-0); font-size: 14px; font-weight: 600; color: var(--lv3-fg-0); box-shadow: 0 8px 24px rgb(15 20 40 / 0.08); transition: opacity 0.3s, transform 0.3s; }
+.va-say { position: absolute; z-index: 1; left: 16px; top: 52px; max-width: min(56%, 280px); margin: 0; padding: 10px 13px; border: 1px solid var(--lv3-line); border-radius: 12px 12px 12px 4px; background: var(--lv3-bg-0); font-size: 14px; font-weight: 600; color: var(--lv3-fg-0); box-shadow: 0 8px 24px rgb(15 20 40 / 0.08); transition: opacity 0.3s, transform 0.3s; }
 .va-say--off { opacity: 0; transform: translateY(-4px); }
 .va-stage[data-scene='still'] .va-say, .va-stage[data-scene='loading'] .va-say { display: none; }
 .va-stage-toggle { position: absolute; z-index: 1; right: 12px; bottom: 12px; min-height: 40px; background: var(--lv3-bg-0); }

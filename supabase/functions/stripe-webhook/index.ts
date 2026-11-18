@@ -10,7 +10,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
-import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE, isStandaloneVoiceOfferReleased, standaloneVoiceOfferById } from '../_shared/pricing.generated.ts';
 import { invoiceTaxFacts, reviewCheckoutTax, reviewInvoiceTax, type InvoiceLike } from '../_shared/checkout-tax.ts';
 import {
   pickPlanItem,
@@ -22,6 +22,14 @@ import {
   readVoiceEntitlements,
   type ExistingVoiceAgent,
 } from '../_shared/voice-agent-provisioning.ts';
+import {
+  isVoiceAgentSubscription,
+  VOICE_GRANT_SOURCE,
+  voiceGrantDecision,
+  voiceOfferIdForPrice,
+  voicePlanKey,
+  voiceProductSentinel,
+} from '../_shared/voice-agent-checkout.ts';
 
 // Re-export for unit tests that import pickPlanItem from this module.
 export { pickPlanItem };
@@ -125,6 +133,14 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
+        // Eigenständiges Voice-Agent-Abo: NICHT durch den Plan-Sync. Der
+        // ersetzt die subscriptions-Zeile des Mandanten (Konflikt-Ziel
+        // tenant_id) und würde dessen Add-ons widerrufen.
+        if (isVoiceAgentSubscription(sub.metadata)) {
+          await syncVoiceAgentSubscription(admin as unknown as SupabaseClient, sub);
+          await enqueueVoiceAgent(admin, sub, event.id);
+          break;
+        }
         const applied = await syncSubscription(admin, sub);
         // Add-on-Positionen nur für das Abo, das tatsächlich gilt — ein
         // verspätetes Ereignis einer abgelösten Subscription (siehe
@@ -146,6 +162,7 @@ Deno.serve(async (req) => {
       }
       case 'customer.subscription.trial_will_end': {
         const sub = event.data.object as Stripe.Subscription;
+        if (isVoiceAgentSubscription(sub.metadata)) break;
         const applied = await syncSubscription(admin, sub);
         if (applied) await syncAddonItems(admin, sub);
         await recordTrialEventIfApplicable(admin, event, 'trial_will_end');
@@ -195,7 +212,7 @@ Deno.serve(async (req) => {
         }
         // Abo-Checkout: Profil anwenden, falls die Subscription-Zeile schon
         // synchronisiert ist (sonst übernimmt customer.subscription.created).
-        if (session.mode === 'subscription') {
+        if (session.mode === 'subscription' && !isVoiceAgentSubscription(session.metadata)) {
           await applyBotUsagePlan(
             admin as unknown as SupabaseClient,
             session.metadata?.tenant_id ?? session.client_reference_id ?? null,
@@ -418,6 +435,93 @@ async function enqueueVoiceAgent(admin: SupabaseClient, sub: Stripe.Subscription
     // @ts-ignore
     EdgeRuntime.waitUntil(trigger);
   }
+}
+
+/**
+ * Eigenständiges Voice-Agent-Abo → Grant (source 'voice_subscription').
+ *
+ * Das Angebot bestimmt der Stripe-Price des Abos (Edge-Secrets
+ * STRIPE_PRICE_VOICE_<ID>), nicht die Metadaten. Unbekannter Price oder
+ * fehlendes Produkt (Migration 20261118120000 nicht angewandt) → keine
+ * Freischaltung, Fehler sichtbar im Log; ein bereits aktiver Grant wird
+ * dann widerrufen statt still weiterzulaufen.
+ *
+ * Idempotent über (source, purchase_reference = Subscription-ID).
+ */
+async function syncVoiceAgentSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
+  const tenantId = subscriptionTenantId(sub);
+  if (!tenantId) {
+    console.error(`[stripe-webhook] voice subscription ${sub.id} ohne tenant_id — nichts freigeschaltet`);
+    return;
+  }
+  const decision = voiceGrantDecision(sub.status);
+  if (decision === 'skip') return;
+
+  const jetzt = new Date().toISOString();
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+  const priceId = sub.items.data[0]?.price?.id ?? null;
+  const pricedOfferId = voiceOfferIdForPrice(priceId, (name) => Deno.env.get(name));
+  // Ohne bestätigtes Minutenkontingent kein bots.voice: die Bereitstellung
+  // setzte sonst beim Provider kein Tageslimit (fail-closed).
+  const pricedOffer = standaloneVoiceOfferById(pricedOfferId);
+  const offerId = pricedOffer && isStandaloneVoiceOfferReleased(pricedOffer) ? pricedOffer.id : null;
+  if (pricedOfferId && !offerId) {
+    console.error(`[stripe-webhook] voice subscription ${sub.id}: Angebot ${pricedOfferId} nicht freigegeben`);
+  }
+  if (offerId && sub.metadata?.voice_offer_id && sub.metadata.voice_offer_id !== offerId) {
+    console.warn(`[stripe-webhook] voice subscription ${sub.id}: metadata ${sub.metadata.voice_offer_id} ≠ price ${offerId} — Price gilt`);
+  }
+
+  let productId: string | null = null;
+  if (offerId) {
+    const { data: product, error: productErr } = await admin
+      .from('products')
+      .select('id')
+      .eq('stripe_price_id', voiceProductSentinel(offerId))
+      .maybeSingle();
+    if (productErr) throw new Error(`products: ${productErr.message}`);
+    productId = (product as { id?: string } | null)?.id ?? null;
+  }
+
+  if (decision === 'active' && offerId && productId) {
+    const { error } = await admin.from('entitlement_grants').upsert({
+      tenant_id: tenantId,
+      product_id: productId,
+      plan_key: voicePlanKey(offerId),
+      source: VOICE_GRANT_SOURCE,
+      purchase_reference: sub.id,
+      stripe_subscription_id: sub.id,
+      stripe_subscription_item_id: sub.items.data[0]?.id ?? null,
+      stripe_customer_id: customerId,
+      quantity: 1,
+      status: 'active',
+      revoked_at: null,
+      revoked_reason: null,
+      expires_at: null,
+      updated_at: jetzt,
+    }, { onConflict: 'source,purchase_reference' });
+    if (error) throw new Error(`entitlement_grants: ${error.message}`);
+    return;
+  }
+
+  if (decision === 'active') {
+    console.error(
+      `[stripe-webhook] voice subscription ${sub.id}: ` +
+      (offerId ? `kein products-Eintrag ${voiceProductSentinel(offerId)}` : `Price ${priceId ?? '–'} keinem Voice-Angebot zugeordnet`) +
+      ' — nicht freigeschaltet',
+    );
+  }
+  const { error } = await admin.from('entitlement_grants')
+    .update({
+      status: 'revoked',
+      revoked_at: jetzt,
+      revoked_reason: decision === 'revoked' ? `subscription_${sub.status}` : 'voice_offer_unresolved',
+      updated_at: jetzt,
+    })
+    .eq('source', VOICE_GRANT_SOURCE)
+    .eq('purchase_reference', sub.id)
+    .eq('status', 'active');
+  if (error) throw new Error(`entitlement_grants: ${error.message}`);
 }
 
 function isMissingRelation(err: { code?: string; message?: string }): boolean {
@@ -916,7 +1020,11 @@ async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe
   // ohne diese Auflösung bekäme ein Governance-Launch-Käufer eine
   // Willkommensmail über „RealSync Audit-Pro".
   const purchasedPlan = planByKey(session.metadata?.plan_key ?? null);
-  const productLabel = purchasedPlan?.name
+  const voiceOffer = isVoiceAgentSubscription(session.metadata)
+    ? standaloneVoiceOfferById(session.metadata?.voice_offer_id)
+    : undefined;
+  const productLabel = (voiceOffer ? `RealSync Voice Agent ${voiceOffer.name}` : undefined)
+    ?? purchasedPlan?.name
     ?? (isSubscription
       ? "RealSync Cookie-SDK Pro"
       : isOneTime

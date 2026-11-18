@@ -4,6 +4,7 @@ import { SEOHead } from '../../components/SEOHead';
 import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
 import { formatPriceEur, VOICE_STANDALONE_OFFERS } from '@/shared/pricing';
 import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
+import { canOfferVoiceCheckout } from '../../config/voice-checkout';
 
 /**
  * Eigenständiger Voice-Agent-Einstieg auf der BESTEHENDEN Route /phonebot/start.
@@ -11,7 +12,10 @@ import { getImplementation, STATUS_LABEL } from '../../product/implementation-st
  * Voice-Pakete sind bereits im Stripe-Livekatalog angelegt, aber die
  * Verbindung Preis → eigenständiges Abo → Entitlement → Agent-Provisioning →
  * produktive Telefonnummer ist noch nicht Ende-zu-Ende freigegeben.
- * Deshalb gibt es hier ausdrücklich keinen Stripe-Zahlungsbutton.
+ * Deshalb gibt es hier nur dann einen Kauf-Knopf (→ /voice/checkout/:offerId),
+ * wenn `canOfferVoiceCheckout` es erlaubt: Anzeige-Schalter
+ * VITE_VOICE_CHECKOUT_ENABLED, deployte Function und freigegebenes Angebot.
+ * Default: kein Kauf-Knopf.
  *
  * Das Governance-Voice-Add-on (150 EUR) ist NICHT Teil dieses Katalogs.
  * Preise stammen ausschließlich aus shared/pricing.ts.
@@ -37,6 +41,7 @@ const STEPS = [
 export function PhonebotStartPage() {
   const implementation = getImplementation('voice-telephony');
   const statusLabel = implementation ? STATUS_LABEL[implementation.status] : 'IN VORBEREITUNG';
+  const anyCheckout = VOICE_STANDALONE_OFFERS.some((offer) => canOfferVoiceCheckout(offer));
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -85,7 +90,9 @@ export function PhonebotStartPage() {
             </div>
             <p className="mt-4 max-w-3xl text-sm text-slate-500" role="note">
               Produktstatus: {statusLabel}. Der Konfigurator dient derzeit der Vorbereitung.
-              Es wird hier weder ein Abonnement abgeschlossen noch eine Telefonnummer aktiviert.
+              {anyCheckout
+                ? ' Ein Abo schließen Sie über die Paketkarten ab; die Telefonnummer wird erst nach Prüfung aktiviert.'
+                : ' Es wird hier weder ein Abonnement abgeschlossen noch eine Telefonnummer aktiviert.'}
             </p>
           </div>
         </section>
@@ -117,17 +124,33 @@ export function PhonebotStartPage() {
                   <p className="mt-4 text-3xl font-bold tracking-tight">{formatPriceEur(offer.monthlyEur)}
                     <span className="text-sm font-normal text-slate-500"> / Monat</span>
                   </p>
-                  <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
-                    Monatliches Angebot im Stripe-Livekatalog angelegt; kein freigeschalteter Sofortkauf.
-                  </p>
-                  <a
-                    href={ONBOARDING_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-7 inline-flex items-center justify-center gap-2 rounded-md border border-teal-800 px-4 py-3 text-sm font-semibold text-teal-900 hover:bg-teal-50"
-                  >
-                    Paket vorbereiten <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
+                  {offer.bullets.length > 0 ? (
+                    <ul className="mt-3 flex-1 space-y-1 text-sm leading-relaxed text-slate-600">
+                      {offer.bullets.map((b) => <li key={b}>· {b}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
+                      Monatliches Angebot im Stripe-Livekatalog angelegt; kein freigeschalteter Sofortkauf.
+                    </p>
+                  )}
+                  {canOfferVoiceCheckout(offer) ? (
+                    <Link
+                      to={`/voice/checkout/${offer.id}`}
+                      data-testid={`voice-offer-subscribe-${offer.id}`}
+                      className="mt-7 inline-flex items-center justify-center gap-2 rounded-md bg-teal-800 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-900"
+                    >
+                      Paket abonnieren <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <a
+                      href={ONBOARDING_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-7 inline-flex items-center justify-center gap-2 rounded-md border border-teal-800 px-4 py-3 text-sm font-semibold text-teal-900 hover:bg-teal-50"
+                    >
+                      Paket vorbereiten <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </a>
+                  )}
                 </article>
               ))}
             </div>

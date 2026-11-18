@@ -59,6 +59,21 @@
 /api/*
   Cache-Control: private, max-age=0, no-cache
 
+# Abmeldelinks (Issue #2282): Token steht in der URL. Die Pages-Function setzt
+# no-store/no-referrer selbst; dieser Block verhindert, dass die globale
+# Referrer-Policy oben sie verwässert, falls _headers hier mitgreift.
+/api/sp-unsubscribe
+  ! Referrer-Policy
+  ! Cache-Control
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store, max-age=0
+
+/api/drip-unsubscribe
+  ! Referrer-Policy
+  ! Cache-Control
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store, max-age=0
+
 /governance/*
   Cache-Control: public, max-age=300, s-maxage=3600
 

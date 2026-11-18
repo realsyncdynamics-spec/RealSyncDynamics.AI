@@ -21,14 +21,12 @@ export const BOT_LINES: readonly string[] = [
 ];
 
 const LINE_MS = 4200;
-const GRID_COLOR = '#D3D8E1';
 const MOVES: readonly BotMove[] = ['dance', 'jump', 'spin'];
 
 export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<VoiceBotHandle | null>(null);
   const [mode, setMode] = useState<SceneMode>('still');
-  const [out, setOut] = useState(true);
   const [line, setLine] = useState(0);
 
   useEffect(() => {
@@ -38,7 +36,7 @@ export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
     import('./voiceBotScene3D')
       .then(({ mountVoiceBot }) => {
         if (cancelled || !canvasRef.current) return;
-        handleRef.current = mountVoiceBot(canvasRef.current, { gridColor: GRID_COLOR });
+        handleRef.current = mountVoiceBot(canvasRef.current);
         setMode('scene');
       })
       .catch(() => {
@@ -52,27 +50,17 @@ export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (mode !== 'scene' || !out || speaking) return;
+    if (mode !== 'scene' || speaking) return;
     const id = window.setInterval(() => setLine((i) => (i + 1) % BOT_LINES.length), LINE_MS);
     return () => window.clearInterval(id);
-  }, [mode, out, speaking]);
+  }, [mode, speaking]);
 
   useEffect(() => {
     handleRef.current?.setSpeaking(speaking);
   }, [speaking]);
 
-  const toggle = () => {
-    const next = !out;
-    setOut(next);
-    handleRef.current?.setOut(next);
-  };
-
   const poke = () => {
     if (mode !== 'scene') return;
-    if (!out) {
-      toggle();
-      return;
-    }
     handleRef.current?.play(MOVES[Math.floor(Math.random() * MOVES.length)]!);
     setLine((i) => (i + 1) % BOT_LINES.length);
   };
@@ -90,12 +78,12 @@ export function VoiceBotStage({ speaking = false }: { speaking?: boolean }) {
       />
       <canvas ref={canvasRef} className="va-stage-canvas" aria-hidden="true" hidden={mode === 'still'} onClick={poke} />
       <span className="lv3-stage-tag">KI-Assistent · Vorschau</span>
-      <p className={`va-say${out ? '' : ' va-say--off'}`} aria-live="polite">
+      <p className="va-say" aria-live="polite">
         {speaking ? 'Ich spreche …' : BOT_LINES[line]}
       </p>
       {mode === 'scene' ? (
-        <button type="button" className="lv3-btn va-stage-toggle" onClick={toggle}>
-          {out ? 'Zurück in den Kasten' : 'Assistent holen'}
+        <button type="button" className="lv3-btn va-stage-poke" onClick={poke}>
+          Tanz!
         </button>
       ) : null}
     </div>

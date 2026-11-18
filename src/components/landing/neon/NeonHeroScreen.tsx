@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { GlassCube } from '../../neon/GlassCube';
+import { GlassPanel } from '../../neon/GlassPanel';
 
 /**
- * Neon-Würfel im Hero mit Bildschirm („Voice-Show“).
+ * Glaswürfel im Hero mit Untertitel-Leiste („Voice-Show“).
+ *
+ * Seit 18.11.2026 (Owner-Vorlage „3D-Glaswürfel“) ist der Würfel selbst
+ * transparent (GlassCube); der Ablauf läuft in einer Glasleiste darunter.
  *
  * Zeigt den geplanten Ablauf des AI Receptionist als Untertitel-Show und
  * kann ihn mit der Sprachausgabe des Browsers vorlesen. Bewusst KEINE
@@ -105,33 +110,25 @@ export function NeonHeroScreen({ heading, steps, statusLabel }: NeonHeroScreenPr
   }
 
   return (
-    <div className="ln-stage" data-testid="neon-hero-screen">
-      <div className="ln-cube">
-        <div className="ln-f ln-f-top" aria-hidden="true" />
-        <div className="ln-f ln-f-side" aria-hidden="true" />
-        <div className="ln-f ln-f-back" aria-hidden="true" />
-        <div className="ln-f ln-f-front">
-          <div className="ln-screen">
-            <span className="ln-screen-top">
-              <span className="ln-dot" aria-hidden="true" />
-              Vorschau · {statusLabel}
-            </span>
-            <span className="ln-orb" aria-hidden="true"><span>RealSync AI</span></span>
-            <div className="ln-bars" ref={barsRef} aria-hidden="true">
-              {Array.from({ length: BAR_COUNT }, (_, k) => <i key={k} />)}
-            </div>
-            <p className="ln-cap" aria-live="polite" data-testid="neon-hero-caption">
-              <b>RealSync AI:</b> {lines[idx]}
-            </p>
-            {canSpeak ? (
-              <button type="button" className="ln-voice" onClick={toggleVoice} aria-pressed={voiceOn}>
-                {voiceOn ? 'Vorlesen stoppen' : 'Ablauf vorlesen'}
-              </button>
-            ) : null}
-          </div>
+    <div className="ln-stage ln-stage--glass" data-testid="neon-hero-screen">
+      <GlassCube className="ln-cube-stage" />
+      <span className="ln-screen-top ln-glass-tag">
+        <span className="ln-dot" aria-hidden="true" />
+        Vorschau · {statusLabel}
+      </span>
+      <GlassPanel className="ln-glass-bar">
+        <div className="ln-bars" ref={barsRef} aria-hidden="true">
+          {Array.from({ length: BAR_COUNT }, (_, k) => <i key={k} />)}
         </div>
-        <div className="ln-shadow" aria-hidden="true" />
-      </div>
+        <p className="ln-cap" aria-live="polite" data-testid="neon-hero-caption">
+          <b>RealSync AI:</b> {lines[idx]}
+        </p>
+        {canSpeak ? (
+          <button type="button" className="ln-voice" onClick={toggleVoice} aria-pressed={voiceOn}>
+            {voiceOn ? 'Vorlesen stoppen' : 'Ablauf vorlesen'}
+          </button>
+        ) : null}
+      </GlassPanel>
     </div>
   );
 }

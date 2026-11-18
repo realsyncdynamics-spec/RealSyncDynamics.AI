@@ -1,6 +1,6 @@
 /**
  * Neon-Design (18.11.2026): Startseite und App-Shell.
- * Geprüft: Umschalter Hell/Dunkel (Startseite standardmäßig hell),
+ * Geprüft: Umschalter Hell/Dunkel (Startseite seit der Glaswürfel-Vorlage standardmäßig dunkel),
  * Hero-Bildschirm nur mit Registry-Status und geplantem Ablauf,
  * keine Agent-/Bot-ID im Bundle, Shell trägt den Neon-Scope.
  */
@@ -23,15 +23,15 @@ describe('Neon-Design — Startseite', () => {
     window.localStorage.clear();
   });
 
-  it('startet hell (weiß) und schaltet auf dunkel um', () => {
+  it('startet dunkel (Glaswürfel-Vorlage) und schaltet auf hell um', () => {
     const { container } = render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const page = container.querySelector('.lv3.lv3-neon');
-    expect(page).toHaveAttribute('data-mode', 'light');
-    const toggle = within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByTestId('neon-mode-toggle');
-    expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(toggle);
     expect(page).toHaveAttribute('data-mode', 'dark');
-    expect(window.localStorage.getItem('rs-neon-mode-landing')).toBe('dark');
+    const toggle = within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByTestId('neon-mode-toggle');
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(toggle);
+    expect(page).toHaveAttribute('data-mode', 'light');
+    expect(window.localStorage.getItem('rs-neon-mode-landing')).toBe('light');
   });
 
   it('Hero-Bildschirm zeigt Registry-Status und den geplanten Ablauf, kein Live-Versprechen', () => {
@@ -45,6 +45,8 @@ describe('Neon-Design — Startseite', () => {
   it('keine Agent-/Bot-IDs, keine Sprach-SDKs, keine festen Preise im Neon-Code', () => {
     const src = [
       'src/components/landing/neon/NeonHeroScreen.tsx',
+      'src/components/neon/GlassCube.tsx',
+      'src/components/neon/GlassPanel.tsx',
       'src/components/neon/NeonModeToggle.tsx',
       'src/hooks/useNeonMode.ts',
     ]

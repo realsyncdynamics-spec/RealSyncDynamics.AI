@@ -59,25 +59,27 @@
   transition: background-color 0.3s, color 0.3s;
 }
 .lv3.lv3-neon[data-mode='dark'] {
-  --ln-cyan-ink: #67e8f9;
+  /* Werte aus glass-tokens.css (Glaswürfel-Vorlage 18.11.2026). */
+  --ln-accent: var(--rs-g-violet);
+  --ln-cyan-ink: var(--rs-g-cyan-soft);
   --ln-grad-a: #f5b1ff;
-  --ln-grad-b: #c084fc;
-  --ln-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-  --ln-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-  --lv3-bg-0: #070a11;
-  --lv3-bg-1: #0d1321;
-  --lv3-bg-2: #141a2b;
-  --lv3-fg-0: #f2f5fa;
+  --ln-grad-b: var(--rs-g-violet-ink);
+  --ln-glass: var(--rs-g-glass);
+  --ln-shadow: var(--rs-g-shadow);
+  --lv3-bg-0: var(--rs-g-bg);
+  --lv3-bg-1: var(--rs-g-bg-2);
+  --lv3-bg-2: var(--rs-g-bg-3);
+  --lv3-fg-0: var(--rs-g-fg);
   --lv3-fg-1: #dbe1ec;
-  --lv3-fg-2: #a7b0c2;
-  --lv3-line: rgba(255, 255, 255, 0.09);
-  --lv3-line-strong: rgba(255, 255, 255, 0.18);
-  --lv3-focus: #22d3ee;
+  --lv3-fg-2: var(--rs-g-fg-2);
+  --lv3-line: var(--rs-g-line);
+  --lv3-line-strong: var(--rs-g-line-strong);
+  --lv3-focus: var(--rs-g-focus);
   background:
-    radial-gradient(560px 560px at -8% -6%, rgba(124, 58, 237, 0.45), transparent 70%),
-    radial-gradient(640px 640px at 108% 22%, rgba(14, 165, 233, 0.22), transparent 70%),
-    radial-gradient(500px 500px at 40% 100%, rgba(219, 39, 119, 0.14), transparent 70%),
-    var(--lv3-bg-0);
+    radial-gradient(900px 700px at 8% 4%, rgba(124, 58, 237, 0.34), transparent 70%),
+    radial-gradient(800px 700px at 100% 40%, rgba(14, 116, 144, 0.26), transparent 70%),
+    radial-gradient(600px 500px at 60% 0%, rgba(76, 29, 149, 0.2), transparent 70%),
+    var(--rs-g-bg);
   color-scheme: dark;
 }
 .lv3-neon .lv3-hero { background: transparent; }
@@ -129,7 +131,16 @@
 .lv3-neon .lv3-footer { background: color-mix(in srgb, var(--lv3-bg-1) 85%, transparent); }
 .lv3-neon .lv3-input { border-radius: 12px; }
 
-/* Neon-Würfel mit Bildschirm (NeonHeroScreen) */
+/* Glaswürfel im Hero (NeonHeroScreen + GlassCube, Vorlage 18.11.2026) */
+.ln-stage.ln-stage--glass { display: block; position: relative; perspective: none; min-height: 0; }
+.ln-stage--glass .ln-cube-stage { min-height: clamp(360px, 56vh, 620px); }
+.ln-glass-tag { position: absolute; top: 16px; right: 16px; z-index: 2; padding: 4px 10px; border: 1px solid var(--rs-g-line-strong); border-radius: 999px; background: rgba(7, 6, 15, 0.6); backdrop-filter: blur(8px); }
+.ln-stage--glass .rs-g-panel.ln-glass-bar { position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px; border-radius: var(--rs-g-radius); background: rgba(13, 16, 36, 0.62); }
+.ln-glass-bar .ln-bars { width: 92px; height: 28px; flex: 0 0 auto; }
+.ln-glass-bar .ln-cap { flex: 1 1 220px; min-height: 0; max-width: none; text-align: left; font-size: clamp(13px, 1vw, 15px); }
+.ln-glass-bar .ln-voice { flex: 0 0 auto; min-height: 44px; }
+
+/* Früherer Neon-Würfel mit Bildschirm (nicht mehr auf `/`, Klassen bleiben im Bestand) */
 .ln-stage { display: flex; justify-content: center; align-items: center; perspective: 1400px; min-height: clamp(380px, 52vh, 560px); }
 .ln-cube { width: min(460px, 88%); aspect-ratio: 0.94; position: relative; transform-style: preserve-3d; animation: ln-float 7s ease-in-out infinite; }
 @keyframes ln-float {

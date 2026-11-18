@@ -9,6 +9,7 @@ import {
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
+import '../styles/glass-tokens.css';
 import '../styles/neon-theme.css';
 
 /**
@@ -27,10 +28,12 @@ import '../styles/neon-theme.css';
  * landingV3Data.ts.
  *
  * Gestaltung seit 18.11.2026: Neon-Design (Owner-Entscheidung) über
- * `.lv3-neon` in styles/neon-theme.css, Hell/Dunkel-Schalter (Standard hell).
- * Der Hero zeigt den Neon-Würfel mit dem geplanten Receptionist-Ablauf als
- * Bildschirm-Show (NeonHeroScreen) statt der 3D-Bühne (HeroStage bleibt im
- * Bestand). Inhalte, Testkennungen und Datenquellen unverändert.
+ * `.lv3-neon` in styles/neon-theme.css, Hell/Dunkel-Schalter. Seit der
+ * Glaswürfel-Vorlage (18.11.2026) Standard dunkel, Tokens aus
+ * styles/glass-tokens.css. Der Hero zeigt den transparenten Glaswürfel
+ * (GlassCube) mit dem geplanten Receptionist-Ablauf als Untertitel-Leiste
+ * (NeonHeroScreen); die 3D-Bühne (HeroStage) bleibt im Bestand.
+ * Inhalte, Testkennungen und Datenquellen unverändert.
  */
 
 const AUTO_ADVANCE_MS = 6000;
@@ -53,7 +56,7 @@ export function LandingV3() {
   const [paused, setPaused] = useState(false);
   const [site, setSite] = useState('');
   const [siteError, setSiteError] = useState('');
-  const [mode, toggleMode] = useNeonMode('rs-neon-mode-landing', 'light');
+  const [mode, toggleMode] = useNeonMode('rs-neon-mode-landing', 'dark');
 
   useEffect(() => {
     if (paused || prefersReducedMotion()) return;

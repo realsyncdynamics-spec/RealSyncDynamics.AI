@@ -1,0 +1,92 @@
+/* Glaswürfel-Designsystem (Owner-Vorgabe 18.11.2026, Referenz „RealSync
+   Studio – 3D-Glaswürfel“). Zentrale Tokens für das Neon-/Glas-Design.
+
+   Gescoped auf die Neon-Flächen (.lv3-neon, .rs-neon, .rs-glass) — kein
+   :root, damit bestehende Seiten außerhalb des Scopes unverändert bleiben.
+   neon-theme.css liest diese Tokens; Komponenten nutzen nur var(--rs-g-*).
+
+   Kontrast (WCAG, auf --rs-g-bg #07060f geprüft, siehe test/landing/glass-cube.test.tsx):
+     --rs-g-fg    #f3f1fa  ≈ 18,0:1
+     --rs-g-fg-2  #a7b0c2  ≈  9,2:1
+     --rs-g-cyan  #22d3ee  ≈ 11,2:1
+     --rs-g-violet-ink #c084fc ≈ 7,6:1 (Lila als Schrift; #a855f7 nur für Kanten/Flächen)
+   Statusfarben (Erfolg/Warnung/Fehler) gehören NICHT hierher und bleiben
+   getrennt von den Brand-Akzenten. */
+
+.lv3-neon,
+.rs-neon,
+.rs-glass {
+  /* Farben */
+  --rs-g-bg: #07060f;            /* Deep Space Black */
+  --rs-g-bg-2: #0d1024;          /* Midnight Navy */
+  --rs-g-bg-3: #151a33;
+  --rs-g-cyan: #22d3ee;          /* Electric Cyan */
+  --rs-g-cyan-soft: #67e8f9;
+  --rs-g-violet: #a855f7;        /* Neon Violet */
+  --rs-g-violet-ink: #c084fc;
+  --rs-g-magenta: #e879f9;
+  --rs-g-blue: #818cf8;          /* Soft Blue */
+  --rs-g-fg: #f3f1fa;            /* Soft White */
+  --rs-g-fg-2: #a7b0c2;          /* Cool Gray */
+  --rs-g-glow-violet: rgba(168, 85, 247, 0.3);
+  --rs-g-glow-cyan: rgba(34, 211, 238, 0.35);
+
+  /* Oberflächen (Translucent Glass) */
+  --rs-g-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  --rs-g-glass-strong: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(34, 211, 238, 0.06));
+  --rs-g-glass-blur: 18px;
+  --rs-g-line: rgba(255, 255, 255, 0.09);
+  --rs-g-line-strong: rgba(200, 220, 255, 0.22);
+  --rs-g-edge: rgba(200, 220, 255, 0.6);
+
+  /* Hintergrund-Licht wie in der Referenz */
+  --rs-g-space:
+    radial-gradient(60% 55% at 12% 18%, rgba(124, 58, 237, 0.42), transparent 70%),
+    radial-gradient(50% 50% at 90% 85%, rgba(14, 116, 144, 0.38), transparent 70%),
+    radial-gradient(40% 40% at 68% 8%, rgba(76, 29, 149, 0.25), transparent 70%),
+    #07060f;
+
+  /* Typografie (Schriften kommen aus @theme in index.css) */
+  --rs-g-font: var(--font-rs-ui, Inter, system-ui, sans-serif);
+  --rs-g-font-title: var(--font-rs-title, Inter, system-ui, sans-serif);
+  --rs-g-font-mono: var(--font-rs-mono, 'JetBrains Mono', ui-monospace, monospace);
+
+  /* Abstände, Radien, Schatten */
+  --rs-g-space-1: 4px;
+  --rs-g-space-2: 8px;
+  --rs-g-space-3: 16px;
+  --rs-g-space-4: 24px;
+  --rs-g-space-5: 40px;
+  --rs-g-space-6: 64px;
+  --rs-g-radius: 14px;
+  --rs-g-radius-lg: 22px;
+  --rs-g-radius-pill: 999px;
+  --rs-g-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --rs-g-shadow-glow: 0 0 28px var(--rs-g-glow-cyan), 0 0 60px var(--rs-g-glow-violet);
+
+  /* Fokus */
+  --rs-g-focus: #22d3ee;
+  --rs-g-focus-ring: 0 0 0 2px #07060f, 0 0 0 4px #22d3ee;
+
+  /* Bewegung: ruhig, kontrolliert */
+  --rs-g-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --rs-g-dur-fast: 160ms;
+  --rs-g-dur: 320ms;
+  --rs-g-dur-float: 9s;
+}
+
+/* Breakpoints (Referenz; CSS-Variablen gehen nicht in @media):
+   sm 640px · md 768px · lg 1024px · xl 1280px — identisch mit Tailwind 4. */
+
+/* Wiederverwendbare Glasfläche (GlassPanel) */
+.rs-g-panel {
+  position: relative;
+  border: 1px solid var(--rs-g-line-strong);
+  border-radius: var(--rs-g-radius-lg);
+  background: var(--rs-g-glass);
+  backdrop-filter: blur(var(--rs-g-glass-blur));
+  -webkit-backdrop-filter: blur(var(--rs-g-glass-blur));
+  box-shadow: var(--rs-g-shadow);
+  color: var(--rs-g-fg);
+}
+.rs-g-panel[data-glow='true'] { box-shadow: var(--rs-g-shadow), var(--rs-g-shadow-glow); }

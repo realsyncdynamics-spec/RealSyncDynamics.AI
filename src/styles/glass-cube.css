@@ -1,0 +1,152 @@
+/* Glaswürfel (GlassCube) — CSS-3D nach der Owner-Vorlage 18.11.2026.
+   Alle Klassen mit Präfix gc-, gescoped über .gc-stage. Farben nur aus
+   glass-tokens.css. Die Bühne bleibt in Hell und Dunkel dunkel
+   („Vitrine“), damit das Glas wie in der Vorlage leuchtet. */
+
+.gc-stage {
+  --gc-s: clamp(140px, min(22vw, 30vh), 280px);
+  --gc-lid: 1.4;      /* Deckelabstand als Vielfaches der halben Kante */
+  --gc-lid-up: 1.6;
+  --gc-h: calc(var(--gc-s) / 2);
+  --gc-tx: 0deg;
+  --gc-ty: 0deg;
+  position: relative;
+  min-height: clamp(340px, 52vh, 600px);
+  overflow: hidden;
+  border: 1px solid var(--rs-g-line-strong);
+  border-radius: var(--rs-g-radius-lg);
+  background: var(--rs-g-space);
+  perspective: 1400px;
+  isolation: isolate;
+}
+
+.gc-stars {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.85;
+  background-image:
+    radial-gradient(1.2px 1.2px at 8% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 68%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 35% 28%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 47% 84%, #fff 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 61% 9%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 73% 44%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 86% 21%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 93% 73%, #fff 50%, transparent 51%),
+    radial-gradient(1.1px 1.1px at 14% 90%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 4% 46%, #fff 50%, transparent 51%);
+  animation: gc-twinkle 5s ease-in-out infinite;
+}
+
+.gc-halo {
+  position: absolute; left: 50%; top: 54%;
+  width: calc(var(--gc-s) * 1.85); height: calc(var(--gc-s) * 1.85);
+  border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--rs-g-glow-violet), var(--rs-g-glow-cyan) 45%, transparent 70%);
+  filter: blur(34px);
+  animation: gc-pulse 6s ease-in-out infinite;
+}
+.gc-floor {
+  position: absolute; left: 50%; top: 80%;
+  width: calc(var(--gc-s) * 1.7); height: calc(var(--gc-s) * 0.24);
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(ellipse, var(--rs-g-glow-violet), transparent 70%);
+  filter: blur(18px);
+}
+
+.gc-tilt {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--gc-tx)) rotateY(var(--gc-ty));
+  transition: transform 0.35s var(--rs-g-ease, ease-out);
+}
+
+.gc-cube {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--gc-s); height: var(--gc-s);
+  margin: calc(var(--gc-h) * -1) 0 0 calc(var(--gc-h) * -1);
+  transform-style: preserve-3d;
+  animation: gc-float var(--rs-g-dur-float, 9s) ease-in-out infinite;
+}
+
+.gc-face { position: absolute; inset: 0; border-radius: 4px; overflow: hidden; }
+.gc-face::after {
+  content: ""; position: absolute; inset: -40%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.22) 50%, transparent 60%);
+  animation: gc-sweep 6s ease-in-out infinite;
+}
+.gc-back {
+  transform: rotateY(180deg) translateZ(var(--gc-h));
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.06));
+  border: 1.5px solid var(--rs-g-violet);
+  box-shadow: inset 0 0 60px var(--rs-g-glow-violet);
+}
+.gc-left {
+  transform: rotateY(-90deg) translateZ(var(--gc-h));
+  background: linear-gradient(135deg, rgba(232, 121, 249, 0.1), rgba(34, 211, 238, 0.04));
+  border: 1.5px solid var(--rs-g-magenta);
+  box-shadow: inset 0 0 60px var(--rs-g-glow-violet), 0 0 24px var(--rs-g-glow-violet);
+}
+.gc-bottom {
+  transform: rotateX(-90deg) translateZ(var(--gc-h));
+  background: rgba(76, 29, 149, 0.18);
+  border: 1.5px solid rgba(200, 220, 255, 0.35);
+}
+.gc-right {
+  transform: rotateY(90deg) translateZ(var(--gc-h));
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(168, 85, 247, 0.05));
+  border: 1.5px solid var(--rs-g-cyan);
+  box-shadow: inset 0 0 60px var(--rs-g-glow-cyan), 0 0 24px var(--rs-g-glow-cyan);
+}
+.gc-front {
+  transform: translateZ(var(--gc-h));
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.06));
+  border: 1.5px solid var(--rs-g-edge);
+  box-shadow: inset 0 0 60px var(--rs-g-glow-violet), 0 0 28px var(--rs-g-glow-cyan);
+}
+.gc-inner {
+  position: absolute; inset: 14.6%;
+  border: 1px solid var(--rs-g-cyan); opacity: 0.55;
+  background: radial-gradient(circle at 40% 30%, var(--rs-g-glow-cyan), transparent 70%);
+}
+.gc-lid {
+  position: absolute; inset: 0; border-radius: 4px;
+  background: linear-gradient(110deg, #f0a8ff 0%, #a5f3fc 40%, var(--rs-g-cyan) 60%, #e9b8ff 100%);
+  opacity: 0.93;
+  box-shadow: 0 0 70px var(--rs-g-glow-cyan), 0 0 130px var(--rs-g-glow-violet);
+  transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid)));
+  animation: gc-bob 4.5s ease-in-out infinite, gc-hue 8s ease-in-out infinite;
+}
+
+@keyframes gc-float {
+  0%, 100% { transform: translateY(0) rotateX(-14deg) rotateY(-28deg); }
+  50% { transform: translateY(-14px) rotateX(-9deg) rotateY(-18deg); }
+}
+@keyframes gc-bob {
+  0%, 100% { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid))); }
+  50% { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * var(--gc-lid-up))); }
+}
+@keyframes gc-hue { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(-28deg); } }
+@keyframes gc-sweep { 0%, 100% { transform: translateX(-60%); } 50% { transform: translateX(60%); } }
+@keyframes gc-twinkle { 0%, 100% { opacity: 0.85; } 50% { opacity: 0.5; } }
+@keyframes gc-pulse {
+  0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+/* Nicht im Bild: alles anhalten (spart Energie). */
+.gc-stage[data-paused='true'] *,
+.gc-stage[data-paused='true'] *::after { animation-play-state: paused; }
+
+/* Statisch: reduzierte Bewegung (per JS erkannt) und per CSS als Absicherung. */
+.gc-stage[data-still='true'] .gc-cube,
+.gc-stage[data-still='true'] .gc-lid,
+.gc-stage[data-still='true'] .gc-face::after,
+.gc-stage[data-still='true'] .gc-stars,
+.gc-stage[data-still='true'] .gc-halo { animation: none; }
+.gc-stage[data-still='true'] .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
+.gc-stage[data-still='true'] .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
+@media (prefers-reduced-motion: reduce) {
+  .gc-cube, .gc-lid, .gc-face::after, .gc-stars, .gc-halo { animation: none !important; }
+  .gc-cube { transform: rotateX(-14deg) rotateY(-28deg); }
+  .gc-lid { transform: rotateX(90deg) translateZ(calc(var(--gc-h) * 1.5)); }
+  .gc-tilt { transition: none; }
+}

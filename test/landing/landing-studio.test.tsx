@@ -51,6 +51,14 @@ describe('Landing „Studio“ — /design/landing-studio', () => {
     expect(src).not.toMatch(/\b(89|199|349)\s?€/);
   });
 
+  it('Glaswürfel: dekorativ (aria-hidden) mit Deckel und fünf Flächen', () => {
+    render(<MemoryRouter><LandingStudio /></MemoryRouter>);
+    const cube = screen.getByTestId('studio-cube');
+    expect(cube).toHaveAttribute('aria-hidden', 'true');
+    expect(cube.querySelectorAll('.lst-face')).toHaveLength(5);
+    expect(cube.querySelector('.lst-lid')).not.toBeNull();
+  });
+
   it('keine verbotenen CTAs, Check führt in den Audit-Funnel', () => {
     const src = read('src/pages/LandingStudio.tsx');
     for (const phrase of CI_FORBIDDEN_CTA) expect(src).not.toContain(phrase);

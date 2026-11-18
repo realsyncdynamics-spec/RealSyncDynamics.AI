@@ -94,8 +94,24 @@
 .lst-facts { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 24px; font-size: 13.5px; color: var(--lst-muted); }
 .lst-facts b { color: #fff; font-weight: 700; }
 
-/* Glass cube */
-.lst-stage { position: relative; height: 500px; perspective: 1300px; }
+/* Glass cube — umgesetzt nach dem Claude-Design-Entwurf „RealSync Studio – 3D-Glaswürfel“ */
+.lst-stage { position: relative; height: 500px; perspective: 1400px; }
+.lst-halo {
+  position: absolute; left: 50%; top: 56%; width: 460px; height: 460px; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.3), rgba(34, 211, 238, 0.12) 45%, transparent 70%);
+  filter: blur(32px); animation: lst-pulse 6s ease-in-out infinite;
+}
+.lst-floor {
+  position: absolute; left: 50%; top: 86%; width: 420px; height: 60px; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(168, 85, 247, 0.32), transparent 70%); filter: blur(16px);
+}
+.lst-tilt {
+  position: absolute; inset: 0; transform-style: preserve-3d;
+  transform: rotateX(var(--lst-tx, 0deg)) rotateY(var(--lst-ty, 0deg));
+  transition: transform 0.35s ease-out;
+}
 .lst-cube {
   --s: 300px; --h: 150px;
   position: absolute; left: 50%; top: 52%; width: var(--s); height: var(--s);
@@ -103,33 +119,46 @@
   animation: lst-float 9s ease-in-out infinite;
 }
 .lst-face {
-  position: absolute; inset: 0; border-radius: 4px;
+  position: absolute; inset: 0; border-radius: 4px; overflow: hidden;
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.06));
   border: 1.5px solid rgba(200, 220, 255, 0.55);
-  box-shadow: inset 0 0 60px rgba(168, 85, 247, 0.18), 0 0 24px rgba(103, 232, 249, 0.18);
+  box-shadow: inset 0 0 60px rgba(168, 85, 247, 0.2), 0 0 24px rgba(103, 232, 249, 0.2);
 }
-.lst-f-front { transform: translateZ(var(--h)); }
-.lst-f-back { transform: rotateY(180deg) translateZ(var(--h)); border-color: rgba(192, 132, 252, 0.6); }
-.lst-f-right { transform: rotateY(90deg) translateZ(var(--h)); border-color: rgba(103, 232, 249, 0.7); }
-.lst-f-left { transform: rotateY(-90deg) translateZ(var(--h)); border-color: rgba(232, 121, 249, 0.7); }
-.lst-f-bottom { transform: rotateX(-90deg) translateZ(var(--h)); background: rgba(76, 29, 149, 0.15); }
-.lst-top {
-  position: absolute; inset: 0; border-radius: 4px; opacity: 0.92;
+.lst-face::after {
+  content: ""; position: absolute; inset: -40%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.22) 50%, transparent 60%);
+  animation: lst-sweep 6s ease-in-out infinite;
+}
+.lst-f-front { transform: translateZ(var(--h)); border-color: rgba(200, 220, 255, 0.6); }
+.lst-f-back { transform: rotateY(180deg) translateZ(var(--h)); border-color: #a855f7; }
+.lst-f-right { transform: rotateY(90deg) translateZ(var(--h)); border-color: #22d3ee; box-shadow: inset 0 0 60px rgba(34, 211, 238, 0.22), 0 0 24px rgba(34, 211, 238, 0.3); }
+.lst-f-left { transform: rotateY(-90deg) translateZ(var(--h)); border-color: #e879f9; }
+.lst-f-bottom { transform: rotateX(-90deg) translateZ(var(--h)); background: rgba(76, 29, 149, 0.18); border-color: rgba(200, 220, 255, 0.35); }
+.lst-inner {
+  position: absolute; inset: 44px; border: 1px solid rgba(34, 211, 238, 0.55);
+  background: radial-gradient(circle at 40% 30%, rgba(34, 211, 238, 0.18), transparent 70%);
+}
+.lst-lid {
+  position: absolute; inset: 0; border-radius: 4px; opacity: 0.93;
   transform: rotateX(90deg) translateZ(calc(var(--h) * 1.73));
   background: linear-gradient(110deg, #f0a8ff 0%, #a5f3fc 40%, #22d3ee 60%, #e9b8ff 100%);
-  box-shadow: 0 0 70px rgba(103, 232, 249, 0.55), 0 0 120px rgba(240, 168, 255, 0.35);
-  animation: lst-glow 6s ease-in-out infinite;
-}
-.lst-inner { position: absolute; inset: 44px; border: 1px solid rgba(103, 232, 249, 0.35); background: radial-gradient(circle at 40% 30%, rgba(34, 211, 238, 0.12), transparent 70%); }
-.lst-halo {
-  position: absolute; left: 50%; top: 58%; width: 420px; height: 420px; transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.28), rgba(34, 211, 238, 0.1) 45%, transparent 70%); filter: blur(30px);
+  box-shadow: 0 0 70px rgba(34, 211, 238, 0.5), 0 0 130px rgba(168, 85, 247, 0.35);
+  animation: lst-bob 4.5s ease-in-out infinite, lst-hue 8s ease-in-out infinite;
 }
 @keyframes lst-float {
   0%, 100% { transform: translate(-50%, -50%) rotateX(-14deg) rotateY(-28deg); }
-  50% { transform: translate(-50%, -53%) rotateX(-10deg) rotateY(-20deg); }
+  50% { transform: translate(-50%, -53%) rotateX(-9deg) rotateY(-18deg); }
 }
-@keyframes lst-glow { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(-25deg); } }
+@keyframes lst-bob {
+  0%, 100% { transform: rotateX(90deg) translateZ(calc(var(--h) * 1.66)); }
+  50% { transform: rotateX(90deg) translateZ(calc(var(--h) * 1.9)); }
+}
+@keyframes lst-hue { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(-28deg); } }
+@keyframes lst-sweep { 0%, 100% { transform: translateX(-60%); } 50% { transform: translateX(60%); } }
+@keyframes lst-pulse {
+  0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
 
 /* Cards & panels */
 .lst-card {
@@ -227,6 +256,8 @@
   .lst-form { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lst-cube, .lst-top { animation: none; }
+  .lst-cube, .lst-lid, .lst-halo, .lst-face::after { animation: none; }
+  .lst-lid { transform: rotateX(90deg) translateZ(calc(var(--h) * 1.73)); }
+  .lst-tilt { transform: none; transition: none; }
   .lst-btn, .lst-product { transition: none; }
 }

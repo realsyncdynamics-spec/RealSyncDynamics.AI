@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 
 /**
  * Sternenfeld für die Studio-Vorschau (`/design/landing-studio`).
@@ -74,19 +74,41 @@ export function StudioStarfield() {
   return <canvas ref={ref} className="lst-stars" aria-hidden="true" />;
 }
 
-/** Gläserner Neon-Würfel (reines CSS-3D, dekorativ). */
+/**
+ * Gläserner Neon-Würfel (CSS-3D, dekorativ), umgesetzt nach dem
+ * Claude-Design-Entwurf „RealSync Studio – 3D-Glaswürfel“: schwebender
+ * Deckel, Lichtschimmer, pulsierender Halo, Bodenreflexion und
+ * Neigung zur Mausposition. Bei `prefers-reduced-motion` statisch.
+ */
 export function StudioGlassCube() {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const still = reducedMotion();
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (still || e.pointerType === 'touch') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    setTilt({ x: Math.round(-py * 16), y: Math.round(px * 22) });
+  };
+  const onPointerLeave = () => setTilt({ x: 0, y: 0 });
+
+  const tiltStyle = { '--lst-tx': `${tilt.x}deg`, '--lst-ty': `${tilt.y}deg` } as CSSProperties;
+
   return (
-    <div className="lst-stage" aria-hidden="true">
+    <div className="lst-stage" aria-hidden="true" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} data-testid="studio-cube">
       <div className="lst-halo" />
-      <div className="lst-cube">
-        <div className="lst-face lst-f-back" />
-        <div className="lst-face lst-f-left" />
-        <div className="lst-face lst-f-bottom" />
-        <div className="lst-face lst-f-right" />
-        <div className="lst-face lst-f-front"><div className="lst-inner" /></div>
+      <div className="lst-floor" />
+      <div className="lst-tilt" style={tiltStyle}>
+        <div className="lst-cube">
+          <div className="lst-face lst-f-back" />
+          <div className="lst-face lst-f-left" />
+          <div className="lst-face lst-f-bottom" />
+          <div className="lst-face lst-f-right" />
+          <div className="lst-face lst-f-front"><div className="lst-inner" /></div>
+          <div className="lst-lid" />
+        </div>
       </div>
-      <div className="lst-cube lst-lid"><div className="lst-top" /></div>
     </div>
   );
 }

@@ -53,7 +53,7 @@ An auditor must be able to reconstruct the lifecycle of a promoted candidate fro
 
 ## Tenant Privacy
 
-Evidence must preserve tenant isolation and must not expose tenant secrets or protected data merely to establish provenance. Cross-tenant evidence aggregation requires explicit classification and authorization.
+Evidence must preserve tenant isolation and must not expose tenant secrets or protected data merely to establish provenance. Cross-tenant evidence aggregation is excluded (E-GE5).
 
 ## Retention
 

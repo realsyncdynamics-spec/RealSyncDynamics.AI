@@ -55,7 +55,7 @@ export function GovernancePricingSection() {
           <SectionHeading accent="nach Governance-Tiefe.">Plattform-Zugang</SectionHeading>
         </span>
         <p className="mt-4 max-w-[660px] text-pretty leading-[1.7]" style={{ color: GA_MUTED }}>
-          Monatlich abgerechnet. Enterprise mit Multi-Tenant-Runtime, SSO und SLA nach Vereinbarung.
+          Monatlich abgerechnet. Enterprise mit Multi-Tenant-Runtime, SLA nach Vereinbarung und SSO als Preview auf Anfrage.
         </p>
 
         <div className="mt-[38px] grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">

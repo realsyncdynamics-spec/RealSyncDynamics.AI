@@ -99,10 +99,11 @@ test.describe('Scan-Trichter', () => {
     await page.goto('/');
     await dismissConsent(page);
 
-    const feld = page.getByPlaceholder(/Ihre Website/i).first();
-    await expect(feld, 'Kein Domain-Feld im Hero — der Haupt-CTA fehlt').toBeVisible();
+    // Startseite v3: Feld mit Label „Ihre Website“ im Abschnitt #start.
+    const feld = page.getByLabel(/Ihre Website/i).or(page.getByPlaceholder(/Ihre Website/i)).first();
+    await expect(feld, 'Kein Domain-Feld auf der Startseite — der Haupt-CTA fehlt').toBeVisible();
     await feld.fill('example.com');
-    await page.getByRole('button', { name: /Kostenlos starten|Governance kostenlos starten|Governance[- ]?Scan starten/i }).first().click();
+    await page.getByRole('button', { name: /Weiter zum kostenlosen Scan|Kostenlos starten|Governance kostenlos starten|Governance[- ]?Scan starten/i }).first().click();
 
     // Die getippte Adresse muss mitreisen; sonst tippt der Besucher sie zweimal.
     await expect(page).toHaveURL(/\/audit\?domain=example\.com/);
@@ -299,7 +300,7 @@ test.describe('Mobil (390×844)', () => {
     await page.goto('/');
     await dismissConsent(page);
 
-    await expect(page.getByPlaceholder(/Ihre Website/i).first()).toBeVisible();
+    await expect(page.getByLabel(/Ihre Website/i).or(page.getByPlaceholder(/Ihre Website/i)).first()).toBeVisible();
 
     // Waagerechtes Scrollen ist auf dem Telefon der haeufigste Layoutfehler
     // und faellt am Desktop nie auf. 1px Toleranz gegen Rundung.

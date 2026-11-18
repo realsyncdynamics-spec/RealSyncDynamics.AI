@@ -1,8 +1,9 @@
 /**
- * Übernahme im Browser: Mandantenauswahl nur auf Verlangen der RPC,
+ * Übernahme im Browser: explizite Mandantenauswahl hat Vorrang,
  * nachvollziehbare Fehler, Notiz nur bei endgültigen Ausgängen entfernen.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 const A1 = '33333333-3333-4333-8333-333333333333';
 const T1 = '11111111-1111-4111-8111-111111111111';
@@ -47,21 +48,29 @@ beforeEach(() => {
 describe('claimPendingAudit', () => {
   it('übernimmt ohne Mandantenauswahl, wenn die RPC keine verlangt', async () => {
     rpc.mockResolvedValueOnce(ok());
-    const r = await claimPendingAudit(T1);
+    const r = await claimPendingAudit();
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith('claim_gdpr_audit', { p_audit_id: A1 });
     expect(r).toMatchObject({ ok: true, audit_id: A1, tenant_id: T1, domain: 'firma.de' });
     expect(localStorage.getItem(PENDING_AUDIT_ID_KEY)).toBeNull();
   });
 
-  it('wählt den aktiven Arbeitsbereich nur, wenn die RPC eine Auswahl verlangt', async () => {
-    rpc.mockResolvedValueOnce(fail('explicit tenant selection required')).mockResolvedValueOnce(ok());
+  it('nutzt einen ausdrücklich gewählten Arbeitsbereich im ersten RPC-Aufruf', async () => {
+    rpc.mockResolvedValueOnce(ok());
     await claimPendingAudit(T1);
-    expect(rpc).toHaveBeenNthCalledWith(2, 'claim_gdpr_audit', { p_audit_id: A1, p_tenant_id: T1 });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('claim_gdpr_audit', { p_audit_id: A1, p_tenant_id: T1 });
+  });
+
+  it('rät bei einem ungültigen expliziten Tenant keinen anderen Arbeitsbereich', async () => {
+    const err = await claimPendingAudit('nicht-uuid').catch((e: unknown) => e);
+    expect((err as AuditClaimError).code).toBe('TENANT_FORBIDDEN');
+    expect(rpc).not.toHaveBeenCalled();
+    expect(localStorage.getItem(PENDING_AUDIT_ID_KEY)).toBe(A1);
   });
 
   it('rät keinen Arbeitsbereich: ohne Auswahl bleibt es beim Fehler und die Notiz liegen', async () => {
-    rpc.mockResolvedValueOnce(fail('explicit tenant selection required'));
+    rpc.mockResolvedValueOnce(fail('tenant ambiguous'));
     const err = await claimPendingAudit(null).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(AuditClaimError);
     expect((err as AuditClaimError).code).toBe('TENANT_SELECTION_REQUIRED');
@@ -112,6 +121,21 @@ describe('claimPendingAudit', () => {
     localStorage.clear();
     expect(await claimPendingAudit()).toBeNull();
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('Schutz vor impliziter Multi-Tenant-Zuordnung (Code-Vertrag)', () => {
+  it('verlangt Nutzerentscheidung im kanonischen Aktivierungsflow', () => {
+    const activation = readFileSync('src/features/activation/GovernanceActivationView.tsx', 'utf8');
+    expect(activation).toContain('tenants.length !== 1');
+    expect(activation).toContain('claimPendingAuditWithStatus(claimTargetTenant)');
+    expect(activation).toContain('Ziel-Arbeitsbereich für Scanbericht');
+  });
+
+  it('führt im Dashboard bei mehreren Mandanten keinen automatischen Claim durch', () => {
+    const dashboard = readFileSync('src/features/governance/dashboard/NextBestActionCard.tsx', 'utf8');
+    expect(dashboard).toContain('tenants.length === 1');
+    expect(dashboard).not.toContain('claimPendingAudit(activeTenantId)');
   });
 });
 

@@ -80,6 +80,9 @@ export function CompanyVoiceWidget({ startLive }: { startLive?: StartLiveVoice }
   const [listening, setListening] = useState(false);
   const [speechInput, setSpeechInput] = useState(false);
   const [micBlocked, setMicBlocked] = useState(false);
+  // Keine automatische Tonwiedergabe: Antworten werden nur vorgelesen, wenn der
+  // Nutzer das ausdrücklich einschaltet (Standard: aus).
+  const [readAloud, setReadAloud] = useState(false);
   const [facts, setFacts] = useState<PublicFact[]>(() => curatedFacts());
   const [source, setSource] = useState<FactsSource>('curated');
   const [turns, setTurns] = useState<Turn[]>([{ role: 'assistant', text: INTRO }]);
@@ -175,7 +178,7 @@ export function CompanyVoiceWidget({ startLive }: { startLive?: StartLiveVoice }
   }, [open]);
 
   const speak = (text: string) => {
-    if (voice.engine !== 'web-speech' || liveRef.current) return;
+    if (!readAloud || voice.engine !== 'web-speech' || liveRef.current) return;
     speakGerman(text, typeof window !== 'undefined' ? window.speechSynthesis : null);
   };
 
@@ -394,8 +397,16 @@ export function CompanyVoiceWidget({ startLive }: { startLive?: StartLiveVoice }
             ) : (
               <p className="lv6-voice-status">{micBlocked ? 'Spracheingabe ist auf dieser Seite gesperrt. Bitte tippen.' : 'Dieser Browser hat keine Spracheingabe. Bitte tippen.'}</p>
             )}
-            <button type="button" onClick={() => stopSpeaking(window.speechSynthesis)}>
-              Vorlesen stoppen
+            <button
+              type="button"
+              data-testid="company-voice-read-aloud"
+              aria-pressed={readAloud}
+              onClick={() => {
+                if (readAloud) stopSpeaking(window.speechSynthesis);
+                setReadAloud(!readAloud);
+              }}
+            >
+              {readAloud ? 'Vorlesen aus' : 'Antworten vorlesen'}
             </button>
           </form>
         </div>

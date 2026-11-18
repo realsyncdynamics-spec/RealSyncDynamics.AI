@@ -16,9 +16,9 @@ import { CTA } from '../content/runtimeVocab';
 const STEPS: Array<{ k: string; t: string; d: string; beta?: boolean }> = [
   { k: "DISCOVER", t: "Erfassen", d: "Websites, KI-Systeme und Agents als Assets im Inventar." },
   { k: "ASSESS", t: "Bewerten", d: "Risikoklasse nach EU AI Act, Befunde mit DSGVO-Paragraphenbezug." },
-  { k: "GOVERN", t: "Richtlinien", d: "Policy Packs und eigene Policies (allow · log · warn · block · require_approval)." },
+  { k: "GOVERN", t: "Richtlinien", d: "Policy Packs und eigene Policies (allow · log_only · warn · block · require_approval). Unbekannte Aktionen werden nur protokolliert, nie hochgestuft." },
   { k: "ENFORCE", t: "Durchsetzen", d: "Policy-Entscheidung je Runtime-Event, Beobachtungsmodus als Standard. Laufendes Monitoring: Beta.", beta: true },
-  { k: "EVIDENCE", t: "Nachweisen", d: "Automatische Evidence-Einträge, SHA-256-verkettet, EU-Datenhaltung." },
+  { k: "EVIDENCE", t: "Nachweisen", d: "Warnungen, Freigaben und Blockaden als Evidence-Einträge, SHA-256-verkettet, EU-Datenhaltung." },
   { k: "AUDIT", t: "Berichten", d: "Prüffähige Berichte und nachvollziehbarer Prüfpfad." },
 ];
 
@@ -26,7 +26,7 @@ export function GovernanceRuntimePage() {
   usePageMeta({
     title: "Governance Runtime — Risiken, Policies und Nachweise in einer Ebene",
     description:
-      "Die Governance Runtime von RealSyncDynamics.AI: Runtime-Events aus KI-Systemen, Websites und Agents gegen Policies prüfen und als verkettete Nachweise ablegen. DSGVO & EU AI Act, Datenhaltung in Frankfurt.",
+      "Die Governance Runtime von RealSyncDynamics.AI: Runtime-Events aus KI-Systemen, Websites und Agents gegen Policies prüfen; Warnungen, Freigaben und Blockaden als verkettete Nachweise ablegen. DSGVO & EU AI Act, Datenhaltung in Frankfurt.",
     url: "https://realsyncdynamicsai.de/governance-runtime",
   });
 
@@ -46,9 +46,9 @@ export function GovernanceRuntimePage() {
 
           <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
             Die Runtime nimmt Ereignisse aus Website-Scans, KI-Systemen, Agents und
-            SDK entgegen, prüft sie gegen Ihre Policies und legt jede Entscheidung als
-            verketteten Nachweis im Evidence Vault ab — eine Governance-Ebene für
-            DSGVO und EU AI Act.
+            SDK entgegen und prüft sie gegen Ihre Policies. Warnungen, Freigaben und
+            Blockaden landen als verketteter Nachweis im Evidence Vault — eine
+            Governance-Ebene für DSGVO und EU AI Act.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">

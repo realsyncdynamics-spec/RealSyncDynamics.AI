@@ -35,8 +35,9 @@ Keine erfundenen Kennzahlen, SLAs, Referenzen; Status aus `src/product/implement
 Glaswürfel-Design (Owner-Entscheidung 18.11.2026): dunkle Flächen, transparentes Glas,
 Lila/Cyan-Lichtkanten, Tokens nur aus `src/styles/glass-tokens.css`, Monospace für Metadaten,
 Bewegung ruhig und mit `prefers-reduced-motion`. Löst die frühere Hard-Edge-UI ab. Status-
-farben getrennt von Brand-Akzenten. Kunden-Builder-Ergebnisse behalten ihr eigenes Design. Landing gezielt verbessern, Funktionen erhalten; alte
-Landing-Dateien sind kein Löschbeleg (`npm run check:dead` liefert nur Kandidaten).
+farben getrennt von Brand-Akzenten. Kunden-Builder-Ergebnisse behalten ihr eigenes Design.
+Landing gezielt verbessern, Funktionen erhalten; alte Landing-Dateien sind kein Löschbeleg
+(`npm run check:dead` liefert nur Kandidaten).
 
 ## Freigaben
 

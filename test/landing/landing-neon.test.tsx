@@ -11,7 +11,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV3 } from '../../src/pages/LandingV3';
 import { RECEPTIONIST, STATUS_TEXT } from '../../src/components/landing/v3/landingV3Data';
-import { screenLines } from '../../src/components/landing/neon/NeonHeroScreen';
+import { CUBE_PHASES, screenLines } from '../../src/components/landing/neon/NeonHeroScreen';
 
 const root = resolve(__dirname, '../..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
@@ -40,6 +40,8 @@ describe('Neon-Design — Startseite', () => {
     expect(tv).toHaveTextContent(`Vorschau · ${STATUS_TEXT[RECEPTIONIST.status]}`);
     expect(screen.getByTestId('neon-hero-caption')).toHaveTextContent(RECEPTIONIST.heading);
     expect(screenLines(RECEPTIONIST.heading, RECEPTIONIST.steps)).toHaveLength(RECEPTIONIST.steps.length + 1);
+    expect(CUBE_PHASES).toEqual(['lattice', 'solid', 'shatter', 'empty', 'reassemble']);
+    expect(screen.getByTestId('neon-cube-phase')).toHaveAttribute('data-phase', 'lattice');
   });
 
   it('keine Agent-/Bot-IDs, keine Sprach-SDKs, keine festen Preise im Neon-Code', () => {

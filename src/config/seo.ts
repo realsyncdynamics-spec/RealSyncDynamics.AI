@@ -467,6 +467,15 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // Warteliste. Das englische Alias /waitlist bekommt hier bewusst keinen
   // eigenen Eintrag: es wird per 301 (public/_redirects) auf diese URL
   // umgeleitet und rendert nie selbst.
+  '/voice-agent': {
+    title: 'Voice Agent für Betriebe — Anfragen annehmen, Ihr Team entscheidet | RealSync Dynamics & AI',
+    description:
+      'Der Voice Agent soll Bestellungen, Terminwünsche und Rückrufbitten annehmen und geordnet an Ihr Team übergeben. Telefonie in Vorbereitung, Warteliste offen.',
+    canonical: `${SITE_URL}/voice-agent`,
+    ogTitle: 'Voice Agent für Betriebe mit Kundenkontakt',
+    ogDescription:
+      'Anfragen annehmen, Kontakt erfassen, an einen Menschen übergeben. Telefonie in Vorbereitung.',
+  },
   '/warteliste': {
     title: 'Beta-Zugang — Begleitetes Onboarding zur AI Governance Runtime | RealSync Dynamics AI',
     description:

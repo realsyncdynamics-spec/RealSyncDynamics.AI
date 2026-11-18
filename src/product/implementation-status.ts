@@ -311,6 +311,23 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     showOnRoadmap: true,
   },
   {
+    id: 'voice-agent-page',
+    name: 'Voice-Agent-Seite',
+    status: 'preview',
+    group: 'surface',
+    description:
+      'Eigene Produktseite unter /voice-agent (Hauptnavigation der Startseite „Voice Agent“, seit 18.11.2026): Hero „Jede Anfrage angenommen. Auch wenn alle beschäftigt sind.“, 3D-Assistent (three.js, nur lazy auf geeigneten Geräten, sonst Standbild; steigt aus einem Kasten, winkt, springt, tanzt, Rückweg per Knopf), Zielgruppen, geplanter Ablauf, Kunden-Dashboard als geplant mit gekennzeichneten Beispieldaten, Kontrollprinzipien, „Preis folgt“ (kein Eintrag in shared/pricing.ts), FAQ. Status der Telefonie aus voice-telephony, Chat-Assistent aus channel-bots. CTAs Warteliste (/warteliste?interest=bots) und Chat-Assistent (/chatbot/start). Keine Sprachausgabe: Die Figur hat nur einen Anschluss (speaking), eine ElevenLabs-Stimme ist nicht verbunden.',
+    route: '/voice-agent',
+    evidence: [
+      'src/pages/VoiceAgentPage.tsx',
+      'src/components/voice-agent/VoiceBotStage.tsx',
+      'src/components/voice-agent/voiceBotScene3D.ts',
+      'test/voice-agent/voice-agent-page.test.tsx',
+    ],
+    showOnPlatform: false,
+    showOnRoadmap: false,
+  },
+  {
     id: 'ai-gateway',
     name: 'AI Gateway',
     status: 'live',

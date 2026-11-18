@@ -1,0 +1,40 @@
+/* Voice-Agent-Seite (/voice-agent) — ergänzt landing-v3.css. Alle Regeln unter
+   .va, kein globaler Einfluss. Tokens aus .lv3. */
+
+.va-hero-visual { display: flex; flex-direction: column; gap: 12px; }
+
+.va-stage { position: relative; min-height: clamp(300px, 42vh, 460px); border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); overflow: hidden; background: linear-gradient(180deg, var(--lv3-bg-0), var(--lv3-bg-1)); }
+.va-stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; touch-action: pan-y; }
+.va-stage-canvas[hidden] { display: none; }
+.va-say { position: absolute; z-index: 1; left: 16px; top: 14px; max-width: min(60%, 280px); margin: 0; padding: 10px 13px; border: 1px solid var(--lv3-line); border-radius: 12px 12px 12px 4px; background: var(--lv3-bg-0); font-size: 14px; font-weight: 600; color: var(--lv3-fg-0); box-shadow: 0 8px 24px rgb(15 20 40 / 0.08); transition: opacity 0.3s, transform 0.3s; }
+.va-say--off { opacity: 0; transform: translateY(-4px); }
+.va-stage[data-scene='still'] .va-say, .va-stage[data-scene='loading'] .va-say { display: none; }
+.va-stage-toggle { position: absolute; z-index: 1; right: 12px; bottom: 12px; min-height: 40px; background: var(--lv3-bg-0); }
+
+.va-talk { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--lv3-line); border-radius: var(--lv3-radius-lg); background: var(--lv3-bg-1); }
+.va-msg { margin: 0; max-width: 88%; align-self: flex-start; padding: 9px 13px; border-radius: 12px; background: var(--lv3-bg-2); font-size: 14px; }
+.va-msg--bot { align-self: flex-end; background: var(--lv3-fg-1); color: var(--lv3-bg-0); }
+
+.va-card { min-height: 0; }
+
+.va-table-wrap { overflow-x: auto; border: 1px solid var(--lv3-line); border-radius: var(--lv3-radius-lg); background: var(--lv3-bg-0); }
+.va-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.va-table th { padding: 12px 16px; border-bottom: 1px solid var(--lv3-line); text-align: left; font: 600 12px/1.4 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lv3-fg-2); }
+.va-table td { padding: 14px 16px; border-bottom: 1px solid var(--lv3-line); vertical-align: top; }
+.va-table tr:last-child td { border-bottom: 0; }
+.va-nowrap { white-space: nowrap; }
+
+.va-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.va-list li { display: grid; gap: 4px; padding-left: 16px; border-left: 2px solid var(--lv3-line-strong); }
+.va-list strong { color: var(--lv3-fg-0); }
+
+@media (max-width: 600px) {
+  .va-table thead { display: none; }
+  .va-table tr { display: grid; padding: 10px 0; border-bottom: 1px solid var(--lv3-line); }
+  .va-table td { display: flow-root; border: 0; padding: 3px 16px 3px calc(16px + 6.5em); }
+  .va-table td::before { content: attr(data-l); float: left; width: 6em; margin-left: -6.5em; color: var(--lv3-fg-2); font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .va-say { transition: none; }
+}

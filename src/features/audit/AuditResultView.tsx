@@ -5,6 +5,7 @@ import {
   Linkedin, Share2, Globe, Clock, Copy, Check, Zap,
 } from 'lucide-react';
 import { AgentWidget } from '../governance/AgentWidget/AgentWidget';
+import { websiteHandoffHref } from '../siteos/scanHandoff';
 import type { ScanFinding } from '../../core/onboarding/types';
 import {
   buildActionPlan,
@@ -270,6 +271,21 @@ export function AuditResultView({
               )}
 
               {findings.length > 0 && <ActionPlanSection findings={findings} />}
+
+              {domain && typeof score === 'number' && (
+                <section className="border border-[#e4cfa2]/35 bg-[#e4cfa2]/[0.05] p-5" aria-label="Frontend nach dem Scan modernisieren">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-[#e4cfa2]">Nächster Schritt · SiteOS Preview</p>
+                  <h2 className="mt-2 text-lg font-semibold">Neues Frontend, bestehendes Backend</h2>
+                  <p className="mt-2 text-sm leading-6 text-titanium-300">
+                    Die erkannte Website übernehmen und eine neue Oberfläche als Vorschau erstellen.
+                    Bestehende APIs, Login, Buchung und Checkout werden nicht verändert.
+                    Ihre Kompatibilität wird erst vor einer Freigabe geprüft. Voice bleibt optional.
+                  </p>
+                  <Link to={websiteHandoffHref(domain, auditId)} className="mt-4 inline-flex items-center gap-2 bg-[#e4cfa2] px-4 py-3 text-sm font-semibold text-obsidian-900 hover:bg-[#f2eee6]">
+                    Frontend-Vorschau starten <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </section>
+              )}
 
               {findings.length > 0 && (
                 <>

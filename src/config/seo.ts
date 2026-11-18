@@ -583,6 +583,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
 
+  // 18.11.2026: Unternehmens-Landing v6 (Entwurf „RealSync Dynamics & AI“) als
+  // Vorschau — noindex, kanonisch auf /unternehmen, nicht in der Sitemap.
+  '/design/unternehmen-v6': {
+    title: 'RealSync Dynamics & AI – Unternehmens-Landing v6 (Vorschau)',
+    description:
+      'Vorschau: Governance OS, Voice Agent und Landingpage Builder für KMU aus Thüringen. Kanonisch ist /unternehmen.',
+    canonical: `${SITE_URL}/unternehmen`,
+    noIndex: true,
+  },
+
   '/frontend-builder': {
     title: 'Frontend Builder für SaaS, AI und B2B-Websites',
     description:

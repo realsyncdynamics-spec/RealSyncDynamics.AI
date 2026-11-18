@@ -39,8 +39,28 @@ const EMPTY: CompanyContactValues = { name: '', email: '', company: '', message:
  * aus `src/lib/fn-proxy` (die Referenz hatte ihn hartkodiert — hier nicht).
  * Kein plan_key → generischer Kontakt-Lead mit `source: company-landing`.
  */
-export function CompanyContactForm({ prefill }: { prefill?: CompanyContactPrefill | null }) {
+export interface CompanyContactFormProps {
+  prefill?: CompanyContactPrefill | null;
+  /**
+   * Optionale Anliegen-Auswahl (Unternehmens-Landing v6). Das gewählte
+   * Anliegen steht als erste Zeile in der Nachricht; die Edge Function
+   * `sales-lead` bekommt dafür kein neues Feld.
+   */
+  subjects?: readonly string[];
+  /** Herkunftspfad im Lead (Prüfpfad), Standard `/unternehmen`. */
+  path?: string;
+}
+
+/** Nachricht mit vorangestelltem Anliegen; ohne Anliegen unverändert. */
+export function composeCompanyMessage(subject: string, message: string): string {
+  const text = message.trim();
+  if (!subject) return text;
+  return text ? `Anliegen: ${subject}\n\n${text}` : `Anliegen: ${subject}`;
+}
+
+export function CompanyContactForm({ prefill, subjects, path = '/unternehmen' }: CompanyContactFormProps) {
   const [form, setForm] = useState<CompanyContactValues>(EMPTY);
+  const [subject, setSubject] = useState(subjects?.[0] ?? '');
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
   const [note, setNote] = useState('');
@@ -85,10 +105,10 @@ export function CompanyContactForm({ prefill }: { prefill?: CompanyContactPrefil
             name: form.name.trim() || undefined,
             email: form.email.trim(),
             company: form.company.trim() || undefined,
-            message: form.message.trim().slice(0, MAX_MESSAGE) || undefined,
+            message: composeCompanyMessage(subject, form.message).slice(0, MAX_MESSAGE) || undefined,
             source: 'company-landing',
             use_case: 'kontakt',
-            path: '/unternehmen',
+            path,
           }),
         }),
       );
@@ -136,6 +156,18 @@ export function CompanyContactForm({ prefill }: { prefill?: CompanyContactPrefil
           )}
         </div>
       </div>
+      {subjects && subjects.length > 0 && (
+        <div className="field">
+          <label htmlFor="c-sub">Anliegen</label>
+          <select id="c-sub" name="subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
+            {subjects.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="field">
         <label htmlFor="c-co">Unternehmen</label>
         <input id="c-co" name="company" type="text" autoComplete="organization" value={form.company} onChange={(e) => update('company', e.target.value)} />

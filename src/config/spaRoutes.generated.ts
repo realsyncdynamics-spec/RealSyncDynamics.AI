@@ -283,6 +283,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/design/ledger",
   "/design/titan",
   "/design/tribunal",
+  "/design/unternehmen-v6",
   "/developers",
   "/digital-sovereignty",
   "/digitale-souveraenitaet",

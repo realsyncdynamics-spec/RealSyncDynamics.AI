@@ -85,8 +85,6 @@ export function LandingV3() {
           <a href="#govern">Govern</a>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
-          <Link to="/app/voice">Voice</Link>
-          <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>

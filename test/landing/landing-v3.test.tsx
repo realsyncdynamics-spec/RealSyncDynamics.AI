@@ -64,14 +64,6 @@ describe('Startseite v3 — `/`', () => {
     }
   });
 
-  it('Hauptnavigation: Voice führt in die App (/app/voice), Kontakt zur Anfrage (/contact-sales)', () => {
-    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
-    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).getByRole('link', { name: 'Voice' })).toHaveAttribute('href', '/app/voice');
-    expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
-    expect(within(nav).getByRole('link', { name: 'Anmelden' })).toHaveAttribute('href', '/welcome');
-  });
-
   it('stellt den AI Receptionist als ersten Abschnitt nach dem Hero vor (K4), ohne Live-Versprechen', () => {
     const { container } = render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const first = container.querySelector('main > section');

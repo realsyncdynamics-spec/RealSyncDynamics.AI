@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appointmentStatusLabel, orderStatusLabel, conversationStatusLabel, channelLabel,
   statusTone, openCounts, sortAppointmentsOpenFirst, appointmentsForConversation,
-  contactLabel, assertUpdated,
+  contactLabel, assertUpdated, nextHumanReview, sortConversationsForReview,
 } from '../../src/features/bots/inboxLogic';
 
 describe('Status-Beschriftung', () => {
@@ -114,5 +114,43 @@ describe('assertUpdated', () => {
   it('macht ein von RLS still gefiltertes Update (0 Zeilen) sichtbar', () => {
     expect(() => assertUpdated([], 'setAppointmentStatus')).toThrow(/Keine Änderung gespeichert/);
     expect(() => assertUpdated(null, 'setOrderStatus')).toThrow(/setOrderStatus/);
+  });
+});
+
+describe('AI-Receptionist: nächste menschliche Entscheidung', () => {
+  const appointment = (conversation_id: string, status: 'requested' | 'confirmed' | 'cancelled') => ({ conversation_id, status });
+  const conversation = (id: string, status: 'open' | 'closed', last_message_at = '2026-11-19T10:00:00Z') => ({ id, status, last_message_at });
+
+  it('zeigt einen Terminwunsch nur als zu prüfen, nicht als gebucht', () => {
+    const step = nextHumanReview(conversation('c1', 'open'), [appointment('c1', 'requested')]);
+    expect(step.kind).toBe('appointment');
+    expect(step.label).toBe('Terminwunsch prüfen');
+    expect(step.explanation).toMatch(/nicht nachgewiesen/);
+  });
+
+  it('verwechselt die eigene Bestätigung nicht mit menschlicher Übernahme', () => {
+    const step = nextHumanReview(conversation('c1', 'open'), [appointment('c1', 'confirmed')]);
+    expect(step.kind).toBe('conversation');
+    expect(step.explanation).toMatch(/nicht bestätigt/);
+  });
+
+  it('zeigt bei nicht geladenen Terminen einen unbestätigten Status an', () => {
+    expect(nextHumanReview(conversation('c1', 'closed'), null).kind).toBe('unverified');
+    expect(nextHumanReview(conversation('c1', 'closed'), undefined).kind).toBe('unverified');
+  });
+
+  it('trennt fremde Konversationen und geschlossene Einträge sauber', () => {
+    expect(nextHumanReview(conversation('c1', 'closed'), [appointment('c2', 'requested')]).kind).toBe('none');
+  });
+
+  it('sortiert offene Terminwünsche zuerst, dann offene Anfragen, dann geschlossene; ohne Mutation', () => {
+    const rows = [
+      conversation('closed', 'closed', '2026-11-19T12:00:00Z'),
+      conversation('inquiry', 'open', '2026-11-19T11:00:00Z'),
+      conversation('appointment', 'closed', '2026-11-18T11:00:00Z'),
+    ];
+    const sorted = sortConversationsForReview(rows, [appointment('appointment', 'requested')]);
+    expect(sorted.map((r) => r.id)).toEqual(['appointment', 'inquiry', 'closed']);
+    expect(rows.map((r) => r.id)).toEqual(['closed', 'inquiry', 'appointment']);
   });
 });

@@ -10,6 +10,7 @@ import type {
   Bot, BotConversation, BotMessage, BotAppointment, BotOrder,
   CreateBotArgs, UpdateBotArgs, WhatsAppChannel, CreateWhatsAppChannelArgs,
 } from './types';
+import { assertUpdated } from './inboxLogic';
 
 export async function listBots(tenant_id: string): Promise<Bot[]> {
   const sb = getSupabase();
@@ -110,20 +111,26 @@ export async function setAppointmentStatus(
   tenant_id: string, appointment_id: string, status: BotAppointment['status'],
 ): Promise<void> {
   const sb = getSupabase();
-  const { error } = await sb
+  const { data, error } = await sb
     .from('bot_appointments').update({ status })
-    .eq('tenant_id', tenant_id).eq('id', appointment_id);
+    .eq('tenant_id', tenant_id).eq('id', appointment_id)
+    .select('id');
   if (error) throw new Error(`setAppointmentStatus: ${error.message}`);
+  // RLS filtert verweigerte Updates still auf 0 Zeilen — sichtbar machen.
+  assertUpdated(data, 'setAppointmentStatus');
 }
 
 export async function setOrderStatus(
   tenant_id: string, order_id: string, status: BotOrder['status'],
 ): Promise<void> {
   const sb = getSupabase();
-  const { error } = await sb
+  const { data, error } = await sb
     .from('bot_orders').update({ status })
-    .eq('tenant_id', tenant_id).eq('id', order_id);
+    .eq('tenant_id', tenant_id).eq('id', order_id)
+    .select('id');
   if (error) throw new Error(`setOrderStatus: ${error.message}`);
+  // RLS filtert verweigerte Updates still auf 0 Zeilen — sichtbar machen.
+  assertUpdated(data, 'setOrderStatus');
 }
 
 // ── WhatsApp-Kanäle ────────────────────────────────────────────────────────

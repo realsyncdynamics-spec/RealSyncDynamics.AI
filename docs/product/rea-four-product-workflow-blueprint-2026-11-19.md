@@ -158,6 +158,23 @@ Das öffentlich geprüfte Open-Source-Projekt ist **REA – Reverse Engineer Any
 | Site | Kundenseite rechtmäßig analysiert, eigenes Frontend persistent geändert und auf Testdomain veröffentlicht | unzulässige Quelle, API-Vertragsbruch, fremde Domain, defekter Rollback | Erst nach End-to-End-Publish und Abnahmescan |
 | Governance | Risiko/Policy/Approval/Evidence zu einer echten Agentenaktion vollständig verknüpft | fremder Tenant, Replay, abgelaufene Genehmigung, Fail-open, fehlender Evidence-Eintrag | Erst nach autorisiertem Enforcement-/Export-E2E |
 
+## 9a. Verifizierte Voice → Inbox-Brücke (19.11.2026, read-only)
+
+**Eingang A – Twilio:** Der Codepfad supabase/functions/bot-voice-webhook/index.ts überprüft die Twilio-Signatur und bindet Mandant/Bot über die angerufene Nummer (voice_number_bindings), reserviert Gesprächsbudget und legt bei angenommenem Anruf mit upsertConversation(channel: voice, externalRef: CallSid) eine Konversation an. Aus einem gesprochenen Schritt werden Bot-Nachrichten gespeichert. Für Zeit-/Budgetende können voice-call-closing.ts und bot_voice_mark_callback einen Rückrufwunsch idempotent am existierenden Gespräch erfassen, sofern eine verwendbare Rufnummer existiert.
+
+**Eingang B – Runtime:** In apps/agent-runtime/src/voice/tool-executors.ts ist handoff_human ausdrücklich not_configured. Ein Modell kann eine menschliche Übergabe vorschlagen, aber diese Runtime führt sie derzeit nicht aus. schedule_appointment schreibt maximal eine Anfrage im Zustand requested; es bestätigt keinen Kalendertermin. Ein echter Telefontransfer braucht einen gesonderten, sicherheits- und kostenbewerteten Executor samt Providerintegration, Policyprüfung und Negativtests.
+
+**Produktionsabfrage (nur Summen):** public.bot_conversations enthält 4 Einträge, davon 0 im Kanal voice und 0 mit callback_status=erfasst. Die Spalten callback_status, callback_requested_at und callback_reason sind vorhanden. Ein Schema-/Bestandsbeleg, kein positiver Anruf-E2E.
+
+**Bestehender Entwicklungszweig #2303:** Die Inbox-Triage zeigt und priorisiert mit Commit 38c07df7fae6e73226c763588c83bdc2740b34ea nun auch gespeicherte Rückrufwünsche. Dabei behauptet sie weder einen ausgeführten Rückruf noch eine bestätigte Weiterleitung. Nur React/TypeScript und Tests; keine Backend-/Provider-/Auth-/Policy-/Billing-/Migration-Änderung. Draft bis abgeschlossener CI/Abnahme.
+
+**Nachweisabfolge vor Verkaufsfreigabe:**
+1. Autorisierte Testnummer mit signiertem Provider-Webhook und positiver Nummernauflösung in einer Testumgebung.
+2. Korrekt reservierter Anruf, KI-Hinweis, gespeicherte Konversation und Gesprächsschritt.
+3. Testweise provoziertes Zeit-/Budgetende bei rückrufbarer Nummer: einmaliger Rückrufstatus erfasst, keine unbewiesene Kontaktzusage.
+4. Kunden-UI zeigt denselben Vorgang beim richtigen Tenant nach Reload; fremder Tenant darf ihn nicht lesen.
+5. Ein nach Freigabe implementierter Human-Handoff-/Rückruf-Bearbeitungspfad muss eigenen Ausführungserfolg beweisen, bevor die Inbox 'übergeben' oder 'erledigt' zeigen darf.
+6. Einmaliges Kostenledger, Provider-Fehler, Replay, Consent, Kill-Switch, Datenschutz/Retention und Kündigung negativ testen.
 ## 10. Priorisierter Bau- und Freigabepfad
 
 **P0 – Stopper:** Edge-Function-Kapazität/gezielter Deploy (#2333, #2279), Tenant-/RLS-/Policy-Sicherheitsprüfung, Voice-Handoff und Kostenreservierung, reale Provider-/Stripe-Abnahme. Gleichzeitig **aktuellen öffentlichen §-19-UStG-Text** der Live-Seite gegen die im Repo dokumentierte Regelbesteuerung prüfen; Änderung ist ein eigener freigabepflichtiger Legal/Pricing-Schritt.

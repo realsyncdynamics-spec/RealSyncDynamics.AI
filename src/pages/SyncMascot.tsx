@@ -6,7 +6,7 @@ import type { SyncMascotHandle } from '../components/visual/sync-mascot/syncMasc
  *
  * Nachbau der Einzeldatei-Vorlage: Aufbau, Texte und Verhalten 1:1, Gestaltung
  * in den Marken-Tokens (Obsidian-Schrift, Security-Blue, 90°-Kanten, Monospace
- * für Label und Status) auf weißem Hochglanz-Grund statt der dunklen Vorlage. Die Vorlage nutzte model-viewer; hier rendert three
+ * für Label und Status) auf einheitlich weißem Grund (#ffffff) statt der dunklen Vorlage. Die Vorlage nutzte model-viewer; hier rendert three
  * direkt (`syncMascotScene.ts`, per `import()` nachgeladen).
  */
 
@@ -24,13 +24,8 @@ const STATUS_TEXT: Record<Phase, string> = {
 const FOCUS_RING =
   'focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-security-500';
 
-/** Seite: Weiß → kühles Off-White mit schmalem diagonalem Lichtstreifen. */
-const PAGE_GLOSS =
-  'bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.95)_44%,transparent_50%),linear-gradient(180deg,#ffffff,#f1f4f7)]';
-
-/** Bühne: Lichtreflex von oben, nach unten in ein kühles Off-White auslaufend (Boden). */
-const STAGE_GLOSS =
-  'bg-[radial-gradient(ellipse_at_50%_8%,#ffffff_0%,rgba(255,255,255,0)_55%),linear-gradient(180deg,#f7f9fb_0%,#ffffff_58%,#eceff3_100%)]';
+/** Einheitliches Weiß für Seite, Karte und Bühne (ein Ton, keine Off-White-Verläufe). */
+const WHITE = 'bg-[#ffffff]';
 
 export default function SyncMascot() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,8 +72,8 @@ export default function SyncMascot() {
   };
 
   return (
-    <div className={`grid min-h-[100svh] place-items-center p-6 font-sans text-obsidian-900 ${PAGE_GLOSS}`}>
-      <main className="grid w-full max-w-[1040px] grid-cols-1 items-center overflow-hidden border border-titanium-300 bg-white shadow-[0_24px_60px_-30px_rgba(10,10,11,0.25)] min-[651px]:grid-cols-[1fr_1.45fr]">
+    <div className={`grid min-h-[100svh] place-items-center p-6 font-sans text-obsidian-900 ${WHITE}`}>
+      <main className={`grid w-full max-w-[1040px] grid-cols-1 items-center overflow-hidden border border-titanium-300 ${WHITE} shadow-[0_24px_60px_-30px_rgba(10,10,11,0.25)] min-[651px]:grid-cols-[1fr_1.45fr]`}>
         <header className="p-6 min-[651px]:p-[clamp(24px,5vw,70px)]">
           <small className="font-mono text-[0.8rem] tracking-[0.1em] text-titanium-600">
             RealSyncDynamics.AI
@@ -104,7 +99,7 @@ export default function SyncMascot() {
         </header>
         <section
           aria-label="3D-Ansicht"
-          className={`relative border-t border-titanium-200 min-[651px]:border-l min-[651px]:border-t-0 ${STAGE_GLOSS}`}
+          className={`relative border-t border-titanium-200 min-[651px]:border-l min-[651px]:border-t-0 ${WHITE}`}
         >
           <canvas
             ref={canvasRef}

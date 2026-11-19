@@ -600,6 +600,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/ki-bots`,
     noIndex: true,
   },
+  '/landingpage-builder': {
+    title: 'Landingpage-Builder — RealSync Dynamics & AI',
+    description:
+      'Erstellen Sie aus Geschäftsidee, Inhalten und Designwunsch einen Website-Entwurf. Vorschau und Funktionsumfang richten sich nach dem aktuellen Status.',
+    canonical: `${SITE_URL}/landingpage-builder`,
+    noIndex: true,
+  },
   // Produkt-Landingpages App Builder und Governance OS (Entwurf, 19.11.2026), wie /ki-bots noindex.
   '/app-builder': {
     title: 'App Builder — RealSync Dynamics & AI',

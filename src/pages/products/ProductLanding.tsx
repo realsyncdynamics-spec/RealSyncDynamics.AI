@@ -12,7 +12,7 @@ import '../../styles/product-landing.css';
 
 /**
  * Produkt-Landingpage nach der Vorlage von `/ki-bots` (Entwurf, 19.11.2026) für
- * App Builder, Governance OS und Claude Code Optimizer.
+ * Landingpage-Builder, App Builder, Governance OS und Claude Code Optimizer.
  *
  * Aufbau: Hero mit SYNC (3D), Produktversprechen, interaktiver Beispielablauf,
  * Anwendungsbeispiele, Einstieg, Preise mit ehrlichen Grenzen, Handlungsaufforderung,

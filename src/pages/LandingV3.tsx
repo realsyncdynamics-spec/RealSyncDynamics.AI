@@ -218,7 +218,7 @@ export function LandingV3() {
             ))}
           </ol>
           <p className="lv3-fine">
-            Eine erneute Prüfung führt zurück zu Schritt 2. Automatische Dauerüberwachung ist in Vorbereitung.
+            Nach Schritt 3 folgt die Frage: „Was sollen wir für Sie tun?“ Eine erneute Prüfung führt zurück zu Schritt 2. Automatische Dauerüberwachung ist in Vorbereitung.
           </p>
         </section>
 

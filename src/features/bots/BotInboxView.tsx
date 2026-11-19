@@ -256,7 +256,9 @@ function RequestCard({ conversation, appointments, review, onOpenAppointments }:
       <div className="mt-3 border-t border-titanium-900 pt-3">
         <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Terminwunsch</p>
         {appointments.length === 0 ? (
-          <p className="mt-1 text-xs text-titanium-500">Kein Terminwunsch aus dieser Anfrage.</p>
+          <p className="mt-1 text-xs text-titanium-500">
+            {review.kind === 'unverified' ? 'Terminwünsche noch nicht verfügbar – keine Aussage zur Buchung möglich.' : 'Kein Terminwunsch aus dieser Anfrage.'}
+          </p>
         ) : (
           <ul className="mt-1 space-y-1.5">
             {appointments.map((a) => (

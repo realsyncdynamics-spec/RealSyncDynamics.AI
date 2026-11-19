@@ -22,6 +22,7 @@ vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
 import ProductLanding from '../../src/pages/products/ProductLanding';
 import { PRODUCT_CONTENT, type ProductLandingKey } from '../../src/components/landing/products/productContent';
 import { PRODUCT_PAGES } from '../../src/components/landing/products/productLandingShared';
+import { STAGE_SCENES, STAGE_VARIANT_BY_PRODUCT } from '../../src/components/landing/products/stageScenes';
 import { LEGAL_LINKS, STATUS_TEXT, planCards } from '../../src/components/landing/v3/landingV3Data';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 
@@ -61,6 +62,23 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     expect(seo).toMatch(/'\/app-builder': \{[\s\S]*?noIndex: true/);
     expect(seo).toMatch(/'\/governance-os': \{[\s\S]*?noIndex: true/);
     expect(PRODUCT_PAGES.every((p) => p.built && p.href === p.plannedPath)).toBe(true);
+  });
+
+  it.each(KEYS)('%s: eigene Hero-Szene mit Produktkarte', async (key) => {
+    await renderPage(key);
+    const variant = STAGE_VARIANT_BY_PRODUCT[key];
+    const stage = screen.getByTestId('pl-stage');
+    expect(stage).toHaveAttribute('data-variant', variant);
+    expect(within(stage).getByTestId('pl-stage-prop')).toHaveTextContent('Beispiel');
+    expect(scene.options?.orbit).toEqual(STAGE_SCENES[variant].orbit);
+    expect(scene.options?.poseAt).toBe(STAGE_SCENES[variant].poseAt);
+  });
+
+  it('jede Produktseite hat eine andere Szene', () => {
+    const variants = Object.values(STAGE_VARIANT_BY_PRODUCT);
+    expect(new Set(variants).size).toBe(variants.length);
+    const orbits = variants.map((v) => JSON.stringify(STAGE_SCENES[v].orbit));
+    expect(new Set(orbits).size).toBe(orbits.length);
   });
 
   it.each(KEYS)('%s: Überschrift, Hauptaktion und SYNC als 3D-Bühne', async (key) => {

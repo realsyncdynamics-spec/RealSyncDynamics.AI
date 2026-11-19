@@ -14,9 +14,10 @@
  * und nur, solange die Bühne sichtbar und der Tab aktiv ist.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { loadWithRetry } from './loadWithRetry';
 
 export interface SyncMascotOptions {
   /** URL der GLB-Datei. */
@@ -27,6 +28,10 @@ export interface SyncMascotOptions {
   onError(): void;
   /** Die Winken-Animation ist einmal durchgelaufen. */
   onWaveFinished(): void;
+  /** Startwinkel der Kamera in Grad (Standard wie die Vorlage: 20° / 79°). */
+  orbit?: { theta: number; phi: number };
+  /** Ruhepose als Anteil der Winken-Animation, 0 bis 1 (Standard 0 = erstes Bild). */
+  poseAt?: number;
 }
 
 export interface SyncMascotHandle {
@@ -201,9 +206,13 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
     options.onWaveFinished();
   };
 
-  new GLTFLoader().load(
-    options.src,
-    (gltf) => {
+  // Ein Neuversuch nach Fehlschlag: Der erste Abruf kann direkt nach einem Deploy scheitern.
+  const loader = new GLTFLoader();
+  const cancelRetry = loadWithRetry<GLTF>({
+    load: (onSuccess, onFailure) => loader.load(options.src, onSuccess, undefined, onFailure),
+    isCancelled: () => disposed,
+    onError: () => options.onError(),
+    onSuccess: (gltf) => {
       if (disposed) {
         disposeObject(gltf.scene);
         return;
@@ -219,8 +228,11 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
         waveAction.setLoop(THREE.LoopOnce, 1);
         waveAction.clampWhenFinished = true;
         // Ausgangspose = erstes Bild der Animation, wie in der Vorlage.
+        // Produktseiten dürfen ein anderes Bild der Animation als Ruhepose wählen.
         waveAction.play();
         waveAction.paused = true;
+        const poseAt = THREE.MathUtils.clamp(options.poseAt ?? 0, 0, 1);
+        if (poseAt > 0) waveAction.time = clip.duration * poseAt;
         mixer.update(0);
       }
 
@@ -261,7 +273,9 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
 
       idealDistance = computeIdealDistance();
       controls.target.copy(center);
-      spherical.set(idealDistance, ORBIT_PHI, ORBIT_THETA);
+      const phi = options.orbit ? THREE.MathUtils.degToRad(options.orbit.phi) : ORBIT_PHI;
+      const theta = options.orbit ? THREE.MathUtils.degToRad(options.orbit.theta) : ORBIT_THETA;
+      spherical.set(idealDistance, THREE.MathUtils.clamp(phi, MIN_POLAR, MAX_POLAR), theta);
       camera.position.copy(center).add(offset.setFromSpherical(spherical));
       applyLimits();
       controls.update();
@@ -270,11 +284,7 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
       dirty = false;
       options.onLoad();
     },
-    undefined,
-    () => {
-      if (!disposed) options.onError();
-    },
-  );
+  });
 
   resize();
   schedule();
@@ -291,6 +301,7 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
     dispose() {
       if (disposed) return;
       disposed = true;
+      cancelRetry();
       if (frame) cancelAnimationFrame(frame);
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('keydown', onKeyDown);

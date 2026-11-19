@@ -75,7 +75,7 @@ export default function KiBotsLanding() {
               {phoneStatus ? <>Telefon <Pill>{phoneStatus}</Pill></> : null}
             </p>
           </div>
-          <MascotStage tag={KI_BOTS.stageTag} caption={KI_BOTS.stageCaption} waveSignal={waveSignal} />
+          <MascotStage tag={KI_BOTS.stageTag} caption={KI_BOTS.stageCaption} waveSignal={waveSignal} variant="empfang" />
         </div>
       </header>
 

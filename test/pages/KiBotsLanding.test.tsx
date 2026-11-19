@@ -19,6 +19,7 @@ vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
 
 import KiBotsLanding from '../../src/pages/products/KiBotsLanding';
 import { DEMO_STEPS, KI_BOTS } from '../../src/components/landing/products/kiBotsContent';
+import { STAGE_SCENES } from '../../src/components/landing/products/stageScenes';
 import { planChannels } from '../../src/components/landing/products/productLandingShared';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 
@@ -45,6 +46,14 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
     expect(screen.getByTestId('ki-bots-primary')).toHaveTextContent(KI_BOTS.primaryCta);
     expect(screen.getByTestId('ki-bots-primary')).toHaveAttribute('href', '#ablauf');
     expect(scene.options?.src).toBe('/models/sync-mascot.glb');
+  });
+
+  it('inszeniert SYNC als Empfang mit Chat-Karte neben der Figur', async () => {
+    await renderPage();
+    const stage = screen.getByTestId('pl-stage');
+    expect(stage).toHaveAttribute('data-variant', 'empfang');
+    expect(within(stage).getByTestId('pl-stage-prop')).toHaveTextContent(DEMO_STEPS[0]!.text);
+    expect(scene.options?.orbit).toEqual(STAGE_SCENES.empfang.orbit);
   });
 
   it('nimmt die Status-Badges aus der Registry statt fester Angaben', async () => {

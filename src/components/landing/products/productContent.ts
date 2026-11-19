@@ -15,7 +15,13 @@
  * Status-Badges kommen zur Laufzeit aus der Registry (statusLabel), nie aus diesem Text.
  * Abläufe sind Beispiele und als solche gekennzeichnet; keine Kundenreferenzen.
  */
+import { checkoutHrefForPlan, planById } from '@/shared/pricing';
 import type { ProductPage } from './productLandingShared';
+
+const GOVERNANCE_LAUNCH = planById('governance_launch');
+const GOVERNANCE_LAUNCH_CHECKOUT = GOVERNANCE_LAUNCH
+  ? checkoutHrefForPlan(GOVERNANCE_LAUNCH, { source: 'governance-os-product' })
+  : '/pricing?source=governance-os-product';
 
 export type ProductLandingKey = Exclude<ProductPage['key'], 'ki-bots'>;
 
@@ -235,8 +241,8 @@ export const GOVERNANCE_OS: ProductLandingContent = {
   h1: ['Datenschutz und KI-Pflichten.', 'An einem Ort, mit Nachweis.'],
   lead:
     'Governance OS bündelt KI-Register, Risiken, Vorfälle, Betroffenenanfragen und Freigaben. Zu jedem Schritt entsteht ein Nachweis, den Sie später vorzeigen können.',
-  primary: { label: 'Kostenlosen Governance Scan starten', to: `/audit?source=${GOVERNANCE_SOURCE}` },
-  secondary: { label: 'KI-Einstufung ausprobieren', to: `/ai-act-klassifikator?source=${GOVERNANCE_SOURCE}` },
+  primary: { label: 'Governance Launch buchen', to: GOVERNANCE_LAUNCH_CHECKOUT },
+  secondary: { label: 'Kostenlosen Scan starten', to: `/audit?source=${GOVERNANCE_SOURCE}` },
   status: [
     { label: 'Scan', registryId: 'free-audit' },
     { label: 'KI-Register', registryId: 'ai-system-registry' },
@@ -302,14 +308,14 @@ export const GOVERNANCE_OS: ProductLandingContent = {
     { title: 'Erfassen', body: 'KI-Systeme und Dienstleister im Register anlegen.' },
     { title: 'Nachweisen', body: 'Freigaben erteilen und Nachweise exportieren.' },
   ],
-  pricingTitle: 'Der Scan ist kostenlos. Tarife im Überblick.',
+  pricingTitle: 'Governance OS direkt buchen.',
   limits:
     'In Vorbereitung: dauerhafte Überwachung Ihrer Domain mit täglichem Re-Scan. Heute prüft der Scan einmalig.',
   cta: {
     title: 'Wo steht Ihr Betrieb heute?',
     text: 'Der Governance Scan zeigt es. Kostenlos und ohne Konto.',
-    primary: { label: 'Kostenlosen Governance Scan starten', to: `/audit?source=${GOVERNANCE_SOURCE}-cta` },
-    secondary: { label: 'Preise ansehen', to: `/pricing?source=${GOVERNANCE_SOURCE}` },
+    primary: { label: 'Governance Launch buchen', to: GOVERNANCE_LAUNCH_CHECKOUT },
+    secondary: { label: 'Kostenlosen Scan starten', to: `/audit?source=${GOVERNANCE_SOURCE}-cta` },
   },
   faqs: [
     {

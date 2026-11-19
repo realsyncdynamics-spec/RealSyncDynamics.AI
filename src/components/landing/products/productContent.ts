@@ -91,7 +91,7 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
   promises: [
     { title: 'Inhalte selbst gestalten', body: 'Geschäftsidee, Texte und gewünschter Stil bilden den Ausgangspunkt.' },
     { title: 'Erst die Vorschau', body: 'Jede Änderung landet zuerst in einer Vorschau, die Sie in Ruhe prüfen.' },
-    { title: 'Ein Mensch entscheidet', body: 'Veröffentlichen dürfen nur Inhaber oder Admins. Ohne Freigabe geht nichts live.' },
+    { title: 'Freigabe bleibt bei Ihnen', body: 'Sie prüfen den Entwurf in der Vorschau. Der Veröffentlichungsstatus hängt vom freigegebenen Projektumfang ab.' },
   ],
   flow: {
     eyebrow: 'So arbeitet der Landingpage-Builder',
@@ -116,8 +116,8 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
       },
       {
         title: 'Freigabe',
-        action: 'Inhaber oder Admin geben die Vorschau frei.',
-        result: 'Erst jetzt wird veröffentlicht.',
+        action: 'Sie prüfen den Entwurf und entscheiden über den nächsten Schritt.',
+        result: 'Eine Veröffentlichung wird nur angezeigt, wenn sie im Projektstatus freigeschaltet ist.',
       },
     ],
     fine: 'Beispielablauf zur Veranschaulichung, ohne Verbindung zu einem echten Projekt.',
@@ -143,11 +143,11 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
   startSteps: [
     { title: 'Öffnen', body: 'Geschäftsidee und Inhalte als Ausgangspunkt eingeben.' },
     { title: 'Gestalten', body: 'Entwurf anpassen und in der Vorschau prüfen.' },
-    { title: 'Veröffentlichen', body: 'Tarif wählen und freigeben. Veröffentlichen ist ab Starter enthalten.' },
+    { title: 'Nächsten Schritt wählen', body: 'Verfügbarkeit und Veröffentlichung im Projektstatus prüfen.' },
   ],
   pricingTitle: 'Tarife im Überblick.',
   limits:
-    'Der Builder ist vom App Builder getrennt. Veröffentlichung, eigene Domain, DNS und Rücksetzen sind nur verfügbar, soweit sie im aktuellen Projektstatus freigeschaltet sind.',
+    'Der Landingpage-Builder ist vom App Builder getrennt. Der verfügbare Entwurf, Veröffentlichung, eigene Domain, DNS und Rücksetzen richten sich nach dem aktuellen Projektstatus.',
   cta: {
     title: 'Ihre Website beginnt mit Ihrer Idee.',
     text: 'Öffnen Sie den App Builder und sehen Sie Ihren Betrieb zuerst in der Vorschau.',

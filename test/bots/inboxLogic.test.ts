@@ -143,6 +143,10 @@ describe('AI-Receptionist: nächste menschliche Entscheidung', () => {
     expect(nextHumanReview(conversation('c1', 'closed'), [appointment('c2', 'requested')]).kind).toBe('none');
   });
 
+  it('behandelt unbekannte Konversationsstatus nicht als erledigt', () => {
+    expect(nextHumanReview({ id: 'c1', status: 'unexpected' as 'open' }, []).kind).toBe('conversation');
+  });
+
   it('sortiert offene Terminwünsche zuerst, dann offene Anfragen, dann geschlossene; ohne Mutation', () => {
     const rows = [
       conversation('closed', 'closed', '2026-11-19T12:00:00Z'),

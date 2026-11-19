@@ -18,7 +18,7 @@ import type { ChannelId } from '@/shared/pricing';
 import { STATUS_TEXT, registryStatus } from '../v3/landingV3Data';
 
 export interface ProductPage {
-  key: 'ki-bots' | 'app-builder' | 'governance-os' | 'claude-code-optimizer';
+  key: 'ki-bots' | 'landingpage-builder' | 'app-builder' | 'governance-os' | 'claude-code-optimizer';
   name: string;
   /** Geplante Marketing-Adresse. */
   plannedPath: string;
@@ -29,16 +29,10 @@ export interface ProductPage {
 }
 
 export const PRODUCT_PAGES: readonly ProductPage[] = [
-  { key: 'ki-bots', name: 'KI-Bots & Voice-Agenten', plannedPath: '/ki-bots', href: '/ki-bots', built: true },
-  { key: 'app-builder', name: 'App Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
+  { key: 'ki-bots', name: 'Telefonassistent', plannedPath: '/ki-bots', href: '/ki-bots', built: true },
+  { key: 'landingpage-builder', name: 'Landingpage-Builder', plannedPath: '/landingpage-builder', href: '/landingpage-builder', built: true },
+  { key: 'app-builder', name: 'App-Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
   { key: 'governance-os', name: 'Governance OS', plannedPath: '/governance-os', href: '/governance-os', built: true },
-  {
-    key: 'claude-code-optimizer',
-    name: 'Claude Code Optimizer',
-    plannedPath: '/claude-code-optimizer',
-    href: '/claude-code-optimizer',
-    built: true,
-  },
 ];
 
 /** Statuslabel aus der Registry; `null`, wenn es keinen Eintrag gibt (dann kein Badge). */

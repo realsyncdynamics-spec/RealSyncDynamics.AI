@@ -117,6 +117,38 @@ Vier Erlebnisebenen:
 
 **Providerprinzip:** vorhandene ai-gateway-/ai-invoke-Routen ausbauen, keine unkontrollierte Schlüsselverwaltung je Produkt. Cloud/ EU-lokal nach Tenant-Policy, tatsächlichem Modell-/Hosting-Nachweis und Anbieter-AVV; Fallback nur innerhalb erlaubter Residenz. Kleine Modelle für Routine, leistungsfähigere für schwierige Entscheidungen, deterministische Guards für Sicherheit. Metriken pro Job: End-to-End-Erfolg, menschliche Nachbearbeitungszeit, Kosten je erfolgreichem Job, Fehlzusagen, Rollbacks, Laufzeit und Eskalationsquote.
 
+## 8a. Konkrete Agentenrollen – eine kontrollierte Jobkette
+
+**Nicht 20 dauerhaft autonome Agenten starten.** Pro Kundenauftrag gibt es einen verantwortlichen Job-Controller, der spezialisierte Worker nur bei Bedarf aufruft. Alle Worker geben strukturierte Ergebnisse zurück; sie bekommen *keine* ungeprüften Schreibrechte.
+
+| Rolle | Aufgabe und Eingabe | Ausführung | Ergebnis / Stop-Bedingung |
+| --- | --- | --- | --- |
+| Intake & Intent | Voice-Nachricht oder Kundenprompt; Absicht + fehlende Angaben erkennen | kleines Modell, JSON-Schema, Bestätigung durch Nutzer | validierter Brief; bei Unsicherheit Rückfrage oder Human-Handoff |
+| Knowledge Worker | nur autorisierte Website/FAQ/Dateien, Index und Quellversion | Berechtigungsfilter + Retrieval, ggf. kleines Modell | belegte Wissenskarte; bei fehlender Quelle keine Zusage |
+| Voice Dialogue | sprachliche Echtzeitführung mit Unterbrechungen | geprüfter Streaming-Provider + strikte Tool-Allowlist | hörbare Antwort, ausdrücklicher KI-Hinweis, kein frei erfundener Buchungserfolg |
+| Human-Handoff Worker | geprüfter Kontakt + Anliegen + Terminwunsch | deterministische Eingabevalidierung + vorhandene Ticket-/Inbox-Funktion | idempotent gespeicherter Vorgang und tatsächlicher Übergabestatus; sonst sichtbarer Fehler |
+| App Architect | bestätigter Build-Brief, Tech-Constraints | leistungsfähiges Reasoning-/Coding-Modell | typisierte BuildSpec + überprüfbare TODOs |
+| App Coder | BuildSpec und begrenzter Quellcodekontext | Coding-Agent in Sandbox | Commit/Diff/Artefakte; **keine** direkte Produktivmutation |
+| Build QA | ausgebautes Artefakt und Testvertrag | deterministische Tests + optional KI zur Fehler-Triage | reproduzierbares Testprotokoll; Stop bei Auth-/RLS-/Build-Fehler |
+| Browser Observer | vom Eigentümer freigegebene URL und Beobachtungsgrenzen | Playwright/Screenshot/DOM; REA nur als **separates autorisiertes Analysewerkzeug** | Quellen-/Layout-/Verhaltensbelege, keine automatische Aktion mit Außenwirkung |
+| Visual Designer | Scan-Befund, Branding, UX-Brief | Multimodales Design-/Coding-Modell; bestehende SiteOS-Renderer | eigenständige Komponenten/Tokens/Preview, vorhandenes Backend unverändert |
+| Governance Decision | geprüfte Session, Tool-Aktion, Ressource, Budget, Datentyp, Zweck | **deterministische Policy**, kein LLM als Autorisierungsinstanz | ALLOW, DENY oder REQUIRE_APPROVAL; fail-closed |
+| Evidence Verifier | trace_id + Request-/Result-Hashes | bestehende Runtime Evidence/Hash-/Chain-Verifikation | belegt/ausstehend/abweichend, **nie** bloß „grün“ aus Modelltext |
+
+### Modellwahl und Kostensteuerung
+
+1. **Vor jeder Ausführung:** serverseitiger Tenant, Berechtigung, Datenresidenz, Rate-Limit, Budgetreservierung und erlaubte Tool-Scopes. Eine Modellentscheidung darf nichts davon umgehen.
+2. **Model Routing:** schneller und günstiger Pfad für Klassifikation/Extraktion/FAQ; großes Coding-/Reasoning-Modell nur für schwierige Architektur- oder Codearbeit; Streaming-Audio nur während des freigegebenen Gesprächs.
+3. **Eskalieren statt blind wiederholen:** Bei ungültigem Schema, Widersprüchen, Quellenlücken oder mehrfach misslungenem Build maximal begrenzte Retries, danach ein menschlich prüfbarer Fehlerbericht.
+4. **Lokale Daten nur bei belegter Residenz:** der bestehende EU-lokal-Pfad ist kein Blankoscheck für alle Provider/Tools. Keine Fallback-Route außerhalb vertraglicher Tenant-Policy.
+5. **Messen auf Auftragsebene:** Kosten je tatsächlich erfolgreicher Anfrage/Build/Publikation, Fehlerrate, mittlere Zeit bis zur menschlichen Übernahme, Anteil unbelegter Aussagen und Reopen-/Rollback-Erfolg.
+
+### REA-Upstream und Namenskollision
+
+Das öffentlich geprüfte Open-Source-Projekt ist **REA – Reverse Engineer Anything**: https://github.com/morluto/rea (MIT laut Upstream). Das Tool kann autorisierte App-, Website- und Runtime-Beobachtungen evidenzbasiert unterstützen; es ist **nicht** der in PR #2319 so bezeichnete RealSync **REA – Runtime Evidence Agent**. Integration ausschließlich als isolierter **Entwicklungs-/Analyseworker**, nicht als ungeprüfte Kunden-Runtime; vorher Lizenz, Berechtigungen, Setup, Node-Version, Abhängigkeiten und erlaubte Zielsysteme prüfen.
+
+**Status dieses Arbeitsschritts:** Die öffentlich verfügbaren REA-Informationen wurden geprüft. REA wurde hier weder installiert noch gegen ein fremdes Produkt ausgeführt; es liegt kein tatsächlicher REA-Aufzeichnungslauf vor. Die vorliegenden Produktanalysen beruhen auf offener Dokumentation und dem verbundenen RealSync-Repository, nicht auf heimlich beobachteten Produktkonten.
+
 ## 9. Abnahmematrix (bewusst ohne erfundene Prozentreife)
 
 | Produkt | Ein positiver End-to-End-Nachweis | Unverzichtbarer Negativnachweis | Freigabe |

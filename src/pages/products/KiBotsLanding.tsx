@@ -5,8 +5,8 @@ import {
   DEMO_STEPS, KI_BOTS, KI_BOTS_SOURCE, PROMISES, RECEPTION_PHASES, START_STEPS, USE_CASES,
 } from '../../components/landing/products/kiBotsContent';
 import { ProductFooter, ProductNav } from '../../components/landing/products/ProductChrome';
-import { planChannels, statusLabel } from '../../components/landing/products/productLandingShared';
-import { TAX_NOTE, faqs, planCards, pricingIntro } from '../../components/landing/v3/landingV3Data';
+import { statusLabel } from '../../components/landing/products/productLandingShared';
+import { faqs } from '../../components/landing/v3/landingV3Data';
 import '../../styles/product-landing.css';
 
 /**
@@ -24,8 +24,6 @@ import '../../styles/product-landing.css';
  * wie die Startseite v3 (landingV3Data.ts, productLandingShared.ts).
  */
 
-const PLAN_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
-
 function Pill({ children }: { children: string }) {
   return <span className="pl-pill">{children}</span>;
 }
@@ -36,7 +34,6 @@ export default function KiBotsLanding() {
 
   const chatStatus = statusLabel('channel-bots');
   const phoneStatus = statusLabel('voice-telephony');
-  const plans = planCards(KI_BOTS_SOURCE);
   const visible = DEMO_STEPS.slice(0, shown);
   const activePhase = shown === 0 ? -1 : DEMO_STEPS[shown - 1]!.phase;
   const done = shown >= DEMO_STEPS.length;
@@ -175,34 +172,20 @@ export default function KiBotsLanding() {
         </section>
 
         <section id="preise" className="pl-section" aria-labelledby="pl-preise-h">
-          <span className="pl-eyebrow">Preise und Verfügbarkeit</span>
-          <h2 id="pl-preise-h" className="pl-h2">Der Assistent ist in jedem Tarif dabei.</h2>
-          <p className="pl-text">{pricingIntro()}</p>
-          <div className="pl-plans">
-            {plans.map((p) => {
-              const channels = PLAN_IDS.includes(p.id as (typeof PLAN_IDS)[number])
-                ? planChannels(p.id as (typeof PLAN_IDS)[number])
-                : [];
-              return (
-                <article key={p.id} className="pl-plan" data-featured={p.featured} data-testid={`ki-bots-plan-${p.id}`}>
-                  {p.badge ? <Pill>{p.badge}</Pill> : null}
-                  <h3 className="pl-h3">{p.name}</h3>
-                  <p className="pl-price">
-                    <strong>{p.price}</strong>
-                    {p.listPrice ? <s aria-label={`statt ${p.listPrice}`}>{p.listPrice}</s> : null}
-                    <span>{p.unit}</span>
-                  </p>
-                  <p className="pl-plan-note">{p.note}</p>
-                  <p className="pl-plan-channels">
-                    <span className="pl-meta">Kanäle</span> {channels.join(' · ')}
-                  </p>
-                  <Link to={p.href} className={p.featured ? 'pl-btn pl-btn--solid' : 'pl-btn'}>{p.cta}</Link>
-                </article>
-              );
-            })}
+          <span className="pl-eyebrow">Produktstatus</span>
+          <h2 id="pl-preise-h" className="pl-h2">Telefonie ist noch in Vorbereitung.</h2>
+          <p className="pl-text">
+            Der Telefonassistent kann derzeit nicht gebucht werden. Für ihn wird hier kein allgemeiner Tarif als Telefonie-Checkout ausgegeben.
+            Den verfügbaren Chat-Assistenten können Sie separat ausprobieren oder Ihr Interesse am Telefonprodukt vormerken.
+          </p>
+          <div className="pl-actions">
+            <Link className="pl-btn pl-btn--solid" to={KI_BOTS.waitlistHref} data-testid="ki-bots-waitlist-pricing">
+              {KI_BOTS.waitlistCta}
+            </Link>
+            <Link className="pl-btn" to={KI_BOTS.tryHref}>{KI_BOTS.tryCta}</Link>
           </div>
-          <p className="pl-fine" data-testid="ki-bots-tax-note">
-            {TAX_NOTE} Verbindlich sind Preise und Leistungen auf <Link to="/pricing">der Preisseite</Link>.
+          <p className="pl-fine" data-testid="ki-bots-status-note">
+            Ein eigener Telefon-Checkout wird erst angeboten, wenn Angebot, Serverfunktion und Bereitstellung freigegeben sind.
           </p>
         </section>
 

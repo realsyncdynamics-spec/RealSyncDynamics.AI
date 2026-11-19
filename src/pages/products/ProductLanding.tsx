@@ -8,11 +8,12 @@ import {
 } from '../../components/landing/products/productContent';
 import { statusLabel } from '../../components/landing/products/productLandingShared';
 import { TAX_NOTE, planCards, pricingIntro } from '../../components/landing/v3/landingV3Data';
+import { checkoutHrefForPlan, formatPriceEur, planById } from '@/shared/pricing';
 import '../../styles/product-landing.css';
 
 /**
  * Produkt-Landingpage nach der Vorlage von `/ki-bots` (Entwurf, 19.11.2026) für
- * App Builder, Governance OS und Claude Code Optimizer.
+ * Landingpage-Builder, App Builder, Governance OS und Claude Code Optimizer.
  *
  * Aufbau: Hero mit SYNC (3D), Produktversprechen, interaktiver Beispielablauf,
  * Anwendungsbeispiele, Einstieg, Preise mit ehrlichen Grenzen, Handlungsaufforderung,
@@ -45,7 +46,8 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
   const steps = c.flow.steps;
   const done = shown >= steps.length;
   const activeStep = shown - 1;
-  const plans = planCards(c.source);
+  const plans = c.key === 'governance-os' ? [] : planCards(c.source);
+  const governanceLaunch = c.key === 'governance-os' ? planById('governance_launch') : null;
   const status = c.status
     .map((s) => ({ label: s.label, value: statusLabel(s.registryId) }))
     .filter((s): s is { label: string; value: string } => s.value !== null);
@@ -192,8 +194,27 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
         <section id="preise" className="pl-section" aria-labelledby="pl-preise-h">
           <span className="pl-eyebrow">Preise und Verfügbarkeit</span>
           <h2 id="pl-preise-h" className="pl-h2">{c.pricingTitle}</h2>
-          <p className="pl-text">{pricingIntro()}</p>
+          {c.key === 'governance-os' ? (
+            <p className="pl-text">Einmalige Implementierung für einen Anwendungsfall. Preis und Berechtigungen kommen aus dem kanonischen Angebotsmodell.</p>
+          ) : (
+            <p className="pl-text">{pricingIntro()}</p>
+          )}
           <div className="pl-plans">
+            {governanceLaunch ? (
+              <article className="pl-plan" data-featured="true" data-testid="product-plan-governance-launch">
+                <Pill>Einmalig</Pill>
+                <h3 className="pl-h3">{governanceLaunch.name}</h3>
+                <p className="pl-price">
+                  <strong>{governanceLaunch.price.oneTimeEur !== null ? formatPriceEur(governanceLaunch.price.oneTimeEur) : 'Preis auf Anfrage'}</strong>
+                  <span> einmalig</span>
+                </p>
+                <p className="pl-plan-note">{governanceLaunch.outcomeHeadline}</p>
+                <p className="pl-plan-channels">{governanceLaunch.technicalSubheadline}</p>
+                <Link to={checkoutHrefForPlan(governanceLaunch, { source: c.source })} className="pl-btn pl-btn--solid">
+                  {governanceLaunch.ctaLabel}
+                </Link>
+              </article>
+            ) : null}
             {plans.map((p) => (
               <article key={p.id} className="pl-plan" data-featured={p.featured} data-testid={`product-plan-${p.id}`}>
                 {p.badge ? <Pill>{p.badge}</Pill> : null}

@@ -15,7 +15,7 @@ import { PRODUCT_CONTENT } from './productContent';
  * Inhaltsdateien, keine Kennzahlen oder Kundenangaben.
  */
 
-export type StageVariant = 'empfang' | 'builder' | 'governance' | 'optimizer';
+export type StageVariant = 'empfang' | 'landingpage' | 'app-builder' | 'builder' | 'governance' | 'optimizer';
 
 export interface StageScene {
   /** Kamerawinkel in Grad. */
@@ -29,6 +29,8 @@ export interface StageScene {
 export const STAGE_SCENES: Record<StageVariant, StageScene> = {
   // Negativer Winkel: SYNC schaut nach rechts, positiver: nach links, jeweils zur Karte.
   empfang: { orbit: { theta: -32, phi: 80 }, poseAt: 0, side: 'left' },
+  landingpage: { orbit: { theta: 28, phi: 74 }, poseAt: 0, side: 'right' },
+  'app-builder': { orbit: { theta: -24, phi: 78 }, poseAt: 0, side: 'left' },
   builder: { orbit: { theta: 28, phi: 74 }, poseAt: 0, side: 'right' },
   governance: { orbit: { theta: -12, phi: 86 }, poseAt: 0, side: 'left' },
   optimizer: { orbit: { theta: 40, phi: 66 }, poseAt: 0, side: 'right' },
@@ -37,7 +39,8 @@ export const STAGE_SCENES: Record<StageVariant, StageScene> = {
 /** Zuordnung Produktseite → Szene. */
 export const STAGE_VARIANT_BY_PRODUCT = {
   'ki-bots': 'empfang',
-  'app-builder': 'builder',
+  'landingpage-builder': 'landingpage',
+  'app-builder': 'app-builder',
   'governance-os': 'governance',
   'claude-code-optimizer': 'optimizer',
 } as const satisfies Record<string, StageVariant>;
@@ -63,6 +66,20 @@ function BuilderCard() {
         <span className="pl-prop-cols"><span className="pl-prop-block" /><span className="pl-prop-block" /><span className="pl-prop-block" /></span>
       </div>
       <p className="pl-prop-row"><span>Veröffentlichung</span><span className="pl-pill">Freigabe offen</span></p>
+    </>
+  );
+}
+
+function AppBuilderCard() {
+  return (
+    <>
+      <span className="pl-prop-label">Anwendungsentwurf · Beispiel</span>
+      <div className="pl-prop-browser" aria-hidden="true">
+        <span className="pl-prop-bar"><i /><i /><i /></span>
+        <span className="pl-prop-row"><span>Startseite</span><span className="pl-prop-mark">Entwurf</span></span>
+        <span className="pl-prop-row"><span>Arbeitsablauf</span><span className="pl-prop-mark">Vorschau</span></span>
+        <span className="pl-prop-row"><span>Freigabe</span><span className="pl-prop-mark">Offen</span></span>
+      </div>
     </>
   );
 }
@@ -110,6 +127,8 @@ function OptimizerCard() {
 
 const CARDS: Record<StageVariant, ComponentType> = {
   empfang: EmpfangCard,
+  landingpage: BuilderCard,
+  'app-builder': AppBuilderCard,
   builder: BuilderCard,
   governance: GovernanceCard,
   optimizer: OptimizerCard,

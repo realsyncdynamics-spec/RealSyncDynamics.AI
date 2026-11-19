@@ -377,6 +377,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/iubenda-alternative",
   "/kanzleien",
   "/ki-bots",
+  "/landingpage-builder",
   "/ki-governance-in-5-schritten",
   "/kmu-website",
   "/kodee",

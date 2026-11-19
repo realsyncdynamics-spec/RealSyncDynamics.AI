@@ -74,7 +74,7 @@ const OPTIMIZER_SOURCE = 'cco-landing';
 export const LANDINGPAGE_BUILDER: ProductLandingContent = {
   key: 'landingpage-builder',
   source: LANDINGPAGE_BUILDER_SOURCE,
-  name: 'Landingpage Builder',
+  name: 'Landingpage-Builder',
   audience: 'Für Betriebe, die eine neue Website gestalten möchten',
   h1: ['Ihre Website.', 'Aus Ihrer Idee gebaut.'],
   lead:
@@ -152,7 +152,7 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
     title: 'Ihre Website beginnt mit Ihrer Idee.',
     text: 'Öffnen Sie den App Builder und sehen Sie Ihren Betrieb zuerst in der Vorschau.',
     primary: { label: 'Landingpage-Builder öffnen', to: `/build?kind=landing&source=${LANDINGPAGE_BUILDER_SOURCE}-cta` },
-    secondary: { label: 'Preise ansehen', to: `/pricing?source=${APP_BUILDER_SOURCE}` },
+    secondary: { label: 'Preise ansehen', to: `/pricing?source=${LANDINGPAGE_BUILDER_SOURCE}` },
   },
   faqs: [
     {

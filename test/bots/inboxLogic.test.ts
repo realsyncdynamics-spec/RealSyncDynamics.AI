@@ -158,3 +158,43 @@ describe('AI-Receptionist: nächste menschliche Entscheidung', () => {
     expect(rows.map((r) => r.id)).toEqual(['closed', 'inquiry', 'appointment']);
   });
 });
+
+describe('AI-Receptionist: tatsächlicher Voice-Rückrufstatus', () => {
+  const convo = (id: string, status: 'open' | 'closed', callback_status?: 'erfasst' | null) => ({
+    id, status, callback_status, last_message_at: '2026-11-19T10:00:00Z',
+  });
+  const wish = (conversation_id: string) => ({ conversation_id, status: 'requested' as const });
+
+  it('setzt gespeicherten Rückruf vor Terminwunsch, ohne menschlichen Erfolg zu behaupten', () => {
+    const s = nextHumanReview(convo('voice-1', 'closed', 'erfasst'), [wish('voice-1')]);
+    expect(s.kind).toBe('callback');
+    expect(s.label).toBe('Rückrufwunsch bearbeiten');
+    expect(s.explanation).toMatch(/nicht nachgewiesen/);
+  });
+
+  it('zeigt Rückruf auch bei noch nicht geladenen Terminen zuverlässig an', () => {
+    expect(nextHumanReview(convo('voice-1', 'closed', 'erfasst'), null).kind).toBe('callback');
+  });
+
+  it('meldet unbekannten Rückrufstatus als ungeprüft', () => {
+    const s = nextHumanReview({ ...convo('voice-1', 'closed'), callback_status: 'strange' as 'erfasst' }, []);
+    expect(s.kind).toBe('unverified');
+    expect(s.priority).toBe(0);
+  });
+
+  it('verwandelt eine normale geschlossene Konversation nicht in eine Rückrufanfrage', () => {
+    expect(nextHumanReview(convo('chat-1', 'closed', null), []).kind).toBe('none');
+  });
+
+  it('priorisiert Rückruf vor Termin und offener Konversation, ohne Eingabe zu mutieren', () => {
+    const rows = [
+      convo('open', 'open'),
+      convo('appointment', 'open'),
+      convo('callback', 'closed', 'erfasst'),
+      convo('closed', 'closed'),
+    ];
+    const sorted = sortConversationsForReview(rows, [wish('appointment')]);
+    expect(sorted.map((r) => r.id)).toEqual(['callback', 'appointment', 'open', 'closed']);
+    expect(rows.map((r) => r.id)).toEqual(['open', 'appointment', 'callback', 'closed']);
+  });
+});

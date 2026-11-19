@@ -82,7 +82,7 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
   primary: { label: 'Landingpage erstellen', to: `/build?kind=landing&source=${LANDINGPAGE_BUILDER_SOURCE}` },
   secondary: { label: 'So läuft es ab', to: '#ablauf' },
   status: [
-    { label: 'Builder', registryId: 'web-builder' },
+    { label: 'Builder', registryId: 'public-frontend-builder' },
     { label: 'Freischaltung je Tarif', registryId: 'builder-entitlement-gate' },
   ],
   stageTag: 'Landingpage-Builder · Entwurf',
@@ -97,7 +97,7 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
     eyebrow: 'So arbeitet der Landingpage-Builder',
     title: 'Von der Idee zur Seite.',
     text: 'Klicken Sie sich durch die vier Schritte. Rechts sehen Sie, was nach jedem Schritt vorliegt.',
-    panelLabel: 'App Builder · Beispiel',
+    panelLabel: 'Landingpage-Builder · Beispiel',
     steps: [
       {
         title: 'Entwurf',

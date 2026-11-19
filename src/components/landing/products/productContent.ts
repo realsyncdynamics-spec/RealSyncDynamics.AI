@@ -66,34 +66,35 @@ export interface ProductLandingContent {
   faqs: ReadonlyArray<{ q: string; a: string }>;
 }
 
+const LANDINGPAGE_BUILDER_SOURCE = 'landingpage-builder';
 const APP_BUILDER_SOURCE = 'app-builder';
 const GOVERNANCE_SOURCE = 'governance-os';
 const OPTIMIZER_SOURCE = 'cco-landing';
 
-export const APP_BUILDER: ProductLandingContent = {
-  key: 'app-builder',
-  source: APP_BUILDER_SOURCE,
-  name: 'App Builder',
-  audience: 'Für Betriebe, die online gefunden werden wollen',
-  h1: ['Ihre Website.', 'Erst Vorschau, dann live.'],
+export const LANDINGPAGE_BUILDER: ProductLandingContent = {
+  key: 'landingpage-builder',
+  source: LANDINGPAGE_BUILDER_SOURCE,
+  name: 'Landingpage Builder',
+  audience: 'Für Betriebe, die eine neue Website gestalten möchten',
+  h1: ['Ihre Website.', 'Aus Ihrer Idee gebaut.'],
   lead:
-    'Im App Builder entsteht Ihre Website oder App direkt im Browser. Jede Änderung sehen Sie zuerst in einer Vorschau. Live geht sie erst, wenn Sie freigeben.',
-  primary: { label: 'App Builder öffnen', to: `/build?source=${APP_BUILDER_SOURCE}` },
+    'Im Landingpage-Builder entwickeln Sie aus Ihrer Geschäftsidee einen eigenständigen Website-Entwurf. Inhalte und Gestaltung prüfen Sie zuerst in der Vorschau.',
+  primary: { label: 'Landingpage erstellen', to: `/build?kind=landing&source=${LANDINGPAGE_BUILDER_SOURCE}` },
   secondary: { label: 'So läuft es ab', to: '#ablauf' },
   status: [
     { label: 'Builder', registryId: 'web-builder' },
     { label: 'Freischaltung je Tarif', registryId: 'builder-entitlement-gate' },
   ],
-  stageTag: 'App Builder · Entwurf',
+  stageTag: 'Landingpage-Builder · Entwurf',
   stageCaption: 'Entwurf → Vorschau → Freigabe → live',
-  promiseTitle: 'Eine Website, die Sie selbst pflegen.',
+  promiseTitle: 'Eine Website, die zu Ihrem Betrieb passt.',
   promises: [
-    { title: 'Im Browser bearbeiten', body: 'Seiten, Texte und Aufbau ändern Sie selbst, ohne Programmierung.' },
+    { title: 'Inhalte selbst gestalten', body: 'Geschäftsidee, Texte und gewünschter Stil bilden den Ausgangspunkt.' },
     { title: 'Erst die Vorschau', body: 'Jede Änderung landet zuerst in einer Vorschau, die Sie in Ruhe prüfen.' },
     { title: 'Ein Mensch entscheidet', body: 'Veröffentlichen dürfen nur Inhaber oder Admins. Ohne Freigabe geht nichts live.' },
   ],
   flow: {
-    eyebrow: 'So arbeitet der App Builder',
+    eyebrow: 'So arbeitet der Landingpage-Builder',
     title: 'Von der Idee zur Seite.',
     text: 'Klicken Sie sich durch die vier Schritte. Rechts sehen Sie, was nach jedem Schritt vorliegt.',
     panelLabel: 'App Builder · Beispiel',
@@ -110,7 +111,7 @@ export const APP_BUILDER: ProductLandingContent = {
       },
       {
         title: 'Vorschau',
-        action: 'Der App Builder stellt den Stand als Vorschau bereit.',
+        action: 'Der Builder stellt den Stand als Vorschau bereit.',
         result: 'Eine Vorschau, die Sie vor der Veröffentlichung prüfen.',
       },
       {
@@ -140,23 +141,23 @@ export const APP_BUILDER: ProductLandingContent = {
     },
   ],
   startSteps: [
-    { title: 'Öffnen', body: 'Den App Builder im Browser starten und ein Projekt anlegen.' },
+    { title: 'Öffnen', body: 'Geschäftsidee und Inhalte als Ausgangspunkt eingeben.' },
     { title: 'Gestalten', body: 'Entwurf anpassen und in der Vorschau prüfen.' },
     { title: 'Veröffentlichen', body: 'Tarif wählen und freigeben. Veröffentlichen ist ab Starter enthalten.' },
   ],
   pricingTitle: 'Tarife im Überblick.',
   limits:
-    'Noch nicht verfügbar: eigene Domain, DNS-Einrichtung und das Zurücksetzen auf einen früheren Stand. Der App Builder ist eine Preview.',
+    'Der Builder ist vom App Builder getrennt. Veröffentlichung, eigene Domain, DNS und Rücksetzen sind nur verfügbar, soweit sie im aktuellen Projektstatus freigeschaltet sind.',
   cta: {
-    title: 'Ihre Seite beginnt mit einem Entwurf.',
+    title: 'Ihre Website beginnt mit Ihrer Idee.',
     text: 'Öffnen Sie den App Builder und sehen Sie Ihren Betrieb zuerst in der Vorschau.',
-    primary: { label: 'App Builder öffnen', to: `/build?source=${APP_BUILDER_SOURCE}-cta` },
+    primary: { label: 'Landingpage-Builder öffnen', to: `/build?kind=landing&source=${LANDINGPAGE_BUILDER_SOURCE}-cta` },
     secondary: { label: 'Preise ansehen', to: `/pricing?source=${APP_BUILDER_SOURCE}` },
   },
   faqs: [
     {
       q: 'Brauche ich Programmierkenntnisse?',
-      a: 'Nein. Sie bearbeiten Seiten und Texte im Browser.',
+      a: 'Der Einstieg beginnt mit Geschäftsidee, Inhalten und gewünschtem Stil. Der aktuelle Funktionsumfang hängt vom Builder-Status ab.',
     },
     {
       q: 'Wann ist meine Seite öffentlich?',
@@ -166,6 +167,63 @@ export const APP_BUILDER: ProductLandingContent = {
       q: 'Kann ich meine eigene Domain verwenden?',
       a: 'Noch nicht. Eigene Domain und DNS-Einrichtung sind geplant und noch nicht freigeschaltet.',
     },
+  ],
+};
+
+export const APP_BUILDER: ProductLandingContent = {
+  key: 'app-builder',
+  source: APP_BUILDER_SOURCE,
+  name: 'App Builder',
+  audience: 'Für Betriebe mit eigenen digitalen Abläufen',
+  h1: ['Ihre Anwendung.', 'Für Ihren Arbeitsalltag.'],
+  lead: 'Der App Builder ist der Einstieg für eigene Web-Anwendungen. Beschreiben Sie, welchen Ablauf Ihre Anwendung unterstützen soll, und prüfen Sie den verfügbaren Entwurf vor einer Freigabe.',
+  primary: { label: 'App Builder öffnen', to: `/build?kind=web_app&source=${APP_BUILDER_SOURCE}` },
+  secondary: { label: 'So läuft es ab', to: '#ablauf' },
+  status: [{ label: 'Builder', registryId: 'web-builder' }, { label: 'Freischaltung je Tarif', registryId: 'builder-entitlement-gate' }],
+  stageTag: 'App Builder · Entwurf',
+  stageCaption: 'Ablauf → Anwendung → Vorschau → Freigabe',
+  promiseTitle: 'Ein eigener digitaler Ablauf.',
+  promises: [
+    { title: 'Mit dem Ablauf beginnen', body: 'Beschreiben Sie, welche Aufgabe die Anwendung in Ihrem Betrieb unterstützen soll.' },
+    { title: 'Entwurf prüfen', body: 'Prüfen Sie den erzeugten Stand und passen Sie den Umfang an, bevor etwas freigegeben wird.' },
+    { title: 'Freigabe bleibt bei Ihnen', body: 'Veröffentlichung und Tarifzugang richten sich nach dem verfügbaren Projektstatus.' },
+  ],
+  flow: {
+    eyebrow: 'So arbeitet der App Builder',
+    title: 'Vom Ablauf zur Anwendung.',
+    text: 'Der Beispielablauf zeigt die Trennung zwischen Idee, Entwurf und Ihrer Freigabe.',
+    panelLabel: 'App Builder · Beispiel',
+    steps: [
+      { title: 'Idee', action: 'Sie beschreiben die Aufgabe, die Ihre Anwendung lösen soll.', result: 'Ein klarer Ausgangspunkt für den Entwurf.' },
+      { title: 'Entwurf', action: 'Der Builder stellt einen ersten Anwendungsentwurf bereit.', result: 'Ein Stand, den Sie prüfen und weiter beschreiben können.' },
+      { title: 'Vorschau', action: 'Sie prüfen den verfügbaren Funktionsumfang.', result: 'Offene Punkte sind sichtbar, bevor Sie entscheiden.' },
+      { title: 'Freigabe', action: 'Sie geben den nächsten Schritt selbst frei.', result: 'Kein automatisches Live-Schalten ohne Ihre Entscheidung.' },
+    ],
+    fine: 'Beispielablauf zur Veranschaulichung. Verfügbarkeit und Umfang richten sich nach dem aktuellen Projektstatus.',
+  },
+  casesTitle: 'Wofür Betriebe ihn nutzen.',
+  cases: [
+    { trade: 'Handwerk', situation: 'Ein wiederkehrender interner Ablauf kostet Zeit.', result: 'Ein digitaler Entwurf macht den Ablauf prüfbar.' },
+    { trade: 'Dienstleistung', situation: 'Anfragen benötigen mehrere manuelle Schritte.', result: 'Ein Anwendungsentwurf bündelt den vorgesehenen Ablauf.' },
+    { trade: 'Kleines Team', situation: 'Informationen liegen in verschiedenen Listen.', result: 'Ein klar abgegrenzter Anwendungsfall wird zuerst sichtbar gemacht.' },
+  ],
+  startSteps: [
+    { title: 'Anwendungsfall beschreiben', body: 'Legen Sie fest, welche Aufgabe die Anwendung unterstützen soll.' },
+    { title: 'Entwurf ansehen', body: 'Prüfen Sie den Stand und die verfügbaren Funktionen.' },
+    { title: 'Nächsten Schritt freigeben', body: 'Sie entscheiden über Weiterentwicklung und Veröffentlichung.' },
+  ],
+  pricingTitle: 'Tarife im Überblick.',
+  limits: 'Der App Builder ist eine Preview. Datenbank, Integrationen, Anmeldung und Veröffentlichung sind nur enthalten, wenn sie im konkreten Projektstatus nachweislich verfügbar sind.',
+  cta: {
+    title: 'Starten Sie mit einem klaren Anwendungsfall.',
+    text: 'Öffnen Sie den App Builder und prüfen Sie den verfügbaren Entwurf.',
+    primary: { label: 'App Builder öffnen', to: `/build?kind=web_app&source=${APP_BUILDER_SOURCE}-cta` },
+    secondary: { label: 'Preise ansehen', to: `/pricing?source=${APP_BUILDER_SOURCE}` },
+  },
+  faqs: [
+    { q: 'Brauche ich Programmierkenntnisse?', a: 'Der Builder soll den Einstieg ohne Code ermöglichen. Welche Funktionen freigeschaltet sind, zeigt der aktuelle Projektstatus.' },
+    { q: 'Wird die Anwendung automatisch veröffentlicht?', a: 'Nein. Veröffentlichung benötigt eine ausdrückliche Freigabe und hängt vom verfügbaren Publish-Status ab.' },
+    { q: 'Ist der App Builder dasselbe wie der Landingpage-Builder?', a: 'Nein. Der Landingpage-Builder erstellt Website-Entwürfe. Der App Builder richtet sich an eigene digitale Abläufe und Anwendungen.' },
   ],
 };
 
@@ -369,6 +427,7 @@ export const OPTIMIZER: ProductLandingContent = {
 };
 
 export const PRODUCT_CONTENT: Record<ProductLandingKey, ProductLandingContent> = {
+  'landingpage-builder': LANDINGPAGE_BUILDER,
   'app-builder': APP_BUILDER,
   'governance-os': GOVERNANCE_OS,
   'claude-code-optimizer': OPTIMIZER,

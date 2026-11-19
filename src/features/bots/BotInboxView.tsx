@@ -12,6 +12,7 @@ import type { BotConversation, BotMessage, BotAppointment, BotOrder } from './ty
 import {
   appointmentStatusLabel, orderStatusLabel, conversationStatusLabel, channelLabel,
   statusTone, openCounts, sortAppointmentsOpenFirst, appointmentsForConversation, contactLabel,
+  nextHumanReview, sortConversationsForReview,
 } from './inboxLogic';
 
 type Tab = 'conversations' | 'appointments' | 'orders';
@@ -181,12 +182,13 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
   }
 
   const selectedConvo = convos.find((c) => c.id === selected) ?? null;
+  const prioritizedConvos = sortConversationsForReview(convos, appointments);
 
   return (
     <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
       <div className="space-y-1">
-        {convos.map((c) => {
-          const openAppointments = appointmentsForConversation(appointments, c.id).filter((a) => a.status === 'requested').length;
+        {prioritizedConvos.map((c) => {
+          const review = nextHumanReview(c, appointments);
           return (
             <button
               key={c.id}
@@ -202,8 +204,8 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
               </div>
               <div className="mt-0.5 flex items-center justify-between gap-2">
                 <span className="font-mono text-[10px] text-titanium-600">{fmt(c.last_message_at)}</span>
-                {openAppointments > 0 && (
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-amber-400">Terminwunsch offen</span>
+                {review.kind !== 'none' && (
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-amber-400">{review.label}</span>
                 )}
               </div>
             </button>
@@ -216,6 +218,7 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
             <RequestCard
               conversation={selectedConvo}
               appointments={appointmentsForConversation(appointments, selectedConvo.id)}
+              review={nextHumanReview(selectedConvo, appointments)}
               onOpenAppointments={onOpenAppointments}
             />
             <MessageThread tenantId={tenantId} conversationId={selectedConvo.id} />
@@ -229,8 +232,9 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
 }
 
 /** Kopf einer Anfrage: Kontakt, Kanal, Status und daraus entstandene Terminwünsche. */
-function RequestCard({ conversation, appointments, onOpenAppointments }: {
-  conversation: BotConversation; appointments: BotAppointment[]; onOpenAppointments: () => void;
+function RequestCard({ conversation, appointments, review, onOpenAppointments }: {
+  conversation: BotConversation; appointments: BotAppointment[];
+  review: ReturnType<typeof nextHumanReview>; onOpenAppointments: () => void;
 }) {
   return (
     <section aria-label="Anfrage" className="border border-titanium-800 bg-obsidian-900 px-4 py-3">
@@ -241,6 +245,12 @@ function RequestCard({ conversation, appointments, onOpenAppointments }: {
           <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Status</p>
           <StatusChip status={conversation.status} label={conversationStatusLabel(conversation.status)} />
         </div>
+      </div>
+
+      <div className="mt-3 border-t border-titanium-900 pt-3" aria-label="Nächster menschlicher Prüfschritt">
+        <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Nächster Prüfschritt</p>
+        <p className="mt-1 text-xs text-titanium-200">{review.label}</p>
+        <p className="mt-1 text-[11px] text-titanium-500">{review.explanation}</p>
       </div>
 
       <div className="mt-3 border-t border-titanium-900 pt-3">

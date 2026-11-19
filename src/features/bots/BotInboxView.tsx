@@ -193,8 +193,8 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
           Ein erfasster Rückrufwunsch bedeutet nicht, dass ein Rückruf durchgeführt wurde.
         </p>
       )}
-    <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
-      <div className="space-y-1">
+      <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
+        <div className="space-y-1">
         {prioritizedConvos.map((c) => {
           const review = nextHumanReview(c, appointments);
           return (
@@ -226,6 +226,7 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
             <RequestCard
               conversation={selectedConvo}
               appointments={appointmentsForConversation(appointments, selectedConvo.id)}
+              appointmentsLoaded={appointments !== null}
               review={nextHumanReview(selectedConvo, appointments)}
               onOpenAppointments={onOpenAppointments}
             />
@@ -241,8 +242,8 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
 }
 
 /** Kopf einer Anfrage: Kontakt, Kanal, Status und daraus entstandene Terminwünsche. */
-function RequestCard({ conversation, appointments, review, onOpenAppointments }: {
-  conversation: BotConversation; appointments: BotAppointment[];
+function RequestCard({ conversation, appointments, appointmentsLoaded, review, onOpenAppointments }: {
+  conversation: BotConversation; appointments: BotAppointment[]; appointmentsLoaded: boolean;
   review: ReturnType<typeof nextHumanReview>; onOpenAppointments: () => void;
 }) {
   return (
@@ -279,7 +280,7 @@ function RequestCard({ conversation, appointments, review, onOpenAppointments }:
         <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Terminwunsch</p>
         {appointments.length === 0 ? (
           <p className="mt-1 text-xs text-titanium-500">
-            {review.kind === 'unverified' ? 'Terminwünsche noch nicht verfügbar – keine Aussage zur Buchung möglich.' : 'Kein Terminwunsch aus dieser Anfrage.'}
+            {!appointmentsLoaded ? 'Terminwünsche noch nicht verfügbar – keine Aussage zur Buchung möglich.' : 'Kein Terminwunsch aus dieser Anfrage.'}
           </p>
         ) : (
           <ul className="mt-1 space-y-1.5">

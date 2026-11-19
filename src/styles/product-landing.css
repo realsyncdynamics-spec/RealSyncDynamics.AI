@@ -71,7 +71,7 @@
 
 .pl-meta { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; font: 600 12px/1.4 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pl-fg-2); }
 .pl-eyebrow { font: 600 12px/1.4 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pl-fg-2); }
-.pl-pill { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid var(--pl-line-strong); font: 600 11px/1.5 var(--font-mono, monospace); letter-spacing: 0.04em; text-transform: none; color: var(--pl-fg-2); background: var(--pl-bg-0); }
+.pl-pill { display: inline-flex; align-self: flex-start; align-items: center; padding: 1px 8px; border: 1px solid var(--pl-line-strong); font: 600 11px/1.5 var(--font-mono, monospace); letter-spacing: 0.04em; text-transform: none; color: var(--pl-fg-2); background: var(--pl-bg-0); }
 
 /* 3D-Bühne */
 .pl-stage {

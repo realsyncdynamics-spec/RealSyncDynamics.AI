@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
+import { OPEN_ASSISTANT_EVENT } from '../features/assistant/openAssistant';
 
 // AssistentChip — persistent floating entry to the AI Runtime.
 //
@@ -38,6 +39,19 @@ export function AssistentChip() {
   const [open, setOpen] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const isLanding = pathname === '/';
+  const hidden = shouldHide(pathname);
+
+  // „KI fragen“-Pill (Header) öffnet dasselbe Panel. preventDefault()
+  // signalisiert dem Aufrufer, dass kein Rückfall-Link nötig ist.
+  useEffect(() => {
+    if (hidden) return;
+    const onOpen = (event: Event) => {
+      event.preventDefault();
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_ASSISTANT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_ASSISTANT_EVENT, onOpen);
+  }, [hidden]);
 
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
@@ -92,7 +106,7 @@ export function AssistentChip() {
     };
   }, [pathname]);
 
-  if (shouldHide(pathname)) return null;
+  if (hidden) return null;
 
   const faded = heroVisible;
   const positionClass = isLanding

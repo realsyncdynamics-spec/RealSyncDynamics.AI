@@ -3,10 +3,18 @@
 Gilt für jeden Agenten (Claude Code, Codex, Copilot, Subagenten); `CLAUDE.md` importiert sie.
 Profile und Policies dürfen verschärfen, nie lockern.
 
-**Produkt (K4, 27.10.2026, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für **KI-Mitarbeiter
-mit eingebauter Governance** für KMU mit Kundenkontakt, zuerst Handwerk. Erster Ablauf:
-AI Receptionist (Anfrage, Kontakt, Terminwunsch, Übergabe an Menschen). DSGVO/EU AI Act,
-Freigaben und Nachweise sind Infrastruktur, nicht Hero-Botschaft.
+**Produkt (K4, 27.10.2026, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für KI-Mitarbeiter
+mit eingebauter Governance für KMU. Governance, Freigaben und Nachweise sind Infrastruktur.
+
+**Öffentliche Website-Architektur (Owner-Entscheidung 19.11.2026):** Die Unternehmensstartseite
+unter `/` zeigt vier gleichwertige, direkt erreichbare und einzeln buchbare Produkte:
+Telefonassistent (`/ki-bots`), Landingpage-Builder (`/landingpage-builder`), App-Builder
+(`/app-builder`) und Governance OS (`/governance-os`). SYNC begrüßt als Markenfigur.
+Ein kostenloser Domain-Scan ist ein zweiter, freiwilliger Einstieg; kein Produkt setzt ihn voraus.
+Der Scan-Weg folgt sechs Schritten: Domain → öffentliche Prüfung → Befunde/Fehlercodes/
+Vorschläge und Frage „Was sollen wir für Sie tun?“ → optionaler Frontend-Entwurf
+(Backend unverändert) → optionaler Telefonassistent → Governance OS; erneute Prüfung führt
+zurück zur öffentlichen Prüfung. Automatische Dauerüberwachung ist als In Vorbereitung zu kennzeichnen.
 
 ## Regelhierarchie
 

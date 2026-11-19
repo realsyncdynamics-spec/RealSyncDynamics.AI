@@ -2,8 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SyncHeroStage } from '../components/landing/v3/SyncHeroStage';
 import {
-  BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
-  faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
+  BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, SOURCE, STATUS_TEXT, TAX_NOTE,
+  faqs, planCards, pricingIntro, productNote, productStatus,
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
@@ -68,7 +68,6 @@ export function LandingV3() {
   };
 
   const plans = planCards();
-  const tryStatus = registryStatus(RECEPTIONIST.tryRegistryId);
   const current = PRODUCTS[active]!;
 
   return (
@@ -147,36 +146,31 @@ export function LandingV3() {
       </header>
 
       <main>
-        <section id="receptionist" className="lv3-section lv3-split lv3-receptionist" aria-labelledby="lv3-receptionist-h" data-testid="v3-product-receptionist">
+        <section id="einstiege" className="lv3-section lv3-split" aria-labelledby="lv3-entry-h">
           <div>
-            <span className="lv3-eyebrow">
-              {RECEPTIONIST.audience} <StatusPill label={STATUS_TEXT[RECEPTIONIST.status]} />
-            </span>
-            <h2 id="lv3-receptionist-h" className="lv3-h2">{RECEPTIONIST.heading}</h2>
+            <span className="lv3-eyebrow">Zwei gleichwertige Einstiege</span>
+            <h2 id="lv3-entry-h" className="lv3-h2">Sie bestimmen, womit wir beginnen.</h2>
             <p className="lv3-text">
-              <strong>{RECEPTIONIST.name}:</strong> {RECEPTIONIST.body}
+              Kennen Sie Ihr Ziel, öffnen Sie direkt die passende Produktseite. Möchten Sie zuerst den Zustand Ihrer bestehenden Website verstehen, starten Sie mit dem kostenlosen Domain-Scan.
             </p>
-            <div className="lv3-actions">
-              <Link className="lv3-btn lv3-btn--solid" to={RECEPTIONIST.waitlistHref} data-testid="v3-receptionist-waitlist">
-                {RECEPTIONIST.waitlistCta}
-              </Link>
-              <Link className="lv3-btn" to={RECEPTIONIST.tryHref} data-testid="v3-receptionist-try">
-                {RECEPTIONIST.tryCta}
-                {tryStatus ? <> <StatusPill label={STATUS_TEXT[tryStatus]} /></> : null}
-              </Link>
-            </div>
           </div>
-          <div>
-            <span className="lv3-eyebrow">Geplanter Ablauf</span>
-            <ol className="lv3-steps" data-testid="v3-receptionist-steps">
-              {RECEPTIONIST.steps.map((s, i) => (
-                <li key={s}><span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span><span>{s}</span></li>
-              ))}
-            </ol>
+          <div className="lv3-cards">
+            <a href="#produkte" className="lv3-card">
+              <span className="lv3-meta">Direkter Produkteinstieg</span>
+              <strong className="lv3-card-name">Das passende Produkt öffnen.</strong>
+              <span>Alle vier Produktseiten sind direkt erreichbar. Ein vorheriger Scan ist nicht nötig.</span>
+              <span className="lv3-card-cta">Vier Produkte ansehen <span aria-hidden="true">→</span></span>
+            </a>
+            <a href="#start" className="lv3-card">
+              <span className="lv3-meta">Kostenloser Domain-Scan</span>
+              <strong className="lv3-card-name">Mit der bestehenden Website starten.</strong>
+              <span>Adresse eingeben, öffentliche Website prüfen lassen und konkrete Befunde ansehen.</span>
+              <span className="lv3-card-cta">Domain prüfen <span aria-hidden="true">→</span></span>
+            </a>
           </div>
         </section>
 
-        <section id="module" className="lv3-section" aria-labelledby="lv3-module-h">
+        <section id="produkte" className="lv3-section" aria-labelledby="lv3-module-h">
           <span className="lv3-eyebrow">Module</span>
           <h2 id="lv3-module-h" className="lv3-h2">Direkt ausprobieren.</h2>
           <p className="lv3-text">Jede Karte führt zur Seite des Produkts.</p>
@@ -198,6 +192,34 @@ export function LandingV3() {
               );
             })}
           </div>
+        </section>
+
+        <section id="kundenweg" className="lv3-section lv3-split" aria-labelledby="lv3-kundenweg-h">
+          <div>
+            <span className="lv3-eyebrow">Vom Domain-Scan zur laufenden Übersicht</span>
+            <h2 id="lv3-kundenweg-h" className="lv3-h2">Der Weg in sechs Schritten.</h2>
+            <p className="lv3-text">
+              Die Schritte vier bis sechs sind freiwillig. Der Telefonassistent lässt sich auch separat öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
+            </p>
+          </div>
+          <ol className="lv3-steps" data-testid="v3-customer-journey">
+            {[
+              'Domain eingeben',
+              'Öffentliche Website prüfen',
+              'Befunde, Fehlercodes und Vorschläge ansehen',
+              'Optional einen Frontend-Entwurf anpassen',
+              'Optional den Telefonassistenten ergänzen',
+              'Governance OS für Zuständigkeiten, Freigaben und Nachweise nutzen',
+            ].map((step, i) => (
+              <li key={step}>
+                <span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="lv3-fine">
+            Eine erneute Prüfung führt zurück zu Schritt 2. Automatische Dauerüberwachung ist in Vorbereitung.
+          </p>
         </section>
 
         <section id="govern" className="lv3-section lv3-split" aria-labelledby="lv3-govern-h">

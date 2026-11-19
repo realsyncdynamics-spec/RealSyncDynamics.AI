@@ -55,6 +55,10 @@ export interface BotConversation {
   external_ref: string | null;
   contact_label: string | null;
   status: 'open' | 'closed';
+  /** Im bestehenden Voice-Closing-Pfad gespeichert; kein Nachweis eines erfolgten Rückrufs. */
+  callback_status?: 'erfasst' | null;
+  callback_requested_at?: string | null;
+  callback_reason?: 'zeitlimit' | 'budget' | null;
   metadata: Record<string, unknown>;
   last_message_at: string | null;
   created_at: string;

@@ -594,7 +594,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // Produkt-Landingpage KI-Bots (erster Entwurf, 19.11.2026). Noindex und nicht in der
   // Sitemap, bis Gestaltung und Inhalte freigegeben sind.
   '/ki-bots': {
-    title: 'KI-Bots & Voice-Agenten — RealSync Dynamics & AI',
+    title: 'Persönlicher Telefonassistent — RealSync Dynamics & AI',
     description:
       'Erreichbar bleiben: Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team.',
     canonical: `${SITE_URL}/ki-bots`,
@@ -611,7 +611,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/app-builder': {
     title: 'App Builder — RealSync Dynamics & AI',
     description:
-      'Website oder App im Browser bauen. Jede Änderung zuerst in der Vorschau, live erst nach Ihrer Freigabe.',
+      'Eigene Web-Anwendungen aus klaren Abläufen entwickeln. Umfang und Veröffentlichung richten sich nach dem aktuellen Projektstatus.',
     canonical: `${SITE_URL}/app-builder`,
     noIndex: true,
   },

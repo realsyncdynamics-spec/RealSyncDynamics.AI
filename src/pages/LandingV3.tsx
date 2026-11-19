@@ -72,7 +72,7 @@ export function LandingV3() {
 
   return (
     <div className="lv3">
-      <a href="#receptionist" className="lv3-skip">Zum Inhalt springen</a>
+      <a href="#produkte" className="lv3-skip">Zum Inhalt springen</a>
 
       {BETA_OFFER ? (
         <p className="lv3-ribbon">
@@ -106,7 +106,7 @@ export function LandingV3() {
             </p>
             <div className="lv3-actions">
               <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
-              <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
+              <Link className="lv3-btn lv3-btn--lg" to="/ki-bots?source=landing-v3-hero">Telefonassistent ansehen</Link>
             </div>
           </div>
           <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · RealSync" waveSignal={waveSignal} />

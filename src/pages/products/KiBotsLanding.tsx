@@ -4,8 +4,9 @@ import { MascotStage } from '../../components/landing/products/MascotStage';
 import {
   DEMO_STEPS, KI_BOTS, KI_BOTS_SOURCE, PROMISES, RECEPTION_PHASES, START_STEPS, USE_CASES,
 } from '../../components/landing/products/kiBotsContent';
-import { PRODUCT_PAGES, planChannels, statusLabel } from '../../components/landing/products/productLandingShared';
-import { COMPANY_LINE, LEGAL_LINKS, TAX_NOTE, faqs, planCards, pricingIntro } from '../../components/landing/v3/landingV3Data';
+import { ProductFooter, ProductNav } from '../../components/landing/products/ProductChrome';
+import { planChannels, statusLabel } from '../../components/landing/products/productLandingShared';
+import { TAX_NOTE, faqs, planCards, pricingIntro } from '../../components/landing/v3/landingV3Data';
 import '../../styles/product-landing.css';
 
 /**
@@ -15,7 +16,9 @@ import '../../styles/product-landing.css';
  * dient als Vorlage für den gemeinsamen Aufbau: Hero mit 3D, Produktversprechen,
  * interaktiver Ablauf, Anwendungsbeispiele, Einstieg, Preise/Verfügbarkeit,
  * Handlungsaufforderung, Fragen. Die Gestaltung ist ein Vorschlag und gilt erst
- * nach Freigabe als Regel. Die Seite ist noindex und nicht von `/` verlinkt.
+ * nach Freigabe als Regel. Die Seite ist noindex. Navigation und Footer teilt sie
+ * mit den übrigen Produktseiten (ProductChrome.tsx). `data-hero-cta` an Hauptbutton
+ * und Demo lässt den schwebenden Assistent-Button dort ausblenden (AssistentChip).
  *
  * Status, Preise, Steuerhinweis und Rechtliches kommen aus denselben Quellen
  * wie die Startseite v3 (landingV3Data.ts, productLandingShared.ts).
@@ -49,20 +52,7 @@ export default function KiBotsLanding() {
       <a href="#ablauf" className="pl-skip">Zum Inhalt springen</a>
 
       <header className="pl-hero" id="top">
-        <nav className="pl-nav" aria-label="Hauptnavigation">
-          <Link to="/" className="pl-brand">RealSync Dynamics &amp; AI</Link>
-          <div className="pl-nav-products">
-            {PRODUCT_PAGES.map((p) =>
-              p.key === 'ki-bots' ? (
-                <a key={p.key} href="#top" aria-current="page">{p.name}</a>
-              ) : (
-                <Link key={p.key} to={p.href}>{p.name}</Link>
-              ),
-            )}
-          </div>
-          <a href="#preise">Preise</a>
-          <Link to="/welcome">Anmelden</Link>
-        </nav>
+        <ProductNav current="ki-bots" />
 
         <div className="pl-hero-grid">
           <div className="pl-hero-copy">
@@ -75,7 +65,7 @@ export default function KiBotsLanding() {
             </h1>
             <p className="pl-lead">{KI_BOTS.lead}</p>
             <div className="pl-actions">
-              <a className="pl-btn pl-btn--solid pl-btn--lg" href="#ablauf" data-testid="ki-bots-primary">
+              <a className="pl-btn pl-btn--solid pl-btn--lg" href="#ablauf" data-testid="ki-bots-primary" data-hero-cta="ki-bots">
                 {KI_BOTS.primaryCta}
               </a>
               <Link className="pl-btn pl-btn--lg" to={KI_BOTS.tryHref}>{KI_BOTS.tryCta}</Link>
@@ -124,7 +114,7 @@ export default function KiBotsLanding() {
             </p>
           </div>
 
-          <div className="pl-chat" data-testid="ki-bots-demo">
+          <div className="pl-chat" data-testid="ki-bots-demo" data-hero-cta="ki-bots-demo">
             <div className="pl-chat-head">
               <span className="pl-meta">Website-Chat · Beispiel</span>
               {chatStatus ? <Pill>{chatStatus}</Pill> : null}
@@ -249,16 +239,7 @@ export default function KiBotsLanding() {
         </section>
       </main>
 
-      <footer className="pl-footer">
-        <div className="pl-footer-row">
-          <Link to="/" className="pl-brand">RealSync Dynamics &amp; AI</Link>
-          <nav aria-label="Rechtliches" className="pl-legal">
-            {LEGAL_LINKS.map((l) => <Link key={l.to} to={l.to}>{l.label}</Link>)}
-            <a href="#top">Nach oben ↑</a>
-          </nav>
-        </div>
-        <p className="pl-fine">{COMPANY_LINE} · {TAX_NOTE}</p>
-      </footer>
+      <ProductFooter />
     </div>
   );
 }

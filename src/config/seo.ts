@@ -368,9 +368,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/claude-code-optimizer': {
-    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
+    // Produkt-Landingpage (Entwurf 19.11.2026). Beschreibung nach Registry `cloud-code-optimizer`
+    // (Preview): Website-Audit mit Befunden; keine Repository-Analyse und keine Code-Fixes.
+    title: 'Claude Code Optimizer — Website prüfen, Befunde verstehen | RealSync Dynamics AI',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. Offene Beta: kostenlos bis 31.01.2027.',
+      'Der Claude Code Optimizer prüft Ihre Website auf ausgewählte DSGVO-, Tracking- und Einwilligungsthemen und zeigt die Befunde nach Schweregrad. Kostenlos und ohne Konto.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -596,6 +598,21 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Erreichbar bleiben: Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team.',
     canonical: `${SITE_URL}/ki-bots`,
+    noIndex: true,
+  },
+  // Produkt-Landingpages App Builder und Governance OS (Entwurf, 19.11.2026), wie /ki-bots noindex.
+  '/app-builder': {
+    title: 'App Builder — RealSync Dynamics & AI',
+    description:
+      'Website oder App im Browser bauen. Jede Änderung zuerst in der Vorschau, live erst nach Ihrer Freigabe.',
+    canonical: `${SITE_URL}/app-builder`,
+    noIndex: true,
+  },
+  '/governance-os': {
+    title: 'Governance OS — RealSync Dynamics & AI',
+    description:
+      'KI-Register, Risiken, Vorfälle, Betroffenenanfragen und Freigaben an einem Ort, mit Nachweis zu jedem Schritt.',
+    canonical: `${SITE_URL}/governance-os`,
     noIndex: true,
   },
 

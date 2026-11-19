@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HeroStage } from '../components/landing/v3/HeroStage';
+import { SyncHeroStage } from '../components/landing/v3/SyncHeroStage';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
@@ -22,6 +22,10 @@ import '../styles/landing-v3.css';
  *   - fest eingetragene Preise und Checkout-Links
  * Status, Preise, Beta, Steuerhinweis und Firma kommen aus den Quellen in
  * landingV3Data.ts.
+ *
+ * Hero-Bühne seit 19.11.2026: SYNC, das 3D-Maskottchen (SyncHeroStage, Weg 1).
+ * Ein Klick im Produktkatalog lässt SYNC winken. `data-hero-cta` am Hauptbutton
+ * blendet den schwebenden Assistent-Button aus, solange der Hero sichtbar ist.
  */
 
 const AUTO_ADVANCE_MS = 6000;
@@ -42,6 +46,7 @@ export function LandingV3() {
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [waveSignal, setWaveSignal] = useState(0);
   const [site, setSite] = useState('');
   const [siteError, setSiteError] = useState('');
 
@@ -101,11 +106,11 @@ export function LandingV3() {
               Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.
             </p>
             <div className="lv3-actions">
-              <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start">Kostenlosen Check starten</a>
+              <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
               <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
             </div>
           </div>
-          <HeroStage active={active} caption={current.stageCaption} statusLabel="Kontrollschicht · Vorschau" />
+          <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · RealSync" waveSignal={waveSignal} />
         </div>
 
         <div
@@ -126,7 +131,7 @@ export function LandingV3() {
                 type="button"
                 className="lv3-cat"
                 aria-pressed={i === active}
-                onClick={() => { setActive(i); setPaused(true); }}
+                onClick={() => { setActive(i); setPaused(true); setWaveSignal((n) => n + 1); }}
               >
                 <span className="lv3-cat-bar" aria-hidden="true"><span data-on={i === active} /></span>
                 <span className="lv3-meta">

@@ -3,9 +3,10 @@
  *
  * Website-Architektur laut Owner (19.11.2026): eine Unternehmensstartseite auf
  * `/` plus vier eigenständige Produktseiten unter der bestehenden Domain.
- * Gebaut ist bisher nur `/ki-bots` (erster Entwurf, noindex). Die übrigen
- * Einträge zeigen bis zu ihrer eigenen Seite auf die vorhandenen Funktionsrouten;
- * `plannedPath` ist nur die geplante Marketing-Adresse und wird nicht verlinkt.
+ * Alle vier sind als Entwurf gebaut (noindex): `/ki-bots` (eigene Seite) und
+ * `/app-builder`, `/governance-os`, `/claude-code-optimizer` (ProductLanding.tsx).
+ * Auf `/claude-code-optimizer` ersetzt die Landingpage die frühere Übersicht;
+ * der Ablauf darunter (`/scan`, `/ergebnis`, `/anmelden`, `/bericht`) bleibt.
  *
  * Quellen wie auf der Startseite v3:
  *   - Status  → src/product/implementation-status.ts (über registryStatus)
@@ -29,14 +30,14 @@ export interface ProductPage {
 
 export const PRODUCT_PAGES: readonly ProductPage[] = [
   { key: 'ki-bots', name: 'KI-Bots & Voice-Agenten', plannedPath: '/ki-bots', href: '/ki-bots', built: true },
-  { key: 'app-builder', name: 'App Builder', plannedPath: '/app-builder', href: '/build', built: false },
-  { key: 'governance-os', name: 'Governance OS', plannedPath: '/governance-os', href: '/governance-runtime', built: false },
+  { key: 'app-builder', name: 'App Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
+  { key: 'governance-os', name: 'Governance OS', plannedPath: '/governance-os', href: '/governance-os', built: true },
   {
     key: 'claude-code-optimizer',
     name: 'Claude Code Optimizer',
     plannedPath: '/claude-code-optimizer',
     href: '/claude-code-optimizer',
-    built: false,
+    built: true,
   },
 ];
 

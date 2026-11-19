@@ -145,7 +145,8 @@ export function nextHumanReview(
       explanation: 'Der Termin wurde lediglich angefragt. Kalenderbuchung und Kundenzusage sind nicht nachgewiesen.',
     };
   }
-  if (conversation.status === 'open') {
+  // Auch unbekannte DB-Statuswerte sind prüfpflichtig (fail-closed).
+  if (conversation.status !== 'closed') {
     return {
       kind: 'conversation',
       priority: 1,

@@ -18,14 +18,14 @@ import { RECEPTIONIST } from '../v3/landingV3Data';
 export const KI_BOTS_SOURCE = 'ki-bots';
 
 export const KI_BOTS = {
-  name: 'KI-Bots & Voice-Agenten',
+  name: 'Persönlicher Telefonassistent',
   audience: 'Für Betriebe mit Kundenkontakt, zuerst im Handwerk',
-  h1: ['Erreichbar bleiben.', 'Auch wenn alle auf der Baustelle sind.'],
+  h1: ['Persönlicher Telefonassistent.', 'Für KMU mit Kundenkontakt.'],
   lead:
-    'Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team. Sie legen fest, was er sagen darf.',
-  primaryCta: 'KI-Empfang kennenlernen',
-  stageTag: 'KI-Empfang · Entwurf',
-  stageCaption: 'Anfrage → Kontakt → Terminwunsch → Mensch',
+    'Der Telefonassistent soll Anrufe entgegennehmen, das Anliegen und einen Rückruf- oder Terminwunsch erfassen und an Ihr Team übergeben. Telefonie ist aktuell noch in Vorbereitung; der Chat-Assistent kann separat ausprobiert werden.',
+  primaryCta: 'Ablauf ansehen',
+  stageTag: 'Telefonassistent · in Vorbereitung',
+  stageCaption: 'Anruf → Anliegen → Rückrufwunsch → Team',
   waitlistHref: `/warteliste?interest=bots&source=${KI_BOTS_SOURCE}`,
   waitlistCta: 'Auf die Warteliste',
   tryHref: `/chatbot/start?source=${KI_BOTS_SOURCE}`,
@@ -35,16 +35,16 @@ export const KI_BOTS = {
 /** Konkretes Produktversprechen: drei Punkte, jeweils mit Grenze. */
 export const PROMISES: ReadonlyArray<{ title: string; body: string }> = [
   {
-    title: 'Keine Anfrage bleibt liegen',
-    body: 'Der Assistent antwortet, während Ihr Team arbeitet, und hält das Anliegen fest.',
+    title: 'Anrufe sollen nicht unbeantwortet bleiben',
+    body: 'Der geplante Telefonassistent nimmt Anliegen auf, während Ihr Team arbeitet. Telefonie ist noch nicht live.',
   },
   {
     title: 'Alles Wichtige auf einen Blick',
-    body: 'Name, Rückrufnummer, Anliegen und Terminwunsch kommen geordnet bei Ihnen an.',
+    body: 'Name, Rückrufnummer, Anliegen und Terminwunsch sollen geordnet an Ihr Team übergeben werden.',
   },
   {
-    title: 'Ein Mensch entscheidet',
-    body: 'Zusagen, Preise und Termine bestätigt Ihr Team. Der Assistent übergibt.',
+    title: 'Ihr Team behält die Entscheidung',
+    body: 'Zusagen, Preise und Termine bestätigt ein Mensch. Der Assistent soll die Informationen übergeben.',
   },
 ];
 
@@ -82,24 +82,24 @@ export const RECEPTION_PHASES = RECEPTIONIST.steps;
 export const USE_CASES: ReadonlyArray<{ trade: string; situation: string; result: string }> = [
   {
     trade: 'Heizung & Sanitär',
-    situation: 'Abends schreibt jemand über die Website, dass das Warmwasser fehlt.',
-    result: 'Anliegen, Adresse und Rückrufnummer liegen morgens geordnet vor.',
+    situation: 'Während des Kundentermins ruft jemand wegen eines Heizungsausfalls an.',
+    result: 'Das geplante System erfasst Anliegen und Rückrufwunsch zur späteren Übergabe.',
   },
   {
     trade: 'Elektro',
-    situation: 'Mehrere Angebotsanfragen kommen gleichzeitig herein.',
-    result: 'Jede Anfrage ist mit Umfang und Kontakt erfasst und wartet auf Ihr Angebot.',
+    situation: 'Während das Team arbeitet, gehen mehrere Anrufe ein.',
+    result: 'Der geplante Ablauf sammelt Anliegen und Kontaktdaten für das Team.',
   },
   {
     trade: 'Dach & Fassade',
-    situation: 'Nach einem Sturm fragen viele Kunden nach einem Termin.',
-    result: 'Terminwünsche sind gesammelt, Ihr Team plant die Reihenfolge.',
+    situation: 'Nach einem Sturm rufen mehrere Kunden mit Terminwünschen an.',
+    result: 'Die Wünsche sollen erfasst und von Ihrem Team bestätigt werden.',
   },
 ];
 
 /** Verständlicher Einstieg in drei Schritten. */
 export const START_STEPS: ReadonlyArray<{ title: string; body: string }> = [
-  { title: 'Ausprobieren', body: 'Den Chat-Assistenten ohne Vorbereitung im Browser testen.' },
-  { title: 'Vorgaben festlegen', body: 'Bestimmen, welche Fragen er beantwortet und was er an Ihr Team gibt.' },
-  { title: 'Vormerken lassen', body: 'Auf die Warteliste für den KI-Empfang am Telefon.' },
+  { title: 'Ablauf ansehen', body: 'Das markierte Beispiel zeigt, welche Informationen das Team erhalten soll.' },
+  { title: 'Chat testen', body: 'Den verfügbaren Chat-Assistenten separat im Browser ausprobieren.' },
+  { title: 'Vormerken lassen', body: 'Interesse am Telefonassistenten für KMU hinterlegen.' },
 ];

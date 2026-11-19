@@ -116,20 +116,38 @@ export function contactLabel(c: Pick<BotConversation, 'contact_label' | 'externa
  * Dies ist eine LESE-/Triagehilfe, keine persistierte Handoff-Bestätigung.
  */
 export type HumanReview = {
-  kind: 'appointment' | 'conversation' | 'none' | 'unverified';
-  priority: 0 | 1 | 2;
+  kind: 'callback' | 'appointment' | 'conversation' | 'none' | 'unverified';
+  priority: 0 | 1 | 2 | 3 | 4;
   label: string;
   explanation: string;
 };
 
 export function nextHumanReview(
-  conversation: Pick<BotConversation, 'id' | 'status'>,
+  conversation: Pick<BotConversation, 'id' | 'status' | 'callback_status'>,
   appointments: readonly Pick<BotAppointment, 'conversation_id' | 'status'>[] | null | undefined,
 ): HumanReview {
+  // Die Voice-Closing-RPC speichert 'erfasst'; das bedeutet ausschließlich
+  // Rückrufwunsch gespeichert, NICHT Rückruf erfolgt oder Human-Handoff fertig.
+  if (conversation.callback_status === 'erfasst') {
+    return {
+      kind: 'callback',
+      priority: 0,
+      label: 'Rückrufwunsch bearbeiten',
+      explanation: 'Rückrufwunsch gespeichert. Eine Kontaktaufnahme oder Übergabe an einen Menschen ist noch nicht nachgewiesen.',
+    };
+  }
+  if (conversation.callback_status != null) {
+    return {
+      kind: 'unverified',
+      priority: 0,
+      label: 'Rückrufstatus prüfen',
+      explanation: 'Der gespeicherte Rückrufstatus ist unbekannt. Bitte vor einer Zusage prüfen.',
+    };
+  }
   if (appointments == null) {
     return {
       kind: 'unverified',
-      priority: 1,
+      priority: 2,
       label: 'Terminstatus nicht verifiziert',
       explanation: 'Terminwünsche sind noch nicht verfügbar. Eine Bearbeitung oder Übergabe ist nicht bestätigt.',
     };
@@ -140,7 +158,7 @@ export function nextHumanReview(
   if (pending) {
     return {
       kind: 'appointment',
-      priority: 0,
+      priority: 1,
       label: 'Terminwunsch prüfen',
       explanation: 'Der Termin wurde lediglich angefragt. Kalenderbuchung und Kundenzusage sind nicht nachgewiesen.',
     };
@@ -149,23 +167,24 @@ export function nextHumanReview(
   if (conversation.status !== 'closed') {
     return {
       kind: 'conversation',
-      priority: 1,
+      priority: 3,
       label: 'Offene Anfrage prüfen',
       explanation: 'Die Konversation ist offen. Eine menschliche Übernahme ist dadurch noch nicht bestätigt.',
     };
   }
   return {
     kind: 'none',
-    priority: 2,
+    priority: 4,
     label: 'Kein offener Terminwunsch erfasst',
     explanation: 'Die Konversation ist geschlossen. Eine Kundenbenachrichtigung ist damit nicht nachgewiesen.',
   };
 }
 
-/** Offene Terminwünsche und Konversationen erhalten Vorrang vor geschlossenen Einträgen.
+/** Gespeicherte Rückrufwünsche vor offenen Terminen, diese vor anderen Anfragen.
+ * Ein Rückruf gilt niemals allein deshalb als erledigt, weil das Gespräch 'closed' ist.
  * Der Sortierer verändert das Eingabearray nicht und nutzt ausschließlich gelesene Daten.
  */
-export function sortConversationsForReview<T extends Pick<BotConversation, 'id' | 'status' | 'last_message_at'>>(
+export function sortConversationsForReview<T extends Pick<BotConversation, 'id' | 'status' | 'last_message_at' | 'callback_status'>>(
   conversations: readonly T[],
   appointments: readonly Pick<BotAppointment, 'conversation_id' | 'status'>[] | null | undefined,
 ): T[] {

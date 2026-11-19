@@ -123,8 +123,8 @@
 
 @container (min-width: 560px) {
   .pl-stage[data-variant] .pl-stage-view { position: absolute; inset: 0; min-height: 0; }
-  .pl-stage-view--left { right: 34%; }
-  .pl-stage-view--right { left: 34%; }
+  .pl-stage[data-variant] .pl-stage-view--left { right: 40%; }
+  .pl-stage[data-variant] .pl-stage-view--right { left: 40%; }
   .pl-prop { position: absolute; top: 50%; width: min(46%, 340px); margin: 0; transform: translateY(-50%); }
   .pl-prop--left { right: 20px; }
   .pl-prop--right { left: 20px; }

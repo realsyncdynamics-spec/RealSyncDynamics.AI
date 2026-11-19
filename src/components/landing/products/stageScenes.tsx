@@ -27,10 +27,11 @@ export interface StageScene {
 }
 
 export const STAGE_SCENES: Record<StageVariant, StageScene> = {
-  empfang: { orbit: { theta: 32, phi: 80 }, poseAt: 0, side: 'left' },
-  builder: { orbit: { theta: -28, phi: 74 }, poseAt: 0, side: 'right' },
-  governance: { orbit: { theta: 8, phi: 86 }, poseAt: 0, side: 'left' },
-  optimizer: { orbit: { theta: -40, phi: 66 }, poseAt: 0, side: 'right' },
+  // Negativer Winkel: SYNC schaut nach rechts, positiver: nach links, jeweils zur Karte.
+  empfang: { orbit: { theta: -32, phi: 80 }, poseAt: 0, side: 'left' },
+  builder: { orbit: { theta: 28, phi: 74 }, poseAt: 0, side: 'right' },
+  governance: { orbit: { theta: -12, phi: 86 }, poseAt: 0, side: 'left' },
+  optimizer: { orbit: { theta: 40, phi: 66 }, poseAt: 0, side: 'right' },
 };
 
 /** Zuordnung Produktseite → Szene. */

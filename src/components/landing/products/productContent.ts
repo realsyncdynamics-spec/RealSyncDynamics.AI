@@ -82,7 +82,7 @@ export const LANDINGPAGE_BUILDER: ProductLandingContent = {
   primary: { label: 'Landingpage erstellen', to: `/build?kind=landing&source=${LANDINGPAGE_BUILDER_SOURCE}` },
   secondary: { label: 'So läuft es ab', to: '#ablauf' },
   status: [
-    { label: 'Builder', registryId: 'public-frontend-builder' },
+    { label: 'Builder', registryId: 'web-builder' },
     { label: 'Freischaltung je Tarif', registryId: 'builder-entitlement-gate' },
   ],
   stageTag: 'Landingpage-Builder · Entwurf',

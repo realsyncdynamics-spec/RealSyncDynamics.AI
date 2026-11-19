@@ -68,7 +68,7 @@ export const PRODUCTS: readonly V3Product[] = [
     body: 'Geschäftsidee, Inhalte und gewünschtes Design bilden den Startpunkt für einen Frontend-Entwurf.',
     flow: 'Idee → Inhalt → Design → Vorschau',
     href: `/landingpage-builder?source=${SOURCE}`,
-    registryId: 'public-frontend-builder',
+    registryId: 'web-builder',
     stageCaption: 'Geschäftsidee → Website-Entwurf',
   },
   {

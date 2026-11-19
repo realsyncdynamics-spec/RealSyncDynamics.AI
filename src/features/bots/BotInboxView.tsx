@@ -183,8 +183,16 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
 
   const selectedConvo = convos.find((c) => c.id === selected) ?? null;
   const prioritizedConvos = sortConversationsForReview(convos, appointments);
+  const callbackCount = convos.filter((c) => c.callback_status === 'erfasst').length;
 
   return (
+    <div className="space-y-3">
+      {callbackCount > 0 && (
+        <p className="border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-300" role="status">
+          {callbackCount} gespeicherte {callbackCount === 1 ? 'Rückrufanfrage' : 'Rückrufanfragen'} – zuerst bearbeiten.
+          Ein erfasster Rückrufwunsch bedeutet nicht, dass ein Rückruf durchgeführt wurde.
+        </p>
+      )}
     <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
       <div className="space-y-1">
         {prioritizedConvos.map((c) => {
@@ -228,6 +236,7 @@ function ConversationsPane({ tenantId, appointments, onOpenAppointments }: {
         )}
       </div>
     </div>
+    </div>
   );
 }
 
@@ -247,6 +256,19 @@ function RequestCard({ conversation, appointments, review, onOpenAppointments }:
         </div>
       </div>
 
+      {conversation.callback_status === 'erfasst' && (
+        <div className="mt-3 border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs">
+          <p className="font-semibold text-amber-300">Rückrufwunsch erfasst – Bearbeitung offen</p>
+          <p className="mt-1 text-titanium-300">
+            Erfasst: {fmt(conversation.callback_requested_at ?? null)}
+            {conversation.callback_reason === 'zeitlimit' ? ' · Gesprächszeit beendet' :
+              conversation.callback_reason === 'budget' ? ' · Kostenlimit erreicht' : ''}
+          </p>
+          <p className="mt-1 text-titanium-400">
+            Ein Telefonrückruf oder eine Weiterleitung an einen Menschen ist nicht bestätigt.
+          </p>
+        </div>
+      )}
       <div className="mt-3 border-t border-titanium-900 pt-3" aria-label="Nächster menschlicher Prüfschritt">
         <p className="font-mono text-[9px] uppercase tracking-wider text-titanium-600">Nächster Prüfschritt</p>
         <p className="mt-1 text-xs text-titanium-200">{review.label}</p>

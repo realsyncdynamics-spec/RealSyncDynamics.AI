@@ -126,8 +126,8 @@
   .pl-stage[data-variant] .pl-stage-view--left { right: 40%; }
   .pl-stage[data-variant] .pl-stage-view--right { left: 40%; }
   .pl-prop { position: absolute; top: 50%; width: min(46%, 340px); margin: 0; transform: translateY(-50%); }
-  .pl-prop--left { right: 20px; }
-  .pl-prop--right { left: 20px; }
+  .pl-prop--left { left: 20px; }
+  .pl-prop--right { right: 20px; }
 }
 
 /* Abschnitte */

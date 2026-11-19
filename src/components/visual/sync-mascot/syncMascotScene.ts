@@ -14,9 +14,10 @@
  * und nur, solange die Bühne sichtbar und der Tab aktiv ist.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { loadWithRetry } from './loadWithRetry';
 
 export interface SyncMascotOptions {
   /** URL der GLB-Datei. */
@@ -205,9 +206,13 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
     options.onWaveFinished();
   };
 
-  new GLTFLoader().load(
-    options.src,
-    (gltf) => {
+  // Ein Neuversuch nach Fehlschlag: Der erste Abruf kann direkt nach einem Deploy scheitern.
+  const loader = new GLTFLoader();
+  const cancelRetry = loadWithRetry<GLTF>({
+    load: (onSuccess, onFailure) => loader.load(options.src, onSuccess, undefined, onFailure),
+    isCancelled: () => disposed,
+    onError: () => options.onError(),
+    onSuccess: (gltf) => {
       if (disposed) {
         disposeObject(gltf.scene);
         return;
@@ -279,11 +284,7 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
       dirty = false;
       options.onLoad();
     },
-    undefined,
-    () => {
-      if (!disposed) options.onError();
-    },
-  );
+  });
 
   resize();
   schedule();
@@ -300,6 +301,7 @@ export function mountSyncMascot(canvas: HTMLCanvasElement, options: SyncMascotOp
     dispose() {
       if (disposed) return;
       disposed = true;
+      cancelRetry();
       if (frame) cancelAnimationFrame(frame);
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('keydown', onKeyDown);

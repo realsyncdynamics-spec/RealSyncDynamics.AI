@@ -589,6 +589,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
 
+  // Produkt-Landingpage KI-Bots (erster Entwurf, 19.11.2026). Noindex und nicht in der
+  // Sitemap, bis Gestaltung und Inhalte freigegeben sind.
+  '/ki-bots': {
+    title: 'KI-Bots & Voice-Agenten — RealSync Dynamics & AI',
+    description:
+      'Erreichbar bleiben: Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team.',
+    canonical: `${SITE_URL}/ki-bots`,
+    noIndex: true,
+  },
+
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/unternehmen': {

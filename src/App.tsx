@@ -36,6 +36,7 @@ const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default:
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const SyncMascot = lazy(() => import('./pages/SyncMascot'));
+const KiBotsLanding = lazy(() => import('./pages/products/KiBotsLanding'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const NeedsCheckPage = lazy(() => import('./pages/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
 const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').then((m) => ({ default: m.NeedsCheckSavedPage })));
@@ -554,6 +555,8 @@ function RoutesWithTracking() {
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
       {/* SYNC — 3D-Maskottchen (three in eigenem Chunk). */}
       <Route path="/sync" element={<SyncMascot />} />
+      {/* Produkt-Landingpage KI-Bots, erster Entwurf (noindex, nicht von / verlinkt). */}
+      <Route path="/ki-bots" element={<KiBotsLanding />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />

@@ -111,6 +111,69 @@ export function contactLabel(c: Pick<BotConversation, 'contact_label' | 'externa
   return 'Unbekannter Kontakt';
 }
 
+/** Welche Entscheidung im AI-Receptionist-Posteingang als Nächstes nötig ist.
+ * Ohne geladene Terminwünsche wird nichts als erledigt ausgegeben.
+ * Dies ist eine LESE-/Triagehilfe, keine persistierte Handoff-Bestätigung.
+ */
+export type HumanReview = {
+  kind: 'appointment' | 'conversation' | 'none' | 'unverified';
+  priority: 0 | 1 | 2;
+  label: string;
+  explanation: string;
+};
+
+export function nextHumanReview(
+  conversation: Pick<BotConversation, 'id' | 'status'>,
+  appointments: readonly Pick<BotAppointment, 'conversation_id' | 'status'>[] | null | undefined,
+): HumanReview {
+  if (appointments == null) {
+    return {
+      kind: 'unverified',
+      priority: 1,
+      label: 'Terminstatus nicht verifiziert',
+      explanation: 'Terminwünsche sind noch nicht verfügbar. Eine Bearbeitung oder Übergabe ist nicht bestätigt.',
+    };
+  }
+  const pending = appointments.some(
+    (a) => a.conversation_id === conversation.id && a.status === 'requested',
+  );
+  if (pending) {
+    return {
+      kind: 'appointment',
+      priority: 0,
+      label: 'Terminwunsch prüfen',
+      explanation: 'Der Termin wurde lediglich angefragt. Kalenderbuchung und Kundenzusage sind nicht nachgewiesen.',
+    };
+  }
+  if (conversation.status === 'open') {
+    return {
+      kind: 'conversation',
+      priority: 1,
+      label: 'Offene Anfrage prüfen',
+      explanation: 'Die Konversation ist offen. Eine menschliche Übernahme ist dadurch noch nicht bestätigt.',
+    };
+  }
+  return {
+    kind: 'none',
+    priority: 2,
+    label: 'Kein offener Terminwunsch erfasst',
+    explanation: 'Die Konversation ist geschlossen. Eine Kundenbenachrichtigung ist damit nicht nachgewiesen.',
+  };
+}
+
+/** Offene Terminwünsche und Konversationen erhalten Vorrang vor geschlossenen Einträgen.
+ * Der Sortierer verändert das Eingabearray nicht und nutzt ausschließlich gelesene Daten.
+ */
+export function sortConversationsForReview<T extends Pick<BotConversation, 'id' | 'status' | 'last_message_at'>>(
+  conversations: readonly T[],
+  appointments: readonly Pick<BotAppointment, 'conversation_id' | 'status'>[] | null | undefined,
+): T[] {
+  return [...conversations].sort((a, b) => {
+    const priority = nextHumanReview(a, appointments).priority - nextHumanReview(b, appointments).priority;
+    return priority || timeOf(b.last_message_at) - timeOf(a.last_message_at);
+  });
+}
+
 /**
  * Wirft, wenn ein Update keine Zeile getroffen hat. PostgREST meldet ein von
  * RLS gefiltertes Update nicht als Fehler, sondern liefert 0 Zeilen — ohne

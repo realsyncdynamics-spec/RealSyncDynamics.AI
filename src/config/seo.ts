@@ -580,6 +580,15 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
 
+  // SYNC — 3D-Maskottchen. Noindex und nicht in der Sitemap; Indexierung wäre ein eigener Schritt.
+  '/sync': {
+    title: 'SYNC — RealSyncDynamics.AI',
+    description:
+      'SYNC, das 3D-Maskottchen von RealSyncDynamics: im Browser drehen, zoomen und winken lassen.',
+    canonical: `${SITE_URL}/sync`,
+    noIndex: true,
+  },
+
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/unternehmen': {

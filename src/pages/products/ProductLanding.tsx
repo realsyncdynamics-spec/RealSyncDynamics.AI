@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MascotStage } from '../../components/landing/products/MascotStage';
+import { STAGE_VARIANT_BY_PRODUCT } from '../../components/landing/products/stageScenes';
 import { ProductFooter, ProductNav } from '../../components/landing/products/ProductChrome';
 import {
   PRODUCT_CONTENT, type ProductLandingKey, type ProductLink,
@@ -86,7 +87,12 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
               </p>
             ) : null}
           </div>
-          <MascotStage tag={c.stageTag} caption={c.stageCaption} waveSignal={waveSignal} />
+          <MascotStage
+            tag={c.stageTag}
+            caption={c.stageCaption}
+            waveSignal={waveSignal}
+            variant={STAGE_VARIANT_BY_PRODUCT[c.key]}
+          />
         </div>
       </header>
 

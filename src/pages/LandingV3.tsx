@@ -87,7 +87,7 @@ export function LandingV3() {
           <a href="#katalog">Build</a>
           <a href="#katalog">Automate</a>
           <a href="#govern">Govern</a>
-          <Link to="/phonebot/start">Voice Agent</Link>
+          <Link to="/ki-bots">Telefonassistent</Link>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>

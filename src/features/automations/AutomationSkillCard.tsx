@@ -9,9 +9,9 @@ import {
 import { AutomationSkillRunner } from './AutomationSkillRunner';
 import { tierById } from '../../config/pricing';
 
-// Skills mit Direct-Execution in automation-trigger (kein n8n nötig, siehe
-// supabase/functions/automation-trigger/index.ts).
-const DIRECT_RUN_SKILLS = new Set(['dsgvo-audit']);
+// Skills mit Trigger-UI; ob der Skill tatsächlich an n8n gebunden ist,
+// prüft AutomationSkillRunner mandantenbezogen vor dem Start.
+const TRIGGER_UI_SKILLS = new Set(['dsgvo-audit']);
 
 const STATUS_CLS: Record<AutomationSkillStatus, string> = {
   available: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
@@ -32,7 +32,7 @@ export function AutomationSkillStatusBadge({ status }: { status: AutomationSkill
 }
 
 export function AutomationSkillCard({ skill, tenantId }: { skill: AutomationSkill; tenantId: string | null }) {
-  const canRunDirect = tenantId && DIRECT_RUN_SKILLS.has(skill.id) && skill.status !== 'planned';
+  const canRunDirect = tenantId && TRIGGER_UI_SKILLS.has(skill.id) && skill.status !== 'planned';
 
   return (
     <article id={skill.id} className="border border-titanium-800 bg-obsidian-900">

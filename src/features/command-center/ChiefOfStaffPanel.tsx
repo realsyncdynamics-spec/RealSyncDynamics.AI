@@ -45,6 +45,7 @@ const PRIORITY_CLASS = {
 export function ChiefOfStaffPanel() {
   const tenantContext = useOptionalTenant();
   const activeTenantId = tenantContext?.activeTenantId ?? null;
+  const tenantOptions = tenantContext?.tenants ?? [];
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<InboxState>({
     tenantId: null, loading: false, data: null, error: null,
@@ -87,11 +88,30 @@ export function ChiefOfStaffPanel() {
             Keine eigenständigen Agentenaktionen oder Freigaben.
           </p>
         </div>
-        <button type="button" onClick={() => setReloadKey(x => x + 1)}
-          disabled={!activeTenantId || visible.loading}
-          className="inline-flex items-center gap-2 rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 disabled:opacity-50">
-          <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Aktualisieren
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          {tenantOptions.length > 1 && tenantContext?.setActiveTenant && (
+            <label className="flex flex-col gap-1 text-xs text-zinc-400">
+              Mandant wählen
+              <select aria-label="Mandant wählen" value={activeTenantId ?? ''}
+                onChange={(event) => {
+                  const id = event.target.value;
+                  if (tenantOptions.some((tenant) => tenant.tenantId === id)) {
+                    tenantContext.setActiveTenant(id);
+                  }
+                }}
+                className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100">
+                {tenantOptions.map((tenant) => (
+                  <option key={tenant.tenantId} value={tenant.tenantId}>{tenant.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button type="button" onClick={() => setReloadKey(x => x + 1)}
+            disabled={!activeTenantId || visible.loading}
+            className="inline-flex items-center gap-2 rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 disabled:opacity-50">
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Aktualisieren
+          </button>
+        </div>
       </div>
 
       {visible.loading && <p role="status" className="text-sm text-zinc-400">Arbeitsüberblick wird geladen …</p>}

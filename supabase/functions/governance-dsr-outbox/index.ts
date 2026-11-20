@@ -30,7 +30,10 @@ Deno.serve(async (req: Request) => {
       pending_retryable?: number; exhausted?: number;
     } | null;
     const required = ['delivered', 'failed_in_batch', 'pending_retryable', 'exhausted'] as const;
-    if (!counters || required.some(k => typeof counters[k] !== 'number' || !Number.isFinite(counters[k]))) {
+    if (!counters || required.some(k => {
+      const value = counters[k];
+      return typeof value !== 'number' || !Number.isFinite(value);
+    })) {
       return jsonError(503, 'INVALID_DRAIN_RESULT', 'invalid DSR outbox response', corsHeaders);
     }
 

@@ -59,7 +59,7 @@ export function curatedFacts(): PublicFact[] {
     },
     {
       id: 'company.tradeRegisteredOn',
-      text: 'Gewerbe angemeldet am 13.05.2026.',
+      text: 'Gewerbe angemeldet am 09.05.2026.',
     },
     {
       id: 'company.seat',
@@ -67,7 +67,9 @@ export function curatedFacts(): PublicFact[] {
     },
     {
       id: 'product.summary',
-      text: 'RealSyncDynamics.AI ist eine SaaS-Plattform für DSGVO- und EU-AI-Act-Kontrollen: Governance OS, verkettete Nachweise (Evidence) und AI Agents für regulierte Unternehmen. Agenten- und Bot-Funktionen sind teilweise Preview. Telefonie ist Coming Soon und nicht Teil dieser Demo.',
+      // Wortlaut des Namens = COMPANY.companyName. Kein Import von company.ts:
+      // diese Datei darf import.meta nicht ziehen (Pages-Function).
+      text: 'RealSync Dynamics & AI ist eine SaaS-Plattform für DSGVO- und EU-AI-Act-Kontrollen: Governance OS, verkettete Nachweise (Evidence) und AI Agents für regulierte Unternehmen. Agenten- und Bot-Funktionen sind teilweise Preview. Telefonie ist Coming Soon und nicht Teil dieser Demo.',
     },
     {
       id: 'product.boundaries',

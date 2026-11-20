@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { COMPANY } from '../../config/company';
 
 interface SubProcessor {
   name: string;
@@ -132,7 +133,7 @@ export function SubProcessors() {
         <div className="prose prose-invert max-w-none text-titanium-300 text-sm leading-relaxed">
           <p>
             Diese Liste dokumentiert alle Auftragsverarbeiter (Art. 28 DSGVO), die wir
-            zur Bereitstellung von <strong>RealSyncDynamics.AI</strong> einsetzen. Jeder
+            zur Bereitstellung von <strong>{COMPANY.companyName}</strong> einsetzen. Jeder
             dieser Anbieter verarbeitet personenbezogene Daten nur auf unsere Weisung
             und unter einer Vereinbarung zur Auftragsverarbeitung (AVV / DPA).
           </p>

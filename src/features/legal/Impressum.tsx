@@ -4,6 +4,7 @@ import {
   isImpressumProductionReady,
   loadBusinessIdentity,
 } from '../../config/business-identity';
+import { COMPANY } from '../../config/company';
 
 /**
  * Impressum nach § 5 DDG + § 18 MStV.
@@ -60,7 +61,7 @@ export function Impressum() {
 
         <Section title="Anbieter / Verantwortlicher i. S. d. § 5 DDG">
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            <strong className="text-titanium-50">{COMPANY.companyName}</strong><br />
             Schwarzburger Str. 31<br />
             98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
@@ -70,8 +71,8 @@ export function Impressum() {
             vertreten durch den Inhaber Dominik Steiner.
           </p>
           <p className="text-xs text-titanium-500">
-            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI".
-            Gewerbe angemeldet am 13.05.2026 (Gewerbeamt Neuhaus am Rennweg,
+            Handelsname „{COMPANY.companyName}" bzw. „RealSyncDynamics.AI".
+            Gewerbe angemeldet am 09.05.2026 (Gewerbeamt Neuhaus am Rennweg,
             Landkreis Sonneberg, Gemeindekennzahl 16072013).
           </p>
         </Section>
@@ -103,7 +104,7 @@ export function Impressum() {
           </p>
           <p className="text-xs text-titanium-500">
             Wortlaut gemäß registrierter Gewerbeanmeldung (Anlage zu GewA 1,
-            Feld 18, Datum 13.05.2026). WZ-Code: 62.01.0
+            Feld 18, Datum 09.05.2026). WZ-Code: 62.01.0
             (Programmierungstätigkeiten), ergänzend 62.09.0
             (sonstige Tätigkeiten der Informationstechnologie).
           </p>

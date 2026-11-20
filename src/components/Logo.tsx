@@ -1,5 +1,7 @@
+import { COMPANY } from '../config/company';
+
 /**
- * RealSync Dynamics Logo — Watchmaker-AI Edition.
+ * Logo — Watchmaker-AI Edition. Wortlaut des Namens: `COMPANY.companyName`.
  *
  * Same silhouette as before (two outer ring segments + neural-net core), now
  * in the brand's Watchmaker-AI palette:
@@ -33,7 +35,7 @@ export function Logo({ size = 28, iconOnly = false, textClassName }: LogoProps) 
         viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        aria-label="RealSync Dynamics"
+        aria-label={COMPANY.companyName}
         role="img"
       >
         <defs>

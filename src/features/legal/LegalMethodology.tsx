@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Database, Cog, FileSearch, Calendar, GitBranch, AlertTriangle } from 'lucide-react';
 import { MethodologyBooking } from '../../components/MethodologyBooking';
+import { COMPANY } from '../../config/company';
 
 /**
  * /legal/methodology — Methodology Center.
@@ -226,7 +227,7 @@ export function LegalMethodology() {
 
       <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
+          <div>© 2026 {COMPANY.companyName} · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/impressum" className="hover:text-titanium-300">Impressum</Link>
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>

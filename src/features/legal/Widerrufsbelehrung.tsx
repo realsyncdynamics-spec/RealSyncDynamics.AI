@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { COMPANY } from '../../config/company';
 
 /**
  * Widerrufsbelehrung für Verbraucher gemäß Art. 246a § 1 Abs. 2 EGBGB
@@ -48,7 +49,7 @@ export function Widerrufsbelehrung() {
             Um Ihr Widerrufsrecht auszuüben, müssen Sie uns
           </p>
           <div className="border border-titanium-800 p-3 my-2 text-sm">
-            RealSync Dynamics<br />
+            {COMPANY.companyName}<br />
             Inhaber: Dominik Steiner<br />
             Schwarzburger Str. 31, 98724 Neuhaus am Rennweg, Thüringen, Deutschland<br />
             Telefon: <a className="text-security-400" href="tel:+4917640132161">+49 176 4013 2161</a><br />
@@ -119,7 +120,7 @@ export function Widerrufsbelehrung() {
           </p>
           <div className="border border-titanium-800 p-4 my-2 text-sm font-mono space-y-2">
             <p>
-              An RealSync Dynamics, Inhaber Dominik Steiner, Schwarzburger
+              An {COMPANY.companyName}, Inhaber Dominik Steiner, Schwarzburger
               Str. 31, 98724 Neuhaus am Rennweg, Deutschland,
               E-Mail: hello@realsyncdynamicsai.de:
             </p>

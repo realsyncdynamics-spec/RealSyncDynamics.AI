@@ -125,7 +125,7 @@ Wo dieses Vokabular **im Repo aktiv ist** (Stand 2026-05-20):
 | JSON-LD `Organization.description` (`index.html`) | ✅ aktualisiert in diesem PR |
 | JSON-LD `SoftwareApplication.description` (`index.html`) | ✅ aktualisiert in diesem PR |
 | Meta `keywords` (`index.html`) | ✅ Runtime/Evidence-Begriffe lead |
-| Impressum-Tätigkeitsbeschreibung | ✅ 1:1 aus Gewerbeanmeldung 13.05.2026 — kompatibel mit Runtime-Lead |
+| Impressum-Tätigkeitsbeschreibung | ✅ 1:1 aus Gewerbeanmeldung 09.05.2026 — kompatibel mit Runtime-Lead |
 | Pricing-Page Tagline | ⚠ noch DSGVO-lastig — Folge-PR |
 | Footer-Copy | ⚠ uneinheitlich — Folge-PR |
 | Niche-Landings (`/saas`, `/agencies`, `/praxen`) | ⚠ DSGVO-Lead — Folge-PR pro Page |
@@ -135,7 +135,7 @@ Wo dieses Vokabular **im Repo aktiv ist** (Stand 2026-05-20):
 
 ## 7. Konsistenz mit der Gewerbeanmeldung
 
-Die offizielle Tätigkeitsbeschreibung (Anlage zu GewA 1, Feld 18, registriert 13.05.2026) lautet:
+Die offizielle Tätigkeitsbeschreibung (Anlage zu GewA 1, Feld 18, registriert 09.05.2026) lautet:
 
 > „Entwicklung und Betrieb von Software-as-a-Service (SaaS)-Lösungen im Bereich Datenschutz-, Compliance- und KI-Governance, insbesondere automatisierte Website- und Tracking-Analysen, DSGVO-/TTDSG-Compliance-Monitoring, technische Audit- und Reporting-Systeme sowie digitale Compliance-Tools. Erbringung von IT-Dienstleistungen, Softwareentwicklung und Bereitstellung webbasierter Analyse- und Monitoringplattformen."
 

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Printer, Download, Mail } from 'lucide-react';
+import { COMPANY } from '../../config/company';
 
 /**
  * AVV/DPA-Template gemäß Art. 28 DSGVO. Wird auf /legal/avv ausgeliefert.
  * Inhalt ist eine ausgefüllte Vorlage, die Kunden als Print/PDF nutzen können —
- * "RealSync Dynamics" ist als Auftragsverarbeiter eingetragen, der Kunde
+ * `COMPANY.companyName` ist als Auftragsverarbeiter eingetragen, der Kunde
  * trägt sich als Verantwortlicher ein.
  */
 export function AVVTemplate() {
@@ -64,7 +65,7 @@ export function AVVTemplate() {
             </div>
             <p className="mb-3"><strong>Auftragsverarbeiter:</strong></p>
             <div className="border border-titanium-800 print:border-titanium-300 p-3 text-sm">
-              RealSync Dynamics<br />
+              {COMPANY.companyName}<br />
               Inhaber: Dominik Steiner<br />
               Schwarzburger Str. 31, 98724 Neuhaus am Rennweg, Thüringen, Deutschland<br />
               E-Mail: <a href="mailto:privacy@realsyncdynamicsai.de" className="text-security-400 print:text-[#1f6feb]">privacy@realsyncdynamicsai.de</a><br />
@@ -347,7 +348,7 @@ export function AVVTemplate() {
 
       <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-8 print:hidden">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row justify-between gap-3 text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics</div>
+          <div>© 2026 {COMPANY.companyName}</div>
           <div className="flex flex-wrap gap-4">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
             <Link to="/legal/sub-processors" reloadDocument className="hover:text-titanium-300">Sub-Prozessoren</Link>

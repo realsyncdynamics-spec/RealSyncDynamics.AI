@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Shield, Target, Compass, Users } from 'lucide-react';
 import { CTA } from '../content/runtimeVocab';
 import { TRY_FREE } from '../config/beta';
+import { COMPANY } from '../config/company';
 
 export function About() {
   return (
@@ -14,7 +15,7 @@ export function About() {
           <div className="w-8 h-8 rounded-none bg-gradient-to-br from-security-500 to-security-700 flex items-center justify-center">
             <Compass className="h-4 w-4 text-white" />
           </div>
-          <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Über RealSync Dynamics</div>
+          <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Über {COMPANY.companyName}</div>
         </div>
       </header>
 
@@ -28,7 +29,7 @@ export function About() {
               Wir bauen die <span className="text-security-400">Control Plane</span> für Enterprise-KI in Europa.
             </h1>
             <p className="text-lg text-titanium-300 leading-relaxed">
-              RealSync Dynamics existiert, weil Unternehmen Kontrolle über frontierfähige KI brauchen — nicht
+              {COMPANY.companyName} existiert, weil Unternehmen Kontrolle über frontierfähige KI brauchen — nicht
               noch ein weiteres Modell. DSGVO, EU AI Act, BAIT und DORA bleiben dabei der Proof-Layer.
             </p>
           </div>
@@ -114,13 +115,12 @@ export function About() {
 
           <Section title="Founder">
             <p>
-              RealSync Dynamics wird geführt vom Gründer aus Hessen — mit Background in Software-Engineering,
-              Compliance-Implementierung in regulierten Industrien (HealthTech, FinTech, Behörden) und einer
-              klaren These: <strong className="text-titanium-50">DACH-Compliance braucht DACH-Tools</strong>.
+              {COMPANY.companyName} wird von Gründer Dominik Steiner in {COMPANY.headquartersAddress.city} (Thüringen)
+              geführt. Er baut Governance-Software, KI-Mitarbeiter für Betriebe mit Kundenkontakt und Webseiten —
+              mit einer klaren These: <strong className="text-titanium-50">DACH-Compliance braucht DACH-Tools</strong>.
             </p>
             <p>
-              Kontakt für Presse, Partnerschaften, Investor-Anfragen: <Link to="/contact-sales" className="text-security-400 hover:text-security-300">/contact-sales</Link>
-              {' '}oder über <Link to="/press" className="text-security-400 hover:text-security-300">/press</Link> für Media-Kit.
+              Kontakt für Presse und Media-Kit: <Link to="/press" className="text-security-400 hover:text-security-300">/press</Link>.
             </p>
           </Section>
 
@@ -193,7 +193,7 @@ export function About() {
 
       <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
+          <div>© 2026 {COMPANY.companyName} · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
             <Link to="/legal/avv" className="hover:text-titanium-300">AVV</Link>

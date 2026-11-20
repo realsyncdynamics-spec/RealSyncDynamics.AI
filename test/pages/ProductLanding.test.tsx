@@ -10,7 +10,11 @@ const scene = vi.hoisted(() => ({
   options: null as SyncMascotOptions | null,
   wave: vi.fn(() => true),
   dispose: vi.fn(),
+  canRun3D: true,
 }));
+
+// jsdom kann kein WebGL rendern: Capability-Gate für bestehende 3D-Tests steuerbar.
+vi.mock('../../src/components/landing/v3/HeroStage', () => ({ canRun3D: () => scene.canRun3D }));
 
 vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
   mountSyncMascot: (_canvas: HTMLCanvasElement, options: SyncMascotOptions) => {
@@ -45,6 +49,7 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     scene.options = null;
     scene.wave.mockClear();
     scene.dispose.mockClear();
+    scene.canRun3D = true;
   });
 
   it('sind geroutet, noindex und in der Produktnavigation verlinkt', () => {
@@ -158,6 +163,16 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     const text = JSON.stringify(PRODUCT_CONTENT);
     expect(text).not.toMatch(/Pilot|Demo buchen|Beratung anfragen|Termin vereinbaren|Sales/);
     expect(read('src/config/seo.ts')).not.toMatch(/einfügbaren Fix-Code/);
+  });
+
+  it('zeigt SYNC als Standbild, wenn 3D auf dem Gerät deaktiviert ist', () => {
+    scene.canRun3D = false;
+    render(<MemoryRouter><ProductLanding product="creative-studio" /></MemoryRouter>);
+    const stage = screen.getByTestId('pl-stage');
+    expect(within(stage).getByRole('img', { name: /SYNC, petrolfarbener RealSync-Roboter/ }))
+      .toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+    expect(within(stage).getByRole('img', { name: /SYNC: petrolfarbener/ })).toHaveAttribute('hidden');
+    expect(scene.options).toBeNull();
   });
 
   it('räumt die Szene beim Unmount auf', async () => {

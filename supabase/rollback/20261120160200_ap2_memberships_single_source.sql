@@ -27,12 +27,16 @@ CREATE OR REPLACE FUNCTION public.notify_quota_alert(
   p_alert_type TEXT,
   p_api_calls_count INTEGER,
   p_quota_limit INTEGER
-) RETURNS void AS $$
+) RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $fn$
 DECLARE
   v_alert_id UUID;
   v_member_email TEXT;
   v_subject TEXT;
   v_body TEXT;
+  v_email_event TEXT;
 BEGIN
   INSERT INTO public.quota_alerts (tenant_id, alert_type, api_calls_count, quota_limit, message)
   VALUES (
@@ -47,27 +51,48 @@ BEGIN
     END
   ) RETURNING id INTO v_alert_id;
 
-  INSERT INTO public.webhook_deliveries (webhook_id, event_type, event_data, created_at)
-  SELECT
-    we.id,
-    p_alert_type,
-    jsonb_build_object(
-      'event_type', p_alert_type,
-      'tenant_id', p_tenant_id,
-      'timestamp', now()::text,
-      'api_calls', p_api_calls_count,
-      'quota_limit', p_quota_limit,
-      'message', CASE
-        WHEN p_alert_type = 'warning_80' THEN 'Your API quota usage is at 80%'
-        WHEN p_alert_type = 'limit_exceeded' THEN 'Your API quota limit has been exceeded'
-        ELSE 'API quota alert'
-      END
-    ),
-    now()
-  FROM public.webhook_endpoints we
-  WHERE we.tenant_id = p_tenant_id
-    AND we.is_active = true
-    AND p_alert_type = ANY(we.events);
+  -- Seit 20260705200000 hat webhook_deliveries kein webhook_id. Ein statisches
+  -- INSERT bricht den Aufruf ab, bevor die Admin-Mail geschrieben wird.
+  IF EXISTS (
+    SELECT 1
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'webhook_deliveries'
+       AND column_name = 'webhook_id'
+  ) THEN
+    EXECUTE $ins$
+      INSERT INTO public.webhook_deliveries (webhook_id, event_type, event_data, created_at)
+      SELECT
+        we.id,
+        $1,
+        jsonb_build_object(
+          'event_type', $1,
+          'tenant_id', $2,
+          'timestamp', now()::text,
+          'api_calls', $3,
+          'quota_limit', $4,
+          'message', CASE
+            WHEN $1 = 'warning_80' THEN 'Your API quota usage is at 80%'
+            WHEN $1 = 'limit_exceeded' THEN 'Your API quota limit has been exceeded'
+            ELSE 'API quota alert'
+          END
+        ),
+        now()
+      FROM public.webhook_endpoints we
+      WHERE we.tenant_id = $2
+        AND we.is_active = true
+        AND $1 = ANY(we.events)
+    $ins$
+    USING p_alert_type, p_tenant_id, p_api_calls_count, p_quota_limit;
+  END IF;
+
+  -- email_notifications.event_type erlaubt warning_80 nicht
+  -- (Check aus 20260705140000). Die Empfaenger bleiben tenant_memberships.admin.
+  v_email_event := CASE p_alert_type
+    WHEN 'warning_80' THEN 'quota_warning'
+    WHEN 'limit_exceeded' THEN 'quota_exceeded'
+    ELSE p_alert_type
+  END;
 
   FOR v_member_email IN
     SELECT u.email
@@ -88,10 +113,10 @@ BEGIN
     END;
 
     INSERT INTO public.email_notifications (tenant_id, recipient_email, event_type, subject, body, created_at)
-    VALUES (p_tenant_id, v_member_email, p_alert_type, v_subject, v_body, now());
+    VALUES (p_tenant_id, v_member_email, v_email_event, v_subject, v_body, now());
   END LOOP;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$fn$;
 
 -- Policies nur zuruecksetzen, wenn sie vorhanden sind. Eine in Produktion
 -- bereits entfernte Policy wird hier nicht wieder angelegt.
@@ -154,8 +179,20 @@ BEGIN
     END IF;
   END IF;
 
-  IF to_regclass('public.webhook_deliveries') IS NOT NULL THEN
-  IF EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'public.webhook_deliveries'::regclass AND polname = 'webhook_deliveries tenant_member_read') THEN
+  -- Nur wiederherstellen, wenn die Policy existiert UND jede Spalte, die der
+  -- Ausdruck nennt. Seit 20260705200000 fehlt webhook_id; die Policy gibt es
+  -- live nicht. DROP und CREATE bleiben in derselben Bedingung, sonst bliebe
+  -- nach einem Abbruch keine Lese-Policy uebrig.
+  IF to_regclass('public.webhook_deliveries') IS NOT NULL
+     AND to_regclass('public.webhook_endpoints') IS NOT NULL
+     AND to_regclass('public.tenant_memberships') IS NOT NULL THEN
+  IF EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'public.webhook_deliveries'::regclass AND polname = 'webhook_deliveries tenant_member_read')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'webhook_deliveries' AND column_name = 'webhook_id')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'webhook_endpoints' AND column_name = 'id')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'webhook_endpoints' AND column_name = 'tenant_id')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tenant_memberships' AND column_name = 'tenant_id')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tenant_memberships' AND column_name = 'user_id')
+  THEN
     DROP POLICY "webhook_deliveries tenant_member_read" ON public.webhook_deliveries;
     CREATE POLICY "webhook_deliveries tenant_member_read"
       ON public.webhook_deliveries FOR SELECT

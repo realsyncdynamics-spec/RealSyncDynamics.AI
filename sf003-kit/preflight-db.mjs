@@ -8,6 +8,8 @@ export async function verifyLocalDatabase(pool, expectedName) {
            pg_is_in_recovery() AS recovery
   `);
   const r = state.rows[0];
+  // Diagnostic contains only local test-server identity, never credentials.
+  console.error('SF003 local-only preflight:', JSON.stringify({db_name:r?.db_name,address:r?.address,port:r?.port,superuser:r?.superuser,recovery:r?.recovery}));
   if (!r || r.db_name !== expectedName ||
       !['127.0.0.1', '::1'].includes(r.address) ||
       Number(r.port) !== 55432 || r.superuser !== 'on' || r.recovery) {

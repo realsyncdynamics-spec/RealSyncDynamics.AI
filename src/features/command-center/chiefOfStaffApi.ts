@@ -103,14 +103,17 @@ export async function loadPersistedChiefOfStaffInbox(
     client.from('agent_tasks')
       .select('id,agent,task,priority,status,created_at')
       .eq('tenant_id', tenant_id).in('status', ['blocked', 'failed'])
+      .order('priority', { ascending: true })
       .order('created_at', { ascending: false }).limit(limit),
     client.from('agent_decisions')
       .select('id,proposed_by,decision_title,risk_level,created_at', { count: 'exact' })
       .eq('tenant_id', tenant_id).eq('status', 'proposed')
+      .order('risk_level', { ascending: true })
       .order('created_at', { ascending: false }).limit(limit),
     client.from('agent_observations')
       .select('id,agent,title,severity,created_at', { count: 'exact' })
       .eq('tenant_id', tenant_id).eq('acknowledged', false).in('severity', ['high', 'critical'])
+      .order('severity', { ascending: true })
       .order('created_at', { ascending: false }).limit(limit),
   ]);
 

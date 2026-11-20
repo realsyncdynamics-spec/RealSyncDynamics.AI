@@ -87,7 +87,7 @@ export function LandingV3() {
           <a href="#katalog">Build</a>
           <a href="#katalog">Automate</a>
           <a href="#govern">Govern</a>
-          <Link to="/ki-bots">Telefonassistent</Link>
+          <Link to="/voice-agent">Telefonassistent</Link>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
@@ -106,7 +106,7 @@ export function LandingV3() {
             </p>
             <div className="lv3-actions">
               <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
-              <Link className="lv3-btn lv3-btn--lg" to="/ki-bots?source=landing-v3-hero">Telefonassistent ansehen</Link>
+              <Link className="lv3-btn lv3-btn--lg" to="/voice-agent?source=landing-v3-hero">Telefonassistent ansehen</Link>
             </div>
           </div>
           <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · RealSync" waveSignal={waveSignal} />
@@ -158,8 +158,8 @@ export function LandingV3() {
             <a href="#produkte" className="lv3-card">
               <span className="lv3-meta">Direkter Produkteinstieg</span>
               <strong className="lv3-card-name">Das passende Produkt öffnen.</strong>
-              <span>Alle vier Produktseiten sind direkt erreichbar. Ein vorheriger Scan ist nicht nötig.</span>
-              <span className="lv3-card-cta">Vier Produkte ansehen <span aria-hidden="true">→</span></span>
+              <span>Alle sieben Produktseiten sind direkt erreichbar. Ein vorheriger Scan ist nicht nötig.</span>
+              <span className="lv3-card-cta">Sieben Produkte ansehen <span aria-hidden="true">→</span></span>
             </a>
             <a href="#start" className="lv3-card">
               <span className="lv3-meta">Kostenloser Domain-Scan</span>
@@ -208,7 +208,7 @@ export function LandingV3() {
               'Öffentliche Website prüfen',
               'Befunde, Fehlercodes und Vorschläge ansehen',
               'Optional einen Frontend-Entwurf anpassen',
-              'Optional den Telefonassistenten ergänzen',
+              'Optional Telefonassistent oder WhatsApp-Agent ergänzen (Status beachten)',
               'Governance OS für Zuständigkeiten, Freigaben und Nachweise nutzen',
             ].map((step, i) => (
               <li key={step}>

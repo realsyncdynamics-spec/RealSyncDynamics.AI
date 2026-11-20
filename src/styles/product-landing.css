@@ -82,6 +82,8 @@
   box-shadow: 0 24px 60px -30px rgba(10, 10, 11, 0.25);
 }
 .pl-stage-view { position: absolute; inset: 0; }
+.pl-stage-still { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; background: var(--pl-bg-0); }
+.pl-stage-still[hidden] { display: none; }
 .pl-stage-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; }
 .pl-stage-canvas:active { cursor: grabbing; }
 .pl-stage-canvas[hidden] { display: none; }

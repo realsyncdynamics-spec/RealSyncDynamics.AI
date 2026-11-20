@@ -10,7 +10,11 @@ const scene = vi.hoisted(() => ({
   options: null as SyncMascotOptions | null,
   wave: vi.fn(() => true),
   dispose: vi.fn(),
+  canRun3D: true,
 }));
+
+// jsdom kann kein WebGL rendern: Capability-Gate für bestehende 3D-Tests steuerbar.
+vi.mock('../../src/components/landing/v3/HeroStage', () => ({ canRun3D: () => scene.canRun3D }));
 
 vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
   mountSyncMascot: (_canvas: HTMLCanvasElement, options: SyncMascotOptions) => {
@@ -45,12 +49,17 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     scene.options = null;
     scene.wave.mockClear();
     scene.dispose.mockClear();
+    scene.canRun3D = true;
   });
 
   it('sind geroutet, noindex und in der Produktnavigation verlinkt', () => {
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/app-builder" element={<ProductLanding key="app-builder" product="app-builder" />} />');
     expect(app).toContain('<Route path="/governance-os" element={<ProductLanding key="governance-os" product="governance-os" />} />');
+    for (const key of ['software-factory', 'automation-os', 'creative-studio']) {
+      expect(app).toContain(`<Route path="/${key}" element={<ProductLanding key="${key}" product="${key}" />} />`);
+    }
+    expect(app).toContain('<Route path="/voice-agent" element={<KiBotsLanding />} />');
     expect(app).toContain(
       '<Route path="/claude-code-optimizer" element={<ProductLanding key="claude-code-optimizer" product="claude-code-optimizer" />} />',
     );
@@ -129,9 +138,17 @@ describe('Produkt-Landingpages (Entwurf)', () => {
 
   it.each(KEYS)('%s: Tarife aus shared/pricing.ts, Grenzen und Pflichtseiten', async (key) => {
     await renderPage(key);
-    for (const card of planCards(PRODUCT_CONTENT[key].source)) {
-      const el = screen.getByTestId(`product-plan-${card.id}`);
-      expect(within(el).getByText(card.price.replace(/\s+/g, ' '))).toBeInTheDocument();
+    if (PRODUCT_CONTENT[key].pricingMode === 'roadmap') {
+      expect(screen.getByText(/noch keinen freigegebenen Einzelprodukt-Checkout/)).toBeInTheDocument();
+      expect(screen.queryByTestId('product-plan-starter')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('product-plan-governance-launch')).not.toBeInTheDocument();
+    } else if (key === 'governance-os') {
+      expect(screen.getByTestId('product-plan-governance-launch')).toBeInTheDocument();
+    } else {
+      for (const card of planCards(PRODUCT_CONTENT[key].source)) {
+        const el = screen.getByTestId(`product-plan-${card.id}`);
+        expect(within(el).getByText(card.price.replace(/\s+/g, ' '))).toBeInTheDocument();
+      }
     }
     expect(screen.getByTestId('product-limits')).toHaveTextContent(PRODUCT_CONTENT[key].limits);
     expect(screen.getByTestId('product-tax-note').textContent?.length).toBeGreaterThan(0);
@@ -146,6 +163,16 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     const text = JSON.stringify(PRODUCT_CONTENT);
     expect(text).not.toMatch(/Pilot|Demo buchen|Beratung anfragen|Termin vereinbaren|Sales/);
     expect(read('src/config/seo.ts')).not.toMatch(/einfügbaren Fix-Code/);
+  });
+
+  it('zeigt SYNC als Standbild, wenn 3D auf dem Gerät deaktiviert ist', () => {
+    scene.canRun3D = false;
+    render(<MemoryRouter><ProductLanding product="creative-studio" /></MemoryRouter>);
+    const stage = screen.getByTestId('pl-stage');
+    expect(within(stage).getByRole('img', { name: /SYNC, petrolfarbener RealSync-Roboter/ }))
+      .toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+    expect(within(stage).getByRole('img', { name: /SYNC: petrolfarbener/, hidden: true })).toHaveAttribute('hidden');
+    expect(scene.options).toBeNull();
   });
 
   it('räumt die Szene beim Unmount auf', async () => {

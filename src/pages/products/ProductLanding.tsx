@@ -46,7 +46,7 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
   const steps = c.flow.steps;
   const done = shown >= steps.length;
   const activeStep = shown - 1;
-  const plans = c.key === 'governance-os' ? [] : planCards(c.source);
+  const plans = c.key === 'governance-os' || c.pricingMode === 'roadmap' ? [] : planCards(c.source);
   const governanceLaunch = c.key === 'governance-os' ? planById('governance_launch') : null;
   const status = c.status
     .map((s) => ({ label: s.label, value: statusLabel(s.registryId) }))
@@ -194,12 +194,14 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
         <section id="preise" className="pl-section" aria-labelledby="pl-preise-h">
           <span className="pl-eyebrow">Preise und Verfügbarkeit</span>
           <h2 id="pl-preise-h" className="pl-h2">{c.pricingTitle}</h2>
-          {c.key === 'governance-os' ? (
+          {c.pricingMode === 'roadmap' ? (
+            <p className="pl-text">Für dieses Produkt gibt es noch keinen freigegebenen Einzelprodukt-Checkout. Die folgenden Inhalte sind ein Entwicklungsentwurf und kein buchbares Leistungsversprechen.</p>
+          ) : c.key === 'governance-os' ? (
             <p className="pl-text">Einmalige Implementierung für einen Anwendungsfall. Preis und Berechtigungen kommen aus dem kanonischen Angebotsmodell.</p>
           ) : (
             <p className="pl-text">{pricingIntro()}</p>
           )}
-          <div className="pl-plans">
+          {c.pricingMode !== 'roadmap' ? <div className="pl-plans">
             {governanceLaunch ? (
               <article className="pl-plan" data-featured="true" data-testid="product-plan-governance-launch">
                 <Pill>Einmalig</Pill>
@@ -229,10 +231,11 @@ export default function ProductLanding({ product }: { product: ProductLandingKey
                 <Link to={p.href} className={p.featured ? 'pl-btn pl-btn--solid' : 'pl-btn'}>{p.cta}</Link>
               </article>
             ))}
-          </div>
+          </div> : null}
           <p className="pl-fine" data-testid="product-limits">{c.limits}</p>
           <p className="pl-fine" data-testid="product-tax-note">
-            {TAX_NOTE} Verbindlich sind Preise und Leistungen auf <Link to="/pricing">der Preisseite</Link>.
+            {c.pricingMode === 'roadmap' ? 'Für dieses Produkt ist kein eigener Preis freigegeben. ' : TAX_NOTE + ' '}
+            Verbindlich sind ausschließlich freigegebene Angebote auf <Link to="/pricing">der Preisseite</Link>.
           </p>
         </section>
 

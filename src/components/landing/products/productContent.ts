@@ -368,7 +368,63 @@ export const OPTIMIZER: ProductLandingContent = {
   ],
 };
 
+export const LANDINGPAGE_BUILDER: ProductLandingContent = {
+  ...APP_BUILDER,
+  key: 'landingpage-builder',
+  source: 'landingpage-builder',
+  name: 'Landingpage-Builder',
+  audience: 'Für Betriebe, die eine neue oder bessere Landingpage möchten',
+  h1: ['Ihre Idee wird sichtbar.', 'Erst im Entwurf, dann nach Ihrer Freigabe.'],
+  lead: 'Beschreiben Sie Ziel, Inhalt und Stil. Der Builder führt Sie zu einem Frontend-Entwurf mit Vorschau. Ihr bestehendes Backend bleibt unverändert.',
+  primary: { label: 'Landingpage-Builder öffnen', to: `/build?source=landingpage-builder` },
+  secondary: { label: 'So läuft es ab', to: '#ablauf' },
+  status: [
+    { label: 'Builder', registryId: 'web-builder' },
+    { label: 'Freischaltung je Tarif', registryId: 'builder-entitlement-gate' },
+  ],
+  stageTag: 'Landingpage-Builder · Preview',
+  stageCaption: 'Idee → Frontend-Entwurf → Vorschau → Freigabe',
+  promiseTitle: 'Eine Landingpage, die zu Ihrem Betrieb passt.',
+  promises: [
+    { title: 'Im Dialog starten', body: 'Ziel, Inhalte und gewünschte Gestaltung schrittweise festlegen.' },
+    { title: 'Vorher ansehen', body: 'Änderungen in einer Vorschau prüfen, bevor sie veröffentlicht werden.' },
+    { title: 'Backend bleibt unberührt', body: 'Der Ablauf erstellt einen Frontend-Entwurf; Änderungen am bestehenden Backend sind nicht Teil des Scans oder Entwurfs.' },
+  ],
+  flow: {
+    ...APP_BUILDER.flow,
+    eyebrow: 'So arbeitet der Landingpage-Builder',
+    title: 'Von der Geschäftsidee zur Vorschau.',
+    panelLabel: 'Landingpage-Builder · Beispiel',
+    fine: 'Beispielablauf. Der aktuelle Builder ist als Preview geführt; eigene Domain, DNS und Rollback sind nicht verfügbar.',
+  },
+  casesTitle: 'Wofür Betriebe den Builder nutzen.',
+  cases: [
+    { trade: 'Handwerk', situation: 'Eine Leistung soll verständlich vorgestellt werden.', result: 'Ein bearbeitbarer Seitenentwurf mit klarer Kontaktmöglichkeit.' },
+    { trade: 'Lokaler Betrieb', situation: 'Die bestehende Website braucht eine neue Angebotsseite.', result: 'Ein separater Frontend-Entwurf, den das Team vorab prüft.' },
+    { trade: 'Neues Angebot', situation: 'Eine neue Dienstleistung geht an den Start.', result: 'Eine Landingpage-Vorschau, die erst nach Freigabe veröffentlicht wird.' },
+  ],
+  startSteps: [
+    { title: 'Beschreiben', body: 'Ziel, Inhalte und gewünschtes Design festlegen.' },
+    { title: 'Gestalten', body: 'Den Entwurf bearbeiten und als Vorschau prüfen.' },
+    { title: 'Freigeben', body: 'Die Veröffentlichung bleibt an den vorhandenen Freigabeweg gebunden.' },
+  ],
+  pricingTitle: 'Tarife und Verfügbarkeit im Überblick.',
+  limits: 'Der Builder ist eine Preview. Eigene Domain, DNS-Einrichtung und Rollback sind noch nicht verfügbar. Eine separate Buchbarkeit dieses Produkts ist noch nachzuweisen.',
+  cta: {
+    title: 'Starten Sie mit einem überprüfbaren Entwurf.',
+    text: 'Öffnen Sie den vorhandenen Builder und prüfen Sie zuerst die Vorschau.',
+    primary: { label: 'Builder-Preview öffnen', to: `/build?source=landingpage-builder-cta` },
+    secondary: { label: 'Preise ansehen', to: `/pricing?source=landingpage-builder` },
+  },
+  faqs: [
+    { q: 'Brauche ich Programmierkenntnisse?', a: 'Der Builder ist auf die Bearbeitung im Browser ausgelegt. Der vollständige Funktionsumfang bleibt Preview.' },
+    { q: 'Ändert der Builder mein Backend?', a: 'Der Domain-Scan und der hier beschriebene Frontend-Entwurf ändern das bestehende Backend nicht.' },
+    { q: 'Kann ich eine eigene Domain verbinden?', a: 'Eigene Domain und DNS-Einrichtung sind laut Implementierungsstatus noch nicht verfügbar.' },
+  ],
+};
+
 export const PRODUCT_CONTENT: Record<ProductLandingKey, ProductLandingContent> = {
+  'landingpage-builder': LANDINGPAGE_BUILDER,
   'app-builder': APP_BUILDER,
   'governance-os': GOVERNANCE_OS,
   'claude-code-optimizer': OPTIMIZER,

@@ -591,16 +591,29 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
 
-  // Produkt-Landingpage KI-Bots (erster Entwurf, 19.11.2026). Noindex und nicht in der
-  // Sitemap, bis Gestaltung und Inhalte freigegeben sind.
-  '/ki-bots': {
-    title: 'KI-Bots & Voice-Agenten — RealSync Dynamics & AI',
+  // Telefonassistent: eigenständiger Produkteinstieg; Telefonie bleibt laut Registry in Vorbereitung.
+  '/telefonassistent': {
+    title: 'Telefonassistent für KMU — RealSync Dynamics & AI',
     description:
-      'Erreichbar bleiben: Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team.',
-    canonical: `${SITE_URL}/ki-bots`,
+      'Persönlicher KI-Empfang für kleine und mittlere Betriebe. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/telefonassistent`,
     noIndex: true,
   },
-  // Produkt-Landingpages App Builder und Governance OS (Entwurf, 19.11.2026), wie /ki-bots noindex.
+  // Legacy-Route leitet auf den kanonischen Telefonassistenten weiter.
+  '/ki-bots': {
+    title: 'Telefonassistent — RealSync Dynamics & AI',
+    description: 'Der persönliche Telefonassistent für kleine und mittlere Betriebe.',
+    canonical: `${SITE_URL}/telefonassistent`,
+    noIndex: true,
+  },
+  // Eigenständige Landingpage-Builder-Seite. Der Builder bleibt Preview.
+  '/landingpage-builder': {
+    title: 'Landingpage-Builder — RealSync Dynamics & AI',
+    description: 'Landingpages im Browser entwerfen und vor der Freigabe prüfen. Der Builder ist derzeit Preview.',
+    canonical: `${SITE_URL}/landingpage-builder`,
+    noIndex: true,
+  },
+  // Produktseiten App Builder und Governance OS bleiben noindex.
   '/app-builder': {
     title: 'App Builder — RealSync Dynamics & AI',
     description:

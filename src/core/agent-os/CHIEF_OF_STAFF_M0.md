@@ -21,6 +21,8 @@ All statuses above refer to **source availability**, not successful production e
 - Attention list excludes routine open tasks to prevent alert fatigue, prioritizes by severity, and enforces a bounded response.
 - `buildAgentTaskReportCards()`: observed task closure ratio only; **quality_score** and **cost_usd** explicitly `null` until verified independent telemetry exists.
 - `test/core/agent-os/chiefOfStaff.test.ts`: tenant separation, no auto-approval, no write side effects, severity, acknowledgement, limits, unknown metrics.
+- `src/features/command-center/chiefOfStaffApi.ts`: opt-in, authenticated **owner/admin-only** adapter using existing RLS-protected `agent_tasks`, `agent_decisions`, and `agent_observations`; no UI route or automatic invocation.
+- `test/core/agent-os/chiefOfStaffApi.test.ts`: mocked tenant/role, data availability, exact counts and read-only contract tests (not an actual Postgres RLS integration test).
 - No new database objects, cron, email, webhooks, publish flow, paid LLM usage or production changes.
 
 **Important trust boundary:** These pure functions take a tenant_id parameter but DO NOT authenticate the caller. Never expose them directly to an external request handler; first authorize the requester for that tenant and use RLS-backed store adapters. The in-memory store's `getTaskById()`/global queue do not provide caller authorization and should not be used to read across tenant boundaries.
@@ -66,4 +68,4 @@ All statuses above refer to **source availability**, not successful production e
 6. Observability proves event/task/evidence correlation and operator-visible error handling.
 7. Security/DSGVO review, rollback plan and deployment checklist before enabling any production trigger.
 
-**Delivery state:** M0 read-model code and isolated tests proposed in draft PR. Other M0.1–M3 items are **not implemented** by this PR.
+**Delivery state:** M0 read-model and M0.1 read adapter code proposed for review. The adapter is NOT connected to the UI, and no end-to-end database/RLS integration test or production deployment is claimed. M0.2–M3 items are **not implemented** by this PR.

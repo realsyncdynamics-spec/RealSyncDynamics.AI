@@ -343,6 +343,11 @@ export function GovernanceWorkspace() {
                 <WorkspaceToolGrid
                   onChat={() => { setMode('chat'); textareaRef.current?.focus(); }}
                   onBuild={() => { setMode('build'); textareaRef.current?.focus(); }}
+                  onPrompt={(nextMode, prompt) => {
+                    setMode(nextMode);
+                    setInput(prompt);
+                    textareaRef.current?.focus();
+                  }}
                 />
               </div>
             ) : (

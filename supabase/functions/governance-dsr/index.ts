@@ -328,11 +328,6 @@ async function enqueueErasure(admin: SupabaseAdminClient, tenantId: string, subj
   }
 }
 
-function subjectRefOf(dsr: DsrRequest): string | null {
-  const ref = dsr?.metadata?.subject_ref;
-  return typeof ref === 'string' && ref.length >= 8 ? ref : null;
-}
-
 // Append-only evidence row on the per-tenant hash chain. Best-effort: a
 // failure here (e.g. a missing future partition) is logged but never blocks
 // the DSR write, which is the source of truth.

@@ -29,6 +29,9 @@ test.describe('Governance OS 3D preview', () => {
     await page.goto('/design/governance-3d', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /Governance Audit starten/ })).toBeVisible();
+    await expect(page.locator('.rs-governance-hero__scene')).toHaveAttribute('data-scene-requested', 'false');
+    await expect(page.locator('.rs-governance-hero__scene canvas')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Interaktive Governance-3D-Ansicht aktivieren/ })).toBeVisible();
 
     const viewport = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
@@ -66,4 +69,12 @@ test('Governance preview retains real actions when WebGL is unavailable', async 
   await expect(page.locator('.rs-governance-hero__scene canvas')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Governance Audit starten/ })).toHaveAttribute('href', '/audit');
   await expect(page.getByRole('link', { name: /Plattform entdecken/ })).toHaveAttribute('href', '/governance-runtime');
+});
+
+test('mobile users can opt into genuine 3D without losing the audit CTA', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/design/governance-3d', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: /Interaktive Governance-3D-Ansicht aktivieren/ }).click();
+  await expect(page.locator('.rs-governance-hero__scene')).toHaveAttribute('data-scene-requested', 'true');
+  await expect(page.getByRole('link', { name: /Governance Audit starten/ })).toHaveAttribute('href', '/audit');
 });

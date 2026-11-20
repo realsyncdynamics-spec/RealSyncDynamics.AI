@@ -25,6 +25,16 @@ function useReducedMotion() {
 }
 
 
+function shouldUseStaticMobile() {
+  if (typeof window === 'undefined') return false;
+  try {
+    // Intentional progressive enhancement: mobile data and GPU budgets are smaller.
+    return !!window.matchMedia?.('(max-width: 760px), (pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+}
+
 function StillCube() {
   return (
     <div className="rs-governance-hero__fallback" aria-hidden="true">
@@ -42,19 +52,29 @@ export default function Governance3DHero({
   const titleRef = useRef<HTMLDivElement>(null);
   const motion = useRef<MotionState>({ progress: 0, pointerX: 0, pointerY: 0 });
   const reduced = useReducedMotion();
+  const [staticMobile] = useState(shouldUseStaticMobile);
+  const [mobile3DEnabled, setMobile3DEnabled] = useState(false);
+  const canRun3D = !reduced && (!staticMobile || mobile3DEnabled);
 
-  // First paint contains only lightweight HTML/CSS. 3D is progressively loaded.
+  // Mobile opts into GPU rendering. Desktop progressively loads after first paint.
   const [sceneReady, setSceneReady] = useState(false);
   useEffect(() => {
-    if (reduced) return;
+    if (!canRun3D) {
+      setSceneReady(false);
+      return;
+    }
+    if (mobile3DEnabled) {
+      setSceneReady(true);
+      return;
+    }
     const timeout = window.setTimeout(() => setSceneReady(true), 650);
     return () => window.clearTimeout(timeout);
-  }, [reduced]);
+  }, [canRun3D, mobile3DEnabled]);
 
   // Dynamically load GSAP only when animation is permitted, after the hero can paint.
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section || reduced) return;
+    if (!section || !canRun3D || !sceneReady) return;
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     void Promise.all([import('gsap'), import('gsap/ScrollTrigger')])
@@ -80,7 +100,7 @@ export default function Governance3DHero({
         // The content and CTA remain usable when the animation library fails.
       });
     return () => { cancelled = true; cleanup?.(); };
-  }, [reduced]);
+  }, [canRun3D, sceneReady]);
 
   const handleMove = (event: PointerEvent<HTMLElement>) => {
     if (reduced || event.pointerType === 'touch') return;
@@ -93,11 +113,11 @@ export default function Governance3DHero({
     <section ref={sectionRef} className="rs-governance-hero"
       aria-labelledby="rs-governance-hero-title" onPointerMove={handleMove}
       onPointerLeave={() => { motion.current.pointerX = 0; motion.current.pointerY = 0; }}>
-      <div className="rs-governance-hero__sticky">
+      <div className="rs-governance-hero__sticky" data-mobile-static={staticMobile && !mobile3DEnabled ? 'true' : 'false'}>
         <div className="rs-governance-hero__glow" aria-hidden="true" />
         <div className="rs-governance-hero__scene" aria-hidden="true"
-          data-scene-requested={sceneReady && !reduced ? 'true' : 'false'}>
-          {sceneReady && !reduced ? (
+          data-scene-requested={sceneReady && canRun3D ? 'true' : 'false'}>
+          {sceneReady && canRun3D ? (
             <Suspense fallback={<StillCube />}>
               <Governance3DScene motion={motion} reduced={reduced} />
             </Suspense>
@@ -122,6 +142,18 @@ export default function Governance3DHero({
             AUDIT <span>·</span> EVIDENCE <span>·</span> POLICY <span>·</span> RISK <span>·</span> MONITORING
           </p>
         </div>
+        {staticMobile && !reduced && !mobile3DEnabled ? (
+          <div className="rs-governance-hero__activate">
+            <span>3D ist auf Mobilgeräten optional – für schnelle Ladezeiten.</span>
+            <button
+              type="button"
+              onClick={() => setMobile3DEnabled(true)}
+              aria-label="Interaktive Governance-3D-Ansicht aktivieren"
+            >
+              3D-Ansicht aktivieren <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        ) : null}
         <span className="rs-governance-hero__scroll" aria-hidden="true">SCROLL TO EXPLORE ↓</span>
       </div>
     </section>

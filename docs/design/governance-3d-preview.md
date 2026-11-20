@@ -23,3 +23,16 @@ same reviewed files on the current main without altering the production homepage
 Additional acceptance gates: dedicated mobile Lighthouse config, isolated PR workflow,
 and forced WebGL-unavailable end-to-end test. This route stays a review surface.
 A green Lighthouse job does not prove mobile GPU frame time; manual QA still required.
+
+## Mobile-first performance iteration
+
+On `(max-width: 760px), (pointer: coarse)`, the page defaults to a CSS glass-cube
+placeholder instead of initializing WebGL/Three.js or GSAP automatically.
+A keyboard-accessible button enables the full 3D and scroll animation on demand.
+Desktop continues to load the real 3D automatically after the first paint.
+`prefers-reduced-motion` always uses the static visual, without an activation button.
+
+Before this iteration the dedicated mobile Lighthouse runs scored 41 and 45/100;
+the new score must be verified on the new commit, not assumed. The 3D opt-in
+exists to preserve feature parity without spending mobile GPU resources before
+user intent.

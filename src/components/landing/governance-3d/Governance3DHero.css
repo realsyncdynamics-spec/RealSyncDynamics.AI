@@ -25,3 +25,19 @@
 @media(max-width:900px){.rs-governance-hero__scene{width:100%;right:-30%;opacity:.65}.rs-governance-hero__copy{width:79%;margin-left:6vw}.rs-governance-hero h1{font-size:clamp(45px,8vw,78px)}}
 @media(max-width:600px){.rs-governance-hero{min-height:145svh}.rs-governance-hero__sticky{align-items:flex-start;min-height:640px}.rs-governance-hero__scene{width:130%;height:66%;top:32%;right:-36%;opacity:.4}.rs-governance-hero__copy{width:calc(100% - 40px);margin:0 20px;padding-top:clamp(76px,15vh,115px)}.rs-governance-hero h1{font-size:clamp(44px,11vw,65px)}.rs-governance-hero__lead{max-width:380px;font-size:16px}.rs-governance-hero__btn{min-height:48px;padding:0 15px;font-size:12px}.rs-governance-hero__domains{margin-top:35px}}
 @media(prefers-reduced-motion:reduce){.rs-governance-hero{min-height:100svh}.rs-governance-hero__copy{will-change:auto;transform:none!important;opacity:1!important}.rs-governance-hero__btn{transition:none}.rs-governance-hero__btn:hover{transform:none}}
+
+/* Mobile: keep all marketing copy and conversion actions usable without WebGL. */
+.rs-governance-hero__activate{
+  position:absolute;z-index:4;right:clamp(18px,5vw,48px);bottom:62px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+  max-width:min(280px,75vw);text-align:right;font-size:11px;
+  line-height:1.5;color:#425679;
+}
+.rs-governance-hero__activate button{
+  cursor:pointer;background:#fff;border:1px solid #b7ccee;color:#1553b1;
+  font:inherit;font-size:12px;font-weight:750;min-height:44px;
+  border-radius:10px;padding:10px 14px;box-shadow:0 8px 24px #1b5ccc15;
+}
+.rs-governance-hero__activate button:hover{background:#edf5ff}
+.rs-governance-hero__activate button:focus-visible{outline:3px solid #0c85e9;outline-offset:3px}
+@media(max-width:600px){.rs-governance-hero__activate{right:20px;bottom:50px}}

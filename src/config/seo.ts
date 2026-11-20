@@ -600,6 +600,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/ki-bots`,
     noIndex: true,
   },
+  '/voice-agent': {
+    title: 'Telefonassistent – RealSync Dynamics & AI',
+    description:
+      'Geplanter RealSync-KI-Telefonassistent für Kundenanfragen, Rückrufwünsche und Übergaben an Mitarbeitende. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/voice-agent`,
+    noIndex: true,
+  },
   '/landingpage-builder': {
     title: 'Landingpage-Builder — RealSync Dynamics & AI',
     description:
@@ -622,6 +629,28 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/governance-os`,
     noIndex: true,
   },
+  '/software-factory': {
+    title: 'Software Factory – RealSync Dynamics & AI',
+    description:
+      'Entwicklungsausblick: KI-gestützte Codearbeit mit Spezifikation, isolierten Branches, Tests und menschlicher Freigabe. Noch kein freigegebenes Kundenprodukt.',
+    canonical: `${SITE_URL}/software-factory`,
+    noIndex: true,
+  },
+  '/automation-os': {
+    title: 'Automation OS – RealSync Dynamics & AI',
+    description:
+      'Geplante Workflows mit Regelprüfung, Freigaben und Prüfpfad innerhalb der bestehenden RealSync-Plattform. Produktive n8n-Ausführung noch nicht abgenommen.',
+    canonical: `${SITE_URL}/automation-os`,
+    noIndex: true,
+  },
+  '/creative-studio': {
+    title: 'Creative Studio – RealSync Dynamics & AI',
+    description:
+      'Geplantes Modul für Bilder, Videos und Content-Workflows unter der RealSync-Dachmarke. Bild- und Videogenerierung noch nicht produktiv freigegeben.',
+    canonical: `${SITE_URL}/creative-studio`,
+    noIndex: true,
+  },
+
 
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.

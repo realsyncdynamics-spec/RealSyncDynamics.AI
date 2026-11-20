@@ -8,7 +8,11 @@ const scene = vi.hoisted(() => ({
   options: null as SyncMascotOptions | null,
   wave: vi.fn(() => true),
   dispose: vi.fn(),
+  canRun3D: true,
 }));
+
+// jsdom kann kein WebGL rendern: Capability-Gate für bestehende 3D-Tests steuerbar.
+vi.mock('../../src/components/landing/v3/HeroStage', () => ({ canRun3D: () => scene.canRun3D }));
 
 vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
   mountSyncMascot: (_canvas: HTMLCanvasElement, options: SyncMascotOptions) => {
@@ -37,6 +41,7 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
     scene.options = null;
     scene.wave.mockClear();
     scene.dispose.mockClear();
+    scene.canRun3D = true;
   });
 
   it('zeigt Kernbotschaft, Hauptaktion und lädt SYNC als 3D-Bühne', async () => {
@@ -100,6 +105,15 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
     await renderPage();
     expect(screen.getByTestId('ki-bots-waitlist')).toHaveAttribute('href', '/warteliste?interest=bots&source=ki-bots');
     expect(screen.getByTestId('ki-bots-try')).toHaveAttribute('href', '/chatbot/start?source=ki-bots');
+  });
+
+  it('zeigt beim fehlenden 3D-Support ein SYNC-Standbild statt einer leeren Bühne', () => {
+    scene.canRun3D = false;
+    render(<MemoryRouter><KiBotsLanding /></MemoryRouter>);
+    const stage = screen.getByTestId('pl-stage');
+    expect(within(stage).getByRole('img', { name: /SYNC, petrolfarbener RealSync-Roboter/ }))
+      .toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+    expect(scene.options).toBeNull();
   });
 
   it('räumt die Szene beim Unmount auf', async () => {

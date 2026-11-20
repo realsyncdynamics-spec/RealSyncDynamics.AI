@@ -1,0 +1,79 @@
+name: Factory SF-000 Consolidated Offline Contracts
+# Pure synthetic, read-only JS contract tests. No npm install, runtime provider,
+# database, Docker, billing, publish, migration, merge or production access.
+on:
+  push:
+    branches:
+      - factory/sf-000-contract-consolidation-20261120
+    paths:
+      - .github/workflows/factory-sf000-contracts.yml
+      - apps/factory-worker/consolidation/**
+      - apps/factory-worker/integration/contract-projection.mjs
+      - apps/factory-worker/integration/test/contract-projection.test.mjs
+      - docs/software-factory/SF-000-CONSOLIDATION.md
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - factory/sf-006-offline-ci-20261120
+    paths:
+      - .github/workflows/factory-sf000-contracts.yml
+      - apps/factory-worker/consolidation/**
+      - apps/factory-worker/integration/contract-projection.mjs
+      - apps/factory-worker/integration/test/contract-projection.test.mjs
+      - docs/software-factory/SF-000-CONSOLIDATION.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-sf000-offline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-contracts:
+    name: Six synthetic suites (no deploy)
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without stored credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Install Node.js 22 (no package installation)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Syntax check – offline modules and suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            apps/factory-worker/handoff/bridge.mjs \
+            apps/factory-worker/handoff/review.mjs \
+            apps/factory-worker/handoff/demo.mjs \
+            apps/factory-worker/loop/engine.mjs \
+            apps/factory-worker/integration/compose.mjs \
+            apps/factory-worker/integration/index.mjs \
+            apps/factory-worker/integration/contract-projection.mjs \
+            apps/factory-worker/consolidation/status-compat.mjs \
+            apps/factory-worker/handoff/test/handoff.test.mjs \
+            apps/factory-worker/loop/test/engine.test.mjs \
+            apps/factory-worker/integration/test/compose.test.mjs \
+            apps/factory-worker/integration/test/integration.test.mjs \
+            apps/factory-worker/integration/test/contract-projection.test.mjs \
+            apps/factory-worker/consolidation/test/status-compat.test.mjs
+          do
+            node --check "$file"
+          done
+      - name: Execute six negative and real-module import suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            apps/factory-worker/handoff/test/handoff.test.mjs \
+            apps/factory-worker/loop/test/engine.test.mjs \
+            apps/factory-worker/integration/test/compose.test.mjs \
+            apps/factory-worker/integration/test/integration.test.mjs \
+            apps/factory-worker/consolidation/test/status-compat.test.mjs \
+            apps/factory-worker/integration/test/contract-projection.test.mjs

@@ -33,6 +33,8 @@ const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default:
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 // 17.11.2026: Startseite v3 (Claude Design) ist `/`. Three.js lädt nur hier und nur auf geeigneten Geräten.
 const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
+// Gemeinsames White-Produktlayout: separate Produkt-Landingpages unter derselben Hauptdomain.
+const ProductLanding = lazy(() => import('./pages/ProductLanding').then((m) => ({ default: m.ProductLanding })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
@@ -548,6 +550,12 @@ function RoutesWithTracking() {
           Startseite. Landing v6 bleibt unverändert als Rückfall unter /design/landing-v6;
           die frühere Vorschau /design/startseite-v3 leitet auf `/`. */}
       <Route path="/" element={<LandingV3 />} />
+      <Route path="/governance-os" element={<ProductLanding />} />
+      <Route path="/voice-agent" element={<ProductLanding />} />
+      <Route path="/app-builder" element={<ProductLanding />} />
+      <Route path="/software-factory" element={<ProductLanding />} />
+      <Route path="/automation-os" element={<ProductLanding />} />
+      <Route path="/creative-studio" element={<ProductLanding />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />

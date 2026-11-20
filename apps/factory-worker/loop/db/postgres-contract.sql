@@ -144,6 +144,10 @@ BEGIN
   IF r.snapshot->>'status' IN ('review_required','blocked') THEN
     RAISE EXCEPTION 'loop_terminal' USING ERRCODE = '55000';
   END IF;
+  IF (r.snapshot->>'deadlineAtMs')::BIGINT <
+     (extract(epoch FROM clock_timestamp()) * 1000)::BIGINT THEN
+    RAISE EXCEPTION 'loop_deadline_exceeded' USING ERRCODE = '55000';
+  END IF;
   IF r.lease_expires_at IS NOT NULL AND r.lease_expires_at > clock_timestamp() THEN
     RAISE EXCEPTION 'loop_already_claimed' USING ERRCODE = '55P03';
   END IF;
@@ -206,6 +210,12 @@ BEGIN
      r.lease_expires_at IS NULL OR r.lease_expires_at <= clock_timestamp() THEN
     RAISE EXCEPTION 'stale_or_missing_lease' USING ERRCODE = '55P03';
   END IF;
+  -- Server clock is authoritative; only a blocked stop may arrive late.
+  IF (p_snapshot->>'deadlineAtMs')::BIGINT <
+     (extract(epoch FROM clock_timestamp()) * 1000)::BIGINT AND
+     p_snapshot->>'status' IS DISTINCT FROM 'blocked' THEN
+    RAISE EXCEPTION 'loop_deadline_exceeded' USING ERRCODE = '55000';
+  END IF;
   from_state := r.snapshot->>'status';
   to_state := p_snapshot->>'status';
   event_type := p_event->>'type';
@@ -242,6 +252,12 @@ BEGIN
      (p_snapshot->>'spentCents')::INT > (p_snapshot->'limits'->>'maxCostCents')::INT THEN
     RAISE EXCEPTION 'loop_limit_mismatch' USING ERRCODE = '22023';
   END IF;
+  -- Label inequality is not an attestation, but blocks obvious self-review.
+  IF to_state = 'review_required' AND (
+      p_event->'details'->>'verifierId' IS NULL OR
+      p_event->'details'->>'verifierId' IS NOT DISTINCT FROM
+        p_snapshot->'submission'->>'authorId'
+  ) THEN RAISE EXCEPTION 'verifier_not_independent' USING ERRCODE = '22023'; END IF;
   IF to_state = 'review_required' AND (
       jsonb_typeof(p_snapshot->'checks') IS DISTINCT FROM 'array' OR
       jsonb_array_length(p_snapshot->'checks') IS DISTINCT FROM

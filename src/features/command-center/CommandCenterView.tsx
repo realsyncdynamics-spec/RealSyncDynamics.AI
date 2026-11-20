@@ -127,7 +127,7 @@ export function CommandCenterView() {
             </nav>
           )}
         </div>
-        <div role="group" aria-label="Bereich" className="mb-3 flex gap-1">
+        <div role="group" aria-label="Bereich" className="mb-3 flex flex-wrap gap-1">
           {([['agents', 'Agenten'], ['chief', 'Arbeitsüberblick'], ['tasks', 'Aufgaben'], ['memory', 'Gedächtnis'], ['routines', 'Routinen'], ['monitoring', 'Kosten & Monitoring']] as const).map(([k, l]) => (
             <button key={k} type="button" aria-pressed={view === k} onClick={() => setView(k)}
               className={`rounded px-3 py-1 text-sm ${view === k ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400'}`}>{l}</button>

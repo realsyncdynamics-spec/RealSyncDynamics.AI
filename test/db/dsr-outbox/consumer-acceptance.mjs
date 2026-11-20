@@ -36,6 +36,7 @@ try {
   // This runner rejects remote databases, then resets ONLY the disposable test DB.
   await q('drop schema if exists public cascade; create schema public;');
   await q('create role service_role bypassrls; create role anon; create role authenticated;');
+  await q('grant usage on schema public to service_role, anon, authenticated');
   await q('create table public.memberships(tenant_id uuid,user_id uuid,role text);');
   await q("create table public.dsr_requests(id uuid primary key default gen_random_uuid(), tenant_id uuid, request_type text, status text, requester_email text, requester_name text, subject_description text, assigned_to text, affected_assets jsonb, metadata jsonb default '{}'::jsonb);");
   await q('create table public.subject_ref_mappings(subject_ref text primary key, tenant_id uuid, deletion_requested_at timestamptz, erased_at timestamptz);');

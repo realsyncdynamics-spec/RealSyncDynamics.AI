@@ -51,6 +51,10 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/app-builder" element={<ProductLanding key="app-builder" product="app-builder" />} />');
     expect(app).toContain('<Route path="/governance-os" element={<ProductLanding key="governance-os" product="governance-os" />} />');
+    for (const key of ['software-factory', 'automation-os', 'creative-studio']) {
+      expect(app).toContain(`<Route path="/${key}" element={<ProductLanding key="${key}" product="${key}" />} />`);
+    }
+    expect(app).toContain('<Route path="/voice-agent" element={<KiBotsLanding />} />');
     expect(app).toContain(
       '<Route path="/claude-code-optimizer" element={<ProductLanding key="claude-code-optimizer" product="claude-code-optimizer" />} />',
     );
@@ -129,9 +133,17 @@ describe('Produkt-Landingpages (Entwurf)', () => {
 
   it.each(KEYS)('%s: Tarife aus shared/pricing.ts, Grenzen und Pflichtseiten', async (key) => {
     await renderPage(key);
-    for (const card of planCards(PRODUCT_CONTENT[key].source)) {
-      const el = screen.getByTestId(`product-plan-${card.id}`);
-      expect(within(el).getByText(card.price.replace(/\s+/g, ' '))).toBeInTheDocument();
+    if (PRODUCT_CONTENT[key].pricingMode === 'roadmap') {
+      expect(screen.getByText(/noch keinen freigegebenen Einzelprodukt-Checkout/)).toBeInTheDocument();
+      expect(screen.queryByTestId('product-plan-starter')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('product-plan-governance-launch')).not.toBeInTheDocument();
+    } else if (key === 'governance-os') {
+      expect(screen.getByTestId('product-plan-governance-launch')).toBeInTheDocument();
+    } else {
+      for (const card of planCards(PRODUCT_CONTENT[key].source)) {
+        const el = screen.getByTestId(`product-plan-${card.id}`);
+        expect(within(el).getByText(card.price.replace(/\s+/g, ' '))).toBeInTheDocument();
+      }
     }
     expect(screen.getByTestId('product-limits')).toHaveTextContent(PRODUCT_CONTENT[key].limits);
     expect(screen.getByTestId('product-tax-note').textContent?.length).toBeGreaterThan(0);

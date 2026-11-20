@@ -42,8 +42,10 @@ export function SyncStage({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<SyncMascotHandle | null>(null);
   const [mode, setMode] = useState<StageState>('still');
+  const [waveState, setWaveState] = useState<'idle' | 'playing' | 'finished'>('idle');
 
   useEffect(() => {
+    setWaveState('idle');
     if (!canRun3D()) {
       setMode('still');
       return;
@@ -60,12 +62,14 @@ export function SyncStage({
           onLoad: () => {
             if (cancelled) return;
             setMode('scene');
-            handleRef.current?.wave();
+            if (handleRef.current?.wave()) setWaveState('playing');
           },
           onError: () => {
             if (!cancelled) setMode('still');
           },
-          onWaveFinished: () => {},
+          onWaveFinished: () => {
+            if (!cancelled) setWaveState('finished');
+          },
         });
       })
       .catch(() => {
@@ -80,13 +84,14 @@ export function SyncStage({
   }, [variant]);
 
   useEffect(() => {
-    if (waveSignal > 0) handleRef.current?.wave();
+    if (waveSignal > 0 && handleRef.current?.wave()) setWaveState('playing');
   }, [waveSignal]);
 
   return (
     <figure
       className={'rs-sync-stage rs-sync-stage--' + (variant === 'home' ? 'hero' : 'product')}
       data-scene={mode}
+      data-wave={waveState}
       data-variant={variant}
       data-testid="sync-master-stage"
       aria-label="SYNC, die einheitliche 3D-Markenfigur von RealSync"

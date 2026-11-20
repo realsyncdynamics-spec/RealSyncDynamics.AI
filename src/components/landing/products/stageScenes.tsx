@@ -15,7 +15,7 @@ import { PRODUCT_CONTENT } from './productContent';
  * Inhaltsdateien, keine Kennzahlen oder Kundenangaben.
  */
 
-export type StageVariant = 'empfang' | 'landingpage' | 'app-builder' | 'builder' | 'governance' | 'optimizer';
+export type StageVariant = 'empfang' | 'landingpage' | 'app-builder' | 'builder' | 'governance' | 'optimizer' | 'factory' | 'automation' | 'creative';
 
 export interface StageScene {
   /** Kamerawinkel in Grad. */
@@ -34,6 +34,9 @@ export const STAGE_SCENES: Record<StageVariant, StageScene> = {
   builder: { orbit: { theta: 28, phi: 74 }, poseAt: 0, side: 'right' },
   governance: { orbit: { theta: -12, phi: 86 }, poseAt: 0, side: 'left' },
   optimizer: { orbit: { theta: 40, phi: 66 }, poseAt: 0, side: 'right' },
+  factory: { orbit: { theta: -46, phi: 77 }, poseAt: 0, side: 'left' },
+  automation: { orbit: { theta: 16, phi: 69 }, poseAt: 0, side: 'right' },
+  creative: { orbit: { theta: -52, phi: 61 }, poseAt: 0, side: 'left' },
 };
 
 /** Zuordnung Produktseite → Szene. */
@@ -43,6 +46,9 @@ export const STAGE_VARIANT_BY_PRODUCT = {
   'app-builder': 'app-builder',
   'governance-os': 'governance',
   'claude-code-optimizer': 'optimizer',
+  'software-factory': 'factory',
+  'automation-os': 'automation',
+  'creative-studio': 'creative',
 } as const satisfies Record<string, StageVariant>;
 
 function EmpfangCard() {
@@ -125,6 +131,53 @@ function OptimizerCard() {
   );
 }
 
+
+/** Neue Produktbühnen mit demselben SYNC-Modell und unterschiedlichen Prozesskarten. */
+function FactoryCard() {
+  return (
+    <>
+      <span className="pl-prop-label">Software Factory · Beispiel</span>
+      <ol className="pl-prop-list">
+        {['Spezifikation', 'Isolierter Branch', 'Tests', 'Menschliche Freigabe'].map((item, i) => (
+          <li key={item} className="pl-prop-row">
+            <span>{String(i + 1).padStart(2, '0')} · {item}</span>
+            <span className="pl-prop-mark">{i === 3 ? 'offen' : 'geplant'}</span>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+function AutomationCard() {
+  return (
+    <>
+      <span className="pl-prop-label">Automation OS · Beispiel</span>
+      <ol className="pl-prop-list">
+        {['Auslöser', 'Regelprüfung', 'Workflow', 'Prüfpfad'].map((item, i) => (
+          <li key={item} className="pl-prop-row">
+            <span>{item}</span><span className="pl-prop-mark">{i === 2 ? 'Preview' : 'Konzept'}</span>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+function CreativeCard() {
+  return (
+    <>
+      <span className="pl-prop-label">Creative Studio · Beispiel</span>
+      <div className="pl-prop-browser" aria-hidden="true">
+        <span className="pl-prop-bar"><i /><i /><i /></span>
+        <span className="pl-prop-block pl-prop-block--hero" />
+        <span className="pl-prop-cols"><span className="pl-prop-block" /><span className="pl-prop-block" /><span className="pl-prop-block" /></span>
+      </div>
+      <p className="pl-prop-row"><span>Bild / Video</span><span className="pl-prop-mark">In Vorbereitung</span></p>
+    </>
+  );
+}
+
 const CARDS: Record<StageVariant, ComponentType> = {
   empfang: EmpfangCard,
   landingpage: BuilderCard,
@@ -132,6 +185,9 @@ const CARDS: Record<StageVariant, ComponentType> = {
   builder: BuilderCard,
   governance: GovernanceCard,
   optimizer: OptimizerCard,
+  factory: FactoryCard,
+  automation: AutomationCard,
+  creative: CreativeCard,
 };
 
 /** Produktkarte neben SYNC. */

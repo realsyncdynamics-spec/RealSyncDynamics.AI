@@ -143,7 +143,7 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     const id = await createDsr(ctx, tenantId);
     await ctx.client.query(
       `ALTER TABLE public.runtime_events
-       ADD CONSTRAINT dsr_force_runtime_fail CHECK (type <> 'dsr.created') NOT VALID`,
+       ADD CONSTRAINT dsr_force_runtime_fail CHECK (type <> 'dsr.created')`,
     );
     await ctx.withClaims({ role: 'service_role' }, async () => {
       const res = await ctx.client.query<{ result: { failed_in_batch: number } }>(

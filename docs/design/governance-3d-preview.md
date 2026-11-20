@@ -1,0 +1,17 @@
+# Governance OS 3D Hero – isolated preview v0.2
+
+Review route: /design/governance-3d
+
+- Public route / stays on LandingV3.
+- Visual-only R3F core: three glass shells, internal network and expanding modules.
+- GSAP 3.15.1 ScrollTrigger animates scene progress and hero copy.
+- No tenant data, fictitious audit scores, payments, or changed backend.
+- /audit and /governance-runtime are existing app routes and are only linked.
+- No remote HDR environment download.
+- Low-motion mode uses static CSS cube; WebGL failure uses the same fallback.
+- All 3D is lazy-loaded behind the preview page route.
+
+Do not promote to / without human approval and passing full CI and device checks.
+Validation still required: npm ci, npm run lint, npm run build, vitest focused tests,
+Playwright desktop/mobile, WCAG reduced-motion and focus checks, deployment preview.
+Check the production-gate PR independently before any release.

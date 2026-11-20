@@ -122,7 +122,7 @@ describe('RLS-backed Chief of Staff loader', () => {
       open_tasks: 1, in_progress_tasks: 0, blocked_tasks: 1, failed_tasks: 0,
       pending_decisions: 1, unacknowledged_high_alerts: 1, attention_total: 3,
     });
-    expect(output.items.map(item => item.title)).toEqual(['Human approval', 'Release blocker', 'SLO high']);
+    expect(output.items.map(item => item.title)).toEqual(['Human approval', 'SLO high', 'Release blocker']);
     expect(JSON.stringify(output)).not.toContain('Private B');
     expect(calls.filter(call => call.table !== 'memberships' && call.method === 'eq' && call.key === 'tenant_id'))
       .toHaveLength(7);

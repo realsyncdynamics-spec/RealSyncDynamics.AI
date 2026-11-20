@@ -83,6 +83,15 @@ jobs:
         env:
           CI: true
 
+      # Der Standard-Testkatalog (playwright.catalog.config.ts) enthaelt nur
+      # tests/e2e/ und erfasst e2e/ NICHT. Das Auth-/Tenant-UI dieses PR
+      # braucht einen nachgewiesenen eigenen Browserlauf, nicht nur gruene
+      # Landingpage-Checks. Lokale HTTP-Fakes, keine Produktivzugriffe.
+      - name: Chief-of-Staff Browser-Tenant-Tests (mocked Auth/PostgREST)
+        run: npx playwright test e2e/chief-of-staff-browser.spec.ts --config=playwright.config.ts
+        env:
+          CI: true
+
       - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

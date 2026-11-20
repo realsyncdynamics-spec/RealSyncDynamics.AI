@@ -117,3 +117,35 @@ test('a malformed DB row never counts as persisted state', async () => {
   const { adapter } = backend({ version: 3, snapshot: ready });
   await assert.rejects(adapter.read(input), /invalid_response/);
 });
+
+test('heartbeat renews same fenced epoch and rejects invalid parameters', async () => {
+  const { adapter, calls } = backend({
+    version: 1, lease_epoch: 4, lease_expires_at: '2026-11-20T12:45:00Z',
+  });
+  const result = await adapter.heartbeat({
+    ...input, workerId: 'worker-01', leaseEpoch: 4, leaseSeconds: 60,
+  });
+  assert.deepEqual(result, {
+    version: 1, leaseEpoch: 4, leaseExpiresAt: '2026-11-20T12:45:00Z',
+  });
+  assert.match(calls[0].sql, /loop_heartbeat/);
+  assert.deepEqual(calls[0].params, [taskId, tenantId, 'worker-01', 4, 60]);
+  await assert.rejects(adapter.heartbeat({
+    ...input, workerId: 'worker-01', leaseEpoch: 0,
+  }), /lease_epoch_invalid/);
+  assert.equal(calls.length, 1);
+});
+
+test('release requires matching fenced epoch and returns explicit receipt', async () => {
+  const { adapter, calls } = backend({ released: true, lease_epoch: 4 });
+  const result = await adapter.release({
+    ...input, workerId: 'worker-01', leaseEpoch: 4,
+  });
+  assert.deepEqual(result, { released: true, leaseEpoch: 4 });
+  assert.match(calls[0].sql, /loop_release/);
+  assert.deepEqual(calls[0].params, [taskId, tenantId, 'worker-01', 4]);
+  await assert.rejects(adapter.release({
+    ...input, workerId: 'worker-01', leaseEpoch: -1,
+  }), /lease_epoch_invalid/);
+  assert.equal(calls.length, 1);
+});

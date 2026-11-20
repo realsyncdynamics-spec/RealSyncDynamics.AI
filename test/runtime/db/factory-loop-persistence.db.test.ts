@@ -26,7 +26,12 @@ describe('SF-005 SQL contract static', () => {
   });
 });
 
-const d = requireDbOrFail('sf005-postgres-contract') ? describe : describe.skip;
+const hasDb = requireDbOrFail('sf005-postgres-contract');
+const permitted = process.env.SF005_DISPOSABLE_DB === '1';
+if (process.env.REQUIRE_DB_TESTS === '1' && !permitted) {
+  throw new Error('SF005_DISPOSABLE_DB=1 erforderlich: niemals auf Produktion testen');
+}
+const d = hasDb && permitted ? describe : describe.skip;
 d('SF-005 real PostgreSQL — requires isolated DB plus contract installed', () => {
   let ctx: DbCtx | null = null;
   let tenantId = '', memberId = '', taskId = '';

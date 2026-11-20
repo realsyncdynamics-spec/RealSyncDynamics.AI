@@ -42,7 +42,7 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
 
   it('zeigt Kernbotschaft, Hauptaktion und lädt SYNC als 3D-Bühne', async () => {
     await renderPage();
-    expect(screen.getByTestId('ki-bots-heading')).toHaveTextContent('Erreichbar bleiben.');
+    expect(screen.getByTestId('ki-bots-heading')).toHaveTextContent('Keine Anfrage verpassen.');
     expect(screen.getByTestId('ki-bots-primary')).toHaveTextContent(KI_BOTS.primaryCta);
     expect(screen.getByTestId('ki-bots-primary')).toHaveAttribute('href', '#ablauf');
     expect(scene.options?.src).toBe('/models/sync-mascot.glb');
@@ -98,8 +98,8 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
 
   it('führt zu Warteliste und Chat-Assistent mit eigener Quelle', async () => {
     await renderPage();
-    expect(screen.getByTestId('ki-bots-waitlist')).toHaveAttribute('href', '/warteliste?interest=bots&source=ki-bots');
-    expect(screen.getByTestId('ki-bots-try')).toHaveAttribute('href', '/chatbot/start?source=ki-bots');
+    expect(screen.getByTestId('ki-bots-waitlist')).toHaveAttribute('href', '/warteliste?interest=bots&source=telefonassistent');
+    expect(screen.getByTestId('ki-bots-try')).toHaveAttribute('href', '/chatbot/start?source=telefonassistent');
   });
 
   it('räumt die Szene beim Unmount auf', async () => {

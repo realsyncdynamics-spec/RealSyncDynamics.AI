@@ -12,7 +12,7 @@ try {
     create table memberships(tenant_id uuid,user_id uuid,role text);
     create table dsr_requests(id uuid primary key default gen_random_uuid(),tenant_id uuid,request_type text,
     status text,requester_email text,requester_name text,subject_description text,assigned_to text,
-    affected_assets jsonb,metadata jsonb);`);
+    affected_assets text[],metadata jsonb);`);
   await db.exec(await readFile(new URL('./intake.sql',import.meta.url),'utf8'));
   const tenant = randomUUID(), actor = randomUUID(), operation = randomUUID();
   await db.query("insert into memberships values ($1,$2,'editor')",[tenant,actor]);

@@ -58,7 +58,7 @@ describe('Startseite v3 — `/`', () => {
     for (const p of PRODUCTS) expect(screen.getByTestId(`v3-product-${p.key}`)).toHaveAttribute('href', p.href);
     expect(PRODUCTS).toHaveLength(7);
     for (const slug of ['software-factory','automation-os','creative-studio']) {
-      expect(screen.getByTestId(`v3-product-${slug}`)).toHaveAttribute('href', `/\${slug}?source=landing-v3`.replace('\\',''));
+      expect(screen.getByTestId(`v3-product-${slug}`)).toHaveAttribute('href', `/${slug}?source=landing-v3`);
     }
     expect(screen.getByTestId('v3-product-receptionist')).toHaveTextContent('In Vorbereitung');
     expect(screen.queryByTestId('v3-product-receptionist')?.tagName).toBe('SECTION');

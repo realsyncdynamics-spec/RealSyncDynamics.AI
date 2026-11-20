@@ -210,6 +210,8 @@ jobs:
     # Pull requests may build/validate, but must never deploy to the production Pages branch.
     if: github.event_name != 'pull_request' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
+    # R1 (Phase 0, 18.11.2026): Prod-Wirkung nur nach Freigabe in der GitHub-Environment `production`.
+    environment: production
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Download build artifact

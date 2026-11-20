@@ -824,6 +824,21 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     ],
     showOnRoadmap: true,
   },
+  {
+    id: 'software-factory-product',
+    name: 'Software Factory – Kundenprodukt',
+    status: 'coming-soon',
+    group: 'runtime',
+    description:
+      'Öffentliche Produktseite als Entwurf; isolierte Entwicklungs- und Testbausteine existieren, aber kein freigegebener Kunden-End-to-End-Ablauf und kein autonomes Produktionsdeployment.',
+    route: '/software-factory',
+    evidence: [
+      'src/components/landing/products/productExtensions.ts',
+      'docs/design/white-product-family-rule.md',
+      'docs/product/realsync-agent-os.md',
+    ],
+    showOnRoadmap: false,
+  },
 ] as const;
 
 export const LIVE_IMPLEMENTATION = IMPLEMENTATION_ITEMS.filter((i) => i.status === 'live');

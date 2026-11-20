@@ -19,6 +19,7 @@ Review-Entwurf, keine bereits deployte Migration.
 - apps/factory-worker/loop/db/postgres-contract.sql
 - apps/factory-worker/loop/db/adapter.mjs
 - apps/factory-worker/loop/db/test/adapter.test.mjs
+- test/runtime/db/factory-loop-concurrency.db.test.ts
 - test/runtime/db/factory-loop-persistence.db.test.ts
 - apps/factory-worker/loop/engine.mjs
 - docs/software-factory/SF-005-GOAL-LOOP.md
@@ -49,6 +50,11 @@ werden als Replay erkannt. Derselbe Schlüssel mit verändertem Inhalt scheitert
 - Tabellen haben RLS und keine direkten App-Schreibrechte.
 - Privilegierte Funktionen sind ausschließlich dem service_role erteilt.
   Dieser Schlüssel darf niemals im Browser verwendet werden.
+- Loop-Heartbeat kann eine aktive Lease erneuern, ohne die Fencing-Epoche
+  zurückzusetzen. Ein eigener `loop_release` erlaubt geplante Übergaben;
+  ein veralteter Worker darf weder committen noch die neue Lease freigeben.
+- Task-Sperre und Checkpoint-Sperre werden in fester Reihenfolge genommen,
+  um Statuswechsel mit Task-Abbruch zu serialisieren.
 - Worker-ID und Verifier-ID sind noch keine kryptografisch attestierten
   Identitäten. Der künftig nutzende Backenddienst muss separat abgesichert
   werden.
@@ -65,10 +71,12 @@ werden als Replay erkannt. Derselbe Schlüssel mit verändertem Inhalt scheitert
 1. Disposable-PostgreSQL-Instanz mit den vollständigen vorhandenen
    Supabase-Tabellen, Rollen und Migrationen erzeugen. Keine Produktions-DB!
 2. Die SQL-Review-Datei nach eigenständiger Prüfung NUR dort anwenden.
-3. TEST_DB_URL für diese Testdatenbank setzen.
+3. TEST_DB_URL ausschließlich für diese Testdatenbank setzen und
+   SF005_DISPOSABLE_DB=1 aktivieren. Diese zusätzliche Schranke verhindert
+   die versehentliche Ausführung gegen Produktionsverbindungen.
 4. Tests aufrufen:
 
-    npx vitest run test/runtime/db/factory-loop-persistence.db.test.ts
+    npx vitest run test/runtime/db/factory-loop-persistence.db.test.ts test/runtime/db/factory-loop-concurrency.db.test.ts
 
 5. In CI unbedingt REQUIRE_DB_TESTS=1 setzen: Fehlt TEST_DB_URL, darf die
    Integrationssuite nicht stillschweigend als erfolgreich gelten.
@@ -77,6 +85,12 @@ Ohne Testdatenbank laufen lediglich statische Code-Vertragsprüfungen.
 Zusätzlich sind zehn Offline-Adaptertests für Eingabevalidierung,
 Parametrisierung und Fail-Closed-Verhalten vorhanden. Sie ersetzen
 keinen echten Datenbanklauf.
+
+Der neue Parallelitätstest nutzt drei unabhängige PostgreSQL-Sessions:
+Zwei Worker konkurrieren um dieselbe Lease, ein blockierter Claim wird
+nach dem ersten Commit ausdrücklich abgewiesen, der erste Worker wird
+simuliert aufgegeben, und nur die neue Fencing-Epoche darf den Zustand
+weiterführen. Anschließend werden Heartbeat, Release und Replay geprüft.
 
 Die eigentlichen PostgreSQL-Läufe und parallele Worker-Lease-Tests
 bleiben ausstehend.

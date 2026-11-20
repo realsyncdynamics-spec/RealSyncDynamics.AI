@@ -20,7 +20,6 @@ vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
 import KiBotsLanding from '../../src/pages/products/KiBotsLanding';
 import { DEMO_STEPS, KI_BOTS } from '../../src/components/landing/products/kiBotsContent';
 import { STAGE_SCENES } from '../../src/components/landing/products/stageScenes';
-import { planChannels } from '../../src/components/landing/products/productLandingShared';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 
 async function renderPage() {
@@ -87,13 +86,14 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
     expect(within(demo).getByText('Noch keine Nachricht. Starten Sie den Ablauf.')).toBeInTheDocument();
   });
 
-  it('zeigt die vier Tarife mit Kanälen aus shared/pricing.ts und den Steuerhinweis', async () => {
+  it('bietet keine irreführenden Telefonie-Tarife an, solange Checkout nicht live ist', async () => {
     await renderPage();
-    for (const id of ['starter', 'growth', 'agency', 'enterprise'] as const) {
-      const card = screen.getByTestId(`ki-bots-plan-${id}`);
-      for (const channel of planChannels(id)) expect(card).toHaveTextContent(channel);
-    }
-    expect(screen.getByTestId('ki-bots-tax-note').textContent?.length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Telefonie ist noch in Vorbereitung.' })).toBeInTheDocument();
+    expect(screen.queryByTestId('ki-bots-plan-starter')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ki-bots-plan-growth')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ki-bots-status-note')).toHaveTextContent('erst angeboten');
+    expect(screen.getByTestId('ki-bots-waitlist-pricing'))
+      .toHaveAttribute('href', '/warteliste?interest=bots&source=ki-bots');
   });
 
   it('führt zu Warteliste und Chat-Assistent mit eigener Quelle', async () => {

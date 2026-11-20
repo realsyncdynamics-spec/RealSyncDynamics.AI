@@ -1,0 +1,62 @@
+name: Factory SF-008 Ephemeral PostgreSQL Lab
+# Not a migration, no Supabase project, no provider credentials, no deploy.
+on:
+  push:
+    branches:
+      - factory/sf-008-ephemeral-postgres-20261120
+    paths:
+      - .github/workflows/factory-sf008-postgres-lab.yml
+      - apps/factory-worker/postgres-lab/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sf008-pg-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-negative-tests:
+    name: Postgres transaction and RLS fixture (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: sf008_ephemeral_only
+          POSTGRES_DB: sf008_test
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sf008_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Validate guarded Bash starter
+        run: bash -n apps/factory-worker/postgres-lab/run-tests.sh
+      - name: Install PostgreSQL client if absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          psql --version
+      - name: Test atomic rollback, CAS, RLS and fencing in disposable DB
+        shell: bash
+        env:
+          SF008_EPHEMERAL_DB: 'true'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sf008_test
+          PGUSER: postgres
+          PGPASSWORD: sf008_ephemeral_only
+        run: bash apps/factory-worker/postgres-lab/run-tests.sh

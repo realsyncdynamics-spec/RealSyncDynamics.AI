@@ -17,6 +17,8 @@ Review-Entwurf, keine bereits deployte Migration.
 ## Artefakte
 
 - apps/factory-worker/loop/db/postgres-contract.sql
+- apps/factory-worker/loop/db/adapter.mjs
+- apps/factory-worker/loop/db/test/adapter.test.mjs
 - test/runtime/db/factory-loop-persistence.db.test.ts
 - apps/factory-worker/loop/engine.mjs
 - docs/software-factory/SF-005-GOAL-LOOP.md
@@ -32,6 +34,11 @@ Review-Entwurf, keine bereits deployte Migration.
   Checkpoint-Version und Event-Audit in einer Transaktion.
 - loop_read: Liefert nur an den autorisierten Serverdienst den Snapshot und
   die Version zurück, sodass ein Neustart den letzten Zustand lesen kann.
+
+Der neue serverseitige JavaScript-Adapter verwendet ausschließlich parametrisierte
+SQL-Aufrufe und benötigt einen bereits authentifizierten Datenbankclient. Er
+öffnet selbst keine Verbindung, lädt keine Secrets und führt keinen Agenten aus.
+Bei Datenbankfehlern bricht er ohne Erfolgsbestätigung ab.
 
 Wiederholte Schreibversuche mit identischem Idempotenzschlüssel und Inhalt
 werden als Replay erkannt. Derselbe Schlüssel mit verändertem Inhalt scheitert.
@@ -67,6 +74,10 @@ werden als Replay erkannt. Derselbe Schlüssel mit verändertem Inhalt scheitert
    Integrationssuite nicht stillschweigend als erfolgreich gelten.
 
 Ohne Testdatenbank laufen lediglich statische Code-Vertragsprüfungen.
+Zusätzlich sind zehn Offline-Adaptertests für Eingabevalidierung,
+Parametrisierung und Fail-Closed-Verhalten vorhanden. Sie ersetzen
+keinen echten Datenbanklauf.
+
 Die eigentlichen PostgreSQL-Läufe und parallele Worker-Lease-Tests
 bleiben ausstehend.
 

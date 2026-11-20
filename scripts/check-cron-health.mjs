@@ -181,11 +181,43 @@ export function groupByCause(broken) {
 // Gezaehlt werden nur Dispatches, die aelter als zwei Minuten sind — juengere
 // koennen noch unterwegs sein.
 //
-// `net._http_response` haelt nur rund sechs Stunden vor — das Fenster ist
-// deshalb bewusst kurz und wird in der Ausgabe mitgenannt.
+// `net._http_response` haelt typischerweise nur rund sechs Stunden vor.
+// Das Lookback fuer vorhandene Antworten ist 24h (Issue #2200), das
+// Ohne-Antwort-Fenster bleibt bei der Aufbewahrung (6h), beide konfigurierbar.
 
-export const SQL_ANTWORTEN = `
-WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
+/**
+ * Stunden, die vorhandene HTTP-Antworten zurueckgeschaut werden (Default 24).
+ * So bleibt der taegliche 09:00-UTC-Drip sichtbar, auch wenn der Guard
+ * erst nach 15:00 UTC startet (Issue #2200, RSD-012).
+ *
+ * Ueber CRON_HEALTH_HTTP_LOOKBACK_HOURS konfigurierbar (z. B. 6 ergibt
+ * das vorherige Fenster). Ungueltige Werte fallen auf 24 zurueck.
+ */
+export function cronHealthHttpLookbackHours() {
+  const n = Number(process.env.CRON_HEALTH_HTTP_LOOKBACK_HOURS ?? 24);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 24;
+}
+
+/**
+ * Fenster, in dem fehlende Antworten als Befund zaehlen (Default 6).
+ * `net._http_response` haelt typischerweise nur rund sechs Stunden vor —
+ * ein laengeres Ohne-Antwort-Fenster wuerde Dispatches ohne gespeicherte
+ * Antwort faelschlich rot faerben. CRON_HEALTH_HTTP_RETENTION_HOURS.
+ */
+export function cronHealthHttpRetentionHours() {
+  const n = Number(process.env.CRON_HEALTH_HTTP_RETENTION_HOURS ?? 6);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 6;
+}
+
+export function buildSqlAntworten(
+  lookbackHours = cronHealthHttpLookbackHours(),
+  retentionHours = cronHealthHttpRetentionHours(),
+) {
+  const lookback = Number.isFinite(lookbackHours) && lookbackHours > 0 ? Math.floor(lookbackHours) : 24;
+  const retention = Number.isFinite(retentionHours) && retentionHours > 0 ? Math.floor(retentionHours) : 6;
+  return `
+WITH fenster AS (SELECT now() - interval '${lookback} hours' AS ab),
+retention AS (SELECT now() - interval '${retention} hours' AS ab),
 dispatch_laeufe AS (
   SELECT q.request_id
   FROM public.cron_dispatch_requests q
@@ -205,11 +237,27 @@ antworten AS (
 ),
 laeufe AS (
   SELECT count(*)::int AS anzahl
-  FROM dispatch_laeufe
+  FROM public.cron_dispatch_requests q
+  CROSS JOIN retention ret
+  WHERE q.dispatched_at >= ret.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
+),
+antworten_retention AS (
+  SELECT count(*)::int AS anzahl
+  FROM public.cron_dispatch_requests q
+  CROSS JOIN retention ret
+  JOIN net._http_response r ON r.id = q.request_id
+  WHERE q.dispatched_at >= ret.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
 )
 SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
 UNION ALL
-SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`
+SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l
+UNION ALL
+SELECT 'antwort_im_retention', NULL, ar.anzahl, NULL, NULL, NULL FROM antworten_retention ar;`
+}
+
+export const SQL_ANTWORTEN = buildSqlAntworten();
 
 /**
  * Groesster erwarteter Abstand zwischen zwei Laeufen, in Minuten.
@@ -235,7 +283,23 @@ export function erwarteterAbstandMinuten(schedule) {
 
   const minutenSchritt = schritt(minute);
   if (minutenSchritt) return minutenSchritt;
-  if (!/^\d+$/.test(minute)) return null;
+  if (!/^\d+$/.test(minute)) {
+    // Komma-Listen wie 4,19,34,49 (versetzte */15-Jobs, vorbereitet fuer RSD-013).
+    if (/^\d+(,\d+)+$/.test(minute) && (stunde === '*' || /^\d+$/.test(stunde))) {
+      const parts = minute.split(',').map(Number);
+      if (parts.some((n) => !Number.isFinite(n))) return null;
+      const sorted = [...new Set(parts)].sort((a, b) => a - b);
+      if (sorted.length < 2) return null;
+      let minGap = (sorted[0] + 60) - sorted[sorted.length - 1];
+      for (let i = 1; i < sorted.length; i++) {
+        minGap = Math.min(minGap, sorted[i] - sorted[i - 1]);
+      }
+      if (minGap <= 0) return null;
+      if (stunde === '*') return minGap;
+      return 24 * 60;
+    }
+    return null;
+  }
 
   if (stunde === '*') return 60;
   const stundenSchritt = schritt(stunde);
@@ -284,8 +348,15 @@ export function evaluateAntworten(zeilen) {
   const summeGut = gut.reduce((s, a) => s + a.anzahl, 0);
   const summeSchlecht = schlecht.reduce((s, a) => s + a.anzahl, 0);
 
-  // Weniger Antworten als Laeufe heisst: irgendwo kam nichts zurueck.
-  const ohneAntwort = Math.max(0, dispatchLaeufe - (summeGut + summeSchlecht));
+  // Ohne-Antwort nur im Retention-Fenster (Default 6h). Antworten aus dem
+  // laengeren Lookback (Default 24h) fliessen in schlecht/gut ein, duerfen
+  // aber die Retention-Zaehlung nicht verzerren. Fehlt die neue Zeile
+  // (alte Testdaten), gilt die bisherige Rechnung.
+  const antwortImRetention = zeilen.find((z) => z.art === 'antwort_im_retention')?.anzahl;
+  const antwortZahlFuerOhne = Number.isFinite(antwortImRetention)
+    ? antwortImRetention
+    : (summeGut + summeSchlecht);
+  const ohneAntwort = Math.max(0, dispatchLaeufe - antwortZahlFuerOhne);
 
   return {
     schlecht: schlecht.sort((a, b) => b.anzahl - a.anzahl),
@@ -503,7 +574,7 @@ if (direkt) {
   } else if (antwort.summeSchlecht > 0 || antwort.ohneAntwort > 0) {
     befund = true;
     console.error(
-      `\n❌ Im 6-Stunden-Fenster: ${antwort.summeSchlecht} Antworten ohne 2xx` +
+      `\n❌ Im ${cronHealthHttpLookbackHours()}-Stunden-Lookback: ${antwort.summeSchlecht} Antworten ohne 2xx` +
       (antwort.ohneAntwort > 0 ? ` und ${antwort.ohneAntwort} Dispatch-Laeufe ohne jede Antwort` : '') +
       ` (${antwort.summeGut} erfolgreich, ${antwort.dispatchLaeufe} Dispatch-Laeufe):\n`,
     );
@@ -523,7 +594,7 @@ if (direkt) {
       'Ablehnung steht nur hier. Anleitung: docs/runbooks/cron-vault-secrets.md\n',
     );
   } else if (antwort.dispatchLaeufe === 0) {
-    console.log('ℹ️  Antwort-Ebene: im 6-Stunden-Fenster lief kein Dispatch-Job.');
+    console.log(`ℹ️  Antwort-Ebene: im ${cronHealthHttpRetentionHours()}-Stunden-Retention-Fenster lief kein Dispatch-Job.`);
   } else {
     console.log(`✅ Antwort-Ebene: ${antwort.summeGut} von ${antwort.summeGut} Antworten waren 2xx.`);
   }

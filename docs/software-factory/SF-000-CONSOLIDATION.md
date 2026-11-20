@@ -4,7 +4,7 @@
 
 ## Baseline und Branch-Strategie
 
-Der SF-000-Branch basiert auf factory/sf-006-offline-ci-20261120. Die vorhandenen Branches, Draft-PRs und main bleiben unverändert. Der PR soll nur die neu hinzugefügten SF-000-Dateien enthalten. Die späteren Merge-Abhängigkeiten und die aktuellsten Quell-SHAs sind vor der Integration neu zu prüfen.
+Der SF-000-Branch basiert auf factory/sf-006-offline-ci-20261120. Die bestehenden Produkt- und Produktionszweige bleiben unverändert. Der Draft-PR ist die gemeinsame, additive Sammelstelle für die SF-000-Statusbrücke und die zuvor separat entwickelte SF-007-Snapshot-Korrelationsprüfung. Der alte SF-007-Branch bleibt als Referenz bestehen, wird jedoch nicht separat gemergt. Die späteren Merge-Abhängigkeiten und die aktuellsten Quell-SHAs sind vor der Integration neu zu prüfen.
 
 | Linie | Quelle | Belegte Bausteine | Grenze |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Der SF-000-Branch basiert auf factory/sf-006-offline-ci-20261120. Die vorhandene
 
 1. apps/factory-worker/consolidation/status-compat.mjs enthält eine **rein lesende Status-Vokabularbrücke** für alle drei Linien.
 2. apps/factory-worker/consolidation/test/status-compat.test.mjs überprüft alle 28 Statuswerte und Negativfälle. Die Adapter-Ausgabe ist ein unverbindlicher Anzeige-Hinweis.
-3. Diese Datei enthält den Konsolidierungs- und Abnahmeplan. Keine bestehende State Machine, Policy, Datenbank oder Release-Funktion wird geändert.
+3. `apps/factory-worker/integration/contract-projection.mjs` und `apps/factory-worker/integration/test/contract-projection.test.mjs` stammen unverändert aus dem bereits existierenden SF-007-Entwicklungsbranch. Sie korrelieren zwei untrusted Job-/Scope-/Commit-Snapshots; auch ihre Ergebnisse haben sechs `authority`-Flags fest auf `false`. Die Suite enthält 18 synthetische Tests.\n4. `.github/workflows/factory-sf000-contracts.yml` erweitert die lesende CI auf die vier vorhandenen SF-003/SF-004/SF-005-Suiten und die beiden SF-000/SF-007-Suiten. Keine bestehende State Machine, Policy, Datenbank oder Release-Funktion wird geändert.
 
 **Sicherheitsinvariante:** Jeder Adapter-Ausgang hat canStartWorker=false, canCreatePullRequest=false, canMerge=false, canDeploy=false; humanReviewStillRequired=true, evidenceVerified=false und statusAuthenticated=false. Ein Anzeige-Hinweis darf niemals zur Autorisierung eines Jobs werden.
 
@@ -37,7 +37,7 @@ Lokale Prüfung mit Node 22 ohne Paketinstallation:
     node --check apps/factory-worker/consolidation/test/status-compat.test.mjs
     node --test apps/factory-worker/consolidation/test/status-compat.test.mjs
 
-Der bestehende GitHub-Workflow deckt diese neue Suite noch nicht ab und der neue PR-Zielbranch ist nicht Teil der expliziten PR-Baseliste des Workflows. Der lokale Testnachweis ersetzt **keinen CI-Nachweis**. Das Anpassen von GitHub-Workflow-Regeln bedarf einer eigenen Sicherheitsprüfung und Freigabe.
+**CI ergänzt – Nachweis gesondert prüfen:** Der neue, auf diesen Draft-PR und seinen Review-Branch begrenzte Workflow führt 14 JavaScript-Syntaxprüfungen und sechs Offline-Testsuiten aus. `contents: read`, kein gespeichertes Checkout-Token, keine Provider-Secrets, kein Paketinstall, kein Docker oder Deployment. Das erfolgreiche SF-006-CI-Ergebnis (41 Tests) darf nicht als Erfolg des neuen SF-000-Heads ausgegeben werden. Für jeden Commit sind die tatsächlichen GitHub-Job-Logs und Resultate neu zu prüfen. Dieser Workflow ersetzt weder Repository-Gesamttests noch produktive oder sicherheitskritische Abnahmen. Nachgelagerte Zusammenführung und Aktivierung benötigen weiterhin separates Review.
 
 ## Ziel-Vertrag – nach Review, nicht Bestandteil dieses PRs
 

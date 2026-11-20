@@ -115,4 +115,15 @@ describe('SF-003 recovery inspection (read-only; simulation only)', () => {
     const states = Object.values(fixture());
     for (const job of states) expect(inspect(job).canAutomaticallyExecute).toBe(false);
   });
+  it('rejects a forged jump directly from sandbox approval to completed', () => {
+    const j = fixture().running;
+    const events = [...j.events];
+    events[2] = { ...events[2], operation: 'accept_review', to: 'completed' };
+    expect(inspect({ ...j, state: 'completed', events }).category).toBe('invalid_snapshot');
+  });
+  it('rejects missing approval metadata on previously approved job', () => {
+    const j = fixture().running;
+    expect(inspect({ ...j, sandboxApprovalId: null }).category).toBe('invalid_snapshot');
+  });
+
 });

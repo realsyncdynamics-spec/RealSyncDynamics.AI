@@ -25,8 +25,8 @@ export const EXTENDED_PRODUCT_CONTENT = {
     },
     "status": [
       {
-        "label": "Agent OS Teilkomponente",
-        "registryId": "agent-os-product-evolution"
+        "label": "Software Factory",
+        "registryId": "software-factory-product"
       }
     ],
     "stageTag": "Software Factory · Produktentwurf",

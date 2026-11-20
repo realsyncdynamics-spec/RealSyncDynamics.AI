@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HeroStage } from '../components/landing/v3/HeroStage';
+import { HiggsfieldBotHero } from '../components/landing/v3/HiggsfieldBotHero';
+import { PRODUCT_LANDINGS, PRODUCT_STATUS_LABELS, productLandingStatus } from '../config/productLandings';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
@@ -80,10 +81,11 @@ export function LandingV3() {
       <header className="lv3-hero" id="top">
         <nav className="lv3-nav" aria-label="Hauptnavigation">
           <Link to="/" className="lv3-brand">RealSync Dynamics &amp; AI</Link>
+          <a href="#produkte">Produkte</a>
           <a href="#katalog">Build</a>
           <a href="#katalog">Automate</a>
           <a href="#govern">Govern</a>
-          <Link to="/phonebot/start">Voice Agent</Link>
+          <Link to="/voice-agent">Voice Agent</Link>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
@@ -105,7 +107,7 @@ export function LandingV3() {
               <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
             </div>
           </div>
-          <HeroStage active={active} caption={current.stageCaption} statusLabel="Kontrollschicht · Vorschau" />
+          <HiggsfieldBotHero active={active} caption={current.stageCaption} />
         </div>
 
         <div
@@ -192,6 +194,23 @@ export function LandingV3() {
                 </Link>
               );
             })}
+          </div>
+        </section>
+
+
+        <section id="produkte" className="lv3-section" aria-labelledby="lv3-produkthaus-h">
+          <span className="lv3-eyebrow">Eine Plattform · sechs Produktwelten</span>
+          <h2 id="lv3-produkthaus-h" className="lv3-h2">Ein Dach. Viele Möglichkeiten.</h2>
+          <p className="lv3-text">Jedes Produkt hat eine eigene Seite und ein eigenes Hero-Motiv. Login, Abrechnung und Governance bleiben gemeinsam.</p>
+          <div className="lv3-product-landings" data-testid="v3-product-landings">
+            {PRODUCT_LANDINGS.map((product, i) => (
+              <Link key={product.slug} to={'/' + product.slug} className="lv3-product-landing" data-testid={'v3-landing-' + product.slug}>
+                <span className="lv3-meta">{String(i + 1).padStart(2, '0')} · {product.label}</span>
+                <span className="lv3-product-landing__name">{product.name}</span>
+                <span className="lv3-product-landing__status">{PRODUCT_STATUS_LABELS[productLandingStatus(product)]}</span>
+                <span className="lv3-product-landing__cta">Produktseite öffnen <span aria-hidden="true">↗</span></span>
+              </Link>
+            ))}
           </div>
         </section>
 

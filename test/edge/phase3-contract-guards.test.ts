@@ -29,6 +29,12 @@ describe('Phase 3 — automation trigger and runner wiring', () => {
     expect(trigger).toContain("'ENTITLEMENT_UNAVAILABLE'");
     expect(trigger).toContain("'QUOTA_NOT_CONFIGURED'");
   });
+
+  it('prevents duplicate terminal callback updates via compare-and-set', () => {
+    const callback = source('supabase/functions/automation-callback/index.ts');
+    expect(callback).toContain(".in('status', ['queued', 'running']).select('id').maybeSingle()");
+    expect(callback).toContain("'ALREADY_FINISHED'");
+  });
 });
 
 describe('Phase 3 — DPIA approval gates', () => {

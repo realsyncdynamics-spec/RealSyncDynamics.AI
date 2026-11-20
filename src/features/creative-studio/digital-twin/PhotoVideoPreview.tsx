@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { canPreview, MAX_SCRIPT_LENGTH, validatePhoto, type TwinFormat } from './photoVideoContract';
+import { sha256Hex } from '../../../lib/provenance';
 
 /** Private design preview. No photo is uploaded, no video is generated. */
 export default function PhotoVideoPreview() {
@@ -13,11 +14,28 @@ export default function PhotoVideoPreview() {
   const [consent, setConsent] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [speaking, setSpeaking] = useState(false);
+  const [photoDigest, setPhotoDigest] = useState<string | null>(null);
+  const [digestError, setDigestError] = useState(false);
 
   useEffect(() => () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }, []);
+
+  // Existing Provenance SHA-256 implementation is reused. This is only a local
+  // exact-byte fingerprint, NOT a signed proof, identity check or copyright title.
+  useEffect(() => {
+    let cancelled = false;
+    setPhotoDigest(null);
+    setDigestError(false);
+    if (file) {
+      file.arrayBuffer()
+        .then((buffer) => sha256Hex(new Uint8Array(buffer)))
+        .then((digest) => { if (!cancelled) setPhotoDigest(digest); })
+        .catch(() => { if (!cancelled) setDigestError(true); });
+    }
+    return () => { cancelled = true; };
+  }, [file]);
 
   const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = event.currentTarget.files?.[0] ?? null;
@@ -135,6 +153,25 @@ export default function PhotoVideoPreview() {
             Die optionale Sprachprobe nutzt die Browser-Stimme, nicht deine Stimme. Das Gesicht wird nicht animiert;
             es findet keine Aufnahme, Generierung oder Übertragung an einen KI-Anbieter statt.
           </p>
+          <section className="mt-6 border border-slate-300 bg-white p-4" aria-labelledby="butterfly-heading">
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-800">RealSync Butterfly · Identity Protection</p>
+            <h3 id="butterfly-heading" className="mt-2 text-lg font-semibold">Herkunft & Identität</h3>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div><dt className="font-semibold">Foto-Fingerabdruck (SHA-256)</dt>
+                <dd className="mt-1 break-all font-mono text-xs text-slate-700">
+                  {digestError ? 'Berechnung fehlgeschlagen' : photoDigest ?? 'Noch kein Fingerabdruck'}
+                </dd>
+              </div>
+              <div><dt className="font-semibold">Identitätsstatus</dt><dd>Nicht überprüft</dd></div>
+              <div><dt className="font-semibold">Kryptografische Signatur</dt><dd>Nicht ausgestellt</dd></div>
+              <div><dt className="font-semibold">Avatar-QR-Code</dt><dd>Noch nicht verfügbar – erst nach serverseitiger Verifizierung</dd></div>
+              <div><dt className="font-semibold">Unsichtbares Wasserzeichen</dt><dd>Noch nicht integriert</dd></div>
+            </dl>
+            <p className="mt-3 text-xs text-slate-600">
+              Ein Hash zeigt nur die Integrität genau dieser Datei. Er ist kein Identitätsnachweis und kein Eigentumsnachweis.
+              Ein QR-Code darf erst nach gültiger, vertrauenswürdiger Signatur zur Verifizierungsseite führen.
+            </p>
+          </section>
           <button type="button" disabled className="mt-6 w-full cursor-not-allowed bg-slate-300 px-5 py-3 font-semibold text-slate-600">
             Video generieren · Backend nicht freigegeben
           </button>

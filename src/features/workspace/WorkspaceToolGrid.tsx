@@ -60,6 +60,14 @@ export function WorkspaceToolGrid({
 }) {
   return (
     <div className="space-y-7" data-testid="workspace-tools">
+      <ToolSection
+        title="Direktzugriff: Voice-Bot & Governance OS"
+        description="Beide vorhandenen RealSync-Produktbereiche direkt öffnen – ohne zweite Plattform oder neue Backend-Pfade."
+        group="direktzugriff"
+        featured
+        onChat={onChat}
+        onBuild={onBuild}
+      />
       <section aria-label="Vorschläge" data-testid="workspace-suggestions">
         <h2 className="text-base font-semibold text-titanium-100">Vorschläge</h2>
         <p className="mt-1 mb-3 text-xs text-titanium-400">Vorlagen füllen nur die vorhandene Eingabe – erst Sie entscheiden, ob gesendet wird.</p>
@@ -85,11 +93,12 @@ export function WorkspaceToolGrid({
 }
 
 function ToolSection({
-  title, description, group, onChat, onBuild,
+  title, description, group, featured = false, onChat, onBuild,
 }: {
   title: string;
   description: string;
-  group: 'ki-werkzeuge' | 'realsync-module';
+  group: 'direktzugriff' | 'ki-werkzeuge' | 'realsync-module';
+  featured?: boolean;
   onChat: () => void;
   onBuild: () => void;
 }) {
@@ -97,7 +106,7 @@ function ToolSection({
     <section aria-label={title}>
       <h2 className="text-base font-semibold text-titanium-100">{title}</h2>
       <p className="mt-1 mb-3 text-xs text-titanium-400">{description}</p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className={featured ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : 'grid grid-cols-2 gap-3 sm:grid-cols-4'}>
         {workspaceToolsFor(group).map((tool) => (
           <ToolTile key={tool.id} tool={tool} onChat={onChat} onBuild={onBuild} />
         ))}

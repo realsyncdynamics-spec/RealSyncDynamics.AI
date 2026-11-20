@@ -17,8 +17,8 @@ import { AutomationSkillCard } from './AutomationSkillCard';
  *
  * Zeigt das fest definierte Skill-Set (AUTOMATION_SKILLS). Die meisten Skills
  * verlinken weiterhin auf eine bereits vorhandene Route (Phase 1). Der DSGVO
- * Audit Skill hat bereits einen echten Direct-Execution-Run über
- * automation-trigger → gdpr-audit (siehe docs/product/automation-skills.md).
+ * Audit Skill zeigt die asynchrone automation-trigger-Schnittstelle nur bei
+ * bestätigter n8n-Verknüpfung; ansonsten bleibt /audit der separate Einstieg.
  */
 export function AutomationSkillsView() {
   return <AuthGate>{() => <AutomationSkillsInner />}</AuthGate>;
@@ -82,7 +82,7 @@ function AutomationSkillsInner() {
                 keine Beratung, kein individuelles Setup.
               </p>
               <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                DSGVO Audit Skill: echter Run direkt hier · weitere Skills verlinken noch auf bestehende Tools (Phase 2 folgt)
+                DSGVO Audit: bestehender Audit-Einstieg verfügbar · Automationsläufe nur bei tatsächlicher Workflow-Verknüpfung
               </p>
             </div>
           </div>

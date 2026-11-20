@@ -7,10 +7,16 @@
  *
  * This handler is intentionally not registered globally or wired into /app.
  */
-import type { OllamaAdapter } from '../ai-gateway/providers/ollamaAdapter';
+import { OllamaAdapter } from '../ai-gateway/providers/ollamaAdapter';
 import type { Orchestrator } from './orchestrator';
 
 export const JARVIS_LOCAL_AGENT = 'jarvis-local' as const;
+
+export interface JarvisLocalOptions {
+  model: string;
+  /** Injection only for deterministic tests; the destination stays loopback. */
+  fetchImpl?: typeof fetch;
+}
 
 const MAX_PROMPT_LENGTH = 8_000;
 const MAX_MEMORY_ITEMS = 10;
@@ -18,8 +24,15 @@ const MAX_ITEM_LENGTH = 2_000;
 
 export function registerJarvisLocalAgent(
   orchestrator: Orchestrator,
-  ollama: OllamaAdapter,
+  options: JarvisLocalOptions,
 ): void {
+  // Pin to loopback even if the caller is misconfigured. Never accept a remote
+  // endpoint in this local-only feature.
+  const ollama = new OllamaAdapter({
+    model: options.model,
+    baseUrl: 'http://127.0.0.1:11434',
+    fetchImpl: options.fetchImpl,
+  });
   orchestrator.registerAgent(JARVIS_LOCAL_AGENT, async ({ task, store }) => {
     const raw = task.input.prompt;
     if (typeof raw !== 'string' || raw.trim().length === 0 || raw.length > MAX_PROMPT_LENGTH) {

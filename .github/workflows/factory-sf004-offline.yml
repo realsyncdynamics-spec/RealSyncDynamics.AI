@@ -1,0 +1,66 @@
+name: Factory SF-004 Offline Integration
+# Synthetic contract tests only. No provider credentials, Docker, database,
+# release, workflow dispatch, deployment or approval is exercised here.
+on:
+  push:
+    branches:
+      - factory/sf-006-offline-ci-20261120
+    paths:
+      - .github/workflows/factory-sf004-offline.yml
+      - apps/factory-worker/**
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - factory/sf-004-integration-lab-20261120
+      - main
+    paths:
+      - .github/workflows/factory-sf004-offline.yml
+      - apps/factory-worker/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-sf004-offline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-contracts:
+    name: SF-004 synthetic module integration (no deploy)
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout only this commit without keeping credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Install Node.js 22 (no npm install)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            apps/factory-worker/handoff/bridge.mjs \
+            apps/factory-worker/handoff/review.mjs \
+            apps/factory-worker/handoff/demo.mjs \
+            apps/factory-worker/loop/engine.mjs \
+            apps/factory-worker/integration/compose.mjs \
+            apps/factory-worker/integration/index.mjs \
+            apps/factory-worker/handoff/test/handoff.test.mjs \
+            apps/factory-worker/loop/test/engine.test.mjs \
+            apps/factory-worker/integration/test/compose.test.mjs \
+            apps/factory-worker/integration/test/integration.test.mjs
+          do
+            node --check "$file"
+          done
+      - name: Real-module and negative synthetic tests
+        run: |
+          node --test \
+            apps/factory-worker/handoff/test/handoff.test.mjs \
+            apps/factory-worker/loop/test/engine.test.mjs \
+            apps/factory-worker/integration/test/compose.test.mjs \
+            apps/factory-worker/integration/test/integration.test.mjs

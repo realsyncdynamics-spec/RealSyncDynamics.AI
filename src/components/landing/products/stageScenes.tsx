@@ -37,6 +37,7 @@ export const STAGE_SCENES: Record<StageVariant, StageScene> = {
 /** Zuordnung Produktseite → Szene. */
 export const STAGE_VARIANT_BY_PRODUCT = {
   'ki-bots': 'empfang',
+  'landingpage-builder': 'builder',
   'app-builder': 'builder',
   'governance-os': 'governance',
   'claude-code-optimizer': 'optimizer',

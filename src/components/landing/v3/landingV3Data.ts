@@ -50,48 +50,46 @@ export interface V3Product {
 
 export const PRODUCTS: readonly V3Product[] = [
   {
-    key: 'app-builder',
-    section: 'BUILD',
-    name: 'App Builder',
-    short: 'Ideen in Websites und Anwendungen verwandeln',
-    body: 'Geschäftsidee beschreiben und einen ersten Website-Entwurf erhalten.',
-    flow: 'Idee eingeben → Entwurf ansehen',
-    href: `/build?source=${SOURCE}`,
-    registryId: 'web-builder',
-    stageCaption: 'Idee → Entwurf → Website oder App',
-  },
-  {
     key: 'bots',
     section: 'AUTOMATE',
-    name: 'KI-Bots & Voice Agenten',
-    short: 'Anfragen annehmen und bearbeiten',
-    body: 'Ein Chat-Assistent beantwortet Kundenanfragen nach Ihren Vorgaben und übergibt an Ihr Team.',
-    flow: 'Anfrage schreiben → Antwort lesen → weiterleiten',
-    href: `/chatbot/start?source=${SOURCE}`,
-    registryId: 'channel-bots',
-    note: { registryId: 'voice-telephony', text: (label) => `Telefonie: ${label}` },
-    stageCaption: 'Anfrage → Antwort → Weiterleitung',
+    name: 'Persönlicher Telefonassistent',
+    short: 'Für KMU, die telefonisch erreichbar bleiben wollen',
+    body: 'Der Telefonassistent ist als eigener Einstieg vorgesehen. Telefonie ist laut Produktstatus noch in Vorbereitung.',
+    flow: 'Anruf → Anliegen → Rückrufwunsch → Team',
+    href: `/telefonassistent?source=${SOURCE}`,
+    registryId: 'voice-telephony',
+    stageCaption: 'Telefonassistent · in Vorbereitung',
   },
   {
-    key: 'optimizer',
+    key: 'landingpage-builder',
     section: 'BUILD',
-    name: 'Claude Code Optimizer',
-    short: 'Websites und Code gezielt verbessern',
-    body: 'Website-Adresse eingeben und Befunde zu Sicherheit, Datenschutz und Sichtbarkeit erhalten.',
-    flow: 'Adresse eingeben → Befunde prüfen → abhaken',
-    href: `/claude-code-optimizer?source=${SOURCE}`,
-    // Kein eigener Registry-Eintrag für den Optimizer (Stand 15.11.2026) → kein Badge.
-    registryId: null,
-    stageCaption: 'Website & Code → gezielt verbessert',
+    name: 'Landingpage-Builder',
+    short: 'Eine neue Website aus Ihrer Geschäftsidee entwickeln',
+    body: 'Geschäftsidee, Inhalte und gewünschtes Design bilden den Startpunkt für einen Frontend-Entwurf.',
+    flow: 'Idee → Inhalt → Design → Vorschau',
+    href: `/landingpage-builder?source=${SOURCE}`,
+    registryId: 'web-builder',
+    stageCaption: 'Geschäftsidee → Website-Entwurf',
+  },
+  {
+    key: 'app-builder',
+    section: 'BUILD',
+    name: 'App-Builder',
+    short: 'Eigene digitale Anwendungen entwickeln',
+    body: 'Beschreiben Sie einen konkreten Ablauf und prüfen Sie den verfügbaren Anwendungsentwurf.',
+    flow: 'Ablauf → Anwendung → Vorschau → Freigabe',
+    href: `/app-builder?source=${SOURCE}`,
+    registryId: 'web-builder',
+    stageCaption: 'Anwendungsfall → App-Entwurf',
   },
   {
     key: 'governance',
     section: 'GOVERN',
     name: 'Governance OS',
-    short: 'Für Teams, die Regeln und Nachweise direkt steuern möchten',
-    body: 'Risiken, Vorfälle, Betroffenenanfragen, Datenschutz-Folgenabschätzungen, Dienstleister und Freigaben an einem Ort.',
-    flow: 'Risiko erfassen → Freigabe einholen → Nachweis behalten',
-    href: `/governance-runtime?source=${SOURCE}`,
+    short: 'Befunde, Zuständigkeiten und Nachweise steuern',
+    body: 'KI-Register, Risiken, Vorfälle, Betroffenenanfragen, Dienstleister und Freigaben an einem Ort.',
+    flow: 'Befund → Zuständigkeit → Freigabe → Nachweis',
+    href: `/governance-os?source=${SOURCE}`,
     registryId: 'governance-runtime-core',
     stageCaption: 'Berechtigungen · Regeln · Nachweise',
   },
@@ -155,7 +153,8 @@ export interface V3PlanCard {
   href: string;
 }
 
-export function planCards(): V3PlanCard[] {
+/** `source` steuert nur das Tracking-Ziel der Links (Standard: Startseite v3). */
+export function planCards(source: string = SOURCE): V3PlanCard[] {
   return PLAN_IDS.map((id) => tierById(id))
     .filter((t): t is PricingTier => Boolean(t))
     .map((tier) => {
@@ -180,7 +179,7 @@ export function planCards(): V3PlanCard[] {
         desc: plan.outcomeHeadline,
         features: tier.bullets.filter((b) => b.trim().length > 0).slice(0, 3),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
-        href: inquiry ? checkoutHrefForPlan(plan, { source: `${SOURCE}-pricing` }) : planHref(plan, `${SOURCE}-pricing`),
+        href: inquiry ? checkoutHrefForPlan(plan, { source: `${source}-pricing` }) : planHref(plan, `${source}-pricing`),
       };
     });
 }

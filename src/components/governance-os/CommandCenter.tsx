@@ -6,6 +6,7 @@ import {
   ArrowDown,
   Command,
   Lock,
+  Send,
 } from 'lucide-react';
 import {
   filterCommands,
@@ -18,7 +19,7 @@ export interface CommandCenterProps {
   onClose: () => void;
   items: CommandDefinition[];
   onRun: (item: CommandDefinition) => void;
-  /** Free-text Agent OS intent (e.g. DSGVO/AI Act). Optional — when set, Enter submits intent if no runnable command is selected or query is free text. */
+  /** Optional, explicit handoff of free text as an editable assistant draft — no automatic send or agent execution. */
   onSubmitIntent?: (text: string) => void;
 }
 
@@ -70,6 +71,13 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
   useEffect(() => {
     if (!open) return;
 
+    function submitDraft() {
+      const text = query.trim();
+      if (!onSubmitIntent || !text) return;
+      onSubmitIntent(text);
+      onClose();
+    }
+
     function runActive() {
       const item = filtered[activeIndex];
       if (item && isCommandRunnable(item)) {
@@ -77,11 +85,8 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
         onClose();
         return;
       }
-      const text = query.trim();
-      if (onSubmitIntent && text) {
-        onSubmitIntent(text);
-        onClose();
-      }
+      // Never silently turn a disabled or Coming-Soon command into a chat request.
+      if (filtered.length === 0) submitDraft();
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -99,6 +104,11 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         setActiveIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        submitDraft();
         return;
       }
       if (e.key === 'Enter') {
@@ -190,7 +200,7 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
           {filtered.length === 0 && (
             <p className="px-4 py-8 text-center text-xs text-titanium-500">
               {onSubmitIntent && query.trim()
-                ? `Enter: Intent „${query.trim()}“ im Agent OS öffnen`
+                ? `Enter: „${query.trim()}“ als Entwurf im Assistenten öffnen`
                 : `Keine Treffer für „${query}“`}
             </p>
           )}
@@ -258,6 +268,25 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
           })}
         </div>
 
+        {onSubmitIntent && query.trim() && (
+          <div className="border-t border-titanium-800 px-4 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                onSubmitIntent(query.trim());
+                onClose();
+              }}
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-xs text-titanium-100 hover:bg-titanium-800/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4FD4E8]"
+            >
+              <Send className="h-3.5 w-3.5 text-[#4FD4E8]" aria-hidden />
+              Entwurf im Governance-Assistenten öffnen
+            </button>
+            <p className="px-2 text-[10px] text-titanium-500">
+              Kein automatischer Versand oder Agentenlauf. Vor dem Absenden prüfen.
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center gap-4 border-t border-titanium-800 px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-titanium-600">
           <span className="flex items-center gap-1">
             <ArrowUp className="h-3 w-3" aria-hidden />
@@ -265,7 +294,7 @@ export function CommandCenter({ open, onClose, items, onRun, onSubmitIntent }: C
           </span>
           <span className="flex items-center gap-1">
             <CornerDownLeft className="h-3 w-3" aria-hidden />{' '}
-            {onSubmitIntent ? 'Befehl / Intent' : 'Ausführen'}
+            {onSubmitIntent ? 'Befehl / Entwurf' : 'Ausführen'}
           </span>
           <span className="ml-auto text-titanium-700">Esc schließen</span>
         </div>

@@ -39,7 +39,7 @@ und erfolgreich sind. Ohne `TEST_DB_URL` sind die DB-Tests ausdrücklich skipped
 ## Operator-Runbook (nicht automatisch ausführen)
 
 1. Review der Migration inkl. Constraint, RLS, SECURITY DEFINER, Grants und Zugriff über `service_role`; anschließend isolated DB-Test.
-2. Gesondert autorisierte Staging-Migration aufspielen. Den Trigger und `dsr_outbox_ready() = true` mit Service-Role prüfen, bevor die geänderte `governance-dsr` Edge Function deployt wird.
+2. **DSR-Schreibvorgänge und den Erasure-Sweeper während des kurzen Cutovers pausieren.** Die bisherige Edge-Version schreibt Lifecycle-Evidence noch direkt; gleichzeitige Verarbeitung durch den neuen Outbox-Trigger kann sonst doppelte Ereignisse erzeugen. Gesondert autorisierte Staging-Migration aufspielen. Den Trigger und `dsr_outbox_ready() = true` mit Service-Role prüfen, bevor die geänderte `governance-dsr` Edge Function deployt wird.
 3. Staging-Edge-Functions `governance-dsr` und `governance-dsr-outbox` deployen; Negativtests `401`, `403`, Cross-Tenant und Partition-Ausfall durchführen.
 4. Dedizierten Zufalls-Cron-Key als Vault-Secret `cron_dsr_outbox_key` anlegen und optional denselben Wert als Function Secret `CRON_DSR_OUTBOX_KEY` setzen. **Werte niemals im Repository, PR oder Chat speichern.**
 5. Erst nach erfolgreicher Staging-Abnahme und separater Produktionsfreigabe darf ein Cron-Job aktiviert werden:

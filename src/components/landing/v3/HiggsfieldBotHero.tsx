@@ -1,15 +1,21 @@
 import { useState } from 'react';
-import { HeroStage } from './HeroStage';
+import { SyncStage, SYNC_STILL_SRC } from '../../visual/sync-mascot/SyncStage';
 
 /**
- * Haupt-Hero: originaler Higgsfield-3D-Bot, sobald ein freigegebener
- * MP4/WebM-Export als öffentliche URL konfiguriert ist.
+ * Public video is optional. A Higgsfield render may only replace the
+ * canonical SYNC stage after the export has been approved as depicting
+ * the SAME character from our master GLB.
  *
- * VITE_HIGGSFIELD_BOT_VIDEO_URL ist nur die öffentliche Medien-URL
- * (kein Token/Secret). Kein Cross-Origin-iframe und kein erfundener Export.
- * Ohne gültigen Film bleibt die vorhandene lokale Three.js-Bühne aktiv.
+ * Fail-closed to self-hosted media. The opt-in is an editorial release
+ * flag, not proof of legal rights or a successful live voice runtime.
  */
 const PUBLIC_VIDEO_URL = import.meta.env.VITE_HIGGSFIELD_BOT_VIDEO_URL?.trim() ?? '';
+const APPROVED_SYNC_EXPORT = import.meta.env.VITE_HIGGSFIELD_BOT_VERIFIED_SYNC === 'true';
+
+export function approvedSyncVideoUrl(url: string, verified: boolean): string | null {
+  if (!verified || !/^\/(?!\/)(?!.*\.\.)[^?#]+\.(?:mp4|webm)(?:\?[^#]*)?$/i.test(url)) return null;
+  return url;
+}
 
 function reducedMotion(): boolean {
   try {
@@ -21,23 +27,26 @@ function reducedMotion(): boolean {
 
 export function HiggsfieldBotHero({ active, caption }: { active: number; caption: string }) {
   const [failed, setFailed] = useState(false);
-  if (!PUBLIC_VIDEO_URL || failed || reducedMotion()) {
-    return <HeroStage active={active} caption={caption} statusLabel="3D · Vorschau" />;
+  const video = approvedSyncVideoUrl(PUBLIC_VIDEO_URL, APPROVED_SYNC_EXPORT);
+
+  if (!video || failed || reducedMotion()) {
+    return <SyncStage variant="home" caption={caption} statusLabel="SYNC · 3D" waveSignal={active} />;
   }
   return (
     <div className="lv3-stage lv3-higgsfield-hero" data-testid="higgsfield-bot-hero">
       <video
         className="lv3-higgsfield-video"
-        src={PUBLIC_VIDEO_URL}
-        poster="/landing-v3/hero-still.jpg"
+        src={video}
+        poster={SYNC_STILL_SRC}
         autoPlay
         loop
         muted
         playsInline
         preload="metadata"
-        aria-label="Animierter RealSync 3D-Bot"
+        aria-label="SYNC: freigegebene Animation der RealSync-3D-Markenfigur"
         onError={() => setFailed(true)}
       />
+      <span className="lv3-stage-tag">SYNC · Originalvideo</span>
       <span className="lv3-stage-caption">{caption}</span>
     </div>
   );

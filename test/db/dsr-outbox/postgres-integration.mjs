@@ -1,12 +1,12 @@
 /**
- * Isolated REAL PostgreSQL integration test for P0 #2360 producer contract.
+ * Isolated REAL PostgreSQL integration test for P0 #2360 producer and lease contracts.
  *
  * DB is an ephemeral GitHub Actions Postgres service. Never use a Supabase or
  * production URL. Tests exercise the candidate SQL, not a deployed migration.
  *
  * Coverage: service-only invocation, tenant roles, transaction rollback,
- * multi-connection contention, idempotent restart and payload-substitution.
- * Does NOT certify the not-yet-implemented consumer, evidence hash-chain,
+ * multi-connection contention, idempotent replay, lease fencing and retries.
+ * Does NOT certify an evidence-delivering consumer, hash-chain ACK,
  * erasure pipeline, or full historical migration compatibility.
  */
 import assert from 'node:assert/strict';
@@ -238,7 +238,7 @@ try {
     assert.deepEqual(rows[0], { evidence_status: 'failed', last_error_code: 'RETRIES_EXHAUSTED', lease_owner: null });
   });
 
-  console.log(JSON.stringify({ ok: true, passed, engine: 'PostgreSQL', scope: 'producer-only', productionChanges: 0 }));
+  console.log(JSON.stringify({ ok: true, passed, engine: 'PostgreSQL', scope: 'producer-and-lease-only', productionChanges: 0 }));
 } finally {
   await admin.end();
 }

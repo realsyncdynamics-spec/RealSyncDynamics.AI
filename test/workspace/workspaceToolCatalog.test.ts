@@ -6,7 +6,8 @@ import {
 describe('Governance Workspace — Werkzeugkatalog (additiv)', () => {
   it('führt acht KI-Werkzeuge und vorhandene RealSync-Module getrennt', () => {
     expect(workspaceToolsFor('ki-werkzeuge')).toHaveLength(8);
-    expect(workspaceToolsFor('realsync-module').length).toBeGreaterThanOrEqual(4);
+    expect(workspaceToolsFor('realsync-module')).toHaveLength(3);
+    expect(workspaceToolsFor('direktzugriff').map((tool) => tool.id)).toEqual(['voice', 'governance']);
     expect(new Set(WORKSPACE_TOOLS.map((tool) => tool.id)).size).toBe(WORKSPACE_TOOLS.length);
   });
 
@@ -18,6 +19,15 @@ describe('Governance Workspace — Werkzeugkatalog (additiv)', () => {
       expect(tool?.action).toBe('none');
       expect(isWorkspaceToolRunnable(tool!)).toBe(false);
     }
+  });
+
+  it('zeigt Voice-Bot und Governance OS direkt mit ihren bestehenden AppGate-Routen', () => {
+    const voice = WORKSPACE_TOOLS.find((tool) => tool.id === 'voice');
+    const governance = WORKSPACE_TOOLS.find((tool) => tool.id === 'governance');
+    expect(voice).toMatchObject({ label: 'Voice-Bot', group: 'direktzugriff', href: '/app/voice', state: 'zu_pruefen' });
+    expect(governance).toMatchObject({ label: 'Governance OS', group: 'direktzugriff', href: '/app/dashboard', state: 'implementiert' });
+    expect(isWorkspaceToolRunnable(voice!)).toBe(true);
+    expect(isWorkspaceToolRunnable(governance!)).toBe(true);
   });
 
   it('verwendet vorhandene Governance- und Agenten-Routen', () => {

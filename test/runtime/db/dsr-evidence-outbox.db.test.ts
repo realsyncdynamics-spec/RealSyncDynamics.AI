@@ -118,11 +118,15 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       );
       expect(rows.rows.map(x => x.dsr_id)).toContain(own);
       expect(rows.rows.map(x => x.dsr_id)).not.toContain(foreign);
-      await expect(ctx.client.query(
+    });
+    // A failed SQL statement aborts a PostgreSQL subtransaction. Let
+    // withClaims roll its savepoint back instead of catching inside it.
+    await expect(ctx.withClaims({ sub: a.userId, role: 'authenticated' }, async () => {
+      await ctx.client.query(
         `INSERT INTO public.dsr_evidence_outbox(tenant_id, dsr_id, event_type)
          VALUES ($1, $2, 'dsr.created')`, [a.tenantId, own],
-      )).rejects.toThrow();
-    });
+      );
+    })).rejects.toThrow();
   });
 
   it('queues evidence for an update from another trusted DB writer (erasure sweeper path)', async () => {

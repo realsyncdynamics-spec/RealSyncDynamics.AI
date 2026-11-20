@@ -189,7 +189,7 @@ export const TAX_NOTE = pricingTaxNote(COMPANY.taxMode);
 
 export function pricingIntro(): string {
   return BETA_OFFER
-    ? `Offene Beta bis ${BETA.endsLabel}: Starter, Growth und Agency kostenlos testen – keine Kreditkarte, kein Abo.`
+    ? `Offene Beta bis ${BETA.endsLabel}: Starter kostenlos testen – keine Kreditkarte, kein Abo. Growth und Agency zum Listenpreis, monatlich kündbar.`
     : 'Der Website-Scan ist kostenlos. Tarife mit Testphase testen Sie vor der ersten Zahlung.';
 }
 

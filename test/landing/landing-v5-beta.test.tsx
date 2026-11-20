@@ -10,8 +10,9 @@ describe('Landing v5 + Beta-Testphase', () => {
   it('Beta ist per Default aktiv und deckt nur Self-Service-Pläne ab', () => {
     expect(BETA.active).toBe(true);
     expect(isBetaPlan('starter')).toBe(true);
-    expect(isBetaPlan('growth_monthly')).toBe(true);
-    expect(isBetaPlan('agency')).toBe(true);
+    // Entscheidung 18.11.2026: nur Starter bleibt Beta-Tarif.
+    expect(isBetaPlan('growth_monthly')).toBe(false);
+    expect(isBetaPlan('agency')).toBe(false);
     expect(isBetaPlan('enterprise')).toBe(false);
     expect(isBetaPlan(undefined)).toBe(false);
   });

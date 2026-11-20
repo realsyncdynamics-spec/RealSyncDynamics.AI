@@ -1,0 +1,42 @@
+name: DSR Outbox PostgreSQL Acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'test/db/dsr-outbox/**'
+      - '.github/workflows/dsr-outbox-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    name: DSR outbox isolated PostgreSQL 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run synthetic PostgreSQL outbox acceptance
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: node test/db/dsr-outbox/consumer-acceptance.mjs

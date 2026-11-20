@@ -52,10 +52,14 @@ describe('Startseite v3 — `/`', () => {
     expect(screen.getByTestId('v3-tax-note')).toHaveTextContent(pricingTaxNote(COMPANY.taxMode));
   });
 
-  it('rendert alle vier Produkte, AI Receptionist als „In Vorbereitung“, Rechtslinks erreichbar', () => {
+  it('rendert alle sieben Produkte, AI Receptionist als „In Vorbereitung“, Rechtslinks erreichbar', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     expect(screen.getByTestId('v3-hero-heading')).toHaveTextContent('Ihre Ideen.In Bewegung.');
     for (const p of PRODUCTS) expect(screen.getByTestId(`v3-product-${p.key}`)).toHaveAttribute('href', p.href);
+    expect(PRODUCTS).toHaveLength(7);
+    for (const slug of ['software-factory','automation-os','creative-studio']) {
+      expect(screen.getByTestId(`v3-product-${slug}`)).toHaveAttribute('href', `/\${slug}?source=landing-v3`.replace('\\',''));
+    }
     expect(screen.getByTestId('v3-product-receptionist')).toHaveTextContent('In Vorbereitung');
     expect(screen.queryByTestId('v3-product-receptionist')?.tagName).toBe('SECTION');
     const legal = screen.getByRole('navigation', { name: 'Rechtliches' });
@@ -67,10 +71,10 @@ describe('Startseite v3 — `/`', () => {
   it('Hauptnavigation führt Voice Agent und Kontakt, Ziele sind echte Routen', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).getByRole('link', { name: 'Voice Agent' })).toHaveAttribute('href', '/phonebot/start');
+    expect(within(nav).getByRole('link', { name: 'Telefonassistent' })).toHaveAttribute('href', '/voice-agent');
     expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
     const app = read('src/App.tsx');
-    expect(app).toContain('<Route path="/phonebot/start"');
+    expect(app).toContain('<Route path="/voice-agent"');
     expect(app).toContain('<Route path="/contact-sales"');
   });
 

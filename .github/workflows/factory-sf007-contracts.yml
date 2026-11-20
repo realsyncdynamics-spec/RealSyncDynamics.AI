@@ -1,0 +1,40 @@
+name: Factory SF-007 Contract Convergence
+# Offline-only, untrusted fixtures. No providers, database, npm install or deployment.
+on:
+  push:
+    branches:
+      - factory/sf-007-contract-convergence-20261120
+    paths:
+      - .github/workflows/factory-sf007-contracts.yml
+      - apps/factory-worker/integration/contract-projection.mjs
+      - apps/factory-worker/integration/test/contract-projection.test.mjs
+      - docs/software-factory/SF-007-CONTRACT-CONVERGENCE.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-sf007-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  read-only-convergence:
+    name: Status projection negative tests (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Node.js 22 (no package installation)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax and offline negative tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check apps/factory-worker/integration/contract-projection.mjs
+          node --check apps/factory-worker/integration/test/contract-projection.test.mjs
+          node --test apps/factory-worker/integration/test/contract-projection.test.mjs

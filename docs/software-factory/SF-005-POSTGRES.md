@@ -19,6 +19,8 @@ Review-Entwurf, keine bereits deployte Migration.
 - apps/factory-worker/loop/db/postgres-contract.sql
 - apps/factory-worker/loop/db/adapter.mjs
 - apps/factory-worker/loop/db/test/adapter.test.mjs
+- apps/factory-worker/loop/db/resume.mjs
+- apps/factory-worker/loop/db/test/resume.test.mjs
 - test/runtime/db/factory-loop-concurrency.db.test.ts
 - test/runtime/db/factory-loop-persistence.db.test.ts
 - apps/factory-worker/loop/engine.mjs
@@ -82,9 +84,18 @@ werden als Replay erkannt. Derselbe Schlüssel mit verändertem Inhalt scheitert
    Integrationssuite nicht stillschweigend als erfolgreich gelten.
 
 Ohne Testdatenbank laufen lediglich statische Code-Vertragsprüfungen.
-Zusätzlich sind zehn Offline-Adaptertests für Eingabevalidierung,
+Zusätzlich sind zwölf Offline-Adaptertests für Eingabevalidierung,
 Parametrisierung und Fail-Closed-Verhalten vorhanden. Sie ersetzen
 keinen echten Datenbanklauf.
+
+Der zusätzliche serverseitige Restore-Planer fordert zunächst eine
+gültige Worker-Lease an, liest den persistierten Checkpoint nochmals
+und vergleicht die Versionsnummer. Nur bekannte nächste Rollen/Aktionen
+dürfen als **nicht ausführbare Metadaten** zurückgegeben werden.
+Bei einem defekten Checkpoint versucht er, seine Lease abzugeben und
+bricht ohne Erfolgsbestätigung ab. Sechs Offline-Restore-Tests prüfen dies.
+Ein sicherer Betrieb bei echten Prozessabstürzen muss trotzdem auf
+PostgreSQL nachgewiesen werden.
 
 Der neue Parallelitätstest nutzt drei unabhängige PostgreSQL-Sessions:
 Zwei Worker konkurrieren um dieselbe Lease, ein blockierter Claim wird

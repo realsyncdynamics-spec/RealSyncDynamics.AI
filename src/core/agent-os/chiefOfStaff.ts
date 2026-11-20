@@ -137,6 +137,7 @@ export function buildAgentTaskReportCards(
   assertTenant(tenant_id);
   const byAgent = new Map<string, AgentTaskReportCard>();
   for (const t of store.listTasks({ tenant_id })) {
+    if (t.status === 'cancelled') continue;
     let row = byAgent.get(t.agent);
     if (!row) {
       row = {
@@ -147,7 +148,7 @@ export function buildAgentTaskReportCards(
       };
       byAgent.set(t.agent, row);
     }
-    row.tasks[t.status === 'cancelled' ? 'open' : t.status] += t.status === 'cancelled' ? 0 : 1;
+    row.tasks[t.status] += 1;
   }
   return [...byAgent.values()].map(row => {
     const terminal = row.tasks.done + row.tasks.failed;

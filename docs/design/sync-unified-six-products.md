@@ -33,6 +33,25 @@ Diese Felder sind öffentlich sichtbare **Frontend-Konfiguration**, keine Secret
 | Tests | Vitest/Lint/Build, Playwright Mobil/Desktop, WebGL/RM/Fallback | **nicht vollständig ausgeführt** |
 | Deployment | explizite Merge-/Deploy-Freigabe | **nicht erteilt** |
 
+## Browser-Abnahme – vorbereiteter Playwright-Prüfpfad
+
+`e2e/brand/sync-seven-routes.spec.ts` enthält eine Matrix für **Startseite + sechs Produktseiten** auf Desktop (1280 × 800) und Mobile (390 × 844), außerdem drei gezielte Szenarien für reduzierte Bewegung, blockierte GLB-Quelle und nicht freigegebenes Higgsfield-Video: insgesamt **17 Testfälle**. Die Datei ist eingecheckt, **aber ihre Playwright-Tests wurden noch nicht ausgeführt**.
+
+Die Cloudflare-Git-Integration hat nach dem ersten CI-Lauf eine **Branch-Preview** bereitgestellt, nicht die Produktivdomain. Die Preview-URL wird aus dem GitHub-Check `Cloudflare Pages: realsyncdynamics-ai` abgeleitet; die Verfügbarkeit und Browserdarstellung sind separat zu prüfen. Kein externes Voice-/Video-Medium ist freigegeben.
+
+Lokaler Test nach eigenem autorisiertem Build:
+
+```bash
+npm run build:full
+npm run e2e -- e2e/brand/sync-seven-routes.spec.ts
+```
+
+Test auf eine **explizit verifizierte** Preview-URL:
+
+```bash
+TEST_BASE_URL=https://<geprüfter-preview-host> npm run e2e -- e2e/brand/sync-seven-routes.spec.ts
+```
+
 ## Testpfad
 
 ```bash

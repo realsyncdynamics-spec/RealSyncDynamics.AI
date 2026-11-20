@@ -48,6 +48,15 @@ function params({ tenant, actor, operation, type = 'access', email = 'member@exa
 const statement = `select public.dsr_intake(
   $1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,$6::text,$7::text,$8::text,$9::text[]
 ) as id`;
+async function serviceQuery(query, params = []) {
+  const c = open();
+  await c.connect();
+  try {
+    await c.query('set role service_role');
+    return await c.query(query, params);
+  } finally { await c.end(); }
+}
+
 async function invoke(p, role = 'service_role') {
   const client = open();
   await client.connect();
@@ -79,6 +88,8 @@ try {
       metadata jsonb default '{}', created_at timestamptz default now(), updated_at timestamptz default now()
     );`);
   await admin.query(sql);
+  const workerSql = await readFile(new URL('./worker.sql', import.meta.url), 'utf8');
+  await admin.query(workerSql);
 
   const tenant = randomUUID(), actor = randomUUID(), stranger = randomUUID(), viewer = randomUUID();
   const operation = randomUUID();
@@ -149,6 +160,84 @@ try {
       assert.deepEqual(rows, [{ dsr_id: id, evidence_status: 'pending' }]);
     } finally { await again.end(); }
   });
+
+  await check('worker lease RPC cannot be invoked by authenticated users', async () => {
+    const c = open(); await c.connect();
+    try {
+      await c.query('set role authenticated');
+      await assert.rejects(
+        c.query('select * from public.dsr_claim_outbox($1::uuid,1,120)', [randomUUID()]),
+        /permission denied/i,
+      );
+    } finally { await c.end(); }
+  });
+
+  const workerA = randomUUID(), workerB = randomUUID();
+  let leases;
+  await check('SKIP LOCKED gives two concurrent workers distinct tasks', async () => {
+    const results = await Promise.all([
+      serviceQuery('select * from public.dsr_claim_outbox($1::uuid,1,120)', [workerA]),
+      serviceQuery('select * from public.dsr_claim_outbox($1::uuid,1,120)', [workerB]),
+    ]);
+    assert.equal(results[0].rows.length, 1);
+    assert.equal(results[1].rows.length, 1);
+    leases = [results[0].rows[0], results[1].rows[0]];
+    assert.notEqual(leases[0].operation_id, leases[1].operation_id);
+    assert.equal(leases[0].lease_epoch, '1');
+    assert.equal(leases[1].lease_epoch, '1');
+  });
+
+  await check('fencing rejects another worker or outdated epoch', async () => {
+    const first = leases[0];
+    const retry = 'select public.dsr_retry_outbox($1::uuid,$2::uuid,$3::uuid,$4::bigint,$5::text) as applied';
+    await assert.rejects(
+      serviceQuery(retry, [first.tenant_id, first.operation_id, workerB, 1, 'VAULT_DOWN']),
+      /stale worker lease/i,
+    );
+    await assert.rejects(
+      serviceQuery(retry, [first.tenant_id, first.operation_id, workerA, 0, 'VAULT_DOWN']),
+      /stale worker lease/i,
+    );
+    const accepted = await serviceQuery(retry, [first.tenant_id, first.operation_id, workerA, 1, 'VAULT_DOWN']);
+    assert.equal(accepted.rows[0].applied, true);
+    const { rows } = await admin.query(
+      'select evidence_status, lease_owner, attempts, next_attempt_at > now() as delayed from public.dsr_outbox where operation_id = $1',
+      [first.operation_id],
+    );
+    assert.deepEqual(rows[0], { evidence_status: 'retry', lease_owner: null, attempts: 1, delayed: true });
+    const tooEarly = await serviceQuery('select * from public.dsr_claim_outbox($1::uuid,1,120)', [workerA]);
+    assert.equal(tooEarly.rows.length, 0);
+  });
+
+  await check('retry can be re-leased after the backoff with increased fence epoch', async () => {
+    const first = leases[0];
+    await admin.query('update public.dsr_outbox set next_attempt_at = now() - interval \'1 second\' where operation_id = $1', [first.operation_id]);
+    const second = await serviceQuery('select * from public.dsr_claim_outbox($1::uuid,1,120)', [workerB]);
+    assert.equal(second.rows.length, 1);
+    assert.equal(second.rows[0].operation_id, first.operation_id);
+    assert.equal(second.rows[0].lease_epoch, '2');
+    const { rows } = await admin.query('select attempts from public.dsr_outbox where operation_id = $1', [first.operation_id]);
+    assert.equal(rows[0].attempts, 2);
+  });
+
+  await check('exhausted worker lease is marked failed instead of becoming invisible', async () => {
+    const first = leases[0];
+    await admin.query(
+      `update public.dsr_outbox
+          set attempts=8, lease_until = now() - interval '1 second',
+              next_attempt_at = now() - interval '1 second'
+        where operation_id = $1`,
+      [first.operation_id],
+    );
+    const notClaimable = await serviceQuery('select * from public.dsr_claim_outbox($1::uuid,1,120)', [workerA]);
+    assert.equal(notClaimable.rows.length, 0);
+    const { rows } = await admin.query(
+      'select evidence_status, last_error_code, lease_owner from public.dsr_outbox where operation_id = $1',
+      [first.operation_id],
+    );
+    assert.deepEqual(rows[0], { evidence_status: 'failed', last_error_code: 'RETRIES_EXHAUSTED', lease_owner: null });
+  });
+
   console.log(JSON.stringify({ ok: true, passed, engine: 'PostgreSQL', scope: 'producer-only', productionChanges: 0 }));
 } finally {
   await admin.end();

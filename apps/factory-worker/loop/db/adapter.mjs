@@ -83,6 +83,37 @@ export function createFactoryLoopDbAdapter(client) {
         version: r.version, leaseEpoch: r.lease_epoch, leaseExpiresAt: r.lease_expires_at,
       });
     },
+    async heartbeat({ taskId, tenantId, workerId, leaseEpoch, leaseSeconds = 300 }) {
+      identity(taskId, tenantId);
+      required(workerId, WORKER, 'worker_id');
+      positive(leaseEpoch, 'lease_epoch');
+      if (!Number.isSafeInteger(leaseSeconds) || leaseSeconds < 30 || leaseSeconds > 900) {
+        throw Error('factory_lease_seconds_invalid');
+      }
+      const r = await queryOne(client,
+        'SELECT factory_runtime.loop_heartbeat($1::uuid,$2::uuid,$3,$4::bigint,$5::int) AS result',
+        [taskId, tenantId, workerId, leaseEpoch, leaseSeconds]);
+      if (!Number.isSafeInteger(r.lease_epoch) || r.lease_epoch !== leaseEpoch ||
+          !Number.isSafeInteger(r.version) || r.version < 1 ||
+          typeof r.lease_expires_at !== 'string') {
+        throw Error('factory_db_invalid_response');
+      }
+      return Object.freeze({
+        version: r.version, leaseEpoch: r.lease_epoch, leaseExpiresAt: r.lease_expires_at,
+      });
+    },
+    async release({ taskId, tenantId, workerId, leaseEpoch }) {
+      identity(taskId, tenantId);
+      required(workerId, WORKER, 'worker_id');
+      positive(leaseEpoch, 'lease_epoch');
+      const r = await queryOne(client,
+        'SELECT factory_runtime.loop_release($1::uuid,$2::uuid,$3,$4::bigint) AS result',
+        [taskId, tenantId, workerId, leaseEpoch]);
+      if (r.released !== true || r.lease_epoch !== leaseEpoch) {
+        throw Error('factory_db_invalid_response');
+      }
+      return Object.freeze({ released: true, leaseEpoch });
+    },
     async commit({ taskId, tenantId, expectedVersion, workerId, leaseEpoch,
                    idempotencyKey, state }) {
       identity(taskId, tenantId);

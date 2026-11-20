@@ -213,6 +213,8 @@ const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter')
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
 // Standard aus). GovernanceAiRoute zeigt dann nur einen Hinweis und lädt den Workspace nicht.
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
+// Governance Workspace (/app/workspace): Chat + Build + REA-Prüfpfad, gleicher Schalter wie /app/assistant.
+const GovernanceWorkspaceRoute = lazy(() => import('./features/workspace/GovernanceWorkspaceRoute').then((m) => ({ default: m.GovernanceWorkspaceRoute })));
 // ── Modul-Hub: Capability-Übersicht des Workspaces (Aktivieren/Öffnen je Entitlement)
 const ModulesHubView = lazy(() => import('./features/modules/ModulesHubView').then((m) => ({ default: m.ModulesHubView })));
 const GovernanceActivationView = lazy(() =>
@@ -853,6 +855,7 @@ function RoutesWithTracking() {
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/workspace" element={<AppGate><GovernanceBrowserShell><GovernanceWorkspaceRoute /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/cockpit/brief" element={<AppGate><CeoBriefPrintView /></AppGate>} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />

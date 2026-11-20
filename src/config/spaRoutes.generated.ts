@@ -2,7 +2,7 @@
 // Neu erzeugen: npm run sync:spa-routes
 
 /** Pfadmuster aller React-Router-Routen (ohne den Catch-all `*`). */
-export const SPA_ROUTE_PATTERNS: readonly string[
+export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/",
   "/about",
   "/account",

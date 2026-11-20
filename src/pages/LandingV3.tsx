@@ -2,10 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { HeroStage } from '../components/landing/v3/HeroStage';
 import {
-  BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
+  PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
 } from '../components/landing/v3/landingV3Data';
-import { BETA, betaSignupHref } from '../config/beta';
+import { StatusPill, V3BetaRibbon, V3Footer, V3Nav } from '../components/landing/v3/V3Shell';
 import '../styles/landing-v3.css';
 
 /**
@@ -32,10 +32,6 @@ function prefersReducedMotion(): boolean {
   } catch {
     return false;
   }
-}
-
-function StatusPill({ label }: { label: string }) {
-  return <span className="lv3-pill">{label}</span>;
 }
 
 export function LandingV3() {
@@ -70,26 +66,10 @@ export function LandingV3() {
     <div className="lv3">
       <a href="#receptionist" className="lv3-skip">Zum Inhalt springen</a>
 
-      {BETA_OFFER ? (
-        <p className="lv3-ribbon">
-          <span>{BETA.headline} – bis {BETA.endsLabel}, keine Kreditkarte.</span>{' '}
-          <Link to={betaSignupHref(BETA.testPlan, `${SOURCE}-ribbon`)}>Jetzt kostenlos testen</Link>
-        </p>
-      ) : null}
+      <V3BetaRibbon source={SOURCE} />
 
       <header className="lv3-hero" id="top">
-        <nav className="lv3-nav" aria-label="Hauptnavigation">
-          <Link to="/" className="lv3-brand">RealSync Dynamics &amp; AI</Link>
-          <a href="#katalog">Build</a>
-          <a href="#katalog">Automate</a>
-          <a href="#govern">Govern</a>
-          <Link to="/phonebot/start">Voice Agent</Link>
-          <a href="#preise">Preise</a>
-          <a href="#fragen">Fragen</a>
-          <Link to="/contact-sales">Kontakt</Link>
-          <Link to="/welcome">Anmelden</Link>
-          <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
-        </nav>
+        <V3Nav onLanding />
 
         <div className="lv3-hero-grid">
           <div className="lv3-hero-copy">
@@ -280,16 +260,7 @@ export function LandingV3() {
         </section>
       </main>
 
-      <footer className="lv3-footer">
-        <div className="lv3-footer-row">
-          <span className="lv3-brand">RealSync Dynamics &amp; AI</span>
-          <nav aria-label="Rechtliches" className="lv3-legal">
-            {LEGAL_LINKS.map((l) => <Link key={l.to} to={l.to}>{l.label}</Link>)}
-            <a href="#top">Nach oben ↑</a>
-          </nav>
-        </div>
-        <p className="lv3-fine">{COMPANY_LINE} · {TAX_NOTE}</p>
-      </footer>
+      <V3Footer />
     </div>
   );
 }

@@ -1,18 +1,22 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, MessageCircle } from 'lucide-react';
-import { LandingHeader } from '../../components/landing/LandingShell';
 import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
+import { STATUS_TEXT, registryStatus } from '../../components/landing/v3/landingV3Data';
+import { StatusPill, V3ModuleSwitch, V3PageShell } from '../../components/landing/v3/V3Shell';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 /**
  * /chatbot/start — Einstieg KI-Chat-Assistent.
  *
- * Aufbau angeglichen an die Produkt-Landingpage „KI-Bots“ im Design (15.11.2026):
- * Stationen einer Antwort, Kanäle, klare Grenzen. Die Stationen folgen
- * `supabase/functions/bot-chat/index.ts` (Regelprüfung vor dem Speichern,
- * Kontingent über `consumeUsage`, Budget-Grenze). Der Zustand der Bot-Laufzeit
- * kommt ausschließlich aus dem Registry über `CapabilityAvailabilityNotice`.
+ * Gestaltung und Navigation wie die Startseite v3 (`V3PageShell`):
+ * Hauptnavigation, Brotkrumen, „Auf dieser Seite“, Modulwechsel, Footer.
+ * Die Stationen folgen `supabase/functions/bot-chat/index.ts` (Regelprüfung vor
+ * dem Speichern, Kontingent über `consumeUsage`, Budget-Grenze). Der Zustand
+ * der Bot-Laufzeit kommt ausschließlich aus dem Registry: Status-Pill aus
+ * `implementation-status.ts` (`channel-bots`), Hinweis über
+ * `CapabilityAvailabilityNotice`.
  */
+const SOURCE = 'chatbot_start';
+
 const STATIONS: Array<{ k: string; t: string; d: string }> = [
   { k: 'NACHRICHT', t: 'Frage kommt an', d: 'Eine Besucherin schreibt im Chat auf Ihrer Website.' },
   { k: 'REGELN', t: 'Regelprüfung', d: 'Vor dem Speichern prüft die Plattform die Nachricht gegen Ihre Regeln. Im Standard läuft die Prüfung im Beobachtungsmodus und protokolliert nur; erst im Durchsetzungsmodus beendet eine Blockade die Antwort.' },
@@ -33,6 +37,14 @@ const LIMITS = [
   'Die Übergabe an einen Menschen ist in Vorbereitung.',
 ];
 
+const SECTIONS = [
+  { id: 'ueberblick', label: 'Überblick' },
+  { id: 'ablauf', label: 'Ablauf' },
+  { id: 'kanaele', label: 'Kanäle' },
+  { id: 'grenzen', label: 'Grenzen' },
+  { id: 'module', label: 'Weitere Module' },
+] as const;
+
 export function ChatbotStartPage() {
   usePageMeta({
     title: 'KI-Chat-Assistent — Antworten mit Regeln, Kontingent und Protokoll',
@@ -41,89 +53,102 @@ export function ChatbotStartPage() {
     url: 'https://realsyncdynamicsai.de/chatbot/start',
   });
 
-  return (
-    <div className="rs-paper bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      <LandingHeader />
+  const status = registryStatus('channel-bots');
+  const statusLabel = status ? STATUS_TEXT[status] : null;
 
-      <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-10 sm:pt-20 sm:pb-14">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-4">
-            <MessageCircle className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-            02 · Bots · KI-Chat-Assistent
-          </div>
-          <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.03] max-w-4xl">
+  return (
+    <V3PageShell
+      current="/chatbot/start"
+      source={SOURCE}
+      crumbs={[
+        { label: 'Start', to: '/' },
+        { label: 'Module', to: '/#module' },
+        { label: 'KI-Chat-Assistent' },
+      ]}
+      sections={SECTIONS}
+    >
+      <section id="ueberblick" className="lv3-section lv3-section--first lv3-split" aria-labelledby="chat-h1">
+        <div className="lv3-stack">
+          <span className="lv3-meta">
+            02 · AUTOMATE · KI-Chat-Assistent
+            {statusLabel ? <StatusPill label={statusLabel} /> : null}
+          </span>
+          <h1 id="chat-h1" className="lv3-page-h1">
             Antworten für Ihre Kunden. Mit Regeln, die vorher prüfen.
           </h1>
-          <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
+          <p className="lv3-text">
             Der Chat-Assistent beantwortet Fragen auf Ihrer Website. Jede Nachricht wird gegen
             Ihre Regeln geprüft, bevor sie gespeichert wird – im Standard im Beobachtungsmodus –,
             und jede Antwort zählt gegen ein festes Kontingent.
           </p>
-
-          <CapabilityAvailabilityNotice capabilityId="bots" className="mt-8 max-w-3xl" />
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <Link
-              to="/app/bots"
-              className="surface-mono inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
-            >
-              Chat-Assistent erstellen <ArrowRight className="h-4 w-4" />
+          <CapabilityAvailabilityNotice capabilityId="bots" tone="light" />
+          <div className="lv3-actions">
+            <Link to="/app/bots" className="lv3-btn lv3-btn--solid lv3-btn--lg">
+              Chat-Assistent erstellen <span aria-hidden="true">&nbsp;→</span>
             </Link>
-            <Link
-              to="/pricing?source=chatbot_start"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
-            >
+            <Link to={`/pricing?source=${SOURCE}`} className="lv3-btn lv3-btn--lg">
               Pläne vergleichen
             </Link>
           </div>
         </div>
+
+        <dl className="lv3-facts" aria-label="Kurzüberblick">
+          <div><dt>Status</dt><dd>{statusLabel ?? 'Nicht erfasst'}</dd></div>
+          <div><dt>Kanäle</dt><dd>Web-Chat · WhatsApp und Telegram als Vorschau</dd></div>
+          <div><dt>Regelprüfung</dt><dd>Vor dem Speichern, im Standard im Beobachtungsmodus</dd></div>
+          <div><dt>Kosten</dt><dd>Nachrichten-Kontingent je Paket, festes KI-Budget je Monat</dd></div>
+          <div><dt>Protokoll</dt><dd>Frage und Antwort in Ihrem Konto</dd></div>
+          <div><dt>Übergabe</dt><dd>An einen Menschen: in Vorbereitung</dd></div>
+        </dl>
       </section>
 
-      <section aria-label="Stationen einer Antwort" className="px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.25em] text-titanium-100 mb-4">
-            Stationen einer Antwort
-          </h2>
-          <ol className="grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-2 lg:grid-cols-5">
-            {STATIONS.map((s, i) => (
-              <li key={s.k} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex flex-col gap-2">
-                <span className="font-mono text-[11px] tracking-[0.2em] text-titanium-100">
-                  {String(i + 1).padStart(2, '0')} — {s.k}
-                </span>
-                <span className="font-display text-lg text-titanium-50">{s.t}</span>
-                <span className="text-sm text-silver-300 leading-relaxed">{s.d}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
+      <section id="ablauf" className="lv3-section" aria-labelledby="chat-ablauf-h">
+        <span className="lv3-eyebrow">Stationen einer Antwort</span>
+        <h2 id="chat-ablauf-h" className="lv3-h2">Von der Frage zum Protokoll.</h2>
+        <ol className="lv3-flow">
+          {STATIONS.map((s, i) => (
+            <li key={s.k}>
+              <span className="lv3-meta">{String(i + 1).padStart(2, '0')} · {s.k}</span>
+              <strong>{s.t}</strong>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <section aria-label="Kanäle" className="px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.25em] text-titanium-100 mb-4">Kanäle</h2>
-          <ul className="grid gap-px bg-silver-700/30 border border-silver-700/30 sm:grid-cols-3">
-            {CHANNELS.map((c) => (
-              <li key={c.n} className="bg-[var(--brand-bg-0,#0b0d10)] p-5 flex items-baseline justify-between gap-3">
-                <span className="font-display text-lg text-titanium-50">{c.n}</span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-silver-300">{c.s}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <section id="kanaele" className="lv3-section" aria-labelledby="chat-kanaele-h">
+        <span className="lv3-eyebrow">Kanäle</span>
+        <h2 id="chat-kanaele-h" className="lv3-h2">Wo der Assistent antwortet.</h2>
+        <ul className="lv3-cards lv3-cards--compact lv3-list-reset">
+          {CHANNELS.map((c) => (
+            <li key={c.n} className="lv3-card">
+              <strong className="lv3-card-name">{c.n}</strong>
+              <StatusPill label={c.s} />
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section aria-label="Grenzen" className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-14">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-5">
-            Klare Grenzen.
-          </h2>
-          <ul className="max-w-3xl space-y-3 border-l border-silver-500 pl-5">
-            {LIMITS.map((l) => (
-              <li key={l} className="text-sm sm:text-base text-silver-300 leading-relaxed">{l}</li>
-            ))}
-          </ul>
+      <section id="grenzen" className="lv3-section lv3-split" aria-labelledby="chat-grenzen-h">
+        <div className="lv3-stack">
+          <span className="lv3-eyebrow">Grenzen</span>
+          <h2 id="chat-grenzen-h" className="lv3-h2">Klare Grenzen.</h2>
+        </div>
+        <ul className="lv3-limits">
+          {LIMITS.map((l) => <li key={l}>{l}</li>)}
+        </ul>
+      </section>
+
+      <V3ModuleSwitch currentKey="bots" />
+
+      <section id="loslegen" className="lv3-section lv3-start" aria-labelledby="chat-start-h">
+        <h2 id="chat-start-h" className="lv3-h2">Ersten Assistenten anlegen.</h2>
+        <p className="lv3-text">Vorgaben festlegen, Regeln wählen, Kontingent über Ihr Paket.</p>
+        <div className="lv3-actions">
+          <Link to="/app/bots" className="lv3-btn lv3-btn--solid lv3-btn--lg">Chat-Assistent erstellen</Link>
+          <Link to={`/pricing?source=${SOURCE}`} className="lv3-btn lv3-btn--lg">Pläne vergleichen</Link>
         </div>
       </section>
-    </div>
+    </V3PageShell>
   );
 }

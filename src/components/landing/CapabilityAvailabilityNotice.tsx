@@ -34,15 +34,30 @@ import { PLATFORM_CAPABILITIES } from '../../config/platform-capabilities';
 export function CapabilityAvailabilityNotice({
   capabilityId,
   className,
+  tone = 'dark',
 }: {
   capabilityId: string;
   /** Zusätzliche Layout-Klassen der einbettenden Seite. */
   className?: string;
+  /** `light` für helle Seiten im Design der Startseite v3 (`.lv3`). */
+  tone?: 'dark' | 'light';
 }) {
   const capability = PLATFORM_CAPABILITIES.find(
     (c) => c.id === capabilityId || (capabilityId === 'channel-bots' && c.id === 'bots'),
   );
   if (!capability || capability.status === 'live') return null;
+
+  if (tone === 'light') {
+    return (
+      <div role="note" className={`lv3-notice ${className ?? ''}`}>
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <div>
+          <strong>{capability.name} ist noch nicht einsatzbereit</strong>
+          <p>{capability.note} Wir weisen das hier aus, statt es mitzuverkaufen.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

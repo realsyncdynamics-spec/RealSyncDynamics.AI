@@ -15,7 +15,7 @@ describe('Phase 3 DSR transactional evidence contract (static)', () => {
 
   it('blocks DSR writes if the outbox readiness RPC cannot be verified', () => {
     expect(handler).toContain("admin.rpc('dsr_outbox_ready')");
-    expect(handler.match(/EVIDENCE_UNAVAILABLE/g)?.length).toBe(1);
+    expect(handler.match(/EVIDENCE_UNAVAILABLE/g)?.length).toBe(4);
     expect(handler.match(/await outboxReady\(admin\)/g)?.length).toBe(4);
   });
 

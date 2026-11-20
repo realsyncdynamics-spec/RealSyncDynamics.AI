@@ -67,6 +67,8 @@ Only AFTER successful commit return "committed"; otherwise ROLLBACK
 
 Das Produktions-Auth-Modell muss für den konkreten Execution-Channel geprüft werden; der aktuelle `FactoryMockContext` mit `isOperator` und `aal2` ist **testseitig kontrolliert**, keine Benutzerautorisierung.
 
+**Aktuelle Supabase-Änderung (seit 30.10.2026):** Neue Tabellen im `public`-Schema werden bei bestehenden Projekten nicht mehr automatisch für Data API / GraphQL freigegeben. Das geplante private Factory-Schema soll ohnehin nicht exponiert werden. Bei jeder späteren Migration sind dennoch die Grants für die **konkret verwendete Serverrolle** explizit und minimal zu prüfen; eine `42501`-Fehlermeldung wird nicht durch pauschale Grants an `anon` oder Abschalten von RLS behoben. [Offizieller Supabase-Changelog](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically).
+
 ## 3. Genau-einmal-Absicht versus externe Wirklichkeit
 
 Postgres kann Jobstatus, Event, Receipt und Outbox gemeinsam committen. Damit ist **nicht** garantiert, dass ein externer Provider einen Befehl genau einmal ausführt.

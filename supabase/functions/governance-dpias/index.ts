@@ -144,8 +144,11 @@ async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmai
   }
   if (Object.keys(patch).length === 0) return jsonError(400, 'BAD_REQUEST', 'no update fields supplied');
 
-  const { data, error } = await admin.from('dpias').update(patch).eq('id', id).select('*').single();
+  // Prevent a stale edit from changing an assessment approved concurrently.
+  const { data, error } = await admin.from('dpias').update(patch)
+    .eq('id', id).eq('status', row.status).select('*').maybeSingle();
   if (error) throw error;
+  if (!data) return jsonError(409, 'CONFLICT', 'DPIA status changed concurrently; reload and retry');
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.update', target_type: 'dpia', target_id: id, payload: patch });
   return jsonResponse({ ok: true, dpia: data });
 }

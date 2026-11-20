@@ -26,6 +26,7 @@ function mockClient(
     let countRequested = false;
     let head = false;
     let maxRows: number | null = null;
+    const orderKeys: Array<{ key: string; ascending: boolean }> = [];
     const query = {
       select(_columns: string, options?: { count?: string; head?: boolean }) {
         calls.push({ table, method: 'select' });
@@ -45,7 +46,7 @@ function mockClient(
       },
       order(key: string, options: { ascending: boolean }) {
         calls.push({ table, method: 'order', key });
-        rows.sort((a, b) => String(a[key]).localeCompare(String(b[key])) * (options.ascending ? 1 : -1));
+        orderKeys.push({ key, ascending: options.ascending });
         return query;
       },
       limit(n: number) {
@@ -59,8 +60,15 @@ function mockClient(
       },
       then(resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) {
         const total = rows.length;
+        const ordered = [...rows].sort((a, b) => {
+          for (const { key, ascending } of orderKeys) {
+            const cmp = String(a[key]).localeCompare(String(b[key]));
+            if (cmp !== 0) return cmp * (ascending ? 1 : -1);
+          }
+          return 0;
+        });
         const response = {
-          data: head ? null : rows.slice(0, maxRows ?? rows.length),
+          data: head ? null : ordered.slice(0, maxRows ?? ordered.length),
           count: countRequested ? (settings.missingCount ? null : total) : null,
           error: settings.failTable === table ? { message: 'db unavailable' } : null,
         };
@@ -134,6 +142,22 @@ describe('RLS-backed Chief of Staff loader', () => {
     expect(output.items).toHaveLength(1);
     expect(output.items[0]?.priority).toBe('critical');
     expect(output.counts.attention_total).toBe(3);
+    expect(output.truncated).toBe(true);
+  });
+
+  it('selects an older critical task before a newer high task at the query limit', async () => {
+    const data: DbFixture = {
+      ...base,
+      agent_tasks: [
+        { id: 'older-critical', tenant_id: A, agent: 'sec', task: 'Critical', priority: 'critical', status: 'blocked', created_at: '2026-01-01T00:00:00Z' },
+        { id: 'newer-high', tenant_id: A, agent: 'dev', task: 'High', priority: 'high', status: 'blocked', created_at: '2026-11-19T00:00:00Z' },
+      ],
+      agent_decisions: [],
+      agent_observations: [],
+    };
+    const output = await loadPersistedChiefOfStaffInbox(mockClient(data).client, A, { max_items: 1 });
+    expect(output.items.map(x => x.title)).toEqual(['Critical']);
+    expect(output.counts.attention_total).toBe(2);
     expect(output.truncated).toBe(true);
   });
 

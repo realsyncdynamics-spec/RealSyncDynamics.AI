@@ -91,8 +91,9 @@ Weiterentwicklung: Dominiks Entscheidung, Wortlaut in `.github/PR_TRIAGE_POLICY.
 #### Inhalte und Design
 
 - Preise und Checkout-Ziele nur aus `shared/pricing.ts`. Preise, Steuer-/Rechtstexte und Claims: Einzel-Freigabe.
-- Design-DNA: Hard-Edge (90-Grad-Kanten, Sovereign Grid 40px), Monospace für technische Daten.
-  Risk-/Statusfarben semantisch getrennt von Brand-Akzenten.
+- Design: gemeinsames weißes Designsystem und konsistente SYNC-Figur mit Produkt-Heroes nach
+  [RealSync-Infrastrukturregel 2027](../../.github/RealSync_Infrastrukturregel_2027.md); frühere dunkle
+  Designvorgaben sind ersetzt. Risk-/Statusfarben semantisch getrennt von Brand-Akzenten.
 - Alte Landing-Dateien sind kein Löschbeleg. Vor Cleanup Importgraph, Tests, Registries und
   Vorschau-Routen prüfen. `npm run check:dead` liefert nur Kandidaten.
 - Nur betroffene Dateien ändern, kleiner PR, keine Repo-weiten Refactors.

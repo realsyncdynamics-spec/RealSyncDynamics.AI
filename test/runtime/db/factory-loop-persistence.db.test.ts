@@ -2,7 +2,7 @@
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createGoalLoop, submitLoopEvidence } from '../../../apps/factory-worker/loop/engine.mjs';
+import { createGoalLoop, submitLoopEvidence, verifyLoopEvidence } from '../../../apps/factory-worker/loop/engine.mjs';
 import { openDb, closeDb, createTenantWithMember, requireDbOrFail, type DbCtx } from './db-helpers';
 
 const sql = readFileSync(join(__dirname,
@@ -146,4 +146,32 @@ d('SF-005 real PostgreSQL — requires isolated DB plus contract installed', () 
       await q('SELECT factory_runtime.loop_read($1::uuid,$2::uuid)', [taskId, tenantId]);
     })).rejects.toThrow(/permission denied/);
   });
+  it('requires an independent verifier before review_required', async () => {
+    await init();
+    const lease = await claim();
+    const submitted = submit();
+    await commit(1, Number(lease.lease_epoch), submitted,
+      submitted.events.at(-1), 'commit-submitted');
+    const verified = verifyLoopEvidence(submitted, {
+      verifierId: 'verifier-01', attestationRef: 'artifact:verifier_001',
+      checks: [{ criterionId: 'build', passed: true,
+        evidenceRef: 'artifact:review_001' }],
+    }, submitted.events.at(-1)!.atMs + 10);
+    const forgedEvent = {
+      ...verified.events.at(-1)!,
+      details: { ...verified.events.at(-1)!.details, verifierId: 'builder-01' },
+    };
+    const forged = { ...verified, events: [...verified.events.slice(0, -1), forgedEvent] };
+    await rejected(
+      'SELECT factory_runtime.loop_commit($1::uuid,$2::uuid,$3::bigint,$4,$5::bigint,$6,$7::jsonb,$8::jsonb)',
+      [taskId, tenantId, 2, 'worker-01', lease.lease_epoch,
+        'commit-forged', JSON.stringify(forged), JSON.stringify(forgedEvent)],
+      /verifier_not_independent/);
+    expect(await commit(2, Number(lease.lease_epoch), verified,
+      verified.events.at(-1), 'commit-verified'))
+      .toMatchObject({ version: 3, replayed: false });
+    const read = await q('SELECT snapshot FROM factory_runtime.loop_checkpoints WHERE task_id=$1', [taskId]);
+    expect(read.rows[0].snapshot.status).toBe('review_required');
+  });
+
 });

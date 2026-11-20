@@ -48,16 +48,17 @@ test.describe('Governance OS 3D preview', () => {
   });
 });
 
-import { test, expect } from '@playwright/test';
-
 /** The public conversion buttons must work when WebGL cannot be created. */
 test('Governance preview retains real actions when WebGL is unavailable', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (id: string, ...args: unknown[]) {
-      if (id === 'webgl' || id === 'webgl2' || id === 'experimental-webgl') return null;
-      return original.apply(this, [id, ...args] as Parameters<typeof original>);
-    } as typeof original;
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      configurable: true,
+      value: function (this: HTMLCanvasElement, id: string, ...args: unknown[]) {
+        if (id === 'webgl' || id === 'webgl2' || id === 'experimental-webgl') return null;
+        return Reflect.apply(original, this, [id, ...args]);
+      },
+    });
   });
   await page.goto('/design/governance-3d', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.rs-governance-hero__fallback')).toBeVisible();

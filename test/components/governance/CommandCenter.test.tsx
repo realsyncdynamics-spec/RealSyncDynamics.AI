@@ -127,4 +127,77 @@ describe('CommandCenter', () => {
       expect.objectContaining({ id: 'nav-settings' }),
     );
   });
+
+  it('öffnet einen unbekannten Freitext per Enter nur als Entwurf', () => {
+    const onSubmitIntent = vi.fn();
+    const onRun = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <CommandCenter open onClose={onClose} items={ITEMS} onRun={onRun} onSubmitIntent={onSubmitIntent} />,
+    );
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: '  Prüfe meine Datenverarbeitung auf DSGVO-Lücken  ' },
+    });
+    expect(onSubmitIntent).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(onSubmitIntent).toHaveBeenCalledOnce();
+    expect(onSubmitIntent).toHaveBeenCalledWith('Prüfe meine Datenverarbeitung auf DSGVO-Lücken');
+    expect(onRun).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('zeigt bei Treffer eine separate Entwurf-Aktion statt ungewollter Navigation', () => {
+    const onSubmitIntent = vi.fn();
+    const onRun = vi.fn();
+    render(
+      <CommandCenter open onClose={() => {}} items={ITEMS} onRun={onRun} onSubmitIntent={onSubmitIntent} />,
+    );
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'Evidence' },
+    });
+    expect(screen.getByRole('option', { name: /Evidence/ })).toBeInTheDocument();
+    expect(screen.getByText(/Kein automatischer Versand oder Agentenlauf/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Entwurf im Governance-Assistenten öffnen/ }));
+    expect(onSubmitIntent).toHaveBeenCalledWith('Evidence');
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it('Ctrl+Enter übergibt gezielt Freitext auch bei übereinstimmendem Befehl', () => {
+    const onSubmitIntent = vi.fn();
+    const onRun = vi.fn();
+    render(
+      <CommandCenter open onClose={() => {}} items={ITEMS} onRun={onRun} onSubmitIntent={onSubmitIntent} />,
+    );
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'Evidence' },
+    });
+    fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+    expect(onSubmitIntent).toHaveBeenCalledWith('Evidence');
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it('führt gesperrte Coming-Soon-Befehle auch mit Entwurf-Funktion nicht per Enter aus', () => {
+    const onSubmitIntent = vi.fn();
+    const onRun = vi.fn();
+    render(
+      <CommandCenter open onClose={() => {}} items={ITEMS} onRun={onRun} onSubmitIntent={onSubmitIntent} />,
+    );
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'DSFA' },
+    });
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(onSubmitIntent).not.toHaveBeenCalled();
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it('hat ohne Intent-Handler keinen Entwurf-Button', () => {
+    render(
+      <CommandCenter open onClose={() => {}} items={ITEMS} onRun={() => {}} />,
+    );
+    fireEvent.change(screen.getByLabelText('Was möchtest du erledigen?'), {
+      target: { value: 'Unbekannte Aufgabe' },
+    });
+    expect(screen.queryByRole('button', { name: /Entwurf im Governance-Assistenten öffnen/ })).not.toBeInTheDocument();
+  });
+
 });

@@ -9,6 +9,7 @@ import {
   findProductLanding, productLandingStatus, type ProductSlug,
 } from '../config/productLandings';
 import '../styles/product-landings.css';
+import { SyncStage } from '../components/visual/sync-mascot/SyncStage';
 
 /**
  * Gemeinsames White-Designsystem für die sechs Produkt-Landingpages.
@@ -102,7 +103,10 @@ export function ProductLanding() {
             </div>
             <p className="rpl-hero__note">{product.note}</p>
           </div>
-          <ProductHeroVisual variant={product.slug} />
+          <div className="rpl-sync-composition" data-testid={'product-sync-' + product.slug}>
+            <ProductHeroVisual variant={product.slug} />
+            <SyncStage variant={product.slug} caption={product.name} statusLabel="SYNC · RealSync Dynamics & AI" />
+          </div>
         </section>
 
         <section className="rpl-section" aria-labelledby="rpl-features-heading">

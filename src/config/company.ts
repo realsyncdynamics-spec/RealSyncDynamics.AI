@@ -1,7 +1,7 @@
 import { PRICING_TAX_MODE } from '@/shared/pricing';
 
 /**
- * Zentrale Unternehmenskonfiguration für RealSyncDynamics.AI
+ * Zentrale Unternehmenskonfiguration.
  *
  * Diese Datei ist die Single Source of Truth für alle Unternehmensdaten:
  * - Rechtliche Form (Einzelunternehmen; keine Umwandlung geplant)
@@ -77,8 +77,11 @@ export interface CompanyConfig {
  * - Stripe-Keys kommen aus .env: VITE_STRIPE_PUBLISHABLE_KEY
  * - registryEntry bleibt null, solange legalForm === 'Einzelunternehmen'
  */
+/** Rechtlicher Firmenname. Einzige Schreibweise; Seiten lesen `COMPANY.companyName`. */
+const COMPANY_NAME = 'RealSync Dynamics & AI';
+
 export const COMPANY: CompanyConfig = {
-  companyName: 'RealSync Dynamics & AI',
+  companyName: COMPANY_NAME,
   legalForm: 'Einzelunternehmen',
   futureLegalForm: 'Einzelunternehmen',
 
@@ -110,7 +113,7 @@ export const COMPANY: CompanyConfig = {
   // denselben Steuerhinweis zeigen.
   taxMode: PRICING_TAX_MODE,
   complianceDisclaimer:
-    'RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ' +
+    `${COMPANY_NAME} ist eine Compliance-Support-Plattform. Keine Rechtsberatung. ` +
     'Die Ergebnisse dienen der technischen und organisatorischen Compliance-Unterstützung.',
 
   website: 'https://realsyncdynamicsai.de',
@@ -122,7 +125,7 @@ export const COMPANY: CompanyConfig = {
 
 /**
  * Vollständiger Company-Display-Name mit Legal Form
- * z.B. "RealSync Dynamics · Einzelunternehmen" bzw. "… UG (haftungsbeschränkt)"
+ * z.B. "RealSync Dynamics & AI · Einzelunternehmen" bzw. "… UG (haftungsbeschränkt)"
  */
 export function getCompanyDisplayName(includeEntity = true): string {
   const base = COMPANY.companyName;

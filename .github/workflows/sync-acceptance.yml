@@ -1,0 +1,56 @@
+name: SYNC Branch Acceptance (no deploy)
+
+# Deliberately isolated to the unmerged SYNC feature branch.
+# No production deployment, DB changes, or external service mutations.
+on:
+  push:
+    branches:
+      - feat/sync-unified-six-products-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      VITE_BASE: /
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout current feature branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Use Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: SYNC Vitest cases
+        run: npx vitest run test/landing/sync-unified-stage.test.tsx test/landing/white-product-landings.test.tsx
+      - name: Compile and prerender public pages
+        run: npm run build:full
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: SYNC Chromium routes, fallback and software WebGL
+        env:
+          TEST_BASE_URL: http://127.0.0.1:4173
+        run: npx playwright test --config=playwright.config.ts e2e/brand/sync-seven-routes.spec.ts e2e/brand/sync-webgl-runtime.spec.ts
+      - name: Save browser report and failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sync-browser-evidence
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

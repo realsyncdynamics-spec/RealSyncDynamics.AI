@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowRight, ArrowUpRight, AudioLines, Blocks, Bot, CheckCheck, Code2,
   Fingerprint, GitBranchPlus, LockKeyhole, PanelsTopLeft, PhoneCall,
@@ -72,8 +72,8 @@ function ProductHeroVisual({ variant }: { variant: ProductSlug }) {
 }
 
 export function ProductLanding() {
-  const { slug = '' } = useParams<{ slug: string }>();
-  const product = findProductLanding(slug);
+  const { pathname } = useLocation();
+  const product = findProductLanding(pathname.replace(/^\//, '').replace(/\/$/, ''));
   if (!product) return <main className="rpl rpl-missing"><h1>Produkt nicht gefunden.</h1><Link to="/">Zur Hauptseite</Link></main>;
   const status = productLandingStatus(product);
 

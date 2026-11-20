@@ -8,6 +8,13 @@ create table public.dsr_outbox (
   event_type text not null check (event_type = 'dsr.created'),
   revision bigint not null check (revision > 0),
   evidence_status text not null default 'pending' check (evidence_status in ('pending','retry','complete','failed')),
+  attempts integer not null default 0 check (attempts >= 0),
+  next_attempt_at timestamptz not null default now(),
+  lease_owner uuid,
+  lease_until timestamptz,
+  lease_epoch bigint not null default 0 check (lease_epoch >= 0),
+  last_error_code text check (length(last_error_code) <= 64),
+  completed_at timestamptz,
   created_at timestamptz not null default now(),
   primary key (tenant_id, operation_id),
   unique (dsr_id, revision)
@@ -39,7 +46,25 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(p_tenant::text || p_operation::text, 0));
   select * into receipt from public.dsr_outbox where tenant_id=p_tenant and operation_id=p_operation;
   if found then
-    if receipt.actor_user_id <> p_actor then raise exception 'operation conflict'; end if;
+    if receipt.actor_user_id <> p_actor then
+      raise exception 'operation conflict' using errcode='23505';
+    end if;
+    -- The operation UUID identifies exactly one immutable intake payload.
+    -- An accidental reuse for a different request must NOT return the
+    -- original DSR as if the second request had been accepted.
+    select * into request from public.dsr_requests
+      where id = receipt.dsr_id and tenant_id = p_tenant;
+    if not found
+       or request.request_type is distinct from p_type
+       or request.requester_email is distinct from trim(p_email)
+       or request.requester_name is distinct from p_name
+       or request.subject_description is distinct from p_description
+       or request.assigned_to is distinct from p_assignee
+       or coalesce(request.affected_assets, '{}'::text[])
+          is distinct from coalesce(p_assets, '{}'::text[])
+    then
+      raise exception 'operation conflict' using errcode='23505';
+    end if;
     return receipt.dsr_id;
   end if;
 

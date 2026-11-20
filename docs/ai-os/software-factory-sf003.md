@@ -15,7 +15,7 @@ Verweise: [SF-001](software-factory-sf001.md), [SF-002](software-factory-sf002.m
 
 `inspectFactoryRecovery({ job, lease, undeliveredOutboxCount, observedAt })` wertet einen bereits geladenen *synthetischen* Snapshot rein lesend aus:
 
-- `invalid_snapshot`: Widerspruch bei Versionszahl, Event-Reihenfolge, Receipts, Scope/Lease, Kosten oder Zeit.
+- `invalid_snapshot`: Widerspruch bei Versionszahl, Event-Reihenfolge, verbotenem Statusübergang, Approval-Metadaten, Receipts, Scope/Lease, Kosten oder Zeit.
 - `storage_incomplete`: Lease-/Outbox-Daten fehlen. Das bedeutet **nicht**, dass der Job sicher sei.
 - `outbox_reconciliation_required`: nicht zugestellte Seiteneffekte erfordern Abgleich, unabhängig vom Jobstatus.
 - `orphaned_worker`: `running` ohne gültige Lease / abgelaufene Lease; kein Auto-Retry.
@@ -109,7 +109,7 @@ sonst -> none
 
 | Gate | Abnahme | Stand |
 | --- | --- | --- |
-| SF-003 Snapshot-Inspector | deterministisch, fail-closed | lokal: 14/14 Smoke-Tests; GitHub: 15 Vitest-Fälle angelegt |
+| SF-003 Snapshot-Inspector | deterministisch, fail-closed | lokal: 16/16 Smoke-Tests; GitHub: 17 Vitest-Fälle angelegt |
 | TypeScript `--strict` für Inspector + SF-001 | keine Fehler | lokal bestanden |
 | Repository-Vitest + vollständiger Typecheck | CI auf Branch-Head | **offen** |
 | Transaction Rollback / DB-Ausfall | Testcontainer, nachgewiesene Atomizität | **offen** |

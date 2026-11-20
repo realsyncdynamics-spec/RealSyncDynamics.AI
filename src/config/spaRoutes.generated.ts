@@ -2,7 +2,7 @@
 // Neu erzeugen: npm run sync:spa-routes
 
 /** Pfadmuster aller React-Router-Routen (ohne den Catch-all `*`). */
-export const SPA_ROUTE_PATTERNS: readonly string[] = [
+export const SPA_ROUTE_PATTERNS: readonly string[
   "/",
   "/about",
   "/account",
@@ -384,6 +384,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/kontakt",
   "/landing",
   "/landing-uebersicht",
+  "/landingpage-builder",
   "/landingpages",
   "/legal-tech",
   "/legal/avv",
@@ -517,6 +518,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/steuerberater",
   "/steuerkanzlei",
   "/sync",
+  "/telefonassistent",
   "/tenant/invite/:token",
   "/tenant/invites",
   "/tom-generator",

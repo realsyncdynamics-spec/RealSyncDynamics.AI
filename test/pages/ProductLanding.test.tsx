@@ -171,7 +171,7 @@ describe('Produkt-Landingpages (Entwurf)', () => {
     const stage = screen.getByTestId('pl-stage');
     expect(within(stage).getByRole('img', { name: /SYNC, petrolfarbener RealSync-Roboter/ }))
       .toHaveAttribute('src', '/landing-v3/sync-still.jpg');
-    expect(within(stage).getByRole('img', { name: /SYNC: petrolfarbener/ })).toHaveAttribute('hidden');
+    expect(within(stage).getByRole('img', { name: /SYNC: petrolfarbener/, hidden: true })).toHaveAttribute('hidden');
     expect(scene.options).toBeNull();
   });
 

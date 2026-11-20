@@ -557,9 +557,14 @@ function RoutesWithTracking() {
       <Route path="/sync" element={<SyncMascot />} />
       {/* Produkt-Landingpages, Entwurf (noindex). /claude-code-optimizer steht beim Optimizer-Flow. */}
       <Route path="/ki-bots" element={<KiBotsLanding />} />
+      {/* Telefonassistent: kanonische Produktadresse; alter /ki-bots-Einstieg bleibt erhalten. */}
+      <Route path="/voice-agent" element={<KiBotsLanding />} />
       <Route path="/landingpage-builder" element={<ProductLanding key="landingpage-builder" product="landingpage-builder" />} />
       <Route path="/app-builder" element={<ProductLanding key="app-builder" product="app-builder" />} />
       <Route path="/governance-os" element={<ProductLanding key="governance-os" product="governance-os" />} />
+      <Route path="/software-factory" element={<ProductLanding key="software-factory" product="software-factory" />} />
+      <Route path="/automation-os" element={<ProductLanding key="automation-os" product="automation-os" />} />
+      <Route path="/creative-studio" element={<ProductLanding key="creative-studio" product="creative-studio" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />

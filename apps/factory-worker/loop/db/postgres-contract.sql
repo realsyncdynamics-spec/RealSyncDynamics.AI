@@ -41,8 +41,10 @@ CREATE TABLE IF NOT EXISTS factory_runtime.loop_events (
 -- Defense in depth even though this schema is not exposed through PostgREST.
 ALTER TABLE factory_runtime.loop_checkpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE factory_runtime.loop_events ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON ALL TABLES IN SCHEMA factory_runtime FROM PUBLIC, anon, authenticated, service_role;
-REVOKE ALL ON ALL SEQUENCES IN SCHEMA factory_runtime FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON TABLE factory_runtime.loop_checkpoints, factory_runtime.loop_events
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON SEQUENCE factory_runtime.loop_events_id_seq
+  FROM PUBLIC, anon, authenticated, service_role;
 
 -- Server-side read only, scoped to a task in the requested tenant.
 CREATE OR REPLACE FUNCTION factory_runtime.loop_read(
@@ -190,6 +192,12 @@ BEGIN
       RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE = '23505';
     END IF;
     RETURN jsonb_build_object('version', previous.version, 'replayed', true);
+  END IF;
+  -- Detect a parent task moved to another tenant or retired since init.
+  IF NOT EXISTS (SELECT 1 FROM public.agent_tasks t
+     WHERE t.id = p_task_id AND t.tenant_id = p_tenant_id
+       AND t.input->>'factory_kind' = 'software_factory') THEN
+    RAISE EXCEPTION 'task_binding_revoked' USING ERRCODE = '42501';
   END IF;
   IF r.version <> p_expected_version THEN
     RAISE EXCEPTION 'stale_checkpoint_version' USING ERRCODE = '40001';

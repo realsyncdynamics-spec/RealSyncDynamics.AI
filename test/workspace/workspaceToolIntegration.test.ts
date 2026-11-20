@@ -21,13 +21,17 @@ describe('Workspace-Launcher als additive REA-Integration', () => {
     expect(workspace).toContain('trace_id: traceId');
     expect(workspace).toContain('attestCall(');
     expect(workspace).toContain('codeEntryState(prompt)');
-    expect(launcher).not.toMatch(/fetch\\(|createClient|service_role|SUPABASE_SERVICE_ROLE/);
+    for (const forbidden of ['fetch(', 'createClient', 'service_role', 'SUPABASE_SERVICE_ROLE']) {
+      expect(launcher).not.toContain(forbidden);
+    }
   });
 
   it('deaktiviert fehlende Werkzeuge und öffnet vorhandene Ziele nur über Links', () => {
     expect(launcher).toContain('isWorkspaceToolRunnable(tool)');
     expect(launcher).toContain('aria-disabled="true"');
     expect(launcher).toContain('to={tool.href}');
-    expect(launcher).not.toMatch(/window\\.location|window\\.open/);
+    for (const forbidden of ['window.location', 'window.open']) {
+      expect(launcher).not.toContain(forbidden);
+    }
   });
 });

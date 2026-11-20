@@ -29,7 +29,8 @@ Deno.serve(async (req: Request) => {
       delivered?: number; failed_in_batch?: number;
       pending_retryable?: number; exhausted?: number;
     } | null;
-    if (!counters || !Object.values(counters).every(v => typeof v === 'number' && Number.isFinite(v))) {
+    const required = ['delivered', 'failed_in_batch', 'pending_retryable', 'exhausted'] as const;
+    if (!counters || required.some(k => typeof counters[k] !== 'number' || !Number.isFinite(counters[k]))) {
       return jsonError(503, 'INVALID_DRAIN_RESULT', 'invalid DSR outbox response', corsHeaders);
     }
 

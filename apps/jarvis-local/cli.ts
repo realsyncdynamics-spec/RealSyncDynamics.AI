@@ -67,7 +67,7 @@ async function main(): Promise<void> {
   }
 
   const orchestrator = new Orchestrator();
-  registerJarvisLocalAgent(orchestrator, ollama);
+  registerJarvisLocalAgent(orchestrator, { model: args.model });
 
   for (const path of args.notes) {
     const absolute = resolve(path);

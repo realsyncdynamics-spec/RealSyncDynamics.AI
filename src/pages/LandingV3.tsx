@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { HeroStage } from '../components/landing/v3/HeroStage';
+import { AskAiPill } from '../components/AskAiPill';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
@@ -88,6 +89,7 @@ export function LandingV3() {
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
+          <AskAiPill className="lv3-btn lv3-ask" />
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>
 

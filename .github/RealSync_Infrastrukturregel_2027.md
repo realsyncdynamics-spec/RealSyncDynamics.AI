@@ -22,9 +22,13 @@ Die Hauptseite ist der zentrale Einstieg und verlinkt alle Produkte über einen 
 | Automation OS | `/automation-os` |
 | Creative Studio | `/creative-studio` |
 
-Diese Tabelle definiert die Zielstruktur. Die technische Existenz und Erreichbarkeit jeder Route ist separat zu prüfen. Neue Produkte werden nach demselben Muster ergänzt.
+Diese Tabelle definiert die Zielstruktur. Die technische Existenz und Erreichbarkeit jeder Route ist separat zu prüfen. Neue Produkte werden nach demselben Muster ergänzt. Abweichungen von dieser Architekturvorgabe benötigen eine ausdrückliche Entscheidung von Dominik Steiner; sie dürfen nicht eigenständig eingeführt werden.
 
 ## Gemeinsame Infrastruktur
+
+Die verbindliche technische Basis ist React/Vite/Tailwind für das Frontend, Supabase für Datenbank und zentrale Backend-Dienste, Cloudflare Pages für das Plattform-Frontend und Stripe für die Abrechnung. Produktspezifische Dienste werden an diese gemeinsame Basis angebunden.
+
+Alle Produkte nutzen ein gemeinsames Kundenkonto und Dashboard sowie die zentrale Unternehmensverwaltung und Abrechnung. Sie sind einzeln buchbar und miteinander kombinierbar; Produktberechtigungen werden innerhalb derselben Plattform verwaltet.
 
 Produkte nutzen die vorhandene zentrale Anmeldung, Mandantenverwaltung, Rollen und Rechte, Abrechnung, Tarif- und Produktberechtigungen sowie Governance, Protokollierung und Nachweise. Die Berechtigung für einen Mandanten und ein Produkt wird serverseitig geprüft.
 

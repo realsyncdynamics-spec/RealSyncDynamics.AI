@@ -1,0 +1,14 @@
+{
+  "name": "realsync-sf003-postgres-integration-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:preflight": "node --test preflight.test.mjs",
+    "test:postgres": "node --test integration.test.mjs",
+    "check:syntax": "node --check db-target.mjs && node --check preflight-db.mjs && node --check integration.test.mjs && node --check preflight.test.mjs"
+  },
+  "dependencies": {
+    "pg": "8.21.0"
+  }
+}

@@ -1,0 +1,65 @@
+# Test-only: executes only for the explicit isolated verification branch.
+# No production deployment, migrations, external services, or repository writes.
+name: SF-003 PostgreSQL 16 isolated verification
+on:
+  push:
+    branches:
+      - sf003/pg-abnahme-20261120
+    paths:
+      - 'sf003-kit/**'
+      - 'scripts/run-isolated-postgres.sh'
+      - '.github/workflows/sf003-postgres-verification.yml'
+permissions:
+  contents: read
+concurrency:
+  group: sf003-pg-test-only-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  postgres-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SF003_CI_ISOLATED_RUNNER: 'YES'
+    steps:
+      - name: Checkout reviewed branch without persisting credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Install locked npm dependencies without lifecycle scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          node -e 'console.log("pg version:", require("./node_modules/pg/package.json").version)'
+      - name: Install isolated PostgreSQL 16 binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-16 postgresql-client-16
+          /usr/lib/postgresql/16/bin/postgres --version
+      - name: Run disposable database test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/run-isolated-postgres.sh | tee "$RUNNER_TEMP/sf003-test-output.tap"
+      - name: Report evidence
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## SF-003 Test-Only PostgreSQL verification'
+            echo 'This execution is isolated, non-production, and never grants merge/deploy permission.'
+            if test -f "$RUNNER_TEMP/sf003-test-output.tap"; then
+              echo '### TAP result excerpt'
+              echo '\`\`\`text'
+              tail -n 30 "$RUNNER_TEMP/sf003-test-output.tap"
+              echo '\`\`\`'
+            else
+              echo 'No TAP output captured; review the failed step.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

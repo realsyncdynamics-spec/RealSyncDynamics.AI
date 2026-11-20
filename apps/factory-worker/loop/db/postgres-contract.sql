@@ -101,11 +101,11 @@ BEGIN
      p_snapshot->'goal'->>'repository' IS DISTINCT FROM t.input->>'repository' OR
      p_snapshot->'goal'->>'requireHumanReview' IS DISTINCT FROM 'true' OR
      p_snapshot->>'runId' IS NULL OR p_snapshot->'goal'->>'goalId' IS NULL OR
-     jsonb_typeof(p_snapshot->'events') <> 'array' OR
-     jsonb_array_length(p_snapshot->'events') <> 1 OR
+     jsonb_typeof(p_snapshot->'events') IS DISTINCT FROM 'array' OR
+     jsonb_array_length(p_snapshot->'events') IS DISTINCT FROM 1 OR
      p_event IS DISTINCT FROM p_snapshot->'events'->0 OR
      p_event->>'type' IS DISTINCT FROM 'loop_created' OR
-     jsonb_typeof(p_snapshot->'nextSteps') <> 'array' THEN
+     jsonb_typeof(p_snapshot->'nextSteps') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'invalid_initial_goal_checkpoint' USING ERRCODE = '22023';
   END IF;
   -- Do not allow clients to initialize an already-finished run.
@@ -215,26 +215,28 @@ BEGIN
      p_snapshot->>'startedAtMs' IS DISTINCT FROM r.snapshot->>'startedAtMs' OR
      p_snapshot->>'deadlineAtMs' IS DISTINCT FROM r.snapshot->>'deadlineAtMs' OR
      (p_snapshot->>'checkpointVersion')::BIGINT IS DISTINCT FROM r.version + 1 OR
-     jsonb_typeof(p_snapshot->'nextSteps') <> 'array' OR
-     jsonb_typeof(p_snapshot->'events') <> 'array' THEN
+     jsonb_typeof(p_snapshot->'nextSteps') IS DISTINCT FROM 'array' OR
+     jsonb_typeof(p_snapshot->'events') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'checkpoint_contract_mismatch' USING ERRCODE = '22023';
   END IF;
   n := jsonb_array_length(p_snapshot->'events');
-  IF n <> jsonb_array_length(r.snapshot->'events') + 1 OR
+  IF n IS DISTINCT FROM jsonb_array_length(r.snapshot->'events') + 1 OR
      (p_snapshot->'events' - (n - 1)) IS DISTINCT FROM r.snapshot->'events' OR
      (p_snapshot->'events'->(n - 1)) IS DISTINCT FROM p_event OR
      (p_event->>'seq')::INT IS DISTINCT FROM n THEN
     RAISE EXCEPTION 'event_history_mismatch' USING ERRCODE = '22023';
   END IF;
-  IF (p_snapshot->>'iteration')::INT < (r.snapshot->>'iteration')::INT OR
+  IF (p_snapshot->>'iteration')::INT IS NULL OR
+     (p_snapshot->>'spentCents')::INT IS NULL OR
+     (p_snapshot->>'iteration')::INT < (r.snapshot->>'iteration')::INT OR
      (p_snapshot->>'iteration')::INT > (p_snapshot->'limits'->>'maxIterations')::INT OR
      (p_snapshot->>'spentCents')::INT < (r.snapshot->>'spentCents')::INT OR
      (p_snapshot->>'spentCents')::INT > (p_snapshot->'limits'->>'maxCostCents')::INT THEN
     RAISE EXCEPTION 'loop_limit_mismatch' USING ERRCODE = '22023';
   END IF;
   IF to_state = 'review_required' AND (
-      jsonb_typeof(p_snapshot->'checks') <> 'array' OR
-      jsonb_array_length(p_snapshot->'checks') <>
+      jsonb_typeof(p_snapshot->'checks') IS DISTINCT FROM 'array' OR
+      jsonb_array_length(p_snapshot->'checks') IS DISTINCT FROM
         jsonb_array_length(p_snapshot->'goal'->'criteria') OR
       EXISTS (SELECT 1 FROM jsonb_array_elements(p_snapshot->'checks') x
                 WHERE x->>'passed' IS DISTINCT FROM 'true')

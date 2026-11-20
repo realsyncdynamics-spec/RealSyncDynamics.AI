@@ -12,10 +12,11 @@ Die bestehende `GovernanceWorkspaceRoute` bleibt hinter `AppGate` und `VITE_GOVE
 
 1. Autorisierter Nutzer öffnet `/app/workspace`, sofern separat freigegeben.
 2. Die **bestehende Eingabe** erscheint beim Start über den Werkzeugkacheln. Nach dem ersten Chat-Turn bleibt die gleiche Eingabe am bisherigen unteren Platz. Kein zweiter Prompt oder zweiter Netzwerkaufruf.
-3. `KI-Chat` nutzt unverändert `ai-gateway` mit Nutzer-JWT, `tenant_id`, `trace_id` und REA-Prüfpfad.
-4. `App-Builder` schaltet den bestehenden Build-Modus um; die Übergabe und seine eigenen Berechtigungen bleiben unverändert.
-5. Dokumente, Agenten, Voice, Governance, Evidence und Audits verlinken nur vorhandene interne Routen. Ihre produktive Funktionsfähigkeit ist dadurch **nicht** nachgewiesen.
-6. Fehlende Generatoren `KI-Folien`, `KI-Tabellen`, `KI-Bild`, `KI-Video` und `Übersetzungs-Hub` sind sichtbar, aber nicht ausführbar. Es gibt keine Mock-Ausgaben und keine kostenpflichtigen Provider-Aufrufe.
+3. **Voice-Bot** (`/app/voice`) und **Governance OS** (`/app/dashboard`) stehen als hervorgehobener Direktzugriff **vor** Vorschlägen und allgemeiner KI-Werkzeugliste. Beide bleiben separate RealSync-Produkte, nicht Teil eines nachgebauten Genspark-Dienstes. Der Voice-Livebetrieb ist weiterhin offen.
+4. `KI-Chat` nutzt unverändert `ai-gateway` mit Nutzer-JWT, `tenant_id`, `trace_id` und REA-Prüfpfad.
+5. `App-Builder` schaltet den bestehenden Build-Modus um; die Übergabe und seine eigenen Berechtigungen bleiben unverändert.
+6. Dokumente, Agenten, Voice, Governance, Evidence und Audits verlinken nur vorhandene interne Routen. Ihre produktive Funktionsfähigkeit ist dadurch **nicht** nachgewiesen.
+7. Fehlende Generatoren `KI-Folien`, `KI-Tabellen`, `KI-Bild`, `KI-Video` und `Übersetzungs-Hub` sind sichtbar, aber nicht ausführbar. Es gibt keine Mock-Ausgaben und keine kostenpflichtigen Provider-Aufrufe.
 
 ## Abnahmebedingungen
 
@@ -33,3 +34,10 @@ Die bestehende `GovernanceWorkspaceRoute` bleibt hinter `AppGate` und `VITE_GOVE
 - **Slice 05 Agenten, Voice, Übersetzung, Notizen/E-Mail:** vorhandene Module, Agenten-/Voice-Adapter und Berechtigungssysteme adaptieren, niemals parallel neu aufbauen.
 
 **Quelle:** bestehender `GovernanceBrowserShell`, `GovernanceWorkspace`/REA-Entwurf, `workspaceGuideModel`, `docs/architecture/target-architecture.md`, Zielarchitektur-Entwurf PR #2369. Keine Freigabe oder Laufzeitnachweise durch dieses Dokument.
+
+## Ergänzung 20.11.2026 – Direktzugriff
+
+- Die vorhandenen Voice- und Governance-Routen wurden lediglich in den obersten Bereich der bestehenden Workspace-Kachelansicht verschoben.
+- Keine Veränderung am Voice-Router, Governance-Dashboard, App-Shell oder deren API-, Entitlement- und Evidenzverträgen.
+- Der Governance-OS-Einstieg öffnet das zentrale `/app/dashboard`; das KI-Register bleibt unter `/app/ai-systems` erreichbar.
+- Statuskennzeichnungen im Workspace sind keine Live-Audio- oder produktive Governance-Abnahme.

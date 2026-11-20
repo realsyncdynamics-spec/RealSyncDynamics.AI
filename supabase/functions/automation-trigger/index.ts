@@ -16,6 +16,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { getCurrentTotal } from '../_shared/usage.ts';
+import { resolveAutomationRunLimit } from './logic.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface N8nAcknowledge {
@@ -89,10 +90,18 @@ Deno.serve(async (req) => {
     getCurrentTotal(admin, body.tenant_id, 'limit.automation_runs_monthly'),
     admin.rpc('tenant_entitlements', { p_tenant_id: body.tenant_id }),
   ]);
-  // deno-lint-ignore no-explicit-any
-  const limits = Object.fromEntries(((entResp.data ?? []) as any[]).map((r) => [r.key, r.value as number]));
-  const runsLimit = limits['limit.automation_runs_monthly'];
-  if (typeof runsLimit === 'number' && runsLimit !== -1 && currentRuns + 1 > runsLimit) {
+  if (entResp.error) {
+    // Without the quota definition we cannot safely authorize a new run.
+    console.error('automation-trigger entitlement lookup failed', entResp.error.message);
+    return jsonError(503, 'ENTITLEMENT_UNAVAILABLE', 'automation quota could not be verified');
+  }
+  const runsLimit = resolveAutomationRunLimit(entResp.data);
+  if (runsLimit === null) {
+    return jsonError(503, 'ENTITLEMENT_UNAVAILABLE', 'automation quota is not configured');
+  }
+  // This is a non-atomic preflight; a future DB-side reservation is required
+  // to eliminate concurrent-run races (tracked separately in the Phase-3 plan).
+  if (runsLimit !== -1 && currentRuns + 1 > runsLimit) {
     return jsonError(402, 'QUOTA_EXCEEDED',
       `monthly automation run quota reached (${currentRuns}/${runsLimit})`);
   }

@@ -67,7 +67,7 @@ describe('Startseite v3 — `/`', () => {
   it('Hauptnavigation führt Voice Agent und Kontakt, Ziele sind echte Routen', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).getByRole('link', { name: 'Voice Agent' })).toHaveAttribute('href', '/phonebot/start');
+    expect(within(nav).getByRole('link', { name: 'Voice Agent' })).toHaveAttribute('href', '/voice-agent');
     expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/phonebot/start"');

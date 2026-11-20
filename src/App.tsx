@@ -41,6 +41,7 @@ const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').the
 const ChatbotStartPage = lazy(() => import('./pages/product-entry-points/ChatbotStartPage').then((m) => ({ default: m.ChatbotStartPage })));
 const PhonebotStartPage = lazy(() => import('./pages/product-entry-points/PhonebotStartPage').then((m) => ({ default: m.PhonebotStartPage })));
 const VoiceCheckoutPage = lazy(() => import('./pages/VoiceCheckoutPage').then((m) => ({ default: m.VoiceCheckoutPage })));
+const VoiceAgentPage = lazy(() => import('./pages/VoiceAgentPage').then((m) => ({ default: m.VoiceAgentPage })));
 const AetherOSLandingRoute = lazy(() =>
   import('./pages/AetherOSLandingRoute').then((m) => ({ default: m.AetherOSLandingRoute })),
 );
@@ -570,6 +571,7 @@ function RoutesWithTracking() {
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />
+      <Route path="/voice-agent" element={<VoiceAgentPage />} />
       <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/voice/checkout/:offerId" element={<VoiceCheckoutPage />} />
       <Route path="/aetheros" element={<AetherOSLandingRoute />} />

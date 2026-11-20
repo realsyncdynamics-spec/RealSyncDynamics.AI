@@ -30,7 +30,7 @@ describe('Governance Workspace — Werkzeugkatalog (additiv)', () => {
     for (const tool of WORKSPACE_TOOLS) {
       if (tool.state === 'geplant') expect(isWorkspaceToolRunnable(tool)).toBe(false);
       if (tool.action === 'route' && isWorkspaceToolRunnable(tool)) {
-        expect(tool.href).toMatch(/^\\/app\\//);
+        expect(tool.href?.startsWith('/app/')).toBe(true);
       }
     }
   });

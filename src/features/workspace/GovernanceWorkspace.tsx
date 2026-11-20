@@ -31,6 +31,7 @@ import {
 import { codeEntryState } from '../build-studio/entry';
 import { attestCall, REA_STATUS_LABEL, type ReaReceipt, type ReaStatus } from '../rea/runtimeEvidenceAgent';
 import { createSupabaseReaSource } from '../rea/supabaseSource';
+import { WorkspaceToolGrid } from './WorkspaceToolGrid';
 
 type Mode = 'chat' | 'build';
 
@@ -223,103 +224,10 @@ export function GovernanceWorkspace() {
     }
   };
 
-  return (
-    <div className="h-screen bg-obsidian-950 text-titanium-200 flex overflow-hidden" data-testid="governance-workspace">
-      {/* Linke Leiste */}
-      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-titanium-800 bg-obsidian-900">
-        <div className="px-4 h-14 flex items-center border-b border-titanium-800">
-          <Link to="/app" className="text-sm font-semibold text-titanium-50 tracking-tight">
-            RealSync Dynamics <span className="text-security-400">&amp; AI</span>
-          </Link>
-        </div>
-        <div className="p-3">
-          <button
-            type="button"
-            onClick={() => { setTurns([]); setBuildError(null); }}
-            className="w-full flex items-center gap-2 border border-titanium-700 px-3 py-2 text-sm text-titanium-100 hover:bg-obsidian-800"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" /> Neue Sitzung
-          </button>
-        </div>
-        <nav className="px-2 space-y-px text-sm" aria-label="Workspace">
-          <Link to="/app/assistant" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><MessageSquare className="h-4 w-4" aria-hidden="true" /> Governance AI</Link>
-          <Link to="/build" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><Blocks className="h-4 w-4" aria-hidden="true" /> Build-Projekte</Link>
-          <Link to="/app/evidence" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><FileCheck2 className="h-4 w-4" aria-hidden="true" /> Evidence</Link>
-        </nav>
-        <div className="mt-auto border-t border-titanium-800 p-3 font-mono text-[11px] text-titanium-500">
-          <div className="truncate text-titanium-300">{tenantName}</div>
-          <div className="mt-1">
-            {grounding
-              ? `${grounding.incidents.length} Vorfälle · ${grounding.evidence.length} Nachweise · ${grounding.findings.length} Findings`
-              : 'kein Mandantenkontext'}
-          </div>
-        </div>
-      </aside>
-
-      {/* Mitte */}
-      <main className="flex-1 min-w-0 flex flex-col">
-        <header className="h-14 shrink-0 border-b border-titanium-800 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-titanium-50 font-medium">Governance Workspace</span>
-            <span className="text-titanium-600">/</span>
-            <span className="text-titanium-400 truncate">{tenantName}</span>
-          </div>
-          <div className="font-mono text-[11px] text-titanium-500 flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-security-400" aria-hidden="true" /> EU-lokal · Prüfpfad aktiv
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-4 py-10">
-            {turns.length === 0 ? (
-              <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
-                <h1 className="text-3xl font-semibold tracking-tight text-titanium-50">Was soll erledigt werden?</h1>
-                <p className="mt-3 max-w-lg text-sm text-titanium-400">
-                  {mode === 'chat'
-                    ? 'Fragen gehen über den RealSync AI Gateway. Jeder Aufruf erhält einen Herkunftsnachweis, den der REA rechts prüft.'
-                    : 'Beschreibe die App. Der Auftrag geht an den App Builder; Governance-Gate und Freigaben gelten dort.'}
-                </p>
-              </div>
-            ) : (
-              <ol className="space-y-6">
-                {turns.map((t) => (
-                  <li key={t.id} className={t.role === 'user' ? 'flex justify-end' : ''}>
-                    <div
-                      role={t.error ? 'alert' : undefined}
-                      className={
-                        t.role === 'user'
-                          ? 'max-w-[85%] border border-titanium-700 bg-obsidian-800 px-4 py-3 text-sm text-titanium-100 whitespace-pre-wrap'
-                          : t.error
-                            ? 'border border-rose-500/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200'
-                            : 'text-sm leading-7 text-titanium-200 whitespace-pre-wrap'
-                      }
-                    >
-                      {t.content}
-                      {t.role === 'assistant' && !t.error && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] text-titanium-500">
-                          <span>trace {short(t.traceId, 8)}</span>
-                          {t.model && <span>· {t.model}</span>}
-                          {typeof t.latencyMs === 'number' && <span>· {t.latencyMs} ms</span>}
-                          {t.attesting && <span className="border border-titanium-700 px-1.5">REA prüft …</span>}
-                          {t.receipt && (
-                            <span className={`border px-1.5 ${STATUS_CLASS[t.receipt.status]}`}>
-                              {REA_STATUS_LABEL[t.receipt.status]}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-                {sending && <li className="font-mono text-xs text-titanium-500">Gateway antwortet …</li>}
-                <div ref={bottomRef} />
-              </ol>
-            )}
-          </div>
-        </div>
-
-        {/* Composer */}
-        <div className="shrink-0 px-4 pb-5">
+  // Dieselbe Eingabekomponente: auf der Startfläche oben, im Chatverlauf unten.
+  // Kein zweiter Eingabestatus, Modellaufruf oder Governance-Pfad.
+  const composer = (
+<div className="shrink-0 px-4 pb-5">
           <div className="mx-auto max-w-3xl border border-titanium-700 bg-obsidian-900 focus-within:border-security-500">
             <label htmlFor="workspace-input" className="sr-only">Auftrag</label>
             <textarea
@@ -369,6 +277,114 @@ export function GovernanceWorkspace() {
             KI kann Fehler machen. Rechtliche Entscheidungen und Veröffentlichungen prüfen.
           </p>
         </div>
+  );
+
+  return (
+    <div className="h-screen bg-obsidian-950 text-titanium-200 flex overflow-hidden" data-testid="governance-workspace">
+      {/* Linke Leiste */}
+      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-titanium-800 bg-obsidian-900">
+        <div className="px-4 h-14 flex items-center border-b border-titanium-800">
+          <Link to="/app" className="text-sm font-semibold text-titanium-50 tracking-tight">
+            RealSync Dynamics <span className="text-security-400">&amp; AI</span>
+          </Link>
+        </div>
+        <div className="p-3">
+          <button
+            type="button"
+            onClick={() => { setTurns([]); setBuildError(null); }}
+            className="w-full flex items-center gap-2 border border-titanium-700 px-3 py-2 text-sm text-titanium-100 hover:bg-obsidian-800"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" /> Neue Sitzung
+          </button>
+        </div>
+        <nav className="px-2 space-y-px text-sm" aria-label="Workspace">
+          <Link to="/app/assistant" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><MessageSquare className="h-4 w-4" aria-hidden="true" /> Governance AI</Link>
+          <Link to="/build" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><Blocks className="h-4 w-4" aria-hidden="true" /> Build-Projekte</Link>
+          <Link to="/app/evidence" className="flex items-center gap-2 px-3 py-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800"><FileCheck2 className="h-4 w-4" aria-hidden="true" /> Evidence</Link>
+        </nav>
+        <div className="mt-auto border-t border-titanium-800 p-3 font-mono text-[11px] text-titanium-500">
+          <div className="truncate text-titanium-300">{tenantName}</div>
+          <div className="mt-1">
+            {grounding
+              ? `${grounding.incidents.length} Vorfälle · ${grounding.evidence.length} Nachweise · ${grounding.findings.length} Findings`
+              : 'kein Mandantenkontext'}
+          </div>
+        </div>
+      </aside>
+
+      {/* Mitte */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        <header className="h-14 shrink-0 border-b border-titanium-800 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-titanium-50 font-medium">Governance Workspace</span>
+            <span className="text-titanium-600">/</span>
+            <span className="text-titanium-400 truncate">{tenantName}</span>
+          </div>
+          <div className="font-mono text-[11px] text-titanium-500 flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-security-400" aria-hidden="true" /> EU-lokal · Prüfpfad aktiv
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-3xl px-4 py-10">
+            {turns.length === 0 ? (
+              <div className="space-y-8" data-testid="workspace-start">
+                <div className="text-center">
+                  <h1 className="text-3xl font-semibold tracking-tight text-titanium-50">
+                    Fragen Sie alles, erstellen Sie alles
+                  </h1>
+                  <p className="mt-3 mx-auto max-w-lg text-sm text-titanium-400">
+                    {mode === 'chat'
+                      ? 'Vorhandenes Governance AI Gateway mit REA-Prüfpfad. Nicht freigegebene Werkzeuge bleiben gesperrt.'
+                      : 'Der Auftrag wird an den bestehenden App Builder übergeben. Seine Berechtigungen und Freigaben bleiben unverändert.'}
+                  </p>
+                </div>
+                {composer}
+                <WorkspaceToolGrid
+                  onChat={() => { setMode('chat'); textareaRef.current?.focus(); }}
+                  onBuild={() => { setMode('build'); textareaRef.current?.focus(); }}
+                />
+              </div>
+            ) : (
+              <ol className="space-y-6">
+                {turns.map((t) => (
+                  <li key={t.id} className={t.role === 'user' ? 'flex justify-end' : ''}>
+                    <div
+                      role={t.error ? 'alert' : undefined}
+                      className={
+                        t.role === 'user'
+                          ? 'max-w-[85%] border border-titanium-700 bg-obsidian-800 px-4 py-3 text-sm text-titanium-100 whitespace-pre-wrap'
+                          : t.error
+                            ? 'border border-rose-500/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200'
+                            : 'text-sm leading-7 text-titanium-200 whitespace-pre-wrap'
+                      }
+                    >
+                      {t.content}
+                      {t.role === 'assistant' && !t.error && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-[10px] text-titanium-500">
+                          <span>trace {short(t.traceId, 8)}</span>
+                          {t.model && <span>· {t.model}</span>}
+                          {typeof t.latencyMs === 'number' && <span>· {t.latencyMs} ms</span>}
+                          {t.attesting && <span className="border border-titanium-700 px-1.5">REA prüft …</span>}
+                          {t.receipt && (
+                            <span className={`border px-1.5 ${STATUS_CLASS[t.receipt.status]}`}>
+                              {REA_STATUS_LABEL[t.receipt.status]}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+                {sending && <li className="font-mono text-xs text-titanium-500">Gateway antwortet …</li>}
+                <div ref={bottomRef} />
+              </ol>
+            )}
+          </div>
+        </div>
+
+        {/* Nach dem ersten Turn bleibt die unveränderte Eingabe am unteren Rand. */}
+        {turns.length > 0 && composer}
       </main>
 
       {/* REA-Spalte */}

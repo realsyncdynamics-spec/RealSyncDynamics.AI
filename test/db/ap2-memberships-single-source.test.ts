@@ -23,6 +23,10 @@ const verify = readFileSync(
   resolve(root, 'supabase/verify/ap2_tenant_memberships_coverage.sql'),
   'utf8',
 );
+const repair = readFileSync(
+  resolve(root, 'supabase/migrations/20261120180000_ap2_membership_policy_column_guard.sql'),
+  'utf8',
+);
 
 const policies = [
   'api_calls tenant_member_read',
@@ -66,6 +70,16 @@ describe('AP2 Dateivertrag', () => {
     expect(draft).toContain('ap2.allow_decommission');
     expect(draft).toContain('DROP TABLE public.tenant_memberships');
     expect(migration).not.toContain('DROP TABLE public.tenant_memberships');
+  });
+
+  it('ersetzt die webhook-Policy nur, wenn die genannte Spalte existiert', () => {
+    expect(repair).toContain("column_name = 'webhook_id'");
+    expect(repair).toContain('FROM public.memberships m');
+    expect(repair).toContain("m.role = 'admin'");
+    expect(repair).not.toMatch(/DROP\s+TABLE/i);
+    expect(rollback).toContain("column_name = 'webhook_id'");
+    const restore = rollback.slice(rollback.indexOf('webhook_deliveries tenant_member_read'));
+    expect(restore.indexOf("column_name = 'webhook_id'")).toBeLessThan(restore.indexOf('DROP POLICY "webhook_deliveries tenant_member_read"'));
   });
 
   it('Pruef-SQL ist nur lesend', () => {

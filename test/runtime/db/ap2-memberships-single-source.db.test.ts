@@ -3,6 +3,11 @@
  * tenant_memberships bleibt bestehen, schreibt fuer anon/authenticated nicht
  * mehr, und der Rollback stellt Funktion, Policies und Grants wieder her.
  *
+ * webhook_deliveries hat seit 20260705200000 kein webhook_id und nicht die
+ * Policy "webhook_deliveries tenant_member_read". Die wird nur angelegt, wenn
+ * die Spalte existiert. Der Nachzug 20261120180000 haelt notify_quota_alert
+ * auf diesem Schema aufrufbar; Empfaenger bleiben memberships.admin.
+ *
  * Laeuft in der Testtransaktion (scripts/test-db). Fehlende Zieltabellen
  * werden dort als Mindestschema angelegt und mit der Transaktion verworfen.
  */
@@ -21,12 +26,28 @@ import {
 const d = requireDbOrFail('ap2-memberships') ? describe : describe.skip;
 const root = resolve(__dirname, '../../..');
 const forward = ['supabase/migrations', '20261120160200_ap2_memberships_single_source.sql'] as const;
+const repair = ['supabase/migrations', '20261120180000_ap2_membership_policy_column_guard.sql'] as const;
 const backward = ['supabase/rollback', '20261120160200_ap2_memberships_single_source.sql'] as const;
 
 type Outcome = 'allow' | 'deny';
 
 async function apply(ctx: DbCtx, dir: string, file: string): Promise<void> {
   await applyMigration(ctx, resolve(root, dir), file);
+}
+
+async function applyForward(ctx: DbCtx): Promise<void> {
+  await apply(ctx, ...forward);
+  await apply(ctx, ...repair);
+}
+
+async function insertApiKey(ctx: DbCtx, tenantId: string, name: string): Promise<string> {
+  const { rows } = await ctx.client.query<{ id: string }>(
+    `INSERT INTO public.api_keys (tenant_id, name, key_hash, key_prefix)
+     VALUES ($1, $2, md5(random()::text || $2), 'rs' || substr(md5(random()::text), 1, 10))
+     RETURNING id`,
+    [tenantId, name],
+  );
+  return rows[0]!.id;
 }
 
 async function asRole(
@@ -176,13 +197,13 @@ async function prepareTargets(ctx: DbCtx): Promise<void> {
     $stub$;
   `);
 
-  const legacy: Array<[string, string, string]> = [
+  const legacy: Array<[string, string, string] | [string, string, string, string[]]> = [
     ['api_calls', 'api_calls tenant_member_read', `CREATE POLICY "api_calls tenant_member_read" ON public.api_calls FOR SELECT USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = api_calls.tenant_id AND m.user_id = auth.uid()))`],
     ['webhook_endpoints', 'webhook_endpoints tenant_member_read', `CREATE POLICY "webhook_endpoints tenant_member_read" ON public.webhook_endpoints FOR SELECT USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()))`],
     ['webhook_endpoints', 'webhook_endpoints tenant_member_insert', `CREATE POLICY "webhook_endpoints tenant_member_insert" ON public.webhook_endpoints FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()))`],
     ['webhook_endpoints', 'webhook_endpoints tenant_member_update', `CREATE POLICY "webhook_endpoints tenant_member_update" ON public.webhook_endpoints FOR UPDATE USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid())) WITH CHECK (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()))`],
     ['webhook_endpoints', 'webhook_endpoints tenant_member_delete', `CREATE POLICY "webhook_endpoints tenant_member_delete" ON public.webhook_endpoints FOR DELETE USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()))`],
-    ['webhook_deliveries', 'webhook_deliveries tenant_member_read', `CREATE POLICY "webhook_deliveries tenant_member_read" ON public.webhook_deliveries FOR SELECT USING (EXISTS (SELECT 1 FROM public.webhook_endpoints we JOIN public.tenant_memberships m ON we.tenant_id = m.tenant_id WHERE we.id = webhook_deliveries.webhook_id AND m.user_id = auth.uid()))`],
+    ['webhook_deliveries', 'webhook_deliveries tenant_member_read', `CREATE POLICY "webhook_deliveries tenant_member_read" ON public.webhook_deliveries FOR SELECT USING (EXISTS (SELECT 1 FROM public.webhook_endpoints we JOIN public.tenant_memberships m ON we.tenant_id = m.tenant_id WHERE we.id = webhook_deliveries.webhook_id AND m.user_id = auth.uid()))`, ['webhook_deliveries.webhook_id', 'webhook_endpoints.id', 'webhook_endpoints.tenant_id', 'tenant_memberships.tenant_id', 'tenant_memberships.user_id']],
     ['quota_alerts', 'quota_alerts tenant_member_read', `CREATE POLICY "quota_alerts tenant_member_read" ON public.quota_alerts FOR SELECT USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = quota_alerts.tenant_id AND m.user_id = auth.uid()))`],
     ['email_notifications', 'email_notifications tenant_member_read', `CREATE POLICY "email_notifications tenant_member_read" ON public.email_notifications FOR SELECT USING (EXISTS (SELECT 1 FROM public.tenant_memberships m WHERE m.tenant_id = email_notifications.tenant_id AND m.user_id = auth.uid()))`],
     ['custom_controls', 'Users can read controls in their frameworks', `CREATE POLICY "Users can read controls in their frameworks" ON public.custom_controls FOR SELECT USING (framework_id IN (SELECT id FROM public.custom_frameworks WHERE tenant_id IN (SELECT tenant_id FROM public.tenant_memberships WHERE user_id = auth.uid())))`],
@@ -198,7 +219,20 @@ async function prepareTargets(ctx: DbCtx): Promise<void> {
   ];
 
   const quote = (value: string) => "'" + value.replaceAll("'", "''") + "'";
-  for (const [table, name, sql] of legacy) {
+  for (const entry of legacy) {
+    const [table, name, sql] = entry;
+    const columns = entry.length === 4 ? entry[3] : [];
+    const columnGuard = columns.map((qualified) => {
+      const dot = qualified.indexOf('.');
+      const rel = qualified.slice(0, dot);
+      const column = qualified.slice(dot + 1);
+      return `AND EXISTS (
+             SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = ${quote(rel)}
+                AND column_name = ${quote(column)}
+           )`;
+    }).join('\n');
     await ctx.client.query(`
       DO $legacy$
       BEGIN
@@ -207,7 +241,9 @@ async function prepareTargets(ctx: DbCtx): Promise<void> {
              SELECT 1 FROM pg_policy
               WHERE polrelid = ${quote(`public.${table}`)}::regclass
                 AND polname = ${quote(name)}
-           ) THEN
+           )
+           ${columnGuard}
+        THEN
           EXECUTE ${quote(sql)};
         END IF;
       END
@@ -279,10 +315,11 @@ d('AP2 memberships als einzige Quelle', () => {
       [own.tenantId, legacyUserId],
     );
 
+    const apiKeyId = await insertApiKey(ctx!, own.tenantId, 'ap2-own');
     await ctx!.client.query(
-      `INSERT INTO public.api_calls (tenant_id, endpoint, method, request_path)
-       VALUES ($1, '/x', 'GET', '/x')`,
-      [own.tenantId],
+      `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path)
+       VALUES ($1, $2, '/x', 'GET', '/x')`,
+      [own.tenantId, apiKeyId],
     );
     const { rows: hook } = await ctx!.client.query<{ id: string }>(
       `INSERT INTO public.webhook_endpoints (tenant_id, url, secret_key, events)
@@ -290,11 +327,22 @@ d('AP2 memberships als einzige Quelle', () => {
        RETURNING id`,
       [own.tenantId],
     );
-    await ctx!.client.query(
-      `INSERT INTO public.webhook_deliveries (webhook_id, event_type, event_data)
-       VALUES ($1, 'warning_80', '{}'::jsonb)`,
-      [hook[0]!.id],
+    const { rows: deliveryColumn } = await ctx!.client.query<{ ok: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'webhook_deliveries'
+            AND column_name = 'webhook_id'
+       ) AS ok`,
     );
+    const deliveriesUseWebhookId = deliveryColumn[0]!.ok;
+    if (deliveriesUseWebhookId) {
+      await ctx!.client.query(
+        `INSERT INTO public.webhook_deliveries (webhook_id, event_type, event_data)
+         VALUES ($1, 'warning_80', '{}'::jsonb)`,
+        [hook[0]!.id],
+      );
+    }
     await ctx!.client.query(
       `INSERT INTO public.quota_alerts (tenant_id, alert_type, api_calls_count, quota_limit)
        VALUES ($1, 'warning_80', 1, 10)`,
@@ -302,7 +350,7 @@ d('AP2 memberships als einzige Quelle', () => {
     );
     await ctx!.client.query(
       `INSERT INTO public.email_notifications (tenant_id, recipient_email, event_type, subject, body)
-       VALUES ($1, 'a@example.test', 'warning_80', 's', 'b')`,
+       VALUES ($1, 'a@example.test', 'quota_warning', 's', 'b')`,
       [own.tenantId],
     );
     await ctx!.client.query(
@@ -318,16 +366,18 @@ d('AP2 memberships als einzige Quelle', () => {
        VALUES ('cfm-own', 'cf-own', 'dsgvo')`,
     );
     await ctx!.client.query(
-      `INSERT INTO public.api_rate_limit_configs (tenant_id) VALUES ($1)`,
-      [own.tenantId],
+      `INSERT INTO public.api_rate_limit_configs (tenant_id, api_key_id) VALUES ($1, $2)`,
+      [own.tenantId, apiKeyId],
     );
     await ctx!.client.query(
-      `INSERT INTO public.api_rate_limit_violations (tenant_id) VALUES ($1)`,
-      [own.tenantId],
+      `INSERT INTO public.api_rate_limit_violations
+         (tenant_id, api_key_id, violation_type, requests_count, limit_value)
+       VALUES ($1, $2, 'per_minute', 11, 10)`,
+      [own.tenantId, apiKeyId],
     );
     await insertEvent(ctx!, own.tenantId);
 
-    await apply(ctx!, ...forward);
+    await applyForward(ctx!);
     await ctx!.client.query(`DELETE FROM public.tenant_memberships WHERE user_id = $1`, [own.userId]);
     await ctx!.client.query(`DELETE FROM public.memberships WHERE user_id = $1`, [legacyUserId]);
 
@@ -336,7 +386,9 @@ d('AP2 memberships als einzige Quelle', () => {
       ['quota_alerts', `SELECT 1 FROM public.quota_alerts WHERE tenant_id = $1`],
       ['email_notifications', `SELECT 1 FROM public.email_notifications WHERE tenant_id = $1`],
       ['webhook_endpoints', `SELECT 1 FROM public.webhook_endpoints WHERE tenant_id = $1`],
-      ['webhook_deliveries', `SELECT 1 FROM public.webhook_deliveries WHERE webhook_id = $1`],
+      ...(deliveriesUseWebhookId
+        ? [['webhook_deliveries', `SELECT 1 FROM public.webhook_deliveries WHERE webhook_id = $1`] as [string, string]]
+        : []),
       ['custom_controls', `SELECT 1 FROM public.custom_controls WHERE id = 'cc-own'`],
       ['custom_framework_mappings', `SELECT 1 FROM public.custom_framework_mappings WHERE id = 'cfm-own'`],
       ['api_rate_limit_configs', `SELECT 1 FROM public.api_rate_limit_configs WHERE tenant_id = $1`],
@@ -389,11 +441,39 @@ d('AP2 memberships als einzige Quelle', () => {
     expect(updated).toBe('allow');
     expect(deleted).toBe('allow');
 
-    const sources = await policySources(ctx!);
-    expect(sources.length).toBeGreaterThanOrEqual(18);
-    for (const source of sources) {
+    const switchedNames = [
+      'api_calls tenant_member_read',
+      'webhook_endpoints tenant_member_read',
+      'webhook_endpoints tenant_member_insert',
+      'webhook_endpoints tenant_member_update',
+      'webhook_endpoints tenant_member_delete',
+      ...(deliveriesUseWebhookId ? ['webhook_deliveries tenant_member_read'] : []),
+      'quota_alerts tenant_member_read',
+      'email_notifications tenant_member_read',
+      'Users can read controls in their frameworks',
+      'Users can create controls in their frameworks',
+      'Users can update controls in their frameworks',
+      'Users can delete controls in their frameworks',
+      'Users can read mappings in their frameworks',
+      'Users can create mappings in their frameworks',
+      'Users can delete mappings in their frameworks',
+      "Users can view their tenant's rate limit configs",
+      "Users can update their tenant's rate limit configs",
+      "Users can view their tenant's rate limit violations",
+    ];
+    const switched = (await policySources(ctx!)).filter((source) => switchedNames.includes(source.name));
+    expect(switched.map((source) => source.name).sort()).toEqual([...switchedNames].sort());
+    for (const source of switched) {
       expect(source.src, source.name).not.toMatch(/tenant_memberships/i);
       expect(source.src, source.name).toMatch(/is_tenant_member/i);
+    }
+    if (!deliveriesUseWebhookId) {
+      const obsolete = await ctx!.client.query(
+        `SELECT 1 FROM pg_policy
+          WHERE polrelid = 'public.webhook_deliveries'::regclass
+            AND polname = 'webhook_deliveries tenant_member_read'`,
+      );
+      expect(obsolete.rowCount).toBe(0);
     }
 
     const fn = await ctx!.client.query<{ prosrc: string }>(
@@ -441,14 +521,24 @@ d('AP2 memberships als einzige Quelle', () => {
       const onlyMemberships = await asRole(ctx!, 'authenticated', own.userId, sql, param);
       const onlyLegacy = await asRole(ctx!, 'authenticated', legacyUserId, sql, param);
       const stranger = await asRole(ctx!, 'authenticated', foreign.userId, sql, param);
-      expect(onlyMemberships, `${label} Rollback, nur memberships`).toBe('deny');
+      // Zweite Policies, die AP2 nicht anfasst und die schon memberships lesen:
+      // api_calls member_read_canonical, runtime_events_tenant_read.
+      const membershipsReadRemains = label === 'api_calls' || label === 'runtime_events';
+      expect(onlyMemberships, `${label} Rollback, nur memberships`).toBe(membershipsReadRemains ? 'allow' : 'deny');
       expect(stranger, `${label} Rollback, fremder Mandant`).toBe('deny');
-      if (label !== 'custom_framework_mappings') {
+      // mappings: Unterabfrage auf custom_frameworks unterliegt dort weiter
+      // is_tenant_member. Rate-Limits: Unterabfrage auf tenants sieht die Zeile
+      // fuer einen Nutzer ohne memberships nicht. Die Policy-Texte stellen die
+      // Altquelle trotzdem her (Assertion darunter).
+      if (label !== 'custom_framework_mappings'
+        && label !== 'api_rate_limit_configs'
+        && label !== 'api_rate_limit_violations') {
         expect(onlyLegacy, `${label} Rollback, nur tenant_memberships`).toBe('allow');
       }
     }
 
-    const restored = await policySources(ctx!);
+    const restored = (await policySources(ctx!)).filter((source) => switchedNames.includes(source.name));
+    expect(restored.map((source) => source.name).sort()).toEqual([...switchedNames].sort());
     expect(restored.every((source) => /tenant_memberships/i.test(source.src))).toBe(true);
     const fnBack = await ctx!.client.query<{ prosrc: string }>(
       `SELECT prosrc FROM pg_proc WHERE proname = 'has_tenant_membership'`,
@@ -459,7 +549,7 @@ d('AP2 memberships als einzige Quelle', () => {
       `INSERT INTO public.memberships (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`,
       [own.tenantId, legacyUserId],
     );
-    await apply(ctx!, ...forward);
+    await applyForward(ctx!);
     const again = await asRole(
       ctx!,
       'authenticated',
@@ -472,22 +562,24 @@ d('AP2 memberships als einzige Quelle', () => {
 
   it('gewahrt jede erlaubte memberships-Rolle und verweigert den fremden Mandanten', async () => {
     await prepareTargets(ctx!);
-    await apply(ctx!, ...forward);
+    await applyForward(ctx!);
     const roles = await membershipRoles(ctx!);
     expect(roles.length).toBeGreaterThan(0);
     const stranger = await createTenantWithMember(ctx!);
+    const strangerKey = await insertApiKey(ctx!, stranger.tenantId, 'ap2-stranger');
     await ctx!.client.query(
-      `INSERT INTO public.api_calls (tenant_id, endpoint, method, request_path) VALUES ($1, '/r', 'GET', '/r')`,
-      [stranger.tenantId],
+      `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path) VALUES ($1, $2, '/r', 'GET', '/r')`,
+      [stranger.tenantId, strangerKey],
     );
 
     for (const role of roles) {
       const member = await createTenantWithMember(ctx!);
       await ctx!.client.query(`UPDATE public.memberships SET role = $2 WHERE user_id = $1`, [member.userId, role]);
       await ctx!.client.query(`DELETE FROM public.tenant_memberships WHERE user_id = $1`, [member.userId]);
+      const memberKey = await insertApiKey(ctx!, member.tenantId, `ap2-${role}`);
       await ctx!.client.query(
-        `INSERT INTO public.api_calls (tenant_id, endpoint, method, request_path) VALUES ($1, '/r', 'GET', '/r')`,
-        [member.tenantId],
+        `INSERT INTO public.api_calls (tenant_id, api_key_id, endpoint, method, request_path) VALUES ($1, $2, '/r', 'GET', '/r')`,
+        [member.tenantId, memberKey],
       );
       const own = await asRole(
         ctx!,
@@ -513,7 +605,7 @@ d('AP2 memberships als einzige Quelle', () => {
     const tenant = await createTenantWithMember(ctx!);
     await ctx!.client.query(`UPDATE public.memberships SET role = 'admin' WHERE user_id = $1`, [tenant.userId]);
     await ctx!.client.query(`UPDATE auth.users SET email = 'kanonisch@example.test' WHERE id = $1`, [tenant.userId]);
-    await apply(ctx!, ...forward);
+    await applyForward(ctx!);
     await ctx!.client.query(`DELETE FROM public.tenant_memberships WHERE user_id = $1`, [tenant.userId]);
 
     const { rows: legacyUser } = await ctx!.client.query<{ id: string }>(

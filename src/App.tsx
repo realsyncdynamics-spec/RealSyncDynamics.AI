@@ -210,6 +210,8 @@ const DashboardRouter = lazy(() => import('./features/governance/dashboard/Dashb
 const SampleWorkspacePage = lazy(() => import('./features/governance/dashboard/SampleWorkspacePage').then((m) => ({ default: m.SampleWorkspacePage })));
 // Voice dashboard (PR 5/6) — read-only sessions behind AppGate + shell.
 const VoiceRouter = lazy(() => import('./features/governance/voice/VoiceRouter').then((m) => ({ default: m.VoiceRouter })));
+// Photo-to-video: local-only draft within the existing tenant-aware workspace.
+const PhotoVideoPreview = lazy(() => import('./features/creative-studio/digital-twin/PhotoVideoPreview'));
 // Governance AI (/app/assistant) steht hinter GOVERNANCE_AI (src/config/featureFlags.ts,
 // Standard aus). GovernanceAiRoute zeigt dann nur einen Hinweis und lädt den Workspace nicht.
 const GovernanceAiRoute = lazy(() => import('./features/governance/dashboard/GovernanceAiRoute').then((m) => ({ default: m.GovernanceAiRoute })));
@@ -851,6 +853,7 @@ function RoutesWithTracking() {
       {/* WP-4: Dashboard mit erfundenen Beispieldaten — liest und schreibt nichts. */}
       <Route path="/app/beispiel" element={<AppGate><GovernanceBrowserShell><SampleWorkspacePage /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/creative-studio/digital-twin" element={<AppGate><GovernanceBrowserShell><PhotoVideoPreview /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/voice/:sessionId" element={<AppGate><GovernanceBrowserShell><VoiceRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/assistant" element={<AppGate><GovernanceBrowserShell><GovernanceAiRoute /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit" element={<Navigate to="/app/dashboard" replace />} />

@@ -8,7 +8,7 @@
  */
 export type WorkspaceToolState = 'implementiert' | 'zu_pruefen' | 'geplant';
 export type WorkspaceToolAction = 'chat' | 'build' | 'route' | 'none';
-export type WorkspaceToolGroup = 'ki-werkzeuge' | 'realsync-module';
+export type WorkspaceToolGroup = 'direktzugriff' | 'ki-werkzeuge' | 'realsync-module';
 export type WorkspaceToolId =
   | 'chat' | 'documents' | 'slides' | 'tables' | 'image' | 'video'
   | 'translation' | 'agents' | 'app-builder' | 'voice'
@@ -71,14 +71,14 @@ export const WORKSPACE_TOOLS: readonly WorkspaceToolDefinition[] = [
     group: 'realsync-module', state: 'zu_pruefen', action: 'build',
   },
   {
-    id: 'voice', label: 'Voice-Agent',
-    description: 'Vorhandene Voice-Ansicht öffnen; Live-Audiobetrieb nicht bestätigt.',
-    group: 'realsync-module', state: 'zu_pruefen', action: 'route', href: '/app/voice',
+    id: 'voice', label: 'Voice-Bot',
+    description: 'Persönlicher Telefon- und Sprachassistent. Vorhandenes Voice-Modul; Live-Audio nicht abgenommen.',
+    group: 'direktzugriff', state: 'zu_pruefen', action: 'route', href: '/app/voice',
   },
   {
     id: 'governance', label: 'Governance OS',
-    description: 'Bestehendes KI-Systemregister öffnen.',
-    group: 'realsync-module', state: 'implementiert', action: 'route', href: '/app/ai-systems',
+    description: 'Zentrale Governance-Control-Plane mit Risiko-, Audit- und Evidence-Einstiegen.',
+    group: 'direktzugriff', state: 'implementiert', action: 'route', href: '/app/dashboard',
   },
   {
     id: 'evidence', label: 'Evidence',

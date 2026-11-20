@@ -187,7 +187,7 @@ export function groupByCause(broken) {
 export const SQL_ANTWORTEN = `
 WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
 dispatch_laeufe AS (
-  SELECT q.request_id
+  SELECT q.request_id, q.function_name
   FROM public.cron_dispatch_requests q
   CROSS JOIN fenster f
   WHERE q.dispatched_at >= f.ab
@@ -195,21 +195,22 @@ dispatch_laeufe AS (
 ),
 antworten AS (
   SELECT coalesce(r.status_code::text, '(keine Antwort)') AS status,
+         coalesce(l.function_name, '') AS funktion,
          count(*)::int AS anzahl,
          min(r.created)::text AS von,
          max(r.created)::text AS bis,
          left(coalesce(r.content, ''), 200) AS beispiel
   FROM dispatch_laeufe l
   JOIN net._http_response r ON r.id = l.request_id
-  GROUP BY 1, left(coalesce(r.content, ''), 200)
+  GROUP BY 1, 2, left(coalesce(r.content, ''), 200)
 ),
 laeufe AS (
   SELECT count(*)::int AS anzahl
   FROM dispatch_laeufe
 )
-SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
+SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel, a.funktion FROM antworten a
 UNION ALL
-SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`
+SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL, NULL FROM laeufe l;`
 
 /**
  * Groesster erwarteter Abstand zwischen zwei Laeufen, in Minuten.
@@ -296,9 +297,26 @@ export function evaluateAntworten(zeilen) {
   };
 }
 
-export function antwortUrsache(beispiel) {
+function cronEnvName(wert) {
+  const m = /\b(CRON_[A-Z0-9_]*_KEY)\b/.exec(typeof wert === 'string' ? wert : '');
+  return m ? m[1] : null;
+}
+
+/**
+ * Ursache einer Nicht-2xx-Antwort.
+ *
+ * `funktion` kommt aus `cron_dispatch_requests.function_name`. Fehlendes
+ * Function Secret (500 CRON_KEY_MISSING) bleibt eine andere Ursache als ein
+ * falsches (401 "cron only") — aber zwei fehlende Secrets sind zwei Befunde.
+ * Der konkrete Name (`CRON_AUDIT_MONITOR_KEY`) steht in der Function-Antwort
+ * und darf nicht auf `CRON_*_KEY` zusammenfallen, sonst sieht der Betreiber
+ * nicht, welchen Eintrag er setzen muss.
+ */
+export function antwortUrsache(beispiel, funktion) {
   const roh = String(beispiel ?? '').replace(/\s+/g, ' ').trim();
-  if (!roh) return '(ohne Antworttext)';
+  const fn = String(funktion ?? '').trim();
+  const mitFunktion = (text) => (fn ? `${fn}: ${text}` : text);
+  if (!roh) return mitFunktion('(ohne Antworttext)');
 
   let parsed = null;
   try {
@@ -307,11 +325,14 @@ export function antwortUrsache(beispiel) {
     // kein JSON, weiter unten als Rohtext behandeln
   }
 
-  // Fehlendes Function Secret (500 CRON_KEY_MISSING) ist eine andere Ursache
-  // als ein falsches (401 "cron only"): Secret setzen statt Wert abgleichen.
   const code = parsed?.error?.code ?? parsed?.code;
+  const message = parsed?.error?.message ?? parsed?.message;
   if (code === 'CRON_KEY_MISSING' || (!parsed && roh.includes('CRON_KEY_MISSING'))) {
-    return 'Function Secret fehlt (CRON_*_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md';
+    const env = cronEnvName(message) || cronEnvName(roh);
+    const detail = env
+      ? `Function Secret fehlt (${env} nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md`
+      : 'Function Secret fehlt (CRON_*_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md';
+    return mitFunktion(detail);
   }
 
   const enthaeltCronOnly = (wert) => typeof wert === 'string' && wert.toLowerCase().includes('cron only');
@@ -322,19 +343,18 @@ export function antwortUrsache(beispiel) {
     enthaeltCronOnly(parsed?.message);
 
   if (cronOnlyText) {
-    return 'Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md';
+    return mitFunktion('Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md');
   }
 
-  const message = parsed?.error?.message ?? parsed?.message;
-  if (code && message) return `${code}: ${message}`;
-  if (message) return String(message);
-  return roh.slice(0, 160);
+  if (code && message) return mitFunktion(`${code}: ${message}`);
+  if (message) return mitFunktion(String(message));
+  return mitFunktion(roh.slice(0, 160));
 }
 
 export function groupAntwortenByCause(schlecht) {
   const nach = new Map();
   for (const a of schlecht) {
-    const ursache = antwortUrsache(a.beispiel);
+    const ursache = antwortUrsache(a.beispiel, a.funktion);
     nach.set(ursache, (nach.get(ursache) ?? 0) + (a.anzahl ?? 0));
   }
   return [...nach.entries()]
@@ -374,7 +394,7 @@ export function befundZeilen({ broken, veraltet, antwort }) {
   if (antwort) {
     const nach = new Map();
     for (const a of antwort.schlecht) {
-      const schluessel = `C · ${beschreibeStatus(a.status)} · ${antwortUrsache(a.beispiel)}`;
+      const schluessel = `C · ${beschreibeStatus(a.status)} · ${antwortUrsache(a.beispiel, a.funktion)}`;
       nach.set(schluessel, (nach.get(schluessel) ?? 0) + (a.anzahl ?? 0));
     }
     for (const [schluessel, anzahl] of nach) zeilen.push({ schluessel, anzahl });
@@ -508,8 +528,9 @@ if (direkt) {
       ` (${antwort.summeGut} erfolgreich, ${antwort.dispatchLaeufe} Dispatch-Laeufe):\n`,
     );
     for (const a of antwort.schlecht) {
-      console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}   ${a.von} … ${a.bis}`);
-      console.error(`      ${antwortUrsache(a.beispiel)}\n`);
+      const funktion = a.funktion ? `  ${a.funktion}` : '';
+      console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}${funktion}   ${a.von} … ${a.bis}`);
+      console.error(`      ${antwortUrsache(a.beispiel, a.funktion)}\n`);
     }
     const gruppiert = groupAntwortenByCause(antwort.schlecht);
     console.error('Nach Ursache gruppiert:\n');

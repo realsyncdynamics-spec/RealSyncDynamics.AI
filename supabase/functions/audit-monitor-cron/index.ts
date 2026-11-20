@@ -1,13 +1,15 @@
 /**
  * audit-monitor-cron — täglicher Re-Scan der monitored_domains.
  *
- * Auth: Bearer == CRON_AUDIT_MONITOR_KEY (Function Secret). pg_cron schickt
- * ihn über Vault `cron_audit_monitor_key` (dispatch_cron_function, Job
- * `audit-monitor-daily`, 04:00 UTC, Migration 20261009230000). Fail-closed:
- * leerer Key → 500 (keine Arbeit), falscher/fehlender Bearer → 401
- * "cron only". Der inbound Authorization wird nie mit
- * SUPABASE_SERVICE_ROLE_KEY verglichen; service_role dient nur dem
- * DB-Zugriff nach der Prüfung.
+ * Auth: Bearer == CRON_AUDIT_MONITOR_KEY. pg_cron schickt denselben Wert
+ * über Vault `cron_audit_monitor_key` (dispatch_cron_function, Job
+ * `audit-monitor-daily`, 04:00 UTC, Migration 20261009230000).
+ * Auflösung: Function Secret, sonst Vault (`resolveCronKey`). Fail-closed:
+ * beide leer → 500 CRON_KEY_MISSING (keine Arbeit, strukturiertes Log ohne
+ * Key-Material), falscher/fehlender Bearer → 401 "cron only". Der inbound
+ * Authorization wird nie mit SUPABASE_SERVICE_ROLE_KEY verglichen;
+ * service_role dient nur dem DB-Zugriff nach der Prüfung und dem
+ * Vault-Fallback.
  *
  *   SELECT cron.schedule('audit-monitor-daily', '0 4 * * *',
  *     $$ SELECT public.dispatch_cron_function('audit-monitor-cron',
@@ -24,11 +26,20 @@
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 import { jsonError } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
 import { handleAuditMonitor, type Alerter, type Scanner } from './handler.ts';
 import { createSupabaseRepo } from './repo.ts';
-import { checkCronAuth, normalizeCookieScan, planViewFrom } from './logic.ts';
+import {
+  CRON_ENV,
+  CRON_VAULT,
+  checkCronAuth,
+  cronKeyMissingEvent,
+  cronKeyMissingMessage,
+  normalizeCookieScan,
+  planViewFrom,
+} from './logic.ts';
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -39,9 +50,17 @@ const PLAN_KEYS = ['monitoring.daily', 'monitoring.monthly', 'monitoring.drift',
 
 Deno.serve(async (req) => {
   try {
-    const CRON_KEY = Deno.env.get('CRON_AUDIT_MONITOR_KEY') ?? '';
+    // OPTIONS bleibt ohne Vault-Roundtrip. Ein leeres Function Secret ist kein
+    // Ausfall, solange der Vault-Eintrag existiert, den pg_cron schon schickt.
+    const CRON_KEY = req.method === 'OPTIONS' ? '' : await resolveCronKey(CRON_ENV, CRON_VAULT);
     const pre = checkCronAuth(CRON_KEY, req.headers.get('Authorization'));
-    if (!pre.ok && req.method !== 'OPTIONS') return jsonError(pre.status, pre.code, pre.message);
+    if (!pre.ok && req.method !== 'OPTIONS') {
+      if (pre.code === 'CRON_KEY_MISSING') {
+        console.error(JSON.stringify(cronKeyMissingEvent()));
+        return jsonError(pre.status, pre.code, cronKeyMissingMessage());
+      }
+      return jsonError(pre.status, pre.code, pre.message);
+    }
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';

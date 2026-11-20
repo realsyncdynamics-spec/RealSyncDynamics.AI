@@ -15,6 +15,25 @@ export const EVIDENCE_TITLE = 'Domain-Monitoring Re-Scan';
 export const CRON_ENV = 'CRON_AUDIT_MONITOR_KEY';
 export const CRON_VAULT = 'cron_audit_monitor_key';
 
+/** Structured log when function secret and vault fallback are both empty. Never includes key material. */
+export function cronKeyMissingEvent() {
+  return {
+    level: 'error' as const,
+    scope: 'audit-monitor-cron',
+    code: 'CRON_KEY_MISSING' as const,
+    env: CRON_ENV,
+    vault: CRON_VAULT,
+    message:
+      `${CRON_ENV} is empty and vault secret ${CRON_VAULT} did not resolve. ` +
+      'Set both to the same value. See docs/runbooks/cron-vault-secrets.md',
+  };
+}
+
+/** HTTP body for the same fail-closed path. Names env and vault, never the value. */
+export function cronKeyMissingMessage(): string {
+  return `${CRON_ENV} not configured (function secret empty, vault ${CRON_VAULT} unresolved)`;
+}
+
 /** Ab dieser Score-Änderung (Punkte) gilt eine Score-Bewegung als Delta. */
 export const SCORE_DELTA_THRESHOLD = 10;
 /**

@@ -17,6 +17,7 @@
  */
 import { checkoutHrefForPlan, planById } from '@/shared/pricing';
 import type { ProductPage } from './productLandingShared';
+import { EXTENDED_PRODUCT_CONTENT } from './productExtensions';
 
 const GOVERNANCE_LAUNCH = planById('governance_launch');
 const GOVERNANCE_LAUNCH_CHECKOUT = GOVERNANCE_LAUNCH
@@ -66,6 +67,8 @@ export interface ProductLandingContent {
   cases: ReadonlyArray<{ trade: string; situation: string; result: string }>;
   startSteps: ReadonlyArray<{ title: string; body: string }>;
   pricingTitle: string;
+  /** Geplante Module zeigen keine allgemeinen Abos als kaufbare Einzelprodukte. */
+  pricingMode?: 'roadmap';
   /** Ehrliche Grenzen, direkt unter den Preisen. */
   limits: string;
   cta: { title: string; text: string; primary: ProductLink; secondary: ProductLink };
@@ -437,4 +440,5 @@ export const PRODUCT_CONTENT: Record<ProductLandingKey, ProductLandingContent> =
   'app-builder': APP_BUILDER,
   'governance-os': GOVERNANCE_OS,
   'claude-code-optimizer': OPTIMIZER,
+  ...EXTENDED_PRODUCT_CONTENT,
 };

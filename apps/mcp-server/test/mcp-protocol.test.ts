@@ -37,9 +37,18 @@ function ctx(scopes: string[], invoke?: Ctx['invoke']): Ctx {
   };
 }
 
+/** Felder, die das SDK für `initialize` verlangt. */
+function initParams(protocolVersion: string) {
+  return {
+    protocolVersion,
+    capabilities: {},
+    clientInfo: { name: 'test', version: '0' },
+  };
+}
+
 test('initialize bestätigt eine unterstützte Protokollfassung des Clients', async () => {
   const res = await handleMessage(
-    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26' } },
+    { jsonrpc: '2.0', id: 1, method: 'initialize', params: initParams('2025-03-26') },
     ctx(['evidence.read']),
   );
   const result = res?.result as { protocolVersion: string; capabilities: Record<string, unknown> };
@@ -50,7 +59,7 @@ test('initialize bestätigt eine unterstützte Protokollfassung des Clients', as
 
 test('initialize fällt bei unbekannter Fassung auf die eigene zurück', async () => {
   const res = await handleMessage(
-    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '1999-01-01' } },
+    { jsonrpc: '2.0', id: 1, method: 'initialize', params: initParams('1999-01-01') },
     ctx(['evidence.read']),
   );
   assert.equal((res?.result as { protocolVersion: string }).protocolVersion, PROTOCOL_VERSION);

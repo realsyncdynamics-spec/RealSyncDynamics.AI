@@ -8,12 +8,13 @@
  * Compliance-Produkt eine falsche Auskunft.
  */
 
-import type { McpToolDefinition, McpToolResult } from './protocol.js';
+import type { McpToolDefinition, McpToolResult, ToolInvoker } from './protocol.js';
 import {
   listEvidence,
   getEvidence,
   verifyHashChain,
   searchEvidenceByControl,
+  type EvidenceDb,
 } from '../tools/evidence.js';
 import { getGovernanceStatus, listControls, checkComplianceStatus } from '../tools/governance.js';
 
@@ -131,22 +132,40 @@ function requireString(args: Record<string, unknown>, key: string): string {
   return v;
 }
 
+/**
+ * Bindet die Werkzeuge an den Tenant des authentifizierten Keys.
+ *
+ * `tenant_id` im Argumentobjekt wird nicht gelesen. Der Mandant kommt nur
+ * aus dem Auth-Kontext, nie aus dem, was das Modell mitschickt.
+ */
+export function bindTenantTools(tenantId: string, db?: EvidenceDb): ToolInvoker {
+  return (name, args) => invokeTool(tenantId, name, args, db);
+}
+
 /** Führt ein Werkzeug für den angegebenen Tenant aus. */
 export async function invokeTool(
   tenantId: string,
   name: string,
   args: Record<string, unknown>,
+  db?: EvidenceDb,
 ): Promise<McpToolResult> {
+  if (typeof tenantId !== 'string' || tenantId.trim() === '') {
+    return {
+      content: [{ type: 'text', text: 'Tenant-Kontext fehlt — Aufruf abgelehnt.' }],
+      isError: true,
+    };
+  }
+
   switch (name) {
     case 'evidence_list': {
       const subjectRef = typeof args.subject_ref === 'string' ? args.subject_ref : undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
-      const data = await listEvidence(tenantId, subjectRef, limit);
+      const data = await listEvidence(tenantId, subjectRef, limit, db);
       return asText({ count: data.length, evidence: data });
     }
 
     case 'evidence_get': {
-      const found = await getEvidence(tenantId, requireString(args, 'id'));
+      const found = await getEvidence(tenantId, requireString(args, 'id'), db);
       if (!found) {
         return {
           content: [{ type: 'text', text: 'Kein Snapshot mit dieser ID in diesem Tenant.' }],
@@ -157,10 +176,10 @@ export async function invokeTool(
     }
 
     case 'evidence_verify_chain':
-      return asText(await verifyHashChain(tenantId, requireString(args, 'id')));
+      return asText(await verifyHashChain(tenantId, requireString(args, 'id'), db));
 
     case 'evidence_search_by_control': {
-      const data = await searchEvidenceByControl(tenantId, requireString(args, 'control_id'));
+      const data = await searchEvidenceByControl(tenantId, requireString(args, 'control_id'), db);
       return asText({ count: data.length, evidence: data });
     }
 

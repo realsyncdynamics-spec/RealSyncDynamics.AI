@@ -12,13 +12,8 @@ import {
   searchEvidenceByControl,
 } from './tools/evidence.js';
 import { getGovernanceStatus, listControls, checkComplianceStatus } from './tools/governance.js';
-import {
-  handleMessage,
-  isJsonRpcRequest,
-  rpcError,
-  RpcCode,
-} from './mcp/protocol.js';
-import { MCP_TOOLS, invokeTool } from './mcp/tools.js';
+import { dispatchMcpRequest, rpcError, RpcCode } from './mcp/protocol.js';
+import { MCP_TOOLS, bindTenantTools } from './mcp/tools.js';
 
 /** Wird im MCP-Handshake als serverInfo.version gemeldet. */
 const SERVER_VERSION = '0.1.0';
@@ -44,6 +39,10 @@ const RATE_LIMIT_PER_IP = parseInt(process.env.MCP_RATE_LIMIT_PER_MINUTE || '120
  * einzigen Anfrage tragen.
  */
 const MAX_BATCH_SIZE = parseInt(process.env.MCP_MAX_BATCH_SIZE || '20', 10);
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 declare global {
   namespace FastifyInstance {
@@ -185,8 +184,10 @@ async function start() {
 
   // ─── MCP-Protokoll ────────────────────────────────────────
   //
-  // JSON-RPC 2.0 über POST. Auth, Scopes und Kontingent laufen über dieselben
-  // Hooks wie die HTTP-Routen — der Transport ändert nichts an den Regeln.
+  // JSON-RPC über den offiziellen Streamable-HTTP-Transport (JSON, ohne
+  // Sitzung). Auth, Scopes und Kontingent laufen über dieselben Hooks wie
+  // die HTTP-Routen — der Transport ändert nichts an den Regeln. Die Antwort
+  // geht durch Fastify zurück, damit der Prüfpfad im onResponse-Hook greift.
   fastify.post('/mcp', async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const body = request.body;
@@ -201,6 +202,7 @@ async function start() {
     // HTTP-Anfragen, ein Stapel trüge aber beliebig viele Werkzeugaufrufe in
     // einer einzigen. Abgewiesen wird der ganze Stapel, nicht der Überhang —
     // eine halb ausgeführte Anfrage wäre für den Aufrufer nicht zu deuten.
+    // Das SDK lässt bis zu 100 Nachrichten zu; diese Schranke bleibt enger.
     if (messages.length > MAX_BATCH_SIZE) {
       return reply
         .code(413)
@@ -213,31 +215,28 @@ async function start() {
         );
     }
 
-    const ctx = {
-      tools: MCP_TOOLS,
-      invoke: (name: string, args: Record<string, unknown>) =>
-        invokeTool(auth.tenantId, name, args),
-      scopes: auth.scopes,
-      serverName: 'realsync-mcp-governance',
-      serverVersion: SERVER_VERSION,
-    };
-
-    const responses: unknown[] = [];
-    for (const message of messages) {
-      if (!isJsonRpcRequest(message)) {
-        responses.push(rpcError(null, RpcCode.INVALID_REQUEST, 'Keine gültige JSON-RPC-Nachricht'));
-        continue;
-      }
-      const answer = await handleMessage(message, ctx);
-      if (answer) responses.push(answer);
-    }
+    const outcome = await dispatchMcpRequest(
+      body,
+      {
+        tools: MCP_TOOLS,
+        invoke: bindTenantTools(auth.tenantId),
+        scopes: auth.scopes,
+        serverName: 'realsync-mcp-governance',
+        serverVersion: SERVER_VERSION,
+      },
+      {
+        accept: headerValue(request.headers.accept),
+        contentType: headerValue(request.headers['content-type']),
+        protocolVersion: headerValue(request.headers['mcp-protocol-version']),
+      },
+    );
 
     // Bestand der Stapel nur aus Benachrichtigungen, gibt es nichts zu
     // antworten — 202 statt eines leeren Rumpfes.
-    if (responses.length === 0) {
+    if (outcome.status === 202) {
       return reply.code(202).send();
     }
-    return Array.isArray(body) ? responses : responses[0];
+    return reply.code(outcome.status).send(outcome.body ?? { error: 'Leere Antwort' });
   });
 
   // ─── Evidence API ─────────────────────────────────────────

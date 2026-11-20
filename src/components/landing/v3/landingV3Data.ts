@@ -101,8 +101,8 @@ export const PRODUCTS: readonly V3Product[] = [
     body: 'Geplanter Entwicklungsablauf. Die zugehörige Agent-OS-Teilkomponente ist Preview; kein autonomes Live-Deployment.',
     flow: 'Spezifikation → Branch → Tests → Freigabe',
     href: `/software-factory?source=${SOURCE}`,
-    registryId: 'agent-os-product-evolution',
-    stageCaption: 'Software Factory · Entwicklungsentwurf',
+    registryId: 'software-factory-product',
+    stageCaption: 'Software Factory · In Vorbereitung',
   },
   {
     key: 'automation-os',

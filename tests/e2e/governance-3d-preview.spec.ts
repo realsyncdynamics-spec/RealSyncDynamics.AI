@@ -61,7 +61,9 @@ test('Governance preview retains real actions when WebGL is unavailable', async 
     });
   });
   await page.goto('/design/governance-3d', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('.rs-governance-hero__scene')).toHaveAttribute('data-scene-requested', 'true');
   await expect(page.locator('.rs-governance-hero__fallback')).toBeVisible();
+  await expect(page.locator('.rs-governance-hero__scene canvas')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Governance Audit starten/ })).toHaveAttribute('href', '/audit');
   await expect(page.getByRole('link', { name: /Plattform entdecken/ })).toHaveAttribute('href', '/governance-runtime');
 });

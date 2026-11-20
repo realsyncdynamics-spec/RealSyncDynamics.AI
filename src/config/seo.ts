@@ -304,6 +304,33 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Websites, KI-Agenten und Automatisierungen für Ihren Betrieb – mit Kontrollschicht für Berechtigungen, Regeln und Nachweise. Betrieben in der EU.',
     jsonLd: HOME_JSONLD,
   },
+  // Produktfamilie: gemeinsame White-Designsystem-Landingpages, keine getrennten Apps.
+  '/governance-os': {
+    title: 'Governance OS – KI steuern | RealSync Dynamics AI',
+    description: 'KI-Systeme, Regeln, Freigaben und Nachweise in der RealSync-Plattform zentral verwalten. Governance OS mit öffentlichem Scan und geschütztem Workspace.',
+  },
+  '/voice-agent': {
+    title: 'Voice Agent – KI-Telefonassistent | RealSync Dynamics AI',
+    description: 'KI-Telefonassistent für Anliegen, Kontakte und Terminwünsche kennenlernen. Telefonie ist in Vorbereitung; Chat-Assistent und Warteliste sind erreichbar.',
+  },
+  '/app-builder': {
+    title: 'App Builder – Website-Entwürfe | RealSync Dynamics AI',
+    description: 'Aus Ideen Webseiten und App-Oberflächen entwerfen. Geführten Builder ansehen und bestehende Backends bei der Frontend-Modernisierung berücksichtigen.',
+  },
+  '/software-factory': {
+    title: 'Software Factory – Entwicklungsstrecke | RealSync Dynamics AI',
+    description: 'Geplante Software Factory für Spezifikation, KI-gestützte Codeänderungen, Tests und Reviews. Entwicklungsstand und Grenzen transparent kennenlernen.',
+    noIndex: true,
+  },
+  '/automation-os': {
+    title: 'Automation OS – Workflows | RealSync Dynamics AI',
+    description: 'Workflows und Automatisierungen in einer gemeinsamen Plattform kennenlernen: Auslöser, Freigaben und Nachweise. n8n-Laufzeit derzeit Preview.',
+  },
+  '/creative-studio': {
+    title: 'Creative Studio – Bild & Video | RealSync Dynamics AI',
+    description: 'Geplanter Kreativbereich für Bild-, Video- und Marketinginhalte unter dem RealSync-Dach. Einblick in die Produktausrichtung und den aktuellen Status.',
+    noIndex: true,
+  },
   '/design/landing-v2': {
     title: 'RealSync Dynamics AI – Landing v2 (Design-Referenz)',
     description:

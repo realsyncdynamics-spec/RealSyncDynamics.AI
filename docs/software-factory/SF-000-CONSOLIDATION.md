@@ -27,7 +27,8 @@ Der SF-000-Branch basiert auf factory/sf-006-offline-ci-20261120. Die bestehende
 
 1. apps/factory-worker/consolidation/status-compat.mjs enthält eine **rein lesende Status-Vokabularbrücke** für alle drei Linien.
 2. apps/factory-worker/consolidation/test/status-compat.test.mjs überprüft alle 28 Statuswerte und Negativfälle. Die Adapter-Ausgabe ist ein unverbindlicher Anzeige-Hinweis.
-3. `apps/factory-worker/integration/contract-projection.mjs` und `apps/factory-worker/integration/test/contract-projection.test.mjs` stammen unverändert aus dem bereits existierenden SF-007-Entwicklungsbranch. Sie korrelieren zwei untrusted Job-/Scope-/Commit-Snapshots; auch ihre Ergebnisse haben sechs `authority`-Flags fest auf `false`. Die Suite enthält 18 synthetische Tests.\n4. `.github/workflows/factory-sf000-contracts.yml` erweitert die lesende CI auf die vier vorhandenen SF-003/SF-004/SF-005-Suiten und die beiden SF-000/SF-007-Suiten. Keine bestehende State Machine, Policy, Datenbank oder Release-Funktion wird geändert.
+3. `apps/factory-worker/integration/contract-projection.mjs` und `apps/factory-worker/integration/test/contract-projection.test.mjs` stammen unverändert aus dem bereits existierenden SF-007-Entwicklungsbranch. Sie korrelieren zwei untrusted Job-/Scope-/Commit-Snapshots; auch ihre Ergebnisse haben sechs `authority`-Flags fest auf `false`. Die Suite enthält 18 synthetische Tests.
+4. `.github/workflows/factory-sf000-contracts.yml` erweitert die lesende CI auf die vier vorhandenen SF-003/SF-004/SF-005-Suiten und die beiden SF-000/SF-007-Suiten. Keine bestehende State Machine, Policy, Datenbank oder Release-Funktion wird geändert.
 
 **Sicherheitsinvariante:** Jeder Adapter-Ausgang hat canStartWorker=false, canCreatePullRequest=false, canMerge=false, canDeploy=false; humanReviewStillRequired=true, evidenceVerified=false und statusAuthenticated=false. Ein Anzeige-Hinweis darf niemals zur Autorisierung eines Jobs werden.
 

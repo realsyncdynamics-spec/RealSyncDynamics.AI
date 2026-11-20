@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OllamaAdapter } from '../../../src/core/ai-gateway/providers/ollamaAdapter';
 import { Orchestrator } from '../../../src/core/agent-os/orchestrator';
 import { JARVIS_LOCAL_AGENT, registerJarvisLocalAgent } from '../../../src/core/agent-os/local-jarvis';
 
@@ -18,13 +17,8 @@ function fixture(shouldFail = false) {
       json: async () => ({ model: MODEL, message: { role: 'assistant', content: 'Lokal beantwortet.' } }),
     } as Response;
   }) as typeof fetch;
-  const adapter = new OllamaAdapter({
-    model: MODEL,
-    baseUrl: 'http://127.0.0.1:11434',
-    fetchImpl: localFetch,
-  });
   const orch = new Orchestrator();
-  registerJarvisLocalAgent(orch, adapter);
+  registerJarvisLocalAgent(orch, { model: MODEL, fetchImpl: localFetch });
   return { calls, orch };
 }
 

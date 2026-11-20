@@ -92,7 +92,9 @@ Deno.serve(async (req) => {
   const startedAt = new Date(run.started_at);
   const durationMs = finishedAt.getTime() - startedAt.getTime();
 
-  const { error: updateErr } = await admin.from('automation_runs').update({
+  // Atomic compare-and-set: a concurrent terminal callback must not update
+  // the same run twice. The earlier status read alone is not a concurrency lock.
+  const { data: updated, error: updateErr } = await admin.from('automation_runs').update({
     status: body.status,
     result: body.result ?? null,
     error_code: body.error_code ?? null,
@@ -100,8 +102,9 @@ Deno.serve(async (req) => {
     cost_usd: body.cost_usd ?? 0,
     duration_ms: durationMs,
     finished_at: finishedAt.toISOString(),
-  }).eq('id', run.id);
+  }).eq('id', run.id).in('status', ['queued', 'running']).select('id').maybeSingle();
   if (updateErr) return jsonError(500, 'INTERNAL', updateErr.message);
+  if (!updated) return jsonError(409, 'ALREADY_FINISHED', 'run was completed concurrently');
 
   await admin.from('automation_run_events').insert({
     run_id: run.id,

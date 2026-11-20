@@ -3,7 +3,7 @@
  * It NEVER retries, changes a job, sends an outbox event or approves work.
  * Input is a synthetic snapshot; no caller-supplied data can grant authority.
  */
-import type { FactoryJob } from './factory-contract.ts';
+import type { FactoryJob, FactoryOperation, FactoryState } from './factory-contract.ts';
 
 export interface RecoveryLeaseView {
   readonly jobId: string;
@@ -48,6 +48,20 @@ const VALID = new Set([
   'draft', 'specified', 'approved_for_sandbox', 'running', 'testing',
   'review_required', 'completed', 'blocked', 'failed', 'cancelled',
 ]);
+const OPEN: readonly FactoryState[] = ['draft', 'specified', 'approved_for_sandbox', 'running', 'testing', 'review_required'];
+const RULES: Readonly<Record<FactoryOperation, { from: readonly FactoryState[]; to: FactoryState }>> = {
+  specify: { from: ['draft'], to: 'specified' },
+  approve_sandbox: { from: ['specified'], to: 'approved_for_sandbox' },
+  start_mock: { from: ['approved_for_sandbox'], to: 'running' },
+  mock_succeeded: { from: ['running'], to: 'testing' },
+  mock_crashed: { from: ['running'], to: 'failed' },
+  tests_passed: { from: ['testing'], to: 'review_required' },
+  tests_failed: { from: ['testing'], to: 'failed' },
+  accept_review: { from: ['review_required'], to: 'completed' },
+  block: { from: OPEN, to: 'blocked' },
+  fail: { from: ['specified', 'approved_for_sandbox', 'running', 'testing', 'review_required'], to: 'failed' },
+  cancel: { from: OPEN, to: 'cancelled' },
+};
 function nonNegativeSafe(n: number): boolean {
   return Number.isSafeInteger(n) && n >= 0;
 }
@@ -70,13 +84,18 @@ function isValidJob(j: FactoryJob): boolean {
   for (let i = 0; i < j.events.length; i++) {
     const e = j.events[i];
     const r = j.receipts[i];
-    if (!e || !r || e.sequence !== i + 1 || e.from !== previous ||
-        !VALID.has(e.to) || !e.actor || !e.evidenceRef ||
+    const operation = e?.operation;
+    const rule = operation && Object.prototype.hasOwnProperty.call(RULES, operation) ? RULES[operation as FactoryOperation] : null;
+    if (!e || !r || !rule || e.sequence !== i + 1 || e.from !== previous ||
+        !rule.from.includes(e.from) || rule.to !== e.to || !e.actor || !e.evidenceRef ||
         !validTimestamp(e.at) || !r.key || receipts.has(r.key)) return false;
     receipts.add(r.key);
     previous = e.to;
   }
   if (previous !== j.state) return false;
+  if (j.events.some(e => e.operation === 'specify') && !/^[a-f0-9]{64}$/.test(j.specSha256 ?? '')) return false;
+  if (j.events.some(e => e.operation === 'approve_sandbox') &&
+      (!j.sandboxApprovalId || !j.sandboxApprovalExpiresAt || !validTimestamp(j.sandboxApprovalExpiresAt))) return false;
   if (j.version === 0 && (j.state !== 'draft' || j.specSha256 !== null)) return false;
   return true;
 }

@@ -203,4 +203,32 @@ $fn$;
 REVOKE ALL ON FUNCTION public.dsr_outbox_drain(INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.dsr_outbox_drain(INTEGER) TO service_role;
 
+-- Rollout compatibility gate. Updated Edge handlers must never fall back to
+-- best-effort evidence if this trigger is not installed and active.
+CREATE OR REPLACE FUNCTION public.dsr_outbox_ready()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $fn$
+DECLARE
+    v_ready BOOLEAN;
+BEGIN
+    IF auth.role() IS DISTINCT FROM 'service_role' THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+    END IF;
+    SELECT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_trigger
+        WHERE tgname = 'trg_dsr_enqueue_evidence'
+          AND tgrelid = 'public.dsr_requests'::pg_catalog.regclass
+          AND NOT tgisinternal
+          AND tgenabled IN ('O', 'A')
+    ) INTO v_ready;
+    RETURN v_ready;
+END;
+$fn$;
+REVOKE ALL ON FUNCTION public.dsr_outbox_ready() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.dsr_outbox_ready() TO service_role;
+
 COMMIT;

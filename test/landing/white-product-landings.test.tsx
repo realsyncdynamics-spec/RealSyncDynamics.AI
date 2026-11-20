@@ -37,7 +37,9 @@ describe('RealSync Dachmarke: White Product Landings', () => {
   it('lässt das Original-Higgsfield-Medium optional und die vorhandene Bühne als Fallback', () => {
     const hero = read('src/components/landing/v3/HiggsfieldBotHero.tsx');
     expect(hero).toContain('VITE_HIGGSFIELD_BOT_VIDEO_URL');
-    expect(hero).toContain('<HeroStage');
+    expect(hero).toContain('<SyncStage');
+    expect(hero).toContain('VITE_HIGGSFIELD_BOT_VERIFIED_SYNC');
+    expect(hero).toContain('SYNC_STILL_SRC');
     expect(hero).toContain('prefers-reduced-motion');
     expect(hero).toContain('onError={() => setFailed(true)}');
   });

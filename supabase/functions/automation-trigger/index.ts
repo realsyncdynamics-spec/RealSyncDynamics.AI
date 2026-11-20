@@ -89,10 +89,18 @@ Deno.serve(async (req) => {
     getCurrentTotal(admin, body.tenant_id, 'limit.automation_runs_monthly'),
     admin.rpc('tenant_entitlements', { p_tenant_id: body.tenant_id }),
   ]);
+  // A missing entitlement is never an implicit unlimited plan.
+  if (entResp.error) {
+    console.error('automation entitlement lookup failed', entResp.error.code);
+    return jsonError(503, 'ENTITLEMENT_UNAVAILABLE', 'monthly automation allowance unavailable');
+  }
   // deno-lint-ignore no-explicit-any
   const limits = Object.fromEntries(((entResp.data ?? []) as any[]).map((r) => [r.key, r.value as number]));
   const runsLimit = limits['limit.automation_runs_monthly'];
-  if (typeof runsLimit === 'number' && runsLimit !== -1 && currentRuns + 1 > runsLimit) {
+  if (typeof runsLimit !== 'number' || !Number.isInteger(runsLimit) || runsLimit < -1) {
+    return jsonError(403, 'QUOTA_NOT_CONFIGURED', 'monthly automation allowance is not configured');
+  }
+  if (runsLimit !== -1 && currentRuns + 1 > runsLimit) {
     return jsonError(402, 'QUOTA_EXCEEDED',
       `monthly automation run quota reached (${currentRuns}/${runsLimit})`);
   }

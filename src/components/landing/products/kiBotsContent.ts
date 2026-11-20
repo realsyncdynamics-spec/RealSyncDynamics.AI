@@ -1,5 +1,5 @@
 /**
- * Inhalte der Produkt-Landingpage KI-Bots & Voice-Agenten (`/ki-bots`, Entwurf).
+ * Inhalte der Produkt-Landingpage Telefonassistent (`/telefonassistent`, Entwurf).
  *
  * Kernbotschaft (Owner, 19.11.2026): erreichbar bleiben und Kundenanfragen
  * intelligent bearbeiten. Kundeneinstieg: „KI-Empfang kennenlernen“.
@@ -15,17 +15,17 @@
  */
 import { RECEPTIONIST } from '../v3/landingV3Data';
 
-export const KI_BOTS_SOURCE = 'ki-bots';
+export const KI_BOTS_SOURCE = 'telefonassistent';
 
 export const KI_BOTS = {
-  name: 'KI-Bots & Voice-Agenten',
+  name: 'Telefonassistent',
   audience: 'Für Betriebe mit Kundenkontakt, zuerst im Handwerk',
-  h1: ['Erreichbar bleiben.', 'Auch wenn alle auf der Baustelle sind.'],
+  h1: ['Keine Anfrage verpassen.', 'Auch wenn Sie im Einsatz sind.'],
   lead:
-    'Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team. Sie legen fest, was er sagen darf.',
-  primaryCta: 'KI-Empfang kennenlernen',
+    'Der persönliche Telefonassistent soll Anrufe annehmen, Anliegen und Rückrufwünsche aufnehmen und an Ihr Team übergeben. Telefonie ist derzeit noch in Vorbereitung.',
+  primaryCta: 'Telefonassistent vormerken',
   stageTag: 'KI-Empfang · Entwurf',
-  stageCaption: 'Anfrage → Kontakt → Terminwunsch → Mensch',
+  stageCaption: 'Anruf → Anliegen → Rückrufwunsch → Team',
   waitlistHref: `/warteliste?interest=bots&source=${KI_BOTS_SOURCE}`,
   waitlistCta: 'Auf die Warteliste',
   tryHref: `/chatbot/start?source=${KI_BOTS_SOURCE}`,
@@ -82,7 +82,7 @@ export const RECEPTION_PHASES = RECEPTIONIST.steps;
 export const USE_CASES: ReadonlyArray<{ trade: string; situation: string; result: string }> = [
   {
     trade: 'Heizung & Sanitär',
-    situation: 'Abends schreibt jemand über die Website, dass das Warmwasser fehlt.',
+    situation: 'Während das Team arbeitet, ruft jemand wegen eines Heizungsausfalls an.',
     result: 'Anliegen, Adresse und Rückrufnummer liegen morgens geordnet vor.',
   },
   {
@@ -99,7 +99,7 @@ export const USE_CASES: ReadonlyArray<{ trade: string; situation: string; result
 
 /** Verständlicher Einstieg in drei Schritten. */
 export const START_STEPS: ReadonlyArray<{ title: string; body: string }> = [
-  { title: 'Ausprobieren', body: 'Den Chat-Assistenten ohne Vorbereitung im Browser testen.' },
+  { title: 'Vormerken', body: 'Auf die Warteliste für den Telefonassistenten setzen lassen.' },
   { title: 'Vorgaben festlegen', body: 'Bestimmen, welche Fragen er beantwortet und was er an Ihr Team gibt.' },
-  { title: 'Vormerken lassen', body: 'Auf die Warteliste für den KI-Empfang am Telefon.' },
+  { title: 'Chat testen', body: 'Den separaten Website-Chat ausprobieren, solange Telefonie noch vorbereitet wird.' },
 ];

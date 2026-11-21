@@ -368,9 +368,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/claude-code-optimizer': {
-    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSync Dynamics AI',
+    // Produkt-Landingpage (Entwurf 19.11.2026). Beschreibung nach Registry `cloud-code-optimizer`
+    // (Preview): Website-Audit mit Befunden; keine Repository-Analyse und keine Code-Fixes.
+    title: 'Claude Code Optimizer — Website prüfen, Befunde verstehen | RealSync Dynamics AI',
     description:
-      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. Offene Beta: kostenlos bis 31.01.2027.',
+      'Der Claude Code Optimizer prüft Ihre Website auf ausgewählte DSGVO-, Tracking- und Einwilligungsthemen und zeigt die Befunde nach Schweregrad. Kostenlos und ohne Konto.',
     canonical: `${SITE_URL}/claude-code-optimizer`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -577,6 +579,53 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Interaktive 3D-Landingpage im Browser: drehen, scrollen, Details öffnen, Farben und Licht anpassen. Vorlage mit fiktivem Beispielunternehmen.',
     canonical: `${SITE_URL}/demo/3d-landingpage`,
+    noIndex: true,
+  },
+
+  // SYNC — 3D-Maskottchen. Noindex und nicht in der Sitemap; Indexierung wäre ein eigener Schritt.
+  '/sync': {
+    title: 'SYNC — RealSyncDynamics.AI',
+    description:
+      'SYNC, das 3D-Maskottchen von RealSyncDynamics: im Browser drehen, zoomen und winken lassen.',
+    canonical: `${SITE_URL}/sync`,
+    noIndex: true,
+  },
+
+  // Telefonassistent: eigenständiger Produkteinstieg; Telefonie bleibt laut Registry in Vorbereitung.
+  '/telefonassistent': {
+    title: 'Telefonassistent für KMU — RealSync Dynamics & AI',
+    description:
+      'Persönlicher KI-Empfang für kleine und mittlere Betriebe. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/telefonassistent`,
+    noIndex: true,
+  },
+  // Legacy-Route leitet auf den kanonischen Telefonassistenten weiter.
+  '/ki-bots': {
+    title: 'Telefonassistent — RealSync Dynamics & AI',
+    description: 'Der persönliche Telefonassistent für kleine und mittlere Betriebe.',
+    canonical: `${SITE_URL}/telefonassistent`,
+    noIndex: true,
+  },
+  // Eigenständige Landingpage-Builder-Seite. Der Builder bleibt Preview.
+  '/landingpage-builder': {
+    title: 'Landingpage-Builder — RealSync Dynamics & AI',
+    description: 'Landingpages im Browser entwerfen und vor der Freigabe prüfen. Der Builder ist derzeit Preview.',
+    canonical: `${SITE_URL}/landingpage-builder`,
+    noIndex: true,
+  },
+  // Produktseiten App Builder und Governance OS bleiben noindex.
+  '/app-builder': {
+    title: 'App Builder — RealSync Dynamics & AI',
+    description:
+      'Website oder App im Browser bauen. Jede Änderung zuerst in der Vorschau, live erst nach Ihrer Freigabe.',
+    canonical: `${SITE_URL}/app-builder`,
+    noIndex: true,
+  },
+  '/governance-os': {
+    title: 'Governance OS — RealSync Dynamics & AI',
+    description:
+      'KI-Register, Risiken, Vorfälle, Betroffenenanfragen und Freigaben an einem Ort, mit Nachweis zu jedem Schritt.',
+    canonical: `${SITE_URL}/governance-os`,
     noIndex: true,
   },
 

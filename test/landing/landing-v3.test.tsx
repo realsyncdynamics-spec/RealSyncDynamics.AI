@@ -96,7 +96,12 @@ describe('Startseite v3 — `/`', () => {
   });
 
   it('übernimmt keine Platzhalter aus dem Export: keine Bot-IDs, keine WhatsApp-Nummer, kein Projekt-Endpunkt, keine festen Preise', () => {
-    const src = ['src/pages/LandingV3.tsx', 'src/components/landing/v3/landingV3Data.ts', 'src/components/landing/v3/HeroStage.tsx']
+    const src = [
+      'src/pages/LandingV3.tsx',
+      'src/components/landing/v3/landingV3Data.ts',
+      'src/components/landing/v3/HeroStage.tsx',
+      'src/components/landing/v3/SyncHeroStage.tsx',
+    ]
       .map(read)
       .join('\n');
     expect(src).not.toMatch(/4917640132161|wa\.me|be672b50|582308a1|ebljyceifhnlzhjfyxup|functions\/v1/);
@@ -111,5 +116,24 @@ describe('Startseite v3 — `/`', () => {
     expect(stage).not.toMatch(/^import .*from 'three'/m);
     expect(stage).toContain('prefers-reduced-motion: reduce');
     expect(stage).toContain('/landing-v3/hero-still.jpg');
+  });
+
+  it('Hero zeigt SYNC: Szene nur lazy über canRun3D, Standbild als Rückfall', () => {
+    const sync = read('src/components/landing/v3/SyncHeroStage.tsx');
+    expect(sync).toContain("import('../../visual/sync-mascot/syncMascotScene')");
+    expect(sync).not.toMatch(/^import .*from 'three'/m);
+    expect(sync).toContain('canRun3D()');
+    expect(read('src/pages/LandingV3.tsx')).toContain('<SyncHeroStage');
+
+    // matchMedia meldet hier reduzierte Bewegung → nur das Standbild, keine Szene.
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    const stage = screen.getByTestId('v3-sync-stage');
+    expect(stage).toHaveAttribute('data-scene', 'still');
+    expect(within(stage).getByRole('img', { name: /SYNC, das Maskottchen/ })).toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+  });
+
+  it('Hauptbutton im Hero blendet den Assistent-Button aus (data-hero-cta)', () => {
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'Kostenlosen Check starten' })).toHaveAttribute('data-hero-cta', 'landing-v3');
   });
 });

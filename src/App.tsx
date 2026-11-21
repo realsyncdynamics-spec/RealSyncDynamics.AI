@@ -35,6 +35,9 @@ const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default:
 const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
+const SyncMascot = lazy(() => import('./pages/SyncMascot'));
+const KiBotsLanding = lazy(() => import('./pages/products/KiBotsLanding'));
+const ProductLanding = lazy(() => import('./pages/products/ProductLanding'));
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const NeedsCheckPage = lazy(() => import('./pages/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
 const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').then((m) => ({ default: m.NeedsCheckSavedPage })));
@@ -443,7 +446,6 @@ const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage')
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
 // ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
-const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
 const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
 const OptimizerSignup = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerSignup })));
 const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerReport })));
@@ -551,6 +553,14 @@ function RoutesWithTracking() {
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
+      {/* SYNC — 3D-Maskottchen (three in eigenem Chunk). */}
+      <Route path="/sync" element={<SyncMascot />} />
+      {/* Vier Hauptproduktseiten, noindex bis zur Freigabe. Optimizer-Funktionspfad bleibt separat. */}
+      <Route path="/telefonassistent" element={<KiBotsLanding />} />
+      <Route path="/ki-bots" element={<Navigate to="/telefonassistent" replace />} />
+      <Route path="/landingpage-builder" element={<ProductLanding key="landingpage-builder" product="landingpage-builder" />} />
+      <Route path="/app-builder" element={<ProductLanding key="app-builder" product="app-builder" />} />
+      <Route path="/governance-os" element={<ProductLanding key="governance-os" product="governance-os" />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />
@@ -698,9 +708,10 @@ function RoutesWithTracking() {
       <Route path="/setup-assistant" element={<Navigate to={withSearch('/app/activation')} replace />} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
-      {/* Claude Code Optimizer — geführter, seitenweiser Flow.
+      {/* Claude Code Optimizer — Produkt-Landingpage (Entwurf, ersetzt die frühere
+          Übersicht OptimizerOverview), darunter der geführte, seitenweise Flow.
           Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
-      <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
+      <Route path="/claude-code-optimizer" element={<ProductLanding key="claude-code-optimizer" product="claude-code-optimizer" />} />
       <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
       <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
       <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />

@@ -5,7 +5,10 @@
  *  L1  reserve ohne Freigabe ⇒ 409 APPROVAL_REQUIRED (gleicher Weg wie execute)
  *  L2  reserve mit Freigabe ⇒ execution_id, erwartetes Ziel und Domainliste; Playwright NICHT aufgerufen
  *  L3  reserve ohne konfigurierten Playwright-Dienst funktioniert (lokal)
- *  L4  reserve für Lese-Aktionen ⇒ keine Reservierung nötig
+ *  L4  reserve für Lese-Aktionen ⇒ keine Reservierung, aber Event + Evidence (Prüfpfad, Befund 1)
+ *  L4b Lese-reserve, Event nicht schreibbar ⇒ 503 AUDIT_UNAVAILABLE, keine Domainliste
+ *  L4c Lese-reserve, Evidence nicht schreibbar ⇒ 503 AUDIT_UNAVAILABLE, keine Domainliste
+ *  L4d verändernde reserve schreibt keinen Lese-Nachweis (Nachweis erst beim report)
  *  L5  reserve auf nicht freigegebener Domain ⇒ 403
  *  L6  report executed ⇒ Status executed, Event + Evidence + browser_actions, nur Hashes (G4)
  *  L7  report ohne passende Reservierung (fremde/unbekannte execution_id) ⇒ 404
@@ -83,8 +86,39 @@ describe('lokaler Executor: reserve', () => {
   it('L4 Lese-Aktionen ⇒ keine Reservierung nötig', async () => {
     const r = await rawCall({ op: 'reserve', actions: [{ type: 'navigate', url: `${ORIGIN}/` }, { type: 'extract' }] });
     expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ execution_id: null, reservation_required: false });
+    expect(r.json).toMatchObject({ execution_id: null, reservation_required: false, allowed_origins: [ORIGIN] });
     expect(db.browser_executions).toHaveLength(0);
+    const ev = db.governance_events.filter((e) => e.event_type === 'browser.action.reserved');
+    expect(ev).toHaveLength(1);
+    expect(ev[0]).toMatchObject({ policy_action: 'log', risk_level: 'low' });
+    expect(ev[0].payload).toMatchObject({ executor: 'desktop', reservation_required: false, page_origin: null, allowed_origins: [ORIGIN] });
+    expect(db.governance_evidence).toHaveLength(1);
+    expect(db.governance_evidence[0]).toMatchObject({ event_id: ev[0].id });
+    expect(r.json).toMatchObject({ event_id: ev[0].id, evidence_id: db.governance_evidence[0].id });
+    expect(executorCalls).toHaveLength(0);
+  });
+
+  it('L4b Lese-reserve ohne schreibbares Event ⇒ 503, keine Domainliste', async () => {
+    flags.eventError = true;
+    const r = await rawCall({ op: 'reserve', actions: [{ type: 'navigate', url: `${ORIGIN}/` }] });
+    expect(r.status).toBe(503);
+    expect(r.json.error.code).toBe('AUDIT_UNAVAILABLE');
+    expect(r.json.allowed_origins).toBeUndefined();
+    expect(db.governance_evidence).toHaveLength(0);
+  });
+
+  it('L4c Lese-reserve ohne schreibbare Evidence ⇒ 503, keine Domainliste', async () => {
+    flags.evidenceError = true;
+    const r = await rawCall({ op: 'reserve', actions: [{ type: 'navigate', url: `${ORIGIN}/` }] });
+    expect(r.status).toBe(503);
+    expect(r.json.error.code).toBe('AUDIT_UNAVAILABLE');
+    expect(r.json.allowed_origins).toBeUndefined();
+  });
+
+  it('L4d verändernde reserve schreibt keinen Lese-Nachweis', async () => {
+    await reserved();
+    expect(db.governance_events.some((e) => e.event_type === 'browser.action.reserved')).toBe(false);
+    expect(db.governance_evidence).toHaveLength(0);
   });
 
   it('L5 nicht freigegebene Domain ⇒ 403', async () => {

@@ -653,10 +653,62 @@ Deno.serve(async (req: Request) => {
   // Lokaler Executor: Freigabe ist eingelöst, ausgeführt wird im Desktop-Browser.
   // Lese-Aktionen brauchen keine Reservierung (browser_executions.approval_id ist NOT NULL).
   if (body.op === 'reserve') {
+    // Prüfpfad für Lese-Aktionen (Befund 1): Auch Lesen kann über die URL Daten übertragen
+    // (G1). Ohne Reservierung und ohne report wäre die Domain-Freigabe sonst spurlos.
+    // Event und Nachweis entstehen deshalb VOR der Rückgabe. Scheitert einer davon, gibt es
+    // keine Domainliste (fail-closed) – der Desktop-Executor darf dann nichts ausführen.
+    let readAudit: { event_id: string; evidence_id: string } | null = null;
+    if (!requiresApproval) {
+      const risk = riskFor(actions);
+      const auditUnavailable = () =>
+        jsonError(503, 'AUDIT_UNAVAILABLE', 'read action could not be recorded; nothing was cleared');
+      const { data: event, error: eventError } = await auth.admin
+        .from('governance_events')
+        .insert({
+          tenant_id: auth.tenantId,
+          event_type: 'browser.action.reserved',
+          event_source: 'agent_runtime',
+          title: 'Browser read action cleared (desktop executor)',
+          summary: `${actions.length} browser read action(s) cleared for local execution`,
+          risk_level: risk,
+          actor_email: auth.user.email ?? null,
+          policy_action: 'log',
+          payload: {
+            session_id: sessionId,
+            actions: redactActions(actions),
+            executor: 'desktop',
+            reservation_required: false,
+            page_origin: pageOrigin,
+            allowed_origins: allowedOrigins,
+            policy_ids: originPolicy.policyIds,
+          },
+        })
+        .select('id')
+        .single();
+      if (eventError || !event?.id) return auditUnavailable();
+      let evidenceId: string;
+      try {
+        evidenceId = await appendBrowserEvidence(auth.admin, {
+          tenantId: auth.tenantId,
+          eventId: event.id,
+          sessionId,
+          approvalId: null,
+          executionId: null,
+          actionCount: actions.length,
+          risk,
+          target: null,
+          result: { executor: 'desktop', phase: 'reserved', reservation_required: false, page_origin: pageOrigin, allowed_origins: allowedOrigins },
+        });
+      } catch {
+        return auditUnavailable();
+      }
+      readAudit = { event_id: event.id, evidence_id: evidenceId };
+    }
     return jsonResponse({
       ok: true,
       session_id: sessionId,
       execution_id: executionId,
+      ...(readAudit ?? {}),
       reservation_required: requiresApproval,
       fingerprint_version: 'v2',
       allowed_origins: allowedOrigins,

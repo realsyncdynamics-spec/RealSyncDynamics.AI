@@ -583,31 +583,31 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
   '/telefonassistent': {
-    title: 'Telefonassistent — RealSync Dynamics & AI',
-    description: 'KI-Empfang für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
-    canonical: `${SITE_URL}/telefonassistent`,
+    title: 'KI-Bots & Voice-Agenten',
+    description: 'Chat-Assistent und geplanter Voice-Agent für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
+    canonical: `${SITE_URL}/ki-bots`,
     noIndex: true,
   },
   '/ki-bots': {
-    title: 'Telefonassistent — RealSync Dynamics & AI',
-    description: 'KI-Empfang für KMU.',
-    canonical: `${SITE_URL}/telefonassistent`,
+    title: 'KI-Bots & Voice-Agenten',
+    description: 'Chat-Assistent und geplanter Voice-Agent für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
+    canonical: `${SITE_URL}/ki-bots`,
     noIndex: true,
   },
   '/landingpage-builder': {
-    title: 'Landingpage-Builder — RealSync Dynamics & AI',
+    title: 'Landingpage-Builder',
     description: 'Eine Website aus Inhalten und Designwünschen entwerfen.',
     canonical: `${SITE_URL}/landingpage-builder`,
     noIndex: true,
   },
   '/app-builder': {
-    title: 'App-Builder — RealSync Dynamics & AI',
+    title: 'App Builder',
     description: 'Eigene Abläufe als Webanwendung entwerfen.',
     canonical: `${SITE_URL}/app-builder`,
     noIndex: true,
   },
   '/governance-os': {
-    title: 'Governance OS — RealSync Dynamics & AI',
+    title: 'Governance OS',
     description: 'Befunde, Zuständigkeiten und Freigaben verfolgen.',
     canonical: `${SITE_URL}/governance-os`,
     noIndex: true,

@@ -11,6 +11,7 @@ import { TaskBoard } from './TaskBoard';
 import { MemoryView } from './MemoryView';
 import { RoutinesView } from './RoutinesView';
 import { MonitoringView } from './MonitoringView';
+import { ChiefOfStaffPanel } from './ChiefOfStaffPanel';
 
 const NAV = [
   'Übersicht', 'Alle Agenten', 'Offene Fragen', 'Aufgaben', 'Projekte', 'Agenten-Kommunikation',
@@ -100,7 +101,7 @@ export function CommandCenterView() {
   const [f, setF] = useState<AgentFilter>(EMPTY_FILTER);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [configFor, setConfigFor] = useState<RegistryAgent | null>(null);
-  const [view, setView] = useState<'agents' | 'tasks' | 'memory' | 'routines' | 'monitoring'>('agents');
+  const [view, setView] = useState<'agents' | 'chief' | 'tasks' | 'memory' | 'routines' | 'monitoring'>('agents');
   const shown = useMemo(() => filterAgents(agents, f), [agents, f]);
   const set = (patch: Partial<AgentFilter>) => setF((prev) => ({ ...prev, ...patch }));
 
@@ -126,13 +127,13 @@ export function CommandCenterView() {
             </nav>
           )}
         </div>
-        <div role="group" aria-label="Bereich" className="mb-3 flex gap-1">
-          {([['agents', 'Agenten'], ['tasks', 'Aufgaben'], ['memory', 'Gedächtnis'], ['routines', 'Routinen'], ['monitoring', 'Kosten & Monitoring']] as const).map(([k, l]) => (
+        <div role="group" aria-label="Bereich" className="mb-3 flex flex-wrap gap-1">
+          {([['agents', 'Agenten'], ['chief', 'Arbeitsüberblick'], ['tasks', 'Aufgaben'], ['memory', 'Gedächtnis'], ['routines', 'Routinen'], ['monitoring', 'Kosten & Monitoring']] as const).map(([k, l]) => (
             <button key={k} type="button" aria-pressed={view === k} onClick={() => setView(k)}
               className={`rounded px-3 py-1 text-sm ${view === k ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400'}`}>{l}</button>
           ))}
         </div>
-        {view === 'tasks' ? <TaskBoard /> : view === 'memory' ? <MemoryView /> : view === 'routines' ? <RoutinesView /> : view === 'monitoring' ? <MonitoringView /> : (<>
+        {view === 'chief' ? <ChiefOfStaffPanel /> : view === 'tasks' ? <TaskBoard /> : view === 'memory' ? <MemoryView /> : view === 'routines' ? <RoutinesView /> : view === 'monitoring' ? <MonitoringView /> : (<>
         <h1 className="text-xl font-semibold">Agentenübersicht</h1>
         <p className="mt-1 text-sm text-zinc-400">Status nur aus belegten Quellen. Nicht belegte Zustände werden als UNBEKANNT angezeigt.</p>
         {sourceError && (

@@ -204,6 +204,7 @@ const Limits = lazy(() => import('./pages/Limits').then((m) => ({ default: m.Lim
 const AiGovernancePage = lazy(() => import('./pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
 
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
+const WorkspaceGuide = lazy(() => import('./features/onboarding/WorkspaceGuide').then((m) => ({ default: m.WorkspaceGuide })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
 const SampleWorkspacePage = lazy(() => import('./features/governance/dashboard/SampleWorkspacePage').then((m) => ({ default: m.SampleWorkspacePage })));
@@ -862,6 +863,7 @@ function RoutesWithTracking() {
       <Route path="/app/modules" element={<AppGate><GovernanceBrowserShell><ModulesHubView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai/onboarding" element={<AppGate><GovernanceBrowserShell><LocalAiOnboardingView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/local-ai" element={<Navigate to="/app/local-ai/onboarding" replace />} />
+      <Route path="/app/start" element={<AppGate><GovernanceBrowserShell><WorkspaceGuide /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/activation" element={<AppGate><GovernanceBrowserShell><GovernanceActivationView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/home" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="/app/company" element={<AppGate><GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell></AppGate>} />

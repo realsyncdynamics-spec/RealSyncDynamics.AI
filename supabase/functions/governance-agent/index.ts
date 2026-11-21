@@ -48,6 +48,11 @@ import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/llm-quota.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { selectModel, getModelId } from '../_shared/modelSelection.ts';
+import { runGovernedAgentTurn } from '../_shared/agentGovernance.ts';
+import { recordAiCallEvidence } from '../_shared/aiGateway/callEvidence.ts';
+import { parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
+import { decide } from '../_shared/pdp/decide.ts';
+import type { DecisionRequest, DecisionResult } from '../_shared/pdp/core.ts';
 import {
   NO_USAGE,
   addUsage,
@@ -428,6 +433,9 @@ async function handleChat(
   if (history.length > MAX_HISTORY_TURNS * 2) {
     history = history.slice(-(MAX_HISTORY_TURNS * 2));
   }
+  // Verlauf vor diesem Zug — bei fehlgeschlagener Abschluss-Evidence wird
+  // nur dieser Stand gespeichert (MP-A).
+  const priorHistory = [...history];
   history.push({ role: 'user', content: message });
 
   // Smart model selection: route simple questions to Haiku (5x cheaper, 3x faster)
@@ -447,6 +455,11 @@ async function handleChat(
   ];
 
   const client = new Anthropic({ apiKey });
+  // MP-A: Policy vor, Evidence-Kette um die Tool-Schleife (fail-closed).
+  // Eigener Schalter AGENT_ENFORCEMENT, sonst derselbe wie der Gateway.
+  const enforcementMode = parseEnforcementMode(
+    Deno.env.get('AGENT_ENFORCEMENT') ?? Deno.env.get('AI_GATEWAY_ENFORCEMENT'),
+  );
   const toolCallsLog: Array<{ tool: string; input: unknown; output: unknown; iter: number }> = [];
   let totalIn = 0;
   let totalOut = 0;
@@ -459,98 +472,152 @@ async function handleChat(
   let errorMessage: string | null = null;
   const startedAt = Date.now();
 
-  try {
-    for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
-      const resp = await client.messages.create({
-        model: effectiveModel,
-        max_tokens: maxTokens,
-        // Anthropic prompt caching (cache_control: ephemeral) — the
-        // system prompt + tool catalogue are identical across every
-        // iteration of a tool-loop and across every chat turn within
-        // a 5-minute window. Marking them cacheable cuts the input-
-        // token cost for these blocks by ~90% on cache hits, which
-        // is the dominant input cost driver for tool-heavy chats.
-        system: systemBlocks,
-        tools: AGENT_TOOLS.map((t, i) =>
-          // Mark only the LAST tool with cache_control — Anthropic
-          // caches everything up to and including that marker, so
-          // tagging the final tool effectively caches the full
-          // tools array as one block.
-          i === AGENT_TOOLS.length - 1
-            ? { ...t, cache_control: { type: 'ephemeral' as const } }
-            : t,
-        ),
-        messages: history,
-      });
-      totalIn += resp.usage.input_tokens;
-      totalOut += resp.usage.output_tokens;
-      // System-Prompt und Tool-Katalog sind gecacht (siehe oben). Die
-      // Cache-Tokens stehen bei Anthropic NEBEN input_tokens — ohne sie
-      // fehlen Cache-Writes (×1,25) und Cache-Reads (×0,10) in den Kosten.
-      usage = addUsage(usage, fromAnthropicUsage(resp.usage as AnthropicUsage));
-
-      if (resp.stop_reason === 'end_turn') {
-        finalText = resp.content
-          .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-          .map((b) => b.text)
-          .join('\n');
-        history.push({ role: 'assistant', content: resp.content });
-        break;
-      }
-
-      if (resp.stop_reason === 'tool_use') {
-        history.push({ role: 'assistant', content: resp.content });
-        const toolResults: Anthropic.ToolResultBlockParam[] = [];
-        for (const block of resp.content) {
-          if (block.type !== 'tool_use') continue;
-          const result = await dispatchTool({
-            name: block.name,
-            input: block.input as Record<string, unknown>,
-            admin,
-            bearerAuth,
-            tenantId: tenant_id,
-            userId,
-            userEmail,
+  const governed = await runGovernedAgentTurn<DecisionResult, { ok: boolean; errorCode: string | null; model: string; inputTokens: number; outputTokens: number }>(
+    {
+      mode: enforcementMode,
+      timeoutMs: parsePdpTimeoutMs(Deno.env.get('AI_GATEWAY_PDP_TIMEOUT_MS')),
+      decide: async () => {
+        const request: DecisionRequest = {
+          contract: 'v1',
+          tenant_id,
+          principal: { type: 'user', id: userId },
+          action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
+          target: { model: effectiveModel, vendor: 'anthropic' },
+          payload: { provider_region: 'cloud', residency: 'cloud', path: 'user' },
+          context: { feature: 'governance_agent_chat' },
+        };
+        return await decide(admin, request);
+      },
+      recordEvidence: (row) => recordAiCallEvidence(admin as never, row),
+    },
+    { tenantId: tenant_id, userId, message, provider: 'anthropic', model: effectiveModel },
+    async () => {
+      try {
+        for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+          const resp = await client.messages.create({
+            model: effectiveModel,
+            max_tokens: maxTokens,
+            // Anthropic prompt caching (cache_control: ephemeral) — the
+            // system prompt + tool catalogue are identical across every
+            // iteration of a tool-loop and across every chat turn within
+            // a 5-minute window. Marking them cacheable cuts the input-
+            // token cost for these blocks by ~90% on cache hits, which
+            // is the dominant input cost driver for tool-heavy chats.
+            system: systemBlocks,
+            tools: AGENT_TOOLS.map((t, i) =>
+              // Mark only the LAST tool with cache_control — Anthropic
+              // caches everything up to and including that marker, so
+              // tagging the final tool effectively caches the full
+              // tools array as one block.
+              i === AGENT_TOOLS.length - 1
+                ? { ...t, cache_control: { type: 'ephemeral' as const } }
+                : t,
+            ),
+            messages: history,
           });
-          toolCallsLog.push({ tool: block.name, input: block.input, output: result, iter });
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify(result),
-            is_error: !!(result as { error?: unknown }).error,
-          });
+          totalIn += resp.usage.input_tokens;
+          totalOut += resp.usage.output_tokens;
+          // System-Prompt und Tool-Katalog sind gecacht (siehe oben). Die
+          // Cache-Tokens stehen bei Anthropic NEBEN input_tokens — ohne sie
+          // fehlen Cache-Writes (×1,25) und Cache-Reads (×0,10) in den Kosten.
+          usage = addUsage(usage, fromAnthropicUsage(resp.usage as AnthropicUsage));
+
+          if (resp.stop_reason === 'end_turn') {
+            finalText = resp.content
+              .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+              .map((b) => b.text)
+              .join('\n');
+            history.push({ role: 'assistant', content: resp.content });
+            break;
+          }
+
+          if (resp.stop_reason === 'tool_use') {
+            history.push({ role: 'assistant', content: resp.content });
+            const toolResults: Anthropic.ToolResultBlockParam[] = [];
+            for (const block of resp.content) {
+              if (block.type !== 'tool_use') continue;
+              const result = await dispatchTool({
+                name: block.name,
+                input: block.input as Record<string, unknown>,
+                admin,
+                bearerAuth,
+                tenantId: tenant_id,
+                userId,
+                userEmail,
+              });
+              toolCallsLog.push({ tool: block.name, input: block.input, output: result, iter });
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: block.id,
+                content: JSON.stringify(result),
+                is_error: !!(result as { error?: unknown }).error,
+              });
+            }
+            history.push({ role: 'user', content: toolResults });
+            continue;
+          }
+
+          outcome = 'llm_error';
+          errorMessage = `unexpected stop_reason: ${resp.stop_reason}`;
+          break;
         }
-        history.push({ role: 'user', content: toolResults });
-        continue;
+
+        if (!finalText && outcome === 'success') {
+          outcome = 'budget_exceeded';
+          errorMessage = `MAX_ITERATIONS (${MAX_ITERATIONS}) reached without end_turn`;
+        }
+      } catch (e) {
+        outcome = 'llm_error';
+        errorMessage = (e as Error).message;
       }
+      return {
+        ok: outcome === 'success',
+        errorCode: outcome === 'success' ? null : outcome,
+        model: effectiveModel,
+        inputTokens: totalIn,
+        outputTokens: totalOut,
+      };
+    },
+  );
 
-      outcome = 'llm_error';
-      errorMessage = `unexpected stop_reason: ${resp.stop_reason}`;
-      break;
-    }
-
-    if (!finalText && outcome === 'success') {
-      outcome = 'budget_exceeded';
-      errorMessage = `MAX_ITERATIONS (${MAX_ITERATIONS}) reached without end_turn`;
-    }
-  } catch (e) {
+  // Policy abgelehnt oder Reservierung fehlgeschlagen: kein Provider-Aufruf
+  // ist passiert, nichts wird persistiert außer dem Audit-Eintrag.
+  if (governed.kind === 'denied' || governed.kind === 'evidence_unavailable') {
+    await audit(admin, {
+      tenant_id,
+      actor_user_id: userId,
+      actor_email: userEmail,
+      action: 'agent.chat',
+      target_type: 'agent_session',
+      target_id: sessionId,
+      payload: { outcome: 'denied', code: governed.code, request_id: governed.requestId },
+    });
+    return jsonError(governed.status, governed.code, governed.message, undefined, { request_id: governed.requestId });
+  }
+  const requestId = governed.requestId;
+  // Abschluss-Evidence fehlgeschlagen: Lauf festhalten, Antwort zurückhalten.
+  if (governed.kind === 'evidence_write_failed') {
     outcome = 'llm_error';
-    errorMessage = (e as Error).message;
+    errorMessage = `evidence_write_failed (request_id ${requestId})`;
+    finalText = '';
   }
 
   const durationMs = Date.now() - startedAt;
 
-  // Persist session.
+  // Persist session. Bei fehlgeschlagener Abschluss-Evidence nur den Verlauf
+  // VOR diesem Zug: die zurückgehaltene Antwort darf nicht über den Verlauf
+  // wieder auftauchen. Die Sitzung wird trotzdem angelegt, sonst scheitert der
+  // agent_runs-Insert am Fremdschlüssel auf agent_sessions(id).
   await admin.from('agent_sessions').upsert({
     id: sessionId,
     tenant_id,
     user_id: userId,
-    history,
+    history: governed.kind === 'ran' ? history : priorHistory,
     last_turn_at: new Date().toISOString(),
   });
 
   // Persist run trace (use effectiveModel, not LLM_MODEL default).
-  await admin.from('agent_runs').insert({
+  const { error: runInsertError } = await admin.from('agent_runs').insert({
     session_id: sessionId,
     tenant_id,
     actor_user_id: userId,
@@ -568,6 +635,9 @@ async function handleChat(
     outcome,
     error_message: errorMessage,
   });
+  if (runInsertError) {
+    console.error(JSON.stringify({ scope: 'governance-agent-run', event: 'insert_failed', severity: 'critical', request_id: requestId, error: String((runInsertError as { message?: string }).message ?? runInsertError).slice(0, 200) }));
+  }
 
   // Audit log per chat turn (skip the full transcript — refer to run_id).
   await audit(admin, {
@@ -583,6 +653,7 @@ async function handleChat(
       tools: toolCallsLog.map((t) => t.tool),
       // Nur validierte IDs (focusPrompt != null) — nie Client-Freitext.
       agent: focusPrompt ? body.agent : null,
+      request_id: requestId,
     },
   });
 
@@ -603,9 +674,14 @@ async function handleChat(
     });
   }
 
+  if (governed.kind === 'evidence_write_failed') {
+    return jsonError(503, 'EVIDENCE_WRITE_FAILED', governed.message, undefined, { request_id: requestId, session_id: sessionId });
+  }
+
   return jsonResponse({
     ok: outcome === 'success',
     session_id: sessionId,
+    request_id: requestId,
     response: finalText,
     tool_calls: toolCallsLog.length,
     actions_taken: toolCallsLog.map((t) => t.tool),

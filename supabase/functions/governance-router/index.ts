@@ -12,11 +12,18 @@
 //   1. Expansion-Stufe aus tenant_entitlements (kein neues Key-Vokabular)
 //   2. Residenz resolve_ai_residency — EU-lokal sperrt Cloud
 //   3. Kontingent (studio → llm_queries, sonst ai_calls)
-//   4. PDP mit tenant_id, AI_GATEWAY_ENFORCEMENT off|shadow|enforce,
-//      Default shadow, Fail-open bei PDP-Fehler (wie ai-gateway)
+//   4. PDP mit tenant_id, Provider (target.vendor), Modellprofil und Region,
+//      AI_GATEWAY_ENFORCEMENT off|shadow|enforce, Default shadow.
+//      MP-0: fail-closed — PDP-Fehler, Timeout oder unklare Entscheidung → 503.
+//   5. Evidence-Reservierung `ai:call_started` in ai_evidence_events —
+//      schlägt sie fehl, kein Provider-Aufruf (503 EVIDENCE_UNAVAILABLE).
+//   6. Provider-Fallback (LM Studio → Anthropic → OpenAI) NUR, wenn eine
+//      Tenant-Policy ihn je Ziel-Anbieter ausdrücklich erlaubt (Aktion
+//      `provider_fallback`, Treffer mit `allow`). Sonst kein Wechsel.
 //
-// Nach Erfolg: ai_tool_runs (tool_key governance_router, KEIN Prompt) und
-// recordUsage auf dem Stufen-Kontingent.
+// Nach dem Aufruf: Abschluss `ai:call` / `ai:call_failed` (Fehler → Alarm-Log
+// + Header x-evidence-status: incomplete), ai_tool_runs (tool_key
+// governance_router, KEIN Prompt) und recordUsage auf dem Stufen-Kontingent.
 //
 // EU-KI-VO Art. 50 (Kennzeichnung in _governance.disclosure), Art. 12
 // (Prüfpfad ohne Prompt). DSGVO Art. 5/32: Zweckbindung, kein
@@ -39,7 +46,14 @@ import {
   requireQuota,
 } from '../_shared/entitlements.ts';
 import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
-import { createServerGatewayFromEnv, localInferenceLabel } from '../_shared/aiGateway/serverFromEnv.ts';
+import { createServerGatewayFromEnv, localInferenceLabel, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
+import { fallbackExplicitlyAllowed, guardedDecide, parseEnforcementMode, parsePdpTimeoutMs, primaryPolicySource } from '../_shared/aiGateway/pdpGuard.ts';
+import {
+  buildAiCallEvidenceRow,
+  recordAiCallEvidence,
+  resolveResidencyAndRegion,
+  type AiCallEvidenceStage,
+} from '../_shared/aiGateway/callEvidence.ts';
 import { requireVerifiedAiResidency, ResidencyUnavailableError } from '../_shared/residencyGuard.ts';
 import {
   routeOfSlug,
@@ -70,8 +84,15 @@ const TOOL_KEY = 'governance_router';
 type EnforcementMode = 'off' | 'shadow' | 'enforce';
 
 function enforcementMode(): EnforcementMode {
-  const raw = (Deno.env.get('AI_GATEWAY_ENFORCEMENT') ?? 'shadow').toLowerCase();
-  return raw === 'off' || raw === 'enforce' ? raw : 'shadow';
+  return parseEnforcementMode(Deno.env.get('AI_GATEWAY_ENFORCEMENT'));
+}
+
+/** Kandidaten der Fallback-Kette in Reihenfolge (siehe _shared/aiGateway/router.ts). */
+const FALLBACK_CANDIDATES = ['anthropic', 'openai'] as const;
+
+/** Provider, der laut Routing antworten wird (vor dem Aufruf bekannt). */
+function plannedProvider(profile: string): string {
+  return profile === 'cloud-fallback' ? 'anthropic' : resolveLocalProvider();
 }
 
 function err(status: number, code: string, message: string, details?: unknown): Response {
@@ -139,44 +160,107 @@ async function pdpCheck(
   modelProfile: string,
   stage: ExpansionStage,
   residency: AiResidency,
+  provider: string,
+  providerRegion: string,
 ): Promise<{ block: Response | null; result: DecisionResult | null; mode: EnforcementMode }> {
   const mode = enforcementMode();
-  if (mode === 'off') return { block: null, result: null, mode };
-  try {
-    const request: DecisionRequest = {
+  const guarded = await guardedDecide<DecisionResult>({
+    mode,
+    timeoutMs: parsePdpTimeoutMs(Deno.env.get('AI_GATEWAY_PDP_TIMEOUT_MS')),
+    scope: 'governance-router-pep',
+    decide: () => decide(admin, {
       contract: 'v1',
       tenant_id: tenantId,
       principal: { type: 'service' },
       // Kanal ai_gateway: bestehende globale Policies greifen weiter.
       // Ein eigener Shadow-Log-Kanal wäre eine CHECK-Migration, kein Beifang.
       action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
-      target: { model: modelProfile },
+      target: { model: modelProfile, vendor: provider },
       context: { feature },
-      payload: { expansion_stage: stage, residency },
-    };
-    const result = await decide(admin, request);
+      payload: { expansion_stage: stage, residency, provider_region: providerRegion },
+    } satisfies DecisionRequest),
+  });
+  if (guarded.kind === 'off') return { block: null, result: null, mode };
+  if (guarded.kind === 'deny') return { block: err(guarded.status, guarded.code, guarded.message), result: guarded.result, mode };
+  return { block: null, result: guarded.result, mode };
+}
 
-    if (mode === 'enforce' && result.decision === 'block') {
-      return {
-        block: err(403, 'POLICY_BLOCKED',
-          result.reasons[0]?.text_de ?? 'Diese Aktion ist durch eine Unternehmensrichtlinie blockiert.'),
-        result,
-        mode,
-      };
-    }
-    if (mode === 'enforce' && result.decision === 'require_approval') {
-      return {
-        block: err(403, 'APPROVAL_REQUIRED',
-          result.reasons[0]?.text_de ?? 'Diese Aktion erfordert eine Freigabe gemäß Unternehmensrichtlinie.'),
-        result,
-        mode,
-      };
-    }
-    return { block: null, result, mode };
-  } catch (e) {
-    console.error('[governance-router-pep] pdp unavailable — fail open', e);
-    return { block: null, result: null, mode };
+/**
+ * MP-0: Welche Fallback-Anbieter erlaubt eine Tenant-Policy ausdrücklich?
+ * Nur ein Policy-Treffer mit `allow` zählt (der PDP-Default ohne Treffer
+ * nicht). PDP aus, Fehler oder Timeout → keine Erlaubnis (kein Wechsel).
+ */
+async function allowedFallbacks(
+  admin: SupabaseClient,
+  tenantId: string,
+  modelProfile: string,
+  allowCloud: boolean,
+): Promise<string[]> {
+  if (!allowCloud || enforcementMode() === 'off') return [];
+  const allowed: string[] = [];
+  for (const vendor of FALLBACK_CANDIDATES) {
+    const g = await guardedDecide<DecisionResult>({
+      mode: 'shadow',
+      timeoutMs: parsePdpTimeoutMs(Deno.env.get('AI_GATEWAY_PDP_TIMEOUT_MS')),
+      scope: 'governance-router-fallback',
+      decide: () => decide(admin, {
+        contract: 'v1',
+        tenant_id: tenantId,
+        principal: { type: 'service' },
+        action: { verb: 'provider_fallback', channel: 'ai_gateway' },
+        target: { model: modelProfile, vendor },
+        context: { feature: TOOL_KEY },
+      } satisfies DecisionRequest),
+    });
+    if (g.kind === 'ok' && fallbackExplicitlyAllowed(g.result, tenantId)) allowed.push(vendor);
   }
+  return allowed;
+}
+
+/** Evidence-Eintrag (MP-0). Wirft bei DB-Fehler — der Aufrufer entscheidet. */
+async function writeEvidence(
+  admin: SupabaseClient,
+  tenantId: string,
+  e: {
+    stage: AiCallEvidenceStage;
+    requestId: string;
+    profile: string;
+    provider: string | null;
+    model?: string | null;
+    verdict: string | null;
+    policyId?: string | null;
+    /** 'ai_policies' | 'governance_policies' — siehe primaryPolicySource. */
+    policySource?: string | null;
+    usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number } | null;
+    latencyMs: number;
+    errorCode?: string | null;
+    inputLength: number;
+  },
+): Promise<void> {
+  const row = await buildAiCallEvidenceRow({
+    tenantId,
+    stage: e.stage,
+    errorCode: e.errorCode ?? null,
+    path: 'service',
+    internalCaller: 'governance-router',
+    feature: TOOL_KEY,
+    route: '/v1/chat/completions',
+    op: 'chat.completions',
+    provider: e.provider,
+    model: e.model ?? e.profile,
+    modelProfile: e.profile,
+    localRegion: Deno.env.get('AI_GATEWAY_LOCAL_REGION') ?? null,
+    usage: e.usage ?? null,
+    verdict: e.verdict,
+    blocked: e.stage === 'blocked',
+    policyId: e.policyId ?? null,
+    policySource: e.policySource ?? null,
+    requestId: e.requestId,
+    latencyMs: e.latencyMs,
+    // Kein Prompt im Prüfpfad: nur die Länge des Request-Bodys.
+    inputLength: e.inputLength,
+  });
+  await recordAiCallEvidence(admin as unknown as Parameters<typeof recordAiCallEvidence>[0], row);
 }
 
 async function loadStage(
@@ -293,21 +377,75 @@ async function handleChat(
   parsed.request.feature = TOOL_KEY;
   parsed.request.tenant_id = tenantId;
 
+  const profile = parsed.request.model_profile;
+  const provider = plannedProvider(profile);
+  const planned = resolveResidencyAndRegion(provider, undefined, undefined, Deno.env.get('AI_GATEWAY_LOCAL_REGION') ?? null);
+  const requestId = parsed.request.trace_id ?? crypto.randomUUID();
+  parsed.request.trace_id = requestId;
+  const started = Date.now();
+
   const pep = await pdpCheck(
     admin,
     tenantId,
     TOOL_KEY,
-    parsed.request.model_profile,
+    profile,
     ctx.stage,
     ctx.residency,
+    provider,
+    planned.providerRegion,
   );
-  if (pep.block) return pep.block;
+  if (pep.block) {
+    try {
+      await writeEvidence(admin, tenantId, {
+        stage: 'blocked', requestId, profile, provider, verdict: pep.result?.decision ?? 'block',
+        policyId: pep.result?.primary_policy_id ?? null,
+        policySource: primaryPolicySource(pep.result), latencyMs: Date.now() - started, inputLength: raw.length,
+      });
+    } catch (e) {
+      console.error(JSON.stringify({ scope: 'governance-router-evidence', event: 'blocked_record_failed', severity: 'critical', alert: true, tenant_id: tenantId, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) }));
+    }
+    return pep.block;
+  }
 
+  // Evidence-Reservierung VOR dem Provider (fail-closed).
+  try {
+    await writeEvidence(admin, tenantId, {
+      stage: 'started', requestId, profile, provider, verdict: pep.result?.decision ?? 'allow',
+      policyId: pep.result?.primary_policy_id ?? null,
+      policySource: primaryPolicySource(pep.result), latencyMs: 0, inputLength: raw.length,
+    });
+  } catch (e) {
+    console.error(JSON.stringify({ scope: 'governance-router-evidence', event: 'reserve_failed', severity: 'critical', tenant_id: tenantId, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) }));
+    return err(503, 'EVIDENCE_UNAVAILABLE', 'Anfrage abgelehnt: Der Prüfpfad (Evidence) ist nicht verfügbar.');
+  }
+
+  const finalize = async (stage: 'completed' | 'failed', f: {
+    provider: string | null; model?: string | null; usage?: { input_tokens?: number; output_tokens?: number } | null; errorCode?: string | null;
+  }): Promise<boolean> => {
+    try {
+      await writeEvidence(admin, tenantId, {
+        stage, requestId, profile, provider: f.provider, model: f.model ?? null, verdict: pep.result?.decision ?? 'allow',
+        policyId: pep.result?.primary_policy_id ?? null,
+        policySource: primaryPolicySource(pep.result), usage: f.usage ?? null, latencyMs: Date.now() - started,
+        errorCode: f.errorCode ?? null, inputLength: raw.length,
+      });
+      return true;
+    } catch (e) {
+      console.error(JSON.stringify({ scope: 'governance-router-evidence', event: 'complete_failed', severity: 'critical', alert: true, stage, tenant_id: tenantId, request_id: requestId, error: String((e as Error)?.message ?? e).slice(0, 200) }));
+      return false;
+    }
+  };
+
+  const fallbackIds = await allowedFallbacks(admin, tenantId, profile, ctx.allowCloud);
   const built = await createServerGatewayFromEnv({
     allowCloudFallback: ctx.allowCloud,
     requireLmStudio: !ctx.allowCloud,
+    allowedFallbackIds: fallbackIds,
   });
-  if (!built.ok) return err(built.status, built.code, built.message);
+  if (!built.ok) {
+    await finalize('failed', { provider, errorCode: built.code });
+    return err(built.status, built.code, built.message);
+  }
 
   const meta = governanceMeta({
     residency: ctx.residency,
@@ -319,20 +457,23 @@ async function handleChat(
     localLabel: localInferenceLabel(),
   });
 
-  const started = Date.now();
   try {
     const response = parsed.wantsJson
       ? await built.gateway.extractJson(parsed.request)
       : await built.gateway.generate(parsed.request);
 
+    const actual = resolveResidencyAndRegion(response.provider, undefined, undefined, Deno.env.get('AI_GATEWAY_LOCAL_REGION') ?? null);
+    const evidenceOk = await finalize('completed', { provider: response.provider, model: response.model, usage: response.usage ?? null });
     await writeRun(admin, tenantId, {
       status: 'success',
-      profile: parsed.request.model_profile,
+      profile,
       provider: response.provider,
       inputTokens: response.usage?.input_tokens ?? 0,
       outputTokens: response.usage?.output_tokens ?? 0,
       durationMs: response.latency_ms ?? (Date.now() - started),
-      residency: ctx.residency,
+      residency: actual.residency,
+      residencyPolicy: ctx.residency,
+      fallbackAllowed: fallbackIds,
       stage: ctx.stage,
       pdp: pep.result?.decision ?? pep.mode,
       traceId: response.trace_id,
@@ -347,32 +488,39 @@ async function handleChat(
 
     const completion = formatChatResponse(
       response,
-      parsed.request.model_profile,
+      profile,
       Date.now(),
       { requestedModel: parsed.requestedModel, governance: meta },
     );
 
+    const evidenceHeader: Record<string, string> = evidenceOk ? {} : { 'x-evidence-status': 'incomplete' };
     if (body.stream === true) {
       return new Response(formatChatSse(completion), {
         status: 200,
         headers: {
           ...corsHeaders,
+          ...evidenceHeader,
           'content-type': 'text/event-stream; charset=utf-8',
           'cache-control': 'no-cache',
         },
       });
     }
-    return jsonResponse(completion, 200, corsHeaders);
+    const res = jsonResponse(completion, 200, corsHeaders);
+    if (!evidenceOk) res.headers.set('x-evidence-status', 'incomplete');
+    return res;
   } catch (error) {
     const mapped = mapInferenceError(error);
+    await finalize('failed', { provider, errorCode: mapped.code });
     await writeRun(admin, tenantId, {
       status: 'error',
-      profile: parsed.request.model_profile,
+      profile,
       provider: null,
       inputTokens: 0,
       outputTokens: 0,
       durationMs: Date.now() - started,
-      residency: ctx.residency,
+      residency: 'unverified',
+      residencyPolicy: ctx.residency,
+      fallbackAllowed: fallbackIds,
       stage: ctx.stage,
       pdp: pep.result?.decision ?? pep.mode,
       traceId: null,
@@ -392,7 +540,12 @@ async function writeRun(
     inputTokens: number;
     outputTokens: number;
     durationMs: number;
-    residency: AiResidency;
+    /** MP-0: Residenz des TATSÄCHLICH antwortenden Providers, nicht die Tenant-Einstellung. */
+    residency: string;
+    /** Residenz-Einstellung des Tenants (resolve_ai_residency). */
+    residencyPolicy: AiResidency;
+    /** Per Tenant-Policy freigegebene Fallback-Anbieter (meist leer). */
+    fallbackAllowed: string[];
     stage: ExpansionStage;
     pdp: string;
     traceId: string | null;
@@ -417,6 +570,8 @@ async function writeRun(
       profile: row.profile,
       provider: row.provider,
       residency: row.residency,
+      residency_policy: row.residencyPolicy,
+      fallback_allowed: row.fallbackAllowed,
       stage: row.stage,
       pdp: row.pdp,
       trace_id: row.traceId,

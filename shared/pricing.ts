@@ -879,9 +879,10 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
-    // Fail-closed bis die Live-Price-ID (prod_UxG9V9clbqV7qw, 149800, exclusive)
-    // verdrahtet ist — siehe ENTERPRISE_CHECKOUT_PRICE_WIRED.
-    ctaLabel: 'Enterprise anfragen',
+    // Live-Price-ID verdrahtet (ENTERPRISE_CHECKOUT_PRICE_WIRED): der CTA führt in
+    // den Stripe-Checkout, die Beschriftung muss deshalb eine Kaufaktion sein.
+    // Kontakt (SSO-Preview, Custom-DPA, PO) bleibt `CTA.enterprise` → /contact-sales.
+    ctaLabel: 'Enterprise starten',
     limits: {
       bots: 20,
       answersPerMonth: 50_000,

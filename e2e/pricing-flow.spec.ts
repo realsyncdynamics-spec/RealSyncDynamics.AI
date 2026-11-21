@@ -4,7 +4,8 @@ const BASE_URL = process.env.BASE_URL || process.env.TEST_BASE_URL || 'http://lo
 
 // Sellable cards on /pricing (SELLABLE_PRICING_TIERS). Partner is legacy.
 const CARD_IDS = ['starter', 'growth', 'agency', 'enterprise'] as const;
-const SELF_SERVICE_CHECKOUT = ['starter', 'growth', 'agency'] as const;
+// Enterprise ist seit 2026-10-29 per Stripe-Checkout buchbar (ENTERPRISE_CHECKOUT_PRICE_WIRED).
+const SELF_SERVICE_CHECKOUT = ['starter', 'growth', 'agency', 'enterprise'] as const;
 
 test.describe('Pricing Flow', () => {
   test.describe('Pricing Overview (/pricing)', () => {
@@ -70,8 +71,8 @@ test.describe('Pricing Flow', () => {
       }
     });
 
-    test('enterprise and partner checkout redirect to contact-sales', async ({ page }) => {
-      for (const planKey of ['enterprise', 'partner', 'partner_yearly']) {
+    test('partner checkout redirects to contact-sales', async ({ page }) => {
+      for (const planKey of ['partner', 'partner_yearly']) {
         await page.goto(`${BASE_URL}/checkout/${planKey}`);
         await page.waitForURL(/\/contact-sales/);
         await expect(page).toHaveURL(/plan=/);

@@ -16,12 +16,15 @@
 // Reiner Read-Only-Report. Kein Exit-Fail (Diagnose, kein Gate).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { classifyVoiceApiResponse, VOICE_ROUTES } from './voice-route-check.mjs';
+
 const BASES = [
   { name: 'pages.dev', url: 'https://realsyncdynamics-ai.pages.dev' },
   { name: 'apex',      url: 'https://realsyncdynamicsai.de' },
+  { name: 'www',       url: 'https://www.realsyncdynamicsai.de' },
 ];
 
-const ROUTES = ['/', '/pricing', '/pricing/', '/audit', '/audit/', '/login', '/app'];
+const ROUTES = ['/', '/pricing', '/pricing/', '/audit', '/audit/', '/login', '/app', ...VOICE_ROUTES];
 const METHODS = ['HEAD', 'GET'];
 const TIMEOUT_MS = 15000;
 const UA = 'rsd-diagnose/1';
@@ -51,11 +54,12 @@ async function probe(baseUrl, route, method) {
   const url = baseUrl + route;
   const rec = {
     url, method, status: 0, finalUrl: url,
-    headers: {}, bodyPreview: '', error: null,
+    headers: {}, bodyPreview: '', apiCheck: null, error: null,
   };
   try {
     // redirect: manual, um Redirect-Ziele und Trailing-Slash-Regeln zu sehen.
     const r = await fetchWithTimeout(url, { method, redirect: 'manual' });
+    let checkedResponse = r;
     rec.status = r.status;
     rec.headers = headerSnapshot(r);
     rec.finalUrl = url;
@@ -63,14 +67,21 @@ async function probe(baseUrl, route, method) {
     if (r.status >= 300 && r.status < 400 && r.headers.get('location')) {
       const target = new URL(r.headers.get('location'), url).toString();
       const rf = await fetchWithTimeout(target, { method, redirect: 'follow' });
+      checkedResponse = rf;
       rec.status = rf.status;
       rec.finalUrl = rf.url;
       rec.headers = headerSnapshot(rf);
-      if (method === 'GET' && rf.status >= 400) {
+      if (method === 'GET' && rf.status >= 400 && !VOICE_ROUTES.includes(route)) {
         rec.bodyPreview = (await safeText(rf)).slice(0, 300);
       }
-    } else if (method === 'GET' && r.status >= 400) {
+    } else if (method === 'GET' && r.status >= 400 && !VOICE_ROUTES.includes(route)) {
       rec.bodyPreview = (await safeText(r)).slice(0, 300);
+    }
+    if (VOICE_ROUTES.includes(route)) {
+      rec.apiCheck = classifyVoiceApiResponse({
+        route, method, status: rec.status, contentType: rec.headers['content-type'],
+        body: method === 'GET' ? await checkedResponse.text() : '',
+      });
     }
   } catch (e) {
     rec.error = e.code || e.name || e.message || 'unknown';
@@ -103,6 +114,10 @@ function fmt(rec) {
   if (h['location']) lines.push(`        location=${h['location']}`);
   if (h['cache-control']) lines.push(`        cache-control=${h['cache-control']}`);
   if (rec.bodyPreview) lines.push(`        body[≤300]=${rec.bodyPreview}`);
+  if (rec.apiCheck) {
+    const verdict = rec.apiCheck.ok === true ? 'PASS' : rec.apiCheck.ok === false ? 'FAIL' : 'ADVISORY';
+    lines.push(`        api=${rec.apiCheck.state} [${verdict}]`);
+  }
   return lines.join('\n');
 }
 
@@ -120,7 +135,8 @@ async function main() {
       }
     }
   }
-  console.log('\nHinweis: Diagnose-Report (read-only). Edge-Befunde → .archive/root-docs/REALSYNC_DOMAIN_EDGE_DIAGNOSIS.md');
+  console.log('\nHinweis: Read-only. GET-API-PASS beweist nur das Routing, nicht Audio-End-to-End, KV oder Secrets. HEAD ist advisory.');
+  console.log('Voice bleibt bis zur ausdruecklichen Produktionsfreigabe deaktiviert.');
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

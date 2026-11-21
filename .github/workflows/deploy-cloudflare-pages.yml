@@ -6,6 +6,8 @@ on:
     paths:
       - 'src/**'
       - 'platform/**'
+      - 'functions/**'
+      - 'test/company-voice/**'
       - 'public/**'
       - 'scripts/**'
       - 'index.html'
@@ -21,6 +23,8 @@ on:
     paths:
       - 'src/**'
       - 'platform/**'
+      - 'functions/**'
+      - 'test/company-voice/**'
       - 'public/**'
       - 'scripts/**'
       - 'index.html'
@@ -29,6 +33,8 @@ on:
       - 'vite.config.ts'
       - 'tsconfig.json'
       - 'wrangler.toml'
+      - '_redirects'
+      - '_headers'
       - '.github/workflows/deploy-cloudflare-pages.yml'
   workflow_dispatch:
 
@@ -122,6 +128,8 @@ jobs:
           cache: 'npm'
       - name: Install
         run: npm ci
+      - name: Test Voice API routing classifier (offline)
+        run: node --test scripts/voice-route-check.test.mjs
       - name: Lint TypeScript
         run: npm run lint
       - name: Install Playwright Chromium

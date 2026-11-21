@@ -107,6 +107,35 @@
     if (e.origin !== pageOrigin) return;
     const data = e.data;
     if (!data || data.__rsdGovernance !== true) return;
+    if (data.type === 'rsd:get_buffer') return;
+    if (data.decide && typeof data.decide === 'object' && typeof data.decide.id === 'string') {
+      const decide = data.decide;
+      try {
+        chrome.runtime.sendMessage({ type: 'rsd:decide', decide }, (r) => {
+          if (chrome.runtime.lastError) {
+            window.postMessage({
+              __rsdGovernance: true,
+              decision: { id: decide.id, proceed: false },
+            }, pageOrigin);
+            return;
+          }
+          window.postMessage({
+            __rsdGovernance: true,
+            decision: {
+              id: decide.id,
+              proceed: r?.proceed === true,
+              action_id: typeof r?.action_id === 'string' ? r.action_id : null,
+            },
+          }, pageOrigin);
+        });
+      } catch {
+        window.postMessage({
+          __rsdGovernance: true,
+          decision: { id: decide.id, proceed: false },
+        }, pageOrigin);
+      }
+      return;
+    }
     const event = data.event;
     if (!event || typeof event !== 'object') return;
     emit(event);

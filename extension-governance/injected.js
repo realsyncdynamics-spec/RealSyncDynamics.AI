@@ -24,6 +24,9 @@
     'api.deepseek.com',
   ];
 
+  const DECISION_HOST = 'gate.realsyncdynamics.test';
+  const DECISION_TIMEOUT_MS = 1500;
+
   const pageUrl = location.href;
   const pageOrigin = location.origin;
 
@@ -41,12 +44,54 @@
     } catch { /* ignore */ }
   }
 
+  function holdDecision(meta) {
+    const id = (crypto.randomUUID && crypto.randomUUID()) || `rsd-${Date.now()}`;
+    return new Promise((resolve) => {
+      let settled = false;
+      function finish(proceed, actionId) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        window.removeEventListener('message', onMsg);
+        resolve(proceed === true && typeof actionId === 'string' ? actionId : null);
+      }
+      function onMsg(e) {
+        if (e.source !== window || e.origin !== pageOrigin) return;
+        const data = e.data;
+        if (!data || data.__rsdGovernance !== true || !data.decision) return;
+        if (data.decision.id !== id) return;
+        finish(data.decision.proceed === true, data.decision.action_id);
+      }
+      const timer = setTimeout(() => finish(false, null), DECISION_TIMEOUT_MS);
+      window.addEventListener('message', onMsg);
+      try {
+        window.postMessage({
+          __rsdGovernance: true,
+          decide: { id, url: meta.url, method: meta.method, host: meta.host },
+        }, pageOrigin);
+      } catch {
+        finish(false, null);
+      }
+    });
+  }
+
+  function deniedFetch() {
+    return Promise.reject(new TypeError('Failed to fetch'));
+  }
+
   // ── fetch / XHR to AI-vendor hosts ─────────────────────────
   const origFetch = window.fetch;
   window.fetch = function (input, init) {
     try {
       const url = typeof input === 'string' ? input : input?.url;
       const host = url ? hostFromUrl(url) : null;
+      if (host === DECISION_HOST) {
+        const method = (init?.method ?? 'GET').toUpperCase();
+        return holdDecision({ url, method, host }).then((actionId) => {
+          if (!actionId) return deniedFetch();
+          return origFetch.apply(this, arguments);
+        });
+      }
       if (host && isAiHost(host)) {
         emit({
           event_type: 'agent.runtime.call',
@@ -68,6 +113,9 @@
   XMLHttpRequest.prototype.open = function (method, url) {
     try {
       const host = hostFromUrl(url);
+      this.__rsdHost = host;
+      this.__rsdUrl = url;
+      this.__rsdMethod = method;
       if (host && isAiHost(host)) {
         emit({
           event_type: 'agent.runtime.call',
@@ -83,6 +131,23 @@
       }
     } catch { /* ignore */ }
     return origOpen.apply(this, arguments);
+  };
+
+  const origSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (body) {
+    if (this.__rsdHost === DECISION_HOST) {
+      const xhr = this;
+      const args = arguments;
+      holdDecision({ url: xhr.__rsdUrl, method: xhr.__rsdMethod, host: xhr.__rsdHost }).then((actionId) => {
+        if (!actionId) {
+          try { xhr.abort(); } catch { /* ignore */ }
+          return;
+        }
+        origSend.apply(xhr, args);
+      });
+      return;
+    }
+    return origSend.apply(this, arguments);
   };
 
   // ── Cookies set without recognised consent ─────────────────

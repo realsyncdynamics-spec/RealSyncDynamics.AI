@@ -5,6 +5,7 @@
 // taps are firing before flushing.
 
 const STORAGE_KEY = 'rsd_governance_config';
+const GATEWAY_KEY = 'rsd_gateway_config';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,6 +22,11 @@ function loadConfig() {
     $('token').value = cfg.token ?? '';
     setStatus(cfg.token ? 'Konfiguriert.' : 'Noch nicht konfiguriert.');
   });
+  chrome.storage.local.get([GATEWAY_KEY], (res) => {
+    const gate = res[GATEWAY_KEY] ?? {};
+    $('gateway').value = gate.gatewayUrl ?? '';
+    $('gatewayToken').value = gate.token ?? '';
+  });
 }
 
 function saveConfig() {
@@ -35,7 +41,23 @@ function saveConfig() {
     return;
   }
   chrome.storage.local.set({ [STORAGE_KEY]: { ingestUrl, token } }, () => {
-    setStatus('Gespeichert.');
+    const gatewayUrl = $('gateway').value.trim();
+    const gatewayToken = $('gatewayToken').value.trim();
+    if (!gatewayUrl && !gatewayToken) {
+      chrome.storage.local.remove(GATEWAY_KEY, () => setStatus('Gespeichert.'));
+      return;
+    }
+    if (!/^https:\/\/[^/]+/.test(gatewayUrl) || gatewayUrl.includes('governance-ingest')) {
+      setStatus('Gateway-URL ist kein Ingest-Endpunkt.', true);
+      return;
+    }
+    if (!gatewayToken || gatewayToken.startsWith('rsd_gov_')) {
+      setStatus('Gateway-Key darf nicht rsd_gov_ sein.', true);
+      return;
+    }
+    chrome.storage.local.set({ [GATEWAY_KEY]: { gatewayUrl, token: gatewayToken } }, () => {
+      setStatus('Gespeichert.');
+    });
   });
 }
 

@@ -502,8 +502,8 @@ export const pricingPlans: PricingPlan[] = [
       'Advanced Analytics & Risk-Scoring',
     ],
     cta: {
-      label: 'Enterprise anfragen',
-      href: '/contact-sales?plan=enterprise&source=pricing',
+      label: 'Enterprise starten',
+      href: '/checkout/enterprise',
     },
     checkoutPath: '/checkout/enterprise',
     problemsSolved: [

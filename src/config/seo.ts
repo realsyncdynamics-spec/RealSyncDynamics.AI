@@ -562,7 +562,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/contact-sales': {
     title: 'Enterprise anfragen – SLA, Multi-Org | RealSync Dynamics AI',
     description:
-      'Enterprise: 1.498 €/Monat, ohne Testphase — Buchung derzeit auf Anfrage über den Vertrieb. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
+      'Enterprise: 1.498 €/Monat, ohne Testphase — direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben, wir antworten per E-Mail.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

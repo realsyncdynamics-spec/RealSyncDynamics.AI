@@ -32,9 +32,21 @@ Keine erfundenen Kennzahlen, SLAs, Referenzen; Status aus `src/product/implement
 
 ## Design und Landing
 
-Hard-Edge-UI (Obsidian/Titanium/Security-Blue, 90°-Kanten, Monospace für Metadaten); Status-
-farben getrennt von Brand-Akzenten. Landing gezielt verbessern, Funktionen erhalten; alte
+Verbindlich für Konzeption, Entwicklung und Abnahme aller bestehenden und künftigen Produkte:
+[RealSync-Infrastrukturregel 2027](.github/RealSync_Infrastrukturregel_2027.md).
+Alle Produkte unter RealSync Dynamics & AI auf `realsyncdynamicsai.de`, mit eigener Landingpage,
+gemeinsamem weißem Designsystem und derselben SYNC-Figur; produktbezogene Hero-Bühnen.
+Diese Vorgabe ersetzt frühere dunkle Designvorgaben, auch in nachgeordneten Profilen.
+Statusfarben bleiben von Brand-Akzenten getrennt. Landing gezielt verbessern, Funktionen erhalten; alte
 Landing-Dateien sind kein Löschbeleg (`npm run check:dead` liefert nur Kandidaten).
+
+## Gemeinsame Plattform
+
+Zentrale Anmeldung, Mandanten, Rollen, Billing, Produktberechtigungen und Governance wiederverwenden;
+keine separaten Konto-/Billing-/Backend-Systeme je Landingpage. Berechtigungen serverseitig prüfen,
+Produktdaten und Laufzeiten mandantenisoliert halten. Kundenweg: Hauptseite → Produktseite →
+Anmeldung/Tarif → Einrichtung → gemeinsames Dashboard. Abnahme nach der verlinkten Regel;
+Zielzustand und nachgewiesenen Betriebsstatus getrennt ausweisen.
 
 ## Freigaben
 

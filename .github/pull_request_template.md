@@ -25,6 +25,16 @@
 
 <!-- Nur ausgeführte Prüfungen. Gefilterter Typecheck, Stubs, fehlende oder andere Paketversionen = TEILWEISE. -->
 
+## Produkt- und Infrastrukturabnahme
+
+Bei Produkt-, Landing- oder Plattformänderungen gilt die [RealSync-Infrastrukturregel 2027](RealSync_Infrastrukturregel_2027.md).
+Für jeden Punkt Nachweis oder begründetes „nicht betroffen“ angeben; offene Prüfungen bleiben offen.
+
+- [ ] Produktkatalog, direkte Zielroute und Kundenweg bis Einrichtung/Dashboard geprüft.
+- [ ] Gemeinsames weißes Design, konsistente SYNC-Figur, Mobilansicht und Medien-Fallbacks geprüft.
+- [ ] Zentrale Anmeldung, Mandant, Rollen und serverseitige Produktberechtigung nachgewiesen; gemeinsame Dienste wiederverwendet.
+- [ ] Produktstatus und Tarif mit maßgeblichen Quellen abgeglichen; externe Integrationen und kostenpflichtige Aktionen separat nachgewiesen.
+
 ## Deploy-Wirkung
 
 <!-- Welche Systeme deployt der Merge automatisch? Pages / Supabase DB / Edge Functions / VPS-Runtime / Workers / keine.

@@ -1,0 +1,43 @@
+.rs-governance-hero{position:relative;min-height:190svh;isolation:isolate;background:#f8fafd;color:#0b1220}
+.rs-governance-hero *{box-sizing:border-box}
+.rs-governance-hero__sticky{position:sticky;top:0;display:flex;align-items:center;height:100svh;min-height:620px;overflow:hidden}
+.rs-governance-hero__glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 48% 58% at 72% 45%,rgba(69,144,255,.15),transparent 72%),radial-gradient(ellipse 37% 52% at 77% 59%,rgba(139,92,246,.10),transparent 74%)}
+.rs-governance-hero__scene{position:absolute;right:-8%;top:3%;width:68%;height:94%;pointer-events:none;filter:drop-shadow(0 32px 42px rgba(45,110,220,.09))}
+.rs-governance-hero__scene canvas{display:block}
+.rs-governance-hero__copy{position:relative;z-index:2;margin-left:clamp(24px,8vw,148px);padding:48px 0;width:min(660px,58%);will-change:transform,opacity}
+.rs-governance-hero__eyebrow{margin:0 0 23px;color:#3e5f9b;letter-spacing:.18em;font-size:11px;font-weight:800}
+.rs-governance-hero h1{margin:0 0 25px;max-width:730px;font-size:clamp(46px,6.2vw,96px);font-weight:750;letter-spacing:-.072em;line-height:1.04}
+.rs-governance-hero h1 span{display:block;color:#2563eb}
+.rs-governance-hero__lead{max-width:495px;margin:0 0 32px;font-size:clamp(16px,1.5vw,19px);line-height:1.65;color:#52627b}
+.rs-governance-hero__actions{display:flex;flex-wrap:wrap;gap:12px}
+.rs-governance-hero__btn{display:inline-flex;align-items:center;justify-content:center;gap:15px;min-height:52px;padding:0 20px;border-radius:12px;text-decoration:none;font-size:14px;font-weight:700;transition:background .2s,transform .2s,box-shadow .2s}
+.rs-governance-hero__btn:hover{transform:translateY(-2px)}
+.rs-governance-hero__btn:focus-visible{outline:3px solid #0c85e9;outline-offset:4px}
+.rs-governance-hero__btn--primary{background:#155ae3;color:#fff;box-shadow:0 14px 26px rgba(21,90,227,.2)}
+.rs-governance-hero__btn--primary:hover{background:#0946bd}
+.rs-governance-hero__btn--outline{background:#ffffffdd;color:#162848;border:1px solid #dce5f2}
+.rs-governance-hero__btn--outline:hover{background:#fff}
+.rs-governance-hero__domains{margin-top:62px;color:#71829c;font-size:10px;font-weight:750;letter-spacing:.12em;line-height:2}
+.rs-governance-hero__domains span{margin:0 8px;color:#9daeca}
+.rs-governance-hero__scroll{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);font-size:10px;font-weight:700;letter-spacing:.16em;color:#8293ab}
+.rs-governance-hero__fallback{display:grid;place-items:center;width:100%;height:100%;perspective:850px}
+.rs-governance-hero__fallback-cube{width:min(38vw,310px);aspect-ratio:1;transform:rotateX(-22deg) rotateY(35deg);border:2px solid #7cbbf2aa;background:linear-gradient(130deg,#72bfff30,#a99eff14);box-shadow:inset 0 0 44px #55b8ff3d,0 38px 80px #5aa5ff26}
+@media(max-width:900px){.rs-governance-hero__scene{width:100%;right:-30%;opacity:.65}.rs-governance-hero__copy{width:79%;margin-left:6vw}.rs-governance-hero h1{font-size:clamp(45px,8vw,78px)}}
+@media(max-width:600px){.rs-governance-hero{min-height:145svh}.rs-governance-hero__sticky{align-items:flex-start;min-height:640px}.rs-governance-hero__scene{width:130%;height:66%;top:32%;right:-36%;opacity:.4}.rs-governance-hero__copy{width:calc(100% - 40px);margin:0 20px;padding-top:clamp(76px,15vh,115px)}.rs-governance-hero h1{font-size:clamp(44px,11vw,65px)}.rs-governance-hero__lead{max-width:380px;font-size:16px}.rs-governance-hero__btn{min-height:48px;padding:0 15px;font-size:12px}.rs-governance-hero__domains{margin-top:35px}}
+@media(prefers-reduced-motion:reduce){.rs-governance-hero{min-height:100svh}.rs-governance-hero__copy{will-change:auto;transform:none!important;opacity:1!important}.rs-governance-hero__btn{transition:none}.rs-governance-hero__btn:hover{transform:none}}
+
+/* Mobile: keep all marketing copy and conversion actions usable without WebGL. */
+.rs-governance-hero__activate{
+  position:absolute;z-index:4;right:clamp(18px,5vw,48px);bottom:62px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+  max-width:min(280px,75vw);text-align:right;font-size:11px;
+  line-height:1.5;color:#425679;
+}
+.rs-governance-hero__activate button{
+  cursor:pointer;background:#fff;border:1px solid #b7ccee;color:#1553b1;
+  font:inherit;font-size:12px;font-weight:750;min-height:44px;
+  border-radius:10px;padding:10px 14px;box-shadow:0 8px 24px #1b5ccc15;
+}
+.rs-governance-hero__activate button:hover{background:#edf5ff}
+.rs-governance-hero__activate button:focus-visible{outline:3px solid #0c85e9;outline-offset:3px}
+@media(max-width:600px){.rs-governance-hero__activate{right:20px;bottom:50px}}

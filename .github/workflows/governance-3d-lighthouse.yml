@@ -1,0 +1,63 @@
+name: Governance 3D Lighthouse (mobile)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/landing/governance-3d/**'
+      - 'src/pages/Governance3DPreviewPage.tsx'
+      - 'src/App.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'lighthouserc-governance-3d.json'
+      - '.github/workflows/governance-3d-lighthouse.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: governance-3d-lh-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  mobile-lighthouse:
+    name: Governance 3D / Lighthouse Mobile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          SKIP_PRERENDER: '1'
+          VITE_BASE: '/'
+      - name: Start local preview
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 > preview-server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/design/governance-3d > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat preview-server.log
+          exit 1
+      - name: Run dedicated Lighthouse mobile audit
+        run: npx --yes @lhci/cli@0.14.x autorun --config=./lighthouserc-governance-3d.json
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: governance-3d-lighthouse-mobile
+          path: |
+            .lighthouseci/
+            preview-server.log
+          if-no-files-found: ignore
+          retention-days: 14

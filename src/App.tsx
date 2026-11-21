@@ -35,6 +35,9 @@ const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default:
 const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
+// Isolated product preview; public root homepage and other products are unchanged.
+const Governance3DPreviewPage = lazy(() => import('./pages/Governance3DPreviewPage'));
+
 const ScanStartPage = lazy(() => import('./pages/product-entry-points/ScanStartPage').then((m) => ({ default: m.ScanStartPage })));
 const NeedsCheckPage = lazy(() => import('./pages/NeedsCheckPage').then((m) => ({ default: m.NeedsCheckPage })));
 const NeedsCheckSavedPage = lazy(() => import('./pages/NeedsCheckSavedPage').then((m) => ({ default: m.NeedsCheckSavedPage })));
@@ -551,6 +554,7 @@ function RoutesWithTracking() {
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
+      <Route path="/design/governance-3d" element={<Governance3DPreviewPage />} />
       <Route path="/design/landing-v6" element={<LandingV6 />} />
       <Route path="/design/landing-v5" element={<LandingV5 />} />
       <Route path="/design/landing-v4" element={<LandingV4 />} />

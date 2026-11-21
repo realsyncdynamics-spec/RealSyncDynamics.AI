@@ -17,7 +17,9 @@
 //     geprüft über requireAuthAndTenant (jedes Mitglied). Anon-Key,
 //     service_role-Bearer oder fehlender Header → 401, fremder Tenant → 403.
 //   - Service-Pfad: `x-internal-key` gegen Edge-Secret AI_GATEWAY_INTERNAL_KEY
-//     (fail-closed, konstante Zeit) + `x-internal-caller`.
+//     (fail-closed, konstante Zeit) + `x-internal-caller`. Mandant NUR über
+//     `x-internal-tenant-assertion` (HMAC mit AI_GATEWAY_TENANT_SIGNING_KEY,
+//     MP-0); tenant_id im Body ohne Bestätigung → 403.
 //   - Anon-Audit-Copilot: Body `{ mode: 'audit_anon', input: { question } }`,
 //     fester Zweck/Prompt, IP-Hash-Limit, anon_chat_runs fail-closed.
 //   - Cloud-Kette (Anthropic/OpenAI): in KEINEM Pfad, auch nicht im
@@ -31,7 +33,8 @@
 // functions in `_shared/aiGateway/openaiCompat.ts`.
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 
-import { createServerGatewayFromEnv } from '../_shared/aiGateway/serverFromEnv.ts';
+import { createServerGatewayFromEnv, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
+import { guardedDecide, parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
 import type { WindowState } from '../_shared/aiGateway/rateLimit.ts';
 import { jsonError } from '../_shared/gateway.ts';
 import { decide } from '../_shared/pdp/decide.ts';
@@ -45,7 +48,13 @@ import {
   type AiEvidenceEventInsert,
 } from '../_shared/aiGateway/callEvidence.ts';
 import { recordUsage } from '../_shared/usage.ts';
-import { createAiGatewayHandler, type GatewayLike, type UsageBooking } from './handler.ts';
+import {
+  createAiGatewayHandler,
+  type GatewayLike,
+  type PdpContext,
+  type ProviderTarget,
+  type UsageBooking,
+} from './handler.ts';
 
 // Per-instance rate-limit windows (pro Edge-Isolate, verfallen beim
 // Cold-Start). Schlüssel seit der P0-Härtung: Nutzer/Tenant/interner
@@ -53,25 +62,20 @@ import { createAiGatewayHandler, type GatewayLike, type UsageBooking } from './h
 const MINUTE_WINDOWS = new Map<string, WindowState>();
 const HOUR_WINDOWS   = new Map<string, WindowState>();
 
-// ─── PDP-Anbindung: der Gateway als erster Policy Enforcement Point ─────────
+// ─── PDP-Anbindung: der Gateway als Policy Enforcement Point (MP-0) ─────────
 //
 // Modi (Plan P0-4, Rollout-Regel R5 — Enforcement nie still einschalten):
-//   off     → Gateway verhaelt sich exakt wie vor dieser Aenderung
-//   shadow  → Entscheidung wird berechnet und geloggt, aber NIE durchgesetzt
+//   off     → keine Prüfung (bewusste Betreiber-Einstellung)
+//   shadow  → Entscheidung wird berechnet und geloggt, Policy-Treffer werden
+//             NICHT durchgesetzt (Default)
 //   enforce → block / require_approval fuehren zu 403 mit deutscher Begruendung
-// Default ist shadow: Produktionsverhalten aendert sich erst durch bewusstes
-// Umschalten der Env-Variable, nicht durch diesen Deploy.
 //
-// Grenze (ehrlich, Plan §2.3): Der PEP wertet weiterhin nur GLOBALE
-// ai_policies (tenant_id IS NULL) aus. Und der Ziel-Vendor steht erst nach
-// dem internen Routing fest, deshalb bewertet dieser PEP model_profile/
-// feature, nicht den finalen Vendor.
-type EnforcementMode = 'off' | 'shadow' | 'enforce';
-
-function enforcementMode(): EnforcementMode {
-  const raw = (Deno.env.get('AI_GATEWAY_ENFORCEMENT') ?? 'shadow').toLowerCase();
-  return raw === 'off' || raw === 'enforce' ? raw : 'shadow';
-}
+// MP-0 (fail-closed): In shadow UND enforce lehnt ein PDP-Fehler, ein Timeout
+// (AI_GATEWAY_PDP_TIMEOUT_MS, Default 2000) oder eine unklare Entscheidung den
+// Aufruf ab (503), statt ihn durchzulassen. Geprüft wird mandantenspezifisch
+// (tenant_id des verifizierten Principals) mit Provider als `target.vendor`,
+// Modellprofil als `target.model` und Region/Residenz im Payload.
+// Siehe _shared/aiGateway/pdpGuard.ts.
 
 // deno-lint-ignore no-explicit-any
 let pdpAdmin: any | null = null;
@@ -86,53 +90,61 @@ async function getPdpAdmin(): Promise<any | null> {
   return pdpAdmin;
 }
 
-/**
- * Prueft die Anfrage gegen den PDP. Rueckgabe:
- *   Response  → Aktion ist durchgesetzt blockiert (nur im enforce-Modus)
- *   Ergebnis  → warn/allow: Aufrufer haengt es als `governance` an die Antwort
- *   null      → PDP aus, nicht konfiguriert oder nicht erreichbar
- *
- * Ausfallverhalten: Ein PDP-Fehler laesst den Gateway durch (fail open) und
- * wird laut geloggt.
- */
-async function pdpCheck(feature: string, modelProfile: string): Promise<Response | DecisionResult | null> {
-  const mode = enforcementMode();
-  if (mode === 'off') return null;
-  try {
-    const admin = await getPdpAdmin();
-    if (!admin) return null;
-    const request: DecisionRequest = {
-      contract: 'v1',
-      tenant_id: null, // PEP wertet (noch) nur globale Policies aus
-      principal: { type: 'service' },
-      action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
-      target: { model: modelProfile },
-      context: { feature },
-    };
-    const result = await decide(admin, request);
-
-    if (result.matched_policy_ids.length > 0) {
+async function pdpCheck(ctx: PdpContext): Promise<Response | DecisionResult | null> {
+  const mode = parseEnforcementMode(Deno.env.get('AI_GATEWAY_ENFORCEMENT'));
+  const guarded = await guardedDecide<DecisionResult>({
+    mode,
+    timeoutMs: parsePdpTimeoutMs(Deno.env.get('AI_GATEWAY_PDP_TIMEOUT_MS')),
+    scope: 'ai-gateway-pep',
+    decide: async () => {
+      const admin = await getPdpAdmin();
+      if (!admin) throw new Error('pdp admin client not configured');
+      const request: DecisionRequest = {
+        contract: 'v1',
+        tenant_id: ctx.tenantId,
+        principal: ctx.path === 'user' && ctx.userId
+          ? { type: 'user', id: ctx.userId }
+          : { type: 'service' },
+        action: { verb: 'invoke', channel: 'ai_gateway', event_type: 'prompt_sent' },
+        target: { model: ctx.modelProfile, ...(ctx.provider ? { vendor: ctx.provider } : {}) },
+        payload: { provider_region: ctx.providerRegion, residency: ctx.residency, path: ctx.path },
+        context: { feature: ctx.feature },
+      };
+      return await decide(admin, request);
+    },
+  });
+  if (guarded.kind === 'off') return null;
+  if (guarded.kind === 'deny') {
+    if (guarded.result) {
       console.log(JSON.stringify({
-        scope: 'ai-gateway-pep', mode, feature, model_profile: modelProfile,
-        decision: result.decision, policies: result.matched_policy_ids,
-        snapshot: result.snapshot_version,
+        scope: 'ai-gateway-pep', mode, decision: guarded.result.decision, enforced: true,
+        tenant_id: ctx.tenantId, feature: ctx.feature, provider: ctx.provider,
+        policies: guarded.result.matched_policy_ids,
       }));
     }
-
-    if (mode === 'enforce' && result.decision === 'block') {
-      return jsonError(403, 'POLICY_BLOCKED',
-        result.reasons[0]?.text_de ?? 'Diese Aktion ist durch eine Unternehmensrichtlinie blockiert.');
-    }
-    if (mode === 'enforce' && result.decision === 'require_approval') {
-      return jsonError(403, 'APPROVAL_REQUIRED',
-        result.reasons[0]?.text_de ?? 'Diese Aktion erfordert eine Freigabe gemäß Unternehmensrichtlinie.');
-    }
-    // Shadow-Modus veraendert die Antwort NIE — auch kein warn-Anhang.
-    return mode === 'enforce' ? result : null;
-  } catch (e) {
-    console.error('[ai-gateway-pep] pdp unavailable — fail open', e);
-    return null;
+    return jsonError(guarded.status, guarded.code, guarded.message);
   }
+  const result = guarded.result;
+  if (result.matched_policy_ids.length > 0) {
+    console.log(JSON.stringify({
+      scope: 'ai-gateway-pep', mode, tenant_id: ctx.tenantId, feature: ctx.feature,
+      model_profile: ctx.modelProfile, provider: ctx.provider, provider_region: ctx.providerRegion,
+      decision: result.decision, policies: result.matched_policy_ids, snapshot: result.snapshot_version,
+    }));
+  }
+  // Shadow-Modus veraendert die Antwort NIE — auch kein warn-Anhang.
+  return mode === 'enforce' ? result : null;
+}
+
+// Routing-Ziel vor dem Provider-Aufruf: der Gateway baut ausschliesslich den
+// lokalen Slot (allowCloudFallback=false), also antwortet lm_studio oder
+// ollama. Die Region ist nur belegt, wenn der Betreiber sie setzt
+// (AI_GATEWAY_LOCAL_REGION=eu) — sonst `unverified`, kein EU-Default.
+function providerTarget(): ProviderTarget {
+  return {
+    provider: resolveLocalProvider(),
+    localRegion: Deno.env.get('AI_GATEWAY_LOCAL_REGION') ?? null,
+  };
 }
 
 // deno-lint-ignore no-explicit-any
@@ -191,8 +203,9 @@ async function recordGatewayUsage(b: UsageBooking): Promise<void> {
   if (b.tokens > 0) await recordUsage(admin, b.tenantId, 'limit.ai_tokens_monthly', b.tokens, meta);
 }
 
-// Evidence pro angemeldetem KI-Call (WP9 / M3): schreibt einen append-only
-// Eintrag in ai_evidence_events (mit DB-Hash-Kette).
+// Evidence pro KI-Call (WP9 / M3, MP-0 fail-closed): append-only Einträge in
+// ai_evidence_events (DB-Hash-Kette). Ohne Admin-Client wirft die Funktion —
+// der Handler bricht dann VOR dem Provider-Aufruf mit 503 ab.
 async function recordGatewayEvidence(entry: AiEvidenceEventInsert): Promise<void> {
   const admin = await getPdpAdmin();
   if (!admin) throw new Error('evidence admin client not configured');
@@ -205,6 +218,7 @@ Deno.serve(createAiGatewayHandler({
   gateBuilder,
   buildGateway,
   pdpCheck,
+  providerTarget,
   anonAuditLog,
   recordUsage: recordGatewayUsage,
   recordEvidence: recordGatewayEvidence,

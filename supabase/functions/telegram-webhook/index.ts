@@ -18,6 +18,7 @@ import { audit } from '../_shared/auditLog.ts';
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../_shared/aiGateway/internalClient.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
+import { telegramWebhookAuthorized } from './auth.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!;
 const SRK               = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -25,12 +26,13 @@ const BOT_TOKEN         = Deno.env.get('TELEGRAM_BOT_TOKEN');
 const WEBHOOK_SECRET    = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
 const APP_BASE_URL      = Deno.env.get('PUBLIC_APP_URL') ?? Deno.env.get('APP_BASE_URL') ?? 'https://app.realsyncdynamicsai.de';
 
-if (!WEBHOOK_SECRET) {
-  // Webhook ohne Secret ist spoofbar — beim Start laut warnen.
+if (!telegramWebhookAuthorized(WEBHOOK_SECRET, WEBHOOK_SECRET)) {
+  // Nicht nur warnen: jede eingehende Nachricht bleibt ohne gültiges
+  // Provider-Secret dauerhaft gesperrt (keine Service-Role-DB-Zugriffe).
   console.error(JSON.stringify({
-    level: 'warn',
+    level: 'error',
     scope: 'telegram_webhook_startup',
-    msg:   'TELEGRAM_WEBHOOK_SECRET not set — webhook is unauthenticated. Set the secret via BotFather and configure this env var.',
+    msg:   'TELEGRAM_WEBHOOK_SECRET is missing or invalid — all Telegram updates are rejected.',
   }));
 }
 
@@ -368,13 +370,12 @@ Deno.serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    // Webhook-Secret prüfen — falls konfiguriert ist es Pflicht
-    if (WEBHOOK_SECRET) {
-      const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
-      if (incomingSecret !== WEBHOOK_SECRET) {
-        // Stille Ablehnung — kein Detail nach außen
-        return new Response('OK', { status: 200 });
-      }
+    // Provider-Secret ist AUSNAHMSLOS Pflicht: auch ohne gesetzte ENV wird
+    // kein Update verarbeitet. 200 vermeidet Telegram-Retry-Loops; es werden
+    // weder DB noch KI-/Outbound-Provider aufgerufen.
+    const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
+    if (!telegramWebhookAuthorized(WEBHOOK_SECRET, incomingSecret)) {
+      return new Response('OK', { status: 200 });
     }
 
     if (!BOT_TOKEN) {

@@ -21,6 +21,12 @@ if (!WEBHOOK_URL) {
   console.error('Fehler: PUBLIC_APP_URL oder TELEGRAM_WEBHOOK_FUNCTION_URL nicht gesetzt.');
   Deno.exit(1);
 }
+// Der Registrierungsweg darf nie einen Webhook ohne Signaturprüfung
+// einrichten. Vorher ließ das Script SECRET optional und war fail-open.
+if (!SECRET || !/^[A-Za-z0-9_-]{1,256}$/.test(SECRET)) {
+  console.error('Fehler: TELEGRAM_WEBHOOK_SECRET fehlt oder ist ungültig; Registrierung abgebrochen.');
+  Deno.exit(1);
+}
 
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
@@ -31,10 +37,8 @@ async function setWebhook(): Promise<void> {
     allowed_updates: ['message'],
     drop_pending_updates: true,
   };
-  if (SECRET) {
-    body.secret_token = SECRET;
-    console.log('Webhook-Secret gesetzt (Wert wird nicht ausgegeben).');
-  }
+  body.secret_token = SECRET;
+  console.log('Webhook-Secret gesetzt (Wert wird nicht ausgegeben).');
 
   const res = await fetch(`${TELEGRAM_API}/setWebhook`, {
     method: 'POST',

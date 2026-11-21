@@ -289,19 +289,30 @@ describe('Klasse C — Antwort-Ebene', () => {
     expect(ursachen[0]).toContain('cron-vault-secrets.md');
   });
 
-  it('meldet CRON_KEY_MISSING als fehlendes Function Secret, nicht als Mismatch', () => {
-    const fehlt = [
-      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_MEMORY_DECAY_KEY not configured"}}'),
-      antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_SCHEDULER_DISPATCH_KEY not configured"}}'),
-      antwortUrsache('{"code":"CRON_KEY_MISSING","message":"CRON_WEBSITE_RESCAN_KEY not configured"}'),
-      antwortUrsache('CRON_KEY_MISSING'),
-    ];
-    expect(new Set(fehlt).size).toBe(1);
-    expect(fehlt[0]).toContain('Function Secret fehlt (CRON_*_KEY nicht gesetzt)');
-    expect(fehlt[0]).toContain('cron-vault-secrets.md');
-    expect(fehlt[0]).not.toContain('mismatch');
-    // Der Mismatch-Fall bleibt unverändert.
+  it('meldet CRON_KEY_MISSING je Secret, nicht als Mismatch', () => {
+    const memory = antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_MEMORY_DECAY_KEY not configured"}}');
+    const scheduler = antwortUrsache('{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_SCHEDULER_DISPATCH_KEY not configured"}}');
+    const rescan = antwortUrsache('{"code":"CRON_KEY_MISSING","message":"CRON_WEBSITE_RESCAN_KEY not configured"}');
+    const generic = antwortUrsache('CRON_KEY_MISSING');
+    expect(new Set([memory, scheduler, rescan, generic]).size).toBe(4);
+    expect(memory).toContain('CRON_MEMORY_DECAY_KEY nicht gesetzt');
+    expect(scheduler).toContain('CRON_SCHEDULER_DISPATCH_KEY nicht gesetzt');
+    expect(rescan).toContain('CRON_WEBSITE_RESCAN_KEY nicht gesetzt');
+    expect(generic).toContain('Function Secret fehlt (CRON_*_KEY nicht gesetzt)');
+    for (const text of [memory, scheduler, rescan, generic]) {
+      expect(text).toContain('cron-vault-secrets.md');
+      expect(text).not.toContain('mismatch');
+    }
     expect(antwortUrsache('{"error":"cron only"}')).toContain('Function Secret mismatch');
+  });
+
+  it('nennt Function und Secret, wenn die Zeile die Function traegt', () => {
+    expect(antwortUrsache(
+      '{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_AUDIT_MONITOR_KEY not configured"}}',
+      'audit-monitor-cron',
+    )).toBe(
+      'audit-monitor-cron: Function Secret fehlt (CRON_AUDIT_MONITOR_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md',
+    );
   });
 
   it('trennt 500 CRON_KEY_MISSING von 401 cron-only als zwei Ursachen', () => {
@@ -320,8 +331,31 @@ describe('Klasse C — Antwort-Ebene', () => {
     expect(gruppen[0].ursache).toContain('Function Secret mismatch');
     expect(gruppen[1]).toEqual({
       anzahl: 3,
-      ursache: expect.stringContaining('Function Secret fehlt (CRON_*_KEY nicht gesetzt)'),
+      ursache: 'Function Secret fehlt (CRON_GOVERNANCE_MONITORING_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md',
     });
+  });
+
+  it('trennt fehlende Secrets verschiedener Functions', () => {
+    const gruppen = groupAntwortenByCause([
+      {
+        art: 'antwort',
+        status: '500',
+        anzahl: 1,
+        funktion: 'audit-monitor-cron',
+        beispiel: '{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_AUDIT_MONITOR_KEY not configured"}}',
+      },
+      {
+        art: 'antwort',
+        status: '500',
+        anzahl: 2,
+        funktion: 'email-auth-rescan',
+        beispiel: '{"ok":false,"error":{"code":"CRON_KEY_MISSING","message":"CRON_WEBSITE_RESCAN_KEY not configured (function secret empty, vault cron_website_rescan_key unresolved)"}}',
+      },
+    ]);
+    expect(gruppen.map((g) => g.ursache)).toEqual([
+      'email-auth-rescan: Function Secret fehlt (CRON_WEBSITE_RESCAN_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md',
+      'audit-monitor-cron: Function Secret fehlt (CRON_AUDIT_MONITOR_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md',
+    ]);
   });
 
   it('gruppiert die 40x-401-Messung vom 2026-09-22 zu einer Ursache', () => {
@@ -385,7 +419,9 @@ describe('SQL_ANTWORTEN', () => {
     expect(SQL_ANTWORTEN).toContain("q.dispatched_at < now() - interval '2 minutes'");
     // Das Fenster muss zur Aufbewahrung von net._http_response passen.
     expect(SQL_ANTWORTEN).toContain("interval '6 hours'");
-    expect(SQL_ANTWORTEN).toContain("GROUP BY 1, left(coalesce(r.content, ''), 200)");
+    expect(SQL_ANTWORTEN).toContain('q.function_name');
+    expect(SQL_ANTWORTEN).toContain('a.funktion');
+    expect(SQL_ANTWORTEN).toContain("GROUP BY 1, 2, left(coalesce(r.content, ''), 200)");
   });
 });
 

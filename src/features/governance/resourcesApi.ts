@@ -99,12 +99,18 @@ export interface BareResult {
  * Fehler der Function lesbar machen: Bei Nicht-2xx liefert supabase-js nur
  * „non-2xx status code“; Code und Text stehen im Antwort-Body.
  */
-async function serverError(error: unknown): Promise<{ code: string; message: string }> {
+async function serverError(error: unknown): Promise<{ code: string; message: string; details?: unknown }> {
   const ctx = (error as { context?: unknown } | null)?.context;
   if (ctx instanceof Response) {
     try {
-      const body = (await ctx.clone().json()) as { error?: { code?: string; message?: string } } | null;
-      if (body?.error?.message) return { code: body.error.code ?? `HTTP_${ctx.status}`, message: body.error.message };
+      const body = (await ctx.clone().json()) as { error?: { code?: string; message?: string; details?: unknown } } | null;
+      if (body?.error?.message) {
+        return {
+          code: body.error.code ?? `HTTP_${ctx.status}`,
+          message: body.error.message,
+          ...(body.error.details !== undefined ? { details: body.error.details } : {}),
+        };
+      }
     } catch {
       /* kein JSON */
     }
@@ -129,6 +135,19 @@ export const togglePolicy = (policy_id: string, enabled: boolean) =>
   call<BareResult>({ op: 'toggle_policy', policy_id, enabled });
 export const updatePolicy = (input: UpdatePolicyInput) =>
   call<PolicyResult>({ op: 'update_policy', ...input });
+
+/** Domain-Freigaben der Browser-Runtime (owner/admin, serverseitig geprüft). */
+export interface BrowserOriginsResult {
+  ok: boolean;
+  list?: 'allow' | 'block';
+  origins?: string[];
+  added?: string[];
+  removed?: string[];
+  error?: { code: string; message: string; details?: unknown };
+}
+
+export const setBrowserOrigins = (tenant_id: string, list: 'allow' | 'block', origins: string[]) =>
+  call<BrowserOriginsResult>({ op: 'set_browser_origins', tenant_id, list, origins });
 
 export interface MappingResult {
   ok: boolean;

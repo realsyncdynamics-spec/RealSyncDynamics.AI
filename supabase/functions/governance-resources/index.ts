@@ -15,6 +15,8 @@
 //   { op: 'upsert_mapping',   asset_id, control_id, status, notes?, evidence_id? }
 //   { op: 'delete_mapping',   mapping_id }
 //   { op: 'auto_map',         asset_id }
+//   { op: 'set_browser_origins', tenant_id, list: 'allow'|'block', origins: string[] }
+//                             Domain-Freigaben der Browser-Runtime (browserOrigins.ts)
 //
 // Owner / admin gated against `public.memberships`. Reads are
 // handled directly by the frontend via Supabase + tenant-RLS
@@ -28,6 +30,7 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
 import { parseClassificationFields, parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
 import { validatePolicyUpdate } from './policyUpdate.ts';
+import { setBrowserOrigins } from './browserOrigins.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -123,6 +126,13 @@ Deno.serve(async (req) => {
       case 'upsert_mapping':  return await upsertMapping(admin, userId, userEmail, body);
       case 'delete_mapping':  return await deleteMapping(admin, userId, userEmail, body);
       case 'auto_map':        return await autoMap(admin, userId, userEmail, body);
+      case 'set_browser_origins': {
+        const r = await setBrowserOrigins(admin, userId, userEmail, body, {
+          isOwnerOrAdmin: (uid, tid) => isOwnerOrAdmin(admin, uid, tid),
+          audit: (entry) => audit(admin, entry),
+        });
+        return r.status === 200 ? jsonResponse(r.body) : jsonError(r.status, r.code, r.message, undefined, r.details);
+      }
       default: return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {

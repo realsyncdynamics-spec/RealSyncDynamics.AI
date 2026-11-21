@@ -155,7 +155,8 @@ export interface V3PlanCard {
   href: string;
 }
 
-export function planCards(): V3PlanCard[] {
+/** `source` steuert nur das Tracking-Ziel der Links (Standard: Startseite v3). */
+export function planCards(source: string = SOURCE): V3PlanCard[] {
   return PLAN_IDS.map((id) => tierById(id))
     .filter((t): t is PricingTier => Boolean(t))
     .map((tier) => {
@@ -180,7 +181,7 @@ export function planCards(): V3PlanCard[] {
         desc: plan.outcomeHeadline,
         features: tier.bullets.filter((b) => b.trim().length > 0).slice(0, 3),
         cta: beta ? 'Kostenlos testen' : inquiry ? CTA.enterprise : plan.ctaLabel,
-        href: inquiry ? checkoutHrefForPlan(plan, { source: `${SOURCE}-pricing` }) : planHref(plan, `${SOURCE}-pricing`),
+        href: inquiry ? checkoutHrefForPlan(plan, { source: `${source}-pricing` }) : planHref(plan, `${source}-pricing`),
       };
     });
 }

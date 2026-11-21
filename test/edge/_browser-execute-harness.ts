@@ -15,8 +15,9 @@ export const db = {
   browser_executions: [] as Row[],
   governance_evidence: [] as Row[],
   governance_policies: [] as Row[],
+  browser_actions: [] as Row[],
 };
-export const flags = { policyError: false };
+export const flags = { policyError: false, evidenceError: false };
 export const executorCalls: any[] = [];
 let idSeq = 0;
 const newId = () => `00000000-0000-0000-0000-${String(++idSeq).padStart(12, '0')}`;
@@ -25,6 +26,7 @@ export function resetDb(): void {
   for (const k of Object.keys(db) as (keyof typeof db)[]) db[k].length = 0;
   executorCalls.length = 0;
   flags.policyError = false;
+  flags.evidenceError = false;
 }
 
 /** Freigabe-Richtlinie für Browser-Origins anlegen (wie in governance_policies). */
@@ -45,7 +47,7 @@ function reserveBrowserExecution(p: { p_tenant_id: string; p_approval_id: string
   if (new Date(a.expires_at).getTime() <= Date.now()) return { outcome: 'expired', execution_id: null, execution_status: null, approval_status: a.status };
   if (a.requested_action !== p.p_fingerprint) return { outcome: 'mismatch', execution_id: null, execution_status: null, approval_status: a.status };
   const id = newId();
-  db.browser_executions.push({ id, tenant_id: p.p_tenant_id, approval_id: p.p_approval_id, fingerprint: p.p_fingerprint, status: 'reserved' });
+  db.browser_executions.push({ id, tenant_id: p.p_tenant_id, approval_id: p.p_approval_id, fingerprint: p.p_fingerprint, status: 'reserved', detail: null });
   return { outcome: 'reserved', execution_id: id, execution_status: 'reserved', approval_status: a.status };
 }
 
@@ -53,29 +55,37 @@ function finishBrowserExecution(p: { p_execution_id: string; p_status: string })
   const e = db.browser_executions.find((x) => x.id === p.p_execution_id && x.status === 'reserved');
   if (!e) return false;
   e.status = p.p_status;
+  e.detail = (p as any).p_detail ?? null;
+  e.finished_at = new Date().toISOString();
   return true;
 }
 
 function table(name: keyof typeof db) {
   let inserted: Row | null = null;
+  let patch: Row | null = null;
   const filters: Array<[string, unknown]> = [];
+  const match = () => db[name].filter((r) => filters.every(([c, v]) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v)));
   const q: any = {
     insert(row: Row) {
-      inserted = { id: newId(), expires_at: new Date(Date.now() + 3600_000).toISOString(), ...row };
+      inserted = { id: newId(), ...(name === 'governance_approvals' ? { expires_at: new Date(Date.now() + 3600_000).toISOString() } : {}), ...row };
       db[name].push(inserted);
       return q;
     },
+    update(p: Row) { patch = p; return q; },
     select() { return q; },
     single: async () => ({ data: inserted, error: null }),
+    maybeSingle: async () => ({ data: match()[0] ?? null, error: null }),
     eq(col: string, val: unknown) { filters.push([col, val]); return q; },
+    is(col: string, val: unknown) { filters.push([col, val]); return q; },
     not() { return q; },
     order() { return q; },
     limit: async () => ({ data: [...db[name]].reverse().slice(0, 1), error: null }),
-    // await auf eine gefilterte Abfrage (z. B. governance_policies)
+    // await auf Abfrage/Update – UPDATE … WHERE ist wie in Postgres atomar (synchron ausgeführt)
     then(resolve: (v: unknown) => void) {
       if (inserted) return resolve({ data: inserted, error: null });
+      if (patch) { const rows = match(); rows.forEach((r) => Object.assign(r, patch)); return resolve({ data: rows.map((r) => ({ id: r.id })), error: null }); }
       if (name === 'governance_policies' && flags.policyError) return resolve({ data: null, error: { message: 'connection reset' } });
-      return resolve({ data: db[name].filter((r) => filters.every(([c, v]) => r[c] === v)), error: null });
+      return resolve({ data: match(), error: null });
     },
   };
   return q;
@@ -86,7 +96,7 @@ export const admin = {
   rpc: async (fn: string, args: any) => {
     if (fn === 'reserve_browser_execution') return { data: [reserveBrowserExecution(args)], error: null };
     if (fn === 'finish_browser_execution') return { data: finishBrowserExecution(args), error: null };
-    if (fn === 'append_governance_evidence') { const id = newId(); db.governance_evidence.push({ id, ...args.p_row }); return { data: id, error: null }; }
+    if (fn === 'append_governance_evidence') { if (flags.evidenceError) return { data: null, error: { message: 'write failed' } }; const id = newId(); db.governance_evidence.push({ id, ...args.p_row }); return { data: id, error: null }; }
     return { data: null, error: { message: `unknown rpc ${fn}` } };
   },
 };

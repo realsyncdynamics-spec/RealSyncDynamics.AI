@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "project": "RealSync Dynamics & AI · SYNC Masterfilm",
+  "language": "de-DE",
+  "format": {
+    "durationSeconds": 90,
+    "aspectRatio": "16:9",
+    "resolution": "1920x1080",
+    "fps": 30,
+    "audioSampleRateHz": 48000
+  },
+  "visualIdentity": {
+    "brand": "RealSync Dynamics & AI",
+    "mascot": "SYNC",
+    "masterModel": "public/models/sync-mascot.glb (only in unmerged PR #2338/#2340; not on main)",
+    "palette": {
+      "background": "#FFFFFF",
+      "ink": "#1F2A44",
+      "blue": "#2C72E8",
+      "silver": "#E3E8F0"
+    },
+    "rule": "One character only. Reuse approved model/rig/materials in every shot. No replacement human presenter, no character regeneration."
+  },
+  "editorialRules": [
+    "Every narrated feature must be corroborated with current runtime or implementation registry before release.",
+    "Mock conversations, simulated UI states and screenshots are prominently marked Demo or Konzept.",
+    "Never claim production telephony or WhatsApp works until real end-to-end evidence exists.",
+    "No real customer names, voice recordings or contact information without lawful permission and release.",
+    "Never invent metrics, customer references, published tariffs or regulatory guarantees."
+  ],
+  "scenes": [
+    {
+      "id": "S01",
+      "start": 0,
+      "end": 12,
+      "track": "sync-3d",
+      "title": "SYNC begrüßt",
+      "visual": "SYNC erscheint auf einer weißen 3D-Bühne, winkt mit vorhandener GLB-Animation. Nahaufnahme → Halbtotal.",
+      "audio": [
+        {
+          "speaker": "SYNC",
+          "text": "Hallo, ich bin SYNC. Ich zeige dir, wie RealSync Kundenanfragen, Websites und KI-Workflows auf einer Plattform verbindet."
+        }
+      ],
+      "captions": [
+        {
+          "start": 0,
+          "end": 6,
+          "text": "Das ist SYNC."
+        },
+        {
+          "start": 6,
+          "end": 12,
+          "text": "Ein Assistent. Eine RealSync-Plattform."
+        }
+      ],
+      "proof": "Approved SYNC model and non-watermarked 3D render",
+      "claim": "markeninszenierung"
+    },
+    {
+      "id": "S02",
+      "start": 12,
+      "end": 30,
+      "track": "voice-demo",
+      "title": "Deutschsprachiges Beispieltelefonat",
+      "visual": "SYNC hört zu; animierte Tonwellen im weißen Hero. Split-Screen mit klar als Demo markierter Anrufansicht.",
+      "audio": [
+        {
+          "speaker": "Kundin",
+          "text": "Guten Tag, ich brauche einen Termin für ein Beratungsgespräch."
+        },
+        {
+          "speaker": "SYNC",
+          "text": "Gerne. Um welches Anliegen geht es?"
+        },
+        {
+          "speaker": "Kundin",
+          "text": "Um ein Angebot für unsere neue Website."
+        },
+        {
+          "speaker": "SYNC",
+          "text": "Alles klar. Ich kann Ihren Terminwunsch aufnehmen und an das Team weitergeben."
+        }
+      ],
+      "captions": [
+        {
+          "start": 12,
+          "end": 18,
+          "text": "Beispieltelefonat · Demo"
+        },
+        {
+          "start": 18,
+          "end": 24,
+          "text": "Anfrage verstehen"
+        },
+        {
+          "start": 24,
+          "end": 30,
+          "text": "Terminwunsch aufnehmen"
+        }
+      ],
+      "proof": "Controlled German voice-agent E2E recording, provider traces, data consent; else DEMO-only",
+      "claim": "demo-nicht-produktiv"
+    },
+    {
+      "id": "S03",
+      "start": 30,
+      "end": 48,
+      "track": "backend-capture",
+      "title": "Nachvollziehbare Übergabe",
+      "visual": "Aufnahme einer echten, datenschutzbereinigten Dashboard-Session: Gesprächsereignis, Terminwunsch und menschliche Übergabe. Fehlen Funktionen, Konzeptoverlay statt fingiertem Live-Screencast.",
+      "audio": [
+        {
+          "speaker": "SYNC",
+          "text": "Aus einer Anfrage wird ein nachvollziehbarer Vorgang. Das Team sieht, was angefragt wurde, und entscheidet über die nächsten Schritte."
+        }
+      ],
+      "captions": [
+        {
+          "start": 30,
+          "end": 36,
+          "text": "Anfrage → Vorgang"
+        },
+        {
+          "start": 36,
+          "end": 42,
+          "text": "Informationen nachvollziehen"
+        },
+        {
+          "start": 42,
+          "end": 48,
+          "text": "Übergabe an einen Menschen"
+        }
+      ],
+      "proof": "Screen recording of verifiably functioning workflow and sanitized event IDs; otherwise KONZEPT",
+      "claim": "implementierungsstand-prüfen"
+    },
+    {
+      "id": "S04",
+      "start": 48,
+      "end": 65,
+      "track": "frontend-capture",
+      "title": "Kundenworkflow am Bildschirm",
+      "visual": "Screencast der vorhandenen UI: Domain-Scan → Ergebnis. Danach nur wenn implementiert: optionaler Frontend-Entwurf mit unverändertem Backend, optional Voice Agent. Jede Vorschau als solche kennzeichnen.",
+      "audio": [
+        {
+          "speaker": "SYNC",
+          "text": "Bei einer Website beginnt der Ablauf mit dem Scan. Das Ergebnis zeigt die nächsten Optionen: eine neue Oberfläche, einen optionalen Agenten und Governance."
+        }
+      ],
+      "captions": [
+        {
+          "start": 48,
+          "end": 54,
+          "text": "1 · Website scannen"
+        },
+        {
+          "start": 54,
+          "end": 60,
+          "text": "2 · Ergebnis prüfen"
+        },
+        {
+          "start": 60,
+          "end": 65,
+          "text": "3 · Passende nächste Schritte"
+        }
+      ],
+      "proof": "Timestamped, anonymized screen capture from authorized public app and explicit build status",
+      "claim": "frontend-ohne-backend-änderung-nur-wo-belegt"
+    },
+    {
+      "id": "S05",
+      "start": 65,
+      "end": 80,
+      "track": "governance-capture",
+      "title": "Governance und Produktfamilie",
+      "visual": "SYNC im Vordergrund; UI-Capture mit Audit/Evidence; kurze, klar getrennte Produkt-Titel für Governance OS, Voice Agent, App Builder, Software Factory, Automation OS und Creative Studio.",
+      "audio": [
+        {
+          "speaker": "SYNC",
+          "text": "Governance begleitet den Ablauf mit Regeln und Nachweisen. Weitere RealSync-Produkte erreichst du über die gemeinsame Hauptseite."
+        }
+      ],
+      "captions": [
+        {
+          "start": 65,
+          "end": 72,
+          "text": "Governance · Regeln · Nachweise"
+        },
+        {
+          "start": 72,
+          "end": 80,
+          "text": "Sechs Produkte. Eine Dachmarke."
+        }
+      ],
+      "proof": "Real capture for evidence features; product availability labels from implementation registry",
+      "claim": "live-implementiert-preview-trennen"
+    },
+    {
+      "id": "S06",
+      "start": 80,
+      "end": 90,
+      "track": "brand-endcard",
+      "title": "Abschluss",
+      "visual": "SYNC winkt neben dem RealSync Dynamics & AI-Logo. Weißer Hintergrund, dezente blaue Lichtakzente und Domain.",
+      "audio": [
+        {
+          "speaker": "SYNC",
+          "text": "RealSync Dynamics & AI. Deine Ideen. In Bewegung."
+        }
+      ],
+      "captions": [
+        {
+          "start": 80,
+          "end": 85,
+          "text": "RealSync Dynamics & AI"
+        },
+        {
+          "start": 85,
+          "end": 90,
+          "text": "realsyncdynamicsai.de"
+        }
+      ],
+      "proof": "Approved logo, domain, SYNC model, music and rights cleared",
+      "claim": "markeninszenierung"
+    }
+  ],
+  "productRoutesTarget": [
+    "/governance-os",
+    "/voice-agent",
+    "/app-builder",
+    "/software-factory",
+    "/automation-os",
+    "/creative-studio"
+  ],
+  "evidenceSources": [
+    {
+      "label": "3D source PR",
+      "url": "https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2338",
+      "state": "open, not main"
+    },
+    {
+      "label": "SYNC hero PR",
+      "url": "https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2340",
+      "state": "open, not main"
+    },
+    {
+      "label": "six white product pages PR",
+      "url": "https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2350",
+      "state": "draft, not main"
+    },
+    {
+      "label": "Voice agent animation PR",
+      "url": "https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2331",
+      "state": "draft, not main"
+    }
+  ]
+}

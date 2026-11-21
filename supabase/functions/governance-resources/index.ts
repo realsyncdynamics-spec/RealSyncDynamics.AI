@@ -28,6 +28,7 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
 import { parseClassificationFields, parseRegistryFields, sanitizeAssetMetadata } from './registryFields.ts';
 import { validatePolicyUpdate } from './policyUpdate.ts';
+import { resolveCurrentMappings, type ExistingMappingRow } from './currentMappings.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -435,12 +436,7 @@ async function autoMap(admin: SupabaseAdminClient, userId: string, userEmail: st
 
   const { data: existing } = await admin.from('asset_control_mappings')
     .select('control_id, status, source').eq('asset_id', asset_id);
-  const current: CurrentMapping[] = (existing ?? [])
-    .map((m: { control_id: string; status: string; source: string }) => {
-      const c = ctrlList.find((x) => x.id === m.control_id);
-      return c ? { framework: c.framework, control_code: c.control_code, status: m.status as CurrentMapping['status'], source: (m.source as CurrentMapping['source']) ?? 'manual' } : null;
-    })
-    .filter((x: CurrentMapping | null): x is CurrentMapping => x !== null);
+  const current: CurrentMapping[] = resolveCurrentMappings((existing ?? []) as ExistingMappingRow[], ctrlList);
 
   const profile: AssetProfile = {
     assetType: asset.asset_type ?? '',

@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { checkTenantQuota, recordChatHistory, type AdminLike } from '../llm-quota.ts';
-import { gatewayHeaders } from '../aiGateway/edgeClient.ts';
+import { serviceGatewayHeaders } from '../aiGateway/edgeClient.ts';
 import { internalGatewayConfig } from '../aiGateway/internalClient.ts';
 import { describeGatewayError } from './gatewayErrorText.ts';
 import {
@@ -175,7 +175,9 @@ async function callGateway(tenantId: string, system: string, user: string): Prom
 
   const resp = await fetch(`${cfg.config.supabaseUrl}/functions/v1/ai-gateway`, {
     method: 'POST',
-    headers: gatewayHeaders(cfg.config),
+    // MP-0: tenantId kommt aus der Cron-Tenantliste dieses Runners; die
+    // signierte Bestätigung bindet ihn an x-internal-caller agent-os-runner.
+    headers: await serviceGatewayHeaders(cfg.config, tenantId),
     body: JSON.stringify({
       op: 'extract_json',
       tenant_id: tenantId,

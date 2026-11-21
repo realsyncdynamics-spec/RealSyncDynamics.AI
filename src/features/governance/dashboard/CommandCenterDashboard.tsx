@@ -34,6 +34,7 @@ import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
+import { RuntimeEventsFeed } from './RuntimeEventsFeed';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
@@ -175,6 +176,15 @@ export function CommandCenterDashboard() {
       {/* Agent zuerst: eine Frage, `@` wählt den Agenten; übergeben wird an
           den Assistenten der Shell (rechts oben ausklappbar). */}
       <AgentComposer />
+      {activeTenantId && (
+        <div className="mx-4 sm:mx-6 my-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-slate-900">Neu bei RealSync? Starte mit dem Einrichtungs-Guide.</p>
+            <p className="text-xs text-slate-600 mt-1">Persönliche Checkliste, Produktauswahl und bestehende Team-Einladungen.</p>
+          </div>
+          <Link to="/app/start" className="shrink-0 inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Einrichtung öffnen</Link>
+        </div>
+      )}
       {/* Kunden-Startansicht: eine Botschaft, ein nächster Schritt, Fortschritt,
           drei Kernbereiche, Ergebnisse, weitere Module. Testphase/Zahlung
           stehen dort als eine Zeile im Fortschritt (statt TrialBanner). */}
@@ -237,6 +247,13 @@ export function CommandCenterDashboard() {
           data={dataTenantId === activeTenantId ? data : null}
           loading={loading}
           error={error}
+          reloadKey={reloadKey}
+          dataVersion={dataVersion}
+        />
+        {/* Letzte Governance-Entscheidungen aus workspace_events (nur lesend). */}
+        <RuntimeEventsFeed
+          key={`events-${activeTenantId ?? 'no-tenant'}`}
+          activeTenantId={activeTenantId}
           reloadKey={reloadKey}
           dataVersion={dataVersion}
         />

@@ -26,6 +26,13 @@ Deno.serve(async (req) => {
   // sendet Vault `cron_audit_drip_key`; Function Secret CRON_AUDIT_DRIP_KEY oder Vault-Fallback.
   const denied = await requireCronKey(req, 'CRON_AUDIT_DRIP_KEY', 'cron_audit_drip_key');
   if (denied) return denied;
+
+  // Release gate: the public one-click unsubscribe route and durable delivery
+  // reconciliation are not yet verified. Never send compliance/marketing mail
+  // solely because a restored DB schema and a Resend key happen to exist.
+  if (Deno.env.get('AUDIT_DRIP_SEND_ENABLED') !== 'true') {
+    return jsonResponse({ ok: false, code: 'AUDIT_DRIP_RELEASE_GATED', sent: 0 }, 503);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';
@@ -42,6 +49,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, sent: 0, message: 'no due drips' });
   }
 
+  // Fail closed: do not advance a single drip or claim delivery unless a
+  // real mail transport is configured. Earlier code silently marked emails
+  // as sent when RESEND_API_KEY was missing.
+  if (!RESEND_KEY) {
+    return jsonResponse({ ok: false, code: 'RESEND_NOT_CONFIGURED', sent: 0, total_due: rows.length }, 503);
+  }
+
   const sent: string[] = [];
   const failed: { id: string; error: string }[] = [];
 
@@ -54,19 +68,16 @@ Deno.serve(async (req) => {
     }
 
     try {
-      if (!RESEND_KEY) {
-        // No-op falls kein API-Key (Pre-Launch-Phase) — Drip-State trotzdem advancen
-        // damit wir nicht stuck sind. In Production nach Resend-Setup wird real gesendet.
-        await admin.rpc('audit_email_drip_advance', { p_id: row.id });
-        sent.push(row.id);
-        continue;
-      }
-
       const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${RESEND_KEY}`,
           'Content-Type': 'application/json',
+          // Stable per logical email step: protects near-term retries from
+          // sending duplicates when the provider accepted a prior attempt.
+          // Provider-side deduplication lasts 24h; durable reconciliation
+          // is still required for failures beyond that window.
+          'Idempotency-Key': `audit-drip/${row.id}/step-${stepToSend}`,
         },
         body: JSON.stringify({
           from: FROM,
@@ -87,7 +98,28 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      await admin.rpc('audit_email_drip_advance', { p_id: row.id });
+      // Resend HTTP 2xx is not sufficient evidence of acceptance. A provider
+      // message ID is required before the local drip state can advance.
+      // A durable outbox/receipt correlation is still a separate release gate.
+      let providerMessageId: string | null = null;
+      try {
+        const payload: unknown = await resp.json();
+        if (payload && typeof payload === 'object' && 'id' in payload &&
+            typeof payload.id === 'string' && payload.id.trim().length > 0) {
+          providerMessageId = payload.id;
+        }
+      } catch {
+        // Treat unreadable provider responses as failed, never as delivered.
+      }
+      if (!providerMessageId) {
+        const reason = 'Resend response missing message ID';
+        await admin.rpc('audit_email_drip_advance', { p_id: row.id, p_error: reason });
+        failed.push({ id: row.id, error: reason });
+        continue;
+      }
+
+      const { error: advanceError } = await admin.rpc('audit_email_drip_advance', { p_id: row.id });
+      if (advanceError) throw new Error(`audit_email_drip_advance: ${advanceError.message}`);
       sent.push(row.id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -96,7 +128,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonResponse({ ok: true, sent: sent.length, failed: failed.length, total_due: rows.length });
+  // A partially failed batch must not appear as a successful cron job.
+  return jsonResponse(
+    { ok: failed.length === 0, sent: sent.length, failed: failed.length, total_due: rows.length },
+    failed.length > 0 ? 502 : 200,
+  );
 });
 
 interface TemplateContext {

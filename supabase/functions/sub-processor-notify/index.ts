@@ -40,6 +40,13 @@ Deno.serve(async (req) => {
   // sendet Vault `cron_sub_processor_notify_key`; Function Secret CRON_SUB_PROCESSOR_NOTIFY_KEY oder Vault-Fallback.
   const denied = await requireCronKey(req, 'CRON_SUB_PROCESSOR_NOTIFY_KEY', 'cron_sub_processor_notify_key');
   if (denied) return denied;
+
+  // Release gate: the public one-click unsubscribe route and durable delivery
+  // reconciliation are not yet verified. Never send compliance/marketing mail
+  // solely because a restored DB schema and a Resend key happen to exist.
+  if (Deno.env.get('SUB_PROCESSOR_NOTICES_ENABLED') !== 'true') {
+    return jsonResponse({ ok: false, code: 'SUB_PROCESSOR_NOTICES_RELEASE_GATED', sent: 0 }, 503);
+  }
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';
@@ -55,107 +62,136 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, message: 'no pending changes', notifications: 0 });
   }
 
-  // 2. Aktive Subscriptions (verified, not unsubscribed)
+  // 2. Nur bestaetigte, nicht abgemeldete Empfaenger. Keine rechtliche
+  // Zustellung behaupten, solange weder Empfaenger noch Transport bereit sind.
   const { data: subsRaw, error: subErr } = await admin
     .from('sub_processor_subscriptions')
     .select('id, email, unsub_token')
+    .not('verified_at', 'is', null)
     .is('unsubscribed_at', null);
-  if (subErr) return jsonResponse({ ok: false, error: subErr.message }, 500);
+  if (subErr) return jsonResponse({ ok: false, code: 'SUBSCRIBERS_QUERY_FAILED' }, 500);
 
   const subs = (subsRaw ?? []) as Subscription[];
   if (subs.length === 0) {
-    // Keine Subscribers — Changes als notified markieren, damit nicht in nächstem Run wiederholt
-    for (const c of pending) {
-      await admin.rpc('sub_processor_change_mark_notified', { p_id: c.id });
-    }
-    return jsonResponse({ ok: true, message: 'no subscribers, changes marked notified', notifications: 0 });
+    return jsonResponse({
+      ok: false, code: 'NO_VERIFIED_RECIPIENTS', changes_pending: pending.length, notifications_sent: 0,
+    }, 409);
+  }
+  if (!RESEND_KEY) {
+    return jsonResponse({
+      ok: false, code: 'RESEND_NOT_CONFIGURED', changes_pending: pending.length, notifications_sent: 0,
+    }, 503);
   }
 
-  // 3. Pro Change × Subscription Notification-Mail senden, Audit-Trail loggen
+  // 3. Erfolgreiche Zustellung pro Aenderung + Empfaenger protokollieren.
+  // Ein Fehler darf weder den append-only Audit Trail als "gesendet"
+  // befuellen noch die Aenderung als komplett benachrichtigt markieren.
   let totalSent = 0;
   let totalFailed = 0;
+  let changesMarked = 0;
 
   for (const change of pending) {
+    let changeComplete = true;
     for (const sub of subs) {
-      // Idempotent: skip wenn schon notified
-      const { data: existing } = await admin
+      const { data: existing, error: lookupError } = await admin
         .from('sub_processor_notifications')
-        .select('id')
+        .select('id, resend_message_id, error_message')
         .eq('change_id', change.id)
         .eq('subscription_id', sub.id)
         .maybeSingle();
-      if (existing) continue;
+      if (lookupError) {
+        totalFailed++;
+        changeComplete = false;
+        console.error('[sub-processor-notify] notification lookup failed');
+        continue;
+      }
+      if (existing) {
+        // Die alte Function schrieb auch bei fehlendem Provider/Sendefehlern
+        // einen unveraenderlichen Receipt. Solche Legacy-Fehler nicht als
+        // erfolgreich zugestellt zaehlen oder die Aenderung abschliessen.
+        // Manuelle Reconciliation ist wegen UNIQUE + append-only noetig.
+        if (!existing.resend_message_id || existing.error_message) {
+          totalFailed++;
+          changeComplete = false;
+          console.error('[sub-processor-notify] legacy failed receipt requires reconciliation');
+        }
+        continue;
+      }
 
-      const subject = `[RealSync Dynamics] Sub-Processor-Änderung: ${change.processor_name}`;
+      const subject = `[RealSync Dynamics] Sub-Processor-Aenderung: ${change.processor_name}`;
       const html = renderChangeEmail({
         change,
         unsubUrl: `${SITE}/api/sp-unsubscribe?token=${sub.unsub_token}`,
         site: SITE,
       });
 
-      let messageId: string | null = null;
-      let errorMsg: string | null = null;
-
-      if (RESEND_KEY) {
-        try {
-          const resp = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
+      try {
+        const resp = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${RESEND_KEY}`,
+            'Content-Type': 'application/json',
+            // Der stabile Schluessel minimiert doppelte Mails bei Retry.
+            // Resend behaelt die Idempotenz nur fuer 24h: laengere Ausfaelle
+            // muessen vor Produktionsfreigabe mit Outbox-Abgleich abgesichert werden.
+            'Idempotency-Key': `sub-processor/${change.id}/subscriber/${sub.id}`,
+          },
+          body: JSON.stringify({
+            from: FROM,
+            to: [sub.email],
+            subject,
+            html,
             headers: {
-              Authorization: `Bearer ${RESEND_KEY}`,
-              'Content-Type': 'application/json',
+              'List-Unsubscribe': `<${SITE}/api/sp-unsubscribe?token=${sub.unsub_token}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
             },
-            body: JSON.stringify({
-              from: FROM,
-              to: [sub.email],
-              subject,
-              html,
-              headers: {
-                'List-Unsubscribe': `<${SITE}/api/sp-unsubscribe?token=${sub.unsub_token}>`,
-                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-              },
-            }),
-          });
-          if (!resp.ok) {
-            const txt = await resp.text();
-            errorMsg = `resend ${resp.status}: ${txt.slice(0, 300)}`;
-          } else {
-            const json = await resp.json();
-            messageId = (json.id as string) ?? null;
-          }
-        } catch (e) {
-          errorMsg = e instanceof Error ? e.message : String(e);
-        }
-      } else {
-        errorMsg = 'RESEND_API_KEY missing — no-op';
-      }
+          }),
+        });
 
-      // Audit-Trail-Eintrag
-      await admin.from('sub_processor_notifications').insert({
-        change_id: change.id,
-        subscription_id: sub.id,
-        email: sub.email,
-        resend_message_id: messageId,
-        error_message: errorMsg,
-      });
+        if (!resp.ok) throw new Error(`resend ${resp.status}`);
+        const json: unknown = await resp.json();
+        const messageId = (json && typeof json === 'object' && 'id' in json && typeof json.id === 'string')
+          ? json.id
+          : null;
+        if (!messageId) throw new Error('resend response missing message id');
 
-      if (errorMsg && !errorMsg.includes('no-op')) {
-        totalFailed++;
-      } else {
+        const { error: writeError } = await admin.from('sub_processor_notifications').insert({
+          change_id: change.id,
+          subscription_id: sub.id,
+          email: sub.email,
+          resend_message_id: messageId,
+          error_message: null,
+        });
+        if (writeError) throw new Error('notification receipt write failed');
         totalSent++;
+      } catch (e) {
+        totalFailed++;
+        changeComplete = false;
+        // Keine E-Mail-Adressen, Tokens oder Provider-Antwortkoerper loggen.
+        console.error('[sub-processor-notify] send or receipt failed', (e as Error)?.message ?? 'unknown');
       }
     }
 
-    // Marked als notified, sobald über alle Subs iteriert
-    await admin.rpc('sub_processor_change_mark_notified', { p_id: change.id });
+    if (changeComplete) {
+      const { error: markError } = await admin.rpc('sub_processor_change_mark_notified', { p_id: change.id });
+      if (markError) {
+        totalFailed++;
+        console.error('[sub-processor-notify] mark-notified failed');
+      } else {
+        changesMarked++;
+      }
+    }
   }
 
+  // HTTP 200 nur, wenn ALLE faelligen, bestaetigten Empfaenger verarbeitet wurden.
   return jsonResponse({
-    ok: true,
-    changes_processed: pending.length,
+    ok: totalFailed === 0,
+    changes_processed: changesMarked,
+    changes_pending: pending.length - changesMarked,
     subscriptions: subs.length,
     notifications_sent: totalSent,
     notifications_failed: totalFailed,
-  });
+  }, totalFailed > 0 ? 502 : 200);
 });
 
 interface EmailCtx {

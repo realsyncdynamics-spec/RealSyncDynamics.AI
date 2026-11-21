@@ -116,17 +116,29 @@ Alle bis auf `/health` erwarten `Authorization: Bearer rsmcp_…`.
 
 ### MCP-Protokoll
 
-`POST /mcp` — JSON-RPC 2.0. Methoden: `initialize`, `notifications/initialized`,
+`POST /mcp` — JSON-RPC über den offiziellen Streamable-HTTP-Transport aus
+`@modelcontextprotocol/sdk` (MIT, Anthropic). Der HTTP-Server bleibt Fastify;
+das SDK spricht das Protokoll und liefert JSON-Antworten, keinen SSE-Strom
+und keine Sitzung. Methoden: `initialize`, `notifications/initialized`,
 `ping`, `tools/list`, `tools/call`. Gemeldete Fähigkeit ist ausschließlich
-`tools`. Protokollfassungen `2025-06-18` (Standard), `2025-03-26`, `2024-11-05`.
+`tools`. Die Fassungen kommen aus dem SDK: `2025-11-25` (neueste, Fallback),
+`2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`. Nennt der Client eine
+davon, wird sie bestätigt.
 
-`tools/list` zeigt nur Werkzeuge, für die der Key den Scope hat. Fehler bei der
-Ausführung kommen als Ergebnis mit `isError: true` zurück, nicht als
-JSON-RPC-Fehler — sonst sähe das Modell die Begründung nicht.
+`initialize` verlangt die Felder der Spec (`protocolVersion`, `capabilities`,
+`clientInfo`). `tools/list` zeigt nur Werkzeuge, für die der Key den Scope hat.
+Fehler bei der Ausführung kommen als Ergebnis mit `isError: true` zurück, nicht
+als JSON-RPC-Fehler — sonst sähe das Modell die Begründung nicht.
 
-Umgesetzt ohne `@modelcontextprotocol/sdk`: das SDK zieht 17 transitive
-Abhängigkeiten mit, darunter zod (laut CLAUDE.md nicht ohne Absprache
-einzuführen) und Express 5 neben dem hier verwendeten Fastify.
+Der Transport verlangt `Accept: application/json, text/event-stream`. Fehlt der
+Header oder nennt er nur `application/json`, ergänzt der Server den zweiten
+Typ, damit bestehende JSON-Clients weiter funktionieren. Ein anderer Accept-Wert
+wird mit 406 abgelehnt. `GET /mcp` (SSE) ist nicht angebunden: der Server hat
+nichts von sich aus zu senden.
+
+Express 5 liegt transitiv im SDK und wird nicht gestartet. Zod ist Peer des
+SDK (`^3.25` oder `^4`); hier steht `4.6.7`, weil ältere Fassungen eine
+bekannte Speicher-Schwachstelle beim Prüfen grosser Sammlungen haben.
 
 ### Evidence — funktionsfähig
 

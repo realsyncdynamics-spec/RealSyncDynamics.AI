@@ -6,6 +6,49 @@ import { verifyChain, type ChainIssue } from '../../../../packages/evidence-chai
 import { enforce } from '../services/rate-window.js';
 
 /**
+ * Lesezugriff auf Evidence.
+ *
+ * Der Prozess hält den Service-Role-Key, weil die Key-Prüfung eine RPC mit
+ * `service_role` ist und ein API-Key kein Nutzer-JWT hat. RLS sieht diesen
+ * Aufrufer deshalb nicht. Jede Abfrage hier muss den Tenant des Keys selbst
+ * als Prädikat tragen — fehlt er, wird nicht gelesen.
+ */
+export interface EvidenceFilter {
+  eq(column: string, value: unknown): EvidenceFilter;
+  order(column: string, options: { ascending: boolean }): EvidenceFilter;
+  limit(n: number): EvidenceFilter;
+  ilike(column: string, pattern: string): EvidenceFilter;
+  single(): Promise<{ data: EvidenceRow | null; error: QueryError | null }>;
+  then<TResult1 = { data: EvidenceRow[] | null; error: QueryError | null }, TResult2 = never>(
+    onfulfilled?:
+      | ((value: { data: EvidenceRow[] | null; error: QueryError | null }) => TResult1 | PromiseLike<TResult1>)
+      | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ): PromiseLike<TResult1 | TResult2>;
+}
+
+export interface EvidenceDb {
+  from(table: 'evidence_snapshots'): {
+    select(columns: string): EvidenceFilter;
+  };
+}
+
+interface QueryError {
+  message: string;
+  code?: string;
+}
+
+function requireTenant(tenantId: string): void {
+  if (typeof tenantId !== 'string' || tenantId.trim() === '') {
+    throw new Error('Tenant-Kontext fehlt — Abfrage abgelehnt.');
+  }
+}
+
+function dbOf(db?: EvidenceDb): EvidenceDb {
+  return db ?? (supabase as unknown as EvidenceDb);
+}
+
+/**
  * Kettenprüfungen je Tenant und Minute.
  *
  * Bewusst deutlich enger als die allgemeine Schranke: Der Aufruf skaliert mit
@@ -17,8 +60,10 @@ export async function listEvidence(
   tenantId: string,
   subjectRef?: string,
   limit: number = 50,
+  db?: EvidenceDb,
 ): Promise<EvidenceSnapshot[]> {
-  let query = supabase
+  requireTenant(tenantId);
+  let query = dbOf(db)
     .from('evidence_snapshots')
     .select('*')
     .eq('tenant_id', tenantId)
@@ -42,8 +87,10 @@ export async function listEvidence(
 export async function getEvidence(
   tenantId: string,
   evidenceId: string,
+  db?: EvidenceDb,
 ): Promise<EvidenceSnapshot | null> {
-  const { data, error } = await supabase
+  requireTenant(tenantId);
+  const { data, error } = await dbOf(db)
     .from('evidence_snapshots')
     .select('*')
     .eq('tenant_id', tenantId)
@@ -90,6 +137,7 @@ export interface ChainVerification {
 export async function verifyHashChain(
   tenantId: string,
   evidenceId: string,
+  db?: EvidenceDb,
 ): Promise<ChainVerification> {
   // Engere Schranke als der allgemeine Ratenschutz: Dieser Aufruf lädt die
   // gesamte Kette und rechnet je Snapshot einen SHA-256 nach — eine billige
@@ -103,12 +151,12 @@ export async function verifyHashChain(
     'Kettenprüfung',
   );
 
-  const anchor = await getEvidence(tenantId, evidenceId);
+  const anchor = await getEvidence(tenantId, evidenceId, db);
   if (!anchor) {
     throw new Error('Evidence not found');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await dbOf(db)
     .from('evidence_snapshots')
     .select('subject_ref, version, content_sha256, retention_class, prev_hash, event_hash, event_timestamp')
     .eq('tenant_id', tenantId)
@@ -134,10 +182,12 @@ export async function verifyHashChain(
 export async function searchEvidenceByControl(
   tenantId: string,
   controlId: string,
+  db?: EvidenceDb,
 ): Promise<EvidenceSnapshot[]> {
+  requireTenant(tenantId);
   // Phase 2: Semantic search via pgvector
   // For now: search by subject_ref pattern
-  const { data, error } = await supabase
+  const { data, error } = await dbOf(db)
     .from('evidence_snapshots')
     .select('*')
     .eq('tenant_id', tenantId)

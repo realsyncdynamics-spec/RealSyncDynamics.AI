@@ -1,23 +1,29 @@
 /**
- * MCP-Protokoll (JSON-RPC 2.0) — die Teilmenge, die ein reiner Werkzeug-Server
- * braucht: Handshake, Werkzeugliste, Werkzeugaufruf.
+ * MCP-Protokoll über das offizielle SDK (`@modelcontextprotocol/sdk`, MIT).
  *
- * Bewusst ohne `@modelcontextprotocol/sdk`: das SDK zieht 17 transitive
- * Abhängigkeiten mit, darunter zod (laut CLAUDE.md nicht ohne Absprache
- * einzuführen) und Express 5 neben dem hier verwendeten Fastify. Der benötigte
- * Ausschnitt des Protokolls ist klein genug, um ihn abhängigkeitsfrei zu
- * halten — wie die übrigen Pakete dieses Repos.
+ * Der Dienst bleibt bei Fastify. Das SDK übernimmt Handshake, JSON-RPC und
+ * die Streamable-HTTP-Nachrichtenhülle (`WebStandardStreamableHTTPServerTransport`,
+ * zustandslos, JSON statt SSE). Auth, Scopes, Kontingent und die
+ * Werkzeugausführung liegen weiterhin hier — das SDK kennt keinen Tenant.
  *
- * Umgesetzt ist die Anfrage/Antwort-Hälfte über HTTP POST. Server-initiierte
- * Nachrichten (SSE-Stream, Fortschritts-Benachrichtigungen, Sampling) fehlen —
- * ein rein lesender Server hat nichts von sich aus zu senden.
+ * Pro HTTP-Anfrage entstehen Server und Transport neu. Das SDK verbietet,
+ * einen zustandslosen Transport wiederzuverwenden, und ein geteilter Server
+ * würde parallele Aufrufe über denselben Handshake-Zustand schicken.
  */
 
-/** Protokollfassung, die dieser Server spricht. */
-export const PROTOCOL_VERSION = '2025-06-18';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  LATEST_PROTOCOL_VERSION,
+  ListToolsRequestSchema,
+  McpError,
+  type CallToolResult,
+} from '@modelcontextprotocol/sdk/types.js';
 
-/** Ältere Fassungen, mit denen der Handshake ebenfalls zustande kommt. */
-const SUPPORTED_VERSIONS = new Set([PROTOCOL_VERSION, '2025-03-26', '2024-11-05']);
+/** Neueste vom SDK gesprochene Fassung. Bekannte ältere Fassungen werden bestätigt. */
+export const PROTOCOL_VERSION = LATEST_PROTOCOL_VERSION;
 
 export interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -40,7 +46,7 @@ export interface JsonRpcResponse {
   error?: JsonRpcError;
 }
 
-/** Fehlercodes nach JSON-RPC 2.0. */
+/** Fehlercodes nach JSON-RPC 2.0 — dieselben Zahlen wie `ErrorCode` im SDK. */
 export const RpcCode = {
   PARSE_ERROR: -32700,
   INVALID_REQUEST: -32600,
@@ -81,6 +87,18 @@ export interface HandlerContext {
   serverVersion: string;
 }
 
+export interface McpHttpHeaders {
+  /** Rohwert von `Accept`. Fehlt er, wird der vom SDK verlangte Wert ergänzt. */
+  accept?: string;
+  contentType?: string;
+  protocolVersion?: string;
+}
+
+export interface McpHttpOutcome {
+  status: number;
+  body: unknown;
+}
+
 export function rpcError(
   id: string | number | null,
   code: number,
@@ -90,8 +108,23 @@ export function rpcError(
   return { jsonrpc: '2.0', id, error: { code, message, ...(data ? { data } : {}) } };
 }
 
-function rpcResult(id: string | number | null, result: unknown): JsonRpcResponse {
-  return { jsonrpc: '2.0', id, result };
+/**
+ * Accept-Wert für den offiziellen Transport.
+ *
+ * Die Spec verlangt `application/json` und `text/event-stream`. Bestehende
+ * Aufrufer (curl, interne Agenten) senden das oft nicht. Fehlt der Header
+ * oder nennt er nur JSON, wird `text/event-stream` ergänzt — die Antwort
+ * bleibt JSON (`enableJsonResponse`), es wird kein SSE-Strom geöffnet.
+ * Ein ausdrücklich anderer Accept-Wert geht unverändert ans SDK und wird
+ * dort mit 406 abgelehnt.
+ */
+export function acceptHeaderFor(accept: string | undefined): string {
+  if (!accept?.trim()) return 'application/json, text/event-stream';
+  const hasJson = accept.includes('application/json');
+  const hasSse = accept.includes('text/event-stream');
+  if (hasJson && hasSse) return accept;
+  if (hasJson) return `${accept}, text/event-stream`;
+  return accept;
 }
 
 /** Grobprüfung, ob ein Objekt als JSON-RPC-Nachricht durchgeht. */
@@ -101,87 +134,125 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   return v.jsonrpc === '2.0' && typeof v.method === 'string';
 }
 
+function toCallToolResult(result: McpToolResult): CallToolResult {
+  return {
+    content: result.content.map((part) => ({ type: 'text' as const, text: part.text })),
+    ...(result.isError ? { isError: true } : {}),
+  };
+}
+
+function createGovernanceServer(ctx: HandlerContext): Server {
+  const server = new Server(
+    { name: ctx.serverName, version: ctx.serverVersion },
+    // Nur Werkzeuge. Was hier nicht steht, darf der Client nicht anfragen.
+    { capabilities: { tools: {} } },
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    // Werkzeuge ohne passenden Scope werden nicht angeboten: ein Modell soll
+    // nichts vorgeschlagen bekommen, was anschliessend scheitert.
+    const tools = ctx.tools
+      .filter((tool) => ctx.scopes.includes(tool.scope))
+      .map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
+    return { tools };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
+    const name = request.params.name;
+    const args = (request.params.arguments ?? {}) as Record<string, unknown>;
+    const tool = ctx.tools.find((candidate) => candidate.name === name);
+
+    if (!tool) {
+      throw new McpError(ErrorCode.InvalidParams, `Unbekanntes Werkzeug: ${name}`);
+    }
+    if (!ctx.scopes.includes(tool.scope)) {
+      // Fehlender Scope ist ein Ergebnis des Aufrufs, kein Protokollfehler —
+      // so kann das Modell die Begründung sehen und dem Nutzer nennen.
+      return toCallToolResult({
+        content: [
+          {
+            type: 'text',
+            text: `Dieser Key hat den Scope "${tool.scope}" nicht und darf ${name} nicht aufrufen.`,
+          },
+        ],
+        isError: true,
+      });
+    }
+
+    try {
+      return toCallToolResult(await ctx.invoke(name, args));
+    } catch (err) {
+      // Fehler bei der Ausführung gehören ins Ergebnis, nicht in die
+      // JSON-RPC-Fehlerhülle: der Client soll sie dem Modell zeigen können.
+      return toCallToolResult({
+        content: [{ type: 'text', text: (err as Error)?.message ?? 'Unbekannter Fehler' }],
+        isError: true,
+      });
+    }
+  });
+
+  return server;
+}
+
 /**
- * Verarbeitet eine einzelne JSON-RPC-Nachricht.
+ * Eine HTTP-POST-Hülle durch den offiziellen Streamable-HTTP-Transport.
  *
- * Gibt `null` zurück, wenn es sich um eine Benachrichtigung handelt (keine
- * `id`) — darauf antwortet der Server nicht, der Aufrufer schickt dann 202.
+ * Zustandslos und JSON-Antworten: kein Sitzungs-Header, kein SSE. Stapel
+ * verarbeitet das SDK; die engere Stapelgrenze des Dienstes prüft der
+ * Aufrufer, bevor er hierher kommt.
+ */
+export async function dispatchMcpRequest(
+  body: unknown,
+  ctx: HandlerContext,
+  headers?: McpHttpHeaders,
+): Promise<McpHttpOutcome> {
+  const server = createGovernanceServer(ctx);
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
+  });
+
+  try {
+    await server.connect(transport);
+    const requestHeaders = new Headers();
+    requestHeaders.set('accept', acceptHeaderFor(headers?.accept));
+    requestHeaders.set('content-type', headers?.contentType?.trim() || 'application/json');
+    if (headers?.protocolVersion) {
+      requestHeaders.set('mcp-protocol-version', headers.protocolVersion);
+    }
+
+    const request = new Request('http://mcp.local/mcp', {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify(body ?? null),
+    });
+    const response = await transport.handleRequest(request, { parsedBody: body });
+    const text = await response.text();
+    if (!text) return { status: response.status, body: undefined };
+    const trimmed = text.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      return { status: response.status, body: JSON.parse(trimmed) as unknown };
+    }
+    return { status: response.status, body: text };
+  } finally {
+    await server.close().catch(() => undefined);
+  }
+}
+
+/**
+ * Eine einzelne JSON-RPC-Nachricht.
+ *
+ * Gibt `null` zurück, wenn es sich um eine Benachrichtigung handelt — darauf
+ * antwortet der Transport mit 202 und leerem Rumpf.
  */
 export async function handleMessage(
   message: JsonRpcRequest,
   ctx: HandlerContext,
 ): Promise<JsonRpcResponse | null> {
-  const isNotification = message.id === undefined;
-  const id = message.id ?? null;
-
-  switch (message.method) {
-    case 'initialize': {
-      const requested = String(message.params?.protocolVersion ?? '');
-      // Kennt der Client eine Fassung, die wir sprechen, wird sie bestätigt;
-      // sonst nennen wir unsere und der Client entscheidet, ob er mitgeht.
-      const agreed = SUPPORTED_VERSIONS.has(requested) ? requested : PROTOCOL_VERSION;
-      return rpcResult(id, {
-        protocolVersion: agreed,
-        // Nur Werkzeuge. Weder Ressourcen noch Prompts noch Sampling —
-        // was hier nicht steht, darf der Client nicht anfragen.
-        capabilities: { tools: {} },
-        serverInfo: { name: ctx.serverName, version: ctx.serverVersion },
-      });
-    }
-
-    case 'notifications/initialized':
-    case 'notifications/cancelled':
-      return null;
-
-    case 'ping':
-      return isNotification ? null : rpcResult(id, {});
-
-    case 'tools/list': {
-      // Werkzeuge, für die der Key keinen Scope hat, werden gar nicht erst
-      // angeboten: ein Modell soll nichts vorgeschlagen bekommen, was
-      // anschliessend mit 403 endet.
-      const visible = ctx.tools
-        .filter((t) => ctx.scopes.includes(t.scope))
-        .map(({ name, description, inputSchema }) => ({ name, description, inputSchema }));
-      return rpcResult(id, { tools: visible });
-    }
-
-    case 'tools/call': {
-      const name = String(message.params?.name ?? '');
-      const args = (message.params?.arguments ?? {}) as Record<string, unknown>;
-
-      const tool = ctx.tools.find((t) => t.name === name);
-      if (!tool) {
-        return rpcError(id, RpcCode.INVALID_PARAMS, `Unbekanntes Werkzeug: ${name}`);
-      }
-      if (!ctx.scopes.includes(tool.scope)) {
-        // Fehlender Scope ist ein Ergebnis des Aufrufs, kein Protokollfehler —
-        // so kann das Modell die Begründung sehen und dem Nutzer nennen.
-        return rpcResult(id, {
-          content: [
-            {
-              type: 'text',
-              text: `Dieser Key hat den Scope "${tool.scope}" nicht und darf ${name} nicht aufrufen.`,
-            },
-          ],
-          isError: true,
-        } satisfies McpToolResult);
-      }
-
-      try {
-        return rpcResult(id, await ctx.invoke(name, args));
-      } catch (err) {
-        // Fehler bei der Ausführung gehören ins Ergebnis, nicht in die
-        // JSON-RPC-Fehlerhülle: der Client soll sie dem Modell zeigen können.
-        return rpcResult(id, {
-          content: [{ type: 'text', text: (err as Error)?.message ?? 'Unbekannter Fehler' }],
-          isError: true,
-        } satisfies McpToolResult);
-      }
-    }
-
-    default:
-      if (isNotification) return null;
-      return rpcError(id, RpcCode.METHOD_NOT_FOUND, `Unbekannte Methode: ${message.method}`);
+  const outcome = await dispatchMcpRequest(message, ctx);
+  if (outcome.status === 202) return null;
+  if (outcome.body && typeof outcome.body === 'object' && !Array.isArray(outcome.body)) {
+    return outcome.body as JsonRpcResponse;
   }
+  return rpcError(message.id ?? null, RpcCode.INTERNAL_ERROR, 'Leere MCP-Antwort');
 }

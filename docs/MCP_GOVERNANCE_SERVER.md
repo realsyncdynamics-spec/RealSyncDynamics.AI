@@ -127,9 +127,10 @@ scheitert. Ein Key mit ausschließlich `evidence.read` sieht vier Werkzeuge, die
 | `evidence_list` · `evidence_get` · `evidence_verify_chain` · `evidence_search_by_control` | `evidence.read` |
 | `governance_status` · `governance_list_controls` · `governance_check_control` | `governance.read` |
 
-Unterstützte Protokollfassungen: `2025-06-18` (Standard), `2025-03-26`,
-`2024-11-05`. Nennt der Client eine davon, wird sie bestätigt; sonst antwortet
-der Server mit seiner eigenen.
+Unterstützte Protokollfassungen kommen aus `@modelcontextprotocol/sdk`:
+`2025-11-25` (neueste, Fallback), `2025-06-18`, `2025-03-26`, `2024-11-05`,
+`2024-10-07`. Nennt der Client eine davon, wird sie bestätigt; sonst antwortet
+der Server mit `2025-11-25`.
 
 Der Server meldet ausschließlich die Fähigkeit `tools` — keine `resources`,
 keine `prompts`, kein `sampling`. Was nicht gemeldet wird, darf ein Client nicht

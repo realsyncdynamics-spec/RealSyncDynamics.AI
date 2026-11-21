@@ -1,0 +1,32 @@
+name: Jarvis Local Pilot CI
+
+# Draft PRs skip the main CI by design. This scoped check ensures the
+# first local-only Jarvis slice is still typechecked and regression-tested.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/core/agent-os/local-jarvis.ts'
+      - 'apps/jarvis-local/**'
+      - 'test/core/agent-os/local-jarvis.test.ts'
+      - 'docs/runbooks/jarvis-local.md'
+      - '.github/workflows/jarvis-local-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jarvis-local:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript typecheck
+        run: npm run lint
+      - name: Jarvis Local tests (mocked Ollama, no network)
+        run: npx vitest run test/core/agent-os/local-jarvis.test.ts

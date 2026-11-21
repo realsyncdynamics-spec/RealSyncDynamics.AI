@@ -17,7 +17,7 @@ export const db = {
   governance_policies: [] as Row[],
   browser_actions: [] as Row[],
 };
-export const flags = { policyError: false, evidenceError: false };
+export const flags = { policyError: false, evidenceError: false, eventError: false };
 export const executorCalls: any[] = [];
 let idSeq = 0;
 const newId = () => `00000000-0000-0000-0000-${String(++idSeq).padStart(12, '0')}`;
@@ -27,6 +27,7 @@ export function resetDb(): void {
   executorCalls.length = 0;
   flags.policyError = false;
   flags.evidenceError = false;
+  flags.eventError = false;
 }
 
 /** Freigabe-Richtlinie für Browser-Origins anlegen (wie in governance_policies). */
@@ -63,17 +64,19 @@ function finishBrowserExecution(p: { p_execution_id: string; p_status: string })
 function table(name: keyof typeof db) {
   let inserted: Row | null = null;
   let patch: Row | null = null;
+  let failed = false;
   const filters: Array<[string, unknown]> = [];
   const match = () => db[name].filter((r) => filters.every(([c, v]) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v)));
   const q: any = {
     insert(row: Row) {
+      if (name === 'governance_events' && flags.eventError) { inserted = null; failed = true; return q; }
       inserted = { id: newId(), ...(name === 'governance_approvals' ? { expires_at: new Date(Date.now() + 3600_000).toISOString() } : {}), ...row };
       db[name].push(inserted);
       return q;
     },
     update(p: Row) { patch = p; return q; },
     select() { return q; },
-    single: async () => ({ data: inserted, error: null }),
+    single: async () => (failed ? { data: null, error: { message: 'insert failed' } } : { data: inserted, error: null }),
     maybeSingle: async () => ({ data: match()[0] ?? null, error: null }),
     eq(col: string, val: unknown) { filters.push([col, val]); return q; },
     is(col: string, val: unknown) { filters.push([col, val]); return q; },

@@ -22,6 +22,7 @@ import { evidenceFor, EvidenceSequencer } from "./evidence/sequencer";
 import { CommandWorkflow } from "./workflows/command-workflow";
 import { startCommandExecution } from "./executor";
 import { hashObject } from "./lib/hash";
+import { parseDecideBody, runDecide } from "./decide";
 import { GovardError, type PolicyAction, type PolicyRule, type Principal } from "./types";
 
 export { EvidenceSequencer, CommandWorkflow };
@@ -306,6 +307,73 @@ async function handleApprovalDecision(
 }
 
 // ---------------------------------------------------------------
+// POST /api/decide — nur die Entscheidung. Kein Workflow, kein Intent.
+// Der Browser führt den fetch selbst aus, und nur bei browser_may_proceed.
+// ---------------------------------------------------------------
+async function handleDecide(
+  env: Env,
+  request: Request,
+  principal: Principal,
+): Promise<Response> {
+  const idempotencyKey = request.headers.get("Idempotency-Key");
+  if (!idempotencyKey || idempotencyKey.length > 128) {
+    throw new GovardError("IDEMPOTENCY_KEY_REQUIRED", "Header Idempotency-Key fehlt", 400);
+  }
+
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    throw new GovardError("INVALID_JSON", "Body ist kein gültiges JSON");
+  }
+  const body = parseDecideBody(rawBody);
+  const repo = new OrgRepository(env.DB, principal.org_id);
+  const requestHash = await hashObject({
+    intent: body.intent,
+    source: body.source,
+    payload: body.payload,
+    actor: body.claimedActor,
+  });
+  const actionId = crypto.randomUUID();
+  const reserved = await repo.reserveIdempotency(idempotencyKey, requestHash, actionId);
+  const evidence = evidenceFor(env, principal.org_id);
+
+  const result = await runDecide({
+    reserved,
+    actionId,
+    claimedActor: body.claimedActor,
+    principalActorId: principal.actor_id,
+    replay: async () => {
+      const replayed = await repo.replay(idempotencyKey, requestHash);
+      if (replayed === null) {
+        throw new GovardError("IDEMPOTENCY_REPLAY", "Idempotenz-Key ist nicht lesbar", 409);
+      }
+      return replayed;
+    },
+    evaluate: async () => {
+      const payload_hash = await hashObject(body.payload);
+      const policies = await repo.activePolicyVersions();
+      return evaluatePolicies(
+        { intent: body.intent, payload: body.payload, payload_hash },
+        policies,
+      );
+    },
+    append: async (payload) => {
+      await evidence.append({
+        org_id: principal.org_id,
+        command_id: actionId,
+        actor_id: principal.actor_id,
+        event_type: "DECISION_RECORDED",
+        payload,
+      });
+    },
+    finalize: (response) => repo.finalizeIdempotency(idempotencyKey, response),
+  });
+
+  return json(env, request, result.body, result.status);
+}
+
+// ---------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------
 async function route(
@@ -329,6 +397,19 @@ async function route(
 
   if (method === "POST" && pathname === "/api/command") {
     return handleCommand(env, ctx, request, principal);
+  }
+
+  if (method === "POST" && pathname === "/api/decide") {
+    return handleDecide(env, request, principal);
+  }
+
+  const decideMatch = pathname.match(/^\/api\/decide\/([0-9a-f-]{36})$/);
+  if (method === "GET" && decideMatch) {
+    return json(env, request, {
+      action_id: decideMatch[1],
+      executes: false,
+      evidence: await repo.evidenceForCommand(decideMatch[1]),
+    });
   }
 
   const commandMatch = pathname.match(/^\/api\/command\/([0-9a-f-]{36})$/);

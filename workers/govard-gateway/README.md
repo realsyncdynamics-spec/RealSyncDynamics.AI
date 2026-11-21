@@ -83,6 +83,8 @@ Entscheidungen, Verify) < `admin` (+ Policies, Seal).
 | Methode | Pfad | Rolle | Zweck |
 |---|---|---|---|
 | POST | `/api/command` | agent | Command einreichen (Header `Idempotency-Key` Pflicht) |
+| POST | `/api/decide` | agent | Nur entscheiden. Kein Workflow, kein `runIntent`. `executes` ist immer `false` |
+| GET | `/api/decide/:action_id` | agent | Evidence dieser Entscheidung, keine Ausführung |
 | GET | `/api/command/:id` | agent | Command + Übergänge + Evidence |
 | GET | `/api/approvals` | approver | Approval Inbox (offene Freigaben) |
 | POST | `/api/approvals/:id/approve` | approver | Freigeben → startet Ausführung |
@@ -225,6 +227,24 @@ Und gegen den laufenden Worker (`wrangler dev --local`, echte Workflow-Engine):
 
 Der Deploy-Workflow überspringt sich selbst, solange in `wrangler.jsonc` der
 D1-Platzhalter steht (gleiches Guard-Muster wie `siteos-preview`).
+
+## Decision-only (`POST /api/decide`)
+
+Für den Browser-Gate, nicht für Agenten-Commands. `POST /api/command` bleibt
+unverändert: `ALLOW` und eine erteilte Freigabe starten dort weiterhin den
+Workflow.
+
+`/api/decide` bewertet dieselbe Policy Engine und schreibt ein
+`DECISION_RECORDED` in die Chain. Danach ist die Antwort zu Ende.
+
+- `browser_may_proceed` ist nur bei `decision: ALLOW` wahr. `APPROVAL` legt
+  keine Inbox-Zeile an und lässt den Browser nicht zu.
+- `executes` ist immer `false`. `runIntent` wird nicht aufgerufen.
+- Der Akteur ist `principal.actor_id` aus dem Gateway-Key. Weicht `actor` im
+  Body ab, ist die Entscheidung `DENY` mit `ACTOR_MISMATCH`.
+- Derselbe `Idempotency-Key` mit anderem Body bleibt `422 IDEMPOTENCY_MISMATCH`.
+  Schlägt das Schreiben der Chain fehl, gibt es keine `ALLOW`-Antwort.
+- Der Key ist ein Govard-Key, nicht das `rsd_gov_`-Token der Erweiterung.
 
 ## Was v1 bewusst NICHT ist
 

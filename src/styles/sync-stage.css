@@ -1,0 +1,100 @@
+/* Reused across the main brand hero and every white product landing. */
+.rs-sync-stage {
+  position: relative;
+  width: 100%;
+  min-height: clamp(300px, 48vh, 740px);
+  overflow: hidden;
+  margin: 0;
+  isolation: isolate;
+  border: 1px solid #dbe3ec;
+  background: radial-gradient(ellipse at 45% 48%, #ffffff 13%, #eff5fa 78%, #e4edf6 100%);
+  color: #1f2a44;
+}
+.rs-sync-stage__still,
+.rs-sync-stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rs-sync-stage__still {
+  object-fit: contain;
+  object-position: center;
+}
+.rs-sync-stage__still[hidden] { display: none; }
+.rs-sync-stage__canvas {
+  display: block;
+  opacity: 0;
+  transition: opacity .3s ease;
+  outline-offset: -4px;
+  touch-action: pan-y;
+}
+.rs-sync-stage__canvas[data-visible='true'] {
+  opacity: 1;
+}
+.rs-sync-stage__canvas[data-visible='false'] {
+  pointer-events: none;
+}
+.rs-sync-stage__tag,
+.rs-sync-stage__caption {
+  position: absolute;
+  z-index: 2;
+  max-width: calc(100% - 36px);
+  background: rgba(255,255,255,.93);
+  border: 1px solid #e1e8f0;
+  padding: 5px 9px;
+  color: #1f2a44;
+}
+.rs-sync-stage__tag {
+  top: 16px;
+  right: 16px;
+  font: 650 11px/1.45 var(--font-mono, monospace);
+  letter-spacing: .05em;
+}
+.rs-sync-stage__caption {
+  bottom: 16px;
+  left: 16px;
+  font: 600 clamp(14px,1.5vw,20px)/1.35 var(--font-rs-title, Inter, sans-serif);
+}
+.rs-sync-stage--hero { border-radius: 12px; }
+.rpl-sync-composition {
+  position: relative;
+  min-height: clamp(345px,39vw,570px);
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px;
+  background: white;
+}
+.rpl-sync-composition > .rpl-visual {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  opacity: .23;
+  border-color: transparent;
+}
+.rpl-sync-composition > .rs-sync-stage {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  border-color: #dae3ed;
+  border-radius: 12px;
+}
+.rpl-sync-composition .rs-sync-stage__still,
+.rpl-sync-composition .rs-sync-stage__canvas {
+  z-index: 1;
+}
+.rpl-sync-composition .rs-sync-stage__tag,
+.rpl-sync-composition .rs-sync-stage__caption { z-index: 3; }
+@media (max-width: 900px) {
+  .rpl-sync-composition { min-height: 400px; }
+}
+@media (max-width: 620px) {
+  .rpl-sync-composition { min-height: 320px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rs-sync-stage__canvas { transition: none; }
+}

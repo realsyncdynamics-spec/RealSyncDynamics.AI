@@ -155,3 +155,15 @@ a.lv3-card:hover { background: var(--lv3-bg-1); border-color: var(--lv3-fg-2); }
 @media (prefers-reduced-motion: reduce) {
   .lv3 * { transition: none !important; animation: none !important; }
 }
+
+
+/* Dachmarken-Produktkatalog: dieselben White-Design-Tokens wie die einzelnen Produktseiten. */
+.lv3-product-landings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.lv3-product-landing { display: flex; flex-direction: column; gap: 14px; min-height: 230px; padding: 23px; border: 1px solid var(--lv3-line-strong); text-decoration: none; background: #fff; color: var(--lv3-fg-1); }
+.lv3-product-landing:hover { background: var(--lv3-bg-1); border-color: var(--lv3-fg-2); }
+.lv3-product-landing__name { color: var(--lv3-fg-0); font: 650 clamp(22px, 2.3vw, 33px)/1.12 var(--font-rs-title, Inter, sans-serif); letter-spacing: -.025em; }
+.lv3-product-landing__status { color: var(--lv3-fg-2); font-size: 13px; }
+.lv3-product-landing__cta { display: flex; justify-content: space-between; gap: 14px; align-items: center; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--lv3-line); font-weight: 650; font-size: 14px; }
+.lv3-higgsfield-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 900px) { .lv3-product-landings { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 580px) { .lv3-product-landings { grid-template-columns: 1fr; } }

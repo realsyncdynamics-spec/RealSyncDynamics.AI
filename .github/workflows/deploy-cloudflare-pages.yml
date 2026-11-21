@@ -51,7 +51,11 @@ permissions:
 jobs:
   build:
     name: Build SPA
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    container:
+      # Muss exakt zur installierten playwright-Version passen.
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001 --init --ipc=host
     # Build inklusive Prerender braucht regulaer rund fuenf Minuten. Ohne diese Grenze gilt der GitHub-Standard von 360 Minuten —
     # ein haengender Schritt blockiert dann sechs Stunden lang die
     # Warteschlange, statt schnell und lesbar zu scheitern.
@@ -60,6 +64,26 @@ jobs:
       cf_ready: ${{ steps.cfcheck.outputs.ready }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Check 3D asset size for Pages
+        run: |
+          if [ ! -d public/3d ]; then
+            echo "::notice::public/3d/ fehlt – keine 3D-Dateien für Pages zu prüfen."
+            exit 0
+          fi
+
+          TOO_LARGE=""
+          while IFS= read -r -d '' file; do
+            size=$(stat -c%s "$file")
+            if [ "$size" -gt 26214400 ]; then
+              TOO_LARGE="$(printf '%s\n%s (%s Bytes)' "$TOO_LARGE" "$file" "$size")"
+            fi
+          done < <(find public/3d -type f -print0)
+
+          if [ -n "$TOO_LARGE" ]; then
+            echo "::error::Cloudflare Pages erlaubt maximal 25 MiB je Datei. Große 3D-Modelle dürfen nicht unter public/3d liegen:$TOO_LARGE"
+            echo "Lege große Modelle außerhalb von public/ ab und lade sie separat nach R2 hoch."
+            exit 1
+          fi
       - name: Detect Cloudflare credentials
         id: cfcheck
         env:
@@ -121,27 +145,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+      - name: Verify Playwright version match
+        run: |
+          INSTALLED=$(node -p "require('playwright/package.json').version")
+          EXPECTED="1.59.1"
+          if [ "$INSTALLED" != "$EXPECTED" ]; then
+            echo "::error::Playwright version mismatch: package=$INSTALLED, Docker image expects $EXPECTED"
+            echo "Bitte Image-Tag in diesem Workflow auf v${INSTALLED}-noble anpassen."
+            exit 1
+          fi
+          echo "✓ Playwright $INSTALLED matches Docker image"
       - name: Lint TypeScript
         run: npm run lint
-      - name: Install Playwright Chromium
-        # `--with-deps` ruft im Hintergrund `apt-get` gegen die Ubuntu-Spiegel.
-        # Genau dort hingen am 2026-08-19 zwei Laeufe bis zum Job-Timeout: Das
-        # Log endet mitten in `apt-get update` mit `Ign:` fuer jedes Repository,
-        # danach 28 Minuten Stille, und `playwright-report/` blieb leer — es lief
-        # kein einziger Test. Auffaellig war, dass ausschliesslich die zwei Jobs
-        # mit diesem Schritt hingen, alle uebrigen liefen gruen durch.
-        #
-        # Das Runner-Image `ubuntu-latest` bringt die Systembibliotheken fuer
-        # Chromium bereits mit (Chrome ist vorinstalliert). Der apt-Lauf sichert
-        # hier also gegen ein Risiko ab, das nicht besteht — und schafft dabei
-        # ein neues.
-        #
-        # `timeout-minutes` bleibt als Netz: Haengt der Download doch einmal,
-        # faellt der Job nach sechs Minuten mit einer lesbaren Meldung aus,
-        # statt eine halbe Stunde still zu blockieren.
-        timeout-minutes: 6
-        run: npx playwright install chromium
       - name: Build Vite + Prerender
         env:
           VITE_BASE: /
@@ -193,6 +209,43 @@ jobs:
             ls -la dist/ | head -20
             exit 1
           fi
+      - name: Upload 3D assets to R2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          R2_BUCKET: rsd-3d-mascot
+        run: |
+          if [ ! -d public/3d ] || ! find public/3d -type f -print -quit | grep -q .; then
+            echo "::notice::public/3d/ ist leer oder fehlt – R2-Upload übersprungen."
+            exit 0
+          fi
+
+          if [ -z "$RCLONE_CONFIG_R2_ACCESS_KEY_ID" ] || \
+             [ -z "$RCLONE_CONFIG_R2_SECRET_ACCESS_KEY" ] || \
+             [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::3D-Dateien vorhanden, aber R2-Zugangsdaten fehlen."
+            exit 1
+          fi
+
+          RCLONE_VERSION="1.76.0"
+          RCLONE_SHA256="b00f00b3266c3764413afe599d3ec316f6f43b3e0ea8a0bc1d186d2133e46df7"
+          RCLONE_DIR="$(mktemp -d)"
+          RCLONE_ZIP="$RCLONE_DIR/rclone-v${RCLONE_VERSION}-linux-amd64.zip"
+          curl -fsSL "https://downloads.rclone.org/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip" -o "$RCLONE_ZIP"
+          echo "$RCLONE_SHA256  $RCLONE_ZIP" | sha256sum --check
+          unzip -p "$RCLONE_ZIP" "rclone-v${RCLONE_VERSION}-linux-amd64/rclone" > "$RCLONE_DIR/rclone"
+          chmod +x "$RCLONE_DIR/rclone"
+
+          "$RCLONE_DIR/rclone" copy public/3d/ "r2:${R2_BUCKET}/3d/" \
+            --fast-list \
+            --transfers 8 \
+            --s3-no-check-bucket
+          echo "✓ 3D-Assets nach R2 kopiert"
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -208,7 +261,7 @@ jobs:
     timeout-minutes: 15
     needs: build
     # Pull requests may build/validate, but must never deploy to the production Pages branch.
-    if: github.event_name != 'pull_request' && needs.build.outputs.cf_ready == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -232,7 +285,7 @@ jobs:
     timeout-minutes: 10
     needs: [build, deploy]
     # Live-route smoke tests only make sense after an authorized non-PR deployment.
-    if: github.event_name != 'pull_request' && needs.build.outputs.cf_ready == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CDN propagation

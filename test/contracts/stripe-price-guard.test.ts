@@ -124,9 +124,13 @@ describe('stripe-checkout akzeptiert nur echte Stripe-Preise', () => {
       }
     });
 
-    it('Enterprise ist monatlich per Checkout kaufbar, die Jahresvariante bleibt gesperrt', () => {
+    it('Enterprise-Neukauf ist serverseitig pausiert (21.11.2026), die Jahresvariante bleibt gesperrt', () => {
+      // stripe-checkout weist neue Enterprise-Sessions mit INQUIRY_ONLY ab,
+      // solange ENTERPRISE_SELF_SERVICE_PAUSED gilt; der harte Stopp für die
+      // Jahresvariante bleibt unabhängig davon bestehen.
       const enterprise = PLANS.find((p) => p.id === 'enterprise')!;
       expect(enterprise.purchaseMode).toBe('checkout');
+      expect(SOURCE).toContain("plan.id === 'enterprise' && ENTERPRISE_SELF_SERVICE_PAUSED");
       expect(enterprise.priceOnRequest ?? false).toBe(false);
       expect(enterprise.yearlyCheckoutUnavailable).toBe(true);
       expect(SOURCE).toContain("ENTERPRISE_SELF_SERVICE_BLOCKED = new Set(['enterprise_yearly'])");

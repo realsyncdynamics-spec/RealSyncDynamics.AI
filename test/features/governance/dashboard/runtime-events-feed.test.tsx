@@ -88,13 +88,14 @@ function renderFeed() {
 describe('RuntimeEventsFeed', () => {
   beforeEach(() => { supa.result = { data: [], error: null }; });
 
-  it('zeigt Events mit Entscheidung und Link zur Freigabe', async () => {
+  it('zeigt Events mit Entscheidung, ohne Link auf eine fremde Freigabeansicht', async () => {
     supa.result = { data: [row], error: null };
     renderFeed();
     await waitFor(() => expect(screen.getByTestId('runtime-events-list')).toBeTruthy());
     expect(screen.getByText('RSD-02')).toBeTruthy();
-    const approval = screen.getByRole('link', { name: 'Freigabe nötig' });
-    expect(approval.getAttribute('href')).toBe('/app/approvals');
+    expect(screen.getByText('Freigabe nötig')).toBeTruthy();
+    // /app/approvals liest governance_approvals, nicht workspace_approvals.
+    expect(screen.queryByRole('link', { name: 'Freigabe nötig' })).toBeNull();
   });
 
   it('zeigt Leerzustand ohne Beispieldaten', async () => {

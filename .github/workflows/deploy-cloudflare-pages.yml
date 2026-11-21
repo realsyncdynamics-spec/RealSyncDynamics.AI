@@ -75,7 +75,7 @@ jobs:
           while IFS= read -r -d '' file; do
             size=$(stat -c%s "$file")
             if [ "$size" -gt 26214400 ]; then
-              TOO_LARGE="$(printf '%s\\n%s (%s Bytes)' "$TOO_LARGE" "$file" "$size")"
+              TOO_LARGE="$(printf '%s\n%s (%s Bytes)' "$TOO_LARGE" "$file" "$size")"
             fi
           done < <(find public/3d -type f -print0)
 

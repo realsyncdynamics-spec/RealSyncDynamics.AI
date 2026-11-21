@@ -33,6 +33,11 @@ interface SupabaseAdminClient {
     };
     update(row: Record<string, unknown>): {
       eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          select(columns: string): {
+            maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          };
+        };
         select?(columns: string): {
           single(): Promise<{ data: unknown; error: unknown }>;
         };
@@ -121,18 +126,29 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmai
 async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
-  const { data: row } = await admin.from('dpias').select('tenant_id').eq('id', id).maybeSingle();
+  const { data: row } = await admin.from('dpias').select('tenant_id, status').eq('id', id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'dpia not found');
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  // An approved assessment is immutable until a dedicated revocation workflow exists.
+  if (row.status === 'approved') return jsonError(409, 'ALREADY_APPROVED', 'approved DPIA cannot be edited');
 
   const patch: Record<string, unknown> = {};
   for (const k of ['title','status','necessity_assessment','proportionality_assessment','risk_description','mitigation_measures','dpo_consulted','dpo_email','review_due_at']) {
     if (k in body) patch[k] = body[k];
   }
-  if (patch.status && !STATUS.includes(patch.status as string)) return jsonError(400, 'BAD_REQUEST', `status must be one of ${STATUS.join('|')}`);
+  if (patch.status === 'approved') {
+    return jsonError(409, 'APPROVAL_REQUIRED', 'approval requires op=approve');
+  }
+  if (patch.status !== undefined && !STATUS.includes(patch.status as string)) {
+    return jsonError(400, 'BAD_REQUEST', `status must be one of ${STATUS.join('|')}`);
+  }
+  if (Object.keys(patch).length === 0) return jsonError(400, 'BAD_REQUEST', 'no update fields supplied');
 
-  const { data, error } = await admin.from('dpias').update(patch).eq('id', id).select('*').single();
+  // Prevent a stale edit from changing an assessment approved concurrently.
+  const { data, error } = await admin.from('dpias').update(patch)
+    .eq('id', id).eq('status', row.status).select('*').maybeSingle();
   if (error) throw error;
+  if (!data) return jsonError(409, 'CONFLICT', 'DPIA status changed concurrently; reload and retry');
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.update', target_type: 'dpia', target_id: id, payload: patch });
   return jsonResponse({ ok: true, dpia: data });
 }
@@ -143,9 +159,17 @@ async function handleApprove(admin: SupabaseAdminClient, userId: string, userEma
   const { data: row } = await admin.from('dpias').select('tenant_id, status').eq('id', id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'dpia not found');
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  if (row.status !== 'in_review') {
+    return jsonError(409, 'INVALID_TRANSITION', 'DPIA must be in_review before approval');
+  }
   const now = new Date().toISOString();
-  const { error } = await admin.from('dpias').update({ status: 'approved', approved_by: userEmail ?? userId, approved_at: now }).eq('id', id);
+  // Compare-and-set prevents approving an assessment that was withdrawn or
+  // rejected between the initial read and the write.
+  const { data: approved, error } = await admin.from('dpias')
+    .update({ status: 'approved', approved_by: userEmail ?? userId, approved_at: now })
+    .eq('id', id).eq('status', 'in_review').select('id').maybeSingle();
   if (error) throw error;
+  if (!approved) return jsonError(409, 'CONFLICT', 'DPIA changed concurrently; reload and retry');
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.approve', target_type: 'dpia', target_id: id, payload: { approved_at: now } });
   return jsonResponse({ ok: true, approved_at: now });
 }

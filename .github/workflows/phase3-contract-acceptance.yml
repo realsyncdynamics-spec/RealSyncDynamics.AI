@@ -1,0 +1,38 @@
+name: Phase 3 Contract Acceptance (Draft, no deploy)
+
+# Isolated Phase 3 review gate: runs while the PR remains Draft.
+# This is NOT PostgreSQL/RLS/Edge runtime proof and never deploys.
+on:
+  push:
+    branches:
+      - fix/phase3-automation-dpia-contract-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase3-contract-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-regression:
+    name: Phase 3 contract and regression tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+    steps:
+      - name: Checkout Phase 3 branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Set up Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run lint
+      - name: Contract and regression Vitest
+        run: npx vitest run test/edge/automation-run-contract.test.ts test/edge/phase3-contract-guards.test.ts

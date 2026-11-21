@@ -104,10 +104,12 @@ Wenn ein 🟢-Modul mit einem offenen Finding verbunden ist, **muss** der Caveat
 
 | Modul | Status | Reifegrad | Evidence | Belege / Caveats |
 |---|---|---|---|---|
-| DSGVO-Datenexport (Art. 15) | 🟢 | produktiv | audit-log | `gdpr-export` |
-| DSGVO-Löschung (Art. 17) | 🟢 | produktiv | audit-log | `gdpr-delete` |
-| DPIA Workflow | 🟢 | produktiv | workflow events | `governance-dpias` — **Caveat:** unterstützt DPIA-Erstellung, ersetzt **nicht** die DPO-Verantwortung |
-| Incident Workflow | 🔴 | roadmap | – | – |
+| DSGVO-Datenexport (Art. 15) | 🟢 | produktiv | audit-log | `gdpr-export` — separater Exportpfad; keine End-to-End-Bestätigung der neuen `governance-dsr`-Bridge |
+| DSGVO-Löschung (Art. 17) | 🟢 | produktiv | audit-log | `gdpr-delete` — separater Löschpfad; sichere DSR-Löschauftrag-/Evidence-Kette weiterhin offen (#2360) |
+| DSR-Antragsworkflow (`governance-dsr`) | 🟡 | beta | unvollständige Evidence-Kette | CRUD/Export, JWT, Tenant und Writer-Gates implementiert; best-effort Mapping/Evidence/Erasure ohne transaktionale Outbox; P0 #2360 |
+| DPIA Workflow | 🟡 | beta | partial | `governance-dpias` implementiert; Direktfreigabe in `update` auf `main` noch möglich, Fix nur als Draft-PR #2355; tatsächliche PostgreSQL-/RLS-Abnahme offen |
+| Incident Workflow | 🟡 | beta | partial | `governance-incidents` mit Auth, Tenant-Guards und CAS im Quellcode; integrierte Laufzeit und 72h-Fristen noch nicht nachgewiesen |
+| Automation Skill Runner | 🔴 | roadmap | – | Engine/Tabellen/Edge Functions vorhanden, aber DSGVO-Skill ohne bestätigte n8n-Bindung und keine durchgängige, atomare Quota-Buchung; #2355 / #2361. Nicht als ausführbarer Live-Skill bewerben |
 | Vendor Review Workflow | 🔴 | roadmap | – | – |
 
 ### Agent Runtime

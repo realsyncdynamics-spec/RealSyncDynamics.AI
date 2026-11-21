@@ -77,7 +77,7 @@ describe('Startseite v3 — `/`', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const links = within(screen.getByRole('group', { name: 'Produkte' })).getAllByRole('link');
     expect(links.map(link => link.getAttribute('href')?.split('?')[0])).toEqual([
-      '/telefonassistent', '/landingpage-builder', '/app-builder', '/governance-os',
+      '/ki-bots', '/app-builder', '/governance-os', '/claude-code-optimizer',
     ]);
     expect(screen.getByTestId('v3-customer-journey').children).toHaveLength(6);
   });

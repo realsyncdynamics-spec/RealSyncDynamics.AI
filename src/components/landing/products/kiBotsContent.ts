@@ -18,13 +18,13 @@ import { RECEPTIONIST } from '../v3/landingV3Data';
 export const KI_BOTS_SOURCE = 'ki-bots';
 
 export const KI_BOTS = {
-  name: 'Persönlicher Telefonassistent',
+  name: 'KI-Bots & Voice-Agenten',
   audience: 'Für Betriebe mit Kundenkontakt, zuerst im Handwerk',
-  h1: ['Persönlicher Telefonassistent.', 'Für KMU mit Kundenkontakt.'],
+  h1: ['KI-Bots & Voice-Agenten.', 'Für KMU mit Kundenkontakt.'],
   lead:
-    'Der Telefonassistent soll Anrufe entgegennehmen, das Anliegen und einen Rückruf- oder Terminwunsch erfassen und an Ihr Team übergeben. Telefonie ist aktuell noch in Vorbereitung; der Chat-Assistent kann separat ausprobiert werden.',
+    'Ein Chat-Assistent beantwortet Kundenanfragen nach Ihren Vorgaben. Der Voice-Agent soll Anrufe entgegennehmen, das Anliegen und einen Rückruf- oder Terminwunsch erfassen und an Ihr Team übergeben. Telefonie ist aktuell noch in Vorbereitung; der Chat-Assistent kann separat ausprobiert werden.',
   primaryCta: 'Ablauf ansehen',
-  stageTag: 'Telefonassistent · in Vorbereitung',
+  stageTag: 'Voice-Agent · in Vorbereitung',
   stageCaption: 'Anruf → Anliegen → Rückrufwunsch → Team',
   waitlistHref: `/warteliste?interest=bots&source=${KI_BOTS_SOURCE}`,
   waitlistCta: 'Auf die Warteliste',
@@ -36,7 +36,7 @@ export const KI_BOTS = {
 export const PROMISES: ReadonlyArray<{ title: string; body: string }> = [
   {
     title: 'Anrufe sollen nicht unbeantwortet bleiben',
-    body: 'Der geplante Telefonassistent nimmt Anliegen auf, während Ihr Team arbeitet. Telefonie ist noch nicht live.',
+    body: 'Der geplante Voice-Agent nimmt Anliegen auf, während Ihr Team arbeitet. Telefonie ist noch nicht live.',
   },
   {
     title: 'Alles Wichtige auf einen Blick',
@@ -101,5 +101,5 @@ export const USE_CASES: ReadonlyArray<{ trade: string; situation: string; result
 export const START_STEPS: ReadonlyArray<{ title: string; body: string }> = [
   { title: 'Ablauf ansehen', body: 'Das markierte Beispiel zeigt, welche Informationen das Team erhalten soll.' },
   { title: 'Chat testen', body: 'Den verfügbaren Chat-Assistenten separat im Browser ausprobieren.' },
-  { title: 'Vormerken lassen', body: 'Interesse am Telefonassistenten für KMU hinterlegen.' },
+  { title: 'Vormerken lassen', body: 'Interesse am Voice-Agenten für KMU hinterlegen.' },
 ];

@@ -112,10 +112,19 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
     [navigate],
   );
 
-  // Kein Freitext-Intent mehr (P0-5): Er ging per Router-State an
-  // `/app/dashboard`, gelesen wurde er nur von `AgentOsPanel`, das auf keiner
-  // erreichbaren Route gemountet ist — der Intent verpuffte. Ohne
-  // `onSubmitIntent` bietet die Palette nur ausführbare Befehle an.
+  // Kein toter Router-State-Intent mehr: Freitext geht ausschließlich als
+  // editierbarer Entwurf an die existierende, tenant-gebundene Chat-Sidebar.
+  // Weder senden noch Tool-/Agent-Aktionen werden hier automatisch ausgelöst.
+  const handleSubmitIntent = useCallback((text: string) => {
+    const draft = text.trim();
+    if (!draft) return;
+    setAssistantPrompt((previous) => ({
+      id: (previous?.id ?? 0) + 1,
+      text: draft,
+    }));
+    setBrowserAgentOpen(false);
+    setAssistantOpen(true);
+  }, []);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -230,6 +239,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
           onClose={() => setCommandCenterOpen(false)}
           items={commandItems}
           onRun={handleRunCommand}
+          onSubmitIntent={handleSubmitIntent}
         />
       </div>
     </AppGate>

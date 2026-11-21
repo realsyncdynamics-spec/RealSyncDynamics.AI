@@ -15,6 +15,7 @@ import { computeWorkspaceBootstrapSteps } from '../../../../src/features/governa
 
 const APP = readFileSync('src/App.tsx', 'utf8');
 const TOP_BAR = readFileSync('src/components/governance-os/BrowserTopBar.tsx', 'utf8');
+const BROWSER_SHELL = readFileSync('src/components/governance-os/GovernanceBrowserShell.tsx', 'utf8');
 const DASHBOARD = readFileSync(
   'src/features/governance/dashboard/ComplianceStatusDashboard.tsx',
   'utf8',
@@ -172,5 +173,14 @@ describe('empty-state CTAs and bootstrap next steps', () => {
         activationStatus: null,
       }),
     ).toEqual([]);
+  });
+});
+
+describe('Command Center → vorhandene Assistenten-Sidebar', () => {
+  it('bindet Freitext als Entwurf statt in einen toten Dashboard-Router-State', () => {
+    expect(BROWSER_SHELL).toContain('onSubmitIntent={handleSubmitIntent}');
+    expect(BROWSER_SHELL).toContain('setAssistantPrompt((previous) => ({');
+    expect(BROWSER_SHELL).toContain('setAssistantOpen(true)');
+    expect(BROWSER_SHELL).not.toContain('navigate(\'/app/dashboard\', { state:');
   });
 });

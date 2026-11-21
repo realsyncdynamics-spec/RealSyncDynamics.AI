@@ -102,13 +102,12 @@ describe('governed browser executor contract', () => {
 
   it('records browser-execute as measured production state', () => {
     expect(productionRegistry).toContain("'browser-execute'");
-    // browser-execute kam mit der Messung 191 dazu. Der Zähler darf danach
-    // nur steigen — jeder weitere Deploy hebt ihn an. Ein exakter Literal-
-    // Vergleich (`= 191`) brach deshalb bei der nächsten Neumessung
-    // (local-ai-runtime, 192), ohne dass sich an browser-execute etwas änderte.
+    // browser-execute kam mit der Messung 191 dazu. Der Zähler ist keine
+    // Untergrenze: Am 18.11.2026 sank er durch das gewollte Löschen von zehn
+    // Functions ohne Aufrufer auf 190. Maßgeblich ist, dass browser-execute
+    // in der Produktionsliste steht.
     const observed = productionRegistry.match(/EDGE_FUNCTIONS_OBSERVED_MAX = (\d+)/);
     expect(observed).not.toBeNull();
-    expect(Number(observed![1])).toBeGreaterThanOrEqual(191);
     expect(productionRegistry).not.toContain("{ slug: 'browser-execute'");
   });
 });

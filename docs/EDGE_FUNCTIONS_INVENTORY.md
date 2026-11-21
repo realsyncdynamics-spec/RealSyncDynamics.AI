@@ -3,7 +3,7 @@
 > **Automatisch erzeugt** von `scripts/generate-edge-function-inventory.mjs` — nicht von Hand editieren.
 > Neu erzeugen: `node scripts/generate-edge-function-inventory.mjs`. Grundlage: PLAN_100 #15/#16.
 >
-> Grundwahrheit „in Produktion": `src/config/production-edge-functions.ts` (Messung 2026-10-30T11:46Z, vom Drift-Guard gehuetet).
+> Grundwahrheit „in Produktion": `src/config/production-edge-functions.ts` (Messung 2026-11-18T19:30Z, vom Drift-Guard gehuetet).
 > Erreichbarkeit: Referenz-Scan ueber `src/`, `supabase/config.toml`, `supabase/migrations/` und Function-zu-Function-Calls.
 > **Scope:** statischer Repo-Scan, kein Laufzeit-Healthcheck. Produktiv verwaltete Runtime-Crons koennen ausserhalb der Migrationen liegen; aktueller Snapshot: [Runtime-Beobachtungen](./EDGE_FUNCTIONS_RUNTIME_OBSERVATIONS.md).
 
@@ -12,23 +12,23 @@
 | Status | Anzahl | Bedeutung |
 |---|---:|---|
 | AKTIV | 155 | Deployt **und** mit mindestens einem Caller/Trigger im Repo (invoke/fetch/cron/function-call/public) |
-| DEPLOYT-OHNE-CALLER | 45 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
-| REPO-ONLY (nicht deployt) | 4 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
+| DEPLOYT-OHNE-CALLER | 35 | Deployt, aber kein Code-Caller im Repo gefunden → Pruef-Kandidat fuer #16 (nicht automatisch „tot") |
+| REPO-ONLY (nicht deployt) | 5 | Verzeichnis im Repo, aber nicht in der Prod-Liste |
 | DRIFT: deployt ohne Quelle | 0 | In Prod-Liste, aber kein Verzeichnis (sollte 0 sein — sonst Drift-Guard) |
-| **Summe** | **204** | Vereinigung aus Prod-Liste (200) und Verzeichnissen (204) |
+| **Summe** | **195** | Vereinigung aus Prod-Liste (190) und Verzeichnissen (195) |
 
 ### Einordnung
 
-- ⚠️ Repo und Produktion weichen ab (4 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
+- ⚠️ Repo und Produktion weichen ab (5 nur im Repo, 0 nur deployt) — siehe die jeweiligen Listen unten.
 - **Grenze der Repo-Sicht:** Cron-Jobs, die nur in der Produktions-DB angelegt wurden (nicht in `supabase/migrations/`), externe Webhook-Ziele und manuelle Aufrufe sind hier unsichtbar. Vor #16 deshalb `cron.job`, die Aufruf-Logs und die Webhook-Konfiguration der Anbieter gegenpruefen.
-- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (45): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
+- Das einzige verbleibende „tot?"-Signal ist **DEPLOYT-OHNE-CALLER** (35): deployt, aber im Repo ruft nichts sie auf. Das ist die Arbeitsliste fuer #16 — **nicht** eine Loeschfreigabe. Vor jeder Deprecation gilt weiterhin: fetch- *und* invoke-bewusst gegenpruefen, Out-of-band-/Admin-Nutzung ausschliessen.
 - Alle oeffentlichen Functions (`verify_jwt=false`, z. B. Webhooks von Stripe/Shopify/Telegram) tragen den Trigger `public/webhook` und zaehlen damit als AKTIV, auch ohne internen Caller.
 
-## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (45)
+## #16 Pruef-Kandidaten — deployt, aber kein interner Caller (35)
 
 > **Kein Loeschbefund.** „Kein Caller" heisst: im Repo (`src/`, `config.toml`, Migrationen, Function-zu-Function) ruft nichts diese Function auf. Extern erreichbare APIs (z. B. `api-audit`, OAuth-Endpunkte) und Out-of-band-/Admin-Tools (z. B. `mfa-admin-reset`) sind legitim ohne internen Caller. Pro Function verifizieren, bevor an Deprecation (#16) gedacht wird.
 
-**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 41 · nur Tests/e2e: 2 · in config.toml deklariert: 2
+**Aufschluesselung nach Spur:** kein interner Caller/Trigger: 31 · nur Tests/e2e: 2 · in config.toml deklariert: 2
 
 | Function | Cluster | Einzige Spur |
 |---|---|---|
@@ -37,25 +37,17 @@
 | `ai-act-auto-classify` | AI-Act | nur Tests/e2e |
 | `mfa-admin-reset` | Auth/MFA/Tenant | kein interner Caller/Trigger |
 | `provision-tenant` | Auth/MFA/Tenant | kein interner Caller/Trigger |
-| `tenant-branding-get` | Auth/MFA/Tenant | kein interner Caller/Trigger |
 | `checkout-siteos-project` | Billing/Stripe | kein interner Caller/Trigger |
 | `stripe-oauth-callback` | Billing/Stripe | kein interner Caller/Trigger |
 | `stripe-token-meter-sync` | Billing/Stripe | kein interner Caller/Trigger |
 | `compliance-alert-trigger` | Compliance/NIS2 | kein interner Caller/Trigger |
 | `compliance-remediation-execute` | Compliance/NIS2 | kein interner Caller/Trigger |
-| `nis2-deadline-calculator` | Compliance/NIS2 | kein interner Caller/Trigger |
-| `evidence-r2` | Evidence | kein interner Caller/Trigger |
 | `governance-agents-list` | Governance-OS | in config.toml deklariert |
-| `governance-audit-report-gen` | Governance-OS | kein interner Caller/Trigger |
-| `governance-evidence-handler` | Governance-OS | kein interner Caller/Trigger |
-| `governance-gap-analyzer` | Governance-OS | kein interner Caller/Trigger |
 | `governance-risk-escalate` | Governance-OS | in config.toml deklariert |
-| `governance-workflow-intake` | Governance-OS | kein interner Caller/Trigger |
 | `api-gateway` | Health/Ops | kein interner Caller/Trigger |
 | `mcp-api-key-manager` | Integrationen | kein interner Caller/Trigger |
 | `oauth2-apps` | Integrationen | kein interner Caller/Trigger |
 | `oauth2-token` | Integrationen | kein interner Caller/Trigger |
-| `seed-integrations` | Integrationen | kein interner Caller/Trigger |
 | `c2pa-manifest-generate` | Legal/RAG/Provenance | kein interner Caller/Trigger |
 | `email-delivery-webhook` | Notify/Webhook | kein interner Caller/Trigger |
 | `pitch-deck-pdf` | Report/PDF/Doc | kein interner Caller/Trigger |
@@ -65,11 +57,9 @@
 | `schedule-data-syncs` | Scheduler/Jobs | kein interner Caller/Trigger |
 | `social-publisher-worker` | Social | kein interner Caller/Trigger |
 | `email-notify-send` | Sonstige | kein interner Caller/Trigger |
-| `notify-terminal-event` | Sonstige | kein interner Caller/Trigger |
 | `onboarding-orchestrator` | Sonstige | kein interner Caller/Trigger |
 | `partner-provision-tenant` | Sonstige | kein interner Caller/Trigger |
 | `plans` | Sonstige | kein interner Caller/Trigger |
-| `report-generator` | Sonstige | kein interner Caller/Trigger |
 | `skills` | Sonstige | kein interner Caller/Trigger |
 | `api-webhook-deliver` | Webhook-Zustellung | kein interner Caller/Trigger |
 | `webhook-deliver` | Webhook-Zustellung | kein interner Caller/Trigger |
@@ -78,10 +68,11 @@
 | `cloudflare-deployer` | Website/Betrieb | kein interner Caller/Trigger |
 | `hostinger-agent-brief` | Website/Betrieb | kein interner Caller/Trigger |
 
-## REPO-ONLY — im Repo, nicht in der Prod-Liste (4)
+## REPO-ONLY — im Repo, nicht in der Prod-Liste (5)
 
 | Function | Cluster | Erreichbarkeit |
 |---|---|---|
+| `checkout-voice-agent` | Billing/Stripe | frontend-invoke |
 | `platform-intelligence-orchestrator` | Sonstige | — |
 | `workspace-approvals` | Sonstige | public/webhook |
 | `workspace-events` | Sonstige | public/webhook |
@@ -133,7 +124,7 @@
 | `classify-document` | AKTIV | frontend-invoke |
 | `local-ai-runtime` | AKTIV | frontend-wrapper |
 
-### Auth/MFA/Tenant (10)
+### Auth/MFA/Tenant (9)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
@@ -143,16 +134,16 @@
 | `mfa-recovery-redeem` | AKTIV | frontend-invoke |
 | `provision-tenant` | DEPLOYT-OHNE-CALLER | — |
 | `provision-voice-agent` | AKTIV | cron, function-call, public/webhook |
-| `tenant-branding-get` | DEPLOYT-OHNE-CALLER | — |
 | `tenant-branding-update` | AKTIV | frontend-invoke |
 | `tenant-invite` | AKTIV | frontend-invoke |
 | `tenant-members` | AKTIV | frontend-invoke |
 
-### Billing/Stripe (11)
+### Billing/Stripe (12)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
 | `checkout-siteos-project` | DEPLOYT-OHNE-CALLER | — |
+| `checkout-voice-agent` | REPO-ONLY (nicht deployt) | frontend-invoke |
 | `checkout-website-rebuild` | AKTIV | frontend-invoke, public/webhook |
 | `stripe-checkout` | AKTIV | frontend-invoke |
 | `stripe-checkout-verify` | AKTIV | frontend-fetch |
@@ -171,22 +162,20 @@
 | `bot-chat` | AKTIV | public/webhook |
 | `bot-voice-enforcer` | AKTIV | cron, public/webhook |
 
-### Compliance/NIS2 (4)
+### Compliance/NIS2 (3)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
 | `compliance-alert-trigger` | DEPLOYT-OHNE-CALLER | — |
 | `compliance-remediation-execute` | DEPLOYT-OHNE-CALLER | — |
-| `nis2-deadline-calculator` | DEPLOYT-OHNE-CALLER | — |
 | `security-signal-ingest` | AKTIV | frontend-fetch, public/webhook |
 
-### Evidence (5)
+### Evidence (4)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
 | `evidence-anchor` | AKTIV | frontend-invoke |
 | `evidence-export` | AKTIV | frontend-invoke |
-| `evidence-r2` | DEPLOYT-OHNE-CALLER | — |
 | `evidence-vault` | AKTIV | frontend-invoke |
 | `evidence-vault-export` | AKTIV | frontend-invoke, frontend-fetch |
 
@@ -198,7 +187,7 @@
 | `gdpr-delete` | AKTIV | frontend-fetch |
 | `gdpr-export` | AKTIV | frontend-fetch |
 
-### Governance-OS (28)
+### Governance-OS (24)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
@@ -207,15 +196,12 @@
 | `governance-analytics-aggregator` | AKTIV | public/webhook |
 | `governance-analytics-export` | AKTIV | frontend-invoke |
 | `governance-approvals` | AKTIV | frontend-invoke, public/webhook |
-| `governance-audit-report-gen` | DEPLOYT-OHNE-CALLER | — |
 | `governance-connectors` | AKTIV | frontend-invoke, public/webhook |
 | `governance-deadline-monitor` | AKTIV | cron, public/webhook |
 | `governance-decide` | AKTIV | public/webhook |
 | `governance-dpias` | AKTIV | frontend-invoke, public/webhook |
 | `governance-dsr` | AKTIV | frontend-invoke, public/webhook |
 | `governance-erasure-sweeper` | AKTIV | cron, public/webhook |
-| `governance-evidence-handler` | DEPLOYT-OHNE-CALLER | — |
-| `governance-gap-analyzer` | DEPLOYT-OHNE-CALLER | — |
 | `governance-incidents` | AKTIV | frontend-invoke, public/webhook |
 | `governance-ingest` | AKTIV | frontend-fetch, cron, function-call, public/webhook |
 | `governance-keys` | AKTIV | frontend-invoke, frontend-fetch, public/webhook |
@@ -229,7 +215,6 @@
 | `governance-score-calculator` | AKTIV | cron, public/webhook |
 | `governance-vendors` | AKTIV | frontend-invoke, public/webhook |
 | `governance-webhooks` | AKTIV | frontend-invoke, frontend-fetch, public/webhook |
-| `governance-workflow-intake` | DEPLOYT-OHNE-CALLER | — |
 
 ### Health/Ops (4)
 
@@ -240,7 +225,7 @@
 | `health` | AKTIV | frontend-fetch, cron, public/webhook |
 | `market-scanner` | AKTIV | cron, public/webhook |
 
-### Integrationen (6)
+### Integrationen (5)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
@@ -249,7 +234,6 @@
 | `microsoft365-connect` | AKTIV | frontend-invoke |
 | `oauth2-apps` | DEPLOYT-OHNE-CALLER | — |
 | `oauth2-token` | DEPLOYT-OHNE-CALLER | — |
-| `seed-integrations` | DEPLOYT-OHNE-CALLER | — |
 
 ### ISO 42001/Zertifizierung (6)
 
@@ -373,7 +357,7 @@
 | `social-orchestrator-persistence` | AKTIV | frontend-invoke |
 | `social-publisher-worker` | DEPLOYT-OHNE-CALLER | — |
 
-### Sonstige (25)
+### Sonstige (23)
 
 | Function | Status | Erreichbarkeit |
 |---|---|---|
@@ -385,7 +369,6 @@
 | `create-trial-subscription` | AKTIV | frontend-wrapper |
 | `email-notify-send` | DEPLOYT-OHNE-CALLER | — |
 | `log-tool-run` | AKTIV | frontend-fetch |
-| `notify-terminal-event` | DEPLOYT-OHNE-CALLER | — |
 | `onboarding-orchestrator` | DEPLOYT-OHNE-CALLER | — |
 | `optimize-analyze` | AKTIV | frontend-invoke |
 | `optimize-execute` | AKTIV | frontend-invoke |
@@ -393,7 +376,6 @@
 | `partner-provision-tenant` | DEPLOYT-OHNE-CALLER | — |
 | `plans` | DEPLOYT-OHNE-CALLER | — |
 | `platform-intelligence-orchestrator` | REPO-ONLY (nicht deployt) | — |
-| `report-generator` | DEPLOYT-OHNE-CALLER | — |
 | `save-company-profile` | AKTIV | frontend-wrapper |
 | `siteos` | AKTIV | frontend-invoke, frontend-wrapper |
 | `skills` | DEPLOYT-OHNE-CALLER | — |
@@ -427,4 +409,4 @@
 
 ---
 
-_Erzeugt am 2026-11-16 · 204 Functions · 155 AKTIV · 45 ohne Caller._
+_Erzeugt am 2026-11-18 · 195 Functions · 155 AKTIV · 35 ohne Caller._

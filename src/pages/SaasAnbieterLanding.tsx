@@ -77,13 +77,13 @@ export function SaasAnbieterLanding() {
           <Section title="Pricing für SaaS-Anbieter">
             <ul className="space-y-1.5 text-sm">
               <li><strong className="text-titanium-50">Growth 249 €/M</strong> — Multi-Tenant, API, AVV-Generator, Sub-Processors-Page, alle Tools</li>
-              <li><strong className="text-titanium-50">Enterprise</strong> — 1.498 €/Monat, direkt buchbar: Multi-Tenant, dediziertes Onboarding, White-Label-Reports, Priority-Support, SLA, Custom-Integration</li>
+              <li><strong className="text-titanium-50">Enterprise</strong> — 1.498 €/Monat, vorerst auf Anfrage: Multi-Tenant, dediziertes Onboarding, White-Label-Reports, Priority-Support, SLA, Custom-Integration</li>
             </ul>
           </Section>
 
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-              Procurement-ready in 14 Tagen
+              Compliance-Unterlagen für Einkaufsprüfungen bereitstellen
             </h2>
             <p className="text-titanium-300 text-sm mb-4">
               Von „wir haben kein AVV" zu „komplettes Compliance-Paket downloadbar" —

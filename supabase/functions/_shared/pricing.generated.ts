@@ -868,12 +868,13 @@ export const PLANS: Plan[] = [
     trialDays: 0,
   },
 
-  // ── Enterprise — Self-Service-Checkout ──────────────────────────────────
-  // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat (netto) direkt über
-  // Checkout verkauft, ohne Testphase. Bis dahin war der Plan ein Vertragsplan
-  // (inquiry + priceOnRequest + ENTERPRISE_SELF_SERVICE_BLOCKED) mit `-1` auf
-  // allen Kontingenten. Ohne Vertrag braucht er endliche Kontingente — siehe
-  // PLAN_ENTITLEMENTS.enterprise.
+  // ── Enterprise — Self-Service-Checkout, vorläufig ausgesetzt ────────────
+  // Dominik 2026-10-24: Enterprise zu 1.498 € / Monat (netto) per Checkout,
+  // ohne Testphase. 2026-11-21 (Bereinigungsplan, PR 1): Neukauf vorläufig
+  // nur auf Anfrage — siehe ENTERPRISE_SELF_SERVICE_PAUSED. Kaufmodus,
+  // Verfügbarkeit, Preis und Kontingente bleiben bewusst unverändert:
+  // `purchaseMode` steht auch in `plan_catalog` (Katalog-Migration), die
+  // Sperre soll ohne Datenbankänderung wirken und ohne sie aufhebbar sein.
   {
     id: 'enterprise',
     planKey: 'enterprise',
@@ -890,8 +891,8 @@ export const PLANS: Plan[] = [
     availability: 'self_service',
     highlight: false,
     badges: ['SLA nach Vereinbarung'],
-    // Fail-closed bis die Live-Price-ID (prod_UxG9V9clbqV7qw, 149800, exclusive)
-    // verdrahtet ist — siehe ENTERPRISE_CHECKOUT_PRICE_WIRED.
+    // CTA führt über `checkoutHrefForPlan` zu /contact-sales, solange
+    // ENTERPRISE_SELF_SERVICE_PAUSED gilt.
     ctaLabel: 'Enterprise anfragen',
     limits: {
       bots: 20,
@@ -2968,6 +2969,36 @@ export function recommendPlan(input: RecommendationInput): PlanRecommendation {
 // Verdrahtet 2026-10-29: price_1UVxUrREjTWueUcGuSjqctMH (prod_UxG9V9clbqV7qw).
 export const ENTERPRISE_CHECKOUT_PRICE_WIRED = true as boolean;
 
+/**
+ * Enterprise-Neukauf vorläufig nur auf Anfrage (Bereinigungsplan 2026-11-21).
+ *
+ * Enterprise ist nicht Teil der Beta und damit der einzige Pfad, auf dem
+ * heute echtes Geld fließt — ein Live-Neukauf mit Zahlung, Webhook,
+ * Mandanten-Provisionierung und Entitlement ist nicht nachgewiesen
+ * (implementation-status `stripe-checkout-e2e`). Solange `true`:
+ * jeder Enterprise-CTA führt zu /contact-sales, `/checkout/enterprise`
+ * leitet dorthin um, und `stripe-checkout` weist neue Sessions ab.
+ *
+ * Bewusst getrennt von `purchaseMode`: Der Kaufmodus steht auch in
+ * `plan_catalog` (Katalog-Migration). Diese Sperre wirkt ohne
+ * Datenbankänderung und wird nach der Abnahme hier auf `false` gesetzt.
+ * Bestehende Abos berührt sie nicht.
+ */
+export const ENTERPRISE_SELF_SERVICE_PAUSED = true as boolean;
+
+/**
+ * Darf für diesen Plan heute ein Self-Service-Checkout starten? Eine Regel
+ * für Links, Checkout-Seite, Billing-Ansicht und Edge Function.
+ */
+export function isSelfServiceCheckoutOpen(plan: Plan | PlanId | string | null | undefined): boolean {
+  const resolved = resolvePlan(plan);
+  if (!resolved) return false;
+  if (resolved.purchaseMode !== 'checkout' && resolved.purchaseMode !== 'one_time') return false;
+  if (resolved.availability === 'legacy') return false;
+  if (resolved.id === 'enterprise' && (ENTERPRISE_SELF_SERVICE_PAUSED || !ENTERPRISE_CHECKOUT_PRICE_WIRED)) return false;
+  return true;
+}
+
 export function checkoutHrefForPlan(
   plan: Plan | PlanId,
   options: { interval?: 'month' | 'year'; source?: string } = {},
@@ -2979,7 +3010,10 @@ export function checkoutHrefForPlan(
   if (resolved.purchaseMode === 'free') {
     return `/audit?source=${encodeURIComponent(source)}`;
   }
-  if (resolved.purchaseMode === 'inquiry' || (resolved.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED)) {
+  if (
+    resolved.purchaseMode === 'inquiry'
+    || (resolved.id === 'enterprise' && (!ENTERPRISE_CHECKOUT_PRICE_WIRED || ENTERPRISE_SELF_SERVICE_PAUSED))
+  ) {
     return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
   }
   // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.

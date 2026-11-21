@@ -1,4 +1,4 @@
-import { showsNetPriceLabel } from '@/shared/pricing';
+import { isSelfServiceCheckoutOpen, showsNetPriceLabel } from '@/shared/pricing';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -63,14 +63,15 @@ export function tierCovers(tier: OptimizerTierId, min: OptimizerTierId): boolean
 }
 
 /**
- * Self-Service-Checkout ist für starter/growth/agency und seit 2026-10-24
- * auch für enterprise verfügbar. free braucht keinen Checkout; partner
- * (scale) läuft über den Kontakt-/Sales-Pfad.
+ * Self-Service-Checkout genau dann, wenn die SSoT ihn für den realen Plan
+ * erlaubt (`isSelfServiceCheckoutOpen`) — keine eigene Liste, sonst verkauft
+ * der Optimizer weiter, was die Preisquelle gesperrt hat.
+ * Stand 21.11.2026: starter/growth/agency. free braucht keinen Checkout;
+ * partner (legacy) und enterprise (ENTERPRISE_SELF_SERVICE_PAUSED) laufen
+ * über /contact-sales.
  */
-const SELF_SERVE_PLAN_KEYS = new Set<TierId>(['starter', 'growth', 'agency', 'enterprise']);
-
 export function isSelfServeCheckout(planKey: TierId): boolean {
-  return SELF_SERVE_PLAN_KEYS.has(planKey);
+  return planKey !== 'free' && isSelfServiceCheckoutOpen(tierById(planKey)?.plan);
 }
 
 export function optimizerTierById(id: OptimizerTierId): OptimizerTier | undefined {

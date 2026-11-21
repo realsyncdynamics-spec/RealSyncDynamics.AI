@@ -189,8 +189,8 @@ describe('State Effects', () => {
 
     const enterpriseStep = getFlowStepById('pricing.checkoutEnterprise');
     expect(enterpriseStep?.stateEffect?.selectedPlan).toBe('enterprise');
-    // Seit 2026-10-24 per Checkout buchbar.
-    expect(enterpriseStep?.primary?.to).toBe('/checkout/enterprise');
+    // Seit 21.11.2026 vorläufig nur auf Anfrage.
+    expect(enterpriseStep?.primary?.to).toBe('/contact-sales');
   });
 
   it('should mark checkout status transitions', () => {

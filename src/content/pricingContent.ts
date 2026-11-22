@@ -19,6 +19,13 @@ export interface Feature {
   customerBenefit: string;
   includedInPlans: string[]; // Plan-Namen/Slugs
   icon?: string; // Optional: icon name
+  /**
+   * 'planned' = noch nicht Teil des buchbaren Leistungsumfangs (Status aus
+   * src/product/implementation-status.ts). Plan- und Feature-Seiten führen
+   * solche Funktionen getrennt unter „Geplante Funktionen“, nie als „enthalten“.
+   * Ohne Angabe gilt die Funktion als verfügbar.
+   */
+  availability?: 'planned';
 }
 
 export interface PricingPlan {
@@ -31,7 +38,7 @@ export interface PricingPlan {
   recommended: boolean;
   shortDescription: string;
   targetAudience: string;
-  whatCustomerGets: string[]; // Bullet points
+  whatCustomerGets: string[]; // Bullet points — nur verfügbare Leistungen
   cta: {
     label: string; // "Starter buchen", "Kostenlosen Audit starten", etc.
     href: string; // "/checkout/starter", etc.
@@ -91,10 +98,12 @@ export const featureDetails: Feature[] = [
   {
     slug: 'monitoring',
     title: 'Monitoring',
-    subtitle: 'Regelmäßige Überwachung auf Änderungen (in Vorbereitung)',
-    whatItDoes: 'Monitoring prüft regelmäßig, ob sich auf einer Website etwas verändert hat.',
+    subtitle: 'Regelmäßige Überwachung auf Änderungen',
+    // implementation-status: continuous-domain-monitoring = coming-soon.
+    availability: 'planned',
+    whatItDoes: 'Monitoring soll regelmäßig prüfen, ob sich auf einer Website etwas verändert hat.',
     whyItMatters: 'Websites ändern sich ständig: neue Plugins, neue Skripte, neue Tracking-Dienste, neue Formulare oder externe Einbindungen.',
-    customerBenefit: 'Der Kunde erkennt Änderungen frühzeitig, statt Risiken erst Monate später zu bemerken.',
+    customerBenefit: 'Sobald die Funktion verfügbar ist, erkennt der Kunde Änderungen frühzeitig, statt Risiken erst Monate später zu bemerken.',
     includedInPlans: ['Starter', 'Growth', 'Agency', 'Partner', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Partner (Jährlich)'],
   },
   {
@@ -268,7 +277,6 @@ export const pricingPlans: PricingPlan[] = [
       'Genaue Regel- und Risiko-Hinweise',
       'Automatische Datenschutzerklärung',
       'Konkrete Verbesserungsvorschläge für Cookies und Tracking',
-      'Laufendes Monitoring (in Vorbereitung)',
       'Audit-Beweise für Datenschutzbeauftragte oder interne Dokumentation',
       '25 automatisierte Scan-Läufe pro Monat',
     ],
@@ -445,7 +453,7 @@ export const pricingPlans: PricingPlan[] = [
     interval: 'Jahresabrechnung in Vorbereitung',
     recommended: false,
     badge: 'In Vorbereitung',
-    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit identischem Funktionsumfang und ohne Mindestlaufzeit.',
+    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit denselben derzeit verfügbaren Leistungen und ohne Mindestlaufzeit.',
     targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die eine durchgehende DSGVO-Grundabsicherung brauchen.',
     whatCustomerGets: [
       'Alles aus Starter (monatlich)',
@@ -473,7 +481,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit identischem Funktionsumfang und ohne Mindestlaufzeit. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit denselben derzeit verfügbaren Leistungen und ohne Mindestlaufzeit. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -627,7 +635,7 @@ export const pricingPlans: PricingPlan[] = [
     // pricingContent.test.ts erzwingt genau EINEN empfohlenen Plan.
     recommended: false,
     badge: 'In Vorbereitung',
-    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € verfügbar — KI-Governance, AI Risk Register und Monitoring (in Vorbereitung) mit identischem Funktionsumfang.',
+    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € buchbar. Verfügbar sind dort unter anderem KI-Governance und AI Risk Register. Monitoring ist in Vorbereitung und noch nicht enthalten.',
     targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse dauerhaft verankern wollen.',
     whatCustomerGets: [
       'Alles aus Growth (monatlich)',
@@ -659,7 +667,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit denselben derzeit verfügbaren Leistungen. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -713,7 +721,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Agency ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Agency ist unverändert monatlich zu 699 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Agency ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Agency ist unverändert monatlich zu 699 € verfügbar, mit denselben derzeit verfügbaren Leistungen. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -773,7 +781,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Partner zum Preis von 10 Monaten. Multi-Tenant-Betreiber kalkulieren ihre Mandantenpreise üblicherweise auf Jahresbasis — die Jahresvariante passt Einkaufs- und Verkaufslogik aneinander an. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Partner zum Preis von 10 Monaten. Multi-Tenant-Betreiber kalkulieren ihre Mandantenpreise üblicherweise auf Jahresbasis — die Jahresvariante passt Einkaufs- und Verkaufslogik aneinander an. Die derzeit verfügbaren Leistungen sind dieselben wie in der monatlichen Variante; geplante Funktionen wie Monitoring sind in keiner Variante enthalten.',
       },
     ],
   },
@@ -795,6 +803,20 @@ export function getPlansByFeature(featureSlug: string): PricingPlan[] {
   const feature = getFeatureBySlug(featureSlug);
   if (!feature) return [];
   return pricingPlans.filter((plan) => feature.includedInPlans.includes(plan.name));
+}
+
+export function isPlannedFeature(feature: Feature): boolean {
+  return feature.availability === 'planned';
+}
+
+/** Verfügbare Funktionen eines Plans (ohne geplante). */
+export function getAvailableFeaturesByPlan(planSlug: string): Feature[] {
+  return getFeaturesByPlan(planSlug).filter((f) => !isPlannedFeature(f));
+}
+
+/** Geplante Funktionen eines Plans — noch nicht Teil des Leistungsumfangs. */
+export function getPlannedFeaturesByPlan(planSlug: string): Feature[] {
+  return getFeaturesByPlan(planSlug).filter(isPlannedFeature);
 }
 
 export function getFeaturesByPlan(planSlug: string): Feature[] {

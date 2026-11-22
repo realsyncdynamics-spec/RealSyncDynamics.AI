@@ -513,6 +513,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/status",
   "/steuerberater",
   "/steuerkanzlei",
+  "/sync",
   "/tenant/invite/:token",
   "/tenant/invites",
   "/tom-generator",

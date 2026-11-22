@@ -109,6 +109,7 @@
 .lv3-section { display: flex; flex-direction: column; gap: 20px; padding: clamp(56px, 8vw, 112px) var(--lv3-pad-x); border-top: 1px solid var(--lv3-line); }
 .lv3-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 32px clamp(24px, 6vw, 96px); align-items: start; }
 .lv3-eyebrow { font: 600 12px/1.4 var(--font-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lv3-fg-2); }
+.lv3-sync-intro { margin: 0; }
 .lv3-h2 { margin: 0; font: 600 clamp(32px, 4.2vw, 80px)/1 var(--font-rs-title, Inter, sans-serif); letter-spacing: -0.02em; color: var(--lv3-fg-0); }
 .lv3-h2--xl { font-size: clamp(38px, 5.4vw, 110px); }
 .lv3-h3 { margin: 0; font: 600 22px/1.2 var(--font-rs-title, Inter, sans-serif); color: var(--lv3-fg-0); }

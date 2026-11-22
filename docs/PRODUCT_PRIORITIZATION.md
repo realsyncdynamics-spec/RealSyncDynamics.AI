@@ -170,6 +170,33 @@ und verkauft wird, folgen weitere Branchen und Assistenten.
 
 ---
 
+## Öffentliche Website-Architektur — Owner-Entscheidung vom 2026-11-19
+
+Für die öffentliche Website gilt die folgende Produktstruktur. Diese Entscheidung
+ordnet die Navigation und Produktseiten; sie ändert nicht die interne Reihenfolge
+von Runtime- und Sicherheitsarbeiten. Ältere Aussagen über ein einziges öffentlich
+vermarktetes Produkt gelten für diese Website-Struktur nicht mehr.
+
+| Startseiten-Karte | Produktseite | Einstieg |
+|---|---|---|
+| Persönlicher Telefonassistent für KMU | `/ki-bots` | Telefonassistent als eigenes Produkt; Status „In Vorbereitung“, solange Telefonie nicht live ist |
+| Landingpage-Builder | `/landingpage-builder` | Neue Website aus Geschäftsidee, Inhalten und Designwunsch |
+| App-Builder | `/app-builder` | Eigene digitale Anwendungen und Abläufe |
+| Governance OS | `/governance-os` | Befunde, Zuständigkeiten, Freigaben und Nachweise |
+
+Alle vier Karten sind gleichwertig und direkt erreichbar. Jeder Einstieg ist einzeln
+vorgesehen; ein Domain-Scan ist nicht Voraussetzung. Der kostenlose Scan ist ein
+zweiter, freiwilliger Weg für Kunden mit bestehender Website.
+
+Der Scan-Weg besteht aus sechs Schritten: (1) Domain eingeben, (2) öffentlich erreichbare
+Website prüfen, (3) konkrete Befunde, Fehlercodes soweit vorhanden und verständliche
+Vorschläge ansehen, dann „Was sollen wir für Sie tun?“, (4) optional einen neuen
+Frontend-Entwurf erstellen und in der Vorschau prüfen, ohne das bestehende Backend
+zu verändern, (5) optional den Telefonassistenten ergänzen, (6) Governance OS für
+offene Befunde, Zuständigkeiten, freigegebene Korrekturen und Nachweise nutzen.
+Eine erneute Prüfung führt zurück zu Schritt 2. Automatische Dauerüberwachung bleibt
+„In Vorbereitung“, bis der Status belegt ist.
+
 ## Bau-Aufgaben aus den Entscheidungen
 
 - [x] **Landingpage-Konsolidierung** (aus K3): Branchen-Seiten auf

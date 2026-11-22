@@ -95,7 +95,7 @@ export function LandingV3() {
         <div className="lv3-hero-grid">
           <div className="lv3-hero-copy">
             <h1 className="lv3-h1" data-testid="v3-hero-heading">
-              <span>Ihre Ideen.</span>
+              <span>Ihre Ideen.</span>{' '}
               <span className="lv3-h1-2">In Bewegung.</span>
             </h1>
             <p className="lv3-lead">
@@ -225,7 +225,7 @@ export function LandingV3() {
             <h2 id="lv3-govern-h" className="lv3-h2">Die Kontrollschicht läuft mit.</h2>
             <p className="lv3-text">
               Berechtigungen, Regeln und Nachweise begleiten die Abläufe. Wer sie selbst steuern möchte, öffnet das{' '}
-              <Link to={`/governance-runtime?source=${SOURCE}`}>Governance OS</Link>.
+              <Link to={`/governance-os?source=${SOURCE}`}>Governance OS</Link>.
             </p>
           </div>
           <ol className="lv3-steps">

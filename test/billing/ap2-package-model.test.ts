@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import {
   ADDONS,
   BOOKABLE_MODULES,
+  ENTERPRISE_SELF_SERVICE_PAUSED,
   LEGACY_PLANS,
   MODULE_ADDON_PRICE_DIVERGENCE,
   PLANS,
@@ -14,6 +15,7 @@ import {
   SELF_SERVICE_PLANS,
   addonsFor,
   isPlanSelectable,
+  isSelfServiceCheckoutOpen,
   planById,
   planGrants,
 } from '../../shared/pricing';
@@ -237,10 +239,15 @@ describe('Partner ist stillgelegt; Agency ist wieder verkaufbar', () => {
     expect(isPlanSelectable('partner')).toBe(false);
   });
 
-  it('führt Enterprise seit 2026-10-24 im Self-Service-Checkout', () => {
+  it('führt Enterprise als Checkout-Plan; Neukauf seit 21.11.2026 pausiert', () => {
+    // Kaufmodus und Verfügbarkeit bleiben (stehen auch in plan_catalog);
+    // die Sperre sitzt in ENTERPRISE_SELF_SERVICE_PAUSED.
     const enterprise = planById('enterprise');
     expect(enterprise.availability).toBe('self_service');
     expect(enterprise.purchaseMode).toBe('checkout');
+    expect(ENTERPRISE_SELF_SERVICE_PAUSED).toBe(true);
+    expect(isSelfServiceCheckoutOpen(enterprise)).toBe(false);
+    expect(isSelfServiceCheckoutOpen('agency')).toBe(true);
     expect(SALES_PLANS.map((p) => p.id)).toContain('enterprise');
     expect(SELF_SERVICE_PLANS.map((p) => p.id)).toContain('enterprise');
   });

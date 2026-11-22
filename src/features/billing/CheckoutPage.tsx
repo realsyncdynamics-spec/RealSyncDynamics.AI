@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { tierByPlanKey } from '../../config/pricing';
-import { formatPriceEur, monthlyPriceText, normalizePlanKey, planById, planByKey, type PlanKey } from '@/shared/pricing';
+import { ENTERPRISE_SELF_SERVICE_PAUSED, formatPriceEur, monthlyPriceText, normalizePlanKey, planById, planByKey, type PlanKey } from '@/shared/pricing';
 import { createCheckoutSession } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
@@ -90,7 +90,9 @@ export function CheckoutPage() {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
-    if (plan.purchaseMode === 'inquiry') {
+    // Enterprise-Neukauf vorläufig nur auf Anfrage (ENTERPRISE_SELF_SERVICE_PAUSED,
+    // 2026-11-21) — auch über die getippte URL /checkout/enterprise.
+    if (plan.purchaseMode === 'inquiry' || (plan.id === 'enterprise' && ENTERPRISE_SELF_SERVICE_PAUSED)) {
       window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
       return;
     }

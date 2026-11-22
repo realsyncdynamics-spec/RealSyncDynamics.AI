@@ -109,11 +109,11 @@ export function DsgvoKiChecklist() {
                 <AlertTriangle className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
                 <div>
                   <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-                    Diese Liste manuell abarbeiten dauert 6 Monate.
+                    Diese Liste manuell abzuarbeiten ist aufwendig.
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
                     RealSync Dynamics liefert die Bausteine als SaaS — EU-Datenresidenz, Audit-Log, AVV-Generator,
-                    DSGVO-Selfservice (Art. 15 + 17). <strong className="text-titanium-50">In 14 Tagen DSGVO-ready.</strong>
+                    DSGVO-Selfservice (Art. 15 + 17). <strong className="text-titanium-50">Der Stand jedes Punkts bleibt nachvollziehbar dokumentiert.</strong>
                   </p>
                 </div>
               </div>

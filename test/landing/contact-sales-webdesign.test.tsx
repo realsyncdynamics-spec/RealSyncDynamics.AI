@@ -25,13 +25,14 @@ it('shows a personal website inquiry instead of the Enterprise copy for intent=w
   expect(screen.getByRole('button', { name: 'Anfrage senden' })).toBeInTheDocument();
 });
 
-it('shows the Enterprise fixed price and checkout for plain contact links', () => {
+it('shows the Enterprise fixed price as inquiry-only for plain contact links', () => {
   mountAt('?source=landing');
   expect(screen.getByRole('heading', { level: 1, name: 'Enterprise anfragen' })).toBeInTheDocument();
-  // Enterprise ist nicht Teil der Beta: Festpreis, ohne Testphase, direkt buchbar.
-  expect(screen.getByText(/Enterprise kostet 1\.498\s€\/Monat, ohne Testphase und direkt buchbar/)).toBeInTheDocument();
-  expect(screen.getByTestId('contact-sales-enterprise-checkout')).toHaveAttribute('href', '/checkout/enterprise');
-  expect(document.body.textContent).not.toMatch(/Enterprise-Beta|auf Anfrage/);
+  // Enterprise ist nicht Teil der Beta: Festpreis, ohne Testphase, seit
+  // 21.11.2026 vorläufig auf Anfrage — kein Link in den Self-Service-Checkout.
+  expect(screen.getByText(/Enterprise kostet 1\.498\s€\/Monat, ohne Testphase, vorerst auf Anfrage/)).toBeInTheDocument();
+  expect(screen.queryByTestId('contact-sales-enterprise-checkout')).toBeNull();
+  expect(document.body.textContent).not.toMatch(/Enterprise-Beta|direkt buchbar/);
   // Kein Kontingent: /contact-sales schreibt über sales-lead, ohne Obergrenze.
   expect(document.body.textContent).not.toMatch(/100 Unternehmen|14 Tage|Founding Access/);
 });

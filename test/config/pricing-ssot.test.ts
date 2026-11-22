@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ENTERPRISE_CHECKOUT_PRICE_WIRED,
+  ENTERPRISE_SELF_SERVICE_PAUSED,
   ADDONS,
   ALL_MODULES,
   ALL_PLANS_ORDERED,
@@ -257,7 +258,7 @@ describe('Pricing SSoT — Checkout-Ziele', () => {
       expect(href.startsWith('/'), `${plan.id}: ${href}`).toBe(true);
       if (plan.purchaseMode === 'free') expect(href).toContain('/audit');
       if (plan.purchaseMode === 'inquiry') expect(href).toContain('/contact-sales');
-      if (plan.purchaseMode === 'checkout' && plan.id === 'enterprise' && !ENTERPRISE_CHECKOUT_PRICE_WIRED) expect(href).toContain('/contact-sales');
+      if (plan.purchaseMode === 'checkout' && plan.id === 'enterprise' && (!ENTERPRISE_CHECKOUT_PRICE_WIRED || ENTERPRISE_SELF_SERVICE_PAUSED)) expect(href).toContain('/contact-sales');
       else if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
       // Einmalprodukte nutzen denselben Checkout-Einstieg wie Abos; der
       // Kaufmodus wird serverseitig aus der SSoT abgeleitet, nicht aus der URL.
@@ -451,7 +452,11 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     }
   });
 
-  it('Enterprise ist monatlich per Checkout kaufbar, ohne Trial (Dominik 2026-10-24)', () => {
+  it('Enterprise ist vorläufig nur auf Anfrage, Festpreis bleibt, ohne Trial (21.11.2026)', () => {
+    // Dominik 2026-10-24: 1.498 € / Monat per Checkout. 2026-11-21:
+    // Self-Service bis zur Live-Abnahme des Checkouts ausgesetzt — über
+    // ENTERPRISE_SELF_SERVICE_PAUSED, nicht über den Kaufmodus (der steht
+    // auch in plan_catalog und bliebe sonst nur per Migration änderbar).
     const enterprise = planById('enterprise');
     expect(enterprise.purchaseMode).toBe('checkout');
     expect(enterprise.availability).toBe('self_service');
@@ -460,9 +465,12 @@ describe('Öffentliche Angebote sind erfüllbar', () => {
     expect(enterprise.trialDays).toBe(0);
 
     const href = checkoutHrefForPlan(enterprise, { interval: 'month' });
-    // Live-Price-ID price_1UVxUrREjTWueUcGuSjqctMH verdrahtet → Self-Service-Checkout.
+    // Live-Price-ID price_1UVxUrREjTWueUcGuSjqctMH bleibt verdrahtet; die
+    // Pause lenkt trotzdem auf den Kontaktweg.
     expect(ENTERPRISE_CHECKOUT_PRICE_WIRED).toBe(true);
-    expect(href).toContain('/checkout/enterprise');
+    expect(ENTERPRISE_SELF_SERVICE_PAUSED).toBe(true);
+    expect(href).toContain('/contact-sales');
+    expect(href).not.toContain('/checkout/');
     expect(href).not.toContain('pilot=true');
 
     // Die Jahresvariante hat keinen Stripe-Preis und bleibt gesperrt.

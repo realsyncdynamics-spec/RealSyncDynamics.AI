@@ -70,7 +70,7 @@ export function OneTrustAlternative() {
           <li className="flex items-start gap-3"><Euro className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" /><div><strong className="text-titanium-50">Pricing-Transparenz</strong>: OneTrust hat Sales-Termine und Quote-on-Request ({oneTrustPricing}). Wir haben Pricing online ab 79 €/M (Starter), Self-Serve, jederzeit kündbar.</div></li>
         </ul>
       </Section>
-      <Section title="Migration in 14 Tagen"><p>Wir haben einen <strong className="text-titanium-50">OneTrust-Importer</strong> (auf Anfrage): Cookie-Banner-Konfig + AVV-Bibliothek übernehmen, ohne neu konfigurieren. Plus: 30-Min-Onboarding-Call mit Walkthrough für deinen DSB.</p></Section>
+      <Section title="Wechsel von OneTrust"><p>Einen automatischen Import aus OneTrust gibt es derzeit nicht. Cookie-Banner-Konfiguration und AVV-Vorlagen richtest du im Produkt neu ein; der kostenlose Audit-Scan zeigt vorab, was auf deiner Website heute geladen wird. Fragen zum Wechsel beantworten wir per E-Mail.</p></Section>
     </AlternativeLanding>
   );
 }

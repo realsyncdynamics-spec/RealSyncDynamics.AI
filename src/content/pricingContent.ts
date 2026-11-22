@@ -91,7 +91,7 @@ export const featureDetails: Feature[] = [
   {
     slug: 'monitoring',
     title: 'Monitoring',
-    subtitle: 'Regelmäßige Überwachung auf Änderungen (Beta)',
+    subtitle: 'Regelmäßige Überwachung auf Änderungen (in Vorbereitung)',
     whatItDoes: 'Monitoring prüft regelmäßig, ob sich auf einer Website etwas verändert hat.',
     whyItMatters: 'Websites ändern sich ständig: neue Plugins, neue Skripte, neue Tracking-Dienste, neue Formulare oder externe Einbindungen.',
     customerBenefit: 'Der Kunde erkennt Änderungen frühzeitig, statt Risiken erst Monate später zu bemerken.',
@@ -264,11 +264,11 @@ export const pricingPlans: PricingPlan[] = [
     shortDescription: 'Die solide Grundausstattung für kleinere Unternehmen, die ihre Website regelmäßig prüfen und Datenschutzrisiken nachvollziehbar dokumentieren möchten.',
     targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien, Handwerker, lokale Dienstleister und Betreiber einzelner Webseiten.',
     whatCustomerGets: [
-      'Vollständiger DSGVO-Scan',
+      'Website-Prüfung zu Datenschutz und Sicherheit',
       'Genaue Regel- und Risiko-Hinweise',
       'Automatische Datenschutzerklärung',
       'Konkrete Verbesserungsvorschläge für Cookies und Tracking',
-      'Laufendes Monitoring',
+      'Laufendes Monitoring (in Vorbereitung)',
       'Audit-Beweise für Datenschutzbeauftragte oder interne Dokumentation',
       '25 automatisierte Scan-Läufe pro Monat',
     ],
@@ -627,7 +627,7 @@ export const pricingPlans: PricingPlan[] = [
     // pricingContent.test.ts erzwingt genau EINEN empfohlenen Plan.
     recommended: false,
     badge: 'In Vorbereitung',
-    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € verfügbar — KI-Governance, AI Risk Register und tägliches Monitoring mit identischem Funktionsumfang.',
+    shortDescription: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar. Growth ist monatlich zu 249 € verfügbar — KI-Governance, AI Risk Register und Monitoring (in Vorbereitung) mit identischem Funktionsumfang.',
     targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse dauerhaft verankern wollen.',
     whatCustomerGets: [
       'Alles aus Growth (monatlich)',

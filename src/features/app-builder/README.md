@@ -28,3 +28,10 @@ Ablauf:
 - Kein KV. Kein Merge nach main aus diesem Stand.
 
 WebContainer, COOP/COEP, wrangler, KV: gesperrt bis explizite Infra-Freigabe.
+
+## Spike Laufzeit-Vorschau (22.11.2026, Draft, Flag aus)
+
+`/builder/:slug/code` → Reiter „Laufzeit“ nur mit `VITE_APP_BUILDER_SANDBOX_PREVIEW=true`;
+Server `siteos/code-preview` nur mit `APP_BUILDER_SANDBOX_PREVIEW=true` und angebundenem Anbieter.
+Kern: `supabase/functions/_shared/preview-sandbox/`. Nur gegen Fake getestet, kein Anbieter, kein Deploy.
+Bericht: `docs/builder/SPIKE_SANDBOX_PREVIEW_2026-11-22.md`.

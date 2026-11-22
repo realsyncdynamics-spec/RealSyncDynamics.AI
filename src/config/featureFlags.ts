@@ -32,3 +32,22 @@ export function isGovernanceAiEnabled(): boolean {
   if (raw === 'false') return false;
   return GOVERNANCE_AI_DEFAULT;
 }
+
+/**
+ * APP_BUILDER_SANDBOX_PREVIEW — Laufzeit-Vorschau per Sandbox im Code-Builder
+ * (`/builder/:slug/code`). Spike vom 22.11.2026, Standard: AUS.
+ *
+ * Ohne Flag wird die Laufzeit-Vorschau weder gerendert noch geladen; die
+ * srcDoc-Vorschau bleibt Standard und Rückfall. Serverseitig gilt zusätzlich
+ * `APP_BUILDER_SANDBOX_PREVIEW=true` in der Edge Function `siteos` — ohne
+ * beide Schalter startet keine Sandbox. Nur gegen einen Fake-Adapter getestet.
+ * Bericht: `docs/builder/SPIKE_SANDBOX_PREVIEW_2026-11-22.md`.
+ */
+export const APP_BUILDER_SANDBOX_PREVIEW_DEFAULT = false;
+
+export function isSandboxPreviewEnabled(): boolean {
+  const raw = import.meta.env?.VITE_APP_BUILDER_SANDBOX_PREVIEW;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return APP_BUILDER_SANDBOX_PREVIEW_DEFAULT;
+}

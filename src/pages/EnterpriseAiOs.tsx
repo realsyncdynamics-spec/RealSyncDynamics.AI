@@ -122,23 +122,18 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 pb-24">
         <div className="rounded-3xl border border-[#d4af37]/30 bg-[#d4af37]/10 p-8">
           <h2 className="text-2xl font-semibold text-[#d4af37]">
-            Enterprise – {monthlyPriceText(ENTERPRISE)}, direkt buchbar
+            Enterprise – {monthlyPriceText(ENTERPRISE)}, auf Anfrage
           </h2>
           <p className="mt-4 max-w-3xl text-zinc-200">
-            Enterprise ist nicht Teil der offenen Beta: Du buchst direkt, ohne Testphase, und nutzt alle
-            Enterprise-Funktionen ab dem ersten Tag. Starter, Growth und Agency sind bis{' '}
-            {BETA.endsLabel} kostenlos. Fragen zu Umfang oder SLA beantworten wir über die Anfrage.
+            Enterprise ist nicht Teil der offenen Beta und derzeit nur auf Anfrage erhältlich, ohne
+            Testphase. Beschreibe kurz Umfang, Organisationen und SLA-Bedarf — wir antworten per E-Mail.
+            Starter, Growth und Agency sind bis {BETA.endsLabel} kostenlos.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
+            {/* 21.11.2026: kein Self-Service-Checkout bis zur Live-Abnahme (ENTERPRISE_SELF_SERVICE_PAUSED). */}
             <Link
-              to="/checkout/enterprise"
+              to="/contact-sales?plan=enterprise&source=founding"
               className="inline-flex rounded-2xl bg-[#d4af37] px-6 py-4 font-semibold text-black"
-            >
-              {ENTERPRISE.ctaLabel}
-            </Link>
-            <Link
-              to="/contact-sales?source=founding"
-              className="inline-flex rounded-2xl border border-[#d4af37]/40 px-6 py-4 font-semibold text-[#d4af37]"
             >
               {CTA.enterprise}
             </Link>

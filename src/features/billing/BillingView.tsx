@@ -12,6 +12,7 @@ import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
 import { SELLABLE_PRICING_TIERS, planByKey, tierPriceLabel, type TierId } from '../../config/pricing';
+import { isSelfServiceCheckoutOpen } from '@/shared/pricing';
 import { getSupabaseUrl } from '../../lib/supabaseUrl';
 
 interface Subscription {
@@ -60,6 +61,10 @@ const AVAILABLE_PLANS = SELLABLE_PRICING_TIERS
     price: tierPriceLabel(tier, ''),
     suffix: tier.priceSuffix,
     tagline: tier.tagline,
+    // Ohne offenen Self-Service-Checkout (Anfrage-Pläne, Enterprise während
+    // ENTERPRISE_SELF_SERVICE_PAUSED) führt der Button zur Anfrage.
+    inquiry: tier.plan.purchaseMode !== 'free' && !isSelfServiceCheckoutOpen(tier.plan),
+    inquiryHref: tier.cta.href,
   }));
 
 export function BillingView() {
@@ -150,6 +155,14 @@ export function BillingView() {
   }
 
   async function handlePlanUpgrade(planId: TierId) {
+    // Pläne ohne offenen Self-Service-Checkout nie an Stripe reichen —
+    // `stripe-checkout` weist sie mit INQUIRY_ONLY ab. Gilt für die
+    // Plankarten und das Upgrade-Modal.
+    const inquiryPlan = AVAILABLE_PLANS.find((p) => p.id === planId && p.inquiry);
+    if (inquiryPlan) {
+      window.location.href = inquiryPlan.inquiryHref;
+      return;
+    }
     if (!activeTenantId || !user) return;
     setUpgradingPlan(true);
     setError(null);
@@ -389,7 +402,7 @@ export function BillingView() {
                     disabled={upgradingPlan}
                     className="w-full py-2 px-3 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white text-xs font-semibold rounded-none"
                   >
-                    Zu diesem Plan
+                    {plan.inquiry ? 'Anfragen' : 'Zu diesem Plan'}
                   </button>
                 )}
               </div>

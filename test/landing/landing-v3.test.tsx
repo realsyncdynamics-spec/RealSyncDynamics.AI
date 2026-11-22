@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV3 } from '../../src/pages/LandingV3';
-import { planCards, PRODUCTS, productStatus, RECEPTIONIST, STATUS_TEXT } from '../../src/components/landing/v3/landingV3Data';
+import { planCards, PRODUCTS, productStatus, STATUS_TEXT } from '../../src/components/landing/v3/landingV3Data';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 import { pricingTaxNote } from '../../shared/pricing';
 import { COMPANY } from '../../src/config/company';
@@ -56,8 +56,7 @@ describe('Startseite v3 — `/`', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     expect(screen.getByTestId('v3-hero-heading')).toHaveTextContent('Ihre Ideen.In Bewegung.');
     for (const p of PRODUCTS) expect(screen.getByTestId(`v3-product-${p.key}`)).toHaveAttribute('href', p.href);
-    expect(screen.getByTestId('v3-product-receptionist')).toHaveTextContent('In Vorbereitung');
-    expect(screen.queryByTestId('v3-product-receptionist')?.tagName).toBe('SECTION');
+    expect(screen.getByTestId('v3-product-bots')).toHaveTextContent('In Vorbereitung');
     const legal = screen.getByRole('navigation', { name: 'Rechtliches' });
     for (const [label, href] of [['Impressum', '/impressum'], ['Datenschutz', '/datenschutz'], ['Widerruf', '/widerruf']]) {
       expect(within(legal).getByRole('link', { name: label })).toHaveAttribute('href', href);
@@ -67,36 +66,29 @@ describe('Startseite v3 — `/`', () => {
   it('Hauptnavigation führt Voice Agent und Kontakt, Ziele sind echte Routen', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).getByRole('link', { name: 'Voice Agent' })).toHaveAttribute('href', '/phonebot/start');
+    expect(within(nav).getByRole('link', { name: 'Produkte' })).toHaveAttribute('href', '#katalog');
     expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/phonebot/start"');
     expect(app).toContain('<Route path="/contact-sales"');
   });
 
-  it('stellt den AI Receptionist als ersten Abschnitt nach dem Hero vor (K4), ohne Live-Versprechen', () => {
-    const { container } = render(<MemoryRouter><LandingV3 /></MemoryRouter>);
-    const first = container.querySelector('main > section');
-    expect(first?.id).toBe('receptionist');
-    const section = screen.getByTestId('v3-product-receptionist');
-    expect(within(section).getByRole('heading', { level: 2 })).toHaveTextContent(RECEPTIONIST.heading);
-    // Status bleibt „In Vorbereitung“, solange Telefonie nicht live ist.
-    expect(RECEPTIONIST.status).toBe('coming-soon');
-    expect(IMPLEMENTATION_ITEMS.find((i) => i.id === 'voice-telephony')?.status).not.toBe('live');
-    expect(within(section).getAllByText(STATUS_TEXT['coming-soon']).length).toBeGreaterThan(0);
-    expect(screen.getByTestId('v3-receptionist-waitlist')).toHaveAttribute('href', '/warteliste?interest=bots&source=landing-v3-receptionist');
-    const tryLink = screen.getByTestId('v3-receptionist-try');
-    expect(tryLink).toHaveAttribute('href', '/chatbot/start?source=landing-v3-receptionist');
-    const botStatus = IMPLEMENTATION_ITEMS.find((i) => i.id === RECEPTIONIST.tryRegistryId)!.status;
-    expect(tryLink).toHaveTextContent(STATUS_TEXT[botStatus]);
-    expect(within(screen.getByTestId('v3-receptionist-steps')).getAllByRole('listitem')).toHaveLength(RECEPTIONIST.steps.length);
-    // Hero-Sekundär-CTA und Skip-Link führen zum Receptionist.
-    expect(screen.getByRole('link', { name: 'AI Receptionist ansehen' })).toHaveAttribute('href', '#receptionist');
-    expect(screen.getByRole('link', { name: 'Zum Inhalt springen' })).toHaveAttribute('href', '#receptionist');
+  it('verlinkt die vier Produkte unter SYNC direkt und in der vereinbarten Reihenfolge', () => {
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    const links = within(screen.getByRole('group', { name: 'Produkte' })).getAllByRole('link');
+    expect(links.map(link => link.getAttribute('href')?.split('?')[0])).toEqual([
+      '/telefonassistent', '/landingpage-builder', '/app-builder', '/governance-os',
+    ]);
+    expect(screen.getByTestId('v3-customer-journey').children).toHaveLength(6);
   });
 
   it('übernimmt keine Platzhalter aus dem Export: keine Bot-IDs, keine WhatsApp-Nummer, kein Projekt-Endpunkt, keine festen Preise', () => {
-    const src = ['src/pages/LandingV3.tsx', 'src/components/landing/v3/landingV3Data.ts', 'src/components/landing/v3/HeroStage.tsx']
+    const src = [
+      'src/pages/LandingV3.tsx',
+      'src/components/landing/v3/landingV3Data.ts',
+      'src/components/landing/v3/HeroStage.tsx',
+      'src/components/landing/v3/SyncHeroStage.tsx',
+    ]
       .map(read)
       .join('\n');
     expect(src).not.toMatch(/4917640132161|wa\.me|be672b50|582308a1|ebljyceifhnlzhjfyxup|functions\/v1/);
@@ -111,5 +103,24 @@ describe('Startseite v3 — `/`', () => {
     expect(stage).not.toMatch(/^import .*from 'three'/m);
     expect(stage).toContain('prefers-reduced-motion: reduce');
     expect(stage).toContain('/landing-v3/hero-still.jpg');
+  });
+
+  it('Hero zeigt SYNC: Szene nur lazy über canRun3D, Standbild als Rückfall', () => {
+    const sync = read('src/components/landing/v3/SyncHeroStage.tsx');
+    expect(sync).toContain("import('../../visual/sync-mascot/syncMascotScene')");
+    expect(sync).not.toMatch(/^import .*from 'three'/m);
+    expect(sync).toContain('canRun3D()');
+    expect(read('src/pages/LandingV3.tsx')).toContain('<SyncHeroStage');
+
+    // matchMedia meldet hier reduzierte Bewegung → nur das Standbild, keine Szene.
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    const stage = screen.getByTestId('v3-sync-stage');
+    expect(stage).toHaveAttribute('data-scene', 'still');
+    expect(within(stage).getByRole('img', { name: /SYNC, das Maskottchen/ })).toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+  });
+
+  it('Hauptbutton im Hero blendet den Assistent-Button aus (data-hero-cta)', () => {
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'Kostenlosen Check starten' })).toHaveAttribute('data-hero-cta', 'landing-v3');
   });
 });

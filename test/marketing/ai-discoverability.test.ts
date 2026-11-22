@@ -55,7 +55,7 @@ describe('public/llms.txt', () => {
       ['starter', 'Starter'],
       ['growth', 'Growth'],
       ['agency', 'Agency'],
-      // Enterprise seit 2026-10-24 per Checkout buchbar (kein priceOnRequest mehr).
+      // Enterprise: Festpreis seit 2026-10-24 (kein priceOnRequest), seit 2026-11-21 vorläufig auf Anfrage.
       ['enterprise', 'Enterprise'],
     ] as const) {
       const plan = byId.get(id);

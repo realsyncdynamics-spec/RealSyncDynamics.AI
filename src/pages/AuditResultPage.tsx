@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { AuditResultView, type AuditResultFinding } from '../features/audit/AuditResultView';
 import { rememberPendingAudit } from '../features/audit/pendingAudit';
 import { SEOHead } from '../components/SEOHead';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
+import '../styles/product-landing.css';
 
 // AuditResultPage — sharable permalink for an audit result.
 //
@@ -123,6 +124,22 @@ export function AuditResultPage() {
         loading={loading}
         error={error}
       />
+      {domain && !loading && !error ? (
+        <div className="pl" data-testid="audit-next-steps">
+          <section className="pl-section" aria-labelledby="audit-next-steps-title">
+            <span className="pl-eyebrow">Nächster Schritt</span>
+            <h2 id="audit-next-steps-title" className="pl-h2">Was sollen wir für Sie tun?</h2>
+            <p className="pl-text">
+              Wählen Sie selbst, ob Sie einen neuen Frontend-Entwurf ansehen, den Telefonassistenten ergänzen oder Befunde im Governance OS weiterverfolgen möchten.
+            </p>
+            <div className="pl-actions">
+              <Link className="pl-btn pl-btn--solid" to="/landingpage-builder?source=scan-result">Frontend-Entwurf ansehen</Link>
+              <Link className="pl-btn" to="/telefonassistent?source=scan-result">Telefonassistent ansehen</Link>
+              <Link className="pl-btn" to="/governance-os?source=scan-result">Befunde weiterverfolgen</Link>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }

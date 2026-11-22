@@ -32,6 +32,8 @@ const LandingV5 = lazy(() => import('./pages/LandingV5').then((m) => ({ default:
 const LandingV6 = lazy(() => import('./pages/LandingV6').then((m) => ({ default: m.LandingV6 })));
 const LandingV7 = lazy(() => import('./pages/LandingV7').then((m) => ({ default: m.LandingV7 })));
 // 17.11.2026: Startseite v3 (Claude Design) ist `/`. Three.js lädt nur hier und nur auf geeigneten Geräten.
+const TelefonassistentLanding = lazy(() => import('./pages/products/KiBotsLanding'));
+const ProductLanding = lazy(() => import('./pages/products/ProductLanding'));
 const LandingV3 = lazy(() => import('./pages/LandingV3').then((m) => ({ default: m.LandingV3 })));
 // 13.11.2026: Interaktive 3D-Landingpage (Template-Vorschau, fiktives Unternehmen). Three.js lädt nur auf dieser Route.
 const Demo3DLandingPage = lazy(() => import('./pages/Demo3DLandingPage'));
@@ -84,7 +86,6 @@ const ContinuousCompliance = lazy(() => import('./pages/seo/ContinuousCompliance
 const AiActReadiness = lazy(() => import('./pages/seo/AiActReadiness').then((m) => ({ default: m.AiActReadiness })));
 const MatomoDsgvoKonfiguration = lazy(() => import('./pages/seo/MatomoDsgvoKonfiguration').then((m) => ({ default: m.MatomoDsgvoKonfiguration })));
 const CookieConsentSdk = lazy(() => import('./pages/CookieConsentSdk').then((m) => ({ default: m.CookieConsentSdk })));
-const AuditPro = lazy(() => import('./pages/AuditPro').then((m) => ({ default: m.AuditPro })));
 const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then((m) => ({ default: m.DsgvoToolVergleich })));
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
 const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
@@ -550,6 +551,11 @@ function RoutesWithTracking() {
           Startseite. Landing v6 bleibt unverändert als Rückfall unter /design/landing-v6;
           die frühere Vorschau /design/startseite-v3 leitet auf `/`. */}
       <Route path="/" element={<LandingV3 />} />
+      <Route path="/telefonassistent" element={<TelefonassistentLanding />} />
+      <Route path="/ki-bots" element={<TelefonassistentLanding />} />
+      <Route path="/landingpage-builder" element={<ProductLanding key="landingpage-builder" product="landingpage-builder" />} />
+      <Route path="/app-builder" element={<ProductLanding key="app-builder" product="app-builder" />} />
+      <Route path="/governance-os" element={<ProductLanding key="governance-os" product="governance-os" />} />
       <Route path="/design/landing-v7" element={<LandingV7 />} />
       <Route path="/design/startseite-v3" element={<Navigate to="/" replace />} />
       <Route path="/demo/3d-landingpage" element={<Demo3DLandingPage builderHref="/build" backHref="/#websites" />} />
@@ -673,7 +679,10 @@ function RoutesWithTracking() {
       <Route path="/ai-act-readiness" element={<AiActReadiness />} />
       <Route path="/resources/matomo-dsgvo-konfiguration" element={<MatomoDsgvoKonfiguration />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
-      <Route path="/audit-pro" element={<AuditPro />} />
+      {/* 21.11.2026: Audit Pro (499-€-Einmalkauf) nicht kaufbar — der Button führte ins
+          Growth-Abo, Preis und Geld-zurück-Garantie standen in keiner Quelle. Serverseitig
+          301 via public/_redirects; die Seite kommt erst mit echtem Einmal-Checkout zurück. */}
+      <Route path="/audit-pro" element={<Navigate to="/audit" replace />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />

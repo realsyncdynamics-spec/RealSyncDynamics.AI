@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight, ArrowLeft, AlertTriangle, Building2 } from 'lucide-react';
 import { TRY_FREE } from '../config/beta';
 import { CTA } from '../content/runtimeVocab';
+import { monthlyPriceText, planById } from '@/shared/pricing';
 
 export function BaitMaRiskGuide() {
   return (
@@ -110,11 +111,12 @@ export function BaitMaRiskGuide() {
                 <AlertTriangle className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
                 <div>
                   <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-                    BaFin-ready bis Ende 2026 — wir machen das in 14 Tagen.
+                    BAIT- und MaRisk-Nachweise für Ihre KI an einem Ort.
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
-                    Setup + erstes Audit-Log live in 14 Tagen. Pilot {TRY_FREE.phrase},
-                    danach Growth 249 €/Monat (passt für KMU-FinTechs bis ~50 Mitarbeitende).
+                    Audit-Log pro KI-Aufruf, AVV-Vorlagen und Human-Oversight im Produkt — die Bewertung
+                    gegenüber der Aufsicht bleibt bei Ihnen. Growth {TRY_FREE.phrase} testen, danach{' '}
+                    {monthlyPriceText(planById('growth'))}.
                   </p>
                 </div>
               </div>

@@ -12,7 +12,7 @@ const FACTS = [
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
   {
     k: 'Pricing',
-    v: `Free Audit kostenlos · Starter ${monthlyPriceText(planById('starter'))} · Growth ${monthlyPriceText(planById('growth'))} · Agency ${monthlyPriceText(planById('agency'))} · Enterprise ${monthlyPriceText(planById('enterprise'))}, direkt buchbar`,
+    v: `Free Audit kostenlos · Starter ${monthlyPriceText(planById('starter'))} · Growth ${monthlyPriceText(planById('growth'))} · Agency ${monthlyPriceText(planById('agency'))} · Enterprise ${monthlyPriceText(planById('enterprise'))}, vorerst auf Anfrage`,
   },
 ];
 

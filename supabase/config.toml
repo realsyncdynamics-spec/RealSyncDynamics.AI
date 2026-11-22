@@ -283,6 +283,13 @@ verify_jwt = false
 [functions.audit-monitor-cron]
 verify_jwt = false
 
+# browser-execution-sweep: schließt hängende browser_executions ab ('reserved'
+# ohne Abschluss). Bearer ist CRON_BROWSER_SWEEP_KEY (Fallback Vault
+# cron_browser_sweep_key). Fail-closed: ohne Key 500, sonst 401. Zeitplan
+# (pg_cron) ist noch nicht angelegt, siehe index.ts.
+[functions.browser-execution-sweep]
+verify_jwt = false
+
 [functions.audit-recheck-weekly]
 verify_jwt = false
 

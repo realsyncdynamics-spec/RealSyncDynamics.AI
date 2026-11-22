@@ -71,7 +71,9 @@ export function tierCovers(tier: OptimizerTierId, min: OptimizerTierId): boolean
  * über /contact-sales.
  */
 export function isSelfServeCheckout(planKey: TierId): boolean {
-  return planKey !== 'free' && isSelfServiceCheckoutOpen(tierById(planKey)?.plan);
+  // Kein Namensvergleich auf 'free': free hat purchaseMode 'free', die SSoT
+  // lehnt ihn ohnehin ab (Ratsche scripts/check-plan-name-gates.mjs).
+  return isSelfServiceCheckoutOpen(tierById(planKey)?.plan);
 }
 
 export function optimizerTierById(id: OptimizerTierId): OptimizerTier | undefined {

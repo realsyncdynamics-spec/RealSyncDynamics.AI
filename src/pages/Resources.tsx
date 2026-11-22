@@ -88,8 +88,8 @@ const RESOURCES: Resource[] = [
   },
   {
     href: '/case-studies',
-    title: 'Customer Cases',
-    description: 'Wie Kanzleien, HealthTechs, FinTechs in 14 Tagen compliance-ready werden. Konkrete Cases aus DACH.',
+    title: 'Referenzszenarien',
+    description: 'Beispielhafte Abläufe für Kanzleien, HealthTechs und FinTechs — als Referenzszenarien gekennzeichnet, keine Kundenstories.',
     badge: 'Stories',
     icon: <BookOpen className="h-5 w-5" />,
   },

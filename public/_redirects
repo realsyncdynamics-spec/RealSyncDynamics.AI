@@ -62,6 +62,9 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /kontakt            /contact-sales  301
 /domain-check       /audit  301
 /domain-checker     /audit  301
+# 21.11.2026: Audit Pro (499-€-Einmalkauf) ist kein lieferbares Produkt — der
+# Button führte ins Growth-Abo. Bis Checkout, Umfang und Garantie freigegeben sind.
+/audit-pro          /audit  301
 /preise             /pricing  301
 /preise/            /pricing  301
 # Nackte Pfade haben keine Router-Route (nur /checkout/:planKey und

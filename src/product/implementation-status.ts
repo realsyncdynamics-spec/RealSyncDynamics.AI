@@ -423,7 +423,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Enterprise-Anfrage',
     status: 'live',
     group: 'billing',
-    description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
+    description:
+      'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout. Seit 21.11.2026 Self-Service pausiert (`ENTERPRISE_SELF_SERVICE_PAUSED` in shared/pricing.ts; Festpreis 1.498 € bleibt sichtbar), bis ein Live-Neukauf mit Webhook, Provisionierung und Entitlement nachgewiesen ist (siehe `stripe-checkout-e2e`). `stripe-checkout` weist neue Enterprise-Sessions nach dem nächsten Edge-Deploy serverseitig mit INQUIRY_ONLY ab.',
     route: '/contact-sales',
     evidence: [
       'src/components/landing/v3/landingV3Data.ts#planCards',

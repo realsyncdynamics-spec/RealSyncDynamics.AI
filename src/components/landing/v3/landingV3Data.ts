@@ -48,39 +48,36 @@ export interface V3Product {
   stageCaption: string;
 }
 
+/**
+ * Produktkatalog nach der Owner-Entscheidung vom 21.11.2026 (Definition A):
+ * KI-Bots & Voice-Agenten · App Builder · Governance OS · Claude Code Optimizer.
+ * Der Landingpage-Builder bleibt als Website-Modus des App Builders unter
+ * `/landingpage-builder` erreichbar, ist aber kein eigenes Kernprodukt.
+ * Status nur aus der Registry; Telefonie bleibt als Zusatzhinweis sichtbar.
+ */
 export const PRODUCTS: readonly V3Product[] = [
   {
     key: 'bots',
     section: 'AUTOMATE',
-    name: 'Persönlicher Telefonassistent',
-    short: 'Für KMU, die telefonisch erreichbar bleiben wollen',
-    body: 'Der Telefonassistent ist als eigener Einstieg vorgesehen. Telefonie ist laut Produktstatus noch in Vorbereitung.',
-    flow: 'Anruf → Anliegen → Rückrufwunsch → Team',
-    href: `/telefonassistent?source=${SOURCE}`,
-    registryId: 'voice-telephony',
-    stageCaption: 'Telefonassistent · in Vorbereitung',
-  },
-  {
-    key: 'landingpage-builder',
-    section: 'BUILD',
-    name: 'Landingpage-Builder',
-    short: 'Eine neue Website aus Ihrer Geschäftsidee entwickeln',
-    body: 'Geschäftsidee, Inhalte und gewünschtes Design bilden den Startpunkt für einen Frontend-Entwurf.',
-    flow: 'Idee → Inhalt → Design → Vorschau',
-    href: `/landingpage-builder?source=${SOURCE}`,
-    registryId: 'web-builder',
-    stageCaption: 'Geschäftsidee → Website-Entwurf',
+    name: 'KI-Bots & Voice-Agenten',
+    short: 'Erreichbar bleiben und Kundenanfragen bearbeiten',
+    body: 'Ein Chat-Assistent beantwortet Kundenanfragen nach Ihren Vorgaben und übergibt an Ihr Team.',
+    flow: 'Anfrage → Antwort → Übergabe an das Team',
+    href: `/ki-bots?source=${SOURCE}`,
+    registryId: 'channel-bots',
+    note: { registryId: 'voice-telephony', text: (label) => `Telefonie: ${label}` },
+    stageCaption: 'Anfrage → Antwort → Übergabe',
   },
   {
     key: 'app-builder',
     section: 'BUILD',
-    name: 'App-Builder',
-    short: 'Eigene digitale Anwendungen entwickeln',
-    body: 'Beschreiben Sie einen konkreten Ablauf und prüfen Sie den verfügbaren Anwendungsentwurf.',
-    flow: 'Ablauf → Anwendung → Vorschau → Freigabe',
+    name: 'App Builder',
+    short: 'Ideen in Websites und Anwendungen verwandeln',
+    body: 'Geschäftsidee oder Ablauf beschreiben und einen ersten Website- oder Anwendungsentwurf in der Vorschau prüfen.',
+    flow: 'Idee → Entwurf → Vorschau → Freigabe',
     href: `/app-builder?source=${SOURCE}`,
     registryId: 'web-builder',
-    stageCaption: 'Anwendungsfall → App-Entwurf',
+    stageCaption: 'Idee → Entwurf → Website oder App',
   },
   {
     key: 'governance',
@@ -92,6 +89,17 @@ export const PRODUCTS: readonly V3Product[] = [
     href: `/governance-os?source=${SOURCE}`,
     registryId: 'governance-runtime-core',
     stageCaption: 'Berechtigungen · Regeln · Nachweise',
+  },
+  {
+    key: 'optimizer',
+    section: 'BUILD',
+    name: 'Claude Code Optimizer',
+    short: 'Websites und Code gezielt verbessern',
+    body: 'Website-Adresse eingeben und Befunde zu Sicherheit, Datenschutz und Sichtbarkeit erhalten.',
+    flow: 'Adresse eingeben → Befunde prüfen → abhaken',
+    href: `/claude-code-optimizer?source=${SOURCE}`,
+    registryId: 'cloud-code-optimizer',
+    stageCaption: 'Website & Code → gezielt verbessert',
   },
 ];
 

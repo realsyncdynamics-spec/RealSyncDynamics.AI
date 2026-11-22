@@ -582,6 +582,36 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/telefonassistent': {
+    title: 'Telefonassistent — RealSync Dynamics & AI',
+    description: 'KI-Empfang für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
+    canonical: `${SITE_URL}/telefonassistent`,
+    noIndex: true,
+  },
+  '/ki-bots': {
+    title: 'Telefonassistent — RealSync Dynamics & AI',
+    description: 'KI-Empfang für KMU.',
+    canonical: `${SITE_URL}/telefonassistent`,
+    noIndex: true,
+  },
+  '/landingpage-builder': {
+    title: 'Landingpage-Builder — RealSync Dynamics & AI',
+    description: 'Eine Website aus Inhalten und Designwünschen entwerfen.',
+    canonical: `${SITE_URL}/landingpage-builder`,
+    noIndex: true,
+  },
+  '/app-builder': {
+    title: 'App-Builder — RealSync Dynamics & AI',
+    description: 'Eigene Abläufe als Webanwendung entwerfen.',
+    canonical: `${SITE_URL}/app-builder`,
+    noIndex: true,
+  },
+  '/governance-os': {
+    title: 'Governance OS — RealSync Dynamics & AI',
+    description: 'Befunde, Zuständigkeiten und Freigaben verfolgen.',
+    canonical: `${SITE_URL}/governance-os`,
+    noIndex: true,
+  },
   '/unternehmen': {
     title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
     description:

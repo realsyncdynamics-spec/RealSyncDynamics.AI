@@ -273,7 +273,7 @@ export function ContactSales() {
   const intro = isWebdesign
     ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
     : showEnterpriseCopy
-    ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase und direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter, Growth und Agency sind in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
+    ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase und direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter ist in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
   const submitLabel = showEnterpriseCopy ? 'Enterprise anfragen' : 'Anfrage senden';

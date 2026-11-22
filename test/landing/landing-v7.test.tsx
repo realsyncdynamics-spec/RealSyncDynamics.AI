@@ -9,7 +9,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingV7 } from '../../src/pages/LandingV7';
-import { BETA } from '../../src/config/beta';
+import { BETA, isBetaPlan } from '../../src/config/beta';
 import { tierById, tierPriceLabel } from '../../src/config/pricing';
 import { CHANNEL_TOOLS } from '../../src/components/landing/LandingChannelTools';
 import { getImplementation, PLATFORM_LIVE_ITEMS, ROADMAP_PREVIEW_ITEMS } from '../../src/product/implementation-status';
@@ -64,7 +64,8 @@ it('prices plans from the SSoT and respects the beta offer', () => {
     if (!plan) throw new Error(`Plan ${id} fehlt in der SSoT`);
     const card = pricing.getByText(plan.name.toUpperCase()).closest('article') as HTMLElement;
     const amount = card.querySelector('.lv7-amt')?.textContent ?? '';
-    if (BETA_OFFER) {
+    // Seit 18.11.2026 ist nur Starter Beta-Tarif; Growth/Agency zum Listenpreis.
+    if (BETA_OFFER && isBetaPlan(id)) {
       expect(amount).toContain(formatPriceEur(0));
       expect(card.querySelector('s')?.textContent).toContain(formatPriceEur(plan.price.monthlyEur));
       expect(within(card).getByRole('link').getAttribute('href')).toMatch(/^\/welcome\?/);

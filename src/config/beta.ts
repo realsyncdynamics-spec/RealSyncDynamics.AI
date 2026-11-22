@@ -34,7 +34,12 @@ export const BETA = {
   endsLabelEn: '31 January 2027',
   /** Letzter kostenloser Tag maschinenlesbar (schema.org `priceValidUntil`, llms.txt). */
   endsIso: '2027-01-31',
-  /** Planstufe, deren Umfang Beta-Tester testen dürfen. */
+  /**
+   * Planstufe, deren Umfang Beta-Tester testen dürfen. Muss `BETA_PLAN_KEY`
+   * in `supabase/functions/beta-enroll/logic.ts` entsprechen (Vertragstest).
+   * Seit 18.11.2026 ist öffentlich nur Starter kostenlos; Growth und Agency
+   * laufen über den Stripe-Checkout (`BETA_PLANS`).
+   */
   testPlan: 'growth' as const,
   badge: 'BETA',
   headline: 'Offene Beta: kostenlos testen',
@@ -76,16 +81,20 @@ export const TRY_FREE = {
   badge: BETA_PUBLIC_OFFER ? `Kostenlos bis ${BETA.endsLabel}` : `${TRIAL_DAYS_AFTER_BETA} Tage kostenlos`,
   /** Tarif-Satz für Preisübersichten. */
   plans: BETA_PUBLIC_OFFER
-    ? `Starter, Growth und Agency: kostenlos bis ${BETA.endsLabel}, danach Listenpreis, monatlich kündbar.`
+    ? `Starter: kostenlos bis ${BETA.endsLabel}. Growth und Agency zum Listenpreis, monatlich kündbar.`
     : `Starter und Growth: ${TRIAL_DAYS_AFTER_BETA} Tage kostenlos testen, monatlich kündbar.`,
   /** Vertrauenszeile unter Preiskarten (statt `PRICING_TRUST_NOTE`). */
   trustNote: BETA_PUBLIC_OFFER
-    ? `Free Audit kostenlos · Offene Beta bis ${BETA.endsLabel} · Keine Kreditkarte · Danach monatlich kündbar · Made in Germany`
+    ? `Free Audit kostenlos · Starter kostenlos bis ${BETA.endsLabel}, keine Kreditkarte · Growth und Agency monatlich kündbar · Made in Germany`
     : PRICING_TRUST_NOTE,
 } as const;
 
-/** Plan-IDs, die während der Beta nicht gekauft, sondern kostenlos getestet werden. */
-const BETA_PLANS = new Set(['starter', 'growth', 'agency']);
+/**
+ * Plan-IDs, die während der Beta nicht gekauft, sondern kostenlos getestet
+ * werden. Entscheidung Owner 18.11.2026: nur Starter; Growth und Agency
+ * zeigen wieder den Listenpreis aus `shared/pricing.ts` und gehen in den Checkout.
+ */
+const BETA_PLANS = new Set(['starter']);
 
 export function isBetaPlan(planIdOrKey: string | undefined | null): boolean {
   if (!BETA.active || !planIdOrKey) return false;
@@ -134,6 +143,6 @@ export const BETA_MILESTONES: readonly BetaMilestone[] = [
   },
   {
     date: 'Ab Februar 2027',
-    label: 'Reguläre Preise: Starter 79 €, Growth 249 €, Agency 699 € / Monat.',
+    label: 'Starter regulär 79 € / Monat (Growth 249 € und Agency 699 € bereits zum Listenpreis).',
   },
 ] as const;

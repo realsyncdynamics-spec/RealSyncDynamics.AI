@@ -126,7 +126,7 @@ export function EnterpriseAiOs() {
           </h2>
           <p className="mt-4 max-w-3xl text-zinc-200">
             Enterprise ist nicht Teil der offenen Beta: Du buchst direkt, ohne Testphase, und nutzt alle
-            Enterprise-Funktionen ab dem ersten Tag. Starter, Growth und Agency sind bis{' '}
+            Enterprise-Funktionen ab dem ersten Tag. Starter ist bis{' '}
             {BETA.endsLabel} kostenlos. Fragen zu Umfang oder SLA beantworten wir über die Anfrage.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">

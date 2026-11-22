@@ -31,12 +31,12 @@ const mount = () =>
 it('keeps German footer and disclaimer under DE', () => {
   mount();
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(
-    /Offene Beta: Starter, Growth und Agency kostenlos bis 31\. Januar 2027/,
+    /Offene Beta: Starter kostenlos bis 31\. Januar 2027/,
   );
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(/keine Kreditkarte/);
   expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(/kein Account nötig/);
   expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(
-    /Starter, Growth und Agency: kostenlos bis 31\. Januar 2027, danach gilt der durchgestrichene Listenpreis/,
+    /Starter: kostenlos bis 31\. Januar 2027, danach gilt der durchgestrichene Listenpreis/,
   );
   expect(screen.getByTestId('pricing-foot')).not.toHaveTextContent(/14 Tage|Tag 15/);
   // Enterprise ist nicht Teil der Beta: Festpreis, direkt buchbar.
@@ -54,7 +54,7 @@ it('renders English footer and disclaimer under EN', () => {
   expect(screen.getByTestId('lang-toggle')).toHaveAttribute('data-lang', 'en');
 
   expect(screen.getByTestId('pricing-trust-note')).toHaveTextContent(
-    /Open beta: Starter, Growth and Agency free until 31 January 2027/,
+    /Open beta: Starter free until 31 January 2027/,
   );
   expect(screen.getByTestId('pricing-trust-note')).not.toHaveTextContent(/kostenlos testen/);
 

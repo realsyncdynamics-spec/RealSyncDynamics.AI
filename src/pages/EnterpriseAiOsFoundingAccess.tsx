@@ -26,7 +26,7 @@ export function EnterpriseAiOsFoundingAccess() {
 
         <p className="mt-5 text-zinc-300">
           Das frühere Founding-Programm ist am 02.08.2026 ausgelaufen. Enterprise buchen Sie heute
-          direkt für {monthlyPriceText(ENTERPRISE)}, ohne Testphase. Starter, Growth und Agency sind
+          direkt für {monthlyPriceText(ENTERPRISE)}, ohne Testphase. Starter ist
           in der offenen Beta bis {BETA.endsLabel} kostenlos.
         </p>
 

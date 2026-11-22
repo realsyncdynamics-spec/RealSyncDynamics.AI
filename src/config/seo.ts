@@ -70,7 +70,7 @@ export const DEFAULT_SEO: SEOConfig = {
  * — so wie die Karten auf /pricing („danach“, durchgestrichen). Preise ohne Umsatzsteuerausweis
  * (`PRICING_TAX_MODE = EXEMPT`, § 19 UStG, nur B2B).
  */
-function subscriptionOffer(name: string, listEur: number, url: string): Record<string, unknown> {
+function subscriptionOffer(name: string, listEur: number, url: string, beta = true): Record<string, unknown> {
   const list = {
     '@type': 'UnitPriceSpecification',
     price: String(listEur),
@@ -78,7 +78,7 @@ function subscriptionOffer(name: string, listEur: number, url: string): Record<s
     billingDuration: 'P1M',
     valueAddedTaxIncluded: true,
   };
-  if (!BETA_PUBLIC_OFFER) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
+  if (!BETA_PUBLIC_OFFER || !beta) return { '@type': 'Offer', name, price: String(listEur), priceCurrency: 'EUR', url, priceSpecification: list };
   const afterBeta = new Date(`${BETA.endsIso}T00:00:00Z`);
   afterBeta.setUTCDate(afterBeta.getUTCDate() + 1);
   return {
@@ -118,8 +118,8 @@ const PRICING_PRODUCT_JSONLD = {
       },
     },
     subscriptionOffer('Starter', 79, `${SITE_URL}/pricing`),
-    subscriptionOffer('Growth', 249, `${SITE_URL}/pricing`),
-    subscriptionOffer('Agency', 699, `${SITE_URL}/checkout/agency`),
+    subscriptionOffer('Growth', 249, `${SITE_URL}/pricing`, false),
+    subscriptionOffer('Agency', 699, `${SITE_URL}/checkout/agency`, false),
     {
       '@type': 'Offer',
       name: 'Enterprise',
@@ -357,7 +357,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSync Dynamics AI',
     description:
-      'Offene Beta: Starter, Growth und Agency kostenlos bis 31.01.2027, danach 79 €, 249 € bzw. 699 € pro Monat. Enterprise 1.498 €/Monat, ohne Testphase. Free Audit 0 €. AVV inklusive.',
+      'Offene Beta: Starter kostenlos bis 31.01.2027, danach 79 € pro Monat. Growth 249 €/Monat, Agency 699 €/Monat. Enterprise 1.498 €/Monat, ohne Testphase. Free Audit 0 €. AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

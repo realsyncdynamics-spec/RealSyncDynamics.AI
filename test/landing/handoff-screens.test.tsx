@@ -40,14 +40,19 @@ describe('/pricing (Handoff v2)', () => {
     mount();
     expect(screen.queryByTestId('pricing-billing-yearly')).not.toBeInTheDocument();
     expect(screen.getByTestId('pricing-yearly-disabled')).toBeInTheDocument();
-    const growth = screen.getByTestId('pricing-card-growth');
-    // Offene Beta: 0 € bis Beta-Ende, Listenpreis nur durchgestrichen als „danach“.
-    expect(within(growth).getByText(formatPriceEur(0).replace(/\s+/g, ' '))).toBeInTheDocument();
-    expect(within(growth).getByText('kostenlos bis 31. Januar 2027')).toBeInTheDocument();
-    const listPrice = within(growth).getByTestId('pricing-list-price-growth');
+    // Offene Beta (seit 18.11.2026 nur Starter): 0 € bis Beta-Ende, Listenpreis durchgestrichen als „danach“.
+    const starter = screen.getByTestId('pricing-card-starter');
+    expect(within(starter).getByText(formatPriceEur(0).replace(/\s+/g, ' '))).toBeInTheDocument();
+    expect(within(starter).getByText('kostenlos bis 31. Januar 2027')).toBeInTheDocument();
+    const listPrice = within(starter).getByTestId('pricing-list-price-starter');
     expect(listPrice).toHaveTextContent(/^danach/);
-    expect(listPrice.querySelector('s')).toHaveTextContent(formatPriceEur(planById('growth').price.monthlyEur).replace(/\s+/g, ' '));
-    expect(within(growth).getByTestId('pricing-book-growth')).toHaveTextContent('Kostenlos testen');
+    expect(listPrice.querySelector('s')).toHaveTextContent(formatPriceEur(planById('starter').price.monthlyEur).replace(/\s+/g, ' '));
+    // Growth und Agency: Listenpreis, kein Beta-Nullpreis.
+    for (const id of ['growth', 'agency'] as const) {
+      const card = screen.getByTestId(`pricing-card-${id}`);
+      expect(within(card).getByText(formatPriceEur(planById(id).price.monthlyEur).replace(/\s+/g, ' '))).toBeInTheDocument();
+      expect(within(card).queryByTestId(`pricing-list-price-${id}`)).toBeNull();
+    }
     // Enterprise ist nicht Teil der Beta: Festpreis, Anfrage bis Stripe-Price-ID verdrahtet.
     expect(within(screen.getByTestId('pricing-card-enterprise')).queryByText('Auf Anfrage')).toBeNull();
     expect(within(screen.getByTestId('pricing-card-enterprise')).getByTestId('pricing-book-enterprise')).toHaveTextContent('Enterprise anfragen');

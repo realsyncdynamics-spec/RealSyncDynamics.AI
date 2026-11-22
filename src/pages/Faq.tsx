@@ -7,8 +7,8 @@ import { BETA, TRY_FREE } from '../config/beta';
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
 // COMMERCIAL-SSOT: Beträge aus shared/pricing.ts. Entscheidung Dominik
-// 2026-10-24: Starter, Growth und Agency bleiben Beta-Tarife; Enterprise ist
-// nicht Teil der Beta und kostet vom ersten Tag an 1.498 €/Monat.
+// 2026-10-24, angepasst 2026-11-18: nur Starter bleibt Beta-Tarif (kostenlos);
+// Growth, Agency und Enterprise kosten vom ersten Tag an den Listenpreis.
 const BETA_OFFER = BETA.active && BETA.publicOffer;
 const STARTER = planById('starter');
 const GROWTH = planById('growth');
@@ -75,14 +75,14 @@ const ITEMS: Item[] = [
       <>
         <p>
           {BETA_OFFER
-            ? `Starter, Growth und Agency sind Beta-Tarife und bis ${BETA.endsLabel} kostenlos, danach gelten die Listenpreise. Enterprise ist nicht Teil der Beta und kostet vom ersten Tag an ${monthlyPriceText(ENTERPRISE)}, ohne Testphase:`
+            ? `Starter ist Beta-Tarif und bis ${BETA.endsLabel} kostenlos, danach gilt der Listenpreis. Growth und Agency gelten zum Listenpreis; Enterprise kostet vom ersten Tag an ${monthlyPriceText(ENTERPRISE)}, ohne Testphase:`
             : `Starter und Growth ${TRY_FREE.phrase} testen, Agency und Enterprise ohne Testphase:`}
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
           <li><strong className="text-titanium-50">Starter</strong> {betaPrice(STARTER.price.monthlyEur)} — eine Domain, Audit-Trail, Re-Scan-Monitoring (Coming Soon)</li>
-          <li><strong className="text-titanium-50">Growth</strong> {betaPrice(GROWTH.price.monthlyEur)} — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
-          <li><strong className="text-titanium-50">Agency</strong> {betaPrice(AGENCY.price.monthlyEur)} — bis {AGENCY.limits.domains} Domains, White-Label-Reports, API + Webhooks</li>
+          <li><strong className="text-titanium-50">Growth</strong> {listPrice(GROWTH.price.monthlyEur)} — bis 3 Domains, tägliches Monitoring + Drift-Detection (Coming Soon)</li>
+          <li><strong className="text-titanium-50">Agency</strong> {listPrice(AGENCY.price.monthlyEur)} — bis {AGENCY.limits.domains} Domains, White-Label-Reports, API + Webhooks</li>
           <li><strong className="text-titanium-50">Enterprise</strong> {monthlyPriceText(ENTERPRISE)}, ohne Testphase — White-Label, Multi-Tenant, SLA nach Vereinbarung, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">

@@ -56,7 +56,7 @@ export const PRODUCTS: readonly V3Product[] = [
     short: 'Für KMU, die telefonisch erreichbar bleiben wollen',
     body: 'Der Telefonassistent ist als eigener Einstieg vorgesehen. Telefonie ist laut Produktstatus noch in Vorbereitung.',
     flow: 'Anruf → Anliegen → Rückrufwunsch → Team',
-    href: `/ki-bots?source=${SOURCE}`,
+    href: `/voice-agent?source=${SOURCE}`,
     registryId: 'voice-telephony',
     stageCaption: 'Telefonassistent · in Vorbereitung',
   },
@@ -91,7 +91,7 @@ export const PRODUCTS: readonly V3Product[] = [
     flow: 'Befund → Zuständigkeit → Freigabe → Nachweis',
     href: `/governance-os?source=${SOURCE}`,
     registryId: 'governance-runtime-core',
-    stageCaption: 'Berechtigungen · Regeln · Nachweise',
+    stageCaption: 'Befund → Freigabe → Nachweis',
   },
 ];
 

@@ -591,13 +591,28 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     noIndex: true,
   },
 
-  // Produkt-Landingpage KI-Bots (erster Entwurf, 19.11.2026). Noindex und nicht in der
-  // Sitemap, bis Gestaltung und Inhalte freigegeben sind.
+  // Telefonassistent: kanonische Route /voice-agent (Freigabe 22.11.2026). /ki-bots und
+  // /telefonassistent bleiben als kompatible Einstiege und zeigen auf die kanonische Route.
+  // Noindex und nicht in der Sitemap, bis Gestaltung und Inhalte freigegeben sind.
+  '/voice-agent': {
+    title: 'Persönlicher Telefonassistent — RealSync Dynamics & AI',
+    description:
+      'Persönlicher KI-Empfang für kleine und mittlere Betriebe. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/voice-agent`,
+    noIndex: true,
+  },
   '/ki-bots': {
     title: 'Persönlicher Telefonassistent — RealSync Dynamics & AI',
     description:
-      'Erreichbar bleiben: Ein KI-Empfang nimmt Kundenanfragen an, erfasst Kontakt und Terminwunsch und übergibt an Ihr Team.',
-    canonical: `${SITE_URL}/ki-bots`,
+      'Persönlicher KI-Empfang für kleine und mittlere Betriebe. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/voice-agent`,
+    noIndex: true,
+  },
+  '/telefonassistent': {
+    title: 'Persönlicher Telefonassistent — RealSync Dynamics & AI',
+    description:
+      'Persönlicher KI-Empfang für kleine und mittlere Betriebe. Telefonie ist noch in Vorbereitung.',
+    canonical: `${SITE_URL}/voice-agent`,
     noIndex: true,
   },
   '/landingpage-builder': {

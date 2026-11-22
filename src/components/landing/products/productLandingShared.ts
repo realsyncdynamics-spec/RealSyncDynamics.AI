@@ -3,8 +3,9 @@
  *
  * Website-Architektur laut Owner (19.11.2026): eine Unternehmensstartseite auf
  * `/` plus vier eigenständige Produktseiten unter der bestehenden Domain.
- * Alle vier sind als Entwurf gebaut (noindex): `/ki-bots` (eigene Seite) und
- * `/app-builder`, `/governance-os`, `/claude-code-optimizer` (ProductLanding.tsx).
+ * Die kanonischen vier sind `/voice-agent`, `/landingpage-builder`,
+ * `/app-builder` und `/governance-os`. Der Optimizer bleibt als zusätzlicher
+ * Funktionspfad verfügbar, gehört aber nicht in den Hauptproduktkatalog.
  * Auf `/claude-code-optimizer` ersetzt die Landingpage die frühere Übersicht;
  * der Ablauf darunter (`/scan`, `/ergebnis`, `/anmelden`, `/bericht`) bleibt.
  *
@@ -29,7 +30,7 @@ export interface ProductPage {
 }
 
 export const PRODUCT_PAGES: readonly ProductPage[] = [
-  { key: 'ki-bots', name: 'Telefonassistent', plannedPath: '/ki-bots', href: '/ki-bots', built: true },
+  { key: 'ki-bots', name: 'Telefonassistent', plannedPath: '/voice-agent', href: '/voice-agent', built: true },
   { key: 'landingpage-builder', name: 'Landingpage-Builder', plannedPath: '/landingpage-builder', href: '/landingpage-builder', built: true },
   { key: 'app-builder', name: 'App-Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
   { key: 'governance-os', name: 'Governance OS', plannedPath: '/governance-os', href: '/governance-os', built: true },

@@ -134,7 +134,7 @@ export function AuditResultPage() {
             </p>
             <div className="pl-actions">
               <Link className="pl-btn pl-btn--solid" to="/landingpage-builder?source=scan-result">Frontend-Entwurf ansehen</Link>
-              <Link className="pl-btn" to="/ki-bots?source=scan-result">Telefonassistent ansehen</Link>
+              <Link className="pl-btn" to="/voice-agent?source=scan-result">Telefonassistent ansehen</Link>
               <Link className="pl-btn" to="/governance-os?source=scan-result">Befunde weiterverfolgen</Link>
             </div>
           </section>

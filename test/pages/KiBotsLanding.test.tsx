@@ -20,7 +20,6 @@ vi.mock('../../src/components/visual/sync-mascot/syncMascotScene', () => ({
 import KiBotsLanding from '../../src/pages/products/KiBotsLanding';
 import { DEMO_STEPS, KI_BOTS } from '../../src/components/landing/products/kiBotsContent';
 import { STAGE_SCENES } from '../../src/components/landing/products/stageScenes';
-import { planChannels } from '../../src/components/landing/products/productLandingShared';
 import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 
 async function renderPage() {
@@ -42,7 +41,7 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
 
   it('zeigt Kernbotschaft, Hauptaktion und lädt SYNC als 3D-Bühne', async () => {
     await renderPage();
-    expect(screen.getByTestId('ki-bots-heading')).toHaveTextContent('Erreichbar bleiben.');
+    expect(screen.getByTestId('ki-bots-heading')).toHaveTextContent(KI_BOTS.h1[0]);
     expect(screen.getByTestId('ki-bots-primary')).toHaveTextContent(KI_BOTS.primaryCta);
     expect(screen.getByTestId('ki-bots-primary')).toHaveAttribute('href', '#ablauf');
     expect(scene.options?.src).toBe('/models/sync-mascot.glb');
@@ -87,13 +86,11 @@ describe('KiBotsLanding (/ki-bots, Entwurf)', () => {
     expect(within(demo).getByText('Noch keine Nachricht. Starten Sie den Ablauf.')).toBeInTheDocument();
   });
 
-  it('zeigt die vier Tarife mit Kanälen aus shared/pricing.ts und den Steuerhinweis', async () => {
+  it('zeigt keinen Telefon-Tarif als buchbar, sondern den Produktstatus', async () => {
     await renderPage();
-    for (const id of ['starter', 'growth', 'agency', 'enterprise'] as const) {
-      const card = screen.getByTestId(`ki-bots-plan-${id}`);
-      for (const channel of planChannels(id)) expect(card).toHaveTextContent(channel);
-    }
-    expect(screen.getByTestId('ki-bots-tax-note').textContent?.length).toBeGreaterThan(0);
+    expect(document.querySelector('[data-testid^="ki-bots-plan-"]')).toBeNull();
+    expect(screen.getByTestId('ki-bots-waitlist-pricing')).toBeInTheDocument();
+    expect(screen.getByTestId('ki-bots-status-note').textContent?.length).toBeGreaterThan(0);
   });
 
   it('führt zu Warteliste und Chat-Assistent mit eigener Quelle', async () => {

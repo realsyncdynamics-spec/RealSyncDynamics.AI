@@ -1,5 +1,5 @@
 /**
- * Inhalte der Produkt-Landingpage KI-Bots & Voice-Agenten (`/ki-bots`, Entwurf).
+ * Inhalte der Produkt-Landingpage Telefonassistent (`/voice-agent`, Entwurf; `/ki-bots` und `/telefonassistent` als Einstiege).
  *
  * Kernbotschaft (Owner, 19.11.2026): erreichbar bleiben und Kundenanfragen
  * intelligent bearbeiten. Kundeneinstieg: „KI-Empfang kennenlernen“.

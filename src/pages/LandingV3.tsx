@@ -87,7 +87,7 @@ export function LandingV3() {
           <a href="#katalog">Build</a>
           <a href="#katalog">Automate</a>
           <a href="#govern">Govern</a>
-          <Link to="/ki-bots">Telefonassistent</Link>
+          <Link to="/voice-agent">Telefonassistent</Link>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
@@ -106,7 +106,7 @@ export function LandingV3() {
             </p>
             <div className="lv3-actions">
               <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
-              <Link className="lv3-btn lv3-btn--lg" to="/ki-bots?source=landing-v3-hero">Telefonassistent ansehen</Link>
+              <Link className="lv3-btn lv3-btn--lg" to="/voice-agent?source=landing-v3-hero">Telefonassistent ansehen</Link>
             </div>
           </div>
           <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · RealSync" waveSignal={waveSignal} />
@@ -199,7 +199,7 @@ export function LandingV3() {
             <span className="lv3-eyebrow">Vom Domain-Scan zur laufenden Übersicht</span>
             <h2 id="lv3-kundenweg-h" className="lv3-h2">Der Weg in sechs Schritten.</h2>
             <p className="lv3-text">
-              Die Schritte vier bis sechs sind freiwillig. Der Telefonassistent lässt sich auch separat öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
+              Die Schritte vier bis sechs sind freiwillig. Der Telefonassistent und die übrigen Produkte lassen sich auch direkt öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
             </p>
           </div>
           <ol className="lv3-steps" data-testid="v3-customer-journey">
@@ -208,7 +208,7 @@ export function LandingV3() {
               'Öffentliche Website prüfen',
               'Befunde, Fehlercodes und Vorschläge ansehen',
               'Optional einen Frontend-Entwurf anpassen',
-              'Optional den Telefonassistenten ergänzen',
+              'Optional Telefon- oder WhatsApp-Assistenten ergänzen. Telefonie ist in Vorbereitung, WhatsApp ist derzeit Preview.',
               'Governance OS für Zuständigkeiten, Freigaben und Nachweise nutzen',
             ].map((step, i) => (
               <li key={step}>
@@ -224,18 +224,33 @@ export function LandingV3() {
 
         <section id="govern" className="lv3-section lv3-split" aria-labelledby="lv3-govern-h">
           <div>
-            <span className="lv3-eyebrow">Im Hintergrund</span>
-            <h2 id="lv3-govern-h" className="lv3-h2">Die Kontrollschicht läuft mit.</h2>
+            <span className="lv3-eyebrow">Der gemeinsame Kundenweg</span>
+            <h2 id="lv3-journey-h" className="lv3-h2">Von der Domain bis zur laufenden Überwachung.</h2>
             <p className="lv3-text">
-              Berechtigungen, Regeln und Nachweise begleiten die Abläufe. Wer sie selbst steuern möchte, öffnet das{' '}
-              <Link to={`/governance-runtime?source=${SOURCE}`}>Governance OS</Link>.
+              Der Domain-Check ist ein optionaler Einstieg. Sie können auch direkt jedes der vier Produkte öffnen.
             </p>
           </div>
-          <ol className="lv3-steps">
-            {['Scan', 'Report', 'Build', 'Automate', 'Govern'].map((s, i) => (
-              <li key={s}><span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span><span>{s}</span></li>
+          <ol className="lv3-steps" aria-label="Sechs Schritte vom Website-Check zur Governance">
+            {[
+              ['Domain eingeben', 'Bestehende Website-Adresse eintragen.'],
+              ['Check & Analyse', 'Öffentlich erreichbare Website-Eigenschaften prüfen.'],
+              ['Befunde ansehen', 'Befunde mit Fehlercode, soweit vorhanden, und verständlichem Vorschlag ansehen. Was sollen wir für Sie tun?'],
+              ['Landingpage anpassen', 'Frontend-Entwurf in der Vorschau prüfen. Das bestehende Backend bleibt unverändert.'],
+              ['Telefonassistent ergänzen', 'Optional hinzunehmen. Telefonie ist derzeit in Vorbereitung.'],
+              ['Governance OS nutzen', 'Offene Befunde, Zuständigkeiten, freigegebene Korrekturen und Nachweise verfolgen.'],
+            ].map(([title, detail], i) => (
+              <li key={title}>
+                <span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span>
+                <span className="lv3-step-copy">
+                  <strong>{title}</strong>
+                  <span className="lv3-step-detail">{detail}</span>
+                </span>
+              </li>
             ))}
           </ol>
+          <p className="lv3-text">
+            Ohne bestehende Domain starten Sie direkt im Landingpage-Builder oder App-Builder. Eine erneute Prüfung führt zurück zu Check &amp; Analyse; automatische Dauerüberwachung ist in Vorbereitung.
+          </p>
         </section>
 
         <section id="preise" className="lv3-section" aria-labelledby="lv3-preise-h">

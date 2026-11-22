@@ -476,11 +476,11 @@ describe('pricingContent', () => {
       });
     });
 
-    it('kein Plantext koppelt „identischer Funktionsumfang“ an eine geplante Funktion', () => {
+    it('Pläne mit geplanten Funktionen versprechen keinen „identischen Funktionsumfang“', () => {
       pricingPlans.forEach((plan) => {
-        if (/monitoring/i.test(plan.shortDescription)) {
-          expect(plan.shortDescription).not.toMatch(/identisch/i);
-        }
+        if (getPlannedFeaturesByPlan(plan.slug).length === 0) return;
+        const texts = [plan.shortDescription, ...plan.detailedSections.map((s) => s.content)];
+        texts.forEach((text) => expect(text).not.toMatch(/identisch/i));
       });
     });
   });

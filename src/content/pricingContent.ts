@@ -453,7 +453,7 @@ export const pricingPlans: PricingPlan[] = [
     interval: 'Jahresabrechnung in Vorbereitung',
     recommended: false,
     badge: 'In Vorbereitung',
-    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit identischem Funktionsumfang und ohne Mindestlaufzeit.',
+    shortDescription: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar. Starter ist monatlich zu 79 € verfügbar — mit denselben derzeit verfügbaren Leistungen und ohne Mindestlaufzeit.',
     targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die eine durchgehende DSGVO-Grundabsicherung brauchen.',
     whatCustomerGets: [
       'Alles aus Starter (monatlich)',
@@ -481,7 +481,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit identischem Funktionsumfang und ohne Mindestlaufzeit. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Starter ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Starter ist unverändert monatlich zu 79 € verfügbar, mit denselben derzeit verfügbaren Leistungen und ohne Mindestlaufzeit. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -667,7 +667,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Growth ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Growth ist unverändert monatlich zu 249 € verfügbar, mit denselben derzeit verfügbaren Leistungen. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -721,7 +721,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum steht hier kein Jahrespreis?',
-        content: 'Die Jahresabrechnung für Agency ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Agency ist unverändert monatlich zu 699 € verfügbar, mit identischem Funktionsumfang. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
+        content: 'Die Jahresabrechnung für Agency ist derzeit nicht buchbar — es ist kein Jahres-Zahlungsweg hinterlegt. Statt einen Betrag zuzusichern, den der Kauf nicht einlösen kann, weisen wir die Variante als in Vorbereitung aus. Agency ist unverändert monatlich zu 699 € verfügbar, mit denselben derzeit verfügbaren Leistungen. Geplante Funktionen wie Monitoring sind in keiner Variante enthalten. Bestehende Jahresabos sind davon nicht betroffen und laufen unverändert weiter.',
       },
     ],
   },
@@ -781,7 +781,7 @@ export const pricingPlans: PricingPlan[] = [
     detailedSections: [
       {
         title: 'Warum die Jahresvariante?',
-        content: 'Die Jahresabrechnung bündelt 12 Monate Partner zum Preis von 10 Monaten. Multi-Tenant-Betreiber kalkulieren ihre Mandantenpreise üblicherweise auf Jahresbasis — die Jahresvariante passt Einkaufs- und Verkaufslogik aneinander an. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Partner zum Preis von 10 Monaten. Multi-Tenant-Betreiber kalkulieren ihre Mandantenpreise üblicherweise auf Jahresbasis — die Jahresvariante passt Einkaufs- und Verkaufslogik aneinander an. Die derzeit verfügbaren Leistungen sind dieselben wie in der monatlichen Variante; geplante Funktionen wie Monitoring sind in keiner Variante enthalten.',
       },
     ],
   },

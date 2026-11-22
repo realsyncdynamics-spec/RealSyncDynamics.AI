@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+import { COMPANY } from '../../config/company';
 
 /**
- * Allgemeine Geschäftsbedingungen (AGB) — RealSyncDynamics.AI
+ * Allgemeine Geschäftsbedingungen (AGB).
  *
- * Konservative B2B-SaaS-Standard-AGB für die RealSync Dynamics
- * (Einzelunternehmen Dominik Steiner, umsatzsteuerpflichtig, Regelbesteuerung).
+ * Konservative B2B-SaaS-Standard-AGB für den Anbieter aus `COMPANY`
+ * (Einzelunternehmen Dominik Steiner). Steuerhinweis im Text: § 19 UStG.
  *
  * Geltungsbereich: Nutzung der unter `realsyncdynamicsai.de`
  * angebotenen SaaS-Plattform für KI- und DSGVO-Governance.
@@ -70,7 +71,7 @@ export function LegalTerms() {
             „Plattform" oder „Dienst") zwischen
           </p>
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong>
+            <strong className="text-titanium-50">{COMPANY.companyName}</strong>
             <br />
             Inhaber Dominik Steiner
             <br />

@@ -61,7 +61,7 @@ export function DatenschutzPage() {
         {
           heading: '1. Verantwortlicher',
           body: [
-            'Verantwortlicher für die Datenverarbeitung auf dieser Plattform ist RealSync Dynamics, Einzelunternehmen, Inhaber Dominik Steiner (Kontaktdaten siehe Impressum). Bei Fragen zum Datenschutz wenden Sie sich an die im Impressum genannten Kontaktwege.',
+            `Verantwortlicher für die Datenverarbeitung auf dieser Plattform ist ${COMPANY.companyName}, ${COMPANY.legalForm}, Inhaber Dominik Steiner (Kontaktdaten siehe Impressum). Bei Fragen zum Datenschutz wenden Sie sich an die im Impressum genannten Kontaktwege.`,
           ],
         },
         {
@@ -103,7 +103,7 @@ export function DatenschutzPage() {
 export function ImpressumPage() {
   // Abgeglichen mit dem rechtsverbindlichen Impressum (/legal/impressum) über
   // src/config/company.ts — keine Platzhalter für Geschäftsführung/HRB, da
-  // RealSync Dynamics ein Einzelunternehmen ohne Handelsregistereintrag ist.
+  // Der Anbieter ist laut COMPANY ein Einzelunternehmen ohne Handelsregistereintrag.
   const { street, postalCode, city } = COMPANY.headquartersAddress;
   return (
     <LegalPage

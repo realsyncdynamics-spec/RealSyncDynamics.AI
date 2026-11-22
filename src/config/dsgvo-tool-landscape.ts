@@ -19,6 +19,7 @@
  */
 
 import { COMPETITOR_PRICING } from './competitor-pricing';
+import { COMPANY } from './company';
 
 // ─── Stand ───────────────────────────────────────────────────────────────────
 // Detail-Matrix und Marktüberblick haben bewusst getrennte Stände: die
@@ -120,7 +121,7 @@ export const DSGVO_TOOLS: readonly DsgvoTool[] = [
   // ── Continuous Monitoring & AI-Governance ────────────────────────────────
   {
     name: 'RealSyncDynamics.AI',
-    vendor: 'RealSync Dynamics',
+    vendor: COMPANY.companyName,
     url: 'https://RealSyncDynamicsAI.de',
     origin: 'EU',
     transfer: 'eu-intern',

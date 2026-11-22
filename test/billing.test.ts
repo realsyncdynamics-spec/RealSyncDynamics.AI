@@ -36,7 +36,7 @@ describe('Company Configuration (Impressum SSOT)', () => {
   });
 
   it('should support future GmbH transition', () => {
-    expect(COMPANY.futureLegalForm).toBe('GmbH');
+    expect(COMPANY.futureLegalForm).toBe('Einzelunternehmen');
   });
 
   it('should be beta-ready if Stripe key exists', () => {
@@ -168,7 +168,7 @@ describe('Stripe Integration', () => {
     const metadata = getStripeProductMetadata('growth');
     expect(metadata.plan_key).toBe('growth');
     expect(metadata.plan_name).toBe('Growth');
-    expect(metadata.company_name).toBe('RealSync Dynamics');
+    expect(metadata.company_name).toBe('RealSync Dynamics & AI');
     expect(metadata.company_legal_form).toBe('Einzelunternehmen');
     expect(metadata.recurring).toBe('true');
   });
@@ -185,7 +185,7 @@ describe('Stripe Integration', () => {
 describe('Compliance & Legal Notices', () => {
   it('should generate complete impressum text', () => {
     const impressum = generateImpressumText();
-    expect(impressum).toContain('RealSync Dynamics');
+    expect(impressum).toContain('RealSync Dynamics & AI');
     expect(impressum).toContain('IMPRESSUM');
     expect(impressum).toContain(COMPANY.supportEmail);
     expect(impressum).toContain('Einzelunternehmen');

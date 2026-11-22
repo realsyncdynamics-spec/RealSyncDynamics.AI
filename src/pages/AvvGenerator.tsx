@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { HumanVerificationGate } from '../components/HumanVerificationGate';
 import { CTA } from '../content/runtimeVocab';
+import { COMPANY } from '../config/company';
 
 export function AvvGenerator() {
   const [step, setStep] = useState(1);
@@ -9,7 +10,7 @@ export function AvvGenerator() {
     auftraggeber_name: '',
     auftraggeber_adresse: '',
     auftraggeber_email: '',
-    auftragnehmer_name: 'RealSync Dynamics',
+    auftragnehmer_name: COMPANY.companyName,
     auftragnehmer_adresse: 'Neuhaus am Rennweg, Thüringen, Deutschland',
     auftragnehmer_email: 'privacy@realsyncdynamicsai.de',
     verarbeitungszweck: '',

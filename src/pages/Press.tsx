@@ -1,29 +1,35 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Newspaper, Download, Mail, Image as ImageIcon, FileText, Quote } from 'lucide-react';
-import { COMPETITOR_PRICING } from '../config/competitor-pricing';
+import { COMPANY } from '../config/company';
 import { monthlyPriceText, planById } from '@/shared/pricing';
+import {
+  IMPLEMENTATION_MEASURED_AT,
+  PLATFORM_LIVE_ITEMS,
+} from '../product/implementation-status';
+
+const starterPrice = monthlyPriceText(planById('starter'));
+const liveProductNames = PLATFORM_LIVE_ITEMS.map((item) => item.name).join(', ');
 
 const FACTS = [
-  { k: 'Gegründet', v: '2026 · Frankfurt am Main' },
-  { k: 'Sitz', v: 'Hessen · Deutschland' },
-  { k: 'Hosting', v: 'Frankfurt — EU-souverän · keine US-Cloud' },
-  { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
-  { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
+  { k: 'Gegründet', v: '2026 · Thüringen' },
+  { k: 'Sitz', v: `${COMPANY.headquartersAddress.city} · Thüringen` },
+  { k: 'Datenbank', v: 'Supabase, Frankfurt. KI-Aufrufe können an Anbieter in den USA gehen (siehe Datenschutzerklärung).' },
+  { k: 'Modelle', v: 'Anthropic / OpenAI / Google. EU-lokal: eigener VPS in Deutschland (siehe Datenschutzerklärung).' },
+  {
+    k: 'Live laut Registry',
+    v: `${liveProductNames} (Stand ${IMPLEMENTATION_MEASURED_AT})`,
+  },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
   {
     k: 'Pricing',
-    v: `Free Audit kostenlos · Starter ${monthlyPriceText(planById('starter'))} · Growth ${monthlyPriceText(planById('growth'))} · Agency ${monthlyPriceText(planById('agency'))} · Enterprise ${monthlyPriceText(planById('enterprise'))}, direkt buchbar`,
+    v: `Free Audit ${monthlyPriceText(planById('free'))} · Starter ${starterPrice} · Growth ${monthlyPriceText(planById('growth'))} · Agency ${monthlyPriceText(planById('agency'))} · Enterprise ${monthlyPriceText(planById('enterprise'))}`,
   },
 ];
 
 const QUOTES = [
   {
     q: 'EU-Datensouveränität darf kein Premium-Feature sein. Sie ist die Voraussetzung dafür, dass deutsche Unternehmen KI überhaupt einsetzen dürfen.',
-    a: 'Founder, RealSync Dynamics',
-  },
-  {
-    q: `OneTrust wird in dieser Vergleichsmatrix mit ${COMPETITOR_PRICING.OneTrust.pricing} angesetzt. RealSyncDynamics.AI startet bei 79 €/M — plus AVV, VVT und AI-Act-Tools.`,
-    a: 'Founder, RealSync Dynamics',
+    a: `Founder, ${COMPANY.companyName}`,
   },
 ];
 
@@ -52,7 +58,7 @@ export function Press() {
               Media-Kit — <span className="text-security-400">Fakten, Zitate, Logos</span>
             </h1>
             <p className="text-lg text-titanium-300 leading-relaxed max-w-2xl">
-              Alles, was du für einen Artikel über RealSync Dynamics brauchst: Boilerplate, Founder-Quotes,
+              Alles, was du für einen Artikel über {COMPANY.companyName} brauchst: Boilerplate, Founder-Quotes,
               Logos in mehreren Formaten, Produkt-Screenshots — frei verwendbar mit Quellenangabe.
             </p>
           </div>
@@ -60,11 +66,11 @@ export function Press() {
           <Section title="Boilerplate (kurz)">
             <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
               <p className="text-sm text-titanium-200 leading-relaxed">
-                <strong className="text-titanium-50">RealSync Dynamics</strong> ist eine EU-souveräne KI-Compliance-Plattform
-                für DACH-Mittelstand und Behörden. Sitz: Frankfurt am Main. Hosting: ausschließlich EU.
-                Produkt: AVV-Generator, VVT-Wizard, DSFA-Wizard, AI-Act-Klassifikator, Cookie-Consent-SDK,
-                72h-Meldepflicht-Timer, Bußgeld-Rechner — auf einer Plattform ab 79 €/Monat (Starter), Free Audit kostenlos.
-                Made in Germany. DSGVO-by-Design. AI Act-ready.
+                <strong className="text-titanium-50">{COMPANY.companyName}</strong> ist eine KI-Compliance-Plattform.
+                Sitz: {COMPANY.headquartersAddress.city} (Thüringen). Rechtsform: {COMPANY.legalForm}.
+                Listenpreis Starter: {starterPrice}.
+                Als live geführt (Registry-Stand {IMPLEMENTATION_MEASURED_AT}): {liveProductNames}.
+                Made in Germany.
               </p>
             </div>
           </Section>
@@ -72,17 +78,13 @@ export function Press() {
           <Section title="Boilerplate (lang)">
             <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none space-y-3 text-sm text-titanium-200 leading-relaxed">
               <p>
-                <strong className="text-titanium-50">RealSync Dynamics</strong> wurde 2026 in Hessen gegründet, um
-                deutsche Mittelständler bei der Umsetzung der DSGVO, des EU AI Acts und branchenspezifischer
-                Anforderungen (BAIT/MaRisk in Banken, § 203 StGB in Kanzleien, BFSG/BITV in Behörden)
-                zu unterstützen — ohne 6-Monats-Implementierung und ohne 50.000 €/Jahr-Enterprise-Verträge.
+                <strong className="text-titanium-50">{COMPANY.companyName}</strong> wurde 2026 in Thüringen gegründet.
+                Sitz ist {COMPANY.headquartersAddress.city}. Rechtsform: {COMPANY.legalForm}.
               </p>
               <p>
-                Die Plattform kombiniert acht kostenfreie Self-Service-Tools (AVV, VVT, DSFA, TOM,
-                AI-Act-Klassifikator, Datenschutz-Generator, Meldepflicht-Timer, Bußgeld-Rechner) mit einem
-                kostenpflichtigen Tarifen ab Starter (Cookie-Consent-SDK, Audit-Trail, Multi-Tenant-Management).
-                Hosting erfolgt vollständig in der EU (Frankfurt). KI-Workloads laufen wahlweise auf europäischen
-                Anbietern oder lokal via Ollama (Llama / Mistral) — keine US-Cloud-Default-Pfade.
+                Listenpreis Starter: {starterPrice}.
+                Als live geführt (Registry-Stand {IMPLEMENTATION_MEASURED_AT}): {liveProductNames}.
+                Module, die in der Registry Preview oder Coming Soon sind, stehen hier nicht als Produktumfang.
               </p>
               <p>
                 Mission: <em>EU-Datensouveränität als Default, nicht als Premium-Feature.</em> Ziel bis Ende 2027 ist es,
@@ -187,7 +189,7 @@ export function Press() {
 
       <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
+          <div>© 2026 {COMPANY.companyName} · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
             <Link to="/legal/avv" className="hover:text-titanium-200">AVV</Link>

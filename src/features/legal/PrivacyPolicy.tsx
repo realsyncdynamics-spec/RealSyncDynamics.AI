@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, AlertTriangle } from 'lucide-react';
+import { COMPANY } from '../../config/company';
 
 /**
  * Datenschutzerklärung — Mustertext.
@@ -45,7 +46,7 @@ export function PrivacyPolicy() {
 
         <Section title="1. Verantwortlicher (Art. 4 Nr. 7 DSGVO)">
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            <strong className="text-titanium-50">{COMPANY.companyName}</strong><br />
             Schwarzburger Str. 31<br />
             98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
@@ -120,7 +121,7 @@ export function PrivacyPolicy() {
 
         <Section title="6a. KI-Systeme & Transparenz (Art. 50 EU AI Act)">
           <p id="ki-systeme">
-            Innerhalb der Plattform RealSyncDynamics.AI kommen Systeme der
+            Innerhalb der Plattform {COMPANY.companyName} kommen Systeme der
             künstlichen Intelligenz (KI) zum Einsatz, unter anderem bei der
             automatisierten Generierung von Compliance-Berichten, Audit-Protokollen
             und Risikoanalysen. Wenn Du mit einem KI-System interagierst

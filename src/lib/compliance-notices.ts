@@ -14,7 +14,7 @@ import { COMPANY, getCompanyDisplayName, getCompanyAddress } from '../config/com
 // ─── DSGVO Hinweise ─────────────────────────────────────────────────────────
 
 export const DSGVO_COMPLIANCE_NOTICE = `
-RealSync Dynamics / RealSyncDynamics.AI ist eine Compliance-Support-Plattform für technische und
+${COMPANY.companyName} ist eine Compliance-Support-Plattform für technische und
 organisatorische Maßnahmen. Die Plattform liefert KEINE Rechtsberatung.
 
 Alle Audit-Ergebnisse, Risikobewertungen und Empfehlungen dienen der

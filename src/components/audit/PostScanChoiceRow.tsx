@@ -1,7 +1,7 @@
 /**
  * Post-scan CHOICE row — four honest next steps after a public /audit result.
- * Primary next step: set up the governance workspace (/app/activation via
- * /welcome, free account per E-F6 — no trial promise here).
+ * Primary next step: create a SiteOS frontend preview using the scan URL.
+ * The existing customer backend is not migrated or changed by the scan.
  *
  * Not a product mega-menu. Account only when the visitor wants to save, share,
  * or continuously monitor. Badges match src/product/implementation-status.ts.
@@ -14,9 +14,11 @@ import {
   ArrowRight,
   ClipboardList,
   FileDown,
+  Globe2,
   Scale,
   Wrench,
 } from 'lucide-react';
+import { websiteHandoffHref } from '../../features/siteos/scanHandoff';
 
 export type PostScanChoiceBadge = 'live' | 'preview' | 'coming-soon';
 
@@ -54,7 +56,6 @@ export function buildPostScanChoices(input: {
   }>;
 }): PostScanChoice[] {
   const { auditId, domain, score, severity, hasFindings, findings = [] } = input;
-  const monitorNext = encodeURIComponent('/app/monitoring');
   const activationNext = encodeURIComponent('/app/activation');
   const evidenceNext = encodeURIComponent('/app/evidence');
 
@@ -73,23 +74,23 @@ export function buildPostScanChoices(input: {
 
   return [
     {
-      id: 'activation',
-      title: 'Governance-Workspace einrichten',
+      id: 'website-redesign',
+      title: 'Neues Frontend als Vorschau erstellen',
       description:
-        'KI-Use-Cases und EU-AI-Act-Pflichten erfassen — Guided Activation mit kostenlosem Konto, der Scan wird übernommen.',
-      to: `/welcome?next=${activationNext}&source=post_scan_activation&audit_id=${encodeURIComponent(auditId)}`,
-      badge: 'live',
-      icon: Scale,
+        'Scan-Domain übernehmen, modernes Design vorbereiten. Das vorhandene Backend bleibt unverändert; Schnittstellen müssen vor Livegang geprüft werden.',
+      to: websiteHandoffHref(domain, auditId),
+      badge: 'preview',
+      icon: Globe2,
       primary: true,
     },
     {
-      id: 'monitor',
-      title: 'Diese Domain überwachen',
+      id: 'activation',
+      title: 'Direkt zum Governance-Workspace',
       description:
-        'Kontinuierliche Kontrolle — Drift und neue Risiken nach dem Snapshot.',
-      to: `/welcome?next=${monitorNext}&source=post_scan_monitor&audit_id=${encodeURIComponent(auditId)}&domain=${encodeURIComponent(domain)}`,
-      badge: 'coming-soon',
-      icon: Activity,
+        'Ohne Website-Neubau fortfahren: KI-Use-Cases, Risiken und Evidence im bestehenden Governance-Workspace verwalten.',
+      to: `/welcome?next=${activationNext}&source=post_scan_activation&audit_id=${encodeURIComponent(auditId)}`,
+      badge: 'live',
+      icon: Scale,
     },
     {
       id: 'fix-plan',
@@ -168,15 +169,15 @@ export function PostScanChoiceRow({
                     : 'mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#e4cfa2] transition hover:text-[#f2eee6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e4cfa2]/50'
                 }
               >
-                {choice.primary ? 'Workspace einrichten' : 'Weiter'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                {choice.primary ? 'Frontend-Vorschau starten' : 'Weiter'} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </li>
           );
         })}
       </ul>
       <p className="border-t border-titanium-900 px-4 py-2 font-mono text-[9px] text-titanium-600">
-        Konto nur zum Speichern, Teilen oder für Dauerüberwachung — der erste Scan-Ergebnisbericht
-        bleibt ohne Login sichtbar.
+        Das Scan-Ergebnis bleibt ohne Login sichtbar. Für den SiteOS-Entwurf und die Governance-Einrichtung
+        ist eine Anmeldung erforderlich. Ein Frontend-Entwurf verändert das bestehende Backend nicht.
       </p>
     </section>
   );

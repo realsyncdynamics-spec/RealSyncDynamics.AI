@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { governanceHandoffHref } from '../../features/siteos/scanHandoff';
 import { ArrowRight, AudioLines, Bot, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { SEOHead } from '../../components/SEOHead';
 import { CapabilityAvailabilityNotice } from '../../components/landing/CapabilityAvailabilityNotice';
@@ -39,6 +40,9 @@ const STEPS = [
 ] as const;
 
 export function PhonebotStartPage() {
+  const [searchParams] = useSearchParams();
+  const fromWebsiteFlow = searchParams.get('source') === 'website_transformation';
+  const auditId = searchParams.get('audit_id');
   const implementation = getImplementation('voice-telephony');
   const statusLabel = implementation ? STATUS_LABEL[implementation.status] : 'IN VORBEREITUNG';
   const anyCheckout = VOICE_STANDALONE_OFFERS.some((offer) => canOfferVoiceCheckout(offer));
@@ -88,6 +92,17 @@ export function PhonebotStartPage() {
                 Verfügbarkeit vormerken
               </Link>
             </div>
+            {fromWebsiteFlow && (
+              <div className="mt-5 rounded-lg border border-teal-200 bg-teal-50 px-5 py-4">
+                <p className="text-sm text-slate-700">
+                  Voice ist optional. Nach der Konfiguration oder auch ohne Voice können Sie
+                  unmittelbar zum Governance-Workspace wechseln. Es wird kein Sprachkanal automatisch aktiviert.
+                </p>
+                <Link to={governanceHandoffHref(auditId)} className="mt-3 inline-flex items-center gap-2 font-semibold text-teal-900 hover:underline">
+                  Weiter zur Governance-Aktivierung <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </div>
+            )}
             <p className="mt-4 max-w-3xl text-sm text-slate-500" role="note">
               Produktstatus: {statusLabel}. Der Konfigurator dient derzeit der Vorbereitung.
               {anyCheckout

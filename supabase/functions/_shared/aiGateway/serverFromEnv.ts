@@ -63,6 +63,8 @@ const OLLAMA_EMBED_MODEL = Deno.env.get('OLLAMA_EMBED_MODEL') ?? 'nomic-embed-te
 export async function createServerGatewayFromEnv(opts: {
   allowCloudFallback: boolean;
   requireLmStudio?: boolean;
+  /** MP-0: Adapter-IDs, auf die bei Transportfehlern gewechselt werden DARF. Default: keiner. */
+  allowedFallbackIds?: readonly string[];
 }): Promise<GatewayBuild> {
   const requireLocal = opts.requireLmStudio ?? true;
   const localProvider = resolveLocalProvider();
@@ -133,6 +135,7 @@ export async function createServerGatewayFromEnv(opts: {
             embeddingModel: OPENAI_EMBEDDING_MODEL,
           }
         : undefined,
+      allowedFallbackIds: opts.allowedFallbackIds ?? [],
     }),
   };
 }

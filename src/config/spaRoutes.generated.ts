@@ -186,6 +186,7 @@ export const SPA_ROUTE_PATTERNS: readonly string[] = [
   "/app/siteos/claim",
   "/app/siteos/modernize",
   "/app/siteos/modernize/:projectId",
+  "/app/start",
   "/app/team",
   "/app/terminal",
   "/app/vendor-exposure",

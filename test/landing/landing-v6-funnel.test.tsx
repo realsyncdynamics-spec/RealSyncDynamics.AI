@@ -116,9 +116,9 @@ it('keeps one filled CTA in the hero and ties the plan row to it with its own so
     const href = a.getAttribute('href') ?? '';
     expect(new URLSearchParams(href.split('?')[1]).get('source')).toBe('landing-v6-hero');
   }
-  // Enterprise steht in der Preiszeile; fail-closed → /contact-sales bis Price-ID verdrahtet.
+  // Enterprise steht in der Preiszeile; seit 21.11.2026 vorläufig auf Anfrage → /contact-sales.
   const enterprise = screen.getByTestId('hero-secondary-cta');
-  expect(enterprise).toHaveAttribute('href', '/checkout/enterprise?source=landing-v6-hero');
+  expect(enterprise).toHaveAttribute('href', '/contact-sales?plan=enterprise&source=landing-v6-hero');
   expect(enterprise).toHaveTextContent('1.498 € / Monat');
   expect(plans.getByRole('link', { name: 'Leistungen vergleichen' })).toHaveAttribute('href', '#preise');
 });

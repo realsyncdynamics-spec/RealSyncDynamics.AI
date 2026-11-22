@@ -86,7 +86,6 @@ const ContinuousCompliance = lazy(() => import('./pages/seo/ContinuousCompliance
 const AiActReadiness = lazy(() => import('./pages/seo/AiActReadiness').then((m) => ({ default: m.AiActReadiness })));
 const MatomoDsgvoKonfiguration = lazy(() => import('./pages/seo/MatomoDsgvoKonfiguration').then((m) => ({ default: m.MatomoDsgvoKonfiguration })));
 const CookieConsentSdk = lazy(() => import('./pages/CookieConsentSdk').then((m) => ({ default: m.CookieConsentSdk })));
-const AuditPro = lazy(() => import('./pages/AuditPro').then((m) => ({ default: m.AuditPro })));
 const DsgvoToolVergleich = lazy(() => import('./pages/DsgvoToolVergleich').then((m) => ({ default: m.DsgvoToolVergleich })));
 const ContactSales = lazy(() => import('./pages/ContactSales').then((m) => ({ default: m.ContactSales })));
 const FrontendBuilderLanding = lazy(() => import('./pages/frontend-builder/FrontendBuilderLanding').then((m) => ({ default: m.FrontendBuilderLanding })));
@@ -678,7 +677,10 @@ function RoutesWithTracking() {
       <Route path="/ai-act-readiness" element={<AiActReadiness />} />
       <Route path="/resources/matomo-dsgvo-konfiguration" element={<MatomoDsgvoKonfiguration />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
-      <Route path="/audit-pro" element={<AuditPro />} />
+      {/* 21.11.2026: Audit Pro (499-€-Einmalkauf) nicht kaufbar — der Button führte ins
+          Growth-Abo, Preis und Geld-zurück-Garantie standen in keiner Quelle. Serverseitig
+          301 via public/_redirects; die Seite kommt erst mit echtem Einmal-Checkout zurück. */}
+      <Route path="/audit-pro" element={<Navigate to="/audit" replace />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/frontend-builder" element={<FrontendBuilderLanding />} />

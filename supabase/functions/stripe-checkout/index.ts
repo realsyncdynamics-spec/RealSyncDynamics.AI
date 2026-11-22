@@ -28,7 +28,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
-import { normalizePlanKey, planByKey, PRICING_TAX_MODE } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey, PRICING_TAX_MODE, ENTERPRISE_SELF_SERVICE_PAUSED } from '../_shared/pricing.generated.ts';
 import { checkoutTaxParams, invoiceFooter } from '../_shared/checkout-tax.ts';
 import {
   isRealStripeCustomerId, isTrialEligibleForCheckout,
@@ -115,6 +115,14 @@ Deno.serve(async (req) => {
   if (plan.purchaseMode === 'inquiry') {
     return jsonError(400, 'INQUIRY_ONLY',
       `${plan.name} wird über /contact-sales abgeschlossen, nicht über Self-Service-Checkout`);
+  }
+  // Enterprise-Neukauf vorläufig nur auf Anfrage (shared/pricing.ts,
+  // ENTERPRISE_SELF_SERVICE_PAUSED, 2026-11-21) — serverseitig, damit ein
+  // selbst gebauter Request die Sperre nicht umgeht. Bestehende Abos und das
+  // Kundenportal sind nicht betroffen; diese Function legt nur neue Sessions an.
+  if (plan.id === 'enterprise' && ENTERPRISE_SELF_SERVICE_PAUSED) {
+    return jsonError(400, 'INQUIRY_ONLY',
+      `${plan.name} ist derzeit nur auf Anfrage über /contact-sales erhältlich`);
   }
   // Stillgelegte Pläne sind aus dem Verkauf, nicht aus dem Betrieb: Ihre
   // laufenden Abos rechnen unverändert weiter ab, ein *neues* entsteht nicht

@@ -34,19 +34,18 @@ const DETAIL_SLUGS = [
 // eigens geprüft statt hier ignoriert.
 // Die Plan-Keys, die einen Self-Service-Checkout erreichen. Agency ist wieder
 // dabei (Dominik-Landing 2026-09). Jahres-Keys ohne verdrahteten Stripe-Preis
-// leiten auf den Monats-Checkout um. Enterprise ist seit 24.10.2026 dabei.
+// leiten auf den Monats-Checkout um. Enterprise ist seit 21.11.2026 vorläufig
+// nicht dabei (ENTERPRISE_SELF_SERVICE_PAUSED) — Umleitung siehe unten.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
-  'enterprise',
 ];
 
 const UNWIRED_YEARLY_REDIRECTS: Array<[string, string]> = [
   ['starter_yearly', 'starter'],
   ['growth_yearly', 'growth'],
   ['agency_yearly', 'agency'],
-  ['enterprise_yearly', 'enterprise'],
 ];
 
 test.describe('Pricing Flow', () => {
@@ -179,15 +178,18 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout bleibt auf dem Checkout-Pfad', async ({ page }) => {
-      // Seit 24.10.2026 wird Enterprise per Self-Service-Checkout verkauft
-      // (`purchaseMode: 'checkout'`, ohne Testphase). Enterprise ist kein
-      // Beta-Plan (src/config/beta.ts), braucht also kein `?purchase=1`.
-      // Die Anfrage läuft weiter über /contact-sales?intent=enterprise.
-      await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(/\/checkout\/enterprise/);
-      await expect(page).not.toHaveURL(/contact-sales/);
+    test('enterprise checkout leitet vorläufig auf contact-sales', async ({ page }) => {
+      // 21.11.2026: Enterprise-Neukauf vorläufig nur auf Anfrage
+      // (ENTERPRISE_SELF_SERVICE_PAUSED in shared/pricing.ts). `purchaseMode`
+      // bleibt 'checkout', die CheckoutPage leitet aber auf /contact-sales um —
+      // auch für den Jahres-Key. Auf die Umleitung warten statt direkt nach
+      // domcontentloaded zu prüfen, sonst gewinnt der Test das Rennen nur.
+      for (const planKey of ['enterprise', 'enterprise_yearly']) {
+        await page.goto(`${BASE_URL}/checkout/${planKey}`);
+        await page.waitForURL(/\/contact-sales/);
+        await expect(page).toHaveURL(/plan=enterprise/);
+        await expect(page).not.toHaveURL(/\/checkout\//);
+      }
     });
 
     // Partner bleibt legacy + inquiry: die Umleitung auf /contact-sales

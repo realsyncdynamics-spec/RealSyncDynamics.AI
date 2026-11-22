@@ -505,7 +505,8 @@ export const pricingPlans: PricingPlan[] = [
       label: 'Enterprise anfragen',
       href: '/contact-sales?plan=enterprise&source=pricing',
     },
-    checkoutPath: '/checkout/enterprise',
+    // 21.11.2026: vorläufig nur auf Anfrage (ENTERPRISE_SELF_SERVICE_PAUSED).
+    checkoutPath: '/contact-sales?plan=enterprise&intent=enterprise',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',

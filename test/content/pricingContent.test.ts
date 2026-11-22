@@ -91,9 +91,9 @@ describe('pricingContent', () => {
 
     // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
     // /checkout/<slug>, sondern auf /contact-sales. Partner ist nicht
-    // self-service-checkoutfähig. Agency monatlich ist wieder verkaufbar,
-    // Enterprise seit 2026-10-24 ebenfalls (Self-Service-Checkout).
-    const INQUIRY_ONLY_SLUGS = ['partner', 'partner_yearly'];
+    // self-service-checkoutfähig. Agency monatlich ist wieder verkaufbar.
+    // Enterprise ist seit 21.11.2026 vorläufig wieder nur auf Anfrage.
+    const INQUIRY_ONLY_SLUGS = ['partner', 'partner_yearly', 'enterprise'];
 
     // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
     // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
@@ -111,8 +111,6 @@ describe('pricingContent', () => {
       pricingPlans
         .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
         .filter((plan) => !(plan.slug in UNWIRED_YEARLY))
-        // Enterprise: fail-closed → /contact-sales, bis die Stripe-Price-ID verdrahtet ist.
-        .filter((plan) => plan.slug !== 'enterprise')
         .forEach((plan) => {
           expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
           expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
@@ -388,9 +386,9 @@ describe('pricingContent', () => {
 
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
-    // Enterprise ist seit 2026-10-24 per Checkout buchbar; der Betrag muss
-    // der Pricing-SSoT entsprechen.
-    it('enterprise weist den Checkout-Preis aus der SSoT aus', () => {
+    // Enterprise ist seit 21.11.2026 vorläufig nur auf Anfrage; der Festpreis
+    // bleibt veröffentlicht und muss der Pricing-SSoT entsprechen.
+    it('enterprise weist den Festpreis aus der SSoT aus', () => {
       const enterprise = getPlanBySlug('enterprise');
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
       expect(enterprise?.priceString).toBe('1.498 €');

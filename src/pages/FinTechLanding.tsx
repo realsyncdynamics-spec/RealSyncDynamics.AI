@@ -10,10 +10,10 @@ export function FinTechLanding() {
         Icon: Briefcase,
         iconGradient: 'bg-gradient-to-br from-amber-500 to-orange-700',
         badgeClass: 'border-amber-900 bg-amber-950/30 text-amber-300',
-        badgeText: 'FinTech · BAIT · MaRisk · DORA · BaFin-ready',
+        badgeText: 'FinTech · BAIT · MaRisk · DORA',
         headline: (
           <>
-            KI für FinTechs — <span className="text-security-400">BaFin-tauglich</span> in 14 Tagen
+            KI für FinTechs — <span className="text-security-400">prüfbar dokumentiert</span>
           </>
         ),
         subline: (
@@ -23,7 +23,7 @@ export function FinTechLanding() {
           </>
         ),
         cta: {
-          heading: 'BaFin-ready bis Ende 2026 — wir machen es in 14 Tagen.',
+          heading: 'Audit-Log, AVV und Human-Oversight für Ihre KI — die Nachweise an einem Ort.',
           buttons: [
             { to: '/contact-sales?source=fintech', label: CTA.enterprise, variant: 'primary' },
             { to: '/bait-marisk-compliance-guide', label: 'BAIT-Guide', variant: 'secondary' },
@@ -31,9 +31,9 @@ export function FinTechLanding() {
           ],
         },
         jsonLd: {
-          headline: 'KI für FinTechs — BAIT · MaRisk · DORA · AI Act konform',
+          headline: 'KI für FinTechs — BAIT · MaRisk · DORA · AI Act dokumentieren',
           description:
-            'Bonitätsprüfung, Fraud-Detection, AML mit KI — BaFin-tauglich mit Audit-Log, AVV und Human-Oversight.',
+            'Bonitätsprüfung, Fraud-Detection, AML mit KI — dokumentiert mit Audit-Log, AVV und Human-Oversight.',
           datePublished: '2026-05-06',
         },
       }}
@@ -52,8 +52,8 @@ export function FinTechLanding() {
           </li>
           <li className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-            <strong className="text-titanium-50">AI Act ab 8/2026</strong> — Bonitätsprüfung +
-            Kreditscoring = High-Risk → Conformity Assessment + Tech-Doku + Human Oversight.
+            <strong className="text-titanium-50">AI Act, Anhang III ab 02.12.2027</strong> — Bonitätsprüfung +
+            Kreditscoring = Hochrisiko → Konformitätsbewertung + Tech-Doku + Human Oversight.
           </li>
           <li className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />

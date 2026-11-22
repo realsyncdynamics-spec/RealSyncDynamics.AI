@@ -24,13 +24,13 @@ describe('OPTIMIZER_TIERS', () => {
 });
 
 describe('isSelfServeCheckout', () => {
-  it('starter/growth/agency und seit 2026-10-24 enterprise sind self-service', () => {
+  it('starter/growth/agency sind self-service; enterprise seit 21.11.2026 pausiert (ENTERPRISE_SELF_SERVICE_PAUSED)', () => {
     expect(isSelfServeCheckout('starter')).toBe(true);
     expect(isSelfServeCheckout('growth')).toBe(true);
     expect(isSelfServeCheckout('agency')).toBe(true);
     expect(isSelfServeCheckout('free')).toBe(false);
     expect(isSelfServeCheckout('partner')).toBe(false);
-    expect(isSelfServeCheckout('enterprise')).toBe(true);
+    expect(isSelfServeCheckout('enterprise')).toBe(false);
   });
 });
 
@@ -63,8 +63,8 @@ describe('formatTierPrice', () => {
     const bronze = OPTIMIZER_TIERS.find((t) => t.id === 'bronze')!; // → starter €79
     expect(formatTierPrice(bronze)).toBe('€79 / Monat');
   });
-  it('zeigt Enterprise (Diamant) seit 2026-10-24 als Self-Service-Preis', () => {
-    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise checkout
+  it('zeigt Enterprise (Diamant) mit Festpreis, auch während der Self-Service-Pause', () => {
+    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise, /contact-sales
     expect(formatTierPrice(diamant)).toBe('€1498 / Monat');
   });
   it('zeigt für Partner (Platin) keinen Fake-Festpreis', () => {

@@ -72,7 +72,7 @@ describe('Pricing Tiers (6-Tier Model, monthly only in Live Stripe)', () => {
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
-  it('should have enterprise tier as self-service checkout at 1.498 €', () => {
+  it('should have enterprise tier as checkout plan at 1.498 € (Self-Service seit 21.11.2026 pausiert)', () => {
     const enterprise = tierById('enterprise');
     expect(enterprise?.id).toBe('enterprise');
     expect(enterprise?.priceEur).toBe(1498);
@@ -160,7 +160,7 @@ describe('Stripe Integration', () => {
     expect(isPlanFixedPrice('starter')).toBe(true); // €79
     expect(isPlanFixedPrice('growth')).toBe(true); // €249
     expect(isPlanFixedPrice('agency')).toBe(true); // €699
-    expect(isPlanFixedPrice('enterprise')).toBe(true); // €1.498, Checkout seit 2026-10-24
+    expect(isPlanFixedPrice('enterprise')).toBe(true); // €1.498 Festpreis (Kaufweg vorläufig Anfrage)
     expect(isPlanFixedPrice('partner')).toBe(false); // inquiry / legacy
   });
 
@@ -249,13 +249,13 @@ describe('Billing Workflows', () => {
     expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
-  it('enterprise fuehrt seit 2026-10-24 in den Checkout, ohne Trial', () => {
-    // Dominik 2026-10-24: Enterprise wird zu 1.498 € / Monat direkt ueber
-    // Checkout verkauft und ist ab Tag 1 kostenpflichtig.
+  it('enterprise fuehrt seit 21.11.2026 vorläufig zu /contact-sales, ohne Trial', () => {
+    // Dominik 2026-10-24: 1.498 € / Monat, ab Tag 1 kostenpflichtig.
+    // 2026-11-21: Self-Service bis zur Live-Abnahme des Checkouts ausgesetzt
+    // (ENTERPRISE_SELF_SERVICE_PAUSED); die Live-Price bleibt verdrahtet.
     const enterprise = tierById('enterprise')!;
-    // Live-Price price_1UVxUrREjTWueUcGuSjqctMH verdrahtet (ENTERPRISE_CHECKOUT_PRICE_WIRED=true).
-    expect(enterprise.cta.href).toContain('/checkout/enterprise');
-    expect(enterprise.cta.href).not.toContain('/contact-sales');
+    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).not.toContain('/checkout/enterprise');
     expect(enterprise.plan.trialDays).toBe(0);
     expect(enterprise.priceOnRequest).toBe(false);
     expect(enterprise.cta.href).not.toContain('pilot=true');

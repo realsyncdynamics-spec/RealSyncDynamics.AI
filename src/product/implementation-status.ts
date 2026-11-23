@@ -890,4 +890,7 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   'Evidence Vault Advanced: immutable snapshots',
   // Beta: bis WP-3 die Freischaltung serverseitig absichert, nur „kostenlos testen”.
   'alle Funktionen kostenlos',
+  // Absolute Prüf- und Vollständigkeitsversprechen ohne Beleg.
+  'jeden Prüfer überzeugt',
+  'Vollständiger DSGVO-Scan',
 ] as const;

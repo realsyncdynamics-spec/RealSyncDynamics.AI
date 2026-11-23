@@ -3,12 +3,14 @@
 // email-auth findings and appends email_auth_finding / email_auth_resolved
 // governance events with a hash-chained DNS snapshot as evidence.
 //
-// Auth: Bearer == CRON_WEBSITE_RESCAN_KEY (Function secret). pg_cron sends
-// it via Vault `cron_website_rescan_key` (dispatch_cron_function, job
-// `website-rescan-daily`, 03:30 UTC). Fail-closed: empty secret → 500 (no
-// work), wrong/missing bearer → 401 "cron only". The inbound Authorization is
-// never compared to SUPABASE_SERVICE_ROLE_KEY; service_role is only used
-// internally for DB access after the check.
+// Auth: Bearer == CRON_WEBSITE_RESCAN_KEY. pg_cron sends the same value via
+// Vault `cron_website_rescan_key` (dispatch_cron_function, job
+// `website-rescan-daily`, 03:30 UTC). Resolution: function secret, else vault
+// (`resolveCronKey`). Fail-closed: both empty → 500 CRON_KEY_MISSING (no work,
+// structured log, no key material), wrong/missing bearer → 401 "cron only".
+// The inbound Authorization is never compared to SUPABASE_SERVICE_ROLE_KEY;
+// service_role is only used for DB access after the check and for the vault
+// fallback.
 //
 //   SELECT cron.schedule('website-rescan-daily', '30 3 * * *',
 //     $$ SELECT public.dispatch_cron_function('email-auth-rescan',
@@ -18,15 +20,20 @@
 // repo.ts, tested in test/edge/email-auth-rescan.test.ts.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { resolveCronKey } from '../_shared/cronKey.ts';
 import { jsonError } from '../_shared/gateway.ts';
 import { loadEntitlementsForTenant, hasFeature } from '../_shared/entitlements.ts';
 import { erlaubteKadenz } from '../_shared/monitoring-cadence.ts';
 import { handleEmailAuthRescan } from './handler.ts';
 import { createSupabaseRepo } from './repo.ts';
 import {
+  CRON_ENV,
+  CRON_VAULT,
   DNS_TIMEOUT_MS,
   checkCronAuth,
   classifyDnsError,
+  cronKeyMissingEvent,
+  cronKeyMissingMessage,
   joinTxt,
   type DnsResolver,
   type TenantMode,
@@ -73,12 +80,18 @@ const dns: DnsResolver = {
 
 Deno.serve(async (req) => {
   try {
-    const CRON_KEY = Deno.env.get('CRON_WEBSITE_RESCAN_KEY') ?? '';
-    // Cheap pre-check so that no service_role client is even constructed for
-    // a request without the cron bearer. The handler repeats the same
-    // fail-closed check (500 without secret, 401 "cron only" otherwise).
+    // OPTIONS stays free of a vault round-trip. A missing function secret is
+    // not an outage while the vault entry pg_cron already sends still resolves.
+    // The handler repeats the same fail-closed check.
+    const CRON_KEY = req.method === 'OPTIONS' ? '' : await resolveCronKey(CRON_ENV, CRON_VAULT);
     const pre = checkCronAuth(CRON_KEY, req.headers.get('Authorization'));
-    if (!pre.ok && req.method !== 'OPTIONS') return jsonError(pre.status, pre.code, pre.message);
+    if (!pre.ok && req.method !== 'OPTIONS') {
+      if (pre.code === 'CRON_KEY_MISSING') {
+        console.error(JSON.stringify(cronKeyMissingEvent()));
+        return jsonError(pre.status, pre.code, cronKeyMissingMessage());
+      }
+      return jsonError(pre.status, pre.code, pre.message);
+    }
 
     const db = createClient(
       Deno.env.get('SUPABASE_URL')!,

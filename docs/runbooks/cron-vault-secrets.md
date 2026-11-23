@@ -111,9 +111,39 @@ Täglich 03:30 UTC SPF/DMARC/DKIM-Recheck mit Auto-Resolve. Reihenfolge nach
 dem Merge: Vault-Eintrag + Function Secret (derselbe Zufallswert, s. o.) →
 Migration `20260925210000_email_auth_rescan.sql` → Deploy-Workflow.
 Fail-closed, nichts wird geschrieben: Vault fehlt → Lauf `failed` ohne
-HTTP-Request; Secret fehlt → `500 CRON_KEY_MISSING`; Werte verschieden →
-`401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer und Body
-`{"trigger":"manual","dry_run":true}`.
+HTTP-Request; Function Secret und Vault beide leer → `500 CRON_KEY_MISSING`;
+nur das Function Secret leer → Vault-Fallback (`resolveCronKey`); Werte
+verschieden → `401 cron only`. Probelauf ohne Writes: `POST` mit Cron-Bearer
+und Body `{"trigger":"manual","dry_run":true}`.
+
+### Befund 2026-11-20: HTTP 500 bei `audit-monitor-cron` und `email-auth-rescan`
+
+Gemessen im Workflow [Cron Health Guard, Lauf 44690468144](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/44690468144)
+(06:48 UTC, 07:48 Berlin, Job `cron-health`, Schritt `Check cron health`, Exit 1).
+Dieselbe Klasse am Vortag: [Lauf 44474937966](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/44474937966).
+
+Auszug:
+
+```
+Cron-Jobs: 27 registriert — 25 zuletzt gruen, 0 zuletzt rot, 0 nie gelaufen, 2 inaktiv.
+✅ Kein aktiver Job ist im letzten Lauf gescheitert.
+❌ Im 6-Stunden-Fenster: 2 Antworten ohne 2xx (76 erfolgreich, 78 Dispatch-Laeufe):
+  1× HTTP 500   2026-11-20 04:00:00.414404+00
+  1× HTTP 500   2026-11-20 03:30:00.449006+00
+  2× Function Secret fehlt (CRON_*_KEY nicht gesetzt)
+```
+
+Einordnung: Klasse A ist grün. `dispatch_cron_function` bricht ab, bevor ein HTTP-Request entsteht, wenn das Vault-Secret fehlt. Es gab HTTP-Antworten, also existieren `cron_audit_monitor_key` (Job `audit-monitor-daily`, `0 4 * * *` → `audit-monitor-cron`) und `cron_website_rescan_key` (Job `website-rescan-daily`, `30 3 * * *` → `email-auth-rescan`). Die Functions lasen nur `Deno.env` und antworteten `500 CRON_KEY_MISSING`, ohne den Vault-Eintrag zu verwenden, den pg_cron schon geschickt hat. Der Guard hat die konkreten Namen `CRON_AUDIT_MONITOR_KEY` und `CRON_WEBSITE_RESCAN_KEY` auf `CRON_*_KEY` zusammengezogen.
+
+Seit diesem Stand lösen beide Functions den Key über `resolveCronKey` auf (Function Secret, sonst Vault) und loggen bei weiterhin leerem Key strukturiert `CRON_KEY_MISSING` mit Env- und Vault-Namen, ohne den Wert. Der Guard nennt Function und Secret getrennt.
+
+**Manueller Schritt für Dominik — nur wenn der nächste Lauf nach dem Deploy weiter `CRON_KEY_MISSING` für genau diese Functions meldet.** Nicht ausführen, solange der Vault-Eintrag existiert und der Deploy den Fallback enthält. Keinen bestehenden Vault-Wert überschreiben, keinen Wert in Issue, PR oder Chat kopieren.
+
+1. Supabase Dashboard des Produktionsprojekts → Edge Functions → Secrets.
+2. `CRON_AUDIT_MONITOR_KEY` auf denselben Wert setzen wie Vault `cron_audit_monitor_key` (SQL-Editor, nur lesen: `select name from vault.decrypted_secrets where name in ('cron_audit_monitor_key','cron_website_rescan_key');` — die Spalte `decrypted_secret` nicht in ein Ticket kopieren).
+3. `CRON_WEBSITE_RESCAN_KEY` ebenso gegen `cron_website_rescan_key`.
+4. Fehlt ein Name in der Abfrage, nur diesen anlegen: `select vault.create_secret('<neuer-zufallswert>', '<vault-name>');` und denselben Wert als Function Secret setzen.
+5. Nicht den `service_role`-JWT als Bearer verwenden. Nächster Nachweis: Cron Health Guard, Klasse C ohne HTTP 500 für diese beiden Functions.
 
 ### `audit-monitor-daily` → `audit-monitor-cron` (neu, 2026-10-09)
 
@@ -122,9 +152,10 @@ Täglich 04:00 UTC Re-Scan der `monitored_domains` (Kadenz je Plan: täglich mit
 Dauerbetrieb). Reihenfolge nach dem Merge: Vault-Eintrag `cron_audit_monitor_key`
 + Function Secret `CRON_AUDIT_MONITOR_KEY` (derselbe Zufallswert) → Migration
 `20261009230000_audit_monitor_daily_cron.sql` → Deploy der Function.
-Fail-closed: Vault fehlt → Lauf `failed` ohne HTTP-Request; Secret fehlt →
-`500 CRON_KEY_MISSING`; Werte verschieden → `401 cron only`; Scan- oder
-Evidence-Fehler → Antwort `ok:false` (HTTP 500), kein Alert. Drift-Mails nutzen
+Fail-closed: Vault fehlt → Lauf `failed` ohne HTTP-Request; Function Secret
+und Vault beide leer → `500 CRON_KEY_MISSING`; nur das Function Secret leer →
+Vault-Fallback (`resolveCronKey`); Werte verschieden → `401 cron only`; Scan-
+oder Evidence-Fehler → Antwort `ok:false` (HTTP 500), kein Alert. Drift-Mails nutzen
 das vorhandene `RESEND_API_KEY`; fehlt es, steht `alert: not_configured` im Ergebnis.
 
 ### Sechs weitere Jobs weg von `service_role_key` (2026-11-01)

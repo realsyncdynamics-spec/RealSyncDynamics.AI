@@ -68,6 +68,8 @@ describe('Startseite v3 — `/`', () => {
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
     expect(within(nav).getByRole('link', { name: 'Produkte' })).toHaveAttribute('href', '#katalog');
     expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
+    // „KI fragen“ öffnet den öffentlichen Assistenten; Rückfall ist der Website-Check.
+    expect(within(nav).getByRole('link', { name: 'KI fragen' })).toHaveAttribute('href', '/audit?source=ki-fragen');
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/phonebot/start"');
     expect(app).toContain('<Route path="/contact-sales"');
@@ -116,7 +118,15 @@ describe('Startseite v3 — `/`', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const stage = screen.getByTestId('v3-sync-stage');
     expect(stage).toHaveAttribute('data-scene', 'still');
-    expect(within(stage).getByRole('img', { name: /SYNC, das Maskottchen/ })).toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+    expect(within(stage).getByRole('img', { name: /SYNC, der KI-Assistent/ })).toHaveAttribute('src', '/landing-v3/sync-still.jpg');
+  });
+
+  it('Hero stellt SYNC als KI-Assistenten vor, ohne Hilfe-Versprechen', () => {
+    render(<MemoryRouter><LandingV3 /></MemoryRouter>);
+    const intro = screen.getByTestId('v3-sync-intro');
+    expect(intro).toHaveTextContent('Hallo, ich bin SYNC – der KI-Assistent von RealSync Dynamics & AI.');
+    expect(intro.textContent ?? '').not.toMatch(/helfe|begleite|unterstütze|berate/i);
+    expect(within(screen.getByTestId('v3-sync-stage')).getByText('SYNC · KI-Assistent')).toBeInTheDocument();
   });
 
   it('Hauptbutton im Hero blendet den Assistent-Button aus (data-hero-cta)', () => {

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
+import { AskAiPill } from './AskAiPill';
 
 // Kundenorientierte Self-Service-Navigation (max. 6 Punkte). Keine
 // technischen Begriffe in den Labels — Runtime / Evidence / Agent Registry
@@ -60,6 +61,7 @@ export function Navbar() {
                 </Link>
               );
             })}
+            <AskAiPill className="inline-flex items-center gap-1.5 border border-cyan-400/60 text-cyan-300 hover:bg-cyan-400/10 hover:text-cyan-200 px-3 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors" />
             <Link
               to="/audit?source=nav-activate"
               className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
@@ -92,6 +94,10 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
+            <AskAiPill
+              onActivate={() => setIsOpen(false)}
+              className="flex items-center gap-2 px-3 py-3 mt-2 text-base font-semibold border border-cyan-400/60 text-cyan-300 hover:bg-obsidian-900 rounded-none"
+            />
             <Link
               to="/audit?source=nav-activate-mobile"
               onClick={() => setIsOpen(false)}

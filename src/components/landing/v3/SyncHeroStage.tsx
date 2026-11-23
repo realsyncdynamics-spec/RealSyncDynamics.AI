@@ -66,7 +66,7 @@ export function SyncHeroStage({ caption, statusLabel, waveSignal = 0 }: {
       <img
         className="lv3-stage-still"
         src={SYNC_STILL_SRC}
-        alt="SYNC, das Maskottchen von RealSync: petrolfarbener Roboter mit Würfelkopf und lächelndem Bildschirmgesicht"
+        alt="SYNC, der KI-Assistent von RealSync Dynamics &amp; AI: petrolfarbener Roboter mit Würfelkopf und lächelndem Bildschirmgesicht"
         width={1116}
         height={1100}
         decoding="async"
@@ -76,7 +76,7 @@ export function SyncHeroStage({ caption, statusLabel, waveSignal = 0 }: {
         ref={canvasRef}
         className="lv3-stage-canvas"
         role="img"
-        aria-label="SYNC als 3D-Figur. Ziehen dreht die Figur."
+        aria-label="SYNC, der KI-Assistent von RealSync Dynamics &amp; AI, als 3D-Figur. Ziehen dreht die Figur."
         hidden={mode === 'still'}
       />
       <span className="lv3-stage-tag">{statusLabel}</span>

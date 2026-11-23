@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SyncHeroStage } from '../components/landing/v3/SyncHeroStage';
+import { AskAiPill } from '../components/AskAiPill';
 import {
   BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, SOURCE, STATUS_TEXT, TAX_NOTE,
   faqs, planCards, pricingIntro, productNote, productStatus,
@@ -26,6 +27,8 @@ import '../styles/landing-v3.css';
  * Hero-Bühne seit 19.11.2026: SYNC, das 3D-Maskottchen (SyncHeroStage, Weg 1).
  * Ein Klick im Produktkatalog lässt SYNC winken. `data-hero-cta` am Hauptbutton
  * blendet den schwebenden Assistent-Button aus, solange der Hero sichtbar ist.
+ * Seit 22.11.2026 stellt der Hero SYNC namentlich als KI-Assistenten vor
+ * (Kennzeichnung als KI). Kein Hilfe-Versprechen, solange kein Chat angebunden ist.
  */
 
 const AUTO_ADVANCE_MS = 6000;
@@ -89,11 +92,16 @@ export function LandingV3() {
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
+          <AskAiPill className="lv3-btn lv3-ask" />
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>
 
         <div className="lv3-hero-grid">
           <div className="lv3-hero-copy">
+            {/* Vorstellung ohne Hilfe-Versprechen (Owner 22.11.2026): SYNC hat hier keinen Chat. */}
+            <p className="lv3-eyebrow lv3-sync-intro" data-testid="v3-sync-intro">
+              Hallo, ich bin SYNC – der KI-Assistent von RealSync Dynamics &amp; AI.
+            </p>
             <h1 className="lv3-h1" data-testid="v3-hero-heading">
               <span>Ihre Ideen.</span>
               <span className="lv3-h1-2">In Bewegung.</span>
@@ -106,7 +114,7 @@ export function LandingV3() {
               <a className="lv3-btn lv3-btn--lg" href="#katalog">Produkte entdecken</a>
             </div>
           </div>
-          <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · RealSync" waveSignal={waveSignal} />
+          <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · KI-Assistent" waveSignal={waveSignal} />
         </div>
 
         <div

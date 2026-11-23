@@ -9,8 +9,9 @@ import { edgeFunctionUrl, fnFetchInit, shouldUseFnProxy } from '../lib/fn-proxy'
 import { BETA } from '../config/beta';
 
 const ENTERPRISE = planById('enterprise');
-/** Enterprise ist seit 24.10.2026 per Checkout buchbar, nicht Teil der Beta. */
-const ENTERPRISE_CHECKOUT_PATH = '/checkout/enterprise';
+// Enterprise ist nicht Teil der Beta und seit 21.11.2026 vorläufig wieder nur
+// auf Anfrage (ENTERPRISE_SELF_SERVICE_PAUSED) — kein Link in den Checkout, der
+// würde auf diese Seite zurückleiten.
 
 interface FormState {
   name: string;
@@ -273,7 +274,7 @@ export function ContactSales() {
   const intro = isWebdesign
     ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
     : showEnterpriseCopy
-    ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase und direkt buchbar. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter, Growth und Agency sind in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
+    ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase, vorerst auf Anfrage. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter, Growth und Agency sind in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
   const submitLabel = showEnterpriseCopy ? 'Enterprise anfragen' : 'Anfrage senden';
@@ -319,16 +320,6 @@ export function ContactSales() {
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
           {intro}
         </p>
-        {showEnterpriseCopy && (
-          <Link
-            to={ENTERPRISE_CHECKOUT_PATH}
-            data-testid="contact-sales-enterprise-checkout"
-            className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-security-400 hover:underline"
-          >
-            → Enterprise direkt buchen
-          </Link>
-        )}
-
         {error && (
           <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" /><span>{error}</span>

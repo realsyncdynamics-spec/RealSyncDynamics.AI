@@ -49,7 +49,7 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     status: 'live',
     group: 'surface',
     description:
-      'Startseite v3 auf `/` (seit 17.11.2026, Claude Design): H1 „Ihre Ideen. In Bewegung.“, Lead „Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.“, Primär-CTA „Kostenlosen Check starten“ (#start → /audit?domain=…&source=landing-v3), Sekundär-CTA „AI Receptionist ansehen“ (#receptionist); erster Abschnitt nach dem Hero ist der AI Receptionist (K4, Owner-Entscheidung 18.11.2026): „Ihr KI-Mitarbeiter am Empfang.“, Status „In Vorbereitung“ (Telefonie siehe voice-telephony), nur geplanter Ablauf (Anfrage annehmen → Kontakt erfassen → Terminwunsch aufnehmen → an einen Menschen übergeben), CTAs „Auf die Warteliste“ (/warteliste?interest=bots&source=landing-v3-receptionist) und „Chat-Assistent ausprobieren“ (/chatbot/start, Status aus channel-bots); danach Produktkatalog App Builder, KI-Bots & Voice Agenten, Claude Code Optimizer, Governance OS mit Status nur aus dieser Registry (ohne Eintrag kein Badge); Abschnitt Kontrollschicht (Scan → Report → Build → Automate → Govern), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`), Website-Check, FAQ. 3D-Bühne (three.js) nur lazy auf geeigneten Geräten, sonst Standbild. Landing v6 („Das Governance OS für DSGVO & EU AI Act.“) bleibt als Rückfall unter /design/landing-v6; /design/startseite-v3 leitet auf `/`; v7/v5/v4/v2 unter /design/landing-v7, /design/landing-v5, /design/landing-v4, /design/landing-v2.',
+      'Startseite v3 auf `/` (seit 17.11.2026, Claude Design): H1 „Ihre Ideen. In Bewegung.“, Lead „Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.“, Primär-CTA „Kostenlosen Check starten“ (#start → /audit?domain=…&source=landing-v3), Sekundär-CTA „AI Receptionist ansehen“ (#receptionist); erster Abschnitt nach dem Hero ist der AI Receptionist (K4, Owner-Entscheidung 18.11.2026): „Ihr KI-Mitarbeiter am Empfang.“, Status „In Vorbereitung“ (Telefonie siehe voice-telephony), nur geplanter Ablauf (Anfrage annehmen → Kontakt erfassen → Terminwunsch aufnehmen → an einen Menschen übergeben), CTAs „Auf die Warteliste“ (/warteliste?interest=bots&source=landing-v3-receptionist) und „Chat-Assistent ausprobieren“ (/chatbot/start, Status aus channel-bots); Produktkatalog nach Owner-Entscheidung 21.11.2026: KI-Bots & Voice-Agenten (/ki-bots), App Builder (/app-builder; Landingpage-Builder als Website-Modus unter /landingpage-builder), Governance OS (/governance-os), Claude Code Optimizer (/claude-code-optimizer), Status nur aus dieser Registry (ohne Eintrag kein Badge); Abschnitt Kontrollschicht (Scan → Report → Build → Automate → Govern), Preise aus der SSoT (Beta-Angebot über `config/beta.ts`), Website-Check, FAQ. 3D-Bühne (three.js) nur lazy auf geeigneten Geräten, sonst Standbild. Landing v6 („Das Governance OS für DSGVO & EU AI Act.“) bleibt als Rückfall unter /design/landing-v6; /design/startseite-v3 leitet auf `/`; v7/v5/v4/v2 unter /design/landing-v7, /design/landing-v5, /design/landing-v4, /design/landing-v2.',
     route: '/',
     evidence: [
       'src/pages/LandingV3.tsx',
@@ -423,7 +423,8 @@ export const IMPLEMENTATION_ITEMS: readonly ImplementationItem[] = [
     name: 'Enterprise-Anfrage',
     status: 'live',
     group: 'billing',
-    description: 'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout.',
+    description:
+      'Enterprise per Anfrage (/contact-sales) — kein Self-Service-Checkout. Seit 21.11.2026 Self-Service pausiert (`ENTERPRISE_SELF_SERVICE_PAUSED` in shared/pricing.ts; Festpreis 1.498 € bleibt sichtbar), bis ein Live-Neukauf mit Webhook, Provisionierung und Entitlement nachgewiesen ist (siehe `stripe-checkout-e2e`). `stripe-checkout` weist neue Enterprise-Sessions nach dem nächsten Edge-Deploy serverseitig mit INQUIRY_ONLY ab.',
     route: '/contact-sales',
     evidence: [
       'src/components/landing/v3/landingV3Data.ts#planCards',
@@ -889,4 +890,7 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   'Evidence Vault Advanced: immutable snapshots',
   // Beta: bis WP-3 die Freischaltung serverseitig absichert, nur „kostenlos testen”.
   'alle Funktionen kostenlos',
+  // Absolute Prüf- und Vollständigkeitsversprechen ohne Beleg.
+  'jeden Prüfer überzeugt',
+  'Vollständiger DSGVO-Scan',
 ] as const;

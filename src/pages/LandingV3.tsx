@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HeroStage } from '../components/landing/v3/HeroStage';
+import { SyncHeroStage } from '../components/landing/v3/SyncHeroStage';
+import { AskAiPill } from '../components/AskAiPill';
 import {
-  BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, RECEPTIONIST, SOURCE, STATUS_TEXT, TAX_NOTE,
-  faqs, planCards, pricingIntro, productNote, productStatus, registryStatus,
+  BETA_OFFER, COMPANY_LINE, LEGAL_LINKS, PRODUCTS, SOURCE, STATUS_TEXT, TAX_NOTE,
+  faqs, planCards, pricingIntro, productNote, productStatus,
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
 import '../styles/landing-v3.css';
@@ -22,6 +23,12 @@ import '../styles/landing-v3.css';
  *   - fest eingetragene Preise und Checkout-Links
  * Status, Preise, Beta, Steuerhinweis und Firma kommen aus den Quellen in
  * landingV3Data.ts.
+ *
+ * Hero-Bühne seit 19.11.2026: SYNC, das 3D-Maskottchen (SyncHeroStage, Weg 1).
+ * Ein Klick im Produktkatalog lässt SYNC winken. `data-hero-cta` am Hauptbutton
+ * blendet den schwebenden Assistent-Button aus, solange der Hero sichtbar ist.
+ * Seit 22.11.2026 stellt der Hero SYNC namentlich als KI-Assistenten vor
+ * (Kennzeichnung als KI). Kein Hilfe-Versprechen, solange kein Chat angebunden ist.
  */
 
 const AUTO_ADVANCE_MS = 6000;
@@ -42,6 +49,7 @@ export function LandingV3() {
   const navigate = useNavigate();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [waveSignal, setWaveSignal] = useState(0);
   const [site, setSite] = useState('');
   const [siteError, setSiteError] = useState('');
 
@@ -63,12 +71,11 @@ export function LandingV3() {
   };
 
   const plans = planCards();
-  const tryStatus = registryStatus(RECEPTIONIST.tryRegistryId);
   const current = PRODUCTS[active]!;
 
   return (
     <div className="lv3">
-      <a href="#receptionist" className="lv3-skip">Zum Inhalt springen</a>
+      <a href="#produkte" className="lv3-skip">Zum Inhalt springen</a>
 
       {BETA_OFFER ? (
         <p className="lv3-ribbon">
@@ -80,19 +87,21 @@ export function LandingV3() {
       <header className="lv3-hero" id="top">
         <nav className="lv3-nav" aria-label="Hauptnavigation">
           <Link to="/" className="lv3-brand">RealSync Dynamics &amp; AI</Link>
-          <a href="#katalog">Build</a>
-          <a href="#katalog">Automate</a>
-          <a href="#govern">Govern</a>
-          <Link to="/phonebot/start">Voice Agent</Link>
+          <a href="#katalog">Produkte</a>
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
+          <AskAiPill className="lv3-btn lv3-ask" />
           <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
         </nav>
 
         <div className="lv3-hero-grid">
           <div className="lv3-hero-copy">
+            {/* Vorstellung ohne Hilfe-Versprechen (Owner 22.11.2026): SYNC hat hier keinen Chat. */}
+            <p className="lv3-eyebrow lv3-sync-intro" data-testid="v3-sync-intro">
+              Hallo, ich bin SYNC – der KI-Assistent von RealSync Dynamics &amp; AI.
+            </p>
             <h1 className="lv3-h1" data-testid="v3-hero-heading">
               <span>Ihre Ideen.</span>
               <span className="lv3-h1-2">In Bewegung.</span>
@@ -101,11 +110,11 @@ export function LandingV3() {
               Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.
             </p>
             <div className="lv3-actions">
-              <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start">Kostenlosen Check starten</a>
-              <a className="lv3-btn lv3-btn--lg" href="#receptionist">AI Receptionist ansehen</a>
+              <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
+              <a className="lv3-btn lv3-btn--lg" href="#katalog">Produkte entdecken</a>
             </div>
           </div>
-          <HeroStage active={active} caption={current.stageCaption} statusLabel="Kontrollschicht · Vorschau" />
+          <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · KI-Assistent" waveSignal={waveSignal} />
         </div>
 
         <div
@@ -121,12 +130,12 @@ export function LandingV3() {
             const st = productStatus(p);
             const note = productNote(p);
             return (
-              <button
+              <Link
                 key={p.key}
-                type="button"
+                to={p.href}
                 className="lv3-cat"
-                aria-pressed={i === active}
-                onClick={() => { setActive(i); setPaused(true); }}
+                onMouseEnter={() => setActive(i)}
+                onFocus={() => { setActive(i); setPaused(true); setWaveSignal((n) => n + 1); }}
               >
                 <span className="lv3-cat-bar" aria-hidden="true"><span data-on={i === active} /></span>
                 <span className="lv3-meta">
@@ -135,43 +144,38 @@ export function LandingV3() {
                 </span>
                 <span className="lv3-cat-name">{p.name}</span>
                 <span className="lv3-cat-short">{p.short}{note ? ` · ${note}` : ''}</span>
-              </button>
+              </Link>
             );
           })}
         </div>
       </header>
 
       <main>
-        <section id="receptionist" className="lv3-section lv3-split lv3-receptionist" aria-labelledby="lv3-receptionist-h" data-testid="v3-product-receptionist">
+        <section id="einstiege" className="lv3-section lv3-split" aria-labelledby="lv3-entry-h">
           <div>
-            <span className="lv3-eyebrow">
-              {RECEPTIONIST.audience} <StatusPill label={STATUS_TEXT[RECEPTIONIST.status]} />
-            </span>
-            <h2 id="lv3-receptionist-h" className="lv3-h2">{RECEPTIONIST.heading}</h2>
+            <span className="lv3-eyebrow">Zwei gleichwertige Einstiege</span>
+            <h2 id="lv3-entry-h" className="lv3-h2">Sie bestimmen, womit wir beginnen.</h2>
             <p className="lv3-text">
-              <strong>{RECEPTIONIST.name}:</strong> {RECEPTIONIST.body}
+              Kennen Sie Ihr Ziel, öffnen Sie direkt die passende Produktseite. Möchten Sie zuerst den Zustand Ihrer bestehenden Website verstehen, starten Sie mit dem kostenlosen Domain-Scan.
             </p>
-            <div className="lv3-actions">
-              <Link className="lv3-btn lv3-btn--solid" to={RECEPTIONIST.waitlistHref} data-testid="v3-receptionist-waitlist">
-                {RECEPTIONIST.waitlistCta}
-              </Link>
-              <Link className="lv3-btn" to={RECEPTIONIST.tryHref} data-testid="v3-receptionist-try">
-                {RECEPTIONIST.tryCta}
-                {tryStatus ? <> <StatusPill label={STATUS_TEXT[tryStatus]} /></> : null}
-              </Link>
-            </div>
           </div>
-          <div>
-            <span className="lv3-eyebrow">Geplanter Ablauf</span>
-            <ol className="lv3-steps" data-testid="v3-receptionist-steps">
-              {RECEPTIONIST.steps.map((s, i) => (
-                <li key={s}><span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span><span>{s}</span></li>
-              ))}
-            </ol>
+          <div className="lv3-cards">
+            <a href="#produkte" className="lv3-card">
+              <span className="lv3-meta">Direkter Produkteinstieg</span>
+              <strong className="lv3-card-name">Das passende Produkt öffnen.</strong>
+              <span>Alle vier Produktseiten sind direkt erreichbar. Ein vorheriger Scan ist nicht nötig.</span>
+              <span className="lv3-card-cta">Vier Produkte ansehen <span aria-hidden="true">→</span></span>
+            </a>
+            <a href="#start" className="lv3-card">
+              <span className="lv3-meta">Kostenloser Domain-Scan</span>
+              <strong className="lv3-card-name">Mit der bestehenden Website starten.</strong>
+              <span>Adresse eingeben, öffentliche Website prüfen lassen und konkrete Befunde ansehen.</span>
+              <span className="lv3-card-cta">Domain prüfen <span aria-hidden="true">→</span></span>
+            </a>
           </div>
         </section>
 
-        <section id="module" className="lv3-section" aria-labelledby="lv3-module-h">
+        <section id="produkte" className="lv3-section" aria-labelledby="lv3-module-h">
           <span className="lv3-eyebrow">Module</span>
           <h2 id="lv3-module-h" className="lv3-h2">Direkt ausprobieren.</h2>
           <p className="lv3-text">Jede Karte führt zur Seite des Produkts.</p>
@@ -193,6 +197,34 @@ export function LandingV3() {
               );
             })}
           </div>
+        </section>
+
+        <section id="kundenweg" className="lv3-section lv3-split" aria-labelledby="lv3-kundenweg-h">
+          <div>
+            <span className="lv3-eyebrow">Vom Domain-Scan zur laufenden Übersicht</span>
+            <h2 id="lv3-kundenweg-h" className="lv3-h2">Der Weg in sechs Schritten.</h2>
+            <p className="lv3-text">
+              Die Schritte vier bis sechs sind freiwillig. KI-Bots &amp; Voice-Agenten lassen sich auch separat öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
+            </p>
+          </div>
+          <ol className="lv3-steps" data-testid="v3-customer-journey">
+            {[
+              'Domain eingeben',
+              'Öffentliche Website prüfen',
+              'Befunde, Fehlercodes und Vorschläge ansehen',
+              'Optional einen Frontend-Entwurf anpassen',
+              'Optional einen KI-Bot oder Voice-Agenten ergänzen',
+              'Governance OS für Zuständigkeiten, Freigaben und Nachweise nutzen',
+            ].map((step, i) => (
+              <li key={step}>
+                <span className="lv3-meta">{String(i + 1).padStart(2, '0')}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="lv3-fine">
+            Nach Schritt 3 folgt die Frage: „Was sollen wir für Sie tun?“ Eine erneute Prüfung führt zurück zu Schritt 2. Automatische Dauerüberwachung ist in Vorbereitung.
+          </p>
         </section>
 
         <section id="govern" className="lv3-section lv3-split" aria-labelledby="lv3-govern-h">

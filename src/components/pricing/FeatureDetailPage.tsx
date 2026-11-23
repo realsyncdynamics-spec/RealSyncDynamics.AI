@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
-import { getFeatureBySlug, getPlansByFeature } from '../../content/pricingContent';
+import { getFeatureBySlug, getPlansByFeature, isPlannedFeature } from '../../content/pricingContent';
 
 interface FeatureDetailPageProps {
   featureSlug: string;
@@ -23,6 +23,9 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
     );
   }
 
+  // Geplante Funktion: kein „enthalten“, kein grüner Haken.
+  const planned = isPlannedFeature(feature);
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50" data-testid={`feature-detail-${feature.slug}`}>
       {/* Top bar */}
@@ -39,10 +42,15 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
           {/* Header */}
           <div className="mb-12 pb-12 border-b border-silver-700/30">
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-              Feature · Detailinformation
+              Feature · Detailinformation{planned ? ' · Status: In Vorbereitung' : ''}
             </div>
             <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">{feature.title}</h1>
             <p className="text-lg text-silver-300">{feature.subtitle}</p>
+            {planned && (
+              <p className="mt-4 text-sm text-silver-300" data-testid="feature-planned-notice">
+                Diese Funktion ist in Vorbereitung und noch nicht Teil des aktuell buchbaren Leistungsumfangs.
+              </p>
+            )}
           </div>
 
           {/* What it does */}
@@ -65,7 +73,9 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
 
           {/* Included in plans */}
           <section className="mb-12 pb-12 border-b border-silver-700/30">
-            <h2 className="font-display font-bold text-2xl mb-6">In welchen Paketen enthalten?</h2>
+            <h2 className="font-display font-bold text-2xl mb-6">
+              {planned ? 'Für welche Pakete ist die Funktion geplant?' : 'In welchen Paketen enthalten?'}
+            </h2>
             {plans.length > 0 ? (
               <div className="space-y-2">
                 {plans.map((plan) => (
@@ -79,7 +89,11 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
                       <h3 className="font-display font-bold text-titanium-50">{plan.name}</h3>
                       <p className="text-sm text-silver-300">{plan.priceString} {plan.interval}</p>
                     </div>
-                    <Check className="h-5 w-5 text-emerald-400 group-hover:text-emerald-300" />
+                    {planned ? (
+                      <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-silver-400">Geplant</span>
+                    ) : (
+                      <Check className="h-5 w-5 text-emerald-400 group-hover:text-emerald-300" />
+                    )}
                   </Link>
                 ))}
               </div>

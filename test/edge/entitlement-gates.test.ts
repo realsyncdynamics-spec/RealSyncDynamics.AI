@@ -112,7 +112,8 @@ describe('Cron-Functions: Inbound-Auth', () => {
 
   it('audit-monitor-cron nutzt CRON_AUDIT_MONITOR_KEY (nicht service_role JWT)', () => {
     const src = quelle('audit-monitor-cron');
-    expect(src).toContain("Deno.env.get('CRON_AUDIT_MONITOR_KEY')");
+    expect(src).toContain('resolveCronKey(CRON_ENV, CRON_VAULT)');
+    expect(src).toContain('CRON_AUDIT_MONITOR_KEY');
     expect(src).toContain('checkCronAuth(CRON_KEY');
     expect(src).not.toMatch(/Bearer \$\{SERVICE_KEY\}/);
     const logic = quelle('audit-monitor-cron', 'logic.ts');

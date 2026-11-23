@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Info } from 'lucide-react';
-import { getPlanBySlug, getFeaturesByPlan, ALL_PLAN_SLUGS } from '../../content/pricingContent';
+import { getPlanBySlug, getAvailableFeaturesByPlan, getPlannedFeaturesByPlan, ALL_PLAN_SLUGS } from '../../content/pricingContent';
 import { BETA, BETA_PUBLIC_OFFER, betaSignupHref, isBetaPlan } from '../../config/beta';
 
 interface PlanDetailPageProps {
@@ -10,7 +10,9 @@ interface PlanDetailPageProps {
 export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
   const navigate = useNavigate();
   const plan = getPlanBySlug(planSlug);
-  const features = getFeaturesByPlan(planSlug);
+  // Geplante Funktionen stehen getrennt — nie unter „Enthaltene Features“.
+  const features = getAvailableFeaturesByPlan(planSlug);
+  const plannedFeatures = getPlannedFeaturesByPlan(planSlug);
 
   if (!plan) {
     return (
@@ -167,6 +169,40 @@ export function PlanDetailPage({ planSlug }: PlanDetailPageProps) {
               ))}
             </div>
           </section>
+
+          {/* Planned features — ausdrücklich nicht Teil des Leistungsumfangs */}
+          {plannedFeatures.length > 0 && (
+            <section className="mb-12 pb-12 border-b border-silver-700/30" data-testid="plan-planned-features">
+              <h2 className="font-display font-bold text-2xl mb-2">Geplante Funktionen</h2>
+              <p className="text-sm text-silver-300 mb-6">
+                In Vorbereitung und noch nicht Teil des aktuell buchbaren Leistungsumfangs.
+              </p>
+              <div className="space-y-3">
+                {plannedFeatures.map((feature) => (
+                  <div
+                    key={feature.slug}
+                    className="flex items-start justify-between gap-4 p-4 bg-obsidian-900/40 border border-dashed border-silver-700/40 rounded-none"
+                  >
+                    <div className="flex-1">
+                      <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-silver-400 mb-1">
+                        Status · In Vorbereitung
+                      </div>
+                      <h3 className="font-display font-bold text-titanium-50 mb-1">{feature.title}</h3>
+                      <p className="text-sm text-silver-300">{feature.subtitle}</p>
+                    </div>
+                    <Link
+                      to={`/features/${feature.slug}`}
+                      className="flex items-center justify-center w-10 h-10 shrink-0 text-titanium-200 hover:text-titanium-50 transition-colors"
+                      title="Mehr Details"
+                      data-testid={`feature-link-${feature.slug}`}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* After purchase section */}
           <section className="mb-12 pb-12 border-b border-silver-700/30">

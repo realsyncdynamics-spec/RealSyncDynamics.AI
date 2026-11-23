@@ -17,7 +17,7 @@ export type PricingPlanCopy = {
 
 const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
   free: {
-    tagline: 'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
+    tagline: 'Sehen Sie, wo Ihre Governance-Lücken liegen.',
     ctaLabel: 'Kostenlosen Governance Scan starten',
     bullets: [
       'Runtime-Scan einer Domain mit Governance Score 0–100',
@@ -28,10 +28,10 @@ const DE: Record<PricingPlanCopyId, PricingPlanCopy> = {
     ],
   },
   starter: {
-    tagline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
+    tagline: 'Ein nachvollziehbares Fundament für Governance und Audits.',
     ctaLabel: 'Kostenlos testen',
     bullets: [
-      'Vollständiger DSGVO-Scan mit Paragraphenbezug',
+      'Website-Prüfung zu Datenschutz und Sicherheit mit Paragraphenbezug',
       'Evidence Vault mit Hash-Chain-Verifizierung',
       'Audit-Export als PDF und JSON',
       'Lückenloser Prüfpfad über alle Läufe',

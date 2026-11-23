@@ -324,18 +324,20 @@ export const FLOW_STEPS: Record<string, FlowStep> = {
   'pricing.checkoutEnterprise': {
     id: 'pricing.checkoutEnterprise',
     slug: 'checkout/enterprise',
-    label: 'Enterprise buchen',
+    label: 'Enterprise anfragen',
     fromPage: 'Paket auswählen',
     title: 'Paket „Enterprise“',
     clicked: 'Du hast das Paket „Enterprise“ ausgewählt.',
+    // 21.11.2026: Enterprise vorläufig nur auf Anfrage (ENTERPRISE_SELF_SERVICE_PAUSED),
+    // bis der Live-Checkout abgenommen ist. Slug/ID bleiben für bestehende Links.
     explanation:
       'Enterprise ist für Organisationen mit mehreren Mandanten: Multi-Tenant-Verwaltung, ' +
-      'SSO und erweiterte Nachweise. Über den Button unten startest du den sicheren ' +
-      'Stripe-Checkout — ohne Testphase, ab dem ersten Tag kostenpflichtig. Fragen zum ' +
-      'Umfang klärst du vorab über „Enterprise anfragen“.',
+      'SSO und erweiterte Nachweise. Enterprise ist derzeit nur auf Anfrage erhältlich — ' +
+      'über den Button unten beschreibst du kurz deinen Bedarf und erhältst eine Antwort ' +
+      'per E-Mail. Ohne Testphase.',
     stage: 'checkout',
     stateEffect: { selectedPlan: 'enterprise', checkoutStatus: 'started' },
-    primary: { label: 'Checkout starten (Enterprise)', to: '/checkout/enterprise', external: true, hint: 'Öffnet den echten Stripe-Checkout.' },
+    primary: { label: 'Enterprise anfragen', to: '/contact-sales', external: true, hint: 'Öffnet das Anfrageformular.' },
     secondary: { label: 'Zurück zur Paketwahl', to: flow('choose-plan') },
     extraActions: [
       { label: 'Zahlung erfolgreich?', to: flow('checkout-success') },

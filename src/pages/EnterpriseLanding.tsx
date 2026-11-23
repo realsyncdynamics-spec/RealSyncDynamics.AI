@@ -304,23 +304,18 @@ export function EnterpriseLanding() {
             Enterprise zum Festpreis
           </h2>
           <p className="text-lg text-silver-300 leading-relaxed mb-10">
-            <strong>{monthlyPriceText(ENTERPRISE)}</strong> · direkt buchbar, ohne Testphase.
+            <strong>{monthlyPriceText(ENTERPRISE)}</strong> · ohne Testphase, derzeit auf Anfrage.
             <br />
-            Fragen zu Domains, Benutzern, API-Calls oder SLA klären wir gern vorab.
+            Fragen zu Domains, Benutzern, API-Calls oder SLA klären wir mit Ihrer Anfrage.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {/* `checkoutHrefForPlan` führt während ENTERPRISE_SELF_SERVICE_PAUSED (seit 21.11.2026) auf /contact-sales. */}
             <Link
               to={checkoutHrefForPlan(ENTERPRISE, { source: 'enterprise-landing' })}
               className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
             >
               {ENTERPRISE.ctaLabel} <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/contact-sales?intent=enterprise"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none border border-titanium-700 text-titanium-100 hover:border-gold-400"
-            >
-              {CTA.enterprise}
             </Link>
           </div>
 

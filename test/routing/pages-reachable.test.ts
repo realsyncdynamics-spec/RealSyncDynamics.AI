@@ -73,6 +73,8 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
     'Abgelöst durch Landing v4: /governance-runtime-layer leitet auf /.',
   'src/pages/EnterpriseAiOsDashboard.tsx':
     'Abgelöst durch WP11: /dashboard/enterprise-ai-os leitet auf /app/dashboard.',
+  'src/pages/AuditPro.tsx':
+    'Seit 21.11.2026 nicht kaufbar: /audit-pro leitet auf /audit (301). Die Seite kommt erst mit echtem Einmal-Checkout zurück.',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

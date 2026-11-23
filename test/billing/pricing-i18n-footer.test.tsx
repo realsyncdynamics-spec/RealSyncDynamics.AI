@@ -39,9 +39,9 @@ it('keeps German footer and disclaimer under DE', () => {
     /Starter, Growth und Agency: kostenlos bis 31\. Januar 2027, danach gilt der durchgestrichene Listenpreis/,
   );
   expect(screen.getByTestId('pricing-foot')).not.toHaveTextContent(/14 Tage|Tag 15/);
-  // Enterprise ist nicht Teil der Beta: Festpreis, direkt buchbar.
-  expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(/Enterprise: direkt buchbar, ohne Testphase/);
-  expect(screen.getByTestId('pricing-trial-foot')).not.toHaveTextContent(/auf Anfrage/);
+  // Enterprise ist nicht Teil der Beta: Festpreis, seit 21.11.2026 vorläufig auf Anfrage.
+  expect(screen.getByTestId('pricing-trial-foot')).toHaveTextContent(/Enterprise: auf Anfrage, ohne Testphase/);
+  expect(screen.getByTestId('pricing-trial-foot')).not.toHaveTextContent(/direkt buchbar/);
   expect(screen.getByTestId('pricing-disclaimer')).toHaveTextContent(
     /Unsere Outputs sind methodisch und technisch fundiert/,
   );

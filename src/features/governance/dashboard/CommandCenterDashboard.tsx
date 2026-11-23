@@ -34,6 +34,7 @@ import { useLang } from '../../../i18n/useLang';
 import { tenantDisplayName } from './dashboardSignals';
 import { BrowserRuntimePanel } from './BrowserRuntimePanel';
 import { OsControlStrip } from './OsControlStrip';
+import { RuntimeEventsFeed } from './RuntimeEventsFeed';
 import { CustomerStartPanel } from './CustomerStartPanel';
 import { AgentComposer } from './AgentComposer';
 import { computeStartPanel } from './startPanelModel';
@@ -246,6 +247,13 @@ export function CommandCenterDashboard() {
           data={dataTenantId === activeTenantId ? data : null}
           loading={loading}
           error={error}
+          reloadKey={reloadKey}
+          dataVersion={dataVersion}
+        />
+        {/* Letzte Governance-Entscheidungen aus workspace_events (nur lesend). */}
+        <RuntimeEventsFeed
+          key={`events-${activeTenantId ?? 'no-tenant'}`}
+          activeTenantId={activeTenantId}
           reloadKey={reloadKey}
           dataVersion={dataVersion}
         />

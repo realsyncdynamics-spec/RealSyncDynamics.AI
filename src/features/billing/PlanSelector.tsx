@@ -38,7 +38,7 @@ export function PlanSelector({
           <p className="text-titanium-300 max-w-2xl mx-auto">
             Von kostenlos bis Enterprise — alle Funktionen skalieren mit deinen Anforderungen.
             {TRY_FREE.plans}
-            Enterprise: {monthlyPriceText(planById('enterprise'))}, direkt buchbar. Partner: auf Anfrage.
+            Enterprise: {monthlyPriceText(planById('enterprise'))}, vorerst auf Anfrage. Partner: auf Anfrage.
           </p>
         </div>
 

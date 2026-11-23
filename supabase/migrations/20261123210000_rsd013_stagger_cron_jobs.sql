@@ -58,7 +58,7 @@ BEGIN
       RAISE NOTICE 'RSD-013: % (jobid %) per alter_job von % auf % gesetzt',
         rec.jobname, rec.jobid, rec.schedule, new_schedule;
     EXCEPTION WHEN undefined_function THEN
-      PERFORM cron.unschedule(rec.jobid);
+      PERFORM cron.unschedule(rec.jobname);
       PERFORM cron.schedule(rec.jobname, new_schedule, saved_command);
       RAISE NOTICE 'RSD-013: % per unschedule+schedule auf % gesetzt (Kommando unveraendert)',
         rec.jobname, new_schedule;

@@ -264,6 +264,7 @@ export function DashboardView() {
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Schnellaktionen</h3><div className="mt-3 space-y-1">{[
                 { label: 'Neuen Scan starten', icon: Search, path: '/unified-entry/scan' },
                 { label: 'Website in Comet öffnen', icon: Globe2, path: '/app/websites' },
+                { label: 'Mein Betrieb', icon: LayoutDashboard, path: '/app/betrieb' },
                 { label: 'Chatbot konfigurieren', icon: MessageSquare, path: '/app/bots' },
                 { label: 'Telefonbot konfigurieren', icon: Mic, path: '/app/agents/susi' },
                 { label: 'Workflow starten', icon: Workflow, path: '/app/workflows' },

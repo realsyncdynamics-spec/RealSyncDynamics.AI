@@ -175,7 +175,7 @@ export default function KiBotsLanding() {
           <span className="pl-eyebrow">Produktstatus</span>
           <h2 id="pl-preise-h" className="pl-h2">Telefonie ist noch in Vorbereitung.</h2>
           <p className="pl-text">
-            Der Telefonassistent kann derzeit nicht gebucht werden. Für ihn wird hier kein allgemeiner Tarif als Telefonie-Checkout ausgegeben.
+            Der Voice-Agent für Telefonie kann derzeit nicht gebucht werden. Für ihn wird hier kein allgemeiner Tarif als Telefonie-Checkout ausgegeben.
             Den verfügbaren Chat-Assistenten können Sie separat ausprobieren oder Ihr Interesse am Telefonprodukt vormerken.
           </p>
           <div className="pl-actions">

@@ -36,7 +36,6 @@ BEGIN
     BEGIN
       PERFORM cron.alter_job(rec.jobid, old_schedule);
     EXCEPTION WHEN undefined_function THEN
-      PERFORM cron.unschedule(rec.jobid);
       PERFORM cron.schedule(rec.jobname, old_schedule, saved_command);
     END;
   END LOOP;

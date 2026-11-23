@@ -8,11 +8,11 @@ import { resolve } from 'node:path';
 
 const migration = resolve(
   __dirname,
-  '../../supabase/migrations/20261114104600_rsd013_stagger_cron_jobs.sql',
+  '../../supabase/migrations/20261123210000_rsd013_stagger_cron_jobs.sql',
 );
 const rollback = resolve(
   __dirname,
-  '../../supabase/rollback/20261114104600_rsd013_stagger_cron_jobs.sql',
+  '../../supabase/rollback/20261123210000_rsd013_stagger_cron_jobs.sql',
 );
 const sql = readFileSync(migration, 'utf8');
 const rb = readFileSync(rollback, 'utf8');
@@ -23,7 +23,7 @@ const TARGETS: Record<string, { from: string; to: string }> = {
   'scan-scheduler-dispatch': { from: '*/15 * * * *', to: '4,19,34,49 * * * *' },
 };
 
-describe('RSD-013 Migration 20261114104600', () => {
+describe('RSD-013 Migration 20261123210000', () => {
   it('liegt zusammen mit einer Rollback-Datei vor', () => {
     expect(existsSync(migration)).toBe(true);
     expect(existsSync(rollback)).toBe(true);
@@ -45,6 +45,11 @@ describe('RSD-013 Migration 20261114104600', () => {
     expect(sql).not.toMatch(/net\.http_post/);
     expect(sql).toContain('saved_command := rec.command');
     expect(sql).toContain('cron.schedule(rec.jobname, new_schedule, saved_command)');
+  });
+
+  it('nutzt kein cron.unschedule(bigint) – das gibt es im CI-Stub nicht (Fallback per Jobname)', () => {
+    expect(sql).not.toMatch(/cron\.unschedule\(\s*rec\.jobid/);
+    expect(rb).not.toMatch(/cron\.unschedule\(\s*rec\.jobid/);
   });
 
   it('die neuen Plaene kollidieren untereinander nicht zur Minute 0 von Stunde 3', () => {

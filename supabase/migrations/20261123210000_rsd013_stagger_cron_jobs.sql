@@ -13,7 +13,7 @@
 --
 -- Idempotent: Aenderung nur wenn der aktuelle Plan vom Ziel abweicht.
 -- Fehlt das cron-Schema (CI-Stub), wird still uebersprungen.
--- Bevorzugt cron.alter_job; Fallback unschedule+schedule mit vorher
+-- Bevorzugt cron.alter_job; Fallback cron.schedule per Jobname mit vorher
 -- gesichertem Kommando, falls alter_job in der pg_cron-Version fehlt.
 
 DO $stagger$
@@ -58,9 +58,10 @@ BEGIN
       RAISE NOTICE 'RSD-013: % (jobid %) per alter_job von % auf % gesetzt',
         rec.jobname, rec.jobid, rec.schedule, new_schedule;
     EXCEPTION WHEN undefined_function THEN
-      PERFORM cron.unschedule(rec.jobid);
+      -- cron.schedule mit vorhandenem Jobnamen aktualisiert den Job (pg_cron >= 1.3)
+      -- und funktioniert auch mit dem CI-Stub; kein unschedule(bigint) noetig.
       PERFORM cron.schedule(rec.jobname, new_schedule, saved_command);
-      RAISE NOTICE 'RSD-013: % per unschedule+schedule auf % gesetzt (Kommando unveraendert)',
+      RAISE NOTICE 'RSD-013: % per schedule (Name) auf % gesetzt (Kommando unveraendert)',
         rec.jobname, new_schedule;
     END;
   END LOOP;

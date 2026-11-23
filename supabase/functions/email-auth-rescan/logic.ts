@@ -66,6 +66,28 @@ export type CronAuthResult =
   | { ok: true }
   | { ok: false; status: 401 | 500; code: string; message: string };
 
+export const CRON_ENV = 'CRON_WEBSITE_RESCAN_KEY';
+export const CRON_VAULT = 'cron_website_rescan_key';
+
+/** Structured log when function secret and vault fallback are both empty. Never includes key material. */
+export function cronKeyMissingEvent() {
+  return {
+    level: 'error' as const,
+    scope: 'email-auth-rescan',
+    code: 'CRON_KEY_MISSING' as const,
+    env: CRON_ENV,
+    vault: CRON_VAULT,
+    message:
+      `${CRON_ENV} is empty and vault secret ${CRON_VAULT} did not resolve. ` +
+      'Set both to the same value. See docs/runbooks/cron-vault-secrets.md',
+  };
+}
+
+/** HTTP body for the same fail-closed path. Names env and vault, never the value. */
+export function cronKeyMissingMessage(): string {
+  return `${CRON_ENV} not configured (function secret empty, vault ${CRON_VAULT} unresolved)`;
+}
+
 /**
  * Fail-closed cron auth. Missing secret → 500 (misconfiguration, refuse to
  * run); missing/wrong bearer → 401 ("cron only").

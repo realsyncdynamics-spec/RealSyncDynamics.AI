@@ -17,6 +17,8 @@ import {
 import {
   canonicalJson,
   checkCronAuth,
+  cronKeyMissingEvent,
+  cronKeyMissingMessage,
   detectDrift,
   evidenceContentHash,
   gateDomain,
@@ -171,9 +173,27 @@ describe('audit-monitor-cron: Cron-Auth fail-closed', () => {
 
   it('index.ts vergleicht den Bearer nicht mit dem service_role-Key', () => {
     const src = readFileSync('supabase/functions/audit-monitor-cron/index.ts', 'utf8');
-    expect(src).toContain("Deno.env.get('CRON_AUDIT_MONITOR_KEY')");
+    expect(src).toContain('resolveCronKey(CRON_ENV, CRON_VAULT)');
+    expect(src).toContain('cronKeyMissingEvent()');
     expect(src).not.toMatch(/Bearer \$\{SERVICE_KEY\}/);
-    expect(src).toContain('cron_audit_monitor_key');
+    expect(src.indexOf('resolveCronKey(CRON_ENV, CRON_VAULT)')).toBeLessThan(src.indexOf('createClient('));
+    expect(src.indexOf('checkCronAuth(')).toBeLessThan(src.indexOf('createClient('));
+  });
+
+  it('fehlendes Secret nennt Env und Vault und enthaelt kein Key-Material', () => {
+    const event = cronKeyMissingEvent();
+    expect(event).toMatchObject({
+      level: 'error',
+      scope: 'audit-monitor-cron',
+      code: 'CRON_KEY_MISSING',
+      env: 'CRON_AUDIT_MONITOR_KEY',
+      vault: 'cron_audit_monitor_key',
+    });
+    expect(event.message).toContain('docs/runbooks/cron-vault-secrets.md');
+    expect(JSON.stringify(event)).not.toMatch(/Bearer |decrypted_secret/i);
+    expect(cronKeyMissingMessage()).toBe(
+      'CRON_AUDIT_MONITOR_KEY not configured (function secret empty, vault cron_audit_monitor_key unresolved)',
+    );
   });
 });
 

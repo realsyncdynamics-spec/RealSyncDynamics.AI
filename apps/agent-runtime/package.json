@@ -10,7 +10,8 @@
     "start": "node dist/gateway.js",
     "dev": "tsx watch src/gateway.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test --import tsx ./test/*.test.ts"
+    "test": "node --test --import tsx ./test/*.test.ts",
+    "voice:readiness": "tsx src/voice/readiness-report-cli.ts"
   },
   "engines": {
     "node": ">=20"

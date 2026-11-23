@@ -83,6 +83,22 @@ function notConfigured(tool: VoiceToolName): VoiceToolExecutor {
   });
 }
 
+/**
+ * Statische Backend-Zuordnung für den Readiness-Report.
+ * `none` = Executor bleibt fail-closed `not_configured` (kein Backend im Repo).
+ * `appointment_store` = echter Executor über den Voice-Store.
+ * Die Gateway-Schreibsperre ist davon unabhängig.
+ */
+export type VoiceToolBackend = 'none' | 'appointment_store';
+
+export const VOICE_TOOL_BACKEND: Record<VoiceToolName, VoiceToolBackend> = {
+  lookup_kb: 'none',
+  create_ticket: 'none',
+  schedule_appointment: 'appointment_store',
+  handoff_human: 'none',
+  export_transcript: 'none',
+};
+
 export const VOICE_TOOL_EXECUTORS: Record<VoiceToolName, VoiceToolExecutor> = {
   lookup_kb: notConfigured('lookup_kb'),
   create_ticket: notConfigured('create_ticket'),

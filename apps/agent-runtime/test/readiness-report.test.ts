@@ -20,12 +20,12 @@ import {
   type VoiceToolReadinessFact,
 } from '../src/voice/readiness-report.js';
 
-const SENTINEL_URL = 'https://sentinel.invalid/readiness-secret-url';
+const SENTINEL_STORE = 'sentinel-store-url-value-9f3a';
 const SENTINEL_KEY = 'sentinel-service-role-value-9f3a';
 const UNRELATED = 'unrelated-secret-value-should-not-leak';
 
 const STORE_ENV = {
-  SUPABASE_URL: SENTINEL_URL,
+  SUPABASE_URL: SENTINEL_STORE,
   SUPABASE_SERVICE_ROLE_KEY: SENTINEL_KEY,
   UNRELATED_SECRET: UNRELATED,
 };
@@ -42,7 +42,7 @@ function fact(partial: Partial<VoiceToolReadinessFact> & Pick<VoiceToolReadiness
 }
 
 function assertNoSecrets(text: string): void {
-  assert.equal(text.includes(SENTINEL_URL), false);
+  assert.equal(text.includes(SENTINEL_STORE), false);
   assert.equal(text.includes(SENTINEL_KEY), false);
   assert.equal(text.includes(UNRELATED), false);
   assert.equal(text.includes('sentinel'), false);
@@ -62,6 +62,11 @@ describe('Voice Readiness Report', () => {
     assert.equal(a, b);
     const names = buildVoiceReadinessReport(facts, env).tools.map((row) => row.name);
     assert.deepEqual(names, ['handoff_human', 'lookup_kb', 'schedule_appointment']);
+    const broken = renderVoiceReadinessMarkdown(
+      buildVoiceReadinessReport([fact({ name: 'a|b\\c\nd', hasBackend: false })], env),
+    );
+    assert.match(broken, /\| a b c d \| read \| not_configured \| nein \|/);
+    assert.equal(broken.split('\n').some((line) => line.startsWith('| a ')), true);
     assert.deepEqual(buildVoiceReadinessReport(facts, env).tools[0]?.steps, ['T7']);
     assert.deepEqual(buildVoiceReadinessReport(facts, env).tools[2]?.steps, ['T5', 'T7']);
   });
@@ -76,9 +81,9 @@ describe('Voice Readiness Report', () => {
     const readTool = fact({ name: 'lookup_live', writes: false, hasBackend: true });
     for (const env of [
       {},
-      { SUPABASE_URL: SENTINEL_URL },
+      { SUPABASE_URL: SENTINEL_STORE },
       { SUPABASE_URL: '   ', SUPABASE_SERVICE_ROLE_KEY: '   ' },
-      { SUPABASE_URL: SENTINEL_URL, SUPABASE_SERVICE_ROLE_KEY: '' },
+      { SUPABASE_URL: SENTINEL_STORE, SUPABASE_SERVICE_ROLE_KEY: '' },
     ]) {
       assert.equal(assessVoiceToolReadiness(writeTool, env).state, 'not_configured');
       assert.equal(assessVoiceToolReadiness(readTool, env).state, 'not_configured');
@@ -219,6 +224,7 @@ describe('Voice Readiness Report', () => {
     const errorText = errors.join('');
     assert.match(errorText, /--json/);
     assert.equal(errorText.includes(SENTINEL_KEY), false);
+    assert.equal(errorText.includes(SENTINEL_STORE), false);
 
     const ok: string[] = [];
     const okCode = runVoiceReadinessCli({
@@ -242,7 +248,7 @@ describe('Voice Readiness Report', () => {
       encoding: 'utf8',
       env: {
         PATH: process.env.PATH,
-        SUPABASE_URL: SENTINEL_URL,
+        SUPABASE_URL: SENTINEL_STORE,
         SUPABASE_SERVICE_ROLE_KEY: SENTINEL_KEY,
         UNRELATED_SECRET: UNRELATED,
       },

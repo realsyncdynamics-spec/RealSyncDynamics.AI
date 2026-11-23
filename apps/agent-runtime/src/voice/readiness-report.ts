@@ -140,8 +140,9 @@ export function createVoiceReadinessReport(
   return buildVoiceReadinessReport(listVoiceToolReadinessFacts(), env);
 }
 
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+/** Tabellenzellen bleiben einzeilig. Zeichen, die Markdown brechen, werden zu Leerzeichen. */
+function plainCell(value: string): string {
+  return value.replace(/[|\\\r\n]/g, ' ');
 }
 
 export function renderVoiceReadinessMarkdown(report: VoiceReadinessReport): string {
@@ -159,7 +160,7 @@ export function renderVoiceReadinessMarkdown(report: VoiceReadinessReport): stri
     const steps = row.steps.length > 0 ? row.steps.join(', ') : '—';
     const ready = row.ready ? 'ja' : 'nein';
     lines.push(
-      `| ${escapeCell(row.name)} | ${row.access} | ${row.state} | ${ready} | ${escapeCell(env)} | ${escapeCell(steps)} |`,
+      `| ${plainCell(row.name)} | ${row.access} | ${row.state} | ${ready} | ${plainCell(env)} | ${plainCell(steps)} |`,
     );
   }
   lines.push(

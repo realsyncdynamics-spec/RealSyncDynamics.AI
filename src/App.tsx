@@ -363,6 +363,7 @@ const OperationsItemsView       = lazy(() => import('./features/operations/Inven
 const BotsView                  = lazy(() => import('./features/bots/BotsView').then((m) => ({ default: m.BotsView })));
 const BotBuilderView            = lazy(() => import('./features/bots/BotBuilderView').then((m) => ({ default: m.BotBuilderView })));
 const BotInboxView              = lazy(() => import('./features/bots/BotInboxView').then((m) => ({ default: m.BotInboxView })));
+const MeinBetriebView           = lazy(() => import('./features/betrieb/MeinBetriebView').then((m) => ({ default: m.MeinBetriebView })));
 const WhatsAppChannelsView      = lazy(() => import('./features/bots/WhatsAppChannelsView').then((m) => ({ default: m.WhatsAppChannelsView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
 const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
@@ -947,6 +948,7 @@ function RoutesWithTracking() {
       <Route path="/app/siteos/modernize/:projectId" element={<AppGate><GovernanceBrowserShell><FmtModernizeWizard /></GovernanceBrowserShell></AppGate>} />
       {/* Claim: AppGate + View-eigener Resume nach /welcome?next=. */}
       <Route path="/app/siteos/claim" element={<AppGate><GovernanceBrowserShell><SiteOsClaimView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/betrieb" element={<AppGate><GovernanceBrowserShell><MeinBetriebView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots" element={<AppGate><GovernanceBrowserShell><BotsView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/inbox" element={<AppGate><GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/bots/whatsapp" element={<AppGate><GovernanceBrowserShell><WhatsAppChannelsView /></GovernanceBrowserShell></AppGate>} />

@@ -40,9 +40,9 @@
 // Zugriff: Supabase Management API (POST /v1/projects/{ref}/database/query)
 // mit SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID — dieselben Secrets wie
 // der Migrations-Drift-Guard, kein DB-Passwort und keine neue Dependency.
-// Ohne Secrets (Fork-PRs) wird sauber uebersprungen (Exit 0).
-// API-/Netz-Fehler failen NICHT hart (≠ Drift) — aber wie beim
-// Migrations-Guard gibt es dann auch keinen gruenen Haken.
+// Ohne Secrets wird nur in expliziten advisory-Laeufen uebersprungen.
+// Betriebslaeufe ohne Messung scheitern; API-/Netz-Fehler sind keine
+// Entwarnung. Explizit beratende PR-Laeufe bleiben advisory.
 
 // ── Soll-Zustand (Spiegel von 20260826000001) ────────────────────────────────
 
@@ -144,12 +144,13 @@ const FORBIDDEN_CLIENT = [
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const projectId = process.env.SUPABASE_PROJECT_ID;
 
+const ADVISORY = (process.env.FUNCTION_ACL_DRIFT_MODE ?? 'fail') === 'advisory';
+
 if (!token || !projectId) {
   console.log('ℹ️  Function-ACL-Drift-Check uebersprungen (keine Supabase-Secrets).');
-  process.exit(0);
+  process.exit(ADVISORY ? 0 : 1);
 }
 
-const ADVISORY = (process.env.FUNCTION_ACL_DRIFT_MODE ?? 'fail') === 'advisory';
 
 const SQL = `
 SELECT p.proname AS name,
@@ -172,6 +173,7 @@ try {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ query: SQL }),
+      signal: AbortSignal.timeout(30_000),
     },
   );
   if (!resp.ok) {
@@ -180,7 +182,7 @@ try {
   rows = await resp.json();
 } catch (e) {
   console.error('⚠️  ACL-Abfrage nicht ausfuehrbar (Infra, kein Drift):', e.message);
-  process.exit(0);
+  process.exit(ADVISORY ? 0 : 1);
 }
 
 // Format-Wachhund wie beim Migrations-Guard: liefert die API keine einzige

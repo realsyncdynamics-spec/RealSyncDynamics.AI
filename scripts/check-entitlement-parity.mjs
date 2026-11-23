@@ -39,8 +39,8 @@
 // (SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID) — dieselben Secrets wie
 // beim Function-ACL-Guard.
 //
-// Ohne beides beendet sich das Skript mit Hinweis und Code 0. Ein Guard, der
-// ohne Zugangsdaten rot wird, wird abgeschaltet statt beachtet.
+// Ohne Datenquelle scheitert die Betriebsmessung. PR-Laeufe bleiben ueber
+// den bestehenden Workflow beratend; keine Messung ist keine Entwarnung.
 //
 // Aufruf:  npm run check:entitlements
 //          npm run check:entitlements -- --matrix   (Uebersicht je Plan)
@@ -64,6 +64,7 @@ function ausLokalerDatenbank() {
     const roh = execFileSync('psql', ['-tAF', '', '-c', ABFRAGE], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 30_000,
     });
     return roh
       .split('\n')
@@ -89,6 +90,7 @@ async function ausManagementApi() {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: JSON.stringify({ query: ABFRAGE }),
+      signal: AbortSignal.timeout(30_000),
     },
   );
   if (!resp.ok) {
@@ -99,16 +101,16 @@ async function ausManagementApi() {
   return zeilen.map((z) => ({ planKey: z.plan_key, key: z.key, value: Number(z.value) }));
 }
 
-const { PLAN_ENTITLEMENTS, ENTITLEMENT_KEYS } = await import('../shared/pricing.ts');
-
 const ausDb = ausLokalerDatenbank() ?? (await ausManagementApi());
 if (!ausDb) {
   console.log(
     'ℹ️  Entitlement-Paritaet uebersprungen: weder lokale PostgreSQL (psql) noch ' +
       'SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID verfuegbar.',
   );
-  process.exit(0);
+  process.exit(1);
 }
+
+const { PLAN_ENTITLEMENTS, ENTITLEMENT_KEYS } = await import('../shared/pricing.ts');
 
 // DB-Zuordnung nach Plan buendeln. Jahresvarianten erben von ihrem
 // Monatszwilling und werden nicht getrennt gefuehrt — die Quelle kennt sie

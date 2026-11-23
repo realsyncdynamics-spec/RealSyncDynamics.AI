@@ -202,7 +202,7 @@ export function LandingV3() {
             <span className="lv3-eyebrow">Vom Domain-Scan zur laufenden Übersicht</span>
             <h2 id="lv3-kundenweg-h" className="lv3-h2">Der Weg in sechs Schritten.</h2>
             <p className="lv3-text">
-              Die Schritte vier bis sechs sind freiwillig. Der Telefonassistent lässt sich auch separat öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
+              Die Schritte vier bis sechs sind freiwillig. KI-Bots &amp; Voice-Agenten lassen sich auch separat öffnen. Bei einer Website-Anpassung entsteht ein neuer Frontend-Entwurf; das bestehende Backend bleibt unverändert.
             </p>
           </div>
           <ol className="lv3-steps" data-testid="v3-customer-journey">
@@ -211,7 +211,7 @@ export function LandingV3() {
               'Öffentliche Website prüfen',
               'Befunde, Fehlercodes und Vorschläge ansehen',
               'Optional einen Frontend-Entwurf anpassen',
-              'Optional den Telefonassistenten ergänzen',
+              'Optional einen KI-Bot oder Voice-Agenten ergänzen',
               'Governance OS für Zuständigkeiten, Freigaben und Nachweise nutzen',
             ].map((step, i) => (
               <li key={step}>

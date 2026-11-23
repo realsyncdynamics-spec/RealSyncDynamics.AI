@@ -79,6 +79,7 @@
 .lv3-btn--solid { background: var(--lv3-fg-1); border-color: var(--lv3-fg-1); color: var(--lv3-bg-0) !important; }
 .lv3-btn--solid:hover { background: var(--lv3-fg-2); border-color: var(--lv3-fg-2); }
 .lv3-btn--lg { min-height: 52px; padding: 0 22px; font-size: 15px; }
+.lv3-ask { gap: 8px; border-color: var(--lv3-fg-2); border-radius: 0; }
 
 .lv3-stage { position: relative; min-height: clamp(260px, 48vh, 820px); border: 1px solid var(--lv3-line-strong); border-radius: var(--lv3-radius-lg); overflow: hidden; background: var(--lv3-bg-1); }
 .lv3-stage-still, .lv3-stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }

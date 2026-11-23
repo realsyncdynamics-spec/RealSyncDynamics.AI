@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Gavel, AlertTriangle, Loader2, Check, X,
   ShieldCheck, Bot, Clock,
@@ -12,6 +12,7 @@ import {
 } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { WorkspaceApprovalsPanel } from './WorkspaceApprovalsPanel';
 
 /**
  * /governance/approvals — pending-approval queue for events that
@@ -35,8 +36,28 @@ const FILTERS: Array<{ key: ApprovalStatus; label: string }> = [
   { key: 'expired',  label: 'Abgelaufen' },
 ];
 
+/**
+ * Zwei Quellen auf einer Seite: Governance-Events (`governance_approvals`) und
+ * Workspace-Flows (`workspace_approvals`). `?quelle=workspace` wählt die
+ * zweite, damit der Runtime-Events-Feed direkt dorthin verlinken kann.
+ */
+type ApprovalSource = 'governance' | 'workspace';
+
+const SOURCES: Array<{ key: ApprovalSource; label: string }> = [
+  { key: 'governance', label: 'Governance-Events' },
+  { key: 'workspace', label: 'Workspace-Flows' },
+];
+
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const source: ApprovalSource = searchParams.get('quelle') === 'workspace' ? 'workspace' : 'governance';
+  const selectSource = (next: ApprovalSource) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'workspace') params.set('quelle', 'workspace');
+    else params.delete('quelle');
+    setSearchParams(params, { replace: true });
+  };
   const [filter, setFilter] = useState<ApprovalStatus>('pending');
   const [items, setItems] = useState<Approval[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +72,11 @@ function Inner() {
     else       setItems(r.approvals ?? []);
   };
 
-  useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [activeTenantId, filter]);
+  useEffect(() => {
+    if (source !== 'governance') return;
+    void reload();
+    /* eslint-disable-next-line */
+  }, [activeTenantId, filter, source]);
 
   const approve = async (a: Approval) => {
     setBusy(a.id);
@@ -83,7 +108,9 @@ function Inner() {
             </div>
             <div className="leading-tight">
               <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Approvals</div>
-              <div className="text-[11px] text-titanium-400 font-medium">Events mit require_approval</div>
+              <div className="text-[11px] text-titanium-400 font-medium">
+                {source === 'workspace' ? 'Workspace-Flows mit require_approval' : 'Events mit require_approval'}
+              </div>
             </div>
           </div>
         </div>
@@ -98,6 +125,32 @@ function Inner() {
         )}
       </header>
 
+      <div role="tablist" aria-label="Quelle der Freigaben" className="border-b border-titanium-900 bg-obsidian-900 px-4 py-2 flex items-center gap-2">
+        {SOURCES.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            role="tab"
+            aria-selected={source === s.key}
+            data-testid={`approval-source-${s.key}`}
+            onClick={() => selectSource(s.key)}
+            className={`px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border rounded-none ${
+              source === s.key
+                ? 'border-sky-500 bg-sky-500/10 text-sky-200'
+                : 'border-titanium-900 text-titanium-400 hover:border-titanium-700'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {source === 'workspace' ? (
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <WorkspaceApprovalsPanel activeTenantId={activeTenantId} />
+        </main>
+      ) : (
+      <>
       <div className="border-b border-titanium-900 bg-obsidian-900/50 px-4 py-2 flex items-center gap-2">
         {FILTERS.map((f) => (
           <button
@@ -152,6 +205,8 @@ function Inner() {
           </ul>
         )}
       </main>
+      </>
+      )}
 
       {reasonModal && (
         <RejectModal

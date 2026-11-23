@@ -46,6 +46,17 @@ BEGIN
   END LOOP;
 END $$;
 
+-- 1b. View ueber _operation_metrics: in Produktion security_invoker = true
+--     (gemessen 23.11.2026). Ohne die Option liefe sie mit Owner-Rechten und
+--     umginge die RLS aus Schritt 1 (Invariante in
+--     gate0-views-security-invoker.db.test.ts). Auf Produktion ein No-op.
+DO $$
+BEGIN
+  ALTER VIEW public.v_recent_errors SET (security_invoker = true);
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'View public.v_recent_errors fehlt in dieser Umgebung, uebersprungen';
+END $$;
+
 -- 2. Tabellen mit deny_all-Policy: RLS an, Policy sicherstellen
 DO $$
 DECLARE

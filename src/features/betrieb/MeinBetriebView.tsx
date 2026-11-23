@@ -132,10 +132,10 @@ function StateBlock({ loading, error, onRetry, label }: {
 
 function InboxCard({ section, onRetry }: { section: Section<InboxCounts | null>; onRetry: () => void }) {
   const c = section.data;
-  const tiles: { label: string; value: number; hint?: string }[] = c ? [
-    { label: 'Offene Gespräche', value: c.openConversations },
-    { label: 'Terminwünsche', value: c.requestedAppointments, hint: 'Wunsch, nicht bestätigt' },
-    { label: 'Neue Bestellungen', value: c.newOrders },
+  const tiles: { label: string; value: number; truncated: boolean; hint?: string }[] = c ? [
+    { label: 'Offene Gespräche', value: c.openConversations, truncated: c.truncated.conversations },
+    { label: 'Terminwünsche', value: c.requestedAppointments, truncated: c.truncated.appointments, hint: 'Wunsch, nicht bestätigt' },
+    { label: 'Neue Bestellungen', value: c.newOrders, truncated: c.truncated.orders },
   ] : [];
   return (
     <Card>
@@ -152,8 +152,9 @@ function InboxCard({ section, onRetry }: { section: Section<InboxCounts | null>;
             {tiles.map((t) => (
               <div key={t.label} className="border border-titanium-800 bg-obsidian-900 px-4 py-3">
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">{t.label}</p>
-                <p className="mt-1 font-display text-2xl font-semibold text-titanium-50">{formatCount(t.value, c.truncated)}</p>
+                <p className="mt-1 font-display text-2xl font-semibold text-titanium-50">{formatCount(t.value, t.truncated)}</p>
                 {t.hint && <p className="mt-0.5 text-[11px] text-amber-300">{t.hint}</p>}
+                {t.truncated && <p className="mt-0.5 text-[11px] text-titanium-400">Ältere Einträge: siehe Posteingang</p>}
               </div>
             ))}
           </div>

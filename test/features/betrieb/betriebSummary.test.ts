@@ -60,18 +60,30 @@ describe('countInbox', () => {
       [appt('requested'), appt('confirmed'), appt('cancelled')],
       [order('new'), order('confirmed'), order('fulfilled'), order('new')],
     );
-    expect(c).toEqual({ openConversations: 2, requestedAppointments: 1, newOrders: 2, truncated: false });
+    expect(c).toEqual({
+      openConversations: 2, requestedAppointments: 1, newOrders: 2,
+      truncated: { conversations: false, appointments: false, orders: false },
+    });
   });
 
   it('alles null bei leeren Listen', () => {
     expect(countInbox([], [], [])).toEqual({
-      openConversations: 0, requestedAppointments: 0, newOrders: 0, truncated: false,
+      openConversations: 0, requestedAppointments: 0, newOrders: 0,
+      truncated: { conversations: false, appointments: false, orders: false },
     });
   });
 
-  it('markiert abgeschnittene Abfragen', () => {
+  it('markiert die Kürzung pro Liste', () => {
     const many = Array.from({ length: INBOX_FETCH_LIMIT }, () => order('new'));
-    expect(countInbox([], [], many).truncated).toBe(true);
+    expect(countInbox([], [], many).truncated).toEqual({ conversations: false, appointments: false, orders: true });
+  });
+
+  it('abgeschnittene Liste nur mit bestätigten Terminen ergibt 0 Treffer, aber Kürzung bleibt sichtbar', () => {
+    const confirmed = Array.from({ length: INBOX_FETCH_LIMIT }, () => appt('confirmed'));
+    const c = countInbox([], confirmed, []);
+    expect(c.requestedAppointments).toBe(0);
+    expect(c.truncated.appointments).toBe(true);
+    expect(formatCount(c.requestedAppointments, c.truncated.appointments)).toBe('–');
   });
 });
 
@@ -82,7 +94,10 @@ describe('formatCount', () => {
   it('kennzeichnet abgeschnittene Zählung', () => {
     expect(formatCount(3, true)).toBe('mind. 3');
   });
-  it('null bleibt null, auch bei abgeschnittener Abfrage anderer Listen', () => {
-    expect(formatCount(0, true)).toBe('0');
+  it('zeigt bei abgeschnittener Abfrage ohne Treffer keine exakte Null', () => {
+    expect(formatCount(0, true)).toBe('–');
+  });
+  it('null bleibt null ohne Kürzung', () => {
+    expect(formatCount(0, false)).toBe('0');
   });
 });

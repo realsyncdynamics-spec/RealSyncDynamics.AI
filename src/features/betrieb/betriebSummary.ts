@@ -36,8 +36,8 @@ export interface InboxCounts {
   openConversations: number;
   requestedAppointments: number;
   newOrders: number;
-  /** true, wenn mindestens eine Liste die Abfragegrenze erreicht hat. */
-  truncated: boolean;
+  /** Je Liste: true, wenn die Abfragegrenze erreicht wurde (ältere Einträge fehlen evtl.). */
+  truncated: { conversations: boolean; appointments: boolean; orders: boolean };
 }
 
 /** Aktive Seiten (ohne Archiv), neueste zuerst. */
@@ -74,11 +74,19 @@ export function countInbox(
     openConversations: conversations.filter((c) => c.status === 'open').length,
     requestedAppointments: appointments.filter((a) => a.status === 'requested').length,
     newOrders: orders.filter((o) => o.status === 'new').length,
-    truncated: conversations.length >= limit || appointments.length >= limit || orders.length >= limit,
+    truncated: {
+      conversations: conversations.length >= limit,
+      appointments: appointments.length >= limit,
+      orders: orders.length >= limit,
+    },
   };
 }
 
-/** Zahl für die Anzeige; bei abgeschnittener Abfrage ehrlich als „mind.“ kennzeichnen. */
+/**
+ * Zahl für die Anzeige. Bei abgeschnittener Abfrage ist die Zählung unvollständig:
+ * Treffer → „mind. N“, keine Treffer → „–“ (ältere offene Einträge sind möglich, nie „0“).
+ */
 export function formatCount(n: number, truncated: boolean): string {
-  return truncated && n > 0 ? `mind. ${n}` : String(n);
+  if (!truncated) return String(n);
+  return n > 0 ? `mind. ${n}` : '–';
 }

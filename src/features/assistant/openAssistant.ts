@@ -8,8 +8,12 @@
 
 export const OPEN_ASSISTANT_EVENT = 'rsd:open-assistant';
 
-/** Rückfall-Ziel, wenn auf der Route kein Assistent verfügbar ist. */
-export const ASSISTANT_FALLBACK_HREF = '/audit?source=ki-fragen';
+/**
+ * Rückfall-Ziel, wenn auf der Route kein Assistent verfügbar ist.
+ * Führt auf die Produktseite KI-Bots & Voice-Agenten (K4: KI-Mitarbeiter
+ * zuerst), nicht mehr auf den Website-Check `/audit`.
+ */
+export const ASSISTANT_FALLBACK_HREF = '/ki-bots?source=ki-fragen';
 
 /** @returns true, wenn ein Assistent das Öffnen übernommen hat. */
 export function openAssistant(): boolean {

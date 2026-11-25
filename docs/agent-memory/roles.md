@@ -5,9 +5,10 @@ und `CLAUDE.md`. Keine Secrets, keine Kundendaten. Statusstufen: GEPLANT · IN A
 IMPLEMENTIERT · GETESTET · LIVE · BLOCKIERT.
 
 Diese Datei ersetzt die 3b-Fassung aus #2416 inhaltlich; die Einzel-PRs #2423–#2432 sind in
-#2436 enthalten. Merge-Reihenfolge (je Einzel-Freigabe, Folge-PRs danach per Merge von
-`main` aktualisieren): **#2416 → #2436 → #2440** (#2440 enthält #2434). Beim add/add-Konflikt
-mit #2416 gilt für `roles.md`, `deputy.md`, `nova.md` diese Fassung
+#2436 enthalten. Merge-Reihenfolge laut Entscheidung des Inhabers (25.11.2026; je
+Einzel-Freigabe, Folge-PRs danach per Merge von `main` aktualisieren): **#2436 → #2416 →
+#2440** (#2440 enthält #2434). Beim add/add-Konflikt in #2416 gilt für `roles.md`,
+`deputy.md`, `nova.md` diese Fassung
 (`docs/MERGE_CONFLICT_CONCEPT.md`). Ein Status gilt erst, wenn er auf `main` ist.
 
 ## Grundregeln

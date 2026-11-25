@@ -22,6 +22,7 @@
     "check:model-prices": "node scripts/sync-model-prices.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:hooks": "node .claude/hooks/guard-bash.test.mjs && node .claude/hooks/guard-phase3d.test.mjs && node .claude/hooks/guard-bypass.test.mjs",
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",
     "test:pricing": "vitest run test/content/pricingContent.test.ts && playwright test --config=playwright.catalog.config.ts tests/e2e/pricing-flow.spec.ts",
     "e2e": "playwright test",

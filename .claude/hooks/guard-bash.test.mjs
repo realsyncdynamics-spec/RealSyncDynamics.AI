@@ -39,3 +39,4 @@ for (const bad of ['kein json', '{}']) {
   console.log(ok ? 'OK  ' : 'FAIL', r.status, `Eingabe: ${bad}`);
 }
 console.log(fail ? `${fail} FEHLER` : `ALLE ${cases.length + 2} OK`);
+process.exit(fail ? 1 : 0);

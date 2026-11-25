@@ -13,6 +13,12 @@ export const APPOINTMENT_LIMITS = {
 } as const;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** ISO-8601 mit Datum, Uhrzeit und Zeitzone (Z oder ±hh:mm) — ohne Zone wäre die Uhrzeit mehrdeutig. */
+const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})$/;
+/** Steuerzeichen außer Tab, Zeilenumbruch, Wagenrücklauf (NUL bricht Postgres-Text). */
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+/** Unsichtbare Zeichen, die allein keinen Namen ergeben. */
+const INVISIBLE = /[\s\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g;
 
 export interface AppointmentInput {
   tenantId: string;
@@ -45,8 +51,9 @@ function optionalText(
   if (typeof raw === 'string') s = raw;
   else if (allowNumber && typeof raw === 'number' && Number.isFinite(raw)) s = String(raw);
   else return { ok: false, message: `${field} must be a string` };
+  if (CONTROL.test(s)) return { ok: false, message: `${field} contains control characters` };
   s = s.trim();
-  if (!s) return { ok: true, value: null };
+  if (!s.replace(INVISIBLE, '')) return { ok: true, value: null };
   if (s.length > max) return { ok: false, message: `${field} too long (max ${max})` };
   return { ok: true, value: s };
 }
@@ -62,6 +69,8 @@ export function parseAppointmentInput(body: Record<string, unknown>, now: Date =
     return fail('customer_name required');
   }
   const customerName = body.customer_name.trim();
+  if (CONTROL.test(customerName)) return fail('customer_name contains control characters');
+  if (!customerName.replace(INVISIBLE, '')) return fail('customer_name required');
   if (customerName.length > APPOINTMENT_LIMITS.customerName) {
     return fail(`customer_name too long (max ${APPOINTMENT_LIMITS.customerName})`);
   }
@@ -78,7 +87,9 @@ export function parseAppointmentInput(body: Record<string, unknown>, now: Date =
 
   let requestedAt: string | null = null;
   if (body.requested_at !== undefined && body.requested_at !== null && body.requested_at !== '') {
-    if (typeof body.requested_at !== 'string') return fail('requested_at must be ISO-8601');
+    if (typeof body.requested_at !== 'string' || !ISO_WITH_ZONE.test(body.requested_at)) {
+      return fail('requested_at must be ISO-8601 with time zone');
+    }
     const d = new Date(body.requested_at);
     if (Number.isNaN(d.getTime())) return fail('requested_at must be ISO-8601');
     const t = d.getTime();

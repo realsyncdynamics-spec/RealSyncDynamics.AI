@@ -356,9 +356,35 @@ describe('appointment-book — gleichzeitige Anfragen und Folgetermine', () => {
     expect(res.status).toBe(409);
   });
 
-  it('index.ts behandelt den Unique-Konflikt 23505 und nutzt kein Zeitfenster mehr', () => {
-    const src = readFileSync('supabase/functions/appointment-book/index.ts', 'utf8');
-    expect(src).toContain("=== '23505'");
+  it('der Schreibpfad behandelt den Unique-Konflikt 23505 und nutzt kein Zeitfenster', () => {
+    const deps = readFileSync('supabase/functions/appointment-book/deps.ts', 'utf8');
+    expect(deps).toContain("error.code === '23505'");
+    const src = readFileSync('supabase/functions/appointment-book/index.ts', 'utf8') + deps;
     expect(src).not.toContain('DUPLICATE_WINDOW_MS');
+  });
+});
+
+describe('appointment-book — strenge Eingaben (DEPUTY P2-3, P3)', () => {
+  it.each([
+    ['requested_at ohne Zeitzone', { requested_at: '2026-12-01T10:00:00' }],
+    ['requested_at als Freitext', { requested_at: 'Dec 1 2026 10:00' }],
+    ['requested_at nur Datum', { requested_at: '2026-12-01' }],
+    ['Name nur aus unsichtbaren Zeichen', { customer_name: '​​﻿' }],
+    ['NUL-Byte in notes', { notes: 'a\u0000b' }],
+    ['Steuerzeichen im Namen', { customer_name: 'Max\u0007' }],
+  ])('%s → 400', async (_n, extra) => {
+    const h = harness();
+    const res = await h.handler(post({ ...VALID, ...extra }));
+    expect(res.status).toBe(400);
+    expect(h.inserted).toHaveLength(0);
+  });
+
+  it('Zeitzonen werden korrekt nach UTC umgerechnet', () => {
+    const r = parseAppointmentInput({ ...VALID, requested_at: '2026-12-01T10:00+01:00' }, NOW);
+    expect(r).toMatchObject({ ok: true, value: { requestedAt: '2026-12-01T09:00:00.000Z' } });
+  });
+
+  it('Zeilenumbrüche in notes bleiben erlaubt', () => {
+    expect(parseAppointmentInput({ ...VALID, notes: 'Zeile 1\nZeile 2' }, NOW).ok).toBe(true);
   });
 });

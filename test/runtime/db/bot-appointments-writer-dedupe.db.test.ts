@@ -154,6 +154,17 @@ d('bot_appointments writer policy + dedupe', () => {
     expect(await attempt(user(ids.editor), move, [ids.appt, ids.tB])).toBe('deny');
   });
 
+  it('schreibende Rollen dürfen nur status ändern — nicht bot_id, tenant_id oder Kundendaten', async () => {
+    const otherBot = (await q<{ id: string }>(
+      `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Fremd-Bot') RETURNING id`, [ids.tB],
+    )).rows[0]!.id;
+    for (const who of [ids.owner, ids.editor]) {
+      expect(await attempt(user(who), `UPDATE public.bot_appointments SET bot_id = $2 WHERE id = $1`, [ids.appt, otherBot])).toBe('deny');
+      expect(await attempt(user(who), `UPDATE public.bot_appointments SET customer_name = 'X' WHERE id = $1`, [ids.appt])).toBe('deny');
+      expect(await attempt(user(who), `UPDATE public.bot_appointments SET status = 'cancelled' WHERE id = $1`, [ids.appt])).toBe('allow');
+    }
+  });
+
   it('kein direktes Anlegen durch Nutzer — nur über die Service-Role', async () => {
     const ins = `INSERT INTO public.bot_appointments (tenant_id, bot_id, customer_name) VALUES ($1, $2, 'X')`;
     for (const who of [ids.owner, ids.editor, ids.viewer]) {

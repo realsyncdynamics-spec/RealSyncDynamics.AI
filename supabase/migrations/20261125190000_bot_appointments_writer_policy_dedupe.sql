@@ -20,9 +20,36 @@
 --    appointment-book fängt den Konflikt (23505) ab und gibt den
 --    bestehenden Termin zurück.
 --
--- Nicht destruktiv: keine Daten werden gelöscht oder geändert. Bestehen
--- bereits Duplikate, bricht der Index-Aufbau ab statt Daten zu entfernen
--- (Produktion 25.11.2026: 0 Zeilen in bot_appointments).
+-- 3. Spaltenrecht: authenticated darf per UPDATE nur noch `status` setzen.
+--    Bisher durften schreibende Rollen jede Spalte ändern (z. B. bot_id auf
+--    einen fremden Bot). updated_at setzt der Trigger
+--    update_bot_appointments_modtime; dafür braucht es kein Spaltenrecht.
+--    anon verliert UPDATE ganz (RLS hat es ohnehin abgewiesen).
+--    Einziger Client-Schreibpfad: src/features/bots/api.ts setAppointmentStatus
+--    (.update({ status })).
+--
+-- Reihenfolge: zuerst der Index. Bestehen bereits Duplikate, bricht er ab,
+-- bevor Policy oder Rechte geändert sind (Vorabprüfung:
+-- supabase/verify/bot_appointments_open_duplicates.sql; Produktion
+-- 25.11.2026: 0 Duplikate). Zusätzlich eine Transaktionsklammer.
+--
+-- Nicht destruktiv: keine Daten werden gelöscht oder geändert.
+-- Rückbau: supabase/rollback/20261125190000_bot_appointments_writer_policy_dedupe.sql
+
+BEGIN;
+
+CREATE UNIQUE INDEX IF NOT EXISTS bot_appointments_open_conversation_uniq
+  ON public.bot_appointments (
+    tenant_id,
+    bot_id,
+    conversation_id,
+    customer_name,
+    (COALESCE(requested_at, '1970-01-01 00:00:00+00'::timestamptz))
+  )
+  WHERE status = 'requested' AND conversation_id IS NOT NULL;
+
+COMMENT ON INDEX public.bot_appointments_open_conversation_uniq IS
+  'Eine offene Terminanfrage je Konversation, Name und Wunschtermin (appointment-book, atomarer Duplikatschutz).';
 
 DO $appt_policy$
 BEGIN
@@ -41,15 +68,7 @@ BEGIN
 END
 $appt_policy$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS bot_appointments_open_conversation_uniq
-  ON public.bot_appointments (
-    tenant_id,
-    bot_id,
-    conversation_id,
-    customer_name,
-    (COALESCE(requested_at, '1970-01-01 00:00:00+00'::timestamptz))
-  )
-  WHERE status = 'requested' AND conversation_id IS NOT NULL;
+REVOKE UPDATE ON public.bot_appointments FROM anon, authenticated;
+GRANT UPDATE (status) ON public.bot_appointments TO authenticated;
 
-COMMENT ON INDEX public.bot_appointments_open_conversation_uniq IS
-  'Eine offene Terminanfrage je Konversation, Name und Wunschtermin (appointment-book, atomarer Duplikatschutz).';
+COMMIT;

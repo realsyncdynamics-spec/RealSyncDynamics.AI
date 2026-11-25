@@ -201,7 +201,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="Compliance-Assistent"
+        aria-label="SYNC, KI-Mitarbeiter"
         aria-hidden={!open}
       >
         {/* Drag handle affordance (mobile) */}
@@ -210,8 +210,8 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         </div>
 
         <WidgetHeader
-          label="KI-Assistent"
-          badge="Öffentlich · keine Rechtsberatung"
+          label="SYNC · KI-Mitarbeiter"
+          badge="KI-System · keine Rechtsberatung"
           onReset={chat.reset}
           onClose={onClose}
         />
@@ -242,7 +242,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
           isLoading={chat.isLoading}
           showQuickActions={chat.showQuickActions}
           quickActions={ANON_QUICK}
-          placeholder="DSGVO-Frage stellen…"
+          placeholder="Was möchtest du erreichen?"
         />
       </div>
     </>

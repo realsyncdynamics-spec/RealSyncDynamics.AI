@@ -88,7 +88,7 @@ describe('<AssistentChip>', () => {
     const btn = getByLabelText('Assistent öffnen');
     expect(btn).toBeInTheDocument();
     expect(btn.className).toMatch(/opacity-100/);
-    expect(getByText('Assistent')).toBeInTheDocument();
+    expect(getByText('SYNC')).toBeInTheDocument();
 
     act(() => {
       observers.forEach((o) => o.trigger(true));
@@ -206,7 +206,7 @@ describe('<AssistentChip>', () => {
     expect(dialog).toHaveAttribute('aria-hidden', 'false');
     expect(dialog).toHaveAttribute(
       'aria-label',
-      expect.stringMatching(/Compliance|Assistent/i) as unknown as string,
+      expect.stringMatching(/SYNC.*KI-Mitarbeiter/) as unknown as string,
     );
   });
 

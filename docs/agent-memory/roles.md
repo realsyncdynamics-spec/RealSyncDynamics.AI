@@ -11,7 +11,7 @@ Branch mit eigenem Draft-PR. Diese Datei ersetzt die 3b-Fassung inhaltlich. #241
 `origin/main` per Merge in `agents/roles`, `agents/deputy`, `agents/nova` holen und die Datei
 zugunsten der 3c-Fassung auflösen (`docs/MERGE_CONFLICT_CONCEPT.md`).
 
-Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea` → `agents/roles`
+Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea` → `agents/roles` → `agents/atlas` (#2429) → Radar-Konsolidierung (#2434, enthält REA 3c aus #2425 und ersetzt #2420)
 → übrige. Ein Status in der Tabelle gilt erst, wenn der jeweilige Branch auf `main` ist.
 
 ## Grundregeln
@@ -45,7 +45,7 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 | CHIEF | Hauptsitzung: plant, delegiert, führt Befehle aus, schreibt, eskaliert an Dominik | Abschnitt in `CLAUDE.md` erst mit PR #2416 | Sitzungsmodell | alle | `aios-knowledge-update`, `aios-documentation-update` (schreibend → nur CHIEF) | IMPLEMENTIERT (Regeln in #2416, nicht auf `main`) |
 | DEPUTY | Unabhängige Abnahme, Urteil ABGENOMMEN / NACHBESSERN / ABGELEHNT | `.claude/agents/deputy.md` | opus | Read, Grep, Glob | `aios-pr-review`, `aios-release-readiness` | GETESTET (Probe 3c) |
 | NOVA | Security, Governance, Datenschutz; nur Befund + Empfehlung | `.claude/agents/nova.md` | sonnet | Read, Grep, Glob | `aios-security-audit`, `aios-compliance-verification` | GETESTET (Probe 3c) |
-| REA | Software Factory: ein Arbeitspaket nach 10-Schritt-Loop, Branch `claude/<kurzname>`, Draft-PR | `.claude/agents/rea.md`, Befehl `.claude/commands/rea.md` | Sitzungsmodell (kein `model:`) | Read, Grep, Glob, Edit, Write, Bash | keine vorgeladen; zugeordnet: `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | GETESTET (Probe 3c) |
+| REA | Software Factory: ein Arbeitspaket nach 10-Schritt-Loop, Branch `claude/<kurzname>`, Draft-PR | `.claude/agents/rea.md`, Befehl `.claude/commands/rea.md` | Sitzungsmodell (kein `model:`) | Read, Grep, Glob, Edit, Write, Bash | keine vorgeladen; zugeordnet: `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | GETESTET (Probe 3c); Radar-Modus (#2434, Recherche über ATLAS) ungeprüft |
 | VIO | Voice-Runtime `apps/agent-runtime`, AI Receptionist, Branchenvorlagen, KI-Offenlegung, Notfall/Weiterleitung | `.claude/agents/vio.md` | sonnet | Read, Grep, Glob, Edit, Write, Bash | — | GETESTET nur Verhalten (Probe 3c); Schreibgrenze `apps/agent-runtime/**` technisch nicht durchgesetzt und nicht getestet |
 | MOTION | Medienjob-Pläne (Briefing, Storyboard, Prompt, Kosten, Stufe S0–S4); erzeugt nichts | `.claude/agents/motion.md` | sonnet, `permissionMode: plan` | Read, Grep, Glob | — | GETESTET (Probe 3c) |
 | ATLAS | Markt- und Webrecherche, externer Faktencheck, Radar-Recherche für `/rea-radar` (Repo-Faktencheck macht DEPUTY bzw. DATA) | `.claude/agents/atlas.md` | sonnet, `effort: medium` | WebSearch, WebFetch (Read/Grep/Glob/Bash/Edit/Write/Agent gesperrt) | — | GETESTET Werkzeuggrenze (Probe A3/A4 25.11.2026: init-Werkzeuge `WebSearch, WebFetch`, keine Datei angelegt, keine Auftragsdaten in Suchanfragen); Webrecherche selbst nicht geprobt |

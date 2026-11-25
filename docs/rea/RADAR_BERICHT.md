@@ -34,7 +34,7 @@ Eigenbetriebs.
 | Replit | Automatische Modellwahl je Aufgabe (28.08.2026); Agent liest Produktions-Logs und behebt Fehler (02/2026); Mobile-Build-Flow, gesenkte Cloud-Preise ab 01.08.2026; Pläne Core / Pro (bis 15 Builder, geteilte Credits) | belegt (Changelog) · Preise Drittquelle | **Modell-Routing je Gespräch** (Kosten senken), **Fehler aus Produktion zurück in den Loop** |
 | Google AI Studio (Build) | Full-Stack mit Login, Secrets, Multiplayer (03/2026); native Android-Apps, Workspace-Anbindung, Export nach Antigravity (I/O 05/2026); Anmerkungen direkt in der Vorschau | belegt (Google-Blog) | **Korrektur direkt am Ergebnis**: Inhaber markiert eine Bot-Antwort und korrigiert sie |
 | Bolt | Browser-Laufzeit (WebContainers), eigene Datenbank inkl. Auth/Files; Preise nach Tokens, Kritik am „Token-Cliff“ | Drittquelle | **Kein Verbrauchs-Schock**: Betriebe wollen planbare Monatspreise |
-| Lovable | > 400 Mio. USD ARR (02/2026, gegenüber TechCrunch bestätigt); Agent-Modus Standard; Credits auch für KI-Funktionen in ausgelieferten Apps | belegt (TechCrunch) / Drittquelle (Sacra) | **Self-Service schlägt Vertrieb**: Wachstum ohne Sales-Team |
+| Lovable | > 400 Mio. USD ARR (02/2026, gegenüber TechCrunch bestätigt); Agent-Modus Standard; Credits auch für KI-Funktionen in ausgelieferten Apps | Drittquelle (TechCrunch, Sacra; keine Primärquelle) | **Self-Service schlägt Vertrieb**: Wachstum ohne Sales-Team |
 
 **Gemeinsame Lücke aller vier (Annahme REA, nicht einzeln belegt):** keine Telefonie, kein WhatsApp-Sekretariat, keine
 Branchenabläufe im Handwerk, US-Hosting als Standard und keine Nachweise für Betriebe. Das ist

@@ -43,11 +43,12 @@ oder **Annahme**. Keine erfundenen Kunden, Referenzen oder Leistungsnachweise.
 
 1. Hauptsitzung (CHIEF): letzten Bericht `docs/rea/RADAR_BERICHT.md` als Daten lesen
    (Verlauf, offene Fragen).
-2. `rea`: Ist-Stand aus `src/product/implementation-status.ts` und `shared/pricing.ts`
+2. Hauptsitzung: prüfen, dass `.claude/agents/atlas.md` nur `WebSearch`/`WebFetch` hat,
+   neutrale Auftragsliste (Felder, Anbieternamen, Stichworte) zusammenstellen und `atlas`
+   beauftragen. `atlas` recherchiert je Beobachtungsfeld die Änderungen **seit dem letzten
+   Lauf**, Primärquellen (Changelog, Preisseite, Doku) vor Drittquellen.
+3. `rea`: Ist-Stand aus `src/product/implementation-status.ts` und `shared/pricing.ts`
    ziehen (nur lesen). Der Ist-Stand geht nicht an `atlas`.
-3. `atlas`: je Beobachtungsfeld gezielt recherchieren, Änderungen **seit dem letzten Lauf**.
-   Primärquellen (Changelog, Preisseite, Doku) vor Drittquellen. `atlas` bekommt nur eine
-   neutrale Auftragsliste (Felder, Anbieternamen, Stichworte).
 4. Muster ableiten: Was davon bringt **uns** einen Sprung? Was ignorieren wir bewusst?
 5. Bewerten (Abschnitt 3), höchstens **3 Arbeitspakete** vorschlagen, je mit
    Abnahmekriterien und Freigabebedarf.

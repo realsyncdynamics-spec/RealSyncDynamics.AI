@@ -11,7 +11,7 @@ GETESTET · LIVE · BLOCKIERT.
   `disallowedTools: Agent, Write, Edit, NotebookEdit, Bash`.
 - Befehle (`git`, `npm run …`, GitHub-API) führt CHIEF aus und gibt die Ausgabe im
   Delegationsauftrag mit. Für DEPUTY erzeugt CHIEF den Diff
-  (`git diff main...<branch>`) — Standardverfahren.
+  (`git diff origin/main...<branch>`) — Standardverfahren.
 - Keine Selbstabnahme: Was ein Agent erstellt hat, nimmt DEPUTY ab, nie er selbst.
 - Ergebnisformat aller Agenten: Aufgaben-ID · Agent · Ziel · geprüfter Bestand ·
   Aktionen · betroffene Dateien · Testergebnisse · Risiken · Blocker · benötigte
@@ -22,9 +22,9 @@ GETESTET · LIVE · BLOCKIERT.
 | Rolle | Zuständigkeit | Datei | Modell | Skills (`skills:`) | Status |
 |---|---|---|---|---|---|
 | CHIEF | Hauptsitzung: plant, delegiert, führt Befehle aus, schreibt, eskaliert an Dominik | `CLAUDE.md` › REALSYNC CHIEF | Sitzungsmodell | `aios-knowledge-update`, `aios-documentation-update` (beide schreiben → nur CHIEF) | IMPLEMENTIERT |
-| DEPUTY | Unabhängige Abnahme von Agentenergebnissen und PR-Diffs; Urteil ABGENOMMEN / NACHBESSERN / ABGELEHNT | `.claude/agents/deputy.md` | opus | `aios-pr-review`, `aios-release-readiness` | IMPLEMENTIERT (Tests: PR #2416) |
-| NOVA | Security, Governance, Datenschutz: Secrets, RLS, Mandantentrennung, Service-Role, Auth in Edge Functions, DSGVO/AI Act; nur Befund + Empfehlung | `.claude/agents/nova.md` | sonnet | `aios-security-audit`, `aios-compliance-verification` | IMPLEMENTIERT (Tests: PR #2416) |
-| REA | Codeanalyse, Software Factory: Architektur, Codequalität, CI-Fehler, Routing, Dashboard, Testplanung; in 3b nur Analyse | `.claude/agents/rea.md` | sonnet | `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | IMPLEMENTIERT (Tests: PR #2416) |
+| DEPUTY | Unabhängige Abnahme von Agentenergebnissen und PR-Diffs; Urteil ABGENOMMEN / NACHBESSERN / ABGELEHNT | `.claude/agents/deputy.md` | opus | `aios-pr-review`, `aios-release-readiness` | IMPLEMENTIERT (Probe: schreibgeschützt; CI offen) |
+| NOVA | Security, Governance, Datenschutz: Secrets, RLS, Mandantentrennung, Service-Role, Auth in Edge Functions, DSGVO/AI Act; nur Befund + Empfehlung | `.claude/agents/nova.md` | sonnet | `aios-security-audit`, `aios-compliance-verification` | IMPLEMENTIERT (Probe: schreibgeschützt; CI offen) |
+| REA | Codeanalyse, Software Factory: Architektur, Codequalität, CI-Fehler, Routing, Dashboard, Testplanung; in 3b nur Analyse | `.claude/agents/rea.md` | sonnet | `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | IMPLEMENTIERT (Probe: schreibgeschützt; CI offen) |
 | VIO | Voice-Runtime (`apps/agent-runtime`), Kundenflüsse (AI Receptionist) | — | — | — | GEPLANT (3c) |
 | MOTION | Creative Studio, Medien | — | — | — | GEPLANT (3c) |
 | ATLAS | Recherche im Projektwissen (`docs/`, ADRs) | — | — | — | GEPLANT (3c) |
@@ -67,3 +67,11 @@ deshalb **keine aktiven Subagenten**, sondern Spezifikationen. Sie bleiben unver
 
 Angabe in `platform-intelligence-agent.md` „Status: Production (Phase 1)“ ist hier
 nicht geprüft.
+
+## Abnahme Phase 3b
+
+DEPUTY, Aufgabe `P3B-ABNAHME` (25.11.2026): **ABGENOMMEN**, ohne Blocker. Belegt durch
+Headless-Proben (`claude -p`): `deputy`, `nova`, `rea` werden erkannt. Je ein Schreibauftrag
+wird nicht ausgeführt, die Probedatei entsteht nicht, und die Agenten melden nur
+`Read`, `Grep`, `Glob`. Offen: CI auf dem Head von PR #2416. Hinweis an CHIEF:
+`platform-intelligence-agent.md` widerspricht sich (Z. 6 „Production“, Z. 234 „pending“).

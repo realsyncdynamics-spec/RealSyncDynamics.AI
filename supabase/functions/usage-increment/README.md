@@ -41,8 +41,11 @@ role); this endpoint does not accept them.
   and `source: "plan" | "global"`.
 - **400 BAD_REQUEST** — missing `tenant_id` / `entitlement_key`, or invalid
   `delta`.
-- **403 FORBIDDEN** — the caller is not a member of the given tenant, or
-  `delta` is negative.
+- **400 BAD_REQUEST** — `entitlement_key` is unknown (not in
+  `usage_limits_config`) or malformed.
+- **403 FORBIDDEN** — the caller is not an `owner`/`admin` of the given
+  tenant, `delta` is negative, or the key is billed by consumption
+  (`metered`/`overage`) and therefore measured server-side only.
 
 ## Hot path
 

@@ -8,14 +8,15 @@
 // success, or { ok: false, error: { code, message, details } } on quota /
 // validation errors.
 //
-// Authorization model: the user must be a member of the tenant. We verify by
-// reading the JWT, then probing memberships with the same JWT (RLS enforces
-// the membership constraint).
+// Authorization model: the user must be an owner or admin of the tenant
+// (memberships probed with the user's JWT; RLS enforces membership), and the
+// entitlement key must be a known, non-metered key (see policy.ts).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { parseDelta } from './delta.ts';
+import { checkEntitlementKey, checkRole, isWellFormedKey } from './policy.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
@@ -47,25 +48,42 @@ Deno.serve(async (req) => {
   if (!parsed.ok) return jsonError(parsed.status, parsed.code, parsed.message);
   const delta = parsed.delta;
 
-  // Membership check via user's JWT (RLS does the actual gate)
+  if (!isWellFormedKey(body.entitlement_key)) {
+    return jsonError(400, 'BAD_REQUEST', 'unknown entitlement_key');
+  }
+  const entitlementKey = body.entitlement_key;
+
+  // Membership + role check via user's JWT (RLS does the actual gate)
   const { data: member, error: memberErr } = await userClient
     .from('memberships')
-    .select('id')
+    .select('id, role')
     .eq('tenant_id', body.tenant_id)
     .eq('user_id', userId)
     .maybeSingle();
-  if (memberErr) return jsonError(500, 'INTERNAL', memberErr.message);
+  if (memberErr) return jsonError(500, 'INTERNAL', 'membership lookup failed');
   if (!member)   return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+  const roleCheck = checkRole(member.role);
+  if (!roleCheck.ok) return jsonError(roleCheck.status, roleCheck.code, roleCheck.message);
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
 
+  // Only known, non-metered keys may be reported by clients (fail-closed).
+  const { data: keyConfig, error: keyErr } = await admin
+    .from('usage_limits_config')
+    .select('billing_mode')
+    .eq('entitlement_key', entitlementKey)
+    .maybeSingle();
+  if (keyErr) return jsonError(500, 'INTERNAL', 'entitlement lookup failed');
+  const keyCheck = checkEntitlementKey(entitlementKey, keyConfig);
+  if (!keyCheck.ok) return jsonError(keyCheck.status, keyCheck.code, keyCheck.message);
+
   try {
     const snap = await consumeUsage(
       admin,
       body.tenant_id,
-      body.entitlement_key,
+      entitlementKey,
       delta,
       body.metadata ?? {},
     );

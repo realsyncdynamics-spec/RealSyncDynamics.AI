@@ -47,8 +47,11 @@ export function localInferenceLabel(provider: LocalProvider = resolveLocalProvid
     : 'EU-lokale Inferenz (LM Studio)';
 }
 
+// Standard: Haiku 5.5 — günstigstes aktuelles Modell; Preis steht in der
+// Einkaufspreis-SSoT (shared/model-prices.ts), sonst blockiert die Abrechnung
+// mit MODEL_PRICE_MISSING. Per Env überschreibbar, etwa auf claude-sonnet-5-5.
 const ANTHROPIC_FALLBACK_MODEL =
-  Deno.env.get('AI_GATEWAY_ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001';
+  Deno.env.get('AI_GATEWAY_ANTHROPIC_MODEL') ?? 'claude-haiku-5-5';
 const OPENAI_FALLBACK_MODEL =
   Deno.env.get('AI_GATEWAY_OPENAI_MODEL') ?? 'gpt-4.1-mini';
 const OPENAI_EMBEDDING_MODEL =

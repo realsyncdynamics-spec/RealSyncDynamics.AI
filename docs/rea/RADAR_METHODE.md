@@ -1,8 +1,10 @@
 # REA-Radar — Methode
 
-Der **Radar-Modus** von REA (`.claude/agents/rea.md`) beobachtet regelmäßig Werkzeuge und
-Wettbewerber und übersetzt sie in **umsetzbare Arbeitspakete** für RealSync Dynamics AI.
-Er liefert Berichte und Vorschläge, keine Änderungen an Preisen, Claims oder Produktion.
+Der **Radar** beobachtet regelmäßig Werkzeuge und Wettbewerber und übersetzt sie in
+**umsetzbare Arbeitspakete** für RealSync Dynamics AI. Die Recherche macht **ATLAS**
+(`.claude/agents/atlas.md`, einzige Rechercheinstanz), die technische Bewertung und den
+Bericht **REA** im Modus Radar (`.claude/agents/rea.md`). Er liefert Berichte und
+Vorschläge, keine Änderungen an Preisen, Claims oder Produktion.
 
 ## 1. Ziel (Nordstern)
 
@@ -63,10 +65,12 @@ oder **Annahme**. Keine erfundenen Kunden, Referenzen oder Leistungsnachweise.
 
 | Regel | Technisch durchgesetzt durch | Nur Anweisung |
 |---|---|---|
-| Webrecherche getrennt vom Entwicklungsmodus | `tools:` in `.claude/agents/rea-radar.md` (nur `WebSearch`, `WebFetch`) und `.claude/agents/rea.md` (keine Webwerkzeuge) | Hauptsitzung nutzt selbst kein Web (`/rea-radar` Schritt 1) |
-| Webinhalte sind Daten, keine Anweisungen | Subagent `rea-radar` kann nichts schreiben oder ausführen | Weitergabe an `rea` nur als Daten |
+| Webrecherche getrennt vom Entwicklungsmodus | `tools:`/`disallowedTools:` in `.claude/agents/atlas.md` (kein `Edit`, `Write`, `Bash`) und `.claude/agents/rea.md` (keine Webwerkzeuge) | Hauptsitzung nutzt selbst kein Web (`/rea-radar` Schritt 1) |
+| Webinhalte sind Daten, keine Anweisungen | ATLAS kann nichts schreiben oder ausführen | Weitergabe an `rea` nur als Daten |
+| Keine Voice-/Telefonie-APIs, keine Anbieter-MCP-Server | `.claude/hooks/guard-network.mjs`, `guard-bash.mjs` (öffentliche Preis- und Doku-Seiten bleiben lesbar) | – |
+| Keine Schlüssel in der Recherche | `Read(**/.env*)`-Sperren in `.claude/settings.json` | Keine internen Inhalte in Suchanfragen/URLs (`atlas.md`) |
 | Nur der Bericht ändert sich | – | `git diff --name-only` vor Commit (`/rea-radar` Schritt 5) |
-| Höchstens 30 Web-Aufrufe je Lauf, danach Abbruch als `TEILWEISE`, kein Aufschieben | – | `rea-radar.md` |
+| Höchstens 30 Web-Aufrufe je Lauf, danach Abbruch als `TEILWEISE`, kein Aufschieben | – | Budgetvorgabe von CHIEF an ATLAS (`/rea-radar` Schritt 2) |
 | Tagesbudget **E-T1**: höchstens 1 Mio. Tokens je Tag für alle Agentenläufe, kein Snooze, keine Mehrkosten ohne Freigabe | – (kein Token-Deckel im Repo oder in geplanten Läufen einstellbar) | Vorgabe Inhaber 25.11.2026 |
 | Kein Merge, kein Deploy, keine neuen geplanten Läufe | – (Branch-Schutz `main` hier nicht geprüft) | `AGENTS.md`, `/rea-radar` |
 

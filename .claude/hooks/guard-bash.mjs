@@ -3,7 +3,9 @@
 // Exit 2 = blockiert (Meldung geht an Claude). Fail-closed bei unlesbarer Eingabe.
 // v3 (Phase 3d): Zerlegung in lib/shell.mjs, Sperre externer Voice-Dienste, VIO-Allowlist.
 import { execSync } from 'node:child_process';
-import { split, strip } from './lib/shell.mjs';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { isDynamicWord, split, strip } from './lib/shell.mjs';
 import { BLOCKED_VOICE_CLIS, findBlockedHost } from './lib/voice-hosts.mjs';
 import { checkWritePath, scopeFor } from './lib/vio-scope.mjs';
 
@@ -14,14 +16,34 @@ const block = (why, cmd) => {
 
 const isMainRef = (r) => /^(\+)?((HEAD|[^:]*):)?(refs\/heads\/)?(main|master)$/.test(r);
 
-function checkGit(args, raw) {
+// Löst einen git-Alias auf (lokal/global). Unbekannt → null.
+function gitAlias(name) {
+  if (!/^[A-Za-z0-9._-]+$/.test(name)) return null;
+  try {
+    return execSync(`git config --get alias.${name}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+  } catch { return null; }
+}
+
+function checkGit(args, raw, words) {
   // globale Optionen vor dem Unterbefehl überspringen (-C pfad, -c k=v, --git-dir=...)
   let i = 0;
   while (i < args.length && args[i].startsWith('-')) {
+    if (args[i] === '-c' && /^alias\./i.test(args[i + 1] ?? '')) block('git-Alias per -c (nicht statisch prüfbar)', raw);
+    if (args[i].startsWith('-c') && /alias\./i.test(args[i])) block('git-Alias per -c (nicht statisch prüfbar)', raw);
     if (['-C', '-c', '--git-dir', '--work-tree', '--namespace'].includes(args[i])) i += 2; else i++;
   }
-  if (args[i] !== 'push') return;
+  const subcmd = args[i];
+  if (isDynamicWord(subcmd)) block('git-Unterbefehl aus Variable', raw);
+  if (subcmd === 'config' && args.slice(i + 1).some((x) => /^alias\./i.test(x)) && args.length - i > 2)
+    block('git-Alias anlegen', raw);
+  if (subcmd && subcmd !== 'push') {
+    const alias = gitAlias(subcmd);
+    if (alias && (/\bpush\b/.test(alias) || alias.startsWith('!'))) block(`git-Alias „${subcmd}“ → ${alias}`, raw);
+  }
+  if (subcmd !== 'push') return;
+  if (words?.viaStdinArgs) block('git push mit Argumenten aus stdin (xargs)', raw);
   const rest = args.slice(i + 1);
+  if (rest.some(isDynamicWord)) block('git push mit Ziel aus Variable', raw);
   const opts = rest.filter((a) => a.startsWith('-'));
   const refs = rest.filter((a) => !a.startsWith('-'));
   if (opts.some((o) => /^(--force|--force-with-lease|--force-if-includes|--all|--mirror|--delete|--prune|-[a-zA-Z]*[fd])/.test(o)))
@@ -114,9 +136,31 @@ function checkVio(base, words, a, raw, ctx) {
   }
 }
 
+// Inline-Code, der Prozesse startet oder Shell ausführt: nicht statisch prüfbar.
+const INLINE_PROCESS = /child_process|exec(Sync|File)?\s*\(|spawn(Sync)?\s*\(|subprocess|os\.(system|popen|exec)|Popen|Deno\.(run|Command)|Bun\.(spawn|\$)|shell_exec|passthru|proc_open|system\s*\(/;
+// In perl, ruby und php führen Backticks Shell-Befehle aus (in JS sind es Template-Strings).
+const BACKTICK_EXEC = new Set(['perl', 'ruby', 'php']);
+// Produktions-APIs, die nie per HTTP aus der Sitzung angesprochen werden.
+const PROD_API = /api\.github\.com\/\S*\/(pulls\/\d+\/merge|merges)\b|api\.supabase\.com|api\.cloudflare\.com|api\.stripe\.com/i;
+// Gefährliche Befehlsmuster in Skripttext (für bash datei.sh, source datei).
+const MAX_SCRIPT_BYTES = 256 * 1024;
+
+function checkScriptFile(file, raw, depth, ctx) {
+  if (isDynamicWord(file)) block('Skriptpfad aus Variable', raw);
+  let text;
+  try {
+    const full = resolve(ctx.cwd, file);
+    text = readFileSync(full, 'utf8');
+  } catch { block(`Skript „${file}“ nicht lesbar – nicht prüfbar`, raw); }
+  if (text.length > MAX_SCRIPT_BYTES) block(`Skript „${file}“ zu groß zum Prüfen`, raw);
+  checkLine(text, raw, depth + 1, ctx);
+}
+
 function checkCmd(words, raw, depth, ctx) {
   const redirs = words.redirs;
+  const dynamicHead = words.dynamic === true;
   words = strip(words); words.redirs = redirs;
+  if (words.length && (dynamicHead || isDynamicWord(words[0]))) block('Befehlswort nicht statisch prüfbar', raw);
   if (!words.length) {
     if (ctx.vio) for (const r of redirs ?? []) { if (!r.op.endsWith('&') && !r.op.startsWith('<')) { const why = checkWritePath(r.target, ctx); if (why) block(`VIO-Schreibgrenze: ${why}`, raw); } }
     return;
@@ -125,9 +169,10 @@ function checkCmd(words, raw, depth, ctx) {
   const base = cmd.split('/').pop();
   const sub = a.filter((x) => !x.startsWith('-'));
 
-  if (SHELLS.has(base) && a.includes('-c')) {
+  const cIdx = a.findIndex((x) => /^-[a-zA-Z]*c[a-zA-Z]*$/.test(x)); // -c, -lc, -ec …
+  if (SHELLS.has(base) && cIdx >= 0) {
     if (ctx.vio) block('VIO: verschachtelte Shell', raw);
-    const inner = a[a.indexOf('-c') + 1];
+    const inner = a[cIdx + 1];
     if (inner !== undefined) return checkLine(inner, raw, depth + 1, ctx);
   }
   if (base === 'eval') {
@@ -138,7 +183,31 @@ function checkCmd(words, raw, depth, ctx) {
   checkVoice(base, a, words, raw);
   if (ctx.vio) checkVio(base, words, a, raw, ctx);
 
-  if (base === 'git') return checkGit(a, raw);
+  // Shell liest Befehle aus einer Pipe (echo … | bash): Inhalt nicht prüfbar.
+  if (SHELLS.has(base) && cIdx < 0 && !a.some((x) => !x.startsWith('-')) && /\|/.test(raw))
+    block('Shell liest Befehle aus einer Pipe', raw);
+  // Shell führt Skriptdatei aus (bash deploy.sh, bash < deploy.sh) oder source/. lädt sie: Inhalt mitprüfen.
+  if (SHELLS.has(base) && cIdx < 0) {
+    const file = a.find((x) => !x.startsWith('-'));
+    if (file) checkScriptFile(file, raw, depth, ctx);
+    for (const r of words.redirs ?? []) if (r.op === '<' && r.target) checkScriptFile(r.target, raw, depth, ctx);
+  }
+  if ((base === 'source' || base === '.') && a[0]) checkScriptFile(a[0], raw, depth, ctx);
+  // Interpreter-Inline-Code, der Prozesse startet.
+  if (INLINE[base]) {
+    const i = a.findIndex((x) => INLINE[base].includes(x));
+    const code = i >= 0 ? a.slice(i + 1).join(' ') : '';
+    if (i >= 0 && (INLINE_PROCESS.test(code) || (BACKTICK_EXEC.has(base) && code.includes('`'))))
+      block(`Prozessstart aus Inline-Code (${base})`, raw);
+  }
+  // HTTP direkt an Produktions-APIs (Merge, Supabase-/Cloudflare-/Stripe-Management).
+  if (NET_TOOLS.has(base) && a.some((x) => PROD_API.test(x))) block('HTTP-Aufruf einer Produktions-API', raw);
+
+  const sensitive = ['gh', 'supabase', 'wrangler'].includes(base);
+  if (sensitive && words.viaStdinArgs) block(`${base} mit Argumenten aus stdin (xargs)`, raw);
+  if (sensitive && sub.slice(0, 2).some(isDynamicWord)) block(`${base}-Unterbefehl aus Variable`, raw);
+
+  if (base === 'git') return checkGit(a, raw, words);
   if (base === 'gh') {
     if (sub[0] === 'pr' && sub[1] === 'merge') block('PR-Merge', raw);
     if (sub[0] === 'api' && a.some((x) => /\/(merges?|pulls\/\d+\/merge)\b/.test(x))) block('Merge über API', raw);

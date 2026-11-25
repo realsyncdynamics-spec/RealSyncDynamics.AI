@@ -137,8 +137,13 @@ function unknown(reason: string): { status: 'unknown'; value: null; reason: stri
 // Einzelne Felder
 // ─────────────────────────────────────────────────────────────────────
 
-/** Trenner, mit denen Seitentitel Name und Zusatz verbinden. */
-const TITLE_SEPARATORS = /\s+[|–—·•:]\s+|\s+-\s+/;
+/**
+ * Trenner, mit denen Seitentitel Name und Zusatz verbinden. Genau ein Leerzeichen
+ * je Seite statt `\s+`: Das frühere `\s+[|–—·•:]\s+` lief auf langen Leerzeichenfolgen
+ * im Fremdtitel quadratisch (polynomielles ReDoS). Überzählige Leerzeichen entfernt
+ * danach `cleanValue`.
+ */
+const TITLE_SEPARATORS = /\s[|–—·•:-]\s/;
 const GENERIC_TITLES = /^(startseite|home|willkommen|herzlich willkommen|index|homepage)$/i;
 const LEGAL_FORM_RE = /\b(GmbH|gGmbH|UG|AG|KG|OHG|GbR|e\.\s?K\.|e\.\s?Kfr\.|Inh\.|& Co\.?)(?=\s|$|,)/;
 
@@ -246,8 +251,13 @@ function deriveEmail(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => Fi
 
 const DAY = '(?:Mo(?:ntag)?|Di(?:enstag)?|Mi(?:ttwoch)?|Do(?:nnerstag)?|Fr(?:eitag)?|Sa(?:mstag)?|So(?:nntag)?)\\.?';
 const TIME = '\\d{1,2}(?:[:.]\\d{2})?';
-const HOURS_SEGMENT = `${DAY}(?:\\s*(?:[-–—]|bis)\\s*${DAY})?\\s*:?\\s*${TIME}\\s*(?:[-–—]|bis)\\s*${TIME}\\s*(?:Uhr)?`;
-const HOURS_RE = new RegExp(`${HOURS_SEGMENT}(?:\\s*(?:[,;/|]|und)?\\s*(?:${HOURS_SEGMENT}|${TIME}\\s*(?:[-–—]|bis)\\s*${TIME}\\s*(?:Uhr)?))*`, 'gi');
+// Kein `\s*X?\s*` und kein `\s*` am Segmentende vor einem `\s*` im nächsten Schritt:
+// Solche Folgen können dieselben Leerzeichen auf viele Arten aufteilen und liefen
+// quadratisch (polynomielles ReDoS). Optionale Teile tragen ihr Leerzeichen selbst.
+const RANGE = '\\s*(?:[-–—]|bis)\\s*';
+const UHR = '(?:\\s*Uhr)?';
+const HOURS_SEGMENT = `${DAY}(?:${RANGE}${DAY})?\\s*(?::\\s*)?${TIME}${RANGE}${TIME}${UHR}`;
+const HOURS_RE = new RegExp(`${HOURS_SEGMENT}(?:\\s*(?:(?:[,;/|]|und)\\s*)?(?:${HOURS_SEGMENT}|${TIME}${RANGE}${TIME}${UHR}))*`, 'gi');
 
 function deriveOpeningHours(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => FieldSource): DraftField<string> {
   const text = d.visible_text ?? '';

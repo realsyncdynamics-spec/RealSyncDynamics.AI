@@ -10,6 +10,8 @@ on:
 jobs:
   deploy:
     name: Build and deploy frontend
+    # R1 (Phase 0, 18.11.2026): Prod-Wirkung nur nach Freigabe in der GitHub-Environment `production`.
+    environment: production
     env:
       # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
       # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.

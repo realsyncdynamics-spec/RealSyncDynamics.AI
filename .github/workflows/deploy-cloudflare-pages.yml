@@ -208,7 +208,8 @@ jobs:
     timeout-minutes: 15
     needs: build
     # Pull requests may build/validate, but must never deploy to the production Pages branch.
-    if: github.event_name != 'pull_request' && needs.build.outputs.cf_ready == 'true'
+    # R1: auch workflow_dispatch nur von main, denn der Upload geht fest nach --branch=main.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     # R1 (Phase 0, 18.11.2026): Prod-Wirkung nur nach Freigabe in der GitHub-Environment `production`.
     environment: production

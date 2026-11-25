@@ -12,6 +12,8 @@ jobs:
   delete:
     name: Delete ${{ inputs.function_name }}
     runs-on: ubuntu-latest
+    # R1 (Phase 0, 18.11.2026): Prod-Wirkung nur nach Freigabe in der GitHub-Environment `production`.
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:

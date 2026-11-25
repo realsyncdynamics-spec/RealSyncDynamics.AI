@@ -26,6 +26,8 @@ concurrency:
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
+    # R1 (Phase 0, 18.11.2026): Prod-Wirkung nur nach Freigabe in der GitHub-Environment `production`.
+    environment: production
     timeout-minutes: 30
 
     steps:

@@ -79,6 +79,11 @@ describe('Anon-Prompt: KI-Mitarbeiter', () => {
     expect(prompt.replace(/Claude Code Optimizer/g, '')).not.toMatch(/\bClaude\b/);
   });
 
+  it('nutzt durchgehend den Markennamen „RealSync Dynamics & AI“', () => {
+    expect(prompt).toContain('RealSync Dynamics & AI');
+    expect(prompt).not.toMatch(/RealSync Dynamics AI|RealSyncDynamics\.AI/);
+  });
+
   it('verbietet Ausführungsbestätigungen und eigenmächtige Aktionen', () => {
     expect(prompt).toContain('Du führst nichts aus');
     expect(prompt).toContain('Bestätige nie');
@@ -94,7 +99,7 @@ describe('Anon-Prompt: KI-Mitarbeiter', () => {
 
 describe('Anon-Widget: Begrüßung und Einstiege', () => {
   it('begrüßt als digitaler KI-Mitarbeiter', () => {
-    expect(chatSource).toContain('Ich bin SYNC, dein digitaler KI-Mitarbeiter von RealSync Dynamics AI.');
+    expect(chatSource).toContain('Ich bin SYNC, dein digitaler KI-Mitarbeiter von RealSync Dynamics & AI.');
     expect(chatSource).not.toContain('öffentliche Compliance-Assistent');
   });
 

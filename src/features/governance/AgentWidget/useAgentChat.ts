@@ -248,7 +248,7 @@ const ANON_WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hallo! Ich bin SYNC, dein digitaler KI-Mitarbeiter von RealSync Dynamics AI. Ich unterstütze dich dabei, die passenden KI-Lösungen für dein Unternehmen zu finden und die verfügbaren Funktionen unserer Plattform zu nutzen. Was möchtest du heute erreichen?',
+    'Hallo! Ich bin SYNC, dein digitaler KI-Mitarbeiter von RealSync Dynamics & AI. Ich unterstütze dich dabei, die passenden KI-Lösungen für dein Unternehmen zu finden und die verfügbaren Funktionen unserer Plattform zu nutzen. Was möchtest du heute erreichen?',
   ts: Date.now(),
 };
 

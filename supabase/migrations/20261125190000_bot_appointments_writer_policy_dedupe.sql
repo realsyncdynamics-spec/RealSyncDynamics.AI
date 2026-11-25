@@ -53,9 +53,6 @@ COMMENT ON INDEX public.bot_appointments_open_conversation_uniq IS
 
 DO $appt_policy$
 BEGIN
-  IF to_regclass('public.bot_appointments') IS NULL THEN
-    RETURN;
-  END IF;
   IF to_regprocedure('public.is_tenant_writer(uuid)') IS NULL THEN
     RAISE EXCEPTION 'public.is_tenant_writer(uuid) fehlt — Policy wird nicht ohne Rollenprüfung ersetzt';
   END IF;

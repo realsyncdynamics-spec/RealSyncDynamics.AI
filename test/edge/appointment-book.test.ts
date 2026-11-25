@@ -388,3 +388,37 @@ describe('appointment-book — strenge Eingaben (DEPUTY P2-3, P3)', () => {
     expect(parseAppointmentInput({ ...VALID, notes: 'Zeile 1\nZeile 2' }, NOW).ok).toBe(true);
   });
 });
+
+describe('appointment-book — Unicode und Kalender (DEPUTY Runde 2)', () => {
+  it.each([
+    ['Hangul-Füllzeichen als Name', { customer_name: 'ㅤ' }],
+    ['Braille-Leerzeichen als Name', { customer_name: '⠀' }],
+    ['weiches Trennzeichen als Name', { customer_name: '­' }],
+    ['Tag-Zeichen als Name', { customer_name: '\u{E0041}' }],
+    ['C1-Steuerzeichen im Namen', { customer_name: 'Max\u0085' }],
+    ['Zeilenumbruch im Namen', { customer_name: 'Max\nMuster' }],
+    ['ungepaartes Surrogat', { customer_name: 'Max\uD800' }],
+    ['30. Februar', { requested_at: '2027-02-30T09:00Z' }],
+    ['24:00 Uhr', { requested_at: '2026-12-01T24:00Z' }],
+  ])('%s → 400', async (_n, extra) => {
+    const h = harness();
+    const res = await h.handler(post({ ...VALID, ...extra }));
+    expect(res.status).toBe(400);
+    expect(h.inserted).toHaveLength(0);
+  });
+
+  it('unsichtbare Zeichen werden entfernt, damit die Duplikatprüfung greift', () => {
+    expect(parseAppointmentInput({ ...VALID, customer_name: 'Ma​x' }, NOW)).toMatchObject({ ok: true, value: { customerName: 'Max' } });
+  });
+
+  it('Umlaute, Bindestriche, Apostrophe, Emoji mit ZWJ und NFD-Eingaben bleiben erhalten', () => {
+    for (const [inp, out] of [["Jürgen-Müller O'Neil", "Jürgen-Müller O'Neil"], ['Max 👨‍👩‍👧', 'Max 👨‍👩‍👧'], ['Müller', 'Müller']]) {
+      expect(parseAppointmentInput({ ...VALID, customer_name: inp }, NOW)).toMatchObject({ ok: true, value: { customerName: out } });
+    }
+  });
+
+  it('29. Februar im Schaltjahr ist gültig', () => {
+    const r = parseAppointmentInput({ ...VALID, requested_at: '2028-02-29T09:00Z' }, new Date('2028-01-15T12:00:00Z'));
+    expect(r).toMatchObject({ ok: true, value: { requestedAt: '2028-02-29T09:00:00.000Z' } });
+  });
+});

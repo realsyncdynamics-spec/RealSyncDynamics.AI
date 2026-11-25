@@ -35,6 +35,8 @@ jobs:
   cutover:
     name: Bind domain + fix DNS + purge
     runs-on: ubuntu-latest
+    # R1b (25.11.2026): manueller Prod-Eingriff nur nach Freigabe in der Environment `production`.
+    environment: production
     env:
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

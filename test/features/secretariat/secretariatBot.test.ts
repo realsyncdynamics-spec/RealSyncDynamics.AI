@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, buildSecretariatPersona, draftBotArgs, isSecretariatBot, readSecretariatConfig,
-  SecretariatApprovalError, secretariatStatus, updateDraftPatch,
+  approvalRequest, SECRETARIAT_ACTIVATION_LOCKED, buildSecretariatPersona, draftBotArgs, isSecretariatBot, readSecretariatConfig,
+  SecretariatApprovalError, secretariatStatus, updateDraftPatch, type ServerApprovalStatus,
 } from '../../../src/features/secretariat/secretariatBot';
 import { applyOwnerEdit, deriveSecretariatDraft } from '../../../src/features/secretariat/websiteDraft';
 import type { Bot } from '../../../src/features/bots/types';
@@ -34,7 +34,7 @@ describe('draftBotArgs', () => {
   it('legt den Bot immer deaktiviert und ohne Freigabe an', () => {
     expect(args.enabled).toBe(false);
     expect(args.tenant_id).toBe('t1');
-    expect(readSecretariatConfig(asBot(args))?.approval).toBeNull();
+    expect(readSecretariatConfig(asBot(args))?.approval).toBeUndefined();
     expect(isSecretariatBot(asBot(args))).toBe(true);
   });
 
@@ -71,59 +71,104 @@ describe('buildSecretariatPersona', () => {
   });
 });
 
-describe('Freigabe-Gate', () => {
+const server = (p: Partial<ServerApprovalStatus> = {}): ServerApprovalStatus => ({
+  hasActiveApproval: false, valid: false, everApproved: false, approvedAt: null, approvedBy: null, ...p,
+});
+const VALID = server({ hasActiveApproval: true, valid: true, everApproved: true, approvedAt: AT, approvedBy: 'u1' });
+
+describe('Freigabe-Anfrage (serverseitige Freigabe)', () => {
   const bot = asBot(draftBotArgs('t1', draft));
 
-  it('Entwurf ohne Freigabe hat Status draft', async () => {
-    expect(await secretariatStatus(bot)).toBe('draft');
+  it('verweigert ohne Anmeldung oder ohne Bestätigung', () => {
+    expect(() => approvalRequest(bot, { userId: null, confirmed: true })).toThrow(SecretariatApprovalError);
+    expect(() => approvalRequest(bot, { userId: 'u1', confirmed: false })).toThrow(/bestätigen/);
   });
 
-  it('verweigert Freigabe ohne Anmeldung oder ohne Bestätigung', async () => {
-    await expect(approvalPatch(bot, { userId: null, at: AT, confirmed: true })).rejects.toBeInstanceOf(SecretariatApprovalError);
-    await expect(approvalPatch(bot, { userId: 'u1', at: AT, confirmed: false })).rejects.toThrow(/bestätigen/);
-  });
-
-  it('verweigert Freigabe bei fehlenden Pflichtangaben', async () => {
+  it('verweigert bei fehlenden Pflichtangaben', () => {
     const leer = applyOwnerEdit(applyOwnerEdit(draft, 'phone', '', AT), 'businessName', '', AT);
-    const b = asBot(draftBotArgs('t1', leer));
-    await expect(approvalPatch(b, { userId: 'u1', at: AT, confirmed: true })).rejects.toThrow(/Name des Betriebs/);
+    expect(() => approvalRequest(asBot(draftBotArgs('t1', leer)), { userId: 'u1', confirmed: true })).toThrow(/Name des Betriebs/);
   });
 
-  it('Freigabe speichert Hash, aktiviert aber nicht (serverseitiges Gate fehlt)', async () => {
+  it('übergibt nur Bot-ID, geprüften Stand und Aktivierungswunsch, keinen Hash und keinen Nutzer', () => {
+    const req = approvalRequest({ ...bot, updated_at: '2026-11-25T10:05:00.123456+00:00' }, { userId: 'u1', confirmed: true });
+    expect(req).toEqual({ botId: 'b1', expectedUpdatedAt: '2026-11-25T10:05:00.123456+00:00', activate: false });
     expect(SECRETARIAT_ACTIVATION_LOCKED).toBe(true);
-    const patch = await approvalPatch(bot, { userId: 'u1', at: AT, confirmed: true });
+  });
+});
+
+describe('Status aus dem Freigabestand der Datenbank', () => {
+  const bot = asBot(draftBotArgs('t1', draft));
+
+  it('nicht prüfbar → unknown, nie freigegeben (fail-closed)', () => {
+    expect(secretariatStatus(bot, null)).toBe('unknown');
+    expect(secretariatStatus({ ...bot, enabled: true }, null)).toBe('unknown');
+  });
+
+  it('Entwurf, gesperrt, aktiv', () => {
+    expect(secretariatStatus(bot, server())).toBe('draft');
+    expect(secretariatStatus(bot, VALID)).toBe('locked');
+    expect(secretariatStatus({ ...bot, enabled: true }, VALID)).toBe('approved');
+  });
+
+  it('geändert nach Freigabe → changed; aktiv ohne gültige Freigabe → Warnung', () => {
+    const invalidated = server({ everApproved: true });
+    expect(secretariatStatus(bot, invalidated)).toBe('changed');
+    expect(secretariatStatus({ ...bot, enabled: true }, invalidated)).toBe('active-unapproved');
+    // Freigabe vorhanden, passt aber nicht zum Inhalt (serverseitig festgestellt)
+    expect(secretariatStatus(bot, server({ hasActiveApproval: true, valid: false, everApproved: true }))).toBe('changed');
+  });
+
+  it('kein Sekretariats-Bot → kein Status', () => {
+    expect(secretariatStatus({ config: {}, enabled: true }, VALID)).toBeNull();
+  });
+});
+
+describe('updateDraftPatch', () => {
+  const bot = asBot(draftBotArgs('t1', draft));
+  const edited = applyOwnerEdit(draft, 'phone', '0221 7777777', AT);
+
+  it('pausiert einen aktiven Bot im selben Schritt', () => {
+    const patch = updateDraftPatch({ ...bot, enabled: true }, edited.fields);
     expect(patch.enabled).toBe(false);
-    const approved = { ...bot, ...patch } as Bot;
-    const cfg = readSecretariatConfig(approved);
-    expect(cfg?.approval).toMatchObject({ approvedBy: 'u1', approvedAt: AT });
-    expect(cfg?.approval?.fieldsSha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(await secretariatStatus(approved)).toBe('locked');
-    expect(await secretariatStatus({ ...approved, enabled: true })).toBe('approved');
-
-    // Aktiv geschaltet (z. B. über den Bot-Editor), danach geändert:
-    const active = { ...approved, enabled: true } as Bot;
-    const edited = applyOwnerEdit(draft, 'phone', '0221 7777777', AT);
-    const changed = { ...active, ...updateDraftPatch(active, edited.fields) } as Bot;
-    // updateDraftPatch fasst `enabled` nicht an — aktiv mit ungültiger Freigabe ist ein Warnzustand
-    expect(await secretariatStatus(changed)).toBe('active-unapproved');
-    expect(await secretariatStatus({ ...changed, enabled: false })).toBe('changed');
+    expect(patch.persona).toContain('0221 7777777');
   });
 
-  it('per Bot-Editor aktivierter Entwurf ohne Freigabe wird als Warnung erkannt', async () => {
-    expect(await secretariatStatus({ ...bot, enabled: true })).toBe('active-unapproved');
+  it('fasst enabled bei einem deaktivierten Bot nicht an', () => {
+    expect('enabled' in updateDraftPatch(bot, edited.fields)).toBe(false);
   });
 
-  it('Herkunft/Zeitstempel ändern den Hash nicht, nur Werte', async () => {
-    const patch = await approvalPatch(bot, { userId: 'u1', at: AT, confirmed: true });
-    const approved = { ...bot, ...patch } as Bot;
-    const sameValue = applyOwnerEdit(draft, 'phone', '0221 1234560', '2026-12-01T00:00:00.000Z');
-    const resaved = { ...approved, ...updateDraftPatch(approved, sameValue.fields) } as Bot;
-    // Freigabe bleibt gültig (gesperrt, nicht „geändert“).
-    expect(await secretariatStatus(resaved)).toBe('locked');
+  it('entfernt die veraltete Browser-Freigabe aus der Konfiguration', () => {
+    const legacy = asBot(draftBotArgs('t1', draft), {
+      config: { vertical: 'general', secretariat: { ...readSecretariatConfig(bot), approval: { approvedBy: 'u1', fieldsSha256: 'x' } } },
+    });
+    const patch = updateDraftPatch(legacy, edited.fields);
+    const cfg = (patch.config as { secretariat: Record<string, unknown> }).secretariat;
+    expect('approval' in cfg).toBe(false);
+    expect((patch.config as { vertical: string }).vertical).toBe('general');
   });
 
-  it('kein Sekretariats-Bot → kein Status', async () => {
-    expect(await secretariatStatus({ config: {}, enabled: true })).toBeNull();
-    expect(() => updateDraftPatch({ config: {} }, draft.fields)).toThrow();
+  it('kein Sekretariats-Bot → Fehler', () => {
+    expect(() => updateDraftPatch({ config: {}, enabled: false }, draft.fields)).toThrow();
+  });
+});
+
+describe('Herkunftsnachweis nur bei tatsächlicher Änderung', () => {
+  it('gleicher Wert nach Bereinigung lässt Entwurf und Herkunft unverändert', () => {
+    const same = applyOwnerEdit(draft, 'phone', ' 0221 1234560 ', '2026-12-01T00:00:00.000Z');
+    expect(same).toBe(draft);
+    expect(same.fields.phone).toMatchObject({ source: { method: 'phone-pattern', fetchedAt: AT } });
+    const services = applyOwnerEdit(draft, 'services', ['Badsanierung'], '2026-12-01T00:00:00.000Z');
+    expect(services).toBe(draft);
+  });
+
+  it('leer bleibt leer ohne neuen Eintrag', () => {
+    const leer = applyOwnerEdit(draft, 'email', '', AT);
+    expect(applyOwnerEdit(leer, 'email', '   ', '2026-12-01T00:00:00.000Z')).toBe(leer);
+  });
+
+  it('echte Änderung setzt owner-edit und behält die Website als Ursprung', () => {
+    const changed = applyOwnerEdit(draft, 'phone', '0221 7777777', '2026-12-01T00:00:00.000Z');
+    expect(changed).not.toBe(draft);
+    expect(changed.fields.phone).toMatchObject({ source: { method: 'owner-edit' }, derivedFrom: { method: 'phone-pattern' } });
   });
 });

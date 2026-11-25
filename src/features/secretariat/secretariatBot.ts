@@ -6,27 +6,32 @@
 // Assistenten entsteht aus `persona` (siehe `buildBotPrompt` in
 // supabase/functions/_shared/bots.ts).
 //
-// Freigabe: Der Inhaber bestätigt die Angaben. Dabei wird ein Hash über die
-// freigegebenen Felder gespeichert. Ändert jemand danach Angaben, passt der
-// Hash nicht mehr und der Status springt auf „geändert — neu freigeben“.
-//
-// Grenze (bewusst offen, siehe PR): Das Gate wirkt in der Oberfläche. Die
-// serverseitige Durchsetzung (bot-chat/whatsapp-webhook lehnen Sekretariats-
-// Bots ohne gültige Freigabe ab, Freigabe nur durch Owner/Admin) braucht eine
-// Backend-Änderung mit Einzel-Freigabe.
+// Freigabe (serverseitig, Migration 20261125183000_secretariat_bot_approval_gate):
+// Owner/Admin geben über die RPC `approve_secretariat_bot` frei. Prüfgegenstand
+// und Hash entstehen in der Datenbank (Persona, Begrüßung, Kanal, Fähigkeiten,
+// Konfiguration). Jede spätere Änderung macht die Freigabe ungültig; ein
+// BEFORE-Trigger lässt `enabled = true` nur mit gültiger Freigabe zu – für jeden
+// Schreibweg, nicht nur diese Oberfläche. `resolveBot` prüft zur Laufzeit erneut.
 
-import { canonicalHash } from '../../../packages/siteos-core/src/canonical';
 import type { Bot, BotConfig, CreateBotArgs, UpdateBotArgs } from '../bots/types';
 import {
   approvalBlockers, SECRETARIAT_DRAFT_VERSION,
   type SecretariatDraft, type SecretariatFields,
 } from './websiteDraft';
 
-export interface SecretariatApproval {
-  approvedBy: string;
-  approvedAt: string;
-  /** SHA-256 über die kanonisierten Feldwerte zum Zeitpunkt der Freigabe. */
-  fieldsSha256: string;
+/**
+ * Freigabestand laut Datenbank (`secretariat_bot_approval_status`). Der Browser
+ * berechnet keinen Hash mehr: Ein im Client erzeugter Hash wäre kein Nachweis.
+ */
+export interface ServerApprovalStatus {
+  /** Es gibt eine nicht widerrufene Freigabe. */
+  hasActiveApproval: boolean;
+  /** Diese Freigabe passt zum aktuellen Inhalt (serverseitig geprüft). */
+  valid: boolean;
+  /** Es gab jemals eine Freigabe (auch eine inzwischen ungültige). */
+  everApproved: boolean;
+  approvedAt: string | null;
+  approvedBy: string | null;
 }
 
 export interface SecretariatConfig {
@@ -34,20 +39,20 @@ export interface SecretariatConfig {
   sourceUrl: string;
   fetchedAt: string;
   fields: SecretariatFields;
-  approval: SecretariatApproval | null;
+  /**
+   * Veraltet (#2435): Freigabe aus dem Browser. Wird nicht mehr geschrieben und
+   * nirgends ausgewertet; die Datenbank ignoriert sie im Prüfgegenstand.
+   */
+  approval?: unknown;
 }
 
-export type SecretariatStatus = 'draft' | 'approved' | 'changed' | 'paused' | 'active-unapproved' | 'locked';
+export type SecretariatStatus = 'draft' | 'approved' | 'changed' | 'paused' | 'active-unapproved' | 'locked' | 'unknown';
 
 /**
- * Aktivierung gesperrt, solange das serverseitige Freigabe-Gate fehlt.
- *
- * Das Gate in dieser Datei wirkt nur in der Oberfläche: `public.bots` erlaubt
- * jedem Mandantenmitglied ein UPDATE auf `enabled`, und `resolveBot`
- * (`supabase/functions/_shared/bots.ts`) prüft nur `enabled`, nicht die Freigabe.
- * Bis das serverseitige Gate umgesetzt und freigegeben ist
- * (`docs/secretariat/SERVER_GATE_KONZEPT.md`), speichert die Freigabe nur den
- * Hash und lässt den Assistenten deaktiviert. Umschalten nur mit Einzel-Freigabe.
+ * Aktivierung aus dieser Oberfläche gesperrt, bis das serverseitige Gate
+ * (Migration + `resolveBot`) LIVE und verifiziert ist. Die Freigabe selbst läuft
+ * bereits serverseitig; sie aktiviert nur nicht. Umschalten nur mit Einzel-Freigabe
+ * (`docs/secretariat/SERVER_GATE_KONZEPT.md`).
  */
 export const SECRETARIAT_ACTIVATION_LOCKED = true;
 
@@ -58,18 +63,8 @@ export const STATUS_LABEL: Record<SecretariatStatus, string> = {
   changed: 'Geändert — bitte neu freigeben',
   paused: 'Freigegeben, aber pausiert',
   'active-unapproved': 'Aktiv ohne gültige Freigabe — bitte prüfen',
+  unknown: 'Freigabestand nicht prüfbar — der Assistent bleibt aus',
 };
-
-/** Nur die Werte — Herkunft und Zeitstempel ändern den Freigabe-Hash nicht. */
-export function fieldValues(fields: SecretariatFields): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, field] of Object.entries(fields)) out[key] = field.status === 'known' ? field.value : null;
-  return out;
-}
-
-export function fieldsHash(fields: SecretariatFields): Promise<string> {
-  return canonicalHash(fieldValues(fields));
-}
 
 // ─────────────────────────────────────────────────────────────────────
 // Prompt-Bausteine
@@ -144,7 +139,6 @@ export function draftBotArgs(tenantId: string, draft: SecretariatDraft): CreateB
     sourceUrl: draft.sourceUrl,
     fetchedAt: draft.fetchedAt,
     fields: draft.fields,
-    approval: null,
   };
   return {
     tenant_id: tenantId,
@@ -159,58 +153,68 @@ export function draftBotArgs(tenantId: string, draft: SecretariatDraft): CreateB
   };
 }
 
-/** Geänderte Felder speichern. Eine bestehende Freigabe bleibt stehen, wird aber ungültig (Hash). */
-export function updateDraftPatch(bot: Pick<Bot, 'config'>, fields: SecretariatFields): UpdateBotArgs {
+/**
+ * Geänderte Felder speichern.
+ * - Die Datenbank macht eine bestehende Freigabe dabei ungültig.
+ * - Ist der Bot aktiv, wird er im selben Schritt pausiert (`enabled: false`):
+ *   Geänderte Inhalte dürfen nicht ungeprüft weiterlaufen, und der Trigger würde
+ *   „aktiv ohne gültige Freigabe“ ohnehin ablehnen. So ist die Pause sichtbar
+ *   statt eines Fehlers.
+ * - Die veraltete Browser-Freigabe in `config.secretariat.approval` entfällt.
+ */
+export function updateDraftPatch(bot: Pick<Bot, 'config' | 'enabled'>, fields: SecretariatFields): UpdateBotArgs {
   const current = readSecretariatConfig(bot);
   if (!current) throw new Error('Kein Sekretariats-Bot.');
+  const { approval: _legacy, ...rest } = current;
+  void _legacy;
   return {
     persona: buildSecretariatPersona(fields),
     greeting: buildSecretariatGreeting(fields),
-    config: { ...(bot.config ?? {}), secretariat: { ...current, fields } },
+    config: { ...(bot.config ?? {}), secretariat: { ...rest, fields } },
+    ...(bot.enabled ? { enabled: false } : {}),
   };
 }
 
 export class SecretariatApprovalError extends Error {}
 
+export interface ApprovalRequest {
+  botId: string;
+  /** Stand, den der Inhaber geprüft hat; die RPC lehnt ab, wenn sich der Bot seitdem geändert hat. */
+  expectedUpdatedAt: string;
+  activate: boolean;
+}
+
 /**
- * Freigabe durch den Inhaber: prüft die Pflichtangaben und speichert den Hash.
- * Aktiviert wird nur, wenn `SECRETARIAT_ACTIVATION_LOCKED` aus ist (heute nicht).
- * Ohne `userId` keine Freigabe.
+ * Prüft im Browser nur, was die Bedienung braucht (angemeldet, bestätigt,
+ * Pflichtangaben), und baut den Aufruf der RPC. Rolle, Mandant, Pflichtangaben
+ * und Hash prüft die Datenbank erneut; nichts davon kommt aus diesem Objekt.
  */
-export async function approvalPatch(
-  bot: Pick<Bot, 'config'>,
-  input: { userId: string | null | undefined; at: string; confirmed: boolean },
-): Promise<UpdateBotArgs> {
+export function approvalRequest(
+  bot: Pick<Bot, 'id' | 'config' | 'updated_at'>,
+  input: { userId: string | null | undefined; confirmed: boolean },
+): ApprovalRequest {
   const current = readSecretariatConfig(bot);
   if (!current) throw new SecretariatApprovalError('Kein Sekretariats-Bot.');
   if (!input.userId) throw new SecretariatApprovalError('Freigabe nur angemeldet möglich.');
   if (!input.confirmed) throw new SecretariatApprovalError('Bitte bestätigen, dass die Angaben geprüft sind.');
   const blockers = approvalBlockers({ version: current.version, sourceUrl: current.sourceUrl, fetchedAt: current.fetchedAt, fields: current.fields });
   if (blockers.length > 0) throw new SecretariatApprovalError(blockers.join(' '));
-  const approval: SecretariatApproval = {
-    approvedBy: input.userId,
-    approvedAt: input.at,
-    fieldsSha256: await fieldsHash(current.fields),
-  };
-  return {
-    persona: buildSecretariatPersona(current.fields),
-    greeting: buildSecretariatGreeting(current.fields),
-    config: { ...(bot.config ?? {}), secretariat: { ...current, approval } },
-    // Fail-closed: Aktivieren erst mit serverseitigem Gate (siehe oben).
-    enabled: !SECRETARIAT_ACTIVATION_LOCKED,
-  };
+  return { botId: bot.id, expectedUpdatedAt: bot.updated_at, activate: !SECRETARIAT_ACTIVATION_LOCKED };
 }
 
 /**
- * Status für die Anzeige. Ohne gültige Freigabe (keine oder Hash passt nicht)
- * ist ein aktiver Bot ein Warnzustand — `enabled` lässt sich über den
- * Bot-Editor setzen, das Gate hier ist nur die Oberfläche.
+ * Status für die Anzeige aus dem Freigabestand der Datenbank.
+ * `server === null` heißt: nicht prüfbar (RPC fehlt oder Fehler) → `unknown`,
+ * nie „freigegeben“.
  */
-export async function secretariatStatus(bot: Pick<Bot, 'config' | 'enabled'>): Promise<SecretariatStatus | null> {
-  const cfg = readSecretariatConfig(bot);
-  if (!cfg) return null;
-  const valid = cfg.approval !== null && (await fieldsHash(cfg.fields)) === cfg.approval.fieldsSha256;
-  if (!valid) return bot.enabled ? 'active-unapproved' : cfg.approval ? 'changed' : 'draft';
+export function secretariatStatus(
+  bot: Pick<Bot, 'config' | 'enabled'>,
+  server: ServerApprovalStatus | null,
+): SecretariatStatus | null {
+  if (!readSecretariatConfig(bot)) return null;
+  if (!server) return 'unknown';
+  const valid = server.hasActiveApproval && server.valid;
+  if (!valid) return bot.enabled ? 'active-unapproved' : server.everApproved ? 'changed' : 'draft';
   if (bot.enabled) return 'approved';
   return SECRETARIAT_ACTIVATION_LOCKED ? 'locked' : 'paused';
 }

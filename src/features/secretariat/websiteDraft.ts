@@ -445,7 +445,8 @@ export function deriveSecretariatDraft(raw: WebsiteDiscovery, now: () => string 
 /**
  * Änderung durch den Inhaber. Der Wert wird bereinigt; der ursprüngliche
  * Herkunftsnachweis bleibt als `derivedFrom` erhalten (Prüfpfad).
- * Ein leerer Wert setzt das Feld auf `unknown`.
+ * Ein leerer Wert setzt das Feld auf `unknown`. Ohne inhaltliche Änderung bleibt
+ * der Entwurf unverändert (gleiches Objekt).
  */
 export function applyOwnerEdit<K extends FieldKey>(
   draft: SecretariatDraft,
@@ -456,6 +457,13 @@ export function applyOwnerEdit<K extends FieldKey>(
   const prev = draft.fields[key] as DraftField<unknown>;
   const cleaned = cleanFieldValue(value as unknown);
   const isEmpty = cleaned === null;
+  // Keine inhaltliche Änderung (gleicher Wert nach Bereinigung, oder leer bleibt leer):
+  // Entwurf unverändert zurück. So bleibt der Herkunftsnachweis „von der Website“
+  // erhalten, statt beim bloßen Verlassen eines Feldes auf „vom Inhaber geändert“ zu
+  // springen, und ein Speichern ohne Änderung macht keine Freigabe ungültig.
+  if (isEmpty ? prev.status === 'unknown' : prev.status === 'known' && sameValue(prev.value, cleaned)) {
+    return draft;
+  }
   const source: FieldSource = { url: draft.sourceUrl, fetchedAt: at, method: 'owner-edit', excerpt: '' };
   const next: DraftField<unknown> = isEmpty
     ? unknown('Vom Inhaber geleert.')
@@ -464,6 +472,10 @@ export function applyOwnerEdit<K extends FieldKey>(
         ...(prev.status === 'known' ? { derivedFrom: prev.source.method === 'owner-edit' ? prev.derivedFrom : prev.source } : {}),
       };
   return { ...draft, fields: { ...draft.fields, [key]: next } as SecretariatFields };
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function cleanFieldValue(value: unknown): unknown {

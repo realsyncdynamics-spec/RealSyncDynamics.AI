@@ -16,16 +16,18 @@ import {
   type DraftField, type FieldKey, type SecretariatDraft, type WebsiteDiscovery,
 } from './websiteDraft';
 import {
-  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, draftBotArgs, readSecretariatConfig, secretariatStatus, STATUS_LABEL, updateDraftPatch,
+  approvalRequest, SECRETARIAT_ACTIVATION_LOCKED, draftBotArgs, readSecretariatConfig, secretariatStatus, STATUS_LABEL, updateDraftPatch,
   type SecretariatStatus,
 } from './secretariatBot';
+import { approveSecretariatBot, fetchApprovalStatus } from './approvalApi';
 
 /**
  * „KI-Sekretariat aus der Website“ in „Mein Betrieb“.
  *
  * Domain → bestehender Abruf `siteos/discover` → Entwurf mit Herkunftsnachweis
  * je Feld → Inhaber prüft/ändert → als deaktivierter Bot speichern → Freigabe
- * aktiviert. Kein neues Backend, keine neue Tabelle.
+ * durch Owner/Admin über die RPC `approve_secretariat_bot`. Freigabestand und
+ * Aktivierung prüft die Datenbank, nicht diese Oberfläche.
  */
 const DISCOVER_FUNCTIONS = ['siteos'] as const;
 const TEXT_FIELDS: FieldKey[] = ['businessName', 'phone', 'email', 'address', 'openingHours'];
@@ -80,7 +82,11 @@ export function SecretariatCard({ tenantId, bots, onChanged }: {
   useEffect(() => {
     let alive = true;
     if (!existing) { setStatus(null); return; }
-    void secretariatStatus(existing).then((s) => { if (alive) setStatus(s); });
+    setStatus(null);
+    // Fail-closed: Ist der Freigabestand nicht abrufbar, gilt „nicht prüfbar“, nie „freigegeben“.
+    fetchApprovalStatus(existing.id)
+      .then((server) => { if (alive) setStatus(secretariatStatus(existing, server)); })
+      .catch(() => { if (alive) setStatus(secretariatStatus(existing, null)); });
     return () => { alive = false; };
   }, [existing]);
 
@@ -116,8 +122,7 @@ export function SecretariatCard({ tenantId, bots, onChanged }: {
 
   const approve = (bot: Bot) => run('Wird freigegeben …', async () => {
     if (!tenantId) throw new Error('Kein Arbeitsbereich ausgewählt.');
-    const patch = await approvalPatch(bot, { userId: user?.id, at: new Date().toISOString(), confirmed });
-    await updateBot(tenantId, bot.id, patch);
+    await approveSecretariatBot(approvalRequest(bot, { userId: user?.id, confirmed }));
     setConfirmed(false);
     onChanged();
     setPhase({ kind: 'idle' });

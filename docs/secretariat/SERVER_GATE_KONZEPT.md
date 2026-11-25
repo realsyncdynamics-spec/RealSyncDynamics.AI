@@ -1,7 +1,22 @@
 # KI-Sekretariat: serverseitiges Freigabe-Gate (Konzept, zur Freigabe)
 
-**Stand:** 25.11.2026 · **Status:** GEPLANT, nichts umgesetzt. Backend, Migrationen und
-Edge Functions bleiben bis zur Einzel-Freigabe unverändert (`AGENTS.md` › Freigaben).
+**Stand:** 25.11.2026 · **Status:** IMPLEMENTIERT im Security-Draft-PR (Branch
+`claude/tender-carson-iib6mf-security`), **nicht gemergt, nicht deployt**. Freigabe für die
+Umsetzung erteilt; Merge und Deploy brauchen je eine Einzel-Freigabe (`AGENTS.md` › Freigaben).
+
+### Umsetzung (Abweichungen vom Konzept unten)
+
+| Konzept | Umsetzung |
+|---|---|
+| Freigabe in `config.secretariat.approval` | eigene Tabelle `public.bot_approvals` (Prüfpfad), nur über SECURITY-DEFINER-Funktionen schreibbar |
+| Hash über die Feldwerte | Hash über den Prüfgegenstand: Persona, Begrüßung, Kanal, Fähigkeiten, Konfiguration (ohne Alt-Freigabe), Mandant – serverseitig in SQL |
+| Hash-Vergleich bei jeder Prüfung | zusätzlich: jede Änderung macht die Freigabe dauerhaft ungültig (`invalidated_at`), auch nach Rücksetzen |
+| Session-Flag in der RPC | nicht nötig: Trigger erlaubt `enabled = true` nur mit gültiger Freigabe und nur Owner/Admin (oder ohne Nutzerkontext) |
+| Hash im Edge-Code nachrechnen | `resolveBot` fragt `bot_runtime_approval_ok` (nur `service_role`), keine zweite Hash-Implementierung |
+| Frontend | `approve_secretariat_bot` per RPC mit geprüftem Stand (`updated_at`); `SECRETARIAT_ACTIVATION_LOCKED` bleibt `true` |
+
+Bestand vor der Migration (Produktion, Lesezugriff 25.11.2026): 0 Bots mit `config ? 'secretariat'`;
+der Trigger verändert oder deaktiviert keinen bestehenden Bot.
 
 ## 1. Ist-Zustand (belegt)
 

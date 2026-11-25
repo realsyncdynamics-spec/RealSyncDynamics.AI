@@ -7,11 +7,13 @@ const TENANT_QUICK = [
   { label: 'Vendoren ohne DPA', text: 'Welche Vendoren haben noch keinen signed DPA?' },
 ];
 
+// Öffentlicher KI-Mitarbeiter: Einstiege nach Anliegen, nicht nach Paragraphen.
+// Jede Aktion führt auf eine Funktion aus dem FUNKTIONSKATALOG des Anon-Prompts.
 export const ANON_QUICK = [
-  { label: 'DSGVO Art. 6', text: 'Welche Rechtsgrundlagen gibt es nach DSGVO Art. 6 für die Verarbeitung personenbezogener Daten?' },
-  { label: 'Cookie-Pflichten', text: 'Welche Cookie-Pflichten gelten in Deutschland nach TDDDG und DSGVO?' },
-  { label: 'EU AI Act', text: 'Was sind die wichtigsten Pflichten für KI-Systeme unter dem EU AI Act?' },
-  { label: 'Website-Audit', text: 'Was sollte ich bei einem DSGVO-Audit meiner Website prüfen?' },
+  { label: 'Kundenanfragen', text: 'Ich möchte Kundenanfragen per Chat oder Telefon mit KI beantworten. Was davon kann ich heute schon nutzen?' },
+  { label: 'Website-Check', text: 'Wie prüfe ich meine Website auf Tracking, Cookies und Datenschutz-Risiken?' },
+  { label: 'Website bauen', text: 'Ich brauche eine neue Website oder Landingpage. Welche Möglichkeiten habt ihr?' },
+  { label: 'Pakete', text: 'Welche Pakete gibt es und wo finde ich die Preise?' },
 ];
 
 export function ChatInput(props: {

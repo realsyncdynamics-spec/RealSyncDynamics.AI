@@ -8,7 +8,8 @@
 //   5. Rate-Limit je IP+Bot und je Bot
 //   6. Capability des Bots, danach Entitlement-Gate des Plans
 //   7. Doppelte Anfrage derselben Konversation → bestehenden Termin zurückgeben
-//   8. Termin anlegen
+//   8. Termin anlegen; Konflikt am Unique-Index (gleichzeitige Anfragen)
+//      → bestehenden Termin zurückgeben (atomar über die Datenbank)
 // Interne Fehlertexte gehen nie an den Client.
 
 import { handleOptions, jsonError, jsonResponse, methodNotAllowed } from '../_shared/gateway.ts';
@@ -24,6 +25,8 @@ export interface AppointmentBot {
 export type RateDecision = { allowed: true } | { allowed: false; scope: string };
 export type GateResult = 'ok' | 'missing';
 export interface StoredAppointment { id: string; status: string }
+/** Insert-Ergebnis: angelegt oder Konflikt am Unique-Index (Duplikat). */
+export type InsertResult = StoredAppointment | { conflict: true };
 
 export interface AppointmentDeps {
   hashIp(req: Request): Promise<string>;
@@ -36,7 +39,7 @@ export interface AppointmentDeps {
   gate(bot: AppointmentBot): Promise<GateResult>;
   upsertConversation(bot: AppointmentBot, externalRef: string, contactLabel: string): Promise<string>;
   findDuplicate(bot: AppointmentBot, conversationId: string, input: AppointmentInput): Promise<StoredAppointment | null>;
-  insertAppointment(bot: AppointmentBot, conversationId: string | null, input: AppointmentInput): Promise<StoredAppointment>;
+  insertAppointment(bot: AppointmentBot, conversationId: string | null, input: AppointmentInput): Promise<InsertResult>;
   logError(scope: string, err: unknown): void;
   now(): Date;
 }
@@ -118,6 +121,14 @@ export function createAppointmentHandler(deps: AppointmentDeps) {
       }
 
       const row = await deps.insertAppointment(bot, conversationId, input);
+      if ('conflict' in row) {
+        // Gleichzeitige Anfrage hat gewonnen: deren Termin zurückgeben.
+        const winner = conversationId ? await deps.findDuplicate(bot, conversationId, input) : null;
+        if (winner) {
+          return jsonResponse({ ok: true, appointment_id: winner.id, status: winner.status, duplicate: true });
+        }
+        return jsonError(409, 'CONFLICT', 'appointment request already exists');
+      }
       return jsonResponse({ ok: true, appointment_id: row.id, status: row.status });
     } catch (e) {
       deps.logError('appointment_book_failed', e);

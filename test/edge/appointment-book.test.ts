@@ -284,3 +284,81 @@ describe('Rate-Limit-Helfer für appointment-book', () => {
     expect(await checkAppointmentBotRateLimit(rpcAdmin([true, 'error']), 'h', B1)).toEqual({ allowed: false, scope: 'unavailable' });
   });
 });
+
+describe('appointment-book — gleichzeitige Anfragen und Folgetermine', () => {
+  // In-Memory-Tabelle mit derselben Eindeutigkeitsregel wie der Unique-Index
+  // bot_appointments_open_conversation_uniq (Migration 20261125190000).
+  function dbHarness() {
+    const rows: Array<{ id: string; status: string; key: string | null }> = [];
+    let seq = 0;
+    const keyOf = (conv: string | null, name: string, at: string | null) =>
+      conv ? `${T1}|${B1}|${conv}|${name}|${at ?? 'epoch'}` : null;
+    const tick = () => new Promise((r) => setTimeout(r, Math.random() * 3));
+    const h = harness({
+      upsertConversation: async (_b, ref) => `conv-${ref}`,
+      findDuplicate: async (_b, conv, input) => {
+        await tick();
+        const k = keyOf(conv, input.customerName, input.requestedAt);
+        const hit = rows.find((r) => r.key === k && r.status === 'requested');
+        return hit ? { id: hit.id, status: hit.status } : null;
+      },
+      insertAppointment: async (_b, conv, input) => {
+        await tick();
+        const k = keyOf(conv, input.customerName, input.requestedAt);
+        if (k && rows.some((r) => r.key === k && r.status === 'requested')) return { conflict: true };
+        const row = { id: `appt-${++seq}`, status: 'requested', key: k };
+        rows.push(row);
+        return { id: row.id, status: row.status };
+      },
+    });
+    return { ...h, rows };
+  }
+
+  it('10 gleichzeitige identische Anfragen → genau ein Termin, alle erhalten dieselbe ID', async () => {
+    const d = dbHarness();
+    const body = { ...VALID, conversation_ref: 'call-7', requested_at: '2026-12-01T09:00:00Z' };
+    const results = await Promise.all(Array.from({ length: 10 }, () => d.handler(post(body)).then(json)));
+    expect(d.rows).toHaveLength(1);
+    const ids = new Set(results.map((r) => r.appointment_id));
+    expect(ids.size).toBe(1);
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(results.filter((r) => r.duplicate).length).toBe(9);
+  });
+
+  it('Folgetermin mit anderem Wunschtermin in derselben Konversation wird angelegt', async () => {
+    const d = dbHarness();
+    await d.handler(post({ ...VALID, conversation_ref: 'call-8', requested_at: '2026-12-01T09:00:00Z' }));
+    const res = await d.handler(post({ ...VALID, conversation_ref: 'call-8', requested_at: '2026-12-08T09:00:00Z' }));
+    expect((await json(res)).duplicate).toBeUndefined();
+    expect(d.rows).toHaveLength(2);
+  });
+
+  it('nach Bestätigung oder Absage ist eine neue Anfrage möglich', async () => {
+    const d = dbHarness();
+    const body = { ...VALID, conversation_ref: 'call-9', requested_at: '2026-12-01T09:00:00Z' };
+    await d.handler(post(body));
+    d.rows[0].status = 'cancelled';
+    const res = await d.handler(post(body));
+    expect((await json(res)).duplicate).toBeUndefined();
+    expect(d.rows).toHaveLength(2);
+  });
+
+  it('Anfragen ohne Konversation werden nicht zusammengelegt', async () => {
+    const d = dbHarness();
+    await d.handler(post(VALID));
+    await d.handler(post(VALID));
+    expect(d.rows).toHaveLength(2);
+  });
+
+  it('Konflikt ohne auffindbaren Gewinner → neutrale 409, kein zweiter Insert', async () => {
+    const h = harness({ insertAppointment: async () => ({ conflict: true }), findDuplicate: async () => null });
+    const res = await h.handler(post({ ...VALID, conversation_ref: 'call-x' }));
+    expect(res.status).toBe(409);
+  });
+
+  it('index.ts behandelt den Unique-Konflikt 23505 und nutzt kein Zeitfenster mehr', () => {
+    const src = readFileSync('supabase/functions/appointment-book/index.ts', 'utf8');
+    expect(src).toContain("=== '23505'");
+    expect(src).not.toContain('DUPLICATE_WINDOW_MS');
+  });
+});

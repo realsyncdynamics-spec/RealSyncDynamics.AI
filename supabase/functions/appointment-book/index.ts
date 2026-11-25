@@ -12,6 +12,10 @@
 //   conversation_ref?: string     // max. 128 Zeichen
 // }
 //
+// Wiederholte Anfrage derselben Konversation (gleicher Name, gleicher
+// Wunschtermin, noch offen) liefert den bestehenden Termin mit
+// duplicate: true — atomar über einen Unique-Index (Migration 20261125190000).
+//
 // Legt eine Terminanfrage (bot_appointments) an. Voraussetzung: der Bot hat
 // capabilities.appointments = true und der Plan trägt bots.appointments.
 // verify_jwt = false; Zugriff über das Paar (tenant_id, bot_id), Rate-Limit
@@ -28,9 +32,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Gleicher Schlüssel wie bot-chat; verlässt die Function nie.
 const RATE_LIMIT_SECRET = Deno.env.get('BOT_RATE_LIMIT_SALT') || SERVICE_ROLE;
-
-/** Doppelte Anfrage derselben Konversation innerhalb dieses Fensters. */
-const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
@@ -66,8 +67,7 @@ const handler = createAppointmentHandler({
       .eq('bot_id', bot.id)
       .eq('conversation_id', conversationId)
       .eq('customer_name', input.customerName)
-      .eq('status', 'requested')
-      .gte('created_at', new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString());
+      .eq('status', 'requested');
     q = input.requestedAt ? q.eq('requested_at', input.requestedAt) : q.is('requested_at', null);
     const { data, error } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (error) throw new Error(`duplicate lookup failed: ${error.message}`);
@@ -86,6 +86,9 @@ const handler = createAppointmentHandler({
       notes: input.notes,
       metadata: { source: 'bot' },
     }).select('id, status').single<{ id: string; status: string }>();
+    // 23505: Unique-Index bot_appointments_open_conversation_uniq (Migration
+    // 20261125190000) — gleiche offene Anfrage existiert bereits.
+    if (error && (error as { code?: string }).code === '23505') return { conflict: true as const };
     if (error) throw new Error(`insert failed: ${error.message}`);
     return data;
   },

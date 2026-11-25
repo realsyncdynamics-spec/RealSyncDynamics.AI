@@ -1,18 +1,14 @@
 # Rollen — REALSYNC CHIEF und Fachagenten
 
-**Stand:** 25.11.2026 (Phase 3c, je Agent ein Branch `agents/<name>`, diese Datei auf
-`agents/roles`) · Verbindlich bleiben `AGENTS.md` und `CLAUDE.md`. Keine Secrets, keine
-Kundendaten. Statusstufen: GEPLANT · IN ARBEIT · IMPLEMENTIERT · GETESTET · LIVE · BLOCKIERT.
+**Stand:** 25.11.2026 (Phase 3c, gebündelt in PR #2436) · Verbindlich bleiben `AGENTS.md`
+und `CLAUDE.md`. Keine Secrets, keine Kundendaten. Statusstufen: GEPLANT · IN ARBEIT ·
+IMPLEMENTIERT · GETESTET · LIVE · BLOCKIERT.
 
-Grundlage: Fassung Phase 3b aus PR #2416 (`chore/chief-setup`, offen, nicht auf `main`) und
-die Sammelfassung aus PR #2421 (`chore/agents-3c`). Jede Agentendatei liegt auf einem eigenen
-Branch mit eigenem Draft-PR. Diese Datei ersetzt die 3b-Fassung inhaltlich. #2416 legt
-`roles.md`, `deputy.md` und `nova.md` ebenfalls neu an (add/add). Wird #2416 zuerst gemergt:
-`origin/main` per Merge in `agents/roles`, `agents/deputy`, `agents/nova` holen und die Datei
-zugunsten der 3c-Fassung auflösen (`docs/MERGE_CONFLICT_CONCEPT.md`).
-
-Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea` → `agents/roles`
-→ übrige. Ein Status in der Tabelle gilt erst, wenn der jeweilige Branch auf `main` ist.
+Diese Datei ersetzt die 3b-Fassung aus #2416 inhaltlich; die Einzel-PRs #2423–#2432 sind in
+#2436 enthalten. Merge-Reihenfolge (je Einzel-Freigabe, Folge-PRs danach per Merge von
+`main` aktualisieren): **#2416 → #2436 → #2440** (#2440 enthält #2434). Beim add/add-Konflikt
+mit #2416 gilt für `roles.md`, `deputy.md`, `nova.md` diese Fassung
+(`docs/MERGE_CONFLICT_CONCEPT.md`). Ein Status gilt erst, wenn er auf `main` ist.
 
 ## Grundregeln
 
@@ -50,7 +46,7 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 | VIO | Voice-Runtime `apps/agent-runtime`, AI Receptionist, Branchenvorlagen, KI-Offenlegung, Notfall/Weiterleitung: Befunde und Vorschläge | `.claude/agents/vio.md` | sonnet | Read, Grep, Glob | — | IMPLEMENTIERT (nur lesend seit 25.11.2026, nicht neu geprobt); Schreibrechte nur nach Einzel-Freigabe |
 | MOTION | Medienjob-Pläne (Briefing, Storyboard, Prompt, Kosten, Stufe S0–S4); erzeugt nichts | `.claude/agents/motion.md` | sonnet, `permissionMode: plan` | Read, Grep, Glob | — | GETESTET (Probe 3c) |
 | ATLAS | Externe Recherche (Web), Radar-Zulieferung für REA; kein Repo-Zugriff (Fassung #2429) | `.claude/agents/atlas.md` | sonnet, `effort: medium` | WebSearch, WebFetch | — | GETESTET (Probe 3c, nur intern); A1 lieferte zuerst TEILWEISE BELEGT statt WIDERLEGT → Regel „Teil widerlegt = ganz widerlegt“ ergänzt, A1 wiederholt (siehe PR `agents/atlas`) |
-| MIRA | Marketing, SEO, Akquise; Textvorschläge, Umsetzung via REA | `.claude/agents/mira.md` | sonnet | Read, Grep, Glob, WebSearch | — | GETESTET (Probe 3c) |
+| MIRA | Marketing, Vertrieb, SEO; Textvorschläge, Umsetzung via REA, Recherche via ATLAS | `.claude/agents/mira.md` | sonnet | Read, Grep, Glob | — | GETESTET (Probe 3c, damals mit WebSearch) |
 | DATA | Finanzen/Pricing: Preis-Drift, Stripe-Logik im Code, Kosten, § 19 UStG | `.claude/agents/data.md` | sonnet | Read, Grep, Glob | `aios-business-report` | GETESTET (Probe 3c) |
 | FLOW | Workflows, Cron, Edge-Function-Trigger, Prozesse; YAML-Diff nur für Nicht-Deploy | `.claude/agents/flow.md` | sonnet | Read, Grep, Glob | — | GETESTET (Probe 3c) |
 

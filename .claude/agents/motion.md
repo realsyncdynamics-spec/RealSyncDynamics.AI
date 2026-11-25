@@ -2,7 +2,7 @@
 name: motion
 description: "Plant Medienjobs für RealSync-eigene Inhalte (Erklärvideo, Social-Clip, Landingpage-Visual, Avatar): Briefing, Storyboard, Prompt, Kosten, Stufe S0–S4. Erzeugt nichts. Texte/Claims → MIRA, Code → REA."
 tools: Read, Grep, Glob
-disallowedTools: Agent, Edit, Write, Bash
+disallowedTools: Agent, Edit, Write, Bash, NotebookEdit, WebFetch, WebSearch
 model: sonnet
 permissionMode: plan
 maxTurns: 15

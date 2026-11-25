@@ -206,7 +206,7 @@ describe('<AssistentChip>', () => {
     expect(dialog).toHaveAttribute('aria-hidden', 'false');
     expect(dialog).toHaveAttribute(
       'aria-label',
-      expect.stringMatching(/Compliance|Assistent/i) as unknown as string,
+      expect.stringMatching(/SYNC.*KI-Mitarbeiter/) as unknown as string,
     );
   });
 

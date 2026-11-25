@@ -239,11 +239,25 @@ export function findEmails(text: string): Array<{ value: string; index: number }
   return out;
 }
 
+/**
+ * Platzhalter-Domain (RFC 2606): nur `example.com` selbst und echte Subdomains.
+ * Vorher `value.endsWith('example.com')` – das verwarf auch echte Adressen wie
+ * `info@meinexample.com` (CodeQL js/incomplete-url-substring-sanitization, Alert #275).
+ * Die Domain wird hinter dem letzten `@` genommen und normalisiert (Groß-/Kleinschreibung,
+ * abschließender Punkt).
+ */
+export function isPlaceholderEmailDomain(email: string): boolean {
+  const at = email.lastIndexOf('@');
+  if (at < 0) return false;
+  const domain = email.slice(at + 1).trim().toLowerCase().replace(/\.$/, '');
+  return domain === 'example.com' || domain.endsWith('.example.com');
+}
+
 function deriveEmail(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => FieldSource): DraftField<string> {
   const text = d.visible_text ?? '';
   for (const m of findEmails(text)) {
     const value = m.value.toLowerCase();
-    if (NOREPLY_RE.test(value) || ASSET_SUFFIX_RE.test(value) || value.endsWith('example.com')) continue;
+    if (NOREPLY_RE.test(value) || ASSET_SUFFIX_RE.test(value) || isPlaceholderEmailDomain(value)) continue;
     return { status: 'known', value, confidence: 'high', source: src('email-pattern', excerptAround(text, m.index, m.value.length)) };
   }
   return unknown('Keine E-Mail-Adresse im Website-Text gefunden.');

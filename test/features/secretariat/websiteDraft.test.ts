@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyOwnerEdit, approvalBlockers, cleanValue, deriveSecretariatDraft, draftHints, faqToLines, findEmails,
-  linesToFaq, linesToList, normalizePhone,
+  isPlaceholderEmailDomain, linesToFaq, linesToList, normalizePhone,
   type WebsiteDiscovery,
 } from '../../../src/features/secretariat/websiteDraft';
 
@@ -188,6 +188,31 @@ describe('E-Mail-Erkennung ohne ReDoS (CodeQL-Befund #2435)', () => {
     findEmails('@'.repeat(200_000));
     // Vorher (Regex) ~300 ms schon bei 20 000 Zeichen und quadratisch wachsend.
     expect(performance.now() - start).toBeLessThan(500);
+  });
+});
+
+describe('Platzhalter-Domain example.com exakt erkennen (CodeQL-Alert #275)', () => {
+  const cases: Array<[string, boolean]> = [
+    ['info@meinexample.com', false],
+    ['test@example.com', true],
+    ['a@mail.example.com', true],
+    ['test@EXAMPLE.COM', true],
+    ['info@example.com.de', false],
+    ['info@firma.de', false],
+  ];
+
+  it.each(cases)('%s → Platzhalter: %s', (email, placeholder) => {
+    expect(isPlaceholderEmailDomain(email)).toBe(placeholder);
+  });
+
+  it.each(cases)('Entwurf übernimmt %s nur, wenn kein Platzhalter (%s)', (email, placeholder) => {
+    const field = deriveSecretariatDraft(discovery({ visible_text: `Kontakt E-Mail: ${email}` })).fields.email;
+    if (placeholder) expect(field.status).toBe('unknown');
+    else expect(field).toMatchObject({ status: 'known', value: email.toLowerCase() });
+  });
+
+  it('ohne @ kein Platzhalter', () => {
+    expect(isPlaceholderEmailDomain('example.com')).toBe(false);
   });
 });
 

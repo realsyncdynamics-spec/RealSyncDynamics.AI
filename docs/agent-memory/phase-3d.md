@@ -21,7 +21,9 @@ kreative Konzeption, DATA Wirtschaftlichkeit, FLOW Automatisierungskonzepte.
 | Bash-Hook | Probe: 13 von 16 Umgehungen offen | gehärtet (Commit `8a18cb9`), 0 von 16; Tests in `npm test` |
 
 Merge-Reihenfolge neu (je Einzel-Freigabe, nach jedem Merge Folge-PRs per Merge von `main`
-aktualisieren): **#2416 → #2436 → dieser Branch (#2440).** #2434 ist hier vollständig
+aktualisieren, Entscheidung des Inhabers 25.11.2026): **#2436 → #2416 → dieser Branch (#2440).**
+Beide Vorgänger sind hier per Merge enthalten, die Reihenfolge ist für diesen Branch daher
+unkritisch. #2434 ist hier vollständig
 enthalten und wird nicht separat gemergt. Dieser Branch enthält #2416 und #2436 bereits per
 Merge; `deputy.md`, `nova.md`, `roles.md` sind zugunsten #2436 aufgelöst (DEPUTY-Abnahme
 25.11.2026, Nr. 9). Die Tabelle in Abschnitt 1 mit den Einzel-PRs ist damit überholt.

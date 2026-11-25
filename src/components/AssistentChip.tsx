@@ -16,8 +16,8 @@ import { OPEN_ASSISTANT_EVENT } from '../features/assistant/openAssistant';
 // Visual model unchanged from Phase 1:
 //   - Position: Landing `/` BOTTOM-RIGHT; other public routes BOTTOM-CENTER.
 //     Respects iOS safe-area-inset-bottom.
-//   - Look: schwarzer Mic-Circle + "Assistent"-Label, glassmorphism.
-//     Kein Anbietername im öffentlichen UI (früher „Grok Bot“, geändert 25.11.2026).
+//   - Look: schwarzer Mic-Circle + "SYNC"-Label, glassmorphism.
+//     Produktname SYNC, kein Anbietername im öffentlichen UI (früher „Grok Bot“).
 //   - Routes: visible on `/` (landing). Auto-hide on /dashboard, /app/*,
 //     /checkout/* and /audit — those surfaces already have their own
 //     assistant context (tenant widget or audit-copilot panel).
@@ -150,7 +150,7 @@ export function AssistentChip() {
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
         <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
-          Assistent
+          SYNC
         </span>
       </button>
       )}

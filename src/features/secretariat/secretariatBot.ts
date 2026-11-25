@@ -37,10 +37,23 @@ export interface SecretariatConfig {
   approval: SecretariatApproval | null;
 }
 
-export type SecretariatStatus = 'draft' | 'approved' | 'changed' | 'paused' | 'active-unapproved';
+export type SecretariatStatus = 'draft' | 'approved' | 'changed' | 'paused' | 'active-unapproved' | 'locked';
+
+/**
+ * Aktivierung gesperrt, solange das serverseitige Freigabe-Gate fehlt.
+ *
+ * Das Gate in dieser Datei wirkt nur in der Oberfläche: `public.bots` erlaubt
+ * jedem Mandantenmitglied ein UPDATE auf `enabled`, und `resolveBot`
+ * (`supabase/functions/_shared/bots.ts`) prüft nur `enabled`, nicht die Freigabe.
+ * Bis das serverseitige Gate umgesetzt und freigegeben ist
+ * (`docs/secretariat/SERVER_GATE_KONZEPT.md`), speichert die Freigabe nur den
+ * Hash und lässt den Assistenten deaktiviert. Umschalten nur mit Einzel-Freigabe.
+ */
+export const SECRETARIAT_ACTIVATION_LOCKED = true;
 
 export const STATUS_LABEL: Record<SecretariatStatus, string> = {
   draft: 'Entwurf — noch nicht freigegeben',
+  locked: 'Freigegeben — Aktivierung gesperrt, bis die serverseitige Prüfung freigeschaltet ist',
   approved: 'Freigegeben und aktiv',
   changed: 'Geändert — bitte neu freigeben',
   paused: 'Freigegeben, aber pausiert',
@@ -160,8 +173,9 @@ export function updateDraftPatch(bot: Pick<Bot, 'config'>, fields: SecretariatFi
 export class SecretariatApprovalError extends Error {}
 
 /**
- * Freigabe durch den Inhaber: prüft die Pflichtangaben, speichert den Hash
- * und aktiviert den Assistenten. Ohne `userId` keine Freigabe.
+ * Freigabe durch den Inhaber: prüft die Pflichtangaben und speichert den Hash.
+ * Aktiviert wird nur, wenn `SECRETARIAT_ACTIVATION_LOCKED` aus ist (heute nicht).
+ * Ohne `userId` keine Freigabe.
  */
 export async function approvalPatch(
   bot: Pick<Bot, 'config'>,
@@ -182,7 +196,8 @@ export async function approvalPatch(
     persona: buildSecretariatPersona(current.fields),
     greeting: buildSecretariatGreeting(current.fields),
     config: { ...(bot.config ?? {}), secretariat: { ...current, approval } },
-    enabled: true,
+    // Fail-closed: Aktivieren erst mit serverseitigem Gate (siehe oben).
+    enabled: !SECRETARIAT_ACTIVATION_LOCKED,
   };
 }
 
@@ -196,5 +211,6 @@ export async function secretariatStatus(bot: Pick<Bot, 'config' | 'enabled'>): P
   if (!cfg) return null;
   const valid = cfg.approval !== null && (await fieldsHash(cfg.fields)) === cfg.approval.fieldsSha256;
   if (!valid) return bot.enabled ? 'active-unapproved' : cfg.approval ? 'changed' : 'draft';
-  return bot.enabled ? 'approved' : 'paused';
+  if (bot.enabled) return 'approved';
+  return SECRETARIAT_ACTIVATION_LOCKED ? 'locked' : 'paused';
 }

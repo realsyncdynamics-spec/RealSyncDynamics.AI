@@ -16,7 +16,7 @@ import {
   type DraftField, type FieldKey, type SecretariatDraft, type WebsiteDiscovery,
 } from './websiteDraft';
 import {
-  approvalPatch, draftBotArgs, readSecretariatConfig, secretariatStatus, STATUS_LABEL, updateDraftPatch,
+  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, draftBotArgs, readSecretariatConfig, secretariatStatus, STATUS_LABEL, updateDraftPatch,
   type SecretariatStatus,
 } from './secretariatBot';
 
@@ -190,8 +190,13 @@ export function SecretariatCard({ tenantId, bots, onChanged }: {
                   Ich habe die Angaben geprüft. Der Assistent darf sie gegenüber Anfragenden verwenden.
                 </label>
                 <Button size="sm" disabled={!confirmed} onClick={() => approve(existing)}>
-                  <ShieldCheck className="h-3.5 w-3.5" /> Freigeben und aktivieren
+                  <ShieldCheck className="h-3.5 w-3.5" /> {SECRETARIAT_ACTIVATION_LOCKED ? 'Freigeben' : 'Freigeben und aktivieren'}
                 </Button>
+                {SECRETARIAT_ACTIVATION_LOCKED && (
+                  <p className="text-xs text-titanium-500">
+                    Die Freigabe wird gespeichert. Aktiv geschaltet wird der Assistent erst, wenn die serverseitige Prüfung bereitsteht.
+                  </p>
+                )}
               </>
             )}
           </div>

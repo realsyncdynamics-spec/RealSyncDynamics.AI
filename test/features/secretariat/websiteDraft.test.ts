@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  applyOwnerEdit, approvalBlockers, cleanValue, deriveSecretariatDraft, draftHints, faqToLines,
+  applyOwnerEdit, approvalBlockers, cleanValue, deriveSecretariatDraft, draftHints, faqToLines, findEmails,
   linesToFaq, linesToList, normalizePhone,
   type WebsiteDiscovery,
 } from '../../../src/features/secretariat/websiteDraft';
@@ -164,5 +164,29 @@ describe('approvalBlockers / draftHints', () => {
   it('weist auf automatisch erkannte Felder mit niedriger Sicherheit hin', () => {
     const hints = draftHints(deriveSecretariatDraft(discovery()));
     expect(hints.some((h) => h.startsWith('Leistungen'))).toBe(true);
+  });
+});
+
+describe('E-Mail-Erkennung ohne ReDoS (CodeQL-Befund #2435)', () => {
+  it('findet Adressen und schneidet Satzzeichen ab', () => {
+    expect(findEmails('Schreiben Sie an info@firma.de.').map((e) => e.value)).toEqual(['info@firma.de']);
+    expect(findEmails('(kontakt@sub.firma-gmbh.co.uk)').map((e) => e.value)).toEqual(['kontakt@sub.firma-gmbh.co.uk']);
+  });
+
+  it('erfindet keinen Wortrest als Adresse („Büro@…“ → nichts)', () => {
+    expect(findEmails('Büro@firma.de')).toEqual([]);
+  });
+
+  it('weist ungültige Kandidaten ab', () => {
+    expect(findEmails('@firma.de a@b x@y.z info@@x.de')).toEqual([]);
+  });
+
+  it('bleibt bei bösartigem Website-Text linear', () => {
+    const hostile = 'a@' + 'a.'.repeat(100_000) + '!';
+    const start = performance.now();
+    findEmails(hostile);
+    findEmails('@'.repeat(200_000));
+    // Vorher (Regex) ~300 ms schon bei 20 000 Zeichen und quadratisch wachsend.
+    expect(performance.now() - start).toBeLessThan(500);
   });
 });

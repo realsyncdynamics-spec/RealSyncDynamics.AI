@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  approvalPatch, buildSecretariatPersona, draftBotArgs, isSecretariatBot, readSecretariatConfig,
+  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, buildSecretariatPersona, draftBotArgs, isSecretariatBot, readSecretariatConfig,
   SecretariatApprovalError, secretariatStatus, updateDraftPatch,
 } from '../../../src/features/secretariat/secretariatBot';
 import { applyOwnerEdit, deriveSecretariatDraft } from '../../../src/features/secretariat/websiteDraft';
@@ -89,18 +89,21 @@ describe('Freigabe-Gate', () => {
     await expect(approvalPatch(b, { userId: 'u1', at: AT, confirmed: true })).rejects.toThrow(/Name des Betriebs/);
   });
 
-  it('Freigabe aktiviert und speichert Hash; spätere Änderung macht sie ungültig', async () => {
+  it('Freigabe speichert Hash, aktiviert aber nicht (serverseitiges Gate fehlt)', async () => {
+    expect(SECRETARIAT_ACTIVATION_LOCKED).toBe(true);
     const patch = await approvalPatch(bot, { userId: 'u1', at: AT, confirmed: true });
-    expect(patch.enabled).toBe(true);
+    expect(patch.enabled).toBe(false);
     const approved = { ...bot, ...patch } as Bot;
     const cfg = readSecretariatConfig(approved);
     expect(cfg?.approval).toMatchObject({ approvedBy: 'u1', approvedAt: AT });
     expect(cfg?.approval?.fieldsSha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(await secretariatStatus(approved)).toBe('approved');
-    expect(await secretariatStatus({ ...approved, enabled: false })).toBe('paused');
+    expect(await secretariatStatus(approved)).toBe('locked');
+    expect(await secretariatStatus({ ...approved, enabled: true })).toBe('approved');
 
+    // Aktiv geschaltet (z. B. über den Bot-Editor), danach geändert:
+    const active = { ...approved, enabled: true } as Bot;
     const edited = applyOwnerEdit(draft, 'phone', '0221 7777777', AT);
-    const changed = { ...approved, ...updateDraftPatch(approved, edited.fields) } as Bot;
+    const changed = { ...active, ...updateDraftPatch(active, edited.fields) } as Bot;
     // updateDraftPatch fasst `enabled` nicht an — aktiv mit ungültiger Freigabe ist ein Warnzustand
     expect(await secretariatStatus(changed)).toBe('active-unapproved');
     expect(await secretariatStatus({ ...changed, enabled: false })).toBe('changed');
@@ -115,7 +118,8 @@ describe('Freigabe-Gate', () => {
     const approved = { ...bot, ...patch } as Bot;
     const sameValue = applyOwnerEdit(draft, 'phone', '0221 1234560', '2026-12-01T00:00:00.000Z');
     const resaved = { ...approved, ...updateDraftPatch(approved, sameValue.fields) } as Bot;
-    expect(await secretariatStatus(resaved)).toBe('approved');
+    // Freigabe bleibt gültig (gesperrt, nicht „geändert“).
+    expect(await secretariatStatus(resaved)).toBe('locked');
   });
 
   it('kein Sekretariats-Bot → kein Status', async () => {

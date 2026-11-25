@@ -197,16 +197,49 @@ function derivePhone(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => Fi
   };
 }
 
-const EMAIL_RE = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}\b/gi;
+// Linear statt Regex über den ganzen Fremdtext: Das frühere Muster
+// `[a-z0-9.-]+\.[a-z]{2,24}` lief auf Eingaben wie `a@a.a.a.…` quadratisch
+// (polynomielles ReDoS, CodeQL-Befund in #2435). Jetzt wird nur rund um jedes
+// `@` ein begrenzter Kandidat ausgeschnitten und verankert geprüft.
+const EMAIL_LOCAL_CHARS = /[a-z0-9._%+-]/i;
+const EMAIL_DOMAIN_CHARS = /[a-z0-9.-]/i;
+const EMAIL_LOCAL_MAX = 64;
+const EMAIL_DOMAIN_MAX = 253;
+const EMAIL_EXACT_RE = /^[a-z0-9._%+-]{1,64}@(?:[a-z0-9-]{1,63}\.){1,10}[a-z]{2,24}$/i;
 const NOREPLY_RE = /^(no-?reply|noreply|donotreply|webmaster|wordpress|example)@/i;
 const ASSET_SUFFIX_RE = /\.(png|jpe?g|gif|svg|webp)$/i;
 
+/** Findet E-Mail-Kandidaten in linearer Zeit (je Zeichen höchstens konstant oft besucht). */
+export function findEmails(text: string): Array<{ value: string; index: number }> {
+  const out: Array<{ value: string; index: number }> = [];
+  let from = 0;
+  for (let at = text.indexOf('@'); at >= 0; at = text.indexOf('@', at + 1)) {
+    let start = at;
+    const minStart = Math.max(from, at - EMAIL_LOCAL_MAX);
+    while (start > minStart && EMAIL_LOCAL_CHARS.test(text[start - 1])) start--;
+    let end = at + 1;
+    const maxEnd = Math.min(text.length, at + 1 + EMAIL_DOMAIN_MAX);
+    while (end < maxEnd && EMAIL_DOMAIN_CHARS.test(text[end])) end++;
+    // Satzzeichen am Ende („info@x.de.“) gehört nicht zur Adresse.
+    while (end > at + 1 && (text[end - 1] === '.' || text[end - 1] === '-')) end--;
+    const candidate = text.slice(start, end);
+    // Steht direkt davor ein Buchstabe außerhalb ASCII („Büro@…“), wäre der Kandidat
+    // nur ein Wortrest („ro@…“) – dann lieber nichts als eine falsche Adresse.
+    const cutWord = start > 0 && /\p{L}/u.test(text[start - 1]);
+    if (!cutWord && start < at && end > at + 1 && EMAIL_EXACT_RE.test(candidate)) {
+      out.push({ value: candidate, index: start });
+      from = end;
+    }
+  }
+  return out;
+}
+
 function deriveEmail(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => FieldSource): DraftField<string> {
   const text = d.visible_text ?? '';
-  for (const m of text.matchAll(EMAIL_RE)) {
-    const value = m[0].toLowerCase();
+  for (const m of findEmails(text)) {
+    const value = m.value.toLowerCase();
     if (NOREPLY_RE.test(value) || ASSET_SUFFIX_RE.test(value) || value.endsWith('example.com')) continue;
-    return { status: 'known', value, confidence: 'high', source: src('email-pattern', excerptAround(text, m.index ?? 0, m[0].length)) };
+    return { status: 'known', value, confidence: 'high', source: src('email-pattern', excerptAround(text, m.index, m.value.length)) };
   }
   return unknown('Keine E-Mail-Adresse im Website-Text gefunden.');
 }
@@ -229,7 +262,8 @@ function deriveOpeningHours(d: WebsiteDiscovery, src: (m: DraftMethod, e: string
   };
 }
 
-const ADDRESS_RE = /([A-ZÄÖÜ][a-zäöüß.-]+(?:\s[A-ZÄÖÜa-zäöüß.-]+){0,3}(?:straße|strasse|str\.|weg|gasse|platz|allee|ring|damm|ufer|chaussee)\s?\d{1,4}\s?[a-z]?)\s*,?\s*((?:A-|D-)?\d{4,5})\s+([A-ZÄÖÜ][a-zäöüß-]+(?:\s(?:am|an der|im|bei)?\s?[A-ZÄÖÜ][a-zäöüß-]+)?)/;
+// Begrenzte Quantoren ({1,40}, {0,3}): kein Backtracking über beliebig lange Fremdtext-Wörter.
+const ADDRESS_RE = /([A-ZÄÖÜ][a-zäöüß.-]{1,40}(?:\s[A-ZÄÖÜa-zäöüß.-]{1,40}){0,3}(?:straße|strasse|str\.|weg|gasse|platz|allee|ring|damm|ufer|chaussee)\s?\d{1,4}\s?[a-z]?)\s{0,3},?\s{0,3}((?:A-|D-)?\d{4,5})\s{1,3}([A-ZÄÖÜ][a-zäöüß-]{1,40}(?:\s(?:am|an der|im|bei)?\s?[A-ZÄÖÜ][a-zäöüß-]{1,40})?)/;
 
 function deriveAddress(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => FieldSource): DraftField<string> {
   const text = d.visible_text ?? '';

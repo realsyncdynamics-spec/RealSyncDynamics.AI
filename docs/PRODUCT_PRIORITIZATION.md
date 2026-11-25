@@ -168,6 +168,25 @@ und verkauft wird, folgen weitere Branchen und Assistenten.
   `marketing/icp-und-sales-navigator.md`, `.github/PR_TRIAGE_POLICY.md`) werden
   in eigenen PRs angeglichen.
 
+### K4a — Portfolio-Priorität  · ✅ ENTSCHIEDEN am 2026-11-25
+K4 bleibt gültig. Der AI Receptionist ist der erste kommerzielle Kundenablauf,
+nicht das einzige langfristige Geschäftsmodell.
+
+| Produktbereich | Priorität | Funktion |
+|---|---|---|
+| Voice Agent / AI Receptionist | P1 | Erster kommerzieller Kundenablauf |
+| Landingpage-Builder | P1 | Kundengewinnung, Einstieg, ergänzende Kundenfunktion |
+| Governance OS | P1 | Produktübergreifende Sicherheits- und Compliance-Schicht, keine Hero-Botschaft |
+| Automation OS | P2 | Erweiterung betrieblicher Prozesse |
+| App Builder | P2 | Individuelle Kundenanwendungen |
+| Software Factory | P2 | Zuerst interne Entwicklungsinfrastruktur, später mögliche Kundenleistung |
+| Creative Studio | P3 | Content, Werbung, Medien |
+
+Produktbereich ≠ interner Agent: Der Agent REA arbeitet für die Software Factory,
+ist aber selbst kein Produkt. Produktstatus nur aus
+`src/product/implementation-status.ts`. Agentenorganisation:
+`docs/agent-memory/organisation.md`. Preise, Claims und Entitlements bleiben unverändert.
+
 ---
 
 ## Bau-Aufgaben aus den Entscheidungen

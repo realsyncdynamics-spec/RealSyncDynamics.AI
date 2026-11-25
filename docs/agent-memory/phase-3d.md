@@ -4,6 +4,31 @@
 Status: IMPLEMENTIERT, Hooks GETESTET (lokal), nichts gemergt, nichts LIVE.
 Verbindlich bleiben `AGENTS.md` und `CLAUDE.md`. Statusstufen wie `roles.md`.
 
+## 0. Nachtrag Senior-Review 25.11.2026 (geht Abschnitt 1–4 vor)
+
+Zielarchitektur (Vorgabe Dominik): CHIEF koordiniert, DEPUTY nimmt ab, NOVA prüft
+Sicherheit/Governance, **ATLAS bündelt die externe Recherche**, REA setzt um und bewertet
+Integrationen, **VIO bleibt vorerst nur lesend**, MIRA Marketing/Vertrieb, MOTION
+kreative Konzeption, DATA Wirtschaftlichkeit, FLOW Automatisierungskonzepte.
+
+| Thema | Befund (belegt per `git diff`/`merge-base`) | Folge |
+|---|---|---|
+| Einzel-PRs #2423–#2428, #2430–#2432 | byte-identisch in #2436 enthalten | #2436 ist die Quelle; Einzel-PRs schließen nach Freigabe |
+| ATLAS | #2429 (nur `WebSearch`, `WebFetch`) ist strenger als #2436 (`Read` + Web) | #2436 übernimmt die #2429-Fassung; `/rea-radar` verlangt genau diese Werkzeuge |
+| VIO | #2436 gibt `Edit, Write, Bash` | #2436: nur `Read, Grep, Glob`; Schreibgrenze-Hook hier bleibt als zweite Schicht für eine spätere Freigabe |
+| Radar | #2434 und dieser Branch hatten zwei abweichende Fassungen | Konflikt zugunsten #2434 aufgelöst (NOVA-/DEPUTY-Runde 2); `rea.md`, `rea-radar.md`, `docs/rea/` = #2434 |
+| #2420 | Head `e33300b` ist Vorfahr von #2434 | vollständig ersetzt; Schließen vorbereitet, nur nach Freigabe |
+| Bash-Hook | Probe: 13 von 16 Umgehungen offen | gehärtet (Commit `8a18cb9`), 0 von 16; Tests in `npm test` |
+
+Merge-Reihenfolge neu (je Einzel-Freigabe, nach jedem Merge Folge-PRs per Merge von `main`
+aktualisieren): **#2416 → #2436 → #2434 → dieser Branch.** Die Tabelle in Abschnitt 1 mit
+den Einzel-PRs ist damit überholt.
+
+Hook ≠ Berechtigungsgrenze: Ein Hook prüft Befehlstext. Code in Dateien, die erlaubte
+Befehle starten (`npm test`, `node skript.mjs`), sieht er nicht. Echte Grenzen sind:
+Branch-Schutz auf `main`, Environment-Freigabe für Deploys (#2336), keine Prod-Tokens in
+Agentensitzungen.
+
 ## 1. Bestand und Konflikte (geprüft mit `git merge-tree`, 25.11.2026)
 
 Alle Einzel-PRs basieren auf `main` = `3a58095` und sind 0 Commits hinter `main`.

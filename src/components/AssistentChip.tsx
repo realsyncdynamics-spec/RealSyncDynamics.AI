@@ -16,18 +16,19 @@ import { OPEN_ASSISTANT_EVENT } from '../features/assistant/openAssistant';
 // Visual model unchanged from Phase 1:
 //   - Position: Landing `/` BOTTOM-RIGHT; other public routes BOTTOM-CENTER.
 //     Respects iOS safe-area-inset-bottom.
-//   - Look: schwarzer Mic-Circle + "Grok Bot"-Label, glassmorphism.
+//   - Look: schwarzer Mic-Circle + "Assistent"-Label, glassmorphism.
+//     Kein Anbietername im öffentlichen UI (früher „Grok Bot“, geändert 25.11.2026).
 //   - Routes: visible on `/` (landing). Auto-hide on /dashboard, /app/*,
 //     /checkout/* and /audit — those surfaces already have their own
 //     assistant context (tenant widget or audit-copilot panel).
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting, the
 //     chip fades out. On `/` this keeps the premium hero conversion zone
-//     clear; the Grok Bot returns as soon as the visitor leaves the hero.
+//     clear; the chip returns as soon as the visitor leaves the hero.
 
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
-  // Landing `/` shows the chip (Dominik: RealSyncDynamicsai Grok Bot on homepage).
+  // Landing `/` shows the chip.
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
   if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
@@ -149,7 +150,7 @@ export function AssistentChip() {
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
         <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
-          Grok Bot
+          Assistent
         </span>
       </button>
       )}

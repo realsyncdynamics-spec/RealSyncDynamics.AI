@@ -20,7 +20,7 @@ Kurz halten. Ledger und Audit-Kästen gehören nach `docs/`. Budget: `npm run ch
 
 ## Befehle
 
-`npm run dev` · `npm run lint` · `npm test` · `npm run build`. Kein `npm install` durch Agenten.
+`npm run dev` · `npm run lint` · `npm test` · `npm run build`. npm install / npm ci nur nach Einzelfreigabe (ask in .claude/settings.json).
 
 ## Git
 

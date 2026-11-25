@@ -277,7 +277,7 @@ describe('Telefon-Reservierung und -Abrechnung', () => {
     const src = readFileSync('supabase/functions/bot-voice-webhook/index.ts', 'utf8');
     expect(src).toContain(`twiml('<Reject reason="busy"/>')`);
     const reserve = src.indexOf('await reserveVoiceCall(');
-    const greet = src.indexOf('return speakAndGather(actionUrl, greeting)');
+    const greet = src.indexOf('return twiml(firstTurnBody(actionUrl, disclosure, greeting))');
     const reply = src.indexOf('await replyForVoice(admin, bot, conversationId, speech');
     expect(reserve).toBeGreaterThan(-1);
     expect(greet).toBeGreaterThan(reserve);

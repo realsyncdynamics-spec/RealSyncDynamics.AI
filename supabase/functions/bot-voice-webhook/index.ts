@@ -3,8 +3,11 @@
 // Unterstützt zwei Modi:
 //
 //  A) Twilio (application/x-www-form-urlencoded)
-//     Antwortet mit TwiML. Beim ersten Hit (kein SpeechResult) wird der
-//     Greeting gesprochen und per <Gather input="speech"> auf Spracheingabe
+//     Antwortet mit TwiML. Beim ersten Hit (kein SpeechResult) wird zuerst
+//     die KI-Offenlegung gesprochen (Pflicht, vor <Gather>, nicht
+//     unterbrechbar; Wortlaut aus voice_bot_configs, sonst Standardsatz —
+//     _shared/voice-disclosure.ts), danach der Greeting, und per
+//     <Gather input="speech"> auf Spracheingabe
 //     gewartet; das action-Attribut zeigt zurück auf diesen Webhook. Bei
 //     Folge-Hits (SpeechResult vorhanden) wird die Bot-Antwort gesprochen und
 //     erneut gesammelt. CallSid dient als conversation_ref.
@@ -74,6 +77,9 @@ import {
   closingTwimlBody, markCallbackRequested, voiceTurnDecision, type ClosingReason,
 } from '../_shared/voice-call-closing.ts';
 import {
+  firstTurnBody, gatherTurnBody, loadVoiceDisclosure, type DisclosureReader,
+} from '../_shared/voice-disclosure.ts';
+import {
   resolveBot, upsertConversation, insertMessage, loadRecentHistory,
   buildBotPrompt, BotError, type BotRow,
 } from '../_shared/bots.ts';
@@ -93,12 +99,6 @@ if (!TWILIO_AUTH_TOKEN || !TWILIO_WEBHOOK_URL) {
   }));
 }
 
-function xmlEscape(s: string): string {
-  return s
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-}
-
 function twiml(body: string): Response {
   return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>${body}</Response>`, {
     status: 200,
@@ -108,13 +108,7 @@ function twiml(body: string): Response {
 
 /** TwiML, das den Text spricht und erneut auf Spracheingabe wartet. */
 function speakAndGather(actionUrl: string, text: string): Response {
-  return twiml(
-    `<Gather input="speech" language="de-DE" speechTimeout="auto" timeout="5" method="POST" action="${xmlEscape(actionUrl)}">` +
-    `<Say language="de-DE">${xmlEscape(text)}</Say>` +
-    `</Gather>` +
-    `<Say language="de-DE">Ich habe nichts gehört. Auf Wiederhören.</Say>` +
-    `<Hangup/>`,
-  );
+  return twiml(gatherTurnBody(actionUrl, text));
 }
 
 /**
@@ -417,10 +411,12 @@ Deno.serve(async (req) => {
         channel: 'voice', externalRef: callSid || from || null, contactLabel: from || null,
       });
 
-      // Kein SpeechResult → Begrüßung + erste Sammlung.
+      // Kein SpeechResult → KI-Offenlegung (Pflicht, zuerst, nicht
+      // unterbrechbar), dann Begrüßung + erste Sammlung.
       if (!speech) {
         const greeting = bot.greeting?.trim() || `Hallo, hier ist ${bot.name}. Wie kann ich Ihnen helfen?`;
-        return speakAndGather(actionUrl, greeting);
+        const disclosure = await loadVoiceDisclosure(admin as unknown as DisclosureReader, tenantId, bot.id);
+        return twiml(firstTurnBody(actionUrl, disclosure, greeting));
       }
 
       // SpeechResult vorhanden → Antwort generieren + erneut sammeln.
@@ -475,8 +471,13 @@ Deno.serve(async (req) => {
     });
 
     if (!message) {
+      // Gleiche Reihenfolge wie im Telefonpfad: Offenlegung vor der Begrüßung.
       const greeting = bot.greeting?.trim() || `Hallo, hier ist ${bot.name}. Wie kann ich Ihnen helfen?`;
-      return jsonResponse({ ok: true, conversation_id: conversationId, reply: greeting, greeting: true });
+      const disclosure = await loadVoiceDisclosure(admin as unknown as DisclosureReader, tenantId, bot.id);
+      return jsonResponse({
+        ok: true, conversation_id: conversationId,
+        reply: `${disclosure} ${greeting}`, disclosure, greeting: true,
+      });
     }
 
     const reply = await replyForVoice(

@@ -29,6 +29,9 @@ import {
 import {
   TWILIO_TERMINAL_STATUSES, planSecondsFromEntitlement,
 } from '../../supabase/functions/_shared/bot-budget';
+import {
+  DEFAULT_VOICE_DISCLOSURE, firstTurnBody, gatherTurnBody, loadVoiceDisclosure,
+} from '../../supabase/functions/_shared/voice-disclosure';
 
 const ACCOUNT = 'AC' + 'a'.repeat(32);
 const CALL = 'CA' + 'b'.repeat(32);
@@ -363,6 +366,7 @@ async function runWebhook(sc: Scenario) {
     settleVoiceCall: async () => ({ duplicate: false }),
     applyProviderTimeLimit: async () => { events.push('timelimit'); return { ok: true, status: 200 }; },
     closingTwimlBody, markCallbackRequested, voiceTurnDecision,
+    firstTurnBody, gatherTurnBody, loadVoiceDisclosure,
     resolveBot: async () => ({ id: 'bot-1', tenant_id: 'tenant-1', name: 'Empfang', greeting: 'Hallo', persona: '', config: {}, capabilities: {} }),
     upsertConversation: async () => 'conv-1',
     insertMessage: async () => {},
@@ -389,6 +393,21 @@ describe('Webhook — V1: neue Anrufe bei erschöpftem Budget bleiben Besetzt', 
     expect(r.body).not.toContain('<Say');
     expect(r.events).not.toContain('rpc:bot_voice_mark_callback');
     expect(r.events).not.toContain('ai');
+  });
+});
+
+describe('Webhook — KI-Offenlegung im ersten Schritt', () => {
+  it('erster angenommener Hit: Offenlegung zuerst (vor <Gather>), danach Begrüßung', async () => {
+    const r = await runWebhook({ reservation: { ok: true, existing: false, reservationId: 'res-new', reservedSeconds: 600 } });
+    // Ohne voice_bot_configs-Zeile (Simulation) gilt der Standardsatz.
+    expect(r.body).toContain(`<Response><Say language="de-DE">${DEFAULT_VOICE_DISCLOSURE}</Say><Gather`);
+    expect(r.body.indexOf(DEFAULT_VOICE_DISCLOSURE)).toBeLessThan(r.body.indexOf('Hallo'));
+    expect(r.events).not.toContain('ai');
+  });
+
+  it('Folgeschritt wiederholt die Offenlegung nicht', async () => {
+    const r = await runWebhook({ reservation: existing, clockAgeSeconds: 60, speech: 'Hallo' });
+    expect(r.body).not.toContain(DEFAULT_VOICE_DISCLOSURE);
   });
 });
 

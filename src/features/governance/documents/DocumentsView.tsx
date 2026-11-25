@@ -36,6 +36,7 @@ import {
 import { listDpias, type DbDpia } from '../dpiasApi';
 import type { DpiaStatus } from '../types';
 import { AuthGate } from '../../kodee/connections/AuthGate';
+import { SandboxedPreviewFrame } from '../../../components/preview/SandboxedPreviewFrame';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
@@ -604,10 +605,11 @@ export function DocumentsView() {
               <Download className="h-3 w-3" /> Export
             </button>
           </div>
-          <iframe
+          {/* Statisch: kein Skript, opake Herkunft, CSP im Dokument. */}
+          <SandboxedPreviewFrame
             title={viewer.title}
-            sandbox=""
-            srcDoc={viewer.html}
+            html={viewer.html}
+            isolation="static"
             className="w-full h-[60vh] bg-white border border-titanium-800"
           />
         </Modal>

@@ -27,6 +27,7 @@ import { Top3RisksPreview } from '../components/audit/Top3RisksPreview';
 import { saveFunnelContext } from '../core/onboarding/funnelContext';
 import { clearPendingAudit, readPendingAudit } from '../core/onboarding/claimAudit';
 import { TRY_FREE } from '../config/beta';
+import { openStaticHtmlInNewTab } from '../lib/static-html';
 
 // Über `getSupabaseUrl()` statt direkt aus `import.meta.env`: Der Helfer fällt
 // auf die Produktions-Projekt-URL zurück, wenn `VITE_SUPABASE_URL` im Build
@@ -1004,11 +1005,8 @@ function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: 
         return;
       }
       // Open generated HTML in new tab — user nutzt Browser-Print für PDF
-      const blob = new Blob([data.html_content], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener');
-      // URL.revokeObjectURL nach kurzem Delay damit Tab geladen ist
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      // Bereinigt (skriptfrei, strenge CSP) öffnen — siehe src/lib/static-html.ts.
+      openStaticHtmlInNewTab(String(data.html_content ?? ''));
       setGenerated((prev) => new Set(prev).add(docType));
     } catch (e) {
       setError((e as Error).message);

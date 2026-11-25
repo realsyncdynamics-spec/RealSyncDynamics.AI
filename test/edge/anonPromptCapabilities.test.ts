@@ -79,6 +79,20 @@ describe('Anon-Prompt: KI-Mitarbeiter', () => {
     expect(prompt.replace(/Claude Code Optimizer/g, '')).not.toMatch(/\bClaude\b/);
   });
 
+  it('hat genau die freigegebenen Abschnitte (kein zweiter Produktkatalog)', () => {
+    // Schützt davor, dass ein später gemergter PR einen zweiten, nicht gegen
+    // das Register geprüften Produktblock anhängt (z. B. „PRODUKTE UND STATUS“).
+    const headings = prompt.split('\n').filter((l) => /^[A-ZÄÖÜ][A-ZÄÖÜ /()–-]{3,}( \(|$)/.test(l)).map((l) => l.split(' (')[0]);
+    expect(headings).toEqual([
+      'AUFGABE',
+      'WAS DU KANNST UND WAS NICHT',
+      'FUNKTIONSKATALOG',
+      'LEITPLANKEN',
+      'DATENSCHUTZ UND VERARBEITUNG',
+      'STIL',
+    ]);
+  });
+
   it('nutzt durchgehend den Markennamen „RealSync Dynamics & AI“', () => {
     expect(prompt).toContain('RealSync Dynamics & AI');
     expect(prompt).not.toMatch(/RealSync Dynamics AI|RealSyncDynamics\.AI/);

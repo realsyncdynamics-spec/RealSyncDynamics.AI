@@ -24,8 +24,11 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
   (Branch noch nicht gemergt), meldet der Agent BLOCKIERT. Auf `main` gibt es noch keine Tiefenbegrenzung in
   `.claude/settings.json` und keinen Bash-Guard-Hook; beides kommt erst mit PR #2416.
 - Lesend (`tools` ohne Edit/Write/Bash): DEPUTY, NOVA, MOTION, MIRA, DATA, FLOW.
+  Offen: MIRA hat zusätzlich `WebSearch` (Repo lesen + Websuche). Gegenüber der
+  Inhaber-Entscheidung 25.11.2026 (ATLAS zentraler Recherche-Agent) ist das nicht entschieden;
+  die Freigabe vom 25.11. deckt nur ATLAS ab, MIRA bleibt unverändert bis zur Entscheidung.
 - Nur Web, kein Repo (`tools: WebSearch, WebFetch`): ATLAS (Inhaber-Entscheidung 25.11.2026, zentraler Recherche-Agent, auch für `/rea-radar`).
-  Schreibend: REA (Repo, Freigabematrix in `rea.md`) und VIO (nur `apps/agent-runtime/**`,
+- Schreibend: REA (Repo, Freigabematrix in `rea.md`) und VIO (nur `apps/agent-runtime/**`,
   Grenze nur als Anweisung, technisch nicht durchgesetzt).
 - Für lesende Rollen führt CHIEF Befehle (`git`, `npm run …`, GitHub-API) aus und gibt die
   Ausgabe im Auftrag mit. Für DEPUTY erzeugt CHIEF den Diff (`git diff origin/main...<branch>`).

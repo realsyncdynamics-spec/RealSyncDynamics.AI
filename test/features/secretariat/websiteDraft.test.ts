@@ -190,3 +190,32 @@ describe('E-Mail-Erkennung ohne ReDoS (CodeQL-Befund #2435)', () => {
     expect(performance.now() - start).toBeLessThan(500);
   });
 });
+
+describe('Titel und Öffnungszeiten ohne ReDoS (CodeQL-Befund #2435)', () => {
+  it('trennt Seitentitel weiterhin an | – · : und freistehendem -', () => {
+    const name = (title: string) => {
+      const field = deriveSecretariatDraft(discovery({ title })).fields.businessName;
+      return field.status === 'known' ? field.value : null;
+    };
+    expect(name('Bad und Heizung | Muster GmbH')).toBe('Muster GmbH');
+    expect(name('Muster  -  Sanitär-Profi')).toBe('Muster');
+    expect(name('Sanitär-Profi Köln')).toBe('Sanitär-Profi Köln');
+  });
+
+  it('erkennt übliche Öffnungszeiten weiterhin vollständig', () => {
+    const hours = (text: string) => {
+      const field = deriveSecretariatDraft(discovery({ visible_text: text })).fields.openingHours;
+      return field.status === 'known' ? field.value : null;
+    };
+    expect(hours('Öffnungszeiten: Mo-Fr 8:00-17:00 Uhr, Sa 9-12 Uhr')).toBe('Mo-Fr 8:00-17:00 Uhr, Sa 9-12 Uhr');
+    expect(hours('Montag bis Freitag: 7.30 bis 16 Uhr und Sa 8 - 12')).toBe('Montag bis Freitag: 7.30 bis 16 Uhr und Sa 8 - 12');
+  });
+
+  it('bleibt bei langen Leerzeichenfolgen in Titel und Text linear', () => {
+    const spaces = ' '.repeat(80_000);
+    const start = performance.now();
+    deriveSecretariatDraft(discovery({ title: `a${spaces}a`, visible_text: `Mo${spaces}x Mo 8-12${spaces}x` }));
+    // Vorher ~4,5 s (Titel) bzw. ~2,1 s (Öffnungszeiten) bei 80 000 Zeichen.
+    expect(performance.now() - start).toBeLessThan(500);
+  });
+});

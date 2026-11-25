@@ -37,7 +37,6 @@ const EXPECTED_EXTERNAL_ROUTES = new Set([
   '/checkout/starter',    // Stripe: Starter Plan
   '/checkout/growth',     // Stripe: Growth Plan
   '/checkout/agency',     // Stripe: Agency Plan (self_service, Live-Price)
-  '/checkout/enterprise', // Stripe: Enterprise Plan (self_service seit 2026-10-24)
   '/contact-sales',       // Vertrieb: Partner / Enterprise-Anfragen
 ]);
 

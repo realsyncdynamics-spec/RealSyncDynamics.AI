@@ -117,8 +117,11 @@ describe('email-auth-rescan: dedizierter CRON_WEBSITE_RESCAN_KEY, fail-closed', 
   const logic = () => readFileSync('supabase/functions/email-auth-rescan/logic.ts', 'utf8');
 
   it('liest CRON_WEBSITE_RESCAN_KEY und nennt den Vault-Namen', () => {
-    expect(index()).toContain("Deno.env.get('CRON_WEBSITE_RESCAN_KEY')");
+    expect(index()).toContain('CRON_WEBSITE_RESCAN_KEY');
     expect(index()).toContain('cron_website_rescan_key');
+    expect(index()).toContain('resolveCronKey(CRON_ENV, CRON_VAULT)');
+    expect(logic()).toContain("export const CRON_ENV = 'CRON_WEBSITE_RESCAN_KEY'");
+    expect(logic()).toContain("export const CRON_VAULT = 'cron_website_rescan_key'");
     expect(index()).toContain('checkCronAuth(');
   });
 

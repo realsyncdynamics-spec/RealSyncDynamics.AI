@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
+import { OPEN_ASSISTANT_EVENT } from '../features/assistant/openAssistant';
 
 // AssistentChip — persistent floating entry to the AI Runtime.
 //
@@ -15,18 +16,19 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 // Visual model unchanged from Phase 1:
 //   - Position: Landing `/` BOTTOM-RIGHT; other public routes BOTTOM-CENTER.
 //     Respects iOS safe-area-inset-bottom.
-//   - Look: schwarzer Mic-Circle + "Grok Bot"-Label, glassmorphism.
+//   - Look: schwarzer Mic-Circle + "SYNC"-Label, glassmorphism.
+//     Produktname SYNC, kein Anbietername im öffentlichen UI (früher „Grok Bot“).
 //   - Routes: visible on `/` (landing). Auto-hide on /dashboard, /app/*,
 //     /checkout/* and /audit — those surfaces already have their own
 //     assistant context (tenant widget or audit-copilot panel).
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting, the
 //     chip fades out. On `/` this keeps the premium hero conversion zone
-//     clear; the Grok Bot returns as soon as the visitor leaves the hero.
+//     clear; the chip returns as soon as the visitor leaves the hero.
 
 const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
-  // Landing `/` shows the chip (Dominik: RealSyncDynamicsai Grok Bot on homepage).
+  // Landing `/` shows the chip.
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
   if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
@@ -38,6 +40,19 @@ export function AssistentChip() {
   const [open, setOpen] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const isLanding = pathname === '/';
+  const hidden = shouldHide(pathname);
+
+  // „KI fragen“-Pill (Header) öffnet dasselbe Panel. preventDefault()
+  // signalisiert dem Aufrufer, dass kein Rückfall-Link nötig ist.
+  useEffect(() => {
+    if (hidden) return;
+    const onOpen = (event: Event) => {
+      event.preventDefault();
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_ASSISTANT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_ASSISTANT_EVENT, onOpen);
+  }, [hidden]);
 
   // Observe [data-hero-cta] visibility — the assistant yields to the
   // conversion zone on every public surface, including the landing page.
@@ -92,7 +107,7 @@ export function AssistentChip() {
     };
   }, [pathname]);
 
-  if (shouldHide(pathname)) return null;
+  if (hidden) return null;
 
   const faded = heroVisible;
   const positionClass = isLanding
@@ -135,7 +150,7 @@ export function AssistentChip() {
           <Mic className="h-4 w-4" style={{ color: '#e4cfa2' }} />
         </span>
         <span className="text-sm font-medium tracking-tight" style={{ color: '#e8ddc8' }}>
-          Grok Bot
+          SYNC
         </span>
       </button>
       )}

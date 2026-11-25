@@ -125,9 +125,9 @@ const PRICING_PRODUCT_JSONLD = {
       name: 'Enterprise',
       price: '1498',
       priceCurrency: 'EUR',
-      url: `${SITE_URL}/checkout/enterprise`,
-      // Seit 2026-10-24 (Dominik) per Self-Service-Checkout, netto, ohne
-      // Testphase. Betrag muss shared/pricing.ts entsprechen.
+      url: `${SITE_URL}/contact-sales`,
+      // 1.498 € seit 2026-10-24 (Dominik), ohne Testphase. Seit 2026-11-21
+      // vorläufig nur auf Anfrage. Betrag muss shared/pricing.ts entsprechen.
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: '1498',
@@ -582,6 +582,36 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
 
   // 03.11.2026: Unternehmens-Landing v5 (Port des Design-Handoffs) — bewusst noindex
   // und nicht in der Sitemap. Freischaltung zur Indexierung als eigener Schritt.
+  '/telefonassistent': {
+    title: 'KI-Bots & Voice-Agenten',
+    description: 'Chat-Assistent und geplanter Voice-Agent für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
+    canonical: `${SITE_URL}/ki-bots`,
+    noIndex: true,
+  },
+  '/ki-bots': {
+    title: 'KI-Bots & Voice-Agenten',
+    description: 'Chat-Assistent und geplanter Voice-Agent für KMU. Beispielgespräch ansehen und den Stand der Telefonie prüfen.',
+    canonical: `${SITE_URL}/ki-bots`,
+    noIndex: true,
+  },
+  '/landingpage-builder': {
+    title: 'Landingpage-Builder',
+    description: 'Eine Website aus Inhalten und Designwünschen entwerfen.',
+    canonical: `${SITE_URL}/landingpage-builder`,
+    noIndex: true,
+  },
+  '/app-builder': {
+    title: 'App Builder',
+    description: 'Eigene Abläufe als Webanwendung entwerfen.',
+    canonical: `${SITE_URL}/app-builder`,
+    noIndex: true,
+  },
+  '/governance-os': {
+    title: 'Governance OS',
+    description: 'Befunde, Zuständigkeiten und Freigaben verfolgen.',
+    canonical: `${SITE_URL}/governance-os`,
+    noIndex: true,
+  },
   '/unternehmen': {
     title: 'RealSync Dynamics & AI – KI sicher für den Mittelstand',
     description:
@@ -952,16 +982,6 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     description:
       'Practical material on GDPR + EU AI Act: BAIT/MaRisk guide, Schrems II explainer, GDPR AI checklist, tool comparisons. Stand 2026, no marketing fluff.',
     canonical: `${SITE_URL}/ressourcen`,
-  },
-  '/audit-pro': {
-    title: 'Audit Pro — Vollständiger DSGVO + AI-Act-Audit | RealSync Dynamics AI',
-    description:
-      'Tiefen-Audit mit allen Findings, Paragraphen-Bezug, Auto-Fix-Empfehlungen und PDF-Report für Datenschutzbeauftragte. Inkl. Consent-Timing + AI-Act-Klassifikation.',
-    canonical: `${SITE_URL}/audit-pro`,
-    jsonLd: breadcrumbs([
-      { name: 'Home', url: '/' },
-      { name: 'Audit Pro', url: '/audit-pro' },
-    ]),
   },
   '/dsgvo-tool-vergleich': {
     title: 'DSGVO-Tool-Vergleich 2026 — Cookiebot vs Usercentrics vs OneTrust | RealSync Dynamics AI',

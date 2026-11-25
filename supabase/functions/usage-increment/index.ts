@@ -15,6 +15,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { consumeUsage, UsageError } from '../_shared/usage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { parseDelta } from './delta.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
@@ -35,20 +36,16 @@ Deno.serve(async (req) => {
   if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const userId = userResp.user.id;
 
-  let body: { tenant_id?: string; entitlement_key?: string; delta?: number; metadata?: Record<string, unknown> };
+  let body: { tenant_id?: string; entitlement_key?: string; delta?: unknown; metadata?: Record<string, unknown> };
   try { body = await req.json(); }
   catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.entitlement_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and entitlement_key required');
   }
-  const delta = Math.trunc(body.delta ?? 1);
-  if (!Number.isFinite(delta) || delta === 0) {
-    return jsonError(400, 'BAD_REQUEST', 'delta must be a non-zero integer');
-  }
-  if (Math.abs(delta) > 1_000_000) {
-    return jsonError(400, 'BAD_REQUEST', 'delta out of range');
-  }
+  const parsed = parseDelta(body.delta);
+  if (!parsed.ok) return jsonError(parsed.status, parsed.code, parsed.message);
+  const delta = parsed.delta;
 
   // Membership check via user's JWT (RLS does the actual gate)
   const { data: member, error: memberErr } = await userClient

@@ -27,6 +27,8 @@ import {
   apexDomain,
   buildTargets,
   checkCronAuth,
+  cronKeyMissingEvent,
+  cronKeyMissingMessage,
   checkOfEvent,
   evaluateDmarc,
   evaluateSpf,
@@ -746,10 +748,21 @@ describe('SPF / DMARC evaluation and legacy check inference', () => {
 describe('source contract', () => {
   const index = readFileSync('supabase/functions/email-auth-rescan/index.ts', 'utf8');
   it('reads the dedicated secret and never compares the bearer against service_role', () => {
-    expect(index).toContain("Deno.env.get('CRON_WEBSITE_RESCAN_KEY')");
+    expect(index).toContain('resolveCronKey(CRON_ENV, CRON_VAULT)');
+    expect(index).toContain('cronKeyMissingEvent()');
+    expect(index).toContain('CRON_WEBSITE_RESCAN_KEY');
     expect(index).toContain('cron_website_rescan_key');
     expect(index).not.toMatch(/Bearer \$\{(SERVICE_KEY|SERVICE_ROLE|SRK|SUPABASE_SERVICE_ROLE_KEY)\}/);
+    expect(index.indexOf('resolveCronKey(CRON_ENV, CRON_VAULT)')).toBeLessThan(index.indexOf('createClient('));
     expect(index.indexOf('checkCronAuth(')).toBeLessThan(index.indexOf('createClient('));
+    const event = cronKeyMissingEvent();
+    expect(event).toMatchObject({
+      code: 'CRON_KEY_MISSING',
+      env: 'CRON_WEBSITE_RESCAN_KEY',
+      vault: 'cron_website_rescan_key',
+    });
+    expect(JSON.stringify(event)).not.toMatch(/Bearer |decrypted_secret/i);
+    expect(cronKeyMissingMessage()).toContain('vault cron_website_rescan_key unresolved');
   });
   it('handler/logic stay vitest-importable (no Deno / jsr specifiers)', () => {
     for (const f of ['handler.ts', 'logic.ts', 'repo.ts']) {

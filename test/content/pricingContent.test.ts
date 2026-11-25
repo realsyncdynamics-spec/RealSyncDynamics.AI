@@ -8,7 +8,11 @@ import {
   getPlansByFeature,
   ALL_PLAN_SLUGS,
   ALL_FEATURE_SLUGS,
+  isPlannedFeature,
+  getAvailableFeaturesByPlan,
+  getPlannedFeaturesByPlan,
 } from '../../src/content/pricingContent';
+import { IMPLEMENTATION_ITEMS } from '../../src/product/implementation-status';
 import { planById } from '../../shared/pricing';
 
 describe('pricingContent', () => {
@@ -91,9 +95,9 @@ describe('pricingContent', () => {
 
     // Plaene ohne Self-Service-Checkout fuehren bewusst NICHT auf
     // /checkout/<slug>, sondern auf /contact-sales. Partner ist nicht
-    // self-service-checkoutfähig. Agency monatlich ist wieder verkaufbar,
-    // Enterprise seit 2026-10-24 ebenfalls (Self-Service-Checkout).
-    const INQUIRY_ONLY_SLUGS = ['partner', 'partner_yearly'];
+    // self-service-checkoutfähig. Agency monatlich ist wieder verkaufbar.
+    // Enterprise ist seit 21.11.2026 vorläufig wieder nur auf Anfrage.
+    const INQUIRY_ONLY_SLUGS = ['partner', 'partner_yearly', 'enterprise'];
 
     // Dritte Kategorie: Der Plan ist verkaeuflich, nur seine JAHRESvariante
     // hat keinen verdrahteten Stripe-Preis. Hier waere `/contact-sales`
@@ -111,8 +115,6 @@ describe('pricingContent', () => {
       pricingPlans
         .filter((plan) => !INQUIRY_ONLY_SLUGS.includes(plan.slug))
         .filter((plan) => !(plan.slug in UNWIRED_YEARLY))
-        // Enterprise: fail-closed → /contact-sales, bis die Stripe-Price-ID verdrahtet ist.
-        .filter((plan) => plan.slug !== 'enterprise')
         .forEach((plan) => {
           expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
           expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
@@ -388,9 +390,9 @@ describe('pricingContent', () => {
 
     // COMMERCIAL-SSOT: temporary production hotfix.
     // Canonical source migration tracked in Phase 2.
-    // Enterprise ist seit 2026-10-24 per Checkout buchbar; der Betrag muss
-    // der Pricing-SSoT entsprechen.
-    it('enterprise weist den Checkout-Preis aus der SSoT aus', () => {
+    // Enterprise ist seit 21.11.2026 vorläufig nur auf Anfrage; der Festpreis
+    // bleibt veröffentlicht und muss der Pricing-SSoT entsprechen.
+    it('enterprise weist den Festpreis aus der SSoT aus', () => {
       const enterprise = getPlanBySlug('enterprise');
       expect(enterprise?.price).toBe(planById('enterprise').price.monthlyEur);
       expect(enterprise?.priceString).toBe('1.498 €');
@@ -441,6 +443,45 @@ describe('pricingContent', () => {
     it('scale should not have trial', () => {
       const scale = getPlanBySlug('scale');
       expect(scale?.trial).toBeUndefined();
+    });
+  });
+
+  describe('Geplante Funktionen (nicht im Leistungsumfang)', () => {
+    it('Monitoring ist als geplant markiert, solange die Domain-Überwachung nicht live ist', () => {
+      const status = IMPLEMENTATION_ITEMS.find((i) => i.id === 'continuous-domain-monitoring')?.status;
+      const monitoring = getFeatureBySlug('monitoring');
+      expect(status).toBeDefined();
+      expect(monitoring).toBeDefined();
+      // Wird die Überwachung live, muss die Markierung bewusst entfernt werden.
+      expect(isPlannedFeature(monitoring!)).toBe(status !== 'live');
+    });
+
+    it('geplante Funktionen erscheinen nie unter den verfügbaren Funktionen eines Plans', () => {
+      pricingPlans.forEach((plan) => {
+        const available = getAvailableFeaturesByPlan(plan.slug);
+        const planned = getPlannedFeaturesByPlan(plan.slug);
+        expect(available.some(isPlannedFeature)).toBe(false);
+        expect(available.length + planned.length).toBe(getFeaturesByPlan(plan.slug).length);
+      });
+    });
+
+    it('„Was bekommt der Kunde“ nennt keine geplante Funktion als Leistung', () => {
+      const plannedTitles = featureDetails.filter(isPlannedFeature).map((f) => f.title.toLowerCase());
+      pricingPlans.forEach((plan) => {
+        plan.whatCustomerGets.forEach((item) => {
+          plannedTitles.forEach((title) => {
+            expect(item.toLowerCase()).not.toContain(title);
+          });
+        });
+      });
+    });
+
+    it('Pläne mit geplanten Funktionen versprechen keinen „identischen Funktionsumfang“', () => {
+      pricingPlans.forEach((plan) => {
+        if (getPlannedFeaturesByPlan(plan.slug).length === 0) return;
+        const texts = [plan.shortDescription, ...plan.detailedSections.map((s) => s.content)];
+        texts.forEach((text) => expect(text).not.toMatch(/identisch/i));
+      });
     });
   });
 });

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -128,5 +128,20 @@ describe('Agent-/Bot-Katalog (WP5 & WP12)', () => {
   it('WP12: ungeroutete src/features/agents/AgentsView.tsx ist entfernt', () => {
     const filePath = resolve(__dirname, '../../src/features/agents/AgentsView.tsx');
     expect(existsSync(filePath)).toBe(false);
+  });
+
+  it('öffentliche AgentsPage (/agents) behauptet keinen autonomen Dauerbetrieb', () => {
+    // Stand 17.11.2026: keiner der vier Agenten ist live (Prod-Nutzungszählung,
+    // Projektdoku agenten-nutzung-prod-2026-11-17). Der Seitentext darf daher
+    // keinen laufenden autonomen Betrieb versprechen; der Status je Karte genügt.
+    const source = readFileSync(resolve(__dirname, '../../src/pages/AgentsPage.tsx'), 'utf8');
+    for (const claim of [
+      'autonome Agenten',
+      'autonome Prozesse',
+      'autonome Kontrollebene',
+      'betreiben die Governance',
+    ]) {
+      expect(source, `Claim „${claim}“ auf /agents`).not.toContain(claim);
+    }
   });
 });

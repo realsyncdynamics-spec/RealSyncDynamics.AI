@@ -9,8 +9,8 @@ const ENTERPRISE = planById('enterprise');
  * Altadresse des Founding-Programms. Das Programm (100 Plätze, Freischaltung
  * über `enterprise-ai-os-founding-access`) endete am 02.08.2026; der Endpoint
  * lehnt seither jede Aktivierung ab. Statt eines Formulars, das nur noch
- * scheitern kann, verweist die Seite auf den Enterprise-Checkout; Enterprise
- * ist nicht Teil der Beta.
+ * scheitern kann, verweist die Seite auf die Enterprise-Anfrage; Enterprise
+ * ist nicht Teil der Beta und seit 21.11.2026 vorläufig nur auf Anfrage.
  */
 export function EnterpriseAiOsFoundingAccess() {
   return (
@@ -21,25 +21,19 @@ export function EnterpriseAiOsFoundingAccess() {
         </div>
 
         <h1 className="text-4xl font-semibold tracking-tight">
-          Enterprise – direkt buchbar
+          Enterprise – auf Anfrage
         </h1>
 
         <p className="mt-5 text-zinc-300">
-          Das frühere Founding-Programm ist am 02.08.2026 ausgelaufen. Enterprise buchen Sie heute
-          direkt für {monthlyPriceText(ENTERPRISE)}, ohne Testphase. Starter, Growth und Agency sind
-          in der offenen Beta bis {BETA.endsLabel} kostenlos.
+          Das frühere Founding-Programm ist am 02.08.2026 ausgelaufen. Enterprise kostet{' '}
+          {monthlyPriceText(ENTERPRISE)}, ohne Testphase, und ist derzeit nur auf Anfrage erhältlich.
+          Starter, Growth und Agency sind in der offenen Beta bis {BETA.endsLabel} kostenlos.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-4">
           <Link
-            to="/checkout/enterprise"
+            to="/contact-sales?plan=enterprise&source=founding"
             className="inline-flex rounded-2xl bg-[#d4af37] px-6 py-4 font-semibold text-black"
-          >
-            {ENTERPRISE.ctaLabel}
-          </Link>
-          <Link
-            to="/contact-sales?source=founding"
-            className="inline-flex rounded-2xl border border-[#d4af37]/40 px-6 py-4 font-semibold text-[#d4af37]"
           >
             {CTA.enterprise}
           </Link>

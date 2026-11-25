@@ -43,8 +43,8 @@
 // Zugriff: Supabase Management API (POST /v1/projects/{ref}/database/query)
 // mit SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID — dieselben Secrets wie der
 // Migrations- und der ACL-Guard, keine neue Dependency. Ohne Secrets
-// (Fork-PRs) wird sauber uebersprungen (Exit 0). API-/Netz-Fehler failen NICHT
-// hart (≠ Befund) — aber es gibt dann auch keinen gruenen Haken.
+// wird nur im expliziten advisory-Modus uebersprungen. API-/Netz-Fehler
+// sind keine Entwarnung: Betriebslaeufe scheitern ohne vollstaendige Messung.
 
 import { formatBefundZeile } from './cron-befund.mjs';
 
@@ -181,13 +181,45 @@ export function groupByCause(broken) {
 // Gezaehlt werden nur Dispatches, die aelter als zwei Minuten sind — juengere
 // koennen noch unterwegs sein.
 //
-// `net._http_response` haelt nur rund sechs Stunden vor — das Fenster ist
-// deshalb bewusst kurz und wird in der Ausgabe mitgenannt.
+// `net._http_response` haelt typischerweise nur rund sechs Stunden vor.
+// Das Lookback fuer vorhandene Antworten ist 24h (Issue #2200), das
+// Ohne-Antwort-Fenster bleibt bei der Aufbewahrung (6h), beide konfigurierbar.
 
-export const SQL_ANTWORTEN = `
-WITH fenster AS (SELECT now() - interval '6 hours' AS ab),
+/**
+ * Stunden, die vorhandene HTTP-Antworten zurueckgeschaut werden (Default 24).
+ * So bleibt der taegliche 09:00-UTC-Drip sichtbar, auch wenn der Guard
+ * erst nach 15:00 UTC startet (Issue #2200, RSD-012).
+ *
+ * Ueber CRON_HEALTH_HTTP_LOOKBACK_HOURS konfigurierbar (z. B. 6 ergibt
+ * das vorherige Fenster). Ungueltige Werte fallen auf 24 zurueck.
+ */
+export function cronHealthHttpLookbackHours() {
+  const n = Number(process.env.CRON_HEALTH_HTTP_LOOKBACK_HOURS ?? 24);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 24;
+}
+
+/**
+ * Fenster, in dem fehlende Antworten als Befund zaehlen (Default 6).
+ * `net._http_response` haelt typischerweise nur rund sechs Stunden vor —
+ * ein laengeres Ohne-Antwort-Fenster wuerde Dispatches ohne gespeicherte
+ * Antwort faelschlich rot faerben. CRON_HEALTH_HTTP_RETENTION_HOURS.
+ */
+export function cronHealthHttpRetentionHours() {
+  const n = Number(process.env.CRON_HEALTH_HTTP_RETENTION_HOURS ?? 6);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 6;
+}
+
+export function buildSqlAntworten(
+  lookbackHours = cronHealthHttpLookbackHours(),
+  retentionHours = cronHealthHttpRetentionHours(),
+) {
+  const lookback = Number.isFinite(lookbackHours) && lookbackHours > 0 ? Math.floor(lookbackHours) : 24;
+  const retention = Number.isFinite(retentionHours) && retentionHours > 0 ? Math.floor(retentionHours) : 6;
+  return `
+WITH fenster AS (SELECT now() - interval '${lookback} hours' AS ab),
+retention AS (SELECT now() - interval '${retention} hours' AS ab),
 dispatch_laeufe AS (
-  SELECT q.request_id
+  SELECT q.request_id, q.function_name
   FROM public.cron_dispatch_requests q
   CROSS JOIN fenster f
   WHERE q.dispatched_at >= f.ab
@@ -195,21 +227,38 @@ dispatch_laeufe AS (
 ),
 antworten AS (
   SELECT coalesce(r.status_code::text, '(keine Antwort)') AS status,
+         coalesce(l.function_name, '') AS funktion,
          count(*)::int AS anzahl,
          min(r.created)::text AS von,
          max(r.created)::text AS bis,
          left(coalesce(r.content, ''), 200) AS beispiel
   FROM dispatch_laeufe l
   JOIN net._http_response r ON r.id = l.request_id
-  GROUP BY 1, left(coalesce(r.content, ''), 200)
+  GROUP BY 1, 2, left(coalesce(r.content, ''), 200)
 ),
 laeufe AS (
   SELECT count(*)::int AS anzahl
-  FROM dispatch_laeufe
+  FROM public.cron_dispatch_requests q
+  CROSS JOIN retention ret
+  WHERE q.dispatched_at >= ret.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
+),
+antworten_retention AS (
+  SELECT count(*)::int AS anzahl
+  FROM public.cron_dispatch_requests q
+  CROSS JOIN retention ret
+  JOIN net._http_response r ON r.id = q.request_id
+  WHERE q.dispatched_at >= ret.ab
+    AND q.dispatched_at < now() - interval '2 minutes'
 )
-SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel FROM antworten a
+SELECT 'antwort' AS art, a.status, a.anzahl, a.von, a.bis, a.beispiel, a.funktion FROM antworten a
 UNION ALL
-SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL FROM laeufe l;`
+SELECT 'dispatch', NULL, l.anzahl, NULL, NULL, NULL, NULL FROM laeufe l
+UNION ALL
+SELECT 'antwort_im_retention', NULL, ar.anzahl, NULL, NULL, NULL, NULL FROM antworten_retention ar;`
+}
+
+export const SQL_ANTWORTEN = buildSqlAntworten();
 
 /**
  * Groesster erwarteter Abstand zwischen zwei Laeufen, in Minuten.
@@ -235,7 +284,23 @@ export function erwarteterAbstandMinuten(schedule) {
 
   const minutenSchritt = schritt(minute);
   if (minutenSchritt) return minutenSchritt;
-  if (!/^\d+$/.test(minute)) return null;
+  if (!/^\d+$/.test(minute)) {
+    // Komma-Listen wie 4,19,34,49 (versetzte */15-Jobs, vorbereitet fuer RSD-013).
+    if (/^\d+(,\d+)+$/.test(minute) && (stunde === '*' || /^\d+$/.test(stunde))) {
+      const parts = minute.split(',').map(Number);
+      if (parts.some((n) => !Number.isFinite(n))) return null;
+      const sorted = [...new Set(parts)].sort((a, b) => a - b);
+      if (sorted.length < 2) return null;
+      let minGap = (sorted[0] + 60) - sorted[sorted.length - 1];
+      for (let i = 1; i < sorted.length; i++) {
+        minGap = Math.min(minGap, sorted[i] - sorted[i - 1]);
+      }
+      if (minGap <= 0) return null;
+      if (stunde === '*') return minGap;
+      return 24 * 60;
+    }
+    return null;
+  }
 
   if (stunde === '*') return 60;
   const stundenSchritt = schritt(stunde);
@@ -284,8 +349,15 @@ export function evaluateAntworten(zeilen) {
   const summeGut = gut.reduce((s, a) => s + a.anzahl, 0);
   const summeSchlecht = schlecht.reduce((s, a) => s + a.anzahl, 0);
 
-  // Weniger Antworten als Laeufe heisst: irgendwo kam nichts zurueck.
-  const ohneAntwort = Math.max(0, dispatchLaeufe - (summeGut + summeSchlecht));
+  // Ohne-Antwort nur im Retention-Fenster (Default 6h). Antworten aus dem
+  // laengeren Lookback (Default 24h) fliessen in schlecht/gut ein, duerfen
+  // aber die Retention-Zaehlung nicht verzerren. Fehlt die neue Zeile
+  // (alte Testdaten), gilt die bisherige Rechnung.
+  const antwortImRetention = zeilen.find((z) => z.art === 'antwort_im_retention')?.anzahl;
+  const antwortZahlFuerOhne = Number.isFinite(antwortImRetention)
+    ? antwortImRetention
+    : (summeGut + summeSchlecht);
+  const ohneAntwort = Math.max(0, dispatchLaeufe - antwortZahlFuerOhne);
 
   return {
     schlecht: schlecht.sort((a, b) => b.anzahl - a.anzahl),
@@ -296,9 +368,26 @@ export function evaluateAntworten(zeilen) {
   };
 }
 
-export function antwortUrsache(beispiel) {
+function cronEnvName(wert) {
+  const m = /\b(CRON_[A-Z0-9_]*_KEY)\b/.exec(typeof wert === 'string' ? wert : '');
+  return m ? m[1] : null;
+}
+
+/**
+ * Ursache einer Nicht-2xx-Antwort.
+ *
+ * `funktion` kommt aus `cron_dispatch_requests.function_name`. Fehlendes
+ * Function Secret (500 CRON_KEY_MISSING) bleibt eine andere Ursache als ein
+ * falsches (401 "cron only") — aber zwei fehlende Secrets sind zwei Befunde.
+ * Der konkrete Name (`CRON_AUDIT_MONITOR_KEY`) steht in der Function-Antwort
+ * und darf nicht auf `CRON_*_KEY` zusammenfallen, sonst sieht der Betreiber
+ * nicht, welchen Eintrag er setzen muss.
+ */
+export function antwortUrsache(beispiel, funktion) {
   const roh = String(beispiel ?? '').replace(/\s+/g, ' ').trim();
-  if (!roh) return '(ohne Antworttext)';
+  const fn = String(funktion ?? '').trim();
+  const mitFunktion = (text) => (fn ? `${fn}: ${text}` : text);
+  if (!roh) return mitFunktion('(ohne Antworttext)');
 
   let parsed = null;
   try {
@@ -307,11 +396,14 @@ export function antwortUrsache(beispiel) {
     // kein JSON, weiter unten als Rohtext behandeln
   }
 
-  // Fehlendes Function Secret (500 CRON_KEY_MISSING) ist eine andere Ursache
-  // als ein falsches (401 "cron only"): Secret setzen statt Wert abgleichen.
   const code = parsed?.error?.code ?? parsed?.code;
+  const message = parsed?.error?.message ?? parsed?.message;
   if (code === 'CRON_KEY_MISSING' || (!parsed && roh.includes('CRON_KEY_MISSING'))) {
-    return 'Function Secret fehlt (CRON_*_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md';
+    const env = cronEnvName(message) || cronEnvName(roh);
+    const detail = env
+      ? `Function Secret fehlt (${env} nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md`
+      : 'Function Secret fehlt (CRON_*_KEY nicht gesetzt) — siehe docs/runbooks/cron-vault-secrets.md';
+    return mitFunktion(detail);
   }
 
   const enthaeltCronOnly = (wert) => typeof wert === 'string' && wert.toLowerCase().includes('cron only');
@@ -322,19 +414,18 @@ export function antwortUrsache(beispiel) {
     enthaeltCronOnly(parsed?.message);
 
   if (cronOnlyText) {
-    return 'Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md';
+    return mitFunktion('Function Secret mismatch (Bearer-Token passt nicht zum Function Secret) — siehe docs/runbooks/cron-vault-secrets.md');
   }
 
-  const message = parsed?.error?.message ?? parsed?.message;
-  if (code && message) return `${code}: ${message}`;
-  if (message) return String(message);
-  return roh.slice(0, 160);
+  if (code && message) return mitFunktion(`${code}: ${message}`);
+  if (message) return mitFunktion(String(message));
+  return mitFunktion(roh.slice(0, 160));
 }
 
 export function groupAntwortenByCause(schlecht) {
   const nach = new Map();
   for (const a of schlecht) {
-    const ursache = antwortUrsache(a.beispiel);
+    const ursache = antwortUrsache(a.beispiel, a.funktion);
     nach.set(ursache, (nach.get(ursache) ?? 0) + (a.anzahl ?? 0));
   }
   return [...nach.entries()]
@@ -374,7 +465,7 @@ export function befundZeilen({ broken, veraltet, antwort }) {
   if (antwort) {
     const nach = new Map();
     for (const a of antwort.schlecht) {
-      const schluessel = `C · ${beschreibeStatus(a.status)} · ${antwortUrsache(a.beispiel)}`;
+      const schluessel = `C · ${beschreibeStatus(a.status)} · ${antwortUrsache(a.beispiel, a.funktion)}`;
       nach.set(schluessel, (nach.get(schluessel) ?? 0) + (a.anzahl ?? 0));
     }
     for (const [schluessel, anzahl] of nach) zeilen.push({ schluessel, anzahl });
@@ -393,12 +484,12 @@ if (direkt) {
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   const projectId = process.env.SUPABASE_PROJECT_ID;
 
+  const ADVISORY = (process.env.CRON_HEALTH_MODE ?? 'fail') === 'advisory';
+
   if (!token || !projectId) {
     console.log('ℹ️  Cron-Health-Check uebersprungen (keine Supabase-Secrets).');
-    process.exit(0);
+    process.exit(ADVISORY ? 0 : 1);
   }
-
-  const ADVISORY = (process.env.CRON_HEALTH_MODE ?? 'fail') === 'advisory';
 
   async function frage(sql) {
     const resp = await fetch(
@@ -407,6 +498,7 @@ if (direkt) {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: sql }),
+        signal: AbortSignal.timeout(30_000),
       },
     );
     if (!resp.ok) {
@@ -420,7 +512,7 @@ if (direkt) {
     rows = await frage(SQL);
   } catch (e) {
     console.error('⚠️  Cron-Abfrage nicht ausfuehrbar (Infra, kein Befund):', e.message);
-    process.exit(0);
+    process.exit(ADVISORY ? 0 : 1);
   }
 
   // Die Antwort-Ebene darf die Job-Ebene nicht mitreissen: Scheitert nur
@@ -446,9 +538,13 @@ if (direkt) {
 
   const { broken, nie, inaktiv, ok } = evaluate(rows);
   const veraltet = evaluateFrische(rows, Date.now());
-  const antwort = Array.isArray(antwortZeilen)
-    ? evaluateAntworten(antwortZeilen)
-    : null;
+  const antwortFormatOk = Array.isArray(antwortZeilen) &&
+    antwortZeilen.filter((z) => z?.art === 'dispatch').length === 1 &&
+    antwortZeilen.filter((z) => z?.art === 'antwort_im_retention').length <= 1 &&
+    antwortZeilen.every((z) => z && ['dispatch', 'antwort', 'antwort_im_retention'].includes(z.art) &&
+      Number.isInteger(z.anzahl) && z.anzahl >= 0 &&
+      (z.art !== 'antwort' || typeof z.status === 'string'));
+  const antwort = antwortFormatOk ? evaluateAntworten(antwortZeilen) : null;
 
   console.log(`\nCron-Jobs: ${rows.length} registriert — ${ok.length} zuletzt gruen, ` +
               `${broken.length} zuletzt rot, ${nie.length} nie gelaufen, ${inaktiv.length} inaktiv.\n`);
@@ -499,17 +595,19 @@ if (direkt) {
 
   // ── C: Antwort war kein 2xx ───────────────────────────────────────────────
   if (!antwort) {
+    befund = true;
     console.error('\n⚠️  Antwort-Ebene nicht auswertbar (unerwartetes Format von net._http_response).');
   } else if (antwort.summeSchlecht > 0 || antwort.ohneAntwort > 0) {
     befund = true;
     console.error(
-      `\n❌ Im 6-Stunden-Fenster: ${antwort.summeSchlecht} Antworten ohne 2xx` +
+      `\n❌ Im ${cronHealthHttpLookbackHours()}-Stunden-Lookback: ${antwort.summeSchlecht} Antworten ohne 2xx` +
       (antwort.ohneAntwort > 0 ? ` und ${antwort.ohneAntwort} Dispatch-Laeufe ohne jede Antwort` : '') +
       ` (${antwort.summeGut} erfolgreich, ${antwort.dispatchLaeufe} Dispatch-Laeufe):\n`,
     );
     for (const a of antwort.schlecht) {
-      console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}   ${a.von} … ${a.bis}`);
-      console.error(`      ${antwortUrsache(a.beispiel)}\n`);
+      const funktion = a.funktion ? `  ${a.funktion}` : '';
+      console.error(`  ${a.anzahl}× ${beschreibeStatus(a.status)}${funktion}   ${a.von} … ${a.bis}`);
+      console.error(`      ${antwortUrsache(a.beispiel, a.funktion)}\n`);
     }
     const gruppiert = groupAntwortenByCause(antwort.schlecht);
     console.error('Nach Ursache gruppiert:\n');
@@ -523,7 +621,8 @@ if (direkt) {
       'Ablehnung steht nur hier. Anleitung: docs/runbooks/cron-vault-secrets.md\n',
     );
   } else if (antwort.dispatchLaeufe === 0) {
-    console.log('ℹ️  Antwort-Ebene: im 6-Stunden-Fenster lief kein Dispatch-Job.');
+    befund = true;
+    console.error(`⚠️  Antwort-Ebene nicht verifizierbar: im ${cronHealthHttpRetentionHours()}-Stunden-Fenster lief kein Dispatch-Job. Kein Ausfallnachweis, aber auch keine Entwarnung.`);
   } else {
     console.log(`✅ Antwort-Ebene: ${antwort.summeGut} von ${antwort.summeGut} Antworten waren 2xx.`);
   }

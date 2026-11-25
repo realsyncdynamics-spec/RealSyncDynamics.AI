@@ -119,7 +119,8 @@ CREATE POLICY secretariat_bot_approvals_select_member ON public.secretariat_bot_
   USING (public.is_tenant_member(tenant_id));
 
 -- Append-only auch für Rollen mit Tabellenrechten (Eigentümer). DELETE ist
--- nur als Kaskade erlaubt, wenn der Bot selbst gelöscht wurde.
+-- nur als Kaskade erlaubt, wenn der Bot oder der Mandant selbst gelöscht
+-- wurde (Reihenfolge der beiden Kaskaden ist damit gleichgültig).
 CREATE OR REPLACE FUNCTION public.secretariat_bot_approvals_append_only()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -128,7 +129,8 @@ CREATE OR REPLACE FUNCTION public.secretariat_bot_approvals_append_only()
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE'
-     AND NOT EXISTS (SELECT 1 FROM public.bots b WHERE b.id = OLD.bot_id) THEN
+     AND (NOT EXISTS (SELECT 1 FROM public.bots b WHERE b.id = OLD.bot_id)
+          OR NOT EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = OLD.tenant_id)) THEN
     RETURN OLD;
   END IF;
   RAISE EXCEPTION 'secretariat_bot_approvals ist append-only'

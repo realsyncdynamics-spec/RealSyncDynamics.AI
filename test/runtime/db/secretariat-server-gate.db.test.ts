@@ -389,7 +389,7 @@ d('KI-Sekretariat — Freigabe-Gate (Migration 20261125180000)', () => {
     expect(await freigabeZeilen(ctx, bot)).toBe(0);
   });
 
-  it('Freigaben sind append-only; Löschen des Bots entfernt sie per Kaskade', async () => {
+  it('Freigaben sind append-only; Löschen von Bot oder Mandant entfernt sie per Kaskade', async () => {
     const bot = await botAnlegen(ctx, w.tenantA);
     expect(await freigeben(ctx, als(w.ownerA), bot, await hash(ctx, bot))).toBe('OK');
     // Superuser-Kontext (Tabelleneigentümer): Trigger sperrt trotzdem.
@@ -406,6 +406,12 @@ d('KI-Sekretariat — Freigabe-Gate (Migration 20261125180000)', () => {
 
     expect(await versuch(ctx, als(w.ownerA), 'DELETE FROM public.bots WHERE id = $1', [bot])).toBe('OK');
     expect(await freigabeZeilen(ctx, bot)).toBe(0);
+
+    // Mandantenlöschung: beide Kaskaden (über bots und über tenants) laufen durch.
+    const zweiter = await botAnlegen(ctx, w.tenantA);
+    expect(await freigeben(ctx, als(w.ownerA), zweiter, await hash(ctx, zweiter), true)).toBe('OK');
+    await ctx.client.query('DELETE FROM public.tenants WHERE id = $1', [w.tenantA]);
+    expect(await freigabeZeilen(ctx, zweiter)).toBe(0);
   });
 
   it('client-geschriebenes config.secretariat.approval macht nichts gültig', async () => {

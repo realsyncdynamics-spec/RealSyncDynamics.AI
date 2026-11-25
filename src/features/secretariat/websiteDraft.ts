@@ -320,11 +320,30 @@ export function findEmails(text: string): Array<{ value: string; index: number }
   return out;
 }
 
+/** Für Beispiele reservierte Domains (RFC 2606/6761), verglichen als ganze Labels. */
+const PLACEHOLDER_DOMAINS = new Set(['example.com', 'example.net', 'example.org']);
+const PLACEHOLDER_TLDS = new Set(['example', 'test', 'invalid', 'localhost']);
+
+/**
+ * Platzhalter-Adresse wie `info@example.com` oder `a@shop.example.org`?
+ * Früher `value.endsWith('example.com')`: Ein Teilstring-Vergleich verwarf auch echte
+ * Domains wie `notexample.com` und übersah `example.org` (CodeQL „Incomplete URL
+ * substring sanitization“, #2435/#2447). Jetzt zählen nur ganze Domain-Labels.
+ */
+export function isPlaceholderEmailDomain(email: string): boolean {
+  const at = email.lastIndexOf('@');
+  if (at < 0) return false;
+  const labels = email.slice(at + 1).toLowerCase().split('.').filter(Boolean);
+  if (labels.length === 0) return false;
+  if (PLACEHOLDER_TLDS.has(labels[labels.length - 1])) return true;
+  return labels.length >= 2 && PLACEHOLDER_DOMAINS.has(labels.slice(-2).join('.'));
+}
+
 function deriveEmail(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => FieldSource): DraftField<string> {
   const text = d.visible_text ?? '';
   for (const m of findEmails(text)) {
     const value = m.value.toLowerCase();
-    if (NOREPLY_RE.test(value) || ASSET_SUFFIX_RE.test(value) || value.endsWith('example.com')) continue;
+    if (NOREPLY_RE.test(value) || ASSET_SUFFIX_RE.test(value) || isPlaceholderEmailDomain(value)) continue;
     return { status: 'known', value, confidence: 'high', source: src('email-pattern', excerptAround(text, m.index, m.value.length)) };
   }
   return unknown('Keine E-Mail-Adresse im Website-Text gefunden.');

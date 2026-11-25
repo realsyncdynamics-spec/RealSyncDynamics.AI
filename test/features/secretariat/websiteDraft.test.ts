@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyOwnerEdit, approvalBlockers, cleanValue, deriveSecretariatDraft, draftHints, faqToLines, findEmails,
-  isFaxLabel, isPhoneLabel, labelTail, linesToFaq, linesToList, normalizePhone,
+  isFaxLabel, isPhoneLabel, isPlaceholderEmailDomain, labelTail, linesToFaq, linesToList, normalizePhone,
   type WebsiteDiscovery,
 } from '../../../src/features/secretariat/websiteDraft';
 
@@ -312,5 +312,24 @@ describe('cleanValue: unsichtbare und sicherheitsrelevante Unicode-Zeichen', () 
     expect(draft.fields.phone.status === 'known' && /[\u200b\u202e\u2066]/.test(draft.fields.phone.source.excerpt)).toBe(false);
     const edited = applyOwnerEdit(draft, 'businessName', 'Muster\u2066 GmbH\u{e0041}', AT);
     expect(edited.fields.businessName.value).toBe('Muster GmbH');
+  });
+});
+
+describe('Platzhalter-Domains ohne Teilstring-Vergleich (CodeQL-Befund #2447, websiteDraft.ts)', () => {
+  it('verwirft reservierte Beispiel-Domains als ganze Labels', () => {
+    for (const e of ['info@example.com', 'a@mail.example.com', 'x@example.org', 'x@example.net', 'x@foo.test', 'x@a.invalid', 'x@localhost', 'X@EXAMPLE.COM']) {
+      expect(isPlaceholderEmailDomain(e), e).toBe(true);
+    }
+  });
+
+  it('lässt echte Domains durch, die den Text nur enthalten', () => {
+    for (const e of ['info@notexample.com', 'info@example.com.de', 'info@myexample.com', 'kontakt@example-sanitaer.de', 'a@testbetrieb.de', 'ohne-at']) {
+      expect(isPlaceholderEmailDomain(e), e).toBe(false);
+    }
+  });
+
+  it('wirkt in der Erkennung: echte Adresse nach einem Platzhalter wird übernommen', () => {
+    const d = deriveSecretariatDraft(discovery({ visible_text: 'Muster: max@example.com. Kontakt: info@notexample.com' }));
+    expect(d.fields.email).toMatchObject({ status: 'known', value: 'info@notexample.com' });
   });
 });

@@ -24,7 +24,7 @@ function renderAt(path: string, withChip: boolean) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/audit" element={<p>Audit-Seite</p>} />
+        <Route path="/ki-bots" element={<p>KI-Bots-Seite</p>} />
         <Route path="*" element={<AskAiPill />} />
       </Routes>
       {withChip && <AssistentChip />}
@@ -33,7 +33,7 @@ function renderAt(path: string, withChip: boolean) {
 }
 
 describe('<AskAiPill>', () => {
-  it('zeigt „KI fragen“ mit Rückfall-Link auf den Website-Check', () => {
+  it('zeigt „KI fragen“ mit Rückfall-Link auf die KI-Bots-Seite', () => {
     const { getByTestId } = renderAt('/', false);
     const pill = getByTestId('ask-ai-pill');
     expect(pill).toHaveTextContent('KI fragen');
@@ -51,15 +51,15 @@ describe('<AskAiPill>', () => {
 
     expect(dialog).toHaveAttribute('aria-hidden', 'false');
     // Kein Seitenwechsel: der Link-Rückfall wurde unterdrückt.
-    expect(queryByText('Audit-Seite')).toBeNull();
+    expect(queryByText('KI-Bots-Seite')).toBeNull();
   });
 
-  it('navigiert auf den Website-Check, wenn kein Assistent verfügbar ist', () => {
+  it('navigiert auf die KI-Bots-Seite, wenn kein Assistent verfügbar ist', () => {
     const { getByTestId, getByText } = renderAt('/', false);
     act(() => {
       fireEvent.click(getByTestId('ask-ai-pill'));
     });
-    expect(getByText('Audit-Seite')).toBeInTheDocument();
+    expect(getByText('KI-Bots-Seite')).toBeInTheDocument();
   });
 
   it('openAssistant() meldet false, wenn der Chip auf der Route ausgeblendet ist', () => {

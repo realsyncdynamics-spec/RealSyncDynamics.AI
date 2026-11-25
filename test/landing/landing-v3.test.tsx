@@ -68,7 +68,7 @@ describe('Startseite v3 — `/`', () => {
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
     expect(within(nav).getByRole('link', { name: 'Produkte' })).toHaveAttribute('href', '#katalog');
     expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
-    // „KI fragen“ öffnet den öffentlichen Assistenten; Rückfall ist der Website-Check.
+    // „KI fragen“ öffnet den öffentlichen Assistenten; Rückfall ist die KI-Bots-Seite.
     expect(within(nav).getByRole('link', { name: 'KI fragen' })).toHaveAttribute('href', '/ki-bots?source=ki-fragen');
     const app = read('src/App.tsx');
     expect(app).toContain('<Route path="/phonebot/start"');

@@ -128,7 +128,7 @@ function vioCommandAllowed(base, a) {
 }
 
 function checkVio(base, words, a, raw, ctx) {
-  if (!vioCommandAllowed(base, a)) block(`VIO: „${base}${a[0] ? ` ${a[0]}` : ''}“ nicht in der Allowlist (vio.md „Bash“)`, raw);
+  if (!vioCommandAllowed(base, a)) block(`VIO: „${base}${a[0] ? ` ${a[0]}` : ''}“ nicht in der VIO-Allowlist (VIO ist vorerst nur lesend)`, raw);
   for (const r of words.redirs ?? []) {
     if (r.op.endsWith('&') || r.op.startsWith('<')) continue; // fd-Duplikat, Eingabe
     const why = checkWritePath(r.target, ctx);

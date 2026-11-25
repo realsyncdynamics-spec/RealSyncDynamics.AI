@@ -4,7 +4,7 @@
 Status: IMPLEMENTIERT, Hooks GETESTET (lokal), nichts gemergt, nichts LIVE.
 Verbindlich bleiben `AGENTS.md` und `CLAUDE.md`. Statusstufen wie `roles.md`.
 
-## 0. Nachtrag Senior-Review 25.11.2026 (geht Abschnitt 1–4 vor)
+## 0. Nachtrag Senior-Review 25.11.2026 (geht Abschnitt 1–5 vor)
 
 Zielarchitektur (Vorgabe Dominik): CHIEF koordiniert, DEPUTY nimmt ab, NOVA prüft
 Sicherheit/Governance, **ATLAS bündelt die externe Recherche**, REA setzt um und bewertet
@@ -21,8 +21,10 @@ kreative Konzeption, DATA Wirtschaftlichkeit, FLOW Automatisierungskonzepte.
 | Bash-Hook | Probe: 13 von 16 Umgehungen offen | gehärtet (Commit `8a18cb9`), 0 von 16; Tests in `npm test` |
 
 Merge-Reihenfolge neu (je Einzel-Freigabe, nach jedem Merge Folge-PRs per Merge von `main`
-aktualisieren): **#2416 → #2436 → #2434 → dieser Branch.** Die Tabelle in Abschnitt 1 mit
-den Einzel-PRs ist damit überholt.
+aktualisieren): **#2416 → #2436 → dieser Branch (#2440).** #2434 ist hier vollständig
+enthalten und wird nicht separat gemergt. Dieser Branch enthält #2416 und #2436 bereits per
+Merge; `deputy.md`, `nova.md`, `roles.md` sind zugunsten #2436 aufgelöst (DEPUTY-Abnahme
+25.11.2026, Nr. 9). Die Tabelle in Abschnitt 1 mit den Einzel-PRs ist damit überholt.
 
 Hook ≠ Berechtigungsgrenze: Ein Hook prüft Befehlstext. Code in Dateien, die erlaubte
 Befehle starten (`npm test`, `node skript.mjs`), sieht er nicht. Echte Grenzen sind:
@@ -108,15 +110,15 @@ gesperrte Dienste. Tagesbudget E-T1 (1 Mio. Tokens) ist Vorgabe, technisch nicht
 | Agent | PR | Werkzeuge (Frontmatter) | Prüfstand | Offene Risiken | Freigabe |
 |---|---|---|---|---|---|
 | CHIEF | #2416 | alle; Bash-Guard, Tiefe 1 | Guard 50/50, check:context | volle CI fehlt (Draft) | Merge offen |
-| DEPUTY | #2423 | Read, Grep, Glob · opus · 25 | Probe 3c (PR-Text) | Konflikt mit #2416 | Merge offen |
-| NOVA | #2424 | Read, Grep, Glob · sonnet · 25 | Probe 3c | Konflikt mit #2416 | Merge offen |
+| DEPUTY | #2436 | Read, Grep, Glob · opus · 25 | Probe 3c (PR-Text) | Konflikt mit #2416 hier aufgelöst | Merge offen |
+| NOVA | #2436 | Read, Grep, Glob · sonnet · 25 | Probe 3c | Konflikt mit #2416 hier aufgelöst | Merge offen |
 | REA | hier | Read, Grep, Glob, Edit, Write, Bash | Probe 3c (#2425), Radar-Text hier nicht neu geprobt | Radar hängt an ATLAS | Merge offen |
-| VIO | #2427 | wie REA · sonnet | Grenze jetzt technisch, 51 Fälle | `npm test` führt Code aus (nicht abdeckbar); Merge = Deploy der Runtime | Merge + Deploy offen |
-| MOTION | #2428 | Read, Grep, Glob · plan · 15 | Probe 3c | erzeugt nichts | Merge offen |
-| ATLAS | #2429 | Read, Grep, Glob, WebSearch, WebFetch · 25 | Probe 3c (intern) | Repo-Lesen + Web = Abflussweg über URLs | Merge offen |
-| MIRA | #2430 | Read, Grep, Glob, WebSearch · 20 | Probe 3c | – | Merge offen |
-| DATA | #2431 | Read, Grep, Glob · 30 | Probe 3c | Steuerwiderspruch Abschnitt 4 | Merge offen |
-| FLOW | #2432 | Read, Grep, Glob · 25 | Probe 3c | – | Merge offen |
+| VIO | #2436 | Read, Grep, Glob · sonnet (nur lesend) | Schreibgrenze-Hook vorbereitet, greift erst bei Schreibrechten | Merge = Deploy der Runtime, sobald REA dort ändert | Merge offen |
+| MOTION | #2436 | Read, Grep, Glob · plan · 15 | Probe 3c | erzeugt nichts | Merge offen |
+| ATLAS | #2436 (Fassung #2429) | WebSearch, WebFetch · 25 (kein Repo) | Probe 3c | Webinhalte nur als Daten an CHIEF/REA | Merge offen |
+| MIRA | #2436 | Read, Grep, Glob · 20 (Recherche via ATLAS) | Probe 3c (damals mit WebSearch) | – | Merge offen |
+| DATA | #2436 | Read, Grep, Glob · 30 | Probe 3c | Steuerwiderspruch Abschnitt 4 | Merge offen |
+| FLOW | #2436 | Read, Grep, Glob · 25 | Probe 3c | – | Merge offen |
 
 Restrisiken der Hooks (grundsätzlich): Code in Dateien, die erlaubte Befehle ausführen
 (`npm test`, Skripte), IP-Adressen statt Hostnamen, Ziel aus Dateien (`wget -i`). Bekannter

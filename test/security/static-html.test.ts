@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PRINT_MARKER, isDangerousUrl, toStaticHtmlDocument } from '../../src/lib/static-html';
+import { CLOSE_MARKER, PRINT_MARKER, STATIC_HTML_MIME, isDangerousUrl, toStaticHtmlDocument } from '../../src/lib/static-html';
 import { previewCsp } from '../../src/lib/preview-sandbox';
 
 /**
@@ -108,10 +108,11 @@ describe('Mutation-XSS: auch nach erneutem Parsen nichts Aktives', () => {
   });
 });
 
-describe('CSP steht als erstes Kopf-Element', () => {
+describe('Zeichensatz und CSP stehen am Anfang des Kopfes', () => {
   it('setzt die statische CSP mit script-src none an den Anfang', () => {
     const doc = parse('<html><head><title>T</title><style>p{}</style></head><body>x</body></html>');
-    const first = doc.head.firstElementChild;
+    expect(doc.head.firstElementChild?.getAttribute('charset')).toBe('utf-8');
+    const first = doc.head.children[1];
     expect(first?.tagName).toBe('META');
     expect(first?.getAttribute('http-equiv')).toBe('Content-Security-Policy');
     expect(first?.getAttribute('content')).toContain("script-src 'none'");
@@ -120,7 +121,7 @@ describe('CSP steht als erstes Kopf-Element', () => {
 
   it('schützt auch ein Fragment ohne html- und head-Element', () => {
     const doc = parse('<h1>Nur Text</h1>');
-    expect(doc.head.firstElementChild?.getAttribute('http-equiv')).toBe('Content-Security-Policy');
+    expect(doc.head.children[1]?.getAttribute('http-equiv')).toBe('Content-Security-Policy');
     expect(doc.body.innerHTML).toContain('<h1>Nur Text</h1>');
   });
 
@@ -147,6 +148,47 @@ describe('Druck-Buttons der Berichte', () => {
     const doc = parse('<button id="p" onclick="window.print();fetch(\'//x\')">x</button>');
     expect(doc.getElementById('p')?.hasAttribute(PRINT_MARKER)).toBe(false);
     expect(doc.getElementById('p')?.hasAttribute('onclick')).toBe(false);
+  });
+});
+
+describe('NOVA-Befunde F1–F5 (Prüfung 25.11.2026)', () => {
+  it('F1: setzt eigenes charset=utf-8 als erstes Kopf-Element, entfernt fremde Zeichensätze', () => {
+    const doc = parse('<html><head><meta charset="iso-2022-jp"><title>x</title></head><body>a</body></html>');
+    const metas = Array.from(doc.querySelectorAll('meta[charset]'));
+    expect(metas).toHaveLength(1);
+    expect(metas[0].getAttribute('charset')).toBe('utf-8');
+    expect(doc.head.firstElementChild).toBe(metas[0]);
+    expect(doc.head.children[1]?.getAttribute('http-equiv')).toBe('Content-Security-Policy');
+  });
+
+  it('F1: lässt am html-Element nur lang und dir stehen', () => {
+    const out = toStaticHtmlDocument('<html lang="de" dir="ltr" data-x="\u001b$B" style="x"><body>a</body></html>');
+    const root = new DOMParser().parseFromString(out, 'text/html').documentElement;
+    expect(Array.from(root.attributes).map((a) => a.name).sort()).toEqual(['dir', 'lang']);
+  });
+
+  it('F1: Blob-Typ legt den Zeichensatz fest', () => {
+    expect(STATIC_HTML_MIME).toBe('text/html;charset=utf-8');
+  });
+
+  it('F2: entfernt template samt Declarative Shadow DOM', () => {
+    const out = toStaticHtmlDocument(
+      '<div><template shadowrootmode="open"><img src=x onerror="alert(1)"><script>alert(2)</script></template></div>',
+    );
+    expect(out).not.toMatch(/<template|shadowroot|onerror|<script/i);
+  });
+
+  it('F3: entfernt target und formtarget (kein Reverse Tabnabbing)', () => {
+    const doc = parse('<a id="a" target="x" href="https://example.com">a</a><button id="b" formtarget="_blank">b</button>');
+    expect(doc.getElementById('a')?.hasAttribute('target')).toBe(false);
+    expect(doc.getElementById('a')?.getAttribute('href')).toBe('https://example.com');
+    expect(doc.getElementById('b')?.hasAttribute('formtarget')).toBe(false);
+  });
+
+  it('F5: ersetzt onclick="window.close()" durch ein Kennzeichen ohne Code', () => {
+    const doc = parse('<button id="c" onclick="window.close()">Schließen</button>');
+    expect(doc.getElementById('c')?.hasAttribute('onclick')).toBe(false);
+    expect(doc.getElementById('c')?.hasAttribute(CLOSE_MARKER)).toBe(true);
   });
 });
 
@@ -179,7 +221,12 @@ describe('Kein ungeschütztes text/html-Blob im Repository', () => {
   it('erzeugt HTML-Blobs nur über src/lib/static-html.ts', () => {
     const offenders = walk(ROOT)
       .filter((file) => !ALLOWED.has(relative(ROOT, file).split('\\').join('/')))
-      .filter((file) => /new Blob\([^)]*type:\s*['"]text\/html/.test(readFileSync(file, 'utf-8')));
+      .filter((file) => {
+        // Bewusst grob (NOVA-Befund F4): jede Datei, die Blobs baut und text/html
+        // nennt, muss über den Helfer gehen — egal wie der Typ übergeben wird.
+        const src = readFileSync(file, 'utf-8');
+        return /new\s+Blob\s*\(/.test(src) && /text\/html/i.test(src);
+      });
     expect(offenders.map((f) => relative(ROOT, f))).toEqual([]);
   });
 });

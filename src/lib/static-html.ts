@@ -59,6 +59,10 @@ export const BLOCKED_ELEMENTS = [
   'set',
   'animateMotion',
   'animateTransform',
+  // Declarative Shadow DOM (`<template shadowrootmode>`): DOMParser baut den
+  // Shadow Root nicht auf, der Browser beim Laden schon — der Inhalt entginge
+  // sonst der Bereinigung (NOVA-Befund F2).
+  'template',
 ] as const;
 
 /** Attribute, die Adressen tragen und deshalb geprüft werden. */
@@ -82,9 +86,25 @@ const URL_ATTRIBUTES = new Set([
  */
 export const PRINT_MARKER = 'data-print';
 const PRINT_HANDLER = /^\s*(window\.)?print\(\)\s*;?\s*$/;
+/** Ebenso für „Schließen"-Buttons (`onclick="window.close()"`). */
+export const CLOSE_MARKER = 'data-close';
+const CLOSE_HANDLER = /^\s*(window\.)?close\(\)\s*;?\s*$/;
+
+/** Attribute, die am `<html>`-Element bleiben dürfen. Alles andere stünde im
+ *  Ergebnis vor dem CSP-Meta (NOVA-Befund F1). */
+const HTML_ROOT_ATTRIBUTES = new Set(['lang', 'dir']);
 
 /** Attribute, die immer entfernt werden. */
-const ALWAYS_REMOVED_ATTRIBUTES = new Set(['srcdoc', 'srcset']);
+// `target`/`formtarget`: kein Öffnen fremder Seiten mit `opener` auf den
+// Dokument-Tab (Reverse Tabnabbing, NOVA-Befund F3). `shadowroot*`: siehe F2.
+const ALWAYS_REMOVED_ATTRIBUTES = new Set([
+  'srcdoc',
+  'srcset',
+  'target',
+  'formtarget',
+  'shadowrootmode',
+  'shadowroot',
+]);
 
 /**
  * Prüft, ob eine Adresse aktiven Inhalt auslösen kann.
@@ -108,7 +128,12 @@ function sanitizeOnce(html: string): Document {
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
   doc.querySelectorAll(BLOCKED_ELEMENTS.join(',')).forEach((el) => el.remove());
-  doc.querySelectorAll('meta[http-equiv]').forEach((el) => el.remove());
+  // Fremde Zeichensatz- und HTTP-Angaben entfernen; der eigene Zeichensatz
+  // wird in withSafeHead() gesetzt (NOVA-Befund F1).
+  doc.querySelectorAll('meta[http-equiv],meta[charset]').forEach((el) => el.remove());
+  for (const attr of Array.from(doc.documentElement.attributes)) {
+    if (!HTML_ROOT_ATTRIBUTES.has(attr.name.toLowerCase())) doc.documentElement.removeAttribute(attr.name);
+  }
 
   for (const el of Array.from(doc.querySelectorAll('*'))) {
     for (const attr of Array.from(el.attributes)) {
@@ -117,6 +142,7 @@ function sanitizeOnce(html: string): Document {
         // Einziger erhaltener „Handler": als Kennzeichen, nicht als Code.
         el.setAttribute(PRINT_MARKER, '');
       }
+      if (name === 'onclick' && CLOSE_HANDLER.test(attr.value)) el.setAttribute(CLOSE_MARKER, '');
       if (name.startsWith('on') || ALWAYS_REMOVED_ATTRIBUTES.has(name)) {
         el.removeAttribute(attr.name);
         continue;
@@ -131,7 +157,8 @@ function sanitizeOnce(html: string): Document {
 
 /** Enthält das Dokument noch etwas, das nie im Ergebnis stehen darf? */
 function hasActiveContent(doc: Document): boolean {
-  if (doc.querySelector(`${BLOCKED_ELEMENTS.join(',')},meta[http-equiv]`)) return true;
+  if (doc.querySelector(`${BLOCKED_ELEMENTS.join(',')},meta[http-equiv],meta[charset]`)) return true;
+  if (Array.from(doc.documentElement.attributes).some((a) => !HTML_ROOT_ATTRIBUTES.has(a.name.toLowerCase()))) return true;
   for (const el of Array.from(doc.querySelectorAll('*'))) {
     for (const attr of Array.from(el.attributes)) {
       const name = attr.name.toLowerCase();
@@ -153,7 +180,11 @@ function withCspHead(bodyAndHead: Document): string {
   const meta = bodyAndHead.createElement('meta');
   meta.setAttribute('http-equiv', 'Content-Security-Policy');
   meta.setAttribute('content', previewCsp('static'));
-  bodyAndHead.head.prepend(meta);
+  // Zeichensatz zuerst: Er ist zusätzlich im Blob-Typ festgelegt, damit kein
+  // Inhalt die Dekodierung umschalten und das CSP-Meta „verschlucken" kann.
+  const charset = bodyAndHead.createElement('meta');
+  charset.setAttribute('charset', 'utf-8');
+  bodyAndHead.head.prepend(charset, meta);
   return `<!doctype html>\n${bodyAndHead.documentElement.outerHTML}`;
 }
 
@@ -190,17 +221,23 @@ function bindPrintButtons(win: Window): void {
       win.document.querySelectorAll(`[${PRINT_MARKER}]`).forEach((el) => {
         el.addEventListener('click', () => win.print());
       });
+      win.document.querySelectorAll(`[${CLOSE_MARKER}]`).forEach((el) => {
+        el.addEventListener('click', () => win.close());
+      });
     } catch {
       /* fremde Herkunft oder bereits geschlossen — kein Druck-Button, kein Fehler */
     }
   };
   try {
-    if (win.document.readyState === 'complete' && win.document.querySelector(`[${PRINT_MARKER}]`)) attach();
+    if (win.document.readyState === 'complete' && win.document.querySelector(`[${PRINT_MARKER}],[${CLOSE_MARKER}]`)) attach();
     else win.addEventListener('load', attach, { once: true });
   } catch {
     /* siehe oben */
   }
 }
+
+/** MIME-Typ mit festem Zeichensatz (NOVA-Befund F1). */
+export const STATIC_HTML_MIME = 'text/html;charset=utf-8';
 
 /** Wie lange eine `blob:`-Adresse gültig bleibt, damit der neue Tab laden kann. */
 const DEFAULT_REVOKE_MS = 30_000;
@@ -212,7 +249,7 @@ const DEFAULT_REVOKE_MS = 30_000;
  * Verweis auf die Anwendung (`opener`) wird sofort gekappt.
  */
 export function openStaticHtmlInNewTab(html: string, revokeAfterMs = DEFAULT_REVOKE_MS): boolean {
-  const blob = new Blob([toStaticHtmlDocument(html)], { type: 'text/html' });
+  const blob = new Blob([toStaticHtmlDocument(html)], { type: STATIC_HTML_MIME });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank');
   if (win) {
@@ -229,7 +266,7 @@ export function openStaticHtmlInNewTab(html: string, revokeAfterMs = DEFAULT_REV
 
 /** Lädt ein Dokument bereinigt als HTML-Datei herunter. */
 export function downloadStaticHtml(html: string, filename: string): void {
-  const blob = new Blob([toStaticHtmlDocument(html)], { type: 'text/html' });
+  const blob = new Blob([toStaticHtmlDocument(html)], { type: STATIC_HTML_MIME });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

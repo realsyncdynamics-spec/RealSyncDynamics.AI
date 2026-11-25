@@ -49,7 +49,7 @@ function hostOf(url: string): string {
   try { return new URL(url).hostname; } catch { return url; }
 }
 
-function Provenance({ field }: { field: DraftField<unknown> }) {
+function Herkunftsnachweis({ field }: { field: DraftField<unknown> }) {
   if (field.status === 'unknown') {
     return <p className="mt-1 font-mono text-[10px] text-titanium-500">Nicht erkannt: {field.reason}</p>;
   }
@@ -259,7 +259,7 @@ function DraftEditor({ draft, onChange, onCancel, onSave, saveLabel }: {
                   if (e.target.value.trim() !== before) onChange(applyOwnerEdit(draft, key as 'phone', e.target.value, now()));
                 }}
               />
-              <Provenance field={field} />
+              <Herkunftsnachweis field={field} />
             </label>
           );
         })}
@@ -269,14 +269,14 @@ function DraftEditor({ draft, onChange, onCancel, onSave, saveLabel }: {
         <textarea className={`${inputCls} min-h-24`} value={servicesText}
           onChange={(e) => setServicesText(e.target.value)}
           onBlur={() => onChange(applyOwnerEdit(draft, 'services', linesToList(servicesText), now()))} />
-        <Provenance field={f.services} />
+        <Herkunftsnachweis field={f.services} />
       </label>
       <label className="block text-xs text-titanium-400">
         {FIELD_LABELS.faq} <span className="text-titanium-500">(„Frage? Antwort“ je Zeile)</span>
         <textarea className={`${inputCls} min-h-20`} value={faqText}
           onChange={(e) => setFaqText(e.target.value)}
           onBlur={() => onChange(applyOwnerEdit(draft, 'faq', linesToFaq(faqText), now()))} />
-        <Provenance field={f.faq} />
+        <Herkunftsnachweis field={f.faq} />
       </label>
       {(hints.length > 0 || blockers.length > 0) && (
         <ul className="list-disc space-y-0.5 pl-4 text-xs">

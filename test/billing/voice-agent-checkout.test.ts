@@ -38,12 +38,12 @@ const released: StandaloneVoiceOffer = {
 const monthly = { active: true, currency: 'eur', unit_amount: 8900, recurring: { interval: 'month', interval_count: 1 } };
 
 describe('Voice-Angebote in der Pricing-SSoT', () => {
-  it('Beträge unverändert (89 / 199 / 349 €), nur Starter-Kontingent bestätigt, nichts freigegeben', () => {
+  it('Beträge unverändert (89 / 199 / 349 €), K5-Zielwerte eingetragen, nichts freigegeben', () => {
     expect(VOICE_STANDALONE_OFFERS.map((o) => [o.id, o.monthlyEur])).toEqual([
       ['starter', 89], ['professional', 199], ['kanzlei_praxis', 349],
     ]);
     expect(VOICE_STANDALONE_OFFERS.map((o) => [o.id, o.monthlyMinutes, o.extraMinuteEur])).toEqual([
-      ['starter', 500, 0.18], ['professional', null, null], ['kanzlei_praxis', null, null],
+      ['starter', 500, 0.19], ['professional', 1200, 0.17], ['kanzlei_praxis', 2500, 0.16],
     ]);
     for (const o of VOICE_STANDALONE_OFFERS) {
       expect(o.bullets).toEqual([]);

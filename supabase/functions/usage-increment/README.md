@@ -29,8 +29,9 @@ Content-Type: application/json
 }
 ```
 
-`delta` defaults to `1`. Negative values record refunds; the trigger floors
-`usage_totals.total` at 0.
+`delta` defaults to `1` and must be a positive integer (max 1,000,000).
+Refunds and corrections are server-side only (`recordUsage` with the service
+role); this endpoint does not accept them.
 
 ## Responses
 
@@ -40,7 +41,8 @@ Content-Type: application/json
   and `source: "plan" | "global"`.
 - **400 BAD_REQUEST** — missing `tenant_id` / `entitlement_key`, or invalid
   `delta`.
-- **403 FORBIDDEN** — the caller is not a member of the given tenant.
+- **403 FORBIDDEN** — the caller is not a member of the given tenant, or
+  `delta` is negative.
 
 ## Hot path
 

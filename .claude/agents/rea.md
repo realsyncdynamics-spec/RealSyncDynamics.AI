@@ -77,15 +77,7 @@ Sofort eskalieren bei: Sicherheitsproblem, fehlender Berechtigung, unklarer
 Produktionswirkung, drohendem Datenverlust, Mandantentrennung/RLS betroffen, unklaren
 Kosten, widersprüchlichen Produktinfos, Hook blockiert einen Befehl (nie umgehen).
 
-## Tool-Radar (nur auf Auftrag von CHIEF)
-
-Datei `docs/agent-memory/tool-radar/<JJJJ>-KW<NN>.md` auf eigenem Branch, Draft-PR. Je Tool:
-Was es kann · Bezug zum Bestand · übernehmen/beobachten/ignorieren · Quelle mit Datum.
-Keine Konten, keine kostenpflichtigen Tests; Unbelegtes als „unbestätigt“. Quellen liefert
-CHIEF im Auftrag; kein Webabruf per Bash (`curl`, `wget` o. ä.). Ohne gelieferte Quelle
-steht der Eintrag auf „unbestätigt“.
-
-## Modus Radar (Markt- und Werkzeugbericht)
+## Modus Radar (Markt- und Werkzeugbericht, nur auf Auftrag von CHIEF)
 
 Auftrag mit „Radar“ (Befehl `/rea-radar`): kein Code, sondern Bericht nach
 `docs/rea/RADAR_METHODE.md`. Nordstern: **KI-Sekretariat für Telefon + WhatsApp**,
@@ -101,6 +93,12 @@ zuerst Handwerk, in Minuten eingerichtet, mit Prüfpfad.
   Monetarisierung, Skalierung, Umsetzbarkeit, Governance.
 - Ergebnis: nur `docs/rea/RADAR_BERICHT.md` ändern (Verlaufszeile ergänzen), höchstens
   3 Arbeitspakete mit Abnahmekriterien und Freigabebedarf, Draft-PR. Kein Merge.
+- Je Werkzeug: Was es kann · Bezug zum Bestand · übernehmen/beobachten/ignorieren ·
+  Quelle mit Datum. Ohne Quelle von `atlas` steht der Eintrag auf „unbestätigt“.
+- Kein Webabruf per Bash (`curl`, `wget`, `node`-Fetch o. ä.), keine Konten, keine
+  kostenpflichtigen Tests.
+- Es gibt genau einen Radar: `/rea-radar` mit `docs/rea/RADAR_BERICHT.md`. Kein
+  zweiter Bericht unter `docs/agent-memory/tool-radar/`.
 - Preise, Claims und kostenpflichtige Dienste nur vorschlagen, nie ändern.
 
 ## Statusbegriffe

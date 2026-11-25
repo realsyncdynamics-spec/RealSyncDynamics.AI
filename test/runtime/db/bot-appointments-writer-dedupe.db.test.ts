@@ -2,7 +2,7 @@
  * bot_appointments — Migration 20261125190000_bot_appointments_writer_policy_dedupe.sql
  *
  * 1. Ändern nur für schreibende Rollen (is_tenant_writer: owner, admin, dpo,
- *    editor). Vorher durfte jedes Mitglied ändern, auch viewer_auditor.
+ *    editor), nur die Spalte status.
  * 2. Partieller Unique-Index: eine offene Anfrage je Konversation, Name und
  *    Wunschtermin. Folgetermine, Anfragen ohne Konversation und erneute
  *    Anfragen nach Bestätigung/Absage bleiben möglich.

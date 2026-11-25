@@ -2,10 +2,9 @@
 -- Schutz vor doppelten Terminanfragen derselben Konversation.
 --
 -- 1. Policy "bot_appointments tenant-update"
---    Bisher: is_tenant_member(tenant_id) — jedes Mitglied, auch die
---    Nur-Lese-Rolle viewer_auditor, durfte Termine ändern.
---    Neu: is_tenant_writer(tenant_id) (owner, admin, dpo, editor), gleiche
---    Funktion wie in den übrigen Schreib-Policies. Lesen bleibt unverändert.
+--    Vereinheitlicht auf is_tenant_writer(tenant_id) (owner, admin, dpo,
+--    editor), gleiche Funktion wie in den übrigen Schreib-Policies.
+--    Lesen bleibt unverändert.
 --    Der Posteingang (src/features/bots/api.ts setAppointmentStatus) bleibt
 --    für schreibende Rollen nutzbar. Inserts laufen weiter nur über die
 --    Service-Role (appointment-book, agent-runtime); dafür gibt es keine
@@ -21,10 +20,9 @@
 --    bestehenden Termin zurück.
 --
 -- 3. Spaltenrecht: authenticated darf per UPDATE nur noch `status` setzen.
---    Bisher durften schreibende Rollen jede Spalte ändern (z. B. bot_id auf
---    einen fremden Bot). updated_at setzt der Trigger
+--    updated_at setzt der Trigger
 --    update_bot_appointments_modtime; dafür braucht es kein Spaltenrecht.
---    anon verliert UPDATE ganz (RLS hat es ohnehin abgewiesen).
+--    anon erhält kein UPDATE.
 --    Einziger Client-Schreibpfad: src/features/bots/api.ts setAppointmentStatus
 --    (.update({ status })).
 --

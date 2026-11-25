@@ -17,6 +17,7 @@ Bei Widerspruch gilt die Regelhierarchie aus `AGENTS.md`.
 | `loop.md` | 10-Schritt-Loop mit Abbruchkriterien (max. 3 Korrekturversuche je Fehler) und Eskalationswegen |
 | `approval-matrix.md` | Freigabematrix: Aktion → autonom / Rückfrage / nur Dominik; Abgleich mit `.claude/settings.json` und `.claude/hooks/guard-bash.mjs` |
 | `lessons.md` | Erfahrungen: Befund, Ursache, Gegenmaßnahme, Datum, Prüfpfad |
+| `phase-3d.md` (vorhanden) | Integrationsstand der Fachagenten, Konflikte, technische Sperren (VIO-Grenze, Voice-Dienste), Steuerabgleich |
 
 ## Regeln für diesen Ordner
 

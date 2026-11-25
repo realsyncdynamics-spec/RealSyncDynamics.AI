@@ -19,8 +19,6 @@ jobs:
       # Secret zu setzen — der Workflow selbst muss nicht angefasst werden.
       VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
     runs-on: ubuntu-latest
-    # R1b (25.11.2026): manueller Prod-Eingriff nur nach Freigabe in der Environment `production`.
-    environment: production
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 

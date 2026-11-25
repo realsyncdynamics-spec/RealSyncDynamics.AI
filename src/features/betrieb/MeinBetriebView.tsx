@@ -12,6 +12,7 @@ import {
   countInbox, formatCount, INBOX_FETCH_LIMIT, summarizeBots, summarizeSites,
   type BotItem, type InboxCounts, type SiteItem,
 } from './betriebSummary';
+import { ReceptionistDraftCard } from './ReceptionistDraftCard';
 
 /**
  * /app/betrieb — „Mein Betrieb“: Kundenübersicht über Seite, Assistent und Eingänge.
@@ -98,6 +99,9 @@ function MeinBetriebInner() {
         )}
 
         <InboxCard section={inbox} onRetry={retry} />
+
+        {/* key: Mandantenwechsel verwirft Entwurf und Freigabe vollständig. */}
+        {activeTenantId && <ReceptionistDraftCard key={activeTenantId} tenantId={activeTenantId} />}
 
         <div className="grid gap-6 md:grid-cols-2">
           <SitesCard section={sites} onRetry={retry} />

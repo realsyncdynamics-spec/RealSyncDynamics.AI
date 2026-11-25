@@ -32,6 +32,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
+import { sanitizeAnonHistory } from '../_shared/anonHistory.ts';
 import { agentFocusPrompt } from '../_shared/agent-focus.ts';
 import { sha256Hex } from '../_shared/hash.ts';
 import { checkAnonRateLimit } from '../_shared/anonRateLimit.ts';
@@ -858,7 +859,8 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     return quotaResp;
   }
 
-  const clientHistory = Array.isArray(body.history) ? (body.history as SimpleMsg[]) : [];
+  // Verlauf stammt aus dem Browser: Rollen, Typen und Länge serverseitig prüfen.
+  const clientHistory: SimpleMsg[] = sanitizeAnonHistory(body.history, ANON_MAX_HISTORY);
 
   // EU-routing guard. ai_gateway provider routes via LM Studio (EU-local)
   // by default, so the US-routing acknowledgement is not required.

@@ -248,7 +248,7 @@ const ANON_WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hallo! Ich bin der öffentliche Compliance-Assistent von RealSyncDynamics.AI. Fragen zu DSGVO, TDDDG und EU AI Act – keine Rechtsberatung. Womit kann ich helfen?',
+    'Hallo! Ich bin dein digitaler KI-Mitarbeiter von RealSync Dynamics AI. Ich unterstütze dich dabei, die passenden KI-Lösungen für dein Unternehmen zu finden und die verfügbaren Funktionen unserer Plattform zu nutzen. Was möchtest du heute erreichen?',
   ts: Date.now(),
 };
 

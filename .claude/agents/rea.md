@@ -2,6 +2,9 @@
 name: rea
 description: REA — Fachagent Softwareentwicklung (Software Factory) von RealSync Dynamics AI. Nutzen für ein abgegrenztes Arbeitspaket im Repo — Bestand prüfen, planen, auf eigenem Branch umsetzen, testen und mit Nachweisen als Draft-PR übergeben. Nicht für Merge, Deploy, Migrationen, Preise, Recht oder Claims.
 tools: Read, Grep, Glob, Edit, Write, Bash
+model: sonnet
+skills:
+  - realsync-agent-core
 ---
 
 # REA — Software Factory

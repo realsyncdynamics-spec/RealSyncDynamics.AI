@@ -24,6 +24,8 @@ playwright/.cache/
 .agents/
 .claude/skills/*
 !.claude/skills/aios-*/
+# Eigener Pflichtskill des Agenten-Teams (docs/ai-os/agenten-team.md).
+!.claude/skills/realsync-agent-core/
 .claude/worktrees/
 skills-lock.json
 

@@ -29,6 +29,7 @@ Architektur, Bestandsaufnahme und Sicherheitsgrenzen: [Abschnitt unten](#bestand
 - [Technik und Infrastruktur](wissen/technik-und-infrastruktur.md)
 - [Entwicklung und Arbeitsregeln](wissen/entwicklung-und-regeln.md)
 - [Compliance und Geschäftsprozesse](wissen/compliance-und-prozesse.md)
+- [Agenten-Team (CHIEF bis FLOW)](agenten-team.md)
 
 Regeln:
 

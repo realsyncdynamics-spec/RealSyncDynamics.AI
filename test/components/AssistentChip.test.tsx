@@ -88,7 +88,7 @@ describe('<AssistentChip>', () => {
     const btn = getByLabelText('Assistent öffnen');
     expect(btn).toBeInTheDocument();
     expect(btn.className).toMatch(/opacity-100/);
-    expect(getByText('Grok Bot')).toBeInTheDocument();
+    expect(getByText('Assistent')).toBeInTheDocument();
 
     act(() => {
       observers.forEach((o) => o.trigger(true));
@@ -225,7 +225,7 @@ describe('<AssistentChip>', () => {
     expect(dialog).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('unmounts the Grok Bot chip while the panel is open (kein Doppel-FAB)', () => {
+  it('unmounts the Assistent chip while the panel is open (kein Doppel-FAB)', () => {
     const { getByLabelText, queryByLabelText, getByRole } = renderChip({ withHero: false });
     expect(getByLabelText('Assistent öffnen')).toBeInTheDocument();
 

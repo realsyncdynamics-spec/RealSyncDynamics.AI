@@ -150,3 +150,48 @@ describe('costUsd', () => {
     expect(costUsd(haiku, { input: 1_000_000, output: 0 })).toBeCloseTo(1.0, 10);
   });
 });
+
+describe('Generation 5.5 / Fable 5.2', () => {
+  it('pinnt die Grundsätze und die ausgewiesenen Cache-Preise', () => {
+    expect(priceFor('anthropic', 'claude-opus-5-5')).toMatchObject({
+      inputPerMillionUsd: 4.0, outputPerMillionUsd: 20.0,
+      cacheWritePerMillionUsd: 5.0, cacheReadPerMillionUsd: 0.2,
+    });
+    expect(priceFor('anthropic', 'claude-sonnet-5-5')).toMatchObject({
+      inputPerMillionUsd: 2.0, outputPerMillionUsd: 10.0,
+      cacheWritePerMillionUsd: 2.5, cacheReadPerMillionUsd: 0.1,
+    });
+    expect(priceFor('anthropic', 'claude-haiku-5-5')).toMatchObject({
+      inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.5,
+      cacheWritePerMillionUsd: 0.125, cacheReadPerMillionUsd: 0.01,
+    });
+    expect(priceFor('anthropic', 'claude-fable-5-2')).toMatchObject({
+      inputPerMillionUsd: 8.0, outputPerMillionUsd: 40.0,
+      cacheWritePerMillionUsd: 10.0, cacheReadPerMillionUsd: 0.2,
+    });
+  });
+});
+
+describe('costUsd: Long-Context-Stufe (Haiku 5.5)', () => {
+  const haiku = () => priceFor('anthropic', 'claude-haiku-5-5')!;
+
+  it('rechnet bis einschließlich 100.000 Prompt-Tokens zum Grundsatz', () => {
+    // 100k Input à $0,10 + 1M Output à $0,50
+    expect(costUsd(haiku(), { input: 100_000, output: 1_000_000 })).toBeCloseTo(0.01 + 0.5, 10);
+  });
+
+  it('rechnet den ganzen Request zum Long-Context-Satz, sobald die Schwelle überschritten ist', () => {
+    expect(costUsd(haiku(), { input: 100_001, output: 0 })).toBeCloseTo((100_001 / 1_000_000) * 0.5, 10);
+  });
+
+  it('zählt Cache-Reads und Cache-Writes zur Prompt-Länge', () => {
+    // 1 nicht gecachter Token + 100.000 Cache-Reads = 100.001 → Long-Context.
+    expect(costUsd(haiku(), { input: 1, output: 0, cacheRead: 100_000 }))
+      .toBeCloseTo(0.5 / 1_000_000 + 0.1 * 0.05, 10);
+  });
+
+  it('lässt Modelle ohne zweite Stufe unverändert', () => {
+    const sonnet = priceFor('anthropic', 'claude-sonnet-4-6')!;
+    expect(costUsd(sonnet, { input: 1_000_000, output: 1_000_000 })).toBeCloseTo(18.0, 10);
+  });
+});

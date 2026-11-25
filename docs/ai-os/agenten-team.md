@@ -26,11 +26,12 @@ Ausführungsebene in Claude Code. Die Zuordnung steht in §2. Eine Zusammenführ
 | `/rea <Arbeitspaket>` | Arbeitspaket an REA (bestehend) |
 
 Die Liste `Agent(…)` im `tools`-Feld begrenzt die startbaren Agenten nur, wenn der Agent als Hauptsitzung
-läuft. Als Subagent gilt sie laut Claude-Code-Doku nicht.
+läuft. Als Subagent gilt sie nicht ([Claude-Code-Doku „Subagents“](https://code.claude.com/docs/en/sub-agents),
+abgerufen 25.11.2026).
 
 ## 2. Rollen
 
-| Agent | Datei | Modell | Profil | AI-OS-Rolle | Vorgeladene Skills | Darf ändern |
+| Agent | Datei | Modell | Profil | AI-OS-Rolle | Vorgeladene Skills | Darf ändern (Regel, §4.1) |
 |---|---|---|---|---|---|---|
 | CHIEF | `chief.md` | opus | – | – | core | nur `docs/ai-os/` |
 | DEPUTY | `deputy.md` | sonnet | QA | development (Review) | core | nichts |
@@ -69,13 +70,15 @@ taucht als Tool auf. Funktionstests gab es dafür nicht.
 | RealSync Memory | kein Dienst | Ersatz heute: `docs/ai-os/` per PR |
 | RealSync Agent Registry | `packages/ai-os-core` (Code-Register, kein MCP) | Team nicht eingetragen (§7) |
 | RealSync Task Manager | kein Dienst | Ersatz heute: GitHub Issues/PRs |
-| RealSync Voice Runtime, Automation OS, AI Gateway, Billing | Code vorhanden (`apps/agent-runtime`, `ai-os-control`, `src/core/ai-gateway`) | kein MCP |
+| RealSync Voice Runtime, Automation OS, AI Gateway, Billing | Code vorhanden (`apps/agent-runtime`, `supabase/functions/ai-os-control/`, `src/core/ai-gateway`) | kein MCP |
 
 `.mcp.json` bleibt leer (Regel in `CLAUDE.md`). Connectoren kommen aus dem claude.ai-Konto.
 
 ## 4. Berechtigungsmatrix
 
-W = Arbeitszugriff (rollenbasiert, kritische Aktionen freigabepflichtig) · R = lesend · – = kein Zugriff.
+Zielbild-Matrix. W = Arbeitszugriff innerhalb der Rolle · R = lesend · – = kein Zugriff.
+**W schließt nie ein**, was `AGENTS.md` → „Freigaben“ einer Einzel-Freigabe vorbehält (Merge, Deploy,
+Migration, Produktionsdaten, Workflows, Berechtigungen, Preise, Recht, Claims, kostenpflichtige Dienste).
 
 | System | CHIEF | DEPUTY | REA | NOVA | VIO | MOTION | ATLAS | MIRA | DATA | FLOW |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -92,17 +95,26 @@ W = Arbeitszugriff (rollenbasiert, kritische Aktionen freigabepflichtig) · R = 
 | Voice-Provider | R | R | R | R | W | R | – | – | R | W |
 | Suche/Recherche | W | W | W | W | W | W | W | W | W | W |
 | Wissensbasis (`docs/ai-os`) | W | R | W | W | W | W | W | W | W | W |
-| Evidence Vault | R | W | W | W | W | W | W | W | W | W |
+| Evidence Vault (heute nicht nutzbar, §3) | R | R | R | R | R | R | R | R | R | R |
 | Agentenregister | W | R | R | R | R | R | R | R | R | W |
 
-DATA „W“ auf Stripe meint Berichte und Analysen, keine Zahlungen, Erstattungen oder Preispläne.
+Präzisierungen zu W:
+
+- Supabase und Cloudflare: Branch, lokale Tests, Entwurf von Migrationen und Functions — kein Produktions-SQL, kein Deploy.
+- Gmail und Calendar: nur Entwürfe bzw. Terminvorschläge, Versand und Einladung nach Freigabe.
+- Voice-Provider: Konfiguration im Testmodus, keine echten Anrufe und keine Nummernkäufe.
+- DATA auf Stripe: Berichte und Analysen, keine Zahlungen, Erstattungen oder Preispläne.
+- Evidence Vault: `apps/mcp-server` ist nur lesend gebaut. Ein Schreibweg für Nachweise existiert nicht als Agentenzugriff.
 
 **Technische Durchsetzung heute:**
 
-1. **Subagent-Tools sind hart begrenzt.** Jeder Agent hat eine feste `tools`-Liste aus Kern-Tools
-   (Read, Bash, Edit, WebSearch, …). MCP-Tools stehen bewusst **nicht** darin. Grund: Ein Eintrag,
-   der nicht auflöst, lässt den Subagent-Start fehlschlagen, und Connector-Namen gibt es nur in
-   Sitzungen des Kontoinhabers.
+1. **Subagent-Tools sind hart begrenzt, Pfade nicht.** Jeder Agent hat eine feste `tools`-Liste aus
+   Kern-Tools (Read, Bash, Edit, WebSearch, …). MCP-Tools stehen bewusst **nicht** darin. Grund: Ein
+   Eintrag, der nicht auflöst, lässt den Subagent-Start in der Regel fehlschlagen (Claude-Code-Doku
+   „Subagents“, s. o.), und Connector-Namen gibt es nur in Sitzungen des Kontoinhabers.
+   Technisch erzwungen ist nur, **welche** Tools ein Agent hat. Wer `Write`, `Edit` oder `Bash` hat,
+   kann damit jeden Pfad erreichen. Die Spalte „Darf ändern“ in §2 und die Aussage „ändert nichts“
+   bei DEPUTY und NOVA (beide mit `Bash`) sind **Regeln**, keine Sperren.
 2. **MCP läuft über die Hauptsitzung.** Braucht ein Agent einen Connector, fordert er ihn
    per Übergabe an. Die Hauptsitzung (bzw. CHIEF) führt ihn nach Bestätigung aus. Die Matrix
    oben ist also eine **Regel**, keine technische Sperre.
@@ -150,6 +162,6 @@ kommen nur dazu, wenn ein wiederkehrender Ablauf belegt ist.
    (das ändert Command Center und Tests) oder die bestehenden fünf Rollen beibehalten und das Team
    nur darauf abbilden (§2).
 2. **Budget:** Das Monatslimit (z. B. 100 $ Claude-API) muss in der Anthropic-Konsole am API-Schlüssel gesetzt werden.
-   Sitzungen mit Abo-Anmeldung zählen nicht gegen dieses Guthaben.
+   `Annahme` (nicht geprüft): Sitzungen mit Abo-Anmeldung statt API-Schlüssel zählen nicht gegen dieses Guthaben.
 3. **Supabase lesend:** eingeschränkte Rolle oder `apps/mcp-server` deployen
    (Edge-Function-Kontingent, `docs/runbooks/edge-function-kontingent.md`).

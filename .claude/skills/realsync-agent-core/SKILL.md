@@ -16,10 +16,12 @@ Skill verweist nur darauf und verschärft die Regeln, er lockert keine. Team, Ma
    DSGVO, EU AI Act und Freigaben gelten als Infrastruktur und nicht als Werbebotschaft.
 3. **agent-communication:** Schreib kurz und auf Deutsch. Fakten, Annahmen und Vorschläge kennzeichnest du getrennt.
 4. **agent-handoff:** Übergabe immer im Format unten (Abschnitt „Übergabe“). Delegieren dürfen
-   nur CHIEF und FLOW. Alle anderen empfehlen den nächsten Agenten.
+   nur CHIEF und FLOW und nur als Hauptsitzung (`claude --agent …`). Als Subagent und bei allen
+   anderen Agenten gilt: den nächsten Agenten empfehlen.
 5. **task-management:** Ein Auftrag pro Lauf mit Ziel, Abnahmekriterium und Grenze. Fehlt eine wesentliche
    Angabe, fragst du nach.
-6. **memory-management:** Dauerhaftes Wissen kommt als PR nach `docs/ai-os/` und nirgendwo sonst hin. Keine
+6. **memory-management:** Dauerhaftes Wissen kommt als PR nach `docs/ai-os/`.
+   Arbeitsentwürfe (Texte, Briefings) liegen in `docs/content/` bzw. `docs/sales/`. Keine
    personenbezogenen Daten und keine Secrets.
 7. **human-approval:** Freigabeliste in `AGENTS.md` → „Freigaben“. Eine Freigabe gilt einmal
    und für genau die genannte Aktion.

@@ -23,7 +23,8 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 - Übergaben zwischen Fachagenten laufen nur über CHIEF. Fehlt die Datei des Zielagenten
   (Branch noch nicht gemergt), meldet der Agent BLOCKIERT. Auf `main` gibt es noch keine Tiefenbegrenzung in
   `.claude/settings.json` und keinen Bash-Guard-Hook; beides kommt erst mit PR #2416.
-- Lesend (`tools` ohne Edit/Write/Bash): DEPUTY, NOVA, MOTION, ATLAS, MIRA, DATA, FLOW.
+- Lesend (`tools` ohne Edit/Write/Bash): DEPUTY, NOVA, MOTION, MIRA, DATA, FLOW.
+- Nur Web, kein Repo (`tools: WebSearch, WebFetch`): ATLAS (Inhaber-Entscheidung 25.11.2026, zentraler Recherche-Agent, auch für `/rea-radar`).
   Schreibend: REA (Repo, Freigabematrix in `rea.md`) und VIO (nur `apps/agent-runtime/**`,
   Grenze nur als Anweisung, technisch nicht durchgesetzt).
 - Für lesende Rollen führt CHIEF Befehle (`git`, `npm run …`, GitHub-API) aus und gibt die
@@ -47,7 +48,7 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 | REA | Software Factory: ein Arbeitspaket nach 10-Schritt-Loop, Branch `claude/<kurzname>`, Draft-PR | `.claude/agents/rea.md`, Befehl `.claude/commands/rea.md` | Sitzungsmodell (kein `model:`) | Read, Grep, Glob, Edit, Write, Bash | keine vorgeladen; zugeordnet: `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | GETESTET (Probe 3c) |
 | VIO | Voice-Runtime `apps/agent-runtime`, AI Receptionist, Branchenvorlagen, KI-Offenlegung, Notfall/Weiterleitung | `.claude/agents/vio.md` | sonnet | Read, Grep, Glob, Edit, Write, Bash | — | GETESTET nur Verhalten (Probe 3c); Schreibgrenze `apps/agent-runtime/**` technisch nicht durchgesetzt und nicht getestet |
 | MOTION | Medienjob-Pläne (Briefing, Storyboard, Prompt, Kosten, Stufe S0–S4); erzeugt nichts | `.claude/agents/motion.md` | sonnet, `permissionMode: plan` | Read, Grep, Glob | — | GETESTET (Probe 3c) |
-| ATLAS | Recherche & Faktencheck (Projektwissen, Web), Tool-Radar-Zulieferung | `.claude/agents/atlas.md` | sonnet, `effort: medium` | Read, Grep, Glob, WebSearch, WebFetch | — | GETESTET (Probe 3c, nur intern); A1 lieferte zuerst TEILWEISE BELEGT statt WIDERLEGT → Regel „Teil widerlegt = ganz widerlegt“ ergänzt, A1 wiederholt (siehe PR `agents/atlas`) |
+| ATLAS | Markt- und Webrecherche, externer Faktencheck, Radar-Recherche für `/rea-radar` (Repo-Faktencheck macht DEPUTY bzw. DATA) | `.claude/agents/atlas.md` | sonnet, `effort: medium` | WebSearch, WebFetch (Read/Grep/Glob/Bash/Edit/Write/Agent gesperrt) | — | GETESTET Werkzeuggrenze (Probe A3/A4 25.11.2026: init-Werkzeuge `WebSearch, WebFetch`, keine Datei angelegt, keine Auftragsdaten in Suchanfragen); Webrecherche selbst nicht geprobt |
 | MIRA | Marketing, SEO, Akquise; Textvorschläge, Umsetzung via REA | `.claude/agents/mira.md` | sonnet | Read, Grep, Glob, WebSearch | — | GETESTET (Probe 3c) |
 | DATA | Finanzen/Pricing: Preis-Drift, Stripe-Logik im Code, Kosten, § 19 UStG | `.claude/agents/data.md` | sonnet | Read, Grep, Glob | `aios-business-report` | GETESTET (Probe 3c) |
 | FLOW | Workflows, Cron, Edge-Function-Trigger, Prozesse; YAML-Diff nur für Nicht-Deploy | `.claude/agents/flow.md` | sonnet | Read, Grep, Glob | — | GETESTET (Probe 3c) |

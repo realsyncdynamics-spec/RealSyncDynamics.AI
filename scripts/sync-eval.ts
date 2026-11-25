@@ -7,7 +7,7 @@
  *
  * Läuft NUR mit ausdrücklicher Freigabe:
  *   SYNC_EVAL_ALLOW_PAID=1 \
- *   SYNC_EVAL_URL=https://<projekt>.supabase.co/functions/v1/governance-agent \
+ *   SYNC_EVAL_URL=https://<projekt-ref>.supabase.co/functions/v1/governance-agent \
  *   SYNC_EVAL_ANON_KEY=<öffentlicher anon key> \
  *   npx tsx scripts/sync-eval.ts
  *
@@ -25,13 +25,27 @@ if (SYNC_EVAL_ALLOW_PAID !== '1' || !SYNC_EVAL_URL) {
   process.exit(2);
 }
 
+// Ziel-Allowlist (CodeQL js/file-access-to-http): Die Testfragen dürfen nur an
+// die governance-agent-Function eines Supabase-Projekts gehen, nie an fremde Hosts.
+const TARGET = (() => {
+  try {
+    const u = new URL(SYNC_EVAL_URL);
+    const okHost = /^[a-z0-9]{20}\.supabase\.co$/.test(u.hostname);
+    if (u.protocol === 'https:' && okHost && u.pathname === '/functions/v1/governance-agent' && !u.search && !u.username) {
+      return `https://${u.hostname}/functions/v1/governance-agent`;
+    }
+  } catch { /* fällt unten durch */ }
+  console.error('Abbruch: SYNC_EVAL_URL muss https://<projekt-ref>.supabase.co/functions/v1/governance-agent sein.');
+  process.exit(2);
+})();
+
 const { scenarios } = JSON.parse(readFileSync('test/sync/sync-scenarios.json', 'utf8')) as {
   scenarios: { id: string; message: string; mustMentionAny: string[]; mustMentionAll?: string[] }[];
 };
 
 let failed = 0;
 for (const s of scenarios) {
-  const res = await fetch(SYNC_EVAL_URL, {
+  const res = await fetch(TARGET, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

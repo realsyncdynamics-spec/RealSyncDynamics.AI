@@ -107,20 +107,69 @@ const ANSWER_MAX = 280;
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Website-Text landet später im Prompt des Assistenten. Deshalb einzeilig,
- * ohne Steuerzeichen, spitze und eckige Klammern (die Abschnittsmarken des
- * Prompts wie `[Neue Nachricht]` lassen sich so nicht einschleusen) und mit
- * harter Längengrenze. Inhaltlich bleibt der Text eine Angabe der Website —
- * der Prompt kennzeichnet ihn als Daten, nicht als Anweisung.
+ * Trennende Steuerzeichen (C0/C1 einschließlich Zeilenumbruch und Tab, Zeilen- und
+ * Absatztrenner): werden zu einem Leerzeichen, damit Wörter getrennt bleiben.
+ */
+const SEPARATING_CONTROL_RE = /[\p{Cc}\p{Zl}\p{Zp}]/gu;
+
+/**
+ * Unsichtbare und sicherheitsrelevante Zeichen, die ersatzlos entfallen:
+ * - `\p{Cf}` Formatzeichen: Null-Breite-Zeichen (U+200B–U+200D, U+2060–U+2064),
+ *   Richtungssteuerung (U+200E/F, U+202A–U+202E, U+2066–U+2069, U+061C, „Trojan Source“),
+ *   weiches Trennzeichen U+00AD, BOM U+FEFF, Interlinear-Zeichen U+FFF9–U+FFFB und die
+ *   Tag-Zeichen U+E0000–U+E007F (unsichtbar mitgeschmuggelter ASCII-Text für KI-Modelle);
+ * - `\p{Co}` private Zeichen, `\p{Cs}` einzelne Surrogate (ungültiges UTF-16);
+ * - Variantenselektoren (U+FE00–U+FE0F, U+E0100–U+E01EF, mongolisch U+180B–U+180F),
+ *   Combining Grapheme Joiner U+034F und als Leerzeichen dargestellte Füllzeichen
+ *   (Hangul U+115F, U+1160, U+3164, U+FFA0; Khmer U+17B4, U+17B5).
+ * Ersatzlos, damit ein im Wort versteckter Null-Breite-Trenner („In<ZWSP>fo“) das Wort
+ * nicht teilt.
+ */
+const INVISIBLE_RE = /[\p{Cf}\p{Co}\p{Cs}\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u3164\uffa0\ufe00-\ufe0f\u{e0100}-\u{e01ef}]/gu;
+
+/**
+ * Klammern und ihre Doppelgänger. Nach NFKC sind Vollbreiten- und Kleinformen
+ * (U+FF3B, U+FF1C, U+FE64 …) bereits auf ASCII abgebildet; CJK- und mathematische
+ * Klammern (U+3010/U+3011, U+3008/U+3009, U+27E6/U+27E7 …) bildet NFKC nicht ab, sie
+ * sehen aber wie Abschnittsmarken aus.
+ */
+const BRACKET_RE = /[<>[\]{}`\u2045\u2046\u2329\u232a\u27e6-\u27ef\u2983-\u2998\u29fc\u29fd\u3008-\u3011\u3014-\u301b]/g;
+
+/**
+ * Website-Text landet später im Prompt des Assistenten. Deshalb:
+ * 1. Unicode-Normalform NFKC, damit Vollbreiten- und Kompatibilitätszeichen die Filter
+ *    unten nicht umgehen (Vollbreiten-„[Neue Nachricht]“ wird zu ASCII und dann entfernt);
+ * 2. einzeilig: trennende Steuerzeichen werden Leerzeichen;
+ * 3. unsichtbare und richtungsändernde Zeichen entfallen (siehe `INVISIBLE_RE`);
+ * 4. ohne spitze, eckige und geschweifte Klammern samt Doppelgängern (die Abschnittsmarken
+ *    des Prompts wie `[Neue Nachricht]` lassen sich so nicht einschleusen);
+ * 5. harte Längengrenze, ohne ein Surrogatpaar zu zerschneiden.
+ * Inhaltlich bleibt der Text eine Angabe der Website — der Prompt kennzeichnet ihn als
+ * Daten, nicht als Anweisung.
  */
 export function cleanValue(input: string, max = VALUE_MAX): string {
-  return input
-    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g, ' ')
-    .replace(/[<>[\]{}`]/g, ' ')
+  let out = input
+    .normalize('NFKC')
+    .replace(SEPARATING_CONTROL_RE, ' ')
+    .replace(INVISIBLE_RE, '')
+    .replace(BRACKET_RE, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, max)
-    .trim();
+    .slice(0, max);
+  // `slice` zählt UTF-16-Einheiten: Ein am Ende halbiertes Surrogatpaar fällt weg.
+  const last = out.charCodeAt(out.length - 1);
+  if (last >= 0xd800 && last <= 0xdbff) out = out.slice(0, -1);
+  return out.trim();
+}
+
+/**
+ * Vorstufe für die Erkennung: NFKC und ohne unsichtbare Zeichen, aber mit Zeilen und
+ * Abständen. So kann ein versteckter Null-Breite- oder Richtungs-Trenner weder eine
+ * Nummer noch eine Beschriftung unkenntlich machen. Indizes beziehen sich danach auf
+ * diesen Text.
+ */
+export function stripInvisible(input: string): string {
+  return input.normalize('NFKC').replace(INVISIBLE_RE, '');
 }
 
 function excerptAround(text: string, index: number, length: number): string {
@@ -170,8 +219,40 @@ function deriveBusinessName(d: WebsiteDiscovery, src: (m: DraftMethod, e: string
  * 7 Ziffern. Bevorzugt Nummern, vor denen „Tel“, „Telefon“ oder „Fon“ steht.
  */
 const PHONE_RE = /(?:\+|00)(?:49|43|41)[\s/.\-()]*\d[\d\s/.\-()]{5,18}\d|\b0\d{2,5}[\s/.\-()]*\d[\d\s/.\-]{3,14}\d/g;
-const PHONE_LABEL_RE = /(tel(?:efon)?\.?|fon|phone|anruf|ruf(?:en sie)? an)\s*:?\s*$/i;
-const FAX_LABEL_RE = /fax\s*:?\s*$/i;
+// Beschriftung direkt vor der Nummer („Tel.: “, „Fax “). Früher `…\s*:?\s*$`: Zwei
+// Leerzeichen-Schleifen um ein optionales Zeichen vor `$` teilen dieselben Leerzeichen
+// auf viele Arten auf (gemessen quadratisch: 40 000 Zeichen ≈ 1,5 s; polynomielles
+// ReDoS). Jetzt schneidet `labelTail` Leerzeichen und einen Doppelpunkt linear ab, die
+// Muster prüfen nur noch feste Wörter am Ende – ohne Schleife.
+const PHONE_LABEL_RE = /(?:tel(?:efon)?\.?|fon|phone|anruf|ruf(?:en sie)? an)$/i;
+const FAX_LABEL_RE = /fax$/i;
+const LABEL_WINDOW = 20;
+
+const SPACE_CHAR_RE = /\s/;
+
+/** Ein einzelnes Zeichen gegen `\s` – dieselbe Menge wie im früheren Muster, ohne Schleife. */
+function isSpace(ch: string): boolean {
+  return SPACE_CHAR_RE.test(ch);
+}
+
+/** Text vor einer Nummer ohne abschließende Leerzeichen und höchstens einen Doppelpunkt. */
+export function labelTail(before: string): string {
+  let end = before.length;
+  while (end > 0 && isSpace(before[end - 1])) end--;
+  if (end > 0 && before[end - 1] === ':') {
+    end--;
+    while (end > 0 && isSpace(before[end - 1])) end--;
+  }
+  return before.slice(0, end);
+}
+
+export function isPhoneLabel(before: string): boolean {
+  return PHONE_LABEL_RE.test(labelTail(before));
+}
+
+export function isFaxLabel(before: string): boolean {
+  return FAX_LABEL_RE.test(labelTail(before));
+}
 
 export function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d+]/g, '');
@@ -187,11 +268,11 @@ function derivePhone(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => Fi
   let best: { value: string; index: number; raw: string; labelled: boolean } | null = null;
   for (const m of text.matchAll(PHONE_RE)) {
     const index = m.index ?? 0;
-    const before = text.slice(Math.max(0, index - 20), index);
-    if (FAX_LABEL_RE.test(before)) continue;
+    const before = text.slice(Math.max(0, index - LABEL_WINDOW), index);
+    if (isFaxLabel(before)) continue;
     const value = normalizePhone(m[0]);
     if (!value) continue;
-    const labelled = PHONE_LABEL_RE.test(before);
+    const labelled = isPhoneLabel(before);
     if (!best || (labelled && !best.labelled)) best = { value, index, raw: m[0], labelled };
     if (labelled) break;
   }
@@ -329,9 +410,19 @@ function deriveFaq(d: WebsiteDiscovery, src: (m: DraftMethod, e: string) => Fiel
 // Entwurf
 // ─────────────────────────────────────────────────────────────────────
 
-export function deriveSecretariatDraft(discovery: WebsiteDiscovery, now: () => string = () => new Date().toISOString()): SecretariatDraft {
-  const fetchedAt = discovery.fetched_at ?? now();
-  const sourceUrl = discovery.source_url;
+export function deriveSecretariatDraft(raw: WebsiteDiscovery, now: () => string = () => new Date().toISOString()): SecretariatDraft {
+  const fetchedAt = raw.fetched_at ?? now();
+  const sourceUrl = raw.source_url;
+  const prep = (v: string | null): string | null => (v === null || v === undefined ? null : stripInvisible(v));
+  const discovery: WebsiteDiscovery = {
+    ...raw,
+    title: prep(raw.title),
+    description: prep(raw.description),
+    h1: prep(raw.h1),
+    headings: (raw.headings ?? []).map((h) => stripInvisible(h)),
+    services: (raw.services ?? []).map((v) => stripInvisible(v)),
+    visible_text: stripInvisible(raw.visible_text ?? ''),
+  };
   const src = (method: DraftMethod, excerpt: string): FieldSource => ({
     url: sourceUrl, fetchedAt, method, excerpt: cleanValue(excerpt, EXCERPT_MAX),
   });

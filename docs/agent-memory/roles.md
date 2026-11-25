@@ -23,9 +23,11 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 - Übergaben zwischen Fachagenten laufen nur über CHIEF. Fehlt die Datei des Zielagenten
   (Branch noch nicht gemergt), meldet der Agent BLOCKIERT. Auf `main` gibt es noch keine Tiefenbegrenzung in
   `.claude/settings.json` und keinen Bash-Guard-Hook; beides kommt erst mit PR #2416.
-- Lesend (`tools` ohne Edit/Write/Bash): DEPUTY, NOVA, MOTION, ATLAS, MIRA, DATA, FLOW.
-  Schreibend: REA (Repo, Freigabematrix in `rea.md`) und VIO (nur `apps/agent-runtime/**`,
-  Grenze nur als Anweisung, technisch nicht durchgesetzt).
+- Lesend (`tools` ohne Edit/Write/Bash): DEPUTY, NOVA, VIO, MOTION, ATLAS, MIRA, DATA, FLOW.
+  Schreibend: nur REA (Repo, Freigabematrix in `rea.md`). VIO ist vorerst nur lesend
+  (Vorgabe Dominik, 25.11.2026); Umsetzung in `apps/agent-runtime/**` übernimmt REA.
+- ATLAS ist die einzige Instanz für externe Recherche (nur `WebSearch`, `WebFetch`, kein
+  Repo-Zugriff). REA bewertet, CHIEF koordiniert (`/rea-radar`).
 - Für lesende Rollen führt CHIEF Befehle (`git`, `npm run …`, GitHub-API) aus und gibt die
   Ausgabe im Auftrag mit. Für DEPUTY erzeugt CHIEF den Diff (`git diff origin/main...<branch>`).
 - Keine Selbstabnahme: Was ein Agent erstellt hat, nimmt DEPUTY ab. Die eigene `deputy.md`
@@ -45,9 +47,9 @@ Empfohlene Merge-Reihenfolge: `agents/deputy` → `agents/nova` → `agents/rea`
 | DEPUTY | Unabhängige Abnahme, Urteil ABGENOMMEN / NACHBESSERN / ABGELEHNT | `.claude/agents/deputy.md` | opus | Read, Grep, Glob | `aios-pr-review`, `aios-release-readiness` | GETESTET (Probe 3c) |
 | NOVA | Security, Governance, Datenschutz; nur Befund + Empfehlung | `.claude/agents/nova.md` | sonnet | Read, Grep, Glob | `aios-security-audit`, `aios-compliance-verification` | GETESTET (Probe 3c) |
 | REA | Software Factory: ein Arbeitspaket nach 10-Schritt-Loop, Branch `claude/<kurzname>`, Draft-PR | `.claude/agents/rea.md`, Befehl `.claude/commands/rea.md` | Sitzungsmodell (kein `model:`) | Read, Grep, Glob, Edit, Write, Bash | keine vorgeladen; zugeordnet: `aios-ci-failure-analysis`, `aios-code-quality-audit`, `aios-dashboard-review` | GETESTET (Probe 3c) |
-| VIO | Voice-Runtime `apps/agent-runtime`, AI Receptionist, Branchenvorlagen, KI-Offenlegung, Notfall/Weiterleitung | `.claude/agents/vio.md` | sonnet | Read, Grep, Glob, Edit, Write, Bash | — | GETESTET nur Verhalten (Probe 3c); Schreibgrenze `apps/agent-runtime/**` technisch nicht durchgesetzt und nicht getestet |
+| VIO | Voice-Runtime `apps/agent-runtime`, AI Receptionist, Branchenvorlagen, KI-Offenlegung, Notfall/Weiterleitung: Befunde und Vorschläge | `.claude/agents/vio.md` | sonnet | Read, Grep, Glob | — | IMPLEMENTIERT (nur lesend seit 25.11.2026, nicht neu geprobt); Schreibrechte nur nach Einzel-Freigabe |
 | MOTION | Medienjob-Pläne (Briefing, Storyboard, Prompt, Kosten, Stufe S0–S4); erzeugt nichts | `.claude/agents/motion.md` | sonnet, `permissionMode: plan` | Read, Grep, Glob | — | GETESTET (Probe 3c) |
-| ATLAS | Recherche & Faktencheck (Projektwissen, Web), Tool-Radar-Zulieferung | `.claude/agents/atlas.md` | sonnet, `effort: medium` | Read, Grep, Glob, WebSearch, WebFetch | — | GETESTET (Probe 3c, nur intern); A1 lieferte zuerst TEILWEISE BELEGT statt WIDERLEGT → Regel „Teil widerlegt = ganz widerlegt“ ergänzt, A1 wiederholt (siehe PR `agents/atlas`) |
+| ATLAS | Externe Recherche (Web), Radar-Zulieferung für REA; kein Repo-Zugriff (Fassung #2429) | `.claude/agents/atlas.md` | sonnet, `effort: medium` | WebSearch, WebFetch | — | GETESTET (Probe 3c, nur intern); A1 lieferte zuerst TEILWEISE BELEGT statt WIDERLEGT → Regel „Teil widerlegt = ganz widerlegt“ ergänzt, A1 wiederholt (siehe PR `agents/atlas`) |
 | MIRA | Marketing, SEO, Akquise; Textvorschläge, Umsetzung via REA | `.claude/agents/mira.md` | sonnet | Read, Grep, Glob, WebSearch | — | GETESTET (Probe 3c) |
 | DATA | Finanzen/Pricing: Preis-Drift, Stripe-Logik im Code, Kosten, § 19 UStG | `.claude/agents/data.md` | sonnet | Read, Grep, Glob | `aios-business-report` | GETESTET (Probe 3c) |
 | FLOW | Workflows, Cron, Edge-Function-Trigger, Prozesse; YAML-Diff nur für Nicht-Deploy | `.claude/agents/flow.md` | sonnet | Read, Grep, Glob | — | GETESTET (Probe 3c) |
@@ -86,7 +88,7 @@ Subagenten. Sie bleiben unverändert.
 
 ## Offene Punkte (Stand 3c)
 
-- VIO-Schreibgrenze technisch durchsetzen (Vorschlag im PR; braucht Freigabe für Hooks).
+- VIO-Schreibgrenze: technisch vorbereitet in #2440 (`guard-write-scope.mjs`); greift erst, wenn VIO Schreibrechte bekommt (Einzel-Freigabe).
 - Netzwerksperre für Voice-/Telefonie-APIs im Bash-Guard (#2416) prüfen.
 - Ablageort der Einwilligungsakte (digitaler Klon) festlegen.
 - Definition „Medienjob“ für die Kostenrechnung (DATA/MOTION) festlegen.

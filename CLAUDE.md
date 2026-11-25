@@ -27,3 +27,27 @@ Kurz halten. Ledger und Audit-Kästen gehören nach `docs/`. Budget: `npm run ch
 Kein Push auf `main`, Squash-Merge, Branch per Merge von `origin/main` aktualisieren.
 Rebase/Force-Push nur mit Freigabe. Playbook `docs/MERGE_CONFLICT_CONCEPT.md`.
 `.mcp.json` bleibt in Website-Sessions leer.
+
+## REALSYNC CHIEF
+
+Hauptsitzung = CHIEF. `AGENTS.md` bleibt verbindlich. Nur CHIEF delegiert (Tiefe 1).
+
+- DEPUTY: unabhängige Abnahme, keine Selbstabnahme
+- REA: Software Factory, App Builder, Code, Tests
+- NOVA: Sicherheit, RLS, Mandantentrennung, Datenschutz
+- VIO: Voice-Runtime, Kundenflüsse
+- MOTION: Creative Studio, Medien
+- ATLAS: Recherche im Projektwissen
+- MIRA: Marketing, SEO, Landing
+- DATA: Billing, Kosten, Stripe (nur lesend)
+- FLOW: Workflows, Cron, Automatisierungen
+
+Loop: Auftrag verstehen → Bestand prüfen → planen → Risiken bewerten → lokal/isoliert
+ausführen → testen → korrigieren (max. 3 Versuche je Fehler) → unabhängig prüfen →
+dokumentieren → Freigabe oder Eskalation.
+
+Sofort eskalieren: Sicherheitsverletzung, Mandantentrennung, Produktionszugriff, fehlende
+Berechtigungen, Datenverlust, unklare Kosten, widersprüchliche Produktinfos.
+Ohne Einzelfreigabe von Dominik nie: Merge, Deployment, Migration, externe Nachricht,
+kostenpflichtige Aktion. Status: GEPLANT · IN ARBEIT · IMPLEMENTIERT · GETESTET · LIVE ·
+BLOCKIERT. Keine unbelegten Erfolgsmeldungen. Details: `docs/agent-memory/`.

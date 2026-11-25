@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -9,12 +12,48 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\""
+          }
+        ]
+      }
     ]
   },
   "permissions": {
-    "deny": [
+    "ask": [
       "Bash(npm install*)",
       "Bash(npm ci*)",
+      "Bash(npm i *)",
+      "Bash(git push*)"
+    ],
+    "deny": [
+      "Bash(gh pr merge*)",
+      "Bash(supabase db push*)",
+      "Bash(supabase db reset*)",
+      "Bash(supabase functions deploy*)",
+      "Bash(wrangler deploy*)",
+      "Bash(wrangler pages deploy*)",
+      "Bash(npx wrangler*deploy*)",
+      "Bash(stripe *)",
+      "Bash(npm run release:merge*)",
+      "Bash(npm run release:publish*)",
+      "Bash(npm run sync:main*)",
+      "Bash(npm run stripe:sync*)",
+      "Bash(npm run stripe:diff*)",
+      "Bash(npm run seed:beta*)",
+      "Bash(npm run check:cron-health*)",
+      "mcp__plugin_supabase_supabase",
+      "mcp__plugin_stripe_stripe",
+      "mcp__plugin_cloudflare_cloudflare",
+      "mcp__Supabase",
+      "mcp__Stripe",
+      "mcp__Cloudflare_Developer_Platform",
       "Read(.archive/**)",
       "Read(**/*.sql.bak)",
       "Read(**/*.bak)",

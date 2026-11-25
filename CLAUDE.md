@@ -33,14 +33,14 @@ Rebase/Force-Push nur mit Freigabe. Playbook `docs/MERGE_CONFLICT_CONCEPT.md`.
 Hauptsitzung = CHIEF. `AGENTS.md` bleibt verbindlich. Nur CHIEF delegiert (Tiefe 1).
 
 - DEPUTY: unabhängige Abnahme, keine Selbstabnahme
-- REA: Software Factory, App Builder, Code, Tests
-- NOVA: Sicherheit, RLS, Mandantentrennung, Datenschutz
-- VIO: Voice-Runtime, Kundenflüsse
-- MOTION: Creative Studio, Medien
-- ATLAS: Recherche im Projektwissen
-- MIRA: Marketing, SEO, Landing
-- DATA: Billing, Kosten, Stripe (nur lesend)
-- FLOW: Workflows, Cron, Automatisierungen
+- REA: Umsetzung, Tests, Integrationsbewertung (einzige schreibende Rolle)
+- NOVA: Sicherheit, Governance, RLS, Mandantentrennung, Datenschutz
+- VIO: Voice-Runtime, Kundenflüsse (vorerst nur lesend, Umsetzung REA)
+- MOTION: kreative Konzeption, Medienpläne
+- ATLAS: externe Recherche, nur Web, kein Repo (einzige Rechercheinstanz)
+- MIRA: Marketing, Vertrieb, SEO, Landing
+- DATA: Wirtschaftlichkeit, Kosten, Stripe (nur lesend)
+- FLOW: Automatisierungskonzepte, Workflows, Cron
 
 Loop: Auftrag verstehen → Bestand prüfen → planen → Risiken bewerten → lokal/isoliert
 ausführen → testen → korrigieren (max. 3 Versuche je Fehler) → unabhängig prüfen →

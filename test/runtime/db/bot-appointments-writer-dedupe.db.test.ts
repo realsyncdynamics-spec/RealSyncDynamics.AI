@@ -30,10 +30,20 @@ const d = dbUrl ? describe : describe.skip;
 type Actor = { kind: 'anon' } | { kind: 'service' } | { kind: 'user'; userId: string };
 type Outcome = 'allow' | 'deny';
 
+/** Plan mit Bot-Recht setzen (der tenants-Trigger legt bereits ein Free-Abo an). */
+async function planGrowth(client: Pick<Client, 'query'>, tenantId: string): Promise<void> {
+  await client.query(
+    `INSERT INTO public.subscriptions (tenant_id, plan_key, status) VALUES ($1, 'growth', 'active')
+     ON CONFLICT (tenant_id) DO UPDATE SET plan_key = 'growth', status = 'active',
+       stripe_price_id = NULL, past_due_since = NULL, updated_at = now()`,
+    [tenantId],
+  );
+}
+
 d('bot_appointments writer policy + dedupe', () => {
   let ctx: DbCtx | null = null;
   const ids = {} as {
-    tA: string; tB: string; botA: string; convA: string; appt: string;
+    tA: string; tB: string; botA: string; botB: string; convA: string; appt: string;
     owner: string; admin: string; dpo: string; editor: string; viewer: string; ownerB: string;
   };
 
@@ -116,16 +126,24 @@ d('bot_appointments writer policy + dedupe', () => {
     await member(ids.tA, ids.viewer, 'viewer_auditor');
     await member(ids.tB, ids.ownerB, 'owner');
 
-    ids.botA = (await q<{ id: string }>(
-      `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Termin-Bot') RETURNING id`, [ids.tA],
-    )).rows[0]!.id;
-    ids.convA = (await q<{ id: string }>(
-      `INSERT INTO public.bot_conversations (tenant_id, bot_id) VALUES ($1, $2) RETURNING id`, [ids.tA, ids.botA],
-    )).rows[0]!.id;
-    ids.appt = (await q<{ id: string }>(
-      `INSERT INTO public.bot_appointments (tenant_id, bot_id, customer_name) VALUES ($1, $2, 'Max') RETURNING id`,
-      [ids.tA, ids.botA],
-    )).rows[0]!.id;
+    // Muster aus voice-closing-callback.db.test.ts: Plan mit Bot-Recht, dann
+    // Bot als service_role (bots_enforce_quota prüft auth.role()).
+    for (const t of [ids.tA, ids.tB]) await planGrowth(ctx!.client, t);
+    await ctx!.withClaims({ role: 'service_role' }, async () => {
+      ids.botA = (await q<{ id: string }>(
+        `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Termin-Bot') RETURNING id`, [ids.tA],
+      )).rows[0]!.id;
+      ids.botB = (await q<{ id: string }>(
+        `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Fremd-Bot') RETURNING id`, [ids.tB],
+      )).rows[0]!.id;
+      ids.convA = (await q<{ id: string }>(
+        `INSERT INTO public.bot_conversations (tenant_id, bot_id) VALUES ($1, $2) RETURNING id`, [ids.tA, ids.botA],
+      )).rows[0]!.id;
+      ids.appt = (await q<{ id: string }>(
+        `INSERT INTO public.bot_appointments (tenant_id, bot_id, customer_name) VALUES ($1, $2, 'Max') RETURNING id`,
+        [ids.tA, ids.botA],
+      )).rows[0]!.id;
+    });
   });
 
   afterEach(async () => {
@@ -155,9 +173,7 @@ d('bot_appointments writer policy + dedupe', () => {
   });
 
   it('schreibende Rollen dürfen nur status ändern — nicht bot_id, tenant_id oder Kundendaten', async () => {
-    const otherBot = (await q<{ id: string }>(
-      `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Fremd-Bot') RETURNING id`, [ids.tB],
-    )).rows[0]!.id;
+    const otherBot = ids.botB;
     for (const who of [ids.owner, ids.editor]) {
       expect(await attempt(user(who), `UPDATE public.bot_appointments SET bot_id = $2 WHERE id = $1`, [ids.appt, otherBot])).toBe('deny');
       expect(await attempt(user(who), `UPDATE public.bot_appointments SET customer_name = 'X' WHERE id = $1`, [ids.appt])).toBe('deny');
@@ -214,9 +230,12 @@ d('bot_appointments dedupe unter Parallelität', () => {
   it('10 gleichzeitige identische Inserts → genau 1 Zeile, 9 × 23505', async () => {
     const setup = new Client({ connectionString: dbUrl! });
     await setup.connect();
+    await setup.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ role: 'service_role' })]);
     const tag = `appt-par-${Date.now()}`;
     const t = (await setup.query<{ id: string }>(`INSERT INTO public.tenants(name) VALUES ($1) RETURNING id`, [tag])).rows[0]!.id;
     try {
+      await planGrowth(setup, t);
+      await setup.query(`SET ROLE service_role`);
       const bot = (await setup.query<{ id: string }>(
         `INSERT INTO public.bots (tenant_id, name) VALUES ($1, 'Par-Bot') RETURNING id`, [t],
       )).rows[0]!.id;
@@ -227,6 +246,9 @@ d('bot_appointments dedupe unter Parallelität', () => {
       const clients = await Promise.all(Array.from({ length: 10 }, async () => {
         const c = new Client({ connectionString: dbUrl! });
         await c.connect();
+        // Wie die Edge Function: Schreiben als service_role.
+        await c.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ role: 'service_role' })]);
+        await c.query(`SET ROLE service_role`);
         return c;
       }));
       const results = await Promise.all(clients.map(async (c) => {
@@ -250,6 +272,7 @@ d('bot_appointments dedupe unter Parallelität', () => {
       );
       expect(rows[0]!.n).toBe('1');
     } finally {
+      await setup.query(`RESET ROLE`);
       await setup.query(`DELETE FROM public.tenants WHERE id = $1`, [t]);
       await setup.end();
     }

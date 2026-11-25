@@ -73,7 +73,22 @@ export class BotError extends Error {
   }
 }
 
-/** Lädt einen Bot und prüft Tenant-Zugehörigkeit + enabled. */
+/** Bot aus „KI-Sekretariat aus der Website“ (siehe src/features/secretariat/secretariatBot.ts). */
+export function isSecretariatConfig(config: unknown): boolean {
+  return !!config && typeof config === 'object' && !Array.isArray(config)
+    && Object.prototype.hasOwnProperty.call(config, 'secretariat');
+}
+
+/**
+ * Lädt einen Bot und prüft Tenant-Zugehörigkeit + enabled.
+ *
+ * Sekretariats-Bots zusätzlich: gültige serverseitige Freigabe
+ * (`bot_runtime_approval_ok`, Migration 20261125183000). Fail-closed: Fehlt die
+ * Freigabe → 403; ist die Prüfung nicht möglich (RPC-Fehler, unerwartete
+ * Antwort) → 503. Gilt für jeden Aufrufer (bot-chat, whatsapp-webhook,
+ * bot-voice-webhook, appointment-book, order-intake). Andere Bots: unverändert,
+ * kein zusätzlicher Aufruf.
+ */
 export async function resolveBot(
   admin: SupabaseAdmin,
   tenantId: string,
@@ -89,6 +104,17 @@ export async function resolveBot(
   const row = data as BotRow | null;
   if (!row) throw new BotError('bot not found', 'NOT_FOUND', 404);
   if (!row.enabled) throw new BotError('bot is disabled', 'FORBIDDEN', 403);
+  if (isSecretariatConfig(row.config)) {
+    let approved: unknown;
+    try {
+      const res = await admin.rpc('bot_runtime_approval_ok', { p_bot_id: row.id });
+      if (res.error) throw res.error;
+      approved = res.data;
+    } catch {
+      throw new BotError('approval check unavailable', 'APPROVAL_CHECK_FAILED', 503);
+    }
+    if (approved !== true) throw new BotError('bot is not approved', 'FORBIDDEN', 403);
+  }
   return row;
 }
 

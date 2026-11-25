@@ -4,7 +4,8 @@
  *
  * AI-Act Daten-Governance (Art. 10) — /app/datasets
  * Listet Trainings-/Validierungs-/Testdatensätze pro KI-System mit
- * Art-10-Vollständigkeits-Anzeige. Ohne Tenant: Demo-Daten.
+ * Art-10-Vollständigkeits-Anzeige. Ohne Tenant oder bei Lesefehler: leere Liste
+ * (fail-closed, keine Demo-Daten).
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -23,76 +24,28 @@ import {
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
-// ── Demo-Daten (ohne Tenant) ──────────────────────────────────────────────────
-
-const DEMO_DATASETS: Dataset[] = [
-  {
-    id: 'demo-1',
-    tenant_id: 'demo',
-    ai_system_ref: 'CV-Screening HR-Tool',
-    name: 'Bewerbungs-Trainingskorpus 2024',
-    dataset_role: 'training',
-    source_description: 'Historische Bewerbungen, anonymisiert aus dem ATS exportiert',
-    origin_jurisdictions: ['DE', 'AT'],
-    contains_personal_data: true,
-    special_categories: false,
-    legal_basis: null,
-    data_steward: 'Team People',
-    preprocessing_notes: 'PII-Maskierung, Lebenslauf-Felder strukturiert',
-    bias_assessment: null,
-    representativeness_note: 'Überrepräsentation technischer Rollen bekannt',
-    known_gaps: 'Wenige Senior-Profile',
-    collected_from: '2024-01-01',
-    collected_to: '2024-12-31',
-    evidence_id: null,
-    metadata: {},
-    created_by: null,
-    created_at: '2026-06-10T09:00:00Z',
-    updated_at: '2026-06-10T09:00:00Z',
-  },
-  {
-    id: 'demo-2',
-    tenant_id: 'demo',
-    ai_system_ref: 'Produktempfehlung Shop',
-    name: 'Klickstrom-Validierungsset',
-    dataset_role: 'validation',
-    source_description: 'Aggregierte Session-Events, EU-Region',
-    origin_jurisdictions: ['DE'],
-    contains_personal_data: false,
-    special_categories: false,
-    legal_basis: null,
-    data_steward: 'Team Commerce',
-    preprocessing_notes: 'Sessionisiert, Bots gefiltert',
-    bias_assessment: 'Saisonale Verzerrung dokumentiert',
-    representativeness_note: 'Repräsentativ für Bestandskunden',
-    known_gaps: null,
-    collected_from: '2025-09-01',
-    collected_to: '2025-11-30',
-    evidence_id: null,
-    metadata: {},
-    created_by: null,
-    created_at: '2026-06-12T09:00:00Z',
-    updated_at: '2026-06-12T09:00:00Z',
-  },
-];
-
 // ── Haupt-View ────────────────────────────────────────────────────────────────
 
 export function AiActDataGovernanceView() {
   const { activeTenantId } = useTenant();
-  const [datasets, setDatasets] = useState<Dataset[]>(DEMO_DATASETS);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeTenantId) {
-      setDatasets(DEMO_DATASETS);
+      setDatasets([]);
       return;
     }
     let cancelled = false;
     listDatasets(activeTenantId)
-      .then((rows) => { if (!cancelled && rows.length > 0) setDatasets(rows); })
-      .catch(() => {/* Demo-Fallback bleibt */});
+      .then((rows) => { if (!cancelled) setDatasets(rows); })
+      .catch(() => {
+        if (cancelled) return;
+        setDatasets([]);
+        setToast('Datensätze konnten nicht geladen werden');
+        setTimeout(() => setToast(null), 3000);
+      });
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
@@ -110,19 +63,8 @@ export function AiActDataGovernanceView() {
 
   async function handleCreate(input: CreateDatasetInput) {
     if (!activeTenantId) {
-      // Demo-Modus: optimistisch lokal anhängen.
-      setDatasets((prev) => [{
-        ...DEMO_DATASETS[0],
-        ...input,
-        id: `local-${Date.now()}`,
-        origin_jurisdictions: input.origin_jurisdictions ?? [],
-        contains_personal_data: input.contains_personal_data ?? false,
-        special_categories: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as Dataset, ...prev]);
-      setShowModal(false);
-      showToast('Datensatz gespeichert (Demo)');
+      // Fail-closed: ohne aktiven Mandanten wird nichts lokal angelegt.
+      showToast('Kein aktiver Mandant – Datensatz nicht gespeichert');
       return;
     }
     try {

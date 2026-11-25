@@ -606,6 +606,7 @@ export function DocumentsView() {
           </div>
           <iframe
             title={viewer.title}
+            sandbox=""
             srcDoc={viewer.html}
             className="w-full h-[60vh] bg-white border border-titanium-800"
           />

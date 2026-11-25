@@ -201,7 +201,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="KI-Mitarbeiter"
+        aria-label="SYNC, KI-Mitarbeiter"
         aria-hidden={!open}
       >
         {/* Drag handle affordance (mobile) */}
@@ -210,7 +210,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         </div>
 
         <WidgetHeader
-          label="KI-Mitarbeiter"
+          label="SYNC · KI-Mitarbeiter"
           badge="KI-System · keine Rechtsberatung"
           onReset={chat.reset}
           onClose={onClose}

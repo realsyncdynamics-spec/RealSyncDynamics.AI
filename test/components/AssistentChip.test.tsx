@@ -88,7 +88,7 @@ describe('<AssistentChip>', () => {
     const btn = getByLabelText('Assistent öffnen');
     expect(btn).toBeInTheDocument();
     expect(btn.className).toMatch(/opacity-100/);
-    expect(getByText('Assistent')).toBeInTheDocument();
+    expect(getByText('SYNC')).toBeInTheDocument();
 
     act(() => {
       observers.forEach((o) => o.trigger(true));

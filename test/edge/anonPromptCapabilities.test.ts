@@ -85,14 +85,16 @@ describe('Anon-Prompt: KI-Mitarbeiter', () => {
     expect(prompt).toContain('kostenpflichtigen oder sicherheitskritischen');
   });
 
-  it('legt offen, dass es ein KI-System ist (Art. 50 KI-VO)', () => {
+  it('legt offen, dass es ein KI-System ist (Art. 50 KI-VO) und heißt SYNC', () => {
     expect(prompt).toContain('Du bist ein KI-System');
+    expect(prompt.startsWith('Du bist SYNC')).toBe(true);
+    expect(prompt).toContain('Versprich keine Rechtskonformität');
   });
 });
 
 describe('Anon-Widget: Begrüßung und Einstiege', () => {
   it('begrüßt als digitaler KI-Mitarbeiter', () => {
-    expect(chatSource).toContain('Ich bin dein digitaler KI-Mitarbeiter von RealSync Dynamics AI.');
+    expect(chatSource).toContain('Ich bin SYNC, dein digitaler KI-Mitarbeiter von RealSync Dynamics AI.');
     expect(chatSource).not.toContain('öffentliche Compliance-Assistent');
   });
 

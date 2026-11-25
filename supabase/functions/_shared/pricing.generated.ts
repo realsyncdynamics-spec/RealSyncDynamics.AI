@@ -3182,14 +3182,23 @@ export interface StandaloneVoiceOffer {
    * setzte die Bereitstellung beim Provider kein Tageslimit.
    */
   monthlyMinutes: number | null;
+  /**
+   * Preis je Minute über dem Inklusivkontingent (Endpreis, € je Minute).
+   * `null` = noch nicht bestätigt. Rein informativ: Checkout und Freigabe
+   * hängen nicht daran.
+   */
+  extraMinuteEur: number | null;
   /** Leistungsumfang laut Stripe-Produktbeschreibung. Leer = noch nicht bestätigt. */
   bullets: readonly string[];
 }
 
+// Starter: 500 Inklusivminuten und 0,18 € je weitere Minute, Owner-Bestätigung
+// am 2026-11-25. Professional und Kanzlei/Praxis sind noch nicht bestätigt.
+// Ohne `bullets` bleibt auch Starter unfreigegeben (OFFER_NOT_RELEASED).
 export const VOICE_STANDALONE_OFFERS: readonly StandaloneVoiceOffer[] = [
-  { id: 'starter', name: 'Starter', monthlyEur: 89, availability: 'preview', monthlyMinutes: null, bullets: [] },
-  { id: 'professional', name: 'Professional', monthlyEur: 199, availability: 'preview', monthlyMinutes: null, bullets: [] },
-  { id: 'kanzlei_praxis', name: 'Kanzlei / Praxis', monthlyEur: 349, availability: 'preview', monthlyMinutes: null, bullets: [] },
+  { id: 'starter', name: 'Starter', monthlyEur: 89, availability: 'preview', monthlyMinutes: 500, extraMinuteEur: 0.18, bullets: [] },
+  { id: 'professional', name: 'Professional', monthlyEur: 199, availability: 'preview', monthlyMinutes: null, extraMinuteEur: null, bullets: [] },
+  { id: 'kanzlei_praxis', name: 'Kanzlei / Praxis', monthlyEur: 349, availability: 'preview', monthlyMinutes: null, extraMinuteEur: null, bullets: [] },
 ];
 
 export function standaloneVoiceOfferById(id: string | null | undefined): StandaloneVoiceOffer | undefined {

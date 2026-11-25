@@ -168,6 +168,27 @@ und verkauft wird, folgen weitere Branchen und Assistenten.
   `marketing/icp-und-sales-navigator.md`, `.github/PR_TRIAGE_POLICY.md`) werden
   in eigenen PRs angeglichen.
 
+### K5 — Voice Agent branchenübergreifend  · ✅ ENTSCHIEDEN am 2026-11-25
+
+**Entscheidung (Owner):** Der Voice Agent (AI Receptionist) ist nicht auf das
+Handwerk beschränkt. Er wird über Branchenvorlagen angeboten, wie auf
+`voice.realsyncdynamicsai.de` (u. a. Handwerk, Gastronomie & Bäckerei,
+KFZ-Werkstatt, Metzgerei, Hausverwaltung, Arztpraxis, Kanzlei,
+Steuerberatung). Handwerk ist eine Vorlage, keine Zielgruppen-Einschränkung.
+
+**Ändert an K4:** nur den Satz „AI Receptionist für Handwerksbetriebe … erst
+danach weitere Branchen“. Positionierung, Produktebenen und Leitplanken von K4
+bleiben gültig.
+
+**Preisbestätigung am selben Tag:** Voice-Paket Starter (89 €/Monat) mit
+500 Inklusivminuten und 0,18 € je weitere Minute (`shared/pricing.ts`,
+`VOICE_STANDALONE_OFFERS`). Professional und Kanzlei/Praxis: Kontingente noch
+offen. Kein Paket ist damit kaufbar freigegeben; dafür fehlt der bestätigte
+Leistungsumfang (`bullets`).
+
+**Unverändert durch K5:** Telefonie bleibt `voice-telephony` (nicht live),
+Status nur aus `src/product/implementation-status.ts`.
+
 ---
 
 ## Bau-Aufgaben aus den Entscheidungen

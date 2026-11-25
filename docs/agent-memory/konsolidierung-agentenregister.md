@@ -85,6 +85,40 @@ Erzwungen = durch `tools`/`disallowedTools`, Hooks oder Gateway technisch durchg
 Regel für alle: Kein Agent hat MCP-Werkzeuge in `tools`. Fehlt ein MCP-Server, startet der Agent
 trotzdem; der Bedarf wird als Übergabe an CHIEF gemeldet (erfüllt „blockiert keinen Agentenstart“).
 
+### 2a. Prüfung der Durchsetzbarkeit durch NOVA (Stand #2440 @ `f32d8c5`)
+
+Ausgeführt als Subagent mit `nova.md` als verbindlicher Anweisung, nur Read/Grep/Glob.
+**NOVA-Status: BLOCKIERT** (Lockerung N4, drei P1). CHIEF hat die Kernbefunde per Hook-Probe nachgeprüft.
+
+| Grenze | Mechanismus | Durchsetzung |
+|---|---|---|
+| Nur REA schreibt | `tools`/`disallowedTools` der 9 Agenten | **teilweise**: gilt für die 9 Dateien; CHIEF, eingebaute `general-purpose`- und Plugin-Agenten schreiben weiter |
+| ATLAS nur Web | `atlas.md:4-5` | erzwungen |
+| VIO, NOVA, DEPUTY lesend | Frontmatter | erzwungen |
+| Nur CHIEF delegiert | `disallowedTools: Agent` + `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` | teilweise (Wirkung der Variable unbelegt) |
+| Kein Merge / Deploy | `permissions.deny` + `guard-bash` | **teilweise** (Umgehungen N1, N5) |
+| Keine Migration | Regel `rea.md:41`; nur `supabase db push` gesperrt | Regel |
+| Guard-Dateien geschützt | keiner | **nur Regel** (N3) |
+| Serverseitiges AI-OS-Gateway | `gateway.ts:21-69` | erzwungen, gilt nur für `ai-os-control`, nicht für Claude-Code-Agenten |
+
+| ID | P | Befund | Status |
+|---|---|---|---|
+| N1 | P1 | Merge-Sperre umgehbar: `gh api graphql … mergePullRequest`, `node <datei>`, MCP `mcp__github__merge_pull_request` nicht in `deny` | BESTÄTIGT (Probe: Exit 0; `deny`-Liste gelesen) |
+| N2 | P1 | „Nur REA schreibt“ nicht erzwungen für eingebaute/Plugin-Agenten (`guard-write-scope.mjs:24` lässt alle außer `vio` durch) | BESTÄTIGT (Code) |
+| N3 | P1 | `.claude/hooks/**` und `settings.json` für REA/CHIEF beschreibbar → Selbstabschaltung der Guards | BESTÄTIGT (Code) |
+| N4 | P2 | Lockerung `deny` → `ask` für `npm install`/`npm ci` | BESTÄTIGT (= K5) |
+| N5 | P2 | Deploy-Umgehung: `gh api …/dispatches`, `npm run-script release:merge` | BESTÄTIGT (Probe: Exit 0) |
+| N6 | P2 | Hook-Absturz (Exit ≠ 2) blockiert nicht | OFFEN (Annahme, Hook-Doku prüfen) |
+| N7 | P2 | „Hook-Tests nicht in CI“ | **widerlegt**: `vitest.config` `include: test/**/*.test.ts` → `test/security/claude-hooks.test.ts` läuft im `unit`-Job (bei Drafts übersprungen) |
+| N8 | P3 | Wirkung von `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` unbelegt | OFFEN |
+| N9 | P3 | 6 Alt-Spezifikationen `*-agent.md` ohne Frontmatter würden alle Werkzeuge erben, falls geladen | OFFEN |
+| N10 | P3 | REA hat Web per `curl` (Probe `curl https://example.com` → Exit 0) | BESTÄTIGT |
+
+Folgerung: Die Rollengrenzen der neun Fachagenten sind technisch erzwungen. Merge-, Deploy- und
+Selbstschutz-Grenzen sind es nur teilweise. Maßgeblich bleibt deshalb serverseitig: Ruleset auf
+`main` (Pflicht-Review, kein Bypass) und Environment `production` (#2336/#2452) — nicht prüfbar aus
+dieser Sitzung → OFFEN.
+
 ## 3. MCP-Matrix (Sitzung 25.11.2026)
 
 | Dienst | Status | Prüfung | Befundstatus |
@@ -160,7 +194,10 @@ Dateien). Abnahme DEPUTY, Rechteprüfung NOVA.
    zurück nach `deny`, CLAUDE.md-Zeile wiederherstellen (K5); (c) P0-Fix `8a18cb9` aus #2440
    übernehmen oder #2416 direkt mit #2440 zusammen mergen (K6); (d) Ready for Review → volle CI.
    Workflow-Änderung `auto-merge.yml` ist freigabepflichtig.
-3. **#2440** — Merge von `main`, Ready for Review, volle CI inkl. `test/security/claude-hooks.test.ts`.
+3. **#2440** — vorher N1, N3, N5 durch REA schließen (GraphQL-Merge, `node <datei>`, Dispatch-API,
+   `npm run-script` im Hook sperren; `mcp__github__merge_pull_request` in `deny`; Edit/Write auf
+   `.claude/**` für Subagenten sperren), N4 = K5 rückgängig; dann Merge von `main`, Ready for Review,
+   volle CI inkl. `test/security/claude-hooks.test.ts`, Neuprüfung NOVA + DEPUTY.
 4. #2423–#2432, #2434, #2420, #2425 als überholt schließen (Freigabe „PR schließen“).
 5. Register-PR nach §5 (neu, REA).
 6. #2450 aufteilen: Agententeil verwerfen; Modellpreise + Gateway-Standardmodell als eigener PR

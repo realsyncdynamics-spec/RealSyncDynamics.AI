@@ -37,7 +37,7 @@ describe('<AskAiPill>', () => {
     const { getByTestId } = renderAt('/', false);
     const pill = getByTestId('ask-ai-pill');
     expect(pill).toHaveTextContent('KI fragen');
-    expect(pill).toHaveAttribute('href', '/audit?source=ki-fragen');
+    expect(pill).toHaveAttribute('href', '/ki-bots?source=ki-fragen');
   });
 
   it('öffnet den öffentlichen Assistenten, wenn der Chip montiert ist', () => {

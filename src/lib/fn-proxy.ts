@@ -16,6 +16,8 @@ export const FN_PROXY_PREFIX = '/api/fn';
 export const FN_PROXY_ALLOW = [
   'ai-gateway',
   'siteos/code-persist',
+  // Spike Laufzeit-Vorschau; serverseitig ohne Flag 404.
+  'siteos/code-preview',
   'gdpr-audit',
   'cookie-scan',
   'sales-lead',

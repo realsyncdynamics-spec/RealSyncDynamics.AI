@@ -27,8 +27,10 @@ import {
   type ProjectMeta,
 } from './bolt/project-store';
 import type { AuditRecord, EngineRunResult, FileRecord, GovernanceContext } from './bolt/types';
+import { isSandboxPreviewEnabled } from '../../config/featureFlags';
+import { SandboxPreviewPanel } from './preview-runtime/SandboxPreviewPanel';
 
-type Pane = 'preview' | 'code' | 'audit';
+type Pane = 'preview' | 'code' | 'audit' | 'runtime';
 
 const DEFAULT_CODE_PROMPT = 'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.';
 
@@ -106,6 +108,8 @@ export function BoltWorkbench({
   const [activePath, setActivePath] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [pane, setPane] = useState<Pane>('preview');
+  // Spike Laufzeit-Vorschau: nur mit Feature-Flag (Standard AUS) sichtbar.
+  const sandboxPreview = useMemo(() => isSandboxPreviewEnabled(), []);
   const [isolation, setIsolation] = useState<'static' | 'interactive'>('interactive');
   const [previewKey, setPreviewKey] = useState(0);
   const [serverPersist, setServerPersist] = useState<'idle' | 'ok' | 'blocked'>('idle');
@@ -580,8 +584,8 @@ export function BoltWorkbench({
         </section>
 
         <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
-          <div className="grid grid-cols-3 border-b border-white/10">
-            {(['preview', 'code', 'audit'] as Pane[]).map((id) => (
+          <div className={`grid ${sandboxPreview ? 'grid-cols-4' : 'grid-cols-3'} border-b border-white/10`}>
+            {(sandboxPreview ? (['preview', 'code', 'audit', 'runtime'] as Pane[]) : (['preview', 'code', 'audit'] as Pane[])).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -590,7 +594,7 @@ export function BoltWorkbench({
                   pane === id ? 'bg-[#0052FF] text-[#E2E2E2]' : 'bg-[#101114] text-white/55'
                 }`}
               >
-                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : 'Prüfpfad'}
+                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : id === 'runtime' ? 'Laufzeit' : 'Prüfpfad'}
               </button>
             ))}
           </div>
@@ -650,6 +654,10 @@ export function BoltWorkbench({
               )}
             </div>
           )}
+
+          {sandboxPreview && pane === 'runtime' ? (
+            <SandboxPreviewPanel tenantId={ctx.tenantId} projectId={project.id === 'draft' ? null : project.id} />
+          ) : null}
 
           {pane === 'code' && (
             <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">

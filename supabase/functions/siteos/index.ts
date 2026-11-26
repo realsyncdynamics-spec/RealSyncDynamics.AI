@@ -16,6 +16,7 @@
 //   POST /functions/v1/siteos/session          Sitzung lesen, ohne Konto
 //   POST /functions/v1/siteos/claim            Sitzung -> Mandant (idempotent)
 //   POST /functions/v1/siteos/code-persist     Web-App-Builder Dateibaum (nicht Puck)
+//   POST /functions/v1/siteos/code-preview     Spike Laufzeit-Vorschau (Flag, Standard aus)
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 //
 // ## Warum ein Router und nicht vier Functions
@@ -55,6 +56,7 @@ import { handle as publishPreview } from './handlers/publish-preview.ts';
 import { handle as publishProduction } from './handlers/publish-production.ts';
 import { handleBuildAnon, handleClaim, handleGetSession, handleRefineAnon } from './handlers/anonymous.ts';
 import { handle as codePersist } from './handlers/code-persist.ts';
+import { handle as codePreview } from './handlers/code-preview.ts';
 
 const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'agents': agents,
@@ -79,6 +81,8 @@ const routes: Record<string, (req: Request) => Response | Promise<Response>> = {
   'claim': handleClaim,
   // Web App Builder file trees. Distinct from Puck `edit` / siteos_blueprints.
   'code-persist': codePersist,
+  // Spike Laufzeit-Vorschau (22.11.2026). Ohne APP_BUILDER_SANDBOX_PREVIEW=true → 404.
+  'code-preview': codePreview,
 };
 
 Deno.serve((req) => {

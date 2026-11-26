@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_GITHUB_ENABLED?: string;
   /** 'true' schaltet Governance AI (/app/assistant) ein. Standard: aus. */
   readonly VITE_GOVERNANCE_AI_ENABLED?: string;
+  /** 'true' schaltet die Laufzeit-Vorschau per Sandbox im Code-Builder ein (Spike). Standard: aus. */
+  readonly VITE_APP_BUILDER_SANDBOX_PREVIEW?: string;
   /**
    * Reserviert für einen späteren ElevenLabs-Browser-Adapter.
    * Dieser Stand lädt kein SDK und keinen Key. Standard: nicht gesetzt.

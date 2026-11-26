@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
 import { usePageMeta } from '../lib/usePageMeta';
-import { errorText, getCheck, listChecks, type ApiError, type SavedCheck } from '../features/needs-check/api';
-import { AREA_LABEL, GOAL_LABEL, SECTION_LABEL, recommendationsFromIds } from '../features/needs-check/model';
+import { deleteCheck, errorText, getCheck, listChecks, type ApiError, type SavedCheck } from '../features/needs-check/api';
+import { NEEDS_CHECK_CATALOG, renderRecommendations } from '../../shared/needs-check';
+import { RecommendationList } from './NeedsCheckPage';
 import '../styles/needs-check.css';
 
 /**
@@ -11,6 +12,9 @@ import '../styles/needs-check.css';
  * /check/ergebnisse/:id    — ein gespeichertes Ergebnis
  *
  * Lesen nur mit Anmeldung; welche Zeilen sichtbar sind, entscheidet RLS.
+ * Texte kommen aus dem Katalog der gespeicherten Modellversion, nicht aus
+ * dem heutigen. Der Hinweis zur Verfügbarkeit ist ausdrücklich der heutige
+ * Stand (siehe currentStatus.ts).
  */
 
 type Load<T> = { s: 'loading' } | { s: 'ok'; data: T } | { s: 'error'; error: ApiError };
@@ -20,33 +24,39 @@ function formatDate(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-function SavedDetail({ check }: { check: SavedCheck }) {
-  const recs = recommendationsFromIds(check.recommendationIds, check.answers);
+function SavedDetail({ check, onDeleted }: { check: SavedCheck; onDeleted: () => void }) {
+  const cat = NEEDS_CHECK_CATALOG[check.modelVersion];
+  const recs = renderRecommendations(check.recommendationIds, check.answers, check.modelVersion);
+  const [del, setDel] = useState<{ s: 'idle' } | { s: 'busy' } | { s: 'error'; error: ApiError }>({ s: 'idle' });
+
+  const remove = async () => {
+    setDel({ s: 'busy' });
+    const r = await deleteCheck(check.id);
+    if (r.ok) onDeleted();
+    else setDel({ s: 'error', error: r.error });
+  };
+
   return (
     <section className="nc-card" aria-labelledby="nc-saved-h">
       <div className="nc-result-head">
         <h1 id="nc-saved-h" className="nc-h1">Gespeichertes Ergebnis</h1>
-        <span className="nc-badge">{check.basis === 'answers_and_scan' ? 'Grundlage: Ihre Angaben + technische Prüfung' : 'Grundlage: Ihre Angaben'}</span>
+        <span className="nc-badge" data-testid="nc-basis">Grundlage: Ihre Angaben</span>
       </div>
       <p className="nc-summary">
-        {formatDate(check.createdAt)} · Ziel: {GOAL_LABEL[check.answers.goal]} · Bereich: {AREA_LABEL[check.answers.area]} · Website: {check.answers.hasWebsite ? (check.answers.websiteUrl ?? 'ja') : 'noch keine'}
+        {formatDate(check.createdAt)} · Ziel: {cat.goalLabel[check.answers.goal]} · Bereich: {cat.areaLabel[check.answers.area]} · Website: {check.answers.hasWebsite ? (check.answers.websiteUrl ?? 'ja') : 'noch keine'}
       </p>
-      <ol className="nc-recs">
-        {recs.map((r, i) => (
-          <li key={r.id} className="nc-rec">
-            <span className="nc-rec-meta">{String(i + 1).padStart(2, '0')} · {SECTION_LABEL[r.section]}</span>
-            <h2 className="nc-h2">{r.title}</h2>
-            <p>{r.reason}</p>
-            {r.status ? <p className="nc-status">{r.status}</p> : null}
-            <Link to={r.cta.href} className={i === 0 ? 'nc-btn' : 'nc-btn nc-btn--ghost'}>{r.cta.label}</Link>
-          </li>
-        ))}
-      </ol>
-      {check.auditId ? <Link to={`/audit/result/${check.auditId}`} className="nc-link">Bericht der technischen Prüfung öffnen →</Link> : null}
+      <p className="nc-note" data-testid="nc-version-note">
+        Empfehlungen wie am {formatDate(check.createdAt)} gespeichert (Modellversion {check.modelVersion}). Hinweise zur Verfügbarkeit zeigen den heutigen Stand, Preise stehen unter „Pakete vergleichen“.
+      </p>
+      <RecommendationList recs={recs} />
       <div className="nc-actions">
         <Link to="/check/ergebnisse" className="nc-link">← Alle Ergebnisse</Link>
-        <Link to="/check" className="nc-link">Neuen Check starten →</Link>
+        <button type="button" className="nc-btn nc-btn--ghost" onClick={remove} disabled={del.s === 'busy'}>
+          {del.s === 'busy' ? 'Wird gelöscht …' : 'Ergebnis löschen'}
+        </button>
       </div>
+      <p className="nc-note">Löschen entfernt das Ergebnis. Es zählt weiter zu Ihren höchstens 20 Speicherungen in 24 Stunden.</p>
+      {del.s === 'error' ? <p role="alert" className="nc-error">{errorText(del.error)}</p> : null}
     </section>
   );
 }
@@ -59,6 +69,7 @@ export function NeedsCheckSavedPage() {
     url: 'https://realsyncdynamicsai.de/check/ergebnisse',
   });
   const { user, isLoading: authLoading } = useSupabaseAuth();
+  const navigate = useNavigate();
   const [list, setList] = useState<Load<SavedCheck[]>>({ s: 'loading' });
   const [one, setOne] = useState<Load<SavedCheck>>({ s: 'loading' });
 
@@ -101,7 +112,7 @@ export function NeedsCheckSavedPage() {
                 <p role="alert" className="nc-error" data-testid="nc-saved-error">{errorText(one.error)}</p>
                 <Link to="/check/ergebnisse" className="nc-link">← Alle Ergebnisse</Link>
               </section>
-            ) : <SavedDetail check={one.data} />
+            ) : <SavedDetail check={one.data} onDeleted={() => navigate('/check/ergebnisse')} />
         ) : null}
 
         {!authLoading && user && !id ? (
@@ -114,14 +125,17 @@ export function NeedsCheckSavedPage() {
             ) : null}
             {list.s === 'ok' && list.data.length > 0 ? (
               <ul className="nc-list">
-                {list.data.map((c) => (
-                  <li key={c.id}>
-                    <Link to={`/check/ergebnisse/${c.id}`} className="nc-list-item">
-                      <strong>{GOAL_LABEL[c.answers.goal]}</strong>
-                      <span>{AREA_LABEL[c.answers.area]} · {formatDate(c.createdAt)}</span>
-                    </Link>
-                  </li>
-                ))}
+                {list.data.map((c) => {
+                  const cat = NEEDS_CHECK_CATALOG[c.modelVersion];
+                  return (
+                    <li key={c.id}>
+                      <Link to={`/check/ergebnisse/${c.id}`} className="nc-list-item">
+                        <strong>{cat.goalLabel[c.answers.goal]}</strong>
+                        <span>{cat.areaLabel[c.answers.area]} · {formatDate(c.createdAt)}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </section>

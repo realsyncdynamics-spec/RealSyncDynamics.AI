@@ -1,6 +1,6 @@
 /**
- * /check — Ablauf mit simuliertem Auth-Kontext und simulierter API.
- * Kein echtes Backend (siehe needs-check-rls.db.test.ts für die Datenbank).
+ * /check und /check/ergebnisse — Ablauf mit simuliertem Auth-Kontext und
+ * simulierter API. Kein echtes Backend (Datenbank: needs-check-results.db.test.ts).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -10,9 +10,9 @@ const auth = vi.hoisted(() => ({ value: { user: null as null | { id: string; ema
 const configured = vi.hoisted(() => ({ value: true }));
 const apiMock = vi.hoisted(() => ({
   saveCheck: vi.fn(),
-  runWebsiteScan: vi.fn(),
   getCheck: vi.fn(),
   listChecks: vi.fn(),
+  deleteCheck: vi.fn(),
 }));
 
 vi.mock('../../src/features/supabase/SupabaseAuthContext', () => ({
@@ -31,6 +31,8 @@ import { NeedsCheckPage } from '../../src/pages/NeedsCheckPage';
 import { NeedsCheckSavedPage } from '../../src/pages/NeedsCheckSavedPage';
 import { readPending, writePending } from '../../src/features/needs-check/pending';
 
+const USER = { id: 'u1', email: 'a@b.de' };
+
 function Where() {
   const loc = useLocation();
   return <p data-testid="where">{loc.pathname + loc.search}</p>;
@@ -41,7 +43,7 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/check" element={<><NeedsCheckPage /><Where /></>} />
-        <Route path="/check/ergebnisse" element={<NeedsCheckSavedPage />} />
+        <Route path="/check/ergebnisse" element={<><NeedsCheckSavedPage /><Where /></>} />
         <Route path="/check/ergebnisse/:id" element={<NeedsCheckSavedPage />} />
         <Route path="*" element={<Where />} />
       </Routes>
@@ -59,6 +61,17 @@ function answerAll(opts: { goal: string; area: string; site: 'Ja' | 'Nein'; url?
   fireEvent.click(screen.getByRole('button', { name: 'Ergebnis anzeigen' }));
 }
 
+function saved(overrides: Record<string, unknown> = {}) {
+  return {
+    id: '11111111-1111-1111-1111-111111111111',
+    createdAt: '2026-11-15T10:00:00Z',
+    modelVersion: 1,
+    answers: { goal: 'inquiries', area: 'praxis', hasWebsite: false, websiteUrl: null },
+    recommendationIds: ['automate.chat', 'build.new_site', 'govern.runtime'],
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   sessionStorage.clear();
   auth.value = { user: null, isLoading: false };
@@ -73,17 +86,29 @@ describe('/check — Ablauf', () => {
     expect(screen.getByText(/Ihre Website wird dabei nicht abgerufen/)).toBeInTheDocument();
   });
 
-  it('Startseite → Check → Ergebnis: Empfehlungen aus den Angaben, klar gekennzeichnet', () => {
+  it('Ergebnis aus den Angaben, gekennzeichnet; keine technische Prüfung im Check', () => {
     renderAt('/check');
     answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handwerk', site: 'Nein' });
     expect(screen.getByRole('heading', { level: 1, name: 'Das passt zu Ihrem Betrieb' })).toBeInTheDocument();
-    expect(screen.getByTestId('nc-basis')).toHaveTextContent('Grundlage: Ihre Angaben');
-    expect(screen.getByTestId('nc-basis')).not.toHaveTextContent('technische Prüfung');
-    const first = screen.getByRole('link', { name: 'Entwurf erzeugen' });
-    expect(first.getAttribute('href')).toMatch(/^\/build\?prompt=/);
-    // Ohne Adresse wird keine technische Prüfung angeboten.
-    expect(screen.queryByRole('button', { name: 'Jetzt prüfen' })).toBeNull();
-    expect(apiMock.runWebsiteScan).not.toHaveBeenCalled();
+    expect(screen.getByTestId('nc-basis')).toHaveTextContent(/^Grundlage: Ihre Angaben$/);
+    expect(screen.getByRole('link', { name: 'Entwurf erzeugen' }).getAttribute('href')).toMatch(/^\/build\?prompt=/);
+    expect(screen.queryByRole('button', { name: /prüfen/i })).toBeNull();
+    expect(screen.queryByTestId('nc-audit-hint')).toBeNull();
+  });
+
+  it('mit Website: eindeutiger Verweis auf /audit statt eingebauter Prüfung', () => {
+    renderAt('/check');
+    answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handel', site: 'Ja', url: 'beispiel.de' });
+    const hint = screen.getByTestId('nc-audit-hint');
+    expect(hint).toHaveTextContent(/enthält keine technische Prüfung/);
+    expect(screen.getByRole('link', { name: 'Zum kostenlosen Scan →' })).toHaveAttribute('href', '/audit?source=needs-check');
+    expect(screen.getByTestId('nc-basis')).not.toHaveTextContent(/technische Prüfung/);
+  });
+
+  it('Verfügbarkeit nur als heutiger Stand aus der Registry', () => {
+    renderAt('/check');
+    answerAll({ goal: 'Kundenanfragen schneller beantworten', area: 'Praxis', site: 'Nein' });
+    expect(screen.getByTestId('nc-status-automate.chat')).toHaveTextContent('Aktueller Stand: Vorschau');
   });
 
   it('ungültige Adresse wird abgelehnt, Ergebnis erscheint nicht', () => {
@@ -93,70 +118,48 @@ describe('/check — Ablauf', () => {
     expect(screen.queryByText('Das passt zu Ihrem Betrieb')).toBeNull();
   });
 
-  it('technische Prüfung nur auf Wunsch; danach wechselt die Kennzeichnung', async () => {
-    apiMock.runWebsiteScan.mockResolvedValue({ ok: true, data: { auditId: 'a1', domain: 'beispiel.de', score: 70, issues: [{ title: 'Kein Impressum-Link gefunden', severity: 'Kritisch', ref: '§ 5 DDG' }], coverageNotice: null } });
-    renderAt('/check');
-    answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handel', site: 'Ja', url: 'beispiel.de' });
-    expect(apiMock.runWebsiteScan).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Jetzt prüfen' }));
-    expect(apiMock.runWebsiteScan).toHaveBeenCalledWith('https://beispiel.de');
-    await screen.findByTestId('nc-scan-result');
-    expect(screen.getByTestId('nc-basis')).toHaveTextContent('Ihre Angaben + technische Prüfung');
-    expect(screen.getByRole('link', { name: /Vollständigen Bericht/ })).toHaveAttribute('href', '/audit/result/a1');
-  });
-
-  it('Backend-Ausfall beim Scan: Fehlermeldung, kein erfundenes Ergebnis', async () => {
-    apiMock.runWebsiteScan.mockResolvedValue({ ok: false, error: { kind: 'failed', message: 'Die Prüfung ist gerade nicht erreichbar.' } });
-    renderAt('/check');
-    answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handel', site: 'Ja', url: 'beispiel.de' });
-    fireEvent.click(screen.getByRole('button', { name: 'Jetzt prüfen' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/nicht erreichbar/);
-    expect(screen.queryByTestId('nc-scan-result')).toBeNull();
-    expect(screen.getByTestId('nc-basis')).toHaveTextContent(/^Grundlage: Ihre Angaben$/);
-  });
-
-  it('fehlende Verbindung: Speichern und Prüfen sind gesperrt und ehrlich beschriftet', () => {
+  it('fehlende Verbindung: Speichern gesperrt und ehrlich beschriftet', () => {
     configured.value = false;
     renderAt('/check');
-    answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handel', site: 'Ja', url: 'beispiel.de' });
-    expect(screen.getByRole('button', { name: 'Jetzt prüfen' })).toBeDisabled();
+    answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handel', site: 'Nein' });
     expect(screen.getByRole('button', { name: 'Anmelden und speichern' })).toBeDisabled();
-    expect(screen.getAllByText(/nicht verfügbar/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/nicht verfügbar/)).toBeInTheDocument();
   });
 });
 
 describe('/check — Speichern und Anmeldung', () => {
-  it('ohne Anmeldung: Angaben werden gemerkt, Weiterleitung zur Anmeldung mit Rücksprung', () => {
+  it('ohne Anmeldung: nur Angaben werden gemerkt, Weiterleitung mit Rücksprung', () => {
     renderAt('/check');
     answerAll({ goal: 'Regeln und Nachweise für KI und Website', area: 'Kanzlei', site: 'Nein' });
     fireEvent.click(screen.getByRole('button', { name: 'Anmelden und speichern' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/welcome?next=%2Fcheck%3Fresume%3D1');
-    expect(readPending()).toMatchObject({ wantsSave: true, answers: { goal: 'rules', area: 'kanzlei', hasWebsite: false } });
+    expect(readPending()).toEqual({ wantsSave: true, answers: { goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: null } });
     expect(apiMock.saveCheck).not.toHaveBeenCalled();
   });
 
-  it('nach der Anmeldung: Ablauf wird wiederhergestellt und gespeichert; „Gespeichert“ erst nach Bestätigung', async () => {
-    writePending({ answers: { goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: null }, auditId: null, wantsSave: true });
+  it('nach der Anmeldung: wiederhergestellt und gespeichert; „Gespeichert“ erst nach Bestätigung', async () => {
+    writePending({ answers: { goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: null }, wantsSave: true });
     let resolveSave: (v: unknown) => void = () => {};
     apiMock.saveCheck.mockReturnValue(new Promise((r) => { resolveSave = r; }));
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
+    auth.value = { user: USER, isLoading: false };
     renderAt('/check?resume=1');
     expect(await screen.findByText('Das passt zu Ihrem Betrieb')).toBeInTheDocument();
+    expect(apiMock.saveCheck).toHaveBeenCalledWith({ goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: null });
     expect(screen.getByRole('button', { name: 'Wird gespeichert …' })).toBeDisabled();
     expect(screen.queryByTestId('nc-saved')).toBeNull();
-    resolveSave({ ok: true, data: { id: 'res-1' } });
+    resolveSave({ ok: true, data: saved({ id: 'res-1' }) });
     expect(await screen.findByTestId('nc-saved')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ergebnis öffnen' })).toHaveAttribute('href', '/check/ergebnisse/res-1');
     expect(readPending()).toBeNull();
   });
 
-  it('Speicherfehler wird angezeigt, kein „Gespeichert“', async () => {
+  it('Kontingent erreicht: verständliche Meldung, kein „Gespeichert“', async () => {
     apiMock.saveCheck.mockResolvedValue({ ok: false, error: { kind: 'rate_limited' } });
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
+    auth.value = { user: USER, isLoading: false };
     renderAt('/check');
     answerAll({ goal: 'Eine neue oder bessere Website', area: 'Handwerk', site: 'Nein' });
     fireEvent.click(screen.getByRole('button', { name: 'Ergebnis speichern' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Zu viele Anfragen/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/20 Ergebnisse gespeichert/);
     expect(screen.queryByTestId('nc-saved')).toBeNull();
   });
 });
@@ -168,32 +171,45 @@ describe('/check/ergebnisse — erneut öffnen', () => {
     expect(apiMock.getCheck).not.toHaveBeenCalled();
   });
 
-  it('eigenes Ergebnis wird angezeigt', async () => {
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
-    apiMock.getCheck.mockResolvedValue({ ok: true, data: { id: 'x', createdAt: '2026-11-15T10:00:00Z', answers: { goal: 'inquiries', area: 'praxis', hasWebsite: false, websiteUrl: null }, recommendationIds: ['automate.chat'], auditId: null, basis: 'answers' } });
-    renderAt('/check/ergebnisse/x');
+  it('zeigt die gespeicherten Empfehlungen des Servers mit Versionshinweis', async () => {
+    auth.value = { user: USER, isLoading: false };
+    // Absichtlich andere Reihenfolge als die heutige Logik: angezeigt wird, was gespeichert ist.
+    apiMock.getCheck.mockResolvedValue({ ok: true, data: saved({ recommendationIds: ['govern.runtime', 'automate.chat'] }) });
+    renderAt('/check/ergebnisse/11111111-1111-1111-1111-111111111111');
     expect(await screen.findByText('Gespeichertes Ergebnis')).toBeInTheDocument();
-    expect(screen.getByText('Chat-Assistent für Kundenanfragen')).toBeInTheDocument();
+    const titles = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(titles).toEqual(['Regeln, Freigaben und Nachweise', 'Chat-Assistent für Kundenanfragen']);
+    expect(screen.getByTestId('nc-version-note')).toHaveTextContent(/Modellversion 1/);
+    expect(screen.getByTestId('nc-version-note')).toHaveTextContent(/heutigen Stand/);
   });
 
   it('fremdes Ergebnis: abgewiesen, nichts angezeigt', async () => {
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
+    auth.value = { user: USER, isLoading: false };
     apiMock.getCheck.mockResolvedValue({ ok: false, error: { kind: 'not_found' } });
     renderAt('/check/ergebnisse/22222222-2222-2222-2222-222222222222');
     expect(await screen.findByTestId('nc-saved-error')).toHaveTextContent(/anderen Konto/);
     expect(screen.queryByText('Gespeichertes Ergebnis')).toBeNull();
   });
 
-  it('leere Liste zeigt einen Leerzustand', async () => {
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
+  it('Löschen führt zur Liste zurück und erklärt das Kontingent', async () => {
+    auth.value = { user: USER, isLoading: false };
+    apiMock.getCheck.mockResolvedValue({ ok: true, data: saved() });
+    apiMock.deleteCheck.mockResolvedValue({ ok: true, data: null });
     apiMock.listChecks.mockResolvedValue({ ok: true, data: [] });
-    renderAt('/check/ergebnisse');
+    renderAt('/check/ergebnisse/11111111-1111-1111-1111-111111111111');
+    expect(await screen.findByText(/zählt weiter zu Ihren höchstens 20 Speicherungen/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ergebnis löschen' }));
     expect(await screen.findByTestId('nc-empty')).toBeInTheDocument();
+    expect(apiMock.deleteCheck).toHaveBeenCalledWith('11111111-1111-1111-1111-111111111111');
   });
 
-  it('Ladefehler der Liste wird angezeigt', async () => {
-    auth.value = { user: { id: 'u1', email: 'a@b.de' }, isLoading: false };
-    apiMock.listChecks.mockResolvedValue({ ok: false, error: { kind: 'failed', message: 'Netzwerk' } });
+  it('leere Liste und Ladefehler', async () => {
+    auth.value = { user: USER, isLoading: false };
+    apiMock.listChecks.mockResolvedValueOnce({ ok: true, data: [] });
+    const { unmount } = renderAt('/check/ergebnisse');
+    expect(await screen.findByTestId('nc-empty')).toBeInTheDocument();
+    unmount();
+    apiMock.listChecks.mockResolvedValueOnce({ ok: false, error: { kind: 'failed', message: 'Netzwerk' } });
     renderAt('/check/ergebnisse');
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/Netzwerk/));
   });

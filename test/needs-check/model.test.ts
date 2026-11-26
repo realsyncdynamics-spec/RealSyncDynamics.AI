@@ -1,102 +1,129 @@
+/**
+ * Bedarfs-Check — gemeinsames Modell (shared/needs-check.ts).
+ *
+ * Reine Logik, kein Backend. Die Parität zur SQL-Funktion prüft
+ * test/runtime/db/needs-check-results.db.test.ts gegen Postgres.
+ */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  RECOMMENDATION_IDS, normalizeWebsiteUrl, recommend, recommendationsFromIds, validateAnswers,
-  type Answers,
-} from '../../src/features/needs-check/model';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+  AREAS, GOALS, NEEDS_CHECK_CATALOG, NEEDS_CHECK_MODEL_VERSION, RECOMMENDATION_IDS, WEBSITE_URL_PATTERN,
+  normalizeWebsiteUrl, recommend, recommendIds, renderRecommendations, validateAnswers,
+} from '../../shared/needs-check';
 
-const base: Answers = { goal: 'website', area: 'handwerk', hasWebsite: false, websiteUrl: null };
+const readMigration = (f: string) => readFileSync(join(__dirname, '../../supabase/migrations', f), 'utf8');
+/** Erstfassung (#2262, angewendet) — legt Tabelle, erlaubte Werte und RLS-Policies an. */
+const BASE = readMigration('20261115200000_needs_check_results.sql');
+/** Härtung — Grants, Trigger, Kontingent, Empfehlung, Ausschluss der Scan-Referenz. */
+const MIGRATION = readMigration('20261117190000_needs_check_results_hardening.sql');
 
-describe('Bedarfs-Check: Empfehlungen aus den Angaben', () => {
-  it('ohne Website und Ziel Website: zuerst Entwurf erstellen', () => {
-    const r = recommend(base);
-    expect(r[0].id).toBe('build.new_site');
-    expect(r[0].cta.href).toMatch(/^\/build\?prompt=/);
-    expect(decodeURIComponent(r[0].cta.href)).toContain('Handwerk');
+describe('Eingabeprüfung', () => {
+  it('nimmt gültige Angaben an und normalisiert die Adresse', () => {
+    const v = validateAnswers({ goal: 'website', area: 'handwerk', hasWebsite: true, websiteUrl: 'beispiel.de' });
+    expect(v).toEqual({ ok: true, answers: { goal: 'website', area: 'handwerk', hasWebsite: true, websiteUrl: 'https://beispiel.de' } });
   });
 
-  it('mit Website und Ziel Website: neu aufbauen plus technische Prüfung', () => {
-    const r = recommend({ ...base, hasWebsite: true, websiteUrl: 'https://beispiel.de' });
-    expect(r.map((x) => x.id)).toEqual(['build.modernize', 'govern.website_scan', 'automate.chat']);
+  it('verwirft eine Adresse, wenn es keine Website gibt', () => {
+    const v = validateAnswers({ goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: 'beispiel.de' });
+    expect(v.ok && v.answers.websiteUrl).toBeNull();
   });
 
-  it('Ziel Anfragen: Chat-Assistent zuerst, mit ehrlichem Vorschau-Status', () => {
-    const r = recommend({ ...base, goal: 'inquiries' });
-    expect(r[0].id).toBe('automate.chat');
-    expect(r[0].status).toMatch(/Vorschau/);
+  it.each([
+    [{ goal: 'hack', area: 'handwerk', hasWebsite: false }, 'goal'],
+    [{ goal: 'rules', area: 'mars', hasWebsite: false }, 'area'],
+    [{ goal: 'rules', area: 'kanzlei', hasWebsite: 'ja' }, 'hasWebsite'],
+    [{ goal: 'rules', area: 'kanzlei', hasWebsite: true, websiteUrl: 'kein text' }, 'websiteUrl'],
+  ])('lehnt %o ab (%s)', (input, field) => {
+    const v = validateAnswers(input as never);
+    expect(v.ok).toBe(false);
+    if (!v.ok) expect(v.field).toBe(field);
   });
 
-  it('Ziel Regeln: Governance OS zuerst; Begründung behauptet keine Nachweise für jede Entscheidung', () => {
-    const r = recommend({ ...base, goal: 'rules', hasWebsite: true });
-    expect(r[0].id).toBe('govern.runtime');
-    expect(r[0].reason).toContain('Warnungen, Freigaben und Blockaden');
-    expect(r[0].reason).not.toMatch(/jede Entscheidung/i);
-  });
+  it.each(['https://user:pw@a.de', 'javascript:alert(1)', `https://a.de/${'x'.repeat(300)}`, 'ftp://a.de'])(
+    'normalizeWebsiteUrl lehnt %s ab',
+    (raw) => expect(normalizeWebsiteUrl(raw)).toBeNull(),
+  );
+});
 
-  it('liefert höchstens drei Empfehlungen ohne Dubletten und nur bekannte IDs', () => {
-    for (const goal of ['website', 'inquiries', 'rules', 'unsure'] as const) {
+describe('Empfehlungslogik Version 1', () => {
+  it('liefert für jede Kombination 1–3 eindeutige, bekannte IDs', () => {
+    for (const goal of GOALS) {
       for (const hasWebsite of [true, false]) {
-        const ids = recommend({ ...base, goal, hasWebsite }).map((x) => x.id);
-        expect(ids.length).toBeGreaterThan(0);
+        const ids = recommendIds({ goal, hasWebsite });
+        expect(ids.length, `${goal}/${hasWebsite}`).toBeGreaterThanOrEqual(1);
         expect(ids.length).toBeLessThanOrEqual(3);
         expect(new Set(ids).size).toBe(ids.length);
-        for (const id of ids) expect(RECOMMENDATION_IDS).toContain(id);
+        ids.forEach((id) => expect(RECOMMENDATION_IDS).toContain(id));
       }
     }
   });
 
-  it('jede Begründung bezieht sich auf die Angaben und verspricht keine Websiteprüfung', () => {
-    const r = recommend({ ...base, goal: 'unsure', hasWebsite: true });
-    for (const x of r) expect(x.reason.length).toBeGreaterThan(30);
-    const scan = r.find((x) => x.id === 'govern.website_scan')!;
-    expect(scan.cta.href).toContain('/audit');
+  it('erste Empfehlung folgt dem Ziel', () => {
+    expect(recommendIds({ goal: 'website', hasWebsite: false })[0]).toBe('build.new_site');
+    expect(recommendIds({ goal: 'website', hasWebsite: true })[0]).toBe('build.modernize');
+    expect(recommendIds({ goal: 'inquiries', hasWebsite: false })[0]).toBe('automate.chat');
+    expect(recommendIds({ goal: 'rules', hasWebsite: true })[0]).toBe('govern.runtime');
   });
 
-  it('recommendationsFromIds verwirft unbekannte IDs', () => {
-    expect(recommendationsFromIds(['govern.runtime', 'evil'], base).map((x) => x.id)).toEqual(['govern.runtime']);
+  it('Texte beziehen sich auf die Angaben', () => {
+    const [first] = recommend({ goal: 'website', area: 'praxis', hasWebsite: false, websiteUrl: null });
+    expect(first!.reason).toContain('Praxis-Betrieb');
+    expect(first!.cta.href).toMatch(/^\/build\?prompt=/);
   });
 });
 
-describe('Bedarfs-Check: Eingabeprüfung', () => {
-  it('lehnt fehlende oder unbekannte Werte ab', () => {
-    expect(validateAnswers({}).ok).toBe(false);
-    expect(validateAnswers({ goal: 'x', area: 'handwerk', hasWebsite: false }).ok).toBe(false);
-    expect(validateAnswers({ goal: 'website', area: 'mond', hasWebsite: false }).ok).toBe(false);
-    expect(validateAnswers({ goal: 'website', area: 'handwerk', hasWebsite: 'ja' }).ok).toBe(false);
+describe('Versionierter Katalog', () => {
+  it('Version 1 ist eingefroren — Textänderungen brauchen eine neue Version', () => {
+    // Schlägt dieser Test fehl, wurden Texte oder Links von Version 1 geändert.
+    // Gespeicherte Ergebnisse würden dann andere Formulierungen zeigen als beim
+    // Speichern. Stattdessen: Version 2 anlegen (Katalog, Logik, SQL-Funktion,
+    // CHECK in einer neuen Migration) und Version 1 unverändert lassen.
+    const hash = createHash('sha256').update(JSON.stringify(NEEDS_CHECK_CATALOG[1])).digest('hex');
+    expect(hash).toBe('7ba103d84a7db4d6d9fff40ea2c5555f1cccc644daa540e290275ef62bdcd41f');
   });
 
-  it('akzeptiert eine Adresse ohne Schema und ergänzt https', () => {
-    const v = validateAnswers({ goal: 'website', area: 'handwerk', hasWebsite: true, websiteUrl: 'beispiel.de' });
-    expect(v.ok && v.answers.websiteUrl).toBe('https://beispiel.de');
+  it('enthält keine Preise und keine Verfügbarkeitsangaben', () => {
+    const text = JSON.stringify(NEEDS_CHECK_CATALOG);
+    expect(text).not.toMatch(/€|\bEUR\b|\bpreis|kostenlos testen|Vorschau|Preview|\blive\b|verfügbar/i);
   });
 
-  it('lehnt ungültige Adressen und Zugangsdaten in der Adresse ab', () => {
-    expect(normalizeWebsiteUrl('kein text')).toBeNull();
-    expect(normalizeWebsiteUrl('javascript:alert(1)')).toBeNull();
-    expect(normalizeWebsiteUrl('https://user:pw@beispiel.de')).toBeNull();
-    expect(normalizeWebsiteUrl('https://' + 'a'.repeat(300) + '.de')).toBeNull();
-    const v = validateAnswers({ goal: 'website', area: 'handwerk', hasWebsite: true, websiteUrl: 'kein text' });
-    expect(v.ok).toBe(false);
-    if (!v.ok) expect(v.field).toBe('websiteUrl');
-  });
-
-  it('ignoriert eine Adresse, wenn es keine Website gibt', () => {
-    const v = validateAnswers({ goal: 'website', area: 'handwerk', hasWebsite: false, websiteUrl: 'beispiel.de' });
-    expect(v.ok && v.answers.websiteUrl).toBeNull();
+  it('rendert gespeicherte IDs mit dem Katalog ihrer Version und überspringt Unbekanntes', () => {
+    const recs = renderRecommendations(
+      ['govern.runtime', 'manipuliert', 'automate.chat'],
+      { goal: 'rules', area: 'kanzlei', hasWebsite: false, websiteUrl: null },
+      1,
+    );
+    expect(recs.map((r) => r.id)).toEqual(['govern.runtime', 'automate.chat']);
+    expect(recs[0]!.title).toBe(NEEDS_CHECK_CATALOG[1].recommendations['govern.runtime'].title);
   });
 });
 
-describe('Bedarfs-Check: Client und Datenbank erlauben dieselben Werte', () => {
-  const sql = readFileSync(resolve(__dirname, '../../supabase/migrations/20261115200000_needs_check_results.sql'), 'utf8');
-  it('jede Empfehlungs-ID steht im CHECK-Constraint', () => {
-    for (const id of RECOMMENDATION_IDS) expect(sql).toContain(`'${id}'`);
+describe('Abgleich mit der Migration', () => {
+  it('erlaubte Werte und Adressmuster stimmen mit den CHECK-Constraints überein', () => {
+    expect(BASE).toContain(`goal IN (${GOALS.map((g) => `'${g}'`).join(', ')})`);
+    expect(BASE).toContain(`area IN (${AREAS.map((a) => `'${a}'`).join(', ')})`);
+    expect(MIGRATION).toContain(`website_url ~* '${WEBSITE_URL_PATTERN}'`);
+    expect(MIGRATION).toContain(`model_version in (${NEEDS_CHECK_MODEL_VERSION})`);
   });
-  it('RLS ist aktiv, nur eigene Zeilen, kein UPDATE, anon gesperrt', () => {
-    expect(sql).toMatch(/ENABLE ROW LEVEL SECURITY/);
-    expect(sql).toMatch(/REVOKE ALL ON public\.needs_check_results FROM anon/);
-    expect(sql).toMatch(/GRANT SELECT, INSERT, DELETE ON public\.needs_check_results TO authenticated/);
-    expect(sql).not.toMatch(/FOR UPDATE/);
-    expect(sql.match(/user_id = \(select auth\.uid\(\)\)/g)?.length).toBe(3);
+
+  it('der Client darf nur die vier Angaben schreiben', () => {
+    expect(MIGRATION).toContain('grant insert (goal, area, has_website, website_url) on public.needs_check_results to authenticated;');
+    // Kein tabellenweites INSERT/ALL und kein UPDATE für Nutzer.
+    expect(MIGRATION).not.toMatch(/grant (all|[a-z, ]*\binsert) on public\.needs_check_results to authenticated/i);
+    expect(MIGRATION).not.toMatch(/grant[^;]*\bupdate\b[^;]*on public\.needs_check_results/i);
+  });
+
+  it('keine Scan-Referenz im Ergebnis: Spalten bleiben, sind aber festgelegt und nicht beschreibbar', () => {
+    expect(MIGRATION).toContain("check (audit_id is null and result_basis = 'answers')");
+    expect(MIGRATION).toContain("new.audit_id := null;");
+    expect(MIGRATION).not.toMatch(/grant insert \([^)]*(audit_id|result_basis)/i);
+  });
+
+  it('Härtung ist additiv: keine gelöschte Tabelle oder Spalte, alte Kontingent-Logik ersetzt', () => {
+    expect(MIGRATION).not.toMatch(/drop\s+table|drop\s+column|truncate|delete\s+from\s+public\.needs_check_results/i);
+    expect(MIGRATION).toContain('drop trigger if exists needs_check_results_rate_limit_trg');
+    expect(MIGRATION).toContain('drop function if exists public.needs_check_results_rate_limit()');
   });
 });

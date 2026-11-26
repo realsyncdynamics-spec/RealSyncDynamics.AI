@@ -17,6 +17,8 @@ export interface AgentToolCall {
 export interface ChatResponse {
   ok: boolean;
   session_id: string;
+  /** Ab MP-A: verknüpft die Antwort mit `ai_evidence_events.evidence.request_id`. */
+  request_id?: string;
   response: string;
   tool_calls: number;
   actions_taken: string[];

@@ -20,14 +20,14 @@ test.describe('Produkt-Einstiege: direkte SPA-Routen', () => {
     const cards = page.locator('.lv3-catalog .lv3-cat');
     await expect(cards).toHaveCount(4);
     for (const { path } of PRODUCTS) {
-      await expect(cards.locator(`a[href^="${path}"]`)).toHaveCount(1);
+      await expect(page.locator(`.lv3-catalog a.lv3-cat[href^="${path}"]`)).toHaveCount(1);
     }
   });
 
   for (const { path, marker } of PRODUCTS) {
     test(`Direktaufruf ${path} rendert eigene Produktseite`, async ({ page }) => {
       await page.goto(path);
-      await expect(page).toHaveURL(new RegExp(`${path.replace(/\\//g, '\\/')}(?:\\?|$)`));
+      expect(new URL(page.url()).pathname).toBe(path);
       await expect(page.locator(marker).first()).toBeVisible();
       if (path === '/claude-code-optimizer') {
         await expect(page.getByRole('heading', { name: /Claude Code Optimizer/i }).first()).toBeVisible();

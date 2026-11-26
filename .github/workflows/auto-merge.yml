@@ -1,5 +1,8 @@
 name: Auto-merge
 
+# Deaktiviert 25.11.2026: Merge nur durch Dominik (CHIEF-Governance).
+# Wieder einschalten: `if: false` unten durch die auskommentierte Bedingung ersetzen.
+
 # Squash-Auto-Merge nur für PRs gegen main mit Label `automerge`.
 # Merged nicht selbst: GitHub wartet auf die Required Checks des Rulesets
 # "main merge hygiene".
@@ -35,11 +38,13 @@ concurrency:
 
 jobs:
   auto-merge:
-    if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      (contains(github.event.pull_request.labels.*.name, 'automerge') ||
-       (github.event.action == 'unlabeled' && github.event.label.name == 'automerge'))
+    if: false
+    # Bisherige Bedingung (vor 25.11.2026):
+    # if: >-
+    #   github.event.pull_request.draft == false &&
+    #   github.event.pull_request.head.repo.full_name == github.repository &&
+    #   (contains(github.event.pull_request.labels.*.name, 'automerge') ||
+    #    (github.event.action == 'unlabeled' && github.event.label.name == 'automerge'))
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub App token

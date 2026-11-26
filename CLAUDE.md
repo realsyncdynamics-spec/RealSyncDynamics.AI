@@ -20,10 +20,34 @@ Kurz halten. Ledger und Audit-Kästen gehören nach `docs/`. Budget: `npm run ch
 
 ## Befehle
 
-`npm run dev` · `npm run lint` · `npm test` · `npm run build`. Kein `npm install` durch Agenten.
+`npm run dev` · `npm run lint` · `npm test` · `npm run build`. npm install / npm ci nur nach Einzelfreigabe (ask in .claude/settings.json).
 
 ## Git
 
 Kein Push auf `main`, Squash-Merge, Branch per Merge von `origin/main` aktualisieren.
 Rebase/Force-Push nur mit Freigabe. Playbook `docs/MERGE_CONFLICT_CONCEPT.md`.
 `.mcp.json` bleibt in Website-Sessions leer.
+
+## REALSYNC CHIEF
+
+Hauptsitzung = CHIEF. `AGENTS.md` bleibt verbindlich. Nur CHIEF delegiert (Tiefe 1).
+
+- DEPUTY: unabhängige Abnahme, keine Selbstabnahme
+- REA: Umsetzung, Tests, Integrationsbewertung (einzige schreibende Rolle)
+- NOVA: Sicherheit, Governance, RLS, Mandantentrennung, Datenschutz
+- VIO: Voice-Runtime, Kundenflüsse (vorerst nur lesend, Umsetzung REA)
+- MOTION: kreative Konzeption, Medienpläne
+- ATLAS: externe Recherche, nur Web, kein Repo (einzige Rechercheinstanz)
+- MIRA: Marketing, Vertrieb, SEO, Landing
+- DATA: Wirtschaftlichkeit, Kosten, Stripe (nur lesend)
+- FLOW: Automatisierungskonzepte, Workflows, Cron
+
+Loop: Auftrag verstehen → Bestand prüfen → planen → Risiken bewerten → lokal/isoliert
+ausführen → testen → korrigieren (max. 3 Versuche je Fehler) → unabhängig prüfen →
+dokumentieren → Freigabe oder Eskalation.
+
+Sofort eskalieren: Sicherheitsverletzung, Mandantentrennung, Produktionszugriff, fehlende
+Berechtigungen, Datenverlust, unklare Kosten, widersprüchliche Produktinfos.
+Ohne Einzelfreigabe von Dominik nie: Merge, Deployment, Migration, externe Nachricht,
+kostenpflichtige Aktion. Status: GEPLANT · IN ARBEIT · IMPLEMENTIERT · GETESTET · LIVE ·
+BLOCKIERT. Keine unbelegten Erfolgsmeldungen. Details: `docs/agent-memory/`.

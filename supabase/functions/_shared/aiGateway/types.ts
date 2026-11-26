@@ -19,7 +19,7 @@ export type ModelProfile =
   | 'embed-default'
   | 'cloud-fallback';
 
-export type ProviderId = 'lm_studio' | 'ollama' | 'openai' | 'anthropic' | 'mock';
+export type ProviderId = 'lm_studio' | 'ollama' | 'nebius' | 'openai' | 'anthropic' | 'mock';
 
 export interface AiGatewayRequest {
   tenant_id?: string | null;

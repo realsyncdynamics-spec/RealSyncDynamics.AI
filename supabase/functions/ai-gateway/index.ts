@@ -33,7 +33,7 @@
 // functions in `_shared/aiGateway/openaiCompat.ts`.
 // 2026-09-18: gezieltes Production-Redeploy (siteos + ai-gateway), nicht die Flotte.
 
-import { createServerGatewayFromEnv, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
+import { createServerGatewayFromEnv, parsePrimaryProvider, resolveLocalProvider } from '../_shared/aiGateway/serverFromEnv.ts';
 import { guardedDecide, parseEnforcementMode, parsePdpTimeoutMs } from '../_shared/aiGateway/pdpGuard.ts';
 import type { WindowState } from '../_shared/aiGateway/rateLimit.ts';
 import { jsonError } from '../_shared/gateway.ts';
@@ -140,9 +140,15 @@ async function pdpCheck(ctx: PdpContext): Promise<Response | DecisionResult | nu
 // lokalen Slot (allowCloudFallback=false), also antwortet lm_studio oder
 // ollama. Die Region ist nur belegt, wenn der Betreiber sie setzt
 // (AI_GATEWAY_LOCAL_REGION=eu) — sonst `unverified`, kein EU-Default.
+//
+// Gateway v2: AI_GATEWAY_PROVIDER=nebius belegt den Slot mit Nebius Token
+// Factory. Nebius ist extern → Evidence führt es als `cloud` (CLOUD_PROVIDERS),
+// unabhängig von AI_GATEWAY_LOCAL_REGION. Ohne den Schalter: unverändert.
+const PRIMARY_PROVIDER = parsePrimaryProvider(Deno.env.get('AI_GATEWAY_PROVIDER'));
+
 function providerTarget(): ProviderTarget {
   return {
-    provider: resolveLocalProvider(),
+    provider: PRIMARY_PROVIDER ?? resolveLocalProvider(),
     localRegion: Deno.env.get('AI_GATEWAY_LOCAL_REGION') ?? null,
   };
 }
@@ -170,6 +176,7 @@ async function buildGateway(): Promise<GatewayLike | Response> {
     // OpenAI. Cloud-Keys werden gar nicht erst gelesen.
     allowCloudFallback: false,
     requireLmStudio: true,
+    primaryProvider: PRIMARY_PROVIDER,
   });
   if (!built.ok) return jsonError(built.status, built.code, built.message);
   return built.gateway as unknown as GatewayLike;

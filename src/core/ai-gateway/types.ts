@@ -21,6 +21,7 @@ export type ModelProfile =
 export type ProviderId =
   | 'lm_studio'
   | 'ollama'
+  | 'nebius'
   | 'openai'
   | 'anthropic'
   | 'mock';

@@ -1,5 +1,6 @@
 import { ServerAiGateway } from './router.ts';
 import { OllamaAdapter } from './ollamaAdapter.ts';
+import { NebiusAdapter, normalizeNebiusBaseUrl } from './nebiusAdapter.ts';
 
 /**
  * Gemeinsamer Gateway-Bau für `ai-gateway` und `governance-router`.
@@ -22,7 +23,7 @@ export type GatewayBuildOk = { ok: true; gateway: ServerAiGateway };
 export type GatewayBuildErr = {
   ok: false;
   status: 503;
-  code: 'LM_STUDIO_NOT_CONFIGURED' | 'LOCAL_NOT_CONFIGURED' | 'NO_PROVIDER';
+  code: 'LM_STUDIO_NOT_CONFIGURED' | 'LOCAL_NOT_CONFIGURED' | 'NO_PROVIDER' | 'NEBIUS_NOT_CONFIGURED';
   message: string;
 };
 export type GatewayBuild = GatewayBuildOk | GatewayBuildErr;
@@ -47,6 +48,25 @@ export function localInferenceLabel(provider: LocalProvider = resolveLocalProvid
     : 'EU-lokale Inferenz (LM Studio)';
 }
 
+/**
+ * Gateway v2: ausdrücklich gewählter Primär-Anbieter für den Slot, den sonst
+ * der lokale Provider belegt. Bewusst ein EIGENER Schalter (nicht
+ * AI_LOCAL_PROVIDER), weil Edge-Secrets projektweit gelten: nur Funktionen,
+ * die `primaryProvider` übergeben, wechseln zu Nebius. Nebius ist extern →
+ * Residency `cloud`, nie `eu_local`.
+ */
+export type PrimaryProvider = 'nebius';
+
+/** Liest einen Primär-Anbieter-Schalter (z. B. AI_GATEWAY_PROVIDER). Nur `nebius` wird erkannt. */
+export function parsePrimaryProvider(value: string | undefined | null): PrimaryProvider | null {
+  return (value ?? '').trim().toLowerCase() === 'nebius' ? 'nebius' : null;
+}
+
+/** Art.-50-Label für Nebius: externer Verarbeiter, kein „lokal". */
+export function nebiusInferenceLabel(): string {
+  return 'Cloud-Inferenz (Nebius Token Factory)';
+}
+
 const ANTHROPIC_FALLBACK_MODEL =
   Deno.env.get('AI_GATEWAY_ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001';
 const OPENAI_FALLBACK_MODEL =
@@ -65,7 +85,11 @@ export async function createServerGatewayFromEnv(opts: {
   requireLmStudio?: boolean;
   /** MP-0: Adapter-IDs, auf die bei Transportfehlern gewechselt werden DARF. Default: keiner. */
   allowedFallbackIds?: readonly string[];
+  /** Gateway v2: belegt den Primär-Slot mit Nebius statt LM Studio/Ollama. */
+  primaryProvider?: PrimaryProvider | null;
 }): Promise<GatewayBuild> {
+  if (opts.primaryProvider === 'nebius') return buildNebiusGateway(opts);
+
   const requireLocal = opts.requireLmStudio ?? true;
   const localProvider = resolveLocalProvider();
   const localBaseUrl = localProvider === 'ollama'
@@ -135,6 +159,37 @@ export async function createServerGatewayFromEnv(opts: {
             embeddingModel: OPENAI_EMBEDDING_MODEL,
           }
         : undefined,
+      allowedFallbackIds: opts.allowedFallbackIds ?? [],
+    }),
+  };
+}
+
+async function buildNebiusGateway(opts: {
+  allowedFallbackIds?: readonly string[];
+}): Promise<GatewayBuild> {
+  const apiKey = Deno.env.get('NEBIUS_API_KEY')
+    ?? (await readVaultSecret('NEBIUS_API_KEY'))
+    ?? (await readVaultSecret('nebius_api_key'));
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: 503,
+      code: 'NEBIUS_NOT_CONFIGURED',
+      message: 'NEBIUS_API_KEY not set',
+    };
+  }
+  const nebius = new NebiusAdapter({
+    apiKey,
+    baseUrl: normalizeNebiusBaseUrl(Deno.env.get('NEBIUS_BASE_URL')),
+    model: Deno.env.get('NEBIUS_MODEL') ?? undefined,
+    embeddingModel: Deno.env.get('NEBIUS_EMBEDDING_MODEL') ?? undefined,
+  });
+  return {
+    ok: true,
+    gateway: new ServerAiGateway({
+      lmStudio: nebius,
+      lmStudioBaseUrl: 'http://127.0.0.1:1',
+      // Keine Cloud-Kette: Anthropic/OpenAI werden hier nie gebaut.
       allowedFallbackIds: opts.allowedFallbackIds ?? [],
     }),
   };

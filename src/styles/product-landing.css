@@ -1,19 +1,22 @@
 /* Produkt-Landingpages (Entwurf, erste Seite /ki-bots).
    Weißer Hochglanz-Grund wie /sync, Hard-Edge (90°-Kanten), Obsidian-Schrift,
-   Security-Blue für die Hauptaktion, Monospace für Metadaten. Statusfarben
+   Anthrazit für die Hauptaktion (früher Security-Blue), Monospace für Metadaten. Statusfarben
    bleiben neutral (Pill), getrennt vom Brand-Akzent. Alle Tokens unter .pl,
    kein globaler Einfluss. Schriften aus dem vorhandenen @theme. */
 
 .pl {
+  /* Einheitliches Designsystem Gold/Anthrazit (26.11.2026): kein Blau,
+     Hauptaktion Anthrazit, Fokus und Akzente Gold – wie die Startseite. */
   --pl-bg-0: #ffffff;
-  --pl-bg-1: #f7f8fa;
-  --pl-fg-0: #0a0a0b;
-  --pl-fg-1: #1c1d21;
-  --pl-fg-2: #5b5f6b;
-  --pl-line: #e3e5ea;
-  --pl-line-strong: #c9ccd4;
-  --pl-accent: #1e5aff;
-  --pl-accent-2: #1648d6;
+  --pl-bg-1: #f6f4f0;
+  --pl-fg-0: #1c1a17;
+  --pl-fg-1: #2a2723;
+  --pl-fg-2: #5e5852;
+  --pl-line: #e4ded4;
+  --pl-line-strong: #d8d2c8;
+  --pl-accent: #1c1a17;
+  --pl-accent-2: #2e2b28;
+  --pl-gold: #b68235;
   --pl-pad-x: clamp(16px, 5vw, 72px);
   background: var(--pl-bg-0);
   color: var(--pl-fg-1);
@@ -23,9 +26,9 @@
   min-height: 100vh;
   overflow-x: clip;
 }
-.pl *, .pl *::before, .pl *::after { box-sizing: border-box; border-radius: 0; }
+.pl *, .pl *::before, .pl *::after { box-sizing: border-box; }
 .pl a { color: var(--pl-fg-1); }
-.pl :where(a, button, summary, canvas):focus-visible { outline: 3px solid var(--pl-accent); outline-offset: 2px; }
+.pl :where(a, button, summary, canvas):focus-visible { outline: 3px solid var(--pl-gold); outline-offset: 2px; }
 
 .pl-skip { position: absolute; left: -9999px; top: 0; }
 .pl-skip:focus { left: 16px; top: 16px; z-index: 100; padding: 12px 16px; background: var(--pl-fg-1); color: var(--pl-bg-0); }
@@ -62,7 +65,8 @@
   border: 1px solid var(--pl-line-strong); background: var(--pl-bg-0); color: var(--pl-fg-1);
   font: 600 14px var(--font-rs-ui, Inter, sans-serif); text-decoration: none; cursor: pointer;
 }
-.pl-btn:hover { background: var(--pl-bg-1); border-color: var(--pl-fg-2); }
+.pl-btn { border-radius: 10px; transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s, background-color 0.25s, color 0.25s; }
+.pl-btn:hover { background: var(--pl-bg-1); border-color: var(--pl-gold); transform: translateY(-2px); }
 .pl-btn--solid { background: var(--pl-accent); border-color: var(--pl-accent); color: #ffffff !important; }
 .pl-btn--solid:hover { background: var(--pl-accent-2); border-color: var(--pl-accent-2); }
 .pl-btn--lg { min-height: 52px; padding: 0 24px; font-size: 15px; }
@@ -151,7 +155,7 @@
 .pl-phases li { display: flex; gap: 20px; align-items: baseline; padding: 14px 18px; border-bottom: 1px solid var(--pl-line); font: 600 19px/1.3 var(--font-rs-title, Inter, sans-serif); color: var(--pl-fg-2); }
 .pl-phases li:last-child { border-bottom: 0; }
 .pl-phases li strong { color: var(--pl-fg-0); }
-.pl-phases li[data-active='true'] { color: var(--pl-fg-0); background: var(--pl-bg-0); box-shadow: inset 3px 0 0 var(--pl-accent); }
+.pl-phases li[data-active='true'] { color: var(--pl-fg-0); background: var(--pl-bg-0); box-shadow: inset 3px 0 0 var(--pl-gold); }
 .pl-phases li[data-done='true'] { color: var(--pl-fg-0); }
 
 .pl-chat { display: flex; flex-direction: column; gap: 16px; padding: 20px; border: 1px solid var(--pl-line-strong); background: var(--pl-bg-0); box-shadow: 0 24px 60px -36px rgba(10, 10, 11, 0.3); }

@@ -155,7 +155,7 @@ export function LandingV3() {
           <Link to="/contact-sales">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <AskAiPill className="lv3-btn lv3-ask" />
-          <Link className="lv3-btn lv3-btn--solid" to={`/landingpage-builder?source=landing-v3-nav`}>Landingpage erstellen</Link>
+          <a className="lv3-btn lv3-btn--solid" href="#hero-check">Website prüfen</a>
         </nav>
 
         <div className="lv3-hero-grid">
@@ -168,19 +168,36 @@ export function LandingV3() {
               <span>Ihre Ideen.</span>
               <span className="lv3-h1-2">In Bewegung.</span>
             </h1>
-            {/* Owner 26.11.2026: ohne Klick sofort verständlich, was der Nutzer bekommt. */}
+            {/* Owner 26.11.2026: Einstieg ist der Website-Check mit Domain-Eingabe;
+                ohne Klick sofort verständlich, was der Nutzer bekommt. */}
             <p className="lv3-lead" data-testid="v3-hero-offer">
-              Der <strong>AI Landingpage Builder</strong> erstellt fotorealistische Landingpages für Ihren Betrieb – direkt auf Ihrem bestehenden Backend.
+              Geben Sie Ihre Website ein – wir prüfen sie kostenlos. Danach baut der <strong>AI Landingpage Builder</strong> eine fotorealistische Landingpage direkt auf Ihrem bestehenden Backend.
             </p>
-            <ul className="lv3-gets" aria-label="Was Sie bekommen">
-              <li>Fotorealistische Landingpage aus Ihrer Beschreibung</li>
-              <li>Setzt auf Ihr bestehendes Backend auf – es bleibt unverändert</li>
+            <form id="hero-check" className="lv3-hero-form" onSubmit={submitCheck} noValidate data-hero-cta="landing-v3">
+              <label className="lv3-hero-label">
+                <span className="lv3-sr">Ihre Website</span>
+                <input
+                  className="lv3-input lv3-hero-input"
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
+                  placeholder="ihr-betrieb.de"
+                  value={site}
+                  maxLength={253}
+                  onChange={(e) => setSite(e.target.value)}
+                  aria-invalid={siteError ? true : undefined}
+                  aria-describedby={siteError ? 'lv3-hero-error' : 'lv3-hero-hint'}
+                />
+              </label>
+              <button type="submit" className="lv3-btn lv3-btn--solid lv3-btn--lg">Website kostenlos prüfen</button>
+            </form>
+            {siteError ? <p id="lv3-hero-error" role="alert" className="lv3-error">{siteError}</p> : null}
+            <ul id="lv3-hero-hint" className="lv3-gets" aria-label="Was Sie bekommen">
+              <li>Kostenloser Check: Sicherheit, Einwilligung, Impressum, Datenschutz</li>
+              <li>Danach Ihre fotorealistische Landingpage – Ihr Backend bleibt unverändert</li>
               <li>Erst die Vorschau, dann Ihre Freigabe</li>
             </ul>
-            <div className="lv3-actions">
-              <Link className="lv3-btn lv3-btn--solid lv3-btn--lg" to="/landingpage-builder?source=landing-v3" data-hero-cta="landing-v3">Landingpage erstellen</Link>
-              <a className="lv3-btn lv3-btn--lg" href="#start">Website kostenlos prüfen</a>
-            </div>
+            <Link className="lv3-hero-alt" to="/landingpage-builder?source=landing-v3">Ohne Check direkt zum AI Landingpage Builder <span aria-hidden="true">→</span></Link>
           </div>
           <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · KI-Assistent" waveSignal={waveSignal} />
         </div>

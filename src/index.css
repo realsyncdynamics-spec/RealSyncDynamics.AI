@@ -1858,79 +1858,97 @@ html, body {
    `styles/governance-os-landing-v3.css` mit dem disjunkten Gegenstück
    `body:has(.rs-paper[data-landing-design='governance-v3'])`. */
 .rs-paper,
-body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent,
+body:has(.lv3) .cookie-consent {
+  /* Einheitliches Designsystem Gold/Anthrazit (26.11.2026, Owner: „kein Blau“):
+     ersetzt Waldgrün und Serif. Gilt für alle Seiten hinter den Startseiten-
+     Buttons; nur die Anwendung (App/Dashboard) hat eine eigene Oberfläche. */
   color-scheme: light;
-  --color-rs-hero:          #EFEAE1;
-  --color-rs-bg-0:          #EFEAE1;
-  --color-rs-bg-1:          #F7F4EE;
-  --color-rs-bg-2:          #EDE7DC;
-  --color-rs-bg-3:          #E2DBCF;
-  --color-rs-fg-0:          #1B1F1C;
-  --color-rs-fg-1:          #454B47;
-  --color-rs-fg-2:          #5E665F;
-  --color-rs-fg-3:          #8A9089;
-  --color-rs-border:        #D6CFC2;
-  --color-rs-border-strong: #B9B0A0;
-  --color-rs-primary:       #1F3D32;
-  --color-rs-primary-hover: #16302A;
-  --color-rs-primary-light: #2F6B53;
-  --color-rs-cyan:          #2F6B53;
-  --color-rs-cyan-light:    #3F8A6A;
-  --color-rs-success:       #2F6B53;
-  --color-rs-violet:        #1F3D32;
+  --font-rs-serif:          "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-rs-hero:          #F6F4F0;
+  --color-rs-bg-0:          #F6F4F0;
+  --color-rs-bg-1:          #FFFFFF;
+  --color-rs-bg-2:          #F0EBE2;
+  --color-rs-bg-3:          #E4DED4;
+  --color-rs-fg-0:          #1C1A17;
+  --color-rs-fg-1:          #3D3833;
+  --color-rs-fg-2:          #5E5852;
+  --color-rs-fg-3:          #7A736B;
+  --color-rs-border:        #E4DED4;
+  --color-rs-border-strong: #D8D2C8;
+  --color-rs-primary:       #1C1A17;
+  --color-rs-primary-hover: #2E2B28;
+  --color-rs-primary-light: #7D5411;
+  --color-rs-cyan:          #7D5411;
+  --color-rs-cyan-light:    #B68235;
+  --color-rs-success:       #4F7A3F;
+  --color-rs-violet:        #1C1A17;
 
-  /* Ältere Skalen: Flächen → Papier, Schrift → Tinte, Akzente → Waldgrün. */
-  --color-obsidian-950: #EFEAE1;
-  --color-obsidian-900: #F7F4EE;
-  --color-obsidian-800: #E8E2D7;
-  --color-obsidian-700: #E2DBCF;
-  --color-obsidian-600: #D6CFC2;
-  --color-obsidian-500: #B9B0A0;
-  --color-obsidian-400: #8A9089;
-  --color-obsidian-300: #5E665F;
-  --color-obsidian-200: #454B47;
-  --color-obsidian-100: #2A2F2B;
-  --color-obsidian-50:  #1B1F1C;
+  /* Ältere Skalen: Flächen → Papier, Schrift → Anthrazit, Akzente → Gold. */
+  --color-obsidian-950: #F6F4F0;
+  --color-obsidian-900: #FFFFFF;
+  --color-obsidian-800: #F0EBE2;
+  --color-obsidian-700: #E4DED4;
+  --color-obsidian-600: #D8D2C8;
+  --color-obsidian-500: #B5ADA2;
+  --color-obsidian-400: #7A736B;
+  --color-obsidian-300: #5E5852;
+  --color-obsidian-200: #3D3833;
+  --color-obsidian-100: #2A2723;
+  --color-obsidian-50:  #1C1A17;
 
-  --color-titanium-50:  #1B1F1C;
-  --color-titanium-100: #1B1F1C;
-  --color-titanium-200: #2A2F2B;
-  --color-titanium-300: #454B47;
-  --color-titanium-400: #5E665F;
-  --color-titanium-500: #5E665F;
-  --color-titanium-600: #8A9089;
-  --color-titanium-700: #B9B0A0;
-  --color-titanium-800: #D6CFC2;
-  --color-titanium-900: #E2DBCF;
+  --color-titanium-50:  #1C1A17;
+  --color-titanium-100: #1C1A17;
+  --color-titanium-200: #2A2723;
+  --color-titanium-300: #3D3833;
+  --color-titanium-400: #5E5852;
+  --color-titanium-500: #5E5852;
+  --color-titanium-600: #7A736B;
+  --color-titanium-700: #B5ADA2;
+  --color-titanium-800: #D8D2C8;
+  --color-titanium-900: #E4DED4;
 
-  --color-silver-50:  #1B1F1C;
-  --color-silver-100: #1B1F1C;
-  --color-silver-300: #454B47;
-  --color-silver-400: #5E665F;
-  --color-silver-500: #5E665F;
-  --color-silver-700: #B9B0A0;
-  --color-silver-900: #E2DBCF;
+  --color-silver-50:  #1C1A17;
+  --color-silver-100: #1C1A17;
+  --color-silver-300: #3D3833;
+  --color-silver-400: #5E5852;
+  --color-silver-500: #5E5852;
+  --color-silver-700: #B5ADA2;
+  --color-silver-900: #E4DED4;
 
-  --color-gold-50:  #E4ECE6;
-  --color-gold-100: #D3E1D7;
-  --color-gold-200: #2F6B53;
-  --color-gold-300: #1F3D32;
-  --color-gold-400: #2F6B53;
-  --color-gold-500: #1F3D32;
-  --color-gold-600: #2F6B53;
-  --color-gold-700: #16302A;
-  --color-gold-800: #16302A;
-  --color-gold-900: #D3E1D7;
+  --color-gold-50:  #FBF3E4;
+  --color-gold-100: #F4E6CC;
+  --color-gold-200: #B68235;
+  --color-gold-300: #7D5411;
+  --color-gold-400: #B68235;
+  --color-gold-500: #7D5411;
+  --color-gold-600: #B68235;
+  --color-gold-700: #5A3B0A;
+  --color-gold-800: #5A3B0A;
+  --color-gold-900: #F4E6CC;
 
-  --color-security-400: #2F6B53;
-  --color-security-500: #1F3D32;
-  --color-security-600: #16302A;
-  --color-cyan-300: #2F6B53;
-  --color-cyan-400: #2F6B53;
-  --color-cyan-500: #1F3D32;
-  --color-cyan-600: #1F3D32;
-  --color-cyan-700: #2F6B53;
-  --color-brass-100: #1B1F1C;
+  /* Blau-/Türkis-Akzente (security, cyan, blue, sky, petrol) → Gold/Anthrazit. */
+  --color-security-300: #7D5411;
+  --color-security-400: #7D5411;
+  --color-security-500: #1C1A17;
+  --color-security-600: #2E2B28;
+  --color-security-700: #2E2B28;
+  --color-security-800: #D8D2C8;
+  --color-security-900: #F4E6CC;
+  --color-cyan-300: #7D5411;
+  --color-cyan-400: #7D5411;
+  --color-cyan-500: #1C1A17;
+  --color-cyan-600: #1C1A17;
+  --color-cyan-700: #B68235;
+  --color-blue-300: #7D5411;
+  --color-blue-400: #7D5411;
+  --color-blue-500: #1C1A17;
+  --color-blue-600: #1C1A17;
+  --color-sky-300: #7D5411;
+  --color-sky-400: #7D5411;
+  --color-sky-500: #1C1A17;
+  --color-petrol: #7D5411;
+  --color-brass-100: #1C1A17;
 
   /* Statusfarben: auf Papier dunkel genug für Text, Flächen hell. */
   --color-red-100: #7F1D1D;
@@ -1939,46 +1957,59 @@ body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent {
   --color-red-400: #9B2C2C;
   --color-red-900: #E8C4C0;
   --color-red-950: #F6E4E1;
-  --color-emerald-200: #1F3D32;
-  --color-emerald-300: #2F6B53;
-  --color-emerald-400: #2F6B53;
-  --color-emerald-600: #2F6B53;
-  --color-emerald-900: #C9DCCF;
-  --color-emerald-950: #E4ECE6;
-  --color-amber-300: #8A5A0B;
-  --color-amber-400: #8A5A0B;
-  --color-amber-500: #2F6B53;
-  --color-orange-600: #1F3D32;
+  --color-emerald-200: #3B5E2E;
+  --color-emerald-300: #4F7A3F;
+  --color-emerald-400: #4F7A3F;
+  --color-emerald-600: #4F7A3F;
+  --color-emerald-900: #D6E3CD;
+  --color-emerald-950: #EAF1E4;
+  --color-amber-300: #7D5411;
+  --color-amber-400: #7D5411;
+  --color-amber-500: #B68235;
+  --color-orange-600: #1C1A17;
+
+  /* Brand-v4-Tokens des Optimizer-Flows: dunkel → Papier, Champagner → Anthrazit/Gold. */
+  --brand-bg-0: #FFFFFF;
+  --brand-bg-1: #F6F4F0;
+  --brand-champ-hi: #1C1A17;
+  --brand-champ: #7D5411;
+  --brand-titan: #5E5852;
+  --brand-line-dark: #E4DED4;
+  --brand-line-dark-strong: #D8D2C8;
+  --brand-serif: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 .rs-paper {
   background-color: var(--color-rs-hero);
   color: var(--color-rs-fg-0);
 }
-/* Banner-Buttons: grau-auf-weiß wäre auf Papier unlesbar → Waldgrün. */
-body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
+/* Banner-Buttons: grau-auf-weiß wäre auf Papier unlesbar → Anthrazit. */
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500),
+body:has(.lv3) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500) {
   background: var(--color-rs-primary);
   border-color: var(--color-rs-primary);
   color: #F7F4EE;
 }
-body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover,
+body:has(.lv3) .cookie-consent :is(button.bg-titanium-700, button.bg-security-500):hover {
   background: var(--color-rs-primary-hover);
 }
-body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(p, div).font-display {
-  font-family: var(--font-rs-serif);
-  font-weight: 400;
+body:has(.rs-paper:not([data-landing-design='governance-v3'])) .cookie-consent :is(p, div).font-display,
+body:has(.lv3) .cookie-consent :is(p, div).font-display {
+  font-family: var(--font-rs-title);
+  font-weight: 650;
 }
 
 /* Fest kodierte Primärflächen der älteren Seiten (Titan-Grau, Gold) und
-   deren fette Grotesk-Überschriften: im Papier-Scope Waldgrün und Serif. */
+   deren Überschriften: im Papier-Scope Anthrazit und Inter Tight. */
 .rs-paper :is(.surface-mono, .surface-gold) {
   background: var(--color-rs-primary);
   color: #F7F4EE;
 }
 .rs-paper :is(.surface-mono, .surface-gold):hover { background: var(--color-rs-primary-hover); }
 .rs-paper :is(h1, h2).font-display {
-  font-family: var(--font-rs-serif);
-  font-weight: 400;
-  letter-spacing: -0.015em;
+  font-family: var(--font-rs-title);
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
 
 .ga-context.rs-handoff {

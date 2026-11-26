@@ -46,16 +46,50 @@ export interface V3Product {
   /** Zusatzhinweis aus einem zweiten Registry-Eintrag, z. B. Telefonie. */
   note?: { registryId: string; text: (label: string) => string };
   stageCaption: string;
+  /** Unterordner und Unterseiten wie im Windows-Explorer (nur erreichbare Routen). */
+  children?: readonly V3TreeNode[];
+}
+
+/** Eintrag im Produkt-Explorer: Ordner (mit children) oder Seite (ohne). */
+export interface V3TreeNode {
+  label: string;
+  href: string;
+  children?: readonly V3TreeNode[];
 }
 
 /**
- * Produktkatalog nach der Owner-Entscheidung vom 21.11.2026 (Definition A):
- * KI-Bots & Voice-Agenten · App Builder · Governance OS · Claude Code Optimizer.
+ * Produktkatalog nach der Owner-Entscheidung vom 21.11.2026 (Definition A),
+ * Reihenfolge nach Produktstrategie K6 (25.11.2026): App Builder (mit dem
+ * AI Landingpage Builder als Unterordner) · KI-Bots & Voice-Agenten ·
+ * Claude Code Optimizer · Governance OS (Kontrollschicht, zuletzt).
  * Der Landingpage-Builder bleibt als Website-Modus des App Builders unter
  * `/landingpage-builder` erreichbar, ist aber kein eigenes Kernprodukt.
  * Status nur aus der Registry; Telefonie bleibt als Zusatzhinweis sichtbar.
  */
 export const PRODUCTS: readonly V3Product[] = [
+  {
+    key: 'app-builder',
+    section: 'BUILD',
+    name: 'App Builder',
+    short: 'Ideen in Websites und Anwendungen verwandeln',
+    body: 'Geschäftsidee oder Ablauf beschreiben und einen ersten Website- oder Anwendungsentwurf in der Vorschau prüfen.',
+    flow: 'Idee → Entwurf → Vorschau → Freigabe',
+    href: `/app-builder?source=${SOURCE}`,
+    registryId: 'web-builder',
+    stageCaption: 'Idee → Entwurf → Website oder App',
+    children: [
+      {
+        label: 'AI Landingpage Builder',
+        href: `/landingpage-builder?source=${SOURCE}`,
+        children: [
+          { label: 'Builder öffnen', href: `/build?source=${SOURCE}` },
+          { label: 'So läuft es ab', href: '/landingpage-builder#ablauf' },
+          { label: 'Preise', href: '/landingpage-builder#preise' },
+        ],
+      },
+      { label: 'App Builder öffnen', href: `/build?source=${SOURCE}` },
+    ],
+  },
   {
     key: 'bots',
     section: 'AUTOMATE',
@@ -67,28 +101,11 @@ export const PRODUCTS: readonly V3Product[] = [
     registryId: 'channel-bots',
     note: { registryId: 'voice-telephony', text: (label) => `Telefonie: ${label}` },
     stageCaption: 'Anfrage → Antwort → Übergabe',
-  },
-  {
-    key: 'app-builder',
-    section: 'BUILD',
-    name: 'App Builder',
-    short: 'Ideen in Websites und Anwendungen verwandeln',
-    body: 'Geschäftsidee oder Ablauf beschreiben und einen ersten Website- oder Anwendungsentwurf in der Vorschau prüfen.',
-    flow: 'Idee → Entwurf → Vorschau → Freigabe',
-    href: `/app-builder?source=${SOURCE}`,
-    registryId: 'web-builder',
-    stageCaption: 'Idee → Entwurf → Website oder App',
-  },
-  {
-    key: 'governance',
-    section: 'GOVERN',
-    name: 'Governance OS',
-    short: 'Befunde, Zuständigkeiten und Nachweise steuern',
-    body: 'KI-Register, Risiken, Vorfälle, Betroffenenanfragen, Dienstleister und Freigaben an einem Ort.',
-    flow: 'Befund → Zuständigkeit → Freigabe → Nachweis',
-    href: `/governance-os?source=${SOURCE}`,
-    registryId: 'governance-runtime-core',
-    stageCaption: 'Berechtigungen · Regeln · Nachweise',
+    children: [
+      { label: 'Chat-Assistent ausprobieren', href: `/chatbot/start?source=${SOURCE}` },
+      { label: 'AI Receptionist · Warteliste', href: `/warteliste?interest=bots&source=${SOURCE}` },
+      { label: 'So läuft es ab', href: '/ki-bots#ablauf' },
+    ],
   },
   {
     key: 'optimizer',
@@ -100,6 +117,25 @@ export const PRODUCTS: readonly V3Product[] = [
     href: `/claude-code-optimizer?source=${SOURCE}`,
     registryId: 'cloud-code-optimizer',
     stageCaption: 'Website & Code → gezielt verbessert',
+    children: [
+      { label: 'Website scannen', href: `/claude-code-optimizer/scan?source=${SOURCE}` },
+    ],
+  },
+  {
+    key: 'governance',
+    section: 'GOVERN',
+    name: 'Governance OS',
+    short: 'Befunde, Zuständigkeiten und Nachweise steuern',
+    body: 'KI-Register, Risiken, Vorfälle, Betroffenenanfragen, Dienstleister und Freigaben an einem Ort.',
+    flow: 'Befund → Zuständigkeit → Freigabe → Nachweis',
+    href: `/governance-os?source=${SOURCE}`,
+    registryId: 'governance-runtime-core',
+    stageCaption: 'Berechtigungen · Regeln · Nachweise',
+    children: [
+      { label: 'Kostenloser Scan', href: `/audit?source=${SOURCE}` },
+      { label: 'So läuft es ab', href: '/governance-os#ablauf' },
+      { label: 'Preise', href: '/pricing' },
+    ],
   },
 ];
 

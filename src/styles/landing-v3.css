@@ -246,6 +246,47 @@ a.lv3-product:hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.
 a.lv3-product:hover::after { opacity: 0.26; }
 #produkte :where(a, button):focus-visible { outline-color: var(--p, var(--lv3-champ)); }
 
+/* Hero-Angebot: was der Nutzer bekommt, ohne zu klicken (26.11.2026). */
+.lv3-lead strong { color: var(--lv3-fg-0); font-weight: 650; }
+.lv3-gets { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: clamp(15px, 1.05vw, 17px); color: var(--lv3-fg-1); }
+.lv3-gets li { display: flex; align-items: baseline; gap: 10px; }
+.lv3-gets li::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; transform: translateY(-1px); background: var(--lv3-gold); box-shadow: 0 0 0 3px rgba(194, 141, 65, 0.16); }
+
+/* Produkt-Explorer in der Navigation: Ordner und Unterordner wie im Windows-Explorer. */
+.lv3-explorer { position: relative; }
+.lv3-explorer > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 500; cursor: pointer; list-style: none; color: var(--lv3-fg-1); }
+.lv3-explorer > summary::-webkit-details-marker { display: none; }
+.lv3-explorer > summary::after { content: ''; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s var(--lv3-ease); }
+.lv3-explorer[open] > summary::after { transform: translateY(1px) rotate(225deg); }
+.lv3-explorer-panel { position: absolute; z-index: 60; left: 0; top: calc(100% + 6px); width: min(92vw, 380px); padding: 10px; border: 1px solid var(--lv3-line-strong); border-radius: 12px; background: var(--lv3-bg-0); box-shadow: 0 24px 48px -24px rgba(28, 26, 23, 0.35); animation: lv3-in 0.25s var(--lv3-ease) both; }
+.lv3-explorer-path { margin: 0 0 6px; padding: 6px 8px; border-radius: 6px; background: var(--lv3-bg-1); font: 500 12px/1.4 var(--font-mono, monospace); color: var(--lv3-fg-2); }
+
+/* Baum: Pfeil klappt auf, Name ist immer direkt ein Link. */
+.lv3-tree { list-style: none; margin: 0; padding: 0; }
+.lv3-tree .lv3-tree { margin-left: 15px; padding-left: 8px; border-left: 1px dotted var(--lv3-line-strong); }
+.lv3-tree-row { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 6px; border-radius: 6px; }
+.lv3-tree-row:hover { background: var(--lv3-bg-1); }
+.lv3-tree-toggle { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; color: var(--lv3-fg-2); }
+.lv3-tree-toggle svg { transition: transform 0.2s var(--lv3-ease); }
+.lv3-tree-toggle[aria-expanded='true'] svg { transform: rotate(90deg); }
+.lv3-tree-toggle:hover { background: var(--lv3-bg-2); color: var(--lv3-fg-0); }
+.lv3-tree-toggle:focus-visible { outline: 2px solid var(--lv3-focus); outline-offset: 1px; }
+.lv3-tree-spacer { width: 24px; flex: none; }
+.lv3-tree-icon { flex: none; color: var(--p-deep, var(--lv3-gold)); }
+.lv3-tree-icon--file { color: var(--lv3-fg-2); }
+.lv3 .lv3-tree-link { display: inline-flex; align-items: center; min-height: 32px; font-size: 14px; font-weight: 500; text-decoration: none; color: var(--lv3-fg-0); }
+.lv3 .lv3-tree-link:hover { color: var(--lv3-gold-ink); text-decoration: underline; text-underline-offset: 3px; }
+.lv3-explorer-panel .lv3-tree > .lv3-tree-item > .lv3-tree-row .lv3-tree-link { font-weight: 600; }
+.lv3-explorer-panel .lv3-tree-item[data-product] .lv3-tree-icon { color: var(--p-deep); }
+
+/* Produktleiste im Hero: Unterseiten direkt unter jedem Produkt. */
+.lv3-cat-wrap { display: flex; flex-direction: column; min-width: 0; }
+.lv3-tree--mini { margin-top: -4px; }
+.lv3-tree--mini .lv3-tree-row { min-height: 30px; padding: 0 2px; }
+.lv3-tree--mini .lv3-tree-spacer { width: 4px; }
+.lv3 .lv3-tree--mini .lv3-tree-link { min-height: 28px; font-size: 13px; color: var(--lv3-fg-2); }
+.lv3-tree--mini .lv3-tree-icon { color: var(--p-deep, var(--lv3-gold)); }
+
 /* Motion: gestaffelter Einstieg im Hero, Gold-Schimmer, atmender Schein. */
 .lv3-hero-copy > * { animation: lv3-in 0.9s var(--lv3-ease) both; }
 .lv3-hero-copy > :nth-child(2) { animation-delay: 0.12s; }

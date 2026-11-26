@@ -102,7 +102,9 @@ function MeinBetriebInner() {
         )}
 
         {activeTenantId && !bots.loading && !bots.error && (
-          <SecretariatCard tenantId={activeTenantId} bots={rawBots} onChanged={retry} />
+          // key: Beim Wechsel des Arbeitsbereichs wird ein offener Entwurf verworfen,
+          // damit er nicht im falschen Mandanten gespeichert wird.
+          <SecretariatCard key={activeTenantId} tenantId={activeTenantId} bots={rawBots} onChanged={retry} />
         )}
 
         <InboxCard section={inbox} onRetry={retry} />

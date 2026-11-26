@@ -132,6 +132,16 @@ export function readSecretariatConfig(bot: Pick<Bot, 'config'>): SecretariatConf
   return raw;
 }
 
+/**
+ * Gespeicherten Entwurf wieder öffnen (z. B. nach einem Reload): Der Entwurf
+ * liegt vollständig in `bots.config.secretariat`, inklusive Herkunftsnachweis
+ * je Feld. Kein lokaler Speicher, keine zweite Quelle.
+ */
+export function draftFromBot(bot: Pick<Bot, 'config'>): SecretariatDraft | null {
+  const cfg = readSecretariatConfig(bot);
+  return cfg ? { version: cfg.version, sourceUrl: cfg.sourceUrl, fetchedAt: cfg.fetchedAt, fields: cfg.fields } : null;
+}
+
 export function isSecretariatBot(bot: Pick<Bot, 'config'>): boolean {
   return readSecretariatConfig(bot) !== null;
 }

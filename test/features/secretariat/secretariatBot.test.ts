@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, buildSecretariatPersona, draftBotArgs, isSecretariatBot, readSecretariatConfig,
+  approvalPatch, SECRETARIAT_ACTIVATION_LOCKED, buildSecretariatPersona, draftBotArgs, draftFromBot, isSecretariatBot, readSecretariatConfig,
   SecretariatApprovalError, secretariatStatus, updateDraftPatch,
 } from '../../../src/features/secretariat/secretariatBot';
 import { applyOwnerEdit, deriveSecretariatDraft } from '../../../src/features/secretariat/websiteDraft';
@@ -125,5 +125,53 @@ describe('Freigabe-Gate', () => {
   it('kein Sekretariats-Bot → kein Status', async () => {
     expect(await secretariatStatus({ config: {}, enabled: true })).toBeNull();
     expect(() => updateDraftPatch({ config: {} }, draft.fields)).toThrow();
+  });
+});
+
+/** Simuliert den Weg über Postgres (JSONB) und zurück, wie nach einem Reload. */
+function throughDb<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+describe('Speichern und Wiederöffnen nach Reload', () => {
+  it('der gespeicherte Entwurf kommt nach dem Laden unverändert zurück', () => {
+    const args = draftBotArgs('t1', draft);
+    const reloaded = asBot({ ...args, config: throughDb(args.config) });
+    expect(draftFromBot(reloaded)).toEqual(draft);
+  });
+
+  it('Herkunftsnachweis und Status je Feld bleiben erhalten', () => {
+    const args = draftBotArgs('t1', draft);
+    const fields = draftFromBot(asBot({ ...args, config: throughDb(args.config) }))!.fields;
+    expect(fields.phone).toMatchObject({ status: 'known', source: { method: 'phone-pattern', url: 'https://muster-sanitaer.de/' } });
+    expect(fields.email.status).toBe('unknown');
+  });
+
+  it('der Entwurf wird ausdrücklich deaktiviert gespeichert (createBot setzt sonst enabled: true)', () => {
+    const args = draftBotArgs('t1', draft);
+    expect(Object.prototype.hasOwnProperty.call(args, 'enabled')).toBe(true);
+    expect(args.enabled).toBe(false);
+  });
+
+  it('Inhaber-Änderungen überstehen Speichern und Laden', () => {
+    const bot = asBot(draftBotArgs('t1', draft));
+    const edited = applyOwnerEdit(draft, 'email', 'info@muster-sanitaer.de', AT);
+    const patch = updateDraftPatch(bot, edited.fields);
+    const reloaded = asBot(draftBotArgs('t1', draft), { config: throughDb(patch.config) });
+    const reopened = draftFromBot(reloaded)!;
+    expect(reopened.fields.email).toMatchObject({ status: 'known', value: 'info@muster-sanitaer.de', source: { method: 'owner-edit' } });
+    expect(reopened.sourceUrl).toBe(draft.sourceUrl);
+  });
+
+  it('Speichern ändert enabled nicht und lässt fremde Konfigurationsschlüssel stehen', () => {
+    const bot = asBot(draftBotArgs('t1', draft), { config: { ...draftBotArgs('t1', draft).config, other: 1 } });
+    const patch = updateDraftPatch(bot, draft.fields);
+    expect('enabled' in patch).toBe(false);
+    expect((patch.config as Record<string, unknown>).other).toBe(1);
+  });
+
+  it('ohne oder mit beschädigter Sekretariats-Konfiguration gibt es keinen Entwurf', () => {
+    expect(draftFromBot(asBot(draftBotArgs('t1', draft), { config: {} }))).toBeNull();
+    expect(draftFromBot(asBot(draftBotArgs('t1', draft), { config: { secretariat: { fields: null } } }))).toBeNull();
   });
 });

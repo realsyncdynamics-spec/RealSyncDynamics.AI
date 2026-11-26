@@ -2,93 +2,73 @@
 //
 // POST /functions/v1/appointment-book
 // Body: {
-//   tenant_id: string,
-//   bot_id: string,
-//   customer_name: string,
-//   contact?: string,
-//   service?: string,
-//   requested_at?: string,        // ISO-8601
-//   notes?: string,
-//   conversation_ref?: string
+//   tenant_id: string (UUID),
+//   bot_id: string (UUID),
+//   customer_name: string,        // max. 120 Zeichen
+//   contact?: string,             // max. 254 Zeichen
+//   service?: string,             // max. 120 Zeichen
+//   requested_at?: string,        // ISO-8601 mit Zeitzone (Z oder ±hh:mm), -24 h bis +400 Tage
+//   notes?: string,               // max. 2000 Zeichen
+//   conversation_ref?: string     // max. 128 Zeichen
 // }
 //
+// Wiederholte Anfrage derselben Konversation (gleicher Name, gleicher
+// Wunschtermin, noch offen) liefert den bestehenden Termin mit
+// duplicate: true — atomar über einen Unique-Index (Migration 20261125190000).
+//
 // Legt eine Terminanfrage (bot_appointments) an. Voraussetzung: der Bot hat
-// capabilities.appointments = true. verify_jwt = false.
+// capabilities.appointments = true und der Plan trägt bots.appointments.
+// verify_jwt = false; Zugriff über das Paar (tenant_id, bot_id), Rate-Limit
+// je IP-Hash/Bot und optional allowed_origins. Ablauf: handler.ts,
+// Datenbank-Bausteine: deps.ts.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
-import { resolveBot, upsertConversation, BotError } from '../_shared/bots.ts';
+import { findExistingConversationId, resolveBot, upsertConversation } from '../_shared/bots.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
+import { clientIpFromHeaders, hashClientIp, originAllowed } from '../_shared/bot-budget.ts';
+import { checkAppointmentBotRateLimit, checkAppointmentIpRateLimit } from './ratelimit.ts';
+import { createAppointmentHandler, type AppointmentBot } from './handler.ts';
+import {
+  makeFindDuplicate, makeGate, makeInsertAppointment, makeUpsertConversation, type TableClient,
+} from './deps.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Gleicher Schlüssel wie bot-chat; verlässt die Function nie.
+const RATE_LIMIT_SECRET = Deno.env.get('BOT_RATE_LIMIT_SALT') || SERVICE_ROLE;
 
-Deno.serve(async (req) => {
-  const preflight = handleOptions(req);
-  if (preflight) return preflight;
-  if (req.method !== 'POST') return methodNotAllowed();
+const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+const tables = admin as unknown as TableClient;
+type SharedBot = Parameters<typeof upsertConversation>[1];
 
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError(400, 'BAD_REQUEST', 'invalid json body');
-  }
+const handler = createAppointmentHandler({
+  now: () => new Date(),
+  hashIp: (req) => hashClientIp(clientIpFromHeaders(req.headers), RATE_LIMIT_SECRET, new Date()),
+  rateIp: (ipHash) => checkAppointmentIpRateLimit(admin, ipHash),
+  rateBot: (ipHash, botId) => checkAppointmentBotRateLimit(admin, ipHash, botId),
+  resolveBot: (tenantId, botId) => resolveBot(admin, tenantId, botId) as Promise<AppointmentBot>,
+  originAllowed,
 
-  const tenantId = String(body.tenant_id ?? '');
-  const botId = String(body.bot_id ?? '');
-  const customerName = typeof body.customer_name === 'string' ? body.customer_name.trim() : '';
-  if (!customerName) return jsonError(400, 'BAD_REQUEST', 'customer_name required');
+  // Capability ist ein kundeneigenes Flag (bot.capabilities?.appointments) —
+  // es reicht allein nicht. Ob der Plan die Terminbuchung trägt, entscheidet
+  // das Entitlement-Gate darunter (entitlement-reality-map.md §2).
+  hasCapability: (bot) => Boolean(bot.capabilities?.appointments),
+  gate: makeGate(
+    (bot) => gateFeature(admin, bot.tenant_id, 'bots.appointments'),
+    (e) => e instanceof EntitlementError,
+  ),
 
-  let requestedAt: string | null = null;
-  if (body.requested_at) {
-    const d = new Date(String(body.requested_at));
-    if (Number.isNaN(d.getTime())) return jsonError(400, 'BAD_REQUEST', 'requested_at must be ISO-8601');
-    requestedAt = d.toISOString();
-  }
+  upsertConversation: makeUpsertConversation(
+    (bot, externalRef, contactLabel) => upsertConversation(admin, bot as SharedBot, { externalRef, contactLabel }),
+    (bot, externalRef) => findExistingConversationId(admin, bot as SharedBot, externalRef),
+  ),
+  findDuplicate: makeFindDuplicate(tables),
+  insertAppointment: makeInsertAppointment(tables),
 
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-
-  try {
-    const bot = await resolveBot(admin, tenantId, botId);
-    if (!bot.capabilities?.appointments) {
-      return jsonError(403, 'CAPABILITY_DISABLED', 'this bot cannot book appointments');
-    }
-
-    // Entitlement-Gate (AP9, Welle 1): `bot.capabilities.appointments` ist ein
-    // kundeneigenes Flag, das der Kunde im Browser selbst setzt — es fragt
-    // ihn, ob er darf (entitlement-reality-map.md §2). Ob der Plan die
-    // Terminbuchung trägt, entscheidet allein `bots.appointments`.
-    try {
-      await gateFeature(admin, bot.tenant_id, 'bots.appointments');
-    } catch (e) {
-      if (e instanceof EntitlementError) {
-        return jsonError(403, 'ENTITLEMENT_MISSING', 'Terminbuchung ist im Plan dieses Arbeitsbereichs nicht enthalten (bots.appointments).');
-      }
-      throw e;
-    }
-
-    const conversationRef = body.conversation_ref ? String(body.conversation_ref) : null;
-    const conversationId = conversationRef
-      ? await upsertConversation(admin, bot, { externalRef: conversationRef, contactLabel: customerName })
-      : null;
-
-    const { data, error } = await admin.from('bot_appointments').insert({
-      tenant_id: bot.tenant_id,
-      bot_id: bot.id,
-      conversation_id: conversationId,
-      customer_name: customerName,
-      contact: body.contact ? String(body.contact) : null,
-      service: body.service ? String(body.service) : null,
-      requested_at: requestedAt,
-      notes: body.notes ? String(body.notes) : null,
-      metadata: { source: 'bot' },
-    }).select('id, status').single<{ id: string; status: string }>();
-    if (error) return jsonError(500, 'INTERNAL', error.message);
-
-    return jsonResponse({ ok: true, appointment_id: data.id, status: data.status });
-  } catch (e) {
-    if (e instanceof BotError) return jsonError(e.status, e.code, e.message);
-    return jsonError(500, 'INTERNAL', (e as Error).message);
-  }
+  // Nur Fehlerart und Meldung ins Server-Log, keine Personendaten.
+  logError: (scope, err) => {
+    console.error(JSON.stringify({ level: 'error', scope, error: err instanceof Error ? err.message : String(err) }));
+  },
 });
+
+Deno.serve(handler);

@@ -1,14 +1,17 @@
 /**
  * usePlatformStats — lädt nicht-personenbezogene Plattform-Aggregate für das
- * öffentliche Landing-Hero-Widget über die SECURITY-DEFINER-RPC
- * `public.platform_stats()` (siehe Migration 20260623000000).
+ * öffentliche Landing-Hero-Widget über die Edge Function
+ * `public-platform-stats` (Ersatz für das anonyme RPC public.platform_stats,
+ * das mit P0-1 entzogen wird). Dieselben nicht-personenbezogenen Aggregate
+ * wie Migration 20260623000000.
  *
  * Quelle sind ausschließlich Aggregate aus dem öffentlichen Free-Scan-Funnel —
- * keine Tenant-Daten, keine PII. Ist Supabase nicht konfiguriert oder die RPC
- * nicht erreichbar, bleibt `data` null und der Aufrufer zeigt Fallback-Werte.
+ * keine Tenant-Daten, keine PII. Ist Supabase nicht konfiguriert oder der
+ * Endpunkt nicht erreichbar, bleibt `data` null und der Aufrufer zeigt Fallback-Werte.
  */
 import { useEffect, useState } from 'react';
-import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../lib/supabaseUrl';
 
 export interface PlatformStats {
   domainsScanned: number;
@@ -35,27 +38,43 @@ export function usePlatformStats(): PlatformStatsState {
 
     (async () => {
       try {
-        const sb = getSupabase();
-        const { data, error } = await sb.rpc('platform_stats').single();
+        const resp = await fetch(`${getSupabaseUrl()}/functions/v1/public-platform-stats`, {
+          headers: {
+            apikey: getSupabaseAnonKey(),
+            Authorization: `Bearer ${getSupabaseAnonKey()}`,
+          },
+        });
         if (!active) return;
-        if (error || !data) {
+        if (!resp.ok) {
           setState({ data: null, loading: false });
           return;
         }
-        const row = data as {
-          domains_scanned: number;
-          audits_total: number;
-          open_risks: number;
-          evidence_pct: number;
-          last_scan_at: string | null;
+        const payload = await resp.json() as {
+          ok?: boolean;
+          domains_scanned?: number;
+          audits_total?: number;
+          open_risks?: number;
+          evidence_pct?: number;
+          last_scan_at?: string | null;
+        };
+        if (!payload?.ok) {
+          setState({ data: null, loading: false });
+          return;
+        }
+        const row = {
+          domains_scanned: payload.domains_scanned,
+          audits_total: payload.audits_total,
+          open_risks: payload.open_risks,
+          evidence_pct: payload.evidence_pct,
+          last_scan_at: payload.last_scan_at ?? null,
         };
         setState({
           data: {
-            domainsScanned: row.domains_scanned,
-            auditsTotal: row.audits_total,
-            openRisks: row.open_risks,
-            evidencePct: row.evidence_pct,
-            lastScanAt: row.last_scan_at,
+            domainsScanned: Number(row.domains_scanned ?? 0),
+            auditsTotal: Number(row.audits_total ?? 0),
+            openRisks: Number(row.open_risks ?? 0),
+            evidencePct: Number(row.evidence_pct ?? 0),
+            lastScanAt: row.last_scan_at ?? null,
           },
           loading: false,
         });

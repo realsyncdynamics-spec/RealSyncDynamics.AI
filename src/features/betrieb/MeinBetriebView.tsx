@@ -7,7 +7,8 @@ import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardBody, CardHeader } from '../../enterprise-os/components/Card';
 import { listAppointments, listBots, listConversations, listOrders } from '../bots/api';
 import { listSites } from '../siteos/siteOsApi';
-import type { BotChannel } from '../bots/types';
+import type { Bot, BotChannel } from '../bots/types';
+import { SecretariatCard } from '../secretariat/SecretariatCard';
 import {
   countInbox, formatCount, INBOX_FETCH_LIMIT, summarizeBots, summarizeSites,
   type BotItem, type InboxCounts, type SiteItem,
@@ -39,12 +40,14 @@ function MeinBetriebInner() {
   const { activeTenantId } = useTenant();
   const [sites, setSites] = useState<Section<SiteItem[]>>(initial([]));
   const [bots, setBots] = useState<Section<BotItem[]>>(initial([]));
+  const [rawBots, setRawBots] = useState<Bot[]>([]);
   const [inbox, setInbox] = useState<Section<InboxCounts | null>>(initial(null));
 
   const load = useCallback(async () => {
     if (!activeTenantId) {
       setSites({ loading: false, error: null, data: [] });
       setBots({ loading: false, error: null, data: [] });
+      setRawBots([]);
       setInbox({ loading: false, error: null, data: null });
       return;
     }
@@ -63,6 +66,7 @@ function MeinBetriebInner() {
     setSites(siteRes.status === 'fulfilled'
       ? { loading: false, error: null, data: summarizeSites(siteRes.value) }
       : { loading: false, error: errText(siteRes.reason), data: [] });
+    setRawBots(botRes.status === 'fulfilled' ? botRes.value : []);
     setBots(botRes.status === 'fulfilled'
       ? { loading: false, error: null, data: summarizeBots(botRes.value) }
       : { loading: false, error: errText(botRes.reason), data: [] });
@@ -95,6 +99,10 @@ function MeinBetriebInner() {
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
         {!activeTenantId && (
           <p className="text-sm text-titanium-400">Kein Arbeitsbereich ausgewählt.</p>
+        )}
+
+        {activeTenantId && !bots.loading && !bots.error && (
+          <SecretariatCard tenantId={activeTenantId} bots={rawBots} onChanged={retry} />
         )}
 
         <InboxCard section={inbox} onRetry={retry} />

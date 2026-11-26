@@ -14,10 +14,11 @@ concurrency:
 
 jobs:
   publish:
-    name: Governed SiteOS preview to production
-    # R1: veröffentlicht real nach Produktion — nur von main und nach Freigabe in `production`.
+    # R1: veröffentlicht real nach Produktion, daher nur vom Stand main.
     if: github.ref == 'refs/heads/main'
+    name: Governed SiteOS preview to production
     runs-on: ubuntu-24.04
+    # R1b (25.11.2026): manueller Prod-Eingriff nur nach Freigabe in der Environment `production`.
     environment: production
     timeout-minutes: 20
     env:

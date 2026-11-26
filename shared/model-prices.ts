@@ -56,6 +56,25 @@ export interface ModelPrice {
   cacheReadPerMillionUsd: number | null;
   /** Belegstelle. Ohne sie ist in sechs Monaten nicht mehr nachvollziehbar, woher eine Zahl kam. */
   source: string;
+  /**
+   * Zweite Preisstufe für lange Prompts, wo der Anbieter eine ausweist
+   * (Haiku 5.5: oberhalb von 100.000 Prompt-Tokens gilt der Long-Context-Satz).
+   *
+   * Prompt-Länge = alle Input-Tokens des Requests, also nicht gecachter Input
+   * plus Cache-Writes plus Cache-Reads. Jeder Request wird einzeln bepreist.
+   * Fehlt das Feld, gilt für jede Prompt-Länge der Grundsatz oben.
+   */
+  longContext?: LongContextTier;
+}
+
+/** Preisstufe oberhalb einer Prompt-Länge. Gleiche Bedeutung der Felder wie in `ModelPrice`. */
+export interface LongContextTier {
+  /** Gilt, wenn die Prompt-Länge diesen Wert ÜBERSCHREITET. */
+  aboveInputTokens: number;
+  inputPerMillionUsd: number;
+  outputPerMillionUsd: number;
+  cacheWritePerMillionUsd: number | null;
+  cacheReadPerMillionUsd: number | null;
 }
 
 /**
@@ -83,6 +102,55 @@ export const CACHE_READ_MULTIPLIER  = 0.10;
  * `estimateCostUsFromModel`.
  */
 export const MODEL_PRICES: ModelPrice[] = [
+  // ── Generation 5.5 / Fable 5.2 ──────────────────────────────────────────
+  // Cache-Preise ausdrücklich, weil die Lese-Multiplikatoren hier vom 0,10-
+  // Default abweichen (Opus/Sonnet 5.5: 0,05×, Fable 5.2: $0,20 fest).
+  // Cache-Write = 5-Minuten-Cache, den die Adapter heute verwenden.
+  {
+    provider: 'anthropic',
+    modelId: 'claude-fable-5-2',
+    inputPerMillionUsd: 8.00,
+    outputPerMillionUsd: 40.00,
+    cacheWritePerMillionUsd: 10.00,
+    cacheReadPerMillionUsd: 0.20,
+    source: 'anthropic-pricing-2026-11-25',
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-opus-5-5',
+    inputPerMillionUsd: 4.00,
+    outputPerMillionUsd: 20.00,
+    cacheWritePerMillionUsd: 5.00,
+    cacheReadPerMillionUsd: 0.20,
+    source: 'anthropic-pricing-2026-11-25',
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-sonnet-5-5',
+    inputPerMillionUsd: 2.00,
+    outputPerMillionUsd: 10.00,
+    cacheWritePerMillionUsd: 2.50,
+    cacheReadPerMillionUsd: 0.10,
+    source: 'anthropic-pricing-2026-11-25',
+  },
+  {
+    provider: 'anthropic',
+    modelId: 'claude-haiku-5-5',
+    // Grundsatz gilt für Prompts bis einschließlich 100.000 Tokens.
+    inputPerMillionUsd: 0.10,
+    outputPerMillionUsd: 0.50,
+    cacheWritePerMillionUsd: 0.125,
+    cacheReadPerMillionUsd: 0.01,
+    source: 'anthropic-pricing-2026-11-25',
+    longContext: {
+      aboveInputTokens: 100_000,
+      inputPerMillionUsd: 0.50,
+      outputPerMillionUsd: 2.50,
+      cacheWritePerMillionUsd: 0.625,
+      cacheReadPerMillionUsd: 0.05,
+    },
+  },
+  // ── Ältere Generationen ─────────────────────────────────────────────────
   {
     provider: 'anthropic',
     modelId: 'claude-fable-5-1',
@@ -210,14 +278,32 @@ export function priceFor(provider: string, modelId: string): ModelPrice | null {
   return MODEL_PRICES.find((e) => e.provider === p && e.modelId === base) ?? null;
 }
 
+/** Die vier Sätze einer Preisstufe — Grundsatz (`ModelPrice`) oder `LongContextTier`. */
+type RateSet = Pick<
+  ModelPrice,
+  'inputPerMillionUsd' | 'outputPerMillionUsd' | 'cacheWritePerMillionUsd' | 'cacheReadPerMillionUsd'
+>;
+
 /** Cache-Schreibpreis je 1M Tokens — explizit, sonst abgeleitet. */
-export function cacheWritePerMillionUsd(price: ModelPrice): number {
+export function cacheWritePerMillionUsd(price: RateSet): number {
   return price.cacheWritePerMillionUsd ?? price.inputPerMillionUsd * CACHE_WRITE_MULTIPLIER;
 }
 
 /** Cache-Lesepreis je 1M Tokens — explizit, sonst abgeleitet. */
-export function cacheReadPerMillionUsd(price: ModelPrice): number {
+export function cacheReadPerMillionUsd(price: RateSet): number {
   return price.cacheReadPerMillionUsd ?? price.inputPerMillionUsd * CACHE_READ_MULTIPLIER;
+}
+
+/**
+ * Preisstufe für einen Request mit `promptTokens` Input-Tokens insgesamt
+ * (nicht gecacht + Cache-Write + Cache-Read). Ohne `longContext` immer der
+ * Grundsatz; mit `longContext` der Long-Context-Satz, sobald die Prompt-Länge
+ * die Schwelle überschreitet.
+ */
+export function rateFor(price: ModelPrice, promptTokens: number): RateSet {
+  const tier = price.longContext;
+  if (tier && promptTokens > tier.aboveInputTokens) return tier;
+  return price;
 }
 
 /**
@@ -241,10 +327,14 @@ export function costUsd(
   },
 ): number {
   const perMillion = (count: number, rate: number) => (count / 1_000_000) * rate;
+  const cacheWrite = tokens.cacheWrite ?? 0;
+  const cacheRead = tokens.cacheRead ?? 0;
+  // Ein Request ist genau einer Stufe zugeordnet — keine Aufteilung an der Schwelle.
+  const rate = rateFor(price, tokens.input + cacheWrite + cacheRead);
   return (
-    perMillion(tokens.input, price.inputPerMillionUsd) +
-    perMillion(tokens.output, price.outputPerMillionUsd) +
-    perMillion(tokens.cacheWrite ?? 0, cacheWritePerMillionUsd(price)) +
-    perMillion(tokens.cacheRead ?? 0, cacheReadPerMillionUsd(price))
+    perMillion(tokens.input, rate.inputPerMillionUsd) +
+    perMillion(tokens.output, rate.outputPerMillionUsd) +
+    perMillion(cacheWrite, cacheWritePerMillionUsd(rate)) +
+    perMillion(cacheRead, cacheReadPerMillionUsd(rate))
   );
 }

@@ -8,6 +8,7 @@ import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
 import { getSupabaseUrl } from '../../lib/supabaseUrl';
+import { openStaticHtmlInNewTab } from '../../lib/static-html';
 
 const SUPABASE_URL = getSupabaseUrl();
 
@@ -272,10 +273,8 @@ function DetailModal({ gap, onClose, onChanged }: { gap: MarketGap; onClose: () 
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
       const html = await resp.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      // Bereinigt (skriptfrei, strenge CSP) öffnen — siehe src/lib/static-html.ts.
+      openStaticHtmlInNewTab(html, 60_000);
     } catch (e) {
       setErr((e as Error).message);
     }

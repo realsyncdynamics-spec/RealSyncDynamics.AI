@@ -7,6 +7,7 @@
 // nutzt und das Dokument in public.generated_documents persistiert.
 
 import { getSupabase } from '../../../lib/supabase';
+import { downloadStaticHtml, openStaticHtmlInNewTab } from '../../../lib/static-html';
 
 // Vom Generator unterstützte Dokumenttypen (siehe generate-document/index.ts
 // und CHECK-Constraint der Tabelle generated_documents).
@@ -107,23 +108,15 @@ export async function generateDocument(input: {
   return data as GenerateDocumentResult;
 }
 
-/** Öffnet HTML-Inhalt in einem neuen Browser-Tab (Druck → PDF möglich). */
-export function openHtmlInNewTab(html: string): void {
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank', 'noopener');
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+/**
+ * Öffnet HTML-Inhalt bereinigt in einem neuen Browser-Tab (Druck → PDF möglich).
+ * Skripte und aktive Inhalte werden entfernt, siehe `src/lib/static-html.ts`.
+ */
+export function openHtmlInNewTab(html: string): boolean {
+  return openStaticHtmlInNewTab(html);
 }
 
-/** Lädt HTML-Inhalt als Datei herunter. */
+/** Lädt HTML-Inhalt bereinigt als Datei herunter. */
 export function downloadHtml(html: string, filename: string): void {
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  downloadStaticHtml(html, filename);
 }

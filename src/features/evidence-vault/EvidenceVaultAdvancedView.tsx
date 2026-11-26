@@ -10,6 +10,7 @@ import { describeRetention, RETENTION_CLASSES, type RetentionClass } from '../..
 import { verifyAllChains, type ChainReport } from '../../../packages/evidence-chain/src/index';
 import { createSnapshot, setLegalHold, listTimeline, listSnapshotsForVerification, exportEvidenceBundle, type TimelineEntry, type VaultError } from './evidenceVaultApi';
 import { buildEvidenceExportReportHtml } from './exportReportHtml';
+import { openStaticHtmlInNewTab } from '../../lib/static-html';
 
 // WebCrypto-Adapter für die Verifizierung (string → hex), teilt sich die
 // SHA-256-Implementierung mit der Snapshot-Erzeugung.
@@ -133,17 +134,13 @@ function VaultInner() {
     const r = await exportEvidenceBundle({ tenant_id: activeTenantId });
     if (r.kind === 'ok') {
       const html = buildEvidenceExportReportHtml(r.data);
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const win = window.open(url, '_blank');
-      if (!win) {
+      // Bereinigt (skriptfrei, strenge CSP) öffnen — siehe src/lib/static-html.ts.
+      const opened = openStaticHtmlInNewTab(html);
+      if (!opened) {
         setError('Pop-up wurde blockiert — bitte Pop-ups für diese Seite erlauben und erneut versuchen.');
       } else {
         setNotice(`PDF-Ansicht geöffnet (${r.data.count} Event(s)) — im Browser-Druckdialog „Als PDF speichern" wählen.`);
       }
-      // Object URL must outlive the initial navigation of the new tab —
-      // revoke on a delay rather than immediately after window.open().
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
     } else {
       setError(exportErrorMessage(r));
     }

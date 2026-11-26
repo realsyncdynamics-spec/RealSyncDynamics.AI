@@ -250,6 +250,33 @@ export async function runScan(args: {
   return { kind: 'ok', data: data as ScanResponse };
 }
 
+/** Antwort von `siteos/discover`: liest die Startseite einer öffentlichen Website (nur lesend). */
+export interface DiscoveryResponse {
+  ok: true;
+  source_url: string;
+  status: number;
+  content_type: string;
+  title: string | null;
+  description: string | null;
+  h1: string | null;
+  headings: string[];
+  services: string[];
+  visible_text: string;
+  fetched_at: string;
+}
+
+/**
+ * Website-Check für Betriebsdaten. `tenant_id` kommt aus dem Tenant-Kontext des
+ * Aufrufers; der Server prüft Anmeldung und Mitgliedschaft und blockt private
+ * bzw. lokale Adressen. Schreibt nichts.
+ */
+export async function discoverWebsite(args: { tenant_id: string; url: string }): Promise<SiteOsResult<DiscoveryResponse>> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('siteos/discover', { body: args });
+  if (error) return mapError(error);
+  return { kind: 'ok', data: data as DiscoveryResponse };
+}
+
 /**
  * Gibt einen wartenden Agentenlauf frei (owner/admin/dpo, nicht der
  * Auslöser). `reason` ist Pflicht, wenn der Auslöser als einziges

@@ -92,11 +92,11 @@ describe('implementation-status registry', () => {
     const landing = getImplementation('public-landing')!;
     expect(v3).toContain('<span>Ihre Ideen.</span>');
     expect(v3).toContain('<span className="lv3-h1-2">In Bewegung.</span>');
-    expect(v3).toContain('>Kostenlosen Check starten<');
+    expect(v3).toContain('>Website kostenlos prüfen<');
     expect(v3).toContain('navigate(`/audit?domain=${encodeURIComponent(value)}&source=${SOURCE}`)');
     expect(v3Data).toContain("export const SOURCE = 'landing-v3';");
     expect(landing.description).toContain('Ihre Ideen. In Bewegung.');
-    expect(landing.description).toContain('Kostenlosen Check starten');
+    expect(landing.description).toContain('Website kostenlos prüfen');
     expect(landing.description).toContain('/audit?domain=…&source=landing-v3');
 
     // Landing v6 bleibt als Rückfall unter /design/landing-v6 unverändert.

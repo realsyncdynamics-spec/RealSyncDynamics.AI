@@ -90,7 +90,7 @@ describe('/audit stepper', () => {
     const onReveal = vi.fn();
     const props = { initialDomain: 'muster.de', running: false, error: null, onReset: vi.fn(), onRun, onReveal };
     const view = render(<MemoryRouter><AuditStepper {...props} report={null} /></MemoryRouter>);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Ihr KI-Bestand in vier Fragen.');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Ihr Website-Check in vier Fragen.');
     expect(screen.getByLabelText('Hauptdomain')).toHaveValue('muster.de');
     fireEvent.change(screen.getByLabelText('E-Mail für den Bericht'), { target: { value: 'a@b.de' } });
     // Lead + Scan gehen nach Schritt 1 an den Server — nicht erst nach vier Fragen.

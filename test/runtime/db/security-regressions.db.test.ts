@@ -537,16 +537,10 @@ d('F-08 — RLS-Abdeckung jeder Tabelle in public', () => {
    *    `social_publishing_metrics_hourly`: fachliche Tabellen, RLS + Tenant-Policy
    *    faellig (additive Migration).
    */
-  const RLS_BEKANNTE_SCHULD = [
-    '_circuit_breakers',
-    '_operation_metrics',
-    '_rate_limits',
-    'memory_retention_policies',
-    'provenance_records',
-    'seo_marketing_audit_log',
-    'social_publishing_metrics_hourly',
-    'subscription_addons',
-  ];
+  // Abgetragen mit 20261123220000_rls_drift_align_known_debt_tables.sql
+  // (Drift-Abgleich mit Produktion, gemessen 23.11.2026). Die Liste bleibt als
+  // Ratsche stehen: Sie darf nicht wieder wachsen.
+  const RLS_BEKANNTE_SCHULD: string[] = [];
 
   // Basistabellen (relkind='r') in public ohne RLS. Partitions-KINDER
   // (relispartition) sind ausgenommen: die Policy sitzt auf der Elterntabelle

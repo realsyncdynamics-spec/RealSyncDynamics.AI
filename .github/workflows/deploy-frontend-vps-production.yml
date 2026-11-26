@@ -8,9 +8,10 @@ on:
         required: true
         default: 'production'
         type: choice
+        # R1: nur `production`. Die frühere Option `staging` deployte auf
+        # denselben Prod-VPS-Pfad und umging so die Freigabe.
         options:
           - production
-          - staging
 
 jobs:
   deploy:
@@ -21,7 +22,7 @@ jobs:
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.event.inputs.environment }}
+      name: production
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 

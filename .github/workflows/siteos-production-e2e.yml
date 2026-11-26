@@ -14,8 +14,12 @@ concurrency:
 
 jobs:
   publish:
+    # R1: veröffentlicht real nach Produktion, daher nur vom Stand main.
+    if: github.ref == 'refs/heads/main'
     name: Governed SiteOS preview to production
     runs-on: ubuntu-24.04
+    # R1b (25.11.2026): manueller Prod-Eingriff nur nach Freigabe in der Environment `production`.
+    environment: production
     timeout-minutes: 20
     env:
       TEST_BASE_URL: https://realsyncdynamicsai.de

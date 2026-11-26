@@ -13,6 +13,8 @@ jobs:
   reconcile-and-deploy:
     name: Repair orphan migration & deploy
     runs-on: ubuntu-latest
+    # E6: gleiches Environment-Gate wie deploy.yml (db-push).
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

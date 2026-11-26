@@ -1,0 +1,2 @@
+# Optionaler, isolierter Pilot; keine Änderung an Root-Abhängigkeiten.
+smolagents>=1.0,<3.0

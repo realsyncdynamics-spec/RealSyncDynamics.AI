@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { MODULAR_OFFERS, MODULAR_PRODUCT_IDS, MODULAR_STANDALONE_MONTHLY_EUR, isValidModularSelection, formatPriceEur, type ModularOfferId, type ModularProductId } from '@/shared/pricing';
 
 const productNames: Record<ModularProductId, string> = {
@@ -13,6 +13,8 @@ const offerNames: Record<ModularOfferId, string> = {
 };
 
 export function ModularPricingPreview() {
+  const [params] = useSearchParams();
+  const testReturn = params.get('test');
   const [offerId, setOfferId] = useState<ModularOfferId>('professional');
   const [products, setProducts] = useState<ModularProductId[]>([]);
   const offer = MODULAR_OFFERS.find(item => item.id === offerId) ?? MODULAR_OFFERS[1];
@@ -25,6 +27,12 @@ export function ModularPricingPreview() {
         <p className="mt-8 text-sm font-mono uppercase text-blue-800">RealSync Dynamics &amp; AI · Abnahmeentwurf</p>
         <h1 className="mt-2 text-4xl sm:text-5xl font-bold">Planbare Kosten. Ihre Produktauswahl.</h1>
         <p className="mt-4 max-w-2xl text-slate-700">Unverbindliche Vorschau. Keine Buchung, keine Zahlung, keine Änderung bestehender Abos. Leistungsumfang und Verbrauchskontingente sind noch nicht freigegeben.</p>
+        {(testReturn === 'success' || testReturn === 'cancelled') && (
+          <section role="status" className="mt-6 border border-blue-700 p-5" data-testid="modular-sandbox-return">
+            <h2 className="font-bold">{testReturn === 'success' ? 'Rückkehr vom Sandbox-Checkout' : 'Sandbox-Checkout verlassen'}</h2>
+            <p className="mt-2">Diese Rückleitung ist kein Zahlungsnachweis. Der Zahlungsstatus muss serverseitig bei Stripe bestätigt werden. Es werden hier keine Produkte freigeschaltet.</p>
+          </section>
+        )}
         <fieldset className="mt-8">
           <legend className="font-semibold mb-3">Paket auswählen</legend>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

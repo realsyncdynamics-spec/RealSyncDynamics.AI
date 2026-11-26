@@ -105,7 +105,7 @@ export function OptimizerShell({
   const current = stepById(step);
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex flex-col">
+    <div className="rs-paper min-h-screen bg-obsidian-950 text-titanium-100 flex flex-col">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4 sm:px-6">
         <button
           type="button"

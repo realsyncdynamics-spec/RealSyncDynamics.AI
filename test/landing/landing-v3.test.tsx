@@ -63,11 +63,14 @@ describe('Startseite v3 — `/`', () => {
     }
   });
 
-  it('Hauptnavigation führt Voice Agent und Kontakt, Ziele sind echte Routen', () => {
+  it('Hauptnavigation führt Produkt-Explorer und Kontakt, Ziele sind echte Routen', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).getByRole('link', { name: 'Produkte' })).toHaveAttribute('href', '#katalog');
-    expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales');
+    // „Produkte“ ist ein Explorer (Ordner/Unterordner); jeder Produktname ist direkt ein Link.
+    expect(within(nav).getByText('Produkte', { selector: 'summary' })).toBeInTheDocument();
+    const tree = within(nav).getByRole('list', { name: 'Produkte und Unterseiten' });
+    for (const p of PRODUCTS) expect(within(tree).getByRole('link', { name: p.name })).toHaveAttribute('href', p.href);
+    expect(within(nav).getByRole('link', { name: 'Kontakt' })).toHaveAttribute('href', '/contact-sales?source=kontakt');
     // „KI fragen“ öffnet den öffentlichen Assistenten; Rückfall ist die KI-Bots-Seite.
     expect(within(nav).getByRole('link', { name: 'KI fragen' })).toHaveAttribute('href', '/ki-bots?source=ki-fragen');
     const app = read('src/App.tsx');
@@ -77,10 +80,14 @@ describe('Startseite v3 — `/`', () => {
 
   it('verlinkt die vier Produkte unter SYNC direkt und in der vereinbarten Reihenfolge', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
-    const links = within(screen.getByRole('group', { name: 'Produkte' })).getAllByRole('link');
+    const group = screen.getByRole('group', { name: 'Produkte' });
+    // Reihenfolge nach K6 (26.11.2026): Builder zuerst, Governance OS zuletzt.
+    const links = Array.from(group.querySelectorAll('a.lv3-cat'));
     expect(links.map(link => link.getAttribute('href')?.split('?')[0])).toEqual([
-      '/ki-bots', '/app-builder', '/governance-os', '/claude-code-optimizer',
+      '/app-builder', '/ki-bots', '/claude-code-optimizer', '/governance-os',
     ]);
+    // Unterseiten direkt unter jedem Produkt, z. B. der AI Landingpage Builder im App Builder.
+    expect(within(group).getByRole('link', { name: 'AI Landingpage Builder' }).getAttribute('href')?.split('?')[0]).toBe('/landingpage-builder');
     expect(screen.getByTestId('v3-customer-journey').children).toHaveLength(6);
   });
 
@@ -129,8 +136,10 @@ describe('Startseite v3 — `/`', () => {
     expect(within(screen.getByTestId('v3-sync-stage')).getByText('SYNC · KI-Assistent')).toBeInTheDocument();
   });
 
-  it('Hauptbutton im Hero blendet den Assistent-Button aus (data-hero-cta)', () => {
+  it('Einstieg im Hero ist der Website-Check und blendet den Assistent-Button aus (data-hero-cta)', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
-    expect(screen.getByRole('link', { name: 'Kostenlosen Check starten' })).toHaveAttribute('data-hero-cta', 'landing-v3');
+    const form = screen.getByRole('button', { name: 'Website kostenlos prüfen' }).closest('form');
+    expect(form).toHaveAttribute('data-hero-cta', 'landing-v3');
+    expect(within(form as HTMLElement).getByPlaceholderText('ihr-betrieb.de')).toBeInTheDocument();
   });
 });

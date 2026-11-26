@@ -49,7 +49,7 @@ export function OptimizerResults() {
         step={3}
         pageType="feedback"
         backTo="/optimizer/scan"
-        metaTitle="Kein Ergebnis — Cloud Code Optimizer"
+        metaTitle="Kein Ergebnis — Claude Code Optimizer"
         metaDescription="Es liegt kein Scan-Ergebnis vor."
       >
         <div className="text-center py-12">
@@ -73,7 +73,7 @@ export function OptimizerResults() {
       step={3}
       pageType="feedback"
       backTo="/optimizer/scan"
-      metaTitle={`Analyse für ${result.domain} — Cloud Code Optimizer`}
+      metaTitle={`Analyse für ${result.domain} — Claude Code Optimizer`}
       metaDescription="Deine Website-Analyse: Score und Befund-Übersicht."
     >
       <div className="flex items-start justify-between gap-4 mb-2">
@@ -102,7 +102,14 @@ export function OptimizerResults() {
         </div>
       </div>
 
+      {totalIssues === 0 && (
+        <p className="border border-titanium-800 bg-obsidian-900 rounded-none p-4 mb-8 text-sm text-titanium-200">
+          Keine Befunde in den geprüften Bereichen. Ein kostenpflichtiger Bericht ist dafür nicht nötig.
+        </p>
+      )}
+
       {/* Severity-Buckets (gated: nur Zählungen) */}
+      {totalIssues > 0 && (
       <div className="grid sm:grid-cols-3 gap-3 mb-10">
         {summary.map(({ bucket, count }) => {
           const meta = BUCKET_META[bucket];
@@ -122,8 +129,10 @@ export function OptimizerResults() {
           );
         })}
       </div>
+      )}
 
       {/* Freischalt-Block */}
+      {totalIssues > 0 && (
       <div className="border border-security-800 bg-security-900/20 rounded-none p-6 mb-8">
         <h2 className="inline-flex items-center gap-2 font-display font-bold text-titanium-50 mb-4">
           <ListChecks className="h-5 w-5 text-security-400" aria-hidden />
@@ -153,6 +162,7 @@ export function OptimizerResults() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Neuer Scan */}
       <button

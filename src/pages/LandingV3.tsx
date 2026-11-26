@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, FileText, Folder, FolderOpen } from 'lucide-react';
 import { SyncHeroStage } from '../components/landing/v3/SyncHeroStage';
 import { AskAiPill } from '../components/AskAiPill';
 import {
@@ -7,6 +8,7 @@ import {
   faqs, planCards, pricingIntro, productNote, productStatus,
 } from '../components/landing/v3/landingV3Data';
 import { BETA, betaSignupHref } from '../config/beta';
+import type { V3TreeNode } from '../components/landing/v3/landingV3Data';
 import '../styles/landing-v3.css';
 
 /**
@@ -43,6 +45,66 @@ function prefersReducedMotion(): boolean {
 
 function StatusPill({ label }: { label: string }) {
   return <span className="lv3-pill">{label}</span>;
+}
+
+/**
+ * Produkt-Explorer wie im Windows-Explorer: Ordner klappen über den Pfeil auf,
+ * der Name selbst ist immer direkt ein Link. Seiten ohne Unterordner zeigen ein Dokument-Symbol.
+ */
+function TreeNode({ node, depth, defaultOpen = false }: { node: V3TreeNode; depth: number; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isFolder = Boolean(node.children?.length);
+  return (
+    <li className="lv3-tree-item" style={{ '--lv3-depth': depth } as CSSProperties}>
+      <div className="lv3-tree-row">
+        {isFolder ? (
+          <button
+            type="button"
+            className="lv3-tree-toggle"
+            aria-expanded={open}
+            aria-label={`${node.label} ${open ? 'zuklappen' : 'aufklappen'}`}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <ChevronRight aria-hidden="true" size={16} />
+          </button>
+        ) : (
+          <span className="lv3-tree-spacer" aria-hidden="true" />
+        )}
+        {isFolder ? (
+          open ? <FolderOpen aria-hidden="true" size={18} className="lv3-tree-icon" /> : <Folder aria-hidden="true" size={18} className="lv3-tree-icon" />
+        ) : (
+          <FileText aria-hidden="true" size={16} className="lv3-tree-icon lv3-tree-icon--file" />
+        )}
+        <Link to={node.href} className="lv3-tree-link">{node.label}</Link>
+      </div>
+      {isFolder && open ? (
+        <ul className="lv3-tree">
+          {node.children!.map((c) => <TreeNode key={c.label + c.href} node={c} depth={depth + 1} />)}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
+function ProductExplorer() {
+  return (
+    <details className="lv3-explorer">
+      <summary>Produkte</summary>
+      <div className="lv3-explorer-panel">
+        <p className="lv3-explorer-path" aria-hidden="true">RealSync › Produkte</p>
+        <ul className="lv3-tree" aria-label="Produkte und Unterseiten">
+          {PRODUCTS.map((p, i) => (
+            <TreeNode
+              key={p.key}
+              node={{ label: p.name, href: p.href, children: p.children }}
+              depth={0}
+              defaultOpen={i === 0}
+            />
+          ))}
+        </ul>
+      </div>
+    </details>
+  );
 }
 
 export function LandingV3() {
@@ -87,13 +149,13 @@ export function LandingV3() {
       <header className="lv3-hero" id="top">
         <nav className="lv3-nav" aria-label="Hauptnavigation">
           <Link to="/" className="lv3-brand">RealSync Dynamics &amp; AI</Link>
-          <a href="#katalog">Produkte</a>
+          <ProductExplorer />
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
-          <Link to="/contact-sales">Kontakt</Link>
+          <Link to="/contact-sales?source=kontakt">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <AskAiPill className="lv3-btn lv3-ask" />
-          <a className="lv3-btn lv3-btn--solid" href="#start">Check starten</a>
+          <a className="lv3-btn lv3-btn--solid" href="#hero-check">Website prüfen</a>
         </nav>
 
         <div className="lv3-hero-grid">
@@ -106,13 +168,36 @@ export function LandingV3() {
               <span>Ihre Ideen.</span>
               <span className="lv3-h1-2">In Bewegung.</span>
             </h1>
-            <p className="lv3-lead">
-              Websites, KI-Agenten und Automatisierungen, die Ihrem Betrieb Arbeit abnehmen und Kunden schneller zum Ziel bringen.
+            {/* Owner 26.11.2026: Einstieg ist der Website-Check mit Domain-Eingabe;
+                ohne Klick sofort verständlich, was der Nutzer bekommt. */}
+            <p className="lv3-lead" data-testid="v3-hero-offer">
+              Geben Sie Ihre Website ein – wir prüfen sie kostenlos. Danach baut der <strong>AI Landingpage Builder</strong> eine fotorealistische Landingpage direkt auf Ihrem bestehenden Backend.
             </p>
-            <div className="lv3-actions">
-              <a className="lv3-btn lv3-btn--solid lv3-btn--lg" href="#start" data-hero-cta="landing-v3">Kostenlosen Check starten</a>
-              <a className="lv3-btn lv3-btn--lg" href="#katalog">Produkte entdecken</a>
-            </div>
+            <form id="hero-check" className="lv3-hero-form" onSubmit={submitCheck} noValidate data-hero-cta="landing-v3">
+              <label className="lv3-hero-label">
+                <span className="lv3-sr">Ihre Website</span>
+                <input
+                  className="lv3-input lv3-hero-input"
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
+                  placeholder="ihr-betrieb.de"
+                  value={site}
+                  maxLength={253}
+                  onChange={(e) => setSite(e.target.value)}
+                  aria-invalid={siteError ? true : undefined}
+                  aria-describedby={siteError ? 'lv3-hero-error' : 'lv3-hero-hint'}
+                />
+              </label>
+              <button type="submit" className="lv3-btn lv3-btn--solid lv3-btn--lg">Website kostenlos prüfen</button>
+            </form>
+            {siteError ? <p id="lv3-hero-error" role="alert" className="lv3-error">{siteError}</p> : null}
+            <ul id="lv3-hero-hint" className="lv3-gets" aria-label="Was Sie bekommen">
+              <li>Kostenloser Check: Sicherheit, Einwilligung, Impressum, Datenschutz</li>
+              <li>Danach Ihre fotorealistische Landingpage – Ihr Backend bleibt unverändert</li>
+              <li>Erst die Vorschau, dann Ihre Freigabe</li>
+            </ul>
+            <Link className="lv3-hero-alt" to="/landingpage-builder?source=landing-v3">Ohne Check direkt zum AI Landingpage Builder <span aria-hidden="true">→</span></Link>
           </div>
           <SyncHeroStage caption={current.stageCaption} statusLabel="SYNC · KI-Assistent" waveSignal={waveSignal} />
         </div>
@@ -130,10 +215,11 @@ export function LandingV3() {
             const st = productStatus(p);
             const note = productNote(p);
             return (
+              <div key={p.key} className="lv3-cat-wrap" data-product={p.key}>
               <Link
-                key={p.key}
                 to={p.href}
                 className="lv3-cat"
+                data-product={p.key}
                 onMouseEnter={() => setActive(i)}
                 onFocus={() => { setActive(i); setPaused(true); setWaveSignal((n) => n + 1); }}
               >
@@ -145,6 +231,12 @@ export function LandingV3() {
                 <span className="lv3-cat-name">{p.name}</span>
                 <span className="lv3-cat-short">{p.short}{note ? ` · ${note}` : ''}</span>
               </Link>
+              {p.children?.length ? (
+                <ul className="lv3-tree lv3-tree--mini" aria-label={`${p.name}: Unterseiten`}>
+                  {p.children.map((c) => <TreeNode key={c.label + c.href} node={c} depth={1} />)}
+                </ul>
+              ) : null}
+              </div>
             );
           })}
         </div>
@@ -184,7 +276,7 @@ export function LandingV3() {
               const st = productStatus(p);
               const note = productNote(p);
               return (
-                <Link key={p.key} to={p.href} className="lv3-card" data-testid={`v3-product-${p.key}`}>
+                <Link key={p.key} to={p.href} className="lv3-card lv3-product" data-product={p.key} data-testid={`v3-product-${p.key}`}>
                   <span className="lv3-meta">
                     {String(i + 1).padStart(2, '0')} · {p.section}
                     {st ? <StatusPill label={st.label} /> : null}

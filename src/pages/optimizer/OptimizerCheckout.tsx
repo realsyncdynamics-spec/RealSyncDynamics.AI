@@ -41,7 +41,7 @@ export function OptimizerCheckout() {
         step={5}
         pageType="action"
         backTo="/optimizer/pricing"
-        metaTitle="Paket wählen — Cloud Code Optimizer"
+        metaTitle="Paket wählen — Claude Code Optimizer"
         metaDescription="Wähle ein buchbares Paket."
       >
         <div className="text-center py-12">
@@ -67,7 +67,7 @@ export function OptimizerCheckout() {
       step={5}
       pageType="action"
       backTo="/optimizer/pricing"
-      metaTitle={`${realTier.name} buchen — Cloud Code Optimizer`}
+      metaTitle={`${realTier.name} buchen — Claude Code Optimizer`}
       metaDescription={`Aktiviere das Paket ${realTier.name} und schalte den vollständigen Optimizer frei.`}
     >
       <h1 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 tracking-tight mb-2">

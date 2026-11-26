@@ -51,7 +51,7 @@ export function OptimizerPricing() {
       step={5}
       pageType="info"
       backTo="/optimizer/results"
-      metaTitle="Pakete — Cloud Code Optimizer"
+      metaTitle="Pakete — Claude Code Optimizer"
       metaDescription="Wähle dein Paket: vom kostenlosen Scan bis zu Auto-Fix und kontinuierlichem Monitoring."
     >
       <h1 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 tracking-tight mb-3">

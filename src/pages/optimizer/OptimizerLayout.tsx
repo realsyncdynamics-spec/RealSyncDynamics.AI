@@ -46,7 +46,7 @@ export function OptimizerLayout({
   usePageMeta({ title: metaTitle, description: metaDescription, url: metaUrl });
 
   return (
-    <div className="min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
+    <div className="rs-paper min-h-screen bg-[var(--brand-bg-1)] text-[var(--brand-champ-hi)] font-[family-name:var(--brand-sans)]">
       {/* Marken-Header */}
       <header className="h-14 border-b border-[var(--brand-line-dark)] bg-[var(--brand-bg-0)] flex items-center px-4">
         <Link
@@ -59,7 +59,7 @@ export function OptimizerLayout({
           </div>
           <div className="leading-tight">
             <div className="font-[family-name:var(--brand-serif)] font-semibold text-base tracking-tight text-[var(--brand-champ-hi)]">
-              Cloud Code Optimizer
+              Claude Code Optimizer
             </div>
             <div className="text-[11px] text-[var(--brand-titan)] font-medium">RealSync Dynamics</div>
           </div>

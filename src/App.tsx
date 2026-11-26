@@ -278,17 +278,17 @@ const FmtModernizeWizard = lazy(() => import('./features/siteos/fmt/FmtModernize
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
-// Cloud Code Optimizer — öffentlicher Page-by-Page-Flow (Phase 1), lazy geladen.
+// Claude Code Optimizer — öffentlicher Page-by-Page-Flow (Phase 1), lazy geladen.
 const OptimizerLanding = lazy(() => import('./pages/optimizer/OptimizerLanding').then((m) => ({ default: m.OptimizerLanding })));
 const OptimizerScan = lazy(() => import('./pages/optimizer/OptimizerScan').then((m) => ({ default: m.OptimizerScan })));
 const OptimizerScanning = lazy(() => import('./pages/optimizer/OptimizerScanning').then((m) => ({ default: m.OptimizerScanning })));
 const OptimizerResults = lazy(() => import('./pages/optimizer/OptimizerResults').then((m) => ({ default: m.OptimizerResults })));
-// Cloud Code Optimizer — Phase 2 (Auth, Pricing, Dashboard).
+// Claude Code Optimizer — Phase 2 (Auth, Pricing, Dashboard).
 const OptimizerAuth = lazy(() => import('./pages/optimizer/OptimizerAuth').then((m) => ({ default: m.OptimizerAuth })));
 const OptimizerVerify = lazy(() => import('./pages/optimizer/OptimizerVerify').then((m) => ({ default: m.OptimizerVerify })));
 const OptimizerPricing = lazy(() => import('./pages/optimizer/OptimizerPricing').then((m) => ({ default: m.OptimizerPricing })));
 const OptimizerDashboard = lazy(() => import('./pages/optimizer/OptimizerDashboard').then((m) => ({ default: m.OptimizerDashboard })));
-// Cloud Code Optimizer — Phase 3 (Checkout-Handoff, Auto-Optimizer).
+// Claude Code Optimizer — Phase 3 (Checkout-Handoff, Auto-Optimizer).
 const OptimizerCheckout = lazy(() => import('./pages/optimizer/OptimizerCheckout').then((m) => ({ default: m.OptimizerCheckout })));
 const OptimizerOptimizing = lazy(() => import('./pages/optimizer/OptimizerOptimizing').then((m) => ({ default: m.OptimizerOptimizing })));
 const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete').then((m) => ({ default: m.OptimizerComplete })));
@@ -446,6 +446,7 @@ const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
 // ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
 const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
+const CcoOptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
 const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
 const OptimizerSignup = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerSignup })));
 const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerReport })));
@@ -617,7 +618,7 @@ function RoutesWithTracking() {
       <Route path="/check" element={<NeedsCheckPage />} />
       <Route path="/check/ergebnisse" element={<NeedsCheckSavedPage />} />
       <Route path="/check/ergebnisse/:id" element={<NeedsCheckSavedPage />} />
-      {/* Cloud Code Optimizer — Page-by-Page-Flow (Phase 1) */}
+      {/* Claude Code Optimizer — Page-by-Page-Flow (Phase 1) */}
       <Route path="/optimizer" element={<OptimizerLanding />} />
       <Route path="/optimizer/scan" element={<OptimizerScan />} />
       <Route path="/optimizer/scanning" element={<OptimizerScanning />} />
@@ -711,7 +712,7 @@ function RoutesWithTracking() {
       {/* Claude Code Optimizer — geführter, seitenweiser Flow.
           Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
       <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
-      <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/claude-code-optimizer/scan" element={<CcoOptimizerScan />} />
       <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
       <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />
       <Route path="/claude-code-optimizer/bericht" element={<OptimizerReport />} />

@@ -78,7 +78,7 @@ export function OptimizerScanning() {
     <OptimizerLayout
       step={2}
       pageType="feedback"
-      metaTitle="Scan läuft — Cloud Code Optimizer"
+      metaTitle="Scan läuft — Claude Code Optimizer"
       metaDescription="Deine Website wird analysiert."
     >
       {error ? (

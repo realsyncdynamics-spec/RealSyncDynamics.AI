@@ -4,7 +4,7 @@
  */
 
 /**
- * Typen für den Cloud Code Optimizer Flow (/optimizer).
+ * Typen für den Claude Code Optimizer Flow (/optimizer).
  *
  * Der Optimizer setzt auf die bestehende Scan-Pipeline (`gdpr-audit`
  * Edge Function) auf. `OptimizerScanResult` ist die schlanke Teilmenge

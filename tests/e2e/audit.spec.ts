@@ -6,7 +6,7 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
     await page.goto('/audit', { waitUntil: 'domcontentloaded' });
 
     await expect(
-      page.getByRole('heading', { level: 1, name: /Ihr KI-Bestand in vier Fragen/i }),
+      page.getByRole('heading', { level: 1, name: /Ihr Website-Check in vier Fragen/i }),
     ).toBeVisible();
 
     // Handoff v2: Schritt 1 fragt Unternehmen + Domain; geprüft wird das Domain-Feld.

@@ -34,7 +34,7 @@ export function OptimizerComplete() {
       <OptimizerLayout
         step={6}
         pageType="feedback"
-        metaTitle="Kein Ergebnis — Cloud Code Optimizer"
+        metaTitle="Kein Ergebnis — Claude Code Optimizer"
         metaDescription="Es liegt kein Scan-Ergebnis vor."
       >
         <div className="text-center py-12">

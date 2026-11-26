@@ -271,6 +271,12 @@ a.lv3-product:hover::after { opacity: 0.26; }
 .lv3-explorer > summary::after { content: ''; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s var(--lv3-ease); }
 .lv3-explorer[open] > summary::after { transform: translateY(1px) rotate(225deg); }
 .lv3-explorer-panel { position: absolute; z-index: 60; left: 0; top: calc(100% + 6px); width: min(92vw, 380px); padding: 10px; border: 1px solid var(--lv3-line-strong); border-radius: 12px; background: var(--lv3-bg-0); box-shadow: 0 24px 48px -24px rgba(28, 26, 23, 0.35); animation: lv3-in 0.25s var(--lv3-ease) both; }
+/* Schmale Viewports: Panel an der Navigation ausrichten statt am Button, sonst läuft es rechts aus dem Bild. */
+@media (max-width: 720px) {
+  .lv3-nav { position: relative; }
+  .lv3-explorer { position: static; }
+  .lv3-explorer-panel { left: var(--lv3-pad-x); right: var(--lv3-pad-x); width: auto; top: calc(100% - 4px); }
+}
 .lv3-explorer-path { margin: 0 0 6px; padding: 6px 8px; border-radius: 6px; background: var(--lv3-bg-1); font: 500 12px/1.4 var(--font-mono, monospace); color: var(--lv3-fg-2); }
 
 /* Baum: Pfeil klappt auf, Name ist immer direkt ein Link. */

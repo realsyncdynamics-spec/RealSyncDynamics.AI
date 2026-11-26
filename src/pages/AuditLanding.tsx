@@ -12,6 +12,7 @@ import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
 import { postEdgeFunction } from '../lib/edgeFunction';
 import { getSupabaseUrl } from '../lib/supabaseUrl';
+import { requestAuditReportEmail, reportEmailMessage, type ReportEmailStatus } from '../features/audit/reportEmail';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditStepper, type AuditStepperInput } from '../components/audit/AuditStepper';
 import { readAuditPrefill } from '../features/audit/auditPrefill';
@@ -106,6 +107,7 @@ export function AuditLanding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [reportEmailStatus, setReportEmailStatus] = useState<ReportEmailStatus | 'sending' | null>(null);
   const [stepperGen, setStepperGen] = useState(0);
   // Der Scan startet nach Schritt 1 und läuft parallel zu den Folgefragen.
   // Den vollständigen Bericht zeigt die Seite erst, wenn der Besucher beim
@@ -123,6 +125,7 @@ export function AuditLanding() {
   function clearResult() {
     runSeq.current += 1;
     setReport(null);
+    setReportEmailStatus(null);
     setError(null);
     setRevealed(false);
     setLoading(false);
@@ -137,7 +140,7 @@ export function AuditLanding() {
 
   async function runScan({ domain, email, company, marketingConsent, honeypot }: AuditStepperInput) {
     const seq = ++runSeq.current;
-    setLoading(true); setError(null); setReport(null);
+    setLoading(true); setError(null); setReport(null); setReportEmailStatus(null);
     trackMarketingEvent('lead_submitted', { metadata: { form: 'governance_scan' } });
     try {
       const normalizedUrl = domain.match(/^https?:\/\//i) ? domain : `https://${domain}`;
@@ -169,21 +172,14 @@ export function AuditLanding() {
       rememberLeadContext({ email, domain });
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id && SUPABASE_URL) {
-        // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
-        // Failures are intentionally swallowed — report is already shown in-browser.
-        //
-        // Hier stand `data.scan_run_id`. Das Feld gibt `gdpr-audit` nicht
-        // zurück — die Antwort trägt `audit_id` —, und weil es im Typ als
-        // optional deklariert war, hat TypeScript nie gewarnt. Die Bedingung
-        // war damit immer falsch: Die Report-E-Mail wurde nie ausgelöst.
-        // Gemessen am 2026-08-31, nachdem die Function selbst wieder lief.
-        //
-        // `audit-report-email` erwartet genau diese ID: Es liest
-        // `gdpr_audits` per `?id=<uuid>` und markiert dort `email_sent_at`.
-        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
-          method: 'GET',
-          keepalive: true,
-        }).catch(() => { /* non-blocking */ });
+        setReportEmailStatus('sending');
+        // A missing provider key, a skipped send, and transport failures are not success.
+        // This request does not imply inbox delivery; do not block the visible report.
+        void requestAuditReportEmail(SUPABASE_URL, data.audit_id).then((status) => {
+          if (seq === runSeq.current) setReportEmailStatus(status);
+        });
+      } else {
+        setReportEmailStatus('not_sent');
       }
     } catch (e) {
       if (seq !== runSeq.current) return;
@@ -223,6 +219,13 @@ export function AuditLanding() {
                   </div>
                 </div>
                 <ReportView report={report} onRetry={resetForNewScan} />
+                {reportEmailStatus && (
+                  <p role="status" aria-live="polite" className="mt-4 border border-titanium-800 p-3 text-sm text-titanium-200">
+                    {reportEmailStatus === 'sending'
+                      ? 'Der E-Mail-Versand wird geprüft …'
+                      : reportEmailMessage[reportEmailStatus]}
+                  </p>
+                )}
               </div>
               <div className="mt-10">
                 <LegalDisclaimer context="audit" />

@@ -54,7 +54,7 @@ describe('Startseite v3 — `/`', () => {
 
   it('rendert alle vier Produkte, AI Receptionist als „In Vorbereitung“, Rechtslinks erreichbar', () => {
     render(<MemoryRouter><LandingV3 /></MemoryRouter>);
-    expect(screen.getByTestId('v3-hero-heading')).toHaveTextContent('Ihre Ideen.In Bewegung.');
+    expect(screen.getByTestId('v3-hero-heading')).toHaveTextContent('Ihre Ideen. In Bewegung.');
     for (const p of PRODUCTS) expect(screen.getByTestId(`v3-product-${p.key}`)).toHaveAttribute('href', p.href);
     expect(screen.getByTestId('v3-product-bots')).toHaveTextContent('In Vorbereitung');
     const legal = screen.getByRole('navigation', { name: 'Rechtliches' });

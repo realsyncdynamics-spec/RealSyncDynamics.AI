@@ -1,4 +1,5 @@
 import { showsNetPriceLabel } from '@/shared/pricing';
+import { ModularPricingPreview } from './ModularPricingPreview';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resolveAuditContext, withAuditContext } from '../../core/onboarding/funnelContext';
@@ -93,6 +94,11 @@ export function PricingPage() {
     const el = document.getElementById(`plan-${selectedPlan}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [selectedPlan]);
+
+  // Explicit review URL only; existing public offers and checkout stay intact.
+  if (params.get('preview') === 'modular-v2') {
+    return <ModularPricingPreview />;
+  }
 
   // Ohne verdrahtete Jahrespreise immer monatlich halten.
   const effectiveBilling: Billing = YEARLY_BILLING_ENABLED ? billing : 'monthly';

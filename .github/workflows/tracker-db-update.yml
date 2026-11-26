@@ -2,9 +2,9 @@ name: Tracker-DB Version Update
 
 # Wöchentlicher Job: erzeugt eine frische Version-Tag für die Tracker-DB,
 # basierend auf EasyList-Last-Modified-Header. Schreibt
-# public/tracker-db-version.json und committet die Änderung.
+# public/tracker-db-version.json und legt dafür einen Branch mit PR an.
 #
-# Triggert dadurch den Frontend-Deploy (deploy-cloudflare-pages.yml watcht
+# Nach dem Merge triggert das den Frontend-Deploy (deploy-cloudflare-pages.yml watcht
 # public/**), sodass /audit-Reports automatisch neue Versions-Pills zeigen.
 
 on:
@@ -19,6 +19,7 @@ concurrency:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update-tracker-db:
@@ -70,7 +71,13 @@ jobs:
           # Format mit jq für stable diff
           jq . public/tracker-db-version.json > /tmp/tdb.json && mv /tmp/tdb.json public/tracker-db-version.json
 
-      - name: Commit if changed
+      - name: Branch und Pull Request statt Push auf main
+        # Seit dem Ruleset „main merge hygiene“ lehnt GitHub den direkten Push
+        # auf main ab (GH013, belegt in den Läufen ab 22.10.2026). Der Job legt
+        # deshalb einen Branch an und öffnet einen PR. Merge bleibt beim Menschen.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW_VERSION: ${{ steps.compute.outputs.new_version }}
         run: |
           git config user.name "tracker-db-bot"
           git config user.email "tracker-db-bot@users.noreply.github.com"
@@ -78,18 +85,17 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
+          branch="chore/tracker-db-${NEW_VERSION}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "::notice::Branch $branch existiert bereits – nichts zu tun."
+            exit 0
+          fi
+          git switch -c "$branch"
           git add public/tracker-db-version.json
-          git commit -m "chore(tracker-db): bump to ${{ steps.compute.outputs.new_version }}"
-          # Rebase auf aktuellen main-Stand und versuche Push mit Retries,
-          # falls zwischenzeitlich weitere Commits auf main landen.
-          for attempt in 1 2 3; do
-            git pull --rebase origin main
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep 2
-            fi
-          done
-          echo "Push failed after retries due to concurrent updates on main."
-          exit 1
+          git commit -m "chore(tracker-db): bump to ${NEW_VERSION}"
+          git push origin "HEAD:refs/heads/$branch"
+          if ! gh pr create --base main --head "$branch" \
+              --title "chore(tracker-db): bump to ${NEW_VERSION}" \
+              --body "Automatisch erzeugt von \`tracker-db-update.yml\`. Ändert nur \`public/tracker-db-version.json\`. Merge löst den Frontend-Deploy aus."; then
+            echo "::warning::PR konnte nicht angelegt werden (Repo-Einstellung Allow GitHub Actions to create pull requests?). Branch $branch liegt bereit."
+          fi

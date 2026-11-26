@@ -59,7 +59,7 @@ export function OptimizerLayout({
           </div>
           <div className="leading-tight">
             <div className="font-[family-name:var(--brand-serif)] font-semibold text-base tracking-tight text-[var(--brand-champ-hi)]">
-              Cloud Code Optimizer
+              Claude Code Optimizer
             </div>
             <div className="text-[11px] text-[var(--brand-titan)] font-medium">RealSync Dynamics</div>
           </div>

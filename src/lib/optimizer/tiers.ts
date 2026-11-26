@@ -5,7 +5,7 @@ import { isSelfServiceCheckoutOpen, showsNetPriceLabel } from '@/shared/pricing'
  */
 
 /**
- * Paket-Definitionen für den Cloud Code Optimizer.
+ * Paket-Definitionen für den Claude Code Optimizer.
  *
  * WICHTIG (Phase 3): Die Optimizer-Karten sind eine Marketing-Sicht auf
  * die **realen** SaaS-Tiers aus `src/config/pricing.ts`. Preise und

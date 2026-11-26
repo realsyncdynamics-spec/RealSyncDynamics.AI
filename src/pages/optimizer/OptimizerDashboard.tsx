@@ -76,7 +76,7 @@ export function OptimizerDashboard() {
       <OptimizerLayout
         step={6}
         pageType="feedback"
-        metaTitle="Kein Bericht — Cloud Code Optimizer"
+        metaTitle="Kein Bericht — Claude Code Optimizer"
         metaDescription="Es liegt kein Scan-Ergebnis vor."
       >
         <div className="text-center py-12">

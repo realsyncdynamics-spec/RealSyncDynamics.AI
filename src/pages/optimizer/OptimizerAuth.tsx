@@ -68,7 +68,7 @@ export function OptimizerAuth() {
       step={4}
       pageType="action"
       backTo="/optimizer/results"
-      metaTitle="Anmelden oder Konto erstellen — Cloud Code Optimizer"
+      metaTitle="Anmelden oder Konto erstellen — Claude Code Optimizer"
       metaDescription="Melde dich an, um deinen vollständigen Optimierungsbericht zu erhalten."
     >
       <h1 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 tracking-tight mb-6">

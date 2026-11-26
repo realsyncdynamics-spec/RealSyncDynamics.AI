@@ -48,7 +48,7 @@ export function OptimizerVerify() {
     <OptimizerLayout
       step={4}
       pageType="feedback"
-      metaTitle="E-Mail bestätigen — Cloud Code Optimizer"
+      metaTitle="E-Mail bestätigen — Claude Code Optimizer"
       metaDescription="Bestätige deine E-Mail-Adresse, um fortzufahren."
     >
       <div className="text-center py-6">

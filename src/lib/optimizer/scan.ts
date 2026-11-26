@@ -4,7 +4,7 @@
  */
 
 /**
- * Scanner-Adapter für den Cloud Code Optimizer.
+ * Scanner-Adapter für den Claude Code Optimizer.
  *
  * Verwendet die bestehende `gdpr-audit` Edge Function wieder (keine
  * Duplikat-Pipeline) und mappt deren Antwort auf die schlanke
@@ -60,6 +60,13 @@ export async function runOptimizerScan(rawUrl: string, scannedAt: string): Promi
     },
     { requireAuth: false },
   );
+
+  // Nicht erreichbare Seite: kein Score, sondern eine klare Meldung (Claims-vs-Runtime).
+  if (report.fetched === false) {
+    throw new Error(
+      `Die Website ${report.domain ?? domainFromUrl(url)} war nicht erreichbar. Bitte prüfe die Adresse und versuche es erneut.`,
+    );
+  }
 
   const issues: OptimizerIssue[] = (report.issues ?? []).map((i, idx) => ({
     id: i.id ?? `issue-${idx}`,

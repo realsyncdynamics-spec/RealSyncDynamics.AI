@@ -4,7 +4,7 @@
  */
 
 /**
- * Flow-State für den Cloud Code Optimizer.
+ * Flow-State für den Claude Code Optimizer.
  *
  * Zustand wird bewusst NICHT im DOM/Router gehalten, sondern in
  * `sessionStorage` — so übersteht der Flow einen Reload und jede Seite

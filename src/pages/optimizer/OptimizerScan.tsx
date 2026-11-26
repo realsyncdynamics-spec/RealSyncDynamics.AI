@@ -55,7 +55,7 @@ export function OptimizerScan() {
       step={2}
       pageType="action"
       backTo="/optimizer"
-      metaTitle="Website-URL eingeben — Cloud Code Optimizer"
+      metaTitle="Website-URL eingeben — Claude Code Optimizer"
       metaDescription="Gib deine Website-URL ein und starte den kostenlosen Scan."
     >
       <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">

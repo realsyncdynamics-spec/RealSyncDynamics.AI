@@ -43,12 +43,12 @@ export function OptimizerLanding() {
     <OptimizerLayout
       step={1}
       pageType="info"
-      metaTitle="Cloud Code Optimizer — Website-Analyse | RealSync Dynamics"
+      metaTitle="Claude Code Optimizer — Website-Analyse | RealSync Dynamics"
       metaDescription="Analysiere Performance, SEO, Sicherheit, Code-Qualität und DSGVO deiner Website. Erster Scan kostenlos, ohne Anmeldung."
       metaUrl="https://RealSyncDynamicsAI.de/optimizer"
     >
       <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-        Cloud Code Optimizer — was kann er für dich tun?
+        Claude Code Optimizer — was kann er für dich tun?
       </h1>
       <p className="text-lg text-titanium-300 leading-relaxed mb-8 max-w-2xl">
         Der Optimizer prüft deine Website technisch durch und zeigt dir konkret, wo sie

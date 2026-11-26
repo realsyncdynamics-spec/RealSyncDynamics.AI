@@ -56,7 +56,7 @@ export function OptimizerOptimizing() {
     <OptimizerLayout
       step={6}
       pageType="feedback"
-      metaTitle="Optimierung läuft — Cloud Code Optimizer"
+      metaTitle="Optimierung läuft — Claude Code Optimizer"
       metaDescription="Dein Optimierungsplan wird zusammengestellt."
     >
       <div className="flex flex-col items-center text-center py-6">

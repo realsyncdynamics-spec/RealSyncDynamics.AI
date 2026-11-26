@@ -31,6 +31,7 @@ interface AuditReport {
   score: number;
   severity: string;
   created_at?: string;
+  fetched?: boolean;
   issues: Array<{
     id: string;
     severity: OptimizerFinding['severity'];
@@ -71,6 +72,13 @@ export function OptimizerScan() {
         },
         { requireAuth: false },
       );
+
+      // Nicht erreichbare Seite: kein Score, sondern eine klare Meldung.
+      if (report.fetched === false) {
+        throw new Error(
+          `Die Website ${report.domain} war nicht erreichbar. Bitte prüfe die Adresse und versuche es erneut.`,
+        );
+      }
 
       const result: OptimizerScanResult = {
         auditId: report.audit_id,

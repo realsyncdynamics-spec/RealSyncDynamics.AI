@@ -47,6 +47,11 @@ abgeleitet (`src/product/implementation-status.ts`), nicht behauptet.
 | Draft-PR öffnen | Preise (`shared/pricing.ts`), Rechtstexte, Landing-Claims |
 | | Kostenpflichtige Dienste, PR schließen, `automerge`-Label |
 
+**Technisch erzwungen:** `.claude/hooks/file-guard.mjs` blockiert Edit/Write außerhalb der
+Allowlist in `.claude/hooks/file-guard.json` (Backend, Migrationen, Auth, Billing/Stripe,
+Preise, Workflows, Produktionskonfiguration). Blockiert der Guard: nicht per Bash umgehen,
+sondern stoppen und eskalieren.
+
 Sofort eskalieren bei: Sicherheitsproblem, fehlender Berechtigung, unklarer
 Produktionswirkung, drohendem Datenverlust.
 

@@ -27,3 +27,8 @@ auslagern — Budget nicht anheben.
 
 `hooks/session-start.sh` darf **kein** `npm install` ausführen (Cloud-Timeout
 + Kontextmüll). Nur `exit 0`.
+
+`hooks/file-guard.mjs` (PreToolUse, Edit/Write) erzwingt die Allowlist aus
+`hooks/file-guard.json`: deny gewinnt, alles im Repo außerhalb von allow wird
+blockiert, fail-closed. Schreiben per Bash deckt er nicht ab. Test:
+`test/claude/file-guard.test.ts`.

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyOwnerEdit, approvalBlockers, cleanValue, deriveSecretariatDraft, draftHints, faqToLines, findEmails,
-  isPlaceholderEmailDomain, linesToFaq, linesToList, normalizePhone,
+  FAX_LABEL_RE, isPlaceholderEmailDomain, linesToFaq, linesToList, normalizePhone, PHONE_LABEL_RE,
   type WebsiteDiscovery,
 } from '../../../src/features/secretariat/websiteDraft';
 
@@ -241,6 +241,36 @@ describe('Titel und Öffnungszeiten ohne ReDoS (CodeQL-Befund #2435)', () => {
     const start = performance.now();
     deriveSecretariatDraft(discovery({ title: `a${spaces}a`, visible_text: `Mo${spaces}x Mo 8-12${spaces}x` }));
     // Vorher ~4,5 s (Titel) bzw. ~2,1 s (Öffnungszeiten) bei 80 000 Zeichen.
+    expect(performance.now() - start).toBeLessThan(500);
+  });
+});
+
+describe('Telefon- und Fax-Beschriftung ohne ReDoS', () => {
+  it('erkennt übliche Beschriftungen unverändert', () => {
+    for (const label of ['Tel.:', 'Telefon: ', 'fon ', 'Phone', 'rufen Sie an:', 'Tel']) {
+      expect(PHONE_LABEL_RE.test(label)).toBe(true);
+    }
+    expect(PHONE_LABEL_RE.test('Tel x')).toBe(false);
+    expect(FAX_LABEL_RE.test('Fax:')).toBe(true);
+    expect(FAX_LABEL_RE.test('Fax :  ')).toBe(true);
+    expect(FAX_LABEL_RE.test('Faxe')).toBe(false);
+  });
+
+  it('bevorzugt die beschriftete Nummer und überspringt Fax', () => {
+    const phone = deriveSecretariatDraft(discovery({ visible_text: 'Fax: 0221 999888 Tel.: 0221 123456' })).fields.phone;
+    expect(phone.status).toBe('known');
+    if (phone.status === 'known') {
+      expect(phone.value).toBe('0221 123456');
+      expect(phone.confidence).toBe('high');
+    }
+  });
+
+  it('bleibt bei langen Leerzeichenfolgen linear', () => {
+    const input = `tel${' '.repeat(80_000)}x`;
+    const start = performance.now();
+    PHONE_LABEL_RE.test(input);
+    FAX_LABEL_RE.test(`fax${' '.repeat(80_000)}x`);
+    // Vorher ~2,6 s bei 80 000 Zeichen.
     expect(performance.now() - start).toBeLessThan(500);
   });
 });

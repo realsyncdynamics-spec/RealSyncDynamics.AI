@@ -170,8 +170,11 @@ function deriveBusinessName(d: WebsiteDiscovery, src: (m: DraftMethod, e: string
  * 7 Ziffern. Bevorzugt Nummern, vor denen „Tel“, „Telefon“ oder „Fon“ steht.
  */
 const PHONE_RE = /(?:\+|00)(?:49|43|41)[\s/.\-()]*\d[\d\s/.\-()]{5,18}\d|\b0\d{2,5}[\s/.\-()]*\d[\d\s/.\-]{3,14}\d/g;
-const PHONE_LABEL_RE = /(tel(?:efon)?\.?|fon|phone|anruf|ruf(?:en sie)? an)\s*:?\s*$/i;
-const FAX_LABEL_RE = /fax\s*:?\s*$/i;
+// `\s*(?::\s*)?$` statt `\s*:?\s*$`: Ohne Doppelpunkt konnten sich die beiden `\s*`
+// dieselben Leerzeichen aufteilen (quadratische Laufzeit). Im Ablauf laufen beide
+// Muster nur auf den 20 Zeichen vor einer Nummer, eindeutig bleiben sie trotzdem.
+export const PHONE_LABEL_RE = /(tel(?:efon)?\.?|fon|phone|anruf|ruf(?:en sie)? an)\s*(?::\s*)?$/i;
+export const FAX_LABEL_RE = /fax\s*(?::\s*)?$/i;
 
 export function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d+]/g, '');

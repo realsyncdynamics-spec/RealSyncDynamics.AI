@@ -18,6 +18,10 @@ import {
 } from '../_shared/stripe-subscription-sync.ts';
 import { invoiceSubscriptionId, type InvoiceSubscriptionShape } from '../_shared/stripe-invoice.ts';
 import {
+  decideOneTimeGrantStatus,
+  type OneTimeGrantTrigger,
+} from '../_shared/one-time-grant-status.ts';
+import {
   planEnqueue,
   readVoiceEntitlements,
   type ExistingVoiceAgent,
@@ -208,7 +212,7 @@ Deno.serve(async (req) => {
         // Abos werden hier bewusst NICHT synchronisiert: das übernimmt
         // `customer.subscription.created` mit dem echten Subscription-Objekt.
         if (session.mode === 'payment') {
-          await recordOneTimePurchase(admin, stripe, session);
+          await recordOneTimePurchase(admin, stripe, session, event.type);
         }
         // Abo-Checkout: Profil anwenden, falls die Subscription-Zeile schon
         // synchronisiert ist (sonst übernimmt customer.subscription.created).
@@ -223,6 +227,18 @@ Deno.serve(async (req) => {
         await triggerWebsiteRebuildIfApplicable(admin, session);
         await reportPurchaseToAdPlatforms(session, req);
         await flagCheckoutTaxReview(admin, session);
+        break;
+      }
+      // Asynchrone Zahlarten (SEPA-Lastschrift u. a.): `completed` meldete
+      // noch `unpaid`, der Grant steht auf `revoked`. Erst diese Events
+      // bestätigen Eingang oder Ausfall. Abos laufen über die
+      // Subscription-/Invoice-Events und brauchen hier nichts.
+      case 'checkout.session.async_payment_succeeded':
+      case 'checkout.session.async_payment_failed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === 'payment') {
+          await recordOneTimePurchase(admin, stripe, session, event.type);
+        }
         break;
       }
       // Add more handlers as the billing surface grows; ignore unknown types.
@@ -592,6 +608,7 @@ async function recordOneTimePurchase(
   admin: SupabaseAdminClient,
   stripe: Stripe,
   session: Stripe.Checkout.Session,
+  trigger: OneTimeGrantTrigger,
 ): Promise<void> {
   const tenantId = session.metadata?.tenant_id;
   if (!tenantId) {
@@ -635,9 +652,29 @@ async function recordOneTimePurchase(
 
   // `payment_status` ist bei erfolgreichem Checkout 'paid'; 'unpaid' tritt bei
   // asynchronen Zahlarten auf. Nur ein bezahlter Kauf darf Rechte gewähren —
-  // ein unbezahlter wird als widerrufen geführt und später über
-  // `checkout.session.async_payment_succeeded` o. ä. nachgezogen.
-  const paid = session.payment_status === 'paid';
+  // ein unbezahlter wird als widerrufen geführt und über
+  // `checkout.session.async_payment_succeeded` aktiviert bzw. über
+  // `checkout.session.async_payment_failed` endgültig entzogen.
+  //
+  // Der bestehende Grant wird gelesen, weil Stripe keine Zustellreihenfolge
+  // garantiert: Ein verspäteter Retry von `completed` (Stand `unpaid`) darf
+  // einen bereits bestätigten Kauf nicht wieder entziehen.
+  const { data: existing, error: existingErr } = await admin
+    .from('entitlement_grants')
+    .select('status, source')
+    .eq('purchase_reference', session.id)
+    .limit(1)
+    .maybeSingle();
+  if (existingErr) throw existingErr;
+  const existingRow = existing as { status?: string; source?: string } | null;
+  const existingStatus = existingRow?.source === 'one_time_purchase' ? existingRow.status ?? null : null;
+
+  const decision = decideOneTimeGrantStatus(trigger, session.payment_status, existingStatus);
+  if (decision.keepExisting) {
+    console.info(`[stripe-webhook] one-time ${session.id}: ${trigger} mit payment_status=${session.payment_status} — aktiver Grant bleibt`);
+    return;
+  }
+  const paid = decision.status === 'active';
 
   const row = {
     tenant_id: tenantId,
@@ -650,11 +687,11 @@ async function recordOneTimePurchase(
     stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null,
     amount_total_cents: session.amount_total ?? 0,
     currency: (session.currency ?? 'eur').toLowerCase(),
-    status: paid ? 'active' : 'revoked',
+    status: decision.status,
     // Der CHECK entitlement_grants_revocation_consistent verlangt, dass
     // revoked_at genau dann gesetzt ist, wenn der Status 'revoked' lautet.
     revoked_at: paid ? null : new Date().toISOString(),
-    revoked_reason: paid ? null : `payment_status=${session.payment_status ?? 'unknown'}`,
+    revoked_reason: decision.revokedReason,
     // Governance Launch gewährt dauerhaft — kein Ablaufdatum.
     expires_at: null,
     granted_at: new Date(session.created * 1000).toISOString(),

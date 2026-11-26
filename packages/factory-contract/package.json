@@ -1,0 +1,12 @@
+{
+  "name": "@realsync/factory-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kanonischer FactoryJob-Vertrag v1 der RealSync Software Factory (reine Datentypen, keine Ausführung).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

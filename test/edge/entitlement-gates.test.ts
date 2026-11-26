@@ -32,8 +32,6 @@ const GATES: ReadonlyArray<{ fn: string; key: EntitlementKey; source?: string }>
   // `reports.export` gewährt kein Plan, nur das Add-on Compliance Pack —
   // Berichte hängen deshalb an `compliance.export` (ab Starter).
   { fn: 'governance-analytics-export', key: 'compliance.export' },
-  { fn: 'governance-audit-report-gen', key: 'compliance.export' },
-  { fn: 'report-generator', key: 'compliance.export' },
   { fn: 'generate-certification-report', key: 'compliance.export' },
   { fn: 'evidence-vault-export', key: 'compliance.export' },
   { fn: 'generate-compliance-report', key: 'compliance.export' },
@@ -210,13 +208,6 @@ describe('Welle 4 — Auth-Reparaturen an Export-Functions', () => {
     expect(src).not.toContain(".from('team_members')");
     expect(src).toContain('requireUser(req)');
     expect(src).toContain("['owner', 'admin']");
-  });
-
-  it('report-generator prüft Token und Mitgliedschaft, nicht nur das Wort „Bearer"', () => {
-    const src = quelle('report-generator');
-    expect(src).not.toMatch(/authHeader\?\.startsWith\('Bearer '\)/);
-    expect(src).toContain('requireUser(req)');
-    expect(src).toContain('requireTenantMembership(');
   });
 
   it('generate-certification-report prüft die Mitgliedschaft vor dem Bericht', () => {

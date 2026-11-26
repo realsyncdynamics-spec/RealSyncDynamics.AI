@@ -220,7 +220,7 @@ function main() {
     // Weitere Domaenen (angehaengt: fruehere Treffer gewinnen, nur „Sonstige" schrumpft).
     ['ISO 42001/Zertifizierung', /^iso42001-|^certification-|^policy-packs$/],
     ['Website/Betrieb', /^website-|^rebuild-website$|^maintenance-|^cloudflare-|^hostinger-/],
-    ['Integrationen', /^microsoft365-|^integration-|^seed-integrations$|^oauth2-|^mcp-/],
+    ['Integrationen', /^microsoft365-|^integration-|^oauth2-|^mcp-/],
     ['Legal/RAG/Provenance', /^legal-|^provenance$|^c2pa-/],
     ['Compliance/NIS2', /^compliance-|^nis2-|^security-signal-/],
     ['SEO/Analytics', /seo|^sync-ga-metrics$|^dashboard-|^share-dashboard$|forecast|^sync-stripe-metrics$/],

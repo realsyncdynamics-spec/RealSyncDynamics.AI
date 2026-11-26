@@ -10,6 +10,13 @@
  *
  * ## Stand der Messung
  *
+ * 2026-11-18: 10 Functions ohne Aufrufer und ohne Aufrufe in 24 h aus Repo
+ * und Produktion entfernt (Limit 200 erreicht, workspace-* und
+ * platform-intelligence-orchestrator konnten nicht deployt werden):
+ * seed-integrations, governance-audit-report-gen, governance-evidence-handler,
+ * governance-gap-analyzer, governance-workflow-intake, nis2-deadline-calculator,
+ * notify-terminal-event, report-generator, tenant-branding-get, evidence-r2.
+ *
  * 2026-10-30T11:46Z, Drift-Guard (Lauf 41050437804) gegen RealSyncDynamicsLive:
  * **200 ACTIVE**, neu `agent-questions` (#2095) als STALE_PROD_LIST — Liste nachgezogen.
  *
@@ -94,11 +101,15 @@
  * Bewusst kein „Plan-Limit": Diese Zahl ist eine Beobachtung, keine Schranke.
  * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
  * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
+ *
+ * Achtung (16.11.2026): Bei 200 aktiven Functions lehnte Supabase neue mit
+ * `402 Max number of functions reached` ab (Tarif-Grenze `function.max_count`).
+ * Seit der Bereinigung vom 18.11.2026 entspricht der Wert der Listenlänge.
  */
-export const EDGE_FUNCTIONS_OBSERVED_MAX = 200;
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 190;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-10-30T11:46Z';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-11-18T19:30Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -168,7 +179,6 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'enterprise-ai-os-founding-access',
   'evidence-anchor',
   'evidence-export',
-  'evidence-r2',
   'evidence-vault',
   'evidence-vault-export',
   'export-audit',
@@ -184,15 +194,12 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-analytics-aggregator',
   'governance-analytics-export',
   'governance-approvals',
-  'governance-audit-report-gen',
   'governance-connectors',
   'governance-deadline-monitor',
   'governance-decide',
   'governance-dpias',
   'governance-dsr',
   'governance-erasure-sweeper',
-  'governance-evidence-handler',
-  'governance-gap-analyzer',
   'governance-incidents',
   'governance-ingest',
   'governance-keys',
@@ -206,7 +213,6 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'governance-score-calculator',
   'governance-vendors',
   'governance-webhooks',
-  'governance-workflow-intake',
   'health',
   'hostinger-agent-brief',
   'integration-credentials',
@@ -235,8 +241,6 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'microsoft365-connect',
   'newsletter-confirm',
   'newsletter-subscribe',
-  'nis2-deadline-calculator',
-  'notify-terminal-event',
   'oauth2-apps',
   'oauth2-token',
   'onboarding-orchestrator',
@@ -253,14 +257,12 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'rebuild-website',
   'remediation-agent',
   'remediation-workflow',
-  'report-generator',
   'sales-lead',
   'save-company-profile',
   'schedule-data-syncs',
   'scheduler',
   'scheduler-dispatch',
   'security-signal-ingest',
-  'seed-integrations',
   'seo-dashboard-data',
   'share-dashboard',
   'shopify-callback',
@@ -286,7 +288,6 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'telegram-webhook',
   'telemetry-ai-event',
   'tenant-audit',
-  'tenant-branding-get',
   'tenant-branding-update',
   'tenant-invite',
   'tenant-members',

@@ -168,6 +168,42 @@ und verkauft wird, folgen weitere Branchen und Assistenten.
   `marketing/icp-und-sales-navigator.md`, `.github/PR_TRIAGE_POLICY.md`) werden
   in eigenen PRs angeglichen.
 
+### K5 — Voice Agent branchenübergreifend, vorläufige Voice-Zielwerte  · ✅ ENTSCHIEDEN am 2026-11-25
+
+**Entscheidung (Owner):** Der Voice Agent (AI Receptionist) ist nicht auf das
+Handwerk beschränkt. Er wird über Branchenvorlagen angeboten, wie auf
+`voice.realsyncdynamicsai.de` (u. a. Handwerk, Gastronomie & Bäckerei,
+KFZ-Werkstatt, Metzgerei, Hausverwaltung, Arztpraxis, Kanzlei,
+Steuerberatung). Handwerk ist eine Vorlage, keine Zielgruppen-Einschränkung.
+
+**Ändert an K4:** nur den Satz „AI Receptionist für Handwerksbetriebe … erst
+danach weitere Branchen“. Positionierung, Produktebenen und Leitplanken von K4
+bleiben gültig.
+
+**Vorläufige Voice-Zielwerte (Owner, 25.11.2026, ersetzen 0,18 € für Starter):**
+
+| Paket | Monat | Inklusivminuten | Zusatzminute |
+|---|---|---|---|
+| Starter | 89 € | 500 | 0,19 € |
+| Professional | 199 € | 1.200 | 0,17 € |
+| Kanzlei / Praxis | 349 € | 2.500 | 0,16 € |
+
+Quelle im Code: `shared/pricing.ts` → `VOICE_STANDALONE_OFFERS`.
+
+**Wirtschaftliche Freigabekriterien je Tarif:** mindestens 30 % Marge bei
+50 % Nutzung, mindestens 15 % bei 100 % Nutzung, mindestens 30 % je
+Zusatzminute und kein negativer Deckungsbeitrag im Stressszenario (variable
+Minutenkosten +20 % bei 100 % Nutzung, Fixkosten unverändert). Vollkosten
+umfassen Provider, LLM, Telefonie, Concurrency/Burst, Infrastruktur, Support
+und Zahlungsabwicklung. Die Kalkulation steht in
+`docs/pricing/voice-k5-kalkulation.md`.
+
+Kein Paket ist kaufbar freigegeben: Der Leistungsumfang (`bullets`) fehlt,
+`VOICE_CHECKOUT_ENABLED` bleibt aus, und Stripe bleibt unverändert.
+
+**Unverändert durch K5:** Telefonie bleibt `voice-telephony` (nicht live),
+Status nur aus `src/product/implementation-status.ts`.
+
 ---
 
 ## Bau-Aufgaben aus den Entscheidungen

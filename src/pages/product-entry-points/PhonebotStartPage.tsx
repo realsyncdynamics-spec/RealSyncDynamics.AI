@@ -139,6 +139,12 @@ export function PhonebotStartPage() {
                   <p className="mt-4 text-3xl font-bold tracking-tight">{formatPriceEur(offer.monthlyEur)}
                     <span className="text-sm font-normal text-slate-500"> / Monat</span>
                   </p>
+                  {offer.monthlyMinutes !== null && offer.extraMinuteEur !== null && (
+                    <p className="mt-2 text-sm text-slate-600" data-testid={`voice-offer-minutes-${offer.id}`}>
+                      Vorläufiger Zielwert: {offer.monthlyMinutes.toLocaleString('de-DE')} Inklusivminuten,
+                      {' '}{offer.extraMinuteEur.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })} je weitere Minute
+                    </p>
+                  )}
                   {offer.bullets.length > 0 ? (
                     <ul className="mt-3 flex-1 space-y-1 text-sm leading-relaxed text-slate-600">
                       {offer.bullets.map((b) => <li key={b}>· {b}</li>)}

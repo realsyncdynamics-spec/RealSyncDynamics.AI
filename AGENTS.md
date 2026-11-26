@@ -3,8 +3,9 @@
 Gilt für jeden Agenten (Claude Code, Codex, Copilot, Subagenten); `CLAUDE.md` importiert sie.
 Profile und Policies dürfen verschärfen, nie lockern.
 
-**Produkt (K4, 27.10.2026, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für **KI-Mitarbeiter
-mit eingebauter Governance** für KMU mit Kundenkontakt, zuerst Handwerk. Erster Ablauf:
+**Produkt (K4/K5, `docs/PRODUCT_PRIORITIZATION.md`):** Plattform für **KI-Mitarbeiter
+mit eingebauter Governance** für KMU mit Kundenkontakt, branchenübergreifend über
+Branchenvorlagen (Handwerk ist eine davon, keine Einschränkung). Erster Ablauf:
 AI Receptionist (Anfrage, Kontakt, Terminwunsch, Übergabe an Menschen). DSGVO/EU AI Act,
 Freigaben und Nachweise sind Infrastruktur, nicht Hero-Botschaft.
 

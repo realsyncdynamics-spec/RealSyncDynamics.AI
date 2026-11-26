@@ -8,6 +8,7 @@
 //   cannot map a subscription back to a tenant and the event is rejected.
 
 import Stripe from 'npm:stripe@16.12.0';
+import { sendCheckoutWelcomeMail } from '../_shared/checkout-welcome-mail.ts';
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
 import { normalizePlanKey, planByKey, PRICING_TAX_MODE, isStandaloneVoiceOfferReleased, standaloneVoiceOfferById } from '../_shared/pricing.generated.ts';
@@ -1047,7 +1048,7 @@ async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe
   const setupUrl = `${SITE}/welcome?session=${encodeURIComponent(session.id)}&product=${encodeURIComponent(productLabel)}`;
 
   // Persistiere Onboarding-State (idempotent — falls Webhook retry, nichts kaputt)
-  await admin
+  const { error: onboardingError } = await admin
     .from("customer_onboarding")
     .upsert(
       {
@@ -1064,8 +1065,13 @@ async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe
     .select()
     .single();
 
+  if (onboardingError) {
+    console.error("[stripe-webhook] customer onboarding persistence failed", { sessionId: session.id });
+    return;
+  }
+
   if (!RESEND_KEY) {
-    console.log("[stripe-webhook] RESEND_API_KEY missing — onboarding state saved, email skipped");
+    console.error("[stripe-webhook] RESEND_API_KEY missing — onboarding state saved, email skipped", { sessionId: session.id });
     return;
   }
 
@@ -1085,14 +1091,14 @@ async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe
 </body>
 </html>`;
 
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from: FROM, to: [email], subject, html }),
-  });
+  try {
+    const providerId = await sendCheckoutWelcomeMail({ apiKey: RESEND_KEY, sessionId: session.id, from: FROM, email, subject, html });
+    console.info("[stripe-webhook] welcome email accepted", { sessionId: session.id, providerId });
+  } catch (err) {
+    // Do not replay unrelated provisioning or marketing side effects solely for mail.
+    // Durable outbox/retry is a separate migration and remains required.
+    console.error("[stripe-webhook] welcome email failed", { sessionId: session.id, reason: err instanceof Error ? err.message : 'UNKNOWN' });
+  }
 }
 
 // Trigger den Website-Rebuild-Workflow wenn der Checkout den

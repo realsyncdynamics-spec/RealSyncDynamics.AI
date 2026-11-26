@@ -48,7 +48,9 @@ jobs:
 
   backup:
     name: Backup VPS
-    if: vars.VPS_BACKUP_ENABLED == 'true'
+    # R1: führt ein Repo-Skript per SSH auf dem Prod-VPS aus — nur vom Stand main.
+    # Bewusst ohne Freigabe-Gate: der tägliche Backup-Lauf würde sonst auf eine Freigabe warten.
+    if: vars.VPS_BACKUP_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

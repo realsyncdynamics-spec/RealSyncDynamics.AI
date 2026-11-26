@@ -134,6 +134,7 @@ export function LandingV3() {
                 key={p.key}
                 to={p.href}
                 className="lv3-cat"
+                data-product={p.key}
                 onMouseEnter={() => setActive(i)}
                 onFocus={() => { setActive(i); setPaused(true); setWaveSignal((n) => n + 1); }}
               >
@@ -184,7 +185,7 @@ export function LandingV3() {
               const st = productStatus(p);
               const note = productNote(p);
               return (
-                <Link key={p.key} to={p.href} className="lv3-card" data-testid={`v3-product-${p.key}`}>
+                <Link key={p.key} to={p.href} className="lv3-card lv3-product" data-product={p.key} data-testid={`v3-product-${p.key}`}>
                   <span className="lv3-meta">
                     {String(i + 1).padStart(2, '0')} · {p.section}
                     {st ? <StatusPill label={st.label} /> : null}

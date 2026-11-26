@@ -273,5 +273,5 @@ export const LEGAL_LINKS: ReadonlyArray<{ to: string; label: string }> = [
   { to: '/widerruf', label: 'Widerruf' },
   { to: '/legal/sub-processors', label: 'Unterauftragsverarbeiter' },
   { to: '/sicherheit', label: 'Sicherheit' },
-  { to: '/kontakt', label: 'Kontakt' },
+  { to: '/contact-sales?source=kontakt', label: 'Kontakt' },
 ];

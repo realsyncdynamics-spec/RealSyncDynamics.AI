@@ -152,7 +152,7 @@ export function LandingV3() {
           <ProductExplorer />
           <a href="#preise">Preise</a>
           <a href="#fragen">Fragen</a>
-          <Link to="/contact-sales">Kontakt</Link>
+          <Link to="/contact-sales?source=kontakt">Kontakt</Link>
           <Link to="/welcome">Anmelden</Link>
           <AskAiPill className="lv3-btn lv3-ask" />
           <a className="lv3-btn lv3-btn--solid" href="#hero-check">Website prüfen</a>

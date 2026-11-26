@@ -28,10 +28,16 @@ export interface ProductPage {
   built: boolean;
 }
 
+/**
+ * Reihenfolge und Namen wie im Produkt-Explorer der Startseite (K6, 26.11.2026):
+ * Builder zuerst, Governance OS zuletzt. „Telefonassistent“ hieß irreführend,
+ * solange Telefonie nicht live ist – der Name folgt dem Produkt (KI-Bots & Voice).
+ */
 export const PRODUCT_PAGES: readonly ProductPage[] = [
-  { key: 'ki-bots', name: 'Telefonassistent', plannedPath: '/telefonassistent', href: '/telefonassistent', built: true },
-  { key: 'landingpage-builder', name: 'Landingpage-Builder', plannedPath: '/landingpage-builder', href: '/landingpage-builder', built: true },
-  { key: 'app-builder', name: 'App-Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
+  { key: 'landingpage-builder', name: 'AI Landingpage Builder', plannedPath: '/landingpage-builder', href: '/landingpage-builder', built: true },
+  { key: 'app-builder', name: 'App Builder', plannedPath: '/app-builder', href: '/app-builder', built: true },
+  { key: 'ki-bots', name: 'KI-Bots & Voice', plannedPath: '/ki-bots', href: '/ki-bots', built: true },
+  { key: 'claude-code-optimizer', name: 'Claude Code Optimizer', plannedPath: '/claude-code-optimizer', href: '/claude-code-optimizer', built: true },
   { key: 'governance-os', name: 'Governance OS', plannedPath: '/governance-os', href: '/governance-os', built: true },
 ];
 

@@ -146,6 +146,9 @@ export function ContactSales() {
   const isWebdesign = !isInquiry && isWebdesignIntent(intent);
   const showEnterpriseCopy = !isWebdesign && (!isInquiry || isFoundingIntent(inboundSource ?? '', intent));
   const showPlanBadge = isInquiry && planKey !== null;
+  // Allgemeiner Kontakt (Navigation/Footer „Kontakt“, source=kontakt, ohne Plan):
+  // keine Enterprise-Überschrift für KMU, gleiches Formular und Backend (Owner 26.11.2026).
+  const isGeneralContact = !isWebdesign && planKey === null && (inboundSource ?? '').startsWith('kontakt');
 
   function handleChange(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -252,18 +255,24 @@ export function ContactSales() {
     );
   }
 
-  const headerTitle = isWebdesign
+  const headerTitle = isGeneralContact
+    ? 'Kontakt'
+    : isWebdesign
     ? 'Individuelle Dienstleistung'
     : showEnterpriseCopy
       ? 'Enterprise / Kontakt'
       : 'Enterprise / Partner Anfrage';
-  const headerSub = isWebdesign
+  const headerSub = isGeneralContact
+    ? 'RealSync Dynamics & AI'
+    : isWebdesign
     ? 'Persönlich mit Dominik Steiner'
     : showEnterpriseCopy
       ? 'AI Agent antwortet sofort'
       : 'Vertrieb prüft die Anfrage';
 
-  const headline = isWebdesign
+  const headline = isGeneralContact
+    ? 'Schreiben Sie uns.'
+    : isWebdesign
     ? 'Individuelles Webdesign anfragen'
     : showEnterpriseCopy
     ? (planKey
@@ -271,13 +280,15 @@ export function ContactSales() {
       : 'Enterprise anfragen')
     : (planKey ? `${planBadgeLabel(planKey)} — Anfrage` : 'Enterprise / Partner anfragen');
 
-  const intro = isWebdesign
+  const intro = isGeneralContact
+    ? 'Fragen zum Website-Check, zum AI Landingpage Builder oder zu den KI-Bots? Beschreiben Sie kurz Ihr Anliegen. Ihre Nachricht kommt per E-Mail bei uns an.'
+    : isWebdesign
     ? 'Beschreiben Sie kurz Ihr Unternehmen und was entstehen soll: Landingpage, Website (neu oder Relaunch) oder ein individuelles Dashboard – gern mit Wünschen zu Bots, KI-Workflows oder Integrationen. Dominik Steiner prüft die Anfrage persönlich und meldet sich mit Rückfragen zu Umfang und Inhalten. Danach erhalten Sie ein persönliches Festangebot nach Projektumfang.'
     : showEnterpriseCopy
     ? `Enterprise kostet ${monthlyPriceText(ENTERPRISE)}, ohne Testphase, vorerst auf Anfrage. Fragen zu Umfang, Multi-Org oder SLA? Kurz beschreiben: Der AI Agent gleicht Deinen Use-Case mit den relevanten Features ab und antwortet per E-Mail. Starter, Growth und Agency sind in der offenen Beta bis ${BETA.endsLabel} kostenlos.`
     : 'Individuelles Angebot für Enterprise- und Partner-Deployments — Multi-Org, SLA und vertragliche Konditionen. Kurz beschreiben, was Du brauchst; unser Team meldet sich mit einem konkreten Vorschlag.';
 
-  const submitLabel = showEnterpriseCopy ? 'Enterprise anfragen' : 'Anfrage senden';
+  const submitLabel = isGeneralContact ? 'Nachricht senden' : showEnterpriseCopy ? 'Enterprise anfragen' : 'Anfrage senden';
 
   return (
     <div className="min-h-screen rs-paper bg-obsidian-950 text-titanium-100">

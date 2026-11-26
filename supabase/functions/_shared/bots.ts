@@ -73,7 +73,21 @@ export class BotError extends Error {
   }
 }
 
-/** Lädt einen Bot und prüft Tenant-Zugehörigkeit + enabled. */
+/** Sekretariats-Bot (#2435): Marker `config.secretariat` vorhanden, egal mit welchem Wert. */
+function isSecretariatRow(row: BotRow): boolean {
+  const config = row.config;
+  return config !== null && typeof config === 'object' && Object.prototype.hasOwnProperty.call(config, 'secretariat');
+}
+
+/**
+ * Lädt einen Bot und prüft Tenant-Zugehörigkeit + enabled.
+ *
+ * Sekretariats-Bots zusätzlich: Freigabe zum aktuellen Inhalt laut Datenbank
+ * (`secretariat_bot_gate_status`, Migration 20261125180000). Der Hash wird nur
+ * dort berechnet, nie hier. RPC-Fehler, fehlende Antwort oder
+ * `approved !== true` → 403 (fail closed). Für alle anderen Bots kein
+ * zusätzlicher Aufruf.
+ */
 export async function resolveBot(
   admin: SupabaseAdmin,
   tenantId: string,
@@ -89,6 +103,18 @@ export async function resolveBot(
   const row = data as BotRow | null;
   if (!row) throw new BotError('bot not found', 'NOT_FOUND', 404);
   if (!row.enabled) throw new BotError('bot is disabled', 'FORBIDDEN', 403);
+
+  if (isSecretariatRow(row)) {
+    let approved = false;
+    try {
+      const gate = await admin.rpc('secretariat_bot_gate_status', { p_bot_id: row.id });
+      const status = gate.data as { approved?: unknown } | null;
+      approved = !gate.error && status !== null && typeof status === 'object' && status.approved === true;
+    } catch {
+      approved = false;
+    }
+    if (!approved) throw new BotError('secretariat not approved', 'FORBIDDEN', 403);
+  }
   return row;
 }
 

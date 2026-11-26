@@ -88,14 +88,21 @@ function renderFeed() {
 describe('RuntimeEventsFeed', () => {
   beforeEach(() => { supa.result = { data: [], error: null }; });
 
-  it('zeigt Events mit Entscheidung, ohne Link auf eine fremde Freigabeansicht', async () => {
+  it('verlinkt „Freigabe nötig“ auf die Workspace-Quelle der Freigabe-Seite', async () => {
     supa.result = { data: [row], error: null };
     renderFeed();
     await waitFor(() => expect(screen.getByTestId('runtime-events-list')).toBeTruthy());
     expect(screen.getByText('RSD-02')).toBeTruthy();
-    expect(screen.getByText('Freigabe nötig')).toBeTruthy();
-    // /app/approvals liest governance_approvals, nicht workspace_approvals.
-    expect(screen.queryByRole('link', { name: 'Freigabe nötig' })).toBeNull();
+    // Nicht die Governance-Quelle (governance_approvals), sondern workspace_approvals.
+    const link = screen.getByRole('link', { name: 'Freigabe nötig' });
+    expect(link.getAttribute('href')).toBe('/app/approvals?quelle=workspace');
+  });
+
+  it('verlinkt erlaubte Events nicht', async () => {
+    supa.result = { data: [{ ...row, decision: 'allow' }], error: null };
+    renderFeed();
+    await waitFor(() => expect(screen.getByText('Erlaubt')).toBeTruthy());
+    expect(screen.queryByRole('link', { name: 'Erlaubt' })).toBeNull();
   });
 
   it('zeigt Leerzustand ohne Beispieldaten', async () => {

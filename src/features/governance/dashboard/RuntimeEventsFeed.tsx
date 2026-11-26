@@ -3,10 +3,9 @@
  *
  * Zeigt die letzten Governance-Entscheidungen aus `workspace_events`:
  * Agent, Ereignis, angefragte Aktion, Entscheidung (erlaubt / Freigabe nötig),
- * Zeitpunkt und Herkunftsnachweis (Payload-Hash). Nur lesend. Workspace-
- * Freigaben (`workspace_approvals`) haben noch keine Frontend-Ansicht; der
- * Feed verlinkt deshalb nicht auf `/app/approvals` (liest nur
- * `governance_approvals`).
+ * Zeitpunkt und Herkunftsnachweis (Payload-Hash). Nur lesend. „Freigabe nötig“
+ * führt zu `/app/approvals?quelle=workspace` (liest `workspace_approvals`);
+ * entschieden wird dort von Owner/Admin.
  *
  * Zustände: Laden · Quelle nicht eingerichtet · Fehler mit „Erneut laden“ ·
  * leer · Liste. Keine Demo-Daten (siehe runtimeEventsFeedData.ts).
@@ -29,6 +28,9 @@ interface Props {
   /** Mandanten-Datenereignisse (`useTenantDataVersion`). */
   dataVersion: number;
 }
+
+/** Freigabe-Seite mit der Quelle `workspace_approvals`. */
+export const WORKSPACE_APPROVALS_PATH = '/app/approvals?quelle=workspace';
 
 const TIME_FORMAT = new Intl.DateTimeFormat('de-DE', {
   day: '2-digit',
@@ -129,8 +131,8 @@ export function RuntimeEventsFeed({ activeTenantId, reloadKey, dataVersion }: Pr
                   {' → '}
                   <span className="font-mono">{event.requestedAction}</span>
                 </span>
-                {/* Kein Link auf /app/approvals: Diese Ansicht liest governance_approvals,
-                    Workspace-Freigaben liegen in workspace_approvals (noch ohne Frontend). */}
+                {/* Workspace-Freigaben liegen in workspace_approvals — daher die
+                    Quelle `workspace` der Freigabe-Seite, nicht governance_approvals. */}
                 <span
                   data-decision={event.decision}
                   className={`ml-auto font-mono text-[11px] px-1.5 py-0.5 border ${
@@ -139,7 +141,13 @@ export function RuntimeEventsFeed({ activeTenantId, reloadKey, dataVersion }: Pr
                       : 'border-amber-700 text-amber-300'
                   }`}
                 >
-                  {DECISION_LABEL[event.decision]}
+                  {event.decision === 'require_approval' ? (
+                    <Link to={WORKSPACE_APPROVALS_PATH} className="hover:underline">
+                      {DECISION_LABEL[event.decision]}
+                    </Link>
+                  ) : (
+                    DECISION_LABEL[event.decision]
+                  )}
                 </span>
                 <span
                   className="basis-full font-mono text-[10px] text-titanium-600 break-all"

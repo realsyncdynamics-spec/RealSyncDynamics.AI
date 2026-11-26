@@ -102,4 +102,28 @@ https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 /busseld-rechner     /bussgeld-rechner  301
 /bussgeldrechner     /bussgeld-rechner  301
 
+# 26.11.2026 Routing-Prüfung: Diese Aliase lieferten HTTP 200 mit eigenem
+# Prerender-HTML, der canonical zeigte aber auf das Ziel — 13 davon standen
+# zusätzlich in der Sitemap (Sitemap meldet Nicht-Canonical-URLs). Ein 301
+# konsolidiert Index und Backlinks an der Wurzel. Die SPA-Routen in App.tsx
+# bleiben für Client-Navigation bestehen; Ziele = jeweiliger canonical.
+/ai-governance       /ai-act                    301
+/api                 /api-docs                  301
+/behoerden           /oeffentliche-verwaltung   301
+/ecommerce           /online-shops              301
+/hr-software         /personalwesen             301
+/integrations        /integrationen             301
+/release-notes       /changelog                 301
+/versicherungen      /insurance                 301
+/kanzleien           /legal-tech                301
+/impressum           /legal/impressum           301
+/datenschutz         /legal/privacy             301
+/legal/datenschutz   /legal/privacy             301
+/agb                 /legal/terms               301
+/methodik            /legal/methodology         301
+/widerruf            /legal/widerruf            301
+# /avv war nur ein Client-Navigate — ohne Edge-301 bekam ein Crawler die
+# Startseiten-Shell samt Startseiten-Canonical.
+/avv                 /legal/avv                 301
+
 /*  /index.html  200

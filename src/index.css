@@ -1940,6 +1940,14 @@ body:has(.lv3) .cookie-consent {
   --color-cyan-500: #1C1A17;
   --color-cyan-600: #1C1A17;
   --color-cyan-700: #B68235;
+  --color-cyan-200: #7D5411;
+  --color-cyan-800: #D8D2C8;
+  --color-cyan-900: #F4E6CC;
+  --color-cyan-950: #FBF3E4;
+  --color-security-50: #FBF3E4;
+  --color-security-100: #F4E6CC;
+  --color-security-200: #7D5411;
+  --color-security-950: #FBF3E4;
   --color-blue-300: #7D5411;
   --color-blue-400: #7D5411;
   --color-blue-500: #1C1A17;

@@ -33,7 +33,7 @@ export type AiCallEvidenceRiskLevel = 'info' | 'low' | 'medium' | 'high' | 'crit
 export type AiCallResidency = 'eu_local' | 'cloud' | 'unverified';
 
 /** Externe Cloud-Anbieter (Daten verlassen die eigene Infrastruktur). */
-export const CLOUD_PROVIDERS: ReadonlySet<string> = new Set(['openai', 'anthropic', 'google', 'xai', 'mistral']);
+export const CLOUD_PROVIDERS: ReadonlySet<string> = new Set(['openai', 'anthropic', 'google', 'xai', 'mistral', 'nebius']);
 /** Selbst betriebene Endpunkte — Region nur so belastbar wie ihre Konfiguration. */
 export const LOCAL_PROVIDERS: ReadonlySet<string> = new Set(['lm_studio', 'ollama']);
 

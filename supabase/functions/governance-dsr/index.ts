@@ -14,7 +14,8 @@
 //
 // Side effects per write:
 //   • governance_admin_log audit row (best-effort, observable on failure)
-//   • runtime_events evidence row (best-effort, append-only hash chain)
+//   • DSR row + durable evidence outbox via database trigger (atomic);
+//     a cron worker appends runtime_events asynchronously and idempotently.
 //   • subject_ref HMAC computed from requester_email; a tenant key is
 //     provisioned lazily on first use, and a subject_ref_mappings row is
 //     created so the subject is linkable for export + erasure.
@@ -110,6 +111,7 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmai
   if (built.error || !built.row) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
   const row = built.row;
   if (!(await isWriter(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be a tenant member');
+  if (!(await outboxReady(admin))) return jsonError(503, 'EVIDENCE_UNAVAILABLE', 'DSR evidence outbox not ready');
 
   // Resolve (and lazily provision) the subject reference. Best-effort: a
   // failure here must never block intake — the DSR record is the source of
@@ -132,7 +134,6 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmai
   }
 
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dsr.create', target_type: 'dsr_request', target_id: data.id, payload: { request_type: row.request_type } });
-  await emitEvidence(admin, { tenant_id: row.tenant_id, eventType: 'dsr.created', dsr: data, subject_ref, payload: { request_type: row.request_type } });
   return json({ ok: true, dsr: data });
 }
 
@@ -142,6 +143,7 @@ async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmai
   const row = await loadRow(admin, id);
   if (!row) return jsonError(404, 'NOT_FOUND', 'dsr request not found');
   if (!(await isWriter(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be a tenant member');
+  if (!(await outboxReady(admin))) return jsonError(503, 'EVIDENCE_UNAVAILABLE', 'DSR evidence outbox not ready');
 
   const built = buildUpdatePatch(body, row.completed_at ?? null, new Date().toISOString());
   if (built.error || !built.patch) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
@@ -151,7 +153,6 @@ async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmai
   if (error) throw error;
 
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dsr.update', target_type: 'dsr_request', target_id: id, payload: patch });
-  await emitEvidence(admin, { tenant_id: row.tenant_id, eventType: 'dsr.updated', dsr: data, subject_ref: subjectRefOf(data), payload: { status: data.status } });
   return json({ ok: true, dsr: data });
 }
 
@@ -163,12 +164,12 @@ async function handleAssign(admin: SupabaseAdminClient, userId: string, userEmai
   const row = await loadRow(admin, id);
   if (!row) return jsonError(404, 'NOT_FOUND', 'dsr request not found');
   if (!(await isWriter(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be a tenant member');
+  if (!(await outboxReady(admin))) return jsonError(503, 'EVIDENCE_UNAVAILABLE', 'DSR evidence outbox not ready');
 
   const { data, error } = await admin.from('dsr_requests').update({ assigned_to: assigned_to.slice(0, 254) }).eq('id', id).select('*').single();
   if (error) throw error;
 
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dsr.assign', target_type: 'dsr_request', target_id: id, payload: { assigned_to } });
-  await emitEvidence(admin, { tenant_id: row.tenant_id, eventType: 'dsr.assigned', dsr: data, subject_ref: subjectRefOf(data), payload: { assigned_to } });
   return json({ ok: true, dsr: data });
 }
 
@@ -178,6 +179,7 @@ async function handleClose(admin: SupabaseAdminClient, userId: string, userEmail
   const row = await loadRow(admin, id);
   if (!row) return jsonError(404, 'NOT_FOUND', 'dsr request not found');
   if (!(await isWriter(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be a tenant member');
+  if (!(await outboxReady(admin))) return jsonError(503, 'EVIDENCE_UNAVAILABLE', 'DSR evidence outbox not ready');
 
   const built = buildClosePatch(body, row.completed_at ?? null, new Date().toISOString());
   if (built.error || !built.patch) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
@@ -187,7 +189,6 @@ async function handleClose(admin: SupabaseAdminClient, userId: string, userEmail
   if (error) throw error;
 
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dsr.close', target_type: 'dsr_request', target_id: id, payload: { status: patch.status } });
-  await emitEvidence(admin, { tenant_id: row.tenant_id, eventType: 'dsr.closed', dsr: data, subject_ref: subjectRefOf(data), severity: 'medium', payload: { status: patch.status } });
   return json({ ok: true, dsr: data });
 }
 
@@ -235,6 +236,17 @@ async function loadRow(admin: SupabaseAdminClient, id: string) {
 async function isWriter(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return isWriterRole(data?.role);
+}
+
+// Migration readiness gate. Never fall back to unproven best-effort evidence
+// when a changed DSR record must be accompanied by a durable outbox row.
+async function outboxReady(admin: SupabaseAdminClient): Promise<boolean> {
+  try {
+    const { data, error } = await admin.rpc('dsr_outbox_ready');
+    return !error && data === true;
+  } catch {
+    return false;
+  }
 }
 
 async function isMember(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
@@ -314,11 +326,6 @@ async function enqueueErasure(admin: SupabaseAdminClient, tenantId: string, subj
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'dsr_erasure_enqueue_failed', tenant_id: tenantId, dsr_id: dsrId, error: (e as Error)?.message ?? String(e) }));
   }
-}
-
-function subjectRefOf(dsr: DsrRequest): string | null {
-  const ref = dsr?.metadata?.subject_ref;
-  return typeof ref === 'string' && ref.length >= 8 ? ref : null;
 }
 
 // Append-only evidence row on the per-tenant hash chain. Best-effort: a

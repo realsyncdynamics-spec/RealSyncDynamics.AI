@@ -60,7 +60,7 @@ export function Impressum() {
 
         <Section title="Anbieter / Verantwortlicher i. S. d. § 5 DDG">
           <p>
-            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            <strong className="text-titanium-50">RealSync Dynamics &amp; AI</strong><br />
             Schwarzburger Str. 31<br />
             98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
@@ -70,7 +70,7 @@ export function Impressum() {
             vertreten durch den Inhaber Dominik Steiner.
           </p>
           <p className="text-xs text-titanium-500">
-            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI".
+            Handelsname „RealSync Dynamics &amp; AI“ bzw. „RealSyncDynamics.AI“.
             Gewerbe angemeldet am 13.05.2026 (Gewerbeamt Neuhaus am Rennweg,
             Landkreis Sonneberg, Gemeindekennzahl 16072013).
           </p>
@@ -117,8 +117,6 @@ export function Impressum() {
           ) : (
             <p className="text-titanium-500">
               <span className="text-titanium-300">Aktueller Status:</span> Einzelunternehmen, nicht im Handelsregister eingetragen.
-              Bei späterer Umwandlung in UG (haftungsbeschränkt) oder GmbH wird hier der HRB-Eintrag
-              (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
             </p>
           )}
         </Section>

@@ -103,6 +103,18 @@ Deno.serve(async (req) => {
     return new Response(`signature verify failed: ${(err as Error).message}`, { status: 400 });
   }
 
+  // V2 sandbox events must never flow into legacy tenant provisioning or marketing.
+  // Only the signed event is inspected; no browser-supplied metadata is trusted.
+  if (event.livemode === false) {
+    const object = event.data.object as { metadata?: Record<string, string> | null; subscription_details?: { metadata?: Record<string, string> | null } | null; parent?: { subscription_details?: { metadata?: Record<string, string> | null } | null } | null };
+    const candidates = [object.metadata, object.subscription_details?.metadata, object.parent?.subscription_details?.metadata];
+    if (candidates.some(meta => meta?.catalog === 'modular-v2' && meta.test_only === 'true')) {
+      return new Response(JSON.stringify({ received: true, sandbox_isolated: true }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }
+  }
+
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });

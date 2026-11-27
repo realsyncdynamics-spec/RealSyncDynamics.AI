@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 
 export const PROJECT = 'realsyncdynamics-ai';
 export const DOMAIN = 'realsyncdynamicsai.de';
+export const VOICE_HOST = 'voice.' + DOMAIN;
 const API = 'https://api.cloudflare.com/client/v4';
 
 export function deploymentSummary(deployment) {
@@ -64,6 +65,37 @@ export function dnsSummary(entries, name) {
     }));
 }
 
+/**
+ * The voice subdomain is not part of the Pages production-domain gate.
+ * Classify it solely from the fetched DNS record, never from a README or
+ * a stale screenshot. GitHub Pages requires a DNS-only CNAME proof.
+ */
+export function voiceDnsClassification(entries) {
+  const matching = (Array.isArray(entries) ? entries : []).filter((d) => d.name === VOICE_HOST);
+  const cname = matching.find((d) => d.type === 'CNAME');
+  if (cname) {
+    const target = String(cname.content ?? '').trim().replace(/\.$/, '').toLowerCase();
+    if (cname.proxied === false) {
+      return {
+        host: VOICE_HOST,
+        classification: target.endsWith('.github.io') ? 'GITHUB_PAGES_DNS_ONLY' : 'DNS_ONLY_EXTERNAL_ORIGIN_UNVERIFIED',
+        cname_target: target || null,
+        proxied: false,
+      };
+    }
+    return {
+      host: VOICE_HOST, classification: cname.proxied === true ? 'CLOUDFLARE_PROXY_CANDIDATE' : 'UNVERIFIED',
+      cname_target: target || null, proxied: cname.proxied ?? null,
+    };
+  }
+  return {
+    host: VOICE_HOST,
+    classification: matching.length ? 'NON_CNAME_ORIGIN_UNVERIFIED' : 'UNVERIFIED',
+    cname_target: null,
+    proxied: matching.length === 1 ? matching[0].proxied ?? null : null,
+  };
+}
+
 export function routeSummary(entries) {
   return (Array.isArray(entries) ? entries : [])
     .filter((r) => typeof r.pattern === 'string' && r.pattern.includes(DOMAIN))
@@ -102,6 +134,7 @@ export async function collectEvidence({ accountId, token, fetchImpl = fetch }) {
     domains: null,
     zone: null,
     dns: {},
+    voice_dns: voiceDnsClassification([]),
     worker_routes: null,
     missing,
     assessment: 'NOT_PRODUCTION_APPROVED',
@@ -136,7 +169,7 @@ export async function collectEvidence({ accountId, token, fetchImpl = fetch }) {
     missing.push('ZONE_READ_UNAVAILABLE');
   }
   if (zoneId) {
-    for (const name of [DOMAIN, 'www.' + DOMAIN]) {
+    for (const name of [DOMAIN, 'www.' + DOMAIN, VOICE_HOST]) {
       try {
         const data = await get('/zones/' + zoneId + '/dns_records?name=' + encodeURIComponent(name) + '&per_page=100');
         report.dns[name] = dnsSummary(data.result, name);
@@ -146,6 +179,8 @@ export async function collectEvidence({ accountId, token, fetchImpl = fetch }) {
         missing.push('DNS_READ_UNAVAILABLE:' + name);
       }
     }
+    report.voice_dns = voiceDnsClassification(report.dns[VOICE_HOST]);
+    if (report.voice_dns.classification === 'UNVERIFIED') missing.push('VOICE_EXTERNAL_HOST_UNVERIFIED');
     try {
       const data = await get('/zones/' + zoneId + '/workers/routes?per_page=100');
       report.worker_routes = routeSummary(data.result);

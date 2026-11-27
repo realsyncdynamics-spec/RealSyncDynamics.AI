@@ -23,6 +23,8 @@ DECLARE
   request public.dsr_requests%ROWTYPE;
   mapping public.subject_ref_mappings%ROWTYPE;
   ref text;
+  recomputed_ref text;
+  email_binding bytea;
 BEGIN
   IF p_tenant IS NULL OR p_operation IS NULL OR p_worker IS NULL
      OR p_lease_epoch IS NULL OR p_lease_epoch <= 0 THEN
@@ -65,6 +67,16 @@ BEGIN
     RAISE EXCEPTION 'DSR record missing' USING ERRCODE = '23503';
   END IF;
 
+  -- Keep the original email bound to this immutable operation receipt.
+  -- Mutable DSR fields must not redirect evidence to another person.
+  email_binding := pg_catalog.sha256(pg_catalog.convert_to(
+    pg_catalog.jsonb_build_array('dsr-email-v1',p_tenant::text,
+      p_operation::text,pg_catalog.lower(pg_catalog.btrim(request.requester_email)))::text,
+    'UTF8'));
+  IF email_binding IS DISTINCT FROM task.email_binding THEN
+    RAISE EXCEPTION 'REQUESTER_EMAIL_CHANGED' USING ERRCODE = 'P0002';
+  END IF;
+
   -- Fails closed until an existing HMAC key and mapping have been resolved.
   -- No PII is placed in the outbox or events.
   ref := request.metadata ->> 'subject_ref';
@@ -80,6 +92,20 @@ BEGIN
    FOR UPDATE;
   IF NOT FOUND OR mapping.erased_at IS NOT NULL THEN
     RAISE EXCEPTION 'SUBJECT_MAPPING_PENDING' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- Verify the *existing* RFC-002 HMAC against the exact mapped key version.
+  -- A syntactically valid or tenant-local forged subject_ref is insufficient.
+  -- Key rotation is supported through subject_ref_compute(p_key_version).
+  BEGIN
+    recomputed_ref := public.subject_ref_compute(
+      p_tenant, 'email', request.requester_email, mapping.key_version);
+  EXCEPTION WHEN OTHERS THEN
+    -- Do not leak vault/key metadata or the requester address to callers.
+    RAISE EXCEPTION 'SUBJECT_REF_BINDING_PENDING' USING ERRCODE = 'P0002';
+  END;
+  IF recomputed_ref IS NULL OR recomputed_ref IS DISTINCT FROM ref THEN
+    RAISE EXCEPTION 'SUBJECT_REF_BINDING_PENDING' USING ERRCODE = 'P0002';
   END IF;
 
   -- Existing hash-chain BEFORE INSERT trigger computes tenant_seq and the

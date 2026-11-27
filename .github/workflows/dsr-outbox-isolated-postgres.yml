@@ -1,0 +1,66 @@
+name: DSR Outbox - isolated PostgreSQL contract (no deploy)
+
+# Only exercise the draft P0 #2360 candidate. Never apply this SQL as a
+# Supabase migration or target an existing cloud project.
+on:
+  push:
+    branches:
+      - dev/2360-dsr-atomic-intake
+    paths:
+      - 'test/db/dsr-outbox/**'
+      - 'test/edge/governance-dsr-atomic-intake.test.ts'
+      - 'supabase/functions/governance-dsr/**'
+      - '.github/workflows/dsr-outbox-isolated-postgres.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dsr-outbox-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-producer:
+    name: PostgreSQL producer rollback and concurrency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-only-local
+          POSTGRES_DB: dsr_outbox_contract
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dsr_outbox_contract"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install repository-locked PostgreSQL test dependency
+        run: npm ci --ignore-scripts
+      - name: Validate staged Edge request contract and existing DSR validation
+        run: npx vitest run test/edge/governance-dsr-logic.test.ts test/edge/governance-dsr-atomic-intake.test.ts --reporter=default
+      - name: Check TypeScript and staged Edge syntax
+        run: |
+          npm run lint
+          npm run check:edge-syntax
+      - name: Run producer atomicity, permission and 20-client concurrency tests
+        env:
+          DSR_TEST_DATABASE_URL: postgresql://postgres:test-only-local@127.0.0.1:5432/dsr_outbox_contract
+        run: node test/db/dsr-outbox/postgres-integration.mjs
+
+      - name: Validate actual repository DSR and partitioned SHA-256 chain migrations
+        env:
+          DSR_TEST_DATABASE_URL: postgresql://postgres:test-only-local@127.0.0.1:5432/dsr_outbox_contract
+        run: node test/db/dsr-outbox/real-runtime-integration.mjs

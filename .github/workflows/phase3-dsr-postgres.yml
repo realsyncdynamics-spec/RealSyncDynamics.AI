@@ -35,7 +35,7 @@ jobs:
           sudo service postgresql start
           sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER USER postgres PASSWORD 'postgres';"
           pg_isready -h 127.0.0.1 -p 5432
-      - name: Bootstrap DSR PostgreSQL test DB and run all seven tests
+      - name: Bootstrap DSR PostgreSQL test DB and run all nine tests
         env:
           PGPASSWORD: postgres
           REQUIRE_DB_TESTS: '1'
@@ -68,6 +68,6 @@ jobs:
             for(const test of checks.filter(t=>t.status==="failed")) {
               console.error("FAILED:", test.fullName, (test.failureMessages??[]).join(" ").slice(0,1600));
             }
-            if(passed!==7||skipped!==0||result.success!==true)process.exit(1);
+            if(passed!==9||skipped!==0||result.success!==true)process.exit(1);
           '
           if [[ "$test_rc" -ne 0 ]]; then exit "$test_rc"; fi

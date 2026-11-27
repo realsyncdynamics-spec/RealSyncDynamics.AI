@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.dsr_evidence_outbox (
     tenant_id           UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     dsr_id              UUID NOT NULL REFERENCES public.dsr_requests(id) ON DELETE RESTRICT,
     event_type          TEXT NOT NULL CHECK (event_type IN
-                          ('dsr.created','dsr.updated','dsr.assigned','dsr.closed')),
+                          ('dsr.created','dsr.updated','dsr.assigned','dsr.closed','dsr.erasure_requested')),
     subject_ref         TEXT,
     event_payload       JSONB NOT NULL DEFAULT '{}'::jsonb,
     state               TEXT NOT NULL DEFAULT 'pending'
@@ -115,6 +115,150 @@ CREATE TRIGGER trg_dsr_enqueue_evidence
     AFTER INSERT OR UPDATE ON public.dsr_requests
     FOR EACH ROW EXECUTE FUNCTION public.dsr_enqueue_evidence_change();
 
+
+-- Durable subject-link recovery: read only pending DSRs. Plaintext requester
+-- email never enters an outbox payload, runtime event or log. The service-only
+-- cron worker receives it just long enough to compute the HMAC reference.
+CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_pending(
+  p_batch_size integer DEFAULT 25
+) RETURNS TABLE (
+  dsr_id uuid, tenant_id uuid, requester_email text, request_type text
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $fn$
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF p_batch_size IS NULL OR p_batch_size NOT BETWEEN 1 AND 100 THEN
+    RAISE EXCEPTION 'invalid batch size' USING ERRCODE = '22023';
+  END IF;
+
+  RETURN QUERY
+    SELECT d.id, d.tenant_id, d.requester_email, d.request_type
+      FROM public.dsr_requests d
+     WHERE d.tenant_id IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM public.dsr_evidence_outbox o
+          WHERE o.dsr_id = d.id AND o.tenant_id = d.tenant_id
+            AND o.state IN ('pending', 'failed') AND o.attempt_count < 12
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM public.subject_ref_mappings m
+          WHERE m.tenant_id = d.tenant_id
+            AND m.subject_ref = d.metadata->>'subject_ref'
+            AND (d.request_type <> 'erasure'
+                 OR m.deletion_requested_at IS NOT NULL
+                 OR m.erased_at IS NOT NULL)
+       )
+     ORDER BY d.received_at, d.id
+     LIMIT p_batch_size;
+END;
+$fn$;
+
+-- Atomically bind a computed HMAC to its DSR and existing erasure queue.
+-- Triggered DSR metadata changes produce a separate durable dsr.updated event;
+-- the operation is idempotent and preserves the original 30-day hold.
+CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_link(
+  p_dsr_id uuid, p_tenant_id uuid, p_subject_ref text, p_key_version integer
+) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $fn$
+DECLARE
+  v_dsr public.dsr_requests%ROWTYPE;
+  v_mapping public.subject_ref_mappings%ROWTYPE;
+  v_expected_ref text;
+  v_erasure_at timestamptz;
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+  IF p_dsr_id IS NULL OR p_tenant_id IS NULL
+      OR p_subject_ref IS NULL OR length(p_subject_ref) NOT BETWEEN 8 AND 256
+      OR p_key_version IS NULL OR p_key_version < 1 THEN
+    RAISE EXCEPTION 'invalid subject link identity' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_dsr FROM public.dsr_requests
+   WHERE id = p_dsr_id AND tenant_id = p_tenant_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'DSR not found for tenant' USING ERRCODE = '23503';
+  END IF;
+  IF NULLIF(v_dsr.metadata->>'subject_ref', '') IS NOT NULL
+     AND v_dsr.metadata->>'subject_ref' <> p_subject_ref THEN
+    RAISE EXCEPTION 'subject identity mismatch' USING ERRCODE = '23514';
+  END IF;
+
+  -- Guard the supplied HMAC against accidental binding to another tenant or
+  -- a stale/nonexistent key. A recomputed HMAC alone is not authorization.
+  PERFORM 1 FROM public.subject_ref_keys k
+   WHERE k.tenant_id = p_tenant_id AND k.key_version = p_key_version
+     AND k.status IN ('active', 'rotating');
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'subject key unavailable' USING ERRCODE = '23503';
+  END IF;
+
+  -- Recompute in PostgreSQL against the actual protected Vault key:
+  -- even a compromised or buggy internal caller cannot attach a different
+  -- person's HMAC merely by passing a plausible-looking reference.
+  SELECT public.subject_ref_compute(
+    p_tenant_id, 'email', v_dsr.requester_email, p_key_version
+  ) INTO v_expected_ref;
+  IF v_expected_ref IS DISTINCT FROM p_subject_ref THEN
+    RAISE EXCEPTION 'subject reference HMAC mismatch' USING ERRCODE = '23514';
+  END IF;
+
+  INSERT INTO public.subject_ref_mappings
+    (subject_ref, tenant_id, key_version, subject_kind)
+  VALUES (p_subject_ref, p_tenant_id, p_key_version, 'email')
+  ON CONFLICT (subject_ref) DO NOTHING;
+
+  SELECT * INTO v_mapping FROM public.subject_ref_mappings
+   WHERE subject_ref = p_subject_ref AND tenant_id = p_tenant_id
+     AND key_version = p_key_version AND subject_kind = 'email'
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'subject mapping conflict' USING ERRCODE = '23514';
+  END IF;
+
+  IF NULLIF(v_dsr.metadata->>'subject_ref', '') IS NULL THEN
+    UPDATE public.dsr_requests
+       SET metadata = COALESCE(metadata, '{}'::jsonb) ||
+                      pg_catalog.jsonb_build_object('subject_ref', p_subject_ref)
+     WHERE id = p_dsr_id AND tenant_id = p_tenant_id;
+  END IF;
+
+  IF v_dsr.request_type = 'erasure' AND v_mapping.erased_at IS NULL THEN
+    -- First caller wins: retries never reset the retention hold or enqueue
+    -- a second event. Mapping update + outbox event share this transaction.
+    UPDATE public.subject_ref_mappings
+       SET deletion_requested_at = now()
+     WHERE subject_ref = p_subject_ref AND tenant_id = p_tenant_id
+       AND deletion_requested_at IS NULL
+    RETURNING deletion_requested_at INTO v_erasure_at;
+    IF v_erasure_at IS NOT NULL THEN
+      INSERT INTO public.dsr_evidence_outbox
+        (tenant_id, dsr_id, event_type, subject_ref, event_payload)
+      VALUES (p_tenant_id, p_dsr_id, 'dsr.erasure_requested', p_subject_ref,
+        pg_catalog.jsonb_build_object(
+          'request_id', p_dsr_id, 'retention_hold', '30 days',
+          'reason', 'dsr:' || p_dsr_id::text
+        ));
+    END IF;
+  END IF;
+  RETURN true;
+END;
+$fn$;
+
+REVOKE ALL ON FUNCTION public.dsr_outbox_subject_pending(integer)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.dsr_outbox_subject_link(uuid, uuid, text, integer)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.dsr_outbox_subject_pending(integer)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.dsr_outbox_subject_link(uuid, uuid, text, integer)
+  TO service_role;
+
 -- Fail-closed processing of a small batch. The inner exception block is a
 -- savepoint: if the append-only hash chain cannot be written, the event and
 -- delivery mark roll back together. A later retry reuses the SAME outbox ID.
@@ -132,6 +276,7 @@ DECLARE
     v_pending INTEGER := 0;
     v_exhausted INTEGER := 0;
     v_retry INTEGER;
+    v_subject_ref TEXT;
 BEGIN
     IF auth.role() IS DISTINCT FROM 'service_role' THEN
         RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
@@ -151,13 +296,39 @@ BEGIN
          FOR UPDATE SKIP LOCKED
     LOOP
         BEGIN
+            -- Do not mark an event delivered before subject linkage and
+            -- erasure enqueue are durably verified. Use the current mapping,
+            -- not the stale subject_ref snapshot captured at DSR intake.
+            SELECT m.subject_ref INTO v_subject_ref
+              FROM public.dsr_requests d
+              JOIN public.subject_ref_mappings m
+                ON m.tenant_id = d.tenant_id
+               AND m.subject_ref = d.metadata->>'subject_ref'
+             WHERE d.id = v_item.dsr_id AND d.tenant_id = v_item.tenant_id
+               AND (d.request_type <> 'erasure'
+                    OR m.deletion_requested_at IS NOT NULL
+                    OR m.erased_at IS NOT NULL);
+            IF v_subject_ref IS NULL THEN
+              -- Missing Vault/HMAC material is an unresolved prerequisite,
+              -- not a failed evidence delivery. Do not spend one of the
+              -- 12 DB-error attempts each time the cron polls.
+              UPDATE public.dsr_evidence_outbox
+                 SET state = 'failed',
+                     next_attempt_at = pg_catalog.now() + INTERVAL '1 minute',
+                     last_error = 'SUBJECT_PENDING'
+               WHERE id = v_item.id AND state <> 'delivered';
+              v_failed := v_failed + 1;
+              CONTINUE;
+            END IF;
             INSERT INTO public.runtime_events
                 (tenant_id, type, severity, source, review_status,
                  subject_ref, payload, spec_version, correlation_id)
             VALUES
                 (v_item.tenant_id, v_item.event_type,
-                 CASE WHEN v_item.event_type = 'dsr.closed' THEN 'medium' ELSE 'info' END,
-                 'governance-dsr-outbox', 'auto', v_item.subject_ref,
+                 CASE WHEN v_item.event_type = 'dsr.erasure_requested' THEN 'high'
+                      WHEN v_item.event_type = 'dsr.closed' THEN 'medium'
+                      ELSE 'info' END,
+                 'governance-dsr-outbox', 'auto', v_subject_ref,
                  v_item.event_payload ||
                    pg_catalog.jsonb_build_object(
                        'dsr_id', v_item.dsr_id,

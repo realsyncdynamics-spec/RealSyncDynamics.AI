@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const migration = readFileSync('supabase/migrations/20261120040000_dsr_evidence_outbox.sql', 'utf8');
 const handler = readFileSync('supabase/functions/governance-dsr/index.ts', 'utf8');
 const worker = readFileSync('supabase/functions/governance-dsr-outbox/index.ts', 'utf8');
+const subjectHelper = readFileSync('supabase/functions/_shared/dsrSubjectRef.ts', 'utf8');
 const config = readFileSync('supabase/config.toml', 'utf8');
 
 describe('Phase 3 DSR transactional evidence contract (static)', () => {
@@ -45,4 +46,28 @@ describe('Phase 3 DSR transactional evidence contract (static)', () => {
     expect(worker).toContain("admin.rpc('dsr_outbox_drain'");
     expect(config).toContain('[functions.governance-dsr-outbox]\nverify_jwt = false');
   });
+  it('reuses the HMAC identity helper for DSR intake and cron recovery', () => {
+    expect(handler).toContain("import { ensureSubjectRef } from '../_shared/dsrSubjectRef.ts'");
+    expect(worker).toContain("import { ensureSubjectRef } from '../_shared/dsrSubjectRef.ts'");
+    expect(subjectHelper).toContain("admin.rpc('subject_ref_compute'");
+  });
+
+  it('blocks evidence completion without a durable tenant subject mapping', () => {
+    expect(migration).toContain('CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_pending');
+    expect(migration).toContain('CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_link');
+    expect(migration).toContain("public.subject_ref_compute(");
+    expect(migration).toContain("last_error = 'SUBJECT_PENDING'");
+    expect(worker).toContain("'dsr_outbox_subject_pending'");
+    expect(worker).toContain("admin.rpc('dsr_outbox_subject_link'");
+  });
+
+  it('enqueues erasure evidence atomically and never logs database error messages', () => {
+    expect(migration).toContain("'dsr.erasure_requested'");
+    expect(migration).toContain("deletion_requested_at IS NULL");
+    expect(migration).toContain("last_error = 'SQLSTATE_' || SQLSTATE");
+    expect(handler).not.toContain('await enqueueErasure(');
+    expect(handler).not.toContain('await upsertMapping(');
+    expect(handler).not.toContain('async function emitEvidence(');
+  });
+
 });

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.dsr_evidence_outbox (
     tenant_id           UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     dsr_id              UUID NOT NULL REFERENCES public.dsr_requests(id) ON DELETE RESTRICT,
     event_type          TEXT NOT NULL CHECK (event_type IN
-                          ('dsr.created','dsr.updated','dsr.assigned','dsr.closed')),
+                          ('dsr.created','dsr.updated','dsr.assigned','dsr.closed','dsr.erasure_requested')),
     subject_ref         TEXT,
     event_payload       JSONB NOT NULL DEFAULT '{}'::jsonb,
     state               TEXT NOT NULL DEFAULT 'pending'
@@ -168,6 +168,7 @@ DECLARE
   v_dsr public.dsr_requests%ROWTYPE;
   v_mapping public.subject_ref_mappings%ROWTYPE;
   v_expected_ref text;
+  v_erasure_at timestamptz;
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
@@ -228,9 +229,22 @@ BEGIN
   END IF;
 
   IF v_dsr.request_type = 'erasure' AND v_mapping.erased_at IS NULL THEN
+    -- First caller wins: retries never reset the retention hold or enqueue
+    -- a second event. Mapping update + outbox event share this transaction.
     UPDATE public.subject_ref_mappings
-       SET deletion_requested_at = COALESCE(deletion_requested_at, now())
-     WHERE subject_ref = p_subject_ref AND tenant_id = p_tenant_id;
+       SET deletion_requested_at = now()
+     WHERE subject_ref = p_subject_ref AND tenant_id = p_tenant_id
+       AND deletion_requested_at IS NULL
+    RETURNING deletion_requested_at INTO v_erasure_at;
+    IF v_erasure_at IS NOT NULL THEN
+      INSERT INTO public.dsr_evidence_outbox
+        (tenant_id, dsr_id, event_type, subject_ref, event_payload)
+      VALUES (p_tenant_id, p_dsr_id, 'dsr.erasure_requested', p_subject_ref,
+        pg_catalog.jsonb_build_object(
+          'request_id', p_dsr_id, 'retention_hold', '30 days',
+          'reason', 'dsr:' || p_dsr_id::text
+        ));
+    END IF;
   END IF;
   RETURN true;
 END;
@@ -302,7 +316,9 @@ BEGIN
                  subject_ref, payload, spec_version, correlation_id)
             VALUES
                 (v_item.tenant_id, v_item.event_type,
-                 CASE WHEN v_item.event_type = 'dsr.closed' THEN 'medium' ELSE 'info' END,
+                 CASE WHEN v_item.event_type = 'dsr.erasure_requested' THEN 'high'
+                      WHEN v_item.event_type = 'dsr.closed' THEN 'medium'
+                      ELSE 'info' END,
                  'governance-dsr-outbox', 'auto', v_subject_ref,
                  v_item.event_payload ||
                    pg_catalog.jsonb_build_object(

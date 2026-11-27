@@ -298,7 +298,7 @@ try {
   // separate canonical migration suite runs the REAL RFC-002 HMAC function.
   await admin.query(`create function public.subject_ref_compute(
     p_tenant uuid, p_kind text, p_value text, p_version integer default null
-  ) returns text language plpgsql stable as $
+  ) returns text language plpgsql stable as $$
   begin
     if not exists(select 1 from public.subject_ref_keys
         where tenant_id=p_tenant and key_version=p_version and status in ('active','rotating'))
@@ -307,7 +307,7 @@ try {
       'synthetic-only:' || p_tenant::text || ':' || p_kind || ':' ||
       pg_catalog.lower(pg_catalog.btrim(p_value)) || ':' || p_version::text,
       'UTF8')), 'hex');
-  end $;`);
+  end $$;`);
   await admin.query(
     "insert into public.subject_ref_keys(tenant_id,key_version,status) values($1,1,'active')",
     [tenant],

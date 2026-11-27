@@ -140,6 +140,30 @@ try {
     await assert.rejects(invoke({ ...input, assets: ['changed'] }), /operation conflict/i);
     assert.equal(await count('dsr_requests'), 1);
   });
+
+  await check('original immutable receipt survives mutable DSR edits', async () => {
+    await admin.query(
+      'update public.dsr_requests set requester_name=$1,subject_description=$2,assigned_to=$3 where id=$4',
+      ['edited later','edited subject','new assignee',id],
+    );
+    assert.equal(await invoke(input),id);
+    await assert.rejects(invoke({...input,name:'edited later'}),/operation conflict/);
+    const { rows } = await admin.query(
+      'select intake_fingerprint,email_binding from public.dsr_outbox where operation_id=$1',
+      [operation],
+    );
+    assert.equal(rows[0].intake_fingerprint.length,32);
+    assert.equal(rows[0].email_binding.length,32);
+  });
+
+  await check('outbox service-role cannot rewrite immutable operation fingerprint', async () => {
+    await assert.rejects(
+      admin.query('update public.dsr_outbox set intake_fingerprint=$1 where operation_id=$2',
+        [Buffer.alloc(32,0),operation]),
+      /immutable outbox receipt/,
+    );
+  });
+
   await check('same operation ID cannot be reused by a different valid actor', async () => {
     const otherActor = randomUUID();
     await admin.query('insert into public.memberships values ($1,$2,$3)', [tenant, otherActor, 'owner']);
@@ -346,6 +370,52 @@ try {
     'insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,$3,$4)',
     [ref, tenant, 1, 'email'],
   );
+
+
+  await check('changed requester email cannot redirect an existing Evidence ACK', async () => {
+    await admin.query(
+      'update public.dsr_requests set requester_email=$1 where id=$2',
+      ['other@example.invalid', erasureId],
+    );
+    await assert.rejects(serviceQuery(ackQuery,
+      [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]), /REQUESTER_EMAIL_CHANGED/);
+    await admin.query('update public.dsr_requests set requester_email=$1 where id=$2',
+      ['delete@example.invalid', erasureId]);
+    assert.equal(await count('runtime_events'), 0);
+  });
+
+  await check('tenant-local forged HMAC reference is rejected against requester email', async () => {
+    const forgedRef = await fakeRef('another@example.invalid');
+    await admin.query(
+      'insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,1,$3)',
+      [forgedRef, tenant, 'email'],
+    );
+    await admin.query(
+      "update public.dsr_requests set metadata=jsonb_build_object('subject_ref',$1::text) where id=$2",
+      [forgedRef, erasureId],
+    );
+    await assert.rejects(serviceQuery(ackQuery,
+      [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]), /SUBJECT_REF_BINDING_PENDING/);
+    await admin.query(
+      "update public.dsr_requests set metadata=jsonb_build_object('subject_ref',$1::text) where id=$2",
+      [ref, erasureId],
+    );
+    assert.equal(await count('runtime_events'), 0);
+  });
+
+  await check('unavailable HMAC key is not treated as valid Evidence delivery', async () => {
+    await admin.query(
+      "update public.subject_ref_keys set status='revoked' where tenant_id=$1 and key_version=1",
+      [tenant],
+    );
+    await assert.rejects(serviceQuery(ackQuery,
+      [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]), /SUBJECT_REF_BINDING_PENDING/);
+    await admin.query(
+      "update public.subject_ref_keys set status='active' where tenant_id=$1 and key_version=1",
+      [tenant],
+    );
+    assert.equal(await count('runtime_events'), 0);
+  });
 
   await check('evidence insert failure rolls back every side effect', async () => {
     await admin.query('alter table public.runtime_events add constraint injected_event_failure check(false)');

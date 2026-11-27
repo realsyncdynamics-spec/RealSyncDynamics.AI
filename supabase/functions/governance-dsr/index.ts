@@ -22,6 +22,7 @@
 //     erasure sweep (governance-erasure-sweeper drains it daily).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { atomicCreateParams, parseAtomicOperationId } from './atomic-intake.ts';
 import { audit } from '../_shared/auditLog.ts';
 import {
   buildClosePatch,
@@ -110,6 +111,43 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmai
   if (built.error || !built.row) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
   const row = built.row;
   if (!(await isWriter(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be a tenant member');
+
+  // P0 #2360 – explicitly opt-in server-side integration candidate.
+  // OFF by default. Never enable until the matching migration, HMAC recovery
+  // worker, durable client operation_id, and production release are approved.
+  // The legacy create path below is intentionally unchanged.
+  if (Deno.env.get('DSR_ATOMIC_CREATE_ENABLED') === 'true') {
+    const operationId = parseAtomicOperationId(body.operation_id);
+    if (!operationId) return jsonError(400, 'BAD_REQUEST', 'operation_id must be a UUIDv4 in atomic create mode');
+
+    // With this gate enabled, do NOT perform a legacy insert or best-effort
+    // audit/event write. On any RPC error, fail closed. Clients retry using
+    // their original operation_id; server-generated IDs would break replay.
+    const { data: receiptId, error: intakeErr } = await admin.rpc(
+      'dsr_intake',
+      atomicCreateParams(row, userId, operationId),
+    );
+    if (intakeErr) {
+      const code = typeof intakeErr === 'object' && intakeErr !== null && 'code' in intakeErr
+        ? String((intakeErr as { code?: unknown }).code ?? '')
+        : '';
+      if (code === '23505') return jsonError(409, 'OPERATION_CONFLICT', 'operation_id already used for different payload');
+      if (code === '42501') return jsonError(403, 'FORBIDDEN', 'writer permission required');
+      if (code === '22023' || code === '22P02') return jsonError(400, 'BAD_REQUEST', 'invalid DSR intake payload');
+      return jsonError(503, 'DSR_INTAKE_UNAVAILABLE', 'atomic DSR intake unavailable');
+    }
+    if (typeof receiptId !== 'string') {
+      return jsonError(503, 'DSR_INTAKE_UNAVAILABLE', 'atomic DSR receipt unavailable');
+    }
+
+    // Preserve the established API response shape. A temporary read error
+    // is retryable with the *same* operation_id and never creates a second
+    // request. No evidence_status success is inferred from this read.
+    const { data: dsr, error: readErr } = await admin.from('dsr_requests')
+      .select('*').eq('id', receiptId).maybeSingle();
+    if (readErr || !dsr) return jsonError(503, 'DSR_RECEIPT_UNAVAILABLE', 'DSR created but receipt lookup unavailable');
+    return json({ ok: true, dsr });
+  }
 
   // Resolve (and lazily provision) the subject reference. Best-effort: a
   // failure here must never block intake — the DSR record is the source of

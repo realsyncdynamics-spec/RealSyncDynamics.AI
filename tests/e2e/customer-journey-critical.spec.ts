@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Kritischer, read-only Kundenpfad. Keine echten E-Mails, Accounts, Zahlungen
- * oder Scans. Läuft lokal per Playwright gegen die gebaute SPA.
+ * oder Scans. Läuft im CI-Katalog (`npm run test:e2e`) gegen die gebaute SPA.
  *
  * Live-URL nur explizit mit TEST_BASE_URL konfigurieren.
  * Authentifizierte Dashboard-CRUD-Prüfung benötigt separate Testidentitäten.
@@ -26,7 +26,8 @@ test.describe('Produkt-Einstiege: direkte SPA-Routen', () => {
 
   for (const { path, marker } of PRODUCTS) {
     test(`Direktaufruf ${path} rendert eigene Produktseite`, async ({ page }) => {
-      await page.goto(path);
+      const response = await page.goto(path);
+      expect(response?.ok(), `HTTP-Antwort für ${path}`).toBe(true);
       expect(new URL(page.url()).pathname).toBe(path);
       await expect(page.locator(marker).first()).toBeVisible();
       if (path === '/claude-code-optimizer') {

@@ -11,6 +11,25 @@ Diese Änderung ergänzt ausschließlich Playwright-Smoke-Tests für:
 
 **Nicht durch diese Tests belegt:** visuelle Designqualität, echtes Login, OTP-Zustellung, Registrierung, Tenant-Anlage, Zugriff auf echte Dashboard-Daten, CRUD, Einwilligungsnachweise, E-Mail-Zustellung oder Produktionsrouting per CDN. Ein erfolgreicher lokaler SPA-Test allein beweist keinen funktionierenden Cloudflare-Deep-Link.
 
+## CI-Einbindung und Prüfstand (27.11.2026)
+
+`npm run test:e2e` verwendet `playwright.catalog.config.ts` mit `testDir: './tests/e2e'`.
+Die Datei lag zuvor unter `e2e/` und wurde dadurch vom grünen CI-Lauf nicht erfasst.
+Sie liegt jetzt unter `tests/e2e/customer-journey-critical.spec.ts`; der bestehende
+Workflow führt sie ohne Workflow- oder Dependency-Änderung aus. Direkte Produktaufrufe
+prüfen zusätzlich den HTTP-Erfolg, bevor URL und produktspezifischer Inhalt geprüft werden.
+
+Der frühere Lauf [45835500979](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/45835500979)
+am PR-Head `ee75143` meldete 47 bestandene und vier übersprungene Katalogtests.
+Er enthält keinen Kundenreise-Test und ist daher keine Abnahme dieser neuen Suite.
+Die elf Kundenreise-Fälle benötigen einen neuen CI-Nachweis am korrigierten Head.
+
+Diese Prüfung deckt die vier aktuell verlinkten Produkte ab. Sie belegt nicht die
+vollständige Umsetzung der verbindlichen sechs Produktpfade: `/voice-agent`,
+`/software-factory`, `/automation-os` und `/creative-studio` fehlen als exakte
+Routen im geprüften `main@a53dce7`. Die Architekturvorgabe bleibt bestehen;
+fehlende Routen werden durch diese Testkorrektur nicht als umgesetzt ausgewiesen.
+
 ## Befund aus Repository / öffentlichem Abruf (26.11.2026)
 - Produkt-Routen sind in `src/App.tsx` definiert.
 - Der Hero-Katalog verweist auf vier eigenständige Ziele in `landingV3Data.ts`.
@@ -24,12 +43,12 @@ Nach bestehendem Repo-Workflow (keine selbstständige Dependency-Installation):
 
 ```sh
 npm run build
-npx playwright test e2e/customer-journey-critical.spec.ts --config playwright.config.ts
+npm run test:e2e -- tests/e2e/customer-journey-critical.spec.ts
 ```
 
 Für einen kontrollierten Live-Smoke ohne Formular-Submit:
 ```sh
-TEST_BASE_URL=https://realsyncdynamicsai.de npx playwright test e2e/customer-journey-critical.spec.ts --config playwright.config.ts
+TEST_BASE_URL=https://realsyncdynamicsai.de npm run test:e2e -- tests/e2e/customer-journey-critical.spec.ts
 ```
 
 ## Notwendige Freigabe-/Abnahmestufe danach

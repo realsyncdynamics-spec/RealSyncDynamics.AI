@@ -12,7 +12,8 @@ eingebunden werden.
 | --- | --- |
 | `intake.sql` | Atomare `dsr_requests`-Annahme + dauerhafter Outbox-Auftrag, tenant- und actor-gebundene Operations-ID, Replay-Konfliktschutz; service-role-only RPC |
 | `worker.sql` | Isolierter `FOR UPDATE SKIP LOCKED`-Claim, Worker-Lease, Fencing-Epoch, begrenzter Backoff, Dead-Letter nach acht Versuchen |
-| `evidence-ack.sql` | Isolierte atomare Evidence-/Audit-/Erasure-/ACK-RPC; verlangt gültige Lease, HMAC-Subject-Referenz und vorhandenes Tenant-Mapping, kein PII im Event-/Audit-Payload |\n| `postgres-integration.mjs` | Echte PostgreSQL-Prüfung (bisher 16 Producer-/Lease-Checks plus 10 neue ACK-Checks), darunter 20 parallele Anfragen, erzwungene Evidence-/Audit-Fehler, ACK-Replay, Worker-Fencing und Erasure-Idempotenz; die Evidence-Tabellen sind Test-Fixtures, **nicht** das produktive Hash-Chain-Schema |
+| `evidence-ack.sql` | Isolierte atomare Evidence-/Audit-/Erasure-/ACK-RPC; verlangt gültige Lease, HMAC-Subject-Referenz und vorhandenes Tenant-Mapping, kein PII im Event-/Audit-Payload |
+| `postgres-integration.mjs` | Echte PostgreSQL-Prüfung (bisher 16 Producer-/Lease-Checks plus 10 neue ACK-Checks), darunter 20 parallele Anfragen, erzwungene Evidence-/Audit-Fehler, ACK-Replay, Worker-Fencing und Erasure-Idempotenz; die Evidence-Tabellen sind Test-Fixtures, **nicht** das produktive Hash-Chain-Schema |
 | `recovery.mjs` | Älterer ergänzender PGlite-Test mit persistentem Testverzeichnis |
 | `.github/workflows/dsr-outbox-isolated-postgres.yml` | Branchgebundener Wegwerf-PostgreSQL-Container (nur CI, keine Verbindung zu Supabase-Produktion) |
 

@@ -2,6 +2,9 @@
 -- REVIEW DRAFT. Apply only after isolated PostgreSQL integration tests and
 -- an explicit deployment decision. No secrets or pg_cron schedule are changed.
 --
+-- Subject identity, mapping, erasure marker and runtime evidence are now
+-- committed together during drain; an unavailable HMAC key leaves retryable
+-- work instead of a falsely completed evidence status.
 -- Every INSERT/UPDATE on dsr_requests creates an immutable pending work item
 -- in the *same transaction*. Direct writes by the erasure sweeper are covered.
 -- The worker appends to runtime_events and marks delivered in one transaction:
@@ -132,6 +135,12 @@ DECLARE
     v_pending INTEGER := 0;
     v_exhausted INTEGER := 0;
     v_retry INTEGER;
+    v_dsr public.dsr_requests%ROWTYPE;
+    v_subject_ref TEXT;
+    v_key_version INTEGER;
+    v_mapping_tenant UUID;
+    v_key RECORD;
+    v_candidate TEXT;
 BEGIN
     IF auth.role() IS DISTINCT FROM 'service_role' THEN
         RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
@@ -151,18 +160,138 @@ BEGIN
          FOR UPDATE SKIP LOCKED
     LOOP
         BEGIN
+            -- Never deliver a DSR event whose identity anchor is missing.
+            -- The original DSR row holds the email; the queue has no PII.
+            -- Locking it also serializes a later DSR update/finalization.
+            SELECT * INTO v_dsr
+              FROM public.dsr_requests d
+             WHERE d.id = v_item.dsr_id AND d.tenant_id = v_item.tenant_id
+             FOR UPDATE;
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'DSR no longer belongs to queue tenant'
+                    USING ERRCODE = '23503';
+            END IF;
+            v_subject_ref := COALESCE(
+                NULLIF(v_item.subject_ref, ''),
+                NULLIF(v_dsr.metadata->>'subject_ref', '')
+            );
+
+            -- An existing mapping is authoritative and may already have
+            -- been softly erased. Do not rotate or recreate erased mappings.
+            v_key_version := NULL;
+            v_mapping_tenant := NULL;
+            IF v_subject_ref IS NOT NULL THEN
+                SELECT m.tenant_id, m.key_version
+                  INTO v_mapping_tenant, v_key_version
+                  FROM public.subject_ref_mappings m
+                 WHERE m.subject_ref = v_subject_ref
+                 FOR UPDATE;
+                IF FOUND AND v_mapping_tenant IS DISTINCT FROM v_item.tenant_id THEN
+                    RAISE EXCEPTION 'subject mapping tenant mismatch'
+                        USING ERRCODE = '42501';
+                END IF;
+            END IF;
+
+            IF v_key_version IS NULL THEN
+                -- For an unlinked request, derive a stable HMAC through the
+                -- existing Vault-backed subject_ref_compute(), never an
+                -- ad-hoc hash or newly minted secret. A missing Vault key
+                -- remains retryable; never overwrite an old key on failure.
+                IF NULLIF(v_dsr.requester_email, '') IS NULL
+                   OR v_dsr.requester_email = '[erased]' THEN
+                    RAISE EXCEPTION 'subject identity not available'
+                        USING ERRCODE = 'P0002';
+                END IF;
+                FOR v_key IN
+                    SELECT k.key_version
+                      FROM public.subject_ref_keys k
+                     WHERE k.tenant_id = v_item.tenant_id
+                       AND k.status IN ('active', 'rotating')
+                     ORDER BY (k.status = 'active') DESC, k.key_version DESC
+                LOOP
+                    v_candidate := public.subject_ref_compute(
+                        v_item.tenant_id, 'email', v_dsr.requester_email,
+                        v_key.key_version
+                    );
+                    IF v_candidate IS NOT NULL
+                       AND (v_subject_ref IS NULL OR v_candidate = v_subject_ref) THEN
+                        v_subject_ref := v_candidate;
+                        v_key_version := v_key.key_version;
+                        EXIT;
+                    END IF;
+                END LOOP;
+                IF v_key_version IS NULL OR v_subject_ref IS NULL THEN
+                    RAISE EXCEPTION 'subject reference key unavailable'
+                        USING ERRCODE = 'P0002';
+                END IF;
+
+                INSERT INTO public.subject_ref_mappings
+                    (subject_ref, tenant_id, key_version, subject_kind)
+                VALUES (v_subject_ref, v_item.tenant_id, v_key_version, 'email')
+                ON CONFLICT (subject_ref) DO NOTHING;
+                -- A concurrent insert cannot silently bind a foreign tenant.
+                PERFORM 1 FROM public.subject_ref_mappings m
+                 WHERE m.subject_ref = v_subject_ref
+                   AND m.tenant_id = v_item.tenant_id
+                   AND m.key_version = v_key_version
+                   AND m.subject_kind = 'email';
+                IF NOT FOUND THEN
+                    RAISE EXCEPTION 'subject mapping conflict'
+                        USING ERRCODE = '23505';
+                END IF;
+            END IF;
+
+            IF NULLIF(v_dsr.metadata->>'subject_ref', '') IS DISTINCT FROM v_subject_ref THEN
+                IF NULLIF(v_dsr.metadata->>'subject_ref', '') IS NOT NULL THEN
+                    RAISE EXCEPTION 'DSR subject reference changed'
+                        USING ERRCODE = '23505';
+                END IF;
+                -- The existing AFTER UPDATE DSR evidence trigger also records
+                -- this internal link change. Its work is durable and separate.
+                UPDATE public.dsr_requests d
+                   SET metadata = COALESCE(d.metadata, '{}'::jsonb) ||
+                                  pg_catalog.jsonb_build_object('subject_ref', v_subject_ref)
+                 WHERE d.id = v_dsr.id AND d.tenant_id = v_item.tenant_id;
+            END IF;
+
             INSERT INTO public.runtime_events
                 (tenant_id, type, severity, source, review_status,
                  subject_ref, payload, spec_version, correlation_id)
             VALUES
                 (v_item.tenant_id, v_item.event_type,
                  CASE WHEN v_item.event_type = 'dsr.closed' THEN 'medium' ELSE 'info' END,
-                 'governance-dsr-outbox', 'auto', v_item.subject_ref,
+                 'governance-dsr-outbox', 'auto', v_subject_ref,
                  v_item.event_payload ||
                    pg_catalog.jsonb_build_object(
                        'dsr_id', v_item.dsr_id,
                        'outbox_id', v_item.id),
                  '0.2', v_item.dsr_id);
+
+            -- Only the created erasure request may enqueue deletion.
+            -- Replays are prevented by the same transaction's delivered ACK.
+            -- Do not reset a prior deletion timestamp or resurrect an
+            -- already-erased subject. The 30-day sweeper remains canonical.
+            IF v_item.event_type = 'dsr.created'
+               AND v_dsr.request_type = 'erasure' THEN
+                UPDATE public.subject_ref_mappings m
+                   SET deletion_requested_at =
+                       COALESCE(m.deletion_requested_at, pg_catalog.now())
+                 WHERE m.tenant_id = v_item.tenant_id
+                   AND m.subject_ref = v_subject_ref
+                   AND m.erased_at IS NULL;
+
+                INSERT INTO public.runtime_events
+                    (tenant_id, type, severity, source, review_status,
+                     subject_ref, payload, spec_version, correlation_id)
+                VALUES
+                    (v_item.tenant_id, 'dsr.erasure_requested', 'high',
+                     'governance-dsr-outbox', 'auto', v_subject_ref,
+                     pg_catalog.jsonb_build_object(
+                         'dsr_id', v_item.dsr_id,
+                         'outbox_id', v_item.id,
+                         'retention_hold', '30 days'),
+                     '0.2', v_item.dsr_id);
+            END IF;
 
             UPDATE public.dsr_evidence_outbox
                SET state = 'delivered',

@@ -13,14 +13,13 @@
 // Reads happen directly from the SPA via RLS (dsr_requests tenant-read policy).
 //
 // Side effects per write:
-//   • governance_admin_log audit row (best-effort, observable on failure)
+//   • governance_admin_log: durable metadata-only trigger audit + best-effort actor audit
 //   • DSR row + durable evidence outbox via database trigger (atomic);
 //     a cron worker appends runtime_events asynchronously and idempotently.
-//   • subject_ref HMAC computed from requester_email; a tenant key is
-//     provisioned lazily on first use, and a subject_ref_mappings row is
-//     created so the subject is linkable for export + erasure.
-//   • request_type='erasure' → enqueues the subject for the automated
-//     erasure sweep (governance-erasure-sweeper drains it daily).
+//   • subject_ref HMAC is attempted before insert; if unavailable,
+//     the durable outbox worker retries linking subject_ref_mappings.
+//   • request_type='erasure' → the same worker atomically marks deletion
+//     requested. Existing erasure sweeper handles retention and redaction.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
@@ -28,7 +27,6 @@ import {
   buildClosePatch,
   buildCreate,
   buildUpdatePatch,
-  isErasure,
   isWriterRole,
   normalizeExportRequest,
 } from './logic.ts';
@@ -52,13 +50,6 @@ interface SupabaseAdminClient {
     };
   };
   rpc(name: string, params?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
-}
-
-interface DsrRequest {
-  id?: string;
-  metadata?: Record<string, unknown>;
-  tenant_id?: string;
-  [key: string]: unknown;
 }
 
 const corsHeaders = {
@@ -125,13 +116,9 @@ async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmai
   }).select('*').single();
   if (error) throw error;
 
-  // Anchor the subject so export + erasure can find it (best-effort).
-  if (subject) {
-    await upsertMapping(admin, { subject_ref: subject.subject_ref, tenant_id: row.tenant_id, key_version: subject.key_version });
-    if (isErasure(row.request_type)) {
-      await enqueueErasure(admin, row.tenant_id, subject.subject_ref, data.id);
-    }
-  }
+  // The DSR trigger enqueues evidence in the same INSERT transaction.
+  // The guarded outbox worker reconciles mapping and erasure with that
+  // evidence atomically; never perform a separate best-effort erasure here.
 
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dsr.create', target_type: 'dsr_request', target_id: data.id, payload: { request_type: row.request_type } });
   return json({ ok: true, dsr: data });
@@ -291,75 +278,6 @@ async function ensureSubjectRef(admin: SupabaseAdminClient, tenantId: string, em
     return { subject_ref: data, key_version: key.key_version };
   } catch {
     return null;
-  }
-}
-
-// Create the subject anchor if absent; never disturb an existing mapping's
-// lifecycle (deletion_requested_at / erased_at / retention_class).
-async function upsertMapping(admin: SupabaseAdminClient, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
-  try {
-    const { error } = await admin.from('subject_ref_mappings').upsert(
-      { subject_ref: m.subject_ref, tenant_id: m.tenant_id, key_version: m.key_version, subject_kind: 'email' },
-      { onConflict: 'subject_ref', ignoreDuplicates: true },
-    );
-    if (error) throw error;
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'dsr_mapping_upsert_failed', tenant_id: m.tenant_id, error: (e as Error)?.message ?? String(e) }));
-  }
-}
-
-// Enqueue the subject for the automated erasure sweep. Replicates the effect
-// of request_subject_erasure() via the service-role client (that RPC guards
-// on has_tenant_membership/auth.uid(), which is absent for service role).
-// The membership check already happened in handleCreate (isWriter).
-async function enqueueErasure(admin: SupabaseAdminClient, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
-  try {
-    const { error } = await admin.from('subject_ref_mappings')
-      .update({ deletion_requested_at: new Date().toISOString() })
-      .eq('tenant_id', tenantId).eq('subject_ref', subjectRef).is('deletion_requested_at', null);
-    if (error) throw error;
-    await emitEvidence(admin, {
-      tenant_id: tenantId, eventType: 'dsr.erasure_requested', dsr: { id: dsrId },
-      subject_ref: subjectRef, severity: 'high',
-      payload: { request_id: crypto.randomUUID(), retention_hold: '30 days', reason: `dsr:${dsrId}` },
-    });
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'dsr_erasure_enqueue_failed', tenant_id: tenantId, dsr_id: dsrId, error: (e as Error)?.message ?? String(e) }));
-  }
-}
-
-// Append-only evidence row on the per-tenant hash chain. Best-effort: a
-// failure here (e.g. a missing future partition) is logged but never blocks
-// the DSR write, which is the source of truth.
-async function emitEvidence(admin: SupabaseAdminClient, args: {
-  tenant_id: string;
-  eventType: string;
-  dsr: DsrRequest;
-  subject_ref: string | null;
-  severity?: string;
-  payload: Record<string, unknown>;
-}): Promise<void> {
-  try {
-    const { error } = await admin.from('runtime_events').insert({
-      tenant_id: args.tenant_id,
-      type: args.eventType,
-      severity: args.severity ?? 'info',
-      source: 'governance-dsr',
-      // runtime_events CHECK restricts spec_version to ('0.1','0.2'); the
-      // column default is still '1.0' (fixed in 20260626000000), so set it
-      // explicitly to stay valid regardless of deploy order.
-      spec_version: '0.2',
-      subject_ref: args.subject_ref,
-      payload: { dsr_id: args.dsr?.id, ...args.payload },
-      correlation_id: args.dsr?.id ?? null,
-    });
-    if (error) throw error;
-  } catch (e) {
-    console.error(JSON.stringify({
-      level: 'error', scope: 'dsr_evidence_emit_failed',
-      event_type: args.eventType, tenant_id: args.tenant_id,
-      dsr_id: args.dsr?.id, error: (e as Error)?.message ?? String(e),
-    }));
   }
 }
 

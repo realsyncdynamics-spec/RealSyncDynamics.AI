@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PROJECT, DOMAIN, deploymentSummary, projectSummary, domainSummary,
-  dnsSummary, routeSummary, collectEvidence,
+  dnsSummary, routeSummary, voiceDnsClassification, collectEvidence,
 } from './cloudflare-p0-evidence.mjs';
 
 const canonical = {
@@ -51,6 +51,33 @@ test('DNS results must be exact-name filtered', () => {
   ]);
 });
 
+test('voice DNS-only CNAME to GitHub Pages is classified as external hosting', () => {
+  assert.deepEqual(voiceDnsClassification([
+    { name: 'voice.' + DOMAIN, type: 'CNAME', content: 'realsyncdynamics-spec.github.io', proxied: false },
+  ]), {
+    host: 'voice.' + DOMAIN,
+    classification: 'GITHUB_PAGES_DNS_ONLY',
+    cname_target: 'realsyncdynamics-spec.github.io',
+    proxied: false,
+  });
+});
+
+test('DNS-only CNAME to an unverified origin is not falsely labeled GitHub Pages', () => {
+  assert.equal(voiceDnsClassification([
+    { name: 'voice.' + DOMAIN, type: 'CNAME', content: 'elsewhere.example', proxied: false },
+  ]).classification, 'DNS_ONLY_EXTERNAL_ORIGIN_UNVERIFIED');
+});
+
+test('proxied voice record is not classified as DNS-only', () => {
+  assert.equal(voiceDnsClassification([
+    { name: 'voice.' + DOMAIN, type: 'CNAME', content: 'realsyncdynamics-spec.github.io', proxied: true },
+  ]).classification, 'CLOUDFLARE_PROXY_CANDIDATE');
+});
+
+test('missing voice DNS yields UNVERIFIED, not an outage assertion', () => {
+  assert.equal(voiceDnsClassification([]).classification, 'UNVERIFIED');
+});
+
 test('Worker route candidates are listed but not automatically called collisions', () => {
   assert.deepEqual(routeSummary([
     { pattern: 'realsyncdynamicsai.de/*', script: 'some-worker' },
@@ -78,10 +105,12 @@ test('collector only performs GETs, does not expose bearer token, and stays unap
     });
   };
   const report = await collectEvidence({ accountId: 'a'.repeat(32), token: secret, fetchImpl });
-  assert.equal(requested.length, 6);
+  assert.equal(requested.length, 7);
   assert.equal(requested.every((r) => r.method === 'GET' && r.host === 'api.cloudflare.com'), true);
   assert.equal(report.project.production_candidate, true);
   assert.equal(report.domains.every((d) => d.present), true);
+  assert.equal(report.voice_dns.host, 'voice.' + DOMAIN);
+  assert.equal(report.voice_dns.classification, 'CLOUDFLARE_PROXY_CANDIDATE');
   assert.equal(report.assessment, 'NOT_PRODUCTION_APPROVED');
   assert.equal(report.missing.includes('HTTP_GET_HEAD_AND_API_ROUTES_NOT_CHECKED'), true);
   assert.equal(JSON.stringify(report).includes(secret), false);

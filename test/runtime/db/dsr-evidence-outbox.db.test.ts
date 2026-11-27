@@ -6,10 +6,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  closeDb, createTenantWithMember, getDbUrl, openDb, type DbCtx,
+  closeDb, createTenantWithMember, requireDbOrFail, openDb, type DbCtx,
 } from './db-helpers';
 
-const suite = getDbUrl() ? describe : describe.skip;
+const suite = requireDbOrFail('DSR evidence outbox') ? describe : describe.skip;
 const requester = 'subject@example.test';
 
 async function createDsr(ctx: DbCtx, tenantId: string) {
@@ -155,10 +155,13 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       );
       expect(res.rows[0]!.result.failed_in_batch).toBe(1);
     });
-    const failed = await ctx.client.query<{ state: string; attempt_count: number }>(
-      'SELECT state, attempt_count FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
+    const failed = await ctx.client.query<{ state: string; attempt_count: number; last_error: string }>(
+      'SELECT state, attempt_count, last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
     );
-    expect(failed.rows[0]).toMatchObject({ state: 'failed', attempt_count: 1 });
+    expect(failed.rows[0]).toMatchObject({
+      state: 'failed', attempt_count: 1, last_error: 'SQLSTATE_23514',
+    });
+    expect(failed.rows[0]!.last_error).not.toContain(requester);
 
     await ctx.client.query('ALTER TABLE public.runtime_events DROP CONSTRAINT dsr_force_runtime_fail');
     await ctx.client.query(

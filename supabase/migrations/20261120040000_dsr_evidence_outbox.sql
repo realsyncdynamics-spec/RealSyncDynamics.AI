@@ -173,14 +173,15 @@ BEGIN
             v_delivered := v_delivered + 1;
         EXCEPTION WHEN OTHERS THEN
             -- The per-item subtransaction undoes any partial event append.
-            -- Never log requester data or internal stack details.
-            v_retry := pg_catalog.least(3600,
-                pg_catalog.power(2, pg_catalog.least(v_item.attempt_count + 1, 11))::integer);
+            -- Never persist raw SQLERRM here: database errors can embed PII.
+            -- SQLSTATE is sufficient for retry classification and alerts.
+            v_retry := LEAST(3600,
+                pg_catalog.power(2, LEAST(v_item.attempt_count + 1, 11))::integer);
             UPDATE public.dsr_evidence_outbox
                SET state = 'failed',
                    attempt_count = attempt_count + 1,
                    next_attempt_at = pg_catalog.now() + v_retry * INTERVAL '1 second',
-                   last_error = pg_catalog.left(SQLERRM, 300)
+                   last_error = 'SQLSTATE_' || SQLSTATE
              WHERE id = v_item.id;
             v_failed := v_failed + 1;
         END;

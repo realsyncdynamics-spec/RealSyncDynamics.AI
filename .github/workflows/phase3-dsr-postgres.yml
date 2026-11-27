@@ -1,0 +1,73 @@
+name: Phase 3 DSR Outbox PostgreSQL Integration
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/phase3-dsr-postgres.yml'
+      - 'scripts/test-db/**'
+      - 'supabase/migrations/20261120040000_dsr_evidence_outbox.sql'
+      - 'supabase/functions/governance-dsr/**'
+      - 'test/runtime/db/dsr-evidence-outbox.db.test.ts'
+      - 'test/runtime/db/db-helpers.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dsr-postgresql:
+    name: DSR evidence on isolated PostgreSQL 16
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked node dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Provision isolated PostgreSQL 16
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-16 postgresql-client-16
+          sudo pg_ctlcluster 16 main start || true
+          sudo service postgresql start
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER USER postgres PASSWORD 'postgres';"
+          pg_isready -h 127.0.0.1 -p 5432
+      - name: Bootstrap DSR PostgreSQL test DB and run all seven tests
+        env:
+          PGPASSWORD: postgres
+          REQUIRE_DB_TESTS: '1'
+        run: |
+          set -euo pipefail
+          # postgres runs as a separate Unix user and cannot traverse the
+          # GitHub runner's private checkout. Copy only test SQL inputs to /tmp.
+          mkdir -p /tmp/rsd-dsr-test/scripts /tmp/rsd-dsr-test/supabase
+          cp -R scripts/test-db /tmp/rsd-dsr-test/scripts/
+          cp -R supabase/migrations /tmp/rsd-dsr-test/supabase/
+          chmod -R a+rX /tmp/rsd-dsr-test
+          DB_URL="$(bash /tmp/rsd-dsr-test/scripts/test-db/dsr-outbox-up.sh)" || {
+            echo "DSR test bootstrap failed" >&2
+            exit 1
+          }
+          export TEST_DB_URL="$DB_URL"
+          if [[ "$TEST_DB_URL" != postgresql://postgres@127.0.0.1:* && "$TEST_DB_URL" != postgresql://postgres@localhost:* ]]; then
+            echo "Unsafe test DB host" >&2
+            exit 1
+          fi
+          test_rc=0
+          npx vitest run test/runtime/db/dsr-evidence-outbox.db.test.ts --reporter=json --outputFile=/tmp/dsr-vitest.json || test_rc=$?
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const result=JSON.parse(readFileSync("/tmp/dsr-vitest.json","utf8"));
+            const checks=(result.testResults??[]).flatMap(s=>s.assertionResults??[]);
+            const passed=checks.filter(t=>t.status==="passed").length;
+            const skipped=checks.filter(t=>t.status==="pending"||t.status==="skipped").length;
+            console.log("DSR PostgreSQL tests: "+passed+" passed, "+skipped+" skipped");
+            for(const test of checks.filter(t=>t.status==="failed")) {
+              console.error("FAILED:", test.fullName, (test.failureMessages??[]).join(" ").slice(0,1600));
+            }
+            if(passed!==7||skipped!==0||result.success!==true)process.exit(1);
+          '
+          if [[ "$test_rc" -ne 0 ]]; then exit "$test_rc"; fi

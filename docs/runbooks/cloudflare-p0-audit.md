@@ -36,9 +36,29 @@ node scripts/cloudflare-p0-evidence.mjs
 unset CLOUDFLARE_API_TOKEN
 ```
 
-Der Report enthält ausschließlich ausgewählte Metadaten: Production-Branch, kanonisches Deployment (nur als Kandidat), Custom-Domain-Status, DNS-Ziele und Worker-Routen-Kandidaten. Das Token wird nicht ausgegeben. Ein fehlender Berechtigungsnachweis erscheint als `*_READ_UNAVAILABLE` und wird **nicht** als DNS- oder Plattformausfall interpretiert.
+Der Report enthält ausschließlich ausgewählte Metadaten: Production-Branch, kanonisches Deployment (nur als Kandidat), Custom-Domain-Status, DNS-Ziele, getrennte DNS-only-Klassifizierung der Voice-Subdomain und Worker-Routen-Kandidaten. Das Token wird nicht ausgegeben. Ein fehlender Berechtigungsnachweis erscheint als `*_READ_UNAVAILABLE` und wird **nicht** als DNS- oder Plattformausfall interpretiert.
 
 Die Prüfung sendet **nur GET** an die Cloudflare-API. Selbst bei vollständig befüllten Feldern lautet das Ergebnis immer `NOT_PRODUCTION_APPROVED`, da diese Daten **keine** öffentliche HTTP- oder Audio-Abnahme ersetzen.
+
+## DNS-only-Sonderfall: `voice.realsyncdynamicsai.de`
+
+**Nutzerseitiger DNS-Befund (27.11.2026), noch nicht per Cloudflare-API belegt:** `voice` zeigt als DNS-only-CNAME (graue Wolke) auf GitHub Pages. Das ist **kein** Cloudflare-Pages-Production-Endpunkt und darf nicht als Ausfall markiert werden, wenn Cloudflare-Zonen-HTTP-Analytik für diesen Host keine Zugriffe anzeigt.
+
+Der Prüfbericht fragt `voice` deshalb separat ab und klassifiziert den Host anhand des tatsächlichen DNS-CNAMEs:
+
+- `GITHUB_PAGES_DNS_ONLY`: **Nur** CNAME mit `proxied=false` und Ziel `*.github.io`.
+- `DNS_ONLY_EXTERNAL_ORIGIN_UNVERIFIED`: DNS-only-CNAME mit anderem Ziel; externer Dienst ist nicht näher bestätigt.
+- `CLOUDFLARE_PROXY_CANDIDATE`: CNAME mit `proxied=true`; Cloudflare-Proxy möglich, aber funktionierende TLS-/HTTP-Route ungeprüft.
+- `NON_CNAME_ORIGIN_UNVERIFIED` / `UNVERIFIED`: kein belastbarer Zuordnungsnachweis.
+
+**Kein automatischer DNS-Wechsel.** Cloudflare DNS-only liefert selbst keine HTTP-WAF, kein CDN-Caching und keine Cloudflare-HTTP-Analytik; daraus lässt sich aber nicht ableiten, dass GitHub Pages keinen eigenen Plattformschutz hat. Eine Proxy-Umstellung benötigt gesonderte Owner-Freigabe, Rückfallplan und Cloudflare-SSL-/GitHub-Pages-Zertifikatstests. Ein GitHub-Pages-CNAME-Check ist **keine** Verifizierung der tatsächlichen Inhalte oder externen JavaScript-Aufrufe.
+
+**Bereits im RealSync-Repository belegte Ressourcen (Code-Referenzen, kein aktueller Netzwerk-Scan):**
+- `https://voice.realsyncdynamicsai.de/onboarding.html` als externer Link in `src/components/landing/company/companyProducts.ts` und `src/pages/product-entry-points/PhonebotStartPage.tsx`.
+- MP3-Beispiele unter `/audio/handwerk.mp3?v=grok1`, `/audio/kfz.mp3?v=grok1`, `/audio/gastronomie.mp3?v=grok1`, `/audio/hausverwaltung.mp3?v=grok1` in `src/components/landing/company/CompanyDemos.tsx`.
+- `src/product/implementation-status.ts` bewertet das externe Onboarding nur als Preview und verweist auf den historischen HTTP-200-Befund vom 03.11.2026; **kein Live-Voice-/Checkout-Nachweis**.
+
+Ein vollständiger Ressourcen- und Drittanbieter-Scan muss die ausgelieferte Seite mit Browser-Netzwerkprotokoll, Requests, CSP, externen Skripten, Cookies, Form-Zielen und erreichbaren MP3-Dateien untersuchen. Ohne echten HTTP-Zugriff dürfen weder „keine externen Anbieter“ noch „alles sicher“ bescheinigt werden.
 
 ## Zweiter, unabhängiger Nachweis: öffentliche Routen
 
@@ -57,7 +77,7 @@ done
 
 ## Abnahme vor irgendeinem Cutover
 
-1. **Production-Projekt** und `production_branch` mit einem kanonischen **production**-Deployment und exakt nachvollziehbarem Commit abgleichen. Eine Branch-Preview ist kein Live-Beweis.
+1. **Production-Projekt** und `production_branch` mit einem kanonischen **production**-Deployment und exakt nachvollziehbarem Commit abgleichen; `voice` ausdrücklich nicht als Pages-Production-Host behandeln, wenn der DNS-only-Nachweis vorliegt. Eine Branch-Preview ist kein Live-Beweis.
 2. Apex und `www`: Custom Domains und DNS-Einträge auf denselben Production-Pfad prüfen; konkurrierende Worker-Routen mit dem Cloudflare-Dashboard klären, nicht automatisch löschen.
 3. HTTP-GET/HEAD, Redirects, Content-Type, CF-Ray und die beiden Voice-API-Typen auf allen drei Hosts unabhängig testen.
 4. Bestehende [#2336](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/pull/2336)-Änderungen und eventuelle Wiederaufnahme von #2358 vor einem späteren Merge koordinieren.

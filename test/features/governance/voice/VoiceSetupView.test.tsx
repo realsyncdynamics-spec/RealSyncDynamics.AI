@@ -15,10 +15,8 @@ vi.mock('@/src/core/access/TenantProvider', () => ({
   useTenant: () => tenant,
 }));
 
-import {
-  VoiceSetupView,
-  VOICE_PREVIEW_ONBOARDING_URL,
-} from '@/src/features/governance/voice/VoiceSetupView';
+import { VoiceSetupView } from '@/src/features/governance/voice/VoiceSetupView';
+import { VOICE_PREVIEW_ONBOARDING_URL } from '@/src/config/voice-onboarding';
 
 function show() {
   render(<MemoryRouter><VoiceSetupView /></MemoryRouter>);

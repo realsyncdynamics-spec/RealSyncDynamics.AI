@@ -56,7 +56,8 @@ jobs:
             echo "Unsafe test DB host" >&2
             exit 1
           fi
-          npx vitest run test/runtime/db/dsr-evidence-outbox.db.test.ts --reporter=json --outputFile=/tmp/dsr-vitest.json
+          test_rc=0
+          npx vitest run test/runtime/db/dsr-evidence-outbox.db.test.ts --reporter=json --outputFile=/tmp/dsr-vitest.json || test_rc=$?
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             const result=JSON.parse(readFileSync("/tmp/dsr-vitest.json","utf8"));
@@ -64,5 +65,9 @@ jobs:
             const passed=checks.filter(t=>t.status==="passed").length;
             const skipped=checks.filter(t=>t.status==="pending"||t.status==="skipped").length;
             console.log("DSR PostgreSQL tests: "+passed+" passed, "+skipped+" skipped");
+            for(const test of checks.filter(t=>t.status==="failed")) {
+              console.error("FAILED:", test.fullName, (test.failureMessages??[]).join(" ").slice(0,1600));
+            }
             if(passed!==7||skipped!==0||result.success!==true)process.exit(1);
           '
+          if [[ "$test_rc" -ne 0 ]]; then exit "$test_rc"; fi

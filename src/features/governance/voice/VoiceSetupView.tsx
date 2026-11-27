@@ -9,8 +9,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Building2, FileDown, LockKeyhole, Loader2, ShieldCheck } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { VOICE_PREVIEW_ONBOARDING_URL } from '../../../config/voice-onboarding';
 
-export const VOICE_PREVIEW_ONBOARDING_URL = 'https://voice.realsyncdynamicsai.de/onboarding.html';
+
 
 export function VoiceSetupView() {
   const { activeTenantId, tenants, loading, error } = useTenant();

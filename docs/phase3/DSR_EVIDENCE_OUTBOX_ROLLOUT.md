@@ -15,11 +15,11 @@ Stand 20.11.2026 · **Draft / Nicht produktiv freigegeben**
 
 **Diese PR ist nicht die vollständige DSGVO-Abnahme.**
 
-1. *Betroffenen-Identität und Löschauftrag*: `ensureSubjectRef`, `upsertMapping` und `enqueueErasure` sind weiterhin best-effort und nicht in derselben DSR-Transaktion. Ein erfolgreicher DSR-Eingang ist daher kein Nachweis einer erfolgreich vorgemerkten Löschung. Dafür ist ein separater persistenter Link-/Erasure-Auftrag erforderlich.
+1. *Betroffenen-Identität und Löschauftrag*: Der vorhandene `dsr_evidence_outbox`-Auftrag bleibt erhalten, wenn HMAC/Vault oder Mapping fehlen. Der geänderte `dsr_outbox_drain()` verknüpft `dsr_requests.metadata.subject_ref`, `subject_ref_mappings`, bei Erasure `deletion_requested_at`, und die beiden `runtime_events` zusammen mit dem `delivered`-ACK transaktional. Der bestehende DSR-Handler erzeugt keine separaten best-effort Mapping-/Erasure-Schreibvorgänge mehr. **Achtung:** Key-Provisioning vor dem DSR-Insert bleibt best-effort; falls ein vorhandener Key ohne gültiges Vault-Secret zurückbleibt, darf ein Worker dessen Secret nicht blind überschreiben. Nach 12 Fehlern ist manuelle Wiederherstellung erforderlich.
 2. *Akteursbezug*: Der Edge-Handler schreibt mit service_role, daher ist `auth.uid()` im SQL-Trigger nicht automatisch der handelnde Nutzer. Der atomare System-Audit hat dann `actor_user_id=NULL`; der bisherige nachgelagerte Akteurs-Audit bleibt best-effort. Vollständig atomare „wer hat was geändert“-Attribution erfordert einen autorisierten Mutation-RPC oder gleichwertige vertrauenswürdige Sitzungsübergabe.
 3. *Historische Nachweise*: vor Ausrollen fehlende `runtime_events` und `subject_ref_mappings` inventarisieren; keine synthetischen historischen Ereignisse vortäuschen.
 4. *Abschlussstatus*: eine DSR-Abschlussanzeige darf erst als vollständig revisionssicher gelten, wenn alle verpflichtenden Nachweise vorliegen und der Outbox-Status `delivered` ist.
-5. *Echte PostgreSQL-Abnahme*: Sieben Integrationsprüfungen im neuen Testfile; bis deren Lauf nachgewiesen ist, bleiben sämtliche Prüfungen **offen**.
+5. *Echte PostgreSQL-Abnahme*: Die isolierte PostgreSQL-16-CI aus PR #2469 hat sieben Tests bestanden (Run 46003148649). Der Nachfolge-PR #2471 ergänzt Tests für HMAC-Ausfall/Wiederanlauf, Löschvormerkung, Hash-Chain und atomaren Rollback. Die vollständige produktionsnahe Supabase-JWT/Edge-/Retention-Abnahme steht weiterhin aus. Der im jeweiligen PR erfolgreiche Testlauf ist vor Freigabe auf **nicht übersprungene** Tests zu prüfen.
 6. *Worker-Cadence und Alarmierung*: Nach Freigabe Cron-Health- und Outbox-Rückstand überwachen. HTTP-503 vom Worker zeigt fehlgeschlagene oder dauerhaft erschöpfte Aufträge an.
 
 ## Isolierter DB-Test
@@ -63,6 +63,10 @@ SELECT cron.schedule(
 
 - Kein Merge in `main`, keine Migration in Produktiv-Supabase und keine automatische Bereitstellung von Secrets.
 - Der DSR-Eingang ist auch dann nachweisbar, wenn `runtime_events` temporär nicht erreichbar ist; der Outbox-Eintrag bleibt persistent, mit Retry/Fehlerzustand.
+- Ein **angenommener** DSR darf nicht mit einem **ausgelieferten und vollständig zugeordneten** Evidence-Nachweis gleichgesetzt werden. Solange HMAC/Mapping fehlt, bleibt der Queue-Status `failed`/retryable; nach zwölf Versuchen ist Betreiberalarm erforderlich.
+- Beim Cutover darf der alte Handler mit direktem `enqueueErasure` nicht gleichzeitig mit dem neuen Outbox-Drain arbeiten: sonst entstehen doppelte `dsr.erasure_requested`-Ereignisse. Migration zuerst Staging, dann abgestimmte Edge-Version und Worker aktivieren.
+- Die Subject-Verknüpfung schreibt bei zuvor fehlendem `metadata.subject_ref` ein internes DSR-`UPDATE`; dessen bestehender Trigger erzeugt zusätzlich ein weiteres nachvollziehbares `dsr.updated`-Outbox-Ereignis. Dies ist endlich/idempotent, da der Wert nur einmal gesetzt wird.
+- `SQLSTATE` statt `SQLERRM` in Queue-Fehlerstatus speichern; keine Klartext-Fehlermeldungen mit möglichen personenbezogenen Daten.
 - Derzeit wird bei Fehlern der **Outbox-Tabelle selbst** die DSR-Schreiboperation abgebrochen. Dies verhindert nachweislose Bestätigungen; gesetzliche Fristen und Notfallannahme müssen organisatorisch abgesichert werden.
 - Kein automatischer Behördenversand. Datenschutzpflichten und Aufbewahrungsfragen gesondert juristisch prüfen.
 

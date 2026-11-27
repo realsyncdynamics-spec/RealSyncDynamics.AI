@@ -2,7 +2,7 @@
  * RealSyncDynamics.AI Web App Builder — code workbench.
  * Puck remains the visual editor at /builder/:slug. This surface is additive.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { FileCode2, Loader2, Play, Plus, RefreshCw, ShieldOff, Square, Trash2, Wrench } from 'lucide-react';
 import { BoltEngine } from './bolt/engine';
 import { htmlFromFiles, sandboxTokens } from './bolt/preview';
@@ -28,7 +28,10 @@ import {
 } from './bolt/project-store';
 import type { AuditRecord, EngineRunResult, FileRecord, GovernanceContext } from './bolt/types';
 
-type Pane = 'preview' | 'code' | 'audit';
+// Nicht im kritischen Pfad: Three.js wird erst beim expliziten Öffnen der 3D-Vorschau geladen.
+const ThreePreviewPanel = lazy(() => import('./three-preview/ThreePreviewPanel'));
+
+type Pane = 'preview' | 'three' | 'code' | 'audit';
 
 const DEFAULT_CODE_PROMPT = 'Exklusive Landingpage für einen Invite-only Launch: ein Satz, eine Handlung, kein Dashboard.';
 
@@ -580,8 +583,8 @@ export function BoltWorkbench({
         </section>
 
         <section className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)]">
-          <div className="grid grid-cols-3 border-b border-white/10">
-            {(['preview', 'code', 'audit'] as Pane[]).map((id) => (
+          <div className="grid grid-cols-4 border-b border-white/10">
+            {(['preview', 'three', 'code', 'audit'] as Pane[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -590,7 +593,7 @@ export function BoltWorkbench({
                   pane === id ? 'bg-[#0052FF] text-[#E2E2E2]' : 'bg-[#101114] text-white/55'
                 }`}
               >
-                {id === 'preview' ? 'Vorschau' : id === 'code' ? 'Code' : 'Prüfpfad'}
+                {id === 'preview' ? 'Vorschau' : id === 'three' ? '3D-Objekt' : id === 'code' ? 'Code' : 'Prüfpfad'}
               </button>
             ))}
           </div>
@@ -649,6 +652,12 @@ export function BoltWorkbench({
                 </div>
               )}
             </div>
+          )}
+
+          {pane === 'three' && (
+            <Suspense fallback={<p role="status" className="p-6 text-sm text-white/55">3D-Modul wird geladen…</p>}>
+              <ThreePreviewPanel />
+            </Suspense>
           )}
 
           {pane === 'code' && (

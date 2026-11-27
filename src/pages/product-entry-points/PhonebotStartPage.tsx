@@ -6,9 +6,11 @@ import { CapabilityAvailabilityNotice } from '../../components/landing/Capabilit
 import { formatPriceEur, VOICE_STANDALONE_OFFERS } from '@/shared/pricing';
 import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
 import { canOfferVoiceCheckout } from '../../config/voice-checkout';
+import { VOICE_PREVIEW_ONBOARDING_URL } from '../../config/voice-onboarding';
 
 /**
- * Eigenständiger Voice-Agent-Einstieg auf der BESTEHENDEN Route /phonebot/start.
+ * Voice-Agent-Einstieg auf dem gemeinsamen Produktpfad /voice-agent.
+ * Der alte /phonebot/start ist ein Query-erhaltender Alias.
  *
  * Voice-Pakete sind bereits im Stripe-Livekatalog angelegt, aber die
  * Verbindung Preis → eigenständiges Abo → Entitlement → Agent-Provisioning →
@@ -21,7 +23,7 @@ import { canOfferVoiceCheckout } from '../../config/voice-checkout';
  * Das Governance-Voice-Add-on (150 EUR) ist NICHT Teil dieses Katalogs.
  * Preise stammen ausschließlich aus shared/pricing.ts.
  */
-const ONBOARDING_URL = 'https://voice.realsyncdynamicsai.de/onboarding.html';
+const ONBOARDING_URL = VOICE_PREVIEW_ONBOARDING_URL;
 const WAITLIST_URL = '/warteliste?interest=bots&utm_source=voice-product&utm_medium=product-page&utm_campaign=voice-agent-preview';
 
 const STEPS = [
@@ -77,13 +79,21 @@ export function PhonebotStartPage() {
               Voice-Konfigurator. Die produktive Telefonanbindung ist noch in Vorbereitung.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                to="/app/voice/setup"
+                data-testid="voice-account-setup-cta"
+                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-teal-800 px-6 py-3 font-semibold text-white hover:bg-teal-900"
+              >
+                Im RealSync-Konto vorbereiten <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
               <a
                 href={ONBOARDING_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-teal-800 px-6 py-3 font-semibold text-white hover:bg-teal-900"
+                data-testid="voice-external-preview-cta"
+                className="inline-flex min-h-12 items-center gap-2 rounded-md border border-slate-300 px-6 py-3 font-semibold text-slate-800 hover:border-teal-700"
               >
-                Voice Agent konfigurieren <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                Konfigurator-Vorschau <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </a>
               <Link
                 to={WAITLIST_URL}
@@ -104,7 +114,7 @@ export function PhonebotStartPage() {
               </div>
             )}
             <p className="mt-4 max-w-3xl text-sm text-slate-500" role="note">
-              Produktstatus: {statusLabel}. Der Konfigurator dient derzeit der Vorbereitung.
+              Produktstatus: {statusLabel}. Die externe Vorschau speichert noch nicht in Ihrem RealSync-Konto.
               {anyCheckout
                 ? ' Ein Abo schließen Sie über die Paketkarten ab; die Telefonnummer wird erst nach Prüfung aktiviert.'
                 : ' Es wird hier weder ein Abonnement abgeschlossen noch eine Telefonnummer aktiviert.'}
@@ -114,7 +124,7 @@ export function PhonebotStartPage() {
 
         <section className="px-5 py-16 sm:px-8" aria-labelledby="voice-packages">
           <div className="mx-auto max-w-6xl">
-            <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">Eigenständige Pakete</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">Einzeln buchbare Pakete</p>
             <h2 id="voice-packages" className="mt-3 text-3xl font-semibold tracking-tight">
               Drei Voice-Agent-Angebote
             </h2>
@@ -163,7 +173,7 @@ export function PhonebotStartPage() {
                       rel="noopener noreferrer"
                       className="mt-7 inline-flex items-center justify-center gap-2 rounded-md border border-teal-800 px-4 py-3 text-sm font-semibold text-teal-900 hover:bg-teal-50"
                     >
-                      Paket vorbereiten <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      Vorschau öffnen <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </a>
                   )}
                 </article>

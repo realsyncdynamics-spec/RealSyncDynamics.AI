@@ -172,6 +172,15 @@ export function VoiceSessionsView() {
             </p>
           </div>
         </div>
+        {!tenantLoading && activeTenantId ? (
+          <Link
+            to="/app/voice/setup"
+            className="mt-4 inline-flex items-center gap-2 border border-security-700 px-4 py-2 text-xs font-semibold text-security-300 hover:bg-obsidian-900"
+            data-testid="voice-setup-account-link"
+          >
+            Voice Agent vorbereiten <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        ) : null}
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">

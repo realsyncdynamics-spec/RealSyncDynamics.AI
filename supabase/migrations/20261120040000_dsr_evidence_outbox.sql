@@ -309,7 +309,16 @@ BEGIN
                     OR m.deletion_requested_at IS NOT NULL
                     OR m.erased_at IS NOT NULL);
             IF v_subject_ref IS NULL THEN
-              RAISE EXCEPTION 'subject linkage pending' USING ERRCODE = '23503';
+              -- Missing Vault/HMAC material is an unresolved prerequisite,
+              -- not a failed evidence delivery. Do not spend one of the
+              -- 12 DB-error attempts each time the cron polls.
+              UPDATE public.dsr_evidence_outbox
+                 SET state = 'failed',
+                     next_attempt_at = pg_catalog.now() + INTERVAL '1 minute',
+                     last_error = 'SUBJECT_PENDING'
+               WHERE id = v_item.id AND state <> 'delivered';
+              v_failed := v_failed + 1;
+              CONTINUE;
             END IF;
             INSERT INTO public.runtime_events
                 (tenant_id, type, severity, source, review_status,

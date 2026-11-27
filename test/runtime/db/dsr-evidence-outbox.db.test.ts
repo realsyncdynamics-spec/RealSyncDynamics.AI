@@ -227,7 +227,24 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     const waiting = await ctx.client.query<{ last_error: string; state: string }>(
       'SELECT state, last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
     );
-    expect(waiting.rows[0]).toMatchObject({ state: 'failed', last_error: 'SQLSTATE_23503' });
+    expect(waiting.rows[0]).toMatchObject({ state: 'failed', last_error: 'SUBJECT_PENDING' });
+    // Subject/HMAC outages must remain retryable and not exhaust the
+    // twelve-attempt budget reserved for actual evidence write errors.
+    for (let attempt = 0; attempt < 14; attempt++) {
+      await ctx.client.query(
+        'UPDATE public.dsr_evidence_outbox SET next_attempt_at=now() WHERE dsr_id=$1', [id],
+      );
+      await ctx.withClaims({ role: 'service_role' }, async () => {
+        const { rows } = await ctx.client.query<{ result: { failed_in_batch: number } }>(
+          'SELECT public.dsr_outbox_drain(10) AS result',
+        );
+        expect(rows[0]!.result.failed_in_batch).toBe(1);
+      });
+    }
+    const afterOutage = await ctx.client.query<{ attempt_count: number; state: string }>(
+      'SELECT attempt_count, state FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
+    );
+    expect(afterOutage.rows[0]).toMatchObject({ attempt_count: 0, state: 'failed' });
 
     const subjectRef = await prepareSubjectKey(ctx, tenantId);
     await ctx.withClaims({ role: 'service_role' }, async () => {

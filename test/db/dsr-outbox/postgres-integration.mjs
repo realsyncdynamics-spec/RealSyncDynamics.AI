@@ -408,7 +408,7 @@ try {
     assert.equal(logs[0].actor_email, null);
   });
 
-  await check('ordinary access DSR emits one event without scheduling deletion', async () => {
+  await check('parallel ACK replay emits one access event without scheduling deletion', async () => {
     const accessOp = randomUUID(), accessWorker = randomUUID();
     const accessId = await invoke({ ...input, operation: accessOp, email: 'read@example.invalid' });
     const readRef = 'b'.repeat(64);
@@ -424,9 +424,17 @@ try {
       'select * from public.dsr_claim_outbox($1::uuid,1,120)', [accessWorker],
     )).rows[0];
     assert.equal(claim.operation_id, accessOp);
-    assert.equal((await serviceQuery(ackQuery, [
-      tenant, accessOp, accessWorker, claim.lease_epoch,
-    ])).rows[0].applied, true);
+    await assert.rejects(
+      serviceQuery(ackQuery, [tenant, accessOp, randomUUID(), claim.lease_epoch]),
+      /stale worker lease/,
+    );
+    // Two deliveries race on the same live lease. The outbox row lock and
+    // transaction boundary guarantee exactly one event + one receipt.
+    const callbacks = await Promise.all([
+      serviceQuery(ackQuery, [tenant, accessOp, accessWorker, claim.lease_epoch]),
+      serviceQuery(ackQuery, [tenant, accessOp, accessWorker, claim.lease_epoch]),
+    ]);
+    assert.deepEqual(callbacks.map(r => r.rows[0].applied).sort(), [false, true]);
     assert.equal(await count('runtime_events'), 3);
     assert.equal(await count('governance_admin_log'), 2);
     const { rows } = await admin.query(

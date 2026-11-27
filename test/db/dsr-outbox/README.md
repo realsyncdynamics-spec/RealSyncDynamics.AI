@@ -10,17 +10,17 @@ eingebunden werden.
 
 | Datei | Zweck |
 | --- | --- |
-| `intake.sql` | Atomare `dsr_requests`-Annahme + dauerhafter Outbox-Auftrag, tenant- und actor-gebundene Operations-ID, Replay-Konfliktschutz; service-role-only RPC |
+| `intake.sql` | Atomare `dsr_requests`-Annahme + dauerhafter Outbox-Auftrag; private, mit Tenant-/Operations-UUID gebundene SHA-256-Fingerprints der ursprünglichen Eingaben sowie E-Mail-Bindung; DB-Trigger schützt die Identitätsfelder vor Updates; service-role-only RPC |
 | `worker.sql` | Isolierter `FOR UPDATE SKIP LOCKED`-Claim, Worker-Lease, Fencing-Epoch, begrenzter Backoff, Dead-Letter nach acht Versuchen |
-| `evidence-ack.sql` | Isolierte atomare Evidence-/Audit-/Erasure-/ACK-RPC; verlangt gültige Lease, HMAC-Subject-Referenz und vorhandenes Tenant-Mapping, kein PII im Event-/Audit-Payload |
-| `postgres-integration.mjs` | Echte PostgreSQL-Prüfung (bisher 16 Producer-/Lease-Checks plus 10 neue ACK-Checks), darunter 20 parallele Anfragen, erzwungene Evidence-/Audit-Fehler, ACK-Replay, Worker-Fencing und Erasure-Idempotenz; die Evidence-Tabellen sind Test-Fixtures, **nicht** das produktive Hash-Chain-Schema |
-| `real-runtime-integration.mjs` | 8 zusätzliche Integrationstests mit den **Originalmigrationen** für DSR, Admin-Log, partitionierte `runtime_events`, HMAC-Subject-Lifecycle und DSR-Erasure; prüft SHA-256-Hash-Chain, Transaktionsrollback, Append-only und Tenant-Prüfung. Das Supabase-Auth-/Vault-Bootstrap bleibt synthetisch. |
+| `evidence-ack.sql` | Atomare Evidence-/Audit-/Erasure-/ACK-RPC; verlangt gültige Lease, unveränderte Antragsteller-E-Mail, tenantgebundene Mapping-Zeile und erneute kryptografische HMAC-Prüfung mit der gespeicherten Key-Version; keine Klartext-PII im Event-/Audit-Payload |
+| `postgres-integration.mjs` | Echte PostgreSQL-Prüfung (**31 Producer-/Lease-/ACK-Checks**, inklusive manipulierter Payload, HMAC-Fehler und unveränderlicher Identität), darunter 20 parallele Anfragen, erzwungene Evidence-/Audit-Fehler, ACK-Replay, Worker-Fencing und Erasure-Idempotenz; die Evidence-Tabellen sind Test-Fixtures, **nicht** das produktive Hash-Chain-Schema |
+| `real-runtime-integration.mjs` | **14** zusätzliche Integrationstests mit den **Originalmigrationen** für DSR, Admin-Log, partitionierte `runtime_events`, HMAC-Subject-Lifecycle und DSR-Erasure; prüft SHA-256-Hash-Chain, Transaktionsrollback, Append-only und Tenant-Prüfung. Das Supabase-Auth-/Vault-Bootstrap bleibt synthetisch. |
 | `recovery.mjs` | Älterer ergänzender PGlite-Test mit persistentem Testverzeichnis |
 | `.github/workflows/dsr-outbox-isolated-postgres.yml` | Branchgebundener Wegwerf-PostgreSQL-Container (nur CI, keine Verbindung zu Supabase-Produktion) |
 
 Prüfprotokoll: GitHub Actions → **DSR Outbox - isolated PostgreSQL contract (no deploy)**.
 
-**Abnahme vom 27.11.2026:** [CI-Lauf #46002329913](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/46002329913) erfolgreich: **26/26 isolierte Producer-/Lease-/ACK-Tests** + **8/8 Tests mit ausgewählten Originalmigrationen**, zusammen **34/34**. Die Hash-Chain wurde mit `runtime_events_verify_chain` der echten Migration bestätigt; bei Fehler im zweiten Event-Insert blieben keine Audit-/Evidence-/Erasure-Nebenwirkungen bestehen.
+**Abnahme vom 27.11.2026:** [CI-Lauf #46003714945](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/46003714945) erfolgreich: **31/31 isolierte Producer-/Lease-/ACK-Tests** + **14/14 Tests mit ausgewählten Originalmigrationen**, zusammen **45/45**. Die Hash-Chain wurde mit `runtime_events_verify_chain` der echten Migration bestätigt; bei Fehler im zweiten Event-Insert blieben keine Audit-/Evidence-/Erasure-Nebenwirkungen bestehen.
 
 **Genauer Schema-Scope:** `20260514100000_governance_admin_log.sql`, `20260515200000_dsr_tracker.sql`, `20260602100000_runtime_events_backbone.sql`, `20260603000000_subject_ref_lifecycle.sql`, `20260604100000_runtime_events_spec_version_v02.sql` und `20260626000000_dsr_erasure_automation.sql` werden aus dem Repository in eine Wegwerf-Datenbank geladen. Dazu dienen `scripts/test-db/bootstrap.sql` (Auth-Stubs) und die Originaldefinition von `set_updated_at()`. **Dies ist kein vollständiger Replay aller Repository-Migrationen und keine Prüfung des Supabase-Vault-Dienstes.**
 
@@ -33,11 +33,11 @@ Prüfprotokoll: GitHub Actions → **DSR Outbox - isolated PostgreSQL contract (
 2. `create`, `update`, `assign`, `close` in der bestehenden
    `governance-dsr`-Edge Function auf atomare RPCs umstellen. Bisher
    testet dieser Kandidat ausschließlich die Annahme (`create`).
-3. **Evidence-Consumer weiter integrieren:** Der atomare Abschluss ist nun
+3. **Evidence-Consumer weiter integrieren:** Der atomare Abschluss und die echte kryptografische Bindung an die gespeicherte Subject-Key-Version sind nun
    mit einem synthetischen Test-Envelopeschema **und** den originalen
    Runtime-/Hash-Chain-Migrationen isoliert geprüft. Offen bleiben der
    ausführende Consumer im vorhandenen Scheduler, automatisierte
-   HMAC-/Vault-Mapping-Recovery, der vollständige historische
+   HMAC-/Vault-Mapping-Recovery und -Provisionierung, der vollständige historische
    Migrationsreplay inklusive Ledger-Drift, weitere JWT-/RLS-Varianten und
    produktionsnahe End-to-End-Abnahme. Fehlende Subject-Referenzen bleiben
    **pending/retry**, niemals `complete`.

@@ -351,4 +351,81 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     });
   });
 
+  it('verifies the canonical runtime_events SHA-256 chain after subject linking', async () => {
+    const { tenantId, userId } = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, tenantId);
+    const ref = await prepareSubjectKey(ctx, tenantId);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      const linked = await ctx.client.query<{ ok: boolean }>(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1) AS ok',
+        [id, tenantId, ref],
+      );
+      expect(linked.rows[0]!.ok).toBe(true);
+      const first = await ctx.client.query<{ result: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS result',
+      );
+      expect(first.rows[0]!.result.delivered).toBe(2);
+      const replay = await ctx.client.query<{ result: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS result',
+      );
+      expect(replay.rows[0]!.result.delivered).toBe(0);
+    });
+
+    // This is the original SPEC-001 verifier (not a synthetic hash function).
+    const result = await ctx.withClaims({ sub: userId, role: 'authenticated' }, async () =>
+      ctx.client.query<{ tenant_seq: string; valid: boolean; chain_ok: boolean }>(
+        'SELECT tenant_seq, valid, chain_ok FROM public.runtime_events_verify_chain($1::uuid,1,NULL)',
+        [tenantId],
+      ));
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows.every(x => x.valid === true && x.chain_ok === true)).toBe(true);
+
+    const events = await ctx.client.query<{
+      subject_ref: string;
+      event_hash: Buffer;
+      prev_hash: Buffer | null;
+      payload: unknown;
+    }>(
+      'SELECT subject_ref,event_hash,prev_hash,payload FROM public.runtime_events ' +
+      'WHERE tenant_id=$1 AND correlation_id=$2 ORDER BY tenant_seq',
+      [tenantId, id],
+    );
+    expect(events.rows).toHaveLength(2);
+    expect(events.rows.every(e => e.subject_ref === ref && e.event_hash.length === 32)).toBe(true);
+    expect(events.rows[0]!.prev_hash).toBeNull();
+    expect(events.rows[1]!.prev_hash!.equals(events.rows[0]!.event_hash)).toBe(true);
+    expect(JSON.stringify(events.rows.map(e => e.payload))).not.toContain(requester);
+  });
+
+  it('rejects attempts to mutate delivered runtime evidence and preserves chain validity', async () => {
+    const { tenantId, userId } = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, tenantId);
+    const ref = await prepareSubjectKey(ctx, tenantId);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      await ctx.client.query('SELECT public.dsr_outbox_subject_link($1,$2,$3,1)',
+        [id, tenantId, ref]);
+      const { rows } = await ctx.client.query<{ outcome: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS outcome',
+      );
+      expect(rows[0]!.outcome.delivered).toBe(2);
+    });
+
+    // The test transaction must survive the deliberately rejected mutation.
+    await ctx.client.query('SAVEPOINT dsr_attempted_event_mutation');
+    await expect(ctx.client.query(
+      "UPDATE public.runtime_events SET payload = '{\"forged\":true}'::jsonb " +
+      'WHERE tenant_id=$1 AND correlation_id=$2',
+      [tenantId, id],
+    )).rejects.toThrow();
+    await ctx.client.query('ROLLBACK TO SAVEPOINT dsr_attempted_event_mutation');
+
+    const verification = await ctx.withClaims({ sub: userId, role: 'authenticated' }, async () =>
+      ctx.client.query<{ valid: boolean; chain_ok: boolean }>(
+        'SELECT valid,chain_ok FROM public.runtime_events_verify_chain($1::uuid,1,NULL)',
+        [tenantId],
+      ));
+    expect(verification.rows).toHaveLength(2);
+    expect(verification.rows.every(v => v.valid && v.chain_ok)).toBe(true);
+  });
+
 });

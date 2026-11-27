@@ -82,7 +82,7 @@ try {
   await migrate('20260603000000_subject_ref_lifecycle.sql');
   await migrate('20260604100000_runtime_events_spec_version_v02.sql');
   await migrate('20260626000000_dsr_erasure_automation.sql');
-  for(const name of ['intake.sql','worker.sql','evidence-ack.sql','subject-recovery.sql']) {
+  for(const name of ['intake.sql','worker.sql','evidence-ack.sql','subject-recovery.sql','mutations.sql']) {
     await db.query(await candidate(name));
   }
 
@@ -300,6 +300,113 @@ try {
     assert.equal(rows[0].relrowsecurity,true);
     assert.ok(Number((await db.query(
       "select count(*) as n from pg_inherits where inhparent='public.runtime_events'::regclass")).rows[0].n)>=1);
+  });
+
+
+  // Mutation staging: the producer is intentionally NOT wired to the Edge
+  // handler or the ACK consumer yet. It must not be mistaken for a release.
+  const mutation = 'select public.dsr_mutate($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::bigint,$6::text,$7::jsonb) as revision';
+  const mutationId = (await rpc(intake,[
+    tenant,actor,randomUUID(),'access','mutations@example.invalid'
+  ])).rows[0].id;
+  let revision = 1;
+  const mutate = (operationId,expected,action,patch,actingUser=actor,forTenant=tenant,
+                  role='service_role') => rpc(mutation,[
+    forTenant,actingUser,operationId,mutationId,expected,action,JSON.stringify(patch)
+  ],role);
+  await check('mutation RPC is blocked for anonymous and authenticated callers',async()=>{
+    for(const role of ['anon','authenticated']) {
+      await assert.rejects(mutate(randomUUID(),1,'update',{status:'in_progress'},
+        actor,tenant,role),/permission denied/i);
+    }
+  });
+  await check('mutation role and cross-tenant restrictions are enforced',async()=>{
+    const outsider=randomUUID(),foreignTenant=randomUUID();
+    await assert.rejects(mutate(randomUUID(),1,'update',{status:'in_progress'},outsider),
+      /writer required/);
+    await assert.rejects(mutate(randomUUID(),1,'update',{status:'in_progress'},
+      actor,foreignTenant),/writer required/);
+  });
+  await check('whitelist blocks private metadata mutation without writing outbox',async()=>{
+    const start=Number((await db.query('select count(*) as n from public.dsr_outbox where dsr_id=$1',
+      [mutationId])).rows[0].n);
+    await assert.rejects(mutate(randomUUID(),1,'update',{
+      metadata:{subject_ref:'malicious'},status:'in_progress'
+    }),/invalid patch/);
+    assert.equal(Number((await db.query('select count(*) as n from public.dsr_outbox where dsr_id=$1',
+      [mutationId])).rows[0].n),start);
+  });
+  const firstOp=randomUUID();
+  await check('successful update writes DSR mutation and immutable outbox revision 2 atomically',async()=>{
+    const result=await mutate(firstOp,revision,'update',{status:'in_progress',response_notes:'reviewing'});
+    assert.equal(String(result.rows[0].revision),'2');
+    revision=2;
+    const {rows}=await db.query('select status,response_notes from public.dsr_requests where id=$1',
+      [mutationId]);
+    assert.deepEqual(rows,[{status:'in_progress',response_notes:'reviewing'}]);
+    const receipt=(await db.query('select event_type,revision,evidence_status from public.dsr_outbox where operation_id=$1',
+      [firstOp])).rows[0];
+    assert.deepEqual(receipt,{event_type:'dsr.updated',revision:'2',evidence_status:'pending'});
+  });
+  await check('same mutation ID replays, different patch conflicts without extra revision',async()=>{
+    const replay=await mutate(firstOp,1,'update',{status:'in_progress',response_notes:'reviewing'});
+    assert.equal(String(replay.rows[0].revision),'2');
+    await assert.rejects(mutate(firstOp,1,'update',{status:'completed'}),/operation conflict/);
+    assert.equal(Number((await db.query('select count(*) as n from public.dsr_outbox where dsr_id=$1',
+      [mutationId])).rows[0].n),2);
+  });
+  await check('stale revision is rejected without changing existing DSR',async()=>{
+    await assert.rejects(mutate(randomUUID(),1,'update',{status:'completed'}),/revision conflict/);
+    const {rows}=await db.query('select status from public.dsr_requests where id=$1',[mutationId]);
+    assert.equal(rows[0].status,'in_progress');
+  });
+  await check('outbox insert error rolls back the DSR assignment',async()=>{
+    await db.query("alter table public.dsr_outbox add constraint injected_dsr_assign_failure check (event_type <> 'dsr.assigned')");
+    try {
+      await assert.rejects(mutate(randomUUID(),revision,'assign',{assigned_to:'new reviewer'}),
+        /injected_dsr_assign_failure/);
+    } finally {await db.query('alter table public.dsr_outbox drop constraint injected_dsr_assign_failure');}
+    const {rows}=await db.query('select assigned_to from public.dsr_requests where id=$1',[mutationId]);
+    assert.equal(rows[0].assigned_to,null);
+    assert.equal(Number((await db.query('select count(*) as n from public.dsr_outbox where dsr_id=$1',
+      [mutationId])).rows[0].n),2);
+  });
+  await check('assign produces revision 3 and close produces revision 4 with completion timestamp',async()=>{
+    assert.equal(String((await mutate(randomUUID(),revision,'assign',
+      {assigned_to:'new reviewer'})).rows[0].revision),'3');
+    revision=3;
+    assert.equal(String((await mutate(randomUUID(),revision,'close',
+      {status:'completed'})).rows[0].revision),'4');
+    revision=4;
+    const {rows}=await db.query('select assigned_to,status,completed_at from public.dsr_requests where id=$1',
+      [mutationId]);
+    assert.equal(rows[0].assigned_to,'new reviewer');
+    assert.equal(rows[0].status,'completed');
+    assert.ok(rows[0].completed_at);
+  });
+  await check('two independent mutations with identical expected revision have one winner',async()=>{
+    const ops=[randomUUID(),randomUUID()];
+    const results=await Promise.allSettled(ops.map((op,i)=>mutate(op,revision,'update',
+      {response_notes:'competing-'+i})));
+    const ok=results.filter(a=>a.status==='fulfilled');
+    const bad=results.filter(a=>a.status==='rejected');
+    assert.equal(ok.length,1);
+    assert.equal(bad.length,1);
+    assert.match(String(bad[0].reason),/revision conflict/);
+    revision=5;
+    const {rows}=await db.query('select revision from public.dsr_outbox where dsr_id=$1 order by revision',
+      [mutationId]);
+    assert.deepEqual(rows.map(z=>z.revision),['1','2','3','4','5']);
+  });
+  await check('staged mutation evidence remains pending: hash chain unchanged until ACK supports events',async()=>{
+    const {rows}=await db.query(
+      "select event_type,evidence_status from public.dsr_outbox where dsr_id=$1 and revision>1 order by revision",
+      [mutationId]);
+    assert.deepEqual(rows.map(z=>z.event_type),[
+      'dsr.updated','dsr.assigned','dsr.closed','dsr.updated'
+    ]);
+    assert.ok(rows.every(z=>z.evidence_status==='pending'));
+    await verify(tenant,actor,2);
   });
 
   console.log(JSON.stringify({ok:true,checks,proof:'selected-original-migrations-sha256-hash-chain',allHistoricalMigrations:false,productionChanges:0}));

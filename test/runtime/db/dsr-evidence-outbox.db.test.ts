@@ -6,7 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  closeDb, createTenantWithMember, requireDbOrFail, openDb, type DbCtx,
+  closeDb, createTenantWithMember, requireDbOrFail, openDb, seedAppSecret, type DbCtx,
 } from './db-helpers';
 
 const suite = requireDbOrFail('DSR evidence outbox') ? describe : describe.skip;
@@ -26,6 +26,23 @@ async function queueCount(ctx: DbCtx, id: string) {
     'SELECT count(*) FROM public.dsr_evidence_outbox WHERE dsr_id = $1', [id],
   );
   return Number(r.rows[0]!.count);
+}
+
+
+async function prepareSubjectKey(ctx: DbCtx, tenantId: string): Promise<string> {
+  const name = `test_dsr_subject_${tenantId}_v1`;
+  await ctx.client.query(
+    `INSERT INTO public.subject_ref_keys
+       (tenant_id, key_version, vault_secret_name, status)
+     VALUES ($1, 1, $2, 'active')`,
+    [tenantId, name],
+  );
+  await seedAppSecret(ctx, name, 'test-hmac-secret-for-dsr-recovery');
+  const { rows } = await ctx.client.query<{ subject_ref: string }>(
+    "SELECT public.subject_ref_compute($1,'email',$2) AS subject_ref",
+    [tenantId, requester],
+  );
+  return rows[0]!.subject_ref;
 }
 
 suite('DSR evidence outbox — PostgreSQL integration', () => {
@@ -179,4 +196,106 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     );
     expect(events.rowCount).toBe(1);
   });
+  it('keeps subjectless evidence pending, then recovers with a verified HMAC', async () => {
+    const { tenantId } = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, tenantId);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      const tasks = await ctx.client.query<{ dsr_id: string; requester_email: string }>(
+        'SELECT * FROM public.dsr_outbox_subject_pending(10)',
+      );
+      expect(tasks.rows).toEqual([
+        expect.objectContaining({ dsr_id: id, requester_email: requester }),
+      ]);
+      const attempted = await ctx.client.query<{ status: { failed_in_batch: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS status',
+      );
+      expect(attempted.rows[0]!.status.failed_in_batch).toBe(1);
+    });
+    const waiting = await ctx.client.query<{ last_error: string; state: string }>(
+      'SELECT state, last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
+    );
+    expect(waiting.rows[0]).toMatchObject({ state: 'failed', last_error: 'SQLSTATE_23503' });
+
+    const subjectRef = await prepareSubjectKey(ctx, tenantId);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      const linked = await ctx.client.query<{ ok: boolean }>(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1) AS ok',
+        [id, tenantId, subjectRef],
+      );
+      expect(linked.rows[0]!.ok).toBe(true);
+    });
+    await ctx.client.query(
+      'UPDATE public.dsr_evidence_outbox SET next_attempt_at=now() WHERE dsr_id=$1', [id],
+    );
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      const res = await ctx.client.query<{ status: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS status',
+      );
+      expect(res.rows[0]!.status.delivered).toBe(2);
+    });
+    const emitted = await ctx.client.query<{ subject_ref: string }>(
+      "SELECT subject_ref FROM public.runtime_events WHERE correlation_id=$1 AND source='governance-dsr-outbox'", [id],
+    );
+    expect(emitted.rows).toHaveLength(2);
+    expect(emitted.rows.every(r => r.subject_ref === subjectRef)).toBe(true);
+  });
+
+  it('rejects forged subject refs and wrong-tenant linking without side effects', async () => {
+    const owner = await createTenantWithMember(ctx);
+    const foreign = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, owner.tenantId);
+    const ref = await prepareSubjectKey(ctx, owner.tenantId);
+    await expect(ctx.withClaims({ role: 'service_role' }, async () => {
+      await ctx.client.query(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1)',
+        [id, foreign.tenantId, ref],
+      );
+    })).rejects.toThrow();
+    await expect(ctx.withClaims({ role: 'service_role' }, async () => {
+      await ctx.client.query(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1)',
+        [id, owner.tenantId, 'fake-subject-reference'],
+      );
+    })).rejects.toThrow();
+    const mappings = await ctx.client.query(
+      'SELECT subject_ref FROM public.subject_ref_mappings WHERE tenant_id=$1',
+      [owner.tenantId],
+    );
+    expect(mappings.rowCount).toBe(0);
+    expect(await queueCount(ctx, id)).toBe(1);
+  });
+
+  it('records an erasure marker once without resetting the retention clock', async () => {
+    const { tenantId } = await createTenantWithMember(ctx);
+    const { rows } = await ctx.client.query<{ id: string }>(
+      "INSERT INTO public.dsr_requests(tenant_id,request_type,requester_email,status) VALUES ($1,'erasure',$2,'received') RETURNING id",
+      [tenantId, requester],
+    );
+    const id = rows[0]!.id;
+    const ref = await prepareSubjectKey(ctx, tenantId);
+    const link = () => ctx.withClaims({ role: 'service_role' }, async () =>
+      ctx.client.query('SELECT public.dsr_outbox_subject_link($1,$2,$3,1)', [id, tenantId, ref]));
+    await link();
+    const { rows: first } = await ctx.client.query<{ deletion_requested_at: Date }>(
+      'SELECT deletion_requested_at FROM public.subject_ref_mappings WHERE subject_ref=$1', [ref],
+    );
+    expect(first[0]!.deletion_requested_at).toBeTruthy();
+    await link();
+    const { rows: second } = await ctx.client.query<{ deletion_requested_at: Date }>(
+      'SELECT deletion_requested_at FROM public.subject_ref_mappings WHERE subject_ref=$1', [ref],
+    );
+    expect(second[0]!.deletion_requested_at).toEqual(first[0]!.deletion_requested_at);
+    expect(await queueCount(ctx, id)).toBe(2);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      const sent = await ctx.client.query<{ outcome: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS outcome',
+      );
+      expect(sent.rows[0]!.outcome.delivered).toBe(2);
+      const replay = await ctx.client.query<{ outcome: { delivered: number } }>(
+        'SELECT public.dsr_outbox_drain(10) AS outcome',
+      );
+      expect(replay.rows[0]!.outcome.delivered).toBe(0);
+    });
+  });
+
 });

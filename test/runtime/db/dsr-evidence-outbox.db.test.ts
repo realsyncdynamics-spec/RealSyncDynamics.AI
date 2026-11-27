@@ -131,6 +131,24 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     })).rejects.toThrow();
   });
 
+  it('denies access to service-only subject email recovery and link RPCs', async () => {
+    const { tenantId, userId } = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, tenantId);
+    await expect(ctx.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+      await ctx.client.query('SELECT * FROM public.dsr_outbox_subject_pending(10)');
+    })).rejects.toThrow();
+    await expect(ctx.withClaims({ sub: userId, role: 'authenticated' }, async () => {
+      await ctx.client.query(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1)',
+        [id, tenantId, 'unauthorized-subject-ref'],
+      );
+    })).rejects.toThrow();
+    const rows = await ctx.client.query(
+      'SELECT 1 FROM public.subject_ref_mappings WHERE tenant_id=$1', [tenantId],
+    );
+    expect(rows.rowCount).toBe(0);
+  });
+
   it('does not allow a tenant member to read another tenant evidence queue', async () => {
     const a = await createTenantWithMember(ctx);
     const b = await createTenantWithMember(ctx);

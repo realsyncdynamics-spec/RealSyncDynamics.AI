@@ -3189,3 +3189,33 @@ export function standaloneVoiceOfferById(id: string | null | undefined): Standal
 export function isStandaloneVoiceOfferReleased(offer: StandaloneVoiceOffer): boolean {
   return offer.monthlyMinutes !== null && offer.monthlyMinutes > 0 && offer.bullets.length > 0;
 }
+
+/**
+ * Modularer Nachfolgekatalog zu PR #2330. Nur Abnahmeentwurf:
+ * keine Zuordnung zu Legacy-PlanKeys, keine Stripe-IDs, keine Freischaltung.
+ * Bestehende Abos und Beta-Verträge bleiben unverändert.
+ */
+export const MODULAR_PRODUCT_IDS = ['ki-bots', 'app-builder', 'governance-os', 'claude-code-optimizer'] as const;
+export type ModularProductId = typeof MODULAR_PRODUCT_IDS[number];
+export type ModularOfferId = 'starter' | 'professional' | 'growth' | 'agency';
+export const MODULAR_OFFERS = [
+  { id: 'starter', monthlyEur: 0, selectableProducts: 0 },
+  { id: 'professional', monthlyEur: 49, selectableProducts: 1 },
+  { id: 'growth', monthlyEur: 149, selectableProducts: 2 },
+  { id: 'agency', monthlyEur: 399, selectableProducts: 4 },
+] as const;
+export const MODULAR_STANDALONE_MONTHLY_EUR = {
+  'ki-bots': 49, 'app-builder': 49, 'governance-os': 49, 'claude-code-optimizer': 29,
+} as const satisfies Record<ModularProductId, number>;
+
+/** Keine Freigabe bis Kostenmessung, Stripe-Abgleich und serverseitige Entitlements nachgewiesen sind. */
+export const MODULAR_CATALOG_STATUS = 'preview' as const;
+export function isModularCheckoutReleased(): false { return false; }
+
+/** Validiert ausschließlich die Auswahl im Entwurf; vergibt niemals Berechtigungen. */
+export function isValidModularSelection(offerId: string, products: readonly string[]): boolean {
+  const offer = MODULAR_OFFERS.find((item) => item.id === offerId);
+  return !!offer && products.length === offer.selectableProducts &&
+    new Set(products).size === products.length &&
+    products.every((id) => MODULAR_PRODUCT_IDS.some((known) => known === id));
+}

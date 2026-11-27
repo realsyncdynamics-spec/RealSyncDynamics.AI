@@ -394,8 +394,21 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     );
     expect(events.rows).toHaveLength(2);
     expect(events.rows.every(e => e.subject_ref === ref && e.event_hash.length === 32)).toBe(true);
-    expect(events.rows[0]!.prev_hash).toBeNull();
-    expect(events.rows[1]!.prev_hash!.equals(events.rows[0]!.event_hash)).toBe(true);
+    // Other tenant events may be interleaved between the two DSR events.
+    // Validate prev_hash against the preceding event in the *whole tenant*
+    // chain, not against the preceding filtered correlation_id.
+    const allEvents = await ctx.client.query<{
+      event_hash: Buffer;
+      prev_hash: Buffer | null;
+    }>(
+      'SELECT event_hash,prev_hash FROM public.runtime_events ' +
+      'WHERE tenant_id=$1 ORDER BY tenant_seq', [tenantId],
+    );
+    expect(allEvents.rows.length).toBeGreaterThanOrEqual(2);
+    expect(allEvents.rows[0]!.prev_hash).toBeNull();
+    for (let i = 1; i < allEvents.rows.length; i++) {
+      expect(allEvents.rows[i]!.prev_hash!.equals(allEvents.rows[i - 1]!.event_hash)).toBe(true);
+    }
     expect(JSON.stringify(events.rows.map(e => e.payload))).not.toContain(requester);
   });
 

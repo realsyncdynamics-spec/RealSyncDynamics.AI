@@ -6,6 +6,7 @@ import { CapabilityAvailabilityNotice } from '../../components/landing/Capabilit
 import { formatPriceEur, VOICE_STANDALONE_OFFERS } from '@/shared/pricing';
 import { getImplementation, STATUS_LABEL } from '../../product/implementation-status';
 import { canOfferVoiceCheckout } from '../../config/voice-checkout';
+import { VOICE_PREVIEW_ONBOARDING_URL } from '../../config/voice-onboarding';
 
 /**
  * Voice-Agent-Einstieg auf dem gemeinsamen Produktpfad /voice-agent.
@@ -22,7 +23,7 @@ import { canOfferVoiceCheckout } from '../../config/voice-checkout';
  * Das Governance-Voice-Add-on (150 EUR) ist NICHT Teil dieses Katalogs.
  * Preise stammen ausschließlich aus shared/pricing.ts.
  */
-const ONBOARDING_URL = 'https://voice.realsyncdynamicsai.de/onboarding.html';
+const ONBOARDING_URL = VOICE_PREVIEW_ONBOARDING_URL;
 const WAITLIST_URL = '/warteliste?interest=bots&utm_source=voice-product&utm_medium=product-page&utm_campaign=voice-agent-preview';
 
 const STEPS = [

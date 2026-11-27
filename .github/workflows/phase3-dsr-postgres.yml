@@ -41,7 +41,17 @@ jobs:
           REQUIRE_DB_TESTS: '1'
         run: |
           set -euo pipefail
-          export TEST_DB_URL="$(bash scripts/test-db/dsr-outbox-up.sh)"
+          # postgres runs as a separate Unix user and cannot traverse the
+          # GitHub runner's private checkout. Copy only test SQL inputs to /tmp.
+          mkdir -p /tmp/rsd-dsr-test/scripts /tmp/rsd-dsr-test/supabase
+          cp -R scripts/test-db /tmp/rsd-dsr-test/scripts/
+          cp -R supabase/migrations /tmp/rsd-dsr-test/supabase/
+          chmod -R a+rX /tmp/rsd-dsr-test
+          DB_URL="$(bash /tmp/rsd-dsr-test/scripts/test-db/dsr-outbox-up.sh)" || {
+            echo "DSR test bootstrap failed" >&2
+            exit 1
+          }
+          export TEST_DB_URL="$DB_URL"
           if [[ "$TEST_DB_URL" != postgresql://postgres@127.0.0.1:* && "$TEST_DB_URL" != postgresql://postgres@localhost:* ]]; then
             echo "Unsafe test DB host" >&2
             exit 1

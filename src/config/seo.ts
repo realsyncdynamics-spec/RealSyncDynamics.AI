@@ -291,6 +291,27 @@ const HOME_JSONLD: Record<string, unknown>[] = [
 ];
 
 export const SEO_CONFIG: Record<string, SEOConfig> = {
+  '/ai-dsgvo-bot': {
+    title: "AI DSGVO Bot | RealSync Dynamics AI",
+    description: "Übersicht zum Compliance Copilot für Fragen zu DSGVO, AI Act, Website-Befunden und Maßnahmenvorschlägen.",
+  },
+  '/agents': {
+    title: "KI-Agenten im Überblick | RealSync Dynamics AI",
+    description: "Übersicht der Agenten-Kontrollebene mit Aufgabenbereichen und ausgewiesenem Implementierungsstatus.",
+  },
+  '/monitoring': {
+    title: "Monitoring-Vorschau | RealSync Dynamics AI",
+    description: "Vorschau des Runtime-Feeds mit simulierten Ereignissen zu Scans, Drift, KI und Evidence. Keine Kundendaten.",
+  },
+  '/chatbot/start': {
+    title: "KI-Chat-Assistent | RealSync Dynamics AI",
+    description: "Informationen zum KI-Chat-Assistenten für Websites, zu Regelprüfung, Kontingenten, Kanälen und aktuellen Funktionsgrenzen.",
+  },
+  '/resources/matomo-dsgvo-konfiguration': {
+    title: "Matomo konfigurieren | RealSync Dynamics AI",
+    description: "Technische Hinweise zu Matomo, cookieless Tracking, IP-Masking, Datenminimierung und Opt-out. Keine pauschale rechtliche Freigabe.",
+  },
+
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   // Titel und Beschreibung folgen der Startseite v3 (H1 „Ihre Ideen. In Bewegung.“,
   // Websites, KI-Agenten und Automatisierungen mit mitlaufender Kontrollschicht).

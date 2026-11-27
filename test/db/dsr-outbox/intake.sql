@@ -28,7 +28,7 @@ alter table public.dsr_outbox enable row level security;
 -- A state transition can change lease/retry/status columns, but MUST NOT
 -- rewrite the immutable identity/payload receipt, even under service_role.
 create function public.dsr_outbox_protect_identity() returns trigger
-  language plpgsql set search_path = '' as $
+  language plpgsql set search_path = '' as $$
 begin
   if row(new.tenant_id,new.operation_id,new.actor_user_id,new.dsr_id,
          new.event_type,new.revision,new.intake_fingerprint,new.email_binding)
@@ -39,7 +39,7 @@ begin
     raise exception 'immutable outbox receipt' using errcode = '23514';
   end if;
   return new;
-end $;
+end $$;
 revoke all on function public.dsr_outbox_protect_identity() from public,anon,authenticated;
 create trigger dsr_outbox_identity_guard before update on public.dsr_outbox
   for each row execute function public.dsr_outbox_protect_identity();

@@ -243,9 +243,15 @@ try {
   // schema are not installed here. These are isolated contract-shaped tables
   // for testing *transaction boundaries* and uniqueness, not cryptographic
   // integrity or the full migration history.
-  await admin.query(`create table public.subject_ref_mappings (
+  await admin.query(`create table public.subject_ref_keys (
+      tenant_id uuid not null, key_version integer not null,
+      status text not null default 'active',
+      primary key(tenant_id,key_version)
+    );
+    create table public.subject_ref_mappings (
       subject_ref text primary key,
       tenant_id uuid not null,
+      key_version integer not null,
       subject_kind text not null,
       deletion_requested_at timestamptz,
       erased_at timestamptz
@@ -263,6 +269,33 @@ try {
       payload jsonb not null
     );`);
   await admin.query(await readFile(new URL('./evidence-ack.sql', import.meta.url), 'utf8'));
+
+  // TEST-ONLY synthetic HMAC stub for transactional envelope tests. The
+  // separate canonical migration suite runs the REAL RFC-002 HMAC function.
+  await admin.query(`create function public.subject_ref_compute(
+    p_tenant uuid, p_kind text, p_value text, p_version integer default null
+  ) returns text language plpgsql stable as $
+  begin
+    if not exists(select 1 from public.subject_ref_keys
+        where tenant_id=p_tenant and key_version=p_version and status in ('active','rotating'))
+    then raise exception 'test key unavailable'; end if;
+    return encode(pg_catalog.sha256(pg_catalog.convert_to(
+      'synthetic-only:' || p_tenant::text || ':' || p_kind || ':' ||
+      pg_catalog.lower(pg_catalog.btrim(p_value)) || ':' || p_version::text,
+      'UTF8')), 'hex');
+  end $;`);
+  await admin.query(
+    "insert into public.subject_ref_keys(tenant_id,key_version,status) values($1,1,'active')",
+    [tenant],
+  );
+  async function fakeRef(email, keyVersion = 1) {
+    const { rows } = await admin.query(
+      "select public.subject_ref_compute($1::uuid,'email',$2::text,$3::int) as ref",
+      [tenant, email, keyVersion],
+    );
+    return rows[0].ref;
+  }
+
 
   const ackQuery = 'select public.dsr_ack_evidence($1::uuid,$2::uuid,$3::uuid,$4::bigint) as applied';
   const deliveryWorker = randomUUID();
@@ -297,7 +330,7 @@ try {
     assert.equal(rows[0].evidence_status, 'retry');
   });
 
-  const ref = 'a'.repeat(64);
+  const ref = await fakeRef('delete@example.invalid');
   await admin.query(
     'update public.dsr_requests set metadata=jsonb_build_object($1::text,$2::text) where id=$3::uuid',
     ['subject_ref', ref, erasureId],
@@ -310,8 +343,8 @@ try {
     assert.equal(await count('runtime_events'), 0);
   });
   await admin.query(
-    'insert into public.subject_ref_mappings(subject_ref,tenant_id,subject_kind) values($1,$2,$3)',
-    [ref, tenant, 'email'],
+    'insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,$3,$4)',
+    [ref, tenant, 1, 'email'],
   );
 
   await check('evidence insert failure rolls back every side effect', async () => {
@@ -411,14 +444,14 @@ try {
   await check('parallel ACK replay emits one access event without scheduling deletion', async () => {
     const accessOp = randomUUID(), accessWorker = randomUUID();
     const accessId = await invoke({ ...input, operation: accessOp, email: 'read@example.invalid' });
-    const readRef = 'b'.repeat(64);
+    const readRef = await fakeRef('read@example.invalid');
     await admin.query(
       'update public.dsr_requests set metadata=jsonb_build_object($1::text,$2::text) where id=$3::uuid',
       ['subject_ref', readRef, accessId],
     );
     await admin.query(
-      'insert into public.subject_ref_mappings(subject_ref,tenant_id,subject_kind) values($1,$2,$3)',
-      [readRef, tenant, 'email'],
+      'insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,$3,$4)',
+      [readRef, tenant, 1, 'email'],
     );
     const claim = (await serviceQuery(
       'select * from public.dsr_claim_outbox($1::uuid,1,120)', [accessWorker],

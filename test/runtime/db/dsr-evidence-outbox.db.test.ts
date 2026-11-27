@@ -91,12 +91,18 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
   it('delivers exactly once even if the caller retries after a lost response', async () => {
     const { tenantId } = await createTenantWithMember(ctx);
     const id = await createDsr(ctx, tenantId);
-
+    // New contract: evidence cannot be delivered without a verified subject
+    // anchor. The link operation also creates a second durable DSR update.
+    const ref = await prepareSubjectKey(ctx, tenantId);
     await ctx.withClaims({ role: 'service_role' }, async () => {
+      const row = await ctx.client.query<{ ok: boolean }>(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1) AS ok', [id, tenantId, ref],
+      );
+      expect(row.rows[0]!.ok).toBe(true);
       const r = await ctx.client.query<{ result: { delivered: number } }>(
         'SELECT public.dsr_outbox_drain(10) AS result',
       );
-      expect(r.rows[0]!.result.delivered).toBe(1);
+      expect(r.rows[0]!.result.delivered).toBe(2);
     });
     await ctx.withClaims({ role: 'service_role' }, async () => {
       const r = await ctx.client.query<{ result: { delivered: number } }>(
@@ -114,7 +120,8 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
     const outbox = await ctx.client.query<{ state: string; attempt_count: number }>(
       'SELECT state, attempt_count FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
     );
-    expect(outbox.rows[0]).toMatchObject({ state: 'delivered', attempt_count: 1 });
+    expect(outbox.rows).toHaveLength(2);
+    expect(outbox.rows.every(x => x.state === 'delivered' && x.attempt_count === 1)).toBe(true);
   });
 
   it('denies the drain RPC to authenticated non-service users', async () => {
@@ -162,6 +169,12 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
   it('keeps failed evidence pending and can later deliver the same outbox item', async () => {
     const { tenantId } = await createTenantWithMember(ctx);
     const id = await createDsr(ctx, tenantId);
+    const ref = await prepareSubjectKey(ctx, tenantId);
+    await ctx.withClaims({ role: 'service_role' }, async () => {
+      await ctx.client.query(
+        'SELECT public.dsr_outbox_subject_link($1,$2,$3,1)', [id, tenantId, ref],
+      );
+    });
     await ctx.client.query(
       `ALTER TABLE public.runtime_events
        ADD CONSTRAINT dsr_force_runtime_fail CHECK (type <> 'dsr.created')`,
@@ -173,7 +186,7 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       expect(res.rows[0]!.result.failed_in_batch).toBe(1);
     });
     const failed = await ctx.client.query<{ state: string; attempt_count: number; last_error: string }>(
-      'SELECT state, attempt_count, last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1', [id],
+      "SELECT state, attempt_count, last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1 AND event_type='dsr.created'", [id],
     );
     expect(failed.rows[0]).toMatchObject({
       state: 'failed', attempt_count: 1, last_error: 'SQLSTATE_23514',
@@ -182,7 +195,7 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
 
     await ctx.client.query('ALTER TABLE public.runtime_events DROP CONSTRAINT dsr_force_runtime_fail');
     await ctx.client.query(
-      'UPDATE public.dsr_evidence_outbox SET next_attempt_at=now() WHERE dsr_id=$1', [id],
+      "UPDATE public.dsr_evidence_outbox SET next_attempt_at=now() WHERE dsr_id=$1 AND state='failed'", [id],
     );
     await ctx.withClaims({ role: 'service_role' }, async () => {
       const res = await ctx.client.query<{ result: { delivered: number } }>(

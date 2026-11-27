@@ -28,7 +28,8 @@ begin
          lease_owner = null,
          lease_until = null,
          last_error_code = 'RETRIES_EXHAUSTED'
-   where o.evidence_status in ('pending','retry')
+   where o.event_type = 'dsr.created' -- ACK currently supports intake only
+       and o.evidence_status in ('pending','retry')
      and o.attempts >= 8
      and (o.lease_until is null or o.lease_until < clock_timestamp())
      and o.next_attempt_at <= clock_timestamp();
@@ -37,7 +38,8 @@ begin
   with picked as (
     select o.tenant_id, o.operation_id
       from public.dsr_outbox as o
-     where o.evidence_status in ('pending','retry')
+     where o.event_type = 'dsr.created' -- ACK currently supports intake only
+       and o.evidence_status in ('pending','retry')
        and o.attempts < 8
        and o.next_attempt_at <= clock_timestamp()
        and (o.lease_until is null or o.lease_until < clock_timestamp())

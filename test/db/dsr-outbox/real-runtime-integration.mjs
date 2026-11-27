@@ -42,6 +42,7 @@ async function rpc(sql,args=[],role='service_role') {
 const intake='select public.dsr_intake($1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,NULL::text,NULL::text,NULL::text,ARRAY[]::text[]) as id';
 const claim='select * from public.dsr_claim_outbox($1::uuid,1,120)';
 const ack='select public.dsr_ack_evidence($1::uuid,$2::uuid,$3::uuid,$4::bigint) as applied';
+const recover='select public.dsr_recover_subject_ref($1::uuid,$2::uuid,$3::uuid,$4::bigint) as recovered';
 async function migrate(name) {
   await db.query(await appFile('supabase/migrations/'+name));
   console.log('APPLIED '+name);
@@ -81,7 +82,7 @@ try {
   await migrate('20260603000000_subject_ref_lifecycle.sql');
   await migrate('20260604100000_runtime_events_spec_version_v02.sql');
   await migrate('20260626000000_dsr_erasure_automation.sql');
-  for(const name of ['intake.sql','worker.sql','evidence-ack.sql']) {
+  for(const name of ['intake.sql','worker.sql','evidence-ack.sql','subject-recovery.sql']) {
     await db.query(await candidate(name));
   }
 
@@ -105,19 +106,84 @@ try {
     assert.equal((await db.query('select count(*)::int as n from public.runtime_events')).rows[0].n,0);
   });
 
-  // Simulate the still-unimplemented worker HMAC/mapping recovery through
-  // the existing canonical HMAC function and schema, never an invented digest.
-  const ref=(await db.query("select public.subject_ref_compute($1::uuid,'email',$2) as ref",
-    [tenant,'subject@example.invalid'])).rows[0].ref;
-  assert.match(ref,/^[0-9a-f]{64}$/);
-  await db.query(
-    'insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,1,$3)',
-    [ref,tenant,'email'],
-  );
-  await db.query(
-    "update public.dsr_requests set metadata=jsonb_build_object('subject_ref',$1::text) where id=$2::uuid",
-    [ref,dsr],
-  );
+
+  await check('recovery RPC denies authenticated public access',async()=>{
+    await assert.rejects(
+      rpc(recover,[tenant,operation,worker,lease.lease_epoch],'authenticated'),
+      /permission denied/i);
+  });
+  await check('worker fencing rejects foreign worker and prior epoch',async()=>{
+    await assert.rejects(
+      rpc(recover,[tenant,operation,randomUUID(),lease.lease_epoch]),
+      /stale or unsupported worker lease/);
+    await assert.rejects(
+      rpc(recover,[tenant,operation,worker,0]),
+      /invalid recovery receipt/);
+    assert.equal((await db.query('select count(*)::int as n from public.subject_ref_mappings')).rows[0].n,0);
+  });
+  await check('missing Vault secret keeps DSR and outbox pending without mapping',async()=>{
+    await db.query('delete from public.app_secrets where name=$1',[secretName]);
+    try {
+      await assert.rejects(
+        rpc(recover,[tenant,operation,worker,lease.lease_epoch]),
+        /SUBJECT_REF_BINDING_PENDING/);
+    } finally {
+      await db.query('insert into public.app_secrets(name,value) values($1,$2)',
+        [secretName,'synthetic-local-HMAC-secret']);
+    }
+    const {rows}=await db.query('select metadata from public.dsr_requests where id=$1',[dsr]);
+    assert.ok(!rows[0].metadata?.subject_ref);
+    assert.equal((await db.query('select count(*)::int as n from public.subject_ref_mappings')).rows[0].n,0);
+  });
+  await check('email change blocks worker mapping recovery',async()=>{
+    await db.query('update public.dsr_requests set requester_email=$1 where id=$2',
+      ['other@example.invalid',dsr]);
+    try {
+      await assert.rejects(
+        rpc(recover,[tenant,operation,worker,lease.lease_epoch]),
+        /REQUESTER_EMAIL_CHANGED/);
+    } finally {
+      await db.query('update public.dsr_requests set requester_email=$1 where id=$2',
+        ['subject@example.invalid',dsr]);
+    }
+    assert.equal((await db.query('select count(*)::int as n from public.subject_ref_mappings')).rows[0].n,0);
+  });
+  await check('no active HMAC key refuses mapping recovery',async()=>{
+    await db.query("update public.subject_ref_keys set status='retired' where tenant_id=$1 and key_version=1",[tenant]);
+    try {
+      await assert.rejects(
+        rpc(recover,[tenant,operation,worker,lease.lease_epoch]),
+        /SUBJECT_KEY_PENDING/);
+    } finally {
+      await db.query("update public.subject_ref_keys set status='active' where tenant_id=$1 and key_version=1",[tenant]);
+    }
+    assert.equal((await db.query('select count(*)::int as n from public.subject_ref_mappings')).rows[0].n,0);
+  });
+
+  // REAL worker recovery now creates metadata + mapping atomically using
+  // subject_ref_compute() from the canonical RFC-002 HMAC migration.
+  let ref;
+  await check('leased recovery creates exactly one verified subject mapping',async()=>{
+    const result=await rpc(recover,[tenant,operation,worker,lease.lease_epoch]);
+    assert.equal(result.rows[0].recovered,true);
+    const {rows:d}=await db.query('select metadata from public.dsr_requests where id=$1',[dsr]);
+    ref=d[0].metadata.subject_ref;
+    assert.match(ref,/^[0-9a-f]{64}$/);
+    const {rows:m}=await db.query('select tenant_id,key_version,subject_kind,erased_at,deletion_requested_at from public.subject_ref_mappings where subject_ref=$1',[ref]);
+    assert.equal(m.length,1);
+    assert.equal(m[0].tenant_id,tenant);
+    assert.equal(m[0].key_version,1);
+    assert.equal(m[0].subject_kind,'email');
+    assert.equal(m[0].erased_at,null);
+    assert.equal(m[0].deletion_requested_at,null);
+  });
+  await check('recovery replay preserves prior mapping without duplicates',async()=>{
+    assert.equal((await rpc(recover,[tenant,operation,worker,lease.lease_epoch])).rows[0].recovered,true);
+    assert.equal((await db.query('select count(*)::int as n from public.subject_ref_mappings')).rows[0].n,1);
+    const {rows}=await db.query('select metadata from public.dsr_requests where id=$1',[dsr]);
+    assert.equal(rows[0].metadata.subject_ref,ref);
+  });
+
   await check('canonical HMAC reproduces stable subject reference',async()=>{
     const again=(await db.query("select public.subject_ref_compute($1::uuid,'email',$2) as ref",
       [tenant,' SUBJECT@EXAMPLE.INVALID '])).rows[0].ref;
@@ -207,6 +273,11 @@ try {
     assert.ok(rows[1].prev_hash.equals(rows[0].event_hash));
     assert.equal((await db.query('select count(*)::int as n from public.governance_admin_log')).rows[0].n,1);
     assert.ok((await db.query('select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1',[ref])).rows[0].deletion_requested_at);
+  });
+  await check('completed Evidence task cannot be recovered or remapped',async()=>{
+    const result=await rpc(recover,[tenant,operation,worker,lease.lease_epoch]);
+    assert.equal(result.rows[0].recovered,false);
+    await verify(tenant,actor,2);
   });
   await check('replaying an already completed ACK leaves the real chain untouched',async()=>{
     assert.equal((await rpc(ack,[tenant,operation,worker,lease.lease_epoch])).rows[0].applied,false);

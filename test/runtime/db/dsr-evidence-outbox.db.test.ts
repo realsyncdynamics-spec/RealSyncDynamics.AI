@@ -377,7 +377,9 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
         'SELECT tenant_seq, valid, chain_ok FROM public.runtime_events_verify_chain($1::uuid,1,NULL)',
         [tenantId],
       ));
-    expect(result.rows).toHaveLength(2);
+    // Other canonical runtime producers may add events for the same tenant.
+    // Verify every chain entry, not an assumed total event count.
+    expect(result.rows.length).toBeGreaterThanOrEqual(2);
     expect(result.rows.every(x => x.valid === true && x.chain_ok === true)).toBe(true);
 
     const events = await ctx.client.query<{
@@ -424,7 +426,7 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
         'SELECT valid,chain_ok FROM public.runtime_events_verify_chain($1::uuid,1,NULL)',
         [tenantId],
       ));
-    expect(verification.rows).toHaveLength(2);
+    expect(verification.rows.length).toBeGreaterThanOrEqual(2);
     expect(verification.rows.every(v => v.valid && v.chain_ok)).toBe(true);
   });
 

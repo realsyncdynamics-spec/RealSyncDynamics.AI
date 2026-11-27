@@ -243,7 +243,7 @@ try {
   // schema are not installed here. These are isolated contract-shaped tables
   // for testing *transaction boundaries* and uniqueness, not cryptographic
   // integrity or the full migration history.
-  await admin.query(\`create table public.subject_ref_mappings (
+  await admin.query(`create table public.subject_ref_mappings (
       subject_ref text primary key,
       tenant_id uuid not null,
       subject_kind text not null,
@@ -261,7 +261,7 @@ try {
       tenant_id uuid not null, actor_user_id uuid, actor_email text,
       action text not null, target_type text not null, target_id text,
       payload jsonb not null
-    );\`);
+    );`);
   await admin.query(await readFile(new URL('./evidence-ack.sql', import.meta.url), 'utf8'));
 
   const ackQuery = 'select public.dsr_ack_evidence($1::uuid,$2::uuid,$3::uuid,$4::bigint) as applied';

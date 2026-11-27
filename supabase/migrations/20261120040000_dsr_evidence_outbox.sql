@@ -167,6 +167,7 @@ AS $fn$
 DECLARE
   v_dsr public.dsr_requests%ROWTYPE;
   v_mapping public.subject_ref_mappings%ROWTYPE;
+  v_expected_ref text;
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
@@ -194,6 +195,16 @@ BEGIN
      AND k.status IN ('active', 'rotating');
   IF NOT FOUND THEN
     RAISE EXCEPTION 'subject key unavailable' USING ERRCODE = '23503';
+  END IF;
+
+  -- Recompute in PostgreSQL against the actual protected Vault key:
+  -- even a compromised or buggy internal caller cannot attach a different
+  -- person's HMAC merely by passing a plausible-looking reference.
+  SELECT public.subject_ref_compute(
+    p_tenant_id, 'email', v_dsr.requester_email, p_key_version
+  ) INTO v_expected_ref;
+  IF v_expected_ref IS DISTINCT FROM p_subject_ref THEN
+    RAISE EXCEPTION 'subject reference HMAC mismatch' USING ERRCODE = '23514';
   END IF;
 
   INSERT INTO public.subject_ref_mappings

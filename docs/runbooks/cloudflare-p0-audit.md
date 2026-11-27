@@ -42,6 +42,15 @@ Die Prüfung sendet **nur GET** an die Cloudflare-API. Selbst bei vollständig b
 
 ## DNS-only-Sonderfall: `voice.realsyncdynamicsai.de`
 
+### Neu verifizierte Quellcode-Herkunft (27.11.2026)
+
+- **Eigenes Repository:** [realsyncdynamics-spec/vertical-voice-agent](https://github.com/realsyncdynamics-spec/vertical-voice-agent), Default-Branch `main`, Commit `6a91caf8a5bc831194a793fd3c1bc2298533959f`.
+- **GitHub-Pages-Domainkonfiguration:** Die dortige Datei `CNAME` enthält exakt `voice.realsyncdynamicsai.de`. Die Datenschutzerklärung im selben Repository nennt GitHub Pages als Website-Hoster. Dies bestätigt die **Konfiguration im GitHub-Quellcode**, aber weder den aktuellen DNS-`proxied`-Wert noch erfolgreiche öffentliche HTTP-Antworten.
+- **Statische Website:** `index.html`, `onboarding.html`, `chatbot.js`, lokal gehostete `fonts/`, sechs vorhandene MP3s unter `audio/`; die geprüften HTML-Skript-/Resource-Referenzen und der FAQ-Hilfe-Bot sind lokal. Im geprüften Onboarding wurden JSON-/Markdown-Downloads statt einer Backend-Übertragung gefunden. **Kein Live-Browser-/Traffic-/Cookie-Scan.**
+- **Backend separat:** `workers/vva-sip-webhook/` enthält einen Cloudflare Worker mit xAI-SIP-Webhook, D1, Durable Object, Mandanten-Zulassung und separater Test-/Produktionsumgebung. Die Repository-Konfiguration enthält `TELEPHONY_ENABLED = "false"` für Test und Produktion sowie D1-ID-Platzhalter; daraus folgt **kein aktueller Deployment- oder Secret-Nachweis**. `GO_LIVE.md` führt fehlende Telefonie-Freigaben auf.
+- **Verbindliche RealSync-Plattformarchitektur beachten:** Die öffentliche Website nennt VVA noch „eigenständiges Produkt außerhalb von RealSyncDynamics.AI“. Dies ist **veraltete Produktkommunikation** gegenüber der beschlossenen gemeinsamen Plattform. Integrationsziel: zentrale `/voice-agent`-Landingpage, ein Konto/Dashboard und gemeinsame Mandantenverwaltung/Abrechnung; bestehende Website nur nach Bestand-/Abhängigkeitsprüfung integrieren. **Keine zweite Plattform oder zusätzliche unabhängige Checkout-Logik aufbauen.**
+- **Governance-Grenze:** Die SIP-/xAI-Architekturdokumentation weist auf mögliche Verarbeitung außerhalb der EU und notwendige DPA/ZDR-Prüfung hin. Vor Live-Freigabe aktuelle Verträge, Datenflüsse, Tenant-Isolation, Kostengrenzen und echte Audio-E2E prüfen. Keine EU-Only-Zusage.
+
 **Nutzerseitiger DNS-Befund (27.11.2026), noch nicht per Cloudflare-API belegt:** `voice` zeigt als DNS-only-CNAME (graue Wolke) auf GitHub Pages. Das ist **kein** Cloudflare-Pages-Production-Endpunkt und darf nicht als Ausfall markiert werden, wenn Cloudflare-Zonen-HTTP-Analytik für diesen Host keine Zugriffe anzeigt.
 
 Der Prüfbericht fragt `voice` deshalb separat ab und klassifiziert den Host anhand des tatsächlichen DNS-CNAMEs:

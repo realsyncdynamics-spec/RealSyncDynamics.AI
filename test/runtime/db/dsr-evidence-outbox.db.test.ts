@@ -281,6 +281,64 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       [id],
     );
     expect(erasureEvents.rowCount).toBe(1);
+    // The existing SPEC-001 hash chain must include BOTH atomic events.
+    const chained = await ctx.client.query<{prev_hash:Buffer|null;event_hash:Buffer;tenant_seq:string}>(
+      'SELECT prev_hash,event_hash,tenant_seq FROM public.runtime_events WHERE correlation_id=$1 ORDER BY tenant_seq',
+      [id],
+    );
+    expect(chained.rows).toHaveLength(2);
+    expect(chained.rows[0]!.event_hash.length).toBe(32);
+    expect(chained.rows[1]!.prev_hash).toEqual(chained.rows[0]!.event_hash);
+  });
+
+
+  it('rolls back erasure marker, mapping and chained evidence together on delivery failure', async () => {
+    const {tenantId} = await createTenantWithMember(ctx);
+    const id = await createDsr(ctx, tenantId, {requestType:'erasure'});
+    await ctx.client.query(
+      "ALTER TABLE public.runtime_events ADD CONSTRAINT dsr_block_erasure_event CHECK (type <> 'dsr.erasure_requested')",
+    );
+    await ctx.withClaims({role:'service_role'}, async () => {
+      const result = await ctx.client.query<{result:{failed_in_batch:number}}>(
+        'SELECT public.dsr_outbox_drain(10) AS result',
+      );
+      expect(result.rows[0]!.result.failed_in_batch).toBe(1);
+    });
+    const mappings = await ctx.client.query(
+      'SELECT subject_ref FROM public.subject_ref_mappings WHERE tenant_id=$1', [tenantId],
+    );
+    expect(mappings.rowCount).toBe(0);
+    const events = await ctx.client.query(
+      'SELECT type FROM public.runtime_events WHERE correlation_id=$1', [id],
+    );
+    expect(events.rowCount).toBe(0);
+    const pending = await ctx.client.query<{state:string;last_error:string}>(
+      'SELECT state,last_error FROM public.dsr_evidence_outbox WHERE dsr_id=$1',
+      [id],
+    );
+    expect(pending.rows[0]).toMatchObject({state:'failed',last_error:'SQLSTATE_23514'});
+
+    await ctx.client.query('ALTER TABLE public.runtime_events DROP CONSTRAINT dsr_block_erasure_event');
+    await ctx.client.query(
+      'UPDATE public.dsr_evidence_outbox SET next_attempt_at=now() WHERE dsr_id=$1', [id],
+    );
+    await ctx.withClaims({role:'service_role'}, async () => {
+      const result = await ctx.client.query<{result:{delivered:number}}>(
+        'SELECT public.dsr_outbox_drain(10) AS result',
+      );
+      expect(result.rows[0]!.result.delivered).toBe(1);
+    });
+    const restored = await ctx.client.query(
+      'SELECT deletion_requested_at FROM public.subject_ref_mappings WHERE tenant_id=$1',
+      [tenantId],
+    );
+    expect(restored.rowCount).toBe(1);
+    expect(restored.rows[0]!.deletion_requested_at).toBeTruthy();
+    const evidence = await ctx.client.query(
+      'SELECT type FROM public.runtime_events WHERE correlation_id=$1 ORDER BY tenant_seq',
+      [id],
+    );
+    expect(evidence.rows.map(r=>r.type)).toEqual(['dsr.created','dsr.erasure_requested']);
   });
 
 });

@@ -56,7 +56,7 @@ describe('Phase 3 DSR transactional evidence contract (static)', () => {
     expect(migration).toContain('CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_pending');
     expect(migration).toContain('CREATE OR REPLACE FUNCTION public.dsr_outbox_subject_link');
     expect(migration).toContain("public.subject_ref_compute(");
-    expect(migration).toContain("RAISE EXCEPTION 'subject linkage pending'");
+    expect(migration).toContain("last_error = 'SUBJECT_PENDING'");
     expect(worker).toContain("'dsr_outbox_subject_pending'");
     expect(worker).toContain("admin.rpc('dsr_outbox_subject_link'");
   });

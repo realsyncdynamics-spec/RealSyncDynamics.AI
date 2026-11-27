@@ -8,6 +8,8 @@ on:
       - dev/2360-dsr-atomic-intake
     paths:
       - 'test/db/dsr-outbox/**'
+      - 'test/edge/governance-dsr-atomic-intake.test.ts'
+      - 'supabase/functions/governance-dsr/**'
       - '.github/workflows/dsr-outbox-isolated-postgres.yml'
 
 permissions:
@@ -47,6 +49,12 @@ jobs:
           cache: npm
       - name: Install repository-locked PostgreSQL test dependency
         run: npm ci --ignore-scripts
+      - name: Validate staged Edge request contract and existing DSR validation
+        run: npx vitest run test/edge/governance-dsr-logic.test.ts test/edge/governance-dsr-atomic-intake.test.ts --reporter=default
+      - name: Check TypeScript and staged Edge syntax
+        run: |
+          npm run lint
+          npm run check:edge-syntax
       - name: Run producer atomicity, permission and 20-client concurrency tests
         env:
           DSR_TEST_DATABASE_URL: postgresql://postgres:test-only-local@127.0.0.1:5432/dsr_outbox_contract

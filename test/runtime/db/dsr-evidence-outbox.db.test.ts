@@ -6,10 +6,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  closeDb, createTenantWithMember, getDbUrl, openDb, type DbCtx,
+  closeDb, createTenantWithMember, requireDbOrFail, openDb, type DbCtx,
 } from './db-helpers';
 
-const suite = getDbUrl() ? describe : describe.skip;
+const suite = requireDbOrFail('DSR evidence outbox') ? describe : describe.skip;
 const requester = 'subject@example.test';
 
 async function createDsr(ctx: DbCtx, tenantId: string) {

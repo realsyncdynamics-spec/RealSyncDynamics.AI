@@ -238,7 +238,204 @@ try {
     assert.deepEqual(rows[0], { evidence_status: 'failed', last_error_code: 'RETRIES_EXHAUSTED', lease_owner: null });
   });
 
-  console.log(JSON.stringify({ ok: true, passed, engine: 'PostgreSQL', scope: 'producer-and-lease-only', productionChanges: 0 }));
+
+  // The actual production runtime_events hash-chain trigger and tenancy/RLS
+  // schema are not installed here. These are isolated contract-shaped tables
+  // for testing *transaction boundaries* and uniqueness, not cryptographic
+  // integrity or the full migration history.
+  await admin.query(\`create table public.subject_ref_mappings (
+      subject_ref text primary key,
+      tenant_id uuid not null,
+      subject_kind text not null,
+      deletion_requested_at timestamptz,
+      erased_at timestamptz
+    );
+    create table public.runtime_events (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null, type text not null, severity text not null,
+      source text not null, review_status text not null, spec_version text not null,
+      subject_ref text, payload jsonb not null, correlation_id uuid
+    );
+    create table public.governance_admin_log (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null, actor_user_id uuid, actor_email text,
+      action text not null, target_type text not null, target_id text,
+      payload jsonb not null
+    );\`);
+  await admin.query(await readFile(new URL('./evidence-ack.sql', import.meta.url), 'utf8'));
+
+  const ackQuery = 'select public.dsr_ack_evidence($1::uuid,$2::uuid,$3::uuid,$4::bigint) as applied';
+  const deliveryWorker = randomUUID();
+  const erasureOp = randomUUID();
+  const erasureInput = { ...input, type: 'erasure', operation: erasureOp, email: 'delete@example.invalid' };
+  const erasureId = await invoke(erasureInput);
+  const erasureClaim = (await serviceQuery(
+    'select * from public.dsr_claim_outbox($1::uuid,1,120)', [deliveryWorker],
+  )).rows[0];
+  assert.equal(erasureClaim.operation_id, erasureOp);
+
+  await check('evidence ACK is forbidden to authenticated users', async () => {
+    const c = open(); await c.connect();
+    try {
+      await c.query('set role authenticated');
+      await assert.rejects(c.query(ackQuery, [
+        tenant, erasureOp, deliveryWorker, 1,
+      ]), /permission denied/i);
+    } finally { await c.end(); }
+  });
+
+  await check('missing HMAC never acknowledges DSR evidence', async () => {
+    await assert.rejects(
+      serviceQuery(ackQuery, [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]),
+      /SUBJECT_REF_PENDING/,
+    );
+    assert.equal(await count('runtime_events'), 0);
+    assert.equal(await count('governance_admin_log'), 0);
+    const { rows } = await admin.query(
+      'select evidence_status from public.dsr_outbox where operation_id=$1', [erasureOp],
+    );
+    assert.equal(rows[0].evidence_status, 'retry');
+  });
+
+  const ref = 'a'.repeat(64);
+  await admin.query(
+    'update public.dsr_requests set metadata=jsonb_build_object($1::text,$2::text) where id=$3::uuid',
+    ['subject_ref', ref, erasureId],
+  );
+  await check('missing tenant-scoped mapping blocks ACK even with a subject_ref', async () => {
+    await assert.rejects(
+      serviceQuery(ackQuery, [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]),
+      /SUBJECT_MAPPING_PENDING/,
+    );
+    assert.equal(await count('runtime_events'), 0);
+  });
+  await admin.query(
+    'insert into public.subject_ref_mappings(subject_ref,tenant_id,subject_kind) values($1,$2,$3)',
+    [ref, tenant, 'email'],
+  );
+
+  await check('evidence insert failure rolls back every side effect', async () => {
+    await admin.query('alter table public.runtime_events add constraint injected_event_failure check(false)');
+    try {
+      await assert.rejects(
+        serviceQuery(ackQuery, [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]),
+        /injected_event_failure/,
+      );
+    } finally {
+      await admin.query('alter table public.runtime_events drop constraint injected_event_failure');
+    }
+    assert.equal(await count('runtime_events'), 0);
+    assert.equal(await count('governance_admin_log'), 0);
+    const { rows } = await admin.query(
+      'select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1', [ref],
+    );
+    assert.equal(rows[0].deletion_requested_at, null);
+  });
+
+  await check('audit insert failure also rolls back evidence and erasure scheduling', async () => {
+    await admin.query('alter table public.governance_admin_log add constraint injected_audit_failure check(false)');
+    try {
+      await assert.rejects(
+        serviceQuery(ackQuery, [tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch]),
+        /injected_audit_failure/,
+      );
+    } finally {
+      await admin.query('alter table public.governance_admin_log drop constraint injected_audit_failure');
+    }
+    assert.equal(await count('runtime_events'), 0);
+    assert.equal(await count('governance_admin_log'), 0);
+    const { rows } = await admin.query(
+      'select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1', [ref],
+    );
+    assert.equal(rows[0].deletion_requested_at, null);
+  });
+
+  let erasureAt;
+  await check('valid erasure ACK atomically writes events, audit and erasure queue', async () => {
+    const out = await serviceQuery(ackQuery, [
+      tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch,
+    ]);
+    assert.equal(out.rows[0].applied, true);
+    assert.equal(await count('runtime_events'), 2);
+    assert.equal(await count('governance_admin_log'), 1);
+    const { rows: tasks } = await admin.query(
+      'select evidence_status, lease_owner, lease_until, completed_at from public.dsr_outbox where operation_id=$1',
+      [erasureOp],
+    );
+    assert.equal(tasks[0].evidence_status, 'complete');
+    assert.equal(tasks[0].lease_owner, null);
+    assert.equal(tasks[0].lease_until, null);
+    assert.notEqual(tasks[0].completed_at, null);
+    const { rows: mappings } = await admin.query(
+      'select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1', [ref],
+    );
+    assert.notEqual(mappings[0].deletion_requested_at, null);
+    erasureAt = mappings[0].deletion_requested_at.toISOString();
+    const { rows: evidence } = await admin.query(
+      'select type, subject_ref, correlation_id, spec_version from public.runtime_events order by type',
+    );
+    assert.deepEqual(evidence.map(e => e.type), ['dsr.created', 'dsr.erasure_requested']);
+    assert.ok(evidence.every(e => e.subject_ref === ref && e.correlation_id === erasureId && e.spec_version === '0.2'));
+  });
+
+  await check('completed ACK replay cannot double-book evidence or erasure', async () => {
+    const replay = await serviceQuery(ackQuery, [
+      tenant, erasureOp, deliveryWorker, erasureClaim.lease_epoch,
+    ]);
+    assert.equal(replay.rows[0].applied, false);
+    assert.equal(await count('runtime_events'), 2);
+    assert.equal(await count('governance_admin_log'), 1);
+    const { rows } = await admin.query(
+      'select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1', [ref],
+    );
+    assert.equal(rows[0].deletion_requested_at.toISOString(), erasureAt);
+  });
+
+  await check('wrong tenant and stale worker cannot finalize another task', async () => {
+    const wrongTenant = await serviceQuery(ackQuery, [
+      randomUUID(), erasureOp, deliveryWorker, erasureClaim.lease_epoch,
+    ]);
+    assert.equal(wrongTenant.rows[0].applied, false);
+    assert.equal(await count('runtime_events'), 2);
+  });
+
+  await check('evidence and admin payloads contain no requester PII', async () => {
+    const { rows: events } = await admin.query('select payload from public.runtime_events');
+    const { rows: logs } = await admin.query('select payload,actor_email from public.governance_admin_log');
+    const material = JSON.stringify({ events, logs });
+    assert.equal(material.includes('delete@example.invalid'), false);
+    assert.equal(material.includes('member@example.invalid'), false);
+    assert.equal(logs[0].actor_email, null);
+  });
+
+  await check('ordinary access DSR emits one event without scheduling deletion', async () => {
+    const accessOp = randomUUID(), accessWorker = randomUUID();
+    const accessId = await invoke({ ...input, operation: accessOp, email: 'read@example.invalid' });
+    const readRef = 'b'.repeat(64);
+    await admin.query(
+      'update public.dsr_requests set metadata=jsonb_build_object($1::text,$2::text) where id=$3::uuid',
+      ['subject_ref', readRef, accessId],
+    );
+    await admin.query(
+      'insert into public.subject_ref_mappings(subject_ref,tenant_id,subject_kind) values($1,$2,$3)',
+      [readRef, tenant, 'email'],
+    );
+    const claim = (await serviceQuery(
+      'select * from public.dsr_claim_outbox($1::uuid,1,120)', [accessWorker],
+    )).rows[0];
+    assert.equal(claim.operation_id, accessOp);
+    assert.equal((await serviceQuery(ackQuery, [
+      tenant, accessOp, accessWorker, claim.lease_epoch,
+    ])).rows[0].applied, true);
+    assert.equal(await count('runtime_events'), 3);
+    assert.equal(await count('governance_admin_log'), 2);
+    const { rows } = await admin.query(
+      'select deletion_requested_at from public.subject_ref_mappings where subject_ref=$1', [readRef],
+    );
+    assert.equal(rows[0].deletion_requested_at, null);
+  });
+
+  console.log(JSON.stringify({ ok: true, passed, engine: 'PostgreSQL', scope: 'producer-lease-ack-synthetic-envelope', productionChanges: 0 }));
 } finally {
   await admin.end();
 }

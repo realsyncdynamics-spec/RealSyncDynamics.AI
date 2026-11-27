@@ -255,7 +255,7 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
   });
 
   it('atomically enqueues erasure once and preserves the retention timestamp on replay', async () => {
-    const {tenantId} = await createTenantWithMember(ctx);
+    const {tenantId, userId} = await createTenantWithMember(ctx);
     const id = await createDsr(ctx, tenantId, {requestType:'erasure'});
     const runDrain = () => ctx.withClaims({role:'service_role'}, async () => {
       const r=await ctx.client.query<{result:{delivered:number}}>(
@@ -281,14 +281,24 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       [id],
     );
     expect(erasureEvents.rowCount).toBe(1);
-    // The existing SPEC-001 hash chain must include BOTH atomic events.
-    const chained = await ctx.client.query<{prev_hash:Buffer|null;event_hash:Buffer;tenant_seq:string}>(
-      'SELECT prev_hash,event_hash,tenant_seq FROM public.runtime_events WHERE correlation_id=$1 ORDER BY tenant_seq',
-      [id],
+    // The cryptographic chain is TENANT-wide, not scoped to this DSR.
+    // The existing subject-risk trigger can insert extra events between
+    // dsr.created and dsr.erasure_requested. Verify all tenant events.
+    const chained = await ctx.client.query<{prev_hash:Buffer|null;event_hash:Buffer}>(
+      'SELECT prev_hash,event_hash FROM public.runtime_events WHERE tenant_id=$1 ORDER BY tenant_seq',
+      [tenantId],
     );
-    expect(chained.rows).toHaveLength(2);
-    expect(chained.rows[0]!.event_hash.length).toBe(32);
-    expect(chained.rows[1]!.prev_hash).toEqual(chained.rows[0]!.event_hash);
+    expect(chained.rows.length).toBeGreaterThanOrEqual(2);
+    for (let i=1; i<chained.rows.length; i++) {
+      expect(chained.rows[i]!.prev_hash).toEqual(chained.rows[i-1]!.event_hash);
+    }
+    const verifier = await ctx.withClaims({sub: userId, role:'authenticated'}, async () => {
+      return ctx.client.query<{valid:boolean;chain_ok:boolean}>(
+        'SELECT valid,chain_ok FROM public.runtime_events_verify_chain($1)', [tenantId],
+      );
+    });
+    expect(verifier.rows.length).toBe(chained.rows.length);
+    expect(verifier.rows.every(row=>row.valid&&row.chain_ok)).toBe(true);
   });
 
 

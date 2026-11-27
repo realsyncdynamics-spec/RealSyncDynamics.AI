@@ -9,7 +9,7 @@ create table public.dsr_outbox (
   intake_fingerprint bytea not null check (octet_length(intake_fingerprint) = 32),
   email_binding bytea not null check (octet_length(email_binding) = 32),
   dsr_id uuid not null,
-  event_type text not null check (event_type = 'dsr.created'),
+  event_type text not null check (event_type in ('dsr.created','dsr.updated','dsr.assigned','dsr.closed')),
   revision bigint not null check (revision > 0),
   evidence_status text not null default 'pending' check (evidence_status in ('pending','retry','complete','failed')),
   attempts integer not null default 0 check (attempts >= 0),

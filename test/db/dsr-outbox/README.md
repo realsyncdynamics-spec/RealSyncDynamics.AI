@@ -14,10 +14,15 @@ eingebunden werden.
 | `worker.sql` | Isolierter `FOR UPDATE SKIP LOCKED`-Claim, Worker-Lease, Fencing-Epoch, begrenzter Backoff, Dead-Letter nach acht Versuchen |
 | `evidence-ack.sql` | Isolierte atomare Evidence-/Audit-/Erasure-/ACK-RPC; verlangt gültige Lease, HMAC-Subject-Referenz und vorhandenes Tenant-Mapping, kein PII im Event-/Audit-Payload |
 | `postgres-integration.mjs` | Echte PostgreSQL-Prüfung (bisher 16 Producer-/Lease-Checks plus 10 neue ACK-Checks), darunter 20 parallele Anfragen, erzwungene Evidence-/Audit-Fehler, ACK-Replay, Worker-Fencing und Erasure-Idempotenz; die Evidence-Tabellen sind Test-Fixtures, **nicht** das produktive Hash-Chain-Schema |
+| `real-runtime-integration.mjs` | 8 zusätzliche Integrationstests mit den **Originalmigrationen** für DSR, Admin-Log, partitionierte `runtime_events`, HMAC-Subject-Lifecycle und DSR-Erasure; prüft SHA-256-Hash-Chain, Transaktionsrollback, Append-only und Tenant-Prüfung. Das Supabase-Auth-/Vault-Bootstrap bleibt synthetisch. |
 | `recovery.mjs` | Älterer ergänzender PGlite-Test mit persistentem Testverzeichnis |
 | `.github/workflows/dsr-outbox-isolated-postgres.yml` | Branchgebundener Wegwerf-PostgreSQL-Container (nur CI, keine Verbindung zu Supabase-Produktion) |
 
 Prüfprotokoll: GitHub Actions → **DSR Outbox - isolated PostgreSQL contract (no deploy)**.
+
+**Abnahme vom 27.11.2026:** [CI-Lauf #46002329913](https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/actions/runs/46002329913) erfolgreich: **26/26 isolierte Producer-/Lease-/ACK-Tests** + **8/8 Tests mit ausgewählten Originalmigrationen**, zusammen **34/34**. Die Hash-Chain wurde mit `runtime_events_verify_chain` der echten Migration bestätigt; bei Fehler im zweiten Event-Insert blieben keine Audit-/Evidence-/Erasure-Nebenwirkungen bestehen.
+
+**Genauer Schema-Scope:** `20260514100000_governance_admin_log.sql`, `20260515200000_dsr_tracker.sql`, `20260602100000_runtime_events_backbone.sql`, `20260603000000_subject_ref_lifecycle.sql`, `20260604100000_runtime_events_spec_version_v02.sql` und `20260626000000_dsr_erasure_automation.sql` werden aus dem Repository in eine Wegwerf-Datenbank geladen. Dazu dienen `scripts/test-db/bootstrap.sql` (Auth-Stubs) und die Originaldefinition von `set_updated_at()`. **Dies ist kein vollständiger Replay aller Repository-Migrationen und keine Prüfung des Supabase-Vault-Dienstes.**
 
 ## Ausdrücklich noch offen
 
@@ -28,13 +33,14 @@ Prüfprotokoll: GitHub Actions → **DSR Outbox - isolated PostgreSQL contract (
 2. `create`, `update`, `assign`, `close` in der bestehenden
    `governance-dsr`-Edge Function auf atomare RPCs umstellen. Bisher
    testet dieser Kandidat ausschließlich die Annahme (`create`).
-3. **Evidence-Consumer weiter integrieren:** `evidence-ack.sql` prüft bereits
-   Leasing, Mapping, Rollenrechte sowie den atomaren Abschluss mit
-   `runtime_events`, `governance_admin_log`, Erasure-Vormerkung und Outbox-ACK
-   **im isolierten Testschema**. Noch offen bleiben der ausführende Consumer
-   im vorhandenen Scheduler, HMAC-/Vault-Mapping-Recovery, echte
-   hash-chain-Trigger mit Partitionen, Retention und RLS im Vollschema.
-   Fehlende Subject-Referenzen bleiben **pending/retry**, niemals `complete`.
+3. **Evidence-Consumer weiter integrieren:** Der atomare Abschluss ist nun
+   mit einem synthetischen Test-Envelopeschema **und** den originalen
+   Runtime-/Hash-Chain-Migrationen isoliert geprüft. Offen bleiben der
+   ausführende Consumer im vorhandenen Scheduler, automatisierte
+   HMAC-/Vault-Mapping-Recovery, der vollständige historische
+   Migrationsreplay inklusive Ledger-Drift, weitere JWT-/RLS-Varianten und
+   produktionsnahe End-to-End-Abnahme. Fehlende Subject-Referenzen bleiben
+   **pending/retry**, niemals `complete`.
 4. `evidence_status` separat vom fachlichen DSR-Status für den Tenant
    im Dashboard sichtbar machen, ohne private Task-Payloads freizugeben.
 5. HTTP/JWT 401, Tenant-Fremdzugriff 403, Viewer 403 und komplette

@@ -29,7 +29,6 @@ import {
   buildClosePatch,
   buildCreate,
   buildUpdatePatch,
-  isErasure,
   isWriterRole,
   normalizeExportRequest,
 } from './logic.ts';
@@ -105,11 +104,20 @@ async function handleCreate(admin: SupabaseClient, userId: string, userEmail: st
   }).select('*').single();
   if (error) throw error;
 
-  // Anchor the subject so export + erasure can find it (best-effort).
+  // Fast path: verify the computed HMAC, persist mapping and enqueue
+  // erasure evidence atomically in PostgreSQL. The DSR trigger already
+  // persisted a durable recovery item if this attempt fails.
   if (subject) {
-    await upsertMapping(admin, { subject_ref: subject.subject_ref, tenant_id: row.tenant_id, key_version: subject.key_version });
-    if (isErasure(row.request_type)) {
-      await enqueueErasure(admin, row.tenant_id, subject.subject_ref, data.id);
+    const { data: linked, error: linkError } = await admin.rpc('dsr_outbox_subject_link', {
+      p_dsr_id: data.id,
+      p_tenant_id: row.tenant_id,
+      p_subject_ref: subject.subject_ref,
+      p_key_version: subject.key_version,
+    });
+    if (linkError || linked !== true) {
+      // Only a code: database error messages may contain personal data.
+      console.error(JSON.stringify({ scope: 'dsr_subject_link_pending',
+        code: linkError?.code ?? 'SUBJECT_LINK_FAILED' }));
     }
   }
 
@@ -232,75 +240,6 @@ async function outboxReady(admin: SupabaseClient): Promise<boolean> {
 async function isMember(admin: SupabaseClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('user_id').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return !!data;
-}
-
-// Create the subject anchor if absent; never disturb an existing mapping's
-// lifecycle (deletion_requested_at / erased_at / retention_class).
-async function upsertMapping(admin: SupabaseClient, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
-  try {
-    const { error } = await admin.from('subject_ref_mappings').upsert(
-      { subject_ref: m.subject_ref, tenant_id: m.tenant_id, key_version: m.key_version, subject_kind: 'email' },
-      { onConflict: 'subject_ref', ignoreDuplicates: true },
-    );
-    if (error) throw error;
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'dsr_mapping_upsert_failed', tenant_id: m.tenant_id, error: (e as Error)?.message ?? String(e) }));
-  }
-}
-
-// Enqueue the subject for the automated erasure sweep. Replicates the effect
-// of request_subject_erasure() via the service-role client (that RPC guards
-// on has_tenant_membership/auth.uid(), which is absent for service role).
-// The membership check already happened in handleCreate (isWriter).
-async function enqueueErasure(admin: SupabaseClient, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
-  try {
-    const { error } = await admin.from('subject_ref_mappings')
-      .update({ deletion_requested_at: new Date().toISOString() })
-      .eq('tenant_id', tenantId).eq('subject_ref', subjectRef).is('deletion_requested_at', null);
-    if (error) throw error;
-    await emitEvidence(admin, {
-      tenant_id: tenantId, eventType: 'dsr.erasure_requested', dsr: { id: dsrId },
-      subject_ref: subjectRef, severity: 'high',
-      payload: { request_id: crypto.randomUUID(), retention_hold: '30 days', reason: `dsr:${dsrId}` },
-    });
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'dsr_erasure_enqueue_failed', tenant_id: tenantId, dsr_id: dsrId, error: (e as Error)?.message ?? String(e) }));
-  }
-}
-
-// Append-only evidence row on the per-tenant hash chain. Best-effort: a
-// failure here (e.g. a missing future partition) is logged but never blocks
-// the DSR write, which is the source of truth.
-async function emitEvidence(admin: SupabaseClient, args: {
-  tenant_id: string;
-  eventType: string;
-  dsr: DsrRequest;
-  subject_ref: string | null;
-  severity?: string;
-  payload: Record<string, unknown>;
-}): Promise<void> {
-  try {
-    const { error } = await admin.from('runtime_events').insert({
-      tenant_id: args.tenant_id,
-      type: args.eventType,
-      severity: args.severity ?? 'info',
-      source: 'governance-dsr',
-      // runtime_events CHECK restricts spec_version to ('0.1','0.2'); the
-      // column default is still '1.0' (fixed in 20260626000000), so set it
-      // explicitly to stay valid regardless of deploy order.
-      spec_version: '0.2',
-      subject_ref: args.subject_ref,
-      payload: { dsr_id: args.dsr?.id, ...args.payload },
-      correlation_id: args.dsr?.id ?? null,
-    });
-    if (error) throw error;
-  } catch (e) {
-    console.error(JSON.stringify({
-      level: 'error', scope: 'dsr_evidence_emit_failed',
-      event_type: args.eventType, tenant_id: args.tenant_id,
-      dsr_id: args.dsr?.id, error: (e as Error)?.message ?? String(e),
-    }));
-  }
 }
 
 function json(body: unknown, status = 200): Response {

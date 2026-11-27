@@ -175,8 +175,8 @@ BEGIN
             -- The per-item subtransaction undoes any partial event append.
             -- Never persist raw SQLERRM here: database errors can embed PII.
             -- SQLSTATE is sufficient for retry classification and alerts.
-            v_retry := pg_catalog.least(3600,
-                pg_catalog.power(2, pg_catalog.least(v_item.attempt_count + 1, 11))::integer);
+            v_retry := LEAST(3600,
+                pg_catalog.power(2, LEAST(v_item.attempt_count + 1, 11))::integer);
             UPDATE public.dsr_evidence_outbox
                SET state = 'failed',
                    attempt_count = attempt_count + 1,

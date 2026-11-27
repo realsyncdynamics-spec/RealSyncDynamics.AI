@@ -124,6 +124,70 @@ try {
     assert.equal(again,ref);
   });
 
+
+  await check('original immutable receipt replays after mutable DSR edits',async()=>{
+    await db.query('update public.dsr_requests set requester_name=$1,assigned_to=$2 where id=$3',
+      ['updated after intake','new staff member',dsr]);
+    assert.equal((await rpc(intake,[tenant,actor,operation,'erasure','subject@example.invalid'])).rows[0].id,dsr);
+    await assert.rejects(rpc(intake,[tenant,actor,operation,'erasure','new@example.invalid']),/operation conflict/);
+    const {rows}=await db.query('select intake_fingerprint,email_binding from public.dsr_outbox where operation_id=$1',[operation]);
+    assert.equal(rows[0].intake_fingerprint.length,32);
+    assert.equal(rows[0].email_binding.length,32);
+  });
+
+  await check('requester email tampering cannot redirect evidence',async()=>{
+    await db.query('update public.dsr_requests set requester_email=$1 where id=$2',
+      ['other@example.invalid',dsr]);
+    await assert.rejects(rpc(ack,[tenant,operation,worker,lease.lease_epoch]),/REQUESTER_EMAIL_CHANGED/);
+    await db.query('update public.dsr_requests set requester_email=$1 where id=$2',
+      ['subject@example.invalid',dsr]);
+    assert.equal((await db.query('select count(*)::int as n from public.runtime_events')).rows[0].n,0);
+  });
+
+  await check('valid tenant-local but forged HMAC mapping is rejected',async()=>{
+    const forged=(await db.query("select public.subject_ref_compute($1::uuid,'email',$2) as ref",
+      [tenant,'another@example.invalid'])).rows[0].ref;
+    await db.query('insert into public.subject_ref_mappings(subject_ref,tenant_id,key_version,subject_kind) values($1,$2,1,$3)',
+      [forged,tenant,'email']);
+    await db.query("update public.dsr_requests set metadata=jsonb_build_object('subject_ref',$1::text) where id=$2",
+      [forged,dsr]);
+    await assert.rejects(rpc(ack,[tenant,operation,worker,lease.lease_epoch]),/SUBJECT_REF_BINDING_PENDING/);
+    await db.query("update public.dsr_requests set metadata=jsonb_build_object('subject_ref',$1::text) where id=$2",
+      [ref,dsr]);
+    assert.equal((await db.query('select count(*)::int as n from public.runtime_events')).rows[0].n,0);
+  });
+
+  await check('missing Vault secret fails closed',async()=>{
+    await db.query('delete from public.app_secrets where name=$1',[secretName]);
+    await assert.rejects(rpc(ack,[tenant,operation,worker,lease.lease_epoch]),/SUBJECT_REF_BINDING_PENDING/);
+    await db.query('insert into public.app_secrets(name,value) values($1,$2)',
+      [secretName,'synthetic-local-HMAC-secret']);
+  });
+
+  await check('retired HMAC key cannot validate existing receipt',async()=>{
+    await db.query("update public.subject_ref_keys set status='retired' where tenant_id=$1 and key_version=1",
+      [tenant]);
+    await assert.rejects(rpc(ack,[tenant,operation,worker,lease.lease_epoch]),/SUBJECT_REF_BINDING_PENDING/);
+    await db.query("update public.subject_ref_keys set status='active' where tenant_id=$1 and key_version=1",
+      [tenant]);
+  });
+
+  await check('rotation preserves validation against the original mapped key version',async()=>{
+    await db.query("update public.subject_ref_keys set status='rotating' where tenant_id=$1 and key_version=1",
+      [tenant]);
+    const secret2='dsr_test_rotated_'+tenant;
+    await db.query("insert into public.subject_ref_keys(tenant_id,key_version,vault_secret_name,status) values($1,2,$2,'active')",
+      [tenant,secret2]);
+    await db.query('insert into public.app_secrets(name,value) values($1,$2)',
+      [secret2,'rotated-synthetic-HMAC-secret']);
+    const latest=(await db.query("select public.subject_ref_compute($1::uuid,'email',$2) as ref",
+      [tenant,'subject@example.invalid'])).rows[0].ref;
+    assert.notEqual(latest,ref);
+    const versioned=(await db.query("select public.subject_ref_compute($1::uuid,'email',$2,1) as ref",
+      [tenant,'subject@example.invalid'])).rows[0].ref;
+    assert.equal(versioned,ref);
+  });
+
   await check('real hash-chain insert failure atomically rolls back erasure and audit',async()=>{
     await db.query("alter table public.runtime_events add constraint inject_block_erasure check(type <> 'dsr.erasure_requested')");
     try {

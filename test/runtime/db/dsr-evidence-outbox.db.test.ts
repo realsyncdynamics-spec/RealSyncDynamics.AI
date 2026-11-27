@@ -285,12 +285,17 @@ suite('DSR evidence outbox — PostgreSQL integration', () => {
       'SELECT deletion_requested_at FROM public.subject_ref_mappings WHERE subject_ref=$1', [ref],
     );
     expect(second[0]!.deletion_requested_at).toEqual(first[0]!.deletion_requested_at);
-    expect(await queueCount(ctx, id)).toBe(2);
+    const queuedErasure = await ctx.client.query(
+      "SELECT event_type FROM public.dsr_evidence_outbox WHERE dsr_id=$1 AND event_type='dsr.erasure_requested'",
+      [id],
+    );
+    expect(queuedErasure.rowCount).toBe(1);
+    expect(await queueCount(ctx, id)).toBe(3);
     await ctx.withClaims({ role: 'service_role' }, async () => {
       const sent = await ctx.client.query<{ outcome: { delivered: number } }>(
         'SELECT public.dsr_outbox_drain(10) AS outcome',
       );
-      expect(sent.rows[0]!.outcome.delivered).toBe(2);
+      expect(sent.rows[0]!.outcome.delivered).toBe(3);
       const replay = await ctx.client.query<{ outcome: { delivered: number } }>(
         'SELECT public.dsr_outbox_drain(10) AS outcome',
       );
